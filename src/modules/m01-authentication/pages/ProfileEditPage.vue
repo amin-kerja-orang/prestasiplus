@@ -10,6 +10,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
+import { isHttpMode } from '@/api/mode'
 import { useFlash } from '@/composables/useFlash'
 import { useSessionStore } from '@/stores/session'
 
@@ -23,6 +24,15 @@ import { errorLines } from '../lib/error-lines'
 const session = useSessionStore()
 const flash = useFlash()
 const user = computed(() => session.user)
+
+/**
+ * DV-28: the real API only stores a self-chosen school for a student or a parent (every other role ignores
+ * `schoolId`, so the card would "save" nothing). In mock mode (live) the card shows for every role.
+ */
+const SELF_SCHOOL_ROLES: readonly string[] = ['student', 'parent']
+const showSchool = computed(
+  () => !isHttpMode() || (user.value !== null && SELF_SCHOOL_ROLES.includes(user.value.role)),
+)
 
 const name = ref('')
 const phone = ref('')
@@ -80,7 +90,7 @@ async function submit(): Promise<void> {
       phone: phone.value === '' ? null : phone.value,
       bio: bio.value === '' ? null : bio.value,
       grade: grade.value,
-      schoolId: school.value?.id ?? null,
+      ...(showSchool.value ? { schoolId: school.value?.id ?? null } : {}),
     })
     session.setUser(result.data)
     seed(result.data)
@@ -183,7 +193,7 @@ async function submit(): Promise<void> {
         </div>
       </UCard>
 
-      <UCard>
+      <UCard v-if="showSchool" data-testid="profile-school-card">
         <div class="flex flex-col gap-4">
           <h2 class="flex items-center gap-2 text-subheading text-highlighted">
             <UIcon name="i-ph-buildings" class="size-5" aria-hidden="true" />

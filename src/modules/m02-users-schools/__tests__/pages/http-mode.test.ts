@@ -331,3 +331,59 @@ describe('Daftar Pelajar Komplimen (S7)', () => {
     expect(t(w, 'comp-info-password').text()).toBe('c')
   })
 })
+
+const roleValues = (w: VueWrapper) =>
+  (t(w, 'user-role').findAll('option') as { element: Element }[]).map(
+    (o) => (o.element as HTMLOptionElement).value,
+  )
+
+describe('Peranan select (DV-M02-22)', () => {
+  it('http: S2 and S3 leave out "Pegawai JPN" (not a contract role)', async () => {
+    const create = await mountPage(UserCreatePage, '/admin/users/create')
+    expect(roleValues(create.w)).not.toContain('jpn_officer')
+    expect(roleValues(create.w)).toContain('ppd_officer')
+    expect(create.w.text()).not.toContain('Pegawai JPN')
+    users.fetchAdminUser.mockResolvedValue(detail())
+    const edit = await mountPage(UserEditPage, '/admin/users/7/edit', { id: 7 })
+    expect(roleValues(edit.w)).not.toContain('jpn_officer')
+    expect(roleValues(edit.w)).toContain('school_admin')
+  })
+
+  it('mock: S2 keeps "Pegawai JPN"', async () => {
+    mode.http = false
+    const { w } = await mountPage(UserCreatePage, '/admin/users/create')
+    expect(roleValues(w)).toContain('jpn_officer')
+  })
+})
+
+describe('Pautkan Anak search minimum (DV-M02-23)', () => {
+  async function searchFor(term: string) {
+    const { w } = await mountPage(UserCreatePage, '/admin/users/create')
+    await t(w, 'user-role').setValue('parent')
+    await t(w, 'linker-search').trigger('focus')
+    await t(w, 'linker-search').setValue(term)
+    await vi.advanceTimersByTimeAsync(300)
+    await flushPromises()
+    return w
+  }
+
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  it('http: 2 characters search nothing and show no "Tiada pelajar dijumpai"; 3 search', async () => {
+    const w = await searchFor('pe')
+    expect(users.searchStudents).not.toHaveBeenCalled()
+    expect(has(w, 'linker-empty')).toBe(false)
+    await t(w, 'linker-search').setValue('pel')
+    await vi.advanceTimersByTimeAsync(300)
+    await flushPromises()
+    expect(users.searchStudents).toHaveBeenCalledWith('pel', expect.anything())
+    expect(has(w, 'linker-empty')).toBe(true)
+  })
+
+  it('mock: 2 characters still search', async () => {
+    mode.http = false
+    await searchFor('pe')
+    expect(users.searchStudents).toHaveBeenCalledWith('pe', expect.anything())
+  })
+})

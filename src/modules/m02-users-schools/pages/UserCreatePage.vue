@@ -44,6 +44,7 @@ import {
   isOfficerRole,
   isStandardRole,
   ROLE_OPTIONS,
+  roleOptionsFor,
 } from '../lib/user-form-options'
 
 const router = useRouter()
@@ -52,6 +53,8 @@ const flash = useFlash()
 /** http mode: no default password exists (D59b); the server generates one per account and returns it once. */
 const http = isHttpMode()
 const credential = ref<CredentialRow | null>(null)
+/** DV-M02-22: no "Pegawai JPN" in http mode (not a contract role). */
+const roleOptions = roleOptionsFor(ROLE_OPTIONS, http)
 
 const role = ref<Role | ''>('')
 
@@ -293,7 +296,7 @@ async function submit(): Promise<void> {
             data-testid="user-role"
           >
             <option value="">-- Pilih Peranan --</option>
-            <option v-for="o in ROLE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+            <option v-for="o in roleOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
           </DsNativeSelect>
         </DsFormField>
       </DsFormSection>

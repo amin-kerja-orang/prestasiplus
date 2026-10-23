@@ -54,6 +54,7 @@ import {
   formatDateTime,
   PACKAGE_OPTIONS,
   ROLE_OPTIONS,
+  roleOptionsFor,
   SECURITY_NOTES,
 } from '../lib/user-form-options'
 
@@ -64,6 +65,8 @@ const flash = useFlash()
 
 /** http mode: no admin-chosen password (D59b); "reset" asks the server for a random one, shown once. */
 const http = isHttpMode()
+/** DV-M02-22: no "Pegawai JPN" in http mode (not a contract role). */
+const roleOptions = roleOptionsFor(ROLE_OPTIONS, http)
 const credential = ref<CredentialRow | null>(null)
 
 const {
@@ -351,7 +354,7 @@ async function submit(): Promise<void> {
               required
               data-testid="user-role"
             >
-              <option v-for="o in ROLE_OPTIONS" :key="o.value" :value="o.value">
+              <option v-for="o in roleOptions" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
             </DsNativeSelect>

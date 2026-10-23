@@ -3,6 +3,7 @@
  * Full class strings live in the components (overview §8.2 rule 2); this file holds the finite lookups.
  */
 
+import { isHttpMode } from '@/api/mode'
 import type { Role } from '@/modules/m01-authentication'
 
 import type { SubscriptionPackage } from '../api/users'
@@ -26,6 +27,17 @@ export const ROLE_OPTIONS: readonly { value: Role; label: string }[] = [
   { value: 'jpn_officer', label: 'Pegawai JPN' },
   { value: 'admin', label: 'Admin' },
 ]
+
+/**
+ * http mode (DV-M02-22): `jpn_officer` is not a role of the API contract (a "Pegawai JPN" is a `ppd_officer`
+ * with a JPN scope), so create / update would answer 422. Mock mode keeps the live 8-role select.
+ */
+export function roleOptionsFor<T extends { value: string }>(
+  options: readonly T[],
+  http: boolean = isHttpMode(),
+): readonly T[] {
+  return http ? options.filter((o) => o.value !== 'jpn_officer') : options
+}
 
 /** BR-01: standard roles share the FR-M02-22 field set. */
 const STANDARD_ROLES: readonly string[] = ['student', 'teacher', 'parent', 'sponsor', 'admin']
@@ -93,6 +105,16 @@ export const SECURITY_NOTES: readonly string[] = [
 
 /** Minimum characters that trigger a student / school search (FR-M02-25, 26, 27, 41, 42). */
 export const SEARCH_MIN_CHARS = 2
+
+/**
+ * http mode (DV-M02-23): `GET /api/admin/students/search` answers `[]` below 3 characters (contract
+ * `STUDENT_SEARCH_MIN_CHARS`), so the parent-student linker waits for 3. The school endpoints have no minimum.
+ */
+export const STUDENT_SEARCH_MIN_CHARS_HTTP = 3
+
+export function studentSearchMinChars(http: boolean = isHttpMode()): number {
+  return http ? STUDENT_SEARCH_MIN_CHARS_HTTP : SEARCH_MIN_CHARS
+}
 
 /**
  * BR-09 (INFERRED): lower-case the name, then upper-case every letter that starts the text or follows a
