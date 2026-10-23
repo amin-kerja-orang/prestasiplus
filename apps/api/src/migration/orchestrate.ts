@@ -191,7 +191,8 @@ const fromReport = (name: 'core' | 'activity', report: RunReport): StageResult =
 })
 
 /** The core counters that `migrate:all` / `migrate:delta` print per core stage (counts only; the full list is `migrate:core`). */
-const CORE_STAGE_NOTES = ['rosterDefaultHashes', 'rosterDefaultHashesWarning', 'nullHashAccounts', 'flaggedWithoutLoginId'] as const
+const CORE_STAGE_NOTES = ['rosterDefaultHashes', 'rosterDefaultHashesWarning', 'nullHashAccounts', 'flaggedWithoutLoginId',
+  'must_reset.roster_account', 'must_reset.non_bcrypt', 'must_reset.shared_default'] as const
 
 async function runStage(name: 'core' | 'activity', mode: RunMode, o: PipelineOptions): Promise<StageResult> {
   const source = o.source ?? 'cloud'

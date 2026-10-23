@@ -193,8 +193,8 @@ describe('Q10/Q11 in the core stage of migrate:all', () => {
     ...(restrictedFile ? { restrictedFile } : {}),
   })
 
-  it('prints the four counts and the restricted file path (no ids), and hands warn and outDir to runCore', async () => {
-    const counts: [string, number][] = [['rosterDefaultHashes', 0], ['rosterDefaultHashesWarning', 1], ['nullHashAccounts', 3], ['flaggedWithoutLoginId', 2], ['must_reset.non_bcrypt', 5]]
+  it('prints the report counts (incl. the three must_reset.* of C5) and the restricted file path (no ids), and hands warn and outDir to runCore', async () => {
+    const counts: [string, number][] = [['rosterDefaultHashes', 0], ['rosterDefaultHashesWarning', 1], ['nullHashAccounts', 3], ['flaggedWithoutLoginId', 2], ['must_reset.roster_account', 4], ['must_reset.non_bcrypt', 5], ['must_reset.shared_default', 0], ['must_reset.other_reason', 9]]
     mocks.runCore.mockResolvedValueOnce(withCore(report('dry-run', 'succeeded'), counts)).mockResolvedValueOnce(withCore(report('apply', 'succeeded'), counts, '/x/.migration-out/core-login-gaps-1.json'))
     mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
     const log = capture()
@@ -204,7 +204,11 @@ describe('Q10/Q11 in the core stage of migrate:all', () => {
     expect(log.text()).toContain('note flaggedWithoutLoginId: 2')
     expect(log.text()).toContain('note rosterDefaultHashes: 0')
     expect(log.text()).toContain('note rosterDefaultHashesWarning: 1')
-    expect(log.text()).not.toContain('must_reset')
+    // C5 (night SQL checks) compares these three with the database
+    expect(log.text()).toContain('note must_reset.roster_account: 4')
+    expect(log.text()).toContain('note must_reset.non_bcrypt: 5')
+    expect(log.text()).toContain('note must_reset.shared_default: 0')
+    expect(log.text()).not.toContain('must_reset.other_reason') // only the listed counters are printed per stage
     expect(log.text()).toContain('restricted id file (mode 0600, delete within 7 days): /x/.migration-out/core-login-gaps-1.json')
     for (const [o] of mocks.runCore.mock.calls) expect(o).toMatchObject({ warn: expect.any(Function) })
   })

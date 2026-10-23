@@ -46,6 +46,20 @@ afterAll(async () => {
   await env?.close()
 })
 
+/** `etl_runs.counters -> 'notes'` of a run, and the entity counters next to it. */
+async function ledgerNotes(pool: StagingDb['pool'], runId: string): Promise<{ notes: Record<string, unknown> | null; users: unknown }> {
+  const r = await pool.query<{ notes: Record<string, unknown> | null; users: unknown }>(
+    `select counters -> 'notes' as notes, counters -> 'users' as users from etl_runs where id = $1::bigint`,
+    [runId],
+  )
+  return r.rows[0] as { notes: Record<string, unknown> | null; users: unknown }
+}
+const expectNumbersOnly = (notes: Record<string, unknown> | null): Record<string, number> => {
+  expect(notes).not.toBeNull()
+  for (const [k, v] of Object.entries(notes ?? {})) expect(typeof v, k).toBe('number')
+  return notes as Record<string, number>
+}
+
 const files = (): string[] => readdirSync(outDir).filter((f) => f.startsWith('core-login-gaps-'))
 
 async function run(mode: 'dry-run' | 'apply', extra: Record<string, string> = {}) {
@@ -96,10 +110,22 @@ describe('Q11: accounts without a way to log in', () => {
     expect(core.notes.counters.get('flaggedWithoutLoginId')).toBe(2)
     // the per-reason flag counts exist already
     expect(core.notes.counters.get('must_reset.non_bcrypt')).toBeGreaterThanOrEqual(3)
-    expect(core.notes.counters.get('must_reset.roster_account')).toBeGreaterThanOrEqual(1)
+    expect(core.notes.counters.get('must_reset.roster_account')).toBe(1) // user 3: username in the staged row, no e-mail
+    expect(core.notes.counters.get('must_reset.shared_default')).toBe(0) // present as 0, not absent (night check C5)
     // ids are not in the aggregate notes
     expect(core.notes.ids.has('nullHashAccounts')).toBe(false)
     expect(core.notes.ids.has('flaggedWithoutLoginId')).toBe(false)
+
+    // the ledger carries the same counters under counters -> 'notes' (numbers only), next to the runner's entity counters
+    const ledger = await ledgerNotes(env.pool, report.runId)
+    const notes = expectNumbersOnly(ledger.notes)
+    expect(ledger.users, 'the runner counters are kept').toMatchObject({ read: 13 })
+    expect(notes).toMatchObject({
+      rosterDefaultHashes: 0, rosterDefaultHashesWarning: 1, nullHashAccounts: 3, flaggedWithoutLoginId: 2,
+      'must_reset.roster_account': 1, 'must_reset.shared_default': 0,
+    })
+    expect(Object.keys(notes).every((k) => /^(must_reset\.|nullHashAccounts$|flaggedWithoutLoginId$|rosterDefaultHashes|countsFromCommittedRows$)/.test(k))).toBe(true)
+    expect(JSON.stringify(ledger.notes)).not.toMatch(/\[|"[0-9]+"/) // no id list, no id as a value
 
     expect(restrictedFile).toBeDefined()
     expect(files().filter((f) => !before.has(f))).toHaveLength(1)
@@ -200,6 +226,11 @@ describe('Q11 after an interrupted and resumed apply', () => {
     expect((JSON.parse(readFileSync(join(out1, written[0] as string), 'utf8')) as { ids: unknown }).ids).toEqual({ flaggedWithoutLoginId: ['3'] })
     expect(warnings.some((w) => w.includes('restricted id file'))).toBe(true)
 
+    const failedRun = await env2.pool.query<{ id: string }>(`select id::text from etl_runs where mode = 'apply' order by id desc limit 1`)
+    const afterFailure = expectNumbersOnly((await ledgerNotes(env2.pool, failedRun.rows[0]?.id as string)).notes)
+    expect(afterFailure.flaggedWithoutLoginId).toBe(1) // committed batches only: user 3
+    expect(afterFailure.nullHashAccounts).toBe(0)
+
     const resumed = await runCore({ ...base, mode: 'apply', outDir: out2, warn: (l) => void warnings.push(l) })
     expect(resumed.report.status).toBe('succeeded')
     expect(resumed.report.resumedBatches).toBeGreaterThan(0)
@@ -207,6 +238,12 @@ describe('Q11 after an interrupted and resumed apply', () => {
     expect(resumed.core.notes.counters.get('nullHashAccounts')).toBe(3)
     expect(resumed.core.notes.counters.get('flaggedWithoutLoginId')).toBe(2)
     expect(resumed.core.notes.counters.get('countsFromCommittedRows')).toBe(1)
+    // user 3 was committed in batch 2, before the failure, and its username was dropped as a duplicate afterwards: it is a roster
+    // account by the staged row (transform / C5 definition), which neither this process' notes nor the committed row alone show.
+    expect(resumed.core.notes.counters.get('must_reset.roster_account')).toBe(1)
+    expect((await env2.pool.query(`select username, email from users where legacy_id = '3'`)).rows).toEqual([{ username: null, email: null }])
+    const final = expectNumbersOnly((await ledgerNotes(env2.pool, resumed.report.runId)).notes)
+    expect(final).toMatchObject({ nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1, 'must_reset.roster_account': 1 })
     const body = JSON.parse(readFileSync(resumed.restrictedFile as string, 'utf8')) as { ids: Record<string, string[]> }
     expect(body.ids).toEqual({ flaggedWithoutLoginId: ['3', '10'], nullHashAccounts: ['9', '10', '11'] })
   }, 300_000)

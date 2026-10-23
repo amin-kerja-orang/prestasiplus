@@ -137,7 +137,8 @@ function noteRosterHashes(core: CoreContext, mode: RunMode): void {
 /**
  * Q11, after a resumed or interrupted apply: the notes only saw the batches this process loaded (a resume starts after the
  * checkpoint, and a failed batch was rolled back after its ids were noted). So the two counts and the id lists are rebuilt
- * from the committed v2 `users` rows (read-only), which is the truth whatever the batch history was.
+ * from the committed v2 `users` rows (read-only), which is the truth whatever the batch history was. Also rebuilt:
+ * `must_reset.roster_account` (night check C5).
  */
 async function recountFromCommitted(pool: Pick<pg.Pool, 'query'>, core: CoreContext): Promise<void> {
   const res = await pool.query<{ legacy_id: string; null_hash: boolean; loginless: boolean }>(
@@ -156,7 +157,39 @@ async function recountFromCommitted(pool: Pick<pg.Pool, 'query'>, core: CoreCont
   core.notes.restricted.set('flaggedWithoutLoginId', loginless)
   core.notes.counters.set('nullHashAccounts', nulls.length)
   core.notes.counters.set('flaggedWithoutLoginId', loginless.length)
+  // `must_reset.roster_account` follows the TRANSFORM's definition (and the night check C5): a username and no valid e-mail in the
+  // STAGED row, judged before dropDuplicateLogins. The committed row alone cannot say it (a dropped duplicate username or e-mail
+  // changes `username` / `email` after the decision), so the committed users are joined to their staged rows.
+  const roster = await pool.query<{ n: string }>(
+    `SELECT count(*)::text AS n
+     FROM users x
+     JOIN "${STAGING_SCHEMA}"."users" s ON s.id::text = x.legacy_id
+     WHERE x.legacy_source = $1
+       AND nullif(btrim(s.username, E' \\t\\r\\n\\f\\v'), '') IS NOT NULL
+       AND (nullif(lower(btrim(s.email, E' \\t\\r\\n\\f\\v')), '') IS NULL
+            OR lower(btrim(s.email, E' \\t\\r\\n\\f\\v')) !~ '^[^\\s@]+@[^\\s@]+$')`,
+    [core.source],
+  )
+  core.notes.counters.set('must_reset.roster_account', Number(roster.rows[0]?.n ?? 0))
+  // `must_reset.non_bcrypt` and `must_reset.shared_default` are NOT rebuilt (the second needs the secret list): after a resume
+  // they only cover the batches of this process, which `countsFromCommittedRows` says.
   core.notes.counters.set('countsFromCommittedRows', 1)
+}
+
+/** Counters copied into `etl_runs.counters -> 'notes'` (numbers only; the night SQL checks read them). Never ids or hashes. */
+const LEDGER_NOTES = /^(must_reset\..+|nullHashAccounts|flaggedWithoutLoginId|rosterDefaultHashes|rosterDefaultHashesWarning|countsFromCommittedRows)$/
+
+/**
+ * Merges the report counters into the apply run's `counters` JSON under `notes` (`jsonb_set`, so the runner's per-entity
+ * counts stay). The run is the latest apply row of this input hash: the one that just finished or failed.
+ */
+async function saveNotesToRun(pool: Pick<pg.Pool, 'query'>, core: CoreContext, inputHash: string): Promise<void> {
+  const notes = Object.fromEntries([...core.notes.counters].filter(([k, v]) => LEDGER_NOTES.test(k) && Number.isFinite(v)))
+  await pool.query(
+    `UPDATE etl_runs SET counters = jsonb_set(coalesce(counters, '{}'::jsonb), '{notes}', $2::jsonb)
+     WHERE id = (SELECT max(id) FROM etl_runs WHERE mode = 'apply' AND input_hash = $1)`,
+    [inputHash, JSON.stringify(notes)],
+  )
 }
 
 /** Runs the whole command through the kit runner (dry-run by default; apply needs a passing dry-run on the same input). */
@@ -191,6 +224,7 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
         await recountFromCommitted(options.pool, core)
         const file = writeFile('interrupted')
         if (file !== undefined) core.options.warn?.(`restricted id file (mode 0600, delete within 7 days): ${file}`)
+        await saveNotesToRun(options.pool, core, inputHash)
       } catch {
         // nothing more can be done here
       }
@@ -200,6 +234,7 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
   let restrictedFile: string | undefined
   if (mode === 'apply') {
     if (report.resumedBatches > 0) await recountFromCommitted(options.pool, core)
+    await saveNotesToRun(options.pool, core, inputHash)
     restrictedFile = writeFile(report.runId)
   }
   return { report, core, restrictedFile }

@@ -71,6 +71,7 @@ export function usersStep(core: CoreContext): AnyEntityStep {
       // Q11: always present in the report, 0 when there is none.
       core.notes.count('nullHashAccounts', 0)
       core.notes.count('flaggedWithoutLoginId', 0)
+      for (const r of ['roster_account', 'non_bcrypt', 'shared_default']) core.notes.count(`must_reset.${r}`, 0) // C5 needs 0, not absent
       for (const { legacyId, out } of accepted) {
         core.notes.resetReason(out.notes.resetReasons)
         // Q11 (after dropDuplicateLogins): ids go to the restricted file only, never to the aggregate report or stdout.
