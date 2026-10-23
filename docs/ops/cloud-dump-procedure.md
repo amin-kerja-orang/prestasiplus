@@ -1,6 +1,6 @@
 # Procedure: producing an anonymised .cloud dump (AM-10)
 
-- **Status:** draft for LEAD review (2026-10-21). Written against the fixed CLI interface of AM-10; nothing in this document has been run on real data.
+- **Status:** draft for LEAD review (2026-10-21; sections 9 to 11 added 2026-10-23). Written against the fixed CLI interface of AM-10; nothing in this document has been run on real data. The `dump:check` command, the report shape and the counter and checklist statements of sections 9 to 11 were run against a synthetic MariaDB 10.11 database on 23 Oct (MySQL 5.7 and 8 not verified; each such statement says so).
 - **Items marked "Perlu pengesahan"** are not confirmed yet. Do not treat them as decided.
 - **Night-sitting decisions (Decided: LEAD, 22 Oct (6340542912)):** (14) the raw production dump is staged only on the throwaway staging cluster (section 8); (19) the Q9 `question_submissions` CSV is kept like the dump, outside GitHub (section 4); (16) there is no deputy: the operator runs the 01:00 night sittings alone, and every stop in this procedure means "stop, wipe, make sure the account is locked, report on #109 in the morning (aggregates only)" (sections 6 and 8). The night plan is the cutover plan on branch `be/AM-MIG-08-cutover-plan` (`docs/ops/v2-cutover-plan.md`, #124, sections 3.3, 4.0 and 4.6). **Dates (per LEAD go-live plan 22 Oct (6343623918); AM1-2's one-night reading, to be confirmed by the LEAD):** 24 Oct = the anonymised rehearsal sitting (sections 2 to 7 of this procedure, loaded on the rehearsal DB of #117; step A1 of #124) together with the MIG-07 real-data rehearsal; 27 Oct = the second rehearsal, production-like and timed (A4); 29 Oct at 01:00 MYT = the one production night sitting (section 8; B1 freeze, B2 export, B3 encrypt, hand over and wipe, then B4 to B10 on the VPS). There is no T-1 export and no delta at go-live: the earlier two-night structure (a T-1 export plus a final export) is superseded.
 - **Related:** [migration runbook](../architecture/v2-migration-runbook.md) (rules in section 0, anonymiser in sections 8, 10 and 11), [database backup and encryption pattern](db-backup.md), [threat model, row 72](../architecture/v2-threat-model.md), [backend plan, OD-2 and OD-18](../architecture/v2-backend-plan.md), [BE-35 task card](../plan/backend-tasks/BE-35-anonymiser-fixtures.md).
@@ -134,7 +134,7 @@ Work through this list on the operator PC. No data rows are read. The `dump:chec
    - **InnoDB.** The consistent snapshot of the sitting holds only for InnoDB tables. `dump:check` prints each spec table's `engine` and warns about every non-InnoDB table. A warning means the data owner must confirm that writes to that table are frozen for the whole sitting; otherwise the sitting is a no-go. Tell the LEAD privately; post only "engine warning: yes/no" on #109.
    - **Binding smoke against the real server (before the first real sitting).** Proof so far is on MariaDB 10.11. `dump:check` must run clean **once** against the real .cloud server (metadata only, no rows), whatever its flavour and version (**Perlu pengesahan:** MySQL 8?). The JSON expression path for MySQL 5.7/8 is otherwise only string-tested. Do not schedule the sitting until this run exits 0; if it fails, post only the exit code and the MySQL error number (for example `ERROR 1045`).
    - For any failure of `dump:check`, `dump:produce` or `dump:cloud`, post on #109 **only the exit code and the MySQL error numbers** (e.g. `ERROR 1045`), never the message text.
-   - **Wait for a developer to reply "rules OK" on #109.** Do not schedule the sitting before that.
+   - **Wait for a developer to reply "rules OK" on #109.** Do not schedule the sitting before that. Section 9 gives the exact command again for 24 Oct and the night, and the list of what the report must show before the operator posts the aggregates.
 9. **Time zone (LEAD decision 21 Oct, DT-1 A).** .cloud DATETIME values are `+08:00`, which is the default of `--datetime-offset`; **do not change the default**. Rule: the export writes every DATETIME with an explicit `+08:00` and every TIMESTAMP with `Z`, because `staging:load` reads offset-less strings in the session time zone. The `dump:check` report still lists the server time zones; if they look inconsistent with this, tell the LEAD instead of changing the offset.
 10. **Book the sitting** with the LEAD (about 30 minutes, uninterrupted) and with the receiver of the rehearsal host (so the file can be accepted and confirmed the same day).
 
@@ -396,7 +396,7 @@ npm run dump:wipe -w @pp/api -- --dir $work
 npm run dump:wipe -w @pp/api -- --dir "$work"
 ```
 
-**Night sitting rule (Decided: LEAD, 22 Oct (6340542912), no deputy, decision 16).** For the 01:00 production night sitting on 29 Oct (B1 to B3 of the cutover plan, per LEAD go-live plan 22 Oct (6343623918); AM1-2's one-night reading, to be confirmed by the LEAD) the operator is alone. **Every stop condition in this section and in section 8, in particular exit codes 1, 2, 3, 6 and 130 (any other non-zero code is treated the same), the receiver not confirming, and a failed check, means the same four things and nothing else:** (1) stop, do not retry; (2) wipe with `dump:wipe --dir "$work"`; (3) make sure the account is locked (the data owner's lock, arranged before the night; if the operator cannot confirm it, say so in the report); (4) report on #109 in the morning, aggregates only (exit code and `ERROR n` numbers). The same STOP also closes everything else that the night opened, matching the "Common to every STOP" block of #124 section 4.6, in this order: wipe the work dir and check it is gone; delete the `.gpg` file (the local copy); wipe the dump copies on the receiving host (the half AZ `slot.sh` steps named in #124); the account locked (confirmed by a refused connection attempt) or "lock unconfirmed"; close the SSH tunnel; close the terminal, which holds the passphrase in its scrollback, and destroy the passphrase note. Nobody is called, woken or asked for a go/no-go during the night; the decision to repeat is taken in the morning by the LEAD. Wherever a row below says "tell the LEAD" or "tell the data owner", read it as "in the morning report" for a night sitting.
+**Night sitting rule (Decided: LEAD, 22 Oct (6340542912), no deputy, decision 16).** For the 01:00 production night sitting on 29 Oct (B1 to B3 of the cutover plan; dates as in the note at the top of this document) the operator is alone. **Every stop condition in this section and in section 8, in particular exit codes 1, 2, 3, 6 and 130 (any other non-zero code is treated the same), the receiver not confirming, and a failed check, means the same four things and nothing else:** (1) stop, do not retry; (2) wipe with `dump:wipe --dir "$work"`; (3) make sure the account is locked (the data owner's lock, arranged before the night; if the operator cannot confirm it, say so in the report); (4) report on #109 in the morning, aggregates only (exit code and `ERROR n` numbers). The same STOP also closes everything else that the night opened, matching the "Common to every STOP" block of #124 section 4.6, in this order: wipe the work dir and check it is gone; delete the `.gpg` file (the local copy); wipe the dump copies on the receiving host (the half AZ `slot.sh` steps named in #124); the account locked (confirmed by a refused connection attempt) or "lock unconfirmed"; **delete the option file that holds the DB credential** (after the lock check, which needs it; a repeat gets a new option file and a new password from the data owner, see section 2, item 7 and section 3, step 8); close the SSH tunnel; close the terminal, which holds the passphrase in its scrollback, and destroy the passphrase note. Nobody is called, woken or asked for a go/no-go during the night; the decision to repeat is taken in the morning by the LEAD. Wherever a row below says "tell the LEAD" or "tell the data owner", read it as "in the morning report" for a night sitting.
 
 `dump:wipe` covers everything in the work dir, including the `raw.partial` and `anon.partial` directories. After any non-zero exit check that `<work>` is gone (or wipe it) and that the key file is destroyed.
 
@@ -414,7 +414,7 @@ npm run dump:wipe -w @pp/api -- --dir "$work"
 
 For the cutover, `dump:cloud` is the normal path and is described in section 8. Outside the cutover, `dump:cloud` (raw export only) is a troubleshooting tool for a failing export. If used: `npm run dump:cloud -w @pp/api -- --out <dir>` writes raw data, so it is real personal data on disk. Then run `anonymise:run` and `anonymise:scan` as in runbook section 8, and `npm run dump:wipe -w @pp/api -- --dir <dir>` on the raw directory straight afterwards, with the same key and wipe rules as above.
 
-## 7. Repeat runs (rehearsals and delta runs)
+## 7. Repeat runs (rehearsals)
 
 Every run follows this document from the start of section 3:
 
@@ -435,7 +435,7 @@ Sections 1 to 7 describe the anonymised rehearsal dump. The cutover (MIG-08, pla
 
 **The raw export is real personal data of minors.** Encrypted disk (section 2, item 1), no screen sharing, no cloud-sync folder, and it never enters GitHub, an issue or PR, any chat, or any Claude/AI session or transcript. Everything in section 1 (hard rules) and section 5 (PDPA and incidents) applies in full.
 
-**Timing and who is present (Decided: LEAD, 22 Oct (6340542912); per LEAD go-live plan 22 Oct (6343623918); AM1-2's one-night reading, to be confirmed by the LEAD).** There is **one** production sitting, on 29 Oct 2026 from 01:00 MYT (28 Oct 17:00 UTC): #124 B1 freezes `.cloud` (the `.cloud` maintenance switch, not part of this procedure), B2 is `dump:check` then `dump:cloud` (this section, steps 3 to 6), B3 is encrypt, hand over, compare the checksum and wipe (steps 7 to 9). The earlier T-1 export (A2) and the second export are gone: the export is taken in the freeze, so the table and row counts equal the `dump:check` report. The operator runs the sitting alone: no deputy, no LEAD present, nobody on call (decision 16). The data owner's part (creating the account, and the unlock and lock of `pp_dump_ro`) and the booking are arranged **before** the night (#124 section 4.6, "Night access" and "Before the night"); the operator holds no `ALTER USER`. Nothing in the night requires waking anyone. The migrate, verify and rollback steps (B4 to B10, S1 to S7, restore of `pre_etl`) belong to #124, not to this procedure; a threshold breach there (decision 4b: 5 % or 100 rows, where a delta applies at all) is a stop and rollback by #124.
+**Timing and who is present (Decided: LEAD, 22 Oct (6340542912); dates as in the note at the top of this document).** There is **one** production sitting, on 29 Oct 2026 from 01:00 MYT (28 Oct 17:00 UTC): #124 B1 freezes `.cloud` (the `.cloud` maintenance switch, not part of this procedure), B2 is `dump:check` then `dump:cloud` (this section, steps 3 to 6), B3 is encrypt, hand over, compare the checksum and wipe (steps 7 to 9). The earlier T-1 export (A2) and the second export are gone: the export is taken in the freeze, so the table and row counts equal the `dump:check` report. The operator runs the sitting alone: no deputy, no LEAD present, nobody on call (decision 16). The data owner's part (creating the account, and the unlock and lock of `pp_dump_ro`) and the booking are arranged **before** the night (#124 section 4.6, "Night access" and "Before the night"); the operator holds no `ALTER USER`. Nothing in the night requires waking anyone. The migrate, verify and rollback steps (B4 to B10, S1 to S7, restore of `pre_etl`) belong to #124, not to this procedure; a threshold breach there (decision 4b: 5 % or 100 rows, where a delta applies at all) is a stop and rollback by #124.
 
 **The production sitting (B2 and B3), by the operator alone on the operator PC; the data owner is not present and the account is unlocked and locked by the arrangement made beforehand:**
 
@@ -460,7 +460,7 @@ Sections 1 to 7 describe the anonymised rehearsal dump. The cutover (MIG-08, pla
    npm run dump:cloud -w @pp/api -- --out "$work/raw"
    ```
    Expect exit 0. **Exit 6 means stop: it is a no-go for that sitting** (row-count mismatch or bad stream, or an integer of 2^53 or larger). Do not retry in the same sitting. Stop, wipe (`dump:wipe`), make sure the account is locked, and report on #109 in the morning, aggregates only (exit code, no values). Rehearsal sittings in daytime may tell the LEAD privately instead.
-5. **The account is locked again** by the same pre-arranged arrangement after the export, **also after a failure**. The operator confirms the lock by a refused connection attempt, or reports "lock unconfirmed".
+5. **The account is locked again** by the same pre-arranged arrangement after the export, **also after a failure**. The operator confirms the lock by a refused connection attempt, or reports "lock unconfirmed". Only after that check, **delete the option file that holds the DB credential** (step 9).
 6. Check the output: the manifest in `<work>/raw` is marked `raw: true`, no `.partial` directory is left, and the table and row counts equal the `dump:check` report (the export is taken in the freeze, so they are equal; a difference is a STOP).
 7. **Encrypt** with the same commands as step 6 of the sitting, with `raw` (and `files`, if section 8.1 applies) in place of `anon`; the **listing check is mandatory**: the line count it prints must equal the number of files plus directories under `raw` (and `files`) plus the top directories themselves (bash: `find "$work/raw" | wc -l`; PowerShell: `(Get-ChildItem -Recurse "$work/raw").Count + 1`). Take the sha256 of the `.gpg` file. The passphrase goes to the receiver by phone call, in person or an end-to-end-encrypted messenger on a device with no AI agent or cloud session (step 6), never with the file, never in GitHub, e-mail, or any chat with an agent.
    ```powershell
@@ -481,12 +481,12 @@ Sections 1 to 7 describe the anonymised rehearsal dump. The cutover (MIG-08, pla
    sha256sum "$out"
    ```
 8. **Hand over** with `scp "$out" <user>@<receiver host>:<restricted dir>/` to the receiver, who runs the throwaway staging cluster (MIG-08 plan section 3.1). The checksum is compared on the receiving host: `sha256sum` there, against the value of step 7. **At night the operator is both sender and receiver** (#124 section 3.3 item 5 and section 4.6 B3): the operator runs the VPS steps alone, types a fresh passphrase once on the receiving host to decrypt (kept in the operator's head or on paper, never sent anywhere), and destroys it at the close. A mismatch allows one new hand-over; a second mismatch is a STOP. In a daytime rehearsal of this flow the receiver does the comparison and confirms. The receiver stages the extracted dump only on the throwaway cluster (decision 14).
-9. **As soon as the receiver confirms the checksum**, run `dump:wipe --dir "$work"`. **Same-day cap:** if the checksum is not confirmed by the end of the sitting (the "receiver not confirming" case), run `dump:wipe --dir "$work"` anyway, delete the `.gpg` file, and repeat the sitting; the plaintext raw directory never stays on the operator PC overnight. In a night sitting this is the "receiver not confirming" stop: wipe, make sure the account is locked, report in the morning (no call, no waiting for a go/no-go). Then, delete the `.gpg` file if it is outside `$work`, and close the SSH tunnel. Do not wait for the verify or the load. The receiver then holds the only copy and deletes it right after `staging:load` succeeds.
-10. Report **aggregates only** on #109: date, exit code, number of tables, total rows, sha256 of the `.gpg` file, "local copies deleted", and "option file deleted" or "account locked" (section 3, step 8 checklist). Never data, message text of errors (exit code and `ERROR n` only), paths with personal information, the passphrase or any host name.
+9. **As soon as the receiver confirms the checksum**, run `dump:wipe --dir "$work"`. **Same-day cap:** if the checksum is not confirmed by the end of the sitting (the "receiver not confirming" case), run `dump:wipe --dir "$work"` anyway, delete the `.gpg` file, and repeat the sitting; the plaintext raw directory never stays on the operator PC overnight. In a night sitting this is the "receiver not confirming" stop: wipe, make sure the account is locked, report in the morning (no call, no waiting for a go/no-go). Then, delete the `.gpg` file if it is outside `$work`, **delete the option file that holds the DB credential** (`Remove-Item $cnf` / `shred -u ~/pp-cloud-ro.cnf`; the lock check of step 5 is done by then), and close the SSH tunnel. Do not wait for the verify or the load. The receiver then holds the only copy and deletes it right after `staging:load` succeeds.
+10. Report **aggregates only** on #109: date, exit code, number of tables, total rows, sha256 of the `.gpg` file, "local copies deleted", and, for the night sitting, both "option file deleted" and "account locked" (or "lock unconfirmed"); for a daytime rehearsal "option file deleted" or "account locked" as in the section 3, step 8 checklist. Never data, message text of errors (exit code and `ERROR n` only), paths with personal information, the passphrase or any host name.
 
 **Abort and failure.** The abort table in section 6 applies, including exit 6 and exit 130. After a failure or an interruption run `dump:wipe --dir "$work"` **first** (also after a hard kill), make sure the data owner has locked the account, and only then repeat (in a night sitting, repeating is decided in the morning, not during the night: stop, wipe, account locked, morning report on #109, aggregates only). There is no key to destroy in this flow. An interrupted export inside the freeze costs the export time again (MIG-08 plan, trigger R2), but at night it is a STOP, not a repeat (#124 S3).
 
-**Rehearsal dates of this flow (per LEAD go-live plan 22 Oct (6343623918); AM1-2's one-night reading, to be confirmed by the LEAD).** 24 Oct: the anonymised sitting of sections 2 to 7 plus the real-data rehearsal on the rehearsal DB (#124 A1). 27 Oct: the production-like, timed rehearsal (A4): the `dump:cloud` part is timed against the rehearsal source only (a synthetic or anonymised database, never the real .cloud), and the rest of this section is exercised in daylight with the receiver confirming.
+**Rehearsal dates of this flow (as in the note at the top of this document).** 24 Oct: the anonymised sitting of sections 2 to 7 plus the real-data rehearsal on the rehearsal DB (#124 A1). 27 Oct: the production-like, timed rehearsal (A4): the `dump:cloud` part is timed against the rehearsal source only (a synthetic or anonymised database, never the real .cloud), and the rest of this section is exercised in daylight with the receiver confirming.
 
 **Retention.** The same deadlines as section 4 apply: the operator wipes in step 9; the receiver deletes right after `staging:load` succeeds, and in any case within 7 days (runbook section 0, rule 4); the throwaway cluster is destroyed after the cutover sign-off (Decided: LEAD, 22 Oct (6340542912)). The Q9 `question_submissions` CSV follows the same custody (section 4). The option file and the account follow section 4.
 
@@ -526,3 +526,262 @@ The mandatory listing check of step 7 stays, and its entry count now includes th
 **Exit and abort.** A missing, unlisted, mismatched, oversized, wrongly typed or unsafe file is an `INVALID_VALUE` reject on that banner's `image_path`; it is not an exit code of the dump tools. The banner row is not loaded. The fix is a **new export** (a new sitting with the same rules: account unlocked and locked, `dump:wipe` first after a failure).
 
 **Rehearsal (anonymised flow).** Files do **not** go with the anonymised dump by default, because `dump:produce` does not handle files. Rehearsals run `migrate:activity` without `--files-dir` (the report then prints `files: not migrated`), unless the LEAD allows real banner images in a rehearsal. **Perlu pengesahan:** banner images are public marketing images, but that is for the LEAD to confirm.
+
+## 9. `dump:check` for the operator: running it and reading "rules OK" (24 Oct and the night)
+
+**Added 23 Oct.** The command and its output paths were run against a synthetic MariaDB 10.11 database on 23 Oct (a local fixture built from `apps/api/src/migration/ddl/spec.ts`, 118 spec tables, an account made with `dump:grants`). **Not verified:** MySQL 5.7 and 8 (section 2, item 8 still asks for one clean run against the real server), and any real .cloud data. Section 2, item 8 stays the place for the preflight rules; this section is the operator's exact command and the reading guide.
+
+**When.** On 24 Oct before the anonymised rehearsal sitting (A1), and again as the last look in B2 of the night (section 8, step 4). It reads **no rows**: schema information, grants and `COUNT(*)` per table.
+
+### 9.1 The command
+
+Run it from the repository root, in the terminal where `CLOUD_MYSQL_DEFAULTS_FILE` points to the mode-600 option file **outside the repo** (section 2, item 7). Use a **new** `--out` directory every time.
+
+```powershell
+$env:CLOUD_MYSQL_DEFAULTS_FILE = "$env:USERPROFILE\pp-cloud-ro.cnf"
+$stamp = Get-Date -Format yyyyMMdd-HHmm
+npm run dump:check -w @pp/api -- --out ".migration-out/check-$stamp"
+$LASTEXITCODE     # 0 = the tool is satisfied
+```
+
+```bash
+export CLOUD_MYSQL_DEFAULTS_FILE=~/pp-cloud-ro.cnf
+stamp=$(date +%Y%m%d-%H%M)
+npm run dump:check -w @pp/api -- --out ".migration-out/check-$stamp"
+echo "exit $?"      # 0 = the tool is satisfied
+```
+
+Rules that `cli.ts` enforces (checked before any connection is opened):
+
+- `--out` is the only flag `dump:check` takes. Any other flag gives exit 2. There is no password or connection string on the command line; the tools refuse one.
+- `--out` is resolved against the working directory. `npm run ... -w @pp/api` runs inside `apps/api`, so `--out .migration-out/check-<stamp>` is written to `<repo>/apps/api/.migration-out/check-<stamp>/`. An absolute path works if it is inside a `.migration-out` folder under the repo.
+- The directory must be **new or empty**. A second run into the same directory gives exit 2 ("The output directory is not empty"). Add the time to the name (`yyyyMMdd-HHmm`) so a second run on the same day has its own directory.
+- The option file must be outside the repo and the working directory, mode 600 (POSIX), with only the allowed keys (section 2, item 7). `mysql` must be on `PATH`, or set `CLOUD_MYSQL_CLIENT`.
+
+Terminal output on success (four lines, plus a `Not InnoDB (...)` warning line first if a table is not InnoDB; the values below are placeholders):
+
+```
+Server: <mariadb|mysql> <version>. Grants: read-only.
+Schema: <n> of <m> spec tables present, <rows> rows.
+Report: <repo>/apps/api/.migration-out/check-<stamp>/schema-report.md (and .json).
+Grants: read-only (accepted).
+```
+
+The two report files are created with mode 600 and hold names and aggregates only, but they stay on the operator PC (section 2, item 8).
+
+### 9.2 What "rules OK" looks like
+
+"Rules OK" itself is the developer's reply on #109 (section 2, item 8), given on the aggregates the operator posts. The operator first checks that the report is in this shape. Every row must hold.
+
+| # | What | Where | Must hold |
+|---|---|---|---|
+| 1 | Exit code | the shell | `0`. The last terminal line is `Grants: read-only (accepted).` |
+| 2 | Grants | `schema-report.md`: the line starting `Grants:`; `schema-report.json`: `grants` | `Grants: read-only (accepted). Privileges seen: ...` where the privileges are only from `USAGE`, `SELECT`, `SHOW VIEW`, `SHOW DATABASES` (a column-level account shows `SELECT, USAGE`). In the JSON: `read_only: true`, `refused: []`, `unverifiable: 0`, `roles_active: false`. The line has **no** `Beyond read-only:`, **no** `Unverifiable grant lines:` and **no** `A mandatory or active role is in effect.` |
+| 3 | No active or mandatory role | same line; `grants.roles_active` | `false`. The tool reads `mandatory_roles` and the current role itself and exits 3 before counting rows if either is set |
+| 4 | Server version | `Server: <flavor> <version>.` (line 3 of the `.md`); `server.flavor`, `server.version` | Present. The operator notes flavor and version for the LEAD; it is **not** posted on #109. The first run on the real server is the binding smoke of section 2, item 8 |
+| 5 | Time zone (DT-1) | `Time zone: session <x>, global <y>, system <z>.` and the next line `DATETIME columns have no time zone: --datetime-offset decides the offset at export.`; `time_zone` in the JSON | Both lines present. The check report does **not** carry the offset (the `datetime_offset` key and the line `DATETIME offset applied: +08:00.` appear only in the report of `dump:cloud` / `dump:produce`). DT-1 holds when the export report then says `DATETIME offset applied: +08:00.` (look for it in step 3 of the sitting, or in B2). The export also sets its own session to `+00:00`, so every TIMESTAMP is written with `Z` whatever the server zone is. If the three zones look inconsistent with the data owner's statement that .cloud DATETIME values are Malaysian time, tell the LEAD; do not change the offset (section 2, item 9). **Perlu pengesahan:** the LEAD confirms that this is what cutover plan P8 means by "time-zone line matches DT-1" |
+| 6 | Spec tables present | `Tables present: <n> of <m>. Rows: <total>.`; `totals` and `spec_tables_absent_in_source` | `<n>` equals `<m>`, and `spec_tables_absent_in_source` is `[]`. A table shown as `no (absent)` is absent **or not granted**: the data owner explains each one (a spec table that does not exist in .cloud is skipped by the grant script, so it is also absent here). `Rows:` is a number, not `not counted` |
+| 7 | Spec columns | table column "Spec columns missing or not granted" | Empty for every present table, or each name is explained by the data owner |
+| 8 | Source columns not in spec | table column "Source columns not in spec" (`<count>: <names>`); `tables[].source_columns_not_in_spec` | Listed **by name only** (no values). Posted on #109 as table plus column names (section 2, item 8). **Empty by construction for a column-level account**: such an account sees only the columns it was granted (confirmed on the fixture: a source-only column was not listed), so the data owner's `information_schema.columns` query is the real answer |
+| 9 | Source tables not in spec | the section `## Source tables that ddl/spec.ts does not know (never exported)`; `source_tables_not_in_spec` | The section exists only when the count is above 0. Post the **count** only. **Empty by construction for a column-level account too**: a table with no grant is invisible (confirmed on the fixture) |
+| 10 | Engines | table column "Engine" | `InnoDB` everywhere. `(not InnoDB: no consistent snapshot)` plus the `Not InnoDB (...)` warning line triggers the InnoDB rule of section 2, item 8 |
+| 11 | Row counts | table column "Rows"; `tables[].row_count`; `totals.rows` | A number for every present table (an empty cell means the table was not counted, which only happens when exit is not 0). The total equals the sum. These are the numbers the export must equal at the night (B2 compares against them) |
+| 12 | Type notes | the section `## Type notes` | Informational (DATETIME offset notes, text columns held as JSON). Stays on the PC |
+
+Shape of `schema-report.md` (headings and line templates, no values):
+
+```
+# .cloud schema report (names, types and counts only)
+
+Generated: <ISO 8601 UTC>. Server: <flavor> <version>.
+Time zone: session <x>, global <y>, system <z>.
+DATETIME columns have no time zone: --datetime-offset decides the offset at export.
+
+Grants: read-only (accepted). Privileges seen: <list>.
+
+Tables present: <n> of <m>. Rows: <total>.
+
+| Table | Present | Engine | Rows | Selected | Redacted | Spec columns missing or not granted | Source columns not in spec |
+|---|---|---|---:|---:|---|---|---|
+| <one row per spec table, 118 on the fixture> |
+
+## Type notes            (only if there are notes)
+## Source tables that ddl/spec.ts does not know (never exported)   (only if the count is above 0)
+```
+
+Top-level keys of `schema-report.json`: `generated_at`, `server` (`version`, `flavor`), `time_zone` (`session`, `global`, `system`), `grants` (`read_only`, `privileges`, `refused`, `unverifiable`, `roles_active`), `spec_tables_absent_in_source`, `source_tables_not_in_spec` (`count`, `names`), `tables[]` (`table`, `group`, `present`, `engine`, `row_count`, `columns_selected`, `columns_redacted`, `spec_columns_missing_in_source`, `source_columns_not_in_spec`, `type_notes`, `invalid_json`) and `totals` (`tables_present`, `tables_expected`, `rows`).
+
+### 9.3 When it does not exit 0
+
+Only these codes can come from `dump:check` (4, 5 and 130 belong to `dump:produce`). The full table and the night rule are in section 6; the operator does what that table says and nothing else.
+
+| Exit | Seen on the fixture when | What the operator does |
+|---|---|---|
+| 1 | The account is locked (MariaDB 10.11 prints `ERROR 4151`; the MySQL error number is not verified), a wrong password, the server is unreachable | Section 6, exit 1. At night: a locked account at `dump:check` is a STOP (section 8, step 2) |
+| 2 | The `--out` directory is not empty or not inside a `.migration-out` folder, an unknown flag, a bad option file, no TLS verification for a remote host, no `mysql` client | Section 6, exit 2. Use a new `--out` directory and fix the setting; nothing was read |
+| 3 | The account holds a privilege beyond the allow-list (the fixture had `INSERT` added: the report was written with `NOT read-only (refused)` and `rows not counted`) | Section 6, exit 3. Do not fix the grants yourself; the data owner does |
+
+Post only the exit code and the `ERROR n` numbers on #109 (section 2, item 8). At night every non-zero exit is the common STOP of section 6.
+
+## 10. Freeze and unfreeze of .cloud (cutover plan P8, B1)
+
+**Added 23 Oct. Status: draft; the command lines of the switch itself are not known.** Cutover plan references: section 2 (roles), section 3 P8, section 4.6 (night card B1, B2 and the common STOP block) and section 6.3 (rollback). If this section and the plan ever disagree, **the plan wins**; tell the LEAD so this document is corrected.
+
+**Who and when.**
+
+- The dump operator freezes at **B1, 29 Oct 01:00 MYT** (28 Oct 17:00 UTC), alone, with the switch access that the .cloud owner arranged in daylight (plan section 2 and section 4.6 "Night access"). The operator does not need any database privilege beyond `pp_dump_ro` for this section.
+- **There is no freeze on 24 Oct.** The 24 Oct sitting exports from the running site. `dump:cloud` and `dump:produce` read in one consistent read-only snapshot, so rows changing during the sitting do not mix into the export (this holds for InnoDB tables only; see section 2, item 8).
+- **Nothing in this section may be improvised.** Every item marked "Perlu pengesahan (.cloud owner)" is missing until the .cloud owner supplies it in writing. If one is missing at G6, the plan says the night is a no-go.
+
+| Item | Status |
+|---|---|
+| The freeze (maintenance switch) command | **Perlu pengesahan (.cloud owner):** `<freeze command>` |
+| The unfreeze command | **Perlu pengesahan (.cloud owner):** `<unfreeze command>` |
+| The HTTP status the maintenance page returns, and the status of the normal page | **Perlu pengesahan (.cloud owner):** `<maintenance status>` and `<normal status>` |
+| Which background writers exist (queue workers, scheduler or cron jobs, anything else that writes to the database) and how the owner stops and restarts them | **Perlu pengesahan (.cloud owner)** |
+| Whether the owner also sets the database read-only at server level | **Perlu pengesahan; the owner's choice**, not a requirement |
+| Whether `pp_dump_ro` is unlocked early enough for the two readings (see "The account must be unlocked" below) | **Perlu pengesahan (.cloud owner, LEAD)** |
+
+The command is not invented here. If the .cloud owner confirms which framework the application uses, that framework's standard maintenance command (and its matching "up" command) is the likely answer, but it stays **Perlu pengesahan** until the owner confirms it, including any options such as a secret bypass path or a retry header.
+
+### 10.1 Freeze (B1)
+
+1. **Run the freeze command:** `<freeze command: Perlu pengesahan (.cloud owner)>`.
+2. **Record `T-freeze`** straight after the command returns, as ISO 8601 with `+08:00`:
+   ```powershell
+   [DateTimeOffset]::UtcNow.ToOffset([TimeSpan]::FromHours(8)).ToString("yyyy-MM-ddTHH:mm:sszzz")
+   ```
+   ```bash
+   TZ=Asia/Kuala_Lumpur date -Iseconds        # GNU date; checked on 23 Oct
+   ```
+3. **Public page check.** `<cloud-url>` must return the maintenance status. Only the status code is read.
+   ```powershell
+   try { (Invoke-WebRequest -Uri "<cloud-url>/" -UseBasicParsing).StatusCode } catch { [int]$_.Exception.Response.StatusCode }
+   ```
+   ```bash
+   curl -s -o /dev/null -w '%{http_code}\n' "<cloud-url>/"
+   ```
+   Expected: `<maintenance status: Perlu pengesahan (.cloud owner)>`. Another status is a failed freeze (rule in 10.3).
+4. **Background writers.** An HTTP maintenance page alone does not stop background writers: queue workers and scheduler or cron jobs keep writing to the database. The .cloud owner confirms they are stopped (**Perlu pengesahan**). The operator cannot see this with `pp_dump_ro`; the proof in 10.2 is what shows it. Optionally the owner also sets the database read-only at server level (**Perlu pengesahan; the owner's choice**). The operator can read that state: `SELECT @@global.read_only;` (works for `pp_dump_ro`; `1` means on).
+
+**The account must be unlocked during B1.** Both readings of 10.2 use `pp_dump_ro`. The plan's example for the pre-arranged unlock is 01:15 (plan section 4.6, "Night access"; **Perlu pengesahan**), which is too late for two readings 5 minutes apart before B1's latest time of 01:20. The data owner and the LEAD therefore arrange the unlock for B1 (for example 01:00 or earlier), and the lock after B2. If that is not arranged, the proof cannot be done: say so on the B1 line and treat it as "not confirmed" (STOP by the plan). The plan wins; the LEAD decides.
+
+### 10.2 Proof of no write after the freeze
+
+The account `pp_dump_ro` has `SELECT` only, so the proof uses only what that account can read. Take **two readings at least 5 minutes apart, both after `T-freeze`**, with a clock in view (reading 1 about T+5, reading 2 about T+10, inside the B1 time-box). A reading is three things:
+
+- **(a)** a `dump:check` into its own new `--out` directory (row counts per table; no row value is read);
+- **(b)** the server write counters;
+- **(c)** `SELECT @@global.read_only;` (information only).
+
+Commands (the same terminal as section 3, step 0; `$date` is set there; `$counters` is the SQL of (b); use `CLOUD_MYSQL_CLIENT` instead of `mysql` if the client is not on `PATH`). Set `n` to 1 for the first reading and 2 for the second.
+
+```powershell
+$freeze = "freeze-$date"
+$n = 1
+$counters = "SHOW GLOBAL STATUS WHERE Variable_name IN ('Innodb_rows_inserted','Innodb_rows_updated','Innodb_rows_deleted','Com_insert','Com_update','Com_delete','Com_replace','Com_insert_select','Com_update_multi','Com_delete_multi','Com_replace_select','Com_load')"
+npm run dump:check -w @pp/api -- --out ".migration-out/$freeze-$n"
+$LASTEXITCODE        # must be 0
+mysql --defaults-file="$env:CLOUD_MYSQL_DEFAULTS_FILE" -B -N -e $counters | Set-Content "apps/api/.migration-out/$freeze-$n.status.txt"
+mysql --defaults-file="$env:CLOUD_MYSQL_DEFAULTS_FILE" -B -N -e "SELECT @@global.read_only"
+(Get-Content -Raw "apps/api/.migration-out/$freeze-$n/schema-report.json" | ConvertFrom-Json).tables | ForEach-Object { "$($_.table)`t$($_.row_count)" } | Set-Content "apps/api/.migration-out/$freeze-$n.counts.txt"
+```
+
+```bash
+freeze="freeze-$date"
+n=1
+counters="SHOW GLOBAL STATUS WHERE Variable_name IN ('Innodb_rows_inserted','Innodb_rows_updated','Innodb_rows_deleted','Com_insert','Com_update','Com_delete','Com_replace','Com_insert_select','Com_update_multi','Com_delete_multi','Com_replace_select','Com_load')"
+npm run dump:check -w @pp/api -- --out ".migration-out/$freeze-$n"; echo "exit $?"        # must be 0
+mysql --defaults-file="$CLOUD_MYSQL_DEFAULTS_FILE" -B -N -e "$counters" > "apps/api/.migration-out/$freeze-$n.status.txt"
+mysql --defaults-file="$CLOUD_MYSQL_DEFAULTS_FILE" -B -N -e "SELECT @@global.read_only"
+node -e "const r=require(process.argv[1]);for(const t of r.tables)console.log(t.table+'\t'+t.row_count)" "$PWD/apps/api/.migration-out/$freeze-$n/schema-report.json" > "apps/api/.migration-out/$freeze-$n.counts.txt"
+```
+
+After reading 2 (set `n=2` and run the block again, then compare):
+
+```powershell
+Compare-Object (Get-Content "apps/api/.migration-out/$freeze-1.counts.txt") (Get-Content "apps/api/.migration-out/$freeze-2.counts.txt")
+Compare-Object (Get-Content "apps/api/.migration-out/$freeze-1.status.txt") (Get-Content "apps/api/.migration-out/$freeze-2.status.txt")
+# no output from both = nothing changed
+```
+
+```bash
+diff "apps/api/.migration-out/$freeze-1.counts.txt" "apps/api/.migration-out/$freeze-2.counts.txt" && echo "counts equal"
+diff "apps/api/.migration-out/$freeze-1.status.txt" "apps/api/.migration-out/$freeze-2.status.txt" && echo "counters delta 0"
+```
+
+What was verified (MariaDB 10.11 on a synthetic fixture, 23 Oct, as an account with only the `dump:grants` privileges): `SHOW GLOBAL STATUS` with a `WHERE` filter, `SELECT @@global.read_only`, and `dump:check` all work for that account, and `dump:check` and the status query themselves move none of the counters. A deliberate `UPDATE` moved `Com_update` and **not** the row counts; a deliberate `DELETE` changed the row count of one table. **The `Innodb_rows_*` counters do not exist on MariaDB 10.11 (the query simply omits them); the `Com_*` statement counters do.** The `Innodb_rows_*` counters on MySQL 5.7 and 8 are **not verified**, and neither is any PowerShell form here (they were not run). Do not use `Handler_*` counters: they also count the server's internal temporary tables.
+
+Read this carefully:
+
+- The counters are **server-wide**. Other databases on the same server (if any) move them, and a server restart resets them to a lower value. Per-table row counts are the per-schema fallback, with the owner's confirmation.
+- Row counts see inserts and deletes only. **An update changes no row count**, so the counters are the only evidence for updates. Counts and counters together are the proof.
+- `Com_*` count statements, `Innodb_rows_*` count rows. Either moving is a signal.
+
+### 10.3 The pass rule and the night-card line
+
+**Pass.** Every table's row count is equal in the two readings **and** every counter delta is 0. A counter that moved, with all row counts equal, passes only if the .cloud owner confirms in writing (text, no names) that a schema other than the .cloud database caused it (**Perlu pengesahan**: the operator cannot see which schema). A counter that went down means the server restarted: fail. The public page must also return the maintenance status. **Fail** is anything else, and a failed or unprovable freeze is a STOP: lift the freeze (10.4) and follow the plan (B1 "If not"; nothing in v2 has changed yet).
+
+**The line for the night card (and the morning report), aggregates only:**
+
+```
+B1 freeze: T-freeze=<YYYY-MM-DDTHH:MM:SS+08:00>; maintenance page confirmed (status <code>);
+readings at <HH:MM> and <HH:MM> (>= 5 min apart); no-write proof OK
+(row counts equal in all <m> tables; counters delta 0 [or: moved, explained by a non-.cloud schema, owner confirmed]);
+background writers stopped: owner confirmed
+```
+
+The later check of B4 (every staged table with `updated_at` has `max(updated_at) <= T-freeze`, criterion 13) is a second, independent proof and is not replaced by this one.
+
+### 10.4 Unfreeze
+
+**When.** Only when the plan says so: B1 not confirmed by T+0:20 (01:20), a STOP or no-go before the switch, or a rollback (plan section 4.6, rollback Case 1 and Case 2, where `.cloud` is unfrozen first and does not wait for the v2 clean-up; and section 6.3). **On success .cloud stays read-only** until the DNS switch (plan section 4.4) and then shows the pointer page; the plan states it is never written again. After the switch, a rollback unfreeze happens on the LEAD's request (plan section 6.3). The operator never unfreezes on his or her own judgement.
+
+1. **Run the unfreeze command:** `<unfreeze command: Perlu pengesahan (.cloud owner)>`. Record `T-unfreeze` as in 10.1 step 2.
+2. **Restart the background writers** (queue workers, scheduler or cron jobs): the owner does it, or the operator with the owner's written steps (**Perlu pengesahan**). If the owner had set the database read-only, the owner turns it off.
+3. **Proof that .cloud is back:**
+   - the public page returns the normal status (`<normal status: Perlu pengesahan (.cloud owner)>`), using the command in 10.1 step 3;
+   - the write counters move again: take the status query of 10.2 twice, a few minutes apart. At night traffic may be too low to move them; then the public page plus the owner's confirmation that the writers are running is the proof (the operator cannot test a write with a read-only account);
+   - the owner confirms in text that the site accepts writes.
+4. **Report line** (aggregates only, in the morning report): `unfreeze: T-unfreeze=<ISO 8601 +08:00>; public page normal (status <code>); writers restarted (owner confirmed); counters moved: yes/no`.
+5. Communication text (plan section 6.5): "maintenance extended, no data lost", approved by the LEAD, sent by the operator.
+
+The readings and the counter files are aggregates. They live in `apps/api/.migration-out/` and are deleted with the `dump:check` reports (section 4).
+
+## 11. `pp_dump_ro` confirmation checklist for the .cloud owner
+
+**Added 23 Oct.** The dump operator hands this list to the .cloud owner, who runs each check with the owner's own (administrator) access and ticks the box. The operator never runs these. SQL below uses `<host>` for the account host chosen in section 2, item 5. **Verified on MariaDB 10.11 (synthetic local fixture, 23 Oct):** every MariaDB form shown. **Not verified on MySQL 5.7 or 8:** every form marked "MySQL". Where the two flavours differ, both are given.
+
+**Do not paste any output into an issue, a PR or a chat.** `SHOW CREATE USER` (MariaDB and MySQL) and `SHOW GRANTS` (MariaDB) print the password hash. The owner reads the output and ticks the box.
+
+- [ ] **1. The account exists, once.**
+  `SELECT user, host FROM mysql.user WHERE user = 'pp_dump_ro';`
+  Expected: exactly one row, and the host is the one chosen in section 2, item 5 (not `%`, unless the owner confirms the firewall restriction that item 5 makes a MUST).
+- [ ] **2. The grants equal the `dump:grants` output.**
+  `SHOW GRANTS FOR 'pp_dump_ro'@'<host>';`
+  Expected: one `GRANT USAGE ON *.*` line, then one `GRANT SELECT (<columns>) ON <db>.<table>` line per table, with the same tables and column names as the script the operator printed with `npm run dump:grants -w @pp/api -- --database <db> --account "'pp_dump_ro'@'<host>'"`. The numbers must be equal: the count of `GRANT SELECT (` lines here equals the count of `GRANT` lines of the script (bash `... | grep -c '^GRANT'`; PowerShell `(... | Select-String '^GRANT').Count`). On the fixture both were 118. Column-level grants are preferred; a table-level `GRANT SELECT, SHOW VIEW ON <db>.*` is the fallback, and whether it is allowed is an **open LEAD item** (section 2, item 5).
+- [ ] **3. No privilege beyond `USAGE`, `SELECT`, `SHOW VIEW`, `SHOW DATABASES`, and no grant option.**
+  `SELECT privilege_type, is_grantable FROM information_schema.user_privileges WHERE grantee LIKE '%pp_dump_ro%';`
+  Expected: one row, `USAGE`, `NO`.
+  `SELECT privilege_type, COUNT(*) FROM information_schema.column_privileges WHERE grantee LIKE '%pp_dump_ro%' GROUP BY privilege_type;`
+  Expected: `SELECT` only.
+  `SELECT privilege_type FROM information_schema.schema_privileges WHERE grantee LIKE '%pp_dump_ro%';` and the same on `information_schema.table_privileges`.
+  Expected: no rows for a column-level account. For the table-level fallback only `SELECT` and `SHOW VIEW` (and the global `SHOW DATABASES` in the first query). Any other privilege (including `PROCESS`, `LOCK TABLES`, `REPLICATION CLIENT` and a `SELECT ON *.*`) is removed before the sitting; the tools refuse it with exit 3.
+- [ ] **4. The account is locked outside sittings.**
+  MariaDB: `SHOW CREATE USER 'pp_dump_ro'@'<host>';` ends with `ACCOUNT LOCK` while locked. Or `SELECT JSON_VALUE(Priv, '$.account_locked') FROM mysql.global_priv WHERE User = 'pp_dump_ro' AND Host = '<host>';` gives `1` when locked (`0` or empty when not).
+  MySQL: `SELECT user, host, account_locked FROM mysql.user WHERE user = 'pp_dump_ro';` gives `Y`.
+  Expected now (before the 24 Oct sitting): locked. After each sitting: locked again.
+- [ ] **5. No mandatory role and no default role.**
+  MySQL 8: `SELECT @@global.mandatory_roles;` is empty. (The tools refuse a non-empty value for any role, not only for this account.)
+  MariaDB: the variable does not exist. `SHOW GLOBAL VARIABLES WHERE Variable_name = 'mandatory_roles';` returns no rows (this is what the tools read), and `SELECT @@global.mandatory_roles;` gives `ERROR 1193 (unknown system variable)`, which is also "none".
+  Default role: MariaDB `SELECT user, host, default_role FROM mysql.user WHERE user = 'pp_dump_ro';` has an empty `default_role`; MySQL 8 `SELECT * FROM mysql.default_roles WHERE user = 'pp_dump_ro';` returns no rows. `SHOW GRANTS` (check 2) has no `GRANT <role> TO` line, and `SELECT * FROM information_schema.applicable_roles WHERE grantee LIKE '%pp_dump_ro%';` returns no rows (checked on MariaDB). In a login as `pp_dump_ro`, `SELECT CURRENT_ROLE();` gives `NULL` (MariaDB) or `NONE` (MySQL 8); the tools refuse anything else.
+- [ ] **6. TLS or tunnel, as section 2 says.**
+  Direct connection: the account requires TLS and the server offers it: MariaDB `SHOW CREATE USER` contains `REQUIRE SSL`; MySQL `SELECT ssl_type FROM mysql.user WHERE user = 'pp_dump_ro';` is not empty; and `SHOW VARIABLES LIKE 'have_ssl';` is `YES`. The operator's option file verifies the certificate (section 2, item 7).
+  Tunnel variant: the account host is the one MySQL sees (section 2, item 5), the tunnel is the only route, and the owner states whether `REQUIRE SSL` was dropped for the tunnel account (**Perlu pengesahan**).
+- [ ] **7. Unlock and lock are pre-arranged for 24 Oct and the night of 29 Oct.**
+  How: **Perlu pengesahan** (for example scheduled events that run `ALTER USER ... ACCOUNT UNLOCK` and `... ACCOUNT LOCK`). If events are used: `SELECT @@global.event_scheduler;` is `ON`, and `SELECT event_schema, event_name, status, execute_at, interval_value, interval_field, starts, time_zone FROM information_schema.events;` lists the unlock and the lock event as `ENABLED` (the statements run on MariaDB; no event was created in the test). The times are read in the time zone of the event or the server: 29 Oct 01:00 MYT is 28 Oct 17:00 UTC. Expected: an unlock before the operator's first reading of B1 (section 10.1) or at the sitting start on 24 Oct, and a lock after B2 or the end of the sitting. The owner states what happens if an event does not fire (a manual unlock by the owner is not available at night: the plan has no one on call, so a missed unlock is a STOP).
+- [ ] **8. The operator holds no `ALTER USER`.**
+  The only database credential the operator holds is `pp_dump_ro` (check 3 shows no grant option), and no other account on the .cloud database was given to the operator. Written statement by the owner.
+- [ ] **9. Clean-up is dated.** The owner drops the account after the last use (`DROP USER 'pp_dump_ro'@'<host>';`) on a date that is agreed (**Perlu pengesahan**: the date; section 4 says after the last rehearsal or at go-live, whichever comes first).
+
+**Confirmation.** This is a human step; nothing here is automated. When the owner has ticked every box, the operator posts one line on #109 with **no names, no host names and no credentials**, for example: `pp_dump_ro checklist (section 11) items 1 to 9 confirmed by the .cloud owner on <date>; open: <item numbers or none>`. Boxes the owner cannot tick stay open and are named by number only; a missing item 1 to 8 on the day of a sitting is a no-go for that sitting.
