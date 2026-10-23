@@ -69,7 +69,10 @@ export interface BoardPaths {
   daily: string
   /** "← Dashboard". */
   dashboard: string
-  /** S3 "Laporan Eksekutif" (S8, admin only: absent in the alias). */
+  /**
+   * S3 "Laporan Eksekutif" (S8, admin only). `null` until S8 is built: the link is not rendered
+   * (SWEEP-23OCT D4, D9: it would be a dead link; DV-M17-45).
+   */
   report: string | null
   /** Prefix of the drill-down S4-S7. */
   basePath: string
@@ -82,7 +85,7 @@ export function boardPaths(alias: boolean): BoardPaths {
     board: basePath,
     daily: `${basePath}/daily-activity`,
     dashboard: alias ? '/admin-sekolah' : '/admin',
-    report: alias ? null : '/admin/laporan-eksekutif',
+    report: null,
     basePath,
   }
 }

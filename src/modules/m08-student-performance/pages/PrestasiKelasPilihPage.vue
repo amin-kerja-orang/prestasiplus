@@ -7,6 +7,7 @@
 import { computed } from 'vue'
 
 import { DsEmptyState, DsLoadError, DsPage, DsPageHeader } from '@/ds'
+import { useSessionStore } from '@/stores/session'
 
 import { fetchOwnClasses } from '../api/performance'
 import ClassPickCard from '../components/prestasi/ClassPickCard.vue'
@@ -15,6 +16,14 @@ import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 const { data, error, reload } = useRouteData((signal) => fetchOwnClasses({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
 const active = computed(() => (data.value ?? []).filter((c) => c.isActive))
+
+/**
+ * Only the teacher and the admin own / create classes (M10 `/guru/kelas/cipta` is theirs). Any other role
+ * (pelajar, school admin) sees the same empty state without the "create a class" copy and button, which
+ * would lead to a screen it cannot open (D5 of the 23 Oct sweep, D9).
+ */
+const session = useSessionStore()
+const canCreateClass = computed(() => session.role === 'teacher' || session.role === 'admin')
 </script>
 
 <template>
@@ -26,10 +35,14 @@ const active = computed(() => (data.value ?? []).filter((c) => c.isActive))
       <div v-if="active.length === 0" data-testid="kelas-empty">
         <DsEmptyState
           title="Anda belum mempunyai kelas aktif."
-          description="Cipta kelas terlebih dahulu untuk mula memantau prestasi murid."
+          :description="
+            canCreateClass
+              ? 'Cipta kelas terlebih dahulu untuk mula memantau prestasi murid.'
+              : 'Prestasi kelas dipaparkan untuk guru yang mempunyai kelas aktif.'
+          "
           icon="i-ph-chalkboard"
         >
-          <template #actions>
+          <template v-if="canCreateClass" #actions>
             <UButton
               to="/guru/kelas/cipta"
               size="lg"

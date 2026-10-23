@@ -15,3 +15,6 @@ export const manifest: ModuleManifest = {
 }
 
 export * from './api'
+
+/** The monitoring routes for one prefix: M17 mounts them on `/admin/monitoring` (FR-M17-10). */
+export { monitoringRoutes } from './routes/monitoring'
