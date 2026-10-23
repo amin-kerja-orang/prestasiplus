@@ -88,3 +88,4 @@ Hidden items: 68
 | Menu item | Route | Reason | Status |
 |---|---|---|---|
 | Analisa Item | /analisa-item | The route redirects a student to /dashboard (no student screen). Hidden from the student menu in `src/shells/nav/user-nav.ts` (`STUDENT_HIDDEN_IDS`); teacher and school admin keep it. | Not built for student |
+| Headcount | /headcount | `/headcount` is refused for a pupil (route, API, FR-M08-08), so the sidebar entry led to a 403. Hidden from the student menu (`STUDENT_HIDDEN_IDS` id `headcount`); teacher and school admin keep it. | Not for student |

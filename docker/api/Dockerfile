@@ -33,6 +33,14 @@ RUN npm run be:build
 FROM node:22.22.2-alpine AS runtime
 ENV NODE_ENV=production \
     PORT=3000
+# Pull the Alpine security fixes published after the base image was built (OpenSSL libcrypto3/libssl3).
+# Runtime stage only; the apk cache is not kept.
+RUN apk upgrade --no-cache
+# Nothing in the runtime image runs npm, npx, corepack or yarn (CMD is `node dist/main.js`), so remove the base image's global
+# copies: their bundled dependencies (tar, brace-expansion, picomatch, ...) are scanned by Trivy but are never loaded.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg \
+    /opt/yarn-*
 WORKDIR /app
 # Same layout as the repo so the node_modules/@pp/* workspace symlinks resolve.
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
