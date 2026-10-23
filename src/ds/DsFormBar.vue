@@ -4,6 +4,7 @@
  * (tonal), submit (primary, `type="submit"`, loading while `saving`). `status` sits on the left.
  * Batal is a link when `cancelTo` is set, otherwise it emits `cancel`.
  */
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
 import { dsCopy } from './copy'
@@ -12,7 +13,7 @@ import { resolveIcon } from './icon'
 import { usePersonality } from './personality'
 import type { DsIconProp } from './types'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     submitLabel?: string
     cancelLabel?: string
@@ -40,10 +41,48 @@ withDefaults(
 const personality = usePersonality()
 
 const emit = defineEmits<{ cancel: [] }>()
+
+/*
+ * A sticky bar hides whatever sits under it, and the browser does not scroll a focused field that
+ * is "in view" but behind the bar (the last field of a long form on a phone). The scrolling
+ * ancestor therefore gets `scroll-padding-bottom` = bar height + its offset, so a focused field,
+ * an error summary link or a hash target always lands above the bar.
+ */
+const panel = ref<{ $el: HTMLElement } | null>(null)
+let scroller: HTMLElement | null = null
+let previous = ''
+let observer: ResizeObserver | null = null
+
+function scrollParent(el: HTMLElement | null): HTMLElement | null {
+  for (let p = el?.parentElement ?? null; p; p = p.parentElement) {
+    if (/(auto|scroll)/.test(getComputedStyle(p).overflowY)) return p
+  }
+  return null
+}
+function pad(): void {
+  const el = panel.value?.$el
+  if (scroller && el) scroller.style.scrollPaddingBottom = `${Math.ceil(el.offsetHeight) + 16}px`
+}
+onMounted(() => {
+  const el = panel.value?.$el
+  if (!props.sticky || !el) return
+  scroller = scrollParent(el)
+  if (!scroller) return
+  previous = scroller.style.scrollPaddingBottom
+  pad()
+  if (typeof ResizeObserver !== 'undefined') {
+    observer = new ResizeObserver(pad)
+    observer.observe(el)
+  }
+})
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  if (scroller) scroller.style.scrollPaddingBottom = previous
+})
 </script>
 
 <template>
-  <DsPanel tone="bar" :sticky="sticky" data-ds="form-bar">
+  <DsPanel ref="panel" tone="bar" :sticky="sticky" data-ds="form-bar">
     <div class="flex flex-wrap items-center justify-end gap-3">
       <div v-if="$slots.status" class="mr-auto min-w-0 text-caption text-muted">
         <slot name="status" />
