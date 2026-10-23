@@ -172,13 +172,6 @@ d AS (
   SELECT (xpath('/row/jpns/text()', (SELECT x FROM d_xml)))[1]::text::bigint AS st_jpns,
          (xpath('/row/ppds/text()', (SELECT x FROM d_xml)))[1]::text::bigint AS st_ppds
 ),
--- v2-side derivation for the same figures, used only when staging_cloud.schools is absent.
-d_v2 AS (
-  SELECT count(DISTINCT upper(nullif(btrim(regexp_replace(state, '\s+', ' ', 'g')), ''))) AS jpns,
-         count(DISTINCT upper(nullif(btrim(regexp_replace(state, '\s+', ' ', 'g')), '')) || '|' || upper(nullif(btrim(regexp_replace(district, '\s+', ' ', 'g')), '')))
-           FILTER (WHERE nullif(btrim(state), '') IS NOT NULL AND nullif(btrim(district), '') IS NOT NULL) AS ppds
-  FROM schools WHERE legacy_source = 'cloud'
-),
 -- Block C: wallet balance against the sum of the user's migrated ledger rows (verify/checks.ts, ledger()).
 c AS (
   SELECT count(l.user_id) AS with_ledger,
@@ -193,6 +186,8 @@ u AS (
   SELECT count(*) FILTER (WHERE must_reset_password) AS flagged,
          count(*) AS migrated,
          count(*) FILTER (WHERE password_hash IS NULL) AS null_hash,
+         -- Same predicate as Q10's recount of flaggedWithoutLoginId (plain IS NULL on the stored columns: the loader stores a
+         -- blank username or e-mail as NULL, so this equals the counter by construction).
          count(*) FILTER (WHERE must_reset_password AND username IS NULL AND email IS NULL) AS no_login_id
   FROM public.users WHERE legacy_source = 'cloud'
 ),
@@ -259,10 +254,10 @@ nt AS (
          ((SELECT n FROM core_notes) ->> 'rosterDefaultHashesWarning')::numeric::bigint AS warn,
          ((SELECT n FROM core_notes) ->> 'rosterDefaultHashes')::numeric::bigint AS hashes
 ),
--- Block U (#226 F1): one lower-case username used by more than one account.
+-- Block U (#226 F1): one lower-case username used by more than one account; same presence test as A1.11 (f).
 uname AS (
   SELECT count(*) AS dup_names, coalesce(sum(n), 0) AS accounts
-  FROM (SELECT count(*) AS n FROM users WHERE legacy_source = 'cloud' AND username IS NOT NULL GROUP BY lower(username) HAVING count(*) > 1) t
+  FROM (SELECT count(*) AS n FROM users WHERE legacy_source = 'cloud' AND nullif(btrim(username), '') IS NOT NULL GROUP BY lower(username) HAVING count(*) > 1) t
 ),
 -- Block X: rejects of the run that produced each entity's latest recon row (a dry-run or an earlier apply is not counted twice).
 rej AS (
@@ -324,16 +319,18 @@ checks AS (
   UNION ALL SELECT 'C', 'C3', 'wallets without ledger rows (plan 4.5 part 1)', without_ledger::text, '= detail of the same verify line (not stored in the DB)', 'info' FROM c
 
   -- ---------------------------------------------------------------- D. plan 4.5 part 1, derived JPN / PPD; PPD scope (#199)
-  UNION ALL SELECT 'D', 'D1', 'JPN rows + rejects against distinct states; basis '
-           || CASE WHEN (SELECT has_schools FROM stg) THEN 'staging_cloud.schools' ELSE 'v2 schools' END || ' (plan 4.5 part 1)',
-         (SELECT count(*) FROM jpns WHERE legacy_source = 'cloud')::text || ' + ' || coalesce((SELECT rejected FROM recon WHERE entity = 'jpns'), 0)::text,
-         coalesce((SELECT st_jpns FROM d), (SELECT jpns FROM d_v2))::text,
-         CASE WHEN (SELECT count(*) FROM jpns WHERE legacy_source = 'cloud') + coalesce((SELECT rejected FROM recon WHERE entity = 'jpns'), 0) = coalesce((SELECT st_jpns FROM d), (SELECT jpns FROM d_v2)) THEN 'ok' ELSE 'FAIL' END
-  UNION ALL SELECT 'D', 'D2', 'PPD rows + rejects against distinct state/district pairs; basis '
-           || CASE WHEN (SELECT has_schools FROM stg) THEN 'staging_cloud.schools' ELSE 'v2 schools' END || ' (plan 4.5 part 1)',
-         (SELECT count(*) FROM ppds WHERE legacy_source = 'cloud')::text || ' + ' || coalesce((SELECT rejected FROM recon WHERE entity = 'ppds'), 0)::text,
-         coalesce((SELECT st_ppds FROM d), (SELECT ppds FROM d_v2))::text,
-         CASE WHEN (SELECT count(*) FROM ppds WHERE legacy_source = 'cloud') + coalesce((SELECT rejected FROM recon WHERE entity = 'ppds'), 0) = coalesce((SELECT st_ppds FROM d), (SELECT ppds FROM d_v2)) THEN 'ok' ELSE 'FAIL' END
+  UNION ALL SELECT 'D', 'D1', 'JPN rows + rejects against distinct states of staging_cloud.schools (plan 4.5 part 1)',
+         CASE WHEN (SELECT has_schools FROM stg) THEN (SELECT count(*) FROM jpns WHERE legacy_source = 'cloud')::text || ' + ' || coalesce((SELECT rejected FROM recon WHERE entity = 'jpns'), 0)::text
+              ELSE 'n/a: staging_cloud not present' END,
+         CASE WHEN (SELECT has_schools FROM stg) THEN (SELECT st_jpns FROM d)::text ELSE 'n/a' END,
+         CASE WHEN NOT (SELECT has_schools FROM stg) THEN 'info'
+              WHEN (SELECT count(*) FROM jpns WHERE legacy_source = 'cloud') + coalesce((SELECT rejected FROM recon WHERE entity = 'jpns'), 0) = (SELECT st_jpns FROM d) THEN 'ok' ELSE 'FAIL' END
+  UNION ALL SELECT 'D', 'D2', 'PPD rows + rejects against distinct state/district pairs of staging_cloud.schools (plan 4.5 part 1)',
+         CASE WHEN (SELECT has_schools FROM stg) THEN (SELECT count(*) FROM ppds WHERE legacy_source = 'cloud')::text || ' + ' || coalesce((SELECT rejected FROM recon WHERE entity = 'ppds'), 0)::text
+              ELSE 'n/a: staging_cloud not present' END,
+         CASE WHEN (SELECT has_schools FROM stg) THEN (SELECT st_ppds FROM d)::text ELSE 'n/a' END,
+         CASE WHEN NOT (SELECT has_schools FROM stg) THEN 'info'
+              WHEN (SELECT count(*) FROM ppds WHERE legacy_source = 'cloud') + coalesce((SELECT rejected FROM recon WHERE entity = 'ppds'), 0) = (SELECT st_ppds FROM d) THEN 'ok' ELSE 'FAIL' END
   UNION ALL SELECT 'D', 'D3', 'schools (cloud) with no state or no district (added, not in plan; PPD scope, #199)',
          (SELECT count(*) FROM schools WHERE legacy_source = 'cloud' AND (nullif(btrim(state), '') IS NULL OR nullif(btrim(district), '') IS NULL))::text,
          'reported; compare with the rehearsal', 'info'
