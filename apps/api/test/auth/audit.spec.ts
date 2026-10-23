@@ -50,6 +50,7 @@ describe('AuditService', () => {
     audit = new AuditService(prisma, { get: () => SECRET } as never)
   })
   afterAll(async () => {
+    await prisma.$disconnect()
     await db.drop()
   })
 
