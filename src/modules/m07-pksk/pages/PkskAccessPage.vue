@@ -402,7 +402,7 @@ const cardFields: CardField[] = [
     >
       <template #userName-cell="{ row }">
         <div
-          class="flex min-w-40 flex-col gap-1"
+          class="flex min-w-0 flex-col gap-1"
           data-testid="access-row"
           :data-access-id="row.original.id"
         >

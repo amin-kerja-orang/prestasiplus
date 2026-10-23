@@ -395,13 +395,13 @@ const cellClass = (th: string, td = th): { meta: Record<string, unknown> } => ({
 })
 
 const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'id', header: 'ID', ...cellClass('w-16') },
+  { accessorKey: 'id', header: 'ID', ...cellClass('w-24') },
   { accessorKey: 'excerptText', header: 'Soalan', ...cellClass('min-w-64') },
   { accessorKey: 'subjectName', header: 'Subjek', ...cellClass('w-32 xl:w-36') },
   { accessorKey: 'levelName', header: 'Tahap', ...cellClass('hidden 2xl:table-cell w-40') },
-  { id: 'difficulty', header: 'Kesukaran', ...cellClass('w-28') },
-  { id: 'status', header: 'Status', ...cellClass('w-32') },
-  { id: 'actions', header: ' ', ...cellClass('w-64 text-end', 'w-64') },
+  { id: 'difficulty', header: 'Kesukaran', ...cellClass('w-32') },
+  { id: 'status', header: 'Status', ...cellClass('w-36') },
+  { id: 'actions', header: ' ', ...cellClass('w-48 text-end', 'w-48') },
 ]
 const cardFields: CardField[] = [
   { key: 'subjectName', label: 'Subjek' },
