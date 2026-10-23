@@ -17377,33 +17377,13 @@
               "type": "string"
             },
             "description": "The own active classes the pupil is in."
-          },
-          "classes": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "$ref": "#/components/schemas/Id"
-                },
-                "name": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id",
-                "name"
-              ]
-            },
-            "description": "The viewer's own active classes of this pupil, in the same order as classNames (which stays for compatibility)."
           }
         },
         "required": [
           "id",
           "name",
           "levelName",
-          "classNames",
-          "classes"
+          "classNames"
         ]
       },
       "TeacherStudentsMeta": {

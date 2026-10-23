@@ -76,12 +76,7 @@ describe('ClassCreateRequest', () => {
 
 describe('roster', () => {
   it('parses a student row and the add/remove inputs', () => {
-    const row = { id: '9', name: 'Murid Ujian', levelName: null, classNames: ['Kelas Contoh 4A'], classes: [{ id: '501', name: 'Kelas Contoh 4A' }] }
-    expect(TeacherStudentSchema.safeParse(row).success).toBe(true)
-    // SW5-03: two classes may share a name; the ids tell them apart
-    const twins = { ...row, classNames: ['Kelas Kembar', 'Kelas Kembar'], classes: [{ id: '501', name: 'Kelas Kembar' }, { id: '502', name: 'Kelas Kembar' }] }
-    expect(TeacherStudentSchema.safeParse(twins).success).toBe(true)
-    expect(TeacherStudentSchema.safeParse({ ...row, classes: [{ id: '', name: 'x' }] }).success).toBe(false)
+    expect(TeacherStudentSchema.safeParse({ id: '9', name: 'Murid Ujian', levelName: null, classNames: ['Kelas Contoh 4A'] }).success).toBe(true)
     expect(ClassStudentAddRequestSchema.safeParse({ classroomId: '501' }).success).toBe(true)
     expect(fieldsOf(ClassStudentAddRequestSchema.safeParse({}))).toEqual({ classroomId: CLASS_MESSAGES.classroom })
     expect(fieldsOf(ClassStudentRemoveQuerySchema.safeParse({ classroomId: '' }))).toEqual({ classroomId: CLASS_MESSAGES.classroom })
