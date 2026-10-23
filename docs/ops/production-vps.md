@@ -220,7 +220,14 @@ Reserved (do NOT put them in `api.env` yet): `CLAMAV_HOST=clamav`, `CLAMAV_PORT=
 PP_MIGRATE_ROSTER_DEFAULT_HASHES='<hash1>,<hash2>'
 ```
 
-The Compose documentation states the single-quote rule for the interpolation `.env` file; it does not say outright that `--env-from-file` and `env_file:` parse the same way. **Verify once on the host before B7** (no hash is printed; the count of `$` must be 3 per bcrypt hash, so 6 for two hashes, and no `$` may be missing): `docker compose ... run --rm --no-deps -T --env-from-file /etc/pretasiplus/etl.env migrate sh -c 'printenv PP_MIGRATE_ROSTER_DEFAULT_HASHES | tr -cd "$" | wc -c'`. If the count is short, fall back to doubling every `$` (`$$`) and check again. The plan's B7 line `note rosterDefaultHashes: <n>` (n at least 1) is the second check.
+The Compose documentation states the single-quote rule for the interpolation `.env` file; it does not say outright that `--env-from-file` and `env_file:` parse the same way. Single quotes were tested safe with Compose v5.6.0 for both `env_file` and `--env-from-file`. **Verify once on the host's own Compose version before B7**, as the deploy user from the repository root, with the repo's `pp_compose` helper of `deploy/vps/lib.sh` (the same call `slot.sh` makes). It prints only a count of `$` characters, never a hash; the count must be 3 per bcrypt hash, so 6 for two hashes:
+
+```
+. deploy/vps/lib.sh
+pp_compose run --rm --no-deps -T --env-from-file "$PP_ENV_DIR/etl.env" migrate sh -c 'printenv PP_MIGRATE_ROSTER_DEFAULT_HASHES | tr -cd "$" | wc -c'
+```
+
+If the count is short, drop the quotes and write `$$` for each `$`, and check again. The plan's B7 line `note rosterDefaultHashes: <n>` (n at least 1) is the second check.
 
 ### 3.1 Database roles (cutover plan P3)
 
