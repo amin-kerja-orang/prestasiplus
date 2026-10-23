@@ -259,14 +259,18 @@ export class UsersService {
       }
       if (roles.includes('school_admin') && schoolId === null && fields.schoolId === undefined) fields.schoolId = FIELD_MESSAGES.schoolRequired
 
-      // grade: required for a student that would have none.
+      // grade (R73): required only when the request makes the user a student that would have none (the
+      // student role is being added and no grade is stored or sent) or when a `grade` key is sent (null
+      // is refused, an out-of-range value is refused). An update of an existing student that does not
+      // touch the grade (password reset, name or e-mail edit) never fails on a stored null grade: a
+      // migrated pupil with no class label must stay resettable.
       let grade: number | null | undefined
       if (isStudent) {
         if (body.grade !== undefined) {
           const g = body.grade === null ? null : gradeOf(body.grade)
           if (g === null) fields.grade = FIELD_MESSAGES.gradeRequired
           else grade = g
-        } else if (target.grade === null) {
+        } else if (target.grade === null && !target.roles.includes('student')) {
           fields.grade = FIELD_MESSAGES.gradeRequired
         }
       }
