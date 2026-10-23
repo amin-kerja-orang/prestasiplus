@@ -19,13 +19,15 @@
  * BIJAK_ADMIN_PUSAT_PASS) for the Admin Pusat login.
  */
 
+import { randomUUID } from 'node:crypto'
+
 import type { Page } from '@playwright/test'
 
 import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
 import { account, csrfOf, expectNoHScroll, HOME, newPeerContext } from './helpers'
 
-/** A throw-away test password (the account is deleted at the end); not a secret. */
-const NEW_PASSWORD = 'Ujian5678'
+/** Random per run, kept in memory only (never a known password on any target). */
+const NEW_PASSWORD = `T${randomUUID()}!a1`
 
 async function onChangePage(page: Page): Promise<boolean> {
   return page
@@ -54,9 +56,11 @@ test.describe('forced password change (AM2-A1) @api', () => {
       data: { roles: ['student'], name: 'Murid Ujian AM2A1', email, grade: 10 },
     })
     expect(created.status(), 'POST /api/admin/users').toBe(201)
-    const body = ((await created.json()) as {
-      data: { id: string; mustChangePassword: boolean; generatedPassword: string }
-    }).data
+    const body = (
+      (await created.json()) as {
+        data: { id: string; mustChangePassword: boolean; generatedPassword: string }
+      }
+    ).data
     expect(body.mustChangePassword).toBe(true)
     const id = body.id
     const initialPassword = body.generatedPassword
