@@ -20,6 +20,12 @@ export const ACCOUNT_AUDIT = {
   PICTURE_UPDATED: 'account.picture.updated',
 } as const
 
+/**
+ * Laravel `different:current_password` text, on field `password` of `PUT /me/password` when the new password
+ * equals the current one. Local to the API: the contract is LEAD-owned (AGENT-SYNC rule 3), SRS SEC-M01-21(c).
+ */
+export const PASSWORD_MUST_DIFFER_MESSAGE = 'The password field and current password must be different.'
+
 /** A reset token is 32 random bytes (256 bits, contract minimum 128), base64url. */
 export const RESET_TOKEN_BYTES = 32
 export const RESET_TOKEN_TTL_MS = ACCOUNT_RESET_TOKEN_TTL_MINUTES * 60_000
