@@ -257,10 +257,10 @@ const {
       @row-click="(r: Row) => (selectedId = r.id)"
     >
       <template #id-cell="{ row }">
-        <span class="text-caption text-muted">{{ row.original.id }}</span>
+        <span class="block whitespace-normal text-caption text-muted">{{ row.original.id }}</span>
       </template>
       <template #preview-cell="{ row }">
-        <div class="flex min-w-0 flex-col gap-1">
+        <div class="flex min-w-48 flex-col gap-1 whitespace-normal">
           <span class="line-clamp-2 text-body text-default"
             ><RichText :text="row.original.preview"
           /></span>
@@ -276,7 +276,9 @@ const {
         </div>
       </template>
       <template #subjectName-cell="{ row }">
-        {{ row.original.subjectName }} · K{{ row.original.kertas }}
+        <span class="block whitespace-normal"
+          >{{ row.original.subjectName }} · K{{ row.original.kertas }}</span
+        >
       </template>
       <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind] }}</template>
       <template #usedIn-cell="{ row }">{{ row.original.usedIn }} kertas</template>

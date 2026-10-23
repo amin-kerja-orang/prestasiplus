@@ -213,7 +213,7 @@ function open(row: Row): void {
       @row-click="open"
     >
       <template #preview-cell="{ row }">
-        <div class="flex min-w-0 flex-col gap-1">
+        <div class="flex min-w-48 flex-col gap-1 whitespace-normal">
           <span class="line-clamp-2 text-body text-default"
             ><RichText :text="row.original.preview"
           /></span>
@@ -237,7 +237,9 @@ function open(row: Row): void {
         </div>
       </template>
       <template #subjectName-cell="{ row }">
-        {{ row.original.subjectName }} · K{{ row.original.kertas }}
+        <span class="block whitespace-normal"
+          >{{ row.original.subjectName }} · K{{ row.original.kertas }}</span
+        >
       </template>
       <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind] }}</template>
       <template #ageDays-cell="{ row }">{{ ageText(row.original.ageDays) }}</template>
