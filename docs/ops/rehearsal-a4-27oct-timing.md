@@ -362,7 +362,7 @@ At the placeholders (`rho = 1`, `kappa = 1`, `r_B6 = r_B7 = 3,611`) this is exac
 
 ### 9.3 Fill-in table
 
-All durations in minutes (seconds divided by 60). `Used` is the value that goes into the sum.
+All durations in minutes (seconds divided by 60). `Used` is the value that goes into the sum. The table is the template for the real A1/A4 values and stays empty until then; the **synthetic, provisional** figures of 23 Oct are in the separate block 9.3a and must not be copied into it.
 
 | Item | A1 | A4 (R) | A4 (S) | 24 Oct | Used | Source of the used value |
 |---|---|---|---|---|---|---|
@@ -400,6 +400,82 @@ N_night_max = ETL_max / ( rho x ( kappa / r_B6 + 2 / r_B7 ) )
 
 (replace 360 by 345 for the stricter limit). If `ETL_max` is zero or negative, nothing fits: the fixed part alone is over the window. Each minute taken off `Fixed` adds `60 / ( rho x ( kappa / r_B6 + 2 / r_B7 ) )` rows; at the placeholders that is about 72,000 rows per minute, as the plan says.
 
+### 9.3a Provisional, synthetic (23 Oct): a first W before A4
+
+**Every number in this block is synthetic, provisional.** It is a first reading for the LEAD, not a measurement of `.cloud` or of the VPS. The real `N_night` comes from the 24 Oct `dump:check` / manifest (P-5) and the real rates from the A1 and A4 runs; when they exist, this block is replaced by the table of 9.3.
+
+**Inputs (synthetic, provisional).** All on the synthetic medium fixture (118 tables, `N_manifest` = 366,026 rows, 20,000 users), on 4 vCPU / 15 GiB cloud VMs with a local PostgreSQL 16 (not production hardware, `fsync` on, default tuning):
+
+| Source | Figures |
+|---|---|
+| A1 dress rehearsal, 23 Oct (this sheet's author) | `load-dump` 11 s; stage copy 3 s; `staging:profile` 1 s; `migrate:all --dry-run` 8 s; `migrate:all --apply` 490 s (first, quiet run) and 558 s (busy machine); `migrate:verify` 5 s; restore `pre_etl` 2 s; `migrate:rollback --apply` 17 s; `N_core` 39,110, `N_act` 295,786, `N_read` 334,896, `rho` 0.915, `kappa` 0.117; `r_core_apply` 8,502, `r_act_apply` 1,092, `r_overall` 1,216, `r_B7` 1,200 to 1,367 rows/s |
+| AM1-1 integration run, 23 Oct (#113) | `migrate:all --apply` 610.9 s on about 366k rows (the slowest, used below); WAL about 499 MB; verify 4.4 s; restore 1.6 to 2.2 s |
+| AM1-3 AM-10 dress rehearsal (#113 comment 6365605536) | `dump:cloud` 4.1 s for 366,026 rows / 96.2 MB raw (about 89,000 rows/s, about 11 s per million rows); `D_xfer` 4.6 s (about 5 s per 100 MB raw; loopback network; synthetic text compresses about 13:1, so real data will be slower) |
+
+**Step 1: seconds at the synthetic N (366,026 rows), synthetic, provisional.**
+
+| Item | Seconds | Where from |
+|---|---|---|
+| `D_dump` | 4.1 | AM1-3 |
+| `D_xfer` | 4.6 | AM1-3 |
+| `D_load` | 11 | A1 `load-dump` (scan plus load) |
+| `D_copy` | 3 | A1 stage copy |
+| `D_profile_dry` | 9 | A1 command seconds: profile 1 + dry-run 8 (the sheet's `r_B6` form, 39,110 / (1 + 5.2) = 6,308 rows/s, counts run seconds only) |
+| `D_apply` | 610.9 | AM1-1, slowest of 490 / 558 / 610.9 (about 1,096 rows/s by the `r_B7` form, 2 x 334,896 / 610.9) |
+| `D_verify` | 5 | A1 (AM1-1: 4.4); the read-only SQL checks and the smoke (P-9) are not measured here |
+| ETL and transfer part | 647.6 s = 10.79 min | sum of the seven rows |
+
+`sum` = `D_freeze` 20 + 10.79 + `D_gonogo` 15 = 45.79 min. **`W` = 1.25 x 45.79 = 57.2 min (0.95 h) at N = 366,026, synthetic, provisional.** Margin to 360 = 302.8 min; to 345 = 287.8 min.
+
+**Step 2: cost per million rows (scaling by rows, an assumption: section 9.2), synthetic, provisional.** Factor = 1,000,000 / 366,026 = 2.7321. The seconds of Step 1 are per manifest row, so `rho` and `kappa` are already inside them.
+
+| Row-scaled step | Seconds per million rows | Calculation |
+|---|---|---|
+| dump | 11.2 | 4.1 x 2.7321 |
+| xfer | 12.6 | 4.6 x 2.7321 (by bytes: 96.2 MB per 366,026 rows is 263 MB per million, about 13 s) |
+| load | 30.0 | 11 x 2.7321 |
+| copy | 8.2 | 3 x 2.7321 |
+| profile + dry-run | 24.6 | 9 x 2.7321 |
+| apply (610.9 s, conservative) | 1,669.0 | 610.9 x 2.7321 |
+| verify | 13.7 | 5 x 2.7321 (verify is probably less than linear; kept linear) |
+| **Total** | **1,769.3 s = 29.49 min per million rows** | sum |
+
+**Step 3: `W` as a function of N (millions of rows, `N_M`), synthetic, provisional.**
+
+```
+W(N_M) = 1.25 x (35 + 29.49 x N_M) = 43.75 + 36.86 x N_M      minutes
+N_max(limit) = (limit - 43.75) / 36.86                          millions of rows
+check: N_M = 0.366026 gives 43.75 + 13.49 = 57.2 min (Step 1)
+```
+
+| N | W (min) | Calculation | Fits 360? | Fits 345? |
+|---|---|---|---|---|
+| 1,000,000 | 80.6 (1 h 21) | 43.75 + 36.86 x 1 | yes | yes |
+| 3,000,000 | 154.3 (2 h 34) | 43.75 + 36.86 x 3 | yes | yes |
+| 5,000,000 | 228.0 (3 h 48) | 43.75 + 36.86 x 5 | yes | yes |
+| `N_max` for 360 min | | (360 - 43.75) / 36.86 = **8.58 million rows** | | |
+| `N_max` for 345 min (advisory) | | (345 - 43.75) / 36.86 = **8.17 million rows** | | |
+
+Sensitivity of the apply figure (same arithmetic): with 558 s, `W` = 43.75 + 33.85 x `N_M` and `N_max` = 9.34 / 8.90 million; with the quiet 490 s run, `W` = 43.75 + 29.98 x `N_M` and `N_max` = 10.55 / 10.05 million (limits 360 / 345).
+
+**Step 4: the same with the plan's placeholders for the steps that synthetic data cannot represent (a more careful reading), synthetic, provisional.** Synthetic text compresses about 13:1 and moves on loopback, so the dump, transfer, load, copy and verify figures above are surely too small for real data. Here the non-ETL steps keep the plan's placeholders of 9.6 (`D_freeze` 20, `D_dump` 25, `D_xfer` 15, `D_load` 20, `D_copy` 10, `D_verify` 20, `D_gonogo` 15 = 125 min fixed) and only `D_profile_dry` + `D_apply` use the measured figures: (24.6 + 1,669.0) s per million rows = 28.23 min.
+
+```
+W(N_M) = 1.25 x (125 + 28.23 x N_M) = 156.25 + 35.28 x N_M      minutes
+```
+
+| N | W (min) | Calculation |
+|---|---|---|
+| 1,000,000 | 191.5 (3 h 12) | 156.25 + 35.28 |
+| 3,000,000 | 262.1 (4 h 22) | 156.25 + 35.28 x 3 |
+| 5,000,000 | 332.7 (5 h 33) | 156.25 + 35.28 x 5 |
+| `N_max` for 360 min | | (360 - 156.25) / 35.28 = **5.77 million rows** |
+| `N_max` for 345 min (advisory) | | (345 - 156.25) / 35.28 = **5.35 million rows** |
+
+**For the LEAD, in one sentence (synthetic, provisional):** on synthetic data at the measured speeds, the whole night comes to about 57 minutes at 366,026 rows and grows to about 154 minutes at 3 million and 228 minutes at 5 million rows, so it fits the 6 hour window up to about 8.2 to 8.6 million rows (about 5.3 to 5.8 million rows if the non-ETL steps take the plan's placeholder times), and the real answer waits for the real `N_night` from the 24 Oct `dump:check` and the real rates from A1 and A4.
+
+This block is not the P7 decision (section 9.5): it rests on synthetic text, loopback transfer, a different host and a linear scaling assumption, and the 3,611 rows/s placeholder is not used in it.
+
 ### 9.4 Per-step latest times (advisory: a proposal for the LEAD, not a plan rule)
 
 Plan 4.3 and P7 test only the total `W`. This table is **not** in the plan. It is an extra reading the half AM operator offers, because the card (plan 4.6) also has a latest time for every step. It uses the same convention as `W`: the 25 % buffer applies to every duration, including `D_freeze`. `C_k = 1.25 x (20 + sum of the durations of B2 to step k)`, in minutes after `T` (01:00); `C_B9end` therefore equals `W`. Fill the duration column from the table above.
@@ -428,6 +504,8 @@ A row that does not fit is reported to the LEAD, who may change that latest time
 - **Contradiction to resolve (Perlu pengesahan, LEAD):** plan 4.3 compares `W` (B1 to the end of B9) with 360 min, but the card lets B9 start as late as T+5:30 and takes 15 min, and then B10 needs 15 more minutes before T+6:00 (07:00). If both hold, `W` can be at most about 345 min. The sheet shows both margins.
 
 ### 9.6 Worked example (placeholders only; not a measurement)
+
+Kept as the plan's own illustration with the 3,611 rows/s placeholder. The block 9.3a gives the same calculation with the measured synthetic figures of 23 Oct, labelled synthetic, provisional.
 
 Uses only the plan's placeholders: `r_B6 = r_B7 = 3,611 rows/s`, `rho = 1`, `kappa = 1`, `D_freeze = 20`, `D_dump = 25`, `D_xfer = 15`, `D_load = 20`, `D_copy = 10`, `D_verify = 20`, `D_gonogo = 15` (fixed total 125 min), and an example `N_night = 5,000,000` rows (an example, not an observed count).
 
