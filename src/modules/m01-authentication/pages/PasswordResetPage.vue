@@ -17,7 +17,11 @@ import { useSessionStore } from '@/stores/session'
 import { resetPassword } from '../api'
 import PasswordCard from '../components/auth/PasswordCard.vue'
 import PasswordInput from '../components/auth/PasswordInput.vue'
+import { useNoReferrer } from '../composables/useNoReferrer'
 import { errorLines } from '../lib/error-lines'
+
+// The URL may hold the token (path route): never send it as a Referer (SW8-07b).
+useNoReferrer()
 
 // SW8-07b: the mailed link carries the token in the URL fragment; `PasswordResetEntryPage` reads it
 // once and hands it over as props (client state only). Without props the token comes from the path
