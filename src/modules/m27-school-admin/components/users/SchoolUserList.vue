@@ -272,54 +272,72 @@ async function exportCsv(): Promise<void> {
   }
 }
 
-// Fixed layout: a width per column so the nine columns fit from 1280 without clipping.
+// Fixed layout: a width per column, and the lower-priority columns drop out below a breakpoint so every kept column
+// is readable without clipping (SW6-01, DV-M27-24). The table card is ~696px wide at 768 and ~952px at 1280:
+//   below `xl`  #, Nama, Emel, Aktif?, Tindakan;
+//   from `xl`   + Tingkatan and Kelas (pupil) / Kelas (teacher);
+//   from `2xl`  + Telefon (pupil) / Telefon and Login Terakhir (teacher).
+// Tarikh never shows in the table: the card is capped at ~1080px inside, and nine columns plus a 20-character name
+// need ~1110px. The column stays in the DOM (header and cell texts) for the unit and e2e specs.
 // `UTable` reads per-cell classes from the column meta key `class`; the key is computed so the class linter
-// does not read it as a class list.
+// does not read it as a class list. Full class strings: Tailwind reads the source text.
 // eslint-disable-next-line pp/ds-class-allowlist -- an object key, not a class list
 const META_CLASS = 'class'
+const XL = 'hidden xl:table-cell'
+const XXL = 'hidden 2xl:table-cell'
 const WIDTHS: Record<string, string> = {
-  index: 'w-8',
-  name: 'w-32',
-  email: 'w-32',
-  phone: 'w-24',
-  grade: 'w-24',
-  kelas: 'w-24',
-  lastLogin: 'w-32',
-  isActive: 'w-28',
-  date: 'w-24',
+  index: 'w-12',
+  name: 'w-48 xl:w-64',
+  email: 'w-44',
+  phone: `w-28 ${XXL}`,
+  grade: `w-24 ${XL}`,
+  kelas: `w-28 ${XL}`,
+  lastLogin: `w-32 ${XXL}`,
+  isActive: 'w-24',
+  date: 'hidden',
   actions: 'w-40',
 }
 const sized = (cols: TableColumn<Item>[]): TableColumn<Item>[] =>
   cols.map((c) => {
     const key = String(c.id ?? (c as { accessorKey?: string }).accessorKey)
-    const w = key === 'kelas' && isPupil.value ? 'w-28' : WIDTHS[key]
+    // The teacher has one more visible column from `2xl` and an "Aktif?" button (icon + label, wider than the
+    // pupil's badge), so the name and that column give way a little.
+    const w = isPupil.value
+      ? WIDTHS[key]
+      : key === 'name'
+        ? 'w-48 xl:w-64 2xl:w-56'
+        : key === 'isActive'
+          ? 'w-28'
+          : WIDTHS[key]
     return w ? { ...c, meta: { [META_CLASS]: { th: w, td: w } } } : c
   })
 
 const columns = computed<TableColumn<Item>[]>(() =>
-  sized(isPupil.value
-    ? [
-        { accessorKey: 'index', header: '#' },
-        { accessorKey: 'name', header: 'Nama' },
-        { accessorKey: 'email', header: 'Emel' },
-        { accessorKey: 'phone', header: 'Telefon' },
-        { accessorKey: 'grade', header: 'Tingkatan' },
-        { accessorKey: 'kelas', header: 'Kelas' },
-        { accessorKey: 'isActive', header: 'Aktif?' },
-        { accessorKey: 'date', header: 'Tarikh' },
-        { id: 'actions', header: 'Tindakan' },
-      ]
-    : [
-        { accessorKey: 'index', header: '#' },
-        { accessorKey: 'name', header: 'Nama' },
-        { accessorKey: 'email', header: 'Emel' },
-        { accessorKey: 'phone', header: 'Telefon' },
-        { accessorKey: 'kelas', header: 'Kelas' },
-        { accessorKey: 'lastLogin', header: 'Login Terakhir' },
-        { accessorKey: 'isActive', header: 'Aktif?' },
-        { accessorKey: 'date', header: 'Tarikh' },
-        { id: 'actions', header: 'Tindakan' },
-      ]),
+  sized(
+    isPupil.value
+      ? [
+          { accessorKey: 'index', header: '#' },
+          { accessorKey: 'name', header: 'Nama' },
+          { accessorKey: 'email', header: 'Emel' },
+          { accessorKey: 'phone', header: 'Telefon' },
+          { accessorKey: 'grade', header: 'Tingkatan' },
+          { accessorKey: 'kelas', header: 'Kelas' },
+          { accessorKey: 'isActive', header: 'Aktif?' },
+          { accessorKey: 'date', header: 'Tarikh' },
+          { id: 'actions', header: 'Tindakan' },
+        ]
+      : [
+          { accessorKey: 'index', header: '#' },
+          { accessorKey: 'name', header: 'Nama' },
+          { accessorKey: 'email', header: 'Emel' },
+          { accessorKey: 'phone', header: 'Telefon' },
+          { accessorKey: 'kelas', header: 'Kelas' },
+          { accessorKey: 'lastLogin', header: 'Login Terakhir' },
+          { accessorKey: 'isActive', header: 'Aktif?' },
+          { accessorKey: 'date', header: 'Tarikh' },
+          { id: 'actions', header: 'Tindakan' },
+        ],
+  ),
 )
 
 const cardFields = computed<CardField[]>(() =>
@@ -454,7 +472,8 @@ function openRow(row: Item): void {
         :page="applied.page"
         :caption="cfg.listTitle"
         layout="fixed"
-        density="compact"
+        density="tight"
+        :sticky-first-column="false"
         card-title="name"
         :card-fields="cardFields"
         data-testid="user-table"
@@ -475,19 +494,24 @@ function openRow(row: Item): void {
               <RouterLink
                 v-if="row.original.canEdit"
                 :to="row.original.editTo"
-                class="inline-flex min-h-11 min-w-0 items-center"
+                class="flex min-h-11 min-w-0 items-center"
+                :title="row.original.name"
                 data-testid="user-name"
-                >{{ row.original.name }}</RouterLink
+                ><span class="truncate">{{ row.original.name }}</span></RouterLink
               >
-              <span v-else data-testid="user-name">{{ row.original.name }}</span>
+              <span v-else :title="row.original.name" data-testid="user-name">{{
+                row.original.name
+              }}</span>
             </template>
           </DsIdentity>
         </template>
         <template #email-cell="{ row }">
-          <span class="break-all" data-testid="user-email">{{ row.original.email }}</span>
+          <span class="block truncate" :title="row.original.email" data-testid="user-email">{{
+            row.original.email
+          }}</span>
         </template>
         <template #phone-cell="{ row }">
-          <span class="break-words" data-testid="user-phone">{{ row.original.phone }}</span>
+          <span class="text-nowrap" data-testid="user-phone">{{ row.original.phone }}</span>
         </template>
         <template #grade-cell="{ row }">
           <span class="break-words" data-testid="user-grade">{{ row.original.grade }}</span>
@@ -496,9 +520,7 @@ function openRow(row: Item): void {
           <span data-testid="user-classes">{{ row.original.kelas }}</span>
         </template>
         <template #lastLogin-cell="{ row }">
-          <span class="break-words" data-testid="user-last-login">{{
-            row.original.lastLogin
-          }}</span>
+          <span data-testid="user-last-login">{{ row.original.lastLogin }}</span>
         </template>
         <template #isActive-cell="{ row }">
           <DsStatusBadge
@@ -523,7 +545,7 @@ function openRow(row: Item): void {
           >
         </template>
         <template #date-cell="{ row }">
-          <span class="break-words" data-testid="user-date">{{ row.original.date }}</span>
+          <span class="text-nowrap" data-testid="user-date">{{ row.original.date }}</span>
         </template>
         <template #actions-cell="{ row }">
           <UserRowActions :edit-to="row.original.editTo" :can-edit="row.original.canEdit">
