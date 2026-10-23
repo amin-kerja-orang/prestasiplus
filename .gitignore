@@ -66,6 +66,12 @@ apps/api/src/db/generated/
 # Local git worktrees created by agent sessions (never tracked)
 .claude/worktrees/
 
+# AM-10 dump pipeline: option files, env files and key files never enter git
+# (*.key also covers the pp-anon*.key key files; *.cnf covers MySQL option files)
+.env.migration
+*.key
+*.cnf
+
 # Production VPS pack (AZ-09): real env files live in /etc/pretasiplus on the server; never inside the repo
 deploy/vps/prod.env
 deploy/vps/api.env
