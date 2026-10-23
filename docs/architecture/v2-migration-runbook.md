@@ -292,6 +292,7 @@ The commands below run on a rehearsal or staging database that holds an imported
 | Step | Command | Expected result |
 |---|---|---|
 | 1. Load | `npm run staging:load -w @pp/api -- --from <dump dir>` | Exit 0. 83 tables in `staging_cloud`, 35 in `archive_cloud` (section 2). |
+| 1b. Statistics | `psql -X -c 'ANALYZE'` on the target database, right after the stage copy (or the load), before the profile and the `pre_etl` point | Exit 0. The copied schemas have no planner statistics (`n_live_tup` 0), so the ETL queries can pick unstable plans. `ANALYZE` writes statistics only. `migrate:all` runs core and activity back to back, so the v2 targets cannot be analysed between the stages by hand. |
 | 2. Profile | `npm run staging:profile -w @pp/api` | `profile-<date>.md/.json` in `.migration-out/`. Read the orphan, duplicate and enum counts. |
 | 3. Dry-run | `npm run migrate:all -w @pp/api -- --as-of=<YYYY-MM-DD>` | Core dry-run, then the activity dry-run only if a core apply on the same staged data exists, otherwise "skipped". No v2 data table is written. |
 | 4. Apply | `PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:all -w @pp/api -- --apply --as-of=<same date>` | Per stage, core then activity: a dry-run, then the apply with identical options only if the dry-run succeeded. Stops at the first failed stage. |
