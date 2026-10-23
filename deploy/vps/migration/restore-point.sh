@@ -4,7 +4,7 @@
 #
 #   deploy/vps/migration/restore-point.sh take NAME [--operator "<name>"]
 #   deploy/vps/migration/restore-point.sh list
-#   deploy/vps/migration/restore-point.sh verify NAME
+#   deploy/vps/migration/restore-point.sh verify NAME [--expect-migrations N|repo]
 #   deploy/vps/migration/restore-point.sh restore NAME [--yes]
 #   deploy/vps/migration/restore-point.sh purge-raw --after post_drop [--yes]
 #   deploy/vps/migration/restore-point.sh raw-check
@@ -42,7 +42,7 @@ export PP_SCRIPT=restore-point
 
 usage() { sed -n '2,35p' "${BASH_SOURCE[0]}"; }
 cmd="${1:-}"; [ $# -eq 0 ] || shift
-name=""; operator="${PP_OPERATOR:-}"; yes=0; after=""
+name=""; operator="${PP_OPERATOR:-}"; yes=0; after=""; expect=""
 case "$cmd" in
   take|verify|restore) name="${1:-}"; [ $# -eq 0 ] || shift ;;
   list|purge-raw|raw-check) ;;
@@ -54,6 +54,7 @@ while [ $# -gt 0 ]; do
     --operator) operator="${2:?--operator needs a value}"; shift 2 ;;
     --yes) yes=1; shift ;;
     --after) after="${2:?--after needs a value}"; shift 2 ;;
+    --expect-migrations) expect="${2:?--expect-migrations needs N or repo}"; shift 2 ;;
     *) pp_die "unknown argument: $1" 2 ;;
   esac
 done
@@ -108,6 +109,13 @@ check_dump() { # check_dump FILE: header + table of contents
   printf '%s' "$toc"
 }
 
+# migrations_in_dump FILE -> applied Prisma migrations inside the dump (finished, not rolled back). Cutover plan A5:
+# a point with fewer migrations than the release fails the migration check on restore.
+migrations_in_dump() {
+  pp_db_exec pg_restore --data-only -t _prisma_migrations -f - <"$1" \
+    | awk -F'\t' '/^COPY / { c = 1; next } /^\\\.$/ { c = 0 } c && $3 != "\\N" && $6 == "\\N" { n++ } END { print n + 0 }'
+}
+
 cmd_take() {
   ensure_dir
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
@@ -146,7 +154,15 @@ cmd_verify() {
   { [ -n "$f" ] && [ -f "$f" ]; } || pp_die "no restore point named $name in $custody"
   (cd "$(dirname "$f")" && sha256sum -c --quiet "$(basename "$f").sha256") || pp_die "sha256 mismatch for $(basename "$f")"
   toc="$(check_dump "$f")"
-  pp_log "RESTORE POINT OK: $name file=$(basename "$f") sha256 matches, $toc tables with data"
+  local mig want
+  mig="$(migrations_in_dump "$f")"
+  if [ -n "$expect" ]; then
+    want="$expect"
+    [ "$expect" != repo ] || want="$(find "$PP_REPO/apps/api/prisma/migrations" -mindepth 1 -maxdepth 1 -type d | wc -l)"
+    [[ "$want" =~ ^[0-9]+$ ]] || pp_die "--expect-migrations needs a number or repo" 2
+    [ "$mig" = "$want" ] || pp_die "MIGRATION CHECK FAILED: $name holds $mig applied migrations, the release has $want: take the point again after the final schema migrations" 3
+  fi
+  pp_log "RESTORE POINT OK: $name file=$(basename "$f") sha256 matches, $toc tables with data, migrations=$mig${expect:+ (equals the release: $want)}"
 }
 
 cmd_restore() {

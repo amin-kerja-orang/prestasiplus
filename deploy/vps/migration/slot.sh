@@ -85,6 +85,7 @@ check_out_dir() {
 }
 
 # migrate_run ENV_ARGS... -- COMMAND...: the migrate image, on the compose network, with the reports volume.
+RUN_EXTRA=()   # extra `compose run` arguments of the current command (mounts), set by cmd_etl
 migrate_run() {
   local envs=()
   while [ "$1" != -- ]; do envs+=(-e "$1"); shift; done
@@ -92,7 +93,7 @@ migrate_run() {
   # The folder is made once by the runbook (section 1) for the migrate image's user, not for ppdeploy: ppdeploy may
   # have any uid, so it only checks it here (chmod on a folder it does not own would fail under set -e).
   check_out_dir
-  pp_compose run --rm --no-deps -T -v "$out_dir:/app/apps/api/.migration-out" "${envs[@]}" migrate "$@"
+  pp_compose run --rm --no-deps -T -v "$out_dir:/app/apps/api/.migration-out" ${RUN_EXTRA[@]+"${RUN_EXTRA[@]}"} "${envs[@]}" migrate "$@"
 }
 
 cmd_throwaway_up() {
@@ -163,7 +164,7 @@ cmd_load() {
   # shellcheck disable=SC2064
   trap "rm -f '$envf'" EXIT
   # CLOUD_SOURCE_URL must not be set (the loader takes --from OR a source URL); api.env does not carry it.
-  pp_compose run --rm --no-deps -T --env-from-file "$envf" -v "$from:/dump:ro" \
+  pp_compose run --rm --no-deps -T --user "$(id -u):$(id -g)" --env-from-file "$envf" -v "$from:/dump:ro" \
     -e NODE_ENV=development -e PP_ALLOW_STAGING_RESET=1 \
     migrate npm run staging:load -w @pp/api -- --from /dump
   rm -f "$envf"; trap - EXIT
@@ -184,8 +185,12 @@ cmd_copy() {
     | pp_db_exec sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --no-acl --exit-on-error'
   b="$(schema_tables target_psql)"
   [ "$a" = "$b" ] || pp_die "STAGE COPY FAILED: $a in $staging_db, $b in the target"
-  pp_log "STAGE COPY PASSED: $b (the cutover plan expects staging_cloud:83 and archive_cloud:35), duration_s=$((SECONDS - t0))"
-  case "$b" in "archive_cloud:35 staging_cloud:83") ;; *) pp_warn "table counts differ from 83/35: report them to the half-AM operator before the next step" ;; esac
+  # Cutover plan 4.6 B5: a count other than 83/35 is a STOP. PP_STAGE_EXPECT is the LEAD-approved override.
+  case "$b" in
+    "$(pp_cfg PP_STAGE_EXPECT 'archive_cloud:35 staging_cloud:83')") ;;
+    *) pp_die "STAGE COPY COUNTS DIFFER: $b (expected archive_cloud:35 staging_cloud:83): STOP and report to the half-AM operator" 4 ;;
+  esac
+  pp_log "STAGE COPY PASSED: $b, duration_s=$((SECONDS - t0))"
 }
 
 cmd_throwaway_down() {
@@ -202,10 +207,24 @@ cmd_throwaway_down() {
 }
 
 cmd_wipe_dump() {
-  local d="${1:-}" g="${2:-}"
-  [ -n "$d" ] || pp_die "wipe-dump DIR [FILE.gpg]" 2
+  local d="" g="" missing_ok=0 a gone=0
+  for a in "$@"; do
+    case "$a" in
+      --missing-ok) missing_ok=1 ;;
+      -*) pp_die "wipe-dump: unknown option $a" 2 ;;
+      *) if [ -z "$d" ]; then d="$a"; elif [ -z "$g" ]; then g="$a"; else pp_die "wipe-dump DIR [FILE.gpg] [--missing-ok]" 2; fi ;;
+    esac
+  done
+  [ -n "$d" ] || pp_die "wipe-dump DIR [FILE.gpg] [--missing-ok]" 2
   pp_assert_outside_repo "$d"
   [ -z "$g" ] || pp_assert_outside_repo "$g"
+  # Deleting something that is not there is not a deletion: without --missing-ok (the STOP block of the night card)
+  # a wrong path must not print DUMP COPIES DELETED.
+  if [ "$missing_ok" = 0 ]; then
+    [ -d "$d" ] || pp_die "wipe-dump: $d does not exist: nothing was deleted (wrong path? use --missing-ok only in the STOP block)" 3
+    [ -z "$g" ] || [ -f "$g" ] || pp_die "wipe-dump: $g does not exist: nothing was deleted (wrong path? use --missing-ok only in the STOP block)" 3
+  fi
+  [ -d "$d" ] || [ -f "$g" ] || gone=1
   if [ -d "$d" ]; then
     [ -f "$d/manifest.json" ] || pp_die "$d has no manifest.json: refusing to delete a directory that is not a dump" 2
     # Overwrite then delete (as dump:wipe does). On SSDs and copy-on-write disks only the encrypted volume truly
@@ -215,29 +234,78 @@ cmd_wipe_dump() {
   fi
   if [ -n "$g" ] && [ -f "$g" ]; then shred -u -n 1 -z "$g" 2>/dev/null || rm -f -- "$g"; fi
   { [ ! -e "$d" ] && { [ -z "$g" ] || [ ! -e "$g" ]; }; } || pp_die "something was not deleted"
+  if [ "$gone" = 1 ]; then pp_log "DUMP COPIES NOT PRESENT (nothing to delete; --missing-ok): $(basename "$d")${g:+ and $(basename "$g")}"; return 0; fi
   pp_log "DUMP COPIES DELETED: $(basename "$d")${g:+ and $(basename "$g")} (record it in the custody list, runbook 0 rule 4)"
 }
 
 cmd_etl() {
   local c="${1:-}"; [ $# -eq 0 ] || shift
   case "$c" in
-    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:link-questions|migrate:export-question-reports) ;;
-    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:link-questions | migrate:export-question-reports (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
+    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
+    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
   esac
-  local a apply=0 envs=(NODE_ENV=production "PP_MIGRATE_TARGET_DB=$target_db")
-  for a in "$@"; do [ "$a" != --apply ] || apply=1; done
-  # The rollback needs both gates in every environment (cutover plan 6.3), its dry-run included.
-  if [ "$c" = migrate:rollback ]; then envs+=(PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1)
-  elif [ "$apply" = 1 ]; then envs+=(PP_ALLOW_MIGRATE_APPLY=1); fi
-  if [ "$apply" = 1 ] || [ "$c" = migrate:rollback ]; then
-    [ "$(target_psql "select count(*) from information_schema.schemata where schema_name = 'staging_cloud'")" = 1 ] \
-      || [ "$c" = migrate:rollback ] || pp_die "no staging_cloud in the target: run copy first" 3
-  fi
+  local a apply=0 envs=(NODE_ENV=production "PP_MIGRATE_TARGET_DB=$target_db") argv=() files_host="" files_seen=0 out_given=0 i=0
+  local args=("$@")
+  # --files-dir names a HOST folder; the container sees it as /files (read-only). --apply is spotted for the gates.
+  while [ "$i" -lt "$#" ]; do
+    a="${args[$i]}"
+    case "$a" in
+      --apply) apply=1; argv+=("$a") ;;
+      --files-dir=*) files_seen=1; files_host="${a#--files-dir=}"; argv+=(--files-dir=/files) ;;
+      --files-dir) files_seen=1; i=$((i + 1)); files_host="${args[$i]:-}"; argv+=(--files-dir /files) ;;
+      --out-dir|--out-dir=*) out_given=1; argv+=("$a") ;;
+      *) argv+=("$a") ;;
+    esac
+    i=$((i + 1))
+  done
+  # The rollback and the archive minimisation need the apply gate in every mode (their dry-run too: the code calls
+  # assertApplyAllowed for both). The rollback also needs its own switch (cutover plan 6.3).
+  case "$c" in
+    migrate:rollback) envs+=(PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1) ;;
+    migrate:archive-minimise) envs+=(PP_ALLOW_MIGRATE_APPLY=1) ;;
+    *) [ "$apply" = 0 ] || envs+=(PP_ALLOW_MIGRATE_APPLY=1) ;;
+  esac
+  # Only the loads read staging_cloud; link-questions, archive-minimise and rollback must still run after the drop.
+  case "$c" in
+    migrate:all|migrate:delta)
+      if [ "$apply" = 1 ]; then
+        [ "$(target_psql "select count(*) from information_schema.schemata where schema_name = 'staging_cloud'")" = 1 ] \
+          || pp_die "no staging_cloud in the target: run copy first" 3
+      fi ;;
+  esac
   [ "$c" != staging:profile ] || envs=(NODE_ENV=production)
+  # The reports go to the mounted folder. The default of migrate:* is <repo root>/.migration-out = /app/.migration-out,
+  # on the read-only root file system and not on the volume; staging:profile uses ./.migration-out of apps/api.
+  if [ "$out_given" = 0 ] && [ "$c" != staging:profile ]; then argv+=(--out-dir /app/apps/api/.migration-out); fi
+  RUN_EXTRA=()
+  if [ "$files_seen" = 1 ]; then
+    [ -n "$files_host" ] || pp_die "--files-dir needs a directory" 2
+    [ -d "$files_host" ] || pp_die "--files-dir $files_host is not a directory on this host" 2
+    files_host="$(readlink -f "$files_host")"
+    pp_assert_outside_repo "$files_host"
+    # The container user (PP_MIGRATE_UID) must be able to read the export; ppdeploy's umask makes it 700 by default.
+    docker run --rm --user "$(pp_cfg PP_MIGRATE_UID 1000)" -v "$files_host:/files:ro" --entrypoint sh "$stage_image" -c 'test -r /files/SHA256SUMS' \
+      || pp_die "uid $(pp_cfg PP_MIGRATE_UID 1000) cannot read $files_host/SHA256SUMS: sudo setfacl -R -m u:$(pp_cfg PP_MIGRATE_UID 1000):rX $files_host" 3
+    RUN_EXTRA+=(-v "$files_host:/files:ro")
+    if [ "$apply" = 1 ]; then
+      # An apply copies the files into the v2 file storage = the volume of the api (cutover plan P5, FILE_STORAGE_DIR).
+      local vol; vol="$(docker volume ls -q --filter label=com.docker.compose.volume=apifiles)"
+      [ -n "$vol" ] && [ "$(wc -l <<<"$vol")" = 1 ] || pp_die "cannot find the api uploads volume (compose volume apifiles) exactly once: $(wc -l <<<"$vol") found" 3
+      RUN_EXTRA+=(-v "$vol:/var/lib/pretasiplus/files")
+      envs+=(FILE_STORAGE_DIR=/var/lib/pretasiplus/files)
+    fi
+  fi
+  # P3: the migration role's DATABASE_URL (mode 600 env file, kept out of api.env). Without it api.env's URL is used.
+  local mig_env; mig_env="$(pp_cfg PP_MIGRATE_ENV_FILE '')"
+  if [ -n "$mig_env" ]; then
+    [ -f "$mig_env" ] && [ "$(stat -c %a "$mig_env")" = 600 ] || pp_die "PP_MIGRATE_ENV_FILE $mig_env must be a file with mode 600" 3
+    pp_assert_outside_repo "$mig_env"
+    RUN_EXTRA+=(--env-from-file "$mig_env")
+  fi
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
   local t0=$SECONDS rc=0
-  pp_log "etl: $c $* (env: ${envs[*]})"
-  migrate_run "${envs[@]}" -- npm run "$c" -w @pp/api -- "$@" || rc=$?
+  pp_log "etl: $c ${argv[*]} (env: ${envs[*]})"
+  migrate_run "${envs[@]}" -- npm run "$c" -w @pp/api -- ${argv[@]+"${argv[@]}"} || rc=$?
   pp_log "ETL STEP $c exit=$rc duration_s=$((SECONDS - t0)) (reports in $out_dir)"
   return "$rc"
 }
@@ -250,7 +318,7 @@ cmd_gonogo() {
     else echo "criterion 8: restore point $f MISSING or damaged  -> NO-GO"; fi
   done
   arch="$(target_psql "show archive_mode")"
-  if [ "$arch" = off ]; then echo "criterion 8: PITR off (archive_mode=off): restore points only  -> needs the LEAD's written waiver"
+  if [ "$arch" = off ]; then echo "criterion 8: PITR off (archive_mode=off): restore points only  -> NO-GO at night (a written waiver of the LEAD is possible in daylight only)"
   else
     failed="$(target_psql "select failed_count from pg_stat_archiver")"
     last="$(target_psql "select coalesce(to_char(last_archived_time at time zone 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'), 'never') from pg_stat_archiver")"
@@ -259,9 +327,12 @@ cmd_gonogo() {
   fi
   echo "stage: $(schema_tables target_psql) in the target (expected archive_cloud:35 staging_cloud:83 while the slot runs)"
   f="$(find "$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)" -maxdepth 1 -name 'pp-backup-*.dump' -printf '%T@ %f\n' 2>/dev/null | sort -rn | head -n1)"
-  if [ -n "$f" ]; then age=$(( ($(date +%s) - ${f%%.*}) / 3600 )); echo "backup: newest dump ${f#* } is ${age} h old"; else echo "backup: NO dump found  -> NO-GO"; fi
+  if [ -n "$f" ]; then age=$(( ($(date +%s) - ${f%%.*}) / 3600 )); echo "backup: newest dump ${f#* } is ${age} h old$([ "$age" -le 24 ] || echo '  -> NO-GO (older than 24 h)')"; else echo "backup: NO dump found  -> NO-GO"; fi
   pct="$(df -P "$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)" | awk 'NR == 2 { gsub("%", "", $5); print $5 }')"
   disk=$((100 - pct)); echo "disk: ${disk}% free on the backup volume$([ "$disk" -gt 30 ] || echo '  -> NO-GO (needs > 30%)')"
+  # Cutover plan 3.1 / B0: free space on the receiving folder must be at least 5 x the dump size (compare by hand).
+  pct="$(df -P -BG "$stage_dir" 2>/dev/null | awk 'NR == 2 { gsub("G", "", $4); print $4 }' || true)"
+  echo "stage disk: ${pct:-?} GiB free on $stage_dir (needs at least 5 x the dump size)"
   ready="$(_pp_curl_edge 443 https /api/ready -o /dev/null -w '%{http_code}' 2>/dev/null || true)"; ready="${ready:-000}"
   echo "api: /api/ready through the edge -> $ready"
   if stage_running; then echo "throwaway: $stage_name is STILL RUNNING  -> destroy it after the copy (throwaway-down)"; else echo "throwaway: none running"; fi
@@ -270,6 +341,8 @@ cmd_gonogo() {
   if [ -d "$out_dir" ] && [ "$(stat -c %u:%a "$out_dir" 2>/dev/null)" = "$(pp_cfg PP_MIGRATE_UID 1000):700" ]; then
     echo "reports: $out_dir ready (owner uid $(pp_cfg PP_MIGRATE_UID 1000), mode 700)"
   else echo "reports: $out_dir missing or wrong owner/mode  -> NO-GO (runbook section 1)"; fi
+  # Last line: a gonogo that stopped half way (db down, set -e) never prints it, so a short output cannot pass as clean.
+  echo "gonogo: complete (every check above ran)"
 }
 
 case "$cmd" in
