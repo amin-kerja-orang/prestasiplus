@@ -162,10 +162,13 @@ export interface ResetPasswordPayload extends SessionPayload {
   status: string
 }
 
-/** #5. */
+/**
+ * #5. The contract (`packages/contract`, account reset-by-IC) returns `{token}` only. `email` is
+ * echoed by the mock server alone, so it is optional: callers fall back to the e-mail they sent.
+ */
 export interface ResetByIcPayload {
   token: string
-  email: string
+  email?: string
 }
 
 /** #9. */

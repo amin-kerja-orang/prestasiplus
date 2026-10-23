@@ -46,6 +46,9 @@ async function submit(): Promise<void> {
     session.setSession(next)
     flash.success(status)
     await router.push(next.user.landingPath)
+    // SW8-07: the pending flash is consumed by the landing navigation; when a follow-up
+    // navigation (a redirect) already emptied it, show it on the page that is open now.
+    if (flash.flash.value === null) flash.show({ type: 'success', message: status })
   } catch (err) {
     errors.value = errorLines(err)
     password.value = ''

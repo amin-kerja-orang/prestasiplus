@@ -231,6 +231,45 @@ describe('PasswordResetPage (S4)', () => {
     expect(router.currentRoute.value.fullPath).toBe('/dashboard')
   })
 
+  it('shows the success flash on the landing page once the navigation is done (SW8-07)', async () => {
+    apiMocks.resetPassword.mockResolvedValue({
+      session: SESSION,
+      status: 'Your password has been reset.',
+    })
+    const w = await render(PasswordResetPage, '/password/reset/demo-reset-token?email=a@b.my')
+    // The app's after-each hook: pending -> current.
+    router.afterEach(() => void useFlashStore().consume())
+    await w.get('[data-testid=reset-password]').setValue('BaruBaru1')
+    await w.get('[data-testid=reset-confirm]').setValue('BaruBaru1')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({
+      type: 'success',
+      message: 'Your password has been reset.',
+    })
+  })
+
+  it('still shows the flash when a follow-up navigation emptied it (SW8-07)', async () => {
+    apiMocks.resetPassword.mockResolvedValue({
+      session: SESSION,
+      status: 'Your password has been reset.',
+    })
+    const w = await render(PasswordResetPage, '/password/reset/demo-reset-token?email=a@b.my')
+    // Consume twice: the second navigation (nothing pending) clears the current flash.
+    router.afterEach(() => {
+      useFlashStore().consume()
+      useFlashStore().consume()
+    })
+    await w.get('[data-testid=reset-password]').setValue('BaruBaru1')
+    await w.get('[data-testid=reset-confirm]').setValue('BaruBaru1')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({
+      type: 'success',
+      message: 'Your password has been reset.',
+    })
+  })
+
   it('shows the invalid-token alert, keeps the email and clears the passwords', async () => {
     apiMocks.resetPassword.mockRejectedValue(
       validationError('This password reset token is invalid.'),
@@ -295,6 +334,22 @@ describe('PasswordResetIcPage (S5)', () => {
     expect(apiMocks.resetByIc).toHaveBeenCalledWith('pelajar@demo.test', '100101140001')
     expect(router.currentRoute.value.path).toBe('/password/reset/tok123')
     expect(router.currentRoute.value.query.email).toBe('pelajar@demo.test')
+  })
+
+  it('passes the typed e-mail to S4 when the API answers {token} only (SW8-03)', async () => {
+    apiMocks.resetByIc.mockResolvedValue({ token: 'tok456' })
+    const w = await render(PasswordResetIcPage, '/password/reset-ic')
+    await w.get('[data-testid=ic-email]').setValue('pelajar@demo.test')
+    await w.get('[data-testid=ic-number]').setValue('100101140001')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/password/reset/tok456')
+    expect(router.currentRoute.value.query.email).toBe('pelajar@demo.test')
+    // S4 opens with the e-mail filled in.
+    const s4 = await render(PasswordResetPage, router.currentRoute.value.fullPath)
+    expect((s4.get('[data-testid=reset-email]').element as HTMLInputElement).value).toBe(
+      'pelajar@demo.test',
+    )
   })
 
   it('shows the mismatch alert and keeps both values', async () => {

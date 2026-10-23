@@ -2,7 +2,8 @@
 /**
  * S5 `/password/reset-ic` "Reset Kata Laluan (No IC) - PRESTASIPLUS" (M01-T4; FR-M01-33..35, BR-12).
  * Submit calls `POST /api/auth/password/reset-ic`; on a match the app goes to S4 pre-filled
- * (`/password/reset/{token}?email={email}`), otherwise the red alert shows the mismatch text and the
+ * (`/password/reset/{token}?email={email}`; the e-mail is the one typed here when the response
+ * carries none, SW8-03), otherwise the red alert shows the mismatch text and the
  * entered values stay. `maxlength=14` (DV-04; live 20).
  */
 import { onMounted, ref } from 'vue'
@@ -32,7 +33,12 @@ async function submit(): Promise<void> {
   errors.value = []
   try {
     const { token, email: matched } = await resetByIc(email.value, icNumber.value)
-    await router.push({ path: `/password/reset/${token}`, query: { email: matched } })
+    // SW8-03: the API answers `{token}` only, and the token is bound to the e-mail it was
+    // issued for, so S4 gets the e-mail typed here (the mock also echoes it; that one wins).
+    await router.push({
+      path: `/password/reset/${token}`,
+      query: { email: matched ?? email.value },
+    })
   } catch (err) {
     errors.value = errorLines(err)
   } finally {
