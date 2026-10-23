@@ -310,6 +310,7 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
     if (q.modes) base.push(Prisma.sql`a.mode IN (${Prisma.join([...q.modes])})`)
     if (q.submittedFrom) base.push(Prisma.sql`a.submitted_at >= ${q.submittedFrom}`)
     if (q.submittedTo) base.push(Prisma.sql`a.submitted_at < ${q.submittedTo}`)
+    if (q.district !== undefined && q.state === undefined) return [] // a district needs its state: matches nothing
     if (q.state !== undefined || q.district !== undefined) {
       const scope: Prisma.Sql[] = []
       if (q.state !== undefined) scope.push(Prisma.sql`s.state = ${q.state}`)
