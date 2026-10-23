@@ -4,6 +4,9 @@
  *   an `ApplyRefusedError` from a stage exits 3, a preflight error exits 2, a busy run exits 4;
  *   when a later stage throws, the stages that completed were already printed (the core apply committed).
  */
+import { rmSync } from 'node:fs'
+import { join } from 'node:path'
+
 import type pg from 'pg'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -118,6 +121,28 @@ describe('etl_runs.git_sha', () => {
     const log = capture()
     const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01'], { pool: fakePool, env: { ...env, PP_GIT_SHA: sha }, out: log.out, err: log.err })
     expect(code).toBe(0)
+    expect(mocks.runCore).toHaveBeenCalledTimes(2)
+    expect(mocks.runActivity).toHaveBeenCalledTimes(2)
+    for (const [o] of [...mocks.runCore.mock.calls, ...mocks.runActivity.mock.calls]) expect(o).toMatchObject({ gitSha: sha })
+  })
+
+  it('migrate:delta hands the resolved git sha to every core and activity stage', async () => {
+    const sha = 'fedcba9876543210fedcba9876543210fedcba98'
+    const outDir = join(process.cwd(), '.migration-out', `stages-delta-${process.pid}`)
+    // First-load check answers "yes"; the staged-changes scan finds no table with updated_at.
+    const query = vi.fn(async (sql: string) => (/information_schema\.columns/.test(sql) ? { rows: [], rowCount: 0 } : answer()))
+    const pool = { query, connect: vi.fn(async () => ({ query, release: vi.fn() })) } as unknown as pg.Pool
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    const log = capture()
+    try {
+      const code = await runCli(['migrate:delta', '--apply', '--since=2026-10-29T00:00:00Z', '--as-of=2026-10-29', `--out-dir=${outDir}`], {
+        pool, env: { ...env, PP_GIT_SHA: sha }, out: log.out, err: log.err,
+      })
+      expect(code, log.text()).toBe(0)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
     expect(mocks.runCore).toHaveBeenCalledTimes(2)
     expect(mocks.runActivity).toHaveBeenCalledTimes(2)
     for (const [o] of [...mocks.runCore.mock.calls, ...mocks.runActivity.mock.calls]) expect(o).toMatchObject({ gitSha: sha })

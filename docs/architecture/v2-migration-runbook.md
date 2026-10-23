@@ -285,6 +285,7 @@ The commands below run on a rehearsal or staging database that holds an imported
 | `IC_HASH_KEY` | `migrate:core` | Else `SESSION_SECRET` outside production. Keep the key stable across the full run and the delta run, otherwise IC hashes differ. |
 | `PP_MIGRATE_ROSTER_DEFAULT_HASHES` | `migrate:core` | Optional. The lead's list of shared roster default hashes. Never logged. |
 | `NODE_ENV` | all | `production` on a production host, so the anonymised-data and wrong-database guards apply. |
+| `PP_GIT_SHA` (or `GIT_SHA`) | `migrate:all`, `migrate:delta`, `migrate:core`, `migrate:activity` | The commit recorded in `etl_runs.git_sha`. Read first; otherwise `git rev-parse HEAD` of the working directory is used. A value that is not 7 to 64 hex characters is ignored. **In a container the runtime image has no `.git` (`.dockerignore`), so `git_sha` is NULL unless it is set:** pass `PP_GIT_SHA=$(git rev-parse HEAD)` of the release checkout into the run (on the VPS through `slot.sh etl`, #166). |
 
 **Sequence.**
 
@@ -342,7 +343,7 @@ Tick each box and record the evidence in the PR or the issue as text (counts, ex
 - [ ] 1. Rehearsal database name ends in `_staging`; `NODE_ENV` is not production. Owner: devops. Evidence: the database name and the `staging:load` guard output.
 - [ ] 2. Disk encryption confirmed on every machine and volume that holds the dump (section 0, rule 5). Owner: lead. Evidence: a confirmation line.
 - [ ] 3. Source role proven read-only by privileges, not trust (section 3): `staging:load` from the restore passes the role check (not exit 3). Owner: devops. Evidence: exit code 0 and the role-check line.
-- [ ] 4. Git sha of the code under test, and the `etl_runs.git_sha` that will record it. Owner: be. Evidence: the sha.
+- [ ] 4. Git sha of the code under test, and the `etl_runs.git_sha` that will record it (equal to it; in a container only when `PP_GIT_SHA` is passed, section 12). Owner: be. Evidence: the sha.
 - [ ] 5. Fresh anonymisation key for this rehearsal (section 8); it is never reused. Owner: lead. Evidence: a confirmation line (no key).
 - [ ] 6. Pre-migration snapshot of per-table counts of every migratable table (`SELECT count(*)` per table), kept as text. Owner: be. Evidence: the counts (used by section 16).
 
