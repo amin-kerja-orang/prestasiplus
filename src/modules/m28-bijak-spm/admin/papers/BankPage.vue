@@ -338,7 +338,7 @@ const siblings = computed(
                   color="primary"
                   size="sm"
                   class="min-h-11"
-                  :label="`${s.label} · ${s.id}`"
+                  :label="`Soalan ${s.position} · ${s.id}`"
                   :data-testid="`bank-sibling-${s.id}`"
                   @click="selectedId = s.id"
                 />

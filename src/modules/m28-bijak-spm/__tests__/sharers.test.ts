@@ -11,13 +11,8 @@ describe('shared stimulus: who shares it (FB-002)', () => {
     const e = await make().getBankEditable('mat1-g1-q2')
     expect(e.stimulus?.label).toBe('Rajah 1')
     expect(e.sharers).toMatchObject({ stimulusLabel: 'Rajah 1', count: 4 })
-    expect(e.sharers!.questions.map((q) => q.label)).toEqual([
-      'Soalan 1',
-      'Soalan 2',
-      'Soalan 3',
-      'Soalan 4',
-    ])
-    expect(e.sharers!.questions.map((q) => q.id)).toContain('mat1-g1-q2')
+    expect(e.sharers!.questions.map((q) => q.position)).toEqual([1, 2, 3, 4])
+    expect(e.sharers!.questions.filter((q) => q.current).map((q) => q.id)).toEqual(['mat1-g1-q2'])
   })
 
   it('a question without a stimulus has no sharers', async () => {
@@ -37,6 +32,9 @@ describe('shared stimulus: who shares it (FB-002)', () => {
     const detail = await server.getReviewItem('v:mat1-g1-q1')
     expect(detail.questions).toHaveLength(1)
     expect(detail.sharers).toMatchObject({ stimulusLabel: 'Rajah 1', count: 4 })
+    expect(detail.sharers!.questions.filter((q) => q.current).map((q) => q.id)).toEqual([
+      'mat1-g1-q1',
+    ])
   })
 
   it('a revision that leaves the stimulus alone shows no sharer notice', async () => {
@@ -57,16 +55,20 @@ describe('shared stimulus: who shares it (FB-002)', () => {
       sharersText({
         stimulusLabel: 'Rajah 1',
         count: 4,
-        questions: [1, 2, 3, 4].map((n) => ({ id: `q${n}`, label: `Soalan ${n}` })),
+        questions: [1, 2, 3, 4].map((n) => ({
+          id: `q${n}`,
+          position: n,
+          ...(n === 2 ? { current: true } : {}),
+        })),
       }),
     ).toBe(
-      'Rajah 1 dikongsi oleh 4 soalan: Soalan 1, 2, 3, 4. Perubahan di sini terpakai untuk semua soalan tersebut.',
+      'Rajah 1 dikongsi oleh 4 soalan: Soalan 1, 2 (soalan ini), 3, 4. Perubahan di sini terpakai untuk semua soalan tersebut.',
     )
     expect(
       sharersText({
         stimulusLabel: 'Petikan 1',
         count: 1,
-        questions: [{ id: 'q', label: 'Soalan 1' }],
+        questions: [{ id: 'q', position: 1, current: true }],
       }),
     ).toBe('Petikan 1 hanya digunakan oleh soalan ini.')
   })
