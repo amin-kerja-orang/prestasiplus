@@ -20,11 +20,16 @@ const generated = defineModel<boolean>('generated', { required: true })
 const name = defineModel<string>('name', { required: true })
 const phone = defineModel<string>('phone', { required: true })
 
-const props = defineProps<{
-  /** The configured school-admin default password (SEC-M02-01), shown read-only once generated. */
-  password: string
-  generating?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** The configured school-admin default password (SEC-M02-01), shown read-only once generated. */
+    password: string
+    generating?: boolean
+    /** false in http mode: the server generates the password on create (D59b), so there is none to show. */
+    showPassword?: boolean
+  }>(),
+  { generating: false, showPassword: true },
+)
 
 const emit = defineEmits<{ generate: []; copy: [value: string] }>()
 
@@ -229,7 +234,7 @@ function metaLine(s: SchoolSummary): string {
             />
           </div>
         </DsFormField>
-        <DsFormField native for="gen-password" label="Kata Laluan">
+        <DsFormField v-if="showPassword" native for="gen-password" label="Kata Laluan">
           <div class="flex items-center gap-1">
             <UInput
               id="gen-password"
