@@ -204,9 +204,9 @@ function insertMath(field: 'stem'): void {
     </div>
 
     <!-- MCQ -->
-    <fieldset v-if="q.type === 'mcq'" class="flex flex-col gap-2">
+    <fieldset v-if="q.type === 'mcq'" class="flex min-w-0 flex-col gap-2">
       <legend class="mb-1 text-sm font-medium">Pilihan jawapan dan kunci</legend>
-      <div v-for="(o, i) in q.options" :key="o.id" class="flex items-center gap-2">
+      <div v-for="(o, i) in q.options" :key="o.id" class="flex min-w-0 items-center gap-2">
         <input
           type="radio"
           :name="`key-${q.id}`"
@@ -224,6 +224,7 @@ function insertMath(field: 'stem'): void {
           @update:model-value="setOption(i, String($event))"
         />
         <UButton
+          class="shrink-0"
           icon="i-ph-trash"
           color="error"
           variant="ghost"
