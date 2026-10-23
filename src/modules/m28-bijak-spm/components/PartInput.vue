@@ -230,7 +230,7 @@ async function dropPhoto(key: string): Promise<void> {
         <UInput
           :model-value="answer.unit ?? ''"
           :disabled="disabled"
-          placeholder="cth. cm"
+          placeholder="Tulis unit"
           size="xl"
           autocomplete="off"
           class="w-full"
