@@ -49,7 +49,7 @@ All must be true before A1.0. A precondition with no evidence is not met.
 | I2 | **Dump**: the AM-10 anonymised dump, `pp-staging-dump/1`, made by `dump:produce` on the AM-10 sitting of 24 Oct (anonymised, leak-scanned; `manifest.json` carries `"anonymised": true`). The rehearsal environment refuses raw data. | The dump operator's step 9 report: date, exit code, tables, total rows, sha256 of the `.gpg`, offset `+08:00`, "free-text check passed", "raw wiped, key destroyed", "local copies deleted". |
 | I3 | **Encrypted hand-over**: `pp-staging-dump-<date>.tar.gz.gpg` (it holds the directory `anon`), received by `scp` into a restricted directory of the rehearsal host. The passphrase came by a different channel, never with the file, never in GitHub, chat or an AI session. | The sha256 of the received file equals the sender's value (A1.1). |
 | I4 | **Files export for `--files-dir`** (AC9): normally **absent** in A1. AM-10 section 8.1 says files do not go with the anonymised dump by default unless the LEAD allows real banner images in a rehearsal. | If present: a directory `files` in the archive with `SHA256SUMS` at its root. If absent, A1 runs without `--files-dir` and the activity report says `files: not migrated (no --files-dir)`. |
-| I5 | **`--as-of`**: `2026-10-29` on every `migrate:*` call of this sheet. | n/a |
+| I5 | **`--as-of`**: `2026-10-29` on every call that takes it: `migrate:all`, `migrate:delta` (required there) and the standalone `migrate:core` of O5. `migrate:verify` and `migrate:rollback` take no `--as-of`. | n/a |
 | I6 | **Host**: full-disk encryption on every disk that holds the dump, the databases, the state dir and the reports (runbook rule 5; AM-10 section 2 item 1 has the check commands); free disk of at least 5 times the size of the dump; at least 4 GB RAM (recipe section 2); repo checkout, state dir and dump all on the encrypted disk, outside any cloud-sync folder; the dump and the state dir are outside the repo (the script refuses otherwise). | A confirmation line from half AZ DevOps; `df -h` free space as a number. |
 | I7 | **Tools**: Node 22, `npm ci` done, `npm run db:generate -w @pp/api` done, PostgreSQL client 16 (`psql`, `pg_dump`, `pg_restore`), `gpg`, `tar`; docker mode also Docker with Compose v2; host mode a dedicated PostgreSQL 16 and a role with only CREATEDB and CREATEROLE (never a superuser). `deploy/rehearsal/.env.rehearsal` exists (docker mode) or `PP_REHEARSAL_ADMIN_URL` is in a 600 file (host mode). | Version lines. |
 | I8 | **Retention**: the dump copies on the host are kept at most 7 days (until 31 Oct 2026) and are deleted on the plan's schedule (section 10). The custodian is the LEAD. | The LEAD's list of copies. |
@@ -359,7 +359,7 @@ step verify-after-restore "$RDB" exec target -- npm run migrate:verify -w @pp/ap
 
 Expect: `ROLLBACK VERIFIED ...`, `MIGRATION CHECK PASSED ...`, then exit 0 and `verify pass: ...` (a restored migrated state verifies; MIG-07 P3.5 (b)). Record both durations. This is the timing of "restore of a migrated point" (plan P1, replan).
 
-**O2. Idempotency run (plan section 4.7; runbook 13 item 16).** The same stage, a delta dry-run and apply; every row must be `unchanged`. `--since` is the ISO time of the 24 Oct dump with a zone (from the dump operator's clock readings), for example `2026-10-24T09:00:00+08:00`; it only feeds the delta report.
+**O2. Idempotency run (plan section 4.7; runbook 13 item 16). Needs O1 first (restore `after_full`).** After A1.13 and A1.15 the database is at `pre_etl` with no migrated users, and `migrate:delta` then exits 2 ("No earlier succeeded migrate:core --apply run with loaded users: run migrate:all --apply first", `orchestrate.ts`, `assertFirstLoadExists`). The same stage, a delta dry-run and apply; every row must be `unchanged`. `--since` is the ISO time of the 24 Oct dump with a zone (from the dump operator's clock readings), for example `2026-10-24T09:00:00+08:00`; it only feeds the delta report.
 
 ```bash
 step delta-dry "$RDB" exec target -- npm run migrate:delta -w @pp/api -- --since="<T-dump ISO with +08:00>" --as-of="$ASOF"
@@ -367,7 +367,7 @@ step delta-apply "$RDB" exec target -- env PP_ALLOW_MIGRATE_APPLY=1 npm run migr
 step verify-after-delta "$RDB" exec target -- npm run migrate:verify -w @pp/api
 ```
 
-(Add `--files-dir="$FILES"` and the `FILE_STORAGE_DIR` variable to both delta lines if I4 applied to A1.9.) Expect: exit 0; the delta table `stage | entity | read | inserted | updated | unchanged` with **inserted = 0 and updated = 0 on every row**; the warning line `warning: cannot verify --as-of against the first load; make sure it is the same value` (always printed); `delta report: <path>`; exit 0 for the verify. A delta apply takes about as long as the full apply (MIG-07: 515 s no-op against 527 s full), so this step gives the second measurement of `r`. Any inserted or updated row on an unchanged stage: red (criterion 7, runbook 14).
+(Add `--files-dir="$FILES"` and the `FILE_STORAGE_DIR` variable to both delta lines if I4 applied to A1.9.) Expect: exit 0; the delta table `stage | entity | read | inserted | updated | unchanged` with **inserted = 0 and updated = 0 on every row**; the warning line `warning: cannot verify --as-of against the first load; make sure it is the same value` (always printed); `delta report: <path>`; exit 0 for the verify. A delta apply takes about as long as the full apply (MIG-07: 515 s no-op against 527 s full), so this step gives the second measurement of `r`. Any inserted or updated row on an unchanged stage: red (runbook 14 item 7).
 
 **O3. Restore from the migrated state to `pre_etl` (the night's Case 2 shape), then the dump-form snapshot.**
 
@@ -467,7 +467,7 @@ Compare each rate with the placeholder **3,611 rows/s** (AM-08 AC7). A rate belo
 9. Any personal data in a report, a post, a log or a copy outside the custody list. This is also a PDPA incident (runbook rule 8): tell the LEAD at once, before anything else.
 10. The code changed after the run. The evidence counts only for the sha it ran on (P2). A change to the ETL or the schema after A1 means A1 is repeated.
 
-**Amber (reported; not red):** a rate below 3,611 rows/s; a `WARNING ... fsync` line in `status`; a projected window above the maximum (computed in the A4 sheet); ledger or drift rows to be accepted; content-entity rejects explained by the missing content owner; a step much slower than the MIG-07 synthetic runs. MIG-07 saw a spread of at least 2 times between identical apply runs on one host (527 to 964 s), so one slow run is not a finding by itself.
+**Amber (reported; not red):** a rate below 3,611 rows/s; a `WARNING ... fsync` line in `status`; a projected window above the maximum (computed in the A4 sheet); ledger or drift rows to be accepted; content-entity rejects explained by the missing content owner; a step much slower than the MIG-07 synthetic runs. MIG-07 saw a spread of about 1.8 times between identical `migrate:all --apply` runs on one host (527, 718 and 964 s), so one slow run is not a finding by itself.
 
 **What to do on red:**
 

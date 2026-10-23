@@ -33,9 +33,29 @@ So the 24 Oct dump (real shape and volume, anonymised) can only be loaded and mi
 | **R** (rehearsal) | The rehearsal DB with production-like Postgres settings (recipe section 3: set `PP_PG_*` to the real VPS values; `status` must not print the `fsync` warning, else the figures are not valid for P7) | The 24 Oct AM-10 dump, extracted on the rehearsal host | `D_load`, `D_copy`, `D_profile_dry`, `D_apply`, `D_verify`, the rates `r_B6` and `r_B7`, rejects, snapshot and restore timings, the two guard refusals |
 | **S** (slot) | A scratch VPS (a restored copy of the target, never production) | A **raw-marked fixture** (see below) at fixture volume | `throwaway-up` and `-down`, `D_load` and `D_copy` through `slot.sh`, restore points (`take`, `verify`, `restore`), `gonogo`, the production-mode run at fixture scale, the e2e smoke target, the night card read end to end |
 
+**Host class (fill in; no host names).** P7 is only as good as the host the rates came from:
+
+| Host | CPU cores | RAM (GB) | Disk type | `fsync` | `PP_PG_*` set to the VPS values | Same class as the VPS? |
+|---|---|---|---|---|---|---|
+| Track R host | | | | | | |
+| Track S host | | | | | | |
+| Production VPS (AZ-09 pack; half AZ states it) | | | | on | n/a | n/a |
+
+**Rule:** if the Track R host is faster than the VPS in CPU, disk or RAM, or its Postgres settings differ, then `r_B6` and `r_B7` are upper bounds and **P7 is provisional**. The post says "P7 provisional", and the LEAD decides whether to accept it, to repeat the Track R timing on a VPS-class host, or to apply a margin the LEAD names. A Track R host that is slower than or equal to the VPS keeps P7 firm.
+
 **Rule for each figure:** take the larger (slower) of Track R and Track S for a step that exists on both, and say which one it was. Track R decides everything that scales with the number of rows; Track S decides the fixed cost of the scripts.
 
-**Raw-marked fixture (Track S).** `fixtures:generate --size medium --seed 7 --out <dir inside a .migration-out folder>` writes a synthetic dump (20,000 users, about 366,000 rows in MIG-07) whose manifest says `"synthetic": true`, so `slot.sh load` refuses it. A fixture whose manifest carries `"raw": true` and neither `anonymised` nor `synthetic` is loadable. Its password values are filler (`fakeHash` in `fixtures/generate.ts`), not the dummy hashes, so in production mode the ETL will **accept** it. That makes it a safe end-to-end rehearsal of production mode at fixture scale on the scratch VPS, and it means this fixture can **not** be used for the guard refusal below.
+**Raw-marked fixture (Track S).** `fixtures:generate --size medium --seed 7 --out <dir inside a .migration-out folder>` writes a synthetic dump (20,000 users, about 366,000 rows in MIG-07) whose manifest says `"synthetic": true`, so `slot.sh load` refuses it. A fixture whose manifest carries `"raw": true` and neither `anonymised` nor `synthetic` is loadable. Its password values are filler (`fakeHash` in `fixtures/generate.ts`), not the dummy hashes, so in production mode the ETL is **expected to accept** it (read from the code; **not yet run**). If that holds, it is a safe end-to-end rehearsal of production mode at fixture scale on the scratch VPS, and this fixture can **not** be used for the guard refusal below.
+
+**The fixture must leave the checkout before `slot.sh load`.** `fixtures:generate` writes only inside a `.migration-out` folder of the checkout, but `slot.sh load` and `slot.sh wipe-dump` refuse any path inside the checkout (`pp_assert_outside_repo`, `deploy/vps/lib.sh`: "refusing a path inside the repository", exit 3). So: generate, edit the manifest, then copy to a new directory outside the checkout and delete the first copy:
+
+```bash
+mkdir -m 700 <fixture dir outside the checkout>
+cp -a <checkout>/apps/api/.migration-out/<fixture>/. <fixture dir outside the checkout>/
+rm -rf <checkout>/apps/api/.migration-out/<fixture>
+```
+
+`<fixture dir outside the checkout>` is the `<fixture dir>` of section 5.2 and is on the encrypted volume; the data is synthetic, but it is wiped with `S wipe-dump` at the close like a dump.
 **Perlu pengesahan (half AM, half AZ):** how the raw-marked fixture is produced (a hand edit of the manifest key is the only way with today's code), and that the LEAD accepts a fixture that carries a `raw` marker on a scratch host. `fixtures:generate` has no raw option.
 
 ## 3. Preconditions
@@ -47,7 +67,7 @@ So the 24 Oct dump (real shape and volume, anonymised) can only be loaded and mi
 | P-3 | The 24 Oct dump is still on the rehearsal host as the extracted directory (kept until the end of A4, A1 sheet section 10), inside 7 days (until 31 Oct). | Custody line; `du -sh`. |
 | P-4 | The clock readings of the 24 Oct sitting (A1 sheet, I9). | The dump operator's list. |
 | P-5 | `dump:check` was run by the dump operator (P8) and "rules OK" was received. Its line `Schema: <x> of <y> spec tables present, <rows> rows.` gives **N_night**, the best estimate of the night's rows (a number only; the report stays on the operator PC). | The number `N_night`. |
-| P-6 | Track S host: a scratch VPS or a restored copy of the target, encrypted disk, `db.env`, the compose stack, the `migrate` image at the release sha, `PP_STAGE_DIR`, `PP_MIGRATION_OUT`; free disk at least 5 times the dump size on `PP_STAGE_DIR` (plan B0) and the 3 times database size for restore points (`production-migration-slot.md` section 1). **Perlu pengesahan (half AZ):** scratch VPS or the rehearsal box for Track S, and its size against production. | A confirmation line. |
+| P-6 | Track S host: a scratch VPS or a restored copy of the target, encrypted disk, `db.env`, the compose stack, the `migrate` image at the release sha, `PP_STAGE_DIR`, `PP_MIGRATION_OUT`; free disk at least 5 times the dump size on `PP_STAGE_DIR` (plan B0) and the 3 times database size for restore points (`production-migration-slot.md` section 1). **`S gonogo` must be clean on the scratch copy, so also** (the checks of `slot.sh cmd_gonogo`): PITR on (`archive_mode` not off; base backup taken with `deploy/vps/migration/pitr.sh base --label first`, `pitr.sh status` shows archived above 0 and failed 0), else the line is `PITR off`; at least one backup `pp-backup-*.dump` in the backup folder and younger than 24 h (take one with `deploy/vps/backup/backup.sh --no-offsite`), else `backup: NO dump found  -> NO-GO` (the script prints the age; the plan's reading rule needs under 24 h); more than 30 % free disk on the backup volume; `/api/ready` through the edge returns 200 (the stack is up); the two points `pre_etl` and `pre_delta` verified. **Perlu pengesahan (half AZ):** scratch VPS or the rehearsal box for Track S, and its size against production. | A confirmation line and the first `S gonogo` lines. |
 | P-7 | A3 is done (26 Oct): roles of P3, `IC_HASH_KEY` and the other names of P5 exist (names only). | The P3 and P5 evidence. |
 | P-8 | The maximum night window is set (default 6 hours); the LEAD confirms it on 27 Oct (plan 4.3). | A dated line. |
 | P-9 | The read-only SQL checks of plan 4.5 part 1 exist as a file (half AM prepares them). **Perlu pengesahan (half AM):** the file is a deliverable for A4; without it criterion 9 cannot be shown. | The file's name and a count of statements. |
@@ -55,7 +75,7 @@ So the 24 Oct dump (real shape and volume, anonymised) can only be loaded and mi
 
 ## 4. Timing sheet
 
-One row per timed item. Fill every cell. `Rows` is the number of rows the step handles; `Rate` is rows per second where the step is a row-moving step. `Source of figure` says where the number comes from: **R** (Track R), **S** (Track S), **24** (the 24 Oct sitting), **MIG-07** (a measured figure from `mig07-rehearsal-report.md`, for comparison only).
+One row per timed item. Fill every cell; the only blanks allowed are cells marked n/a and row T24. `Rows` is the number of rows the step handles; `Rate` is rows per second where the step is a row-moving step. `Source of figure` says where the number comes from: **R** (Track R), **S** (Track S), **24** (the 24 Oct sitting), **MIG-07** (a measured figure from `mig07-rehearsal-report.md`, for comparison only).
 
 | ID | Step | Plan id (B-step) | Command (full forms in section 5) | Start | End | Duration | Exit | Rows | Rate | Source | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -77,17 +97,19 @@ One row per timed item. Fill every cell. `Rows` is the number of rows the step h
 | T15a | of which: core dry-run, core apply, activity dry-run, activity apply | B7 | query (a) of the A1 sheet, A1.11 | | | | | | | R | Seconds per run. |
 | T16 | `D_verify`: `migrate:verify` | B8 | `migrate:verify` | | | | 0 | | | R (and S) | `verify pass`. |
 | T17 | Read-only SQL checks of plan 4.5 part 1 | B8 | the file of P-9, against the restored copy | | | | | checks | | R or S | All equal the verify report? |
-| T18 | `slot.sh gonogo` read by the rule | B0, B9 | `S gonogo` | | | | 0 | | | S | No `NO-GO`, `MISSING`, `PITR off`; `api` line `-> 200`. |
+| T18 | `slot.sh gonogo` read by the rule | B0, B9 | `S gonogo` | | | | 0 | | | S | No `NO-GO`, `MISSING`, `PITR off`; `api` line `-> 200`. A bare scratch VPS prints `PITR off` and `NO dump found -> NO-GO`: that is a P-6 failure, fix it first. |
 | T19 | Restore point `pre_etl`: take and verify, after the final schema migrations | A5 | `R take pre_etl --operator "<role>"`; `R verify pre_etl` | | | | 0 | bytes | | S | `RESTORE POINT TAKEN`, `RESTORE POINT OK`; migration count (section 7). |
 | T20 | **Restore of a restore point, small (the night's Case 2):** `restore pre_etl` | 4.6 Case 2 | `R restore pre_etl --yes` | | | | 0 | | | S | `RESTORED: pre_etl ... in <N> s`. |
 | T21 | Restore of a **large** point (migrated and staged state; the replan case): take `pre_delta` after T15, then restore it | 6.3 | `R take pre_delta --operator "<role>"`; `R restore pre_delta --yes` | | | | 0 | bytes | | S and R | Track R: `restore-snapshot after_full --yes`, and the dump form `restore-snapshot <name> --yes`. |
 | T22 | `migrate:rollback` dry-run and apply (fallback R-b) | 6.3 | see section 5 | | | | 0 | deleted | | R | Counts only. |
-| T23 | Idempotency run: `migrate:delta` dry-run, apply, verify (**replan only**) | 4.7 | see section 5 | | | | 0 | | `r` | R | All `unchanged`. |
-| T24 | Delta with changed rows (**replan only**) | 4.7 | needs a second dump | | | | | | | | **Not planned**; the plan marks it replan only. |
+| T23 | Idempotency run: `migrate:delta` dry-run, apply, verify (**mandatory**: plan P1 lists the delta dry-run and apply among the timings; not in `W`) | 4.7 | section 5.3; needs the migrated state, so it runs **before** T22 | | | | 0 | | `r` | R | All `unchanged`. If T23 cannot run, the MIG-07 figures (delta apply 513 s in pass 3b, a no-op delta 515 s, 20k synthetic users) stand in and are labelled so in the post. |
+| T24 | Delta with changed rows (**replan only**) | 4.7 | needs a second dump | n/a | n/a | n/a | n/a | n/a | n/a | n/a | **Not planned**; no second dump exists. Covered by T23. |
 | T25 | The night card read end to end | 4.6 | section 8 | | | | n/a | defects | | | Minutes and a defect count. |
 | T26 | e2e smoke on a restored copy (not in `W`) | P6 | the command of P-10 | | | | 0 | | | S | Test output tail as text. |
 | T27 | Guard refusal 1: synthetic-data guard | P6 | section 6 | | | | 2 | | | R | Accepted = failed. |
 | T28 | Guard refusal 2: target guard | P6 | section 6 | | | | 2 | | | R | Accepted = failed. |
+| T29 | Unfreeze of `.cloud` (plan 6.4) | 4.6 Case 1 and 2 step 2 | the `.cloud` maintenance-switch unfreeze (`.cloud` owner's command) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | **Not measurable at A4**: `.cloud` is live and is never frozen or switched in a rehearsal. The plan 6.4 placeholder stays; **Perlu pengesahan (`.cloud` owner, LEAD):** whether the owner can state or time the unfreeze on a non-production instance. |
+| T30 | Switch-back (plan 6.4) | 6.3 | DNS switch-back | n/a | n/a | n/a | n/a | n/a | n/a | n/a | **Timed in P9 on 28 Oct**, not at A4 (plan P9: "Switch and switch-back durations"). |
 
 `D_freeze` (20 min) and `D_gonogo` (15 min) are fixed by the plan and are not timed.
 
@@ -126,11 +148,11 @@ R verify pre_etl                            # RESTORE POINT OK: pre_etl file=...
 S gonogo                                    # T18, read by the rule of plan 4.6
 S throwaway-up                              # T08: THROWAWAY UP: container ..., database <db>_staging, ... archive_mode=off
 # B4, B5 with the raw-marked fixture (section 2)
-S load --from <fixture dir>                 # T09: LOAD DONE: archive_cloud:35 staging_cloud:83 in <db>_staging, duration_s=<n>
+S load --from <fixture dir>                 # <fixture dir> = the copy OUTSIDE the checkout (section 2). T09: LOAD DONE: archive_cloud:35 staging_cloud:83 in <db>_staging, duration_s=<n>
 S copy                                      # T11: STAGE COPY PASSED: archive_cloud:35 staging_cloud:83 ..., duration_s=<n>
 S throwaway-down                            # T12: THROWAWAY DESTROYED: container ... removed
 S wipe-dump <fixture dir> <fixture .gpg, if any>   # DUMP COPIES DELETED: ...
-# B6, B7, B8 in production mode (set by slot.sh; the fixture is accepted by the guard, see section 2)
+# B6, B7, B8 in production mode (set by slot.sh; the fixture is expected to be accepted by the guard, see section 2: not yet run)
 S etl staging:profile                       # T13: ETL STEP staging:profile exit=0 duration_s=<n>
 S etl migrate:all --dry-run --as-of=2026-10-29      # T14: ETL STEP migrate:all exit=0
 S etl migrate:all --apply   --as-of=2026-10-29      # T15: ETL STEP migrate:all exit=0 (slot.sh adds PP_ALLOW_MIGRATE_APPLY=1)
@@ -153,7 +175,7 @@ R restore pre_etl --yes                     # T20: the night's Case 2 shape (res
 
 ### 5.3 Track R: B6, B7, B8 and T22 to T23 with the real-shape data
 
-As the A1 sheet, A1.7 to A1.13 and the optional O1 to O3, with these changes: production-like settings (section 2), the `--as-of` of the night, and one more recorded item per step: **peak RSS** (`/usr/bin/time -v` before `npm`) and **WAL** (`pg_current_wal_lsn()` before and after the apply, A1 sheet A1.11 d).
+As the A1 sheet, A1.7 to A1.13 and O1 to O3, with these changes. **Order:** T13 to T16, then `snapshot after_full`, then **T23** (the idempotency run needs the migrated state: `migrate:delta` exits 2 when the database has no migrated users, `orchestrate.ts` `assertFirstLoadExists`), then T22 (rollback), then the restores (`restore-snapshot after_full` and the dump form, T21). Other changes: production-like settings (section 2), the `--as-of` of the night, and one more recorded item per step: **peak RSS** (`/usr/bin/time -v` before `npm`) and **WAL** (`pg_current_wal_lsn()` before and after the apply, A1 sheet A1.11 d).
 
 ### 5.4 Per-run seconds and rows (for the rates)
 
@@ -225,7 +247,7 @@ Optional third and fourth lines of the same table (each must also exit 2 and cha
 
 **Accepted = failed rehearsal.** If either command exits 0 or 1, prints a `run <id>` line, or changes any count, A4 is red (section 10) and the fix is a developer task. The refusals are recorded as the text of the table: exit code, the fixed line, the seven counts before and after.
 
-`slot.sh etl` sets `NODE_ENV=production` and `PP_MIGRATE_TARGET_DB=<db>` itself on every run, so refusal 2 cannot be shown through `slot.sh`; the composition of the variables is verified by reading `cmd_etl` and by the accepted production-mode dry-run on the fixture in Track S. Refusal 1 through `slot.sh` needs a stage with dummy hashes in the production-mode copy, which `slot.sh load` does not allow (section 2). Both refusals are therefore shown on Track R, with the identical code path (`cli.ts`, `kit/apply-guard.ts`, `load/index.ts`).
+`slot.sh etl` sets `NODE_ENV=production` and `PP_MIGRATE_TARGET_DB=<db>` itself on every run, so refusal 2 cannot be shown through `slot.sh`; the composition of the variables is verified by reading `cmd_etl` and by the production-mode dry-run on the fixture in Track S (expected to be accepted; not yet run). Refusal 1 through `slot.sh` needs a stage with dummy hashes in the production-mode copy, which `slot.sh load` does not allow (section 2). Both refusals are therefore shown on Track R, with the identical code path (`cli.ts`, `kit/apply-guard.ts`, `load/index.ts`).
 
 ## 7. Restore time and the migration-count check on restore points
 
@@ -242,7 +264,7 @@ Optional third and fourth lines of the same table (each must also exit 2 and cha
 | Services | Track S: `api` and `frontend` stay stopped; v2 stays dark; no restart at night (plan 4.6 Case 2 step 5) |
 | Host settings | `fsync` on (the `status` warning absent): a restore timed with `fsync` off is not valid. MIG-07 used template copies with `fsync` off (3 to 6 s) and never timed a dump-form restore |
 
-The restore does not enter `W` (it happens only after a STOP, and `.cloud` is unfrozen first, plan 4.6 Case 2 step 1). It is recorded to state the worst case from a STOP to a restored database, and as plan section 6.4 asks. MIG-07 figures for comparison only: restore `pre_etl` 5.5 s and 4.4 s, `after_full` 16.7 s, `migrate:rollback --apply` 19 s (synthetic, 20k users).
+The restore does not enter `W` (it happens only after a STOP, and `.cloud` is unfrozen first, plan 4.6 Case 2 step 1). It is recorded to state the worst case from a STOP to a restored database, and as plan section 6.4 asks. Plan 6.4 also lists the unfreeze and the switch-back: the unfreeze of the real `.cloud` cannot be measured at A4 and the switch-back is timed in P9 on 28 Oct (rows T29 and T30). MIG-07 figures for comparison only: restore `pre_etl` 5.5 s and 4.4 s, `after_full` 16.7 s, `migrate:rollback --apply` 19 s (synthetic, 20k users).
 
 **Migration-count check on restore points (plan A5 item 2 and criterion 8).** A point taken before the final schema migrations fails the check on restore (MIG-07 pass 4: a 33-migration snapshot on a 36-migration tree gave `MIGRATION CHECK FAILED: 33 applied, 36 in apps/api/prisma/migrations`). The rule:
 
@@ -272,7 +294,7 @@ Checks that the reading must close (each is a fact from the code or the plan; th
 | 6 | C5 `migrate:archive-minimise` through `slot.sh etl` | The command is accepted | The accepted list is `staging:profile`, `migrate:all`, `migrate:delta`, `migrate:verify`, `migrate:rollback`, `migrate:link-questions`, `migrate:export-question-reports` (plan 3.1 gap b). Daylight step, not blocking the night. |
 | 7 | Case 2 step 6 `S etl migrate:rollback --confirm <db>` | Both gates are set by the script | `cmd_etl` adds `PP_ALLOW_MIGRATE_ROLLBACK=1` and `PP_ALLOW_MIGRATE_APPLY=1` for the rollback, with `NODE_ENV=production` and `PP_MIGRATE_TARGET_DB`. The code accepts `--confirm <db>` and `--confirm=<db>`. |
 | 8 | The B7 expected text | `ETL STEP migrate:all exit=0`; `verify pass: <n> entities, <m> checks` | Both strings exist (`slot.sh`; `orchestrate.ts printVerify`). |
-| 9 | One source lock | The card says the standalone `migrate:core` and `migrate:activity` do not take the lock | **Outdated.** They take the same lock since AM-08 and exit 2 when it is held (`load/command.ts`, `load/activity/command.ts`, `kit/source-lock.ts`; runbook section 12 and 19). `migrate:all` / `migrate:delta` / `migrate:rollback` exit 4. The advice (use only `migrate:all`) stands. |
+| 9 | One source lock | The card says the standalone `migrate:core` and `migrate:activity` do not take the lock | **Outdated.** They take the same lock since AM-08 and exit 2 when it is held (`load/command.ts`, `load/activity/command.ts`, `kit/source-lock.ts`; runbook section 12 and 19). `migrate:all` and `migrate:delta` exit 4 when it is held; `migrate:rollback` exits **2** (it throws `RollbackRefusedError`, which extends `ApplyGuardError`, `verify/rollback.ts:141`, and `cli.ts` maps `ApplyGuardError` to exit 2). The advice (use only `migrate:all`) stands. |
 | 10 | Step ids of `slot.sh` and `production-migration-slot.md` | Match the plan's numbering (A4, A5, B0 to B10) | Still the old ids (A4, A12, B11 to B13); the plan says #166 must be updated or the mapping read. |
 | 11 | Every **Perlu pengesahan** of the card (VPS access, the `.cloud` maintenance switch, the pre-arranged unlock and lock of `pp_dump_ro`, shell access and the secret store, how `--files-dir` and `FILE_STORAGE_DIR` reach `S etl`) | Each is answered or the night is a no-go | Plan 4.6, "Before the night": if any is missing at G6, the night is a no-go. |
 
@@ -310,14 +332,16 @@ At the placeholders (`rho = 1`, `kappa = 1`, `r_B6 = r_B7 = 3,611`) this is exac
 
 | Quantity | Rule |
 |---|---|
-| `r_B6`, `r_B7` | The **slower** (lower) of the valid runs (A1 and A4). A run that was red does not count. If the runs differ by more than 30 %, say so to the LEAD: MIG-07 saw 527, 668, 718 and 964 s for the same apply on one host, so use the slowest and keep the others as the spread. A4 on production-like settings governs when it is the only valid run; A1 is a lower-bound check. |
+| `r_B6`, `r_B7` | The **slower** (lower) of the valid runs (A1 and A4). A run that was red does not count. If the runs differ by more than 30 %, say so to the LEAD: MIG-07 saw 527 s (pass 3), 718 s and 964 s (pass 5) for the same `migrate:all --apply` on one host, about 1.8 times between the fastest and the slowest (the 668 to 682 s of pass 4 were `migrate:delta --apply` runs), so use the slowest and keep the others as the spread. A4 on production-like settings governs when it is the only valid run; A1 is a lower-bound check. |
 | `rho`, `kappa` | From the run whose rate was used. |
+| Sanity check against MIG-07 | MIG-07 pass 3 ran the full `migrate:all --apply` in 526.7 s (`mig07-rehearsal-report.md` P3.1) on a dump of 366,026 rows (P2.1) whose activity stage reads about 330,000 rows per pass (pass 1, section 3, note on peak throughput). Two passes over 366,026 rows in 526.7 s is `r_B7` of about 1,390 rows/s (about 1,250 rows/s counting the activity rows alone), roughly 0.35 to 0.4 of the 3,611 placeholder, on a local cluster with `fsync` off. If the A1 and A4 rates are far above that, find out why before trusting them; if they are near it, the largest `N` of the plan (11.7 million) is too high (at 1,390 rows/s and the same fixed 125 min it is about 4.5 million). This is an illustration from synthetic data, not a measurement of `.cloud`. |
 | `D_dump` | The 24 Oct reading (T01, plus T02 if the files export was allowed). If a rehearsal MySQL source exists for a repeat at A4 (**Perlu pengesahan, half AZ and the `.cloud` owner**), the larger. AM-10 section 8 says the A4 repeat is against a synthetic or anonymised source, never the real `.cloud`; plan P6 says the figure comes from the 24 Oct sitting (the plan replaces the older AM-10 wording). |
 | `D_xfer` | The sum T03 to T07: the larger of the 24 Oct readings and the A4 repeat (section 5.1) for each sub-step. |
 | `D_load`, `D_copy` | The larger of Track R and Track S (T09, T11). Subtract the pattern scan from Track R `load-dump` only if it was timed alone. |
 | `D_verify` | T16 plus T17 (verify and the read-only SQL checks); the larger of the runs; if P-9 is missing, the plan's 20 min stays and the budget is marked incomplete. |
 | `N_night` | The `dump:check` total of P-5 (27 Oct), and the 24 Oct manifest total as a cross-check. **Perlu pengesahan (LEAD):** whether to add an allowance for rows added between 27 Oct and the night (the 25 % buffer covers time, not rows). |
 | Fixed items | `D_freeze` 20 min and `D_gonogo` 15 min, as the plan. |
+| Scaling to the night's size (an **assumption**, stated as such) | Track S runs on a fixture, and `D_xfer` may run on a different size than the night. Scale **linearly**: row-moving Track S steps (`D_load`, `D_copy`, restore points) by `N_night / N_fixture` (rows) or by bytes of `staging_cloud` plus `archive_cloud`, whichever is larger; `D_xfer` sub-steps (encrypt, listing check, `scp`, extract) by bytes: `night dump bytes / measured bytes`, with the night's bytes estimated from the 24 Oct dump (`du -sh`) plus the files export if it is included. Fixed costs (container start, checks) are not scaled. If the scaled Track S figure and the Track R figure of the same step differ by more than 30 %, use the larger and tell the LEAD. Record the scale factor in the fill-in table. |
 
 ### 9.3 Fill-in table
 
@@ -331,6 +355,7 @@ All durations in minutes (seconds divided by 60). `Used` is the value that goes 
 | `kappa` | | | n/a | n/a | | |
 | `r_B6` (rows/s) | | | n/a | n/a | | slower |
 | `r_B7` (rows/s) | | | n/a | n/a | | slower |
+| Scale factor applied (Track S rows, bytes; `D_xfer` bytes) | n/a | n/a | | | | section 9.2 |
 | `D_freeze` | fixed | fixed | fixed | fixed | 20 | plan |
 | `D_dump` | n/a | n/a | n/a | | | T01 (+T02) |
 | `D_xfer` | n/a | | | | | T03 to T07 |
@@ -358,9 +383,9 @@ N_night_max = ETL_max / ( rho x ( kappa / r_B6 + 2 / r_B7 ) )
 
 (replace 360 by 345 for the stricter limit). If `ETL_max` is zero or negative, nothing fits: the fixed part alone is over the window. Each minute taken off `Fixed` adds `60 / ( rho x ( kappa / r_B6 + 2 / r_B7 ) )` rows; at the placeholders that is about 72,000 rows per minute, as the plan says.
 
-### 9.4 Per-step latest times (second test)
+### 9.4 Per-step latest times (advisory: a proposal for the LEAD, not a plan rule)
 
-`W` is a total. The card also has a latest time for every step (plan 4.6). With the buffer, the clock after each step must still be at or before the step's latest time. `C_k = 20 + 1.25 x (sum of the durations of B2 to step k)`, in minutes after `T` (01:00). Fill the duration column from the table above.
+Plan 4.3 and P7 test only the total `W`. This table is **not** in the plan. It is an extra reading the half AM operator offers, because the card (plan 4.6) also has a latest time for every step. It uses the same convention as `W`: the 25 % buffer applies to every duration, including `D_freeze`. `C_k = 1.25 x (20 + sum of the durations of B2 to step k)`, in minutes after `T` (01:00); `C_B9end` therefore equals `W`. Fill the duration column from the table above.
 
 | Step | Duration used (min) | Cumulative `C_k` | Latest (minutes after T) | Latest (MYT) | Fits? |
 |---|---|---|---|---|---|
@@ -372,15 +397,16 @@ N_night_max = ETL_max / ( rho x ( kappa / r_B6 + 2 / r_B7 ) )
 | B7 `D_apply` | | | 300 | 06:00 | |
 | B8 `D_verify` | | | 320 | 06:20 | |
 | B9 must **start** by | (`C_B8`) | | 330 | 06:30 | |
-| B9 ends (`+ D_gonogo`) so B10 fits | | | 345 | 06:45 | |
+| B9 ends (`+ D_gonogo`) so B10 fits | | (`= W`) | 345 | 06:45 | |
 | B10 close | 15 | | 360 | 07:00 | |
 
-A step that does not fit means the LEAD either changes that latest time in the card, or moves the date, before G6.
+A row that does not fit is reported to the LEAD, who may change that latest time in the card before G6. It does not by itself make P7 unmet.
 
 ### 9.5 Decision rule (P7)
 
-- **`W` at most the maximum window and every row of 9.4 fits:** P7 is met. The half AM operator posts the sum, `W`, the margin and the largest `N_night` as text.
-- **`W` above the maximum, or any row of 9.4 does not fit:** the LEAD decides on 27 Oct: **widen the window** (and change the latest times of the card), or **move the date**. Nothing is shortened by editing the ETL on the night. Plan 4.3 and P7.
+- **`W` at most the maximum window:** P7 is met. The half AM operator posts the sum, `W`, the margin and the largest `N_night` as text.
+- **`W` above the maximum:** the LEAD decides on 27 Oct: **widen the window**, or **move the date**. Nothing is shortened by editing the ETL on the night. This is the plan's P7 rule (plan 4.3 and P7) and nothing more.
+- **Advisory only:** the per-step reading of 9.4 and the 345 min line are reported with the post. The LEAD may use them to change a latest time of the card; they are not a decision trigger.
 - **The budget is incomplete** (a figure missing: the files export, the read-only SQL checks, a Track S step) and the missing item is not covered by a plan placeholder: the half AM operator says so in the post, and the LEAD decides whether to take the plan's placeholder for it.
 - **Contradiction to resolve (Perlu pengesahan, LEAD):** plan 4.3 compares `W` (B1 to the end of B9) with 360 min, but the card lets B9 start as late as T+5:30 and takes 15 min, and then B10 needs 15 more minutes before T+6:00 (07:00). If both hold, `W` can be at most about 345 min. The sheet shows both margins.
 
@@ -399,9 +425,9 @@ Uses only the plan's placeholders: `r_B6 = r_B7 = 3,611 rows/s`, `rho = 1`, `kap
 | Margin to 345 | 345 - 242.8 | 102.2 min |
 | `ETL_max` | `(360 / 1.25 - 125) x 60` = (288 - 125) x 60 | 9,780 s (163 min) |
 | `N_night_max` | `9,780 / (3 / 3,611)` | 11,771,860 rows (the plan says "about 11.7 million") |
-| Cumulative `C_k` (9.4) | B2 51.3, B3 70.0, B4 95.0, B5 107.5, B6 136.4, B7 194.1, B8 219.1 | each is below its latest time (70, 95, 125, 140, 170, 300, 320) |
+| Cumulative `C_k` (9.4, advisory) | B2 56.3, B3 75.0, B4 100.0, B5 112.5, B6 141.4, B7 199.0, B8 224.0, B9 end 242.8 (= `W`) | each is below its latest time (70, 95, 125, 140, 170, 300, 320, 345) |
 
-At these placeholders every row of 9.4 fits. The first row to fail would be B2: `D_dump` above 40 min fails it (`20 + 1.25 x 40 = 70`). This example shows the method. It says nothing about the real data.
+At these placeholders every row of 9.4 fits (no scaling is applied in the example: scale factor 1). The first row to fail would be B2: `D_dump` above 36 min (`1.25 x (20 + 36) = 70`). This example shows the method. It says nothing about the real data.
 
 ## 10. Green and red for A4
 
@@ -412,7 +438,7 @@ At these placeholders every row of 9.4 fits. The first row to fail would be B2: 
 1. Any red condition of the A1 sheet section 9 on an A4 run, including a non-zero exit where 0 is expected and a `migrate:verify` that is not exit 0 with `verify pass`.
 2. A guard refusal that is **accepted**, or refused for the wrong reason (section 6.3).
 3. A restore of a restore point that fails, or a migration count `n` not equal to `F`.
-4. `slot.sh gonogo` with `NO-GO`, `MISSING` or `PITR off` on the scratch copy at the point where it must be clean; `throwaway` still running after `S throwaway-down`.
+4. `slot.sh gonogo` with `NO-GO`, `MISSING` or `PITR off` on the scratch copy after P-6 holds, at the point where it must be clean; `throwaway` still running after `S throwaway-down`.
 5. The e2e smoke or a read-only SQL check differs from the verify report (trigger R4 shape).
 6. A blocking defect in the night card (section 8) without an owner and a date.
 7. Personal data in a post, a log or a copy outside the custody list (PDPA incident: tell the LEAD at once).
@@ -432,7 +458,7 @@ Rows: N_manifest <>, N_night <>, N_core <>, N_act <>, rho <>, kappa <>; rates r_
 Verify: exit <>, verify pass <yes|no>, <n> entities, <m> checks; rejects by reason <>; entities above threshold <list|none>
 Guards: refusal 1 exit <2>, line <fixed text>, counts unchanged <yes|no>; refusal 2 exit <2>, line <fixed text>, counts unchanged <yes|no>
 Restore: duration small <>, large <>, dump-form <>; migration count n <> of F <>
-Budget: fixed <> min, ETL <> min, sum <>, W <>, margin to 360 <>, to 345 <>, N_night_max <>; per-step fit <all|list>
+Budget: fixed <> min, ETL <> min, sum <>, W <>, margin to 360 <>, to 345 <>, N_night_max <>; per-step fit (advisory) <all|list>
 Smoke: e2e <pass|fail> (tail as text), read-only SQL checks <n of n equal>
 Result: GREEN | RED (item <id>, reason <short>); P7: met | LEAD decision needed (widen | move)
 ```
