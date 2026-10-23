@@ -11,8 +11,11 @@
 # (env files, placeholders, the fail-closed seed guard, `docker compose config -q`), then prints each step.
 #
 # Order (a failed step stops the run; there is NO automatic rollback because migrations are forward-only):
-#   1 preflight   2 pre-deploy backup   3 build or pull images tagged with the git sha   4 db up
-#   5 migrate (one-shot, `prisma migrate deploy` only, never a seed)   6 api + frontend up (wait healthy)
+#   1 preflight   2 pre-deploy backup   3 build or pull images tagged with the git sha
+#   4 db up, then the least-privilege roles (db-roles.sh apply: idempotent, cutover plan P3)
+#   5 migrate (one-shot, `prisma migrate deploy` only, never a seed, as the schema owner pp_owner), then
+#     db-roles.sh apply + check (the API role has no DDL; a failed check stops the deploy before the api switches)
+#   6 api + frontend up (wait healthy)
 #   7 edge (re)created   8 health checks through the edge: /api/health, /api/ready, /, /api/metrics (404), http->https
 #   9 record current and previous image tag for rollback.sh
 # deploying.tag (state dir) names the release being started from step 5 on; it is removed in step 9.
@@ -37,13 +40,15 @@ while [ $# -gt 0 ]; do
     --allow-dirty) allow_dirty=1; shift ;;
     --tag) tag="${2:?--tag needs a value}"; shift 2 ;;
     --seed-reference) seed_reference=1; shift ;;
-    -h|--help) sed -n '2,21p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n '2,22p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) pp_die "unknown argument: $1" 2 ;;
   esac
 done
 
 api_env="$PP_ENV_DIR/api.env"
 db_env="$PP_ENV_DIR/db.env"
+migrate_env="$PP_ENV_DIR/migrate.env"   # DATABASE_URL of the schema owner (db-roles.sh secrets)
+etl_env="$PP_ENV_DIR/etl.env"           # DATABASE_URL of the migration role (slot.sh etl)
 state_dir="$(pp_cfg PP_STATE_DIR /var/lib/pretasiplus-deploy)"
 domain="$(pp_cfg PP_DOMAIN '')"
 errors=(); warnings=()
@@ -65,15 +70,6 @@ run() { # run CMD...: print, and execute unless --dry-run
 step() { pp_log "---- $* ----"; }
 
 is_true() { case "${1,,}" in true|1) return 0 ;; *) return 1 ;; esac; }
-# Percent-decoding only: a '+' in a URL userinfo is a literal plus, not a space.
-urldecode() {
-  local s="$1" out="" h
-  while [ -n "$s" ]; do
-    if [[ "$s" =~ ^%([0-9A-Fa-f]{2})(.*)$ ]]; then printf -v h '%b' "\\x${BASH_REMATCH[1]}"; out+="$h"; s="${BASH_REMATCH[2]}"
-    else out+="${s:0:1}"; s="${s:1}"; fi
-  done
-  printf '%s' "$out"
-}
 
 # ------------------------------------------------------------------------------------------------------------
 preflight() {
@@ -88,8 +84,12 @@ preflight() {
     fi
   fi
 
-  for f in "$PP_PROD_ENV" "$api_env" "$db_env"; do
-    if [ ! -r "$f" ]; then err "env file missing or unreadable: $f"; continue; fi
+  for f in "$PP_PROD_ENV" "$api_env" "$db_env" "$migrate_env" "$etl_env"; do
+    if [ ! -r "$f" ]; then
+      case "$f" in "$migrate_env"|"$etl_env") err "env file missing or unreadable: $f (create it with: sudo deploy/vps/db-roles.sh secrets)" ;;
+        *) err "env file missing or unreadable: $f" ;; esac
+      continue
+    fi
     m="$(stat -c %a "$f")"
     # Standard: 640 root:ppdeploy (the deploy user reads, nobody else). 600 and 400 are accepted; anything that
     # gives "others" any access, or the group write access, is refused.
@@ -99,7 +99,7 @@ preflight() {
   [ ${#errors[@]} -eq 0 ] || return 0   # nothing below makes sense without the files
 
   # Placeholders: any uncommented line that still carries an example value. Names only are printed, never values.
-  for f in "$PP_PROD_ENV" "$api_env" "$db_env"; do
+  for f in "$PP_PROD_ENV" "$api_env" "$db_env" "$migrate_env" "$etl_env"; do
     while IFS= read -r line; do
       case "$line" in ''|'#'*) continue ;; esac
       k="${line%%=*}"
@@ -111,7 +111,7 @@ preflight() {
 
   # Fail-closed seed guard. The API itself accepts 'true' / '1' (env.schema.ts) and compose.prod.yaml forces both
   # flags to false, so these can never be active in production; a file that asks for them is a mistake, refuse it.
-  for f in "$PP_PROD_ENV" "$api_env" "$db_env"; do
+  for f in "$PP_PROD_ENV" "$api_env" "$db_env" "$migrate_env" "$etl_env"; do
     for k in ALLOW_DEMO_SEED BIJAK_POC_QUESTIONS MAIL_LOG_RESET_LINKS; do
       v="$(pp_env_value "$f" "$k")"
       if is_true "$v"; then err "$k=$v in $f: refused (demo seed / PoC questions / reset-link logging never run in production)"; fi
@@ -127,23 +127,37 @@ preflight() {
   v="$(pp_env_value "$api_env" REGISTRATION_OPEN)"; [ -n "$v" ] || warn "REGISTRATION_OPEN is not set in api.env: self-registration is OPEN (set false until the go-live switch)"
 
   # Required values (mirrors loadEnv in env.schema.ts, with the stricter team policy of 32 characters).
-  local ss ic dburl pguser pgdb pgpw
+  local ss ic pguser pgdb pgpw kind_file kind_role pws=()
   ss="$(pp_env_value "$api_env" SESSION_SECRET)"
   ic="$(pp_env_value "$api_env" IC_HASH_KEY)"
   [ "${#ss}" -ge 32 ] || err "SESSION_SECRET must be at least 32 characters (openssl rand -hex 32)"
   [ "${#ic}" -ge 32 ] || err "IC_HASH_KEY must be at least 32 characters (openssl rand -hex 32)"
   [ -z "$ss" ] || [ "$ss" != "$ic" ] || err "IC_HASH_KEY must differ from SESSION_SECRET"
-  dburl="$(pp_env_value "$api_env" DATABASE_URL)"
   pguser="$(pp_env_value "$db_env" POSTGRES_USER)"; pgdb="$(pp_env_value "$db_env" POSTGRES_DB)"; pgpw="$(pp_env_value "$db_env" POSTGRES_PASSWORD)"
   [ "${#pgpw}" -ge 24 ] || err "POSTGRES_PASSWORD must be at least 24 characters"
-  if [[ "$dburl" =~ ^postgres(ql)?://([^:@/]+):([^@]+)@([^:/]+)(:[0-9]+)?/([^?]+)(\?.*)?$ ]]; then
-    [ "${BASH_REMATCH[4]}" = db ] || err "DATABASE_URL host must be 'db' (the compose service)"
-    [ "${BASH_REMATCH[2]}" = "$pguser" ] || err "DATABASE_URL user differs from POSTGRES_USER in db.env"
-    [ "${BASH_REMATCH[6]}" = "$pgdb" ] || err "DATABASE_URL database differs from POSTGRES_DB in db.env"
-    [ "$(urldecode "${BASH_REMATCH[3]}")" = "$pgpw" ] || err "DATABASE_URL password differs from POSTGRES_PASSWORD in db.env"
-  else
-    err "DATABASE_URL must look like postgresql://USER:PASSWORD@db:5432/DBNAME"
+  # Least-privilege roles (cutover plan P3, runbook section 3.1): the API, the migrate job and the ETL each connect as
+  # their own non-superuser role; the bootstrap POSTGRES_USER (a superuser) is never in a DATABASE_URL.
+  for kind_file in "api.env:$PP_DB_ROLE_APP" "migrate.env:$PP_DB_ROLE_OWNER" "etl.env:$PP_DB_ROLE_ETL"; do
+    f="$PP_ENV_DIR/${kind_file%%:*}"; kind_role="${kind_file#*:}"
+    [ -r "$f" ] || continue
+    if pp_parse_db_url "$(pp_env_value "$f" DATABASE_URL)"; then
+      [ "$PP_URL_HOST" = db ] || err "DATABASE_URL host in $f must be 'db' (the compose service)"
+      [ "$PP_URL_USER" = "$kind_role" ] || err "DATABASE_URL user in $f must be $kind_role, not the superuser or another role (sudo deploy/vps/db-roles.sh secrets)"
+      [ "$PP_URL_DB" = "$pgdb" ] || err "DATABASE_URL database in $f differs from POSTGRES_DB in db.env"
+      [[ "$PP_URL_PASSWORD" =~ ^[A-Za-z0-9._~-]{32,128}$ ]] || err "DATABASE_URL password in $f must be 32-128 characters of A-Z a-z 0-9 . _ ~ - (sudo deploy/vps/db-roles.sh secrets --rotate ...)"
+      [ "$PP_URL_PASSWORD" != "$pgpw" ] || err "DATABASE_URL password in $f must differ from POSTGRES_PASSWORD"
+      pws+=("$PP_URL_PASSWORD")
+    else
+      err "DATABASE_URL in $f must look like postgresql://$kind_role:PASSWORD@db:5432/DBNAME (sudo deploy/vps/db-roles.sh secrets)"
+    fi
+  done
+  case " $PP_DB_ROLE_OWNER $PP_DB_ROLE_APP $PP_DB_ROLE_ETL $PP_DB_ROLE_STAGE " in
+    *" $pguser "*) err "POSTGRES_USER in db.env must not be one of the application role names" ;;
+  esac
+  if [ ${#pws[@]} -eq 3 ] && { [ "${pws[0]}" = "${pws[1]}" ] || [ "${pws[0]}" = "${pws[2]}" ] || [ "${pws[1]}" = "${pws[2]}" ]; }; then
+    err "the api.env, migrate.env and etl.env passwords must differ from each other"
   fi
+  pws=()
   v="$(pp_env_value "$api_env" MARKETPLACE_PLATFORM_WHATSAPP)"
   if [[ ! "$v" =~ ^[0-9]{9,15}$ ]] || [ "$v" = 60000000000 ]; then err "MARKETPLACE_PLATFORM_WHATSAPP must be the real wa.me number (digits, country code first), not the dev default"; fi
   v="$(pp_env_value "$api_env" PUBLIC_BASE_URL)"
@@ -287,15 +301,20 @@ else
   run pp_compose build api migrate frontend
 fi
 
-step "4/9 database"
+step "4/9 database and least-privilege roles"
 run pp_compose up -d --wait --no-deps db
+run "$PP_VPS_DIR/db-roles.sh" apply
 
 # Written before the first container of the new release starts (migrate runs the new image): rollback.sh and the
 # failure message use it to tell "new release started but not recorded" from "nothing started".
 [ "$dry" = 1 ] || { mkdir -p "$state_dir"; printf '%s\n' "$tag" >"$state_dir/deploying.tag"; }
 
-step "5/9 migrate (prisma migrate deploy only)"
+step "5/9 migrate (prisma migrate deploy only, as $PP_DB_ROLE_OWNER), then the roles again and the role check"
 run pp_compose run --rm --no-deps migrate
+# apply again: tables the migrate just created get the per-table rules default privileges cannot express
+# (_prisma_migrations read-only for the API and the ETL; on a fresh database it did not exist at step 4).
+run "$PP_VPS_DIR/db-roles.sh" apply
+run "$PP_VPS_DIR/db-roles.sh" check
 
 step "6/9 api and frontend"
 run pp_compose up -d --wait --no-deps api frontend

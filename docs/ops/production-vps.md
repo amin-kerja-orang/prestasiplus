@@ -34,6 +34,7 @@ Files:
 |---|---|
 | `deploy/vps/compose.prod.yaml` | Overlay over `compose.yaml` (services, limits, restart, health, logging, profiles) |
 | `deploy/vps/.env.prod.example`, `api.env.example`, `db.env.example` | Names with placeholders: copy to `/etc/pretasiplus/{prod,api,db}.env` |
+| `deploy/vps/db-roles.sh`, `db-roles/{apply,check}.sql`, `migrate.env.example`, `etl.env.example` | Least-privilege database roles (cutover plan P3, section 3.1): `secrets` writes `migrate.env` and `etl.env` and the `api.env` `DATABASE_URL`; `apply` and `check` run from `deploy.sh` |
 | `deploy/vps/nginx/` | Edge config template, snippets, `check.sh` (syntax) and `test-routing.sh` (behaviour, with stub upstreams) |
 | `deploy/vps/deploy.sh`, `rollback.sh`, `lib.sh` | Migrate-then-deploy with `--dry-run`, image rollback |
 | `deploy/vps/tls/` | `init-cert.sh` (first certificate), `renew.sh` |
@@ -115,13 +116,15 @@ Decisions and why:
 
 ## 3. Parameters
 
-Three files hold everything, all outside the repo, owner `root`, group `ppdeploy`, mode `640` (`sudo install -m 640 -o root -g ppdeploy ...`):
+Five files hold everything, all outside the repo, owner `root`, group `ppdeploy`, mode `640` (`sudo install -m 640 -o root -g ppdeploy ...`):
 
 | File | Content | Example |
 |---|---|---|
 | `/etc/pretasiplus/prod.env` | Compose interpolation and script settings (`--env-file`). Not secret, except the two ping URLs and `PP_ALERT_WEBHOOK_URL` | `deploy/vps/.env.prod.example` |
 | `/etc/pretasiplus/api.env` | API secrets and production settings (`env_file` of `api` and `migrate`) | `deploy/vps/api.env.example` |
-| `/etc/pretasiplus/db.env` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | `deploy/vps/db.env.example` |
+| `/etc/pretasiplus/db.env` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (the bootstrap superuser, ops scripts only: section 3.1) | `deploy/vps/db.env.example` |
+| `/etc/pretasiplus/migrate.env` | `DATABASE_URL` of the schema owner `pp_owner` (`env_file` of `migrate`, read after `api.env`) | written by `sudo deploy/vps/db-roles.sh secrets` (`migrate.env.example`) |
+| `/etc/pretasiplus/etl.env` | `DATABASE_URL` of the migration role `pp_etl` (`slot.sh etl`, `--env-from-file`) | written by `sudo deploy/vps/db-roles.sh secrets` (`etl.env.example`) |
 
 Write values with an editor (`sudoedit`), never on a command line. Generate secrets with `openssl rand -hex 32`. The `*.example`
 files use inline-comment-free lines on purpose (Compose would keep a trailing comment of an empty value).
@@ -180,7 +183,7 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 
 | Name | Who | Rule |
 |---|---|---|
-| `DATABASE_URL` | LEAD | `postgresql://USER:PASSWORD@db:5432/DBNAME`, equal to `db.env`. `deploy.sh` checks host, user, database and password |
+| `DATABASE_URL` | OPS (generated) | `postgresql://pp_app:<generated>@db:5432/<POSTGRES_DB>`: the API role, **never** the `db.env` superuser. Written by `sudo deploy/vps/db-roles.sh secrets`; `deploy.sh` checks host `db`, user `pp_app`, database, a 32+ character password different from the other two files and from `POSTGRES_PASSWORD` (section 3.1) |
 | `SESSION_SECRET`, `IC_HASH_KEY` | LEAD | 32+ characters each, different. **Never rotate `IC_HASH_KEY` casually** (section 12) |
 | `MARKETPLACE_PLATFORM_WHATSAPP` | LEAD | The real wa.me number (digits, country code first); the dev default is refused by `deploy.sh` |
 | `PUBLIC_ORIGINS` | LEAD | Extra image origins for articles/banners (empty = API origin only) |
@@ -199,6 +202,95 @@ Forced by the overlay (cannot be overridden by `api.env`): `NODE_ENV=production`
 
 Reserved (do NOT put them in `api.env` yet): `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310` (section 15).
 
+### 3.1 Database roles (cutover plan P3)
+
+**LEAD decision 23 Oct (on #220):** in production the API, the migrate job and `slot.sh` do **not** run as the Postgres superuser; no risk
+acceptance. `deploy/vps/db-roles.sh` implements cutover plan P3 ([v2-cutover-plan.md](v2-cutover-plan.md) section 3). The names are fixed
+(in `lib.sh`); none of the four is a superuser or has `CREATEDB`, `CREATEROLE`, `REPLICATION` or `BYPASSRLS`, and none is a member of any role.
+
+| Role | Used by | Env file | Privileges |
+|---|---|---|---|
+| `pp_owner` | the one-shot `migrate` service only: `prisma migrate deploy`, `deploy.sh --seed-reference`, `admin:bootstrap` | `migrate.env` | Owns the database, schema `public` and every object in it: the only role with DDL. Creates `pgcrypto` on a fresh database (trusted extension, database owner) |
+| `pp_app` | the API (`api` service) | `api.env` | `CONNECT`; `USAGE` on `public`; `SELECT, INSERT, UPDATE, DELETE` on every table (`_prisma_migrations`: `SELECT` only, so a forged ledger row cannot make `prisma migrate deploy` skip a migration) and `USAGE, SELECT, UPDATE` on every sequence, plus **default privileges** for what `pp_owner` creates later. No DDL, no `TRUNCATE`, no `TEMP`, nothing on `staging_cloud` or `archive_cloud` |
+| `pp_etl` | `migrate:*` through `slot.sh etl` (the migration role) | `etl.env` | The `pp_app` grants (see note), plus `TEMP` (the ETL upsert uses temporary tables); `USAGE` + `SELECT` on `staging_cloud` and `archive_cloud`, `UPDATE` on `archive_cloud` (`migrate:archive-minimise`). No DDL in `public` |
+| `pp_stager` | `slot.sh copy` and the section 7 `drop schema ... cascade` (stage-only role) | none | `CONNECT` and `CREATE` on the database: it creates the two stage schemas and, as their owner, drops them. **Nothing on `public`** (a `select` and an `insert` are refused). **No password**: it connects only over the local socket inside the db container (`docker compose exec db psql -U pp_stager`), never over the network |
+| `POSTGRES_USER` of `db.env` | bootstrap superuser of the cluster | `db.env` | Used only by ops scripts, always inside the db container: `db-roles.sh`, `backup/backup.sh` and `backup/restore-drill.sh` (a full dump, and the drill's `CREATE DATABASE <db>_restorecheck`), a manual restore (section 8), and #166's `restore-point.sh` / `pitr.sh` (whole-database dump, base backup). Never in a `DATABASE_URL` |
+
+`pp_owner`, `pp_app` and `pp_etl` have `search_path = public` pinned: `pp_stager` may create schemas, so a crafted dump could add one
+named like a role (`"$user"` is first in the default search path); `check` also fails on any schema besides `public` and the two stage
+schemas. Trust boundary of `pp_stager`: it owns what it restores into the stage schemas, so it could plant a function or view there that `pp_etl`
+later runs with its own rights; with `CREATE` on the database it can also install a trusted extension into its schemas. That is accepted
+because `pp_stager` is reachable only from inside the db container, which is root-equivalent anyway (the deploy user is in the docker group).
+
+Note on `pp_etl`: P3 says "read and write on the v2 tables the ETL writes and on `etl_*`". The ETL writes tables outside
+`prisma/migratable-models.json` (for example `attempt_results`) and through table names built at run time, so there is no fixed list to grant
+on; `pp_etl` gets read/write on every `public` table, with no DDL. Narrowing it is run sheet question Q3 (LEAD).
+
+**How it is wired.** `compose.prod.yaml`: `api` reads `api.env` (`pp_app`); `migrate` reads `api.env` and then `migrate.env`, so its
+`DATABASE_URL` is `pp_owner`'s. `slot.sh etl` must add `--env-from-file /etc/pretasiplus/etl.env` and `slot.sh copy` must restore as
+`pp_stager` (the patch is on #166). `deploy.sh` runs `db-roles.sh apply` after `db` is up (step 4), and `apply` again plus `db-roles.sh check` after
+`migrate` (step 5; the second `apply` makes a `_prisma_migrations` created by that first migrate read-only): a failed check stops the
+deploy before the API is switched. `deploy.sh` refuses any `DATABASE_URL` whose user is not the role
+of its file.
+
+**First set-up (and the switch of a server that ran as the superuser).** As `ppdeploy`, from the release checkout:
+
+```
+sudo deploy/vps/db-roles.sh secrets     # root: passwords generated on the server (openssl rand -hex 32), never printed;
+                                        # writes the api.env DATABASE_URL (pp_app) and creates migrate.env (pp_owner) and etl.env (pp_etl),
+                                        # root:ppdeploy 640. A file that already holds a valid URL for its role is kept; connection parameters (?...) of the old URL are kept.
+deploy/vps/deploy.sh --dry-run          # preflight checks the three URLs
+deploy/vps/deploy.sh                    # step 4 db-roles.sh apply, step 5 migrate as pp_owner + db-roles.sh check
+deploy/vps/db-roles.sh check            # again by hand: the P3 evidence lines (names, privileges, error texts; no values)
+```
+
+`apply` is idempotent: it creates missing roles, forces the attributes, removes memberships, makes `pp_owner` the owner of the database and
+of every object in `public` the superuser created (an earlier migrate as the superuser, a restore), revokes `PUBLIC` access to the database
+and to `public`, and re-grants exactly the table above. A `staging_cloud` or `archive_cloud` made by another role is handed to `pp_stager`.
+The passwords are set from the env files with `log_statement`, `log_min_duration_statement` and `log_min_error_statement` switched off for that
+session, so they never reach the server log. Run `apply` again (it is safe at any time) after:
+
+- **a restore** of any dump (section 8, `restore-point.sh restore`): the restored objects belong to the superuser;
+- **`slot.sh copy`**: `pp_etl` gets `SELECT` on the copy at once (default privileges of `pp_stager`), `UPDATE` on `archive_cloud` only from
+  `apply` (the #166 patch runs it inside `copy`).
+
+A production dump restored on **another** cluster needs the four roles first (`db-roles.sh apply` there) or `pg_restore --no-acl`; the
+restore drill restores in the same cluster and is not affected.
+
+**What `check` proves** (each probe runs the statement **as the role** in a rolled-back subtransaction, so nothing changes; plus a real
+network login with each env-file password): attributes and memberships of the four roles; `pp_owner` owns the database and every `public`
+table and sequence; `pp_app` and `pp_etl` hold `SELECT/INSERT/UPDATE/DELETE` on every `public` table and `USAGE/SELECT/UPDATE` on every
+sequence, and nothing else (an extra `TRUNCATE`, `TRIGGER` or `REFERENCES` grant on any table is a FAIL; `search_path` pinned);
+`pp_app` **cannot** `CREATE TABLE`, `DROP`, `ALTER`, `TRUNCATE`, `CREATE SCHEMA` or `CREATE TEMP TABLE`, and cannot read
+`staging_cloud` or `archive_cloud` (when they exist; otherwise no default privilege can give it anything there); `pp_etl` can use `TEMP`,
+read both stage schemas and update `archive_cloud`, but has no DDL in `public`; `pp_stager` is refused `select` and `insert` on `public` and
+can create and drop the stage schemas; `_prisma_migrations` is read-only for `pp_app` and `pp_etl`; `pg_hba` has no `trust` rule beyond
+loopback and the local socket; the stage role is refused over the network and accepted over the local socket. The network logins use the
+compose name `db` (override: `PP_DB_ROLES_NET_HOST`), never `127.0.0.1`: the official image trusts loopback (initdb default), so a loopback
+login would accept any password, while the container's network address hits the `scram-sha-256` rule the API also goes through. Output: one
+`PASS | role | probe | detail` line each, then `DB ROLES CHECK PASSED: <n> probes` (exit 0) or `DB ROLES CHECK FAILED` (exit 1).
+The same SQL runs in CI (`apps/api/test/ops/db-roles.spec.ts`).
+
+**Rotate a role password** (LEAD confirmation first, as for every secret, section 12):
+
+```
+sudo deploy/vps/db-roles.sh secrets --rotate app     # or owner, etl, or a comma list: app,owner,etl
+deploy/vps/db-roles.sh apply                         # sets the new password in the database
+docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env up -d --no-deps --force-recreate api   # app only
+deploy/vps/db-roles.sh check                         # the network login lines must PASS
+```
+
+`secrets --rotate` writes the env file first and `apply` changes the database password: between them and the recreate, open API
+connections keep working and new ones fail, so run the lines together. A rotation does not end existing sessions: after a suspected
+leak, also end the role's sessions as the superuser (`select pg_terminate_backend(pid) from pg_stat_activity where usename = 'pp_app'`,
+then the recreate). `owner` and `etl` are
+used by one-shot containers only, so nothing needs a restart. `pp_stager` has no password to rotate. The bootstrap `POSTGRES_PASSWORD` is
+rotated as before (section 12: `ALTER ROLE` plus `db.env`); since no `DATABASE_URL` uses it, the API is not affected.
+
+**Rollback to a release from before this change.** Its `deploy.sh` requires `DATABASE_URL` user = `POSTGRES_USER`. `rollback.sh` (images
+only) keeps working, because `pp_app` has everything the API needs; a full `deploy.sh` of such a release needs the old `api.env` line back,
+which the LEAD would have to approve (it is the superuser again).
+
 ---
 
 ## 4. First install, step by step
@@ -212,7 +304,8 @@ Every step that touches the server is the operator's, after the LEAD's go. `LEAD
 3. Folders: `sudo install -d -m 750 -o root -g ppdeploy /etc/pretasiplus && sudo install -d -o ppdeploy -g ppdeploy -m 700 /var/backups/pretasiplus /var/lib/pretasiplus-deploy /var/log/pretasiplus /srv/pretasiplus/letsencrypt /srv/pretasiplus/letsencrypt-log /srv/pretasiplus/certbot-webroot`
    (a separate encrypted volume mounted at `/var/backups/pretasiplus` is better).
 4. Env files: `sudo install -m 640 -o root -g ppdeploy deploy/vps/.env.prod.example /etc/pretasiplus/prod.env`, same for `api.env.example` -> `api.env`
-   and `db.env.example` -> `db.env`; edit all three with `sudoedit` (`LEAD:` values). Choose the size profile of section 13.
+   and `db.env.example` -> `db.env`; edit all three with `sudoedit` (`LEAD:` values; leave the `api.env` `DATABASE_URL` line as it is). Choose the size profile of section 13.
+   Then `sudo deploy/vps/db-roles.sh secrets`: it writes the `api.env` `DATABASE_URL` (`pp_app`) and creates `migrate.env` and `etl.env` (section 3.1).
 5. Dry run: `deploy/vps/deploy.sh --dry-run`. **Before step 6 the only failure it should report is the missing-certificate line** (`no certificate for ...`); everything else must already pass. After step 6 it must end with `preflight passed`. It prints every step it would run.
 6. Certificate (section 6): `deploy/vps/tls/init-cert.sh --dry-run`, then `deploy/vps/tls/init-cert.sh`.
 7. Deploy (section 7): `deploy/vps/deploy.sh`. On a first install there is nothing to back up; the script says so.
@@ -277,15 +370,15 @@ deploy/vps/deploy.sh                    # asks you to type the domain: the LEAD'
 
 What it does, in order (`deploy.sh --help`):
 
-1. **Preflight.** Tools and Compose version; the three env files exist, mode `640` (`root:ppdeploy`; `600`/`400` also pass) and are neither readable by others nor writable by the group; **no placeholder** (`change-me`, `USER:PASSWORD`,
+1. **Preflight.** Tools and Compose version; the five env files exist, mode `640` (`root:ppdeploy`; `600`/`400` also pass) and are neither readable by others nor writable by the group; **no placeholder** (`change-me`, `USER:PASSWORD`,
    `app.example.my`, the dev WhatsApp number, ...); **fail-closed guard**: refuses if `ALLOW_DEMO_SEED`, `BIJAK_POC_QUESTIONS` or `MAIL_LOG_RESET_LINKS` is `true`/`1`
    in any env file or the shell; secrets 32+ characters, `IC_HASH_KEY` different from `SESSION_SECRET` (what the API enforces at boot, plus the 32-character team policy);
-   `DATABASE_URL` matches `db.env` (host `db`, user, database, password); stop grace above `SHUTDOWN_GRACE_MS`; the certificate is readable (directly, or through the running edge when `live/` is root-only) and is **not self-signed** (issuer differs from subject: the `init-cert.sh` placeholder is refused), not expired; `docker compose config -q`
+   the three `DATABASE_URL`s (`api.env`, `migrate.env`, `etl.env`) use host `db`, the `POSTGRES_DB` database and their own role (`pp_app`, `pp_owner`, `pp_etl`, never the superuser), with three different 32+ character passwords (section 3.1); stop grace above `SHUTDOWN_GRACE_MS`; the certificate is readable (directly, or through the running edge when `live/` is root-only) and is **not self-signed** (issuer differs from subject: the `init-cert.sh` placeholder is refused), not expired; `docker compose config -q`
    passes with the overlay; **single-instance guard** (section 14); the working tree is clean (`--allow-dirty` to override).
 2. **Pre-deploy backup** (`backup.sh --tag pre-deploy --no-files`) if the database is running. `--skip-backup` exists and is logged as a warning: do not use it with a migrating release.
 3. **Build or pull** the three images tagged with the git sha.
-4. `db` up and healthy.
-5. **Migrate**: one-shot `migrate` runs `prisma migrate deploy` only. Never a seed. Idempotent. A failed migration stops the deploy before the API is touched.
+4. `db` up and healthy, then `db-roles.sh apply` (idempotent; section 3.1).
+5. **Migrate**: one-shot `migrate` runs `prisma migrate deploy` only, as `pp_owner`. Never a seed. Idempotent. A failed migration stops the deploy before the API is touched. Then `db-roles.sh check`: a FAIL stops the deploy the same way.
 6. `api` and `frontend` up, `--wait` for healthy.
 7. **Edge** recreated (rendered nginx config and certificate are re-read). A blip of about a second on 80/443.
 8. **Health checks through the edge** (real host name, forced to 127.0.0.1): `/api/health` 200, `/api/ready` 200 `ready` (database up and every shipped migration applied), `/` 200,
@@ -340,7 +433,8 @@ Use `--checkout` when `compose.prod.yaml` or the nginx files changed in the bad 
   2. Prove the chosen dump is intact: `(cd /var/backups/pretasiplus && sha256sum -c <dump>.sha256)` and `$PC exec -T db pg_restore --list < <dump> | head`. (The full row-count drill compares against the live database, so it only applies to a fresh dump of an idle database: section 9.)
   3. `$PC cp <dump> db:/tmp/restore.dump`, then
      `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'`, then
-     `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error /tmp/restore.dump'`, then `$PC exec db rm /tmp/restore.dump`.
+     `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error /tmp/restore.dump'`, then `$PC exec db rm /tmp/restore.dump`,
+     then **`deploy/vps/db-roles.sh apply` and `deploy/vps/db-roles.sh check`** (the new database and the restored objects belong to the superuser, and `pp_app` has no `CONNECT` until `apply`; section 3.1). **Do not start the api (step 4) before `check` ends with `DB ROLES CHECK PASSED`.**
   4. Roll the images back (`rollback.sh --checkout <tag>`; this also works right after a failed deploy, see section 7), then `$PC up -d --wait --no-deps api frontend`. Check `/api/ready` and a login.
   5. Uploads: restore from the newest `pp-files-*.tar.gz` only if the files volume was damaged (`$PC exec -T api tar -xzf - -C /var/lib/pretasiplus/files < archive`; the api rootfs is read-only but the volume is writable).
   6. Record the incident (what, when, which dump, data-loss window) and tell the LEAD.
@@ -474,8 +568,9 @@ Useful: `docker compose ... logs --since 15m api | grep '"level":50'` (errors); 
 
 - Secrets exist only in `/etc/pretasiplus/*.env` (and the operator's password manager / the LEAD's vault). Never in the repo, in build args (`VITE_*` are public), in chat or in an issue.
 - Rotation procedure and effects per secret: [api-runbook.md](api-runbook.md) section 13 (`SESSION_SECRET` logs everyone out; `IC_HASH_KEY` **breaks IC lookups until every hash is recomputed: do not rotate without a plan from the backend developers**;
-  `DATABASE_URL`/`POSTGRES_PASSWORD` need `ALTER ROLE` because `POSTGRES_PASSWORD` only applies at first init).
-- On this stack a rotation is: `sudoedit /etc/pretasiplus/api.env` (and `db.env` + `ALTER ROLE` for the database), then `docker compose ... up -d --force-recreate api`, check `/api/ready` and one login, delete the old value. LEAD confirmation first.
+  `POSTGRES_PASSWORD` needs `ALTER ROLE` because it only applies at first init). The three role passwords (`DATABASE_URL` in `api.env`,
+  `migrate.env`, `etl.env`) are rotated with `db-roles.sh secrets --rotate` (section 3.1).
+- On this stack a rotation is: `sudoedit /etc/pretasiplus/api.env` (and `db.env` + `ALTER ROLE` for the bootstrap superuser; the role passwords: section 3.1), then `docker compose ... up -d --force-recreate api`, check `/api/ready` and one login, delete the old value. LEAD confirmation first.
 - Suggested schedule: every 90 days and after any suspected leak; a leaked secret or dump is reported to the LEAD the same day (PDPA).
 - CI/CD tokens: this pack adds none. Deploys are run by the deploy user on the server (no CI deploy token with access to production exists). If a CI deploy is added later: a dedicated key, restricted to `deploy.sh` through a forced command, no registry write scope.
 
@@ -588,7 +683,7 @@ decision D-3 "is migration needed at go-live" are open, see [go-live-bijak-spm.m
 | T-2 h | Rollback readiness: previous image tag present (`previous.tag`), disk free > 30%, last scheduled backup < 24 h old and off-site, operator awake and `sudo`-capable, on-call phone list | AZ | checklist ticked |
 | **T-1 h** | **Pre-cutover backup**: `deploy/vps/backup/backup.sh --tag pre-deploy` (dump + sha256 + off-site copy), verify the off-site copy is there; record file name and sha256 in the cutover log | AZ | file and hash recorded |
 | T-1 h | **Deploy / migrate**: `deploy/vps/deploy.sh` (confirmation typed by the LEAD's go): builds, runs the schema migrations, starts the release. Health checks pass through the edge | AZ | `deploy complete` |
-| **T0 slot** | **Half-AM migration slot**: AM runs the BE-30 orchestrator against this database (freeze window, dry-run, `--apply` with its `PP_ALLOW_MIGRATE_APPLY` / `PP_MIGRATE_TARGET_DB` guards, delta run, reconciliation). AZ keeps the API reachable only to the team (DNS not switched yet), watches `docker stats`, `logs api`, disk and `pg_stat_activity`, and **takes a second dump right after the load** (`backup.sh --tag pre-deploy`) so the migrated state is restorable. How AM runs the tooling on the VPS (for example `docker compose ... run --rm --no-deps -e PP_ALLOW_MIGRATE_APPLY=1 -e PP_MIGRATE_TARGET_DB=<db> migrate <command>` from the `migrate` image, which has the tooling) is **unverified** and agreed with AM before T-2 d | AM (runs), AZ (supports) | reconciliation green (AM's report); dump taken |
+| **T0 slot** | **Half-AM migration slot**: AM runs the BE-30 orchestrator against this database (freeze window, dry-run, `--apply` with its `PP_ALLOW_MIGRATE_APPLY` / `PP_MIGRATE_TARGET_DB` guards, delta run, reconciliation). AZ keeps the API reachable only to the team (DNS not switched yet), watches `docker stats`, `logs api`, disk and `pg_stat_activity`, and **takes a second dump right after the load** (`backup.sh --tag pre-deploy`) so the migrated state is restorable. How AM runs the tooling on the VPS (for example `docker compose ... run --rm --no-deps -e PP_ALLOW_MIGRATE_APPLY=1 -e PP_MIGRATE_TARGET_DB=<db> migrate <command>` from the `migrate` image, which has the tooling; it must add `--env-from-file /etc/pretasiplus/etl.env` so `migrate:*` run as `pp_etl`, not as the schema owner, section 3.1) is **unverified** and agreed with AM before T-2 d | AM (runs), AZ (supports) | reconciliation green (AM's report); dump taken |
 | T0 + 15 min | **Smoke test** on the real name through the edge (section 7 list), including login of a migrated account, a Bijak attempt, an upload, the throttle/XFF check from two networks, the metrics 404 | AZ + QA | all pass |
 | **T0 + 30 min** | **Go / no-go** (below). On go: **DNS switch** (change the A record to the VPS (no AAAA record); they should already be, in which case this is lifting the access restriction). Announce | LEAD | decision logged |
 | T0 + 30 min, on go | **Open self-registration** (after the DNS switch). As the deploy user, from the repo checkout: `sudoedit /etc/pretasiplus/api.env` and set `REGISTRATION_OPEN=true`; then recreate only the api: `PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag) docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env up -d --no-deps --force-recreate --wait api` (`PP_IMAGE_TAG` keeps the running release; without it compose falls back to the `prod` tag; add `--profile ...` if `PP_PROFILES` is set). Check: `curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' https://$PP_DOMAIN/api/auth/register` gives 422 (open; an empty body creates nothing) instead of 403 (closed); `/api/ready` 200. Rollback: close again with the same edit (`false`) and recreate | AZ (LEAD gives the go) | probe 422, `/api/ready` 200 |
