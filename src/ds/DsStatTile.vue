@@ -210,7 +210,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
       <DsIconChip v-else-if="icon" :icon="icon" :accent="accent" :tone="tone" :size="chipSize" />
       <div class="flex min-w-0 flex-col items-start gap-2 staff:gap-0.5">
         <span
-          class="tabular font-display font-extrabold staff:text-kpi"
+          class="tabular max-w-full font-display font-extrabold wrap-anywhere staff:text-kpi"
           :class="[numberClass, isRoomy ? 'text-title' : 'text-heading']"
           :data-testid="valueTestid ?? part('value')"
           >{{ value }}</span
