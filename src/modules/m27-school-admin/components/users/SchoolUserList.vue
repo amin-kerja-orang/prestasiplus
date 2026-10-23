@@ -22,6 +22,7 @@ import { useApi, useFlash, useSession } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
 import {
   DsBackLink,
+  DsCluster,
   DsDataTable,
   DsEmptyState,
   DsFilterBar,
@@ -33,9 +34,11 @@ import {
   DsPanel,
   DsStatTile,
   DsStatusBadge,
+  DsText,
   useConfirm,
   type CardField,
 } from '@/ds'
+import { useMedia } from '@/ds/useMedia'
 import { formatDateKey } from '@/lib/time'
 import { clock } from '@/lib/time/clock'
 import { saveBlob } from '@/lib/save-blob'
@@ -277,8 +280,10 @@ async function exportCsv(): Promise<void> {
 //   below `xl`  #, Nama, Emel, Aktif?, Tindakan;
 //   from `xl`   + Tingkatan and Kelas (pupil) / Kelas (teacher);
 //   from `2xl`  + Telefon (pupil) / Telefon and Login Terakhir (teacher).
-// Tarikh never shows in the table: the card is capped at ~1080px inside, and nine columns plus a 20-character name
-// need ~1110px. The column stays in the DOM (header and cell texts) for the unit and e2e specs.
+// Tarikh never gets its own column: the card is capped at ~1080px inside, and nine columns plus a 20-character name
+// need ~1110px. No field is dropped: every value of a hidden column shows as a small muted line under the name
+// (`SUB_FIELDS`, hidden by the inverse breakpoint class), so the registration date is always reachable. The hidden
+// "Tarikh" column stays in the DOM (header and cell texts) for the unit and e2e specs.
 // `UTable` reads per-cell classes from the column meta key `class`; the key is computed so the class linter
 // does not read it as a class list. Full class strings: Tailwind reads the source text.
 // eslint-disable-next-line pp/ds-class-allowlist -- an object key, not a class list
@@ -297,6 +302,11 @@ const WIDTHS: Record<string, string> = {
   date: 'hidden',
   actions: 'w-40',
 }
+// Same breakpoints as the column classes (`xl` 1280, `2xl` 1536); `useMedia` is true without `matchMedia` (jsdom).
+const minWidth = (px: number) => useMedia(`(width >= ${px}px)`)
+const xl = minWidth(1280)
+const xxl = minWidth(1536)
+
 const sized = (cols: TableColumn<Item>[]): TableColumn<Item>[] =>
   cols.map((c) => {
     const key = String(c.id ?? (c as { accessorKey?: string }).accessorKey)
@@ -347,12 +357,14 @@ const cardFields = computed<CardField[]>(() =>
         { key: 'phone', label: 'Telefon' },
         { key: 'grade', label: 'Tingkatan' },
         { key: 'kelas', label: 'Kelas' },
+        { key: 'date', label: 'Tarikh' },
       ]
     : [
         { key: 'email', label: 'Emel' },
         { key: 'phone', label: 'Telefon' },
         { key: 'kelas', label: 'Kelas' },
         { key: 'lastLogin', label: 'Login Terakhir' },
+        { key: 'date', label: 'Tarikh' },
       ],
 )
 
@@ -504,6 +516,32 @@ function openRow(row: Item): void {
               }}</span>
             </template>
           </DsIdentity>
+          <!-- The values of the columns hidden at this width (the breakpoints of `WIDTHS`), no field is dropped. -->
+          <DsCluster gap="sm" align="start" data-testid="user-sub">
+            <DsText
+              v-if="isPupil && !xl"
+              as="span"
+              variant="caption"
+              data-testid="user-sub-grade"
+              >{{ row.original.grade === '-' ? 'Tingkatan: -' : row.original.grade }}</DsText
+            >
+            <DsText v-if="!xl" as="span" variant="caption" data-testid="user-sub-kelas"
+              >Kelas: {{ row.original.kelas }}</DsText
+            >
+            <DsText v-if="!xxl" as="span" variant="caption" data-testid="user-sub-phone"
+              >Telefon: {{ row.original.phone }}</DsText
+            >
+            <DsText
+              v-if="!isPupil && !xxl"
+              as="span"
+              variant="caption"
+              data-testid="user-sub-last-login"
+              >Login Terakhir: {{ row.original.lastLogin }}</DsText
+            >
+            <DsText as="span" variant="caption" data-testid="user-sub-date"
+              >Tarikh: {{ row.original.date }}</DsText
+            >
+          </DsCluster>
         </template>
         <template #email-cell="{ row }">
           <span class="block truncate" :title="row.original.email" data-testid="user-email">{{
