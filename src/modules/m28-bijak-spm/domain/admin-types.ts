@@ -165,6 +165,8 @@ export interface StimulusSharers {
 export interface BankRow {
   id: string
   groupId?: string
+  /** Number of questions in the stimulus group (set whenever `groupId` is). */
+  groupSize?: number
   subject: SubjectCode
   subjectName: string
   kertas: number
@@ -211,6 +213,8 @@ export interface BankDetail {
   history: HistoryEntry[]
   usedInPapers: { id: string; title: string }[]
   pendingRevision: boolean
+  /** The questions that share the stimulus (set whenever the question is in a group). */
+  sharers?: StimulusSharers
 }
 
 /* ------------------------------------------------------------------------------- papers */

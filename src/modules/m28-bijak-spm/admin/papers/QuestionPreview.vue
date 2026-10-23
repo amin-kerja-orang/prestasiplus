@@ -20,8 +20,10 @@ withDefaults(
     hideScheme?: boolean
     /** Number of the first question. */
     start?: number
+    /** How many questions share the stimulus when only one of them is shown (bank preview). */
+    sharedCount?: number
   }>(),
-  { stimulus: undefined, optionBank: undefined, hideScheme: false, start: 1 },
+  { stimulus: undefined, optionBank: undefined, hideScheme: false, start: 1, sharedCount: 0 },
 )
 
 const LETTERS = 'ABCDEFGH'
@@ -38,7 +40,9 @@ function flat(parts: PartDef[], depth = 0): { part: PartDef; depth: number }[] {
         {{
           questions.length > 1
             ? `Rangsangan dikongsi oleh ${questions.length} soalan (dipaparkan sekali)`
-            : 'Rangsangan soalan ini'
+            : sharedCount > 1
+              ? `Rangsangan dikongsi oleh ${sharedCount} soalan`
+              : 'Rangsangan soalan ini'
         }}
       </p>
       <StimulusView :stimulus="stimulus" />

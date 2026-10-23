@@ -76,8 +76,11 @@ export interface AdminHost {
 const SEED_BY_KEY = new Map<string, ReviewSeed>(REVIEW_SEEDS.map((s) => [s.key, s]))
 const SEED_OF_Q = new Map<string, ReviewSeed>()
 const SEED_Q = new Map<string, QuestionDef>()
+/** Stimulus groups of review units, by group id (a unit's key is not always its group id). */
+const SEED_GROUP = new Map<string, NonNullable<ReviewSeed['group']>>()
 const SEED_SCHEMES = new Map<string, SchemeDef>()
 for (const s of REVIEW_SEEDS) {
+  if (s.group) SEED_GROUP.set(s.group.def.id, s.group)
   for (const q of s.questions) {
     SEED_OF_Q.set(q.id, s)
     SEED_Q.set(q.id, q)
@@ -90,6 +93,7 @@ const DYN_KEY_OF_Q = new Map<string, string>()
 
 function registerSeed(s: ReviewSeed): void {
   SEED_BY_KEY.set(s.key, s)
+  if (s.group) SEED_GROUP.set(s.group.def.id, s.group)
   for (const q of s.questions) {
     SEED_OF_Q.set(q.id, s)
     SEED_Q.set(q.id, q)
@@ -103,11 +107,11 @@ const plain = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T
 const getQ = (id: string): QuestionDef | undefined => BANK.questions.get(id) ?? SEED_Q.get(id)
 const getScheme = (id: string): SchemeDef | undefined =>
   BANK.schemes.get(id) ?? SEED_SCHEMES.get(id)
-const getGroup = (gid: string) => BANK.groups.get(gid) ?? SEED_BY_KEY.get(gid)?.group?.def
+const getGroup = (gid: string) => BANK.groups.get(gid) ?? SEED_GROUP.get(gid)?.def
 const getStimulus = (gid: string): StimulusDef | undefined => {
   const g = BANK.groups.get(gid)
   if (g) return BANK.stimuli.get(g.stimulusId)
-  return SEED_BY_KEY.get(gid)?.group?.stimulus
+  return SEED_GROUP.get(gid)?.stimulus
 }
 const membersOf = (gid: string): string[] => getGroup(gid)?.questionIds ?? []
 const groupOf = (qid: string): string | undefined => getQ(qid)?.groupId
@@ -831,11 +835,16 @@ export class AdminOps {
     }))
   }
 
+  /** Questions that share the stimulus of `q`; a group always counts at least the question itself. */
+  private groupSizeOf(q: QuestionDef): number {
+    return Math.max(1, sharersOf(q.groupId!)?.count ?? 0)
+  }
+
   private bankRow(qid: string): BankRow {
     const q = getQ(qid)!
     return {
       id: qid,
-      ...(q.groupId ? { groupId: q.groupId } : {}),
+      ...(q.groupId ? { groupId: q.groupId, groupSize: this.groupSizeOf(q) } : {}),
       subject: q.curriculum.subject,
       subjectName: subjectName(q.curriculum.subject),
       kertas: kertasOf(qid),
@@ -916,6 +925,7 @@ export class AdminOps {
       ],
       usedInPapers: this.usedIn(qid),
       pendingRevision: !!rec?.revision,
+      ...(q.groupId ? { sharers: sharersOf(q.groupId)! } : {}),
     }
   }
 

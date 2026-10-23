@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { sharersText } from '../admin/papers/ui'
+import { BANK } from '../data/registry'
 import { BijakServer, MemoryStorage } from '../server/store'
 
 const make = () => new BijakServer({ storage: new MemoryStorage() })
@@ -68,5 +69,42 @@ describe('shared stimulus: who shares it (FB-002)', () => {
         questions: [{ id: 'q', label: 'Soalan 1' }],
       }),
     ).toBe('Petikan 1 hanya digunakan oleh soalan ini.')
+  })
+})
+
+describe('bank list: group size on every member (FB-003)', () => {
+  it('every question of a stimulus group carries the group id and the real size', async () => {
+    const rows = await make().listBank({ status: 'semua' })
+    for (const g of BANK.groups.values()) {
+      for (const id of g.questionIds) {
+        const row = rows.find((r) => r.id === id)!
+        expect(row.groupId, id).toBe(g.id)
+        expect(row.groupSize, id).toBe(g.questionIds.length)
+      }
+    }
+    expect(rows.filter((r) => r.groupId).every((r) => (r.groupSize ?? 0) >= 1)).toBe(true)
+    expect(rows.filter((r) => !r.groupId).every((r) => r.groupSize === undefined)).toBe(true)
+  })
+
+  it('a group waiting for review shows its size too', async () => {
+    const rows = await make().listBank({ status: 'semua' })
+    const pending = rows.filter((r) => r.groupId === 'mat2-rev-g1')
+    expect(pending.map((r) => r.groupSize)).toEqual([2, 2])
+  })
+
+  it('both members of mat2-segitiga show Kumpulan 2 soalan', async () => {
+    const rows = await make().listBank({ status: 'semua' })
+    for (const id of ['mat2-segitiga-v1-q1', 'mat2-segitiga-v1-q2', 'mat2-segitiga-v2-q1', 'mat2-segitiga-v2-q2'])
+      expect(rows.find((r) => r.id === id)).toMatchObject({ groupSize: 2 })
+  })
+
+  it('the preview lists the siblings of a member', async () => {
+    const d = await make().getBankDetail('mat1-g1-q2')
+    expect(d.sharers!.questions.map((q) => q.id).filter((id) => id !== 'mat1-g1-q2')).toEqual([
+      'mat1-g1-q1',
+      'mat1-g1-q3',
+      'mat1-g1-q4',
+    ])
+    expect((await make().getBankDetail('mat1-pub-1')).sharers).toBeUndefined()
   })
 })
