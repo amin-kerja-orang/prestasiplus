@@ -229,6 +229,8 @@ Assumption (D29a, user): questions are **not** migrated; the new bank is loaded 
 
 **Historical snapshot, link later.**
 
+**Update (QLOAD, LEAD decision A, 2026-10-24):** the approved MCQs of the legacy bank (status `diluluskan`, type `mcq`) are loaded from `archive_cloud` into the v2 bank by `migrate:questions`, a standalone command run after `migrate:all` (runbook section 12, step 7). The link backfill below then matches first through the id map (`etl_id_map` entity `questions`). Everything else in the archive stays unmigrated.
+
 1. **At extract time, join each attempt to its legacy question once** (the legacy tables are still in the staging schema) and write onto the migrated row: `subject_id`, `education_level_id`, `chapter_id`, `topic_id`, `difficulty_level`, `question_type`, `is_correct`, `selected_label` (the .cloud `selected_option`), `time_seconds`, `answered_at`.
 2. **Keep three soft references, none a foreign key:** `legacy_question_ref` (the old `questions.id`), `legacy_content_hash` (hash of normalised stem plus options), and, where the question came from a canonical paper, `source_natural_key` plus `number_label`. Add a nullable `question_id` to the new bank.
 3. **Backfill job (optional, after the reload):** fill `question_id` for rows whose `source_natural_key` plus `number_label` or hash matches a new question. Unmatched rows stay `NULL` forever and still count in every statistic because the dimensions are on the row. Cutover never waits for it.
@@ -281,7 +283,7 @@ Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replace
 
 ### 4.3 M04: question bank
 
-- Realign the whole store to the **new exam schema** (to be shared by the user). Nothing from .cloud is loaded except the archive.
+- Realign the whole store to the **new exam schema** (to be shared by the user). Nothing from .cloud is loaded except the archive, **with one exception (QLOAD, 2026-10-24):** `migrate:questions` loads the approved MCQs (`diluluskan`, `mcq`) with their options as published, live, active single-part questions (`questions.legacy_source` / `legacy_id`, migration 0043; deviations row 2026-10-24).
 - Enum differences to keep in mind for the archive and any status filter: question status BM vs English, `compliance_status` includes `ai_verified` (prototype has a separate `aiVerified` facet and a `draft` value instead).
 - `question_reports` and `question_submissions` need a decision on what to keep (Q4, Q9); their question references cannot be preserved.
 - Reserved id ranges, `contributeAnchors`, virtual dataset and `qualityBucket` facets are mock-only.
@@ -383,7 +385,7 @@ Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replace
 4. Content and operations: `banners`, `articles`, `notes`, `videos`, `audio_kbat`, `notifications`, `support_tickets`, `payments`, `invoices`, marketplace, sponsorship, `audit_logs`.
 
 Aligned with `v2-backend-plan.md` section 14.7 (2026-10-19): in B1 the ETL does not load `settings`, `feature_flags`, `teacher_badges`, `teacher_badge_user`, `mood_checkins`, `payments`, `invoices`, `audit_logs`, marketplace, sponsorship or `battle_queue`/`battle_invites`; `packages` is open (plan OD-27, BE-28 skips it). Their tables are staged and profiled only.
-5. Archive the question tables; start the new intake; run the optional backfill.
+5. Archive the question tables; run `migrate:questions` (approved MCQs into the v2 bank, after `migrate:all`); start the new intake; run the optional backfill.
 
 ### 6.2 Realignment tasks (before and during backend work)
 

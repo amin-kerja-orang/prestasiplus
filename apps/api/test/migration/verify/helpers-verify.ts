@@ -51,3 +51,6 @@ export async function legacyTableCounts(h: ActivityHarness): Promise<Record<stri
 }
 
 export { bootActivity }
+
+/** `migrate:questions` is standalone (not part of `migrate:all`), so its `required: false` row is `not-run` after a full run. */
+export const STANDALONE_NOT_RUN = (e: { entity: string; status: string }): boolean => e.entity === 'questions' && e.status === 'not-run'

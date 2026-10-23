@@ -36,48 +36,54 @@ export class QualityService {
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  /** `GET /question-quality`: every figure is counted from the stored scores and the question store. */
+  /** `GET /question-quality`: every figure is counted from the stored scores and the question store (streamed in keyset batches). */
   async summary(): Promise<QuestionQualitySummary> {
-    const questions = await this.ports.questionBank.listForQuality()
-    const stored = await this.prisma.client.questionQualityScore.findMany({ select: { questionId: true, score: true } })
-    const byId = new Map(stored.map((s) => [idToString(s.questionId), s.score]))
-    const scoredRows: Scored[] = []
-    for (const q of questions) {
-      const score = byId.get(q.id)
-      if (score !== undefined) scoredRows.push({ q, score })
-    }
-
-    const total = questions.length
-    const scoredCount = scoredRows.length
-    const sum = scoredRows.reduce((a, r) => a + r.score, 0)
-    const share = (n: number): number => (scoredCount === 0 ? 0 : round1((n * 100) / scoredCount))
-    const count = (band: string): number => scoredRows.filter((r) => bucketOfScore(r.score) === band).length
-
-    const excellentCount = count('cemerlang')
-    const baik = count('baik')
-    const lemah = count('lemah')
-    const kritikal = count('kritikal')
-    const low = scoredRows.filter((r) => r.score <= QUESTION_QUALITY_ACTION_MAX_SCORE)
-    const action = low.filter((r) => !r.q.isLegacy)
-    const legacyGeneric = scoredRows.filter((r) => r.q.isLegacy).length
-
     const subjects = new Map<string, { name: string; count: number; sum: number; excellent: number }>()
     const levelAgg = new Map<string, { count: number; sum: number }>()
-    for (const { q, score } of scoredRows) {
-      if (q.subjectId !== null) {
-        const e = subjects.get(q.subjectId) ?? { name: q.subjectName ?? '', count: 0, sum: 0, excellent: 0 }
-        e.count += 1
-        e.sum += score
-        if (bucketOfScore(score) === 'cemerlang') e.excellent += 1
-        subjects.set(q.subjectId, e)
+    const action: Scored[] = []
+    let total = 0
+    let scoredCount = 0
+    let sum = 0
+    let excellentCount = 0
+    let baik = 0
+    let lemah = 0
+    let kritikal = 0
+    let legacyGeneric = 0
+    await this.ports.questionBank.forEachQualityBatch(async (batch) => {
+      total += batch.length
+      const stored = await this.prisma.client.questionQualityScore.findMany({
+        where: { questionId: { in: batch.map((q) => idFromString(q.id)) } },
+        select: { questionId: true, score: true },
+      })
+      const byId = new Map(stored.map((s) => [idToString(s.questionId), s.score]))
+      for (const q of batch) {
+        const score = byId.get(q.id)
+        if (score === undefined) continue
+        scoredCount += 1
+        sum += score
+        const band = bucketOfScore(score)
+        if (band === 'cemerlang') excellentCount += 1
+        else if (band === 'baik') baik += 1
+        else if (band === 'lemah') lemah += 1
+        else if (band === 'kritikal') kritikal += 1
+        if (q.isLegacy) legacyGeneric += 1
+        if (score <= QUESTION_QUALITY_ACTION_MAX_SCORE && !q.isLegacy) action.push({ q, score })
+        if (q.subjectId !== null) {
+          const e = subjects.get(q.subjectId) ?? { name: q.subjectName ?? '', count: 0, sum: 0, excellent: 0 }
+          e.count += 1
+          e.sum += score
+          if (band === 'cemerlang') e.excellent += 1
+          subjects.set(q.subjectId, e)
+        }
+        if (q.educationLevelId !== null) {
+          const e = levelAgg.get(q.educationLevelId) ?? { count: 0, sum: 0 }
+          e.count += 1
+          e.sum += score
+          levelAgg.set(q.educationLevelId, e)
+        }
       }
-      if (q.educationLevelId !== null) {
-        const e = levelAgg.get(q.educationLevelId) ?? { count: 0, sum: 0 }
-        e.count += 1
-        e.sum += score
-        levelAgg.set(q.educationLevelId, e)
-      }
-    }
+    })
+    const share = (n: number): number => (scoredCount === 0 ? 0 : round1((n * 100) / scoredCount))
 
     const bySubject = [...subjects.entries()]
       .map(([subjectId, e]) => ({ subjectId, name: e.name, count: e.count, raw: e.sum / e.count, average: round1(e.sum / e.count), excellentPct: Math.round((e.excellent * 100) / e.count) }))
@@ -125,38 +131,41 @@ export class QualityService {
     }
   }
 
-  /** `POST /question-quality/audit`: scores EVERY question, one `quality_audits` row per run. */
+  /** `POST /question-quality/audit`: scores EVERY question (keyset batches, one statement each), one `quality_audits` row per run. */
   async audit(actor: WorkflowActor): Promise<{ data: { lastAuditAt: string }; status: string }> {
-    const questions = await this.ports.questionBank.listForQuality()
     const now = this.clock.now()
     const finishedAt = await this.prisma.transaction(async (tx) => {
-      const existing = await tx.questionQualityScore.findMany({ select: { questionId: true, score: true } })
-      const before = new Map(existing.map((s) => [idToString(s.questionId), s.score]))
-      const scores = questions.map((q) => {
-        const score = scoreQuestion(q)
-        return { id: q.id, score, bucket: bucketOfScore(score) }
-      })
       const run = await tx.qualityAudit.create({ data: { runById: idFromString(actor.userId), createdAt: now } })
-      // One statement for all scores (three array parameters, any catalogue size).
-      await tx.$executeRaw`
-        INSERT INTO question_quality_scores (question_id, score, bucket, audit_id, scored_at)
-        SELECT t.question_id, t.score, t.bucket, ${run.id}, ${now}
-          FROM unnest(${scores.map((x) => x.id)}::bigint[], ${scores.map((x) => x.score)}::int[], ${scores.map((x) => x.bucket)}::text[])
-               AS t(question_id, score, bucket)
-        ON CONFLICT (question_id) DO UPDATE
-          SET score = EXCLUDED.score, bucket = EXCLUDED.bucket, audit_id = EXCLUDED.audit_id, scored_at = EXCLUDED.scored_at`
+      let scored = 0
+      let changed = 0
+      let sum = 0
+      await this.ports.questionBank.forEachQualityBatch(async (batch) => {
+        const existing = await tx.questionQualityScore.findMany({
+          where: { questionId: { in: batch.map((q) => idFromString(q.id)) } },
+          select: { questionId: true, score: true },
+        })
+        const before = new Map(existing.map((s) => [idToString(s.questionId), s.score]))
+        const scores = batch.map((q) => {
+          const score = scoreQuestion(q)
+          return { id: q.id, score, bucket: bucketOfScore(score) }
+        })
+        // One statement per batch (three array parameters).
+        await tx.$executeRaw`
+          INSERT INTO question_quality_scores (question_id, score, bucket, audit_id, scored_at)
+          SELECT t.question_id, t.score, t.bucket, ${run.id}, ${now}
+            FROM unnest(${scores.map((x) => x.id)}::bigint[], ${scores.map((x) => x.score)}::int[], ${scores.map((x) => x.bucket)}::text[])
+                 AS t(question_id, score, bucket)
+          ON CONFLICT (question_id) DO UPDATE
+            SET score = EXCLUDED.score, bucket = EXCLUDED.bucket, audit_id = EXCLUDED.audit_id, scored_at = EXCLUDED.scored_at`
+        scored += scores.length
+        changed += scores.filter((s) => before.get(s.id) !== s.score).length
+        sum += scores.reduce((a, s) => a + s.score, 0)
+      })
       // Every current question was just stamped with this run; what is left belongs to deleted questions.
       await tx.$executeRaw`DELETE FROM question_quality_scores WHERE audit_id IS DISTINCT FROM ${run.id}`
-      const changed = scores.filter((s) => before.get(s.id) !== s.score).length
-      const sum = scores.reduce((a, s) => a + s.score, 0)
       await tx.qualityAudit.update({
         where: { id: run.id },
-        data: {
-          finishedAt: now,
-          findingCount: changed,
-          scoredCount: scores.length,
-          averageScore: scores.length === 0 ? 0 : sum / scores.length,
-        },
+        data: { finishedAt: now, findingCount: changed, scoredCount: scored, averageScore: scored === 0 ? 0 : sum / scored },
       })
       return now
     }, AUDIT_TX)

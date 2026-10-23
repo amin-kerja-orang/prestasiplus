@@ -1175,6 +1175,8 @@ create table "archive_cloud"."questions" (
   "type" text,
   "status" text,
   "body" text,
+  "explanation" text,
+  "image_path" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1187,6 +1189,7 @@ create table "archive_cloud"."question_options" (
   "question_id" bigint,
   "label" text,
   "body" text,
+  "image_path" text,
   "is_correct" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1194,6 +1197,8 @@ create table "archive_cloud"."question_options" (
   "_row_hash" text,
   primary key ("id")
 );
+
+create index "ix_question_options_question_id" on "archive_cloud"."question_options" ("question_id");
 
 create table "archive_cloud"."structured_questions" (
   "id" bigint,

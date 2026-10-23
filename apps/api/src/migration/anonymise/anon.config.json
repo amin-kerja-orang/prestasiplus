@@ -578,12 +578,15 @@
       "difficulty_level": "keep",
       "type": "keep",
       "status": "keep",
-      "body": "keep"
+      "body": "keep",
+      "explanation": "keep",
+      "image_path": "keep"
     },
     "question_options": {
       "question_id": "keep",
       "label": "keep",
       "body": "keep",
+      "image_path": "keep",
       "is_correct": "keep"
     },
     "structured_questions": {

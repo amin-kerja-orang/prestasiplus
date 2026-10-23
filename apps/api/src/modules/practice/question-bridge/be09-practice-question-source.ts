@@ -13,6 +13,8 @@ import { servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practic
 const HYDRATE_MAX = 500
 /** `sample` asks the bank for `n * OVER_FETCH` ids, and widens by the same factor while the draw comes up short. */
 export const OVER_FETCH = 4
+/** Windows one `sample` reads at most (each is a LIMIT-ed SQL draw, the last of `n * 4^MAX_ROUNDS` ids). */
+const MAX_ROUNDS = 4
 /** Refusals logged once per question version; the memory is bounded (cleared when full). */
 const LOGGED_MAX = 10_000
 
@@ -47,13 +49,13 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
   async sample(filter: PracticeSelection, n: number, rng: Prng): Promise<string[]> {
     if (!Number.isSafeInteger(n) || n <= 0) return []
     const f = this.filterOf(filter)
-    // BE-09 `sample` forces published + active and Fisher-Yates-shuffles the WHOLE eligible list before it
-    // slices, so a wider window keeps the same prefix as long as every window shuffles with the same stream.
-    // One child seed from the caller's stream gives each window an identical fresh copy: same seed, same draw.
+    // BE-09 `sample` forces published + active and orders by a seeded hash with a LIMIT, so a wider window keeps the
+    // same prefix as long as every window uses the same seed. One child seed from the caller's stream gives each
+    // window an identical fresh copy: same seed, same draw. No window ever loads the whole eligible set.
     const seed = rng.int(0, 0xffffffff)
     const out: string[] = []
     const seen = new Set<string>()
-    for (let limit = Math.min(n * OVER_FETCH, Number.MAX_SAFE_INTEGER); ; limit = Math.min(limit * OVER_FETCH, Number.MAX_SAFE_INTEGER)) {
+    for (let round = 0, limit = Math.min(n * OVER_FETCH, Number.MAX_SAFE_INTEGER); ; round++, limit = Math.min(limit * OVER_FETCH, Number.MAX_SAFE_INTEGER)) {
       const window = await this.questions.sample(f, limit, mulberry32(seed))
       // Only ids not already checked (a concurrent publish can shift the window; never serve one twice).
       const fresh = window.filter((id) => !seen.has(id))
@@ -64,7 +66,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
         if (servable.has(id)) out.push(id)
       }
       // Done when the draw is full, or the bank had no more eligible ids than this window asked for.
-      if (out.length >= n || window.length < limit || limit === Number.MAX_SAFE_INTEGER) return out
+      if (out.length >= n || window.length < limit || limit === Number.MAX_SAFE_INTEGER || round >= MAX_ROUNDS) return out
     }
   }
 
@@ -73,6 +75,30 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     const ids = await this.questions.eligibleIds({ chapterId, type: 'mcq' })
     const servable = await this.servableIds(ids)
     return ids.filter((id) => servable.has(id))
+  }
+
+  async chapterCounts(chapterIds: readonly string[]): Promise<ReadonlyMap<string, number>> {
+    const wanted = [...new Set(chapterIds)].filter(isIdString)
+    if (wanted.length === 0) return new Map()
+    // The SQL scope is the servable shape (one MCQ, no group); loaded questions are single-part MCQ by construction.
+    return this.questions.groupCount('chapter', { chapterIds: wanted, type: 'mcq', ungrouped: true, status: 'published', active: true })
+  }
+
+  async chapterPage(chapterId: string, excludeIds: readonly string[], limit: number): Promise<string[]> {
+    if (!isIdString(chapterId) || !Number.isSafeInteger(limit) || limit <= 0) return []
+    const exclude = excludeIds.filter(isIdString)
+    const out: string[] = []
+    let after: string | undefined
+    // Keyset pages of the chapter; ids the hydration refuses (`servableMcq`) are skipped and the next page read.
+    while (out.length < limit) {
+      const page = await this.questions.eligibleIdsPage({ chapterId, type: 'mcq', ungrouped: true, excludeIds: exclude }, after, Math.max(limit, 50))
+      if (page.length === 0) break
+      after = page[page.length - 1]
+      const servable = await this.servableIds(page)
+      for (const id of page) if (out.length < limit && servable.has(id)) out.push(id)
+      if (page.length < Math.max(limit, 50)) break
+    }
+    return out
   }
 
   async live(ids: readonly string[]): Promise<ReadonlyMap<string, PracticeQuestion>> {

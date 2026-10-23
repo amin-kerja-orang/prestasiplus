@@ -94,6 +94,20 @@ export interface NewGroup {
   optionBank: { label: string; bodyMs: string | null; bodyEn: string | null }[]
 }
 
+/** Facts of one question (latest version) the quality audit scores. */
+export interface QualityRow {
+  id: string
+  stemMs: string | null
+  stemEn: string | null
+  explanationMs: string | null
+  explanationEn: string | null
+  sourceType: string | null
+  subjectId: string | null
+  educationLevelId: string | null
+  setLabel: string | null
+  hasSp: boolean
+}
+
 export interface IdPage {
   ids: string[]
   total: number
@@ -111,6 +125,13 @@ type VersionRow = PrismaTypes.QuestionVersionGetPayload<{
 const PKSK_TAG = 'pksk_domain'
 const NOT_PKSK = Prisma.sql`NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
 const IS_PKSK = Prisma.sql`EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
+
+/** Most ids `eligibleIds` returns (it throws beyond it) and the cap of one keyset page. */
+export const ELIGIBLE_IDS_MAX = 5000
+/** Largest draw one `sampleIds` call returns (a guard; real draws are tens of ids). */
+const SAMPLE_MAX = 50_000
+/** Ids per `eligibleAmong` statement (one bind parameter array, chunked only for very long lists). */
+const AMONG_CHUNK = 5000
 
 const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, published: 0, archived: 0 })
 
@@ -196,13 +217,72 @@ export class QuestionsRepository {
   }
 
   async groupCount(by: GroupCountBy, filter: QuestionFilter = {}): Promise<Map<string, number>> {
-    const column = { subject: 'v.subject_id', level: 'v.education_level_id', status: 'v.status', difficultyTp: 'v.difficulty_tp', unit: 'v.unit_node_id' }[by]
+    const column = { subject: 'v.subject_id', level: 'v.education_level_id', status: 'v.status', difficultyTp: 'v.difficulty_tp', unit: 'v.unit_node_id', chapter: 'v.chapter_id' }[by]
     const { from, where } = this.scope(filter)
     const rows = await this.db.$queryRaw<{ k: bigint | string | number | null; n: number }[]>`
       SELECT ${Prisma.raw(column)} AS k, count(*)::int AS n ${from} WHERE ${where} GROUP BY 1`
     const out = new Map<string, number>()
     for (const r of rows) if (r.k !== null) out.set(String(r.k), r.n)
     return out
+  }
+
+  /** Eligible-style counts grouped by (level, TP) in ONE statement: the SPM pool splits. `filter` is used as given. */
+  async groupCountsByLevelTp(filter: QuestionFilter = {}): Promise<{ levelId: string | null; tp: number | null; n: number }[]> {
+    const { from, where } = this.scope(filter)
+    const rows = await this.db.$queryRaw<{ level_id: bigint | null; tp: number | null; n: number }[]>`
+      SELECT v.education_level_id AS level_id, v.difficulty_tp AS tp, count(*)::int AS n ${from} WHERE ${where} GROUP BY 1, 2`
+    return rows.map((r) => ({ levelId: r.level_id === null ? null : idToString(r.level_id), tp: r.tp, n: r.n }))
+  }
+
+  /**
+   * Keyset page over the LATEST version (any status, no PKSK), ids ascending after `after`, with only the facts the quality
+   * audit scores. No totals, no OFFSET, no hydration of parts: one bounded statement per batch.
+   */
+  async qualityBatch(after: string | undefined, limit: number): Promise<QualityRow[]> {
+    const key = after === undefined ? null : bi(after)
+    if (after !== undefined && key === null) return []
+    const size = Math.max(1, Math.min(Math.floor(limit), 2000))
+    const rows = await this.db.$queryRaw<
+      {
+        id: bigint
+        stem_ms: string | null
+        stem_en: string | null
+        explanation_ms: string | null
+        explanation_en: string | null
+        source_type: string | null
+        subject_id: bigint | null
+        education_level_id: bigint | null
+        set_label: string | null
+        has_sp: boolean
+      }[]
+    >`
+      SELECT q.id, v.stem_ms, v.stem_en, v.explanation_ms, v.explanation_en, q.source_type, v.subject_id, v.education_level_id, v.set_label,
+             EXISTS (SELECT 1 FROM question_version_sp_nodes s WHERE s.question_version_id = v.id) AS has_sp
+        FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+       WHERE ${NOT_PKSK} ${key === null ? Prisma.empty : Prisma.sql`AND q.id > ${key}`}
+       ORDER BY q.id ASC LIMIT ${size}`
+    return rows.map((r) => ({
+      id: idToString(r.id),
+      stemMs: r.stem_ms,
+      stemEn: r.stem_en,
+      explanationMs: r.explanation_ms,
+      explanationEn: r.explanation_en,
+      sourceType: r.source_type,
+      subjectId: r.subject_id === null ? null : idToString(r.subject_id),
+      educationLevelId: r.education_level_id === null ? null : idToString(r.education_level_id),
+      setLabel: r.set_label,
+      hasSp: r.has_sp,
+    }))
+  }
+
+  /** `listIds` without the totals and status counts: one page (newest first) of the admin filter, by keyset (`idBelow`). */
+  async listIdsKeyset(filter: Omit<AdminListFilter, 'page' | 'pageSize'>, idBelow: string | undefined, limit: number): Promise<string[]> {
+    const conds = this.adminConds({ ...filter, page: 1, pageSize: limit })
+    const below = idBelow === undefined ? undefined : bi(idBelow)
+    if (idBelow !== undefined) conds.push(below === null || below === undefined ? Prisma.sql`FALSE` : Prisma.sql`q.id < ${below}`)
+    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${Prisma.join(conds, ' AND ')} ORDER BY q.id DESC LIMIT ${Math.max(1, limit)}`
+    return rows.map((r) => idToString(r.id))
   }
 
   async eligibleForPractice(id: string): Promise<boolean> {
@@ -215,22 +295,57 @@ export class QuestionsRepository {
     return rows.length > 0
   }
 
+  /**
+   * Ids of the live-published, active questions of `filter`, ascending. Bounded: it reads at most `ELIGIBLE_IDS_MAX` ids and
+   * THROWS when the filter matches more (never a silent truncation). Meant for small domains (a chapter, a tracking set,
+   * a test fixture). A draw uses `sampleIds` / `sample`, a membership check `eligibleAmong`, a full walk `eligibleIdsPage`.
+   */
   async eligibleIds(filter: QuestionFilter = {}): Promise<string[]> {
     const { from, where } = this.scope({ ...filter, status: 'published', active: true })
-    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC`
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${ELIGIBLE_IDS_MAX + 1}`
+    if (rows.length > ELIGIBLE_IDS_MAX) {
+      throw new Error(`eligibleIds matched more than ${String(ELIGIBLE_IDS_MAX)} questions: use sampleIds, eligibleAmong or eligibleIdsPage`)
+    }
     return rows.map((r) => idToString(r.id))
   }
 
-  async sample(filter: SampleFilter, n: number, rng: Prng): Promise<string[]> {
-    const ids = await this.eligibleIds(filter)
-    // Fisher-Yates over the ascending list with the supplied stream: same seed, same ids. Never Math.random.
-    for (let i = ids.length - 1; i > 0; i--) {
-      const j = rng.int(0, i)
-      const tmp = ids[i] as string
-      ids[i] = ids[j] as string
-      ids[j] = tmp
+  /** One keyset page of eligible ids, ascending; pass the last id of the previous page as `after`. */
+  async eligibleIdsPage(filter: QuestionFilter, after: string | undefined, limit: number): Promise<string[]> {
+    const size = Math.max(1, Math.min(Math.floor(limit), ELIGIBLE_IDS_MAX))
+    const { from, where } = this.scope({ ...filter, status: 'published', active: true, ...(after === undefined ? {} : { idAfter: after }) })
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${size}`
+    return rows.map((r) => idToString(r.id))
+  }
+
+  /** The ids among `ids` that are eligible for `filter` (published, active, live), ascending. One query, no scan of the bank. */
+  async eligibleAmong(ids: readonly string[], filter: QuestionFilter = {}): Promise<string[]> {
+    const wanted = [...new Set(ids)]
+    const out: string[] = []
+    for (let i = 0; i < wanted.length; i += AMONG_CHUNK) {
+      const { from, where } = this.scope({ ...filter, status: 'published', active: true, idIn: wanted.slice(i, i + AMONG_CHUNK) })
+      const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC`
+      out.push(...rows.map((r) => idToString(r.id)))
     }
-    return ids.slice(0, Math.max(0, n))
+    return out
+  }
+
+  /**
+   * Up to `n` eligible ids drawn in SQL: ordered by `hashtextextended(id, seed)` (then id) with a LIMIT, so memory and rows
+   * returned stay O(n). Deterministic for a seed (same seed, same ids; a larger `n` keeps the smaller draw as its prefix).
+   */
+  async sampleIds(filter: SampleFilter, n: number, seed: number): Promise<string[]> {
+    if (!Number.isSafeInteger(n) || n <= 0) return []
+    const limit = Math.min(n, SAMPLE_MAX)
+    const { from, where } = this.scope({ ...filter, status: 'published', active: true })
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${Math.trunc(seed)}::bigint), q.id LIMIT ${limit}`
+    return rows.map((r) => idToString(r.id))
+  }
+
+  /** `sampleIds` with the seed taken from one draw of `rng` (never Math.random). */
+  async sample(filter: SampleFilter, n: number, rng: Prng): Promise<string[]> {
+    if (!Number.isSafeInteger(n) || n <= 0) return []
+    return this.sampleIds(filter, n, rng.int(0, 0xffffffff))
   }
 
   async deactivate(id: string): Promise<boolean> {
@@ -813,6 +928,19 @@ export class QuestionsRepository {
       const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
       conds.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.education_level_id IN (${Prisma.join(keys)})`)
     }
+    if (filter.chapterIds !== undefined) {
+      const keys = filter.chapterIds.map(bi).filter((k): k is bigint => k !== null)
+      conds.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.chapter_id IN (${Prisma.join(keys)})`)
+    }
+    if (filter.idIn !== undefined) {
+      const keys = [...new Set(filter.idIn)].map(bi).filter((k): k is bigint => k !== null)
+      conds.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`q.id = ANY(${keys}::bigint[])`)
+    }
+    if (filter.idAfter !== undefined) {
+      const key = bi(filter.idAfter)
+      conds.push(key === null ? Prisma.sql`FALSE` : Prisma.sql`q.id > ${key}`)
+    }
+    if (filter.ungrouped) conds.push(Prisma.sql`q.group_id IS NULL`)
     if (filter.difficultyTps !== undefined) {
       const tps = filter.difficultyTps.filter((n) => Number.isSafeInteger(n))
       conds.push(tps.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.difficulty_tp IN (${Prisma.join(tps)})`)

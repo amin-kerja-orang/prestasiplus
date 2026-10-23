@@ -7,15 +7,14 @@
  *  1. Active students (bot pick, search): `UsersRepository.search` (name/e-mail substring, name A-Z) with an empty or
  *     name term, capped at `STUDENT_POOL_CAP`; the filters (active, not suspended, grade, school) run here. A direct
  *     `activeStudents({grade, schoolId, excludeIds, limit})` read in BE-05 would remove the cap.
- *  2. SPM pool: `QuestionFilter` has no `spmPool` flag, so the pool is `eligibleIds({subjectId, type: 'mcq'})` filtered
- *     by `QuestionRecord.spmPool` (hydrated in chunks). BE-09 should add `spmPool` to `QuestionFilter`.
+ *  2. SPM pool: the `spmPool` filter of `QuestionFilter`: the size is one SQL count and a draw is `sampleIds` (no id list).
  *  3. Arena question and key: `flatFromVersion` from `questions/projection` (not in the questions index) gives text,
  *     options and the key index of a one-leaf MCQ.
  *  4. Platform answer accuracy: BE-12 exports only per-user reads (`PracticeRepository.answers(userId)`), no platform
  *     total (so no `PracticeRepository` is injected here). `platformAccuracy()` returns 0 (the SRS value for "no answers"), so bots answer wrong until BE-12 adds one.
  *  5. Avatar: no owner serves a user avatar yet; `avatar` is always null.
  *  5b. OPEN QUESTION for the lead: BE-05 should export a bounded read of active students (grade, school, exclude ids,
- *     limit) and BE-09 a bounded SPM-pool id/count read. Until then the reads in 1 and 2 are cached in process for
+ *     limit). Until then the read in 1 and the pool count in 2 are cached in process for
  *     `CACHE_TTL_MS` (read through the Clock) so polls and the lobby do not rescan the tables; `invalidateCache()` is for tests.
  *  6. PKSK: no owner serves PKSK domains or tagged questions (Open question 6): `pkskDomains()` is `[]` and a PKSK
  *     draw returns `null` (callers answer 422 `{}`).
@@ -27,7 +26,7 @@ import type { Prng } from '../../db/prng'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { ClassesRepository } from '../classes'
 import { CurriculumRepository } from '../curriculum'
-import { QuestionsRepository } from '../questions'
+import { type QuestionFilter, QuestionsRepository } from '../questions'
 import { flatFromVersion } from '../questions/projection'
 import { SchoolsRepository } from '../schools'
 import { UsersRepository, type UserRecord } from '../users'
@@ -35,7 +34,6 @@ import type { Caller } from '../users/caller'
 
 /** Most users one student read looks at (see fallback 1). */
 export const STUDENT_POOL_CAP = 5000
-const SPM_CHUNK = 200
 /** Student pool and SPM pool reads are reused this long (see 5b). */
 export const CACHE_TTL_MS = 60_000
 /** Rows read by the name search before the active / not-suspended filter (the caller sees at most `limit`). */
@@ -231,24 +229,11 @@ export class BattleDeps {
 
   // --- questions (BE-09) -------------------------------------------------------------------------------
 
-  /** Live-published, active SPM-pool MCQ ids of a subject, ascending (fallback 2). */
-  private spmPoolIds(subjectId: string): Promise<string[]> {
-    return this.cached(`spm:${subjectId}`, () => this.readSpmPoolIds(subjectId))
-  }
-
-  private async readSpmPoolIds(subjectId: string): Promise<string[]> {
-    const ids = await this.questions.eligibleIds({ subjectId, type: 'mcq' })
-    const out: string[] = []
-    for (let i = 0; i < ids.length; i += SPM_CHUNK) {
-      const records = await this.questions.getMany(ids.slice(i, i + SPM_CHUNK), 'live')
-      for (const r of records) if (r.spmPool) out.push(r.id)
-    }
-    return out
-  }
-
-  /** Size of the SPM pool of a subject (lobby `spmSubjects`, start check). */
+  /** Size of the SPM pool of a subject (lobby `spmSubjects`, start check): one SQL count, cached `CACHE_TTL_MS`. */
   async spmPoolCount(subjectId: string): Promise<number> {
-    return (await this.spmPoolIds(subjectId)).length
+    return this.cached(`spm-count:${subjectId}`, () =>
+      this.questions.count({ subjectId, type: 'mcq', spmPool: true, ungrouped: true, status: 'published', active: true }),
+    )
   }
 
   /** PKSK domains served by an owner: none yet (Open question 6). */
@@ -258,24 +243,18 @@ export class BattleDeps {
 
   /**
    * Draws `n` eligible keyless MCQ ids (pool rule `battle-pool.ts poolFilter`): biasa = published MCQ of the subject at
-   * the owner's level; spm = SPM pool MCQ of the subject; pksk = unsupported. Fisher-Yates over the ascending list with
-   * `rng`, so a seeded stream gives the same ids. `null` when fewer than `n` can be drawn.
+   * the owner's level; spm = SPM pool MCQ of the subject; pksk = unsupported. Drawn in SQL (`sampleIds`: seeded hash order,
+   * LIMIT `n`), so a seeded stream gives the same ids and memory stays O(n). `null` when fewer than `n` can be drawn.
    */
   async drawQuestions(spec: PoolSpec, n: number, rng: Prng): Promise<string[] | null> {
     if (spec.questionType === 'pksk' || spec.subjectId === null) return null
-    let ids =
+    if (!Number.isSafeInteger(n) || n <= 0) return n === 0 ? [] : null
+    const filter: QuestionFilter =
       spec.questionType === 'spm'
-        ? await this.spmPoolIds(spec.subjectId)
-        : await this.questions.eligibleIds({ subjectId: spec.subjectId, type: 'mcq', ...(spec.levelId === null ? {} : { educationLevelId: spec.levelId }) })
-    if (ids.length < n) return null
-    ids = [...ids]
-    for (let i = ids.length - 1; i > 0; i--) {
-      const j = rng.int(0, i)
-      const tmp = ids[i] as string
-      ids[i] = ids[j] as string
-      ids[j] = tmp
-    }
-    return ids.slice(0, n)
+        ? { subjectId: spec.subjectId, type: 'mcq', spmPool: true }
+        : { subjectId: spec.subjectId, type: 'mcq', ...(spec.levelId === null ? {} : { educationLevelId: spec.levelId }) }
+    const ids = await this.questions.sampleIds(filter, n, rng.int(0, 0xffffffff))
+    return ids.length < n ? null : ids
   }
 
   /** The question as the arena serves it: text and up to four options, NEVER the key. */

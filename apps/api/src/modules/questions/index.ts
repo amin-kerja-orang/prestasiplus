@@ -1,5 +1,5 @@
 export { QuestionsModule } from './questions.module'
-export { QuestionsRepository } from './questions.repository'
+export { ELIGIBLE_IDS_MAX, QuestionsRepository } from './questions.repository'
 export { QuestionsService } from './questions.service'
 export { PkskQuestionsService, PKSK_TO_V2, pkskStatusOf } from './pksk.service'
 export type { PkskStatus, PkskListFilter, PkskQuestionWrite, PkskQuestionRecord, PkskQuestionRow, PkskServedQuestion, PkskAnswerKeyRecord } from './pksk.service'

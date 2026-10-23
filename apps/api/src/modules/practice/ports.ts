@@ -65,10 +65,14 @@ export interface PracticeSelection {
 }
 
 export interface PracticeQuestionSource {
-  /** `QuestionsRepository.sample`: up to `n` eligible ids, Fisher-Yates over the ascending list with `rng`. */
+  /** `QuestionsRepository.sample`: up to `n` eligible ids drawn in SQL (seeded hash order, LIMIT) with a seed taken from `rng`. */
   sample(filter: PracticeSelection, n: number, rng: Prng): Promise<string[]>
   /** Eligible questions of a chapter in ascending id order (BR-15, BR-17). */
   chapterQuestionIds(chapterId: string): Promise<string[]>
+  /** Servable question count per chapter (BR-15, BR-16), one grouped statement; a chapter with none is absent or 0. */
+  chapterCounts(chapterIds: readonly string[]): Promise<ReadonlyMap<string, number>>
+  /** Up to `limit` servable questions of a chapter in ascending id order, never one of `excludeIds` (BR-17 unanswered first). */
+  chapterPage(chapterId: string, excludeIds: readonly string[], limit: number): Promise<string[]>
   /**
    * The LIVE version of each id that is eligible for practice NOW (`eligibleForPractice`: published, active).
    * An ineligible or unknown id is omitted, so it is never served (AC 4).
@@ -87,6 +91,12 @@ export class NoPracticeQuestions implements PracticeQuestionSource {
     return []
   }
   async chapterQuestionIds(): Promise<string[]> {
+    return []
+  }
+  async chapterCounts(): Promise<ReadonlyMap<string, number>> {
+    return new Map()
+  }
+  async chapterPage(): Promise<string[]> {
     return []
   }
   async live(): Promise<ReadonlyMap<string, PracticeQuestion>> {

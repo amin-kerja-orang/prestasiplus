@@ -180,6 +180,22 @@ export class FakeBank implements PracticeQuestionSource {
     return this.eligibleIds().filter((id) => this.get(id).chapterId === chapterId)
   }
 
+  async chapterCounts(chapterIds: readonly string[]): Promise<ReadonlyMap<string, number>> {
+    const out = new Map<string, number>()
+    for (const c of new Set(chapterIds)) {
+      const n = this.eligibleIds().filter((id) => this.get(id).chapterId === c).length
+      if (n > 0) out.set(c, n)
+    }
+    return out
+  }
+
+  async chapterPage(chapterId: string, excludeIds: readonly string[], limit: number): Promise<string[]> {
+    const skip = new Set(excludeIds)
+    return this.eligibleIds()
+      .filter((id) => this.get(id).chapterId === chapterId && !skip.has(id))
+      .slice(0, limit)
+  }
+
   async live(ids: readonly string[]): Promise<ReadonlyMap<string, PracticeQuestion>> {
     this.calls.live += 1
     const out = new Map<string, PracticeQuestion>()

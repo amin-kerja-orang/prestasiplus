@@ -212,9 +212,17 @@ export interface QuestionFilter {
   type?: StoreQuestionType
   /** `true`: only questions with a `pool` tag (flat `spmPool`); `false`: only questions without one. */
   spmPool?: boolean
+  /** `true`: only questions outside any stimulus group (`questions.group_id IS NULL`), the practice and games servable shape. */
+  ungrouped?: boolean
+  /** Any of these chapters (ANDed with `chapterId` when both are set); `[]` matches nothing. */
+  chapterIds?: readonly string[]
+  /** Only ids in this list (`q.id = ANY(...)`): "which of these are still eligible". `[]` matches nothing. */
+  idIn?: readonly string[]
+  /** Keyset: only ids strictly above this one (use with `eligibleIdsPage`, ascending id). */
+  idAfter?: string
 }
 export type SampleFilter = QuestionFilter
-export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit'
+export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit' | 'chapter'
 
 export interface GuruListFilter {
   ownerId: string

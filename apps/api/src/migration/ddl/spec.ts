@@ -10,6 +10,7 @@
  *   Flags and MySQL tinyint columns are `t` (permissive: the dump may hold 0/1, true/false or words).
  *   `enum`  the column is enum-like: the profiler lists its distinct values (cap 50).
  *   `fk=T`  the column references `T.id`: the profiler counts orphans.
+ *   `idx`   the DDL also creates a btree index on the column (only where a loader reads by it in bulk, e.g. `question_options.question_id`).
  *   `redact` the loader writes NULL (PDPA data minimisation: login/invite secrets are never staged).
  *
  * Column names are the REAL .cloud (MariaDB) names, checked against a schema export (FIT-FIX): a listed column must
@@ -43,6 +44,8 @@ export interface ColumnSpec {
   fk: string | null
   /** The loader stores NULL instead of the source value. */
   redact: boolean
+  /** The DDL creates an index on this column (absent = no). */
+  index?: boolean
 }
 
 export interface TableSpec {
@@ -59,13 +62,15 @@ function column(notation: string): ColumnSpec {
   let isEnum = false
   let fk: string | null = null
   let redact = false
+  let index = false
   for (const flag of flags) {
     if (flag === 'enum') isEnum = true
     else if (flag === 'redact') redact = true
+    else if (flag === 'idx') index = true
     else if (flag.startsWith('fk=')) fk = flag.slice(3)
     else throw new RangeError(`Bad column flag "${flag}" in "${notation}".`)
   }
-  return { name, type: type as ColumnType, enum: isEnum, fk, redact }
+  return { name, type: type as ColumnType, enum: isEnum, fk, redact, index }
 }
 
 const TS = ['created_at:ts', 'updated_at:ts']
@@ -268,8 +273,10 @@ const ARCHIVE: TableSpec[] = [
   a('questions', [
     'subject_id:id:fk=subjects', 'education_level_id:id:fk=education_levels', 'chapter_id:id:fk=chapters',
     'topic_id:id:fk=topics', 'difficulty_level:t:enum', 'type:t:enum', 'status:t:enum', 'body:t',
+    // QLOAD (`migrate:questions`): the explanation is copied into the v2 version; image_path is only counted and kept as an unresolved reference.
+    'explanation:t', 'image_path:t',
   ]),
-  a('question_options', ['question_id:id:fk=questions', 'label:t', 'body:t', 'is_correct:t:enum']),
+  a('question_options', ['question_id:id:fk=questions:idx', 'label:t', 'body:t', 'image_path:t', 'is_correct:t:enum']),
   a('structured_questions', ['subject_id:id:fk=subjects', 'status:t:enum', 'stimulus:t']),
   a('structured_sub_questions', ['structured_question_id:id:fk=structured_questions', 'number:t', 'marks:i']),
   a('structured_rubric_points', ['structured_sub_question_id:id:fk=structured_sub_questions', 'marks:i', 'text:t']),

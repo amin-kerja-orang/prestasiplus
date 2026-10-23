@@ -248,31 +248,39 @@ export class QuestionBankAdapter implements QuestionBankPort {
     return out
   }
 
-  async listForQuality(): Promise<QualityQuestion[]> {
+  async forEachQualityBatch(visit: (batch: QualityQuestion[]) => Promise<void>, size = QUALITY_PAGE): Promise<void> {
     const { subjects, levels } = await this.names()
-    const out: QualityQuestion[] = []
-    for (let page = 1; ; page += 1) {
-      const slice = await this.repo.listIds({ page, pageSize: QUALITY_PAGE })
-      for (const r of await this.repo.getMany(slice.ids, 'latest')) {
-        const v = r.version
-        out.push({
+    let after: string | undefined
+    for (;;) {
+      const rows = await this.repo.qualityBatch(after, size)
+      if (rows.length === 0) return
+      after = rows[rows.length - 1]?.id
+      await visit(
+        rows.map((r) => ({
           id: r.id,
-          stemText: v.stemMs ?? v.stemEn ?? '',
-          explanation: v.explanationMs ?? v.explanationEn,
-          untagged: v.spIds.length === 0,
+          stemText: r.stemMs ?? r.stemEn ?? '',
+          explanation: r.explanationMs ?? r.explanationEn,
+          untagged: !r.hasSp,
           sourceType: r.sourceType,
           quarantinedOrRejected: false, // v2 has no compliance state; archived is not "rejected"
           isLegacy: false,
-          subjectId: v.subjectId,
-          subjectName: v.subjectId === null ? null : (subjects.get(v.subjectId) ?? null),
-          educationLevelId: v.educationLevelId,
-          levelName: v.educationLevelId === null ? null : (levels.get(v.educationLevelId) ?? null),
-          sourceSet: v.setLabel,
-        })
-      }
-      if (page * QUALITY_PAGE >= slice.total) break
+          subjectId: r.subjectId,
+          subjectName: r.subjectId === null ? null : (subjects.get(r.subjectId) ?? null),
+          educationLevelId: r.educationLevelId,
+          levelName: r.educationLevelId === null ? null : (levels.get(r.educationLevelId) ?? null),
+          sourceSet: r.setLabel,
+        })),
+      )
+      if (rows.length < size) return
     }
-    return out.sort((a, b) => Number(BigInt(a.id) - BigInt(b.id)))
+  }
+
+  async listForQuality(): Promise<QualityQuestion[]> {
+    const out: QualityQuestion[] = []
+    await this.forEachQualityBatch(async (batch) => {
+      out.push(...batch)
+    })
+    return out
   }
 
   /** Defaulted: the bank has no "needs a diagram" flag, so nothing is flagged. */

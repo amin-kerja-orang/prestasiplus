@@ -8,7 +8,7 @@ import { ApplyGuardError } from '../../../src/migration/kit/apply-guard'
 import { rollbackLegacy, RollbackRefusedError, runVerify } from '../../../src/migration/verify'
 import { countAll } from '../staging/helpers'
 import type { ActivityHarness } from '../activity/helpers'
-import { bootActivity, legacyTableCounts, migrateAll } from './helpers-verify'
+import { bootActivity, legacyTableCounts, migrateAll, STANDALONE_NOT_RUN } from './helpers-verify'
 
 let h: ActivityHarness
 let db = ''
@@ -197,7 +197,7 @@ describe('rollback (AC3)', () => {
     expect(again.tables.every((t) => t.deleted === 0)).toBe(true)
     await migrateAll(h)
     const report = await runVerify({ pool: h.env.pool, env: h.runEnv, source: 'cloud' })
-    expect(report.entities.filter((e) => e.status !== 'ok')).toEqual([])
+    expect(report.entities.filter((e) => e.status !== 'ok' && !STANDALONE_NOT_RUN(e))).toEqual([])
     expect(report.status).toBe('pass')
   }, 120_000)
 })
