@@ -145,6 +145,19 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       ])
     })
 
+    it('SW7-06: a deactivated pupil leaves the selected class population and returns when reactivated', async () => {
+      const q = t.db.query.bind(t.db)
+      await q(`update users set is_active = false where id = $1`, [w.ids.p2])
+      try {
+        const body = report(await teacherA.get(`/teacher/report?classroomId=${classMain}`))
+        expect(body.population.total).toBe(1)
+        expect(body.notLoggedIn).toEqual([])
+      } finally {
+        await q(`update users set is_active = true where id = $1`, [w.ids.p2])
+      }
+      expect(report(await teacherA.get(`/teacher/report?classroomId=${classMain}`)).population.total).toBe(2)
+    })
+
     it('ranges: 7 days keeps the last two activities, 90 days adds the 2026-09-10 session; the score is Σ correct ÷ Σ questions', async () => {
       const d7 = report(await teacherA.get(`/teacher/report?classroomId=${classMain}&range=7`))
       expect(d7.range).toBe(7)
