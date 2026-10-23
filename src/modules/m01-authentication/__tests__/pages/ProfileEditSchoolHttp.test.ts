@@ -18,6 +18,7 @@ const mode = vi.hoisted(() => ({ http: true }))
 vi.mock('@/api/mode', () => ({ isHttpMode: () => mode.http }))
 
 const apiMocks = vi.hoisted(() => ({
+  getMe: vi.fn(),
   updateProfile: vi.fn(),
   uploadPicture: vi.fn(),
   changePassword: vi.fn(),
@@ -58,7 +59,10 @@ function userOf(role: Role): UserMe {
 
 let wrapper: VueWrapper | null = null
 
-async function render(role: Role): Promise<VueWrapper> {
+/** `roles` = what `GET /api/me` answers (the client `UserMe` only has the active `role`); `null` = unknown. */
+async function render(role: Role, roles: Role[] | null = [role]): Promise<VueWrapper> {
+  if (roles) apiMocks.getMe.mockResolvedValue({ ...userOf(role), roles })
+  else apiMocks.getMe.mockRejectedValue(new Error('offline'))
   const session = useSessionStore()
   session.setSession({
     token: 't',
@@ -94,9 +98,19 @@ afterEach(() => {
   wrapper = null
 })
 
+const submitAndSent = async (w: VueWrapper): Promise<Record<string, unknown>> => {
+  await w.get('[data-testid=profile-form]').trigger('submit')
+  await flushPromises()
+  return apiMocks.updateProfile.mock.calls[0]?.[0] as Record<string, unknown>
+}
+
 describe('S8 Maklumat Sekolah, http mode', () => {
-  it.each(['student', 'parent'] as const)('shows the school card for a %s', async (role) => {
-    const w = await render(role)
+  it.each([
+    ['student', ['student']],
+    ['parent', ['parent']],
+    ['parent', ['parent', 'student']],
+  ] as const)('shows the school card for active %s with roles %j', async (role, roles) => {
+    const w = await render(role, [...roles])
     expect(w.find('[data-testid=profile-school-card]').exists()).toBe(true)
     expect(w.text()).toContain('Maklumat Sekolah')
     expect(w.find('[data-testid=profile-school]').exists()).toBe(true)
@@ -106,20 +120,48 @@ describe('S8 Maklumat Sekolah, http mode', () => {
     'hides the school card for a %s, keeps Tahap, and does not send schoolId',
     async (role) => {
       apiMocks.updateProfile.mockResolvedValue({
-        data: userOf(role),
+        data: { ...userOf(role), roles: [role] },
         status: 'Profil berjaya dikemaskini.',
       })
       const w = await render(role)
       expect(w.find('[data-testid=profile-school-card]').exists()).toBe(false)
       expect(w.text()).not.toContain('Maklumat Sekolah')
       expect(w.find('[data-testid=grade-picker]').exists()).toBe(true)
-      await w.get('[data-testid=profile-form]').trigger('submit')
-      await flushPromises()
-      const sent = apiMocks.updateProfile.mock.calls[0]?.[0] as Record<string, unknown>
+      const sent = await submitAndSent(w)
       expect(sent).toMatchObject({ name: 'Pengguna Contoh', grade: 10 })
       expect(sent).not.toHaveProperty('schoolId')
     },
   )
+
+  it('hides the card for a teacher who is also a parent (parent active): every role must allow it', async () => {
+    apiMocks.updateProfile.mockResolvedValue({
+      data: { ...userOf('parent'), roles: ['teacher', 'parent'] },
+      status: 'Profil berjaya dikemaskini.',
+    })
+    const w = await render('parent', ['teacher', 'parent'])
+    expect(w.find('[data-testid=profile-school-card]').exists()).toBe(false)
+    expect(await submitAndSent(w)).not.toHaveProperty('schoolId')
+  })
+
+  it('fails closed while the role list is unknown (GET /api/me failed)', async () => {
+    apiMocks.updateProfile.mockResolvedValue({
+      data: userOf('student'),
+      status: 'Profil berjaya dikemaskini.',
+    })
+    const w = await render('student', null)
+    expect(w.find('[data-testid=profile-school-card]').exists()).toBe(false)
+    expect(await submitAndSent(w)).not.toHaveProperty('schoolId')
+  })
+
+  it('takes the roles of the PUT answer too', async () => {
+    apiMocks.updateProfile.mockResolvedValue({
+      data: { ...userOf('student'), roles: ['student'] },
+      status: 'Profil berjaya dikemaskini.',
+    })
+    const w = await render('student', null)
+    await submitAndSent(w)
+    expect(w.find('[data-testid=profile-school-card]').exists()).toBe(true)
+  })
 })
 
 describe('S8 Maklumat Sekolah, mock mode (live)', () => {
