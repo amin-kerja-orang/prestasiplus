@@ -113,8 +113,15 @@ export class UsersDirectoryAdapter implements DirectoryPort {
     return new Map([...counts].map(([id, c]) => [id, c.teacherCount]))
   }
 
-  async subjectIdOfCode(code: string): Promise<string | null> {
-    const subject = await this.curriculum.subjectByCode(curriculumCodeOf(code))
-    return subject ? subject.id.toString() : null
+  async subjectIdsOfCodes(codes: readonly string[]): Promise<Map<string, string>> {
+    if (codes.length === 0) return new Map()
+    // One read of the (small) subjects table instead of a lookup per code.
+    const idByCode = new Map((await this.curriculum.subjects()).map((s) => [s.code.toUpperCase(), s.id.toString()]))
+    const out = new Map<string, string>()
+    for (const code of codes) {
+      const id = idByCode.get(curriculumCodeOf(code).toUpperCase())
+      if (id !== undefined) out.set(code, id)
+    }
+    return out
   }
 }

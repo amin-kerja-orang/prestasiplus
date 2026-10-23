@@ -61,7 +61,7 @@ export class InMemoryDirectory implements DirectoryPort {
   async countTeachers(schoolIds: readonly string[]): Promise<Map<string, number>> {
     return new Map(schoolIds.map((id) => [id, [...this.teachers.values()].filter((t) => t.schoolId === id).length]))
   }
-  async subjectIdOfCode(code: string): Promise<string | null> {
-    return this.subjectIds.get(code) ?? null
+  async subjectIdsOfCodes(codes: readonly string[]): Promise<Map<string, string>> {
+    return new Map(codes.flatMap((c) => (this.subjectIds.has(c) ? [[c, this.subjectIds.get(c)!] as const] : [])))
   }
 }

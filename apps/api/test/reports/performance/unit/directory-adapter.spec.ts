@@ -30,19 +30,22 @@ describe('UsersDirectoryAdapter.users', () => {
   })
 })
 
-describe('UsersDirectoryAdapter.subjectIdOfCode', () => {
-  it('maps a Bijak code to the curriculum row id (MAT to MATH) and an unknown code to null', async () => {
-    const asked: string[] = []
+describe('UsersDirectoryAdapter.subjectIdsOfCodes', () => {
+  it('maps Bijak codes to the curriculum row ids (MAT to MATH) in one read; an unknown code is absent', async () => {
+    let reads = 0
     const curriculum = {
-      subjectByCode: async (code: string) => {
-        asked.push(code)
-        return code === 'MATH' ? { id: 3n } : code === 'BM' ? { id: 1n } : null
-      },
+      subjects: async () => (reads++, [{ id: 3n, code: 'MATH' }, { id: 1n, code: 'BM' }, { id: 7n, code: 'SCI' }]),
     }
     const adapter = new UsersDirectoryAdapter({} as never, {} as never, curriculum as never)
-    expect(await adapter.subjectIdOfCode('MAT')).toBe('3')
-    expect(await adapter.subjectIdOfCode('BM')).toBe('1')
-    expect(await adapter.subjectIdOfCode('ZZZ')).toBeNull()
-    expect(asked).toEqual(['MATH', 'BM', 'ZZZ'])
+    const ids = await adapter.subjectIdsOfCodes(['MAT', 'BM', 'SN', 'ZZZ'])
+    expect([...ids]).toEqual([['MAT', '3'], ['BM', '1'], ['SN', '7']])
+    expect(reads).toBe(1)
+  })
+
+  it('an empty list makes no read', async () => {
+    let reads = 0
+    const adapter = new UsersDirectoryAdapter({} as never, {} as never, { subjects: async () => (reads++, []) } as never)
+    expect((await adapter.subjectIdsOfCodes([])).size).toBe(0)
+    expect(reads).toBe(0)
   })
 })
