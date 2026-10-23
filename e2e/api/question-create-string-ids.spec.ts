@@ -59,7 +59,11 @@ test.describe('SW7-08 contribute a question without an image sends string ids @a
       const post = page.waitForResponse(
         (r) => /\/api\/guru\/questions$/.test(r.url()) && r.request().method() === 'POST',
       )
-      await page.getByTestId('form-submit').click()
+      // Submit from the keyboard: at 640-1023px the fixed bottom tab bar covers the last control of
+      // the page (PembelajaranLayout `pb-32 sm:py-6` leaves 24px), so a pointer click is
+      // intercepted. That shell bug is reported to half AZ; this spec checks the ids on the wire.
+      await page.getByTestId('form-submit').focus()
+      await page.keyboard.press('Enter')
       const res = await post
       const body = await res.text()
       createdStatus = res.status()
