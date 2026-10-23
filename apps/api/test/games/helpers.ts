@@ -14,11 +14,13 @@ import { schoolPackagesSeed } from '../../prisma/seed/core/school-packages'
 import { schoolsSeed } from '../../prisma/seed/core/schools'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { questionsSeed } from '../../prisma/seed/questions'
+import { gamificationSeed } from '../../prisma/seed/gamification'
 import { walletSeed } from '../../prisma/seed/wallet'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
+import { GamificationModule } from '../../src/modules/gamification'
 import {
   GamesModule,
   GamesPorts,
@@ -63,6 +65,8 @@ export interface BootGamesOptions {
   }
   /** Start the clock somewhere else. */
   at?: string
+  /** Real BE-23 wiring: adds `GamificationModule` (binds the rewards port) and its seed. Do not combine with `ports.rewards`. */
+  withGamification?: boolean
   /** Reuse a database (the caller then drops it). */
   db?: TestDatabase
 }
@@ -109,7 +113,7 @@ export async function bootGamesApp(opts: BootGamesOptions = {}): Promise<GamesTe
   const db = opts.db ?? (await createTestDatabase())
   if (!opts.db) {
     const base = opts.baseSeeds ?? [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed]
-    await runSeeds([...base, ...(opts.seeds ?? [])], { prisma: db.prisma })
+    await runSeeds([...base, ...(opts.withGamification ? [gamificationSeed] : []), ...(opts.seeds ?? [])], { prisma: db.prisma })
   }
   Object.assign(process.env, {
     DATABASE_URL: db.url,
@@ -121,7 +125,7 @@ export async function bootGamesApp(opts: BootGamesOptions = {}): Promise<GamesTe
     ...opts.env,
   })
   const clock = new FixedClock(opts.at ?? START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, GamesModule])] })
+  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, GamesModule, ...(opts.withGamification ? [GamificationModule] : [])])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .compile()

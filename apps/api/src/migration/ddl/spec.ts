@@ -12,7 +12,7 @@
  *   `fk=T`  the column references `T.id`: the profiler counts orphans.
  *   `redact` the loader writes NULL (PDPA data minimisation: login/invite secrets are never staged).
  *
- * Only columns named in v2-data-migration.md (sections 1, 2, 3.3, 4) are listed, plus `id` and the
+ * Only columns named in v2-data-migration.md (sections 1, 2, 3.3, 4) or the 14.7 matrix are listed, plus `id` and the
  * usual timestamps. The real .cloud column list is not available to this card (OD-2), so the loader
  * REFUSES a dump that carries a column missing here (see staging/load.ts) instead of dropping it
  * silently. Complete the lists against the first real schema export.
@@ -160,7 +160,7 @@ const STAGING: TableSpec[] = [
   s('coin_transactions', [
     'user_id:id:fk=users', 'type:t:enum', 'source:t:enum', 'amount:i', 'balance_after:i',
   ]),
-  s('challenges', ['created_by:id:fk=users', 'classroom_id:id:fk=classrooms', 'type:t:enum', 'title:t']),
+  s('challenges', ['created_by:id:fk=users', 'classroom_id:id:fk=classrooms', 'type:t:enum', 'title:t', 'criteria:t']),
   s('challenge_user', [
     'challenge_id:id:fk=challenges', 'user_id:id:fk=users', 'progress:i', 'completed_at:ts', 'claimed_on:d',
   ], pivot),
@@ -237,7 +237,7 @@ const STAGING: TableSpec[] = [
   s('duta_bookings', ['duta_profile_id:id:fk=duta_profiles', 'user_id:id:fk=users', 'status:t:enum']),
   // Exams (attempts)
   s('exam_attempts', [
-    'user_id:id:fk=users', 'exam_paper_id:id:fk=exam_papers', 'mode:t:enum', 'score:n', 'max_score:n',
+    'user_id:id:fk=users', 'exam_paper_id:id:fk=exam_papers', 'mode:t:enum', 'status:t:enum', 'score:n', 'max_score:n',
     'section_scores:j', 'section_selections:j', 'served_composition:j',
   ]),
   s('part_responses', [

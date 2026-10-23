@@ -522,6 +522,15 @@ export class GamificationService {
     })
   }
 
+  /** Papan Bijak coins per correct answer / per win of the user's wallet tier (the lowest tier without a wallet). */
+  async boardGameRates(userId: string, options: { tx?: TxClient } = {}): Promise<{ correct: number; win: number }> {
+    const db = this.repo.handle(options.tx)
+    const tiers = await this.repo.tiers(db)
+    const walletTier = (await this.repo.walletTierId(db, userId)) ?? null
+    const tier = (walletTier ? tiers.find((t) => t.id === walletTier) : undefined) ?? defaultTier(tiers)
+    return { correct: tier?.boardGameRewardCorrect ?? 0, win: tier?.boardGameRewardWin ?? 0 }
+  }
+
   /**
    * BR-M14-21 (BE-44/BE-45): XP always; syiling only while `canEarnSyiling`. The syiling credit is idempotent per
    * `(user, <game source>, game:<key>)` when `input.key` is given. XP has no ledger row, so it cannot be keyed:
@@ -535,10 +544,8 @@ export class GamificationService {
       if (await this.canEarnSyiling(userId, { tx })) {
         if (input.coins !== undefined) coins = input.coins
         else if (input.game === 'papan_bijak') {
-          const tiers = await this.repo.tiers(tx)
-          const walletTier = (await this.repo.walletTierId(tx, userId)) ?? null
-          const tier = (walletTier ? tiers.find((t) => t.id === walletTier) : undefined) ?? defaultTier(tiers)
-          coins = input.event === 'win' ? (tier?.boardGameRewardWin ?? 0) : (tier?.boardGameRewardCorrect ?? 0)
+          const rates = await this.boardGameRates(userId, { tx })
+          coins = input.event === 'win' ? rates.win : rates.correct
         }
       }
       coins = Number.isSafeInteger(coins) && coins > 0 ? coins : 0

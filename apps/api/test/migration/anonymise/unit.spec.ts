@@ -7,7 +7,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { findTable, TABLES, type TableSpec } from '../../../src/migration/ddl/spec'
 import { ConfigError, CoverageError, KeyError } from '../../../src/migration/anonymise/errors'
 import { loadHmacKey } from '../../../src/migration/anonymise/key'
-import { patternKinds } from '../../../src/migration/anonymise/leak-scan'
+import { OriginalsIndex, patternKinds } from '../../../src/migration/anonymise/leak-scan'
 import { DUMMY_ARGON2_HASH, DUMMY_PASSWORD, dummyPasswordHash, NOT_A_HASH } from '../../../src/migration/anonymise/passwords'
 import { Pseudonymiser, PSEUDONYM_KINDS } from '../../../src/migration/anonymise/pseudonyms'
 import { applyRule, checkCoverage, findCoverageGaps, parseConfig, ruleFor, type AnonConfig } from '../../../src/migration/anonymise/rules'
@@ -74,7 +74,7 @@ describe('default deny (AC1)', () => {
 
   it('the shipped config covers the quasi-identifier and upload columns (M4)', () => {
     const expected: [string, string, string][] = [
-      ['practice_sessions', 'client_uuid', 'pseudonym'], ['audit_logs', 'subject_id', 'pseudonym'], ['users', 'spm_targets', 'scrub-text'],
+      ['practice_sessions', 'client_uuid', 'pseudonym'], ['audit_logs', 'subject_id', 'pseudonym'], ['users', 'spm_targets', 'scrub-text'], ['challenges', 'criteria', 'scrub-json'],
       ['notifications', 'title', 'scrub-text'], ['notifications', 'target', 'scrub-text'], ['media_assets', 'path', 'pseudonym'],
       ['paper_documents', 'path', 'pseudonym'], ['paper_document_pages', 'image_path', 'pseudonym'], ['banners', 'image_path', 'pseudonym'],
       ['audio_kbat', 'audio_path', 'pseudonym'],
@@ -111,6 +111,65 @@ describe('rules keep structure', () => {
     expect(apply({ rule: 'scrub-text' }, { a: 'secret', n: 3, b: true, list: ['x', 1, null], deep: { s: 'y' } })).toEqual({
       a: 'Teks anonim.', n: 3, b: true, list: ['Teks anonim.', 1, null], deep: { s: 'Teks anonim.' },
     })
+  })
+})
+
+describe('scrub-json', () => {
+  const p = new Pseudonymiser(key(TEST_KEY))
+  const rule = { rule: 'scrub-json' } as const
+  const apply = (v: unknown) => applyRule(rule, v, p)
+  const criteria = '{"type":"questions","target_value":50,"daily":true,"note":"Untuk Aina Contoh Fiktif","tags":["Kelas 5 Fiktif",3,null],"deep":{"who":"Budi Contoh","n":1.5}}'
+
+  it('keeps keys, numbers, booleans and null; every nested string leaf is scrubbed', () => {
+    const out = apply(criteria) as string
+    expect(typeof out).toBe('string')
+    expect(JSON.parse(out)).toEqual({
+      type: 'Teks anonim.', target_value: 50, daily: true, note: 'Teks anonim.', tags: ['Teks anonim.', 3, null], deep: { who: 'Teks anonim.', n: 1.5 },
+    })
+  })
+
+  it('no original string value or name survives in the output', () => {
+    const out = apply(criteria) as string
+    for (const original of ['Aina Contoh Fiktif', 'Kelas 5 Fiktif', 'Budi Contoh', 'Aina', 'Budi']) expect(out).not.toContain(original)
+  })
+
+  it('an already parsed value is handled the same way', () => {
+    expect(apply(JSON.parse(criteria))).toEqual(JSON.parse(apply(criteria) as string))
+  })
+
+  it('numbers and booleans at the top level are kept', () => {
+    expect(apply('50')).toBe('50')
+    expect(apply('false')).toBe('false')
+    expect(apply('"Aina Contoh"')).toBe('"Teks anonim."')
+  })
+
+  it('NULL stays NULL and empty text stays empty', () => {
+    expect(apply(null)).toBeNull()
+    expect(apply(undefined)).toBeNull()
+    expect(apply('')).toBe('')
+  })
+
+  it('a value that is not valid JSON is replaced exactly as scrub-text would (fail closed)', () => {
+    for (const bad of ['Aina bin Contoh', '{"target_value": 5, "note": "Aina"', "{'a': 'Aina'}", '  ', '{"a":1} trailing Aina']) {
+      expect(apply(bad), bad).toBe(applyRule({ rule: 'scrub-text' }, bad, p))
+      expect(apply(bad), bad).toBe('Teks anonim.')
+    }
+  })
+
+  it('is deterministic for the same input and key', () => {
+    const other = new Pseudonymiser(key(TEST_KEY))
+    expect(apply(criteria)).toBe(applyRule(rule, criteria, other))
+    expect(apply(criteria)).toBe(apply(criteria))
+  })
+
+  it('the leak index records the string leaves of the original json text, and the scrubbed output is clean', () => {
+    const original = '{"target_value":5,"note":"Catatan untuk Aina Contoh Fiktif sahaja"}'
+    const out = apply(original)
+    const index = new OriginalsIndex()
+    index.record(rule, original, out)
+    expect(index.size).toBeGreaterThan(0)
+    expect(index.match('Catatan untuk Aina Contoh Fiktif sahaja')).toBe('original-value')
+    expect(index.match(out as string)).toBeNull()
   })
 })
 
