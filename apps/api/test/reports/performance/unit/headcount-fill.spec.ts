@@ -186,10 +186,36 @@ describe('School: GPS, distribution, subjects and teachers', () => {
     expect((await small.school.school(ctxOf('student', '1'))).gps).toMatchObject({ value: 3, entries: 5 })
   })
 
-  it('privacy (test 15): a headcount-only subject row below 5 pupils is not listed to non-staff', async () => {
+  it('privacy (test 15): a headcount-only subject below 5 pupils keeps the whole breakdown from non-staff; the overall figures and staff are unchanged', async () => {
     w.facts.add(entry({ studentId: '1', configId: '7', subjectId: '2', subjectName: 'Matematik', actuals: [null, 60], targets: [null, 60] }))
-    expect((await w.school.school(ctxOf('student', '1'))).subjects.map((s) => s.name)).toEqual(['Bahasa Melayu'])
-    expect((await w.school.school(schoolAdmin)).subjects.map((s) => s.name)).toEqual(['Bahasa Melayu', 'Matematik'])
+    const pupil = await w.school.school(ctxOf('student', '1'))
+    expect(pupil.subjects).toEqual([])
+    expect(pupil.gps).toEqual({ value: 3.17, band: 'Baik', entries: 6 })
+    PerformanceSchoolSchema.parse(pupil)
+    const staff = await w.school.school(schoolAdmin)
+    expect(staff.subjects.map((s) => s.name)).toEqual(['Bahasa Melayu', 'Matematik'])
+    expect(staff.gps).toEqual(pupil.gps)
+  })
+
+  it('cohort consistency: every subject with graded entries at 5 pupils or more keeps the full breakdown for non-staff', async () => {
+    for (const id of ['1', '2', '3', '4', '5']) {
+      w.facts.add(entry({ studentId: id, configId: '7', subjectId: '2', subjectName: 'Matematik', actuals: [null, 60], targets: [null, 60] }))
+    }
+    const pupil = await w.school.school(ctxOf('student', '1'))
+    expect(pupil.subjects.map((s) => [s.name, s.entries])).toEqual([
+      ['Bahasa Melayu', 5],
+      ['Matematik', 5],
+    ])
+    expect(pupil.subjects).toEqual((await w.school.school(schoolAdmin)).subjects)
+  })
+
+  it('cohort consistency: one subject below 5 pupils withholds the breakdown, for any non-staff role', async () => {
+    w.facts.add(entry({ studentId: '1', configId: '7', subjectId: '2', subjectName: 'Matematik', actuals: [null, 60], targets: [null, 60] }))
+    for (const ctx of [ctxOf('student', '1'), ctxOf('parent', 'p1'), ctxOf('ppd_officer', 'o1')]) {
+      const r = await w.school.school(ctx)
+      expect(r.subjects).toEqual([])
+      expect(r.gps.entries).toBe(6)
+    }
   })
 })
 
