@@ -31,52 +31,74 @@ export function groupsOf(questions: IntakeQuestion[]): GroupInfo[] {
   }))
 }
 
-/** Printed numbers follow paper order: "1", "2", ... (a stimulus label such as "Rajah 1" is not touched). */
-export function renumberQuestions(questions: IntakeQuestion[]): IntakeQuestion[] {
-  return questions.map((q, i) => (q.label === String(i + 1) ? q : { ...q, label: String(i + 1) }))
-}
-
-/** True when every label is a whole number and they do not rise in paper order (an earlier reorder left them scrambled). */
-function numbersOutOfOrder(questions: IntakeQuestion[]): boolean {
-  const nums = questions.map((q) => (/^\d+$/.test(q.label) ? Number(q.label) : NaN))
-  if (nums.some(Number.isNaN)) return false
-  return nums.some((n, i) => i > 0 && n <= nums[i - 1]!)
+/**
+ * Printed numbers follow paper order. Only a batch whose labels are all plain whole numbers and
+ * unique is touched: the same set of numbers is dealt out again in paper order, so a gap in the
+ * source numbering (18, 19, 21) is kept. Free-text labels ("1(a)", "7A", empty) and duplicates are
+ * left exactly as the admin typed them. A stimulus label such as "Rajah 1" is never touched.
+ */
+export function renumberQuestions(questions: IntakeQuestion[]): {
+  questions: IntakeQuestion[]
+  renumbered: boolean
+} {
+  if (!questions.every((q) => /^\d+$/.test(q.label))) return { questions, renumbered: false }
+  const nums = questions.map((q) => Number(q.label))
+  if (new Set(nums).size !== nums.length) return { questions, renumbered: false }
+  const sorted = [...nums].sort((x, y) => x - y)
+  let renumbered = false
+  const out = questions.map((q, i) => {
+    const label = String(sorted[i])
+    if (q.label === label) return q
+    renumbered = true
+    return { ...q, label }
+  })
+  return renumbered ? { questions: out, renumbered } : { questions, renumbered }
 }
 
 /**
  * Attach `ids` to `stimulusId`. The group (existing members plus the new ones) is gathered into one
  * contiguous block at the position of its earliest member. `moved` tells the UI that the paper order
- * changed, so it can say so. When the order changed the printed numbers are renumbered to paper order
- * (1..n), so the labels never run out of sequence.
+ * changed, so it can say so. When the order changed and the labels are plain unique numbers they are
+ * dealt out again in paper order (`renumbered`), so they never run out of sequence.
  */
 export function attachToStimulus(
   questions: IntakeQuestion[],
   ids: string[],
   stimulusId: string,
-): { questions: IntakeQuestion[]; moved: boolean } {
+): { questions: IntakeQuestion[]; moved: boolean; renumbered: boolean } {
   const picked = new Set(ids)
   const tagged = questions.map((q) => (picked.has(q.id) ? { ...q, stimulusId } : q))
   const members = tagged.filter((q) => q.stimulusId === stimulusId)
-  if (members.length === 0) return { questions: tagged, moved: false }
+  if (members.length === 0) return { questions: tagged, moved: false, renumbered: false }
   const firstIndex = tagged.findIndex((q) => q.stimulusId === stimulusId)
   const memberIds = new Set(members.map((q) => q.id))
   const rest = tagged.filter((q) => !memberIds.has(q.id))
   const before = tagged.slice(0, firstIndex).filter((q) => !memberIds.has(q.id)).length
   const out = [...rest.slice(0, before), ...members, ...rest.slice(before)]
   const moved = out.some((q, i) => q.id !== tagged[i]!.id)
-  return { questions: moved ? renumberQuestions(out) : out, moved }
+  if (!moved) return { questions: out, moved, renumbered: false }
+  return { ...renumberQuestions(out), moved }
 }
 
-export function detachFromStimulus(questions: IntakeQuestion[], ids: string[]): IntakeQuestion[] {
+function clearStimulus(questions: IntakeQuestion[], ids: string[]): IntakeQuestion[] {
   const drop = new Set(ids)
-  const out = questions.map((q) => {
+  return questions.map((q) => {
     if (!drop.has(q.id)) return q
     const rest = { ...q }
     delete rest.stimulusId
     return rest
   })
-  // Detaching never reorders, but it heals numbers left out of sequence by an earlier reorder.
-  return numbersOutOfOrder(out) ? renumberQuestions(out) : out
+}
+
+/**
+ * Detach never reorders. It only deals the numbers out again when plain unique numbers were left
+ * out of sequence by an earlier reorder (same guard as `renumberQuestions`).
+ */
+export function detachFromStimulus(
+  questions: IntakeQuestion[],
+  ids: string[],
+): { questions: IntakeQuestion[]; renumbered: boolean } {
+  return renumberQuestions(clearStimulus(questions, ids))
 }
 
 /** Remove a stimulus and detach every question that used it. */
@@ -87,7 +109,7 @@ export function removeStimulus(
 ): { questions: IntakeQuestion[]; stimuli: IntakeStimulus[] } {
   const ids = questions.filter((q) => q.stimulusId === stimulusId).map((q) => q.id)
   return {
-    questions: detachFromStimulus(questions, ids),
+    questions: clearStimulus(questions, ids),
     stimuli: stimuli.filter((s) => s.id !== stimulusId),
   }
 }

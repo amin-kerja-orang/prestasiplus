@@ -143,19 +143,57 @@ describe('stimulus grouping', () => {
     expect(r.questions.map((x) => x.label)).toEqual(['1', '2', '3', '4', '5'])
   })
 
-  it('detach renumbers labels an earlier reorder left out of sequence and keeps ordered ones', () => {
+  it('detach deals plain numbers out again when an earlier reorder left them out of sequence', () => {
     const scrambled = [q('1', 's1'), q('3', 's1'), q('4'), q('2'), q('5')]
     const r = detachFromStimulus(scrambled, ['q1'])
-    expect(r.map((x) => x.label)).toEqual(['1', '2', '3', '4', '5'])
-    const ordered = [q('1', 's1'), q('2', 's1'), q('3')]
-    expect(detachFromStimulus(ordered, ['q1']).map((x) => x.label)).toEqual(['1', '2', '3'])
+    expect(r.renumbered).toBe(true)
+    expect(r.questions.map((x) => x.label)).toEqual(['1', '2', '3', '4', '5'])
+    const ordered = detachFromStimulus([q('1', 's1'), q('2', 's1'), q('3')], ['q1'])
+    expect(ordered.renumbered).toBe(false)
+    expect(ordered.questions.map((x) => x.label)).toEqual(['1', '2', '3'])
   })
 
-  it('renumberQuestions numbers in paper order and leaves unchanged objects alone', () => {
+  it('renumberQuestions deals the numbers out in paper order and leaves unchanged objects alone', () => {
     const qs = [q('1'), q('3'), q('2')]
     const r = renumberQuestions(qs)
-    expect(r.map((x) => x.label)).toEqual(['1', '2', '3'])
-    expect(r[0]).toBe(qs[0])
+    expect(r.renumbered).toBe(true)
+    expect(r.questions.map((x) => x.label)).toEqual(['1', '2', '3'])
+    expect(r.questions[0]).toBe(qs[0])
+  })
+
+  it('a gap in the source numbering keeps its set of numbers', () => {
+    const qs = [q('18'), q('19'), q('21'), q('22')]
+    const r = attachToStimulus(qs, ['q18', 'q22'], 's1')
+    expect(r.moved).toBe(true)
+    expect(r.renumbered).toBe(true)
+    expect(r.questions.map((x) => x.id)).toEqual(['q18', 'q22', 'q19', 'q21'])
+    expect(r.questions.map((x) => x.label)).toEqual(['18', '19', '21', '22'])
+  })
+
+  it('free-text labels are never touched', () => {
+    for (const labels of [
+      ['1(a)', '2', '3'],
+      ['A1', 'A2', 'A3'],
+      ['', '2', '3'],
+      ['7A', '7B', '8'],
+    ]) {
+      const qs = labels.map((l, i) => ({ ...q(l), id: `x${i}` }))
+      const r = attachToStimulus(qs, ['x0', 'x2'], 's1')
+      expect(r.moved).toBe(true)
+      expect(r.renumbered).toBe(false)
+      expect(r.questions.map((x) => x.id)).toEqual(['x0', 'x2', 'x1'])
+      expect(r.questions.map((x) => x.label)).toEqual([labels[0], labels[2], labels[1]])
+      expect(detachFromStimulus(r.questions, ['x0']).renumbered).toBe(false)
+    }
+  })
+
+  it('duplicate numbers are never touched', () => {
+    const qs = [q('1'), { ...q('2'), id: 'dup', label: '1' }, q('3')]
+    const r = attachToStimulus(qs, ['q1', 'q3'], 's1')
+    expect(r.moved).toBe(true)
+    expect(r.renumbered).toBe(false)
+    expect(r.questions.map((x) => x.label)).toEqual(['1', '3', '1'])
+    expect(detachFromStimulus(r.questions, ['q1']).renumbered).toBe(false)
   })
 
   it('groupLabel lists the members of a group that is not contiguous', () => {
@@ -178,7 +216,7 @@ describe('stimulus grouping', () => {
 
   it('detach and remove clear the reference', () => {
     const grouped = attachToStimulus([q('1'), q('2')], ['q1', 'q2'], 's1').questions
-    expect(groupsOf(detachFromStimulus(grouped, ['q1']))[0]!.questionIds).toEqual(['q2'])
+    expect(groupsOf(detachFromStimulus(grouped, ['q1']).questions)[0]!.questionIds).toEqual(['q2'])
     const r = removeStimulus(
       grouped,
       [{ id: 's1', kind: 'diagram', label: 'Rajah 1', alt: 'x' }],
