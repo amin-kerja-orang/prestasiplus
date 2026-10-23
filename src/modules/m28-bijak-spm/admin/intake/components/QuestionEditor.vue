@@ -185,7 +185,7 @@ function insertMath(field: 'stem'): void {
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between gap-2">
         <label :for="`stem-${q.id}`" class="text-sm font-medium">Teks soalan</label>
-        <UButton size="xs" variant="ghost" color="neutral" icon="i-ph-function" @click="insertMath('stem')">
+        <UButton class="shrink-0 whitespace-nowrap" size="md" variant="ghost" color="neutral" icon="i-ph-function" @click="insertMath('stem')">
           Sisip matematik
         </UButton>
       </div>
@@ -398,6 +398,7 @@ function insertMath(field: 'stem'): void {
           :key="f"
           :model-value="q.confirmed.includes(f)"
           :label="`Saya sahkan ${fieldName(f)} (keyakinan rendah)`"
+          :ui="{ root: 'items-center', label: 'flex min-h-11 cursor-pointer items-center' }"
           :data-testid="`confirm-${f}`"
           @update:model-value="(v: boolean | 'indeterminate') => confirm(f, v === true)"
         />
