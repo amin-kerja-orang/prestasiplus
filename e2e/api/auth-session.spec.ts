@@ -43,7 +43,7 @@ test.describe('auth and session @api', () => {
     const session = await currentSession(page)
     expect(session.active.role).toBe('student')
     const landing = new URL(page.url()).pathname
-    // The API landingPath is overridden by the FE prototype scope (prototype-scope.ts studentHomePath).
+    // The student lands on the server landingPath, /dashboard (GET /api/dashboard is served).
     expect(landing).toBe(HOME.student)
 
     await page.reload()

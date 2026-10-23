@@ -23,7 +23,7 @@ import { fetchStructuredDetail, submitStructuredAttempt } from '../api/practice'
 import type { StructuredAttemptResult } from '../api/types'
 import StimulusImage from '../components/structured/StimulusImage.vue'
 import { marksLabel, parseVariant, safeImageSrc } from '../components/structured/structured-lib'
-import { DsLoadError } from '@/ds'
+import { DsLoadError, DsStickyActions } from '@/ds'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 const SUBMIT_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
@@ -201,10 +201,7 @@ async function submit(): Promise<void> {
           Jawab semua sub-soalan, kemudian klik Hantar.
         </p>
 
-        <div
-          v-if="!result"
-          class="sticky bottom-16 flex flex-wrap items-center gap-3 bg-muted py-3 pe-16 md:static md:py-0 lg:pe-0"
-        >
+        <DsStickyActions v-if="!result">
           <UButton
             type="button"
             color="neutral"
@@ -221,11 +218,11 @@ async function submit(): Promise<void> {
             type="submit"
             size="lg"
             :disabled="sending"
-            class="me-4 min-h-14 flex-1 justify-center md:flex-none md:px-8 lg:me-0"
+            class="min-h-14 flex-1 justify-center md:flex-none md:px-8"
             data-testid="answer-submit"
             >Hantar</UButton
           >
-        </div>
+        </DsStickyActions>
       </form>
 
       <ReportQuestionModal

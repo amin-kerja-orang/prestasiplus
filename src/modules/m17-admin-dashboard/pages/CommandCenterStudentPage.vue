@@ -32,7 +32,7 @@ import { useCcPage } from '../components/command-center/use-cc-page'
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
 type Row = { [K in keyof CcHeadcountRow]: CcHeadcountRow[K] }
 
-const props = withDefaults(defineProps<{ userId: number; basePath?: string }>(), {
+const props = withDefaults(defineProps<{ userId: number | string; basePath?: string }>(), {
   basePath: '/admin/command-center',
 })
 
@@ -69,7 +69,7 @@ const crumbs = computed(() => {
 // --- modals ---------------------------------------------------------------------------------
 const sessionsSource = ref<CcSessionsSource | null>(null)
 const sessionId = ref<string | null>(null)
-const headcount = ref<{ configId: number; subject: string } | null>(null)
+const headcount = ref<{ configId: number | string; subject: string } | null>(null)
 const moodDay = ref<(CcMoodDot & { noSession: boolean }) | null>(null)
 
 function openWeek(week: CcWeek) {

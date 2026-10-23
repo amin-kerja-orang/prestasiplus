@@ -268,7 +268,7 @@
   @keyframes ds-stamp {
     from {
       opacity: 0;
-      transform: scale(2.2) rotate(-14deg);
+      transform: scale(var(--ds-stamp-from-scale, 2.2)) rotate(var(--ds-stamp-from-rotate, -14deg));
     }
     to {
       opacity: 1;
@@ -365,6 +365,15 @@
 
 /* Personality variants: learner: and staff: apply inside (or on) the scope. :is() keeps the specificity
    at (0,2,0), like any other variant. Use these instead of arbitrary [data-personality] variants. */
+/* Sticker `contained` (AZ-21a): below sm the stamp starts at its resting scale/rotation (a fade), so a chip on
+   the right edge never overshoots the viewport. Desktop keeps the full stamp-in. */
+@media (width < 40rem) {
+  [data-ds='sticker'][data-contained] {
+    --ds-stamp-from-scale: 1;
+    --ds-stamp-from-rotate: var(--ds-stamp-rotate, -4deg);
+  }
+}
+
 @custom-variant learner (&:is([data-personality='learner'] *, [data-personality='learner']));
 @custom-variant staff (&:is([data-personality='staff'] *, [data-personality='staff']));
 

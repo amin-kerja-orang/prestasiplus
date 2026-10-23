@@ -3,7 +3,7 @@
  * Pure functions: copy, labels and query parsing only.
  */
 
-import type { SetStatus, SubjektifOverview, TargetType, TrackingASetCard } from '../api'
+import type { SetStatus, SubjektifOverview, TargetType, TrackingASetCard, WireId } from '../api'
 import { targetName } from './latih-tubi'
 
 /** Badge text and colour of a set status (BR-M06-08; "Belum Cukup" is the locked card). */
@@ -42,11 +42,11 @@ export const setHref = (code: string, setNo: number): string =>
   `/spm/ramalan/${encodeURIComponent(code)}?year=2026&set=${String(setNo)}`
 
 /** Link of a Tracking A Bahasa card (S5 → S7). */
-export const bahasaHref = (subjectId: number): string =>
+export const bahasaHref = (subjectId: WireId): string =>
   `/latihan-berstruktur?subject_id=${String(subjectId)}&scope=spm&track=bahasa`
 
 /** Link of an S8 subject card (S8 → S9). */
-export const subjektifHref = (subjectId: number): string =>
+export const subjektifHref = (subjectId: WireId): string =>
   `/latihan-berstruktur?subject_id=${String(subjectId)}&scope=spm`
 
 const toInt = (v: unknown): number | null => {

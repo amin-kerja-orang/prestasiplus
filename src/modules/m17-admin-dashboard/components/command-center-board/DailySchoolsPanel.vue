@@ -19,7 +19,7 @@ const props = defineProps<{
   drill: DrillState | null
   basePath: string
 }>()
-defineEmits<{ toggle: [schoolId: number] }>()
+defineEmits<{ toggle: [schoolId: number | string] }>()
 
 const paths = ccPaths(props.basePath)
 
