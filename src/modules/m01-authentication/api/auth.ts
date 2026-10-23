@@ -39,6 +39,18 @@ export async function login(request: LoginRequest): Promise<ClientSession> {
   return toClientSession(payload, request.remember)
 }
 
+/**
+ * `GET /api/session` (real API only; contract `Session`): the session the cookie now belongs to.
+ * The forced password change needs it because `PUT /api/me/password` rotates the session, so the CSRF
+ * token changes. Resolves to `null` outside http mode (the mock session needs no refresh) or for a body
+ * that is not the API session. Errors propagate (a 401 is handled by the 401 policy).
+ */
+export async function getSession(remember: boolean): Promise<ClientSession | null> {
+  if (!isHttpMode()) return null
+  const body = await api.get<unknown>('/api/session')
+  return isApiSession(body) ? toClientSessionFromApi(body, remember) : null
+}
+
 /** #2 `POST /api/auth/register` (201): logs the new user in, not remembered (FR-M01-25). */
 export async function register(request: RegisterRequest): Promise<ClientSession> {
   const payload = await api.post<SessionPayload>('/api/auth/register', { body: request })
