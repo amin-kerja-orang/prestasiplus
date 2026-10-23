@@ -3,5 +3,5 @@
 {"id":3,"user_id":32,"score":3,"satisfaction":3,"usability":3,"relevance":3,"comment":"Komen contoh 3.","created_at":"2026-01-01T00:14:00Z","updated_at":"2026-01-01T00:14:00Z"}
 {"id":4,"user_id":48,"score":4,"satisfaction":4,"usability":4,"relevance":4,"comment":"Komen contoh 4.","created_at":"2026-01-01T00:21:00Z","updated_at":"2026-01-01T00:21:00Z"}
 {"id":5,"user_id":64,"score":5,"satisfaction":5,"usability":5,"relevance":5,"comment":"Komen contoh 5.","created_at":"2026-01-01T00:28:00Z","updated_at":"2026-01-01T00:28:00Z"}
-{"id":6,"user_id":79,"score":6,"satisfaction":1,"usability":1,"relevance":1,"comment":"Komen contoh 6.","created_at":"2026-01-01T00:35:00Z","updated_at":"2026-01-01T00:35:00Z"}
-{"id":7,"user_id":93,"score":7,"satisfaction":2,"usability":2,"relevance":2,"comment":"Komen contoh 7.","created_at":"2026-01-01T00:42:00Z","updated_at":"2026-01-01T00:42:00Z"}
+{"id":6,"user_id":79,"score":1,"satisfaction":1,"usability":1,"relevance":1,"comment":"Komen contoh 6.","created_at":"2026-01-01T00:35:00Z","updated_at":"2026-01-01T00:35:00Z"}
+{"id":7,"user_id":93,"score":9,"satisfaction":2,"usability":2,"relevance":2,"comment":"Komen contoh 7.","created_at":"2026-01-01T00:42:00Z","updated_at":"2026-01-01T00:42:00Z"}

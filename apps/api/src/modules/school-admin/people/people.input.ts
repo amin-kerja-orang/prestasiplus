@@ -2,13 +2,15 @@ import { V } from '@pp/contract'
 import { z } from 'zod'
 
 import { ApiError } from '../../../common/errors/api-error'
+import { notAllowed, setFieldOnce, unknownKeysOf } from '../../../common/validation/strict-body'
 import { isIdString } from '../../../db/ids'
 
 /**
  * Body validation of the teacher and pupil writes (pure; no DB). The contract schemas carry no Laravel text, so the rules are
  * applied here and the messages are the contract's English ones (`V`). Only the fields below are ever read from the body:
  * every other key (`role`, `schoolId`, `isActive`, `grade`, `icNumber`, `password`, ...) is ignored, never bound (the
- * mass-assignment waiver of BE-NFR-05).
+ * mass-assignment waiver of BE-NFR-05). Exception: the teacher create body is STRICT (BE-33 AC1c, #97, LEAD decision
+ * 22 Oct): there an unknown key is a 422 naming it.
  */
 
 export const NAME_MAX = 255
@@ -100,12 +102,16 @@ export interface UserUpdateInput {
   newPassword?: string
 }
 
+/** The keys of `SchoolAdminTeacherCreateRequestSchema`; any other key of the create body is refused (#97). */
+const TEACHER_CREATE_KEYS = ['name', 'email', 'phone'] as const
+
 export function parseTeacherCreate(raw: unknown): { value: TeacherCreateInput | null; fields: Fields } {
   const body = bodyOf(raw)
   const fields: Fields = {}
   const name = requiredText(fields, 'name', 'name', body.name, NAME_MAX)
   const email = emailField(fields, body.email)
   const phone = phoneField(fields, body.phone)
+  for (const key of unknownKeysOf(body, TEACHER_CREATE_KEYS)) setFieldOnce(fields, key, notAllowed(key))
   if (Object.keys(fields).length > 0 || name === null || email === null) return { value: null, fields }
   return { value: { name, email, phone: phone ?? null }, fields }
 }

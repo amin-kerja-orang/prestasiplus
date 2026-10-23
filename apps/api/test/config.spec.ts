@@ -29,6 +29,7 @@ describe('env validation', () => {
       LOGIN_FAILURE_FLOOR_MS: 1500,
       LOGIN_IDENTIFIER_FAIL_LIMIT: 100,
       THROTTLE_PUBLIC_PER_MINUTE: 60,
+      REGISTRATION_OPEN: true,
       THROTTLE_REGISTER_PER_MINUTE: 30,
       THROTTLE_PUBLIC_SEARCH_PER_MINUTE: 300,
       THROTTLE_ADMIN_READ_PER_MINUTE: 300,
@@ -88,6 +89,11 @@ describe('env validation', () => {
     expect(() => loadEnv({ ...VALID, ALLOW_DEMO_SEED: 'yes' })).toThrow(/ALLOW_DEMO_SEED/)
     expect(loadEnv({ ...VALID, ALLOW_DEMO_SEED: '1' }).ALLOW_DEMO_SEED).toBe(true)
     expect(loadEnv({ ...VALID, ALLOW_DEMO_SEED: '0' }).ALLOW_DEMO_SEED).toBe(false)
+    expect(loadEnv({ ...VALID }).REGISTRATION_OPEN).toBe(true)
+    for (const [raw, want] of [['true', true], ['1', true], ['false', false], ['0', false]] as const) {
+      expect(loadEnv({ ...VALID, REGISTRATION_OPEN: raw }).REGISTRATION_OPEN).toBe(want)
+    }
+    expect(() => loadEnv({ ...VALID, REGISTRATION_OPEN: 'no' })).toThrow(/REGISTRATION_OPEN/)
     expect(loadEnv({ ...VALID }).BIJAK_POC_QUESTIONS).toBe(false)
     expect(loadEnv({ ...VALID, BIJAK_POC_QUESTIONS: 'true' }).BIJAK_POC_QUESTIONS).toBe(true)
     expect(loadEnv({ ...VALID, BIJAK_POC_QUESTIONS: '1' }).BIJAK_POC_QUESTIONS).toBe(true)

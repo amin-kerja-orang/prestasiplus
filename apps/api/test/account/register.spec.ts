@@ -119,18 +119,40 @@ describe('POST /api/auth/register (mock cases, AC1 and AC6)', () => {
     expect(fieldsOf(f)).toEqual({ icNumber: 'The ic number field format is invalid.' })
   })
 
-  it('never lets the client choose isActive, mustChangePassword or extra keys (ignored, not stored)', async () => {
+  it('never lets the client choose isActive, mustChangePassword or extra keys (strict body, #99: 422 naming each, nothing stored)', async () => {
     const res = await t
       .http()
       .post('/api/auth/register')
       .send(body({ email: 'extra@ujian.test', isActive: false, mustChangePassword: true, id: '1', roles: ['admin'] }))
-    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(res.status, JSON.stringify(res.body)).toBe(422)
+    expect(res.body.error.code).toBe('VALIDATION_ERROR')
+    expect(res.body.error.fields).toMatchObject({
+      isActive: 'The isActive field is not allowed.',
+      mustChangePassword: 'The mustChangePassword field is not allowed.',
+      id: 'The id field is not allowed.',
+      roles: 'The roles field is not allowed.',
+    })
+    expect(await userRow(t.db, 'extra@ujian.test')).toBeUndefined()
+    // The same body without the extra keys is a plain student account: active, no forced password change.
+    const ok = await t.http().post('/api/auth/register').send(body({ email: 'extra@ujian.test' }))
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201)
     const row = await userRow(t.db, 'extra@ujian.test')
     expect(row?.must_reset_password).toBe(false)
     const roles = await t.db.query<{ role: string }>(`select role from user_roles where user_id = $1::bigint`, [row?.id])
     expect(roles.map((r) => r.role)).toEqual(['student'])
     const active = await t.db.query<{ is_active: boolean }>(`select is_active from users where id = $1::bigint`, [row?.id])
     expect(active[0]?.is_active).toBe(true)
+  })
+
+  it('a __proto__ or constructor key is named like any other unknown key (strict body, #99)', async () => {
+    const res = await t
+      .http()
+      .post('/api/auth/register')
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify({ ...body({ email: 'proto@ujian.test' }) }).replace(/^\{/, '{"__proto__":{"isAdmin":true},"constructor":1,'))
+    expect(res.status, JSON.stringify(res.body)).toBe(422)
+    expect(Object.keys(res.body.error.fields).sort()).toEqual(['__proto__', 'constructor'])
+    expect(await userRow(t.db, 'proto@ujian.test')).toBeUndefined()
   })
 
   it('accepts an unknown referral code silently (FR-M01-70)', async () => {
