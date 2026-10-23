@@ -645,15 +645,18 @@ const feedback = computed(() => {
     description="Pilih soalan untuk melompat ke sana."
   >
     <template #body>
-      <NavigatorPanel
-        v-if="view && current"
-        :sections="view.sections"
-        :questions="questions"
-        :states="navStates"
-        :current="current.id"
-        :counters="counters"
-        @go="goToId"
-      />
+      <!-- A page-coloured panel: the sheet is bg-elevated, the same fill as the unanswered dots. -->
+      <UCard>
+        <NavigatorPanel
+          v-if="view && current"
+          :sections="view.sections"
+          :questions="questions"
+          :states="navStates"
+          :current="current.id"
+          :counters="counters"
+          @go="goToId"
+        />
+      </UCard>
       <!-- Phones: the footer has no room for Hantar, so it lives here on every question (FB-044). -->
       <UButton
         v-if="isExam"
