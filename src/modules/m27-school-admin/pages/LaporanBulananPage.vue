@@ -12,7 +12,7 @@
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { isApiError } from '@/api'
+import { isApiError, isHttpMode } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
@@ -39,6 +39,19 @@ const bulan = computed(() => {
 const { data, error, loading, reload } = useApi(
   (signal) => fetchMonthlyReport({ bulan: bulan.value, signal }),
   [bulan],
+)
+
+/**
+ * SW7-04 (DV-M27-25): the real API leaves a month out of the series (and hides its accuracy) when fewer than 5
+ * pupils answered in it, so a month with answers can come with no row. Only then (http mode) the empty state names
+ * the real reason instead of "Tiada aktiviti direkodkan".
+ */
+const cohortHidden = computed(
+  () =>
+    isHttpMode() &&
+    (data.value?.cards.answers ?? 0) > 0 &&
+    data.value?.cards.accuracy === null &&
+    data.value.months.length === 0,
 )
 
 const refused = computed(() => isApiError(error.value) && error.value.status === 403)
@@ -104,7 +117,7 @@ function print() {
       <MonthlyCards :cards="data.cards" />
 
       <template v-if="hasAnswers">
-        <MonthlyTable :months="data.months" :total="data.total" />
+        <MonthlyTable :months="data.months" :total="data.total" :cohort-hidden="cohortHidden" />
         <SubjectPerformance v-if="data.subjects.rows.length > 0" :subjects="data.subjects" />
       </template>
 
