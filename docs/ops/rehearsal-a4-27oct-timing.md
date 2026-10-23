@@ -22,7 +22,7 @@ It runs on **27 Oct**, on the release sha that the LEAD re-pinned at A2 (code fr
 
 The code does not let one environment time everything. This is the reason (verified in the code):
 
-- `slot.sh load` refuses a dump that is not marked `"raw": true`, or is marked `anonymised` or `synthetic` (`slot.sh`, `manifest_check`). The 24 Oct dump is marked anonymised, and `fixtures:generate` writes `"synthetic": true` (`fixtures/generate.ts:554`).
+- `slot.sh load` refuses a dump that is not marked `"raw": true`, or is marked `anonymised` or `synthetic` (`slot.sh`, `manifest_check`). The 24 Oct dump is marked anonymised, and `fixtures:generate` writes `"synthetic": true` (`fixtures/generate.ts`, the `manifest.json` it writes: `synthetic: true`, with the comment "`synthetic`, not `anonymised`").
 - `slot.sh etl` always runs with `NODE_ENV=production` and `PP_MIGRATE_TARGET_DB=<db>` (`slot.sh`, `cmd_etl`), and the ETL refuses staged data that holds the known dummy password hashes in production (`load/index.ts`, `assertNotSyntheticInProduction`). The anonymised dump holds them, so `slot.sh etl migrate:all` on that data is refused by design.
 - `rehearsal-db.sh` forces `NODE_ENV=development` and accepts only attested anonymised or synthetic dumps.
 
@@ -45,7 +45,7 @@ So the 24 Oct dump (real shape and volume, anonymised) can only be loaded and mi
 
 **Rule for each figure:** take the larger (slower) of Track R and Track S for a step that exists on both, and say which one it was. Track R decides everything that scales with the number of rows; Track S decides the fixed cost of the scripts.
 
-**Track S fixture.** `fixtures:generate --size medium --seed 7 --out <dir inside a .migration-out folder>` writes a synthetic dump (20,000 users, about 366,000 rows in MIG-07; 366,026 in the 23 Oct dress rehearsal) whose manifest says `"synthetic": true`, so `slot.sh load` refuses it, by design. `fixtures:generate` has no option for a loadable fixture. A scratch-only override in `slot.sh load` (one that refuses a production host) is requested on #166; until it exists, Track S `load` and every step after it cannot be rehearsed with a fixture. Its password values are filler (`fakeHash` in `fixtures/generate.ts`), not the dummy hashes, so this fixture can **not** be used for the guard refusal below.
+**Track S fixture.** `fixtures:generate --size medium --seed 7 --out <dir inside a .migration-out folder>` writes a synthetic dump (20,000 users, about 366,000 rows in MIG-07; 366,026 in the 23 Oct dress rehearsal) whose manifest says `"synthetic": true`, so `slot.sh load` refuses it, by design. `fixtures:generate` has no option for a loadable fixture. A scratch-only override in `slot.sh load` (one that refuses a production host) is requested on #166; until it exists, Track S `load` and every step after it cannot be rehearsed with a fixture: those rows are marked **BLOCKED until #166 has a scratch-only override** in section 4 and 5.2. Its password values are filler (`fakeHash` in `fixtures/generate.ts`), not the dummy hashes, so this fixture can **not** be used for the guard refusal below.
 
 **The fixture must leave the checkout before `slot.sh load`.** `fixtures:generate` writes only inside a `.migration-out` folder of the checkout, but `slot.sh load` and `slot.sh wipe-dump` refuse any path inside the checkout (`pp_assert_outside_repo`, `deploy/vps/lib.sh`: "refusing a path inside the repository", exit 3). So: generate, then copy to a new directory outside the checkout and delete the first copy:
 
@@ -64,7 +64,8 @@ rm -rf <checkout>/apps/api/.migration-out/<fixture>
 |---|---|---|
 | P-1 | A1 green at the release sha (or repeated at it). | The A1 evidence block (A1 sheet, section 11). |
 | P-2 | Release sha re-pinned at A2 and the checkout at that sha; PRs #122, #160, #123, #125 and #166 are in it. | `git rev-parse HEAD`; `grep -c` of the script names as in A1.0. |
-| P-3 | An anonymised dump is on the rehearsal host: the fresh hand-over of a new AM-10 sitting (default of the A1 sheet I8: the A1 extracted directory is deleted at the A1 close-out), or, if the LEAD chose the alternative, the A1 extracted directory kept until the end of A4; inside 7 days of its sitting (until 31 Oct). | Custody line; `du -sh`. |
+| P-3 | An anonymised dump is on the rehearsal host: under the default of the A1 sheet I8 (the A1 extracted directory is deleted at the A1 close-out) the fresh hand-over of a **second AM-10 sitting on 27 Oct**, which plan 4.1 does not schedule; or, if the LEAD chose the alternative, the A1 extracted directory kept until the end of A4; inside 7 days of its sitting (until 31 Oct). | Custody line; `du -sh`. |
+| P-3a | Only under the default of I8: the second sitting is booked by the LEAD for 27 Oct, with a time-box, the `pp_dump_ro` unlock and lock arranged with the data owner, and the option-file deletion or account lock of AM-10 section 3 step 8 (c) planned. | The LEAD's dated booking line (no values). |
 | P-4 | The clock readings of the 24 Oct sitting (A1 sheet, I9). | The dump operator's list. |
 | P-5 | `dump:check` was run by the dump operator (P8) and "rules OK" was received. Its line `Schema: <x> of <y> spec tables present, <rows> rows.` gives **N_night**, the best estimate of the night's rows (a number only; the report stays on the operator PC). | The number `N_night`. |
 | P-6 | Track S host: a scratch VPS or a restored copy of the target, encrypted disk, `db.env`, the compose stack, the `migrate` image at the release sha, `PP_STAGE_DIR`, `PP_MIGRATION_OUT`; free disk at least 5 times the dump size on `PP_STAGE_DIR` (plan B0) and the 3 times database size for restore points (`production-migration-slot.md` section 1). **`S gonogo` must be clean on the scratch copy, so also** (the checks of `slot.sh cmd_gonogo`): PITR on (`archive_mode` not off; base backup taken with `deploy/vps/migration/pitr.sh base --label first`, `pitr.sh status` shows archived above 0 and failed 0), else the line is `PITR off`; at least one backup `pp-backup-*.dump` in the backup folder and younger than 24 h (take one with `deploy/vps/backup/backup.sh --no-offsite`), else `backup: NO dump found  -> NO-GO` (the script prints the age; the plan's reading rule needs under 24 h); more than 30 % free disk on the backup volume; `/api/ready` through the edge returns 200 (the stack is up); the two points `pre_etl` and `pre_delta` verified. **Perlu pengesahan (half AZ):** scratch VPS or the rehearsal box for Track S, and its size against production. | A confirmation line and the first `S gonogo` lines. |
@@ -88,31 +89,33 @@ One row per timed item. Fill every cell; the only blanks allowed are cells marke
 | T06 | `D_xfer`: decrypt and extract on the receiving host | B3 | `gpg --decrypt \| tar -xzf - -C <extract dir>` | | | | 0 | | | S | `manifest.json` exists. |
 | T07 | `D_xfer`: wipe of the operator copy | B3 | `dump:wipe --dir "$work"` | | | | 0 | | | 24 | "local copies deleted". |
 | T08 | Throwaway cluster up | B0 | `S throwaway-up` | | | | 0 | | | S | `THROWAWAY UP`. |
-| T09 | `D_load`: `staging:load` | B4 | Track S: `S load --from <dump dir>`; Track R: `rehearsal-db.sh load-dump` | | | | 0 | | | R and S | R includes the pattern scan; subtract it if it was timed alone. |
+| T09 | `D_load`: `staging:load` | B4 | Track S: `S load --from <dump dir>`; Track R: `rehearsal-db.sh load-dump` | | | | 0 | | | R and S | R includes the pattern scan; subtract it if it was timed alone. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T10 | Freeze proof SQL (rehearsed with `T` = the dump's end time) | B4 | read-only query per staged table with `updated_at` | | | | | tables | | R | **Perlu pengesahan (half AZ):** the one-line form. |
-| T11 | `D_copy`: stage copy | B5 | Track S: `S copy`; Track R: `rehearsal-db.sh stage` | | | | 0 | | | R and S | `STAGE COPY PASSED`, 83 and 35. |
-| T12 | Throwaway down and wipe | B5 | `S throwaway-down`; `S wipe-dump <extract dir 2>/anon <restricted dir>/<name>` and `S wipe-dump <fixture dir>`, then `ls` of each path | | | | 0 | | | S | `THROWAWAY DESTROYED`, `DUMP COPIES DELETED`. The `ls` must say "No such file or directory": `slot.sh wipe-dump` skips a directory that is not there and still prints `DUMP COPIES DELETED` (gap, for #166). |
-| T13 | `staging:profile` | B6 | `rehearsal-db.sh exec target -- npm run staging:profile -w @pp/api`; Track S: `S etl staging:profile` | | | | 0 | | | R and S | |
-| T14 | `D_profile_dry`: `migrate:all --dry-run` (first load: core only) | B6 | see section 5 | | | | 0 | `N_core` | `r_core_dry` | R (and S) | Activity "skipped". |
-| T15 | `D_apply`: `migrate:all --apply` (includes the verify) | B7 | see section 5 | | | | 0 | `N_core + N_act` | `r_B7` | R (and S) | Four stage runs from `etl_runs`. |
+| T11 | `D_copy`: stage copy | B5 | Track S: `S copy`; Track R: `rehearsal-db.sh stage` | | | | 0 | | | R and S | `STAGE COPY PASSED`, 83 and 35. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
+| T12 | Throwaway down and wipe | B5 | `S throwaway-down`; `S wipe-dump <extract dir 2>/anon <restricted dir>/<name>` and `S wipe-dump <fixture dir>`, then `ls` of each path | | | | 0 | | | S | `THROWAWAY DESTROYED`, `DUMP COPIES DELETED`. The `ls` must say "No such file or directory": `slot.sh wipe-dump` skips a directory that is not there and still prints `DUMP COPIES DELETED` (gap, for #166). The fixture wipe is **BLOCKED until #166 has a scratch-only override** (nothing was loaded); `S throwaway-down` and the wipe of `<extract dir 2>/anon` can run. |
+| T13 | `staging:profile` | B6 | `rehearsal-db.sh exec target -- npm run staging:profile -w @pp/api`; Track S: `S etl staging:profile` | | | | 0 | | | R and S | **BLOCKED (Track S part) until #166 has a scratch-only override.** |
+| T14 | `D_profile_dry`: `migrate:all --dry-run` (first load: core only) | B6 | see section 5 | | | | 0 | `N_core` | `r_core_dry` | R (and S) | Activity "skipped". **BLOCKED (Track S part) until #166 has a scratch-only override.** |
+| T15 | `D_apply`: `migrate:all --apply` (includes the verify) | B7 | see section 5 | | | | 0 | `N_core + N_act` | `r_B7` | R (and S) | Four stage runs from `etl_runs`. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T15a | of which: core dry-run, core apply, activity dry-run, activity apply | B7 | query (a) of the A1 sheet, A1.11 | | | | | | | R | Seconds per run. |
-| T16 | `D_verify`: `migrate:verify` | B8 | `migrate:verify` | | | | 0 | | | R (and S) | `verify pass`. |
-| T17 | Read-only SQL checks of plan 4.5 part 1 | B8 | the file of P-9, against the restored copy | | | | | checks | | R (read-only SQL counts only) or S | All equal the verify report? |
+| T16 | `D_verify`: `migrate:verify` | B8 | `migrate:verify` | | | | 0 | | | R (and S) | `verify pass`. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
+| T17 | Read-only SQL checks of plan 4.5 part 1 | B8 | the file of P-9, against the restored copy | | | | | checks | | R (read-only SQL counts only) or S | All equal the verify report? **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T18 | `slot.sh gonogo` read by the rule | B0, B9 | `S gonogo` | | | | 0 | | | S | No `NO-GO`, `MISSING`, `PITR off`; `api` line `-> 200`. A bare scratch VPS prints `PITR off` and `NO dump found -> NO-GO`: that is a P-6 failure, fix it first. |
 | T19 | Restore point `pre_etl`: take and verify, after the final schema migrations | A5 | `R take pre_etl --operator "<role>"`; `R verify pre_etl` | | | | 0 | bytes | | S | `RESTORE POINT TAKEN`, `RESTORE POINT OK`; migration count (section 7). |
-| T20 | **Restore of a restore point, small (the night's Case 2):** `restore pre_etl` | 4.6 Case 2 | `R restore pre_etl` (typed database name) | | | | 0 | | | S | `RESTORED: pre_etl ... in <N> s`. |
-| T21 | Restore of a **large** point (migrated and staged state; the replan case): take `pre_delta` after T15, then restore it | 6.3 | `R take pre_delta --operator "<role>"`; `R restore pre_delta` (typed database name) | | | | 0 | bytes | | S and R | Track R: `restore-snapshot after_full --yes`, and the dump form `restore-snapshot <name> --yes`. |
+| T20 | **Restore of a restore point, small (the night's Case 2):** `restore pre_etl` | 4.6 Case 2 | `R restore pre_etl` (typed database name) | | | | 0 | | | S | `RESTORED: pre_etl ... in <N> s`. **BLOCKED until #166 has a scratch-only override** (the Case 2 shape needs the migrated and staged state of T15). |
+| T21 | Restore of a **large** point (migrated and staged state; the replan case): take `pre_delta` after T15, then restore it | 6.3 | `R take pre_delta --operator "<role>"`; `R restore pre_delta` (typed database name) | | | | 0 | bytes | | S and R | Track R: `restore-snapshot after_full --yes`, and the dump form `restore-snapshot <name> --yes`. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T22 | `migrate:rollback` dry-run and apply (fallback R-b) | 6.3 | see section 5 | | | | 0 | deleted | | R | Counts only. |
 | T23 | Idempotency run: `migrate:delta` dry-run, apply, verify (**mandatory**: plan P1 lists the delta dry-run and apply among the timings; not in `W`) | 4.7 | section 5.3; needs the migrated state, so it runs **before** T22 | | | | 0 | | `r` | R | All `unchanged`. If T23 cannot run, the MIG-07 figures (delta apply 513 s in pass 3b, a no-op delta 515 s, 20k synthetic users) stand in and are labelled so in the post. |
 | T24 | Delta with changed rows (**replan only**) | 4.7 | needs a second dump | n/a | n/a | n/a | n/a | n/a | n/a | n/a | **Not planned**; no second dump exists. Covered by T23. |
 | T25 | The night card read end to end | 4.6 | section 8 | | | | n/a | defects | | | Minutes and a defect count. |
-| T26 | e2e smoke on a Track S restored copy of synthetic data (not in `W`) | P6 | the command of P-10 | | | | 0 | | | S | Pass or fail and counts only, never a failure tail; no trace, screenshot or video is kept. |
+| T26 | e2e smoke on a Track S restored copy of synthetic data (not in `W`) | P6 | the command of P-10 | | | | 0 | | | S | Pass or fail and counts only, never a failure tail; no trace, screenshot or video is kept. **BLOCKED until #166 has a scratch-only override** (it needs the migrated Track S copy). |
 | T27 | Guard refusal 1: synthetic-data guard | P6 | section 6 | | | | 2 | | | R | Accepted = failed. |
 | T28 | Guard refusal 2: target guard | P6 | section 6 | | | | 2 | | | R | Accepted = failed. |
 | T29 | Unfreeze of `.cloud` (plan 6.4) | 4.6 Case 1 and 2 step 2 | the `.cloud` maintenance-switch unfreeze (`.cloud` owner's command) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | **Not measurable at A4**: `.cloud` is live and is never frozen or switched in a rehearsal. The plan 6.4 placeholder stays; **Perlu pengesahan (`.cloud` owner, LEAD):** whether the owner can state or time the unfreeze on a non-production instance. |
 | T30 | Switch-back (plan 6.4) | 6.3 | DNS switch-back | n/a | n/a | n/a | n/a | n/a | n/a | n/a | **Timed in P9 on 28 Oct**, not at A4 (plan P9: "Switch and switch-back durations"). |
 
 `D_freeze` (20 min) and `D_gonogo` (15 min) are fixed by the plan and are not timed.
+
+**Without the `slot.sh` override A4 can still turn green:** T01 to T08 (the transfer forms and `S throwaway-up`), T09, T11, T13 to T17 and T21 on **Track R** only, T10, T12 (`S throwaway-down` and the wipe of `<extract dir 2>/anon`), T18 (the first `S gonogo`), T19 (`R take` and `R verify` of `pre_etl` before any staging), T22, T23, T25, T27 and T28. **BLOCKED** until the override exists: the Track S halves of T09, T11, T13 to T17 and T21, the fixture wipe of T12, T20, T26, the closing `S gonogo` of 5.2, and the real-role `S etl` pass. T24, T29 and T30 are n/a. A blocked row is reported as BLOCKED, not as failed. **Perlu pengesahan (LEAD):** whether A4 can be green with them blocked, and so whether P7 uses the Track R figures alone for those steps.
 
 ## 5. Commands
 
@@ -136,7 +139,7 @@ step t05-scp scp "$out" <user>@<receiver host>:<restricted dir>/
 step t06-extract bash -c 'set -o pipefail; gpg --decrypt <restricted dir>/"$1" | tar -xzf - -C <extract dir 2>' _ "$name"
 ```
 
-The forms are those of plan 4.6 B3 with the anonymised directory `anon` in place of `raw files`; the passphrase is fresh, typed on the receiver, never in a file or a chat, and destroyed with the `.gpg` file (plan 3.3 item 5). The `gpg` prompts for the passphrase, so `step` will wait for you. After T06, wipe both `.gpg` files and `<work>`; `<extract dir 2>/anon` is wiped at the close (section 11). All of them are on the custody list of the A1 sheet I8. T07 is the 24 Oct reading of `dump:wipe` (AM-10 step 8).
+The forms are those of plan 4.6 B3 with the anonymised directory `anon` in place of `raw files`; the passphrase is fresh, typed on the receiver, never in a file or a chat, and destroyed with the `.gpg` file (plan 3.3 item 5). The `gpg` prompts for the passphrase, so `step` will wait for you. After T06, wipe both `.gpg` files and `<work>`; `<extract dir 2>/anon` is wiped at T12 (`S wipe-dump`, B5) and checked again with `ls` at the close (section 11). All of them are on the custody list of the A1 sheet I8. T07 is the 24 Oct reading of `dump:wipe` (AM-10 step 8).
 
 ### 5.2 Track S: the script path on the scratch VPS
 
@@ -144,7 +147,7 @@ The forms are those of plan 4.6 B3 with the anonymised directory `anon` in place
 
 ```bash
 hostname -s                                                     # the host
-grep -E '^(POSTGRES_DB|POSTGRES_USER)=' "$PP_ENV_DIR/db.env"    # the database and the role; never print POSTGRES_PASSWORD
+grep -E '^(POSTGRES_DB|POSTGRES_USER)=' "${PP_ENV_DIR:-/etc/pretasiplus}/db.env"    # the database and the role; never print POSTGRES_PASSWORD
 ```
 
 Both lines are read aloud to half AZ DevOps and compared with the **written production list** (host, database and role names, kept by half AZ outside the repo). The scratch database name must differ from the production one. Any match stops A4 (red, section 10) and nothing is started. **Perlu pengesahan (half AZ):** the production list.
@@ -159,12 +162,12 @@ R verify pre_etl                            # RESTORE POINT OK: pre_etl file=...
 # B0
 S gonogo                                    # T18, read by the rule of plan 4.6
 S throwaway-up                              # T08: THROWAWAY UP: container ..., database <db>_staging, ... archive_mode=off
-# B4, B5 with the Track S fixture (section 2)
+# From `S load` to the last `S gonogo` the rows are BLOCKED until #166 has a scratch-only override: `slot.sh load` refuses a synthetic fixture (section 2). Kept as the target order.
 S load --from <fixture dir>                 # <fixture dir> = the copy OUTSIDE the checkout (section 2). T09: LOAD DONE: archive_cloud:35 staging_cloud:83 in <db>_staging, duration_s=<n>
 S copy                                      # T11: STAGE COPY PASSED: archive_cloud:35 staging_cloud:83 ..., duration_s=<n>
 S throwaway-down                            # T12: THROWAWAY DESTROYED: container ... removed
 S wipe-dump <fixture dir> <fixture .gpg, if any>   # DUMP COPIES DELETED: ...; then ls of both paths (a missing directory is skipped and the message still appears)
-# B6, B7, B8 in production mode (set by slot.sh; the fixture is expected to be accepted by the guard, see section 2: not yet run)
+# B6, B7, B8 in production mode (set by slot.sh); BLOCKED like the lines above
 S etl staging:profile                       # T13: ETL STEP staging:profile exit=0 duration_s=<n>
 S etl migrate:all --dry-run --as-of=2026-10-29      # T14: ETL STEP migrate:all exit=0
 S etl migrate:all --apply   --as-of=2026-10-29      # T15: ETL STEP migrate:all exit=0 (slot.sh adds PP_ALLOW_MIGRATE_APPLY=1)
@@ -174,9 +177,9 @@ S gonogo                                    # B9 analogue: throwaway: none runni
 
 Expected strings are from `slot.sh` and `restore-point.sh`. The line `ETL STEP <cmd> exit=<rc> duration_s=<n> (reports in <dir>)` is printed for every `S etl`. A `S etl ... --apply` without `staging_cloud` in the target is refused with exit 3 ("no staging_cloud in the target: run copy first"). `S etl` refuses `migrate:core` and `migrate:activity` (exit 2).
 
-One `S etl` pass (B6 to B8: `staging:profile`, `migrate:all --dry-run`, `migrate:verify`) runs with the real migration role of P3 and its real environment, not with the admin role of the scratch copy. The denials of the stage-only role (the statements it must not be able to run) are recorded as exit codes and fixed refusal lines only. **Perlu pengesahan (half AZ):** the statement list.
+One `S etl` pass (B6 to B8: `staging:profile`, `migrate:all --dry-run`, `migrate:verify`) runs with the real migration role of P3 and its real environment, not with the admin role of the scratch copy. The denials of the stage-only role (the statements it must not be able to run) are recorded as exit codes and fixed refusal lines only. This pass is BLOCKED like the rest of Track S ETL. A1 and Track R run the ETL as the rehearsal admin and prove nothing about grants: `rehearsal-db.sh exec` also hands the child `PP_REHEARSAL_ADMIN_URL`, `PGPASSWORD` and `PGUSER` from the shell (checked in the dress rehearsal), so `env -u PP_REHEARSAL_ADMIN_URL` alone would not remove the admin credentials and is not added. **Perlu pengesahan (half AZ):** the statement list.
 
-For T21 and T20 (restores on the scratch VPS, after T15 and T16 and the smokes):
+For T21 and T20 (restores on the scratch VPS, after T15 and T16 and the smokes; BLOCKED until #166 has a scratch-only override, like T15):
 
 ```bash
 R take pre_delta --operator "<role>"        # a second point, now with the migrated and staged state: the large point (raw_data=yes: it holds staging_cloud)
@@ -261,7 +264,7 @@ Optional third and fourth lines of the same table (each must also exit 2 and cha
 
 **Accepted = failed rehearsal.** If either command exits 0 or 1, prints a `run <id>` line, or changes any count, A4 is red (section 10) and the fix is a developer task. The refusals are recorded as the text of the table: exit code, the fixed line, the seven counts before and after.
 
-`slot.sh etl` sets `NODE_ENV=production` and `PP_MIGRATE_TARGET_DB=<db>` itself on every run, so refusal 2 cannot be shown through `slot.sh`; the composition of the variables is verified by reading `cmd_etl` and by the production-mode dry-run on the fixture in Track S (expected to be accepted; not yet run). Refusal 1 through `slot.sh` needs a stage with dummy hashes in the production-mode copy, which `slot.sh load` does not allow (section 2). Both refusals are therefore shown on Track R, with the identical code path (`cli.ts`, `kit/apply-guard.ts`, `load/index.ts`).
+`slot.sh etl` sets `NODE_ENV=production` and `PP_MIGRATE_TARGET_DB=<db>` itself on every run, so refusal 2 cannot be shown through `slot.sh`; the composition of the variables is verified by reading `cmd_etl`; a production-mode dry-run through `slot.sh` is BLOCKED (section 2). Refusal 1 through `slot.sh` needs a stage with dummy hashes in the production-mode copy, which `slot.sh load` does not allow (section 2). Both refusals are therefore shown on Track R, with the identical code path (`cli.ts`, `kit/apply-guard.ts`, `load/index.ts`).
 
 ## 7. Restore time and the migration-count check on restore points
 
@@ -480,7 +483,7 @@ Result: GREEN | RED (item <id>, reason <short>); P7: met | LEAD decision needed 
 
 ## 11. Close of A4
 
-- Wipe both `.gpg` files of 5.1, `<work>` and `<extract dir 2>/anon` (overwrite with `shred -u -n 1 -z`, then remove), destroy the passphrase notes, and show each deletion with `ls`. They are on the custody list (A1 sheet I8) and in the deletion comment on #109.
+- Wipe both `.gpg` files of 5.1 and `<work>`, and check with `ls` that `<extract dir 2>/anon` is gone after T12 (wipe it now if not) (overwrite with `shred -u -n 1 -z`, then remove), destroy the passphrase notes, and show each deletion with `ls`. They are on the custody list (A1 sheet I8) and in the deletion comment on #109.
 - After A4: every dump directory still on the rehearsal host (the fresh hand-over of A4, `<extract dir 2>/anon`, and the A1 directory and `files` if the LEAD kept it) is deleted and **named at A5** (plan A5 item 7 and section 7): `find <extract dir> -type f -exec shred -u -n 1 -z {} +` then remove the directory, the pattern of `slot.sh wipe-dump` (**Perlu pengesahan (half AZ):** the exact command on the rehearsal host, as in the A1 sheet). On the scratch VPS: `S wipe-dump <dir> <file>` for the fixture, `S throwaway-down` (the cluster must not be left running), and drop the scratch copy.
 - Rehearsal DB: `"$RDB" down --yes` after copying the timings (`"$RDB" status` prints `timings.log`).
 - Restore points of the scratch copy: kept or deleted with the scratch host.
