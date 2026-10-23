@@ -195,7 +195,7 @@ Steps:
 - **Changed flows** (the two portals, question intake and display, the UI theme, Portal Pentadbiran) follow D28-D32 and the v2 docs ([v2-portals](../requirements/v2-portals.md), [design language](../design/v2-design-language.md), [glossary](../design/v2-copy-glossary.md)). Live copy that works stays verbatim even when it differs from the glossary and is recorded as a live exception.
 - Staff copy addresses the user as "anda", learner copy as "awak". Title Case for buttons, headings, table headers; sentence case for hints, toasts, errors. No new English strings.
 - Defaults for shared patterns come from `dsCopy`; module-specific strings live next to the code as named constants (as M05 does), never repeated as scattered literals.
-- **Privacy:** never write a real person's name (author, teacher, principal, student) in code, seeds, tests, docs or fixtures; use fictitious names. Credentials never go into the repo (they are in `C:\Users\hp\.prestasiplus\credentials.md`, outside it).
+- **Privacy:** never write a real person's name (author, teacher, principal, student) in code, seeds, tests, docs or fixtures; use fictitious names. Credentials never go into the repo (they are in `<credentials file outside the repo>`, outside it).
 - **Hide unbuilt screens.** Do not create a placeholder page or a menu entry that says "Belum tersedia". Items that are not built stay in the docs backlog only. (The existing prototype-scope page `Belum Tersedia dalam Prototaip` and the `/admin/p/*` placeholders are legacy; see OQ-FE-4.)
 
 ---
