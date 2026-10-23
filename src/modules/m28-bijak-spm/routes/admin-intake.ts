@@ -11,6 +11,8 @@ const base = {
   layout: 'admin',
   access: 'auth',
   roles: ['admin'],
+  // A typed URL of another role gets the in-place 403 (AC-22.4 / R26), not a redirect.
+  onForbidden: '403',
   module: 'M06',
   v2: true,
 } as const
