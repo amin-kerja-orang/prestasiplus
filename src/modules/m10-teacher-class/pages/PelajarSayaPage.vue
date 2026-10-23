@@ -29,6 +29,7 @@ import {
 import type { StudentTab } from '../api/types'
 import { PELAJAR_COPY } from '../components/pelajar/copy'
 import StudentRow from '../components/pelajar/StudentRow.vue'
+import { isInClass } from '../components/pelajar/student-classes'
 
 const flash = useFlash()
 const confirm = useConfirm()
@@ -52,7 +53,11 @@ const school = useApi(
 
 const tabs = computed<PillItem<StudentTab>[]>(() => [
   { key: 'school', label: PELAJAR_COPY.tabSchool, icon: 'i-ph-buildings' },
-  { key: 'mine', label: `${PELAJAR_COPY.tabMine} (${String(count.value)})`, icon: 'i-ph-user-check' },
+  {
+    key: 'mine',
+    label: `${PELAJAR_COPY.tabMine} (${String(count.value)})`,
+    icon: 'i-ph-user-check',
+  },
 ])
 
 const ownClasses = computed(() => (classes.data.value?.data ?? []).filter((c) => c.isActive))
@@ -65,8 +70,8 @@ const schoolRows = computed(() => school.data.value?.data ?? [])
 const loadError = computed(() => mine.error.value !== null || school.error.value !== null)
 
 /**
- * Chip name → class id, only for names that identify one active class. Known limitation: the API
- * lists class names, not ids, so a chip of a duplicated class name has no remove button.
+ * Fallback only, for an API that lists class names without `classes` (SW5-03): chip name → class
+ * id, for names that identify one active class. A chip that carries its own id never reads this.
  */
 const classIds = computed(() => {
   const seen = new Map<string, number>()
@@ -252,7 +257,7 @@ async function remove(studentId: number, classId: number): Promise<void> {
             :student="s"
             mode="school"
             :can-add="targetClass !== ''"
-            :already-in="targetName !== null && s.classNames.includes(targetName)"
+            :already-in="isInClass(s, { id: targetClass, name: targetName })"
             :busy="busy"
             @add="add"
           />
