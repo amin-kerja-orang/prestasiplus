@@ -176,8 +176,8 @@ services:
       PP_UPLOAD_FILES_MB: ${PP_UPLOAD_FILES_MB:-22}
       PP_UPLOAD_BIG_MB: ${PP_UPLOAD_BIG_MB:-256}
       PP_CSP_IMG_HOSTS: ${PP_CSP_IMG_HOSTS:-}
-      PP_EDGE_AUTH_RATE: ${PP_EDGE_AUTH_RATE:-60r/m}
-      PP_EDGE_AUTH_BURST: ${PP_EDGE_AUTH_BURST:-60}
+      PP_EDGE_AUTH_RATE: ${PP_EDGE_AUTH_RATE:-300r/m}   # F2 default 22 Oct: a school NAT signs a whole class in at once
+      PP_EDGE_AUTH_BURST: ${PP_EDGE_AUTH_BURST:-120}
       PP_CSP_MODE: ${PP_CSP_MODE:-report-only}   # report-only | enforce | off: picks nginx/snippets/csp-<mode>.conf
       # HSTS of the whole host (edge-owned, replaces the API's own): ramp from max-age=300 (platform-settings.md 4.3).
       # `-` not `:-`, so an explicitly empty PP_HSTS stays empty (= no header) while an unset one gets the safe start.
