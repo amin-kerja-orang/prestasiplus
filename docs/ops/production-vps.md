@@ -759,3 +759,56 @@ deactivate the second one.
 |---|---|---|---|
 | F10 | `support_config` (help-box e-mail and WhatsApp) has no production write path: it is written by the demo seed only, there is no admin endpoint, and the ETL does not load it. On production `GET /api/config/support` is `NOT_FOUND`. It needs a reference seed reading two non-secret env values, or an admin write endpoint (a contract change, so a LEAD decision) | backend-developer (BE-24 owner), LEAD | Medium (go-live: the contact is only in the school guide) |
 | F11 | No admin bootstrap or reset command (F1 fallback, locked-out last Admin Pusat) | backend-developer, LEAD assigns | High (until two active Admin Pusat accounts are confirmed) |
+
+### Admin Pusat bootstrap/reset command (AZ-36, added 22 Oct)
+
+This is the command that step 2 of "Locked-out last Admin Pusat" and the F1 fallback (section 20) refer to. It closes
+F11 once the AZ-36 PR is merged and in the deployed `migrate` image. The "Status: this command does not exist yet" note
+above stays true until then.
+
+- **What it does.** Everything happens in one transaction, under the same lock as the users module's last-admin guard:
+  - an argon2id hash (the same parameters as login);
+  - `must_reset_password` is set, so the account must change its password at the next login;
+  - the national `admin` scope is set;
+  - every live session of that account ends;
+  - open "Lupa Kata Laluan" reset links of that account are spent;
+  - one `audit_events` row is written: `admin.bootstrap.reset` or `admin.bootstrap.created`, actor role `host_cli`.
+    It holds the OS user and counts only, never the e-mail, the password or the hash.
+- **When it refuses (exit 3, nothing written):**
+  - `--mode=create` while any active Admin Pusat exists, or when the e-mail already has an account;
+  - `--mode=reset` when the e-mail is not an Admin Pusat, or when **another** active Admin Pusat exists (that admin
+    resets it on the admin screen instead);
+  - an inactive or suspended target, unless `--reactivate` is given.
+- **When it stops (exit 2):** `--confirm` is missing or does not repeat `--email` exactly; any password-like argument
+  (none is echoed); a weak password (under 12 characters, leading or trailing spaces, or it contains the e-mail name).
+- **Run it (as `ppdeploy`, with the LEAD's confirmation).** Use the prod overlay command from section 1. The default is
+  the **hidden prompt**: the password is typed twice and never touches the disk. Start the line with a space so that
+  `HISTCONTROL=ignorespace` keeps it out of the history (or run `history -d` on it afterwards):
+
+  ```
+   docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
+    run --rm --no-deps migrate npm run admin:bootstrap -w @pp/api -- \
+    --mode=reset --email=<admin e-mail> --confirm=<admin e-mail>
+  ```
+
+  Only when no terminal is available, use a file. The redirect is read by the calling shell, so the file must belong
+  to `ppdeploy` (a root-only file fails with "Permission denied" before compose starts). It must hold the password on
+  **one line only**; a second line is refused with exit 2. Add `-T` and `--password-stdin`, then remove the file
+  with `shred -u` right after the run:
+
+  ```
+  install -m 600 -o ppdeploy /dev/null ~ppdeploy/pp-admin-pass   # then write the one-line password into it
+   docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
+    run --rm --no-deps -T migrate npm run admin:bootstrap -w @pp/api -- \
+    --mode=reset --email=<admin e-mail> --confirm=<admin e-mail> --password-stdin < ~ppdeploy/pp-admin-pass
+  shred -u ~ppdeploy/pp-admin-pass
+  ```
+
+  Exit 0 prints the user id, the database name, and the number of sessions and reset links ended. The e-mail is
+  stored in lower case.
+- **Known limits:**
+  - The e-mail is a command-line argument, so it appears in `ps` while the command runs (and in the history unless
+    the leading space or `history -d` above is used). It is not a secret.
+  - The login throttle row is not cleared: right after a recovery, the admin may wait up to 60 s before the first login.
+  - The audit row names the OS user only (often the shared `ppdeploy`), so also write the support ticket line from the
+    "Records" rule above.
