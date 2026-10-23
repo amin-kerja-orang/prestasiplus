@@ -254,7 +254,8 @@ describe('ArtikelDetailPage (S16)', () => {
     wrapper?.unmount()
     vi.stubEnv('VITE_API_MODE', 'http')
     try {
-      expect(crumb(await mountAt('/artikel/teknik-pomodoro', ArtikelDetailPage))).toBe('/spm/bijak')
+      // The student home is /dashboard in http mode too since AZ-20c (GET /api/dashboard is served).
+      expect(crumb(await mountAt('/artikel/teknik-pomodoro', ArtikelDetailPage))).toBe('/dashboard')
     } finally {
       vi.unstubAllEnvs()
     }
