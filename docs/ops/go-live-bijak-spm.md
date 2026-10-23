@@ -87,7 +87,7 @@ Merged means merged into `feature/v2-backend` @ `2be3b5f6`.
 | Command Center / admin dashboard | M17 | BE-22 | **merged** (#69) |
 | AI intake: files, OCR, job runner; dashboard and budget | Admin Pusat | BE-37, BE-40 | **merged** |
 | AI extraction service | Admin Pusat | BE-36 | **merged** (#86 @ `c4793dfc`, via `lead/merge-final`; migration `0037_ai_extraction`) |
-| Intake workflow (batches, review, accept to Draf) | Admin Pusat | BE-38 | **merged** (#85 @ `621b5a61`, via `lead/merge-final`; migration `0038_intake_workflow`). Sends redacted OCR text only, never page images (LEAD decision (c), 2026-10-21). Open Group B follow-up (#85, #78, not blocking): use BE-36's redactor and remove `intake/workflow/redact.ts`. |
+| Intake workflow (batches, review, accept to Draf) | Admin Pusat | BE-38 | **merged** (#85 @ `621b5a61`, via `lead/merge-final`; migration `0038_intake_workflow`). Sends redacted OCR text only, never page images (LEAD decision (c), 2026-10-21). The single-redactor follow-up (#85, #78) is closed by #189: BE-36's service redacts once, and nothing but OCR text reaches the provider. |
 | Security hardening, `/api/ready`, `/api/metrics`, runbook | cross-cutting | BE-33 rest | **merged** (#81). `docs/ops/api-runbook.md` §15 is the release gate. |
 | Log PII redaction | cross-cutting | BE-33 part | **merged** (`521a6756`, via `lead/merge-final`, no PR) |
 | Seed guard fail-closed, PoC seed profile | seed | #80, BE-26 (#74) | **merged** |

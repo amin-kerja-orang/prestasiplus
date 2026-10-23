@@ -22,7 +22,8 @@ describe('PoC question pool content (pure)', () => {
   })
 
   it('every item has four distinct non-empty options, one key and a text unique within its subject and level', () => {
-    const specs = poolSpecs()
+    // The Tingkatan part; the Darjah part (AZ-02) is pinned by question-pool-primary.spec.ts.
+    const specs = poolSpecs().filter((s) => s.tingkatan)
     expect(specs).toHaveLength(POOL_SUBJECTS.length * POOL_LEVELS.length * POOL_PER_LEVEL)
     expect(new Set(specs.map((s) => s.ref)).size).toBe(specs.length)
     const texts = new Map<string, Set<string>>()
@@ -129,7 +130,7 @@ describe('PoC question pool seed (database)', () => {
          join questions q on q.id = v.question_id
          join subjects s on s.id = v.subject_id
          join education_levels l on l.id = v.education_level_id
-        where v.number_label like 'SEED-POOL-%'
+        where v.number_label like 'SEED-POOL-%' and l.code in ('T4', 'T5')
         group by s.code, l.code`,
     )) as { subject: string; level: string; n: number; tagged: number; with_sp: number; spm: number; live: number }[]
     expect(rows).toHaveLength(POOL_SUBJECTS.length * POOL_LEVELS.length)

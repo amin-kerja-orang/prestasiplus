@@ -97,6 +97,9 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     // ticks fast, so a scenario can wait for a batch to be read. OCR stays off (OCR_ENGINE unset).
     INTAKE_MAX_ACTIVE_BATCHES: '100',
     INTAKE_DAILY_PAGE_QUOTA: '100000',
+    // The intake scenarios replay the mock's teacher paths: the AZ-35 flag is on here (default off: Admin Pusat only,
+    // pinned in test/intake-workflow/teacher-gate.spec.ts).
+    INTAKE_TEACHER_ENABLED: 'true',
     INTAKE_WRITES_PER_MINUTE: '1000',
     INTAKE_READS_PER_MINUTE: '10000',
     JOBS_WORKER_ENABLED: 'true',

@@ -80,13 +80,15 @@ export class QuestionSetsService {
 
   /**
    * The practice adapter's view of one set for one student: null unless the student is an active member of
-   * the set's class (real or Mod Pelajar enrolment) and the set is visible at `at`.
+   * the set's class (real or Mod Pelajar enrolment) and the set is visible at `at`. A set without a class
+   * (migrated header, Q4 A) is never served until it is rebuilt into a class.
    */
   async visibleSetFor(userId: string, id: string, at: Date): Promise<QuestionSetRecord | null> {
     if (!isIdString(id) || !isIdString(userId)) return null
     const set = await this.repo.get(id)
-    if (!set || !isVisibleAt(set, at)) return null
-    const member = (await this.classes.isMember(set.classroomId, userId, false)) || (await this.classes.isMember(set.classroomId, userId, true))
+    if (!set || set.classroomId === null || !isVisibleAt(set, at)) return null
+    const classroomId = set.classroomId
+    const member = (await this.classes.isMember(classroomId, userId, false)) || (await this.classes.isMember(classroomId, userId, true))
     return member ? set : null
   }
 }
