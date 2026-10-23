@@ -708,7 +708,7 @@ const SETTINGS_ID = 'tetapan-peribadi'
  * Student menu items with no student screen (the route redirects to /dashboard): hidden, recorded
  * in `docs/requirements/v2-pentadbiran-backlog.md` (student hidden items).
  */
-const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set(['analisa-item'])
+const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set(['analisa-item', 'headcount'])
 /** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
 const PROFILE_IDS: readonly string[] = ['profil-saya', 't-profil-saya', 'sa-profil-saya']
 

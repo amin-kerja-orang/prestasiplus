@@ -295,6 +295,26 @@ describe('admin pages in http mode do not crash', () => {
     },
   )
 
+  it('IntakeReviewPage: all items decided shows the note, not "no questions detected"', async () => {
+    const server = setup().server as unknown as Record<string, unknown>
+    const batch = {
+      id: 'b1', subject: 'MAT', kertas: 2, year: 2025, paperType: 'Soalan Umum', source: 's',
+      copyright: 'sendiri', notes: '', fileName: 'k.pdf', fileHash: '', pageCount: 1, sourceKind: 'pdf',
+      userId: 0, status: 'draf', createdAt: 0, updatedAt: 0, provider: 'mock', model: 'm',
+      questions: [], stimuli: [], unmatched: [], pages: [],
+      extraction: { state: 'succeeded', itemCount: 2, canExtract: false, processing: false },
+    }
+    server.getIntakeBatch = () => Promise.resolve(batch)
+    const html = await renderPage(IntakeReviewPage, { batchId: 'b1' }, server)
+    expect(html).toContain('all-decided')
+    expect(html).not.toContain('extract-panel')
+    expect(html).not.toContain('Tiada soalan dikesan')
+    batch.extraction.itemCount = 0
+    const none = await renderPage(IntakeReviewPage, { batchId: 'b1' }, server)
+    expect(none).toContain('Tiada soalan dikesan')
+    expect(none).not.toContain('all-decided')
+  })
+
   it('keeps the generic load error for any other failure', async () => {
     const server = setup().server as unknown as Record<string, unknown>
     server.listBank = () => Promise.reject(new Error('boom'))

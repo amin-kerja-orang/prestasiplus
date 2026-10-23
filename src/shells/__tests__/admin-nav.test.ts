@@ -148,7 +148,8 @@ describe('ADMIN_NAV data (shells.md §2.7)', () => {
   it('the sidebar links equal the live inventory links in order (label, href, icon)', () => {
     // The live sidebar text of the command card includes its LIVE pill.
     const live = liveSidebar
-      .filter((e) => e.icon !== 'fa-sign-out-alt')
+      // D9 deviation (SWEEP-23OCT): the live "Laporan Eksekutif" item is a dead link here (S8 not built).
+      .filter((e) => e.icon !== 'fa-sign-out-alt' && pathOf(e) !== '/admin/laporan-eksekutif')
       .map((e) => ({
         text: clean(e.text).replace(/ LIVE$/, ''),
         href: pathOf(e),
@@ -289,10 +290,10 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(activeLabel('/admin/unknown-page')).toBeNull()
   })
 
-  it('matches at a "/" boundary only (Laporan vs Laporan Eksekutif)', () => {
+  it('matches at a "/" boundary only (Laporan vs a longer sibling path)', () => {
     expect(activeLabel('/admin/laporan')).toBe('Laporan')
-    expect(activeLabel('/admin/laporan-eksekutif')).toBe('Laporan Eksekutif')
-    expect(activeLabel('/admin/laporan-eksekutif/sekolah/7')).toBe('Laporan Eksekutif')
+    expect(activeLabel('/admin/laporan-eksekutif')).toBeNull()
+    expect(activeLabel('/admin/laporan-eksekutif/sekolah/7')).toBeNull()
   })
 
   it('the /guru twins activate Monitoring and Kirkpatrick (FR-M11-05, FR-M12-04)', () => {
