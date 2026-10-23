@@ -110,6 +110,20 @@ describe('--files-dir (BE-29 AC9)', () => {
   })
 })
 
+describe('etl_runs.git_sha', () => {
+  it('migrate:all hands the resolved git sha to every core and activity stage', async () => {
+    const sha = '0123456789abcdef0123456789abcdef01234567'
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    const log = capture()
+    const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01'], { pool: fakePool, env: { ...env, PP_GIT_SHA: sha }, out: log.out, err: log.err })
+    expect(code).toBe(0)
+    expect(mocks.runCore).toHaveBeenCalledTimes(2)
+    expect(mocks.runActivity).toHaveBeenCalledTimes(2)
+    for (const [o] of [...mocks.runCore.mock.calls, ...mocks.runActivity.mock.calls]) expect(o).toMatchObject({ gitSha: sha })
+  })
+})
+
 describe('a stage that throws', () => {
   it('ApplyRefusedError exits 3', async () => {
     mocks.runCore.mockRejectedValueOnce(new ApplyRefusedError('abc'))

@@ -79,6 +79,7 @@ import { quoteIdent } from './kit/sql'
 import { sourceLockKey } from './kit/source-lock'
 import { runCore } from './load'
 import { assertCorePreflight, PreflightError, runActivity } from './load/activity'
+import { resolveGitSha } from './load/git-sha'
 import { assertMinimiseAllowed, minimiseArchive } from './export/archive-minimise'
 import { exportOpenQuestionReports } from './export/question-reports'
 import { prepareOutputDir, ProfileOutputError } from './profile'
@@ -504,7 +505,7 @@ export const migrateAll: MigrateCommand = {
   summary: 'core then activity (dry-run first, then apply) and the reconciliation (dry-run by default)',
   async run(args, ctx) {
     const f = commonFlags(args)
-    const result = await runAll({ pool: ctx.pool, env: ctx.env, mode: args.mode, ...f, onStage: (s) => printStage(ctx, 'migrate:all', s) })
+    const result = await runAll({ pool: ctx.pool, env: ctx.env, mode: args.mode, ...f, gitSha: resolveGitSha(ctx.env), onStage: (s) => printStage(ctx, 'migrate:all', s) })
     printOutcome(ctx, 'migrate:all', result)
     return result.status === 'succeeded' ? 0 : 1
   },
@@ -518,7 +519,7 @@ export const migrateDelta: MigrateCommand = {
     if (since === undefined) throw new ApplyGuardError('--since is required (ISO-8601 timestamp, e.g. 2026-06-02T00:00:00Z).')
     parseSince(since)
     const f = commonFlags(args, true)
-    const result = await runDelta({ pool: ctx.pool, env: ctx.env, mode: args.mode, since, ...f, onStage: (s) => printStage(ctx, 'migrate:delta', s) })
+    const result = await runDelta({ pool: ctx.pool, env: ctx.env, mode: args.mode, since, ...f, gitSha: resolveGitSha(ctx.env), onStage: (s) => printStage(ctx, 'migrate:delta', s) })
     printOutcome(ctx, 'migrate:delta', result)
     if (result.delta) {
       printDelta(ctx, result.delta)
