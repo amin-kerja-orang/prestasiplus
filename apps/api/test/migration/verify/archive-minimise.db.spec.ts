@@ -103,9 +103,9 @@ beforeAll(async () => {
   }
   await env.pool.query(`insert into archive_cloud.question_imports (id, imported_by, status, created_at, updated_at) values (9001, 3, 'selesai', ${ts}), (9002, null, 'selesai', ${ts})`)
   await env.pool.query(`insert into archive_cloud.spm_sets (id, subject_id, created_at, updated_at) values (9001, 1, ${ts})`)
-  await env.pool.query(`insert into archive_cloud.teacher_reference_documents (id, teacher_id, file_path, created_at, updated_at) values (9001, 5, 'rujukan/contoh.pdf', ${ts})`)
+  await env.pool.query(`insert into archive_cloud.teacher_reference_documents (id, teacher_id, created_at, updated_at) values (9001, 5, ${ts})`)
   await env.pool.query(`delete from archive_cloud.teacher_reference_papers`)
-  await env.pool.query(`insert into archive_cloud.teacher_reference_papers (id, teacher_id, title, created_at, updated_at) values (9001, 6, 'Rujukan contoh', ${ts})`)
+  await env.pool.query(`insert into archive_cloud.teacher_reference_papers (id, teacher_id, created_at, updated_at) values (9001, 6, ${ts})`)
   for (const t of TABLES) await env.pool.query(`update archive_cloud."${t}" set "_row_hash" = 'hash-' || id`)
   summary = (await exportOpenQuestionReports({ pool: env.pool, outDir: join(outRoot, 'export') })).summary
 }, 300_000)

@@ -143,7 +143,7 @@ describe('read-only guard (AC2, BE-MIG-05)', () => {
       expect(await source.tableExists('cache')).toBe(false)
       let rows = 0
       for await (const batch of source.read('users', 5)) rows += batch.length
-      expect(rows).toBe(13)
+      expect(rows).toBe(15)
     } finally {
       await source.close()
     }

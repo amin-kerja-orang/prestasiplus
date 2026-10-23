@@ -309,7 +309,7 @@ Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replace
 - `headcounts` is aggregate per teacher/class/subject/year (`tov`, `rs`); the prototype entry is per student with targets, actuals and ETR. Migrate the aggregate as a config with `tov`/`rs` only; per-student entries have no source.
 - `timeline_entries` (`title`, `body`, `happened_on`) to M08 timeline posts (`category` default, `photos` empty).
 - `feedback` (4 scores + comment) vs M12 monthly NPS: either add the four score columns or migrate as legacy feedback with `nps` `NULL`.
-- `interventions` columns (`alert_type`, `action_taken`, before/after accuracy and mood) vs M12 shape: map and keep the free text as is, subject to Q9.
+- `interventions` columns (`alert_type`, before/after accuracy) vs M12 shape. PDPA minimisation (FIT-FIX, security review M1 to M3): `action_taken`, `before_mood` and `after_mood` are no longer staged, nor are the other free-text columns that no reader uses (`study_schedules.focus_topic`, `structured_attempt_answers.answer`, `student_notes.title/body`, `mood_checkins.note`, `chatbot_messages.body`, and the archive file path and title columns). Bring one back to the spec only when a reader needs it, subject to Q9.
 - `mood_checkins` (hosted provisionally in M17 for M26): rename only. `wellbeing_alerts`, `psychometric_results`, `aspirations`, `career_paths`, `universities`, `scholarships` have no prototype store.
 - Kirkpatrick, risk, ranking, standings, item statistics, school scores are **computed**; nothing to migrate.
 
@@ -359,7 +359,7 @@ Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replace
 | Risk | Detail | Mitigation |
 |---|---|---|
 | **PII volume** | Users (name, email, phone, IC, class, faith, bio), parents, sponsors (officer name), foster applications (family category, income reason), mood notes, intervention notes, psychometric results, chatbot and ticket free text, student notes, `audit_logs.ip`, `google_id`. Most users are minors. | Treat the dump as sensitive; encrypted storage; staging DB access limited and logged; PDPA-aligned data minimisation. Migrate wellbeing, psychometric, foster and chatbot data only after an explicit user decision (Q7). Mask free text in non-production copies. |
-| **Faith field** | `users.faith` is sensitive personal data. | Do not migrate unless a v2 feature uses it. |
+| **Faith field** | `users.faith` is sensitive personal data. | Do not migrate unless a v2 feature uses it. Not staged either (FIT-FIX): `users.faith` and `users.google_id` are not in `ddl/spec.ts`. |
 | **Seed rosters in the reference repo** | `backend/database/data/bbb_students.json` and `bbb_teachers.json` appear to be rosters (**to confirm**); the roster seeders and `roster:backfill-logins` assign one shared default password. | Never load or copy these files. Every roster account (`username` set) must be forced to reset on first login. |
 | **Passwords and hashes** | Laravel hashes (assumed bcrypt `$2y$`; to verify per prefix). Sanctum tokens, `remember_token` exist. | Migrate hashes only; accept `$2y$` as `$2b$` in the Node verifier, rehash to the v2 algorithm on first successful login; flag accounts whose hash is not bcrypt; never migrate tokens (everyone re-logs in); accounts with the shared default hash are forced to reset. No plaintext in any file. |
 | **IC numbers** | Plain text in `users.ic`. | Hash + mask at extract; drop the column; do not log. |

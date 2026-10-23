@@ -25,7 +25,7 @@ const T0 = '2026-01-01T00:00:00Z'
 const pad = (n: number, w = 3) => String(n).padStart(w, '0')
 
 function users(): Row[] {
-  const roles = ['pelajar', 'pelajar', 'pelajar', 'pelajar', 'pelajar', 'pelajar', 'guru', 'guru', 'ibu_bapa', 'admin_sekolah', 'pegawai_ppd', 'admin', 'super_guru']
+  const roles = ['pelajar', 'pelajar', 'pelajar', 'pelajar', 'pelajar', 'pelajar', 'guru', 'guru', 'ibu_bapa', 'admin_sekolah', 'pegawai_ppd', 'admin', 'super_guru', 'jpn_officer', 'agent']
   return roles.map((role, i) => {
     const n = i + 1
     const row: Row = {
@@ -105,7 +105,7 @@ function build(): Map<string, Row[]> {
     selected_option: 'A', is_correct: n % 2 === 0 ? '1' : '0', time_seconds: 10 + n, created_at: T0,
   })))
   put('review_schedules', [{ id: 1, user_id: 1, question_id: 1, ease_factor: 2.5, interval_days: 1, repetitions: 1, lapses: 0, next_due_at: T0 }])
-  put('student_notes', [{ id: 1, user_id: 1, subject_id: 1, title: 'Nota Contoh', body: 'Isi nota contoh.' }])
+  put('student_notes', [{ id: 1, user_id: 1, subject_id: 1 }])
   put('mood_checkins', [{ id: 1, user_id: 1, mood: 'gembira', checked_in_on: '2026-01-02' }, { id: 2, user_id: 2, mood: 'sedih', checked_in_on: '2026-01-02' }])
   put('feedback', [{ id: 1, user_id: 1, score: 9, satisfaction: 5, usability: 4, relevance: 5, comment: 'Komen contoh.' }])
   put('gamification_tiers', [{ id: 1, label_ms: 'Peringkat Contoh', perks: 'Contoh', sort_order: 1 }])
@@ -147,7 +147,7 @@ function build(): Map<string, Row[]> {
   put('question_options', [1, 2, 3, 4].map((n) => ({ id: n, question_id: n === 4 ? 555 : 1, label: 'ABCD'[n - 1], body: `Pilihan ${n}`, is_correct: n === 1 ? '1' : '0' })))
   put('source_papers', [{ id: 1, natural_key: 'contoh-2025-1', file_hash: '0'.repeat(64), year: 2025, exam_board_id: 1, exam_type_id: 1 }])
   put('exam_papers', [{ id: 1, status_id: 3, title: 'Kertas Contoh' }])
-  put('teacher_reference_papers', [{ id: 1, teacher_id: null, title: 'Rujukan Contoh' }])
+  put('teacher_reference_papers', [{ id: 1, teacher_id: null }])
   put('legacy_canonical_map', [{ id: 1, source: 'questions', legacy_id: '1', canonical_type: 'exam_question', canonical_id: 1 }, { id: 2, source: 'spm_set', legacy_id: '9', canonical_type: 'exam_paper', canonical_id: 1 }])
   put('exam_boards', [{ id: 1, slug: 'contoh_lembaga' }])
   put('exam_types', [{ id: 1, slug: 'contoh_jenis' }])

@@ -21,13 +21,9 @@
       "role": "keep",
       "school_id": "keep",
       "kelas": "keep",
-      "faith": {
-        "fixed": "tidak_dinyatakan"
-      },
       "is_active": "keep",
       "is_suspended": "keep",
       "is_complimentary": "keep",
-      "google_id": "pseudonym:opaque",
       "referral_code": "pseudonym:code",
       "referred_by": "keep",
       "parent_invite_token": "null",
@@ -143,21 +139,17 @@
       "structured_attempt_id": "keep",
       "structured_sub_question_id": "keep",
       "awarded": "keep",
-      "max_marks": "keep",
-      "answer": "scrub-text"
+      "max_marks": "keep"
     },
     "student_notes": {
       "user_id": "keep",
-      "subject_id": "keep",
-      "title": "scrub-text",
-      "body": "scrub-text"
+      "subject_id": "keep"
     },
     "study_schedules": {
       "teacher_id": "keep",
       "classroom_id": "keep",
       "subject_id": "keep",
-      "day": "keep",
-      "focus_topic": "scrub-text"
+      "day": "keep"
     },
     "broadcasts": {
       "teacher_id": "keep",
@@ -189,7 +181,6 @@
     "mood_checkins": {
       "user_id": "keep",
       "mood": "keep",
-      "note": "scrub-text",
       "checked_in_on": "keep"
     },
     "wellbeing_alerts": {
@@ -206,12 +197,9 @@
       "student_id": "keep",
       "recorded_by": "keep",
       "alert_type": "keep",
-      "action_taken": "scrub-text",
       "action_date": "keep",
       "before_accuracy": "keep",
-      "after_accuracy": "keep",
-      "before_mood": "keep",
-      "after_mood": "keep"
+      "after_accuracy": "keep"
     },
     "aspirations": {
       "user_id": "keep",
@@ -423,7 +411,6 @@
     "chatbot_messages": {
       "chatbot_conversation_id": "keep",
       "sender": "keep",
-      "body": "scrub-text",
       "rating": "keep"
     },
     "settings": {
@@ -716,13 +703,10 @@
       "legacy_id": "keep",
       "reason": "keep"
     },
-    "paper_documents": {
-      "source_file": "pseudonym:path"
-    },
+    "paper_documents": {},
     "paper_document_pages": {
       "paper_document_id": "keep",
-      "position": "keep",
-      "path": "pseudonym:path"
+      "position": "keep"
     },
     "paper_blueprints": {
       "subject_id": "keep"
@@ -734,12 +718,10 @@
       "selection_rule_id": "keep"
     },
     "teacher_reference_documents": {
-      "teacher_id": "keep",
-      "file_path": "pseudonym:path"
+      "teacher_id": "keep"
     },
     "teacher_reference_papers": {
-      "teacher_id": "keep",
-      "title": "scrub-text"
+      "teacher_id": "keep"
     },
     "exam_boards": {
       "slug": "keep"
