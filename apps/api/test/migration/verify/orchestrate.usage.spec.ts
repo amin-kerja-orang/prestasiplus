@@ -4,16 +4,17 @@
  * mocked here; their own specs cover the behaviour).
  */
 import { readFileSync, symlinkSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 
 import type pg from 'pg'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runCli } from '../../../src/migration/cli'
 import { findMigrateCommand } from '../../../src/migration/kit'
+import { DEFAULT_OUT_DIR as VERIFY_OUT_DIR } from '../../../src/migration/verify/render'
 import { RollbackRefusedError } from '../../../src/migration/verify/rollback'
-import { AS_OF_UNVERIFIED, malaysiaDate, parseSince, writeDeltaReport, type DeltaReport } from '../../../src/migration/orchestrate'
-import { capture } from '../staging/helpers'
+import { AS_OF_UNVERIFIED, DEFAULT_OUT_DIR, malaysiaDate, parseSince, writeDeltaReport, type DeltaReport } from '../../../src/migration/orchestrate'
+import { capture, REPO_ROOT } from '../staging/helpers'
 import { tempOutDir } from './helpers-verify'
 
 const mocks = vi.hoisted(() => ({
@@ -52,6 +53,17 @@ describe('registration', () => {
   it('registers the six commands', () => {
     for (const n of ['all', 'delta', 'verify', 'rollback', 'link-questions', 'export-question-reports']) {
       expect(findMigrateCommand(`migrate:${n}`), n).toBeDefined()
+    }
+  })
+})
+
+describe('default report directory', () => {
+  it('is apps/api/.migration-out (the only folder the image mounts), not the repo root', () => {
+    const expected = join(REPO_ROOT, 'apps', 'api', '.migration-out')
+    for (const dir of [DEFAULT_OUT_DIR, VERIFY_OUT_DIR]) {
+      expect(dir.endsWith(`${sep}apps${sep}api${sep}.migration-out`)).toBe(true)
+      expect(dir).toBe(expected)
+      expect(dir).not.toBe(join(REPO_ROOT, '.migration-out'))
     }
   })
 })

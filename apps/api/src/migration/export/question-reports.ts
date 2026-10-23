@@ -64,7 +64,7 @@ export const KNOWN_STATUSES: readonly string[] = ['baru', 'menunggu', 'pending',
 export interface ExportOptions {
   pool: pg.Pool
   source?: 'cloud'
-  /** A `.migration-out` folder. Default `<repo>/.migration-out`. */
+  /** A `.migration-out` folder. Default `apps/api/.migration-out`. */
   outDir: string
   /** Test seam: the clock that names the files. */
   now?: () => Date

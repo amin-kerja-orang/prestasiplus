@@ -147,7 +147,7 @@ export interface PipelineOptions {
   contentOwner?: string
   /** Activity `--files-dir` (BE-29 AC9): the checked .cloud storage export. Unset: no file is migrated. */
   filesDir?: string
-  /** Report directory (a `.migration-out` folder). Default `<repo>/.migration-out`. */
+  /** Report directory (a `.migration-out` folder). Default `apps/api/.migration-out`. */
   outDir?: string
   gitSha?: string | null
   /** Called with each stage as soon as it finishes (the CLI prints it), so completed stages survive a later throw. */
@@ -169,8 +169,7 @@ export interface DeltaOptions extends PipelineOptions {
  */
 export const AS_OF_UNVERIFIED = 'cannot verify --as-of against the first load; make sure it is the same value'
 export const ACTIVITY_NEEDS_CORE = 'needs migrate:core --apply first'
-const REPO_ROOT = fileURLToPath(new URL('../../../../', import.meta.url))
-const DEFAULT_OUT_DIR = join(REPO_ROOT, '.migration-out')
+export const DEFAULT_OUT_DIR = join(fileURLToPath(new URL('../../', import.meta.url)), '.migration-out')
 const MAX_IDS_PRINTED = 200
 
 // ---------------------------------------------------------------- stages

@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url'
 import { prepareOutputDir } from '../profile'
 import type { VerifyReport } from './types'
 
-const DEFAULT_OUT_DIR = join(fileURLToPath(new URL('../../../../../', import.meta.url)), '.migration-out')
+export const DEFAULT_OUT_DIR = join(fileURLToPath(new URL('../../../', import.meta.url)), '.migration-out')
 
 /** Table cell: no pipe or line break can break the row. */
 const cell = (v: string | number | null | undefined): string => (v === null || v === undefined ? '-' : String(v).replace(/[|\r\n]+/g, ' '))
@@ -65,7 +65,7 @@ export function renderVerifyMarkdown(report: VerifyReport): string {
 export const stampOf = (iso: string): string => iso.replace(/\.\d+Z$/, 'Z').replace(/[-:TZ]/g, '').slice(0, 14)
 
 /**
- * Writes the report (mode 0600) into `outDir` (default `<repo>/.migration-out`), refusing to replace an existing file or
+ * Writes the report (mode 0600) into `outDir` (default `apps/api/.migration-out`), refusing to replace an existing file or
  * a link at the target, sets `report.files` and returns the two paths.
  */
 export function writeVerifyReport(report: VerifyReport, outDir: string = DEFAULT_OUT_DIR): { json: string; md: string; deletedIds?: string } {

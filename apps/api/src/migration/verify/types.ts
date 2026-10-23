@@ -63,7 +63,7 @@ export interface VerifyOptions {
   pool: pg.Pool
   env: Env
   source: LegacySource
-  /** Report directory; must be a `.migration-out` folder (see `profile/render.ts` `prepareOutputDir`). Default `<repo>/.migration-out`. */
+  /** Report directory; must be a `.migration-out` folder (see `profile/render.ts` `prepareOutputDir`). Default `apps/api/.migration-out`. */
   outDir?: string
   /** Build from these runs instead of the latest succeeded apply runs. */
   runIds?: readonly string[]
