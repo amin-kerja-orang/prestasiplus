@@ -6,6 +6,8 @@
  */
 import { computed } from 'vue'
 
+import { DsNativeSelect } from '@/ds'
+
 import type { PointCode, PointDef, SchemeDef } from '../../../domain/types'
 import { CODE_NAMES, codesForSubject, pointTag, schemeTotal } from '../domain/marks'
 
@@ -109,7 +111,7 @@ function setAccepted(text: string): void {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3" :data-testid="testid ?? 'scheme-editor'">
+  <div class="@container flex min-w-0 flex-col gap-3" :data-testid="testid ?? 'scheme-editor'">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <p class="font-medium">Skema pemarkahan</p>
       <div class="flex gap-1" role="group" aria-label="Jenis skema">
@@ -143,42 +145,41 @@ function setAccepted(text: string): void {
           class="rounded-xl border border-default bg-elevated/40 p-3"
           data-testid="scheme-point"
         >
-          <div class="grid grid-cols-[auto_1fr_auto] items-end gap-2 sm:grid-cols-[6rem_5rem_1fr_auto]">
-            <label class="flex flex-col gap-1 text-sm">
+          <div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-2 @lg:grid-cols-[6rem_5rem_minmax(0,1fr)_auto]">
+            <label class="flex min-w-0 flex-col gap-1 text-sm">
               <span class="text-muted">Kod</span>
-              <select
-                :value="p.code"
-                class="min-h-11 rounded-lg border border-default bg-default px-2"
+              <DsNativeSelect
+                :model-value="p.code"
                 :aria-label="`Kod mata ${i + 1}`"
-                @change="patch(i, { code: ($event.target as HTMLSelectElement).value as PointCode })"
+                @update:model-value="patch(i, { code: String($event) as PointCode })"
               >
                 <option v-for="c in codes" :key="c" :value="c" :title="CODE_NAMES[c]">{{ c }}</option>
-              </select>
+              </DsNativeSelect>
             </label>
-            <label class="flex flex-col gap-1 text-sm">
+            <label class="flex min-w-0 flex-col gap-1 text-sm">
               <span class="text-muted">Markah</span>
-              <input
-                :value="p.marks"
+              <UInput
+                :model-value="p.marks"
                 type="number"
                 min="0"
-                class="min-h-11 w-full rounded-lg border border-default bg-default px-2"
+                class="w-full"
                 :aria-label="`Markah mata ${i + 1}`"
-                @input="patch(i, { marks: Number(($event.target as HTMLInputElement).value) || 0 })"
+                @update:model-value="patch(i, { marks: Number($event) || 0 })"
               />
             </label>
-            <label class="col-span-3 flex flex-col gap-1 text-sm sm:col-span-1">
+            <label class="col-span-3 flex min-w-0 flex-col gap-1 text-sm @lg:col-span-1">
               <span class="text-muted">Penerangan ({{ pointTag(points, i) }})</span>
-              <input
-                :value="p.label"
+              <UInput
+                :model-value="p.label"
                 type="text"
-                class="min-h-11 w-full rounded-lg border border-default bg-default px-2"
+                class="w-full"
                 :aria-label="`Penerangan mata ${i + 1}`"
-                @input="
+                @update:model-value="
                   patch(i, {
-                    label: ($event.target as HTMLInputElement).value,
+                    label: String($event),
                     match: {
                       type: 'step',
-                      accept: [($event.target as HTMLInputElement).value, ...altText(p).split('\n').slice(1)],
+                      accept: [String($event), ...altText(p).split('\n').slice(1)],
                     },
                   })
                 "
@@ -196,12 +197,12 @@ function setAccepted(text: string): void {
             <summary class="min-h-11 cursor-pointer py-2 text-sm text-muted">
               Jawapan alternatif ({{ Math.max(0, altText(p).split('\n').filter(Boolean).length - 1) }})
             </summary>
-            <textarea
-              :value="altText(p)"
-              rows="3"
-              class="w-full rounded-lg border border-default bg-default p-2 text-sm"
+            <UTextarea
+              :model-value="altText(p)"
+              :rows="3"
+              class="w-full"
               :aria-label="`Jawapan diterima mata ${pointTag(points, i)}, satu setiap baris`"
-              @input="setAlt(i, ($event.target as HTMLTextAreaElement).value)"
+              @update:model-value="setAlt(i, String($event))"
             />
             <p class="text-xs text-muted">Satu bentuk setiap baris. Mana-mana satu diterima.</p>
           </details>
@@ -234,14 +235,14 @@ function setAccepted(text: string): void {
         </UButton>
         <label v-if="group" class="flex items-center gap-2 text-sm">
           Mana-mana
-          <input
-            :value="group.anyN"
+          <UInput
+            :model-value="group.anyN"
             type="number"
             min="1"
             :max="group.pointIds.length"
-            class="min-h-11 w-16 rounded-lg border border-default bg-default px-2"
+            class="w-20"
             aria-label="Bilangan mata yang dikira"
-            @input="setAnyN(Number(($event.target as HTMLInputElement).value) || 1)"
+            @update:model-value="setAnyN(Number($event) || 1)"
           />
           daripada {{ group.pointIds.length }}
         </label>
@@ -251,11 +252,11 @@ function setAccepted(text: string): void {
     <template v-else>
       <label class="flex flex-col gap-1 text-sm">
         <span class="text-muted">Jawapan diterima (satu setiap baris)</span>
-        <textarea
-          :value="acceptedText"
-          rows="3"
-          class="w-full rounded-lg border border-default bg-default p-2"
-          @input="setAccepted(($event.target as HTMLTextAreaElement).value)"
+        <UTextarea
+          :model-value="acceptedText"
+          :rows="3"
+          class="w-full"
+          @update:model-value="setAccepted(String($event))"
         />
       </label>
     </template>

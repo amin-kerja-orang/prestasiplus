@@ -8,7 +8,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsPage, DsPanel, DsStateView, DsStatusBadge } from '@/ds'
+import { DsNativeSelect, DsPage, DsPanel, DsStateView, DsStatusBadge } from '@/ds'
 
 import StimulusView from '../../../components/StimulusView.vue'
 import { formatDateTime } from '../../../lib/use-bijak'
@@ -419,14 +419,7 @@ async function submit(): Promise<void> {
         >
           <!-- source (stimuli only for a manual batch) -->
           <aside
-            :class="
-              isManual
-                ? 'block'
-                : [
-                    mobileTab === 'sumber' ? 'block' : 'hidden lg:block',
-                    'lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-auto',
-                  ]
-            "
+            :class="isManual ? 'block' : mobileTab === 'sumber' ? 'block' : 'hidden lg:block'"
             class="flex min-w-0 flex-col gap-3"
             :aria-label="isManual ? 'Rajah dan petikan' : 'Sumber kertas'"
             data-testid="source-panel"
@@ -460,7 +453,7 @@ async function submit(): Promise<void> {
                 />
                 <pre
                   v-else-if="pageText"
-                  class="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm"
+                  class="wrap-break-word whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm"
                   data-testid="source-text"
                   >{{ pageText.text }}</pre
                 >
@@ -510,30 +503,30 @@ async function submit(): Promise<void> {
                   />
                   <label class="flex flex-col gap-1 text-sm">
                     <span class="text-muted">Tajuk kapsyen</span>
-                    <input
-                      :value="s.caption ?? ''"
-                      class="min-h-11 rounded-lg border border-default bg-default px-3"
+                    <UInput
+                      :model-value="s.caption ?? ''"
+                      class="w-full"
                       :aria-label="`Kapsyen ${s.label}`"
-                      @input="patchStimulus(s.id, { caption: ($event.target as HTMLInputElement).value })"
+                      @update:model-value="patchStimulus(s.id, { caption: String($event) })"
                     />
                   </label>
                   <label class="flex flex-col gap-1 text-sm">
                     <span class="text-muted">Teks alternatif (wajib)</span>
-                    <input
-                      :value="s.alt"
-                      class="min-h-11 rounded-lg border border-default bg-default px-3"
+                    <UInput
+                      :model-value="s.alt"
+                      class="w-full"
                       :aria-label="`Teks alternatif ${s.label}`"
                       data-testid="stimulus-alt"
-                      @input="patchStimulus(s.id, { alt: ($event.target as HTMLInputElement).value })"
+                      @update:model-value="patchStimulus(s.id, { alt: String($event) })"
                     />
                   </label>
                   <label v-if="s.kind === 'passage'" class="flex flex-col gap-1 text-sm">
                     <span class="text-muted">Teks petikan</span>
-                    <textarea
-                      :value="s.text ?? ''"
-                      rows="3"
-                      class="rounded-lg border border-default bg-default p-3"
-                      @input="patchStimulus(s.id, { text: ($event.target as HTMLTextAreaElement).value })"
+                    <UTextarea
+                      :model-value="s.text ?? ''"
+                      :rows="3"
+                      class="w-full"
+                      @update:model-value="patchStimulus(s.id, { text: String($event) })"
                     />
                   </label>
                   <fieldset class="flex flex-col gap-1">
@@ -646,15 +639,14 @@ async function submit(): Promise<void> {
                   >
                     <label class="flex max-w-sm flex-col gap-1 text-sm">
                       <span class="font-medium">Rajah / petikan dikongsi</span>
-                      <select
-                        :value="q.stimulusId ?? ''"
-                        class="min-h-11 rounded-lg border border-default bg-default px-3"
+                      <DsNativeSelect
+                        :model-value="q.stimulusId ?? ''"
                         data-testid="q-stimulus"
-                        @change="quickAttach(q.id, ($event.target as HTMLSelectElement).value)"
+                        @update:model-value="quickAttach(q.id, String($event))"
                       >
                         <option value="">Tiada</option>
                         <option v-for="s in batch.stimuli" :key="s.id" :value="s.id">{{ s.label }}</option>
-                      </select>
+                      </DsNativeSelect>
                     </label>
                     <QuestionEditor
                       :model-value="q"
