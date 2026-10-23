@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -217,12 +218,157 @@ describe.each(['tiny', 'small'] as const)('planted anomalies match a scan of the
   })
 })
 
+// ---------------------------------------------------------------------------------------------------------
+const sumsOf = (text: string): [hash: string, name: string][] =>
+  text.split('\n').filter(Boolean).map((l) => {
+    const m = /^([0-9a-f]{64})  (\S.*)$/.exec(l)
+    expect(m, `not in sha256sum format: ${l}`).not.toBeNull()
+    return [(m as RegExpExecArray)[1] as string, (m as RegExpExecArray)[2] as string]
+  })
+const sha = (content: string | Buffer): string => createHash('sha256').update(content).digest('hex')
+
+describe('SHA256SUMS (rehearsal-db.sh load-dump checks it)', () => {
+  const files = fixtureFiles(generateFixture('tiny', 1))
+
+  it('is in sha256sum format, bytewise sorted, lists every other file once, and each hash matches the content', () => {
+    const text = files.get('SHA256SUMS') as string
+    expect(text.endsWith('\n')).toBe(true)
+    expect(text).not.toMatch(/\r/)
+    const entries = sumsOf(text)
+    const names = entries.map(([, n]) => n)
+    expect(names).toEqual([...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)))
+    expect(names).toEqual([...files.keys()].filter((k) => k !== 'SHA256SUMS')) // fixtureFiles returns sorted keys; SHA256SUMS lists all else
+    expect(names).toContain('manifest.json')
+    expect(names).toContain('anomalies.json')
+    expect(names).toContain('users.ndjson')
+    for (const [hash, name] of entries) expect(hash === sha(files.get(name) as string), name).toBe(true)
+  })
+
+  it('is part of the file set and differs for different data', () => {
+    expect(files.has('SHA256SUMS')).toBe(true)
+    const other = fixtureFiles(generateFixture('tiny', 2))
+    expect(other.get('SHA256SUMS')).not.toBe(files.get('SHA256SUMS'))
+  })
+
+  it('the files written to a directory pass a real sha256sum check', () => {
+    const out = work.out('sums')
+    writeFixture('tiny', 1, out)
+    const entries = sumsOf(readFileSync(join(out, 'SHA256SUMS'), 'utf8'))
+    expect(entries.length).toBe(readdirSync(out).length - 1)
+    for (const [hash, name] of entries) expect(hash === sha(readFileSync(join(out, name))), name).toBe(true)
+  })
+})
+
+describe('observed value sets (docs/architecture/v2-data-migration.md 4.4, M14 8.1/8.3)', () => {
+  const distinct = (fx: ReturnType<typeof generateFixture>, t: string, col: string): Set<unknown> => new Set(asRows(fx, t).map((r) => r[col]))
+
+  describe.each(['tiny', 'small'] as const)('%s', (size) => {
+    const fx = generateFixture(size, 7)
+
+    it('practice session modes are the five observed ones (plus the planted unknown) and all five occur', () => {
+      const seen = distinct(fx, 'practice_sessions', 'mode')
+      seen.delete(UNKNOWN_MODE)
+      expect([...seen].sort()).toEqual(['battle', 'chapter', 'latih_tubi', 'pksk', 'spm'])
+    })
+
+    it('coin ledger rows use only the M14 (type, source, sign) combinations, with spends and conversions negative', () => {
+      const allowed = new Set([
+        'earn|quiz_spm|1', 'earn|daily_login|1', 'convert|token_conversion|-1', 'earn|spm|1', 'earn|daily_challenge|1',
+        'bonus|streak_bonus|1', 'earn|mystery_box|1', 'spend|reward_claim|-1', 'spend|hadiah_redeem|-1',
+      ])
+      const seen = new Set<string>()
+      for (const c of asRows(fx, 'coin_transactions')) {
+        if (c.type === UNKNOWN_COIN_TYPE) continue
+        const key = `${c.type}|${c.source}|${Math.sign(c.amount as number)}`
+        expect(allowed.has(key), key).toBe(true)
+        expect(c.amount).not.toBe(0)
+        seen.add(key)
+      }
+      expect([...seen].sort()).toEqual([...allowed].sort())
+      const negatives = asRows(fx, 'coin_transactions').filter((c) => (c.amount as number) < 0)
+      expect(negatives.length).toBeGreaterThan(0)
+      for (const c of negatives) expect(['spend', 'convert', UNKNOWN_COIN_TYPE]).toContain(c.type)
+      // The M14 ledger sources, so the ETL's source map and its rejects are both exercised.
+      expect([...distinct(fx, 'coin_transactions', 'source')].sort()).toEqual(['daily_challenge', 'daily_login', 'hadiah_redeem', 'mystery_box', 'quiz_spm', 'reward_claim', 'spm', 'streak_bonus', 'token_conversion'])
+    })
+
+    it('challenge and banner types are the observed sets', () => {
+      expect([...distinct(fx, 'challenges', 'type')].sort()).toEqual(['accuracy', 'quiz_count', 'streak', 'time_spent', 'topic_variety'])
+      expect([...distinct(fx, 'banners', 'type')].sort()).toEqual(['announcement', 'hero', 'promo'])
+    })
+
+    it('education levels are "Darjah N" / "Tingkatan N" with an accepted stage each, and the grade is derivable', () => {
+      const levels = asRows(fx, 'education_levels')
+      expect(levels.map((l) => [l.name_bm, l.stage])).toEqual([
+        ['Darjah 1', 'primary'], ['Darjah 6', 'primary'], ['Tingkatan 1', 'lower_secondary'], ['Tingkatan 4', 'upper_secondary'],
+      ])
+      expect(levels.map((l) => l.name_en)).toEqual(['Year 1', 'Year 6', 'Form 1', 'Form 4'])
+      for (const l of levels) expect(String(l.name_bm)).toMatch(/^(Darjah [1-6]|Tingkatan [1-5])$/)
+      expect(new Set(levels.map((l) => l.stage))).toEqual(new Set(['primary', 'lower_secondary', 'upper_secondary']))
+    })
+  })
+})
+
+describe.each(['tiny', 'small'] as const)('capped and single planted cases (%s)', (size) => {
+  const fx = generateFixture(size, 5)
+  const { planted } = fx.anomalies
+
+  it('exactly one feedback score is outside 1 to 5 (it holds 9), and it is recorded as planted', () => {
+    expect(planted.outOfRange['feedback.score']).toBe(1)
+    const feedback = asRows(fx, 'feedback')
+    const outside = feedback.filter((r) => (r.score as number) < 1 || (r.score as number) > 5)
+    expect(outside).toHaveLength(1)
+    expect(outside[0]?.score).toBe(9)
+    expect(feedback[feedback.length - 1]?.score).toBe(9)
+    for (const r of feedback.filter((x) => x !== outside[0])) expect([1, 2, 3, 4, 5]).toContain(r.score)
+  })
+
+  it('orphan topics are capped at 2 whatever the size (curriculum is fixed at 54 topics)', () => {
+    const expected = size === 'tiny' ? 1 : 2 // tiny: round(1 / 2) = 1; small: min(2, 5)
+    expect(planted.orphans['topics.chapter_id']).toBe(expected)
+    const chapterIds = new Set(asRows(fx, 'chapters').map((c) => c.id))
+    const orphanTopics = asRows(fx, 'topics').filter((t) => !chapterIds.has(t.chapter_id))
+    expect(orphanTopics).toHaveLength(expected)
+    expect(orphanTopics.length).toBeLessThanOrEqual(2)
+    expect(asRows(fx, 'topics')).toHaveLength(54)
+  })
+})
+
+describe('fixtures:generate replaces a stale SHA256SUMS', () => {
+  it('a re-run over a synthetic directory with a bogus SHA256SUMS writes a fresh, correct one', () => {
+    const out = work.out('stale-sums')
+    const quiet = { out: () => undefined, err: () => undefined }
+    expect(runFixturesCli(['fixtures:generate', '--size', 'tiny', '--seed', '3', '--out', out], quiet)).toBe(FIXTURE_EXIT.ok)
+    const bogus = `${'0'.repeat(64)}  manifest.json\n`
+    writeFileSync(join(out, 'SHA256SUMS'), bogus)
+    const errs: string[] = []
+    expect(runFixturesCli(['fixtures:generate', '--size', 'tiny', '--seed', '4', '--out', out], { out: () => undefined, err: (l) => errs.push(l) })).toBe(FIXTURE_EXIT.ok)
+    expect(errs).toEqual([])
+    const text = readFileSync(join(out, 'SHA256SUMS'), 'utf8')
+    expect(text).not.toBe(bogus)
+    expect(text).toBe(fixtureFiles(generateFixture('tiny', 4)).get('SHA256SUMS'))
+    for (const [hash, name] of sumsOf(text)) expect(hash === sha(readFileSync(join(out, name))), name).toBe(true)
+  })
+
+  it('writeFixture does the same, and files the tool does not own are left alone', () => {
+    const out = work.out('stale-sums-2')
+    writeFixture('tiny', 1, out)
+    writeFileSync(join(out, 'SHA256SUMS'), 'stale\n')
+    writeFileSync(join(out, 'notes.txt'), 'keep me')
+    writeFixture('tiny', 1, out)
+    expect(readFileSync(join(out, 'SHA256SUMS'), 'utf8')).toBe(fixtureFiles(generateFixture('tiny', 1)).get('SHA256SUMS'))
+    expect(readFileSync(join(out, 'notes.txt'), 'utf8')).toBe('keep me')
+  })
+})
+
 // Slow (20,000 users); run with PP_FIXTURE_MEDIUM=1.
 describe.skipIf(!process.env.PP_FIXTURE_MEDIUM)('medium', () => {
   it('generates the medium size without error and scales the planted counts', () => {
     const fx = generateFixture('medium', 9)
     expect(asRows(fx, 'users')).toHaveLength(20000)
     expect(fx.anomalies.planted.orphans['question_attempts.question_id']).toBe(300)
+    expect(fx.anomalies.planted.orphans['topics.chapter_id']).toBe(2)
+    expect(fx.anomalies.planted.outOfRange['feedback.score']).toBe(1)
     expect(fx.anomalies.scanned.orphans).toEqual(fx.anomalies.planted.orphans)
   }, 60_000)
 })

@@ -10,6 +10,9 @@
  *   {"fixed": <json>}         a non-NULL value becomes this constant (NULL stays NULL)
  *   "scrub-text"              free text becomes `Teks anonim.`; in json every string leaf is replaced,
  *                             numbers and booleans are kept (NULL and "" stay as they are)
+ *   "scrub-json"              json held in a text column: parsed, keys/numbers/booleans/null kept, every string leaf
+ *                             becomes `Teks anonim.`, written back with JSON.stringify; NULL stays NULL and a value
+ *                             that is not valid JSON is replaced as scrub-text would (fail closed)
  *   "hash-password-dummy"     see passwords.ts
  *   "pseudonym:<kind>"        keyed deterministic fake, kinds in pseudonyms.ts
  *
@@ -28,6 +31,7 @@ export type Rule =
   | { rule: 'null' }
   | { rule: 'fixed'; value: unknown }
   | { rule: 'scrub-text' }
+  | { rule: 'scrub-json' }
   | { rule: 'hash-password-dummy' }
   | { rule: 'pseudonym'; kind: PseudonymKind }
 
@@ -50,13 +54,13 @@ const PLAIN_NAME = /^[a-z][a-z0-9_]{0,62}$/
 
 function parseRule(raw: unknown, where: string): Rule {
   if (typeof raw === 'string') {
-    if (raw === 'keep' || raw === 'null' || raw === 'scrub-text' || raw === 'hash-password-dummy') return { rule: raw }
+    if (raw === 'keep' || raw === 'null' || raw === 'scrub-text' || raw === 'scrub-json' || raw === 'hash-password-dummy') return { rule: raw }
     if (raw.startsWith('pseudonym:')) {
       const kind = raw.slice('pseudonym:'.length)
       if ((PSEUDONYM_KINDS as readonly string[]).includes(kind)) return { rule: 'pseudonym', kind: kind as PseudonymKind }
       throw new ConfigError(`${where}: unknown pseudonym kind. Allowed: ${PSEUDONYM_KINDS.join(', ')}.`)
     }
-    throw new ConfigError(`${where}: unknown rule. Allowed: keep, null, scrub-text, hash-password-dummy, pseudonym:<kind>, {"fixed": ...}.`)
+    throw new ConfigError(`${where}: unknown rule. Allowed: keep, null, scrub-text, scrub-json, hash-password-dummy, pseudonym:<kind>, {"fixed": ...}.`)
   }
   if (isObject(raw) && Object.keys(raw).length === 1 && 'fixed' in raw) return { rule: 'fixed', value: raw.fixed }
   throw new ConfigError(`${where}: a rule is a string or {"fixed": value}.`)
@@ -153,6 +157,18 @@ function scrubJson(value: unknown): unknown {
   return value
 }
 
+/** `scrub-json` on a text cell: parse, scrub string leaves, serialise. Not valid JSON: whole value scrubbed (fail closed). */
+function scrubJsonText(value: string): string {
+  if (value === '') return ''
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(value)
+  } catch {
+    return SCRUBBED_TEXT
+  }
+  return JSON.stringify(scrubJson(parsed))
+}
+
 /** Applies one rule to one value. `pseudo` is only needed for pseudonym rules. */
 export function applyRule(rule: Rule, value: unknown, pseudo: Pseudonymiser, lockPassword = false): unknown {
   switch (rule.rule) {
@@ -166,6 +182,11 @@ export function applyRule(rule: Rule, value: unknown, pseudo: Pseudonymiser, loc
       if (value === null || value === undefined) return null
       if (typeof value === 'object') return scrubJson(value)
       return value === '' ? '' : SCRUBBED_TEXT
+    case 'scrub-json':
+      if (value === null || value === undefined) return null
+      if (typeof value === 'string') return scrubJsonText(value)
+      if (typeof value === 'object') return scrubJson(value)
+      return SCRUBBED_TEXT
     case 'hash-password-dummy':
       return dummyPasswordHash(value, lockPassword)
     case 'pseudonym':
