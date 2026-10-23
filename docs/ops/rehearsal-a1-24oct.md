@@ -1,6 +1,6 @@
 # 24 Oct real-data rehearsal run sheet (A1 / P1): .cloud to v2, on the rehearsal DB (MIG-08 addendum)
 
-- **Status:** draft for the LEAD. **Nothing here has been run.** Every command, flag, variable, exit code and output line below was checked against the code or the docs named next to it; where something is not implemented or not known it is marked **Perlu pengesahan** with the person who confirms. Nothing is started without the LEAD's explicit confirmation.
+- **Status:** draft for the LEAD. **Dress-rehearsed once (23 Oct) on synthetic data only (medium fixture, seed 7) on a local PostgreSQL 16 in host mode; never run on real data.** Every command, flag, variable, exit code and output line below was checked against the code or the docs named next to it; where something is not implemented or not known it is marked **Perlu pengesahan** with the person who confirms. Nothing is started without the LEAD's explicit confirmation.
 - **Slug:** `v2-cutover-plan` (addendum). **Item:** half AM step 5 of MIG-08: plan steps A1 and P1 (it also feeds A4 / P6 and the budget P7). Docs only.
 - **Builds on:** [cutover plan](v2-cutover-plan.md) sections 3 (P1, P2, P6, P7), 3.1, 3.3, 4.0, 4.1 (A1), 4.3, 4.6, 4.7, 5 and 6; [rehearsal DB recipe](rehearsal-db.md) and `deploy/rehearsal/rehearsal-db.sh` (PR #117); [migration runbook](../architecture/v2-migration-runbook.md) sections 12 to 18 (they arrive with PR #123 and exist only on branch `be/AM-09-migrate-orchestration` until then); the AM-10 procedure `docs/ops/cloud-dump-procedure.md` (PR #125); the MIG-07 reports `docs/ops/mig07-rehearsal-report.md` and `docs/ops/mig07-real-data-pass.md` (branch `be/AM-MIG-07-rehearsal`); [backup and restore drill](db-backup.md). The next sheet is [A4 timed rehearsal and window budget](rehearsal-a4-27oct-timing.md).
 - **Time convention:** every time is Malaysia time (MYT, UTC+8) with UTC in brackets. The helper in section 5 prints UTC; add 8 hours for MYT. `.cloud` `DATETIME` values are read as +08:00 (DT-1 A).
@@ -45,14 +45,14 @@ All must be true before A1.0. A precondition with no evidence is not met.
 
 | # | Input | Evidence (text, aggregates only) |
 |---|---|---|
-| I1 | **Release sha**: the merged tip after the LEAD merged #122, #123, #125 and #166 (P2): `<sha>` (to be filled in by the LEAD). The checkout is clean and at that sha. | `git rev-parse HEAD` equals the LEAD's sha. |
-| I2 | **Dump**: the AM-10 anonymised dump, `pp-staging-dump/1`, made by `dump:produce` on the AM-10 sitting of 24 Oct (anonymised, leak-scanned; `manifest.json` carries `"anonymised": true`). The rehearsal environment refuses raw data. | The dump operator's step 9 report: date, exit code, tables, total rows, sha256 of the `.gpg`, offset `+08:00`, "free-text check passed", "raw wiped, key destroyed", "local copies deleted". |
-| I3 | **Encrypted hand-over**: `pp-staging-dump-<date>.tar.gz.gpg` (it holds the directory `anon`), received by `scp` into a restricted directory of the rehearsal host. The passphrase came by a different channel, never with the file, never in GitHub, chat or an AI session. | The sha256 of the received file equals the sender's value (A1.1). |
-| I4 | **Files export for `--files-dir`** (AC9): normally **absent** in A1. AM-10 section 8.1 says files do not go with the anonymised dump by default unless the LEAD allows real banner images in a rehearsal. | If present: a directory `files` in the archive with `SHA256SUMS` at its root. If absent, A1 runs without `--files-dir` and the activity report says `files: not migrated (no --files-dir)`. |
+| I1 | **Release sha**: the merged tip after the LEAD merged #122, #160, #123, #125 and #166 (P2): `<sha>` (to be filled in by the LEAD; **Perlu pengesahan (LEAD):** that #160 is on the merge list). The verify matrix at that sha lists `question_sets` (an activity entity of #160, a row of the matrix of #123): without the row, `migrate:all --apply` and `migrate:verify` exit 1 with `question_sets ... mismatch` (found in the dress rehearsal). The checkout is clean and at that sha. | `git rev-parse HEAD` equals the LEAD's sha; the `question_sets` check of A1.0 prints 1. |
+| I2 | **Dump**: the AM-10 anonymised dump, `pp-staging-dump/1`, made by `dump:produce` on the AM-10 sitting of 24 Oct (anonymised, leak-scanned; `manifest.json` carries `"anonymised": true`). The rehearsal environment refuses raw data. | The dump operator's step 9 report: date, exit code, tables, total rows, sha256 of the `.gpg`, offset `+08:00`, "free-text check passed", "raw wiped, key destroyed", "option file deleted" or "account locked" (AM-10 section 3 step 8 (c)), "local copies deleted". |
+| I3 | **Encrypted hand-over**: `pp-staging-dump-<date>.tar.gz.gpg` (it holds the directory `anon`), received by `scp` into a restricted directory of the rehearsal host (`mkdir -m 700 <restricted dir>`, made under `umask 077`). The passphrase came by a different channel, never with the file, never in GitHub, chat or an AI session. | The sha256 of the received file equals the sender's value (A1.1). |
+| I4 | **Files export for `--files-dir`** (AC9): normally **absent** in A1. AM-10 section 8.1 says files do not go with the anonymised dump by default unless the LEAD allows real banner images in a rehearsal. | If present: a directory `files` in the archive with `SHA256SUMS` at its root. If absent, A1 runs without `--files-dir`. `migrate:all` prints no files line (only the standalone `migrate:activity` prints `files: not migrated (no --files-dir) <n> references`), so the evidence is the command line without the flag. |
 | I5 | **`--as-of`**: `2026-10-29` on every call that takes it: `migrate:all`, `migrate:delta` (required there) and the standalone `migrate:core` of O5. `migrate:verify` and `migrate:rollback` take no `--as-of`. | n/a |
 | I6 | **Host**: full-disk encryption on every disk that holds the dump, the databases, the state dir and the reports (runbook rule 5; AM-10 section 2 item 1 has the check commands); free disk of at least 5 times the size of the dump; at least 4 GB RAM (recipe section 2); repo checkout, state dir and dump all on the encrypted disk, outside any cloud-sync folder; the dump and the state dir are outside the repo (the script refuses otherwise). | A confirmation line from half AZ DevOps; `df -h` free space as a number. |
 | I7 | **Tools**: Node 22, `npm ci` done, `npm run db:generate -w @pp/api` done, PostgreSQL client 16 (`psql`, `pg_dump`, `pg_restore`), `gpg`, `tar`; docker mode also Docker with Compose v2; host mode a dedicated PostgreSQL 16 and a role with only CREATEDB and CREATEROLE (never a superuser). `deploy/rehearsal/.env.rehearsal` exists (docker mode) or `PP_REHEARSAL_ADMIN_URL` is in a 600 file (host mode). | Version lines. |
-| I8 | **Retention**: the dump copies on the host are kept at most 7 days (until 31 Oct 2026) and are deleted on the plan's schedule (section 10). The custodian is the LEAD. | The LEAD's list of copies. |
+| I8 | **Retention.** Default (runbook section 0 rule 4, AM-10 section 4, `rehearsal-db.md` intro): the dump is deleted as soon as the load and the reconciliation succeed and kept 7 days at most. So the received `.gpg` and the passphrase note go right after A1.1, and the extracted directory at the A1 close-out (section 10); A4 then loads a fresh hand-over (a new AM-10 sitting with a new key, AM-10 section 7). **DECISION NEEDED (LEAD) before A1.0:** the alternative is to keep the extracted directory until the end of A4 (plan sections 3.1 and 7), at the latest 31 Oct 2026. Hard rule for both: after a red integrity result (red rule 7 of section 9: `PII SCAN FAILED`, a manifest not anonymised, a checksum mismatch) every copy is wiped at the LEAD's written instruction, and by 31 Oct 2026 at the latest whatever the state; a moved date needs a new dump. The custodian is the LEAD. | The LEAD's decision line (default or alternative) and the LEAD's list of copies, A4 copies included (the receiver `.gpg` and `<extract dir 2>/anon` of the A4 sheet section 5.1, any `deleted-at-source-*.json`). |
 | I9 | **Clock readings from the sitting** (for A4 rows T01 to T07): the dump operator writes down the clock time at: start of `dump:produce`; the line `Done: <n> tables, <rows> rows. This directory is RAW personal data...` (end of the export part, `cloud.ts:187` on #125); the line `Anonymised dump: ...` and the printed `Elapsed: <s> s`; start and end of encrypt (AM-10 step 6); end of the mandatory listing check; start and end of `scp`; the time the receiver confirmed the checksum; start and end of `dump:wipe`. Seconds only, no data. | A short text list. |
 
 **Perlu pengesahan (dump operator, half AM):** `dump:produce` prints only one total (`Elapsed: <s> s`, `dump/cli.ts:229`) and no timestamps, so the `dump:cloud` part (the plan's `D_dump`) cannot be read from the output. The clock readings above are the way; a timestamping pipe on the command was not rehearsed and is not proposed.
@@ -62,7 +62,7 @@ All must be true before A1.0. A precondition with no evidence is not met.
 ## 4. Rules for the whole run
 
 - One terminal for the whole run. Close chat clients and any agent. No screen sharing.
-- Output is copied into the tables of section 7 as numbers and fixed line names only. Do not paste whole logs. Do not paste the line `--apply target: database "<db>" on <host>` (it holds a host name), the `report files:` paths, or any error message text that the tool did not print as a fixed line.
+- Output is copied into the tables of section 7 as numbers and fixed line names only. Do not paste whole logs. Do not paste the line `--apply target: database "<db>" on <host>` (it holds a host name), the `report files:` paths, or any error message text that the tool did not print as a fixed line. The same holds for the `--apply target:` line that `migrate:rollback --apply` and `migrate:core --apply` also print, and for the `ids <note>: ...` lines (lists of row ids) that the standalone `migrate:core` prints (`migrate:all` prints none).
 - If a log is saved at all, it goes under the state dir (mode 700, outside the repo) and is deleted at the close (section 10).
 - Never select `offending` or `legacy_id` from `etl_rejects` (mig07-real-data-pass section 3).
 - A suspected PDPA incident (a dump or report in the wrong place, a copy on an unencrypted disk, a value in a post) is reported to the LEAD at once (runbook rule 8); do not clean up first.
@@ -73,6 +73,7 @@ All must be true before A1.0. A precondition with no evidence is not met.
 Run from the repo root of the release sha, in the one terminal.
 
 ```bash
+umask 077                                # first: every file this run creates is private to the operator
 RDB=deploy/rehearsal/rehearsal-db.sh
 DB=${PP_REHEARSAL_DB:-pp_rehearsal}      # default name of the target database
 ASOF=2026-10-29                          # --as-of, the night's date
@@ -85,11 +86,11 @@ DUMP=<extract dir>/anon                  # the extracted pp-staging-dump/1 direc
 step() { local n=$1 s a=$SECONDS; shift; s=$(date -u +%FT%TZ); "$@"; local rc=$?
          printf 'STEP %s start=%s end=%s seconds=%s exit=%s\n' "$n" "$s" "$(date -u +%FT%TZ)" $((SECONDS - a)) "$rc"; return "$rc"; }
 
-# one SQL statement on the target database (the form used by mig07-rehearse.sh, target_psql)
-q() { "$RDB" exec target -- bash -c 'psql "$DATABASE_URL" -Atq -c "$1"' _ "$1"; }
+# one SQL statement on the target database; the URL and its password stay in the environment of the child, never in argv
+q() { "$RDB" exec target -- node -e 'const u=new URL(process.env.DATABASE_URL);const r=require("child_process").spawnSync("psql",["-Atq","-c",process.argv[1]],{stdio:"inherit",env:{...process.env,DATABASE_URL:"",PGHOST:u.hostname,PGPORT:u.port||"5432",PGUSER:decodeURIComponent(u.username),PGPASSWORD:decodeURIComponent(u.password),PGDATABASE:decodeURIComponent(u.pathname.slice(1)),...(u.searchParams.get("sslmode")?{PGSSLMODE:u.searchParams.get("sslmode")}:{})}});process.exit(r.status??1)' "$1"; }
 ```
 
-Notes on the helpers: `step` only wraps a command; it adds no data. `q` passes the connection URL to `psql` as an argument for the length of the call, so it is visible in the process list of the host; this is acceptable on a dedicated single-purpose host. Anywhere else use the `PG*` variables instead (half AZ decides).
+Notes on the helpers: `step` only wraps a command; it adds no data. `q` takes the connection URL from the environment that `rehearsal-db.sh exec` gives the child and hands it to `psql` as `PG*` variables, so neither the URL nor the password is ever on a command line (runbook section 0 rule 7; checked with `ps` in the dress rehearsal: only the SQL text is in argv, so a query must never contain a value). It replaces the form of `mig07-rehearse.sh` (`psql "$DATABASE_URL"`), which does put the URL in argv.
 
 ## 6. Run sheet
 
@@ -102,6 +103,7 @@ git rev-parse HEAD ; git status --short                   # sha = I1; second com
 ls -d apps/api/prisma/migrations/*/ | wc -l                # folder count F (plan A5 form)
 grep -c '"migrate:all"\|"migrate:verify"\|"migrate:rollback"\|"migrate:delta"' apps/api/package.json   # 4: PR #123 is in this sha
 grep -c '"dump:check"\|"dump:cloud"\|"dump:produce"\|"dump:wipe"' apps/api/package.json                # 4: PR #125 is in this sha
+grep -c "'question_sets'" apps/api/src/migration/verify/entities.ts                                   # 1: the verify matrix knows question_sets (0: stop, see I1)
 node --version ; psql --version ; pg_dump --version ; pg_restore --version
 df -h <extract dir> ; free -m
 ```
@@ -133,6 +135,8 @@ Then add the checksum file that the loader needs. `dump:produce` writes **no** c
 
 (command from `rehearsal-db.md` section 2). This protects the copy from here on only; the chain of trust is the `.gpg` checksum. **Perlu pengesahan (half AZ):** that the receiver, not the LEAD, creates this file.
 
+When the extraction exited 0 and the checksum file exists, the receiver deletes the received `.gpg` and the passphrase note (default of I8): `shred -u -n 1 -z <restricted dir>/pp-staging-dump-<date>.tar.gz.gpg`, then `gpgconf --kill gpg-agent`; `ls <restricted dir>` shows it empty. If A1.4 then fails for a reason in the dump, a new hand-over is asked for.
+
 If I4 applies: check `ls <extract dir>/files/SHA256SUMS` exists; create `STORAGE` (`mkdir -m 700`).
 
 ### A1.2 Rehearsal DB up (night analogue: B0)
@@ -142,7 +146,7 @@ step up "$RDB" up
 step status0 "$RDB" status
 ```
 
-Expect from `up`: `databases ready: <db>, <db>_staging; read-only role: pp_staging_reader`, then `[time] migrate (all schema migrations, prisma): <s>s` (host mode default: `psql`), then `MIGRATION CHECK PASSED: <n> of <n> migrations applied in '<db>'`, then `[time] up: <s>s`. Exit 0.
+Expect from `up`: `databases ready: <db>, <db>_staging; read-only role: pp_staging_reader`, then (host mode default, `psql`) `psql path: applied <n> new migration(s)` and `[time] migrate (all schema migrations, psql): <s>s` (docker mode: `prisma`; a `NOTICE: identifier ... will be truncated` line from migration 0018 is harmless), then `MIGRATION CHECK PASSED: <n> of <n> migrations applied in '<db>'`, then `[time] up: <s>s`. Exit 0.
 Expect from `status`: no `WARNING: fsync / synchronous_commit / full_page_writes is off here` (if present, the write timings are **not** production-like: note it; the figures stay valid for correctness but are amber for P7); `applied: <n> of <n> in the folder`.
 
 Record: `up` seconds; `n` = `F` (migration count equals the folder count); the settings printed by `status` (shared_buffers, work_mem, max_connections, wal_level, fsync); server version line.
@@ -166,7 +170,7 @@ step load-dump "$RDB" load-dump "$DUMP"
 ```
 
 `load-dump` for an ndjson directory does, in order (`rehearsal-db.sh:cmd_load_dump`): checks the format, the checksum, the attestation; runs `anonymise:scan` (patterns only); runs `staging:load --from` into `<db>_staging` with `PP_ALLOW_STAGING_RESET=1` and `NODE_ENV=development`.
-Expect lines: `dump kind: ndjson`; `SHA256SUMS: OK`; `attestation: manifest is marked anonymised/synthetic`; one `Loaded staging_cloud.<table>: <n> rows.` per non-empty table (and `archive_cloud.<table>` lines); `Staging load finished: <t> tables, <r> rows.`; `Done: <t> tables (<k> absent from the input), <r> rows.`; `[time] load-dump (ndjson): <s>s`. Exit 0.
+Expect lines: `dump kind: ndjson`; `SHA256SUMS: OK`; `attestation: manifest is marked anonymised/synthetic`; the pattern scan `Scanned <r> rows, <c> cells.` and `Leak scan: clean (patterns only).`; one `Loaded staging_cloud.<table>: <n> rows.` per non-empty table (and `archive_cloud.<table>` lines); `Staging load finished: <t> tables, <r> rows.`; `Done: <t> tables (<k> absent from the input), <r> rows.`; `[time] load-dump (ndjson): <s>s`. Exit 0.
 Failure lines that mean red: `SHA256 MISMATCH`, `no anonymisation attestation`, `PII SCAN FAILED: the dump holds personal-looking data. Nothing was loaded; tell the lead.`, `staging:load` exit 3 (source role can write) or 4 (reset guard refused). The loader itself fails (exit 1) when rows read differ from the manifest.
 
 Record: seconds (this is the scan **plus** the load; the scan alone can be timed with `npm run anonymise:scan -w @pp/api -- --dir "$DUMP"` if the LEAD wants the split), `r` equal to `R` of A1.1, number of tables, the number of absent tables (`k`).
@@ -226,7 +230,7 @@ step all-apply "$RDB" exec target -- env PP_ALLOW_MIGRATE_APPLY=1 npm run migrat
 ```
 
 `migrate:all --apply` runs, per stage (core then activity), a dry-run and then the apply with identical options; stops at the first failed stage; then runs the verify and exits 1 unless it passes (`orchestrate.ts` header).
-Expect: exit 0; the lines `migrate:all core dry-run: run <id> succeeded`, `migrate:all core apply: run <id> succeeded`, `migrate:all activity dry-run: run <id> succeeded`, `migrate:all activity apply: run <id> succeeded` each followed by its entity table; then `verify pass: <n> entities, <m> checks, runs <ids>` and the verify table. The first line of the output, `--apply target: ...`, holds a host name: do not copy it.
+Expect: exit 0; the lines `migrate:all core dry-run: run <id> succeeded`, `migrate:all core apply: run <id> succeeded`, `migrate:all activity dry-run: run <id> succeeded`, `migrate:all activity apply: run <id> succeeded` each followed by its entity table; then `migrate:all verify: succeeded` (`failed` on red), `verify pass: <n> entities, <m> checks, runs <ids>` and the verify table. The first line of the output, `--apply target: ...`, holds a host name: do not copy it.
 
 Record: seconds (this is **B7**, including the verify at the end); the four run ids; exit; peak RSS if you used GNU time (**Perlu pengesahan (half AZ):** `/usr/bin/time` is installed on the host; the value is the largest single process, not the sum); `n` and `m` of the verify line; the non-`ok` check rows printed by name and status (ledger, correct-sum, drift: criterion 6; read them, do not "fix" them).
 
@@ -238,7 +242,7 @@ Record: seconds (this is **B7**, including the verify at the end); the four run 
 step verify "$RDB" exec target -- npm run migrate:verify -w @pp/api
 ```
 
-Expect: exit 0 and a line `verify pass: <n> entities, <m> checks, runs <...>`. The gate is the exit code and the word `pass`, not the numbers (plan B8). For comparison only: the synthetic 20k-user runs of MIG-07 gave 37 entities and 16 checks on a full state.
+Expect: exit 0 and a line `verify pass: <n> entities, <m> checks, runs <...>`. The gate is the exit code and the word `pass`, not the numbers (plan B8). For comparison only: the synthetic 20k-user runs of MIG-07 gave 37 entities and 16 checks on a full state; the dress rehearsal at a sha with `question_sets` gave 38 entities and 16 checks (a `question_sets ... mismatch` row means the matrix row is missing, I1).
 Any other status (`verify fail`, a `check ... mismatch` line, exit 1): red.
 
 Record: seconds, `n`, `m`, the list of non-`ok` check rows (name and status only). Open the verify `.md` named on the `report files:` line, on the host, and read the orphan scan row (criterion 4: must be 0) and the ledger / correct-sum / drift rows.
@@ -251,7 +255,7 @@ Record: seconds, `n`, `m`, the list of non-`ok` check rows (name and status only
 q "select r.id, r.mode, case when r.entity_set @> array['users','classrooms']::text[] then 'core' else 'activity' end as stage, r.status, left(r.git_sha, 8) as git_sha, round(extract(epoch from r.finished_at - r.started_at)::numeric, 1) as seconds, (select sum(c.source_count) from etl_recon c where c.run_id = r.id) as rows_read, (select sum(c.loaded) from etl_recon c where c.run_id = r.id) as rows_loaded, (select sum(c.rejected) from etl_recon c where c.run_id = r.id) as rows_rejected from etl_runs r where 'cloud' = any(r.sources) order by r.id"
 ```
 
-Columns used: `etl_runs.id, mode, entity_set, status, git_sha, started_at, finished_at, sources` and `etl_recon.run_id, source_count, loaded, rejected` (migration `0003_etl_control_tables`). The `git_sha` column must equal the release sha (short form): this is the "git sha" evidence of the run (checklist item 4).
+Columns used: `etl_runs.id, mode, entity_set, status, git_sha, started_at, finished_at, sources` and `etl_recon.run_id, source_count, loaded, rejected` (migration `0003_etl_control_tables`). `git_sha` is recorded by the standalone `migrate:core` and `migrate:activity` only: the dress rehearsal found it **empty (NULL) for every run of `migrate:all` and `migrate:delta`** (`orchestrate.ts` passes no `gitSha`; reported to the backend developer role; **Perlu pengesahan (half AM)**). Until that is fixed, the "git sha" evidence of the run (checklist item 4) is the `git rev-parse HEAD` of A1.0 and an empty column is not red; once it is fixed the column must equal the release sha (short form).
 
 (b) Rejects by reason and by entity, for the succeeded apply runs only (every run, dry-runs included, writes its reject rows again, MIG-07 problem 8). Never add `offending` or `legacy_id`.
 
@@ -316,7 +320,7 @@ step rb-dry   "${RB[@]}" "$RDB" exec target -- npm run migrate:rollback -w @pp/a
 step rb-apply "${RB[@]}" "$RDB" exec target -- npm run migrate:rollback -w @pp/api -- --confirm "$DB" --apply
 ```
 
-Expect for each: exit 0; `migrate:rollback dry-run on "<db>": succeeded` (apply: `migrate:rollback apply on "<db>": succeeded`); the table `table | deleted`; `etl_id_map | <n>`; possibly `released <table>: <n>` and `warning: ...` lines for reference tables (read them). MIG-07 measured the apply at 19 s (pass 3) and 31.7 s (pass 4), and the dry-run at 36.6 s (pass 4), on 20k synthetic users. Refusals that mean red here: `RollbackRefusedError` (exit 2) because a v2-born row references a migrated row, or because an apply run is still `running` in `etl_runs`.
+Expect for each: exit 0; `migrate:rollback dry-run on "<db>": succeeded` (apply: the `--apply target:` line first, do not copy it, then `migrate:rollback apply on "<db>": succeeded`); the table `table | deleted`; `etl_id_map | <n>`; possibly `released <table>: <n>` and `warning: ...` lines for reference tables (read them). MIG-07 measured the apply at 19 s (pass 3) and 31.7 s (pass 4), and the dry-run at 36.6 s (pass 4), on 20k synthetic users. Refusals that mean red here: `RollbackRefusedError` (exit 2) because a v2-born row references a migrated row, or because an apply run is still `running` in `etl_runs`.
 
 Record: seconds and exit of the four probes, the dry-run and the apply; deleted rows per table (counts).
 
@@ -389,7 +393,7 @@ q "select u.id from users u join user_roles r on r.user_id = u.id where r.role::
 step scout-restore "$RDB" restore-snapshot pre_etl --yes
 ```
 
-Record whether an active admin was found (yes/no) and the seconds, not the id in any shared post. A full run with `--content-owner=<id>` is then A4's job if the LEAD decides to use one. (`migrate:core` is the standalone command: allowed on the rehearsal DB because nothing else runs; it takes the source lock since AM-08 and exits 2 if the lock is held. `slot.sh etl` refuses it at the night.)
+Record whether an active admin was found (yes/no) and the seconds, not the id in any shared post. The standalone `migrate:core` prints `note ...` and `ids <note>: ...` lines too (row ids): read them on the host, never post them. A full run with `--content-owner=<id>` is then A4's job if the LEAD decides to use one. (`migrate:core` is the standalone command: allowed on the rehearsal DB because nothing else runs; it takes the source lock since AM-08 and exits 2 if the lock is held. `slot.sh etl` refuses it at the night.)
 
 **O6. Delta with changed rows.** Needs a second dump after known changes (recipe section 7). Only one dump is planned on 24 Oct, so this is **not** part of A1 unless the LEAD orders a second sitting. The idempotency run O2 is the delta timing for A1; plan P1 marks the delta "replan only".
 
@@ -473,7 +477,7 @@ Compare each rate with the placeholder **3,611 rows/s** (AM-08 AC7). A rate belo
 
 1. **Stop.** Do not retry, do not patch the database, do not "fix forward" in the rehearsal DB. Keep the state as it is until the LEAD has read the aggregates (the evidence of the failing step may need it).
 2. **Keep aggregates only:** the step id, the exit code, the fixed line names that were printed, the counts. No whole logs, no error text beyond the fixed lines.
-3. **Tell, by role:** the LEAD at once; the half AM migration operator (owner of the repeat); and by cause: ETL, verify or rollback behaviour: the backend developer role of half AM (a developer task, below); the rehearsal script or host: half AZ DevOps; the dump (checksum, scan, quality): the dump operator, who asks for a new sitting with a new key (AM-10 section 6; the LEAD approves it).
+3. **Tell, by role:** the LEAD at once; the half AM migration operator (owner of the repeat); and by cause: ETL, verify or rollback behaviour: the backend developer role of half AM (a developer task, below); the rehearsal script or host: half AZ DevOps; the dump (checksum, scan, quality): the dump operator, who asks for a new sitting with a new key (AM-10 section 6; the LEAD approves it), and every copy is wiped at the LEAD's written instruction (I8).
 4. **Where:** a comment on the cutover issue (#109) with the section 11 block and `RED` plus the step id. Environment and host items also go to half AZ on the half AZ DevOps thread (#113). **Perlu pengesahan (LEAD):** that this routing of #109 and #113 is the one you want.
 5. **Fix as a developer task on a PR** through the normal gates (G3 build, G4 review); nothing is edited in production or in the rehearsal DB. The LEAD merges and re-pins the sha.
 6. **Repeat** A1 from A1.2 with `reset --yes`, on the new sha, with the same dump if it is still inside the 7 days and was not the cause, or with a new dump. Any ETL change after the code freeze of 25 Oct (A2) means the LEAD re-pins and A1 and A4 evidence must both be at the final sha (P2).
@@ -485,18 +489,19 @@ Copy the figures out first: `"$RDB" status` prints `timings.log` (`up`, `migrate
 
 | Item | When | By | How |
 |---|---|---|---|
-| Rehearsal DB, snapshots, state dir, secrets | At the end of A1 (A4 starts again with `up` and a fresh load, so its timings are from scratch) | Half AM operator, half AZ DevOps | `step down "$RDB" down --yes` (docker mode removes the container, network and volume; host mode drops the databases and the role) |
+| Rehearsal DB, snapshots, state dir, secrets | At the end of A1 (A4 starts again with `up` and a fresh load, so its timings are from scratch) | Half AM operator, half AZ DevOps | `step down "$RDB" down --yes` (docker mode removes the container, network and volume; host mode drops the databases and the role, and then the WAL, base backups and replicas of the server that held the data are deleted by hand, `rehearsal-db.md` section 9) |
 | Operator PC copies | At the hand-over, by the dump operator | Dump operator | `dump:wipe --dir "$work"` and the `.gpg` there (AM-10 steps 8 and 9); "local copies deleted" in I2 |
-| The received `.gpg` file and the passphrase | After A1.1 has extracted and A1.4 has loaded successfully | Half AZ DevOps | Overwrite and delete the file; destroy the passphrase note. **Proposal**, so the extracted directory is the only working copy. |
-| Extracted dump directory (and `files`) | Kept **until the end of A4** (plan sections 3.1 and 7: rehearsal dumps are deleted after A4 and named at A5), at the latest 31 Oct | Half AZ DevOps (host), the LEAD (custodian) | After A4, the same pattern as `slot.sh wipe-dump`: overwrite each file with `shred -u -n 1 -z`, then remove the directory (`slot.sh` function `cmd_wipe_dump`). `dump:wipe` refuses a directory outside a `.migration-out` folder, so it does not fit this directory. |
+| The received `.gpg` file and the passphrase | Right after A1.1 (extraction exit 0 and the checksum file made); default of I8 | Half AZ DevOps | `shred -u -n 1 -z` the file, destroy the passphrase note, `gpgconf --kill gpg-agent`; the extracted directory is then the only working copy. |
+| Extracted dump directory (and `files`) | Default (I8): at this close-out, after the evidence is posted; A4 loads a fresh hand-over. **DECISION NEEDED (LEAD) before A1.0**, alternative: kept until the end of A4 (plan sections 3.1 and 7), at the latest 31 Oct | Half AZ DevOps (host), the LEAD (custodian) | The pattern of `slot.sh wipe-dump`: overwrite each file with `shred -u -n 1 -z`, then remove the directory (`slot.sh` function `cmd_wipe_dump`), then `ls` of the parent to show it gone. `dump:wipe` refuses a directory outside a `.migration-out` folder, so it does not fit this directory. |
 | `apps/api/.migration-out/` and `<repo>/.migration-out/` (profile, recon reports, delta report) | Aggregates only; kept in the LEAD's encrypted storage until both the rehearsal and the cutover sign-offs, at most 30 days; numbers go into the issue as text; never GitHub | Half AM operator, the LEAD | Move to the LEAD's storage or delete (runbook 17 item 1, 18) |
-| Temp files, `/tmp` leftovers, `pg_restore` temp, shell history lines with a URL, the trash | At the close | Half AM operator | Check and clear (runbook section 5 items 3 and 4) |
+| `.migration-out/deleted-at-source-<stamp>-<rand>.json`, if a verify or delta produced one | It holds real legacy ids of minors (mode 600): at most 7 days after the LEAD read it; never moved into report storage, never in GitHub, chat or e-mail | The LEAD, half AM operator | `shred -u -n 1 -z` (runbook section 18); listed in the custody list of I8 |
+| Temp files, `/tmp` leftovers, `pg_restore` temp, shell history lines with a URL, the trash; the terminal window (it holds the scrollback) and the gpg agent | At the close | Half AM operator | Check and clear (runbook section 5 items 3 and 4); close the terminal and run `gpgconf --kill gpg-agent` |
 
-Runbook rule 4 says real-data dumps are deleted as soon as the load and reconciliation succeed (7 days at most), while plan section 7 keeps the rehearsal dump until after A4. This sheet follows the plan, keeps only the extracted directory, and counts the 7 days from 24 Oct. **Perlu pengesahan (LEAD):** confirm that reading.
+Runbook rule 4 says real-data dumps are deleted as soon as the load and reconciliation succeed (7 days at most), while plan section 7 keeps the rehearsal dump until after A4. This sheet follows runbook rule 4 by default (delete after the A1 load and close-out, A4 loads a fresh hand-over); keeping the extracted directory until after A4 is the alternative of I8. The 7 days count from 24 Oct. **DECISION NEEDED (LEAD) before A1.0.**
 
 **Perlu pengesahan (half AZ):** the exact wipe command on the rehearsal host (the `slot.sh` pattern above is the model; `slot.sh` itself needs the VPS compose environment).
 
-After the close, the half AM operator posts one line to the LEAD: `A1 close <date>: rehearsal DB down <yes|no>; .gpg and passphrase destroyed <yes|no>; extracted dump kept until A4 <yes>, custodian <role>; reports <kept in LEAD storage|deleted>; temp and history cleared <yes|no>`.
+After the close, the half AM operator posts one line to the LEAD: `A1 close <date>: rehearsal DB down <yes|no>; .gpg and passphrase destroyed <yes|no>; extracted dump <deleted|kept until A4 by LEAD decision>, custodian <role>; reports <kept in LEAD storage|deleted>; temp, history, terminal and gpg agent cleared <yes|no>`. The receiver also posts the deletion confirmation on #109 (date, "deleted", what was deleted, nothing else) and the LEAD signs it (AM-10 section 4).
 
 ## 11. Evidence to post (text, aggregates only)
 
@@ -504,7 +509,7 @@ Post on the cutover issue (#109) in one comment. No names, no host names, no pat
 
 ```
 A1 real-data rehearsal <date>, host class <cpu / ram / disk type>
-Release sha <short sha>; etl_runs.git_sha <short sha>; migrations applied <n> of folder <F>; --as-of 2026-10-29
+Release sha <short sha>; etl_runs.git_sha <short sha | empty (known gap, A1.11 a)>; migrations applied <n> of folder <F>; --as-of 2026-10-29
 Dump: AM-10 pp-staging-dump/1, <T> tables, <R> rows (manifest); .gpg checksum matched <yes|no>; anonymised <true>; files export <present|absent>
 Steps (seconds / exit): up <>/<>, seed <>/<>, load-dump <>/<>, stage <>/<>, snapshot pre_etl <>/<>, snapshot pre_etl_d (dump, <size>) <>/<>,
   profile <>/<>, all dry-run <>/<>, all apply <>/<>, verify <>/<>, rollback dry-run <>/<>, rollback apply <>/<>, restore pre_etl <>/<>
@@ -531,6 +536,6 @@ Result: GREEN | RED (step <id>, reason <short>); amber items: <list | none>
 | 5 | `--content-owner` at the night and how its id is found (plan B6 and B7 have none). | LEAD, half AM |
 | 6 | `/usr/bin/time` for peak memory; the `q` helper and `ps` exposure on the host. | Half AZ |
 | 7 | A reject breach that the LEAD accepts for A1 against the night's threshold without a waiver. | LEAD |
-| 8 | Keep the extracted dump until A4 (plan section 7) against runbook rule 4; the exact wipe command on the rehearsal host. | LEAD, half AZ |
+| 8 | **DECISION NEEDED (LEAD) before A1.0:** delete the extracted dump after A1 (default, runbook rule 4) or keep it until the end of A4 (plan section 7); the exact wipe command on the rehearsal host. | LEAD, half AZ |
 | 9 | The unit of the 3,611 rows/s placeholder. | Half AM |
 | 10 | Routing of red reports: #109 for the cutover, #113 for half AZ items. | LEAD |
