@@ -108,4 +108,22 @@ describe('PUT /me/password: the new password must differ from the current one (h
     expect(row?.must_reset_password).toBe(true)
     expect(row?.password_hash).toMatch(/^\$2y\$/)
   })
+
+  it('same-password refusals do not use the change throttle: 5 in a row, then a different password is 200 (not 429)', async () => {
+    const who = await login(t, 'pelajar2@demo.test')
+    for (let i = 0; i < 5; i++) {
+      const same = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })
+      expect(same.status, `try ${i} ${JSON.stringify(same.body)}`).toBe(422)
+      expect(fieldsOf(same)).toEqual({ password: MUST_DIFFER })
+    }
+    const ok = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'Baharu1234', passwordConfirmation: 'Baharu1234' })
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+
+    // A wrong current password is still counted: 5 per minute, then 429 even with the right one.
+    const again = await login(t, 'pelajar2@demo.test', 'Baharu1234')
+    for (let i = 0; i < 5; i++) {
+      expect((await put(again, '/me/password', { currentPassword: 'salah-sungguh', password: 'Lain-12345', passwordConfirmation: 'Lain-12345' })).status).toBe(422)
+    }
+    expect((await put(again, '/me/password', { currentPassword: 'Baharu1234', password: 'Lain-12345', passwordConfirmation: 'Lain-12345' })).status).toBe(429)
+  })
 })

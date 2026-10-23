@@ -212,6 +212,9 @@ export class ProfileService {
       // cannot be cleared by "changing" to the same password. Same verifier as above (argon2id and legacy bcrypt).
       // Nothing is written, the session is not rotated and no audit row is added (like the wrong-password 422).
       if ((await this.passwords.check(data.password, credentials.passwordHash)).ok) {
+        // The current password was proven, so this is not a guess: give the per-minute unit back (clears the
+        // per-minute window, like a success). The 15-minute failure ceiling is not touched.
+        await this.throttle.passwordChangeSucceeded(auth.userId).catch(() => undefined)
         throw invalid({ password: PASSWORD_MUST_DIFFER_MESSAGE })
       }
 
