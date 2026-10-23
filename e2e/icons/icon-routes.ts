@@ -43,6 +43,8 @@ export const ICON_ROUTES = {
 /** Records icon-API requests and not-bundled warnings of a page (known-absent Phosphor names excluded). */
 export function watchIcons(page: Page): string[] {
   const seen: string[] = []
+  // With the guard installed the loader fails in-page and never sends a request, so this watcher only
+  // catches a removed guard; the console warnings below are the main signal.
   page.on('request', (r) => {
     if (ICONIFY_API_HOSTS.some((h) => r.url().includes(h))) seen.push(`request ${r.url()}`)
   })
@@ -66,9 +68,20 @@ export async function visit(page: Page, path: string): Promise<number> {
       | null
     await app?.__vue_app__?.config.globalProperties.$router.push(to)
   }, path)
-  // Icons load in a microtask after the first paint; give the loader its tick.
+  // The route chunk and its icons load after navigation: wait for the network to go quiet, then give the
+  // icon loader its tick (a fixed wait alone could miss a late loader tick on a slow runner).
+  await page.waitForLoadState('networkidle')
   await page.waitForTimeout(350)
-  return page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  // A page can overflow for a moment while its enter transition or late layout settles: re-measure a few
+  // times and report only an overflow that persists (a real one stays after ~2 s).
+  const overflow = (): Promise<number> =>
+    page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  let px = await overflow()
+  for (let i = 0; i < 4 && px > 0; i += 1) {
+    await page.waitForTimeout(500)
+    px = await overflow()
+  }
+  return px
 }
 
 /** Visits every route; returns the paths that scroll horizontally. */
