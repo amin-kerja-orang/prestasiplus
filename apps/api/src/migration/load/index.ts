@@ -11,9 +11,11 @@ import { ApplyGuardError } from '../kit/apply-guard'
 import { hashInput, tableDigest } from '../kit/sql'
 import { Runner, type AnyEntityStep, type RunReport } from '../kit/runner'
 import type { RunMode } from '../kit/types'
+import { prepareOutputDir } from '../profile'
 import { DUMMY_ARGON2_HASH, NOT_A_HASH, dummyBcryptHash } from '../anonymise/passwords'
 import { classroomsStep, enrolmentsStep, subscriptionsStep } from './class-steps'
 import { CoreContext, type CoreOptions } from './context'
+import { DEFAULT_OUT_DIR, writeRestrictedIds } from './restricted'
 import { parentLinksStep, usersStep } from './identity-steps'
 import {
   chaptersStep,
@@ -108,18 +110,34 @@ export interface CoreRunOptions extends Omit<CoreOptions, 'pool'> {
   mode: RunMode
   batchSize?: number
   gitSha?: string | null
+  /** Folder (a `.migration-out` folder) of the restricted id file. Default `<repo>/.migration-out`. */
+  outDir?: string
 }
 
 export interface CoreRunResult {
   report: RunReport
   core: CoreContext
+  /** Path of the mode-0600 restricted id file (Q11); set only by a succeeded `--apply` that had ids to write. */
+  restrictedFile?: string
+}
+
+export const ROSTER_HASHES_WARNING =
+  'warning: PP_MIGRATE_ROSTER_DEFAULT_HASHES is unset or empty; accounts holding the shared roster default password are NOT flagged must_reset_password.'
+
+/** Q10: how many shared roster default hashes the run knows (never the hashes), and a warning flag when there are none. */
+function noteRosterHashes(core: CoreContext, mode: RunMode): void {
+  const n = core.defaultHashes.size
+  core.notes.counters.set('rosterDefaultHashes', n)
+  core.notes.counters.set('rosterDefaultHashesWarning', n === 0 ? 1 : 0)
+  if (n === 0 && mode === 'apply') core.options.warn?.(ROSTER_HASHES_WARNING)
 }
 
 /** Runs the whole command through the kit runner (dry-run by default; apply needs a passing dry-run on the same input). */
 export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
-  const { mode, batchSize, gitSha, ...coreOptions } = options
+  const { mode, batchSize, gitSha, outDir, ...coreOptions } = options
   const core = new CoreContext(coreOptions)
   await assertNotSyntheticInProduction(options.pool, options.env)
+  noteRosterHashes(core, mode)
   const steps = buildCoreSteps(core)
   const defaults = createHash('sha256').update([...core.defaultHashes].sort().join('\n')).digest('hex')
   const inputHash = hashInput([
@@ -130,6 +148,12 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
     `default-hashes=${defaults}`,
   ])
   const runner = new Runner({ pool: options.pool, env: options.env })
+  // Fail before anything is written when the restricted file could not be placed afterwards (an unsafe folder).
+  if (mode === 'apply') prepareOutputDir(outDir ?? DEFAULT_OUT_DIR)
   const report = await runner.run({ mode, steps, inputHash, gitSha, batchSize })
-  return { report, core }
+  let restrictedFile: string | undefined
+  if (mode === 'apply' && report.status === 'succeeded') {
+    restrictedFile = writeRestrictedIds(core.notes.restricted, { runId: report.runId, generatedAt: new Date().toISOString() }, outDir ?? DEFAULT_OUT_DIR)
+  }
+  return { report, core, restrictedFile }
 }

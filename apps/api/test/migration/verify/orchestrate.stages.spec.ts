@@ -184,3 +184,27 @@ describe('a stage that throws', () => {
     expect(seen).toEqual(shape(r.stages))
   })
 })
+
+describe('Q10/Q11 in the core stage of migrate:all', () => {
+  const withCore = (r: ReturnType<typeof report>, counters: [string, number][], restrictedFile?: string) => ({
+    ...r,
+    core: { notes: { counters: new Map(counters) } },
+    ...(restrictedFile ? { restrictedFile } : {}),
+  })
+
+  it('prints the four counts and the restricted file path (no ids), and hands warn and outDir to runCore', async () => {
+    const counts: [string, number][] = [['rosterDefaultHashes', 0], ['rosterDefaultHashesWarning', 1], ['nullHashAccounts', 3], ['flaggedWithoutLoginId', 2], ['must_reset.non_bcrypt', 5]]
+    mocks.runCore.mockResolvedValueOnce(withCore(report('dry-run', 'succeeded'), counts)).mockResolvedValueOnce(withCore(report('apply', 'succeeded'), counts, '/x/.migration-out/core-login-gaps-1.json'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    const log = capture()
+    const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01'], { pool: fakePool, env, out: log.out, err: log.err })
+    expect(code).toBe(0)
+    expect(log.text()).toContain('note nullHashAccounts: 3')
+    expect(log.text()).toContain('note flaggedWithoutLoginId: 2')
+    expect(log.text()).toContain('note rosterDefaultHashes: 0')
+    expect(log.text()).toContain('note rosterDefaultHashesWarning: 1')
+    expect(log.text()).not.toContain('must_reset')
+    expect(log.text()).toContain('restricted id file (mode 0600, delete within 7 days): /x/.migration-out/core-login-gaps-1.json')
+    for (const [o] of mocks.runCore.mock.calls) expect(o).toMatchObject({ warn: expect.any(Function) })
+  })
+})
