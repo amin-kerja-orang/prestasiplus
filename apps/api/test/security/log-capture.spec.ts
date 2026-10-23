@@ -15,6 +15,32 @@ import { bootSecurityApp, cookieValue, COOKIE_NAME, DEMO_PASSWORD, loginAs, type
 const IC = '990101145678'
 const IC_DASHED = '990101-14-5678'
 
+/** A bare 12-digit run: the shape of an IC number written without dashes. */
+const BARE_IC = /(?<!\d)\d{12}(?!\d)/
+
+/**
+ * Removes the two random ids that can hold a run of 12 decimal digits by chance, for the bare-IC check only:
+ * request-id UUIDs (the last group is 12 hex characters, all digits in about 0.4% of ids) and the upload's multipart
+ * boundary in the logged content-type header (24 random hex characters; a 12-digit run in about 1 run in 120).
+ * An IC is never written in either form.
+ */
+const withoutRandomIds = (text: string): string =>
+  text
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<uuid>')
+    .replace(/boundary=-*[0-9a-z]+/gi, 'boundary=<b>')
+
+describe('the bare-IC check ignores random ids only', () => {
+  it('masks a boundary or a UUID that holds 12 digits, and still catches a real IC next to them', () => {
+    const boundary = 'content-type: multipart/form-data; boundary=--------------------------eda024e92c578580993012ec'
+    const uuid = 'reqId 1b4e28ba-2fa1-11d2-883f-016045123456'
+    expect(boundary).toMatch(BARE_IC)
+    expect(uuid).toMatch(BARE_IC)
+    expect(withoutRandomIds(`${boundary} ${uuid}`)).not.toMatch(BARE_IC)
+    expect(withoutRandomIds(`${boundary} ic ${IC} ${uuid}`)).toMatch(BARE_IC)
+    expect(withoutRandomIds(`${boundary};ic=${IC}`)).toMatch(BARE_IC)
+  })
+})
+
 describe('BE-33 AC8: logs hold no secrets across login, password reset and upload', () => {
   let t: SecurityApp
   const logs = new LogCapture()
@@ -83,14 +109,7 @@ describe('BE-33 AC8: logs hold no secrets across login, password reset and uploa
       expect(secret.length).toBeGreaterThanOrEqual(8)
       expect(all, `logs contain a secret starting ${secret.slice(0, 4)}`).not.toContain(secret)
     }
-    // No bare 12-digit IC. Request ids are UUIDs whose last group can be 12 decimal digits (~0.4% each), and the upload's
-    // random multipart boundary (24 hex characters, in the logged content-type header) holds a run of 12 decimal digits
-    // in roughly 1 run in 25. Both are removed for this one check only; an IC is never written in either form.
-    expect(
-      all
-        .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<uuid>')
-        .replace(/boundary=-*[0-9a-z]+/gi, 'boundary=<b>'),
-    ).not.toMatch(/(?<!\d)\d{12}(?!\d)/)
+    expect(withoutRandomIds(all)).not.toMatch(BARE_IC)
     expect(all).not.toMatch(/\b\d{6}-\d{2}-\d{4}\b/)
     expect(all).not.toMatch(/\$argon2|\$2[aby]\$/)
     // No cookie header values, request or response.
