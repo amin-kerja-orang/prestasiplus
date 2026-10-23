@@ -165,7 +165,7 @@ export interface StimulusSharers {
 export interface BankRow {
   id: string
   groupId?: string
-  /** Number of questions in the stimulus group (set whenever `groupId` is). */
+  /** Number of questions in the stimulus group (set when the group resolves). */
   groupSize?: number
   subject: SubjectCode
   subjectName: string

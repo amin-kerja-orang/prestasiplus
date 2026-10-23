@@ -151,6 +151,12 @@ function stimulusChanged(live: StimulusDef | undefined, next: StimulusDef | unde
 }
 
 function hydrate(seed: ReviewSeed): void {
+/** Size of a stimulus group, counted from the group's members (not from its stimulus). */
+const groupSizeProp = (gid: string): { groupSize?: number } => {
+  const n = liveMembersOf(gid).length
+  return n > 0 ? { groupSize: n } : {}
+}
+
   // Units made from an intake batch always win: their ids repeat across server instances.
   const force = !!seed.batchId
   for (const q of seed.questions) if (force || !BANK.questions.has(q.id)) BANK.questions.set(q.id, q)
@@ -852,16 +858,11 @@ export class AdminOps {
     }))
   }
 
-  /** Questions that share the stimulus of `q`; a group always counts at least the question itself. */
-  private groupSizeOf(q: QuestionDef): number {
-    return Math.max(1, sharersOf(q.groupId!)?.count ?? 0)
-  }
-
   private bankRow(qid: string): BankRow {
     const q = getQ(qid)!
     return {
       id: qid,
-      ...(q.groupId ? { groupId: q.groupId, groupSize: this.groupSizeOf(q) } : {}),
+      ...(q.groupId ? { groupId: q.groupId, ...groupSizeProp(q.groupId) } : {}),
       subject: q.curriculum.subject,
       subjectName: subjectName(q.curriculum.subject),
       kertas: kertasOf(qid),
@@ -945,7 +946,7 @@ export class AdminOps {
       ],
       usedInPapers: this.usedIn(qid),
       pendingRevision: !!rec?.revision,
-      ...(q.groupId ? { sharers: sharersOf(q.groupId)! } : {}),
+      ...sharersProp(q),
     }
   }
 

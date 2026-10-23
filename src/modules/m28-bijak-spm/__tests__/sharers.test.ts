@@ -102,11 +102,19 @@ describe('bank list: group size on every member (FB-003)', () => {
 
   it('the preview lists the siblings of a member', async () => {
     const d = await make().getBankDetail('mat1-g1-q2')
+    expect(d.sharers!.questions.find((q) => q.current)?.id).toBe('mat1-g1-q2')
     expect(d.sharers!.questions.map((q) => q.id).filter((id) => id !== 'mat1-g1-q2')).toEqual([
       'mat1-g1-q1',
       'mat1-g1-q3',
       'mat1-g1-q4',
     ])
     expect((await make().getBankDetail('mat1-pub-1')).sharers).toBeUndefined()
+  })
+})
+
+describe('group size is counted from the group members (FB-003 follow-up)', () => {
+  it('a single-member group has size 1, so the bank chip is hidden', async () => {
+    const rows = await make().listBank({ status: 'semua' })
+    expect(rows.find((r) => r.id === 'sej2-q1')).toMatchObject({ groupId: 'sej2-bahan1', groupSize: 1 })
   })
 })
