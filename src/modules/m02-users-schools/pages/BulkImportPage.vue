@@ -12,6 +12,7 @@
  */
 import { computed, nextTick, onMounted, ref } from 'vue'
 
+import { isHttpMode } from '@/api/mode'
 import { useFlash } from '@/composables'
 import { DsFormBar, DsFormField, DsFormSection, DsIconChip, DsPage, DsPanel } from '@/ds'
 
@@ -19,6 +20,7 @@ import { importUsers, type BulkImportRole, type ImportMode } from '../api/import
 import type { SchoolSummary } from '../api/schools'
 import { fetchAdminDefaults } from '../api/users'
 import BulkSchoolPicker from '../components/BulkSchoolPicker.vue'
+import GeneratedCredentials from '../components/GeneratedCredentials.vue'
 import ImportSourceFields from '../components/ImportSourceFields.vue'
 import {
   BULK_PASTE_PLACEHOLDER,
@@ -26,10 +28,15 @@ import {
   roleNeedsSchool,
   STUDENT_IMPORT_PATH,
 } from '../lib/import-options'
+import type { CredentialRow } from '../lib/credential-row'
 import { errorLines } from '../lib/user-form-errors'
 import { USERS_LIST_PATH } from '../lib/user-form-options'
 
 const flash = useFlash()
+
+/** http mode: no default password exists (D59b); the server generates one per created account (`credentials`). */
+const http = isHttpMode()
+const credentials = ref<CredentialRow[]>([])
 
 const role = ref<BulkImportRole | ''>('')
 const school = ref<SchoolSummary | null>(null)
@@ -46,6 +53,7 @@ const alertBox = ref<HTMLElement | null>(null)
 const showSchool = computed(() => roleNeedsSchool(role.value))
 
 onMounted(() => {
+  if (http) return
   // FR-M02-53: the value and the placeholder are the configured bulk default; a failure leaves both empty.
   fetchAdminDefaults().then(
     (d) => {
@@ -69,16 +77,22 @@ async function submit(): Promise<void> {
   if (submitting.value) return
   submitting.value = true
   errors.value = []
+  credentials.value = []
   try {
     const result = await importUsers({
       role: role.value,
       schoolId: showSchool.value ? (school.value?.id ?? null) : null,
-      defaultPassword: defaultPassword.value,
+      ...(http ? {} : { defaultPassword: defaultPassword.value }),
       importMode: mode.value,
       csvFile: mode.value === 'csv' ? file.value : null,
       pasteContent: mode.value === 'paste' ? paste.value : null,
     })
     reset()
+    credentials.value = (result.data.credentials ?? []).map((c) => ({
+      line: c.line,
+      email: c.email,
+      password: c.generatedPassword,
+    }))
     flash.show({ type: 'success', message: result.status })
     window.scrollTo?.({ top: 0 })
   } catch (err) {
@@ -139,6 +153,12 @@ const ROLE_ICONS: Record<string, string> = {
           </UAlert>
         </div>
 
+        <GeneratedCredentials
+          v-if="credentials.length > 0"
+          :rows="credentials"
+          data-testid="bulk-credentials"
+        />
+
         <DsFormSection
           title="Peranan dan Sekolah"
           description="Pilih jenis pengguna dan sekolah mereka."
@@ -174,7 +194,7 @@ const ROLE_ICONS: Record<string, string> = {
             <BulkSchoolPicker v-model="school" />
           </div>
 
-          <div class="sm:col-span-2">
+          <div v-if="!http" class="sm:col-span-2">
             <DsFormField
               native
               for="bulk-default-password"
@@ -215,8 +235,14 @@ const ROLE_ICONS: Record<string, string> = {
                       <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
                       Format CSV:
                     </p>
-                    <p class="break-words">Nama, Emel, Telefon (pilihan), Kata Laluan (pilihan)</p>
-                    <p class="break-words">
+                    <p v-if="http" class="break-words">Nama, Emel, Telefon (pilihan)</p>
+                    <p v-else class="break-words">
+                      Nama, Emel, Telefon (pilihan), Kata Laluan (pilihan)
+                    </p>
+                    <p v-if="http" class="break-words">
+                      Contoh: Muhammad Fulan bin Fulan, ahmad@email.com, 0123456789
+                    </p>
+                    <p v-else class="break-words">
                       Contoh: Muhammad Fulan bin Fulan, ahmad@email.com, 0123456789, pass123
                     </p>
                     <p>Baris pertama akan dilangkau jika ia mengandungi tajuk (header).</p>
@@ -278,7 +304,7 @@ const ROLE_ICONS: Record<string, string> = {
             <ul class="flex flex-col gap-2 text-body text-muted">
               <li>• Emel sedia ada akan dilangkau automatik</li>
               <li>• Guru &amp; admin sekolah dikaitkan dengan sekolah dipilih</li>
-              <li>• Kata laluan boleh dinyatakan per-pengguna di lajur ke-4</li>
+              <li v-if="!http">• Kata laluan boleh dinyatakan per-pengguna di lajur ke-4</li>
               <li>
                 • Pelajar DELIMa &rarr;
                 <ULink

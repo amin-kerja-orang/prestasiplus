@@ -8,6 +8,7 @@
  * A name that is not in the bundle is reported once with `console.warn('[icons] not bundled: ph:x')`,
  * which the e2e suite and a developer can see; add the name to `iconBundle` (or fix the typo).
  */
+// `_api` is an underscore export of `@iconify/vue`: re-run `src/theme/__tests__/icon-offline.test.ts` when bumping it.
 import { _api } from '@iconify/vue'
 
 import { ICON_NOT_BUNDLED } from './icon-hosts'
