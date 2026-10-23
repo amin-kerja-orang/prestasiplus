@@ -1,3 +1,3 @@
-{"id":1,"title":"Sepanduk Contoh 1","type":"info","target":"/","sort_order":1,"is_active":"1"}
-{"id":2,"title":"Sepanduk Contoh 2","type":"info","target":"/","sort_order":2,"is_active":"1"}
-{"id":3,"title":"Sepanduk Contoh 3","type":"info","target":"/","sort_order":3,"is_active":"1"}
+{"id":1,"title":"Sepanduk Contoh 1","type":"hero","target":"/","sort_order":1,"is_active":"1"}
+{"id":2,"title":"Sepanduk Contoh 2","type":"promo","target":"/","sort_order":2,"is_active":"1"}
+{"id":3,"title":"Sepanduk Contoh 3","type":"announcement","target":"/","sort_order":3,"is_active":"1"}

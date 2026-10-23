@@ -13,7 +13,7 @@ seed) needs the LEAD's explicit confirmation first; the scripts ask for it (type
 Contents: 1 Design | 2 Server prerequisites | 3 Parameters | 4 First install | 5 Edge nginx | 6 TLS | 7 Deploy |
 8 Rollback | 9 Backups and restore drill | 10 Monitoring and alerts | 11 Logs | 12 Secrets | 13 Sizing and load test |
 14 Single-instance rule | 15 ClamAV | 16 Cutover 30 Oct (AZ side) | 17 Findings for the developer roles |
-18 Not rehearsed here | 19 Troubleshooting
+18 Not rehearsed here | 19 Troubleshooting | 20 Defaults applied on 22 Oct (LEAD may veto)
 
 ---
 
@@ -34,6 +34,7 @@ Files:
 |---|---|
 | `deploy/vps/compose.prod.yaml` | Overlay over `compose.yaml` (services, limits, restart, health, logging, profiles) |
 | `deploy/vps/.env.prod.example`, `api.env.example`, `db.env.example` | Names with placeholders: copy to `/etc/pretasiplus/{prod,api,db}.env` |
+| `deploy/vps/db-roles.sh`, `db-roles/{apply,check}.sql`, `migrate.env.example`, `etl.env.example` | Least-privilege database roles (cutover plan P3, section 3.1): `secrets` writes `migrate.env` and `etl.env` and the `api.env` `DATABASE_URL`; `apply` and `check` run from `deploy.sh` |
 | `deploy/vps/nginx/` | Edge config template, snippets, `check.sh` (syntax) and `test-routing.sh` (behaviour, with stub upstreams) |
 | `deploy/vps/deploy.sh`, `rollback.sh`, `lib.sh` | Migrate-then-deploy with `--dry-run`, image rollback |
 | `deploy/vps/tls/` | `init-cert.sh` (first certificate), `renew.sh` |
@@ -115,13 +116,15 @@ Decisions and why:
 
 ## 3. Parameters
 
-Three files hold everything, all outside the repo, owner `root`, group `ppdeploy`, mode `640` (`sudo install -m 640 -o root -g ppdeploy ...`):
+Five files hold everything, all outside the repo, owner `root`, group `ppdeploy`, mode `640` (`sudo install -m 640 -o root -g ppdeploy ...`):
 
 | File | Content | Example |
 |---|---|---|
 | `/etc/pretasiplus/prod.env` | Compose interpolation and script settings (`--env-file`). Not secret, except the two ping URLs and `PP_ALERT_WEBHOOK_URL` | `deploy/vps/.env.prod.example` |
 | `/etc/pretasiplus/api.env` | API secrets and production settings (`env_file` of `api` and `migrate`) | `deploy/vps/api.env.example` |
-| `/etc/pretasiplus/db.env` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | `deploy/vps/db.env.example` |
+| `/etc/pretasiplus/db.env` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (the bootstrap superuser, ops scripts only: section 3.1) | `deploy/vps/db.env.example` |
+| `/etc/pretasiplus/migrate.env` | `DATABASE_URL` of the schema owner `pp_owner` (`env_file` of `migrate`, read after `api.env`) | written by `sudo deploy/vps/db-roles.sh secrets` (`migrate.env.example`) |
+| `/etc/pretasiplus/etl.env` | `DATABASE_URL` of the migration role `pp_etl` (`slot.sh etl`, `--env-from-file`) | written by `sudo deploy/vps/db-roles.sh secrets` (`etl.env.example`) |
 
 Write values with an editor (`sudoedit`), never on a command line. Generate secrets with `openssl rand -hex 32`. The `*.example`
 files use inline-comment-free lines on purpose (Compose would keep a trailing comment of an empty value).
@@ -143,8 +146,8 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_BUILD_MODE` | `local` | OPS | `local` builds on the VPS (needs ~2 GB free RAM); `pull` pulls from `PP_IMAGE_PREFIX` |
 | `PP_PROFILES` | empty | LEAD | Compose profiles to run: `clamav`, `monitoring` (comma list) |
 | `PP_HTTP_BIND` | `0.0.0.0` | OPS | IPv4 address for ports 80/443. The edge publishes **IPv4 only**: create an A record, no AAAA record |
-| `PP_EDGE_AUTH_RATE` | `60r/m` | OPS | Edge `limit_req` per client IP on `/api/auth/` (nginx rate syntax). Secondary to the API's own login throttle; generous because many schools share one NAT address. A huge value (`100000r/m`) makes it a no-op |
-| `PP_EDGE_AUTH_BURST` | `60` | OPS | Burst size of that limit (excess requests get `429` immediately, `nodelay`) |
+| `PP_EDGE_AUTH_RATE` | `300r/m` | OPS | Edge `limit_req` per client IP on `/api/auth/` (nginx rate syntax). Secondary to the API's own login throttle; generous because many schools share one NAT address (F2 default, section 20). A huge value (`100000r/m`) makes it a no-op |
+| `PP_EDGE_AUTH_BURST` | `120` | OPS | Burst size of that limit (excess requests get `429` immediately, `nodelay`) |
 | `PP_LOCK_FILE` | `/var/lock/pretasiplus.lock` | OPS | The shared lock for backup, deploy, rollback, restore drill and certificate jobs; the deploy user must be able to write it |
 | `PP_DEPLOY_GROUP` | `ppdeploy` | OPS | When a script runs as root (`sudo init-cert.sh`), `pp_lock` hands the lock file to this group with mode 0660, so the deploy user's timers are not locked out. Also install `systemd/pretasiplus.tmpfiles.conf` (section 9, Schedule) |
 | `PP_LOCK_WAIT` | `1800` | OPS | Seconds a timer-started backup or drill waits for another operation before it fails |
@@ -155,12 +158,12 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_KUMA_PORT` | `3001` | OPS | Loopback port of Uptime Kuma |
 | `PP_PG_SHARED_BUFFERS`, `PP_PG_EFFECTIVE_CACHE_SIZE`, `PP_PG_WORK_MEM`, `PP_PG_MAINTENANCE_WORK_MEM`, `PP_PG_MAX_CONNECTIONS`, `PP_PG_MAX_WAL_SIZE`, `PP_PG_LOG_MIN_DURATION_MS` | `512MB`, `1GB`, `8MB`, `128MB`, `100`, `2GB`, `1000` | OPS (LEAD sizes) | Postgres settings passed as `-c` (table in section 13) |
 | `PP_UPLOAD_FILES_MB`, `PP_UPLOAD_BIG_MB` | `22`, `256` | OPS | Edge body limits (section 5) |
-| `PP_CSP_MODE` | `report-only` | LEAD (decision D-7) | `report-only`, `enforce` or `off` |
-| `PP_HSTS` | `max-age=300` | LEAD | HSTS value for the whole host, sent by the edge on every https response (the API's own HSTS is replaced, so there is one policy). Ramp per `platform-settings.md` §4.3: `max-age=300` → `max-age=86400` → `max-age=15552000`; add `; includeSubDomains` only once every subdomain serves HTTPS. Empty = no header |
+| `PP_CSP_MODE` | `report-only` | LEAD (decision D-7) | `report-only`, `enforce` or `off`. Default applied 22 Oct: `report-only` at go-live (section 20) |
+| `PP_HSTS` | `max-age=300` | LEAD | HSTS value for the whole host, sent by the edge on every https response (the API's own HSTS is replaced, so there is one policy). Ramp per `platform-settings.md` §4.3: `max-age=300` → `max-age=86400` → `max-age=604800` → `max-age=15552000`, one clean week per step; add `; includeSubDomains` only once every subdomain serves HTTPS; never `preload`. Empty = no header. `deploy.sh` refuses any other shape (the value is pasted into the nginx config) |
 | `PP_LOG_MAX_SIZE`, `PP_LOG_MAX_FILE` | `20m`, `5` | OPS | Docker log rotation |
 | `PP_JOBS_WORKER_ENABLED` | `true` | OPS | The one API instance runs the job worker |
 | `PP_BACKUP_KEEP_DAILY`, `PP_BACKUP_KEEP_WEEKLY`, `PP_BACKUP_WEEKLY_DAY`, `PP_BACKUP_KEEP_AUX`, `PP_BACKUP_KEEP_FILES`, `PP_BACKUP_FILES` | `7`, `4`, `7`, `5`, `2`, `weekly` | LEAD | Retention (section 9) |
-| `PP_OFFSITE_KIND` | `none` | LEAD | `s3`, `rsync` or `none` |
+| `PP_OFFSITE_KIND` | `none` | LEAD | `s3`, `rsync` or `none`. Default applied 22 Oct: **`s3`** once the LEAD has the bucket (section 20) |
 | `PP_OFFSITE_S3_URI`, `PP_OFFSITE_S3_ENDPOINT`, `PP_OFFSITE_S3_PROFILE` | empty | LEAD | S3-compatible target (credentials in the backup user's aws CLI config, not here) |
 | `PP_OFFSITE_RSYNC_TARGET`, `PP_OFFSITE_RSYNC_SSH_PORT` | empty, `22` | LEAD | rsync-over-ssh target (key-based login of the backup user) |
 | `PP_BACKUP_GPG_RECIPIENT` | empty | LEAD | **Required when `PP_OFFSITE_KIND` is `s3` or `rsync`**: public key (id/e-mail) that every off-site copy is encrypted to. The PRIVATE key is kept off the server (LEAD's vault / a second machine); `offsite.sh` checks `gpg --list-keys` and dies otherwise |
@@ -180,14 +183,17 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 
 | Name | Who | Rule |
 |---|---|---|
-| `DATABASE_URL` | LEAD | `postgresql://USER:PASSWORD@db:5432/DBNAME`, equal to `db.env`. `deploy.sh` checks host, user, database and password |
+| `DATABASE_URL` | OPS (generated) | `postgresql://pp_app:<generated>@db:5432/<POSTGRES_DB>`: the API role, **never** the `db.env` superuser. Written by `sudo deploy/vps/db-roles.sh secrets`; `deploy.sh` checks host `db`, user `pp_app`, database, a 32+ character password different from the other two files and from `POSTGRES_PASSWORD` (section 3.1) |
 | `SESSION_SECRET`, `IC_HASH_KEY` | LEAD | 32+ characters each, different. **Never rotate `IC_HASH_KEY` casually** (section 12) |
 | `MARKETPLACE_PLATFORM_WHATSAPP` | LEAD | The real wa.me number (digits, country code first); the dev default is refused by `deploy.sh` |
 | `PUBLIC_ORIGINS` | LEAD | Extra image origins for articles/banners (empty = API origin only) |
-| `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_MONTHLY_BUDGET_SEN`, `AI_PRICE_TABLE_JSON` | LEAD (decision D-5/OD-14) | Mock until decided; `AI_API_KEY` is a secret |
-| `OCR_ENGINE`, `OCR_LANG_DIR` | LEAD | `none` until OCR language data is shipped |
+| `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_MONTHLY_BUDGET_SEN`, `AI_PRICE_TABLE_JSON` | LEAD (decision D-5/OD-14) | **Decided 22 Oct (AZ-29 item 1): `AI_PROVIDER=mock`**, the other four stay unset. `AI_API_KEY` is a secret. See `docs/ops/ai-intake-production-decisions.md` (lands with #138) |
+| `OCR_ENGINE`, `OCR_LANG_DIR` | LEAD | **Decided 22 Oct (AZ-29 item 4): `OCR_ENGINE=none`**, `OCR_LANG_DIR` unset. Scanned pages are typed in by hand |
+| `INTAKE_*` limits | LEAD | **Decided 22 Oct (AZ-29 item 5 KEEP):** no key set, the schema defaults apply (20 MB, 200 pages, 500 pages per day). Intake is admin-only at go-live (item 7, card AZ-35) |
+| `REGISTRATION_OPEN` | LEAD | `false` from install until the 30 Oct switch, then `true` (section 16). Unset = open, so the key must be present. While `false`, `POST /api/auth/register` answers 403 `REGISTRATION_CLOSED`; login, password reset and admin-created accounts are unaffected |
 | `METRICS_ENABLED`, `METRICS_INTERNAL_CIDRS` | OPS | Metrics stay admin-session-only; the edge returns 404 from outside |
-| `THROTTLE_*`, `LOGIN_*`, `INTAKE_*`, ... | LEAD (OQ1) | Defaults unless the LEAD changes them. See the `THROTTLE_GLOBAL_PER_MINUTE` finding in section 17 |
+| `THROTTLE_GLOBAL_PER_MINUTE` | LEAD (OQ1) | **`3000`** (F2 default applied 22 Oct, section 20): counted per client address, and a school shares one NAT address. `deploy.sh` warns below 3000 |
+| other `THROTTLE_*`, `LOGIN_*`, ... | LEAD (OQ1) | Defaults unless the LEAD changes them |
 | `KEEP_ALIVE_TIMEOUT_MS`, `REQUEST_TIMEOUT_MS`, `SHUTDOWN_GRACE_MS` | OPS | Defaults 65000 / 120000 / 25000; the edge timeouts are built around them |
 
 Forced by the overlay (cannot be overridden by `api.env`): `NODE_ENV=production`, `PORT=3000`, `TRUST_PROXY_HOPS=1`,
@@ -195,6 +201,95 @@ Forced by the overlay (cannot be overridden by `api.env`): `NODE_ENV=production`
 `PUBLIC_BASE_URL=https://$PP_DOMAIN`, `FILE_STORAGE_DIR=/var/lib/pretasiplus/files`, `NODE_OPTIONS=--max-old-space-size=$PP_API_HEAP_MB`.
 
 Reserved (do NOT put them in `api.env` yet): `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310` (section 15).
+
+### 3.1 Database roles (cutover plan P3)
+
+**LEAD decision 23 Oct (on #220):** in production the API, the migrate job and `slot.sh` do **not** run as the Postgres superuser; no risk
+acceptance. `deploy/vps/db-roles.sh` implements cutover plan P3 ([v2-cutover-plan.md](v2-cutover-plan.md) section 3). The names are fixed
+(in `lib.sh`); none of the four is a superuser or has `CREATEDB`, `CREATEROLE`, `REPLICATION` or `BYPASSRLS`, and none is a member of any role.
+
+| Role | Used by | Env file | Privileges |
+|---|---|---|---|
+| `pp_owner` | the one-shot `migrate` service only: `prisma migrate deploy`, `deploy.sh --seed-reference`, `admin:bootstrap` | `migrate.env` | Owns the database, schema `public` and every object in it: the only role with DDL. Creates `pgcrypto` on a fresh database (trusted extension, database owner) |
+| `pp_app` | the API (`api` service) | `api.env` | `CONNECT`; `USAGE` on `public`; `SELECT, INSERT, UPDATE, DELETE` on every table (`_prisma_migrations`: `SELECT` only, so a forged ledger row cannot make `prisma migrate deploy` skip a migration) and `USAGE, SELECT, UPDATE` on every sequence, plus **default privileges** for what `pp_owner` creates later. No DDL, no `TRUNCATE`, no `TEMP`, nothing on `staging_cloud` or `archive_cloud` |
+| `pp_etl` | `migrate:*` through `slot.sh etl` (the migration role) | `etl.env` | The `pp_app` grants (see note), plus `TEMP` (the ETL upsert uses temporary tables); `USAGE` + `SELECT` on `staging_cloud` and `archive_cloud`, `UPDATE` on `archive_cloud` (`migrate:archive-minimise`). No DDL in `public` |
+| `pp_stager` | `slot.sh copy` and the section 7 `drop schema ... cascade` (stage-only role) | none | `CONNECT` and `CREATE` on the database: it creates the two stage schemas and, as their owner, drops them. **Nothing on `public`** (a `select` and an `insert` are refused). **No password**: it connects only over the local socket inside the db container (`docker compose exec db psql -U pp_stager`), never over the network |
+| `POSTGRES_USER` of `db.env` | bootstrap superuser of the cluster | `db.env` | Used only by ops scripts, always inside the db container: `db-roles.sh`, `backup/backup.sh` and `backup/restore-drill.sh` (a full dump, and the drill's `CREATE DATABASE <db>_restorecheck`), a manual restore (section 8), and #166's `restore-point.sh` / `pitr.sh` (whole-database dump, base backup). Never in a `DATABASE_URL` |
+
+`pp_owner`, `pp_app` and `pp_etl` have `search_path = public` pinned: `pp_stager` may create schemas, so a crafted dump could add one
+named like a role (`"$user"` is first in the default search path); `check` also fails on any schema besides `public` and the two stage
+schemas. Trust boundary of `pp_stager`: it owns what it restores into the stage schemas, so it could plant a function or view there that `pp_etl`
+later runs with its own rights; with `CREATE` on the database it can also install a trusted extension into its schemas. That is accepted
+because `pp_stager` is reachable only from inside the db container, which is root-equivalent anyway (the deploy user is in the docker group).
+
+Note on `pp_etl`: P3 says "read and write on the v2 tables the ETL writes and on `etl_*`". The ETL writes tables outside
+`prisma/migratable-models.json` (for example `attempt_results`) and through table names built at run time, so there is no fixed list to grant
+on; `pp_etl` gets read/write on every `public` table, with no DDL. Narrowing it is run sheet question Q3 (LEAD).
+
+**How it is wired.** `compose.prod.yaml`: `api` reads `api.env` (`pp_app`); `migrate` reads `api.env` and then `migrate.env`, so its
+`DATABASE_URL` is `pp_owner`'s. `slot.sh etl` must add `--env-from-file /etc/pretasiplus/etl.env` and `slot.sh copy` must restore as
+`pp_stager` (the patch is on #166). `deploy.sh` runs `db-roles.sh apply` after `db` is up (step 4), and `apply` again plus `db-roles.sh check` after
+`migrate` (step 5; the second `apply` makes a `_prisma_migrations` created by that first migrate read-only): a failed check stops the
+deploy before the API is switched. `deploy.sh` refuses any `DATABASE_URL` whose user is not the role
+of its file.
+
+**First set-up (and the switch of a server that ran as the superuser).** As `ppdeploy`, from the release checkout:
+
+```
+sudo deploy/vps/db-roles.sh secrets     # root: passwords generated on the server (openssl rand -hex 32), never printed;
+                                        # writes the api.env DATABASE_URL (pp_app) and creates migrate.env (pp_owner) and etl.env (pp_etl),
+                                        # root:ppdeploy 640. A file that already holds a valid URL for its role is kept; connection parameters (?...) of the old URL are kept.
+deploy/vps/deploy.sh --dry-run          # preflight checks the three URLs
+deploy/vps/deploy.sh                    # step 4 db-roles.sh apply, step 5 migrate as pp_owner + db-roles.sh check
+deploy/vps/db-roles.sh check            # again by hand: the P3 evidence lines (names, privileges, error texts; no values)
+```
+
+`apply` is idempotent: it creates missing roles, forces the attributes, removes memberships, makes `pp_owner` the owner of the database and
+of every object in `public` the superuser created (an earlier migrate as the superuser, a restore), revokes `PUBLIC` access to the database
+and to `public`, and re-grants exactly the table above. A `staging_cloud` or `archive_cloud` made by another role is handed to `pp_stager`.
+The passwords are set from the env files with `log_statement`, `log_min_duration_statement` and `log_min_error_statement` switched off for that
+session, so they never reach the server log. Run `apply` again (it is safe at any time) after:
+
+- **a restore** of any dump (section 8, `restore-point.sh restore`): the restored objects belong to the superuser;
+- **`slot.sh copy`**: `pp_etl` gets `SELECT` on the copy at once (default privileges of `pp_stager`), `UPDATE` on `archive_cloud` only from
+  `apply` (the #166 patch runs it inside `copy`).
+
+A production dump restored on **another** cluster needs the four roles first (`db-roles.sh apply` there) or `pg_restore --no-acl`; the
+restore drill restores in the same cluster and is not affected.
+
+**What `check` proves** (each probe runs the statement **as the role** in a rolled-back subtransaction, so nothing changes; plus a real
+network login with each env-file password): attributes and memberships of the four roles; `pp_owner` owns the database and every `public`
+table and sequence; `pp_app` and `pp_etl` hold `SELECT/INSERT/UPDATE/DELETE` on every `public` table and `USAGE/SELECT/UPDATE` on every
+sequence, and nothing else (an extra `TRUNCATE`, `TRIGGER` or `REFERENCES` grant on any table is a FAIL; `search_path` pinned);
+`pp_app` **cannot** `CREATE TABLE`, `DROP`, `ALTER`, `TRUNCATE`, `CREATE SCHEMA` or `CREATE TEMP TABLE`, and cannot read
+`staging_cloud` or `archive_cloud` (when they exist; otherwise no default privilege can give it anything there); `pp_etl` can use `TEMP`,
+read both stage schemas and update `archive_cloud`, but has no DDL in `public`; `pp_stager` is refused `select` and `insert` on `public` and
+can create and drop the stage schemas; `_prisma_migrations` is read-only for `pp_app` and `pp_etl`; `pg_hba` has no `trust` rule beyond
+loopback and the local socket; the stage role is refused over the network and accepted over the local socket. The network logins use the
+compose name `db` (override: `PP_DB_ROLES_NET_HOST`), never `127.0.0.1`: the official image trusts loopback (initdb default), so a loopback
+login would accept any password, while the container's network address hits the `scram-sha-256` rule the API also goes through. Output: one
+`PASS | role | probe | detail` line each, then `DB ROLES CHECK PASSED: <n> probes` (exit 0) or `DB ROLES CHECK FAILED` (exit 1).
+The same SQL runs in CI (`apps/api/test/ops/db-roles.spec.ts`).
+
+**Rotate a role password** (LEAD confirmation first, as for every secret, section 12):
+
+```
+sudo deploy/vps/db-roles.sh secrets --rotate app     # or owner, etl, or a comma list: app,owner,etl
+deploy/vps/db-roles.sh apply                         # sets the new password in the database
+docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env up -d --no-deps --force-recreate api   # app only
+deploy/vps/db-roles.sh check                         # the network login lines must PASS
+```
+
+`secrets --rotate` writes the env file first and `apply` changes the database password: between them and the recreate, open API
+connections keep working and new ones fail, so run the lines together. A rotation does not end existing sessions: after a suspected
+leak, also end the role's sessions as the superuser (`select pg_terminate_backend(pid) from pg_stat_activity where usename = 'pp_app'`,
+then the recreate). `owner` and `etl` are
+used by one-shot containers only, so nothing needs a restart. `pp_stager` has no password to rotate. The bootstrap `POSTGRES_PASSWORD` is
+rotated as before (section 12: `ALTER ROLE` plus `db.env`); since no `DATABASE_URL` uses it, the API is not affected.
+
+**Rollback to a release from before this change.** Its `deploy.sh` requires `DATABASE_URL` user = `POSTGRES_USER`. `rollback.sh` (images
+only) keeps working, because `pp_app` has everything the API needs; a full `deploy.sh` of such a release needs the old `api.env` line back,
+which the LEAD would have to approve (it is the superuser again).
 
 ---
 
@@ -209,15 +304,16 @@ Every step that touches the server is the operator's, after the LEAD's go. `LEAD
 3. Folders: `sudo install -d -m 750 -o root -g ppdeploy /etc/pretasiplus && sudo install -d -o ppdeploy -g ppdeploy -m 700 /var/backups/pretasiplus /var/lib/pretasiplus-deploy /var/log/pretasiplus /srv/pretasiplus/letsencrypt /srv/pretasiplus/letsencrypt-log /srv/pretasiplus/certbot-webroot`
    (a separate encrypted volume mounted at `/var/backups/pretasiplus` is better).
 4. Env files: `sudo install -m 640 -o root -g ppdeploy deploy/vps/.env.prod.example /etc/pretasiplus/prod.env`, same for `api.env.example` -> `api.env`
-   and `db.env.example` -> `db.env`; edit all three with `sudoedit` (`LEAD:` values). Choose the size profile of section 13.
+   and `db.env.example` -> `db.env`; edit all three with `sudoedit` (`LEAD:` values; leave the `api.env` `DATABASE_URL` line as it is). Choose the size profile of section 13.
+   Then `sudo deploy/vps/db-roles.sh secrets`: it writes the `api.env` `DATABASE_URL` (`pp_app`) and creates `migrate.env` and `etl.env` (section 3.1).
 5. Dry run: `deploy/vps/deploy.sh --dry-run`. **Before step 6 the only failure it should report is the missing-certificate line** (`no certificate for ...`); everything else must already pass. After step 6 it must end with `preflight passed`. It prints every step it would run.
 6. Certificate (section 6): `deploy/vps/tls/init-cert.sh --dry-run`, then `deploy/vps/tls/init-cert.sh`.
 7. Deploy (section 7): `deploy/vps/deploy.sh`. On a first install there is nothing to back up; the script says so.
 8. Reference data, once: `deploy/vps/deploy.sh --seed-reference` (section 7). Then the smoke test of section 7.
 9. Schedulers: install the timers (section 9) and the probe (section 10), and logrotate (section 11).
 10. First backup and a restore drill (section 9) before any user data exists, then again after the data migration.
-11. `LEAD:` the first administrator account. **There is no production path to create one yet** (no demo seed, no bootstrap command):
-    see section 17, finding F1. Do not enable the demo seed to work around it.
+11. `LEAD:` the first administrator account. Default applied 22 Oct (F1, section 20): the first Admin Pusat accounts come from the
+    `.cloud` migration (T-1 load, 29 Oct). There is still no bootstrap command; do not enable the demo seed to work around it.
 
 ---
 
@@ -237,7 +333,7 @@ Template `deploy/vps/nginx/templates/pp.conf.template`, rendered at container st
 | Uploads, tier 2 (`PP_UPLOAD_BIG_MB`, 256 MB) | Many-file multipart routes: `/api/intake/batches` and `/api/intake/batches/:id/files` (up to `INTAKE_MAX_FILES_PER_BATCH`+1 = 11 files x 20 MB = 220 MB), `/api/admin/audio-kbat-sets` (4 x 20 MB = **80 MB**, the biggest the audio KBAT needs), `/api/admin/screenshots` (20 x 10 MB), `/api/perutusan` (6 x 2 MB + 3 x 5 MB), `/api/guru/question-papers` (up to 101 MB). At most **2 concurrent big uploads per address and 4 for the whole server** (`limit_conn`). The API enforces each purpose itself; this is the outer fence. A new many-file route needs a line in that regex |
 | SPA | `/` proxied to `frontend:8080`. Cache headers come from the frontend nginx (`/assets/*` immutable for a year, `index.html` and deep links `no-cache`, SPA fallback). Gzip is on for SPA assets, **off for `/api`** (the JSON carries the CSRF token: BREACH) |
 | Security headers on the SPA | The frontend nginx already sends `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`; the edge adds only HSTS and the CSP, so nothing is duplicated |
-| CSP | Decision **D-7 is open** (add a CSP, or replicate live, which has none). Default `report-only`: no breakage, violations appear in the browser console. `PP_CSP_MODE=enforce` enforces the same policy (decide D-7 before go-live: section 16, T-2 d), `off` sends nothing. The policy (`snippets/csp-*.conf`): `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: $PP_CSP_IMG_HOSTS (no bare `https:`); font-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src` the three video hosts the SPA allows; `object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. **Check in a browser on staging before choosing `enforce`** (video embeds, article images, audio player) |
+| CSP | Decision **D-7**: default `report-only` applied for go-live on 22 Oct (section 20). `report-only`: no breakage, violations appear in the browser console. `PP_CSP_MODE=enforce` enforces the same policy (decide D-7 before go-live: section 16, T-2 d), `off` sends nothing. The policy (`snippets/csp-*.conf`): `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: $PP_CSP_IMG_HOSTS (no bare `https:`); font-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src` the three video hosts the SPA allows; `object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. **Check in a browser on staging before choosing `enforce`** (video embeds, article images, audio player) |
 | Request-body buffers | `client_body_temp_path` and `proxy_temp_path` are on the **disk-backed named volume `edgetmp`** (`/var/cache/nginx`), not tmpfs. tmpfs pages count against the edge's memory limit, so buffering unauthenticated 256 MB bodies in RAM would OOM-kill the edge. Worst case on disk: 4 big uploads x 256 MB + the 22 MB tier, a few GB at most; the nginx workers' memory stays small. HSTS (`PP_HSTS`) is also sent on the 404s that nginx itself answers (`/api/metrics`, `/api`) |
 | Auth flood guard | `/api/auth/` has `limit_req` per client IP (`PP_EDGE_AUTH_RATE`, `PP_EDGE_AUTH_BURST`, status 429). It is a secondary guard: the API throttles logins per account and per IP itself, and the edge sees one address for a whole school behind NAT, hence the generous default. Tested by `test-routing.sh` |
 | Access log | Same format as the frontend nginx: a 64-hex path segment (parent invite token) is logged as `[redacted]`, no Referer |
@@ -274,20 +370,22 @@ deploy/vps/deploy.sh                    # asks you to type the domain: the LEAD'
 
 What it does, in order (`deploy.sh --help`):
 
-1. **Preflight.** Tools and Compose version; the three env files exist, mode `640` (`root:ppdeploy`; `600`/`400` also pass) and are neither readable by others nor writable by the group; **no placeholder** (`change-me`, `USER:PASSWORD`,
+1. **Preflight.** Tools and Compose version; the five env files exist, mode `640` (`root:ppdeploy`; `600`/`400` also pass) and are neither readable by others nor writable by the group; **no placeholder** (`change-me`, `USER:PASSWORD`,
    `app.example.my`, the dev WhatsApp number, ...); **fail-closed guard**: refuses if `ALLOW_DEMO_SEED`, `BIJAK_POC_QUESTIONS` or `MAIL_LOG_RESET_LINKS` is `true`/`1`
    in any env file or the shell; secrets 32+ characters, `IC_HASH_KEY` different from `SESSION_SECRET` (what the API enforces at boot, plus the 32-character team policy);
-   `DATABASE_URL` matches `db.env` (host `db`, user, database, password); stop grace above `SHUTDOWN_GRACE_MS`; the certificate is readable (directly, or through the running edge when `live/` is root-only) and is **not self-signed** (issuer differs from subject: the `init-cert.sh` placeholder is refused), not expired; `docker compose config -q`
-   passes with the overlay; the working tree is clean (`--allow-dirty` to override).
+   the three `DATABASE_URL`s (`api.env`, `migrate.env`, `etl.env`) use host `db`, the `POSTGRES_DB` database and their own role (`pp_app`, `pp_owner`, `pp_etl`, never the superuser), with three different 32+ character passwords (section 3.1); stop grace above `SHUTDOWN_GRACE_MS`; the certificate is readable (directly, or through the running edge when `live/` is root-only) and is **not self-signed** (issuer differs from subject: the `init-cert.sh` placeholder is refused), not expired; `docker compose config -q`
+   passes with the overlay; **single-instance guard** (section 14); the working tree is clean (`--allow-dirty` to override).
 2. **Pre-deploy backup** (`backup.sh --tag pre-deploy --no-files`) if the database is running. `--skip-backup` exists and is logged as a warning: do not use it with a migrating release.
 3. **Build or pull** the three images tagged with the git sha.
-4. `db` up and healthy.
-5. **Migrate**: one-shot `migrate` runs `prisma migrate deploy` only. Never a seed. Idempotent. A failed migration stops the deploy before the API is touched.
+4. `db` up and healthy, then `db-roles.sh apply` (idempotent; section 3.1).
+5. **Migrate**: one-shot `migrate` runs `prisma migrate deploy` only, as `pp_owner`. Never a seed. Idempotent. A failed migration stops the deploy before the API is touched. Then `db-roles.sh check`: a FAIL stops the deploy the same way.
 6. `api` and `frontend` up, `--wait` for healthy.
 7. **Edge** recreated (rendered nginx config and certificate are re-read). A blip of about a second on 80/443.
 8. **Health checks through the edge** (real host name, forced to 127.0.0.1): `/api/health` 200, `/api/ready` 200 `ready` (database up and every shipped migration applied), `/` 200,
    `/api/metrics` 404, `http://` redirects 301.
 9. Records `current.tag` and `previous.tag` in `PP_STATE_DIR`, appends to `history.log` (tag, sha, user).
+
+**Deploy check (single instance).** After the deploy, `docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env ps api` must show exactly one container.
 
 **Expected log line:** in production the API logs one boot warning (`clientIpBootWarning`, #91) when `TRUST_PROXY_HOPS` > 0 and `CLIENT_IP_HEADER` / `EDGE_PROXY_SECRET` are unset. On this stack that is expected and harmless: the edge is the single proxy and sets the client address itself; those two keys are for the Cloudflare Pages path and stay empty here.
 
@@ -335,7 +433,8 @@ Use `--checkout` when `compose.prod.yaml` or the nginx files changed in the bad 
   2. Prove the chosen dump is intact: `(cd /var/backups/pretasiplus && sha256sum -c <dump>.sha256)` and `$PC exec -T db pg_restore --list < <dump> | head`. (The full row-count drill compares against the live database, so it only applies to a fresh dump of an idle database: section 9.)
   3. `$PC cp <dump> db:/tmp/restore.dump`, then
      `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'`, then
-     `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error /tmp/restore.dump'`, then `$PC exec db rm /tmp/restore.dump`.
+     `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error /tmp/restore.dump'`, then `$PC exec db rm /tmp/restore.dump`,
+     then **`deploy/vps/db-roles.sh apply` and `deploy/vps/db-roles.sh check`** (the new database and the restored objects belong to the superuser, and `pp_app` has no `CONNECT` until `apply`; section 3.1). **Do not start the api (step 4) before `check` ends with `DB ROLES CHECK PASSED`.**
   4. Roll the images back (`rollback.sh --checkout <tag>`; this also works right after a failed deploy, see section 7), then `$PC up -d --wait --no-deps api frontend`. Check `/api/ready` and a login.
   5. Uploads: restore from the newest `pp-files-*.tar.gz` only if the files volume was damaged (`$PC exec -T api tar -xzf - -C /var/lib/pretasiplus/files < archive`; the api rootfs is read-only but the volume is writable).
   6. Record the incident (what, when, which dump, data-loss window) and tell the LEAD.
@@ -434,7 +533,7 @@ Real-data migration dumps follow the shorter 7-day rule of the migration runbook
 
 Alerts required by the task and where they come from: **disk usage** (probe), **backup failure** (backup.sh alert + `/fail` ping + backup-age check + dead man's switch), **certificate expiry** (probe + renewal failure alert + Let's Encrypt e-mail), **service down** (probe + external checker).
 
-### DECISION NEEDED: error tracking (Sentry)
+### Error tracking (Sentry): default A applied 22 Oct (section 20)
 
 State: `apps/api` has **no Sentry SDK and no DSN variable** (searched `apps/api`, `packages`, `src`; the only hit is a word inside a vendored PDF-engine comment). Go-live checklist item D-4.
 
@@ -469,8 +568,9 @@ Useful: `docker compose ... logs --since 15m api | grep '"level":50'` (errors); 
 
 - Secrets exist only in `/etc/pretasiplus/*.env` (and the operator's password manager / the LEAD's vault). Never in the repo, in build args (`VITE_*` are public), in chat or in an issue.
 - Rotation procedure and effects per secret: [api-runbook.md](api-runbook.md) section 13 (`SESSION_SECRET` logs everyone out; `IC_HASH_KEY` **breaks IC lookups until every hash is recomputed: do not rotate without a plan from the backend developers**;
-  `DATABASE_URL`/`POSTGRES_PASSWORD` need `ALTER ROLE` because `POSTGRES_PASSWORD` only applies at first init).
-- On this stack a rotation is: `sudoedit /etc/pretasiplus/api.env` (and `db.env` + `ALTER ROLE` for the database), then `docker compose ... up -d --force-recreate api`, check `/api/ready` and one login, delete the old value. LEAD confirmation first.
+  `POSTGRES_PASSWORD` needs `ALTER ROLE` because it only applies at first init). The three role passwords (`DATABASE_URL` in `api.env`,
+  `migrate.env`, `etl.env`) are rotated with `db-roles.sh secrets --rotate` (section 3.1).
+- On this stack a rotation is: `sudoedit /etc/pretasiplus/api.env` (and `db.env` + `ALTER ROLE` for the bootstrap superuser; the role passwords: section 3.1), then `docker compose ... up -d --force-recreate api`, check `/api/ready` and one login, delete the old value. LEAD confirmation first.
 - Suggested schedule: every 90 days and after any suspected leak; a leaked secret or dump is reported to the LEAD the same day (PDPA).
 - CI/CD tokens: this pack adds none. Deploys are run by the deploy user on the server (no CI deploy token with access to production exists). If a CI deploy is added later: a dedicated key, restricted to `deploy.sh` through a forced command, no registry write scope.
 
@@ -528,7 +628,7 @@ against a **staging box of the same size**, never against production without the
 Pass thresholds tied to the table: read p95 < 500 ms, autosave p95 < 400 ms, login p95 < 3 s, error rate < 0.5%, **zero 429**, checks > 99%; and during the run the API container stays under 70% of its CPU limit and 80% of its memory limit.
 Start at N, then 1.5 x N: where p95 crosses the threshold is the real capacity; replace A4 with that number.
 
-**Throttles vs one load generator.** The API throttles per client address: `THROTTLE_GLOBAL_PER_MINUTE` = 300 requests per minute per address on every `/api` route, login 5 per minute per identifier and address.
+**Throttles vs one load generator.** The API throttles per client address: `THROTTLE_GLOBAL_PER_MINUTE` = 300 requests per minute per address on every `/api` route (3000 in production, section 20), login 5 per minute per identifier and address.
 A single-IP generator hits the global ceiling within seconds and then measures the limiter. Do not change production values: either run on staging with `THROTTLE_GLOBAL_PER_MINUTE=1000000` in its `api.env`
 (per-user limits can stay), or spread the load over several source addresses. The same ceiling is a **production risk** for schools (finding F2).
 
@@ -540,6 +640,8 @@ The API keeps its rate-limit counters (and the AI provider limits) in process me
 
 - `api` is one container. `compose.prod.yaml` has no `deploy.replicas`, and says so in a comment next to the service. **Never** add `replicas`, `docker compose up --scale api=N`, a second stack on the same database, or a second host running the API.
 - A shared store (Redis, or a Postgres counter table behind `RateLimiter.consume`) is required before scaling out; that is a backend-developer card. Until then, scale up (section 13), not out.
+- **Go-live (30 Oct) is single-instance on the VPS. This is the accepted go-live limit (LEAD decision A on #190, 2026-10-22); scaling out needs the shared store first** (Redis, or a Postgres counter table behind `RateLimiter.consume`).
+- **Guard.** `deploy.sh` preflight (also in `--dry-run`, read-only, no root) refuses the deploy with "api must run as ONE instance (threat model row 18, runbook section 14)" when the rendered production config gives the `api` service `deploy.replicas` or `scale` other than 1, or when more than one `api` container of this compose project is already running (a leftover `--scale api=2`). It also refuses `PP_JOBS_WORKER_ENABLED` set to anything but true, because the single instance is the worker. It prints names and counts only. It cannot see a second host or a second stack on another project name: those stay a rule.
 - `JOBS_WORKER_ENABLED=true` runs on exactly this one instance (`PP_JOBS_WORKER_ENABLED`). With a second instance, exactly one must have it `true`.
 - A restart resets the in-memory counters; a deploy therefore briefly resets rate limits. Accepted.
 - During a deploy the API is recreated: for the few seconds of the swap the edge returns 502 for `/api` (the SPA stays up). Deploy outside exam windows.
@@ -557,7 +659,7 @@ This pack provides the environment:
 - Enable with `PP_PROFILES=clamav` in `prod.env`, then `deploy.sh`.
 - **Reserved env names, read once the half-AM card lands:** `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310`. They are only comments in `.env.prod.example`. Do not add them to `api.env` before the card: `env.schema.ts` does not know them and a test keeps `.env.api.example` equal to the schema.
 - Until the card lands, clamd runs but nothing calls it. Check it is alive: `docker compose ... ps clamav` shows `healthy` (the image's `clamdcheck.sh` health check asks clamd to answer).
-- **Go-live gate:** no pupil or teacher uploads in production until the #78 ClamAV wiring lands, **or a recorded LEAD risk acceptance** (a dated line in the cutover log). It is an explicit go/no-go item in section 16. `clamav` runs on its own network `scan` (add `scan` to the api service when the card lands) with `cap_drop: ALL` plus the few capabilities its entrypoint needs.
+- **Go-live gate:** no pupil or teacher uploads in production until the #78 ClamAV wiring lands, **or a recorded LEAD risk acceptance** (a dated line in the cutover log). Intake is admin-only at go-live (AZ-29 item 7, card AZ-35); the gate still covers the other pupil and teacher upload routes (section 20). It is an explicit go/no-go item in section 16. `clamav` runs on its own network `scan` (add `scan` to the api service when the card lands) with `cap_drop: ALL` plus the few capabilities its entrypoint needs.
 - ClamAV needs outbound HTTPS to the ClamAV mirrors for signature updates (freshclam). Cost: 1 to 1.5 GB RAM (section 13).
 
 ---
@@ -569,21 +671,22 @@ decision D-3 "is migration needed at go-live" are open, see [go-live-bijak-spm.m
 
 | When | Step | Owner | Done when |
 |---|---|---|---|
-| T-7 d | `LEAD:` VPS provisioned, SSH access, domain bought, off-site target and alert channel chosen; sizing profile chosen (section 13) | LEAD | accounts exist |
+| T-7 d | `LEAD:` VPS provisioned, SSH access, domain bought, off-site **S3-compatible bucket and write key** created (section 20) and alert channel chosen; sizing profile chosen (section 13) | LEAD | accounts exist |
 | T-5 d | Server hardened (section 2); repo cloned; env files written (section 4); `deploy.sh --dry-run` passes | AZ | `preflight passed` |
 | T-4 d | `init-cert.sh --dry-run` on the real name, then the real certificate (DNS must already point at the VPS, or use a temporary name) | AZ | `https://` works with a valid certificate |
-| **T-2 d** | **Infrastructure ready**: full deploy of the release candidate on the production box under its real name (no pupils yet), `--seed-reference`, smoke test (section 7), ufw check (`ss -tlnp`), timers installed, external uptime checker and dead-man's-switch URLs live, a test alert delivered end to end (stop the backup timer's ping URL and see the provider mail, or `monitoring/alert.sh "test"`) | AZ | smoke test 100% pass; test alert received |
+| **T-2 d** | **Infrastructure ready**: full deploy of the release candidate on the production box under its real name (no pupils yet), `--seed-reference`, smoke test (section 7), ufw check (`ss -tlnp`), timers installed, external uptime checker and dead-man's-switch URLs live, a test alert delivered end to end (stop the backup timer's ping URL and see the provider mail, or `monitoring/alert.sh "test"`) | AZ | smoke test 100% pass; test alert received. `api.env` keeps `REGISTRATION_OPEN=false`: the smoke test expects 403 on `curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' https://$PP_DOMAIN/api/auth/register` |
 | T-2 d | First **backup + restore drill** on the production box; evidence file kept; one off-site copy restored on a scratch host | AZ | `result: PASS`, off-site copy restores |
 | **T-2 d** | **DNS TTL lowered** to 300 s (48 h before the switch) on the records that will change | LEAD | `dig` shows TTL <= 300 |
 | **T-2 d** | **Decide D-7 (SPA CSP) before go-live**: check the report-only policy in a browser on staging (video embeds, article images, audio player), then set `PP_CSP_MODE=enforce` (and `PP_CSP_IMG_HOSTS`) or record the LEAD's decision to stay on `report-only`/`off` | LEAD + frontend | decision recorded |
-| T-1 d | Load test on a staging box of the same size at 1 x and 1.5 x the expected N (section 13); decision on `THROTTLE_GLOBAL_PER_MINUTE` made (F2); CSP decision D-7 made (`PP_CSP_MODE`); error-tracking decision made (section 10); go-live checklist items 17-19 closed or waived in writing | LEAD + AZ | numbers recorded |
+| T-1 d | Load test on a staging box of the same size at 1 x and 1.5 x the expected N (section 13), with the section 20 values (`THROTTLE_GLOBAL_PER_MINUTE=3000`, edge auth 300r/m burst 120): zero 429 from one source address at the class-login wave; go-live checklist items 17-19 closed or waived in writing | LEAD + AZ | numbers recorded |
 | T-1 d | Freeze announced: no merges after the release tag; the release SHA in `deploy.sh --dry-run` equals the tag the LEAD approved | LEAD | tag recorded |
 | T-2 h | Rollback readiness: previous image tag present (`previous.tag`), disk free > 30%, last scheduled backup < 24 h old and off-site, operator awake and `sudo`-capable, on-call phone list | AZ | checklist ticked |
 | **T-1 h** | **Pre-cutover backup**: `deploy/vps/backup/backup.sh --tag pre-deploy` (dump + sha256 + off-site copy), verify the off-site copy is there; record file name and sha256 in the cutover log | AZ | file and hash recorded |
 | T-1 h | **Deploy / migrate**: `deploy/vps/deploy.sh` (confirmation typed by the LEAD's go): builds, runs the schema migrations, starts the release. Health checks pass through the edge | AZ | `deploy complete` |
-| **T0 slot** | **Half-AM migration slot**: AM runs the BE-30 orchestrator against this database (freeze window, dry-run, `--apply` with its `PP_ALLOW_MIGRATE_APPLY` / `PP_MIGRATE_TARGET_DB` guards, delta run, reconciliation). AZ keeps the API reachable only to the team (DNS not switched yet), watches `docker stats`, `logs api`, disk and `pg_stat_activity`, and **takes a second dump right after the load** (`backup.sh --tag pre-deploy`) so the migrated state is restorable. How AM runs the tooling on the VPS (for example `docker compose ... run --rm --no-deps -e PP_ALLOW_MIGRATE_APPLY=1 -e PP_MIGRATE_TARGET_DB=<db> migrate <command>` from the `migrate` image, which has the tooling) is **unverified** and agreed with AM before T-2 d | AM (runs), AZ (supports) | reconciliation green (AM's report); dump taken |
+| **T0 slot** | **Half-AM migration slot**: AM runs the BE-30 orchestrator against this database (freeze window, dry-run, `--apply` with its `PP_ALLOW_MIGRATE_APPLY` / `PP_MIGRATE_TARGET_DB` guards, delta run, reconciliation). AZ keeps the API reachable only to the team (DNS not switched yet), watches `docker stats`, `logs api`, disk and `pg_stat_activity`, and **takes a second dump right after the load** (`backup.sh --tag pre-deploy`) so the migrated state is restorable. How AM runs the tooling on the VPS (for example `docker compose ... run --rm --no-deps -e PP_ALLOW_MIGRATE_APPLY=1 -e PP_MIGRATE_TARGET_DB=<db> migrate <command>` from the `migrate` image, which has the tooling; it must add `--env-from-file /etc/pretasiplus/etl.env` so `migrate:*` run as `pp_etl`, not as the schema owner, section 3.1) is **unverified** and agreed with AM before T-2 d | AM (runs), AZ (supports) | reconciliation green (AM's report); dump taken |
 | T0 + 15 min | **Smoke test** on the real name through the edge (section 7 list), including login of a migrated account, a Bijak attempt, an upload, the throttle/XFF check from two networks, the metrics 404 | AZ + QA | all pass |
 | **T0 + 30 min** | **Go / no-go** (below). On go: **DNS switch** (change the A record to the VPS (no AAAA record); they should already be, in which case this is lifting the access restriction). Announce | LEAD | decision logged |
+| T0 + 30 min, on go | **Open self-registration** (after the DNS switch). As the deploy user, from the repo checkout: `sudoedit /etc/pretasiplus/api.env` and set `REGISTRATION_OPEN=true`; then recreate only the api: `PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag) docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env up -d --no-deps --force-recreate --wait api` (`PP_IMAGE_TAG` keeps the running release; without it compose falls back to the `prod` tag; add `--profile ...` if `PP_PROFILES` is set). Check: `curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' https://$PP_DOMAIN/api/auth/register` gives 422 (open; an empty body creates nothing) instead of 403 (closed); `/api/ready` 200. Rollback: close again with the same edit (`false`) and recreate | AZ (LEAD gives the go) | probe 422, `/api/ready` 200 |
 | T0 + 30 min to +4 h | **Monitoring watch**: the operator watches the uptime checker, the probe, `logs api | grep '"level":50'`, 429 rates, CPU and memory against the 70% / 80% lines, p95 from the edge log (`rt=`), disk growth. First 4 hours continuous, then the normal alerts | AZ | no trigger hit |
 | T0 + 1 d | Nightly backup + off-site verified; certificate renewal dry run (`certbot renew --dry-run`); capacity review against the sizing table; post-cutover drill after the first full backup | AZ | recorded |
 
@@ -603,15 +706,15 @@ Found while building this pack; AZ does not change application code.
 
 | # | Finding | For | Severity |
 |---|---|---|---|
-| F1 | **No way to create the first Admin Pusat account in production.** The demo seed is refused in production (correct), the production seed loads reference data only, and there is no bootstrap command in `apps/api`. Unless the data migration (BE-28) brings an admin, go-live has nobody who can publish papers. Needs a one-off, audited "create first admin" command (password from the environment, not the command line) or a documented migration step | backend-developer | High (go-live blocker) |
-| F2 | **`THROTTLE_GLOBAL_PER_MINUTE=300` is per client address.** A school (a class of 40 on one NAT address at about 12 requests per minute each = 480) exceeds it, and then every request from that school is 429. The login failed-attempt limit of 20 per minute per address (fixed) is similar. LEAD decision OQ1 (rate-limit numbers) must raise it for production or key signed-in routes on the user | backend-developer, LEAD | High |
+| F1 | **Default applied 22 Oct (section 20): migrated `.cloud` admins; a bootstrap command card is still needed as the fallback and for a locked-out last admin.** **No way to create the first Admin Pusat account in production.** The demo seed is refused in production (correct), the production seed loads reference data only, and there is no bootstrap command in `apps/api`. Unless the data migration (BE-28) brings an admin, go-live has nobody who can publish papers. Needs a one-off, audited "create first admin" command (password from the environment, not the command line) or a documented migration step | backend-developer | High (go-live blocker) |
+| F2 | **Default applied 22 Oct (section 20): `THROTTLE_GLOBAL_PER_MINUTE=3000`, edge auth 300r/m burst 120.** **`THROTTLE_GLOBAL_PER_MINUTE=300` is per client address.** A school (a class of 40 on one NAT address at about 12 requests per minute each = 480) exceeds it, and then every request from that school is 429. The login failed-attempt limit of 20 per minute per address (fixed) is similar. LEAD decision OQ1 (rate-limit numbers) must raise it for production or key signed-in routes on the user | backend-developer, LEAD | High |
 | F3 | Many-file multipart routes exceed the staging frontend nginx limits (`/api/` 3 MB, `/api/files` 22 MB): `POST /api/admin/audio-kbat-sets` (80 MB), `/api/intake/batches/:id/files` (220 MB), `/api/admin/screenshots` (200 MB), `/api/guru/question-papers` (101 MB), `/api/perutusan`, plus 5 MB photo routes would get 413 on the staging stack. The production edge handles them; `docker/frontend/nginx.conf` (staging) does not. Not changed here | devops (follow-up on staging), qa-engineer | Medium |
 | F4 | `REQUEST_TIMEOUT_MS=120000` covers the whole request, so a 220 MB upload must arrive within 2 minutes (about 15 Mbit/s). The runbook suggests up to 300000 for slow links; the edge already allows 300 s upstream on those routes. LEAD to decide per intake behaviour | LEAD, backend-developer | Low |
 | F5 | The API buffers multipart bodies in memory (multer memory storage): 220 MB x `INTAKE_UPLOAD_CONCURRENCY`=2 means API memory spikes of about 450 MB (included in the sizing) | backend-developer | Info |
 | F6 | `apifiles` (uploads) is not in the database dump. This pack archives it weekly; pupil photos grow it. A plan for object storage or incremental backup is a later improvement | devops | Info |
 | F7 | ClamAV: the scan code is not in the API yet (half AM). Reserved env names `CLAMAV_HOST` / `CLAMAV_PORT` | half AM (backlog #78) | High before go-live per row 43 |
-| F8 | No error tracking in the API (section 10 DECISION NEEDED) | LEAD | Decision |
-| F9 | SPA CSP decision D-7; the pack ships report-only (explicit T-2 d item in section 16) | LEAD, frontend-developer (verify the policy in a browser) | Decision |
+| F8 | No error tracking in the API (section 10). **Default A applied 22 Oct: none for 30 Oct, re-decide after week 1** | LEAD | Default applied |
+| F9 | SPA CSP decision D-7; the pack ships report-only (explicit T-2 d item in section 16). **Default applied 22 Oct: report-only at go-live** | LEAD, frontend-developer (verify the policy in a browser) | Default applied |
 
 ---
 
@@ -649,3 +752,29 @@ the edge nginx config (`nginx -t` and a live behaviour test against stub upstrea
 | `restore-drill.sh`: row-count mismatch | Writes happened between dump and check: run with the api stopped (default), not `--no-quiesce` |
 | Disk full | `docker system df`, old images (`docker image prune` keeps tagged ones in use; keep the last two releases), backup dir, Docker logs |
 | After a reboot nothing is up | `restart: unless-stopped` needs the Docker service enabled: `systemctl enable docker` |
+
+---
+
+## 20. Defaults applied on 22 Oct (LEAD may veto)
+
+The LEAD DECISION of 22 Oct 2026, 10:30 MYT (#113) told AZ-DevOps to apply the recommended defaults of this pack to
+the open items and list them, so the LEAD can veto any line. A veto is one line on #113; AZ-DevOps then changes this
+section, the example files and the checks. **The VPS size stays parameterised** (section 13) until the LEAD gives the
+specs.
+
+| # | Item | Default in force | Where it is set | What the LEAD still supplies |
+|---|---|---|---|---|
+| F1 | First Admin Pusat in production | The first Admin Pusat accounts are the **migrated `.cloud` admins** (MIG-08 load option A: `migrate:all --apply` on 29 Oct brings `admin` users with a national scope; their password hash is carried, or they must reset it). At the T-1 check (cutover plan step A10) the LEAD confirms that at least **two** active Admin Pusat accounts exist (a second one is the break-glass path for a locked-out admin) and signs in with his own. No demo seed, no raw SQL | Cutover plan (#124) A10; this runbook section 4 step 11 | His own admin account on `.cloud`. A fallback is still needed if no admin migrates, and for a locked-out last admin: a one-off, audited bootstrap/reset command (backend card, to be assigned by the LEAD) |
+| F2 | Throttle behind a school NAT | `THROTTLE_GLOBAL_PER_MINUTE=3000` (about 250 active pupils on one address at 12 requests per minute each); edge `PP_EDGE_AUTH_RATE=300r/m`, `PP_EDGE_AUTH_BURST=120` (a class of 40 signing in at once). Per-user and per-route buckets unchanged. The fixed login limit of 20 failed attempts per minute per address stays (code); it counts failures only | `api.env.example`, `.env.prod.example`, compose defaults; `deploy.sh` warns below 3000 | Nothing. The T-1 d load test confirms zero 429 |
+| Sentry | Error tracking | **A: none for 30 Oct**; re-decide after week 1 with real error volume. The probe alerts on bursts of API error lines (`PP_ALERT_API_ERRORS_5M`) | Section 10 | Nothing now |
+| CSP | SPA CSP (D-7) | **`PP_CSP_MODE=report-only`** at go-live. The T-2 d browser check still runs; switching to `enforce` is a later LEAD decision | `.env.prod.example`; section 16 T-2 d | Nothing now |
+| ClamAV | Upload scanning | Profile `clamav` **not** in `PP_PROFILES` until the #78 scan card lands (clamd would run with nothing calling it). Intake is admin-only (AZ-29 item 7, card AZ-35). The go/no-go uploads gate of section 16 stays for every other pupil or teacher upload route: #78 landed, or a dated LEAD risk-acceptance line | `.env.prod.example`; sections 15 and 16 | The risk acceptance line, if #78 is not in by 30 Oct |
+| Off-site | Off-site target | **`s3`**: an S3-compatible bucket, ideally in a Malaysian or Asia-Pacific region; a key that can write but not delete if the provider supports it; bucket lifecycle **35 days** (the erasure rule of section 9); **no object lock** and versioning off (the erasure rule and the migration clean-up of the cutover plan section 7 must be able to delete); GPG required with `PP_BACKUP_GPG_FPR` pinned; one off-site copy restored on a scratch host at T-2 d. `rsync` stays possible if the LEAD prefers a second server | `.env.prod.example` (`PP_OFFSITE_KIND` stays `none` in the example until the bucket exists) | The bucket, endpoint and key (in the backup user's aws profile, never in `prod.env`), and the GPG key pair |
+
+AI intake values (AZ-29: `AI_PROVIDER=mock`, `OCR_ENGINE=none`, intake limits KEEP, admin-only) are decided, not
+defaults: see section 3 and `docs/ops/ai-intake-production-decisions.md` (lands with #138).
+
+Also folded in here (optional G4 minors of the #116 review): the HSTS ramp now lists 604800 like
+`platform-settings.md`; `deploy.sh` refuses a `PP_HSTS` value that is not empty, `max-age=N` or
+`max-age=N; includeSubDomains`; and a failed deploy with no api container running now prints the rollback command
+instead of "nothing to roll back".

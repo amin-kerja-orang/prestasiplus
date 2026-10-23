@@ -9,6 +9,7 @@ export interface PracticeScopeQuery {
   userIds?: readonly string[]
   schoolIds?: readonly string[]
   state?: string
+  /** Needs `state` too (a district name is only unique inside its state); a district alone matches nothing. */
   district?: string
   subjectId?: string
   /** 't4' | 't5' (the level is the answer row's own dimension). */

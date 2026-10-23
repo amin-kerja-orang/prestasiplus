@@ -154,10 +154,17 @@ describe('BE-21 people security', () => {
     }
   })
 
-  it('mass assignment: role, schoolId, isActive, grade, icNumber and password in the body (or schoolId in the query) are ignored on create', async () => {
+  it('mass assignment: role, schoolId, isActive, grade, icNumber and password in the body (or schoolId in the query) are ignored on pupil create and refused on teacher create', async () => {
     const forged = { role: 'admin', roles: ['admin', 'school_admin'], schoolId: s2, school_id: s2, isActive: false, grade: 5, icNumber: '010101-01-0101', icHash: 'x', password: 'Penyerang-123', passwordHash: 'x', createdById: pupil2, mustChangePassword: false }
     const pupil = SchoolAdminPupilCreatedResultSchema.parse((await admin.post(`/admin-sekolah/pelajar?schoolId=${s2}`, { name: 'Zulaikha Ujian', email: 'zulaikha@ujian.test', ...forged })).body)
-    const teacher = SchoolAdminTeacherCreatedResultSchema.parse((await admin.post(`/admin-sekolah/guru?schoolId=${s2}`, { name: 'Rahim Ujian', email: 'rahim@ujian.test', phone: '0165554443', ...forged })).body)
+    // The teacher create body is strict (BE-33 AC1c, #97): every forged key is named in a 422 and no account is written.
+    const users = await countOf(t.db, `select count(*)::text as n from users`)
+    const refused = errorOf(await admin.post(`/admin-sekolah/guru?schoolId=${s2}`, { name: 'Rahim Ujian', email: 'rahim@ujian.test', phone: '0165554443', ...forged }), 422, 'VALIDATION_ERROR')
+    expect(Object.keys(refused.fields ?? {}).sort()).toEqual(Object.keys(forged).sort())
+    expect(refused.fields).toMatchObject({ password: 'The password field is not allowed.', schoolId: 'The schoolId field is not allowed.' })
+    expect(await countOf(t.db, `select count(*)::text as n from users`)).toBe(users)
+    // Without the forged keys the schoolId in the query is still ignored: the teacher lands in the caller's own school.
+    const teacher = SchoolAdminTeacherCreatedResultSchema.parse((await admin.post(`/admin-sekolah/guru?schoolId=${s2}`, { name: 'Rahim Ujian', email: 'rahim@ujian.test', phone: '0165554443' })).body)
     secrets.push(pupil.credential.password, teacher.credential.password)
     for (const [created, role] of [
       [pupil, 'student'],

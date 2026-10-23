@@ -24,6 +24,10 @@ export interface BatchContext {
   /** 1-based number of this batch within the entity. */
   batch: number
   mode: RunMode
+  /** Runs `undo` (best effort, errors ignored) if this batch does not commit: removes what the batch made outside the database. */
+  onRollback(undo: () => Promise<void>): void
+  /** Runs `done` (best effort, errors ignored) once this batch has committed. */
+  afterCommit(done: () => Promise<void>): void
 }
 
 /** What a step reports for a batch; omitted numbers count as 0. */
@@ -220,6 +224,9 @@ export class Runner {
             runId,
             batch: batchNo,
             mode: 'dry-run',
+            // A dry-run writes nothing outside the database and its transaction is always rolled back.
+            onRollback: () => undefined,
+            afterCommit: () => undefined,
           })
           addBatch(c, rows.length, result)
         }
@@ -245,6 +252,8 @@ export class Runner {
       const next: EntityCounters = { ...(counters[step.entity] as EntityCounters) }
       const client = await this.pool.connect()
       let released = false
+      const undo: (() => Promise<void>)[] = []
+      const done: (() => Promise<void>)[] = []
       try {
         await client.query('BEGIN')
         const result = await step.load(rows, {
@@ -255,6 +264,8 @@ export class Runner {
           runId,
           batch: batchNo,
           mode: 'apply',
+          onRollback: (fn) => void undo.push(fn),
+          afterCommit: (fn) => void done.push(fn),
         })
         addBatch(next, rows.length, result)
         await rejects.flush(client, runId)
@@ -264,10 +275,12 @@ export class Runner {
         })
         await this.ledger.saveCounters(runId, { ...counters, [step.entity]: next }, client)
         await client.query('COMMIT')
+        await Promise.allSettled(done.map((fn) => fn()))
       } catch (err) {
         rejects.clear()
         await rollbackAndRelease(client)
         released = true
+        await Promise.allSettled(undo.map((fn) => fn()))
         throw err
       } finally {
         if (!released) client.release()

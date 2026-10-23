@@ -11,7 +11,8 @@ export interface Redacted<T> {
  * Page text, taxonomy labels and structure labels go through the redactor. Page images are dropped: a masked name on a
  * text layer is still a name in the pixels of the cover page, and there is no redacting image source in this card
  * (open question in the card report), so the service sends text only. `spans` are the masked values, in memory only, for
- * `maskEchoes` on the answer (BE-38's intake workflow); they are never stored, logged or returned.
+ * `maskEchoes` on the answer (`AiExtractionService.extractPaper`); they are never stored, logged or returned. This is the
+ * one redaction of an extraction request (#189): callers hand over unredacted text and never redact it themselves.
  */
 export function redactExtractRequest(req: AiExtractRequest): Redacted<AiExtractRequest> & { spans: MaskedSpan[] } {
   const r = new Redactor()
