@@ -221,7 +221,8 @@ Every step that touches the server is the operator's, after the LEAD's go. `LEAD
 9. Schedulers: install the timers (section 9) and the probe (section 10), and logrotate (section 11).
 10. First backup and a restore drill (section 9) before any user data exists, then again after the data migration.
 11. `LEAD:` the first administrator account. Default applied 22 Oct (F1, section 20): the first Admin Pusat accounts come from the
-    `.cloud` migration (T-1 load, 29 Oct). There is still no bootstrap command; do not enable the demo seed to work around it.
+    `.cloud` migration (T-1 load, 29 Oct). If none migrates, or the last one is locked out, use the host command
+    `admin:bootstrap` (section 21, AZ-36); never enable the demo seed to work around it.
 
 ---
 
@@ -612,7 +613,7 @@ Found while building this pack; AZ does not change application code.
 
 | # | Finding | For | Severity |
 |---|---|---|---|
-| F1 | **Default applied 22 Oct (section 20): migrated `.cloud` admins; a bootstrap command card is still needed as the fallback and for a locked-out last admin.** **No way to create the first Admin Pusat account in production.** The demo seed is refused in production (correct), the production seed loads reference data only, and there is no bootstrap command in `apps/api`. Unless the data migration (BE-28) brings an admin, go-live has nobody who can publish papers. Needs a one-off, audited "create first admin" command (password from the environment, not the command line) or a documented migration step | backend-developer | High (go-live blocker) |
+| F1 | **Default applied 22 Oct (section 20): migrated `.cloud` admins; the fallback and the locked-out-last-admin path is the AZ-36 `admin:bootstrap` command (section 21).** **No way to create the first Admin Pusat account in production.** The demo seed is refused in production (correct), the production seed loads reference data only, and there is no bootstrap command in `apps/api`. Unless the data migration (BE-28) brings an admin, go-live has nobody who can publish papers. Needs a one-off, audited "create first admin" command (password from the environment, not the command line) or a documented migration step. **Closed by AZ-36:** `npm run admin:bootstrap -w @pp/api` (section 21) | backend-developer | High (go-live blocker); closed |
 | F2 | **Default applied 22 Oct (section 20): `THROTTLE_GLOBAL_PER_MINUTE=3000`, edge auth 300r/m burst 120.** **`THROTTLE_GLOBAL_PER_MINUTE=300` is per client address.** A school (a class of 40 on one NAT address at about 12 requests per minute each = 480) exceeds it, and then every request from that school is 429. The login failed-attempt limit of 20 per minute per address (fixed) is similar. LEAD decision OQ1 (rate-limit numbers) must raise it for production or key signed-in routes on the user | backend-developer, LEAD | High |
 | F3 | Many-file multipart routes exceed the staging frontend nginx limits (`/api/` 3 MB, `/api/files` 22 MB): `POST /api/admin/audio-kbat-sets` (80 MB), `/api/intake/batches/:id/files` (220 MB), `/api/admin/screenshots` (200 MB), `/api/guru/question-papers` (101 MB), `/api/perutusan`, plus 5 MB photo routes would get 413 on the staging stack. The production edge handles them; `docker/frontend/nginx.conf` (staging) does not. Not changed here | devops (follow-up on staging), qa-engineer | Medium |
 | F4 | `REQUEST_TIMEOUT_MS=120000` covers the whole request, so a 220 MB upload must arrive within 2 minutes (about 15 Mbit/s). The runbook suggests up to 300000 for slow links; the edge already allows 300 s upstream on those routes. LEAD to decide per intake behaviour | LEAD, backend-developer | Low |
@@ -670,7 +671,7 @@ specs.
 
 | # | Item | Default in force | Where it is set | What the LEAD still supplies |
 |---|---|---|---|---|
-| F1 | First Admin Pusat in production | The first Admin Pusat accounts are the **migrated `.cloud` admins** (MIG-08 load option A: `migrate:all --apply` on 29 Oct brings `admin` users with a national scope; their password hash is carried, or they must reset it). At the T-1 check (cutover plan step A10) the LEAD confirms that at least **two** active Admin Pusat accounts exist (a second one is the break-glass path for a locked-out admin) and signs in with his own. No demo seed, no raw SQL | Cutover plan (#124) A10; this runbook section 4 step 11 | His own admin account on `.cloud`. A fallback is still needed if no admin migrates, and for a locked-out last admin: a one-off, audited bootstrap/reset command (backend card, to be assigned by the LEAD) |
+| F1 | First Admin Pusat in production | The first Admin Pusat accounts are the **migrated `.cloud` admins** (MIG-08 load option A: `migrate:all --apply` on 29 Oct brings `admin` users with a national scope; their password hash is carried, or they must reset it). At the T-1 check (cutover plan step A10) the LEAD confirms that at least **two** active Admin Pusat accounts exist (a second one is the break-glass path for a locked-out admin) and signs in with his own. No demo seed, no raw SQL | Cutover plan (#124) A10; this runbook section 4 step 11 | His own admin account on `.cloud`. The fallback, if no admin migrates or the last admin is locked out, is the audited host command `admin:bootstrap` (AZ-36, section 21) |
 | F2 | Throttle behind a school NAT | `THROTTLE_GLOBAL_PER_MINUTE=3000` (about 250 active pupils on one address at 12 requests per minute each); edge `PP_EDGE_AUTH_RATE=300r/m`, `PP_EDGE_AUTH_BURST=120` (a class of 40 signing in at once). Per-user and per-route buckets unchanged. The fixed login limit of 20 failed attempts per minute per address stays (code); it counts failures only | `api.env.example`, `.env.prod.example`, compose defaults; `deploy.sh` warns below 3000 | Nothing. The T-1 d load test confirms zero 429 |
 | Sentry | Error tracking | **A: none for 30 Oct**; re-decide after week 1 with real error volume. The probe alerts on bursts of API error lines (`PP_ALERT_API_ERRORS_5M`) | Section 10 | Nothing now |
 | CSP | SPA CSP (D-7) | **`PP_CSP_MODE=report-only`** at go-live. The T-2 d browser check still runs; switching to `enforce` is a later LEAD decision | `.env.prod.example`; section 16 T-2 d | Nothing now |
@@ -702,7 +703,7 @@ sends mail: the API binds only the logging mail port, and `deploy.sh` refuses `M
   reset links. `LEAD:` both values. The WhatsApp number is the same one as AM-16 S3, due by 29 Oct.
 - **Hours:** during hypercare (30 Oct to 6 Nov), every school day from 07:00 to 18:00 MYT, plus the cutover night. After
   that, office hours. Expect a spike in reset requests after the cutover: migrated accounts whose old password could
-  not be carried have no usable password and must reset (cutover plan, section 4.5).
+  not be carried have no usable password and must reset (section 20, row F1).
 - **Gap (finding F10 below):** the in-app help box (`GET /api/config/support`) reads the `support_config` row. Only the
   demo seed writes that row. There is no admin screen for it and the migration does not load it, so on production the
   help box returns `NOT_FOUND` until a reference path exists. Until then the contact appears in the school guide
@@ -726,6 +727,10 @@ Rules for the Meja Bantuan:
 - **Records:** each request becomes one support ticket line: date, role, school, which path was used and who did it.
   No IC, no password and no pupil name in GitHub.
 - **Abuse:** many requests for one account, or a caller who cannot be checked, means no reset. Tell the LEAD.
+- **Admin-level resets** (school admin and Admin Pusat accounts): call back only on a number from an independent
+  record (the school's official number, or the team's own contact list), never on a number the caller gives. A
+  second team member approves before the one-time password is issued, and the account holder is told afterwards on a
+  different channel, so an unexpected reset is noticed.
 
 ### Locked-out last Admin Pusat
 
@@ -735,16 +740,14 @@ deactivate the second one.
 **If no Admin Pusat can sign in:**
 
 1. **Reset Melalui No IC**, if that admin account has an e-mail and IC on record.
-2. **Otherwise, the LEAD on the host uses the documented admin bootstrap or reset path.** This is a one-off, audited
-   command in the `migrate` image, run as `ppdeploy` with the LEAD's confirmation:
-   - `docker compose ... run --rm --no-deps migrate npm run <command> -w @pp/api`;
-   - it reads the e-mail and the new password from a root-only (mode 600) file, never from the command line or chat;
-   - it stores an argon2id hash, sets "must change password", ends that account's sessions and writes an `audit_events`
-     row;
-   - delete the file right after the run.
-
-   **Status: this command does not exist yet.** It is the same backend card as the F1 fallback (section 20), and the
-   LEAD assigns it. Until it lands, prevention is the only safe path.
+2. **Otherwise, the LEAD on the host runs `admin:bootstrap --mode=reset`** (AZ-36, the subsection "Admin Pusat
+   bootstrap/reset command" below). It is a one-off, audited command in the `migrate` image, run as `ppdeploy`:
+   - the password comes from a hidden prompt (or, with no terminal, a one-line `ppdeploy`-owned mode 600 file removed
+     with `shred -u`), never from the command line or chat;
+   - it stores an argon2id hash, sets "must change password", ends that account's sessions and writes an
+     `audit_events` row;
+   - a second person (another team member on the call) witnesses the run, and the run is logged as in step 4.
+   If no Admin Pusat exists at all (none migrated), the same command with `--mode=create` makes the first one.
 3. **Never**, not even in an emergency:
    - a raw SQL write of `password_hash` (or any other column of `users`);
    - copying a hash from another account;
@@ -758,13 +761,28 @@ deactivate the second one.
 | # | Finding | For | Severity |
 |---|---|---|---|
 | F10 | `support_config` (help-box e-mail and WhatsApp) has no production write path: it is written by the demo seed only, there is no admin endpoint, and the ETL does not load it. On production `GET /api/config/support` is `NOT_FOUND`. It needs a reference seed reading two non-secret env values, or an admin write endpoint (a contract change, so a LEAD decision) | backend-developer (BE-24 owner), LEAD | Medium (go-live: the contact is only in the school guide) |
-| F11 | No admin bootstrap or reset command (F1 fallback, locked-out last Admin Pusat) | backend-developer, LEAD assigns | High (until two active Admin Pusat accounts are confirmed) |
+| F11 | No admin bootstrap or reset command (F1 fallback, locked-out last Admin Pusat). **Closed by AZ-36:** `npm run admin:bootstrap -w @pp/api` is on `feature/v2-backend` (`apps/api/src/ops/admin-bootstrap/`); it is usable on the host once that release's `migrate` image is deployed | backend-developer | High; closed |
+| F12 | **Reset Melalui No IC** (`POST /api/auth/password/reset-ic`) has no role check: any active account with an e-mail and IC on record, an Admin Pusat included, gets a reset token back from its e-mail address and IC number alone. IC numbers are semi-public, and an Admin Pusat has no school admin to notify. Options: refuse the IC path for `admin` accounts (a code change), or keep it and rely on the e-mail factor plus the throttle | backend-developer, LEAD decides | Medium |
 
 ### Admin Pusat bootstrap/reset command (AZ-36, added 22 Oct)
 
-This is the command that step 2 of "Locked-out last Admin Pusat" and the F1 fallback (section 20) refer to. It closes
-F11 once the AZ-36 PR is merged and in the deployed `migrate` image. The "Status: this command does not exist yet" note
-above stays true until then.
+This is the command that step 2 of "Locked-out last Admin Pusat" and the F1 fallback (section 20) refer to
+(`apps/api/src/ops/admin-bootstrap/`, script `admin:bootstrap` of `@pp/api`). It closes F11. It runs on the host only,
+inside the `migrate` image (which carries the sources and `tsx`); the API never imports it, so there is no HTTP route
+to it. Flags:
+
+| Flag | Meaning |
+|---|---|
+| `--mode=create` or `--mode=reset` | Required. `create` makes the first Admin Pusat; `reset` gives a locked-out last Admin Pusat a new password |
+| `--email=<e-mail>` | Required. Stored and compared in lower case |
+| `--confirm=<same e-mail>` | Required. Must repeat `--email` (case does not matter); the explicit confirmation |
+| `--name="<display name>"` | `create` only; default "Admin Pusat" |
+| `--reactivate` | `reset` only: also makes an inactive or suspended account active again |
+| `--password-stdin` | Read the password from standard input (a file), not from the hidden prompt |
+| `--help` | Print the usage |
+
+Exit codes: 0 done, 1 failed (database error, nothing committed), 2 usage or confirmation problem, 3 refused by the
+database state (nothing written). A password is never accepted as an argument: any password-like flag stops it.
 
 - **What it does.** Everything happens in one transaction, under the same lock as the users module's last-admin guard:
   - an argon2id hash (the same parameters as login);
