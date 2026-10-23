@@ -83,9 +83,14 @@ describe('BE-33 AC8: logs hold no secrets across login, password reset and uploa
       expect(secret.length).toBeGreaterThanOrEqual(8)
       expect(all, `logs contain a secret starting ${secret.slice(0, 4)}`).not.toContain(secret)
     }
-    // No bare 12-digit IC. Request ids are UUIDs whose last group can be 12 decimal digits (~0.4% each), so UUIDs are
-    // removed for this one check only; an IC is never written in UUID form.
-    expect(all.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<uuid>')).not.toMatch(/(?<!\d)\d{12}(?!\d)/)
+    // No bare 12-digit IC. Request ids are UUIDs whose last group can be 12 decimal digits (~0.4% each), and the upload's
+    // random multipart boundary (24 hex characters, in the logged content-type header) holds a run of 12 decimal digits
+    // in roughly 1 run in 25. Both are removed for this one check only; an IC is never written in either form.
+    expect(
+      all
+        .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<uuid>')
+        .replace(/boundary=-*[0-9a-z]+/gi, 'boundary=<b>'),
+    ).not.toMatch(/(?<!\d)\d{12}(?!\d)/)
     expect(all).not.toMatch(/\b\d{6}-\d{2}-\d{4}\b/)
     expect(all).not.toMatch(/\$argon2|\$2[aby]\$/)
     // No cookie header values, request or response.
