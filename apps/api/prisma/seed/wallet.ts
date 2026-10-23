@@ -1,5 +1,5 @@
 /**
- * Wallet seed (BE-11, M14 core): the tier catalogue and the demo wallets, ledgers and streaks of the demo
+ * Wallet seed (BE-11, M14 core): the demo wallets, ledgers and streaks of the demo
  * accounts that have wallet data in the frontend mock. Demo kind: refused in production unless
  * ALLOW_DEMO_SEED (the demo gate, as BE-07 and BE-25). Fictitious data only.
  *
@@ -17,6 +17,9 @@
  *    several days and the idempotency key must be unique per user, source and source id;
  *  - `total_days` of the designed streaks is 0, as SRS M14 section 6.11.7 fixes (the replay counts 3);
  *  - session_credits are not seeded: they need practice sessions (BE-12).
+ *
+ * The tier catalogue is also REFERENCE data (`core/wallet-tiers.ts`, P11-B1), which runs earlier in every environment;
+ * the tier upsert below, by the same key, is then a no-op in a demo run and keeps this seed working when run alone.
  *
  * Idempotent: tiers are upserted by `tier_name` and an existing tier is left as it is; a user that already has
  * a wallet row (seeded earlier, or loaded by the migration) is left untouched, so a re-run never doubles a
@@ -68,7 +71,7 @@ export const WALLET_TIERS = [
 ] as const
 
 /** Reward rates shared by the four seeded tiers (mock `rewards` and `games`). */
-const TIER_REWARDS = {
+export const TIER_REWARDS = {
   quizRewardL1: 1,
   quizRewardL2: 2,
   quizRewardL3: 3,
