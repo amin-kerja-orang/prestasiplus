@@ -32,8 +32,8 @@ Fixes for findings in `docs/qa/audit-sistem/BIJAK-SPM-AUDIT-REPORT.md` (branch `
 | FB-019 | §10.5 F9 | Fast | In progress | | Sticky form bar covers the last fields on create/edit forms. | |
 | FB-020 | §10.5 F10, §10.3 #15 | Fast | In progress | | Phone truncation: stat labels ("Jumlah ke…"), clipped input values, two-line pill. | |
 | FB-021 | §10.3 #8 | Fast | In progress | | Phone review action bar on `/admin/spm/semakan/:key` floats over the answer scheme with no bar background. | |
-| FB-022 | §6 P9, AC-22.4 / R26 | Fast | In progress | | Admin Bijak routes redirect a non-admin to its landing instead of 403. | |
-| FB-023 | §9 #14, §12 #12 | Fast | In progress | | Bank stat total 79 vs subject counts 61 + 7 + 4 = 72. | |
+| FB-022 | §6 P9, AC-22.4 / R26 | Fast | Fixed | fabef0bd | Admin Bijak routes (11, routes/admin-papers.ts and admin-intake.ts) carry onForbidden '403': a student/teacher/parent typing the URL gets the in-place 403; a guest goes to /login. Security review: Pass. Known for the real backend: the mock admin API has no role check (route guard only). |  |
+| FB-023 | §9 #14, §12 #12 | Fast | Fixed | 8428de2f | Cause: the total counted every status (72 Terbit + 7 menunggu semakan = 79) while subject cards count Terbit only. Total is now the Terbit count; the card sub reads "72 Terbit · 7 menunggu semakan". |  |
 | FB-024 | §10.3 #9-14, #16 | Fast | Need-info | | Judgement calls (form intro alignment, stat row 24 px short, ghost buttons in light, drop zone border, ekstrak filter bar, Tag DSKP indent, sidebar footer/ring). Not defects by the report. | Nak aku baiki juga item kosmetik ini (#9-14, #16), atau biar dulu? |
 | FB-025 | §10.3 #17 | Fast | Need-info | | "Download Template" / "Template CSV" in English on `/admin/questions/import` (legacy .my replica, M04). | Halaman ini tiruan .my. Kalau di .my pun tertulis bahasa Inggeris, aku kekalkan (fideliti). Nak tukar ke BM juga? |
 | FB-026 | §13 (all), §3 #19-22 | Full | Planned | | See proposal P-026. | See P-026 questions. |
