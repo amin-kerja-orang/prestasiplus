@@ -208,7 +208,7 @@ describe('S1 GuruDashboardPage', () => {
 })
 
 describe('S1 route and header', () => {
-  it('registers /guru for the teacher only in the user shell', async () => {
+  it('registers /guru for teacher and admin in the user shell (mock mode)', async () => {
     const { default: routes } = await import('../../routes/dashboard')
     expect(routes).toHaveLength(1)
     const r = routes[0]!
@@ -216,9 +216,20 @@ describe('S1 route and header', () => {
     expect(r.meta).toMatchObject({
       layout: 'user',
       access: 'auth',
-      roles: ['teacher'],
+      roles: ['teacher', 'admin'],
       title: 'Dashboard Guru - PRESTASIPLUS',
     })
+  })
+
+  it('registers /guru for the teacher only in http mode (DV-M10-37)', async () => {
+    vi.resetModules()
+    vi.stubEnv('VITE_API_MODE', 'http')
+    try {
+      const { default: routes } = await import('../../routes/dashboard')
+      expect(routes[0]!.meta?.roles).toEqual(['teacher'])
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('builds the "Selamat datang, {nama} 👩‍🏫" subtitle', () => {
