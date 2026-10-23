@@ -81,8 +81,8 @@ step all-apply "$RDB" exec target -- env PP_ALLOW_MIGRATE_APPLY=1 npm run migrat
 # A1.10 verify. Expect: exit 0, "verify pass: ..."
 step verify "$RDB" exec target -- npm run migrate:verify -w @pp/api
 
-# A1.11 evidence queries: paste the q commands of A1.11 (a), (b), (c) and (e) as written ((d) is optional). Expect: 5 runs (the A1.8 core dry-run, then core and activity dry-run and apply of A1.9),
-#   rejects by reason, the third reject query empty, reject % per entity within its threshold (content entities empty: expected), git_sha = the short sha of A1.0
+# A1.11 evidence queries: paste the q commands of A1.11 (a), (b), (c), (e), (f) and (g) as written ((d) is optional). Expect: 5 runs (the A1.8 core dry-run, then core and activity dry-run and apply of A1.9),
+#   rejects by reason, the third reject query empty, reject % per entity within its threshold (content entities empty: expected), git_sha = the short sha of A1.0, (f) and (g) counts recorded (no threshold)
 # A1.12 snapshot. Expect: "snapshot 'after_full' created ...", exit 0
 step snap-after_full "$RDB" snapshot after_full
 
@@ -293,7 +293,7 @@ step analyze q "ANALYZE"      # planner statistics for the staged tables (n_live
 For the ndjson route `stage` only copies the two schemas (`pg_dump -Fc -n staging_cloud -n archive_cloud | pg_restore`) after dropping old copies in the target.
 Expect: first `NOTICE:  schema "staging_cloud" does not exist, skipping` and the same for `archive_cloud` (harmless: there is no old copy to drop), then `STAGE COPY PASSED: <b> tables (staging_cloud + archive_cloud) now in <db>`; `[time] stage-copy: <s>s`. Exit 0. The query returns `archive_cloud|35` and `staging_cloud|83` (runbook 12 step 1; `slot.sh` expects the same). Any other number: red (the staging spec and the dump disagree).
 
-Then `ANALYZE` (the `step analyze` line). The stage copy leaves no planner statistics (`n_live_tup` = 0 in the profile), so the ETL queries can pick unstable plans. `ANALYZE` of the whole database covers `staging_cloud`, `archive_cloud` and the v2 tables; it writes statistics only, no rows. It runs before the `pre_etl` snapshot, so the snapshot keeps them. Statistics of the v2 targets after the core apply would need a run between the stages of `migrate:all`, which the command does not offer (it runs core and activity back to back); that is a proposed code change, not an operator step. Night analogue: after B5 `S copy`, before B6.
+Then `ANALYZE` (the `step analyze` line). The stage copy leaves no planner statistics (`n_live_tup` = 0 for the copied tables, seen in `pg_stat_user_tables` in the 23 Oct dress run; `staging:profile` does not read it), so the ETL queries can pick unstable plans. `ANALYZE` of the whole database covers `staging_cloud`, `archive_cloud` and the v2 tables; it writes statistics only, no rows. It runs before the `pre_etl` snapshot, so the template snapshot `pre_etl` keeps them; the `--dump` snapshot `pre_etl_d` does not (a restore from a dump needs `ANALYZE` again). Statistics of the v2 targets after the core apply would need a run between the stages of `migrate:all`, which the command does not offer (it runs core and activity back to back); that is a proposed code change, not an operator step. Night analogue: after B5 `S copy`, before B6, as a **proposed night step: plan B5/B6 and `slot.sh` have no `ANALYZE` (Perlu pengesahan, LEAD / half AZ; A4 sheet T11a)**.
 
 Record: seconds; the two counts; the `ANALYZE` seconds.
 
@@ -391,7 +391,7 @@ q "select c.entity, c.source_count, c.rejected, round(100.0 * c.rejected / nulli
 q "select count(*) filter (where must_reset_password) as flagged, count(*) as migrated from public.users where legacy_source = 'cloud'"
 ```
 
-The reasons come from `transform/secrets.ts` (`decidePassword`: `non_bcrypt`, `shared_default`, `roster_account`; one account can have several). `migrate:all` does not print them; the standalone `migrate:core` prints them as `note must_reset.<reason>: <n>` lines, so read them from the O5 scout if it runs (copy only those `note` lines, never the `ids <note>:` lists). Post line: `forced-change accounts: <flagged> of <migrated> (<pct> %), by reason non_bcrypt <n>, shared_default <n>, roster_account <n> (or "reasons: O5 not run")`. On the anonymised dump every password is a dummy hash, so `non_bcrypt` and the total may differ from the real night; `roster_account` (a username and no e-mail) carries over.
+The reasons come from `transform/secrets.ts` (`decidePassword`: `non_bcrypt`, `shared_default`, `roster_account`; one account can have several). `migrate:all` does not print them until Q10 (`be/AM-Q10-roster-report`) merges; the standalone `migrate:core` prints them as `note must_reset.<reason>: <n>` lines, so read them from the O5 scout if it runs (copy only those `note` lines, never the `ids <note>:` lists). Post line: `forced-change accounts: <flagged> of <migrated> (<pct> %), by reason non_bcrypt <n>, shared_default <n>, roster_account <n> (or "reasons: O5 not run")`. On the anonymised dump every password is a dummy hash, so `non_bcrypt` and the total may differ from the real night; `roster_account` (a username and no e-mail) carries over.
 
 (f) Usernames shared by more than one migrated account (input to #226 F1, AM1-3 6367326305; counts only). The login looks a username up case-insensitively over **all** accounts (`account.repository.ts` `findLoginCandidates`: `lower(username) = lower(<id>)`, no school given), and answers `AMBIGUOUS_USERNAME` only when the same password also fits several of them (`auth.service.ts`), so this count is an upper bound of the accounts that can hit it, for example roster accounts that share a default password:
 
