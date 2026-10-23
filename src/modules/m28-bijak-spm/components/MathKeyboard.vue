@@ -1,92 +1,136 @@
 <script setup lang="ts">
 /**
- * On-screen maths keyboard (US-09): fraction, power, root, pi, plus-minus, times, divide,
- * brackets, x / y, digits. Keys are 44 px and tab-reachable buttons; they insert LaTeX at the
- * caret of the field that owns the keyboard.
+ * On-screen maths keypad laid out like the Casio fx-570 / fx-991 SPM students use (US-09): a
+ * function area on top (layer "Fungsi": fraction, root, powers, trig, log; layer "Simbol": x, y,
+ * comma, %, ±, inequalities, =; both over `( ) π °` and a layer key) above a number block
+ * (7 8 9 DEL AC / 4 5 6 × ÷ / 1 2 3 + − / 0 . ×10ˣ cursor). Keys are tab-reachable buttons; they
+ * insert friendly notation at the caret of the field that owns the keypad. The key map lives in
+ * `lib/math-keys.ts`.
  */
-export interface KeyPress {
-  insert?: string
-  /** Caret offset inside the inserted text (default: its end). */
-  cursor?: number
-  action?: 'backspace' | 'left' | 'right'
-}
+import { ref } from 'vue'
 
-interface Key {
-  id: string
-  label: string
-  aria: string
-  insert?: string
-  cursor?: number
-  action?: KeyPress['action']
-  tone?: 'math' | 'num' | 'act'
-}
+import {
+  FUNCTION_ROWS,
+  type KeyPress,
+  type KeyTone,
+  type MathKey,
+  NUMBER_ROWS,
+  SHARED_KEYS,
+  SYMBOL_ROWS,
+} from '../lib/math-keys'
 
-const KEYS: Key[] = [
-  { id: 'frac', label: 'a/b', aria: 'Pecahan', insert: '()/()', cursor: 1, tone: 'math' },
-  { id: 'pow', label: 'xⁿ', aria: 'Kuasa', insert: '^()', cursor: 2, tone: 'math' },
-  { id: 'sq', label: 'x²', aria: 'Kuasa dua', insert: '^2', tone: 'math' },
-  { id: 'sqrt', label: '√', aria: 'Punca kuasa dua', insert: '√()', cursor: 2, tone: 'math' },
-  { id: 'pi', label: 'π', aria: 'Pi', insert: 'π', tone: 'math' },
-  { id: 'pm', label: '±', aria: 'Tambah atau tolak', insert: '±', tone: 'math' },
-  { id: '7', label: '7', aria: '7', insert: '7', tone: 'num' },
-  { id: '8', label: '8', aria: '8', insert: '8', tone: 'num' },
-  { id: '9', label: '9', aria: '9', insert: '9', tone: 'num' },
-  { id: 'times', label: '×', aria: 'Darab', insert: '×', tone: 'math' },
-  { id: 'div', label: '÷', aria: 'Bahagi', insert: '÷', tone: 'math' },
-  { id: 'back', label: '⌫', aria: 'Padam', action: 'backspace', tone: 'act' },
-  { id: '4', label: '4', aria: '4', insert: '4', tone: 'num' },
-  { id: '5', label: '5', aria: '5', insert: '5', tone: 'num' },
-  { id: '6', label: '6', aria: '6', insert: '6', tone: 'num' },
-  { id: 'plus', label: '+', aria: 'Tambah', insert: '+', tone: 'math' },
-  { id: 'minus', label: '−', aria: 'Tolak', insert: '-', tone: 'math' },
-  { id: 'left', label: '◀', aria: 'Kursor ke kiri', action: 'left', tone: 'act' },
-  { id: '1', label: '1', aria: '1', insert: '1', tone: 'num' },
-  { id: '2', label: '2', aria: '2', insert: '2', tone: 'num' },
-  { id: '3', label: '3', aria: '3', insert: '3', tone: 'num' },
-  { id: 'lp', label: '(', aria: 'Kurungan buka', insert: '(', tone: 'math' },
-  { id: 'rp', label: ')', aria: 'Kurungan tutup', insert: ')', tone: 'math' },
-  { id: 'right', label: '▶', aria: 'Kursor ke kanan', action: 'right', tone: 'act' },
-  { id: '0', label: '0', aria: '0', insert: '0', tone: 'num' },
-  { id: 'dot', label: '.', aria: 'Titik perpuluhan', insert: '.', tone: 'num' },
-  { id: 'x', label: 'x', aria: 'Pemboleh ubah x', insert: 'x', tone: 'math' },
-  { id: 'y', label: 'y', aria: 'Pemboleh ubah y', insert: 'y', tone: 'math' },
-  { id: 'eq', label: '=', aria: 'Sama dengan', insert: '=', tone: 'math' },
-  { id: 'lt', label: '<', aria: 'Kurang daripada', insert: '<', tone: 'math' },
-  { id: 'gt', label: '>', aria: 'Lebih daripada', insert: '>', tone: 'math' },
-  { id: 'le', label: '≤', aria: 'Kurang daripada atau sama dengan', insert: '≤', tone: 'math' },
-  { id: 'ge', label: '≥', aria: 'Lebih daripada atau sama dengan', insert: '≥', tone: 'math' },
-  { id: 'percent', label: '%', aria: 'Peratus', insert: '%', tone: 'math' },
-  { id: 'comma', label: ',', aria: 'Koma', insert: ', ', tone: 'math' },
-]
+export type { KeyPress }
 
 defineProps<{ label: string }>()
 const emit = defineEmits<{ press: [KeyPress]; close: [] }>()
 
-function press(k: Key): void {
+const symbols = ref(false)
+
+type ButtonColor = 'primary' | 'neutral' | 'warning'
+type ButtonVariant = 'soft' | 'solid' | 'subtle'
+/** Tone of a key: function and symbol keys are primary-tinted, operators solid, DEL / AC warning. */
+const TONE: Record<KeyTone, { color: ButtonColor; variant: ButtonVariant }> = {
+  fn: { color: 'primary', variant: 'soft' },
+  sci: { color: 'primary', variant: 'soft' },
+  sym: { color: 'primary', variant: 'soft' },
+  num: { color: 'neutral', variant: 'subtle' },
+  op: { color: 'primary', variant: 'solid' },
+  del: { color: 'warning', variant: 'soft' },
+  nav: { color: 'neutral', variant: 'soft' },
+}
+
+function press(k: MathKey): void {
   emit('press', k.action ? { action: k.action } : { insert: k.insert, cursor: k.cursor })
 }
 </script>
 
 <template>
   <div
-    class="grid grid-cols-7 gap-1 rounded-card bg-muted p-2"
+    class="mx-auto flex w-full max-w-md flex-col gap-1 rounded-card bg-accented p-1.5 sm:gap-1.5 sm:p-2"
     role="group"
     :aria-label="label"
     data-testid="math-keyboard"
     @keydown.esc.stop="emit('close')"
   >
-    <UButton
-      v-for="k in KEYS"
-      :key="k.id"
-      type="button"
-      :color="k.tone === 'math' ? 'primary' : 'neutral'"
-      variant="soft"
-      class="min-h-11 justify-center rounded-xl text-body font-semibold"
-      :aria-label="k.aria"
-      :data-key="k.id"
-      @mousedown.prevent
-      @click="press(k)"
-      >{{ k.label }}</UButton
+    <div
+      class="flex flex-col gap-1 sm:gap-1.5"
+      :data-testid="symbols ? 'math-area-simbol' : 'math-area-fungsi'"
     >
+      <div
+        v-for="(row, r) in symbols ? SYMBOL_ROWS : FUNCTION_ROWS"
+        :key="`${symbols}-${r}`"
+        class="grid grid-cols-5 gap-1 sm:gap-1.5"
+      >
+        <UButton
+          v-for="k in row"
+          :key="k.id"
+          type="button"
+          :color="TONE[k.tone].color"
+          :variant="TONE[k.tone].variant"
+          class="min-h-11 w-full min-w-0 justify-center rounded-xl px-0 text-label learner:min-h-11 learner:rounded-xl learner:px-0 learner:text-label"
+          :aria-label="k.aria"
+          :data-key="k.id"
+          @mousedown.prevent
+          @click="press(k)"
+        >
+          <span
+            v-if="k.id === 'frac'"
+            class="flex flex-col items-center gap-0.5"
+            aria-hidden="true"
+          >
+            <span class="size-2 rounded-none bg-primary-t opacity-60" />
+            <span class="h-0.5 w-4 bg-primary-t" />
+            <span class="size-2 rounded-none bg-primary-t opacity-60" />
+          </span>
+          <template v-else>{{ k.label }}</template>
+        </UButton>
+      </div>
+      <div class="grid grid-cols-5 gap-1 sm:gap-1.5">
+        <UButton
+          v-for="k in SHARED_KEYS"
+          :key="k.id"
+          type="button"
+          :color="TONE[k.tone].color"
+          :variant="TONE[k.tone].variant"
+          class="min-h-11 w-full min-w-0 justify-center rounded-xl px-0 text-label learner:min-h-11 learner:rounded-xl learner:px-0 learner:text-label"
+          :aria-label="k.aria"
+          :data-key="k.id"
+          @mousedown.prevent
+          @click="press(k)"
+          >{{ k.label }}</UButton
+        >
+        <UButton
+          type="button"
+          color="neutral"
+          variant="subtle"
+          class="min-h-11 w-full min-w-0 justify-center rounded-xl px-0 text-caption learner:min-h-11 learner:rounded-xl learner:px-0 learner:text-caption"
+          :aria-label="symbols ? 'Papar kekunci fungsi' : 'Papar kekunci simbol'"
+          data-key="layer"
+          data-testid="math-layer"
+          @mousedown.prevent
+          @click="symbols = !symbols"
+          >{{ symbols ? 'Fungsi' : 'Simbol' }}</UButton
+        >
+      </div>
+    </div>
+
+    <div class="mt-1 flex flex-col gap-1 sm:gap-1.5" data-testid="math-area-number">
+      <div v-for="(row, r) in NUMBER_ROWS" :key="r" class="grid grid-cols-5 gap-1 sm:gap-1.5">
+        <UButton
+          v-for="k in row"
+          :key="k.id"
+          type="button"
+          :color="TONE[k.tone].color"
+          :variant="TONE[k.tone].variant"
+          class="min-h-11 w-full min-w-0 justify-center rounded-xl px-0 sm:min-h-12 md:min-h-14 learner:min-h-11 learner:rounded-xl learner:px-0 sm:learner:min-h-12 md:learner:min-h-14"
+          :class="k.tone === 'num' || k.tone === 'op' ? 'text-heading' : 'text-label'"
+          :aria-label="k.aria"
+          :data-key="k.id"
+          @mousedown.prevent
+          @click="press(k)"
+          >{{ k.label }}</UButton
+        >
+      </div>
+    </div>
   </div>
 </template>
