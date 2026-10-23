@@ -181,7 +181,10 @@ export interface BankRow {
 }
 
 export interface BankStats {
+  /** Terbit questions: equals the sum of `bySubject[].terbit`. */
   total: number
+  /** Questions of every subject waiting for review (not part of `total`). */
+  semakan: number
   bySubject: {
     code: SubjectCode
     name: string

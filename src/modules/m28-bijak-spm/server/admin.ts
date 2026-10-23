@@ -894,8 +894,11 @@ export class AdminOps {
   async bankStats(): Promise<BankStats> {
     await this.host.tick()
     const rows = this.allQuestionIds().map((id) => this.bankRow(id))
+    // "Jumlah soalan" is the Terbit bank (what the list shows by default and what the subject cards
+    // count); questions still in review are reported on their own, never added into the total.
     return {
-      total: rows.length,
+      total: rows.filter((r) => r.status === 'terbit').length,
+      semakan: rows.filter((r) => r.status === 'semakan').length,
       bySubject: SUBJECTS.map((s) => {
         const mine = rows.filter((r) => r.subject === s.code)
         const n = (st: QuestionStatus) => mine.filter((r) => r.status === st).length

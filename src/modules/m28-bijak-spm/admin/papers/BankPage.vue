@@ -71,6 +71,7 @@ const kpi = computed<StatItem[]>(() => {
       key: 'total',
       label: 'Jumlah soalan',
       value: s.total,
+      sub: `${s.total} Terbit · ${s.semakan} menunggu semakan`,
       icon: 'books',
       active: !applied.value.subject,
       onClick: () => pick(''),
