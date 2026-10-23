@@ -190,7 +190,8 @@ copy is a `RAW RETENTION OVERDUE` warning and it exits 1. It runs:
 - **`deploy/vps/migration/pitr.sh`:**
   - `status`: the archiver counters, size and base backups, then `restore-point.sh raw-check`;
   - `base`: `pg_basebackup -Ft -z -X none` into `/walarchive/base/<UTC>`;
-  - `restore-test --target-time`: replays into a scratch container with no network, prints the counts, and destroys
+  - `restore-test --target-time`: replays into a scratch container with no network (same `max_connections` as
+    production, which recovery requires), prints the counts, and destroys
     it;
   - `cleanup --keep-from <base>`: `pg_archivecleanup`, plus removal of the older base backups.
   - `--base` and `--keep-from` take only a stamp of the form `20261030T010000Z`.

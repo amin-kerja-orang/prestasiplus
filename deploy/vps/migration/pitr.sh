@@ -105,11 +105,15 @@ cmd_restore_test() {
       echo "recovery_target_action = '"'"'promote'"'"'"
       echo "archive_mode = off"; } >> /scratch/data/postgresql.auto.conf
     chown -R 70:70 /scratch/data && chmod 700 /scratch/data' sh "$base" "$target"
-  local dbu dbn
+  local dbu dbn maxc
   dbu="$(pp_env_value "$PP_ENV_DIR/db.env" POSTGRES_USER)"; dbn="$(pp_env_value "$PP_ENV_DIR/db.env" POSTGRES_DB)"
   # No network, archive read-only, the copied pg_hba keeps local-socket trust from initdb: no password is needed.
+  # Production passes max_connections on its command line (compose.prod.yaml), so the base backup's config files do
+  # not carry it; recovery refuses a lower value than the primary's, so the scratch server gets the same one.
+  maxc="$(pp_cfg PP_PG_MAX_CONNECTIONS 100)"
+  [[ "$maxc" =~ ^[0-9]{1,5}$ ]] || pp_die "PP_PG_MAX_CONNECTIONS must be a number" 2
   docker run -d --name "$name" --network none -e PGUSER="$dbu" -e PGDATABASE="$dbn" -e PGHOST=/var/run/postgresql \
-    -v "$scratch/data:/var/lib/postgresql/data" -v "$wal_dir:/walarchive:ro" "$img" postgres >/dev/null
+    -v "$scratch/data:/var/lib/postgresql/data" -v "$wal_dir:/walarchive:ro" "$img" postgres -c "max_connections=$maxc" >/dev/null
   local state="" out=""
   for _ in $(seq 1 120); do
     state="$(docker exec "$name" psql -X -At -c 'select pg_is_in_recovery()' 2>/dev/null || true)"
