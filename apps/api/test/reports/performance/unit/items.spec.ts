@@ -1,8 +1,10 @@
 import { PerformanceClassItemAnalysisSchema, PerformanceSchoolItemAnalysisSchema } from '@pp/contract'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import type { HeadcountEntryView } from '../../../../src/modules/reports/performance/services/headcount-facts.types'
 import type { OptionLetter } from '../../../../src/modules/reports/performance/ports'
 import { ctxOf, item, sitting, world, type World } from '../fakes/fixtures'
+import { entry } from '../fakes/in-memory-headcount-facts'
 
 let w: World
 const national = { level: 'national', label: 'x' } as const
@@ -42,6 +44,48 @@ describe('Analisa Item: school', () => {
     expect(r.subjects).toEqual([{ subjectId: '1', name: 'Bahasa Melayu', pupils: 6, questions: 2, accuracy: 50, wrong: 4 }])
     expect(r.gps).toEqual({ value: null, band: null, entries: 0, years: [] })
     PerformanceSchoolItemAnalysisSchema.parse(r)
+  })
+
+  describe('GPS card (SW5-07, DV-M08-31)', () => {
+    const graded = (studentId: string, ar: number, over: Partial<HeadcountEntryView> = {}) =>
+      entry({ studentId, actuals: [ar, null], targets: [80, null], ...over })
+
+    it('is the headcount GPS of Prestasi sekolah with the yearly series, tombstones left out', async () => {
+      // A+ 0, A 1, A- 2, B 4, C 6 in 2026 (sum 13), D 7 in 2025; a dropped E (8) never counts.
+      w.facts.add(
+        graded('1', 95),
+        graded('2', 85),
+        graded('3', 75),
+        graded('4', 62),
+        graded('5', 52),
+        graded('1', 45, { configId: '2', academicYear: 2025 }),
+        graded('6', 42, { configId: '3', dropped: true }),
+      )
+      const s9 = await w.items.school(sa, {})
+      const s1 = await w.school.school(sa)
+      expect(s1.gps).toEqual({ value: 3.33, band: 'Baik', entries: 6 })
+      expect(s9.gps).toEqual({ ...s1.gps, years: [{ year: 2025, gps: 7 }, { year: 2026, gps: 2.6 }] })
+      PerformanceSchoolItemAnalysisSchema.parse(s9)
+    })
+
+    it('non-staff: empty below 5 graded pupils, and a year under 5 pupils is not listed', async () => {
+      w.facts.add(graded('1', 95), graded('2', 85), graded('3', 75), graded('4', 62))
+      expect((await w.items.school(ctxOf('student', '1'), {})).gps).toEqual({ value: null, band: null, entries: 0, years: [] })
+      expect((await w.items.school(sa, {})).gps).toMatchObject({ value: 1.75, entries: 4, years: [{ year: 2026, gps: 1.75 }] })
+      w.facts.add(graded('5', 52), graded('1', 45, { configId: '2', academicYear: 2025 }))
+      expect((await w.items.school(ctxOf('student', '1'), {})).gps.years).toEqual([{ year: 2026, gps: 2.6 }])
+    })
+
+    it('a tingkatan narrows it to the pupils of that level', async () => {
+      w.facts.add(graded('1', 95), graded('7', 45))
+      expect((await w.items.school(sa, { tingkatan: 'T5' })).gps).toEqual({ value: 7, band: 'Perlu Perhatian', entries: 1, years: [{ year: 2026, gps: 7 }] })
+      expect((await w.items.school(sa, { tingkatan: 'T4' })).gps).toMatchObject({ value: 0, entries: 1 })
+    })
+
+    it('another school entries do not count; a school without entries keeps the empty card', async () => {
+      w.facts.add(graded('1', 95, { schoolId: 's2' }))
+      expect((await w.items.school(sa, {})).gps).toEqual({ value: null, band: null, entries: 0, years: [] })
+    })
   })
 
   it('questions: hardest first, with counts, options and the popular wrong answer', async () => {

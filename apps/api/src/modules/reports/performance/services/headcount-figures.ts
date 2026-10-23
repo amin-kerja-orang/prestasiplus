@@ -1,3 +1,4 @@
+import { MIN_COHORT } from '../domain/constants'
 import { GRADES, compareIds, gradeOfPercent, pct, round, type Grade } from '../domain/rules'
 import { GRADE_POINTS, bandStatus, isGraded, latestAr, pairStatus } from '../headcount/headcount.rules'
 import type { HeadcountEntryView } from './headcount-facts.types'
@@ -48,6 +49,29 @@ export function gpsOf(entries: readonly HeadcountEntryView[]): { value: number |
 export const gradedEntries = (entries: readonly HeadcountEntryView[]): HeadcountEntryView[] => entries.filter((e) => isGraded(e))
 
 export const distinctStudents = (entries: readonly HeadcountEntryView[]): number => new Set(entries.map((e) => e.studentId)).size
+
+/**
+ * The school GPS card shared by Prestasi sekolah (S1) and Analisa Item sekolah (S9, DV-M08-31): GPS and band over the graded
+ * entries (BR-M08-01, 03). Non-staff get an empty card below MIN_COHORT graded pupils.
+ */
+export function schoolGps(entries: readonly HeadcountEntryView[], staff: boolean): { value: number | null; band: GpsBandName | null; entries: number } {
+  const graded = gradedEntries(entries)
+  const g = gpsOf(graded)
+  if ((!staff && distinctStudents(graded) < MIN_COHORT) || g.value === null) return { value: null, band: null, entries: 0 }
+  return { value: g.value, band: gpsBand(g.value), entries: g.entries }
+}
+
+/** The yearly headcount GPS of the same entries (S9 sparkline), oldest year first. Non-staff: a year below MIN_COHORT graded pupils is left out. */
+export function gpsByYear(entries: readonly HeadcountEntryView[], staff: boolean): { year: number; gps: number }[] {
+  const by = new Map<number, HeadcountEntryView[]>()
+  for (const e of gradedEntries(entries)) by.set(e.academicYear, [...(by.get(e.academicYear) ?? []), e])
+  return [...by]
+    .sort(([a], [b]) => a - b)
+    .flatMap(([year, list]) => {
+      const g = gpsOf(list)
+      return g.value === null || (!staff && distinctStudents(list) < MIN_COHORT) ? [] : [{ year, gps: g.value }]
+    })
+}
 
 /** Per pupil: on when at least one pair is on, else below when at least one is below (BR-M08-08 rule 3). */
 export function studentStatuses(entries: readonly HeadcountEntryView[]): { on: number; below: number } {

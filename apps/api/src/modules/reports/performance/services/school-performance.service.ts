@@ -30,12 +30,12 @@ import {
   achievementOf,
   distinctStudents,
   entryGrade,
-  gpsBand,
   gpsOf,
   gradeOfPoints,
   gradedEntries,
   liveEntries,
   pairCounts,
+  schoolGps,
   studentStatuses,
 } from './headcount-figures'
 import { distinctMembers, nameMap, ownPupilIds, viewScope, type ViewScope } from './support'
@@ -251,9 +251,7 @@ export class SchoolPerformanceService {
     const staff = isStaff(ctx.role)
     const graded = gradedEntries(entries)
     const shownGps = staff || distinctStudents(graded) >= MIN_COHORT
-    const g = gpsOf(graded)
-    const gps: PerformanceSchool['gps'] =
-      shownGps && g.value !== null ? { value: g.value, band: gpsBand(g.value), entries: g.entries } : { value: null, band: null, entries: 0 }
+    const gps: PerformanceSchool['gps'] = schoolGps(entries, staff)
 
     const counts = new Map<string, number>()
     for (const e of shownGps ? graded : []) {
