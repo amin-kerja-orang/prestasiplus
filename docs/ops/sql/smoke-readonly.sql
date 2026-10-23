@@ -31,7 +31,14 @@
 --   columns, one hash aggregate over coin_ledger, one pass over the staged sessions and answers; no cross join).
 --   Set statement_timeout as above so that a slow run stops instead of waiting.
 --
--- STAGING-DEPENDENT CHECKS (blocks B and D1/D2)
+-- PERSISTED CORE COUNTERS (rows F3 to F5, F8 to F10)
+--   They compare staged-side counts with the `note ...` counters of the core stage. A build that persists them in
+--   etl_runs.counters -> 'notes' of the latest succeeded core apply run gives ok / FAIL. A build that does not
+--   persist them gives 'info' (expected = "compare with the B7 output"; the operator compares by hand). When the notes
+--   say countsFromCommittedRows = 1 (a resumed apply: non_bcrypt and shared_default only saw the resumed part; the
+--   roster count is rebuilt from the committed rows and stays exact) F4 and F5 are 'info' too.
+--
+-- STAGING-DEPENDENT CHECKS (blocks B, D1/D2 and F3 to F7)
 --   They read staging_cloud (kept in the target from the stage copy B5 until migrate:archive-minimise). When
 --   staging_cloud.* is absent (an empty migrated DB, or after minimise) the row says ok = 'info' and value 'n/a:
 --   staging_cloud not present' instead of failing.
@@ -40,7 +47,7 @@
 --   4.5 part 1, "per role sample: migrated practice-session and answer counts equal the staged counts" -> B1.*, B2.*
 --   4.5 part 1, "sample of wallets: balance against the ledger sum equals what the verify report lists" -> C1 to C3
 --   4.5 part 1, "derived JPN/PPD rows equal the distinct state and district pairs"                       -> D1, D2
---   4.5 part 1, "accounts marked for forced reset equal the expected number"                             -> F1 to F6
+--   4.5 part 1, "accounts marked for forced reset equal the expected number"                             -> F1 to F10
 --   4.6 B8 "SQL counts equal the verify report"; "entity counts, reject counts by reason"               -> E.0, E.*, X1.*
 --   Criterion 9 (B8 part), R4 (a check differs from the verify report)                                  -> all rows
 --   Criterion 2 / 3 evidence (reject thresholds, ORPHAN_PARENT on users and schools)                      -> X1 to X3
@@ -102,7 +109,8 @@ live AS (
 -- Which staged tables exist now (staging_cloud is a plain schema in the target after the stage copy).
 stg AS (
   SELECT to_regclass('staging_cloud.practice_sessions') IS NOT NULL AND to_regclass('staging_cloud.question_attempts') IS NOT NULL AS has_activity,
-         to_regclass('staging_cloud.schools') IS NOT NULL AS has_schools
+         to_regclass('staging_cloud.schools') IS NOT NULL AS has_schools,
+         to_regclass('staging_cloud.users') IS NOT NULL AS has_users
 ),
 -- Block B, staged side. One XML table per role: sample users (users.id % 50 = 0) with their v2 and staged counts.
 -- A staged row that has no v2 row is allowed only when etl_rejects lists it ("explained"); the sums are counts.
@@ -184,12 +192,72 @@ c AS (
 u AS (
   SELECT count(*) FILTER (WHERE must_reset_password) AS flagged,
          count(*) AS migrated,
-         count(*) FILTER (WHERE nullif(btrim(username), '') IS NOT NULL AND nullif(btrim(email), '') IS NULL) AS roster,
          count(*) FILTER (WHERE password_hash IS NULL) AS null_hash,
-         count(*) FILTER (WHERE NOT must_reset_password AND password_hash IS NULL) AS unflagged_but_due,
-         count(*) FILTER (WHERE must_reset_password AND password_hash LIKE '$2_$%'
-                            AND NOT (nullif(btrim(username), '') IS NOT NULL AND nullif(btrim(email), '') IS NULL)) AS flagged_bcrypt_non_roster
+         count(*) FILTER (WHERE must_reset_password AND username IS NULL AND email IS NULL) AS no_login_id
   FROM public.users WHERE legacy_source = 'cloud'
+),
+-- Block F, staged side (rules of transform/users.ts and transform/secrets.ts, read from the staged row so that an
+-- account whose duplicate e-mail was dropped AFTER the password decision is not mistaken for a roster account):
+--   roster      username present and no valid e-mail in the staged row;
+--   non_bcrypt  staged hash is not bcrypt $2a/b/x/y$ cost 04..13 (argon2id, plain text, empty, NULL);
+--   null_expected  non_bcrypt that is not argon2id: the loader stores a NULL hash.
+f_xml AS (
+  SELECT CASE WHEN (SELECT has_users FROM stg) THEN query_to_xml($q$
+    WITH j AS (
+      SELECT x.must_reset_password AS flagged,
+             (x.password_hash IS NULL) AS v2_null_hash,
+             (nullif(btrim(s.username, E' \t\r\n\f\v'), '') IS NOT NULL
+              AND (nullif(lower(btrim(s.email, E' \t\r\n\f\v')), '') IS NULL
+                   OR lower(btrim(s.email, E' \t\r\n\f\v')) !~ '^[^\s@]+@[^\s@]+$')) AS roster,
+             (coalesce(btrim(s.password, E' \t\r\n\f\v'), '') !~ '^\$2[abxy]\$(0[4-9]|1[0-3])\$[./A-Za-z0-9]{53}$') AS non_bcrypt,
+             (coalesce(btrim(s.password, E' \t\r\n\f\v'), '')
+                ~ '^\$argon2id\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/]+\$[A-Za-z0-9+/]+$') AS argon2
+      FROM users x JOIN staging_cloud.users s ON s.id::text = x.legacy_id
+      WHERE x.legacy_source = 'cloud'
+    )
+    SELECT count(*) AS migrated,
+           count(*) FILTER (WHERE roster) AS roster,
+           count(*) FILTER (WHERE non_bcrypt) AS non_bcrypt,
+           count(*) FILTER (WHERE non_bcrypt AND NOT argon2) AS null_expected,
+           count(*) FILTER (WHERE v2_null_hash) AS null_v2,
+           count(*) FILTER (WHERE (roster OR non_bcrypt) AND NOT flagged) AS derivable_not_flagged,
+           count(*) FILTER (WHERE flagged AND NOT roster AND NOT non_bcrypt) AS remainder
+    FROM j
+  $q$, false, true, '') END AS x
+),
+fs AS (
+  SELECT (SELECT has_users FROM stg) AS has_f,
+         (xpath('/row/migrated/text()', (SELECT x FROM f_xml)))[1]::text::bigint AS migrated,
+         (xpath('/row/roster/text()', (SELECT x FROM f_xml)))[1]::text::bigint AS roster,
+         (xpath('/row/non_bcrypt/text()', (SELECT x FROM f_xml)))[1]::text::bigint AS non_bcrypt,
+         (xpath('/row/null_expected/text()', (SELECT x FROM f_xml)))[1]::text::bigint AS null_expected,
+         (xpath('/row/null_v2/text()', (SELECT x FROM f_xml)))[1]::text::bigint AS null_v2,
+         (xpath('/row/derivable_not_flagged/text()', (SELECT x FROM f_xml)))[1]::text::bigint AS derivable,
+         (xpath('/row/remainder/text()', (SELECT x FROM f_xml)))[1]::text::bigint AS remainder
+),
+-- Block F, persisted counters of the core stage: etl_runs.counters -> 'notes' of the latest succeeded core apply run
+-- (core = entity set holds users and classrooms, as orchestrate.ts recognises it). Builds that do not persist the
+-- notes give has_notes = false and the rows below turn into 'info' (compare with the B7 output). A must_reset.* key that
+-- is absent while the notes exist means 0 (the loader counts a reason only when it happens).
+core_notes AS (
+  SELECT counters -> 'notes' AS n FROM etl_runs
+  WHERE mode = 'apply' AND status = 'succeeded' AND 'cloud' = ANY (sources) AND entity_set @> ARRAY['users', 'classrooms']
+    AND jsonb_typeof(counters -> 'notes') = 'object'
+  ORDER BY id DESC LIMIT 1
+),
+nt AS (
+  SELECT (SELECT n FROM core_notes) IS NOT NULL AS has_notes,
+         coalesce(((SELECT n FROM core_notes) ->> 'countsFromCommittedRows')::numeric, 0) = 1 AS partial,
+         coalesce(((SELECT n FROM core_notes) ->> 'must_reset.roster_account')::numeric, 0)::bigint AS roster,
+         coalesce(((SELECT n FROM core_notes) ->> 'must_reset.non_bcrypt')::numeric, 0)::bigint AS non_bcrypt,
+         coalesce(((SELECT n FROM core_notes) ->> 'must_reset.shared_default')::numeric, 0)::bigint AS shared,
+         coalesce((SELECT n FROM core_notes) ? 'nullHashAccounts', false) AS has_null,
+         ((SELECT n FROM core_notes) ->> 'nullHashAccounts')::numeric::bigint AS null_hash,
+         coalesce((SELECT n FROM core_notes) ? 'flaggedWithoutLoginId', false) AS has_nologin,
+         ((SELECT n FROM core_notes) ->> 'flaggedWithoutLoginId')::numeric::bigint AS no_login,
+         coalesce((SELECT n FROM core_notes) ? 'rosterDefaultHashesWarning', false) AS has_warn,
+         ((SELECT n FROM core_notes) ->> 'rosterDefaultHashesWarning')::numeric::bigint AS warn,
+         ((SELECT n FROM core_notes) ->> 'rosterDefaultHashes')::numeric::bigint AS hashes
 ),
 -- Block U (#226 F1): one lower-case username used by more than one account.
 uname AS (
@@ -251,9 +319,9 @@ checks AS (
 
   -- ---------------------------------------------------------------- C. plan 4.5 part 1, wallets against the ledger (all wallets, not a sample)
   UNION ALL SELECT 'C', 'C1', 'wallets whose balance differs from the ledger sum (plan 4.5 part 1)',
-         differing::text, '= verify report, wallet vs ledger', 'info' FROM c
-  UNION ALL SELECT 'C', 'C2', 'wallets that have migrated ledger rows (plan 4.5 part 1)', with_ledger::text, '= verify report detail', 'info' FROM c
-  UNION ALL SELECT 'C', 'C3', 'wallets without ledger rows (plan 4.5 part 1)', without_ledger::text, '= verify report detail', 'info' FROM c
+         differing::text, '= actual of verify line "wallet balance versus ledger sum (users with a difference)" (not stored in the DB)', 'info' FROM c
+  UNION ALL SELECT 'C', 'C2', 'wallets that have migrated ledger rows (plan 4.5 part 1)', with_ledger::text, '= detail of the same verify line (not stored in the DB)', 'info' FROM c
+  UNION ALL SELECT 'C', 'C3', 'wallets without ledger rows (plan 4.5 part 1)', without_ledger::text, '= detail of the same verify line (not stored in the DB)', 'info' FROM c
 
   -- ---------------------------------------------------------------- D. plan 4.5 part 1, derived JPN / PPD; PPD scope (#199)
   UNION ALL SELECT 'D', 'D1', 'JPN rows + rejects against distinct states; basis '
@@ -276,12 +344,42 @@ checks AS (
 
   -- ---------------------------------------------------------------- F. plan 4.5 part 1, forced password reset
   UNION ALL SELECT 'F', 'F1', 'cloud accounts flagged must_reset_password (same as A1.11 (e), flagged)', flagged::text,
-         '= expected: roster + non-bcrypt + shared default (A1/A4 line)', 'info' FROM u
+         '= expected: roster + non-bcrypt + shared default (see F3 to F5)', 'info' FROM u
   UNION ALL SELECT 'F', 'F2', 'cloud accounts migrated (same as A1.11 (e), migrated)', migrated::text, '= entity users in the verify report', 'info' FROM u
-  UNION ALL SELECT 'F', 'F3', 'roster-shaped accounts: a username and no e-mail (roster_account; includes dropped duplicate e-mails)', roster::text, 'reported', 'info' FROM u
-  UNION ALL SELECT 'F', 'F4', 'accounts with a NULL password_hash (added, not in plan; #226 F2)', null_hash::text, '<= F1; reported', CASE WHEN null_hash <= flagged THEN 'info' ELSE 'FAIL' END FROM u
-  UNION ALL SELECT 'F', 'F5', 'accounts with a NULL hash that are not flagged (added, not in plan)', unflagged_but_due::text, '0', CASE WHEN unflagged_but_due = 0 THEN 'ok' ELSE 'FAIL' END FROM u
-  UNION ALL SELECT 'F', 'F6', 'flagged non-roster accounts with a bcrypt hash, the shared-default group (added, not in plan)', flagged_bcrypt_non_roster::text, 'reported; compare with the rehearsal', 'info' FROM u
+  UNION ALL SELECT 'F', 'F3', 'roster accounts by the staged rule (username, no valid e-mail) against note must_reset.roster_account',
+         CASE WHEN fs.has_f THEN fs.roster::text ELSE 'n/a: staging_cloud.users not present' END,
+         CASE WHEN nt.has_notes THEN nt.roster::text
+              ELSE '= note must_reset.roster_account in the B7 output (counter not persisted in this build)' END,
+         CASE WHEN NOT fs.has_f OR NOT nt.has_notes THEN 'info' WHEN fs.roster = nt.roster THEN 'ok' ELSE 'FAIL' END FROM fs, nt
+  UNION ALL SELECT 'F', 'F4', 'non-bcrypt accounts by the staged hash (includes argon2id and NULL) against note must_reset.non_bcrypt',
+         CASE WHEN fs.has_f THEN fs.non_bcrypt::text ELSE 'n/a: staging_cloud.users not present' END,
+         CASE WHEN nt.has_notes THEN nt.non_bcrypt::text || CASE WHEN nt.partial THEN ' (partial: countsFromCommittedRows = 1)' ELSE '' END
+              ELSE '= note must_reset.non_bcrypt in the B7 output (counter not persisted in this build)' END,
+         CASE WHEN NOT fs.has_f OR NOT nt.has_notes OR nt.partial THEN 'info' WHEN fs.non_bcrypt = nt.non_bcrypt THEN 'ok' ELSE 'FAIL' END FROM fs, nt
+  UNION ALL SELECT 'F', 'F5', 'flagged accounts that are neither roster nor non-bcrypt = shared default remainder, at most note must_reset.shared_default',
+         CASE WHEN fs.has_f THEN fs.remainder::text ELSE 'n/a: staging_cloud.users not present' END,
+         CASE WHEN nt.has_notes THEN '<= ' || nt.shared::text || CASE WHEN nt.partial THEN ' (partial: countsFromCommittedRows = 1)' ELSE '' END
+              ELSE '<= note must_reset.shared_default in the B7 output (counter not persisted in this build)' END,
+         CASE WHEN NOT fs.has_f OR NOT nt.has_notes OR nt.partial THEN 'info' WHEN fs.remainder <= nt.shared THEN 'ok' ELSE 'FAIL' END FROM fs, nt
+  UNION ALL SELECT 'F', 'F6', 'accounts the ETL flags (roster or non-bcrypt/NULL hash by the staged row) but that are NOT flagged in v2 (dropped duplicate e-mails are not counted)',
+         CASE WHEN fs.has_f THEN fs.derivable::text ELSE 'n/a: staging_cloud.users not present' END, '0',
+         CASE WHEN NOT fs.has_f THEN 'info' WHEN fs.derivable = 0 THEN 'ok' ELSE 'FAIL' END FROM fs
+  UNION ALL SELECT 'F', 'F7', 'accounts with a NULL password_hash in v2 against the staged non-bcrypt, non-argon2id accounts (#226 F2)',
+         CASE WHEN fs.has_f THEN fs.null_v2::text ELSE 'n/a: staging_cloud.users not present' END,
+         CASE WHEN fs.has_f THEN fs.null_expected::text ELSE 'n/a' END,
+         CASE WHEN NOT fs.has_f THEN 'info' WHEN fs.null_v2 = fs.null_expected THEN 'ok' ELSE 'FAIL' END FROM fs
+  UNION ALL SELECT 'F', 'F8', 'accounts with a NULL password_hash in v2 against note nullHashAccounts (added, not in plan; #226 F2)',
+         u.null_hash::text,
+         CASE WHEN nt.has_null THEN nt.null_hash::text ELSE '= note nullHashAccounts in the B7 output (counter not persisted in this build)' END,
+         CASE WHEN NOT nt.has_null THEN 'info' WHEN u.null_hash = nt.null_hash THEN 'ok' ELSE 'FAIL' END FROM u, nt
+  UNION ALL SELECT 'F', 'F9', 'flagged accounts with no username and no e-mail in v2 against note flaggedWithoutLoginId (added, not in plan)',
+         u.no_login_id::text,
+         CASE WHEN nt.has_nologin THEN nt.no_login::text ELSE '= note flaggedWithoutLoginId in the B7 output (counter not persisted in this build)' END,
+         CASE WHEN NOT nt.has_nologin THEN 'info' WHEN u.no_login_id = nt.no_login THEN 'ok' ELSE 'FAIL' END FROM u, nt
+  UNION ALL SELECT 'F', 'F10', 'note rosterDefaultHashesWarning: 1 = the shared roster default hashes were not supplied, so those accounts are NOT flagged (added, not in plan)',
+         CASE WHEN nt.has_warn THEN nt.warn::text || ' (default hashes known: ' || coalesce(nt.hashes::text, '?') || ')' ELSE 'not persisted in this build' END,
+         CASE WHEN nt.has_warn THEN '0' ELSE '= no warning line in the B7 output' END,
+         CASE WHEN NOT nt.has_warn THEN 'info' WHEN nt.warn = 0 THEN 'ok' ELSE 'FAIL' END FROM nt
 
   -- ---------------------------------------------------------------- U. username clashes across schools (#226 F1; added, not in plan)
   UNION ALL SELECT 'U', 'U1', 'lower-case usernames used by more than one cloud account (added, not in plan; #226 F1)', dup_names::text, 'reported; compare with the rehearsal', 'info' FROM uname
