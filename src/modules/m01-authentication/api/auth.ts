@@ -82,6 +82,20 @@ export async function register(request: RegisterRequest): Promise<RegisterResult
   return toClientSession(payload, false)
 }
 
+/**
+ * `GET /api/session` (real API only; contract `Session`): the session the cookie now belongs to.
+ * The forced password change needs it because `PUT /api/me/password` rotates the session, so the CSRF
+ * token changes. Resolves to `null` only outside http mode (the mock session needs no refresh). In http
+ * mode a 200 body that is not the API session throws, as does any API error (a 401 is also handled by
+ * the 401 policy), so the caller's failure path runs.
+ */
+export async function getSession(remember: boolean): Promise<ClientSession | null> {
+  if (!isHttpMode()) return null
+  const body = await api.get<unknown>('/api/session')
+  if (!isApiSession(body)) throw new Error('GET /api/session: unexpected response body')
+  return toClientSessionFromApi(body, remember)
+}
+
 /** #3 `POST /api/auth/password/email`. Resolves to the status text (green box, FR-M01-29). */
 export async function sendPasswordResetLink(email: string): Promise<string> {
   const { status } = await api.post<StatusPayload>('/api/auth/password/email', {
