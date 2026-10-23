@@ -55,14 +55,14 @@ describe('M08 prestasi route roles (SW4-04)', () => {
     },
   )
 
-  it('S4 /prestasi/kelas is for admin, teacher and school_admin; a parent or PPD officer gets the 403 page', () => {
+  it('S4 /prestasi/kelas is for admin, teacher, school_admin and student (empty S4, SRS §9); a parent or PPD officer gets the 403 page', () => {
     const meta = router.resolve('/prestasi/kelas').meta
-    expect(meta.roles).toEqual(['admin', 'teacher', 'school_admin'])
+    expect(meta.roles).toEqual(['admin', 'teacher', 'school_admin', 'student'])
     expect(meta.onForbidden).toBe('403')
-    for (const role of ['admin', 'teacher', 'school_admin'] as const) {
+    for (const role of ['admin', 'teacher', 'school_admin', 'student'] as const) {
       expect(decide('/prestasi/kelas', role)).toEqual({ kind: 'allow' })
     }
-    for (const role of ['parent', 'ppd_officer', 'jpn_officer', 'sponsor', 'student'] as const) {
+    for (const role of ['parent', 'ppd_officer', 'jpn_officer', 'sponsor'] as const) {
       expect(decide('/prestasi/kelas', role)).toEqual({ kind: 'in-place', status: 403 })
     }
   })

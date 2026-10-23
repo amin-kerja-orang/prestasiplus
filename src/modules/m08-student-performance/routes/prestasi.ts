@@ -22,8 +22,8 @@ export const PRESTASI_SCHOOL_ROLES: readonly Role[] = [
   'student',
   'parent',
 ]
-/** S4 (`/prestasi/kelas`): the roles that can open a class dashboard (S5). */
-export const PRESTASI_CLASS_ROLES: readonly Role[] = ['admin', 'teacher', 'school_admin']
+/** S4 (`/prestasi/kelas`): the roles that can open a class dashboard (S5), plus pelajar (SRS §9: S4 empty state). */
+export const PRESTASI_CLASS_ROLES: readonly Role[] = ['admin', 'teacher', 'school_admin', 'student']
 
 const routes: RouteRecordRaw[] = [
   { path: '/prestasi', redirect: '/prestasi/sekolah' },
