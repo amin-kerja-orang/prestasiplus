@@ -42,6 +42,7 @@ import type {
   StimulusSharers,
 } from '../domain/admin-types'
 import { leavesOf } from '../domain/paper-model'
+import { topicOf } from '../domain/topic'
 import type {
   Blueprint,
   PaperDef,
@@ -134,13 +135,13 @@ function sharersOf(gid: string, currentId?: string): StimulusSharers | undefined
   }
 }
 
-/** Whether a revised stimulus differs from the live one in what the editor can change. */
 /** `{ sharers }` for a question in a group whose stimulus resolves, else nothing. */
 function sharersProp(q: QuestionDef): { sharers?: StimulusSharers } {
   const s = q.groupId ? sharersOf(q.groupId, q.id) : undefined
   return s ? { sharers: s } : {}
 }
 
+/** Whether a revised stimulus differs from the live one in what the editor can change. */
 function stimulusChanged(live: StimulusDef | undefined, next: StimulusDef | undefined): boolean {
   if (!live || !next) return false
   return (
@@ -150,13 +151,13 @@ function stimulusChanged(live: StimulusDef | undefined, next: StimulusDef | unde
   )
 }
 
-function hydrate(seed: ReviewSeed): void {
 /** Size of a stimulus group, counted from the group's members (not from its stimulus). */
 const groupSizeProp = (gid: string): { groupSize?: number } => {
   const n = liveMembersOf(gid).length
   return n > 0 ? { groupSize: n } : {}
 }
 
+function hydrate(seed: ReviewSeed): void {
   // Units made from an intake batch always win: their ids repeat across server instances.
   const force = !!seed.batchId
   for (const q of seed.questions) if (force || !BANK.questions.has(q.id)) BANK.questions.set(q.id, q)
@@ -492,7 +493,7 @@ export class AdminOps {
       subjectName: subjectName(seed.subject),
       kertas: seed.kertas,
       kind: kindOf(q0),
-      topic: q0.curriculum.unitLabel,
+      topic: topicOf(q0.curriculum),
       preview: previewOf(q0),
       previewPlain: plainMath(previewOf(q0)),
       marks: seed.questions.reduce((n, q) => n + marksOf(q), 0),
@@ -521,7 +522,7 @@ export class AdminOps {
       subjectName: subjectName(nq.curriculum.subject),
       kertas: kertasOf(qid),
       kind: kindOf(nq, lookup),
-      topic: nq.curriculum.unitLabel,
+      topic: topicOf(nq.curriculum),
       preview: previewOf(nq, rev.stem),
       previewPlain: plainMath(previewOf(nq, rev.stem)),
       marks: marksOf(nq, lookup),
@@ -867,7 +868,7 @@ export class AdminOps {
       subjectName: subjectName(q.curriculum.subject),
       kertas: kertasOf(qid),
       kind: kindOf(q),
-      topic: q.curriculum.unitLabel,
+      topic: topicOf(q.curriculum),
       marks: marksOf(q),
       preview: previewOf(q),
       previewPlain: plainMath(previewOf(q)),
@@ -1006,7 +1007,7 @@ export class AdminOps {
       preview: previewOf(q),
       marks: marksOf(q),
       kind: kindOf(q),
-      topic: q.curriculum.unitLabel,
+      topic: topicOf(q.curriculum),
       status: this.statusOf(qid),
       kertas: kertasOf(qid),
       subject: q.curriculum.subject,

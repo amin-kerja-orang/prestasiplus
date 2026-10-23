@@ -4,7 +4,9 @@ import { validateBatch } from '../admin/intake/domain/validation'
 import { emptyTag } from '../admin/intake/lib/dskp'
 import type { IntakeQuestion } from '../admin/intake/types'
 import type { CurriculumTag, QuestionDef, SchemeDef } from '../domain/types'
+import { T1_T3_TOPIC, topicOf } from '../domain/topic'
 import { gateErrors } from '../server/admin'
+import { BijakServer, MemoryStorage } from '../server/store'
 
 const scheme = (id: string): SchemeDef | undefined =>
   id === 'q1' ? { kind: 'option', marks: 1, correct: 'A', reason: 'Kunci' } : undefined
@@ -79,5 +81,28 @@ describe('publish gate: DSKP topic (FB-004)', () => {
     const intakeT4 = validateBatch({ questions: [{ ...q, tag: t4 }], stimuli: [], source: 'x', copyright: 'sendiri' })
     expect(intakeT4.some((i) => i.message.includes('Unit DSKP'))).toBe(true)
     expect(gateErrors([question(t4)], scheme)).toHaveLength(1)
+  })
+})
+
+describe('T1-T3 topic display (FB-004 follow-up)', () => {
+  it('falls back to the editor copy only for T1-T3 without a unit label', () => {
+    expect(topicOf(tag({ unit: null, unitLabel: '', formOrigin: 'T1-T3' }))).toBe(T1_T3_TOPIC)
+    expect(T1_T3_TOPIC).toBe('Tingkatan 1-3 (di luar DSKP)')
+    expect(topicOf(tag({ unitLabel: 'Pemfaktoran', formOrigin: 'T1-T3' }))).toBe('Pemfaktoran')
+    expect(topicOf(tag({ unit: null, unitLabel: '', formOrigin: 'T4' }))).toBe('')
+  })
+
+  it('a published T1-T3 question without a unit shows the fallback topic in the bank', async () => {
+    const server = new BijakServer({ storage: new MemoryStorage() })
+    const id = 'mat1-pub-1'
+    const e = await server.getBankEditable(id)
+    const edited: IntakeQuestion = {
+      ...e.question,
+      tag: { ...e.question.tag, formOrigin: 'T1-T3', unit: null, unitLabel: '' },
+    }
+    expect((await server.reviseQuestionFull(id, edited, undefined, '')).ok).toBe(true)
+    expect((await server.reviewDecision(`v:${id}`, { action: 'terbit' })).ok).toBe(true)
+    expect((await server.getBankDetail(id)).row.topic).toBe(T1_T3_TOPIC)
+    expect((await server.listBank()).find((r) => r.id === id)?.topic).toBe(T1_T3_TOPIC)
   })
 })

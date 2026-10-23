@@ -31,6 +31,7 @@ import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registr
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
 import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
+import { topicOf } from '../domain/topic'
 import type { BankFilter, DecisionAction, PaperPatch, QueueFilter } from '../domain/admin-types'
 import type {
   Attempt,
@@ -468,7 +469,7 @@ export class BijakServer {
           id: q.id,
           number: numberOf.get(q.id)!,
           sectionId: s.id,
-          topic: q.curriculum.unitLabel,
+          topic: topicOf(q.curriculum),
           formOrigin: q.curriculum.formOrigin,
           ...(q.groupId ? { groupId: q.groupId } : {}),
           ...(q.groupId && BANK.groups.get(q.groupId)?.optionBank
