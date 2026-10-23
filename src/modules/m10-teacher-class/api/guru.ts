@@ -96,12 +96,18 @@ export function fetchGuruStudents(
   })
 }
 
-/** #16 `PUT /api/guru/students/:id`: adds a student of the profile school to an own class. */
+/**
+ * #16 `PUT /api/guru/students/:id`: adds a student of the profile school to an own class.
+ * `classroomId` goes out as a string id in http mode (`ClassStudentAddRequestSchema`; a number is
+ * 422 "Kelas tidak sah.", SW5-01). Mock mode keeps the number.
+ */
 export function addStudentToClass(
   studentId: number,
-  body: { classroomId: number },
+  body: { classroomId: number | string },
 ): Promise<ClassroomStudent> {
-  return api.put<ClassroomStudent>(`/api/guru/students/${String(studentId)}`, { body })
+  return api.put<ClassroomStudent>(`/api/guru/students/${String(studentId)}`, {
+    body: { classroomId: wireId(body.classroomId) },
+  })
 }
 
 /** #17 `DELETE /api/guru/students/:id?classroomId=`: removes a student from an own class. */

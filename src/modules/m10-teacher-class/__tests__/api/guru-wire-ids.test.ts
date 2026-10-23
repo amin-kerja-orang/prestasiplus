@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createHttpTransport, installTransport } from '@/api'
 
-import { createGuruClass } from '../../api/guru'
+import { addStudentToClass, createGuruClass } from '../../api/guru'
 
 /**
  * DEMO-FIX-1 D-01: `POST /api/guru/classes` sends `subjectId` / `schoolId` as string ids on the wire
@@ -77,5 +77,27 @@ describe('createGuruClass wire ids', () => {
       subjectId: 3,
       educationLevel: 'tahun-1',
     })
+  })
+})
+
+/**
+ * SW5-01: `PUT /api/guru/students/:id` sends `classroomId` as a string id on the wire
+ * (`ClassStudentAddRequestSchema`); a number was 422 "Kelas tidak sah.". Mock mode keeps the value.
+ */
+describe('addStudentToClass wire ids', () => {
+  it('http mode: classroomId goes out as a string (number or string input)', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    await addStudentToClass(3001, { classroomId: 15 })
+    await addStudentToClass(3001, { classroomId: '15' })
+    expect(sent).toHaveLength(2)
+    expect(sent[0]?.url).toBe('/api/guru/students/3001')
+    expect(sent[0]?.body).toEqual({ classroomId: '15' })
+    expect(sent[1]?.body).toEqual({ classroomId: '15' })
+  })
+
+  it('mock mode: the number is unchanged', async () => {
+    vi.stubEnv('VITE_API_MODE', 'mock')
+    await addStudentToClass(3001, { classroomId: 15 })
+    expect(sent[0]?.body).toEqual({ classroomId: 15 })
   })
 })
