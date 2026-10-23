@@ -101,7 +101,7 @@ Several sessions work in this one folder at the same time.
 - **Checkpoints:** commit a checkpoint on the feature branch after each green boot milestone. The user approved this on 2026-10-02.
 
 ### Credentials
-All credentials (live logins, server access) are in `C:\Users\hp\.prestasiplus\credentials.md`, **outside the repo**. Read it when a login is needed. Never copy a secret into the repo, docs, memory, cross-session messages or summaries. Live remains read-only.
+All credentials (live logins, server access) are in `<credentials file outside the repo>`, **outside the repo**. Read it when a login is needed. Never copy a secret into the repo, docs, memory, cross-session messages or summaries. Live remains read-only.
 
 ### Parallel browser lanes
 Three Playwright MCP servers exist (`.mcp.json`): `playwright` (lane 1), `playwright2` (lane 2), `playwright3` (lane 3). Each is a separate browser, so up to 3 browser agents can run at once. Rules:

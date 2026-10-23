@@ -5,11 +5,9 @@ import {
   AI_MAX_TEXT_CHARS,
   AiExtractRequestSchema,
   type AiExtractRequest,
-  type AiPageImageRef,
   type AiPageText,
 } from '@pp/contract'
 
-import { idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { JobError } from '../../jobs'
 
@@ -40,12 +38,13 @@ export function sanitizeForAi(text: string): string {
 
 /**
  * The hand-off from the stored pages of a submission to the provider-neutral AI request (BE-38 calls it from
- * its extraction job; there is no route). Built from the stored page text and page image references ONLY: the
- * uploader notes, the source declaration, the original file names and the admin notes are never read.
+ * its extraction job; there is no route). Built from the stored page text ONLY: the uploader notes, the source
+ * declaration, the original file names and the admin notes are never read, and page images are never referenced
+ * (#189, v2-threat-model rows 46 and 50: the provider receives local-OCR text only, never a page image).
  *
  * Pages of all `done` files are numbered 1.. in file order, then page order (the AI request has one page
- * sequence); text and image refs use the same number. At most `AI_MAX_PAGES` pages, and the text of all pages
- * together is capped at `AI_MAX_TEXT_CHARS`.
+ * sequence). At most `AI_MAX_PAGES` pages, and the text of all pages together is capped at `AI_MAX_TEXT_CHARS`.
+ * The text is not redacted here: BE-36's `AiExtractionService` redacts it, once, right before the provider.
  */
 @Injectable()
 export class IntakeExtractionInput {
@@ -69,7 +68,7 @@ export class IntakeExtractionInput {
           select: {
             pages: {
               orderBy: { pageNo: 'asc' },
-              select: { text: true, textSource: true, ocrConfidence: true, ocrStatus: true, imageFileId: true, width: true, height: true },
+              select: { text: true, textSource: true, ocrConfidence: true, ocrStatus: true },
             },
           },
         },
@@ -78,16 +77,12 @@ export class IntakeExtractionInput {
     if (!batch) throw new JobError('BATCH_NOT_FOUND', false)
 
     const pages: AiPageText[] = []
-    const images: AiPageImageRef[] = []
     let remaining = AI_MAX_TEXT_CHARS
     let number = 0
     for (const file of batch.files) {
       for (const p of file.pages) {
         if (number >= AI_MAX_PAGES) break
         number += 1
-        if (p.imageFileId !== null && p.width && p.height) {
-          images.push({ page: number, fileId: idToString(p.imageFileId), width: p.width, height: p.height })
-        }
         if (p.text === null || (p.ocrStatus !== 'not_needed' && p.ocrStatus !== 'done') || remaining <= 0) continue
         const text = cut(sanitizeForAi(p.text), remaining)
         if (text === '') continue
@@ -99,7 +94,6 @@ export class IntakeExtractionInput {
     }
     return AiExtractRequestSchema.parse({
       pages,
-      ...(images.length > 0 ? { images } : {}),
       subject: batch.subject,
       kertas: batch.kertas === 2 ? 2 : 1,
     })

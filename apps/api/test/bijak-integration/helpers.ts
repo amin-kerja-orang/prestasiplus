@@ -7,7 +7,7 @@ import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
 import { expect } from 'vitest'
 
-import { runSeeds } from '../../prisma/seed'
+import { runSeeds, type SeedModule } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { examSeed } from '../../prisma/seed/exam'
@@ -39,9 +39,9 @@ export interface IntegrationApp {
  * No port is plugged by the test. The BE-09 question seed runs too, so every flow runs on the merged stack
  * (PoC papers on the reserved ids AND bank questions in `question_versions`).
  */
-export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraModules?: Type<unknown>[] } = {}): Promise<IntegrationApp> {
+export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraModules?: Type<unknown>[]; extraSeeds?: SeedModule[] } = {}): Promise<IntegrationApp> {
   const db = await createTestDatabase()
-  await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed], { prisma: db.prisma })
+  await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed, ...(opts.extraSeeds ?? [])], { prisma: db.prisma })
   const env: Record<string, string | undefined> = {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',
