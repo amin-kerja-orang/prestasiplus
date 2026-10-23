@@ -1,23 +1,4 @@
-import type { RouteLocationNormalized, RouteLocationRaw, RouteRecordRaw } from 'vue-router'
-
-/**
- * SW8-07 (DV-29): the API mails `/password/reset#token=…&email=…` (the token stays out of the path,
- * logs and Referer), while S4 is `/password/reset/:token?email=`. A hash that carries a token goes
- * to S4 (a redirect, so the hash is not kept in history); any other visit is the forgot page (S3).
- */
-export function resetLinkTarget(
-  to: Pick<RouteLocationNormalized, 'hash'>,
-): true | RouteLocationRaw {
-  const params = new URLSearchParams(to.hash.replace(/^#/, ''))
-  const token = params.get('token')?.trim()
-  if (!token) return true
-  const email = params.get('email')?.trim()
-  return {
-    path: `/password/reset/${encodeURIComponent(token)}`,
-    query: email ? { email } : {},
-    replace: true,
-  }
-}
+import type { RouteRecordRaw } from 'vue-router'
 
 /**
  * M01 route fragment: S3 forgot password, S4 reset with token, S5 IC reset (M01-T4). All are public
@@ -28,7 +9,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/password/reset',
     name: 'm01.password.forgot',
-    beforeEnter: resetLinkTarget,
     component: () => import('../pages/PasswordForgotPage.vue'),
     meta: {
       layout: 'bare',

@@ -32,12 +32,15 @@ async function submit(): Promise<void> {
   loading.value = true
   errors.value = []
   try {
-    const { token, email: matched } = await resetByIc(email.value, icNumber.value)
+    // Snapshot first: the field stays editable while the request is pending, but the token is
+    // bound to the e-mail that was submitted.
+    const submitted = email.value
+    const { token, email: matched } = await resetByIc(submitted, icNumber.value)
     // SW8-03: the API answers `{token}` only, and the token is bound to the e-mail it was
-    // issued for, so S4 gets the e-mail typed here (the mock also echoes it; that one wins).
+    // issued for, so S4 gets the submitted e-mail (the mock also echoes it; that one wins).
     await router.push({
       path: `/password/reset/${token}`,
-      query: { email: matched ?? email.value },
+      query: { email: matched ?? submitted },
     })
   } catch (err) {
     errors.value = errorLines(err)

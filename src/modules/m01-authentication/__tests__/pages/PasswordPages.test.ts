@@ -352,6 +352,21 @@ describe('PasswordResetIcPage (S5)', () => {
     )
   })
 
+  it('uses the submitted e-mail when the field is edited while the request is pending', async () => {
+    let resolve!: (v: { token: string }) => void
+    apiMocks.resetByIc.mockReturnValue(new Promise((r) => (resolve = r)))
+    const w = await render(PasswordResetIcPage, '/password/reset-ic')
+    await w.get('[data-testid=ic-email]').setValue('pelajar@demo.test')
+    await w.get('[data-testid=ic-number]').setValue('100101140001')
+    await w.get('form').trigger('submit')
+    await w.get('[data-testid=ic-email]').setValue('lain@demo.test')
+    resolve({ token: 'tok789' })
+    await flushPromises()
+    expect(apiMocks.resetByIc).toHaveBeenCalledWith('pelajar@demo.test', '100101140001')
+    expect(router.currentRoute.value.path).toBe('/password/reset/tok789')
+    expect(router.currentRoute.value.query.email).toBe('pelajar@demo.test')
+  })
+
   it('shows the mismatch alert and keeps both values', async () => {
     apiMocks.resetByIc.mockRejectedValue(
       validationError('Email atau No Kad Pengenalan tidak sepadan.'),
