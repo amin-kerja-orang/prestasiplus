@@ -30,6 +30,9 @@ export class CoverageError extends AnonymiseError {
 /** The output location is not acceptable (not under .migration-out, not empty, overlaps the source). */
 export class OutputError extends AnonymiseError {}
 
+/** The run was interrupted through `AnonymiseOptions.signal`; the partial output was deleted. */
+export class AnonymiseAbortedError extends AnonymiseError {}
+
 /** The input carries something the tool must not guess about (a column that is not in the DDL, a bad row). */
 export class InputError extends AnonymiseError {}
 
