@@ -7,6 +7,110 @@
 - **Marker:** "Perlu pengesahan" means not decided or not verified yet; it is to be confirmed by the person named.
 - **Privacy:** this repo is public. Roles only; no host names, no addresses, no names, no paths of real people, no secrets, no row values. Placeholders: `<db>`, `<dump dir>`, `<extract dir>`, `<files dir>`.
 
+## LEAD quick path: Docker mode
+
+**Docker mode is not dress-rehearsed; our sandbox has no Docker daemon. Host mode was (23 Oct, synthetic). So the first Docker `up` and its migration-count line are the LEAD's go point before the dump load: if `up` does not show `<n> of <F>` migrations (`MIGRATION CHECK PASSED: <n> of <n>` with `n` = the folder count `F` of A1.0), stop.** What was checked offline in the sandbox: the dry-runs of `up` and `down` in Docker mode, and `docker compose config` on `compose.rehearsal.yaml` (images, loopback port, `DATABASE_URL`); nothing was started.
+
+**Required state.** #122, #160 and #123 at `aa3b325a` or newer (the `question_sets` verify row and `etl_runs.git_sha`), #133 and #125 merged; the three greps of A1.0 print 4, 4 and 1; `--as-of=2026-10-29` on every call that takes it (I5). `--content-owner` stays as the sheet says: not passed, and whether the night passes one is a **Perlu pengesahan (LEAD, half AM)** (A1.9). LEAD decision on #122 (item 2 A, item 3 A, "content tables empty"): content entities (articles, notes, videos, audio KBAT sets) with 0 rows loaded are expected, not red (section 9, red rule 6); the behaviour of the merged code for them is not checked here.
+
+**Shell.** Every command is bash. On Windows run it inside WSL2 (Ubuntu) with Docker Desktop's WSL integration, with the checkout and `<extract dir>` on the WSL file system (not `/mnt/c`); on macOS use `sed -i ''` instead of `sed -i`. **Perlu pengesahan (LEAD):** the OS of the machine.
+
+**What differs from host mode** (checked in `rehearsal-db.sh` and `rehearsal-db.md`):
+
+- **Settings** come from `deploy/rehearsal/.env.rehearsal` (git-ignored; the script does not check its mode, so make it 600), not from `PP_REHEARSAL_ADMIN_URL`. Keys: `POSTGRES_USER`, `POSTGRES_PASSWORD` (letters and digits only, not starting `change-me`), `POSTGRES_DB` (`postgres`), `PP_REHEARSAL_DB` (keep `pp_rehearsal`: the script reads the file for itself but your shell does not, and `$DB` in section 5 and `--confirm "$DB"` of A1.13 assume that name), `PP_REHEARSAL_PORT` (55433), optional `PP_PG_*` tuning (defaults assume 4 GB RAM; A4 sets them to the VPS values). A variable already exported in the shell wins over the file, so unset them first.
+- **Migrations by Prisma, not `psql`:** `up` builds and runs the migrate image, so there is no `psql path: applied <n> new migration(s)` line. Expect the compose build output, then the `prisma migrate deploy` output ending `All migrations have been successfully applied` (wording from `demo-cloudflare-supabase.md`, not seen here), then `[time] migrate (all schema migrations, prisma): <s>s`, `MIGRATION CHECK PASSED: <n> of <n> migrations applied in 'pp_rehearsal'`, `[time] up: <s>s`. Whether the NOTICE of migration 0018 (identifier truncated; `psql` printed it in host mode) shows with Prisma is not known: it is harmless either way.
+- **Port:** the container publishes `127.0.0.1:55433` only (`status` shows `host: 127.0.0.1:55433`), never `0.0.0.0`. The host still needs Node 22, `npm ci`, `db:generate`, `psql`, `pg_dump`, `pg_restore` 16 and `gpg`: `exec`, `load-dump`, `stage` and the snapshots run on the host against that port.
+- **Compose v2 or newer is required:** the script calls `docker compose -p pp-rehearsal` (never `docker-compose`), and the Dockerfile uses BuildKit cache mounts (the default in Compose v2). The sandbox had Compose v5.6.0.
+- **Images:** the first `up` pulls `postgres:16-alpine` (the default registry, Docker Hub) and builds `pretasiplus-api-migrate:rehearsal` locally from `docker/api/Dockerfile` (target `build`), which pulls the base `node:22.22.2-alpine` and runs `npm ci` and `npm run be:build` (npm registry needed). The migrate image is built, not pulled; no data leaves the host.
+- **`down --yes`** runs `docker compose down --volumes --remove-orphans` (container, network and the data volume with every database and template snapshot) and deletes the state dir. It does **not** remove the two images or `.env.rehearsal`. Never use `--keep-volume` at the close.
+
+```bash
+# Setup, once (I6, I7). Then paste the section 5 block (umask, RDB, DB, ASOF, DUMP, step, q) without its host-mode comment line.
+unset PP_REHEARSAL_MODE PP_REHEARSAL_ADMIN_URL PP_REHEARSAL_DB PP_REHEARSAL_PORT POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB
+( umask 077; cp deploy/rehearsal/.env.rehearsal.example deploy/rehearsal/.env.rehearsal )
+sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 24)/" deploy/rehearsal/.env.rehearsal ; chmod 600 deploy/rehearsal/.env.rehearsal
+docker compose version                        # Docker Compose version v2 or newer
+
+# A1.0 pre-flight. Expect: LEAD's sha; nothing; F (36 at the time of the rehearsal); 4; 4; 1; tool versions; free disk >= 5 x dump
+git rev-parse HEAD ; git status --short
+ls -d apps/api/prisma/migrations/*/ | wc -l
+grep -c '"migrate:all"\|"migrate:verify"\|"migrate:rollback"\|"migrate:delta"' apps/api/package.json
+grep -c '"dump:check"\|"dump:cloud"\|"dump:produce"\|"dump:wipe"' apps/api/package.json
+grep -c "'question_sets'" apps/api/src/migration/verify/entities.ts
+node --version ; psql --version ; pg_dump --version ; pg_restore --version ; docker compose version
+df -h <extract dir> ; free -m
+
+# A1.1 receive. Expect: equal sha256; exit 0; "anon"; "<T> tables, <R> rows, anonymised=true" (T, R = the dump operator's report)
+sha256sum <restricted dir>/pp-staging-dump-<date>.tar.gz.gpg
+mkdir -m 700 <extract dir>
+( set -o pipefail; gpg --decrypt <restricted dir>/pp-staging-dump-<date>.tar.gz.gpg | tar -xzf - -C <extract dir> ); echo "exit $?"
+ls <extract dir> ; du -sh "$DUMP"
+node -e 'const m=JSON.parse(require("fs").readFileSync(process.argv[1]+"/manifest.json","utf8"));let n=0,t=0;for(const v of Object.values(m.tables)){t++;n+=v.rows}console.log(t+" tables, "+n+" rows, anonymised="+m.anonymised)' "$DUMP"
+( cd "$DUMP" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS )
+
+# A1.2 up. Expect: "databases ready: pp_rehearsal, pp_rehearsal_staging; read-only role: pp_staging_reader", the image pull/build, prisma lines,
+#   "MIGRATION CHECK PASSED: <n> of <n>" (n = F: GO POINT, else stop), "[time] up: <s>s"; status: "applied: <n> of <F>", no fsync WARNING
+step up "$RDB" up
+step status0 "$RDB" status
+
+# A1.3 seed. Expect: "seed: profile=migration, 3 module(s): ...", users count 0
+step seed "$RDB" exec target -- env NODE_ENV=production npm run db:seed -w @pp/api -- --profile=migration
+q 'select count(*) from users'
+
+# A1.4 load-dump. Expect: "dump kind: ndjson", "SHA256SUMS: OK", "attestation: ...", "Leak scan: clean", "Staging load finished: <t> tables, <r> rows." (r = R), exit 0
+step load-dump "$RDB" load-dump "$DUMP"
+shred -u -n 1 -z <restricted dir>/pp-staging-dump-<date>.tar.gz.gpg ; gpgconf --kill gpg-agent      # only after exit 0 (default of I8)
+
+# A1.5 stage. Expect: "STAGE COPY PASSED: <b> tables", then archive_cloud|35 and staging_cloud|83
+step stage "$RDB" stage
+q "select table_schema, count(*) from information_schema.tables where table_schema in ('staging_cloud','archive_cloud') group by 1 order by 1"
+
+# A1.6 snapshots. Expect: "applied: <n> of <F>" with n = F; "snapshot 'pre_etl' created ...", "snapshot 'pre_etl_d' written as a dump (<size>)"; exit 0
+"$RDB" status | grep 'applied:'
+step snap-pre_etl "$RDB" snapshot pre_etl
+step snap-pre_etl_d "$RDB" snapshot pre_etl_d --dump
+
+# A1.7 profile. Expect: "Profile written: ... and ...", exit 0.   A1.8 dry-run. Expect: "migrate:all core dry-run: run <id> succeeded", activity skipped, exit 0
+step profile "$RDB" exec target -- npm run staging:profile -w @pp/api
+step all-dry "$RDB" exec target -- npm run migrate:all -w @pp/api -- --dry-run --as-of="$ASOF"
+
+# A1.9 apply (the long step; B7). Expect: four "run <id> succeeded" lines, "migrate:all verify: succeeded", "verify pass: <n> entities, <m> checks", exit 0
+step all-apply "$RDB" exec target -- env PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:all -w @pp/api -- --apply --as-of="$ASOF"
+
+# A1.10 verify. Expect: exit 0, "verify pass: ..."
+step verify "$RDB" exec target -- npm run migrate:verify -w @pp/api
+
+# A1.11 evidence queries: paste the q commands of A1.11 (a), (b), (c) and (e) as written ((d) is optional). Expect: 5 runs (the A1.8 core dry-run, then core and activity dry-run and apply of A1.9),
+#   rejects by reason, the third reject query empty, reject % per entity within its threshold (content entities empty: expected), git_sha = the short sha of A1.0
+# A1.12 snapshot. Expect: "snapshot 'after_full' created ...", exit 0
+step snap-after_full "$RDB" snapshot after_full
+
+# A1.13 rollback. Expect: probes a, b, c, d exit 2 each; dry-run and apply exit 0 ("migrate:rollback dry-run|apply on "pp_rehearsal": succeeded")
+RB=(env PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 "PP_MIGRATE_TARGET_DB=$DB")
+step probe-a env PP_ALLOW_MIGRATE_APPLY=1 "PP_MIGRATE_TARGET_DB=$DB" "$RDB" exec target -- env -u PP_ALLOW_MIGRATE_ROLLBACK npm run migrate:rollback -w @pp/api -- --confirm "$DB"
+step probe-b env PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 "$RDB" exec target -- env -u PP_MIGRATE_TARGET_DB npm run migrate:rollback -w @pp/api -- --confirm "$DB"
+step probe-c "${RB[@]}" "$RDB" exec target -- npm run migrate:rollback -w @pp/api -- --confirm not_the_database
+step probe-d "${RB[@]}" "$RDB" exec target -- npm run migrate:rollback -w @pp/api
+step rb-dry   "${RB[@]}" "$RDB" exec target -- npm run migrate:rollback -w @pp/api -- --confirm "$DB"
+step rb-apply "${RB[@]}" "$RDB" exec target -- npm run migrate:rollback -w @pp/api -- --confirm "$DB" --apply
+
+# A1.14 prove the rollback: paste the two q commands of A1.14. Expect: eleven counts 0 and etl_id_map 0
+# A1.15 restore. Expect: "ROLLBACK VERIFIED ...", "MIGRATION CHECK PASSED: <n> of <n>", exit 0; applied <n> of <F>; etl_runs 0; archive_cloud|35, staging_cloud|83
+step restore-pre_etl "$RDB" restore-snapshot pre_etl --yes
+"$RDB" status | grep -E 'applied:|route'
+q "select count(*) from etl_runs"
+q "select table_schema, count(*) from information_schema.tables where table_schema in ('staging_cloud','archive_cloud') group by 1 order by 1"
+
+# Close-out (section 10) after copying the figures out (status prints timings.log). Expect: "rehearsal environment removed. Still to do by hand: ..."
+"$RDB" status
+step down "$RDB" down --yes
+shred -u -n 1 -z deploy/rehearsal/.env.rehearsal
+find <extract dir> -type f -exec shred -u -n 1 -z {} + ; rm -rf <extract dir>      # default of I8 (alternative: keep until A4, LEAD decision)
+gpgconf --kill gpg-agent ; docker image rm pretasiplus-api-migrate:rehearsal          # last one optional
+```
+
+Then the deletions of section 10 (reports under `.migration-out/`, temp files, history, terminal), the close line, and the evidence block of section 11 on #109. Optional steps O1 to O6 are in section 6 after A1.15. Details of each step: [A1.0](#a10-pre-flight-no-data-touched) [A1.1](#a11-receive-check-and-extract-the-dump) [A1.2](#a12-rehearsal-db-up-night-analogue-b0) [A1.3](#a13-reference-seed-the-etl-needs-the-reference-rows-before-migratecore) [A1.4](#a14-load-the-dump-night-analogue-b4) [A1.5](#a15-stage-copy-night-analogue-b5-copy) [A1.6](#a16-pre-etl-snapshot-and-the-migration-count-check-night-analogue-a5-restore-points) [A1.7](#a17-profile-night-analogue-b6-first-part) [A1.8](#a18-dry-run-night-analogue-b6-second-part) [A1.9](#a19-apply-night-analogue-b7) [A1.10](#a110-verify-stand-alone-night-analogue-b8) [A1.11](#a111-evidence-queries-read-only-aggregates-only) [A1.12](#a112-snapshot-of-the-migrated-state) [A1.13](#a113-rollback-guard-probes-dry-run-apply-night-analogue-rollback-r-b-of-plan-63) [A1.14](#a114-verify-the-rollback-result) [A1.15](#a115-restore-the-pre-etl-snapshot-and-check-night-analogue-case-2-restore).
+
 ## 1. What A1 is for
 
 A1 runs the whole data path of the night once on the rehearsal DB, with the real shape and volume of `.cloud` data in the form of the AM-10 anonymised dump: load, stage copy, snapshot, profile, dry-run, apply, verify, rollback, restore. It answers three questions before A4:
@@ -236,7 +340,7 @@ Expect: exit 0; the lines `migrate:all core dry-run: run <id> succeeded`, `migra
 
 Record: seconds (this is **B7**, including the verify at the end); the four run ids; exit; peak RSS if you used GNU time (**Perlu pengesahan (half AZ):** `/usr/bin/time` is installed on the host; the value is the largest single process, not the sum); `n` and `m` of the verify line; the non-`ok` check rows printed by name and status (ledger, correct-sum, drift: criterion 6; read them, do not "fix" them).
 
-**Content owner (decision input).** Without `--content-owner`, content rows (articles, notes, videos) have no owner and are rejected `ORPHAN_PARENT` (MIG-07 pass 5). The owner must be an **active v2 admin**, and none exists before the load, so MIG-07 found one by a scout core apply and a restore of `pre_etl`; ids follow load order. The plan's B6 and B7 command lines have no `--content-owner`. **Perlu pengesahan (LEAD, half AM):** whether the night passes one and how its id is found. A1 runs as the plan is written and records the content-entity rejects; optional step O5 shows the scout.
+**Content owner (decision input).** Without `--content-owner`, content rows (articles, notes, videos) have no owner and are rejected `ORPHAN_PARENT` (MIG-07 pass 5). The owner must be an **active v2 admin**, and none exists before the load, so MIG-07 found one by a scout core apply and a restore of `pre_etl`; ids follow load order. The plan's B6 and B7 command lines have no `--content-owner`. **Perlu pengesahan (LEAD, half AM):** whether the night passes one and how its id is found. A1 runs as the plan is written and records the content-entity rejects; optional step O5 shows the scout. LEAD decision on #122 (item 2 A, item 3 A, "content tables empty"): content entities with 0 rows loaded are expected, not red.
 
 ### A1.10 Verify, stand-alone (night analogue: B8)
 
@@ -475,7 +579,7 @@ Compare each rate with the placeholder **3,611 rows/s** (AM-08 AC7). A rate belo
 3. A guard accepts what it must refuse: a probe in A1.13 that exits 0, or a rollback that runs without the three variables and `--confirm`. (The production-mode guards are tested at A4.)
 4. A rollback that leaves rows: any of the eleven table counts above 0, or `etl_id_map` with `legacy_source = 'cloud'` above 0, or a rollback exit other than 0.
 5. A restore that fails the check: `ROLLBACK CHECK FAILED`, `MIGRATION CHECK FAILED`, no `ROLLBACK VERIFIED` or no `MIGRATION CHECK PASSED`, or a migration count that was not equal to the folder count when the snapshot was taken (A1.6).
-6. Plan section 5 criteria 2 to 4 not met: any entity above its threshold (0.1 % for `users` and `schools`, 0.5 % for every other entity), a reject reason without an explanation, `ORPHAN_PARENT` on `users` or `schools` above 0, or an orphan scan above 0. (Plan section 5 lets the LEAD waive a criterion in writing in daylight, but the night has no waiver, and B9 item 2 is the same threshold: a breach that the LEAD accepts for A1 still needs either a fix or a written change of the threshold in plan section 5 before G6. **Perlu pengesahan (LEAD).**)
+6. Plan section 5 criteria 2 to 4 not met: any entity above its threshold (0.1 % for `users` and `schools`, 0.5 % for every other entity), a reject reason without an explanation, `ORPHAN_PARENT` on `users` or `schools` above 0, or an orphan scan above 0. Content entities (articles, notes, videos, audio KBAT sets) with 0 rows loaded are expected under the LEAD decision on #122 ("content tables empty") and are not red; **Perlu pengesahan (LEAD):** whether their rejected source rows still count against the 0.5 % threshold. (Plan section 5 lets the LEAD waive a criterion in writing in daylight, but the night has no waiver, and B9 item 2 is the same threshold: a breach that the LEAD accepts for A1 still needs either a fix or a written change of the threshold in plan section 5 before G6. **Perlu pengesahan (LEAD).**)
 7. Dump or load integrity: a checksum mismatch; `PII SCAN FAILED`; a manifest not marked anonymised; the stage not at 83 and 35 tables; rows loaded not equal to the manifest.
 8. Idempotency (O2, if run): an inserted or updated row on an unchanged stage.
 9. Any personal data in a report, a post, a log or a copy outside the custody list. This is also a PDPA incident (runbook rule 8): tell the LEAD at once, before anything else.
