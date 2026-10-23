@@ -6,8 +6,10 @@ import { aiConfigFromEnv, PROVIDER_IDS } from '../admin/intake/ai/registry'
 import {
   attachToStimulus,
   detachFromStimulus,
+  groupLabel,
   groupsOf,
   removeStimulus,
+  renumberQuestions,
 } from '../admin/intake/domain/grouping'
 import { schemeTotal } from '../admin/intake/domain/marks'
 import { validateBatch } from '../admin/intake/domain/validation'
@@ -115,10 +117,50 @@ describe('stimulus grouping', () => {
   it('attaching non-adjacent questions pulls them together', () => {
     const qs = [q('1'), q('2'), q('3'), q('4')]
     const r = attachToStimulus(qs, ['q1', 'q4'], 's1')
-    expect(r.questions.map((x) => x.label)).toEqual(['1', '4', '2', '3'])
+    // paper order is q1, q4, q2, q3 and the printed numbers follow it
+    expect(r.questions.map((x) => x.id)).toEqual(['q1', 'q4', 'q2', 'q3'])
+    expect(r.questions.map((x) => x.label)).toEqual(['1', '2', '3', '4'])
     expect(r.moved).toBe(true)
     const [g] = groupsOf(r.questions)
-    expect(g).toMatchObject({ stimulusId: 's1', from: '1', to: '4', contiguous: true })
+    expect(g).toMatchObject({ stimulusId: 's1', from: '1', to: '2', contiguous: true })
+    expect(groupLabel(g!)).toBe('Soalan 1 - 2')
+  })
+
+  it('a share across 1, 5 and 2 renumbers so the header names the real members', () => {
+    const qs = [q('1'), q('2'), q('3'), q('4'), q('5')]
+    const r = attachToStimulus(qs, ['q1', 'q5', 'q2'], 's1')
+    expect(r.questions.map((x) => x.id)).toEqual(['q1', 'q2', 'q5', 'q3', 'q4'])
+    expect(r.questions.map((x) => x.label)).toEqual(['1', '2', '3', '4', '5'])
+    const [g] = groupsOf(r.questions)
+    expect(g!.labels).toEqual(['1', '2', '3'])
+    expect(groupLabel(g!)).toBe('Soalan 1 - 3')
+  })
+
+  it('attaching to an existing group pulls a later question up and renumbers', () => {
+    const first = attachToStimulus([q('1'), q('2'), q('3'), q('4'), q('5')], ['q3', 'q4'], 's1').questions
+    const r = attachToStimulus(first, ['q1'], 's1')
+    expect(r.questions.map((x) => x.id)).toEqual(['q1', 'q3', 'q4', 'q2', 'q5'])
+    expect(r.questions.map((x) => x.label)).toEqual(['1', '2', '3', '4', '5'])
+  })
+
+  it('detach renumbers labels an earlier reorder left out of sequence and keeps ordered ones', () => {
+    const scrambled = [q('1', 's1'), q('3', 's1'), q('4'), q('2'), q('5')]
+    const r = detachFromStimulus(scrambled, ['q1'])
+    expect(r.map((x) => x.label)).toEqual(['1', '2', '3', '4', '5'])
+    const ordered = [q('1', 's1'), q('2', 's1'), q('3')]
+    expect(detachFromStimulus(ordered, ['q1']).map((x) => x.label)).toEqual(['1', '2', '3'])
+  })
+
+  it('renumberQuestions numbers in paper order and leaves unchanged objects alone', () => {
+    const qs = [q('1'), q('3'), q('2')]
+    const r = renumberQuestions(qs)
+    expect(r.map((x) => x.label)).toEqual(['1', '2', '3'])
+    expect(r[0]).toBe(qs[0])
+  })
+
+  it('groupLabel lists the members of a group that is not contiguous', () => {
+    const [g] = groupsOf([q('1', 's1'), q('2'), q('3', 's1')])
+    expect(groupLabel(g!)).toBe('Soalan 1, 3')
   })
 
   it('adjacent questions do not move', () => {
