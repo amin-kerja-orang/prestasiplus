@@ -61,7 +61,7 @@ q 'select count(*) from users'
 step load-dump "$RDB" load-dump "$DUMP"
 shred -u -n 1 -z <restricted dir>/pp-staging-dump-<date>.tar.gz.gpg ; gpgconf --kill gpg-agent      # only after exit 0 (default of I8)
 
-# A1.5 stage. Expect: "STAGE COPY PASSED: <b> tables", then archive_cloud|35 and staging_cloud|83
+# A1.5 stage. Expect: "STAGE COPY PASSED: <b> tables", then archive_cloud|38 and staging_cloud|89
 step stage "$RDB" stage
 q "select table_schema, count(*) from information_schema.tables where table_schema in ('staging_cloud','archive_cloud') group by 1 order by 1"
 step analyze q "ANALYZE"      # planner statistics for the staged tables (n_live_tup was 0 after the copy)
@@ -96,7 +96,7 @@ step rb-dry   "${RB[@]}" "$RDB" exec target -- npm run migrate:rollback -w @pp/a
 step rb-apply "${RB[@]}" "$RDB" exec target -- npm run migrate:rollback -w @pp/api -- --confirm "$DB" --apply
 
 # A1.14 prove the rollback: paste the two q commands of A1.14. Expect: eleven counts 0 and etl_id_map 0
-# A1.15 restore. Expect: "ROLLBACK VERIFIED ...", "MIGRATION CHECK PASSED: <n> of <n>", exit 0; applied <n> of <F>; etl_runs 0; archive_cloud|35, staging_cloud|83
+# A1.15 restore. Expect: "ROLLBACK VERIFIED ...", "MIGRATION CHECK PASSED: <n> of <n>", exit 0; applied <n> of <F>; etl_runs 0; archive_cloud|38, staging_cloud|89
 step restore-pre_etl "$RDB" restore-snapshot pre_etl --yes
 "$RDB" status | grep -E 'applied:|route'
 q "select count(*) from etl_runs"
@@ -291,7 +291,7 @@ step analyze q "ANALYZE"      # planner statistics for the staged tables (n_live
 ```
 
 For the ndjson route `stage` only copies the two schemas (`pg_dump -Fc -n staging_cloud -n archive_cloud | pg_restore`) after dropping old copies in the target.
-Expect: first `NOTICE:  schema "staging_cloud" does not exist, skipping` and the same for `archive_cloud` (harmless: there is no old copy to drop), then `STAGE COPY PASSED: <b> tables (staging_cloud + archive_cloud) now in <db>`; `[time] stage-copy: <s>s`. Exit 0. The query returns `archive_cloud|35` and `staging_cloud|83` (runbook 12 step 1; `slot.sh` expects the same). Any other number: red (the staging spec and the dump disagree).
+Expect: first `NOTICE:  schema "staging_cloud" does not exist, skipping` and the same for `archive_cloud` (harmless: there is no old copy to drop), then `STAGE COPY PASSED: <b> tables (staging_cloud + archive_cloud) now in <db>`; `[time] stage-copy: <s>s`. Exit 0. The query returns `archive_cloud|38` and `staging_cloud|89` (runbook 12 step 1; `slot.sh` expects the same). Any other number: red (the staging spec and the dump disagree).
 
 Then `ANALYZE` (the `step analyze` line). The stage copy leaves no planner statistics (`n_live_tup` = 0 for the copied tables, seen in `pg_stat_user_tables` in the 23 Oct dress run; `staging:profile` does not read it), so the ETL queries can pick unstable plans. `ANALYZE` of the whole database covers `staging_cloud`, `archive_cloud` and the v2 tables; it writes statistics only, no rows. It runs before the `pre_etl` snapshot, so the template snapshot `pre_etl` keeps them; the `--dump` snapshot `pre_etl_d` does not (a restore from a dump needs `ANALYZE` again). Statistics of the v2 targets after the core apply would need a run between the stages of `migrate:all`, which the command does not offer (it runs core and activity back to back); that is a proposed code change, not an operator step. Night analogue: after B5 `S copy`, before B6, as a **proposed night step: plan B5/B6 and `slot.sh` have no `ANALYZE` (Perlu pengesahan, LEAD / half AZ; A4 sheet T11a)**.
 
@@ -478,7 +478,7 @@ q "select count(*) from etl_runs"
 q "select table_schema, count(*) from information_schema.tables where table_schema in ('staging_cloud','archive_cloud') group by 1 order by 1"
 ```
 
-Expect: exit 0; `ROLLBACK VERIFIED: every table of <db> has the snapshot's row count again (<c> table(s) differed before the rollback)`; `MIGRATION CHECK PASSED: <n> of <n> migrations applied in '<db>'`; `[time] restore-snapshot pre_etl: <s>s`. After the restore: `applied: <n> of <F>`, `etl_runs` count 0 (the snapshot had no run), and the stage still there (`archive_cloud|35`, `staging_cloud|83`), because the snapshot was taken after the stage copy.
+Expect: exit 0; `ROLLBACK VERIFIED: every table of <db> has the snapshot's row count again (<c> table(s) differed before the rollback)`; `MIGRATION CHECK PASSED: <n> of <n> migrations applied in '<db>'`; `[time] restore-snapshot pre_etl: <s>s`. After the restore: `applied: <n> of <F>`, `etl_runs` count 0 (the snapshot had no run), and the stage still there (`archive_cloud|38`, `staging_cloud|89`), because the snapshot was taken after the stage copy.
 Red: `ROLLBACK CHECK FAILED: row counts differ from the snapshot`, `MIGRATION CHECK FAILED: <a> applied, <f> in apps/api/prisma/migrations`, `snapshot dump checksum failed`, a missing `snapshot database ... is missing`.
 
 Record: seconds (template copy: expect seconds, MIG-07 saw 3 to 6 s), `c`, `n` and `F`, the three counts above.
@@ -540,7 +540,7 @@ Copy the tables into the issue comment as text. Aggregates only.
 | A1.2 up | B0 | | | | | n/a | n/a | | n/a | n = F? |
 | A1.3 seed | | | | | | n/a | n/a | | n/a | modules, users = 0 |
 | A1.4 load-dump | B4 | | | | | tables / rows | n/a | | | scan plus load |
-| A1.5 stage | B5 | | | | | n/a | n/a | | n/a | 83 / 35 |
+| A1.5 stage | B5 | | | | | n/a | n/a | | n/a | 89 / 38 |
 | A1.6 snapshot pre_etl | A5 | | | | | n/a | n/a | | n/a | n of F |
 | A1.6 snapshot pre_etl_d (dump) | A5 | | | | | n/a | n/a | | n/a | size |
 | A1.7 profile | B6 | | | | | n/a | n/a | | | |
@@ -598,7 +598,7 @@ Compare each rate with the placeholder **3,611 rows/s** (AM-08 AC7). A rate belo
 4. A rollback that leaves rows: any of the eleven table counts above 0, or `etl_id_map` with `legacy_source = 'cloud'` above 0, or a rollback exit other than 0.
 5. A restore that fails the check: `ROLLBACK CHECK FAILED`, `MIGRATION CHECK FAILED`, no `ROLLBACK VERIFIED` or no `MIGRATION CHECK PASSED`, or a migration count that was not equal to the folder count when the snapshot was taken (A1.6).
 6. Plan section 5 criteria 2 to 4 not met: any entity above its threshold (0.1 % for `users` and `schools`, 0.5 % for every other entity), a reject reason without an explanation, `ORPHAN_PARENT` on `users` or `schools` above 0, or an orphan scan above 0. Content entities (articles, notes, videos, audio KBAT sets) with 0 rows loaded are expected under the LEAD decision on #122 ("content tables empty") and are not red; **Perlu pengesahan (LEAD):** whether their rejected source rows still count against the 0.5 % threshold. (Plan section 5 lets the LEAD waive a criterion in writing in daylight, but the night has no waiver, and B9 item 2 is the same threshold: a breach that the LEAD accepts for A1 still needs either a fix or a written change of the threshold in plan section 5 before G6. **Perlu pengesahan (LEAD).**)
-7. Dump or load integrity: a checksum mismatch; `PII SCAN FAILED`; a manifest not marked anonymised; the stage not at 83 and 35 tables; rows loaded not equal to the manifest.
+7. Dump or load integrity: a checksum mismatch; `PII SCAN FAILED`; a manifest not marked anonymised; the stage not at 89 and 38 tables; rows loaded not equal to the manifest.
 8. Idempotency (O2, if run): an inserted or updated row on an unchanged stage.
 9. Any personal data in a report, a post, a log or a copy outside the custody list. This is also a PDPA incident (runbook rule 8): tell the LEAD at once, before anything else.
 10. The code changed after the run. The evidence counts only for the sha it ran on (P2). A change to the ETL or the schema after A1 means A1 is repeated.
@@ -646,7 +646,7 @@ Dump: AM-10 pp-staging-dump/1, <T> tables, <R> rows (manifest); .gpg checksum ma
 Steps (seconds / exit): up <>/<>, seed <>/<>, load-dump <>/<>, stage <>/<>, snapshot pre_etl <>/<>, snapshot pre_etl_d (dump, <size>) <>/<>,
   profile <>/<>, all dry-run <>/<>, all apply <>/<>, verify <>/<>, rollback dry-run <>/<>, rollback apply <>/<>, restore pre_etl <>/<>
 Verify: exit <>, verify pass <yes|no>, <n> entities, <m> checks; non-ok rows by name: <name: status, ...>
-Rows: core read <n>, activity read <n>, loaded <n>, rejected <n> (<pct> %); stage tables 83 / 35 <yes|no>
+Rows: core read <n>, activity read <n>, loaded <n>, rejected <n> (<pct> %); stage tables 89 / 38 <yes|no>
 Rejects by reason: ORPHAN_PARENT <n>, UNKNOWN_ENUM <n>, INVALID_VALUE <n>, DUPLICATE_KEY <n>, UNSUPPORTED <n>
 Entities above threshold: <entity pct, ... | none>; ORPHAN_PARENT on users / schools: <n>; orphan scan: <n>
 Forced-change accounts: <flagged> of <migrated> (<pct> %), by reason non_bcrypt <n>, shared_default <n>, roster_account <n> (or: reasons O5 not run)
