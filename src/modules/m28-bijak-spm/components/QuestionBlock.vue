@@ -99,6 +99,7 @@ function pick(id: string): void {
       :model-value="choose.chosen"
       :disabled="choose.blocked && !choose.chosen"
       label="Pilih soalan ini untuk dijawab"
+      :ui="{ root: 'items-center', label: 'block py-3' }"
       :aria-describedby="choose.hint ? `choose-hint-${question.id}` : undefined"
       data-testid="choose-checkbox"
       @update:model-value="emit('toggle-choose')"

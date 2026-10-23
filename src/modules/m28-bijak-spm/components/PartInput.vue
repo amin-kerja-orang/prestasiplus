@@ -234,6 +234,7 @@ async function dropPhoto(key: string): Promise<void> {
           size="xl"
           autocomplete="off"
           class="w-full"
+          :ui="{ base: 'min-h-11' }"
           data-testid="unit-input"
           @update:model-value="update({ unit: String($event ?? '') })"
         />
