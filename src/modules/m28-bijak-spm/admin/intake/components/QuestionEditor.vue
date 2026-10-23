@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsText } from '@/ds'
+import { DsNativeSelect, DsText } from '@/ds'
 
 import type { LeafKind } from '../../../domain/types'
 import RichText from '../../../components/RichText.vue'
@@ -150,33 +150,32 @@ function insertMath(field: 'stem'): void {
     <div class="grid gap-4" :class="hideNumber ? 'sm:grid-cols-2' : 'sm:grid-cols-3'">
       <label v-if="!hideNumber" class="flex flex-col gap-1 text-sm">
         <span class="font-medium">Nombor soalan</span>
-        <input
-          :value="q.label"
+        <UInput
+          :model-value="q.label"
           type="text"
-          class="min-h-11 rounded-lg border border-default bg-default px-3"
-          @input="set({ label: ($event.target as HTMLInputElement).value })"
+          class="w-full"
+          @update:model-value="set({ label: String($event) })"
         />
       </label>
       <label class="flex flex-col gap-1 text-sm">
         <span class="font-medium">Jenis soalan</span>
-        <select
-          :value="q.type"
-          class="min-h-11 rounded-lg border border-default bg-default px-3"
+        <DsNativeSelect
+          :model-value="q.type"
           data-testid="q-type"
-          @change="setType(($event.target as HTMLSelectElement).value as IntakeQType)"
+          @update:model-value="setType(String($event) as IntakeQType)"
         >
           <option v-for="t in TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
-        </select>
+        </DsNativeSelect>
       </label>
       <label v-if="q.parts.length === 0" class="flex flex-col gap-1 text-sm">
         <span class="font-medium">Markah</span>
-        <input
-          :value="q.marks"
+        <UInput
+          :model-value="q.marks"
           type="number"
           min="0"
-          class="min-h-11 rounded-lg border border-default bg-default px-3"
+          class="w-full"
           data-testid="q-marks"
-          @input="set({ marks: Number(($event.target as HTMLInputElement).value) || 0 })"
+          @update:model-value="set({ marks: Number($event) || 0 })"
         />
       </label>
       <p v-else class="self-end pb-3 text-sm text-muted">Markah soalan: {{ q.marks }} (jumlah bahagian)</p>
@@ -190,13 +189,13 @@ function insertMath(field: 'stem'): void {
           Sisip matematik
         </UButton>
       </div>
-      <textarea
+      <UTextarea
         :id="`stem-${q.id}`"
-        :value="q.stem"
-        rows="3"
-        class="w-full rounded-lg border border-default bg-default p-3"
+        :model-value="q.stem"
+        :rows="3"
+        class="w-full"
         data-testid="q-stem"
-        @input="set({ stem: ($event.target as HTMLTextAreaElement).value })"
+        @update:model-value="set({ stem: String($event) })"
       />
       <p class="text-xs text-muted">Gunakan $...$ untuk matematik, cth. $x^2 + 3$.</p>
       <p v-if="q.stem" class="rounded-lg bg-muted p-3 text-sm" aria-label="Pratonton teks soalan">
@@ -217,12 +216,12 @@ function insertMath(field: 'stem'): void {
           @change="setKey(o.id)"
         />
         <span class="w-6 shrink-0 font-semibold">{{ o.id }}</span>
-        <input
-          :value="o.text"
+        <UInput
+          :model-value="o.text"
           type="text"
-          class="min-h-11 min-w-0 flex-1 rounded-lg border border-default bg-default px-3"
+          class="min-w-0 flex-1"
           :aria-label="`Pilihan ${o.id}`"
-          @input="setOption(i, ($event.target as HTMLInputElement).value)"
+          @update:model-value="setOption(i, String($event))"
         />
         <UButton
           icon="i-ph-trash"
@@ -251,42 +250,41 @@ function insertMath(field: 'stem'): void {
         <div class="grid gap-3 sm:grid-cols-[6rem_1fr_6rem_10rem_auto]">
           <label class="flex flex-col gap-1 text-sm">
             <span class="text-muted">Label</span>
-            <input
-              :value="p.label"
-              class="min-h-11 rounded-lg border border-default bg-default px-3"
-              @input="setPart(i, { label: ($event.target as HTMLInputElement).value })"
+            <UInput
+              :model-value="p.label"
+              class="w-full"
+              @update:model-value="setPart(i, { label: String($event) })"
             />
           </label>
           <label class="flex flex-col gap-1 text-sm">
             <span class="text-muted">Teks bahagian</span>
-            <input
-              :value="p.prompt"
-              class="min-h-11 rounded-lg border border-default bg-default px-3"
+            <UInput
+              :model-value="p.prompt"
+              class="w-full"
               :aria-label="`Teks bahagian ${p.label}`"
-              @input="setPart(i, { prompt: ($event.target as HTMLInputElement).value })"
+              @update:model-value="setPart(i, { prompt: String($event) })"
             />
           </label>
           <label class="flex flex-col gap-1 text-sm">
             <span class="text-muted">Markah</span>
-            <input
-              :value="p.marks"
+            <UInput
+              :model-value="p.marks"
               type="number"
               min="0"
-              class="min-h-11 rounded-lg border border-default bg-default px-3"
+              class="w-full"
               :aria-label="`Markah bahagian ${p.label}`"
-              @input="setPart(i, { marks: Number(($event.target as HTMLInputElement).value) || 0 })"
+              @update:model-value="setPart(i, { marks: Number($event) || 0 })"
             />
           </label>
           <label class="flex flex-col gap-1 text-sm">
             <span class="text-muted">Mod jawapan</span>
-            <select
-              :value="p.mode"
-              class="min-h-11 rounded-lg border border-default bg-default px-2"
+            <DsNativeSelect
+              :model-value="p.mode"
               :aria-label="`Mod jawapan ${p.label}`"
-              @change="setPart(i, { mode: ($event.target as HTMLSelectElement).value as LeafKind })"
+              @update:model-value="setPart(i, { mode: String($event) as LeafKind })"
             >
               <option v-for="m in MODES" :key="m.value" :value="m.value">{{ m.label }}</option>
-            </select>
+            </DsNativeSelect>
           </label>
           <UButton
             class="self-end"
@@ -323,13 +321,12 @@ function insertMath(field: 'stem'): void {
     <div v-else class="flex flex-col gap-4">
       <label class="flex max-w-xs flex-col gap-1 text-sm">
         <span class="font-medium">Mod jawapan</span>
-        <select
-          :value="q.mode"
-          class="min-h-11 rounded-lg border border-default bg-default px-3"
-          @change="set({ mode: ($event.target as HTMLSelectElement).value as LeafKind })"
+        <DsNativeSelect
+          :model-value="q.mode"
+          @update:model-value="set({ mode: String($event) as LeafKind })"
         >
           <option v-for="m in MODES" :key="m.value" :value="m.value">{{ m.label }}</option>
-        </select>
+        </DsNativeSelect>
       </label>
       <SchemeEditor
         :model-value="q.scheme"
@@ -345,50 +342,48 @@ function insertMath(field: 'stem'): void {
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label class="flex flex-col gap-1 text-sm">
           <span class="text-muted">Asal tingkatan</span>
-          <select
-            :value="q.tag.formOrigin"
-            class="min-h-11 rounded-lg border border-default bg-default px-3"
+          <DsNativeSelect
+            :model-value="q.tag.formOrigin"
             data-testid="q-form"
-            @change="setForm(($event.target as HTMLSelectElement).value as 'T1-T3' | 'T4' | 'T5')"
+            @update:model-value="setForm(String($event) as 'T1-T3' | 'T4' | 'T5')"
           >
             <option value="T4">Tingkatan 4</option>
             <option value="T5">Tingkatan 5</option>
             <option value="T1-T3">Tingkatan 1-3 (di luar DSKP)</option>
-          </select>
+          </DsNativeSelect>
         </label>
         <label class="flex flex-col gap-1 text-sm lg:col-span-2">
           <span class="text-muted">Unit</span>
-          <select
-            :value="q.tag.unit ?? ''"
+          <DsNativeSelect
+            :model-value="q.tag.unit ?? ''"
             :disabled="q.tag.formOrigin === 'T1-T3'"
-            class="min-h-11 rounded-lg border border-default bg-default px-3"
             data-testid="q-unit"
-            @change="setUnit(($event.target as HTMLSelectElement).value)"
+            @update:model-value="setUnit(String($event))"
           >
             <option value="">Pilih unit</option>
             <option v-for="u in units" :key="u.code" :value="u.code">
               {{ u.form }} - {{ u.label }}
             </option>
-          </select>
+          </DsNativeSelect>
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="text-muted">TP (1-6)</span>
-          <input
-            :value="q.tag.tp"
+          <UInput
+            :model-value="q.tag.tp"
             type="number"
             min="1"
             max="6"
-            class="min-h-11 rounded-lg border border-default bg-default px-3"
-            @input="set({ tag: { ...q.tag, tp: Number(($event.target as HTMLInputElement).value) || 0 } })"
+            class="w-full"
+            @update:model-value="set({ tag: { ...q.tag, tp: Number($event) || 0 } })"
           />
         </label>
         <label class="flex flex-col gap-1 text-sm sm:col-span-2 lg:col-span-4">
           <span class="text-muted">SP (asingkan dengan koma)</span>
-          <input
-            :value="spText"
+          <UInput
+            :model-value="spText"
             type="text"
             placeholder="cth. 3.1, 3.2"
-            class="min-h-11 rounded-lg border border-default bg-default px-3"
+            class="w-full"
             data-testid="q-sp"
             @change="setSp(($event.target as HTMLInputElement).value)"
           />
