@@ -277,6 +277,14 @@ q "select c.entity, c.source_count, c.rejected, round(100.0 * c.rejected / nulli
 
 (d) Size and WAL (optional, recipe section 11): run `"$RDB" status` after the apply and note the database sizes; take `q 'select pg_current_wal_lsn()'` before A1.9 and after A1.10, then `q "select pg_wal_lsn_diff('<after>','<before>')::bigint"`.
 
+(e) Forced password change after migration (input to BUG AM2-A1 on #113; counts only, never ids):
+
+```bash
+q "select count(*) filter (where must_reset_password) as flagged, count(*) as migrated from public.users where legacy_source = 'cloud'"
+```
+
+The reasons come from `transform/secrets.ts` (`decidePassword`: `non_bcrypt`, `shared_default`, `roster_account`; one account can have several). `migrate:all` does not print them; the standalone `migrate:core` prints them as `note must_reset.<reason>: <n>` lines, so read them from the O5 scout if it runs (copy only those `note` lines, never the `ids <note>:` lists). Post line: `forced-change accounts: <flagged> of <migrated> (<pct> %), by reason non_bcrypt <n>, shared_default <n>, roster_account <n> (or "reasons: O5 not run")`. On the anonymised dump every password is a dummy hash, so `non_bcrypt` and the total may differ from the real night; `roster_account` (a username and no e-mail) carries over.
+
 ### A1.12 Snapshot of the migrated state
 
 ```bash
@@ -519,6 +527,7 @@ Verify: exit <>, verify pass <yes|no>, <n> entities, <m> checks; non-ok rows by 
 Rows: core read <n>, activity read <n>, loaded <n>, rejected <n> (<pct> %); stage tables 83 / 35 <yes|no>
 Rejects by reason: ORPHAN_PARENT <n>, UNKNOWN_ENUM <n>, INVALID_VALUE <n>, DUPLICATE_KEY <n>, UNSUPPORTED <n>
 Entities above threshold: <entity pct, ... | none>; ORPHAN_PARENT on users / schools: <n>; orphan scan: <n>
+Forced-change accounts: <flagged> of <migrated> (<pct> %), by reason non_bcrypt <n>, shared_default <n>, roster_account <n> (or: reasons O5 not run)
 Rates (rows/s): core apply <>, activity apply <>, overall apply <>, r_B6 <>, r_B7 <>; placeholder 3,611
 Guards: rollback probes a / b / c / d exit <2/2/2/2>
 Rollback: dry-run exit <>, apply exit <>, migrated tables all 0 <yes|no>, etl_id_map cloud rows <n>
