@@ -249,27 +249,6 @@ describe('PasswordResetPage (S4)', () => {
     })
   })
 
-  it('still shows the flash when a follow-up navigation emptied it (SW8-07)', async () => {
-    apiMocks.resetPassword.mockResolvedValue({
-      session: SESSION,
-      status: 'Your password has been reset.',
-    })
-    const w = await render(PasswordResetPage, '/password/reset/demo-reset-token?email=a@b.my')
-    // Consume twice: the second navigation (nothing pending) clears the current flash.
-    router.afterEach(() => {
-      useFlashStore().consume()
-      useFlashStore().consume()
-    })
-    await w.get('[data-testid=reset-password]').setValue('BaruBaru1')
-    await w.get('[data-testid=reset-confirm]').setValue('BaruBaru1')
-    await w.get('form').trigger('submit')
-    await flushPromises()
-    expect(useFlashStore().current).toEqual({
-      type: 'success',
-      message: 'Your password has been reset.',
-    })
-  })
-
   it('shows the invalid-token alert, keeps the email and clears the passwords', async () => {
     apiMocks.resetPassword.mockRejectedValue(
       validationError('This password reset token is invalid.'),

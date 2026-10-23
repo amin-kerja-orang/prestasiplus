@@ -159,7 +159,8 @@ export interface StatusPayload {
 
 /** #4: a session plus the flash text for the landing page. */
 export interface ResetPasswordPayload extends SessionPayload {
-  status: string
+  /** Mock only (it nests `status` in `data`); the real API puts it next to `data`. */
+  status?: string
 }
 
 /**
