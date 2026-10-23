@@ -189,9 +189,14 @@ preflight() {
     off) warn "PP_PG_ARCHIVE_MODE=off: no point-in-time recovery (the migration slot needs it on)" ;;
     on|always)
       v="$(pp_cfg PP_WAL_ARCHIVE_DIR /var/backups/pretasiplus/wal)"
-      if [ ! -d "$v" ] || [ "$(stat -c %u "$v" 2>/dev/null)" != 70 ]; then
-        err "PP_WAL_ARCHIVE_DIR $v must exist, owned by uid 70: sudo install -d -o 70 -g 70 -m 700 $v $v/wal $v/base"
-      fi ;;
+      # The WAL holds every row written (raw .cloud data during the slot): owner uid 70, mode 700, never in the checkout.
+      # Only the top folder is checked: its children are not readable by the deploy user once it is 700.
+      if [ ! -d "$v" ] || [ "$(stat -c %u:%a "$v" 2>/dev/null)" != 70:700 ]; then
+        err "PP_WAL_ARCHIVE_DIR $v must exist, owned by uid 70 with mode 700: sudo install -d -o 70 -g 70 -m 700 $v $v/wal $v/base"
+      fi
+      case "$(readlink -m "$v")/" in
+        "$(readlink -f "$PP_REPO")"/*) err "PP_WAL_ARCHIVE_DIR $v is inside the repository: put it on the encrypted backup volume" ;;
+      esac ;;
     *) err "PP_PG_ARCHIVE_MODE must be on or off" ;;
   esac
   if [ "$(pp_cfg PP_OFFSITE_KIND none)" = none ]; then warn "PP_OFFSITE_KIND=none: backups stay on this server only"

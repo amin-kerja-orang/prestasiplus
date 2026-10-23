@@ -7,6 +7,7 @@
 #   deploy/vps/migration/restore-point.sh verify NAME
 #   deploy/vps/migration/restore-point.sh restore NAME [--yes]
 #   deploy/vps/migration/restore-point.sh purge-raw --after post_drop [--yes]
+#   deploy/vps/migration/restore-point.sh raw-check
 #
 # NAME is one of: pre_etl (A4, before any .cloud data reaches the server), pre_delta (A12, the verified T-1 state),
 # post_switch (rollback after the switch: v2 writes stopped, kept for analysis), post_drop (after
@@ -24,6 +25,12 @@
 #         says. It asks the operator to type the database name (the LEAD's confirmation) unless --yes.
 # purge-raw  deletes every restore point marked raw_data=yes that is OLDER than the newest verified post_drop point,
 #         and records the deletion in custody.tsv (cutover plan section 7, due 6 Nov 2026). Asks for the database name.
+# raw-check  raw .cloud data retention (no automatic expiry, so this is the reminder): lists the copies that may
+#         still hold raw data: kept raw_data=yes restore points, schema staging_cloud in the production database, and
+#         PITR base backups older than the newest post_drop point (their archived WAL replays the raw copy; all base
+#         backups when there is no post_drop yet). Before PP_RAW_PURGE_BY (default 2026-11-06, cutover plan section 7)
+#         it reports and exits 0; from that day on every remaining copy is a WARN line and it exits 1. backup.sh runs it
+#         every night and alerts on exit 1; slot.sh gonogo and pitr.sh status print it.
 #
 # Every step holds the shared lock (PP_LOCK_FILE). Output: names, sizes, hashes and counts only, never row data.
 set -Eeuo pipefail
@@ -33,14 +40,14 @@ export PP_SCRIPT=restore-point
 # shellcheck source=../lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib.sh"
 
-usage() { sed -n '2,31p' "${BASH_SOURCE[0]}"; }
+usage() { sed -n '2,35p' "${BASH_SOURCE[0]}"; }
 cmd="${1:-}"; [ $# -eq 0 ] || shift
 name=""; operator="${PP_OPERATOR:-}"; yes=0; after=""
 case "$cmd" in
   take|verify|restore) name="${1:-}"; [ $# -eq 0 ] || shift ;;
-  list|purge-raw) ;;
+  list|purge-raw|raw-check) ;;
   -h|--help|help|'') usage; exit 0 ;;
-  *) pp_die "unknown command: $cmd (take | list | verify | restore | purge-raw)" 2 ;;
+  *) pp_die "unknown command: $cmd (take | list | verify | restore | purge-raw | raw-check)" 2 ;;
 esac
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -55,7 +62,7 @@ case "$cmd" in
     case "$name" in pre_etl|pre_delta|post_switch|post_drop) ;; *) pp_die "NAME must be pre_etl, pre_delta, post_switch or post_drop" 2 ;; esac ;;
 esac
 [ -n "$operator" ] || operator="OPERATOR-NAME-TO-FILL-IN"
-operator="${operator//$'\t'/ }"
+operator="${operator//[$'\t\r\n']/ }"   # one custody line per point
 
 backup_dir="$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)"
 pp_assert_outside_repo "$backup_dir"
@@ -179,10 +186,15 @@ cmd_purge_raw() {
   tmp="$(mktemp "$rp_dir/.custody.XXXXXX")"
   while IFS=$'\t' read -r created rname file sha bytes raw lsn op status; do
     if [ "$created" != created_utc ] && [ "$raw" = yes ] && [ "$status" != deleted ] && [[ "$created" < "$anchor_ts" ]]; then
-      rm -f -- "$file" "$file.sha256"
-      status=deleted
-      n=$((n + 1))
-      pp_log "deleted raw-data restore point $rname ($(basename "$file"))"
+      # Only a dump inside restore-points/ is deleted (custody.tsv is a text file a hand edit could change).
+      case "$(readlink -m "$file")" in
+        "$(readlink -m "$rp_dir")"/*.dump)
+          rm -f -- "$file" "$file.sha256"
+          status=deleted
+          n=$((n + 1))
+          pp_log "deleted raw-data restore point $rname ($(basename "$file"))" ;;
+        *) pp_warn "custody names $file, outside $rp_dir: NOT deleted, left as $status; check custody.tsv by hand" ;;
+      esac
     fi
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$created" "$rname" "$file" "$sha" "$bytes" "$raw" "$lsn" "$op" "$status" >>"$tmp"
   done <"$custody"
@@ -191,10 +203,47 @@ cmd_purge_raw() {
   pp_log "PURGE DONE: $n raw-data restore point(s) deleted; custody.tsv records them as deleted (date: $(date -u +%Y-%m-%d))"
 }
 
+cmd_raw_check() {
+  local by today overdue=0 n=0 anchor="" stamp b schema bases_out raw_ever=0
+  by="$(pp_cfg PP_RAW_PURGE_BY 2026-11-06)"
+  [[ "$by" =~ ^20[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]] || pp_die "PP_RAW_PURGE_BY must be YYYY-MM-DD" 2
+  today="$(date -u +%Y-%m-%d)"
+  [[ "$today" < "$by" ]] || overdue=1
+  found() { # found TEXT: one copy that may still hold raw .cloud data
+    n=$((n + 1))
+    if [ "$overdue" = 1 ]; then pp_warn "RAW RETENTION OVERDUE (purge by $by): $1"; else pp_log "raw copy (purge by $by): $1"; fi
+  }
+  if [ -f "$custody" ]; then
+    while IFS=$'\t' read -r created rname file _ _ raw _ _ status; do
+      [ "$created" != created_utc ] && [ "$raw" = yes ] && [ "$status" != deleted ] && found "restore point $rname ($(basename "$file"))"
+    done <"$custody"
+    anchor="$(awk -F'\t' 'NR > 1 && $2 == "post_drop" && $9 != "deleted" { t = $1 } END { print t }' "$custody")"
+    ! awk -F'\t' 'NR > 1 && $6 == "yes" { f = 1 } END { exit !f }' "$custody" || raw_ever=1
+  fi
+  schema="$(psql_target "select count(*) from information_schema.schemata where schema_name = 'staging_cloud'" 2>/dev/null || echo '?')"
+  case "$schema" in 0) ;; 1) raw_ever=1; found "schema staging_cloud in the production database (drop it, cutover plan section 7)" ;; *) pp_warn "could not check schema staging_cloud (db down?)" ;; esac
+  # PITR: a base backup older than the clean point needs WAL from the slot, so the archive still holds the raw copy.
+  stamp="${anchor//[-:]/}"
+  # Only once raw data has been on this host (a raw restore point was ever taken, or staging_cloud exists): routine
+  # base backups from before the slot hold no .cloud data.
+  # shellcheck disable=SC2016  # expands inside the container
+  if [ "$raw_ever" = 1 ] && bases_out="$(pp_compose exec -T -u postgres db sh -c 'ls -1 /walarchive/base 2>/dev/null | grep -E "^20[0-9]{6}T[0-9]{6}Z$"' 2>/dev/null)"; then
+    for b in $bases_out; do
+      if [ -z "$stamp" ] || [[ "$b" < "$stamp" ]]; then
+        found "PITR base backup $b and the archived WAL after it (pitr.sh cleanup --keep-from <a base taken after post_drop>)"
+      fi
+    done
+  fi
+  if [ "$n" = 0 ]; then pp_log "RAW CHECK OK: no copy of raw .cloud data found (restore points, staging_cloud, PITR base backups)"; return 0; fi
+  if [ "$overdue" = 1 ]; then pp_log "RAW CHECK OVERDUE: $n copy(ies) past $by"; return 1; fi
+  pp_log "RAW CHECK: $n copy(ies), due by $by"
+}
+
 case "$cmd" in
   take) cmd_take ;;
   list) cmd_list ;;
   verify) cmd_verify ;;
   restore) cmd_restore ;;
   purge-raw) cmd_purge_raw ;;
+  raw-check) cmd_raw_check ;;
 esac

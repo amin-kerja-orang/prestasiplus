@@ -42,14 +42,20 @@ All as `ppdeploy` unless `sudo` is shown. The values go in `/etc/pretasiplus/pro
 # folders: encrypted volume for all of them
 sudo install -d -o 70 -g 70 -m 700 /var/backups/pretasiplus/wal /var/backups/pretasiplus/wal/wal /var/backups/pretasiplus/wal/base
 sudo install -d -o ppdeploy -g ppdeploy -m 700 /srv/pretasiplus/stage
-sudo install -d -o 1000 -g 1000 -m 700 /srv/pretasiplus/migration-out    # uid 1000 = node in the migrate image
+sudo install -d -o 1000 -g 1000 -m 700 /srv/pretasiplus/migration-out    # uid 1000 = node in the migrate image (PP_MIGRATE_UID)
 # prod.env: PP_PG_ARCHIVE_MODE=on, PP_PG_ARCHIVE_TIMEOUT=1800, PP_WAL_ARCHIVE_DIR, PP_BACKUP_EXCLUDE_SCHEMAS=staging_cloud,
-#           PP_STAGE_DIR, PP_STAGE_MEM, PP_STAGE_CPUS, PP_MIGRATION_OUT
-deploy/vps/deploy.sh --dry-run            # refuses a missing or wrongly owned WAL folder
+#           PP_STAGE_DIR, PP_STAGE_MEM, PP_STAGE_CPUS, PP_MIGRATION_OUT, PP_MIGRATE_UID=1000, PP_RAW_PURGE_BY=2026-11-06
+docker compose run --help | grep -q -- --env-from-file || echo "Compose too old for slot.sh load: update the plugin"
+deploy/vps/deploy.sh --dry-run            # refuses a WAL folder that is missing, not uid 70, not mode 700, or in the checkout
 deploy/vps/deploy.sh                      # turning archive_mode on restarts the db once (before go-live, no users)
 deploy/vps/migration/pitr.sh base --label first
 deploy/vps/migration/pitr.sh status       # archived > 0, failed 0
 ```
+
+`ppdeploy` is made with `adduser`, so its uid is whatever was free (often not 1000). That is why the reports folder
+is created here with `sudo` for the image's user: `slot.sh etl` never changes its owner or mode, it only checks them
+(owner `PP_MIGRATE_UID`, mode 700) and stops with the `sudo install` line above when they are wrong. `gonogo` prints
+the same check as its `reports:` line. The reports are then readable with `sudo` only.
 
 **Dependencies.** Half AM supplies these; the slot cannot run without them:
 
@@ -127,7 +133,7 @@ deploy/vps/migration/slot.sh etl migrate:rollback --confirm=<db> [--apply]      
 
 ## 3. Restore points
 
-`deploy/vps/migration/restore-point.sh` covers `take`, `list`, `verify`, `restore` and `purge-raw`:
+`deploy/vps/migration/restore-point.sh` covers `take`, `list`, `verify`, `restore`, `purge-raw` and `raw-check`:
 
 - **What a point is:** a full `pg_dump -Fc` of the database, `staging_cloud` included, plus a sha256 and a line in
   `restore-points/custody.tsv`. The line gives the time, the name, the file, the sha256, the size, whether the point
@@ -147,7 +153,12 @@ deploy/vps/migration/restore-point.sh take pre_etl --operator "<role or handle>"
 deploy/vps/migration/restore-point.sh verify pre_delta
 deploy/vps/migration/restore-point.sh restore pre_delta     # 6.3 R-a: stops api+frontend, drop/create, pg_restore; typed db name
 deploy/vps/migration/restore-point.sh purge-raw --after post_drop
+deploy/vps/migration/restore-point.sh raw-check             # every copy that may still hold raw .cloud data
 ```
+
+A `restore` **drops the production database first** and takes no dump of its current state. When the current state
+may matter later (for example the writes made after the switch), take `restore-point.sh take post_switch` first; the
+rollback row of section 6 already does this.
 
 A `restore` leaves `api` and `frontend` stopped. The operator checks the counts. Then the cutover plan says what
 comes next: R-a is a new final dump plus a delta; after R-b, `migrate:all --apply`.
@@ -155,6 +166,19 @@ comes next: R-a is a new final dump plus a delta; after R-b, `migrate:all --appl
 **Routine backups leave `staging_cloud` out.** `backup.sh` now dumps with `--exclude-schema=staging_cloud`
 (`PP_BACKUP_EXCLUDE_SCHEMAS`). So the raw copy never reaches nightly, weekly or off-site copies. `archive_cloud` stays
 in them: it is kept for 12 months, decision Q12 A. The restore drill compares public tables, so it is unaffected.
+
+**Raw-data retention has no automatic expiry, so there is a reminder.** Raw `.cloud` data sits in the `pre_delta`
+(and `post_switch`) restore points, in `staging_cloud` inside the production database, and in the PITR base backups
+and archived WAL from the slot. Nothing deletes these by itself: the section 7 clean-up does, by hand, by 6 Nov
+(`PP_RAW_PURGE_BY`). `restore-point.sh raw-check` lists every copy still present: kept `raw_data=yes` points, the
+`staging_cloud` schema, and the base backups older than the newest `post_drop` point (all of them while there is no
+`post_drop`; none before any raw data reached the host). Before `PP_RAW_PURGE_BY` it only reports. From that day on each
+copy is a `RAW RETENTION OVERDUE` warning and it exits 1. It runs:
+
+- every night at the end of `backup.sh`, which sends `pp_alert` "RAW DATA RETENTION OVERDUE" on exit 1 (the backup
+  itself is not failed);
+- in `pitr.sh status`;
+- as the `raw data:` line of `slot.sh gonogo`.
 
 ## 4. Point-in-time recovery (WAL archiving)
 
@@ -164,11 +188,14 @@ in them: it is kept for 12 months, decision Q12 A. The restore drill compares pu
   - an `archive_command` that gzips each finished segment into `/walarchive/wal`, which is `PP_WAL_ARCHIVE_DIR` on the
     host.
 - **`deploy/vps/migration/pitr.sh`:**
-  - `status`: the archiver counters, size and base backups;
+  - `status`: the archiver counters, size and base backups, then `restore-point.sh raw-check`;
   - `base`: `pg_basebackup -Ft -z -X none` into `/walarchive/base/<UTC>`;
   - `restore-test --target-time`: replays into a scratch container with no network, prints the counts, and destroys
     it;
   - `cleanup --keep-from <base>`: `pg_archivecleanup`, plus removal of the older base backups.
+  - `--base` and `--keep-from` take only a stamp of the form `20261030T010000Z`.
+- **The archive folder.** `deploy.sh` refuses `PP_WAL_ARCHIVE_DIR` unless it exists, is owned by uid 70, has mode 700
+  and is outside the checkout. The WAL holds every row written, raw `.cloud` data included during the slot.
 
 | When | Command | Why |
 |---|---|---|
@@ -267,6 +294,8 @@ into the issue at A12, B0 and B9.
 | `disk: N% free on the backup volume` | runbook section 16 | 30 % or less |
 | `api: /api/ready through the edge` | 9 (before the switch: health) | not 200 |
 | `throwaway: none running` | 3.1 step 4 (destroyed after the copy) | still running after B5 |
+| `reports: <dir> ready (owner uid 1000, mode 700)` | none (the ETL steps need it) | missing or wrong owner/mode: every `etl` step would stop |
+| `raw data: RAW CHECK ...` | none: cutover plan section 7 (information) | never a no-go; after 6 Nov it must read `RAW CHECK OK` |
 
 These criteria are checked by people, not by the script:
 
@@ -292,6 +321,11 @@ replaced by a stand-in that maps `docker compose exec db` and `docker exec <thro
   - `gonogo` lines, `throwaway-down`, `wipe-dump`;
   - the shared lock refuses a second operation.
 - **`backup.sh`:** the nightly dump has 0 `staging_cloud` entries and keeps `archive_cloud`.
+- **Review fixes (stand-in docker, fictitious custody file):** `etl` stops with the `sudo install` line when the
+  reports folder is missing or has the wrong owner or mode, and runs when it is right; `raw-check` reports before
+  `PP_RAW_PURGE_BY` (exit 0), warns and exits 1 after it (raw point, `staging_cloud`, base backup older than
+  `post_drop`), and is OK when no raw data was ever there; `purge-raw` leaves a custody path outside `restore-points/`
+  in place; `pitr.sh` refuses `--keep-from ../x`.
 - **PITR, run natively** with the exact `archive_command`, `pg_basebackup -Ft -z -X none` and the restore settings of
   `pitr.sh`:
   - 4 segments archived, 0 failed;

@@ -169,6 +169,16 @@ else
   pp_log "off-site copy skipped (--no-offsite)"
 fi
 
+# ---- 6. raw .cloud data retention (MIG08-PREP, cutover plan section 7): a reminder, never fails the backup ----
+if [ -x "$PP_VPS_DIR/migration/restore-point.sh" ]; then
+  raw_rc=0; "$PP_VPS_DIR/migration/restore-point.sh" raw-check >&2 || raw_rc=$?
+  case "$raw_rc" in
+    0) ;;
+    1) pp_alert "RAW DATA RETENTION OVERDUE: raw .cloud copies are still on the host past PP_RAW_PURGE_BY. Run restore-point.sh raw-check and the cutover plan section 7 clean-up." ;;
+    *) pp_warn "restore-point.sh raw-check could not run (exit $raw_rc); the raw-data retention reminder was skipped" ;;
+  esac
+fi
+
 finished=1
 pp_ping "$ping_url"
 pp_log "backup done: $name"

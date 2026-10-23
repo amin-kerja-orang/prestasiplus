@@ -74,13 +74,24 @@ schema_tables() { # schema_tables psql_fn -> "staging_cloud:N archive_cloud:M"
   "$1" "select string_agg(s || ':' || coalesce(n, 0), ' ' order by s) from (values ('archive_cloud'), ('staging_cloud')) v(s) left join (select table_schema, count(*) n from information_schema.tables where table_schema in ('staging_cloud', 'archive_cloud') group by 1) t on t.table_schema = v.s"
 }
 
+# check_out_dir -> the reports folder exists, mode 700, owned by the migrate image's user (uid PP_MIGRATE_UID, 1000).
+check_out_dir() {
+  local want got
+  want="$(pp_cfg PP_MIGRATE_UID 1000)"
+  [[ "$want" =~ ^[0-9]+$ ]] || pp_die "PP_MIGRATE_UID must be a numeric uid" 3
+  want="$want:700"
+  [ -d "$out_dir" ] && got="$(stat -c %u:%a "$out_dir" 2>/dev/null)" || got=missing
+  [ "$got" = "$want" ] || pp_die "PP_MIGRATION_OUT $out_dir is $got, needs owner:mode $want: sudo install -d -o ${want%:*} -g ${want%:*} -m 700 $out_dir" 3
+}
+
 # migrate_run ENV_ARGS... -- COMMAND...: the migrate image, on the compose network, with the reports volume.
 migrate_run() {
   local envs=()
   while [ "$1" != -- ]; do envs+=(-e "$1"); shift; done
   shift
-  mkdir -p "$out_dir"
-  chmod 700 "$out_dir"
+  # The folder is made once by the runbook (section 1) for the migrate image's user, not for ppdeploy: ppdeploy may
+  # have any uid, so it only checks it here (chmod on a folder it does not own would fail under set -e).
+  check_out_dir
   pp_compose run --rm --no-deps -T -v "$out_dir:/app/apps/api/.migration-out" "${envs[@]}" migrate "$@"
 }
 
@@ -254,6 +265,11 @@ cmd_gonogo() {
   ready="$(_pp_curl_edge 443 https /api/ready -o /dev/null -w '%{http_code}' 2>/dev/null || true)"; ready="${ready:-000}"
   echo "api: /api/ready through the edge -> $ready"
   if stage_running; then echo "throwaway: $stage_name is STILL RUNNING  -> destroy it after the copy (throwaway-down)"; else echo "throwaway: none running"; fi
+  # Not a go/no-go criterion: where the raw copy lives and when it must be gone (cutover plan section 7).
+  echo "raw data: $("$PP_VPS_DIR/migration/restore-point.sh" raw-check 2>&1 | tail -n1 | sed 's/^[^]]*] //')"
+  if [ -d "$out_dir" ] && [ "$(stat -c %u:%a "$out_dir" 2>/dev/null)" = "$(pp_cfg PP_MIGRATE_UID 1000):700" ]; then
+    echo "reports: $out_dir ready (owner uid $(pp_cfg PP_MIGRATE_UID 1000), mode 700)"
+  else echo "reports: $out_dir missing or wrong owner/mode  -> NO-GO (runbook section 1)"; fi
 }
 
 case "$cmd" in

@@ -14,7 +14,7 @@
 # segment after it can be replayed to any moment after the base backup finished.
 #
 # status        archive_mode, archive_timeout, pg_stat_archiver (archived count, last segment and time, failures),
-#               archive size, base backups.
+#               archive size, base backups, and restore-point.sh raw-check (raw .cloud data still on the host).
 # base          a new base backup (label NAME, default "base"). Needs archive_mode=on. Holds the shared lock.
 # restore-test  proves the archive: extracts a base backup (newest, or STAMP) into a SCRATCH container (never the
 #               production data dir), replays WAL up to --target-time, promotes, prints the number of applied Prisma
@@ -46,6 +46,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 [[ "$label" =~ ^[a-z][a-z0-9_]{0,30}$ ]] || pp_die "--label: lowercase letters, digits and _" 2
+# A STAMP names a folder under /walarchive/base: only the exact shape, so "../x" can never pass the test -d checks.
+for v in "$base" "$keep"; do
+  [ -z "$v" ] || [[ "$v" =~ ^20[0-9]{6}T[0-9]{6}Z$ ]] || pp_die "--base / --keep-from must be a STAMP like 20261030T010000Z" 2
+done
 wal_dir="$(pp_cfg PP_WAL_ARCHIVE_DIR /var/backups/pretasiplus/wal)"
 pp_assert_outside_repo "$wal_dir"
 
@@ -62,6 +66,8 @@ cmd_status() {
   pp_log "archive_mode=$(psql_target 'show archive_mode') archive_timeout=$(psql_target 'show archive_timeout') wal_level=$(psql_target 'show wal_level')"
   pp_log "archiver: $(psql_target "select 'archived ' || archived_count || ', last ' || coalesce(last_archived_wal, '-') || ' at ' || coalesce(to_char(last_archived_time at time zone 'UTC', 'YYYY-MM-DD HH24:MI:SS'), 'never') || ' UTC, failed ' || failed_count || coalesce(', last failure ' || to_char(last_failed_time at time zone 'UTC', 'YYYY-MM-DD HH24:MI:SS') || ' UTC', '') from pg_stat_archiver")"
   pp_log "archive on disk: $(walsh 'du -sh /walarchive/wal 2>/dev/null | cut -f1; ls -1 /walarchive/wal 2>/dev/null | grep -c "\.gz$"' | tr '\n' ' ')(size, segments); base backups: $(bases | tr '\n' ' ')"
+  # Raw .cloud data retention (security review M1): the archive keeps the slot's WAL until cleanup.
+  "$PP_VPS_DIR/migration/restore-point.sh" raw-check || true
 }
 
 cmd_base() {
@@ -85,6 +91,9 @@ cmd_restore_test() {
   img="$(pp_cfg PP_STAGE_IMAGE postgres:16-alpine)"
   scratch="$(mktemp -d "$(pp_cfg PP_STAGE_DIR /srv/pretasiplus/stage)/pitr-test.XXXXXX")"
   docker rm -f "$name" >/dev/null 2>&1 || true
+  # A failed extract or start must not leave the scratch copy (production data) on disk.
+  # shellcheck disable=SC2064  # expand now: the trap must remove exactly this run's folder
+  trap "docker rm -f '$name' >/dev/null 2>&1 || true; docker run --rm -v '$scratch:/scratch' --entrypoint sh '$img' -c 'rm -rf /scratch/data' >/dev/null 2>&1 || true; rmdir '$scratch' 2>/dev/null || true" EXIT
   # Extract, add the recovery settings, start: all inside a throw-away container that only READS the archive.
   # shellcheck disable=SC2016  # expands inside the container
   docker run --rm -v "$scratch:/scratch" -v "$wal_dir:/walarchive:ro" --entrypoint sh "$img" -c '
@@ -113,6 +122,7 @@ cmd_restore_test() {
   docker rm -f "$name" >/dev/null 2>&1 || true
   docker run --rm -v "$scratch:/scratch" --entrypoint sh "$img" -c 'rm -rf /scratch/data' >/dev/null 2>&1 || true
   rmdir "$scratch" 2>/dev/null || true
+  trap - EXIT
   [ "$state" = f ] || pp_die "PITR TEST FAILED: the scratch server did not finish recovery to $target (base $base)"
   pp_log "PITR TEST PASSED: base $base replayed to $target and promoted in $((SECONDS - t0)) s; ${out:-no database listed}"
 }
