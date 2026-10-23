@@ -64,6 +64,16 @@ export function* leaves(value: unknown): Generator<string> {
   else if (value !== null && typeof value === 'object') for (const v of Object.values(value)) yield* leaves(v)
 }
 
+/** The parsed value of a json text cell (so its string leaves are indexed, not the whole text); anything else as it is. */
+function parsedJson(original: unknown): unknown {
+  if (typeof original !== 'string') return original
+  try {
+    return JSON.parse(original)
+  } catch {
+    return original
+  }
+}
+
 /** Salted hashes of the original values that rules replaced. Memory only; never written anywhere. */
 export class OriginalsIndex {
   private readonly salt = randomBytes(16)
@@ -83,7 +93,7 @@ export class OriginalsIndex {
   /** Index what `rule` replaced. `keep` and values that the rule left unchanged are never recorded. */
   record(rule: Rule, original: unknown, output: unknown): void {
     if (rule.rule === 'keep') return
-    for (const s of leaves(original)) {
+    for (const s of leaves(rule.rule === 'scrub-json' ? parsedJson(original) : original)) {
       if (typeof output === 'string' && output === s) continue
       this.add(rule, s)
     }
@@ -92,7 +102,7 @@ export class OriginalsIndex {
   private add(rule: Rule, raw: string): void {
     const n = collapse(raw)
     const kind = rule.rule === 'pseudonym' ? rule.kind : null
-    const minWhole = rule.rule === 'scrub-text' ? 20 : kind === 'username' || kind === 'code' || kind === 'opaque' ? 5 : 6
+    const minWhole = rule.rule === 'scrub-text' || rule.rule === 'scrub-json' ? 20 : kind === 'username' || kind === 'code' || kind === 'opaque' ? 5 : 6
     if (n.length >= minWhole) this.whole.add(this.h('w', n))
     if (kind === 'phone' || kind === 'ic') {
       const d = raw.replace(/\D/g, '')

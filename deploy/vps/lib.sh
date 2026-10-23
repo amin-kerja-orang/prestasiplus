@@ -10,6 +10,13 @@ PP_ENV_DIR="${PP_ENV_DIR:-/etc/pretasiplus}"
 export PP_ENV_DIR
 PP_PROD_ENV="${PP_PROD_ENV:-$PP_ENV_DIR/prod.env}"
 
+# Least-privilege database roles (cutover plan P3; deploy/vps/db-roles.sh, runbook section 3.1). Fixed names.
+PP_DB_ROLE_OWNER=pp_owner    # schema owner: the one-shot migrate service (migrate.env)
+PP_DB_ROLE_APP=pp_app        # the API (api.env)
+PP_DB_ROLE_ETL=pp_etl        # migrate:* through slot.sh etl (etl.env)
+PP_DB_ROLE_STAGE=pp_stager   # stage-only: slot.sh copy and the section 7 drops (no password, local socket only)
+export PP_DB_ROLE_OWNER PP_DB_ROLE_APP PP_DB_ROLE_ETL PP_DB_ROLE_STAGE
+
 pp_log()  { printf '%s [%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${PP_SCRIPT:-pp}" "$*"; }
 pp_warn() { pp_log "WARN: $*" >&2; }
 pp_die()  { pp_log "ERROR: $1" >&2; exit "${2:-1}"; }
@@ -34,6 +41,27 @@ pp_env_value() {
     *) val="${val%%[[:space:]]#*}"; val="${val%"${val##*[![:space:]]}"}" ;;
   esac
   printf '%s' "$val"
+}
+
+# pp_urldecode TEXT -> percent-decoded TEXT ('+' stays a literal plus, as in a URL userinfo)
+pp_urldecode() {
+  local s="$1" out="" h
+  while [ -n "$s" ]; do
+    if [[ "$s" =~ ^%([0-9A-Fa-f]{2})(.*)$ ]]; then printf -v h '%b' "\\x${BASH_REMATCH[1]}"; out+="$h"; s="${BASH_REMATCH[2]}"
+    else out+="${s:0:1}"; s="${s:1}"; fi
+  done
+  printf '%s' "$out"
+}
+
+# pp_parse_db_url URL -> sets PP_URL_USER, PP_URL_PASSWORD (decoded), PP_URL_HOST, PP_URL_DB, PP_URL_QUERY ('' or
+# '?...'); fails on another shape.
+# Never prints anything.
+# shellcheck disable=SC2034  # output variables, read by the callers
+pp_parse_db_url() {
+  PP_URL_USER=""; PP_URL_PASSWORD=""; PP_URL_HOST=""; PP_URL_DB=""; PP_URL_QUERY=""
+  [[ "$1" =~ ^postgres(ql)?://([^:@/]+):([^@]+)@([^:/]+)(:[0-9]+)?/([^?]+)(\?.*)?$ ]] || return 1
+  PP_URL_USER="${BASH_REMATCH[2]}"; PP_URL_HOST="${BASH_REMATCH[4]}"; PP_URL_DB="${BASH_REMATCH[6]}"; PP_URL_QUERY="${BASH_REMATCH[7]}"
+  PP_URL_PASSWORD="$(pp_urldecode "${BASH_REMATCH[3]}")"
 }
 
 # pp_cfg KEY DEFAULT -> environment, else prod.env, else DEFAULT

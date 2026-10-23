@@ -19,7 +19,8 @@
 #   clamav    (profile `clamav`)     clamd for upload scanning, reserved until the API reads CLAMAV_* (backlog #78)
 #   kuma      (profile `monitoring`) Uptime Kuma on 127.0.0.1 only
 #
-# Secrets are NOT in this file or in the repo: /etc/pretasiplus/{prod,api,db}.env (owner root, group ppdeploy, mode 640) hold them.
+# Secrets are NOT in this file or in the repo: /etc/pretasiplus/{prod,api,db,migrate,etl}.env (owner root, group ppdeploy,
+# mode 640) hold them. Database roles (P3): api = pp_app, migrate = pp_owner; the db.env superuser is for ops scripts only.
 # The *.example files in deploy/vps/ list the names with placeholders.
 #
 # SINGLE-INSTANCE RULE (threat model row 18, accepted by the LEAD 2026-10-21): the API keeps its rate-limit
@@ -95,12 +96,17 @@ services:
     logging: *logging
 
   # ---- One-shot migration. Production NEVER seeds from here. ----
+  # Connects as the schema owner pp_owner (migrate.env, read after api.env so its DATABASE_URL wins), never as the
+  # API role or the Postgres superuser (cutover plan P3, runbook section 3.1). `slot.sh etl` reuses this image and
+  # must pass etl.env (the migration role pp_etl) with `--env-from-file`.
   migrate:
     image: ${PP_IMAGE_PREFIX:-}pretasiplus-api-migrate:${PP_IMAGE_TAG:-prod}
     command: ['npm', 'run', 'be:db:migrate']
     env_file: !override
       - path: ${PP_ENV_DIR:-/etc/pretasiplus}/api.env
         required: false
+      - path: ${PP_ENV_DIR:-/etc/pretasiplus}/migrate.env
+        required: false           # deploy.sh refuses to run without it (sudo deploy/vps/db-roles.sh secrets)
     environment:
       NODE_ENV: production
       ALLOW_DEMO_SEED: 'false'

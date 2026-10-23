@@ -163,3 +163,7 @@ User create/delete/toggle (BE-05), subscription changes (BE-25) and the BE-21 pa
 - Question writes and file writes: put the audit call inside the same transaction so a committed change always has its row.
 - Ledger rows (`coin_ledger`, `token_movements`) carry no request id or actor; consider a request id column if finance needs traceability.
 - After applying the patch: update unit tests that build `AuditActor`, `ShopActor` or `HttpActor` literals (new `scopeLevel` field), and run the type-check and the affected specs (the patch was not compiled).
+
+## STRICT-1 note (2026-10-22, #97, #98, #99)
+
+- The bodies of `POST /auth/register`, `POST /admin-sekolah/guru`, `POST /admin/articles`, `POST /tiket` and `POST /me/notifications/bulk-read` are now strict (BE-33 AC1c). A body with an unknown key is a 422 before any write, so it writes no `account.registered`, `school_admin.teacher.created`, `content.article.created` or `support.ticket.created` row; a valid body audits exactly as in the table above. No audit row, field or status in this document changes.
