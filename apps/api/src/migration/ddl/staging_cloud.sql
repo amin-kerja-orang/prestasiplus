@@ -1164,6 +1164,8 @@ create table "archive_cloud"."questions" (
   "type" text,
   "status" text,
   "body" text,
+  "explanation" text,
+  "image_path" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),

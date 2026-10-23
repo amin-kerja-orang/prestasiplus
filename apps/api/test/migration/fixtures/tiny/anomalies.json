@@ -282,6 +282,8 @@
       "packages.updated_at": 3,
       "exam_attempts.section_selections": 13,
       "exam_attempts.served_composition": 13,
+      "questions.explanation": 24,
+      "questions.image_path": 24,
       "questions.created_at": 24,
       "questions.updated_at": 24,
       "question_options.created_at": 96,

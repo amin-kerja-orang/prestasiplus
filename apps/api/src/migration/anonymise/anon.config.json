@@ -565,7 +565,9 @@
       "difficulty_level": "keep",
       "type": "keep",
       "status": "keep",
-      "body": "keep"
+      "body": "keep",
+      "explanation": "keep",
+      "image_path": "pseudonym:path"
     },
     "question_options": {
       "question_id": "keep",

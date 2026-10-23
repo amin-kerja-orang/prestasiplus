@@ -267,6 +267,8 @@ const ARCHIVE: TableSpec[] = [
   a('questions', [
     'subject_id:id:fk=subjects', 'education_level_id:id:fk=education_levels', 'chapter_id:id:fk=chapters',
     'topic_id:id:fk=topics', 'difficulty_level:t:enum', 'type:t:enum', 'status:t:enum', 'body:t',
+    // QLOAD (LEAD 24 Oct, #113): loaded into the v2 bank at cutover, so the archive keeps them.
+    'explanation:t', 'image_path:t',
   ]),
   a('question_options', ['question_id:id:fk=questions', 'label:t', 'body:t', 'is_correct:t:enum']),
   a('structured_questions', ['subject_id:id:fk=subjects', 'status:t:enum', 'stimulus:t']),
