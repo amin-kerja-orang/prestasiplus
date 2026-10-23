@@ -1,7 +1,6 @@
 import { INTAKE_MESSAGES, IntakeBatchReviewEnvelopeSchema, IntakeExtractionRunEnvelopeSchema } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { MASK, Redactor } from '../../src/modules/ai-extraction/redaction/redactor'
 import { JobError } from '../../src/modules/jobs'
 import { addAccount, bootWorkflowApp, draft, extract, extractAndRun, itemsOf, loginAs, paper, post, readyBatch, type LoggedIn, type WorkflowTestApp } from './helpers'
 
@@ -164,107 +163,16 @@ describe('extract preconditions', () => {
   })
 })
 
-describe('redaction before the provider (AC-8)', () => {
-  it('cover-page identifiers never reach the extractor and are scrubbed from what it returns', async () => {
-    const { batchId } = await readyBatch(t, teacher)
-    const cover = [
-      'PEPERIKSAAN PERCUBAAN',
-      'Nama: Contoh Penuh Pelajar',
-      'Guru: Contoh Guru Kelas',
-      'Sekolah: SMK TAMAN CONTOH',
-      'No. KP: 080808-10-1234',
-      'Tel: 012-3456789',
-      'E-mel: pelajar.contoh@sekolah.test',
-      'Alamat: 1 Jalan Contoh, Taman Contoh',
-      'Soalan 1. Hitung 2 + 3.',
-    ].join('\n')
-    await t.db.query(
-      `update intake_pages set text = $1 where intake_file_id in (select id from intake_files where batch_id = $2) and page_no = 1`,
-      [cover, batchId],
-    )
-    t.ai.paper = () => paper([draft(t.codes, '1', { stem: 'Hubungi guru.rahsia@sekolah.test atau 013-9876543 untuk soalan ini tentang pecahan.' })])
-    const calls = t.ai.calls.length
-    await extractAndRun(t, teacher, batchId)
-    const sent = JSON.stringify(t.ai.calls[calls])
-    for (const secret of ['Contoh Penuh Pelajar', 'Contoh Guru Kelas', 'TAMAN CONTOH', '080808', '3456789', 'pelajar.contoh', 'Jalan Contoh']) {
-      expect(sent, secret).not.toContain(secret)
-    }
-    expect(sent).toContain('Hitung 2 + 3')
-    expect(t.ai.calls[calls]?.images?.some((im) => im.page === 1) ?? false).toBe(false)
-
-    const stored = await t.db.query<{ payload: unknown }>(`select payload from intake_items where batch_id = $1`, [batchId])
-    const text = JSON.stringify(stored)
-    expect(text).not.toContain('guru.rahsia')
-    expect(text).not.toContain('9876543')
-  })
-})
-
-describe("BE-36's redactor (LEAD decision (c): one redactor)", () => {
-  it('every page text of the outbound request passed through BE-36\'s redactor, and only its output is sent', async () => {
-    const { batchId } = await readyBatch(t, teacher)
-    const cover = 'Nama: Contoh Penuh Pelajar\nSekolah: SMK TAMAN CONTOH\nNo. KP: 080808-10-1234\nSoalan 1. Hitung 2 + 3.'
-    await t.db.query(
-      `update intake_pages set text = $1 where intake_file_id in (select id from intake_files where batch_id = $2) and page_no = 1`,
-      [cover, batchId],
-    )
-    t.ai.paper = () => paper([draft(t.codes, '1')])
-    const calls = t.ai.calls.length
-    const spy = vi.spyOn(Redactor.prototype, 'redact')
-    try {
-      await extractAndRun(t, teacher, batchId)
-      const req = t.ai.calls[calls]!
-      const outputs = spy.mock.results.map((r) => r.value as string)
-      expect(req.pages.length).toBeGreaterThan(0)
-      // Each page text the extractor received is an output of BE-36's Redactor, and the cover page was one of its inputs.
-      for (const p of req.pages) expect(outputs, `page ${p.page}`).toContain(p.text)
-      expect(spy.mock.calls.map((c) => c[0])).toContain(cover)
-      // BE-36's mask tokens are on the wire; the removed workflow redactor's token is not.
-      const sent = JSON.stringify(req)
-      for (const token of [MASK.person_name, MASK.school_name, MASK.ic_number]) expect(sent).toContain(token)
-      expect(sent).not.toContain('[DIRAHSIAKAN]')
-      expect(sent).toContain('Hitung 2 + 3')
-      expect(req.images).toBeUndefined()
-    } finally {
-      spy.mockRestore()
-    }
-  })
-})
-
-describe('page images (AC-8, text only)', () => {
-  it('never sends a page image: the provider request carries redacted OCR text only', async () => {
-    const { batchId } = await readyBatch(t, teacher, { pages: 5 })
-    const rows = await t.db.query<{ id: string; page_no: number }>(
-      `select p.id::text, p.page_no from intake_pages p join intake_files f on f.id = p.intake_file_id where f.batch_id = $1 order by p.page_no`,
-      [batchId],
-    )
-    expect(rows).toHaveLength(5)
-    // page 2: a scan whose text could not be read; page 4: labelled personal details.
-    await t.db.query(`update intake_pages set text = null, ocr_status = 'failed' where id = $1`, [rows[1]!.id])
-    await t.db.query(`update intake_pages set text = $2 where id = $1`, [rows[3]!.id, 'Nama: Contoh Penuh Calon\nSoalan 2. Hitung 4 + 5.'])
+describe('text only at the port (AC-8, #189)', () => {
+  it('the request on the AI_EXTRACTOR port has no page image, not even a reference; redaction is left to BE-36', async () => {
+    const { batchId } = await readyBatch(t, teacher, { pages: 3 })
     t.ai.paper = () => paper([draft(t.codes, '1')])
     const calls = t.ai.calls.length
     await extractAndRun(t, teacher, batchId)
     const req = t.ai.calls[calls]!
+    expect(Object.keys(req).sort()).toEqual(['kertas', 'pages', 'subject', 'taxonomy'])
     expect(req.images).toBeUndefined()
-    const sent = JSON.stringify(req)
-    expect(sent).not.toMatch(/"images"|data:image|base64|imageKey|storageKey/)
-    expect(sent).not.toContain('Contoh Penuh Calon')
-    expect(req.pages.map((p) => p.page)).not.toContain(2)
-  })
-
-  it('a name the redaction masked in the input is masked again if the provider echoes it', async () => {
-    const { batchId } = await readyBatch(t, teacher)
-    await t.db.query(
-      `update intake_pages set text = $2 where intake_file_id in (select id from intake_files where batch_id = $1) and page_no = 1`,
-      [batchId, 'Nama: Zulkarnain Bin Contohan\nSekolah: SMK TAMAN CONTOHAN\nSoalan 1. Hitung 2 + 3.'],
-    )
-    t.ai.paper = () =>
-      paper([draft(t.codes, '1', { stem: 'Soalan ini disediakan untuk Zulkarnain dari SMK TAMAN CONTOHAN tentang pecahan sahaja.' })], {
-        warnings: ['Nama Zulkarnain Bin Contohan dikesan'],
-      })
-    await extractAndRun(t, teacher, batchId)
-    const text = JSON.stringify(await t.db.query(`select payload from intake_items where batch_id = $1`, [batchId])) +
-      JSON.stringify(await t.db.query(`select warnings from intake_extraction_runs where batch_id = $1`, [batchId]))
-    expect(text).not.toMatch(/Zulkarnain|CONTOHAN/i)
+    expect(JSON.stringify(req)).not.toMatch(/"images"|"fileId"|data:image|base64|imageKey|storageKey|https?:\/\//)
+    // The redaction and its echo masking run once, in BE-36's service behind the port: provider-boundary.spec.ts.
   })
 })
