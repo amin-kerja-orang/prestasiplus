@@ -62,8 +62,8 @@ function pick(id: string): void {
     :data-testid="`question-${question.id}`"
     :aria-labelledby="`h-${question.id}`"
   >
-    <header class="flex items-start justify-between gap-3">
-      <div class="min-w-0">
+    <header class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+      <div class="min-w-0 grow basis-32">
         <h2
           :id="`h-${question.id}`"
           ref="heading"
@@ -72,7 +72,12 @@ function pick(id: string): void {
           data-testid="question-heading"
         >
           Soalan {{ question.number
-          }}<template v-if="stimulusLabel"> · berdasarkan {{ stimulusLabel }}</template>
+          }}<template v-if="stimulusLabel"
+            ><span class="sr-only"> · </span
+            ><span class="block text-caption font-semibold text-muted"
+              >berdasarkan {{ stimulusLabel }}</span
+            ></template
+          >
         </h2>
         <p class="tabular text-caption text-muted">[{{ question.marks }} markah]</p>
       </div>
@@ -81,7 +86,7 @@ function pick(id: string): void {
         :color="flagged ? 'warning' : 'neutral'"
         :variant="flagged ? 'soft' : 'ghost'"
         :icon="flagged ? 'i-ph-flag-fill' : 'i-ph-flag'"
-        class="min-h-11 shrink-0 rounded-2xl"
+        class="ml-auto min-h-11 shrink-0 rounded-2xl max-sm:px-3 max-sm:learner:px-3"
         :aria-pressed="flagged"
         data-testid="flag-button"
         @click="emit('toggle-flag')"
