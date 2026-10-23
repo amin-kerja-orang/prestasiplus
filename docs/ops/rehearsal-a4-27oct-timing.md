@@ -227,22 +227,48 @@ q "select 'etl_runs', count(*) from etl_runs union all select 'etl_recon', count
 
 ### 6.1 Refusal 1: the synthetic-data guard
 
+**Data.** Track R: the stage of the 24 Oct anonymised dump, option (a), nothing planted. Track S: option (b) only (the `fixtures:generate` output holds filler hashes, not the marker), and only once #166 has the scratch-only override of `slot.sh load`; until then the Track S form is BLOCKED and Track R carries the proof (same code path).
+
+**Preconditions (both tracks, in this order; any miss = stop, not a pass).**
+1. The target is the rehearsal DB or the scratch copy, never production: `q "select current_database()"` prints `$DB` (Track S: the scratch name and host written at P-6, initialled by half AZ). No API or session is connected.
+2. State `pre_etl` (staged, not migrated). Write down the seven counts of this section; `etl_runs` is 0.
+3. The marker is in the stage (read-only; the pattern is the documented public dummy of `anonymise/passwords.ts`, not a secret). The result must be at least 1:
+
 ```bash
-step guard1 "$RDB" exec target -- env NODE_ENV=production "PP_MIGRATE_TARGET_DB=$DB" PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:all -w @pp/api -- --apply --as-of="$ASOF"
+q "select count(*) from staging_cloud.users where password = 'not-a-hash-anonymised' or password like '\$2_\$10\$1BYJgcHHYPQGKg8zT39ARe/w5AeZ41OVkDbo33Yy8S.1BexZs1KEC' or password like '\$argon2id\$v=19\$m=19456,t=2,p=1\$rh2l5K/3jj9wZ18JnsWzBA\$%'"
 ```
 
-(Shape of `rehearsal-db.md` section 4: `exec` forces `NODE_ENV=development`, so `NODE_ENV=production` goes inside the command with `env`; `exec` supplies `IC_HASH_KEY` from the state dir.)
+On Track R the 24 Oct stage gives at least 1 with no change. On Track S it gives 0 on the fixture: plant one row first, on the scratch copy only (as the scratch admin through the T11a `psql` form; **Perlu pengesahan (half AZ):** that form). The original value is kept inside `staging_cloud`:
+
+```sql
+create table staging_cloud.zz_guard_plant as select id, password from staging_cloud.users order by id limit 1;
+update staging_cloud.users u set password = 'not-a-hash-anonymised' from staging_cloud.zz_guard_plant p where u.id = p.id;
+```
+
+**Command.** Track R (`NODE_ENV=production` inside the command; `exec` supplies `IC_HASH_KEY`). Track S (`slot.sh etl` already sets `NODE_ENV=production` and `PP_MIGRATE_TARGET_DB`; `--dry-run` is enough, the guard runs in `runCore` in every mode):
+
+```bash
+step guard1 "$RDB" exec target -- env NODE_ENV=production "PP_MIGRATE_TARGET_DB=$DB" PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:all -w @pp/api -- --apply --as-of="$ASOF"   # Track R
+step guard1s "$S" etl migrate:all --dry-run --as-of="$ASOF"   # Track S, scratch only
+```
 
 | Item | Expected (from the code) |
 |---|---|
-| Exit code | **2** (`SyntheticDataRefusedError` extends `ApplyGuardError`; `cli.ts` maps it to exit 2) |
-| stdout | The line `--apply target: database "<db>" on <host>` (the target guard passed). Do not copy it; it holds a host name. No line `migrate:all core dry-run: run <id>`. |
+| Exit code | **2**. Track S: the line `ETL STEP migrate:all exit=2 duration_s=<n> ...` |
 | stderr | `Refusing to migrate in production: staging_cloud holds the dummy password hashes of an anonymised or synthetic dump.` |
-| After | The same seven counts as before, all unchanged. In particular `etl_runs` has no new row (0 at the `pre_etl` state): the guard stopped the run before the runner created it. |
+| stdout | Track R: `--apply target: database "<db>" on <host>` (do not copy it). Track S `--dry-run`: no such line. Both: no `migrate:all core dry-run: run <id>` line. |
+| Written nothing | The seven counts equal the "before" numbers (`etl_runs` still 0: the guard stops before the runner creates the row). `count(*)` of `staging_cloud.users` equal before and after. |
 
-The same data in production mode is refused for `--dry-run` too (the guard is in `runCore`, whatever the mode); this is what B6 relies on ("the synthetic-data guard fails early"). Optional check: the same line with `--dry-run` instead of `--apply`, exit 2, same message, `etl_runs` still 0.
+**Remove (Track S only, right after the counts).** Put the original back and drop the helper; the marker count must then be 0. Track R: nothing to remove (after the main sequence, `restore-snapshot pre_etl --yes` as before).
 
-**Not a valid proof:** exit 1 with `IC_HASH_KEY is required in production to hash IC numbers.` (the key was missing: `IcHasher` is built before the guard); exit 0; any `run <id>` line; any change in the counts.
+```sql
+update staging_cloud.users u set password = p.password from staging_cloud.zz_guard_plant p where u.id = p.id;
+drop table staging_cloud.zz_guard_plant;
+```
+
+**Record:** data used (R anonymised stage / S planted), marker count, exit code, the fixed stderr line, the seven counts before and after, plant removed yes/no. **Not a valid proof:** exit 1 (`IC_HASH_KEY is required in production ...`), exit 0, any `run <id>` line, any count change, or a marker count of 0 before the run.
+
+*Why (AM1-3, R29):* `assertNotSyntheticInProduction` (`load/index.ts:72-86`) reads only `staging_cloud.users.password` (`:77-80`) against `SYNTHETIC_PASSWORDS` (`:65`) when `NODE_ENV` is production (`:69,76`). The anonymiser rule `hash-password-dummy` (`anon.config.json:19`, `anonymise/passwords.ts:35-44`) writes those values, and `staging:load`/`stage` copy the column unchanged. `fixtures:generate` writes `fakeHash`/`DEFAULT_HASH` (`fixtures/generate.ts:39,95-97`), which are not in the list; `runCore` calls the guard at `:122`, before an `etl_runs` row exists.
 
 ### 6.2 Refusal 2: the target guard (no `PP_MIGRATE_TARGET_DB`)
 
