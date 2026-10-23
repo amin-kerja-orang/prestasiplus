@@ -147,7 +147,7 @@ Edge client address (Cloudflare Pages to Render demo/go-live): when `CLIENT_IP_H
 
 Differences from the card's working assumptions (registration 10 per hour per address, uploads 30 per hour per user, tickets 5 per hour per user): the code uses the numbers above, which are configurable. Registration is per minute because a school shares one address. The lead confirms or changes the numbers (card open question 1).
 
-Single instance: the API must run as ONE instance (Render free plan) because the rate-limit buckets live in process memory (only the login throttle is in the database). Before running more than one instance, move the buckets to a shared store (Redis). Accepted by the lead on 2026-10-21 (threat model row 18).
+Single instance: the API must run as ONE instance because the rate-limit buckets live in process memory (only the login throttle is in the database). This holds for the Render demo (free plan, one instance) and for the production VPS (one `api` container in `deploy/vps/compose.prod.yaml`; `deploy/vps/deploy.sh` preflight refuses a rendered `replicas`/`scale` above 1 or more than one running `api` container; `docs/ops/production-vps.md` section 14). Status: accepted limit for go-live (30 Oct), confirmed by the LEAD on 2026-10-22 (#190, decision A). Before running more than one instance, move the buckets to a shared store (Redis, or a Postgres counter table behind `RateLimiter.consume`). Accepted by the lead on 2026-10-21 (threat model row 18).
 
 ## 10. Backup and restore of pgdata
 
