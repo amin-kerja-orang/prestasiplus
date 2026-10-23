@@ -1,6 +1,7 @@
 import { CreatedUserSchema } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { UsersRepository } from '../../src/modules/users'
 import { ADMIN, apiOf, bootUsersApp, detailOf, fieldsOf, login, SCHOOL_ADMIN, schoolIdOf, type Api, type UsersTestApp } from './helpers'
 
 const INVALID = 'The selected linked student ids is invalid.'
@@ -152,6 +153,27 @@ describe('admin users: parent links (SW2-08)', () => {
     const bad = await admin.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Ujian', linkedStudentIds: [own[1], '9999999'] })
     expect(fieldsOf(bad).linkedStudentIds).toBe(INVALID)
     expect(await stored(pid)).toEqual([own[0]])
+  })
+
+  it('a student that disappears after the pre-check is a 422 and rolls the write back (create and update)', async () => {
+    const repo = t.app.get(UsersRepository)
+    const spy = vi.spyOn(repo, 'allStudents')
+    try {
+      // First call (pre-check) passes, second (inside the transaction) fails.
+      spy.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+      const users = (await t.db.query<{ n: number }>('select count(*)::int n from users'))[0]?.n
+      const res = await admin.post('/admin/users', { roles: ['parent'], name: 'Ibu Hilang', email: 'hilang@ujian.test', linkedStudentIds: [own[0]] })
+      expect(fieldsOf(res).linkedStudentIds).toBe(INVALID)
+      expect((await t.db.query<{ n: number }>('select count(*)::int n from users'))[0]?.n).toBe(users)
+
+      const pid = CreatedUserSchema.parse((await parent({ linkedStudentIds: [own[0]] })).body.data).id
+      spy.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+      const up = await admin.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Hilang', linkedStudentIds: [own[1]] })
+      expect(fieldsOf(up).linkedStudentIds).toBe(INVALID)
+      expect(await stored(pid)).toEqual([own[0]])
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('links are kept only for a parent: other roles ignore linkedStudentIds', async () => {

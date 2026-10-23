@@ -538,7 +538,16 @@ export class UsersService {
    * (AC-M02-15.4). A school_admin only replaces the links of its own school's children, the ones it can see.
    */
   private async storeLinked(caller: Caller, parentId: string, ids: readonly string[]): Promise<LinkChange> {
-    return this.parentLinks.replaceLinksOfParent(parentId, ids, caller.isAdmin ? null : caller.schoolId)
+    // Re-check in the write transaction (after the admin lock on update): a student deleted or de-roled
+    // since the pre-check is a 422, not a 500 or a link to a non-student.
+    const gone = () => invalid({ linkedStudentIds: FIELD_MESSAGES.linkedInvalid })
+    if (!(await this.users.allStudents(ids, caller))) throw gone()
+    try {
+      return await this.parentLinks.replaceLinksOfParent(parentId, ids, caller.isAdmin ? null : caller.schoolId)
+    } catch (err) {
+      if (isForeignKeyBlock(err)) throw gone() // the student vanished between the re-check and the insert
+      throw err
+    }
   }
 
   /**
