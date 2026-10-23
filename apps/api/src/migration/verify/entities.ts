@@ -98,6 +98,7 @@ export const ENTITY_MATRIX: readonly MatrixEntry[] = [
   e('notes', 'notes', 'notes'),
   e('videos', 'videos', 'videos'),
   e('audio_kbat_sets', 'audio_kbat', 'audio_kbat_sets'),
+  e('question_sets', 'question_sets', 'question_sets', 'teacher headers only, as needs-rebuild with no class (OD-10 Q4 A); the items are not migrated'),
   // ---- BE-29 ops
   e('support_tickets', 'support_tickets', 'support_tickets'),
   e('timeline_posts', 'timeline_entries', 'timeline_posts'),
