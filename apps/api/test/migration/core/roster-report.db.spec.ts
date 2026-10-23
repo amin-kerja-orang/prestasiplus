@@ -15,6 +15,7 @@ import { runSeeds } from '../../../prisma/seed'
 import { schoolPackagesSeed } from '../../../prisma/seed/core/school-packages'
 import { curriculumSeed } from '../../../prisma/seed/curriculum'
 import type { AnyEntityStep } from '../../../src/migration/kit/runner'
+import { ApplyRefusedError } from '../../../src/migration/kit'
 import { ROSTER_HASHES_WARNING, runCore } from '../../../src/migration/load'
 import { migrateCore } from '../../../src/migration/load/command'
 import { loadStaging } from '../../../src/migration/staging/load'
@@ -252,4 +253,25 @@ describe('Q11 after an interrupted and resumed apply', () => {
     const body = JSON.parse(readFileSync(resumed.restrictedFile as string, 'utf8')) as { ids: Record<string, string[]> }
     expect(body.ids).toEqual({ flaggedWithoutLoginId: ['3', '10'], nullHashAccounts: ['9', '10', '11'] })
   }, 300_000)
+
+  it('a refused apply (no passing dry-run) leaves the notes of the earlier apply row of the same input untouched', async () => {
+    // Runs after the test above: env2 holds the dry-run and the succeeded apply of this input.
+    const latest = async () =>
+      (await env2.pool.query<{ id: string; notes: unknown }>(`select id::text, counters -> 'notes' as notes from etl_runs where mode = 'apply' order by id desc limit 1`)).rows[0] as { id: string; notes: unknown }
+    const runs = async () => (await env2.pool.query<{ n: number }>(`select count(*)::int as n from etl_runs`)).rows[0]?.n
+    const before = await latest()
+    expectNumbersOnly(before.notes as Record<string, unknown>)
+    const runsBefore = await runs()
+    await env2.pool.query(`update etl_runs set status = 'failed' where mode = 'dry-run'`) // the apply gate now finds no passing dry-run
+    const out = dir2()
+    dirs.push(out)
+    const warnings: string[] = []
+    await expect(
+      runCore({ pool: env2.pool, env: baseEnv, source: 'cloud', asOf: AS_OF, batchSize: 2, mode: 'apply', outDir: out, warn: (l) => void warnings.push(l) }),
+    ).rejects.toBeInstanceOf(ApplyRefusedError)
+    expect(await runs(), 'the refused run created no row').toBe(runsBefore)
+    expect(await latest()).toEqual(before)
+    expect(readdirSync(out).filter((f) => f.startsWith('core-login-gaps-')), 'no id file for a run that loaded nothing').toEqual([])
+    expect(warnings.some((w) => w.includes('restricted id file'))).toBe(false)
+  }, 120_000)
 })

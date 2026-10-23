@@ -9,7 +9,7 @@ import type pg from 'pg'
 import { STAGING_SCHEMA } from '../ddl/spec'
 import { ApplyGuardError } from '../kit/apply-guard'
 import { hashInput, tableDigest } from '../kit/sql'
-import { Runner, type AnyEntityStep, type RunReport } from '../kit/runner'
+import { ApplyRefusedError, RunInProgressError, Runner, type AnyEntityStep, type RunReport } from '../kit/runner'
 import type { RunMode } from '../kit/types'
 import { prepareOutputDir } from '../profile'
 import { DUMMY_ARGON2_HASH, NOT_A_HASH, dummyBcryptHash } from '../anonymise/passwords'
@@ -228,7 +228,10 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
     report = await runner.run({ mode, steps: runSteps, inputHash, gitSha, batchSize })
   } catch (err) {
     // An apply that stopped after committing user batches still needs its list (best effort; the original error wins).
-    if (mode === 'apply' && core.notes.counters.has('nullHashAccounts')) {
+    // A refused apply (no passing dry-run) or a held lock stops before this process has a run row: nothing was loaded, and the
+    // latest apply row of the input hash belongs to an earlier run, so its notes must stay as they are.
+    const noRunRow = err instanceof ApplyRefusedError || err instanceof RunInProgressError
+    if (mode === 'apply' && !noRunRow && core.notes.counters.has('nullHashAccounts')) {
       try {
         await recountFromCommitted(options.pool, core)
         const file = writeFile('interrupted')
