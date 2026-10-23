@@ -19,6 +19,8 @@ const guru = vi.hoisted(() => ({
   downloadQuestionTemplate: vi.fn(),
 }))
 vi.mock('../../api/guru', () => guru)
+const sessionMock = vi.hoisted((): { role: string | null } => ({ role: 'teacher' }))
+vi.mock('@/stores/session', () => ({ useSessionStore: () => sessionMock }))
 const saveBlob = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/save-blob', () => ({ saveBlob }))
 
@@ -36,6 +38,7 @@ const all = (w: VueWrapper, id: string) => w.findAll(`[data-testid="${id}"]`)
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  sessionMock.role = 'teacher'
   router = makeRouter()
   guru.fetchContributions.mockResolvedValue(summary())
   guru.fetchContributedQuestions.mockResolvedValue({
@@ -83,8 +86,25 @@ describe('S21 Sumbang Soalan', () => {
     const ai = t(w, 'ai-card')
     expect(ai.text()).toContain('AI Auto-Generate Soalan')
     expect(ai.find('a, button, form').exists()).toBe(false)
-    expect(t(w, 'audio-create').attributes('href')).toBe('/guru/audio-kbat/create')
-    expect(t(w, 'audio-list').attributes('href')).toBe('/guru/audio-kbat')
+    expect(t(w, 'audio-template-xlsx').attributes('href')).toBe('/api/guru/audio-kbat/template')
+    expect(t(w, 'audio-template-word').attributes('href')).toBe(
+      '/api/guru/audio-kbat/template-word',
+    )
+  })
+
+  it('does not link a teacher to the missing /guru/audio-kbat* screens (DV-M10-36)', async () => {
+    sessionMock.role = 'teacher'
+    const w = await mountPage()
+    expect(t(w, 'audio-create').exists()).toBe(false)
+    expect(t(w, 'audio-list').exists()).toBe(false)
+    expect(w.html()).not.toContain('href="/guru/audio-kbat')
+  })
+
+  it('sends the admin to the M09 admin Audio KBAT screens', async () => {
+    sessionMock.role = 'admin'
+    const w = await mountPage()
+    expect(t(w, 'audio-create').attributes('href')).toBe('/admin/audio-kbat/create')
+    expect(t(w, 'audio-list').attributes('href')).toBe('/admin/audio-kbat')
   })
 
   it('lists the cards, toggles one open and links Edit', async () => {

@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
-import { ApiError } from '@/api'
+import { api, ApiError } from '@/api'
 import { useSessionStore } from '@/stores/session'
 
 import type { ClientSession } from '../../api'
@@ -73,6 +73,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.restoreAllMocks()
   wrapper?.unmount()
   wrapper = null
 })
@@ -245,5 +247,45 @@ describe('LoginPage (M01 S1)', () => {
     expect(w.get('[data-testid=login-alert]').text()).toBe(
       'Too many login attempts. Please try again in 30 seconds.',
     )
+  })
+
+  describe('prototype scope (SWEEP-23OCT O1)', () => {
+    const PARENT: ClientSession = { ...SESSION, user: { ...SESSION.user, role: 'parent' } }
+
+    it('refuses an out-of-scope role: ends the server session, clears the client one, shows the message', async () => {
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+      const post = vi.spyOn(api, 'post').mockResolvedValue(undefined)
+      apiMocks.login.mockResolvedValue(PARENT)
+      const w = await render()
+      await fillAndSubmit(w, 'ibubapa@demo.test', 'Demo1234')
+      expect(post).toHaveBeenCalledWith('/api/auth/logout')
+      expect(useSessionStore().isLoggedIn).toBe(false)
+      expect(w.get('[data-testid=login-alert]').text()).toBe(
+        'Peranan ini tidak termasuk dalam prototaip.',
+      )
+      expect(router.currentRoute.value.fullPath).toBe('/login')
+      expect((w.get('[data-testid=login-password]').element as HTMLInputElement).value).toBe('')
+    })
+
+    it('lets an in-scope role through without calling logout', async () => {
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+      const post = vi.spyOn(api, 'post').mockResolvedValue(undefined)
+      apiMocks.login.mockResolvedValue(SESSION)
+      const w = await render()
+      await fillAndSubmit(w, 'pelajar@demo.test', 'Demo1234')
+      expect(post).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.fullPath).toBe('/dashboard')
+    })
+
+    it('does not refuse any role when the scope is off', async () => {
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'off')
+      apiMocks.login.mockResolvedValue({
+        ...PARENT,
+        user: { ...PARENT.user, landingPath: '/dashboard' },
+      })
+      const w = await render()
+      await fillAndSubmit(w, 'ibubapa@demo.test', 'Demo1234')
+      expect(useSessionStore().isLoggedIn).toBe(true)
+    })
   })
 })

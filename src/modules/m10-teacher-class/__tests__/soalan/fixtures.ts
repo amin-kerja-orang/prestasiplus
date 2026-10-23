@@ -12,8 +12,8 @@ export function makeRouter(): Router {
       { path: '/guru/soalan/cipta', component: stub },
       { path: '/guru/soalan/:id', component: stub },
       { path: '/guru/soalan/:id/edit', component: stub },
-      { path: '/guru/audio-kbat', component: stub },
-      { path: '/guru/audio-kbat/create', component: stub },
+      { path: '/admin/audio-kbat', component: stub },
+      { path: '/admin/audio-kbat/create', component: stub },
     ],
   })
 }
