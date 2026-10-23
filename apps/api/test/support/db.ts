@@ -42,6 +42,12 @@ export async function createTestDatabase(): Promise<TestDatabase> {
   // Small pools: every test file has its own database and the files run in parallel.
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: 3, connectionTimeoutMillis: 30_000 }) })
   const pool = new pg.Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 30_000 }) // same 30 s as src/db/client.ts
+  // A pg.Pool without an 'error' listener turns an idle-connection error into an uncaught exception. The only
+  // error expected is the server terminating the connection (57P01), and only once the drop has started.
+  let dropping = false
+  pool.on('error', (err: Error & { code?: string }) => {
+    if (!(dropping && err.code === '57P01')) throw err
+  })
 
   return {
     name,
@@ -52,11 +58,13 @@ export async function createTestDatabase(): Promise<TestDatabase> {
       return res.rows
     },
     async drop() {
+      dropping = true
       await prisma.$disconnect()
       await pool.end()
       const a = new pg.Client({ connectionString: adminUrl })
       await a.connect()
       try {
+        await waitForClientsToLeave(a, name)
         await a.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`)
       } finally {
         await a.end()
@@ -71,3 +79,23 @@ export async function createTestDatabase(): Promise<TestDatabase> {
  * as a flaky failure. Production keeps Prisma's defaults.
  */
 export const TEST_TX = { maxWait: 20_000, timeout: 20_000 } as const
+
+/**
+ * `pg.Pool.end()` (and so `$disconnect()`) resolves once the clients are sent their Terminate message, not
+ * once the server backends have exited. `DROP DATABASE ... WITH (FORCE)` signalling a backend that is still
+ * shutting down makes it answer 57P01 ("terminating connection due to administrator command") to a client
+ * that is already closing, which node-postgres reports as an unhandled error on a random later spec. Waiting
+ * for our own backends to be gone makes FORCE a no-op for them; it stays only as the fallback for a leaked
+ * connection, after a bounded wait.
+ */
+async function waitForClientsToLeave(admin: pg.Client, database: string, timeoutMs = 5_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    const res = await admin.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM pg_stat_activity WHERE datname = $1 AND backend_type = 'client backend' AND pid <> pg_backend_pid()`,
+      [database],
+    )
+    if (res.rows[0]?.n === '0' || Date.now() >= deadline) return
+    await new Promise((resolve) => setTimeout(resolve, 20))
+  }
+}
