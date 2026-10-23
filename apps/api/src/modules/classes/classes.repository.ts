@@ -371,10 +371,13 @@ export class ClassesRepository {
     return rows.map((r) => idToString(r.studentId))
   }
 
-  /** The class names of the teacher's active classes per student (the "Pelajar Saya" chips), in class creation order. */
-  async classNamesByStudent(teacherId: string): Promise<Map<string, string[]>> {
+  /**
+   * The teacher's active classes per student (the "Pelajar Saya" chips), in class creation order (newest first).
+   * One query; the id travels with the name because class names are not unique (SW5-03).
+   */
+  async classesByStudent(teacherId: string): Promise<Map<string, { id: string; name: string }[]>> {
     const key = idOf(teacherId)
-    const out = new Map<string, string[]>()
+    const out = new Map<string, { id: string; name: string }[]>()
     if (key === null) return out
     const rows = await this.db.enrolment.findMany({
       where: { status: 'active', isTest: false, classroom: { teacherId: key, isActive: true } },
@@ -383,9 +386,10 @@ export class ClassesRepository {
     rows.sort((a, b) => b.classroom.createdAt.getTime() - a.classroom.createdAt.getTime() || Number(a.classroom.id - b.classroom.id))
     for (const r of rows) {
       const id = idToString(r.studentId)
+      const entry = { id: idToString(r.classroom.id), name: r.classroom.name }
       const list = out.get(id)
-      if (list) list.push(r.classroom.name)
-      else out.set(id, [r.classroom.name])
+      if (list) list.push(entry)
+      else out.set(id, [entry])
     }
     return out
   }

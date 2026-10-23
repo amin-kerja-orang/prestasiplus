@@ -139,6 +139,9 @@ export const TeacherStudentSchema = z
     name: z.string().min(1),
     levelName: z.string().nullable().meta({ description: 'M03 level name of the pupil grade.' }),
     classNames: z.array(z.string()).meta({ description: 'The own active classes the pupil is in.' }),
+    classes: z
+      .array(z.object({ id: IdSchema, name: z.string() }))
+      .meta({ description: "The viewer's own active classes of this pupil, in the same order as classNames (which stays for compatibility)." }),
   })
   .meta({ id: 'TeacherStudent' })
 
