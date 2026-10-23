@@ -29,7 +29,7 @@ const tableRows = computed(() =>
   >
     <div
       v-if="stimulus.svg"
-      class="mx-auto w-full overflow-hidden rounded-xl bg-muted p-2 text-highlighted"
+      class="mx-auto w-full overflow-hidden rounded-xl bg-elevated p-2 text-highlighted"
       :class="thumb ? 'max-w-16' : 'max-w-md'"
       role="img"
       :aria-label="stimulus.alt"
@@ -48,10 +48,10 @@ const tableRows = computed(() =>
       <UIcon v-if="stimulus.table" name="i-ph-table" class="size-6" aria-hidden="true" />
       <UIcon v-else name="i-ph-article" class="size-6" aria-hidden="true" />
     </div>
-    <p v-else-if="stimulus.text" class="rounded-xl bg-muted p-3 text-body text-default">
+    <p v-else-if="stimulus.text" class="rounded-xl bg-elevated p-3 text-body text-default">
       <RichText :text="stimulus.text" />
     </p>
-    <div v-else-if="stimulus.table" class="max-w-full overflow-x-auto rounded-xl bg-muted p-2">
+    <div v-else-if="stimulus.table" class="max-w-full overflow-x-auto rounded-xl bg-elevated p-2">
       <UTable :data="tableRows" :columns="tableColumns" :aria-label="stimulus.alt" />
     </div>
     <figcaption v-if="!thumb" class="text-center text-caption text-muted">
