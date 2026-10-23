@@ -11,7 +11,7 @@ import { onMounted, ref } from 'vue'
 import AuthAlert from '../components/auth/AuthAlert.vue'
 
 import { isHttpMode } from '@/api/mode'
-import { DsFormField } from '@/ds'
+import { DsFormField, DsStack } from '@/ds'
 
 import { sendPasswordResetLink } from '../api'
 import PasswordCard from '../components/auth/PasswordCard.vue'
@@ -60,7 +60,7 @@ async function submit(): Promise<void> {
   >
     <template #icon>🔑</template>
 
-    <div v-if="httpMode" class="flex flex-col gap-4" data-testid="forgot-http-notice">
+    <DsStack v-if="httpMode" gap="md" data-testid="forgot-http-notice">
       <UAlert
         color="warning"
         variant="soft"
@@ -79,13 +79,14 @@ async function submit(): Promise<void> {
       >
       <UButton
         to="/login"
+        block
         variant="link"
         color="neutral"
         icon="i-ph-arrow-left"
-        class="min-h-11 justify-center"
+        class="min-h-11"
         >Kembali ke Log Masuk</UButton
       >
-    </div>
+    </DsStack>
 
     <form v-else data-testid="forgot-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert variant="success" :messages="status" data-testid="forgot-status" />
@@ -130,10 +131,11 @@ async function submit(): Promise<void> {
 
       <UButton
         to="/login"
+        block
         variant="link"
         color="neutral"
         icon="i-ph-arrow-left"
-        class="min-h-11 justify-center"
+        class="min-h-11"
         >Kembali ke Log Masuk</UButton
       >
     </form>
