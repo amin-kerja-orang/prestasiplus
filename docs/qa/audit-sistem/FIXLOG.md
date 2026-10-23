@@ -54,6 +54,39 @@ Fixes for findings in `docs/qa/audit-sistem/BIJAK-SPM-AUDIT-REPORT.md` (branch `
 | FB-041 | §11.6 #5, §6 A4 | Doc | Need-info | | QB §4.1 keeps Lulus and Terbit separate and adds Diarkib; the code folds Lulus into Terbit and has no Diarkib. | Pilih: (a) ikut QB §4.1 (Lulus ≠ Terbit, ada Diarkib, jadi item Full); atau (b) kekalkan model kod sekarang dan kemas kini QB §4.1. |
 | FB-042 | §11.6 #6 | Doc | Need-info | | F-71 / F-142 say Tracking A is "Merge-duplicate" but no doc says what replaces its set editor. | Tracking A diganti oleh apa? (cth. Pembina Kertas KS-09 dengan jenis "Tracking A", atau gugurkan terus.) |
 
+### Student scope (from `BIJAK-SPM-STUDENT-AUDIT-REPORT.md` and `STUDENT-SCOPE-NOTES.md`, commit on `audit/sistem-2026-10-23` fetched 2026-10-23)
+
+Priority (user): 1) FB-043, FB-044 critical; 2) keypad FB-045 to FB-047; 3) other §7-§8 items; 4) Full items Planned.
+
+| FB | Sumber | Track | Status | Commit | What changed | Question |
+|---|---|---|---|---|---|---|
+| FB-043 | Student §7 #1, §3 #5 (CRITICAL) | Fast | In progress | | Below 1024 px the sticky "Lihat Bahan 1" strip renders a text passage inside its 48 px thumbnail slot (one syllable per line); label pushed out, question hidden under a long scroll. Fix: text/table stimuli show a label + icon thumbnail in the strip; full content only in the sheet. | |
+| FB-044 | Student §7 #4, §3 #5 (CRITICAL) | Fast | In progress | | "Hantar" is not reachable below 768 except on the last question (0x0 in the footer; the Peta sheet has no Hantar). Fix: Hantar always reachable on phones (footer and/or Peta sheet). | |
+| FB-045 | Student §6, STUDENT-SCOPE-NOTES (user) | Standard | In progress | | Math keypad rearranged like a Casio fx-570/991 scientific calculator: function row(s) on top, number block 7-8-9 / 4-5-6 / 1-2-3 / 0 contiguous, DEL and AC with the operators on the right. Final layout needs the user's eye (status becomes Need-info after the commit). | |
+| FB-046 | Student §6 problem 7 | Fast | In progress | | At 375 the sticky "Lihat Rajah 1" strip covers the answer input when the user scrolls to the lower keypad rows. | |
+| FB-047 | Student §6 problems 3-5, §5 new #3-4 | Fast | In progress | | Keypad pushes content; bottom rows under the sticky footer at 1036 and on short phones; preview shows linear `(7)/(3)` and sits below the keypad. | |
+| FB-048 | Student §8 #1-2 | Standard | In progress | | Choose-N: an answer typed in an unchosen question still counts in "Dijawab" and "Soalan yang dikira"; the second checkbox is disabled with no message; a chosen but unanswered question leads to "Soalan yang dikira: tiada". | |
+| FB-049 | Student §8 #3 | Fast | In progress | | "Perlu perhatian" filter is inconsistent ("Tidak dikira" hidden on one result, kept on another). | |
+| FB-050 | Student §5 new #1, §8 #4 | Fast | In progress | | Numeric answer field accepts any text ("68ab" stored). | |
+| FB-051 | Student §7 #8, §4 S4 | Fast | In progress | | 320-768: the floating AI button and bottom nav cover content (score text, resume block, "Mula Semula"). | |
+| FB-052 | Student §7 #3 | Fast | In progress | | Attempt footer at 320: "Seterusnya" clipped by 10 px; "Peta" wraps to two lines. | |
+| FB-053 | Student §8 #5, §5 new #2 | Fast | In progress | | Seed/content: Mat K1 cover says "40 soalan objektif" for a 10-question paper; Mat K1 Q4 option "x = 7.333333333333333"; "Unit" placeholder "cth. cm" shown for RM and m/s answers. | |
+| FB-054 | Student §7 #5 | Fast | In progress | | Question title touches the "Tanda soalan" flag at 320 and wraps to three lines at 1036. | |
+| FB-055 | Student §7 #6, #12 | Fast | In progress | | Peta: current-question state almost invisible; legend "Dijawab / Ditanda / Belum" has no colour swatches. | |
+| FB-056 | Student §7 #7 | Fast | In progress | | Tap targets under 40 px in the attempt (choose-N checkbox 24 px; inputs 40 px) and the learner shell icon buttons ("Cari…", theme toggle 28x40). | |
+| FB-057 | Student §7 #9 | Fast | In progress | | Cover hero title runs under the stacked-books icon at 375. | |
+| FB-058 | Student §7 #11 | Fast | In progress | | Dark exam-shell passage card has low surface separation (near black on near black). | |
+| FB-059 | Student §8 #7 | Fast | Need-info | | On the cover, "Mula" in the hero sits above the mode choice; the student scrolls down to choose the mode, then back up. | Nak aku pindahkan butang "Mula" ke bawah pilihan mod (atau tambah butang kedua di bawah)? |
+| FB-060 | Student §8 #5 | Doc | Need-info | | Generated Sains K2 Bahagian A gives three working questions with the same stem and different numbers. | Ini disengajakan (varian nombor), atau penjana patut elak stem yang sama dalam satu kertas? |
+| FB-061 | Student §8 #5, §4 E1 | Fast | Declined | | Hub tile "0 Tahun Tersedia": the old system shows the same 0, a deliberate live value (D9: replicate). Kept. | |
+| FB-062 | Student §4 S1, §8 #6 | Full | Planned | | Jana Kertas for Sejarah K1/K2 shows "Belum ada kontrak untuk subjek dan kertas ini": no Sejarah blueprint. Covered by FB-032 / P-032. | See P-032. |
+| FB-063 | Student §4 S5 | Doc | Need-info | | No free MCQ drill like the old `/simulasi/kuiz`; Jana Kertas opens in Mod Peperiksaan by default, so Latihan needs a manual mode switch. | Perlukah latih tubi MCQ pantas? Atau cukup Jana Kertas terus dibuka dalam Mod Latihan? |
+| FB-064 | Student §5 new #5 | Fast | Need-info | | `match_letter` stacks 15 full-width buttons for three sub-parts. | Nak aku tukar kepada pilihan huruf yang padat (A-E sebaris) bagi setiap bahagian? |
+| FB-065 | Student §4 E1 | Fast | Need-info | | Old Bijak card shows a set count pill ("69 set"); the new hero has none. | Tambah kiraan "{n} kertas" pada kad Bijak SPM di `/spm`? |
+| FB-066 | Student §4 S3, §3 #6, US-16, US-19 | Full | Planned | | See proposal P-066. | See P-066 questions. |
+| FB-067 | Student §4 H1, §3 #7, AC-18.x, R22, Q-B5 | Full | Planned | | See proposal P-067. | See P-067 questions. |
+| FB-068 | STUDENT-SCOPE-NOTES carried over; Student §5 drawing/table_fill | Full | Planned | | See proposal P-068. | See P-068 questions. |
+
 ## Proposals for Planned items (Full track: G1 → G6, nothing built until the user answers)
 
 ### P-026 DSKP integration (FB-026) — highest priority
@@ -134,3 +167,21 @@ Fixes for findings in `docs/qa/audit-sistem/BIJAK-SPM-AUDIT-REPORT.md` (branch `
 - Edit link for Draf / Menunggu Semakan / Ditolak bank rows (§9 #11).
 - Duplicate detection by normalised stem + options + figure hash (spec D9; `fileHash` stored but never compared).
 - **Questions:** Mana antara ini yang masuk v2.0, dan susunan keutamaannya?
+
+### P-066 Self-mark, teacher review request and question report on the result page (FB-066, US-16 / US-19 Should)
+- **Scope:** on `/spm/bijak/percubaan/:id/keputusan`, for parts that are not auto-marked: "Markah kendiri" stepper (0..max, saved, shown as provisional), "Mohon semakan guru" (creates a request a teacher resolves; status "Menunggu" / "Disahkan"), and "Lapor Soalan" (reason list + note, into the question-report loop owned by M04, QB-4.7). The old self-mark did not persist; the new one must.
+- **Files:** `m28/pages/ResultPage.vue`, `components/PartResultCard.vue`, `server/store.ts`, M04 report contract, teacher-side queue (M10/M11) or Tanda Karangan (P-033).
+- **Estimate:** M-L (depends on who resolves requests: P-033).
+- **Questions:** Ketiga-tiga ciri ini perlu untuk v2.0? Markah kendiri mengubah jumlah markah (sementara) atau dipaparkan berasingan? Permohonan semakan pergi kepada guru kelas atau Admin Pusat (Tanda Karangan)?
+
+### P-067 Bijak rows in the shared SPM history (FB-067, AC-18.1-18.4, R22, Q-B5)
+- **Scope:** Bijak attempts appear in M06 `/spm/history` ("Sejarah Kuiz SPM") with a "Bijak SPM" filter and label (the old system labelled them "Tahun Lepas"), linking to the Semakan; hub tile "Prestasi SPM Anda" counts them.
+- **Ownership (D12):** practice sessions are owned by M05; M06 history reads them. Bijak attempts live in m28's store today, so this needs a contract decision.
+- **Files:** `m06-spm` history page + stats, m28 `server/store.ts` (expose attempts through the owner contract), tests.
+- **Estimate:** M.
+- **Questions:** Q-B5 masih terbuka. Percubaan Bijak masuk sejarah bersama `/spm/history` (melalui kontrak M05), atau kekal di `/spm/bijak/sejarah` sahaja?
+
+### P-068 Drawing and table-fill answers (FB-068)
+- **Scope:** `table_fill` is a stub ("Jenis jawapan ini akan tersedia tidak lama lagi"); `drawing` is photo upload; no seeded paper uses either. Depends on FB-037 (answer modes decision).
+- **Estimate:** M per widget.
+- **Questions:** Perlu untuk v2.0? (Berkait dengan keputusan FB-037.)
