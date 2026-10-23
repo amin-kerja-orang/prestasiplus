@@ -708,7 +708,7 @@ Found while building this pack; AZ does not change application code.
 
 | # | Finding | For | Severity |
 |---|---|---|---|
-| F1 | **Default applied 22 Oct (section 20): migrated `.cloud` admins; the fallback and the locked-out-last-admin path is the AZ-36 `admin:bootstrap` command (section 21).** **No way to create the first Admin Pusat account in production.** The demo seed is refused in production (correct), the production seed loads reference data only, and there is no bootstrap command in `apps/api`. Unless the data migration (BE-28) brings an admin, go-live has nobody who can publish papers. Needs a one-off, audited "create first admin" command (password from the environment, not the command line) or a documented migration step. **Closed by AZ-36:** `npm run admin:bootstrap -w @pp/api` (section 21) | backend-developer | High (go-live blocker); closed |
+| F1 | **Default applied 22 Oct (section 20): migrated `.cloud` admins; the fallback and the locked-out-last-admin path is the AZ-36 `admin:bootstrap` command (section 21).** **No way to create the first Admin Pusat account in production.** The demo seed is refused in production (correct), the production seed loads reference data only, and there was no bootstrap command in `apps/api` when this was found. Unless the data migration (BE-28) brings an admin, go-live has nobody who can publish papers. Needs a one-off, audited "create first admin" command (password from the environment, not the command line) or a documented migration step. **Fixed in code by AZ-36:** `npm run admin:bootstrap -w @pp/api` (section 21) | backend-developer | High (go-live blocker); fixed in code, closed once the AZ-36 release is deployed |
 | F2 | **Default applied 22 Oct (section 20): `THROTTLE_GLOBAL_PER_MINUTE=3000`, edge auth 300r/m burst 120.** **`THROTTLE_GLOBAL_PER_MINUTE=300` is per client address.** A school (a class of 40 on one NAT address at about 12 requests per minute each = 480) exceeds it, and then every request from that school is 429. The login failed-attempt limit of 20 per minute per address (fixed) is similar. LEAD decision OQ1 (rate-limit numbers) must raise it for production or key signed-in routes on the user | backend-developer, LEAD | High |
 | F3 | Many-file multipart routes exceed the staging frontend nginx limits (`/api/` 3 MB, `/api/files` 22 MB): `POST /api/admin/audio-kbat-sets` (80 MB), `/api/intake/batches/:id/files` (220 MB), `/api/admin/screenshots` (200 MB), `/api/guru/question-papers` (101 MB), `/api/perutusan`, plus 5 MB photo routes would get 413 on the staging stack. The production edge handles them; `docker/frontend/nginx.conf` (staging) does not. Not changed here | devops (follow-up on staging), qa-engineer | Medium |
 | F4 | `REQUEST_TIMEOUT_MS=120000` covers the whole request, so a 220 MB upload must arrive within 2 minutes (about 15 Mbit/s). The runbook suggests up to 300000 for slow links; the edge already allows 300 s upstream on those routes. LEAD to decide per intake behaviour | LEAD, backend-developer | Low |
@@ -836,7 +836,8 @@ deactivate the second one.
 
 1. **Reset Melalui No IC**, if that admin account has an e-mail and IC on record.
 2. **Otherwise, the LEAD on the host runs `admin:bootstrap --mode=reset`** (AZ-36, the subsection "Admin Pusat
-   bootstrap/reset command" below). It is a one-off, audited command in the `migrate` image, run as `ppdeploy`:
+   bootstrap/reset command" below). It is a one-off, audited command in the `migrate` image of the **running
+   release** (`PP_IMAGE_TAG` from `current.tag`), run as `ppdeploy`:
    - the password comes from a hidden prompt (or, with no terminal, a one-line `ppdeploy`-owned mode 600 file removed
      with `shred -u`), never from the command line or chat;
    - it stores an argon2id hash, sets "must change password", ends that account's sessions and writes an
@@ -856,8 +857,8 @@ deactivate the second one.
 | # | Finding | For | Severity |
 |---|---|---|---|
 | F10 | `support_config` (help-box e-mail and WhatsApp) has no production write path: it is written by the demo seed only, there is no admin endpoint, and the ETL does not load it. On production `GET /api/config/support` is `NOT_FOUND`. It needs a reference seed reading two non-secret env values, or an admin write endpoint (a contract change, so a LEAD decision) | backend-developer (BE-24 owner), LEAD | Medium (go-live: the contact is only in the school guide) |
-| F11 | No admin bootstrap or reset command (F1 fallback, locked-out last Admin Pusat). **Closed by AZ-36:** `npm run admin:bootstrap -w @pp/api` is on `feature/v2-backend` (`apps/api/src/ops/admin-bootstrap/`); it is usable on the host once that release's `migrate` image is deployed | backend-developer | High; closed |
-| F12 | **Reset Melalui No IC** (`POST /api/auth/password/reset-ic`) has no role check: any active account with an e-mail and IC on record, an Admin Pusat included, gets a reset token back from its e-mail address and IC number alone. IC numbers are semi-public, and an Admin Pusat has no school admin to notify. Options: refuse the IC path for `admin` accounts (a code change), or keep it and rely on the e-mail factor plus the throttle | backend-developer, LEAD decides | Medium |
+| F11 | No admin bootstrap or reset command (F1 fallback, locked-out last Admin Pusat). **Fixed in code by AZ-36:** `npm run admin:bootstrap -w @pp/api` is on `feature/v2-backend` (`apps/api/src/ops/admin-bootstrap/`); it is usable on the host once that release's `migrate` image is deployed (the `--help` pre-check below confirms it) | backend-developer | High; fixed in code, closed once the AZ-36 release is deployed |
+| F12 | **Reset Melalui No IC** (`POST /api/auth/password/reset-ic`) has no role check: any active account with an e-mail and IC on record, an Admin Pusat included, gets a reset token back from its e-mail address and IC number alone. IC numbers are semi-public, and an Admin Pusat has no school admin to notify. The e-mail address is not a secret either, so the real controls today are the D55a throttles (5 tries per 15 min) and the in-app security notice the account holder gets after an IC reset (`resetIcIssued`). Options: refuse the IC path for `admin` accounts (a code change), or keep it and rely on the throttles plus that notice | backend-developer, LEAD decides | Medium |
 
 ### Admin Pusat bootstrap/reset command (AZ-36, added 22 Oct)
 
@@ -876,8 +877,9 @@ to it. Flags:
 | `--password-stdin` | Read the password from standard input (a file), not from the hidden prompt |
 | `--help` | Print the usage |
 
-Exit codes: 0 done, 1 failed (database error, nothing committed), 2 usage or confirmation problem, 3 refused by the
-database state (nothing written). A password is never accepted as an argument: any password-like flag stops it.
+Exit codes: 0 done (also `--help`), 1 failed (database error, nothing committed), 2 usage, confirmation or
+environment problem (the reasons are listed below), 3 refused by the database state (nothing written). A password is
+never accepted as an argument: any password-like flag stops it.
 
 - **What it does.** Everything happens in one transaction, under the same lock as the users module's last-admin guard:
   - an argon2id hash (the same parameters as login);
@@ -892,30 +894,60 @@ database state (nothing written). A password is never accepted as an argument: a
   - `--mode=reset` when the e-mail is not an Admin Pusat, or when **another** active Admin Pusat exists (that admin
     resets it on the admin screen instead);
   - an inactive or suspended target, unless `--reactivate` is given.
-- **When it stops (exit 2):** `--confirm` is missing or does not repeat `--email` exactly; any password-like argument
-  (none is echoed); a weak password (under 12 characters, leading or trailing spaces, or it contains the e-mail name).
-- **Run it (as `ppdeploy`, with the LEAD's confirmation).** Use the prod overlay command from section 1. The default is
-  the **hidden prompt**: the password is typed twice and never touches the disk. Start the line with a space so that
-  `HISTCONTROL=ignorespace` keeps it out of the history (or run `history -d` on it afterwards):
+- **When it stops (exit 2, nothing written):**
+  - `--confirm` is missing or does not repeat `--email` exactly; an unknown flag; any password-like argument (none is
+    echoed);
+  - a weak password (under 12 characters, leading or trailing spaces, or it contains the e-mail name), or the two
+    typed passwords differ, or the prompt is aborted (Ctrl-C, Ctrl-D);
+  - no terminal for the hidden prompt and no `--password-stdin`; `--password-stdin` with the terminal as input (no
+    file or pipe); a password file with more than one line, or too long;
+  - `DATABASE_URL` is not set or cannot be used (the `migrate` service reads it from `migrate.env`, see below).
+- **Run it (as `ppdeploy`, with the LEAD's confirmation), from the repo checkout.** Use the prod overlay command from
+  section 1 with **`PP_IMAGE_TAG` set to the running release**. Releases are tagged with the 12-character git sha and
+  no `prod` tag exists (section 7), so without it compose looks for `pretasiplus-api-migrate:prod`, which is missing,
+  and then fails or builds from whatever the checkout holds. `current.tag` names the last release that finished
+  (section 7). Add `--profile ...` after `docker compose` if `PP_PROFILES` is set, as in section 16.
+  - **Connection.** Since #227 (DB roles) the `migrate` service connects as the schema owner `pp_owner`: its
+    `DATABASE_URL` comes from `/etc/pretasiplus/migrate.env`, read after `api.env`. No extra flag is needed. If that
+    file is missing, stop: write it with `sudo deploy/vps/db-roles.sh secrets` (section 3) first; never point the
+    command at the superuser.
+  - **Pre-check (writes nothing).** Confirm that the running release ships AZ-36. `--help` prints the usage and exits 0
+    before it reads a password or opens the database:
 
-  ```
-   docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
-    run --rm --no-deps migrate npm run admin:bootstrap -w @pp/api -- \
-    --mode=reset --email=<admin e-mail> --confirm=<admin e-mail>
-  ```
+    ```
+    PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag) \
+     docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
+     run --rm --no-deps -T migrate npm run admin:bootstrap -w @pp/api -- --help
+    ```
 
-  Only when no terminal is available, use a file. The redirect is read by the calling shell, so the file must belong
-  to `ppdeploy` (a root-only file fails with "Permission denied" before compose starts). It must hold the password on
-  **one line only**; a second line is refused with exit 2. Add `-T` and `--password-stdin`, then remove the file
-  with `shred -u` right after the run:
+    An npm "Missing script: admin:bootstrap" error means the release predates AZ-36: deploy a release that has it
+    first (section 7). Ignore the `/root/pp-admin-pass` example in the usage text; use the file steps below instead.
+  - **Run.** The default is the **hidden prompt**: the password is typed twice and never touches the disk. Start the
+    line with a space so that `HISTCONTROL=ignorespace` keeps it out of the history (or run `history -d` on it
+    afterwards):
 
-  ```
-  install -m 600 -o ppdeploy /dev/null ~ppdeploy/pp-admin-pass   # then write the one-line password into it
-   docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
-    run --rm --no-deps -T migrate npm run admin:bootstrap -w @pp/api -- \
-    --mode=reset --email=<admin e-mail> --confirm=<admin e-mail> --password-stdin < ~ppdeploy/pp-admin-pass
-  shred -u ~ppdeploy/pp-admin-pass
-  ```
+    ```
+     PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag) \
+     docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
+     run --rm --no-deps migrate npm run admin:bootstrap -w @pp/api -- \
+     --mode=reset --email=<admin e-mail> --confirm=<admin e-mail>
+    ```
+
+  - **Run with a file**, only when compose cannot give the container a terminal. The redirect is read by the calling
+    shell, so the file must belong to `ppdeploy` (a root-only file fails with "Permission denied" before compose
+    starts). It must hold the password on **one line only**; a second line is refused with exit 2. Write it with
+    `read -rs` (not echoed, and the password is never on a command line, so it stays out of the history and `ps`).
+    Add `-T` and `--password-stdin`, then remove the file with `shred -u` right after the run:
+
+    ```
+    install -m 600 -o ppdeploy /dev/null ~ppdeploy/pp-admin-pass
+    read -rs p && printf '%s\n' "$p" > ~ppdeploy/pp-admin-pass; unset p
+     PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag) \
+     docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
+     run --rm --no-deps -T migrate npm run admin:bootstrap -w @pp/api -- \
+     --mode=reset --email=<admin e-mail> --confirm=<admin e-mail> --password-stdin < ~ppdeploy/pp-admin-pass
+    shred -u ~ppdeploy/pp-admin-pass
+    ```
 
   Exit 0 prints the user id, the database name, and the number of sessions and reset links ended. The e-mail is
   stored in lower case.
