@@ -1,0 +1,72 @@
+import { describe, expect, it } from 'vitest'
+
+import { sharersText } from '../admin/papers/ui'
+import { BijakServer, MemoryStorage } from '../server/store'
+
+const make = () => new BijakServer({ storage: new MemoryStorage() })
+
+describe('shared stimulus: who shares it (FB-002)', () => {
+  it('the edit page knows the real sharer count and labels', async () => {
+    const e = await make().getBankEditable('mat1-g1-q2')
+    expect(e.stimulus?.label).toBe('Rajah 1')
+    expect(e.sharers).toMatchObject({ stimulusLabel: 'Rajah 1', count: 4 })
+    expect(e.sharers!.questions.map((q) => q.label)).toEqual([
+      'Soalan 1',
+      'Soalan 2',
+      'Soalan 3',
+      'Soalan 4',
+    ])
+    expect(e.sharers!.questions.map((q) => q.id)).toContain('mat1-g1-q2')
+  })
+
+  it('a question without a stimulus has no sharers', async () => {
+    expect((await make().getBankEditable('mat1-pub-1')).sharers).toBeUndefined()
+  })
+
+  it('a revision of one member of a 4-member group reports 4 sharers, not 1', async () => {
+    const server = make()
+    const e = await server.getBankEditable('mat1-g1-q1')
+    const res = await server.reviseQuestionFull(
+      'mat1-g1-q1',
+      e.question,
+      { ...e.stimulus!, alt: `${e.stimulus!.alt} (dilengkapkan)` },
+      'Ubah teks alternatif',
+    )
+    expect(res).toEqual({ ok: true, errors: [] })
+    const detail = await server.getReviewItem('v:mat1-g1-q1')
+    expect(detail.questions).toHaveLength(1)
+    expect(detail.sharers).toMatchObject({ stimulusLabel: 'Rajah 1', count: 4 })
+  })
+
+  it('a revision that leaves the stimulus alone shows no sharer notice', async () => {
+    const server = make()
+    const e = await server.getBankEditable('mat1-g1-q3')
+    const res = await server.reviseQuestionFull(
+      'mat1-g1-q3',
+      { ...e.question, stem: `${e.question.stem} Ulang.` },
+      e.stimulus,
+      '',
+    )
+    expect(res.ok).toBe(true)
+    expect((await server.getReviewItem('v:mat1-g1-q3')).sharers).toBeUndefined()
+  })
+
+  it('words the notice in Bahasa Melayu', () => {
+    expect(
+      sharersText({
+        stimulusLabel: 'Rajah 1',
+        count: 4,
+        questions: [1, 2, 3, 4].map((n) => ({ id: `q${n}`, label: `Soalan ${n}` })),
+      }),
+    ).toBe(
+      'Rajah 1 dikongsi oleh 4 soalan: Soalan 1, 2, 3, 4. Perubahan di sini terpakai untuk semua soalan tersebut.',
+    )
+    expect(
+      sharersText({
+        stimulusLabel: 'Petikan 1',
+        count: 1,
+        questions: [{ id: 'q', label: 'Soalan 1' }],
+      }),
+    ).toBe('Petikan 1 hanya digunakan oleh soalan ini.')
+  })
+})

@@ -133,6 +133,8 @@ export interface ReviewDetail {
   revisionNote?: string
   /** The revision changes more than the stem (options, scheme, tag): the preview is the new version. */
   fullEdit?: boolean
+  /** A revision that changes a shared stimulus: who else sees the change. */
+  sharers?: StimulusSharers
 }
 
 export type DecisionAction = 'terbit' | 'tolak' | 'betulkan'
@@ -148,6 +150,16 @@ export interface BankFilter {
   kertas?: number
   kind?: QuestionKind
   status?: QuestionStatus | 'semua'
+}
+
+/** The questions that share one stimulus (figure / passage), in group order. */
+export interface StimulusSharers {
+  /** Label of the shared stimulus, e.g. "Rajah 1". */
+  stimulusLabel: string
+  /** Number of questions that share it (not the members of a review unit). */
+  count: number
+  /** Group order: "Soalan 1", "Soalan 2", ... with the bank id of each. */
+  questions: { id: string; label: string }[]
 }
 
 export interface BankRow {
@@ -187,6 +199,8 @@ export interface BankEditable {
   pendingRevision: boolean
   /** Whether the live question carries no SP (legacy seed): the SP check is waived on save. */
   legacyTag: boolean
+  /** The questions that share the stimulus being edited. */
+  sharers?: StimulusSharers
 }
 
 export interface BankDetail {

@@ -39,6 +39,7 @@ import type {
   ReviewSeed,
   RevisionContent,
   SchemeLine,
+  StimulusSharers,
 } from '../domain/admin-types'
 import { leavesOf } from '../domain/paper-model'
 import type {
@@ -110,6 +111,28 @@ const getStimulus = (gid: string): StimulusDef | undefined => {
 }
 const membersOf = (gid: string): string[] => getGroup(gid)?.questionIds ?? []
 const groupOf = (qid: string): string | undefined => getQ(qid)?.groupId
+
+/** Every question that uses the stimulus of group `gid`, in group order ("Soalan 1", "Soalan 2", ...). */
+function sharersOf(gid: string): StimulusSharers | undefined {
+  const st = getStimulus(gid)
+  if (!st) return undefined
+  const ids = membersOf(gid).filter((id) => !!getQ(id))
+  return {
+    stimulusLabel: st.label,
+    count: ids.length,
+    questions: ids.map((id, i) => ({ id, label: `Soalan ${i + 1}` })),
+  }
+}
+
+/** Whether a revised stimulus differs from the live one in what the editor can change. */
+function stimulusChanged(live: StimulusDef | undefined, next: StimulusDef | undefined): boolean {
+  if (!live || !next) return false
+  return (
+    live.alt !== next.alt ||
+    (live.caption ?? '') !== (next.caption ?? '') ||
+    (live.text ?? '') !== (next.text ?? '')
+  )
+}
 
 function hydrate(seed: ReviewSeed): void {
   // Units made from an intake batch always win: their ids repeat across server instances.
@@ -537,6 +560,9 @@ export class AdminOps {
         ...(q.groupId ? this.groupParts(q.groupId) : {}),
         ...(content?.stimulus ? { stimulus: content.stimulus } : {}),
         ...(content ? { fullEdit: true } : {}),
+        ...(q.groupId && stimulusChanged(getStimulus(q.groupId), content?.stimulus)
+          ? { sharers: sharersOf(q.groupId)! }
+          : {}),
         history: rec.history,
         gate: [
           ...(rev.stem.trim() ? [] : ['Teks soalan tidak boleh kosong']),
@@ -717,6 +743,7 @@ export class AdminOps {
       ...(stimulus ? { stimulus: plain(stimulus) } : {}),
       pendingRevision: !!this.review[qid]?.revision,
       legacyTag: q.curriculum.sp.length === 0,
+      ...(q.groupId && stimulus ? { sharers: sharersOf(q.groupId)! } : {}),
     }
   }
 
