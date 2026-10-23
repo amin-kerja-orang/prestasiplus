@@ -332,6 +332,8 @@ export const uiConfig = {
       footer: 'p-5',
       title: 'text-heading text-highlighted',
       description: 'text-body text-muted',
+      // The X button is as wide as it is tall (it was 32x44).
+      close: 'min-w-11',
     },
     variants: {
       fullscreen: { false: { content: 'rounded-xl shadow-modal ring-0' } },
@@ -339,7 +341,11 @@ export const uiConfig = {
   },
   // Overlays sit above the shell chrome (sidebar and bars are z-30): modal surfaces never hide behind it.
   slideover: {
-    slots: { overlay: 'z-50 bg-overlay', content: 'z-50 divide-y-0 shadow-modal ring-0' },
+    slots: {
+      overlay: 'z-50 bg-overlay',
+      content: 'z-50 divide-y-0 shadow-modal ring-0',
+      close: 'min-w-11',
+    },
   },
   drawer: {
     slots: { overlay: 'z-50 bg-overlay', content: 'z-50 bg-elevated shadow-modal ring-0' },

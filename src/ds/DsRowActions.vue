@@ -90,7 +90,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       type="button"
         color="neutral"
         variant="ghost"
-        :class="a.icon ? 'min-h-9 min-w-9 justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11' : 'min-h-9 pointer-coarse:min-h-11'"
+        :class="a.icon ? 'min-h-10 min-w-10 justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11' : 'min-h-10 pointer-coarse:min-h-11'"
         :icon="a.icon"
         :label="a.icon ? undefined : a.label"
       :aria-label="a.icon ? a.label : undefined"
@@ -109,7 +109,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
         icon="i-ph-dots-three"
         :aria-label="label"
         :title="label"
-        class="min-h-9 min-w-9 justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+        class="min-h-10 min-w-10 justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
         :data-testid="testid"
       />
     </UDropdownMenu>
