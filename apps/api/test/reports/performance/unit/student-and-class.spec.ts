@@ -285,6 +285,42 @@ describe('Analitik', () => {
       await expect(w.analytics.classes(ctxOf('school_admin', 'sa1'), {})).rejects.toMatchObject({ status: 403 })
     })
 
+    describe('SW5-05: a sitting stores the Bijak subject code, a class stores the curriculum subject id', () => {
+      beforeEach(() => {
+        w.directory.addSubject('MAT', '3')
+        w.directory.addPupil({ id: '4', name: 'Eman Contoh', schoolId: 's1' }).addPupil({ id: '5', name: 'Farah Contoh', schoolId: 's1' })
+        w.classes.add({ id: '20', schoolId: 's1', teacherId: 't5', subjectId: '3', subjectName: 'Matematik' }, ['4', '5'])
+        const mat = { subjectId: 'MAT', subjectCode: 'MAT', subjectName: 'Matematik' }
+        w.bijak
+          .addSitting(sitting({ userId: '4', score: 9, maxScore: 10, ...mat }))
+          .addSitting(sitting({ userId: '5', score: 3, maxScore: 10, ...mat }))
+      })
+
+      it('facts of code MAT land under the curriculum id, with one option per subject', async () => {
+        const r = await w.analytics.classes(ctxOf('teacher', 't5'), {})
+        expect(r.options.subjects).toEqual([{ id: '3', name: 'Matematik' }])
+        expect(r.options.selected.subjectId).toBe('3')
+        expect(r.rows.map((x) => [x.userId, x.accuracy])).toEqual([
+          ['4', 90],
+          ['5', 30],
+        ])
+      })
+
+      it('filtering by the curriculum id returns data', async () => {
+        const r = await w.analytics.classes(ctxOf('teacher', 't5'), { classroomId: '20', subjectId: '3' })
+        expect(r.summary).toEqual({ students: 2, accuracy: 60, atRisk: 1, good: 1 })
+      })
+
+      it('a code with no curriculum subject keeps the sitting id; other subjects stay separate options', async () => {
+        w.bijak.addSitting(sitting({ userId: '4', score: 5, maxScore: 10, subjectId: 'XYZ', subjectCode: 'XYZ', subjectName: 'Lain' }))
+        const r = await w.analytics.classes(ctxOf('teacher', 't5'), {})
+        expect(r.options.subjects).toEqual([
+          { id: '3', name: 'Matematik' },
+          { id: 'XYZ', name: 'Lain' },
+        ])
+      })
+    })
+
     it('an admin names a class; members without graded marks are not rows', async () => {
       w.bijak.addSitting(sitting({ userId: '2', score: 2, maxScore: 10, subjectId: '2', subjectCode: 'MT', subjectName: 'Matematik', provisional: true }))
       const admin = ctxOf('admin', 'a', { level: 'national', label: 'x' })
