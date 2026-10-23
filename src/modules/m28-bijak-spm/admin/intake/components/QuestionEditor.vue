@@ -131,7 +131,7 @@ function insertMath(field: 'stem'): void {
 </script>
 
 <template>
-  <div class="flex flex-col gap-5" data-testid="question-editor">
+  <div class="@container flex min-w-0 flex-col gap-5" data-testid="question-editor">
     <UAlert
       v-if="q.needsManual"
       color="warning"
@@ -147,7 +147,7 @@ function insertMath(field: 'stem'): void {
       </template>
     </UAlert>
 
-    <div class="grid gap-4" :class="hideNumber ? 'sm:grid-cols-2' : 'sm:grid-cols-3'">
+    <div class="grid grid-cols-1 gap-4" :class="hideNumber ? '@md:grid-cols-2' : '@md:grid-cols-3'">
       <label v-if="!hideNumber" class="flex flex-col gap-1 text-sm">
         <span class="font-medium">Nombor soalan</span>
         <UInput
@@ -338,10 +338,10 @@ function insertMath(field: 'stem'): void {
     </div>
 
     <!-- tag -->
-    <fieldset class="flex flex-col gap-3 rounded-xl border border-default p-3">
+    <fieldset class="flex min-w-0 flex-col gap-3 rounded-xl border border-default p-3">
       <legend class="px-1 text-sm font-medium">Tag DSKP</legend>
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <label class="flex flex-col gap-1 text-sm">
+      <div class="grid grid-cols-1 gap-3 @md:grid-cols-2 @3xl:grid-cols-4">
+        <label class="flex min-w-0 flex-col gap-1 text-sm">
           <span class="text-muted">Asal tingkatan</span>
           <DsNativeSelect
             :model-value="q.tag.formOrigin"
@@ -353,7 +353,7 @@ function insertMath(field: 'stem'): void {
             <option value="T1-T3">Tingkatan 1-3 (di luar DSKP)</option>
           </DsNativeSelect>
         </label>
-        <label class="flex flex-col gap-1 text-sm lg:col-span-2">
+        <label class="flex min-w-0 flex-col gap-1 text-sm @3xl:col-span-2">
           <span class="text-muted">Unit</span>
           <DsNativeSelect
             :model-value="q.tag.unit ?? ''"
@@ -367,7 +367,7 @@ function insertMath(field: 'stem'): void {
             </option>
           </DsNativeSelect>
         </label>
-        <label class="flex flex-col gap-1 text-sm">
+        <label class="flex min-w-0 flex-col gap-1 text-sm">
           <span class="text-muted">TP (1-6)</span>
           <UInput
             :model-value="q.tag.tp"
@@ -378,7 +378,7 @@ function insertMath(field: 'stem'): void {
             @update:model-value="set({ tag: { ...q.tag, tp: Number($event) || 0 } })"
           />
         </label>
-        <label class="flex flex-col gap-1 text-sm sm:col-span-2 lg:col-span-4">
+        <label class="flex min-w-0 flex-col gap-1 text-sm @md:col-span-2 @3xl:col-span-4">
           <span class="text-muted">SP (asingkan dengan koma)</span>
           <UInput
             :model-value="spText"
