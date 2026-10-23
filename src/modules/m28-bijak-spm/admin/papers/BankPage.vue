@@ -271,7 +271,9 @@ const siblings = computed(
           /></span>
           <span class="flex flex-wrap gap-1">
             <UBadge color="neutral" variant="subtle">{{ row.original.topic }}</UBadge>
-            <UBadge v-if="row.original.groupId" color="info" variant="subtle" icon="i-ph-image"
+            <UBadge
+              v-if="row.original.groupId && (row.original.groupSize ?? 0) > 1"
+              color="info" variant="subtle" icon="i-ph-image"
               >Kumpulan {{ row.original.groupSize }} soalan</UBadge
             >
             <UBadge v-if="row.original.version > 1" color="secondary" variant="subtle"
@@ -338,7 +340,7 @@ const siblings = computed(
                   color="primary"
                   size="sm"
                   class="min-h-11"
-                  :label="`${s.label} · ${s.id}`"
+                  :label="`Soalan ${s.position} · ${s.id}`"
                   :data-testid="`bank-sibling-${s.id}`"
                   @click="selectedId = s.id"
                 />

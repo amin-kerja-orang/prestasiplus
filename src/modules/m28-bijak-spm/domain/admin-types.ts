@@ -158,14 +158,14 @@ export interface StimulusSharers {
   stimulusLabel: string
   /** Number of questions that share it (not the members of a review unit). */
   count: number
-  /** Group order: "Soalan 1", "Soalan 2", ... with the bank id of each. */
-  questions: { id: string; label: string }[]
+  /** In group order: the bank id and 1-based position of each; `current` marks the question in view. */
+  questions: { id: string; position: number; current?: boolean }[]
 }
 
 export interface BankRow {
   id: string
   groupId?: string
-  /** Number of questions in the stimulus group (set whenever `groupId` is). */
+  /** Number of questions in the stimulus group (set when the group resolves). */
   groupSize?: number
   subject: SubjectCode
   subjectName: string

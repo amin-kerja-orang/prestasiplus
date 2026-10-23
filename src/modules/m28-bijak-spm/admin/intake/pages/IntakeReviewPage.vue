@@ -122,6 +122,8 @@ const startsGroup = (i: number): boolean => {
   const qs = batch.value?.questions ?? []
   return !!qs[i]?.stimulusId && qs[i].stimulusId !== qs[i - 1]?.stimulusId
 }
+/** Word for a stimulus kind in the group header. */
+const STIMULUS_WORD = { diagram: 'rajah', passage: 'petikan', table: 'jadual' } as const
 const groupFor = (q: IntakeQuestion) => groups.value.find((g) => g.stimulusId === q.stimulusId)
 
 const saveText = computed(
@@ -195,11 +197,14 @@ function toggleMember(stimulusId: string, qid: string, on: boolean): void {
     const r = attachToStimulus(b.questions, [qid], stimulusId)
     b.questions = r.questions
     groupNote.value = r.moved
-      ? 'Soalan dipindahkan supaya kumpulan kekal berturutan.'
+      ? r.renumbered
+        ? 'Soalan dipindahkan supaya kumpulan kekal berturutan dan dinomborkan semula.'
+        : 'Soalan dipindahkan supaya kumpulan kekal berturutan.'
       : ''
   } else {
-    b.questions = detachFromStimulus(b.questions, [qid])
-    groupNote.value = ''
+    const r = detachFromStimulus(b.questions, [qid])
+    b.questions = r.questions
+    groupNote.value = r.renumbered ? 'Soalan dinomborkan semula mengikut susunan kertas.' : ''
   }
 }
 function quickAttach(qid: string, stimulusId: string): void {
@@ -585,7 +590,7 @@ async function submit(): Promise<void> {
                   <p class="text-sm font-semibold">
                     {{ stimulusOf(q)!.label }}
                     <span v-if="groupFor(q)" class="font-normal text-muted">
-                      · {{ groupLabel(groupFor(q)!) }} berkongsi rajah ini
+                      · {{ groupLabel(groupFor(q)!) }} berkongsi {{ STIMULUS_WORD[stimulusOf(q)!.kind] }} ini
                     </span>
                   </p>
                   <StimulusView v-if="stimulusOf(q)!.svg || stimulusOf(q)!.text" :stimulus="stimulusOf(q)!" />

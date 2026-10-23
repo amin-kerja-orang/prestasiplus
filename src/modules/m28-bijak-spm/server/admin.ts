@@ -42,6 +42,7 @@ import type {
   StimulusSharers,
 } from '../domain/admin-types'
 import { leavesOf } from '../domain/paper-model'
+import { topicOf } from '../domain/topic'
 import type {
   Blueprint,
   PaperDef,
@@ -116,16 +117,28 @@ const getStimulus = (gid: string): StimulusDef | undefined => {
 const membersOf = (gid: string): string[] => getGroup(gid)?.questionIds ?? []
 const groupOf = (qid: string): string | undefined => getQ(qid)?.groupId
 
-/** Every question that uses the stimulus of group `gid`, in group order ("Soalan 1", "Soalan 2", ...). */
-function sharersOf(gid: string): StimulusSharers | undefined {
+/** Questions of group `gid` that exist, in group order. */
+const liveMembersOf = (gid: string): string[] => membersOf(gid).filter((id) => !!getQ(id))
+
+/**
+ * Every question that uses the stimulus of group `gid`, in group order. `position` is the 1-based
+ * place in the group; `current` marks the question being viewed or edited.
+ */
+function sharersOf(gid: string, currentId?: string): StimulusSharers | undefined {
   const st = getStimulus(gid)
   if (!st) return undefined
-  const ids = membersOf(gid).filter((id) => !!getQ(id))
+  const ids = liveMembersOf(gid)
   return {
     stimulusLabel: st.label,
     count: ids.length,
-    questions: ids.map((id, i) => ({ id, label: `Soalan ${i + 1}` })),
+    questions: ids.map((id, i) => ({ id, position: i + 1, ...(id === currentId ? { current: true } : {}) })),
   }
+}
+
+/** `{ sharers }` for a question in a group whose stimulus resolves, else nothing. */
+function sharersProp(q: QuestionDef): { sharers?: StimulusSharers } {
+  const s = q.groupId ? sharersOf(q.groupId, q.id) : undefined
+  return s ? { sharers: s } : {}
 }
 
 /** Whether a revised stimulus differs from the live one in what the editor can change. */
@@ -136,6 +149,12 @@ function stimulusChanged(live: StimulusDef | undefined, next: StimulusDef | unde
     (live.caption ?? '') !== (next.caption ?? '') ||
     (live.text ?? '') !== (next.text ?? '')
   )
+}
+
+/** Size of a stimulus group, counted from the group's members (not from its stimulus). */
+const groupSizeProp = (gid: string): { groupSize?: number } => {
+  const n = liveMembersOf(gid).length
+  return n > 0 ? { groupSize: n } : {}
 }
 
 function hydrate(seed: ReviewSeed): void {
@@ -474,7 +493,7 @@ export class AdminOps {
       subjectName: subjectName(seed.subject),
       kertas: seed.kertas,
       kind: kindOf(q0),
-      topic: q0.curriculum.unitLabel,
+      topic: topicOf(q0.curriculum),
       preview: previewOf(q0),
       previewPlain: plainMath(previewOf(q0)),
       marks: seed.questions.reduce((n, q) => n + marksOf(q), 0),
@@ -503,7 +522,7 @@ export class AdminOps {
       subjectName: subjectName(nq.curriculum.subject),
       kertas: kertasOf(qid),
       kind: kindOf(nq, lookup),
-      topic: nq.curriculum.unitLabel,
+      topic: topicOf(nq.curriculum),
       preview: previewOf(nq, rev.stem),
       previewPlain: plainMath(previewOf(nq, rev.stem)),
       marks: marksOf(nq, lookup),
@@ -570,7 +589,7 @@ export class AdminOps {
         ...(content?.stimulus ? { stimulus: content.stimulus } : {}),
         ...(content ? { fullEdit: true } : {}),
         ...(q.groupId && stimulusChanged(getStimulus(q.groupId), content?.stimulus)
-          ? { sharers: sharersOf(q.groupId)! }
+          ? sharersProp(q)
           : {}),
         history: rec.history,
         gate: [
@@ -752,7 +771,7 @@ export class AdminOps {
       ...(stimulus ? { stimulus: plain(stimulus) } : {}),
       pendingRevision: !!this.review[qid]?.revision,
       legacyTag: q.curriculum.sp.length === 0,
-      ...(q.groupId && stimulus ? { sharers: sharersOf(q.groupId)! } : {}),
+      ...(stimulus ? sharersProp(q) : {}),
     }
   }
 
@@ -840,21 +859,16 @@ export class AdminOps {
     }))
   }
 
-  /** Questions that share the stimulus of `q`; a group always counts at least the question itself. */
-  private groupSizeOf(q: QuestionDef): number {
-    return Math.max(1, sharersOf(q.groupId!)?.count ?? 0)
-  }
-
   private bankRow(qid: string): BankRow {
     const q = getQ(qid)!
     return {
       id: qid,
-      ...(q.groupId ? { groupId: q.groupId, groupSize: this.groupSizeOf(q) } : {}),
+      ...(q.groupId ? { groupId: q.groupId, ...groupSizeProp(q.groupId) } : {}),
       subject: q.curriculum.subject,
       subjectName: subjectName(q.curriculum.subject),
       kertas: kertasOf(qid),
       kind: kindOf(q),
-      topic: q.curriculum.unitLabel,
+      topic: topicOf(q.curriculum),
       marks: marksOf(q),
       preview: previewOf(q),
       previewPlain: plainMath(previewOf(q)),
@@ -933,7 +947,7 @@ export class AdminOps {
       ],
       usedInPapers: this.usedIn(qid),
       pendingRevision: !!rec?.revision,
-      ...(q.groupId ? { sharers: sharersOf(q.groupId)! } : {}),
+      ...sharersProp(q),
     }
   }
 
@@ -993,7 +1007,7 @@ export class AdminOps {
       preview: previewOf(q),
       marks: marksOf(q),
       kind: kindOf(q),
-      topic: q.curriculum.unitLabel,
+      topic: topicOf(q.curriculum),
       status: this.statusOf(qid),
       kertas: kertasOf(qid),
       subject: q.curriculum.subject,

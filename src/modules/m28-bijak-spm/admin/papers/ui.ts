@@ -60,11 +60,11 @@ export function detailMessage(err: unknown): string {
 }
 
 /**
- * "Rajah 1 dikongsi oleh 4 soalan: Soalan 1, 2, 3, 4. Perubahan di sini terpakai untuk semua soalan
- * tersebut." The numbers are the position in the stimulus group.
+ * "Rajah 1 dikongsi oleh 4 soalan: Soalan 1, 2 (soalan ini), 3, 4. Perubahan di sini terpakai untuk
+ * semua soalan tersebut." The numbers are the position in the stimulus group.
  */
 export function sharersText(s: StimulusSharers): string {
   if (s.count <= 1) return `${s.stimulusLabel} hanya digunakan oleh soalan ini.`
-  const nums = s.questions.map((q) => q.label.replace(/^Soalan\s+/, '')).join(', ')
+  const nums = s.questions.map((q) => `${q.position}${q.current ? ' (soalan ini)' : ''}`).join(', ')
   return `${s.stimulusLabel} dikongsi oleh ${s.count} soalan: Soalan ${nums}. Perubahan di sini terpakai untuk semua soalan tersebut.`
 }
