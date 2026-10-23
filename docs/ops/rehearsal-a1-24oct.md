@@ -393,6 +393,20 @@ q "select count(*) filter (where must_reset_password) as flagged, count(*) as mi
 
 The reasons come from `transform/secrets.ts` (`decidePassword`: `non_bcrypt`, `shared_default`, `roster_account`; one account can have several). `migrate:all` does not print them; the standalone `migrate:core` prints them as `note must_reset.<reason>: <n>` lines, so read them from the O5 scout if it runs (copy only those `note` lines, never the `ids <note>:` lists). Post line: `forced-change accounts: <flagged> of <migrated> (<pct> %), by reason non_bcrypt <n>, shared_default <n>, roster_account <n> (or "reasons: O5 not run")`. On the anonymised dump every password is a dummy hash, so `non_bcrypt` and the total may differ from the real night; `roster_account` (a username and no e-mail) carries over.
 
+(f) Usernames shared by more than one migrated account (input to #226 F1, AM1-3 6367326305; counts only). The login looks a username up case-insensitively over **all** accounts (`account.repository.ts` `findLoginCandidates`: `lower(username) = lower(<id>)`, no school given), and answers `AMBIGUOUS_USERNAME` only when the same password also fits several of them (`auth.service.ts`), so this count is an upper bound of the accounts that can hit it, for example roster accounts that share a default password:
+
+```bash
+q "select count(*) as dup_usernames, coalesce(sum(n), 0) as accounts, count(*) filter (where schools > 1) as across_schools from (select lower(username) as u, count(*) as n, count(distinct school_id) as schools from public.users where legacy_source = 'cloud' and nullif(btrim(username), '') is not null group by 1 having count(*) > 1) x"
+```
+
+(g) Migrated accounts with no password hash (no usable password; only an admin reset recovers them; input to #226 F2):
+
+```bash
+q "select count(*) as no_hash from public.users where legacy_source = 'cloud' and password_hash is null"
+```
+
+Post lines: `shared usernames: <dup_usernames> names on <accounts> accounts (<across_schools> across schools)` and `no password hash: <no_hash>`. Counts only.
+
 ### A1.12 Snapshot of the migrated state
 
 ```bash
@@ -636,6 +650,7 @@ Rows: core read <n>, activity read <n>, loaded <n>, rejected <n> (<pct> %); stag
 Rejects by reason: ORPHAN_PARENT <n>, UNKNOWN_ENUM <n>, INVALID_VALUE <n>, DUPLICATE_KEY <n>, UNSUPPORTED <n>
 Entities above threshold: <entity pct, ... | none>; ORPHAN_PARENT on users / schools: <n>; orphan scan: <n>
 Forced-change accounts: <flagged> of <migrated> (<pct> %), by reason non_bcrypt <n>, shared_default <n>, roster_account <n> (or: reasons O5 not run)
+Shared usernames: <n> names on <n> accounts (<n> across schools); no password hash: <n>
 Rates (rows/s): core apply <>, activity apply <>, overall apply <>, r_B6 <>, r_B7 <>; placeholder 3,611
 Guards: rollback probes a / b / c / d exit <2/2/2/2>
 Rollback: dry-run exit <>, apply exit <>, migrated tables all 0 <yes|no>, etl_id_map cloud rows <n>
