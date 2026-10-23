@@ -142,10 +142,13 @@ Recommended path (no Docker-in-Docker dependency): run `bash scripts/cloud-insta
 sudo mkdir -p /var/tmp/pp-pg && sudo chown postgres /var/tmp/pp-pg
 sudo -u postgres test -f /var/tmp/pp-pg/data/PG_VERSION || \
   sudo -u postgres /usr/lib/postgresql/16/bin/initdb -D /var/tmp/pp-pg/data -U test --auth=trust
-# Only if the server is NOT running (pg_isready -h 127.0.0.1 -p 55432 fails): drop a stale pid file.
-sudo -u postgres rm -f /var/tmp/pp-pg/data/postmaster.pid
-sudo -u postgres /usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pp-pg/data -l /var/tmp/pp-pg/log \
-  -o "-p 55432 -k /var/tmp/pp-pg -c listen_addresses=127.0.0.1 -c unix_socket_permissions=0700 -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=300 -c timezone=UTC" start -w
+# Start only if nothing answers on the port; drop a stale pid file only when pg_ctl also says the server is down.
+if ! pg_isready -q -h 127.0.0.1 -p 55432; then
+  sudo -u postgres /usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pp-pg/data status >/dev/null 2>&1 || \
+    sudo -u postgres rm -f /var/tmp/pp-pg/data/postmaster.pid
+  sudo -u postgres /usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pp-pg/data -l /var/tmp/pp-pg/log \
+    -o "-p 55432 -k /var/tmp/pp-pg -c listen_addresses=127.0.0.1 -c unix_socket_permissions=0700 -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=300 -c timezone=UTC" start -w
+fi
 export TEST_DATABASE_URL='postgresql://test@127.0.0.1:55432/postgres'
 npm run be:test -- <path-to-one-spec>
 ```
