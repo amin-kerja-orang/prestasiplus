@@ -6,7 +6,7 @@
  * rejected). The URL query never changes the form: `?role=` is ignored and `?ref=` is only carried
  * in the background (FR-M01-18, 70). On success the new session is stored (not remembered) and the
  * app goes to the role landing page (FR-M01-25, INFERRED); a teacher gets no session: the fields
- * are replaced by the server's pending-verification message, the "Log Masuk" link stays (DV-20);
+ * are replaced by the server's pending-verification message, the "Log Masuk" link stays (DV-22);
  * on failure the red alert lists the server messages and every value is kept except the two
  * passwords (FR-M01-26, INFERRED).
  */
@@ -152,7 +152,7 @@ async function submit(): Promise<void> {
     </div>
 
     <form data-testid="register-form" class="flex flex-col gap-4" @submit.prevent="submit">
-      <!-- A teacher gets no session (AM2-N1, DV-20): the server's message replaces the fields. -->
+      <!-- A teacher gets no session (AM2-N1, DV-22): the server's message replaces the fields. -->
       <template v-if="pendingMessage === null">
         <AuthAlert :messages="errors" data-testid="register-alert" />
 
