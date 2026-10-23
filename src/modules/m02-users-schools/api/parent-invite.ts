@@ -50,7 +50,7 @@ export interface InvitePreview {
   valid: true
   student: {
     name: string
-    /** First letter of the first two words, upper case; "?" when the name is empty. */
+    /** First letter of the first two words, upper case; "?" when the name is empty (http: first name only, one letter, DV-L45-07). */
     initials: string
     schoolName: string | null
   }
@@ -126,12 +126,38 @@ export function generateParentInvite(): Promise<GeneratedParentInvite> {
   return api.post<GeneratedParentInvite>('/api/me/parent-invite/generate')
 }
 
+/**
+ * Wire of `GET /api/parent-invites/:token`. v2 (contract `ParentInvitePreview`, D57f): the child's
+ * `firstName` and `schoolName` only. The mock still answers the old shape with `name` and `initials`.
+ */
+interface InvitePreviewWire {
+  valid: true
+  student: {
+    name?: string
+    initials?: string
+    firstName?: string
+    schoolName?: string | null
+  }
+  viewer: InviteViewer
+}
+
 /** #3 `GET /api/parent-invites/:token` (public; 404 `NOT_FOUND` for any unknown token). */
-export function fetchInvitePreview(
+export async function fetchInvitePreview(
   token: string,
   options: { signal?: AbortSignal } = {},
 ): Promise<InvitePreview> {
-  return api.get<InvitePreview>(inviteAt(token), options.signal ? { signal: options.signal } : {})
+  const raw = await api.get<InvitePreviewWire>(
+    inviteAt(token),
+    options.signal ? { signal: options.signal } : {},
+  )
+  // The page reads `name` and `initials`; the contract sends `firstName` only, so derive them here.
+  const name = raw.student.name ?? raw.student.firstName ?? ''
+  const initials = raw.student.initials ?? (Array.from(name.trim())[0]?.toUpperCase() ?? '?')
+  return {
+    valid: raw.valid,
+    student: { name, initials, schoolName: raw.student.schoolName ?? null },
+    viewer: raw.viewer,
+  }
 }
 
 /** #4 `POST /api/parent-invites/:token/accept` (parent only; idempotent; 401 / 403 / 404). */
