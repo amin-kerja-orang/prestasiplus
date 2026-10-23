@@ -497,6 +497,7 @@ describe('run against a fake GitHub API', () => {
   let port = 0
   let summaryUpdated = '2026-10-22T10:00:00Z'
   let lostPut = false
+  let filesMode: 'ok' | 'invalid' | 'short' | 'many' = 'ok'
   let lateBlock = false
   let scans21 = 0
   let prCreated = '2026-10-22T12:00:00Z'
@@ -538,7 +539,7 @@ describe('run against a fake GitHub API', () => {
         if (m) {
           const n = Number(m[1])
           if (n === 12 && putDone.has(12) && lostPut) return json(res, 200, { state: 'closed', draft: false, merged: true, merge_commit_sha: '7'.repeat(40), base: { ref: BE }, head: { sha: shaOf(12) } })
-          return json(res, 200, { state: 'open', draft: false, merged: false, created_at: prCreated, base: { ref: baseOf(n) }, head: { sha: n === 24 ? 'f'.repeat(40) : shaOf(n) }, mergeable: true, mergeable_state: 'clean' })
+          return json(res, 200, { state: 'open', draft: false, merged: false, created_at: prCreated, changed_files: n === 25 ? 2 : filesMode === 'many' ? 3000 : filesMode === 'short' ? 5 : 1, base: { ref: baseOf(n) }, head: { sha: n === 24 ? 'f'.repeat(40) : shaOf(n) }, mergeable: true, mergeable_state: 'clean' })
         }
         m = /^\/repos\/amin-kerja-orang\/prestasiplus\/issues\/(\d+)\/comments$/.exec(path)
         if (m) {
@@ -548,6 +549,10 @@ describe('run against a fake GitHub API', () => {
           return json(res, 200, n === 22 ? c('MEMBER') : n === 23 ? c('NONE') : [])
         }
         m = /^\/repos\/amin-kerja-orang\/prestasiplus\/pulls\/(\d+)\/files$/.exec(path)
+        if (m && filesMode === 'invalid') {
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          return res.end('not json {')
+        }
         if (m) return json(res, 200, Number(m[1]) === 25 ? [{ filename: 'docs/readme.md' }, { filename: '.github/workflows/merge-batch.yml' }] : [{ filename: 'apps/api/src/x.ts' }])
         if (/\/pulls\/\d+\/(comments|reviews)$/.test(path)) return json(res, 200, [])
         m = /^\/repos\/amin-kerja-orang\/prestasiplus\/branches\/(.+)$/.exec(path)
@@ -672,6 +677,24 @@ describe('run against a fake GitHub API', () => {
       expect(r.reqs.filter((q) => q.method === 'PUT')).toEqual([])
     } finally {
       lateBlock = false
+    }
+  }, 60000)
+
+  it.each([
+    ['many', 'file list incomplete (3000 changed files)'],
+    ['short', 'file list incomplete (5 changed files)'],
+    ['invalid', 'read error'],
+  ] as const)('merge-tooling guard fails closed: files list %s => SKIPPED', async (mode, reason) => {
+    filesMode = mode
+    try {
+      const r = await runScript({ DRY_RUN: '0', MB_EXCLUDE: '11 12 13 22 23 24 25' })
+      const row = r.stdout.split('\n').find((l) => l.includes('| #21 |')) ?? ''
+      expect(row).toContain('SKIPPED')
+      expect(row).toContain(reason)
+      expect(r.reqs.filter((q) => q.method === 'PUT')).toEqual([])
+      if (mode === 'invalid') expect(r.code).toBe(1)
+    } finally {
+      filesMode = 'ok'
     }
   }, 60000)
 

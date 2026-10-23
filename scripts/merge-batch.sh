@@ -400,8 +400,20 @@ process_pr() {
   if ((rc == 0)); then return 0; fi
 
   # merge-tooling guard: a PR that changes the workflow or the script is merged by hand after review
+  local changed nfiles hit
+  changed=$(pj '.changed_files // -1')
   get_pages "$WORK/f.json" "/repos/$GH_REPO/pulls/$pr/files?per_page=100" || { read_error; return 0; }
-  if [[ -n $(jq -r '.[] | (.filename, (.previous_filename // empty)) | select(startswith(".github/") or . == "scripts/merge-batch.sh" or startswith("apps/api/test/security/merge-batch"))' "$WORK/f.json" | head -n 1) ]]; then
+  if ! nfiles=$(jq 'length' "$WORK/f.json"); then ERR="could not read the file list of PR #$pr"; read_error; return 0; fi
+  if ! hit=$(jq -r '.[] | (.filename, (.previous_filename // empty)) | select(startswith(".github/") or . == "scripts/merge-batch.sh" or startswith("apps/api/test/security/merge-batch"))' "$WORK/f.json"); then
+    ERR="could not read the file list of PR #$pr"
+    read_error
+    return 0
+  fi
+  if [[ ! $changed =~ ^[0-9]+$ ]] || ((changed >= 3000 || changed != nfiles)); then
+    P_REASON="file list incomplete ($changed changed files): merge by hand after review"
+    return 0
+  fi
+  if [[ -n $hit ]]; then
     P_REASON='touches the merge tooling (.github/ or merge-batch): merge by hand after review'
     return 0
   fi
