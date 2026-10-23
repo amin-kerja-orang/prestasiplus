@@ -15,7 +15,9 @@ import { isApiSession, toClientSessionFromApi } from '@/stores/http-session'
 import type {
   ClientSession,
   LoginRequest,
+  RegisterPending,
   RegisterRequest,
+  RegisterResult,
   ResetByIcPayload,
   ResetPasswordPayload,
   ResetPasswordRequest,
@@ -39,10 +41,17 @@ export async function login(request: LoginRequest): Promise<ClientSession> {
   return toClientSession(payload, request.remember)
 }
 
-/** #2 `POST /api/auth/register` (201): logs the new user in, not remembered (FR-M01-25). */
-export async function register(request: RegisterRequest): Promise<ClientSession> {
-  const payload = await api.post<SessionPayload>('/api/auth/register', { body: request })
-  return toClientSession(payload, false)
+/**
+ * #2 `POST /api/auth/register` (201). Student and parent: logs the new user in, not remembered
+ * (FR-M01-25). Teacher: resolves to the pending notice `{status: 'pending_verification', message}`
+ * and creates no session (the caller must not store one).
+ */
+export async function register(request: RegisterRequest): Promise<RegisterResult> {
+  const payload = await api.post<SessionPayload | RegisterPending>('/api/auth/register', {
+    body: request,
+  })
+  if ('status' in payload && payload.status === 'pending_verification') return payload
+  return toClientSession(payload as SessionPayload, false)
 }
 
 /** #3 `POST /api/auth/password/email`. Resolves to the status text (green box, FR-M01-29). */

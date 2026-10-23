@@ -5,7 +5,7 @@
  * | # | Route | Notes |
  * |---|---|---|
  * | 1 | `POST /api/auth/login` | BR-01 single credentials message, BR-02 throttle, BR-23 inactive, BR-25 `lastLoginAt`, FR-69 M14 hook |
- * | 2 | `POST /api/auth/register` | BR-04/05, 201 + session, FR-69/70 hooks |
+ * | 2 | `POST /api/auth/register` | BR-04/05, 201 + session (teacher: 201 pending, no session, AM2-N1), FR-69/70 hooks |
  * | 3 | `POST /api/auth/password/email` | BR-10: token to the dev outbox, 60 s throttle |
  * | 4 | `POST /api/auth/password/reset` | BR-11: token + e-mail, auto-login |
  * | 5 | `POST /api/auth/password/reset-ic` | BR-12: IC hash match, issues a broker token |
@@ -77,6 +77,15 @@ export const ACCOUNT_INACTIVE_CODE = 'ACCOUNT_INACTIVE'
  * (eslint boundary; the demo build must not contain it). A test asserts both values are equal.
  */
 export const PASSWORD_RESET_OUTBOX_TYPE = 'password-reset'
+
+/**
+ * Teacher self-registration answer (contract `ACCOUNT_REGISTER_PENDING_*`, AM2-N1): the account is
+ * created inactive with no school scope and no session until a school admin verifies it. A test
+ * asserts both values equal the contract constants.
+ */
+export const REGISTER_PENDING_STATUS = 'pending_verification'
+export const REGISTER_PENDING_MESSAGE =
+  'Pendaftaran diterima. Akaun guru anda akan diaktifkan selepas disahkan oleh pentadbir sekolah.'
 
 const SELF_REGISTER_ROLES = ['student', 'teacher', 'parent'] as const
 
@@ -191,6 +200,7 @@ function register(req: MockRequest, ctx: MockContext): MockResponse {
 
   const role = (body.role ?? 'student') as (typeof SELF_REGISTER_ROLES)[number]
   const isStudent = role === 'student'
+  const isTeacher = role === 'teacher'
   const now = ctx.clock.now()
   const created_ = users.create(
     {
@@ -199,7 +209,9 @@ function register(req: MockRequest, ctx: MockContext): MockResponse {
       role,
       phone: textOrNull(body.phone),
       grade: isStudent ? intOrNull(body.grade) : null,
-      schoolId: intOrNull(body.schoolId),
+      // A teacher is created unverified: inactive and without school scope (as the real API).
+      schoolId: isTeacher ? null : intOrNull(body.schoolId),
+      ...(isTeacher ? { isActive: false } : {}),
     },
     now,
   )
@@ -208,6 +220,9 @@ function register(req: MockRequest, ctx: MockContext): MockResponse {
   if (isStudent && ic !== null) users.setIcNumber(created_.id, ic)
 
   notifyRegistered(created_.id, textOrNull(body.referralCode))
+  if (isTeacher) {
+    return created({ status: REGISTER_PENDING_STATUS, message: REGISTER_PENDING_MESSAGE })
+  }
   const user = sessionUser(users.get(created_.id))
   if (!user) throw new Error('register: the created user has no session role')
   return created(startSession(user, false, ctx))

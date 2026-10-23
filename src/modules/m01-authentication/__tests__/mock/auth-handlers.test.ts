@@ -5,6 +5,8 @@
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { ACCOUNT_REGISTER_PENDING_MESSAGE, ACCOUNT_REGISTER_PENDING_STATUS } from '@pp/contract'
+
 import type { TransportResponse } from '@/api/transport'
 import { sessions } from '@/mock/auth/sessions'
 import { CLOCK_ANCHOR_ISO, createClock, MINUTE_MS, SECOND_MS, toEpochMs } from '@/lib/time'
@@ -289,15 +291,29 @@ describe('POST /api/auth/register (#2)', () => {
     expect(second.body.data!.user!.id).toBe(user.id + 1)
   })
 
-  it('registers a teacher: grade and IC are ignored (BR-04)', async () => {
+  it('registers a teacher as pending: 201 notice, no session, inactive, no school, login refused (AM2-N1)', async () => {
     const r = await call('POST', '/api/auth/register', {
       ...student,
       role: 'teacher',
+      schoolId: 900001,
       email: 'cikgu.baharu@demo.test',
     })
     expect(r.status).toBe(201)
-    expect(r.body.data!.user).toMatchObject({ role: 'teacher', grade: null })
-    expect(users.icMasked(r.body.data!.user!.id)).toBeNull()
+    expect(r.body.data).toEqual({
+      status: ACCOUNT_REGISTER_PENDING_STATUS,
+      message: ACCOUNT_REGISTER_PENDING_MESSAGE,
+    })
+    expect(r.body.data).not.toHaveProperty('token')
+    expect(r.res.headers).not.toHaveProperty('set-cookie')
+    const created = users.findByEmail('cikgu.baharu@demo.test')
+    expect(created).toMatchObject({ role: 'teacher', grade: null, isActive: false, schoolId: null })
+    expect(users.icMasked(created!.id)).toBeNull()
+    const login = await call('POST', '/api/auth/login', {
+      email: 'cikgu.baharu@demo.test',
+      password: student.password,
+    })
+    expect(login.status).toBe(403)
+    expect(login.body.error!.code).toBe('ACCOUNT_INACTIVE')
   })
 
   it('needs no grade for teacher or parent, but requires it for a student', async () => {

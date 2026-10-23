@@ -66,6 +66,18 @@ export interface SessionPayload {
   user: UserMe
 }
 
+/**
+ * #2 for a self-registered TEACHER: 201 `{status, message}` and NO session (the account waits for a
+ * school admin; contract `AccountRegisterPending`). `message` is the server copy, shown as is.
+ */
+export interface RegisterPending {
+  status: 'pending_verification'
+  message: string
+}
+
+/** What `POST /api/auth/register` resolves to: the new session (student, parent) or the pending notice (teacher). */
+export type RegisterResult = ClientSession | RegisterPending
+
 /** DATA-M01-03. */
 export type Faith = 'muslim' | 'hindu' | 'buddhist' | 'christian' | 'none'
 
