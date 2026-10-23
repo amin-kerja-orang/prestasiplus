@@ -8,6 +8,7 @@
  */
 
 import { api } from '@/api'
+import { isHttpMode } from '@/api/mode'
 
 /** DATA-M02-11 (INFERRED, URS OQ-2). `errors` lists the failed lines only. */
 export interface ImportResult {
@@ -15,6 +16,16 @@ export interface ImportResult {
   skipped: number
   failed: number
   errors: ImportError[]
+  /** http mode only (D59b): one entry per created account with its one-time password. */
+  credentials?: ImportCredential[]
+}
+
+/** One created account of a bulk user import (http mode only, D59b). */
+export interface ImportCredential {
+  /** 1-based line of the file or paste. */
+  line: number
+  email: string
+  generatedPassword: string
 }
 
 export interface ImportError {
@@ -48,7 +59,7 @@ export interface BulkImportInput extends ImportSource {
   role: BulkImportRole | ''
   /** Required for `teacher` and `school_admin`. */
   schoolId?: number | null
-  /** Empty or absent → the configured bulk default (SEC-M02-03). */
+  /** Mock mode only: empty or absent → the configured bulk default (SEC-M02-03). Never sent in http mode (D59b). */
   defaultPassword?: string | null
 }
 
@@ -99,7 +110,13 @@ function importBody(
 
 /** #12 `POST /api/admin/users/bulk-import` (422 without role, school or data). */
 export function importUsers(input: BulkImportInput): Promise<ImportResponse> {
-  const { csvFile, ...fields } = input
+  const { csvFile, ...rest } = input
+  const fields: Record<string, string | number | boolean | null | undefined> = { ...rest }
+  if (isHttpMode()) {
+    // D59b: no default-password field, the server generates one per account; ids are strings.
+    delete fields.defaultPassword
+    if (rest.schoolId != null) fields.schoolId = String(rest.schoolId)
+  }
   return api.post<ImportResponse>('/api/admin/users/bulk-import', {
     body: importBody(fields, csvFile),
     raw: true,
