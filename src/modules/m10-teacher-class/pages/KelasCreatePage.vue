@@ -3,14 +3,18 @@
  * S5 `/guru/kelas/cipta` (FR-M10-31..34; URS FT-M10-3.2): school search, "Maklumat Kelas" and the
  * level tiles filtered by the school type. Native validation only (name, subject); the level
  * radios carry no `required` (DV-M10-22). 201 → `/guru/kelas`; 422 → the shared red box.
+ *
+ * DV-M10-40 (http mode only): the picker opens with the teacher's own school selected, so a class
+ * left without a school choice is still visible to that school's admin. The teacher can clear it.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ApiError } from '@/api'
+import { ApiError, isHttpMode } from '@/api'
 import { useApi, useFlash } from '@/composables'
 import { DsBackLink, DsFormField, DsNativeSelect, DsPage, DsPanel } from '@/ds'
-import type { SchoolSummary } from '@/modules/m02-users-schools'
+import { searchSchools, type SchoolSummary } from '@/modules/m02-users-schools'
+import { useSessionStore } from '@/stores/session'
 
 import { createGuruClass } from '../api/guru'
 import type { EducationLevelSlug } from '../api/types'
@@ -22,7 +26,11 @@ const router = useRouter()
 const flash = useFlash()
 const { data: subjects } = useApi((signal) => fetchSubjectOptions(signal))
 
+const session = useSessionStore()
+
 const school = ref<SchoolSummary | null>(null)
+/** The teacher's own school, offered to the picker (DV-M10-40); `null` when none or in mock mode. */
+const ownSchool = ref<SchoolSummary | null>(null)
 const name = ref('')
 const subjectId = ref('')
 const level = ref<EducationLevelSlug | ''>('')
@@ -33,6 +41,17 @@ const fields = ref<Record<string, string>>({})
 const failure = ref<string[]>([])
 
 const tiles = computed(() => tilesForSchoolType(school.value?.type ?? null))
+
+onMounted(async () => {
+  const schoolId = session.user?.schoolId
+  if (!isHttpMode() || schoolId === null || schoolId === undefined) return
+  try {
+    // `GET /api/schools/search?id=`: that one active school, `[]` for an inactive or unknown one.
+    ownSchool.value = (await searchSchools({ id: schoolId }))[0] ?? null
+  } catch {
+    // The picker simply stays empty; the teacher can still search.
+  }
+})
 
 // A level hidden by the chosen school's type is no longer chosen.
 watch(tiles, (next) => {
@@ -83,7 +102,7 @@ async function submit(): Promise<void> {
         role="alert"
       />
 
-      <SchoolPicker @select="school = $event" />
+      <SchoolPicker :preselect="ownSchool" @select="school = $event" />
 
       <DsPanel>
         <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
