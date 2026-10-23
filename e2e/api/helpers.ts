@@ -45,9 +45,9 @@ export function account(role: ApiRole): Account {
 
 export const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
 
-/** Where each role lands (scope home, src/app/prototype-scope.ts `scopeHomePath` + http student home). */
+/** Where each role lands (scope home, src/app/prototype-scope.ts `scopeHomePath` + server landing). */
 export const HOME: Record<'student' | 'guru' | 'adminSekolah' | 'adminPusat', string> = {
-  student: '/spm/bijak',
+  student: '/dashboard',
   guru: '/guru',
   adminSekolah: '/admin-sekolah',
   adminPusat: '/admin/command-center',
@@ -55,13 +55,6 @@ export const HOME: Record<'student' | 'guru' | 'adminSekolah' | 'adminPusat', st
 
 /** Http-mode twin of `expectNoHorizontalScroll`: the app has booted when `#app.__vue_app__` exists. */
 export async function expectNoHScroll(page: Page): Promise<void> {
-  // TODO(d4 /login hero animate-ds-stamp overflow at 375): temporary; remove this wait once d4's FE fix lands (lead, 2026-10-21).
-  // Entry animations (e.g. the login hero chip) overflow briefly: wait until none is running.
-  await page
-    .waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'), null, {
-      timeout: 5000,
-    })
-    .catch(() => {})
   const samples: number[] = []
   for (let i = 0; i < H_SCROLL_SAMPLES; i++) {
     if (i > 0) await page.waitForTimeout(H_SCROLL_SAMPLE_GAP_MS)

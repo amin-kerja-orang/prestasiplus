@@ -18,7 +18,7 @@ import { useCcDialog } from './use-cc-dialog'
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
 type Row = { [K in keyof CcHeadcountStudent]: CcHeadcountStudent[K] }
 
-const props = defineProps<{ configId: number; subject: string }>()
+const props = defineProps<{ configId: number | string; subject: string }>()
 const emit = defineEmits<{ close: [] }>()
 
 const open = useCcDialog(() => emit('close'))

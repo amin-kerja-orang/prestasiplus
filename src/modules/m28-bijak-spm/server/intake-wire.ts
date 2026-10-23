@@ -8,10 +8,12 @@
  * editor binds to the same fields; `questionFromItem` keeps only the question fields.
  */
 import type {
+  IntakeBatchCreate,
   IntakeBatchDetail,
   IntakeBatchReview,
   IntakeBatchStatus,
   IntakeBatchSummary,
+  IntakeCopyright,
   IntakeExtractionRun,
   IntakeFileSummary,
   IntakeIssue as WireIssue,
@@ -25,6 +27,7 @@ import type {
 import type {
   IntakeBatch,
   IntakeExtraction,
+  IntakeMeta,
   IntakeIssue,
   IntakeQuestion,
   IntakeStatus,
@@ -57,6 +60,25 @@ const PAPER_TYPE_LABELS = Object.fromEntries(
 
 export function paperTypeToWire(label: string): IntakePaperType {
   return PAPER_TYPE_CODES[label] ?? 'other'
+}
+
+/**
+ * The declaration body of `POST /intake/batches`, typed by the contract's `IntakeBatchCreate` (78-10). The copyright
+ * select offers exactly the contract codes (`COPYRIGHT_OPTIONS`); an unchosen value ('') is sent as it is, so the
+ * server's 422 field error on `copyright` stays the one the form shows.
+ */
+export function batchCreateToWire(meta: Omit<IntakeMeta, 'fileName' | 'fileHash' | 'pageCount'>): IntakeBatchCreate {
+  const notes = meta.notes.trim()
+  return {
+    paperType: paperTypeToWire(meta.paperType),
+    subject: meta.subject,
+    kertas: meta.kertas,
+    year: meta.year,
+    source: meta.source,
+    copyright: meta.copyright as IntakeCopyright,
+    ...(notes ? { notes } : {}),
+    declaration: true,
+  }
 }
 export function paperTypeFromWire(code: string): string {
   return PAPER_TYPE_LABELS[code] ?? 'Lain-lain'

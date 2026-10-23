@@ -120,12 +120,10 @@ function focusVerify(id: string): boolean {
   return false
 }
 
-/** The shell prints the page's one h1; it gets a temporary tab stop so focus can land on it. */
+/** The page owns the h1 (route `ownsH1`): sr-only; programmatic focus target (tab stop -1) so focus can land on it. */
+const heading = ref<HTMLElement | null>(null)
 function focusHeading(): void {
-  const heading = document.querySelector<HTMLElement>('h1')
-  if (!heading) return
-  heading.setAttribute('tabindex', '-1')
-  heading.focus()
+  heading.value?.focus()
 }
 
 async function refresh(): Promise<void> {
@@ -183,12 +181,20 @@ async function verify(row: Item): Promise<void> {
 <template>
   <DsPage data-testid="pt-page">
     <div ref="root">
+      <h1
+        ref="heading"
+        tabindex="-1"
+        class="sr-only"
+        data-testid="pt-heading"
+      >
+        {{ PENDING_TITLE }}
+      </h1>
       <DsStack gap="lg">
         <DsBackLink :to="TEACHER_LIST_PATH" label="Senarai Guru" data-testid="pt-back" />
 
         <section data-testid="pt-count-card">
           <DsGrid :cols="{ base: 1, sm: 2, lg: 4 }">
-            <USkeleton v-if="firstLoad" data-testid="pt-loading" />
+            <USkeleton v-if="firstLoad" class="h-24" data-testid="pt-loading" />
             <DsStatTile
               v-else-if="data"
               :value="formatCount(count)"
@@ -278,7 +284,11 @@ async function verify(row: Item): Promise<void> {
                   :initials="row.initials"
                   data-testid="pt-row"
                   :data-user-id="row.id"
-                />
+                >
+                  <template #name>
+                    <span data-testid="pt-name">{{ row.name }}</span>
+                  </template>
+                </DsIdentity>
                 <DsCluster gap="xs" align="baseline">
                   <DsText variant="caption" tone="muted" as="span">Emel</DsText>
                   <DsText variant="body" as="span" wrap="anywhere" data-testid="pt-email">{{

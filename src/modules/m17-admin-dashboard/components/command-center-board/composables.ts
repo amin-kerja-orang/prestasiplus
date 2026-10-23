@@ -135,7 +135,7 @@ export function useDailyBoard() {
 }
 
 export interface DrillState {
-  schoolId: number
+  schoolId: number | string
   status: LoadStatus
   data: CcSchoolDrill | null
 }
@@ -153,7 +153,7 @@ export function useSchoolDrill(period: Ref<CcPeriod>) {
     state.value = null
   }
 
-  async function toggle(schoolId: number): Promise<void> {
+  async function toggle(schoolId: number | string): Promise<void> {
     if (state.value?.schoolId === schoolId) {
       close()
       return
