@@ -17,7 +17,7 @@ import { runCore, SyntheticDataRefusedError } from '../../../src/migration/load'
 import '../../../src/migration/load/command'
 import { loadStaging } from '../../../src/migration/staging/load'
 import { DirReader } from '../../../src/migration/staging/readers'
-import { capture, createStagingDb, FIXTURE_DIR, stagingEnv, type StagingDb } from '../staging/helpers'
+import { capture, createStagingDb, FIXTURE_DIR, stagingEnv, testOutDir, type StagingDb } from '../staging/helpers'
 
 const FIXTURE_ICS = Array.from({ length: 13 }, (_, i) => String(i + 1).padStart(12, '0'))
 const AS_OF = '2026-06-01'
@@ -59,7 +59,7 @@ afterAll(async () => {
   await env.close()
 })
 
-const run = (mode: 'dry-run' | 'apply', asOf = AS_OF) => runCore({ pool: env.pool, env: coreEnv, source: 'cloud', asOf, mode, batchSize: 2 })
+const run = (mode: 'dry-run' | 'apply', asOf = AS_OF) => runCore({ pool: env.pool, env: coreEnv, source: 'cloud', asOf, mode, batchSize: 2, outDir: testOutDir() })
 
 describe('dry-run (AC6)', () => {
   it('writes nothing outside etl_*, reconciles every table and records rejects', async () => {

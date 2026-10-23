@@ -37,6 +37,7 @@ const env = { NODE_ENV: 'test', PP_ALLOW_MIGRATE_APPLY: '1' }
 
 let nextRun = 0
 const report = (mode: 'dry-run' | 'apply', status: 'succeeded' | 'failed') => ({
+  core: { notes: { counters: new Map<string, number>() } },
   report: {
     runId: String(++nextRun), mode, status, counters: {}, resumedBatches: 0,
     recon: [{ entity: 'e', sourceCount: 1, eligibleCount: 1, loaded: status === 'failed' ? 0 : 1, rejected: 0, expectedDelta: 0, status: status === 'failed' ? 'mismatch' : 'ok' }],

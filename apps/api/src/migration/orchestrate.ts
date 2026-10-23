@@ -200,7 +200,7 @@ async function runStage(name: 'core' | 'activity', mode: RunMode, o: PipelineOpt
     const { report, core, restrictedFile } = await runCore({ ...common, outDir: o.outDir, warn: o.warn })
     const notes: Record<string, number> = {}
     for (const k of CORE_STAGE_NOTES) {
-      const n = core?.notes.counters.get(k)
+      const n = core.notes.counters.get(k)
       if (n !== undefined) notes[k] = n
     }
     return { ...fromReport('core', report), ...(Object.keys(notes).length > 0 ? { notes } : {}), ...(restrictedFile !== undefined ? { restrictedFile } : {}) }

@@ -112,12 +112,14 @@ export interface CoreRunOptions extends Omit<CoreOptions, 'pool'> {
   gitSha?: string | null
   /** Folder (a `.migration-out` folder) of the restricted id file. Default `<repo>/.migration-out`. */
   outDir?: string
+  /** Test seam (as in `migrate:activity`): wraps the steps, for example to inject a failure after batch N. */
+  transformSteps?: (steps: AnyEntityStep[]) => AnyEntityStep[]
 }
 
 export interface CoreRunResult {
   report: RunReport
   core: CoreContext
-  /** Path of the mode-0600 restricted id file (Q11); set only by a succeeded `--apply` that had ids to write. */
+  /** Path of the mode-0600 restricted id file (Q11); set by an `--apply` (also a failed one) that had ids to write. */
   restrictedFile?: string
 }
 
@@ -132,6 +134,31 @@ function noteRosterHashes(core: CoreContext, mode: RunMode): void {
   if (n === 0 && mode === 'apply') core.options.warn?.(ROSTER_HASHES_WARNING)
 }
 
+/**
+ * Q11, after a resumed or interrupted apply: the notes only saw the batches this process loaded (a resume starts after the
+ * checkpoint, and a failed batch was rolled back after its ids were noted). So the two counts and the id lists are rebuilt
+ * from the committed v2 `users` rows (read-only), which is the truth whatever the batch history was.
+ */
+async function recountFromCommitted(pool: Pick<pg.Pool, 'query'>, core: CoreContext): Promise<void> {
+  const res = await pool.query<{ legacy_id: string; null_hash: boolean; loginless: boolean }>(
+    `SELECT legacy_id,
+            (password_hash IS NULL) AS null_hash,
+            (must_reset_password AND username IS NULL AND email IS NULL) AS loginless
+     FROM users
+     WHERE legacy_source = $1
+       AND (password_hash IS NULL OR (must_reset_password AND username IS NULL AND email IS NULL))
+     ORDER BY length(legacy_id), legacy_id`,
+    [core.source],
+  )
+  const nulls = res.rows.filter((r) => r.null_hash).map((r) => r.legacy_id)
+  const loginless = res.rows.filter((r) => r.loginless).map((r) => r.legacy_id)
+  core.notes.restricted.set('nullHashAccounts', nulls)
+  core.notes.restricted.set('flaggedWithoutLoginId', loginless)
+  core.notes.counters.set('nullHashAccounts', nulls.length)
+  core.notes.counters.set('flaggedWithoutLoginId', loginless.length)
+  core.notes.counters.set('countsFromCommittedRows', 1)
+}
+
 /** Runs the whole command through the kit runner (dry-run by default; apply needs a passing dry-run on the same input). */
 export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
   const { mode, batchSize, gitSha, outDir, ...coreOptions } = options
@@ -139,6 +166,7 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
   await assertNotSyntheticInProduction(options.pool, options.env)
   noteRosterHashes(core, mode)
   const steps = buildCoreSteps(core)
+  const runSteps = options.transformSteps ? options.transformSteps(steps) : steps
   const defaults = createHash('sha256').update([...core.defaultHashes].sort().join('\n')).digest('hex')
   const inputHash = hashInput([
     ...(await stagingFingerprint(options.pool)),
@@ -148,12 +176,31 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
     `default-hashes=${defaults}`,
   ])
   const runner = new Runner({ pool: options.pool, env: options.env })
+  const out = outDir ?? DEFAULT_OUT_DIR
   // Fail before anything is written when the restricted file could not be placed afterwards (an unsafe folder).
-  if (mode === 'apply') prepareOutputDir(outDir ?? DEFAULT_OUT_DIR)
-  const report = await runner.run({ mode, steps, inputHash, gitSha, batchSize })
+  if (mode === 'apply') prepareOutputDir(out)
+  const writeFile = (runId: string): string | undefined =>
+    writeRestrictedIds(core.notes.restricted, { runId, generatedAt: new Date().toISOString() }, out)
+  let report: RunReport
+  try {
+    report = await runner.run({ mode, steps: runSteps, inputHash, gitSha, batchSize })
+  } catch (err) {
+    // An apply that stopped after committing user batches still needs its list (best effort; the original error wins).
+    if (mode === 'apply' && core.notes.counters.has('nullHashAccounts')) {
+      try {
+        await recountFromCommitted(options.pool, core)
+        const file = writeFile('interrupted')
+        if (file !== undefined) core.options.warn?.(`restricted id file (mode 0600, delete within 7 days): ${file}`)
+      } catch {
+        // nothing more can be done here
+      }
+    }
+    throw err
+  }
   let restrictedFile: string | undefined
-  if (mode === 'apply' && report.status === 'succeeded') {
-    restrictedFile = writeRestrictedIds(core.notes.restricted, { runId: report.runId, generatedAt: new Date().toISOString() }, outDir ?? DEFAULT_OUT_DIR)
+  if (mode === 'apply') {
+    if (report.resumedBatches > 0) await recountFromCommitted(options.pool, core)
+    restrictedFile = writeFile(report.runId)
   }
   return { report, core, restrictedFile }
 }

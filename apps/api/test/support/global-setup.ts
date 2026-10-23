@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -38,6 +38,16 @@ export async function applyMigrations(url: string): Promise<void> {
     for (const dir of dirs) await client.query(readFileSync(join(MIGRATIONS_DIR, dir, 'migration.sql'), 'utf8'))
   } finally {
     await client.end()
+  }
+}
+
+/** The restricted id files of `runCore --apply` that specs write into `.migration-out/core-test-*` (`testOutDir`). */
+function removeMigrationTestOutputs(): void {
+  const root = fileURLToPath(new URL('../../../../.migration-out/', import.meta.url))
+  try {
+    for (const d of readdirSync(root)) if (d.startsWith('core-test-')) rmSync(join(root, d), { recursive: true, force: true })
+  } catch {
+    // no such folder: nothing to remove
   }
 }
 
@@ -81,6 +91,7 @@ export default async function setup(project: TestProject): Promise<() => Promise
   }
 
   return async () => {
+    removeMigrationTestOutputs()
     try {
       if (adminUrl && !container) {
         const admin = new pg.Client({ connectionString: adminUrl })
