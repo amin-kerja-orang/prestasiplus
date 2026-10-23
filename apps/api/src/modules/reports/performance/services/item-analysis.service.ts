@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Optional } from '@nestjs/common'
 
 import { ApiError } from '../../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../../db/clock'
@@ -28,6 +28,7 @@ import {
   pct,
   round,
 } from '../domain/rules'
+import { HeadcountFactsService } from '../headcount/headcount-facts.service'
 import {
   DIRECTORY_PORT,
   PerformancePorts,
@@ -37,6 +38,8 @@ import {
   type OptionLetter,
   type SchoolRef,
 } from '../ports'
+import type { HeadcountEntryView, HeadcountFacts } from './headcount-facts.types'
+import { gpsByYear, liveEntries, schoolGps } from './headcount-figures'
 import { groupBy, nameMap, ownPupilIds, toCard } from './support'
 import type {
   Ctx,
@@ -79,7 +82,15 @@ export class ItemAnalysisService {
     protected readonly ports: PerformancePorts,
     @Inject(DIRECTORY_PORT) protected readonly directory: DirectoryPort,
     @Inject(CLOCK) protected readonly clock: Clock,
+    @Optional() @Inject(HeadcountFactsService) protected readonly facts?: HeadcountFacts,
   ) {}
+
+  /** Live headcount entries of a school; [] without the reader. With a tingkatan, only the entries of its pupils. */
+  private async schoolEntries(schoolId: string, onlyPupils: ReadonlySet<string> | null): Promise<HeadcountEntryView[]> {
+    if (!this.facts) return []
+    const live = liveEntries(await this.facts.entriesInScope({ kind: 'school', schoolId }))
+    return onlyPupils === null ? live : live.filter((e) => onlyPupils.has(e.studentId))
+  }
 
   // --- S9 school ----------------------------------------------------------------------------------
 
@@ -222,6 +233,11 @@ export class ItemAnalysisService {
       }
     })
 
+    // DV-M08-31: the GPS card is the school's own headcount GPS, the figure of Prestasi sekolah (same rule and suppression), with its yearly series.
+    const headcount = await this.schoolEntries(targetId, tingkatan === null ? null : new Set(pupilIds))
+    const staff = isStaff(ctx.role)
+    const gps = { ...schoolGps(headcount, staff), years: gpsByYear(headcount, staff) }
+
     return {
       school,
       variant,
@@ -231,7 +247,7 @@ export class ItemAnalysisService {
       correct: answers === null ? null : correct,
       accuracy: answers === null ? null : round(capPercent(pct(correct, basis.length)), 1),
       difficulty,
-      gps: { value: null, band: null, entries: 0, years: [] },
+      gps: gps.value === null ? { ...gps, years: [] } : gps,
       subjects,
       questions,
     }
