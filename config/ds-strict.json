@@ -215,7 +215,14 @@
     { "glob": "src/modules/m17-admin-dashboard/pages/**", "level": "page" },
     { "glob": "src/modules/m17-admin-dashboard/components/**", "level": "page" },
     { "glob": "src/modules/m08-student-performance/pages/**", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/components/**", "level": "page" }
+    { "glob": "src/modules/m08-student-performance/components/**", "level": "page" },
+    { "glob": "src/modules/m28-bijak-spm/admin/**/*.ts", "level": "page" },
+    { "glob": "src/modules/m28-bijak-spm/admin/intake/components/IntakeMetaFields.vue", "level": "page" },
+    { "glob": "src/modules/m28-bijak-spm/admin/intake/pages/IntakeManualPage.vue", "level": "page" },
+    { "glob": "src/modules/m28-bijak-spm/admin/papers/PaperListPage.vue", "level": "page" },
+    { "glob": "src/modules/m28-bijak-spm/admin/papers/ReviewQueuePage.vue", "level": "page" },
+    { "glob": "src/shells/pentadbiran/**/*.ts", "level": "page" },
+    { "glob": "src/shells/pembelajaran/{useExclusiveSheets,useShellUser}.ts", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

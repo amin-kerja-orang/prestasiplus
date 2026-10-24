@@ -26,13 +26,53 @@ export function readDsStrict(file = 'config/ds-strict.json') {
 /** Globs of a level. */
 export const globsOf = (strict, level) => strict.filter((e) => e.level === level).map((e) => e.glob)
 
-/** Globs that match only `.css` and `.vue` files below each entry (for Stylelint). */
+/** Expands brace alternatives (`a/{b,c/**}` -> `a/b`, `a/c/**`); nested braces are expanded recursively. */
+export function expandBraces(glob) {
+  const open = glob.indexOf('{')
+  if (open === -1) return [glob]
+  let depth = 0
+  let close = -1
+  const cuts = []
+  for (let i = open; i < glob.length; i += 1) {
+    const ch = glob[i]
+    if (ch === '{') depth += 1
+    else if (ch === '}') {
+      depth -= 1
+      if (depth === 0) {
+        close = i
+        break
+      }
+    } else if (ch === ',' && depth === 1) cuts.push(i)
+  }
+  if (close === -1) return [glob]
+  const parts = []
+  let from = open + 1
+  for (const cut of [...cuts, close]) {
+    parts.push(glob.slice(from, cut))
+    from = cut + 1
+  }
+  const head = glob.slice(0, open)
+  const tail = glob.slice(close + 1)
+  return parts.flatMap((part) => expandBraces(`${head}${part}${tail}`))
+}
+
+/** A strict entry that names script files only (`admin/**\/*.ts`): nothing for Stylelint to read. */
+const SCRIPT_FILE_GLOB = /\.(?:[cm]?[jt]sx?|json)$/
+
+/**
+ * Globs that match only `.css` and `.vue` files below each entry (for Stylelint). Brace alternatives
+ * are expanded first, so each alternative is treated on its own: a file stays a file, a directory
+ * (`timeline/**`) gets the `/*.{css,vue}` suffix, and script-only entries (`*.ts`) are dropped.
+ */
 export function styleGlobs(globs) {
-  return globs.map((g) => {
-    if (/\.(css|vue)$/.test(g)) return g
-    const base = g.endsWith('/**') ? g : `${g.replace(/\/$/, '')}/**`
-    return `${base}/*.{css,vue}`
-  })
+  return globs
+    .flatMap(expandBraces)
+    .filter((g) => !SCRIPT_FILE_GLOB.test(g))
+    .map((g) => {
+      if (/\.(css|vue)$/.test(g)) return g
+      const base = g.endsWith('/**') ? g : `${g.replace(/\/$/, '')}/**`
+      return `${base}/*.{css,vue}`
+    })
 }
 
 /**
