@@ -34,12 +34,17 @@ describe('monitoring route ids', () => {
   it('passes string ids through in http mode (school, student and teacher routes)', () => {
     mode.http = true
     expect(propsOf('x-monitoring-sekolah', params)).toMatchObject({ schoolId: '1042' })
-    expect(propsOf('x-monitoring-pelajar', params)).toMatchObject({ schoolId: '1042', userId: '77' })
+    expect(propsOf('x-monitoring-pelajar', params)).toMatchObject({
+      schoolId: '1042',
+      userId: '77',
+    })
     expect(propsOf('x-monitoring-guru', params)).toMatchObject({ schoolId: '1042', userId: '77' })
   })
 
   it('does not strip a leading zero from a string id in http mode', () => {
     mode.http = true
-    expect(propsOf('x-monitoring-sekolah', { schoolId: '0042' })).toMatchObject({ schoolId: '0042' })
+    expect(propsOf('x-monitoring-sekolah', { schoolId: '0042' })).toMatchObject({
+      schoolId: '0042',
+    })
   })
 })

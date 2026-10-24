@@ -544,7 +544,11 @@ describe('S2 Monitoring Penglibatan', () => {
   it('a failed CSV export shows the BM error toast (never the API text), saves nothing and does not throw (DV-M11-32)', async () => {
     useToast().clear()
     api.fetchMonitoringExport.mockRejectedValue(
-      new ApiError({ status: 503, code: 'SERVER_ERROR', message: 'Backend exploded: secret detail' }),
+      new ApiError({
+        status: 503,
+        code: 'SERVER_ERROR',
+        message: 'Backend exploded: secret detail',
+      }),
     )
     const unhandled = vi.fn()
     process.on('unhandledRejection', unhandled)
