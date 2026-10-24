@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * S12 `/topics` "Topik - PRESTASIPLUS" (M03-T4; FR-M03-69..74, BR-13). Grade and subject chips (each
- * keeps the other filter), then every matching topic on one page in a 1 / 2 (`sm`) / 3 (`lg`)
+ * S12 `/topics` "Topik - PRESTASIPLUS" (M03-T4; FR-M03-69..74, BR-13). Grade (Tingkatan 4 / 5, D54) and
+ * subject chips (each keeps the other filter), then every matching topic on one page in a 1 / 2 (`sm`) / 3 (`lg`)
  * column grid. No loading state: the content area stays empty until the data is ready (SRS §8).
  */
 import { computed } from 'vue'
@@ -9,14 +9,17 @@ import { RouterLink, useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
 import { DsEmptyState, DsIconChip, DsPage } from '@/ds'
+import { useSessionStore } from '@/stores/session'
 
 import { topicAccent, topicGlyph } from '../lib/topic-accent'
 import { fetchTopics } from '../api/student-curriculum'
 import {
+  ALL_GRADES,
   EMPTY_TOPICS,
   GRADE_CHIPS,
   LOAD_ERROR,
   SUBJECT_CHIPS,
+  effectiveTopicGrade,
   moreSubtopics,
   readFilter,
   topicPath,
@@ -24,11 +27,15 @@ import {
 } from '../lib/student-catalogue'
 
 const route = useRoute()
-const grade = computed(() => readFilter(route.query.grade_level))
+const session = useSessionStore()
+/** D54: Tingkatan 4 / 5 / "Semua" (`SEMUA`); a bare URL opens the student's form (4 by default). */
+const grade = computed(() =>
+  effectiveTopicGrade(readFilter(route.query.grade_level), session.user?.grade),
+)
 const subject = computed(() => readFilter(route.query.subject))
 
 const { data, error } = useApi(
-  (signal) => fetchTopics({ gradeLevel: grade.value, subject: subject.value, signal }),
+  (signal) => fetchTopics({ gradeLevel: grade.value === ALL_GRADES ? null : grade.value, subject: subject.value, signal }),
   [grade, subject],
 )
 const topics = computed(() => data.value?.data ?? [])
@@ -38,7 +45,7 @@ const loaded = computed(() => data.value !== null)
 <template>
   <DsPage data-testid="topics-page">
     <section class="flex flex-col gap-3 rounded-card bg-default p-4 shadow-lift sm:p-5">
-      <nav class="flex flex-wrap gap-2" aria-label="Darjah" data-testid="grade-chips">
+      <nav class="flex flex-wrap gap-2" aria-label="Tingkatan" data-testid="grade-chips">
         <UButton
           v-for="chip in GRADE_CHIPS"
           :key="chip.label"
