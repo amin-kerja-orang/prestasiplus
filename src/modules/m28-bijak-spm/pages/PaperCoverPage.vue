@@ -5,7 +5,7 @@
  * "Sambung" in the hero while a sitting is open); and, when an unsubmitted
  * sitting exists, the "Percubaan belum dihantar" choice (Sambung / Mula Semula).
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { DsEmptyState, DsHeroCard } from '@/ds'
@@ -48,6 +48,14 @@ const modeItems = [
   },
 ]
 const needsChoice = computed(() => !!open.value && !open.value.fresh)
+// "Mula Semula" starts a new sitting, so the student picks its mode; the previous mode is the default.
+watch(
+  open,
+  (o) => {
+    if (o) mode.value = o.mode
+  },
+  { immediate: true },
+)
 
 async function begin(restart: boolean): Promise<void> {
   starting.value = true
@@ -199,6 +207,15 @@ async function begin(restart: boolean): Promise<void> {
       title="Mula semula?"
       description="Semua jawapan dan masa untuk percubaan ini akan dikosongkan. Mula semula?"
     >
+      <template #body>
+        <URadioGroup
+          v-model="mode"
+          :items="modeItems"
+          variant="card"
+          legend="Mod menjawab"
+          data-testid="restart-mode-choice"
+        />
+      </template>
       <template #footer>
         <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
           <UButton color="neutral" @click="confirmRestart = false">Batal</UButton>
