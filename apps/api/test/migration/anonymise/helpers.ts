@@ -111,7 +111,7 @@ export function piiTables(): Record<string, Rows> {
       { id: 1, name: PII.schoolName, code: 'ZRB1234', type: 'smk', state: 'negeri_a', district: 'daerah_a1', join_code: 'JOINZRB1', is_active: '1', created_at: '2026-01-01T00:00:00Z' },
     ],
     users: [
-      { id: 1, name: PII.name1, email: PII.email1, phone: PII.phone1, ic: PII.ic1, username: PII.username1, password: PII.bcryptHash1, role: 'pelajar', school_id: 1, google_id: PII.googleId, referral_code: PII.referral, remember_token: PII.rememberToken, parent_invite_token: PII.inviteToken, bio: 'Saya suka bola sepak dan membaca', is_active: '1', created_at: '2026-01-01T00:00:00Z' },
+      { id: 1, name: PII.name1, email: PII.email1, phone: PII.phone1, ic: PII.ic1, username: PII.username1, password: PII.bcryptHash1, role: 'pelajar', school_id: 1, referral_code: PII.referral, remember_token: PII.rememberToken, parent_invite_token: PII.inviteToken, bio: 'Saya suka bola sepak dan membaca', is_active: '1', created_at: '2026-01-01T00:00:00Z' },
       { id: 2, name: PII.name2, email: PII.email2, phone: PII.phone2, ic: PII.ic2, username: PII.username2, password: PII.bcryptHash2, role: 'guru', school_id: 1, is_active: '1', created_at: '2026-01-02T00:00:00Z' },
       // the same person as user 1, written differently: case-variant e-mail, other spacing and case in the name
       { id: 3, name: `  ${PII.name1.toUpperCase()} `, email: PII.email1.toUpperCase(), phone: '01111112222', ic: '010101010101', username: PII.username1, password: PII.argonHash, role: 'pelajar', school_id: 1, is_active: '1' },
@@ -119,10 +119,10 @@ export function piiTables(): Record<string, Rows> {
       { id: 5, name: PII.name3, email: '', phone: '', ic: '', username: 'roster5', password: '', role: 'pelajar', school_id: 99, is_active: '1' },
       { id: 6, name: 'Roster Six', email: null, phone: null, ic: null, username: 'roster6', password: null, role: 'pelajar', school_id: null, is_active: '1' },
     ],
-    sponsors: [{ id: 1, user_id: 2, organisation: PII.schoolName, category: 'korporat', officer_name: PII.name2, status: 'aktif' }],
+    sponsors: [{ id: 1, organisation: PII.schoolName, category: 'korporat', officer_name: PII.name2, status: 'aktif' }],
     foster_applications: [{ id: 1, applicant_name: PII.name1, category: 'a', status: 'baru', reason: `Anak saya ${PII.name3} perlukan bantuan` }],
     support_tickets: [{ id: 1, user_id: 1, subject: PII.ticketSubject, status: 'dibuka', admin_reply: null }],
-    student_notes: [{ id: 1, user_id: 1, subject_id: 1, title: 'Nota peribadi', body: PII.noteBody }],
+    timeline_entries: [{ id: 1, user_id: 1, title: 'Nota peribadi', body: PII.noteBody, happened_on: '2026-01-02' }],
     audit_logs: [{ id: 1, user_id: 1, action: 'login', subject_type: 'user', subject_id: '1', ip: PII.ip }],
     chatbot_conversations: [{ id: 1, user_id: 1, visitor_id: PII.visitor, start_url: `https://example.org/?token=${PII.rememberToken}` }],
     settings: [{ id: 1, key: 'openai.api_key', value: PII.apiKey, group: 'ai' }],

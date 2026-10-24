@@ -18,8 +18,9 @@ const A = quoteIdent(ARCHIVE_SCHEMA)
 
 /**
  * One row per question that exists in the archive. The paper key and number label come from the canonical bridge
- * (`legacy_canonical_map` source `questions` -> `exam_questions`) and, for the key, the lowest-numbered canonical paper
- * that contains the question. Nothing here is a join on free text.
+ * (`legacy_canonical_map` source `questions` -> `exam_questions`); the key is the natural key of the question's own source
+ * paper (`exam_questions.source_paper_id` -> `source_papers.natural_key`, one paper per canonical question, so no
+ * tie-break is needed). Nothing here is a join on free text.
  */
 export const SNAPSHOT_SQL = `
 WITH opts AS (
@@ -29,32 +30,24 @@ WITH opts AS (
   GROUP BY o.question_id
 ),
 canon AS (
-  SELECT DISTINCT ON (m.legacy_id) m.legacy_id, eq.id AS eq_id, eq.number_label::text AS number_label
+  SELECT DISTINCT ON (m.legacy_id) m.legacy_id, eq.number_label::text AS number_label, sp.natural_key::text AS natural_key
   FROM ${A}."legacy_canonical_map" m
   JOIN ${A}."exam_questions" eq ON eq.id = m.canonical_id
+  LEFT JOIN ${A}."source_papers" sp ON sp.id = eq.source_paper_id
   WHERE m.source = 'questions' AND m.canonical_type = 'exam_question'
     AND m.legacy_id = ANY(ARRAY(SELECT x::text FROM unnest($1::bigint[]) AS x))
   ORDER BY m.legacy_id, m.id
-),
-keys AS (
-  SELECT DISTINCT ON (epq.exam_question_id) epq.exam_question_id, sp.natural_key::text AS natural_key
-  FROM ${A}."exam_paper_questions" epq
-  JOIN ${A}."exam_papers" ep ON ep.id = epq.exam_paper_id
-  JOIN ${A}."source_papers" sp ON sp.id = ep.source_paper_id
-  WHERE epq.exam_question_id IN (SELECT eq_id FROM canon)
-  ORDER BY epq.exam_question_id, ep.id
 )
 SELECT q.id::text AS id,
        q.subject_id::text AS subject_id, q.education_level_id::text AS education_level_id,
        q.chapter_id::text AS chapter_id, q.topic_id::text AS topic_id,
-       q.difficulty_level::text AS difficulty, q.question_type::text AS qtype,
+       q.difficulty_level::text AS difficulty, q.type::text AS qtype,
        q.body::text AS stem,
        coalesce(opts.options, ARRAY[]::text[]) AS options,
-       keys.natural_key AS natural_key, canon.number_label AS number_label
+       canon.natural_key AS natural_key, canon.number_label AS number_label
 FROM ${A}."questions" q
 LEFT JOIN opts ON opts.question_id = q.id
 LEFT JOIN canon ON canon.legacy_id = q.id::text
-LEFT JOIN keys ON keys.exam_question_id = canon.eq_id
 WHERE q.id = ANY($1::bigint[])`
 
 interface SnapshotRow {

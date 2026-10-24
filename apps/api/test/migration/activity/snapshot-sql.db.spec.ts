@@ -1,14 +1,18 @@
 /**
- * The set-based `SNAPSHOT_SQL` (AM-08c) against the correlated form it replaced, on a real PostgreSQL: for planted
- * archive rows with ties, NULLs and rows the joins must ignore, both queries return the same rows, and
- * `readSnapshotDims` returns the same dims with and without its per-run cache. Fictitious values; ids from 9201 up.
+ * The set-based `SNAPSHOT_SQL` (AM-08c) against the correlated form it replaced (the FIT-FIX query, kept verbatim as
+ * REFERENCE_SQL), on a real PostgreSQL: for planted archive rows with ties, NULLs and rows the joins must ignore, both
+ * queries return the same rows, and `readSnapshotDims` returns the same dims with and without its per-run cache.
+ * Fictitious values; ids from 9201 up.
+ *
+ * Since FIT-FIX the natural key comes straight from `exam_questions.source_paper_id`, so a canonical question has exactly
+ * one paper: the old "its exam question is on two papers, the lower paper id wins" case no longer exists and is dropped.
  *
  * Planted questions:
- *   9201  two options (inserted out of id order); two canonical rows (the lower map id wins); its exam question is on
- *         two papers (the lower paper id wins)
+ *   9201  two options (inserted out of id order); two canonical rows (the lower map id wins, and the winner's
+ *         paper key is used, not the other row's)
  *   9202  no options; a canonical row of another type and one of another source (both ignored)
- *   9203  canonical exam question on no paper (natural key null, number label kept)
- *   9204  canonical exam question with a null number label, on a paper whose source paper has a null key
+ *   9203  canonical exam question with no source paper (natural key null, number label kept)
+ *   9204  canonical exam question with a null number label, on a source paper with a null key
  *   9205  canonical row pointing at an exam question that does not exist (dropped by the inner join)
  *   9299  not in the archive (absent)
  */
@@ -21,24 +25,19 @@ import { bootActivity, type ActivityHarness } from './helpers'
 
 const A = quoteIdent(ARCHIVE_SCHEMA)
 
-/** The correlated form before AM-08c, kept here as the reference. */
+/** The correlated form before AM-08c (the FIT-FIX SNAPSHOT_SQL, verbatim), kept here as the reference. */
 const REFERENCE_SQL = `
 SELECT q.id::text AS id,
        q.subject_id::text AS subject_id, q.education_level_id::text AS education_level_id,
        q.chapter_id::text AS chapter_id, q.topic_id::text AS topic_id,
-       q.difficulty_level::text AS difficulty, q.question_type::text AS qtype,
+       q.difficulty_level::text AS difficulty, q.type::text AS qtype,
        q.body::text AS stem,
        coalesce((SELECT array_agg(o.body::text ORDER BY o.id) FROM ${A}."question_options" o WHERE o.question_id = q.id), ARRAY[]::text[]) AS options,
        k.natural_key AS natural_key, k.number_label AS number_label
 FROM ${A}."questions" q
 LEFT JOIN LATERAL (
   SELECT eq.number_label::text AS number_label,
-         (SELECT sp.natural_key::text
-          FROM ${A}."exam_paper_questions" epq
-          JOIN ${A}."exam_papers" ep ON ep.id = epq.exam_paper_id
-          JOIN ${A}."source_papers" sp ON sp.id = ep.source_paper_id
-          WHERE epq.exam_question_id = eq.id
-          ORDER BY ep.id LIMIT 1) AS natural_key
+         (SELECT sp.natural_key::text FROM ${A}."source_papers" sp WHERE sp.id = eq.source_paper_id) AS natural_key
   FROM ${A}."legacy_canonical_map" m
   JOIN ${A}."exam_questions" eq ON eq.id = m.canonical_id
   WHERE m.source = 'questions' AND m.legacy_id = q.id::text AND m.canonical_type = 'exam_question'
@@ -53,7 +52,7 @@ let h: ActivityHarness
 beforeAll(async () => {
   h = await bootActivity()
   await h.q(
-    `insert into archive_cloud.questions (id, subject_id, education_level_id, chapter_id, topic_id, difficulty_level, question_type, status, body) values
+    `insert into archive_cloud.questions (id, subject_id, education_level_id, chapter_id, topic_id, difficulty_level, type, status, body) values
        (9201, 1, 1, 1, 1, '3', 'objektif', 'diluluskan', 'Soalan penanda 9201'),
        (9202, 2, 2, null, null, null, 'objektif', 'diluluskan', 'Soalan penanda 9202'),
        (9203, 1, 2, 1, null, '2', 'objektif', 'diluluskan', 'Soalan penanda 9203'),
@@ -65,21 +64,12 @@ beforeAll(async () => {
        (9212, 9201, 'B', 'Pilihan kedua', '0'), (9211, 9201, 'A', 'Pilihan pertama', '1')`,
   )
   await h.q(
-    `insert into archive_cloud.source_papers (id, natural_key, content_hash, year) values
+    `insert into archive_cloud.source_papers (id, natural_key, file_hash, year) values
        (9401, 'KERTAS-B', null, 2024), (9402, 'KERTAS-A', null, 2023), (9403, null, null, 2022)`,
   )
   await h.q(
-    `insert into archive_cloud.exam_papers (id, source_paper_id, status, title) values
-       (9502, 9401, 'diterbitkan', 'Kertas kemudian'), (9501, 9402, 'diterbitkan', 'Kertas awal'),
-       (9503, 9403, 'diterbitkan', 'Kertas tanpa kunci')`,
-  )
-  await h.q(
-    `insert into archive_cloud.exam_questions (id, status, number_label) values
-       (9601, 'diterbitkan', '1(a)'), (9602, 'diterbitkan', '9'), (9603, 'diterbitkan', '3'), (9604, 'diterbitkan', null)`,
-  )
-  await h.q(
-    `insert into archive_cloud.exam_paper_questions (id, exam_paper_id, exam_question_id, paper_section_id) values
-       (9701, 9502, 9601, null), (9702, 9501, 9601, null), (9703, 9503, 9604, null)`,
+    `insert into archive_cloud.exam_questions (id, source_paper_id, number_label) values
+       (9601, 9402, '1(a)'), (9602, 9401, '9'), (9603, null, '3'), (9604, 9403, null)`,
   )
   await h.q(
     `insert into archive_cloud.legacy_canonical_map (id, source, legacy_id, canonical_type, canonical_id) values

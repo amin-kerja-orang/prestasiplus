@@ -108,6 +108,7 @@ export async function bootAccountApp(opts: BootOptions = {}): Promise<AccountTes
     THROTTLE_LOGIN_PER_MINUTE: undefined,
     THROTTLE_ACCOUNT_WRITE_PER_MINUTE: undefined,
     THROTTLE_PUBLIC_PER_MINUTE: undefined,
+    REGISTRATION_OPEN: undefined,
     MAIL_LOG_RESET_LINKS: undefined,
     TRUST_PROXY_HOPS: undefined,
     LEGACY_BCRYPT_DUMMY_COST: '4',

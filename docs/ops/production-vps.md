@@ -13,7 +13,8 @@ seed) needs the LEAD's explicit confirmation first; the scripts ask for it (type
 Contents: 1 Design | 2 Server prerequisites | 3 Parameters | 4 First install | 5 Edge nginx | 6 TLS | 7 Deploy |
 8 Rollback | 9 Backups and restore drill | 10 Monitoring and alerts | 11 Logs | 12 Secrets | 13 Sizing and load test |
 14 Single-instance rule | 15 ClamAV | 16 Cutover 30 Oct (AZ side) | 17 Findings for the developer roles |
-18 Not rehearsed here | 19 Troubleshooting | 20 Defaults applied on 22 Oct (LEAD may veto)
+18 Not rehearsed here | 19 Troubleshooting | 20 Defaults applied on 22 Oct (LEAD may veto) |
+21 Account recovery and support contact at go-live (AM-18)
 
 ---
 
@@ -34,6 +35,7 @@ Files:
 |---|---|
 | `deploy/vps/compose.prod.yaml` | Overlay over `compose.yaml` (services, limits, restart, health, logging, profiles) |
 | `deploy/vps/.env.prod.example`, `api.env.example`, `db.env.example` | Names with placeholders: copy to `/etc/pretasiplus/{prod,api,db}.env` |
+| `deploy/vps/db-roles.sh`, `db-roles/{apply,check}.sql`, `migrate.env.example`, `etl.env.example` | Least-privilege database roles (cutover plan P3, section 3.1): `secrets` writes `migrate.env` and `etl.env` and the `api.env` `DATABASE_URL`; `apply` and `check` run from `deploy.sh` |
 | `deploy/vps/nginx/` | Edge config template, snippets, `check.sh` (syntax) and `test-routing.sh` (behaviour, with stub upstreams) |
 | `deploy/vps/deploy.sh`, `rollback.sh`, `lib.sh` | Migrate-then-deploy with `--dry-run`, image rollback |
 | `deploy/vps/tls/` | `init-cert.sh` (first certificate), `renew.sh` |
@@ -115,13 +117,15 @@ Decisions and why:
 
 ## 3. Parameters
 
-Three files hold everything, all outside the repo, owner `root`, group `ppdeploy`, mode `640` (`sudo install -m 640 -o root -g ppdeploy ...`):
+Five files hold everything, all outside the repo, owner `root`, group `ppdeploy`, mode `640` (`sudo install -m 640 -o root -g ppdeploy ...`):
 
 | File | Content | Example |
 |---|---|---|
 | `/etc/pretasiplus/prod.env` | Compose interpolation and script settings (`--env-file`). Not secret, except the two ping URLs and `PP_ALERT_WEBHOOK_URL` | `deploy/vps/.env.prod.example` |
 | `/etc/pretasiplus/api.env` | API secrets and production settings (`env_file` of `api` and `migrate`) | `deploy/vps/api.env.example` |
-| `/etc/pretasiplus/db.env` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | `deploy/vps/db.env.example` |
+| `/etc/pretasiplus/db.env` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (the bootstrap superuser, ops scripts only: section 3.1) | `deploy/vps/db.env.example` |
+| `/etc/pretasiplus/migrate.env` | `DATABASE_URL` of the schema owner `pp_owner` (`env_file` of `migrate`, read after `api.env`) | written by `sudo deploy/vps/db-roles.sh secrets` (`migrate.env.example`) |
+| `/etc/pretasiplus/etl.env` | `DATABASE_URL` of the migration role `pp_etl` (`slot.sh etl`, `--env-from-file`) | written by `sudo deploy/vps/db-roles.sh secrets` (`etl.env.example`) |
 
 Write values with an editor (`sudoedit`), never on a command line. Generate secrets with `openssl rand -hex 32`. The `*.example`
 files use inline-comment-free lines on purpose (Compose would keep a trailing comment of an empty value).
@@ -158,6 +162,10 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_CSP_MODE` | `report-only` | LEAD (decision D-7) | `report-only`, `enforce` or `off`. Default applied 22 Oct: `report-only` at go-live (section 20) |
 | `PP_HSTS` | `max-age=300` | LEAD | HSTS value for the whole host, sent by the edge on every https response (the API's own HSTS is replaced, so there is one policy). Ramp per `platform-settings.md` §4.3: `max-age=300` → `max-age=86400` → `max-age=604800` → `max-age=15552000`, one clean week per step; add `; includeSubDomains` only once every subdomain serves HTTPS; never `preload`. Empty = no header. `deploy.sh` refuses any other shape (the value is pasted into the nginx config) |
 | `PP_LOG_MAX_SIZE`, `PP_LOG_MAX_FILE` | `20m`, `5` | OPS | Docker log rotation |
+| `PP_PG_ARCHIVE_MODE`, `PP_PG_ARCHIVE_TIMEOUT`, `PP_WAL_ARCHIVE_DIR` | `on` in the example (`off` if unset), `1800`, `/var/backups/pretasiplus/wal` | OPS | PITR: WAL archiving into the folder (owner uid 70, mode 700, outside the checkout; `deploy.sh` refuses any other). [production-migration-slot.md](production-migration-slot.md) section 4 |
+| `PP_BACKUP_EXCLUDE_SCHEMAS` | `staging_cloud` | OPS | Schemas left out of every routine dump (`-` = none): the raw `.cloud` copy of the migration slot never reaches nightly or off-site copies |
+| `PP_STAGE_DIR`, `PP_STAGE_MEM`, `PP_STAGE_CPUS`, `PP_MIGRATION_OUT` | `/srv/pretasiplus/stage`, `2g`, `1`, `/srv/pretasiplus/migration-out` | OPS | Migration slot: throwaway cluster data dir and limits, ETL reports (owner uid 1000) |
+| `PP_MIGRATE_UID`, `PP_RAW_PURGE_BY` | `1000`, `2026-11-06` | OPS | Migration slot: the owner `slot.sh etl` expects on `PP_MIGRATION_OUT` (it only checks, never chmods); the day from which `restore-point.sh raw-check` and the nightly backup alert on raw `.cloud` copies still on the host |
 | `PP_JOBS_WORKER_ENABLED` | `true` | OPS | The one API instance runs the job worker |
 | `PP_BACKUP_KEEP_DAILY`, `PP_BACKUP_KEEP_WEEKLY`, `PP_BACKUP_WEEKLY_DAY`, `PP_BACKUP_KEEP_AUX`, `PP_BACKUP_KEEP_FILES`, `PP_BACKUP_FILES` | `7`, `4`, `7`, `5`, `2`, `weekly` | LEAD | Retention (section 9) |
 | `PP_OFFSITE_KIND` | `none` | LEAD | `s3`, `rsync` or `none`. Default applied 22 Oct: **`s3`** once the LEAD has the bucket (section 20) |
@@ -180,13 +188,14 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 
 | Name | Who | Rule |
 |---|---|---|
-| `DATABASE_URL` | LEAD | `postgresql://USER:PASSWORD@db:5432/DBNAME`, equal to `db.env`. `deploy.sh` checks host, user, database and password |
+| `DATABASE_URL` | OPS (generated) | `postgresql://pp_app:<generated>@db:5432/<POSTGRES_DB>`: the API role, **never** the `db.env` superuser. Written by `sudo deploy/vps/db-roles.sh secrets`; `deploy.sh` checks host `db`, user `pp_app`, database, a 32+ character password different from the other two files and from `POSTGRES_PASSWORD` (section 3.1) |
 | `SESSION_SECRET`, `IC_HASH_KEY` | LEAD | 32+ characters each, different. **Never rotate `IC_HASH_KEY` casually** (section 12) |
 | `MARKETPLACE_PLATFORM_WHATSAPP` | LEAD | The real wa.me number (digits, country code first); the dev default is refused by `deploy.sh` |
 | `PUBLIC_ORIGINS` | LEAD | Extra image origins for articles/banners (empty = API origin only) |
 | `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_MONTHLY_BUDGET_SEN`, `AI_PRICE_TABLE_JSON` | LEAD (decision D-5/OD-14) | **Decided 22 Oct (AZ-29 item 1): `AI_PROVIDER=mock`**, the other four stay unset. `AI_API_KEY` is a secret. See `docs/ops/ai-intake-production-decisions.md` (lands with #138) |
 | `OCR_ENGINE`, `OCR_LANG_DIR` | LEAD | **Decided 22 Oct (AZ-29 item 4): `OCR_ENGINE=none`**, `OCR_LANG_DIR` unset. Scanned pages are typed in by hand |
 | `INTAKE_*` limits | LEAD | **Decided 22 Oct (AZ-29 item 5 KEEP):** no key set, the schema defaults apply (20 MB, 200 pages, 500 pages per day). Intake is admin-only at go-live (item 7, card AZ-35) |
+| `REGISTRATION_OPEN` | LEAD | `false` from install until the 30 Oct switch, then `true` (section 16). Unset = open, so the key must be present. While `false`, `POST /api/auth/register` answers 403 `REGISTRATION_CLOSED`; login, password reset and admin-created accounts are unaffected |
 | `METRICS_ENABLED`, `METRICS_INTERNAL_CIDRS` | OPS | Metrics stay admin-session-only; the edge returns 404 from outside |
 | `THROTTLE_GLOBAL_PER_MINUTE` | LEAD (OQ1) | **`3000`** (F2 default applied 22 Oct, section 20): counted per client address, and a school shares one NAT address. `deploy.sh` warns below 3000 |
 | other `THROTTLE_*`, `LOGIN_*`, ... | LEAD (OQ1) | Defaults unless the LEAD changes them |
@@ -197,6 +206,95 @@ Forced by the overlay (cannot be overridden by `api.env`): `NODE_ENV=production`
 `PUBLIC_BASE_URL=https://$PP_DOMAIN`, `FILE_STORAGE_DIR=/var/lib/pretasiplus/files`, `NODE_OPTIONS=--max-old-space-size=$PP_API_HEAP_MB`.
 
 Reserved (do NOT put them in `api.env` yet): `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310` (section 15).
+
+### 3.1 Database roles (cutover plan P3)
+
+**LEAD decision 23 Oct (on #220):** in production the API, the migrate job and `slot.sh` do **not** run as the Postgres superuser; no risk
+acceptance. `deploy/vps/db-roles.sh` implements cutover plan P3 ([v2-cutover-plan.md](v2-cutover-plan.md) section 3). The names are fixed
+(in `lib.sh`); none of the four is a superuser or has `CREATEDB`, `CREATEROLE`, `REPLICATION` or `BYPASSRLS`, and none is a member of any role.
+
+| Role | Used by | Env file | Privileges |
+|---|---|---|---|
+| `pp_owner` | the one-shot `migrate` service only: `prisma migrate deploy`, `deploy.sh --seed-reference`, `admin:bootstrap` | `migrate.env` | Owns the database, schema `public` and every object in it: the only role with DDL. Creates `pgcrypto` on a fresh database (trusted extension, database owner) |
+| `pp_app` | the API (`api` service) | `api.env` | `CONNECT`; `USAGE` on `public`; `SELECT, INSERT, UPDATE, DELETE` on every table (`_prisma_migrations`: `SELECT` only, so a forged ledger row cannot make `prisma migrate deploy` skip a migration) and `USAGE, SELECT, UPDATE` on every sequence, plus **default privileges** for what `pp_owner` creates later. No DDL, no `TRUNCATE`, no `TEMP`, nothing on `staging_cloud` or `archive_cloud` |
+| `pp_etl` | `migrate:*` through `slot.sh etl` (the migration role) | `etl.env` | The `pp_app` grants (see note), plus `TEMP` (the ETL upsert uses temporary tables); `USAGE` + `SELECT` on `staging_cloud` and `archive_cloud`, `UPDATE` on `archive_cloud` (`migrate:archive-minimise`). No DDL in `public` |
+| `pp_stager` | `slot.sh copy` and the section 7 `drop schema ... cascade` (stage-only role) | none | `CONNECT` and `CREATE` on the database: it creates the two stage schemas and, as their owner, drops them. **Nothing on `public`** (a `select` and an `insert` are refused). **No password**: it connects only over the local socket inside the db container (`docker compose exec db psql -U pp_stager`), never over the network |
+| `POSTGRES_USER` of `db.env` | bootstrap superuser of the cluster | `db.env` | Used only by ops scripts, always inside the db container: `db-roles.sh`, `backup/backup.sh` and `backup/restore-drill.sh` (a full dump, and the drill's `CREATE DATABASE <db>_restorecheck`), a manual restore (section 8), and #166's `restore-point.sh` / `pitr.sh` (whole-database dump, base backup). Never in a `DATABASE_URL` |
+
+`pp_owner`, `pp_app` and `pp_etl` have `search_path = public` pinned: `pp_stager` may create schemas, so a crafted dump could add one
+named like a role (`"$user"` is first in the default search path); `check` also fails on any schema besides `public` and the two stage
+schemas. Trust boundary of `pp_stager`: it owns what it restores into the stage schemas, so it could plant a function or view there that `pp_etl`
+later runs with its own rights; with `CREATE` on the database it can also install a trusted extension into its schemas. That is accepted
+because `pp_stager` is reachable only from inside the db container, which is root-equivalent anyway (the deploy user is in the docker group).
+
+Note on `pp_etl`: P3 says "read and write on the v2 tables the ETL writes and on `etl_*`". The ETL writes tables outside
+`prisma/migratable-models.json` (for example `attempt_results`) and through table names built at run time, so there is no fixed list to grant
+on; `pp_etl` gets read/write on every `public` table, with no DDL. Narrowing it is run sheet question Q3 (LEAD).
+
+**How it is wired.** `compose.prod.yaml`: `api` reads `api.env` (`pp_app`); `migrate` reads `api.env` and then `migrate.env`, so its
+`DATABASE_URL` is `pp_owner`'s. `slot.sh etl` must add `--env-from-file /etc/pretasiplus/etl.env` and `slot.sh copy` must restore as
+`pp_stager` (the patch is on #166). `deploy.sh` runs `db-roles.sh apply` after `db` is up (step 4), and `apply` again plus `db-roles.sh check` after
+`migrate` (step 5; the second `apply` makes a `_prisma_migrations` created by that first migrate read-only): a failed check stops the
+deploy before the API is switched. `deploy.sh` refuses any `DATABASE_URL` whose user is not the role
+of its file.
+
+**First set-up (and the switch of a server that ran as the superuser).** As `ppdeploy`, from the release checkout:
+
+```
+sudo deploy/vps/db-roles.sh secrets     # root: passwords generated on the server (openssl rand -hex 32), never printed;
+                                        # writes the api.env DATABASE_URL (pp_app) and creates migrate.env (pp_owner) and etl.env (pp_etl),
+                                        # root:ppdeploy 640. A file that already holds a valid URL for its role is kept; connection parameters (?...) of the old URL are kept.
+deploy/vps/deploy.sh --dry-run          # preflight checks the three URLs
+deploy/vps/deploy.sh                    # step 4 db-roles.sh apply, step 5 migrate as pp_owner + db-roles.sh check
+deploy/vps/db-roles.sh check            # again by hand: the P3 evidence lines (names, privileges, error texts; no values)
+```
+
+`apply` is idempotent: it creates missing roles, forces the attributes, removes memberships, makes `pp_owner` the owner of the database and
+of every object in `public` the superuser created (an earlier migrate as the superuser, a restore), revokes `PUBLIC` access to the database
+and to `public`, and re-grants exactly the table above. A `staging_cloud` or `archive_cloud` made by another role is handed to `pp_stager`.
+The passwords are set from the env files with `log_statement`, `log_min_duration_statement` and `log_min_error_statement` switched off for that
+session, so they never reach the server log. Run `apply` again (it is safe at any time) after:
+
+- **a restore** of any dump (section 8, `restore-point.sh restore`): the restored objects belong to the superuser;
+- **`slot.sh copy`**: `pp_etl` gets `SELECT` on the copy at once (default privileges of `pp_stager`), `UPDATE` on `archive_cloud` only from
+  `apply` (the #166 patch runs it inside `copy`).
+
+A production dump restored on **another** cluster needs the four roles first (`db-roles.sh apply` there) or `pg_restore --no-acl`; the
+restore drill restores in the same cluster and is not affected.
+
+**What `check` proves** (each probe runs the statement **as the role** in a rolled-back subtransaction, so nothing changes; plus a real
+network login with each env-file password): attributes and memberships of the four roles; `pp_owner` owns the database and every `public`
+table and sequence; `pp_app` and `pp_etl` hold `SELECT/INSERT/UPDATE/DELETE` on every `public` table and `USAGE/SELECT/UPDATE` on every
+sequence, and nothing else (an extra `TRUNCATE`, `TRIGGER` or `REFERENCES` grant on any table is a FAIL; `search_path` pinned);
+`pp_app` **cannot** `CREATE TABLE`, `DROP`, `ALTER`, `TRUNCATE`, `CREATE SCHEMA` or `CREATE TEMP TABLE`, and cannot read
+`staging_cloud` or `archive_cloud` (when they exist; otherwise no default privilege can give it anything there); `pp_etl` can use `TEMP`,
+read both stage schemas and update `archive_cloud`, but has no DDL in `public`; `pp_stager` is refused `select` and `insert` on `public` and
+can create and drop the stage schemas; `_prisma_migrations` is read-only for `pp_app` and `pp_etl`; `pg_hba` has no `trust` rule beyond
+loopback and the local socket; the stage role is refused over the network and accepted over the local socket. The network logins use the
+compose name `db` (override: `PP_DB_ROLES_NET_HOST`), never `127.0.0.1`: the official image trusts loopback (initdb default), so a loopback
+login would accept any password, while the container's network address hits the `scram-sha-256` rule the API also goes through. Output: one
+`PASS | role | probe | detail` line each, then `DB ROLES CHECK PASSED: <n> probes` (exit 0) or `DB ROLES CHECK FAILED` (exit 1).
+The same SQL runs in CI (`apps/api/test/ops/db-roles.spec.ts`).
+
+**Rotate a role password** (LEAD confirmation first, as for every secret, section 12):
+
+```
+sudo deploy/vps/db-roles.sh secrets --rotate app     # or owner, etl, or a comma list: app,owner,etl
+deploy/vps/db-roles.sh apply                         # sets the new password in the database
+docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env up -d --no-deps --force-recreate api   # app only
+deploy/vps/db-roles.sh check                         # the network login lines must PASS
+```
+
+`secrets --rotate` writes the env file first and `apply` changes the database password: between them and the recreate, open API
+connections keep working and new ones fail, so run the lines together. A rotation does not end existing sessions: after a suspected
+leak, also end the role's sessions as the superuser (`select pg_terminate_backend(pid) from pg_stat_activity where usename = 'pp_app'`,
+then the recreate). `owner` and `etl` are
+used by one-shot containers only, so nothing needs a restart. `pp_stager` has no password to rotate. The bootstrap `POSTGRES_PASSWORD` is
+rotated as before (section 12: `ALTER ROLE` plus `db.env`); since no `DATABASE_URL` uses it, the API is not affected.
+
+**Rollback to a release from before this change.** Its `deploy.sh` requires `DATABASE_URL` user = `POSTGRES_USER`. `rollback.sh` (images
+only) keeps working, because `pp_app` has everything the API needs; a full `deploy.sh` of such a release needs the old `api.env` line back,
+which the LEAD would have to approve (it is the superuser again).
 
 ---
 
@@ -211,7 +309,8 @@ Every step that touches the server is the operator's, after the LEAD's go. `LEAD
 3. Folders: `sudo install -d -m 750 -o root -g ppdeploy /etc/pretasiplus && sudo install -d -o ppdeploy -g ppdeploy -m 700 /var/backups/pretasiplus /var/lib/pretasiplus-deploy /var/log/pretasiplus /srv/pretasiplus/letsencrypt /srv/pretasiplus/letsencrypt-log /srv/pretasiplus/certbot-webroot`
    (a separate encrypted volume mounted at `/var/backups/pretasiplus` is better).
 4. Env files: `sudo install -m 640 -o root -g ppdeploy deploy/vps/.env.prod.example /etc/pretasiplus/prod.env`, same for `api.env.example` -> `api.env`
-   and `db.env.example` -> `db.env`; edit all three with `sudoedit` (`LEAD:` values). Choose the size profile of section 13.
+   and `db.env.example` -> `db.env`; edit all three with `sudoedit` (`LEAD:` values; leave the `api.env` `DATABASE_URL` line as it is). Choose the size profile of section 13.
+   Then `sudo deploy/vps/db-roles.sh secrets`: it writes the `api.env` `DATABASE_URL` (`pp_app`) and creates `migrate.env` and `etl.env` (section 3.1).
 5. Dry run: `deploy/vps/deploy.sh --dry-run`. **Before step 6 the only failure it should report is the missing-certificate line** (`no certificate for ...`); everything else must already pass. After step 6 it must end with `preflight passed`. It prints every step it would run.
 6. Certificate (section 6): `deploy/vps/tls/init-cert.sh --dry-run`, then `deploy/vps/tls/init-cert.sh`.
 7. Deploy (section 7): `deploy/vps/deploy.sh`. On a first install there is nothing to back up; the script says so.
@@ -219,7 +318,8 @@ Every step that touches the server is the operator's, after the LEAD's go. `LEAD
 9. Schedulers: install the timers (section 9) and the probe (section 10), and logrotate (section 11).
 10. First backup and a restore drill (section 9) before any user data exists, then again after the data migration.
 11. `LEAD:` the first administrator account. Default applied 22 Oct (F1, section 20): the first Admin Pusat accounts come from the
-    `.cloud` migration (T-1 load, 29 Oct). There is still no bootstrap command; do not enable the demo seed to work around it.
+    `.cloud` migration (T-1 load, 29 Oct). If none migrates, or the last one is locked out, use the host command
+    `admin:bootstrap` (section 21, AZ-36); never enable the demo seed to work around it.
 
 ---
 
@@ -276,15 +376,15 @@ deploy/vps/deploy.sh                    # asks you to type the domain: the LEAD'
 
 What it does, in order (`deploy.sh --help`):
 
-1. **Preflight.** Tools and Compose version; the three env files exist, mode `640` (`root:ppdeploy`; `600`/`400` also pass) and are neither readable by others nor writable by the group; **no placeholder** (`change-me`, `USER:PASSWORD`,
+1. **Preflight.** Tools and Compose version; the five env files exist, mode `640` (`root:ppdeploy`; `600`/`400` also pass) and are neither readable by others nor writable by the group; **no placeholder** (`change-me`, `USER:PASSWORD`,
    `app.example.my`, the dev WhatsApp number, ...); **fail-closed guard**: refuses if `ALLOW_DEMO_SEED`, `BIJAK_POC_QUESTIONS` or `MAIL_LOG_RESET_LINKS` is `true`/`1`
    in any env file or the shell; secrets 32+ characters, `IC_HASH_KEY` different from `SESSION_SECRET` (what the API enforces at boot, plus the 32-character team policy);
-   `DATABASE_URL` matches `db.env` (host `db`, user, database, password); stop grace above `SHUTDOWN_GRACE_MS`; the certificate is readable (directly, or through the running edge when `live/` is root-only) and is **not self-signed** (issuer differs from subject: the `init-cert.sh` placeholder is refused), not expired; `docker compose config -q`
+   the three `DATABASE_URL`s (`api.env`, `migrate.env`, `etl.env`) use host `db`, the `POSTGRES_DB` database and their own role (`pp_app`, `pp_owner`, `pp_etl`, never the superuser), with three different 32+ character passwords (section 3.1); stop grace above `SHUTDOWN_GRACE_MS`; the certificate is readable (directly, or through the running edge when `live/` is root-only) and is **not self-signed** (issuer differs from subject: the `init-cert.sh` placeholder is refused), not expired; `docker compose config -q`
    passes with the overlay; **single-instance guard** (section 14); the working tree is clean (`--allow-dirty` to override).
 2. **Pre-deploy backup** (`backup.sh --tag pre-deploy --no-files`) if the database is running. `--skip-backup` exists and is logged as a warning: do not use it with a migrating release.
 3. **Build or pull** the three images tagged with the git sha.
-4. `db` up and healthy.
-5. **Migrate**: one-shot `migrate` runs `prisma migrate deploy` only. Never a seed. Idempotent. A failed migration stops the deploy before the API is touched.
+4. `db` up and healthy, then `db-roles.sh apply` (idempotent; section 3.1).
+5. **Migrate**: one-shot `migrate` runs `prisma migrate deploy` only, as `pp_owner`. Never a seed. Idempotent. A failed migration stops the deploy before the API is touched. Then `db-roles.sh check`: a FAIL stops the deploy the same way.
 6. `api` and `frontend` up, `--wait` for healthy.
 7. **Edge** recreated (rendered nginx config and certificate are re-read). A blip of about a second on 80/443.
 8. **Health checks through the edge** (real host name, forced to 127.0.0.1): `/api/health` 200, `/api/ready` 200 `ready` (database up and every shipped migration applied), `/` 200,
@@ -339,7 +439,8 @@ Use `--checkout` when `compose.prod.yaml` or the nginx files changed in the bad 
   2. Prove the chosen dump is intact: `(cd /var/backups/pretasiplus && sha256sum -c <dump>.sha256)` and `$PC exec -T db pg_restore --list < <dump> | head`. (The full row-count drill compares against the live database, so it only applies to a fresh dump of an idle database: section 9.)
   3. `$PC cp <dump> db:/tmp/restore.dump`, then
      `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'`, then
-     `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error /tmp/restore.dump'`, then `$PC exec db rm /tmp/restore.dump`.
+     `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error /tmp/restore.dump'`, then `$PC exec db rm /tmp/restore.dump`,
+     then **`deploy/vps/db-roles.sh apply` and `deploy/vps/db-roles.sh check`** (the new database and the restored objects belong to the superuser, and `pp_app` has no `CONNECT` until `apply`; section 3.1). **Do not start the api (step 4) before `check` ends with `DB ROLES CHECK PASSED`.**
   4. Roll the images back (`rollback.sh --checkout <tag>`; this also works right after a failed deploy, see section 7), then `$PC up -d --wait --no-deps api frontend`. Check `/api/ready` and a login.
   5. Uploads: restore from the newest `pp-files-*.tar.gz` only if the files volume was damaged (`$PC exec -T api tar -xzf - -C /var/lib/pretasiplus/files < archive`; the api rootfs is read-only but the volume is writable).
   6. Record the incident (what, when, which dump, data-loss window) and tell the LEAD.
@@ -358,7 +459,7 @@ Use `--checkout` when `compose.prod.yaml` or the nginx files changed in the bad 
 | Config / secrets | `/etc/pretasiplus/*.env` | by hand | `LEAD:` keep a copy in the LEAD's password manager. A restore without `IC_HASH_KEY` and `SESSION_SECRET` is not a full restore |
 | Certificates | reissuable | n/a | n/a |
 
-`backup.sh` also checks that the file starts with `PGDMP`, that `pg_restore --list` reads it and shows table data, and that a failed run leaves no partial file. A failure raises an alert and pings `/fail`.
+Routine dumps leave out `PP_BACKUP_EXCLUDE_SCHEMAS` (default `staging_cloud`, the raw `.cloud` copy that exists only during the migration slot); the named restore points of the slot keep it, locally only ([production-migration-slot.md](production-migration-slot.md) section 3). `backup.sh` also checks that the file starts with `PGDMP`, that `pg_restore --list` reads it and shows table data, and that a failed run leaves no partial file. A failure raises an alert and pings `/fail`.
 
 **Schedule.** systemd (preferred):
 ```
@@ -473,8 +574,9 @@ Useful: `docker compose ... logs --since 15m api | grep '"level":50'` (errors); 
 
 - Secrets exist only in `/etc/pretasiplus/*.env` (and the operator's password manager / the LEAD's vault). Never in the repo, in build args (`VITE_*` are public), in chat or in an issue.
 - Rotation procedure and effects per secret: [api-runbook.md](api-runbook.md) section 13 (`SESSION_SECRET` logs everyone out; `IC_HASH_KEY` **breaks IC lookups until every hash is recomputed: do not rotate without a plan from the backend developers**;
-  `DATABASE_URL`/`POSTGRES_PASSWORD` need `ALTER ROLE` because `POSTGRES_PASSWORD` only applies at first init).
-- On this stack a rotation is: `sudoedit /etc/pretasiplus/api.env` (and `db.env` + `ALTER ROLE` for the database), then `docker compose ... up -d --force-recreate api`, check `/api/ready` and one login, delete the old value. LEAD confirmation first.
+  `POSTGRES_PASSWORD` needs `ALTER ROLE` because it only applies at first init). The three role passwords (`DATABASE_URL` in `api.env`,
+  `migrate.env`, `etl.env`) are rotated with `db-roles.sh secrets --rotate` (section 3.1).
+- On this stack a rotation is: `sudoedit /etc/pretasiplus/api.env` (and `db.env` + `ALTER ROLE` for the bootstrap superuser; the role passwords: section 3.1), then `docker compose ... up -d --force-recreate api`, check `/api/ready` and one login, delete the old value. LEAD confirmation first.
 - Suggested schedule: every 90 days and after any suspected leak; a leaked secret or dump is reported to the LEAD the same day (PDPA).
 - CI/CD tokens: this pack adds none. Deploys are run by the deploy user on the server (no CI deploy token with access to production exists). If a CI deploy is added later: a dedicated key, restricted to `deploy.sh` through a forced command, no registry write scope.
 
@@ -578,7 +680,7 @@ decision D-3 "is migration needed at go-live" are open, see [go-live-bijak-spm.m
 | T-7 d | `LEAD:` VPS provisioned, SSH access, domain bought, off-site **S3-compatible bucket and write key** created (section 20) and alert channel chosen; sizing profile chosen (section 13) | LEAD | accounts exist |
 | T-5 d | Server hardened (section 2); repo cloned; env files written (section 4); `deploy.sh --dry-run` passes | AZ | `preflight passed` |
 | T-4 d | `init-cert.sh --dry-run` on the real name, then the real certificate (DNS must already point at the VPS, or use a temporary name) | AZ | `https://` works with a valid certificate |
-| **T-2 d** | **Infrastructure ready**: full deploy of the release candidate on the production box under its real name (no pupils yet), `--seed-reference`, smoke test (section 7), ufw check (`ss -tlnp`), timers installed, external uptime checker and dead-man's-switch URLs live, a test alert delivered end to end (stop the backup timer's ping URL and see the provider mail, or `monitoring/alert.sh "test"`) | AZ | smoke test 100% pass; test alert received |
+| **T-2 d** | **Infrastructure ready**: full deploy of the release candidate on the production box under its real name (no pupils yet), `--seed-reference`, smoke test (section 7), ufw check (`ss -tlnp`), timers installed, external uptime checker and dead-man's-switch URLs live, a test alert delivered end to end (stop the backup timer's ping URL and see the provider mail, or `monitoring/alert.sh "test"`) | AZ | smoke test 100% pass; test alert received. `api.env` keeps `REGISTRATION_OPEN=false`: the smoke test expects 403 on `curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' https://$PP_DOMAIN/api/auth/register` |
 | T-2 d | First **backup + restore drill** on the production box; evidence file kept; one off-site copy restored on a scratch host | AZ | `result: PASS`, off-site copy restores |
 | **T-2 d** | **DNS TTL lowered** to 300 s (48 h before the switch) on the records that will change | LEAD | `dig` shows TTL <= 300 |
 | **T-2 d** | **Decide D-7 (SPA CSP) before go-live**: check the report-only policy in a browser on staging (video embeds, article images, audio player), then set `PP_CSP_MODE=enforce` (and `PP_CSP_IMG_HOSTS`) or record the LEAD's decision to stay on `report-only`/`off` | LEAD + frontend | decision recorded |
@@ -587,9 +689,10 @@ decision D-3 "is migration needed at go-live" are open, see [go-live-bijak-spm.m
 | T-2 h | Rollback readiness: previous image tag present (`previous.tag`), disk free > 30%, last scheduled backup < 24 h old and off-site, operator awake and `sudo`-capable, on-call phone list | AZ | checklist ticked |
 | **T-1 h** | **Pre-cutover backup**: `deploy/vps/backup/backup.sh --tag pre-deploy` (dump + sha256 + off-site copy), verify the off-site copy is there; record file name and sha256 in the cutover log | AZ | file and hash recorded |
 | T-1 h | **Deploy / migrate**: `deploy/vps/deploy.sh` (confirmation typed by the LEAD's go): builds, runs the schema migrations, starts the release. Health checks pass through the edge | AZ | `deploy complete` |
-| **T0 slot** | **Half-AM migration slot**: AM runs the BE-30 orchestrator against this database (freeze window, dry-run, `--apply` with its `PP_ALLOW_MIGRATE_APPLY` / `PP_MIGRATE_TARGET_DB` guards, delta run, reconciliation). AZ keeps the API reachable only to the team (DNS not switched yet), watches `docker stats`, `logs api`, disk and `pg_stat_activity`, and **takes a second dump right after the load** (`backup.sh --tag pre-deploy`) so the migrated state is restorable. How AM runs the tooling on the VPS (for example `docker compose ... run --rm --no-deps -e PP_ALLOW_MIGRATE_APPLY=1 -e PP_MIGRATE_TARGET_DB=<db> migrate <command>` from the `migrate` image, which has the tooling) is **unverified** and agreed with AM before T-2 d | AM (runs), AZ (supports) | reconciliation green (AM's report); dump taken |
-| T0 + 15 min | **Smoke test** on the real name through the edge (section 7 list), including login of a migrated account, a Bijak attempt, an upload, the throttle/XFF check from two networks, the metrics 404 | AZ + QA | all pass |
-| **T0 + 30 min** | **Go / no-go** (below). On go: **DNS switch** (change the A record to the VPS (no AAAA record); they should already be, in which case this is lifting the access restriction). Announce | LEAD | decision logged |
+| **T0 slot** | **Migration slot, 29-30 Oct** (MIG-08 all defaults: T-1 full load on 29 Oct, delta inside the 30 Oct 01:00 MYT freeze). The steps and their times are the cutover plan's (`docs/ops/v2-cutover-plan.md`, #124); how they run on this host is [production-migration-slot.md](production-migration-slot.md): the throwaway staging cluster and the raw-data `stage` step (`deploy/vps/migration/slot.sh`), the `migrate:*` runs in the `migrate` image with per-run guards, as the migration role `pp_etl` (`--env-from-file /etc/pretasiplus/etl.env`, section 3.1; `copy` and the stage drops as `pp_stager`), the restore points `pre_etl` / `pre_delta` / `post_switch` / `post_drop` (`restore-point.sh`), PITR (`pitr.sh`), and the `gonogo` evidence lines. At B0 one manual `backup.sh`, then timers `pp-backup`, `pp-restore-drill` and `pp-cert-renew` are stopped until B10 | AM operator (ETL), AZ (host, stage, restore points) | the cutover plan's go/no-go; `slot.sh gonogo` lines pasted |
+| T0 + 15 min | **Smoke test** on the real name through the edge (section 7 list), including login of the v2-born smoke accounts (never a migrated account: cutover plan 4.5), a Bijak attempt, an upload, the throttle/XFF check from two networks, the metrics 404 | AZ + QA | all pass |
+| **T0 + 30 min** | **Go / no-go** (below). On go: **switch option A** (MIG-08 item 8): the v2 address is announced, and the `.cloud` operator (half AM) places the pointer page on `.cloud` (`deploy/cutover/pointer-page/`, [production-migration-slot.md](production-migration-slot.md) section 5). No DNS change | LEAD | decision logged |
+| T0 + 30 min, on go | **Open self-registration** (after the switch, option A). As the deploy user, from the repo checkout: `sudoedit /etc/pretasiplus/api.env` and set `REGISTRATION_OPEN=true`; then recreate only the api: `PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag) docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env up -d --no-deps --force-recreate --wait api` (`PP_IMAGE_TAG` keeps the running release; without it compose falls back to the `prod` tag; add `--profile ...` if `PP_PROFILES` is set). Check: `curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' https://$PP_DOMAIN/api/auth/register` gives 422 (open; an empty body creates nothing) instead of 403 (closed); `/api/ready` 200. Rollback: close again with the same edit (`false`) and recreate | AZ (LEAD gives the go) | probe 422, `/api/ready` 200 |
 | T0 + 30 min to +4 h | **Monitoring watch**: the operator watches the uptime checker, the probe, `logs api | grep '"level":50'`, 429 rates, CPU and memory against the 70% / 80% lines, p95 from the edge log (`rt=`), disk growth. First 4 hours continuous, then the normal alerts | AZ | no trigger hit |
 | T0 + 1 d | Nightly backup + off-site verified; certificate renewal dry run (`certbot renew --dry-run`); capacity review against the sizing table; post-cutover drill after the first full backup | AZ | recorded |
 
@@ -597,9 +700,9 @@ decision D-3 "is migration needed at go-live" are open, see [go-live-bijak-spm.m
 external checker, probe, dead-man's switches and the alert channel proven by a test alert; no Critical/High open from QA or security; migrated-data reconciliation green (AM) when D-3 = yes; disk > 30% free; the operator and the LEAD reachable for the next 4 hours.
 No-go on any failure. The application-side go/no-go list is in [go-live-bijak-spm.md](go-live-bijak-spm.md) section 4.3.
 
-**Rollback triggers (after the DNS switch)** - any of: `/api/ready` not 200 for more than 5 minutes; sustained 5xx above 2% for 10 minutes; login failing for migrated accounts; data-integrity finding (wrong counts, someone seeing another school's data); CPU or memory pinned at the limit with p95 > 3 s for 10 minutes and no quick fix; certificate or TLS failure that the operator cannot fix in 15 minutes.
-Action: the LEAD decides. (1) Image problem only: `rollback.sh --checkout` (section 8). (2) Data problem: put the old system back in front by DNS (the TTL is 300 s; the old systems are never modified, decision D28a), keep the new database untouched for analysis, restore only with the LEAD's confirmation (section 8).
-Writes made on the new system after the DNS switch exist only there: say so in the decision.
+**Rollback triggers (after the switch)** - any of: `/api/ready` not 200 for more than 5 minutes; sustained 5xx above 2% for 10 minutes; login failing for migrated accounts; data-integrity finding (wrong counts, someone seeing another school's data); CPU or memory pinned at the limit with p95 > 3 s for 10 minutes and no quick fix; certificate or TLS failure that the operator cannot fix in 15 minutes.
+Action: the LEAD decides. (1) Image problem only: `rollback.sh --checkout` (section 8). (2) Data problem: stop v2 writes, take the `post_switch` restore point, the `.cloud` operator (half AM) removes the pointer page and the `.cloud` owner unfreezes `.cloud` (cutover plan 6.3; the old systems are never modified, decision D28a); keep the new database untouched for analysis, restore only with the LEAD's confirmation (section 8).
+Writes made on the new system after the switch exist only there: say so in the decision.
 
 ---
 
@@ -609,7 +712,7 @@ Found while building this pack; AZ does not change application code.
 
 | # | Finding | For | Severity |
 |---|---|---|---|
-| F1 | **Default applied 22 Oct (section 20): migrated `.cloud` admins; a bootstrap command card is still needed as the fallback and for a locked-out last admin.** **No way to create the first Admin Pusat account in production.** The demo seed is refused in production (correct), the production seed loads reference data only, and there is no bootstrap command in `apps/api`. Unless the data migration (BE-28) brings an admin, go-live has nobody who can publish papers. Needs a one-off, audited "create first admin" command (password from the environment, not the command line) or a documented migration step | backend-developer | High (go-live blocker) |
+| F1 | **Default applied 22 Oct (section 20): migrated `.cloud` admins; the fallback and the locked-out-last-admin path is the AZ-36 `admin:bootstrap` command (section 21).** **No way to create the first Admin Pusat account in production.** The demo seed is refused in production (correct), the production seed loads reference data only, and there was no bootstrap command in `apps/api` when this was found. Unless the data migration (BE-28) brings an admin, go-live has nobody who can publish papers. Needs a one-off, audited "create first admin" command (password from the environment, not the command line) or a documented migration step. **Fixed in code by AZ-36:** `npm run admin:bootstrap -w @pp/api` (section 21) | backend-developer | High (go-live blocker); fixed in code, closed once the AZ-36 release is deployed |
 | F2 | **Default applied 22 Oct (section 20): `THROTTLE_GLOBAL_PER_MINUTE=3000`, edge auth 300r/m burst 120.** **`THROTTLE_GLOBAL_PER_MINUTE=300` is per client address.** A school (a class of 40 on one NAT address at about 12 requests per minute each = 480) exceeds it, and then every request from that school is 429. The login failed-attempt limit of 20 per minute per address (fixed) is similar. LEAD decision OQ1 (rate-limit numbers) must raise it for production or key signed-in routes on the user | backend-developer, LEAD | High |
 | F3 | Many-file multipart routes exceed the staging frontend nginx limits (`/api/` 3 MB, `/api/files` 22 MB): `POST /api/admin/audio-kbat-sets` (80 MB), `/api/intake/batches/:id/files` (220 MB), `/api/admin/screenshots` (200 MB), `/api/guru/question-papers` (101 MB), `/api/perutusan`, plus 5 MB photo routes would get 413 on the staging stack. The production edge handles them; `docker/frontend/nginx.conf` (staging) does not. Not changed here | devops (follow-up on staging), qa-engineer | Medium |
 | F4 | `REQUEST_TIMEOUT_MS=120000` covers the whole request, so a 220 MB upload must arrive within 2 minutes (about 15 Mbit/s). The runbook suggests up to 300000 for slow links; the edge already allows 300 s upstream on those routes. LEAD to decide per intake behaviour | LEAD, backend-developer | Low |
@@ -635,7 +738,7 @@ the edge nginx config (`nginx -t` and a live behaviour test against stub upstrea
 - Off-site copy (`aws s3 cp`, `rsync`, `gpg`), healthchecks pings, webhook alerts, Uptime Kuma, the systemd timers' actual firing (units were syntax-checked with `systemd-analyze`), logrotate.
 - ClamAV container start, signature download, memory use, and any scan (the API does not call it yet).
 - k6: the real `k6 run`, the thresholds against real numbers, and the sizing table.
-- The 30 Oct cutover itself, the half-AM migration slot (not built), and DNS.
+- The 30 Oct cutover itself. The migration-slot scripts (`deploy/vps/migration/*.sh`) were rehearsed against a local PostgreSQL 16 through a docker stand-in, and the PITR procedure natively; the real containers are proven only at P6 ([production-migration-slot.md](production-migration-slot.md) section 9).
 - The sizing assumptions A1-A10.
 
 ---
@@ -667,7 +770,7 @@ specs.
 
 | # | Item | Default in force | Where it is set | What the LEAD still supplies |
 |---|---|---|---|---|
-| F1 | First Admin Pusat in production | The first Admin Pusat accounts are the **migrated `.cloud` admins** (MIG-08 load option A: `migrate:all --apply` on 29 Oct brings `admin` users with a national scope; their password hash is carried, or they must reset it). At the T-1 check (cutover plan step A10) the LEAD confirms that at least **two** active Admin Pusat accounts exist (a second one is the break-glass path for a locked-out admin) and signs in with his own. No demo seed, no raw SQL | Cutover plan (#124) A10; this runbook section 4 step 11 | His own admin account on `.cloud`. A fallback is still needed if no admin migrates, and for a locked-out last admin: a one-off, audited bootstrap/reset command (backend card, to be assigned by the LEAD) |
+| F1 | First Admin Pusat in production | The first Admin Pusat accounts are the **migrated `.cloud` admins** (MIG-08 load option A: `migrate:all --apply` on 29 Oct brings `admin` users with a national scope; their password hash is carried, or they must reset it). At the T-1 check (cutover plan step A10) the LEAD confirms that at least **two** active Admin Pusat accounts exist (a second one is the break-glass path for a locked-out admin) and signs in with his own. No demo seed, no raw SQL | Cutover plan (#124) A10; this runbook section 4 step 11 | His own admin account on `.cloud`. The fallback, if no admin migrates or the last admin is locked out, is the audited host command `admin:bootstrap` (AZ-36, section 21) |
 | F2 | Throttle behind a school NAT | `THROTTLE_GLOBAL_PER_MINUTE=3000` (about 250 active pupils on one address at 12 requests per minute each); edge `PP_EDGE_AUTH_RATE=300r/m`, `PP_EDGE_AUTH_BURST=120` (a class of 40 signing in at once). Per-user and per-route buckets unchanged. The fixed login limit of 20 failed attempts per minute per address stays (code); it counts failures only | `api.env.example`, `.env.prod.example`, compose defaults; `deploy.sh` warns below 3000 | Nothing. The T-1 d load test confirms zero 429 |
 | Sentry | Error tracking | **A: none for 30 Oct**; re-decide after week 1 with real error volume. The probe alerts on bursts of API error lines (`PP_ALERT_API_ERRORS_5M`) | Section 10 | Nothing now |
 | CSP | SPA CSP (D-7) | **`PP_CSP_MODE=report-only`** at go-live. The T-2 d browser check still runs; switching to `enforce` is a later LEAD decision | `.env.prod.example`; section 16 T-2 d | Nothing now |
@@ -681,3 +784,180 @@ Also folded in here (optional G4 minors of the #116 review): the HSTS ramp now l
 `platform-settings.md`; `deploy.sh` refuses a `PP_HSTS` value that is not empty, `max-age=N` or
 `max-age=N; includeSubDomains`; and a failed deploy with no api container running now prints the rollback command
 instead of "nothing to roll back".
+
+---
+
+## 21. Account recovery and support contact at go-live (AM-18)
+
+**Decision AM-18 A** (LEAD DECISION of 22 Oct 2026, 10:30 MYT, on #109): go live **without password-reset e-mail**.
+The "Lupa Kata Laluan" page shows its own BM text, links to **Reset Melalui No IC**, and tells users to ask their
+teacher or school admin (half AM builds that copy change). Real e-mail is a post-go-live card. On this stack nothing
+sends mail: the API binds only the logging mail port, and `deploy.sh` refuses `MAIL_LOG_RESET_LINKS=true`.
+
+### Support contact
+
+- **Who:** the role **"Meja Bantuan PrestasiPlus"**, staffed by the Admin Pusat team. It is printed in the school guide
+  as a role with its channels, never as a person's name or private number.
+- **Channels:** the support mailbox and the platform WhatsApp number. The mailbox only receives mail; it never sends
+  reset links. `LEAD:` both values. The WhatsApp number is the same one as AM-16 S3, due by 29 Oct.
+- **Hours:** during hypercare (30 Oct to 6 Nov), every school day from 07:00 to 18:00 MYT, plus the cutover night. After
+  that, office hours. Expect a spike in reset requests after the cutover: migrated accounts whose old password could
+  not be carried have no usable password and must reset (section 20, row F1).
+- **Gap (finding F10 below):** the in-app help box (`GET /api/config/support`) reads the `support_config` row. Only the
+  demo seed writes that row. There is no admin screen for it and the migration does not load it, so on production the
+  help box returns `NOT_FOUND` until a reference path exists. Until then the contact appears in the school guide
+  only. Do not insert the row with raw SQL.
+
+### "Lupa Kata Laluan": who resets whom (no e-mail)
+
+| Locked out | 1. Self-service | 2. Within the school | 3. Meja Bantuan |
+|---|---|---|---|
+| Pupil | **Reset Melalui No IC** (e-mail and IC on record; 5 tries per 15 min) | The **teacher** asks the **school admin**, who sets a new password (school-admin pupil list, reset password; `POST /api/admin-sekolah/pelajar/:id/reset-password`): forced change at the next sign-in, other sessions ended, audited | Only through the school admin, never with the pupil directly (minors) |
+| Teacher | Reset Melalui No IC | The **school admin** resets it (teacher list, reset password; `POST /api/admin-sekolah/guru/:id/reset-password`) | If the school has no active school admin: Admin Pusat resets it after the school confirms who the teacher is |
+| School admin | Reset Melalui No IC | A second school admin of the same school, if there is one | **Admin Pusat** issues a one-time password (admin user screen, "reset password"; `PUT /api/admin/users/:id` with `resetPassword`) after an identity check through the school's official channel |
+| Admin Pusat | Reset Melalui No IC | Another **active Admin Pusat** issues a one-time password (same screen) | The LEAD: see "Locked-out last Admin Pusat" below |
+
+Rules for the Meja Bantuan:
+
+- **Identity check:** call back on the school's official number, or have the school admin confirm in writing. Never
+  ask for a full IC number, a password or a screenshot of one in chat or e-mail.
+- **One-time passwords:** a one-time password goes only to the account holder, or to the school admin for a pupil,
+  and over a different channel from the request. It is never written in a ticket, log or issue.
+- **Records:** each request becomes one support ticket line: date, role, school, which path was used and who did it.
+  No IC, no password and no pupil name in GitHub.
+- **Abuse:** many requests for one account, or a caller who cannot be checked, means no reset. Tell the LEAD.
+- **Admin-level resets** (school admin and Admin Pusat accounts): call back only on a number from an independent
+  record (the school's official number, or the team's own contact list), never on a number the caller gives. A
+  second team member approves before the one-time password is issued, and the account holder is told afterwards on a
+  different channel, so an unexpected reset is noticed.
+
+### Locked-out last Admin Pusat
+
+**Prevention (F1, section 20):** keep **at least two active Admin Pusat accounts** from the T-1 check on. Never
+deactivate the second one.
+
+**If no Admin Pusat can sign in:**
+
+1. **Reset Melalui No IC**, if that admin account has an e-mail and IC on record.
+2. **Otherwise, the LEAD on the host runs `admin:bootstrap --mode=reset`** (AZ-36, the subsection "Admin Pusat
+   bootstrap/reset command" below). It is a one-off, audited command in the `migrate` image of the **running
+   release** (`PP_IMAGE_TAG` from `current.tag`), run as `ppdeploy`:
+   - the password comes from a hidden prompt (or, with no terminal, a one-line `ppdeploy`-owned mode 600 file removed
+     with `shred -u`), never from the command line or chat;
+   - it stores an argon2id hash, sets "must change password", ends that account's sessions and writes an
+     `audit_events` row;
+   - a second person (another team member on the call) witnesses the run, and the run is logged as in step 4.
+   If no Admin Pusat exists at all (none migrated), the same command with `--mode=create` makes the first one.
+3. **Never**, not even in an emergency:
+   - a raw SQL write of `password_hash` (or any other column of `users`);
+   - copying a hash from another account;
+   - the demo seed or `ALLOW_DEMO_SEED`;
+   - `MAIL_LOG_RESET_LINKS`;
+   - restoring a backup to get an old password back.
+
+   Each of these skips the audit trail and the password policy. A backup restore would also lose live data.
+4. Record it in the ops log: date, which path, who confirmed. Tell the LEAD.
+
+| # | Finding | For | Severity |
+|---|---|---|---|
+| F10 | `support_config` (help-box e-mail and WhatsApp) has no production write path: it is written by the demo seed only, there is no admin endpoint, and the ETL does not load it. On production `GET /api/config/support` is `NOT_FOUND`. It needs a reference seed reading two non-secret env values, or an admin write endpoint (a contract change, so a LEAD decision) | backend-developer (BE-24 owner), LEAD | Medium (go-live: the contact is only in the school guide) |
+| F11 | No admin bootstrap or reset command (F1 fallback, locked-out last Admin Pusat). **Fixed in code by AZ-36:** `npm run admin:bootstrap -w @pp/api` is on `feature/v2-backend` (`apps/api/src/ops/admin-bootstrap/`); it is usable on the host once that release's `migrate` image is deployed (the `--help` pre-check below confirms it) | backend-developer | High; fixed in code, closed once the AZ-36 release is deployed |
+| F12 | **Reset Melalui No IC** (`POST /api/auth/password/reset-ic`) has no role check: any active account with an e-mail and IC on record, an Admin Pusat included, gets a reset token back from its e-mail address and IC number alone. IC numbers are semi-public, and an Admin Pusat has no school admin to notify. The e-mail address is not a secret either, so the real controls today are the D55a throttles (5 tries per 15 min) and the in-app security notice the account holder gets after an IC reset (`resetIcIssued`). Options: refuse the IC path for `admin` accounts (a code change), or keep it and rely on the throttles plus that notice | backend-developer, LEAD decides | Medium |
+
+### Admin Pusat bootstrap/reset command (AZ-36, added 22 Oct)
+
+This is the command that step 2 of "Locked-out last Admin Pusat" and the F1 fallback (section 20) refer to
+(`apps/api/src/ops/admin-bootstrap/`, script `admin:bootstrap` of `@pp/api`). It closes F11. It runs on the host only,
+inside the `migrate` image (which carries the sources and `tsx`); the API never imports it, so there is no HTTP route
+to it. Flags:
+
+| Flag | Meaning |
+|---|---|
+| `--mode=create` or `--mode=reset` | Required. `create` makes the first Admin Pusat; `reset` gives a locked-out last Admin Pusat a new password |
+| `--email=<e-mail>` | Required. Stored and compared in lower case |
+| `--confirm=<same e-mail>` | Required. Must repeat `--email` (case does not matter); the explicit confirmation |
+| `--name="<display name>"` | `create` only; default "Admin Pusat" |
+| `--reactivate` | `reset` only: also makes an inactive or suspended account active again |
+| `--password-stdin` | Read the password from standard input (a file), not from the hidden prompt |
+| `--help` | Print the usage |
+
+Exit codes: 0 done (also `--help`), 1 failed (database error, nothing committed), 2 usage, confirmation or
+environment problem (the reasons are listed below), 3 refused by the database state (nothing written). A password is
+never accepted as an argument: any password-like flag stops it.
+
+- **What it does.** Everything happens in one transaction, under the same lock as the users module's last-admin guard:
+  - an argon2id hash (the same parameters as login);
+  - `must_reset_password` is set, so the account must change its password at the next login;
+  - the national `admin` scope is set;
+  - every live session of that account ends;
+  - open "Lupa Kata Laluan" reset links of that account are spent;
+  - one `audit_events` row is written: `admin.bootstrap.reset` or `admin.bootstrap.created`, actor role `host_cli`.
+    It holds the OS user and counts only, never the e-mail, the password or the hash.
+- **When it refuses (exit 3, nothing written):**
+  - `--mode=create` while any active Admin Pusat exists, or when the e-mail already has an account;
+  - `--mode=reset` when the e-mail is not an Admin Pusat, or when **another** active Admin Pusat exists (that admin
+    resets it on the admin screen instead);
+  - an inactive or suspended target, unless `--reactivate` is given.
+- **When it stops (exit 2, nothing written):**
+  - `--confirm` is missing or does not repeat `--email` exactly; an unknown flag; any password-like argument (none is
+    echoed);
+  - a weak password (under 12 characters, leading or trailing spaces, or it contains the e-mail name), or the two
+    typed passwords differ, or the prompt is aborted (Ctrl-C, Ctrl-D);
+  - no terminal for the hidden prompt and no `--password-stdin`; `--password-stdin` with the terminal as input (no
+    file or pipe); a password file with more than one line, or too long;
+  - `DATABASE_URL` is not set or cannot be used (the `migrate` service reads it from `migrate.env`, see below).
+- **Run it (as `ppdeploy`, with the LEAD's confirmation), from the repo checkout.** Use the prod overlay command from
+  section 1 with **`PP_IMAGE_TAG` set to the running release**. Releases are tagged with the 12-character git sha and
+  no `prod` tag exists (section 7), so without it compose looks for `pretasiplus-api-migrate:prod`, which is missing,
+  and then fails or builds from whatever the checkout holds. `current.tag` names the last release that finished
+  (section 7). Add `--profile ...` after `docker compose` if `PP_PROFILES` is set, as in section 16.
+  - **Connection.** Since #227 (DB roles) the `migrate` service connects as the schema owner `pp_owner`: its
+    `DATABASE_URL` comes from `/etc/pretasiplus/migrate.env`, read after `api.env`. No extra flag is needed. If that
+    file is missing, stop: write it with `sudo deploy/vps/db-roles.sh secrets` (section 3) first; never point the
+    command at the superuser.
+  - **Pre-check (writes nothing).** Confirm that the running release ships AZ-36. `--help` prints the usage and exits 0
+    before it reads a password or opens the database:
+
+    ```
+    PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag) \
+     docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
+     run --rm --no-deps -T migrate npm run admin:bootstrap -w @pp/api -- --help
+    ```
+
+    An npm "Missing script: admin:bootstrap" error means the release predates AZ-36: deploy a release that has it
+    first (section 7). Ignore the `/root/pp-admin-pass` example in the usage text; use the file steps below instead.
+  - **Run.** The default is the **hidden prompt**: the password is typed twice and never touches the disk. Start the
+    line with a space so that `HISTCONTROL=ignorespace` keeps it out of the history (or run `history -d` on it
+    afterwards):
+
+    ```
+     PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag) \
+     docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
+     run --rm --no-deps migrate npm run admin:bootstrap -w @pp/api -- \
+     --mode=reset --email=<admin e-mail> --confirm=<admin e-mail>
+    ```
+
+  - **Run with a file**, only when compose cannot give the container a terminal. The redirect is read by the calling
+    shell, so the file must belong to `ppdeploy` (a root-only file fails with "Permission denied" before compose
+    starts). It must hold the password on **one line only**; a second line is refused with exit 2. Write it with
+    `read -rs` (not echoed, and the password is never on a command line, so it stays out of the history and `ps`).
+    Add `-T` and `--password-stdin`, then remove the file with `shred -u` right after the run:
+
+    ```
+    install -m 600 -o ppdeploy /dev/null ~ppdeploy/pp-admin-pass
+    read -rs p && printf '%s\n' "$p" > ~ppdeploy/pp-admin-pass; unset p
+     PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag) \
+     docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
+     run --rm --no-deps -T migrate npm run admin:bootstrap -w @pp/api -- \
+     --mode=reset --email=<admin e-mail> --confirm=<admin e-mail> --password-stdin < ~ppdeploy/pp-admin-pass
+    shred -u ~ppdeploy/pp-admin-pass
+    ```
+
+  Exit 0 prints the user id, the database name, and the number of sessions and reset links ended. The e-mail is
+  stored in lower case.
+- **Known limits:**
+  - The e-mail is a command-line argument, so it appears in `ps` while the command runs (and in the history unless
+    the leading space or `history -d` above is used). It is not a secret.
+  - The login throttle row is not cleared: right after a recovery, the admin may wait up to 60 s before the first login.
+  - The audit row names the OS user only (often the shared `ppdeploy`), so also write the support ticket line from the
+    "Records" rule above.

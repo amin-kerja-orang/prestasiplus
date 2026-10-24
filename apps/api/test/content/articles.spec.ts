@@ -188,9 +188,12 @@ describe('AC 2 and AC 6 admin articles', () => {
     expect(d.publishedAt).toEqual(expect.any(String))
     const [admRow] = await t.db.query<{ id: string }>(`select id::text from users where email = 'admin@demo.test'`)
     expect(d.authorId).toBe(admRow?.id)
-    // A client-sent author is ignored.
+    // A client-sent author is refused (strict create body, #98): 422 naming it, and no article is written.
+    const before = await t.db.query<{ n: string }>(`select count(*)::text as n from articles`)
     const other = await admin.post('/admin/articles', articleBody({ title: 'Penulis Palsu', authorId: '999999' }))
-    expect(other.body.data.authorId).toBe(admRow?.id)
+    expect(other.status, JSON.stringify(other.body)).toBe(422)
+    expect(other.body.error).toMatchObject({ code: 'VALIDATION_ERROR', fields: { authorId: 'The authorId field is not allowed.' } })
+    expect(await t.db.query<{ n: string }>(`select count(*)::text as n from articles`)).toEqual(before)
   })
 
   it('a taken title gets the next suffix; the slug is stable on rename and publishedAt is set at the first publish only', async () => {

@@ -13,9 +13,24 @@ describe('people.input: Laravel-style body validation (pure)', () => {
     expect(parseTeacherCreate({ name: 5, email: 'a@ujian.test' }).fields).toEqual({ name: 'The name field must be a string.' })
   })
 
-  it('teacher create: trims, blank phone is null, other keys are dropped from the value', () => {
-    const { value } = parseTeacherCreate({ name: ' Cikgu Demo ', email: ' a@ujian.test ', phone: ' ', role: 'admin', schoolId: '9', isActive: false, password: 'x' })
+  it('teacher create: trims, blank phone is null', () => {
+    const { value, fields } = parseTeacherCreate({ name: ' Cikgu Demo ', email: ' a@ujian.test ', phone: ' ' })
+    expect(fields).toEqual({})
     expect(value).toEqual({ name: 'Cikgu Demo', email: 'a@ujian.test', phone: null })
+  })
+
+  it('teacher create is strict (#97): every other key is named in fields and no value is returned', () => {
+    const { value, fields } = parseTeacherCreate({ name: 'Cikgu Demo', email: 'a@ujian.test', role: 'admin', schoolId: '9', isActive: false, password: 'x' })
+    expect(value).toBeNull()
+    expect(fields).toEqual({
+      role: 'The role field is not allowed.',
+      schoolId: 'The schoolId field is not allowed.',
+      isActive: 'The isActive field is not allowed.',
+      password: 'The password field is not allowed.',
+    })
+    // Listed after the field rules of the known keys; a `__proto__` key is named like any other.
+    const mixed = parseTeacherCreate(JSON.parse('{"name":"","email":"a@ujian.test","__proto__":{"x":1}}'))
+    expect(Object.keys(mixed.fields)).toEqual(['name', '__proto__'])
   })
 
   it('pupil create: name at least 3, classId must look like an id, role/grade/icNumber are ignored', () => {

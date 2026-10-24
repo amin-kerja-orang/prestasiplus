@@ -8,6 +8,7 @@ import type { ActivityGroup } from './context'
 import { completionsStep, referralCodesStep, referralsStep, spmTargetsStep, unlocksStep } from './gamification-steps'
 import { articlesStep, audioSetsStep, bannersStep, notesStep, videosStep } from './content-steps'
 import { feedbackStep, ticketsStep, timelineStep } from './ops-steps'
+import { questionSetsStep } from './question-set-steps'
 
 export const catalogueGroup: ActivityGroup = {
   name: 'catalogue',
@@ -23,7 +24,7 @@ export const activityGroupB: ActivityGroup = {
 
 export const contentGroup: ActivityGroup = {
   name: 'content',
-  steps: (a) => [articlesStep(a), bannersStep(a), notesStep(a), videosStep(a), audioSetsStep(a)],
+  steps: (a) => [articlesStep(a), bannersStep(a), notesStep(a), videosStep(a), audioSetsStep(a), questionSetsStep(a)],
   notMigrated: [
     { table: 'banner image_path / audio_kbat audio_path (files)', reason: 'banner images are copied only with --files-dir (SHA256SUMS checked), else the file id stays null and the rows are counted; audio_path is never migrated (v2 keeps audio in authored sections, no staged source); articles, notes, videos and tickets have no staged file column' },
   ],

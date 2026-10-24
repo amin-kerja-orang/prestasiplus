@@ -22,9 +22,9 @@ async function each<T>(ids: readonly string[], fn: (part: string[]) => Promise<T
 
 /**
  * The people of one school and the chunked practice reads over them (BE-21 Part B). The school id is always the session's.
- * Pupils come from the users owner (`UsersRepository.studentsOfSchool`, active students only), teachers from BE-20's
- * `teachersOfSchool` (active teachers: a pending or deactivated teacher is not listed). Every `IN` list sent to the database is
- * cut into pieces of 1000 ids, so a large school never builds one huge statement.
+ * Pupils and teachers are the managed population of S0/S6/S7 (`UsersRepository.managedIdsBySchoolRole`, the rule of
+ * `countsBySchoolRole`), so the report counts equal the dashboard cards (FR-M27-50, BR-M27-22; SW6-04). Every `IN` list sent to
+ * the database is cut into pieces of 1000 ids, so a large school never builds one huge statement.
  */
 @Injectable()
 export class SchoolPopulation {
@@ -41,16 +41,17 @@ export class SchoolPopulation {
     return { id: row.id, name: row.name }
   }
 
-  /** Active pupils of the school, name A to Z, with their last login. */
+  /** The managed pupils of the school (the S0/S6 population: inactive and suspended included), name A to Z, with their last login. */
   async pupils(schoolId: string): Promise<PupilFact[]> {
-    const rows = await this.users.studentsOfSchool(schoolId, '', '')
-    const ids = rows.filter((r) => r.isActive && r.schoolId === schoolId).map((r) => r.id)
+    const ids = await this.users.managedIdsBySchoolRole(schoolId, 'student')
     const lines = (await each(ids, (c) => this.analytics.studentsAmong(c))).flat()
     return lines.map((l) => ({ id: l.id, name: l.name, lastLoginAt: l.lastLoginAt })).sort(byName)
   }
 
-  teachers(schoolId: string): Promise<TeacherLine[]> {
-    return this.analytics.teachersOfSchool(schoolId)
+  /** The managed teachers of the school (the S0/S7 population: no peer school admin, inactive included), id ascending. */
+  async teachers(schoolId: string): Promise<TeacherLine[]> {
+    const ids = await this.users.managedIdsBySchoolRole(schoolId, 'teacher')
+    return (await each(ids, (c) => this.analytics.teachersAmong(c))).flat()
   }
 
   async sessions(ids: readonly string[], from: number, to: number): Promise<SessionDayRow[]> {

@@ -11,10 +11,10 @@ import { LoaderError, loadStaging, SourceNotImplementedError, type LoadOptions }
 import { DirReader, DumpFormatError } from '../../../src/migration/staging/readers'
 import { capture, countAll, createStagingDb, FIXTURE_DIR, stagingEnv, tempDir, writeDump, type StagingDb } from './helpers'
 
-/** Two tables are enough for failure paths: each full load re-creates all 118 tables (seconds). */
+/** Two tables are enough for failure paths: each full load re-creates all 127 tables (seconds). */
 const SUBSET = ['users', 'schools'].map((n) => findTable(n) as TableSpec)
 
-// A full load creates 118 tables; under a loaded test host (other files, other containers) it can pass 30 s.
+// A full load creates 127 tables; under a loaded test host (other files, other containers) it can pass 30 s.
 const FULL_LOAD_TIMEOUT = 90_000
 
 let env: StagingDb
@@ -52,7 +52,7 @@ describe('staging:load on the synthetic fixture (AC1, AC7)', () => {
     const res = await env.pool.query(
       `select count(*)::int as n, count("_row_hash")::int as hashed, count("_loaded_at")::int as stamped from staging_cloud.users`,
     )
-    expect(res.rows[0]).toEqual({ n: 13, hashed: 13, stamped: 13 })
+    expect(res.rows[0]).toEqual({ n: 15, hashed: 15, stamped: 15 })
     const jsonb = await env.pool.query(`select config from staging_cloud.games where id = 1`)
     expect(jsonb.rows[0].config).toEqual({ level: 1 })
   })
@@ -64,11 +64,11 @@ describe('staging:load on the synthetic fixture (AC1, AC7)', () => {
     const res = await env.pool.query(
       `select count(remember_token)::int as rt, count(parent_invite_token)::int as pit, count(*)::int as n from staging_cloud.users`,
     )
-    expect(res.rows[0]).toEqual({ rt: 0, pit: 0, n: 13 })
+    expect(res.rows[0]).toEqual({ rt: 0, pit: 0, n: 15 })
     // non-secret columns survive
     const kept = await env.pool.query(`select count(referred_by)::int as r, count(created_at)::int as c from staging_cloud.users`)
     expect(kept.rows[0].r).toBeGreaterThan(0)
-    expect(kept.rows[0].c).toBe(13)
+    expect(kept.rows[0].c).toBe(15)
     // the redaction is declared in the spec, for every table that has such a column
     const redacted = TABLES.flatMap((t) => t.columns.filter((c) => c.redact).map((c) => `${t.name}.${c.name}`))
     expect(redacted).toEqual(['users.remember_token', 'users.parent_invite_token'])
@@ -299,7 +299,7 @@ describe('staging:load command', () => {
       err: io.err,
     })
     expect(code).toBe(STAGING_EXIT.ok)
-    expect(io.text()).toMatch(/Staging load finished: 118 tables/)
+    expect(io.text()).toMatch(/Staging load finished: 127 tables/)
   }, FULL_LOAD_TIMEOUT)
 
   it('rejects --tables on staging:load as a usage error, so a partial load can never wipe the other tables', async () => {

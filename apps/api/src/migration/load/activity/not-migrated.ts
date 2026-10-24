@@ -11,7 +11,7 @@ export const NOT_MIGRATED_ACTIVITY: readonly NotMigrated[] = [
   // Question bank: archive only (D29a, section 3.3). Dimensions are copied onto the answers at extract time.
   { table: 'questions / question_options / exam_* / question_parts / legacy_canonical_map / ...', reason: 'question bank is reloaded through the intake (D29a); read only as the snapshot source, archive_cloud afterwards' },
   { table: 'review_schedules', reason: 'question-bound; the revision queue is rebuilt from future answers (Q4)' },
-  { table: 'question_set_items / question_sets', reason: 'items are question-bound (Q4); OD-10 Q4 A decided (keep headers as needs-rebuild); blocked: `question_sets.classroom_id` NOT NULL needs a cross-half schema change (BE-18 owner)' },
+  { table: 'question_set_items', reason: 'items are question-bound (Q4); OD-10 Q4 A decided: only the teacher question-set headers are migrated (see `question_sets`), as needs-rebuild with no class; the staged items are counted in `question_sets.items_not_migrated`' },
   { table: 'spm_sets / spm_set_question', reason: 'plain question lists; SPM tracking sets are seeded, not migrated' },
   { table: 'question_reports / question_submissions / question_imports', reason: 'question-bound or replaced by the intake (D53 OWN-1)' },
   { table: 'structured_attempts / structured_attempt_answers', reason: 'free-text answers are never migrated (Q5); no v2 target for the header either; OD-10 Q5 A (scores only); `structured_attempts.question_id` NOT NULL' },
@@ -23,7 +23,7 @@ export const NOT_MIGRATED_ACTIVITY: readonly NotMigrated[] = [
   { table: 'psychometric_results', reason: 'sensitive category (Q7); never read' },
   { table: 'aspirations', reason: 'sensitive category (Q7); never read' },
   { table: 'foster_applications / foster_sponsorships / sponsors', reason: 'sensitive category and Penaja is out of scope (D48, Q7); never read' },
-  { table: 'interventions', reason: 'OD-10 Q7 A decided (migrate); deferred: v2 `interventions.alert_description` is NOT NULL and has no staged .cloud column (OD-2 open column)' },
+  { table: 'interventions', reason: 'OD-10 Q7 A decided (migrate); deferred: v2 `interventions.alert_description` is NOT NULL; .cloud has an `alert_description` column but the staging spec does not list it and nothing reads it yet' },
   // Shop / draws skipped per Q8 (no fixed values for the catalogue fields v2 requires).
   { table: 'gifts', reason: 'Q8: category / vendor / token values not available from .cloud; skipped until the lead fixes the values' },
   { table: 'gift_redemptions', reason: 'Q8: depends on gifts (snapshot of the gift); skipped with it' },

@@ -7,7 +7,7 @@ import { Public, Roles } from '../../../common/guards/decorators'
 import { NoStoreInterceptor } from '../../../common/http'
 import type { RequestWithAuth } from '../../../common/scope/auth-context'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
-import { ZodValidationPipe } from '../../../common/validation/zod-validation.pipe'
+import { StrictZodValidationPipe } from '../../../common/validation/strict-body'
 import { actorOf, CONTENT_LIMITS, queryText } from '../shared/content-support'
 import { ArticlesService } from './articles.service'
 
@@ -78,10 +78,11 @@ export class AdminArticlesController {
     return { data: await this.articles.adminGet(id) }
   }
 
+  /** STRICT body (BE-33 AC1c, #98): an unknown key such as `views` is a 422 naming it, never bound. */
   @Post()
   @HttpCode(201)
   @RateLimit(CONTENT_LIMITS.adminWrite)
-  create(@Req() req: Req, @Body(new ZodValidationPipe(AdminArticleCreateRequestSchema)) body: ArticleCreateBody) {
+  create(@Req() req: Req, @Body(new StrictZodValidationPipe(AdminArticleCreateRequestSchema)) body: ArticleCreateBody) {
     return this.articles.create(actorOf(req), body)
   }
 

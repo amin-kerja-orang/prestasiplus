@@ -17,7 +17,7 @@ import {
 import {
   CHALLENGE_TYPE_MAP,
   completionLegacyId,
-  criteriaTarget,
+  challengeTarget,
   isPlatformChallenge,
   parseSpmTargets,
   settingEntries,
@@ -55,24 +55,27 @@ describe('tiers and challenges', () => {
     expect(isPlatformChallenge({ created_by: null, classroom_id: '3' })).toBe(false)
   })
 
-  it('reads the target only from a JSON object with a positive integer', () => {
-    expect(criteriaTarget('{"target": 5}')).toBe(5)
-    expect(criteriaTarget('{"target_value": "12"}')).toBe(12)
-    expect(criteriaTarget('{"target": 0}')).toBeNull()
-    expect(criteriaTarget('{"target": 1.5}')).toBeNull()
-    expect(criteriaTarget('selesaikan 5 kuiz')).toBeNull()
-    expect(criteriaTarget('[5]')).toBeNull()
-    expect(criteriaTarget(null)).toBeNull()
+  it('reads the target from the numeric target_value column: a whole number from 1 to 1,000,000', () => {
+    expect(challengeTarget('5')).toBe(5)
+    expect(challengeTarget(' 12.00 ')).toBe(12)
+    expect(challengeTarget('1000000')).toBe(1_000_000)
+    expect(challengeTarget('0')).toBeNull()
+    expect(challengeTarget('1.5')).toBeNull()
+    expect(challengeTarget('-3')).toBeNull()
+    expect(challengeTarget('1000001')).toBeNull()
+    expect(challengeTarget('selesaikan 5 kuiz')).toBeNull()
+    expect(challengeTarget('{"target": 5}')).toBeNull()
+    expect(challengeTarget(null)).toBeNull()
   })
 
   it('maps the challenge type with an explicit table and rejects the rest; metric stays null', () => {
     expect(Object.keys(CHALLENGE_TYPE_MAP).sort()).toEqual(['accuracy', 'quiz_count', 'streak', 'time_spent', 'topic_variety'])
-    const ok = transformChallenge({ title: ' Cabaran  Satu ', type: 'Quiz Count', criteria: '{"target": 3}' })
+    const ok = transformChallenge({ title: ' Cabaran  Satu ', challenge_type: 'Quiz Count', target_value: '3.00' })
     expect(ok.ok && ok.value).toMatchObject({ title: 'Cabaran Satu', challenge_type: 'quiz_count', metric: null, target_value: 3, difficulty: 'medium' })
-    expect(rejectOf(transformChallenge({ title: 'A', type: 'harian', criteria: '{"target": 3}' }))).toBe('UNKNOWN_ENUM:type')
-    expect(rejectOf(transformChallenge({ title: 'A', type: 'accuracy', criteria: 'teks' }))).toBe('INVALID_VALUE:target_value')
-    expect(rejectOf(transformChallenge({ title: '', type: 'accuracy', criteria: '{"target": 3}' }))).toBe('INVALID_VALUE:title')
-    expect(rejectOf(transformChallenge({ title: 'x'.repeat(201), type: 'accuracy', criteria: '{"target": 3}' }))).toBe('INVALID_VALUE:title')
+    expect(rejectOf(transformChallenge({ title: 'A', challenge_type: 'harian', target_value: '3' }))).toBe('UNKNOWN_ENUM:challenge_type')
+    expect(rejectOf(transformChallenge({ title: 'A', challenge_type: 'accuracy', target_value: 'teks' }))).toBe('INVALID_VALUE:target_value')
+    expect(rejectOf(transformChallenge({ title: '', challenge_type: 'accuracy', target_value: '3' }))).toBe('INVALID_VALUE:title')
+    expect(rejectOf(transformChallenge({ title: 'x'.repeat(201), challenge_type: 'accuracy', target_value: '3' }))).toBe('INVALID_VALUE:title')
   })
 
   it('keeps the achievement criteria as legacy text only', () => {
@@ -214,13 +217,15 @@ describe('content', () => {
     const ok = transformNote({ ...note, subject: 'Matematik', grade: 'Tingkatan 4' }, { ownerId: '5' })
     expect(ok.ok && ok.value).toMatchObject({ author_id: '5', subject: 'matematik', note_type: 'FORMULA', content: 'Isi' })
 
-    const video = { title: 'Video', url: 'https://youtu.be/abcdefghijk', is_published: '1' }
+    const video = { title: 'Video', url: 'https://youtu.be/abcdefghijk' }
     expect(rejectOf(transformVideo(video, { ownerId: undefined }))).toBe('ORPHAN_PARENT:uploader_id')
     expect(rejectOf(transformVideo(video, { ownerId: '5' }))).toBe('INVALID_VALUE:category')
-    expect(rejectOf(transformVideo({ ...video, is_published: '0' }, { ownerId: '5' }))).toBe('UNSUPPORTED:is_published')
+    // .cloud videos have no publication flag: nothing is rejected as a draft, whatever a stray column holds.
+    expect(rejectOf(transformVideo({ ...video, is_published: '0' }, { ownerId: '5' }))).toBe('INVALID_VALUE:category')
     expect(rejectOf(transformVideo({ ...video, url: 'javascript:alert(1)' }, { ownerId: '5' }))).toBe('INVALID_VALUE:url')
     const v = transformVideo({ ...video, category: 'Tutorial' }, { ownerId: '5' })
     expect(v.ok && v.value).toMatchObject({ platform: 'Youtube', category: 'tutorial', uploader_id: '5', visibility: 'global' })
+    expect(transformVideo({ ...video, category: 'tutorial', url: 'https://vimeo.com/123456' }, { ownerId: '5' }).ok).toBe(true)
 
     const audio = { title: 'Audio', status: 'draft', audio_path: 'a.mp3' }
     const noOwner = transformAudioSet(audio, { ownerId: undefined, levelId: '1', subjectId: '2' })
