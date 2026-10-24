@@ -38,7 +38,8 @@ const sn = seedSainsK2(bank)
 const sej = seedSejarahK2(bank)
 
 const matK1Instructions = [
-  'Kertas ini mengandungi 40 soalan objektif.',
+  // The count comes from the paper itself (this is a 10-question sample of the 40-question paper).
+  `Kertas ini mengandungi ${k1.setA.length} soalan objektif.`,
   'Jawab semua soalan. Pilih satu jawapan sahaja bagi setiap soalan.',
   'Rajah tidak dilukis mengikut skala kecuali dinyatakan.',
 ]

@@ -13,6 +13,12 @@ const frac = (n: number, d: number): string => {
   const [a, b] = [n / g, d / g]
   return b === 1 ? String(a) : `$\\frac{${a}}{${b}}$`
 }
+/** LaTeX body of n/d: a whole number, else the reduced fraction (never a long decimal). */
+const ratio = (n: number, d: number): string => {
+  const g = gcd(n, d)
+  const [a, b] = [n / g, d / g]
+  return b === 1 ? String(a) : `\\frac{${a}}{${b}}`
+}
 const sgn = (n: number): string => (n < 0 ? `- ${-n}` : `+ ${n}`)
 const poly = (b: number, c: number): string =>
   `x^2 ${b === 0 ? '' : sgn(b).replace(/(\d+)/, '$1x')} ${sgn(c)}`.replace(/\s+/g, ' ').trim()
@@ -126,7 +132,7 @@ const families: { key: string; topic: string; make: Family }[] = [
         correct: `$x = ${x}$`,
         wrong: distinct(
           `$x = ${x}$`,
-          [`$x = ${(c + b) / a}$`, `$x = ${c - b}$`, `$x = ${x + 1}$`],
+          [`$x = ${ratio(c + b, a)}$`, `$x = ${c - b}$`, `$x = ${x + 1}$`],
           (i) => `$x = ${x + i + 1}$`,
         ),
         reason: `${a}x = ${c - b}, x = ${correct}.`,
@@ -314,7 +320,7 @@ const families: { key: string; topic: string; make: Family }[] = [
         correct,
         wrong: distinct(
           correct,
-          [`$x > ${x}$`, `$x < ${c - b}$`, `$x < ${(c + b) / a}$`],
+          [`$x > ${x}$`, `$x < ${c - b}$`, `$x < ${ratio(c + b, a)}$`],
           (i) => `$x < ${x + i}$`,
         ),
         reason: `${a}x < ${c - b}.`,
@@ -342,7 +348,7 @@ const families: { key: string; topic: string; make: Family }[] = [
         correct,
         wrong: distinct(
           correct,
-          [`${d * t} km/j`, `${t / d} km/j`, `${s + 10} km/j`],
+          [`${d * t} km/j`, `${Number((t / d).toFixed(3))} km/j`, `${s + 10} km/j`],
           (i) => `${s + i * 5} km/j`,
         ),
         reason: `${d} / ${t} = ${s}.`,

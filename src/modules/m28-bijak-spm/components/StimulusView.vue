@@ -1,5 +1,9 @@
 <script setup lang="ts">
-/** A shared stimulus (Rajah, petikan, jadual). The diagram is bundled inline SVG that follows the theme. */
+/**
+ * A shared stimulus (Rajah, petikan, jadual). The diagram is bundled inline SVG that follows the theme.
+ * `thumb` is the 48 px slot of the sticky strip below `lg`: a figure shrinks into it, a passage or a
+ * table shows an icon tile instead (the full content only opens in the sheet).
+ */
 import { computed } from 'vue'
 
 import type { StimulusDef } from '../domain/types'
@@ -25,7 +29,7 @@ const tableRows = computed(() =>
   >
     <div
       v-if="stimulus.svg"
-      class="mx-auto w-full overflow-hidden rounded-xl bg-muted p-2 text-highlighted"
+      class="mx-auto w-full overflow-hidden rounded-xl bg-elevated p-2 text-highlighted"
       :class="thumb ? 'max-w-16' : 'max-w-md'"
       role="img"
       :aria-label="stimulus.alt"
@@ -33,10 +37,21 @@ const tableRows = computed(() =>
       <!-- eslint-disable-next-line vue/no-v-html -- bundled seed SVG, not user input -->
       <div aria-hidden="true" v-html="stimulus.svg" />
     </div>
-    <p v-else-if="stimulus.text" class="rounded-xl bg-muted p-3 text-body text-default">
+    <div
+      v-else-if="thumb"
+      class="flex size-10 items-center justify-center rounded-xl bg-default text-highlighted"
+      role="img"
+      :aria-label="stimulus.alt"
+      :data-kind="stimulus.table ? 'table' : 'passage'"
+      data-testid="stimulus-thumb-icon"
+    >
+      <UIcon v-if="stimulus.table" name="i-ph-table" class="size-6" aria-hidden="true" />
+      <UIcon v-else name="i-ph-article" class="size-6" aria-hidden="true" />
+    </div>
+    <p v-else-if="stimulus.text" class="rounded-xl bg-elevated p-3 text-body text-default">
       <RichText :text="stimulus.text" />
     </p>
-    <div v-else-if="stimulus.table" class="max-w-full overflow-x-auto rounded-xl bg-muted p-2">
+    <div v-else-if="stimulus.table" class="max-w-full overflow-x-auto rounded-xl bg-elevated p-2">
       <UTable :data="tableRows" :columns="tableColumns" :aria-label="stimulus.alt" />
     </div>
     <figcaption v-if="!thumb" class="text-center text-caption text-muted">

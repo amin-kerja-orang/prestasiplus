@@ -45,39 +45,52 @@ const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda
       <p v-if="counters?.[s.id]" class="text-caption text-muted" role="status">
         {{ counters[s.id] }}
       </p>
-      <div class="flex flex-wrap gap-2">
-        <UButton
+      <!-- The current question sits in a high-contrast frame (bg-inverted: dark in light mode, white
+           in dark mode) and keeps its own state fill, so "current + answered" shows both. A frame of
+           padding instead of a ring: the design system has no ring/outline utilities (G-3b). -->
+      <div class="flex flex-wrap gap-0">
+        <span
           v-for="q in questions.filter((x) => x.sectionId === s.id)"
           :key="q.id"
-          type="button"
-          :color="
-            states[q.id] === 'flagged'
-              ? 'warning'
-              : states[q.id] === 'answered'
-                ? 'primary'
-                : 'neutral'
-          "
-          :variant="
-            q.id === current
-              ? 'outline'
-              : states[q.id] === 'answered' || states[q.id] === 'flagged'
-                ? 'solid'
-                : 'soft'
-          "
-          class="tabular size-11 justify-center rounded-xl p-0 font-bold"
-          :aria-label="`Soalan ${q.number}, ${label[states[q.id] ?? 'none']}`"
-          :aria-current="q.id === current ? 'true' : undefined"
-          :data-testid="`nav-${q.number}`"
-          :data-state="states[q.id] ?? 'none'"
-          @click="emit('go', q.id)"
-          >{{ q.number }}</UButton
+          class="flex shrink-0 rounded-xl p-1"
+          :class="q.id === current ? 'bg-inverted' : ''"
+          :data-current="q.id === current ? 'true' : undefined"
         >
+          <UButton
+            type="button"
+            :color="
+              states[q.id] === 'flagged'
+                ? 'warning'
+                : states[q.id] === 'answered'
+                  ? 'primary'
+                  : 'neutral'
+            "
+            :variant="states[q.id] === 'answered' || states[q.id] === 'flagged' ? 'solid' : 'soft'"
+            class="tabular size-11 justify-center rounded-xl p-0 font-bold"
+            :aria-label="`Soalan ${q.number}, ${label[states[q.id] ?? 'none']}`"
+            :aria-current="q.id === current ? 'true' : undefined"
+            :data-testid="`nav-${q.number}`"
+            :data-state="states[q.id] ?? 'none'"
+            @click="emit('go', q.id)"
+            >{{ q.number }}</UButton
+          >
+        </span>
       </div>
     </section>
-    <ul class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted" aria-hidden="true">
-      <li>Dijawab</li>
-      <li>Ditanda</li>
-      <li>Belum</li>
+    <ul
+      class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted"
+      aria-hidden="true"
+      data-testid="nav-legend"
+    >
+      <li class="flex items-center gap-2">
+        <span class="size-3 rounded-xs bg-gradient-primary" data-swatch="answered" />Dijawab
+      </li>
+      <li class="flex items-center gap-2">
+        <span class="size-3 rounded-xs bg-warning" data-swatch="flagged" />Ditanda
+      </li>
+      <li class="flex items-center gap-2">
+        <span class="size-3 rounded-xs bg-elevated" data-swatch="none" />Belum
+      </li>
     </ul>
   </nav>
 </template>

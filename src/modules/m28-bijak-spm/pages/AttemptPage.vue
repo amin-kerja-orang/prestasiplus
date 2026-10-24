@@ -14,6 +14,15 @@ import AttemptShell from '../components/AttemptShell.vue'
 import NavigatorPanel, { type NavState } from '../components/NavigatorPanel.vue'
 import QuestionBlock from '../components/QuestionBlock.vue'
 import StimulusView from '../components/StimulusView.vue'
+import {
+  chooseCounterLine,
+  chooseFullHint,
+  chooseOverflowHint,
+  chooseState,
+  pickOnAnswer,
+  unansweredIn,
+  type ChooseState,
+} from '../domain/choose-n'
 import { formatClock, isAnswered, sectionRuleLine } from '../domain/paper-model'
 import type { AttemptPaperView, PartAnswer, QuestionResult } from '../domain/types'
 import { createAutosave, clearLocal, type Autosave, type SaveStatus } from '../lib/autosave'
@@ -97,23 +106,46 @@ const navStates = computed(() => {
   return out
 })
 
-function chosenCount(sectionId: string): number {
-  return picks.value[sectionId]?.length ?? 0
-}
+const answeredIds = computed(
+  () => new Set(questions.value.filter((q) => questionAnswered(q.id)).map((q) => q.id)),
+)
+/** Choose-N state per section (ticks vs answers), the one source of the counter and the hints. */
+const chooseStates = computed(() => {
+  const out: Record<string, ChooseState> = {}
+  for (const s of view.value?.sections ?? []) {
+    if (s.rule.type === 'choose')
+      out[s.id] = chooseState(s.rule.n, s.questionIds, picks.value[s.id], answeredIds.value)
+  }
+  return out
+})
 const counters = computed(() => {
   const out: Record<string, string> = {}
   for (const s of view.value?.sections ?? []) {
-    if (s.rule.type === 'choose') out[s.id] = `${chosenCount(s.id)} / ${s.rule.n} soalan dipilih`
+    const st = chooseStates.value[s.id]
+    if (s.rule.type === 'choose' && st) out[s.id] = chooseCounterLine(st.chosen, s.rule.n)
   }
   return out
+})
+/** More answered than allowed: tells the student that only the best N count. */
+const overflowNote = computed(() => {
+  const s = section.value
+  const st = s ? chooseStates.value[s.id] : undefined
+  return s && s.rule.type === 'choose' && st?.overflow
+    ? chooseOverflowHint(st.answered, s.rule.n)
+    : ''
 })
 const choose = computed(() => {
   const s = section.value
   const q = current.value
   if (!s || !q || s.rule.type !== 'choose') return undefined
   const chosen = picks.value[s.id]?.includes(q.id) ?? false
-  const full = chosenCount(s.id) >= s.rule.n
-  return { chosen, dimmed: full && !chosen, blocked: full }
+  const full = chooseStates.value[s.id]?.full ?? false
+  return {
+    chosen,
+    dimmed: full && !chosen,
+    blocked: full,
+    hint: full && !chosen ? chooseFullHint(s.rule.n) : undefined,
+  }
 })
 
 /* ----------------------------------------------------------------------------- timer */
@@ -221,6 +253,18 @@ async function goResult(): Promise<void> {
 function onAnswer(partId: string, a: PartAnswer): void {
   answers.value = { ...answers.value, [partId]: a }
   autosave?.setAnswer(partId, a)
+  if (isAnswered(a)) tickOnAnswer()
+}
+/** Typing in a question of a choose-N section ticks it while the section has room (AC-06.2). */
+function tickOnAnswer(): void {
+  const s = section.value
+  const q = current.value
+  if (!s || !q || s.rule.type !== 'choose') return
+  const cur = picks.value[s.id] ?? []
+  const next = pickOnAnswer(cur, q.id, s.rule.n)
+  if (next === cur) return
+  picks.value = { ...picks.value, [s.id]: [...next] }
+  autosave?.setPicks(picks.value)
 }
 function toggleFlag(): void {
   const id = current.value?.id
@@ -271,7 +315,12 @@ async function check(): Promise<void> {
 }
 
 /** Counts shown in the Hantar dialog. */
-const unanswered = computed(() => questions.value.filter((q) => !questionAnswered(q.id)).length)
+const unanswered = computed(() =>
+  (view.value?.sections ?? []).reduce(
+    (n, s) => n + unansweredIn(s.rule, s.questionIds, answeredIds.value),
+    0,
+  ),
+)
 const flaggedCount = computed(() => flags.value.length)
 
 /**
@@ -304,6 +353,12 @@ async function submit(auto = false): Promise<void> {
     startRetry()
     submitting.value = false
   }
+}
+
+/** Hantar from the Peta sheet: close the sheet first so the dialog opens over the paper. */
+function openSubmitFromMap(): void {
+  navOpen.value = false
+  confirmSubmit.value = true
 }
 
 function exitNow(): void {
@@ -436,6 +491,14 @@ const feedback = computed(() => {
           >
             {{ counters[section.id] }}
           </p>
+          <p
+            v-if="overflowNote"
+            class="text-caption text-warning"
+            role="status"
+            data-testid="choose-overflow"
+          >
+            {{ overflowNote }}
+          </p>
         </div>
 
         <QuestionBlock
@@ -494,7 +557,7 @@ const feedback = computed(() => {
           color="neutral"
           variant="soft"
           icon="i-ph-arrow-left"
-          class="size-11 justify-center"
+          class="size-11 shrink-0 justify-center px-0 learner:px-0"
           aria-label="Sebelum"
           :disabled="index === 0"
           data-testid="prev"
@@ -504,12 +567,18 @@ const feedback = computed(() => {
           type="button"
           color="neutral"
           variant="soft"
-          icon="i-ph-squares-four"
-          class="min-h-11 lg:hidden"
+          class="min-h-11 shrink-0 whitespace-nowrap max-sm:gap-2 max-sm:px-3 lg:hidden max-sm:learner:px-3"
           data-testid="open-map"
           @click="navOpen = true"
-          >Peta {{ current?.number ?? 0 }}/{{ questions.length }}</UButton
         >
+          <!-- The icon goes below sm: at 320 px the footer has room for the label, not both. -->
+          <UIcon
+            name="i-ph-squares-four"
+            class="hidden size-5 shrink-0 sm:block"
+            aria-hidden="true"
+          />
+          Peta {{ current?.number ?? 0 }}/{{ questions.length }}
+        </UButton>
         <p
           class="tabular hidden min-w-0 flex-1 truncate text-center text-caption text-muted sm:block"
           data-testid="position"
@@ -530,7 +599,7 @@ const feedback = computed(() => {
           v-if="!isLast"
           type="button"
           color="primary"
-          class="min-h-11"
+          class="min-h-11 shrink-0 whitespace-nowrap max-sm:gap-2 max-sm:px-3 max-sm:learner:px-3"
           trailing-icon="i-ph-arrow-right"
           data-testid="next"
           @click="goTo(index + 1)"
@@ -576,15 +645,29 @@ const feedback = computed(() => {
     description="Pilih soalan untuk melompat ke sana."
   >
     <template #body>
-      <NavigatorPanel
-        v-if="view && current"
-        :sections="view.sections"
-        :questions="questions"
-        :states="navStates"
-        :current="current.id"
-        :counters="counters"
-        @go="goToId"
-      />
+      <!-- A page-coloured panel: the sheet is bg-elevated, the same fill as the unanswered dots. -->
+      <UCard>
+        <NavigatorPanel
+          v-if="view && current"
+          :sections="view.sections"
+          :questions="questions"
+          :states="navStates"
+          :current="current.id"
+          :counters="counters"
+          @go="goToId"
+        />
+      </UCard>
+      <!-- Phones: the footer has no room for Hantar, so it lives here on every question (FB-044). -->
+      <UButton
+        v-if="isExam"
+        type="button"
+        block
+        size="lg"
+        class="mt-4 min-h-11"
+        data-testid="submit-from-map"
+        @click="openSubmitFromMap"
+        >Hantar</UButton
+      >
     </template>
   </UDrawer>
 
