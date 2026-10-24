@@ -89,8 +89,12 @@ const gridCols = computed(
   () => GRID_COLS[Math.min(Math.max(props.columns.length, 1), GRID_COLS.length) - 1] ?? GRID_COLS[0],
 )
 
-/** The empty cell: grey with a dashed edge, so it never reads as the lightest band. */
-const NO_DATA = 'border border-dashed border-accented'
+/**
+ * The empty cell: no fill and a dashed edge in the dimmed text colour, so it never reads as the lightest
+ * band. The `--ui-border*` tokens are transparent in every theme ("layers, not lines"), so the edge takes
+ * the dimmed text token, which is visible on the light and the dark surface.
+ */
+const NO_DATA = 'border border-dashed border-[var(--ui-text-dimmed)] bg-transparent'
 
 /** Ramp index of each band (index 0 is the empty cell), lowest band first, by band count. */
 const BAND_STEPS: Record<number, number[]> = { 2: [1, 4], 3: [1, 3, 4], 4: [1, 2, 3, 4] }
@@ -120,13 +124,13 @@ const bandLegend = computed(() => {
   const items = list.map((b, i) => ({ label: b.label, cls: ramp.value[steps[i] ?? 0] ?? 'bg-elevated' }))
   return [
     ...items.reverse(),
-    { label: props.noDataLabel, cls: `${ramp.value[0] ?? 'bg-elevated'} ${NO_DATA}` },
+    { label: props.noDataLabel, cls: NO_DATA },
   ]
 })
 
 function bg(v: number | null): string {
-  const cls = ramp.value[step(v)] ?? 'bg-elevated'
-  return v === null ? `${cls} ${NO_DATA}` : cls
+  if (v === null) return NO_DATA
+  return ramp.value[step(v)] ?? 'bg-elevated'
 }
 function fg(v: number | null): string {
   return rampText.value[step(v)] ?? 'text-highlighted'

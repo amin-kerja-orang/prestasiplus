@@ -111,6 +111,50 @@ for (const [level, subject] of [
     })
     if (ratios.length > 0) expect(Math.min(...ratios)).toBeGreaterThanOrEqual(4.5)
 
+    // "Belum Cuba" must not read as "Lemah": a visible (non-transparent) dashed edge and a different fill
+    const probe = await page.evaluate(() => {
+      const lum = (c: string) => {
+        const m = /rgba?\(([^)]+)\)|color\(srgb ([^)]+)\)/.exec(c)
+        const canvas = document.createElement('canvas')
+        canvas.width = canvas.height = 1
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+        void m
+        ctx.fillStyle = c
+        ctx.fillRect(0, 0, 1, 1)
+        const d = ctx.getImageData(0, 0, 1, 1).data
+        const f = (v: number) => {
+          const x = v / 255
+          return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4
+        }
+        return { l: 0.2126 * f(d[0] ?? 0) + 0.7152 * f(d[1] ?? 0) + 0.0722 * f(d[2] ?? 0), a: (d[3] ?? 0) / 255 }
+      }
+      const surface = (el: Element) => {
+        // first non-transparent background up the tree
+        for (let p: Element | null = el; p; p = p.parentElement) {
+          const bg = getComputedStyle(p).backgroundColor
+          if (lum(bg).a > 0) return bg
+        }
+        return 'rgb(255,255,255)'
+      }
+      const swatches = [...document.querySelectorAll('[data-ds="heat-legend-swatch"]')]
+      const belum = swatches[swatches.length - 1]!
+      const lemah = swatches[swatches.length - 2]!
+      const edge = getComputedStyle(belum)
+      const belumFill = lum(getComputedStyle(belum).backgroundColor).a > 0 ? getComputedStyle(belum).backgroundColor : surface(belum)
+      const l1 = lum(belumFill).l
+      const l2 = lum(getComputedStyle(lemah).backgroundColor).l
+      return {
+        style: edge.borderTopStyle,
+        width: parseFloat(edge.borderTopWidth),
+        edgeAlpha: lum(edge.borderTopColor).a,
+        ratio: (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05),
+      }
+    })
+    expect(probe.style).toBe('dashed')
+    expect(probe.width).toBeGreaterThan(0)
+    expect(probe.edgeAlpha).toBeGreaterThan(0.5)
+    expect(probe.ratio).toBeGreaterThanOrEqual(1.15)
+
     if (SHOTS) {
       mkdirSync(SHOTS, { recursive: true })
       await page.screenshot({ path: `${SHOTS}/${info.project.name}-${level}-${subject ?? 'first'}.png`, fullPage: true })
