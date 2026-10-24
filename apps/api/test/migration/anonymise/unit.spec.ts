@@ -69,23 +69,76 @@ describe('default deny (AC1)', () => {
     expect(stale, 'anon.config.json columns that are not in ddl/spec.ts').toEqual([])
   })
 
-  it('every personal column of the DDL has a rule that is not "keep"', () => {
-    const mustChange: [string, string][] = [
-      ['users', 'name'], ['users', 'email'], ['users', 'phone'], ['users', 'ic'], ['users', 'username'], ['users', 'password'],
-      ['users', 'remember_token'], ['users', 'parent_invite_token'], ['users', 'google_id'], ['users', 'referral_code'], ['users', 'bio'],
-      ['users', 'faith'], ['sponsors', 'officer_name'], ['sponsors', 'organisation'], ['foster_applications', 'applicant_name'],
-      ['foster_applications', 'reason'], ['support_tickets', 'subject'], ['support_tickets', 'admin_reply'], ['student_notes', 'body'],
-      ['mood_checkins', 'note'], ['feedback', 'comment'], ['chatbot_messages', 'body'], ['chatbot_conversations', 'visitor_id'],
-      ['audit_logs', 'ip'], ['settings', 'value'], ['psychometric_results', 'details'], ['part_responses', 'response'],
-      ['structured_attempt_answers', 'answer'], ['schools', 'name'], ['schools', 'join_code'], ['marketplace_sellers', 'organisation'],
+  it('every personal or free-text column of the DDL has the expected non-"keep" rule, and nothing else is changed (fixed list)', () => {
+    // A fixed list on purpose: it is NOT derived from the config. Flipping one of these to "keep", or adding a
+    // non-keep rule without listing it here, fails the test. Columns that were dropped from the spec are not listed.
+    const expected: [table: string, column: string, rule: string][] = [
+      ['users', 'name', 'pseudonym:name'],
+      ['users', 'email', 'pseudonym:email'],
+      ['users', 'phone', 'pseudonym:phone'],
+      ['users', 'ic', 'pseudonym:ic'],
+      ['users', 'username', 'pseudonym:username'],
+      ['users', 'password', 'hash-password-dummy'],
+      ['users', 'remember_token', 'null'],
+      ['users', 'referral_code', 'pseudonym:code'],
+      ['users', 'parent_invite_token', 'null'],
+      ['users', 'bio', 'scrub-text'],
+      ['users', 'spm_targets', 'scrub-text'],
+      ['users', 'teaching_qualification', 'scrub-text'],
+      ['schools', 'name', 'pseudonym:org'],
+      ['schools', 'code', 'pseudonym:code'],
+      ['schools', 'join_code', 'pseudonym:code'],
+      ['classrooms', 'name', 'scrub-text'],
+      ['classrooms', 'code', 'pseudonym:code'],
+      ['practice_sessions', 'client_uuid', 'pseudonym:opaque'],
+      ['broadcasts', 'body', 'scrub-text'],
+      ['timeline_entries', 'title', 'scrub-text'],
+      ['timeline_entries', 'body', 'scrub-text'],
+      ['question_sets', 'title', 'scrub-text'],
+      ['psychometric_results', 'details', 'scrub-text'],
+      ['feedback', 'comment', 'scrub-text'],
+      ['challenges', 'title', 'scrub-text'],
+      ['battle_invites', 'uuid', 'pseudonym:opaque'],
+      ['game_rooms', 'state', 'scrub-text'],
+      ['leagues', 'name', 'scrub-text'],
+      ['leagues', 'invite_code', 'pseudonym:code'],
+      ['banners', 'image_path', 'pseudonym:path'],
+      ['audio_kbat', 'audio_path', 'pseudonym:path'],
+      ['notifications', 'title', 'scrub-text'],
+      ['notifications', 'target', 'scrub-text'],
+      ['support_tickets', 'subject', 'scrub-text'],
+      ['support_tickets', 'admin_reply', 'scrub-text'],
+      ['chatbot_conversations', 'visitor_id', 'pseudonym:opaque'],
+      ['chatbot_conversations', 'start_url', 'scrub-text'],
+      ['settings', 'value', 'scrub-text'],
+      ['audit_logs', 'subject_id', 'pseudonym:opaque'],
+      ['audit_logs', 'ip', 'pseudonym:ip'],
+      ['marketplace_sellers', 'organisation', 'pseudonym:org'],
+      ['marketplace_products', 'name', 'scrub-text'],
+      ['sponsors', 'organisation', 'pseudonym:org'],
+      ['sponsors', 'officer_name', 'pseudonym:name'],
+      ['foster_applications', 'applicant_name', 'pseudonym:name'],
+      ['foster_applications', 'reason', 'scrub-text'],
+      ['part_responses', 'response', 'scrub-text'],
+      ['part_responses', 'ai_grade', 'scrub-text'],
+      ['part_responses', 'graded_by', 'scrub-text'],
+      ['question_reports', 'description', 'scrub-text'],
+      ['media_assets', 'path', 'pseudonym:path'],
+      ['questions', 'image_path', 'pseudonym:path'],
+      ['question_options', 'image_path', 'pseudonym:path'],
     ]
-    for (const [t, c] of mustChange) {
+    const show = (r: { rule: string; kind?: string } | undefined): string | undefined => (r === undefined ? undefined : r.kind ? `${r.rule}:${r.kind}` : r.rule)
+    for (const [t, c, rule] of expected) {
       // Strict: the column must exist in the DDL and have an explicit rule (an undefined rule is not "not keep").
       expect(findTable(t)?.columns.some((col) => col.name === c), `${t}.${c} is not in the DDL`).toBe(true)
-      const rule = DEFAULT_CONFIG.tables[t]?.[c]
-      expect(rule, `${t}.${c} has no explicit rule`).toBeDefined()
-      expect(rule?.rule, `${t}.${c}`).not.toBe('keep')
+      const actual = DEFAULT_CONFIG.tables[t]?.[c]
+      expect(actual, `${t}.${c} has no explicit rule`).toBeDefined()
+      expect(show(actual as { rule: string; kind?: string }), `${t}.${c}`).toBe(rule)
     }
+    const nonKeep = Object.entries(DEFAULT_CONFIG.tables)
+      .flatMap(([t, cols]) => Object.entries(cols).filter(([, r]) => r.rule !== 'keep').map(([c, r]) => `${t}.${c}=${show(r as { rule: string; kind?: string })}`))
+      .sort()
+    expect(nonKeep, 'non-keep rules in anon.config.json that the fixed list does not know').toEqual(expected.map(([t, c, r]) => `${t}.${c}=${r}`).sort())
     expect(ruleFor(DEFAULT_CONFIG, 'users', 'password')?.rule).toBe('hash-password-dummy')
     expect(ruleFor(DEFAULT_CONFIG, 'users', 'remember_token')?.rule).toBe('null')
     expect(ruleFor(DEFAULT_CONFIG, 'users', 'parent_invite_token')?.rule).toBe('null')
@@ -106,7 +159,7 @@ describe('default deny (AC1)', () => {
     const expected: [string, string, string][] = [
       ['practice_sessions', 'client_uuid', 'pseudonym'], ['audit_logs', 'subject_id', 'pseudonym'], ['users', 'spm_targets', 'scrub-text'], ['challenges', 'target_value', 'keep'], ['challenges', 'title', 'scrub-text'],
       ['notifications', 'title', 'scrub-text'], ['notifications', 'target', 'scrub-text'], ['media_assets', 'path', 'pseudonym'],
-      ['paper_documents', 'source_file', 'pseudonym'], ['paper_document_pages', 'path', 'pseudonym'], ['banners', 'image_path', 'pseudonym'],
+      ['banners', 'image_path', 'pseudonym'],
       ['audio_kbat', 'audio_path', 'pseudonym'],
     ]
     for (const [t, c, r] of expected) expect(ruleFor(DEFAULT_CONFIG, t, c)?.rule, `${t}.${c}`).toBe(r)

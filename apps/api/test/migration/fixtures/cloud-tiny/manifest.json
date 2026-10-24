@@ -4,7 +4,7 @@
   "synthetic": true,
   "tables": {
     "users": {
-      "rows": 13,
+      "rows": 15,
       "file": "users.ndjson"
     },
     "schools": {

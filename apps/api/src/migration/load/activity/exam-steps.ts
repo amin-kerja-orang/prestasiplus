@@ -14,7 +14,7 @@ import { quoteIdent, toJson } from '../../kit/sql'
 import { upsertByLegacy, type LegacyRow } from '../../kit/upsert'
 import { rejectRow } from '../helpers'
 import { distinctValues, resolveFk, type StagedRow } from '../source'
-import { EXAM_ATTEMPT_COLUMNS, snapshotTitle, transformExamAttempt, type ExamResultValues } from '../../transform/exam'
+import { EXAM_ATTEMPT_COLUMNS, examStatusRejectLabel, snapshotTitle, transformExamAttempt, type ExamResultValues } from '../../transform/exam'
 import type { ActivityContext } from './context'
 import { idOf } from './wallet-steps'
 
@@ -99,6 +99,8 @@ export function examAttemptsStep(a: ActivityContext): AnyEntityStep {
         })
         if (!out.ok) {
           rejectRow(ctx, entity, legacyId, out.reject)
+          // A status that is rejected is counted by name (in_progress) so the LEAD sees the number; any other is `other`.
+          if (out.reject.column === 'status') a.notes.count(`exam_attempts.status_rejected.${examStatusRejectLabel(row.status)}`)
           continue
         }
         items.push({ legacyId, values: out.value.attempt as unknown as Record<string, unknown> })

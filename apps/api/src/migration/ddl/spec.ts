@@ -92,8 +92,8 @@ const STAGING: TableSpec[] = [
   // Identity, users, schools
   s('users', [
     'name:t', 'email:t', 'phone:t', 'ic:t', 'username:t', 'password:t', 'remember_token:t:redact', 'role:t:enum',
-    'school_id:id:fk=schools', 'kelas:t', 'faith:t', 'is_active:t:enum', 'is_suspended:t:enum',
-    'is_complimentary:t:enum', 'google_id:t', 'referral_code:t', 'referred_by:id:fk=users',
+    'school_id:id:fk=schools', 'kelas:t', 'is_active:t:enum', 'is_suspended:t:enum',
+    'is_complimentary:t:enum', 'referral_code:t', 'referred_by:id:fk=users',
     'parent_invite_token:t:redact', 'notifications_read_at:ts', 'bio:t', 'spm_targets:t', 'teaching_subject:t',
     'teaching_experience_years:i', 'teaching_qualification:t', 'last_login_at:ts',
   ]),
@@ -130,12 +130,11 @@ const STAGING: TableSpec[] = [
   s('structured_attempts', ['user_id:id:fk=users', 'structured_question_id:id:fk=structured_questions', 'score:n', 'max_score:n', 'track:t:enum']),
   s('structured_attempt_answers', [
     'structured_attempt_id:id:fk=structured_attempts', 'structured_sub_question_id:id:fk=structured_sub_questions',
-    'awarded:n', 'max_marks:n', 'answer:t',
+    'awarded:n', 'max_marks:n',
   ]),
-  s('student_notes', ['user_id:id:fk=users', 'subject_id:id:fk=subjects', 'title:t', 'body:t']),
+  s('student_notes', ['user_id:id:fk=users', 'subject_id:id:fk=subjects']),
   s('study_schedules', [
     'teacher_id:id:fk=users', 'classroom_id:id:fk=classrooms', 'subject_id:id:fk=subjects', 'day:t:enum',
-    'focus_topic:t',
   ]),
   s('broadcasts', ['teacher_id:id:fk=users', 'classroom_id:id:fk=classrooms', 'type:t:enum', 'body:t']),
   s('timeline_entries', ['user_id:id:fk=users', 'title:t', 'body:t', 'happened_on:d']),
@@ -148,12 +147,12 @@ const STAGING: TableSpec[] = [
     'status:t:enum',
   ]),
   // Wellbeing, career, feedback
-  s('mood_checkins', ['user_id:id:fk=users', 'mood:t:enum', 'note:t', 'checked_in_on:d']),
+  s('mood_checkins', ['user_id:id:fk=users', 'mood:t:enum', 'checked_in_on:d']),
   s('wellbeing_alerts', ['student_id:id:fk=users', 'type:t:enum', 'severity:t:enum', 'resolved:t:enum']),
   s('psychometric_results', ['user_id:id:fk=users', 'details:j']),
   s('interventions', [
-    'student_id:id:fk=users', 'recorded_by:id:fk=users', 'alert_type:t:enum', 'action_taken:t', 'action_date:d',
-    'before_accuracy:n', 'after_accuracy:n', 'before_mood:t', 'after_mood:t',
+    'student_id:id:fk=users', 'recorded_by:id:fk=users', 'alert_type:t:enum', 'action_date:d',
+    'before_accuracy:n', 'after_accuracy:n',
   ]),
   s('aspirations', ['user_id:id:fk=users', 'career_path_id:id:fk=career_paths', 'target_university_id:id:fk=universities']),
   s('career_paths', ['name:t']),
@@ -213,7 +212,7 @@ const STAGING: TableSpec[] = [
   s('notifications', ['title:t', 'target:t:enum', 'recipients:i', 'sent_at:ts']),
   s('support_tickets', ['user_id:id:fk=users', 'subject:t', 'status:t:enum', 'admin_reply:t']),
   s('chatbot_conversations', ['user_id:id:fk=users', 'visitor_id:t', 'start_url:t']),
-  s('chatbot_messages', ['chatbot_conversation_id:id:fk=chatbot_conversations', 'sender:t:enum', 'body:t', 'rating:i']),
+  s('chatbot_messages', ['chatbot_conversation_id:id:fk=chatbot_conversations', 'sender:t:enum', 'rating:i']),
   // System
   s('settings', ['key:t', 'value:t', 'group:t:enum']),
   s('feature_flags', ['slug:t', 'enabled:t:enum', 'audience:t:enum']),
@@ -273,7 +272,7 @@ const ARCHIVE: TableSpec[] = [
   a('questions', [
     'subject_id:id:fk=subjects', 'education_level_id:id:fk=education_levels', 'chapter_id:id:fk=chapters',
     'topic_id:id:fk=topics', 'difficulty_level:t:enum', 'type:t:enum', 'status:t:enum', 'body:t',
-    // QLOAD (`migrate:questions`): the explanation is copied into the v2 version; image_path is only counted and kept as an unresolved reference.
+    // QLOAD (LEAD 24 Oct, #113): loaded into the v2 bank at cutover, so the archive keeps them.
     'explanation:t', 'image_path:t',
   ]),
   a('question_options', ['question_id:id:fk=questions:idx', 'label:t', 'body:t', 'image_path:t', 'is_correct:t:enum']),
@@ -310,12 +309,12 @@ const ARCHIVE: TableSpec[] = [
   a('import_items', ['import_batch_id:id:fk=import_batches', 'exam_question_id:id:fk=exam_questions', 'review_status:t:enum']),
   a('legacy_canonical_map', ['source:t:enum', 'legacy_id:t', 'canonical_type:t:enum', 'canonical_id:id']),
   a('unify_quarantine', ['source:t:enum', 'legacy_id:t', 'reason:t:enum']),
-  a('paper_documents', ['source_file:t']),
-  a('paper_document_pages', ['paper_document_id:id:fk=paper_documents', 'position:i', 'path:t']),
+  a('paper_documents', []),
+  a('paper_document_pages', ['paper_document_id:id:fk=paper_documents', 'position:i']),
   a('paper_blueprints', ['subject_id:id:fk=subjects']),
   a('blueprint_sections', ['paper_blueprint_id:id:fk=paper_blueprints', 'label:t', 'position:i', 'selection_rule_id:id:fk=selection_rules']),
-  a('teacher_reference_documents', ['teacher_id:id:fk=users', 'file_path:t']),
-  a('teacher_reference_papers', ['teacher_id:id:fk=users', 'title:t']),
+  a('teacher_reference_documents', ['teacher_id:id:fk=users']),
+  a('teacher_reference_papers', ['teacher_id:id:fk=users']),
   // Lookups (id, slug): referenced by `source_papers`, `paper_sections` and `blueprint_sections`
   a('exam_boards', ['slug:t'], noTs),
   a('exam_types', ['slug:t'], noTs),

@@ -50,7 +50,7 @@ describe('profile content (AC3)', () => {
 
   it('lists distinct enum values with counts, including values the new system does not know', () => {
     const role = table('users').enums.find((e) => e.column === 'role')
-    expect(role?.distinct).toBe(7)
+    expect(role?.distinct).toBe(9)
     expect(role?.truncated).toBe(false)
     expect(role?.values[0]).toEqual({ value: 'pelajar', count: 6 })
     expect(role?.values.map((v) => v.value)).toContain('super_guru')
@@ -63,7 +63,7 @@ describe('profile content (AC3)', () => {
   })
 
   it('computes null ratios', () => {
-    expect(table('users').nullRatios.email).toBeCloseTo(1 / 13, 3)
+    expect(table('users').nullRatios.email).toBeCloseTo(1 / 15, 3)
     expect(table('users').nullRatios.id).toBe(0)
     expect(table('subjects').nullRatios.color).toBe(1)
     expect(table('users').nullRatios.remember_token).toBe(1) // redacted at load (M4)
@@ -97,7 +97,7 @@ describe('profile content (AC3)', () => {
 
   it('builds a histogram of password hash prefixes', () => {
     const hist = Object.fromEntries(table('users').hashPrefixes[0]?.prefixes.map((p) => [p.prefix, p.count]) ?? [])
-    expect(hist).toEqual({ $2y$: 8, $2b$: 1, $argon2id$: 1, '(other)': 1, '(empty)': 1, '(null)': 1 })
+    expect(hist).toEqual({ $2y$: 10, $2b$: 1, $argon2id$: 1, '(other)': 1, '(empty)': 1, '(null)': 1 })
   })
 })
 

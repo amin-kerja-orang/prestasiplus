@@ -141,7 +141,7 @@ describe('anonymise:run on a fixture seeded with recognisable fake PII (AC3)', (
     expect(users[0]?.parent_invite_token).toBeNull()
     expect(users[0]?.bio).toBe('Teks anonim.')
     expect((out.support_tickets as Rows)[0]?.subject).toBe('Teks anonim.')
-    expect((out.student_notes as Rows)[0]).toMatchObject({ title: 'Teks anonim.', body: 'Teks anonim.' })
+    expect((out.timeline_entries as Rows)[0]).toMatchObject({ title: 'Teks anonim.', body: 'Teks anonim.' })
     expect((out.settings as Rows)[0]).toMatchObject({ key: 'openai.api_key', value: 'Teks anonim.' })
     expect((out.audit_logs as Rows)[0]?.ip).toMatch(/^(192\.0\.2|198\.51\.100|203\.0\.113)\./)
     expect((out.chatbot_conversations as Rows)[0]?.start_url).toBe('Teks anonim.')

@@ -80,7 +80,8 @@ export const LOOKUPS = {
   selection_rules: ['answer_all', 'choose_n'],
 } as const satisfies Record<string, readonly string[]>
 
-const ROLES = ['pelajar', 'guru', 'ibu_bapa', 'penaja', 'admin_sekolah', 'pegawai_ppd', 'admin'] as const
+// The first rows carry one user of each role; `jpn_officer` (a school with a state, loaded as a state-scoped PPD officer) and `agent` (not migrated) come last so the other fixed ids do not move.
+const ROLES = ['pelajar', 'guru', 'ibu_bapa', 'penaja', 'admin_sekolah', 'pegawai_ppd', 'admin', 'jpn_officer', 'agent'] as const
 const BASE_MS = Date.UTC(2026, 0, 1)
 const MIN = 60_000
 const DAY = 24 * 60 * MIN
@@ -208,7 +209,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
       username: `contoh${pad(id)}`,
       password: fakeHash(id),
       role,
-      school_id: role === 'admin' || role === 'pegawai_ppd' ? null : (i % S) + 1,
+      school_id: role === 'admin' || role === 'pegawai_ppd' || role === 'agent' ? null : (i % S) + 1,
       kelas: role === 'pelajar' ? `${(i % 6) + 1} Contoh` : null,
       is_active: '1',
       is_suspended: '0',
@@ -361,7 +362,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
   put('question_options', options)
   put('source_papers', Array.from({ length: 3 }, (_, i) => ({ id: i + 1, natural_key: `contoh-2025-${i + 1}`, file_hash: String(i).repeat(64).slice(0, 64), year: 2025, exam_board_id: 1, exam_type_id: 1 })))
   put('exam_papers', Array.from({ length: 3 }, (_, i) => ({ id: i + 1, status_id: LOOKUPS.paper_statuses.indexOf('published') + 1, title: `Kertas Contoh ${i + 1}` })))
-  put('teacher_reference_papers', Array.from({ length: 3 }, (_, i) => ({ id: i + 1, teacher_id: null, title: `Rujukan Contoh ${i + 1}` })))
+  put('teacher_reference_papers', Array.from({ length: 3 }, (_, i) => ({ id: i + 1, teacher_id: null })))
   put('legacy_canonical_map', Array.from({ length: Q }, (_, i) => ({ id: i + 1, source: 'questions', legacy_id: String(i + 1), canonical_type: 'exam_question', canonical_id: i + 1 })))
   put('question_sets', Array.from({ length: C }, (_, i) => ({ id: i + 1, teacher_id: teachers.length ? teachers[i % teachers.length] : null, title: `Set Contoh ${i + 1}`, subject_id: (i % 6) + 1, education_level_id: (i % 4) + 1, status: 'draf' })))
 
@@ -398,7 +399,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
   }
   put('question_attempts', attempts)
   put('review_schedules', pupils.map((id, i) => ({ id: i + 1, user_id: id, question_id: (i % Q) + 1, ease_factor: 2.5, interval_days: 1 + (i % 7), repetitions: i % 4, lapses: i % 2, next_due_at: iso(BASE_MS + 100 * DAY + i * MIN), created_at: created(i), updated_at: created(i) })))
-  put('student_notes', pupils.filter((_, i) => i % 4 === 0).map((id, i) => ({ id: i + 1, user_id: id, subject_id: (i % 6) + 1, title: `Nota Contoh ${i + 1}`, body: `Isi nota contoh ${i + 1}.`, created_at: created(i), updated_at: created(i) })))
+  put('student_notes', pupils.filter((_, i) => i % 4 === 0).map((id, i) => ({ id: i + 1, user_id: id, subject_id: (i % 6) + 1, created_at: created(i), updated_at: created(i) })))
 
   // Mood check-ins with date-only edges: the stored date is the UTC date; a check-in between 16:00 and 24:00 UTC
   // is already the next day in Malaysia.

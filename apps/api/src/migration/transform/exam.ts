@@ -13,7 +13,7 @@
  * shape the attempts repository reads), provisional is false, pending_review 0, coins and points null.
  * Free-text answers, AI grading and the served composition are never read.
  */
-import { enumMapper, invalid, orphan } from './activity-common'
+import { enumKey, enumMapper, invalid, orphan } from './activity-common'
 import { ok, stamps, text, type Outcome, type Staged } from './common'
 
 export const EXAM_MODE_MAP = {
@@ -38,6 +38,15 @@ export const EXAM_STATUS_MAP = {
   abandoned: 'abandoned',
   ditinggalkan: 'abandoned',
 } as const
+
+/** Statuses that are known and deliberately not migrated (no v2 equivalent): rejected and counted by name. */
+export const EXAM_STATUSES_DEFERRED: readonly string[] = ['in_progress']
+
+/** Report label of a rejected status: the slug when it is one of `EXAM_STATUSES_DEFERRED`, else `other` (never raw text). */
+export function examStatusRejectLabel(raw: string | null | undefined): string {
+  const k = enumKey(raw)
+  return k !== null && EXAM_STATUSES_DEFERRED.includes(k) ? k : 'other'
+}
 
 export const EXAM_FALLBACK_TITLE = 'Percubaan peperiksaan lama'
 const SCORE = /^\d{1,5}(\.\d+)?$/

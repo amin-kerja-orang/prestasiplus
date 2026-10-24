@@ -65,8 +65,8 @@ beforeAll(async () => {
      values (8001, 7001, 1, '"${SENTINEL}"'::jsonb, 3, '{"comment":"${SENTINEL}"}', 'graded', '${SENTINEL}')`,
   )
   await h.q(
-    `insert into staging_cloud.structured_attempt_answers (id, structured_attempt_id, structured_sub_question_id, awarded, answer)
-     values (8101, 1, 1, 2, '${SENTINEL}')`,
+    `insert into staging_cloud.structured_attempt_answers (id, structured_attempt_id, structured_sub_question_id, awarded)
+     values (8101, 1, 1, 2)`,
   )
   // An archived question whose stem and options carry the marker, answered in a practice session.
   await h.q(`insert into archive_cloud.questions (id, subject_id, education_level_id, chapter_id, topic_id, difficulty_level, type, status, body)
@@ -97,6 +97,9 @@ describe('exam attempts (AC2)', () => {
     expect(applied.report.status).toBe('succeeded')
     for (const r of applied.report.recon) expect(r.eligibleCount - r.loaded - r.rejected, r.entity).toBe(0)
     runId = applied.report.runId
+    // Rejected statuses are counted by name: 7003 is in_progress; 7006 (no id), 7007 (no lookup row) and 7008 (unknown slug) are `other`.
+    expect(applied.activity.notes.counters.get('exam_attempts.status_rejected.in_progress')).toBe(1)
+    expect(applied.activity.notes.counters.get('exam_attempts.status_rejected.other')).toBe(3)
   }, 180_000)
 
   it('loads the header with the documented sentinels and the result with the score only', async () => {

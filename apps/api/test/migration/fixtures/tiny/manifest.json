@@ -16,7 +16,7 @@
       "file": "school_subscriptions.ndjson"
     },
     "parent_student": {
-      "rows": 12,
+      "rows": 10,
       "file": "parent_student.ndjson"
     },
     "classrooms": {
