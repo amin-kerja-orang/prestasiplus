@@ -5,7 +5,7 @@ import { isApiError, RATE_LIMITED_MESSAGE_BM } from '@/api'
 export const GENERIC_LOAD_ERROR = 'Ralat berlaku. Sila cuba lagi.'
 
 /**
- * Picks the line for a failed load by status, never by the server's text (SW11-08, DV-M18-26): the API and the
+ * Picks the line for a failed load by status, never by the server's text (DV-M18-26; SW11-08, DV-M18-52): the API and the
  * client carry English or raw messages ("Internal server error", "Failed to fetch", "HTTP 503", a 422 rule text).
  * A network failure (status 0 or a plain `Error`), a 5xx and a 4xx validation (400, 422) show the generic BM line;
  * a 429 shows the BM rate-limit line; any other status keeps the server's message unless it is empty or the bare
