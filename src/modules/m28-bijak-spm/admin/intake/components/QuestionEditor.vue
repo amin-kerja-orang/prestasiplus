@@ -6,9 +6,9 @@
  */
 import { computed } from 'vue'
 
-import { DsCluster, DsNativeSelect, DsStack, DsText } from '@/ds'
+import { DsCluster, DsFormField, DsNativeSelect, DsStack, DsText } from '@/ds'
 
-import type { LeafKind } from '../../../domain/types'
+import type { KbatLevel, LeafKind } from '../../../domain/types'
 import RichText from '../../../components/RichText.vue'
 import { unitByCode, unitsFor, tagWithUnit } from '../lib/dskp'
 import { fieldName, fieldsToConfirm } from '../domain/validation'
@@ -40,6 +40,7 @@ const MODES: { value: LeafKind; label: string }[] = [
   { value: 'table_fill', label: 'Isi jadual' },
 ]
 const LETTERS = ['A', 'B', 'C', 'D', 'E']
+const KBAT_LEVELS: KbatLevel[] = ['Mengaplikasi', 'Menganalisis', 'Menilai', 'Mencipta']
 
 function set(patch: Partial<IntakeQuestion>): void {
   const next = { ...q.value, ...patch }
@@ -119,6 +120,9 @@ const toConfirm = computed(() => fieldsToConfirm(q.value))
 const spText = computed(() => q.value.tag.sp.join(', '))
 function setSp(text: string): void {
   set({ tag: { ...q.value.tag, sp: text.split(',').map((s) => s.trim()).filter(Boolean) } })
+}
+function setKbat(v: string): void {
+  set({ tag: { ...q.value.tag, kbat: (KBAT_LEVELS as string[]).includes(v) ? (v as KbatLevel) : null } })
 }
 function confirm(field: string, on: boolean): void {
   const c = new Set(q.value.confirmed)
@@ -384,6 +388,17 @@ function insertMath(field: 'stem'): void {
             @update:model-value="set({ tag: { ...q.tag, tp: Number($event) || 0 } })"
           />
         </label>
+        <DsFormField native for="q-kbat" label="Aras KBAT (pilihan)">
+          <DsNativeSelect
+            id="q-kbat"
+            :model-value="q.tag.kbat ?? ''"
+            data-testid="q-kbat"
+            @update:model-value="setKbat(String($event))"
+          >
+            <option value="">— Bukan KBAT —</option>
+            <option v-for="k in KBAT_LEVELS" :key="k" :value="k">{{ k }}</option>
+          </DsNativeSelect>
+        </DsFormField>
         <label class="flex min-w-0 flex-col gap-1 text-sm @md:col-span-2 @3xl:col-span-4">
           <span class="text-muted">SP (asingkan dengan koma)</span>
           <UInput
