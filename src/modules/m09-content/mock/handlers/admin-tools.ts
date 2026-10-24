@@ -4,8 +4,10 @@
  *
  * Each file is checked in the mock (BR-M09-30): JPG, PNG, GIF, WebP or BMP, at most 10 MB. A refused
  * file is reported in `rejected` while the others are saved; when no file is saved the request
- * answers 422. The file bytes are not kept: the list returns a `blob:mock/screenshots/{fileName}`
- * placeholder URL (private files, nothing else in the app lists them).
+ * answers 422. The file bytes are not persisted: a file uploaded in this browser session is served
+ * from an object URL (so S14 shows the picked image as a thumbnail, UAT A-SY05); a file with no
+ * object URL (after a reload) returns the `blob:mock/screenshots/{fileName}` placeholder URL, which
+ * the page draws as an image glyph (private files, nothing else in the app lists them).
  */
 
 import { created, route, unpaged, validationError, type RouteDef } from '@/mock/define'
@@ -30,7 +32,17 @@ export const MAX_BYTES = 10 * 1024 * 1024
 /** SRS §8.2 "Screenshot file type/size" (PROPOSED COPY). */
 export const SCREENSHOT_REFUSED = 'Fail mesti JPG, PNG, GIF, WebP atau BMP, maksimum 10 MB.'
 
-/** `ScreenshotFile` (§6.8) plus the placeholder URL. */
+/** Object URLs of the files uploaded in this session, by row id (the bytes are never persisted). */
+const previewUrls = new Map<number, string>()
+
+function rememberPreview(id: number, file: Blob): void {
+  if (typeof URL.createObjectURL !== 'function') return
+  const old = previewUrls.get(id)
+  if (old) URL.revokeObjectURL(old)
+  previewUrls.set(id, URL.createObjectURL(file))
+}
+
+/** `ScreenshotFile` (§6.8) plus the preview URL (placeholder when the bytes are gone). */
 const shape = (s: ScreenshotRow) => ({
   id: s.id,
   fileName: s.fileName,
@@ -39,7 +51,7 @@ const shape = (s: ScreenshotRow) => ({
   mimeType: s.mimeType,
   uploadedById: s.uploadedById,
   createdAt: s.createdAt,
-  url: `blob:mock/screenshots/${s.fileName}`,
+  url: previewUrls.get(s.id) ?? `blob:mock/screenshots/${s.fileName}`,
 })
 
 /**
@@ -77,11 +89,13 @@ export const adminToolRoutes: RouteDef[] = [
         continue
       }
       try {
-        saved.push(
-          shape(
-            supportRepo.addScreenshot(uploadedById, { name: file.name, size: file.size, mime }),
-          ),
-        )
+        const row = supportRepo.addScreenshot(uploadedById, {
+          name: file.name,
+          size: file.size,
+          mime,
+        })
+        if (file.blob) rememberPreview(row.id, file.blob)
+        saved.push(shape(row))
       } catch (error) {
         if (!(error instanceof M09Error) || error.code !== 'VALIDATION_ERROR') throw error
         rejected.push({ name: file.name, reason: fileRefused(file.name) })

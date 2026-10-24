@@ -1168,12 +1168,16 @@ describe('#42 POST /api/admin/screenshots', () => {
       size: 1,
       mimeType: 'image/png',
       uploadedById: ADMIN,
-      url: 'blob:mock/screenshots/skrin-saya-1.png',
     })
+    // The picked file is served from an object URL, so S14 can show it (UAT A-SY05).
+    const url = r.body.data.saved[0]?.url as string
+    expect(url).toMatch(/^blob:/)
+    expect(url.startsWith('blob:mock/')).toBe(false)
     const list = await get<{ data: Json[]; meta: { total: number } }>(
       '/api/admin/screenshots',
       ADMIN,
     )
+    expect(list.body.data.find((s) => s.fileName === 'skrin-saya-1.png')?.url).toBe(url)
     expect(list.body.meta.total).toBe(2)
     expect(list.body.data).toHaveLength(2)
     expect(support.screenshotCount()).toBe(2)

@@ -29,7 +29,7 @@ Conventions as in the URS §0: OBSERVED / SOURCE-DERIVED / INFERRED / UNVERIFIED
 
 ### 0.1 Fidelity deviations referenced here
 
-DV-M07-01 history page (PROPOSED COPY) · DV-M07-02 edit subtitle "Kemaskini soalan #{id}" · DV-M07-03 domain icons shown on S2/S3 · DV-M07-04 hub h1 white · DV-M07-05 Bahagian C can be saved · DV-M07-08 domain value reset on Bahagian change · DV-M07-09 stable access order (Delivery Lead choice) · DV-M07-12 404 "Mula Latihan" → `/practice` (= M01 DV-02) · DV-M07-13 no content text below 12px (XL-22). Replicated (not changed): DV-M07-06 generic tab titles, DV-M07-07 in-card table scroll, DV-M07-10 Bahagian colours. Withdrawn: DV-M07-11 (practice/exam are provisional pages, not a deviation). Full table: URS §7.
+DV-M07-01 history page (PROPOSED COPY) · DV-M07-02 edit subtitle "Kemaskini soalan #{id}" · DV-M07-03 domain icons shown on S2/S3 · DV-M07-04 hub h1 white · DV-M07-05 Bahagian C can be saved · DV-M07-08 domain value reset on Bahagian change · DV-M07-09 stable access order (Delivery Lead choice) · DV-M07-12 404 "Mula Latihan" → `/practice` (= M01 DV-02) · DV-M07-13 no content text below 12px (XL-22) · DV-M07-14 S7 of a saved Bahagian C question shows the options card (empty rows) once an A or B domain is chosen, instead of refusing the save with no field to fix (UAT A-BS06, 2026-10-24). Replicated (not changed): DV-M07-06 generic tab titles, DV-M07-07 in-card table scroll, DV-M07-10 Bahagian colours. Withdrawn: DV-M07-11 (practice/exam are provisional pages, not a deviation). Full table: URS §7.
 
 ## 1. Scope
 

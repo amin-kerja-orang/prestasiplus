@@ -81,6 +81,26 @@ describe('ScreenshotsPage (S14)', () => {
     })
   })
 
+  it('shows the image of a file with a real URL and a glyph for the mock placeholder or a broken image', async () => {
+    api.fetchScreenshots.mockResolvedValue([
+      { ...shot(3, 'baru.png'), url: 'blob:http://localhost/abc' },
+      { ...shot(2, 'lama.png'), url: 'blob:mock/screenshots/lama.png' },
+      { ...shot(1, 'rosak.png'), url: 'blob:http://localhost/gone' },
+    ])
+    wrapper = (await mountAt(ScreenshotsPage, '/page')).wrapper
+    const w = wrapper
+    const tiles = w.findAll('[data-testid=file-item]')
+    expect(tiles.map((li) => li.find('[data-testid=file-image]').exists())).toEqual([
+      true,
+      false,
+      true,
+    ])
+    expect(tiles[0]!.get('img').attributes('src')).toBe('blob:http://localhost/abc')
+    // An image that fails to load falls back to the glyph.
+    await tiles[2]!.get('img').trigger('error')
+    expect(w.findAll('[data-testid=file-item]')[2]!.find('img').exists()).toBe(false)
+  })
+
   it('refused files show an error flash with their reasons', async () => {
     api.uploadScreenshots.mockResolvedValue({
       data: {
