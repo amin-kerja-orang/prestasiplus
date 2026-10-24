@@ -337,3 +337,11 @@ describe('operations', () => {
     expect(sparse.ok && sparse.value).toMatchObject({ usability: null, relevance: null, score: null, comment: null })
   })
 })
+
+describe('FIT-FIX OQ5 reward bound', () => {
+  it('is the wallet per-call ceiling, so a migrated reward can always be paid', async () => {
+    const { CHALLENGE_REWARD_MAX } = await import('../../../src/migration/transform/gamification')
+    const { MAX_AMOUNT_PER_CALL } = await import('../../../src/modules/wallet/wallet.constants')
+    expect(CHALLENGE_REWARD_MAX).toBe(MAX_AMOUNT_PER_CALL)
+  })
+})

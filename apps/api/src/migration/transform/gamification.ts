@@ -4,11 +4,13 @@
  * Pure functions; the loaders resolve parent ids and read the staged rows.
  *
  * Rules: an enum value outside its table is `UNKNOWN_ENUM`; a column the v2 model requires and the staged
- * data cannot give is `INVALID_VALUE` naming the column; nothing is defaulted or invented. Free text is never
+ * data cannot give is `INVALID_VALUE` naming the column; nothing is defaulted or invented, with one exception: a
+ * challenge `difficulty` word outside easy/medium/hard keeps `medium` and is counted (FIT-FIX OQ5). Free text is never
  * put in a reject.
  */
 import { enumMapper, invalid, orphan } from './activity-common'
 import { enumKey, flag, ok, squash, stamps, text, type Outcome, type Staged } from './activity-common'
+import { MAX_AMOUNT_PER_CALL } from '../../modules/wallet/wallet.constants'
 
 // ---------------------------------------------------------------- tiers
 
@@ -51,7 +53,7 @@ export function challengeTarget(raw: string | null | undefined): number | null {
 }
 
 /** Upper bound of a challenge reward: the v2 admin bound (`MAX_AMOUNT_PER_CALL`, BE-23), so a paid reward never trips the wallet limit. */
-export const CHALLENGE_REWARD_MAX = 100_000
+export const CHALLENGE_REWARD_MAX = MAX_AMOUNT_PER_CALL
 const INT4_MAX = 2_147_483_647
 const INT4_MIN = -2_147_483_648
 

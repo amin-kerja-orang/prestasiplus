@@ -52,7 +52,7 @@ async function plant(): Promise<void> {
     (3, null, null, 'harian', 'Jenis Tidak Dikenali', 3, null, null, null, null, null),
     (4, null, null, 'accuracy', 'Tanpa Sasaran', null, null, null, null, null, null),
     (5, null, null, 'streak', 'Cabaran Ganjaran', 7, 15, 5, ' HARD ', '0', 3),
-    (6, null, null, 'time_spent', 'Kesukaran Tidak Dipetakan', 2, 1, 1, 'sukar', '1', 4),
+    (6, null, null, 'time_spent', 'Kesukaran Tidak Dipetakan', 2, 1, 1, 'sukar', '1', -2),
     (7, null, null, 'accuracy', 'Bendera Tidak Sah', 2, 1, 1, 'easy', 'mungkin', 5)`)
   await q(`insert into staging_cloud.reward_settings (id, reward_budget_sen_month, flat_quiz_reward, current_session_year, games_award_syiling)
     values (1, 300, 2, '2026', -1)`)
@@ -146,13 +146,15 @@ describe('catalogue', () => {
     expect(rows).toEqual([
       { legacy_id: '1', reward_syiling: 0, reward_xp: 0, difficulty: 'medium', is_active: true, sort_order: 0 },
       { legacy_id: '5', reward_syiling: 15, reward_xp: 5, difficulty: 'hard', is_active: false, sort_order: 3 },
-      { legacy_id: '6', reward_syiling: 1, reward_xp: 1, difficulty: 'medium', is_active: true, sort_order: 4 },
+      { legacy_id: '6', reward_syiling: 1, reward_xp: 1, difficulty: 'medium', is_active: true, sort_order: -2 },
     ])
   })
 
-  it('rejects an invalid flag and counts an unmapped difficulty word in the notes (count only)', () => {
+  it('rejects an invalid flag and counts an unmapped difficulty word and a negative order in the notes (count only)', () => {
     expect(reject('challenges', 'INVALID_VALUE', 'is_active')).toBe(1)
     expect(notes['challenges.difficulty_unmapped']).toBe(1)
+    // A negative order is kept as staged (fidelity) and only counted.
+    expect(notes['challenges.sort_order_negative']).toBe(1)
     expect(Object.keys(notes).filter((k) => k.includes('sukar'))).toEqual([])
   })
 
