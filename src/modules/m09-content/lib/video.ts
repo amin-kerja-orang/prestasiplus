@@ -30,6 +30,12 @@ export const VIDEO_TITLES = {
   editFallback: 'Edit Video',
 } as const
 
+/**
+ * Roles that may publish a video for everyone (`visibility: global`). The API refuses `global` for any
+ * other active role with a 422 under `visibility` (videos.service `STAFF_ROLES`), so the form hides it.
+ */
+export const VIDEO_STAFF_ROLES: readonly string[] = ['admin', 'teacher']
+
 export const COPY = {
   listTitle: 'Video Pembelajaran',
   listSubtitle: 'Tonton video motivasi, tutorial dan tips peperiksaan',

@@ -5,7 +5,7 @@
  *
  * A 404's `error.message` is the exact one-time flash text the screens show on their redirect
  * (FR-M09-10 "Artikel tidak dijumpai.", FR-M09-53 "Banner tidak dijumpai."); the notes screens
- * redirect without a flash (FR-M09-44).
+ * redirect without a flash (FR-M09-44), except the note edit form (DV-M09-25).
  */
 
 import { requireRole } from '@/mock/define'
