@@ -56,6 +56,8 @@ export const QUESTION_MESSAGES = {
   guruChapter: 'Bab tidak sah.',
   guruTopic: 'Topik tidak sah.',
   guruScript: 'Jenis tulisan tidak sah.',
+  /** More than four option images in one body. */
+  optionImagesMax: 'Satu soalan boleh mempunyai paling banyak 4 gambar pilihan.',
 } as const
 
 export const QUESTION_TYPES = ['mcq', 'true_false', 'short_answer', 'fill_blank', 'essay'] as const
@@ -252,8 +254,15 @@ const optionList = (o: { long?: string; indexed?: boolean; strict?: boolean; ite
 /** An image already uploaded with `POST /files` (purpose `question_image`): its `id` (or `url`) as returned there. */
 const ImageRef = z.string({ error: QUESTION_MESSAGES.image }).trim().max(200, QUESTION_MESSAGES.image)
 
-/** MCQ key as sent: a digit or letter, `''`/null meaning "none chosen" (never read as 0). */
-const blankToNull = (v: unknown): unknown => (typeof v === 'string' && v.trim() === '' ? null : v)
+/**
+ * MCQ key as sent: a number or a digit string. Blank, `false`, a list or an object mean "none chosen" (null): 422 for an
+ * MCQ, ignored for other types. Never read as 0 (`Number(false)` and `Number([])` are 0).
+ */
+const blankToNull = (v: unknown): unknown => {
+  if (v === undefined || v === null || typeof v === 'number') return v
+  if (typeof v === 'string') return v.trim() === '' ? null : v
+  return null
+}
 
 const baseInput = z.object({
   subjectId: idWith(QUESTION_MESSAGES.subject),
@@ -278,7 +287,7 @@ const baseInput = z.object({
   /** Stem image: the `id` that `POST /files` returned for a `question_image` upload. Absent/null/blank keeps the saved image on edit. */
   questionImage: ImageRef.nullable().optional(),
   /** MCQ option images by index (A to D): uploaded ids, `null`/blank for none (on edit: keep the saved one). */
-  optionImages: z.array(ImageRef.nullable()).max(4).optional(),
+  optionImages: z.array(ImageRef.nullable(), { error: QUESTION_MESSAGES.image }).max(4, QUESTION_MESSAGES.optionImagesMax).optional(),
   removeQuestionImage: z.boolean().optional(),
   removeOptionImage: z.array(z.boolean()).max(4).optional(),
   parts: z.array(QuestionPartSchema).min(1).optional(),
@@ -509,7 +518,7 @@ export const QuestionGuruCreateRequestSchema = z
     options: optionList({ long: QUESTION_MESSAGES.guruOptionLong, item: GuruOptionItem }).optional(),
     correctAnswer: z.union([z.number(), z.string()]).optional(),
     questionImage: ImageRef.nullable().optional(),
-    optionImages: z.array(ImageRef.nullable()).max(4).optional(),
+    optionImages: z.array(ImageRef.nullable(), { error: QUESTION_MESSAGES.image }).max(4, QUESTION_MESSAGES.optionImagesMax).optional(),
     tfAnswer: z.union([z.boolean(), z.string(), z.number()]).nullable().optional(),
     correctAnswerText: z.string().optional(),
     altAnswers: z.union([z.string(), z.array(z.string())]).optional(),

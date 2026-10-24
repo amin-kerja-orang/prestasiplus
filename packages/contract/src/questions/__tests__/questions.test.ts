@@ -304,6 +304,15 @@ describe('exact mock BM copy per field (create)', () => {
     const r = QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'mcq', ...patch })
     expect(issuesOf(r)[field]).toBe(field === 'options' ? m.options : m.correctAnswer)
   })
+  it.each([false, true, [], [1], {}])('an MCQ key of %j is refused, never read as 0; a non-MCQ ignores it', (key) => {
+    const mcq = QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'mcq', options: ['a', 'b', 'c', 'd'], correctAnswer: key })
+    expect(issuesOf(mcq).correctAnswer).toBe(m.correctAnswer)
+    expect(QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'essay', correctAnswer: key }).success).toBe(true)
+  })
+  it('more than four option images gives the BM message on optionImages', () => {
+    const r = QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'essay', optionImages: [null, null, null, null, null] })
+    expect(issuesOf(r).optionImages).toBe(m.optionImagesMax)
+  })
   it('options and a blank key are read for an MCQ only', () => {
     for (const questionType of ['true_false', 'essay'] as const) {
       const r = QuestionCreateRequestSchema.safeParse({ ...good, questionType, tfAnswer: true, options: ['a', '', '', ''], correctAnswer: '' })

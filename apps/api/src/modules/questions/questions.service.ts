@@ -12,7 +12,7 @@ import { CLOCK, type Clock } from '../../db/clock'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { CurriculumRepository } from '../curriculum'
-import { FilesService } from '../files'
+import { FilesService, isPublicToken } from '../files'
 import { UsersRepository } from '../users'
 import { bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
 import { gradeQuestion } from './grading'
@@ -116,8 +116,10 @@ const fileUrl = (publicId: string): string => `${FILE_URL_PREFIX}${publicId}`
 function imageRef(value: string | null | undefined): string | undefined {
   if (typeof value !== 'string') return undefined
   const text = value.trim()
-  const ref = text.startsWith(FILE_URL_PREFIX) ? text.slice(FILE_URL_PREFIX.length) : text
-  return ref === '' ? undefined : ref
+  if (text === '') return undefined
+  // One prefix is stripped. A bare prefix, a second prefix, a query, a host or a trailing slash is left as sent and fails the lookup.
+  const ref = text.startsWith(FILE_URL_PREFIX) && text.length > FILE_URL_PREFIX.length ? text.slice(FILE_URL_PREFIX.length) : text
+  return ref
 }
 
 /** Option image references by index for a flat MCQ body (null where none). */
@@ -178,6 +180,12 @@ interface Normalized {
    * It is stored as a private `image` stimulus of the version (no column).
    */
   stemImage?: string | null | undefined
+  /**
+   * Option image ids (internal) that the stored version already holds and the body did not touch (an edit). They were
+   * authorised when they were set and are not re-checked, so a teacher keeps editing a question whose file has since lost
+   * its owner. Empty for a create and for a body that sends its own part tree.
+   */
+  keptImageIds?: ReadonlySet<string>
   /** Who writes: image files must be theirs (or the actor is an admin). */
   actor: QuestionActor
   /** Message keys to use when a tag problem is found (flat bodies use `dskpSpId`). */
@@ -520,7 +528,7 @@ export class QuestionsService {
     if (input.stimulusIds.length < 1 || input.stimulusIds.length > 3) {
       throw fail({ stimuli: 'Satu kumpulan mesti mempunyai 1 hingga 3 stimulus.' })
     }
-    if (new Set(input.stimulusIds).size !== input.stimulusIds.length || !(await this.repo.stimuliExist(input.stimulusIds))) {
+    if (new Set(input.stimulusIds).size !== input.stimulusIds.length || !(await this.repo.stimuliLinkable(input.stimulusIds, null))) {
       throw fail({ stimuli: 'Stimulus tidak sah.' })
     }
     return this.repo.createGroup({ ...input, stimulusIds: input.stimulusIds.map((s) => BigInt(s)) })
@@ -683,7 +691,7 @@ export class QuestionsService {
       fields.imageIds = 'Satu soalan boleh mempunyai paling banyak ' + String(MAX_IMAGES) + ' imej.'
     } else {
       for (const imageId of imageIds) {
-        const fileId = await this.usableImage(imageId, n.actor)
+        const fileId = await this.usableImage(imageId, n.actor, n.keptImageIds)
         if (fileId === null) fields[this.imageKey(n.parts, imageId)] = QUESTION_MESSAGES.image
         else if (fileId !== imageId) resolved.set(imageId, fileId)
       }
@@ -697,7 +705,8 @@ export class QuestionsService {
     } else if (n.stemImage === null) {
       stem = null
     }
-    if (refs.stimulusIds.length > 0 && !(await this.repo.stimuliExist(refs.stimulusIds))) fields.parts = 'Stimulus tidak sah.'
+    // A stimulus is a shared one, or the private stem image this same question already holds; never another question's.
+    if (refs.stimulusIds.length > 0 && !(await this.repo.stimuliLinkable(refs.stimulusIds, previous?.id ?? null))) fields.parts = 'Stimulus tidak sah.'
     if (n.stimulusGroupId && !(await this.repo.groupExists(n.stimulusGroupId))) fields.stimulusGroupId = 'Kumpulan stimulus tidak sah.'
 
     if (Object.keys(fields).length > 0) throw fail(fields)
@@ -730,15 +739,22 @@ export class QuestionsService {
   }
 
   /**
-   * The internal id of the `question_image` file `ref` names, or null when the writer may not use it. `ref` is the id
-   * that `POST /files` returned or an internal id. Unknown, another purpose and another user's file are all null (the
-   * same 422 for each, so nothing says which files exist); an admin may use any `question_image`.
+   * The internal id of the `question_image` file `ref` names, or null when the writer may not use it. Unknown, another
+   * purpose and another user's file are all null (the same 422 for each, so nothing says which files exist).
+   * - An admin may use any `question_image`, by public token or internal id.
+   * - A teacher may use only a file they uploaded, and only by its public token (or `/api/files/<token>`): the decimal
+   *   internal id is sequential and guessable, so it is not a capability. A file without an owner (its uploader was
+   *   deleted) is admin only.
+   * - `kept` ids (an edit's untouched, already stored images) pass as they are.
    */
-  private async usableImage(ref: string, actor: QuestionActor): Promise<string | null> {
+  private async usableImage(ref: string, actor: QuestionActor, kept?: ReadonlySet<string>): Promise<string | null> {
+    if (kept?.has(ref)) return ref
+    const admin = actor.role === 'admin'
+    if (!admin && !isPublicToken(ref)) return null
     const meta = await this.files.refMeta(ref)
     if (!meta || meta.purpose !== 'question_image') return null
-    const foreign = meta.ownerUserId !== null && meta.ownerUserId !== actor.userId && actor.role !== 'admin'
-    return foreign ? null : meta.id
+    if (admin || meta.ownerUserId === actor.userId) return meta.id
+    return null
   }
 
   /** Stores the stem image of a version as a private `image` stimulus and returns its id. Call inside the write transaction. */
@@ -828,6 +844,7 @@ export class QuestionsService {
         : languageToStore(input.language, undefined)
     const dskpSpId = input.dskpSpId === undefined ? undefined : input.dskpSpId === '' ? null : input.dskpSpId
     const normalized: Normalized = {
+      keptImageIds: input.parts ? new Set<string>() : new Set(referencedIds(v.parts).imageIds),
       subjectId: opts.keepSubject ? (v.subjectId ?? input.subjectId) : input.subjectId,
       educationLevelId: opts.keepSubject ? (v.educationLevelId ?? input.educationLevelId) : input.educationLevelId,
       tp: input.tag?.tp ?? (keepTp && v.difficultyTp !== null ? v.difficultyTp : input.difficultyLevel),

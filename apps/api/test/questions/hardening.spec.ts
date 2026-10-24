@@ -119,22 +119,32 @@ describe('BE-09 hardening (real database)', () => {
     expect(await t.app.get(FilesService).metaOf('abc')).toBeNull()
   })
 
-  it('an attached image must be the actor own file unless the actor is an admin; unowned files are allowed', async () => {
+  const tokenOf = async (id: string): Promise<string> => (await t.db.query<{ public_id: string }>('select public_id from files where id = $1', [id]))[0]!.public_id
+
+  it('an attached image must be the actor own file, by public token; an admin may use any; an unowned file is admin only (SW12-01-A)', async () => {
     const mine = await fileFor(teacher.userId)
     const theirs = await fileFor(teacher2.userId)
     const orphan = await fileFor(null)
     const wrongPurpose = await fileFor(teacher.userId, 'avatar')
     const make = (actor: typeof teacher | typeof admin, imageId: string) =>
       svc.create(mcqInput(tag, { questionType: 'essay', parts: withImage(imageId) }), actor)
-    expect((await make(teacher, mine)).version.status).toBe('draft')
-    expect((await make(teacher, orphan)).version.status).toBe('draft')
-    const err = await apiError(() => make(teacher, theirs))
+    const [mineT, orphanT, theirsT] = [await tokenOf(mine), await tokenOf(orphan), await tokenOf(theirs)]
+    expect((await make(teacher, mineT)).version.status).toBe('draft')
+    // Intended change: a teacher no longer reaches an unowned file (its uploader was deleted), nor any file by its decimal internal id.
+    const noOwner = await apiError(() => make(teacher, orphanT))
+    expect(Object.keys(noOwner.fields ?? {})).toEqual(['optionImages.0'])
+    const byInternalId = await apiError(() => make(teacher, mine))
+    expect(Object.keys(byInternalId.fields ?? {})).toEqual(['optionImages.0'])
+    const err = await apiError(() => make(teacher, theirsT))
     expect(err.getStatus()).toBe(422)
     // Same key and message as a missing file or a wrong purpose: no existence oracle.
-    const missing = await apiError(() => make(teacher, '999999999'))
+    const missing = await apiError(() => make(teacher, 'A'.repeat(22)))
     expect(err.fields).toEqual(missing.fields)
+    expect(noOwner.fields).toEqual(missing.fields)
     expect(Object.keys(err.fields ?? {})).toEqual(['optionImages.0'])
     expect((await make(admin, theirs)).version.status).toBe('draft')
+    expect((await make(admin, orphan)).version.status).toBe('draft')
+    expect((await make(admin, theirsT)).version.status).toBe('draft')
     expect(Object.keys((await apiError(() => make(admin, wrongPurpose))).fields ?? {})).toEqual(['optionImages.0'])
   })
 

@@ -23,6 +23,7 @@ interface Actor {
   post(url: string, body: unknown): ReturnType<TestAgent['post']>
   put(url: string, body: unknown): ReturnType<TestAgent['put']>
   get(url: string): ReturnType<TestAgent['get']>
+  delete(url: string): ReturnType<TestAgent['delete']>
   /** `POST /files` of a tiny valid PNG with `purpose`. */
   upload(purpose: string): Promise<FileRef>
 }
@@ -40,6 +41,7 @@ async function sessionOf(t: QuestionsTestApp, identifier: string): Promise<Actor
     post: (url, body) => agent.post(url).set('X-CSRF-Token', csrf).send(body as object),
     put: (url, body) => agent.put(url).set('X-CSRF-Token', csrf).send(body as object),
     get: (url) => agent.get(url),
+    delete: (url) => agent.delete(url).set('X-CSRF-Token', csrf),
     async upload(purpose) {
       const up = await agent.post(`/api/files?purpose=${purpose}`).set('X-CSRF-Token', csrf).attach('file', makePng(), { filename: 'gambar.png', contentType: 'image/png' })
       expect(up.status, JSON.stringify(up.body)).toBe(201)
@@ -65,6 +67,7 @@ describe('SW12-01-A: question images are referenced by the id POST /files return
     dir = await mkdtemp(join(tmpdir(), 'pp-q-images-'))
     process.env.FILE_STORAGE_DIR = dir
     process.env.UPLOAD_RATE_PER_MINUTE = '1000'
+    process.env.THROTTLE_QUESTIONS_WRITE_PER_MINUTE = '100000'
     t = await bootQuestionsApp()
     await addAccount(t.db, 'guru.sama@demo.test', 'teacher', 'DEMO001')
     await addAccount(t.db, 'guru.lain@demo.test', 'teacher', 'DEMO002')
@@ -398,6 +401,198 @@ describe('SW12-01-A: question images are referenced by the id POST /files return
     it('a teacher is 403 on the admin routes even with a valid image', async () => {
       const file = await teacher.upload('question_image')
       expectError(await teacher.post('/api/questions', mcqBody(refs, { optionImages: [file.id] })), 'FORBIDDEN')
+    })
+  })
+  describe('security: who may use which reference (G4 M1, M3, M4, M5, M6, M7)', () => {
+    const FIELD = QUESTION_MESSAGES.image
+    const internalOf = async (ref: FileRef): Promise<string> => (await t.db.query<{ id: string }>('select id::text from files where public_id = $1', [ref.id]))[0]!.id
+    const edit = { questionText: 'Berapakah punca kuasa dua bagi 100?' }
+    const tree = (stimulusId: string) => [{
+      label: '1', prompt: { ms: 'Pilih jawapan yang betul.' }, mode: 'mcq', marks: 1, stimulusId,
+      options: ['A', 'B', 'C'].map((label) => ({ label, body: { ms: label } })),
+      key: { kind: 'option', correct: 'A' },
+    }]
+    const stimulusOf = async (questionId: string): Promise<string> =>
+      (await t.db.query<{ id: string }>(
+        `select l.stimulus_id::text as id from question_version_stimuli l join question_versions v on v.id = l.question_version_id where v.question_id = $1`,
+        [questionId],
+      ))[0]!.id
+
+    it('M1: a teacher is refused the decimal internal id, even of their own file, on an option and on the stem; an admin may use it', async () => {
+      const own = await teacher.upload('question_image')
+      const internal = await internalOf(own)
+      const before = await questions()
+      const option = await teacher.post('/api/guru/questions', guruBody({ optionImages: [internal, null, null, null] }))
+      expectError(option, 'VALIDATION_ERROR')
+      expect(option.body.error.fields).toEqual({ 'optionImages.0': FIELD })
+      const stem = await teacher.post('/api/guru/questions', guruBody({ questionImage: internal }))
+      expect(stem.body.error.fields).toEqual({ questionImage: FIELD })
+      const asUrl = await teacher.post('/api/guru/questions', guruBody({ questionImage: `/api/files/${internal}` }))
+      expect(asUrl.body.error.fields).toEqual({ questionImage: FIELD })
+      expect(await questions()).toBe(before)
+      expect((await admin.post('/api/questions', mcqBody(refs, { questionImage: internal }))).status).toBe(201)
+    })
+
+    it('M1/M5: a foreign real internal id (other school, colleague) is 422 on an option and on the stem, by token too', async () => {
+      const before = [await questions(), await stimuli()]
+      for (const owner of [otherSchool, sameSchool]) {
+        const file = await owner.upload('question_image')
+        for (const ref of [await internalOf(file), file.id, url(file)]) {
+          const option = await teacher.post('/api/guru/questions', guruBody({ optionImages: [null, ref, null, null] }))
+          expectError(option, 'VALIDATION_ERROR')
+          expect(option.body.error.fields, ref).toEqual({ 'optionImages.1': FIELD })
+          const stem = await teacher.post('/api/guru/questions', guruBody({ questionImage: ref }))
+          expect(stem.body.error.fields, ref).toEqual({ questionImage: FIELD })
+        }
+      }
+      expect([await questions(), await stimuli()]).toEqual(before)
+    })
+
+    it('M5: wrong purpose on the stem is 422 for a teacher', async () => {
+      const avatar = await teacher.upload('avatar')
+      const res = await teacher.post('/api/guru/questions', guruBody({ questionImage: avatar.id }))
+      expect(res.body.error.fields).toEqual({ questionImage: FIELD })
+    })
+
+    it('M1: a file whose owner is gone is admin only', async () => {
+      const file = await teacher.upload('question_image')
+      await t.db.query('update files set owner_user_id = null where public_id = $1', [file.id])
+      const before = await questions()
+      const res = await teacher.post('/api/guru/questions', guruBody({ questionImage: file.id, optionImages: [file.id, null, null, null] }))
+      expectError(res, 'VALIDATION_ERROR')
+      expect(res.body.error.fields).toEqual({ questionImage: FIELD, 'optionImages.0': FIELD })
+      expect(await questions()).toBe(before)
+      const ok = await admin.post('/api/questions', mcqBody(refs, { questionImage: file.id }))
+      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+    })
+
+    it('M1: a teacher can still edit a question whose image file lost its owner (the stored image is kept, not re-checked)', async () => {
+      const file = await teacher.upload('question_image')
+      const created = await teacher.post('/api/guru/questions', guruBody({ optionImages: [file.id, null, null, null] }))
+      expect(created.status, JSON.stringify(created.body)).toBe(201)
+      await t.db.query('update files set owner_user_id = null where public_id = $1', [file.id])
+      const res = await teacher.put(`/api/guru/questions/${created.body.data.id as string}`, edit)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data.optionImages).toEqual([url(file), null, null, null])
+    })
+
+    it('M5: the URL form works on the stem on create and on edit, and a foreign file in URL form is 422', async () => {
+      const own = await teacher.upload('question_image')
+      const created = await teacher.post('/api/guru/questions', guruBody({ questionImage: url(own) }))
+      expect(created.status, JSON.stringify(created.body)).toBe(201)
+      expect(created.body.data.questionImage).toBe(url(own))
+      const id = created.body.data.id as string
+      const next = await teacher.upload('question_image')
+      const edited = await teacher.put(`/api/guru/questions/${id}`, { ...edit, questionImage: url(next) })
+      expect(edited.status, JSON.stringify(edited.body)).toBe(200)
+      expect(edited.body.data.questionImage).toBe(url(next))
+      const foreign = await otherSchool.upload('question_image')
+      const refused = await teacher.put(`/api/guru/questions/${id}`, { ...edit, questionImage: url(foreign) })
+      expect(refused.body.error.fields).toEqual({ questionImage: FIELD })
+      expect((await teacher.get(`/api/guru/questions/${id}`)).body.data.questionImage).toBe(url(next))
+    })
+
+    it.each([
+      ['a query', (r: FileRef) => `${url(r)}?q=1`],
+      ['an absolute URL', (r: FileRef) => `https://host.test${url(r)}`],
+      ['a trailing slash', (r: FileRef) => `${url(r)}/`],
+      ['a bare prefix', () => '/api/files/'],
+      ['an encoded dot segment', () => '/api/files/%2e%2e'],
+      ['a double prefix', (r: FileRef) => `/api/files${url(r)}`],
+      ['a relative path', (r: FileRef) => `../files/${r.id}`],
+    ])('M5: %s is 422 on the stem and on an option, for a teacher and for an admin', async (_name, make) => {
+      const own = await teacher.upload('question_image')
+      const mine = await admin.upload('question_image')
+      const before = await questions()
+      const teacherRef = make(own)
+      const adminRef = make(mine)
+      const a = await teacher.post('/api/guru/questions', guruBody({ questionImage: teacherRef }))
+      expect(a.body.error?.fields, teacherRef).toEqual({ questionImage: FIELD })
+      const b = await teacher.post('/api/guru/questions', guruBody({ optionImages: [teacherRef, null, null, null] }))
+      expect(b.body.error?.fields, teacherRef).toEqual({ 'optionImages.0': FIELD })
+      const c = await admin.post('/api/questions', mcqBody(refs, { questionImage: adminRef }))
+      expect(c.body.error?.fields, adminRef).toEqual({ questionImage: FIELD })
+      const d = await admin.post('/api/questions', mcqBody(refs, { optionImages: [adminRef, null, null, null] }))
+      expect(d.body.error?.fields, adminRef).toEqual({ 'optionImages.0': FIELD })
+      expect(await questions()).toBe(before)
+    })
+
+    it('M3: a part cannot link another question private stem stimulus; a shared stimulus and the question own stem stimulus are fine', async () => {
+      const stem = await admin.upload('question_image')
+      const other = await admin.post('/api/questions', mcqBody(refs, { questionImage: stem.id }))
+      const privateId = await stimulusOf(other.body.data.id as string)
+      const before = await questions()
+      const refused = await admin.post('/api/questions', mcqBody(refs, { questionType: 'essay', parts: tree(privateId), options: undefined, correctAnswer: undefined }))
+      expectError(refused, 'VALIDATION_ERROR')
+      expect(refused.body.error.fields).toEqual({ parts: 'Stimulus tidak sah.' })
+      expect(await questions()).toBe(before)
+      const [shared] = await t.db.query<{ id: string }>(`insert into stimuli (kind, label) values ('passage', 'Teks bersama') returning id::text`)
+      const okShared = await admin.post('/api/questions', mcqBody(refs, { questionType: 'essay', parts: tree(shared!.id), options: undefined, correctAnswer: undefined }))
+      expect(okShared.status, JSON.stringify(okShared.body)).toBe(201)
+      // The question own private stimulus (its stem image) stays linkable when it edits its own part tree.
+      const okOwn = await admin.put(`/api/questions/${other.body.data.id as string}`, {
+        subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: 'Berapakah hasil tambah 2 dan 3?', parts: tree(privateId),
+      })
+      expect(okOwn.status, JSON.stringify(okOwn.body)).toBe(200)
+      // And a third question may not take it by editing.
+      const third = await admin.post('/api/questions', mcqBody(refs))
+      const stolen = await admin.put(`/api/questions/${third.body.data.id as string}`, {
+        subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: 'Berapakah hasil tambah 2 dan 3?', parts: tree(privateId),
+      })
+      expectError(stolen, 'VALIDATION_ERROR')
+      expect(stolen.body.error.fields).toEqual({ parts: 'Stimulus tidak sah.' })
+    })
+
+    it('M4: deleting a question removes its private stem stimulus and keeps a shared stimulus (admin delete, bulk delete, Guru delete)', async () => {
+      const stem = await admin.upload('question_image')
+      const created = await admin.post('/api/questions', mcqBody(refs, { questionImage: stem.id }))
+      const id = created.body.data.id as string
+      const [shared] = await t.db.query<{ id: string }>(`insert into stimuli (kind, label) values ('passage', 'Teks bersama') returning id::text`)
+      await t.db.query(
+        `insert into question_version_stimuli (question_version_id, stimulus_id, position)
+         select id, $2, 2 from question_versions where question_id = $1 and version_no = 1`,
+        [id, shared!.id],
+      )
+      const privateId = await t.db.query<{ id: string }>(`select s.id::text from stimuli s where s.reusable = false and s.id <> $1 and s.asset_file_id is not null and exists (select 1 from question_version_stimuli l join question_versions v on v.id = l.question_version_id where l.stimulus_id = s.id and v.question_id = $2)`, [shared!.id, id])
+      expect(privateId).toHaveLength(1)
+      expect((await admin.delete(`/api/questions/${id}`)).status).toBe(200)
+      expect(await countOf(t.db, 'select count(*) as n from stimuli where id = $1', [privateId[0]!.id])).toBe(0)
+      expect(await countOf(t.db, 'select count(*) as n from stimuli where id = $1', [shared!.id])).toBe(1)
+
+      const second = await admin.post('/api/questions', mcqBody(refs, { questionImage: (await admin.upload('question_image')).id }))
+      const stimulusId = await stimulusOf(second.body.data.id as string)
+      const bulk = await admin.post('/api/questions/bulk-action', { action: 'delete', ids: [second.body.data.id] })
+      expect(bulk.status, JSON.stringify(bulk.body)).toBe(200)
+      expect(await countOf(t.db, 'select count(*) as n from stimuli where id = $1', [stimulusId])).toBe(0)
+
+      const mine = await teacher.post('/api/guru/questions', guruBody({ questionImage: (await teacher.upload('question_image')).id }))
+      const guruStimulus = await stimulusOf(mine.body.data.id as string)
+      expect((await teacher.delete(`/api/guru/questions/${mine.body.data.id as string}`)).status).toBe(200)
+      expect(await countOf(t.db, 'select count(*) as n from stimuli where id = $1', [guruStimulus])).toBe(0)
+    })
+
+    it('M6: an MCQ key of false or a list is 422 on correctAnswer (not option A); a non-MCQ ignores it', async () => {
+      for (const bad of [false, true, [], [1], {}]) {
+        const res = await admin.post('/api/questions', mcqBody(refs, { correctAnswer: bad }))
+        expectError(res, 'VALIDATION_ERROR')
+        expect(res.body.error.fields, JSON.stringify(bad)).toEqual({ correctAnswer: QUESTION_MESSAGES.correctAnswer })
+      }
+      const essay = await admin.post('/api/questions', mcqBody(refs, { questionType: 'essay', correctAnswer: false, modelAnswer: 'Jawapan model contoh.' }))
+      expect(essay.status, JSON.stringify(essay.body)).toBe(201)
+      const created = await admin.post('/api/questions', mcqBody(refs))
+      const put = await admin.put(`/api/questions/${created.body.data.id as string}`, {
+        subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: 'Berapakah hasil tambah 2 dan 3?', correctAnswer: false,
+      })
+      expectError(put, 'VALIDATION_ERROR')
+      expect(put.body.error.fields).toEqual({ correctAnswer: QUESTION_MESSAGES.correctAnswer })
+    })
+
+    it('M7: more than four option images gives the BM message on optionImages (both routes)', async () => {
+      const five = [null, null, null, null, null]
+      const a = await admin.post('/api/questions', mcqBody(refs, { optionImages: five }))
+      expect(a.body.error.fields).toEqual({ optionImages: QUESTION_MESSAGES.optionImagesMax })
+      const b = await teacher.post('/api/guru/questions', guruBody({ optionImages: five }))
+      expect(b.body.error.fields).toEqual({ optionImages: QUESTION_MESSAGES.optionImagesMax })
     })
   })
 })

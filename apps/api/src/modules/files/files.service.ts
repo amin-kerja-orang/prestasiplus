@@ -59,6 +59,9 @@ export function mayUpload(purpose: FilePurpose, role: RoleCode): boolean {
 /** A public token: 16 random bytes as base64url (22 characters). */
 const PUBLIC_TOKEN = /^[A-Za-z0-9_-]{22}$/
 
+/** True when `text` has the shape of a public token (what `POST /files` returns as `id`). */
+export const isPublicToken = (text: string): boolean => PUBLIC_TOKEN.test(text)
+
 function invalidFile(message: string): ApiError {
   return ApiError.of('VALIDATION_ERROR', { fields: { file: message } })
 }

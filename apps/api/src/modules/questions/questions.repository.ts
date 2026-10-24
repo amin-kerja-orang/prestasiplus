@@ -637,6 +637,24 @@ export class QuestionsRepository {
     return (await this.db.stimulus.count({ where: { id: { in: unique } } })) === unique.length
   }
 
+  /**
+   * Every id is a stimulus the writer may link: a shared one (`reusable = true`), or, when `questionId` is given, a private
+   * one that a version of that same question already uses (its own stem image). Another question's private stimulus is not.
+   */
+  async stimuliLinkable(ids: readonly string[], questionId: string | null): Promise<boolean> {
+    const keys = ids.map(bi)
+    if (keys.some((k) => k === null)) return false
+    const unique = [...new Set(keys as bigint[])]
+    const own = questionId === null ? null : bi(questionId)
+    const count = await this.db.stimulus.count({
+      where: {
+        id: { in: unique },
+        OR: [{ reusable: true }, ...(own === null ? [] : [{ versionLinks: { some: { version: { questionId: own } } } }])],
+      },
+    })
+    return count === unique.length
+  }
+
   async groupExists(id: string): Promise<boolean> {
     const key = bi(id)
     return key !== null && (await this.db.stimulusGroup.count({ where: { id: key } })) > 0
@@ -735,11 +753,30 @@ export class QuestionsRepository {
     await this.db.question.update({ where: { id }, data: { liveVersionNo: versionNo } })
   }
 
-  /** Cascades to versions, parts, options, keys, tags and SP nodes. True when a row was deleted. */
+  /**
+   * Cascades to versions, parts, options, keys, tags and SP nodes. True when a row was deleted. The private
+   * (`reusable = false`) stimuli the question's versions used, its stem images, are deleted with it once nothing else
+   * uses them; shared (library) stimuli are never touched.
+   */
   async remove(id: string): Promise<boolean> {
     const key = bi(id)
     if (key === null) return false
+    const privateStimuli = await this.db.questionVersionStimulus.findMany({
+      where: { version: { questionId: key }, stimulus: { reusable: false } },
+      select: { stimulusId: true },
+    })
     const res = await this.db.question.deleteMany({ where: { id: key, tags: { none: { kind: PKSK_TAG } } } })
+    if (res.count > 0 && privateStimuli.length > 0) {
+      await this.db.stimulus.deleteMany({
+        where: {
+          id: { in: [...new Set(privateStimuli.map((l) => l.stimulusId))] },
+          reusable: false,
+          versionLinks: { none: {} },
+          groupLinks: { none: {} },
+          parts: { none: {} },
+        },
+      })
+    }
     return res.count > 0
   }
 
