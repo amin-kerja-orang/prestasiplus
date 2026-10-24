@@ -258,8 +258,9 @@ describe('school quota and student import (AC 2)', () => {
         [school],
       )
       expect(rows.map((r) => [r.name, r.email, r.id_delima, r.grade, r.must, r.is_active])).toEqual([
-        ['Ali Bin Abu', 'ali.abu@moe-dl.edu.my', 'ali.abu@moe-dl.edu.my', 11, true, true],
-        ['Siti', 'siti@moe-dl.edu.my', 'siti@moe-dl.edu.my', 11, true, true],
+        // R39: an imported account is not flagged must-change (the 5th column).
+        ['Ali Bin Abu', 'ali.abu@moe-dl.edu.my', 'ali.abu@moe-dl.edu.my', 11, false, true],
+        ['Siti', 'siti@moe-dl.edu.my', 'siti@moe-dl.edu.my', 11, false, true],
       ])
       expect(rows[0]?.ic_masked).toBe('xxxxxx-xx-xx01')
       expect(rows[0]?.ic_hash).toMatch(/^[0-9a-f]{64}$/)

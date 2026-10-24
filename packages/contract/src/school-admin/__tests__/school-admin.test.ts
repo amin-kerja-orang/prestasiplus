@@ -340,16 +340,16 @@ describe('school-admin contract: teachers and pupils', () => {
     expect(parsed).toEqual(valid)
   })
 
-  it('create teacher result carries the one-time credential and must-change flag (D59b)', () => {
+  it('create teacher result carries the one-time credential and a false must-change flag (D59b, R39)', () => {
     const result = {
       data: { ...detail, role: 'teacher' },
       credential: { name: 'Cikgu Baharu', school: 'SMK DEMO', email: 'baharu@example.test', password: 'aaaa-bbbb-cccc-1' },
-      mustChangePassword: true,
+      mustChangePassword: false, // R39: no forced change at go-live
       status: SCHOOL_ADMIN_FLASH.created,
     }
     expect(ok(SchoolAdminTeacherCreatedResultSchema, result)).toBe(true)
     expect(ok(SchoolAdminTeacherCreatedResultSchema, { ...result, credential: undefined })).toBe(false)
-    expect(ok(SchoolAdminTeacherCreatedResultSchema, { ...result, mustChangePassword: false })).toBe(false)
+    expect(ok(SchoolAdminTeacherCreatedResultSchema, { ...result, mustChangePassword: true })).toBe(true) // R39: widened to boolean, so a legacy true still parses
     expect(ok(SchoolAdminTeacherCreatedResultSchema, { ...result, mustChangePassword: undefined })).toBe(false)
   })
 
@@ -376,7 +376,7 @@ describe('school-admin contract: teachers and pupils', () => {
     const result = {
       data: detail,
       credential: { name: 'Aisyah Demo', school: 'SMK DEMO', email: 'aisyah.demo@example.test', password: 'aaaa-bbbb-cccc-1' },
-      mustChangePassword: true,
+      mustChangePassword: false, // R39
       status: SCHOOL_ADMIN_FLASH.pupilCreated('Aisyah Demo'),
     }
     expect(ok(SchoolAdminPupilCreatedResultSchema, result)).toBe(true)
@@ -384,16 +384,16 @@ describe('school-admin contract: teachers and pupils', () => {
     expect(ok(SchoolAdminPupilCreatedResultSchema, { ...result, credential: undefined })).toBe(false)
   })
 
-  it('create pupil result requires the must-change-password flag (D55c)', () => {
+  it('create pupil result requires the must-change-password flag, which is false now (D55c, R39)', () => {
     const result = {
       data: detail,
       credential: { name: 'Aisyah Demo', school: 'SMK DEMO', email: 'aisyah.demo@example.test', password: 'aaaa-bbbb-cccc-1' },
-      mustChangePassword: true,
+      mustChangePassword: false, // R39
       status: SCHOOL_ADMIN_FLASH.pupilCreated('Aisyah Demo'),
     }
     expect(ok(SchoolAdminPupilCreatedResultSchema, result)).toBe(true)
     expect(ok(SchoolAdminPupilCreatedResultSchema, { ...result, mustChangePassword: undefined })).toBe(false)
-    expect(ok(SchoolAdminPupilCreatedResultSchema, { ...result, mustChangePassword: false })).toBe(false)
+    expect(ok(SchoolAdminPupilCreatedResultSchema, { ...result, mustChangePassword: true })).toBe(true) // R39: widened to boolean, so a legacy true still parses
     expect(ok(SchoolAdminPupilCreatedResultSchema, { ...result, mustChangePassword: 'true' })).toBe(false)
   })
 
@@ -736,7 +736,7 @@ describe('school-admin contract: OpenAPI document', () => {
     const schema = doc.components.schemas.SchoolAdminPupilCreatedResult as unknown as CreatedResultDoc
     expect(schema.required).toContain('mustChangePassword')
     expect(schema.properties.mustChangePassword.description).toMatch(/first login/i)
-    expect(schema.properties.mustChangePassword.description).toMatch(/BE-03/)
+    expect(schema.properties.mustChangePassword.description).toMatch(/R39/) // R39: the description now states no forced change (BE-03 reference dropped)
     const cred = doc.components.schemas.SchoolAdminInitialCredential as unknown as CredentialDoc
     expect(cred.properties.password.minLength).toBe(12)
     const pw = cred.properties.password.description
