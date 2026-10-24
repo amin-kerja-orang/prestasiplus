@@ -198,6 +198,9 @@ const PAIRS: readonly (readonly [string, string])[] = [
   ["boleh link beberapa akaun", "boleh memautkan beberapa akaun"],
   ["permintaan link dari", "permintaan pautan dari"],
   ["Tournament", "Kejohanan"],
+  ["Dashboard", "Papan Pemuka"],
+  ["Monitoring", "Pemantauan"],
+  ["Ranking", "Kedudukan"],
 ]
 
 /** Live labels that change only when the whole label matches. */

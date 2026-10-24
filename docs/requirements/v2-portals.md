@@ -95,7 +95,7 @@ Surfaces: **B** = `/admin` Blade, **P** = `admin.` React panel, **F** = `/admin-
 ### 6.1 Papan Pemuka (2)
 | ID | Item | Function(s) merged | Pusat | PPD·JPN | Sekolah | Evidence |
 |---|---|---|---|---|---|---|
-| PP-01 | Dashboard | platform counts, widgets (PlatformOverview, QuestionStatusChart) | F national | — | S own school | B `web.php:535`; P `/` `:185`; F Dashboard (group Harian) |
+| PP-01 | Papan Pemuka (was Dashboard) | platform counts, widgets (PlatformOverview, QuestionStatusChart) | F national | — | S own school | B `web.php:535`; P `/` `:185`; F Dashboard (group Harian) |
 | PP-02 | Laporan Eksekutif | executive report; league tables withheld when scoped | F | — | S | B `:725`; `helpers.php` nav_school_scoped |
 
 ### 6.2 Pemantauan (28)
@@ -103,7 +103,7 @@ Surfaces: **B** = `/admin` Blade, **P** = `admin.` React panel, **F** = `/admin-
 |---|---|---|---|---|---|---|
 | PM-01 | **Langsung** (was Command Center) | live metrics, drill school→teacher→class→student, full-screen mode | F national | R PPD district; JPN — (Q7) | S own school | B `:738-739` (+ `:1048-1049` school/student drill); `/ppd/command-center` `:831`; guru twin `:1749-1754` |
 | PM-02 | Aktiviti Harian | daily activity | F | — | S | B `:740`; F DailyActivity |
-| PM-03 | Monitoring | school engagement drill-down; CSV/PDF export (`:791`, `:798`) | F | — | S | B `:731`; F Monitoring |
+| PM-03 | Pemantauan (was Monitoring) | school engagement drill-down; CSV/PDF export (`:791`, `:798`) | F | — | S | B `:731`; F Monitoring |
 | PM-04 | Analitik | **merges** B "Analitik Kandungan" (`pusat:`) and P `/analitik` (school-scoped) into one page; content analytics tab Pusat-only | F national | — | S own school (usage tabs only) | B `:727`; P `:187`; F Analitik; `panel-layout.tsx` SCHOOL_SCOPED_HREFS |
 | PM-05 | Kirkpatrick › Ringkasan | overview; PDF export (`:797`) | F | — | S | B `:741`; F Kirkpatrick |
 | PM-06 | Kirkpatrick › T1: Reaksi | | F | — | S | B `:742` |
@@ -116,7 +116,7 @@ Surfaces: **B** = `/admin` Blade, **P** = `admin.` React panel, **F** = `/admin-
 | PM-13 | Amaran Kesejahteraan (was Amaran Wellbeing) | wellbeing alerts of pupils (staff-facing) | F | — | S | [C] `:1489` (shared portal pages); [P] roles admin/teacher/school_admin |
 | PM-14 | Papan Pemuka Wilayah | PPD/JPN dashboard (district/state) | F national view | D (PPD district / JPN state) | — | `:830-861` dashboard; `PpdJpnController` |
 | PM-15 | Statistik Penggunaan | usage statistics at the viewer's scope (**one page** for ppd/jpn `statistik-penggunaan` and M27 L51) | F | D | S | `:831-832`; M27 L51 |
-| PM-16 | Ranking Kebangsaan | national ranking (ppd + jpn) | F | D (see scope note) | — | `:831-832` |
+| PM-16 | Kedudukan Kebangsaan (was Ranking Kebangsaan) | national ranking (ppd + jpn) | F | D (see scope note) | — | `:831-832` |
 | PM-17 | Penanda Aras Sekolah (was Benchmark Sekolah) | PPD only | F | D PPD | — | `:830` |
 | PM-18 | Papan Pendahulu Sekolah (was Leaderboard Sekolah) | PPD only | F | D PPD | — | `:831` |
 | PM-19 | Peta Haba | heat map, PPD only | F | D PPD | — | `:831` |
@@ -199,7 +199,7 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 | PG-09 | Gamifikasi › Cabutan | lucky draws | F | — | — | F LuckyDraws only |
 | PG-10 | Gamifikasi › Kawalan Ganjaran | | F | — | — | B `:894` (`pusat:`); F RewardControl |
 | PG-11 | Permainan › Tetapan Permainan | games settings | F | — | — | B `:897` (`pusat:`); F TetapanPermainan, Games |
-| PG-12 | Permainan › Ranking Sekolah (Battle) | read-only report in admin layout | R | — | — | [.my] `/battle/ranking-sekolah`; layout.blade.php battle group; Q8 |
+| PG-12 | Permainan › Kedudukan Sekolah (Battle) (was Ranking Sekolah) | read-only report in admin layout | R | — | — | [.my] `/battle/ranking-sekolah`; layout.blade.php battle group; Q8 |
 | PG-13 | Permainan › Leaderboard (Battle) | read-only report in admin layout | R | — | — | [.my] `/battle/leaderboard`; Q8 |
 | PG-14 | Marketplace › Produk | | F | — | — | B `:913` (`pusat:`); F MarketplaceProducts |
 | PG-15 | Marketplace › Penjual | | F | — | — | B `:914`; F MarketplaceSellers |

@@ -195,7 +195,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     text: 'text-teal-700',
     rule: 'from-teal-300',
   },
-  item('dashboard', 'Dashboard', '/admin', 'fa-tachometer-alt', 'text-indigo-500', {
+  item('dashboard', 'Papan Pemuka', '/admin', 'fa-tachometer-alt', 'text-indigo-500', {
     exact: true,
     bottomNav: true,
   }),
@@ -217,7 +217,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   item('analitik', 'Analitik', '/admin/analytics', 'fa-chart-pie', 'text-fuchsia-500', {
     lagi: lagi(null, 101, 'text-fuchsia-500'),
   }),
-  item('monitoring', 'Monitoring', '/admin/monitoring', 'fa-binoculars', 'text-teal-500', {
+  item('monitoring', 'Pemantauan', '/admin/monitoring', 'fa-binoculars', 'text-teal-500', {
     alias: ['/guru/monitoring'],
     lagi: lagi(null, 103, 'text-teal-500'),
   }),
@@ -380,7 +380,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     item('battle-live', 'Battle Live', '/battle', 'fa-bolt', '', {
       lagi: lagi('Battle & Permainan', 701, 'text-red-500'),
     }),
-    item('battle-ranking', 'Ranking Sekolah', '/battle/ranking-sekolah', 'fa-school', ''),
+    item('battle-ranking', 'Kedudukan Sekolah', '/battle/ranking-sekolah', 'fa-school', ''),
     item('battle-leaderboard', 'Leaderboard', '/battle/leaderboard', 'fa-trophy', ''),
     item('tetapan-permainan', 'Tetapan Permainan', '/admin/permainan', 'fa-dice', '', {
       lagi: lagi('Battle & Permainan', 702, 'text-emerald-500'),
@@ -536,7 +536,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
 /** Footer links above the user block (admin only; the teacher has none, shells.md §2.6). */
 export const ADMIN_FOOTER_LINKS: readonly AdminNavItem[] = [
   item('tetapan-peribadi', 'Tetapan Peribadi', '/tetapan', 'fa-cog', 'text-slate-500'),
-  item('ke-dashboard', 'Ke Dashboard', '/dashboard', 'fa-arrow-left', 'text-emerald-600', {
+  item('ke-dashboard', 'Ke Papan Pemuka', '/dashboard', 'fa-arrow-left', 'text-emerald-600', {
     textClass: 'text-emerald-600',
   }),
 ]
@@ -551,7 +551,7 @@ export const ADMIN_BOTTOM_NAV: readonly AdminBottomNavEntry[] = [
   {
     kind: 'link',
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'Papan Pemuka',
     to: '/admin',
     fa: 'fa-tachometer-alt',
     exact: true,
@@ -569,7 +569,7 @@ export const TEACHER_BOTTOM_NAV: readonly AdminBottomNavEntry[] = [
   {
     kind: 'link',
     id: 'monitoring',
-    label: 'Monitoring',
+    label: 'Pemantauan',
     to: '/guru/monitoring',
     fa: 'fa-binoculars',
   },

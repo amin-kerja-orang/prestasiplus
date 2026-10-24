@@ -36,7 +36,7 @@ const REGISTRY: readonly ModuleManifest[] = [
         component: page('dashboard'),
         meta: {
           layout: 'user',
-          header: { title: 'Dashboard', subtitle: 'Selamat datang kembali' },
+          header: { title: 'Papan Pemuka', subtitle: 'Selamat datang kembali' },
         },
       },
       {
@@ -118,7 +118,7 @@ describe('UserShell: menu per role (hidden, not disabled)', () => {
   it('student: live murid items, no admin/teacher items, account links', async () => {
     const w = await open('/dashboard')
     const labels = navLabels(sidebar(w))
-    expect(labels.slice(0, 4)).toEqual(['Dashboard', 'Target SPM', 'Misi Harian', 'Remedial'])
+    expect(labels.slice(0, 4)).toEqual(['Papan Pemuka', 'Target SPM', 'Misi Harian', 'Remedial'])
     expect(labels).toContain('Latih Tubi')
     expect(labels).toContain('Tetapan Peribadi')
     expect(labels).toContain('Profil Saya')
@@ -296,7 +296,7 @@ describe('UserShell: header', () => {
 
   it('falls back to the live default "Dashboard" / "Selamat datang kembali"', async () => {
     const w = await open('/no-header')
-    expect(title(w)).toBe('Dashboard')
+    expect(title(w)).toBe('Papan Pemuka')
     expect(subtitle(w).text()).toBe('Selamat datang kembali')
   })
 

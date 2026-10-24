@@ -55,7 +55,7 @@ describe('Pembelajaran menus come from the scoped nav data', () => {
     const labels = pembelajaranTabs('teacher').map((t) => t.label)
     expect(labels.length).toBeGreaterThan(0)
     for (const l of labels) {
-      expect(['Dashboard', 'Kelas', 'Command Center', 'Penilaian']).toContain(l)
+      expect(['Papan Pemuka', 'Kelas', 'Command Center', 'Penilaian']).toContain(l)
     }
   })
 

@@ -129,9 +129,9 @@ export const PREVIEW_HUB_LINKS: readonly PreviewHubLink[] = [
   { module: M04, label: 'Master Notes', path: '/admin/master-notes', roles: ADMIN },
   { module: M04, label: 'Laporan Soalan (Admin)', path: '/admin/question-reports', roles: ADMIN },
   { module: M08, label: 'Prestasi Sekolah', path: '/prestasi/sekolah', roles: ALL },
-  { module: M08, label: 'Dashboard Tingkatan 4', path: '/prestasi/tingkatan/t4', roles: ALL },
-  { module: M08, label: 'Dashboard Tingkatan 5', path: '/prestasi/tingkatan/t5', roles: ALL },
-  { module: M08, label: 'Dashboard Kelas 2001', path: '/prestasi/kelas/2001', roles: ADMIN },
+  { module: M08, label: 'Papan Pemuka Tingkatan 4', path: '/prestasi/tingkatan/t4', roles: ALL },
+  { module: M08, label: 'Papan Pemuka Tingkatan 5', path: '/prestasi/tingkatan/t5', roles: ALL },
+  { module: M08, label: 'Papan Pemuka Kelas 2001', path: '/prestasi/kelas/2001', roles: ADMIN },
   {
     module: M08,
     label: 'Analitik Kelas (kelas 4)',
@@ -156,7 +156,7 @@ export const PREVIEW_HUB_LINKS: readonly PreviewHubLink[] = [
   { module: M08, label: 'Prestasi 360 (Murid 3001)', path: '/prestasi/3001', roles: ADMIN },
   { module: M08, label: 'Prestasi 360 (Murid 3201)', path: '/prestasi/3201', roles: ADMIN },
   { module: M08, label: 'Headcount — Senarai', path: '/headcount', roles: ALL },
-  { module: M08, label: 'Headcount — Dashboard', path: '/headcount/dashboard', roles: ALL },
+  { module: M08, label: 'Headcount — Papan Pemuka', path: '/headcount/dashboard', roles: ALL },
   { module: M08, label: 'Headcount — Jadual (config 213)', path: '/headcount/213', roles: ADMIN },
   {
     module: M08,

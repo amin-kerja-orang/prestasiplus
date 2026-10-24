@@ -34,7 +34,7 @@ test.describe('user shell', { tag: [TAG.smoke] }, () => {
       await expect(page.getByTestId('shell-user-main')).toBeVisible()
       await expect(page.getByTestId('shell-user-header')).toBeVisible()
       // Default header (DV-SH-03) on a route without its own header.
-      await expect(page.getByTestId('shell-user-title').first()).toHaveText('Dashboard')
+      await expect(page.getByTestId('shell-user-title').first()).toHaveText('Papan Pemuka')
 
       // Fast login: the session came from __MOCK_INIT__.session, not from the login endpoint.
       expect(await mock.requests('POST /api/auth/login')).toHaveLength(0)

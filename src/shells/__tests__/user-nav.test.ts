@@ -132,7 +132,7 @@ describe('USER_NAV data', () => {
     const DRAWER_LABELS: Record<string, string> = {
       '/cikgu/rph': 'RPH',
       '/ppd/statistik-penggunaan': 'Statistik Penggunaan',
-      '/jpn/ranking-kebangsaan': 'Ranking Kebangsaan',
+      '/jpn/ranking-kebangsaan': 'Kedudukan Kebangsaan',
       '/admin/hadiah': 'Admin Tebusan',
     }
     const mismatched = liveMenuLinks.filter((l) => {
@@ -187,7 +187,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
   it('student: the live murid menu order at the top, no admin/teacher entries', () => {
     const menu = labels(navFor('student', 'sidebar', USER_NAV, FULL))
     expect(menu.slice(0, 14)).toEqual([
-      'Dashboard',
+      'Papan Pemuka',
       'Target SPM',
       'Misi Harian',
       'Remedial',
@@ -240,7 +240,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
     expect(labels(navFor('teacher', 'sidebar', USER_NAV, FULL))).toEqual([
       'Command Center',
       'HARIAN',
-      'Dashboard Guru',
+      'Papan Pemuka Guru',
       'Headcount',
       'Misi Harian',
       'Soalan Mengikut Bab',
@@ -258,7 +258,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Laporan',
       'Amaran Awal',
       'ANALITIK',
-      'Monitoring',
+      'Pemantauan',
       'Kirkpatrick',
       'Analitik Adaptif',
       'Analisa Item',
@@ -342,7 +342,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Semakan Nota Induk',
       'Log Audit',
       'HARIAN',
-      'Dashboard',
+      'Papan Pemuka',
       'Senarai Pelajar',
       'Senarai Guru',
       'Kelas Sekolah',
@@ -358,7 +358,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Amaran Awal',
       'Laporan Bulanan',
       'ANALITIK',
-      'Monitoring',
+      'Pemantauan',
       'Kirkpatrick',
       'Analitik Adaptif',
       'Statistik Penggunaan',

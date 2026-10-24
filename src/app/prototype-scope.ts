@@ -110,7 +110,7 @@ const GUEST_RULES: readonly PathRule[] = [p('/video'), p('/artikel'), p('/ibu-ba
 
 /** Murid: 37 module items (rows 2-9 and 12-40). */
 export const STUDENT_ITEMS: readonly MatrixItem[] = [
-  item(2, 'Dashboard', p('/dashboard', true)),
+  item(2, 'Papan Pemuka', p('/dashboard', true)),
   item(3, 'Headcount', p('/headcount')),
   item(4, 'Prestasi', p('/prestasi')),
   item(5, 'Analitik Adaptif', p('/analitik')),
@@ -164,7 +164,7 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
 /** Guru: 15 module items (rows 1-11 and 41-44). */
 export const TEACHER_ITEMS: readonly MatrixItem[] = [
   item(1, 'Command Center', p('/guru/command-center')),
-  item(2, 'Dashboard Guru', p('/guru', true)),
+  item(2, 'Papan Pemuka Guru', p('/guru', true)),
   item(3, 'Headcount', p('/headcount')),
   item(4, 'Prestasi', p('/prestasi')),
   item(5, 'Analitik Adaptif', p('/analitik')),
@@ -172,7 +172,7 @@ export const TEACHER_ITEMS: readonly MatrixItem[] = [
   item(7, 'Video', p('/video')),
   item(8, 'Kelas Saya', p('/guru/kelas')),
   item(9, 'Soalan Mengikut Bab', p('/practice/chapter')),
-  item(10, 'Monitoring', p('/guru/monitoring')),
+  item(10, 'Pemantauan', p('/guru/monitoring')),
   item(11, 'Kirkpatrick', p('/guru/kirkpatrick')),
   item(41, 'Pelajar Saya', p('/guru/pelajar')),
   item(42, 'Laporan', p('/guru/laporan')),
@@ -183,13 +183,13 @@ export const TEACHER_ITEMS: readonly MatrixItem[] = [
 /** Admin Sekolah: 18 module items (rows 1-7, 10, 11 and 45-53). */
 export const SCHOOL_ADMIN_ITEMS: readonly MatrixItem[] = [
   item(1, 'Command Center', p('/admin-sekolah/command-center')),
-  item(2, 'Dashboard', p('/admin-sekolah', true)),
+  item(2, 'Papan Pemuka', p('/admin-sekolah', true)),
   item(3, 'Headcount', p('/headcount')),
   item(4, 'Prestasi', p('/prestasi')),
   item(5, 'Analitik Adaptif', p('/analitik')),
   item(6, 'Analisa Item', p('/analisa-item')),
   item(7, 'Video', p('/video')),
-  item(10, 'Monitoring', p('/admin-sekolah/monitoring')),
+  item(10, 'Pemantauan', p('/admin-sekolah/monitoring')),
   item(11, 'Kirkpatrick', p('/admin-sekolah/kirkpatrick')),
   item(45, 'Sekolah Bersaing', p('/sekolah-bersaing')),
   item(46, 'Statistik Penggunaan', p('/admin-sekolah/statistik-penggunaan')),

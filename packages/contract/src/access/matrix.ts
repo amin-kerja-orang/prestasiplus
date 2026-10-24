@@ -33,13 +33,13 @@ type Row = readonly [string, string, Cell, Cell, Cell, boolean?]
 
 const ROWS: Record<AccessGroupId, readonly Row[]> = {
   'papan-pemuka': [
-    ['PP-01', 'Dashboard', 'F', '-', 'S'],
+    ['PP-01', 'Papan Pemuka', 'F', '-', 'S'],
     ['PP-02', 'Laporan Eksekutif', 'F', '-', 'S'],
   ],
   pemantauan: [
     ['PM-01', 'Langsung', 'F', 'R', 'S', true],
     ['PM-02', 'Aktiviti Harian', 'F', '-', 'S'],
-    ['PM-03', 'Monitoring', 'F', '-', 'S'],
+    ['PM-03', 'Pemantauan', 'F', '-', 'S'],
     ['PM-04', 'Analitik', 'F', '-', 'S'],
     ['PM-05', 'Kirkpatrick › Ringkasan', 'F', '-', 'S'],
     ['PM-06', 'Kirkpatrick › T1: Reaksi', 'F', '-', 'S'],
@@ -52,7 +52,7 @@ const ROWS: Record<AccessGroupId, readonly Row[]> = {
     ['PM-13', 'Amaran Kesejahteraan', 'F', '-', 'S'],
     ['PM-14', 'Papan Pemuka Wilayah', 'F', 'D', '-'],
     ['PM-15', 'Statistik Penggunaan', 'F', 'D', 'S'],
-    ['PM-16', 'Ranking Kebangsaan', 'F', 'D', '-'],
+    ['PM-16', 'Kedudukan Kebangsaan', 'F', 'D', '-'],
     ['PM-17', 'Penanda Aras Sekolah', 'F', 'D', '-', true],
     ['PM-18', 'Papan Pendahulu Sekolah', 'F', 'D', '-', true],
     ['PM-19', 'Peta Haba', 'F', 'D', '-', true],
@@ -123,7 +123,7 @@ const ROWS: Record<AccessGroupId, readonly Row[]> = {
     ['PG-09', 'Gamifikasi › Cabutan', 'F', '-', '-'],
     ['PG-10', 'Gamifikasi › Kawalan Ganjaran', 'F', '-', '-'],
     ['PG-11', 'Permainan › Tetapan Permainan', 'F', '-', '-'],
-    ['PG-12', 'Permainan › Ranking Sekolah (Battle)', 'R', '-', '-'],
+    ['PG-12', 'Permainan › Kedudukan Sekolah (Battle)', 'R', '-', '-'],
     ['PG-13', 'Permainan › Leaderboard (Battle)', 'R', '-', '-'],
     ['PG-14', 'Marketplace › Produk', 'F', '-', '-'],
     ['PG-15', 'Marketplace › Penjual', 'F', '-', '-'],
@@ -179,13 +179,13 @@ export const SCHOOL_ADMIN_PROTOTYPE_ROWS: readonly {
   itemIds: readonly string[] | null
 }[] = [
   { row: 1, label: 'Command Center', itemIds: ['PM-01'] },
-  { row: 2, label: 'Dashboard', itemIds: ['PP-01'] },
+  { row: 2, label: 'Papan Pemuka', itemIds: ['PP-01'] },
   { row: 3, label: 'Headcount', itemIds: ['PM-24'] },
   { row: 4, label: 'Prestasi', itemIds: ['PM-25'] },
   { row: 5, label: 'Analitik Adaptif', itemIds: ['PM-26'] },
   { row: 6, label: 'Analisa Item', itemIds: ['PM-27'] },
   { row: 7, label: 'Video', itemIds: ['KK-12'] },
-  { row: 10, label: 'Monitoring', itemIds: ['PM-03'] },
+  { row: 10, label: 'Pemantauan', itemIds: ['PM-03'] },
   {
     row: 11,
     label: 'Kirkpatrick',
@@ -253,7 +253,7 @@ const lg = (
 
 /** Portal Pembelajaran menus at group level (v2-portals section 8), exact BM copy where given. */
 export const LEARNING_MENU: readonly LearningMenuGroup[] = [
-  lg('student', 1, null, ['Dashboard', 'Target SPM', 'Misi Harian', 'Remedial']),
+  lg('student', 1, null, ['Papan Pemuka', 'Target SPM', 'Misi Harian', 'Remedial']),
   lg('student', 2, 'SPM'),
   lg('student', 3, 'Pembelajaran'),
   lg('student', 4, 'Pusat AI', [
@@ -278,13 +278,13 @@ export const LEARNING_MENU: readonly LearningMenuGroup[] = [
   lg('teacher', 2, 'HARIAN'),
   lg('teacher', 3, 'PENGAJARAN'),
   lg('teacher', 4, 'PENILAIAN'),
-  lg('teacher', 5, 'ANALITIK', ['Monitoring', 'Kirkpatrick']),
+  lg('teacher', 5, 'ANALITIK', ['Pemantauan', 'Kirkpatrick']),
   lg('teacher', 6, 'PUSAT AI'),
   lg('teacher', 7, 'BANK SOALAN'),
   lg('teacher', 8, 'AKTIVITI'),
   lg('teacher', 9, 'LAIN-LAIN'),
   lg('teacher', 10, 'Bantuan'),
-  lg('parent', 1, 'Dashboard'),
+  lg('parent', 1, 'Papan Pemuka'),
   lg('parent', 2, 'Anak Berpaut & Kelulusan Persetujuan', [], 'proposed'),
   lg('parent', 3, 'Akaun & Bantuan'),
   lg('sponsor', 1, 'Penaja', [], 'proposed'),
@@ -300,7 +300,7 @@ const PEMBELAJARAN_LABELS = [
   'Jemput Ibu Bapa',
 ]
 const STUDENT_ROWS: readonly ProtoRow[] = [
-  [2, 'Harian', 'Dashboard'],
+  [2, 'Harian', 'Papan Pemuka'],
   [3, 'SPM / Harian / Penilaian', 'Headcount'],
   [4, 'SPM / Penilaian', 'Prestasi'],
   [5, 'SPM / Analitik', 'Analitik Adaptif'],
@@ -316,7 +316,7 @@ const STUDENT_ROWS: readonly ProtoRow[] = [
 ]
 const TEACHER_ROWS: readonly ProtoRow[] = [
   [1, '(top)', 'Command Center'],
-  [2, 'Harian', 'Dashboard Guru'],
+  [2, 'Harian', 'Papan Pemuka Guru'],
   [3, 'SPM / Harian / Penilaian', 'Headcount'],
   [4, 'SPM / Penilaian', 'Prestasi'],
   [5, 'SPM / Analitik', 'Analitik Adaptif'],
@@ -324,7 +324,7 @@ const TEACHER_ROWS: readonly ProtoRow[] = [
   [7, 'Pembelajaran / Lain-lain', 'Video'],
   [8, 'Pembelajaran / Harian', 'Kelas Saya'],
   [9, 'Pembelajaran / Harian', 'Soalan Mengikut Bab'],
-  [10, 'Analitik', 'Monitoring'],
+  [10, 'Analitik', 'Pemantauan'],
   [11, 'Analitik', 'Kirkpatrick'],
   [41, 'Harian', 'Pelajar Saya'],
   [42, 'Penilaian', 'Laporan'],

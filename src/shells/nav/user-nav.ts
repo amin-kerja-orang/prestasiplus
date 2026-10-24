@@ -209,7 +209,7 @@ const sub = (colour: string) => `text-[10px] font-bold uppercase tracking-wider 
 // prettier-ignore
 export const USER_NAV: readonly NavEntry[] = [
   // ── Top (OBSERVED sidebar; the drawer shows only "Dashboard") ──
-  { kind: 'item', id: 'dashboard', label: 'Dashboard', to: '/dashboard', fa: 'fa-home', color: '', roles: DASH },
+  { kind: 'item', id: 'dashboard', label: 'Papan Pemuka', to: '/dashboard', fa: 'fa-home', color: '', roles: DASH },
   { kind: 'item', id: 'target-spm', label: 'Target SPM', to: '/target-spm', fa: 'fa-bullseye', color: 'text-rose-500', tip: 'Tetapkan target gred SPM dan pantau kemajuan', surfaces: ['sidebar'], roles: SA_ },
   { kind: 'item', id: 'misi-harian', label: 'Misi Harian', to: '/misi-harian', fa: 'fa-rocket', color: 'text-amber-500', tip: 'Misi latih tubi harian dari guru', surfaces: ['sidebar'], roles: SA_ },
   { kind: 'item', id: 'remedial', label: 'Remedial', to: '/remedial/saya', fa: 'fa-flask', color: 'text-rose-500', tip: 'Ujian pemulihan untuk topik lemah', surfaces: ['sidebar'], roles: SA_ },
@@ -236,7 +236,7 @@ export const USER_NAV: readonly NavEntry[] = [
   //    items where the same item exists; otherwise INFERRED (marked). ──
   { kind: 'item', id: 't-command-center', label: 'Command Center', to: '/guru/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: T },
   { kind: 'section', id: 't-sec-harian', label: 'HARIAN', text: 'text-teal-700', rule: 'from-teal-300', roles: T },
-  { kind: 'item', id: 't-dashboard-guru', label: 'Dashboard Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: T },
+  { kind: 'item', id: 't-dashboard-guru', label: 'Papan Pemuka Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: T },
   // The screenshot shows a small pill after "Headcount", hidden under a tick mark: not transcribed.
   { kind: 'item', id: 't-headcount', label: 'Headcount', to: '/headcount', fa: 'fa-chart-line', color: 'text-blue-500', roles: T },
   { kind: 'item', id: 't-misi-harian', label: 'Misi Harian', to: '/guru/misi-harian', fa: 'fa-rocket', color: 'text-amber-500', roles: T },
@@ -257,7 +257,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 't-laporan', label: 'Laporan', to: '/guru/laporan', fa: 'fa-chart-pie', color: 'text-orange-500', roles: T },
   { kind: 'item', id: 't-amaran-awal', label: 'Amaran Awal', to: '/amaran', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: T },
   { kind: 'section', id: 't-sec-analitik', label: 'ANALITIK', text: 'text-indigo-700', rule: 'from-indigo-300', roles: T },
-  { kind: 'item', id: 't-monitoring', label: 'Monitoring', to: '/guru/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: T },
+  { kind: 'item', id: 't-monitoring', label: 'Pemantauan', to: '/guru/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: T },
   {
     kind: 'group',
     id: 't-kirkpatrick',
@@ -371,7 +371,7 @@ export const USER_NAV: readonly NavEntry[] = [
   //    "Dashboard", is observed) unless the same item exists elsewhere; icons and heading colours
   //    INFERRED from the screenshot. ──
   { kind: 'section', id: 'sa-sec-harian', label: 'HARIAN', text: 'text-teal-700', rule: 'from-teal-300', roles: SCH },
-  { kind: 'item', id: 'sa-dashboard', label: 'Dashboard', to: '/admin-sekolah', fa: 'fa-home', color: '', roles: SCH },
+  { kind: 'item', id: 'sa-dashboard', label: 'Papan Pemuka', to: '/admin-sekolah', fa: 'fa-home', color: '', roles: SCH },
   { kind: 'item', id: 'sa-senarai-pelajar', label: 'Senarai Pelajar', to: '/admin-sekolah/pelajar', fa: 'fa-user-graduate', color: 'text-indigo-500', roles: SCH },
   { kind: 'item', id: 'sa-senarai-guru', label: 'Senarai Guru', to: '/admin-sekolah/guru', fa: 'fa-chalkboard-teacher', color: 'text-teal-500', roles: SCH },
   { kind: 'item', id: 'sa-kelas-sekolah', label: 'Kelas Sekolah', to: '/admin-sekolah/kelas', fa: 'fa-door-open', color: 'text-red-500', roles: SCH },
@@ -387,7 +387,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'sa-amaran-awal', label: 'Amaran Awal', to: '/amaran/sekolah', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: SCH },
   { kind: 'item', id: 'sa-laporan-bulanan', label: 'Laporan Bulanan', to: '/admin-sekolah/laporan-bulanan', fa: 'fa-calendar-alt', color: 'text-blue-500', roles: SCH },
   { kind: 'section', id: 'sa-sec-analitik', label: 'ANALITIK', text: 'text-indigo-700', rule: 'from-indigo-300', roles: SCH },
-  { kind: 'item', id: 'sa-monitoring', label: 'Monitoring', to: '/admin-sekolah/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: SCH },
+  { kind: 'item', id: 'sa-monitoring', label: 'Pemantauan', to: '/admin-sekolah/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: SCH },
   // Shown collapsed in the screenshot (its sub-items are not visible): rendered as a link.
   { kind: 'item', id: 'sa-kirkpatrick', label: 'Kirkpatrick', to: '/admin-sekolah/kirkpatrick', fa: 'fa-microscope', color: 'text-cyan-500', roles: SCH },
   { kind: 'item', id: 'sa-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/pelajar', fa: 'fa-brain', color: 'text-violet-500', roles: SCH },
@@ -479,7 +479,7 @@ export const USER_NAV: readonly NavEntry[] = [
 
   // ── Portal Guru (sidebar capture) ──
   { kind: 'section', id: 'sec-portal-guru', label: 'Portal Guru', text: 'text-teal-700', rule: 'from-teal-300', roles: A },
-  { kind: 'item', id: 'dashboard-guru', label: 'Dashboard Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: A },
+  { kind: 'item', id: 'dashboard-guru', label: 'Papan Pemuka Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'kelas-guru', label: 'Kelas Guru', to: '/guru/kelas', fa: 'fa-chalkboard-teacher', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'sumbang-soalan', label: 'Sumbang Soalan', to: '/guru/soalan', fa: 'fa-pen-fancy', color: 'text-emerald-500', roles: A },
   { kind: 'item', id: 'databank-soalan', label: 'Databank Soalan', to: '/guru/databank', fa: 'fa-database', color: 'text-violet-500', roles: A },
@@ -488,7 +488,7 @@ export const USER_NAV: readonly NavEntry[] = [
   //    sidebar is transcribed above from the guru screenshots) ──
   { kind: 'item', id: 'command-center-guru', label: 'Command Center', to: '/guru/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: A },
   { kind: 'section', id: 'sec-harian', label: 'HARIAN', text: 'text-teal-700', rule: 'from-teal-300', roles: A },
-  { kind: 'item', id: 'guru-dashboard', label: 'Dashboard Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: A },
+  { kind: 'item', id: 'guru-dashboard', label: 'Papan Pemuka Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'guru-misi-harian', label: 'Misi Harian', to: '/guru/misi-harian', fa: 'fa-rocket', color: 'text-amber-500', roles: A },
   { kind: 'item', id: 'guru-soalan-by-chapter', label: 'Soalan Mengikut Bab', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: A },
   { kind: 'item', id: 'guru-kelas-saya', label: 'Kelas Saya', to: '/guru/kelas', fa: 'fa-chalkboard-teacher', color: 'text-teal-500', roles: A },
@@ -504,7 +504,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'guru-laporan', label: 'Laporan', to: '/guru/laporan', fa: 'fa-chart-pie', color: 'text-orange-500', roles: A },
   { kind: 'item', id: 'guru-amaran-awal', label: 'Amaran Awal', to: '/amaran', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: A },
   { kind: 'section', id: 'sec-analitik', label: 'ANALITIK', text: 'text-indigo-700', rule: 'from-indigo-300', roles: A },
-  { kind: 'item', id: 'guru-monitoring', label: 'Monitoring', to: '/guru/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: A },
+  { kind: 'item', id: 'guru-monitoring', label: 'Pemantauan', to: '/guru/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: A },
   {
     kind: 'group',
     id: 'guru-kirkpatrick',
@@ -541,16 +541,16 @@ export const USER_NAV: readonly NavEntry[] = [
   // ── PPD / JPN (sidebar capture + drawer-only items) ──
   { kind: 'section', id: 'sec-ppd-jpn', label: 'PPD / JPN', text: 'text-indigo-700', rule: 'from-indigo-300', roles: ['admin', 'ppd_officer', 'jpn_officer'] },
   { kind: 'item', id: 'command-center-ppd', label: 'Command Center', to: '/ppd/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: ['admin', 'ppd_officer'] },
-  { kind: 'item', id: 'dashboard-ppd', label: 'Dashboard PPD', to: '/ppd/dashboard', fa: 'fa-building-columns', color: 'text-indigo-500', roles: ['admin', 'ppd_officer'] },
+  { kind: 'item', id: 'dashboard-ppd', label: 'Papan Pemuka PPD', to: '/ppd/dashboard', fa: 'fa-building-columns', color: 'text-indigo-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'statistik-ppd', label: 'Statistik PPD', to: '/ppd/statistik-penggunaan', fa: 'fa-chart-pie', color: 'text-violet-500', roles: ['admin', 'ppd_officer'] },
-  { kind: 'item', id: 'ranking-kebangsaan-ppd', label: 'Ranking Kebangsaan', to: '/ppd/ranking-kebangsaan', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin', 'ppd_officer'] },
+  { kind: 'item', id: 'ranking-kebangsaan-ppd', label: 'Kedudukan Kebangsaan', to: '/ppd/ranking-kebangsaan', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'benchmark-sekolah', label: 'Penanda Aras Sekolah', to: '/ppd/benchmark-sekolah', fa: 'fa-ranking-star', color: 'text-amber-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'peta-haba', label: 'Peta Haba', to: '/ppd/peta-haba', fa: 'fa-map-location-dot', color: 'text-red-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'export-laporan', label: 'Eksport Laporan', to: '/ppd/export-laporan', fa: 'fa-file-export', color: 'text-emerald-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'leaderboard-sekolah', label: 'Papan Pendahulu Sekolah', to: '/ppd/leaderboard-sekolah', fa: 'fa-trophy', color: 'text-yellow-500', roles: ['admin', 'ppd_officer'] },
-  { kind: 'item', id: 'dashboard-jpn', label: 'Dashboard JPN', to: '/jpn/dashboard', fa: 'fa-building-flag', color: 'text-violet-500', roles: ['admin', 'jpn_officer'] },
+  { kind: 'item', id: 'dashboard-jpn', label: 'Papan Pemuka JPN', to: '/jpn/dashboard', fa: 'fa-building-flag', color: 'text-violet-500', roles: ['admin', 'jpn_officer'] },
   { kind: 'item', id: 'statistik-jpn', label: 'Statistik Penggunaan', to: '/jpn/statistik-penggunaan', fa: 'fa-chart-pie', color: 'text-violet-500', roles: ['admin', 'jpn_officer'] },
-  { kind: 'item', id: 'ranking-kebangsaan-jpn', label: 'Ranking Kebangsaan JPN', to: '/jpn/ranking-kebangsaan', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin', 'jpn_officer'] },
+  { kind: 'item', id: 'ranking-kebangsaan-jpn', label: 'Kedudukan Kebangsaan JPN', to: '/jpn/ranking-kebangsaan', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin', 'jpn_officer'] },
 
   // ── Admin ──
   { kind: 'section', id: 'sec-admin', label: 'Admin', text: 'text-red-700', rule: 'from-red-300', roles: A },
