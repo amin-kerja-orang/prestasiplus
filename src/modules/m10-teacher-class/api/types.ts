@@ -125,8 +125,19 @@ export interface GuruStudent {
   name: string
   /** M03 level name of the student's grade, or `null`. */
   levelName: string | null
-  /** The viewer's own classes the student is actively enrolled in. */
+  /** The viewer's own classes the student is actively enrolled in (names are not unique). */
   classNames: string[]
+  /**
+   * The same classes with their ids, in the order of `classNames` (SW5-03). Absent on an API that
+   * predates the field: the page then falls back to the names.
+   */
+  classes?: GuruStudentClass[]
+}
+
+/** One class chip of a student row: the id tells two classes with the same name apart. */
+export interface GuruStudentClass {
+  id: number
+  name: string
 }
 
 export interface GuruStudentsMeta {
