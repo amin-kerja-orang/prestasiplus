@@ -84,6 +84,7 @@ export const dsCopy = {
   heatLow: 'Rendah',
   heatHigh: 'Tinggi',
   heatNoData: 'Tiada data',
+  heatLegend: 'Petunjuk warna',
   audioPlay: 'Main',
   audioPause: 'Jeda',
   audioSeek: 'Kedudukan audio',

@@ -83,6 +83,38 @@ describe('DsHeatGrid', () => {
     expect(cells.map((c) => c.text())).toEqual(['10%', '95%'])
     expect(cells[1]!.classes()).toContain('bg-primary')
   })
+  it('bands colour by status and draw one swatch per band plus the empty cell', async () => {
+    const w = mount(DsThemeScope, {
+      props: { personality: 'staff', scheme: 'light' },
+      slots: {
+        default: () =>
+          h(DsHeatGrid, {
+            ...props,
+            rows: [{ id: 'a', label: 'Kelas A', cells: [49, 50, 74, 75, null] }],
+            columns: ['1', '2', '3', '4', '5'],
+            bands: [
+              { min: 0, label: 'Lemah' },
+              { min: 50, label: 'Sederhana' },
+              { min: 75, label: 'Mahir' },
+            ],
+          }),
+      },
+    })
+    await wait()
+    const cells = w.findAll('[data-ds="heat-cell"]').map((c) => c.classes())
+    expect(cells[0]).toContain('bg-primary/15')
+    expect(cells[1]).toContain('bg-primary/60')
+    expect(cells[2]).toContain('bg-primary/60')
+    expect(cells[3]).toContain('bg-primary')
+    expect(cells[4]).toContain('border-dashed')
+    expect(w.findAll('[data-ds="heat-legend"] > li').map((l) => l.text())).toEqual([
+      'Mahir',
+      'Sederhana',
+      'Lemah',
+      'Tiada data',
+    ])
+    expect(w.findAll('[data-ds="heat-legend-swatch"]')).toHaveLength(4)
+  })
   it('learner ramp ends in the heat colour', async () => {
     const w = mount(DsThemeScope, {
       props: { personality: 'learner', scheme: 'dark' },

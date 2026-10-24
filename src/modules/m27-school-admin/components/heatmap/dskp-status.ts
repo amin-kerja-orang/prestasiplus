@@ -26,3 +26,10 @@ export function tileTitle(sp: HeatmapSp): string {
   const base = `${sp.code}: ${sp.title} — ${STATUS_LABEL[sp.status]}`
   return sp.pct === null ? base : `${base} · ${String(sp.answered)} cuba · ${String(sp.pct)}% betul`
 }
+
+/** FR-M27-62 bands for the grid colours and legend, lowest first: below 50 lemah, 50-74 sederhana, 75 and up mahir. */
+export const BANDS: readonly { min: number; label: string }[] = [
+  { min: 0, label: 'Lemah (<50%)' },
+  { min: 50, label: 'Sederhana (50-74%)' },
+  { min: 75, label: 'Mahir (75%+)' },
+]
