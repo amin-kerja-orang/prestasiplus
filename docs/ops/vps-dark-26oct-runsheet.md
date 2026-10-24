@@ -365,15 +365,59 @@ Timing: not measured. Evidence: reference modules ____ , demo skipped ____ , dur
 
 ## Step 9. Admin Pusat bootstrap (AZ-36)
 
-Without this there is nobody in production who can publish papers.
+Without this there is nobody in production who can publish papers. Two things make this step easy to get wrong, so read the whole step before running anything.
+
+**The image tag.** `deploy.sh` builds and runs the images tagged with the 12-character release sha and exports `PP_IMAGE_TAG` only inside its own process. The `$PC` shorthand does not, and `prod.env` ships `PP_IMAGE_TAG=prod`, so a bare `$PC run … migrate` would ask for `pretasiplus-api-migrate:prod` — an image the deploy never built. Take the tag from the state file the deploy wrote:
 
 ```
-$PC run --rm --no-deps migrate npm run admin:bootstrap -w @pp/api
+TAG="$(cat /var/lib/pretasiplus-deploy/current.tag)"; echo "release tag: $TAG"
 ```
 
-The password comes from the environment, never from the command line (runbook section 21). **Green** — the command reports the account created, and the LEAD can sign in at `https://<domain>` as Admin Pusat. **Red** — any error, or an account that cannot sign in.
+**The password is never an argument.** The CLI refuses any `--password…` flag and any positional argument before it does anything else. It reads the password from a hidden prompt (typed twice) or, with `--password-stdin`, from standard input. `--mode`, `--email` and `--confirm` are all required and `--confirm` must repeat `--email` exactly; without them the CLI exits **2** with its usage text and creates nothing.
 
-Evidence: ____
+### 9a. The hidden prompt (preferred)
+
+`run --rm` without `-T` keeps a terminal, which the prompt needs.
+
+```
+PP_IMAGE_TAG="$TAG" $PC run --rm --no-deps migrate \
+  npm run admin:bootstrap -w @pp/api -- \
+  --mode=create --email=<admin e-mail> --confirm=<the same e-mail> --name="Admin Pusat"
+```
+
+It asks `New password (hidden): ` and then `Repeat the new password: `. The password must be 12 to 255 characters, one line, no leading or trailing space, and must not contain the name part of the e-mail address.
+
+### 9b. Or from a file (when there is no terminal, e.g. over a non-interactive SSH)
+
+The file must belong to `ppdeploy`, not to root: the `<` redirect is done by your shell, so `sudo` on the compose command would not help it read a root-only file.
+
+```
+umask 077
+install -m 600 /dev/null ~/pp-admin-pass
+IFS= read -rsp 'New password (not echoed): ' PW && printf '%s\n' "$PW" > ~/pp-admin-pass && unset PW && echo
+PP_IMAGE_TAG="$TAG" $PC run --rm -T --no-deps migrate \
+  npm run admin:bootstrap -w @pp/api -- \
+  --mode=create --email=<admin e-mail> --confirm=<the same e-mail> --password-stdin < ~/pp-admin-pass
+shred -u ~/pp-admin-pass
+```
+
+The file holds the password on **one** line; exactly one trailing newline is stripped, a second line is refused. Delete it in the same sitting — the `shred` above is part of the step, not an afterthought. `--password-stdin` refuses to run when standard input is a terminal, and the hidden prompt refuses to run when it is not, so 9a and 9b are not interchangeable.
+
+**Green** — exit **0**, the run reports the account created, one `audit_events` row was written (`admin.bootstrap.created`, actor role `host_cli`), and the LEAD can sign in at `https://<domain>`. The account is created with `must_reset_password`, so **the first login asks for a new password** — that is expected, not a fault.
+
+**Red** — by exit code:
+
+| Exit | Meaning | What to do |
+|---|---|---|
+| **2** | usage: a missing or wrong `--mode` / `--email` / `--confirm`, a password passed as an argument, an unknown flag, or the wrong stdin form for the chosen password input | re-read 9a/9b and run again; nothing was written |
+| **3** | refused by the database state: `--mode=create` while an active, unsuspended Admin Pusat already exists | **do not force it.** If an admin already exists the step is done; a locked-out *last* admin is `--mode=reset`, which is the LEAD's decision, not this sheet's |
+| **1** | the run failed | read the output and tell the LEAD; nothing is half-written (it is one transaction under the same advisory lock as the last-admin guard) |
+
+Also red: `Unable to find image 'pretasiplus-api-migrate:prod'` or compose starting a rebuild — `PP_IMAGE_TAG` was not set from `current.tag`.
+
+> `must_reset_password` is set by the version on the tip. PR #268 (`admin:bootstrap no longer sets must_reset_password`) was still open at `9924a2f6`; if it has merged into the release, the first login will not ask.
+
+Evidence: tag ____ , exit ____ , audit row ____ , sign-in ____
 
 ---
 
