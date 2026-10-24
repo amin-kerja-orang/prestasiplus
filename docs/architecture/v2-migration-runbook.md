@@ -154,7 +154,7 @@ Only the lead runs the anonymiser on real data (OD-18), on the lead's PC, on an 
 | `pseudonym:path` | upload paths (`media_assets.path`, `banners.image_path`, `audio_kbat.audio_path`, `questions.image_path`) | `files/<20 letters and digits>.<extension of the original>` |
 | `hash-password-dummy` | `users.password` | **Only for the roles `pelajar`, `guru`, `ibu_bapa`** (config key `dummyPasswordRoles`): the hash of the documented dummy password `Demo1234`, keeping the hash class (`$2y$`/`$2b$` bcrypt, argon2id; plain text becomes `not-a-hash-anonymised`), so developers can log in as a student, teacher or parent. **Every other role (admin, admin_sekolah, pegawai_ppd, penaja, an unknown role, no role) gets the unusable `not-a-hash-anonymised`**, so the dump never holds a known admin password. NULL and empty stay as they are. |
 | `null` | `remember_token`, `parent_invite_token` | NULL (BE-27 M4) |
-| `scrub-text` | tickets, notes, comments, setting values, json answers (mood notes and chat bodies are not staged at all since FIT-FIX) | `Teks anonim.` (json keeps its shape; numbers and booleans stay) |
+| `scrub-text` | tickets, comments, setting values, json answers (student notes, mood notes and chat bodies are not staged at all since FIT-FIX; content `notes` are public and `keep`) | `Teks anonim.` (json keeps its shape; numbers and booleans stay) |
 | `keep` | ids, foreign keys, enums, numbers, dates, public content | unchanged |
 
 The same input and key always give the same fake, in every table, so relations, duplicates and uniqueness survive. Another key gives other fakes. NULL stays NULL and an empty string stays empty, so null ratios are unchanged. Timestamps and date-only columns are kept as they are (day-boundary logic needs them).
