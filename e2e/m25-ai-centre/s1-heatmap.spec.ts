@@ -168,7 +168,7 @@ test.describe('M25 S1 Peta Haba Topik Lemah', MODULE, () => {
     await expect(page.getByTestId('heatmap-hero')).toBeVisible()
     await expectTabTitle(page, 'Peta Haba Topik Lemah')
     await expect(page.getByTestId('shell-user-title').first()).toHaveText('Peta Haba Topik Lemah')
-    await expect(page.getByTestId('shell-user-title').first()).not.toHaveText('Dashboard')
+    await expect(page.getByTestId('shell-user-title').first()).not.toHaveText('Papan Pemuka')
     if (isDesktopShell(page)) {
       await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Selamat datang kembali')
     }
