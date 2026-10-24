@@ -152,7 +152,7 @@ async function revealField(): Promise<void> {
   const fixed = getComputedStyle(sheet).position === 'fixed'
   const free = (fixed ? rect.top : area.bottom - rect.height) - 8
   const f = field.getBoundingClientRect()
-  const top = area.top + pinnedTop(sc, f.left + f.width / 2) + 4
+  const top = area.top + pinnedTop(sc, f.left + f.width / 2) + 2
   const boxTop = box.getBoundingClientRect().top
   const last = ((!wide.value && field) || previewComp.value?.$el || field).getBoundingClientRect()
   let delta: number
@@ -160,7 +160,7 @@ async function revealField(): Promise<void> {
     delta = 0 // already in the free area
   else if (last.bottom - (boxTop - top) <= free)
     delta = boxTop - top // whole field, label first
-  else delta = f.top - top // too little room: the line first, its label under the strip
+  else delta = f.top - top + 2 // too little room: the line first, flush under the strip, label hidden
   if (delta !== 0) sc.scrollTop += delta
 }
 
@@ -240,7 +240,7 @@ onBeforeUnmount(() => {
         autocomplete="off"
         autocapitalize="off"
         spellcheck="false"
-        size="lg"
+        :size="wide ? 'lg' : 'sm'"
         class="min-w-0 grow"
         data-testid="math-input"
         @update:model-value="onInput"
@@ -303,7 +303,7 @@ onBeforeUnmount(() => {
           shadow="none"
           class="mx-auto w-full max-w-md"
         >
-          <div class="p-1.5">
+          <div class="px-1.5">
             <DsStack gap="2xs">
               <!-- Sheet display: the preview of the line next to the close key (the footer is under the sheet).
                    It stays on top when a short (landscape) screen scrolls the sheet. -->
