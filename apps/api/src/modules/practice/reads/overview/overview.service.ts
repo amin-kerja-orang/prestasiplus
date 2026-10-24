@@ -41,7 +41,7 @@ export interface OverviewOptions {
 }
 export const OVERVIEW_OPTIONS = Symbol('OVERVIEW_OPTIONS')
 /** The bank counts are global and change only when staff publish; a few seconds of reuse keeps the dashboard under the card budget on a 130k-question bank (AC5). */
-export const DEFAULT_OVERVIEW_OPTIONS: OverviewOptions = { bankTtlMs: 10_000 }
+export const DEFAULT_OVERVIEW_OPTIONS: OverviewOptions = { bankTtlMs: 60_000 }
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND', { message: PRACTICE_READS_MESSAGES.notFound })
 
@@ -80,10 +80,29 @@ export class OverviewService {
 
   /**
    * Per process memo of the global bank counts. It is NOT invalidated when staff publish or deactivate a
-   * question, so a count can be up to `bankTtlMs` (10 s by default) stale. Test boots must set `bankTtlMs: 0`
+   * question, so a count can be up to `bankTtlMs` (60 s by default) stale. Test boots must set `bankTtlMs: 0`
    * (see `bootOverviewApp` in apps/api/test/practice-reads/overview/helpers.ts) or they read old counts.
    */
   private bankMemo: { at: number; facts: Promise<BankFacts> } | null = null
+
+  /** Per process memo of the chapter question counts, by chapter-id set; same `bankTtlMs` and the same staleness rule. */
+  private readonly chapterMemo = new Map<string, { at: number; counts: Promise<Map<string, number>> }>()
+
+  private chapterCounts(chapterIds: readonly string[]): Promise<Map<string, number>> {
+    const ttl = this.options.bankTtlMs
+    if (ttl <= 0) return this.repo.chapterQuestionCounts(chapterIds)
+    const nowMs = performance.now()
+    const key = [...chapterIds].sort().join(',')
+    const hit = this.chapterMemo.get(key)
+    if (hit && nowMs - hit.at < ttl) return hit.counts
+    if (this.chapterMemo.size >= 200) this.chapterMemo.clear()
+    const counts = this.repo.chapterQuestionCounts(chapterIds)
+    this.chapterMemo.set(key, { at: nowMs, counts })
+    counts.catch(() => {
+      if (this.chapterMemo.get(key)?.counts === counts) this.chapterMemo.delete(key)
+    })
+    return counts
+  }
 
   /** The grouped bank counts; reused for `bankTtlMs` of monotonic time (performance, not business time). */
   private bankFacts(): Promise<BankFacts> {
@@ -338,7 +357,7 @@ export class OverviewService {
    */
   private async practiceChaptersOf(pairs: { subject: SubjectWithLevels; levelId: bigint }[]) {
     const lists = await Promise.all(pairs.map((p) => this.curriculum.chapters(p.subject.id, p.levelId, { active: true })))
-    const counts = await this.repo.chapterQuestionCounts(lists.flatMap((l) => l.map((c) => idToString(c.id))))
+    const counts = await this.chapterCounts(lists.flatMap((l) => l.map((c) => idToString(c.id))))
     const byPair = new Map<string, (typeof lists)[number]>()
     pairs.forEach((p, i) => byPair.set(`${p.subject.id}:${p.levelId}`, (lists[i] as (typeof lists)[number]).filter((c) => (counts.get(idToString(c.id)) ?? 0) > 0)))
     return { byPair, counts }

@@ -96,6 +96,39 @@ export function pinnedPredicate(fk: ForeignKey, childPredicate: string): string 
   return `p.legacy_source = $1 AND EXISTS (SELECT 1 FROM ${q(fk.child)} c WHERE ${childPredicate} AND ${notNull} AND ${match})`
 }
 
+/**
+ * Tables that leave with a migrated row through ON DELETE CASCADE although they carry no legacy pair: the registered derived
+ * children (`ETL_DERIVED_CHILDREN`) and, transitively, every table that cascades from one of them (for a question: its
+ * versions, parts, options, keys, SP nodes and stimulus links). `via` is the cascade foreign key that reaches the table.
+ */
+export function cascadeClosure(inSet: ReadonlySet<string>, derived: ReadonlyMap<string, string>, fks: readonly ForeignKey[]): Map<string, ForeignKey> {
+  const via = new Map<string, ForeignKey>()
+  for (const [table, parent] of derived) {
+    if (!inSet.has(parent)) continue
+    const fk = fks.find((f) => f.child === table && f.parent === parent)
+    if (fk) via.set(table, fk)
+  }
+  for (let grew = true; grew; ) {
+    grew = false
+    for (const fk of fks) {
+      if (fk.onDelete !== 'c' || via.has(fk.child) || inSet.has(fk.child) || !via.has(fk.parent) || fk.child === fk.parent) continue
+      via.set(fk.child, fk)
+      grew = true
+    }
+  }
+  return via
+}
+
+/** SQL that is true for a row `alias` of `table` that belongs to a migrated row (source `$1`) through its cascade chain. */
+export function belongsToMigrated(table: string, alias: string, inSet: ReadonlySet<string>, via: ReadonlyMap<string, ForeignKey>, depth = 0): string {
+  const fk = via.get(table)
+  if (!fk) return 'false'
+  const a = `r${depth}`
+  const match = fk.childCols.map((c, i) => `${alias}.${q(c)} = ${a}.${q(fk.parentCols[i] as string)}`).join(' AND ')
+  const parentOk = inSet.has(fk.parent) ? `${a}.legacy_source = $1` : belongsToMigrated(fk.parent, a, inSet, via, depth + 1)
+  return `EXISTS (SELECT 1 FROM ${q(fk.parent)} ${a} WHERE ${match} AND ${parentOk})`
+}
+
 interface Pinned {
   parent: string
   child: string
@@ -180,6 +213,7 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
     ).rows.map((r) => r.table_name),
   )
   const derived = new Map(ETL_DERIVED_CHILDREN.map((d) => [d.table, d.parent]))
+  const closure = cascadeClosure(inSet, derived, fks)
 
   // ---- 1. pinned rows: release the adopted ones, refuse for the rest
   const released = new Map<string, number>()
@@ -210,6 +244,21 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
         if (n > 0) blockers.push({ parent: fk.parent, child: fk.child, columns: fk.childCols.join('+'), rows: n })
       }
     }
+    // Rows that cascade away with a migrated row (a question's versions, parts, options, keys): a reference from outside the
+    // migration to one of them would make the DELETE fail with a raw FK error, so it is refused here, by name.
+    for (const fk of fks) {
+      if (!closure.has(fk.parent) || closure.has(fk.child)) continue
+      const childPredicate = inSet.has(fk.child) ? 'c.legacy_source IS DISTINCT FROM $1' : 'true'
+      const notNull = fk.childCols.map((c) => `c.${q(c)} IS NOT NULL`).join(' AND ')
+      const match = fk.childCols.map((c, i) => `c.${q(c)} = p.${q(fk.parentCols[i] as string)}`).join(' AND ')
+      const res = await db.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM ${q(fk.parent)} p WHERE ${belongsToMigrated(fk.parent, 'p', inSet, closure)}
+           AND EXISTS (SELECT 1 FROM ${q(fk.child)} c WHERE ${childPredicate} AND ${notNull} AND ${match})`,
+        [source],
+      )
+      const n = res.rows[0]?.n ?? 0
+      if (n > 0) blockers.push({ parent: fk.parent, child: fk.child, columns: fk.childCols.join('+'), rows: n })
+    }
     if (releasedNow === 0) break
   }
   if (blockers.length > 0) {
@@ -218,6 +267,24 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
       `Refusing rollback: migrated rows are referenced by data that is not part of the migration (${lines.join('; ')}). ` +
         'Remove or re-point that data first. Nothing was changed.',
     )
+  }
+
+  // ---- 1b. v2 edits INSIDE a migrated question: a later version, a changed live version or an extra version row would
+  // cascade away with the question. The loader writes version 1 only (latest 1, live 1), so anything else came from v2.
+  if (inSet.has('questions')) {
+    const edited = await db.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM questions q
+        WHERE q.legacy_source = $1
+          AND (q.latest_version_no IS DISTINCT FROM 1 OR q.live_version_no IS DISTINCT FROM 1
+               OR (SELECT count(*) FROM question_versions v WHERE v.question_id = q.id) <> 1)`,
+      [source],
+    )
+    const n = edited.rows[0]?.n ?? 0
+    if (n > 0) {
+      throw new RollbackRefusedError(
+        `Refusing rollback: ${n} migrated question(s) were edited in v2 (a later version, a changed live version or an extra version row); rolling back would delete that work. Withdraw or re-point them first. Nothing was changed.`,
+      )
+    }
   }
 
   // ---- 2. derived rows that cascade with their parent (counted for the report)
