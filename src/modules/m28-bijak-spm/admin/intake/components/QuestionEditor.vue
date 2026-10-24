@@ -344,8 +344,8 @@ function insertMath(field: 'stem'): void {
     </div>
 
     <!-- tag -->
-    <fieldset class="flex min-w-0 flex-col gap-3 rounded-xl border border-default p-3">
-      <legend class="px-1 text-sm font-medium">Tag DSKP</legend>
+    <fieldset class="flex min-w-0 flex-col gap-3 border-0 p-0">
+      <legend class="p-0 text-sm font-medium">Tag DSKP</legend>
       <div class="grid gap-3 @md:grid-cols-2 @3xl:grid-cols-4">
         <label class="flex min-w-0 flex-col gap-1 text-sm">
           <span class="text-muted">Asal tingkatan</span>

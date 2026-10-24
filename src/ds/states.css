@@ -26,3 +26,17 @@
 [data-ds='native-select'][data-state='loading'] {
   cursor: progress;
 }
+
+/* Filter bar `fit`: one row from md. The search field takes the free width, each native select a
+   fixed width. Unlayered on purpose, so it beats the `w-full` utility of the select and the input. */
+@media (min-width: 768px) {
+  [data-ds='filter-bar'][data-fit='true'] > [data-slot='root'] {
+    flex: 1 1 16rem;
+    width: auto;
+    min-width: 16rem;
+  }
+  [data-ds='filter-bar'][data-fit='true'] > [data-ds='native-select'] {
+    flex: none;
+    width: 11rem;
+  }
+}

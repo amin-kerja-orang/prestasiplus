@@ -100,6 +100,7 @@ const COLUMNS: TableColumn<Row>[] = [
     </template>
 
     <DsFilterBar
+      fit
       :chips="chips"
       :active-count="chips.length"
       data-testid="intake-filter"
@@ -173,6 +174,9 @@ const COLUMNS: TableColumn<Row>[] = [
           :label="row.original.status === 'draf' ? 'Draf' : 'Semakan'"
         />
       </template>
+      <template #questionCount-cell="{ row }">{{ row.original.questionCount }}</template>
+      <template #groupCount-cell="{ row }">{{ row.original.groupCount }}</template>
+      <template #marks-cell="{ row }">{{ row.original.marks }}</template>
       <template #lowCount-cell="{ row }">
         <span :class="row.original.lowCount > 0 ? 'text-warning' : 'text-muted'">
           {{ row.original.lowCount }}

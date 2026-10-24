@@ -263,12 +263,13 @@ export const componentDefaults = {
     },
   },
 
-  // Dropzone: a tonal block, no dashed line; dragging tints it, an invalid drop shows the error fill.
+  // Dropzone: a tonal block with a dashed edge (the one place a line says "drop here"); hover and
+  // dragging turn the edge primary and tint the fill, an invalid drop shows the error fill.
   fileUpload: {
     slots: {
       base: [
-        'rounded-lg border-0 bg-elevated p-6 ring-0 transition-colors duration-base',
-        'hover:bg-accented data-[dragging=true]:bg-primary-soft aria-invalid:bg-error-field',
+        'rounded-lg border-2 border-dashed border-(--ui-text-dimmed) bg-elevated p-6 ring-0 transition-colors duration-base',
+        'hover:border-primary hover:bg-accented data-[dragging=true]:border-primary data-[dragging=true]:bg-primary-soft aria-invalid:border-error aria-invalid:bg-error-field',
         disabledState,
         focusRing,
       ].join(' '),

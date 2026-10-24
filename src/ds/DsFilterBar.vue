@@ -33,6 +33,11 @@ const props = withDefaults(
      */
     showReset?: 'auto' | boolean
     loading?: boolean
+    /**
+     * From `md` the search field takes the free width and each native select a fixed width, so a
+     * bar whose fields carry no width classes sits on one row instead of one field per row.
+     */
+    fit?: boolean
     applyLabel?: string
     resetLabel?: string
     filterLabel?: string
@@ -48,6 +53,7 @@ const props = withDefaults(
     tone: undefined,
     showReset: 'auto',
     loading: false,
+    fit: false,
     applyLabel: dsCopy.filterSearch,
     resetLabel: dsCopy.filterReset,
     filterLabel: dsCopy.filterOpen,
@@ -88,6 +94,7 @@ function reset(): void {
     :class="panel ? 'rounded-card bg-default p-3 shadow-card sm:p-4' : ''"
     role="search"
     data-ds="filter-bar"
+    :data-fit="fit ? 'true' : undefined"
     @submit.prevent="apply"
   >
     <template v-if="wide">

@@ -204,6 +204,14 @@ export const uiConfig = {
         variant: ['outline', 'subtle'],
         class: 'bg-elevated text-highlighted hover:bg-accented active:bg-accented',
       },
+      // Neutral tonal buttons in light: staff `elevated` is the same colour as the page layer, so a
+      // button sitting directly on the page (header actions, link rows) vanished. A 1px inset edge
+      // in a 35% `dimmed` tone shows its shape on both the page and a white card; dark does not need it.
+      {
+        color: 'neutral',
+        variant: ['soft', 'subtle', 'outline'],
+        class: 'ring-1 ring-inset ring-(--ui-text-dimmed)/35 dark:ring-0',
+      },
       // Solid primary: gradient in the learner portal, flat in staff (token), label from `primary-on`.
       {
         color: 'primary',
