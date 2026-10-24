@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createMemoryHistory, createRouter, type RouteLocationNormalized } from 'vue-router'
 
 import { decideAccess, type GuardSession } from '@/app/router/guards'
+import { useSessionStore } from '@/stores/session'
 import type { Role } from '@/stores/session-types'
 
 import analisaItem from '../../routes/analisa-item'
@@ -42,9 +43,33 @@ describe('/prestasi redirect (UAT M-09)', () => {
     }
   })
 
-  it('the /prestasi route redirects through the session store', async () => {
+  const login = (id: number, role: Role): void => {
+    useSessionStore().setSession({
+      token: 't',
+      remember: false,
+      expiresAt: '2099-01-01T00:00:00+08:00',
+      user: { id, role, landingPath: '/dashboard' } as never,
+    })
+  }
+
+  it('the /prestasi route sends a logged-in pelajar to /prestasi/{id}', async () => {
+    login(2, 'student')
+    await router.push('/')
     await router.push('/prestasi')
-    // No session in the test pinia: the guest target.
+    expect(router.currentRoute.value.path).toBe('/prestasi/2')
+    expect(router.currentRoute.value.name).toBe('m08.prestasi.360')
+  })
+
+  it('the /prestasi route sends a teacher to /prestasi/sekolah', async () => {
+    login(5, 'teacher')
+    await router.push('/')
+    await router.push('/prestasi')
+    expect(router.currentRoute.value.path).toBe('/prestasi/sekolah')
+  })
+
+  it('the /prestasi route sends a guest to /prestasi/sekolah (the guard then asks for login)', async () => {
+    await router.push('/')
+    await router.push('/prestasi')
     expect(router.currentRoute.value.path).toBe('/prestasi/sekolah')
   })
 })

@@ -61,7 +61,8 @@ Legend: **Pass** executed and passed. **Fail** executed and failed (bug id). **O
 | 02.5 /timeline/1 is 404 | Pass | qa access-nav, dev t3 |
 | 03.1 admin Analisa Item opens S10 | Pass | qa access-nav (sidebar click), dev t5 |
 | 03.2 teacher to S10, pelajar to /dashboard | Pass (provisional) | qa access-nav |
-| 03.3 school admin to S9, pelajar S9 own school | Pass (provisional) | qa access-nav, dev t5 |
+| 03.3 school admin to S9 | Pass (provisional) | qa access-nav, dev t5 |
+| 03.4 pelajar `/prestasi` to own S6; S1-S3 and S9 are the 403 page (UAT 2026-10-24 M-09, T4; replaces the former "pelajar S9 own school" expectation of 03.3, DV-M08-39) | Pass | `uat-m09-prestasi-murid.spec.ts` (3 viewports), dev t5 pelajar group |
 | 04.1 S1 header, pills | Pass | dev t5 |
 | 04.2 S1 seven stat cards | Pass | dev t5 (values and separators; grid columns by viewport not asserted separately) |
 | 04.3 school admin S1 figures | Pass (provisional) | dev t5, qa style (5.33, Sederhana, 6 entri) |
