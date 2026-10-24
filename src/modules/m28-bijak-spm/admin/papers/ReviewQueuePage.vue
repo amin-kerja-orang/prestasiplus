@@ -156,6 +156,7 @@ function open(row: Row): void {
 
     <DsStatRow
       :items="stats"
+      :loading="loading && !data"
       density="compact"
       :cols="3"
       aria-label="Ringkasan baris gilir"

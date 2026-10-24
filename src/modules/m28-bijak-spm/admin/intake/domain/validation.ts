@@ -14,6 +14,10 @@ export function fieldsToConfirm(q: IntakeQuestion): string[] {
   return outsideDskp(q.tag) ? q.lowFields.filter((f) => f !== 'tag.unit' && f !== 'tag.sp') : q.lowFields
 }
 
+/** Low-confidence fields of `q` still waiting for a person (T1-T3 unit/SP are never asked for). */
+export const lowToConfirm = (q: IntakeQuestion): string[] =>
+  fieldsToConfirm(q).filter((f) => !q.confirmed.includes(f))
+
 export function fieldName(f: string): string {
   switch (f) {
     case 'tag.unit':
@@ -91,9 +95,8 @@ export function validateBatch(
       if (t.sp.length === 0) add(q, w, 'Standard Pembelajaran (SP) belum dipilih.')
     }
     if (!(t.tp >= 1 && t.tp <= 6)) add(q, w, 'Tahap Penguasaan (TP) mesti antara 1 dan 6.')
-    for (const f of fieldsToConfirm(q))
-      if (!q.confirmed.includes(f))
-        add(q, w, `Medan keyakinan rendah belum disahkan: ${fieldName(f)}.`)
+    for (const f of lowToConfirm(q))
+      add(q, w, `Medan keyakinan rendah belum disahkan: ${fieldName(f)}.`)
 
     if (q.stimulusId && !batch.stimuli.some((s) => s.id === q.stimulusId))
       add(q, w, 'Rajah / petikan yang dirujuk tidak wujud.')
