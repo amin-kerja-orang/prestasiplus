@@ -290,10 +290,10 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       '/admin/kirkpatrick/reaction',
     ])
     await expect(cards).toContainText([
-      'Lihat detail',
-      'Lihat detail',
-      'Lihat detail',
-      'Lihat detail',
+      'Lihat butiran',
+      'Lihat butiran',
+      'Lihat butiran',
+      'Lihat butiran',
     ])
     const w = viewportWidth(page)
     expect(await columns(cards)).toBe(w >= 1024 ? 4 : w >= 640 ? 2 : 1)
@@ -473,7 +473,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     const info = page.getByTestId('kirk-info')
     await expect(info).toContainText('Model Kirkpatrick — 4 Tahap Penilaian Keberkesanan')
     await expect(info).toContainText(
-      'Dashboard ini mengukur keberkesanan platform PrestasiPlus berdasarkan model Kirkpatrick (1959).',
+      'Papan pemuka ini mengukur keberkesanan platform PrestasiPlus berdasarkan model Kirkpatrick (1959).',
     )
     await expectNoHorizontalScroll(page)
   })
@@ -941,7 +941,7 @@ test.describe(
           .evaluateAll((els) => els.map((e) => e.getAttribute('href') ?? ''))
         expect(hrefs.filter((h) => h.startsWith(ALIAS))).toEqual([])
         expect(hrefs.filter((h) => h.startsWith('/admin/'))).toEqual([])
-        await expect(page.getByTestId('kirk-overview-page')).not.toContainText('Lihat detail')
+        await expect(page.getByTestId('kirk-overview-page')).not.toContainText('Lihat butiran')
         await expectNoHorizontalScroll(page)
       },
     )

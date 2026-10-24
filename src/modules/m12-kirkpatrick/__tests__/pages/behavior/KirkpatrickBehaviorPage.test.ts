@@ -300,8 +300,8 @@ describe('S4 alerts and mood (AC-M12-18.1 ... 18.4)', () => {
     const { wrapper: w } = await open()
     const items = all(w, 'beh-alert')
     expect(items.map((i) => squash(i.text()))).toEqual([
-      'SMK Demo C: 1 pelajar tidak pernah login langsung.',
-      'SMK Demo D: 2 guru telah login tetapi tiada pelajar yang menjawab soalan.',
+      'SMK Demo C: 1 pelajar tidak pernah log masuk langsung.',
+      'SMK Demo D: 2 guru telah log masuk tetapi tiada pelajar yang menjawab soalan.',
       'SMK Demo E: 62.5% pelajar aktif menjawab soalan. Tahniah!',
       'SMK Demo F: 100% pelajar aktif menjawab soalan. Tahniah!',
     ])

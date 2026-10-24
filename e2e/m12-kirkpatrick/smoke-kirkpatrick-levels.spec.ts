@@ -341,11 +341,11 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
       ...Array<string>(12).fill('good'),
     ])
     const never = text.slice(0, 22)
-    for (const t of never) expect(t).toMatch(/: \d+ pelajar tidak pernah login langsung\.$/)
+    for (const t of never) expect(t).toMatch(/: \d+ pelajar tidak pernah log masuk langsung\.$/)
     expect(never.map((t) => Number(/: (\d+) pelajar/.exec(t)![1]))).toEqual([
       1, 4, 6, 8, 257, 205, 1, 759, 674, 1, 5, 148, 2, 1, 1, 16, 8, 7, 7, 8, 1, 6,
     ])
-    expect(text[22]).toMatch(/: 2 guru telah login tetapi tiada pelajar yang menjawab soalan\.$/)
+    expect(text[22]).toMatch(/: 2 guru telah log masuk tetapi tiada pelajar yang menjawab soalan\.$/)
     const good = text.slice(23)
     for (const t of good) expect(t).toMatch(/: [\d.]+% pelajar aktif menjawab soalan\. Tahniah!$/)
     expect(good.map((t) => /: ([\d.]+%)/.exec(t)![1])).toEqual([
@@ -389,12 +389,12 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     await gotoApp(`${S4}?school_id=10220`)
     await expect(page.getByTestId('beh-alert')).toHaveCount(1)
     await expect(page.getByTestId('beh-alert-text')).toContainText(
-      ': 2 guru telah login tetapi tiada pelajar yang menjawab soalan.',
+      ': 2 guru telah log masuk tetapi tiada pelajar yang menjawab soalan.',
     )
     await spaGo(page, `${S4}?school_id=8298`)
     await expect(page.getByTestId('beh-alert')).toHaveCount(1)
     await expect(page.getByTestId('beh-alert-text')).toContainText(
-      ': 2 pelajar tidak pernah login langsung.',
+      ': 2 pelajar tidak pernah log masuk langsung.',
     )
     await expect(page.getByTestId('beh-alert')).toHaveClass(/bg-red-50/)
   })
@@ -415,7 +415,7 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     expect(bands.reduce((a, b) => a + b, 0)).toBe(8)
     const alerts = await texts(page.getByTestId('beh-alert-text'))
     expect(alerts).toHaveLength(2)
-    expect(alerts[0]).toMatch(/: 8 pelajar tidak pernah login langsung\.$/)
+    expect(alerts[0]).toMatch(/: 8 pelajar tidak pernah log masuk langsung\.$/)
     expect(alerts[1]).toMatch(/: 62\.5% pelajar aktif menjawab soalan\. Tahniah!$/)
   })
 })

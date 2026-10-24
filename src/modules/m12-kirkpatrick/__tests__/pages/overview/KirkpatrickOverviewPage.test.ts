@@ -251,7 +251,7 @@ describe('S1 KPI row, bands and info (AC-M12-09.1..09.3)', () => {
     const text = squash(t(w, 'kirk-info').text())
     expect(text).toContain('Model Kirkpatrick — 4 Tahap Penilaian Keberkesanan')
     expect(text).toContain(
-      'Dashboard ini mengukur keberkesanan platform PrestasiPlus berdasarkan model Kirkpatrick (1959).',
+      'Papan pemuka ini mengukur keberkesanan platform PrestasiPlus berdasarkan model Kirkpatrick (1959).',
     )
   })
 })
@@ -267,7 +267,7 @@ describe('mounts', () => {
     const { wrapper: w } = await open('/admin-sekolah/kirkpatrick', { detailLinks: false })
     const hrefs = w.findAll('a').map((a) => a.attributes('href') ?? '')
     expect(hrefs).toEqual(['/admin-sekolah/monitoring', '/admin-sekolah/monitoring'])
-    expect(w.text()).not.toContain('Lihat detail')
+    expect(w.text()).not.toContain('Lihat butiran')
     expect(t(w, 'kirk-level-t3').text()).toContain('946/4158')
     expect(all(w, 'kirk-band-count')).toHaveLength(5)
   })
