@@ -71,8 +71,8 @@ async function createSet(
 async function seedAndSwitch(page: Page, mock: MockHandle, gotoApp: (p: string) => Promise<void>) {
   await gotoApp('/admin/audio-kbat')
   await expect(page.getByTestId('audio-list-page')).toBeVisible()
-  await createSet(page, 'BM T4 Ujian Mendengar Set 1', 'Approved', 'Bahasa Melayu')
-  await createSet(page, 'BI T5 Ujian Mendengar Set 1', 'Draft', 'Bahasa Inggeris')
+  await createSet(page, 'BM T4 Ujian Mendengar Set 1', 'Diluluskan', 'Bahasa Melayu')
+  await createSet(page, 'BI T5 Ujian Mendengar Set 1', 'Draf', 'Bahasa Inggeris')
   await mock.hook('setUser', STUDENT)
   await spaGo(page, '/audio-kbat')
 }
@@ -90,7 +90,7 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
     await expect(page.getByTestId('shell-user-title')).toHaveText('Audio KBAT')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveCount(0)
     const headerBlock = page.getByTestId('shell-user-title').locator('..')
-    await expect(headerBlock).not.toContainText('Dashboard')
+    await expect(headerBlock).not.toContainText('Papan Pemuka')
     await expect(headerBlock).not.toContainText('Selamat datang kembali')
 
     const intro = page.getByTestId('audio-intro')

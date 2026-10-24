@@ -408,7 +408,7 @@ test.describe('M09 S4 preview article', MODULE, () => {
     await expect(page.getByTestId('preview-date')).toHaveText('22 Feb 2026')
     await expect(page.getByTestId('preview-views')).toHaveText('596 tontonan')
     await expect(page.getByTestId('status-pill')).toHaveText('Diterbitkan')
-    await expect(page.getByTestId('preview-featured')).toHaveText('Featured')
+    await expect(page.getByTestId('preview-featured')).toHaveText('Pilihan')
     await expect(page.getByTestId('preview-edit')).toHaveAttribute(
       'href',
       '/admin/articles/10/edit',

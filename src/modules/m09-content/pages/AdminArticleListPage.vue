@@ -205,7 +205,7 @@ const statItems = computed<StatItem[]>(() => [
   },
   {
     key: 'k3',
-    label: 'Featured (halaman ini)',
+    label: 'Pilihan (halaman ini)',
     value: featuredOnPage.value,
     icon: 'star',
     accent: 'trial',

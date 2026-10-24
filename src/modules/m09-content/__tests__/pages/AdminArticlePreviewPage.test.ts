@@ -74,7 +74,7 @@ describe('AdminArticlePreviewPage (M09 S4)', () => {
     expect(t(w, 'preview-date').text()).toBe('22 Feb 2026')
     expect(t(w, 'preview-views').text()).toBe('596 tontonan')
     expect(t(w, 'status-pill').text()).toBe('Diterbitkan')
-    expect(t(w, 'preview-featured').text()).toBe('Featured')
+    expect(t(w, 'preview-featured').text()).toBe('Pilihan')
     expect(t(w, 'preview-excerpt').text()).toBe('Ringkas')
     expect(t(w, 'preview-edit').text()).toBe('Edit Artikel')
     expect(t(w, 'preview-edit').attributes('href')).toBe('/admin/articles/10/edit')

@@ -899,7 +899,7 @@ describe('#23 POST /api/admin/audio-kbat-sets (S13, multipart)', () => {
       id: 1,
       title: 'BM T4 Ujian Mendengar Set 1',
       status: 'approved',
-      statusLabel: 'Approved',
+      statusLabel: 'Diluluskan',
       questionCount: 30,
       sourceLabel: 'Cikgu Demo 02',
       instructions: 'Dengar dan jawab.',
@@ -931,7 +931,7 @@ describe('#23 POST /api/admin/audio-kbat-sets (S13, multipart)', () => {
     const r = await get<ListBody<Json, { stats: Json }>>('/api/admin/audio-kbat-sets', ADMIN)
     expect(r.body.meta.stats).toEqual({ sets: 1, approved: 1, draftPending: 0, questions: 30 })
     expect(r.body.data).toHaveLength(1)
-    expect(r.body.data[0]).toMatchObject({ id: 1, questionCount: 30, statusLabel: 'Approved' })
+    expect(r.body.data[0]).toMatchObject({ id: 1, questionCount: 30, statusLabel: 'Diluluskan' })
     expect(r.body.data[0].educationLevel.name).toEqual(expect.any(String))
     const none = await get<ListBody<Json, { stats: Json }>>(
       '/api/admin/audio-kbat-sets?educationLevelId=11&search=zzz&status=draft',
@@ -965,7 +965,7 @@ describe('#23 POST /api/admin/audio-kbat-sets (S13, multipart)', () => {
       audioForm({ status: 'pending_review', title: 'Set Dua' }),
     )
     expect(r.status).toBe(201)
-    expect(r.body.data.statusLabel).toBe('Pending Review')
+    expect(r.body.data.statusLabel).toBe('Menunggu Semakan')
     const stats = (await get<ListBody<Json, { stats: Json }>>('/api/admin/audio-kbat-sets', ADMIN))
       .body.meta.stats
     expect(stats).toEqual({ sets: 2, approved: 1, draftPending: 1, questions: 60 })

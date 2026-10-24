@@ -26,7 +26,7 @@ export const ARTIKEL_COPY = {
   hotPopular: 'POPULAR',
   heroChip: 'Terkini & Menarik',
   heroTitle: 'Artikel Pilihan',
-  breadcrumbDashboard: 'Dashboard',
+  breadcrumbDashboard: 'Papan Pemuka',
   breadcrumbArtikel: 'Artikel',
   featuredChip: 'Pilihan',
   readers: 'Pembaca',

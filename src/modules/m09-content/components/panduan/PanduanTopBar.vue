@@ -41,7 +41,7 @@ const LOGO_URL = `${import.meta.env.BASE_URL}images/prestasiplus-logo.svg`
           icon="i-ph-newspaper-duotone"
           >Artikel</UButton
         >
-        <UButton v-if="loggedIn" :to="home" icon="i-ph-squares-four-duotone">Dashboard</UButton>
+        <UButton v-if="loggedIn" :to="home" icon="i-ph-squares-four-duotone">Papan Pemuka</UButton>
         <template v-else>
           <UButton to="/login" color="neutral" variant="ghost">Log Masuk</UButton>
           <UButton to="/register" icon="i-ph-rocket-launch-duotone">Daftar Percuma</UButton>
@@ -83,7 +83,7 @@ const LOGO_URL = `${import.meta.env.BASE_URL}images/prestasiplus-logo.svg`
         class="justify-start"
         >Artikel</UButton
       >
-      <UButton v-if="loggedIn" :to="home" icon="i-ph-squares-four-duotone" block>Dashboard</UButton>
+      <UButton v-if="loggedIn" :to="home" icon="i-ph-squares-four-duotone" block>Papan Pemuka</UButton>
       <template v-else>
         <UButton to="/login" color="neutral" variant="ghost" block class="justify-start"
           >Log Masuk</UButton

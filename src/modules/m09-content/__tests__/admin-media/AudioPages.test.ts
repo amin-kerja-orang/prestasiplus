@@ -147,7 +147,7 @@ describe('AudioSetListPage (S12)', () => {
           educationLevel: { id: 10, name: 'Tingkatan 4' },
           subject: { id: 1, name: 'Bahasa Melayu' },
           status: 'approved',
-          statusLabel: 'Approved',
+          statusLabel: 'Diluluskan',
           questionCount: 30,
         },
       ],
@@ -164,7 +164,7 @@ describe('AudioSetListPage (S12)', () => {
     expect(row.get('[data-testid=set-title]').text()).toBe('BM T4 Set 1')
     expect(row.get('[data-testid=set-level]').text()).toBe('Tingkatan 4')
     expect(row.get('[data-testid=set-subject]').text()).toBe('Bahasa Melayu')
-    expect(row.get('[data-testid=set-status]').text()).toBe('Approved')
+    expect(row.get('[data-testid=set-status]').text()).toBe('Diluluskan')
     expect(row.get('[data-testid=set-questions]').text()).toBe('30 soalan')
     expect(w.find('[data-testid=audio-empty]').exists()).toBe(false)
   })

@@ -251,7 +251,7 @@ test.describe('M09 S16 article detail', MODULE, () => {
     )
     await expectTabTitle(page, GENERIC_TITLE)
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Artikel')
-    await expect(page.getByTestId('artikel-breadcrumb')).toContainText('Dashboard')
+    await expect(page.getByTestId('artikel-breadcrumb')).toContainText('Papan Pemuka')
     await expect(page.getByTestId('artikel-breadcrumb')).toContainText('Artikel')
     await expect(page.getByTestId('artikel-breadcrumb-current')).toHaveText(
       'Teknik Pomodoro: Belajar 25 Minit, Rehat...',

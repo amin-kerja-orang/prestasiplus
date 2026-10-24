@@ -140,13 +140,13 @@ describe('PanduanPage', () => {
     const w = await render()
     expect(w.find('[data-testid="panduan-register"]').text()).toContain('Daftar Percuma Sekarang')
     expect(w.find('[data-testid="panduan-links"]').text()).toContain('Log Masuk')
-    expect(w.find('[data-testid="panduan-links"]').text()).not.toContain('Dashboard')
+    expect(w.find('[data-testid="panduan-links"]').text()).not.toContain('Papan Pemuka')
   })
 
   it('shows Dashboard and no register button when logged in', async () => {
     const w = await render('/panduan', true)
     expect(w.find('[data-testid="panduan-register"]').exists()).toBe(false)
-    expect(w.find('[data-testid="panduan-links"]').text()).toContain('Dashboard')
+    expect(w.find('[data-testid="panduan-links"]').text()).toContain('Papan Pemuka')
   })
 
   it('the menu toggle opens and closes the mobile menu', async () => {

@@ -457,12 +457,12 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
     features: [
       {
         emoji: '📊',
-        title: 'Dashboard Daerah (PPD)',
+        title: 'Papan Pemuka Daerah (PPD)',
         text: 'Ringkasan semua sekolah dalam daerah — taburan risiko, kedudukan sekolah.',
       },
       {
         emoji: '🗺️',
-        title: 'Dashboard Negeri (JPN)',
+        title: 'Papan Pemuka Negeri (JPN)',
         text: 'Gambaran seluruh negeri — perbandingan daerah dan sekolah.',
       },
       {

@@ -80,7 +80,7 @@ const failed = computed(() => error.value !== null && !isNotFoundError(error.val
               color="warning"
               variant="subtle"
               icon="i-ph-star-fill"
-              label="Featured"
+              label="Pilihan"
               data-testid="preview-featured"
             />
           </div>
