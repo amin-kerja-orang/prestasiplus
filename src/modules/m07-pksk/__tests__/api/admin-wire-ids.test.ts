@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createHttpTransport, installTransport } from '@/api'
 
-import { createPkskQuestion, grantPkskAccess, updatePkskQuestion } from '../../api/admin'
+import {
+  bulkPkskQuestions,
+  createPkskQuestion,
+  grantPkskAccess,
+  updatePkskQuestion,
+} from '../../api/admin'
 
 let sent: { method: string; url: string; body: unknown }[] = []
 
@@ -60,6 +65,22 @@ describe('PKSK question body wire ids (SWY-04)', () => {
     vi.stubEnv('VITE_API_MODE', 'mock')
     await update()
     expect(domainOf(0)).toBe(2)
+  })
+})
+
+/** SWY-07b: the bulk body `ids` are `idInput` strings on the wire (a number is 422). */
+describe('PKSK bulk wire ids (SWY-07b)', () => {
+  it('http mode sends the ids as strings', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    await bulkPkskQuestions('approve', [4, 5])
+    expect(sent[0]?.url).toBe('/api/admin/pksk-questions/bulk')
+    expect(sent[0]?.body).toEqual({ action: 'approve', ids: ['4', '5'] })
+  })
+
+  it('mock mode keeps the numbers', async () => {
+    vi.stubEnv('VITE_API_MODE', 'mock')
+    await bulkPkskQuestions('approve', [4, 5])
+    expect(sent[0]?.body).toEqual({ action: 'approve', ids: [4, 5] })
   })
 })
 

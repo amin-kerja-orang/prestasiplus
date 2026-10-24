@@ -186,10 +186,10 @@ export function deletePkskQuestion(id: number): Promise<void> {
 /** #13 `POST /api/admin/pksk-questions/bulk` (422 for empty ids, a bad action or a non-PKSK id). */
 export function bulkPkskQuestions(
   action: BulkAction,
-  ids: number[],
+  ids: (number | string)[],
 ): Promise<MutationResult<{ affected: number }>> {
   return api.post<MutationResult<{ affected: number }>>(`${QUESTIONS}/bulk`, {
-    body: { action, ids },
+    body: { action, ids: ids.map((id) => wireId(id)) },
     raw: true,
   })
 }
