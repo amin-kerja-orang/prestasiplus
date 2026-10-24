@@ -159,13 +159,17 @@ export interface StatusPayload {
 
 /** #4: a session plus the flash text for the landing page. */
 export interface ResetPasswordPayload extends SessionPayload {
-  status: string
+  /** Mock only (it nests `status` in `data`); the real API puts it next to `data`. */
+  status?: string
 }
 
-/** #5. */
+/**
+ * #5. The contract (`packages/contract`, account reset-by-IC) returns `{token}` only. `email` is
+ * echoed by the mock server alone, so it is optional: callers fall back to the e-mail they sent.
+ */
 export interface ResetByIcPayload {
   token: string
-  email: string
+  email?: string
 }
 
 /** #9. */

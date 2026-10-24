@@ -5,13 +5,14 @@
  * "{daerah}, {negeri}", "Tiada sekolah dijumpai", and a selected card with a clear button.
  */
 import { DsPanel } from '@/ds'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 import { searchSchools, type SchoolSummary } from '@/modules/m02-users-schools'
 
 import { KELAS_COPY, schoolPlace } from './copy'
 
+const props = defineProps<{ preselect?: SchoolSummary | null }>()
 const emit = defineEmits<{ select: [school: SchoolSummary | null] }>()
 
 const root = ref<HTMLElement | null>(null)
@@ -22,6 +23,15 @@ const picker = useSearchPicker<SchoolSummary>({
   onSelect: (school) => emit('select', school),
 })
 const { term, results, selected, open, searching } = picker
+
+// A school offered after mount (DV-M10-40) fills the picker unless one was already chosen.
+watch(
+  () => props.preselect,
+  (school) => {
+    if (school && !selected.value) picker.select(school)
+  },
+  { immediate: true },
+)
 
 function clear(): void {
   picker.reset()

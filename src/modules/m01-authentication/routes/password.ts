@@ -9,7 +9,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/password/reset',
     name: 'm01.password.forgot',
-    component: () => import('../pages/PasswordForgotPage.vue'),
+    // S3, or S4 when the mailed link carries `#token=...` (SW8-07b).
+    component: () => import('../pages/PasswordResetEntryPage.vue'),
     meta: {
       layout: 'bare',
       access: 'public',

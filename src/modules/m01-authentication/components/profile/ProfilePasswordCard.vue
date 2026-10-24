@@ -3,14 +3,15 @@
  * S8 "Tukar Kata Laluan" card (FR-M01-45, BR-16): its own form, three password fields with no
  * `required` attribute (server-side validation only, as live). Hint "Sekurang-kurangnya 6 aksara"
  * (DV-03; live says 8). On
- * success the fields are cleared and the session is kept; the page shows the flash.
+ * success the fields are cleared, the session is kept and re-read (the API rotates it, so the CSRF
+ * token changes, DV-27); the page shows the flash.
  */
 import { ref } from 'vue'
 
 import { useFlash } from '@/composables/useFlash'
 
-import { changePassword } from '../../api'
 import { errorLines } from '../../lib/error-lines'
+import { changePasswordAndRefresh } from '../../lib/password-change'
 
 const emit = defineEmits<{
   saved: [status: string]
@@ -27,7 +28,7 @@ async function submit(): Promise<void> {
   saving.value = true
   flash.clear()
   try {
-    const status = await changePassword({
+    const { status } = await changePasswordAndRefresh({
       currentPassword: currentPassword.value,
       password: password.value,
       passwordConfirmation: passwordConfirmation.value,
