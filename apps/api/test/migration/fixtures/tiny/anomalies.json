@@ -286,6 +286,7 @@
       "questions.image_path": 24,
       "questions.created_at": 24,
       "questions.updated_at": 24,
+      "question_options.image_path": 96,
       "question_options.created_at": 96,
       "question_options.updated_at": 96,
       "exam_papers.created_at": 3,

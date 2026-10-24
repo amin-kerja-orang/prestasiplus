@@ -67,11 +67,12 @@ export class DuplicateDetector {
     // Keyset paging (newest first): never scans more than `limit` rows and is stable under concurrent inserts.
     while (scanned < limit) {
       const want = Math.min(pageSize, limit - scanned)
-      const ids = await this.questions.listIds({ page: 1, pageSize: want, subjectId: idToString(subject.id), ...(lastId === undefined ? {} : { idBelow: lastId }) })
-      if (ids.ids.length === 0) break
-      scanned += ids.ids.length
-      lastId = ids.ids[ids.ids.length - 1] as string
-      for (const rec of await this.questions.getMany(ids.ids, 'latest')) {
+      // Keyset page without the totals and status counts `listIds` computes (two full-subject scans per page).
+      const ids = await this.questions.listIdsKeyset({ subjectId: idToString(subject.id) }, lastId, want)
+      if (ids.length === 0) break
+      scanned += ids.length
+      lastId = ids[ids.length - 1] as string
+      for (const rec of await this.questions.getMany(ids, 'latest')) {
         if (rec.version.status === 'archived') continue
         // A single-leaf question repeats its stem as the leaf prompt; counting it twice would turn an exact copy into "near".
         const partsText = textOfBankParts(rec.version.parts)
@@ -79,7 +80,7 @@ export class DuplicateDetector {
         const text = stem !== '' && !partsText.includes(stem) ? `${stem} \n ${partsText}` : partsText
         out.push({ id: rec.id, sig: signatureOf(text) })
       }
-      if (ids.ids.length < want) break
+      if (ids.length < want) break
       if (scanned >= limit) {
         // The contract has no field to tell the reviewer the bank was cut short.
         this.log.debug(`duplicate scan stopped at the ${limit} newest bank questions of subject ${subjectCode}; older ones are not compared`)
