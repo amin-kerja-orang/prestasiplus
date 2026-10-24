@@ -167,7 +167,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     const out = await runAdminBootstrap(prisma, { ...args, password, now: new Date(), hostUser: hostUser() })
     err(
       `OK ${out.mode}: user id ${out.userId} on database "${db}". Sessions ended: ${String(out.sessionsRevoked)}. Open reset links spent: ${String(out.resetTokensSpent)}.` +
-        `${out.reactivated ? ' Account reactivated.' : ''} The password must be changed at the next login. Audit row written.`,
+        `${out.reactivated ? ' Account reactivated.' : ''} No password change is required at the next login. Audit row written.`,
     )
     return EXIT.ok
   } catch (e) {
