@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * Paper cover (US-04, US-12): paper code, subject, kertas, minutes, numbered instructions and the
- * foldable reference sheet; the choice of Mod Peperiksaan / Mod Latihan; and, when an unsubmitted
+ * foldable reference sheet; the choice of Mod Peperiksaan / Mod Latihan followed by "Mula" (or
+ * "Sambung" in the hero while a sitting is open); and, when an unsubmitted
  * sitting exists, the "Percubaan belum dihantar" choice (Sambung / Mula Semula).
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { DsEmptyState, DsHeroCard } from '@/ds'
@@ -47,6 +48,14 @@ const modeItems = [
   },
 ]
 const needsChoice = computed(() => !!open.value && !open.value.fresh)
+// "Mula Semula" starts a new sitting, so the student picks its mode; the previous mode is the default.
+watch(
+  open,
+  (o) => {
+    if (o) mode.value = o.mode
+  },
+  { immediate: true },
+)
 
 async function begin(restart: boolean): Promise<void> {
   starting.value = true
@@ -93,7 +102,7 @@ async function begin(restart: boolean): Promise<void> {
         :title="cover.title"
         :subtitle="`${cover.subjectName} · Kertas ${cover.kertas} · ${cover.durationMin} minit · ${cover.marks} markah · ${cover.questionCount} soalan`"
         art="books"
-        :cta-label="open ? 'Sambung' : 'Mula'"
+        :cta-label="open ? 'Sambung' : undefined"
         data-testid="cover-hero"
         @cta="begin(false)"
       />
@@ -180,6 +189,16 @@ async function begin(restart: boolean): Promise<void> {
           data-testid="mode-choice"
         />
         <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" />
+        <UButton
+          v-if="!open"
+          size="lg"
+          trailing-icon="i-ph-arrow-right-bold"
+          class="min-h-12 w-fit"
+          :loading="starting"
+          data-testid="cover-start"
+          @click="begin(false)"
+          >Mula</UButton
+        >
       </section>
     </template>
 
@@ -188,6 +207,15 @@ async function begin(restart: boolean): Promise<void> {
       title="Mula semula?"
       description="Semua jawapan dan masa untuk percubaan ini akan dikosongkan. Mula semula?"
     >
+      <template #body>
+        <URadioGroup
+          v-model="mode"
+          :items="modeItems"
+          variant="card"
+          legend="Mod menjawab"
+          data-testid="restart-mode-choice"
+        />
+      </template>
       <template #footer>
         <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
           <UButton color="neutral" @click="confirmRestart = false">Batal</UButton>
