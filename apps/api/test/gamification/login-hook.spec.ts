@@ -53,6 +53,14 @@ describe('M14 login hook (BR-M14-14, FR-M14-64, XR-M14-02a)', () => {
     expect(await streakOf(id)).toEqual({ current: 2, best: 2, last: '2026-10-20', total_days: 2 })
   })
 
+  it('one time source: the streak day and the daily mark day are the same day, even when the clock passes midnight between two logins', async () => {
+    const id = await userIdOf(t.db, STUDENT_EMPTY)
+    t.clock.set('2026-10-31T00:00:01+08:00')
+    await t.app.get(GamificationService).onLogin(id)
+    expect((await dailyRows(id)).map((r) => r.source_id)).toContain('daily_login:2026-10-31')
+    expect((await streakOf(id))!.last).toBe('2026-10-31')
+  })
+
   it('parallel first logins of one day credit once', async () => {
     const id = await userIdOf(t.db, STUDENT_MAJU)
     const before = (await dailyRows(id)).length
@@ -105,13 +113,13 @@ describe('M14 login hook (BR-M14-14, FR-M14-64, XR-M14-02a)', () => {
     expect((await dailyRows(id)).map((r) => r.source_id)).not.toContain('daily_login:2026-10-23')
   })
 
-  it('a hook that never answers does not hold the login (it answers after the bounded wait)', async () => {
+  it('a hook that never answers does not hold the login beyond the 2 s cap', async () => {
     t.clock.set('2026-10-24T09:00:00+08:00')
     vi.spyOn(t.app.get(GamificationService), 'onLogin').mockImplementation(() => new Promise(() => undefined))
     const started = Date.now()
     await loginAs(t as never, STUDENT_EMPTY)
-    expect(Date.now() - started).toBeLessThan(8_000)
-  }, 15_000)
+    expect(Date.now() - started).toBeLessThan(3_500) // the 2 s cap plus the login itself, no second wait
+  }, 10_000)
 
   it('the day mark is the idempotency guard: a repeated onLogin the same day writes nothing new', async () => {
     const id = await userIdOf(t.db, STUDENT_EMPTY)

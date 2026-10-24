@@ -14,6 +14,6 @@ export class GamificationLoginHook implements LoginHook {
 
   async onPasswordLogin(event: PasswordLoginEvent): Promise<void> {
     if (event.role !== 'student') return
-    await this.gamification.onLogin(event.userId, { at: event.at })
+    await this.gamification.onLogin(event.userId) // the day comes from the server clock, not from `event.at` (BE-11)
   }
 }

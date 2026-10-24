@@ -356,7 +356,7 @@ export class GamificationService {
       registerUrl,
       // As on live: only spaces are encoded; `:/?=&!` stay raw.
       whatsappUrl: `https://wa.me/?text=${shareEncode(text)}`,
-      telegramUrl: `https://t.me/share/url?url=${registerUrl}&text=${shareEncode(`Jom belajar matematik di PRESTASIPLUS! Guna kod ${code}`)}`,
+      telegramUrl: `https://t.me/share/url?url=${encodeURIComponent(registerUrl)}&text=${shareEncode(`Jom belajar matematik di PRESTASIPLUS! Guna kod ${code}`)}`,
       stats: { referrals: stats.referrals, rewarded: stats.rewarded, syilingEarned: stats.rewarded * REFERRAL_REWARD_REFERRER },
     }
   }
@@ -520,10 +520,12 @@ export class GamificationService {
    * A complimentary student (`coinsEnabled` false) gets the streak but no row. The streak is locked before the wallet
    * (BE-11 lock order). Never `is_test`: a login is not Mod Pelajar.
    */
-  async onLogin(userId: string, opts: { tx?: TxClient; at?: Date } = {}): Promise<{ firstToday: boolean; credited: number; streak: number }> {
+  async onLogin(userId: string, opts: { tx?: TxClient } = {}): Promise<{ firstToday: boolean; credited: number; streak: number }> {
     return this.run(opts.tx, async (db) => {
       const tx = db as TxClient
-      const streak = await this.streaks.touch(userId, { ...(opts.at ? { at: opts.at } : {}), tx })
+      // ONE time source for both: the server clock (BE-11: `markDailyLogin` takes no caller time, so a login cannot be marked for another
+      // day), so the streak day and the daily mark day always agree, also when the call straddles midnight.
+      const streak = await this.streaks.touch(userId, { tx })
       const mark = await this.streaks.markDailyLogin(userId, { tx })
       if (!mark.firstToday || !(await this.coinsEnabled(userId, { tx }))) return { firstToday: mark.firstToday, credited: 0, streak: streak.current }
       await this.wallet.credit(
@@ -564,11 +566,14 @@ export class GamificationService {
    * unlock row is unique per (user, achievement) and the reward is credited only by the call that inserted it
    * (`unlockRecord`), so a replay or a concurrent session unlocks and pays once. The criteria counters are read
    * at call time (lazily, only for the kinds still locked); a reward changes `lifetime_syiling` and `unlocked`
-   * for the achievements after it in the same pass (the mock engine's live counters). Returns the ids unlocked by THIS call.
+   * for the achievements after it in the same pass (the mock engine's live counters). Only a `student` account is evaluated.
+   * Returns the ids unlocked by THIS call.
    */
   async evaluateAchievements(userId: string, opts: EntryOptions): Promise<{ unlockedIds: string[]; syiling: number; xp: number }> {
     return this.run(opts.tx, async (db) => {
       const out = { unlockedIds: [] as string[], syiling: 0, xp: 0 }
+      // BR-M14-16 is the pupil's: a teacher or an admin (also in Mod Pelajar, where the ACTOR keeps their own role) unlocks and earns nothing.
+      if (!(await this.repo.isStudent(db, userId))) return out
       const [catalogue, unlocks] = await Promise.all([this.repo.achievements(db), this.repo.unlocksOf(db, userId)])
       if (catalogue.every((a) => unlocks.has(a.id))) return out
       const at = opts.at ?? this.clock.now()

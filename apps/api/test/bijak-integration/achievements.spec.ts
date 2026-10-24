@@ -1,8 +1,9 @@
 import type { StartSessionResponse } from '@pp/contract'
 import { GamificationAchievementsSchema } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { gamificationSeed } from '../../prisma/seed/gamification'
+import { GamificationService } from '../../src/modules/gamification'
 import { PracticePorts } from '../../src/modules/practice/ports'
 import { fillBank, FakeBank, loadWorld, type World } from '../practice/helpers'
 import { ADMIN, bootIntegrationApp, type Client, type IntegrationApp, loginAs, STUDENT } from './helpers'
@@ -16,6 +17,7 @@ let w: World
 let bank: FakeBank
 let student: Client
 let admin: Client
+let maju: Client
 
 beforeAll(async () => {
   t = await bootIntegrationApp({ extraSeeds: [gamificationSeed] })
@@ -25,9 +27,13 @@ beforeAll(async () => {
   t.app.get(PracticePorts).provideQuestions(bank)
   student = await loginAs(t, STUDENT)
   admin = await loginAs(t, ADMIN, true)
+  maju = await loginAs(t, 'pelajarmaju@demo.test')
 }, 120_000)
 afterAll(async () => {
   await t.close()
+})
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 const RANDOM = { mode: 'random', subjectCode: 'MATH', levelId: undefined as string | undefined, count: 5 }
@@ -90,11 +96,30 @@ describe('achievements follow completed practice-mode sessions (BR-M14-16, FR-M1
     expect(await achievementRows(student.userId)).toHaveLength(2)
   })
 
-  it('4. Mod Pelajar: the admin\'s test-mode session is not a practice fact (no "Langkah Pertama"); what it unlocks is stamped is_test, ledger rows included', async () => {
+  it('4. Mod Pelajar: an admin acting as a pupil unlocks and earns nothing (achievements are the pupil\'s, BR-M14-16)', async () => {
     await play(admin, random())
-    const rows = await unlocks(admin.userId)
-    expect(rows.map((r) => r.name)).not.toContain('Langkah Pertama')
-    expect(rows.every((r) => r.is_test)).toBe(true)
-    expect((await achievementRows(admin.userId)).every((r) => r.is_test)).toBe(true)
+    expect(await unlocks(admin.userId)).toEqual([])
+    expect(await achievementRows(admin.userId)).toEqual([])
+  })
+
+  it('5. the evaluator cannot fail the submit: when it throws after a partial write, the submit is 200, the session and the credit stay, only the unlock is skipped (savepoint)', async () => {
+    const gamification = t.app.get(GamificationService)
+    const rajin = (await t.db.query<{ id: string }>(`select id::text from achievements where name = 'Pelajar Rajin'`))[0]!.id
+    const before = (await unlocks(maju.userId)).length
+    const ledgerBefore = (await achievementRows(maju.userId)).length
+    vi.spyOn(gamification, 'evaluateAchievements').mockImplementation(async (userId, opts) => {
+      await gamification.unlockAchievement(userId, rajin, opts) // a partial write inside the submit transaction
+      throw new Error('evaluator boom')
+    })
+    const sessionId = await play(maju, random()) // play() asserts the submit answers 200
+    const row = await t.db.query<{ status: string }>(`select status from practice_sessions where id = $1`, [sessionId])
+    expect(row[0]?.status).toBe('completed')
+    expect((await t.db.query(`select 1 from session_credits where session_id = $1`, [sessionId])).length).toBe(1)
+    expect((await t.db.query(`select 1 from practice_answers where session_id = $1`, [sessionId])).length).toBeGreaterThan(0)
+    expect(await unlocks(maju.userId)).toHaveLength(before) // the partial unlock was rolled back to the savepoint
+    expect(await achievementRows(maju.userId)).toHaveLength(ledgerBefore)
+    vi.restoreAllMocks()
+    await play(maju, random()) // the next session evaluates normally (10 sessions are not played, so the rolled-back unlock is not re-earned)
+    expect((await unlocks(maju.userId)).map((r) => r.name)).not.toContain('Pelajar Rajin')
   })
 })

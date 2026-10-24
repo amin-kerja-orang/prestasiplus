@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
 import { GamificationService } from '../../gamification'
@@ -64,6 +64,8 @@ export class WalletBijakReward implements BijakRewardPort {
  */
 @Injectable()
 export class WalletPracticeReward implements PracticeRewardPort {
+  private readonly logger = new Logger(WalletPracticeReward.name)
+
   constructor(
     @Inject(WalletService) private readonly wallet: WalletService,
     @Inject(StreakService) private readonly streaks: StreakService,
@@ -101,9 +103,24 @@ export class WalletPracticeReward implements PracticeRewardPort {
     await this.gamification.settleChallenges(input.userId, { tx, isTest: input.isTest, at: input.completedAt })
     // BR-M14-16 / FR-M14-51: after the challenges, a PRACTICE-mode session (`random`, `chapter`, `revision`) evaluates the
     // achievement criteria; each unlock is once per user and pays its syiling + XP once (ledger `achievement`, key `achievement:<id>`).
-    if ((ACHIEVEMENT_PRACTICE_MODES as readonly string[]).includes(input.mode)) {
-      await this.gamification.evaluateAchievements(input.userId, { tx, isTest: input.isTest, at: input.completedAt })
-    }
+    // An achievement is a bonus: it runs in a savepoint and its failure only skips the unlock, never the submit.
+    if ((ACHIEVEMENT_PRACTICE_MODES as readonly string[]).includes(input.mode)) await this.evaluateAchievementsSafely(input, tx)
     return { coinsEarned: result.coinsEarned, streakCount: result.streakCount, totalBalance: result.totalBalance }
+  }
+
+  /**
+   * `evaluateAchievements` inside a SAVEPOINT of the submit transaction. If it throws (a rule or a database error), the work it
+   * did is rolled back to the savepoint, the error is logged (no user data) and the submit carries on with the session, the
+   * answers, the credit and the challenges committed. (`settleChallenges` has no such guard: a throw there still rolls the submit back.)
+   */
+  private async evaluateAchievementsSafely(input: PracticeSessionCompleted, tx: TxClient): Promise<void> {
+    await tx.$executeRaw`SAVEPOINT achievements_eval`
+    try {
+      await this.gamification.evaluateAchievements(input.userId, { tx, isTest: input.isTest, at: input.completedAt })
+    } catch (err) {
+      this.logger.warn(`achievement evaluation skipped for session ${input.sessionId}: ${err instanceof Error ? err.name : 'unknown error'}`)
+      await tx.$executeRaw`ROLLBACK TO SAVEPOINT achievements_eval`
+    }
+    await tx.$executeRaw`RELEASE SAVEPOINT achievements_eval`
   }
 }

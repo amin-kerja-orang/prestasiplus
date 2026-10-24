@@ -481,6 +481,11 @@ export class GamificationRepository {
     return rows.length === 1
   }
 
+  /** True when the user holds the role `student` (BR-M14-16: achievements are the pupil's). */
+  async isStudent(db: Db, userId: string): Promise<boolean> {
+    return (await db.userRole.count({ where: { userId: idFromString(userId), role: 'student' } })) > 0
+  }
+
   async mysteryOpenings(db: Db, userId: string): Promise<number> {
     return db.mysteryBoxOpening.count({ where: { userId: idFromString(userId) } })
   }
