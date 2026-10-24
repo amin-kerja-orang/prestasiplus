@@ -180,6 +180,25 @@ describe('S22 inline add', () => {
     expect(guru.createChapter).not.toHaveBeenCalled()
   })
 
+  it('saves the Bidang panel on Enter without submitting the question form (UAT G-49)', async () => {
+    guru.createBidang.mockResolvedValue({ id: 55, code: 'B9', name: 'Bidang Baru' })
+    const w = await mountForm()
+    await pickLevelAndSubject(w)
+    await t(w, 'q-bidang-add').trigger('click')
+    await t(w, 'q-bidang-field-code').setValue('B9')
+    await t(w, 'q-bidang-field-name').setValue('Bidang Baru')
+    await t(w, 'q-bidang-field-name').trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(guru.createBidang).toHaveBeenCalledWith({
+      subjectId: 1,
+      educationLevelId: 11,
+      code: 'B9',
+      name: 'Bidang Baru',
+    })
+    expect((t(w, 'q-bidang-select').element as HTMLSelectElement).value).toBe('55')
+    expect(w.emitted('submit')).toBeUndefined()
+  })
+
   it('keeps the typed values when the panel is cancelled and ignores a refused add', async () => {
     guru.createSp.mockResolvedValue({ error: 'SP sudah wujud.' })
     const w = await mountForm()

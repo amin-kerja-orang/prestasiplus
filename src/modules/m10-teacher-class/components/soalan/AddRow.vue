@@ -4,6 +4,7 @@
  * SP of S22. The "+" button is disabled until `addDisabled` clears; it opens a panel whose fields keep
  * their typed values when "Batal" hides it. "Simpan" emits `add` with the field values; the owner does
  * nothing when a field is empty (live) and closes the panel through `close()` after a success.
+ * Enter inside a panel field saves the panel (it must not submit the surrounding question form: UAT G-49).
  * The select stays a native `<select>` (native validation and keyboard, cascading option lists).
  */
 import { DsPanel, DsNativeSelect } from '@/ds'
@@ -80,6 +81,7 @@ defineExpose({ done })
           :aria-label="f.placeholder"
           class="min-w-0 flex-1 basis-40"
           :data-testid="`${testid}-field-${f.key}`"
+          @keydown.enter.prevent="save"
         />
       </div>
       <div class="flex gap-2">
