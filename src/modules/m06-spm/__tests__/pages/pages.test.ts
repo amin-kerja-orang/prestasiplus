@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia } from 'pinia'
 import { defineComponent, h } from 'vue'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
@@ -50,7 +51,7 @@ async function render(component: unknown, url: string): Promise<VueWrapper> {
     ],
   })
   await router.push(url)
-  wrapper = mount(component as never, { global: { plugins: [router] } })
+  wrapper = mount(component as never, { global: { plugins: [router, createPinia()] } })
   await flushPromises()
   return wrapper
 }
@@ -98,6 +99,11 @@ describe('S1 SpmHubPage', () => {
       expect(s.text()).toContain(expected[i]![0])
       expect(s.text()).toContain(expected[i]![1])
     })
+  })
+
+  it('shows the Bijak SPM paper count, computed from the published papers', async () => {
+    const w = await render(SpmHubPage, '/spm')
+    expect(w.get('[data-testid=spm-bijak-hero]').text()).toMatch(/Baharu · [1-9]\d* kertas/)
   })
 
   it('renders four whole-card links with chips and "Mula"', async () => {

@@ -11,6 +11,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
+import { useBijakPaperCount } from '@/modules/m28-bijak-spm'
 import { DsHeroCard, DsIconChip, DsPage, DsPanel, DsStatTile, type DsAccent, DsLoadError } from '@/ds'
 import { formatCount, formatNumber } from '@/lib/number'
 
@@ -19,6 +20,12 @@ import SkeletonCards from '../components/SkeletonCards.vue'
 import { LOAD_ERROR } from '../lib/copy'
 
 const { data, error, reload } = useApi((signal) => fetchSpmOverview({ signal }))
+
+// "{n} kertas": the published Bijak SPM papers, read from the Bijak module (never a constant).
+const bijakCount = useBijakPaperCount()
+const bijakOverline = computed(() =>
+  bijakCount.value === null ? 'Baharu' : `Baharu · ${bijakCount.value} kertas`,
+)
 
 interface Tile {
   id: string
@@ -168,7 +175,7 @@ const mine = computed<Tile[]>(() => {
 
     <!-- v2 Bijak SPM (Kertas Pilihan + Jana Kertas): full-paper practice in the exam format -->
     <DsHeroCard
-      overline="Baharu"
+      :overline="bijakOverline"
       title="Bijak SPM"
       subtitle="Duduki kertas SPM penuh dalam format kertas sebenar — bermasa, dengan skema."
       art="cap"
