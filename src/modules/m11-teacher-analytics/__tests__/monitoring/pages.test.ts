@@ -441,10 +441,10 @@ describe('S2 Monitoring Penglibatan', () => {
     const att = all('mon-attention-item').map((n) => n.text())
     expect(att[0]).toBe('SMK Dua — 3/20 pelajar aktif (15%). Tahap rendah.')
     expect(att[1]).toBe(
-      'SMK Tiga — 5 pelajar berdaftar tetapi tiada seorang pun yang menjawab soalan. Tiada sebarang tanda penggunaan platform. (Nota: 4 guru telah login)',
+      'SMK Tiga — 5 pelajar berdaftar tetapi tiada seorang pun yang menjawab soalan. Tiada sebarang tanda penggunaan platform. (Nota: 4 guru telah log masuk)',
     )
     expect(tid('mon-suggestion-item')?.text()).toBe(
-      'SMK Tiga: Guru telah login tetapi murid belum aktif. Cadangan: Adakan sesi hands-on dengan pelajar.',
+      'SMK Tiga: Guru telah log masuk tetapi murid belum aktif. Cadangan: Adakan sesi hands-on dengan pelajar.',
     )
   })
 
@@ -471,7 +471,7 @@ describe('S2 Monitoring Penglibatan', () => {
     await mountAt(MonitoringPage, '/guru/monitoring')
     expect(tid('mon-guide')?.exists()).toBe(true)
     expect(all('mon-guide-tile')).toHaveLength(6)
-    expect(tid('mon-guide-tip')?.text()).toContain('Guna Filter untuk tapis negeri/tempoh/tahap.')
+    expect(tid('mon-guide-tip')?.text()).toContain('Guna penapis untuk menapis negeri/tempoh/tahap.')
     await tid('mon-guide-close')?.trigger('click')
     expect(window.localStorage.getItem('hideMonitoringGuide')).toBe('true')
     expect(tid('mon-guide')?.exists()).toBe(false)
@@ -557,7 +557,7 @@ describe('S3 Detail Sekolah', () => {
     await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8080', { schoolId: 8080 })
     expect(tid('mon-school-name')?.text()).toBe('SMK Contoh')
     expect(tid('mon-school-tahap')?.text()).toBe('Cemerlang — 89.7%')
-    expect(tid('mon-subscription')?.text()).toContain('Active — sehingga 12 May 2027')
+    expect(tid('mon-subscription')?.text()).toContain('Aktif — sehingga 12 Mei 2027')
     expect(valuesIn('mon-school-cards')).toEqual(['4', '2', '53,494', '2', '1'])
     expect(tid('mon-warning')?.text().replace(/ {2,}/g, ' ')).toBe(
       '⚠ 2 akaun menunjukkan aktiviti luar biasa (kelajuan menjawab tidak munasabah — perlu semak). 1 daripadanya dikecualikan dari peratus penglibatan kerana corak seperti automasi. Angka penglibatan di atas ialah nilai tulen selepas tapis.',
@@ -583,7 +583,7 @@ describe('S3 Detail Sekolah', () => {
       school({ subscription: { status: 'expired', endsAt: '2026-05-22T00:00:00+08:00' } }),
     )
     await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8107', { schoolId: 8107 })
-    expect(tid('mon-subscription')?.text()).toContain('Expired — sehingga 22 May 2026')
+    expect(tid('mon-subscription')?.text()).toContain('Tamat Tempoh — sehingga 22 Mei 2026')
     expect(tid('mon-subscription')?.attributes('data-status')).toBe('expired')
   })
 
@@ -614,8 +614,8 @@ describe('S3 Detail Sekolah', () => {
     expect(all('mon-student-status').map((n) => n.text())).toEqual([
       'Aktif',
       'Aktif',
-      'Login sahaja',
-      'Belum login',
+      'Log Masuk sahaja',
+      'Belum log masuk',
     ])
   })
 
@@ -653,9 +653,9 @@ describe('S3 Detail Sekolah', () => {
     )
     await tid('mon-tpill-never')?.trigger('click')
     expect(all('mon-teacher-row')).toHaveLength(1)
-    expect(tid('mon-teacher-status')?.text()).toBe('Belum login')
+    expect(tid('mon-teacher-status')?.text()).toBe('Belum log masuk')
     await tid('mon-tpill-login')?.trigger('click')
-    expect(tid('mon-teacher-status')?.text()).toBe('Pernah login')
+    expect(tid('mon-teacher-status')?.text()).toBe('Pernah log masuk')
     wrapper?.unmount()
     api.fetchSchoolDetail.mockResolvedValue(school({ teachers: [] }))
     await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/940', { schoolId: 940 })
@@ -858,8 +858,8 @@ describe('S5 Detail Guru', () => {
 
   it('header, cards, student table and the three suggestions', async () => {
     await open()
-    expect(tid('mon-teacher-last')?.text()).toBe('Login Terakhir: 20/09/2026 08:00')
-    expect(tid('mon-teacher-pill')?.text()).toBe('Pernah Login')
+    expect(tid('mon-teacher-last')?.text()).toBe('Log Masuk Terakhir: 20/09/2026 08:00')
+    expect(tid('mon-teacher-pill')?.text()).toBe('Pernah Log Masuk')
     expect(valuesIn('mon-teacher-cards')).toEqual(['3', '2', '66.7%', '1'])
     const rows = all('mon-teacher-student-row')
     expect(rows).toHaveLength(3)
@@ -884,10 +884,10 @@ describe('S5 Detail Guru', () => {
       }),
     )
     await open()
-    expect(tid('mon-teacher-last')?.text()).toBe('Login Terakhir: -')
-    expect(tid('mon-teacher-pill')?.text()).toBe('Belum Login')
+    expect(tid('mon-teacher-last')?.text()).toBe('Log Masuk Terakhir: -')
+    expect(tid('mon-teacher-pill')?.text()).toBe('Belum Log Masuk')
     expect(tid('mon-suggestion-never')?.text()).toContain(
-      '8 pelajar belum pernah login. Cadangan: Adakan sesi pengenalan platform di kelas.',
+      '8 pelajar belum pernah log masuk. Cadangan: Adakan sesi pengenalan platform di kelas.',
     )
     expect(tid('mon-suggestion-low')?.exists()).toBe(false)
     expect(tid('mon-suggestion-answered')?.exists()).toBe(false)

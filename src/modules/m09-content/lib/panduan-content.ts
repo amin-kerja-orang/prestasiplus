@@ -81,7 +81,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
         title: 'Isi Maklumat',
         text: [
           'Masukkan ',
-          b('nama penuh, e-mel, kata laluan'),
+          b('nama penuh, emel, kata laluan'),
           ', dan pilih tingkatan/darjah anda.',
         ],
       },
@@ -92,7 +92,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
     ],
     done: {
       title: 'Siap! Mula Berlatih',
-      text: ['Anda kini boleh mula latih tubi, kumpul kombo, dan naik ranking!'],
+      text: ['Anda kini boleh mula latih tubi, kumpul kombo, dan naik kedudukan!'],
     },
     featuresTitle: 'Apa Yang Boleh Anda Buat',
     featuresIcon: 'gamepad',
@@ -119,8 +119,8 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
       },
       {
         emoji: '🏆',
-        title: 'Ranking & Lencana',
-        text: 'Naik ranking sekolah dan kumpul lencana pencapaian!',
+        title: 'Kedudukan & Lencana',
+        text: 'Naik kedudukan sekolah dan kumpul lencana pencapaian!',
       },
       {
         emoji: '🪙',
@@ -131,11 +131,11 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
     faqTitle: 'Soalan Lazim Pelajar',
     faqs: [
       {
-        q: 'Macam mana nak reset kata laluan?',
-        a: 'Pergi ke halaman login, klik "Lupa Kata Laluan", masukkan e-mel anda, dan ikut arahan dalam e-mel yang dihantar.',
+        q: 'Macam mana nak set semula kata laluan?',
+        a: 'Pergi ke halaman log masuk, klik "Lupa Kata Laluan", masukkan emel anda, dan ikut arahan dalam emel yang dihantar.',
       },
       {
-        q: 'Saya tak ada e-mel. Boleh daftar?',
+        q: 'Saya tak ada emel. Boleh daftar?',
         a: 'Ya! Minta guru anda daftarkan akaun untuk anda melalui panel guru. Guru boleh import senarai pelajar.',
       },
       {
@@ -168,7 +168,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
           b('"Daftar"'),
           ', pilih peranan ',
           b('"Guru"'),
-          ', dan isi nama, e-mel, serta kata laluan.',
+          ', dan isi nama, emel, serta kata laluan.',
         ],
       },
       {
@@ -209,7 +209,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
       {
         emoji: '📊',
         title: 'Prestasi Kelas',
-        text: 'Dashboard kelas — purata ketepatan, ranking murid, trend prestasi 30 hari.',
+        text: 'Papan pemuka kelas — purata ketepatan, kedudukan murid, trend prestasi 30 hari.',
       },
       {
         emoji: '🎯',
@@ -246,7 +246,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
     faqs: [
       {
         q: 'Macam mana nak import pelajar secara pukal?',
-        a: 'Pergi ke Kelas Saya → pilih kelas → klik "Import Pelajar". Muat naik fail CSV dengan nama dan e-mel pelajar.',
+        a: 'Pergi ke Kelas Saya → pilih kelas → klik "Import Pelajar". Muat naik fail CSV dengan nama dan emel pelajar.',
       },
       {
         q: 'Boleh saya ada lebih dari satu kelas?',
@@ -258,7 +258,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
       },
       {
         q: 'Macam mana nak tengok murid yang tak aktif?',
-        a: 'Pergi ke Kombo → pilih kelas anda. Bahagian "Pelajar Dormant" akan tunjuk murid yang tak berlatih 3+ hari.',
+        a: 'Pergi ke Kombo → pilih kelas anda. Bahagian "Pelajar Tidak Aktif" akan tunjuk murid yang tak berlatih 3+ hari.',
       },
       {
         q: 'Bagaimana Log Intervensi berfungsi?',
@@ -287,10 +287,10 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
         ],
       },
       {
-        title: 'Link Anak Anda',
+        title: 'Pautkan Anak Anda',
         text: [
           'Selepas daftar, pergi ke profil dan masukkan ',
-          b('e-mel anak'),
+          b('emel anak'),
           ' untuk menghubungkan akaun.',
         ],
       },
@@ -318,7 +318,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
       {
         emoji: '📅',
         title: 'Peta Aktiviti',
-        text: 'Heatmap 90 hari — hari mana anak rajin berlatih dan skip.',
+        text: 'Peta haba 90 hari — hari mana anak rajin berlatih dan tidak berlatih.',
       },
       {
         emoji: '💡',
@@ -330,11 +330,11 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
     faqs: [
       {
         q: 'Boleh pantau lebih dari seorang anak?',
-        a: 'Ya! Anda boleh link beberapa akaun anak dan pilih mana satu untuk dilihat.',
+        a: 'Ya! Anda boleh memautkan beberapa akaun anak dan pilih mana satu untuk dilihat.',
       },
       {
         q: 'Saya tak nampak data anak?',
-        a: 'Pastikan anak sudah menerima permintaan link dari akaun mereka.',
+        a: 'Pastikan anak sudah menerima permintaan pautan dari akaun mereka.',
       },
       {
         q: 'Adakah guru boleh lihat bahawa saya pantau?',
@@ -353,7 +353,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
       {
         title: 'Hubungi Admin PRESTASIPLUS',
         text: [
-          'Akaun Admin Sekolah perlu didaftarkan oleh pentadbir sistem. Hubungi kami untuk setup.',
+          'Akaun Admin Sekolah perlu didaftarkan oleh pentadbir sistem. Hubungi kami untuk penyediaan.',
         ],
       },
       {
@@ -394,7 +394,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
       {
         emoji: '📊',
         title: 'Prestasi Sekolah',
-        text: 'Dashboard seluruh sekolah — prestasi mengikut kelas, subjek, tingkatan.',
+        text: 'Papan pemuka seluruh sekolah — prestasi mengikut kelas, subjek, tingkatan.',
       },
       {
         emoji: '⚠️',
@@ -409,18 +409,18 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
       {
         emoji: '📊',
         title: 'Statistik Penggunaan',
-        text: 'Pelajar aktif, sesi latihan, soalan dijawab — gambaran engagement.',
+        text: 'Pelajar aktif, sesi latihan, soalan dijawab — gambaran penglibatan.',
       },
     ],
     faqTitle: 'Soalan Lazim Admin',
     faqs: [
       {
         q: 'Format CSV untuk import pelajar?',
-        a: 'CSV perlu ada lajur: name, email, grade (T4, T5, D1-D6). Baris pertama adalah header. E-mel mesti unik.',
+        a: 'CSV perlu ada lajur: name, email, grade (T4, T5, D1-D6). Baris pertama adalah header. Emel mesti unik.',
       },
       {
-        q: 'Boleh reset kata laluan guru/pelajar?',
-        a: 'Ya! Dari senarai guru/pelajar, klik nama pengguna, kemudian "Reset Kata Laluan".',
+        q: 'Boleh set semula kata laluan guru/pelajar?',
+        a: 'Ya! Dari senarai guru/pelajar, klik nama pengguna, kemudian "Set Semula Kata Laluan".',
       },
       {
         q: 'Macam mana nak cetak Ringkasan Eksekutif?',
@@ -441,9 +441,9 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
         text: ['Akaun PPD/JPN didaftarkan oleh pentadbir sistem. Nyatakan daerah dan negeri anda.'],
       },
       {
-        title: 'Login & Akses Dashboard',
+        title: 'Log Masuk & Akses Papan Pemuka',
         text: [
-          'Selepas akaun aktif, login dan akses menu ',
+          'Selepas akaun aktif, log masuk dan akses menu ',
           b('Amaran Awal'),
           ' untuk data daerah/negeri.',
         ],
@@ -457,12 +457,12 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
     features: [
       {
         emoji: '📊',
-        title: 'Dashboard Daerah (PPD)',
-        text: 'Ringkasan semua sekolah dalam daerah — taburan risiko, ranking sekolah.',
+        title: 'Papan Pemuka Daerah (PPD)',
+        text: 'Ringkasan semua sekolah dalam daerah — taburan risiko, kedudukan sekolah.',
       },
       {
         emoji: '🗺️',
-        title: 'Dashboard Negeri (JPN)',
+        title: 'Papan Pemuka Negeri (JPN)',
         text: 'Gambaran seluruh negeri — perbandingan daerah dan sekolah.',
       },
       {
@@ -473,7 +473,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
       {
         emoji: '📥',
         title: 'Muat Turun CSV',
-        text: 'Export data risiko dalam CSV untuk analisis lanjut.',
+        text: 'Eksport data risiko dalam CSV untuk analisis lanjut.',
       },
       {
         emoji: '🏫',
@@ -483,7 +483,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
       {
         emoji: '🔥',
         title: 'Kombo & Penglibatan',
-        text: 'Pantau kadar penglibatan — purata kombo, pelajar aktif vs dormant.',
+        text: 'Pantau kadar penglibatan — purata kombo, pelajar aktif berbanding tidak aktif.',
       },
     ],
     faqTitle: 'Soalan Lazim PPD / JPN',

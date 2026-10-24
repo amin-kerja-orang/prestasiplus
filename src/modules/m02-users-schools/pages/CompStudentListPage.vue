@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * S6 `/admin/comp-students` "Pelajar Komplimen - Admin Panel" (M02-T7; FR-M02-65…69), v2 staff theme.
+ * S6 `/admin/comp-students` "Pelajar Komplimen - Panel Admin" (M02-T7; FR-M02-65…69), v2 staff theme.
  *
- * Header summary "Syiling OFF: {n} / {total} pelajar komplimen" + "Daftar Baru", three KPI tiles, the
+ * Header summary "Syiling Mati: {n} / {total} pelajar komplimen" + "Daftar Baru", three KPI tiles, the
  * sticky bulk bar (shown while a row is ticked: "{n} dipilih", four immediate actions without
  * confirmation, "Batal pilihan") and `AdminTable` of 50 rows per page (cards below `md`). After a bulk
  * action the same page reloads, the selection is cleared and the API `status` is the success flash
@@ -72,14 +72,14 @@ const stats = computed<StatItem[]>(() => {
     },
     {
       key: 'off',
-      label: 'Syiling OFF',
+      label: 'Syiling Mati',
       value: formatNumber(k.coinsOff),
       icon: 'prohibit',
       accent: 'heat',
     },
     {
       key: 'on',
-      label: 'Syiling ON',
+      label: 'Syiling Hidup',
       value: formatNumber(k.total - k.coinsOff),
       icon: 'coins',
       accent: 'trial',
@@ -150,7 +150,7 @@ const COLUMNS: TableColumn<CompRow>[] = [
   <DsPage title="Pelajar Komplimen" data-testid="comp-list-page">
     <template #subtitle>
       <p v-if="counts" class="text-body text-muted" data-testid="comp-summary">
-        Syiling OFF: <strong class="text-highlighted">{{ counts.coinsOff }}</strong> /
+        Syiling Mati: <strong class="text-highlighted">{{ counts.coinsOff }}</strong> /
         {{ counts.total }} pelajar komplimen
       </p>
     </template>
@@ -282,7 +282,7 @@ const COLUMNS: TableColumn<CompRow>[] = [
         <UBadge
           :color="coinsColor(row.original.coinsEnabled)"
           variant="subtle"
-          :label="row.original.coinsEnabled ? 'ON' : 'OFF'"
+          :label="row.original.coinsEnabled ? 'HIDUP' : 'MATI'"
           data-testid="comp-coins"
         />
       </template>
@@ -319,7 +319,7 @@ const COLUMNS: TableColumn<CompRow>[] = [
               <UBadge
                 :color="coinsColor(row.coinsEnabled as boolean)"
                 variant="subtle"
-                :label="row.coinsEnabled ? 'ON' : 'OFF'"
+                :label="row.coinsEnabled ? 'HIDUP' : 'MATI'"
               />
             </div>
           </div>

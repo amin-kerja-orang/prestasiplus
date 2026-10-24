@@ -79,15 +79,15 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       ['/battle', 'Battle Arena', 'Bertanding kuiz 1v1 dengan pelajar lain!', 'Battle Arena'],
       [
         '/battle/leaderboard',
-        'Ranking Pelajar Battle',
+        'Kedudukan Pelajar Battle',
         'Siapa pejuang terhebat minggu ini?',
-        'Ranking Pelajar Battle',
+        'Kedudukan Pelajar Battle',
       ],
       [
         '/battle/ranking-sekolah',
-        'Papan Ranking Sekolah',
-        'Ranking 10,218 sekolah seluruh Malaysia',
-        'Papan Ranking Sekolah',
+        'Papan Kedudukan Sekolah',
+        'Kedudukan 10,218 sekolah seluruh Malaysia',
+        'Papan Kedudukan Sekolah',
       ],
       ['/battle/history', 'Sejarah Battle', 'Rekod pertandingan anda', 'Sejarah Battle'],
     ] as const
@@ -215,7 +215,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
   })
 
   test(
-    'E2E-M16-22 Quick Match: request, timer 0:00 to 0:06 and the arena after the 3rd poll @m16',
+    'E2E-M16-22 Padanan Pantas: request, timer 0:00 to 0:06 and the arena after the 3rd poll @m16',
     provisional('simulated matchmaking (SIMULATION, BR-M16-05)'),
     async ({ page, gotoApp, loginAs, mock, clock }) => {
       await loginAs(ADMIN)
@@ -312,7 +312,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await openLobby(page, gotoApp)
       await pickSubject(page, 'Bahasa Cina')
       await school(page).click()
-      await expect(err(page)).toHaveText('Ralat dari server. Sila cuba lagi.')
+      await expect(err(page)).toHaveText('Ralat dari pelayan. Sila cuba lagi.')
       await page.getByTestId('battle-error-close').click()
       await expect(err(page)).toBeHidden()
     },
@@ -573,7 +573,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       'Skor',
     ])
     await expect(page.getByTestId('battle-leaderboard-empty')).toHaveText(
-      'Belum ada data ranking. Mula battle untuk muncul di sini!',
+      'Belum ada data kedudukan. Mula battle untuk muncul di sini!',
     )
     await expectNoHorizontalScroll(page)
   })
@@ -602,7 +602,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await gotoApp('/battle/ranking-sekolah')
     await expect(page.getByTestId('battle-period-weekly')).toHaveClass(/bg-blue-500/)
     await expect(page.getByTestId('battle-schools-empty')).toHaveText(
-      'Belum ada data ranking. Mula battle untuk melihat ranking sekolah!',
+      'Belum ada data kedudukan. Mula battle untuk melihat kedudukan sekolah!',
     )
     await expect(page.getByTestId('battle-podium')).toBeHidden()
     await page.getByTestId('battle-period-monthly').click()

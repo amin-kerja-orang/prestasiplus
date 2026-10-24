@@ -150,7 +150,7 @@ describe('POST /api/me/parent-invite/generate (#2): BR-L45-03', () => {
     try {
       const r = await generate(s4)
       expect(r.status).toBe(200)
-      expect(r.data.status).toBe('Link jemputan baru telah dijana!')
+      expect(r.data.status).toBe('Pautan jemputan baharu telah dijana!')
       expect(r.data.token).toMatch(HEX64)
       expect(r.data.token).not.toBe(before.token)
       expect(r.data.createdAt).toBe('2026-09-25T16:10:00+08:00')

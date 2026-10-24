@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S7 `/admin/question-reports` "Laporan Soalan — Admin Panel" (M04-T6c; FR-M04-72…81,
+ * S7 `/admin/question-reports` "Laporan Soalan — Panel Admin" (M04-T6c; FR-M04-72…81,
  * FN-M04-3.2.1…3.2.19).
  *
  * - h1 with the flag icon, the subtitle and five status tabs with live counts (`?status=`, default

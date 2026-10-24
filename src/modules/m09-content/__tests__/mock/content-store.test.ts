@@ -448,7 +448,7 @@ describe('articles (M09 §6.9, §6.11)', () => {
     expect(d?.views).toBe(597)
     expect(d?.likes).toBe(6)
     expect(d?.gradeLabel).toBe('Darjah 4')
-    expect(d?.categoryLabel).toBe('Tips Belajar')
+    expect(d?.categoryLabel).toBe('Petua Belajar')
     expect(d?.content).toContain('Apa Itu Teknik Pomodoro?')
     expect(articles.detail('tiada-slug')).toBeUndefined()
   })
@@ -584,7 +584,7 @@ describe('M05 dashboard inputs (M05 §6.12, §7 #1; M09 FR-M09-40)', () => {
     expect(list[0]).toMatchObject({
       slug: 'ai-ini-apa-sebenarnya-jom-fahami-bersama',
       category: 'TIPS_BELAJAR',
-      categoryLabel: 'Tips Belajar',
+      categoryLabel: 'Petua Belajar',
     })
     expect(list.every((a) => typeof a.publishedAt === 'string')).toBe(true)
     expect(list.map((a) => diffForHumans(a.publishedAt ?? '', NOW))).toEqual(

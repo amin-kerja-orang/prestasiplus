@@ -25,12 +25,12 @@ const EMPTY = 'Tiada hadiah dalam kategori ini.'
 const CHIPS = [
   ['all', '🌟 Semua'],
   ['flagship', '🏆 Mahkota'],
-  ['ewallet', '💳 E-Wallet'],
-  ['telco', '📱 Telco'],
-  ['gaming', '🎮 Gaming'],
-  ['streaming', '🎬 Streaming'],
+  ['ewallet', '💳 Dompet Digital'],
+  ['telco', '📱 Telekomunikasi'],
+  ['gaming', '🎮 Permainan'],
+  ['streaming', '🎬 Penstriman'],
   ['food_beverage', '🍔 Makan & Minum'],
-  ['ecommerce', '🛒 Shopping'],
+  ['ecommerce', '🛒 Beli-belah'],
   ['education', '📚 Pembelajaran'],
   ['entertainment', '🎭 Hiburan'],
 ] as const

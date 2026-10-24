@@ -29,7 +29,7 @@ import { DASHBOARD_PATH, normaliseRange } from '../components/activity/activity-
 
 const TITLE = 'Laporan Aktiviti'
 
-const crumbs = [{ label: 'Dashboard Sekolah', to: DASHBOARD_PATH }, { label: TITLE }]
+const crumbs = [{ label: 'Papan Pemuka Sekolah', to: DASHBOARD_PATH }, { label: TITLE }]
 
 const route = useRoute()
 const pageMeta = usePageMeta()

@@ -77,7 +77,7 @@ test.describe('M13 shell, 404 and routing', MODULE, () => {
     await expect(chat).toContainText('Cikgu Alesa')
     await expect(chat).toContainText('AI')
     if (isDesktopShell(page)) {
-      await expect(nav.getByText('Cikgu Alesa Tools')).toBeVisible()
+      await expect(nav.getByText('Alat Cikgu Alesa')).toBeVisible()
       await expect(nav.locator('[data-nav-id="pbd-auto-tag"]')).toHaveAttribute('href', '/cikgu/pbd')
     }
   })
@@ -109,7 +109,7 @@ test.describe('M13 shell, 404 and routing', MODULE, () => {
       await expect(bottom).toBeHidden()
       return
     }
-    for (const label of ['Home', 'SPM', 'Game', 'Topik', 'Chat', 'Lagi']) {
+    for (const label of ['Utama', 'SPM', 'Permainan', 'Topik', 'Sembang', 'Lagi']) {
       await expect(bottom).toContainText(label)
     }
     await page.evaluate(() => {
@@ -197,7 +197,7 @@ test.describe('M13 S2 / S3 / V1 RPH', MODULE, () => {
     await expect(tid(page, 'rph-create')).toHaveAttribute('href', '/cikgu/rph/baharu')
     await expect(tid(page, 'rph-create')).toHaveText('Jana RPH Baharu')
     const heads = page.locator('[data-testid="rph-table"] th')
-    await expect(heads).toHaveText(['Tarikh', 'Subjek / Level', 'Tajuk', 'Status', 'Tindakan'])
+    await expect(heads).toHaveText(['Tarikh', 'Subjek / Tahap', 'Tajuk', 'Status', 'Tindakan'])
     expect(await headerCase(heads.first())).toBe('uppercase')
     await expect(tid(page, 'rph-empty')).toContainText('Belum ada RPH. Klik "Jana RPH Baharu"')
     await expect(tid(page, 'rph-empty').locator('em')).toHaveText(
@@ -459,7 +459,7 @@ test.describe('M13 S2 / S3 / V1 RPH', MODULE, () => {
       await expect(tid(page, 'rph-view-content')).toContainText('Objektif Pembelajaran')
       await expectNoHorizontalScroll(page)
       await gotoApp('/cikgu/essay/13201')
-      await expect(h1(page)).toHaveText('📝 Marking Karangan AI')
+      await expect(h1(page)).toHaveText('📝 Penandaan Karangan AI')
       await expect(tid(page, 'essay-view-student')).toHaveText('Murid Demo 01')
       await expect(tid(page, 'essay-view-marks')).toHaveText('35/50')
       await expect(tid(page, 'essay-view-comment')).toContainText('Komen membina:')
@@ -480,16 +480,16 @@ test.describe('M13 S4 / S5 / V2 essay', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu/essay')
-    await expect(h1(page)).toHaveText('📝 Marking Karangan AI')
+    await expect(h1(page)).toHaveText('📝 Penandaan Karangan AI')
     await expect(
-      page.getByText('Karangan yang dimark oleh Cikgu Alesa berdasarkan rubric SPM/PT3.'),
+      page.getByText('Karangan yang ditanda oleh Cikgu Alesa berdasarkan rubrik SPM/PT3.'),
     ).toBeVisible()
     await expect(tid(page, 'essay-create')).toHaveAttribute('href', '/cikgu/essay/baharu')
     const heads = page.locator('[data-testid="essay-table"] th')
-    await expect(heads).toHaveText(['Pelajar', 'Subjek / Rubric', 'Tajuk', 'Markah', 'Tindakan'])
+    await expect(heads).toHaveText(['Pelajar', 'Subjek / Rubrik', 'Tajuk', 'Markah', 'Tindakan'])
     expect(await headerCase(heads.nth(3))).toBe('uppercase')
     await expect(tid(page, 'essay-empty')).toHaveText(
-      'Belum ada karangan dimark. Klik "Mark Karangan Baharu" untuk mula.',
+      'Belum ada karangan ditanda. Klik "Tanda Karangan Baharu" untuk mula.',
     )
     await expectNoHorizontalScroll(page)
     await gotoApp('/cikgu/essay?page=2')
@@ -535,7 +535,7 @@ test.describe('M13 S4 / S5 / V2 essay', MODULE, () => {
     await gotoApp('/cikgu/essay/baharu')
     await expect(tid(page, 'essay-back')).toHaveText('← Senarai')
     await expect(tid(page, 'essay-back')).toHaveAttribute('href', '/cikgu/essay')
-    await expect(h1(page)).toHaveText('📝 Mark Karangan Baharu')
+    await expect(h1(page)).toHaveText('📝 Tanda Karangan Baharu')
     await expect(page.getByText('Salin & tampal karangan pelajar di bawah.')).toBeVisible()
     const options = page.locator('#rubric_key option')
     await expect(options).toHaveCount(6)
@@ -589,8 +589,8 @@ test.describe('M13 S4 / S5 / V2 essay', MODULE, () => {
       /\/cikgu\?action=mark_essay&rubric=sejarah_essay&subject=Sejarah&level=T5&student=Murid\+Demo\+03&title=Semangat\+Patriotisme$/,
     )
     await expect(page.locator('#cikgu-input')).toHaveValue(
-      'Tolong mark karangan ini menggunakan rubric Sejarah — Karangan Esei (20 markah). ' +
-        'Subjek: Sejarah. Level: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
+      'Tolong tanda karangan ini menggunakan rubrik Sejarah — Karangan Esei (20 markah). ' +
+        'Subjek: Sejarah. Tahap: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
         `Karangan: ${ESSAY_TEXT}`,
     )
     expect((await mock.requests('/api/cikgu/send')).length).toBe(0)
@@ -632,7 +632,7 @@ test.describe('M13 S6 PBD', MODULE, () => {
     await gotoApp('/cikgu/pbd')
     await expect(h1(page)).toHaveText('📊 PBD Auto-Tag — Antrian Semakan')
     await expect(page.getByText('AI cadangan Tahap Penguasaan (TP1-6)')).toBeVisible()
-    await expect(page.locator('[data-testid="pbd-class"] option')).toHaveText(['Pilih kelas untuk rollup'])
+    await expect(page.locator('[data-testid="pbd-class"] option')).toHaveText(['Pilih kelas untuk ringkasan'])
     await expect(tid(page, 'pbd-class')).not.toHaveAttribute('required', /.*/)
     await expect(tid(page, 'pbd-rollup')).toHaveText('Jalankan Auto-Tag')
     await expect(tid(page, 'pbd-export')).toHaveText('Eksport CSV (Approved)')
@@ -643,7 +643,7 @@ test.describe('M13 S6 PBD', MODULE, () => {
     await expect(heads).toHaveText(['', 'Pelajar', 'SP', 'Skor', 'TP Cadangan', 'Tindakan'])
     expect(await headerCase(heads.nth(1))).toBe('uppercase')
     await expect(tid(page, 'pbd-empty')).toHaveText(
-      'Tiada antrian semakan. Klik "Jalankan Auto-Tag" untuk scan aktiviti pelajar.',
+      'Tiada antrian semakan. Klik "Jalankan Auto-Tag" untuk mengimbas aktiviti pelajar.',
     )
     await expectNoHorizontalScroll(page)
   })
@@ -655,7 +655,7 @@ test.describe('M13 S6 PBD', MODULE, () => {
       await loginAs(GURU)
       await gotoApp('/cikgu/pbd')
       await expect(page.locator('[data-testid="pbd-class"] option')).toHaveText([
-        'Pilih kelas untuk rollup',
+        'Pilih kelas untuk ringkasan',
         '5 MARIKH - Kimia',
         '5 MARIKH - Sejarah',
       ])

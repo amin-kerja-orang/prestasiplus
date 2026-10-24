@@ -108,12 +108,12 @@ describe('S10 DigitalShopPage', () => {
     expect(chips.map((c) => c.text())).toEqual([
       '🌟 Semua',
       '🏆 Mahkota',
-      '💳 E-Wallet',
-      '📱 Telco',
-      '🎮 Gaming',
-      '🎬 Streaming',
+      '💳 Dompet Digital',
+      '📱 Telekomunikasi',
+      '🎮 Permainan',
+      '🎬 Penstriman',
       '🍔 Makan & Minum',
-      '🛒 Shopping',
+      '🛒 Beli-belah',
       '📚 Pembelajaran',
       '🎭 Hiburan',
     ])

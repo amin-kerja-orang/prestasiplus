@@ -280,7 +280,7 @@ function removeTag(): void {
       data-testid="dskp-tagged"
     >
       <UIcon name="i-ph-check-circle" class="size-4" />
-      DSKP tagged
+      DSKP ditag
     </p>
   </UCard>
 </template>

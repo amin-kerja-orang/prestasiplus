@@ -8,7 +8,7 @@
  *
  * Pills (OBSERVED): a category pill is `?subject=&category=` with an active subject, a subject pill
  * is `?category=&subject=` with an active category; subject pills ignore the active subject (no
- * active style, full counts) and "Reset Subjek" clears it. A zero-count pill is not a link (DV-M09-10).
+ * active style, full counts) and "Set Semula Subjek" clears it. A zero-count pill is not a link (DV-M09-10).
  *
  * v2 restyle (B04): `DsPage` + `DsMediaCard` grid, token colours only; the personality (learner
  * Elektrik / staff kobalt) comes from the shell.

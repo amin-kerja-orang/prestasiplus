@@ -74,7 +74,7 @@ const row2 = computed<StatItem[]>(() => [
   },
   {
     key: 'teachersLoggedIn',
-    label: 'Guru Pernah Login',
+    label: 'Guru Pernah Log Masuk',
     value: count(props.kpi.teachersLoggedIn),
     icon: 'i-ph-sign-in', accent: 'win',
 

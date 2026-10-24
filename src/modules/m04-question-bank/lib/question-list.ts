@@ -50,19 +50,19 @@ export const DSKP_OPTIONS = [
 ] as const
 
 export const COMPLIANCE_OPTIONS = [
-  { value: 'verified', label: 'Verified' },
-  { value: 'pending_mapping', label: 'Pending Mapping' },
-  { value: 'quarantined', label: 'Quarantined' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'missing_source', label: 'Tiada Source PDF' },
-  { value: 'verified_generated', label: 'AI Verified' },
+  { value: 'verified', label: 'Disahkan' },
+  { value: 'pending_mapping', label: 'Menunggu Pemetaan' },
+  { value: 'quarantined', label: 'Dikuarantin' },
+  { value: 'rejected', label: 'Ditolak' },
+  { value: 'draft', label: 'Draf' },
+  { value: 'missing_source', label: 'Tiada PDF Sumber' },
+  { value: 'verified_generated', label: 'Disahkan AI' },
 ] as const
 
 export const SOURCE_OPTIONS = [
-  { value: 'textbook', label: 'Textbook' },
+  { value: 'textbook', label: 'Buku Teks' },
   { value: 'dskp', label: 'DSKP' },
-  { value: 'trial', label: 'Trial' },
+  { value: 'trial', label: 'Percubaan' },
   { value: 'marking_scheme', label: 'Skema' },
 ] as const
 
@@ -102,8 +102,26 @@ export function excerpt(text: string): string {
 /** "PENDING_MAPPING" -> "PENDING MAPPING" (DV-M04-08). */
 export const upperWords = (code: string): string => code.replaceAll('_', ' ').toUpperCase()
 
+const SOURCE_LABEL: Record<string, string> = {
+  textbook: 'BUKU TEKS',
+  dskp: 'DSKP',
+  trial: 'PERCUBAAN',
+  marking_scheme: 'SKEMA',
+  ai_generated: 'JANAAN AI',
+}
 export const sourceLabel = (type: string | null): string =>
-  type === null ? 'TIADA' : upperWords(type)
+  type === null ? 'TIADA' : (SOURCE_LABEL[type] ?? upperWords(type))
+
+const COMPLIANCE_LABEL: Record<ComplianceStatus, string> = {
+  verified: 'Disahkan',
+  pending_mapping: 'Menunggu Pemetaan',
+  quarantined: 'Dikuarantin',
+  rejected: 'Ditolak',
+  draft: 'Draf',
+}
+/** BM word of a compliance status (the list badge shows it upper-cased). */
+export const complianceLabel = (status: string): string =>
+  COMPLIANCE_LABEL[status as ComplianceStatus] ?? status
 
 /** S1 status pill (BR-M04-02; archived is "Arkib" in the list, "Diarkibkan" on S3, as live). */
 const STATUS_LABEL: Record<QuestionStatus, string> = {
@@ -150,7 +168,7 @@ const COMPLIANCE_COLOR: Record<ComplianceStatus, BadgeColor> = {
 }
 export const complianceColor = (status: ComplianceStatus): BadgeColor => COMPLIANCE_COLOR[status]
 
-export const LANGUAGE_LABELS: Record<string, string> = { bm: 'Bahasa Melayu', en: 'English' }
+export const LANGUAGE_LABELS: Record<string, string> = { bm: 'Bahasa Melayu', en: 'Bahasa Inggeris' }
 
 export const TYPE_ANSWER_HEADINGS: Record<Exclude<QuestionType, 'mcq'>, string> = {
   true_false: 'Jawapan Betul / Salah',

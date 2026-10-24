@@ -51,8 +51,8 @@ const routes: RouteRecordRaw[] = [
     props: (route) => ({ id: Number(route.params.id) }),
     meta: {
       ...base,
-      title: 'Detail Soalan — Sumbang Soalan',
-      header: { title: 'Detail Soalan', subtitle: 'Selamat datang kembali' },
+      title: 'Butiran Soalan — Sumbang Soalan',
+      header: { title: 'Butiran Soalan', subtitle: 'Selamat datang kembali' },
     },
   },
   {

@@ -57,15 +57,15 @@ function apply(value: { schoolId: string }) {
 <template>
   <DsPage
     data-testid="kirk-behavior"
-    subtitle="Konsistensi penggunaan, engagement score, dan corak tingkah laku pelajar"
+    subtitle="Konsistensi penggunaan, skor penglibatan, dan corak tingkah laku pelajar"
   >
     <KirkpatrickTabs :base-path="basePath" current="behavior" />
-    <!-- Live copy: "Tapis" and "Reset" (FR-M12-19, 41). -->
+    <!-- Live copy: "Tapis" and "Set Semula" (FR-M12-19, 41). -->
     <DsFilterBar
       :chips="filters.chips.value"
       :show-reset="false"
       apply-label="Tapis"
-      reset-label="Reset"
+      reset-label="Set Semula"
       data-testid="kirk-filter"
       @apply="filters.apply"
       @remove-chip="filters.removeChip"

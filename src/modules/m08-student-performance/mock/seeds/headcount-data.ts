@@ -2,7 +2,7 @@
 /**
  * M08-T1b headcount seed data (SRS M08 v1.12 §6.3, §6.10). GENERATED OFFLINE by a deterministic script
  * (seeded PRNG); the per-subject grade split is generated (unobserved) under the constraint that every
- * platform subject row (discovery A.2: entries, GPS, On Track / Below / Tiada Sasaran) and the 8880 pins
+ * platform subject row (discovery A.2: entries, GPS, Atas Landasan / Below / Tiada Sasaran) and the 8880 pins
  * (148 entries, GPS 2.49) hold, and the 744 graded entries give the platform grade counts
  * A+ 125 · A 146 · A- 96 · B+ 47 · B 107 · C+ 24 · C 23 · D 76 · E 28 · G 72 (GPS 3.45).
  *

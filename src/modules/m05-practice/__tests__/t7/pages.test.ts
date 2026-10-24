@@ -104,7 +104,7 @@ describe('S10 StructuredListPage', () => {
     expect(t(w, 'structured-h1').text()).toBe('Soalan Berstruktur')
     expect(t(w, 'card-kbat').text()).toBe('MOTS 3')
     expect(t(w, 'card-minutes').text()).toBe('8m')
-    expect(t(w, 'card-trial').text()).toBe('Trial')
+    expect(t(w, 'card-trial').text()).toBe('Percubaan')
     expect(t(w, 'card-author').text()).toBe('Guru Pakar')
     expect(t(w, 'card-footer').text()).toContain('2 soalan · Tingkatan 5')
     expect(t(w, 'card-start').attributes('href')).toBe('/latihan-berstruktur/4454/jawab')
@@ -340,7 +340,7 @@ describe('S14 MissionListPage', () => {
     api.fetchTodayMissions.mockResolvedValue({ data: [], meta: {} })
     const w = await render(MissionListPage, '/misi-harian')
     expect(t(w, 'missions-empty').text()).toContain('Tiada misi hari ini')
-    expect(t(w, 'missions-empty').text()).toContain('Misi baru akan muncul bila guru anda assign.')
+    expect(t(w, 'missions-empty').text()).toContain('Misi baharu akan muncul apabila guru anda menetapkannya.')
   })
 
   it('renders cards, a safe external link and the completed state', async () => {
@@ -410,7 +410,7 @@ describe('S15 SpmTargetsPage', () => {
       'D',
       'E',
     ])
-    expect(w.text()).toContain('70%+ Ketepatan (On Track)')
+    expect(w.text()).toContain('70%+ Ketepatan (Atas Landasan)')
   })
 
   it('saves all rows, reloads and shows the success flash', async () => {

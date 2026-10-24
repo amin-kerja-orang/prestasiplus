@@ -112,10 +112,10 @@ describe('S2 board (FR-M10-14..18)', () => {
     const labels = t('cc-links')
       .findAll('a, button')
       .map((a) => a.text())
-    expect(labels).toEqual(['Remedial', 'Rekod', 'Evaluate', 'Ramalan SPM', 'Kelas', 'Badges'])
+    expect(labels).toEqual(['Remedial', 'Rekod', 'Nilai', 'Ramalan SPM', 'Kelas', 'Lencana'])
     expect(t('cc-link-rekod').attributes('href')).toBe('/guru/remedial-progress')
     expect(t('cc-back').attributes('href')).toBe('/guru')
-    expect(text('cc-back')).toBe('Dashboard')
+    expect(text('cc-back')).toBe('Papan Pemuka')
   })
 
   it('shows the KPI values of the teacher after the count animation', async () => {
@@ -200,7 +200,7 @@ describe('S2 board (FR-M10-14..18)', () => {
       '"75% pelajar terlibat aktif. Ketepatan purata 46%. GPS sekolah: 4.69."',
     )
     expect(text('cc-footer')).toBe(
-      'Powered by ALESA AI · PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat',
+      'Dikuasakan oleh ALESA AI · PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat',
     )
     expect(t('cc-recent-badges').text()).toContain('Murid Demo 02 — Pemula Rajin')
   })
@@ -316,7 +316,7 @@ describe('drill modal (FR-M10-19, FN-M10-2.2.7)', () => {
           answered: 30,
           accuracy: 86,
           lastActiveAt: '2026-09-24T10:00:00+08:00',
-          status: 'Login',
+          status: 'Log Masuk',
         },
         {
           studentId: 3002,
@@ -456,7 +456,7 @@ describe('"👩‍🏫 Kelas" and "🔮 Ramalan SPM" (FR-M10-20, FR-M10-21)', ()
     await mountPage()
     await t('cc-link-predictive').trigger('click')
     await flushPromises()
-    expect(modalTitle()).toBe('Ramalan SPM — Predictive Analytics')
+    expect(modalTitle()).toBe('Ramalan SPM — Analitik Ramalan')
     expect(all('cc-grade-chip').map((c) => c.text())).toEqual([
       'A+',
       'A',
@@ -506,7 +506,7 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     api.fetchRemedialScan.mockResolvedValue({ weakStudents: [], existingRemedials: [] })
     await mountPage()
     await t('cc-link-remedial').trigger('click')
-    expect(modalTitle()).toBe('Smart Remedial — Scan Pelajar Lemah')
+    expect(modalTitle()).toBe('Remedial Pintar — Imbas Pelajar Lemah')
     await flushPromises()
     expect(text('cc-remedial-empty')).toBe(
       'Tiada pelajar dengan topik lemah (<50% accuracy). Tahniah!',
@@ -533,7 +533,7 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
       t('cc-remedial-table')
         .findAll('th')
         .map((h) => h.text()),
-    ).toEqual(['Pelajar', 'Topik Lemah', 'Accuracy Terendah', 'Tindakan'])
+    ).toEqual(['Pelajar', 'Topik Lemah', 'Ketepatan Terendah', 'Tindakan'])
     const rows = all('cc-remedial-row')
       .map((r) => trOf(r))
       .map((r) => trOf(r))
@@ -671,7 +671,7 @@ describe('"⚠ Evaluate" (FR-M10-24) @provisional UNVERIFIED COPY', () => {
     await mountPage()
     await t('cc-link-evaluate').trigger('click')
     await flushPromises()
-    expect(modalTitle()).toBe('Auto Evaluate — Penilaian Risiko Pelajar')
+    expect(modalTitle()).toBe('Penilaian Auto — Penilaian Risiko Pelajar')
     expect(cards()).toEqual([
       '0 Jumlah Pelajar',
       '0 Berisiko',
@@ -705,14 +705,14 @@ describe('"🏆 Badges" (FR-M10-25) @provisional UNVERIFIED COPY', () => {
     await mountPage()
     await t('cc-link-badges').trigger('click')
     await flushPromises()
-    expect(modalTitle()).toBe('Achievement System — Scan & Award Badges')
+    expect(modalTitle()).toBe('Sistem Pencapaian — Imbas & Anugerah Lencana')
     expect(cards()).toEqual(['8 Pelajar', '1 Lencana Baru Dianugerah', '2 Jenis Lencana Aktif'])
     const chips = all('cc-badge-chip').map((c) => c.text())
     expect(chips[0]).toContain('Pemula Rajin')
     expect(chips[0]).toContain('1 pelajar')
-    expect(chips[0]).toContain('Epic')
+    expect(chips[0]).toContain('Epik')
     expect(chips[1]).toContain('0 pelajar')
-    expect(chips[1]).toContain('Legendary')
+    expect(chips[1]).toContain('Legenda')
     expect(t('cc-collectors-table').text()).toContain('Murid Demo 02')
     expect(text('cc-new-awards')).toContain('Pemula Rajin')
     expect(document.body.textContent).toContain('Baru Dianugerahkan Hari Ini!')

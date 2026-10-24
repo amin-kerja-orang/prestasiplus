@@ -58,7 +58,7 @@ describe('formats (BR-M11-11, 22)', () => {
   })
 
   it('subscription date keeps the English month; datetimes are MYT', () => {
-    expect(subscriptionDate('2027-05-12T00:00:00+08:00')).toBe('12 May 2027')
+    expect(subscriptionDate('2027-05-12T00:00:00+08:00')).toBe('12 Mei 2027')
     expect(dmyHm('2026-06-16T14:19:57+08:00')).toBe('16/06/2026 14:19')
     expect(dmyHm(null)).toBe('-')
   })

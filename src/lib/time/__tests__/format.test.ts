@@ -97,30 +97,30 @@ describe('BM month names', () => {
 })
 
 describe('English month abbreviations', () => {
-  it('dd Mon yyyy (M04 "08 Apr 2026", "20 May 2026"; M09 "22 Feb 2026")', () => {
+  it('dd Mon yyyy (M04 "08 Apr 2026", "20 Mei 2026"; M09 "22 Feb 2026")', () => {
     expect(formatDateEn('2026-04-08 09:00')).toBe('08 Apr 2026')
-    expect(formatDateEn('2026-05-20 09:00')).toBe('20 May 2026')
+    expect(formatDateEn('2026-05-20 09:00')).toBe('20 Mei 2026')
     expect(formatDateEn('2026-02-22')).toBe('22 Feb 2026')
   })
 
-  it('d MMM yyyy (M08 "Direkod", M11 "12 May 2027"; M05 "19 May 2026")', () => {
-    expect(formatDateEnUnpadded('2027-05-12')).toBe('12 May 2027')
-    expect(formatDateEnUnpadded('2026-05-19')).toBe('19 May 2026')
+  it('d MMM yyyy (M08 "Direkod", M11 "12 Mei 2027"; M05 "19 Mei 2026")', () => {
+    expect(formatDateEnUnpadded('2027-05-12')).toBe('12 Mei 2027')
+    expect(formatDateEnUnpadded('2026-05-19')).toBe('19 Mei 2026')
     expect(formatDateEnUnpadded('2026-04-08')).toBe('8 Apr 2026')
   })
 
-  it('Laravel d M Y, H:i (M05 BR-03 S9 "19 May 2026, 03:49")', () => {
-    expect(formatDateTimeEn('2026-05-19 03:49:12')).toBe('19 May 2026, 03:49')
+  it('Laravel d M Y, H:i (M05 BR-03 S9 "19 Mei 2026, 03:49")', () => {
+    expect(formatDateTimeEn('2026-05-19 03:49:12')).toBe('19 Mei 2026, 03:49')
   })
 
   it('d MMM yyyy, hh:mm A (M06 history)', () => {
-    expect(formatDateTimeEn12('2026-05-19 15:49')).toBe('19 May 2026, 03:49 PM')
-    expect(formatDateTimeEn12('2026-05-09 03:49')).toBe('9 May 2026, 03:49 AM')
+    expect(formatDateTimeEn12('2026-05-19 15:49')).toBe('19 Mei 2026, 03:49 PM')
+    expect(formatDateTimeEn12('2026-05-09 03:49')).toBe('9 Mei 2026, 03:49 AM')
   })
 
-  it('dd Mon yyyy, h:mmAM (M09 S23 "17 Mar 2026, 11:23PM")', () => {
-    expect(formatDateTimeEnCompact12('2026-03-17 23:23:00')).toBe('17 Mar 2026, 11:23PM')
-    expect(formatDateTimeEnCompact12('2026-03-07 09:05:00')).toBe('07 Mar 2026, 9:05AM')
+  it('dd Mon yyyy, h:mmAM (M09 S23 "17 Mac 2026, 11:23PM")', () => {
+    expect(formatDateTimeEnCompact12('2026-03-17 23:23:00')).toBe('17 Mac 2026, 11:23PM')
+    expect(formatDateTimeEnCompact12('2026-03-07 09:05:00')).toBe('07 Mac 2026, 9:05AM')
   })
 })
 

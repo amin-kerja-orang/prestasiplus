@@ -55,10 +55,10 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(first.getByTestId('question-id')).toHaveText('564159')
     await expect(first.getByTestId('question-dskp')).toContainText('DSKP')
     await expect(first.getByTestId('question-compliance')).toHaveText(/^[A-Z ]+$/)
-    await expect(first.getByTestId('question-source')).toContainText('Source:')
+    await expect(first.getByTestId('question-source')).toContainText('Sumber:')
     await expect(first.getByTestId('question-stars').locator('.fa-star, svg, i')).not.toHaveCount(0)
     await expect(first.getByTestId('question-status')).toHaveText('Diluluskan')
-    await expect(first.getByTestId('question-active')).toHaveText(/^(ACTIVE|INACTIVE)$/)
+    await expect(first.getByTestId('question-active')).toHaveText(/^(Aktif|Tidak Aktif)$/)
     // Text cut to 80 chars + "..." on every row that is longer.
     const texts = await byId(page, 'question-text').allInnerTexts()
     for (const t of texts) expect(t.replace(/\s+/g, ' ').trim().length).toBeLessThanOrEqual(84 + 40)
@@ -132,15 +132,15 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     expect(await opts('questions-dskp')).toEqual(['Semua', 'Ada DSKP Tag', 'Belum Ditag'])
     expect(await opts('questions-compliance')).toEqual([
       'Semua',
-      'Verified',
-      'Pending Mapping',
-      'Quarantined',
-      'Rejected',
-      'Draft',
-      'Tiada Source PDF',
-      'AI Verified',
+      'Disahkan',
+      'Menunggu Pemetaan',
+      'Dikuarantin',
+      'Ditolak',
+      'Draf',
+      'Tiada PDF Sumber',
+      'Disahkan AI',
     ])
-    expect(await opts('questions-source')).toEqual(['Semua', 'Textbook', 'DSKP', 'Trial', 'Skema'])
+    expect(await opts('questions-source')).toEqual(['Semua', 'Buku Teks', 'DSKP', 'Percubaan', 'Skema'])
     await expect(byId(page, 'questions-search')).toHaveAttribute('placeholder', 'Cari soalan...')
   })
 
@@ -174,20 +174,20 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
   }) => {
     await gotoApp('/admin/questions?status=archived')
     await expect(byId(page, 'question-status').first()).toHaveText('Arkib')
-    await expect(byId(page, 'question-active').first()).toHaveText('INACTIVE')
+    await expect(byId(page, 'question-active').first()).toHaveText('Tidak Aktif')
 
     await gotoApp('/admin/questions?compliance_filter=pending_mapping')
-    await expect(byId(page, 'question-compliance').first()).toHaveText('PENDING MAPPING')
+    await expect(byId(page, 'question-compliance').first()).toHaveText('MENUNGGU PEMETAAN')
 
     await gotoApp('/admin/questions?compliance_filter=missing_source')
     await expect(byId(page, 'question-row').first()).toBeVisible()
     await expect(byId(page, 'question-source-file')).toHaveCount(0)
 
     await gotoApp('/admin/questions?compliance_filter=draft')
-    await expect(byId(page, 'question-source').first()).toContainText('Source: TIADA')
+    await expect(byId(page, 'question-source').first()).toContainText('Sumber: TIADA')
 
     await gotoApp('/admin/questions?compliance_filter=verified_generated')
-    await expect(byId(page, 'question-ai-verified').first()).toContainText('AI Verified')
+    await expect(byId(page, 'question-ai-verified').first()).toContainText('Disahkan AI')
 
     // type / question_type / sort are ignored.
     await gotoApp('/admin/questions?type=essay&question_type=essay&sort=id')
@@ -340,7 +340,7 @@ test.describe('QA G5 S3 detail states', { tag: [moduleTag(4), '@qa'] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/questions/564159')
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Detail Soalan')
+    await expect(byId(page, 'shell-admin-title')).toHaveText('Butiran Soalan')
     await expect(byId(page, 'shell-admin-subtitle')).toHaveCount(0)
     await expect(byId(page, 'question-back')).toHaveAttribute('href', /\/admin\/questions/)
     await expect(byId(page, 'question-edit')).toContainText('Edit')
@@ -563,7 +563,7 @@ test.describe('QA G5 guards and nav', { tag: [moduleTag(4), '@qa'] }, () => {
       ['/admin/questions/create', 'Tambah Soalan Baru', false],
       ['/admin/questions/564159/edit', 'Edit Soalan', false],
       ['/admin/questions/import', 'Import Soalan Secara Pukal', true],
-      ['/admin/questions/quality', 'Dashboard Kualiti Soalan', true],
+      ['/admin/questions/quality', 'Papan Pemuka Kualiti Soalan', true],
       ['/admin/structured-questions', /Soalan Berstruktur|Soalan Berstruktur/, false],
       ['/admin/question-submissions', 'Kertas Soalan Guru', true],
       ['/admin/soalan-gambar', 'Soalan Perlu Gambar Rajah', true],

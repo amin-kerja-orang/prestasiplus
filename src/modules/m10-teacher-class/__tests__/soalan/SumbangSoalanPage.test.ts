@@ -81,7 +81,7 @@ describe('S21 Sumbang Soalan', () => {
   it('shows the static AI card without any action and the Audio KBAT links', async () => {
     const w = await mountPage()
     const ai = t(w, 'ai-card')
-    expect(ai.text()).toContain('AI Auto-Generate Soalan')
+    expect(ai.text()).toContain('Jana Soalan Auto AI')
     expect(ai.find('a, button, form').exists()).toBe(false)
     expect(t(w, 'audio-create').attributes('href')).toBe('/guru/audio-kbat/create')
     expect(t(w, 'audio-list').attributes('href')).toBe('/guru/audio-kbat')
@@ -92,7 +92,7 @@ describe('S21 Sumbang Soalan', () => {
     const cards = all(w, 'question-card')
     expect(cards).toHaveLength(2)
     expect(cards[0]!.find('[data-testid="chip-status"]').text()).toBe('Diluluskan')
-    expect(cards[0]!.find('[data-testid="question-date"]').text()).toBe('02 May 2026')
+    expect(cards[0]!.find('[data-testid="question-date"]').text()).toBe('02 Mei 2026')
     expect(cards[1]!.find('[data-testid="chip-dskp"]').exists()).toBe(false)
     expect(cards[0]!.find('[data-testid="question-body"]').exists()).toBe(false)
     await cards[0]!.find('[data-testid="question-toggle"]').trigger('click')
@@ -255,7 +255,7 @@ describe('S21 Hantar Kertas', () => {
     ).toEqual([
       '-- Pilih Jenis --',
       'Soalan Umum',
-      'Trial Paper',
+      'Kertas Percubaan',
       'Soalan DSKP',
       'Buku Teks',
       'Buku Latihan',

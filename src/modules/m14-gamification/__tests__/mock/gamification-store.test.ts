@@ -945,13 +945,13 @@ describe('games, tokens, draws, referrals, teacher events (BR-M14-19/21/22/23/26
     teacherGamification.onQuestionContributed(5, 9_000_124)
     const s = teacherWallet.summary(5)
     expect(s.transactions[0]).toMatchObject({
-      description: 'Badge: Penyumbang Baru (10 soalan)',
+      description: 'Lencana: Penyumbang Baru (10 soalan)',
       amount: 100,
     })
     expect(s.balance).toBe(120)
     teacherGamification.onQuestionContributed(5, 9_000_125)
     expect(
-      teacherWallet.summary(5).transactions.filter((t) => t.description.startsWith('Badge:')),
+      teacherWallet.summary(5).transactions.filter((t) => t.description.startsWith('Lencana:')),
     ).toHaveLength(1)
   })
 

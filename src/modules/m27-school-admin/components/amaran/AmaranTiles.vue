@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S4 four tiles (FR-M27-75; restyle spec AS-49): Jumlah Pelajar, On Track, Perlu Perhatian, Berisiko Tinggi.
+ * S4 four tiles (FR-M27-75; restyle spec AS-49): Jumlah Pelajar, Atas Landasan, Perlu Perhatian, Berisiko Tinggi.
  * The three risk counts carry their meaning colour (success, warning, error) and an icon; colour never
  * stands alone, the label says the same.
  */
@@ -23,7 +23,7 @@ const items = computed<StatItem[]>(() => [
   },
   {
     key: 'green',
-    label: 'On Track',
+    label: 'Atas Landasan',
     value: formatCount(props.tally.green),
     icon: 'check-circle',
     tone: 'success',

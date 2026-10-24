@@ -34,12 +34,12 @@ test.describe('M02 S6 complimentary list', { tag: [TAG.smoke, moduleTag(2)] }, (
     page,
     gotoApp,
   }) => {
-    await expectTabTitle(page, 'Pelajar Komplimen - Admin Panel')
-    await expect(byId(page, 'comp-summary')).toHaveText('Syiling OFF: 90 / 90 pelajar komplimen')
+    await expectTabTitle(page, 'Pelajar Komplimen - Panel Admin')
+    await expect(byId(page, 'comp-summary')).toHaveText('Syiling Mati: 90 / 90 pelajar komplimen')
     await expect(byId(page, 'comp-add')).toHaveAttribute('href', '/admin/comp-students/create')
     await expect(byId(page, 'comp-row')).toHaveCount(50)
     await expect(byId(page, 'comp-account').first()).toHaveText('AKTIF')
-    await expect(byId(page, 'comp-coins').first()).toHaveText('OFF')
+    await expect(byId(page, 'comp-coins').first()).toHaveText('MATI')
     await expect(byId(page, 'comp-name').first()).toHaveAttribute(
       'href',
       /^\/admin\/comp-students\/\d+$/,
@@ -53,7 +53,7 @@ test.describe('M02 S6 complimentary list', { tag: [TAG.smoke, moduleTag(2)] }, (
 
     await gotoApp('/admin/comp-students?page=2')
     await expect(byId(page, 'comp-row')).toHaveCount(40)
-    await expect(byId(page, 'comp-summary')).toHaveText('Syiling OFF: 90 / 90 pelajar komplimen')
+    await expect(byId(page, 'comp-summary')).toHaveText('Syiling Mati: 90 / 90 pelajar komplimen')
     await expectNoHorizontalScroll(page)
   })
 
@@ -103,10 +103,10 @@ test.describe('M02 S6 complimentary list', { tag: [TAG.smoke, moduleTag(2)] }, (
       await boxes.nth(0).check()
       await boxes.nth(1).check()
       await byId(page, 'comp-bulk-coins_on').click()
-      await expect(byId(page, 'comp-summary')).toHaveText('Syiling OFF: 88 / 90 pelajar komplimen')
-      await expect(byId(page, 'comp-coins').nth(0)).toHaveText('ON')
-      await expect(byId(page, 'comp-coins').nth(1)).toHaveText('ON')
-      await expect(byId(page, 'comp-coins').nth(2)).toHaveText('OFF')
+      await expect(byId(page, 'comp-summary')).toHaveText('Syiling Mati: 88 / 90 pelajar komplimen')
+      await expect(byId(page, 'comp-coins').nth(0)).toHaveText('HIDUP')
+      await expect(byId(page, 'comp-coins').nth(1)).toHaveText('HIDUP')
+      await expect(byId(page, 'comp-coins').nth(2)).toHaveText('MATI')
       await expect(byId(page, 'cmp-flash')).toBeVisible()
       await expect(bar).toHaveCount(0)
       await expectNoHorizontalScroll(page)
@@ -125,7 +125,7 @@ test.describe('M02 S7 register complimentary students', { tag: [TAG.smoke, modul
   test('title, info alert, fields, class select follows the teacher and no horizontal scroll', async ({
     page,
   }) => {
-    await expectTabTitle(page, 'Daftar Pelajar Komplimen - Admin Panel')
+    await expectTabTitle(page, 'Daftar Pelajar Komplimen - Panel Admin')
     await expect(byId(page, 'comp-info')).toContainText(
       'Setiap pelajar dapat: username 6 digit akhir IC@prestasiplus.my',
     )
@@ -166,12 +166,12 @@ test.describe('M02 S7 register complimentary students', { tag: [TAG.smoke, modul
       await expect(byId(page, 'cmp-flash')).toContainText(
         '2 pelajar komplimen berjaya didaftarkan.',
       )
-      await expect(byId(page, 'comp-summary')).toHaveText('Syiling OFF: 92 / 92 pelajar komplimen')
+      await expect(byId(page, 'comp-summary')).toHaveText('Syiling Mati: 92 / 92 pelajar komplimen')
       const usernames = byId(page, 'comp-row').locator('td:nth-child(3)')
       await expect(usernames.filter({ hasText: '077701@prestasiplus.my' })).toHaveCount(1)
       await expect(usernames.filter({ hasText: '088802@prestasiplus.my' })).toHaveCount(1)
       const created = byId(page, 'comp-row').filter({ hasText: '088802@prestasiplus.my' })
-      await expect(created.getByTestId('comp-coins')).toHaveText('OFF')
+      await expect(created.getByTestId('comp-coins')).toHaveText('MATI')
       await expect(created.getByTestId('comp-account')).toHaveText('AKTIF')
       await expectNoHorizontalScroll(page)
     },
@@ -196,20 +196,20 @@ test.describe('M02 S8 complimentary detail', { tag: [TAG.smoke, moduleTag(2)] },
     await expect(byId(page, 'comp-card')).toBeVisible()
     await expect.poll(() => page.title()).toMatch(/^Pelajar Komplimen - .+/)
     await expect(byId(page, 'comp-card').locator('dt')).toHaveText([
-      'Username',
+      'Nama Pengguna',
       'No. KP',
       'Sekolah asal',
       'Tingkatan',
       'Status akaun',
       'Syiling',
       'Pakej tamat',
-      'Baki syiling / coins',
+      'Baki syiling / koin',
     ])
     await expect(byId(page, 'comp-username')).toContainText('@prestasiplus.my')
     await expect(byId(page, 'comp-status')).toHaveText('AKTIF')
-    await expect(byId(page, 'comp-coins')).toHaveText('OFF (tak boleh kumpul/claim)')
+    await expect(byId(page, 'comp-coins')).toHaveText('MATI (tidak boleh kumpul/tuntut)')
     await expect(byId(page, 'comp-expiry')).toHaveText(/^\d{2}\/\d{2}\/\d{4}$/)
-    await expect(byId(page, 'comp-balance')).toHaveText('0 syiling · 0 coins')
+    await expect(byId(page, 'comp-balance')).toHaveText('0 syiling · 0 koin')
     await expect(byId(page, 'comp-classes-title')).toContainText(/Kelas didaftar \(3\)/)
     await expect(byId(page, 'comp-classes').locator('thead th')).toHaveText([
       'Kelas',
@@ -233,7 +233,7 @@ test.describe('M02 S8 complimentary detail', { tag: [TAG.smoke, moduleTag(2)] },
     async ({ page }) => {
       await expect(byId(page, 'comp-toggle-coins')).toHaveText('Hidupkan syiling')
       await byId(page, 'comp-toggle-coins').click()
-      await expect(byId(page, 'comp-coins')).toHaveText('ON')
+      await expect(byId(page, 'comp-coins')).toHaveText('HIDUP')
       await expect(byId(page, 'comp-toggle-coins')).toHaveText('Matikan syiling')
 
       await byId(page, 'comp-toggle-active').click()

@@ -198,7 +198,7 @@ describe('QuizRunner start errors', () => {
   it('alerts the S7 English fallback when the server sends no message', async () => {
     api.start.mockRejectedValue(new ApiError({ status: 500, code: 'SERVER_ERROR', message: '' }))
     await render({ labels: REVISION_LABELS, backUrl: '/practice/revision' })
-    expect(native.alertNative).toHaveBeenCalledWith('Failed to load revision quiz')
+    expect(native.alertNative).toHaveBeenCalledWith('Gagal memuatkan kuiz ulang kaji')
     expect(router.currentRoute.value.fullPath).toBe('/practice/revision')
   })
 })
@@ -219,7 +219,7 @@ describe('QuizRunner question', () => {
   it('shows the revision chips and the "Salah {n}x" pill with revisionChips (S7)', async () => {
     const w = await render({ revisionChips: true })
     expect(t(w, 'chip-revision').text()).toContain(
-      'Mode Ulang Kaji — soalan ini pernah dijawab salah',
+      'Mod Ulang Kaji — soalan ini pernah dijawab salah',
     )
     expect(t(w, 'chip-revision-meta').text()).toContain('2 daripada 46 soalan salah')
     expect(t(w, 'pill-wrong-times').text()).toContain('Salah 3x')

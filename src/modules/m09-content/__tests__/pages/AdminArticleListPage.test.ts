@@ -21,7 +21,7 @@ function article(id: number, extra: Partial<AdminArticleItem> = {}): AdminArticl
     id,
     title: `Artikel ${String(id)}`,
     category: 'TIPS_BELAJAR',
-    categoryLabel: 'Tips Belajar',
+    categoryLabel: 'Petua Belajar',
     gradeLevel: 'DARJAH_4',
     isPublished: true,
     isFeatured: false,
@@ -109,7 +109,7 @@ describe('AdminArticleListPage (M09 S1)', () => {
       'Kategori',
       'Tahap',
       'Status',
-      'Views',
+      'Paparan',
       'Tarikh',
       'Tindakan',
     ])
@@ -120,11 +120,11 @@ describe('AdminArticleListPage (M09 S1)', () => {
     const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(2)
     const first = rows[0]!
-    expect(first.find('[data-testid=article-featured]').attributes('title')).toBe('Featured')
+    expect(first.find('[data-testid=article-featured]').attributes('title')).toBe('Pilihan')
     expect(first.find('[data-testid=admin-article-row]').attributes('data-article-id')).toBe('10')
     expect(first.find('[data-testid=article-title]').text()).toBe('Artikel 10')
     expect(first.find('[data-testid=article-author]').text()).toBe('Oleh: Admin Demo')
-    expect(first.find('[data-testid=article-category]').text()).toBe('Tips Belajar')
+    expect(first.find('[data-testid=article-category]').text()).toBe('Petua Belajar')
     expect(first.find('[data-testid=article-grade]').text()).toBe('DARJAH_4')
     expect(first.find('[data-testid=status-pill]').text()).toBe('Diterbitkan')
     expect(first.find('[data-testid=article-views]').text()).toBe('596')

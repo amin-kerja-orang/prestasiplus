@@ -190,8 +190,8 @@ test.describe('M08 G5 values (admin)', { tag: [moduleTag(8)] }, () => {
     expect.soft(cards.has727, 'observed accuracy 72.7%').toBe(true)
     const links = page.getByTestId('quick-nav').getByRole('link')
     await expect(links).toHaveText([
-      '🎓 Dashboard Tingkatan',
-      '📊 Dashboard Kelas',
+      '🎓 Papan Pemuka Tingkatan',
+      '📊 Papan Pemuka Kelas',
       '📈 Headcount',
       '🔬 Analisa Item',
     ])
@@ -209,20 +209,20 @@ test.describe('M08 G5 values (admin)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('tingkatan-page')).toBeVisible()
     expectInOrder(await text(page), [
       'Headcount Keseluruhan',
-      '45% On Track',
-      'On Track: 34',
-      'Below Target: 41',
+      '45% Atas Landasan',
+      'Atas Landasan: 34',
+      'Bawah Sasaran: 41',
     ])
     await gotoApp('/prestasi/tingkatan/t5')
     await expect(page.getByTestId('tingkatan-page')).toBeVisible()
-    expectInOrder(await text(page), ['28% On Track', 'On Track: 114', 'Below Target: 289'])
+    expectInOrder(await text(page), ['28% Atas Landasan', 'Atas Landasan: 114', 'Bawah Sasaran: 289'])
   })
 
   test('AC-09.4 S3 T5 header reads 645 kelas · 26 subjek', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/tingkatan/t5')
     await expect(page.getByTestId('tingkatan-page')).toBeVisible()
     await expect(page.getByTestId('level-summary')).toHaveText(
-      'Dashboard Prestasi Tingkatan · 645 kelas · 26 subjek',
+      'Papan Pemuka Prestasi Tingkatan · 645 kelas · 26 subjek',
     )
   })
 
@@ -323,7 +323,7 @@ test.describe('M08 G5 values (admin)', { tag: [moduleTag(8)] }, () => {
     ).toBeVisible()
     const t = await text(page)
     expectInOrder(t, [
-      'Dashboard Kelas',
+      'Papan Pemuka Kelas',
       'Pilih kelas untuk lihat prestasi keseluruhan',
       '📭',
       'Anda belum mempunyai kelas aktif.',

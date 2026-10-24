@@ -3,8 +3,8 @@
  * S5 `/admin/questions/import` "Import Soalan Secara Pukal" (M04-T5; FR-M04-53…57, DV-M04-01/07).
  *
  * Top links "Sejarah Import" and "Kembali", the card "Muat Naik Fail CSV" (native `required` file input
- * `.csv,.txt`, "Tetapan Lalai (Opsional)" with the difficulty preselected 2, the draft footer and "Mula
- * Import"), and the side cards "Muat Turun Template", "Format CSV" and "Tips".
+ * `.csv,.txt`, "Tetapan Lalai (Pilihan)" with the difficulty preselected 2, the draft footer and "Mula
+ * Import"), and the side cards "Muat Turun Templat", "Format CSV" and "Tips".
  *
  * Validation is native (the empty file) and server-side (file type and size, invalid defaults); server
  * messages show only in the red alert above the form. Success keeps the page, resets the form and shows the
@@ -150,7 +150,7 @@ async function downloadTemplate(): Promise<void> {
 
           <div class="flex min-w-0 flex-col gap-4">
             <div>
-              <h4 class="text-label text-highlighted">Tetapan Lalai (Opsional)</h4>
+              <h4 class="text-label text-highlighted">Tetapan Lalai (Pilihan)</h4>
               <p class="text-body text-muted">
                 Nilai ini digunakan jika kolum berkaitan tiada dalam CSV.
               </p>
@@ -240,8 +240,8 @@ async function downloadTemplate(): Promise<void> {
         <DsPanel data-testid="import-template-card">
           <div class="flex flex-col items-center gap-2 text-center">
             <UIcon name="i-ph-download-simple" class="size-8 text-primary-t" />
-            <h3 class="text-subheading text-highlighted">Muat Turun Template</h3>
-            <p class="text-body text-muted">Template CSV dengan contoh soalan</p>
+            <h3 class="text-subheading text-highlighted">Muat Turun Templat</h3>
+            <p class="text-body text-muted">Templat CSV dengan contoh soalan</p>
             <UButton
               type="button"
               color="neutral"
@@ -252,7 +252,7 @@ async function downloadTemplate(): Promise<void> {
               data-testid="import-template-download"
               @click="downloadTemplate"
             >
-              Download Template
+              Muat Turun Templat
             </UButton>
           </div>
         </DsPanel>
@@ -277,7 +277,7 @@ async function downloadTemplate(): Promise<void> {
               guna Tetapan Lalai)
             </li>
           </ul>
-          <p class="mb-1 text-label text-highlighted">Kolum opsional:</p>
+          <p class="mb-1 text-label text-highlighted">Kolum pilihan:</p>
           <ul class="flex flex-col gap-2 text-body text-default">
             <li>
               <code class="bg-elevated px-1 text-caption">option_c</code>,
@@ -293,11 +293,11 @@ async function downloadTemplate(): Promise<void> {
           </ul>
         </DsPanel>
 
-        <DsPanel title="Tips" icon="i-ph-lightbulb" data-testid="import-tips-card">
+        <DsPanel title="Petua" icon="i-ph-lightbulb" data-testid="import-tips-card">
           <ul class="flex flex-col gap-2 text-body text-default">
             <li class="flex items-start gap-2">
               <UIcon name="i-ph-check" class="mt-1 size-4 shrink-0 text-success" />
-              Fail CSV mesti encoding UTF-8
+              Fail CSV mesti berkod UTF-8
             </li>
             <li class="flex items-start gap-2">
               <UIcon name="i-ph-check" class="mt-1 size-4 shrink-0 text-success" />
@@ -305,7 +305,7 @@ async function downloadTemplate(): Promise<void> {
             </li>
             <li class="flex items-start gap-2">
               <UIcon name="i-ph-check" class="mt-1 size-4 shrink-0 text-success" />
-              Baris pertama = header kolum
+              Baris pertama = tajuk kolum
             </li>
             <li class="flex items-start gap-2">
               <UIcon name="i-ph-check" class="mt-1 size-4 shrink-0 text-success" />

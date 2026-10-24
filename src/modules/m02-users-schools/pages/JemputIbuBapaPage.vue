@@ -3,7 +3,7 @@
  * S1 `/jemput-ibu-bapa` "Jemput Ibu Bapa - PRESTASIPLUS" (L45 FR-L45-03..18). The student's invite
  * link, copy / WhatsApp / regenerate actions and the linked parents, all from one call
  * (`GET /api/me/parent-invite`). Student only (route meta; guest -> /login, others -> 403 in place).
- * Loading and load error replicate M01 S9 (INFERRED). "Jana Link Baru" updates the field without a
+ * Loading and load error replicate M01 S9 (INFERRED). "Jana Pautan Baharu" updates the field without a
  * reload and shows the success flash above the hero; a failure keeps the old link and shows the red
  * alert (INFERRED, UNVERIFIED COPY).
  */
@@ -111,7 +111,7 @@ onMounted(load)
         <div class="min-w-0">
           <h1 class="font-display text-title font-extrabold break-words">Jemput Ibu Bapa 👨‍👩‍👧</h1>
           <p class="mt-1 text-body">
-            Kongsi link ini dengan ibu bapa untuk pantau perkembangan anda
+            Kongsi pautan ini dengan ibu bapa untuk pantau perkembangan anda
           </p>
         </div>
       </header>

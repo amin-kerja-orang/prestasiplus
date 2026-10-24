@@ -127,7 +127,7 @@ describe('header, breadcrumb and pills (FR-M27-44, 51; AC 13.1, 13.4, 15.1, 15.3
   it('renders "← Dashboard Sekolah" as a link to /admin-sekolah and the bold title as text', async () => {
     const w = await mountPage(usage())
     const back = w.get('[data-testid="su-breadcrumb"] a')
-    expect(back.text()).toBe('Dashboard Sekolah')
+    expect(back.text()).toBe('Papan Pemuka Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
     const current = w.get('[data-testid="su-breadcrumb"] [aria-current="page"]')
     expect(current.text()).toBe('Statistik Penggunaan')

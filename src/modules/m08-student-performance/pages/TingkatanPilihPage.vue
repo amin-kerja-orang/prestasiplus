@@ -18,7 +18,7 @@ const icon = usePhIcon()
 <template>
   <DsPage data-testid="tingkatan-pilih-page">
     <DsPageHeader
-      title="Dashboard Tingkatan"
+      title="Papan Pemuka Tingkatan"
       subtitle="Pilih tingkatan untuk lihat prestasi keseluruhan"
     />
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />

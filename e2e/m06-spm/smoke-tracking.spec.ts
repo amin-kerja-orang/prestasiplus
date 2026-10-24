@@ -69,11 +69,11 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     const bahasa = tid(page, 'lane-bahasa')
     await expect(bahasa).toContainText('BM dan BI format sebenar')
     await expect(bahasa).toContainText(
-      'Lane khas untuk kertas bahasa tanpa memaksa format menjadi 40 MCQ.',
+      'Laluan khas untuk kertas bahasa tanpa memaksa format menjadi 40 MCQ.',
     )
     await expect(bahasa.getByTestId('lane-badge')).toHaveText('2 subjek')
     await expect(bahasa.getByTestId('lane-sets')).toHaveText('1,332 set')
-    await expect(bahasa.getByTestId('lane-paper')).toHaveText('Paper-based tracking')
+    await expect(bahasa.getByTestId('lane-paper')).toHaveText('Penjejakan berasaskan kertas')
 
     // Bahasa section.
     const section = tid(page, 'bahasa-section')
@@ -147,10 +147,10 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'readiness')).toBeVisible(SLOW)
     const card = tid(page, 'readiness')
     await expect(card).toBeVisible()
-    await expect(card).toContainText('Admin Readiness')
+    await expect(card).toContainText('Kesediaan Admin')
     await expect(card).toContainText('Status set Tracking A SPM semasa')
     await expect(card).toContainText(
-      'Laporan ini bezakan set bersih, set bank besar, dan set yang masih lock supaya bacaan readiness lebih jujur.',
+      'Laporan ini membezakan set bersih, set bank besar dan set yang masih terkunci supaya bacaan kesediaan lebih jujur.',
     )
     await expect(card.locator('[data-testid=readiness-summary] > span')).toHaveText([
       'Set Bersih: 1 set',
@@ -190,7 +190,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await expect(geo.getByTestId('tile-locked')).toHaveText('9')
     await expect(geo.getByTestId('tile-readiness')).toHaveText('10%')
     await expect(geo.getByTestId('tile-bank-note')).toHaveText(
-      'Set bank besar boleh dibuka, tetapi bank sumber melebihi target set. Rujuk page subjek untuk beza set bersih vs bank besar.',
+      'Set bank besar boleh dibuka, tetapi bank sumber melebihi target set. Rujuk halaman subjek untuk perbezaan set bersih berbanding bank besar.',
     )
     await expect(page.getByTestId('tile-bank-note')).toHaveCount(1)
     await expect(geo.getByTestId('tile-lock-chip')).toHaveText([
@@ -236,7 +236,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
       await gotoApp('/spm/ramalan')
       await expect(tid(page, 'lanes')).toBeVisible(SLOW)
       await expect(tid(page, 'readiness')).toHaveCount(0)
-      await expect(page.getByText('Admin Readiness')).toHaveCount(0)
+      await expect(page.getByText('Kesediaan Admin')).toHaveCount(0)
     })
   }
 
@@ -330,7 +330,7 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
     const one = tid(page, 'set-card-1')
     await expect(one).toHaveAttribute('href', '/spm/ramalan/GEO?year=2026&set=1')
     await expect(one.getByTestId('set-title')).toHaveText('Set 1')
-    await expect(one.getByTestId('set-badge')).toHaveText('Ready Bank Besar')
+    await expect(one.getByTestId('set-badge')).toHaveText('Bank Besar Sedia')
     await expect(one.getByTestId('set-ready')).toHaveText('40 soalan kuiz siap guna')
     await expect(one.getByTestId('set-format')).toHaveText('Format set: 40 / 40')
     await expect(one.getByTestId('set-bank')).toHaveText(

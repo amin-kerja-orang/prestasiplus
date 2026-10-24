@@ -446,7 +446,7 @@ describe('#27 GET /api/videos (S17)', () => {
     expect(facets.categories).toEqual([
       { code: 'motivasi', label: 'Motivasi', count: 3 },
       { code: 'tutorial', label: 'Tutorial', count: 12 },
-      { code: 'tips-spm', label: 'Tips SPM', count: 3 },
+      { code: 'tips-spm', label: 'Petua SPM', count: 3 },
       { code: 'ceramah', label: 'Ceramah', count: 2_242 },
       { code: 'lain-lain', label: 'Lain-lain', count: 0 },
     ])

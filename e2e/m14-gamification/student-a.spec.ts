@@ -54,7 +54,7 @@ async function expectTierLabelColours(tiers: Locator): Promise<void> {
 
 test.describe('S11 / S12 / S13 / S17 headers and titles', MODULE, () => {
   const cases = [
-    { path: S11, tab: 'Gamifikasi Dashboard', header: 'Gamifikasi Dashboard', ready: 's11-hero' },
+    { path: S11, tab: 'Gamifikasi Papan Pemuka', header: 'Gamifikasi Papan Pemuka', ready: 's11-hero' },
     { path: S12, tab: 'Tukar Token', header: 'Tukar Syiling → Token', ready: 's12-hero' },
     { path: S13, tab: 'Cabaran Harian', header: 'Cabaran Harian', ready: 's13-hero' },
     { path: S17, tab: 'Sejarah Transaksi', header: 'Sejarah Transaksi', ready: 's17-list' },
@@ -97,7 +97,7 @@ test.describe('S11 dashboard', MODULE, () => {
     await expect(text(page, 's11-tier-icon')).toHaveText('🥉')
     await expect(text(page, 's11-title-chip')).toHaveText('📚 Permulaan')
     await expect(text(page, 's11-tier-name')).toHaveText('Gangsa Tier')
-    await expect(text(page, 's11-level')).toHaveText('Level 2')
+    await expect(text(page, 's11-level')).toHaveText('Tahap 2')
     await expect(text(page, 's11-hero-syiling')).toHaveText('256')
     await expect(text(page, 's11-hero-token')).toHaveText('0')
     await expect(text(page, 's11-next-tier')).toContainText('Naik ke Perak')
@@ -224,7 +224,7 @@ test.describe('S11 dashboard', MODULE, () => {
     await gotoApp(S11)
     await expect(text(page, 's11-hero-syiling')).toHaveText('0')
     await expect(text(page, 's11-hero-token')).toHaveText('0')
-    await expect(text(page, 's11-level')).toHaveText('Level 1')
+    await expect(text(page, 's11-level')).toHaveText('Tahap 1')
     await expect(text(page, 's11-tier-name')).toHaveText('Gangsa Tier')
     await expect(text(page, 's11-title-chip')).toHaveText('📚 Permulaan')
     await expect(text(page, 's11-next-need')).toHaveText('Perlu 500 syiling lagi')
@@ -298,7 +298,7 @@ test.describe('S12 convert', MODULE, () => {
     await expect(tiers.nth(1)).toContainText('40')
     await expect(tiers.nth(1)).toContainText('syiling/token')
     await expect(text(page, 's12-tip')).toContainText(
-      'Naik tier untuk dapatkan kadar penukaran yang lebih baik!',
+      'Naik peringkat untuk dapatkan kadar penukaran yang lebih baik!',
     )
     await expectTouchTarget(text(page, 's12-quick-rate'))
     await expectTouchTarget(text(page, 's12-submit'))
@@ -447,7 +447,7 @@ test.describe('S17 history', MODULE, () => {
       page.getByRole('heading', { level: 1, name: '📋 Sejarah Transaksi' }),
     ).toBeVisible()
     await expect(text(page, 's17-balance')).toHaveText('Baki semasa: 256 syiling')
-    await expect(text(page, 's17-back')).toHaveText('← Dashboard')
+    await expect(text(page, 's17-back')).toHaveText('← Papan Pemuka')
     await expect(text(page, 's17-back')).toHaveAttribute('href', S11)
     const rows = page.getByTestId('s17-row')
     await expect(rows).toHaveCount(14)

@@ -555,7 +555,7 @@ const correctItems = (i: number, letter: string) => [
                 data-testid="q-language"
               >
                 <option value="bm">Bahasa Melayu</option>
-                <option value="en">English</option>
+                <option value="en">Bahasa Inggeris</option>
               </DsNativeSelect>
             </DsFormField>
             <DsFormField

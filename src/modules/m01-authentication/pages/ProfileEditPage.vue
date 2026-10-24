@@ -133,7 +133,7 @@ async function submit(): Promise<void> {
             />
           </UFormField>
 
-          <UFormField label="Email" help="Email tidak boleh diubah">
+          <UFormField label="Emel" help="Emel tidak boleh diubah">
             <UInput
               type="email"
               disabled

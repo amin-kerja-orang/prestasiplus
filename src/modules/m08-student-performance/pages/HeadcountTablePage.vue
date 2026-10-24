@@ -2,8 +2,8 @@
 /**
  * S23 `/headcount/{id}` "Headcount {Subjek}" (M08-T6; FR-M08-133…140, BR-M08-08 rule 2 / DV-29,
  * BR-M08-32). Header, chips, the action row, the sort links, the table and the selection bar with
- * "Gugurkan" / "Kembalikan". "Ya, Reset" clears the marks and reloads, "Ya, Padam" deletes the config
- * and opens `/headcount`; "Export CSV" downloads the table (all effects INFERRED, FR-M08-137, L-12).
+ * "Gugurkan" / "Kembalikan". "Ya, Set Semula" clears the marks and reloads, "Ya, Padam" deletes the config
+ * and opens `/headcount`; "Eksport CSV" downloads the table (all effects INFERRED, FR-M08-137, L-12).
  */
 import { computed, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -67,8 +67,8 @@ const chips = computed(() => {
   const c = data.value?.chips
   if (!c) return null
   return {
-    on: `On Track: ${String(c.onTrack)} (${String(percentOf(c.onTrack, c.total))}%)`,
-    below: `Below: ${String(c.below)} (${String(percentOf(c.below, c.total))}%)`,
+    on: `Atas Landasan: ${String(c.onTrack)} (${String(percentOf(c.onTrack, c.total))}%)`,
+    below: `Bawah: ${String(c.below)} (${String(percentOf(c.below, c.total))}%)`,
     empty: `Belum Diisi: ${String(c.empty)}`,
     total: `Jumlah: ${String(c.total)}`,
   }
@@ -135,7 +135,7 @@ const exportHref = computed(
           <DsBackLink to="/headcount" label="Kembali" data-testid="back-link" />
         </template>
         <template #actions>
-          <DsStatusBadge status="active" label="Active" data-testid="status-pill" />
+          <DsStatusBadge status="active" data-testid="status-pill" />
         </template>
       </DsPageHeader>
 
@@ -181,7 +181,7 @@ const exportHref = computed(
             size="lg"
             icon="i-ph-pencil-simple"
             trailing-icon="i-ph-caret-down"
-            label="Key-in AR"
+            label="Masukkan AR"
             :aria-expanded="keyInOpen"
             data-testid="action-key-in"
             @click="keyInOpen = !keyInOpen"
@@ -216,7 +216,7 @@ const exportHref = computed(
           variant="soft"
           size="lg"
           icon="i-ph-download-simple"
-          label="Export CSV"
+          label="Eksport CSV"
           data-testid="action-export"
           @click.prevent="exportCsv"
         />
@@ -253,7 +253,7 @@ const exportHref = computed(
           variant="soft"
           size="lg"
           icon="i-ph-arrow-counter-clockwise"
-          label="Reset Data"
+          label="Set Semula Data"
           data-testid="action-reset"
           @click="resetOpen = true"
         />
@@ -290,7 +290,7 @@ const exportHref = computed(
           :variant="sort === 'ranking' ? 'solid' : 'soft'"
           :aria-current="sort === 'ranking' ? 'true' : undefined"
           icon="i-ph-trophy"
-          label="Ranking"
+          label="Kedudukan"
           data-testid="sort-ranking"
         />
         <UButton

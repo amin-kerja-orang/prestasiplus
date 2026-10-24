@@ -46,7 +46,7 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/prestasi/kelas/2001')
     await expect(page.getByTestId('prestasi-kelas-detail-page')).toBeVisible()
-    await expectTabTitle(page, '5 MARIKH - Kimia — Dashboard Kelas')
+    await expectTabTitle(page, '5 MARIKH - Kimia — Papan Pemuka Kelas')
     await expect(header(page).title).toHaveText('5 MARIKH - Kimia')
     await expect(header(page).subtitle).toContainText('· Kimia · 2026')
     await expect(page.getByTestId('class-sub')).toContainText('Kod: DMO101')

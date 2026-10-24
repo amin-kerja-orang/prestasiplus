@@ -227,8 +227,8 @@ describe('S4 ChapterIndexPage', () => {
   it('shows the hero, the random-drill link and one card per subject (FR-M05-57, 58)', async () => {
     api.fetchChapterSubjects.mockResolvedValue({ data: SUBJECTS, meta: {} })
     const w = await render(ChapterIndexPage, '/practice/chapter')
-    expect(w.text()).toContain('Mode Sistematik')
-    expect(t(w, 'chapter-index-page').get('h1').text()).toBe('Soalan by Chapter')
+    expect(w.text()).toContain('Mod Sistematik')
+    expect(t(w, 'chapter-index-page').get('h1').text()).toBe('Soalan Mengikut Bab')
     expect(w.text()).toContain(
       'Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap dan mencapai sekurang-kurangnya 70%.',
     )
@@ -272,7 +272,7 @@ describe('S5 ChapterSubjectPage', () => {
       expect.anything(),
     )
     expect(t(w, 'chapter-all-subjects').attributes('href')).toBe('/practice/chapter')
-    expect(w.text()).toContain('Progressive Unlock')
+    expect(w.text()).toContain('Buka Kunci Berperingkat')
     expect(t(w, 'chapter-subject-name').text()).toBe('Matematik')
     expect(w.text()).toContain(
       'Lengkapkan semua soalan bab semasa dan capai 70% untuk buka bab seterusnya.',
@@ -485,7 +485,7 @@ describe('S6 RevisionListPage', () => {
       '46 soalan salah',
     )
     expect(t(w, 'revision-subject-BM').text()).toContain('Malay Language')
-    expect(t(w, 'revision-tips').text()).toContain('Tips Ulang Kaji')
+    expect(t(w, 'revision-tips').text()).toContain('Petua Ulang Kaji')
     expect(t(w, 'revision-tips').findAll('li')).toHaveLength(3)
     expect(t(w, 'revision-back').attributes('href')).toBe('/practice')
     expect(t(w, 'revision-back').text()).toBe('Kembali ke Latihan')
@@ -497,7 +497,7 @@ describe('S6 RevisionListPage', () => {
     const w = await render(RevisionListPage, '/practice/revision')
     expect(t(w, 'revision-total').text()).toBe('0 soalan perlu diulang kaji')
     expect(w.find('[data-testid=revision-grid]').exists()).toBe(false)
-    expect(t(w, 'revision-tips').text()).toContain('Tips Ulang Kaji')
+    expect(t(w, 'revision-tips').text()).toContain('Petua Ulang Kaji')
     expect(t(w, 'revision-back').text()).toBe('Kembali ke Latihan')
   })
 

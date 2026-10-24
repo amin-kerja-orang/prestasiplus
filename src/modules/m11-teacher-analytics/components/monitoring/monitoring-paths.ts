@@ -59,7 +59,7 @@ export function monitoringCrumbs(
   schoolId?: number,
   person?: string,
 ): CrumbItem[] {
-  const items: CrumbItem[] = [{ label: 'Monitoring', to: paths.overview }]
+  const items: CrumbItem[] = [{ label: 'Pemantauan', to: paths.overview }]
   if (school) {
     items.push(
       schoolId !== undefined && person !== undefined

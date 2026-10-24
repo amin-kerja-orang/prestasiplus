@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** "Live Feed" (FN-M10-2.2.5): the last answers (time, student, subject, ✓/✗); a row opens the student page. */
+/** "Suapan Langsung" (FN-M10-2.2.5): the last answers (time, student, subject, ✓/✗); a row opens the student page. */
 import type { CcFeedItem } from '../../api/command-center-types'
 import BoardPanel from './BoardPanel.vue'
 import { useOpenTab } from './composables'
@@ -10,7 +10,7 @@ const openTab = useOpenTab()
 </script>
 
 <template>
-  <BoardPanel icon="lightning" accent="action" title="Live Feed" testid="cc-panel-feed">
+  <BoardPanel icon="lightning" accent="action" title="Suapan Langsung" testid="cc-panel-feed">
     <p v-if="feed.length === 0" class="text-body text-muted" data-testid="cc-feed-empty">
       {{ S2_COPY.noActivity }}
     </p>

@@ -154,7 +154,7 @@ async function submit(): Promise<void> {
         />
       </DsFormField>
 
-      <DsFormField native for="email" label="Alamat Email">
+      <DsFormField native for="email" label="Alamat Emel">
         <UInput
           id="email"
           v-model="email"

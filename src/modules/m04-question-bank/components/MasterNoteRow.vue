@@ -21,9 +21,9 @@ const BUTTONS: {
   testId: string
   color: 'success' | 'warning' | 'neutral'
 }[] = [
-  { action: 'approve', label: 'Approve', testId: 'note-approve', color: 'success' },
-  { action: 'regen', label: 'Regenerate', testId: 'note-regen', color: 'warning' },
-  { action: 'unflag', label: 'Clear Flag', testId: 'note-unflag', color: 'neutral' },
+  { action: 'approve', label: 'Luluskan', testId: 'note-approve', color: 'success' },
+  { action: 'regen', label: 'Jana Semula', testId: 'note-regen', color: 'warning' },
+  { action: 'unflag', label: 'Buang Tanda', testId: 'note-unflag', color: 'neutral' },
 ]
 
 const state = reactive<Record<MasterNoteAction, ButtonState>>({
@@ -36,7 +36,7 @@ const dimmed = computed(() => Object.values(state).includes('done'))
 
 function labelOf(action: MasterNoteAction, label: string): string {
   if (state[action] === 'pending') return '...'
-  if (state[action] === 'done') return 'Done'
+  if (state[action] === 'done') return 'Selesai'
   return label
 }
 
@@ -84,7 +84,7 @@ async function run(action: MasterNoteAction): Promise<void> {
       </UCard>
       <UAlert color="warning" variant="subtle" icon="i-ph-warning" data-testid="note-trap">
         <template #description>
-          <span class="break-words"><strong>Trap:</strong> {{ note.trapText }}</span>
+          <span class="break-words"><strong>Perangkap:</strong> {{ note.trapText }}</span>
         </template>
       </UAlert>
       <div class="flex flex-wrap gap-2 pt-1">

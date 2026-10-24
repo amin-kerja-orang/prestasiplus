@@ -2,18 +2,18 @@
 
 export const SB_COPY = {
   heading: 'Sekolah Bersaing',
-  sub: 'Leaderboard mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.',
+  sub: 'Papan pendahulu mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.',
   weekPrefix: 'Minggu',
   weekSuffix: 'sekolah dalam pertandingan',
   headers: ['#', 'Sekolah', '% Aktif', 'Streak Avg', 'Nota/Pelajar'],
   aktif: 'aktif',
   hari: 'hari',
-  per10: 'per 10',
+  per10: 'setiap 10',
   anonymous: 'Sekolah anonim',
   tipLabel: 'Untuk Cikgu Besar / PIBG:',
-  tip: 'Share ranking ini ke parent group WhatsApp. Pelajar nampak sekolah berbangga = lebih semangat. Sekolah yang opt-out akan paparkan sebagai "Sekolah anonim".',
+  tip: 'Share kedudukan ini ke parent group WhatsApp. Pelajar nampak sekolah berbangga = lebih semangat. Sekolah yang opt-out akan paparkan sebagai "Sekolah anonim".',
   emptyTitle: 'Data minggu ini belum dijana.',
-  emptyHint: 'Cron mingguan akan kira pada Isnin pagi. Tunggu kejap ya.',
+  emptyHint: 'Penjadual mingguan akan mengira pada Isnin pagi. Tunggu sebentar ya.',
 } as const
 
 export const SB_MEDALS = ['🥇', '🥈', '🥉'] as const

@@ -3,7 +3,7 @@
  *
  * `POST /api/mohon-keluarga-angkat` `{studentEmail, studentCategory, familyIncomeRange?, reason}`
  * answers `201 {id}`. `studentEmail` must resolve to a `student` user through M01 `users.findByEmail`
- * (422 "Email pelajar tidak dijumpai dalam PrestasiPlus."); `applicantUserId` and `applicantRole` are
+ * (422 "Emel pelajar tidak dijumpai dalam PrestasiPlus."); `applicantUserId` and `applicantRole` are
  * the viewer's; the status is `pending`; no duplicate check. 422 carries the `fields` map.
  */
 

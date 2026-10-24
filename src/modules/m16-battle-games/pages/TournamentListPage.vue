@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S23 `/tournament` (FR-M16-105, 106; URS FN-M16-8.1.1 ... 8.1.3): the hero, "Cipta Tournament Baru"
+ * S23 `/tournament` (FR-M16-105, 106; URS FN-M16-8.1.1 ... 8.1.3): the hero, "Cipta Kejohanan Baharu"
  * for admins only and the active tournaments of #42 (PROPOSED cards) or the empty card "Tiada
  * tournament aktif buat masa ini." (the seed). S25-S27 leagues are not linked from here (no link to
  * `/liga` on live, Q-M16-4).

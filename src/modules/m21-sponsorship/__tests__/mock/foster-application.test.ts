@@ -130,7 +130,7 @@ describe('422 (V-M21-03)', () => {
     const a = await post({ ...valid(), studentEmail: users.get(ADMIN)?.email }, PELAJAR)
     expect(a.status).toBe(422)
     expect(fieldsOf(a)).toEqual({ studentEmail: MSG.studentNotFound })
-    expect(MSG.studentNotFound).toBe('Email pelajar tidak dijumpai dalam PrestasiPlus.')
+    expect(MSG.studentNotFound).toBe('Emel pelajar tidak dijumpai dalam PrestasiPlus.')
     expect(fosterApplications.count('Q-M21-APP-TABS')).toBe(0)
   })
 

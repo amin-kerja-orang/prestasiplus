@@ -2,7 +2,7 @@
 /**
  * L45 S2 `/ibu-bapa/terima/:token` (FR-L45-19..30; owner M01, data from M02 through its public entry,
  * ADR-0009). Public standalone page. `GET /api/parent-invites/:token` decides the page:
- * - 404 (any unknown, replaced or inactive-student token): "Link Tidak Sah" (OBSERVED copy, FR-L45-19);
+ * - 404 (any unknown, replaced or inactive-student token): "Pautan Tidak Sah" (OBSERVED copy, FR-L45-19);
  * - `viewer: guest`: log-in CTA plus the register note (FR-L45-24/25, PROPOSED);
  * - `viewer: other`: switch-account state with "Log Keluar & Log Masuk Sebagai Ibu Bapa" (FR-L45-26);
  * - `viewer: parent`: `POST .../accept` once, then the linked state (FR-L45-27); a failure keeps the
@@ -29,7 +29,7 @@ import { GENERIC_ERROR } from '../lib/error-lines'
 
 const props = defineProps<{ token: string }>()
 
-const INVALID_TITLE = 'Link Tidak Sah — PRESTASIPLUS'
+const INVALID_TITLE = 'Pautan Tidak Sah — PRESTASIPLUS'
 const VALID_TITLE = 'Jemputan Ibu Bapa — PRESTASIPLUS'
 
 const router = useRouter()

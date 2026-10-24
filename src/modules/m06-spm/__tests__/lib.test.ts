@@ -49,7 +49,7 @@ describe('latih tubi helpers (S4)', () => {
   it('names the target types', () => {
     expect([targetName('spm'), targetName('custom'), targetName('latihan')]).toEqual([
       'SPM',
-      'Custom',
+      'Tersuai',
       'Latihan',
     ])
   })

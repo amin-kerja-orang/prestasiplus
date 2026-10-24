@@ -232,7 +232,7 @@ async function submit(): Promise<void> {
             type="text"
             name="title"
             required
-            placeholder="cth: 10 Tips Belajar Matematik"
+            placeholder="cth: 10 Petua Belajar Matematik"
             size="md"
             class="w-full"
             :color="invalid('title') ? 'error' : undefined"
@@ -353,7 +353,7 @@ async function submit(): Promise<void> {
           <USwitch
             v-model="form.isFeatured"
             name="is_featured"
-            label="Artikel Featured"
+            label="Artikel Pilihan"
             class="min-h-11"
             data-testid="article-featured"
           />

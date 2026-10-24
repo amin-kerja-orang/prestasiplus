@@ -95,7 +95,7 @@ Surfaces: **B** = `/admin` Blade, **P** = `admin.` React panel, **F** = `/admin-
 ### 6.1 Papan Pemuka (2)
 | ID | Item | Function(s) merged | Pusat | PPD·JPN | Sekolah | Evidence |
 |---|---|---|---|---|---|---|
-| PP-01 | Dashboard | platform counts, widgets (PlatformOverview, QuestionStatusChart) | F national | — | S own school | B `web.php:535`; P `/` `:185`; F Dashboard (group Harian) |
+| PP-01 | Papan Pemuka (was Dashboard) | platform counts, widgets (PlatformOverview, QuestionStatusChart) | F national | — | S own school | B `web.php:535`; P `/` `:185`; F Dashboard (group Harian) |
 | PP-02 | Laporan Eksekutif | executive report; league tables withheld when scoped | F | — | S | B `:725`; `helpers.php` nav_school_scoped |
 
 ### 6.2 Pemantauan (28)
@@ -103,7 +103,7 @@ Surfaces: **B** = `/admin` Blade, **P** = `admin.` React panel, **F** = `/admin-
 |---|---|---|---|---|---|---|
 | PM-01 | **Langsung** (was Command Center) | live metrics, drill school→teacher→class→student, full-screen mode | F national | R PPD district; JPN — (Q7) | S own school | B `:738-739` (+ `:1048-1049` school/student drill); `/ppd/command-center` `:831`; guru twin `:1749-1754` |
 | PM-02 | Aktiviti Harian | daily activity | F | — | S | B `:740`; F DailyActivity |
-| PM-03 | Monitoring | school engagement drill-down; CSV/PDF export (`:791`, `:798`) | F | — | S | B `:731`; F Monitoring |
+| PM-03 | Pemantauan (was Monitoring) | school engagement drill-down; CSV/PDF export (`:791`, `:798`) | F | — | S | B `:731`; F Monitoring |
 | PM-04 | Analitik | **merges** B "Analitik Kandungan" (`pusat:`) and P `/analitik` (school-scoped) into one page; content analytics tab Pusat-only | F national | — | S own school (usage tabs only) | B `:727`; P `:187`; F Analitik; `panel-layout.tsx` SCHOOL_SCOPED_HREFS |
 | PM-05 | Kirkpatrick › Ringkasan | overview; PDF export (`:797`) | F | — | S | B `:741`; F Kirkpatrick |
 | PM-06 | Kirkpatrick › T1: Reaksi | | F | — | S | B `:742` |
@@ -113,15 +113,15 @@ Surfaces: **B** = `/admin` Blade, **P** = `admin.` React panel, **F** = `/admin-
 | PM-10 | Kirkpatrick › Rantaian Impak | | F | — | S | B `:746` |
 | PM-11 | Kirkpatrick › Intervensi | | F | — | S | B `:747` |
 | PM-12 | Laporan Aktiviti | activity report (label in [P] Lagi; = M27 L53) | F | — | S* | B `:726`; [P] `admin-nav.ts` lagi label; M27 |
-| PM-13 | Amaran Wellbeing | wellbeing alerts of pupils (staff-facing) | F | — | S | [C] `:1489` (shared portal pages); [P] roles admin/teacher/school_admin |
+| PM-13 | Amaran Kesejahteraan (was Amaran Wellbeing) | wellbeing alerts of pupils (staff-facing) | F | — | S | [C] `:1489` (shared portal pages); [P] roles admin/teacher/school_admin |
 | PM-14 | Papan Pemuka Wilayah | PPD/JPN dashboard (district/state) | F national view | D (PPD district / JPN state) | — | `:830-861` dashboard; `PpdJpnController` |
 | PM-15 | Statistik Penggunaan | usage statistics at the viewer's scope (**one page** for ppd/jpn `statistik-penggunaan` and M27 L51) | F | D | S | `:831-832`; M27 L51 |
-| PM-16 | Ranking Kebangsaan | national ranking (ppd + jpn) | F | D (see scope note) | — | `:831-832` |
-| PM-17 | Benchmark Sekolah | PPD only | F | D PPD | — | `:830` |
-| PM-18 | Leaderboard Sekolah | PPD only | F | D PPD | — | `:831` |
+| PM-16 | Kedudukan Kebangsaan (was Ranking Kebangsaan) | national ranking (ppd + jpn) | F | D (see scope note) | — | `:831-832` |
+| PM-17 | Penanda Aras Sekolah (was Benchmark Sekolah) | PPD only | F | D PPD | — | `:830` |
+| PM-18 | Papan Pendahulu Sekolah (was Leaderboard Sekolah) | PPD only | F | D PPD | — | `:831` |
 | PM-19 | Peta Haba | heat map, PPD only | F | D PPD | — | `:831` |
-| PM-20 | Export Laporan | CSV export, PPD only | F | D PPD | — | `:831` |
-| PM-21 | DSKP Heatmap | [.my/M27 L52] | F | — | S | M27 L52; Q6 |
+| PM-20 | Eksport Laporan (was Export Laporan) | CSV export, PPD only | F | D PPD | — | `:831` |
+| PM-21 | Peta Haba DSKP (was DSKP Heatmap) | [.my/M27 L52] | F | — | S | M27 L52; Q6 |
 | PM-22 | Amaran Awal | early-warning (school) [.my/M27 L54] | F | — | S | M27 L54; Q6 |
 | PM-23 | Laporan Bulanan | monthly report [.my/M27 L55] | F | — | S | M27 L55; Q6 |
 | PM-24 | Headcount | school headcount (matrix row 3) | F | — | S | role-access-matrix.md row 3; D43/D-RAM-2 |
@@ -188,8 +188,8 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 ### 6.7 Penglibatan (22) — Pusat only [D30]; Sekolah deviation recorded (Q5)
 | ID | Item | Function(s) merged | Pusat | PPD·JPN | Sekolah | Evidence |
 |---|---|---|---|---|---|---|
-| PG-01 | Gamifikasi › Overview | | F | — | — | B `:887`; F GamificationOverview |
-| PG-02 | Gamifikasi › Tier Config (Kadar Tukaran Syiling) | | F | — | — | B `:888` (`pusat:`); F GamificationTiers |
+| PG-01 | Gamifikasi › Gambaran Keseluruhan (was Overview) | | F | — | — | B `:887`; F GamificationOverview |
+| PG-02 | Gamifikasi › Konfigurasi Peringkat (Kadar Tukaran Syiling) | | F | — | — | B `:888` (`pusat:`); F GamificationTiers |
 | PG-03 | Gamifikasi › Cabaran | daily challenges | F | — | — | B `:889` (`pusat:`); F Challenges |
 | PG-04 | Gamifikasi › Pelajar | | F | — | — | B `:890`; F GamificationStudents |
 | PG-05 | Gamifikasi › Transaksi | | F | — | — | B `:891`; F GamificationTransactions |
@@ -197,9 +197,9 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 | PG-07 | Gamifikasi › Gamifikasi Guru | teacher ledger (tebusan/tunai) | F | — | — | B `:893`, `:801-802`; F GamifikasiGuru |
 | PG-08 | Gamifikasi › Lencana Guru | teacher badges | F | — | — | F TeacherBadges only |
 | PG-09 | Gamifikasi › Cabutan | lucky draws | F | — | — | F LuckyDraws only |
-| PG-10 | Gamifikasi › Kawalan Reward | | F | — | — | B `:894` (`pusat:`); F RewardControl |
+| PG-10 | Gamifikasi › Kawalan Ganjaran | | F | — | — | B `:894` (`pusat:`); F RewardControl |
 | PG-11 | Permainan › Tetapan Permainan | games settings | F | — | — | B `:897` (`pusat:`); F TetapanPermainan, Games |
-| PG-12 | Permainan › Ranking Sekolah (Battle) | read-only report in admin layout | R | — | — | [.my] `/battle/ranking-sekolah`; layout.blade.php battle group; Q8 |
+| PG-12 | Permainan › Kedudukan Sekolah (Battle) (was Ranking Sekolah) | read-only report in admin layout | R | — | — | [.my] `/battle/ranking-sekolah`; layout.blade.php battle group; Q8 |
 | PG-13 | Permainan › Leaderboard (Battle) | read-only report in admin layout | R | — | — | [.my] `/battle/leaderboard`; Q8 |
 | PG-14 | Marketplace › Produk | | F | — | — | B `:913` (`pusat:`); F MarketplaceProducts |
 | PG-15 | Marketplace › Penjual | | F | — | — | B `:914`; F MarketplaceSellers |
@@ -215,9 +215,9 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 | ID | Item | Pusat | PPD·JPN | Sekolah | Evidence |
 |---|---|---|---|---|---|
 | KW-01 | Pembayaran (+ export payments) | F | — | S | B `:901`, `:863`; F Payments |
-| KW-02 | Billing Dashboard | F | — | S | B `:902`; F BillingDashboard |
+| KW-02 | Papan Pemuka Pengebilan (was Billing Dashboard) | F | — | S | B `:902`; F BillingDashboard |
 | KW-03 | Invois | F | — | S | F Invoices ("Billing"); [P] M27 Invois |
-| KW-04 | Dunning Log | F | — | S | B `:903`; F DunningLogs |
+| KW-04 | Log Peringatan Bayaran (was Dunning Log) | F | — | S | B `:903`; F DunningLogs |
 | KW-05 | Langganan Sekolah | F | — | S own subscription | B `:872`; F SchoolSubscriptions |
 | KW-06 | Akses PKSK | F | — | S | B `:896`; F PkskAccesses |
 
@@ -228,7 +228,7 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 | SY-02 | Kawalan Ciri (feature toggles) | B `:870-871` (`pusat:`) |
 | SY-03 | Prestasi Sistem (+ server-status pill in topbar) | B `:732-733` |
 | SY-04 | Log Audit (+ export) | B `:910`, `:792`; F AuditLogs; [.my] `/admin/audit-logs` |
-| SY-05 | Upload Screenshot (tools) | B `:915`; F ScreenshotsTool |
+| SY-05 | Muat Naik Tangkapan Skrin (tools) | B `:915`; F ScreenshotsTool |
 
 ### 6.10 Cross-cutting admin functions (not menu items)
 | Function | Where in v2 | Evidence |
@@ -284,9 +284,9 @@ Replicates .cloud `pelajar/layout.blade.php` and `guru/layout.blade.php` section
 
 | Role | Groups (in order) | Changes vs prototype |
 |---|---|---|
-| Murid | Top (Dashboard, Target SPM, Misi Harian, Remedial) · SPM · Pembelajaran · Pusat AI (✨ Cita-Cita Hijrah, 🔥 Streak & Syiling, 📝 Nota Ringkas, 🤖 Cikgu Alesa AI, ✨ Visi & Pertandingan, 🤖 AI Pintar (Pelajar)) · 🏆 Bilik Duta · ✨ Visi & Pertandingan · 💎 Killer Features · Akaun & Bantuan (Profil Saya, Tetapan Peribadi, Panduan, Tiket Bantuan, Log Keluar) | ▲ no admin-only blocks; ▲ no role-union rendering |
-| Guru | Command Center (LIVE) · HARIAN · PENGAJARAN · PENILAIAN · ANALITIK (Monitoring, Kirkpatrick) · PUSAT AI · BANK SOALAN · AKTIVITI · LAIN-LAIN · Bantuan | ▲ Monitoring/Kirkpatrick/Command Center render in the **learning** layout (prototype renders them in the admin chrome); ▲ Command Center drill-down shares components with PM-01 |
-| Ibu Bapa | Dashboard · linked-child views and consent approvals · Akaun & Bantuan | [P] only (no .cloud login role: parent invite = `/ibu-bapa/terima/{token}` `:1429`); minimal menu |
+| Murid | Top (Papan Pemuka (was Dashboard), Target SPM, Misi Harian, Remedial) · SPM · Pembelajaran · Pusat AI (✨ Cita-Cita Hijrah, 🔥 Streak & Syiling, 📝 Nota Ringkas, 🤖 Cikgu Alesa AI, ✨ Visi & Pertandingan, 🤖 AI Pintar (Pelajar)) · 🏆 Bilik Duta · ✨ Visi & Pertandingan · 💎 Ciri Utama (was Killer Features) · Akaun & Bantuan (Profil Saya, Tetapan Peribadi, Panduan, Tiket Bantuan, Log Keluar) | ▲ no admin-only blocks; ▲ no role-union rendering |
+| Guru | Command Center (LIVE) · HARIAN · PENGAJARAN · PENILAIAN · ANALITIK (Pemantauan (was Monitoring), Kirkpatrick) · PUSAT AI · BANK SOALAN · AKTIVITI · LAIN-LAIN · Bantuan | ▲ Pemantauan/Kirkpatrick/Command Center render in the **learning** layout (prototype renders them in the admin chrome); ▲ Command Center drill-down shares components with PM-01 |
+| Ibu Bapa | Papan Pemuka (was Dashboard) · linked-child views and consent approvals · Akaun & Bantuan | [P] only (no .cloud login role: parent invite = `/ibu-bapa/terima/{token}` `:1429`); minimal menu |
 | Penaja | Penaja home (`/sponsor`) · Akaun & Bantuan | [P] M21 only; Q3 |
 
 Items visible to Admin Pusat that duplicated other roles' blocks (Portal Guru, PPD/JPN, Cikgu Alesa Tools, Admin) are **removed** from the learning menu; admins reach those experiences only through Pratonton.

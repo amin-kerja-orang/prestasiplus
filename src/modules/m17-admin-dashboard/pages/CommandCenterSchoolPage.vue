@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S4 "{sekolah} - Command Center" (M17 FR-M17-48..50, FN-M17-5.1.x; DV-M17-22): header, back link
- * "← Kembali ke Overview", breadcrumb, the four cards and "Senarai Guru ({n})" (a row opens S5).
+ * "← Kembali ke Gambaran Keseluruhan", breadcrumb, the four cards and "Senarai Guru ({n})" (a row opens S5).
  * The route prefix is a prop so M10 (`/guru/command-center`) and the school-admin alias mount it.
  */
 import type { TableColumn } from '@nuxt/ui'
@@ -70,7 +70,7 @@ function open(userId: number) {
   <CcFrame
     v-if="!notFound"
     :back-to="paths.overview"
-    back-label="Kembali ke Overview"
+    back-label="Kembali ke Gambaran Keseluruhan"
     :crumbs="data ? crumbs : [{ label: 'Command Center', to: paths.overview }]"
   >
     <DsLoadError v-if="error" testid="cc-error" @retry="reload" />

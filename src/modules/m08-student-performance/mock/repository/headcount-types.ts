@@ -12,7 +12,7 @@ export interface HeadcountConfigRow {
   /** Always a `classroom` (school classes own no config). */
   classroomId: number
   subjectId: number
-  /** 1–11 (M03 level id): the S14 form allows 10 and 11, Auto-Setup every level. */
+  /** 1–11 (M03 level id): the S14 form allows 10 and 11, Persediaan Auto every level. */
   educationLevelId: number
   academicYear: number
   /** 2–5. */

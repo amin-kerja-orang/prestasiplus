@@ -151,7 +151,7 @@ export interface CcDrillStudentRow {
   accuracy: number
   lastActiveAt: string | null
   /** "Aktif" when the student answered today, else "Login". */
-  status: 'Aktif' | 'Login'
+  status: 'Aktif' | 'Log Masuk'
 }
 
 export interface CcDrillTodayRow {
@@ -243,7 +243,7 @@ export interface CcDrillRowMap {
 /**
  * DV-M10-04: `title` is the label of the clicked tile or panel ("Pelajar Berdaftar", "Soalan Dijawab" /
  * "Aktiviti Hari Ini", "Ketepatan Purata", "GPS Sekolah", "Kirkpatrick T1"…"T4", "Mood Pelajar",
- * "Engagement Pelajar"). `extra` + `vsLabel` ("Bulan Ini vs Bulan Lepas") come with `kirk` t2–t4 (whose
+ * "Penglibatan Pelajar"). `extra` + `vsLabel` ("Bulan Ini vs Bulan Lepas") come with `kirk` t2–t4 (whose
  * `students` is empty). The page shows "Tiada data" when `students` is empty and there is no `extra`.
  */
 export interface CcDrill<T extends CcDrillType = CcDrillType> {

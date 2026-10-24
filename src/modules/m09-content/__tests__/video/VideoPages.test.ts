@@ -208,7 +208,7 @@ describe('VideoListPage (S17)', () => {
     expect(pills[3]?.attributes('href')).toBeUndefined()
   })
 
-  it('builds subject-first category links and category-first subject links, with Reset Subjek', async () => {
+  it('builds subject-first category links and category-first subject links, with Set Semula Subjek', async () => {
     login()
     const w = await mountAt(VideoListPage, '/page?subject=5')
     const pills = w.findAll('[data-testid="video-category-pill"]')
@@ -262,7 +262,7 @@ describe('VideoDetailPage (S18)', () => {
     )
     expect(t(w, 'video-title').text()).toBe('Video 2224')
     expect(t(w, 'video-views').text()).toBe('2234 tontonan')
-    expect(t(w, 'video-date').text()).toBe('03 Mar 2026')
+    expect(t(w, 'video-date').text()).toBe('03 Mac 2026')
     expect(t(w, 'video-chip-platform').text()).toBe('YouTube')
     expect(t(w, 'video-chip-category').text()).toBe('Ceramah')
     expect(t(w, 'video-chip-subject').text()).toBe('Sejarah')
@@ -350,7 +350,7 @@ describe('VideoFormPage (S20 add)', () => {
     const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
     expect(t(w, 'video-form-h1').text()).toBe('Tambah Video Baru')
     expect(t(w, 'video-form-sub').text()).toBe(
-      'Paste sahaja link video — kami akan buat selebihnya',
+      'Tampal sahaja pautan video — kami akan buat selebihnya',
     )
     expect(t(w, 'video-url').attributes('required')).toBeDefined()
     expect(t(w, 'video-url').attributes('type')).toBe('url')

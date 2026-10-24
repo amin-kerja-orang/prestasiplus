@@ -34,7 +34,7 @@ const items = computed(() => data.value?.data ?? [])
       <DsPanel v-if="items.length === 0" data-testid="missions-empty">
         <DsEmptyState
           title="Tiada misi hari ini"
-          description="Misi baru akan muncul bila guru anda assign."
+          description="Misi baharu akan muncul apabila guru anda menetapkannya."
           icon="tray"
         />
       </DsPanel>

@@ -119,11 +119,11 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
     ])
     expect(card.text()).toContain('Taburan Konsistensi:')
     expect(card.findAll('[data-testid="chain-bands"] li').map((l) => flat(l))).toEqual([
-      'Champion 513',
-      'Consistent 259',
-      'Developing 169',
-      'Minimal 5',
-      'Disengaged 3212',
+      'Juara 513',
+      'Konsisten 259',
+      'Berkembang 169',
+      'Minimum 5',
+      'Tidak Terlibat 3212',
     ])
     expect(card.attributes('data-tone')).toBe('warning')
   })

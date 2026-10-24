@@ -178,7 +178,7 @@ describe('route and helpers', () => {
   it('formats the duration as "{h}j {m}m" and a missing login as "Belum login"', () => {
     expect(duration(3725)).toBe('1j 2m')
     expect(duration(0)).toBe('0j 0m')
-    expect(lastLogin(null)).toBe('Belum login')
+    expect(lastLogin(null)).toBe('Belum log masuk')
   })
 
   it('matches case-insensitively over several fields and passes an empty query', () => {
@@ -200,7 +200,7 @@ describe('header, breadcrumb, pills, tabs (FR-M27-44, 66, 67; AC 13.1, 13.4, 19.
   it('renders "← Dashboard Sekolah" as a link and the bold title as text', async () => {
     const w = await mountPage(report())
     const back = w.get('[data-testid="la-breadcrumb"] a')
-    expect(back.text()).toBe('Dashboard Sekolah')
+    expect(back.text()).toBe('Papan Pemuka Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
     const cur = w.get('[data-testid="la-breadcrumb"] [aria-current="page"]')
     expect(cur.text()).toBe('Laporan Aktiviti')
@@ -232,7 +232,7 @@ describe('header, breadcrumb, pills, tabs (FR-M27-44, 66, 67; AC 13.1, 13.4, 19.
 
   it('shows the tabs "Overview", "Guru (n)", "Murid (n)" and no "Sekolah" tab', async () => {
     const w = await mountPage(report())
-    expect(texts(w, 'la-tab-overview')).toEqual(['Overview'])
+    expect(texts(w, 'la-tab-overview')).toEqual(['Gambaran Keseluruhan'])
     expect(text(w, 'la-tab-guru')).toBe('Guru (9)')
     expect(text(w, 'la-tab-murid')).toBe('Murid (1,234)')
     expect(w.findAll('[data-testid="la-tabs"] button')).toHaveLength(3)
@@ -260,8 +260,8 @@ describe('Overview (FR-M27-68…70; AC 19.2…19.4)', () => {
   it('renders exactly the four cards with percent, value, denominator and sub-lines', async () => {
     const w = await mountPage(report())
     expect(texts(w, 'la-card-label')).toEqual([
-      'Murid Pernah Login',
-      'Cikgu Pernah Login',
+      'Murid Pernah Log Masuk',
+      'Cikgu Pernah Log Masuk',
       'Murid Buat Latihan',
       'Jumlah Aktiviti',
     ])
@@ -269,8 +269,8 @@ describe('Overview (FR-M27-68…70; AC 19.2…19.4)', () => {
     expect(texts(w, 'la-card-value')).toEqual(['700', '6', '600', '1,517'])
     expect(texts(w, 'la-card-of')).toEqual(['/ 1,234', '/ 9', '/ 1,234'])
     expect(texts(w, 'la-card-note')).toEqual([
-      '534 belum pernah login',
-      '3 belum pernah login',
+      '534 belum pernah log masuk',
+      '3 belum pernah log masuk',
       '30 hari lepas',
     ])
   })
@@ -287,8 +287,8 @@ describe('Overview (FR-M27-68…70; AC 19.2…19.4)', () => {
     const w = await mountPage(EMPTY)
     expect(texts(w, 'la-card-pct')).toEqual(['0%', '0%', '0%'])
     expect(texts(w, 'la-card-note')).toEqual([
-      '0 belum pernah login',
-      '0 belum pernah login',
+      '0 belum pernah log masuk',
+      '0 belum pernah log masuk',
       '30 hari lepas',
     ])
   })
@@ -315,7 +315,7 @@ describe('Overview (FR-M27-68…70; AC 19.2…19.4)', () => {
     expect(texts(w, 'la-top-rank')).toEqual(['1', '2'])
     expect(texts(w, 'la-top-name')).toEqual(['Murid 1', 'Aini Contoh'])
     expect(texts(w, 'la-top-count')).toEqual(['877', '38'])
-    expect(text(w, 'la-never')).toContain('Cikgu Belum Login')
+    expect(text(w, 'la-never')).toContain('Cikgu Belum Log Masuk')
     expect(texts(w, 'la-never-name')).toEqual(['Guru Satu'])
     expect(texts(w, 'la-never-email')).toEqual(['guru1@demo.test'])
   })
@@ -342,13 +342,13 @@ describe('Guru tab (FR-M27-71; AC 20.1)', () => {
     expect(text(w, 'la-guru-title')).toBe('Senarai Guru (9)')
     expect(w.findAll('[data-testid^="la-guru-pill-"]').map((p) => p.text())).toEqual([
       'Semua',
-      'Pernah Login (6)',
-      'Belum Login (3)',
+      'Pernah Log Masuk (6)',
+      'Belum Log Masuk (3)',
     ])
     expect(w.get('[data-testid="la-guru-search"]').attributes('placeholder')).toBe('Cari guru...')
     expect(texts(w, 'la-tile-label')).toEqual([
       'Jumlah Guru',
-      'Pernah Login',
+      'Pernah Log Masuk',
       'Jumlah Soalan',
       'Jumlah Syiling',
     ])
@@ -356,12 +356,12 @@ describe('Guru tab (FR-M27-71; AC 20.1)', () => {
     expect(w.findAll('[data-testid="la-guru-table"] th').map((e) => e.text())).toEqual([
       '#',
       'Nama',
-      'Login',
+      'Log Masuk',
       'MCQ',
       'Struktur',
       'Syiling',
       'Headcount',
-      'Login Terakhir',
+      'Log Masuk Terakhir',
     ])
     expect(w.find('select').exists()).toBe(false)
   })
@@ -377,7 +377,7 @@ describe('Guru tab (FR-M27-71; AC 20.1)', () => {
     const heads = w.findAll('[data-testid="la-guru-headcount"]')
     expect(heads[0]?.find('svg').exists()).toBe(false)
     expect(heads[1]?.find('svg').exists()).toBe(true)
-    expect(texts(w, 'la-guru-last')[0]).toBe('Belum login')
+    expect(texts(w, 'la-guru-last')[0]).toBe('Belum log masuk')
     expect(texts(w, 'la-guru-last')[1]).toMatch(/yang lepas$/)
   })
 
@@ -409,8 +409,8 @@ describe('Murid tab (FR-M27-72; AC 20.2, 20.3)', () => {
     expect(w.findAll('[data-testid^="la-murid-pill-"]').map((p) => p.text())).toEqual([
       'Semua',
       'Aktif',
-      'Login Sahaja',
-      'Belum Login',
+      'Log Masuk Sahaja',
+      'Belum Log Masuk',
     ])
     expect(w.get('[data-testid="la-murid-search"]').attributes('placeholder')).toBe('Cari murid...')
     expect(texts(w, 'la-tile-label')).toEqual([
@@ -428,7 +428,7 @@ describe('Murid tab (FR-M27-72; AC 20.2, 20.3)', () => {
       'Ketepatan',
       'Masa',
       'Syiling',
-      'Login Terakhir',
+      'Log Masuk Terakhir',
     ])
     expect(w.find('select').exists()).toBe(false)
   })
@@ -441,7 +441,7 @@ describe('Murid tab (FR-M27-72; AC 20.2, 20.3)', () => {
     expect(texts(w, 'la-murid-ketepatan')[0]).toBe('66.7%')
     expect(texts(w, 'la-murid-masa')[0]).toBe('1j 2m')
     expect(texts(w, 'la-murid-syiling')[0]).toBe('1,200')
-    expect(texts(w, 'la-murid-last')[0]).toBe('Belum login')
+    expect(texts(w, 'la-murid-last')[0]).toBe('Belum log masuk')
     expect(texts(w, 'la-murid-kelas')[1]).toBe('-')
   })
 

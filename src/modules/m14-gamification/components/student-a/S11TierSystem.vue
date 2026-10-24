@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** S11 "Sistem Tier" (FN-M14-2.1.9; FR-M14-21): active tiers in sort order, the viewer's tier marked. */
+/** S11 "Sistem Peringkat" (FN-M14-2.1.9; FR-M14-21): active tiers in sort order, the viewer's tier marked. */
 import { DsIconChip } from '@/ds'
 import { formatCount } from '@/lib/number'
 
@@ -12,7 +12,7 @@ defineProps<{ tiers: readonly TierGridItem[]; currentKey: string }>()
   <UCard class="min-w-0" data-testid="s11-tiers">
     <div class="flex flex-col gap-3">
       <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
-        <DsIconChip icon="crown" accent="trial" size="sm" />Sistem Tier
+        <DsIconChip icon="crown" accent="trial" size="sm" />Sistem Peringkat
       </h2>
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div

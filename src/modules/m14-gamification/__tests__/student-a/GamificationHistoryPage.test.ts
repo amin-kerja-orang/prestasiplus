@@ -57,7 +57,7 @@ describe('S17 history (AC-M14-06)', () => {
     await mountAt('/gamification/history')
     expect(w!.get('h1').text()).toBe('📋 Sejarah Transaksi')
     expect(t('s17-balance').text()).toBe('Baki semasa: 256 syiling')
-    expect(t('s17-back').text()).toBe('← Dashboard')
+    expect(t('s17-back').text()).toBe('← Papan Pemuka')
     expect(t('s17-back').attributes('href')).toBe('/gamification')
     const pills = all('s17-pill')
     expect(pills.map((p) => p.text())).toEqual([

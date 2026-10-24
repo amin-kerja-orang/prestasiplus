@@ -99,10 +99,10 @@ afterEach(() => {
 describe('S16 TimelinePage', () => {
   it('shows the empty card, the add links and the own public link', async () => {
     const w = await render(TimelinePage, '/timeline', '/timeline')
-    expect(w.get('h1').text()).toBe('📸 Timeline Saya')
-    expect(w.get('[data-testid=timeline-empty]').text()).toContain('Timeline Kosong')
+    expect(w.get('h1').text()).toBe('📸 Garis Masa Saya')
+    expect(w.get('[data-testid=timeline-empty]').text()).toContain('Garis Masa Kosong')
     expect(w.get('[data-testid=add-post]').attributes('href')).toBe('/timeline/create')
-    expect(w.get('[data-testid=add-first]').text()).toBe('Tambah Post Pertama')
+    expect(w.get('[data-testid=add-first]').text()).toBe('Tambah Hantaran Pertama')
     const link = w.get('[data-testid=public-url]')
     expect(link.attributes('href')).toBe(`${window.location.origin}/pelajar/1`)
     expect(link.attributes('target')).toBe('_blank')
@@ -135,7 +135,7 @@ describe('S16 TimelinePage', () => {
 describe('S17 TimelineCreatePage', () => {
   it('has the live fields, defaults and limits', async () => {
     const w = await render(TimelineCreatePage, '/timeline/create', '/timeline/create')
-    expect(w.get('h1').text()).toBe('📸 Post Baru')
+    expect(w.get('h1').text()).toBe('📸 Hantaran Baharu')
     const title = w.get('input[name=title]')
     expect(title.attributes('maxlength')).toBe('150')
     expect(title.attributes('required')).toBeDefined()
@@ -239,13 +239,13 @@ describe('S18 PublicProfilePage', () => {
     const w = await render18()
     expect(api.fetchPublicProfile).toHaveBeenCalledWith(1, expect.anything())
     expect(w.get('[data-testid=name]').text()).toBe('Admin Demo')
-    expect(w.get('[data-testid=tier-pill]').text()).toBe('🥉 Bronze')
+    expect(w.get('[data-testid=tier-pill]').text()).toBe('🥉 Gangsa')
     expect(w.get('[data-testid=chip-school]').text()).toBe('SK Demo')
     expect(w.get('[data-testid=chip-level]').text()).toBe('Darjah 6')
     expect(w.get('[data-testid=chip-joined]').text()).toBe('Ahli sejak 25 Oktober 2025')
     expect(w.get('[data-testid=days-with]').text()).toBe('334 hari bersama')
     expect(w.get('[data-testid=coin-value]').text()).toBe('256')
-    expect(w.get('[data-testid=tier-next]').text()).toBe('244 syiling lagi ke Silver')
+    expect(w.get('[data-testid=tier-next]').text()).toBe('244 syiling lagi ke Perak')
     expect(w.get('[data-testid=tier-card]').text()).toContain('Tahap 1')
     expect(w.findAll('[data-testid=summary-item]').map((s) => s.text())).toEqual([
       '0 sesi latihan',
@@ -281,7 +281,7 @@ describe('S18 PublicProfilePage', () => {
     await w.get('[data-testid=share]').trigger('click')
     await flushPromises()
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/pelajar/1`)
-    expect(dialogs.alertNative).toHaveBeenCalledWith('Link disalin!')
+    expect(dialogs.alertNative).toHaveBeenCalledWith('Pautan disalin!')
 
     const share = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'share', { value: share, configurable: true })

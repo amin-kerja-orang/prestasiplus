@@ -15,7 +15,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'admin',
       access: 'auth',
       roles: ['admin'],
-      title: 'Pengurusan Pengguna - Admin Panel',
+      title: 'Pengurusan Pengguna - Panel Admin',
       header: { title: 'Pengurusan Pengguna', subtitle: 'Urus akaun pengguna PRESTASIPLUS' },
       module: 'M02',
       v2: true,

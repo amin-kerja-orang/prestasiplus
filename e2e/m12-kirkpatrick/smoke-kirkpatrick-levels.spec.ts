@@ -41,7 +41,7 @@ const TITLES = {
   s4: [
     'Tahap 3: Tingkah Laku — Kirkpatrick',
     'Tahap 3: Tingkah Laku',
-    'Konsistensi penggunaan, engagement score, dan corak tingkah laku pelajar',
+    'Konsistensi penggunaan, skor penglibatan, dan corak tingkah laku pelajar',
   ],
   s5: [
     'Tahap 4: Hasil — Kirkpatrick',
@@ -197,7 +197,7 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     await gotoApp(S4)
     const tile = (k: string) => page.getByTestId(`beh-band-${k}`)
     const expected = [
-      ['champion', '513', 'Champion', '>50 soalan', '12.3%'],
+      ['champion', '513', 'Juara', '>50 soalan', '12.3%'],
       ['konsisten', '259', 'Konsisten', '20-50 soalan', '6.2%'],
       ['berkembang', '169', 'Berkembang', '5-20 soalan', '4.1%'],
       ['minimum', '5', 'Minimum', '<5 soalan', '0.1%'],
@@ -255,7 +255,7 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     )
     const tahap = await texts(page.getByTestId('cell-tahap'))
     const count = (t: string) => tahap.filter((x) => x === t).length
-    expect([count('Champion'), count('Konsisten'), count('Berkembang'), count('Minimum')]).toEqual([
+    expect([count('Juara'), count('Konsisten'), count('Berkembang'), count('Minimum')]).toEqual([
       8, 7, 2, 4,
     ])
     expect(count('Tidak Terlibat')).toBe(12)
@@ -341,11 +341,11 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
       ...Array<string>(12).fill('good'),
     ])
     const never = text.slice(0, 22)
-    for (const t of never) expect(t).toMatch(/: \d+ pelajar tidak pernah login langsung\.$/)
+    for (const t of never) expect(t).toMatch(/: \d+ pelajar tidak pernah log masuk langsung\.$/)
     expect(never.map((t) => Number(/: (\d+) pelajar/.exec(t)![1]))).toEqual([
       1, 4, 6, 8, 257, 205, 1, 759, 674, 1, 5, 148, 2, 1, 1, 16, 8, 7, 7, 8, 1, 6,
     ])
-    expect(text[22]).toMatch(/: 2 guru telah login tetapi tiada pelajar yang menjawab soalan\.$/)
+    expect(text[22]).toMatch(/: 2 guru telah log masuk tetapi tiada pelajar yang menjawab soalan\.$/)
     const good = text.slice(23)
     for (const t of good) expect(t).toMatch(/: [\d.]+% pelajar aktif menjawab soalan\. Tahniah!$/)
     expect(good.map((t) => /: ([\d.]+%)/.exec(t)![1])).toEqual([
@@ -370,7 +370,7 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     await expect(mood).toContainText('💭')
     await expect(mood).toContainText('Data Mood Belum Mencukupi')
     await expect(mood).toContainText(
-      'Pelajar perlu check-in mood harian untuk analisis kesejahteraan vs prestasi.',
+      'Pelajar perlu mendaftar mood harian untuk analisis kesejahteraan vs prestasi.',
     )
     await expectNoHorizontalScroll(page)
 
@@ -389,12 +389,12 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     await gotoApp(`${S4}?school_id=10220`)
     await expect(page.getByTestId('beh-alert')).toHaveCount(1)
     await expect(page.getByTestId('beh-alert-text')).toContainText(
-      ': 2 guru telah login tetapi tiada pelajar yang menjawab soalan.',
+      ': 2 guru telah log masuk tetapi tiada pelajar yang menjawab soalan.',
     )
     await spaGo(page, `${S4}?school_id=8298`)
     await expect(page.getByTestId('beh-alert')).toHaveCount(1)
     await expect(page.getByTestId('beh-alert-text')).toContainText(
-      ': 2 pelajar tidak pernah login langsung.',
+      ': 2 pelajar tidak pernah log masuk langsung.',
     )
     await expect(page.getByTestId('beh-alert')).toHaveClass(/bg-red-50/)
   })
@@ -415,7 +415,7 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     expect(bands.reduce((a, b) => a + b, 0)).toBe(8)
     const alerts = await texts(page.getByTestId('beh-alert-text'))
     expect(alerts).toHaveLength(2)
-    expect(alerts[0]).toMatch(/: 8 pelajar tidak pernah login langsung\.$/)
+    expect(alerts[0]).toMatch(/: 8 pelajar tidak pernah log masuk langsung\.$/)
     expect(alerts[1]).toMatch(/: 62\.5% pelajar aktif menjawab soalan\. Tahniah!$/)
   })
 })
@@ -599,7 +599,7 @@ test.describe('M12 S5 T4 Hasil (admin)', MODULE, () => {
     )
     const n = (t: string) => tahap.filter((x) => x === t).length
     expect([
-      n('Champion'),
+      n('Juara'),
       n('Konsisten'),
       n('Berkembang'),
       n('Minimum'),
@@ -780,7 +780,7 @@ test.describe('M12 S5 T4 Hasil (admin)', MODULE, () => {
       TEXT,
     )
     await expect(page.getByTestId('insight-disclaimer')).toHaveText(
-      'Disclaimer: Data GPS Anggaran berdasarkan markah OTR headcount, bukan keputusan SPM sebenar.',
+      'Penafian: Data GPS Anggaran berdasarkan markah OTR headcount, bukan keputusan SPM sebenar.',
       TEXT,
     )
     await expectNoHorizontalScroll(page)
@@ -864,7 +864,7 @@ test.describe('M12 S6 Rantaian Impak (admin)', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(`${S6}?school_id=8080`)
-    await expectTabTitle(page, 'Kirkpatrick Impact Chain')
+    await expectTabTitle(page, 'Rantaian Impak Kirkpatrick')
     await expect(page.getByTestId('shell-admin-title')).toHaveText('Rantaian Impak')
     await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
     await expect(page.getByTestId('kirk-tabs')).toHaveCount(0)
@@ -883,11 +883,11 @@ test.describe('M12 S6 Rantaian Impak (admin)', MODULE, () => {
     await expect(v('chain-t3')).toHaveText(['946/4158 (22.8%)', '20,991'], TEXT)
     await expect(v('chain-t4')).toHaveText(['4.30', '0.1298', 'Lemah'])
     expect(await texts(page.getByTestId('chain-bands').locator('li'))).toEqual([
-      'Champion 513',
-      'Consistent 259',
-      'Developing 169',
-      'Minimal 5',
-      'Disengaged 3212',
+      'Juara 513',
+      'Konsisten 259',
+      'Berkembang 169',
+      'Minimum 5',
+      'Tidak Terlibat 3212',
     ])
     await expect(page.getByTestId('chain-t1')).toHaveClass(/border-green-300/)
     await expect(page.getByTestId('chain-t2')).toHaveClass(/border-green-300/)
@@ -1044,7 +1044,7 @@ test.describe('M12 S7 Intervensi (admin)', MODULE, () => {
     await expect(page.getByTestId('int-before-mood').locator('option')).toHaveText([
       '-- Pilih --',
       'Gembira',
-      'Okay',
+      'Biasa',
       'Sedih',
       'Tertekan',
     ])

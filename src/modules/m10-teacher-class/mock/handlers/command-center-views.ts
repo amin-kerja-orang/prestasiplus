@@ -318,7 +318,7 @@ export function drill(ctx: CcContext, type: string, filter: string): DrillResult
             answered: t.answered,
             accuracy: pct(t),
             lastActiveAt: iso(lastAnswer(s)?.atMs),
-            status: s.answers.some((a) => inWindow(a, w.today)) ? 'Aktif' : 'Login',
+            status: s.answers.some((a) => inWindow(a, w.today)) ? 'Aktif' : 'Log Masuk',
           }
         })
       return withRows('Pelajar Berdaftar', rows)
@@ -443,7 +443,7 @@ export function drill(ctx: CcContext, type: string, filter: string): DrillResult
             lastActiveAt: iso(lastAnswer(s)?.atMs),
           }
         })
-      return withRows('Engagement Pelajar', rows)
+      return withRows('Penglibatan Pelajar', rows)
     }
   }
 }

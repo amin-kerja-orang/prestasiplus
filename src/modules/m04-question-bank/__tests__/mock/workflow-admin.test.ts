@@ -391,7 +391,7 @@ describe('#20–#22 S10 question papers (BR-M04-18, E2E-M04-48/49)', () => {
         subjectText: 'Sains',
         levelCode: 'T5',
         year: 2026,
-        paperType: 'Trial Paper',
+        paperType: 'Kertas Percubaan',
         authorCredit: 'Oleh: Cikgu Demo 4501',
         files: [{ name: 'a.pdf', size: 10, mime: 'application/pdf' }],
       },

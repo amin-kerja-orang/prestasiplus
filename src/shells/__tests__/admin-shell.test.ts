@@ -70,7 +70,7 @@ const REGISTRY: readonly ModuleManifest[] = [
       {
         path: '/guru/monitoring',
         component: page('monitoring'),
-        meta: { layout: 'admin', roles: BOTH, header: { title: 'Monitoring Penglibatan' } },
+        meta: { layout: 'admin', roles: BOTH, header: { title: 'Pemantauan Penglibatan' } },
       },
       {
         path: '/guru/kirkpatrick',
@@ -204,7 +204,7 @@ describe('AdminShell: structure and breakpoints (< lg / ≥ lg)', () => {
     const w = await open('/admin')
     const cells = bottom(w).findAll('a, button')
     expect(cells.map((c) => c.text())).toEqual([
-      'Dashboard',
+      'Papan Pemuka',
       'Soalan',
       'Penaja',
       'Pengguna',
@@ -230,10 +230,10 @@ describe('AdminShell: menu per role', () => {
       'Command CenterLIVE',
       'Aktiviti Harian',
       'Audio KBAT',
-      'Dashboard',
+      'Papan Pemuka',
       'Laporan Eksekutif',
     ])
-    expect(labels).toContain('Ke Dashboard')
+    expect(labels).toContain('Ke Papan Pemuka')
     expect(labels).toContain('Tetapan Peribadi')
     expect(side.get('[data-nav-id="command-center"]').attributes('target')).toBe('_blank')
     expect(side.get('[data-nav-id="ke-dashboard"]').attributes('href')).toBe('/dashboard')
@@ -259,8 +259,8 @@ describe('AdminShell: menu per role', () => {
     for (const adminOnly of [
       'Panel Pentadbir',
       'Laporan Eksekutif',
-      'Ke Dashboard',
-      'Student View',
+      'Ke Papan Pemuka',
+      'Paparan Pelajar',
       'Aktiviti Harian',
       'data-nav-id="ke-dashboard"',
       'href="/admin/',
@@ -276,8 +276,8 @@ describe('AdminShell: menu per role', () => {
     // Teacher menu, its own order; the pinned card is the teacher's Command Center.
     const labels = labelsOf(sidebar(w))
     expect(labels[0]).toBe('Command CenterLIVE')
-    expect(labels).toContain('Dashboard Guru')
-    expect(labels).toContain('Monitoring')
+    expect(labels).toContain('Papan Pemuka Guru')
+    expect(labels).toContain('Pemantauan')
     expect(sidebar(w).get('[data-nav-id="t-command-center"]').attributes('href')).toBe(
       '/guru/command-center',
     )
@@ -299,7 +299,7 @@ describe('AdminShell: menu per role', () => {
       bottom(w)
         .findAll('a, button')
         .map((c) => c.text()),
-    ).toEqual(['Guru', 'Kelas', 'Monitoring', 'Kirkpatrick', 'Lagi'])
+    ).toEqual(['Guru', 'Kelas', 'Pemantauan', 'Kirkpatrick', 'Lagi'])
     expect(bottom(w).get('[data-nav-id="bottom-monitoring"]').classes()).toContain('active')
     expect(bottom(w).findAll('.active')).toHaveLength(1)
   })
@@ -437,7 +437,7 @@ describe('AdminShell: "Lagi" popover', () => {
     expect(isOpen(w)).toBe(false)
   })
 
-  it('lists the observed headings, rows and links; ends with "Student View" and "Log Keluar"', async () => {
+  it('lists the observed headings, rows and links; ends with "Paparan Pelajar" and "Log Keluar"', async () => {
     const w = await open('/admin')
     const headings = lagi(w)
       .findAll('p')
@@ -457,11 +457,11 @@ describe('AdminShell: "Lagi" popover', () => {
     expect(rows.slice(0, 4).map((a) => a.text())).toEqual([
       'Analitik',
       'Laporan Aktiviti',
-      'Monitoring',
+      'Pemantauan',
       'Kirkpatrick',
     ])
     expect(rows.slice(-2).map((a) => [a.text(), a.attributes('href')])).toEqual([
-      ['Student View', '/dashboard'],
+      ['Paparan Pelajar', '/dashboard'],
       ['Log Keluar', '/logout'],
     ])
     expect(lagi(w).get('[data-testid="shell-admin-lagi-tail"]').classes()).toContain('border-t')
@@ -510,10 +510,10 @@ describe('AdminShell: "Lagi" popover', () => {
       .findAll('a')
       .map((a) => a.text())
     expect(rows).not.toContain('Command Center')
-    expect(rows).not.toContain('Dashboard Guru')
+    expect(rows).not.toContain('Papan Pemuka Guru')
     expect(rows).not.toContain('Kelas Saya')
-    expect(rows).not.toContain('Monitoring')
-    expect(rows).not.toContain('Student View')
+    expect(rows).not.toContain('Pemantauan')
+    expect(rows).not.toContain('Paparan Pelajar')
     expect(rows).toContain('Headcount')
     expect(rows.at(-1)).toBe('Log Keluar')
     expect(lagi(w).find('a[href="/logout"]').exists()).toBe(true)
@@ -544,7 +544,7 @@ describe('AdminShell: header', () => {
 
   it('falls back to the live default "Dashboard" / "Selamat datang, Admin"', async () => {
     const w = await open('/admin/no-header')
-    expect(title(w)).toBe('Dashboard')
+    expect(title(w)).toBe('Papan Pemuka')
     expect(subtitle(w).text()).toBe('Selamat datang, Admin')
   })
 
@@ -585,10 +585,10 @@ describe('AdminShell: server-status pill (admin only)', () => {
     await flushPromises()
     expect(transport.requests.filter((r) => r.url === '/api/admin/server-status')).toHaveLength(1)
     expect(values(w)).toEqual(['6%', '52%', '50%', '204d 2h'])
-    expect(cell(w, 'cpu').attributes('title')).toBe('Load: 0.15 / 8 cores')
+    expect(cell(w, 'cpu').attributes('title')).toBe('Beban: 0.15 / 8 teras')
     expect(cell(w, 'ram').attributes('title')).toBe('16.2GB / 31.1GB')
     expect(cell(w, 'disk').attributes('title')).toBe('199.3GB / 398.7GB')
-    expect(cell(w, 'uptime').attributes('title')).toBe('Uptime')
+    expect(cell(w, 'uptime').attributes('title')).toBe('Masa Aktif')
     expect(cell(w, 'cpu').get('span:last-child').classes()).toContain('text-emerald-600')
     expect(cell(w, 'ram').get('span:last-child').classes()).toContain('text-emerald-600')
     expect(cell(w, 'disk').get('span:last-child').classes()).toContain('text-emerald-600')

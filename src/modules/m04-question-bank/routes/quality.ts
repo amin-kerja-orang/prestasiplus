@@ -18,7 +18,7 @@ const routes: RouteRecordRaw[] = [
       roles: ['admin'],
       title: 'Kualiti Soalan - Admin',
       header: {
-        title: 'Dashboard Kualiti Soalan',
+        title: 'Papan Pemuka Kualiti Soalan',
         subtitle: 'Analisa kualiti keseluruhan bank soalan',
       },
       module: 'M04',

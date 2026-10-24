@@ -439,7 +439,7 @@ describe('S5 ROI and insights (AC-M12-24.1 ... 24.3)', () => {
       'GPS keseluruhan dari headcount (tahun 2025): 4.30. Trend menunjukkan peningkatan dari tahun ke tahun.',
     ])
     expect(squash(t(w, 'insight-disclaimer').text())).toBe(
-      'Disclaimer: Data GPS Anggaran berdasarkan markah OTR headcount, bukan keputusan SPM sebenar.',
+      'Penafian: Data GPS Anggaran berdasarkan markah OTR headcount, bukan keputusan SPM sebenar.',
     )
   })
 })

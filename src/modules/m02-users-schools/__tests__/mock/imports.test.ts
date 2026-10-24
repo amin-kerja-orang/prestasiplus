@@ -463,7 +463,7 @@ describe('#13 POST /api/admin/students/import (S5, BR-15)', () => {
       body({
         importMode: 'csv',
         csvFile: [
-          'Nama,Email DELIMa,Kata Laluan,IC',
+          'Nama,Emel DELIMa,Kata Laluan,IC',
           'ali baba,ali@moe-dl.edu.my,Kata1234,990101015555',
           'Tiada Kata,tk@moe-dl.edu.my,',
           'Emel Buruk,buruk,Kata1234',

@@ -40,8 +40,8 @@ const CASES: Record<string, RoleCase> = {
   Guru: {
     email: 'guru@demo.test',
     home: '/guru',
-    shown: ['Command Center', 'Kelas Saya', 'Pelajar Saya', 'Monitoring', 'Sumbang Soalan'],
-    hidden: ['Misi Harian', 'Broadcast', 'Databank Soalan', 'Liga Pertandingan', 'Jadual Belajar'],
+    shown: ['Command Center', 'Kelas Saya', 'Pelajar Saya', 'Pemantauan', 'Sumbang Soalan'],
+    hidden: ['Misi Harian', 'Siaran', 'Databank Soalan', 'Liga Pertandingan', 'Jadual Belajar'],
     blocked: '/liga',
   },
   'Admin Sekolah': {
@@ -60,7 +60,7 @@ const CASES: Record<string, RoleCase> = {
       'Langganan',
       'Invois',
       'Kombo Harian',
-      'Tournament',
+      'Kejohanan',
     ],
     blocked: '/admin-sekolah/pengguna',
   },

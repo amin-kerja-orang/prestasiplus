@@ -147,7 +147,7 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
       await expect(page.getByTestId(id)).toContainText('Klik untuk lihat senarai')
     }
     await expect(page.getByTestId('card-login-missing')).toHaveCount(0)
-    await expect(page.getByTestId('card-login')).toContainText('Pernah Login')
+    await expect(page.getByTestId('card-login')).toContainText('Pernah Log Masuk')
     await expect(page.getByTestId('card-latihan')).toContainText('Pernah Buat Latihan')
     await expect(value(page, 'card-aktiviti')).toHaveText('0')
     await expect(page.getByTestId('card-aktiviti')).toContainText('30 hari lepas')
@@ -175,8 +175,8 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
     const login = page.getByTestId('card-login')
     await expect(page.getByTestId('panel-login')).toHaveCount(0)
     await login.click()
-    await expect(page.getByTestId('panel-login')).toContainText('Pelajar Belum Pernah Login (0)')
-    await expect(page.getByTestId('panel-login')).toContainText('Semua pelajar sudah pernah login!')
+    await expect(page.getByTestId('panel-login')).toContainText('Pelajar Belum Pernah Log Masuk (0)')
+    await expect(page.getByTestId('panel-login')).toContainText('Semua pelajar sudah pernah log masuk!')
     await expect(login).toHaveClass(/ring-blue-400/)
 
     await page.getByTestId('card-latihan').click()
@@ -326,9 +326,9 @@ test.describe('M11 S1 Laporan Statistik: teacher', MODULE, () => {
         ['46%', '-%', '-%', '-%', '-%'],
       )
       await page.getByTestId('card-login').click()
-      await expect(page.getByTestId('panel-login')).toContainText('Pelajar Belum Pernah Login (0)')
+      await expect(page.getByTestId('panel-login')).toContainText('Pelajar Belum Pernah Log Masuk (0)')
       await expect(page.getByTestId('panel-login')).toContainText(
-        'Semua pelajar sudah pernah login!',
+        'Semua pelajar sudah pernah log masuk!',
       )
       await page.getByTestId('card-latihan').click()
       await expect(page.getByTestId('panel-latihan')).toContainText(

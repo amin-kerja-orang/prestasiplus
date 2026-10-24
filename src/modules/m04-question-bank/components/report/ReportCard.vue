@@ -17,6 +17,7 @@ import {
   type ReportUpdateInput,
   type ReportView,
 } from '../../api/reports'
+import { complianceLabel } from '../../lib/question-list'
 import {
   DEACTIVATE_NOTE,
   DISMISS_NOTE,
@@ -180,7 +181,7 @@ const deactivate = () =>
               </li>
             </ul>
             <p class="mt-2 text-caption text-muted">{{ q.subjectName }} — {{ q.levelName }}</p>
-            <p class="text-caption text-muted">Compliance: {{ q.complianceStatus }}</p>
+            <p class="text-caption text-muted">Pematuhan: {{ complianceLabel(q.complianceStatus ?? '') }}</p>
           </template>
         </UCard>
 

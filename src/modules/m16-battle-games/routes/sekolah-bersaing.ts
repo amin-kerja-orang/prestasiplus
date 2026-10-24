@@ -15,7 +15,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      title: 'Sekolah Bersaing — Leaderboard Mingguan',
+      title: 'Sekolah Bersaing — Papan Pendahulu Mingguan',
       header: { title: 'Sekolah Bersaing', subtitle: 'Selamat datang kembali' },
       module: 'M16',
       v2: true,

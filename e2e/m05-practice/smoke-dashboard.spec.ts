@@ -37,7 +37,7 @@ test.describe('M05 S1 dashboard smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     gotoApp,
   }) => {
     await openDashboard(page, loginAs, gotoApp, ADMIN)
-    await expectTabTitle(page, 'Dashboard - PRESTASIPLUS')
+    await expectTabTitle(page, 'Papan Pemuka - PRESTASIPLUS')
     await expect(tid(page, 'dash-hero')).toContainText(/Selamat Petang, .+ 👋/)
     await expect(tid(page, 'dash-hero')).toContainText('Jom teruskan latihan hari ini! 🚀')
     await expect(tid(page, 'dash-friend-bubble')).toBeVisible()
@@ -64,7 +64,7 @@ test.describe('M05 S1 dashboard smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     await mock.advanceTime(2500)
     await expect(tid(page, 'dash-stat-coins')).toContainText('256')
     await expect(tid(page, 'dash-stat-points')).toContainText('8')
-    await expect(tid(page, 'dash-stat-points')).toContainText('Mata (Lvl 2)')
+    await expect(tid(page, 'dash-stat-points')).toContainText('Mata (Tahap 2)')
     await expect(tid(page, 'dash-stat-streak')).toContainText('Hari Berturut')
     await expect(tid(page, 'dash-stat-accuracy')).toContainText('0%')
     await expect(tid(page, 'dash-platform-total')).toContainText('130152')
@@ -87,7 +87,7 @@ test.describe('M05 S1 dashboard smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     await mock.advanceTime(2500)
     await expect(tid(page, 'dash-stat-coins')).toContainText('267')
     await expect(tid(page, 'dash-stat-points')).toContainText('432')
-    await expect(tid(page, 'dash-stat-points')).toContainText('Mata (Lvl 3)')
+    await expect(tid(page, 'dash-stat-points')).toContainText('Mata (Tahap 3)')
     await expect(tid(page, 'dash-stat-streak')).toContainText('3')
     await expect(tid(page, 'dash-stat-sessions')).toContainText('4')
     await expect(tid(page, 'dash-stat-accuracy')).toContainText('70%')

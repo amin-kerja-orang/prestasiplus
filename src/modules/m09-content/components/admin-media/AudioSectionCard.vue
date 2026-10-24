@@ -27,7 +27,7 @@ const audio = computed<File | null>({
   <div data-testid="section-card" :data-section-no="no">
     <DsFormSection
       :title="`Bahagian ${String(no)} · Soalan ${String(from)}-${String(to)}`"
-      description="Audio section ini akan kekal bersama semua soalan dalam range ini."
+      description="Bahagian audio ini akan kekal bersama semua soalan dalam julat ini."
       icon="headphones"
       accent="heat"
       :columns="2"

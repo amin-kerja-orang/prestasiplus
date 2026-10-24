@@ -34,7 +34,7 @@ const MODULE = { tag: [moduleTag(13)] }
 
 const GREETING =
   'Cikgu Alesa: Hai! Saya Cikgu Alesa. Apa nak belajar hari ni? Cuba tanya pasal subjek tertentu, atau minta latihan soalan.'
-const FALLBACK = 'Cikgu Alesa: Cikgu Alesa tak boleh respon. Cuba lagi.'
+const FALLBACK = 'Cikgu Alesa: Cikgu Alesa tidak dapat membalas. Cuba lagi.'
 const NETWORK = 'Cikgu Alesa: Ralat sambungan. Cuba lagi sebentar.'
 const ESSAY =
   'Karangan contoh ini hanya untuk ujian dan ditulis dengan neutral. Ia bukan karangan sebenar sesiapa.'
@@ -94,9 +94,9 @@ test.describe('M13 S1 chat', MODULE, () => {
       ['/cikgu', 'Cikgu Alesa', 'Cikgu Alesa'],
       ['/cikgu/rph', 'Rancangan Pengajaran Harian (RPH)', 'RPH — Cikgu Alesa'],
       ['/cikgu/rph/baharu', 'Jana RPH dengan Cikgu Alesa', 'Jana RPH Baharu'],
-      ['/cikgu/essay', 'Marking Karangan AI', 'Marking Karangan'],
-      ['/cikgu/essay/baharu', 'Mark Karangan Baharu', 'Mark Karangan Baharu'],
-      ['/cikgu/pbd', 'PBD Auto-Tag — Antrian Semakan', 'PBD Auto-Tag Queue'],
+      ['/cikgu/essay', 'Penandaan Karangan AI', 'Penandaan Karangan'],
+      ['/cikgu/essay/baharu', 'Tanda Karangan Baharu', 'Tanda Karangan Baharu'],
+      ['/cikgu/pbd', 'PBD Auto-Tag — Antrian Semakan', 'Auto-Tag PBD — Baris Gilir'],
     ] as const
     for (const [path, header, tab] of screens) {
       await gotoApp(path)
@@ -175,7 +175,7 @@ test.describe('M13 S1 chat', MODULE, () => {
     await expect(msgs(page)).toHaveCount(1)
     await expect(msgs(page).first()).toHaveText(GREETING)
     await expect(msgs(page).first()).toHaveClass(/cikgu-msg-bot/)
-    await expect(page.locator('#cikgu-voice-toolbar')).toContainText('🎙️ Voice Mode:')
+    await expect(page.locator('#cikgu-voice-toolbar')).toContainText('🎙️ Mod Suara:')
     await expect(page.locator('#cikgu-voice-toolbar')).toContainText(
       'Cikgu jawab dengan suara (auto)',
     )
@@ -349,7 +349,7 @@ test.describe('M13 S1 chat', MODULE, () => {
       await mock.hook('cikguSetTurnsUsed', GURU_ID, 30)
       await say(page, 'Terangkan pecahan')
       await expect(msgs(page).nth(2)).toHaveText(FALLBACK)
-      await expect(meta(page)).toHaveText('Quota habis untuk hari ni.')
+      await expect(meta(page)).toHaveText('Kuota habis untuk hari ini.')
       await expect(sendBtn(page)).toBeEnabled()
       await expect(input(page)).toBeFocused()
     },
@@ -419,8 +419,8 @@ test.describe('M13 S1 chat', MODULE, () => {
       '/cikgu?action=mark_essay&rubric=sejarah_essay&subject=Sejarah&level=T5&student=Murid+Demo+03&title=Semangat+Patriotisme',
     )
     await expect(input(page)).toHaveValue(
-      'Tolong mark karangan ini menggunakan rubric Sejarah — Karangan Esei (20 markah). ' +
-        'Subjek: Sejarah. Level: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
+      'Tolong tanda karangan ini menggunakan rubrik Sejarah — Karangan Esei (20 markah). ' +
+        'Subjek: Sejarah. Tahap: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
         `Karangan: ${ESSAY}`,
     )
     await expect(input(page)).toBeFocused()
@@ -442,7 +442,7 @@ test.describe('M13 S1 chat', MODULE, () => {
     }, ESSAY)
     await gotoApp('/cikgu?action=mark_essay&rubric=&subject=&level=&student=&title=')
     await expect(input(page)).toHaveValue(
-      'Tolong mark karangan ini menggunakan rubric SPM Bahasa Melayu — Karangan (Bahagian B) (50 markah). ' +
+      'Tolong tanda karangan ini menggunakan rubrik SPM Bahasa Melayu — Karangan (Bahagian B) (50 markah). ' +
         `Karangan: ${ESSAY}`,
     )
   })
@@ -477,7 +477,7 @@ test.describe('M13 S1 chat', MODULE, () => {
       await expect(msgs(page)).toHaveCount(3)
       const reply = msgs(page).nth(2).locator('.cikgu-msg-body')
       await expect(reply).toContainText('Markah: 14/20')
-      await expect(reply).toContainText('Rubric: Sejarah — Karangan Esei (20 markah)')
+      await expect(reply).toContainText('Rubrik: Sejarah — Karangan Esei (20 markah)')
       await expect(reply).toContainText('Komen membina:')
       await expect(meta(page)).toContainText('Tool hops: 1')
     },
@@ -563,7 +563,7 @@ test.describe('M13 S1 chat', MODULE, () => {
     await expect(mic(page)).toBeEnabled()
     await mock.hook('cikguVoice', { supported: false })
     await expect(mic(page)).toBeDisabled()
-    await expect(mic(page)).toHaveAttribute('title', 'Browser tidak sokong voice — guna Chrome/Edge')
+    await expect(mic(page)).toHaveAttribute('title', 'Pelayar tidak menyokong suara — guna Chrome/Edge')
     await expect(mic(page)).toHaveCSS('opacity', '0.4')
   })
 

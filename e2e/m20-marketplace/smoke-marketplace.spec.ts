@@ -148,7 +148,7 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
     const c3 = cards(page).nth(2)
     await expect(c3.getByTestId('product-card-discount')).toHaveText('-57%')
     await expect(c3.getByTestId('product-card-used')).toHaveText('Terpakai')
-    await expect(c3.getByTestId('product-card-shipping')).toHaveText('Cash on Delivery (COD)')
+    await expect(c3.getByTestId('product-card-shipping')).toHaveText('Bayar Semasa Penghantaran (COD)')
     const c5 = cards(page).nth(4)
     await expect(c5.getByTestId('product-card-discount')).toHaveCount(0)
     await expect(c5.getByTestId('product-card-original')).toHaveCount(0)

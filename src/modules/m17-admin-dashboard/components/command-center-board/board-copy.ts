@@ -8,14 +8,14 @@ import type { CcMood } from '../../api/command-center-board-types'
 
 export const S2_COPY = {
   title: 'PrestasiPlus Command Center',
-  back: '← Dashboard',
+  back: '← Papan Pemuka',
   daily: 'Aktiviti Harian',
   live: 'LIVE',
   tz: 'MYT',
   /** School view only (FR-M17-106 a). */
   schoolSub: 'Pemantauan langsung sekolah anda',
   footer:
-    'Powered by ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
+    'Dikuasakan oleh ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
   loading: 'Memuatkan...',
   insightLoading: 'Memuatkan wawasan...',
   noData: 'Tiada data',
@@ -29,8 +29,8 @@ export const S3_COPY = {
   noData: 'Tiada data',
   noActivity: 'Tiada aktiviti',
   noSchools: 'Tiada aktiviti',
-  noLogins: 'Tiada login',
-  noBadges: 'Tiada badge baru',
+  noLogins: 'Tiada log masuk',
+  noBadges: 'Tiada lencana baharu',
   noDrill: 'Tiada data terperinci',
   loadFailed: 'Gagal memuatkan',
   drillFailed: 'Gagal',
@@ -88,3 +88,14 @@ export function boardPaths(alias: boolean): BoardPaths {
 /** Colour of a rank badge (top schools and pupils): the podium is primary, the rest neutral. */
 export const rankColor = (index: number): 'primary' | 'neutral' =>
   index < 3 ? 'primary' : 'neutral'
+
+/** BM word of the API role shown on the login rows (FB-025). */
+export const ROLE_LABEL: Readonly<Record<string, string>> = {
+  student: 'Murid',
+  teacher: 'Guru',
+  admin: 'Admin',
+  school_admin: 'Admin Sekolah',
+  parent: 'Ibu Bapa',
+  ppd_officer: 'Pegawai PPD',
+  jpn_officer: 'Pegawai JPN',
+}

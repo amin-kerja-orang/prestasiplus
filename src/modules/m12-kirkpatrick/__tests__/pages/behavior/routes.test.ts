@@ -33,7 +33,7 @@ describe('M12-T3/T4 route fragments (FR-M12-05, 06, 08, 13, 16)', () => {
       title: 'Tahap 3: Tingkah Laku — Kirkpatrick',
       header: {
         title: 'Tahap 3: Tingkah Laku',
-        subtitle: 'Konsistensi penggunaan, engagement score, dan corak tingkah laku pelajar',
+        subtitle: 'Konsistensi penggunaan, skor penglibatan, dan corak tingkah laku pelajar',
       },
     })
     expect(m('results')).toMatchObject({
@@ -44,7 +44,7 @@ describe('M12-T3/T4 route fragments (FR-M12-05, 06, 08, 13, 16)', () => {
       },
     })
     expect(m('chain')).toMatchObject({
-      title: 'Kirkpatrick Impact Chain',
+      title: 'Rantaian Impak Kirkpatrick',
       header: { title: 'Rantaian Impak' },
     })
     expect(m('chain')?.header).not.toHaveProperty('subtitle')

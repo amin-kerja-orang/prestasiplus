@@ -4,7 +4,7 @@
  * S22 `/headcount/{id}/summary`, S23 `/headcount/{id}`, the L-12 page shells, the CSV download #29 and the
  * access rules (§9, OD-R3), as the teacher (account 5), the demo admin and the Admin Sekolah (account 8)
  * at 375 / 768 / 1280, plus a pelajar (account 2) and a guest. Anchors: teacher 5 has 6 configs and 48
- * pupils (on 3 · off 3 · no data 42); config 213 (S22: Above 5, On Track 2, Below 8, Purata TOV 62.1,
+ * pupils (on 3 · off 3 · no data 42); config 213 (S22: Above 5, Atas Landasan 2, Below 8, Purata TOV 62.1,
  * Purata ETR 71.9); config 617 (30 entries).
  */
 
@@ -62,7 +62,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(header(page).title).toHaveText('Headcount')
     await expect(header(page).subtitle).toHaveText('Selamat datang kembali')
     await expect(page.getByTestId('headcount-hero').getByRole('heading')).toHaveText('Headcount')
-    await expect(page.getByText('Tracking prestasi murid — TOV, OTR, AR & RS')).toBeVisible()
+    await expect(page.getByText('Penjejakan prestasi murid — TOV, OTR, AR & RS')).toBeVisible()
     await expect(page.getByTestId('hero-dashboard')).toHaveAttribute('href', '/headcount/dashboard')
     await expect(page.getByTestId('hero-create')).toHaveAttribute('href', '/headcount/create')
 
@@ -87,7 +87,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     expect(new URL(page.url()).pathname).toBe('/headcount/501')
   })
 
-  test('S12 Auto-Setup modal: texts, 11 checkboxes, disabled submit, ticks, closing', async ({
+  test('S12 Persediaan Auto modal: texts, 11 checkboxes, disabled submit, ticks, closing', async ({
     page,
     gotoApp,
   }) => {
@@ -101,7 +101,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     expect(fontSize).toBeGreaterThanOrEqual(12)
     await button.click()
     await expect(modal).toBeVisible()
-    await expect(modal.getByRole('heading', { name: 'Auto-Setup Headcount' })).toBeVisible()
+    await expect(modal.getByRole('heading', { name: 'Persediaan Auto Headcount' })).toBeVisible()
     await expect(modal).toContainText('Pilih tingkatan untuk auto-cipta headcount')
     await expect(modal.getByText('Darjah', { exact: true })).toBeVisible()
     await expect(modal.getByText('Tingkatan', { exact: true })).toBeVisible()
@@ -109,7 +109,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     const submit = page.getByTestId('auto-setup-submit')
     await expect(submit).toBeDisabled()
     await expect(submit).toHaveClass(/bg-slate-300/)
-    await expect(submit).toHaveText('Auto-Setup')
+    await expect(submit).toHaveText('Persediaan Auto')
 
     await page.getByTestId('level-D5').click()
     await page.getByTestId('level-T2').click()
@@ -117,7 +117,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('level-T2')).toHaveClass(/bg-blue-50/)
     await expect(submit).toBeEnabled()
     await expect(submit).toHaveClass(/bg-emerald-600/)
-    await expect(submit).toHaveText('Auto-Setup (2)')
+    await expect(submit).toHaveText('Persediaan Auto (2)')
 
     // Full width below 640px, the two buttons side by side at every width.
     const panel = await modal.boundingBox()
@@ -143,8 +143,8 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
   })
 
   test(
-    'S12 Auto-Setup submit closes the modal and reloads the list',
-    provisional('FR-M08-80: the Auto-Setup result is INFERRED (UNVERIFIED L-4)'),
+    'S12 Persediaan Auto submit closes the modal and reloads the list',
+    provisional('FR-M08-80: the Persediaan Auto result is INFERRED (UNVERIFIED L-4)'),
     async ({ page, gotoApp }) => {
       await gotoApp('/headcount')
       await expect(page.getByTestId('headcount-list')).toBeVisible()
@@ -165,8 +165,8 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/headcount/dashboard')
     await expect(page.getByTestId('headcount-dashboard-page')).toBeVisible()
     await expect(page.getByTestId('stat-configs')).toHaveText('6')
-    await expectTabTitle(page, 'Dashboard Headcount - PRESTASIPLUS')
-    await expect(header(page).title).toHaveText('Dashboard Headcount')
+    await expectTabTitle(page, 'Papan Pemuka Headcount - PRESTASIPLUS')
+    await expect(header(page).title).toHaveText('Papan Pemuka Headcount')
     await expect(page.getByText('Ringkasan prestasi semua kelas anda')).toBeVisible()
     await expect(page.getByTestId('hero-list')).toHaveAttribute('href', '/headcount')
     await expect(page.getByTestId('stat-students')).toHaveText('48')
@@ -175,7 +175,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('overall-pct')).toHaveText('50%')
     await expect(page.getByTestId('overall-pct')).toHaveClass(/text-amber-600/)
     await expect(page.getByTestId('legend')).toHaveText(
-      /On Track: 3\s*Off Track: 3\s*Tiada Data: 42/,
+      /Atas Landasan: 3\s*Luar Landasan: 3\s*Tiada Data: 42/,
     )
     await expect(page.getByTestId('filter-all')).toHaveText('Semua (6)')
     await expect(page.getByTestId('filter-all')).toHaveClass(/bg-blue-600/)
@@ -221,7 +221,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(page.locator('input[name=active_otrs][value="3"]')).toBeChecked()
     await expect(page.getByText('2 OTR', { exact: true })).toBeVisible()
     await expect(
-      page.getByText('Minimum 2 OTR · Default 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas.'),
+      page.getByText('Minimum 2 OTR · Lalai 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas.'),
     ).toBeVisible()
     await expect(page.getByTestId('mode-auto')).toHaveClass(/border-blue-500/)
     await expect(page.getByTestId('mode-auto')).toContainText('🤖 Auto')
@@ -294,7 +294,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
 
     const s = page.getByTestId('section-501')
     await expect(s.getByRole('heading', { name: 'Kimia' })).toBeVisible()
-    await expect(s.getByTestId('status-pill')).toHaveText('On Track')
+    await expect(s.getByTestId('status-pill')).toHaveText('Atas Landasan')
     await expect(s.getByTestId('status-pill')).toHaveClass(/bg-green-100/)
     await expect(s.getByTestId('chip-tov')).toContainText('TOV: 60.0% (B)')
     await expect(s.getByTestId('chip-etr')).toContainText('ETR: 75.0% (A-)')
@@ -311,7 +311,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(s.getByTestId('prediction-box')).toHaveCount(0)
 
     const below = page.getByTestId('section-504')
-    await expect(below.getByTestId('status-pill')).toHaveText('Below Target')
+    await expect(below.getByTestId('status-pill')).toHaveText('Bawah Sasaran')
     await expect(below.getByTestId('row-otr-1')).toHaveAttribute('data-tone', 'below')
     await expect(below.getByTestId('row-otr-1')).toHaveClass(/border-l-red-400/)
 
@@ -384,13 +384,13 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(header(page).title).toHaveText('Headcount Kimia')
     await expect(header(page).subtitle).toHaveText('Selamat datang kembali')
     await expect(page.locator('[data-testid=headcount-table-page] h1')).toHaveText('Kimia')
-    await expect(page.getByTestId('status-pill')).toHaveText('Active')
+    await expect(page.getByTestId('status-pill')).toHaveText('Aktif')
     await expect(page.getByTestId('table-subtitle')).toContainText(
       '5 MARIKH - Kimia · Tingkatan 5 · 2026 · Guru: Guru Demo',
     )
     await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/headcount')
-    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 2 (25%)')
-    await expect(page.getByTestId('chip-below')).toHaveText('Below: 2 (25%)')
+    await expect(page.getByTestId('chip-on')).toHaveText('Atas Landasan: 2 (25%)')
+    await expect(page.getByTestId('chip-below')).toHaveText('Bawah: 2 (25%)')
     await expect(page.getByTestId('chip-empty')).toHaveText('Belum Diisi: 4')
     await expect(page.getByTestId('chip-total')).toHaveText('Jumlah: 8')
 
@@ -457,15 +457,15 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('row-3005')).toHaveAttribute('data-dropped', 'false')
   })
 
-  test('S23 "Reset Data" modal closes without calling the API; "Ya, Reset" clears the marks', async ({
+  test('S23 "Set Semula Data" modal closes without calling the API; "Ya, Set Semula" clears the marks', async ({
     page,
     gotoApp,
   }) => {
     await gotoApp('/headcount/501')
-    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 2 (25%)')
+    await expect(page.getByTestId('chip-on')).toHaveText('Atas Landasan: 2 (25%)')
     const modal = page.getByTestId('reset-modal')
     await page.getByTestId('action-reset').click()
-    await expect(modal.getByRole('heading', { name: 'Reset Semua Data?' })).toBeVisible()
+    await expect(modal.getByRole('heading', { name: 'Set Semula Semua Data?' })).toBeVisible()
     await expect(modal).toContainText(
       'Semua markah murid akan dikosongkan — TOV, ETR, OTR, AR & RS.',
     )
@@ -477,13 +477,13 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await page.getByTestId('action-reset').click()
     await page.getByTestId('cmp-modal-backdrop').click({ position: { x: 4, y: 4 } })
     await expect(modal).toHaveCount(0)
-    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 2 (25%)')
+    await expect(page.getByTestId('chip-on')).toHaveText('Atas Landasan: 2 (25%)')
 
     await page.getByTestId('action-reset').click()
     await expectNoHorizontalScroll(page)
     await page.getByTestId('reset-confirm').click()
     await expect(modal).toHaveCount(0)
-    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 0 (0%)')
+    await expect(page.getByTestId('chip-on')).toHaveText('Atas Landasan: 0 (0%)')
     await expect(page.getByTestId('chip-empty')).toHaveText('Belum Diisi: 8')
     await expect(page.getByTestId('chip-total')).toHaveText('Jumlah: 8')
   })
@@ -516,7 +516,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
   })
 
   test(
-    'L-12 shells and the "Key-in AR" dropdown: header and back link only',
+    'L-12 shells and the "Masukkan AR" dropdown: header and back link only',
     provisional('FR-M08-137: the L-12 pages are provisional shells (OQ-M08-13)'),
     async ({ page, gotoApp }) => {
       await gotoApp('/headcount/501')
@@ -531,7 +531,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
       await page.getByTestId('key-in-2').click()
       await expect(page.getByTestId('headcount-shell-page')).toBeVisible()
       expect(new URL(page.url()).pathname).toBe('/headcount/501/results/2')
-      await expectTabTitle(page, 'Key-in AR - PRESTASIPLUS')
+      await expectTabTitle(page, 'Masukkan AR - PRESTASIPLUS')
       await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/headcount/501')
       await expectNoHorizontalScroll(page)
 
@@ -553,7 +553,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
   )
 
   test(
-    'CSV #29: "Export CSV" on S23 and S22 downloads the table with a BOM; the export URL downloads too',
+    'CSV #29: "Eksport CSV" on S23 and S22 downloads the table with a BOM; the export URL downloads too',
     provisional('FR-M08-132: the CSV columns are UNVERIFIED (L-12)'),
     async ({ page, gotoApp }) => {
       await gotoApp('/headcount/501')
@@ -639,7 +639,7 @@ test.describe('M08 T6 admin', { tag: [moduleTag(8)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('S22 config 213: 15 pupils, TOV 62.1, ETR 71.9, OTR3 Above 5 · On Track 2 · Below 8', async ({
+  test('S22 config 213: 15 pupils, TOV 62.1, ETR 71.9, OTR3 Above 5 · Atas Landasan 2 · Below 8', async ({
     page,
     gotoApp,
   }) => {
@@ -656,18 +656,18 @@ test.describe('M08 T6 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('otr-2')).toContainText('N/A: 15')
     const otr3 = page.getByTestId('otr-3')
     await expect(otr3).toContainText('Above: 5')
-    await expect(otr3).toContainText('On Track: 2')
-    await expect(otr3).toContainText('Below: 8')
+    await expect(otr3).toContainText('Atas Landasan: 2')
+    await expect(otr3).toContainText('Bawah: 8')
     await expect(otr3).toContainText('N/A: 0')
     await expect(otr3.locator('[title="Above: 5"]')).toHaveCount(1)
     await expect(otr3.locator('[title^="N/A"]')).toHaveCount(0)
     await expect(page.getByTestId('legend')).toHaveText(
-      /Above Target\s*On Track \(±2%\)\s*Below Target\s*Belum Diisi/,
+      /Melebihi Sasaran\s*Atas Landasan \(±2%\)\s*Bawah Sasaran\s*Belum Diisi/,
     )
     await expectNoHorizontalScroll(page)
   })
 
-  test('S23 config 213: 7 On Track / 8 Below, 15 rows and the class averages', async ({
+  test('S23 config 213: 7 Atas Landasan / 8 Below, 15 rows and the class averages', async ({
     page,
     gotoApp,
   }) => {
@@ -677,8 +677,8 @@ test.describe('M08 T6 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('table-subtitle')).toContainText(
       '4 Simulasi · Tingkatan 4 · 2026 · Guru: Guru Demo KL-01',
     )
-    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 7 (47%)')
-    await expect(page.getByTestId('chip-below')).toHaveText('Below: 8 (53%)')
+    await expect(page.getByTestId('chip-on')).toHaveText('Atas Landasan: 7 (47%)')
+    await expect(page.getByTestId('chip-below')).toHaveText('Bawah: 8 (53%)')
     await expect(page.getByTestId('chip-empty')).toHaveText('Belum Diisi: 0')
     await expect(page.getByTestId('chip-total')).toHaveText('Jumlah: 15')
     await expect(page.locator('[data-testid^=row-]')).toHaveCount(15)

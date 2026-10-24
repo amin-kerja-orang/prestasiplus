@@ -50,7 +50,7 @@ const ICON_BY_ID: Record<string, string> = {
 
 /** Teacher tabs: label shown, and the existing menu entry (by id) it points at. */
 const TEACHER_TABS: readonly { label: string; navId: string; live?: boolean }[] = [
-  { label: 'Dashboard', navId: 't-dashboard-guru' },
+  { label: 'Papan Pemuka', navId: 't-dashboard-guru' },
   { label: 'Kelas', navId: 't-kelas-saya' },
   { label: 'Command Center', navId: 't-command-center', live: true },
   { label: 'Penilaian', navId: 't-prestasi' },
@@ -58,7 +58,7 @@ const TEACHER_TABS: readonly { label: string; navId: string; live?: boolean }[] 
 
 /** School-admin tabs (the user-nav bottom bar has none for this role). */
 const SCHOOL_TABS: readonly { label: string; navId: string; icon: string; live?: boolean }[] = [
-  { label: 'Dashboard', navId: 'sa-dashboard', icon: 'house' },
+  { label: 'Papan Pemuka', navId: 'sa-dashboard', icon: 'house' },
   { label: 'Command Center', navId: 'sa-command-center', icon: 'chart-line-up', live: true },
   { label: 'Prestasi', navId: 'sa-prestasi', icon: 'pencil-simple-line' },
   { label: 'Pelajar', navId: 'sa-senarai-pelajar', icon: 'chalkboard-teacher' },

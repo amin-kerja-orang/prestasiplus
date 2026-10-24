@@ -2,7 +2,7 @@
 /**
  * S7 mood-day modal (FN-M17-5.4.11, FR-M17-59; SOURCE-DERIVED, never observed): "{date} — Mood: {label}" with
  * the tiles "Mood" and "Sebab", built from the page data (no request). The empty line "Tiada sesi latihan pada
- * hari ini. Pelajar hanya checkin mood." shows when the page data proves the day had no session (the week bar of
+ * hari ini. Pelajar hanya mendaftar masuk mood." shows when the page data proves the day had no session (the week bar of
  * that day's week is 0).
  */
 import { computed } from 'vue'
@@ -36,7 +36,7 @@ const stats = computed(() => [
     <div class="flex min-w-0 flex-col gap-4" data-testid="cc-mood-modal">
       <DsStatRow :items="statItems(stats)" data-testid="cc-modal-stats" />
       <p v-if="noSession" class="text-body text-muted" data-testid="cc-modal-empty">
-        Tiada sesi latihan pada hari ini. Pelajar hanya checkin mood.
+        Tiada sesi latihan pada hari ini. Pelajar hanya mendaftar masuk mood.
       </p>
     </div>
     <template #footer>

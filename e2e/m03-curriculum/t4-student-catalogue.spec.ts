@@ -235,9 +235,9 @@ test.describe('M03 S13 Topic detail', MODULE, () => {
     ])
     expect(await texts(page.getByTestId('subtopic-number'))).toEqual(['1', '2', '3', '4'])
     expect(await texts(cards.first().getByTestId('subtopic-badge'))).toEqual([
-      'Level 1',
-      'Level 2',
-      'Level 3',
+      'Tahap 1',
+      'Tahap 2',
+      'Tahap 3',
     ])
     expect(await texts(page.getByTestId('subtopic-progress'))).toEqual(['0%', '0%', '0%', '0%'])
     await expectNoHorizontalScroll(page)

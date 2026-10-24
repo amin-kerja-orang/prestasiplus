@@ -215,7 +215,7 @@ describe('S1 DashboardPage (v2 Murid Home)', () => {
     expect(t(w, 'dash-stat-coins').text()).toContain('0')
     await vi.advanceTimersByTimeAsync(4000)
     expect(t(w, 'dash-stat-coins').text()).toContain('256')
-    expect(t(w, 'dash-stat-points').text()).toContain('Mata (Lvl 2)')
+    expect(t(w, 'dash-stat-points').text()).toContain('Mata (Tahap 2)')
     expect(t(w, 'dash-stat-points').text()).toContain('8')
     expect(t(w, 'dash-stat-streak').text()).toContain('Hari Berturut')
     expect(t(w, 'dash-stat-accuracy').text()).toContain('0%')

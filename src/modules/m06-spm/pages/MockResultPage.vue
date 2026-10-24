@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * S12 `/spm-mock/:id/result` "Result Mock SPM — {Subjek}" (M06-T4; FR-M06-75…79, BR-M06-24/26,
+ * S12 `/spm-mock/:id/result` "Keputusan Percubaan SPM — {Subjek}" (M06-T4; FR-M06-75…79, BR-M06-24/26,
  * DV-M06-05).
  *
  * Hero by grade band (green / `mid` yellow / `bad` red), the subject-matched Duta block, "Topik Lemah"
- * (hidden without a wrong item), "Review Setiap Soalan" and the two actions. Unknown or foreign id: the
+ * (hidden without a wrong item), "Semak Setiap Soalan" and the two actions. Unknown or foreign id: the
  * global 404; a mock not yet submitted goes back to Q4. Max width 880 px, single column.
  */
 import { computed, watch } from 'vue'
@@ -50,7 +50,7 @@ watch(
   data,
   (d) => {
     if (!d) return
-    const title = `Result Mock SPM — ${d.subject}`
+    const title = `Keputusan Percubaan SPM — ${d.subject}`
     pageMeta.setTitle(title)
     pageMeta.setHeader({ title })
   },
@@ -100,7 +100,7 @@ class="text-display" :class="
 
       <DutaBlock
         :title="`🎓 Cikgu Pakar ${data.subject}`"
-        text="Lemah dlm topik tertentu? Cikgu pakar ni boleh bantu anda naik ke A+ next round."
+        text="Lemah dalam topik tertentu? Cikgu pakar ini boleh membantu anda naik ke A+ pada pusingan seterusnya."
         :subject="data.subject"
       />
 
@@ -127,14 +127,14 @@ class="text-display" :class="
             </li>
           </ul>
           <p class="text-body text-muted" data-testid="result-tip">
-            💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu. Boleh start dengan
+            💡 Cikgu Alesa mencadangkan anda fokus belajar topik di atas dahulu. Boleh bermula dengan
             <ULink to="/pusat-nota-ringkas" class="text-primary-t">jana nota ringkas</ULink>
             untuk topik tersebut.
           </p>
         </div>
       </DsPanel>
 
-      <DsPanel title="📋 Review Setiap Soalan" icon="i-ph-list-checks-duotone" data-testid="result-review">
+      <DsPanel title="📋 Semak Setiap Soalan" icon="i-ph-list-checks-duotone" data-testid="result-review">
         <ul class="flex flex-col gap-2">
           <li
             v-for="it in data.items"
@@ -169,7 +169,7 @@ class="text-display" :class="
 
       <div class="flex flex-wrap gap-3" data-testid="result-actions">
         <UButton to="/spm-mock" size="lg" class="min-h-11 max-sm:flex-1 max-sm:justify-center"
-          >📝 Mock Lain</UButton
+          >📝 Percubaan Lain</UButton
         >
         <UButton
           to="/pusat-nota-ringkas"

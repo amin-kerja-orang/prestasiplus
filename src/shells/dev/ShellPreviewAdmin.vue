@@ -19,7 +19,7 @@ const labels = computed(() => flatItems(adminMenuFor(role.value)).map((i) => i.l
   <div class="rounded-2xl bg-white p-6 shadow" data-testid="dev-shell-admin-preview">
     <h2 class="text-xl font-bold">Pratonton bingkai admin — {{ session.user?.name }}</h2>
     <p class="mt-1 text-slate-600">
-      Peranan: <strong>{{ role }}</strong> · E-mel: {{ session.user?.email }}
+      Peranan: <strong>{{ role }}</strong> · Emel: {{ session.user?.email }}
     </p>
     <p class="mt-4 max-w-2xl text-slate-600">
       Ini bukan skrin sebenar. Sidebar, header, navigasi bawah dan menu "Lagi" di sekeliling kotak

@@ -20,7 +20,7 @@ export const COPY = {
   updated: 'Soalan berjaya dikemas kini.',
   saveFailed: 'Gagal menyimpan soalan. Sila cuba lagi.',
   importDone: (n: number): string => `${String(n)} soalan berjaya diimport.`,
-  templateFailed: 'Gagal memuat turun template.',
+  templateFailed: 'Gagal memuat turun templat.',
   listEmpty: 'Belum ada soalan.',
   paperSent: 'Kertas soalan berjaya dihantar kepada admin.',
   paperFailed: 'Gagal menghantar kertas soalan.',

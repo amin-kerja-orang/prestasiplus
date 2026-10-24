@@ -9,7 +9,7 @@ import { formatCount, formatNumber } from '@/lib/number'
 import type { CcDailyActivity, CcSchoolActivity } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
 import { shortSchool } from '../command-center/cc-format'
-import { S3_COPY } from './board-copy'
+import { ROLE_LABEL, S3_COPY } from './board-copy'
 import type { DrillState, LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
 
@@ -77,7 +77,7 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
                 hasAnswers(s) ? formatCount(s.activeTeachers) : formatCount(s.loginCount)
               }}</b>
               <span class="block text-caption text-muted">{{
-                hasAnswers(s) ? 'GURU' : 'LOGIN'
+                hasAnswers(s) ? 'GURU' : 'LOG MASUK'
               }}</span>
             </span>
             <span data-testid="cc-school-pupils">
@@ -176,7 +176,7 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
               </section>
               <section v-if="drill.data.logins.length > 0" data-testid="cc-drill-logins">
                 <h3 class="mb-1 text-overline text-muted">
-                  Login ({{ drill.data.logins.length }})
+                  Log Masuk ({{ drill.data.logins.length }})
                 </h3>
                 <ul class="max-h-64 overflow-y-auto">
                   <li
@@ -188,7 +188,7 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
                     <span class="min-w-0 flex-1 text-label break-words text-highlighted">{{
                       l.name
                     }}</span>
-                    <UBadge color="primary" variant="soft" size="sm">{{ l.role }}</UBadge>
+                    <UBadge color="primary" variant="soft" size="sm">{{ ROLE_LABEL[l.role] ?? l.role }}</UBadge>
                     <span class="text-caption text-muted">{{ l.timeAgo }}</span>
                   </li>
                 </ul>

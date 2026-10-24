@@ -103,7 +103,7 @@ describe('kadkongsi-lib', () => {
   })
 
   it('capitalises the English tier key', () => {
-    expect(tierName('bronze')).toBe('Bronze')
+    expect(tierName('bronze')).toBe('Gangsa')
   })
 
   it('builds the four card texts (DV-M14-03 inserts the ranking value)', () => {
@@ -114,7 +114,7 @@ describe('kadkongsi-lib', () => {
       '🔥 Kombo 1 hari berturut-turut di PRESTASIPLUS! Rekod terbaik: 5 hari. Jom cabaran!',
     )
     expect(masteryText(2, 'Aktif', 'Bahasa Melayu', 48.94)).toBe(
-      '🧠 Saya sudah capai Level 2 (Aktif) dalam Bahasa Melayu di PRESTASIPLUS! Ketepatan 48.9%. Jom bersaing!',
+      '🧠 Saya sudah capai Tahap 2 (Aktif) dalam Bahasa Melayu di PRESTASIPLUS! Ketepatan 48.9%. Jom bersaing!',
     )
     expect(rankingText(38.7)).toBe('🏆 Kedudukan saya di PRESTASIPLUS: 38.7%! Jom latih tubi!')
   })

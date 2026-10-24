@@ -181,7 +181,7 @@ onMounted(() => void start())
       :new-record="false"
       again-label="🔄 Main Lagi"
       :coins-credited="0"
-      hub-label="🏠 Hub"
+      hub-label="🏠 Hab"
       overlay-testid="solo-overlay"
       @again="start"
     />

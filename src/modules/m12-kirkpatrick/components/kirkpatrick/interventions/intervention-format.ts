@@ -10,7 +10,7 @@ export const ALERT_TYPES: { value: AlertType; label: string }[] = [
 
 export const MOODS: { value: Mood; label: string }[] = [
   { value: 'happy', label: 'Gembira' },
-  { value: 'okay', label: 'Okay' },
+  { value: 'okay', label: 'Biasa' },
   { value: 'sad', label: 'Sedih' },
   { value: 'stressed', label: 'Tertekan' },
 ]

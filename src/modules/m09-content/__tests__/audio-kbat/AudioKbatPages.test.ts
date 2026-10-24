@@ -115,7 +115,7 @@ describe('AudioKbatListPage (S21)', () => {
     expect(w.get('h1').text()).toBe('Audio KBAT')
     expect(w.text()).toContain('Ujian Mendengar')
     expect(w.text()).toContain('Set ini tidak dirawak supaya audio kekal selari')
-    expect(t(w, 'audio-empty').text()).toBe('Belum ada set Audio KBAT yang approved.')
+    expect(t(w, 'audio-empty').text()).toBe('Belum ada set Audio KBAT yang diluluskan.')
     expect((subject(w).props('items') as { label: string }[]).map((o) => o.label)).toEqual([
       'Semua Subjek',
       'Bahasa Melayu',

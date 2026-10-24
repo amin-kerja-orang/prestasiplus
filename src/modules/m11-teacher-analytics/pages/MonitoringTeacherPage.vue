@@ -46,7 +46,7 @@ const statusLabel = (s: StudentStatus) => STATUS_LABEL[s]
 const { data, error, blocked, reload } = useMonitoringPage(
   (signal) => fetchTeacherDetail(props.schoolId, props.userId, { signal }),
   [() => props.schoolId, () => props.userId],
-  (d) => `${d.teacher.name} - Detail Guru`,
+  (d) => `${d.teacher.name} - Butiran Guru`,
 )
 
 const cards = computed<StatItem[]>(() => {
@@ -129,7 +129,7 @@ const columns: TableColumn<PupilRow>[] = [
                 </h2>
                 <p class="text-body break-all text-muted">{{ data.teacher.email }}</p>
                 <p class="text-body text-muted" data-testid="mon-teacher-last">
-                  Login Terakhir: {{ dmyHm(data.teacher.lastLoginAt) }}
+                  Log Masuk Terakhir: {{ dmyHm(data.teacher.lastLoginAt) }}
                 </p>
               </div>
             </div>
@@ -138,7 +138,7 @@ const columns: TableColumn<PupilRow>[] = [
               variant="subtle"
               size="lg"
               data-testid="mon-teacher-pill"
-              :label="data.teacher.lastLoginAt ? 'Pernah Login' : 'Belum Login'"
+              :label="data.teacher.lastLoginAt ? 'Pernah Log Masuk' : 'Belum Log Masuk'"
             />
           </div>
         </UCard>
@@ -265,7 +265,7 @@ const columns: TableColumn<PupilRow>[] = [
               variant="subtle"
               icon="i-ph-warning"
               data-testid="mon-suggestion-never"
-              :description="`${data.suggestions.neverLoggedIn} pelajar belum pernah login. Cadangan: Adakan sesi pengenalan platform di kelas.`"
+              :description="`${data.suggestions.neverLoggedIn} pelajar belum pernah log masuk. Cadangan: Adakan sesi pengenalan platform di kelas.`"
             />
             <UAlert
               v-if="data.suggestions.lowAccuracy > 0"

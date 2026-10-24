@@ -6,6 +6,6 @@ import type { PageHeader } from '@/composables/usePageMeta'
  * a title.
  */
 export const DEFAULT_ADMIN_HEADER: Readonly<PageHeader> = Object.freeze({
-  title: 'Dashboard',
+  title: 'Papan Pemuka',
   subtitle: 'Selamat datang, Admin',
 })

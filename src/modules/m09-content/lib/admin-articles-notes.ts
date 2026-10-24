@@ -46,7 +46,7 @@ export const COPY = {
 
 /** BR-M09-01 article categories (code, label), in the live option order. */
 export const CATEGORY_OPTIONS: readonly { value: ArticleCategory; label: string }[] = [
-  { value: 'TIPS_BELAJAR', label: 'Tips Belajar' },
+  { value: 'TIPS_BELAJAR', label: 'Petua Belajar' },
   { value: 'BERITA', label: 'Berita' },
   { value: 'MOTIVASI', label: 'Motivasi' },
   { value: 'PANDUAN_IBU_BAPA', label: 'Panduan Ibu Bapa' },
@@ -89,9 +89,9 @@ export const NOTE_TYPE_FILTER_OPTIONS: readonly {
 }[] = [
   { value: 'all', label: 'Semua Jenis' },
   { value: 'summary', label: 'Ringkasan' },
-  { value: 'mind_map', label: 'Mind Map' },
-  { value: 'flashcard', label: 'Flashcard' },
-  { value: 'cheat_sheet', label: 'Cheat Sheet' },
+  { value: 'mind_map', label: 'Peta Minda' },
+  { value: 'flashcard', label: 'Kad Imbas' },
+  { value: 'cheat_sheet', label: 'Helaian Rujukan Pantas' },
   { value: 'full_notes', label: 'Nota Penuh' },
 ]
 

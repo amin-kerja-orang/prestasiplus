@@ -31,9 +31,9 @@ const STUDENT_NO_PARENT = 'pelajar2@demo.test'
 const STUDENT_WITH_PARENT = 'pelajar@demo.test'
 const PROPOSED = 'L45 S1 content is PROPOSED from the reference rebuild (SRS §3, D23a)'
 const INFERRED = 'L45 behaviour is INFERRED (SRS §3)'
-const COPY_INTRO = 'Salin link ini dan hantar kepada ibu bapa anda melalui WhatsApp atau mesej.'
-const HERO_TEXT = 'Kongsi link ini dengan ibu bapa untuk pantau perkembangan anda'
-const FLASH = 'Link jemputan baru telah dijana!'
+const COPY_INTRO = 'Salin pautan ini dan hantar kepada ibu bapa anda melalui WhatsApp atau mesej.'
+const HERO_TEXT = 'Kongsi pautan ini dengan ibu bapa untuk pantau perkembangan anda'
+const FLASH = 'Pautan jemputan baharu telah dijana!'
 const GENERIC_ERROR = 'Ralat berlaku. Sila cuba lagi.'
 const TOKEN_RE = /^[0-9a-f]{64}$/
 const FIRST_TOKEN = `${'0'.repeat(63)}1`
@@ -98,11 +98,11 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       await expect(hero.getByRole('heading', { level: 1 })).toHaveText('Jemput Ibu Bapa 👨‍👩‍👧')
       await expect(hero).toContainText(HERO_TEXT)
       const card = page.getByTestId('jemput-link-card')
-      await expect(card.getByRole('heading', { level: 2 })).toHaveText('Link Jemputan')
+      await expect(card.getByRole('heading', { level: 2 })).toHaveText('Pautan Jemputan')
       await expect(card).toContainText(COPY_INTRO)
       await expect(page.getByTestId('jemput-copy')).toHaveText('Salin')
-      await expect(page.getByTestId('jemput-whatsapp')).toHaveText('Hantar via WhatsApp')
-      await expect(page.getByTestId('jemput-regenerate')).toHaveText('Jana Link Baru')
+      await expect(page.getByTestId('jemput-whatsapp')).toHaveText('Hantar melalui WhatsApp')
+      await expect(page.getByTestId('jemput-regenerate')).toHaveText('Jana Pautan Baharu')
       await expect(field(page)).toHaveAttribute('readonly', '')
       const origin = new URL(page.url()).origin
       await expect(field(page)).toHaveValue(`${origin}/ibu-bapa/terima/${FIRST_TOKEN}`)
@@ -202,7 +202,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
         'href',
         'https://wa.me/?text=' +
           encodeURIComponent(
-            `Salam ibu/bapa! Klik link ini untuk pantau perkembangan saya di PRESTASIPLUS: ${url}`,
+            `Salam ibu/bapa! Klik pautan ini untuk pantau perkembangan saya di PRESTASIPLUS: ${url}`,
           ),
       )
       await expect(link).toHaveAttribute('target', '_blank')
@@ -218,7 +218,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
   )
 
   test(
-    'E2E-L45-06 "Jana Link Baru": disabled while pending, new link, flash, same URL',
+    'E2E-L45-06 "Jana Pautan Baharu": disabled while pending, new link, flash, same URL',
     tagP(PROPOSED),
     async ({ page, loginAs, gotoApp, mock }) => {
       await loginAs(STUDENT_NO_PARENT)
@@ -242,7 +242,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
   )
 
   test(
-    'E2E-L45-07 after regenerating, the old URL is "Link Tidak Sah" and the new URL is valid',
+    'E2E-L45-07 after regenerating, the old URL is "Pautan Tidak Sah" and the new URL is valid',
     tagP(PROPOSED),
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(STUDENT_NO_PARENT)
@@ -252,7 +252,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       await expect(page.getByTestId('jemput-flash')).toHaveText(FLASH)
       expect(await tokenOf(page)).toBe(SECOND_TOKEN)
       await gotoApp(`/ibu-bapa/terima/${FIRST_TOKEN}`)
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Link Tidak Sah')
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Pautan Tidak Sah')
       await gotoApp(`/ibu-bapa/terima/${SECOND_TOKEN}`)
       await expect(page.getByTestId('invite-heading')).toHaveText(
         'Anda dijemput untuk memantau kemajuan Pelajar Dua Demo',
@@ -305,7 +305,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
     const empty = page.getByTestId('jemput-empty')
     await expect(empty).toContainText('👨‍👩‍👧')
     await expect(empty).toContainText('Belum ada ibu bapa dihubungkan')
-    await expect(empty).toContainText('Hantar link jemputan di atas')
+    await expect(empty).toContainText('Hantar pautan jemputan di atas')
     await expect(page.getByTestId('jemput-parent')).toHaveCount(0)
   })
 

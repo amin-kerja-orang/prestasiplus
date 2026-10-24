@@ -116,7 +116,7 @@ describe('S1 Laporan: teacher view (E2E-M11-10, 08)', () => {
     respond(teacherReport({ population: { total: 8, loggedIn: 5, practised: 8 } }))
     const w = await mountAt('/guru/laporan')
     expect(text(w, 'card-login')).toContain('63%')
-    expect(text(w, 'card-login-missing')).toBe('3 belum pernah login')
+    expect(text(w, 'card-login-missing')).toBe('3 belum pernah log masuk')
   })
 
   it('lists the class options with the current class selected', async () => {
@@ -176,7 +176,7 @@ describe('S1 Laporan: teacher view (E2E-M11-10, 08)', () => {
     const w = await mountAt('/guru/laporan')
     const rows = t(w, 'list-idle-rows').findAll('[data-testid="student-row"]')
     expect(rows).toHaveLength(2)
-    expect(rows[0]!.find('[data-testid="student-never"]').text()).toBe('Belum pernah login')
+    expect(rows[0]!.find('[data-testid="student-never"]').text()).toBe('Belum pernah log masuk')
     expect(rows[1]!.find('[data-testid="student-never"]').exists()).toBe(false)
     expect(rows[0]!.get('[data-testid="student-email"]').classes()).toContain('truncate')
   })
@@ -203,8 +203,8 @@ describe('S1 Laporan: expandable cards (FR-M11-17, E2E-M11-11/12)', () => {
   it('login and latihan panels show the zero copy', async () => {
     const w = await mountAt('/guru/laporan')
     await t(w, 'card-login').trigger('click')
-    expect(text(w, 'panel-login')).toContain('Pelajar Belum Pernah Login (0)')
-    expect(text(w, 'panel-login')).toContain('Semua pelajar sudah pernah login!')
+    expect(text(w, 'panel-login')).toContain('Pelajar Belum Pernah Log Masuk (0)')
+    expect(text(w, 'panel-login')).toContain('Semua pelajar sudah pernah log masuk!')
     await t(w, 'card-latihan').trigger('click')
     expect(text(w, 'panel-latihan')).toContain('Pelajar Belum Pernah Buat Latihan (0)')
     expect(text(w, 'panel-latihan')).toContain('Semua pelajar sudah aktif buat latihan!')
@@ -224,7 +224,7 @@ describe('S1 Laporan: expandable cards (FR-M11-17, E2E-M11-11/12)', () => {
     )
     const w = await mountAt('/guru/laporan')
     await t(w, 'card-login').trigger('click')
-    expect(text(w, 'panel-login')).toContain('Pelajar Belum Pernah Login (12)')
+    expect(text(w, 'panel-login')).toContain('Pelajar Belum Pernah Log Masuk (12)')
     expect(t(w, 'panel-login-list').findAll('li')).toHaveLength(12)
     await t(w, 'card-latihan').trigger('click')
     expect(text(w, 'panel-latihan')).toContain('Pelajar Belum Pernah Buat Latihan (12)')

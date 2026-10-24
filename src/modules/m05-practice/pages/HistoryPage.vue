@@ -9,6 +9,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
+import { formatMyt } from '@/lib/time'
 import {
   DsEmptyState,
   DsLoadError,
@@ -56,12 +57,9 @@ function goPage(p: number): void {
   void router.push({ path: '/practice/history', query })
 }
 
-/** "19 May 2026, 03:49": English month names, as live (D-10). */
+/** "19 Mei 2026, 03:49": BM month names (FB-025). */
 function when(iso: string): string {
-  const d = new Date(iso)
-  const date = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
-  return `${date}, ${time}`
+  return formatMyt(iso, 'd MMMM yyyy, HH:mm')
 }
 function clock(seconds: number): string {
   const m = Math.floor(seconds / 60)

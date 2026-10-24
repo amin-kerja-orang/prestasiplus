@@ -75,14 +75,14 @@ describe('MasterNotesPage (M04 S12)', () => {
   it('renders the summary line (the shell prints the title)', async () => {
     const w = await render()
     expect(w.get('[data-testid=notes-summary]').text()).toBe(
-      'Self-healing nota AI: 0 flagged · 0 teacher-approved · 525 total. Review yang flagged untuk improve quality.',
+      'Nota AI pemulihan sendiri: 0 ditanda · 0 diluluskan guru · 525 jumlah. Semak nota yang ditanda untuk meningkatkan kualiti.',
     )
   })
 
   it('renders the three tabs with the active one as the dark pill', async () => {
     const w = await render()
     const tabs = w.findAll('[data-testid=notes-tabs] a')
-    expect(tabs.map((t) => t.text())).toEqual(['Flagged Review', 'Teacher Approved', 'Semua'])
+    expect(tabs.map((t) => t.text())).toEqual(['Perlu Semakan', 'Diluluskan Guru', 'Semua'])
     expect(tabs.map((t) => t.attributes('href'))).toEqual([
       '/admin/master-notes?tab=flagged',
       '/admin/master-notes?tab=approved',
@@ -119,11 +119,11 @@ describe('MasterNotesPage (M04 S12)', () => {
     const question = rows[0]?.get('[data-testid=note-question]').text() ?? ''
     expect(question).toBe(`Soalan: ${'S'.repeat(200)}...`)
     expect(rows[0]?.get('[data-testid=note-text]').text()).toBe('Mungkin anda keliru sebab contoh.')
-    expect(rows[0]?.get('[data-testid=note-trap]').text()).toBe('Trap: Salah faham tentang fokus.')
+    expect(rows[0]?.get('[data-testid=note-trap]').text()).toBe('Perangkap: Salah faham tentang fokus.')
     expect(rows[0]?.findAll('button').map((b) => b.text())).toEqual([
-      'Approve',
-      'Regenerate',
-      'Clear Flag',
+      'Luluskan',
+      'Jana Semula',
+      'Buang Tanda',
     ])
   })
 
@@ -141,7 +141,7 @@ describe('MasterNotesPage (M04 S12)', () => {
     expect(approve?.attributes('disabled')).toBeDefined()
     release({ ok: true })
     await flushPromises()
-    expect(approve?.text()).toBe('Done')
+    expect(approve?.text()).toBe('Selesai')
     expect(approve?.attributes('disabled')).toBeDefined()
     expect(row?.attributes('data-dimmed')).toBe('true')
     expect(row?.get('[data-testid=note-regen]').attributes('disabled')).toBeUndefined()
@@ -157,7 +157,7 @@ describe('MasterNotesPage (M04 S12)', () => {
     await regen?.trigger('click')
     await flushPromises()
     expect(api.actOnMasterNote).toHaveBeenCalledWith(1, 'regen')
-    expect(regen?.text()).toBe('Regenerate')
+    expect(regen?.text()).toBe('Jana Semula')
     expect(regen?.attributes('disabled')).toBeUndefined()
     expect(row?.attributes('data-dimmed')).toBe('false')
   })

@@ -379,8 +379,8 @@ const previewBlocks = computed(() => {
           <h3 class="text-subheading text-highlighted">
             {{
               allIssues.length
-                ? `Belum sepadan dengan blueprint (${allIssues.length} perkara)`
-                : 'Sepadan dengan blueprint'
+                ? `Belum sepadan dengan cetak biru (${allIssues.length} perkara)`
+                : 'Sepadan dengan cetak biru'
             }}
           </h3>
         </div>

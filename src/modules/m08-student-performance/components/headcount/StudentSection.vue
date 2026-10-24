@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * One S15 section: the card of one config that holds an entry of the pupil (FR-M08-93…96, FR-M08-127,
- * BR-M08-08 rule 1, BR-M08-23/24/33). Status badge, RS badge, summary chips, line chart, the Checkpoint
+ * BR-M08-08 rule 1, BR-M08-23/24/33). Status badge, RS badge, summary chips, line chart, the Titik Semak
  * table (cards below `md`) and the "Ketepatan Ramalan ETR vs RS" box.
  */
 import type { TableColumn } from '@nuxt/ui'
@@ -25,8 +25,8 @@ const props = defineProps<{ section: HeadcountSection }>()
 type BadgeColor = 'success' | 'error' | 'warning' | 'neutral' | 'info'
 
 const STATUS: Record<HeadcountSection['status'], { text: string; color: BadgeColor }> = {
-  on: { text: 'On Track', color: 'success' },
-  below: { text: 'Below Target', color: 'error' },
+  on: { text: 'Atas Landasan', color: 'success' },
+  below: { text: 'Bawah Sasaran', color: 'error' },
   none: { text: 'Belum Ada Data', color: 'neutral' },
 }
 const PROJECTION: Record<ProjectionVariant, BadgeColor> = {
@@ -152,7 +152,7 @@ const rows = computed<Row[]>(() => {
   return out
 })
 const columns: TableColumn<Row>[] = [
-  { accessorKey: 'checkpoint', header: 'Checkpoint' },
+  { accessorKey: 'checkpoint', header: 'Titik Semak' },
   { accessorKey: 'target', header: 'Target (%)' },
   { accessorKey: 'targetGrade', header: 'Gred Target' },
   { accessorKey: 'ar', header: 'AR (%)' },
@@ -265,7 +265,7 @@ const rowTestId =(r: Row, i: number): string =>
     <DsDataTable
       :data="rows"
       :columns="columns"
-      caption="Checkpoint"
+      caption="Titik Semak"
       card-title="checkpoint"
       :card-fields="cardFields"
       :page-size="rows.length"

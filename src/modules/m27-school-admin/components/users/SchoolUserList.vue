@@ -311,7 +311,7 @@ const columns = computed<TableColumn<Item>[]>(() =>
         { accessorKey: 'email', header: 'Emel' },
         { accessorKey: 'phone', header: 'Telefon' },
         { accessorKey: 'kelas', header: 'Kelas' },
-        { accessorKey: 'lastLogin', header: 'Login Terakhir' },
+        { accessorKey: 'lastLogin', header: 'Log Masuk Terakhir' },
         { accessorKey: 'isActive', header: 'Aktif?' },
         { accessorKey: 'date', header: 'Tarikh' },
         { id: 'actions', header: 'Tindakan' },
@@ -330,7 +330,7 @@ const cardFields = computed<CardField[]>(() =>
         { key: 'email', label: 'Emel' },
         { key: 'phone', label: 'Telefon' },
         { key: 'kelas', label: 'Kelas' },
-        { key: 'lastLogin', label: 'Login Terakhir' },
+        { key: 'lastLogin', label: 'Log Masuk Terakhir' },
       ],
 )
 
@@ -341,7 +341,7 @@ function openRow(row: Item): void {
 
 <template>
   <DsPage :data-testid="`${cfg.testid}-page`">
-    <DsBackLink :to="DASHBOARD_PATH" label="Dashboard Sekolah" data-testid="user-crumb-back" />
+    <DsBackLink :to="DASHBOARD_PATH" label="Papan Pemuka Sekolah" data-testid="user-crumb-back" />
 
     <!-- FR-M27-88 / 99: one count tile, unaffected by the filters. -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" data-testid="user-count-card">

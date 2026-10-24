@@ -340,7 +340,7 @@ export function submitQuestionPaper(
   return api.multipart<QuestionPaper>('/api/guru/question-papers', form)
 }
 
-/** #63 `GET /api/guru/audio-kbat/template` (`xlsx`: the "Template XLSX" link, served as `template-audio-kbat.csv`) or `/template-word` (`word`: a real `.docx`): the template file. */
+/** #63 `GET /api/guru/audio-kbat/template` (`xlsx`: the "Templat XLSX" link, served as `template-audio-kbat.csv`) or `/template-word` (`word`: a real `.docx`): the template file. */
 export function downloadAudioKbatTemplate(format: 'xlsx' | 'word'): Promise<BlobResult> {
   return api.blob(
     format === 'xlsx' ? '/api/guru/audio-kbat/template' : '/api/guru/audio-kbat/template-word',

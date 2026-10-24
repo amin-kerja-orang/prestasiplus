@@ -353,7 +353,7 @@ describe('AI explanation card (M04 S3)', () => {
     expect(w.find('[data-testid="ai-generate"]').exists()).toBe(true)
   })
 
-  it('failure without a message shows "HTTP {status}"; a network error shows "Failed to fetch"', async () => {
+  it('failure without a message shows "HTTP {status}"; a network error shows the BM connection message', async () => {
     questions.generateAiExplanation.mockResolvedValueOnce({
       status: 500,
       headers: {},
@@ -368,6 +368,6 @@ describe('AI explanation card (M04 S3)', () => {
     )
     await t(w, 'ai-generate').trigger('click')
     await flushPromises()
-    expect(t(w, 'ai-error').text()).toBe('Failed to fetch')
+    expect(t(w, 'ai-error').text()).toBe('Sambungan terputus. Semak internet anda dan cuba semula.')
   })
 })

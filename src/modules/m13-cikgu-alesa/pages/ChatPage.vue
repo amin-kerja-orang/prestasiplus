@@ -281,7 +281,7 @@ onBeforeUnmount(() => {
           id="cikgu-voice-toolbar"
           class="flex flex-wrap items-center gap-3 rounded-chip bg-friend/16 px-3 py-2"
         >
-          <span class="text-label text-highlighted">🎙️ Voice Mode:</span>
+          <span class="text-label text-highlighted">🎙️ Mod Suara:</span>
           <UCheckbox
             id="cikgu-voice-mode"
             v-model="voiceOn"

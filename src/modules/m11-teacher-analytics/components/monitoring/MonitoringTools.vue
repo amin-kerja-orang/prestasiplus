@@ -46,7 +46,7 @@ const emit = defineEmits<{ export: [format: 'pdf' | 'csv']; toggle: [] }>()
       variant="soft"
       size="md"
       icon="i-ph-arrows-clockwise"
-      label="Refresh"
+      label="Muat Semula"
       data-testid="mon-refresh"
     />
     <UButton

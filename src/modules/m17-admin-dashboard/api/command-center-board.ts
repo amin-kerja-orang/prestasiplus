@@ -150,9 +150,9 @@ export function ccDailyTrendHeights(d: CcLiveData): number[] {
 
 /** The S3 login card label per tab (DV-M17-10). */
 export const CC_LOGIN_LABEL: Readonly<Record<CcPeriod, string>> = Object.freeze({
-  today: 'Login Hari Ini',
-  week: 'Login Minggu Ini',
-  month: 'Login Bulan Ini',
+  today: 'Log Masuk Hari Ini',
+  week: 'Log Masuk Minggu Ini',
+  month: 'Log Masuk Bulan Ini',
 })
 
 /** "student: 9 · teacher: 1" (roles with at least one login, in the response order, FR-M17-38). */

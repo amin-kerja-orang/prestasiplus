@@ -222,7 +222,7 @@ test.describe('QA G5 user-portal nav and S11 badge', { tag: [moduleTag(4), '@qa'
     await gotoApp('/admin/master-notes')
     const sb = byId(page, 'shell-user-sidebar')
     await expect(sb).toContainText(/Kawalan Kualiti/i)
-    await expect(sb.locator('a[href="/admin/master-notes"]')).toContainText('Semakan Nota Master')
+    await expect(sb.locator('a[href="/admin/master-notes"]')).toContainText('Semakan Nota Induk')
     await expect(sb.locator('a[href="/laporan-soalan"]')).toContainText('Laporan Soalan')
     await expect(sb.locator('a[href="/admin/question-submissions"]')).toContainText(
       'Kertas Soalan Guru',
@@ -241,7 +241,7 @@ test.describe('QA G5 user-portal nav and S11 badge', { tag: [moduleTag(4), '@qa'
     await gotoApp('/admin/master-notes')
     await byId(page, 'shell-user-bottom-nav').getByText('Lagi').click()
     const dr = byId(page, 'shell-user-drawer')
-    await expect(dr.locator('a[href="/admin/master-notes"]')).toContainText('Semakan Nota Master')
+    await expect(dr.locator('a[href="/admin/master-notes"]')).toContainText('Semakan Nota Induk')
     await expect(dr.locator('a[href="/laporan-soalan"]')).toContainText('Laporan Soalan')
     await expect(dr.locator('a[href="/admin/question-submissions"]')).toHaveCount(0)
     await expect(dr.locator('a[href="/admin/soalan-gambar"]')).toHaveCount(0)
@@ -284,7 +284,7 @@ test.describe('QA G5 S8/S9 details', { tag: [moduleTag(4), '@qa'] }, () => {
       '/guru/soalan-berstruktur/cipta',
     )
     await expect(byId(page, 'structured-stat-total')).toContainText('Jumlah Soalan')
-    await expect(byId(page, 'structured-stat-published')).toContainText('Published')
+    await expect(byId(page, 'structured-stat-published')).toContainText('Diterbitkan')
     const kbat = (await byId(page, 'structured-kbat').locator('option').allInnerTexts()).map((s) =>
       s.trim(),
     )

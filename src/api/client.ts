@@ -302,7 +302,7 @@ export class ApiClient {
       throw new ApiError({
         status: 0,
         code: API_ERROR_CODES.NETWORK_ERROR,
-        message: err instanceof Error && err.message ? err.message : 'Network request failed',
+        message: err instanceof Error && err.message ? err.message : 'Sambungan terputus. Semak internet anda dan cuba semula.',
         method,
         url: path,
         cause: err,

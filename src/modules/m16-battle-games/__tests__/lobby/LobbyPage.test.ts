@@ -66,7 +66,7 @@ describe('S8-S12 lobby template (FR-M16-62..65)', () => {
     [
       'perang-fakta',
       '⚔️ Perang Fakta',
-      'Betul atau Salah? Vote & buktikan pengetahuan kamu!',
+      'Betul atau Salah? Undi & buktikan pengetahuan kamu!',
       '2-6 pemain · 15 pusingan · 10 saat setiap soalan',
       '⚔️ Cipta Bilik',
     ],

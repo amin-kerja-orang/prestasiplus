@@ -20,7 +20,7 @@ const { allows } = usePrototypeScope()
 // Prototype scope (D43): the school admin has no 'Papan Pemuka' (`/dashboard`) in the matrix.
 const crumbs = computed(() => [
   ...(allows(PATHS.home) ? [{ label: 'Papan Pemuka', to: PATHS.home }] : []),
-  { label: 'Dashboard Sekolah' },
+  { label: 'Papan Pemuka Sekolah' },
 ])
 </script>
 

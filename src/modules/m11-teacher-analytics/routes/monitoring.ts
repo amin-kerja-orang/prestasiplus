@@ -44,9 +44,9 @@ export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions):
       props: () => ({ basePath: prefix }),
       meta: {
         ...meta,
-        title: 'Monitoring Penglibatan Sekolah - Admin',
+        title: 'Pemantauan Penglibatan Sekolah - Admin',
         header: {
-          title: 'Monitoring Penglibatan',
+          title: 'Pemantauan Penglibatan',
           subtitle: 'Pantau penglibatan sekolah & pelajar T4/T5 dalam platform',
         },
       },
@@ -56,7 +56,7 @@ export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions):
       name: `${name}-sekolah`,
       component: () => import('../pages/MonitoringSchoolPage.vue'),
       props: (route) => ({ basePath: prefix, schoolId: num(route, 'schoolId') }),
-      meta: { ...meta, title: 'Monitoring', header: { title: 'Detail Sekolah' } },
+      meta: { ...meta, title: 'Pemantauan', header: { title: 'Butiran Sekolah' } },
     },
     {
       path: `${prefix}/sekolah/:schoolId(\\d+)/pelajar/:userId(\\d+)`,
@@ -67,7 +67,7 @@ export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions):
         schoolId: num(route, 'schoolId'),
         userId: num(route, 'userId'),
       }),
-      meta: { ...meta, title: 'Detail Pelajar', header: { title: 'Detail Pelajar' } },
+      meta: { ...meta, title: 'Butiran Pelajar', header: { title: 'Butiran Pelajar' } },
     },
     {
       path: `${prefix}/sekolah/:schoolId(\\d+)/guru/:userId(\\d+)`,
@@ -78,7 +78,7 @@ export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions):
         schoolId: num(route, 'schoolId'),
         userId: num(route, 'userId'),
       }),
-      meta: { ...meta, title: 'Detail Guru', header: { title: 'Detail Guru' } },
+      meta: { ...meta, title: 'Butiran Guru', header: { title: 'Butiran Guru' } },
     },
   ]
 }

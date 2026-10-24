@@ -85,8 +85,8 @@ describe('SubmissionListPage (M04 S10)', () => {
   it('shows the four counters and no Ditolak card', async () => {
     const w = await render()
     expect(w.get('[data-testid=submissions-count-all]').text()).toBe('6Jumlah')
-    expect(w.get('[data-testid=submissions-count-pending]').text()).toBe('1Pending')
-    expect(w.get('[data-testid=submissions-count-processing]').text()).toBe('3Processing')
+    expect(w.get('[data-testid=submissions-count-pending]').text()).toBe('1Menunggu Semakan')
+    expect(w.get('[data-testid=submissions-count-processing]').text()).toBe('3Sedang Diproses')
     expect(w.get('[data-testid=submissions-count-done]').text()).toBe('1Selesai')
     expect(w.findAll('[data-ds="stat-row"] li')).toHaveLength(4)
     expect(w.get('[data-ds="stat-row"]').text()).not.toContain('Ditolak')
@@ -95,7 +95,7 @@ describe('SubmissionListPage (M04 S10)', () => {
   it('offers the status filter with Tapis and resets from the filter bar', async () => {
     let w = await render()
     const options = w.findAll('[data-testid=submissions-status] option').map((o) => o.text())
-    expect(options).toEqual(['Semua Status', 'Pending', 'Processing', 'Selesai', 'Ditolak'])
+    expect(options).toEqual(['Semua Status', 'Menunggu Semakan', 'Sedang Diproses', 'Selesai', 'Ditolak'])
     expect(w.get('[data-testid=submissions-filter] button[type=submit]').text()).toBe('Tapis')
     w.unmount()
     w = await render('/admin/question-submissions?status=done')
@@ -105,7 +105,7 @@ describe('SubmissionListPage (M04 S10)', () => {
     const reset = w
       .get('[data-testid=submissions-filter]')
       .findAll('button')
-      .find((b) => b.text() === 'Reset')
+      .find((b) => b.text() === 'Set Semula')
     await reset?.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({})
@@ -143,10 +143,10 @@ describe('SubmissionListPage (M04 S10)', () => {
     expect(text).toContain('kertas-a.docx')
     expect(row?.get('[data-testid=submission-status]').text()).toBe('Selesai')
     expect(row?.get('[data-testid=submission-admin-notes]').text()).toBe('nota lama')
-    expect(text).toContain('09 Mar 2026')
+    expect(text).toContain('09 Mac 2026')
     expect(text).toContain('08:49')
     const second = w.findAll('tbody tr')[1]
-    expect(second?.get('[data-testid=submission-status]').text()).toBe('Processing')
+    expect(second?.get('[data-testid=submission-status]').text()).toBe('Sedang Diproses')
     expect(second?.find('[data-testid=submission-admin-notes]').exists()).toBe(false)
   })
 

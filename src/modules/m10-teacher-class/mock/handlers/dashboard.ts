@@ -3,7 +3,7 @@
  * Both **T**, both read-only, both scoped to the viewer's own records (BR-M10-01).
  *
  * #1 (BR-M10-05, BR-M10-06, FR-M10-09…13): the checklist, the stat cards and the viewer's active
- * classes. "Tindakan Hari Ini", "Peer Tutor Matching" and "Penghantaran Terkini" are empty for every
+ * classes. "Tindakan Hari Ini", "Padanan Rakan Pembimbing" and "Penghantaran Terkini" are empty for every
  * viewer (L-M10-01, OQ-M10-11), so `today`, `peerTutor` and `submissions` are always empty and
  * `assignments` is 0. The admin's "Soalan" figures are the observed constants (DV-M10-12); for any
  * other viewer they are computed from M04 (Q-CONTRIB plus the viewer's structured questions).

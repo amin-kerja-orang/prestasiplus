@@ -242,7 +242,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
                 >
                   <span class="flex min-w-0 flex-col">
                     <span class="text-label">{{ d.label }}</span>
-                    <span class="text-caption">Level {{ d.value }}</span>
+                    <span class="text-caption">Tahap {{ d.value }}</span>
                   </span>
                   <span class="tabular text-label" data-testid="difficulty-count">
                     {{ formatCount(diffCount(config, selectedLevel, d.value)) }}
@@ -366,7 +366,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
             <div class="flex flex-col gap-3">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon name="i-ph-lightbulb-duotone" class="size-6 text-warning" aria-hidden="true" />
-                Tips
+                Petua
               </h2>
               <ul class="flex flex-col gap-2">
                 <li v-for="tip in TIPS" :key="tip" class="flex items-start gap-3 text-body text-default">

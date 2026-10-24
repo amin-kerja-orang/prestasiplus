@@ -50,7 +50,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       ...adminMeta,
       title: 'Langganan - Admin PRESTASIPLUS',
-      header: { title: 'Detail Langganan' },
+      header: { title: 'Butiran Langganan' },
     },
   },
   {
@@ -63,7 +63,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       roles: ['admin'],
       module: 'M02',
-      title: 'Invoice Pembaharuan',
+      title: 'Invois Pembaharuan',
     },
   },
   {
@@ -73,8 +73,8 @@ const routes: RouteRecordRaw[] = [
     props: (route) => ({ id: Number(route.params.id) }),
     meta: {
       ...adminMeta,
-      title: 'Assign Pakej SPM - Admin PRESTASIPLUS',
-      header: { title: 'Assign Pakej SPM' },
+      title: 'Tetapkan Pakej SPM - Admin PRESTASIPLUS',
+      header: { title: 'Tetapkan Pakej SPM' },
     },
   },
 ]

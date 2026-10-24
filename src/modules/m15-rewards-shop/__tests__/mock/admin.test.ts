@@ -125,7 +125,7 @@ describe('#1 catalogue list', () => {
     expect(p1.body.data).toHaveLength(50)
     expect(p1.body.data[0]).toMatchObject({
       id: 1,
-      categoryLabel: '🎮 Gaming',
+      categoryLabel: '🎮 Permainan',
       title: 'Roblox Gift Card RM10',
       iconEmoji: '🎮',
       stockQuantity: null,
@@ -158,7 +158,7 @@ describe('#1 catalogue list', () => {
     expect(telco.body.data).toHaveLength(11)
     expect(telco.body.data[0]).toMatchObject({
       id: 9,
-      categoryLabel: '📱 Telco Topup',
+      categoryLabel: '📱 Tambah Nilai Telekomunikasi',
       stockQuantity: 5,
     })
     expect(telco.body.meta).toMatchObject({ activeCat: 'telco', totalItems: 11 })

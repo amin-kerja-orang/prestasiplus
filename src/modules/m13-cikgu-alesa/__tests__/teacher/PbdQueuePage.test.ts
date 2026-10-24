@@ -54,7 +54,7 @@ describe('S6 PBD queue', () => {
     )
     const select = wrapper.get('[data-testid="pbd-class"]')
     expect(select.attributes('required')).toBeUndefined()
-    expect(select.findAll('option').map((o) => o.text())).toEqual(['Pilih kelas untuk rollup'])
+    expect(select.findAll('option').map((o) => o.text())).toEqual(['Pilih kelas untuk ringkasan'])
     expect(wrapper.get('[data-testid="pbd-rollup"]').text()).toBe('Jalankan Auto-Tag')
     const exp = wrapper.get('[data-testid="pbd-export"]')
     expect(exp.attributes('href')).toBe('/cikgu/pbd/export.csv')
@@ -62,7 +62,7 @@ describe('S6 PBD queue', () => {
     expect(wrapper.get('[data-testid="pbd-bulk"]').text()).toBe('Lulus pukal (TP cadangan)')
     expect(wrapper.get('#bulk-form').text()).toContain('Pilih semua')
     expect(wrapper.get('[data-testid="pbd-empty"]').text()).toBe(
-      'Tiada antrian semakan. Klik "Jalankan Auto-Tag" untuk scan aktiviti pelajar.',
+      'Tiada antrian semakan. Klik "Jalankan Auto-Tag" untuk mengimbas aktiviti pelajar.',
     )
     expect(wrapper.get('#bulk-form').element.querySelector('form')).toBeNull()
     expect(wrapper.findAll('thead th').map((t) => t.text())).toEqual([
@@ -87,7 +87,7 @@ describe('S6 PBD queue', () => {
     const m = await mountAt(PbdQueuePage, '/cikgu/pbd')
     wrapper = m.wrapper
     expect(wrapper.findAll('[data-testid="pbd-class"] option').map((o) => o.text())).toEqual([
-      'Pilih kelas untuk rollup',
+      'Pilih kelas untuk ringkasan',
       '5 MARIKH - Kimia',
       '5 MARIKH - Sejarah',
     ])

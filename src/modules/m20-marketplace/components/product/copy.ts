@@ -82,12 +82,12 @@ export type ShippingKind = 'postage' | 'free' | 'cod' | 'pickup'
 
 /**
  * Maps a BR-M20-17 shipping line ("Pos / Kurier (RM8.00)", "Penghantaran Percuma 🎉",
- * "Cash on Delivery (COD)", "Ambil Sendiri (Pickup)") to its method, so the S6 card shows the live
+ * "Bayar Semasa Penghantaran (COD)", "Ambil Sendiri (Pickup)") to its method, so the S6 card shows the live
  * icon: fa-truck, fa-gift, fa-hand-holding-usd, fa-map-marker-alt.
  */
 export function shippingKindOf(line: string): ShippingKind {
   if (line.startsWith('Pos')) return 'postage'
   if (line.startsWith('Penghantaran Percuma')) return 'free'
-  if (line.startsWith('Cash on Delivery')) return 'cod'
+  if (line.startsWith('Bayar Semasa Penghantaran')) return 'cod'
   return 'pickup'
 }

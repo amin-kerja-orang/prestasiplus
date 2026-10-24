@@ -1,7 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 /**
- * M05 route fragment: S4 / S5 / Q2 Soalan by Chapter and S6 / S7 revision (M05-T5; SRS M05 v1.19 §2;
+ * M05 route fragment: S4 / S5 / Q2 Soalan Mengikut Bab and S6 / S7 revision (M05-T5; SRS M05 v1.19 §2;
  * roles-matrix L14, Murid and Guru: any session may open them, FR-M05-130). Static siblings of
  * `/practice/:code` (`/practice/chapter`, `/practice/revision`) rank above it by the router. The pages
  * answer an unknown code with the global 404 page and set the dynamic tab titles / shell subtitle.
@@ -14,9 +14,9 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      title: 'Soalan by Chapter - PRESTASIPLUS',
+      title: 'Soalan Mengikut Bab - PRESTASIPLUS',
       header: {
-        title: 'Soalan by Chapter',
+        title: 'Soalan Mengikut Bab',
         subtitle: 'Latihan tersusun ikut bab buku teks dan DSKP',
       },
       module: 'M05',
@@ -32,8 +32,8 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       // "Chapter {subject} - PRESTASIPLUS" and the subtitle "{subject}" are set once the subject is known.
-      title: 'Soalan by Chapter - PRESTASIPLUS',
-      header: { title: 'Soalan by Chapter' },
+      title: 'Soalan Mengikut Bab - PRESTASIPLUS',
+      header: { title: 'Soalan Mengikut Bab' },
       module: 'M05',
       v2: true,
     },
@@ -46,9 +46,9 @@ const routes: RouteRecordRaw[] = [
       ownsH1: true,
       layout: 'user',
       access: 'auth',
-      // INFERRED (FR-M05-52 table: Q2 "Soalan by Chapter" / "{subject}"; UNVERIFIED tab title).
-      title: 'Soalan by Chapter - PRESTASIPLUS',
-      header: { title: 'Soalan by Chapter' },
+      // INFERRED (FR-M05-52 table: Q2 "Soalan Mengikut Bab" / "{subject}"; UNVERIFIED tab title).
+      title: 'Soalan Mengikut Bab - PRESTASIPLUS',
+      header: { title: 'Soalan Mengikut Bab' },
       module: 'M05',
       v2: true,
     },

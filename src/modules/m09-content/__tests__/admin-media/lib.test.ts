@@ -65,8 +65,8 @@ describe('common helpers', () => {
 describe('banner form options (BR-M09-12/13, DV-M09-07)', () => {
   it('has the live option sets', () => {
     expect(BANNER_TYPE_OPTIONS.map((o) => o.label)).toEqual([
-      'Hero',
-      'Promo',
+      'Utama',
+      'Promosi',
       'Pengumuman',
       'Acara',
     ])

@@ -61,7 +61,7 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'gpsText', header: 'GPS' },
   { accessorKey: 'gradeText', header: 'Gred' },
   { accessorKey: 'entries', header: 'Entri' },
-  { accessorKey: 'onTrack', header: 'On Track' },
+  { accessorKey: 'onTrack', header: 'Atas Landasan' },
   { accessorKey: 'below', header: 'Below' },
   { accessorKey: 'noTarget', header: 'Tiada Sasaran' },
   { accessorKey: 'achievementPct', header: 'Pencapaian' },
@@ -70,7 +70,7 @@ const cardFields = [
   { key: 'gpsText', label: 'GPS' },
   { key: 'gradeText', label: 'Gred' },
   { key: 'entries', label: 'Entri' },
-  { key: 'onTrack', label: 'On Track' },
+  { key: 'onTrack', label: 'Atas Landasan' },
   { key: 'below', label: 'Below' },
   { key: 'noTarget', label: 'Tiada Sasaran' },
 ]

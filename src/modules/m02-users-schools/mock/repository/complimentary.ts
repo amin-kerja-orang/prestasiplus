@@ -35,7 +35,7 @@ export const complimentaryProfilesTable = defineTable<ComplimentaryProfileRow>({
 /** Used when a complimentary user has no profile row (INFERRED: package ended on the clock anchor's year end). */
 export const DEFAULT_PACKAGE_EXPIRES_AT = '2026-12-31'
 
-/** S8 "Baki syiling / coins": read-only here, owned by M14 (DATA-M02-09). */
+/** S8 "Baki syiling / koin": read-only here, owned by M14 (DATA-M02-09). */
 export interface CompWallet {
   syiling: number
   coins: number

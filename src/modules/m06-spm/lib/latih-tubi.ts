@@ -29,11 +29,11 @@ export const LEVEL_OPTIONS: readonly { key: LevelKey; label: string }[] = [
 
 const TARGET_NAMES: Record<TargetType, string> = {
   spm: 'SPM',
-  custom: 'Custom',
+  custom: 'Tersuai',
   latihan: 'Latihan',
 }
 
-/** "SPM" | "Custom" | "Latihan". */
+/** "SPM" | "Tersuai" | "Latihan". */
 export const targetName = (type: TargetType): string => TARGET_NAMES[type]
 
 /** `getDiffCount(k)`: the level's count when a level is selected, else the subject's (0 when absent). */

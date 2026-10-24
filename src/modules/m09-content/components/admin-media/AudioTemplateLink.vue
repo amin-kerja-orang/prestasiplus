@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "Template XLSX" / "Template Word" (S12 header buttons, S13 guide box; FN-M09-5.1.3, 5.2.2). The
+ * "Templat XLSX" / "Templat Word" (S12 header buttons, S13 guide box; FN-M09-5.1.3, 5.2.2). The
  * `href` is the live download path; a plain click fetches the placeholder file through the API and
  * saves it without leaving the page (OQ-M09-03). Modified clicks fall through to the route of the
  * same path, which downloads and returns to S12.
@@ -36,7 +36,7 @@ async function onClick(event: MouseEvent): Promise<void> {
     size="md"
     class="min-h-11"
     :icon="kind === 'xlsx' ? 'i-ph-file-xls' : 'i-ph-file-doc'"
-    :label="kind === 'xlsx' ? 'Template XLSX' : 'Template Word'"
+    :label="kind === 'xlsx' ? 'Templat XLSX' : 'Templat Word'"
     :data-testid="kind === 'xlsx' ? 'template-xlsx' : 'template-word'"
     @click="onClick"
   />

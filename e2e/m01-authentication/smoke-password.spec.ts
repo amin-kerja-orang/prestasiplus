@@ -23,12 +23,12 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await expectTabTitle(page, 'Lupa Kata Laluan - PRESTASIPLUS')
     await expect(page.getByRole('heading', { name: 'Lupa Kata Laluan?' })).toBeVisible()
     await expect(
-      page.getByText('Masukkan email anda dan kami akan hantar pautan untuk reset kata laluan.'),
+      page.getByText('Masukkan emel anda dan kami akan menghantar pautan untuk set semula kata laluan.'),
     ).toBeVisible()
-    const email = page.getByLabel('Alamat Email')
+    const email = page.getByLabel('Alamat Emel')
     await expect(email).toBeFocused()
     await expect(email).toHaveAttribute('placeholder', 'nama@email.com')
-    await expect(page.getByRole('button', { name: 'Hantar Pautan Reset' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Hantar Pautan Set Semula' })).toBeEnabled()
     await expect(page.getByRole('link', { name: 'Kembali ke Log Masuk' })).toHaveAttribute(
       'href',
       '/login',
@@ -48,7 +48,7 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await page.getByTestId('forgot-email').fill('tiada@demo.test')
     await page.getByTestId('forgot-submit').click()
     await expect(page.getByTestId('forgot-alert')).toContainText(
-      "We can't find a user with that email address.",
+      "Kami tidak menemui pengguna dengan alamat emel itu.",
     )
     await expect(page.getByTestId('forgot-email')).toHaveValue('tiada@demo.test')
     await expectNoHorizontalScroll(page)
@@ -64,20 +64,20 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await page.getByTestId('forgot-submit').click()
     await expect(page.getByTestId('forgot-status')).toBeVisible()
     await expect(page.getByTestId('forgot-status')).toContainText(
-      'emailed your password reset link',
+      'menghantar pautan set semula kata laluan',
     )
     await expectNoHorizontalScroll(page)
 
     // A repeat within 60 s is throttled (BR-10).
     await page.getByTestId('forgot-submit').click()
-    await expect(page.getByTestId('forgot-alert')).toContainText('Please wait before retrying.')
+    await expect(page.getByTestId('forgot-alert')).toContainText('Sila tunggu sebelum mencuba semula.')
 
     const token = await mock.outbox.lastResetFor(STUDENT)
     expect(token).toBeTruthy()
 
     await gotoApp(`/password/reset/${token ?? ''}?email=${encodeURIComponent(STUDENT)}`)
-    await expectTabTitle(page, 'Reset Kata Laluan - PRESTASIPLUS')
-    await expect(page.getByRole('heading', { name: 'Reset Kata Laluan' })).toBeVisible()
+    await expectTabTitle(page, 'Set Semula Kata Laluan - PRESTASIPLUS')
+    await expect(page.getByRole('heading', { name: 'Set Semula Kata Laluan' })).toBeVisible()
     await expect(page.getByTestId('reset-email')).toHaveValue(STUDENT)
     await expect(page.getByTestId('auth-footer')).toContainText('© 2026 PRESTASIPLUS.')
     await expect(page.getByTestId('reset-password')).toHaveAttribute(
@@ -110,7 +110,7 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await page.getByTestId('login-email').fill(STUDENT)
     await page.getByTestId('login-password').fill(DEMO_PASSWORD)
     await page.getByTestId('login-submit').click()
-    await expect(page.getByTestId('login-alert')).toContainText('Email atau kata laluan tidak sah.')
+    await expect(page.getByTestId('login-alert')).toContainText('Emel atau kata laluan tidak sah.')
     await page.getByTestId('login-password').fill(NEW_PASSWORD)
     await page.getByTestId('login-submit').click()
     await expect(page).toHaveURL('/dashboard')
@@ -125,7 +125,7 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await page.getByTestId('reset-confirm').fill(NEW_PASSWORD)
     await page.getByTestId('reset-submit').click()
     await expect(page.getByTestId('reset-alert')).toContainText(
-      'This password reset token is invalid.',
+      'Token set semula kata laluan ini tidak sah.',
     )
     await expect(page.getByTestId('reset-email')).toHaveValue(STUDENT)
     await expect(page).toHaveURL(/\/password\/reset\/demo-expired-token/)
@@ -149,8 +149,8 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/password/reset-ic')
-    await expectTabTitle(page, 'Reset Kata Laluan (No IC) - PRESTASIPLUS')
-    await expect(page.getByRole('heading', { name: 'Reset Melalui No IC' })).toBeVisible()
+    await expectTabTitle(page, 'Set Semula Kata Laluan (No IC) - PRESTASIPLUS')
+    await expect(page.getByRole('heading', { name: 'Set Semula Melalui No IC' })).toBeVisible()
     await expect(page.getByTestId('ic-number')).toHaveAttribute('maxlength', '14')
     await expect(page.getByTestId('auth-footer')).toContainText('© 2026 PRESTASIPLUS.')
     await expect(page.getByText('Tanpa tanda sempang (-). Contoh: 000101010000')).toBeVisible()
@@ -160,7 +160,7 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await page.getByTestId('ic-number').fill('999999999999')
     await page.getByTestId('ic-submit').click()
     await expect(page.getByTestId('ic-alert')).toContainText(
-      'Email atau No Kad Pengenalan tidak sepadan.',
+      'Emel atau No Kad Pengenalan tidak sepadan.',
     )
     await expect(page.getByTestId('ic-number')).toHaveValue('999999999999')
 

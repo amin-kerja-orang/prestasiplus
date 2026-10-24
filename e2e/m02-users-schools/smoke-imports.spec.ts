@@ -124,7 +124,7 @@ test.describe('M02 S5 DELIMa student import', { tag: [TAG.smoke, moduleTag(2)] }
     )
     await byId(page, 'import-mode-csv').click()
     await expect(byId(page, 'student-format-csv')).toContainText(
-      'Nama, Email DELIMa, Kata Laluan, No KP (pilihan)',
+      'Nama, Emel DELIMa, Kata Laluan, No KP (pilihan)',
     )
     await expect(byId(page, 'student-notes')).toContainText(
       'ID yang sudah wujud akan dilangkau automatik',

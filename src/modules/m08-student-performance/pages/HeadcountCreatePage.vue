@@ -197,7 +197,7 @@ async function submit() {
             :items="OTR_ITEMS"
             orientation="horizontal"
             variant="card"
-            hint="Minimum 2 OTR · Default 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas."
+            hint="Minimum 2 OTR · Lalai 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas."
             data-testid="field-otr"
           />
           <URadioGroup

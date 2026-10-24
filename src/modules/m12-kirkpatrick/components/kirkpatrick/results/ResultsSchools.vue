@@ -60,7 +60,7 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'activeText', header: 'Aktif' },
   { accessorKey: 'accuracyText', header: 'Ketepatan' },
   { accessorKey: 'answers', header: 'Soalan' },
-  { accessorKey: 'engagement', header: 'Engagement' },
+  { accessorKey: 'engagement', header: 'Penglibatan' },
   { accessorKey: 'tahapText', header: 'Tahap' },
 ]
 const cardFields = [
@@ -68,7 +68,7 @@ const cardFields = [
   { key: 'activeText', label: 'Aktif' },
   { key: 'accuracyText', label: 'Ketepatan' },
   { key: 'answers', label: 'Soalan' },
-  { key: 'engagement', label: 'Engagement' },
+  { key: 'engagement', label: 'Penglibatan' },
   { key: 'tahapText', label: 'Tahap' },
 ]
 

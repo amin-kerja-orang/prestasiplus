@@ -24,18 +24,18 @@ export const QUESTION_COUNT = 30
 
 /** "Status" of the filter (all four) and of the create form (no "Archived", BR-M09-15). */
 export const FILTER_STATUS_OPTIONS: readonly { value: AudioSetStatus; label: string }[] = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'pending_review', label: 'Pending Review' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'archived', label: 'Archived' },
+  { value: 'draft', label: 'Draf' },
+  { value: 'pending_review', label: 'Menunggu Semakan' },
+  { value: 'approved', label: 'Diluluskan' },
+  { value: 'archived', label: 'Diarkibkan' },
 ]
 export const CREATE_STATUS_OPTIONS: readonly {
   value: 'approved' | 'pending_review' | 'draft'
   label: string
 }[] = [
-  { value: 'approved', label: 'Approved' },
-  { value: 'pending_review', label: 'Pending Review' },
-  { value: 'draft', label: 'Draft' },
+  { value: 'approved', label: 'Diluluskan' },
+  { value: 'pending_review', label: 'Menunggu Semakan' },
+  { value: 'draft', label: 'Draf' },
 ]
 
 export const ANSWER_OPTIONS = ['A', 'B', 'C', 'D'] as const
@@ -49,16 +49,16 @@ export function sortByName<T extends { name: string }>(items: readonly T[]): T[]
 export const LIST_GUIDE = {
   title: 'Panduan ringkas untuk cikgu yang ingin sumbang soalan Audio KBAT',
   paragraphs: [
-    'Set ini bukan soalan rawak. Cikgu perlu bekalkan satu set lengkap 30 soalan MCQ bersama 4 fail audio mengikut range tetap: audio 1 untuk soalan 1-8, audio 2 untuk soalan 9-16, audio 3 untuk soalan 17-24 dan audio 4 untuk soalan 25-30.',
-    'Jika cikgu mahu bahan yang mudah ditaip, gunakan Template Word. Jika mahu format paling senang diimport oleh admin, gunakan Template XLSX. Nama fail audio dalam template mesti sama dengan fail audio yang dihantar.',
+    'Set ini bukan soalan rawak. Cikgu perlu bekalkan satu set lengkap 30 soalan MCQ bersama 4 fail audio mengikut julat tetap: audio 1 untuk soalan 1-8, audio 2 untuk soalan 9-16, audio 3 untuk soalan 17-24 dan audio 4 untuk soalan 25-30.',
+    'Jika cikgu mahu bahan yang mudah ditaip, gunakan Templat Word. Jika mahu format paling senang diimport oleh admin, gunakan Templat XLSX. Nama fail audio dalam template mesti sama dengan fail audio yang dihantar.',
   ],
 } as const
 
 export const CREATE_GUIDE = {
   title: 'Apa yang cikgu perlu sediakan?',
   paragraphs: [
-    'Lengkapkan 30 soalan mengikut turutan asal. Upload audio untuk setiap bahagian: soalan 1-8, 9-16, 17-24 dan 25-30. Jangan randomkan nombor soalan kerana audio dirujuk mengikut range tetap.',
-    'Jika cikgu bekalkan bahan offline, Word lebih mudah untuk menulis soalan dan transkrip. XLSX pula lebih kemas untuk import/admin mapping.',
+    'Lengkapkan 30 soalan mengikut turutan asal. Muat naik audio untuk setiap bahagian: soalan 1-8, 9-16, 17-24 dan 25-30. Jangan rawakkan nombor soalan kerana audio dirujuk mengikut julat tetap.',
+    'Jika cikgu bekalkan bahan luar talian, Word lebih mudah untuk menulis soalan dan transkrip. XLSX pula lebih kemas untuk import/pemetaan admin.',
   ],
 } as const
 

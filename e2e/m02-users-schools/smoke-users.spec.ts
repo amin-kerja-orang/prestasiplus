@@ -1,7 +1,7 @@
 /**
  * M02-T4 developer smoke (build-plan M02-T4; QA writes E2E-M02-* at G5): S1 user list `/admin/users`
  * as the demo admin at 375 / 768 / 1280 — totals, role cards, one filter, toggle, delete through the
- * modal, and Login As a student. The admin session comes in through `loginAs` (fast login hook).
+ * modal, and Log Masuk Sebagai a student. The admin session comes in through `loginAs` (fast login hook).
  */
 
 import { expect, test } from '../fixtures/test'
@@ -35,7 +35,7 @@ test.describe('M02 S1 user list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   })
 
   test('totals, role cards, layout and no horizontal scroll', async ({ page }) => {
-    await expectTabTitle(page, 'Pengurusan Pengguna - Admin Panel')
+    await expectTabTitle(page, 'Pengurusan Pengguna - Panel Admin')
     await expect(page.getByTestId('user-row')).toHaveCount(25)
 
     for (const [role, count] of Object.entries(ROLE_COUNTS)) {
@@ -57,7 +57,7 @@ test.describe('M02 S1 user list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       // "LA" label below 640px.
       const loginAs = page.getByTestId('user-login-as').first()
       await expect(loginAs.getByText('LA', { exact: true })).toBeVisible()
-      await expect(loginAs.getByText('Login As', { exact: true })).toBeHidden()
+      await expect(loginAs.getByText('Log Masuk Sebagai', { exact: true })).toBeHidden()
       await expectTouchTarget(page.getByTestId('user-login-as').first())
       await expectTouchTarget(page.getByTestId('user-delete').first())
     }
@@ -73,7 +73,7 @@ test.describe('M02 S1 user list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('the own row has no checkbox, Login As or delete', async ({ page, gotoApp }) => {
+  test('the own row has no checkbox, Log Masuk Sebagai or delete', async ({ page, gotoApp }) => {
     await gotoApp('/admin/users?role=admin')
     const rows = page.getByTestId('user-row')
     await expect(rows).toHaveCount(2)
@@ -165,14 +165,14 @@ test.describe('M02 S1 user list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     )
   })
 
-  test('Login As a student lands on the student page with the new session', async ({
+  test('Log Masuk Sebagai a student lands on the student page with the new session', async ({
     page,
     gotoApp,
   }) => {
     await gotoApp('/admin/users?role=student')
     const first = page.getByTestId('user-row').first()
     const name = (await first.getByTestId('user-name').innerText()).trim()
-    const dialog = acceptNextDialog(page, { type: 'confirm', message: `Login sebagai ${name}?` })
+    const dialog = acceptNextDialog(page, { type: 'confirm', message: `Log masuk sebagai ${name}?` })
     await first.getByTestId('user-login-as').click()
     await dialog
 

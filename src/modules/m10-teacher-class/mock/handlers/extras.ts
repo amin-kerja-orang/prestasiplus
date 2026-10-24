@@ -25,7 +25,7 @@ import { bodyOf, fileOf, intOf, listOf, textOf, viewerId, teacherOnly } from './
 
 export const PAPER_TYPES = [
   'Soalan Umum',
-  'Trial Paper',
+  'Kertas Percubaan',
   'Soalan DSKP',
   'Buku Teks',
   'Buku Latihan',
@@ -139,7 +139,7 @@ export const extraRoutes: RouteDef[] = [
   route('GET', '/api/guru/audio-kbat/template-word', [teacherOnly], () => {
     const bytes = new Uint8Array(
       tableDocx(
-        'Template Set Audio KBAT',
+        'Templat Set Audio KBAT',
         'Isi satu baris bagi setiap set. Muat naik fail audio melalui borang "Cipta Set" di /guru/audio-kbat.',
         [WORD_HEADINGS, WORD_EXAMPLE],
       ),

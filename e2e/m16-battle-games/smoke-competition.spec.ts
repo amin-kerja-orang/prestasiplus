@@ -45,7 +45,7 @@ test.describe('S20 Pertandingan Mingguan', () => {
         page.getByRole('heading', { level: 1, name: '🏆 Pertandingan Mingguan' }),
       ).toBeVisible()
       await expect(
-        page.getByText('Lumba dengan semua pelajar! Top 3 dapat Syiling bonus.'),
+        page.getByText('Lumba dengan semua pelajar! 3 teratas dapat Syiling bonus.'),
       ).toBeVisible()
       await expect(page.getByTestId('pertandingan-range')).toHaveText('21 Sep — 27 Sep 2026')
       await expect(page.getByTestId('pertandingan-countdown')).toHaveText('2h 8j 19m')
@@ -70,7 +70,7 @@ test.describe('S20 Pertandingan Mingguan', () => {
       const status = page.getByTestId('pertandingan-status')
       await expect(status).toContainText('📝')
       await expect(status).toContainText('Belum mula lagi minggu ini!')
-      await expect(status).toContainText('Buat Latih Tubi untuk masuk ranking.')
+      await expect(status).toContainText('Buat Latih Tubi untuk masuk kedudukan.')
       await expect(page.getByTestId('pertandingan-start')).toHaveAttribute('href', '/practice')
       await expect(page.getByTestId('m16-back-link')).toHaveAttribute('href', '/permainan')
       await expectNoHorizontalScroll(page)
@@ -187,9 +187,9 @@ test.describe('S21 Uji Minda', () => {
     await expect(page.getByText('📋 Apa Ibu/Bapa boleh tetap:')).toBeVisible()
     for (const item of [
       '✅ Bilangan soalan setiap set',
-      '✅ Syiling per jawapan betul',
+      '✅ Syiling bagi setiap jawapan betul',
       '✅ Hadiah custom (cth: buku, jajan, trip)',
-      '✅ Syiling minimum untuk claim hadiah',
+      '✅ Syiling minimum untuk menuntut hadiah',
     ]) {
       await expect(page.getByText(item)).toBeVisible()
     }

@@ -132,20 +132,20 @@ export const EVALUATION_MSG = {
 /** FN-M10-2.2.13 rarity by holders: Common ≥ 20, Uncommon ≥ 10, Rare ≥ 5, Epic ≥ 1, Legendary 0. */
 export function rarityOfHolders(
   holders: number,
-): 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary' {
-  if (holders >= 20) return 'Common'
-  if (holders >= 10) return 'Uncommon'
-  if (holders >= 5) return 'Rare'
-  return holders >= 1 ? 'Epic' : 'Legendary'
+): 'Biasa' | 'Kurang Biasa' | 'Jarang' | 'Epik' | 'Legenda' {
+  if (holders >= 20) return 'Biasa'
+  if (holders >= 10) return 'Kurang Biasa'
+  if (holders >= 5) return 'Jarang'
+  return holders >= 1 ? 'Epik' : 'Legenda'
 }
 
 /** The chip colour of a rarity (PROPOSED; the contract carries a `color` per badge). */
 export const RARITY_COLOR = {
-  Common: '#94a3b8',
-  Uncommon: '#22c55e',
-  Rare: '#3b82f6',
-  Epic: '#a855f7',
-  Legendary: '#f59e0b',
+  Biasa: '#94a3b8',
+  'Kurang Biasa': '#22c55e',
+  Jarang: '#3b82f6',
+  Epik: '#a855f7',
+  Legenda: '#f59e0b',
 } as const
 
 // --- remedial (BR-M10-11, BR-M10-12) ------------------------------------------------------------------

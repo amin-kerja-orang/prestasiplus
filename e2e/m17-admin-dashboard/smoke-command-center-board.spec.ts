@@ -82,7 +82,7 @@ async function minFontSize(page: Page): Promise<number> {
 
 /**
  * BUG-M17-CC-01: at 1280x800 "Aktiviti Hari Ini" shows all its lines ("Minggu ini" and the change line fully inside
- * the panel, nothing scrolled away) and "Live Feed" shows at least the two rows live shows.
+ * the panel, nothing scrolled away) and "Suapan Langsung" shows at least the two rows live shows.
  */
 async function expectTodayAndFeedNotClipped(page: Page): Promise<void> {
   const today = tid(page, 'cc-panel-today')
@@ -106,7 +106,7 @@ async function expectTodayAndFeedNotClipped(page: Page): Promise<void> {
   )
   expect(
     rows.filter((b) => b <= f + 1).length,
-    'Live Feed rows fully visible',
+    'Suapan Langsung rows fully visible',
   ).toBeGreaterThanOrEqual(2)
 }
 
@@ -134,7 +134,7 @@ test.describe('S2 admin', MODULE, () => {
     await expectTabTitle(page, 'PRESTASIPLUS COMMAND CENTER')
     await expect(tid(page, 'shell-admin-sidebar')).toHaveCount(0)
     await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
-    await expect(tid(page, 'cc-s2-back')).toHaveText('← Dashboard')
+    await expect(tid(page, 'cc-s2-back')).toHaveText('← Papan Pemuka')
     await expect(tid(page, 'cc-s2-back')).toHaveAttribute('href', '/admin')
     await expect(tid(page, 'cc-s2-daily')).toHaveText('📊 Aktiviti Harian')
     await expect(tid(page, 'cc-s2-daily')).toHaveAttribute('href', `${CC}/daily-activity`)
@@ -146,7 +146,7 @@ test.describe('S2 admin', MODULE, () => {
     await mock.advanceTime(5000)
     await expect(tid(page, 'cc-clock')).not.toHaveText(first)
     await expect(tid(page, 'cc-footer')).toHaveText(
-      'Powered by ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
+      'Dikuasakan oleh ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
     )
   })
 
@@ -171,7 +171,7 @@ test.describe('S2 admin', MODULE, () => {
     await expect(tid(page, 'cc-alesa')).not.toHaveText('Memuatkan wawasan...')
   })
 
-  test('E2E-M17-27 / 29 / 30 counters, Top Sekolah and Top Pelajar with links', async ({
+  test('E2E-M17-27 / 29 / 30 counters, Sekolah Teratas and Pelajar Teratas with links', async ({
     page,
     gotoApp,
   }) => {
@@ -205,7 +205,7 @@ test.describe('S2 admin', MODULE, () => {
     await expect(page).toHaveURL(new RegExp(`${CC}/school/8082$`))
   })
 
-  test('E2E-M17-31 Live Feed: 10 rows, first 14:59, school cut to 15 characters with the full name in title', async ({
+  test('E2E-M17-31 Suapan Langsung: 10 rows, first 14:59, school cut to 15 characters with the full name in title', async ({
     page,
     gotoApp,
   }) => {
@@ -286,7 +286,7 @@ test.describe('S2 admin', MODULE, () => {
     const w = viewportWidth(page)
     const columns = await columnsOf(page.locator('[data-testid^="cc-col-"]'))
     expect(columns).toBe(w >= 1280 ? 3 : w >= 768 ? 2 : 1)
-    // live placement: column 2 = Aktiviti Hari Ini, Live Feed, Top Pelajar, Mood; column 3 = Pembetulan alone
+    // live placement: column 2 = Aktiviti Hari Ini, Suapan Langsung, Pelajar Teratas, Mood; column 3 = Pembetulan alone
     const ids = (col: string) =>
       page
         .locator(`[data-testid="${col}"] > section`)
@@ -367,11 +367,11 @@ test.describe('S3 admin', MODULE, () => {
     )
     await expect(tid(page, 'cc-pulse-label')).toHaveText([
       'Sekolah Aktif',
-      'Login Hari Ini',
+      'Log Masuk Hari Ini',
       'Pelajar Aktif',
       'Soalan Dijawab',
       'Sesi Latihan',
-      'Engagement',
+      'Penglibatan',
     ])
   })
 
@@ -388,7 +388,7 @@ test.describe('S3 admin', MODULE, () => {
     await expect(values.nth(1)).toHaveText(/^\d+$/)
     await expect(tid(page, 'cc-pulse-sub').nth(3)).toHaveText(/^Ketepatan: \d+(\.\d)?%$/)
     await expect(tid(page, 'cc-pulse-sub').nth(4)).toHaveText(/^Purata: \d+m \d+s$/)
-    await expect(tid(page, 'cc-pulse-sub').nth(5)).toHaveText('Mood:0 Badge:0 Misi:0')
+    await expect(tid(page, 'cc-pulse-sub').nth(5)).toHaveText('Mood:0 Lencana:0 Misi:0')
     const rows = tid(page, 'cc-school-row')
     expect(await rows.count()).toBeGreaterThan(0)
     await expect(tid(page, 'cc-school-name').first()).toHaveText(/^1\. \S/)
@@ -399,7 +399,7 @@ test.describe('S3 admin', MODULE, () => {
     await expect(tid(page, 'cc-subject').first()).toBeVisible()
     await expect(tid(page, 'cc-daily-top-row').first()).toBeVisible()
     await expect(tid(page, 'cc-panel-daily-mood')).toContainText('Tiada data')
-    await expect(tid(page, 'cc-panel-badges')).toContainText('Tiada badge baru')
+    await expect(tid(page, 'cc-panel-badges')).toContainText('Tiada lencana baharu')
   })
 
   test('E2E-M17-18 / 19 tabs: week and month request the period, label per tab, heatmap on today only', async ({
@@ -409,13 +409,13 @@ test.describe('S3 admin', MODULE, () => {
   }) => {
     await open(page, gotoApp)
     await page.locator('[data-testid=cc-tab][data-period=week]').click()
-    await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Login Minggu Ini')
+    await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Log Masuk Minggu Ini')
     await expect(tid(page, 'cc-pulse-value').nth(3)).toHaveText('2,508')
     await expect(tid(page, 'cc-panel-heatmap')).toHaveCount(0)
     const last = await mock.lastRequest('GET /api/command-center/daily-activity')
     expect(last?.query).toMatchObject({ period: 'week' })
     await page.locator('[data-testid=cc-tab][data-period=month]').click()
-    await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Login Bulan Ini')
+    await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Log Masuk Bulan Ini')
     await expect(tid(page, 'cc-pulse-value').nth(3)).toHaveText('20,206') // E2E-M17-97: computed at the project clock; live 20,351 includes post-clock answers
     await page.locator('[data-testid=cc-tab][data-period=today]').click()
     await expect(tid(page, 'cc-panel-heatmap')).toBeVisible()
@@ -428,7 +428,7 @@ test.describe('S3 admin', MODULE, () => {
   }) => {
     await open(page, gotoApp)
     await page.locator('[data-testid=cc-tab][data-period=month]').click()
-    await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Login Bulan Ini')
+    await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Log Masuk Bulan Ini')
     const row = tid(page, 'cc-school-row').first()
     await row.click()
     await expect(tid(page, 'cc-drill')).toBeVisible()
@@ -457,7 +457,7 @@ test.describe('S3 admin', MODULE, () => {
   }) => {
     await open(page, gotoApp)
     await page.locator('[data-testid=cc-tab][data-period=week]').click()
-    await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Login Minggu Ini')
+    await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Log Masuk Minggu Ini')
     await tid(page, 'cc-school-row').first().click()
     await expect(tid(page, 'cc-drill')).toBeVisible()
     const path = 'GET /api/command-center/daily-activity'
@@ -466,7 +466,7 @@ test.describe('S3 admin', MODULE, () => {
     await expect.poll(async () => (await mock.requests(path)).length).toBeGreaterThan(before)
     expect((await mock.lastRequest(path))?.query).toMatchObject({ period: 'week' })
     await expect(tid(page, 'cc-drill')).toBeVisible()
-    await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Login Minggu Ini')
+    await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Log Masuk Minggu Ini')
   })
 
   test(
@@ -507,7 +507,7 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
     await loginAs(SCHOOL_ADMIN)
   })
 
-  test('E2E-M17-103 / 106 school copy, no "keseluruhan platform", no "Top Sekolah"', async ({
+  test('E2E-M17-103 / 106 school copy, no "keseluruhan platform", no "Sekolah Teratas"', async ({
     page,
     gotoApp,
   }) => {
@@ -518,7 +518,7 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
     await expect(tid(page, 'cc-kpi-sub').nth(3)).toHaveText('sekolah anda')
     await expect(page.getByText('keseluruhan platform')).toHaveCount(0)
     await expect(tid(page, 'cc-panel-top-schools')).toHaveCount(0)
-    await expect(page.getByText('Top Sekolah')).toHaveCount(0)
+    await expect(page.getByText('Sekolah Teratas')).toHaveCount(0)
     // computed from the seed (SMK DEMO): school figures, never the platform's 3,152 / 477,743
     const values = await tid(page, 'cc-kpi-value').allInnerTexts()
     expect(values[1]).not.toBe('3,152')
@@ -643,7 +643,7 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
       await expect(tid(page, 'cc-panel-schools')).toHaveCount(0)
       await expect(page.getByText('😴 Tiada aktiviti')).toHaveCount(0)
       await page.locator('[data-testid=cc-tab][data-period=week]').click()
-      await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Login Minggu Ini')
+      await expect(tid(page, 'cc-pulse-label').nth(1)).toHaveText('Log Masuk Minggu Ini')
       await expect(tid(page, 'cc-pulse-sub').nth(0)).toHaveText(/^daripada 1$/)
       const body = await page.locator('body').innerText()
       expect(body).not.toContain('ENGKU HUSAIN')

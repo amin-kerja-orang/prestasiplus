@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** "Live Feed" of S3 (FR-M17-43, FN-M17-4.4.3): the period's latest answers - time, name, subject, ✓/✗. */
+/** "Suapan Langsung" of S3 (FR-M17-43, FN-M17-4.4.3): the period's latest answers - time, name, subject, ✓/✗. */
 import type { CcDailyActivity } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
 import { S3_COPY } from './board-copy'
@@ -11,7 +11,7 @@ const paths = ccPaths(props.basePath)
 </script>
 
 <template>
-  <DailyPanel title="Live Feed" icon="i-ph-lightning" testid="cc-panel-daily-feed" :state="status">
+  <DailyPanel title="Suapan Langsung" icon="i-ph-lightning" testid="cc-panel-daily-feed" :state="status">
     <p
       v-if="!data || data.liveFeed.length === 0"
       class="py-6 text-center text-body text-muted"

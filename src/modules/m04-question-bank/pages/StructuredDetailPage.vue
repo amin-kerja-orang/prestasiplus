@@ -127,7 +127,7 @@ watch(
           </span>
           <DsStatusBadge
             :status="question.status === 'published' ? 'published' : 'draft'"
-            :label="question.status === 'published' ? 'Published' : 'Draft'"
+            :label="question.status === 'published' ? 'Diterbitkan' : 'Draf'"
             size="sm"
             data-testid="structured-status"
           />

@@ -165,7 +165,7 @@ describe('#12 list', () => {
 })
 
 describe('#13 dashboard', () => {
-  it('guru: 6 configs, 48 students, On Track 3, Off Track 3, no data 42 (50 %)', async () => {
+  it('guru: 6 configs, 48 students, Atas Landasan 3, Luar Landasan 3, no data 42 (50 %)', async () => {
     const { configs } = await get<HeadcountDashboard>(GURU, '/api/headcounts/dashboard')
     expect(configs).toHaveLength(6)
     const sum = (f: (c: HeadcountDashboard['configs'][number]) => number) =>
@@ -303,7 +303,7 @@ describe('#17 pupil sections (S15)', () => {
 })
 
 describe('#24 summary (S22) and #25 detail (S23)', () => {
-  it('213 summary: 15 pupils, Purata TOV 62.1, ETR 71.9, OTR3 Above 5 · On Track 2 · Below 8, OTR1 / 2 N/A', async () => {
+  it('213 summary: 15 pupils, Purata TOV 62.1, ETR 71.9, OTR3 Above 5 · Atas Landasan 2 · Below 8, OTR1 / 2 N/A', async () => {
     const s = await get<HeadcountSummary>(ADMIN, '/api/headcounts/213/summary')
     expect(s.config).toEqual({
       id: 213,
@@ -350,7 +350,7 @@ describe('#24 summary (S22) and #25 detail (S23)', () => {
       ars: [null, null, 71.9],
       etr: 71.9,
     })
-    // Tones: 3205 (gap 0) and 3207 (gap -2) are On Track, 3210 (-14) Below.
+    // Tones: 3205 (gap 0) and 3207 (gap -2) are Atas Landasan, 3210 (-14) Below.
     const tone = (id: number) => d.rows.find((r) => r.userId === id)?.cells[2]?.tone
     expect([tone(3205), tone(3207), tone(3210)]).toEqual(['on', 'on', 'below'])
   })

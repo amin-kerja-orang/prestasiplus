@@ -11,7 +11,7 @@ const svgInner = (c: typeof CircleAlert) => mount(c).get('svg').element.innerHTM
 
 describe('AlertBox', () => {
   it('error variant: live red box classes, circle-alert icon, the message', () => {
-    const w = mount(AlertBox, { props: { messages: 'Email atau kata laluan tidak sah.' } })
+    const w = mount(AlertBox, { props: { messages: 'Emel atau kata laluan tidak sah.' } })
     const box = w.get('div')
     expect(box.classes()).toEqual(
       expect.arrayContaining([
@@ -24,7 +24,7 @@ describe('AlertBox', () => {
     )
     expect(box.attributes('data-variant')).toBe('error')
     expect(w.get('svg').element.innerHTML).toBe(svgInner(CircleAlert))
-    expect(w.findAll('p').map((p) => p.text())).toEqual(['Email atau kata laluan tidak sah.'])
+    expect(w.findAll('p').map((p) => p.text())).toEqual(['Emel atau kata laluan tidak sah.'])
   })
 
   it('success variant: green box classes and circle-check icon', () => {

@@ -93,7 +93,7 @@ function goPage(page: number) {
 <template>
   <DsPage data-testid="kl-page">
     <template v-if="data">
-      <DsBackLink to="/admin-sekolah" label="Dashboard Sekolah" data-testid="kl-crumb-back" />
+      <DsBackLink to="/admin-sekolah" label="Papan Pemuka Sekolah" data-testid="kl-crumb-back" />
 
       <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="sm:w-64" data-testid="kl-tile">

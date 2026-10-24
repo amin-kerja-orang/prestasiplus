@@ -79,9 +79,9 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/tools/screenshots',
     name: MEDIA_ROUTES.screenshots,
     component: () => import('../pages/ScreenshotsPage.vue'),
-    meta: meta('Upload Screenshot - Admin PRESTASIPLUS', {
-      title: 'Upload Screenshot',
-      subtitle: 'Tool admin untuk upload & urus gambar (private)',
+    meta: meta('Muat Naik Tangkapan Skrin - Admin PRESTASIPLUS', {
+      title: 'Muat Naik Tangkapan Skrin',
+      subtitle: 'Alat admin untuk muat naik & urus gambar (peribadi)',
     }),
   },
 ]

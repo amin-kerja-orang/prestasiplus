@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "Remedial" -> "Smart Remedial — Scan Pelajar Lemah" (FR-M10-22, FR-M10-23, FN-M10-2.2.10, 2.2.11,
+ * "Remedial" -> "Remedial Pintar — Imbas Pelajar Lemah" (FR-M10-22, FR-M10-23, FN-M10-2.2.10, 2.2.11,
  * BR-M10-11/12): the scan works (DV-M10-03); per weak student either the open test ("Lihat Quiz ({n} soalan)"
  * + "Batal & Jana Semula") or one "Jana {Subjek}" button per weak subject. A failed scan shows "Ralat: {message}".
  */
@@ -65,7 +65,7 @@ watch(
 const columns: TableColumn<Row>[] = [
   { id: 'name', header: 'Pelajar' },
   { id: 'topics', header: 'Topik Lemah' },
-  { id: 'low', header: 'Accuracy Terendah' },
+  { id: 'low', header: 'Ketepatan Terendah' },
   { id: 'act', header: 'Tindakan' },
 ]
 const weak = computed(() => data.value?.weakStudents ?? [])
@@ -118,7 +118,7 @@ async function cancel(s: CcWeakStudent, quizId: number) {
 
 <template>
   <CcDialog
-    title="Smart Remedial — Scan Pelajar Lemah"
+    title="Remedial Pintar — Imbas Pelajar Lemah"
     testid="cc-remedial-modal"
     wide
     @close="$emit('close')"
@@ -141,7 +141,7 @@ async function cancel(s: CcWeakStudent, quizId: number) {
         {{ weak.length }} pelajar dikesan lemah dalam topik tertentu (accuracy &lt;50%)
       </p>
       <div data-testid="cc-remedial-table">
-        <DsDrillTable :data="weak" :columns="columns" caption="Smart Remedial — Scan Pelajar Lemah">
+        <DsDrillTable :data="weak" :columns="columns" caption="Remedial Pintar — Imbas Pelajar Lemah">
           <template #name-cell="{ row }">
             <UButton
               variant="link"

@@ -51,7 +51,7 @@ function scrollTo(event: MouseEvent, id: string) {
       <div class="flex flex-col gap-6">
         <div class="flex items-start justify-between gap-2">
           <h2 class="flex items-center gap-2 text-heading text-highlighted">
-            <UIcon name="i-ph-book-open" class="size-6 text-primary-t" />Panduan Monitoring
+            <UIcon name="i-ph-book-open" class="size-6 text-primary-t" />Panduan Pemantauan
             Penglibatan
           </h2>
           <UButton
@@ -95,7 +95,7 @@ function scrollTo(event: MouseEvent, id: string) {
             </ULink>
             <p>
               Setiap sekolah mengikut <strong class="text-highlighted">% pelajar aktif</strong>.
-              Klik nama sekolah untuk drill-down.
+              Klik nama sekolah untuk melihat butiran.
             </p>
             <p data-testid="mon-guide-legend">
               <strong class="text-success">Cemerlang</strong> &gt;60% |
@@ -117,7 +117,7 @@ function scrollTo(event: MouseEvent, id: string) {
               <UIcon name="i-ph-chalkboard-teacher" class="size-4" />Table Guru
             </ULink>
             <p>
-              Berapa guru yang <strong class="text-highlighted">pernah login</strong> ke platform
+              Berapa guru yang <strong class="text-highlighted">pernah log masuk</strong> ke platform
               mengikut sekolah.
             </p>
           </div>
@@ -130,12 +130,12 @@ function scrollTo(event: MouseEvent, id: string) {
               class="flex items-center gap-2 text-label text-primary-t"
               @click="scrollTo($event, 'section-mingguan')"
             >
-              <UIcon name="i-ph-calendar-dots" class="size-4" />Tracking Mingguan
+              <UIcon name="i-ph-calendar-dots" class="size-4" />Penjejakan Mingguan
             </ULink>
             <p>
               Soalan dijawab setiap minggu. <strong class="text-success">Hijau</strong> = naik.
               <strong class="text-error">Merah</strong> = turun.
-              <strong class="text-highlighted">Best</strong> = minggu paling aktif.
+              <strong class="text-highlighted">Terbaik</strong> = minggu paling aktif.
             </p>
           </div>
           <div
@@ -151,7 +151,7 @@ function scrollTo(event: MouseEvent, id: string) {
             </ULink>
             <p>
               Sekolah yang <strong class="text-highlighted">perlu tindakan</strong> — pelajar daftar
-              tapi tak guna, guru login tapi murid tak aktif. Ada cadangan susulan.
+              tetapi tidak menggunakan, guru log masuk tetapi murid tidak aktif. Ada cadangan susulan.
             </p>
           </div>
           <div
@@ -175,8 +175,8 @@ function scrollTo(event: MouseEvent, id: string) {
         <p class="flex items-start gap-2 text-body text-muted" data-testid="mon-guide-tip">
           <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0 text-primary-t" />
           <span
-            ><strong class="text-highlighted">Tip:</strong> Guna Filter untuk tapis
-            negeri/tempoh/tahap. Export PDF/CSV untuk pembentangan.</span
+            ><strong class="text-highlighted">Petua:</strong> Guna penapis untuk menapis
+            negeri/tempoh/tahap. Eksport PDF/CSV untuk pembentangan.</span
           >
         </p>
       </div>

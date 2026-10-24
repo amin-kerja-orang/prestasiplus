@@ -74,9 +74,9 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
       await expect(rows.nth(i).getByTestId('row-score')).toHaveClass(/bg-red-100/)
       await expect(rows.nth(i).getByTestId('row-score')).toHaveClass(/text-red-600/)
     }
-    await expect(rows.nth(1).getByTestId('row-meta')).toHaveText('19 May 2026, 03:26 AM · 0m 36s')
-    await expect(rows.nth(2).getByTestId('row-meta')).toHaveText('11 May 2026, 02:27 PM · 1m 45s')
-    await expect(rows.nth(3).getByTestId('row-meta')).toHaveText('11 May 2026, 02:22 PM · 2m 11s')
+    await expect(rows.nth(1).getByTestId('row-meta')).toHaveText('19 Mei 2026, 03:26 AM · 0m 36s')
+    await expect(rows.nth(2).getByTestId('row-meta')).toHaveText('11 Mei 2026, 02:27 PM · 1m 45s')
+    await expect(rows.nth(3).getByTestId('row-meta')).toHaveText('11 Mei 2026, 02:22 PM · 2m 11s')
     // Rows are not links.
     expect(await rows.first().evaluate((el) => el.closest('a'))).toBeNull()
     await expectNoHorizontalScroll(page)

@@ -180,7 +180,7 @@ describe('#3 drill (DV-M10-04 titles)', () => {
       'type=kirk&filter=t3': 'Kirkpatrick T3',
       'type=kirk&filter=t4': 'Kirkpatrick T4',
       'type=mood': 'Mood Pelajar',
-      'type=engagement': 'Engagement Pelajar',
+      'type=engagement': 'Penglibatan Pelajar',
     }
     for (const [q, title] of Object.entries(titles)) {
       const r = await drill(q)
@@ -195,7 +195,7 @@ describe('#3 drill (DV-M10-04 titles)', () => {
       status: string
     }[]
     expect(students).toHaveLength(8)
-    expect(students.every((s) => s.status === 'Login')).toBe(true)
+    expect(students.every((s) => s.status === 'Log Masuk')).toBe(true)
     expect((await drill('type=students&filter=active')).body.students).toEqual([])
     expect((await drill('type=today')).body.students).toEqual([])
     const subjects = (await drill('type=subjects')).body.students as {
@@ -491,11 +491,11 @@ describe('rules', () => {
     expect([weekChange(1, 8), weekChange(9, 8), weekChange(6, 8)]).toEqual([-88, 13, -25]) // half away from zero
     expect([1.5, 4.69, 5.01].map(drillGradeOfGps)).toEqual(['A+', 'D', 'E'])
     expect([20, 10, 5, 1, 0].map(rarityOfHolders)).toEqual([
-      'Common',
-      'Uncommon',
-      'Rare',
-      'Epic',
-      'Legendary',
+      'Biasa',
+      'Kurang Biasa',
+      'Jarang',
+      'Epik',
+      'Legenda',
     ])
   })
 })

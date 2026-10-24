@@ -51,7 +51,7 @@ const cards = computed<Card[]>(() => {
         sub: [],
       },
       { id: 'sessions', icon: 'i-ph-clock', label: 'Sesi Latihan', value: dash, sub: [] },
-      { id: 'engagement', icon: 'i-ph-fire', label: 'Engagement', value: dash, sub: [] },
+      { id: 'engagement', icon: 'i-ph-fire', label: 'Penglibatan', value: dash, sub: [] },
     ]
   }
   const acc = ccAccuracyLabel(d.practice.accuracy).split(': ')
@@ -101,11 +101,11 @@ const cards = computed<Card[]>(() => {
     {
       id: 'engagement',
       icon: 'i-ph-fire',
-      label: 'Engagement',
+      label: 'Penglibatan',
       value: formatCount(total),
       sub: [
         {
-          text: `Mood:${String(e.moodCheckins)} Badge:${String(e.badgesEarned)} Misi:${String(e.missionsCompleted)}`,
+          text: `Mood:${String(e.moodCheckins)} Lencana:${String(e.badgesEarned)} Misi:${String(e.missionsCompleted)}`,
         },
       ],
     },

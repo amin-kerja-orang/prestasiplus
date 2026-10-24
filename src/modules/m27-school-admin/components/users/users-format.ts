@@ -89,7 +89,7 @@ export const formatCount = (n: number): string => n.toLocaleString('ms-MY')
 
 /** BR-M27-36 "Login Terakhir": the M17 relative time of `lastLoginAt`, "Belum login" when null. */
 export function lastLoginText(iso: string | null): string {
-  return iso === null ? 'Belum login' : diffForHumans(iso)
+  return iso === null ? 'Belum log masuk' : diffForHumans(iso)
 }
 
 /** "{code} · {district} · {state}" with "·" only between the present parts (FR-M27-108, 117). */

@@ -39,7 +39,7 @@ const paths = computed(() => monitoringPaths(props.basePath))
 const { data, error, blocked, reload } = useMonitoringPage(
   (signal) => fetchStudentDetail(props.schoolId, props.userId, { signal }),
   [() => props.schoolId, () => props.userId],
-  (d) => `${d.student.name} - Detail Pelajar`,
+  (d) => `${d.student.name} - Butiran Pelajar`,
 )
 
 type Tab = 'subject' | 'topic' | 'list' | 'wrong' | 'gaps'
@@ -60,7 +60,7 @@ const tabs = computed<
   },
   {
     key: 'gaps',
-    label: 'Gap Analysis',
+    label: 'Analisis Jurang',
     icon: 'i-ph-crosshair',
     chip: { n: data.value?.gaps.count ?? 0, color: 'warning' },
   },

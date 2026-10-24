@@ -285,14 +285,14 @@ const columns: TableColumn<TableRow>[] = [
   { accessorKey: 'text', header: 'Soalan', ...cellClass('') },
   { accessorKey: 'bahagian', header: 'Bahagian', ...cellClass('w-24') },
   { accessorKey: 'domainName', header: 'Domain', ...cellClass('w-44') },
-  { accessorKey: 'targetLevel', header: 'Level', ...cellClass('w-24') },
+  { accessorKey: 'targetLevel', header: 'Tahap', ...cellClass('w-24') },
   { id: 'status', header: 'Status', ...cellClass('w-36') },
   { id: 'actions', header: 'Tindakan', ...cellClass('w-48') },
 ]
 const cardFields: CardField[] = [
   { key: 'bahagian', label: 'Bahagian' },
   { key: 'domainName', label: 'Domain' },
-  { key: 'targetLevel', label: 'Level' },
+  { key: 'targetLevel', label: 'Tahap' },
 ]
 </script>
 
@@ -344,8 +344,8 @@ const cardFields: CardField[] = [
       <DsNativeSelect
         v-model="level"
         name="level"
-        aria-label="Level"
-        placeholder="Semua Level"
+        aria-label="Tahap"
+        placeholder="Semua Tahap"
         :items="LEVEL_FILTER_OPTIONS"
         class="md:w-44"
         data-testid="filter-level"

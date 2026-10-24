@@ -42,7 +42,7 @@ describe('S2 RPH list', () => {
     expect(cta.attributes('href')).toBe('/cikgu/rph/baharu')
     expect(wrapper.findAll('th').map((th) => th.text())).toEqual([
       'Tarikh',
-      'Subjek / Level',
+      'Subjek / Tahap',
       'Tajuk',
       'Status',
       'Tindakan',

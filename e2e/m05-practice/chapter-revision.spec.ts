@@ -68,18 +68,18 @@ test.describe('M05 S4 chapter subjects', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/practice/chapter')
-    await expectTabTitle(page, 'Soalan by Chapter - PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
+    await expectTabTitle(page, 'Soalan Mengikut Bab - PRESTASIPLUS')
+    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Mengikut Bab')
     if (isDesktopShell(page) || viewportWidth(page) >= 640) {
       await expect(tid(page, 'shell-user-subtitle')).toHaveText(
         'Latihan tersusun ikut bab buku teks dan DSKP',
       )
     }
-    await expect(tid(page, 'chapter-index-page')).toContainText('Mode Sistematik')
+    await expect(tid(page, 'chapter-index-page')).toContainText('Mod Sistematik')
     const eyebrow = tid(page, 'chapter-index-page').locator('p').first()
     expect(await eyebrow.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
     await expect(tid(page, 'chapter-index-page').getByRole('heading', { level: 1 })).toHaveText(
-      'Soalan by Chapter',
+      'Soalan Mengikut Bab',
     )
     await expect(tid(page, 'chapter-index-page')).toContainText(
       'Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap dan mencapai sekurang-kurangnya 70%.',
@@ -127,7 +127,7 @@ test.describe('M05 S4 chapter subjects', { tag: [moduleTag(5)] }, () => {
     await loginAs('guru@demo.test')
     await gotoApp('/practice/chapter')
     await expect(tid(page, 'chapter-subject-grid').locator('> a')).toHaveCount(10)
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
+    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Mengikut Bab')
   })
 
   test('the S2 banner leads to S4', async ({ page, loginAs, gotoApp }) => {
@@ -162,14 +162,14 @@ test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
     await loginAs(PELAJAR2)
     await gotoApp('/practice/chapter/MATH')
     await expectTabTitle(page, 'Chapter Matematik - PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
+    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Mengikut Bab')
     if (viewportWidth(page) >= 640) {
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Matematik')
     }
     await expect(tid(page, 'chapter-all-subjects')).toHaveAttribute('href', '/practice/chapter')
     await expect(tid(page, 'chapter-all-subjects')).toHaveText('Semua Subjek')
     const hero = tid(page, 'chapter-subject-hero')
-    await expect(hero).toContainText('Progressive Unlock')
+    await expect(hero).toContainText('Buka Kunci Berperingkat')
     expect(
       await hero
         .locator('p')
@@ -316,7 +316,7 @@ test.describe('M05 Q2 chapter quiz', { tag: [moduleTag(5)] }, () => {
       await expect(tid(page, 'quiz-title')).toHaveText('Bab 1: Nombor Bulat hingga 100')
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
       await expectTabTitle(page, 'Chapter Matematik - PRESTASIPLUS')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
+      await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Mengikut Bab')
       await expect(tid(page, 'chip-revision')).toHaveCount(0)
       await expect(tid(page, 'pill-wrong-times')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
@@ -419,11 +419,11 @@ test.describe('M05 S6 revision list', { tag: [moduleTag(5)] }, () => {
       cards.nth(0).getByTestId('revision-subject-icon').locator('svg, span').first(),
     ).toBeVisible()
 
-    await expect(tid(page, 'revision-tips')).toContainText('Tips Ulang Kaji')
+    await expect(tid(page, 'revision-tips')).toContainText('Petua Ulang Kaji')
     await expect(tid(page, 'revision-tips').locator('li')).toHaveText([
       'Soalan yang paling kerap dijawab salah akan dipaparkan dahulu',
       'Apabila anda jawab betul, soalan itu akan dikeluarkan dari senarai ini',
-      'Anda tetap mendapat syiling dan coin seperti latihan biasa',
+      'Anda tetap mendapat syiling dan koin seperti latihan biasa',
     ])
     await expect(tid(page, 'revision-back')).toHaveAttribute('href', '/practice')
     await expect(tid(page, 'revision-back')).toHaveText('Kembali ke Latihan')
@@ -507,7 +507,7 @@ test.describe('M05 S7 revision quiz', { tag: [moduleTag(5)] }, () => {
     await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
     await expect(tid(page, 'quiz-progress-text')).toContainText(/Soalan 1 daripada \d+/)
     await expect(tid(page, 'chip-revision')).toHaveText(
-      'Mode Ulang Kaji — soalan ini pernah dijawab salah',
+      'Mod Ulang Kaji — soalan ini pernah dijawab salah',
     )
     await expect(tid(page, 'chip-revision-meta')).toContainText('soalan salah')
     await expect(tid(page, 'pill-wrong-times')).toContainText('Salah 2x')

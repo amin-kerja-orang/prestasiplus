@@ -151,12 +151,12 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     gotoApp,
   }) => {
     await open(page, loginAs, gotoApp, ADMIN)
-    await expectTabTitle(page, 'Dashboard - PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Dashboard')
+    await expectTabTitle(page, 'Papan Pemuka - PRESTASIPLUS')
+    await expect(tid(page, 'shell-user-title')).toHaveText('Papan Pemuka')
     await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
     await navigateInApp(page, '/practice')
     await navigateInApp(page, '/dashboard')
-    await expectTabTitle(page, 'Dashboard - PRESTASIPLUS')
+    await expectTabTitle(page, 'Papan Pemuka - PRESTASIPLUS')
   })
 
   test('AC-01.2 greeting h1, line and the decorative cap by width', async ({
@@ -385,7 +385,7 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
   }
 
   // ---------------------------------------------------------------- Epic 5 stat cards
-  test('AC-05.1 pelajarmaju cards 267 / 432 (Lvl 3, bar 100%) / 3 / 4 / 70%', async ({
+  test('AC-05.1 pelajarmaju cards 267 / 432 (Tahap 3, bar 100%) / 3 / 4 / 70%', async ({
     page,
     loginAs,
     gotoApp,
@@ -396,7 +396,7 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     const card = (id: string) => tid(page, id)
     await expect(card('dash-stat-coins')).toContainText('Syiling Kamu')
     await expect(card('dash-stat-coins').getByTestId('dash-stat-value')).toHaveText('267')
-    await expect(card('dash-stat-points')).toContainText('Mata (Lvl 3)')
+    await expect(card('dash-stat-points')).toContainText('Mata (Tahap 3)')
     await expect(card('dash-stat-points').getByTestId('dash-stat-value')).toHaveText('432')
     await expect(tid(page, 'dash-level-bar')).toHaveAttribute('style', /width: 100%/)
     await expect(card('dash-stat-streak')).toContainText('Hari Berturut')
@@ -461,7 +461,7 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     await expect(tid(page, 'dash-greeting')).toBeVisible()
     const pv = (id: string) => tid(page, id).getByTestId('dash-platform-value')
     await mock.advanceTime(350)
-    // Total Soalan: starts after 100 ms, ceil(130152/30) = 4339 per 25 ms.
+    // Jumlah Soalan: starts after 100 ms, ceil(130152/30) = 4339 per 25 ms.
     const t1 = Number(await pv('dash-platform-total').innerText())
     expect(t1).toBeGreaterThan(0)
     expect(t1).toBeLessThan(130152)
@@ -477,7 +477,7 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     await expect(pv('dash-platform-approved')).toHaveText('129752')
   })
 
-  test('AC-05.3 admin cards 256 / 8 (Lvl 2) / 1 / 0 / 0%', async ({
+  test('AC-05.3 admin cards 256 / 8 (Tahap 2) / 1 / 0 / 0%', async ({
     page,
     loginAs,
     gotoApp,
@@ -488,7 +488,7 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     const v = (id: string) => tid(page, id).getByTestId('dash-stat-value')
     await expect(v('dash-stat-coins')).toHaveText('256')
     await expect(v('dash-stat-points')).toHaveText('8')
-    await expect(tid(page, 'dash-stat-points')).toContainText('Mata (Lvl 2)')
+    await expect(tid(page, 'dash-stat-points')).toContainText('Mata (Tahap 2)')
     await expect(v('dash-stat-streak')).toHaveText('1')
     await expect(v('dash-stat-sessions')).toHaveText('0')
     await expect(v('dash-stat-accuracy')).toHaveText('0%')
@@ -892,10 +892,10 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     const p = tid(page, 'dash-platform')
     await expect(p).toContainText('📊 Statistik Platform')
     for (const [id, val, label] of [
-      ['dash-platform-total', '130152', 'Total Soalan'],
+      ['dash-platform-total', '130152', 'Jumlah Soalan'],
       ['dash-platform-subjects', '31', 'Subjek Aktif'],
       ['dash-platform-levels', '11', 'Tahap Pendidikan'],
-      ['dash-platform-approved', '129752', 'Soalan Approved'],
+      ['dash-platform-approved', '129752', 'Soalan Diluluskan'],
     ] as const) {
       await expect(tid(page, id).getByTestId('dash-platform-value')).toHaveText(val)
       await expect(tid(page, id)).toContainText(label)

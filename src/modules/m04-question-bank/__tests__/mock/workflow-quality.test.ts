@@ -83,7 +83,7 @@ describe('#12 S6 summary: the observed anchor counts (SRS §6.11 Quality, §4.1)
     expect(s.activeActionCount).toBe(2)
   })
 
-  it('bucket cards: Skor 51-75 749, Skor ≤ 50 2, Legacy Generic 373', () => {
+  it('bucket cards: Skor 51-75 749, Skor ≤ 50 2, Generik Lama 373', () => {
     expect(s.buckets).toEqual({ baik: 749, lemahKritikal: 2, legacyGeneric: 373 })
     // 146,275 + 749 + 2 = every scored question.
     expect(s.excellentCount + s.buckets.baik + 2).toBe(s.scoredCount)

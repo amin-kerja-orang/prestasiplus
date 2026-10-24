@@ -24,5 +24,5 @@ export async function shareProfile(title: string, url: string): Promise<void> {
     return
   }
   await copyText(url)
-  alertNative('Link disalin!')
+  alertNative('Pautan disalin!')
 }

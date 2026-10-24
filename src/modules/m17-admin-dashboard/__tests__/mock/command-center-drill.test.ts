@@ -393,14 +393,14 @@ describe('#9 S7 pupil (FR-M17-53…55)', () => {
     expect(s7.headcount[0]).toMatchObject({ tov: 40, etr: null, rs: null, grade: null })
   })
 
-  it('"ALESA AI Insight" applies the BR-M17-27 rules to the cards', () => {
+  it('"Wawasan ALESA AI" applies the BR-M17-27 rules to the cards', () => {
     const expected: string[] = []
     if (s7.cards.accuracy >= 90)
       expected.push(`Ketepatan cemerlang (${String(s7.cards.accuracy)}%).`)
     if (s7.cards.consistency < 30) {
       expected.push(`Konsistensi rendah (${String(s7.cards.consistency)}%) - perlu usaha lebih.`)
     }
-    expect(s7.insight).toEqual({ texts: expected, source: 'Rule-based Analysis' })
+    expect(s7.insight).toEqual({ texts: expected, source: 'Analisis Berasaskan Peraturan' })
   })
 
   it('has no mood dots without check-ins in the last 30 days ("Tiada data mood")', () => {

@@ -7,7 +7,7 @@
  * - "Kedudukan Anda": the viewer's rank, coins, sessions and accuracy ("#-", 0, 0, 0% when unranked).
  * - Podium (top 3, order 2-1-3) and a table of at most 50 rows: # / Pelajar / Koin, Sesi from 768px,
  *   Ketepatan from 1024px. Every viewer sees the same list; names are plain text (no user link).
- * - Footer "{n} peserta bersaing" and, from 768px, "Dikemaskini real-time".
+ * - Footer "{n} peserta bersaing" and, from 768px, "Dikemaskini masa nyata".
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
@@ -55,7 +55,7 @@ const meTiles = computed<StatItem[]>(() => {
   const m = me.value
   if (!m) return []
   return [
-    { key: 'rank', label: 'Ranking', icon: 'i-ph-ranking', accent: 'action', value: m.rank === null ? '#-' : `#${String(m.rank)}` },
+    { key: 'rank', label: 'Kedudukan', icon: 'i-ph-ranking', accent: 'action', value: m.rank === null ? '#-' : `#${String(m.rank)}` },
     { key: 'coins', label: 'Koin', icon: 'i-ph-coins', accent: 'win', value: formatNumber(m.coins) },
     { key: 'sessions', label: 'Sesi', icon: 'i-ph-books', accent: 'heat', value: formatNumber(m.sessions) },
     { key: 'accuracy', label: 'Ketepatan', icon: 'i-ph-target', accent: 'friend', value: percentText(m.accuracy) },
@@ -216,7 +216,7 @@ const columns: TableColumn<Row>[] = [
           </span>
           <span class="hidden items-center gap-2 md:inline-flex">
             <UIcon name="i-ph-arrows-clockwise" class="size-4" aria-hidden="true" />
-            Dikemaskini real-time
+            Dikemaskini masa nyata
           </span>
         </div>
       </div>

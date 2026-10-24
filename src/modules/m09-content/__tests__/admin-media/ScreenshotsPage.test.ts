@@ -45,12 +45,12 @@ describe('ScreenshotsPage (S14)', () => {
   it('renders both cards, the drop zone, the hidden input and the empty list', async () => {
     wrapper = (await mountAt(ScreenshotsPage, '/page')).wrapper
     const w = wrapper
-    expect(w.text()).toContain('Upload Gambar')
+    expect(w.text()).toContain('Muat Naik Gambar')
     expect(w.text()).toContain('Format: JPG, PNG, GIF, WebP, BMP. Maks 10MB setiap fail.')
     expect(w.get('[data-ds=file-field]').text()).toContain('Klik atau seret fail ke sini')
     expect(w.get('[data-ds=file-field]').text()).toContain('Boleh pilih banyak fail')
     expect(w.text()).toContain(
-      'Tip: guna nama fail yang ringkas. Sistem akan auto-sanitize nama fail.',
+      'Petua: guna nama fail yang ringkas. Sistem akan membersihkan nama fail secara automatik.',
     )
     const input = w.get('input[type="file"]')
     expect(input.attributes('accept')).toBe('image/*')

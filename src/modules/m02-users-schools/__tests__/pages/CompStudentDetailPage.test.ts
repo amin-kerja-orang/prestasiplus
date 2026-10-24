@@ -100,27 +100,27 @@ describe('CompStudentDetailPage (M02 S8) content', () => {
     const w = await render()
     expect(usePageMeta().state.header).toEqual({
       title: 'PELAJAR DEMO SATU BIN DEMO',
-      subtitle: 'Detail pelajar komplimen',
+      subtitle: 'Butiran pelajar komplimen',
     })
     expect(document.title).toBe('Pelajar Komplimen - PELAJAR DEMO SATU BIN DEMO')
     expect(w.findAll('dt').map((d) => d.text())).toEqual([
-      'Username',
+      'Nama Pengguna',
       'No. KP',
       'Sekolah asal',
       'Tingkatan',
       'Status akaun',
       'Syiling',
       'Pakej tamat',
-      'Baki syiling / coins',
+      'Baki syiling / koin',
     ])
     expect(t(w, 'comp-username').text()).toBe('101234@prestasiplus.my')
     expect(t(w, 'comp-ic').text()).toBe('090101101234')
     expect(t(w, 'comp-school').text()).toBe('SEKOLAH CONTOH')
     expect(t(w, 'comp-level').text()).toBe('T5')
     expect(t(w, 'comp-status').text()).toBe('Aktif')
-    expect(t(w, 'comp-coins').text()).toBe('OFF (tak boleh kumpul/claim)')
+    expect(t(w, 'comp-coins').text()).toBe('MATI (tidak boleh kumpul/tuntut)')
     expect(t(w, 'comp-expiry').text()).toBe('31/12/2026')
-    expect(t(w, 'comp-balance').text()).toBe('0 syiling · 0 coins')
+    expect(t(w, 'comp-balance').text()).toBe('0 syiling · 0 koin')
     expect(w.get('[data-ds="back-link"]').attributes('href')).toBe('/admin/comp-students')
   })
 
@@ -175,7 +175,7 @@ describe('CompStudentDetailPage (M02 S8) toggles', () => {
     await w.findAll('form')[0]!.trigger('submit')
     await flushPromises()
     expect(api.toggleCompCoins).toHaveBeenCalledWith(5901)
-    expect(t(w, 'comp-coins').text()).toBe('ON')
+    expect(t(w, 'comp-coins').text()).toBe('HIDUP')
     expect(t(w, 'comp-toggle-coins').text()).toBe('Matikan syiling')
     expect(useFlashStore().current).toEqual({
       type: 'success',
@@ -206,6 +206,6 @@ describe('CompStudentDetailPage (M02 S8) toggles', () => {
     await w.findAll('form')[0]!.trigger('submit')
     await flushPromises()
     expect(useFlashStore().current).toEqual({ type: 'error', message: ['Gagal.'] })
-    expect(t(w, 'comp-coins').text()).toBe('OFF (tak boleh kumpul/claim)')
+    expect(t(w, 'comp-coins').text()).toBe('MATI (tidak boleh kumpul/tuntut)')
   })
 })

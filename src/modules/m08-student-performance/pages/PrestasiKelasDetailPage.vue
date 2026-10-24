@@ -43,7 +43,7 @@ const subtitle = computed(() => {
 watchEffect(() => {
   const c = data.value?.class
   if (!c) return
-  pageMeta.setTitle(`${c.name} — Dashboard Kelas`)
+  pageMeta.setTitle(`${c.name} — Papan Pemuka Kelas`)
   pageMeta.setHeader({ title: c.name, subtitle: subtitle.value })
 })
 
@@ -80,7 +80,7 @@ const stats = computed<StatSpec[]>(() => {
 
 const MEDAL = ['🥇', '🥈', '🥉']
 const HEADCOUNT = {
-  on: { text: 'On Track', color: 'success' },
+  on: { text: 'Atas Landasan', color: 'success' },
   below: { text: 'Below', color: 'error' },
   na: { text: 'N/A', color: 'neutral' },
 } as const

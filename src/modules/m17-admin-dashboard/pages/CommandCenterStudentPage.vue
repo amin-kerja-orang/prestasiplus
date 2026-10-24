@@ -3,7 +3,7 @@
  * S7 "{pelajar} - Command Center" (M17 FR-M17-53..59, FN-M17-5.4.x): back link "← Kembali ke Kelas",
  * breadcrumb, five cards ("Jumlah Jawapan" opens all sessions), "Pecahan Subjek", "Aktiviti Mingguan
  * (8 Minggu)" (a 0 week ignores clicks), "Trend Mood (30 Hari)" (a dot opens the mood-day modal from page
- * data), "HeadCount" (a row opens the headcount modal) and "ALESA AI Insight". The sessions, session,
+ * data), "HeadCount" (a row opens the headcount modal) and "Wawasan ALESA AI". The sessions, session,
  * headcount and mood-day modals are opened from here. The route prefix is a prop.
  */
 import type { TableColumn } from '@nuxt/ui'
@@ -276,7 +276,7 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
         </DsPanel>
       </div>
 
-      <DsPanel icon="i-ph-sparkle" title="ALESA AI Insight">
+      <DsPanel icon="i-ph-sparkle" title="Wawasan ALESA AI">
         <div class="flex flex-col gap-2 bg-soft p-4" data-testid="cc-insight">
           <div class="text-overline text-primary-t">Analisis ALESA</div>
           <p class="text-body text-highlighted" data-testid="cc-insight-text">

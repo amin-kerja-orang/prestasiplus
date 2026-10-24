@@ -104,8 +104,8 @@ describe('photo source and profile helpers', () => {
   })
 
   it('maps tier labels and colours, formats percent and the absolute URL', () => {
-    expect(tierName('bronze')).toBe('Bronze')
-    expect(tierName('silver')).toBe('Silver')
+    expect(tierName('bronze')).toBe('Gangsa')
+    expect(tierName('silver')).toBe('Perak')
     expect(tierColour('bronze')).toBe('#cd7f32')
     expect(percent(0)).toBe('0%')
     expect(percent(93.48)).toBe('93.5%')

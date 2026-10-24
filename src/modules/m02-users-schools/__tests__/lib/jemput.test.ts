@@ -13,7 +13,7 @@ describe('jemput helpers', () => {
     const href = whatsAppHref('http://x/ibu-bapa/terima/t')
     expect(href.startsWith('https://wa.me/?text=')).toBe(true)
     expect(decodeURIComponent(href.slice('https://wa.me/?text='.length))).toBe(
-      'Salam ibu/bapa! Klik link ini untuk pantau perkembangan saya di PRESTASIPLUS: http://x/ibu-bapa/terima/t',
+      'Salam ibu/bapa! Klik pautan ini untuk pantau perkembangan saya di PRESTASIPLUS: http://x/ibu-bapa/terima/t',
     )
   })
 

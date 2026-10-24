@@ -22,22 +22,22 @@ test.describe('S23 Tournament list', () => {
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(ADMIN)
       await gotoApp('/tournament')
-      await expectTabTitle(page, 'Liga & Tournament')
-      await expect(page.getByTestId('shell-user-title')).toHaveText('Liga & Tournament')
+      await expectTabTitle(page, 'Liga & Kejohanan')
+      await expect(page.getByTestId('shell-user-title')).toHaveText('Liga & Kejohanan')
       await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
-        'Senarai tournament antara sekolah',
+        'Senarai kejohanan antara sekolah',
       )
-      await expect(page.getByRole('heading', { level: 2, name: 'Liga & Tournament' })).toBeVisible()
+      await expect(page.getByRole('heading', { level: 2, name: 'Liga & Kejohanan' })).toBeVisible()
       await expect(
         page.getByText('Bertanding antara sekolah dalam format liga, kalah mati, atau hibrid!'),
       ).toBeVisible()
-      await expect(page.getByTestId('tournament-create')).toHaveText('Cipta Tournament Baru')
+      await expect(page.getByTestId('tournament-create')).toHaveText('Cipta Kejohanan Baharu')
       await expect(page.getByTestId('tournament-create')).toHaveAttribute(
         'href',
         '/tournament/admin/create',
       )
       await expect(page.getByTestId('tournament-empty')).toHaveText(
-        'Tiada tournament aktif buat masa ini.',
+        'Tiada kejohanan aktif buat masa ini.',
       )
       // S23 does not link to the leagues (S25-S27).
       await expect(page.locator('main a[href^="/liga"]')).toHaveCount(0)
@@ -46,7 +46,7 @@ test.describe('S23 Tournament list', () => {
   )
 
   test(
-    'E2E-M16-06 a student does not see "Cipta Tournament Baru"',
+    'E2E-M16-06 a student does not see "Cipta Kejohanan Baharu"',
     MODULE,
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(STUDENT)

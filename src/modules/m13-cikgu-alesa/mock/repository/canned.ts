@@ -48,7 +48,7 @@ export const cannedMarks = (max: number): number => Math.round(0.7 * max)
 export function markingReply(rubric: Rubric, marks: number): string {
   return (
     `Markah: ${String(marks)}/${String(rubric.max)}\n` +
-    `Rubric: ${rubric.label}\n` +
+    `Rubrik: ${rubric.label}\n` +
     'Komen membina:\n' +
     '1. Isi: idea utama jelas; tambah satu contoh untuk setiap isi.\n' +
     '2. Bahasa: ayat gramatis; kurangkan pengulangan perkataan.\n' +
@@ -109,7 +109,7 @@ export function parseHandoff(message: string): ParsedHandoff {
     rest = dot === -1 ? '' : text.slice(dot + 1)
   }
   const m =
-    /^(?: Subjek: ([\s\S]*?)\.)?(?: Level: ([\s\S]*?)\.)?(?: Pelajar: ([\s\S]*?)\.)?(?: Tajuk: ([\s\S]*?)\.)?(?: Karangan:([\s\S]*))?$/.exec(
+    /^(?: Subjek: ([\s\S]*?)\.)?(?: Tahap: ([\s\S]*?)\.)?(?: Pelajar: ([\s\S]*?)\.)?(?: Tajuk: ([\s\S]*?)\.)?(?: Karangan:([\s\S]*))?$/.exec(
       rest,
     )
   return {

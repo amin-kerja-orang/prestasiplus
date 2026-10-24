@@ -283,7 +283,7 @@ watch(
           size="lg"
           data-testid="tk-retry"
           @click="reload"
-          >Cuba lagi</UButton
+          >Cuba Semula</UButton
         >
       </div>
     </div>

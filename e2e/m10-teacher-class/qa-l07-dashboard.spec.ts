@@ -45,7 +45,7 @@ async function textSizes(page: Page): Promise<{ min: number; offenders: string[]
 const GUIDE_STEPS = [
   [
     'Buka Kelas',
-    'Klik "Kelas Saya" di sidebar. Cipta kelas baru atau lihat kelas sedia ada.',
+    'Klik "Kelas Saya" di bar sisi. Cipta kelas baru atau lihat kelas sedia ada.',
     'Kelas Saya →',
     '/guru/kelas',
   ],
@@ -57,8 +57,8 @@ const GUIDE_STEPS = [
   ],
   [
     'Pantau Prestasi',
-    'Buka Monitoring untuk lihat penglibatan pelajar dan topik lemah mereka.',
-    'Monitoring →',
+    'Buka Pemantauan untuk lihat penglibatan pelajar dan topik lemah mereka.',
+    'Pemantauan →',
     '/guru/monitoring',
   ],
 ]
@@ -90,7 +90,7 @@ test.describe('L07 QA S1 Dashboard Guru', MODULE, () => {
         await expect(s.getByTestId('guide-link')).toHaveAttribute('href', href!)
       }
       await expect(card).toContainText(
-        'Tip: Hover atas mana-mana menu di sidebar untuk lihat penerangan ringkas.',
+        'Tip: Halakan tetikus ke atas mana-mana menu di bar sisi untuk melihat penerangan ringkas.',
       )
       await expectTouchTarget(page.getByTestId('guide-close'))
     })
@@ -175,7 +175,7 @@ test.describe('L07 QA S1 Dashboard Guru', MODULE, () => {
     await expect(rows).toHaveCount(3)
     const exp = [
       ['Kelas dah ada', 'Admin sekolah akan sediakan kelas anda', '/guru/kelas'],
-      ['Pelajar dalam kelas', 'Admin akan import pelajar ke kelas anda', '/guru/pelajar'],
+      ['Pelajar dalam kelas', 'Admin akan mengimport pelajar ke kelas anda', '/guru/pelajar'],
       ['Misi harian pertama', 'Cipta misi latih tubi untuk pelajar anda', '/guru/misi-harian/cipta'],
     ]
     for (let i = 0; i < 3; i++) {
@@ -269,12 +269,12 @@ test.describe('L07 QA S1 Dashboard Guru', MODULE, () => {
     await expect(c).toContainText('Tindakan')
     expect((await c.innerText()).replace(/\s+/g, ' ')).toMatch(/0 .*0 .*0|Pelajar 0 Topik 0 Tindakan 0|0\s*Pelajar\s*0\s*Topik\s*0\s*Tindakan/i)
     await expect(page.getByTestId('today-students')).toContainText('Pelajar Perlu Dibantu')
-    await expect(page.getByTestId('today-students')).toContainText('Top 3')
+    await expect(page.getByTestId('today-students')).toContainText('3 Teratas')
     await expect(page.getByTestId('today-topics')).toContainText('Topik Kritikal')
     await expect(page.getByTestId('today-analytics')).toHaveText('Analitik Kelas →')
     await expect(page.getByTestId('today-analytics')).toHaveAttribute('href', '/analitik/kelas')
     await expect(page.getByTestId('today-actions')).toContainText('Tindakan Disyorkan')
-    await expect(page.getByTestId('today-actions')).toContainText('Rule-based')
+    await expect(page.getByTestId('today-actions')).toContainText('Berasaskan peraturan')
     const a = page.getByTestId('today-action')
     await expect(a).toContainText('Bina aktiviti pertama untuk pelajar')
     await expect(a).toContainText('Permulaan')
@@ -305,13 +305,13 @@ test.describe('L07 QA S1 Dashboard Guru', MODULE, () => {
       await loginAs(who)
       await gotoApp('/guru')
       const peer = page.getByTestId('peer-card')
-      await expect(peer).toContainText('Peer Tutor Matching')
+      await expect(peer).toContainText('Padanan Rakan Pembimbing')
       await expect(peer).toContainText('Cadangan rakan pembimbing pelajar')
       await expect(peer).toContainText(
-        'Cadangan peer tutor akan muncul apabila guru mempunyai pelajar aktif dan data prestasi yang mencukupi.',
+        'Cadangan rakan pembimbing akan muncul apabila guru mempunyai pelajar aktif dan data prestasi yang mencukupi.',
       )
       await expect(page.getByTestId('peer-empty')).toHaveText(
-        'Belum cukup signal yang yakin untuk cadangan peer tutor. Modul ini akan jadi lebih tepat apabila data pelajar dan subjek bertambah.',
+        'Belum cukup isyarat yang yakin untuk cadangan rakan pembimbing. Modul ini akan jadi lebih tepat apabila data pelajar dan subjek bertambah.',
       )
       await expect(peer.locator('p').first()).toHaveCSS('text-transform', 'uppercase')
       await expect(page.getByTestId('quick-card')).toContainText('Tindakan Pantas')
@@ -377,8 +377,8 @@ test.describe('L07 QA S1 Dashboard Guru', MODULE, () => {
   }) => {
     await loginAs(GURU)
     await gotoApp('/guru')
-    await expectTabTitle(page, 'Dashboard Guru - PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Guru')
+    await expectTabTitle(page, 'Papan Pemuka Guru - PRESTASIPLUS')
+    await expect(page.getByTestId('shell-user-title')).toHaveText('Papan Pemuka Guru')
     const sub = page.getByTestId('shell-user-subtitle')
     await expect(sub).toContainText('Selamat datang, ')
     const m = await sub.evaluate((el) => {
@@ -477,7 +477,7 @@ test.describe('L07 QA S1 Dashboard Guru', MODULE, () => {
     await mock.failNext('GET /api/guru/dashboard', 500)
     await navigateInApp(page, '/guru')
     await expect(page.getByTestId('dashboard-error')).toContainText(
-      'Gagal memuatkan dashboard. Sila cuba lagi.',
+      'Gagal memuatkan papan pemuka. Sila cuba semula.',
     )
     await expect(page.getByTestId('checklist-card')).toHaveCount(0)
     await expect(page.getByTestId('guide-wrap')).toBeVisible()

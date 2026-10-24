@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S1 `/guru` "Dashboard Guru" (M10-T2; FR-M10-08…13, FR-M10-129; URS FT-M10-2.1). Guide, checklist,
- * stat cards, "Tindakan Hari Ini", "Peer Tutor Matching", "Tindakan Pantas", "Kelas Saya" and
+ * stat cards, "Tindakan Hari Ini", "Padanan Rakan Pembimbing", "Tindakan Pantas", "Kelas Saya" and
  * "Penghantaran Terkini" from `GET /api/guru/dashboard`.
  */
 import { computed, watchEffect } from 'vue'
@@ -33,7 +33,7 @@ const { data, error, reload } = useApi((signal) => fetchGuruDashboard({ signal }
 
 watchEffect(() => {
   const name = session.user?.name
-  if (name) setHeader({ title: 'Dashboard Guru', subtitle: welcomeSubtitle(name) })
+  if (name) setHeader({ title: 'Papan Pemuka Guru', subtitle: welcomeSubtitle(name) })
 })
 
 /** FN-M10-2.1.3: four stat tiles, each with its own categorical accent (FR-M10-10, BR-M10-06). */

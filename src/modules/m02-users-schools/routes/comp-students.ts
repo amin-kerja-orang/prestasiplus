@@ -22,7 +22,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/CompStudentListPage.vue'),
     meta: {
       ...adminMeta,
-      title: 'Pelajar Komplimen - Admin Panel',
+      title: 'Pelajar Komplimen - Panel Admin',
       header: {
         title: 'Pelajar Komplimen',
         subtitle: 'Pelajar bantuan QA — pakej penuh percuma, syiling dimatikan',
@@ -35,7 +35,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/CompStudentCreatePage.vue'),
     meta: {
       ...adminMeta,
-      title: 'Daftar Pelajar Komplimen - Admin Panel',
+      title: 'Daftar Pelajar Komplimen - Panel Admin',
       header: {
         title: 'Daftar Pelajar Komplimen',
         subtitle: 'Pelajar bantuan QA — akaun percuma, pakej penuh, syiling dimatikan',
@@ -49,8 +49,8 @@ const routes: RouteRecordRaw[] = [
     props: (route) => ({ id: Number(route.params.id) }),
     meta: {
       ...adminMeta,
-      title: 'Pelajar Komplimen - Admin Panel',
-      header: { title: 'Pelajar Komplimen', subtitle: 'Detail pelajar komplimen' },
+      title: 'Pelajar Komplimen - Panel Admin',
+      header: { title: 'Pelajar Komplimen', subtitle: 'Butiran pelajar komplimen' },
     },
   },
 ]

@@ -140,7 +140,7 @@ describe('S7 form panel (AC-M12-29.1, 29.2, 29.6)', () => {
     expect(t(w, 'int-before').attributes('placeholder')).toBe('0.0')
     expect(t(w, 'int-after').attributes('placeholder')).toBe('Isi selepas semakan')
     for (const name of ['before_mood', 'after_mood']) {
-      expect(itemLabels(w, name)).toEqual(['-- Pilih --', 'Gembira', 'Okay', 'Sedih', 'Tertekan'])
+      expect(itemLabels(w, name)).toEqual(['-- Pilih --', 'Gembira', 'Biasa', 'Sedih', 'Tertekan'])
     }
     expect(form.attributes('autocomplete')).toBe('off')
     expect(t(w, 'int-submit').text()).toBe('Simpan Intervensi')

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S3 six KPI cards (FN-M12-4.1.1; FR-M12-34) in a `DsStatRow`. "Learning Gain" is "-" permanently (there
+ * S3 six KPI cards (FN-M12-4.1.1; FR-M12-34) in a `DsStatRow`. "Peningkatan Pembelajaran" is "-" permanently (there
  * are no pre/post tests).
  */
 import { computed } from 'vue'
@@ -40,7 +40,7 @@ const items = computed<StatItem[]>(() => [
   },
   {
     key: 'gain',
-    label: 'Learning Gain',
+    label: 'Peningkatan Pembelajaran',
     value: '-',
     icon: 'i-ph-brain', accent: 'trial',
     sub: 'Perlu pre/post test',

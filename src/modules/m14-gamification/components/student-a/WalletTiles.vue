@@ -31,7 +31,7 @@ defineProps<{ wallet: GamificationWallet }>()
       icon="stack"
       accent="friend"
       :value="wallet.level"
-      unit="Level"
+      unit="Tahap"
       :sub="`${formatCount(wallet.xp)}/${formatCount(wallet.xpNeeded)} XP`"
       value-testid="s11-stat-level"
       sub-testid="s11-stat-xp"
@@ -41,7 +41,7 @@ defineProps<{ wallet: GamificationWallet }>()
         :max="100"
         size="sm"
         class="w-full"
-        aria-label="Level"
+        aria-label="Tahap"
         :data-value="gamClampPct(wallet.levelProgressPct)"
         data-testid="s11-xp-bar"
       />

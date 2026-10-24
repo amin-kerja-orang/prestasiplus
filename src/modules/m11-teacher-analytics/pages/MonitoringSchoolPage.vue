@@ -48,7 +48,7 @@ const statusLabel = (s: StudentStatus) => STATUS_LABEL[s]
 const { data, error, blocked, reload } = useMonitoringPage(
   (signal) => fetchSchoolDetail(props.schoolId, { signal }),
   () => props.schoolId,
-  (d) => `${d.school.name} - Monitoring`,
+  (d) => `${d.school.name} - Pemantauan`,
 )
 
 type StudentFilter = 'all' | 'active' | 'login' | 'never'
@@ -87,18 +87,18 @@ const SUBSCRIPTION_COLOR = {
   cancelled: 'neutral',
   expired: 'neutral',
 } as const
-const SUBSCRIPTION_LABEL = { active: 'Active', cancelled: 'Cancelled', expired: 'Expired' } as const
+const SUBSCRIPTION_LABEL = { active: 'Aktif', cancelled: 'Dibatalkan', expired: 'Tamat Tempoh' } as const
 
 const studentPills = computed<PillItem<StudentFilter>[]>(() => [
   { key: 'all', label: `Semua (${count(data.value?.students.length ?? 0)})` },
   { key: 'active', label: `● Aktif (${count(data.value?.cards.engaged ?? 0)})` },
-  { key: 'login', label: 'Login sahaja' },
-  { key: 'never', label: 'Belum login' },
+  { key: 'login', label: 'Log Masuk sahaja' },
+  { key: 'never', label: 'Belum log masuk' },
 ])
 const TEACHER_PILLS: PillItem<TeacherFilter>[] = [
   { key: 'all', label: 'Semua' },
-  { key: 'login', label: 'Pernah Login' },
-  { key: 'never', label: 'Belum Login' },
+  { key: 'login', label: 'Pernah Log Masuk' },
+  { key: 'never', label: 'Belum Log Masuk' },
 ]
 
 const cards = computed<StatItem[]>(() => {
@@ -133,7 +133,7 @@ const cards = computed<StatItem[]>(() => {
     },
     {
       key: 'teachersLoggedIn',
-      label: 'Guru Pernah Login',
+      label: 'Guru Pernah Log Masuk',
       value: count(c.teachersLoggedIn),
       icon: 'i-ph-sign-in', accent: 'heat',
     },
@@ -154,14 +154,14 @@ const studentColumns: TableColumn<StudentRow>[] = [
   { id: 'level', header: 'Tingkatan', accessorKey: 'level' },
   { id: 'answers', header: 'Soalan', accessorKey: 'answers' },
   { id: 'status', header: 'Status', accessorKey: 'status' },
-  { id: 'lastLogin', header: 'Login Terakhir', accessorKey: 'lastLoginAt' },
+  { id: 'lastLogin', header: 'Log Masuk Terakhir', accessorKey: 'lastLoginAt' },
   { id: 'lastActivity', header: 'Aktiviti Terakhir', accessorKey: 'lastActivityAt' },
 ]
 const teacherColumns: TableColumn<TeacherRow>[] = [
   { id: 'no', header: '#', accessorKey: 'rank' },
   { id: 'name', header: 'Nama', accessorKey: 'name' },
   { id: 'status', header: 'Status', accessorKey: 'loggedIn' },
-  { id: 'lastLogin', header: 'Login Terakhir', accessorKey: 'lastLoginAt' },
+  { id: 'lastLogin', header: 'Log Masuk Terakhir', accessorKey: 'lastLoginAt' },
   { id: 'createdAt', header: 'Daftar', accessorKey: 'createdAt' },
 ]
 /** Both lists are paged at 20 rows (FN-M11-4.1.x). */
@@ -435,7 +435,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                           </dd>
                         </div>
                         <div>
-                          <dt class="text-muted">Login Terakhir</dt>
+                          <dt class="text-muted">Log Masuk Terakhir</dt>
                           <dd class="tabular text-label">
                             {{ dmyHm((row as StudentRow).lastLoginAt) }}
                           </dd>
@@ -504,7 +504,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                       size="lg"
                       class="whitespace-nowrap"
                       data-testid="mon-teacher-status"
-                      :label="row.original.loggedIn ? 'Pernah login' : 'Belum login'"
+                      :label="row.original.loggedIn ? 'Pernah log masuk' : 'Belum log masuk'"
                     />
                   </template>
                   <template #lastLogin-cell="{ row }">
@@ -533,12 +533,12 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                           variant="subtle"
                           size="lg"
                           class="whitespace-nowrap"
-                          :label="(row as TeacherRow).loggedIn ? 'Pernah login' : 'Belum login'"
+                          :label="(row as TeacherRow).loggedIn ? 'Pernah log masuk' : 'Belum log masuk'"
                         />
                       </div>
                       <dl class="grid grid-cols-2 gap-3 text-body">
                         <div>
-                          <dt class="text-muted">Login Terakhir</dt>
+                          <dt class="text-muted">Log Masuk Terakhir</dt>
                           <dd class="tabular text-label">
                             {{ dmyHm((row as TeacherRow).lastLoginAt) }}
                           </dd>

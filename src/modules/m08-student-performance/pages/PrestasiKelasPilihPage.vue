@@ -19,7 +19,7 @@ const active = computed(() => (data.value ?? []).filter((c) => c.isActive))
 
 <template>
   <DsPage data-testid="prestasi-kelas-pilih-page">
-    <DsPageHeader title="Dashboard Kelas" subtitle="Pilih kelas untuk lihat prestasi keseluruhan" />
+    <DsPageHeader title="Papan Pemuka Kelas" subtitle="Pilih kelas untuk lihat prestasi keseluruhan" />
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">

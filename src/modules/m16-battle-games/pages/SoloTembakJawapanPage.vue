@@ -208,7 +208,7 @@ async function finish(): Promise<void> {
 const resultTiles = computed(() => [
   { label: 'Skor Total', value: String(score.value), tone: 'text-warning' },
   { label: 'Ketepatan', value: ratio(correct.value, answered.value), tone: 'text-success' },
-  { label: 'Tertinggi', value: `Level ${String(maxLevel.value)}`, tone: 'text-error' },
+  { label: 'Tertinggi', value: `Tahap ${String(maxLevel.value)}`, tone: 'text-error' },
   { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-info' },
 ])
 
@@ -229,7 +229,7 @@ watch(darjah, () => void start(), { immediate: true })
         v-if="phase === 'countdown'"
         title="🎯 TEMBAK JAWAPAN"
         :count="count"
-        hint="Tap jawapan yang betul sebelum jatuh!"
+        hint="Ketik jawapan yang betul sebelum jatuh!"
       />
 
       <div v-if="phase === 'playing' && current" class="flex flex-col gap-3">
@@ -239,7 +239,7 @@ watch(darjah, () => void start(), { immediate: true })
             <p class="tabular text-heading text-primary-t" data-testid="solo-score">{{ score }}</p>
           </UCard>
           <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
-            <p class="text-caption text-muted">Level</p>
+            <p class="text-caption text-muted">Tahap</p>
             <p class="tabular text-heading text-primary-t" data-testid="solo-level">{{ level }}</p>
           </UCard>
           <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
@@ -303,7 +303,7 @@ watch(darjah, () => void start(), { immediate: true })
         v-if="phase === 'done'"
         theme="ember"
         :title="tembakTitle(score)"
-        :subtitle="`Tembak Jawapan — Level ${String(maxLevel)}`"
+        :subtitle="`Tembak Jawapan — Tahap ${String(maxLevel)}`"
         :tiles="resultTiles"
         :new-record="result.newRecord"
         again-label="🔄 Main Lagi"

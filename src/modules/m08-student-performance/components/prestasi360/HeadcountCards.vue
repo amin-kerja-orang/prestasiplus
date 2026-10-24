@@ -16,7 +16,7 @@ type Chip = Card['chips'][number]
 const icon = usePhIcon()
 
 const STATUS: Record<Card['status'], { text: string; color: 'success' | 'error' | 'neutral' }> = {
-  on: { text: 'On Track', color: 'success' },
+  on: { text: 'Atas Landasan', color: 'success' },
   below: { text: 'Below', color: 'error' },
   none: { text: '—', color: 'neutral' },
 }

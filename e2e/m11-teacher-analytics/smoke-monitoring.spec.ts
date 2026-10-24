@@ -24,7 +24,7 @@ const ADMIN_SEKOLAH = 'adminsekolah@demo.test'
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(11)] }
 const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
-const S2_TITLE = 'Monitoring Penglibatan Sekolah - Admin'
+const S2_TITLE = 'Pemantauan Penglibatan Sekolah - Admin'
 /** 44 px below `lg`, the live 36 px from `lg` (DV-M11-17, M03 precedent). */
 const touchMin = (page: Page) => (page.viewportSize()!.width >= 1024 ? 36 : 44)
 const PROV = (reason: string) => provisional(reason)
@@ -54,7 +54,7 @@ test.describe('M11 S2 Monitoring Penglibatan (guru 5, /guru/monitoring)', MODULE
       await expectTabTitle(page, S2_TITLE)
       await adminHeader(
         page,
-        'Monitoring Penglibatan',
+        'Pemantauan Penglibatan',
         'Pantau penglibatan sekolah & pelajar T4/T5 dalam platform',
       )
       await expect(tid(page, 'shell-admin-header')).toBeVisible()
@@ -85,7 +85,7 @@ test.describe('M11 S2 Monitoring Penglibatan (guru 5, /guru/monitoring)', MODULE
       'Cemerlang >60% | Sederhana 20-60% | Rendah 5-20% | Kritikal <5% | Tiada 0%',
     )
     await expect(tid(page, 'mon-guide-tip')).toContainText(
-      'Tip: Guna Filter untuk tapis negeri/tempoh/tahap. Export PDF/CSV untuk pembentangan.',
+      'Petua: Guna penapis untuk menapis negeri/tempoh/tahap. Eksport PDF/CSV untuk pembentangan.',
     )
     await expectTouchTarget(tid(page, 'mon-guide-close'), touchMin(page))
     await expectNoHorizontalScroll(page)
@@ -293,7 +293,7 @@ test.describe('M11 S2 Monitoring Penglibatan (guru 5, /guru/monitoring)', MODULE
     await expect(tid(page, 'mon-attention-item').first()).toContainText('Tahap rendah.')
     await expect(tid(page, 'mon-attention-item').nth(1)).toContainText('Tahap kritikal.')
     await expect(
-      tid(page, 'mon-attention-item').filter({ hasText: '(Nota: 16 guru telah login)' }),
+      tid(page, 'mon-attention-item').filter({ hasText: '(Nota: 16 guru telah log masuk)' }),
     ).toHaveCount(1)
     await expectNoHorizontalScroll(page)
   })
@@ -373,15 +373,15 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     await loginAs(GURU)
     await gotoApp('/guru/monitoring/sekolah/8080')
     await expect(tid(page, 'mon-school-header')).toBeVisible()
-    await adminHeader(page, 'Detail Sekolah')
+    await adminHeader(page, 'Butiran Sekolah')
     await expect(tid(page, 'mon-crumb-monitoring')).toHaveAttribute('href', '/guru/monitoring')
     await expect(tid(page, 'mon-school-state')).toHaveText('Selangor')
-    await expect(tid(page, 'mon-subscription')).toContainText('Active — sehingga 12 May 2027')
+    await expect(tid(page, 'mon-subscription')).toContainText('Aktif — sehingga 12 Mei 2027')
     await expect(tid(page, 'mon-school-tahap')).toHaveText('Cemerlang — 89.7%')
     await expect(tid(page, 'mon-stat-value')).toHaveText(['184', '165', '53,494', '34', '34'])
     await expect(tid(page, 'mon-warning')).toContainText('19 akaun')
     await expect(tid(page, 'mon-warning')).toContainText('9 daripadanya dikecualikan')
-    await expectTabTitle(page, (await tid(page, 'mon-school-name').innerText()) + ' - Monitoring')
+    await expectTabTitle(page, (await tid(page, 'mon-school-name').innerText()) + ' - Pemantauan')
 
     await expect(tid(page, 'mon-pill-all')).toHaveText('Semua (184)')
     await expect(tid(page, 'mon-pill-active')).toHaveText('● Aktif (165)')
@@ -398,7 +398,7 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     await tid(page, 'mon-pill-login').click()
     await expect(tid(page, 'mon-student-row')).toHaveCount(4)
     await expect(
-      tid(page, 'mon-student-status').filter({ hasNotText: 'Login sahaja' }),
+      tid(page, 'mon-student-status').filter({ hasNotText: 'Log Masuk sahaja' }),
     ).toHaveCount(0)
     await tid(page, 'mon-pill-never').click()
     await expect(tid(page, 'mon-student-row')).toHaveCount(8)
@@ -441,9 +441,9 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
   }) => {
     await loginAs(GURU)
     await gotoApp('/guru/monitoring/sekolah/8102')
-    await expect(tid(page, 'mon-subscription')).toContainText('Cancelled — sehingga 12 May 2027')
+    await expect(tid(page, 'mon-subscription')).toContainText('Dibatalkan — sehingga 12 Mei 2027')
     await gotoApp('/guru/monitoring/sekolah/8107')
-    await expect(tid(page, 'mon-subscription')).toContainText('Expired — sehingga 22 May 2026')
+    await expect(tid(page, 'mon-subscription')).toContainText('Tamat Tempoh — sehingga 22 Mei 2026')
     await gotoApp('/guru/monitoring/sekolah/8765')
     await expect(tid(page, 'mon-school-header')).toBeVisible()
     // AC-M11-18.3 / 18.4 (D9): the S3 cards equal the S2 row of 8765 (6 active, 37.5%), no contradiction.
@@ -455,7 +455,7 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     // The teacher cards equal the teacher rows of the same page.
     const rows = await tid(page, 'mon-teacher-row').count()
     const loggedIn = await tid(page, 'mon-teacher-status')
-      .filter({ hasText: 'Pernah login' })
+      .filter({ hasText: 'Pernah log masuk' })
       .count()
     await expect(values.nth(3)).toHaveText(String(rows))
     await expect(values.nth(4)).toHaveText(String(loggedIn))
@@ -483,14 +483,14 @@ test.describe('M11 S4 Detail Pelajar and S5 Detail Guru (guru 5)', MODULE, () =>
     await loginAs(GURU)
     await gotoApp('/guru/monitoring/sekolah/8080/pelajar/2008')
     await expect(tid(page, 'mon-student-header')).toBeVisible()
-    await adminHeader(page, 'Detail Pelajar')
+    await adminHeader(page, 'Butiran Pelajar')
     await expect(tid(page, 'mon-student-meta')).toContainText('· T5')
     await expect(tid(page, 'mon-student-last')).toHaveText('Aktiviti Terakhir: 16/06/2026 14:19')
     await expect(tid(page, 'mon-stat-value')).toHaveText(['71', '53', '18', '74.6%'])
     await expect(tid(page, 'mon-tab-chip')).toHaveText(['18', '0'])
     await expectTabTitle(
       page,
-      (await tid(page, 'mon-student-name').innerText()) + ' - Detail Pelajar',
+      (await tid(page, 'mon-student-name').innerText()) + ' - Butiran Pelajar',
     )
     await expect(tid(page, 'mon-subject-row')).toHaveCount(3)
     await expect(tid(page, 'mon-observation')).toHaveCount(2)
@@ -606,14 +606,14 @@ test.describe('M11 S4 Detail Pelajar and S5 Detail Guru (guru 5)', MODULE, () =>
     await loginAs(GURU)
     await gotoApp('/guru/monitoring/sekolah/8080/guru/2012')
     await expect(tid(page, 'mon-teacher-header')).toBeVisible()
-    await adminHeader(page, 'Detail Guru')
-    await expect(tid(page, 'mon-teacher-pill')).toHaveText('Pernah Login')
+    await adminHeader(page, 'Butiran Guru')
+    await expect(tid(page, 'mon-teacher-pill')).toHaveText('Pernah Log Masuk')
     await expect(tid(page, 'mon-stat-value')).toHaveText(['184', '174', '94.6%', '10'])
     await expect(tid(page, 'mon-teacher-student-row')).toHaveCount(184)
     await expect(
       page.locator('[data-student-id="2008"]').getByTestId('mon-teacher-student-link'),
     ).toHaveAttribute('href', '/guru/monitoring/sekolah/8080/pelajar/2008')
-    await expect(tid(page, 'mon-suggestion-never')).toContainText('8 pelajar belum pernah login.')
+    await expect(tid(page, 'mon-suggestion-never')).toContainText('8 pelajar belum pernah log masuk.')
     await expect(tid(page, 'mon-suggestion-low')).toContainText('3 pelajar aktif')
     await expect(tid(page, 'mon-suggestion-answered')).toContainText(
       '174 pelajar telah mula menjawab soalan.',
@@ -714,7 +714,7 @@ test.describe(
         await loginAs(ADMIN_SEKOLAH)
         await openOverview(page, gotoApp, '/admin-sekolah/monitoring')
         await expectTabTitle(page, S2_TITLE)
-        await expect(tid(page, 'shell-user-title')).toHaveText('Monitoring Penglibatan')
+        await expect(tid(page, 'shell-user-title')).toHaveText('Pemantauan Penglibatan')
         await expect(tid(page, 'shell-user-subtitle')).toHaveText(
           'Pantau penglibatan sekolah & pelajar T4/T5 dalam platform',
         )

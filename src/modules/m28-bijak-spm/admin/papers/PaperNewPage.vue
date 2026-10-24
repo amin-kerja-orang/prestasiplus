@@ -63,12 +63,12 @@ async function submit(): Promise<void> {
   <DsPage
     layout="form"
     title="Kertas Baharu"
-    subtitle="Pilih subjek dan kertas. Struktur bahagian, bajet markah dan tempoh datang daripada blueprint."
+    subtitle="Pilih subjek dan kertas. Struktur bahagian, bajet markah dan tempoh datang daripada cetak biru."
     :back-to="{ name: ADMIN_ROUTES.papers }"
     back-label="Pembina Kertas"
     data-testid="paper-new-page"
   >
-    <DsLoadError v-if="error" message="Tidak dapat memuatkan blueprint." @retry="reload()" />
+    <DsLoadError v-if="error" message="Tidak dapat memuatkan cetak biru." @retry="reload()" />
     <form v-else class="flex flex-col gap-6" @submit.prevent="submit">
       <DsFormSection title="Subjek dan kertas" icon="scroll" :columns="2">
         <UFormField label="Subjek" required>
@@ -93,7 +93,7 @@ async function submit(): Promise<void> {
         </UFormField>
       </DsFormSection>
 
-      <DsFormSection v-if="blueprint" title="Blueprint" icon="list-checks">
+      <DsFormSection v-if="blueprint" title="Cetak Biru" icon="list-checks">
         <p class="text-body text-muted" data-testid="blueprint-summary">
           {{ blueprint.code }} · {{ blueprint.durationMin }} minit ·
           {{ blueprint.totalMarks }} markah · sumber {{ blueprint.source }}

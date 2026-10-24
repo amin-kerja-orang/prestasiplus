@@ -5,7 +5,7 @@ export const ITEM_COPY = {
   allSubjects: 'Semua Subjek',
   classLabel: 'Kelas',
   allClasses: 'Semua Kelas',
-  reset: 'Reset',
+  reset: 'Set Semula',
   legendMudah: '> 70% (Mudah)',
   legendSederhana: '40–70% (Sederhana)',
   legendSukar: '< 40% (Sukar)',

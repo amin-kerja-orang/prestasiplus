@@ -61,7 +61,7 @@ export const fetchHeadcountDetail = (id: number, options: { sort?: HeadcountSort
     ...(options.sort ? { query: { sort: options.sort } } : {}),
   })
 
-/** #26 `POST /api/headcounts/:id/reset` ("Ya, Reset"). */
+/** #26 `POST /api/headcounts/:id/reset` ("Ya, Set Semula"). */
 export const resetHeadcount = (id: number, o: Signal = {}) =>
   api.post<{ reset: true }>(`/api/headcounts/${String(id)}/reset`, withSignal(o))
 

@@ -3,7 +3,7 @@
  * S9 `/admin-sekolah/pelajar/:id` and S10 `/admin-sekolah/guru/:id` "Edit Pengguna" (SRS M27 Part B FR-M27-94 to 98,
  * 104 to 107; BR-M27-31, 34). One page for both roles (`role` prop). A profile card (initials avatar, name,
  * e-mail, "Daftar", "Kemaskini"), the fields "Nama *", "Emel *", "No. Telefon (Pilihan)", S9 only the read-only line
- * "Status" "Aktif", the "Reset Kata Laluan" bar (closed) and the footer "Batal" / "Kemaskini". No role,
+ * "Status" "Aktif", the "Set Semula Kata Laluan" bar (closed) and the footer "Batal" / "Kemaskini". No role,
  * school, grade, IC field or "Nota Keselamatan" card.
  *
  * "Kemaskini" sends ONE PUT (#8 / #13) with name, e-mail, phone and, when typed, the new password pair (applied in one
@@ -239,12 +239,12 @@ async function submit(): Promise<void> {
         </DsFormField>
       </DsFormSection>
 
-      <!-- FR-M27-95 / 104: "Reset Kata Laluan" -->
+      <!-- FR-M27-95 / 104: "Set Semula Kata Laluan" -->
       <DsFormSection
-        title="Reset Kata Laluan"
+        title="Set Semula Kata Laluan"
         icon="key"
         accent="heat"
-        description="Klik untuk buka bahagian reset kata laluan"
+        description="Klik untuk buka bahagian set semula kata laluan"
         :columns="2"
       >
         <template #actions>

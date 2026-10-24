@@ -358,8 +358,8 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
       else await expect(head.nth(3)).toBeHidden()
       if (width >= 1024) await expect(head.nth(4)).toBeVisible()
       else await expect(head.nth(4)).toBeHidden()
-      // "Dikemaskini real-time" from 768px.
-      const live = page.getByText('Dikemaskini real-time')
+      // "Dikemaskini masa nyata" from 768px.
+      const live = page.getByText('Dikemaskini masa nyata')
       if (width >= 768) await expect(live).toBeVisible()
       else await expect(live).toBeHidden()
 

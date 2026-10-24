@@ -102,7 +102,7 @@ export const teacherGamificationRepo = defineRepository({
     return {
       /**
        * M10 (BR-M14-23, provisional): +1 question, + `coins_per_question` "Sumbang Soalan #{id}",
-       * then each active badge newly reached, once: "Badge: {name} ({threshold} soalan)" +bonus.
+       * then each active badge newly reached, once: "Lencana: {name} ({threshold} soalan)" +bonus.
        */
       onQuestionContributed(
         teacherId: number,
@@ -132,7 +132,7 @@ export const teacherGamificationRepo = defineRepository({
             wallet = teacherCreditOp(
               teacherId,
               b.bonusCoins,
-              `Badge: ${b.name} (${String(b.threshold)} soalan)`,
+              `Lencana: ${b.name} (${String(b.threshold)} soalan)`,
               at,
             )
           }

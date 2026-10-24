@@ -181,7 +181,7 @@ test.describe('shell, header', MODULE, () => {
   })
 
   test(
-    'E2E-M27-02 below lg: no sidebar, the drawer opens with "Dashboard" active, no horizontal scroll',
+    'E2E-M27-02 below lg: no sidebar, the drawer opens with "Papan Pemuka" active, no horizontal scroll',
     provisional('PROPOSED shell-owned breakpoint behaviour (SRS E2E-M27-02)', MODULE.tag),
     async ({ page, gotoApp }) => {
       test.skip(isDesktopShell(page), 'E2E-M27-02 runs at 375 and 768 only')
@@ -205,9 +205,9 @@ test.describe('shell, header', MODULE, () => {
     async ({ page, gotoApp }) => {
       await signIn(page, AZLAN)
       await open(page, gotoApp)
-      await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Sekolah')
+      await expect(page.getByTestId('shell-user-title')).toHaveText('Papan Pemuka Sekolah')
       await expect(page.getByTestId('shell-user-subtitle')).toHaveText('SMK Demo Seri Putra')
-      await expectTabTitle(page, 'Dashboard Sekolah - PRESTASIPLUS')
+      await expectTabTitle(page, 'Papan Pemuka Sekolah - PRESTASIPLUS')
       expect(
         decodeURIComponent(
           (await page.getByTestId('shell-user-header-avatar').getAttribute('src')) ?? '',
@@ -378,7 +378,7 @@ test.describe('breadcrumb', MODULE, () => {
     await expect(back).toHaveText('Papan Pemuka')
     await expect(back).toHaveAttribute('href', '/dashboard')
     const current = page.locator('[data-testid="sd-breadcrumb"] [aria-current="page"]')
-    await expect(current).toHaveText('Dashboard Sekolah')
+    await expect(current).toHaveText('Papan Pemuka Sekolah')
     expect(await current.evaluate((e) => e.tagName)).not.toBe('A')
     expect(
       Number(await current.evaluate((e) => getComputedStyle(e).fontWeight)),
@@ -743,7 +743,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     )
   })
 
-  test('E2E-M27-31 TINGKATAN: two rows with M08 level accuracy, band colour, bar width, "Click untuk detail", link', async ({
+  test('E2E-M27-31 TINGKATAN: two rows with M08 level accuracy, band colour, bar width, "Klik untuk butiran", link', async ({
     page,
     gotoApp,
   }) => {
@@ -751,7 +751,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     await open(page, gotoApp)
     const perf = await m08(page)
     const panel = page.getByTestId('sd-panel-levels')
-    await expect(panel).toContainText('Click untuk detail')
+    await expect(panel).toContainText('Klik untuk butiran')
     await expect(panel).toHaveAttribute('href', '/prestasi/tingkatan')
     const rows = page.getByTestId('sd-level-row')
     await expect(rows).toHaveCount(2)
@@ -795,7 +795,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     await expect(full).toHaveAttribute('href', '/prestasi/sekolah')
     await full.click()
     await expect(page).toHaveURL(/\/prestasi\/sekolah$/)
-    await expectTabTitle(page, 'Dashboard Sekolah — Prestasi')
+    await expectTabTitle(page, 'Papan Pemuka Sekolah — Prestasi')
   })
 
   test(

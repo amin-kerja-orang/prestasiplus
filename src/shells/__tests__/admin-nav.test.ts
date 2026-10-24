@@ -25,6 +25,7 @@ import {
   type LagiEntry,
 } from '../nav/admin-nav'
 import { shellIcon } from '../shared/shell-icons'
+import { bmLive } from './fb025-live-labels'
 import { USER_NAV, navFor } from '../nav/user-nav'
 
 // ---------------------------------------------------------------------------------------------
@@ -50,7 +51,7 @@ const inventory = JSON.parse(
 ) as { elements: InventoryElement[] }
 
 const pathOf = (e: InventoryElement): string => new URL(e.absHref ?? e.href ?? '').pathname
-const clean = (text: string | undefined): string => (text ?? '').replace(/\s+/g, ' ').trim()
+const clean = (text: string | undefined): string => bmLive((text ?? '').replace(/\s+/g, ' ').trim())
 
 /** Sidebar links (desktop), in live order. `absHref` is absent on the logo link only. */
 const liveSidebar = inventory.elements.filter(
@@ -127,7 +128,7 @@ describe('ADMIN_NAV data (shells.md §2.7)', () => {
       '🏆 Bilik Duta',
       '🤖 Pusat AI',
       '✨ Visi & Pertandingan',
-      '💎 Killer Features',
+      '💎 Ciri Utama',
     ])
     const bilik = ADMIN_NAV.find((e) => e.id === 'sec-bilik-duta')
     expect(bilik?.kind === 'section' && bilik.badge?.text).toBe('DEV')
@@ -190,7 +191,7 @@ describe('adminMenuFor / chromeFor: the menu per role', () => {
     expect(adminMenuFor('admin')).toBe(ADMIN_NAV)
     expect(footerLinksFor('admin').map((i) => i.label)).toEqual([
       'Tetapan Peribadi',
-      'Ke Dashboard',
+      'Ke Papan Pemuka',
     ])
     expect(chromeFor('admin')).toEqual({
       caption: 'Panel Pentadbir',
@@ -223,7 +224,7 @@ describe('adminMenuFor / chromeFor: the menu per role', () => {
 
   it('teacher menu holds no admin-only item', () => {
     const labels = teacherItems.map((i) => i.label)
-    for (const adminOnly of ['Ke Admin Panel', 'Ke Dashboard', 'Student View', 'Panel Pentadbir']) {
+    for (const adminOnly of ['Ke Panel Admin', 'Ke Papan Pemuka', 'Paparan Pelajar', 'Panel Pentadbir']) {
       expect(labels).not.toContain(adminOnly)
     }
     // No route under /admin except the open item "Gambar Rajah" (shells.md §7.2 item 4).
@@ -278,14 +279,14 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(activeLabel('/admin/users/bulk-import')).toBe('Import Pengguna')
     expect(activeLabel('/admin/users/42')).toBe('Senarai Pengguna')
     expect(activeLabel('/admin/anak-angkat/permohonan')).toBe('Permohonan')
-    expect(activeLabel('/battle/ranking-sekolah')).toBe('Ranking Sekolah')
+    expect(activeLabel('/battle/ranking-sekolah')).toBe('Kedudukan Sekolah')
     expect(activeLabel('/battle')).toBe('Battle Live')
-    expect(activeLabel('/admin/gamification/tiers')).toBe('Tier Config')
+    expect(activeLabel('/admin/gamification/tiers')).toBe('Konfigurasi Peringkat')
   })
 
   it('/admin (Dashboard) is exact and does not match every /admin/* page', () => {
-    expect(activeLabel('/admin')).toBe('Dashboard')
-    expect(activeLabel('/admin/')).toBe('Dashboard')
+    expect(activeLabel('/admin')).toBe('Papan Pemuka')
+    expect(activeLabel('/admin/')).toBe('Papan Pemuka')
     expect(activeLabel('/admin/unknown-page')).toBeNull()
   })
 
@@ -296,10 +297,10 @@ describe('active item: single longest match (shells.md §2.8)', () => {
   })
 
   it('the /guru twins activate Monitoring and Kirkpatrick (FR-M11-05, FR-M12-04)', () => {
-    expect(activeLabel('/admin/monitoring')).toBe('Monitoring')
-    expect(activeLabel('/guru/monitoring')).toBe('Monitoring')
-    expect(activeLabel('/guru/monitoring/sekolah/5/pelajar/9')).toBe('Monitoring')
-    expect(activeLabel('/guru/kirkpatrick')).toBe('Overview')
+    expect(activeLabel('/admin/monitoring')).toBe('Pemantauan')
+    expect(activeLabel('/guru/monitoring')).toBe('Pemantauan')
+    expect(activeLabel('/guru/monitoring/sekolah/5/pelajar/9')).toBe('Pemantauan')
+    expect(activeLabel('/guru/kirkpatrick')).toBe('Gambaran Keseluruhan')
     expect(activeLabel('/guru/kirkpatrick/reaction')).toBe('T1: Reaksi')
     expect(activeLabel('/admin/kirkpatrick/interventions')).toBe('Intervensi')
   })
@@ -338,9 +339,9 @@ describe('active item: single longest match (shells.md §2.8)', () => {
       const id = activeItemId(teacherEntries, path)
       return teacherItems.find((i) => i.id === id)?.label ?? null
     }
-    expect(label('/guru')).toBe('Dashboard Guru')
-    expect(label('/guru/monitoring')).toBe('Monitoring')
-    expect(label('/guru/monitoring/sekolah/3')).toBe('Monitoring')
+    expect(label('/guru')).toBe('Papan Pemuka Guru')
+    expect(label('/guru/monitoring')).toBe('Pemantauan')
+    expect(label('/guru/monitoring/sekolah/3')).toBe('Pemantauan')
     expect(label('/guru/kirkpatrick')).toBe('Ringkasan')
     expect(label('/guru/kirkpatrick/results')).toBe('T4: Hasil')
     expect(label('/guru/kirkpatrick/pelajar/8')).toBeNull()
@@ -360,7 +361,7 @@ describe('bottom nav (shells.md §2.4, §2.6)', () => {
 
   it('admin: Dashboard, Soalan, Penaja, Pengguna, Lagi', () => {
     expect(ADMIN_BOTTOM_NAV.map((b) => b.label)).toEqual([
-      'Dashboard',
+      'Papan Pemuka',
       'Soalan',
       'Penaja',
       'Pengguna',
@@ -371,7 +372,7 @@ describe('bottom nav (shells.md §2.4, §2.6)', () => {
 
   it('admin: one cell active at most; Dashboard is exact, the others match their subtree', () => {
     const cells = links(ADMIN_BOTTOM_NAV)
-    expect(activeOn(cells, '/admin')).toEqual(['Dashboard'])
+    expect(activeOn(cells, '/admin')).toEqual(['Papan Pemuka'])
     expect(activeOn(cells, '/admin/questions/import')).toEqual(['Soalan'])
     expect(activeOn(cells, '/admin/sponsors')).toEqual(['Penaja'])
     expect(activeOn(cells, '/admin/users/bulk-import')).toEqual(['Pengguna'])
@@ -382,14 +383,14 @@ describe('bottom nav (shells.md §2.4, §2.6)', () => {
     expect(TEACHER_BOTTOM_NAV.map((b) => b.label)).toEqual([
       'Guru',
       'Kelas',
-      'Monitoring',
+      'Pemantauan',
       'Kirkpatrick',
       'Lagi',
     ])
     const cells = links(TEACHER_BOTTOM_NAV)
     expect(activeOn(cells, '/guru')).toEqual(['Guru'])
     expect(activeOn(cells, '/guru/kelas/2')).toEqual(['Kelas'])
-    expect(activeOn(cells, '/guru/monitoring/sekolah/1')).toEqual(['Monitoring'])
+    expect(activeOn(cells, '/guru/monitoring/sekolah/1')).toEqual(['Pemantauan'])
     expect(activeOn(cells, '/guru/kirkpatrick/pelajar/3')).toEqual(['Kirkpatrick'])
     expect(activeOn(cells, '/guru/laporan')).toEqual([])
   })
@@ -425,7 +426,7 @@ describe('"Lagi" popover (shells.md §2.4, §2.7)', () => {
       'Marketplace',
       'Sistem',
     ])
-    expect(rowsUnder(null)).toEqual(['Analitik', 'Laporan Aktiviti', 'Monitoring', 'Kirkpatrick'])
+    expect(rowsUnder(null)).toEqual(['Analitik', 'Laporan Aktiviti', 'Pemantauan', 'Kirkpatrick'])
     expect(admin.entries[0]).toMatchObject({ kind: 'row', label: 'Analitik' })
   })
 
@@ -444,17 +445,17 @@ describe('"Lagi" popover (shells.md §2.4, §2.7)', () => {
       'Nota',
       'Push Notifikasi',
       'Chatbot',
-      'Upload Screenshot',
+      'Muat Naik Tangkapan Skrin',
     ])
     expect(rowsUnder('Sistem')).toEqual([
       'Sekolah',
       'Langganan Sekolah',
       'Tetapan',
       'Pembayaran',
-      'Billing Dashboard',
-      'Dunning Log',
+      'Papan Pemuka Pengebilan',
+      'Log Peringatan Bayaran',
       'Log Audit',
-      'Performance',
+      'Prestasi Sistem',
       'Import Pelajar',
       'Import Pengguna',
     ])
@@ -483,9 +484,9 @@ describe('"Lagi" popover (shells.md §2.4, §2.7)', () => {
     expect(row).toMatchObject({ to: '/admin/kirkpatrick', groupKey: 'kirkpatrick' })
   })
 
-  it('ends with "Student View" and "Log Keluar"', () => {
+  it('ends with "Paparan Pelajar" and "Log Keluar"', () => {
     expect(admin.tail.map((r) => [r.label, r.to])).toEqual([
-      ['Student View', '/dashboard'],
+      ['Paparan Pelajar', '/dashboard'],
       ['Log Keluar', '/logout'],
     ])
   })
@@ -504,9 +505,9 @@ describe('"Lagi" popover (shells.md §2.4, §2.7)', () => {
     const labels = rows.map((r) => r.label)
     for (const excluded of [
       'Command Center',
-      'Dashboard Guru',
+      'Papan Pemuka Guru',
       'Kelas Saya',
-      'Monitoring',
+      'Pemantauan',
       'Ringkasan',
       'T1: Reaksi',
     ]) {

@@ -172,7 +172,7 @@ export const headcountRepo = defineRepository({
         }).rows[0]
       },
 
-      /** Same class + subject + year in any mode (Auto-Setup, BR-M08-21). */
+      /** Same class + subject + year in any mode (Persediaan Auto, BR-M08-21). */
       existsForClass(classroomId: number, subjectId: number, academicYear: number): boolean {
         return store.count({ classroomId, subjectId, academicYear }) > 0
       },
@@ -204,7 +204,7 @@ export const headcountRepo = defineRepository({
         )
       },
 
-      /** "Ya, Reset" (#26): clears TOV, ETR, OTR targets, AR and RS of every entry; the roster stays. */
+      /** "Ya, Set Semula" (#26): clears TOV, ETR, OTR targets, AR and RS of every entry; the roster stays. */
       resetMarks(configId: number, now: number): number {
         const config = store.get(configId)
         if (!config) return 0

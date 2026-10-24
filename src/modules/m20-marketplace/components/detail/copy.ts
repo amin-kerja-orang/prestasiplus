@@ -13,7 +13,7 @@ export const DETAIL_COPY = {
   whatsapp: 'Hubungi Penjual di WhatsApp',
   seller: 'Penjual',
   /** PROPOSED display of a platform product (OQ-M20-10). */
-  platformSeller: 'PRESTASIPLUS Official',
+  platformSeller: 'PRESTASIPLUS Rasmi',
   products: 'produk',
   reviews: 'Ulasan',
   noReviews: 'Belum ada ulasan untuk produk ini',

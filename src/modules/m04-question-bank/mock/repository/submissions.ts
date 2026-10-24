@@ -21,7 +21,7 @@ export const SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
 /** The 7 paper types of the M10 form, stored as the live value = label (DATA-M04-05). */
 export const PAPER_TYPES = [
   'Soalan Umum',
-  'Trial Paper',
+  'Kertas Percubaan',
   'Soalan DSKP',
   'Buku Teks',
   'Buku Latihan',

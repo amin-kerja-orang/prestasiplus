@@ -67,8 +67,8 @@ export function cabaranKilatTitle(score: number): string {
 }
 
 export function tembakTitle(score: number): string {
-  if (score >= 500) return '🏆 SNIPER!'
-  if (score >= 200) return '🎯 SHARP!'
+  if (score >= 500) return '🏆 PENEMBAK TEPAT!'
+  if (score >= 200) return '🎯 TAJAM!'
   if (score >= 80) return '💪 BAGUS!'
   return '🔄 CUBA LAGI!'
 }

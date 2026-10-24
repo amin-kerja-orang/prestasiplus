@@ -100,7 +100,7 @@ describe('PasswordForgotPage (S3)', () => {
     const w = await render(PasswordForgotPage, '/password/reset')
     expect(w.get('h1').text()).toBe('Lupa Kata Laluan?')
     expect(w.text()).toContain(
-      'Masukkan email anda dan kami akan hantar pautan untuk reset kata laluan.',
+      'Masukkan emel anda dan kami akan menghantar pautan untuk set semula kata laluan.',
     )
     expect(w.get('[data-testid=forgot-email]').attributes()).toMatchObject({
       type: 'email',
@@ -112,7 +112,7 @@ describe('PasswordForgotPage (S3)', () => {
     // Grey "@" adornment inside the input, as on S1 (live screenshot); not on S4/S5.
     expect(w.get('[data-testid=forgot-email-at]').text()).toBe('@')
     expect(w.get('[data-testid=forgot-email-at]').attributes('aria-hidden')).toBe('true')
-    expect(w.get('[data-testid=forgot-submit]').text()).toBe('Hantar Pautan Reset')
+    expect(w.get('[data-testid=forgot-submit]').text()).toBe('Hantar Pautan Set Semula')
     expect(w.findAll('a').map((a) => [a.text(), a.attributes('href')])).toEqual([
       ['Kembali ke Log Masuk', '/login'],
     ])
@@ -127,10 +127,10 @@ describe('PasswordForgotPage (S3)', () => {
     const button = w.get('[data-testid=forgot-submit]')
     expect(button.text()).toBe('Menghantar...')
     expect(button.attributes('disabled')).toBeDefined()
-    resolve('We have emailed your password reset link.')
+    resolve('Kami telah menghantar pautan set semula kata laluan ke emel anda.')
     await flushPromises()
     expect(w.get('[data-testid=forgot-status]').text()).toBe(
-      'We have emailed your password reset link.',
+      'Kami telah menghantar pautan set semula kata laluan ke emel anda.',
     )
     expect(w.find('[data-testid=forgot-alert]').exists()).toBe(false)
     expect((w.get('[data-testid=forgot-email]').element as HTMLInputElement).value).toBe(
@@ -140,14 +140,14 @@ describe('PasswordForgotPage (S3)', () => {
 
   it('shows the red alert for an unknown email and for the throttle', async () => {
     apiMocks.sendPasswordResetLink.mockRejectedValueOnce(
-      validationError("We can't find a user with that email address."),
+      validationError("Kami tidak menemui pengguna dengan alamat emel itu."),
     )
     const w = await render(PasswordForgotPage, '/password/reset')
     await w.get('[data-testid=forgot-email]').setValue('tiada@demo.test')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(w.get('[data-testid=forgot-alert]').text()).toBe(
-      "We can't find a user with that email address.",
+      "Kami tidak menemui pengguna dengan alamat emel itu.",
     )
     expect((w.get('[data-testid=forgot-email]').element as HTMLInputElement).value).toBe(
       'tiada@demo.test',
@@ -157,21 +157,21 @@ describe('PasswordForgotPage (S3)', () => {
       new ApiError({
         status: 429,
         code: 'RATE_LIMITED',
-        message: 'Please wait before retrying.',
-        fields: { email: 'Please wait before retrying.' },
+        message: 'Sila tunggu sebelum mencuba semula.',
+        fields: { email: 'Sila tunggu sebelum mencuba semula.' },
         retryAfter: 40,
       }),
     )
     await w.get('form').trigger('submit')
     await flushPromises()
-    expect(w.get('[data-testid=forgot-alert]').text()).toBe('Please wait before retrying.')
+    expect(w.get('[data-testid=forgot-alert]').text()).toBe('Sila tunggu sebelum mencuba semula.')
   })
 })
 
 describe('PasswordResetPage (S4)', () => {
   it('renders for any token and pre-fills the email from ?email=', async () => {
     const w = await render(PasswordResetPage, '/password/reset/apa-apa?email=pelajar@demo.test')
-    expect(w.get('h1').text()).toBe('Reset Kata Laluan')
+    expect(w.get('h1').text()).toBe('Set Semula Kata Laluan')
     expect(w.text()).toContain('Masukkan kata laluan baru anda.')
     expect((w.get('[data-testid=reset-email]').element as HTMLInputElement).value).toBe(
       'pelajar@demo.test',
@@ -207,7 +207,7 @@ describe('PasswordResetPage (S4)', () => {
   it('stores the session, queues the flash and goes to the landing page', async () => {
     apiMocks.resetPassword.mockResolvedValue({
       session: SESSION,
-      status: 'Your password has been reset.',
+      status: 'Kata laluan anda telah ditetapkan semula.',
     })
     const w = await render(
       PasswordResetPage,
@@ -226,14 +226,14 @@ describe('PasswordResetPage (S4)', () => {
     expect(useSessionStore().user?.id).toBe(2)
     expect(useFlashStore().pending).toEqual({
       type: 'success',
-      message: 'Your password has been reset.',
+      message: 'Kata laluan anda telah ditetapkan semula.',
     })
     expect(router.currentRoute.value.fullPath).toBe('/dashboard')
   })
 
   it('shows the invalid-token alert, keeps the email and clears the passwords', async () => {
     apiMocks.resetPassword.mockRejectedValue(
-      validationError('This password reset token is invalid.'),
+      validationError('Token set semula kata laluan ini tidak sah.'),
     )
     const w = await render(
       PasswordResetPage,
@@ -243,7 +243,7 @@ describe('PasswordResetPage (S4)', () => {
     await w.get('[data-testid=reset-confirm]').setValue('BaruBaru1')
     await w.get('form').trigger('submit')
     await flushPromises()
-    expect(w.get('[data-testid=reset-alert]').text()).toBe('This password reset token is invalid.')
+    expect(w.get('[data-testid=reset-alert]').text()).toBe('Token set semula kata laluan ini tidak sah.')
     expect((w.get('[data-testid=reset-email]').element as HTMLInputElement).value).toBe(
       'pelajar@demo.test',
     )
@@ -264,9 +264,9 @@ describe('PasswordResetPage (S4)', () => {
 describe('PasswordResetIcPage (S5)', () => {
   it('renders the live copy, the IC hint and maxlength 14 (DV-04)', async () => {
     const w = await render(PasswordResetIcPage, '/password/reset-ic')
-    expect(w.get('h1').text()).toBe('Reset Melalui No IC')
+    expect(w.get('h1').text()).toBe('Set Semula Melalui No IC')
     expect(w.text()).toContain(
-      'Masukkan email dan No Kad Pengenalan yang didaftarkan dalam profil anda.',
+      'Masukkan emel dan No Kad Pengenalan yang didaftarkan dalam profil anda.',
     )
     const ic = w.get('[data-testid=ic-number]')
     expect(ic.attributes()).toMatchObject({
@@ -278,7 +278,7 @@ describe('PasswordResetIcPage (S5)', () => {
     })
     expect(ic.attributes('inputmode')).toBeUndefined()
     expect(w.text()).toContain('Tanpa tanda sempang (-). Contoh: 000101010000')
-    expect(w.get('[data-testid=ic-submit]').text()).toBe('Reset Kata Laluan')
+    expect(w.get('[data-testid=ic-submit]').text()).toBe('Set Semula Kata Laluan')
     expect(document.activeElement).toBe(w.get('[data-testid=ic-email]').element)
   })
 
@@ -299,7 +299,7 @@ describe('PasswordResetIcPage (S5)', () => {
 
   it('shows the mismatch alert and keeps both values', async () => {
     apiMocks.resetByIc.mockRejectedValue(
-      validationError('Email atau No Kad Pengenalan tidak sepadan.'),
+      validationError('Emel atau No Kad Pengenalan tidak sepadan.'),
     )
     const w = await render(PasswordResetIcPage, '/password/reset-ic')
     await w.get('[data-testid=ic-email]').setValue('pelajar@demo.test')
@@ -307,7 +307,7 @@ describe('PasswordResetIcPage (S5)', () => {
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(w.get('[data-testid=ic-alert]').text()).toBe(
-      'Email atau No Kad Pengenalan tidak sepadan.',
+      'Emel atau No Kad Pengenalan tidak sepadan.',
     )
     expect((w.get('[data-testid=ic-email]').element as HTMLInputElement).value).toBe(
       'pelajar@demo.test',

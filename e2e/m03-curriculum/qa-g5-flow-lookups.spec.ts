@@ -204,7 +204,7 @@ test.describe('QA G5 cross-screen flow', MODULE, () => {
     // 1. Level (S10).
     await gotoApp('/admin/education-levels/create')
     await page.getByTestId('level-name').fill('Tahap QA')
-    await page.getByTestId('level-name-en').fill('QA Level')
+    await page.getByTestId('level-name-en').fill('QA Tahap')
     await page.getByTestId('level-code').fill('qal')
     await page.getByTestId('level-stage').selectOption('lower_secondary')
     await page.getByTestId('level-curriculum').fill('KSSM')

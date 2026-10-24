@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S14 `/admin/tools/screenshots` "Upload Screenshot - Admin PRESTASIPLUS" (M09; FR-M09-119, 120,
+ * S14 `/admin/tools/screenshots` "Muat Naik Tangkapan Skrin - Admin PRESTASIPLUS" (M09; FR-M09-119, 120,
  * BR-M09-30), v2 staff theme.
  *
  * - Card "Upload Gambar": format line, drop zone (click to pick, drag-over highlight, drop sends at once),
@@ -61,7 +61,7 @@ async function send(list: File[]): Promise<void> {
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div class="flex min-w-0 flex-col gap-6 lg:col-span-1">
         <DsFormSection
-          title="Upload Gambar"
+          title="Muat Naik Gambar"
           description="Format: JPG, PNG, GIF, WebP, BMP. Maks 10MB setiap fail."
           icon="upload-simple"
           accent="action"
@@ -79,7 +79,7 @@ async function send(list: File[]): Promise<void> {
             />
           </form>
           <p class="text-caption text-muted">
-            Tip: guna nama fail yang ringkas. Sistem akan auto-sanitize nama fail.
+            Petua: guna nama fail yang ringkas. Sistem akan membersihkan nama fail secara automatik.
           </p>
         </DsFormSection>
       </div>

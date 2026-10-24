@@ -5,7 +5,7 @@ import type { RouteRecordRaw } from 'vue-router'
  * `/analitik/kelas`. Admin and teacher only: every other role gets the standalone 404 for S5 (BR-M08-26,
  * "none → 404", INFERRED) and the 403 page for S8 (§9 "none"). S4, S10 and S11 are M08-T5's pages.
  * An unknown or unpermitted class is decided by the API (S5 404, S8 403). The S5 tab title and header
- * are set from the class (`{kelas} — Dashboard Kelas`, FR-M08-03).
+ * are set from the class (`{kelas} — Papan Pemuka Kelas`, FR-M08-03).
  */
 const routes: RouteRecordRaw[] = [
   {
@@ -18,7 +18,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       roles: ['admin', 'teacher', 'school_admin'],
       onForbidden: '404',
-      title: 'Dashboard Kelas',
+      title: 'Papan Pemuka Kelas',
       module: 'M08',
       v2: true,
     },

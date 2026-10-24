@@ -28,7 +28,7 @@ export interface HubCard {
 }
 
 const MULTIPLAYER = {
-  badge: '👥 MULTIPLAYER',
+  badge: '👥 BERBILANG PEMAIN',
   badgeClass: 'bg-indigo-100 text-indigo-700',
 } as const
 
@@ -37,7 +37,7 @@ export const HUB_CARDS: readonly HubCard[] = [
     id: 'papan-bijak',
     emoji: '🎲',
     title: 'Papan Bijak',
-    text: 'Board game matematik! Gulung dadu, jawab soalan, dan lumba ke garisan penamat bersama kawan.',
+    text: 'Permainan papan matematik! Gulung dadu, jawab soalan, dan lumba ke garisan penamat bersama kawan.',
     chips: [{ text: '🆕 Belum main lagi', unlessFlag: 'papanBijakPlayed' }],
     icon: 'fa-play',
     button: 'Main Sekarang',
@@ -45,7 +45,7 @@ export const HUB_CARDS: readonly HubCard[] = [
   },
   {
     id: 'battle',
-    badge: '🔥 HOT',
+    badge: '🔥 HANGAT',
     badgeClass: 'bg-red-100 text-red-700',
     emoji: '⚔️',
     title: 'Battle Arena',
@@ -60,7 +60,7 @@ export const HUB_CARDS: readonly HubCard[] = [
     ...MULTIPLAYER,
     emoji: '⚔️',
     title: 'Perang Fakta',
-    text: 'Betul atau Salah? Vote bersama 2-6 pemain! 15 pusingan, 10 saat setiap pernyataan.',
+    text: 'Betul atau Salah? Undi bersama 2-6 pemain! 15 pusingan, 10 saat setiap pernyataan.',
     chips: [{ text: '👥 2-6 Pemain' }, { text: '⚡ 10 Saat' }],
     icon: 'fa-fist-raised',
     button: 'Main!',
@@ -72,7 +72,7 @@ export const HUB_CARDS: readonly HubCard[] = [
     emoji: '🏰',
     title: 'Benteng Ilmu',
     text: 'Duel 1v1! Serang benteng lawan dengan kuasa ilmu. Jawab betul = serang, salah = rosak sendiri!',
-    chips: [{ text: '🏰 HP 100' }, { text: '⚡ Special Effect' }],
+    chips: [{ text: '🏰 HP 100' }, { text: '⚡ Kesan Khas' }],
     icon: 'fa-shield-alt',
     button: 'Duel!',
     to: '/benteng-ilmu',
@@ -131,7 +131,7 @@ export const HUB_CARDS: readonly HubCard[] = [
     text: 'Pusing roda setiap hari untuk dapat ganjaran misteri — Syiling, bonus XP, atau cabaran khas!',
     chips: [{ text: '🎁 Hadiah Harian' }, { text: '1x / hari' }],
     icon: 'fa-circle-notch',
-    button: 'Spin Sekarang!',
+    button: 'Putar Sekarang!',
     to: '/permainan/roda-nasib',
   },
   {
@@ -140,18 +140,18 @@ export const HUB_CARDS: readonly HubCard[] = [
     badgeClass: 'bg-amber-100 text-amber-700',
     emoji: '🏆',
     title: 'Pertandingan Mingguan',
-    text: 'Lumba dengan semua pelajar setiap minggu! Top 3 dapat Syiling bonus dan badge istimewa.',
-    chips: [{ text: '📊 Ranking Live' }, { text: '🥇 Hadiah Top 3' }],
+    text: 'Lumba dengan semua pelajar setiap minggu! 3 teratas dapat Syiling bonus dan lencana istimewa.',
+    chips: [{ text: '📊 Kedudukan Live' }, { text: '🥇 Hadiah 3 Teratas' }],
     icon: 'fa-trophy',
-    button: 'Lihat Ranking',
+    button: 'Lihat Kedudukan',
     to: '/permainan/pertandingan',
   },
   {
     id: 'peta-pengembaraan',
     emoji: '🗺️',
     title: 'Peta Pengembaraan',
-    text: 'Jelajah dunia matematik! Selesaikan misi di setiap checkpoint untuk unlock kawasan baru.',
-    chips: [{ text: '🌍 Jelajah Dunia' }, { text: '📈 Progress' }],
+    text: 'Jelajah dunia matematik! Selesaikan misi di setiap checkpoint untuk membuka kunci kawasan baru.',
+    chips: [{ text: '🌍 Jelajah Dunia' }, { text: '📈 Kemajuan' }],
     icon: 'fa-map-marked-alt',
     button: 'Jelajah',
     to: '/peta-belajar',
@@ -163,7 +163,7 @@ export const HUB_CARDS: readonly HubCard[] = [
     emoji: '🧠',
     title: 'Uji Minda',
     text: 'Cabaran khas dari ibu/bapa kamu! Jawab soalan, kumpul mata, dan tebus hadiah istimewa.',
-    chips: [{ text: '🎁 Hadiah Custom' }, { text: '⏳ Menunggu Ibu Bapa' }],
+    chips: [{ text: '🎁 Hadiah Tersuai' }, { text: '⏳ Menunggu Ibu Bapa' }],
     icon: 'fa-brain',
     button: 'Mula',
     to: '/permainan/uji-minda',
@@ -174,8 +174,8 @@ export const HUB_CARDS: readonly HubCard[] = [
     badgeClass: 'bg-sky-100 text-sky-700',
     emoji: '⚡',
     title: 'Cabaran Kilat',
-    text: '60 saat! Jawab laju, bina combo, pecah rekod! Makin panjang kombo, makin banyak Syiling.',
-    chips: [{ text: '⏱️ 60 Saat' }, { text: '🔥 Combo' }],
+    text: '60 saat! Jawab laju, bina kombo, pecah rekod! Makin panjang kombo, makin banyak Syiling.',
+    chips: [{ text: '⏱️ 60 Saat' }, { text: '🔥 Kombo' }],
     icon: 'fa-bolt',
     button: 'Mula!',
     to: '/permainan/cabaran-kilat',
@@ -210,8 +210,8 @@ export const HUB_CARDS: readonly HubCard[] = [
     badgeClass: 'bg-orange-50 text-orange-800',
     emoji: '🎯',
     title: 'Tembak Jawapan',
-    text: 'Jawapan jatuh dari atas — tap yang betul sebelum sampai bawah! Makin laju setiap level!',
-    chips: [{ text: '❤️ 3 Nyawa' }, { text: '⚡ Speed Up' }],
+    text: 'Jawapan jatuh dari atas — ketik yang betul sebelum sampai bawah! Makin laju setiap tahap!',
+    chips: [{ text: '❤️ 3 Nyawa' }, { text: '⚡ Makin Laju' }],
     icon: 'fa-crosshairs',
     button: 'Tembak!',
     to: '/permainan/tembak-jawapan',
@@ -223,14 +223,14 @@ export const HUB_CARDS: readonly HubCard[] = [
     emoji: '🔗',
     title: 'Sambung Kata',
     text: 'Taip perkataan bermula huruf terakhir! Bina rantaian paling panjang sebelum masa habis.',
-    chips: [{ text: '⌨️ Taip Laju' }, { text: '🔗 Chain' }],
+    chips: [{ text: '⌨️ Taip Laju' }, { text: '🔗 Rantaian' }],
     icon: 'fa-link',
     button: 'Mula!',
     to: '/permainan/sambung-kata',
   },
   {
     id: 'kad-memori',
-    badge: '🧠 HOT!',
+    badge: '🧠 HANGAT!',
     badgeClass: 'bg-purple-100 text-purple-800',
     emoji: '🃏',
     title: 'Kad Memori',
@@ -245,7 +245,7 @@ export const HUB_CARDS: readonly HubCard[] = [
 /** The hero copy (FN-M16-4.1.1). */
 export const HUB_HEADING = '🎮 Zona Permainan'
 export const HUB_INTRO =
-  'Main sambil belajar! Kumpul Syiling, naik ranking, dan jadi champion sekolah. Pilih permainan kegemaran kamu.'
+  'Main sambil belajar! Kumpul Syiling, naik kedudukan, dan jadi champion sekolah. Pilih permainan kegemaran kamu.'
 
 /** Open-rooms strip, empty state (FN-M16-4.1.2). */
 export const HUB_NO_ROOMS = {

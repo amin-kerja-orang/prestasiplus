@@ -15,8 +15,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      title: 'Dashboard Sekolah — Prestasi',
-      header: { title: 'Dashboard Sekolah', subtitle: 'Selamat datang kembali' },
+      title: 'Papan Pemuka Sekolah — Prestasi',
+      header: { title: 'Papan Pemuka Sekolah', subtitle: 'Selamat datang kembali' },
       module: 'M08',
       v2: true,
     },
@@ -30,7 +30,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       title: 'Pilih Tingkatan — Prestasi | PRESTASIPLUS',
       header: {
-        title: 'Dashboard Tingkatan',
+        title: 'Papan Pemuka Tingkatan',
         subtitle: 'Pilih tingkatan untuk lihat prestasi keseluruhan',
       },
       module: 'M08',
@@ -45,7 +45,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: (route) =>
-        `Tingkatan ${route.params.code === 't4' ? '4' : '5'} — Dashboard Tingkatan | PRESTASIPLUS`,
+        `Tingkatan ${route.params.code === 't4' ? '4' : '5'} — Papan Pemuka Tingkatan | PRESTASIPLUS`,
       module: 'M08',
       v2: true,
     },

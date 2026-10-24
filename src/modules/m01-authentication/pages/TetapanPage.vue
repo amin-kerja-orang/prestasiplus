@@ -155,8 +155,8 @@ onMounted(load)
                 🕌 Mod Rohani
               </h2>
               <p class="text-caption text-muted">
-                Personalisasi pembelajaran ikut nilai keagamaan anda. Boleh toggle off bila-bila
-                masa.
+                Peribadikan pembelajaran mengikut nilai keagamaan anda. Boleh dimatikan pada
+                bila-bila masa.
               </p>
             </div>
 
@@ -164,21 +164,21 @@ onMounted(load)
               id="spiritual_mode"
               v-model:checked="form.spiritualMode"
               label="Aktifkan Mod Rohani"
-              description="Master toggle — kalau off, semua spiritual touchpoints disable."
+              description="Suis utama — jika dimatikan, semua elemen rohani dinyahaktifkan."
             />
             <SettingRow
               id="show_bismillah_splash"
               v-model:checked="form.showBismillahSplash"
-              label="Tunjuk doa sebelum quiz"
-              description='Splash 2-saat sebelum mula quiz: "Bismillahi tawakkaltu &apos;alallah". Tetapan untuk Muslim.'
+              label="Tunjuk doa sebelum kuiz"
+              description='Paparan 2 saat sebelum kuiz bermula: "Bismillahi tawakkaltu &apos;alallah". Tetapan untuk Muslim.'
             />
             <SettingRow
               id="subuh_push_enabled"
               v-model:checked="form.subuhPushEnabled"
               v-model:time="form.subuhPushTime"
               has-time
-              label="Push waktu Subuh"
-              description="Push notifikasi pagi awal untuk yang bangun Subuh — 30 minit study window selepas Subuh = paling produktif."
+              label="Notifikasi waktu Subuh"
+              description="Notifikasi awal pagi untuk yang bangun Subuh — 30 minit waktu belajar selepas Subuh paling produktif."
             />
             <SettingRow
               id="ramadan_mode_enabled"
@@ -186,7 +186,7 @@ onMounted(load)
               v-model:time="form.sahurPushTime"
               has-time
               label="Mod Ramadan"
-              description="Push waktu sahur (~4:30am) untuk study sebelum Subuh. Pace lebih ringan waktu Ramadan."
+              description="Notifikasi waktu sahur (~4:30 pagi) untuk belajar sebelum Subuh. Rentak lebih ringan semasa Ramadan."
             />
           </div>
         </UCard>
@@ -196,10 +196,10 @@ onMounted(load)
             <div class="flex flex-col gap-1">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon name="i-ph-globe-hemisphere-west" class="size-5" aria-hidden="true" />
-                🌍 Latar Agama (opsyen)
+                🌍 Latar Agama (pilihan)
               </h2>
               <p class="text-caption text-muted">
-                Bagi konteks supaya AI dan content lebih relevan. Tidak diwajibkan.
+                Beri konteks supaya AI dan kandungan lebih relevan. Tidak diwajibkan.
               </p>
             </div>
 
@@ -209,8 +209,8 @@ onMounted(load)
                   Agama / kepercayaan
                 </label>
                 <p class="text-caption text-muted">
-                  Untuk mod rohani yang sesuai. Future: Hindu/Buddhist/Christian content akan
-                  ditambah.
+                  Untuk mod rohani yang sesuai. Kandungan Hindu/Buddha/Kristian akan ditambah
+                  kemudian.
                 </p>
               </div>
               <USelect

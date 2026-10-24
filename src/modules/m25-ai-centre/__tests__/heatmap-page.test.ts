@@ -99,7 +99,7 @@ describe('HeatmapTopikLemahPage', () => {
 
   it('renders hero, legend, subject blocks and cells with exact copy and the practice link', async () => {
     const w = await mountPage(DATA)
-    expect(w.get('h1').text()).toBe('Heatmap Topik Lemah')
+    expect(w.get('h1').text()).toBe('Peta Haba Topik Lemah')
     expect(w.get('[data-testid="heatmap-hero"] p').text()).toBe(
       'Topik mana anda kuat, mana lemah — semua dalam satu paparan. Klik kotak merah untuk fokus belajar.',
     )
@@ -135,7 +135,7 @@ describe('HeatmapTopikLemahPage', () => {
     expect(w.find('[data-testid="heatmap-hero"]').exists()).toBe(true)
     expect(w.findAll('[data-testid="heatmap-legend"] li')).toHaveLength(4)
     const empty = w.get('[data-testid="heatmap-empty"]')
-    expect(empty.text()).toContain('Belum ada data heatmap.')
+    expect(empty.text()).toContain('Belum ada data peta haba.')
     expect(empty.text()).toContain(
       'Jawab soalan latih tubi dahulu — topik kuat dan lemah anda akan dipaparkan di sini.',
     )

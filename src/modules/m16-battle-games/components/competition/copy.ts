@@ -11,7 +11,7 @@ export const BACK_LINK = { label: 'Permainan', to: '/permainan' } as const
 
 export const PERTANDINGAN_COPY = {
   heading: '🏆 Pertandingan Mingguan',
-  sub: 'Lumba dengan semua pelajar! Top 3 dapat Syiling bonus.',
+  sub: 'Lumba dengan semua pelajar! 3 teratas dapat Syiling bonus.',
   weekLabel: '📅 Minggu Ini',
   countdownLabel: '⏳ Tamat dalam',
   countdownBefore: '-',
@@ -22,10 +22,10 @@ export const PERTANDINGAN_COPY = {
     { medal: '🥉', label: 'Tempat Ketiga' },
   ],
   notStarted: 'Belum mula lagi minggu ini!',
-  notStartedHint: 'Buat Latih Tubi untuk masuk ranking.',
+  notStartedHint: 'Buat Latih Tubi untuk masuk kedudukan.',
   startPractice: 'Mula Latih Tubi',
   startPracticeTo: '/practice',
-  boardHeading: '📊 Papan Ranking Mingguan',
+  boardHeading: '📊 Papan Kedudukan Mingguan',
   sessions: 'sesi',
   correct: 'betul',
   accuracy: 'tepat',
@@ -43,13 +43,13 @@ export const UJI_MINDA_COPY = {
   howTitle: 'Bagaimana nak mula?',
   howBefore: 'Minta ibu atau bapa kamu log masuk ke PRESTASIPLUS, pergi ke',
   howLink: '"Cabaran Uji Minda"',
-  howAfter: 'di dashboard mereka, dan tetapkan cabaran + hadiah untuk kamu!',
+  howAfter: 'di papan pemuka mereka, dan tetapkan cabaran + hadiah untuk kamu!',
   setHeading: '📋 Apa Ibu/Bapa boleh tetap:',
   setItems: [
     '✅ Bilangan soalan setiap set',
-    '✅ Syiling per jawapan betul',
+    '✅ Syiling bagi setiap jawapan betul',
     '✅ Hadiah custom (cth: buku, jajan, trip)',
-    '✅ Syiling minimum untuk claim hadiah',
+    '✅ Syiling minimum untuk menuntut hadiah',
   ],
 } as const
 

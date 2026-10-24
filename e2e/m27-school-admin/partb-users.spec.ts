@@ -93,7 +93,7 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
     await expect(first.getByTestId('user-edit')).toHaveAttribute('title', 'Edit')
     await expect(first.getByTestId('user-status')).toHaveText('Aktif')
     await expect(page.locator('input[type="checkbox"]')).toHaveCount(0)
-    await expect(page.getByTestId('sp-page').getByText(/Import|Padam|Login As/)).toHaveCount(0)
+    await expect(page.getByTestId('sp-page').getByText(/Import|Padam|Log Masuk Sebagai/)).toHaveCount(0)
   })
 
   test('E2E-M27-85 status filter and search narrow the list and the count', async ({
@@ -127,7 +127,7 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
     await signIn(page, P1)
     await openList(page, gotoApp, '/admin-sekolah/pelajar')
     const back = page.getByTestId('user-crumb-back')
-    await expect(back).toHaveText('Dashboard Sekolah')
+    await expect(back).toHaveText('Papan Pemuka Sekolah')
     await expect(back).toHaveAttribute('href', '/admin-sekolah')
     await expect(page.locator('main h1, h1').first()).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Senarai Pelajar' }).first()).toBeVisible()
@@ -176,13 +176,13 @@ test.describe('S7 Senarai Guru', MODULE, () => {
     await expect(page.getByTestId('user-add')).toHaveText('Cipta Pengguna')
     await expect(page.getByTestId('user-add')).toHaveAttribute('href', '/admin-sekolah/guru/baru')
     await expect(page.locator('thead th')).toHaveText([
-      '#', 'Nama', 'Emel', 'Telefon', 'Kelas', 'Login Terakhir', 'Aktif?', 'Tarikh', 'Tindakan',
+      '#', 'Nama', 'Emel', 'Telefon', 'Kelas', 'Log Masuk Terakhir', 'Aktif?', 'Tarikh', 'Tindakan',
     ])
     const t5 = page.locator('[data-testid="user-row"][data-user-id="5"]')
     await expect(t5.getByTestId('user-classes')).toHaveText('2 kelas')
     await expect(t5.getByTestId('user-toggle')).toContainText('Aktif')
     await expect(t5.getByTestId('user-name')).toHaveAttribute('href', '/admin-sekolah/guru/5')
-    await expect(t5.getByTestId('user-last-login')).toHaveText(/^(Belum login|\d+ .+ yang lepas)$/)
+    await expect(t5.getByTestId('user-last-login')).toHaveText(/^(Belum log masuk|\d+ .+ yang lepas)$/)
     await expect(page.getByText('Tambah Pelajar')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
@@ -212,7 +212,7 @@ test.describe('S9, S10 edit pages (read part)', MODULE, () => {
     await expect(page.getByTestId('user-profile-updated')).toContainText('Kemaskini: ')
     await expect(page.getByTestId('user-name')).not.toHaveValue('')
     await expect(page.getByTestId('user-status-line')).toContainText('Aktif')
-    await expect(page.getByTestId('user-password-toggle')).toContainText('Reset Kata Laluan')
+    await expect(page.getByTestId('user-password-toggle')).toContainText('Set Semula Kata Laluan')
     await expect(page.getByTestId('user-password-panel')).toBeHidden()
     await page.getByTestId('user-password-toggle').click()
     await expect(page.getByTestId('user-new-password')).toBeVisible()

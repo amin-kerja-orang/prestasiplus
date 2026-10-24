@@ -36,11 +36,11 @@ const when = (iso: string | null): DrillCell => ({
 })
 
 export const BAND_LABEL: Record<string, string> = {
-  champion: 'Champion',
+  champion: 'Juara',
   consistent: 'Konsisten',
   developing: 'Berkembang',
   minimum: 'Minimum',
-  disengaged: 'Disengaged',
+  disengaged: 'Tidak Terlibat',
 }
 
 export function drillTable<T extends CcDrillType>(type: T, rows: CcDrillRowMap[T][]): DrillTable {

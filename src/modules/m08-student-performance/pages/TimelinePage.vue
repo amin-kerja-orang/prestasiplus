@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * S16 `/timeline` "Timeline Saya" (M08-T3; FR-M08-97..99, FN-M08-6.1.*), from `GET /api/timeline`: heading,
- * "Tambah Post", the empty card or the posts (newest first, PROPOSED layout), and the "Profil Awam Anda"
+ * S16 `/timeline` "Garis Masa Saya" (M08-T3; FR-M08-97..99, FN-M08-6.1.*), from `GET /api/timeline`: heading,
+ * "Tambah Hantaran", the empty card or the posts (newest first, PROPOSED layout), and the "Profil Awam Anda"
  * box with the viewer's own public link (DV-19) and a copy button (`fa-copy` / `fa-check` for 2,000ms).
  */
 import { computed, onBeforeUnmount, ref } from 'vue'
@@ -39,7 +39,7 @@ onBeforeUnmount(() => {
 
 <template>
   <DsPage
-    title="📸 Timeline Saya"
+    title="📸 Garis Masa Saya"
     subtitle="Kongsi sijil, pencapaian, aktiviti &amp; cerita anda"
     data-testid="timeline-page"
   >
@@ -47,7 +47,7 @@ onBeforeUnmount(() => {
       <UButton
         to="/timeline/create"
         icon="i-ph-plus"
-        label="Tambah Post"
+        label="Tambah Hantaran"
         size="lg"
         data-testid="add-post"
       />
@@ -58,7 +58,7 @@ onBeforeUnmount(() => {
     <template v-else-if="data">
       <div v-if="posts.length === 0" data-testid="timeline-empty">
         <DsEmptyState
-          title="Timeline Kosong"
+          title="Garis Masa Kosong"
           description="Mula kongsi pencapaian, sijil, dan cerita anda untuk ditunjukkan pada profil awam anda!"
           icon="images"
           friend="aisyah"
@@ -67,7 +67,7 @@ onBeforeUnmount(() => {
             <UButton
               to="/timeline/create"
               icon="i-ph-plus"
-              label="Tambah Post Pertama"
+              label="Tambah Hantaran Pertama"
               size="lg"
               data-testid="add-first"
             />

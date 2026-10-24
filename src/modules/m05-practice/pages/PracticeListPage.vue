@@ -3,7 +3,7 @@
  * S2 `/practice` "Latih Tubi" (M05-T4; FR-M05-29…34, BR-28, DV-M05-03, DV-M05-11), restyled for v2
  * (AR-HUB, batch B01).
  *
- * - Title block "Latih Tubi 🎯", the "Soalan by Chapter" banner → `/practice/chapter`.
+ * - Title block "Latih Tubi 🎯", the "Soalan Mengikut Bab" banner → `/practice/chapter`.
  * - One card per practice subject (#2; grid 1 / `md` 2 / `xl` 3), each a link to `/practice/{CODE}`.
  *   The "Mula Latihan" element is a `<button>` inside the link with no handler of its own, as live
  *   (D-14 replicated, D10): a click follows the card link.
@@ -54,11 +54,11 @@ watch(
         <DsCharacterCard
           accent="action"
           art="books"
-          title="Soalan by Chapter"
+          title="Soalan Mengikut Bab"
           description="Jawab bab demi bab ikut buku teks dan DSKP. Bab seterusnya terkunci sehingga bab semasa lengkap."
         >
           <span class="mt-1 flex items-center gap-2 text-label text-highlighted">
-            <UBadge color="primary" variant="solid" size="md">Mode Baru</UBadge>
+            <UBadge color="primary" variant="solid" size="md">Mod Baharu</UBadge>
             Mula <UIcon name="i-ph-arrow-right-bold" class="size-4" aria-hidden="true" />
           </span>
         </DsCharacterCard>

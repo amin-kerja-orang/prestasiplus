@@ -14,7 +14,7 @@ vi.mock('../../api/guru', () => guru)
 const t = (w: VueWrapper, id: string) => w.find(`[data-testid="${id}"]`)
 
 async function fillAndSubmit(w: VueWrapper): Promise<void> {
-  await t(w, 'paper-jenis').setValue('Trial Paper')
+  await t(w, 'paper-jenis').setValue('Kertas Percubaan')
   await t(w, 'paper-subject').setValue('Kimia')
   await t(w, 'paper-tahun').setValue('2024')
   await pickFiles(w, 'paper-files', [new File(['x'], 'kertas.pdf'), new File(['y'], 'skema.docx')], true)
@@ -35,7 +35,7 @@ describe('Hantar Kertas submit (contract #60)', () => {
       File[],
     ]
     expect(body).toMatchObject({
-      jenisSoalan: 'Trial Paper',
+      jenisSoalan: 'Kertas Percubaan',
       subject: 'Kimia',
       tahun: 2024,
       tingkatan: '',

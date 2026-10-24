@@ -2,7 +2,7 @@
 /**
  * S1 `/prestasi/sekolah` "Dashboard Sekolah" (M08-T5; FR-M08-11…21). From `GET /api/performance/school`:
  * the admin sees the platform, the school admin and every other role the own school (FR-M08-13).
- * GPS, grade distribution, subject rows and the teacher On Track / Below come from the headcount
+ * GPS, grade distribution, subject rows and the teacher Atas Landasan / Below come from the headcount
  * figures (M08-T1b) and show "—", 0 and "Tiada data headcount" until they exist.
  */
 import { computed } from 'vue'
@@ -43,10 +43,10 @@ const cards = computed<StatSpec[]>(() => {
 const quickNav = computed(() => [
   {
     to: '/prestasi/tingkatan',
-    label: '🎓 Dashboard Tingkatan',
+    label: '🎓 Papan Pemuka Tingkatan',
     icon: icon.value('graduation-cap'),
   },
-  { to: '/prestasi/kelas', label: '📊 Dashboard Kelas', icon: icon.value('chart-bar') },
+  { to: '/prestasi/kelas', label: '📊 Papan Pemuka Kelas', icon: icon.value('chart-bar') },
   { to: '/headcount', label: '📈 Headcount', icon: icon.value('chart-line-up') },
   { to: '/analisa-item/sekolah', label: '🔬 Analisa Item', icon: icon.value('list-numbers') },
 ])
@@ -59,7 +59,7 @@ const quickNav = computed(() => [
     <template v-else-if="data">
       <div data-testid="school-header">
         <DsPageHeader
-          title="Dashboard Sekolah"
+          title="Papan Pemuka Sekolah"
           :subtitle="`Ringkasan prestasi keseluruhan · ${plain(data.header.classCount)} kelas · ${plain(data.header.studentCount)} murid`"
           subtitle-testid="header-summary"
         >

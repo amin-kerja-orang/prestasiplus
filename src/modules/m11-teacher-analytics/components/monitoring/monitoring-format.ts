@@ -21,7 +21,7 @@ export const dmyHm = (iso: string | null) => (iso ? formatMyt(iso, 'dd/MM/yyyy H
 export const dmy = (iso: string) => formatMyt(iso, 'dd/MM/yyyy')
 /** Modal time, raw `yyyy-mm-dd HH:mm:ss`. */
 export const rawTime = (iso: string) => formatMyt(iso, 'yyyy-MM-dd HH:mm:ss')
-/** Subscription date with the live English month ("12 May 2027"). */
+/** Subscription date with the BM month ("12 Mei 2027"). */
 export const subscriptionDate = formatDateEnUnpadded
 
 /** Nuxt UI colour names used by the staff badges, progress bars and text (token colours only). */
@@ -66,5 +66,5 @@ export const TOPIC_COLOR: Record<TopicBadge, UiColor> = {
   Lemah: 'error',
 }
 
-export const STATUS_LABEL = { aktif: 'Aktif', login: 'Login sahaja', never: 'Belum login' } as const
+export const STATUS_LABEL = { aktif: 'Aktif', login: 'Log Masuk sahaja', never: 'Belum log masuk' } as const
 export const STATUS_COLOR = { aktif: 'success', login: 'warning', never: 'neutral' } as const

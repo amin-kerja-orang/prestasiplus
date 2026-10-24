@@ -42,7 +42,7 @@ async function run(force: boolean): Promise<void> {
     }
   } catch (err) {
     if (isApiError(err) && (err.code === 'NETWORK_ERROR' || err.status === 0)) {
-      errorText.value = 'Failed to fetch'
+      errorText.value = 'Sambungan terputus. Semak internet anda dan cuba semula.'
     } else {
       errorText.value = (err instanceof Error && err.message) || 'Gagal jana penjelasan'
     }

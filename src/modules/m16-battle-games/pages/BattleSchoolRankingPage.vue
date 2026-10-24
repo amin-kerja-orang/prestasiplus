@@ -84,7 +84,7 @@ const podiumOrder = computed(() => {
     <UCard>
       <div class="flex items-center justify-between gap-4">
         <div class="min-w-0">
-          <h2 class="text-title text-highlighted">Papan Ranking Sekolah</h2>
+          <h2 class="text-title text-highlighted">Papan Kedudukan Sekolah</h2>
           <p class="text-body text-muted">Sekolah mana paling hebat? Wakili sekolah anda!</p>
         </div>
         <DsArt3D name="trophy" size="hero" float class="hidden sm:block" />
@@ -160,7 +160,7 @@ const podiumOrder = computed(() => {
         </h3>
         <DsEmptyState
           v-if="rows.length === 0"
-          title="Belum ada data ranking. Mula battle untuk melihat ranking sekolah!"
+          title="Belum ada data kedudukan. Mula battle untuk melihat kedudukan sekolah!"
           icon="trophy"
           data-testid="battle-schools-empty"
         />

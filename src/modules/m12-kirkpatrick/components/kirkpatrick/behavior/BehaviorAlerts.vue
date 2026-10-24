@@ -13,9 +13,9 @@ defineProps<{ alerts: BehaviorAlert[] }>()
 
 function text(a: BehaviorAlert): string {
   if (a.kind === 'never')
-    return `${a.name}: ${plain(a.n ?? 0)} pelajar tidak pernah login langsung.`
+    return `${a.name}: ${plain(a.n ?? 0)} pelajar tidak pernah log masuk langsung.`
   if (a.kind === 'teacher')
-    return `${a.name}: ${plain(a.n ?? 0)} guru telah login tetapi tiada pelajar yang menjawab soalan.`
+    return `${a.name}: ${plain(a.n ?? 0)} guru telah log masuk tetapi tiada pelajar yang menjawab soalan.`
   return `${a.name}: ${pct(a.pct ?? 0)} pelajar aktif menjawab soalan. Tahniah!`
 }
 </script>

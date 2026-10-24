@@ -40,7 +40,7 @@ import { parentInvitesRepo } from './parent-invites-store'
 import { parentLinksRepo } from './parent-links-store'
 
 /** FR-L45-11 (reference text). */
-export const MSG_INVITE_REGENERATED = 'Link jemputan baru telah dijana!'
+export const MSG_INVITE_REGENERATED = 'Pautan jemputan baharu telah dijana!'
 
 const studentOnly = requireRole('student')
 const parentOnly = requireRole('parent')

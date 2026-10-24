@@ -129,7 +129,7 @@ describe('route and header (FR-M27-74, 44)', () => {
       subtitle: 'SMK Demo',
     })
     expect(w.find('nav[data-testid="am-breadcrumb"]').exists()).toBe(false)
-    expect(w.text()).not.toContain('Dashboard Sekolah')
+    expect(w.text()).not.toContain('Papan Pemuka Sekolah')
   })
 
   it('appends the level suffix to the sub-line with a level', async () => {
@@ -182,7 +182,7 @@ describe('tiles and distribution (FR-M27-75; AC-M27-21.2)', () => {
     const w = await mountPage(data())
     expect(texts(w, 'am-tile-label')).toEqual([
       'Jumlah Pelajar',
-      'On Track',
+      'Atas Landasan',
       'Perlu Perhatian',
       'Berisiko Tinggi',
     ])
@@ -273,7 +273,7 @@ describe('subject card and risk list (FR-M27-76; AC-M27-21.3)', () => {
       'Penguasaan',
     ])
     expect(texts(w, 'am-rank')).toEqual(['1', '2', '3'])
-    expect(texts(w, 'am-status')).toEqual(['Berisiko Tinggi', 'Perlu Perhatian', 'On Track'])
+    expect(texts(w, 'am-status')).toEqual(['Berisiko Tinggi', 'Perlu Perhatian', 'Atas Landasan'])
     expect(texts(w, 'am-class')).toEqual(['Tingkatan 4 4 Contoh', '-', 'Tingkatan 4 4 Contoh'])
     expect(texts(w, 'am-accuracy')[1]).toBe('Tiada data')
     expect(texts(w, 'am-score')).toEqual(['79', '78', '77'])

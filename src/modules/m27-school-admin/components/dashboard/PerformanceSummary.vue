@@ -140,7 +140,7 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
               data-testid="sd-level-bar"
             />
           </div>
-          <p class="mt-3 text-center text-caption text-muted">Click untuk detail</p>
+          <p class="mt-3 text-center text-caption text-muted">Klik untuk butiran</p>
         </DsPanel>
       </RouterLink>
     </div>

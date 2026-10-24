@@ -79,11 +79,11 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
     expect(w.get('[data-testid="form-cancel"]').attributes('href')).toBe('/admin-sekolah/pelajar')
   })
 
-  it('has the amber bar "Reset Kata Laluan" closed by default, with its sub-line, placeholders and hint', async () => {
+  it('has the amber bar "Set Semula Kata Laluan" closed by default, with its sub-line, placeholders and hint', async () => {
     const { wrapper: w } = await open()
     const toggle = w.get('[data-testid="user-password-toggle"]')
-    expect(w.text()).toContain('Reset Kata Laluan')
-    expect(w.text()).toContain('Klik untuk buka bahagian reset kata laluan')
+    expect(w.text()).toContain('Set Semula Kata Laluan')
+    expect(w.text()).toContain('Klik untuk buka bahagian set semula kata laluan')
     expect(w.text()).not.toContain('Tukar Kata Laluan')
     const panel = w.get('[data-testid="user-password-panel"]')
     expect(panel.attributes('style')).toContain('display: none')
@@ -192,7 +192,7 @@ describe('S10 Edit Guru (FR-M27-104 to 107)', () => {
       'No. Telefon (Pilihan)',
     ])
     expect(has(w, 'user-status-line')).toBe(false)
-    expect(w.text()).toContain('Reset Kata Laluan')
+    expect(w.text()).toContain('Set Semula Kata Laluan')
     expect(w.get('[data-testid="user-password-panel"]').attributes('style')).toContain('display: none')
     expect(w.find('select').exists()).toBe(false)
     expect(w.get('[data-testid="form-cancel"]').attributes('href')).toBe('/admin-sekolah/guru')

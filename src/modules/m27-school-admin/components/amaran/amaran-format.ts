@@ -18,7 +18,7 @@ export const LEVEL_PILLS: ReadonlyArray<{ level: LevelFilter | null; label: stri
 ]
 
 export const STATUS_LABEL: Readonly<Record<RiskStatus, string>> = {
-  on_track: 'On Track',
+  on_track: 'Atas Landasan',
   watch: 'Perlu Perhatian',
   high: 'Berisiko Tinggi',
 }

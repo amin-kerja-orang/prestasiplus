@@ -3,7 +3,7 @@
 import type { ArticleCategory, GradeLevel, VideoCategory } from '../types'
 
 export const CATEGORY_LABELS: Readonly<Record<ArticleCategory, string>> = {
-  TIPS_BELAJAR: 'Tips Belajar',
+  TIPS_BELAJAR: 'Petua Belajar',
   BERITA: 'Berita',
   MOTIVASI: 'Motivasi',
   PANDUAN_IBU_BAPA: 'Panduan Ibu Bapa',
@@ -25,7 +25,7 @@ export const GRADE_LABELS: Readonly<Record<GradeLevel, string>> = {
 export const VIDEO_CATEGORY_LABELS: Readonly<Record<VideoCategory, string>> = {
   motivasi: 'Motivasi',
   tutorial: 'Tutorial',
-  'tips-spm': 'Tips SPM',
+  'tips-spm': 'Petua SPM',
   ceramah: 'Ceramah',
   'lain-lain': 'Lain-lain',
 }

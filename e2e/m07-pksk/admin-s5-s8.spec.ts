@@ -102,7 +102,7 @@ test.describe('M07 S5 question list', MODULE, () => {
       'Soalan',
       'Bahagian',
       'Domain',
-      'Level',
+      'Tahap',
       'Status',
       'Tindakan',
     ])
@@ -171,7 +171,7 @@ test.describe('M07 S5 question list', MODULE, () => {
       'C - Esei',
     ])
     await expect(page.getByTestId('filter-level').locator('option')).toHaveText([
-      'Semua Level',
+      'Semua Tahap',
       'Tingkatan 1',
       'Tingkatan 4',
     ])
@@ -791,7 +791,7 @@ test.describe('M07 S8 access', MODULE, () => {
     await toggle.click()
     await expect(form).toBeVisible()
     await expect(page.getByTestId('grant-user')).toHaveAttribute('type', 'number')
-    await expect(page.getByTestId('grant-user')).toHaveAttribute('placeholder', 'User ID')
+    await expect(page.getByTestId('grant-user')).toHaveAttribute('placeholder', 'ID Pengguna')
     await expect(page.getByTestId('grant-expires')).toHaveAttribute('type', 'date')
     await expect(page.getByTestId('grant-package').locator('option')).toHaveText([
       'PKSK Tingkatan 1 (SBP/MRSM) (T1)',

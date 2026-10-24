@@ -55,8 +55,11 @@ export const KAD_COPY = {
 export const pct1 = (value: number): string =>
   formatNumber(value, { decimals: 1, dropZeroFraction: true })
 
-/** "Bronze" from the tier key (English key capitalised, as live). */
-export const tierName = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1)
+const TIER_NAMES: Record<string, string> = { bronze: 'Gangsa', silver: 'Perak', gold: 'Emas', platinum: 'Platinum' }
+
+/** "Gangsa" from the tier key (BM name, FB-025; an unknown key is capitalised). */
+export const tierName = (key: string): string =>
+  TIER_NAMES[key] ?? key.charAt(0).toUpperCase() + key.slice(1)
 
 export const profilText = (accuracy: number, answered: number): string =>
   `Lihat profil saya di PRESTASIPLUS! ${pct1(accuracy)}% ketepatan dengan ${String(answered)} soalan dijawab.`
@@ -70,7 +73,7 @@ export const masteryText = (
   subject: string,
   accuracy: number,
 ): string =>
-  `🧠 Saya sudah capai Level ${String(level)} (${stage}) dalam ${subject} di PRESTASIPLUS! Ketepatan ${pct1(accuracy)}%. Jom bersaing!`
+  `🧠 Saya sudah capai Tahap ${String(level)} (${stage}) dalam ${subject} di PRESTASIPLUS! Ketepatan ${pct1(accuracy)}%. Jom bersaing!`
 
 /** DV-M14-03: the live text leaves the value empty; the card's value is inserted. */
 export const rankingText = (accuracy: number): string =>

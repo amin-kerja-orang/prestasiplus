@@ -108,9 +108,9 @@ test.describe('M15 S5 Kedai Hadiah', MODULE, () => {
 test.describe('M15 S6 Kotak Misteri', MODULE, () => {
   const BOXES = [
     { id: 1, name: 'Kotak Gangsa', cost: 2, coins: '1-20', xp: '1-10', ribbon: null },
-    { id: 2, name: 'Kotak Perak', cost: 5, coins: '10-50', xp: '5-25', ribbon: 'RARE' },
-    { id: 3, name: 'Kotak Emas', cost: 10, coins: '25-150', xp: '10-50', ribbon: 'EPIC' },
-    { id: 4, name: 'Kotak Legenda', cost: 25, coins: '100-500', xp: '25-100', ribbon: 'LEGENDARY' },
+    { id: 2, name: 'Kotak Perak', cost: 5, coins: '10-50', xp: '5-25', ribbon: 'JARANG' },
+    { id: 3, name: 'Kotak Emas', cost: 10, coins: '25-150', xp: '10-50', ribbon: 'EPIK' },
+    { id: 4, name: 'Kotak Legenda', cost: 25, coins: '100-500', xp: '25-100', ribbon: 'LEGENDA' },
   ]
 
   test('SRS §12 #43 admin: hero, chip, four locked boxes, nothing sent on click @m15', async ({

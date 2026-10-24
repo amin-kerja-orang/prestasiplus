@@ -114,7 +114,7 @@ const TABS = [
   { value: 'guru', label: 'Analisis Guru', icon: 'i-ph-chalkboard-teacher', slot: 'guru' as const },
   {
     value: 'mingguan',
-    label: 'Tracking Mingguan',
+    label: 'Penjejakan Mingguan',
     icon: 'i-ph-calendar-dots',
     slot: 'mingguan' as const,
   },
@@ -163,7 +163,7 @@ async function goto(sectionId: string) {
       :chips="filters.chips.value"
       :show-reset="false"
       apply-label="Tapis"
-      reset-label="Reset"
+      reset-label="Set Semula"
       data-testid="mon-filters"
       @apply="filters.submit"
       @remove-chip="filters.removeChip"

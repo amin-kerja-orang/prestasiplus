@@ -52,7 +52,7 @@ describe('navFor with the prototype scope on', () => {
 
   it('Murid keeps the matrix menu (37 + section A) and drops the rest', () => {
     const shown = labels('student')
-    for (const label of ['Dashboard', 'Latih Tubi', 'Kedai Hadiah 🎁', 'Jemput Ibu Bapa', 'SPM']) {
+    for (const label of ['Papan Pemuka', 'Latih Tubi', 'Kedai Hadiah 🎁', 'Jemput Ibu Bapa', 'SPM']) {
       expect(shown).toContain(label)
     }
     // 37 matrix labels minus "Analisa Item" (no student screen, QA M-07) + the four section A
@@ -83,7 +83,7 @@ describe('navFor with the prototype scope on', () => {
     const shown = labels('teacher')
     for (const label of [
       'Command Center',
-      'Dashboard Guru',
+      'Papan Pemuka Guru',
       'Headcount',
       'Prestasi',
       'Analitik Adaptif',
@@ -91,8 +91,8 @@ describe('navFor with the prototype scope on', () => {
       'Analisis Item',
       'Video',
       'Kelas Saya',
-      'Soalan by Chapter',
-      'Monitoring',
+      'Soalan Mengikut Bab',
+      'Pemantauan',
       'Kirkpatrick',
       'T1: Reaksi',
       'T4: Hasil',
@@ -105,7 +105,7 @@ describe('navFor with the prototype scope on', () => {
     ]) {
       expect(shown, label).toContain(label)
     }
-    for (const label of ['Misi Harian', 'Broadcast', 'Databank Soalan', 'Liga Pertandingan']) {
+    for (const label of ['Misi Harian', 'Siaran', 'Databank Soalan', 'Liga Pertandingan']) {
       expect(shown, label).not.toContain(label)
     }
   })
@@ -114,7 +114,7 @@ describe('navFor with the prototype scope on', () => {
     const shown = labels('school_admin')
     for (const label of [
       'Command Center',
-      'Dashboard',
+      'Papan Pemuka',
       'Senarai Pelajar',
       'Senarai Guru',
       'Kelas Sekolah',
@@ -122,11 +122,11 @@ describe('navFor with the prototype scope on', () => {
       'Prestasi',
       'Amaran Awal',
       'Laporan Bulanan',
-      'Monitoring',
+      'Pemantauan',
       'Kirkpatrick',
       'Analitik Adaptif',
       'Statistik Penggunaan',
-      'DSKP Heatmap',
+      'Peta Haba DSKP',
       'Analisa Item',
       'Laporan Aktiviti',
       'Video',
@@ -143,9 +143,9 @@ describe('navFor with the prototype scope on', () => {
       'Perutusan',
       'Kombo Harian',
       'Liga Pertandingan',
-      'Tournament',
+      'Kejohanan',
       'Soalan Berstruktur',
-      'Audit Log',
+      'Log Audit',
     ]) {
       expect(shown, label).not.toContain(label)
     }

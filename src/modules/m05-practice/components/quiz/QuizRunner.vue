@@ -74,7 +74,7 @@ const props = withDefaults(
     /** The title in the header card; a function gets the started session (e.g. the subject name). */
     headerTitle: string | ((session: StartSessionResponse) => string)
     labels?: Partial<QuizLabels>
-    /** "Mode Ulang Kaji …" chips and "Salah {n}x" (S7 only). */
+    /** "Mod Ulang Kaji …" chips and "Salah {n}x" (S7 only). */
     revisionChips?: boolean
     /** "{score} soalan salah berjaya diperbetulkan!" (S7 only). */
     correctedLine?: boolean
@@ -310,7 +310,7 @@ const feedbackExplanation = computed(() =>
                 size="lg"
                 icon="i-ph-arrow-counter-clockwise-bold"
                 data-testid="chip-revision"
-                >Mode Ulang Kaji — soalan ini pernah dijawab salah</UBadge
+                >Mod Ulang Kaji — soalan ini pernah dijawab salah</UBadge
               >
               <UBadge
                 v-if="revisionMeta"

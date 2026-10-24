@@ -2,7 +2,7 @@
 /**
  * S21 `/audio-kbat` "Audio KBAT" (M09; FR-M09-72..74, student, user shell). Header title only, no
  * subtitle (DV-M09-08). Intro, GET filter (level, subject A–Z, "Tapis"; values kept from the URL),
- * approved sets only. Empty: "Belum ada set Audio KBAT yang approved.". Each set links to the
+ * approved sets only. Empty: "Belum ada set Audio KBAT yang diluluskan.". Each set links to the
  * provisional player (L-3: title, level, subject).
  *
  * v2 restyle (B04): `DsPage`, `DsFilterBar` with `USelect`s, compact rows with `DsIconChip`.

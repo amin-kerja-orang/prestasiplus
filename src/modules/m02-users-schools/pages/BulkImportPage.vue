@@ -278,7 +278,7 @@ const ROLE_ICONS: Record<string, string> = {
             <ul class="flex flex-col gap-2 text-body text-muted">
               <li>• Emel sedia ada akan dilangkau automatik</li>
               <li>• Guru &amp; admin sekolah dikaitkan dengan sekolah dipilih</li>
-              <li>• Kata laluan boleh dinyatakan per-pengguna di lajur ke-4</li>
+              <li>• Kata laluan boleh dinyatakan bagi setiap pengguna di lajur ke-4</li>
               <li>
                 • Pelajar DELIMa &rarr;
                 <ULink

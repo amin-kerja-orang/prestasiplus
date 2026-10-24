@@ -23,7 +23,7 @@ describe('M14 student-a routes (FR-M14-04, 05, 06; DV-M14-01)', () => {
 
   it('tab titles are exact and header titles follow DV-M14-01', () => {
     const titles = (p: string) => [byPath[p]!.meta!.title, byPath[p]!.meta!.header!.title]
-    expect(titles('/gamification')).toEqual(['Gamifikasi Dashboard', 'Gamifikasi Dashboard'])
+    expect(titles('/gamification')).toEqual(['Gamifikasi Papan Pemuka', 'Gamifikasi Papan Pemuka'])
     expect(titles('/gamification/convert')).toEqual(['Tukar Token', 'Tukar Syiling → Token'])
     expect(titles('/gamification/challenges')).toEqual(['Cabaran Harian', 'Cabaran Harian'])
     expect(titles('/gamification/history')).toEqual(['Sejarah Transaksi', 'Sejarah Transaksi'])

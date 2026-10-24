@@ -60,7 +60,7 @@ const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count
     <DsPanel data-testid="tiers-card">
       <h2 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
         <UIcon name="i-ph-medal-duotone" class="size-5 text-primary-t" />
-        Pencapaian Badge Penyumbang
+        Pencapaian Lencana Penyumbang
       </h2>
       <ul class="flex flex-wrap gap-2">
         <li

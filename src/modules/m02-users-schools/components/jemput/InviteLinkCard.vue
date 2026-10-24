@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * S1 card "Link Jemputan" (L45 FR-L45-06..10, DV-L45-03/04). Read-only URL field plus "Salin",
- * "Hantar via WhatsApp" and "Jana Link Baru". The page owns the token and the regenerate request;
+ * S1 card "Pautan Jemputan" (L45 FR-L45-06..10, DV-L45-03/04). Read-only URL field plus "Salin",
+ * "Hantar melalui WhatsApp" and "Jana Pautan Baharu". The page owns the token and the regenerate request;
  * this card owns the copy feedback. "Salin" shows "Disalin!" for 2 s only after a successful clipboard
  * write (DV-L45-04). The WhatsApp anchor keeps its `href` but the click does not navigate (D14,
  * DV-L45-03). No ARIA beyond native elements (D10, NFR-L45-02).
@@ -44,10 +44,10 @@ onBeforeUnmount(() => {
   <section class="rounded-card bg-default p-5 shadow-lift sm:p-6" data-testid="jemput-link-card">
     <h2 class="flex items-center gap-2 text-heading text-highlighted">
       <UIcon name="i-ph-link-duotone" class="size-5 text-primary-t" aria-hidden="true" />
-      Link Jemputan
+      Pautan Jemputan
     </h2>
     <p class="mt-2 text-body text-muted">
-      Salin link ini dan hantar kepada ibu bapa anda melalui WhatsApp atau mesej.
+      Salin pautan ini dan hantar kepada ibu bapa anda melalui WhatsApp atau mesej.
     </p>
 
     <div class="mt-4 flex items-stretch gap-2">
@@ -86,7 +86,7 @@ onBeforeUnmount(() => {
         @click.prevent
       >
         <WhatsAppIcon class="size-5" />
-        Hantar via WhatsApp
+        Hantar melalui WhatsApp
       </UButton>
       <UButton
         type="button"
@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
         :loading="regenerating"
         data-testid="jemput-regenerate"
         @click="emit('regenerate')"
-        >Jana Link Baru</UButton
+        >Jana Pautan Baharu</UButton
       >
     </div>
   </section>

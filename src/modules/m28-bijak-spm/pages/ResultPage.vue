@@ -2,7 +2,7 @@
 /**
  * Result and Semakan (US-14, US-15, US-17, US-20, US-21). Win screen in the approved order: 3D hero
  * (party popper from 90%, trophy from 60%, books below) -> title -> score ring -> friend dialog
- * ("awak" voice) -> rewards -> Kongsi / Kembali ke Home. Below it: marks per section, per question
+ * ("awak" voice) -> rewards -> Kongsi / Kembali ke Utama. Below it: marks per section, per question
  * and per marking point, with the scheme revealed (only reachable after Hantar).
  */
 import { computed, ref } from 'vue'
@@ -170,7 +170,7 @@ const home = computed(() => landingPath.value || '/dashboard')
           <UButton color="neutral" size="lg" block data-testid="share" @click="share"
             >Kongsi</UButton
           >
-          <UButton size="lg" block :to="home" data-testid="home">Kembali ke Home</UButton>
+          <UButton size="lg" block :to="home" data-testid="home">Kembali ke Utama</UButton>
         </template>
       </DsWinScreen>
 

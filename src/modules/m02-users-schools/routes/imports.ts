@@ -19,7 +19,7 @@ const routes: RouteRecordRaw[] = [
       header: {
         title: 'Import Pengguna Pukal',
         subtitle:
-          'Daftarkan guru, ibu bapa, atau admin sekolah secara pukal melalui CSV atau paste',
+          'Daftarkan guru, ibu bapa, atau admin sekolah secara pukal melalui CSV atau tampal',
       },
       module: 'M02',
       v2: true,

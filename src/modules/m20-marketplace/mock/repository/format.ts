@@ -25,7 +25,7 @@ export function shippingLine(method: ShippingMethod, fee: string | null): string
     case 'free':
       return 'Penghantaran Percuma 🎉'
     case 'cod':
-      return 'Cash on Delivery (COD)'
+      return 'Bayar Semasa Penghantaran (COD)'
     case 'pickup':
       return 'Ambil Sendiri (Pickup)'
   }

@@ -174,7 +174,7 @@ describe('headcount pair rules (BR-M08-07, 08)', () => {
     expect(pairStatus(entry([60], [null]))).toBe('none')
   })
 
-  it('±2 % band (DV-29): Above > OTR; On Track OTR − 2 … OTR; Below < OTR − 2', () => {
+  it('±2 % band (DV-29): Above > OTR; Atas Landasan OTR − 2 … OTR; Below < OTR − 2', () => {
     expect(bandStatus(82, 80)).toBe('above')
     expect(bandStatus(80, 80)).toBe('on')
     expect(bandStatus(78, 80)).toBe('on')

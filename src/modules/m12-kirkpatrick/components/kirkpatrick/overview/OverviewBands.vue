@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S1 "Taburan Engagement Pelajar" (FN-M12-2.6.1; FR-M12-30): five band links (to the T3 page; plain boxes on
+ * S1 "Taburan Penglibatan Pelajar" (FN-M12-2.6.1; FR-M12-30): five band links (to the T3 page; plain boxes on
  * the alias), `grid-cols-5` at every width, each an icon chip, count (no separator), label and "%" of
  * T4/T5.
  */
@@ -24,7 +24,7 @@ const ordered = () =>
 </script>
 
 <template>
-  <DsPanel title="Taburan Engagement Pelajar" icon="i-ph-chart-pie" data-testid="kirk-bands">
+  <DsPanel title="Taburan Penglibatan Pelajar" icon="i-ph-chart-pie" data-testid="kirk-bands">
     <div class="grid grid-cols-5 gap-1 sm:gap-3">
       <KirkpatrickLink
         v-for="b in ordered()"

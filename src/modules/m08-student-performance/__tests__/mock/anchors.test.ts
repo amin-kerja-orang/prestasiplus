@@ -1,7 +1,7 @@
 /**
  * M08-T1 seed anchors (SRS M08 v1.11 §6.3, §6.10): every figure the SRS observed on live, asserted
  * through the endpoints against the real owners (M01, M02, M03, M04, M05, M10, M14). Headcount-driven
- * figures (GPS 3.45, On Track / Below 34 / 41, the 15 at-risk rows, school admin GPS 5.33) come from the
+ * figures (GPS 3.45, Atas Landasan / Below 34 / 41, the 15 at-risk rows, school admin GPS 5.33) come from the
  * M08-T1b headcount seed and are asserted here since M08-T1b.
  */
 
@@ -123,7 +123,7 @@ describe('S1 Dashboard Sekolah (admin: the platform)', () => {
     expect(s1.distribution.reduce((a, d) => a + d.count, 0)).toBe(744)
   })
 
-  it('the 16 subject rows of discovery A.2 (entries, GPS, On Track, Below, Tiada Sasaran), GPS ascending', () => {
+  it('the 16 subject rows of discovery A.2 (entries, GPS, Atas Landasan, Below, Tiada Sasaran), GPS ascending', () => {
     expect(
       s1.subjects
         .slice(0, 16)
@@ -168,7 +168,7 @@ describe('S1 for the school admin (own school, INFERRED)', () => {
       ['D', 1],
       ['G', 1],
     ])
-    // 3 On Track (3001 Kimia, 3003 Kimia, 3001 BM 2025) and 3 Below: the designed configs only.
+    // 3 Atas Landasan (3001 Kimia, 3003 Kimia, 3001 BM 2025) and 3 Bawah: the designed configs only.
     expect([
       s1.subjects.reduce((a, r) => a + r.onTrack, 0),
       s1.subjects.reduce((a, r) => a + r.below, 0),
@@ -252,7 +252,7 @@ describe('S2 / S3 levels', () => {
     expect((await getAs(runtime, null, '/api/performance/levels/t4')).status).toBe(401)
   })
 
-  it('S3 Tingkatan 4: 34 On Track / 41 Below (45 %), "4 Simulasi" 13 / 2, the 15 at-risk rows of 11 pupils', async () => {
+  it('S3 Tingkatan 4: 34 Atas Landasan / 41 Below (45 %), "4 Simulasi" 13 / 2, the 15 at-risk rows of 11 pupils', async () => {
     const t4 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t4')
     expect([t4.onTrack, t4.below, t4.onTrackPct]).toEqual([34, 41, 45])
     expect(t4.classRows.find((r) => r.classId === 516)).toMatchObject({ onTrack: 13, below: 2 })
@@ -279,7 +279,7 @@ describe('S2 / S3 levels', () => {
     expect(new Set(t4.atRisk.map((r) => r.userId)).size).toBe(11)
   })
 
-  it('S3 Tingkatan 5: 114 On Track / 289 Below (28 %) and the 14 observed at-risk rows first', async () => {
+  it('S3 Tingkatan 5: 114 Atas Landasan / 289 Below (28 %) and the 14 observed at-risk rows first', async () => {
     const t5 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t5')
     expect([t5.onTrack, t5.below, t5.onTrackPct]).toEqual([114, 289, 28])
     expect(t5.atRisk).toHaveLength(15)

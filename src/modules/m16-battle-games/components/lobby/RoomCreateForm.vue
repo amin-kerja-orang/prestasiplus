@@ -114,7 +114,7 @@ async function submit(): Promise<void> {
         />
       </div>
 
-      <UFormField :label="isPb ? 'Siapa Boleh Join?' : 'Siapa boleh join?'">
+      <UFormField :label="isPb ? 'Siapa Boleh Sertai?' : 'Siapa boleh sertai?'">
         <USelect
           v-model="form.matchMode"
           :items="modeItems"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S12 `/headcount` "Headcount" (M08-T6; FR-M08-75…81, FR-M08-122, BR-M08-21). The viewer's own configs
- * newest first (the admin and the school admin own none: the empty state, OD-R3); the Auto-Setup dialog
+ * newest first (the admin and the school admin own none: the empty state, OD-R3); the Persediaan Auto dialog
  * creates configs for the ticked levels. The table (cards below `md`) is PROPOSED (UNVERIFIED L-4, OQ-M08-03).
  */
 import type { TableColumn } from '@nuxt/ui'
@@ -58,7 +58,7 @@ const cardFields = [
   <DsPage data-testid="headcount-list-page">
     <DsPageHeader
       title="Headcount"
-      subtitle="Tracking prestasi murid — TOV, OTR, AR & RS"
+      subtitle="Penjejakan prestasi murid — TOV, OTR, AR & RS"
       data-testid="headcount-hero"
     >
       <template #actions>
@@ -67,7 +67,7 @@ const cardFields = [
           color="neutral"
           variant="soft"
           icon="i-ph-gauge"
-          label="Dashboard"
+          label="Papan Pemuka"
           data-testid="hero-dashboard"
         />
         <UButton
@@ -81,7 +81,7 @@ const cardFields = [
           color="neutral"
           variant="soft"
           icon="i-ph-magic-wand"
-          label="Auto-Setup"
+          label="Persediaan Auto"
           data-testid="hero-auto-setup"
           @click="showAutoSetup = true"
         />

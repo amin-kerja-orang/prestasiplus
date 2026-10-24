@@ -51,7 +51,7 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'subjectName', header: 'Subjek' },
   { accessorKey: 'questionCount', header: 'Soalan' },
   { accessorKey: 'marks', header: 'Markah' },
-  { accessorKey: 'ok', header: 'Blueprint' },
+  { accessorKey: 'ok', header: 'Cetak Biru' },
   { accessorKey: 'status', header: 'Status' },
   { accessorKey: 'updatedAt', header: 'Dikemas kini' },
   { id: 'actions', header: 'Tindakan' },
@@ -76,7 +76,7 @@ async function remove(row: Row): Promise<void> {
   <DsPage layout="list" data-testid="papers-page">
     <template #subtitle>
       <p class="text-body text-muted">
-        Bina kertas SPM mengikut blueprint dari bank soalan, kemudian terbitkan ke Bijak SPM.
+        Bina kertas SPM mengikut cetak biru dari bank soalan, kemudian terbitkan ke Bijak SPM.
       </p>
     </template>
     <template #actions>
@@ -107,7 +107,7 @@ async function remove(row: Row): Promise<void> {
         { key: 'subjectName', label: 'Subjek' },
         { key: 'marks', label: 'Markah', cell: true },
         { key: 'status', label: 'Status', cell: true, wide: true },
-        { key: 'ok', label: 'Blueprint', cell: true, wide: true },
+        { key: 'ok', label: 'Cetak Biru', cell: true, wide: true },
       ]"
       :page-size="20"
       row-key="id"

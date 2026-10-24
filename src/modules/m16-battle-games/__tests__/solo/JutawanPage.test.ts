@@ -119,7 +119,7 @@ describe('Jutawan game (provisional)', () => {
     })
     expect(wrapper.text()).toContain('Tahniah! Anda sampai L3.')
     expect(wrapper.text()).toContain('🔄 Main Lagi')
-    expect(wrapper.text()).toContain('🎮 Hub')
+    expect(wrapper.text()).toContain('🎮 Hab')
   })
 
   it('"50:50" removes two options and drops the lifeline count', async () => {

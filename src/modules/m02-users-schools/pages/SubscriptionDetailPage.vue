@@ -3,7 +3,7 @@
  * S14 `/admin/school-subscriptions/:id` "Langganan {school} - Admin PRESTASIPLUS" (M02-T9; FR-M02-88..96),
  * v2 staff theme.
  *
- * Summary card (quota bar, tier box and tiles, note), the "Tindakan" card (Ubah Kuota, Cetak Invoice,
+ * Summary card (quota bar, tier box and tiles, note), the "Tindakan" card (Ubah Kuota, Cetak Invois,
  * Naik Taraf ke Penuh for basic only, Batalkan, Lanjutkan Tempoh; the three panels toggle independently)
  * and "Senarai Pelajar ({total})" with the "Tunjuk" page size and the pager (`?per_page=&page=`).
  * Every mutation replaces the page data with the API result and shows the API `status` as the flash;
@@ -81,7 +81,7 @@ watch(
   sub,
   (row) => {
     if (!row) return
-    pageMeta.setHeader({ title: 'Detail Langganan', subtitle: row.school.name })
+    pageMeta.setHeader({ title: 'Butiran Langganan', subtitle: row.school.name })
     pageMeta.setTitle(`Langganan ${row.school.name} - Admin PRESTASIPLUS`)
   },
   { immediate: true },
@@ -237,7 +237,7 @@ const studentRows = computed(() => (students.value?.data ?? []) as StudentRow[])
 const STUDENT_COLUMNS: TableColumn<StudentRow>[] = [
   { id: 'no', header: '#' },
   { accessorKey: 'name', header: 'Nama' },
-  { id: 'email', header: 'Email ID Delima' },
+  { id: 'email', header: 'Emel ID Delima' },
   { id: 'level', header: 'Tingkatan' },
 ]
 /** The four detail tiles; the keys give the test ids `sub-start`, `sub-end`, `sub-price`... */
@@ -430,7 +430,7 @@ const tiles = computed<StatItem[]>(() => {
                 color="neutral"
                 variant="soft"
                 icon="i-ph-printer"
-                label="Cetak Invoice"
+                label="Cetak Invois"
                 data-testid="sub-invoice"
               />
               <UButton

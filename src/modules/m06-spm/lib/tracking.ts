@@ -9,7 +9,7 @@ import { targetName } from './latih-tubi'
 /** Badge text and colour of a set status (BR-M06-08; "Belum Cukup" is the locked card). */
 export const SET_STATUS: Record<SetStatus, { label: string; color: 'success' | 'info' | 'warning' }> = {
   bersih: { label: 'Set Bersih', color: 'success' },
-  bank_besar: { label: 'Ready Bank Besar', color: 'info' },
+  bank_besar: { label: 'Bank Besar Sedia', color: 'info' },
   belum_cukup: { label: 'Belum Cukup', color: 'warning' },
 }
 

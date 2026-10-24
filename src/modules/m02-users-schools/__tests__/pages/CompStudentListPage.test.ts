@@ -82,7 +82,7 @@ describe('CompStudentListPage (M02 S6) content', () => {
   it('shows the summary, "Daftar Baru", the headers and a row with links and badges', async () => {
     const w = await render()
     expect(t(w, 'comp-summary').text().replace(/\s+/g, ' ')).toBe(
-      'Syiling OFF: 90 / 90 pelajar komplimen',
+      'Syiling Mati: 90 / 90 pelajar komplimen',
     )
     expect(t(w, 'comp-add').attributes('href')).toBe('/admin/comp-students/create')
     expect(
@@ -96,7 +96,7 @@ describe('CompStudentListPage (M02 S6) content', () => {
       '/admin/comp-students/1',
     )
     expect(rows[0]!.get('[data-testid=comp-account]').text()).toBe('Aktif')
-    expect(rows[0]!.get('[data-testid=comp-coins]').text()).toBe('OFF')
+    expect(rows[0]!.get('[data-testid=comp-coins]').text()).toBe('MATI')
     expect(rows[0]!.text()).toContain('31/12/2026')
     // No IC: an empty cell (FR-M02-66).
     expect(rows[0]!.findAll('td')[2]!.text()).toBe('')
@@ -105,13 +105,13 @@ describe('CompStudentListPage (M02 S6) content', () => {
     expect(rows[0]!.text()).toContain('000001@prestasiplus.my')
   })
 
-  it('shows Tidak Aktif and ON for an inactive student with coins on', async () => {
+  it('shows Tidak Aktif and HIDUP for an inactive student with coins on', async () => {
     api.fetchCompStudents.mockResolvedValue(
       result([student(4, { isActive: false, coinsEnabled: true })]),
     )
     const w = await render()
     expect(t(w, 'comp-account').text()).toBe('Tidak Aktif')
-    expect(t(w, 'comp-coins').text()).toBe('ON')
+    expect(t(w, 'comp-coins').text()).toBe('HIDUP')
   })
 
   it('scrolls the table inside its card (DV-M02-05)', async () => {

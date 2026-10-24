@@ -16,8 +16,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      title: 'Liga & Tournament',
-      header: { title: 'Liga & Tournament', subtitle: 'Senarai tournament antara sekolah' },
+      title: 'Liga & Kejohanan',
+      header: { title: 'Liga & Kejohanan', subtitle: 'Senarai kejohanan antara sekolah' },
       module: 'M16',
       v2: true,
     },
@@ -30,8 +30,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      title: 'Tournament',
-      header: { title: 'Tournament', subtitle: 'Selamat datang kembali' },
+      title: 'Kejohanan',
+      header: { title: 'Kejohanan', subtitle: 'Selamat datang kembali' },
       module: 'M16',
       v2: true,
     },

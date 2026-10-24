@@ -38,7 +38,7 @@ const OWN_P1 = 900003
 const FORBIDDEN_COPY =
   'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.'
 const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
-const TILE_LABELS = ['Jumlah Pelajar', 'On Track', 'Perlu Perhatian', 'Berisiko Tinggi']
+const TILE_LABELS = ['Jumlah Pelajar', 'Atas Landasan', 'Perlu Perhatian', 'Berisiko Tinggi']
 const COLUMNS = [
   '#',
   'Pelajar',
@@ -49,7 +49,7 @@ const COLUMNS = [
   'Penglibatan',
   'Penguasaan',
 ]
-const STATUSES = ['On Track', 'Perlu Perhatian', 'Berisiko Tinggi']
+const STATUSES = ['Atas Landasan', 'Perlu Perhatian', 'Berisiko Tinggi']
 
 test.use({ mockInit: { latency: 0 } })
 
@@ -133,7 +133,7 @@ test.describe('S4 header and sidebar (E2E-M27-41, 42; S4 part)', MODULE, () => {
     await expect(page.getByTestId('shell-user-title')).toHaveText('Amaran Awal — Sekolah')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
     await expectTabTitle(page, TAB_TITLE)
-    await expect(page.getByTestId('am-page')).not.toContainText('Dashboard Sekolah')
+    await expect(page.getByTestId('am-page')).not.toContainText('Papan Pemuka Sekolah')
     await expect(page.getByTestId('am-page').getByRole('link', { name: /←/ })).toHaveCount(0)
   })
 
@@ -202,7 +202,7 @@ test.describe('S4 populated school (E2E-M27-47, 70, 71, 73)', MODULE, () => {
       )
     }
 
-    // tiles in order; Jumlah = On Track + Perlu Perhatian + Berisiko Tinggi
+    // tiles in order; Jumlah = Atas Landasan + Perlu Perhatian + Berisiko Tinggi
     await expect(page.getByTestId('am-tile-label')).toHaveText(TILE_LABELS)
     const [total, green, yellow, red] = (await tileValues(page)) as [number, number, number, number]
     expect(total).toBeGreaterThan(0)

@@ -144,7 +144,7 @@ describe('route and header (FR-M27-38, 40, 44)', () => {
       subtitle: 'SMK Contoh Ujian',
     })
     const back = w.get('[data-testid="lb-breadcrumb"] a')
-    expect(back.text()).toBe('Dashboard Sekolah')
+    expect(back.text()).toBe('Papan Pemuka Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
     const cur = w.get('[data-testid="lb-breadcrumb"] [aria-current="page"]')
     expect(cur.text()).toBe('Laporan Bulanan')
@@ -220,7 +220,7 @@ describe('Statistik Bulanan (FR-M27-84; AC-M27-24.1, 24.2)', () => {
       'Soalan Betul',
       'Pelajar Aktif',
       'Purata/Pelajar',
-      'Accuracy',
+      'Ketepatan',
     ])
     // the "Jumlah" row closes the table
     const rows = w.findAll('[data-testid="lb-table"] tbody tr')

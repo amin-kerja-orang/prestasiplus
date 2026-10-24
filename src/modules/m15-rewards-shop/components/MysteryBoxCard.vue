@@ -27,6 +27,9 @@ const art = computed<Art3DName>(() =>
 const ribbonColor = computed(() =>
   props.box.rarity === 'legendary' ? 'warning' : props.box.rarity === 'rare' ? 'info' : 'primary',
 )
+
+/** BM word of the API rarity (FB-025). */
+const RARITY_LABEL = { rare: 'Jarang', epic: 'Epik', legendary: 'Legenda' } as const
 </script>
 
 <template>
@@ -42,7 +45,7 @@ const ribbonColor = computed(() =>
           :color="ribbonColor"
           variant="solid"
           :data-testid="`box-${String(box.id)}-ribbon`"
-          >{{ box.rarity }}</UBadge
+          >{{ RARITY_LABEL[box.rarity] }}</UBadge
         >
       </div>
       <DsArt3D :name="art" size="hero" float />

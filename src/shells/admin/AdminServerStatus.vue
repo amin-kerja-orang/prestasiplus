@@ -22,7 +22,7 @@ const cells = computed(() => {
       fa: 'fa-microchip',
       value: s ? `${s.cpuPct}%` : '--',
       cls: s ? TONE_CLASS[statusTone('cpu', s.cpuPct)] : 'text-slate-400',
-      title: s ? `Load: ${s.load} / ${s.cores} cores` : 'Load',
+      title: s ? `Beban: ${s.load} / ${s.cores} teras` : 'Beban',
     },
     {
       id: 'ram',
@@ -36,14 +36,14 @@ const cells = computed(() => {
       fa: 'fa-hard-drive',
       value: s ? `${s.diskPct}%` : '--',
       cls: s ? TONE_CLASS[statusTone('disk', s.diskPct)] : 'text-slate-400',
-      title: s ? `${GB(s.diskUsedGb)} / ${GB(s.diskTotalGb)}` : 'Disk',
+      title: s ? `${GB(s.diskUsedGb)} / ${GB(s.diskTotalGb)}` : 'Cakera',
     },
     {
       id: 'uptime',
       fa: 'fa-clock',
       value: s ? s.uptime : '--',
       cls: s ? 'text-slate-500' : 'text-slate-400',
-      title: 'Uptime',
+      title: 'Masa Aktif',
     },
   ]
 })

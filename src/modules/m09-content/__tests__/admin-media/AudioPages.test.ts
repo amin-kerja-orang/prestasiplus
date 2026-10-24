@@ -63,7 +63,7 @@ describe('AudioSetListPage (S12)', () => {
     wrapper = (await mountAt(AudioSetListPage, '/page')).wrapper
     const w = wrapper
     expect(w.text()).toContain('Ujian Mendengar')
-    expect(w.text()).toContain('Senarai set soalan audio fixed sequence, bukan rawak.')
+    expect(w.text()).toContain('Senarai set soalan audio berturutan tetap, bukan rawak.')
     expect(t(w, 'template-xlsx').attributes('href')).toBe('/admin/audio-kbat/template')
     expect(t(w, 'template-word').attributes('href')).toBe('/admin/audio-kbat/template-word')
     expect(t(w, 'audio-create').attributes('href')).toBe('/admin/audio-kbat/create')
@@ -75,7 +75,7 @@ describe('AudioSetListPage (S12)', () => {
     for (const key of ['sets', 'approved', 'draftPending', 'questions']) {
       expect(t(w, `stat-${key}`).text()).toMatch(/^0/)
     }
-    expect(t(w, 'audio-stats').text()).toContain('Draft/Pending')
+    expect(t(w, 'audio-stats').text()).toContain('Draf/Menunggu')
     expect(t(w, 'audio-empty').text()).toBe('Belum ada set Audio KBAT.')
   })
 
@@ -96,7 +96,7 @@ describe('AudioSetListPage (S12)', () => {
       t(w, 'filter-status')
         .findAll('option')
         .map((o) => o.text()),
-    ).toEqual(['Semua Status', 'Draft', 'Pending Review', 'Approved', 'Archived'])
+    ).toEqual(['Semua Status', 'Draf', 'Menunggu Semakan', 'Diluluskan', 'Diarkibkan'])
     expect(t(w, 'filter-search').attributes('placeholder')).toBe('Cari tajuk/sumber...')
     expect(w.get('form[role=search] button[type=submit]').text()).toBe('Tapis')
   })
@@ -147,7 +147,7 @@ describe('AudioSetListPage (S12)', () => {
           educationLevel: { id: 10, name: 'Tingkatan 4' },
           subject: { id: 1, name: 'Bahasa Melayu' },
           status: 'approved',
-          statusLabel: 'Approved',
+          statusLabel: 'Diluluskan',
           questionCount: 30,
         },
       ],
@@ -164,7 +164,7 @@ describe('AudioSetListPage (S12)', () => {
     expect(row.get('[data-testid=set-title]').text()).toBe('BM T4 Set 1')
     expect(row.get('[data-testid=set-level]').text()).toBe('Tingkatan 4')
     expect(row.get('[data-testid=set-subject]').text()).toBe('Bahasa Melayu')
-    expect(row.get('[data-testid=set-status]').text()).toBe('Approved')
+    expect(row.get('[data-testid=set-status]').text()).toBe('Diluluskan')
     expect(row.get('[data-testid=set-questions]').text()).toBe('30 soalan')
     expect(w.find('[data-testid=audio-empty]').exists()).toBe(false)
   })
@@ -213,18 +213,18 @@ describe('AudioSetCreatePage (S13)', () => {
     expect(w.get('[data-ds=back-link]').text()).toBe('Kembali')
     expect(w.get('[data-ds=back-link]').attributes('href')).toBe('/admin/audio-kbat')
     expect(w.text()).toContain(
-      'Format fixed: 4 audio section, 30 soalan MCQ, soalan dipaparkan serentak mengikut section.',
+      'Format tetap: 4 bahagian audio, 30 soalan MCQ, soalan dipaparkan serentak mengikut bahagian.',
     )
     expect(t(w, 'audio-guide').text()).toContain('Apa yang cikgu perlu sediakan?')
-    expect(t(w, 'audio-guide').text()).toContain('Template Word')
-    expect(t(w, 'audio-guide').text()).toContain('Template XLSX')
+    expect(t(w, 'audio-guide').text()).toContain('Templat Word')
+    expect(t(w, 'audio-guide').text()).toContain('Templat XLSX')
     expect(t(w, 'set-title').attributes('placeholder')).toBe('Contoh: BM T4 Ujian Mendengar Set 1')
     expect((t(w, 'set-status').element as HTMLSelectElement).value).toBe('approved')
     expect(
       t(w, 'set-status')
         .findAll('option')
         .map((o) => o.text()),
-    ).toEqual(['Approved', 'Pending Review', 'Draft'])
+    ).toEqual(['Diluluskan', 'Menunggu Semakan', 'Draf'])
     expect(t(w, 'set-source').attributes('placeholder')).toBe('Contoh: Cikgu Demo 02')
     expect(t(w, 'set-instructions').attributes('placeholder')).toBe(
       'Dengar audio bagi setiap bahagian dan jawab semua soalan.',
@@ -266,7 +266,7 @@ describe('AudioSetCreatePage (S13)', () => {
     expect((blocks[0]!.get('[data-testid=q-kbat]').element as HTMLInputElement).value).toBe('3')
     expect(blocks[0]!.get('[data-testid=q-marks]').attributes('max')).toBe('20')
     expect(blocks[0]!.get('[data-testid=q-kbat]').attributes('max')).toBe('5')
-    expect(blocks[0]!.get('[data-testid=q-dskp]').attributes('placeholder')).toBe('Optional')
+    expect(blocks[0]!.get('[data-testid=q-dskp]').attributes('placeholder')).toBe('Pilihan')
     // Section 1 is followed by questions 1–8, then section 2.
     const order = [
       ...w.element.querySelectorAll('[data-testid=section-card], [data-testid=question-block]'),

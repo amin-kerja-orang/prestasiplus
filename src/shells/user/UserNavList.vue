@@ -138,7 +138,7 @@ const PUSAT_AI_TITLE_STYLE =
       <span v-if="entry.badge" :class="entry.badge.cls">{{ entry.badge.text }}</span>
     </ShellLink>
 
-    <!-- "Ke Admin Panel" -->
+    <!-- "Ke Panel Admin" -->
     <ShellLink
       v-else-if="entry.kind === 'item' && entry.variant === 'admin-link' && surface === 'drawer'"
       :to="entry.to"

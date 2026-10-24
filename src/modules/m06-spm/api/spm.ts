@@ -65,7 +65,7 @@ export const fetchSubjektif = (o: Signal = {}) =>
 export const fetchMocks = (o: Signal = {}) =>
   api.get<MockListItem[]>('/api/spm-mocks', withSignal(o))
 
-/** #13 S11 "Jana Mock SPM". */
+/** #13 S11 "Jana Percubaan SPM". */
 export const createMock = (body: { subject: string; paperNumber: 1 | 2 }) =>
   api.post<{ id: number }>('/api/spm-mocks', { body })
 

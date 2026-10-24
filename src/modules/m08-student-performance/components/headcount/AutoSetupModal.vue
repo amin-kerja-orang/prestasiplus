@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S12 Auto-Setup dialog (FR-M08-77…80, BR-M08-21). Opening resets the selection; "Batal", the scrim and
+ * S12 Persediaan Auto dialog (FR-M08-77…80, BR-M08-21). Opening resets the selection; "Batal", the scrim and
  * Esc only hide it (the ticks stay until the next opening). The submit is disabled until a level is ticked;
  * on success the dialog closes and the page reloads its list without a message (PROPOSED, UNVERIFIED L-4).
  */
@@ -58,7 +58,7 @@ const groups = [
 <template>
   <DsDialog
     v-model:open="open"
-    title="Auto-Setup Headcount"
+    title="Persediaan Auto Headcount"
     description="Pilih tingkatan untuk auto-cipta headcount"
   >
     <form class="flex flex-col gap-4" data-testid="auto-setup-modal" @submit.prevent="submit">
@@ -101,7 +101,7 @@ const groups = [
         data-testid="auto-setup-submit"
         @click="submit"
       >
-        Auto-Setup<template v-if="count > 0"> ({{ count }})</template>
+        Persediaan Auto<template v-if="count > 0"> ({{ count }})</template>
       </UButton>
     </template>
   </DsDialog>

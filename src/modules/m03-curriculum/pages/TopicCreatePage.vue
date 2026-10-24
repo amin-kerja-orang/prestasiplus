@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S4 `/admin/curriculum/topics/create?chapter_id=:id` "Tambah Topik - Admin PRESTASIPLUS" (M03-T3;
- * FR-M03-31..35). Without `chapter_id` -> S1 with "Chapter ID diperlukan."; an unknown chapter -> S1 with
+ * FR-M03-31..35). Without `chapter_id` -> S1 with "ID Bab diperlukan."; an unknown chapter -> S1 with
  * "Bab tidak dijumpai." (BR-18). Shows the chapter context card; success goes to the tree of the chapter's
  * pair with the flash.
  */

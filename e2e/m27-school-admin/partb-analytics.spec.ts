@@ -142,7 +142,7 @@ test.describe('S1 header, breadcrumb, sidebar (E2E-M27-41, 42)', MODULE, () => {
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
     await expectTabTitle(page, 'Statistik Penggunaan - PRESTASIPLUS')
     const back = page.locator('[data-testid="su-breadcrumb"] a')
-    await expect(back).toHaveText('Dashboard Sekolah')
+    await expect(back).toHaveText('Papan Pemuka Sekolah')
     await expect(back).toHaveAttribute('href', '/admin-sekolah')
     const current = page.locator('[data-testid="su-breadcrumb"] [aria-current="page"]')
     await expect(current).toHaveText('Statistik Penggunaan')
@@ -548,7 +548,7 @@ test.describe('S3 header, tabs, range (E2E-M27-41, 42, 63)', MODULE, () => {
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
     await expectTabTitle(page, 'Laporan Aktiviti - PRESTASIPLUS')
     const back = page.locator('[data-testid="la-breadcrumb"] a')
-    await expect(back).toHaveText('Dashboard Sekolah')
+    await expect(back).toHaveText('Papan Pemuka Sekolah')
     await expect(back).toHaveAttribute('href', '/admin-sekolah')
     const current = page.locator('[data-testid="la-breadcrumb"] [aria-current="page"]')
     await expect(current).toHaveText('Laporan Aktiviti')
@@ -574,7 +574,7 @@ test.describe('S3 header, tabs, range (E2E-M27-41, 42, 63)', MODULE, () => {
     await signIn(page, POPULATED)
     await openS3(page, gotoApp, '?range=5')
     await expect(page.getByTestId('la-tabs').locator('button')).toHaveCount(3)
-    await expect(page.getByTestId('la-tab-overview')).toHaveText('Overview')
+    await expect(page.getByTestId('la-tab-overview')).toHaveText('Gambaran Keseluruhan')
     await expect(page.getByTestId('la-tab-guru')).toHaveText(/^Guru \([\d,]+\)$/)
     await expect(page.getByTestId('la-tab-murid')).toHaveText(/^Murid \([\d,]+\)$/)
     await expect(page.getByTestId('la-tab-overview')).toHaveAttribute('data-active', 'true')
@@ -634,8 +634,8 @@ test.describe('S3 Overview (E2E-M27-64, 65, 66)', MODULE, () => {
     for (const r of RANGES) {
       await gotoRange(page, r)
       await expect(page.getByTestId('la-card-label')).toHaveText([
-        'Murid Pernah Login',
-        'Cikgu Pernah Login',
+        'Murid Pernah Log Masuk',
+        'Cikgu Pernah Log Masuk',
         'Murid Buat Latihan',
         'Jumlah Aktiviti',
       ])
@@ -650,8 +650,8 @@ test.describe('S3 Overview (E2E-M27-64, 65, 66)', MODULE, () => {
       }
       expect(of[0]).toBe(of[2])
       expect(digits(notes[0]!)).toBe(of[0]! - value[0]!)
-      expect(notes[0]).toMatch(/ belum pernah login$/)
-      expect(notes[1]).toBe(`${String(of[1]! - value[1]!)} belum pernah login`)
+      expect(notes[0]).toMatch(/ belum pernah log masuk$/)
+      expect(notes[1]).toBe(`${String(of[1]! - value[1]!)} belum pernah log masuk`)
       expect(notes[2]).toBe(`${String(r)} hari lepas`)
       // "Jumlah Aktiviti" = the sum of "Pecahan Aktiviti" (M17 DV-M17-16)
       const parts = (await textsOf(page, 'la-breakdown-value')).map((v) => digits(v))
@@ -715,7 +715,7 @@ test.describe('S3 Overview (E2E-M27-64, 65, 66)', MODULE, () => {
     expect(never).toEqual([...never].sort((a, b) => a.localeCompare(b)))
     for (const email of await textsOf(page, 'la-never-email')) expect(email).toMatch(/@/)
     await expect(page.getByTestId('la-top')).toContainText('Pelajar Paling Aktif')
-    await expect(page.getByTestId('la-never')).toContainText('Cikgu Belum Login')
+    await expect(page.getByTestId('la-never')).toContainText('Cikgu Belum Log Masuk')
     // the trend has one point per day of the range, labelled dd/mm (chart registry of the e2e build)
     for (const r of RANGES) {
       await gotoRange(page, r)
@@ -746,15 +746,15 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
       `Senarai Guru (${total.toLocaleString('en-US')})`,
     )
     await expect(page.getByTestId('la-guru-pill-semua')).toHaveText('Semua')
-    await expect(page.getByTestId('la-guru-pill-pernah')).toHaveText(/^Pernah Login \(/)
-    await expect(page.getByTestId('la-guru-pill-belum')).toHaveText(/^Belum Login \(/)
+    await expect(page.getByTestId('la-guru-pill-pernah')).toHaveText(/^Pernah Log Masuk \(/)
+    await expect(page.getByTestId('la-guru-pill-belum')).toHaveText(/^Belum Log Masuk \(/)
     const logged = digits(await page.getByTestId('la-guru-pill-pernah').innerText())
     const not = digits(await page.getByTestId('la-guru-pill-belum').innerText())
     expect(logged + not).toBe(total)
     await expect(page.getByTestId('la-guru-search')).toHaveAttribute('placeholder', 'Cari guru...')
     await expect(page.getByTestId('la-tile-label')).toHaveText([
       'Jumlah Guru',
-      'Pernah Login',
+      'Pernah Log Masuk',
       'Jumlah Soalan',
       'Jumlah Syiling',
     ])
@@ -764,12 +764,12 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     await expect(page.locator('[data-testid="la-guru-table"] th')).toHaveText([
       '#',
       'Nama',
-      'Login',
+      'Log Masuk',
       'MCQ',
       'Struktur',
       'Syiling',
       'Headcount',
-      'Login Terakhir',
+      'Log Masuk Terakhir',
     ])
     await expect(page.getByTestId('la-guru').locator('select')).toHaveCount(0)
     await expect(page.getByTestId('la-guru-table')).not.toContainText('Sekolah')
@@ -781,7 +781,7 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     await page.getByTestId('la-guru-pill-belum').click()
     expect(await page.getByTestId('la-guru-row').count()).toBe(not)
     for (const t of await textsOf(page, 'la-guru-login')) expect(t).toBe('Belum')
-    for (const t of await textsOf(page, 'la-guru-last')) expect(t).toBe('Belum login')
+    for (const t of await textsOf(page, 'la-guru-last')) expect(t).toBe('Belum log masuk')
     // search by name (case-insensitive); no match shows no rows
     await page.getByTestId('la-guru-pill-semua').click()
     const first = (await textsOf(page, 'la-guru-name'))[0]
@@ -812,8 +812,8 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     await expect(page.locator('[data-testid^="la-murid-pill-"]')).toHaveText([
       'Semua',
       'Aktif',
-      'Login Sahaja',
-      'Belum Login',
+      'Log Masuk Sahaja',
+      'Belum Log Masuk',
     ])
     await expect(page.getByTestId('la-murid-search')).toHaveAttribute(
       'placeholder',
@@ -835,7 +835,7 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
       'Ketepatan',
       'Masa',
       'Syiling',
-      'Login Terakhir',
+      'Log Masuk Terakhir',
     ])
     await expect(page.getByTestId('la-murid').locator('select')).toHaveCount(0)
     await expect(page.getByTestId('la-murid-table')).not.toContainText('Sekolah')
@@ -851,7 +851,7 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     for (const n of [semua, aktif, sahaja, belum]) expect(n).toBeLessThanOrEqual(200)
     expect(semua).toBeGreaterThan(0)
     expect(digits(tiles[1]!)).toBe(aktif)
-    for (const t of await textsOf(page, 'la-murid-last')) expect(t).toBe('Belum login')
+    for (const t of await textsOf(page, 'la-murid-last')) expect(t).toBe('Belum log masuk')
     // cells of the full list: accuracy at most 100 %, time "{h}j {m}m"
     await page.getByTestId('la-murid-pill-semua').click()
     for (const a of await textsOf(page, 'la-murid-ketepatan')) {

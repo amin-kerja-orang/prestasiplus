@@ -1,5 +1,5 @@
 /**
- * Independent G5 regression for M27 Part B S1 to S5 (roles-matrix rows L51 Statistik Penggunaan, L52 DSKP Heatmap,
+ * Independent G5 regression for M27 Part B S1 to S5 (roles-matrix rows L51 Statistik Penggunaan, L52 Peta Haba DSKP,
  * L53 Laporan Aktiviti, L54 Amaran Awal, L55 Laporan Bulanan). Report: docs/qa/L51-L55-admin-sekolah-analitik.md.
  *
  * Complements (does not repeat) partb-analytics.spec.ts, partb-proposed.spec.ts and partb-amaran.spec.ts:
@@ -62,7 +62,7 @@ const SCREENS: Screen[] = [
     root: 'dh-page',
     ready: 'dh-card',
     nav: 'sa-dskp-heatmap',
-    title: 'DSKP Heatmap',
+    title: 'Peta Haba DSKP',
     endpoint: '/api/admin-sekolah/dskp-heatmap',
     alt: '?tingkatan=T5',
     error: 'dh-error',

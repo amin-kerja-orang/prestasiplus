@@ -82,7 +82,7 @@ export const TEST_REGISTRY: readonly ModuleManifest[] = [
       {
         path: '/dashboard',
         component: page('dashboard'),
-        meta: { layout: 'user', access: 'auth', title: 'Dashboard - PRESTASIPLUS' },
+        meta: { layout: 'user', access: 'auth', title: 'Papan Pemuka - PRESTASIPLUS' },
       },
       {
         path: '/topics',

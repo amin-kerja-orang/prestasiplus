@@ -62,7 +62,7 @@ describe('start (#2 / #3)', () => {
   })
 
   it.each([
-    [422, {}, 'Ralat dari server. Sila cuba lagi.'],
+    [422, {}, 'Ralat dari pelayan. Sila cuba lagi.'],
     [403, { error: 'Tidak dibenarkan.' }, 'Tidak dibenarkan.'],
     [500, { message: 'Gagal.' }, 'Gagal.'],
   ])('status %i %j shows %s', async (status, body, text) => {
@@ -73,10 +73,10 @@ describe('start (#2 / #3)', () => {
     expect(s.loading.value).toBe(false)
   })
 
-  it('a non-object body is "Respon tidak dijangka."', async () => {
+  it('a non-object body is "Respons tidak dijangka."', async () => {
     api.startBattle.mockResolvedValueOnce(res(200, 'x'))
     await s.start('quick-match', PARAMS)
-    expect(s.errorMsg.value).toBe('Respon tidak dijangka. Sila cuba lagi.')
+    expect(s.errorMsg.value).toBe('Respons tidak dijangka. Sila cuba lagi.')
   })
 
   it('a missing queue id is the system error', async () => {

@@ -20,7 +20,7 @@ export const REVISION_LABELS: QuizLabels = {
   back: 'Senarai Subjek',
   correctTitle: 'Betul! Kali ini berjaya!',
   wrongTitle: 'Masih belum tepat',
-  startErrorFallback: 'Failed to load revision quiz',
+  startErrorFallback: 'Gagal memuatkan kuiz ulang kaji',
   networkErrorFallback: 'Maaf, terdapat masalah memuatkan kuiz ulang kaji.',
 }
 
@@ -40,6 +40,6 @@ export const PRACTICE_LABELS: QuizLabels = {
   correctTitle: 'Betul!',
   wrongTitle: 'Salah',
   // INFERRED: the S7 fallbacks without the revision wording (live Q1 never opened).
-  startErrorFallback: 'Failed to load quiz',
+  startErrorFallback: 'Gagal memuatkan kuiz',
   networkErrorFallback: 'Maaf, terdapat masalah memuatkan kuiz.',
 }

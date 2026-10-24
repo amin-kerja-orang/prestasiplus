@@ -93,7 +93,7 @@ describe('S14 LeaderboardPage', () => {
     const rows = tid(w, 'lb-row')
     expect(rows).toHaveLength(47)
     expect(rows[0]?.text()).toContain('4')
-    expect(rows[0]?.text()).toContain('Mitos · Level 39')
+    expect(rows[0]?.text()).toContain('Mitos · Tahap 39')
     expect(rows[0]?.text()).toContain('65,129')
   })
 
@@ -269,7 +269,7 @@ describe('S16 ReferralPage', () => {
     const code = w.get('[data-testid=referral-copy-code]')
     const link = w.get('[data-testid=referral-copy-link]')
     expect(code.text()).toBe('Salin Kod')
-    expect(link.text()).toBe('Salin Link')
+    expect(link.text()).toBe('Salin Pautan')
     await code.trigger('click')
     await flushPromises()
     expect(clip.writeText).toHaveBeenLastCalledWith('4JURJTT')
@@ -277,7 +277,7 @@ describe('S16 ReferralPage', () => {
     await link.trigger('click')
     await flushPromises()
     expect(clip.writeText).toHaveBeenLastCalledWith('https://prestasiplus.my/register?ref=4JURJTT')
-    expect(link.text()).toBe('✓ Link Disalin!')
+    expect(link.text()).toBe('✓ Pautan Disalin!')
     expect(code.text()).toBe('✓ Disalin!')
   })
 
@@ -332,8 +332,8 @@ describe('S18 KadKongsiPage', () => {
     expect(w.get('[data-testid=kad-profil-answered]').text()).toBe('119')
     expect(w.get('[data-testid=kad-profil-accuracy]').text()).toBe('38.7%')
     expect(w.get('[data-testid=kad-profil-sessions]').text()).toBe('4')
-    expect(w.get('[data-testid=kad-profil-tier]').text()).toBe('🥉 Bronze')
-    expect(w.get('[data-testid=kad-profil-level]').text()).toBe('Lvl 2')
+    expect(w.get('[data-testid=kad-profil-tier]').text()).toBe('🥉 Gangsa')
+    expect(w.get('[data-testid=kad-profil-level]').text()).toBe('Tahap 2')
     expect(w.get('[data-testid=kad-profil-syiling]').text()).toBe('🪙 256')
     expect(w.text()).toContain('🎓 PRESTASIPLUS.MY')
     // one card set at a time
@@ -354,8 +354,8 @@ describe('S18 KadKongsiPage', () => {
     await w.get('[data-testid=kad-tab-penguasaan]').trigger('click')
     expect(tid(w, 'kad-mastery-subject').map((e) => e.text())).toEqual(['Bahasa Melayu', 'Sejarah'])
     expect(tid(w, 'kad-mastery-stage').map((e) => e.text())).toEqual([
-      'Lvl 2 — Aktif',
-      'Lvl 1 — Mula Belajar',
+      'Tahap 2 — Aktif',
+      'Tahap 1 — Mula Belajar',
     ])
     expect(tid(w, 'kad-mastery-accuracy').map((e) => e.text())).toEqual(['48.9%', '35%'])
     expect(tid(w, 'kad-mastery-correct').map((e) => e.text())).toEqual(['46', '14'])
@@ -383,7 +383,7 @@ describe('S18 KadKongsiPage', () => {
     await w.get('[data-testid=kad-tab-penguasaan]').trigger('click')
     await w.get('[data-testid=kad-penguasaan-1-share]').trigger('click')
     expect(waText()).toBe(
-      `🧠 Saya sudah capai Level 1 (Mula Belajar) dalam Sejarah di PRESTASIPLUS! Ketepatan 35%. Jom bersaing!${link}`,
+      `🧠 Saya sudah capai Tahap 1 (Mula Belajar) dalam Sejarah di PRESTASIPLUS! Ketepatan 35%. Jom bersaing!${link}`,
     )
     await w.get('[data-testid=kad-tab-ranking]').trigger('click')
     await w.get('[data-testid=kad-kedudukan-share]').trigger('click')

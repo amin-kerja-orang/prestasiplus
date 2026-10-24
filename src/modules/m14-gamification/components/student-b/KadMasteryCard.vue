@@ -21,7 +21,7 @@ defineProps<{ item: Mastery; name: string }>()
     <span
       class="mt-2 inline-block rounded-full bg-white/25 px-3 py-1 text-xs font-bold"
       data-testid="kad-mastery-stage"
-      >Lvl {{ item.level }} — {{ item.stage }}</span
+      >Tahap {{ item.level }} — {{ item.stage }}</span
     >
     <div class="mt-4 flex justify-center gap-3">
       <div class="min-w-0 rounded-xl bg-white/20 px-4 py-2">

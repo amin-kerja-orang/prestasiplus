@@ -71,7 +71,7 @@ export interface NavSection extends EntryBase {
   text: string
   /** Rule gradient start, e.g. `from-amber-300`. */
   rule: string
-  /** Sidebar wrapper spacing; live uses `pt-4 pb-2` except "Cikgu Alesa Tools" (`pt-2 pb-1`). */
+  /** Sidebar wrapper spacing; live uses `pt-4 pb-2` except "Alat Cikgu Alesa" (`pt-2 pb-1`). */
   wrap?: string
   /**
    * `gradient`: the "Pusat AI" header of the shared Pusat AI block, rendered with the same markup
@@ -106,7 +106,7 @@ export interface NavItem extends EntryBase {
    *   base-size icon on **both** surfaces (live includes the same partial in both menus);
    * - `drawer-style`: live sidebar item rendered with the drawer classes (Audio KBAT, OBSERVED);
    * - `command`: the dark "Command Center" card with the LIVE pill (`target="_blank"`);
-   * - `admin-link`: "Ke Admin Panel" (indigo tint classes).
+   * - `admin-link`: "Ke Panel Admin" (indigo tint classes).
    */
   variant?: 'main' | 'ai' | 'drawer-style' | 'command' | 'admin-link'
   /** Live `data-tip` tooltip (sidebar hover, hidden below 1024 by live CSS). */
@@ -209,7 +209,7 @@ const sub = (colour: string) => `text-[10px] font-bold uppercase tracking-wider 
 // prettier-ignore
 export const USER_NAV: readonly NavEntry[] = [
   // ── Top (OBSERVED sidebar; the drawer shows only "Dashboard") ──
-  { kind: 'item', id: 'dashboard', label: 'Dashboard', to: '/dashboard', fa: 'fa-home', color: '', roles: DASH },
+  { kind: 'item', id: 'dashboard', label: 'Papan Pemuka', to: '/dashboard', fa: 'fa-home', color: '', roles: DASH },
   { kind: 'item', id: 'target-spm', label: 'Target SPM', to: '/target-spm', fa: 'fa-bullseye', color: 'text-rose-500', tip: 'Tetapkan target gred SPM dan pantau kemajuan', surfaces: ['sidebar'], roles: SA_ },
   { kind: 'item', id: 'misi-harian', label: 'Misi Harian', to: '/misi-harian', fa: 'fa-rocket', color: 'text-amber-500', tip: 'Misi latih tubi harian dari guru', surfaces: ['sidebar'], roles: SA_ },
   { kind: 'item', id: 'remedial', label: 'Remedial', to: '/remedial/saya', fa: 'fa-flask', color: 'text-rose-500', tip: 'Ujian pemulihan untuk topik lemah', surfaces: ['sidebar'], roles: SA_ },
@@ -236,28 +236,28 @@ export const USER_NAV: readonly NavEntry[] = [
   //    items where the same item exists; otherwise INFERRED (marked). ──
   { kind: 'item', id: 't-command-center', label: 'Command Center', to: '/guru/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: T },
   { kind: 'section', id: 't-sec-harian', label: 'HARIAN', text: 'text-teal-700', rule: 'from-teal-300', roles: T },
-  { kind: 'item', id: 't-dashboard-guru', label: 'Dashboard Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: T },
+  { kind: 'item', id: 't-dashboard-guru', label: 'Papan Pemuka Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: T },
   // The screenshot shows a small pill after "Headcount", hidden under a tick mark: not transcribed.
   { kind: 'item', id: 't-headcount', label: 'Headcount', to: '/headcount', fa: 'fa-chart-line', color: 'text-blue-500', roles: T },
   { kind: 'item', id: 't-misi-harian', label: 'Misi Harian', to: '/guru/misi-harian', fa: 'fa-rocket', color: 'text-amber-500', roles: T },
-  { kind: 'item', id: 't-soalan-by-chapter', label: 'Soalan by Chapter', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: T },
+  { kind: 'item', id: 't-soalan-by-chapter', label: 'Soalan Mengikut Bab', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: T },
   // INFERRED href and icon.
-  { kind: 'item', id: 't-verify-struktur', label: 'Verify Soalan Struktur', to: '/guru/verify-soalan-struktur', fa: 'fa-shield-halved', color: 'text-slate-500', roles: T },
+  { kind: 'item', id: 't-verify-struktur', label: 'Sahkan Soalan Struktur', to: '/guru/verify-soalan-struktur', fa: 'fa-shield-halved', color: 'text-slate-500', roles: T },
   // INFERRED href and icon.
-  { kind: 'item', id: 't-verify-mcq', label: 'Verify Soalan MCQ', to: '/guru/verify-soalan-mcq', fa: 'fa-list-check', color: 'text-slate-500', roles: T },
+  { kind: 'item', id: 't-verify-mcq', label: 'Sahkan Soalan MCQ', to: '/guru/verify-soalan-mcq', fa: 'fa-list-check', color: 'text-slate-500', roles: T },
   { kind: 'item', id: 't-kelas-saya', label: 'Kelas Saya', to: '/guru/kelas', fa: 'fa-chalkboard-teacher', color: 'text-teal-500', roles: T },
   { kind: 'item', id: 't-pelajar-saya', label: 'Pelajar Saya', to: '/guru/pelajar', fa: 'fa-user-graduate', color: 'text-blue-500', roles: T },
   { kind: 'item', id: 't-kehadiran-digital', label: 'Kehadiran Digital', to: '/guru/kehadiran-digital', fa: 'fa-clipboard-check', color: 'text-green-500', roles: T },
   { kind: 'section', id: 't-sec-pengajaran', label: 'PENGAJARAN', text: 'text-blue-700', rule: 'from-blue-300', roles: T },
   { kind: 'item', id: 't-jadual-belajar', label: 'Jadual Belajar', to: '/guru/jadual-belajar', fa: 'fa-calendar-alt', color: 'text-purple-500', roles: T },
-  { kind: 'item', id: 't-broadcast', label: 'Broadcast', to: '/guru/broadcast', fa: 'fa-bullhorn', color: 'text-amber-500', roles: T },
-  { kind: 'item', id: 't-kelas-live', label: 'Kelas Live', to: '/guru/live-kelas', fa: 'fa-broadcast-tower', color: 'text-red-500', roles: T },
+  { kind: 'item', id: 't-broadcast', label: 'Siaran', to: '/guru/broadcast', fa: 'fa-bullhorn', color: 'text-amber-500', roles: T },
+  { kind: 'item', id: 't-kelas-live', label: 'Kelas Langsung', to: '/guru/live-kelas', fa: 'fa-broadcast-tower', color: 'text-red-500', roles: T },
   { kind: 'section', id: 't-sec-penilaian', label: 'PENILAIAN', text: 'text-amber-700', rule: 'from-amber-300', roles: T },
   { kind: 'item', id: 't-prestasi', label: 'Prestasi', to: '/prestasi/kelas', fa: 'fa-chart-bar', color: 'text-emerald-500', roles: T },
   { kind: 'item', id: 't-laporan', label: 'Laporan', to: '/guru/laporan', fa: 'fa-chart-pie', color: 'text-orange-500', roles: T },
   { kind: 'item', id: 't-amaran-awal', label: 'Amaran Awal', to: '/amaran', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: T },
   { kind: 'section', id: 't-sec-analitik', label: 'ANALITIK', text: 'text-indigo-700', rule: 'from-indigo-300', roles: T },
-  { kind: 'item', id: 't-monitoring', label: 'Monitoring', to: '/guru/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: T },
+  { kind: 'item', id: 't-monitoring', label: 'Pemantauan', to: '/guru/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: T },
   {
     kind: 'group',
     id: 't-kirkpatrick',
@@ -299,43 +299,43 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'pusat-kerjaya', label: 'Pusat Kerjaya', to: '/pusat-kerjaya', fa: 'fa-briefcase', color: 'text-teal-600', variant: 'ai', roles: S },
   { kind: 'item', id: 'pusat-ilmu-sekolah', label: 'Pusat Ilmu Sekolah', to: '/pusat-ilmu-sekolah', fa: 'fa-graduation-cap', color: 'text-emerald-600', variant: 'ai', roles: S },
   { kind: 'item', id: 'psikometrik', label: 'Psikometrik', to: '/psikometrik', fa: 'fa-brain', color: 'text-pink-600', variant: 'ai', badge: { text: 'NEW', cls: B_NEW_PINK_INFERRED }, roles: S },
-  { kind: 'item', id: 'heatmap-topik-lemah', label: 'Heatmap Topik Lemah', to: '/buku-nota/heatmap', fa: 'fa-fire', color: 'text-red-600', variant: 'ai', roles: S },
+  { kind: 'item', id: 'heatmap-topik-lemah', label: 'Peta Haba Topik Lemah', to: '/buku-nota/heatmap', fa: 'fa-fire', color: 'text-red-600', variant: 'ai', roles: S },
 
   { kind: 'subheading', id: 'sub-cikgu-alesa-ai', label: '🤖 Cikgu Alesa AI', cls: sub('text-purple-600/80'), roles: AI_ALL },
-  { kind: 'item', id: 'cikgu-alesa-chat', label: 'Cikgu Alesa Chat', to: '/cikgu', fa: 'fa-robot', color: 'text-purple-600', variant: 'ai', tip: 'Bual dengan Cikgu Alesa — guru maya pakar SPM yang ingat nama dan progress anda', badge: { text: 'AI', cls: B_AI }, roles: AI_ALL },
+  { kind: 'item', id: 'cikgu-alesa-chat', label: 'Cikgu Alesa Chat', to: '/cikgu', fa: 'fa-robot', color: 'text-purple-600', variant: 'ai', tip: 'Bual dengan Cikgu Alesa — guru maya pakar SPM yang ingat nama dan kemajuan anda', badge: { text: 'AI', cls: B_AI }, roles: AI_ALL },
 
   { kind: 'subheading', id: 'sub-visi-ai', label: '✨ Visi & Pertandingan', cls: sub('text-indigo-600/80'), roles: AI_ALL },
   // Student only (murid screenshot); INFERRED href (same page as the "Profil Cerah" item below).
   { kind: 'item', id: 'profil-cerah-ai', label: 'Profil Cerah', to: '/profil-cerah', fa: 'fa-magic', color: 'text-indigo-500', variant: 'ai', badge: { text: 'NEW', cls: B_NEW_PURPLE_INFERRED }, roles: S },
-  { kind: 'item', id: 'sekolah-bersaing-ai', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', variant: 'ai', tip: 'Leaderboard mingguan sekolah-sekolah Malaysia', badge: { text: 'NEW', cls: B_NEW_ITEM }, roles: AI_ALL },
+  { kind: 'item', id: 'sekolah-bersaing-ai', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', variant: 'ai', tip: 'Papan pendahulu mingguan sekolah-sekolah Malaysia', badge: { text: 'NEW', cls: B_NEW_ITEM }, roles: AI_ALL },
   { kind: 'item', id: 'tetapan-peribadi', label: 'Tetapan Peribadi', to: '/tetapan', fa: 'fa-cog', color: 'text-slate-600', variant: 'ai', tip: 'Tetapan rohani, masa Subuh, mod Ramadan', roles: AI_ALL },
 
-  { kind: 'subheading', id: 'sub-bilik-duta-preview', label: '🏆 Bilik Duta · 🔒 PREVIEW', cls: sub('text-amber-600/80'), roles: A },
-  { kind: 'item', id: 'bilik-duta-preview', label: 'Bilik Duta', to: '/bilik-duta', fa: 'fa-crown', color: 'text-amber-500', variant: 'ai', tip: 'Bilik Duta — preview admin sahaja', badge: { text: 'DEV', cls: B_DEV }, roles: A },
+  { kind: 'subheading', id: 'sub-bilik-duta-preview', label: '🏆 Bilik Duta · 🔒 PRATONTON', cls: sub('text-amber-600/80'), roles: A },
+  { kind: 'item', id: 'bilik-duta-preview', label: 'Bilik Duta', to: '/bilik-duta', fa: 'fa-crown', color: 'text-amber-500', variant: 'ai', tip: 'Bilik Duta — pratonton admin sahaja', badge: { text: 'DEV', cls: B_DEV }, roles: A },
 
   { kind: 'subheading', id: 'sub-ai-pelajar', label: '🤖 AI Pintar (Pelajar)', cls: sub('text-emerald-600/80'), roles: AI_ALL },
-  // Student only (murid screenshot). "Cikgu Suara" and "SPM Mock Exam" hrefs as the Killer
+  // Student only (murid screenshot). "Cikgu Suara" and "Peperiksaan Percubaan SPM" hrefs as the Killer
   // Features items; the SPM Mock tooltip is OBSERVED in the screenshot.
   { kind: 'item', id: 'cikgu-suara-ai', label: 'Cikgu Suara', to: '/cikgu-suara', fa: 'fa-microphone', color: 'text-slate-600', variant: 'ai', roles: S },
-  { kind: 'item', id: 'spm-mock-ai', label: 'SPM Mock Exam', to: '/spm-mock', fa: 'fa-file-pen', color: 'text-orange-700', variant: 'ai', tip: 'Mock SPM penuh — timer + auto-grade', badge: { text: 'NEW', cls: B_NEW_ORANGE_INFERRED }, roles: S },
+  { kind: 'item', id: 'spm-mock-ai', label: 'Peperiksaan Percubaan SPM', to: '/spm-mock', fa: 'fa-file-pen', color: 'text-orange-700', variant: 'ai', tip: 'Percubaan SPM penuh — pemasa + penggredan automatik', badge: { text: 'NEW', cls: B_NEW_ORANGE_INFERRED }, roles: S },
   { kind: 'item', id: 'mood-saya', label: 'Mood Saya', to: '/pusat-ai/mood', fa: 'fa-smile', color: 'text-amber-500', variant: 'ai', roles: S },
-  { kind: 'item', id: 'wellbeing-alerts-ai', label: 'Wellbeing Alerts', to: '/wellbeing/alerts', fa: 'fa-triangle-exclamation', color: 'text-red-600', variant: 'ai', tip: 'Wellbeing alerts pelajar di sekolah anda', roles: ['admin', 'teacher', 'school_admin'] },
+  { kind: 'item', id: 'wellbeing-alerts-ai', label: 'Amaran Kesejahteraan', to: '/wellbeing/alerts', fa: 'fa-triangle-exclamation', color: 'text-red-600', variant: 'ai', tip: 'Amaran kesejahteraan pelajar di sekolah anda', roles: ['admin', 'teacher', 'school_admin'] },
   { kind: 'item', id: 'kamus-ai', label: 'Kamus AI', to: '/pusat-ai/kamus', fa: 'fa-book-open', color: 'text-cyan-600', variant: 'ai', tip: 'BM↔EN, istilah teknikal, Jawi-Rumi, sinonim', roles: AI_ALL },
-  // Student only; href `/pusat-ai/spm` OBSERVED for "SPM Walkthrough" in the admin shell (M06 FN-1.2.7).
-  { kind: 'item', id: 'spm-walkthrough', label: 'SPM Walkthrough', to: '/pusat-ai/spm', fa: 'fa-pen-to-square', color: 'text-rose-600', variant: 'ai', roles: S },
+  // Student only; href `/pusat-ai/spm` OBSERVED for "Panduan Langkah SPM" in the admin shell (M06 FN-1.2.7).
+  { kind: 'item', id: 'spm-walkthrough', label: 'Panduan Langkah SPM', to: '/pusat-ai/spm', fa: 'fa-pen-to-square', color: 'text-rose-600', variant: 'ai', roles: S },
   { kind: 'item', id: 'pendamping-motivasi', label: 'Pendamping Motivasi', to: '/pusat-ai/pendamping', fa: 'fa-heart', color: 'text-purple-600', variant: 'ai', tip: 'Pendamping motivasi — bukan kaunselor klinikal', roles: AI_ALL },
   { kind: 'item', id: 'doa-motivasi', label: 'Doa & Motivasi', to: '/pusat-ai/doa', fa: 'fa-mosque', color: 'text-emerald-600', variant: 'ai', tip: 'Doa belajar/exam, hadis pendidikan, ayat motivasi', roles: AI_ALL },
 
   { kind: 'subheading', id: 'sub-ai-guru', label: '🎯 AI Pintar (Guru)', cls: sub('text-blue-600/80'), roles: ['admin', 'teacher', 'school_admin'] },
-  { kind: 'item', id: 'aktiviti-advisor', label: 'Aktiviti Advisor', to: '/pusat-ai/aktiviti', fa: 'fa-lightbulb', color: 'text-green-600', variant: 'ai', tip: 'Cadangan aktiviti pembelajaran B40-aware', roles: ['admin', 'teacher', 'school_admin'] },
-  { kind: 'item', id: 'whiteboard-quiz', label: 'Whiteboard → Quiz', to: '/pusat-ai/whiteboard', fa: 'fa-clipboard-question', color: 'text-blue-600', variant: 'ai', tip: 'Snap whiteboard → 5 soalan exit-ticket dalam 20 saat', roles: ['admin', 'teacher', 'school_admin'] },
+  { kind: 'item', id: 'aktiviti-advisor', label: 'Aktiviti Advisor', to: '/pusat-ai/aktiviti', fa: 'fa-lightbulb', color: 'text-green-600', variant: 'ai', tip: 'Cadangan aktiviti pembelajaran peka B40', roles: ['admin', 'teacher', 'school_admin'] },
+  { kind: 'item', id: 'whiteboard-quiz', label: 'Papan Putih → Kuiz', to: '/pusat-ai/whiteboard', fa: 'fa-clipboard-question', color: 'text-blue-600', variant: 'ai', tip: 'Tangkap gambar papan putih → 5 soalan tiket keluar dalam 20 saat', roles: ['admin', 'teacher', 'school_admin'] },
   { kind: 'item', id: 'rph-cikgu-alesa', label: 'RPH (Cikgu Alesa)', to: '/cikgu/rph', fa: 'fa-clipboard-list', color: 'text-emerald-600', variant: 'ai', tip: 'Cikgu Alesa jana RPH AI mengikut DSKP — siap untuk dicetak', roles: ['admin', 'teacher', 'school_admin'] },
   { kind: 'item', id: 'semak-karangan', label: 'Semak Karangan (Cikgu Alesa)', to: '/cikgu/essay', fa: 'fa-pen-fancy', color: 'text-amber-600', variant: 'ai', tip: 'Cikgu Alesa bantu semak karangan pelajar dengan rubrik DSKP', roles: ['admin', 'teacher', 'school_admin'] },
-  { kind: 'item', id: 'pbd-cikgu-alesa', label: 'PBD (Cikgu Alesa)', to: '/cikgu/pbd', fa: 'fa-tasks', color: 'text-rose-600', variant: 'ai', tip: 'Cikgu Alesa bantu Pentaksiran Bilik Darjah — TP rollup dari aktiviti', roles: ['admin', 'teacher', 'school_admin'] },
+  { kind: 'item', id: 'pbd-cikgu-alesa', label: 'PBD (Cikgu Alesa)', to: '/cikgu/pbd', fa: 'fa-tasks', color: 'text-rose-600', variant: 'ai', tip: 'Cikgu Alesa bantu Pentaksiran Bilik Darjah — ringkasan TP daripada aktiviti', roles: ['admin', 'teacher', 'school_admin'] },
 
   { kind: 'subheading', id: 'sub-kawalan-kualiti', label: '🛡️ Kawalan Kualiti', cls: sub('text-violet-600/80'), roles: ['admin', 'school_admin'] },
-  { kind: 'item', id: 'semakan-nota-master', label: 'Semakan Nota Master', to: '/admin/master-notes', fa: 'fa-shield-alt', color: 'text-violet-600', variant: 'ai', tip: 'Semak dan approve nota AI yang flagged — quality compounds untuk semua pelajar', roles: ['admin', 'school_admin'] },
-  { kind: 'item', id: 'audit-log', label: 'Audit Log', to: '/admin/audit-log', fa: 'fa-clipboard-check', color: 'text-slate-600', variant: 'ai', tip: 'Audit log AI - PDPA & KPM compliance, CSV export', roles: ['admin', 'school_admin'] },
+  { kind: 'item', id: 'semakan-nota-master', label: 'Semakan Nota Induk', to: '/admin/master-notes', fa: 'fa-shield-alt', color: 'text-violet-600', variant: 'ai', tip: 'Semak dan luluskan nota AI yang ditanda — kualiti bertambah untuk semua pelajar', roles: ['admin', 'school_admin'] },
+  { kind: 'item', id: 'audit-log', label: 'Log Audit', to: '/admin/audit-log', fa: 'fa-clipboard-check', color: 'text-slate-600', variant: 'ai', tip: 'Log audit AI - pematuhan PDPA & KPM, eksport CSV', roles: ['admin', 'school_admin'] },
 
   // ── Teacher, part 2 (guru screenshots: BANK SOALAN, AKTIVITI, LAIN-LAIN; Bantuan is shared) ──
   { kind: 'section', id: 't-sec-bank-soalan', label: 'BANK SOALAN', text: 'text-emerald-700', rule: 'from-emerald-300', roles: T },
@@ -353,7 +353,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'section', id: 't-sec-aktiviti', label: 'AKTIVITI', text: 'text-purple-700', rule: 'from-purple-300', roles: T },
   { kind: 'item', id: 't-liga', label: 'Liga Pertandingan', to: '/liga', fa: 'fa-trophy', color: 'text-yellow-500', roles: T },
   // Icon INFERRED (a shield in the screenshot).
-  { kind: 'item', id: 't-tournament', label: 'Tournament', to: '/tournament', fa: 'fa-shield-halved', color: 'text-amber-500', roles: T },
+  { kind: 'item', id: 't-tournament', label: 'Kejohanan', to: '/tournament', fa: 'fa-shield-halved', color: 'text-amber-500', roles: T },
   { kind: 'item', id: 't-kombo', label: 'Kombo', to: '/kombo', fa: 'fa-fire', color: 'text-orange-500', roles: T },
   { kind: 'item', id: 't-syiling-ganjaran', label: 'Syiling & Ganjaran', to: '/guru/gamifikasi', fa: 'fa-coins', color: 'text-amber-500', roles: T },
   { kind: 'section', id: 't-sec-lain-lain', label: 'LAIN-LAIN', text: 'text-slate-700', rule: 'from-slate-300', roles: T },
@@ -371,7 +371,7 @@ export const USER_NAV: readonly NavEntry[] = [
   //    "Dashboard", is observed) unless the same item exists elsewhere; icons and heading colours
   //    INFERRED from the screenshot. ──
   { kind: 'section', id: 'sa-sec-harian', label: 'HARIAN', text: 'text-teal-700', rule: 'from-teal-300', roles: SCH },
-  { kind: 'item', id: 'sa-dashboard', label: 'Dashboard', to: '/admin-sekolah', fa: 'fa-home', color: '', roles: SCH },
+  { kind: 'item', id: 'sa-dashboard', label: 'Papan Pemuka', to: '/admin-sekolah', fa: 'fa-home', color: '', roles: SCH },
   { kind: 'item', id: 'sa-senarai-pelajar', label: 'Senarai Pelajar', to: '/admin-sekolah/pelajar', fa: 'fa-user-graduate', color: 'text-indigo-500', roles: SCH },
   { kind: 'item', id: 'sa-senarai-guru', label: 'Senarai Guru', to: '/admin-sekolah/guru', fa: 'fa-chalkboard-teacher', color: 'text-teal-500', roles: SCH },
   { kind: 'item', id: 'sa-kelas-sekolah', label: 'Kelas Sekolah', to: '/admin-sekolah/kelas', fa: 'fa-door-open', color: 'text-red-500', roles: SCH },
@@ -387,12 +387,12 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'sa-amaran-awal', label: 'Amaran Awal', to: '/amaran/sekolah', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: SCH },
   { kind: 'item', id: 'sa-laporan-bulanan', label: 'Laporan Bulanan', to: '/admin-sekolah/laporan-bulanan', fa: 'fa-calendar-alt', color: 'text-blue-500', roles: SCH },
   { kind: 'section', id: 'sa-sec-analitik', label: 'ANALITIK', text: 'text-indigo-700', rule: 'from-indigo-300', roles: SCH },
-  { kind: 'item', id: 'sa-monitoring', label: 'Monitoring', to: '/admin-sekolah/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: SCH },
+  { kind: 'item', id: 'sa-monitoring', label: 'Pemantauan', to: '/admin-sekolah/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: SCH },
   // Shown collapsed in the screenshot (its sub-items are not visible): rendered as a link.
   { kind: 'item', id: 'sa-kirkpatrick', label: 'Kirkpatrick', to: '/admin-sekolah/kirkpatrick', fa: 'fa-microscope', color: 'text-cyan-500', roles: SCH },
   { kind: 'item', id: 'sa-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/pelajar', fa: 'fa-brain', color: 'text-violet-500', roles: SCH },
   { kind: 'item', id: 'sa-statistik-penggunaan', label: 'Statistik Penggunaan', to: '/admin-sekolah/statistik-penggunaan', fa: 'fa-chart-pie', color: 'text-purple-500', roles: SCH },
-  { kind: 'item', id: 'sa-dskp-heatmap', label: 'DSKP Heatmap', to: '/admin-sekolah/dskp-heatmap', fa: 'fa-table-cells', color: 'text-emerald-500', roles: SCH },
+  { kind: 'item', id: 'sa-dskp-heatmap', label: 'Peta Haba DSKP', to: '/admin-sekolah/dskp-heatmap', fa: 'fa-table-cells', color: 'text-emerald-500', roles: SCH },
   { kind: 'item', id: 'sa-analisa-item', label: 'Analisa Item', to: '/analisa-item', fa: 'fa-magnifying-glass-chart', color: 'text-purple-500', roles: SCH },
   { kind: 'item', id: 'sa-laporan-aktiviti', label: 'Laporan Aktiviti', to: '/admin-sekolah/laporan-aktiviti', fa: 'fa-file-lines', color: 'text-orange-500', roles: SCH },
   { kind: 'section', id: 'sa-sec-akademik', label: 'AKADEMIK', text: 'text-emerald-700', rule: 'from-emerald-300', roles: SCH },
@@ -401,7 +401,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'sa-soalan-berstruktur', label: 'Soalan Berstruktur', to: '/latihan-berstruktur', fa: 'fa-list-ol', color: 'text-cyan-500', roles: SCH },
   { kind: 'item', id: 'sa-kombo-harian', label: 'Kombo Harian', to: '/kombo', fa: 'fa-fire', color: 'text-emerald-500', roles: SCH },
   { kind: 'item', id: 'sa-liga', label: 'Liga Pertandingan', to: '/liga', fa: 'fa-trophy', color: 'text-yellow-500', roles: SCH },
-  { kind: 'item', id: 'sa-tournament', label: 'Tournament', to: '/tournament', fa: 'fa-shield-halved', color: 'text-amber-500', roles: SCH },
+  { kind: 'item', id: 'sa-tournament', label: 'Kejohanan', to: '/tournament', fa: 'fa-shield-halved', color: 'text-amber-500', roles: SCH },
   { kind: 'section', id: 'sa-sec-lain-lain', label: 'LAIN-LAIN', text: 'text-slate-700', rule: 'from-slate-300', roles: SCH },
   { kind: 'item', id: 'sa-perutusan', label: 'Perutusan', to: '/perutusan', fa: 'fa-scroll', color: 'text-amber-500', roles: SCH },
   { kind: 'item', id: 'sa-video', label: 'Video', to: '/video', fa: 'fa-play-circle', color: 'text-emerald-500', roles: SCH },
@@ -420,11 +420,11 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'sekolah-bersaing', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', roles: SA_ },
   { kind: 'item', id: 'cita-cita-hijrah', label: 'Cita-Cita Hijrah', to: '/cita-cita', fa: 'fa-star', color: 'text-pink-500', roles: SA_ },
 
-  // ── 💎 Killer Features ──
-  { kind: 'section', id: 'sec-killer', label: '💎 Killer Features', text: 'text-fuchsia-700', rule: 'from-fuchsia-300', roles: SA_ },
+  // ── 💎 Ciri Utama ──
+  { kind: 'section', id: 'sec-killer', label: '💎 Ciri Utama', text: 'text-fuchsia-700', rule: 'from-fuchsia-300', roles: SA_ },
   { kind: 'item', id: 'cikgu-suara', label: 'Cikgu Suara', to: '/cikgu-suara', fa: 'fa-microphone', color: 'text-fuchsia-500', roles: SA_ },
-  { kind: 'item', id: 'spm-mock', label: 'SPM Mock Exam', to: '/spm-mock', fa: 'fa-file-pen', color: 'text-orange-700', roles: SA_ },
-  { kind: 'item', id: 'wellbeing-alerts', label: 'Wellbeing Alerts', to: '/wellbeing/alerts', fa: 'fa-triangle-exclamation', color: 'text-red-500', roles: SA_ },
+  { kind: 'item', id: 'spm-mock', label: 'Peperiksaan Percubaan SPM', to: '/spm-mock', fa: 'fa-file-pen', color: 'text-orange-700', roles: SA_ },
+  { kind: 'item', id: 'wellbeing-alerts', label: 'Amaran Kesejahteraan', to: '/wellbeing/alerts', fa: 'fa-triangle-exclamation', color: 'text-red-500', roles: SA_ },
   { kind: 'item', id: 'pembetulan', label: 'Pembetulan', to: '/pembetulan', fa: 'fa-arrows-rotate', color: 'text-teal-500', roles: SA_ },
   { kind: 'item', id: 'mohon-keluarga-angkat', label: 'Mohon Keluarga Angkat', to: '/mohon-keluarga-angkat', fa: 'fa-hand-holding-heart', color: 'text-pink-500', roles: SA_ },
   { kind: 'item', id: 'penguasaan', label: 'Penguasaan', to: '/penguasaan', fa: 'fa-layer-group', color: 'text-purple-500', roles: SA_ },
@@ -435,7 +435,7 @@ export const USER_NAV: readonly NavEntry[] = [
   // ── Pembelajaran ──
   { kind: 'section', id: 'sec-pembelajaran', label: 'Pembelajaran', text: 'text-blue-700', rule: 'from-blue-300', roles: SA_ },
   { kind: 'item', id: 'latih-tubi', label: 'Latih Tubi', to: '/practice', fa: 'fa-brain', color: 'icon-brain', activeExcept: ['/practice/chapter', '/practice/revision', '/practice/progress', '/practice/history'], roles: SA_ },
-  { kind: 'item', id: 'soalan-by-chapter', label: 'Soalan by Chapter', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: SA_ },
+  { kind: 'item', id: 'soalan-by-chapter', label: 'Soalan Mengikut Bab', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: SA_ },
   { kind: 'item', id: 'soalan-berstruktur', label: 'Soalan Berstruktur', to: '/latihan-berstruktur', fa: 'fa-list-ol', color: 'text-cyan-500', roles: SA_ },
   { kind: 'item', id: 'kedudukan', label: 'Kedudukan', to: '/ranking', fa: 'fa-trophy', color: 'text-amber-500', roles: SA_ },
   { kind: 'item', id: 'pksk', label: 'PKSK', to: '/pksk', fa: 'fa-shield-halved', color: 'text-indigo-500', badge: { text: 'PRO', cls: B_PRO }, roles: SA_ },
@@ -443,7 +443,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'video', label: 'Video', to: '/video', fa: 'fa-play-circle', color: 'text-emerald-500', roles: SA_ },
   { kind: 'item', id: 'permainan', label: 'Permainan', to: '/permainan', fa: 'fa-gamepad', color: 'text-purple-500', badge: { text: '🎮', cls: B_GAME }, roles: SA_ },
   { kind: 'item', id: 'cabutan', label: 'Cabutan Bertuah', to: '/cabutan', fa: 'fa-ticket', color: 'text-fuchsia-500', badge: { text: '🎟️', cls: B_TICKET }, roles: SA_ },
-  { kind: 'item', id: 'tournament', label: 'Tournament', to: '/tournament', fa: 'fa-trophy', color: 'text-amber-500', roles: SA_ },
+  { kind: 'item', id: 'tournament', label: 'Kejohanan', to: '/tournament', fa: 'fa-trophy', color: 'text-amber-500', roles: SA_ },
   { kind: 'item', id: 'topik', label: 'Topik', to: '/topics', fa: 'fa-book-open', color: 'icon-book', roles: SA_ },
   { kind: 'item', id: 'peta-belajar', label: 'Peta Belajar', to: '/peta-belajar', fa: 'fa-map', color: 'text-cyan-500', roles: SA_ },
   { kind: 'item', id: 'kelas-saya', label: 'Kelas Saya', to: '/kelas-saya', fa: 'fa-book-reader', color: 'text-emerald-500', roles: SA_ },
@@ -465,21 +465,21 @@ export const USER_NAV: readonly NavEntry[] = [
   // (`/kedai-hadiah` is 404 on live, DV-M15-18 / XR-M15-13); classes INFERRED.
   { kind: 'item', id: 'kedai-hadiah-digital', label: 'Kedai Hadiah 🎁', to: '/cikgu/hadiah', fa: 'fa-gift', color: 'text-emerald-500', badge: { text: 'DIGITAL', cls: B_DIGITAL_INFERRED }, roles: S },
 
-  // ── Cikgu Alesa Tools (admin capture) ──
-  { kind: 'section', id: 'sec-cikgu-alesa-tools', label: 'Cikgu Alesa Tools', text: 'text-purple-700', rule: 'from-purple-300', wrap: 'pt-2 pb-1', roles: A },
+  // ── Alat Cikgu Alesa (admin capture) ──
+  { kind: 'section', id: 'sec-cikgu-alesa-tools', label: 'Alat Cikgu Alesa', text: 'text-purple-700', rule: 'from-purple-300', wrap: 'pt-2 pb-1', roles: A },
   { kind: 'item', id: 'rph-rancangan-harian', label: 'RPH (Rancangan Harian)', to: '/cikgu/rph', fa: 'fa-file-alt', color: 'text-purple-500', roles: A },
   { kind: 'item', id: 'pbd-auto-tag', label: 'PBD Auto-Tag', to: '/cikgu/pbd', fa: 'fa-clipboard-check', color: 'text-blue-500', roles: A },
-  { kind: 'item', id: 'mark-karangan', label: 'Mark Karangan', to: '/cikgu/essay', fa: 'fa-pen-fancy', color: 'text-rose-500', roles: A },
+  { kind: 'item', id: 'mark-karangan', label: 'Tanda Karangan', to: '/cikgu/essay', fa: 'fa-pen-fancy', color: 'text-rose-500', roles: A },
   // DV-M15-04: live `/admin/hadiah`.
   { kind: 'item', id: 'admin-tebusan', label: 'Admin Tebusan', to: '/admin/hadiah/tebusan', fa: 'fa-cogs', color: 'text-slate-500', roles: A },
 
-  { kind: 'item', id: 'timeline-saya', label: 'Timeline Saya', to: '/timeline', fa: 'fa-camera', color: 'text-pink-500', roles: SA_ },
+  { kind: 'item', id: 'timeline-saya', label: 'Garis Masa Saya', to: '/timeline', fa: 'fa-camera', color: 'text-pink-500', roles: SA_ },
   // Student only (murid screenshot); href confirmed on live (L45 discovery: route exists, murid-only); icon and colour INFERRED.
   { kind: 'item', id: 'jemput-ibu-bapa', label: 'Jemput Ibu Bapa', to: '/jemput-ibu-bapa', fa: 'fa-users', color: 'text-red-500', roles: S },
 
   // ── Portal Guru (sidebar capture) ──
   { kind: 'section', id: 'sec-portal-guru', label: 'Portal Guru', text: 'text-teal-700', rule: 'from-teal-300', roles: A },
-  { kind: 'item', id: 'dashboard-guru', label: 'Dashboard Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: A },
+  { kind: 'item', id: 'dashboard-guru', label: 'Papan Pemuka Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'kelas-guru', label: 'Kelas Guru', to: '/guru/kelas', fa: 'fa-chalkboard-teacher', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'sumbang-soalan', label: 'Sumbang Soalan', to: '/guru/soalan', fa: 'fa-pen-fancy', color: 'text-emerald-500', roles: A },
   { kind: 'item', id: 'databank-soalan', label: 'Databank Soalan', to: '/guru/databank', fa: 'fa-database', color: 'text-violet-500', roles: A },
@@ -488,23 +488,23 @@ export const USER_NAV: readonly NavEntry[] = [
   //    sidebar is transcribed above from the guru screenshots) ──
   { kind: 'item', id: 'command-center-guru', label: 'Command Center', to: '/guru/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: A },
   { kind: 'section', id: 'sec-harian', label: 'HARIAN', text: 'text-teal-700', rule: 'from-teal-300', roles: A },
-  { kind: 'item', id: 'guru-dashboard', label: 'Dashboard Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: A },
+  { kind: 'item', id: 'guru-dashboard', label: 'Papan Pemuka Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'guru-misi-harian', label: 'Misi Harian', to: '/guru/misi-harian', fa: 'fa-rocket', color: 'text-amber-500', roles: A },
-  { kind: 'item', id: 'guru-soalan-by-chapter', label: 'Soalan by Chapter', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: A },
+  { kind: 'item', id: 'guru-soalan-by-chapter', label: 'Soalan Mengikut Bab', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: A },
   { kind: 'item', id: 'guru-kelas-saya', label: 'Kelas Saya', to: '/guru/kelas', fa: 'fa-chalkboard-teacher', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'guru-pelajar-saya', label: 'Pelajar Saya', to: '/guru/pelajar', fa: 'fa-user-graduate', color: 'text-blue-500', roles: A },
   { kind: 'item', id: 'guru-kehadiran-digital', label: 'Kehadiran Digital', to: '/guru/kehadiran-digital', fa: 'fa-clipboard-check', color: 'text-green-500', roles: A },
   { kind: 'section', id: 'sec-pengajaran', label: 'PENGAJARAN', text: 'text-blue-700', rule: 'from-blue-300', roles: A },
   { kind: 'item', id: 'guru-jadual-belajar', label: 'Jadual Belajar', to: '/guru/jadual-belajar', fa: 'fa-calendar-alt', color: 'text-purple-500', roles: A },
-  { kind: 'item', id: 'guru-broadcast', label: 'Broadcast', to: '/guru/broadcast', fa: 'fa-bullhorn', color: 'text-amber-500', roles: A },
-  { kind: 'item', id: 'guru-kelas-live', label: 'Kelas Live', to: '/guru/live-kelas', fa: 'fa-broadcast-tower', color: 'text-red-500', roles: A },
+  { kind: 'item', id: 'guru-broadcast', label: 'Siaran', to: '/guru/broadcast', fa: 'fa-bullhorn', color: 'text-amber-500', roles: A },
+  { kind: 'item', id: 'guru-kelas-live', label: 'Kelas Langsung', to: '/guru/live-kelas', fa: 'fa-broadcast-tower', color: 'text-red-500', roles: A },
   { kind: 'section', id: 'sec-penilaian', label: 'PENILAIAN', text: 'text-amber-700', rule: 'from-amber-300', roles: A },
   { kind: 'item', id: 'guru-headcount', label: 'Headcount', to: '/headcount', fa: 'fa-chart-line', color: 'text-blue-500', roles: A },
   { kind: 'item', id: 'guru-prestasi', label: 'Prestasi', to: '/prestasi/kelas', fa: 'fa-chart-bar', color: 'text-emerald-500', roles: A },
   { kind: 'item', id: 'guru-laporan', label: 'Laporan', to: '/guru/laporan', fa: 'fa-chart-pie', color: 'text-orange-500', roles: A },
   { kind: 'item', id: 'guru-amaran-awal', label: 'Amaran Awal', to: '/amaran', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: A },
   { kind: 'section', id: 'sec-analitik', label: 'ANALITIK', text: 'text-indigo-700', rule: 'from-indigo-300', roles: A },
-  { kind: 'item', id: 'guru-monitoring', label: 'Monitoring', to: '/guru/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: A },
+  { kind: 'item', id: 'guru-monitoring', label: 'Pemantauan', to: '/guru/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: A },
   {
     kind: 'group',
     id: 'guru-kirkpatrick',
@@ -541,22 +541,22 @@ export const USER_NAV: readonly NavEntry[] = [
   // ── PPD / JPN (sidebar capture + drawer-only items) ──
   { kind: 'section', id: 'sec-ppd-jpn', label: 'PPD / JPN', text: 'text-indigo-700', rule: 'from-indigo-300', roles: ['admin', 'ppd_officer', 'jpn_officer'] },
   { kind: 'item', id: 'command-center-ppd', label: 'Command Center', to: '/ppd/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: ['admin', 'ppd_officer'] },
-  { kind: 'item', id: 'dashboard-ppd', label: 'Dashboard PPD', to: '/ppd/dashboard', fa: 'fa-building-columns', color: 'text-indigo-500', roles: ['admin', 'ppd_officer'] },
+  { kind: 'item', id: 'dashboard-ppd', label: 'Papan Pemuka PPD', to: '/ppd/dashboard', fa: 'fa-building-columns', color: 'text-indigo-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'statistik-ppd', label: 'Statistik PPD', to: '/ppd/statistik-penggunaan', fa: 'fa-chart-pie', color: 'text-violet-500', roles: ['admin', 'ppd_officer'] },
-  { kind: 'item', id: 'ranking-kebangsaan-ppd', label: 'Ranking Kebangsaan', to: '/ppd/ranking-kebangsaan', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin', 'ppd_officer'] },
-  { kind: 'item', id: 'benchmark-sekolah', label: 'Benchmark Sekolah', to: '/ppd/benchmark-sekolah', fa: 'fa-ranking-star', color: 'text-amber-500', roles: ['admin', 'ppd_officer'] },
+  { kind: 'item', id: 'ranking-kebangsaan-ppd', label: 'Kedudukan Kebangsaan', to: '/ppd/ranking-kebangsaan', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin', 'ppd_officer'] },
+  { kind: 'item', id: 'benchmark-sekolah', label: 'Penanda Aras Sekolah', to: '/ppd/benchmark-sekolah', fa: 'fa-ranking-star', color: 'text-amber-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'peta-haba', label: 'Peta Haba', to: '/ppd/peta-haba', fa: 'fa-map-location-dot', color: 'text-red-500', roles: ['admin', 'ppd_officer'] },
-  { kind: 'item', id: 'export-laporan', label: 'Export Laporan', to: '/ppd/export-laporan', fa: 'fa-file-export', color: 'text-emerald-500', roles: ['admin', 'ppd_officer'] },
-  { kind: 'item', id: 'leaderboard-sekolah', label: 'Leaderboard Sekolah', to: '/ppd/leaderboard-sekolah', fa: 'fa-trophy', color: 'text-yellow-500', roles: ['admin', 'ppd_officer'] },
-  { kind: 'item', id: 'dashboard-jpn', label: 'Dashboard JPN', to: '/jpn/dashboard', fa: 'fa-building-flag', color: 'text-violet-500', roles: ['admin', 'jpn_officer'] },
+  { kind: 'item', id: 'export-laporan', label: 'Eksport Laporan', to: '/ppd/export-laporan', fa: 'fa-file-export', color: 'text-emerald-500', roles: ['admin', 'ppd_officer'] },
+  { kind: 'item', id: 'leaderboard-sekolah', label: 'Papan Pendahulu Sekolah', to: '/ppd/leaderboard-sekolah', fa: 'fa-trophy', color: 'text-yellow-500', roles: ['admin', 'ppd_officer'] },
+  { kind: 'item', id: 'dashboard-jpn', label: 'Papan Pemuka JPN', to: '/jpn/dashboard', fa: 'fa-building-flag', color: 'text-violet-500', roles: ['admin', 'jpn_officer'] },
   { kind: 'item', id: 'statistik-jpn', label: 'Statistik Penggunaan', to: '/jpn/statistik-penggunaan', fa: 'fa-chart-pie', color: 'text-violet-500', roles: ['admin', 'jpn_officer'] },
-  { kind: 'item', id: 'ranking-kebangsaan-jpn', label: 'Ranking Kebangsaan JPN', to: '/jpn/ranking-kebangsaan', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin', 'jpn_officer'] },
+  { kind: 'item', id: 'ranking-kebangsaan-jpn', label: 'Kedudukan Kebangsaan JPN', to: '/jpn/ranking-kebangsaan', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin', 'jpn_officer'] },
 
   // ── Admin ──
   { kind: 'section', id: 'sec-admin', label: 'Admin', text: 'text-red-700', rule: 'from-red-300', roles: A },
-  { kind: 'item', id: 'ke-admin-panel', label: 'Ke Admin Panel', to: '/admin', fa: 'fa-shield-halved', color: 'text-indigo-600', variant: 'admin-link', roles: A },
-  { kind: 'item', id: 'admin-soalan-by-chapter', label: 'Soalan by Chapter', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: A },
-  { kind: 'item', id: 'billing-dashboard', label: 'Billing Dashboard', to: '/admin/billing', fa: 'fa-chart-line', color: 'text-emerald-500', roles: A },
+  { kind: 'item', id: 'ke-admin-panel', label: 'Ke Panel Admin', to: '/admin', fa: 'fa-shield-halved', color: 'text-indigo-600', variant: 'admin-link', roles: A },
+  { kind: 'item', id: 'admin-soalan-by-chapter', label: 'Soalan Mengikut Bab', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: A },
+  { kind: 'item', id: 'billing-dashboard', label: 'Papan Pemuka Pengebilan', to: '/admin/billing', fa: 'fa-chart-line', color: 'text-emerald-500', roles: A },
   { kind: 'item', id: 'urus-produk', label: 'Urus Produk', to: '/admin/marketplace/products', fa: 'fa-store', color: 'text-orange-500', roles: A },
   { kind: 'item', id: 'urus-penjual', label: 'Urus Penjual', to: '/admin/marketplace/sellers', fa: 'fa-user-tie', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'urus-hadiah', label: 'Urus Hadiah', to: '/admin/hadiah', fa: 'fa-gift', color: 'text-pink-500', roles: A },
@@ -648,7 +648,7 @@ export interface BottomNavButton {
 export type BottomNavEntry = BottomNavLink | BottomNavButton
 
 export const USER_BOTTOM_NAV: readonly BottomNavEntry[] = [
-  { kind: 'link', id: 'home', label: 'Home', to: '/dashboard', fa: 'fa-home' },
+  { kind: 'link', id: 'home', label: 'Utama', to: '/dashboard', fa: 'fa-home' },
   {
     kind: 'link',
     id: 'spm',
@@ -660,7 +660,7 @@ export const USER_BOTTOM_NAV: readonly BottomNavEntry[] = [
   {
     kind: 'link',
     id: 'game',
-    label: 'Game',
+    label: 'Permainan',
     to: '/permainan',
     fa: 'fa-gamepad',
     iconStyle: 'color: #8b5cf6;',
@@ -679,7 +679,7 @@ export const USER_BOTTOM_NAV: readonly BottomNavEntry[] = [
   },
   { kind: 'link', id: 'topik', label: 'Topik', to: '/topics', fa: 'fa-book-open' },
   // Live dispatches `toggle-chatbot` for the chatbot widget (M22, not built: no listener yet).
-  { kind: 'button', id: 'chat', label: 'Chat', fa: 'fa-comments', iconStyle: 'color: #3B82F6;' },
+  { kind: 'button', id: 'chat', label: 'Sembang', fa: 'fa-comments', iconStyle: 'color: #3B82F6;' },
   // Live dispatches `toggle-drawer`: "Lagi" opens the same drawer as the header hamburger.
   { kind: 'button', id: 'lagi', label: 'Lagi', fa: 'fa-bars', iconStyle: 'color: #f59e0b;' },
 ]

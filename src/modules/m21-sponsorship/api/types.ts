@@ -105,9 +105,9 @@ export type FosterApplicationField =
 /** PROPOSED copy of #15 (SRS §5 V-M21-03, §8.2). */
 export const FOSTER_APPLICATION_MESSAGES = {
   required: 'Sila isi ruangan ini.',
-  invalidEmail: 'Format e-mel tidak sah.',
+  invalidEmail: 'Format emel tidak sah.',
   invalidChoice: 'Pilihan tidak sah.',
-  studentNotFound: 'Email pelajar tidak dijumpai dalam PrestasiPlus.',
+  studentNotFound: 'Emel pelajar tidak dijumpai dalam PrestasiPlus.',
   success: 'Permohonan anda telah dihantar. Admin akan menyemak permohonan dalam 1-3 hari bekerja.',
 } as const
 

@@ -25,7 +25,7 @@ const home = computed(() => {
     return { to: '/logout', label: 'Log Keluar' }
   }
   if (!session.isLoggedIn) return { to: '/login', label: 'Ke Halaman Log Masuk' }
-  return { to: scopeHomePath(session.role), label: 'Kembali ke Dashboard' }
+  return { to: scopeHomePath(session.role), label: 'Kembali ke Papan Pemuka' }
 })
 </script>
 

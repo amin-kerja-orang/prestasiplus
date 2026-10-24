@@ -3,7 +3,7 @@
  * `/api/auth/*` paths handle their own 401 (no global redirect, `isAuthPath`).
  *
  * Failures reject with `ApiError` (`src/api/errors.ts`):
- * - #1 credentials: 422 `VALIDATION_ERROR`, message "Email atau kata laluan tidak sah.";
+ * - #1 credentials: 422 `VALIDATION_ERROR`, message "Emel atau kata laluan tidak sah.";
  * - #1 inactive account (BR-23): 403 `ACCOUNT_INACTIVE`;
  * - #1 and #3 throttled: 429 `RATE_LIMITED` with `retryAfter` (seconds);
  * - others: 422 `VALIDATION_ERROR` with `fields`.

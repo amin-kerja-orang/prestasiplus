@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "Engagement Mengikut Sekolah" (FN-M12-5.4.1; FR-M12-44; BR-M12-11/12): # · Sekolah (link + code line) ·
+ * "Penglibatan Mengikut Sekolah" (FN-M12-5.4.1; FR-M12-44; BR-M12-11/12): # · Sekolah (link + code line) ·
  * Pelajar · Aktif · Soalan · Sesi · Purata/Aktif · Skor · Tahap. Staff table (`DsDataTable`: card list below
  * md, inner scroll when wide).
  */
@@ -79,14 +79,14 @@ const pageSize = ref(20)
 </script>
 
 <template>
-  <DsPanel title="Engagement Mengikut Sekolah" icon="i-ph-buildings" data-testid="beh-schools">
+  <DsPanel title="Penglibatan Mengikut Sekolah" icon="i-ph-buildings" data-testid="beh-schools">
     <DsDataTable
       v-model:page-size="pageSize"
       variant="bare"
       :page-size-options="PAGE_SIZES"
       :data="data"
       :columns="columns"
-      caption="Engagement mengikut sekolah"
+      caption="Penglibatan mengikut sekolah"
       card-title="name"
       :card-fields="cardFields"
     >

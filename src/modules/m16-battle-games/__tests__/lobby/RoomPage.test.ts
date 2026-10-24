@@ -236,7 +236,7 @@ describe('play and result (FR-M16-69, 70)', () => {
     await mountRoom()
     expect(get('room-result-title').text()).toBe('🏆 Admin Demo menang!')
     expect(wrapper!.findAll('[data-testid="room-scores"] li')).toHaveLength(2)
-    expect(get('room-hub').text()).toBe('🎮 Hub')
+    expect(get('room-hub').text()).toBe('🎮 Hab')
     expect(get('room-hub').attributes('href')).toBe('/permainan')
   })
 

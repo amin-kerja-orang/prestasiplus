@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "Top Pelajar Minggu Ini" (FR-M17-29, FN-M17-3.3.6): up to 5 rows - rank, pupil link to S7,
+ * "Pelajar Teratas Minggu Ini" (FR-M17-29, FN-M17-3.3.6): up to 5 rows - rank, pupil link to S7,
  * "{n} jwb · {acc}%".
  */
 import { formatCount, formatNumber } from '@/lib/number'
@@ -15,7 +15,7 @@ const paths = ccPaths(props.basePath)
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-star" title="Top Pelajar Minggu Ini" testid="cc-panel-top-pupils">
+  <BoardPanel icon="i-ph-star" title="Pelajar Teratas Minggu Ini" testid="cc-panel-top-pupils">
     <p v-if="rows === null" class="text-body text-muted">{{ S2_COPY.loading }}</p>
     <p v-else-if="rows.length === 0" class="text-body text-muted" data-testid="cc-empty">
       {{ S2_COPY.noData }}

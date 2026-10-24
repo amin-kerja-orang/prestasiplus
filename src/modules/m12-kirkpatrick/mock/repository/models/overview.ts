@@ -81,7 +81,7 @@ export function comparisonOf(scope: Scope, nowMs: number): Comparison {
   if (delta.answers > 0 && before.answers > 0) {
     text.push(`Jumlah jawapan meningkat ${fmt1((delta.answers / before.answers) * 100)}%.`)
   }
-  if (delta.champions > 0) text.push(`${String(delta.champions)} pelajar naik ke tahap Champion.`)
+  if (delta.champions > 0) text.push(`${String(delta.champions)} pelajar naik ke tahap Juara.`)
 
   return {
     subtitle: `${monthLabel(first)} vs ${monthLabel(current)}`,

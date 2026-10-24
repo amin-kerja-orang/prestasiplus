@@ -105,10 +105,10 @@ test.describe('S21 as the admin', MODULE, () => {
     ])
 
     // Static AI card and the Audio KBAT links.
-    await expect(page.getByTestId('ai-card')).toContainText('AI Auto-Generate Soalan')
+    await expect(page.getByTestId('ai-card')).toContainText('Jana Soalan Auto AI')
     await expect(page.getByTestId('ai-card').locator('a, button, form')).toHaveCount(0)
-    await expect(page.getByTestId('audio-kbat-card')).toContainText('Template XLSX')
-    await expect(page.getByTestId('audio-kbat-card')).toContainText('Template Word')
+    await expect(page.getByTestId('audio-kbat-card')).toContainText('Templat XLSX')
+    await expect(page.getByTestId('audio-kbat-card')).toContainText('Templat Word')
     await expect(page.getByTestId('audio-create')).toHaveAttribute(
       'href',
       '/guru/audio-kbat/create',
@@ -168,8 +168,8 @@ test.describe('S21 as the admin', MODULE, () => {
 
   test('SRS §12 #65 S23 and S24 of 522425', async ({ page, gotoApp }) => {
     await gotoApp('/guru/soalan/522425')
-    await expectTabTitle(page, 'Detail Soalan — Sumbang Soalan')
-    await expectHeader(page, 'Detail Soalan', 'Selamat datang kembali')
+    await expectTabTitle(page, 'Butiran Soalan — Sumbang Soalan')
+    await expectHeader(page, 'Butiran Soalan', 'Selamat datang kembali')
     // Subject name of 522425 is not asserted: the seed gives "Pendidikan Islam" (reported to M04).
     await expect(page.getByTestId('detail-subject')).not.toHaveText('')
     await expect(page.getByTestId('detail-source')).not.toHaveText('')
@@ -197,7 +197,7 @@ test.describe('S21 as the admin', MODULE, () => {
     await expect(page.getByTestId('e-difficulty').locator('option')).toHaveCount(4)
     await expect(page.locator('[data-testid="e-correct"] [role="radio"][aria-checked="true"]')).toHaveCount(1)
     await expect(page.getByTestId('e-text')).toHaveAttribute('required', '')
-    await expect(page.getByText('JPG, PNG, max 5MB.')).toBeVisible()
+    await expect(page.getByText('JPG, PNG, maks 5MB.')).toBeVisible()
     await expect(page.getByTestId('form-cancel')).toHaveAttribute('href', '/guru/soalan/522425')
     await expect(page.getByTestId('edit-back')).toHaveAttribute('href', '/guru/soalan/522425')
     await expectNoHorizontalScroll(page)
@@ -293,16 +293,16 @@ test.describe('S21 as the teacher', MODULE, () => {
     await gotoApp('/guru/soalan')
     const card = page.getByTestId('paper-card')
     await expect(card).toContainText('Hantar Kertas Soalan kepada Admin')
-    await expect(card).toContainText('Admin akan proses dan upload ke databank soalan')
+    await expect(card).toContainText('Admin akan proses dan muat naik ke databank soalan')
     await expect(page.getByTestId('paper-types')).toContainText('Jenis Soalan Yang Diterima')
     await expect(page.getByTestId('paper-conditions')).toContainText(
-      'PDF scan imej TIDAK diterima — teks mesti boleh disalin',
+      'PDF imbasan imej TIDAK diterima — teks mesti boleh disalin',
     )
     await expect(page.getByTestId('paper-steps')).toContainText('3. Databank')
     expect(await page.getByTestId('paper-jenis').locator('option').allTextContents()).toEqual([
       '-- Pilih Jenis --',
       'Soalan Umum',
-      'Trial Paper',
+      'Kertas Percubaan',
       'Soalan DSKP',
       'Buku Teks',
       'Buku Latihan',
@@ -570,7 +570,7 @@ test.describe('S21-S24 observed anchors', MODULE, () => {
     await expect(first.getByTestId('chip-subject')).toHaveText('Bahasa Melayu')
     await expect(first.getByTestId('chip-level')).toHaveText('Darjah 6')
     await expect(first.getByTestId('chip-difficulty')).toHaveText('Sukar')
-    await expect(first.getByTestId('question-date')).toHaveText('02 May 2026')
+    await expect(first.getByTestId('question-date')).toHaveText('02 Mei 2026')
     await first.getByTestId('question-toggle').click()
     await expect(first.getByTestId('question-body')).toContainText('textbook_content_rebuild')
     await expect(first.locator('[data-testid="question-option"]').nth(2)).toHaveAttribute(

@@ -7,12 +7,12 @@ export interface DigitalChip {
 export const DIGITAL_CHIPS: readonly DigitalChip[] = [
   { key: 'all', label: '🌟 Semua' },
   { key: 'flagship', label: '🏆 Mahkota' },
-  { key: 'ewallet', label: '💳 E-Wallet' },
-  { key: 'telco', label: '📱 Telco' },
-  { key: 'gaming', label: '🎮 Gaming' },
-  { key: 'streaming', label: '🎬 Streaming' },
+  { key: 'ewallet', label: '💳 Dompet Digital' },
+  { key: 'telco', label: '📱 Telekomunikasi' },
+  { key: 'gaming', label: '🎮 Permainan' },
+  { key: 'streaming', label: '🎬 Penstriman' },
   { key: 'food_beverage', label: '🍔 Makan & Minum' },
-  { key: 'ecommerce', label: '🛒 Shopping' },
+  { key: 'ecommerce', label: '🛒 Beli-belah' },
   { key: 'education', label: '📚 Pembelajaran' },
   { key: 'entertainment', label: '🎭 Hiburan' },
 ]

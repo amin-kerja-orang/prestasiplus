@@ -87,8 +87,8 @@ describe('validation helper', () => {
   })
 
   it('custom messages: per rule argument, per field.rule, per rule, and attribute names', () => {
-    expect(validationErrors({}, { email: [required('Sila isi e-mel.')] })).toEqual({
-      email: 'Sila isi e-mel.',
+    expect(validationErrors({}, { email: [required('Sila isi emel.')] })).toEqual({
+      email: 'Sila isi emel.',
     })
     expect(
       validationErrors(

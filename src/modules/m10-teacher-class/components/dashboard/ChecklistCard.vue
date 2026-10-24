@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** FN-M10-2.1.2: "Checklist Guru" (FR-M10-09, BR-M10-05). */
+/** FN-M10-2.1.2: "Senarai Semak Guru" (FR-M10-09, BR-M10-05). */
 import { computed } from 'vue'
 
 import { DsIconChip, DsPanel } from '@/ds'
@@ -36,7 +36,7 @@ const ICONS = ['i-ph-laptop-duotone', 'i-ph-users-three-duotone', 'i-ph-rocket-l
     <UProgress
       :model-value="progress.percent"
       class="mt-3"
-      aria-label="Kemajuan checklist"
+      aria-label="Kemajuan senarai semak"
       data-testid="checklist-bar"
     />
     <ul class="mt-4 flex flex-col gap-2">

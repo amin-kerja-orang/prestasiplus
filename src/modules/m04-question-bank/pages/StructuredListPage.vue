@@ -93,7 +93,7 @@ const statItems = computed<StatItem[]>(() => [
   },
   {
     key: 'published',
-    label: 'Published',
+    label: 'Diterbitkan',
     value: formatNumber(stats.value?.published ?? 0),
     icon: 'check-circle',
     accent: 'friend',
@@ -179,7 +179,7 @@ const columns: TableColumn<StructuredRow>[] = [
   { accessorKey: 'levelName', header: 'Tgk' },
   { accessorKey: 'kbat', header: 'KBAT' },
   { accessorKey: 'marks', header: 'Markah' },
-  { accessorKey: 'subCount', header: 'Sub-Q' },
+  { accessorKey: 'subCount', header: 'Sub-Soalan' },
   { id: 'actions', header: 'Aksi' },
 ]
 const cardFields: CardField[] = [
@@ -187,7 +187,7 @@ const cardFields: CardField[] = [
   { key: 'levelName', label: 'Tgk' },
   { key: 'kbat', label: 'KBAT' },
   { key: 'marks', label: 'Markah' },
-  { key: 'subCount', label: 'Sub-Q' },
+  { key: 'subCount', label: 'Sub-Soalan' },
 ]
 
 /** The Malay counter shows when there is no pager (an empty list included, DV-M04-12). */

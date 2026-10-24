@@ -66,10 +66,10 @@ const firstLoad = computed(() => data.value === null && error.value === null)
 
 const countItems = computed<StatItem[]>(() => [
   { key: 'all', label: 'Jumlah', value: formatNumber(counts.value?.all ?? 0), icon: 'stack', accent: 'action' },
-  { key: 'pending', label: 'Pending', value: formatNumber(counts.value?.pending ?? 0), icon: 'clock', accent: 'trial' },
+  { key: 'pending', label: 'Menunggu Semakan', value: formatNumber(counts.value?.pending ?? 0), icon: 'clock', accent: 'trial' },
   {
     key: 'processing',
-    label: 'Processing',
+    label: 'Sedang Diproses',
     value: formatNumber(counts.value?.processing ?? 0),
     icon: 'gear',
     accent: 'friend',
@@ -158,7 +158,7 @@ async function resetFilter(): Promise<void> {
     <DsFilterBar
       :active-count="applied !== '' ? 1 : 0"
       apply-label="Tapis"
-      reset-label="Reset"
+      reset-label="Set Semula"
       data-testid="submissions-filter"
       @apply="submitFilter"
       @reset="resetFilter"

@@ -52,7 +52,7 @@ const loadFailed = computed(() => isLoadError(error.value))
 <template>
   <DsPage
     :back-to="`/pksk/level/${level}`"
-    back-label="Kembali ke Dashboard"
+    back-label="Kembali ke Papan Pemuka"
     data-testid="pksk-history"
     data-provisional="L-4"
   >

@@ -100,8 +100,8 @@ describe('route (FR-M27-01, 03, 07, 10)', () => {
       access: 'auth',
       roles: ['school_admin'],
       onForbidden: '403',
-      title: 'Dashboard Sekolah - PRESTASIPLUS',
-      header: { title: 'Dashboard Sekolah' },
+      title: 'Papan Pemuka Sekolah - PRESTASIPLUS',
+      header: { title: 'Papan Pemuka Sekolah' },
     })
   })
 
@@ -116,7 +116,7 @@ describe('header and Perutusan card (FR-M27-03, 12…17)', () => {
   it('sets the shell subtitle to the school name', async () => {
     await mountPage(dashboard())
     expect(usePageMeta().state.header).toEqual({
-      title: 'Dashboard Sekolah',
+      title: 'Papan Pemuka Sekolah',
       subtitle: 'SMK Contoh Ujian',
     })
   })
@@ -150,7 +150,7 @@ describe('breadcrumb and banner (FR-M27-18…21)', () => {
     expect(back.text()).toBe('Papan Pemuka')
     expect(back.attributes('href')).toBe('/dashboard')
     const current = w.get('[data-testid="sd-breadcrumb"] [aria-current="page"]')
-    expect(current.text()).toBe('Dashboard Sekolah')
+    expect(current.text()).toBe('Papan Pemuka Sekolah')
     expect(current.element.tagName).not.toBe('A')
     expect(current.classes()).toContain('text-highlighted')
     // order: card, breadcrumb, banner
@@ -246,7 +246,7 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
     expect(text(w, 'sd-practice-counts')).toBe('57 sesi · 803 soalan')
   })
 
-  it('shows the Tingkatan panel as a link with coloured rows and "Click untuk detail"', async () => {
+  it('shows the Tingkatan panel as a link with coloured rows and "Klik untuk butiran"', async () => {
     const w = await mountPage(dashboard())
     const panel = w.get('[data-testid="sd-panel-levels"]')
     expect(panel.element.tagName).toBe('A')
@@ -258,7 +258,7 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
       '71.8%',
     ])
     expect(w.findAll('[data-testid="sd-level-pct"]')[0]?.classes()).toContain('text-warning')
-    expect(panel.text()).toContain('Click untuk detail')
+    expect(panel.text()).toContain('Klik untuk butiran')
     expect(w.findAllComponents(UProgress)[0]?.props('modelValue')).toBe(66.2)
   })
 

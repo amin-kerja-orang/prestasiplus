@@ -15,16 +15,16 @@ import BoardPanel from './BoardPanel.vue'
 const props = defineProps<{ data: CcLiveData | null; school: boolean }>()
 
 const BANDS = [
-  { key: 'champion', label: 'Champion' },
+  { key: 'champion', label: 'Juara' },
   { key: 'consistent', label: 'Konsisten' },
   { key: 'developing', label: 'Berkembang' },
   { key: 'minimum', label: 'Minimum' },
-  { key: 'disengaged', label: 'Disengaged' },
+  { key: 'disengaged', label: 'Tidak Terlibat' },
 ] as const
 
 const bandLabels = BANDS.map((b) => b.label)
 const bandSeries = computed(() => [
-  { label: 'Engagement', data: BANDS.map((b) => props.data?.engagement[b.key] ?? 0) },
+  { label: 'Penglibatan', data: BANDS.map((b) => props.data?.engagement[b.key] ?? 0) },
 ])
 const dayLabels = computed(() => (props.data?.dailyTrend ?? []).map((p) => p.label))
 const daySeries = computed(() => [
@@ -42,7 +42,7 @@ const daySeries = computed(() => [
         horizontal
         :labels="bandLabels"
         :series="bandSeries"
-        table-label="Engagement pelajar mengikut tahap"
+        table-label="Penglibatan pelajar mengikut tahap"
       />
     </div>
     <div v-else data-testid="cc-engagement-days">

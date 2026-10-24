@@ -107,7 +107,7 @@ export const SEED_SUBMISSIONS: readonly QuestionSubmission[] = [
     subjectText: 'Matematik',
     levelCode: 'T4',
     year: 2026,
-    paperType: 'Trial Paper',
+    paperType: 'Kertas Percubaan',
     authorCredit: 'Oleh: Guru Demo',
     note: 'Kertas 1 dan skema pemarkahan.',
     files: [

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S2 "Tracking Mingguan", `#section-mingguan` (FN-M11-3.6.1 / 3.6.2; FR-M11-43, 44). The Sekolah column
+ * S2 "Penjejakan Mingguan", `#section-mingguan` (FN-M11-3.6.1 / 3.6.2; FR-M11-43, 44). The Sekolah column
  * is the sticky first column of the drill table (as live; SRS FR-M11-43); the table scrolls inside its
  * card. Cell classes come from the handler (`cls`): zero muted, info (first week or equal to the
  * previous), success up, error down; the best week gets the solid badge variant and a star. Paged at 20
@@ -59,7 +59,7 @@ const columns = computed<TableColumn<Row>[]>(() => [
   <section id="section-mingguan" class="flex flex-col gap-6" data-testid="mon-weekly">
     <div class="flex flex-col gap-1">
       <h2 class="flex items-center gap-2 text-heading text-highlighted">
-        <UIcon name="i-ph-calendar-dots" class="size-6 text-primary-t" />Tracking Mingguan
+        <UIcon name="i-ph-calendar-dots" class="size-6 text-primary-t" />Penjejakan Mingguan
       </h2>
       <p class="text-body text-muted">
         Jumlah soalan dijawab mengikut minggu — warna menunjukkan trend naik/turun
@@ -73,7 +73,7 @@ const columns = computed<TableColumn<Row>[]>(() => [
       :page-size-options="PAGE_SIZES"
       :data="data"
       :columns="columns"
-      caption="Tracking mingguan"
+      caption="Penjejakan mingguan"
     >
       <template #school-cell="{ row }">
         <div class="flex max-w-56 min-w-36 flex-col gap-1" data-testid="mon-weekly-row">

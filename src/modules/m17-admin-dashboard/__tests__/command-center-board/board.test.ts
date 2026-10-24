@@ -67,7 +67,7 @@ describe('S2 admin board', () => {
 
     expect(text(w, 'cc-title')).toBe('PrestasiPlus Command Center')
     expect(text(w, 'cc-live-badge')).toBe('LIVE')
-    expect(text(w, 'cc-s2-back')).toBe('Dashboard')
+    expect(text(w, 'cc-s2-back')).toBe('Papan Pemuka')
     expect(w.get('[data-testid="cc-s2-back"]').attributes('href')).toBe('/admin')
     expect(w.get('[data-testid="cc-s2-daily"]').attributes('href')).toBe(
       '/admin/command-center/daily-activity',
@@ -119,7 +119,7 @@ describe('S2 admin board', () => {
     expect(w.text()).not.toContain('Top Improvers')
     expect(w.find('[data-testid="cc-engagement-bands"]').exists()).toBe(true)
     expect(text(w, 'cc-footer')).toBe(
-      'Powered by ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
+      'Dikuasakan oleh ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
     )
     w.unmount()
   })
@@ -283,7 +283,7 @@ describe('S2 Admin Sekolah alias', () => {
     return w
   }
 
-  it('reflows without "Top Sekolah": Mood moves under Pembetulan so no column has a hole', async () => {
+  it('reflows without "Sekolah Teratas": Mood moves under Pembetulan so no column has a hole', async () => {
     const w = await load()
     const ids = (col: string) =>
       w
@@ -295,13 +295,13 @@ describe('S2 Admin Sekolah alias', () => {
     w.unmount()
   })
 
-  it('shows the school copy, hides "Top Sekolah" and never says "keseluruhan platform"', async () => {
+  it('shows the school copy, hides "Sekolah Teratas" and never says "keseluruhan platform"', async () => {
     const w = await load()
     expect(text(w, 'cc-s2-subtitle')).toBe('Pemantauan langsung sekolah anda')
     expect(texts(w, 'cc-kpi-sub')[3]).toBe('sekolah anda')
     expect(w.find('[data-testid="cc-panel-top-schools"]').exists()).toBe(false)
     expect(w.text()).not.toContain('keseluruhan platform')
-    expect(w.text()).not.toContain('Top Sekolah')
+    expect(w.text()).not.toContain('Sekolah Teratas')
     expect(texts(w, 'cc-kpi-value')).toEqual(['1', '12', '3', '66.7%'])
     expect(text(w, 'cc-alesa')).toContain('Sekolah anda menunjukkan stabil 0%')
     expect(w.text()).not.toContain('Platform menunjukkan')

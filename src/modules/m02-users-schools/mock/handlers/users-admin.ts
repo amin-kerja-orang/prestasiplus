@@ -15,11 +15,11 @@
  * | 39 | `GET /api/students/search?q=` | FR-M02-103: ≤ 15 students, any session |
  *
  * INFERRED (not observed on live, SRS §5 / §8 "UNVERIFIED COPY"): the success and refusal texts, the
- * Laravel-default validation copy, the refusal of a delete / bulk delete / "Login As" that names the
+ * Laravel-default validation copy, the refusal of a delete / bulk delete / "Log Masuk Sebagai" that names the
  * admin's own account (the UI offers no such control, BR-04), an unknown or invalid filter value
  * (`role`, `schoolId`) matching no user like the SQL it stands for, `isActive` / `hasPkskSubscription` /
  * `subscriptionPackage` / `grade` / `schoolId` / `icNumber` being left unchanged when their key is absent
- * (BR-11), and a "Login As" session that is not a password login (no `lastLoginAt`, no M14 hand-off; the
+ * (BR-11), and a "Log Masuk Sebagai" session that is not a password login (no `lastLoginAt`, no M14 hand-off; the
  * admin's own session stays valid until the client drops it).
  */
 
@@ -104,7 +104,7 @@ export const MSG_STATUS_TOGGLED = 'Status pengguna berjaya dikemaskini.'
 export const usersDeletedText = (n: number): string => `${String(n)} pengguna berjaya dipadam.`
 // INFERRED refusals (BR-04: the UI has no such control on the own row).
 export const MSG_OWN_DELETE = 'Anda tidak boleh memadam akaun sendiri.'
-export const MSG_OWN_IMPERSONATE = 'Anda tidak boleh Login As akaun sendiri.'
+export const MSG_OWN_IMPERSONATE = 'Anda tidak boleh log masuk sebagai akaun sendiri.'
 export const MSG_NO_SESSION_ROLE = 'Pengguna ini tiada peranan yang sah untuk log masuk.'
 
 const adminOnly = requireRole('admin')

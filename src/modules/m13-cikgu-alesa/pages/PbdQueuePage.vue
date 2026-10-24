@@ -144,7 +144,7 @@ async function onExport(event: MouseEvent): Promise<void> {
           <DsNativeSelect
             v-model="classId"
             name="classroom_id"
-            aria-label="Kelas untuk rollup"
+            aria-label="Kelas untuk ringkasan"
             class="sm:w-64"
             data-testid="pbd-class"
           >

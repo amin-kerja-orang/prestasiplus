@@ -131,8 +131,8 @@ describe('S2 PracticeListPage', () => {
     expect(w.text()).toContain('Pilih subjek dan mula berlatih!')
     const banner = t(w, 'chapter-banner')
     expect(banner.attributes('href')).toBe('/practice/chapter')
-    expect(banner.text()).toContain('Mode Baru')
-    expect(banner.text()).toContain('Soalan by Chapter')
+    expect(banner.text()).toContain('Mod Baharu')
+    expect(banner.text()).toContain('Soalan Mengikut Bab')
     expect(banner.text()).toContain(
       'Jawab bab demi bab ikut buku teks dan DSKP. Bab seterusnya terkunci sehingga bab semasa lengkap.',
     )

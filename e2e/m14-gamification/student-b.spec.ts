@@ -110,7 +110,7 @@ test.describe('M14 S14 /gamification/leaderboard', MODULE, () => {
     await expect(page.getByTestId('lb-row')).toHaveCount(47)
     await expect(page.getByTestId('lb-row-rank').first()).toHaveText('#4')
     await expect(page.getByTestId('lb-row-rank').last()).toHaveText('#50')
-    await expect(page.getByTestId('lb-row-title').first()).toHaveText('Mitos · Level 39')
+    await expect(page.getByTestId('lb-row-title').first()).toHaveText('Mitos · Tahap 39')
     await expect(page.getByTestId('lb-row-score').first()).toHaveText('65,129')
     await expect(page.getByTestId('lb-row-tier').first()).toHaveText('💎')
 
@@ -333,7 +333,7 @@ test.describe('M14 S16 /gamification/referral', MODULE, () => {
     await expect(page.getByTestId('referral-copy-code')).toHaveText('✓ Disalin!')
     expect(await clipboard(page)).toEqual(['4JURJTT'])
     await page.getByTestId('referral-copy-link').click()
-    await expect(page.getByTestId('referral-copy-link')).toHaveText('✓ Link Disalin!')
+    await expect(page.getByTestId('referral-copy-link')).toHaveText('✓ Pautan Disalin!')
     expect(await clipboard(page)).toEqual([
       '4JURJTT',
       'https://prestasiplus.my/register?ref=4JURJTT',
@@ -371,8 +371,8 @@ test.describe('M14 S18 /gamification/kad-kongsi', MODULE, () => {
     await expect(page.getByTestId('kad-profil-answered')).toHaveText('119')
     await expect(page.getByTestId('kad-profil-accuracy')).toHaveText('38.7%')
     await expect(page.getByTestId('kad-profil-sessions')).toHaveText('4')
-    await expect(page.getByTestId('kad-profil-tier')).toHaveText('🥉 Bronze')
-    await expect(page.getByTestId('kad-profil-level')).toHaveText('Lvl 2')
+    await expect(page.getByTestId('kad-profil-tier')).toHaveText('🥉 Gangsa')
+    await expect(page.getByTestId('kad-profil-level')).toHaveText('Tahap 2')
     await expect(page.getByTestId('kad-profil-syiling')).toHaveText('🪙 256')
     await expect(page.getByTestId('kad-profil-card')).toContainText('🎓 PRESTASIPLUS.MY')
 
@@ -386,8 +386,8 @@ test.describe('M14 S18 /gamification/kad-kongsi', MODULE, () => {
     await page.getByTestId('kad-tab-penguasaan').click()
     await expect(page.getByTestId('kad-mastery-subject')).toHaveText(['Bahasa Melayu', 'Sejarah'])
     await expect(page.getByTestId('kad-mastery-stage')).toHaveText([
-      'Lvl 2 — Aktif',
-      'Lvl 1 — Mula Belajar',
+      'Tahap 2 — Aktif',
+      'Tahap 1 — Mula Belajar',
     ])
     await expect(page.getByTestId('kad-mastery-accuracy')).toHaveText(['48.9%', '35%'])
     await expect(page.getByTestId('kad-mastery-correct')).toHaveText(['46', '14'])
@@ -422,7 +422,7 @@ test.describe('M14 S18 /gamification/kad-kongsi', MODULE, () => {
     await page.getByTestId('kad-tab-penguasaan').click()
     await page.getByTestId('kad-penguasaan-0-share').click()
     expect(await last()).toBe(
-      `🧠 Saya sudah capai Level 2 (Aktif) dalam Bahasa Melayu di PRESTASIPLUS! Ketepatan 48.9%. Jom bersaing!${link}`,
+      `🧠 Saya sudah capai Tahap 2 (Aktif) dalam Bahasa Melayu di PRESTASIPLUS! Ketepatan 48.9%. Jom bersaing!${link}`,
     )
     await page.getByTestId('kad-tab-ranking').click()
     await page.getByTestId('kad-kedudukan-share').click()

@@ -111,7 +111,7 @@ export type LagiEntry = LagiHeading | LagiRow
 
 export interface LagiMenu {
   entries: readonly LagiEntry[]
-  /** Rows after the `border-t`: "Student View" (admin only) and "Log Keluar". */
+  /** Rows after the `border-t`: "Paparan Pelajar" (admin only) and "Log Keluar". */
   tail: readonly LagiRow[]
 }
 
@@ -195,7 +195,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     text: 'text-teal-700',
     rule: 'from-teal-300',
   },
-  item('dashboard', 'Dashboard', '/admin', 'fa-tachometer-alt', 'text-indigo-500', {
+  item('dashboard', 'Papan Pemuka', '/admin', 'fa-tachometer-alt', 'text-indigo-500', {
     exact: true,
     bottomNav: true,
   }),
@@ -217,7 +217,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   item('analitik', 'Analitik', '/admin/analytics', 'fa-chart-pie', 'text-fuchsia-500', {
     lagi: lagi(null, 101, 'text-fuchsia-500'),
   }),
-  item('monitoring', 'Monitoring', '/admin/monitoring', 'fa-binoculars', 'text-teal-500', {
+  item('monitoring', 'Pemantauan', '/admin/monitoring', 'fa-binoculars', 'text-teal-500', {
     alias: ['/guru/monitoring'],
     lagi: lagi(null, 103, 'text-teal-500'),
   }),
@@ -227,7 +227,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     'fa-microscope',
     'text-cyan-500',
     [
-      kirk('kirk-overview', 'Overview', '', 'fa-th-large', true),
+      kirk('kirk-overview', 'Gambaran Keseluruhan', '', 'fa-th-large', true),
       kirk('kirk-reaction', 'T1: Reaksi', '/reaction', 'fa-smile'),
       kirk('kirk-learning', 'T2: Pembelajaran', '/learning', 'fa-brain'),
       kirk('kirk-behavior', 'T3: Tingkah Laku', '/behavior', 'fa-running'),
@@ -351,11 +351,11 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     rule: 'from-slate-300',
   },
   group('gamifikasi', 'Gamifikasi', 'fa-gamepad', 'text-purple-500', [
-    item('gami-overview', 'Overview', '/admin/gamification', 'fa-gamepad', '', {
+    item('gami-overview', 'Gambaran Keseluruhan', '/admin/gamification', 'fa-gamepad', '', {
       exact: true,
       lagi: lagi('Gamifikasi', 601, 'text-purple-500'),
     }),
-    item('gami-tiers', 'Tier Config', '/admin/gamification/tiers', 'fa-crown', '', {
+    item('gami-tiers', 'Konfigurasi Peringkat', '/admin/gamification/tiers', 'fa-crown', '', {
       lagi: lagi('Gamifikasi', 602, 'text-amber-500'),
     }),
     item('gami-challenges', 'Cabaran', '/admin/gamification/challenges', 'fa-bullseye', '', {
@@ -374,13 +374,13 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
       '',
       { lagi: lagi('Gamifikasi', 605, 'text-amber-500') },
     ),
-    item('kawalan-reward', 'Kawalan Reward', '/admin/reward-control', 'fa-shield-halved', ''),
+    item('kawalan-reward', 'Kawalan Ganjaran', '/admin/reward-control', 'fa-shield-halved', ''),
   ]),
   group('battle', 'Battle & Permainan', 'fa-bolt', 'text-red-500', [
     item('battle-live', 'Battle Live', '/battle', 'fa-bolt', '', {
       lagi: lagi('Battle & Permainan', 701, 'text-red-500'),
     }),
-    item('battle-ranking', 'Ranking Sekolah', '/battle/ranking-sekolah', 'fa-school', ''),
+    item('battle-ranking', 'Kedudukan Sekolah', '/battle/ranking-sekolah', 'fa-school', ''),
     item('battle-leaderboard', 'Leaderboard', '/battle/leaderboard', 'fa-trophy', ''),
     item('tetapan-permainan', 'Tetapan Permainan', '/admin/permainan', 'fa-dice', '', {
       lagi: lagi('Battle & Permainan', 702, 'text-emerald-500'),
@@ -409,7 +409,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     }),
     item(
       'upload-screenshot',
-      'Upload Screenshot',
+      'Muat Naik Tangkapan Skrin',
       '/admin/tools/screenshots',
       'fa-cloud-upload-alt',
       '',
@@ -420,15 +420,15 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     item('pembayaran', 'Pembayaran', '/admin/payments', 'fa-credit-card', '', {
       lagi: lagi('Sistem', 1004, 'text-teal-500'),
     }),
-    item('billing', 'Billing Dashboard', '/admin/billing', 'fa-chart-line', '', {
+    item('billing', 'Papan Pemuka Pengebilan', '/admin/billing', 'fa-chart-line', '', {
       lagi: lagi('Sistem', 1005, 'text-emerald-500'),
     }),
-    item('dunning', 'Dunning Log', '/admin/dunning', 'fa-bell-slash', '', {
+    item('dunning', 'Log Peringatan Bayaran', '/admin/dunning', 'fa-bell-slash', '', {
       lagi: lagi('Sistem', 1006, 'text-red-500'),
     }),
   ]),
   group('sistem', 'Sistem', 'fa-cog', 'text-slate-500', [
-    item('performance', 'Performance', '/admin/performance', 'fa-gauge-high', '', {
+    item('performance', 'Prestasi Sistem', '/admin/performance', 'fa-gauge-high', '', {
       lagi: lagi('Sistem', 1008, 'text-orange-500'),
     }),
     item('tetapan', 'Tetapan', '/admin/settings', 'fa-cog', '', {
@@ -460,7 +460,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     'fa-clipboard-check',
     'text-teal-500',
   ),
-  item('duta-dashboard', 'Duta Dashboard', '/duta-dashboard', 'fa-user-tie', 'text-indigo-500'),
+  item('duta-dashboard', 'Papan Pemuka Duta', '/duta-dashboard', 'fa-user-tie', 'text-indigo-500'),
   item('jemput-duta', 'Jemput Duta', '/jemput-duta', 'fa-school', 'text-pink-500'),
   item('kem-bootcamp', 'Kem & Bootcamp', '/bilik-duta/kem', 'fa-campground', 'text-rose-500'),
 
@@ -486,17 +486,17 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     'fa-heart',
     'text-purple-600',
   ),
-  item('spm-walkthrough', 'SPM Walkthrough', '/pusat-ai/spm', 'fa-pen-to-square', 'text-rose-600'),
+  item('spm-walkthrough', 'Panduan Langkah SPM', '/pusat-ai/spm', 'fa-pen-to-square', 'text-rose-600'),
   item(
     'whiteboard-quiz',
-    'Whiteboard → Quiz',
+    'Papan Putih → Kuiz',
     '/pusat-ai/whiteboard',
     'fa-clipboard-question',
     'text-blue-600',
   ),
   item(
     'parent-whisperer',
-    'Parent Whisperer',
+    'Pembisik Ibu Bapa',
     '/pusat-ai/parent-whisperer',
     'fa-comments',
     'text-teal-600',
@@ -518,15 +518,15 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   {
     kind: 'section',
     id: 'sec-killer',
-    label: '💎 Killer Features',
+    label: '💎 Ciri Utama',
     text: 'text-fuchsia-700',
     rule: 'from-fuchsia-300',
   },
   item('cikgu-suara', 'Cikgu Suara', '/cikgu-suara', 'fa-microphone', 'text-fuchsia-500'),
-  item('spm-mock', 'SPM Mock Exam', '/spm-mock', 'fa-file-pen', 'text-orange-700'),
+  item('spm-mock', 'Peperiksaan Percubaan SPM', '/spm-mock', 'fa-file-pen', 'text-orange-700'),
   item(
     'wellbeing-alerts',
-    'Wellbeing Alerts',
+    'Amaran Kesejahteraan',
     '/wellbeing/alerts',
     'fa-triangle-exclamation',
     'text-red-500',
@@ -536,7 +536,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
 /** Footer links above the user block (admin only; the teacher has none, shells.md §2.6). */
 export const ADMIN_FOOTER_LINKS: readonly AdminNavItem[] = [
   item('tetapan-peribadi', 'Tetapan Peribadi', '/tetapan', 'fa-cog', 'text-slate-500'),
-  item('ke-dashboard', 'Ke Dashboard', '/dashboard', 'fa-arrow-left', 'text-emerald-600', {
+  item('ke-dashboard', 'Ke Papan Pemuka', '/dashboard', 'fa-arrow-left', 'text-emerald-600', {
     textClass: 'text-emerald-600',
   }),
 ]
@@ -551,7 +551,7 @@ export const ADMIN_BOTTOM_NAV: readonly AdminBottomNavEntry[] = [
   {
     kind: 'link',
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'Papan Pemuka',
     to: '/admin',
     fa: 'fa-tachometer-alt',
     exact: true,
@@ -569,7 +569,7 @@ export const TEACHER_BOTTOM_NAV: readonly AdminBottomNavEntry[] = [
   {
     kind: 'link',
     id: 'monitoring',
-    label: 'Monitoring',
+    label: 'Pemantauan',
     to: '/guru/monitoring',
     fa: 'fa-binoculars',
   },
@@ -764,7 +764,7 @@ export function bottomNavActive(entry: AdminBottomNavLink, current: string): boo
 const STUDENT_VIEW: LagiRow = {
   kind: 'row',
   id: 'student-view',
-  label: 'Student View',
+  label: 'Paparan Pelajar',
   to: '/dashboard',
   fa: 'fa-arrow-left',
   colour: 'text-emerald-600',

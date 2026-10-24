@@ -52,7 +52,7 @@ const btn =
 
     <section class="mt-8 space-y-3">
       <h2 class="text-lg font-bold">AlertBox</h2>
-      <AlertBox variant="error" messages="Email atau kata laluan tidak sah." />
+      <AlertBox variant="error" messages="Emel atau kata laluan tidak sah." />
       <AlertBox
         variant="error"
         :messages="['The email field is required.', 'The password field is required.']"

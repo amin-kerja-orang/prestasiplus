@@ -96,7 +96,7 @@ describe('S17 Kad Memori (FR-M16-86..89)', () => {
       '50%',
       '+0',
       '🔄 Main Lagi',
-      '🏠 Hub',
+      '🏠 Hab',
     ]) {
       expect(overlay.text()).toContain(s)
     }

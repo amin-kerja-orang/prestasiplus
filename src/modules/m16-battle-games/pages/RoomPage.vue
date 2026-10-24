@@ -438,7 +438,7 @@ const meters = computed(() => {
               class="min-h-12 justify-center sm:self-start"
               data-testid="room-hub"
             >
-              🎮 Hub
+              🎮 Hab
             </UButton>
           </div>
 
@@ -446,7 +446,7 @@ const meters = computed(() => {
           <div v-else class="flex flex-col gap-3" data-testid="room-closed">
             <p class="text-label text-toned">Bilik ini telah ditutup.</p>
             <UButton to="/permainan" size="xl" color="primary" class="min-h-12 justify-center sm:self-start"
-              >🎮 Hub</UButton
+              >🎮 Hab</UButton
             >
           </div>
         </UCard>

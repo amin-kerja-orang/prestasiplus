@@ -1322,7 +1322,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
     for (const f of files) form.append('files[]', f)
     return call<Data<Record<string, unknown>>>('POST', '/api/guru/question-papers', { body: form })
   }
-  const valid = { jenisSoalan: 'Trial Paper', subject: 'SEJARAH SPM' }
+  const valid = { jenisSoalan: 'Kertas Percubaan', subject: 'SEJARAH SPM' }
 
   it('guards: 401 to a guest, 403 to a pupil', async () => {
     for (const [method, url] of [
@@ -1382,7 +1382,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
       subjectText: 'SEJARAH SPM',
       levelCode: 'T4',
       year: 2024,
-      paperType: 'Trial Paper',
+      paperType: 'Kertas Percubaan',
       authorCredit: 'Guru Demo',
       note: 'Dengan skema',
       status: 'pending',

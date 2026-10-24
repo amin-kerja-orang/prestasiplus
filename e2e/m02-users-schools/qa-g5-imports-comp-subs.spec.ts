@@ -265,7 +265,7 @@ test.describe('M02 QA S6-S8 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(byId(page, 'comp-no-class')).toHaveText('Guru ini tiada kelas aktif.')
   })
 
-  test('E2E-M02-40: registered complimentary students get {last 6 IC digits}@prestasiplus.my, coins OFF, and can log in with the fixture password', async ({
+  test('E2E-M02-40: registered complimentary students get {last 6 IC digits}@prestasiplus.my, coins MATI, and can log in with the fixture password', async ({
     page,
     gotoApp,
     newTab,
@@ -281,7 +281,7 @@ test.describe('M02 QA S6-S8 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(page).toHaveURL(/\/admin\/comp-students$/)
     const created = byId(page, 'comp-row').filter({ hasText: '077701@prestasiplus.my' })
     await expect(created).toHaveCount(1)
-    await expect(created.getByTestId('comp-coins')).toHaveText('OFF')
+    await expect(created.getByTestId('comp-coins')).toHaveText('MATI')
     const pw = (
       await (async () => {
         await gotoApp('/admin/comp-students/create')

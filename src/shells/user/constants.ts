@@ -5,7 +5,7 @@ import type { PageHeader } from '@/composables/usePageMeta'
  * (`meta.header`) sets one. DV-SH-03 only replaces it on pages whose module DV gives a title.
  */
 export const DEFAULT_USER_HEADER: Readonly<PageHeader> = Object.freeze({
-  title: 'Dashboard',
+  title: 'Papan Pemuka',
   subtitle: 'Selamat datang kembali',
 })
 

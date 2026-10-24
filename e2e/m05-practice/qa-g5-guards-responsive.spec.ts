@@ -93,8 +93,8 @@ test.describe('QA-G5 access guards', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs('guru@demo.test')
     await gotoApp('/practice/chapter')
-    await expectTabTitle(page, 'Soalan by Chapter - PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
+    await expectTabTitle(page, 'Soalan Mengikut Bab - PRESTASIPLUS')
+    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Mengikut Bab')
     await expect(page.locator('[data-testid=chapter-subject-name]')).toHaveCount(10)
     await tid(page, 'chapter-subject-name').first().click()
     await expect(page).toHaveURL(/\/practice\/chapter\/BM$/)
@@ -322,9 +322,9 @@ test.describe('QA-G5 responsive sweep' + label, { tag: [moduleTag(5)] }, () => {
     await gotoApp('/practice/chapter')
     await expect(tid(page, 'chapter-subject-grid')).toBeVisible()
     if (isDesktopShell(page)) {
-      await expect(page.getByRole('link', { name: 'Soalan by Chapter' }).first()).toBeVisible()
+      await expect(page.getByRole('link', { name: 'Soalan Mengikut Bab' }).first()).toBeVisible()
     } else {
-      await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible()
+      await expect(page.getByRole('link', { name: 'Utama' }).first()).toBeVisible()
     }
   })
 })

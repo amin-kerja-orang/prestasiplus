@@ -58,7 +58,7 @@ test.describe('S26 /panduan', MODULE, () => {
       page.getByRole('link', { name: 'Daftar Percuma' }).filter({ visible: true }).first(),
     ).toHaveAttribute('href', '/register')
     await expect(
-      page.getByRole('link', { name: 'Dashboard' }).filter({ visible: true }),
+      page.getByRole('link', { name: 'Papan Pemuka' }).filter({ visible: true }),
     ).toHaveCount(0)
 
     await expect(page.getByRole('heading', { name: 'Perlukan Bantuan Lanjut?' })).toBeVisible()
@@ -80,7 +80,7 @@ test.describe('S26 /panduan', MODULE, () => {
     await loginAs('pelajar@demo.test')
     await gotoApp('/panduan')
     await expectTabTitle(page, TITLE)
-    const dash = await topBarLink(page, 'Dashboard')
+    const dash = await topBarLink(page, 'Papan Pemuka')
     await expect(dash).toHaveAttribute('href', '/dashboard')
     await expect(page.getByTestId('panduan-register')).toHaveCount(0)
     await expectNoHorizontalScroll(page)

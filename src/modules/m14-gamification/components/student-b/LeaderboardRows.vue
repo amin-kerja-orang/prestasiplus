@@ -16,7 +16,7 @@ defineProps<{ rows: readonly LeaderboardRow[] }>()
       :key="row.rank"
       :rank="row.rank"
       :name="row.name"
-      :school="`${row.title} · Level ${row.level}`"
+      :school="`${row.title} · Tahap ${row.level}`"
       :points="formatNumber(row.totalSyilingEarned)"
       :unit="`${LEADERBOARD_COPY.syiling} ${row.tierIcon}`"
       data-testid="lb-row"

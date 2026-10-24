@@ -79,7 +79,7 @@ describe('RenewalInvoicePage (M02 S15)', () => {
     expect(w.get('h1').text()).toBe('PRESTASIPLUS')
     expect(w.text()).toContain('Platform Pembelajaran Interaktif')
     expect(w.text()).toContain('https://prestasiplus.my')
-    expect(w.get('h2').text()).toBe('Invoice Pembaharuan')
+    expect(w.get('h2').text()).toBe('Invois Pembaharuan')
     expect(w.get('[data-testid=invoice-date]').text()).toBe('Tarikh: 25/09/2026')
     expect(w.get('[data-testid=invoice-ref]').text()).toBe('Ref: INV-10-20260925')
     expect(w.get('[data-testid=invoice-school]').text()).toBe('SEKOLAH CONTOH')
@@ -107,7 +107,7 @@ describe('RenewalInvoicePage (M02 S15)', () => {
     expect(w.text()).toContain('Dokumen ini dijana secara automatik oleh sistem PRESTASIPLUS.')
   })
 
-  it('"Cetak Invoice" calls window.print; the toolbar is print-hidden; "Kembali" goes to S14', async () => {
+  it('"Cetak Invois" calls window.print; the toolbar is print-hidden; "Kembali" goes to S14', async () => {
     const print = vi.fn()
     vi.stubGlobal('print', print)
     const w = await render()

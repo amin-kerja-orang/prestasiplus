@@ -61,23 +61,23 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
       '/admin/kirkpatrick/reaction',
     ])
     expect(flat(t(w, 'kirk-level-t4'))).toBe(
-      'Tahap 4: Hasil 4.30 GPS Sekolah · 4378 rekod headcount Lihat detail',
+      'Tahap 4: Hasil 4.30 GPS Sekolah · 4378 rekod headcount Lihat butiran',
     )
     expect(flat(t(w, 'kirk-level-t3'))).toBe(
-      'Tahap 3: Tingkah Laku 946 /4158 Pelajar aktif · 20991 sesi · 82.8% ketepatan Lihat detail',
+      'Tahap 3: Tingkah Laku 946 /4158 Pelajar aktif · 20991 sesi · 82.8% ketepatan Lihat butiran',
     )
     expect(flat(t(w, 'kirk-level-t2'))).toBe(
-      'Tahap 2: Pembelajaran 82.8% Ketepatan · 306,133 soalan dijawab Lihat detail',
+      'Tahap 2: Pembelajaran 82.8% Ketepatan · 306,133 soalan dijawab Lihat butiran',
     )
     expect(flat(t(w, 'kirk-level-t1'))).toBe(
-      'Tahap 1: Reaksi 4.6 /5 Kepuasan purata · 336 respon Lihat detail',
+      'Tahap 1: Reaksi 4.6 /5 Kepuasan purata · 336 respon Lihat butiran',
     )
   })
 
   it('shows the flow pills and the hint', async () => {
     const { wrapper: w } = await open()
     const flow = t(w, 'kirk-flow')
-    expect(flow.text()).toContain('Klik mana-mana tahap untuk lihat detail')
+    expect(flow.text()).toContain('Klik mana-mana tahap untuk lihat butiran')
     const pills = t(w, 'kirk-flow-circles').findAll('[data-testid="kirk-flow-pill"]')
     expect(pills.map((p) => p.text())).toEqual([
       '4.6/5',
@@ -134,7 +134,7 @@ describe('S1 filter (AC-M12-05.1, 05.2)', () => {
       )
     })
     await vi.waitFor(() => expect(resetLink(w).exists()).toBe(true))
-    expect(resetLink(w).text()).toBe('Reset')
+    expect(resetLink(w).text()).toBe('Set Semula')
     expect((w.get('select[name="school_id"]').element as HTMLSelectElement).value).toBe('8080')
     await resetLink(w).trigger('click')
     await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/admin/kirkpatrick'))
@@ -170,7 +170,7 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
       expect(d.getAttribute('data-tone')).toBe('up')
     }
     expect(squash(t(w, 'kirk-summary').text())).toBe(
-      'Ringkasan: Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. Jumlah jawapan meningkat 465500%. 28 pelajar naik ke tahap Champion.',
+      'Ringkasan: Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. Jumlah jawapan meningkat 465500%. 28 pelajar naik ke tahap Juara.',
     )
   })
 
@@ -251,7 +251,7 @@ describe('S1 KPI row, bands and info (AC-M12-09.1..09.3)', () => {
     const text = squash(t(w, 'kirk-info').text())
     expect(text).toContain('Model Kirkpatrick — 4 Tahap Penilaian Keberkesanan')
     expect(text).toContain(
-      'Dashboard ini mengukur keberkesanan platform PrestasiPlus berdasarkan model Kirkpatrick (1959).',
+      'Papan pemuka ini mengukur keberkesanan platform PrestasiPlus berdasarkan model Kirkpatrick (1959).',
     )
   })
 })
@@ -263,11 +263,11 @@ describe('mounts', () => {
     expect(t(w, 'kirk-kpi-registered').get('a').attributes('href')).toBe('/guru/monitoring')
   })
 
-  it('alias (detailLinks off): no level links, no "Lihat detail", monitoring links stay', async () => {
+  it('alias (detailLinks off): no level links, no "Lihat butiran", monitoring links stay', async () => {
     const { wrapper: w } = await open('/admin-sekolah/kirkpatrick', { detailLinks: false })
     const hrefs = w.findAll('a').map((a) => a.attributes('href') ?? '')
     expect(hrefs).toEqual(['/admin-sekolah/monitoring', '/admin-sekolah/monitoring'])
-    expect(w.text()).not.toContain('Lihat detail')
+    expect(w.text()).not.toContain('Lihat butiran')
     expect(t(w, 'kirk-level-t3').text()).toContain('946/4158')
     expect(all(w, 'kirk-band-count')).toHaveLength(5)
   })

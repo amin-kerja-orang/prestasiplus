@@ -204,7 +204,7 @@ describe('page-raised outcome sets the tab title', () => {
     logIn(STUDENT)
     const router = testRouter()
     await router.push('/dashboard')
-    expect(document.title).toBe('Dashboard - PRESTASIPLUS')
+    expect(document.title).toBe('Papan Pemuka - PRESTASIPLUS')
 
     setRouteOutcome(404)
     expect(document.title).toBe(NOT_FOUND_TITLE)
@@ -241,7 +241,7 @@ describe('page-raised outcome sets the tab title', () => {
     await router.push('/timeline/5')
     expect(document.title).toBe(NOT_FOUND_TITLE)
     await router.push('/dashboard')
-    expect(document.title).toBe('Dashboard - PRESTASIPLUS')
+    expect(document.title).toBe('Papan Pemuka - PRESTASIPLUS')
   })
 })
 
@@ -296,7 +296,7 @@ describe('after each navigation (overview §5.4 step 5)', () => {
     logIn(STUDENT)
     const router = testRouter()
     await router.push('/dashboard')
-    expect(document.title).toBe('Dashboard - PRESTASIPLUS')
+    expect(document.title).toBe('Papan Pemuka - PRESTASIPLUS')
     await router.push('/topics?s=Sains')
     expect(document.title).toBe('Topik Sains')
   })

@@ -14,8 +14,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'role',
       access: 'auth',
-      title: 'SPM Mock Exam',
-      header: { title: 'SPM Mock Exam' },
+      title: 'Peperiksaan Percubaan SPM',
+      header: { title: 'Peperiksaan Percubaan SPM' },
       module: 'M06',
       v2: true,
     },
@@ -27,8 +27,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'role',
       access: 'auth',
-      title: 'SPM Mock Exam',
-      header: { title: 'SPM Mock Exam' },
+      title: 'Peperiksaan Percubaan SPM',
+      header: { title: 'Peperiksaan Percubaan SPM' },
       module: 'M06',
       v2: true,
     },
@@ -40,8 +40,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'role',
       access: 'auth',
-      title: 'Result Mock SPM',
-      header: { title: 'Result Mock SPM' },
+      title: 'Keputusan Percubaan SPM',
+      header: { title: 'Keputusan Percubaan SPM' },
       module: 'M06',
       v2: true,
     },
@@ -53,8 +53,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'role',
       access: 'auth',
-      title: 'SPM Walkthrough — Cikgu Alesa',
-      header: { title: 'SPM Walkthrough — Cikgu Alesa' },
+      title: 'Panduan Langkah SPM — Cikgu Alesa',
+      header: { title: 'Panduan Langkah SPM — Cikgu Alesa' },
       module: 'M06',
       v2: true,
     },

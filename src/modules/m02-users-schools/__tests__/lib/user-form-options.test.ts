@@ -76,12 +76,12 @@ describe('user-form routes (SRS §2)', () => {
   it('has the exact tab titles and shell headers', () => {
     const [create, edit] = routes
     expect(create?.path).toBe('/admin/users/create')
-    expect(create?.meta?.title).toBe('Tambah Pengguna - Admin Panel')
+    expect(create?.meta?.title).toBe('Tambah Pengguna - Panel Admin')
     expect(create?.meta?.header).toEqual({
       title: 'Tambah Pengguna Baru',
       subtitle: 'Daftarkan akaun pengguna baru ke sistem',
     })
-    expect(edit?.meta?.title).toBe('Edit Pengguna - Admin Panel')
+    expect(edit?.meta?.title).toBe('Edit Pengguna - Panel Admin')
     expect(edit?.meta?.header).toEqual({
       title: 'Edit Pengguna',
       subtitle: 'Kemaskini maklumat pengguna',
