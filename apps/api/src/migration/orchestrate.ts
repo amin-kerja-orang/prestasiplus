@@ -36,6 +36,8 @@
  *   dry-run applies nothing. A change in an activity-only table (e.g. practice_sessions) does not skip it. The apply
  *   path has no such limit: core dry-run, core apply, then activity dry-run and apply.
  *
+ * Every command refuses a flag it does not read (`unknown flag --x.`, exit 2) before any database work; see `KNOWN_FLAGS`.
+ *
  * `migrate:verify` runs the reconciliation (exit 0 on pass, 1 on fail). `migrate:rollback` deletes the rows loaded from
  * the source (dry-run by default, `--confirm` must equal the database name; a refusal, `RollbackRefusedError`, exits 2). `migrate:link-questions` is the optional
  * MIG-09 backfill. `migrate:export-question-reports` (Q9 A) writes the open question reports to a CSV for the content team
@@ -420,6 +422,28 @@ export function writeDeltaReport(delta: DeltaReport, outDir: string = DEFAULT_OU
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 const USER_ID = /^[1-9]\d{0,17}$/
 
+/**
+ * The flags each command reads (`--apply` / `--dry-run` are not flags: the parser turns them into `args.mode`). Checked first in
+ * `run()`, so a misspelt `--asof` is a usage error (exit 2) and never a run with today's date. A stray positional is refused too:
+ * `-asof 2026-10-29` (one dash) would otherwise be dropped without a word.
+ */
+const COMMON_FLAGS = ['as-of', 'batch-size', 'content-owner', 'files-dir', 'out-dir'] as const
+export const KNOWN_FLAGS: Readonly<Record<string, ReadonlySet<string>>> = {
+  'migrate:all': new Set(COMMON_FLAGS),
+  'migrate:delta': new Set([...COMMON_FLAGS, 'since']),
+  'migrate:verify': new Set(['out-dir']),
+  'migrate:rollback': new Set(['confirm']),
+  'migrate:link-questions': new Set(['batch-size']),
+  'migrate:export-question-reports': new Set(['out-dir']),
+  'migrate:archive-minimise': new Set(['confirm', 'export-summary']),
+}
+
+function assertKnownFlags(command: string, args: CommandArgs): void {
+  const known = KNOWN_FLAGS[command] as ReadonlySet<string>
+  for (const name of args.flags.keys()) if (!known.has(name)) throw new ApplyGuardError(`unknown flag --${name}.`)
+  if (args.positional.length > 0) throw new ApplyGuardError('unexpected argument: this command takes flags only (--name=value).')
+}
+
 function flagValue(args: CommandArgs, name: string): string | undefined {
   const v = args.flags.get(name)
   if (v === true) throw new ApplyGuardError(`--${name} needs a value.`)
@@ -524,6 +548,7 @@ export const migrateAll: MigrateCommand = {
   name: 'migrate:all',
   summary: 'core then activity (dry-run first, then apply) and the reconciliation (dry-run by default)',
   async run(args, ctx) {
+    assertKnownFlags('migrate:all', args)
     const f = commonFlags(args)
     const result = await runAll({ pool: ctx.pool, env: ctx.env, mode: args.mode, ...f, gitSha: resolveGitSha(ctx.env), onStage: (s) => printStage(ctx, 'migrate:all', s), warn: ctx.err })
     printOutcome(ctx, 'migrate:all', result)
@@ -535,6 +560,7 @@ export const migrateDelta: MigrateCommand = {
   name: 'migrate:delta',
   summary: 'freeze-window re-run of core and activity on the re-staged dump; only changed rows are written',
   async run(args, ctx) {
+    assertKnownFlags('migrate:delta', args)
     const since = flagValue(args, 'since')
     if (since === undefined) throw new ApplyGuardError('--since is required (ISO-8601 timestamp, e.g. 2026-06-02T00:00:00Z).')
     parseSince(since)
@@ -553,6 +579,7 @@ export const migrateVerify: MigrateCommand = {
   name: 'migrate:verify',
   summary: 'reconciliation report and go/no-go gate for the loaded data (read-only)',
   async run(args, ctx) {
+    assertKnownFlags('migrate:verify', args)
     const outDir = outDirOf(args)
     const report = await runVerify({ pool: ctx.pool, env: ctx.env, source: 'cloud', outDir })
     report.files = writeVerifyReport(report, outDir)
@@ -565,6 +592,7 @@ export const migrateRollback: MigrateCommand = {
   name: 'migrate:rollback',
   summary: 'delete every row loaded from the source (dry-run by default; --confirm=<database name> is required)',
   async run(args, ctx) {
+    assertKnownFlags('migrate:rollback', args)
     const confirm = flagValue(args, 'confirm')
     if (confirm === undefined) throw new ApplyGuardError('--confirm=<database name> is required (it must equal the connected database).')
     const report = await rollbackLegacy({ pool: ctx.pool, env: ctx.env, source: 'cloud', confirmDb: confirm, dryRun: args.mode !== 'apply' })
@@ -583,6 +611,7 @@ export const migrateLinkQuestions: MigrateCommand = {
   name: 'migrate:link-questions',
   summary: 'optional backfill: link migrated answers to bank questions by natural key + content hash (dry-run by default)',
   async run(args, ctx) {
+    assertKnownFlags('migrate:link-questions', args)
     const batchSize = batchSizeOf(args)
     let r: Awaited<ReturnType<typeof linkQuestions>>
     try {
@@ -611,6 +640,7 @@ export const migrateExportQuestionReports: MigrateCommand = {
   name: 'migrate:export-question-reports',
   summary: 'export the open question reports (and submission metadata) to CSV files for the content team (read-only; personal-data-bearing file)',
   async run(args, ctx) {
+    assertKnownFlags('migrate:export-question-reports', args)
     // Reads only: there is nothing to apply, so --apply is a usage error rather than something silently ignored.
     if (args.mode === 'apply') throw new ApplyGuardError('migrate:export-question-reports is a read-only command: it has no --apply.')
     const outDir = outDirOf(args)
@@ -632,6 +662,7 @@ export const migrateArchiveMinimise: MigrateCommand = {
   name: 'migrate:archive-minimise',
   summary: 'after the Q9 export: set user_id (and question_reports.reason) to NULL in archive_cloud (dry-run by default; needs --confirm and --export-summary)',
   async run(args, ctx) {
+    assertKnownFlags('migrate:archive-minimise', args)
     const confirm = flagValue(args, 'confirm')
     const summary = flagValue(args, 'export-summary')
     if (confirm === undefined) throw new ApplyGuardError('--confirm <database name> is required (it must equal the connected database).')
