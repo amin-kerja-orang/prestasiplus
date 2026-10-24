@@ -103,13 +103,13 @@ export const TeacherClassSchema = z
   .meta({ id: 'TeacherClass' })
 export type TeacherClass = z.infer<typeof TeacherClassSchema>
 
-/** `POST /guru/classes` body. Owner is always the caller; `schoolId` is optional (DV-M10-22). */
+/** `POST /guru/classes` body. Owner is always the caller; `schoolId` is optional and defaults to the caller's school (DV-M10-22, SW7-01). */
 export const ClassCreateRequestSchema = z
   .object({
     name: text(CLASS_MESSAGES.className, 255),
     subjectId: refId(CLASS_MESSAGES.subject),
     educationLevel: ClassEducationLevelSlugSchema,
-    schoolId: z.string({ error: CLASS_MESSAGES.school }).nullish().meta({ description: 'Optional; null or empty means no school. An unknown school gives fields.schoolId.' }),
+    schoolId: z.string({ error: CLASS_MESSAGES.school }).nullish().meta({ description: 'Optional; when absent, null or empty the class takes the own school of the caller (none if the caller has none). Only that school is accepted; any other or unknown school gives fields.schoolId.' }),
     description: z.string({ error: CLASS_MESSAGES.invalid }).trim().max(2000, CLASS_MESSAGES.invalid).nullish(),
   })
   .meta({ id: 'ClassCreateRequest' })
