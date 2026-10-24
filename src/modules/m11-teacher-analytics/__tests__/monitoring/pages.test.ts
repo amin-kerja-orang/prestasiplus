@@ -471,7 +471,7 @@ describe('S2 Monitoring Penglibatan', () => {
     await mountAt(MonitoringPage, '/guru/monitoring')
     expect(tid('mon-guide')?.exists()).toBe(true)
     expect(all('mon-guide-tile')).toHaveLength(6)
-    expect(tid('mon-guide-tip')?.text()).toContain('Guna Filter untuk tapis negeri/tempoh/tahap.')
+    expect(tid('mon-guide-tip')?.text()).toContain('Guna penapis untuk menapis negeri/tempoh/tahap.')
     await tid('mon-guide-close')?.trigger('click')
     expect(window.localStorage.getItem('hideMonitoringGuide')).toBe('true')
     expect(tid('mon-guide')?.exists()).toBe(false)
@@ -557,7 +557,7 @@ describe('S3 Detail Sekolah', () => {
     await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8080', { schoolId: 8080 })
     expect(tid('mon-school-name')?.text()).toBe('SMK Contoh')
     expect(tid('mon-school-tahap')?.text()).toBe('Cemerlang — 89.7%')
-    expect(tid('mon-subscription')?.text()).toContain('Active — sehingga 12 May 2027')
+    expect(tid('mon-subscription')?.text()).toContain('Aktif — sehingga 12 Mei 2027')
     expect(valuesIn('mon-school-cards')).toEqual(['4', '2', '53,494', '2', '1'])
     expect(tid('mon-warning')?.text().replace(/ {2,}/g, ' ')).toBe(
       '⚠ 2 akaun menunjukkan aktiviti luar biasa (kelajuan menjawab tidak munasabah — perlu semak). 1 daripadanya dikecualikan dari peratus penglibatan kerana corak seperti automasi. Angka penglibatan di atas ialah nilai tulen selepas tapis.',
@@ -583,7 +583,7 @@ describe('S3 Detail Sekolah', () => {
       school({ subscription: { status: 'expired', endsAt: '2026-05-22T00:00:00+08:00' } }),
     )
     await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8107', { schoolId: 8107 })
-    expect(tid('mon-subscription')?.text()).toContain('Expired — sehingga 22 May 2026')
+    expect(tid('mon-subscription')?.text()).toContain('Tamat Tempoh — sehingga 22 Mei 2026')
     expect(tid('mon-subscription')?.attributes('data-status')).toBe('expired')
   })
 

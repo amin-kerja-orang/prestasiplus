@@ -60,7 +60,7 @@ const tabs = computed<
   },
   {
     key: 'gaps',
-    label: 'Gap Analysis',
+    label: 'Analisis Jurang',
     icon: 'i-ph-crosshair',
     chip: { n: data.value?.gaps.count ?? 0, color: 'warning' },
   },

@@ -87,7 +87,7 @@ const SUBSCRIPTION_COLOR = {
   cancelled: 'neutral',
   expired: 'neutral',
 } as const
-const SUBSCRIPTION_LABEL = { active: 'Active', cancelled: 'Cancelled', expired: 'Expired' } as const
+const SUBSCRIPTION_LABEL = { active: 'Aktif', cancelled: 'Dibatalkan', expired: 'Tamat Tempoh' } as const
 
 const studentPills = computed<PillItem<StudentFilter>[]>(() => [
   { key: 'all', label: `Semua (${count(data.value?.students.length ?? 0)})` },

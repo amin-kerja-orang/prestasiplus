@@ -154,7 +154,7 @@ describe('S3 school detail: the other anchor schools (E2E-M11-31/52)', () => {
     expect(d.teachers).toEqual([])
   })
 
-  it('8102 Cancelled until 12 May 2027, 8107 Expired until 22 May 2026', async () => {
+  it('8102 Cancelled until 12 Mei 2027, 8107 Expired until 22 Mei 2026', async () => {
     expect((await school(8102)).subscription).toEqual({
       status: 'cancelled',
       endsAt: '2027-05-12T09:00:00+08:00',

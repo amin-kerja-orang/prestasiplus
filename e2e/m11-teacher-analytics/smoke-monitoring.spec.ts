@@ -376,7 +376,7 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     await adminHeader(page, 'Detail Sekolah')
     await expect(tid(page, 'mon-crumb-monitoring')).toHaveAttribute('href', '/guru/monitoring')
     await expect(tid(page, 'mon-school-state')).toHaveText('Selangor')
-    await expect(tid(page, 'mon-subscription')).toContainText('Active — sehingga 12 May 2027')
+    await expect(tid(page, 'mon-subscription')).toContainText('Aktif — sehingga 12 Mei 2027')
     await expect(tid(page, 'mon-school-tahap')).toHaveText('Cemerlang — 89.7%')
     await expect(tid(page, 'mon-stat-value')).toHaveText(['184', '165', '53,494', '34', '34'])
     await expect(tid(page, 'mon-warning')).toContainText('19 akaun')
@@ -441,9 +441,9 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
   }) => {
     await loginAs(GURU)
     await gotoApp('/guru/monitoring/sekolah/8102')
-    await expect(tid(page, 'mon-subscription')).toContainText('Cancelled — sehingga 12 May 2027')
+    await expect(tid(page, 'mon-subscription')).toContainText('Dibatalkan — sehingga 12 Mei 2027')
     await gotoApp('/guru/monitoring/sekolah/8107')
-    await expect(tid(page, 'mon-subscription')).toContainText('Expired — sehingga 22 May 2026')
+    await expect(tid(page, 'mon-subscription')).toContainText('Tamat Tempoh — sehingga 22 Mei 2026')
     await gotoApp('/guru/monitoring/sekolah/8765')
     await expect(tid(page, 'mon-school-header')).toBeVisible()
     // AC-M11-18.3 / 18.4 (D9): the S3 cards equal the S2 row of 8765 (6 active, 37.5%), no contradiction.

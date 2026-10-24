@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S4 "Gap Analysis & Cadangan Latihan" (FN-M11-4.2.8; FR-M11-69): shown only when its tab is active;
+ * S4 "Analisis Jurang & Cadangan Latihan" (FN-M11-4.2.8; FR-M11-69): shown only when its tab is active;
  * gap cards by severity, "Topik Kuat" tiles, the empty state with the live copy, and "Subjek Belum
  * Dicuba" chips.
  */
@@ -21,12 +21,12 @@ const SEVERITY: Record<GapSeverity, UiColor> = {
     <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-1">
         <h2 class="flex items-center gap-2 text-label text-highlighted">
-          <UIcon name="i-ph-crosshair" class="size-5 text-primary-t" />Gap Analysis &amp; Cadangan
+          <UIcon name="i-ph-crosshair" class="size-5 text-primary-t" />Analisis Jurang &amp; Cadangan
           Latihan
         </h2>
         <p class="text-caption text-muted">
           Topik lemah dikesan automatik berdasarkan jawapan pelajar. Soalan latihan dicadangkan
-          untuk isi gap.
+          untuk mengisi jurang.
         </p>
       </div>
 

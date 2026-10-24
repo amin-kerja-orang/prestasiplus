@@ -56,7 +56,7 @@ const resetButton = (w: VueWrapper) =>
   w
     .get('[data-testid="filter-card"]')
     .findAll('button')
-    .find((b) => b.text() === 'Reset')
+    .find((b) => b.text() === 'Set Semula')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -114,7 +114,7 @@ describe('S6 Analisis Item: admin empty state (E2E-M11-43)', () => {
   it('Reset goes to /guru/analisis-item and clears both filters', async () => {
     const w = await mountAt('/guru/analisis-item?subject_id=1&classroom_id=')
     const reset = resetButton(w)
-    expect(reset?.text()).toBe('Reset')
+    expect(reset?.text()).toBe('Set Semula')
     await reset?.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/guru/analisis-item')
