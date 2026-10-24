@@ -147,6 +147,59 @@ describe('S22 save path', () => {
     expect(w.text()).toContain('Fail melebihi saiz maksimum 2 MB.')
   })
 
+  it('SW12-01-A: a gif picked through "All files" is refused before any request', async () => {
+    const w = await mountPage()
+    await fill(w)
+    await pickFiles(w, 'q-image-input', [new File(['x'], 'a.gif', { type: 'image/gif' })])
+    await pickFiles(w, 'q-option-image-2-input', [new File(['x'], 'b.gif', { type: 'image/gif' })])
+    expect(t(w, 'q-image-type-error').text()).toBe(COPY.imageInvalid)
+    expect(t(w, 'q-option-image-2-type-error').text()).toBe(COPY.imageInvalid)
+    guru.createContributedQuestion.mockResolvedValue(detail())
+    await w.find('form').trigger('submit')
+    await flushPromises()
+    const images = guru.createContributedQuestion.mock.calls[0]![1] as unknown as {
+      questionImage: File | null
+      optionImages: (File | null)[]
+    }
+    expect(images.questionImage).toBeNull()
+    expect(images.optionImages).toEqual([null, null, null, null])
+    // A valid file clears the message.
+    await pickFiles(w, 'q-image-input', [new File(['x'], 'a.png', { type: 'image/png' })])
+    expect(t(w, 'q-image-type-error').exists()).toBe(false)
+  })
+
+  it.each([
+    [
+      'a network error',
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+    ],
+    [
+      'a 500',
+      new ApiError({
+        status: 500,
+        code: 'SERVER_ERROR',
+        message: 'Internal error',
+        body: { error: { code: 'SERVER_ERROR', message: 'Internal error' } },
+      }),
+    ],
+    [
+      'a non-JSON 413',
+      new ApiError({
+        status: 413,
+        code: 'VALIDATION_ERROR',
+        message: 'HTTP 413',
+        body: '<html>413</html>',
+      }),
+    ],
+  ])('SW12-01-A: %s shows the save-failed text, not the raw message', async (_n, error) => {
+    guru.createContributedQuestion.mockRejectedValue(error)
+    const w = await mountPage()
+    await fill(w)
+    await w.find('form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'form-errors').text()).toBe(COPY.saveFailed)
+  })
+
   it('SW12-01-A: "Batal" is disabled while the question is being saved', async () => {
     let finish: (v: unknown) => void = () => undefined
     guru.createContributedQuestion.mockReturnValue(new Promise((r) => (finish = r)))

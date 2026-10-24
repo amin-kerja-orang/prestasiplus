@@ -13,7 +13,7 @@ import { DsBackLink, DsPage } from '@/ds'
 
 import { createContributedQuestion } from '../api/guru'
 import type { CreateQuestionRequest } from '../api/types'
-import { COPY } from '../components/soalan/lib'
+import { COPY, saveErrorMessage } from '../components/soalan/lib'
 import QuestionForm from '../components/soalan/QuestionForm.vue'
 
 const router = useRouter()
@@ -41,7 +41,7 @@ async function save(
       fields.value = err.fields
       general.value = Object.values(err.fields)
     } else {
-      general.value = [isApiError(err) ? err.message : COPY.saveFailed]
+      general.value = [saveErrorMessage(err)]
     }
     window.scrollTo?.({ top: 0 })
   } finally {

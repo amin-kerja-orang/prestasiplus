@@ -6,9 +6,11 @@
  * uploads at runtime is ever shown (D22). The buttons wrap below 640px so the page never scrolls
  * sideways at 375px.
  */
+import { ref } from 'vue'
+
 import { DsFileField } from '@/ds'
 
-import { IMAGE_ACCEPT, IMAGE_MAX_MB } from './lib'
+import { COPY, IMAGE_ACCEPT, IMAGE_MAX_MB, isAcceptedImage } from './lib'
 
 defineProps<{
   variant: 'question' | 'option'
@@ -20,8 +22,17 @@ defineProps<{
 const file = defineModel<File | null>('file', { required: true })
 const emit = defineEmits<{ gallery: [] }>()
 
+/** Set when a picked file is not of an accepted type (the dialog's "All files" bypasses `accept`). */
+const typeError = ref('')
+
 function onPick(value: File | File[] | null): void {
-  file.value = Array.isArray(value) ? (value[0] ?? null) : value
+  const picked = Array.isArray(value) ? (value[0] ?? null) : value
+  if (picked && !isAcceptedImage(picked)) {
+    typeError.value = COPY.imageInvalid
+    return
+  }
+  typeError.value = ''
+  file.value = picked
 }
 </script>
 
@@ -56,5 +67,13 @@ function onPick(value: File | File[] | null): void {
         Muat naik imej soalan (pilihan)
       </span>
     </div>
+    <p
+      v-if="typeError"
+      class="mt-1 text-caption text-error"
+      role="alert"
+      :data-testid="`${testid}-type-error`"
+    >
+      {{ typeError }}
+    </p>
   </div>
 </template>

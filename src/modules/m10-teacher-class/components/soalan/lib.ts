@@ -2,6 +2,8 @@
  * Shared copy, option lists and pure helpers of S21–S24 (M10-T6; FN-M10-7.1–7.4). Copy is the live
  * BM text of URS §7; flashes and server messages are UNVERIFIED COPY (SRS §8.3).
  */
+import { isApiError, isErrorBody } from '@/api'
+
 import type { QuestionType, ScriptType } from '../../api/types'
 
 /**
@@ -11,6 +13,21 @@ import type { QuestionType, ScriptType } from '../../api/types'
 /** What the files API accepts for `question_image` (SW12-01-A). */
 export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp'
 export const IMAGE_MAX_MB = 2
+
+/** `true` when a picked file is of a type the files API takes (the dialog's "All files" can pick any). */
+export const isAcceptedImage = (file: File): boolean => IMAGE_ACCEPT.split(',').includes(file.type)
+
+/**
+ * What the save alert shows for a failed save: the server message of a 4xx that came with the API's
+ * error body, else `COPY.saveFailed` (no response, a 5xx, or an answer that is not the error body,
+ * e.g. a proxy 413 page), so no raw "Failed to fetch" / "HTTP 413" text reaches the user.
+ */
+export function saveErrorMessage(err: unknown): string {
+  if (!isApiError(err)) return COPY.saveFailed
+  if (err.status === 0 || err.status >= 500) return COPY.saveFailed
+  if (err.body !== undefined && !isErrorBody(err.body)) return COPY.saveFailed
+  return err.message
+}
 
 export const COPY = {
   /** Live (FR-M10-97). */

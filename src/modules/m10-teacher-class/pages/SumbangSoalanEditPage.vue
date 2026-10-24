@@ -32,8 +32,10 @@ import {
   EDIT_DIFFICULTIES,
   IMAGE_ACCEPT,
   IMAGE_MAX_MB,
+  isAcceptedImage,
   isLoadableImage,
   OPTION_LETTERS,
+  saveErrorMessage,
 } from '../components/soalan/lib'
 
 const props = defineProps<{ id: number }>()
@@ -61,6 +63,8 @@ const form = reactive({
   explanation: '',
 })
 const image = ref<File | null>(null)
+/** Set when a picked file is not of an accepted type (the dialog's "All files" bypasses `accept`). */
+const imageTypeError = ref('')
 const saving = ref(false)
 const general = ref<string[]>([])
 const fields = ref<Record<string, string>>({})
@@ -80,6 +84,16 @@ watch(data, (q) => {
 
 const isMcq = computed(() => data.value?.questionType === 'mcq')
 const back = computed(() => `/guru/soalan/${String(props.id)}`)
+
+function pickImage(value: File | File[] | null): void {
+  const picked = Array.isArray(value) ? (value[0] ?? null) : value
+  if (picked && !isAcceptedImage(picked)) {
+    imageTypeError.value = COPY.imageInvalid
+    return
+  }
+  imageTypeError.value = ''
+  image.value = picked
+}
 
 async function save(): Promise<void> {
   if (saving.value || !data.value) return
@@ -104,7 +118,7 @@ async function save(): Promise<void> {
       fields.value = err.fields
       general.value = Object.values(err.fields)
     } else {
-      general.value = [isApiError(err) ? err.message : COPY.saveFailed]
+      general.value = [saveErrorMessage(err)]
     }
   } finally {
     saving.value = false
@@ -173,7 +187,7 @@ async function save(): Promise<void> {
             label="Tambah Gambarajah (optional)"
             name="e-image"
             :help="COPY.imageInvalid"
-            :error="fields.questionImage ?? fields.image"
+            :error="imageTypeError || fields.questionImage || fields.image"
           >
             <DsArt3D
               v-if="isLoadableImage(data.questionImage)"
@@ -189,7 +203,7 @@ async function save(): Promise<void> {
               :accept="IMAGE_ACCEPT"
               :max-size-mb="IMAGE_MAX_MB"
               data-testid="e-image"
-              @update:model-value="image = Array.isArray($event) ? ($event[0] ?? null) : $event"
+              @update:model-value="pickImage"
             />
           </DsFormField>
         </DsPanel>

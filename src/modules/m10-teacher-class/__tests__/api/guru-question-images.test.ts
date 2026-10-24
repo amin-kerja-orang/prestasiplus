@@ -21,6 +21,8 @@ interface Call {
 let calls: Call[] = []
 let uploads = 0
 /** Per upload (0-based): a status other than 201 answers that error instead of a file. */
+/** Answers of the next question requests (create / edit), in order; empty = 200. */
+let saveAnswers: { status: number; body: unknown }[] = []
 let uploadFailures: Record<number, { status: number; body: unknown } | 'network' | 'html413'> = {}
 
 const json = (status: number, body: unknown) =>
@@ -30,6 +32,7 @@ beforeEach(() => {
   calls = []
   uploads = 0
   uploadFailures = {}
+  saveAnswers = []
   installTransport(
     createHttpTransport({
       fetch: (input, init) => {
@@ -66,6 +69,8 @@ beforeEach(() => {
             }),
           )
         }
+        const answer = saveAnswers.shift()
+        if (answer) return Promise.resolve(json(answer.status, answer.body))
         return Promise.resolve(json(200, { data: { id: '9' } }))
       },
     }),
@@ -281,6 +286,69 @@ describe('createContributedQuestion images, http mode', () => {
     // A file the user picks again is a new File and is uploaded.
     await createContributedQuestion(base, { questionImage: png('stem.png') })
     expect(uploadCalls()).toHaveLength(3)
+  })
+
+  it('a save 422 on optionImages.1 forgets that token: the retry uploads option B again, the rest is reused', async () => {
+    saveAnswers.push({
+      status: 422,
+      body: {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'x',
+          fields: { 'optionImages.1': COPY.imageInvalid },
+        },
+      },
+    })
+    const images = {
+      questionImage: png('stem.png'),
+      optionImages: [png('a.png'), png('b.png'), null, null],
+    }
+    const err = await createContributedQuestion(base, images).catch((e: unknown) => e)
+    expect(isApiError(err, 'VALIDATION_ERROR')).toBe(true)
+    expect(uploadCalls()).toHaveLength(3)
+    await createContributedQuestion(base, images)
+    // Only option B (tok2) is uploaded again; the stem (tok0) and option A (tok1) are reused.
+    expect(uploadCalls()).toHaveLength(4)
+    const retry = questionCalls()[1]?.body as Record<string, unknown>
+    expect(retry.questionImage).toBe('tok0')
+    expect(retry.optionImages).toEqual(['tok1', 'tok3', null, null])
+  })
+
+  it('a save 422 on questionImage forgets the stem token on edit too', async () => {
+    saveAnswers.push({
+      status: 422,
+      body: {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'x',
+          fields: { questionImage: COPY.imageInvalid },
+        },
+      },
+    })
+    const stem = png('stem.png')
+    await updateContributedQuestion(7, { questionText: 'Soalan contoh' }, stem).catch(
+      () => undefined,
+    )
+    await updateContributedQuestion(7, { questionText: 'Soalan contoh' }, stem)
+    expect(uploadCalls()).toHaveLength(2)
+    expect(calls.at(-1)?.body).toMatchObject({ questionImage: 'tok1' })
+  })
+
+  it('a save failure that names no image keeps the tokens', async () => {
+    saveAnswers.push({
+      status: 422,
+      body: {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'x',
+          fields: { questionText: 'Sila isi soalan.' },
+        },
+      },
+    })
+    const images = { questionImage: png('stem.png') }
+    await createContributedQuestion(base, images).catch(() => undefined)
+    await createContributedQuestion(base, images)
+    expect(uploadCalls()).toHaveLength(1)
   })
 
   it('maps the JSON 422 image keys as they come (questionImage, optionImages.<i>)', async () => {

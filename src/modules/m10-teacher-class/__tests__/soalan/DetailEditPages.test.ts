@@ -9,6 +9,7 @@ import { ApiError } from '@/api'
 import { useRouteOutcome } from '@/app/router/outcome'
 import { useFlashStore } from '@/stores/flash'
 
+import { COPY } from '../../components/soalan/lib'
 import { pickFiles } from './pick-file'
 import SumbangSoalanDetailPage from '../../pages/SumbangSoalanDetailPage.vue'
 import SumbangSoalanEditPage from '../../pages/SumbangSoalanEditPage.vue'
@@ -210,6 +211,35 @@ describe('S24 edit', () => {
     const big = new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' })
     await pickFiles(w, 'e-image', [big])
     expect(w.text()).toContain('Fail melebihi saiz maksimum 2 MB.')
+  })
+
+  it('SW12-01-A: a gif picked through "All files" is refused before any request', async () => {
+    guru.updateContributedQuestion.mockResolvedValue(detail())
+    const w = await mountPage(SumbangSoalanEditPage)
+    await pickFiles(w, 'e-image', [new File(['x'], 'a.gif', { type: 'image/gif' })])
+    expect(w.text()).toContain(COPY.imageInvalid)
+    await t(w, 'edit-form').trigger('submit')
+    await flushPromises()
+    expect(guru.updateContributedQuestion.mock.calls[0]![2]).toBeNull()
+  })
+
+  it.each([
+    ['a network error', new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' })],
+    [
+      'a 500',
+      new ApiError({
+        status: 500,
+        code: 'SERVER_ERROR',
+        message: 'Internal error',
+        body: { error: { code: 'SERVER_ERROR', message: 'Internal error' } },
+      }),
+    ],
+  ])('SW12-01-A: %s shows the save-failed text, not the raw message', async (_n, error) => {
+    guru.updateContributedQuestion.mockRejectedValue(error)
+    const w = await mountPage(SumbangSoalanEditPage)
+    await t(w, 'edit-form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'form-errors').text()).toBe(COPY.saveFailed)
   })
 
   it('SW12-01-A: "Batal" is disabled while the changes are being saved', async () => {

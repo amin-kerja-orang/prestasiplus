@@ -322,6 +322,20 @@ async function resolveImages(
   return ids
 }
 
+/**
+ * A save that the API refused with 422 on an image key (`questionImage`, `optionImages.<i>`): forgets
+ * the token of that file, so a retry uploads it again instead of repeating the refused token.
+ */
+function forgetRefused(
+  err: unknown,
+  entries: readonly (readonly [key: string, value: ImageInput])[],
+): void {
+  if (!isApiError(err) || err.status !== 422 || !err.fields) return
+  for (const [key, value] of entries) {
+    if (value instanceof Blob && key in err.fields) uploaded.delete(value)
+  }
+}
+
 /** Writes `body` into `form`: arrays as `key[]`, arrays of objects as `key[i][field]`. */
 function appendFields(form: FormData, body: object): void {
   for (const [key, value] of Object.entries(body)) {
@@ -374,17 +388,20 @@ export async function createContributedQuestion(
             (_, i) => [`optionImages.${String(i)}`, files.optionImages?.[i]] as const,
           )
         : []
-    const [stem, ...options] = await resolveImages([
-      ['questionImage', files.questionImage],
-      ...optionEntries,
-    ])
-    return api.post<ContributedQuestionDetail>('/api/guru/questions', {
-      body: {
-        ...wired,
-        ...(stem ? { questionImage: stem } : {}),
-        ...(options.some((id) => id !== null) ? { optionImages: options } : {}),
-      },
-    })
+    const entries = [['questionImage', files.questionImage] as const, ...optionEntries]
+    const [stem, ...options] = await resolveImages(entries)
+    try {
+      return await api.post<ContributedQuestionDetail>('/api/guru/questions', {
+        body: {
+          ...wired,
+          ...(stem ? { questionImage: stem } : {}),
+          ...(options.some((id) => id !== null) ? { optionImages: options } : {}),
+        },
+      })
+    } catch (err) {
+      forgetRefused(err, entries)
+      throw err
+    }
   }
   const optionFiles = (files.optionImages ?? []).flatMap((f, i) =>
     f instanceof Blob ? [[i, f] as const] : [],
@@ -427,10 +444,16 @@ export async function updateContributedQuestion(
 ): Promise<ContributedQuestionDetail> {
   const url = `/api/guru/questions/${String(id)}`
   if (isHttpMode()) {
-    const [stem] = await resolveImages([['questionImage', image]])
-    return api.put<ContributedQuestionDetail>(url, {
-      body: stem ? { ...body, questionImage: stem } : body,
-    })
+    const entries = [['questionImage', image] as const]
+    const [stem] = await resolveImages(entries)
+    try {
+      return await api.put<ContributedQuestionDetail>(url, {
+        body: stem ? { ...body, questionImage: stem } : body,
+      })
+    } catch (err) {
+      forgetRefused(err, entries)
+      throw err
+    }
   }
   if (!(image instanceof Blob)) return api.put<ContributedQuestionDetail>(url, { body })
   const form = new FormData()
