@@ -50,7 +50,7 @@ Fixes for findings in `docs/qa/audit-sistem/BIJAK-SPM-AUDIT-REPORT.md` (branch `
 | FB-037 | §11.6 #1, §3 #14 | Doc | Fixed |  | `v2-exam-schema.md` D1 drops numbered_list, sequence_order, code, cloze, gapped_text_match, essay_choice; `v2-bijak-spm.md` US-08 / AC-08.1 / AC-08.3 / R16 still require gaps, ordering, code and numbered list. D47 (2026-10-17) approved the exam schema one day after the Bijak doc. | Pengguna 2026-10-24: "(a) Gugurkan (ikut D1)". numbered_list, sequence_order, code, cloze, gapped_text_match, essay_choice dropped; US-08 / AC-08.1 / AC-08.3 / R16 being updated. |
 | FB-038 | §11.6 #2, §9 #10, §3 #14 | Doc | Need-info |  | Kertas Subjektif is Won't for v2.0 (`v2-bijak-spm.md` §6, R24, Q-B6) but F-76 / F-139 and menu item KS-07 still carry a treatment. | Pengguna 2026-10-24: belum diputuskan ("tak dapat bayangkan"). Sesi local akan tunjuk perbandingan kertas imej lama vs kertas Bijak SPM dan tanya semula. KS-07 tidak diubah. |
 | FB-039 | §11.6 #3 | Doc | Fixed |  | KS-02 label: "Databank Soalan" in the backlog, "Bank Soalan SPM" in the menu. | Diputuskan 2026-10-24 (pengguna serah kepada cloud): "Bank Soalan SPM" (KS-02 ialah bank kanonik gabungan, bukan hanya lorong Databank). Backlog dikemas kini. |
-| FB-040 | §11.6 #4 | Doc | Need-info |  | Paper types: QB §4.2 lists 7, intake code has 5, exam schema D8 `exam_type` lists 5 different values. | Pengguna 2026-10-24: "ikut sistem lama dan standard peperiksaan". Senarai asas = senarai .cloud (Percubaan, Sebenar, Modul) diselaraskan dengan standard peperiksaan; jadual pemetaan D8 / QB §4.2 / intake sedang disediakan untuk "Sahkan senarai". |
+| FB-040 | §11.6 #4 | Doc | Need-info |  | Mapping table in P-040 (end of this file): proposed canonical paper types = Sebenar, Percubaan, Modul (old .cloud list = the recognised exam paper kinds); Soalan Umum, Buku Teks, Buku Latihan, Soalan DSKP, Topikal, Latihan, Lain-lain are not paper types (dropped or recorded as source kind). | Sahkan senarai: Sebenar, Percubaan, Modul sebagai jenis kertas? (lihat P-040) |
 | FB-041 | §11.6 #5, §6 A4 | Doc | Planned |  | QB §4.1 keeps Lulus and Terbit separate and adds Diarkib; the code folds Lulus into Terbit and has no Diarkib. | Pengguna 2026-10-24: "Satu langkah + Arkib". Kekal "Lulus & Terbit" satu langkah; TAMBAH "Arkib / Tarik balik" untuk soalan Terbit (status Diarkib, boleh dipulihkan). QB §4.1 dikemas kini. Status baharu menyentuh kontrak dan backend (PC-2/PC-5): perlu keputusan LEAD (#280). |
 | FB-042 | §11.6 #6 | Doc | Need-info | | F-71 / F-142 say Tracking A is "Merge-duplicate" but no doc says what replaces its set editor. | Tracking A diganti oleh apa? (cth. Pembina Kertas KS-09 dengan jenis "Tracking A", atau gugurkan terus.) |
 
@@ -201,3 +201,40 @@ Priority (user): 1) FB-043, FB-044 critical; 2) keypad FB-045 to FB-047; 3) othe
 - **Alternative:** a custom contenteditable renderer (no dependency) — much more work and riskier on mobile keyboards; not recommended.
 - **Track / estimate:** Full (new dependency + changed input model). M: 1 design note + ADR, 2 developer tasks (editor + keypad bridge; marker/e2e), review + QA. Best after go-live unless the LEAD wants it before the 25 Oct freeze.
 - **Questions:** Setuju guna MathLive (perpustakaan sumber terbuka) untuk medan jawapan? Bina sebelum atau selepas go-live 30 Okt?
+
+## P-040 Paper type mapping (proposal)
+
+FB-040. User answer 2026-10-24: "ikut sistem lama dan standard peperiksaan". This is a **proposal only**: the requirement lists (`v2-exam-schema.md` D8, `v2-question-bank.md` §4.2, intake `PAPER_TYPES`) are **not changed** until the user confirms.
+
+### Sources compared
+
+| Source | Values | Where |
+|---|---|---|
+| Old .cloud (Studio filter "Jenis"; DB `exam_types`) | Percubaan, Sebenar, Modul (`percubaan`, `sebenar`, `modul`) | `/studio` Jenis (audit report §8); `ProvenanceVocabSeeder.php:53-57` (audit rows C15-C17) |
+| Old .cloud teacher declaration (`jenis_soalan`) | Soalan Umum, Trial Paper, Soalan DSKP, Buku Teks, Buku Latihan, Soalan Peperiksaan, Lain-lain | `TeacherController.php:1000`; QB §4.2 lists 7 (audit row C18) |
+| Exam schema D8 `exam_type` | `sebenar`, `percubaan`, `modul`, `topikal`, `latihan` | `v2-exam-schema.md` D8 ("DATA: percubaan, sebenar, modul" + PAPER; `topikal`/`latihan` added from the Drive folder "SOALAN TOPIKAL") |
+| QB §4.2 | Soalan Umum / Trial / DSKP / Buku Teks / Buku Latihan / Peperiksaan / Lain-lain | `v2-question-bank.md` §4.2 step 2 (7 values) |
+| Intake `PAPER_TYPES` (m28) | Percubaan SPM, Soalan Umum, Peperiksaan Sebenar, Buku Latihan, Lain-lain | `src/modules/m28-bijak-spm/admin/intake/types.ts` L118-124 (5 values) |
+
+### Mapping and proposed canonical list
+
+Rule used: the canonical list is the old .cloud exam-type list (Studio), aligned to the exam standard (the three recognised kinds of exam paper: the official SPM paper, the state/school trial paper, and the state/PPD revision module). A value stays only if it is a recognised exam paper type; the rest are not paper types and are handled elsewhere (source or rights fields, or "tidak dikelaskan").
+
+| Proposed canonical (slug / BM label) | Old .cloud exam type | D8 `exam_type` | QB §4.2 value | Intake value (now) | Note |
+|---|---|---|---|---|---|
+| `sebenar` / **Sebenar** | Sebenar | `sebenar` | Peperiksaan | Peperiksaan Sebenar | Official LPM/KPM past-year SPM paper. |
+| `percubaan` / **Percubaan** | Percubaan | `percubaan` | Trial | Percubaan SPM | State, MRSM/SBP or school trial paper (source detail stays in board/source fields). |
+| `modul` / **Modul** | Modul | `modul` | (none; closest Buku Latihan) | (none; closest Buku Latihan) | Revision module (intake had no exact option, audit row C17). |
+| not a paper type | (none) | `topikal` | (none) | (none) | Topical question set: a way of grouping, not an exam paper. Proposed: drop from `exam_type`; topic grouping is already carried by the DSKP unit tag. |
+| not a paper type | (none) | `latihan` | Buku Latihan | Buku Latihan | Exercise-book content. Proposed: drop from `exam_type`; origin recorded as source kind `publisher` (D8). |
+| not a paper type | (none) | (none) | Buku Teks | (none) | Textbook content. Proposed: source kind `publisher`. |
+| not a paper type | (none) | (none) | DSKP | (none) | "Soalan DSKP" describes the tagging, not the paper. Proposed: dropped (DSKP tags are mandatory on every question anyway). |
+| not a paper type | (none) | (none) | Soalan Umum | Soalan Umum | General questions, no exam format. Proposed: dropped; an item that is none of the three types is saved without a paper type (see question 2). |
+| not a paper type | (none) | (none) | Lain-lain | Lain-lain | Catch-all. Proposed: dropped (same as Soalan Umum). |
+
+Result if confirmed: **3 values** (Sebenar, Percubaan, Modul) used identically by the Studio-style filter, intake declaration (3 options replace 5), QB §4.2 (7 values replaced) and D8 `exam_type` (`topikal`, `latihan` removed). Existing intake/seed values would migrate: Percubaan SPM -> percubaan; Peperiksaan Sebenar -> sebenar; Buku Latihan -> source kind publisher (+ modul only if it is a module); Soalan Umum and Lain-lain -> no paper type.
+
+### Questions for the user
+
+1. Sahkan senarai: **Sebenar, Percubaan, Modul** sebagai jenis kertas (ikut sistem lama dan standard peperiksaan)?
+2. Soalan yang bukan kertas peperiksaan (Soalan Umum, Buku Teks, Buku Latihan, Topikal, Lain-lain): dibenarkan tanpa jenis kertas (hanya sumber / hak cipta), atau perlu satu pilihan "Lain-lain"?

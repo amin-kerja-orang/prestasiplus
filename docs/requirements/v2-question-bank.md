@@ -74,21 +74,21 @@ Roles that **do not exist in .cloud** and are not introduced: "Penyemak" (review
 |---|---|---|
 | Draf | Created by extraction, import or manual entry; under edit | No |
 | Semakan | Submitted for review: the uploader (Guru) or an admin confirms the content matches the source | No |
-| Lulus | Approved by Admin Pusat; ready to be published | No |
+| ~~Lulus~~ | *No longer a separate status: "Lulus & Terbit" is one step (see the decision below).* | n/a |
 | Terbit | Live; servable through pools | Yes |
-| Diarkib | Retired / withdrawn; never served; may be restored to Draf | No |
+| Diarkib | Retired / withdrawn ("Arkib / Tarik balik"); never served; may be restored to Draf | No |
 
-Allowed transitions (anything else is refused and logged). Compared with .cloud (`QuestionLifecycle.php:21-26`) v2 adds **Terbit** as separate from Lulus, so an approved question can wait for its paper.
+**User decision 2026-10-24 (system audit FB-041, answer "Satu langkah + Arkib"; approved by the user, pending LEAD for the contract/backend change).** Keep **"Lulus & Terbit" as one step** (an Admin Pusat approval publishes the question in the same action; both the Approve and Publish gates of §4.8 must pass). **Add "Arkib / Tarik balik"** for published bank questions: status **Diarkib**, with restore. This supersedes the separate Lulus status below (v2 had added Terbit as separate from Lulus so an approved question could wait for its paper; that waiting state is dropped). Paper assembly still requires all questions Terbit (§4.5).
+
+Allowed transitions (anything else is refused and logged).
 
 | From | To | Who | Condition |
 |---|---|---|---|
 | Draf | Semakan | Guru (own), Admin Pusat | Submit-for-review checks (§4.8) pass |
 | Draf | Diarkib | Guru (own), Admin Pusat | none |
-| Semakan | Lulus | Admin Pusat | Approve checks pass |
+| Semakan | Terbit ("Lulus & Terbit") | Admin Pusat | Approve checks **and** Publish gate (§4.8) pass |
 | Semakan | Draf | Admin Pusat | Reason is mandatory; the uploader is notified |
-| Lulus | Terbit | Admin Pusat | Publish gate (§4.8) passes |
-| Lulus | Draf | Admin Pusat | Reason is mandatory |
-| Terbit | Diarkib | Admin Pusat | Immediate withdraw; reason is mandatory |
+| Terbit | Diarkib ("Arkib / Tarik balik") | Admin Pusat | Immediate withdraw; reason is mandatory |
 | Terbit | (new version, Draf) | Admin Pusat | "Sunting" creates version n+1 as Draf; the live version keeps serving (§4.6) |
 | Diarkib | Draf | Admin Pusat | Restore |
 
@@ -140,6 +140,8 @@ One form for a single question of any type in the structure [Schema] (stem, opti
 | Approve (Semakan -> Lulus) | Reviewer is not the AI service; tags valid against the controlled taxonomy; marks total equals the sum of part marks; stimulus / figure references resolve to uploaded media. |
 | Publish (Lulus -> Terbit) | **Answer key (or mark scheme for every part) present**; difficulty set from the controlled scale; DSKP topic chosen from the curriculum list (not free text); copyright declaration is not "belum jelas"; no open duplicate flag. For a paper: blueprint conformance (section count, marks, question count) [Schema]. |
 | No bypass | The same gate applies to single and paper-level publish and to any bulk action; a bulk action that includes a failing question reports it and skips it (E9). |
+
+Note (FB-041, 2026-10-24): with "Lulus & Terbit" as one step (§4.1), the Approve and Publish rows above are evaluated together on Semakan -> Terbit.
 
 **User decisions 2026-10-24 (system audit, FB-026; source: `docs/qa/audit-sistem/FIXLOG.md` P-026).** These refine the Publish gate and the DSKP tagging above:
 - **Ownership (D12):** M03 owns the DSKP catalogue (built from `docs/reference/dskp/*.json`; Tingkatan -> Bidang/Tema where printed -> unit/Tajuk -> SK -> SP); Bijak SPM (m28) only reads it through an M03 contract and keeps no DSKP schema of its own.
@@ -266,6 +268,7 @@ Priority: M = Must, S = Should, C = Could, W = Won't (v2.0). IDs are stable.
 - AC-14.1 Given Nyahaktif Segera or Terbit -> Diarkib, then the question is no longer served within [Default] 60 s, with a mandatory reason.
 - AC-14.2 Given a question inside a published paper, then the paper is flagged "Perlu semakan" and stops serving until resolved (replace the question or unpublish).
 - AC-14.3 Given Diarkib, when restored, then it returns as Draf, never directly as Terbit.
+- AC-14.4 Given a Terbit bank question, then the admin has one action "Arkib / Tarik balik" (reason mandatory) that sets it to Diarkib, and a Diarkib question has "Pulihkan" (restore, AC-14.3) [PROPOSED label for restore]. *User decision 2026-10-24 (FB-041, "Satu langkah + Arkib"), pending LEAD for the contract/backend; with "Lulus & Terbit" as one step (§4.1) this is the only way to take a published bank question out of service.*
 
 **US-15 [M] As Admin Pusat, I want an audit trail of every change, so that we can explain any question.**
 - AC-15.1 Each create, edit, tag decision, status change, duplicate decision, publish, withdraw, restore, and export is logged with user, role, time, before / after, and (where applicable) reason.
