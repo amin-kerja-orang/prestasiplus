@@ -407,7 +407,8 @@ describe('U+0000 in the body (the global NulGuard answers before the controller)
       expect(res.status, JSON.stringify(Object.keys(over))).toBe(422)
       expect(res.body.error.code).toBe('VALIDATION_ERROR')
       expect(Object.keys(fieldsOf(res))).toEqual(Object.keys(over))
-      expect(JSON.stringify(res.body)).not.toContain('abc')
+      // The random requestId (a UUID) can contain "abc" by chance, so it is left out of the leak check.
+      expect(JSON.stringify({ ...res.body, error: { ...res.body.error, requestId: undefined } })).not.toContain('abc')
     }
     expect(await rowCount()).toBe(before)
   })

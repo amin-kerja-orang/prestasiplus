@@ -219,7 +219,13 @@ export interface QuestionBankPort {
   /** Display facts for lists; unknown ids are absent from the map. */
   describe(ids: readonly string[]): Promise<ReadonlyMap<string, QuestionBrief>>
 
-  /** Every question, for the quality audit and dashboard. Order is by id. */
+  /**
+   * Every question, for the quality audit and dashboard, in batches of at most `size` (ascending id, keyset, bounded memory):
+   * `visit` is called once per batch, in order. Never load the whole bank into one array.
+   */
+  forEachQualityBatch(visit: (batch: QualityQuestion[]) => Promise<void>, size?: number): Promise<void>
+
+  /** Every question in one array. Small banks and tests only: production code uses `forEachQualityBatch`. */
   listForQuality(): Promise<QualityQuestion[]>
 
   /** Questions flagged as needing a diagram, newest id first, before dismissals are applied. */
@@ -262,6 +268,9 @@ export class EmptyQuestionBank implements QuestionBankPort {
   }
   async describe(): Promise<ReadonlyMap<string, QuestionBrief>> {
     return new Map()
+  }
+  async forEachQualityBatch(): Promise<void> {
+    return
   }
   async listForQuality(): Promise<QualityQuestion[]> {
     return []

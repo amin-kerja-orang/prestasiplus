@@ -18,12 +18,14 @@ const env = { NODE_ENV: 'test', IC_HASH_KEY: 'x'.repeat(24) }
 describe('entity matrix', () => {
   const core = buildCoreSteps(new CoreContext({ pool, env, source: 'cloud', asOf: '2026-06-01' }))
   const activity = buildActivitySteps(new ActivityContext({ pool, env, source: 'cloud', asOf: '2026-06-01' }), ACTIVITY_GROUPS)
+  // `questions` is loaded by the standalone `migrate:questions` (QLOAD), after `migrate:all`: a matrix row, never registered here.
+  const STANDALONE = ['questions']
   const registered = [...core, ...activity].map((s) => s.entity).filter((n) => n !== PROBE_ENTITY)
   const matrix = ENTITY_MATRIX.map((m) => m.entity)
 
   it('has a row for every registered entity, in load order, and no other row', () => {
     expect(registered.length).toBeGreaterThan(30)
-    expect(matrix.filter((n) => !registered.includes(n))).toEqual([])
+    expect(matrix.filter((n) => !registered.includes(n) && !STANDALONE.includes(n))).toEqual([])
     expect(registered.filter((n) => !matrix.includes(n))).toEqual([])
     // core first, then the activity groups: the order of the report follows the load order
     expect(matrix.indexOf('users')).toBeLessThan(matrix.indexOf('wallets'))
@@ -32,7 +34,7 @@ describe('entity matrix', () => {
 
   it('requires every registered entity and gives each a counting mode', () => {
     for (const m of ENTITY_MATRIX) {
-      expect(m.required, m.entity).toBe(true)
+      expect(m.required, m.entity).toBe(!STANDALONE.includes(m.entity))
       expect(['legacy', 'idmap', 'none']).toContain(m.count)
     }
     expect(ENTITY_MATRIX.filter((m) => m.count === 'none').map((m) => m.entity)).toEqual(['wallet_ledger_drift'])
