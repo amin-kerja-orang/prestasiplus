@@ -27,7 +27,7 @@ const routes: RouteRecordRaw[] = [
     name: QUESTION_ROUTES.detail,
     component: () => import('../pages/QuestionDetailPage.vue'),
     props: (route) => ({ id: Number(route.params.id) }),
-    meta: { ...adminMeta, title: 'Lihat Soalan', header: { title: 'Detail Soalan' } },
+    meta: { ...adminMeta, title: 'Lihat Soalan', header: { title: 'Butiran Soalan' } },
   },
 ]
 

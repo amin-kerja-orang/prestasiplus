@@ -173,7 +173,7 @@ test.describe('M04 S3 question detail', { tag: [TAG.smoke, moduleTag(4)] }, () =
     page,
   }) => {
     await expectTabTitle(page, 'Lihat Soalan')
-    await expect(page.getByRole('heading', { name: '📝 Detail Soalan' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '📝 Butiran Soalan' })).toBeVisible()
     await expect(page.getByTestId('question-subtitle')).toHaveText('Soalan #564159')
     await expect(page.getByTestId('question-status')).toHaveText('Diluluskan')
     await expect(page.getByTestId('question-option')).toHaveCount(4)

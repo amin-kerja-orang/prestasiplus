@@ -340,7 +340,7 @@ test.describe('QA G5 S3 detail states', { tag: [moduleTag(4), '@qa'] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/questions/564159')
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Detail Soalan')
+    await expect(byId(page, 'shell-admin-title')).toHaveText('Butiran Soalan')
     await expect(byId(page, 'shell-admin-subtitle')).toHaveCount(0)
     await expect(byId(page, 'question-back')).toHaveAttribute('href', /\/admin\/questions/)
     await expect(byId(page, 'question-edit')).toContainText('Edit')
@@ -563,7 +563,7 @@ test.describe('QA G5 guards and nav', { tag: [moduleTag(4), '@qa'] }, () => {
       ['/admin/questions/create', 'Tambah Soalan Baru', false],
       ['/admin/questions/564159/edit', 'Edit Soalan', false],
       ['/admin/questions/import', 'Import Soalan Secara Pukal', true],
-      ['/admin/questions/quality', 'Dashboard Kualiti Soalan', true],
+      ['/admin/questions/quality', 'Papan Pemuka Kualiti Soalan', true],
       ['/admin/structured-questions', /Soalan Berstruktur|Soalan Berstruktur/, false],
       ['/admin/question-submissions', 'Kertas Soalan Guru', true],
       ['/admin/soalan-gambar', 'Soalan Perlu Gambar Rajah', true],

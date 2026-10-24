@@ -479,7 +479,7 @@ test.describe('QA G5 S6 quality', { tag: [moduleTag(4), '@qa'] }, () => {
   test('E2E-M04-34 shell title/subtitle, KPI labels, bucket titles upper case, legacy backticks (AC-15.1, 15.2)', async ({
     page,
   }) => {
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Dashboard Kualiti Soalan')
+    await expect(byId(page, 'shell-admin-title')).toHaveText('Papan Pemuka Kualiti Soalan')
     await expect(byId(page, 'shell-admin-subtitle')).toHaveText(
       'Analisa kualiti keseluruhan bank soalan',
     )
