@@ -9,7 +9,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
-import { DsDialog, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
+import { DsDialog, DsGrid, DsGridItem, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 
 import RichText from '../../components/RichText.vue'
 import type { DecisionAction } from '../../domain/admin-types'
@@ -236,49 +236,60 @@ async function resubmit(): Promise<void> {
         padding="sm"
         data-testid="review-actions"
       >
-        <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+        <DsGrid :cols="{ base: 2, md: 3, lg: 12 }" gap="xs">
           <template v-if="data.item.status === 'semakan'">
-            <UButton
-              color="error"
-              variant="soft"
-              icon="i-ph-x-circle"
-              label="Tolak"
-              class="min-h-11 justify-center px-2 sm:px-4"
-              :disabled="busy"
-              data-testid="action-reject"
-              @click="ask('tolak')"
-            />
-            <UButton
-              color="warning"
-              variant="soft"
-              icon="i-ph-arrow-u-up-left"
-              label="Minta Pembetulan"
-              class="min-h-11 justify-center px-2 sm:px-4"
-              :ui="{ label: 'overflow-visible whitespace-normal text-center leading-tight' }"
-              :disabled="busy"
-              data-testid="action-correct"
-              @click="ask('betulkan')"
-            />
-            <UButton
-              icon="i-ph-seal-check"
-              label="Lulus & Terbit"
-              class="col-span-2 min-h-11 justify-center sm:col-span-1"
-              :loading="busy"
-              :disabled="data.gate.length > 0"
-              data-testid="action-publish"
-              @click="decide('terbit')"
-            />
+            <DsGridItem :span="{ base: 1, md: 1, lg: 2 }" :start="{ lg: 4 }">
+              <UButton
+                block
+                color="error"
+                variant="soft"
+                icon="i-ph-x-circle"
+                label="Tolak"
+                class="min-h-11"
+                :disabled="busy"
+                data-testid="action-reject"
+                @click="ask('tolak')"
+              />
+            </DsGridItem>
+            <DsGridItem :span="{ base: 1, md: 1, lg: 4 }" :start="{ lg: 6 }">
+              <UButton
+                block
+                color="warning"
+                variant="soft"
+                icon="i-ph-arrow-u-up-left"
+                class="min-h-11"
+                :disabled="busy"
+                data-testid="action-correct"
+                @click="ask('betulkan')"
+              >
+                Minta Pembetulan
+              </UButton>
+            </DsGridItem>
+            <DsGridItem :span="{ base: 2, md: 1, lg: 3 }" :start="{ lg: 10 }">
+              <UButton
+                block
+                icon="i-ph-seal-check"
+                label="Lulus & Terbit"
+                class="min-h-11"
+                :loading="busy"
+                :disabled="data.gate.length > 0"
+                data-testid="action-publish"
+                @click="decide('terbit')"
+              />
+            </DsGridItem>
           </template>
-          <UButton
-            v-else-if="data.item.status !== 'terbit'"
-            icon="i-ph-arrow-counter-clockwise"
-            label="Hantar semula untuk semakan"
-            class="col-span-2 min-h-11 justify-center sm:col-span-1"
-            :loading="busy"
-            data-testid="action-resubmit"
-            @click="resubmit"
-          />
-        </div>
+          <DsGridItem v-else :span="{ base: 2, md: 3, lg: 4 }" :start="{ lg: 9 }">
+            <UButton
+              block
+              icon="i-ph-arrow-counter-clockwise"
+              label="Hantar semula untuk semakan"
+              class="min-h-11"
+              :loading="busy"
+              data-testid="action-resubmit"
+              @click="resubmit"
+            />
+          </DsGridItem>
+        </DsGrid>
       </DsPanel>
 
       <DsDialog

@@ -9,7 +9,16 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
-import { DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
+import {
+  DsCluster,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  DsStatusBadge,
+  DsText,
+  type StatItem,
+} from '@/ds'
 
 import RichText from '../../components/RichText.vue'
 import type { BuilderGroup, BuilderQuestion } from '../../domain/admin-types'
@@ -531,7 +540,7 @@ const previewBlocks = computed(() => {
                 :data-testid="`pick-${c.key}`"
               >
                 <div class="flex min-w-0 grow flex-col gap-1">
-                  <span class="line-clamp-2 text-body text-default"><RichText :text="c.label" /></span>
+                  <DsText as="span" variant="body" :clamp="2"><RichText :text="c.label" /></DsText>
                   <span class="text-caption text-muted">
                     <template v-if="c.groupId"
                       >Kumpulan {{ stimulusOf(c.groupId)?.label }} · {{ c.ids.length }} soalan ·

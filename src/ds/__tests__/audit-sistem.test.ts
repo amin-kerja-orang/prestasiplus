@@ -114,9 +114,10 @@ describe('DsDataTable phone cards', () => {
     phone = true
     const w = mount(DsDataTable<Row>, {
       props: { data: rows, columns, cardTitle: 'title' },
+      // `card-title` is not part of the typed UTable slots, so the slot object is passed untyped.
       slots: {
         'card-title': (p: { row: Row }) => h('em', { 'data-test': 'rich' }, `rich:${p.row.id}`),
-      },
+      } as unknown as Record<string, never>,
     })
     await wait()
     const first = w.find('[data-ds="data-table-cards"] li')
