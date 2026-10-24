@@ -94,6 +94,7 @@ async function begin(restart: boolean): Promise<void> {
         :subtitle="`${cover.subjectName} · Kertas ${cover.kertas} · ${cover.durationMin} minit · ${cover.marks} markah · ${cover.questionCount} soalan`"
         art="books"
         :cta-label="open ? 'Sambung' : 'Mula'"
+        class="max-sm:pt-16"
         data-testid="cover-hero"
         @cta="begin(false)"
       />

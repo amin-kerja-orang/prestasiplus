@@ -272,13 +272,13 @@ const chipClass = (chip: unknown, active: boolean): string =>
           <template #header="{ collapsed }">
             <RouterLink
               to="/dashboard"
-              class="flex min-w-0 items-center gap-2"
+              class="flex min-h-11 min-w-0 items-center gap-2"
               aria-label="Laman utama"
             >
               <DsBrandLogo v-if="!collapsed" />
               <span
                 v-else
-                class="grid size-9 place-items-center rounded-md bg-gradient-primary font-display text-label font-extrabold text-primary-on"
+                class="grid size-11 place-items-center rounded-md bg-gradient-primary font-display text-label font-extrabold text-primary-on"
                 aria-hidden="true"
                 >P+</span
               >
@@ -399,7 +399,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   color="neutral"
                   variant="soft"
                   size="sm"
-                  class="hidden w-52 justify-start font-normal text-muted lg:inline-flex"
+                  class="hidden min-h-11 w-52 justify-start font-normal text-muted lg:inline-flex"
                   :ui="{ label: 'grow text-start' }"
                 />
                 <UDashboardSearchButton
@@ -407,7 +407,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   color="neutral"
                   variant="ghost"
                   size="sm"
-                  class="hidden sm:inline-flex lg:hidden"
+                  class="hidden min-h-11 min-w-11 justify-center sm:inline-flex lg:hidden"
                 />
                 <template v-if="learner">
                   <div class="hidden items-center gap-2 sm:flex">
@@ -420,7 +420,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   variant="ghost"
                   size="sm"
                   :icon="theme.scheme.value === 'dark' ? 'i-ph-sun' : 'i-ph-moon'"
-                  class="hidden sm:inline-flex"
+                  class="hidden min-h-11 min-w-11 justify-center sm:inline-flex"
                   :aria-label="themeLabel"
                   data-testid="pembelajaran-theme-toggle"
                   @click="theme.toggle()"
@@ -432,7 +432,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 >
                   <button
                     type="button"
-                    class="grid size-10 shrink-0 place-items-center rounded-full"
+                    class="grid size-11 shrink-0 place-items-center rounded-full"
                     aria-label="Menu akaun"
                     data-testid="pembelajaran-account-top"
                   >
