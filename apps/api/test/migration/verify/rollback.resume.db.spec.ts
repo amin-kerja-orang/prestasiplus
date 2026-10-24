@@ -12,6 +12,7 @@ import { ACTIVITY_GROUPS } from '../../../src/migration/load/activity'
 import { runAll } from '../../../src/migration/orchestrate'
 import { rollbackLegacy } from '../../../src/migration/verify'
 import { AS_OF, type ActivityHarness } from '../activity/helpers'
+import { testOutDir } from '../staging/helpers'
 import { bootActivity, legacyTableCounts, migrateAll, PROBE_GROUP, tempOutDir } from './helpers-verify'
 
 let h: ActivityHarness
@@ -39,7 +40,7 @@ afterAll(async () => {
 
 describe('rollback after an interrupted apply', () => {
   it('closes the failed run and deletes its checkpoints', async () => {
-    const base = { pool: h.env.pool, env: h.runEnv, source: 'cloud' as const, asOf: AS_OF, batchSize: 2 }
+    const base = { pool: h.env.pool, env: h.runEnv, source: 'cloud' as const, asOf: AS_OF, batchSize: 2, outDir: testOutDir() }
     for (const mode of ['dry-run', 'apply'] as const) expect((await runCore({ ...base, mode })).report.status).toBe('succeeded')
     const dry = await h.run('dry-run')
     expect(dry.report.status).toBe('succeeded')

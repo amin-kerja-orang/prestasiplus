@@ -28,7 +28,7 @@ import {
 import { readById } from '../../../src/migration/load/source'
 import { loadStaging } from '../../../src/migration/staging/load'
 import { DirReader } from '../../../src/migration/staging/readers'
-import { createStagingDb, FIXTURE_DIR, stagingEnv, type StagingDb } from '../staging/helpers'
+import { createStagingDb, FIXTURE_DIR, stagingEnv, testOutDir, type StagingDb } from '../staging/helpers'
 
 export const AS_OF = '2026-06-01'
 export const PROBE_ENTITY = 'act_probe_wallets'
@@ -121,7 +121,7 @@ export async function bootActivity(options: BootOptions = {}): Promise<ActivityH
   if (options.core !== false) {
     const dry = await runCore({ pool: env.pool, env: runEnv, source: 'cloud', asOf: AS_OF, mode: 'dry-run', batchSize: 2 })
     if (dry.report.status !== 'succeeded') throw new Error('BE-28 dry-run did not succeed in the activity test boot.')
-    const applied = await runCore({ pool: env.pool, env: runEnv, source: 'cloud', asOf: AS_OF, mode: 'apply', batchSize: 2 })
+    const applied = await runCore({ pool: env.pool, env: runEnv, source: 'cloud', asOf: AS_OF, mode: 'apply', batchSize: 2, outDir: testOutDir() })
     if (applied.report.status !== 'succeeded') throw new Error('BE-28 apply did not succeed in the activity test boot.')
   }
 

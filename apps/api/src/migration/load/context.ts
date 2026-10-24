@@ -17,12 +17,19 @@ export interface CoreOptions {
   asOf: string
   /** Rows read per keyset page; also bounds memory of the extract. */
   pageSize?: number
+  /** Receives warning lines (no secret value, no personal data). Unset: warnings are only recorded in the notes. */
+  warn?: (line: string) => void
 }
 
 /** Report extras of a run: counts and surrogate ids only (BE-NFR-11). */
 export class CoreNotes {
   readonly counters = new Map<string, number>()
   readonly ids = new Map<string, string[]>()
+  /**
+   * Legacy ids of real people that may only reach the mode-0600 restricted file (`restricted.ts`), never the
+   * report counters' stdout lines or the aggregate output (7-day real-data custody rule, runbook).
+   */
+  readonly restricted = new Map<string, string[]>()
 
   count(name: string, n = 1): void {
     this.counters.set(name, (this.counters.get(name) ?? 0) + n)
@@ -33,6 +40,14 @@ export class CoreNotes {
     const list = this.ids.get(name) ?? []
     list.push(id)
     this.ids.set(name, list)
+    this.count(name)
+  }
+
+  /** Counts an account and remembers its legacy id for the restricted file only. */
+  addRestricted(name: string, id: string): void {
+    const list = this.restricted.get(name) ?? []
+    list.push(id)
+    this.restricted.set(name, list)
     this.count(name)
   }
 

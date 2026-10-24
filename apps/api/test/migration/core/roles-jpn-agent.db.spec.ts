@@ -15,7 +15,7 @@ import { curriculumSeed } from '../../../prisma/seed/curriculum'
 import { runCore } from '../../../src/migration/load'
 import { loadStaging } from '../../../src/migration/staging/load'
 import { DirReader } from '../../../src/migration/staging/readers'
-import { createStagingDb, FIXTURE_DIR, stagingEnv, type StagingDb } from '../staging/helpers'
+import { createStagingDb, FIXTURE_DIR, stagingEnv, testOutDir, type StagingDb } from '../staging/helpers'
 
 const AS_OF = '2026-06-01'
 const coreEnv = { NODE_ENV: 'test', IC_HASH_KEY: 'fixture-ic-key-0123456789', PP_ALLOW_MIGRATE_APPLY: '1' }
@@ -58,7 +58,7 @@ async function boot(): Promise<Boot> {
   return { env, q }
 }
 
-const run = (b: Boot, mode: 'dry-run' | 'apply') => runCore({ pool: b.env.pool, env: coreEnv, source: 'cloud', asOf: AS_OF, mode, batchSize: 2 })
+const run = (b: Boot, mode: 'dry-run' | 'apply') => runCore({ pool: b.env.pool, env: coreEnv, source: 'cloud', asOf: AS_OF, mode, batchSize: 2, outDir: testOutDir() })
 
 describe('jpn_officer and agent, fresh run', () => {
   let b: Boot

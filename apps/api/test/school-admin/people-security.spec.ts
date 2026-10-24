@@ -171,7 +171,7 @@ describe('BE-21 people security', () => {
       [teacher, 'teacher'],
     ] as const) {
       const row = await userRow(t.db, created.data.id)
-      expect(row).toMatchObject({ school_id: s1, is_active: true, roles: [role], must_reset_password: true, created_by_id: adminId, grade: null })
+      expect(row).toMatchObject({ school_id: s1, is_active: true, roles: [role], must_reset_password: false /* R39 */, created_by_id: adminId, grade: null })
       expect(created.data.role).toBe(role)
       expect(await countOf(t.db, `select count(*)::text as n from users where id = $1::bigint and (ic_hash is not null or ic_masked is not null)`, [created.data.id])).toBe(0)
       expect(await countOf(t.db, `select count(*)::text as n from user_scopes where user_id = $1::bigint`, [created.data.id])).toBe(0)
