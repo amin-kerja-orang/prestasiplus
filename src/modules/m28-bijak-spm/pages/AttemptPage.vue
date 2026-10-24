@@ -30,7 +30,7 @@ import {
   type ChooseState,
 } from '../domain/choose-n'
 import { formatClock, isAnswered, sectionRuleLine } from '../domain/paper-model'
-import type { AttemptPaperView, PartAnswer, QuestionResult } from '../domain/types'
+import type { AttemptPaperView, MatchLayout, PartAnswer, QuestionResult } from '../domain/types'
 import { createAutosave, clearLocal, type Autosave, type SaveStatus } from '../lib/autosave'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
 import { browserStorage, bijakServer } from '../server/client'
@@ -41,6 +41,10 @@ const router = useRouter()
 const user = useBijakUser()
 const server = bijakServer()
 const attemptId = computed(() => String(route.params.attemptId))
+/** FB-064 draft: `?match=compact` shows the compact match_letter layout; the default is the current one. */
+const matchLayout = computed<MatchLayout>(() =>
+  route.query.match === 'compact' ? 'compact' : 'list',
+)
 
 const view = ref<AttemptPaperView | null>(null)
 const loadError = ref('')
@@ -539,6 +543,7 @@ const feedback = computed(() => {
           :check="currentCheck"
           :disabled="submitting"
           :choose="choose"
+          :match-layout="matchLayout"
           @answer="onAnswer"
           @toggle-flag="toggleFlag"
           @toggle-choose="toggleChoose"
