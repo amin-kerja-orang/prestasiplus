@@ -220,7 +220,7 @@ describe('Statistik Bulanan (FR-M27-84; AC-M27-24.1, 24.2)', () => {
       'Soalan Betul',
       'Pelajar Aktif',
       'Purata/Pelajar',
-      'Accuracy',
+      'Ketepatan',
     ])
     // the "Jumlah" row closes the table
     const rows = w.findAll('[data-testid="lb-table"] tbody tr')

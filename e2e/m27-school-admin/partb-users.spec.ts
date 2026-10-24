@@ -93,7 +93,7 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
     await expect(first.getByTestId('user-edit')).toHaveAttribute('title', 'Edit')
     await expect(first.getByTestId('user-status')).toHaveText('Aktif')
     await expect(page.locator('input[type="checkbox"]')).toHaveCount(0)
-    await expect(page.getByTestId('sp-page').getByText(/Import|Padam|Login As/)).toHaveCount(0)
+    await expect(page.getByTestId('sp-page').getByText(/Import|Padam|Log Masuk Sebagai/)).toHaveCount(0)
   })
 
   test('E2E-M27-85 status filter and search narrow the list and the count', async ({
@@ -212,7 +212,7 @@ test.describe('S9, S10 edit pages (read part)', MODULE, () => {
     await expect(page.getByTestId('user-profile-updated')).toContainText('Kemaskini: ')
     await expect(page.getByTestId('user-name')).not.toHaveValue('')
     await expect(page.getByTestId('user-status-line')).toContainText('Aktif')
-    await expect(page.getByTestId('user-password-toggle')).toContainText('Reset Kata Laluan')
+    await expect(page.getByTestId('user-password-toggle')).toContainText('Set Semula Kata Laluan')
     await expect(page.getByTestId('user-password-panel')).toBeHidden()
     await page.getByTestId('user-password-toggle').click()
     await expect(page.getByTestId('user-new-password')).toBeVisible()

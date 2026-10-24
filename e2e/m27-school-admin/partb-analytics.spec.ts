@@ -574,7 +574,7 @@ test.describe('S3 header, tabs, range (E2E-M27-41, 42, 63)', MODULE, () => {
     await signIn(page, POPULATED)
     await openS3(page, gotoApp, '?range=5')
     await expect(page.getByTestId('la-tabs').locator('button')).toHaveCount(3)
-    await expect(page.getByTestId('la-tab-overview')).toHaveText('Overview')
+    await expect(page.getByTestId('la-tab-overview')).toHaveText('Gambaran Keseluruhan')
     await expect(page.getByTestId('la-tab-guru')).toHaveText(/^Guru \([\d,]+\)$/)
     await expect(page.getByTestId('la-tab-murid')).toHaveText(/^Murid \([\d,]+\)$/)
     await expect(page.getByTestId('la-tab-overview')).toHaveAttribute('data-active', 'true')

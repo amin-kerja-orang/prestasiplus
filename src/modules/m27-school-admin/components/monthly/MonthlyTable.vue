@@ -52,14 +52,14 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'correct', header: 'Soalan Betul' },
   { accessorKey: 'active', header: 'Pelajar Aktif' },
   { accessorKey: 'perPupil', header: 'Purata/Pelajar' },
-  { accessorKey: 'accuracy', header: 'Accuracy' },
+  { accessorKey: 'accuracy', header: 'Ketepatan' },
 ]
 const cardFields: CardField[] = [
   { key: 'answers', label: 'Soalan Dijawab' },
   { key: 'correct', label: 'Soalan Betul' },
   { key: 'active', label: 'Pelajar Aktif' },
   { key: 'perPupil', label: 'Purata/Pelajar' },
-  { key: 'accuracy', label: 'Accuracy' },
+  { key: 'accuracy', label: 'Ketepatan' },
 ]
 </script>
 

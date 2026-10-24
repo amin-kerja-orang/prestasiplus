@@ -1,5 +1,5 @@
 /**
- * M27 Part B PROPOSED screens (build-plan M27-T3): S2 "DSKP Heatmap" `/admin-sekolah/dskp-heatmap`, S5 "Laporan
+ * M27 Part B PROPOSED screens (build-plan M27-T3): S2 "Peta Haba DSKP" `/admin-sekolah/dskp-heatmap`, S5 "Laporan
  * Bulanan" `/admin-sekolah/laporan-bulanan` and S8 "Kelas Sekolah" `/admin-sekolah/kelas` at 375 / 768 / 1280
  * (SRS M27 Part B §24: E2E-M27-35, 36, 41, 42, 43, 46, 47 (S8 part), 56…62, 77…82, 96…99).
  *
@@ -107,7 +107,7 @@ const SCREENS = {
     path: S2,
     root: 'dh-page',
     ready: 'dh-card',
-    title: 'DSKP Heatmap',
+    title: 'Peta Haba DSKP',
     nav: 'sa-dskp-heatmap',
   },
   s5: {
@@ -209,7 +209,7 @@ for (const key of Object.keys(SCREENS) as ScreenKey[]) {
 }
 
 // ---------------------------------------------------------------------------------------------------
-// S2 DSKP Heatmap
+// S2 Peta Haba DSKP
 // ---------------------------------------------------------------------------------------------------
 
 /** P2 on Kimia at Tingkatan 5: the select drives the page, as a user would. */
@@ -222,7 +222,7 @@ async function openKimiaT5(page: Page, gotoApp: (p: string) => Promise<void>): P
 
 const statusOf = (pct: number): string => (pct >= 75 ? 'mahir' : pct >= 50 ? 'sederhana' : 'lemah')
 
-test.describe('S2 DSKP Heatmap', MODULE, () => {
+test.describe('S2 Peta Haba DSKP', MODULE, () => {
   test('E2E-M27-56 P2 Kimia Tingkatan 5: card heading, caption and legend', async ({
     page,
     loginAs,
@@ -492,7 +492,7 @@ test.describe('S5 Laporan Bulanan', MODULE, () => {
       'Soalan Betul',
       'Pelajar Aktif',
       'Purata/Pelajar',
-      'Accuracy',
+      'Ketepatan',
     ])
     const cells = await rows.evaluateAll((trs) =>
       trs.map((tr) => [...tr.querySelectorAll('td')].map((c) => (c.textContent ?? '').trim())),

@@ -743,7 +743,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     )
   })
 
-  test('E2E-M27-31 TINGKATAN: two rows with M08 level accuracy, band colour, bar width, "Click untuk detail", link', async ({
+  test('E2E-M27-31 TINGKATAN: two rows with M08 level accuracy, band colour, bar width, "Klik untuk butiran", link', async ({
     page,
     gotoApp,
   }) => {
@@ -751,7 +751,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     await open(page, gotoApp)
     const perf = await m08(page)
     const panel = page.getByTestId('sd-panel-levels')
-    await expect(panel).toContainText('Click untuk detail')
+    await expect(panel).toContainText('Klik untuk butiran')
     await expect(panel).toHaveAttribute('href', '/prestasi/tingkatan')
     const rows = page.getByTestId('sd-level-row')
     await expect(rows).toHaveCount(2)

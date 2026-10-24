@@ -30,4 +30,4 @@ export function monthLabel(month: string): string {
 
 /** FR-M27-86: "25 Sep 2026, 03:40 PM" in Asia/Kuala_Lumpur (Laravel `M` English abbreviations). */
 export const generatedAtLabel = (iso: string): string =>
-  formatMyt(iso, 'd MMM yyyy, hh:mm A', { months: 'en' })
+  formatMyt(iso, 'd MMM yyyy, hh:mm A', { months: 'ms' })

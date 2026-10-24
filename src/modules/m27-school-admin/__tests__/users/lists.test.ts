@@ -130,7 +130,7 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     const add = w.get('[data-testid="user-add"]')
     expect(add.text()).toBe('Tambah Pelajar')
     expect(add.attributes('href')).toBe('/admin-sekolah/pelajar/baru')
-    expect(w.text()).not.toMatch(/Import|Padam|Login As/)
+    expect(w.text()).not.toMatch(/Import|Padam|Log Masuk Sebagai/)
     expect(w.find('input[type="checkbox"]').exists()).toBe(false)
   })
 

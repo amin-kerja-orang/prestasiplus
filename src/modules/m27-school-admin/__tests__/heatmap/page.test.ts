@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * M27 S2 "DSKP Heatmap" component tests (SRS M27 Part B v1.8 FR-M27-44, 58…64; AC-M27-17.1…17.4, 18.1, 18.2)
+ * M27 S2 "Peta Haba DSKP" component tests (SRS M27 Part B v1.8 FR-M27-44, 58…64; AC-M27-17.1…17.4, 18.1, 18.2)
  * against a mocked client: exact BM copy, tile colours and `title`, legend, filters, empty and error states.
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
@@ -93,8 +93,8 @@ describe('route (FR-M27-38, 40, 44)', () => {
       access: 'auth',
       roles: ['school_admin'],
       onForbidden: '403',
-      title: 'DSKP Heatmap - PRESTASIPLUS',
-      header: { title: 'DSKP Heatmap' },
+      title: 'Peta Haba DSKP - PRESTASIPLUS',
+      header: { title: 'Peta Haba DSKP' },
     })
   })
 })
@@ -103,7 +103,7 @@ describe('header, breadcrumb and card (FR-M27-44, 58)', () => {
   it('sets the sub-line to the school name', async () => {
     await mountPage(heatmap())
     expect(usePageMeta().state.header).toEqual({
-      title: 'DSKP Heatmap',
+      title: 'Peta Haba DSKP',
       subtitle: 'SMK Contoh Ujian',
     })
   })
@@ -114,7 +114,7 @@ describe('header, breadcrumb and card (FR-M27-44, 58)', () => {
     expect(back.text()).toBe('Dashboard Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
     const current = w.get('[data-testid="dh-breadcrumb"] [aria-current="page"]')
-    expect(current.text()).toBe('DSKP Heatmap')
+    expect(current.text()).toBe('Peta Haba DSKP')
     expect(current.element.tagName).not.toBe('A')
     expect(current.classes()).toContain('text-highlighted')
   })

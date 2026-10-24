@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S2 `/admin-sekolah/dskp-heatmap` "DSKP Heatmap" (SRS M27 Part B v1.8 FR-M27-58…65, 44; PROPOSED screen,
+ * S2 `/admin-sekolah/dskp-heatmap` "Peta Haba DSKP" (SRS M27 Part B v1.8 FR-M27-58…65, 44; PROPOSED screen,
  * D26). User shell; one read-only call (`GET /api/admin-sekolah/dskp-heatmap?subjectId=&tingkatan=`, school
  * from the session). Top to bottom: breadcrumb, filter card, the DSKP map card.
  *
@@ -21,7 +21,7 @@ import { fetchSchoolDskpHeatmap } from '../api/school-admin'
 import HeatmapFilters from '../components/heatmap/HeatmapFilters.vue'
 import HeatmapMap from '../components/heatmap/HeatmapMap.vue'
 
-const TITLE = 'DSKP Heatmap'
+const TITLE = 'Peta Haba DSKP'
 
 const crumbs = [{ label: 'Dashboard Sekolah', to: '/admin-sekolah' }, { label: TITLE }]
 

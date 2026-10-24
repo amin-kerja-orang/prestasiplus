@@ -232,7 +232,7 @@ describe('header, breadcrumb, pills, tabs (FR-M27-44, 66, 67; AC 13.1, 13.4, 19.
 
   it('shows the tabs "Overview", "Guru (n)", "Murid (n)" and no "Sekolah" tab', async () => {
     const w = await mountPage(report())
-    expect(texts(w, 'la-tab-overview')).toEqual(['Overview'])
+    expect(texts(w, 'la-tab-overview')).toEqual(['Gambaran Keseluruhan'])
     expect(text(w, 'la-tab-guru')).toBe('Guru (9)')
     expect(text(w, 'la-tab-murid')).toBe('Murid (1,234)')
     expect(w.findAll('[data-testid="la-tabs"] button')).toHaveLength(3)

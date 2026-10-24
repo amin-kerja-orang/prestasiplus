@@ -12,7 +12,7 @@ const props = defineProps<{ active: ActivityTab; teachers: number; pupils: numbe
 const emit = defineEmits<{ select: [tab: ActivityTab] }>()
 
 const items = computed<PillItem<ActivityTab>[]>(() => [
-  { key: 'overview', label: 'Overview', icon: 'i-ph-chart-pie' },
+  { key: 'overview', label: 'Gambaran Keseluruhan', icon: 'i-ph-chart-pie' },
   {
     key: 'guru',
     label: `Guru (${props.teachers.toLocaleString('en-US')})`,
