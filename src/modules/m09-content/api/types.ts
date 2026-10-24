@@ -166,7 +166,8 @@ export interface VideoInput {
   title: string
   description?: string | null
   category: VideoCategory
-  subjectId?: number | null
+  /** A string on the wire in http mode (contract `IdSchema`), a number in mock mode. */
+  subjectId?: number | string | null
   visibility: VideoVisibility
 }
 

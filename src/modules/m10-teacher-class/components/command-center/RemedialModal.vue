@@ -75,11 +75,25 @@ const activeTestOf = (studentId: number) =>
   data.value?.existingRemedials.find(
     (r) => r.studentId === studentId && r.status === 'active' && !state(studentId).cancelled,
   )
+/**
+ * Whether test id `a` is later than `b`. Ids are numbers in mock mode and digit strings in http mode
+ * (a plain `>` on strings would put "9" after "10"); the scan has no date, so the id orders them.
+ * Opaque non-digit ids fall back to a text comparison.
+ */
+function isLaterId(a: number | string, b: number | string): boolean {
+  const x = String(a)
+  const y = String(b)
+  if (/^\d+$/.test(x) && /^\d+$/.test(y)) return BigInt(x) > BigInt(y)
+  return x > y
+}
 /** The latest completed test: "Selesai ({x}%)"; the teacher can still generate a new one. */
 const doneTestOf = (studentId: number) =>
   data.value?.existingRemedials
     .filter((r) => r.studentId === studentId && r.status === 'completed')
-    .reduce<CcExistingRemedial | undefined>((a, r) => (a && a.id > r.id ? a : r), undefined)
+    .reduce<CcExistingRemedial | undefined>(
+      (a, r) => (a && isLaterId(a.id, r.id) ? a : r),
+      undefined,
+    )
 
 async function generate(s: CcWeakStudent, subject: string) {
   const st = state(s.studentId)
