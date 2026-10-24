@@ -216,6 +216,16 @@ describe('SW13-08: school GPS by subject keys the practice rows by the curriculu
     PerformanceSchoolSchema.parse(r)
   })
 
+  it("a migrated 'legacy' sitting is no subject row but stays in the school totals", async () => {
+    const before = (await w.school.school(schoolAdmin)).stats
+    w.bijak.addSitting(sitting({ userId: '3', score: 5, subjectId: 'legacy', subjectCode: 'legacy', subjectName: 'Tidak diketahui' }))
+    const r = await w.school.school(schoolAdmin)
+    expect(r.subjects.map((s) => s.subjectId)).not.toContain('legacy')
+    expect(r.subjects.filter((s) => s.name.startsWith('Matematik'))).toHaveLength(1)
+    expect(r.stats.sessions).toBe(before.sessions + 1)
+    expect(r.stats.answered).toBeGreaterThan(before.answered)
+  })
+
   it('a code with no curriculum subject keeps its own row', async () => {
     w.bijak.addSitting(sitting({ userId: '3', score: 5, subjectId: 'XYZ', subjectCode: 'XYZ', subjectName: 'Lain' }))
     const r = await w.school.school(schoolAdmin)

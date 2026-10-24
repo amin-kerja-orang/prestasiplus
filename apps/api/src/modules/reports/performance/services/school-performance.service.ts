@@ -11,6 +11,7 @@ import {
   REDACTED_ID,
   TOP_STUDENT_LIMIT,
   TOP_STUDENT_MIN_SITTINGS,
+  isLegacySubject,
   type LevelCode,
 } from '../domain/constants'
 import { NO_SUBJECT_LABEL, SCHOOL_CLASS_LABEL } from '../domain/labels'
@@ -218,8 +219,10 @@ export class SchoolPerformanceService {
 
     // The aggregate keys subject totals by the Bijak CODE (`MAT`); classes and headcount entries use the curriculum
     // subject id. Map code to id so one subject is one row with the headcount figures (SW13-08).
-    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(visibleSubjects.flatMap((r) => (r.subjectId === undefined ? [] : [r.subjectId])))])
-    const hc = this.schoolFigures(ctx, entries, fr.classes, visibleSubjects, idOfCode)
+    // Migrated 'legacy' sittings stay in the totals above but are not a subject row.
+    const subjectRowsShown = visibleSubjects.filter((r) => !isLegacySubject(r))
+    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(subjectRowsShown.flatMap((r) => (r.subjectId === undefined ? [] : [r.subjectId])))])
+    const hc = this.schoolFigures(ctx, entries, fr.classes, subjectRowsShown, idOfCode)
 
     return {
       scope: kind,

@@ -3,7 +3,7 @@ import { Inject, Injectable, Optional } from '@nestjs/common'
 import { ApiError } from '../../../../common/errors/api-error'
 import { CLOCK, mytDay, type Clock } from '../../../../db/clock'
 import { mayOpenStudent, viewerSchoolId } from '../domain/access-policy'
-import { COUNTED_MODES, DEFAULT_SUBJECT_COLOR, HEATMAP_DAYS } from '../domain/constants'
+import { COUNTED_MODES, DEFAULT_SUBJECT_COLOR, HEATMAP_DAYS, isLegacySubject } from '../domain/constants'
 import { START_SUGGESTION, subjectSuggestion } from '../domain/labels'
 import { figuresOf } from '../domain/reduce'
 import { accuracyOf, compareIds } from '../domain/rules'
@@ -34,8 +34,10 @@ export class StudentPerformanceService {
     const accuracy = accuracyOf(f.gradedScore, f.gradedMax)
 
     // One row per curriculum subject: sittings of the same subject can carry different Bijak codes (SW13-08).
-    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(facts.map((s) => s.subjectCode))])
-    const mastery = [...groupBy(facts, (s) => idOfCode.get(s.subjectCode) ?? s.subjectId).values()]
+    // Migrated 'legacy' sittings stay in every total above and below, but are not a mastery row.
+    const named = facts.filter((s) => !isLegacySubject(s))
+    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(named.map((s) => s.subjectCode))])
+    const mastery = [...groupBy(named, (s) => idOfCode.get(s.subjectCode) ?? s.subjectId).values()]
       .map((list) => {
         const first = list[0] as BijakSittingFact
         const sf = figuresOf(list)

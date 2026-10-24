@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { ApiError } from '../../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../../db/clock'
 import { CLASS_ANALYSIS_ROLES, canOpenClassAnalysis } from '../domain/access-policy'
-import { COUNTED_MODES } from '../domain/constants'
+import { COUNTED_MODES, isLegacySubject } from '../domain/constants'
 import { addFact, emptyFigures, figuresOf } from '../domain/reduce'
 import { accuracyOf, compareIds, parseRiskLevel, projection, riskOfAccuracy, round, trendOf, type Trend } from '../domain/rules'
 import { inWindow, trendWindows } from '../domain/windows'
@@ -44,8 +44,10 @@ export class AnalyticsService {
     const now = this.clock.now()
     // A sitting stores the Bijak subject CODE; the curriculum knows the subject by id. Group by the curriculum id (as
     // classes() does) so one subject is one row; a code with no curriculum subject keeps the sitting's own id (SW13-08).
-    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(facts.map((f) => f.subjectCode))])
-    const subjects = [...groupBy(facts, (f) => idOfCode.get(f.subjectCode) ?? f.subjectId)]
+    // Migrated 'legacy' sittings have no subject: they are not a tab here (they stay in every overall figure elsewhere).
+    const named = facts.filter((f) => !isLegacySubject(f))
+    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(named.map((f) => f.subjectCode))])
+    const subjects = [...groupBy(named, (f) => idOfCode.get(f.subjectCode) ?? f.subjectId)]
       .sort(([a], [b]) => compareIds(a, b))
       .map(([subjectId, list]) => {
         const f = figuresOf(list)
@@ -95,9 +97,11 @@ export class AnalyticsService {
     const facts = members.length === 0 ? [] : await this.ports.bijak.sittings({ userIds: members, modes: COUNTED_MODES.analytics })
     // A sitting stores the Bijak subject CODE; a class stores the curriculum subject id. Group by the curriculum id so
     // the options and the class subject agree (a code with no curriculum subject keeps the sitting's own id).
-    const codes = [...new Set(facts.map((f) => f.subjectCode))]
+    // Migrated 'legacy' sittings are not a subject option (SW13-08); there are no class totals to keep them in.
+    const named = facts.filter((f) => !isLegacySubject(f))
+    const codes = [...new Set(named.map((f) => f.subjectCode))]
     const idOfCode = await this.directory.subjectIdsOfCodes(codes)
-    const bySubject = groupBy(facts, (f) => idOfCode.get(f.subjectCode) ?? f.subjectId)
+    const bySubject = groupBy(named, (f) => idOfCode.get(f.subjectCode) ?? f.subjectId)
     const subjectIds = [...bySubject.keys()].sort(compareIds)
     if (cls.subjectId !== null) {
       const i = subjectIds.indexOf(cls.subjectId)

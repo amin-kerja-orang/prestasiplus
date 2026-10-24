@@ -247,6 +247,26 @@ describe('Analitik', () => {
       expect(r.subjects.map((x) => x.subjectId)).toEqual(['3', 'XYZ'])
     })
 
+    describe("migrated 'legacy' sittings are no subject row but still count in the totals", () => {
+      const legacy = { subjectId: 'legacy', subjectCode: 'legacy', subjectName: 'Tidak diketahui' }
+      beforeEach(() => {
+        w.bijak.addSitting(sitting({ userId: '1', score: 2, maxScore: 10, answeredCount: 3, ...legacy }))
+      })
+
+      it('me: one subject row (MAT to 3)', async () => {
+        const r = await w.analytics.me(ctxOf('student', '1'))
+        expect(r.subjects.map((x) => x.subjectId)).toEqual(['3'])
+        expect(r.subjects[0]).toMatchObject({ accuracy: 70, answered: 9 })
+      })
+
+      it('student: one mastery row, while stats and the heatmap still include the legacy sitting', async () => {
+        const r = await w.student.student(ctxOf('student', '1'), '1')
+        expect(r.mastery.map((m) => m.subjectCode)).toEqual(['MAT'])
+        expect(r.stats.answered).toBe(12)
+        expect(r.stats.sessions).toBe(3)
+      })
+    })
+
     it('student mastery: one row per subject as well', async () => {
       const r = await w.student.student(ctxOf('student', '1'), '1')
       expect(r.mastery).toHaveLength(1)
@@ -329,6 +349,16 @@ describe('Analitik', () => {
         const r = await w.analytics.classes(ctxOf('teacher', 't5'), {})
         expect(r.options.subjects).toEqual([{ id: '3', name: 'Matematik' }])
         expect(r.options.selected.subjectId).toBe('3')
+        expect(r.rows.map((x) => [x.userId, x.accuracy])).toEqual([
+          ['4', 90],
+          ['5', 30],
+        ])
+      })
+
+      it("a migrated 'legacy' sitting is not a subject option", async () => {
+        w.bijak.addSitting(sitting({ userId: '4', score: 5, maxScore: 10, subjectId: 'legacy', subjectCode: 'legacy', subjectName: 'Tidak diketahui' }))
+        const r = await w.analytics.classes(ctxOf('teacher', 't5'), {})
+        expect(r.options.subjects).toEqual([{ id: '3', name: 'Matematik' }])
         expect(r.rows.map((x) => [x.userId, x.accuracy])).toEqual([
           ['4', 90],
           ['5', 30],

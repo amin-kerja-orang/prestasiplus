@@ -52,3 +52,14 @@ export const RANKING_MIN_ANSWERS = 3
 export const RANKING_ROW_CAP = 100
 /** Rows of the practice leaderboard. */
 export const LEADERBOARD_ROW_CAP = 50
+
+/**
+ * Subject sentinel of a MIGRATED Bijak attempt (`subject: 'legacy'`, name "Tidak diketahui"; see `src/migration/transform/exam.ts`).
+ * It has no curriculum subject. Such sittings count in every overall figure but never make a per-subject row, tab or option (SW13-08).
+ */
+export const LEGACY_SUBJECT_CODE = 'legacy'
+
+/** True for a sitting (or a subject-grouped total) that carries the migrated-attempt subject sentinel. */
+export function isLegacySubject(s: { subjectId?: string; subjectCode?: string }): boolean {
+  return s.subjectCode === LEGACY_SUBJECT_CODE || s.subjectId === LEGACY_SUBJECT_CODE
+}
