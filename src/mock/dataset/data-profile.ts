@@ -51,12 +51,15 @@ export function buildChecksEnabled(): boolean {
  * Scales the cells of a distribution: `max(anchors in the cell, round(count * POC_SCALE))`.
  * A cell never drops below its anchor count, and a cell that already has fewer rows than anchors
  * is left as is (the original spec check then reports it, exactly as in the full profile).
+ * `cellScale` (optional) lets a dataset keep a larger fraction of chosen cells (never a smaller one
+ * than `scale`), e.g. M04 keeps enough chapter questions per Tingkatan 4/5 chapter (D54).
  */
 export function scaleCellsForPoc<F extends Record<string, unknown>>(
   cells: readonly CellSpec<F>[],
   facetNames: readonly string[],
   anchorFacets: readonly Readonly<Record<string, unknown>>[],
   scale: number,
+  cellScale?: (facets: Readonly<F>) => number | undefined,
 ): CellSpec<F>[] {
   const anchored = new Map<string, number>()
   for (const f of anchorFacets) {
@@ -67,6 +70,9 @@ export function scaleCellsForPoc<F extends Record<string, unknown>>(
     const k = cellKey(c.facets, facetNames)
     const anchors = anchored.get(k) ?? 0
     if (c.count <= anchors) return { facets: c.facets, count: c.count }
-    return { facets: c.facets, count: Math.max(anchors, Math.round(c.count * scale)) }
+    // A dataset may keep a larger share of some cells (`VirtualDatasetDef.pocScale`), never less.
+    const own = cellScale?.(c.facets)
+    const cellFraction = own === undefined ? scale : Math.min(1, Math.max(scale, own))
+    return { facets: c.facets, count: Math.max(anchors, Math.round(c.count * cellFraction)) }
   })
 }

@@ -78,7 +78,7 @@ export function subjectView(s: SubjectRecord): PracticeSubject {
   }
 }
 
-/** BR-11: the subject's M03 level links with level id 1–4 (Darjah 1–4), in level order. */
+/** BR-11 (D54): the subject's M03 level links with level id 10–11 (Tingkatan 4–5), in level order. */
 export function offeredLevelIds(s: SubjectRecord): number[] {
   return s.educationLevelIds.filter((l) => (OFFERED_LEVEL_IDS as readonly number[]).includes(l))
 }

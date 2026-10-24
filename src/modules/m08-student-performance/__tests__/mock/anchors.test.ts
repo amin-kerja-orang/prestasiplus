@@ -151,10 +151,10 @@ describe('S1 Dashboard Sekolah (admin: the platform)', () => {
 })
 
 describe('S1 for the school admin (own school, INFERRED)', () => {
-  it('counts the school SMK DEMO: 2 kelas · 9 murid · 1 guru', async () => {
+  it('counts the school SMK DEMO: 2 kelas · 10 murid (9 + pelajarmaju, D54) · 1 guru', async () => {
     const s1 = await get<SchoolPerformance>(8, '/api/performance/school')
     expect(s1.scope).toBe('school')
-    expect(s1.header).toEqual({ classCount: 2, studentCount: 9 })
+    expect(s1.header).toEqual({ classCount: 2, studentCount: 10 })
     expect(s1.stats.teachers).toBe(1)
     expect(s1.teachers.map((t) => [t.userId, t.classCount, t.studentCount])).toEqual([[5, 2, 8]])
   })

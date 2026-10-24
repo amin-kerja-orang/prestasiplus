@@ -23,12 +23,13 @@ import {
   ELIGIBLE_BY_SUBJECT,
   LEVELS,
   NAMED_SPS,
-  PRACTICE_LEVELS,
+  DARJAH_DIFFICULTY_PINS,
   S6_LEVEL_MEAN,
   S6_SUBJECT_MEAN,
   SPM_POOL,
   TABLE_A,
   TABLE_B,
+  T45_CHAPTERS,
   TABLE_C,
 } from '../../mock/data/tables'
 import { qualityMeans } from '../../mock/datasets/quality'
@@ -38,7 +39,7 @@ import {
   qualityScoreOf,
   questionsDataset,
 } from '../../mock/datasets/questions'
-import { questionSpec } from '../../mock/datasets/questions-spec'
+import { M05_ANCHOR_GROUPS, questionSpec } from '../../mock/datasets/questions-spec'
 import { structuredDataset, structuredSpec } from '../../mock/datasets/structured'
 import { questionQueries, structuredQueries } from '../../mock/repository/queries'
 import { SEED_REPORTS } from '../../mock/seeds/reports'
@@ -114,14 +115,32 @@ describe('plugin and boot', () => {
     }
     // SRS v1.11: "the M03 links are not used as a constraint for Table A" (S10 observes them).
     expect([...outside].sort()).toEqual(['14:7', '14:8', '14:9', '27:7'])
-    for (const [s, byLevel] of Object.entries(PRACTICE_LEVELS)) {
-      for (const [l, data] of Object.entries(byLevel)) {
-        for (const [chapterId] of data.chapters) {
+    // D54: the T4/T5 chapter table is exactly the M03 chapters of each pair (all active).
+    for (const [s, [t4, t5]] of Object.entries(T45_CHAPTERS)) {
+      for (const [l, list] of [
+        [10, t4],
+        [11, t5],
+      ] as const) {
+        for (const chapterId of list) {
           const ch = curriculum.chapter(chapterId)
           expect(ch?.subjectId, `chapter ${String(chapterId)}`).toBe(Number(s))
-          expect(ch?.educationLevelId, `chapter ${String(chapterId)}`).toBe(Number(l))
+          expect(ch?.educationLevelId, `chapter ${String(chapterId)}`).toBe(l)
         }
+        const m03 = curriculum
+          .chapters(Number(s), l)
+          .map((c) => c.id)
+          .sort((a, b) => a - b)
+        expect(
+          [...list].sort((a, b) => a - b),
+          `chapters of ${s}:${String(l)}`,
+        ).toEqual(m03)
       }
+    }
+    // The M05 anchors' chapters (admin: BM Darjah 1/2, kept as observed; pelajarmaju: MATH T4).
+    for (const g of M05_ANCHOR_GROUPS) {
+      const ch = curriculum.chapter(g.chapterId)
+      expect(ch?.subjectId, `chapter ${String(g.chapterId)}`).toBe(g.subjectId)
+      expect(ch?.educationLevelId, `chapter ${String(g.chapterId)}`).toBe(g.levelId)
     }
   })
 
@@ -218,22 +237,51 @@ describe('named queries (SRS §4.1)', () => {
     expect(questions.count('Q-ALL', undefined, 1)).toBe(14_778)
   })
 
-  it('Q-PRACTICE: Darjah 1–4 pins sum to 32,204 and chapters follow M05', () => {
+  it('Q-PRACTICE: Tingkatan 4–5 (D54); every eligible non-anchor row of a pair with M03 chapters has a chapter', () => {
+    // The practice levels are T4/T5: the sum over subjects equals Table A at T4/T5 (minus the
+    // non-MCQ BM databank rows).
+    let tableT45 = 0
     let total = 0
-    for (const s of Object.keys(PRACTICE_LEVELS).map(Number))
-      total += questions.count('Q-PRACTICE', s)
-    expect(total).toBe(32_204)
     for (let s = 1; s <= 27; s++) {
-      if (s in PRACTICE_LEVELS) continue
-      expect(questions.count('Q-PRACTICE', s), `subject ${String(s)}`).toBe(0)
+      tableT45 += cell(TABLE_A, s, 10) + cell(TABLE_A, s, 11)
+      total += questions.count('Q-PRACTICE', s)
     }
-    // Darjah 1 chapter totals as observed (M05 S5); every D1–D4 eligible row has a chapter.
-    for (const [s, byLevel] of Object.entries(PRACTICE_LEVELS)) {
+    expect(total).toBe(tableT45 - 3)
+    expect(questions.count('Q-PRACTICE', 3)).toBe(2601)
+    // Chapter links: a pair's chapter questions + its unlinked anchors = its Q-PRACTICE rows.
+    for (const [s, [t4, t5]] of Object.entries(T45_CHAPTERS)) {
+      for (const [l, list] of [
+        [10, t4],
+        [11, t5],
+      ] as const) {
+        const practice = questions.count('Q-PRACTICE', Number(s), l)
+        if (practice === 0) continue
+        const linked = list.reduce((a, id) => a + questions.count('Q-CHAPTER', id), 0)
+        const unlinked = questions.countWhere({
+          subjectId: Number(s),
+          educationLevelId: l,
+          isActive: true,
+          status: 'approved',
+          questionType: 'mcq',
+          pkskDomainId: null,
+          curriculumChapterId: null,
+        })
+        expect(linked + unlinked, `${s}:${String(l)}`).toBe(practice)
+        if (list.length > 0) expect(linked, `${s}:${String(l)} linked`).toBeGreaterThan(0)
+      }
+    }
+    // Darjah 1–4: no chapter link but the admin's observed BM anchors; the difficulty pins stay.
+    for (const [s, byLevel] of Object.entries(DARJAH_DIFFICULTY_PINS)) {
       for (const [l, data] of Object.entries(byLevel)) {
-        const byChapter = data.chapters.reduce((a, [id]) => a + questions.count('Q-CHAPTER', id), 0)
-        expect(byChapter, `${s}:${l}`).toBe(questions.count('Q-PRACTICE', Number(s), Number(l)))
-        if (l === '1')
-          for (const [id, n] of data.chapters) expect(questions.count('Q-CHAPTER', id)).toBe(n)
+        expect(
+          questions.countWhere({
+            subjectId: Number(s),
+            educationLevelId: Number(l),
+            isActive: true,
+            curriculumChapterId: { ne: null },
+          }),
+          `${s}:${l}`,
+        ).toBe(s === '1' && l === '1' ? 33 : s === '1' && l === '2' ? 2 : 0)
         data.difficulty.forEach((n, i) => {
           expect(
             questions.countWhere({
@@ -582,7 +630,9 @@ describe('anchors and layout', () => {
       expect(r.options).toBeNull()
     }
     // M07 owns the PKSK texts: exactly the 13 observed live "inovasi" rows contain the word (BR-M07-06).
-    expect(pksk.rows.filter((r) => r.questionText.toLowerCase().includes('inovasi'))).toHaveLength(13)
+    expect(pksk.rows.filter((r) => r.questionText.toLowerCase().includes('inovasi'))).toHaveLength(
+      13,
+    )
     expect(questions.count('Q-PKSK', undefined, 'T1')).toBe(383)
   })
 

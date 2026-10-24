@@ -55,7 +55,8 @@ class MemoryStorage {
 // Canonical accounts (M01 §6.8).
 const ADMIN = 1
 const PELAJAR = 2
-const MAJU = 4
+// A pupil of another school than SMK DEMO (account 4 joined SMK DEMO on D54, so it no longer is one).
+const MAJU = 3201
 const GURU = 5
 const ADMIN_SEKOLAH = 8
 

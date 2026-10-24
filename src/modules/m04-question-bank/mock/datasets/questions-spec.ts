@@ -8,9 +8,8 @@
  *  2. Status — Pendidikan Moral archived-active rows (D5–T3); approved-inactive rows per subject
  *     (Q-APPROVED(subject) − Q-ELIGIBLE(subject)) spread over the Table B levels; the rest archived.
  *  3. SPM pool — the M06 §6.10 cells (subject × T4/T5 × difficulty), `spmPool = true`.
- *  4. Darjah 1–4 — chapter × difficulty per (subject, level): difficulty per M05 `difficultyByLevel`,
- *     Darjah 1 chapters as observed, Darjah 2–4 chapters an even split (PROPOSED); `fit2d` keeps
- *     room for the M05 anchors.
+ *  4. Darjah 1–4 — difficulty per (subject, level) per M05 `difficultyByLevel` (observed). D54: no
+ *     chapter links any more; only the admin's observed BM anchors keep Darjah 1/2 chapter cells.
  *  5. `coverageExcluded` rows (BR-M04-38): per subject × level as observed, difficulty 1–3 only
  *     (Σ 473 / 731 / 542; per subject observed for Prinsip Perakaunan, Matematik and Geografi, the
  *     rest by fit, PROPOSED). Where a subject's S10 cell is below its pool, the excluded rows are
@@ -26,6 +25,11 @@
  * 10. Secondary facets — needsDiagram, compliance, source, missing source file, untagged, scored
  *     rows (Table C), baik bucket, legacy rows, aiVerified.
  * 11. PKSK family — 15 domains × T1/T4 × difficulty (253/253/191/66), all approved and active.
+ * 12. Tingkatan 4/5 chapter links (D54): every eligible objective non-pool row of a (subject,
+ *     level) with M03 chapters that no anchor holds gets a chapter, chapter × difficulty by
+ *     `fit2d` (even chapter totals, PROPOSED). SPM pool rows stay chapter-less, except in a pair
+ *     that has no other row (Sejarah, BI, Fizik, PI, Geografi: the bank is the pool). The M05
+ *     Matematik anchors have host cells carved before the reservations (step 7b).
  *
  * **D9 notes (listed for the M04 deviation table):**
  * - SP 418 (Sejarah T5) has no eligible non-pool row (Sejarah T5 = pool 762 = Table A 762), and the
@@ -63,7 +67,7 @@ import {
   PKSK_DIFFICULTY,
   PKSK_DOMAINS,
   PM_ARCHIVED_ACTIVE,
-  PRACTICE_LEVELS,
+  DARJAH_DIFFICULTY_PINS,
   S10_DIFFICULTY,
   SOURCE_TOTALS,
   SPM_POOL,
@@ -71,6 +75,7 @@ import {
   TABLE_B,
   TABLE_C,
   TEACHER_CONTRIB,
+  T45_CHAPTERS,
   TEACHER_DATABANK,
   UNTAGGED_TOTAL,
   USER1_BY_SUBJECT,
@@ -86,7 +91,12 @@ type F = QuestionFacets
 // Documented anchor reservations of other modules (so their rows always find their cell)
 // ---------------------------------------------------------------------------------------------
 
-/** M05 §6.15: anchors per (subject, level, chapter); difficulty of the k-th = ((k − 1) mod 4) + 1. */
+/**
+ * M05 §6.15: anchors per (subject, level, chapter); difficulty of the k-th = ((k − 1) mod 4) + 1.
+ * D54: the Matematik anchors (pelajarmaju's M1–M4 chapter sessions) moved from Darjah 1 chapters
+ * 1/143/136 to the Tingkatan 4 chapters 91/92/220 (Bab 1–3); the BM anchors 600001–600035 are the
+ * admin's observed 19/02 answers (live, Darjah 1/2) and stay where they were observed.
+ */
 export const M05_ANCHOR_GROUPS: readonly {
   ids: readonly [number, number]
   subjectId: number
@@ -97,9 +107,9 @@ export const M05_ANCHOR_GROUPS: readonly {
   { ids: [600019, 600023], subjectId: 1, levelId: 1, chapterId: 36 },
   { ids: [600024, 600033], subjectId: 1, levelId: 1, chapterId: 2 },
   { ids: [600034, 600035], subjectId: 1, levelId: 2, chapterId: 4 },
-  { ids: [600036, 600055], subjectId: 3, levelId: 1, chapterId: 1 },
-  { ids: [600056, 600060], subjectId: 3, levelId: 1, chapterId: 143 },
-  { ids: [600061, 600065], subjectId: 3, levelId: 1, chapterId: 136 },
+  { ids: [600036, 600055], subjectId: 3, levelId: 10, chapterId: 91 },
+  { ids: [600056, 600060], subjectId: 3, levelId: 10, chapterId: 92 },
+  { ids: [600061, 600065], subjectId: 3, levelId: 10, chapterId: 220 },
 ]
 
 /** Difficulty of the M05 anchor `id` (M05 §6.15 rule). */
@@ -235,7 +245,7 @@ export function coveredDeficit(s: number, d: number): number {
   const tile = S10_DIFFICULTY[s]
   if (!tile) return 0
   let base = 0
-  for (const l of [1, 2, 3, 4]) base += PRACTICE_LEVELS[s]?.[l]?.difficulty[d - 1] ?? 0
+  for (const l of [1, 2, 3, 4]) base += DARJAH_DIFFICULTY_PINS[s]?.[l]?.difficulty[d - 1] ?? 0
   base += poolOf(s, 10, d) + poolOf(s, 11, d)
   return Math.max(0, base - (tile[d - 1] ?? 0))
 }
@@ -246,7 +256,7 @@ function excludedRoom(s: number, d: number): number {
   for (const l of LEVELS) {
     const e = excludedOf(s, l)
     if (e === 0) continue
-    const pinned = PRACTICE_LEVELS[s]?.[l]
+    const pinned = DARJAH_DIFFICULTY_PINS[s]?.[l]
     if (pinned) room += Math.min(e, pinned.difficulty[d - 1] ?? 0)
     else if (excludedArePool(s, l)) room += Math.min(e, poolOf(s, l, d))
     else room += e
@@ -342,26 +352,28 @@ function buildObjective(b: CellBuilder<F>): void {
     }
   }
 
-  // 4. Darjah 1–4: chapter × difficulty (M05).
+  // 4. Darjah 1–4: difficulty per M05 `difficultyByLevel` (observed). D54: no chapter links, except
+  //    the admin's observed BM anchors (M05 §6.15, Darjah 1/2), which keep their chapter cells.
   const needs = m05Needs()
-  for (const s of subjectIds(PRACTICE_LEVELS)) {
-    const byLevel = PRACTICE_LEVELS[s] ?? {}
+  for (const s of subjectIds(DARJAH_DIFFICULTY_PINS)) {
+    const byLevel = DARJAH_DIFFICULTY_PINS[s] ?? {}
     for (const l of [1, 2, 3, 4]) {
       const data = byLevel[l]
       if (!data) continue
       const cell = b.cells.find((c) => c.lock === null && at(s, l)(c.f) && eligible(c.f))
       if (!cell) throw new Error(`questions spec: no D${String(l)} cell for subject ${String(s)}`)
-      const total = cell.n
-      const observed = data.chapters.every(([, n]) => n !== null)
-      const chapterTotals = observed
-        ? data.chapters.map(([id, n]) => [id, n as number] as const)
-        : split(
-            total,
-            data.chapters.map(([id]) => [id, 1] as const),
-          )
+      const anchored = new Map<number, number>()
+      for (const [k, n] of needs) {
+        const [ns, nl, nch] = k.split(':').map(Number) as [number, number, number, number]
+        if (ns === s && nl === l) anchored.set(nch, (anchored.get(nch) ?? 0) + n)
+      }
+      const rows: (readonly [number, number])[] = [...anchored.entries()]
+      const anchoredTotal = rows.reduce((a, [, n]) => a + n, 0)
+      // Chapter id 0 = no chapter link.
+      rows.push([0, cell.n - anchoredTotal])
       const table = fit2d({
         label: `questions D${String(l)} subject ${String(s)}`,
-        rows: chapterTotals,
+        rows,
         cols: data.difficulty.map((n, i) => [i + 1, n] as const),
         bounds: (ch, d) => {
           const need = needs.get(`${String(s)}:${String(l)}:${String(ch)}:${String(d)}`)
@@ -371,7 +383,7 @@ function buildObjective(b: CellBuilder<F>): void {
       b.replace(
         cell,
         table.map((c) => ({
-          patch: { curriculumChapterId: c.row, difficultyLevel: c.col },
+          patch: { curriculumChapterId: c.row === 0 ? null : c.row, difficultyLevel: c.col },
           n: c.count,
         })),
       )
@@ -400,11 +412,11 @@ function buildObjective(b: CellBuilder<F>): void {
       const order = [
         ...levels.filter((l) => excludedArePool(s, l)),
         ...levels.filter((l) => !excludedArePool(s, l) && poolCapable(l)),
-        ...levels.filter((l) => PRACTICE_LEVELS[s]?.[l] !== undefined),
+        ...levels.filter((l) => DARJAH_DIFFICULTY_PINS[s]?.[l] !== undefined),
       ]
       for (const l of order) {
         if (need === 0) break
-        const pinned = PRACTICE_LEVELS[s]?.[l]
+        const pinned = DARJAH_DIFFICULTY_PINS[s]?.[l]
         const cap = pinned ? (pinned.difficulty[d - 1] ?? 0) : poolOf(s, l, d)
         const key = pinned ? String(l) : `${String(l)}:pool`
         const t = Math.min(need, cap - (minOf.get(`${key}|${String(d)}`) ?? 0), left.get(l) ?? 0)
@@ -423,7 +435,7 @@ function buildObjective(b: CellBuilder<F>): void {
     }
     for (const l of levels) {
       const rest = left.get(l) ?? 0
-      if (PRACTICE_LEVELS[s]?.[l]) add(String(l), l, 'pinned', rest)
+      if (DARJAH_DIFFICULTY_PINS[s]?.[l]) add(String(l), l, 'pinned', rest)
       else if (excludedArePool(s, l)) add(`${String(l)}:pool`, l, 'pool', rest)
       else if (rest > 0) add(`${String(l)}:free`, l, 'free', rest)
     }
@@ -437,7 +449,7 @@ function buildObjective(b: CellBuilder<F>): void {
         if (!g) return undefined
         const min = minOf.get(`${key}|${String(d)}`)
         if (g.kind === 'pinned')
-          return { min, max: PRACTICE_LEVELS[s]?.[g.l]?.difficulty[d - 1] ?? 0 }
+          return { min, max: DARJAH_DIFFICULTY_PINS[s]?.[g.l]?.difficulty[d - 1] ?? 0 }
         if (g.kind === 'pool') return { min, max: poolOf(s, g.l, d) }
         return undefined
       },
@@ -567,6 +579,28 @@ function buildObjective(b: CellBuilder<F>): void {
       (f) =>
         !f.isActive && f.subjectId === g.s && f.educationLevelId === g.l && f.status === g.status,
       inactiveFit.filter((c) => c.row === k),
+    )
+  }
+
+  // 7b. Host cells of the Tingkatan 4/5 M05 anchors (D54: pelajarmaju's Matematik chapters). The
+  //     difficulty is assigned by now, so the chapter cell is carved out of the plain covered rows
+  //     of (subject, level, difficulty); the reservation below then finds it.
+  for (const [k, n] of needs) {
+    const [s, l, ch, d] = k.split(':').map(Number) as [number, number, number, number]
+    if (l !== 10 && l !== 11) continue
+    b.take(
+      and(
+        at(s, l),
+        eligible,
+        (f) =>
+          !f.spmPool &&
+          !f.coverageExcluded &&
+          f.difficultyLevel === d &&
+          f.curriculumChapterId === null,
+      ),
+      n,
+      { curriculumChapterId: ch },
+      { inOrder: true },
     )
   }
 
@@ -815,6 +849,56 @@ function buildObjective(b: CellBuilder<F>): void {
   b.patchAll((f) => f.subjectId === 4 && f.spmPool && f.complianceStatus === 'verified', {
     aiVerified: true,
   })
+
+  // 12. Tingkatan 4/5 chapter links (D54, PROPOSED split). Every eligible objective non-pool row of
+  //     a (subject, level) that has M03 chapters, and that no anchor holds, is linked to one chapter
+  //     (SPM pool rows stay chapter-less, as XR-M25-02 documents, unless the pair has no other row):
+  //     chapter totals an even split of the unlinked rows, difficulty columns as built above
+  //     (`fit2d`, exact marginals). Anchor-held rows (locked, or already in a chapter) keep their
+  //     facet tuple, so the chapter pool of a pair = its linked rows + the M05 anchors.
+  for (const s of subjectIds(T45_CHAPTERS)) {
+    const chapterIds = T45_CHAPTERS[s] ?? [[], []]
+    for (const l of [10, 11]) {
+      const chapters = chapterIds[l === 10 ? 0 : 1]
+      if (chapters.length === 0) continue
+      const free = (pred: CellPred<F>) =>
+        b.cells.reduce((a, c) => (c.lock === null && pred(c.f) ? a + c.n : a), 0)
+      // A pair whose bank is the SPM pool alone (Sejarah, Bahasa Inggeris, Fizik, Pendidikan
+      // Islam, Geografi: Table A = pool) links the pool rows, or it would have no chapter question.
+      const nonPool = and(at(s, l), eligible, (f) => !f.spmPool && f.curriculumChapterId === null)
+      const poolToo = free(nonPool) === 0
+      const unlinked: CellPred<F> = and(
+        at(s, l),
+        eligible,
+        (f) => (poolToo || !f.spmPool) && f.curriculumChapterId === null,
+      )
+      const total = free(unlinked)
+      if (total === 0) continue
+      const cols = [1, 2, 3, 4, 5]
+        .map((d) => [d, free(and(unlinked, (f) => f.difficultyLevel === d))] as const)
+        .filter(([, n]) => n > 0)
+      if (cols.reduce((a, [, n]) => a + n, 0) !== total)
+        throw new Error(
+          `questions spec: subject ${String(s)} T${String(l - 6)} rows without difficulty`,
+        )
+      const table = fit2d({
+        label: `questions chapters subject ${String(s)} level ${String(l)}`,
+        rows: split(
+          total,
+          chapters.map((id) => [id, 1] as const),
+        ),
+        cols,
+      })
+      for (const c of table) {
+        if (c.count === 0) continue
+        b.take(
+          and(unlinked, (f) => f.difficultyLevel === c.col),
+          c.count,
+          { curriculumChapterId: c.row },
+        )
+      }
+    }
+  }
 }
 
 /** needsDiagram targets per subject (top-10 observed + BA 5 + 167 spread evenly, PROPOSED). */
@@ -906,6 +990,34 @@ export function questionSpec(): QuestionSpec {
   }
   memo = { cells: [...objectiveCells, ...defaultPkskCells()], reserved }
   return memo
+}
+
+/** PoC profile (TRACKER D45): the chapter questions kept per Tingkatan 4/5 chapter (D54). */
+export const POC_CHAPTER_ROWS = 25
+
+let chapterPools: Map<number, number> | null = null
+
+/** Eligible rows of a Tingkatan 4/5 chapter in the full profile (anchors included). */
+export function t45ChapterPool(chapterId: number): number {
+  if (!chapterPools) {
+    chapterPools = new Map()
+    for (const c of questionSpec().cells) {
+      const f = c.facets
+      if (
+        f.pkskDomainId === null &&
+        f.status === 'approved' &&
+        f.isActive &&
+        (f.educationLevelId === 10 || f.educationLevelId === 11) &&
+        f.curriculumChapterId !== null
+      ) {
+        chapterPools.set(
+          f.curriculumChapterId,
+          (chapterPools.get(f.curriculumChapterId) ?? 0) + c.count,
+        )
+      }
+    }
+  }
+  return chapterPools.get(chapterId) ?? 0
 }
 
 /** Cell key in the dataset's facet order. */

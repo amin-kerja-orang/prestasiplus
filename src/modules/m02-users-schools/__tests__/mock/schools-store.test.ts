@@ -326,8 +326,8 @@ describe('public endpoints (#38, #40, #41) and /api/me', () => {
     expect(
       (me4.body as { data: { school: { id: number; name: string } } }).data.school,
     ).toMatchObject({
-      id: 900_004,
-      name: 'SK Demo Bestari',
+      id: 900_001,
+      name: 'SMK DEMO',
     })
     const admin = issueSession(users.get(1) as never, false, at)
     const me1 = await get('/api/me', admin.token)

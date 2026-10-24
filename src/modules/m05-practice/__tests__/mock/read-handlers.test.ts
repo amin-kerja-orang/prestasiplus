@@ -278,17 +278,16 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
     expect(r.body.data[2]).toMatchObject({ code: 'MATH', approvedCount: 13_872 })
   })
 
-  it('#3 BM: D1–D4 counts 958 / 2,540 / 805 / 530 = 4,833 and the difficulty splits (BR-12)', async () => {
+  it('#3 BM: T4–T5 counts 256 / 385 = 641 and the difficulty splits (BR-11 reversed by D54, BR-12)', async () => {
     const c = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/BM')
-    expect(c.total).toBe(4_833)
+    // Table A 257 + 387 minus the 3 non-MCQ teacher-databank rows at T4/T5.
+    expect(c.total).toBe(641)
     expect(c.levels.map((l) => [l.id, l.code, l.count])).toEqual([
-      [1, 'D1', 958],
-      [2, 'D2', 2_540],
-      [3, 'D3', 805],
-      [4, 'D4', 530],
+      [10, 'T4', 256],
+      [11, 'T5', 385],
     ])
     const stats = Object.values(c.difficultyStats)
-    expect(stats.reduce((a, b) => a + b, 0)).toBe(4_833)
+    expect(stats.reduce((a, b) => a + b, 0)).toBe(641)
     for (const l of c.levels) {
       const byLevel = Object.values(c.difficultyByLevel[String(l.id)] ?? {})
       expect(byLevel.reduce((a, b) => a + b, 0)).toBe(l.count)
@@ -297,19 +296,23 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
     expect(c.trial).toEqual({ active: true, used: 32, limit: 50, remaining: 18 })
   })
 
-  it('#3 MATH total 6,538 with D1 2,734; the code is case-insensitive', async () => {
+  it('#3 MATH total 2,601 with T4 1,511; the code is case-insensitive', async () => {
     const c = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/math')
-    expect(c.total).toBe(6_538)
-    expect(c.levels[0]).toMatchObject({ id: 1, count: 2_734 })
+    expect(c.total).toBe(2_601)
+    expect(c.levels[0]).toMatchObject({ id: 10, code: 'T4', name: 'Tingkatan 4', count: 1_511 })
+    expect(c.levels[1]).toMatchObject({ id: 11, code: 'T5', count: 1_090 })
   })
 
-  it('#3 SK offers "D4" with 0 questions (BR-11); a subject linked only to Tingkatan offers none', async () => {
+  it('#3 SK offers T4 and T5 with 0 questions (BR-11, D54); a subject linked only to Darjah offers none', async () => {
     const sk = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/SK')
-    expect(sk.levels).toEqual([{ id: 4, code: 'D4', name: 'Darjah 4', count: 0 }])
+    expect(sk.levels).toEqual([
+      { id: 10, code: 'T4', name: 'Tingkatan 4', count: 0 },
+      { id: 11, code: 'T5', name: 'Tingkatan 5', count: 0 },
+    ])
     expect(sk.total).toBe(0)
-    const phy = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/PHY')
-    expect(phy.levels).toEqual([])
-    expect(phy.total).toBe(0)
+    const jawi = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/JAWI')
+    expect(jawi.levels).toEqual([])
+    expect(jawi.total).toBe(0)
   })
 
   it('#3 an unknown code is 404 NOT_FOUND', async () => {
@@ -329,67 +332,74 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
-  it('#7 lists the subjects with chapters, with chapter and question counts (MATH 6,538)', async () => {
+  it('#7 lists the subjects with chapters, with chapter and question counts (MATH 2,601; D54)', async () => {
     const r = await getAs<ListBody<ChapterSubject>>(runtime, GURU, '/api/practice/chapter-subjects')
     expect(r.status).toBe(200)
     const codes = r.body.data.map((s) => s.code)
     expect(codes.slice(0, 3)).toEqual(['BM', 'BI', 'MATH'])
     const math = r.body.data.find((s) => s.code === 'MATH')
-    expect(math?.questionCount).toBe(6_538)
-    expect(math?.chapterCount).toBeGreaterThanOrEqual(8)
+    expect(math?.questionCount).toBe(2_601)
+    expect(math?.chapterCount).toBe(11)
     // Subjects with no chapter at an offered level are not listed (BR-15).
-    expect(codes).not.toContain('PHY')
+    expect(codes).not.toContain('JAWI')
     expect(r.body.data.every((s) => s.chapterCount > 0)).toBe(true)
   })
 
-  it('#8 pelajarmaju MATH D1: Bab 1 20/464 at 95 % open, Bab 2 5/302 at 60 %, Bab 3 5/316 at 80 %, all others locked', async () => {
+  it('#8 pelajarmaju MATH T4: Bab 1 20 answered at 95 % open, Bab 2 5 at 60 %, Bab 3 5 at 80 %, all others locked (D54)', async () => {
     const c = await data<ChapterSubjectDetail>(MAJU, '/api/practice/chapter-subjects/MATH')
     expect(c.subject).toEqual({ code: 'MATH', name: 'Matematik', color: '#EF4444' })
-    expect(c.levelId).toBe(1)
-    expect(c.levels[0]).toEqual({ id: 1, name: 'Darjah 1', count: 2_734 })
+    expect(c.levelId).toBe(10)
+    expect(c.levels.map((l) => [l.id, l.name])).toEqual([
+      [10, 'Tingkatan 4'],
+      [11, 'Tingkatan 5'],
+    ])
+    // The option count is the level's chapter questions (BR-15): the sum of its chapters.
+    expect(c.levels[0]?.count).toBe(c.chapters.reduce((a, ch) => a + ch.total, 0))
     const [b1, b2, b3, ...rest] = c.chapters
     expect(b1).toMatchObject({
-      id: 1,
+      id: 91,
       number: 1,
-      total: 464,
       answered: 20,
       correct: 19,
       scorePct: 95,
-      remaining: 444,
       state: 'open',
       complete: false,
     })
-    expect(b2).toMatchObject({ id: 143, total: 302, answered: 5, scorePct: 60, state: 'locked' })
-    expect(b3).toMatchObject({ id: 136, total: 316, answered: 5, scorePct: 80, state: 'locked' })
-    expect(rest).toHaveLength(5)
+    expect(b1?.remaining).toBe((b1?.total ?? 0) - 20)
+    expect(b2).toMatchObject({ id: 92, answered: 5, scorePct: 60, state: 'locked' })
+    expect(b3).toMatchObject({ id: 220, answered: 5, scorePct: 80, state: 'locked' })
+    expect(rest).toHaveLength(7)
     for (const ch of rest) {
       expect(ch).toMatchObject({ answered: 0, correct: 0, scorePct: 0, state: 'locked' })
       expect(ch.total).toBeGreaterThan(0)
       expect(ch.name).not.toBe('')
     }
+    for (const ch of c.chapters) expect(ch.total).toBeGreaterThanOrEqual(25)
   })
 
-  it('#8 admin BM D1: Bab 1 18/320 44.4 % (302 baki), Bab 2 5/317 60 %, Bab 3 10/321 80 %', async () => {
+  it('#8 admin BM: T4 Bab 1 (5 answered, 0 correct, A5) and T5 (38 answered, 12 correct, A3 + A4); the Darjah 1 chapters are not offered (D54)', async () => {
     const c = await data<ChapterSubjectDetail>(ADMIN, '/api/practice/chapter-subjects/BM')
-    expect(c.chapters).toHaveLength(3)
+    expect(c.levelId).toBe(10)
+    expect(c.chapters).toHaveLength(1)
     expect(c.chapters[0]).toMatchObject({
-      id: 35,
-      total: 320,
-      answered: 18,
-      correct: 8,
-      scorePct: 44.4,
-      remaining: 302,
+      id: 87,
+      answered: 5,
+      correct: 0,
+      scorePct: 0,
       state: 'open',
     })
-    expect(c.chapters[1]).toMatchObject({
-      id: 36,
-      total: 317,
-      answered: 5,
-      correct: 3,
-      scorePct: 60,
-      state: 'locked',
-    })
-    expect(c.chapters[2]).toMatchObject({ total: 321, answered: 10, correct: 8, scorePct: 80 })
+    const t5 = await data<ChapterSubjectDetail>(
+      ADMIN,
+      '/api/practice/chapter-subjects/BM?levelId=11',
+    )
+    expect(t5.levelId).toBe(11)
+    expect(t5.chapters).toHaveLength(1)
+    expect(t5.chapters[0]).toMatchObject({ id: 413, answered: 38, correct: 12, state: 'open' })
+    const d1 = await data<ChapterSubjectDetail>(
+      ADMIN,
+      '/api/practice/chapter-subjects/BM?levelId=1',
+    )
+    expect(d1.levelId).toBe(10)
   })
 
   it('#8 a user with no answer sees chapter 1 open and the rest locked; the teacher may open it too', async () => {
@@ -398,23 +408,25 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     expect(c.chapters.slice(1).every((ch) => ch.state === 'locked')).toBe(true)
   })
 
-  it('#8 ?levelId= picks a level; an unknown level falls back to the first offered', async () => {
-    const d2 = await data<ChapterSubjectDetail>(
+  it('#8 ?levelId= picks a level; an unknown or not offered level falls back to the first offered', async () => {
+    const t5 = await data<ChapterSubjectDetail>(
       MAJU,
-      '/api/practice/chapter-subjects/MATH?levelId=2',
+      '/api/practice/chapter-subjects/MATH?levelId=11',
     )
-    expect(d2.levelId).toBe(2)
-    expect(d2.chapters[0]).toMatchObject({ number: 1, state: 'open' })
-    const bad = await data<ChapterSubjectDetail>(
-      MAJU,
-      '/api/practice/chapter-subjects/MATH?levelId=99',
-    )
-    expect(bad.levelId).toBe(1)
+    expect(t5.levelId).toBe(11)
+    expect(t5.chapters[0]).toMatchObject({ number: 1, state: 'open' })
+    for (const asked of [99, 2, 1]) {
+      const bad = await data<ChapterSubjectDetail>(
+        MAJU,
+        `/api/practice/chapter-subjects/MATH?levelId=${String(asked)}`,
+      )
+      expect(bad.levelId).toBe(10)
+    }
   })
 
   it('#8 a subject offering no level answers empty levels and chapters; an unknown code is 404', async () => {
-    const phy = await data<ChapterSubjectDetail>(MAJU, '/api/practice/chapter-subjects/PHY')
-    expect(phy).toMatchObject({ levels: [], levelId: null, chapters: [] })
+    const jawi = await data<ChapterSubjectDetail>(MAJU, '/api/practice/chapter-subjects/JAWI')
+    expect(jawi).toMatchObject({ levels: [], levelId: null, chapters: [] })
     const r = await getAs<ErrorBody>(runtime, MAJU, '/api/practice/chapter-subjects/ZZZ')
     expect(r.status).toBe(404)
   })

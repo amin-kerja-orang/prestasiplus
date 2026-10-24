@@ -23,9 +23,9 @@ import { m16Hooks } from '../../mock/hooks'
 import { bootM16, MemoryStorage, setUser, type Answer, type Booted } from './helpers'
 
 const ADMIN = 1
-const T4_STUDENT = 2 // school 900003 (SMK Demo)
 const D5_STUDENT = 3 // no school
-const D1_STUDENT = 4 // school 900004
+const D1_STUDENT = 4 // school 900001 since D54 (900004 before)
+const OTHER_SCHOOL_STUDENT = 3201 // school 8880
 const ANCHOR_8106 = 4301 // logged-in anchor of school 8106
 
 let booted: Booted
@@ -637,7 +637,8 @@ describe('#46-#49 leagues', () => {
       canJoin: false,
     })
     expect(l.inviteCode).toMatch(/^[A-Z0-9]{8}$/)
-    expect(l.schools.map((s) => s.id)).toEqual([900004])
+    // D54: the creator (account 4) lives at SMK DEMO (900001), as pelajar.
+    expect(l.schools.map((s) => s.id)).toEqual([900001])
     expect(
       (
         await data<{ mine: { id: number }[]; open: { id: number }[] }>('/api/leagues', D1_STUDENT)
@@ -696,13 +697,15 @@ describe('#46-#49 leagues', () => {
       await data<{ inviteCode: string }>(`/api/leagues/${String(created.body.data.id)}`, D1_STUDENT)
     ).inviteCode
     expect((await post('/api/leagues/join', ADMIN, { invite_code: code })).status).toBe(200)
-    const full = await post<ErrorBody>('/api/leagues/join', T4_STUDENT, { invite_code: code })
+    const full = await post<ErrorBody>('/api/leagues/join', OTHER_SCHOOL_STUDENT, {
+      invite_code: code,
+    })
     expect(full.status).toBe(422)
     expect(full.body.error.message).toBe('Liga ini sudah penuh.')
     // the detail agrees with join: a full league cannot be joined
     const detail = await data<{ canJoin: boolean }>(
       `/api/leagues/${String(created.body.data.id)}`,
-      T4_STUDENT,
+      OTHER_SCHOOL_STUDENT,
     )
     expect(detail.canJoin).toBe(false)
   })

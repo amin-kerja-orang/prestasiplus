@@ -37,7 +37,7 @@ import {
 } from './question-derive'
 import { composeQuestion, QUESTION_FACETS, QUESTION_ID_RANGE } from './question-row'
 import { DEFAULT_SCORE, solveQualityScores, type PinnedScore } from './quality'
-import { facetKey, questionSpec } from './questions-spec'
+import { facetKey, POC_CHAPTER_ROWS, questionSpec, t45ChapterPool } from './questions-spec'
 
 /** Runtime ids (S2 create, S5 import, teacher writes): 9,000,001 upwards (XL-37). */
 export const QUESTIONS_RUNTIME_FLOOR = 9_000_001
@@ -99,6 +99,20 @@ export const questionsDataset = defineVirtualDataset<Question, QuestionFacetKey,
   absentIds: QUESTION_ABSENT_IDS,
   facets: QUESTION_FACETS,
   distribution: () => questionSpec().cells,
+  // D54 / PoC profile: keep ~POC_CHAPTER_ROWS eligible questions in every Tingkatan 4/5 chapter, so
+  // a 5-20 question chapter quiz and the murid heatmap still work on the small data.
+  pocScale: (f) => {
+    if (
+      f.curriculumChapterId === null ||
+      f.status !== 'approved' ||
+      !f.isActive ||
+      (f.educationLevelId !== 10 && f.educationLevelId !== 11)
+    ) {
+      return undefined
+    }
+    const pool = t45ChapterPool(f.curriculumChapterId)
+    return pool > 0 ? POC_CHAPTER_ROWS / pool : undefined
+  },
   derive: (id, facets) => deriveQuestionFields(id, facets),
   fields: {
     questionText: (key, f) => questionTextOf(key, f),

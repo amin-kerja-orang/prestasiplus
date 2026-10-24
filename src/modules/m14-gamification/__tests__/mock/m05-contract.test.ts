@@ -22,7 +22,7 @@ import { CLOCK_ANCHOR_ISO, createClock, toEpochMs } from '@/lib/time'
 import { bootMock } from '@/mock/index'
 
 import { wallet } from '../../mock'
-import { DESIGNED_SESSIONS, MATH_D1_CHAPTERS } from '../../mock/data/designed'
+import { DESIGNED_SESSIONS, MATH_T4_CHAPTERS } from '../../mock/data/designed'
 import { hasPracticeRepository, m05PracticeReads } from '../../mock/repository/reads'
 import { localDate } from '../../mock/repository/rules'
 
@@ -79,7 +79,7 @@ describe.skipIf(!hasPracticeRepository())('M14 ← M05 practice contract (F-26)'
         .answersOn(4, '2026-09-25')
         .map((a) => a.chapterId),
     )
-    for (const id of Object.values(MATH_D1_CHAPTERS)) expect(chapters.has(id)).toBe(true)
+    for (const id of Object.values(MATH_T4_CHAPTERS)) expect(chapters.has(id)).toBe(true)
   })
 
   it('mastery(userId) returns the per-subject counters (pelajarmaju MATH 26 / 37)', () => {

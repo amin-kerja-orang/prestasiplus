@@ -5,7 +5,7 @@
  *
  * | Ids | Owner request | Placement |
  * |---|---|---|
- * | 1–11 | M01 canonical accounts (`src/mock/core-data/accounts.ts`) | as TRACKER; 4 at 900004 |
+ * | 1–11 | M01 canonical accounts (`src/mock/core-data/accounts.ts`) | as TRACKER; 2 and 4 at 900001 (4: D54) |
  * | 2001–2012 | M11 8080 anchors (Student A = 2008) | 8080 T5, logged in; 2012 Teacher T |
  * | 2013–2060 | M17 week / month / class-370 pupils | T5 register rows at 8080 / 8082 / 8106 / 8078 |
  * | 1919 · 4402, 4418 | M17 teachers | no school · 8082 |

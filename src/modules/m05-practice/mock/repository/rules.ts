@@ -52,8 +52,12 @@ export const LATIH_TUBI_TARGETS: Readonly<Record<number, number>> = {
   27: 40,
   8: 20,
 }
-/** BR-11: offered practice levels are Darjah 1–4. */
-export const OFFERED_LEVEL_IDS = [1, 2, 3, 4] as const
+/**
+ * BR-11 (reversed by D54, 2026-10-24: secondary school and SPM only): the offered practice levels
+ * are Tingkatan 4 and 5 (M03 level ids 10, 11); live offered Darjah 1–4. The first offered level
+ * (T4) is the default of the chapter and practice pages.
+ */
+export const OFFERED_LEVEL_IDS = [10, 11] as const
 /** The SPM levels (T4, T5). */
 export const SPM_LEVEL_IDS = [10, 11] as const
 

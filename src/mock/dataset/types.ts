@@ -153,6 +153,13 @@ export interface VirtualDatasetDef<
    * dataset does not follow `mock.setRandomSeed`, so quiz randomness never changes the data.
    */
   seedBase?: number
+  /**
+   * PoC profile only: the fraction of a cell's rows to keep when the dataset's global PoC scale
+   * (`POC_SCALE_BY_DATASET`) would keep fewer (a larger fraction wins; return `undefined` for the
+   * global scale). Pure and deterministic in the cell's facets. Lets a dataset keep usable pools
+   * for a feature (M04: at least ~30 questions per Tingkatan 4/5 chapter).
+   */
+  pocScale?: (facets: Readonly<Pick<Row, K>>) => number | undefined
   /** Derived-row LRU size (default 4096). */
   rowCacheSize?: number
   /** Slow-path (`match` / derived-field filter) result LRU size (default 16). */
