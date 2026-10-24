@@ -77,7 +77,7 @@ describe('formats (BR-M20-16, 17; FR-M20-11)', () => {
     expect(discountPct('19.90', null)).toBeNull()
     expect(shippingLine('postage', '8.00')).toBe('Pos / Kurier (RM8.00)')
     expect(shippingLine('free', null)).toBe('Penghantaran Percuma 🎉')
-    expect(shippingLine('cod', null)).toBe('Cash on Delivery (COD)')
+    expect(shippingLine('cod', null)).toBe('Bayar Semasa Penghantaran (COD)')
     expect(shippingLine('pickup', null)).toBe('Ambil Sendiri (Pickup)')
     expect(ratingStars(null)).toBe('☆☆☆☆☆')
     expect(ratingStars(3.6)).toBe('★★★★☆')

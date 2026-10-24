@@ -99,10 +99,10 @@ describe('SellerPanel', () => {
     expect(w.get('[data-testid="seller-products"]').text()).toBe('10 produk')
   })
 
-  it('a platform product shows "PRESTASIPLUS Official" without a link or a tick', () => {
+  it('a platform product shows "PRESTASIPLUS Rasmi" without a link or a tick', () => {
     const w = mount(SellerPanel, { props: { seller: null }, global: { plugins: [router()] } })
     expect(w.find('a').exists()).toBe(false)
-    expect(w.get('[data-testid="seller-platform"]').text()).toContain('PRESTASIPLUS Official')
+    expect(w.get('[data-testid="seller-platform"]').text()).toContain('PRESTASIPLUS Rasmi')
     expect(w.find('[data-testid="seller-verified"]').exists()).toBe(false)
   })
 })

@@ -42,7 +42,7 @@ export const CARD_3: ProductCard = {
   condition: 'used',
   thumbnailUrl: '/images/marketplace/products/3/img_1.jpg',
   seller: { shopName: 'JomBelajar Official', verified: true },
-  shippingLine: 'Cash on Delivery (COD)',
+  shippingLine: 'Bayar Semasa Penghantaran (COD)',
 }
 
 export const CARD_5: ProductCard = {

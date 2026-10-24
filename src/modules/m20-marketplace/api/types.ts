@@ -42,7 +42,7 @@ export interface ProductCard {
   discountPct: number | null
   condition: ProductCondition
   thumbnailUrl: string | null
-  /** `null` = platform product ("PRESTASIPLUS Official", no tick, no shop link). */
+  /** `null` = platform product ("PRESTASIPLUS Rasmi", no tick, no shop link). */
   seller: { shopName: string; verified: boolean } | null
   /** BR-M20-17, e.g. "Pos / Kurier (RM8.00)". */
   shippingLine: string
