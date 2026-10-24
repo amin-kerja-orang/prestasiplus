@@ -20,6 +20,7 @@ import {
   chooseOverflowHint,
   chooseState,
   pickOnAnswer,
+  progressOf,
   unansweredIn,
   type ChooseState,
 } from '../domain/choose-n'
@@ -71,10 +72,6 @@ const group = computed(() =>
 )
 const isLast = computed(() => index.value >= questions.value.length - 1)
 const currentCheck = computed(() => (current.value ? checks.value[current.value.id] : undefined))
-const answeredCount = computed(() => questions.value.filter((q) => questionAnswered(q.id)).length)
-const progress = computed(() =>
-  questions.value.length ? (answeredCount.value / questions.value.length) * 100 : 0,
-)
 
 function leafIds(qid: string): string[] {
   const q = questions.value.find((x) => x.id === qid)
@@ -109,6 +106,11 @@ const navStates = computed(() => {
 const answeredIds = computed(
   () => new Set(questions.value.filter((q) => questionAnswered(q.id)).map((q) => q.id)),
 )
+/** Answered over what can count: a choose-N section adds at most N (FB-048). */
+const progress = computed(() => {
+  const { done, total } = progressOf(view.value?.sections ?? [], answeredIds.value)
+  return total ? (done / total) * 100 : 0
+})
 /** Choose-N state per section (ticks vs answers), the one source of the counter and the hints. */
 const chooseStates = computed(() => {
   const out: Record<string, ChooseState> = {}
