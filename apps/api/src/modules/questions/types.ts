@@ -212,7 +212,10 @@ export interface QuestionFilter {
   type?: StoreQuestionType
   /** `true`: only questions with a `pool` tag (flat `spmPool`); `false`: only questions without one. */
   spmPool?: boolean
-  /** `true`: only questions outside any stimulus group (`questions.group_id IS NULL`), the practice and games servable shape. */
+  /**
+   * `true`: only questions outside any stimulus group (`questions.group_id IS NULL`), the practice, games and battle servable
+   * shape. A single-leaf MCQ that sits inside a stimulus group is therefore no longer served by the SPM pool, battle or games.
+   */
   ungrouped?: boolean
   /**
    * Only questions whose live version has the plain servable MCQ shape: exactly one part, an `mcq` leaf, no stimulus on the

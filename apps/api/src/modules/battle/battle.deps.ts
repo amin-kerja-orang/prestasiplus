@@ -111,15 +111,22 @@ export class BattleDeps {
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  private readonly cache = new Map<string, { at: number; value: unknown }>()
+  private readonly cache = new Map<string, { at: number; value: Promise<unknown> }>()
 
-  /** Runs `read` unless the same key was read less than `CACHE_TTL_MS` ago (Clock time). */
-  private async cached<T>(key: string, read: () => Promise<T>): Promise<T> {
+  /**
+   * Runs `read` unless the same key was read less than `CACHE_TTL_MS` ago (Clock time). The PROMISE is cached (single flight):
+   * concurrent callers after the TTL share one read, and a failed read is dropped so the next caller retries.
+   */
+  private cached<T>(key: string, read: () => Promise<T>): Promise<T> {
     const now = this.clock.now().getTime()
     const hit = this.cache.get(key)
-    if (hit && now - hit.at < CACHE_TTL_MS && now >= hit.at) return hit.value as T
-    const value = await read()
-    this.cache.set(key, { at: now, value })
+    if (hit && now - hit.at < CACHE_TTL_MS && now >= hit.at) return hit.value as Promise<T>
+    const value = read()
+    const entry = { at: now, value }
+    this.cache.set(key, entry)
+    value.catch(() => {
+      if (this.cache.get(key) === entry) this.cache.delete(key)
+    })
     return value
   }
 

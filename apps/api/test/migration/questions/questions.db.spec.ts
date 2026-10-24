@@ -2,6 +2,10 @@
  * `migrate:questions` (QLOAD) against a real PostgreSQL: guards, dry-run, apply, reconciliation, idempotency, resume, rejects,
  * excluded counters, preflight, the source lock and the printed report. Synthetic archive rows only.
  */
+import { randomBytes } from 'node:crypto'
+import { readdirSync, readFileSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ApplyGuardError } from '../../../src/migration/kit/apply-guard'
@@ -50,6 +54,26 @@ describe('guards', () => {
     }
   })
 
+  it('an apply is refused when the curriculum id map changed after the dry-run (a migrate:core re-run)', async () => {
+    await h.reset()
+    await addArchive(h.pool, [{ id: 2 }])
+    const dry = await h.run('dry-run')
+    expect(dry.report.status).toBe('succeeded')
+    const row = (await h.q<{ id: string; new_id: string }>(`select id::text as id, new_id from etl_id_map where legacy_source = 'cloud' and entity = 'chapters' order by id limit 1`))[0]
+    expect(row).toBeDefined()
+    await h.q(`update etl_id_map set new_id = new_id || '0' where id = $1::bigint`, [row?.id])
+    try {
+      await expect(h.run('apply')).rejects.toThrow(ApplyRefusedError)
+    } finally {
+      await h.q(`update etl_id_map set new_id = $2 where id = $1::bigint`, [row?.id, row?.new_id])
+    }
+  })
+
+  it('the questions table pairs legacy_source and legacy_id (migration 0043 check)', async () => {
+    await expect(h.q(`insert into questions (legacy_source) values ('cloud')`)).rejects.toThrow(/ck_questions_legacy_pair/)
+    await expect(h.q(`insert into questions (legacy_id) values ('1')`)).rejects.toThrow(/ck_questions_legacy_pair/)
+  })
+
   it('refuses an archive staged before the new spec (a missing column), naming the column', async () => {
     await h.pool.query(`alter table archive_cloud.questions rename column explanation to explanation_gone`)
     try {
@@ -68,7 +92,7 @@ describe('dry-run, apply, reconciliation and the data written', () => {
     await addArchive(h.pool, [
       // loaded
       { id: ids.ok, difficulty: '4', explanation: 'Kerana contoh.', chapter: 1, topic: 4, body: 'Apakah warna langit?' },
-      { id: ids.held, image: 'questions/gambar.png', options: four().map((o, i) => (i === 2 ? { ...o, image: 'options/c.png' } : o)) },
+      { id: ids.held, image: 'questions/gambar.png' },
       { id: ids.t4, level: 2, subject: 2, chapter: 3, topic: 3, options: four(2) },
       { id: ids.noChapter, chapter: null, topic: null, difficulty: 'x' },
       // excluded (status / type)
@@ -150,7 +174,6 @@ describe('dry-run, apply, reconciliation and the data written', () => {
     expect(held).toMatchObject({ is_active: false, status: 'published', live_version_no: 1 })
     expect(held.import_issues).toEqual([
       { code: 'legacy_image_unresolved', target: 'question', path: 'questions/gambar.png' },
-      { code: 'legacy_image_unresolved', target: 'option', label: 'C', path: 'options/c.png' },
     ])
     // Tingkatan 4: form origin t4 and the SPM pool tag, nothing else.
     expect(t4).toMatchObject({ form_origin: 't4', tags: 'pool:spm', key: 'option:C', unit_node_id: null })
@@ -214,6 +237,23 @@ describe('the command', () => {
     expect(text).toMatch(/questions \| 2 \| 1 \| 1 \| 0 \| ok/)
     expect(text).toContain('note questions.excluded.status.draf: 1')
     expect(text).not.toMatch(/RAHSIA/)
+  })
+
+  it('writes a counts-only JSON report to --out-dir and exits 1 when the archive has rows but none is eligible', async () => {
+    await h.reset()
+    await addArchive(h.pool, [{ id: 300, status: 'draf', body: 'TEKS-RAHSIA-2' }, { id: 301, type: 'subjective', options: [] }])
+    const dir = join(process.cwd(), '.migration-out', `qload-test-${randomBytes(3).toString('hex')}`)
+    const { lines, ctx } = ctxOf()
+    expect(await migrateQuestions.run(args('dry-run', [['core-as-of', AS_OF], ['out-dir', dir]]), ctx)).toBe(1)
+    expect(lines.join('\n')).toMatch(/migrate:questions FAILED: eligible = 0 of 2/)
+    const files = readdirSync(dir).filter((f) => f.startsWith('questions-dry-run-'))
+    expect(files).toHaveLength(1)
+    const text = readFileSync(join(dir, files[0] as string), 'utf8')
+    const report = JSON.parse(text) as { recon: { entity: string; sourceCount: number; eligibleCount: number }[]; notes: Record<string, number>; rejects: unknown[] }
+    expect(report.recon[0]).toMatchObject({ entity: 'questions', sourceCount: 2, eligibleCount: 0 })
+    expect(report.notes['questions.excluded.status.draf']).toBe(1)
+    expect(text).not.toMatch(/RAHSIA/)
+    rmSync(dir, { recursive: true, force: true })
   })
 
   it('refuses an unknown flag and a bad value (exit 2 family)', async () => {

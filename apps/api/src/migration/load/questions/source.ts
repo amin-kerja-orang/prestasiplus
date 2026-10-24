@@ -21,7 +21,7 @@ const QUESTIONS_SQL = `SELECT ${selectList('questions', 'q')} FROM ${A}."questio
   WHERE ($1::bigint IS NULL OR q."id" > $1::bigint) ORDER BY q."id" LIMIT $2`
 
 const OPTIONS_SQL = `SELECT o."id"::text AS id, o."question_id"::text AS question_id, o."label"::text AS label, o."body"::text AS body,
-  o."image_path"::text AS image_path, o."is_correct"::text AS is_correct
+  o."is_correct"::text AS is_correct
   FROM ${A}."question_options" o WHERE o."question_id" = ANY($1::bigint[]) ORDER BY o."question_id", o."id"`
 
 export async function* readQuestions(pool: pg.Pool, afterKey: string | null, pageSize: number): AsyncGenerator<LegacyQuestion> {

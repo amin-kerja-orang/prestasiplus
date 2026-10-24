@@ -133,20 +133,29 @@ const SAMPLE_MAX = 50_000
 /** Ids per `eligibleAmong` statement (one bind parameter array, chunked only for very long lists). */
 const AMONG_CHUNK = 5000
 
-/** SQL of `QuestionFilter.singleMcqLeaf` on the version alias `v`. */
-const SINGLE_MCQ_LEAF = Prisma.sql`(SELECT count(*) FROM question_parts sp WHERE sp.question_version_id = v.id) = 1
-  AND EXISTS (SELECT 1 FROM question_parts sp WHERE sp.question_version_id = v.id AND sp.mode = 'mcq')`
-
-/** SQL of `QuestionFilter.mcqShape` on the version alias `v`: the plain servable MCQ (see the filter doc). */
-function shapeSql(shape: { minOptions: number; maxOptions: number }): Prisma.Sql {
-  return Prisma.sql`(SELECT count(*) FROM question_parts sp WHERE sp.question_version_id = v.id) = 1
-    AND NOT EXISTS (SELECT 1 FROM question_parts sp WHERE sp.question_version_id = v.id AND (sp.mode IS DISTINCT FROM 'mcq' OR sp.stimulus_id IS NOT NULL))
-    AND NOT EXISTS (SELECT 1 FROM question_version_stimuli sv WHERE sv.question_version_id = v.id)
-    AND (SELECT count(*) FROM part_options so JOIN question_parts sp ON sp.id = so.part_id WHERE sp.question_version_id = v.id)
-        BETWEEN ${Math.trunc(shape.minOptions)} AND ${Math.trunc(shape.maxOptions)}
-    AND NOT EXISTS (SELECT 1 FROM part_options so JOIN question_parts sp ON sp.id = so.part_id WHERE sp.question_version_id = v.id AND so.image_file_id IS NOT NULL)
-    AND EXISTS (SELECT 1 FROM answer_keys sk JOIN question_parts sp ON sp.id = sk.part_id JOIN part_options so ON so.part_id = sp.id AND so.label = sk.content ->> 'correct'
-                 WHERE sp.question_version_id = v.id)`
+/**
+ * SQL of the shape filters (`QuestionFilter.mcqShape`, `singleMcqLeaf`): a version-id array computed ONCE, set-based, over the
+ * candidates the cheap conditions kept (`candidates` is a full `SELECT v.id AS vid ...` statement). Per-row shape predicates
+ * (EXISTS or scalar sub-selects) are flattened by the planner into a semi join over a cross product (measured at 12k rows: 5-17 s
+ * as a WHERE predicate, 7 s as a fenced IN); `= ANY(ARRAY(subquery))` is an uncorrelated InitPlan the planner cannot flatten
+ * (0.12 s at the same size). The MATERIALIZED CTE keeps the candidate set small before the grouped joins.
+ */
+function shapeArraySql(candidates: Prisma.Sql, shape: QuestionFilter['mcqShape'], single: boolean): Prisma.Sql {
+  const having: Prisma.Sql[] = []
+  if (shape) {
+    having.push(
+      Prisma.sql`count(DISTINCT sp.id) = 1 AND bool_and(sp.mode = 'mcq' AND sp.stimulus_id IS NULL)
+        AND count(DISTINCT so.id) BETWEEN ${Math.trunc(shape.minOptions)} AND ${Math.trunc(shape.maxOptions)}
+        AND count(so.image_file_id) = 0
+        AND coalesce(bool_or(so.label = sk.content ->> 'correct'), false)
+        AND NOT EXISTS (SELECT 1 FROM question_version_stimuli sv WHERE sv.question_version_id = sp.question_version_id)`,
+    )
+  }
+  if (single) having.push(Prisma.sql`count(DISTINCT sp.id) = 1 AND bool_and(sp.mode = 'mcq')`)
+  const joins = shape ? Prisma.sql`LEFT JOIN part_options so ON so.part_id = sp.id LEFT JOIN answer_keys sk ON sk.part_id = sp.id` : Prisma.empty
+  return Prisma.sql`ARRAY(WITH c AS MATERIALIZED (${candidates})
+    SELECT sp.question_version_id FROM question_parts sp JOIN c ON c.vid = sp.question_version_id ${joins}
+    GROUP BY sp.question_version_id HAVING ${Prisma.join(having, ' AND ')})`
 }
 
 const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, published: 0, archived: 0 })
@@ -328,9 +337,31 @@ export class QuestionsRepository {
   /** One keyset page of eligible ids, ascending; pass the last id of the previous page as `after`. */
   async eligibleIdsPage(filter: QuestionFilter, after: string | undefined, limit: number): Promise<string[]> {
     const size = Math.max(1, Math.min(Math.floor(limit), ELIGIBLE_IDS_MAX))
-    const { from, where } = this.scope({ ...filter, status: 'published', active: true, ...(after === undefined ? {} : { idAfter: after }) })
-    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${size}`
-    return rows.map((r) => idToString(r.id))
+    const { mcqShape, singleMcqLeaf, ...plain } = filter
+    const page = async (cursor: string | undefined, rows: number): Promise<string[]> => {
+      const { from, where } = this.scope({ ...plain, status: 'published', active: true, ...(cursor === undefined ? {} : { idAfter: cursor }) })
+      const r = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${rows}`
+      return r.map((x) => idToString(x.id))
+    }
+    if (!mcqShape && !singleMcqLeaf) return page(after, size)
+    // Shaped: read a keyset page of candidates, keep those that pass the shape (checked on that page only), continue after the
+    // last candidate until `size` pass or the candidates run out. Each step touches O(size) rows, never the whole chapter.
+    const out: string[] = []
+    let cursor = after
+    for (;;) {
+      const candidates = await page(cursor, Math.min(size * 3, ELIGIBLE_IDS_MAX))
+      if (candidates.length === 0) break
+      const passing = new Set(await this.eligibleAmong(candidates, { ...plain, ...(mcqShape ? { mcqShape } : {}), ...(singleMcqLeaf ? { singleMcqLeaf } : {}) }))
+      for (const id of candidates) {
+        if (passing.has(id)) {
+          out.push(id)
+          if (out.length >= size) return out
+        }
+      }
+      cursor = candidates[candidates.length - 1]
+      if (candidates.length < Math.min(size * 3, ELIGIBLE_IDS_MAX)) break
+    }
+    return out
   }
 
   /** The ids among `ids` that are eligible for `filter` (published, active, live), ascending. One query, no scan of the bank. */
@@ -364,19 +395,17 @@ export class QuestionsRepository {
         SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${key}::bigint), q.id LIMIT ${limit}`
       return rows.map((r) => idToString(r.id))
     }
-    // The shape check is per row (sub-selects): run it on a hash-ordered window only, and widen x4 while the window falls short.
+    // The shape check is per row (sub-selects): run it on a hash-ordered window only, and widen x4 while the window falls short
+    // and the window was full (a short window means the eligible set is exhausted: widening cannot help).
     let window = Math.min(limit * 3, SAMPLE_MAX)
     let out: string[] = []
     for (let round = 0; round < 3; round++) {
       const rows = await this.db.$queryRaw<{ id: bigint }[]>`
-        SELECT c.id FROM (
-          SELECT q.id, v.id AS vid, hashtextextended(q.id::text, ${key}::bigint) AS h ${from} WHERE ${where}
-           ORDER BY h, q.id LIMIT ${window}
-        ) c JOIN question_versions v ON v.id = c.vid
-        WHERE ${mcqShape ? shapeSql(mcqShape) : Prisma.sql`TRUE`} AND ${singleMcqLeaf ? SINGLE_MCQ_LEAF : Prisma.sql`TRUE`}
-        ORDER BY c.h, c.id LIMIT ${limit}`
-      out = rows.map((r) => idToString(r.id))
-      if (out.length >= limit || window >= SAMPLE_MAX) break
+        SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${key}::bigint), q.id LIMIT ${window}`
+      const candidates = rows.map((r) => idToString(r.id))
+      const passing = new Set(await this.eligibleAmong(candidates, { ...plain, ...(mcqShape ? { mcqShape } : {}), ...(singleMcqLeaf ? { singleMcqLeaf } : {}) }))
+      out = candidates.filter((id) => passing.has(id)).slice(0, limit)
+      if (out.length >= limit || candidates.length < window || window >= SAMPLE_MAX) break
       window = Math.min(window * 4, SAMPLE_MAX)
     }
     return out
@@ -981,8 +1010,6 @@ export class QuestionsRepository {
       conds.push(key === null ? Prisma.sql`FALSE` : Prisma.sql`q.id > ${key}`)
     }
     if (filter.ungrouped) conds.push(Prisma.sql`q.group_id IS NULL`)
-    if (filter.mcqShape) conds.push(shapeSql(filter.mcqShape))
-    if (filter.singleMcqLeaf) conds.push(SINGLE_MCQ_LEAF)
     if (filter.difficultyTps !== undefined) {
       const tps = filter.difficultyTps.filter((n) => Number.isSafeInteger(n))
       conds.push(tps.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.difficulty_tp IN (${Prisma.join(tps)})`)
@@ -1005,6 +1032,10 @@ export class QuestionsRepository {
     if (filter.excludeIds && filter.excludeIds.length > 0) {
       const keys = filter.excludeIds.map(bi).filter((k): k is bigint => k !== null)
       if (keys.length > 0) conds.push(Prisma.sql`q.id <> ALL(${keys}::bigint[])`)
+    }
+    if (filter.mcqShape || filter.singleMcqLeaf) {
+      const candidates = Prisma.sql`SELECT v.id AS vid ${from} WHERE ${Prisma.join(conds, ' AND ')}`
+      conds.push(Prisma.sql`v.id = ANY(${shapeArraySql(candidates, filter.mcqShape, filter.singleMcqLeaf === true)})`)
     }
     return { from, where: Prisma.join(conds, ' AND ') }
   }

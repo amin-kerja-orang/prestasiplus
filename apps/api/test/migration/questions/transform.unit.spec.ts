@@ -4,6 +4,8 @@
 import { QuestionLeafPartSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
+import { mapQuestionType } from '../../../src/migration/snapshot-dims/dims'
+
 import {
   exclusionOf,
   formOriginOf,
@@ -23,7 +25,7 @@ const cur: Curriculum = {
   topicChapter: new Map([['401', '301'], ['402', '302']]),
 }
 
-const opt = (label: string | null, body: string | null, correct: string | null, image: string | null = null): LegacyOption => ({ id: null, label, body, is_correct: correct, image_path: image })
+const opt = (label: string | null, body: string | null, correct: string | null): LegacyOption => ({ id: null, label, body, is_correct: correct })
 const four = (): LegacyOption[] => [opt('A', 'Satu', '0'), opt('B', 'Dua', '1'), opt('C', 'Tiga', '0'), opt('D', 'Empat', '0')]
 const row = (over: Record<string, string | null> = {}, options: LegacyOption[] = four()): LegacyQuestion => ({
   id: '7', subject_id: '1', education_level_id: '1', chapter_id: '1', topic_id: '1', difficulty_level: '3', type: 'mcq', status: 'diluluskan',
@@ -104,9 +106,9 @@ describe('transformQuestion: the happy path', () => {
     expect(p.notes).not.toContain('body_has_html')
   })
 
-  it('leaves text without a known tag untouched, including a bare < or an entity', () => {
-    const p = plan(row({ body: 'Jika x < y dan a<b maka 5 &amp; 6?', explanation: null }))
-    expect(p.stem).toBe('Jika x < y dan a<b maka 5 &amp; 6?')
+  it('leaves text without a known tag untouched, including a bare <', () => {
+    const p = plan(row({ body: 'Jika x < y dan a<b maka 5 dan 6?', explanation: null }))
+    expect(p.stem).toBe('Jika x < y dan a<b maka 5 dan 6?')
     expect(p.notes).not.toContain('html_stripped')
   })
 
@@ -166,7 +168,7 @@ describe('transformQuestion: rejects', () => {
 
   it('a blank option body (an image-only option included) is rejected', () => {
     const o = four()
-    o[2] = opt('C', '  ', '0', 'options/c.png')
+    o[2] = opt('C', '  ', '0')
     expect(rejected(row({}, o))).toBe('INVALID_VALUE:options.body')
   })
 
@@ -199,18 +201,88 @@ describe('transformQuestion: rejects', () => {
 })
 
 describe('transformQuestion: images are held, never copied', () => {
-  it('keeps the paths as a structured list, holds the question inactive and counts', () => {
-    const o = four()
-    o[1] = opt('B', 'Dua', '1', 'options/b.png')
-    const p = plan(row({ image_path: 'questions/q.png' }, o))
+  it('keeps the question image path as a structured list, holds the question inactive and counts', () => {
+    const p = plan(row({ image_path: 'questions/q.png' }))
     expect(p.is_active).toBe(false)
-    expect(p.import_issues).toEqual([
-      { code: 'legacy_image_unresolved', target: 'question', path: 'questions/q.png' },
-      { code: 'legacy_image_unresolved', target: 'option', label: 'B', path: 'options/b.png' },
-    ])
-    expect(p.notes).toEqual(expect.arrayContaining(['question_image', 'option_image', 'held_image']))
-    // An option image alone also holds the question.
-    expect(plan(row({}, o)).is_active).toBe(false)
+    expect(p.import_issues).toEqual([{ code: 'legacy_image_unresolved', target: 'question', path: 'questions/q.png' }])
+    expect(p.notes).toEqual(expect.arrayContaining(['question_image', 'held_image']))
     expect(plan(row({ image_path: '  ' })).is_active).toBe(true)
+  })
+})
+
+describe('transformQuestion: HTML conversion, holds and entity decoding', () => {
+  it('decodes entities (named and numeric) even when no tag is present, once only', () => {
+    const p = plan(row({ body: 'A &amp; B &lt; C &#65; &#x42; &quot;D&quot; &amp;lt;' }))
+    expect(p.stem).toBe('A & B < C A B "D" &lt;')
+    expect(p.notes).toContain('entity_decoded')
+  })
+
+  it('holds a question whose text still has an image, maths or script markup after the conversion', () => {
+    const img = plan(row({ body: 'Lihat <img src="a.png"> ini' }))
+    expect(img.is_active).toBe(false)
+    expect(img.import_issues).toEqual([{ code: 'html_image', target: 'stem' }])
+    expect(img.notes).toContain('held_html_image')
+    expect(plan(row({}, [opt('A', 'Satu', '0'), opt('B', '<math><mi>x</mi></math>', '1'), opt('C', 'Tiga', '0')])).import_issues).toEqual([{ code: 'html_math', target: 'option', label: 'B' }])
+    for (const body of ['x <script>1</script>', 'klik <a href="x">sini</a>', '<td onclick="x()">a</td>', 'x <iframe src=y>', 'javascript:alert(1)', '&#60;script&#62;x']) {
+      const p = plan(row({ body }))
+      expect(p.is_active, body).toBe(false)
+      expect(p.notes, body).toContain('held_html_residual')
+    }
+    const expl = plan(row({ explanation: 'lihat <svg></svg>' }))
+    expect(expl.import_issues).toEqual([{ code: 'html_residual', target: 'explanation' }])
+  })
+
+  it('does not hold plain maths or prose with a bare < or "on...=" words', () => {
+    for (const body of ['Jika x < y dan a<b, maka one = 1 dan ratio=2?', 'Hitung 3 < 5 > 2']) {
+      const p = plan(row({ body }))
+      expect(p.is_active, body).toBe(true)
+      expect(p.import_issues).toBeNull()
+    }
+  })
+
+  it('rejects a body (stem, option, explanation) over the length cap before any pattern runs', () => {
+    const long = '<sup>'.repeat(10_000) + 'x'
+    expect(rejected(row({ body: long }))).toBe('INVALID_VALUE:body')
+    expect(rejected(row({}, [opt('A', long, '0'), opt('B', 'Dua', '1'), opt('C', 'Tiga', '0')]))).toBe('INVALID_VALUE:options.body')
+    expect(rejected(row({ explanation: long }))).toBe('INVALID_VALUE:explanation')
+  })
+})
+
+describe('transformQuestion: personal-data screen (count only)', () => {
+  const kinds = (body: string) => plan(row({ body })).import_issues?.map((i) => `${i.target}:${i.kind}`)
+  it('holds a question whose text looks like an IC number, phone, e-mail, URL or @handle, naming only the kind', () => {
+    expect(kinds('IC 990101-14-5678 ialah')).toEqual(['stem:ic'])
+    expect(kinds('Hubungi 012-3456789 atau +60123456789')).toEqual(['stem:phone'])
+    expect(kinds('mel ke contoh@example.test')).toEqual(['stem:email'])
+    expect(kinds('lawati https://example.test/x')).toEqual(['stem:url'])
+    expect(kinds('lawati www.example.test')).toEqual(['stem:url'])
+    expect(kinds('ikut @contoh_akaun di sini')).toEqual(['stem:handle'])
+    const p = plan(row({ body: 'IC 990101145678', explanation: 'hubungi 0123456789' }))
+    expect(p.is_active).toBe(false)
+    expect(p.notes).toContain('held_pii_suspect')
+    expect(JSON.stringify(p.import_issues)).not.toMatch(/990101|0123456789/)
+  })
+
+  it('checks options and explanation too, and leaves ordinary numbers alone', () => {
+    const o = plan(row({}, [opt('A', 'a@b.test', '0'), opt('B', 'Dua', '1'), opt('C', 'Tiga', '0')]))
+    expect(o.import_issues).toEqual([{ code: 'pii_suspect', target: 'option', label: 'A', kind: 'email' }])
+    expect(plan(row({ explanation: 'lihat www.example.test' })).import_issues).toEqual([{ code: 'pii_suspect', target: 'explanation', kind: 'url' }])
+    for (const body of ['Hitung 1234567 + 89 dan 3.14159 serta 2024-10-24', 'harga RM1,000,000 dan 12345']) {
+      expect(plan(row({ body })).is_active, body).toBe(true)
+    }
+  })
+
+  it('stays fast on a long text with many @ signs and digits (bounded patterns)', () => {
+    const t0 = Date.now()
+    const body = ('1234 a@' + 'b'.repeat(60) + ' ').repeat(200)
+    plan(row({ body }))
+    expect(Date.now() - t0).toBeLessThan(1000)
+  })
+})
+
+describe('mapQuestionType', () => {
+  it('maps mcq, objektif and pilihan_berganda case-insensitively and nothing else', () => {
+    for (const t of ['mcq', 'MCQ', ' Mcq ', 'objektif', 'Objektif', 'pilihan_berganda', 'Pilihan Berganda']) expect(mapQuestionType(t), t).toBe('mcq')
+    for (const t of ['subjective', 'esei', '', null]) expect(mapQuestionType(t as string | null), String(t)).not.toBe('mcq')
   })
 })

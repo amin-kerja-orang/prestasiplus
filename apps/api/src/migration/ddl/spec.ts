@@ -275,7 +275,7 @@ const ARCHIVE: TableSpec[] = [
     // QLOAD (LEAD 24 Oct, #113): loaded into the v2 bank at cutover, so the archive keeps them.
     'explanation:t', 'image_path:t',
   ]),
-  a('question_options', ['question_id:id:fk=questions:idx', 'label:t', 'body:t', 'image_path:t', 'is_correct:t:enum']),
+  a('question_options', ['question_id:id:fk=questions:idx', 'label:t', 'body:t', 'is_correct:t:enum']),
   a('structured_questions', ['subject_id:id:fk=subjects', 'status:t:enum', 'stimulus:t']),
   a('structured_sub_questions', ['structured_question_id:id:fk=structured_questions', 'number:t', 'marks:i']),
   a('structured_rubric_points', ['structured_sub_question_id:id:fk=structured_sub_questions', 'marks:i', 'text:t']),

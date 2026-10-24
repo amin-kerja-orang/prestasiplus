@@ -8,12 +8,13 @@
 -- Reversible while no migrated row exists:
 --   DROP INDEX "ix_questions_parent_question_id";
 --   DROP INDEX "uq_questions_legacy";
---   ALTER TABLE "questions" DROP CONSTRAINT "ck_questions_legacy_source", DROP COLUMN "legacy_id", DROP COLUMN "legacy_source";
+--   ALTER TABLE "questions" DROP CONSTRAINT "ck_questions_legacy_pair", DROP CONSTRAINT "ck_questions_legacy_source", DROP COLUMN "legacy_id", DROP COLUMN "legacy_source";
 
 ALTER TABLE "questions" ADD COLUMN "legacy_source" TEXT, ADD COLUMN "legacy_id" TEXT;
 
 CREATE UNIQUE INDEX "uq_questions_legacy" ON "questions"("legacy_source", "legacy_id");
 
 ALTER TABLE "questions" ADD CONSTRAINT "ck_questions_legacy_source" CHECK ("legacy_source" IN ('cloud', 'my'));
+ALTER TABLE "questions" ADD CONSTRAINT "ck_questions_legacy_pair" CHECK (("legacy_source" IS NULL) = ("legacy_id" IS NULL));
 
 CREATE INDEX "ix_questions_parent_question_id" ON "questions"("parent_question_id");

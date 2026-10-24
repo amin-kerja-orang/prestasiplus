@@ -18,6 +18,8 @@ import { bucketOfScore, scoreQuestion } from './quality-score'
 
 /** Questions scored and written per statement (keyset batch of the audit and of the summary walk). */
 const AUDIT_BATCH = 2000
+/** Rows of `actionList` returned (newest ids first); `activeActionCount` stays the true number of low-scoring questions. */
+const ACTION_LIST_MAX = 200
 /** An unfinished audit run older than this is treated as crashed and no longer blocks a new run. */
 const AUDIT_STALE_MS = 60 * 60 * 1000
 /** Advisory lock key of the audit start (check + insert of the run row). */
@@ -115,6 +117,7 @@ export class QualityService {
         qualityScore: score,
       }))
       .sort((a, b) => cmpId(b.id, a.id))
+      .slice(0, ACTION_LIST_MAX)
 
     const last = await this.prisma.client.qualityAudit.findFirst({
       where: { finishedAt: { not: null } },
@@ -191,7 +194,13 @@ export class QualityService {
       sum += scores.reduce((a, s) => a + s.score, 0)
     }, AUDIT_BATCH)
     // Every current question was just stamped with this run; what is left belongs to deleted questions.
-    await db.$executeRaw`DELETE FROM question_quality_scores WHERE audit_id IS DISTINCT FROM ${runId}`
+    // Sweep: rows this run did not stamp AND whose question left the bank (or is a PKSK question the audit never walks), so a
+    // row another finished run just wrote for a live question is never removed.
+    await db.$executeRaw`
+      DELETE FROM question_quality_scores s
+       WHERE s.audit_id IS DISTINCT FROM ${runId}
+         AND (NOT EXISTS (SELECT 1 FROM questions q WHERE q.id = s.question_id)
+              OR EXISTS (SELECT 1 FROM question_tags p WHERE p.question_id = s.question_id AND p.kind = 'pksk_domain'))`
     await db.qualityAudit.update({
       where: { id: runId },
       data: { finishedAt: now, findingCount: changed, scoredCount: scored, averageScore: scored === 0 ? 0 : sum / scored },
