@@ -9,7 +9,8 @@ export interface NotMigrated {
 
 export const NOT_MIGRATED_ACTIVITY: readonly NotMigrated[] = [
   // Question bank: archive only (D29a, section 3.3). Dimensions are copied onto the answers at extract time.
-  { table: 'questions / question_options / exam_* / question_parts / legacy_canonical_map / ...', reason: 'question bank is reloaded through the intake (D29a); read only as the snapshot source, archive_cloud afterwards' },
+  { table: 'questions / question_options (approved MCQs)', reason: 'loaded into the v2 bank by the standalone migrate:questions, after migrate:all (QLOAD, LEAD decision A); never by migrate:core / migrate:activity' },
+  { table: 'exam_* / question_parts / legacy_canonical_map / structured_* / ... (the rest of the question bank)', reason: 'not loaded: reloaded through the intake (D29a); read only as the snapshot source, archive_cloud afterwards' },
   { table: 'review_schedules', reason: 'question-bound; the revision queue is rebuilt from future answers (Q4)' },
   { table: 'question_set_items', reason: 'items are question-bound (Q4); OD-10 Q4 A decided: only the teacher question-set headers are migrated (see `question_sets`), as needs-rebuild with no class; the staged items are counted in `question_sets.items_not_migrated`' },
   { table: 'spm_sets / spm_set_question', reason: 'plain question lists; SPM tracking sets are seeded, not migrated' },

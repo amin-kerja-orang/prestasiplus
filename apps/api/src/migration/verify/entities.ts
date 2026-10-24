@@ -46,7 +46,7 @@ export interface MatrixEntry {
 /** Entities whose read is NOT "every row of the staging table once". */
 const NOT_PLAIN_READ: ReadonlySet<string> = new Set([
   'subject_levels', 'jpns', 'ppds', 'gamification_settings', 'challenge_completions', 'user_achievements',
-  'referral_codes', 'referrals', 'spm_targets',
+  'referral_codes', 'referrals', 'spm_targets', 'questions',
 ])
 
 const e = (
@@ -103,6 +103,12 @@ export const ENTITY_MATRIX: readonly MatrixEntry[] = [
   e('support_tickets', 'support_tickets', 'support_tickets'),
   e('timeline_posts', 'timeline_entries', 'timeline_posts'),
   e('feedback', 'feedback', 'feedback'),
+  // ---- QLOAD: standalone `migrate:questions`, run AFTER `migrate:all`. Not required (migrate:all --apply verifies before it
+  // exists, so a missing run must not fail the gate); once it has a succeeded apply run it is verified like any other row.
+  {
+    ...e('questions', null, 'questions', 'archive_cloud approved MCQs loaded by migrate:questions; versions, parts, options, keys and tags share the legacy id'),
+    required: false,
+  },
 ]
 
 const BY_ENTITY = new Map(ENTITY_MATRIX.map((m) => [m.entity, m]))
@@ -116,7 +122,12 @@ export function matrixEntry(entity: string): MatrixEntry | undefined {
  * `attempt_results` (one row per migrated exam attempt, ON DELETE CASCADE from `exam_attempts`). Everything else the
  * ETL writes carries the legacy pair.
  */
-export const ETL_DERIVED_CHILDREN: readonly { table: string; parent: string }[] = [{ table: 'attempt_results', parent: 'exam_attempts' }]
+export const ETL_DERIVED_CHILDREN: readonly { table: string; parent: string }[] = [
+  { table: 'attempt_results', parent: 'exam_attempts' },
+  // QLOAD: the other tables of a migrated question (parts, options, keys) cascade through `question_versions`.
+  { table: 'question_versions', parent: 'questions' },
+  { table: 'question_tags', parent: 'questions' },
+]
 
 /**
  * Tables whose loader ADOPTS rows that exist before the migration (`claimSeeded`): a seed row receives the legacy pair
