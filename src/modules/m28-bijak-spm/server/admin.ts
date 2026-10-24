@@ -1060,7 +1060,7 @@ export class AdminOps {
     const bp = BLUEPRINTS.find(
       (b) => b.subject === input.subject && b.kertas === input.kertas && b.source !== 'Draf',
     )
-    if (!bp) throw this.host.error('bad_request', 'Tiada blueprint untuk subjek dan kertas ini')
+    if (!bp) throw this.host.error('bad_request', 'Tiada cetak biru untuk subjek dan kertas ini')
     const slice = this.host.slice()
     slice.paperSeq = (slice.paperSeq ?? 1) + 1
     const paper = newPaper(`kp-${slice.paperSeq}`, bp, this.host.now())
