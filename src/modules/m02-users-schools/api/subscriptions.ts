@@ -9,7 +9,7 @@
  * Dates are ISO 8601 with the +08:00 offset; the screen formats them (BR-33).
  */
 
-import { api, type ListResult } from '@/api'
+import { api, wireIdOpt, type EntityId, type ListResult } from '@/api'
 
 import type { SchoolSummary } from './schools'
 
@@ -109,9 +109,9 @@ export interface SubscriptionMutation {
 
 /** #31 body. */
 export interface CreateSubscriptionInput {
-  schoolId: number | null
+  schoolId: EntityId | null
   packageTier: PackageTier
-  schoolPackageId: number | null
+  schoolPackageId: EntityId | null
   studentQuota: number
   paymentReference?: string | null
   paymentNotes?: string | null
@@ -180,7 +180,13 @@ export function fetchSchoolPackages(
 
 /** #31 `POST /api/admin/school-subscriptions` (201; 422 with `fields`). */
 export function createSubscription(input: CreateSubscriptionInput): Promise<SubscriptionMutation> {
-  return api.post<SubscriptionMutation>(base, { body: input, raw: true })
+  // Contract `SubscriptionCreateRequestSchema`: `schoolId` and `schoolPackageId` are strings (SWX-2); null stays null.
+  const body = {
+    ...input,
+    schoolId: wireIdOpt(input.schoolId),
+    schoolPackageId: wireIdOpt(input.schoolPackageId),
+  }
+  return api.post<SubscriptionMutation>(base, { body, raw: true })
 }
 
 /** #32 `GET /api/admin/school-subscriptions/:id` (404). */
