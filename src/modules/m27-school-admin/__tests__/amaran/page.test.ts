@@ -91,6 +91,20 @@ async function mountPage(value: SchoolRiskData | ApiError, url = '/amaran/sekola
   return wrapper
 }
 
+/** Runs `fn` with `matchMedia` answering for a viewport `width` (jsdom has none: every breakpoint counts as reached). */
+async function atWidth<T>(width: number, fn: () => Promise<T>): Promise<T> {
+  const matchMedia = vi.fn((q: string) => {
+    const min = Number(/(?:min-width:|width >=)\s*(\d+)px/.exec(q)?.[1] ?? 0)
+    return { matches: width >= min, addEventListener: vi.fn(), removeEventListener: vi.fn() }
+  })
+  window.matchMedia = matchMedia as unknown as typeof window.matchMedia
+  try {
+    return await fn()
+  } finally {
+    delete (window as { matchMedia?: unknown }).matchMedia
+  }
+}
+
 const text = (w: VueWrapper, id: string) => w.get(`[data-testid="${id}"]`).text()
 const texts = (w: VueWrapper, id: string) => w.findAll(`[data-testid="${id}"]`).map((e) => e.text())
 const has = (w: VueWrapper, id: string) => w.find(`[data-testid="${id}"]`).exists()
@@ -279,9 +293,39 @@ describe('subject card and risk list (FR-M27-76; AC-M27-21.3)', () => {
     expect(texts(w, 'am-score')).toEqual(['79', '78', '77'])
   })
 
-  it('scrolls the table inside its card, not the page', async () => {
+  it('uses the fixed layout, so nothing scrolls inside the card (SW11-04, DV-M27-26)', async () => {
     const w = await mountPage(data())
-    expect(w.find('.overflow-x-auto').exists()).toBe(true)
+    expect(w.get('[data-testid="am-table"] table').classes()).toContain('table-fixed')
+  })
+
+  it('at 768 the three low-priority columns are hidden and each value shows alone under the name (SW11-04)', async () => {
+    await atWidth(768, async () => {
+      const w = await mountPage(data())
+      await flushPromises()
+      const th = (label: string) => w.findAll('[data-testid="am-table"] th').find((e) => e.text() === label)
+      for (const label of ['Ketepatan', 'Penglibatan', 'Penguasaan']) {
+        expect(th(label)?.classes()).toEqual(expect.arrayContaining(['hidden', 'xl:table-cell']))
+      }
+      expect(th('Status')?.classes()).not.toContain('hidden')
+      expect(texts(w, 'am-sub')).toHaveLength(3)
+      expect(texts(w, 'am-sub-accuracy')).toEqual(['Purata ketepatan: 64%', 'Tiada data', 'Purata ketepatan: 64%'])
+      expect(texts(w, 'am-sub-engagement')[0]).toBe('Terakhir aktif: 2026-02-27')
+      expect(texts(w, 'am-sub-mastery')[0]).toBe('Purata tahap: L1')
+      expect(w.get('[data-testid="am-sub"]').findAll('span').map((e) => e.text())).toEqual([
+        'Purata ketepatan: 64%',
+        'Terakhir aktif: 2026-02-27',
+        'Purata tahap: L1',
+      ])
+    })
+  })
+
+  it('at 1280 the three columns show and there is no sub-line (SW11-04)', async () => {
+    await atWidth(1280, async () => {
+      const w = await mountPage(data())
+      await flushPromises()
+      expect(has(w, 'am-sub')).toBe(false)
+      expect(texts(w, 'am-accuracy')).toEqual(['Purata ketepatan: 64%', 'Tiada data', 'Purata ketepatan: 64%'])
+    })
   })
 })
 
@@ -317,11 +361,20 @@ describe('states', () => {
     expect(api.fetchSchoolRisk).not.toHaveBeenCalled()
   })
 
-  it('shows the BM load error, not the server text, for another failure (SWE)', async () => {
-    const w = await mountPage(apiError(500, 'SERVER_ERROR', 'Server Error'))
-    expect(text(w, 'am-error')).toContain('Tidak dapat memuatkan data. Sila cuba semula.')
-    expect(text(w, 'am-error')).not.toContain('Server Error')
+  it.each([
+    [500, 'SERVER_ERROR', 'Internal server error'],
+    [503, 'SERVER_ERROR', 'HTTP 503'],
+    [422, 'VALIDATION_ERROR', 'The scope must be school, district or state.'],
+  ])('shows the generic BM line for a %i (SW11-08)', async (status, code, message) => {
+    const w = await mountPage(apiError(status, code, message))
+    expect(text(w, 'am-error')).toContain('Ralat berlaku. Sila cuba lagi.')
+    expect(text(w, 'am-error')).not.toContain(message)
     expect(useRouteOutcome().value).toBeNull()
+  })
+
+  it('shows the BM rate-limit line for a 429', async () => {
+    const w = await mountPage(apiError(429, 'RATE_LIMITED', 'Too Many Attempts.'))
+    expect(text(w, 'am-error')).toContain('Terlalu banyak percubaan. Cuba sebentar lagi.')
   })
 
   it('shows the spinner while loading', async () => {

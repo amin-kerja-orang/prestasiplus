@@ -216,10 +216,10 @@ export interface AdminDefaults {
 }
 
 /** #1 `GET /api/admin/users`: 25 per page, newest first; `meta.roleCounts` = the S1 stat cards. */
-export function fetchAdminUsers(
+export async function fetchAdminUsers(
   query: AdminUserListQuery = {},
 ): Promise<ListResult<AdminUserListItem, AdminUserListMeta>> {
-  return api.list<AdminUserListItem, AdminUserListMeta>('/api/admin/users', {
+  const result = await api.list<AdminUserListItem, AdminUserListMeta>('/api/admin/users', {
     query: {
       role: query.role || null,
       schoolId: query.schoolId ?? null,
@@ -230,6 +230,7 @@ export function fetchAdminUsers(
     },
     ...(query.signal ? { signal: query.signal } : {}),
   })
+  return isHttpMode() ? { ...result, data: result.data.map(fromWireListItem) } : result
 }
 
 /** #2 `GET /api/admin/users/filters`: the schools with at least one user, by name (FR-M02-04). */
@@ -241,6 +242,15 @@ export async function fetchUserFilters(
     options.signal ? { signal: options.signal } : {},
   )
   return data.schools
+}
+
+/**
+ * http mode: a wire list row carries `roles[]` and no `role`; the screens use the single `role` (the first role,
+ * `unmapped` without one, as {@link fromWireDetail}). The ids stay the wire strings.
+ */
+function fromWireListItem(wire: AdminUserListItem): AdminUserListItem {
+  const roles = (wire as AdminUserListItem & { roles?: Role[] }).roles
+  return { ...wire, role: roles?.[0] ?? 'unmapped' }
 }
 
 /**

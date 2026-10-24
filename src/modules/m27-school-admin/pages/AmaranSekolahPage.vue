@@ -7,7 +7,7 @@
  * with data) and the risk list. No breadcrumb (DV-M27-22).
  *
  * States: loading shows the spinner; a 403 (or a session without a school) renders the global 403 page in
- * place; any other failure shows the server's own message. While another level loads, the old figures stay.
+ * place; any other failure shows the generic BM line or the 429 line (`loadErrorMessage`, DV-M27-26). While another level loads, the old figures stay.
  */
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -26,7 +26,7 @@ import AmaranLevelPills from '../components/amaran/AmaranLevelPills.vue'
 import AmaranPupilTable from '../components/amaran/AmaranPupilTable.vue'
 import AmaranSubjectCard from '../components/amaran/AmaranSubjectCard.vue'
 import AmaranTiles from '../components/amaran/AmaranTiles.vue'
-import { normaliseLevel, TITLE } from '../components/amaran/amaran-format'
+import { loadErrorMessage, normaliseLevel, TITLE } from '../components/amaran/amaran-format'
 import { errorLines } from '../components/users/users-format'
 
 const route = useRoute()
@@ -90,7 +90,12 @@ async function download(): Promise<void> {
       <AmaranSubjectCard v-if="data.weakness.length > 0" :rows="data.weakness" />
       <AmaranPupilTable :rows="data.pupils" />
     </template>
-    <DsLoadError v-else-if="error && !refused" testid="am-error" @retry="reload" />
+    <DsLoadError
+      v-else-if="error && !refused"
+      :message="loadErrorMessage(error)"
+      testid="am-error"
+      @retry="reload"
+    />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="am-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />

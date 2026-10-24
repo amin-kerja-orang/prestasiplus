@@ -4,6 +4,7 @@
  */
 
 import { isApiError } from '@/api'
+import { isHttpMode } from '@/api/mode'
 
 import type { AdminUserRole, RoleCounts } from '../api/users'
 import { isGenericServerText } from './generic-server-text'
@@ -35,6 +36,13 @@ export const ROLE_FILTER_OPTIONS: readonly { value: AdminUserRole; label: string
   { value: 'jpn_officer', label: 'Pegawai JPN' },
   { value: 'admin', label: 'Admin' },
 ]
+
+/** "Peranan" filter options for the mode: no "Pegawai JPN" in http mode (DV-M02-23, not a contract role). */
+export function roleFilterOptionsFor(
+  http: boolean = isHttpMode(),
+): readonly { value: AdminUserRole; label: string }[] {
+  return http ? ROLE_FILTER_OPTIONS.filter((o) => o.value !== 'jpn_officer') : ROLE_FILTER_OPTIONS
+}
 
 /** A role outside the 8 codes (`unmapped`) shows its raw text, as live shows a raw code. */
 export function roleLabel(role: string): string {

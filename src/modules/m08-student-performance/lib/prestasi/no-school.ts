@@ -1,9 +1,10 @@
 import type { SchoolItemAnalysis } from '../../api/types'
 
 /**
- * S9 `/analisa-item/sekolah` for a viewer without a school (Admin Pusat): the real API answers 404 (no own
- * school), which would render the SPA 404 page. The page shows the S9 "Tiada Data Pelajar" empty state
- * instead, as an unknown `{id}` does (FR-M08-143; DV-M08-41).
+ * S9 `/analisa-item/sekolah` for a viewer without a school (an officer, a teacher or a pelajar with no school;
+ * Admin Pusat is refused by the route, DV-M08-50): the real API answers 404 (no own school), which would
+ * render the SPA 404 page. The page shows the S9 "Tiada Data Pelajar" empty state instead, as an unknown
+ * `{id}` does (FR-M08-143; DV-M08-41).
  */
 export function noSchoolAnalysis(tingkatan: 'T4' | 'T5' | null = null): SchoolItemAnalysis {
   return {
