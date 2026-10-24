@@ -7,7 +7,7 @@
  */
 import { ref } from 'vue'
 
-import { isApiError } from '@/api'
+import { isApiError, isErrorBody } from '@/api'
 import { DsFileField, DsFormField, DsIconChip, DsNativeSelect, DsPanel } from '@/ds'
 
 import { submitQuestionPaper } from '../../api/guru'
@@ -65,7 +65,20 @@ async function submit(): Promise<void> {
     tingkatanSel.value = ''
     files.value = []
   } catch (err) {
-    errors.value = isApiError(err) && err.fields ? Object.values(err.fields) : [COPY.paperFailed]
+    if (isApiError(err) && err.fields) {
+      errors.value = Object.values(err.fields)
+    } else if (
+      isApiError(err) &&
+      err.status === 503 &&
+      isErrorBody(err.body) &&
+      err.message.trim() !== ''
+    ) {
+      // SW12-08 (DV-M10-42): the paper intake is off in http mode; show the API's BM reason. Only the API's
+      // own error envelope counts: a bare proxy 503 carries the developer text "HTTP 503".
+      errors.value = [err.message]
+    } else {
+      errors.value = [COPY.paperFailed]
+    }
   } finally {
     busy.value = false
   }
