@@ -112,6 +112,7 @@
     "vue-tsc": "^3.3.11"
   },
   "overrides": {
-    "@swc/core": "1.15.47"
+    "@swc/core": "1.15.47",
+    "multer": "2.5.0"
   }
 }
