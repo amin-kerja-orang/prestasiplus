@@ -42,4 +42,22 @@ describe('needsAttention: Semakan tab "Perlu perhatian" (FB-049)', () => {
     expect(result.questions.some((x) => !x.counted)).toBe(true)
     expect(listed.length).toBeLessThan(result.questions.length)
   })
+
+  it('Mat K2 with Q6 chosen but blank: Q6 is listed, the unchosen Q5 never is (old code listed neither)', async () => {
+    const server = new BijakServer({ storage: new MemoryStorage(), now: () => 1_800_000_000_000 })
+    const { attemptId } = await server.startAttempt(7, 'mat-k2-2025-a', 'exam')
+    await server.submit(7, attemptId, {
+      idempotencyKey: 'k',
+      changes: [],
+      picks: { 'mat-k2-2025-a-s3': ['mat2-kuadratik-v1'] },
+    })
+    const { result } = await server.getResult(7, attemptId)
+    const byId = new Map(result.questions.map((x) => [x.questionId, x]))
+    expect(byId.get('mat2-kuadratik-v1')!.counted).toBe(true)
+    expect(byId.get('mat2-statistik-v1')!.counted).toBe(false)
+    const listed = result.questions.filter(needsAttention).map((x) => x.questionId)
+    expect(listed).toContain('mat2-kuadratik-v1')
+    expect(listed).not.toContain('mat2-statistik-v1')
+    expect(listed).toHaveLength(5)
+  })
 })

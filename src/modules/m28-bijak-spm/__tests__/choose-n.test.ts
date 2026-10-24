@@ -7,6 +7,7 @@ import {
   chooseState,
   countedIds,
   pickOnAnswer,
+  progressOf,
   unansweredIn,
 } from '../domain/choose-n'
 import { BijakServer, MemoryStorage } from '../server/store'
@@ -71,6 +72,21 @@ describe('chooseState and copy', () => {
     expect(unansweredIn({ type: 'choose', n: 1 }, ids, answered)).toBe(0)
     expect(unansweredIn({ type: 'choose', n: 2 }, ids, answered)).toBe(1)
     expect(unansweredIn({ type: 'choose', n: 1 }, ids, new Set())).toBe(1)
+  })
+})
+
+describe('progressOf: Kemajuan menjawab', () => {
+  const sections = [
+    { rule: { type: 'all' } as const, questionIds: ['a1', 'a2'] },
+    { rule: { type: 'choose', n: 1 } as const, questionIds: ['b1', 'b2'] },
+  ]
+  it('counts a choose section as N, so one answered alternative completes it', () => {
+    expect(progressOf(sections, new Set())).toEqual({ done: 0, total: 3 })
+    expect(progressOf(sections, new Set(['a1', 'b2']))).toEqual({ done: 2, total: 3 })
+    expect(progressOf(sections, new Set(['a1', 'a2', 'b1']))).toEqual({ done: 3, total: 3 })
+  })
+  it('does not count overflow answers', () => {
+    expect(progressOf(sections, new Set(['a1', 'a2', 'b1', 'b2']))).toEqual({ done: 3, total: 3 })
   })
 })
 

@@ -112,3 +112,27 @@ export function pickOnAnswer(
   if (picks.includes(questionId) || picks.length >= n) return picks
   return [...picks, questionId]
 }
+
+/**
+ * Progress of the paper ("Kemajuan menjawab"): answered over what can count. A choose-N section
+ * adds at most N to both sides, so skipping the alternatives never holds the bar back and an
+ * overflow answer never pushes it past its share.
+ */
+export function progressOf(
+  sections: readonly {
+    rule: { type: 'all' } | { type: 'choose'; n: number }
+    questionIds: readonly string[]
+  }[],
+  answeredIds: ReadonlySet<string>,
+): { done: number; total: number } {
+  let done = 0
+  let total = 0
+  for (const s of sections) {
+    const answered = s.questionIds.filter((id) => answeredIds.has(id)).length
+    const cap =
+      s.rule.type === 'all' ? s.questionIds.length : Math.min(s.rule.n, s.questionIds.length)
+    total += cap
+    done += Math.min(answered, cap)
+  }
+  return { done, total }
+}
