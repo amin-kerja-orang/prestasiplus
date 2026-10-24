@@ -45,11 +45,11 @@ async function plant(): Promise<void> {
     (1, 'Gangsa', 'a,b', 1), (2, 'PERAK', null, 2), (3, 'Tidak Wujud', null, 3)`)
   await q(`insert into staging_cloud.achievements (id, name, criteria) values
     (1, 'latih tubi pertama', 'Contoh'), (2, 'Pencapaian Baharu', 'Syarat contoh')`)
-  await q(`insert into staging_cloud.challenges (id, created_by, classroom_id, type, title, criteria) values
-    (1, null, null, 'quiz_count', 'Cabaran Platform', '{"target": 3}'),
-    (2, ${u[0]}, null, 'quiz_count', 'Cabaran Guru', '{"target": 3}'),
-    (3, null, null, 'harian', 'Jenis Tidak Dikenali', '{"target": 3}'),
-    (4, null, null, 'accuracy', 'Tanpa Sasaran', 'contoh')`)
+  await q(`insert into staging_cloud.challenges (id, created_by, classroom_id, challenge_type, title, target_value) values
+    (1, null, null, 'quiz_count', 'Cabaran Platform', 3),
+    (2, ${u[0]}, null, 'quiz_count', 'Cabaran Guru', 3),
+    (3, null, null, 'harian', 'Jenis Tidak Dikenali', 3),
+    (4, null, null, 'accuracy', 'Tanpa Sasaran', null)`)
   await q(`insert into staging_cloud.reward_settings (id, reward_budget_sen_month, flat_quiz_reward, current_session_year, games_award_syiling)
     values (1, 300, 2, '2026', -1)`)
   await q(`insert into staging_cloud.challenge_user (challenge_id, user_id, progress, completed_at, claimed_on) values
@@ -129,7 +129,7 @@ describe('catalogue', () => {
     const rows = await h.q<{ legacy_id: string; metric: string | null; target_value: number }>(`select legacy_id, metric, target_value from challenges order by legacy_id`)
     expect(rows).toEqual([{ legacy_id: '1', metric: null, target_value: 3 }])
     expect(recon.challenges).toEqual({ source: 4, eligible: 3, loaded: 1, rejected: 2 })
-    expect(reject('challenges', 'UNKNOWN_ENUM', 'type')).toBe(1)
+    expect(reject('challenges', 'UNKNOWN_ENUM', 'challenge_type')).toBe(1)
     expect(reject('challenges', 'INVALID_VALUE', 'target_value')).toBe(1)
   })
 

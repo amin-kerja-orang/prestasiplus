@@ -58,7 +58,7 @@ Counts are final tables after all migrations (134). "Business" means the table h
 | Exams (attempts) | `exam_attempts`, `part_responses` (2) | Canonical exam attempts and per-part responses (including AI grading). |
 | Questions, legacy bank | `questions`, `question_options`, `structured_questions`, `structured_sub_questions`, `structured_rubric_points`, `pksk_questions`, `question_reports`, `question_submissions`, `question_imports`, `question_sets`, `question_set_items`, `spm_sets`, `spm_set_question` (13) | Objective, structured and PKSK items; reports; teacher submissions; teacher question sets; SPM tracking sets. |
 | Questions, canonical bank | `exam_papers`, `paper_sections`, `exam_questions`, `exam_paper_questions`, `question_stimulus`, `question_parts`, `part_options`, `part_answer_keys`, `stimuli`, `media_assets`, `question_revisions`, `question_snapshots`, `source_papers`, `import_batches`, `import_items`, `legacy_canonical_map`, `unify_quarantine`, `paper_documents`, `paper_document_pages`, `paper_blueprints`, `blueprint_sections`, `teacher_reference_documents`, `teacher_reference_papers` (23) | Canonical exam model (paper, section, question, part, option, key, stimulus), revisions and snapshots, import pipeline, PDF page images, exam-format blueprints, bridge from legacy ids. |
-| Lookups | `answer_modes`, `answer_key_kinds`, `stimulus_kinds`, `selection_rules`, `question_statuses`, `paper_statuses`, `attempt_statuses`, `exam_boards`, `exam_types` (9) | Vocabulary tables of the canonical model. |
+| Lookups | `answer_modes`, `answer_key_kinds`, `stimulus_kinds`, `selection_rules`, `question_statuses`, `paper_statuses`, `attempt_statuses`, `exam_boards`, `exam_types` (9) | Vocabulary tables of the canonical model (`id`, `slug`). Copied for id to slug joins: 6 staged (`attempt_statuses`, `paper_statuses`, `question_statuses`, `answer_modes`, `answer_key_kinds`, `stimulus_kinds`), 3 archived (`exam_boards`, `exam_types`, `selection_rules`). Still not migrated as v2 rows. |
 
 Two facts about the two banks that matter later:
 
@@ -118,7 +118,7 @@ Prototype store names are the `defineTable` or dataset names in `src/modules/*/m
 | Gamification | `reward_settings` | M14 `settingsTable` | **Reshape** | Single row (`reward_budget_sen_month`, `flat_quiz_reward`, `current_session_year`, `games_award_syiling`) vs prototype key/value settings. |
 | Battle & games | `battles` | M16 `battlesTable` | **Reshape** | .cloud: `mode` (1v1, quick_match, school_battle), live fields (`total_questions`, `duration_seconds`); prototype: playerA/playerB wide row plus question type, domain, level. |
 | Battle & games | `battle_participants` | M16 `battlesTable` (playerA/B) + `battleAnswersTable` | **Reshape** | Normalised rows (`score`, `accuracy`, `is_bot`, `target_score`, `answered`) vs wide columns. |
-| Battle & games | `battle_queue`, `battle_invites` | M16 `battleQueuesTable`, `battleInvitationsTable` | **Rename** | Transient; `uuid`, `grade`, `status` vocabulary. |
+| Battle & games | `battle_queue`, `battle_invites` | M16 `battleQueuesTable`, `battleInvitationsTable` | **Rename** | Transient; `grade`, `status` vocabulary (`battle_invites` also has a `uuid`; `battle_queue` has none). |
 | Battle & games | `school_battle_rankings` | M16 `storedStandingsTable` / `sekolahBersaingTable` | **Not migrated** | Stored aggregate; recompute from battles. |
 | Battle & games | `games` | none (prototype uses a fixed `GameKey` enum) | **Missing in prototype** | `name`, `type`, JSON `config`. |
 | Battle & games | `game_sessions` | M16 `gameSessionsTable` | **Reshape** | .cloud: `game_id`, `score`, `result`; prototype: string `game` key, darjah, item count, max score. |
@@ -159,7 +159,7 @@ Prototype store names are the `defineTable` or dataset names in `src/modules/*/m
 | Questions (canonical) | `question_revisions`, `question_snapshots`, `source_papers`, `import_batches`, `import_items`, `legacy_canonical_map`, `unify_quarantine` | none | **Not migrated** | Provenance and pipeline; keep only in a read-only archive. |
 | Questions (canonical) | `paper_documents`, `paper_document_pages`, `paper_blueprints`, `blueprint_sections` | none | **Not migrated** | PDF page images and exam-format blueprints; re-derive in the new exam schema. |
 | Questions (canonical) | `teacher_reference_documents`, `teacher_reference_papers` | none | **Not migrated** | Teacher reference uploads (files). |
-| Lookups | `answer_modes`, `answer_key_kinds`, `stimulus_kinds`, `selection_rules`, `question_statuses`, `paper_statuses`, `attempt_statuses`, `exam_boards`, `exam_types` | new exam schema | **Not migrated** | Vocabulary tables of the canonical bank. |
+| Lookups | `answer_modes`, `answer_key_kinds`, `stimulus_kinds`, `selection_rules`, `question_statuses`, `paper_statuses`, `attempt_statuses`, `exam_boards`, `exam_types` | new exam schema | **Not migrated** (staged or archived for id to slug joins only) | Vocabulary tables of the canonical bank. The real .cloud rows carry `id` and `slug`; the `*_id` columns of the canonical tables and `exam_attempts.status_id` are joined to the slug in the transforms. |
 
 
 ### 2.1 Counts by match level (134 tables)
@@ -309,7 +309,7 @@ Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replace
 - `headcounts` is aggregate per teacher/class/subject/year (`tov`, `rs`); the prototype entry is per student with targets, actuals and ETR. Migrate the aggregate as a config with `tov`/`rs` only; per-student entries have no source.
 - `timeline_entries` (`title`, `body`, `happened_on`) to M08 timeline posts (`category` default, `photos` empty).
 - `feedback` (4 scores + comment) vs M12 monthly NPS: either add the four score columns or migrate as legacy feedback with `nps` `NULL`.
-- `interventions` columns (`alert_type`, `action_taken`, before/after accuracy and mood) vs M12 shape: map and keep the free text as is, subject to Q9.
+- `interventions` columns (`alert_type`, before/after accuracy) vs M12 shape. PDPA minimisation (FIT-FIX, security review M1 to M3): `action_taken`, `before_mood` and `after_mood` are no longer staged, nor are the other free-text columns that no reader uses (`study_schedules.focus_topic`, `structured_attempt_answers.answer`, `student_notes.title/body`, `mood_checkins.note`, `chatbot_messages.body`, and the archive file path and title columns). Bring one back to the spec only when a reader needs it, subject to Q9.
 - `mood_checkins` (hosted provisionally in M17 for M26): rename only. `wellbeing_alerts`, `psychometric_results`, `aspirations`, `career_paths`, `universities`, `scholarships` have no prototype store.
 - Kirkpatrick, risk, ranking, standings, item statistics, school scores are **computed**; nothing to migrate.
 
@@ -359,7 +359,7 @@ Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replace
 | Risk | Detail | Mitigation |
 |---|---|---|
 | **PII volume** | Users (name, email, phone, IC, class, faith, bio), parents, sponsors (officer name), foster applications (family category, income reason), mood notes, intervention notes, psychometric results, chatbot and ticket free text, student notes, `audit_logs.ip`, `google_id`. Most users are minors. | Treat the dump as sensitive; encrypted storage; staging DB access limited and logged; PDPA-aligned data minimisation. Migrate wellbeing, psychometric, foster and chatbot data only after an explicit user decision (Q7). Mask free text in non-production copies. |
-| **Faith field** | `users.faith` is sensitive personal data. | Do not migrate unless a v2 feature uses it. |
+| **Faith field** | `users.faith` is sensitive personal data. | Do not migrate unless a v2 feature uses it. Not staged either (FIT-FIX): `users.faith` and `users.google_id` are not in `ddl/spec.ts`. |
 | **Seed rosters in the reference repo** | `backend/database/data/bbb_students.json` and `bbb_teachers.json` appear to be rosters (**to confirm**); the roster seeders and `roster:backfill-logins` assign one shared default password. | Never load or copy these files. Every roster account (`username` set) must be forced to reset on first login. |
 | **Passwords and hashes** | Laravel hashes (assumed bcrypt `$2y$`; to verify per prefix). Sanctum tokens, `remember_token` exist. | Migrate hashes only; accept `$2y$` as `$2b$` in the Node verifier, rehash to the v2 algorithm on first successful login; flag accounts whose hash is not bcrypt; never migrate tokens (everyone re-logs in); accounts with the shared default hash are forced to reset. No plaintext in any file. |
 | **IC numbers** | Plain text in `users.ic`. | Hash + mask at extract; drop the column; do not log. |

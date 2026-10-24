@@ -293,7 +293,7 @@ describe('observed value sets (docs/architecture/v2-data-migration.md 4.4, M14 8
     })
 
     it('challenge and banner types are the observed sets', () => {
-      expect([...distinct(fx, 'challenges', 'type')].sort()).toEqual(['accuracy', 'quiz_count', 'streak', 'time_spent', 'topic_variety'])
+      expect([...distinct(fx, 'challenges', 'challenge_type')].sort()).toEqual(['accuracy', 'quiz_count', 'streak', 'time_spent', 'topic_variety'])
       expect([...distinct(fx, 'banners', 'type')].sort()).toEqual(['announcement', 'hero', 'promo'])
     })
 

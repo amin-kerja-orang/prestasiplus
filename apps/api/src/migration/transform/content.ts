@@ -275,9 +275,10 @@ export interface VideoValues {
 }
 
 /**
- * A v2 video has no draft state, so an unpublished source video is UNSUPPORTED (it must not become public).
- * Child safety (LEAD 2026-10-20, D9): the address must pass the API's own `isAllowedHost` (https on a YouTube or Vimeo host),
- * else UNSUPPORTED on `url`; the API holds every non-staff uploader to the same rule.
+ * `.cloud` videos carry no publication flag (the real columns are title, subject, url, duration), so every staged video is
+ * live there and none is rejected as a draft. Child safety (LEAD 2026-10-20, D9): the address must pass the API's own
+ * `isAllowedHost` (https on a YouTube or Vimeo host), else UNSUPPORTED on `url`; the API holds every non-staff uploader
+ * to the same rule.
  * `category` has no staged source: INVALID_VALUE until the spec carries it.
  */
 export function transformVideo(row: Staged, parents: { ownerId: string | undefined }): Outcome<VideoValues> {
@@ -287,9 +288,6 @@ export function transformVideo(row: Staged, parents: { ownerId: string | undefin
   const url = text(row.url)
   if (url === null || !HTTP_URL.test(url)) return invalid('url')
   if (!isAllowedHost(url)) return unsupported('url')
-  const published = flag(row.is_published, false)
-  if (published === 'invalid') return invalid('is_published')
-  if (!published) return unsupported('is_published')
   const category = optText(row, 'category')?.toLowerCase() ?? null
   if (category === null || !VIDEO_CATEGORIES.includes(category)) return invalid('category')
   return ok({
