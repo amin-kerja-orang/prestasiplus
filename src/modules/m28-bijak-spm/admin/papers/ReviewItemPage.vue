@@ -230,7 +230,12 @@ async function resubmit(): Promise<void> {
       <!-- Sticky decision bar: a raised layer with its own shadow (never loose buttons over the
            content). On a phone Tolak and Minta Pembetulan share a row and Lulus & Terbit takes the
            full width below, so the bar stays two rows high instead of wrapping unevenly. -->
-      <DsPanel behavior="bar" padding="sm" data-testid="review-actions">
+      <DsPanel
+        v-if="data.item.status !== 'terbit'"
+        behavior="bar"
+        padding="sm"
+        data-testid="review-actions"
+      >
         <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
           <template v-if="data.item.status === 'semakan'">
             <UButton
