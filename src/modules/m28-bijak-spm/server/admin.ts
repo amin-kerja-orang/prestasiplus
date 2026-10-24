@@ -548,12 +548,22 @@ export class AdminOps {
 
   async listReviewQueue(f: QueueFilter = {}): Promise<{
     items: QueueItem[]
+    /** Queue items per status (a stimulus group is one item). */
     counts: Record<QuestionStatus, number>
+    /**
+     * Questions per status, as the bank counts them: a group of 2 is 2 questions, and a revision is a
+     * new version of an already published question, so it adds no question.
+     */
+    questions: Record<QuestionStatus, number>
   }> {
     await this.host.tick()
     const all = this.allItems()
     const counts: Record<QuestionStatus, number> = { semakan: 0, terbit: 0, draf: 0, ditolak: 0 }
-    for (const i of all) counts[i.status] += 1
+    const questions: Record<QuestionStatus, number> = { semakan: 0, terbit: 0, draf: 0, ditolak: 0 }
+    for (const i of all) {
+      counts[i.status] += 1
+      if (!i.isRevision) questions[i.status] += i.questionIds.length
+    }
     const status = f.status ?? 'semakan'
     const items = all
       .filter(
@@ -564,7 +574,7 @@ export class AdminOps {
           (!f.kind || i.kind === f.kind),
       )
       .sort((a, b) => b.ageDays - a.ageDays || a.key.localeCompare(b.key))
-    return { items, counts }
+    return { items, counts, questions }
   }
 
   async getReviewItem(key: string): Promise<ReviewDetail> {

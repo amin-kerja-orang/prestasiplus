@@ -63,6 +63,10 @@ const { data, error, loading, reload } = useApi(
 
 const rows = computed(() => (data.value?.items ?? []) as Row[])
 const counts = computed(() => data.value?.counts)
+const questions = computed(() => data.value?.questions)
+/** "6 item · 7 soalan": the bank counts questions, the queue counts items (a group is one item). */
+const tileSub = (st: QuestionStatus): string =>
+  `${counts.value?.[st] ?? 0} item · ${questions.value?.[st] ?? 0} soalan`
 const activeCount = computed(
   () => [applied.value.subject, applied.value.kertas, applied.value.kind].filter(Boolean).length,
 )
@@ -102,6 +106,7 @@ const stats = computed<StatItem[]>(() => [
     key: 'semakan',
     label: 'Menunggu',
     value: counts.value?.semakan ?? 0,
+    sub: tileSub('semakan'),
     icon: 'clock',
     active: draft.status === 'semakan',
     onClick: () => (draft.status = 'semakan'),
@@ -110,6 +115,7 @@ const stats = computed<StatItem[]>(() => [
     key: 'draf',
     label: 'Pembetulan',
     value: counts.value?.draf ?? 0,
+    sub: tileSub('draf'),
     icon: 'arrow-u-up-left',
     active: draft.status === 'draf',
     onClick: () => (draft.status = 'draf'),
@@ -118,6 +124,7 @@ const stats = computed<StatItem[]>(() => [
     key: 'ditolak',
     label: 'Ditolak',
     value: counts.value?.ditolak ?? 0,
+    sub: tileSub('ditolak'),
     icon: 'x-circle',
     active: draft.status === 'ditolak',
     onClick: () => (draft.status = 'ditolak'),

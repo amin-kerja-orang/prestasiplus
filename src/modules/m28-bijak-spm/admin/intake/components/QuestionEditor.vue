@@ -11,7 +11,7 @@ import { DsCluster, DsNativeSelect, DsStack, DsText } from '@/ds'
 import type { LeafKind } from '../../../domain/types'
 import RichText from '../../../components/RichText.vue'
 import { unitByCode, unitsFor, tagWithUnit } from '../lib/dskp'
-import { fieldName } from '../domain/validation'
+import { fieldName, fieldsToConfirm } from '../domain/validation'
 import type { IntakePart, IntakeQType, IntakeQuestion } from '../types'
 import SchemeEditor from './SchemeEditor.vue'
 
@@ -114,6 +114,8 @@ function setForm(origin: 'T1-T3' | 'T4' | 'T5'): void {
     },
   })
 }
+/** Low-confidence fields to confirm (no unit or SP confirmation for T1-T3). */
+const toConfirm = computed(() => fieldsToConfirm(q.value))
 const spText = computed(() => q.value.tag.sp.join(', '))
 function setSp(text: string): void {
   set({ tag: { ...q.value.tag, sp: text.split(',').map((s) => s.trim()).filter(Boolean) } })
@@ -394,9 +396,9 @@ function insertMath(field: 'stem'): void {
           />
         </label>
       </div>
-      <div v-if="q.lowFields.length > 0" class="flex flex-col gap-1">
+      <div v-if="toConfirm.length > 0" class="flex flex-col gap-1">
         <UCheckbox
-          v-for="f in q.lowFields"
+          v-for="f in toConfirm"
           :key="f"
           :model-value="q.confirmed.includes(f)"
           :data-testid="`confirm-${f}`"

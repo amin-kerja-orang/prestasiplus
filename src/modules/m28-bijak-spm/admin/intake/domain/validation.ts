@@ -6,6 +6,14 @@ import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '.
 import { groupsOf } from './grouping'
 import { questionMarks, schemeTotal } from './marks'
 
+/** T1-T3 content is outside DSKP: exempt from the unit and the SP (TP stays required). */
+export const outsideDskp = (tag: IntakeQuestion['tag']): boolean => tag.formOrigin === 'T1-T3'
+
+/** Low-confidence fields a person must confirm: the unit and SP are not asked for T1-T3. */
+export function fieldsToConfirm(q: IntakeQuestion): string[] {
+  return outsideDskp(q.tag) ? q.lowFields.filter((f) => f !== 'tag.unit' && f !== 'tag.sp') : q.lowFields
+}
+
 export function fieldName(f: string): string {
   switch (f) {
     case 'tag.unit':
@@ -78,10 +86,12 @@ export function validateBatch(
 
     const t = q.tag
     if (!t.subject || !t.level) add(q, w, 'Subjek dan tingkatan perlu ditetapkan.')
-    if (t.unit === null && t.formOrigin !== 'T1-T3') add(q, w, 'Unit DSKP belum dipilih.')
-    if (t.sp.length === 0) add(q, w, 'Standard Pembelajaran (SP) belum dipilih.')
+    if (!outsideDskp(t)) {
+      if (t.unit === null) add(q, w, 'Unit DSKP belum dipilih.')
+      if (t.sp.length === 0) add(q, w, 'Standard Pembelajaran (SP) belum dipilih.')
+    }
     if (!(t.tp >= 1 && t.tp <= 6)) add(q, w, 'Tahap Penguasaan (TP) mesti antara 1 dan 6.')
-    for (const f of q.lowFields)
+    for (const f of fieldsToConfirm(q))
       if (!q.confirmed.includes(f))
         add(q, w, `Medan keyakinan rendah belum disahkan: ${fieldName(f)}.`)
 
