@@ -26,6 +26,7 @@ import {
   DsIcon,
   DsPillNav,
   DsRewardChip,
+  provideShellSectionTabs,
   provideShellTitle,
 } from '@/ds'
 import { useGamificationSummary } from '@/shells/user/useGamificationSummary'
@@ -115,6 +116,8 @@ const current = computed(() => currentItem(sidebar.value, route.path))
 const sectionTabs = computed(() =>
   groupTabs(sidebar.value, current.value?.id).map((t) => ({ key: t.id, label: t.label, to: t.to })),
 )
+// A page with a tab strip of its own (Kirkpatrick) leaves it out while this one shows.
+provideShellSectionTabs(computed(() => sectionTabs.value.length > 0))
 const title = computed(() => route.meta.header?.title ?? current.value?.label ?? '')
 const crumb = computed(() => {
   const c = current.value ? sectionOf(sidebar.value, current.value.id) : ''

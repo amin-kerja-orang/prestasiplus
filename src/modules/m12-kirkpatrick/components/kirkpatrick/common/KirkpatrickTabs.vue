@@ -2,12 +2,14 @@
 /**
  * The in-page level tab strip of S2, S3, S4, S5 and S7 (FN-M12-1.1.9; FR-M12-09): six plain links to
  * unfiltered URLs of the mount, the current one active. S1 and S6 show no strip. The strip is a
- * `DsPillNav` (it scrolls inside itself on a narrow screen). Targets are built from `basePath` (see
+ * `DsPillNav` (it scrolls inside itself on a narrow screen). The Pembelajaran and Pentadbiran layouts print
+ * the same pages as a strip above the page; then this one is left out, so one set of tabs shows (UAT G-16,
+ * A-PM11). Targets are built from `basePath` (see
  * `kirkpatrick-paths.ts`).
  */
 import { computed } from 'vue'
 
-import { DsPillNav, type PillItem } from '@/ds'
+import { DsPillNav, useShellPrintsSectionTabs, type PillItem } from '@/ds'
 
 import { kirkpatrickPaths } from './kirkpatrick-paths'
 
@@ -15,6 +17,9 @@ export type KirkpatrickTab =
   'overview' | 'reaction' | 'learning' | 'behavior' | 'results' | 'interventions'
 
 const props = defineProps<{ basePath: string; current: KirkpatrickTab }>()
+
+/** True while the layout prints the section tabs (`provideShellSectionTabs`). */
+const shellHasTabs = useShellPrintsSectionTabs()
 
 const paths = computed(() => kirkpatrickPaths(props.basePath))
 const TABS: { key: KirkpatrickTab; label: string; icon: string }[] = [
@@ -32,6 +37,7 @@ const items = computed<PillItem<KirkpatrickTab>[]>(() =>
 
 <template>
   <DsPillNav
+    v-if="!shellHasTabs"
     :items="items"
     :active="current"
     label="Tahap Kirkpatrick"
