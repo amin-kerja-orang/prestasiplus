@@ -66,7 +66,7 @@ test.describe('M05 S13 / S14 / S15 smoke', { tag: [TAG.smoke, moduleTag(5)] }, (
     await expect(tid(page, 'shell-user-title')).toHaveText('Misi Harian')
     await expect(tid(page, 'missions-empty')).toContainText('Tiada misi hari ini')
     await expect(tid(page, 'missions-empty')).toContainText(
-      'Misi baru akan muncul bila guru anda assign.',
+      'Misi baharu akan muncul apabila guru anda menetapkannya.',
     )
     await expectNoHorizontalScroll(page)
   })
@@ -85,7 +85,7 @@ test.describe('M05 S13 / S14 / S15 smoke', { tag: [TAG.smoke, moduleTag(5)] }, (
     await expect(page.locator('[data-testid=target-status]').first()).toHaveText('Belum mula')
     await expect(page.locator('[data-testid=target-predicted]').first()).toHaveText('-')
     await expect(page.locator('[data-testid=target-select] option')).toHaveCount(20 * 10)
-    await expect(tid(page, 'targets-legend')).toContainText('70%+ Ketepatan (On Track)')
+    await expect(tid(page, 'targets-legend')).toContainText('70%+ Ketepatan (Atas Landasan)')
     await expectNoHorizontalScroll(page)
 
     // Mobile: the track sits on its own full-width line (DV-M05-12); wider: one line.

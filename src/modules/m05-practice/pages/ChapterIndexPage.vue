@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S4 `/practice/chapter` "Soalan by Chapter" (M05-T5; FR-M05-57, 58, BR-15; roles-matrix L14 for
+ * S4 `/practice/chapter` "Soalan Mengikut Bab" (M05-T5; FR-M05-57, 58, BR-15; roles-matrix L14 for
  * Murid and Guru: there is no role rule), restyled for v2 (AR-HUB, batch B01). Title block with
  * "Latih Tubi Rawak" and one card per chapter subject (#7; grid 1 / `md` 2 / `xl` 3) linking to S5.
  * DV-M05-15: "Latih Tubi Rawak" is 44 px high below `lg`.
@@ -23,12 +23,12 @@ const subjects = computed(() => data.value?.data ?? [])
 
 <template>
   <DsPage
-    title="Soalan by Chapter"
+    title="Soalan Mengikut Bab"
     subtitle="Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap dan mencapai sekurang-kurangnya 70%."
     data-testid="chapter-index-page"
   >
     <template #breadcrumb>
-      <p class="text-overline text-primary-t">Mode Sistematik</p>
+      <p class="text-overline text-primary-t">Mod Sistematik</p>
     </template>
     <template #actions>
       <UButton

@@ -160,7 +160,7 @@ function dashboard(userId: number, now: number): Dashboard {
           (q.educationLevelId !== null ? curriculum.level(q.educationLevelId)?.code : undefined) ??
           '',
       })),
-    // FR-M05-27: Q-DIFFICULTY(1..5); Σ = Total Soalan.
+    // FR-M05-27: Q-DIFFICULTY(1..5); Σ = Jumlah Soalan.
     difficultyChart: [1, 2, 3, 4, 5].map((level) => ({
       level,
       count: questions.count('Q-DIFFICULTY', level),

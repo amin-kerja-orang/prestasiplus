@@ -115,7 +115,7 @@ test.describe('QA-G5 L21 Latih Tubi flow', { tag: [moduleTag(5)] }, () => {
 })
 
 // ---------------------------------------------------------------------------------------------
-// L14 Soalan by Chapter: S4 -> S5 -> Q2, unlock at 70 %, then S6 / S7 revision
+// L14 Soalan Mengikut Bab: S4 -> S5 -> Q2, unlock at 70 %, then S6 / S7 revision
 // ---------------------------------------------------------------------------------------------
 test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0 } })
@@ -478,7 +478,7 @@ test.describe('QA-G5 S15 SPM targets', { tag: [moduleTag(5)] }, () => {
     expect(options).toEqual(['Target', 'A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E'])
     await expect(page.getByText('50-69% (Perlu Usaha)')).toBeVisible()
     await expect(page.getByText('<50% (Perlu Fokus)')).toBeVisible()
-    await expect(page.getByText('Tip: Jawab lebih banyak soalan untuk ramalan gred yang lebih tepat')).toBeVisible()
+    await expect(page.getByText('Petua: Jawab lebih banyak soalan untuk ramalan gred yang lebih tepat')).toBeVisible()
   })
 
   test('E2E-M05-47/48 pelajar: saved targets A / B+ / A- are selected; saving A+ for Fizik and clearing BM persists', async ({
@@ -531,7 +531,7 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
     const desktop = isDesktopShell(page)
     if (!desktop) {
       await expect(
-        tid(page, 'shell-user-bottom-nav').getByRole('link', { name: 'Home' }),
+        tid(page, 'shell-user-bottom-nav').getByRole('link', { name: 'Utama' }),
       ).toHaveAttribute('href', '/dashboard')
       await tid(page, 'shell-user-hamburger').click()
     }
@@ -539,7 +539,7 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
     const hrefOf = async (name: string) =>
       nav.getByRole('link', { name, exact: true }).first().getAttribute('href')
     expect(await hrefOf('Latih Tubi')).toBe('/practice')
-    expect(await hrefOf('Soalan by Chapter')).toBe('/practice/chapter')
+    expect(await hrefOf('Soalan Mengikut Bab')).toBe('/practice/chapter')
     expect(await hrefOf('Soalan Berstruktur')).toBe('/latihan-berstruktur')
     expect(await hrefOf('Dashboard')).toBe('/dashboard')
     expect(await hrefOf('Pembetulan')).toBe('/pembetulan')
@@ -571,8 +571,8 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
     const expected: Array<[string, string, string[]]> = [
       ['/practice', 'practice-title', ['Latih Tubi']],
       ['/practice/MATH', 'config-name', ['Latih Tubi']],
-      ['/practice/chapter', 'chapter-subject-grid', ['Soalan by Chapter']],
-      ['/practice/chapter/MATH', 'chapter-card-1', ['Soalan by Chapter']],
+      ['/practice/chapter', 'chapter-subject-grid', ['Soalan Mengikut Bab']],
+      ['/practice/chapter/MATH', 'chapter-card-1', ['Soalan Mengikut Bab']],
       ['/practice/revision', 'revision-list-page', []],
       ['/latihan-berstruktur', 'structured-h1', ['Soalan Berstruktur']],
       ['/remedial/saya', 'remedial-h1', ['Remedial']],

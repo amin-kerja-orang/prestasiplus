@@ -141,7 +141,7 @@ describe('HistoryPage (S9)', () => {
     expect(api.fetchHistory).toHaveBeenCalledWith({ period: null, page: 1 }, expect.anything())
     expect(w.text()).toContain('Sejarah Latihan')
     expect(w.text()).toContain('Jumlah Sesi')
-    expect(w.text()).toContain('19 May 2026, 03:49')
+    expect(w.text()).toContain('19 Mei 2026, 03:49')
     expect(w.text()).toContain('02:05')
     expect(w.text()).toContain('2 / 10')
     expect(w.text()).toContain('Cuba Lagi')

@@ -32,7 +32,7 @@ const ALL = 'semua'
 const BAHASA_CHIPS = [
   'BM dahulu, BI kemudian',
   'Format kertas sebenar',
-  'Paper-based tracking',
+  'Penjejakan berasaskan kertas',
   'Berstruktur / respons sebenar',
 ]
 
@@ -163,7 +163,7 @@ function goPage(page: number): void {
       <UCard v-if="variant.track" data-testid="structured-info">
         <div class="flex flex-col gap-3">
           <p class="text-body text-default">
-            Subjek bahasa tidak dipaksa menjadi 40 MCQ. Laluan ini menggunakan paper-based tracking
+            Subjek bahasa tidak dipaksa menjadi 40 MCQ. Laluan ini menggunakan penjejakan berasaskan kertas
             dengan pendekatan berstruktur / respons sebenar.
           </p>
           <div class="flex flex-wrap gap-2">
@@ -257,7 +257,7 @@ function goPage(page: number): void {
                   >{{ c.levelName }}</UBadge
                 >
                 <UBadge v-if="c.isTrial" color="success" variant="soft" data-testid="card-trial"
-                  >Trial</UBadge
+                  >Percubaan</UBadge
                 >
               </div>
               <p

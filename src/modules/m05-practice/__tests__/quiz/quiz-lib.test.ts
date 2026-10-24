@@ -134,7 +134,7 @@ describe('planStartError', () => {
     ).toEqual({ kind: 'alert', message: 'Soalan tidak mencukupi.' })
     expect(planStartError(err(500, 'SERVER_ERROR', ''), REVISION_LABELS)).toEqual({
       kind: 'alert',
-      message: 'Failed to load revision quiz',
+      message: 'Gagal memuatkan kuiz ulang kaji',
     })
     expect(planStartError(new Error(''), REVISION_LABELS)).toEqual({
       kind: 'alert',

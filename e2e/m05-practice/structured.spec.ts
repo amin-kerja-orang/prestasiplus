@@ -192,7 +192,7 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
       await expect(tid(page, 'structured-back')).toHaveText('Kembali ke Tracking A SPM')
       await expect(tid(page, 'structured-back')).toHaveAttribute('href', '/spm/ramalan')
       await expect(tid(page, 'structured-info')).toContainText('BM dahulu, BI kemudian')
-      await expect(tid(page, 'structured-info')).toContainText('Paper-based tracking')
+      await expect(tid(page, 'structured-info')).toContainText('Penjejakan berasaskan kertas')
       await expect(tid(page, 'structured-found')).toHaveText(/\d+ set ditemui/)
       await expect(page.locator('[data-testid=filter-subject] option')).toHaveText([
         'Semua Subjek',

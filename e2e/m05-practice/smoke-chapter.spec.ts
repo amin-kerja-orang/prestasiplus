@@ -38,13 +38,13 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
     }) => {
       await loginAs(who)
       await gotoApp('/practice/chapter')
-      await expectTabTitle(page, 'Soalan by Chapter - PRESTASIPLUS')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
+      await expectTabTitle(page, 'Soalan Mengikut Bab - PRESTASIPLUS')
+      await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Mengikut Bab')
       await expect(tid(page, 'shell-user-subtitle')).toHaveText(
         'Latihan tersusun ikut bab buku teks dan DSKP',
       )
       await expect(tid(page, 'chapter-index-page').getByRole('heading', { level: 1 })).toHaveText(
-        'Soalan by Chapter',
+        'Soalan Mengikut Bab',
       )
       await expect(tid(page, 'chapter-random')).toHaveAttribute('href', '/practice')
       await expect(tid(page, 'chapter-subject-grid').locator('> a')).toHaveCount(10)
@@ -53,7 +53,7 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
       await tid(page, 'chapter-subject-MATH').click()
       await expect(page).toHaveURL(/\/practice\/chapter\/MATH$/)
       await expectTabTitle(page, 'Chapter Matematik - PRESTASIPLUS')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
+      await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Mengikut Bab')
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Matematik')
       await expect(tid(page, 'chapter-subject-name')).toHaveText('Matematik')
       await expect(tid(page, 'chapter-level-select').locator('option')).toHaveCount(4)
@@ -107,14 +107,14 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
     await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Aku Salah')
     await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
     await expect(tid(page, 'revision-total')).toContainText('soalan perlu diulang kaji')
-    await expect(tid(page, 'revision-tips')).toContainText('Tips Ulang Kaji')
+    await expect(tid(page, 'revision-tips')).toContainText('Petua Ulang Kaji')
     await expectNoHorizontalScroll(page)
 
     await page.locator('[data-testid^=revision-subject-][href]').first().click()
     await expect(page).toHaveURL(/\/practice\/revision\/[A-Z]+$/)
     await expect(tid(page, 'quiz-title')).toContainText('Ulang Kaji — ')
     await expect(tid(page, 'chip-revision')).toHaveText(
-      'Mode Ulang Kaji — soalan ini pernah dijawab salah',
+      'Mod Ulang Kaji — soalan ini pernah dijawab salah',
     )
     await expectNoHorizontalScroll(page)
   })

@@ -4,7 +4,7 @@
  * restyled for v2 (batch B01).
  *
  * - Title block, the total of queued questions (orange character card), one card per subject with
- *   queued questions (grid 1 / `md` 2 / `lg` 3) linking to S7, the "Tips Ulang Kaji" card and
+ *   queued questions (grid 1 / `md` 2 / `lg` 3) linking to S7, the "Petua Ulang Kaji" card and
  *   "Kembali ke Latihan".
  * - The info flash "Tiada soalan salah untuk subjek ini. Tahniah!" (set by S7 for a subject with no
  *   queued question) shows once, between the total and the cards as on live, and is gone on reload.
@@ -31,7 +31,7 @@ const subjects = computed(() => data.value?.subjects ?? [])
 const TIPS = [
   'Soalan yang paling kerap dijawab salah akan dipaparkan dahulu',
   'Apabila anda jawab betul, soalan itu akan dikeluarkan dari senarai ini',
-  'Anda tetap mendapat syiling dan coin seperti latihan biasa',
+  'Anda tetap mendapat syiling dan koin seperti latihan biasa',
 ] as const
 </script>
 
@@ -113,7 +113,7 @@ const TIPS = [
         <div class="flex flex-col gap-3">
           <h2 class="flex items-center gap-2 text-subheading text-highlighted">
             <UIcon name="i-ph-lightbulb-duotone" class="size-6 text-warning" aria-hidden="true" />
-            Tips Ulang Kaji
+            Petua Ulang Kaji
           </h2>
           <ul class="flex flex-col gap-2">
             <li v-for="tip in TIPS" :key="tip" class="text-body text-default">{{ tip }}</li>

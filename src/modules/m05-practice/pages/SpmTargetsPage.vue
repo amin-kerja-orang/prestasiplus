@@ -168,13 +168,13 @@ async function save(): Promise<void> {
 
     <DsPanel v-if="data" data-testid="targets-legend">
       <div class="flex flex-wrap gap-2">
-        <UBadge color="success" variant="subtle">70%+ Ketepatan (On Track)</UBadge>
+        <UBadge color="success" variant="subtle">70%+ Ketepatan (Atas Landasan)</UBadge>
         <UBadge color="warning" variant="subtle">50-69% (Perlu Usaha)</UBadge>
         <UBadge color="error" variant="subtle">&lt;50% (Perlu Fokus)</UBadge>
       </div>
       <p class="mt-3 flex items-start gap-2 text-caption text-primary-t sm:justify-end">
         <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0" />
-        Tip: Jawab lebih banyak soalan untuk ramalan gred yang lebih tepat
+        Petua: Jawab lebih banyak soalan untuk ramalan gred yang lebih tepat
       </p>
     </DsPanel>
   </DsPage>

@@ -7,7 +7,7 @@
  *
  * - 409 `CHAPTER_LOCKED` → `/practice/chapter/{code}?level={levelId}` without a message;
  * - 402 → `/pricing` (the runner); header card title "Bab {n}: {chapter}" (INFERRED);
- * - shell header "Soalan by Chapter" / "{subject}", tab title "Chapter {subject} - PRESTASIPLUS" (UNVERIFIED);
+ * - shell header "Soalan Mengikut Bab" / "{subject}", tab title "Chapter {subject} - PRESTASIPLUS" (UNVERIFIED);
  * - results "Keputusan Latihan", "Ulang Lagi" (a new session with the same parameters) and "Kembali" → S5.
  */
 import { computed, onScopeDispose, ref, watch } from 'vue'
@@ -91,8 +91,8 @@ watch(
         setRouteOutcome(404)
         return
       }
-      pageMeta.setTitle(`Chapter ${hit.subjectName} - PRESTASIPLUS`)
-      pageMeta.setHeader({ title: 'Soalan by Chapter', subtitle: hit.subjectName })
+      pageMeta.setTitle(`Bab ${hit.subjectName} - PRESTASIPLUS`)
+      pageMeta.setHeader({ title: 'Soalan Mengikut Bab', subtitle: hit.subjectName })
       resolved.value = { key: k, ...hit }
     } catch (err) {
       if (mine.cancelled) return

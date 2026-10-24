@@ -73,8 +73,8 @@ test.describe('M05 S2 subject list', { tag: [moduleTag(5)] }, () => {
 
     const banner = tid(page, 'chapter-banner')
     await expect(banner).toHaveAttribute('href', '/practice/chapter')
-    await expect(banner.getByText('Mode Baru')).toHaveCSS('text-transform', 'uppercase')
-    await expect(banner).toContainText('Soalan by Chapter')
+    await expect(banner.getByText('Mod Baharu')).toHaveCSS('text-transform', 'uppercase')
+    await expect(banner).toContainText('Soalan Mengikut Bab')
     await expect(banner).toContainText('Mula')
 
     const cards = page.locator('[data-testid^=subject-card-]')

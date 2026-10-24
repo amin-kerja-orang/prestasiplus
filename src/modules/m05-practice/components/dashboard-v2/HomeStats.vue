@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** The five stat cards (FR-M05-10, 11): Syiling Kamu, Mata (Lvl n), Hari Berturut, Sesi Minggu Ini, Ketepatan. */
+/** The five stat cards (FR-M05-10, 11): Syiling Kamu, Mata (Tahap n), Hari Berturut, Sesi Minggu Ini, Ketepatan. */
 import { DsStatTile } from '@/ds'
 
 import type { Dashboard } from '../../api/types'
@@ -27,7 +27,7 @@ const accuracy = useDisplayCount(() => props.week.accuracyPct, COUNT_RULES.accur
     <li class="min-w-0" data-testid="dash-stat-points">
       <DsStatTile
         :value="points"
-        :unit="`Mata (Lvl ${wallet.level})`"
+        :unit="`Mata (Tahap ${wallet.level})`"
         icon="lightning"
         accent="action"
       />
