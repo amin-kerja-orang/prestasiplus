@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S13 `/pusat-ai/spm` "SPM Walkthrough — Cikgu Alesa" (M06-T4; FR-M06-80…85, FR-M06-88, BR-M06-28;
+ * S13 `/pusat-ai/spm` "Panduan Langkah SPM — Cikgu Alesa" (M06-T4; FR-M06-80…85, FR-M06-88, BR-M06-28;
  * L-11 SOURCE-DERIVED from the live inline script).
  *
  * Form `#spmForm`: `subject` with native `required` (an empty subject is stopped by the browser before
@@ -65,8 +65,8 @@ async function solve(): Promise<void> {
 
 <template>
   <DsPage
-    title="📝 SPM Walkthrough"
-    subtitle="Snap soalan SPM, AI walk-through step-by-step dengan mark scheme + sebutan buku teks. Faham bukan hafal."
+    title="📝 Panduan Langkah SPM"
+    subtitle="Tangkap gambar soalan SPM, AI terangkan langkah demi langkah dengan skema pemarkahan + sebutan buku teks. Faham bukan hafal."
     :show-title="true"
     data-testid="walk-page"
   >
@@ -109,7 +109,7 @@ async function solve(): Promise<void> {
               v-model="questionText"
               name="question_text"
               :rows="5"
-              placeholder="Salin soalan SPM di sini, atau upload gambar di bawah..."
+              placeholder="Salin soalan SPM di sini, atau muat naik gambar di bawah..."
               class="w-full"
               data-testid="walk-question"
             />
@@ -144,13 +144,13 @@ async function solve(): Promise<void> {
           :loading="busy"
           class="min-h-11 self-start max-sm:w-full max-sm:justify-center"
           data-testid="walk-submit"
-          >{{ busy ? 'AI sedang fikir... (mungkin 15-30s)' : 'Bagi Walkthrough' }}</UButton
+          >{{ busy ? 'AI sedang fikir... (mungkin 15-30s)' : 'Beri Panduan Langkah' }}</UButton
         >
       </form>
     </DsPanel>
 
     <div v-if="result !== null" ref="resultEl" class="min-w-0">
-      <DsPanel id="result" title="✨ Walkthrough Cikgu Alesa" data-testid="walk-result">
+      <DsPanel id="result" title="✨ Panduan Langkah Cikgu Alesa" data-testid="walk-result">
         <pre
           id="walkBody"
           class="text-body break-words whitespace-pre-wrap text-default"
@@ -161,7 +161,7 @@ async function solve(): Promise<void> {
 
     <DutaBlock
       title="🎓 Cikgu Maestro SPM"
-      text="Setelah baca walkthrough, tonton video penjelasan dari Duta SPM."
+      text="Setelah membaca panduan langkah, tonton video penjelasan dari Duta SPM."
     />
   </DsPage>
 </template>

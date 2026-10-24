@@ -167,7 +167,7 @@ describe('S5 TrackingAHubPage', () => {
     expect(t(w, 'lane-objektif').text()).toContain('18 set')
     expect(t(w, 'lane-objektif').text()).toContain('747 soalan')
     expect(t(w, 'lane-bahasa').text()).toContain('1,332 set')
-    expect(t(w, 'lane-bahasa').text()).toContain('Paper-based tracking')
+    expect(t(w, 'lane-bahasa').text()).toContain('Penjejakan berasaskan kertas')
     expect(w.find('[data-testid=readiness]').exists()).toBe(false)
 
     const bm = t(w, 'bahasa-card-BM')
@@ -227,7 +227,7 @@ describe('S5 TrackingAHubPage', () => {
       }),
     )
     const w = await render(TrackingAHubPage, '/spm/ramalan')
-    expect(w.get('[data-testid=readiness]').text()).toContain('Admin Readiness')
+    expect(w.get('[data-testid=readiness]').text()).toContain('Kesediaan Admin')
     expect(w.get('[data-testid=readiness]').text()).toContain('Status set Tracking A SPM semasa')
     expect(w.findAll('[data-testid=readiness-summary] > span').map((c) => c.text())).toEqual([
       'Set Bersih: 1 set',
@@ -259,7 +259,7 @@ describe('S5 TrackingAHubPage', () => {
     expect(geo.get('[data-testid=tile-bank-note]').text()).toContain(
       'Set bank besar boleh dibuka, tetapi bank sumber melebihi target set.',
     )
-    expect(geo.text()).toContain('Set Masih Lock')
+    expect(geo.text()).toContain('Set Masih Terkunci')
   })
 
   it('shows the error block and retries', async () => {
@@ -318,7 +318,7 @@ describe('S6 TrackingASubjectPage', () => {
 
     const one = t(w, 'set-card-1')
     expect(one.attributes('href')).toBe('/spm/ramalan/GEO?year=2026&set=1')
-    expect(one.get('[data-testid=set-badge]').text()).toBe('Ready Bank Besar')
+    expect(one.get('[data-testid=set-badge]').text()).toBe('Bank Besar Sedia')
     expect(one.get('[data-testid=set-bank]').text()).toBe(
       'Bank source: 67. Sistem tetap ambil 40 soalan ikut prioriti semasa.',
     )

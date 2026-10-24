@@ -153,16 +153,16 @@ afterEach(() => {
 describe('S11 MockExamPage', () => {
   it('renders the hero, warning, form and the list with chips and links', async () => {
     const w = await render(MockExamPage, '/spm-mock')
-    expect(t(w, 'mock-title').text()).toContain('📝 SPM Mock Exam')
+    expect(t(w, 'mock-title').text()).toContain('📝 Peperiksaan Percubaan SPM')
     expect(t(w, 'mock-warning').text()).toContain('Persediaan sebelum mula:')
     expect(t(w, 'mock-subject').attributes('required')).toBeDefined()
     expect(w.findAll('[data-testid=mock-subject] option')).toHaveLength(11)
     expect((t(w, 'mock-paper').element as HTMLSelectElement).value).toBe('1')
-    expect(t(w, 'mock-generate').text()).toBe('🎯 Jana Mock SPM')
+    expect(t(w, 'mock-generate').text()).toBe('🎯 Jana Percubaan SPM')
     expect(t(w, 'duta-name').text()).toBe('Cikgu Ujian')
     const pending = t(w, 'mock-row-317')
     expect(pending.get('[data-testid=mock-row-grade]').text()).toBe('Belum')
-    expect(pending.text()).toContain('Belum submit')
+    expect(pending.text()).toContain('Belum dihantar')
     expect(pending.get('a').attributes('href')).toBe('/spm-mock/317')
     expect(pending.get('a').text()).toBe('Sambung →')
     const done = t(w, 'mock-row-16')
@@ -201,7 +201,7 @@ describe('S11 MockExamPage', () => {
   it('shows an empty history and an error with retry', async () => {
     api.fetchMocks.mockResolvedValueOnce([])
     const w = await render(MockExamPage, '/spm-mock')
-    expect(t(w, 'mock-history').text()).toContain('📚 Mock Sebelum Ini')
+    expect(t(w, 'mock-history').text()).toContain('📚 Percubaan Sebelum Ini')
     expect(w.findAll('[data-testid^=mock-row-]')).toHaveLength(0)
     wrapper?.unmount()
     api.fetchMocks.mockRejectedValueOnce(new Error('x'))
@@ -342,12 +342,12 @@ describe('S12 MockResultPage', () => {
 describe('S13 WalkthroughPage', () => {
   it('renders the form as specified', async () => {
     const w = await render(WalkthroughPage, '/pusat-ai/spm')
-    expect(w.text()).toContain('📝 SPM Walkthrough')
+    expect(w.text()).toContain('📝 Panduan Langkah SPM')
     expect(w.findAll('[data-testid=walk-subject] option')).toHaveLength(16)
     expect(t(w, 'walk-subject').attributes('required')).toBeDefined()
     expect(t(w, 'walk-year').attributes('maxlength')).toBe('8')
     expect(t(w, 'walk-year').attributes('placeholder')).toBe('Cth: 2023')
-    expect(t(w, 'walk-submit').text()).toBe('Bagi Walkthrough')
+    expect(t(w, 'walk-submit').text()).toBe('Beri Panduan Langkah')
     expect(w.find('[data-testid=walk-result]').exists()).toBe(false)
     expect(t(w, 'duta-title').text()).toBe('🎓 Cikgu Maestro SPM')
   })
@@ -369,8 +369,8 @@ describe('S13 WalkthroughPage', () => {
     await flushPromises()
     expect(t(w, 'walk-body').text()).toBe('Soalan: <b>x</b>\n\nLangkah 1')
     expect(t(w, 'walk-body').find('b').exists()).toBe(false)
-    expect(t(w, 'walk-result').text()).toContain('✨ Walkthrough Cikgu Alesa')
-    expect(t(w, 'walk-submit').text()).toBe('Bagi Walkthrough')
+    expect(t(w, 'walk-result').text()).toContain('✨ Panduan Langkah Cikgu Alesa')
+    expect(t(w, 'walk-submit').text()).toBe('Beri Panduan Langkah')
   })
 
   it('alerts the error, "Ralat" without one, and "Ralat: " on a network error', async () => {
@@ -386,7 +386,7 @@ describe('S13 WalkthroughPage', () => {
     await t(w, 'walk-form').trigger('submit')
     await flushPromises()
     expect(dialogs.alertNative.mock.calls.map((c) => c[0])).toEqual(['X', 'Ralat', 'Ralat: putus'])
-    expect(t(w, 'walk-submit').text()).toBe('Bagi Walkthrough')
+    expect(t(w, 'walk-submit').text()).toBe('Beri Panduan Langkah')
     expect(w.find('[data-testid=walk-result]').exists()).toBe(false)
   })
 

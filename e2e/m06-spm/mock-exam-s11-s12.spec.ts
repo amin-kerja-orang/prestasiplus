@@ -32,15 +32,15 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
   }) => {
     await loginAs(PELAJAR)
     await open(page, '/spm-mock')
-    await expectTabTitle(page, 'SPM Mock Exam')
-    await expect(tid(page, 'shell-user-title')).toHaveText('SPM Mock Exam')
-    await expect(tid(page, 'mock-hero')).toContainText('📝 SPM Mock Exam')
+    await expectTabTitle(page, 'Peperiksaan Percubaan SPM')
+    await expect(tid(page, 'shell-user-title')).toHaveText('Peperiksaan Percubaan SPM')
+    await expect(tid(page, 'mock-hero')).toContainText('📝 Peperiksaan Percubaan SPM')
     await expect(tid(page, 'mock-hero')).toContainText(
-      'Mock SPM penuh dengan timer + auto-grade + weakness analysis. Boleh attempt setiap bulan.',
+      'Percubaan SPM penuh dengan pemasa + penggredan automatik + analisis kelemahan. Boleh dicuba setiap bulan.',
     )
     await expect(tid(page, 'duta-title')).toHaveText('⭐ Maestro SPM Untuk Anda')
     await expect(tid(page, 'duta-text')).toHaveText(
-      'Cikgu pakar yg dah bantu pelajar score A+ — tonton video mereka sebelum mula mock.',
+      'Cikgu pakar yang telah membantu pelajar mendapat A+ — tonton video mereka sebelum mula percubaan.',
     )
     await expect(page.getByTestId('duta-card')).toHaveCount(1)
     await expect(tid(page, 'mock-warning')).toContainText('Persediaan sebelum mula:')
@@ -70,7 +70,7 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
       'Paper 2 (Esei/Struktur)',
     ])
     await expect(tid(page, 'mock-paper')).toHaveValue('1')
-    await expect(tid(page, 'mock-generate')).toHaveText('🎯 Jana Mock SPM')
+    await expect(tid(page, 'mock-generate')).toHaveText('🎯 Jana Percubaan SPM')
     await expect(page.locator('label[for=mock-subject]')).toHaveText('Subjek')
     await expect(page.locator('label[for=mock-subject]')).toHaveCSS('text-transform', 'uppercase')
 
@@ -86,13 +86,13 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
   test('E2E-M06-30 admin rows 317 and 16; student chip colours', async ({ page, loginAs }) => {
     await loginAs(ADMIN)
     await open(page, '/spm-mock')
-    await expect(tid(page, 'shell-admin-title')).toHaveText('SPM Mock Exam')
+    await expect(tid(page, 'shell-admin-title')).toHaveText('Peperiksaan Percubaan SPM')
     await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
     await expect(page.locator('li[data-testid^=mock-row-]')).toHaveCount(2)
     const pending = tid(page, 'mock-row-317')
     await expect(pending.getByTestId('mock-row-title')).toHaveText('Sejarah · Paper 1')
     await expect(pending.getByTestId('mock-row-meta')).toHaveText(
-      '2 bulan yang lepas · Belum submit',
+      '2 bulan yang lepas · Belum dihantar',
     )
     await expect(pending.getByTestId('mock-row-grade')).toHaveText('Belum')
     await expect(pending.getByTestId('mock-row-grade')).toHaveCSS('font-size', '13.6px')
@@ -192,7 +192,7 @@ test.describe('M06 Q4 in-exam placeholder (provisional, L-8)', { tag: [moduleTag
       await expect(page).toHaveURL(/\/spm-mock\/\d+$/)
       const url = new URL(page.url()).pathname
       await expect(tid(page, 'run-title')).toHaveText('Matematik · Paper 1')
-      await expectTabTitle(page, 'SPM Mock Exam')
+      await expectTabTitle(page, 'Peperiksaan Percubaan SPM')
       await expect(tid(page, 'mock-timer')).toBeVisible()
       await expect(page.getByRole('button', { name: /pause|jeda|henti/i })).toHaveCount(0)
       await expect(page.locator('[data-testid^=run-item-]').first()).toBeVisible()
@@ -203,7 +203,7 @@ test.describe('M06 Q4 in-exam placeholder (provisional, L-8)', { tag: [moduleTag
       await open(page, '/spm-mock')
       const id = url.split('/').pop()!
       const row = tid(page, `mock-row-${id}`)
-      await expect(row.getByTestId('mock-row-meta')).toContainText('Belum submit')
+      await expect(row.getByTestId('mock-row-meta')).toContainText('Belum dihantar')
       await expect(row.getByTestId('mock-row-link')).toHaveText('Sambung →')
       await row.getByTestId('mock-row-link').click()
       await expect(page).toHaveURL(new RegExp(`${url}$`))
@@ -262,8 +262,8 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await open(page, '/spm-mock/16/result')
-    await expectTabTitle(page, 'Result Mock SPM — Bahasa Melayu')
-    await expect(tid(page, 'shell-admin-title')).toHaveText('Result Mock SPM — Bahasa Melayu')
+    await expectTabTitle(page, 'Keputusan Percubaan SPM — Bahasa Melayu')
+    await expect(tid(page, 'shell-admin-title')).toHaveText('Keputusan Percubaan SPM — Bahasa Melayu')
     const hero = tid(page, 'result-hero')
     await expect(hero).toHaveAttribute('data-hero', 'bad')
     await expect(hero).toHaveClass(/red/)
@@ -276,7 +276,7 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'duta-title')).toHaveText('🎓 Cikgu Pakar Bahasa Melayu')
     await expect(tid(page, 'duta-title')).toHaveCSS('text-transform', 'uppercase')
     await expect(tid(page, 'duta-text')).toHaveText(
-      'Lemah dlm topik tertentu? Cikgu pakar ni boleh bantu anda naik ke A+ next round.',
+      'Lemah dalam topik tertentu? Cikgu pakar ini boleh membantu anda naik ke A+ pada pusingan seterusnya.',
     )
     await expect(tid(page, 'duta-card')).toContainText('Bahasa Melayu')
     await expect(
@@ -290,13 +290,13 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     expect(counts.reduce((a, b) => a + b, 0)).toBe(30)
     expect([...counts].sort((a, b) => b - a)).toEqual(counts)
     await expect(tid(page, 'result-tip')).toContainText(
-      '💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu. Boleh start dengan jana nota ringkas untuk topik tersebut.',
+      '💡 Cikgu Alesa mencadangkan anda fokus belajar topik di atas dahulu. Boleh bermula dengan jana nota ringkas untuk topik tersebut.',
     )
     await expect(tid(page, 'result-tip').getByRole('link')).toHaveAttribute(
       'href',
       '/pusat-nota-ringkas',
     )
-    await expect(page.getByRole('heading', { name: '📋 Review Setiap Soalan' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '📋 Semak Setiap Soalan' })).toBeVisible()
     await expect(page.locator('[data-testid^=review-item-]')).toHaveCount(30)
     const first = tid(page, 'review-item-1')
     await expect(first.getByTestId('review-header')).toHaveText('✗ SOALAN 1 · 0/1 MARKAH', {
@@ -312,7 +312,7 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     )
     await expect(first.getByTestId('review-feedback')).toHaveCSS('font-style', 'italic')
     const actions = tid(page, 'result-actions').getByRole('link')
-    await expect(actions).toHaveText(['📝 Mock Lain', '📚 Belajar Topik Lemah'])
+    await expect(actions).toHaveText(['📝 Percubaan Lain', '📚 Belajar Topik Lemah'])
     await expect(actions.nth(0)).toHaveAttribute('href', '/spm-mock')
     await expect(actions.nth(1)).toHaveAttribute('href', '/pusat-nota-ringkas')
     await expectNoHorizontalScroll(page)

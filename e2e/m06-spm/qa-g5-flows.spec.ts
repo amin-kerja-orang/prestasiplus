@@ -178,7 +178,7 @@ test.describe('QA-G5 M06 flows', { tag: [moduleTag(6)] }, () => {
       await tid(page, 'walk-question').fill('Selesaikan 2x = 6')
       await tid(page, 'walk-submit').click()
       await expect(tid(page, 'walk-result')).toBeVisible({ timeout: 60_000 })
-      await expect(tid(page, 'walk-submit')).toHaveText('Bagi Walkthrough')
+      await expect(tid(page, 'walk-submit')).toHaveText('Beri Panduan Langkah')
       expect(viewportWidth(page)).toBeGreaterThan(0)
       await expectNoHorizontalScroll(page)
     },

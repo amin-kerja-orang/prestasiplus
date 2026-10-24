@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * S11 `/spm-mock` "SPM Mock Exam" (M06-T4; FR-M06-67…71, BR-M06-29, DV-M06-06/08).
+ * S11 `/spm-mock` "Peperiksaan Percubaan SPM" (M06-T4; FR-M06-67…71, BR-M06-29, DV-M06-06/08).
  *
- * Hero, Duta block, warning box, the "Jana Mock SPM" form (native `required` on both selects: an empty
- * subject never sends a request) and the "Mock Sebelum Ini" list, newest first. Generating calls
+ * Hero, Duta block, warning box, the "Jana Percubaan SPM" form (native `required` on both selects: an empty
+ * subject never sends a request) and the "Percubaan Sebelum Ini" list, newest first. Generating calls
  * `POST /api/spm-mocks` and goes to Q4 `/spm-mock/{id}`. Below 640 px the fields stack and the chip and
  * link of each row sit on their own line (DV-M06-08).
  */
@@ -50,15 +50,15 @@ async function generate(): Promise<void> {
 
 <template>
   <DsPage
-    title="📝 SPM Mock Exam"
-    subtitle="Mock SPM penuh dengan timer + auto-grade + weakness analysis. Boleh attempt setiap bulan."
+    title="📝 Peperiksaan Percubaan SPM"
+    subtitle="Percubaan SPM penuh dengan pemasa + penggredan automatik + analisis kelemahan. Boleh dicuba setiap bulan."
     :show-title="true"
     title-testid="mock-title"
     data-testid="mock-page"
   >
     <DutaBlock
       title="⭐ Maestro SPM Untuk Anda"
-      text="Cikgu pakar yg dah bantu pelajar score A+ — tonton video mereka sebelum mula mock."
+      text="Cikgu pakar yang telah membantu pelajar mendapat A+ — tonton video mereka sebelum mula percubaan."
     />
 
     <UAlert
@@ -68,12 +68,12 @@ async function generate(): Promise<void> {
       data-testid="mock-warning"
     >
       <template #description>
-        <b>Persediaan sebelum mula:</b> Pastikan masa anda cukup. Setelah klik "Mula", timer akan
-        jalan dan tak boleh stop. Kalau pause, score akan jejas.
+        <b>Persediaan sebelum mula:</b> Pastikan masa anda cukup. Setelah klik "Mula", pemasa akan
+        berjalan dan tidak boleh dihentikan. Jika dijeda, skor akan terjejas.
       </template>
     </UAlert>
 
-    <DsPanel title="Jana Mock SPM" icon="i-ph-exam-duotone" accent="heat">
+    <DsPanel title="Jana Percubaan SPM" icon="i-ph-exam-duotone" accent="heat">
       <form class="flex flex-col gap-4" data-testid="mock-form" @submit.prevent="generate">
         <UAlert
           v-if="formError"
@@ -98,7 +98,7 @@ async function generate(): Promise<void> {
               </DsNativeSelect>
             </template>
           </DsFormField>
-          <DsFormField label="Paper" native>
+          <DsFormField label="Kertas" native>
             <template #default="{ id }">
               <DsNativeSelect
                 :id="id"
@@ -120,12 +120,12 @@ async function generate(): Promise<void> {
           :disabled="busy"
           class="min-h-11 self-start max-sm:w-full max-sm:justify-center"
           data-testid="mock-generate"
-          >🎯 Jana Mock SPM</UButton
+          >🎯 Jana Percubaan SPM</UButton
         >
       </form>
     </DsPanel>
 
-    <DsPanel title="📚 Mock Sebelum Ini" data-testid="mock-history">
+    <DsPanel title="📚 Percubaan Sebelum Ini" data-testid="mock-history">
       <div v-if="loading && !data" class="flex flex-col gap-2" data-testid="mock-skeleton">
         <USkeleton v-for="n in 3" :key="n" class="h-16" />
       </div>
@@ -146,7 +146,7 @@ async function generate(): Promise<void> {
                 </p>
                 <p class="text-caption text-muted" data-testid="mock-row-meta">
                   {{ diffForHumans(m.createdAt) }} ·
-                  <span v-if="m.status === 'in_progress'" class="text-error">Belum submit</span>
+                  <span v-if="m.status === 'in_progress'" class="text-error">Belum dihantar</span>
                   <template v-else>{{
                     scoreLabel(m.score ?? 0, m.maxScore, m.percent ?? 0)
                   }}</template>

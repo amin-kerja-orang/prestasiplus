@@ -46,9 +46,9 @@ test.describe('M06 S11-S13 shell and layout', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(ADMIN)
     for (const [path, title, tab] of [
-      ['/spm-mock', 'SPM Mock Exam', 'SPM Mock Exam'],
-      ['/spm-mock/16/result', 'Result Mock SPM — Bahasa Melayu', 'Result Mock SPM — Bahasa Melayu'],
-      ['/pusat-ai/spm', 'SPM Walkthrough — Cikgu Alesa', 'SPM Walkthrough — Cikgu Alesa'],
+      ['/spm-mock', 'Peperiksaan Percubaan SPM', 'Peperiksaan Percubaan SPM'],
+      ['/spm-mock/16/result', 'Keputusan Percubaan SPM — Bahasa Melayu', 'Keputusan Percubaan SPM — Bahasa Melayu'],
+      ['/pusat-ai/spm', 'Panduan Langkah SPM — Cikgu Alesa', 'Panduan Langkah SPM — Cikgu Alesa'],
     ] as const) {
       await open(page, path)
       await expectTabTitle(page, tab)
@@ -58,13 +58,13 @@ test.describe('M06 S11-S13 shell and layout', { tag: [moduleTag(6)] }, () => {
     }
   })
 
-  test('E2E-M06-04 (S11 student) renders in the user portal with "SPM Mock Exam"', async ({
+  test('E2E-M06-04 (S11 student) renders in the user portal with "Peperiksaan Percubaan SPM"', async ({
     page,
     loginAs,
   }) => {
     await loginAs(PELAJAR)
     await open(page, '/spm-mock')
-    await expect(tid(page, 'shell-user-title')).toHaveText('SPM Mock Exam')
+    await expect(tid(page, 'shell-user-title')).toHaveText('Peperiksaan Percubaan SPM')
     await expect(page.getByTestId('shell-admin-header')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })

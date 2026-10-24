@@ -248,7 +248,7 @@ describe('S3 LatihTubiListPage', () => {
     const bm = t(w, 'latih-tubi-card-BM')
     expect(bm.attributes('href')).toBe('/spm/latih-tubi/BM')
     expect(bm.get('[data-testid=latih-tubi-count]').text()).toBe('514 soalan')
-    expect(bm.get('[data-testid=latih-tubi-target]').text()).toBe('Target Custom: 34')
+    expect(bm.get('[data-testid=latih-tubi-target]').text()).toBe('Target Tersuai: 34')
     expect(t(w, 'latih-tubi-card-PM').find('[data-testid=latih-tubi-target]').exists()).toBe(false)
     const ba = t(w, 'latih-tubi-card-BA')
     expect(ba.attributes('href')).toBe('javascript:void(0)')
@@ -409,7 +409,7 @@ describe('S10 HistoryPage', () => {
     expect(first.get('[data-testid=row-badge]').text()).toBe('Tahun Lepas')
     expect(first.get('[data-testid=row-correct]').text()).toBe('1/5 betul')
     expect(first.get('[data-testid=row-meta]').text().replace(/\s+/g, ' ')).toBe(
-      '19 May 2026, 03:26 AM · 0m 36s',
+      '19 Mei 2026, 03:26 AM · 0m 36s',
     )
     expect(first.get('[data-testid=row-coins]').text()).toBe('+1 🪙')
     expect(t(w, 'history-filter-all').attributes('data-active')).toBe('true')

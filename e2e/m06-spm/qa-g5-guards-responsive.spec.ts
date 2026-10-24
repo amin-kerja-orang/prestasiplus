@@ -162,7 +162,7 @@ test.describe('QA-G5 M06 unknown ids are the 404 page', { tag: [moduleTag(6)] },
 test.describe('QA-G5 M06 menus', { tag: [moduleTag(6)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('AC-M06-03.1 / 03.2 student: sidebar SPM + SPM Mock Exam (>= 1024), bottom nav SPM and drawer (< 1024)', async ({
+  test('AC-M06-03.1 / 03.2 student: sidebar SPM + Peperiksaan Percubaan SPM (>= 1024), bottom nav SPM and drawer (< 1024)', async ({
     page,
     loginAs,
     gotoApp,
@@ -174,7 +174,7 @@ test.describe('QA-G5 M06 menus', { tag: [moduleTag(6)] }, () => {
       const side = tid(page, 'shell-user-sidebar')
       await expect(side.locator('a[href="/spm"]').first()).toContainText('SPM')
       await expect(side.locator('a[href="/spm"]').first()).toBeVisible()
-      await expect(side.locator('a[href="/spm-mock"]').first()).toContainText('SPM Mock Exam')
+      await expect(side.locator('a[href="/spm-mock"]').first()).toContainText('Peperiksaan Percubaan SPM')
     } else {
       const bottom = tid(page, 'shell-user-bottom-nav').locator('a[href="/spm"]')
       await expect(bottom).toBeVisible()
@@ -210,8 +210,8 @@ test.describe('QA-G5 M06 menus', { tag: [moduleTag(6)] }, () => {
       await expect(scope.locator(`a[href="${href}"]`).first(), name).toContainText(name)
     }
     if (isDesktopShell(page)) {
-      await expect(scope.locator('a[href="/pusat-ai/spm"]').first()).toContainText('SPM Walkthrough')
-      await expect(scope.locator('a[href="/spm-mock"]').first()).toContainText('SPM Mock Exam')
+      await expect(scope.locator('a[href="/pusat-ai/spm"]').first()).toContainText('Panduan Langkah SPM')
+      await expect(scope.locator('a[href="/spm-mock"]').first()).toContainText('Peperiksaan Percubaan SPM')
     }
   })
 })

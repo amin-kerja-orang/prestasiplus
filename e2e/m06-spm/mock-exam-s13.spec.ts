@@ -1,5 +1,5 @@
 /**
- * M06-T4 E2E: S13 `/pusat-ai/spm` "SPM Walkthrough — Cikgu Alesa" (SRS M06 v1.4 §12: E2E-M06-35, -36,
+ * M06-T4 E2E: S13 `/pusat-ai/spm` "Panduan Langkah SPM — Cikgu Alesa" (SRS M06 v1.4 §12: E2E-M06-35, -36,
  * -37, -42 and the S13 part of -40). The AI is simulated (D4): canned text behind the walkthrough
  * latency hook; the busy and error states are driven by `setWalkthroughLatency` / `failNext`. Every
  * test runs on the mobile 375, tablet 768 and desktop 1280 projects.
@@ -33,12 +33,12 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await open(page, '/pusat-ai/spm')
-    await expectTabTitle(page, 'SPM Walkthrough — Cikgu Alesa')
-    await expect(tid(page, 'shell-admin-title')).toHaveText('SPM Walkthrough — Cikgu Alesa')
-    await expect(page.getByText('📝 SPM Walkthrough', { exact: true })).toBeVisible()
+    await expectTabTitle(page, 'Panduan Langkah SPM — Cikgu Alesa')
+    await expect(tid(page, 'shell-admin-title')).toHaveText('Panduan Langkah SPM — Cikgu Alesa')
+    await expect(page.getByText('📝 Panduan Langkah SPM', { exact: true })).toBeVisible()
     await expect(
       page.getByText(
-        'Snap soalan SPM, AI walk-through step-by-step dengan mark scheme + sebutan buku teks. Faham bukan hafal.',
+        'Tangkap gambar soalan SPM, AI terangkan langkah demi langkah dengan skema pemarkahan + sebutan buku teks. Faham bukan hafal.',
       ),
     ).toBeVisible()
     await expect(tid(page, 'walk-subject').locator('option')).toHaveText([
@@ -66,7 +66,7 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'walk-year')).toHaveValue('2023-202')
     await expect(tid(page, 'walk-question')).toHaveAttribute(
       'placeholder',
-      'Salin soalan SPM di sini, atau upload gambar di bawah...',
+      'Salin soalan SPM di sini, atau muat naik gambar di bawah...',
     )
     await expect(tid(page, 'walk-question')).not.toHaveAttribute('required', '')
     await expect(page.getByText('Soalan (taip atau snap)')).toBeVisible()
@@ -74,7 +74,7 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
       '📷 Klik atau drag gambar soalan SPM (auto-extract via AI Vision)',
     )
     await expect(tid(page, 'walk-image')).toHaveAttribute('accept', 'image/*')
-    await expect(tid(page, 'walk-submit')).toHaveText('Bagi Walkthrough')
+    await expect(tid(page, 'walk-submit')).toHaveText('Beri Panduan Langkah')
     await tid(page, 'walk-image').setInputFiles({
       name: 'soalan.png',
       mimeType: 'image/png',
@@ -85,7 +85,7 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
     await expect(page.getByTestId('walk-result')).toHaveCount(0)
     await expect(tid(page, 'duta-title')).toHaveText('🎓 Cikgu Maestro SPM')
     await expect(tid(page, 'duta-text')).toHaveText(
-      'Setelah baca walkthrough, tonton video penjelasan dari Duta SPM.',
+      'Setelah membaca panduan langkah, tonton video penjelasan dari Duta SPM.',
     )
     await expect(page.getByTestId('duta-card')).toHaveCount(1)
     await expectNoHorizontalScroll(page)
@@ -106,7 +106,7 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'walk-submit')).toBeDisabled()
     await expect(tid(page, 'walk-result')).toBeVisible()
     await expect(tid(page, 'walk-result').getByRole('heading')).toHaveText(
-      '✨ Walkthrough Cikgu Alesa',
+      '✨ Panduan Langkah Cikgu Alesa',
     )
     const body = tid(page, 'walk-body')
     await expect(body).toContainText('Soalan: Cari <b>x</b> bagi 2x = 6')
@@ -117,7 +117,7 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
     expect(await body.locator('b').count()).toBe(0)
     expect((await body.textContent())!.split('\n').length).toBeGreaterThan(4)
     await expect(tid(page, 'walk-result')).toBeInViewport()
-    await expect(tid(page, 'walk-submit')).toHaveText('Bagi Walkthrough')
+    await expect(tid(page, 'walk-submit')).toHaveText('Beri Panduan Langkah')
     await expect(tid(page, 'walk-submit')).toBeEnabled()
 
     // A second submit hides the card until the new answer arrives.
@@ -144,14 +144,14 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
     let dialog = acceptNextDialog(page, { type: 'alert', message: 'X' })
     await tid(page, 'walk-submit').click()
     await dialog
-    await expect(tid(page, 'walk-submit')).toHaveText('Bagi Walkthrough')
+    await expect(tid(page, 'walk-submit')).toHaveText('Beri Panduan Langkah')
     await expect(tid(page, 'walk-submit')).toBeEnabled()
 
     await mock.failNext(SOLVE, { status: 200, body: { ok: false } })
     dialog = acceptNextDialog(page, { type: 'alert', message: 'Ralat' })
     await tid(page, 'walk-submit').click()
     await dialog
-    await expect(tid(page, 'walk-submit')).toHaveText('Bagi Walkthrough')
+    await expect(tid(page, 'walk-submit')).toHaveText('Beri Panduan Langkah')
 
     await mock.failNext(SOLVE, 'network')
     const net = await (async () => {
@@ -160,7 +160,7 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
       return d
     })()
     expect(net.message().startsWith('Ralat: ')).toBe(true)
-    await expect(tid(page, 'walk-submit')).toHaveText('Bagi Walkthrough')
+    await expect(tid(page, 'walk-submit')).toHaveText('Beri Panduan Langkah')
     await expect(tid(page, 'walk-submit')).toBeEnabled()
     await expect(page.getByTestId('walk-result')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
@@ -179,7 +179,7 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
     })
     await tid(page, 'walk-submit').click()
     await dialog
-    await expect(tid(page, 'walk-submit')).toHaveText('Bagi Walkthrough')
+    await expect(tid(page, 'walk-submit')).toHaveText('Beri Panduan Langkah')
   })
 
   test('E2E-M06-42 empty Subjek is blocked by the native required check: no request, no dialog, label unchanged', async ({
@@ -202,7 +202,7 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
     expect(
       await tid(page, 'walk-subject').evaluate((el: HTMLSelectElement) => el.validity.valueMissing),
     ).toBe(true)
-    await expect(tid(page, 'walk-submit')).toHaveText('Bagi Walkthrough')
+    await expect(tid(page, 'walk-submit')).toHaveText('Beri Panduan Langkah')
     expect(await mock.requests(SOLVE)).toHaveLength(0)
     expect(dialogs).toBe(0)
   })

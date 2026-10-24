@@ -2,7 +2,7 @@
 /**
  * S5 `/spm/ramalan` "Tracking A SPM" (M06-T3; FR-M06-35…41, BR-M06-09…11, BR-M06-30), restyled for v2.
  *
- * Two lane cards, the "Admin Readiness" card (rendered only when the server sends it: admin only), the
+ * Two lane cards, the "Kesediaan Admin" card (rendered only when the server sends it: admin only), the
  * "Tracking A Bahasa" section (BM and BI → S7) and one card per open objective subject → S6. The cards
  * and chips replicate the live copy; icons are Phosphor stand-ins for the Font Awesome names.
  */
@@ -74,7 +74,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
           accent="friend"
           art="books"
           title="BM dan BI format sebenar"
-          description="Lane khas untuk kertas bahasa tanpa memaksa format menjadi 40 MCQ."
+          description="Laluan khas untuk kertas bahasa tanpa memaksa format menjadi 40 MCQ."
           data-testid="lane-bahasa"
         >
           <p class="text-overline text-primary-t">Tracking A Bahasa</p>
@@ -90,7 +90,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
               variant="soft"
               icon="i-ph-translate-bold"
               data-testid="lane-paper"
-              >Paper-based tracking</UBadge
+              >Penjejakan berasaskan kertas</UBadge
             >
           </div>
         </DsCharacterCard>
@@ -100,13 +100,13 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
       <DsPanel
         v-if="data.readiness"
         title="Status set Tracking A SPM semasa"
-        description="Laporan ini bezakan set bersih, set bank besar, dan set yang masih lock supaya bacaan readiness lebih jujur."
+        description="Laporan ini membezakan set bersih, set bank besar dan set yang masih terkunci supaya bacaan kesediaan lebih jujur."
         icon="i-ph-gauge-duotone"
         accent="trial"
         data-testid="readiness"
       >
         <div class="flex flex-col gap-4">
-          <p class="text-overline text-warning">Admin Readiness</p>
+          <p class="text-overline text-warning">Kesediaan Admin</p>
           <div class="flex flex-wrap gap-2" data-testid="readiness-summary">
             <UBadge color="success" variant="soft"
               >Set Bersih: {{ data.readiness.summary.bersih }} set</UBadge
@@ -154,24 +154,24 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
                   </dd>
                 </div>
                 <div class="min-w-0">
-                  <dt class="text-caption text-muted">Locked</dt>
+                  <dt class="text-caption text-muted">Terkunci</dt>
                   <dd class="tabular text-heading text-warning" data-testid="tile-locked">
                     {{ t.locked }}
                   </dd>
                 </div>
                 <div class="min-w-0">
-                  <dt class="text-caption text-muted">Readiness</dt>
+                  <dt class="text-caption text-muted">Kesediaan</dt>
                   <dd class="tabular text-heading text-primary-t" data-testid="tile-readiness">
                     {{ t.readiness }}%
                   </dd>
                 </div>
               </dl>
               <p v-if="t.hasBankBesar" class="text-caption text-muted" data-testid="tile-bank-note">
-                Set bank besar boleh dibuka, tetapi bank sumber melebihi target set. Rujuk page
-                subjek untuk beza set bersih vs bank besar.
+                Set bank besar boleh dibuka, tetapi bank sumber melebihi target set. Rujuk halaman
+                subjek untuk perbezaan set bersih berbanding bank besar.
               </p>
               <div v-if="t.locked > 0" class="flex flex-col gap-1" data-testid="tile-locks">
-                <p class="text-overline text-muted">Set Masih Lock</p>
+                <p class="text-overline text-muted">Set Masih Terkunci</p>
                 <div class="flex flex-wrap gap-2">
                   <UBadge
                     v-for="s in t.lockedSets"
@@ -195,7 +195,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
           <div class="flex flex-wrap items-center gap-2">
             <h2 class="text-heading text-highlighted">BM dan BI ikut format kertas sebenar</h2>
             <UBadge color="secondary" variant="soft" data-testid="bahasa-paper-pill"
-              >Paper-based tracking</UBadge
+              >Penjejakan berasaskan kertas</UBadge
             >
           </div>
           <p class="text-body text-muted">
