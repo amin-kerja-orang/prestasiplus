@@ -42,12 +42,16 @@ export class AnalyticsService {
   async me(ctx: Ctx): Promise<PerformanceAnalytics> {
     const facts = await this.ports.bijak.sittings({ userIds: [ctx.userId], modes: COUNTED_MODES.analytics })
     const now = this.clock.now()
-    const subjects = [...groupBy(facts, (f) => f.subjectId)]
+    // A sitting stores the Bijak subject CODE; the curriculum knows the subject by id. Group by the curriculum id (as
+    // classes() does) so one subject is one row; a code with no curriculum subject keeps the sitting's own id (SW13-08).
+    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(facts.map((f) => f.subjectCode))])
+    const subjects = [...groupBy(facts, (f) => idOfCode.get(f.subjectCode) ?? f.subjectId)]
       .sort(([a], [b]) => compareIds(a, b))
       .map(([subjectId, list]) => {
         const f = figuresOf(list)
         const accuracy = accuracyOf(f.gradedScore, f.gradedMax)
-        const first = list[0] as BijakSittingFact
+        // Name and code come from a sitting already stored under the curriculum id when there is one, else the first.
+        const first = (list.find((x) => x.subjectId === subjectId) ?? list[0]) as BijakSittingFact
         return {
           subjectId,
           name: first.subjectName,
