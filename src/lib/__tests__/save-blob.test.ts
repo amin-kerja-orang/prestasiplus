@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { saveBlob } from '../save-blob'
+import { REVOKE_DELAY_MS, saveBlob } from '../save-blob'
 
 describe('saveBlob', () => {
   afterEach(() => {
@@ -27,7 +27,9 @@ describe('saveBlob', () => {
     expect(download).toBe('a.csv')
     expect(document.querySelector('a[download]')).toBeNull()
     expect(revoke).not.toHaveBeenCalled()
-    vi.runAllTimers()
+    vi.advanceTimersByTime(1000)
+    expect(revoke).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(REVOKE_DELAY_MS)
     expect(revoke).toHaveBeenCalledWith('blob:x')
   })
 })

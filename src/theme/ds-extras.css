@@ -66,10 +66,13 @@
     visibility: hidden;
   }
   [data-ds='print-sheet'],
-  [data-ds='print-sheet'] * {
+  [data-ds='print-sheet'] *,
+  [data-print-area],
+  [data-print-area] * {
     visibility: visible;
   }
-  [data-ds='print-sheet'] {
+  [data-ds='print-sheet'],
+  [data-print-area] {
     position: absolute;
     inset-block-start: 0;
     inset-inline: 0;
