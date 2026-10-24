@@ -11,3 +11,4 @@ docs
 .playwright-mcp
 CLAUDE.md
 .mcp.json
+src/modules/m03-curriculum/dskp/data
