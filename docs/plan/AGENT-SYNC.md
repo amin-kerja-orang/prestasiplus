@@ -136,6 +136,8 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-24 **DT-1 superseded by the LEAD (D71 in `docs/TRACKER.md`; #109 comment 6371548855, 24 Oct 02:15 MYT).** DT-1 is now **B (UTC)**, not A: the .cloud export has no `DATETIME` columns (every date-time column is a `TIMESTAMP`; app and DB session are UTC), so the sitting passes `--datetime-offset +00:00`. The tool default in `apps/api/src/migration/dump/cloud.ts` stays `+08:00` (no code change), so always pass the flag. The DT-1 A in the D66 line above no longer applies. Q8 is unchanged. **Perlu pengesahan** (LEAD / data owner): the date-only columns may hold the UTC day, not the Malaysia day. That comment stays authoritative.
+
 - 2026-10-22 ~04:30 MYT **Summary of the LEAD decisions of 21–22 Oct (D66–D70 in `docs/TRACKER.md`).** Sources: the LEAD notices on #113 and #109 and the correction on #67. Those comments stay authoritative.
   - **D66 MIG-03/06 = "all defaults"** (#109, 21 Oct 23:20 MYT): OD-10 Q1–Q7 and Q9–Q13 option A, OD-21 C, OD-22 A, OD-23 B, OD-18 A, DT-1 A; Q8 unchanged. Q4 A needs `question_sets.classroom_id` nullable: AZ-31 #135 (migration 0042).
   - **D67 kill switch** (#109/#113, 22 Oct 00:11 MYT): any comment by `aminfaudzi` or `azarulhakim` containing `STOP half-AM` (#109) or `STOP half-AZ` (#113) stops that half, prefix or not. STOP always wins. `RESUME half-AM` / `RESUME half-AZ` counts only at the start of a later comment. Prefixes matter only for `ASSIGN`, `HANDOFF`, `OK` and other steering commands.
@@ -250,8 +252,6 @@ Rules for `contract-only`:
   - Any number of PCs may join; there is no fixed PC-to-lane split (section 1).
   - What may start is set only by the Open list.
   - When the Open list has nothing free for you, stop and report `idle`; the LEAD opens more cards as merges land.
-
-- 2026-10-24 **DT-1 superseded by the LEAD (D71 in `docs/TRACKER.md`; #109 comment 6371548855, 24 Oct 02:15 MYT).** DT-1 is now **B (UTC)**, not A: the .cloud export has no `DATETIME` columns (every date-time column is a `TIMESTAMP`; app and DB session are UTC), so the sitting passes `--datetime-offset +00:00`. The tool default in `apps/api/src/migration/dump/cloud.ts` stays `+08:00` (no code change), so always pass the flag. The DT-1 A in the D66 line above no longer applies. Q8 is unchanged. **Perlu pengesahan** (LEAD / data owner): the date-only columns may hold the UTC day, not the Malaysia day. That comment stays authoritative.
 
 ## 0b. Any number of PCs
 
