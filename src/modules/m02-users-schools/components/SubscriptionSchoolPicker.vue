@@ -10,7 +10,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsPanel } from '@/ds'
+import { DsFormField, DsPanel, DsSurface } from '@/ds'
 
 import { searchSchools, type SchoolSummary } from '../api/schools'
 
@@ -90,7 +90,7 @@ function clear(): void {
         </div>
       </DsPanel>
 
-      <div v-else class="relative">
+      <div v-else>
         <UInput
           id="sub-school-search"
           :model-value="term"
@@ -104,32 +104,41 @@ function clear(): void {
           @focus="picker.onFocus()"
         />
         <span v-if="searching" class="sr-only" data-testid="sub-school-loading">Mencari...</span>
-        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="sub-school-dropdown">
-          <UButton
-            v-for="item in results"
-            :key="item.id"
-            type="button"
-            block
-            color="neutral"
-            variant="ghost"
-            class="h-auto min-h-11 justify-start text-start whitespace-normal"
-            data-testid="sub-school-result"
-            @click="picker.select(item)"
-          >
-            <span class="flex min-w-0 flex-col">
-              <span class="text-label text-highlighted">{{ item.name }}</span>
-              <span class="text-caption text-muted">{{ meta(item) }}</span>
-            </span>
-          </UButton>
-          <p
-            v-if="showEmpty"
-            class="flex items-center justify-center gap-2 p-3 text-center text-label text-muted"
-            data-testid="sub-school-empty"
-          >
-            <UIcon name="i-ph-magnifying-glass-minus" class="size-4" aria-hidden="true" />
-            Tiada sekolah dijumpai
-          </p>
-        </DsPanel>
+        <!-- In flow, not `behavior="float"`: the form section card clips its overflow (SWX4, DV-M02-28). -->
+        <DsSurface
+          v-if="showDropdown"
+          level="elevated"
+          shadow="lift"
+          padding="none"
+          data-testid="sub-school-dropdown"
+        >
+          <div class="max-h-64 overflow-y-auto">
+            <UButton
+              v-for="item in results"
+              :key="item.id"
+              type="button"
+              block
+              color="neutral"
+              variant="ghost"
+              class="h-auto min-h-11 justify-start text-start whitespace-normal"
+              data-testid="sub-school-result"
+              @click="picker.select(item)"
+            >
+              <span class="flex min-w-0 flex-col">
+                <span class="text-label text-highlighted">{{ item.name }}</span>
+                <span class="text-caption text-muted">{{ meta(item) }}</span>
+              </span>
+            </UButton>
+            <p
+              v-if="showEmpty"
+              class="flex items-center justify-center gap-2 p-3 text-center text-label text-muted"
+              data-testid="sub-school-empty"
+            >
+              <UIcon name="i-ph-magnifying-glass-minus" class="size-4" aria-hidden="true" />
+              Tiada sekolah dijumpai
+            </p>
+          </div>
+        </DsSurface>
       </div>
     </DsFormField>
   </div>

@@ -14,7 +14,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsPanel } from '@/ds'
+import { DsFormField, DsPanel, DsSurface } from '@/ds'
 
 import { searchStudents, type StudentSearchItem } from '../api/users'
 import { SEARCH_MIN_CHARS } from '../lib/user-form-options'
@@ -91,7 +91,7 @@ function remove(id: number): void {
       for="linker-search"
       :label="isEdit ? 'Cari pelajar' : 'Pautkan Anak (Pelajar)'"
     >
-      <div class="relative">
+      <div>
         <UInput
           id="linker-search"
           :model-value="term"
@@ -111,54 +111,63 @@ function remove(id: number): void {
           @focus="picker.onFocus()"
         />
 
-        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="linker-dropdown">
-          <div
-            v-if="searching"
-            class="flex min-h-11 items-center justify-center py-3 text-muted"
-            data-testid="linker-loading"
-          >
-            <USkeleton class="h-4 w-24" />
+        <!-- In flow, not `behavior="float"`: the form section card clips its overflow (SWX4, DV-M02-28). -->
+        <DsSurface
+          v-if="showDropdown"
+          level="elevated"
+          shadow="lift"
+          padding="none"
+          data-testid="linker-dropdown"
+        >
+          <div class="max-h-64 overflow-y-auto">
+            <div
+              v-if="searching"
+              class="flex min-h-11 items-center justify-center py-3 text-muted"
+              data-testid="linker-loading"
+            >
+              <USkeleton class="h-4 w-24" />
+            </div>
+            <template v-else>
+              <UButton
+                v-for="student in results"
+                :key="student.id"
+                type="button"
+                block
+                color="neutral"
+                variant="ghost"
+                class="h-auto min-h-11 justify-start text-start whitespace-normal"
+                :disabled="linkedIds.has(student.id)"
+                data-testid="linker-result"
+                @click="add(student)"
+              >
+                <span class="flex w-full min-w-0 items-center gap-2">
+                  <span class="min-w-0 flex-1 truncate">{{ student.name }}</span>
+                  <UBadge
+                    v-if="student.classLevel"
+                    color="neutral"
+                    variant="subtle"
+                    :label="student.classLevel"
+                  />
+                  <UBadge
+                    v-if="student.schoolName"
+                    color="neutral"
+                    variant="subtle"
+                    class="max-w-40 truncate"
+                    :label="student.schoolName"
+                  />
+                </span>
+              </UButton>
+              <p
+                v-if="showEmpty"
+                class="flex min-h-11 items-center justify-center gap-2 p-3 text-label text-muted"
+                data-testid="linker-empty"
+              >
+                <UIcon name="i-ph-magnifying-glass" class="size-4" aria-hidden="true" />
+                Tiada pelajar dijumpai
+              </p>
+            </template>
           </div>
-          <template v-else>
-            <UButton
-              v-for="student in results"
-              :key="student.id"
-              type="button"
-              block
-              color="neutral"
-              variant="ghost"
-              class="h-auto min-h-11 justify-start text-start whitespace-normal"
-              :disabled="linkedIds.has(student.id)"
-              data-testid="linker-result"
-              @click="add(student)"
-            >
-              <span class="flex w-full min-w-0 items-center gap-2">
-                <span class="min-w-0 flex-1 truncate">{{ student.name }}</span>
-                <UBadge
-                  v-if="student.classLevel"
-                  color="neutral"
-                  variant="subtle"
-                  :label="student.classLevel"
-                />
-                <UBadge
-                  v-if="student.schoolName"
-                  color="neutral"
-                  variant="subtle"
-                  class="max-w-40 truncate"
-                  :label="student.schoolName"
-                />
-              </span>
-            </UButton>
-            <p
-              v-if="showEmpty"
-              class="flex min-h-11 items-center justify-center gap-2 p-3 text-label text-muted"
-              data-testid="linker-empty"
-            >
-              <UIcon name="i-ph-magnifying-glass" class="size-4" aria-hidden="true" />
-              Tiada pelajar dijumpai
-            </p>
-          </template>
-        </DsPanel>
+        </DsSurface>
       </div>
     </DsFormField>
 

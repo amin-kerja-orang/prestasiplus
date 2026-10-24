@@ -9,6 +9,7 @@ import { useFlashStore } from '@/stores/flash'
 
 import type { SchoolSummary } from '../../api/schools'
 import BulkImportPage from '../../pages/BulkImportPage.vue'
+import { expectListInFlow } from './in-flow'
 
 const imports = vi.hoisted(() => ({ importUsers: vi.fn() }))
 const users = vi.hoisted(() => ({ fetchAdminDefaults: vi.fn() }))
@@ -111,6 +112,15 @@ describe('BulkImportPage (M02 S4)', () => {
     expect(w.find('[data-testid=bulk-school]').exists()).toBe(true)
     await pickRole(w, 'ppd_officer')
     expect(w.find('[data-testid=bulk-school]').exists()).toBe(false)
+  })
+
+  it('draws the school result list in the flow, not floating (SWX4-06)', async () => {
+    const w = await render()
+    await pickRole(w, 'teacher')
+    await t(w, 'bulk-school-search').setValue('SEKOLAH')
+    await vi.advanceTimersByTimeAsync(300)
+    await flushPromises()
+    expectListInFlow(w, 'bulk-school-dropdown')
   })
 
   it('searches from 2 characters, picks a school, shows "Dipilih: ..." and clears it', async () => {
