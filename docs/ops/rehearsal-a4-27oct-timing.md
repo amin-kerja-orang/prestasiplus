@@ -100,7 +100,7 @@ One row per timed item. Fill every cell; the only blanks allowed are cells marke
 | T14 | `D_profile_dry`: `migrate:all --dry-run` (first load: core only) | B6 | see section 5 | | | | 0 | `N_core` | `r_core_dry` | R (and S) | Activity "skipped". **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T15 | `D_apply`: `migrate:all --apply` (includes the verify) | B7 | see section 5 | | | | 0 | `N_core + N_act` | `r_B7` | R (and S) | Four stage runs from `etl_runs`. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T15a | of which: core dry-run, core apply, activity dry-run, activity apply | B7 | query (a) of the A1 sheet, A1.11 | | | | | | | R | Seconds per run. |
-| T15q | `D_qload`: `migrate:questions --apply` (QLOAD, LEAD decision 24 Oct 03:35 MYT, #113 6373295943: approved legacy MCQs from `archive_cloud` into the v2 bank; after `migrate:all`, before C5) | B7 (after `migrate:all`) | **Perlu pengesahan (half AZ, PC-2):** the exact command, flags and expected lines come from the QLOAD PR (`be/QLOAD-question-bank-loader`) when it posts `ready`; it must be merged and in the release sha before 27 Oct, else the row is "not run" | | | | 0 | questions loaded | | R (and S, once `slot.sh etl` accepts `migrate:questions`) | Loaded, rejected and rollback coverage from its recon; the v2 bank then serves practice. A1 runs without it. |
+| T15q | `D_questions` (QLOAD, plan **B11**: daylight after the B10 close, **outside `W`**; LEAD decision 24 Oct 03:35 MYT, #113 6373295943; cutover plan 4.8 and runbook section 12 step 7 on #261): `migrate:questions` dry-run, then `PP_ALLOW_MIGRATE_APPLY=1 ... migrate:questions --apply`, then `migrate:verify`, a no-op re-run of the apply, and `migrate:rollback` coverage (A4 extra, plan 4.8) | after T16, as an extra step | Track R: `"$RDB" exec target -- npm run migrate:questions -w @pp/api -- --as-of="$ASOF"`, then the same with `env PP_ALLOW_MIGRATE_APPLY=1` and `--apply`; Track S: `S etl migrate:questions` (once `slot.sh etl` accepts it, half AZ) | | | | 0 | questions read / loaded / rejected | | R (and S) | **Precondition:** #261 merged and in the release sha, and the A4 dump made **after** `dump:grants` was re-run for the three new columns (`questions.explanation`, `questions.image_path`, `question_options.image_path`) and re-staged; else `migrate:questions` refuses (missing columns) and the row is "not run". Exit 4 when the source lock is held. Record the exit codes, the recon (loaded, rejected by reason), the `html_stripped` / `explanation_html_stripped` / `body_has_html` counters and the held-with-image count (text only), and the seconds of the dry-run, the apply, the no-op re-run and the rollback (#261 synthetic 100k: 18 s / 19 s / 4 s / 8 s). On the anonymised dump `image_path` is a pseudonym, so the image copy is not exercised. A1 runs without QLOAD. |
 | T16 | `D_verify`: `migrate:verify` | B8 | `migrate:verify` | | | | 0 | | | R (and S) | `verify pass`. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T17 | Read-only SQL checks of plan 4.5 part 1 | B8 | `q "$(cat docs/ops/sql/smoke-readonly.sql)"` (or `psql -X -v ON_ERROR_STOP=1 -f` the file), against the restored copy | | | | 0 | checks | | R (read-only SQL counts only) or S | `Z0` = 0 FAIL, or on Track R with Q10 in the release `Z0` = 1 with F10 as the only `FAIL` (amber, R32; P-9); at the night `Z0` must be 0. Post the count of `ok` / `FAIL` / `info` rows and the check ids of any `FAIL` (no values). Synthetic data shows deliberate fixture FAILs on criteria 2 and 3. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T18 | `slot.sh gonogo` read by the rule | B0, B9 | `S gonogo` | | | | 0 | | | S | No `NO-GO`, `MISSING`, `PITR off`; `api` line `-> 200`; `throwaway: none running`; `reports: <dir> ready (owner uid 1000, mode 700)`; the last line `gonogo: complete (every check above ran)` (absent = the run stopped half way = NO-GO, `slot.sh:363-364`). The two `criterion 8` lines read `restore point <name> present, sha256 ok, migrations equal the release` (F8, `--expect-migrations repo`). The `raw data:` line is information, never a NO-GO: strings in section 5.2. A bare scratch VPS prints `PITR off` and `NO dump found -> NO-GO`: that is a P-6 failure, fix it first. |
@@ -359,7 +359,7 @@ The budget replaces the 3,611 rows/s placeholder with measured figures. `W` is c
 ```
 sum = D_freeze (20 min, fixed)
     + D_dump + D_xfer + D_load + D_copy
-    + D_profile_dry + D_apply + D_qload + D_verify (incl. the read-only smoke)
+    + D_profile_dry + D_apply + D_verify (incl. the read-only smoke)
     + D_gonogo (15 min, fixed)
 W   = 1.25 x sum                 (the 25 % buffer is inside the window)
 D_profile_dry ~ N_core / r       D_apply ~ 2 x N / r
@@ -415,11 +415,11 @@ All durations in minutes (seconds divided by 60). `Used` is the value that goes 
 | `D_copy` | | | | n/a | | larger |
 | `D_profile_dry` (computed) | | | | n/a | | `kappa x N_read_night / r_B6` |
 | `D_apply` (computed) | | | | n/a | | `2 x N_read_night / r_B7` |
-| `D_qload` (QLOAD, T15q) | | | | n/a | | new step (LEAD 24 Oct); 0 until measured |
 | `D_verify` (with smoke) | | | | n/a | | larger |
 | `D_gonogo` | fixed | fixed | fixed | fixed | 15 | plan |
 | **`sum`** | | | | | | |
 | **`W = 1.25 x sum`** | | | | | | |
+| `D_questions` (QLOAD, B11, T15q) | | | | n/a | | **outside `W`**: daylight after B10 (cutover plan 4.8); recorded for the B11 slot, not added to the sum |
 | Maximum window (default 360 min) | | | | | 360 | LEAD confirms (P-8) |
 | **Margin = 360 - `W`** | | | | | | |
 | Margin to 345 (`B9` ends so that `B10` fits in the 15 min before T+6:00) | | | | | | **Perlu pengesahan (LEAD):** which limit applies |
