@@ -7,7 +7,10 @@
  * Planted data (S1 and S2 are migrated pupils of the fixture):
  *   questions 9001..9004 in the archive: 9001 (subject 1, difficulty 3, 3 options), 9002 (subject 2), 9003 (chapter 4 =
  *     the orphan chapter of the fixture), 9004 (no subject)
- *   sessions  1001 (S1, subject 1, random), 1002 (S2, subject 2, chapter), 1003 (S1, mode spm = rejected)
+ *   sessions  1001 (S1, subject 1, random), 1002 (S2, subject 2, chapter), 1003 (S1, mode spm = rejected), 1004 / 1005 /
+ *             1006 (the real modes spm_tahun_lepas, spm_mock -> past_year and spm_ramalan -> ramalan), 1007 (battle = rejected)
+ *   canonical questions for the source-paper key: 9001 -> exam question 9301 (source paper 1, label 7), 9002 -> 9302
+ *             (no source paper, label 8)
  *   attempts  5001 ok, 5002 ok (lower-case label), 5003 ok, 5004 ok (subject from the session), 5005 orphan chapter,
  *             5006 on the rejected session, 5007 question not in the archive (session subject), 5008 bad label
  */
@@ -42,7 +45,7 @@ beforeAll(async () => {
   expect(s1 && s2, 'the fixture must give two migrated pupils').toBeTruthy()
 
   await h.q(
-    `insert into archive_cloud.questions (id, subject_id, education_level_id, chapter_id, topic_id, difficulty_level, question_type, status, body) values
+    `insert into archive_cloud.questions (id, subject_id, education_level_id, chapter_id, topic_id, difficulty_level, type, status, body) values
        (9001, 1, 1, 1, 1, '3', 'objektif', 'diluluskan', 'Soalan penanda 9001'),
        (9002, 2, 2, 3, 3, '5', 'objektif', 'diluluskan', 'Soalan penanda 9002'),
        (9003, 1, 2, 4, null, '2', 'objektif', 'diluluskan', 'Soalan penanda 9003'),
@@ -58,8 +61,20 @@ beforeAll(async () => {
      values
        (1001, $1, 1, 'random', 'paper1', '11111111-1111-4111-8111-111111111111', 5, 2, 40, 120, 3, '2026-03-10T02:00:00Z', '2026-03-10T02:00:00Z'),
        (1002, $2, 2, 'chapter', 'paper2', 'not-a-uuid', 4, 4, 100, 60, 0, '2026-03-11T02:00:00Z', '2026-03-11T02:00:00Z'),
-       (1003, $1, 1, 'spm', 'paper1', null, 4, 1, 25, 60, 0, '2026-03-12T02:00:00Z', '2026-03-12T02:00:00Z')`,
+       (1003, $1, 1, 'spm', 'paper1', null, 4, 1, 25, 60, 0, '2026-03-12T02:00:00Z', '2026-03-12T02:00:00Z'),
+       (1004, $1, 1, 'spm_tahun_lepas', null, null, 4, 1, 25, 60, 0, '2026-03-12T03:00:00Z', '2026-03-12T03:00:00Z'),
+       (1005, $1, 1, 'spm_mock', null, null, 4, 1, 25, 60, 0, '2026-03-12T04:00:00Z', '2026-03-12T04:00:00Z'),
+       (1006, $1, 1, 'spm_ramalan', null, null, 4, 1, 25, 60, 0, '2026-03-12T05:00:00Z', '2026-03-12T05:00:00Z'),
+       (1007, $1, 1, 'battle', null, null, 4, 1, 25, 60, 0, '2026-03-12T06:00:00Z', '2026-03-12T06:00:00Z')`,
     [s1, s2],
+  )
+  // The canonical bridge: the natural key is the question's own source paper (exam_questions.source_paper_id).
+  await h.q(
+    `insert into archive_cloud.exam_questions (id, source_paper_id, exam_paper_id, number_label) values (9301, 1, 1, '7'), (9302, null, 1, '8')`,
+  )
+  await h.q(
+    `insert into archive_cloud.legacy_canonical_map (id, source, legacy_id, canonical_type, canonical_id) values
+       (9401, 'questions', '9001', 'exam_question', 9301), (9402, 'questions', '9002', 'exam_question', 9302)`,
   )
   await h.q(
     `insert into staging_cloud.question_attempts (id, user_id, practice_session_id, question_id, selected_option, is_correct, time_seconds, created_at) values
@@ -136,6 +151,37 @@ describe('practice sessions and answers (AC1)', () => {
     // The hash is the helper's SHA-256 of the normalised stem and sorted options, not the text.
     expect(one?.legacy_content_hash).toBe(contentHash('Soalan penanda 9001', ['Pilihan C', 'Pilihan A', 'Pilihan B']))
     expect(one?.legacy_content_hash).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('maps the real .cloud practice modes and counts spm and battle by name', async () => {
+    const rows = await h.q<{ legacy_id: string; mode: string }>(
+      `select legacy_id, mode from practice_sessions where legacy_source = 'cloud' and legacy_id in ('1004','1005','1006','1007') order by legacy_id`,
+    )
+    expect(rows).toEqual([
+      { legacy_id: '1004', mode: 'past_year' },
+      { legacy_id: '1005', mode: 'past_year' },
+      { legacy_id: '1006', mode: 'ramalan' },
+    ])
+    const rejected = await h.q<{ legacy_id: string; reason: string; column_name: string }>(
+      `select legacy_id, reason, column_name from etl_rejects where run_id = $1 and entity = 'practice_sessions' and legacy_id in ('1003','1007') order by legacy_id`,
+      [runId],
+    )
+    expect(rejected).toEqual([
+      { legacy_id: '1003', reason: 'UNKNOWN_ENUM', column_name: 'mode' },
+      { legacy_id: '1007', reason: 'UNKNOWN_ENUM', column_name: 'mode' },
+    ])
+  })
+
+  it('reads the source-paper key straight from exam_questions.source_paper_id and the question type from questions.type', async () => {
+    const rows = await h.q<{ legacy_id: string; source_natural_key: string | null; number_label: string | null; question_type: string | null }>(
+      `select legacy_id, source_natural_key, number_label, question_type from practice_answers
+       where legacy_source = 'cloud' and legacy_id in ('5001','5002','5003') order by legacy_id`,
+    )
+    expect(rows).toEqual([
+      { legacy_id: '5001', source_natural_key: 'contoh-2025-1', number_label: '7', question_type: 'mcq' },
+      { legacy_id: '5002', source_natural_key: null, number_label: '8', question_type: 'mcq' },
+      { legacy_id: '5003', source_natural_key: 'contoh-2025-1', number_label: '7', question_type: 'mcq' },
+    ])
   })
 
   it('upper-cases the label, falls back to the session subject and keeps an unarchived question reference', async () => {

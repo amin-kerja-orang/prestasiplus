@@ -228,6 +228,11 @@ export class FakeQuestionBank implements QuestionBankPort {
     return out
   }
 
+  async forEachQualityBatch(visit: (batch: QualityQuestion[]) => Promise<void>, size = 200): Promise<void> {
+    const all = await this.listForQuality()
+    for (let i = 0; i < all.length; i += size) await visit(all.slice(i, i + size))
+  }
+
   async listForQuality(): Promise<QualityQuestion[]> {
     return [...this.questions.values()].sort((a, b) => Number(a.id) - Number(b.id)).map((q) => q.quality)
   }

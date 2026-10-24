@@ -15,7 +15,7 @@ import { curriculumSeed } from '../../../prisma/seed/curriculum'
 import { runCore } from '../../../src/migration/load'
 import { loadStaging } from '../../../src/migration/staging/load'
 import { DirReader } from '../../../src/migration/staging/readers'
-import { createStagingDb, FIXTURE_DIR, stagingEnv, type StagingDb } from '../staging/helpers'
+import { createStagingDb, FIXTURE_DIR, stagingEnv, testOutDir, type StagingDb } from '../staging/helpers'
 
 const AS_OF = '2026-06-01'
 const NOTE = 'classrooms.level_kept_no_pupils'
@@ -24,7 +24,7 @@ let coreEnv: Record<string, string>
 
 const q = async <T extends Record<string, unknown> = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> =>
   (await env.pool.query(sql, params)).rows as T[]
-const run = async (mode: 'dry-run' | 'apply') => runCore({ pool: env.pool, env: coreEnv, source: 'cloud', asOf: AS_OF, mode, batchSize: 2 })
+const run = async (mode: 'dry-run' | 'apply') => runCore({ pool: env.pool, env: coreEnv, source: 'cloud', asOf: AS_OF, mode, batchSize: 2, outDir: testOutDir() })
 /** A delta apply: the dry-run of the same input first, as the operator does. */
 const apply = async () => {
   await run('dry-run')

@@ -106,23 +106,28 @@ export async function addSchoolAdmin(db: TestDatabase, schoolId: string, email: 
   await db.query(`insert into user_roles (user_id, role, created_at) values ($1::bigint, 'school_admin', now())`, [rows[0]?.id as string])
 }
 
-/** Active pupils of a school as the reports count them. */
-export async function activePupilCount(db: TestDatabase, schoolId: string): Promise<number> {
+/** Managed accounts of one role in a school, as S0/S6/S7 and the reports count them: the role, no role outside student/teacher, any status. */
+async function managedCount(db: TestDatabase, schoolId: string, role: 'student' | 'teacher'): Promise<number> {
   const rows = await db.query<{ n: number }>(
-    `select count(*)::int as n from users u where u.school_id = $1::bigint and u.is_active
-       and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`,
-    [schoolId],
+    `select count(*)::int as n from users u where u.school_id = $1::bigint
+       and exists (select 1 from user_roles r where r.user_id = u.id and r.role = $2)
+       and not exists (select 1 from user_roles r where r.user_id = u.id and r.role not in ('student', 'teacher'))`,
+    [schoolId, role],
   )
   return rows[0]?.n ?? 0
 }
 
-export async function activeTeacherCount(db: TestDatabase, schoolId: string): Promise<number> {
-  const rows = await db.query<{ n: number }>(
-    `select count(*)::int as n from users u where u.school_id = $1::bigint and u.is_active
-       and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'teacher')`,
-    [schoolId],
-  )
-  return rows[0]?.n ?? 0
+export const managedPupilCount = (db: TestDatabase, schoolId: string) => managedCount(db, schoolId, 'student')
+export const managedTeacherCount = (db: TestDatabase, schoolId: string) => managedCount(db, schoolId, 'teacher')
+
+/** Marks an account suspended (it stays active and is still counted as a managed account). */
+export async function suspend(db: TestDatabase, userId: string): Promise<void> {
+  await db.query(`update users set is_suspended = true where id = $1::bigint`, [userId])
+}
+
+/** Gives an existing account one more role (e.g. a teacher who is also a school_admin). */
+export async function addRole(db: TestDatabase, userId: string, role: string): Promise<void> {
+  await db.query(`insert into user_roles (user_id, role, created_at) values ($1::bigint, $2, now())`, [userId, role])
 }
 
 /** Adds `n` pupils to a school, each with one completed session (the cohort rule needs 5 distinct pupils). */

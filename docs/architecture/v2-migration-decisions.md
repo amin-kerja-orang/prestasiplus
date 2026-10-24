@@ -146,9 +146,9 @@ Not in this table: Q8 (see section 6) and the two AM-10 operating questions OD-1
 
 **Decided:** A (LEAD, 21 Oct).
 
-- **Context.** [v2-data-migration.md](v2-data-migration.md) section 3.3 item 5 (line 240), Q12 (line 417). `archive_cloud` holds 35 question-bank tables for the optional backfill (BE-30). Five of them carry a `user_id`: `question_reports`, `question_submissions`, `question_imports`, `spm_sets`, `teacher_reference_documents` (`apps/api/src/migration/ddl/spec.ts:264-292`).
+- **Context.** [v2-data-migration.md](v2-data-migration.md) section 3.3 item 5 (line 240), Q12 (line 417). `archive_cloud` holds 38 tables (35 question-bank tables plus 3 lookups) for the optional backfill (BE-30). Five of them carry a person id or free text and are minimised: `question_reports` (`reporter_id`, `description`), `question_submissions` (`teacher_id`), `question_imports` (`imported_by`), `teacher_reference_documents` (`teacher_id`), `teacher_reference_papers` (`teacher_id`) (`apps/api/src/migration/export/archive-minimise.ts`; `spm_sets` no longer has a user column after the FIT-FIX schema fit).
 - **Conflict to resolve.** The runbook deletes real dumps within 7 days and drops `archive_cloud` with staging ([runbook](v2-migration-runbook.md) section 0 rule 4 and section 5). A 12-month archive needs an explicit carve-out. Question content is not personal data; the five user-linked tables are.
-- **Options.** A: 12 months, all 35 tables, as the default says. B: 12 months, but the five user-linked tables are not retained (the backfill needs only question content, `source_papers.natural_key` and `content_hash`). C: no archive; delete with the dump; the backfill (MIG-09) cannot run later and old answers stay unlinked, which the design already accepts (data migration line 234).
+- **Options.** A: 12 months, all 38 tables, as the default says. B: 12 months, but the five user-linked tables are not retained (the backfill needs only question content, `source_papers.natural_key` and `content_hash`). C: no archive; delete with the dump; the backfill (MIG-09) cannot run later and old answers stay unlinked, which the design already accepts (data migration line 234).
 - **Code today.** `staging:load` creates and drops `archive_cloud` with `staging_cloud`; there is no retention or export step. The backfill is post go-live and optional, so the storage form (encrypted export or a DB schema not served by the API) is decided by devops under MIG-08 and is not needed before then.
 - **Roster JSON files.** The reference repo's roster JSON files are probably real people (to confirm, data migration line 363). The default, purge them from any shared copy, costs nothing and applies in all options; BE-28 AC7 already has a test that migration code never reads them.
 - **Default and recommendation.** Default A. **Recommend B**: it keeps the backfill option and removes minors' linkage from a long-lived store.
@@ -203,7 +203,7 @@ Not in this table: Q8 (see section 6) and the two AM-10 operating questions OD-1
 
 ## 4. Follow-through (decided)
 
-All defaults were approved (Q1 to Q7, Q9 to Q13 A; OD-21 C; OD-22 A; OD-23 B; OD-18 A; DT-1 A). Owners below come from the #109 thread. The "blocked" findings in section 2 are real and are handled as shown.
+All defaults were approved (Q1 to Q7, Q9 to Q13 A; OD-21 C; OD-22 A; OD-23 B; OD-18 A; DT-1 A, superseded on 24 Oct by DT-1 B, see section 7). Owners below come from the #109 thread. The "blocked" findings in section 2 are real and are handled as shown.
 
 | Item | Owner and state | Notes |
 |---|---|---|
@@ -215,7 +215,7 @@ All defaults were approved (Q1 to Q7, Q9 to Q13 A; OD-21 C; OD-22 A; OD-23 B; OD
 | Q4 A | Half AZ (BE-18 owner): AZ-31, PR #135 | Migration `0042_question_sets_nullable_classroom` (nullable `question_sets.classroom_id` with `ck_question_sets_classroom_or_migrated`), null handling in the BE-18 readers. BE-29 then loads headers with `classroom_id` null, `legacy_*` and `needs_rebuild = true`, no items. |
 | Q6 A (payments leg), Q13 A (leagues) | LEAD fallback rule | If either cannot be rehearsed green by the evening of 24 Oct, a DECISION NEEDED with the recommended option (Q6 B, Q13 B) goes to the LEAD. Until then the interim Q6 rule in code stays in force; there is no league card or schema. |
 | Q11 A, OD-18 A | AM-10, PR #125 | Schema-and-counts export, then the anonymised dump by the half-AM operator (OD-18 A); output shared out-of-band, deleted within 7 days. |
-| DT-1 A | AM-10, PR #125 | `dump:cloud` writes `DATETIME` values with `+08:00` and `TIMESTAMP` values with `Z`. |
+| DT-1 A (21 Oct), superseded by DT-1 B (UTC, 24 Oct) | AM-10, PR #125 | A (21 Oct) had `dump:cloud` write `DATETIME` values with `+08:00`. Superseded on 24 Oct by DT-1 B (LEAD, #109 6371548855): the .cloud export has no `DATETIME` columns (every date-time column is a `TIMESTAMP`; app and DB session are UTC), so the sitting passes `--datetime-offset +00:00`; `TIMESTAMP` values are written with `Z`. The tool default stays `+08:00` (no code change), so the flag must always be passed. |
 | MIG-07 rehearsal (25 Oct target) | Half AM | Runs on the AM-10 anonymised dump; records every default relied on; items still blocked stay on the report as "not migrated". |
 | Doc catch-up | Docs owner, after the PRs | Plan section 13 rows OD-10, OD-21, OD-22, OD-23; plan 14.7 rows Notification, School subscription, AI usage, Teacher question set; data model GAP-6, GAP-15, GAP-16 and line 748; TRACKER decisions log (new D-number, entered by the LEAD); deviations log for Q6. [v2-data-migration.md](v2-data-migration.md) section 7 already marked decided. |
 
@@ -223,14 +223,14 @@ All defaults were approved (Q1 to Q7, Q9 to Q13 A; OD-21 C; OD-22 A; OD-23 B; OD
 
 ## 5. Interactions between answers
 
-- Q9 A and Q12 A together: open reports are exported (AM-09) and the archive keeps all 35 tables, including the five user-linked ones, so those minors' ids live for 12 months. The retention controls are in MIG-08 and runbook section 18 (PR #123).
+- Q9 A and Q12 A together: open reports are exported (AM-09) and the archive keeps all 38 tables, including the five user-linked ones (`question_reports`, `question_submissions`, `question_imports`, `teacher_reference_documents`, `teacher_reference_papers`), so those minors' ids live for 12 months. The retention controls are in MIG-08 and runbook section 18 (PR #123).
 - Q6 and OD-22 A: a school subscription that fails the quota check is rejected, and while the interim Q6 rule is in force that school's students then have no subscription. Check the `quota` profile before `--apply`.
 - Q1 and Q3: a JPN-like production role is a Q1 review-list item; there is no JPN scope level in the migration (`user_scopes` carries national, district and others, but no v2 JPN role exists).
 - Q11 and Q12: the 7-day dump rule and the 12-month archive are reconciled by the runbook edits in MIG-08 (section 18, PR #123) and AM-10 before the real dump is issued.
 
 ## 6. Not covered
 
-- **Q8 (day boundary).** Not asked here. Its default, Malaysia time, is carried by plan OD-8 (line 417) and by transform T-05 (plan line 634). It is implemented in BE-11 (`modules/wallet/streak.service.ts`, `Asia/Kuala_Lumpur`) and specified in BE-29 AC4. Q8 was not answered on #109 and stays as implemented in BE-11. (DT-1 A, section 7, fixes only the export time zone, not this day-boundary rule.)
+- **Q8 (day boundary).** Not asked here. Its default, Malaysia time, is carried by plan OD-8 (line 417) and by transform T-05 (plan line 634). It is implemented in BE-11 (`modules/wallet/streak.service.ts`, `Asia/Kuala_Lumpur`) and specified in BE-29 AC4. Q8 was not answered on #109 and stays as implemented in BE-11. (DT-1, section 7, fixes only the export time zone, not this day-boundary rule: DT-1 B (UTC, 24 Oct) does not change the Q8 rule. For the date-only columns (`checked_in_on`, `claimed_on`, `happened_on`, `action_date`, `starts_at`, `ends_at`, `expires_at`), **Perlu pengesahan** (LEAD / data owner): the app clock is UTC, so the stored date may be the UTC day, not the Malaysia day; see [v2-data-migration.md](v2-data-migration.md) section 5.)
 - **OD-24 to OD-27** (practice `mode`, challenge `metric`, `practice_answers.difficulty`, `packages` target) are out of scope of this item. OD-28 is already resolved (plan line 437).
 - Production hosting and go-live scope (D65, D-1 to D-3 in the [go-live doc](../ops/go-live-bijak-spm.md)) are not decided here.
 
@@ -241,5 +241,5 @@ These are not part of OD-10 but the AM-10 procedure (`docs/ops/cloud-dump-proced
 | ID | Question (one line) | Options | Proposed default | Recommendation | Answer word | Decision |
 |---|---|---|---|---|---|---|
 | OD-18 | Who runs the dump and the anonymiser on real data? The plan default names "the lead, on the lead PC" ([plan](v2-backend-plan.md) line 427); issue #109 AM-10 names the half-AM operator as the human with read-only .cloud access. | A the half-AM operator runs it, the LEAD approves and receives the deletion confirmation. B the LEAD runs it. | A | A (the operator is the person who holds the access; no credential changes hands) | A / B | **A** (LEAD, 21 Oct) |
-| DT-1 | In which time zone are .cloud `DATETIME` values stored? `TIMESTAMP` columns are exported in UTC by the server; `DATETIME` columns carry no zone and the export must add one. | A `+08:00` (Malaysia time, matches Q8). B `+00:00` (UTC). | A | A, cross-checked against the server time zones in the `dump:check` report and the application setting known to the data owner | A / B | **A** (LEAD, 21 Oct) |
+| DT-1 | In which time zone are .cloud `DATETIME` values stored? `TIMESTAMP` columns are exported in UTC by the server; `DATETIME` columns carry no zone and the export must add one. | A `+08:00` (Malaysia time, matches Q8). B `+00:00` (UTC). | A | A, cross-checked against the server time zones in the `dump:check` report and the application setting known to the data owner | A / B | **B** (LEAD, 24 Oct 02:15 MYT, #109 6371548855; replaces **A** of 21 Oct). Reason: the .cloud export has no `DATETIME` columns (every date-time column is a `TIMESTAMP`), and the app time zone and the DB session are both UTC. The sitting passes `--datetime-offset +00:00`; the tool default stays `+08:00`. |
 

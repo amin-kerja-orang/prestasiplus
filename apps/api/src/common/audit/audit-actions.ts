@@ -68,5 +68,8 @@ export const AUDIT_ACTIONS = {
   // BE-19 headcount (M08): no pupil data in the detail.
   HEADCOUNT_CONFIG_RESET: 'headcount.config.reset',
   HEADCOUNT_CONFIG_DELETED: 'headcount.config.deleted',
+  HEADCOUNT_CONFIG_CREATED: 'headcount.config.created',
+  HEADCOUNT_CONFIGS_AUTO_SETUP: 'headcount.configs.auto_setup',
+  HEADCOUNT_STUDENTS_DROPPED: 'headcount.students.dropped',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]

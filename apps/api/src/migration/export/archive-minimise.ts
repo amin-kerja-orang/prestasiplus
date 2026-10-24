@@ -1,9 +1,10 @@
 /**
  * `archive_cloud` minimisation (AM-09 / BE-30, LEAD decision 18 on Q12): after the Q9 export (`question-reports.ts`) has
  * handed the open reports to the content team, the personal columns the archive keeps are emptied:
- *   - `user_id` -> NULL in `question_reports`, `question_submissions`, `question_imports`, `spm_sets`,
- *     `teacher_reference_documents` (where the column exists);
- *   - `reason` (reporter free text) -> NULL in `question_reports`.
+ *   - the person columns -> NULL: `question_reports.reporter_id`, `question_submissions.teacher_id`,
+ *     `question_imports.imported_by`, `teacher_reference_documents.teacher_id`, `teacher_reference_papers.teacher_id`
+ *     (`spm_sets` has no person column on .cloud); a planned column that is missing from the archive stops the command;
+ *   - `description` (reporter free text) -> NULL in `question_reports`.
  * `_row_hash` (the loader's hash of the whole row, which holds those values) is set to NULL on every row that is touched.
  * No other column is written (not `updated_at`, not `title`, not `path`). Rows are never deleted.
  *
@@ -39,11 +40,11 @@ export class ArchiveMinimiseRefusedError extends ApplyGuardError {
 
 /** The columns emptied, per table. Fixed list: nothing is derived from data. */
 export const MINIMISE_PLAN: readonly { table: string; columns: readonly string[] }[] = [
-  { table: 'question_reports', columns: ['user_id', 'reason'] },
-  { table: 'question_submissions', columns: ['user_id'] },
-  { table: 'question_imports', columns: ['user_id'] },
-  { table: 'spm_sets', columns: ['user_id'] },
-  { table: 'teacher_reference_documents', columns: ['user_id'] },
+  { table: 'question_reports', columns: ['reporter_id', 'description'] },
+  { table: 'question_submissions', columns: ['teacher_id'] },
+  { table: 'question_imports', columns: ['imported_by'] },
+  { table: 'teacher_reference_documents', columns: ['teacher_id'] },
+  { table: 'teacher_reference_papers', columns: ['teacher_id'] },
 ]
 
 export interface MinimiseOptions {
@@ -59,7 +60,7 @@ export interface MinimiseOptions {
 export interface MinimiseReport {
   database: string
   dryRun: boolean
-  /** Rows changed (apply) or that would be changed (dry-run), per table and column; columns that do not exist are absent. */
+  /** Rows changed (apply) or that would be changed (dry-run), per table and column. */
   changes: { table: string; column: string; rows: number }[]
   total: number
 }
@@ -162,6 +163,14 @@ export async function minimiseArchive(options: MinimiseOptions): Promise<Minimis
     const have = new Map(cols.rows.map((c) => [`${c.table_name}.${c.column_name}`, c.is_nullable === 'YES']))
     const missing = MINIMISE_PLAN.filter((p) => !cols.rows.some((c) => c.table_name === p.table)).map((p) => p.table)
     if (missing.length > 0) throw new ArchiveMinimiseRefusedError(`Refusing: ${ARCHIVE_SCHEMA} table(s) missing: ${missing.join(', ')}. Nothing was changed.`)
+    // A plan column the archive does not have is a hard stop (never a silent skip): a renamed source column would otherwise
+    // leave the person data in place. `_row_hash` is the only optional column (an archive loaded without it has none).
+    for (const p of MINIMISE_PLAN) {
+      const absent = p.columns.filter((c) => !have.has(`${p.table}.${c}`))
+      if (absent.length > 0) {
+        throw new ArchiveMinimiseRefusedError(`Refusing: ${ARCHIVE_SCHEMA}.${p.table} has no column ${absent.join(', ')} (the plan names it; the spec and the plan have drifted). Nothing was changed.`)
+      }
+    }
     for (const p of MINIMISE_PLAN) {
       for (const c of [...p.columns, HASH_COLUMN]) {
         if (have.get(`${p.table}.${c}`) === false) {
@@ -184,11 +193,11 @@ export async function minimiseArchive(options: MinimiseOptions): Promise<Minimis
     }
 
     // One statement per table: each row is rewritten once. A row is touched when at least one listed column is non-null; the
-    // loader's `_row_hash` (an unkeyed SHA-256 of the whole row, user_id and reason included) is emptied on those rows, or it
+    // loader's `_row_hash` (an unkeyed SHA-256 of the whole row, reporter_id and description included) is emptied on those rows, or it
     // would let the reporter be re-identified by guessing. The per-column counts are taken from the rows' values before the change.
     const changes: MinimiseReport['changes'] = []
     for (const p of MINIMISE_PLAN) {
-      const cols = p.columns.filter((c) => have.has(`${p.table}.${c}`))
+      const cols = p.columns
       if (cols.length === 0) continue
       const flags = cols.map((_, i) => `${q(cols[i] as string)} IS NOT NULL AS f${i}`).join(', ')
       const any = cols.map((c) => `${q(c)} IS NOT NULL`).join(' OR ')

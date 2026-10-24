@@ -16,6 +16,7 @@
     "lint:migration": "tsx scripts/check-migratable.ts",
     "migrate:core": "tsx src/migration/load/cli.ts",
     "migrate:activity": "tsx src/migration/load/activity/cli.ts",
+    "migrate:questions": "tsx src/migration/load/questions/cli.ts",
     "migrate:all": "tsx src/migration/orchestrate.ts migrate:all",
     "migrate:delta": "tsx src/migration/orchestrate.ts migrate:delta",
     "migrate:verify": "tsx src/migration/orchestrate.ts migrate:verify",
@@ -62,7 +63,7 @@
     "rxjs": "7.8.2",
     "sanitize-html": "2.18.1",
     "tesseract.js": "7.0.0",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@nestjs/testing": "11.2.7",
