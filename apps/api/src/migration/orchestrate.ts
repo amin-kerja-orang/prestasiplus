@@ -428,14 +428,16 @@ const USER_ID = /^[1-9]\d{0,17}$/
  * `-asof 2026-10-29` (one dash) would otherwise be dropped without a word.
  */
 const COMMON_FLAGS = ['as-of', 'batch-size', 'content-owner', 'files-dir', 'out-dir'] as const
+// `slot.sh etl` appends `--out-dir /app/apps/api/.migration-out` to every migrate:* command (slot.sh:291), so the three
+// commands that write no report still accept it (and ignore it); refusing it would break the night's rollback fallback.
 export const KNOWN_FLAGS: Readonly<Record<string, ReadonlySet<string>>> = {
   'migrate:all': new Set(COMMON_FLAGS),
   'migrate:delta': new Set([...COMMON_FLAGS, 'since']),
   'migrate:verify': new Set(['out-dir']),
-  'migrate:rollback': new Set(['confirm']),
-  'migrate:link-questions': new Set(['batch-size']),
+  'migrate:rollback': new Set(['confirm', 'out-dir']),
+  'migrate:link-questions': new Set(['batch-size', 'out-dir']),
   'migrate:export-question-reports': new Set(['out-dir']),
-  'migrate:archive-minimise': new Set(['confirm', 'export-summary']),
+  'migrate:archive-minimise': new Set(['confirm', 'export-summary', 'out-dir']),
 }
 
 function assertKnownFlags(command: string, args: CommandArgs): void {

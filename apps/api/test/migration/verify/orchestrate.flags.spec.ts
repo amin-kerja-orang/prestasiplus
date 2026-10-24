@@ -87,10 +87,10 @@ describe('migrate:* commands refuse unknown flags', () => {
     expect([...(KNOWN_FLAGS['migrate:all'] as ReadonlySet<string>)].sort()).toEqual(['as-of', 'batch-size', 'content-owner', 'files-dir', 'out-dir'])
     expect([...(KNOWN_FLAGS['migrate:delta'] as ReadonlySet<string>)].sort()).toEqual(['as-of', 'batch-size', 'content-owner', 'files-dir', 'out-dir', 'since'])
     expect([...(KNOWN_FLAGS['migrate:verify'] as ReadonlySet<string>)]).toEqual(['out-dir'])
-    expect([...(KNOWN_FLAGS['migrate:rollback'] as ReadonlySet<string>)]).toEqual(['confirm'])
-    expect([...(KNOWN_FLAGS['migrate:link-questions'] as ReadonlySet<string>)]).toEqual(['batch-size'])
+    expect([...(KNOWN_FLAGS['migrate:rollback'] as ReadonlySet<string>)].sort()).toEqual(['confirm', 'out-dir'])
+    expect([...(KNOWN_FLAGS['migrate:link-questions'] as ReadonlySet<string>)].sort()).toEqual(['batch-size', 'out-dir'])
     expect([...(KNOWN_FLAGS['migrate:export-question-reports'] as ReadonlySet<string>)]).toEqual(['out-dir'])
-    expect([...(KNOWN_FLAGS['migrate:archive-minimise'] as ReadonlySet<string>)].sort()).toEqual(['confirm', 'export-summary'])
+    expect([...(KNOWN_FLAGS['migrate:archive-minimise'] as ReadonlySet<string>)].sort()).toEqual(['confirm', 'export-summary', 'out-dir'])
   })
 
   it.each(COMMANDS)('%s: a misspelt flag is exit 2 and touches nothing (= form, space form, flag without value)', async (command) => {
@@ -197,6 +197,13 @@ describe('documented invocations (runbook, cut-over plan, slot.sh, rehearsal scr
     ['migrate:export-question-reports', '--out-dir', '/x/.migration-out'],
     ['migrate:archive-minimise', '--dry-run', '--confirm=pp_rehearsal', '--export-summary=/x/s.json'],
     ['migrate:archive-minimise', '--apply', '--confirm', 'pp_rehearsal', '--export-summary', '/x/s.json'],
+    // `S etl <command>`: slot.sh:291 appends --out-dir to every migrate:* command (the night's rollback fallback, B11).
+    ['migrate:rollback', '--confirm', 'pp_prod', '--out-dir', '/app/apps/api/.migration-out'],
+    ['migrate:rollback', '--apply', '--confirm', 'pp_prod', '--out-dir', '/app/apps/api/.migration-out'],
+    ['migrate:link-questions', '--apply', '--out-dir', '/app/apps/api/.migration-out'],
+    ['migrate:archive-minimise', '--apply', '--confirm', 'pp_prod', '--export-summary', '/x/s.json', '--out-dir', '/app/apps/api/.migration-out'],
+    ['migrate:export-question-reports', '--out-dir', '/app/apps/api/.migration-out'],
+    ['migrate:verify', '--out-dir', '/app/apps/api/.migration-out'],
   ]
 
   it.each(documented.map((a) => [a.join(' '), a] as const))('%s: every flag is known to its command', (_label, argv) => {
