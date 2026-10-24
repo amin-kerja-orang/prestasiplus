@@ -121,21 +121,25 @@ async function begin(restart: boolean): Promise<void> {
             Anda mempunyai percubaan <strong>{{ open.title }}</strong> yang masih berjalan.
           </p>
           <p>Masa berlalu setakat ini: {{ formatClock(open.elapsedSeconds) }}</p>
-          <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+          <div class="mt-3 flex flex-col gap-2">
             <UButton
               :loading="starting"
-              class="h-auto min-h-11 text-center whitespace-normal"
+              class="min-h-11 w-fit"
+              aria-label="Sambung — teruskan jawapan &amp; masa sedia ada"
               data-testid="resume"
               @click="begin(false)"
-              >Sambung — teruskan jawapan &amp; masa sedia ada</UButton
+              >Sambung</UButton
             >
+            <p>teruskan jawapan &amp; masa sedia ada</p>
             <UButton
               color="neutral"
-              class="h-auto min-h-11 text-center whitespace-normal"
+              class="min-h-11 w-fit"
+              aria-label="Mula Semula — kosongkan jawapan &amp; masa"
               data-testid="restart"
               @click="confirmRestart = true"
-              >Mula Semula — kosongkan jawapan &amp; masa</UButton
+              >Mula Semula</UButton
             >
+            <p>kosongkan jawapan &amp; masa</p>
           </div>
           <p class="mt-2 text-caption">
             “Sambung” mengekalkan semua jawapan anda. “Mula Semula” tidak boleh diundur.
@@ -179,7 +183,18 @@ async function begin(restart: boolean): Promise<void> {
         </UCollapsible>
       </section>
 
-      <section v-if="!needsChoice" class="flex flex-col gap-3" aria-labelledby="h-mod">
+      <!-- A sitting is open but still fresh (no resume block): the hero resumes, this restarts. -->
+      <section v-if="open && !needsChoice" data-testid="fresh-restart">
+        <UButton
+          color="neutral"
+          class="min-h-11 w-fit"
+          data-testid="restart"
+          @click="confirmRestart = true"
+          >Mula Semula</UButton
+        >
+      </section>
+
+      <section v-if="!open" class="flex flex-col gap-3" aria-labelledby="h-mod">
         <h2 id="h-mod" class="text-heading text-highlighted">Pilih mod</h2>
         <URadioGroup
           v-model="mode"
@@ -190,7 +205,6 @@ async function begin(restart: boolean): Promise<void> {
         />
         <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" />
         <UButton
-          v-if="!open"
           size="lg"
           trailing-icon="i-ph-arrow-right-bold"
           class="min-h-12 w-fit"
