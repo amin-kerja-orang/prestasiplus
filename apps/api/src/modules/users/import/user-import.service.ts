@@ -85,7 +85,7 @@ export class UserImportService {
       schoolId,
       grade: null,
       passwordHash: hashes[i] as string,
-      mustChangePassword: true,
+      mustChangePassword: false, // R39: an imported account is not forced to change its password
       icHash: null,
       icMasked: null,
       isActive: true,
@@ -150,7 +150,7 @@ export class UserImportService {
         line: p.line,
         email: p.email,
         generatedPassword: passwords[i] as string,
-        mustChangePassword: true as const,
+        mustChangePassword: false as const,
       })),
     }
     return { result, status: usersImportedText(result), jobId }

@@ -12,6 +12,7 @@ describe('forced password change: global guard on must_reset_password (AC 4)', (
   let t: AccountTestApp
   let school: string
   let generated: string
+  let unflagged: { responseFlag: unknown; rowFlag: boolean | undefined; sessionFlag: boolean }
 
   beforeAll(async () => {
     t = await bootAccountApp({ modules: [SubscriptionsModule] })
@@ -20,6 +21,11 @@ describe('forced password change: global guard on must_reset_password (AC 4)', (
     const created = await post(admin, '/admin/users', { roles: ['teacher'], name: 'Guru Paksa', email: 'paksa@ujian.test', schoolId: school })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     generated = created.body.data.generatedPassword as string
+    // R39: the admin-created account is NOT flagged. Capture that, then set the flag directly: the guard is what this
+    // file tests, and only an operator action (admin bootstrap, a manual reset) flags an account now.
+    const who = await login(t, 'paksa@ujian.test', generated)
+    unflagged = { responseFlag: created.body.data.mustChangePassword, rowFlag: (await userRow(t.db, 'paksa@ujian.test'))?.must_reset_password, sessionFlag: who.session.mustChangePassword }
+    await t.db.query(`update users set must_reset_password = true where email = 'paksa@ujian.test'`)
   })
   afterAll(async () => {
     await t.close()
@@ -32,7 +38,11 @@ describe('forced password change: global guard on must_reset_password (AC 4)', (
     expect(err.message).toBe(MESSAGE)
   }
 
-  it('an admin-created account logs in and the session carries mustChangePassword = true', async () => {
+  it('an admin-created account is not flagged (R39: no forced change at go-live): row and session report false', () => {
+    expect(unflagged).toEqual({ responseFlag: false, rowFlag: false, sessionFlag: false })
+  })
+
+  it('a flagged account (flag set directly) logs in and the session carries mustChangePassword = true', async () => {
     const who = await login(t, 'paksa@ujian.test', generated)
     expect(who.session.mustChangePassword).toBe(true)
     const again = SessionSchema.parse((await get(who, '/session')).body.data)
