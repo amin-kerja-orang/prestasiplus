@@ -94,7 +94,6 @@ async function begin(restart: boolean): Promise<void> {
         :subtitle="`${cover.subjectName} · Kertas ${cover.kertas} · ${cover.durationMin} minit · ${cover.marks} markah · ${cover.questionCount} soalan`"
         art="books"
         :cta-label="open ? 'Sambung' : 'Mula'"
-        class="max-sm:pt-16"
         data-testid="cover-hero"
         @cta="begin(false)"
       />
@@ -116,14 +115,14 @@ async function begin(restart: boolean): Promise<void> {
           <div class="mt-3 flex flex-col gap-2 sm:flex-row">
             <UButton
               :loading="starting"
-              class="h-auto min-h-11 justify-center py-2 text-center whitespace-normal"
+              class="h-auto min-h-11 text-center whitespace-normal"
               data-testid="resume"
               @click="begin(false)"
               >Sambung — teruskan jawapan &amp; masa sedia ada</UButton
             >
             <UButton
               color="neutral"
-              class="h-auto min-h-11 justify-center py-2 text-center whitespace-normal"
+              class="h-auto min-h-11 text-center whitespace-normal"
               data-testid="restart"
               @click="confirmRestart = true"
               >Mula Semula — kosongkan jawapan &amp; masa</UButton

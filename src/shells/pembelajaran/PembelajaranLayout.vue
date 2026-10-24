@@ -143,16 +143,20 @@ watch(
 /**
  * Cikgu Alesa floating button: it stays out of the way while the learner reads. Scrolling down
  * tucks it away (it never sits on top of text or controls mid-page); scrolling up, reaching the
- * top or the end of the page, or focusing it brings it back. The bottom padding of the page body
- * clears it, so the last content is never under it either.
+ * top or the end of the page, or focusing it brings it back (below lg only; on desktop it always
+ * shows). A spacer at the end of the page body clears it, so the last content is never under it.
  */
 const alesaHidden = ref(false)
 let lastScrollTop = 0
+/** The scrolling panel body (parent of `#kandungan`), looked up once and kept. */
+let scrollBody: HTMLElement | null = null
+const bodyEl = (): HTMLElement | null =>
+  (scrollBody ??= document.getElementById('kandungan')?.parentElement ?? null)
 const SCROLL_STEP = 4
 const SCROLL_TOP_ZONE = 48
 const SCROLL_END_ZONE = 24
 function onBodyScroll(event: Event): void {
-  const body = document.getElementById('kandungan')?.parentElement
+  const body = bodyEl()
   if (!body || event.target !== body) return
   const top = body.scrollTop
   const delta = top - lastScrollTop
@@ -171,7 +175,7 @@ watch(
   () => {
     alesaHidden.value = false
     lastScrollTop = 0
-    void nextTick(() => document.getElementById('kandungan')?.parentElement?.scrollTo(0, 0))
+    void nextTick(() => bodyEl()?.scrollTo(0, 0))
   },
 )
 
@@ -266,7 +270,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
       data-layout="pembelajaran"
       data-portal="pembelajaran"
       :data-role="role ?? undefined"
-      @scroll.capture="onBodyScroll"
+      @scroll.capture.passive="onBodyScroll"
     >
       <a
         href="#kandungan"
@@ -437,8 +441,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   :collapsed="true"
                   color="neutral"
                   variant="ghost"
-                  size="sm"
-                  class="hidden min-h-11 min-w-11 justify-center sm:inline-flex lg:hidden"
+                  size="xl"
+                  class="hidden min-h-11 min-w-11 sm:inline-flex lg:hidden"
                 />
                 <template v-if="learner">
                   <div class="hidden items-center gap-2 sm:flex">
@@ -449,9 +453,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 <UButton
                   color="neutral"
                   variant="ghost"
-                  size="sm"
+                  size="xl"
                   :icon="theme.scheme.value === 'dark' ? 'i-ph-sun' : 'i-ph-moon'"
-                  class="hidden min-h-11 min-w-11 justify-center sm:inline-flex"
+                  class="hidden min-h-11 min-w-11 sm:inline-flex"
                   :aria-label="themeLabel"
                   data-testid="pembelajaran-theme-toggle"
                   @click="theme.toggle()"
@@ -482,7 +486,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
             <main
               id="kandungan"
               :key="route.path"
-              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 pt-4 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:pt-6 lg:pb-24"
+              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 pt-4 sm:pt-6"
               data-testid="pembelajaran-main"
               tabindex="-1"
             >
@@ -509,6 +513,16 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 <p>&copy; 2026 PRESTASIPLUS. Hakcipta Terpelihara.</p>
                 <p>Didikan penuh ❤️ dari Malaysia 🇲🇾</p>
               </footer>
+              <!-- Clearance for the bottom nav (< lg) and the floating Cikgu Alesa button -->
+              <div
+                class="shrink-0"
+                :class="
+                  showAlesa
+                    ? 'h-[calc(11rem+env(safe-area-inset-bottom))] lg:h-20'
+                    : 'h-[calc(6rem+env(safe-area-inset-bottom))] lg:h-12'
+                "
+                aria-hidden="true"
+              />
             </main>
           </template>
         </UDashboardPanel>
@@ -524,9 +538,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
       <RouterLink
         v-if="showAlesa"
         to="/cikgu"
-        class="fixed end-4 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-30 grid size-14 place-items-center rounded-full bg-ai text-primary-on shadow-lift transition duration-200 motion-reduce:transition-none lg:bottom-6"
-        :class="alesaHidden ? 'pointer-events-none scale-75 opacity-0' : ''"
+        class="fixed end-4 bottom-24 z-30 grid size-14 place-items-center rounded-full bg-ai text-primary-on shadow-lift lg:bottom-6"
         aria-label="Cikgu Alesa"
+        data-alesa
         data-testid="pembelajaran-alesa"
         :data-hidden="alesaHidden ? 'true' : undefined"
         @focus="alesaHidden = false"
@@ -682,3 +696,31 @@ const chipClass = (chip: unknown, active: boolean): string =>
     </div>
   </UApp>
 </template>
+
+<style scoped>
+/* Cikgu Alesa floating button: lifted above the home-indicator inset and tucked away while the
+   learner scrolls down (see onBodyScroll). */
+[data-alesa] {
+  margin-bottom: env(safe-area-inset-bottom);
+  transition:
+    opacity var(--transition-duration-base),
+    transform var(--transition-duration-base);
+}
+/* Tucked away below lg only; on desktop the button stays visible. */
+@media (width < 64rem) {
+  [data-alesa][data-hidden='true'] {
+    opacity: 0;
+    transform: scale(0.75);
+    pointer-events: none;
+  }
+}
+/* Keyboard focus brings it back at once, with no fade. */
+[data-alesa]:focus-visible {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-alesa] {
+    transition: none;
+  }
+}
+</style>

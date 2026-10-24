@@ -147,7 +147,6 @@ async function generate(): Promise<void> {
       :subtitle="`${heroPaper.subjectName} · Kertas ${heroPaper.kertas} · ${heroPaper.durationMin} minit · ${heroPaper.marks} markah`"
       :art="heroPaper.status === 'sedang' ? 'books' : 'rocket'"
       :cta-label="heroPaper.status === 'sedang' ? 'Sambung' : 'Mula'"
-      class="max-sm:pt-16"
       data-testid="hero"
       @cta="open(heroPaper)"
     />
