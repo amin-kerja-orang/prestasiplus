@@ -1,4 +1,4 @@
 {"id":1,"name":"Kelas Contoh 001","code":"KLS0001","teacher_id":2,"school_id":1,"subject_id":1,"session_year":"2026"}
-{"id":2,"name":"Kelas Contoh 002","code":"KLS0002","teacher_id":16,"school_id":2,"subject_id":2,"session_year":"2026"}
-{"id":3,"name":"Kelas Contoh 003","code":"KLS0003","teacher_id":43,"school_id":3,"subject_id":3,"session_year":"2026"}
-{"id":4,"name":"Kelas Contoh 004","code":"KLS0004","teacher_id":52,"school_id":1,"subject_id":4,"session_year":"2026"}
+{"id":2,"name":"Kelas Contoh 002","code":"KLS0002","teacher_id":18,"school_id":2,"subject_id":2,"session_year":"2026"}
+{"id":3,"name":"Kelas Contoh 003","code":"KLS0003","teacher_id":45,"school_id":3,"subject_id":3,"session_year":"2026"}
+{"id":4,"name":"Kelas Contoh 004","code":"KLS0004","teacher_id":54,"school_id":1,"subject_id":4,"session_year":"2026"}

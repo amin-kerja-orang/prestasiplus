@@ -10,7 +10,7 @@
  *  - `number_label` is compared the same way (`lower(btrim())`) against `question_versions.number_label`.
  *  - A v2 question is linked to its paper through its LIVE version's `question_versions.source_paper_id`
  *    (a soft pointer, no FK yet). A question has no paper column of its own.
- *  - `source_papers.content_hash` is a hash of a whole PAPER; it cannot match an answer. The answer's
+ *  - `source_papers.file_hash` (.cloud and v2 alike) is a hash of a whole PAPER; it cannot match an answer. The answer's
  *    `legacy_content_hash` is a QUESTION-level hash (BE-29: SHA-256 of normalised stem plus sorted normalised
  *    option texts). The v2 side has no stored question-level hash, so it is computed here from the live version
  *    with the very same function (`snapshot-dims/content-hash.ts` `contentHash`): stem = `stem_ms` (else

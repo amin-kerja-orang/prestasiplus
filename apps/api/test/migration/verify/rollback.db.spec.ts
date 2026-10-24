@@ -93,7 +93,7 @@ describe('dry-run', () => {
     expect(report.status).toBe('succeeded')
     expect(report.database).toBe(db)
     const users = report.tables.find((t) => t.table === 'users')
-    expect(users?.deleted).toBe(11)
+    expect(users?.deleted).toBe(12)
     expect(report.idMapDeleted).toBeGreaterThan(0)
     expect(await legacyTableCounts(h)).toEqual(afterLoad)
     expect(await h.count('etl_id_map', `legacy_source = 'cloud'`)).toBe(report.idMapDeleted)
