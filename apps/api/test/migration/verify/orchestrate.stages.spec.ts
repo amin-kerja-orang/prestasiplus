@@ -37,6 +37,7 @@ const env = { NODE_ENV: 'test', PP_ALLOW_MIGRATE_APPLY: '1' }
 
 let nextRun = 0
 const report = (mode: 'dry-run' | 'apply', status: 'succeeded' | 'failed') => ({
+  core: { notes: { counters: new Map<string, number>() } },
   report: {
     runId: String(++nextRun), mode, status, counters: {}, resumedBatches: 0,
     recon: [{ entity: 'e', sourceCount: 1, eligibleCount: 1, loaded: status === 'failed' ? 0 : 1, rejected: 0, expectedDelta: 0, status: status === 'failed' ? 'mismatch' : 'ok' }],
@@ -182,5 +183,33 @@ describe('a stage that throws', () => {
     const seen: string[] = []
     const r = await runAll({ ...options('dry-run'), onStage: (s) => void seen.push(`${s.name}/${s.mode}/${s.status}`) })
     expect(seen).toEqual(shape(r.stages))
+  })
+})
+
+describe('Q10/Q11 in the core stage of migrate:all', () => {
+  const withCore = (r: ReturnType<typeof report>, counters: [string, number][], restrictedFile?: string) => ({
+    ...r,
+    core: { notes: { counters: new Map(counters) } },
+    ...(restrictedFile ? { restrictedFile } : {}),
+  })
+
+  it('prints the report counts (incl. the three must_reset.* of C5) and the restricted file path (no ids), and hands warn and outDir to runCore', async () => {
+    const counts: [string, number][] = [['rosterDefaultHashes', 0], ['rosterDefaultHashesWarning', 1], ['nullHashAccounts', 3], ['flaggedWithoutLoginId', 2], ['must_reset.roster_account', 4], ['must_reset.non_bcrypt', 5], ['must_reset.shared_default', 0], ['must_reset.other_reason', 9]]
+    mocks.runCore.mockResolvedValueOnce(withCore(report('dry-run', 'succeeded'), counts)).mockResolvedValueOnce(withCore(report('apply', 'succeeded'), counts, '/x/.migration-out/core-login-gaps-1.json'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    const log = capture()
+    const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01'], { pool: fakePool, env, out: log.out, err: log.err })
+    expect(code).toBe(0)
+    expect(log.text()).toContain('note nullHashAccounts: 3')
+    expect(log.text()).toContain('note flaggedWithoutLoginId: 2')
+    expect(log.text()).toContain('note rosterDefaultHashes: 0')
+    expect(log.text()).toContain('note rosterDefaultHashesWarning: 1')
+    // C5 (night SQL checks) compares these three with the database
+    expect(log.text()).toContain('note must_reset.roster_account: 4')
+    expect(log.text()).toContain('note must_reset.non_bcrypt: 5')
+    expect(log.text()).toContain('note must_reset.shared_default: 0')
+    expect(log.text()).not.toContain('must_reset.other_reason') // only the listed counters are printed per stage
+    expect(log.text()).toContain('restricted id file (mode 0600, delete within 7 days): /x/.migration-out/core-login-gaps-1.json')
+    for (const [o] of mocks.runCore.mock.calls) expect(o).toMatchObject({ warn: expect.any(Function) })
   })
 })
