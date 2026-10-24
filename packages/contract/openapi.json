@@ -24206,7 +24206,7 @@
           },
           "mustChangePassword": {
             "type": "boolean",
-            "description": "True for an account with a server-generated initial password, or whose password an admin set (D55c, D59b). Cleared when the user changes it."
+            "description": "True only while a forced password change is pending. R39: an admin-created, imported or admin-reset account is NOT flagged, so this stays false for them; the user can change the password in /profile/edit. Cleared when the user changes it, and when an admin sets or resets the password."
           },
           "ppdState": {
             "type": [
@@ -24959,9 +24959,7 @@
           },
           "mustChangePassword": {
             "type": "boolean",
-            "enum": [
-              true
-            ]
+            "description": "False for an imported account (R39): no forced password change."
           }
         },
         "required": [
@@ -25149,9 +25147,7 @@
           },
           "mustChangePassword": {
             "type": "boolean",
-            "enum": [
-              true
-            ]
+            "description": "False on create (R39): the new account is not forced to change its password."
           },
           "ppdState": {
             "type": [
@@ -25340,7 +25336,7 @@
           },
           "mustChangePassword": {
             "type": "boolean",
-            "description": "True for an account with a server-generated initial password, or whose password an admin set (D55c, D59b). Cleared when the user changes it."
+            "description": "True only while a forced password change is pending. R39: an admin-created, imported or admin-reset account is NOT flagged, so this stays false for them; the user can change the password in /profile/edit. Cleared when the user changes it, and when an admin sets or resets the password."
           },
           "ppdState": {
             "type": [
@@ -28172,10 +28168,7 @@
           },
           "mustChangePassword": {
             "type": "boolean",
-            "enum": [
-              true
-            ],
-            "description": "Always true on create (D59b): the new teacher account is flagged must-change-password, so the first login forces a password change (enforced by BE-03)."
+            "description": "False on create (R39): the new teacher account is not flagged must-change-password, so the first login does not force a password change; the teacher can change it in /profile/edit."
           },
           "status": {
             "type": "string",
@@ -28372,10 +28365,7 @@
           },
           "mustChangePassword": {
             "type": "boolean",
-            "enum": [
-              true
-            ],
-            "description": "Always true on create (D55c, D59b): the new pupil account is flagged must-change-password, so the first login forces a password change (enforced by BE-03)."
+            "description": "False on create (R39): the new pupil account is not flagged must-change-password, so the first login does not force a password change; the pupil can change it in /profile/edit."
           },
           "status": {
             "type": "string",
@@ -87298,7 +87288,7 @@
           "users"
         ],
         "summary": "Create a user",
-        "description": "Access: admin, school_admin. Scope: admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES). status: \"Pengguna berjaya didaftarkan.\". D59b: the request has no password; the server generates a random initial password for the account and returns it once as `generatedPassword` (no-store, never logged, never retrievable again) with `mustChangePassword: true`. No shared default password is ever issued. The IC is accepted as `icNumber` and stored as hash + mask only; a validation error never echoes it. Passwords are never echoed in `fields`, error bodies or logs. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403 FORBIDDEN; a `schoolId` outside the caller scope is 422 `fields.schoolId`. A duplicate e-mail or username is 422 `fields.email` / `fields.username` with the mock copy \"The email has already been taken.\" / \"The username has already been taken.\". For a school_admin caller the answer is identical whether the existing account is in scope or in another school (and whatever its role), so its school and role never leak. Trade-off: the caller can still learn that the e-mail exists somewhere, since an exact uniqueness check cannot be hidden.",
+        "description": "Access: admin, school_admin. Scope: admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES). status: \"Pengguna berjaya didaftarkan.\". D59b: the request has no password; the server generates a random initial password for the account and returns it once as `generatedPassword` (no-store, never logged, never retrievable again) with `mustChangePassword: false` (R39: no forced password change; the user can change it in /profile/edit). No shared default password is ever issued. The IC is accepted as `icNumber` and stored as hash + mask only; a validation error never echoes it. Passwords are never echoed in `fields`, error bodies or logs. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403 FORBIDDEN; a `schoolId` outside the caller scope is 422 `fields.schoolId`. A duplicate e-mail or username is 422 `fields.email` / `fields.username` with the mock copy \"The email has already been taken.\" / \"The username has already been taken.\". For a school_admin caller the answer is identical whether the existing account is in scope or in another school (and whatever its role), so its school and role never leak. Trade-off: the caller can still learn that the e-mail exists somewhere, since an exact uniqueness check cannot be hidden.",
         "parameters": [
           {
             "schema": {
@@ -87588,7 +87578,7 @@
           "users"
         ],
         "summary": "Update a user",
-        "description": "Access: admin, school_admin. Scope: admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES); the target must be in the own school with roles in MANAGEABLE_TARGET_ROLES.school_admin (another school_admin, higher role, other school, a parent with a child outside the school or a parent with no children is 404, never 403); for a parent target the roles may not be changed (403) and only non-role fields are editable. status: \"Pengguna berjaya dikemaskini.\". Absent keys keep the stored value, except `roles`, which is required and replaces the whole list. A school_admin may edit the non-role fields of an in-scope parent but may not change the roles of a parent target (403 FORBIDDEN, same pattern as a role the caller may not assign); assigning the parent role is admin-only. D59: there is no admin-chosen password. `resetPassword: true` makes the server generate a random one-time password, returned once as `generatedPassword` (no-store, never logged, never retrievable again); the target is flagged `mustChangePassword` and all its sessions are revoked. A role or status change also revokes the target sessions. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403; the server refuses to demote, deactivate or remove the last active admin or the caller's own admin role (409 CONFLICT). Uniqueness copy and generic behaviour as on create; a target of a higher or equal role (or another school) is 404 for a school_admin.",
+        "description": "Access: admin, school_admin. Scope: admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES); the target must be in the own school with roles in MANAGEABLE_TARGET_ROLES.school_admin (another school_admin, higher role, other school, a parent with a child outside the school or a parent with no children is 404, never 403); for a parent target the roles may not be changed (403) and only non-role fields are editable. status: \"Pengguna berjaya dikemaskini.\". Absent keys keep the stored value, except `roles`, which is required and replaces the whole list. A school_admin may edit the non-role fields of an in-scope parent but may not change the roles of a parent target (403 FORBIDDEN, same pattern as a role the caller may not assign); assigning the parent role is admin-only. D59: there is no admin-chosen password. `resetPassword: true` makes the server generate a random one-time password, returned once as `generatedPassword` (no-store, never logged, never retrievable again); R39: the target is not flagged `mustChangePassword` (no forced change; an already-set flag is cleared, so the account is not locked out) and all its sessions are revoked. A role or status change also revokes the target sessions. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403; the server refuses to demote, deactivate or remove the last active admin or the caller's own admin role (409 CONFLICT). Uniqueness copy and generic behaviour as on create; a target of a higher or equal role (or another school) is 404 for a school_admin.",
         "parameters": [
           {
             "schema": {
@@ -88100,7 +88090,7 @@
           "users"
         ],
         "summary": "Import teachers, parents, school admins or PPD officers from CSV text or a paste",
-        "description": "Access: admin, school_admin. Scope: admin: any import role; school_admin: teacher only, into own school. Roles limited to teacher, parent, school_admin, ppd_officer (BULK_IMPORT_ROLES_BY_CALLER: a school_admin may import teachers only, never parents: 403 FORBIDDEN, D58); schoolId is required for teacher and school_admin. Rows are `name, email, phone?` (D59b: no password column, no default-password field); the first line is a header when its second column is not an e-mail. Caps: 1,048,576 characters and 1000 non-blank rows (a multipart file over 1 MB is 413; more rows is 422 `fields.csvFile`/`fields.pasteContent`). Failed lines are reported in `errors`; duplicates are counted as `skipped` by one rule for every caller: a duplicate in the caller school and one in another school are counted identically (trade-off: existence is revealed, not the school). Every created account gets a server-generated random password, returned once per row in `credentials` (no-store, never logged) and flagged `mustChangePassword`. No data rows is 422 \"Tiada data untuk diimport.\" on `fields.csvFile` or `fields.pasteContent`. status: \"Import selesai: {created} pengguna didaftarkan, {skipped} dilangkau, {failed} gagal.\". Tightly rate limited. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies).",
+        "description": "Access: admin, school_admin. Scope: admin: any import role; school_admin: teacher only, into own school. Roles limited to teacher, parent, school_admin, ppd_officer (BULK_IMPORT_ROLES_BY_CALLER: a school_admin may import teachers only, never parents: 403 FORBIDDEN, D58); schoolId is required for teacher and school_admin. Rows are `name, email, phone?` (D59b: no password column, no default-password field); the first line is a header when its second column is not an e-mail. Caps: 1,048,576 characters and 1000 non-blank rows (a multipart file over 1 MB is 413; more rows is 422 `fields.csvFile`/`fields.pasteContent`). Failed lines are reported in `errors`; duplicates are counted as `skipped` by one rule for every caller: a duplicate in the caller school and one in another school are counted identically (trade-off: existence is revealed, not the school). Every created account gets a server-generated random password, returned once per row in `credentials` (no-store, never logged), with `mustChangePassword` false (R39: no forced change). No data rows is 422 \"Tiada data untuk diimport.\" on `fields.csvFile` or `fields.pasteContent`. status: \"Import selesai: {created} pengguna didaftarkan, {skipped} dilangkau, {failed} gagal.\". Tightly rate limited. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies).",
         "parameters": [
           {
             "schema": {
@@ -90417,7 +90407,7 @@
           "school-admin"
         ],
         "summary": "Create a teacher (S11)",
-        "description": "Creates an active teacher of the caller school (createdBy = the caller). D59b: there is no password in the request; the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters), returns it once in credential.password and sets mustChangePassword true (the first login forces a change, BE-03). The password is never logged, never stored in plain text and never re-served; the 201 carries Cache-Control: no-store and Pragma: no-cache (D57b). LOST RESPONSE: recover with POST /admin-sekolah/guru/{id}/reset-password; the optional Idempotency-Key header prevents a duplicate account on a retry (a replayed key answers 409 CONFLICT, proposed). The e-mail is unique across all schools (accepted enumeration trade-off, see POST /admin-sekolah/pelajar). Unknown and protected body keys, a password key included, are ignored (mass-assignment waiver).",
+        "description": "Creates an active teacher of the caller school (createdBy = the caller). D59b: there is no password in the request; the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters), returns it once in credential.password and returns mustChangePassword false (R39: no forced change; the teacher can change the password in /profile/edit). The password is never logged, never stored in plain text and never re-served; the 201 carries Cache-Control: no-store and Pragma: no-cache (D57b). LOST RESPONSE: recover with POST /admin-sekolah/guru/{id}/reset-password; the optional Idempotency-Key header prevents a duplicate account on a retry (a replayed key answers 409 CONFLICT, proposed). The e-mail is unique across all schools (accepted enumeration trade-off, see POST /admin-sekolah/pelajar). Unknown and protected body keys, a password key included, are ignored (mass-assignment waiver).",
         "parameters": [
           {
             "schema": {
@@ -90455,7 +90445,7 @@
         },
         "responses": {
           "201": {
-            "description": "Created, with the one-time credential and mustChangePassword true; status \"Pengguna berjaya didaftarkan.\". Never cached.",
+            "description": "Created, with the one-time credential and mustChangePassword false (R39); status \"Pengguna berjaya didaftarkan.\". Never cached.",
             "headers": {
               "Cache-Control": {
                 "description": "no-store (nothing is kept by a proxy or the browser cache).",
@@ -91128,7 +91118,7 @@
           "school-admin"
         ],
         "summary": "Create a pupil (S12)",
-        "description": "Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. D55c: the response shows the password once, to the creating admin only (never logged, never stored in plain text, not retrievable again) and returns mustChangePassword true: the account is flagged so the first login forces a password change (BE-03). The 201 carries Cache-Control: no-store (D57b). LOST RESPONSE: the credential is never re-served. If the 201 is lost, a retry answers 422 \"The email has already been taken.\" and the password is gone; recover with POST /admin-sekolah/pelajar/{id}/reset-password (the admin sets a new password). The server must not store the plaintext to support a retry. The optional Idempotency-Key header prevents a duplicate account on a retry: a replayed key answers 409 CONFLICT and never re-serves the credential. ACCEPTED TRADE-OFF (e-mail enumeration): the e-mail is unique across all schools, so the 422 \"The email has already been taken.\" reveals that an address is registered somewhere (a pupil of another school included). It cannot be hidden without dropping uniqueness; it is mitigated by the 429 rate limit and the audit trail. D59b: there is no password in the request and no shared default password: the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters; exact policy in the implementation card) and returns it once in credential.password with mustChangePassword true. Mass assignment waiver: role, schoolId, isActive, grade, icNumber and a password key in the body are ignored, never bound (BE-NFR-05 exception, mock fidelity). 429 RATE_LIMITED guards bulk account creation.",
+        "description": "Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. D55c: the response shows the password once, to the creating admin only (never logged, never stored in plain text, not retrievable again) and returns mustChangePassword false (R39): the account is not flagged, so the first login does not force a password change; the pupil can change it in /profile/edit. The 201 carries Cache-Control: no-store (D57b). LOST RESPONSE: the credential is never re-served. If the 201 is lost, a retry answers 422 \"The email has already been taken.\" and the password is gone; recover with POST /admin-sekolah/pelajar/{id}/reset-password (the admin sets a new password). The server must not store the plaintext to support a retry. The optional Idempotency-Key header prevents a duplicate account on a retry: a replayed key answers 409 CONFLICT and never re-serves the credential. ACCEPTED TRADE-OFF (e-mail enumeration): the e-mail is unique across all schools, so the 422 \"The email has already been taken.\" reveals that an address is registered somewhere (a pupil of another school included). It cannot be hidden without dropping uniqueness; it is mitigated by the 429 rate limit and the audit trail. D59b: there is no password in the request and no shared default password: the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters; exact policy in the implementation card) and returns it once in credential.password with mustChangePassword false (R39). Mass assignment waiver: role, schoolId, isActive, grade, icNumber and a password key in the body are ignored, never bound (BE-NFR-05 exception, mock fidelity). 429 RATE_LIMITED guards bulk account creation.",
         "parameters": [
           {
             "schema": {
@@ -91166,7 +91156,7 @@
         },
         "responses": {
           "201": {
-            "description": "Created, with the one-time credential and mustChangePassword true. Never cached.",
+            "description": "Created, with the one-time credential and mustChangePassword false (R39). Never cached.",
             "headers": {
               "Cache-Control": {
                 "description": "no-store (nothing is kept by a proxy or the browser cache).",
@@ -103118,7 +103108,7 @@
           "comp-students"
         ],
         "summary": "Register complimentary students from \"NAMA, NOKP\" lines",
-        "description": "status: \"{n} pelajar komplimen berjaya didaftarkan.\". Failed lines: \"Format baris tidak sah. Gunakan NAMA, NOKP.\" and \"No. KP mesti sekurang-kurangnya 6 digit.\". The login e-mail is generated by the server and is not derived from the IC (v2; the mock used the last 6 IC digits + @prestasiplus.my); the initial password is generated and must be changed at first login (must_reset_password); a login that already exists or repeats is skipped. Central admin only. Rate limited.",
+        "description": "status: \"{n} pelajar komplimen berjaya didaftarkan.\". Failed lines: \"Format baris tidak sah. Gunakan NAMA, NOKP.\" and \"No. KP mesti sekurang-kurangnya 6 digit.\". The login e-mail is generated by the server and is not derived from the IC (v2; the mock used the last 6 IC digits + @prestasiplus.my); the initial password is random and nobody is shown it (R39: no must_reset_password flag; the pupil signs in after the IC-based reset); a login that already exists or repeats is skipped. Central admin only. Rate limited.",
         "requestBody": {
           "required": true,
           "content": {
