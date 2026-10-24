@@ -531,7 +531,7 @@ const previewBlocks = computed(() => {
                 :data-testid="`pick-${c.key}`"
               >
                 <div class="flex min-w-0 grow flex-col gap-1">
-                  <span class="line-clamp-2 text-body"><RichText :text="c.label" /></span>
+                  <span class="line-clamp-2 text-body text-default"><RichText :text="c.label" /></span>
                   <span class="text-caption text-muted">
                     <template v-if="c.groupId"
                       >Kumpulan {{ stimulusOf(c.groupId)?.label }} · {{ c.ids.length }} soalan ·

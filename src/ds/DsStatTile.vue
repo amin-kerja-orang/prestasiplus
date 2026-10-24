@@ -144,7 +144,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     :is="to ? RouterLink : 'div'"
     v-if="isCompact"
     v-bind="to ? { to } : {}"
-    class="flex min-w-0 items-center gap-3 rounded-card bg-default p-4 shadow-ds-xs sm:gap-4 staff:p-4 md:staff:p-5"
+    class="flex min-w-0 items-center gap-3 rounded-card bg-default p-4 shadow-ds-xs max-sm:flex-col max-sm:items-start max-sm:gap-2 sm:gap-4 staff:p-4 md:staff:p-5"
     :class="[to ? 'hover:bg-elevated' : '', stateClass]"
     data-ds="stat-tile"
     data-compact="true"
@@ -167,7 +167,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
           >{{ value }}</span
         >
         <span
-          class="truncate text-caption font-semibold text-muted staff:text-body staff:font-medium"
+          class="line-clamp-2 text-caption font-semibold text-muted staff:text-body staff:font-medium"
           :data-testid="part('label')"
           >{{ unit }}</span
         >
@@ -185,7 +185,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     :is="to ? RouterLink : clickable ? 'button' : 'div'"
     v-else
     v-bind="to ? { to } : clickable ? { type: 'button', disabled: disabled || undefined } : {}"
-    class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift staff:flex-row staff:items-center staff:gap-4 staff:p-4 md:staff:p-5"
+    class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift staff:p-4 sm:staff:flex-row sm:staff:items-center sm:staff:gap-4 md:staff:p-5"
     :class="[
       clickable ? 'cursor-pointer text-start' : '',
       isRoomy ? 'gap-3 p-6' : 'gap-2 px-2.5 pt-3.5 pb-3',

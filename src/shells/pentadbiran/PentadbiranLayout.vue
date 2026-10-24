@@ -151,6 +151,7 @@ const accountItems = computed(() => [
           :collapsed-size="4.5"
           :ui="{
             header: 'h-16 shrink-0 px-4',
+            toggle: 'min-h-11 min-w-11',
             body: 'px-3 pt-1 pb-3',
             footer: 'p-2 border-t border-default',
           }"
@@ -159,7 +160,7 @@ const accountItems = computed(() => [
           <template #header="{ collapsed }">
             <RouterLink
               to="/admin"
-              class="flex min-w-0 items-center gap-2"
+              class="flex min-h-11 min-w-11 items-center gap-2"
               aria-label="Pentadbiran"
             >
               <DsBrandLogo v-if="!collapsed" />
@@ -243,7 +244,7 @@ const accountItems = computed(() => [
             >
               <template #leading>
                 <UDashboardSidebarToggle
-                  class="lg:hidden"
+                  class="min-h-11 min-w-11 lg:hidden"
                   aria-label="Buka menu"
                   data-testid="pentadbiran-menu-button"
                 />
@@ -277,12 +278,13 @@ const accountItems = computed(() => [
                   color="neutral"
                   variant="ghost"
                   size="sm"
-                  class="lg:hidden"
+                  class="min-h-11 min-w-11 lg:hidden"
                 />
                 <UButton
                   color="neutral"
                   variant="ghost"
                   size="sm"
+                  class="min-h-11 min-w-11"
                   :icon="theme.scheme.value === 'dark' ? 'i-ph-sun' : 'i-ph-moon'"
                   :aria-label="themeLabel"
                   data-testid="pentadbiran-theme-toggle"

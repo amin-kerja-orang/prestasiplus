@@ -4,13 +4,16 @@
  * rows, no lines, tabular numbers and BM pager copy. Three surfaces: `card` (own `UCard`), `flush`
  * (edge-to-edge card for list pages) and `bare` (no surface, for a panel or tab). Below `md` the
  * rows render as a card list (title, label/value pairs, row actions; or the whole card through the
- * `card` slot) with an "Isih" select instead of header sorting. Pagination is client-side unless
+ * `card` slot) with an "Isih" select instead of header sorting. `card-title` renders a rich title
+ * (KaTeX) and a `cardFields` entry with `cell: true` shows the column's `<key>-cell` slot (badge)
+ * on the card. Pagination is client-side unless
  * `total` is given (server paging: the caller slices `data`). At `lg`+ the table never scrolls the
- * page sideways: `layout="fixed"` fits the columns, `auto` scrolls inside its own container.
+ * page sideways: `layout="fixed"` fits the columns (with `minWidth` it scrolls inside its own container
+ * below that width), `auto` scrolls inside its own container.
  */
 import UCard from '@nuxt/ui/components/Card.vue'
 import type { TableColumn } from '@nuxt/ui'
-import { computed, watch } from 'vue'
+import { computed, useSlots, watch, type VNodeChild } from 'vue'
 
 import { dsCopy, fillCopy } from './copy'
 import { warnDeprecated } from './deprecate'
@@ -21,6 +24,10 @@ import { useMedia } from './useMedia'
 export interface CardField {
   key: string
   label: string
+  /** Render the column's `<key>-cell` slot (badge, formatted text) instead of the raw value. */
+  cell?: boolean
+  /** Span both card columns (a badge or a long value that does not fit half the card). */
+  wide?: boolean
 }
 
 const props = withDefaults(
@@ -35,6 +42,12 @@ const props = withDefaults(
     variant?: 'card' | 'flush' | 'bare'
     /** `fixed` = `table-fixed` full width (the caller sets column widths); `auto` scrolls inside its container when wider. */
     layout?: 'auto' | 'fixed'
+    /**
+     * `fixed` only: a width (`56rem`, `60rem` or `64rem`) below which the table stops shrinking and scrolls
+     * inside its own container instead (the flexible column would otherwise collapse and the
+     * columns beside it be clipped). Leave unset when the columns always fit.
+     */
+    minWidth?: '56rem' | '60rem' | '64rem'
     /** `tight` = 4px less cell padding for tables with many columns. */
     density?: DsTableDensity
     stickyHeader?: boolean
@@ -70,6 +83,7 @@ const props = withDefaults(
     rowKey: undefined,
     variant: 'card',
     layout: 'auto',
+    minWidth: undefined,
     density: 'cozy',
     stickyHeader: false,
     stickyFirstColumn: undefined,
@@ -100,6 +114,8 @@ const wide = useMedia('(min-width: 768px)')
 
 const kind = computed(() => props.variant)
 const fixed = computed(() => props.layout === 'fixed')
+// Literal class names (Tailwind reads the source text; no arbitrary values in the design system).
+const MIN_WIDTH = { '56rem': 'min-w-224', '60rem': 'min-w-240', '64rem': 'min-w-256' } as const
 const bare = computed(() => kind.value === 'bare')
 const flush = computed(() => kind.value === 'flush')
 if (props.compactCells) warnDeprecated('DsDataTable', 'compactCells', 'density="compact"')
@@ -175,7 +191,15 @@ const showPager = computed(() => {
 const showPagination = computed(() => !bare.value || count.value > pageSize.value)
 
 // Reserved slots are ours; every other slot is a `UTable` slot (`<id>-cell`, `<id>-header`).
-const OWN_SLOTS = new Set(['empty', 'card', 'card-actions', 'toolbar'])
+const OWN_SLOTS = new Set(['empty', 'card', 'card-title', 'card-actions', 'toolbar'])
+
+// A card field with `cell: true` shows the column's `<key>-cell` slot. It is read through
+// `useSlots()` rather than a `<slot :name>` so the dynamic name does not widen the typing of the
+// table's own cell slots (`row.index`, `getValue()` ...).
+const slots = useSlots()
+const hasCell = (key: string): boolean => Boolean(slots[`${key}-cell`])
+const CardCell = (p: { name: string; row: T }): VNodeChild =>
+  slots[`${p.name}-cell`]?.({ row: { original: p.row } })
 
 // Selection. `UTable` keeps a row-index keyed record; the model holds the row objects, so a
 // selection survives paging.
@@ -271,13 +295,27 @@ function cell(row: T, key: string): string {
                   color="neutral"
                   variant="link"
                   class="h-auto justify-start p-0 text-start text-label whitespace-normal"
-                  :label="cell(row, cardTitle)"
+                  :label="$slots['card-title'] ? undefined : cell(row, cardTitle)"
                   @click="emit('row-click', row)"
-                />
+                >
+                  <template v-if="$slots['card-title']" #default>
+                    <span class="line-clamp-3 min-w-0 break-words" data-ds="data-table-card-title">
+                      <slot name="card-title" :row="row" />
+                    </span>
+                  </template>
+                </UButton>
                 <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
-                  <div v-for="f in cardFields" :key="f.key" class="min-w-0">
+                  <div
+                    v-for="f in cardFields"
+                    :key="f.key"
+                    class="min-w-0"
+                    :class="f.wide ? 'col-span-2' : ''"
+                  >
                     <dt class="text-caption text-muted">{{ f.label }}</dt>
-                    <dd class="tabular truncate text-body">{{ cell(row, f.key) }}</dd>
+                    <dd class="tabular truncate text-body">
+                      <CardCell v-if="f.cell && hasCell(f.key)" :name="f.key" :row="row" />
+                      <template v-else>{{ cell(row, f.key) }}</template>
+                    </dd>
                   </div>
                 </dl>
               </slot>
@@ -286,7 +324,7 @@ function cell(row: T, key: string): string {
           </li>
         </ul>
       </div>
-      <div v-else :class="fixed ? 'max-w-full' : 'max-w-full overflow-x-auto'">
+      <div v-else :class="fixed && !minWidth ? 'max-w-full' : 'max-w-full overflow-x-auto'">
         <UTable
           v-model:row-selection="rowSelection"
           :sticky="bare"
@@ -295,7 +333,7 @@ function cell(row: T, key: string): string {
           :loading="loading"
           :caption="caption"
           :ui="tableUi"
-          :class="bare ? 'max-h-dvh rounded-card bg-soft' : ''"
+          :class="[bare ? 'max-h-dvh rounded-card bg-soft' : '', fixed && minWidth ? MIN_WIDTH[minWidth] : '']"
           @select="(_e: Event, row: { original: T }) => emit('row-click', row.original)"
         >
           <template

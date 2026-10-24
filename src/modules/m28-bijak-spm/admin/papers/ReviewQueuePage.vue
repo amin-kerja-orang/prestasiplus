@@ -204,8 +204,10 @@ function open(row: Row): void {
       empty-description="Tiada soalan menunggu semakan."
       card-title="previewPlain"
       :card-fields="[
-        { key: 'subjectName', label: 'Subjek' },
+        { key: 'subjectName', label: 'Subjek', cell: true },
         { key: 'marks', label: 'Markah' },
+        { key: 'ageDays', label: 'Usia', cell: true },
+        { key: 'status', label: 'Status', cell: true, wide: true },
       ]"
       :page-size="20"
       row-key="key"
@@ -213,7 +215,7 @@ function open(row: Row): void {
       @row-click="open"
     >
       <template #preview-cell="{ row }">
-        <div class="flex min-w-0 flex-col gap-1">
+        <div class="flex min-w-48 flex-col gap-1 whitespace-normal">
           <span class="line-clamp-2 text-body text-default"
             ><RichText :text="row.original.preview"
           /></span>
@@ -237,7 +239,9 @@ function open(row: Row): void {
         </div>
       </template>
       <template #subjectName-cell="{ row }">
-        {{ row.original.subjectName }} · K{{ row.original.kertas }}
+        <span class="block whitespace-normal"
+          >{{ row.original.subjectName }} · K{{ row.original.kertas }}</span
+        >
       </template>
       <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind] }}</template>
       <template #ageDays-cell="{ row }">{{ ageText(row.original.ageDays) }}</template>
@@ -252,6 +256,19 @@ function open(row: Row): void {
           class="min-h-11"
           :data-testid="`queue-open-${row.original.key}`"
           :to="{ name: ADMIN_ROUTES.reviewItem, params: { key: row.original.key } }"
+        />
+      </template>
+      <template #card-title="{ row }">
+        <RichText :text="row.preview" />
+      </template>
+      <template #card-actions="{ row }">
+        <UButton
+          size="sm"
+          icon="i-ph-eye"
+          label="Semak"
+          class="min-h-11"
+          :data-testid="`queue-open-${row.key}`"
+          :to="{ name: ADMIN_ROUTES.reviewItem, params: { key: row.key } }"
         />
       </template>
     </DsDataTable>

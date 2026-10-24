@@ -227,51 +227,54 @@ async function resubmit(): Promise<void> {
         </ol>
       </DsPanel>
 
-      <div
-        class="sticky bottom-0 z-10 flex flex-wrap justify-end gap-2 rounded-card bg-default p-3 shadow-card"
-        data-testid="review-actions"
-      >
-        <template v-if="data.item.status === 'semakan'">
+      <!-- Sticky decision bar: a raised layer with its own shadow (never loose buttons over the
+           content). On a phone Tolak and Minta Pembetulan share a row and Lulus & Terbit takes the
+           full width below, so the bar stays two rows high instead of wrapping unevenly. -->
+      <DsPanel behavior="bar" padding="sm" data-testid="review-actions">
+        <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+          <template v-if="data.item.status === 'semakan'">
+            <UButton
+              color="error"
+              variant="soft"
+              icon="i-ph-x-circle"
+              label="Tolak"
+              class="min-h-11 justify-center px-2 sm:px-4"
+              :disabled="busy"
+              data-testid="action-reject"
+              @click="ask('tolak')"
+            />
+            <UButton
+              color="warning"
+              variant="soft"
+              icon="i-ph-arrow-u-up-left"
+              label="Minta Pembetulan"
+              class="min-h-11 justify-center px-2 sm:px-4"
+              :ui="{ label: 'overflow-visible whitespace-normal text-center leading-tight' }"
+              :disabled="busy"
+              data-testid="action-correct"
+              @click="ask('betulkan')"
+            />
+            <UButton
+              icon="i-ph-seal-check"
+              label="Lulus & Terbit"
+              class="col-span-2 min-h-11 justify-center sm:col-span-1"
+              :loading="busy"
+              :disabled="data.gate.length > 0"
+              data-testid="action-publish"
+              @click="decide('terbit')"
+            />
+          </template>
           <UButton
-            color="error"
-            variant="soft"
-            icon="i-ph-x-circle"
-            label="Tolak"
-            class="min-h-11"
-            :disabled="busy"
-            data-testid="action-reject"
-            @click="ask('tolak')"
-          />
-          <UButton
-            color="warning"
-            variant="soft"
-            icon="i-ph-arrow-u-up-left"
-            label="Minta Pembetulan"
-            class="min-h-11"
-            :disabled="busy"
-            data-testid="action-correct"
-            @click="ask('betulkan')"
-          />
-          <UButton
-            icon="i-ph-seal-check"
-            label="Lulus & Terbit"
-            class="min-h-11"
+            v-else-if="data.item.status !== 'terbit'"
+            icon="i-ph-arrow-counter-clockwise"
+            label="Hantar semula untuk semakan"
+            class="col-span-2 min-h-11 justify-center sm:col-span-1"
             :loading="busy"
-            :disabled="data.gate.length > 0"
-            data-testid="action-publish"
-            @click="decide('terbit')"
+            data-testid="action-resubmit"
+            @click="resubmit"
           />
-        </template>
-        <UButton
-          v-else-if="data.item.status !== 'terbit'"
-          icon="i-ph-arrow-counter-clockwise"
-          label="Hantar semula untuk semakan"
-          class="min-h-11"
-          :loading="busy"
-          data-testid="action-resubmit"
-          @click="resubmit"
-        />
-      </div>
+        </div>
+      </DsPanel>
 
       <DsDialog
         v-model:open="isOpen"

@@ -252,8 +252,10 @@ const siblings = computed(
       empty-title="Tiada soalan dijumpai"
       card-title="previewPlain"
       :card-fields="[
-        { key: 'subjectName', label: 'Subjek' },
+        { key: 'subjectName', label: 'Subjek', cell: true },
         { key: 'marks', label: 'Markah' },
+        { key: 'usedIn', label: 'Digunakan', cell: true },
+        { key: 'status', label: 'Status', cell: true, wide: true },
       ]"
       :page-size="20"
       :page-size-options="[20, 50, 100]"
@@ -262,10 +264,10 @@ const siblings = computed(
       @row-click="(r: Row) => (selectedId = r.id)"
     >
       <template #id-cell="{ row }">
-        <span class="text-caption text-muted">{{ row.original.id }}</span>
+        <span class="block whitespace-normal text-caption text-muted">{{ row.original.id }}</span>
       </template>
       <template #preview-cell="{ row }">
-        <div class="flex min-w-0 flex-col gap-1">
+        <div class="flex min-w-48 flex-col gap-1 whitespace-normal">
           <span class="line-clamp-2 text-body text-default"
             ><RichText :text="row.original.preview"
           /></span>
@@ -283,9 +285,14 @@ const siblings = computed(
         </div>
       </template>
       <template #subjectName-cell="{ row }">
-        {{ row.original.subjectName }} · K{{ row.original.kertas }}
+        <span class="block whitespace-normal"
+          >{{ row.original.subjectName }} · K{{ row.original.kertas }}</span
+        >
       </template>
       <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind] }}</template>
+      <template #card-title="{ row }">
+        <RichText :text="row.preview" />
+      </template>
       <template #usedIn-cell="{ row }">{{ row.original.usedIn }} kertas</template>
       <template #status-cell="{ row }">
         <DsStatusBadge :status="STATUS_BADGE[row.original.status]" />
@@ -300,6 +307,18 @@ const siblings = computed(
           class="min-h-11"
           :data-testid="`bank-open-${row.original.id}`"
           @click.stop="selectedId = row.original.id"
+        />
+      </template>
+      <template #card-actions="{ row }">
+        <UButton
+          size="sm"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-eye"
+          label="Pratonton"
+          class="min-h-11"
+          :data-testid="`bank-open-${row.id}`"
+          @click="selectedId = row.id"
         />
       </template>
     </DsDataTable>

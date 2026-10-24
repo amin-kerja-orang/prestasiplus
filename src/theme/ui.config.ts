@@ -117,6 +117,20 @@ export const iconBundle = {
   sizeLimitKb: 384,
 }
 
+/** Disabled / aria-disabled primary button (see the `button` compound variants). Literal classes: Tailwind scans source text. */
+const disabledPrimary = [
+  'disabled:bg-none disabled:bg-elevated disabled:text-dimmed disabled:opacity-100 disabled:shadow-none disabled:hover:brightness-100',
+  'aria-disabled:bg-none aria-disabled:bg-elevated aria-disabled:text-dimmed aria-disabled:opacity-100 aria-disabled:shadow-none aria-disabled:hover:brightness-100',
+  // Dark: the page layer (inset look) gives the dimmed label 5.1:1; elevated gave 3.85:1.
+  'dark:disabled:bg-muted dark:aria-disabled:bg-muted',
+].join(' ')
+/** Same for the staff tonal-primary default (the learner tonal button keeps the stock disabled look). */
+const disabledPrimaryStaff = [
+  'staff:disabled:bg-none staff:disabled:bg-elevated staff:disabled:text-dimmed staff:disabled:opacity-100 staff:disabled:shadow-none staff:disabled:hover:brightness-100',
+  'staff:aria-disabled:bg-none staff:aria-disabled:bg-elevated staff:aria-disabled:text-dimmed staff:aria-disabled:opacity-100 staff:aria-disabled:shadow-none staff:aria-disabled:hover:brightness-100',
+  'staff:dark:disabled:bg-muted staff:dark:aria-disabled:bg-muted',
+].join(' ')
+
 export const uiConfig = {
   // tailwind-merge must know the type roles are font sizes, so `text-label` replaces a stock `text-sm`
   // instead of sitting beside it.
@@ -195,6 +209,11 @@ export const uiConfig = {
       },
       // Tonal / link text in the readable tone of the primary (`--ds-primary-t`).
       { color: 'primary', variant: ['soft', 'ghost', 'link'], class: 'text-primary-t' },
+      // Disabled primary: a flat neutral fill with the dimmed label at full opacity. The 40% opacity
+      // on the gradient left the label at 1.6-1.9:1; flat, shadow-free and not-allowed still reads
+      // as "off" and the label keeps >= 4.6:1 (light) / ~5:1 (dark).
+      { color: 'primary', variant: 'solid', class: disabledPrimary },
+      { color: 'primary', variant: 'soft', class: disabledPrimaryStaff },
     ],
   },
 
@@ -316,6 +335,8 @@ export const uiConfig = {
       footer: 'p-5',
       title: 'text-heading text-highlighted',
       description: 'text-body text-muted',
+      // The X button is as wide as it is tall (it was 32x44).
+      close: 'min-w-11',
     },
     variants: {
       fullscreen: { false: { content: 'rounded-xl shadow-modal ring-0' } },
@@ -323,7 +344,11 @@ export const uiConfig = {
   },
   // Overlays sit above the shell chrome (sidebar and bars are z-30): modal surfaces never hide behind it.
   slideover: {
-    slots: { overlay: 'z-50 bg-overlay', content: 'z-50 divide-y-0 shadow-modal ring-0' },
+    slots: {
+      overlay: 'z-50 bg-overlay',
+      content: 'z-50 divide-y-0 shadow-modal ring-0',
+      close: 'min-w-11',
+    },
   },
   drawer: {
     slots: { overlay: 'z-50 bg-overlay', content: 'z-50 bg-elevated shadow-modal ring-0' },

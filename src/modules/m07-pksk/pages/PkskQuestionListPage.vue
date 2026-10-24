@@ -283,10 +283,10 @@ const tableRows = computed<TableRow[]>(() =>
 
 const columns: TableColumn<TableRow>[] = [
   { accessorKey: 'text', header: 'Soalan', ...cellClass('') },
-  { accessorKey: 'bahagian', header: 'Bahagian', ...cellClass('w-28') },
-  { accessorKey: 'domainName', header: 'Domain', ...cellClass('w-48 xl:w-56') },
+  { accessorKey: 'bahagian', header: 'Bahagian', ...cellClass('w-24') },
+  { accessorKey: 'domainName', header: 'Domain', ...cellClass('w-44') },
   { accessorKey: 'targetLevel', header: 'Level', ...cellClass('w-24') },
-  { id: 'status', header: 'Status', ...cellClass('w-44') },
+  { id: 'status', header: 'Status', ...cellClass('w-36') },
   { id: 'actions', header: 'Tindakan', ...cellClass('w-48') },
 ]
 const cardFields: CardField[] = [
@@ -433,6 +433,7 @@ const cardFields: CardField[] = [
         v-model:selection="selection"
         variant="flush"
         layout="fixed"
+        min-width="60rem"
         selectable
         row-key="id"
         :data="tableRows"
@@ -451,7 +452,7 @@ const cardFields: CardField[] = [
       >
         <template #text-cell="{ row }">
           <p
-            class="line-clamp-2 min-w-40 text-body text-highlighted"
+            class="line-clamp-2 min-w-0 break-words text-body text-highlighted"
             data-testid="pksk-question-row"
             :data-question-id="row.original.id"
           >
