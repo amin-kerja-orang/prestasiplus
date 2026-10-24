@@ -17,10 +17,10 @@ export const MOHON_COPY = {
   /** Header subtitle (FR-M21-05, DV-M21-06). */
   headerSubtitle: 'Selamat datang kembali',
   heroLead: 'Isi borang ini untuk memohon tajaan akses PrestasiPlus secara percuma.',
-  emailLabel: 'Email Pelajar',
+  emailLabel: 'Emel Pelajar',
   emailPlaceholder: 'pelajar@email.com',
   hintBefore:
-    'Email pelajar yang berdaftar dalam PrestasiPlus. Jika pelajar belum daftar, minta mereka daftar terlebih dahulu di ',
+    'Emel pelajar yang berdaftar dalam PrestasiPlus. Jika pelajar belum daftar, minta mereka daftar terlebih dahulu di ',
   hintLink: 'sini',
   hintAfter: '.',
   categoryLabel: 'Kategori Pelajar',
@@ -31,12 +31,12 @@ export const MOHON_COPY = {
   reasonPlaceholder: 'Terangkan kenapa pelajar ini memerlukan tajaan...',
   examplesTitle: 'Contoh sebab permohonan:',
   examplesNote:
-    'Klik mana-mana contoh untuk guna sebagai template. Sila ubahsuai mengikut situasi sebenar.',
+    'Klik mana-mana contoh untuk guna sebagai templat. Sila ubahsuai mengikut situasi sebenar.',
   submit: 'Hantar Permohonan',
   afterTitle: 'Apa yang berlaku selepas mohon?',
   afterSteps: [
     'Admin semak dan luluskan permohonan (1-3 hari bekerja)',
-    'Pelajar masuk ke pool — sponsor/keluarga angkat boleh pilih',
+    'Pelajar masuk ke kumpulan — sponsor/keluarga angkat boleh pilih',
     'Bila sponsor pilih, pelajar dapat akses PERCUMA PrestasiPlus selama 1 sesi persekolahan',
     'Keluarga angkat boleh pantau prestasi pelajar dari dashboard mereka',
   ],

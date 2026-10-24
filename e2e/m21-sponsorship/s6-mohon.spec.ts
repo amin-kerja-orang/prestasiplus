@@ -35,7 +35,7 @@ const MODULE = { tag: [moduleTag(21)] }
 
 const SUCCESS =
   'Permohonan anda telah dihantar. Admin akan menyemak permohonan dalam 1-3 hari bekerja.'
-const NOT_FOUND = 'Email pelajar tidak dijumpai dalam PrestasiPlus.'
+const NOT_FOUND = 'Emel pelajar tidak dijumpai dalam PrestasiPlus.'
 
 const EXAMPLES = [
   '• Keluarga berpendapatan rendah (B40). Bapa bekerja sebagai buruh am, ibu suri rumah. Tidak mampu membayar yuran tuisyen tambahan untuk persediaan SPM.',
@@ -140,11 +140,11 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
     await expect(page.getByTestId('mohon-hero')).toContainText(
       'Isi borang ini untuk memohon tajaan akses PrestasiPlus secara percuma.',
     )
-    await expect(page.locator('label[for="student_email"]')).toHaveText('Email Pelajar')
+    await expect(page.locator('label[for="student_email"]')).toHaveText('Emel Pelajar')
     await expect(email(page)).toHaveAttribute('type', 'email')
     await expect(email(page)).toHaveAttribute('placeholder', 'pelajar@email.com')
     await expect(page.locator('#student_email_hint')).toHaveText(
-      'Email pelajar yang berdaftar dalam PrestasiPlus. Jika pelajar belum daftar, minta mereka daftar terlebih dahulu di sini.',
+      'Emel pelajar yang berdaftar dalam PrestasiPlus. Jika pelajar belum daftar, minta mereka daftar terlebih dahulu di sini.',
     )
     await expect(page.locator('#student_email_hint a')).toHaveText('sini')
     await expect(page.locator('#student_email_hint a')).toHaveAttribute('href', '/register')
@@ -188,7 +188,7 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
     await expect(items).toHaveCount(5)
     await expect(page.getByTestId('mohon-examples')).toContainText('Contoh sebab permohonan:')
     await expect(page.getByTestId('mohon-examples')).toContainText(
-      'Klik mana-mana contoh untuk guna sebagai template. Sila ubahsuai mengikut situasi sebenar.',
+      'Klik mana-mana contoh untuk guna sebagai templat. Sila ubahsuai mengikut situasi sebenar.',
     )
     await items.nth(1).click()
     await expect(reason(page)).toHaveValue(EXAMPLES[1]!)
@@ -221,7 +221,7 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
     await expect(info).toContainText('Apa yang berlaku selepas mohon?')
     await expect(info.locator('ol li')).toHaveText([
       'Admin semak dan luluskan permohonan (1-3 hari bekerja)',
-      'Pelajar masuk ke pool — sponsor/keluarga angkat boleh pilih',
+      'Pelajar masuk ke kumpulan — sponsor/keluarga angkat boleh pilih',
       'Bila sponsor pilih, pelajar dapat akses PERCUMA PrestasiPlus selama 1 sesi persekolahan',
       'Keluarga angkat boleh pantau prestasi pelajar dari dashboard mereka',
     ])

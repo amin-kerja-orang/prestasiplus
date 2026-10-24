@@ -87,9 +87,9 @@ describe('S6 static copy (FR-M21-46, 48)', () => {
     expect(email().attributes('type')).toBe('email')
     expect(email().attributes('placeholder')).toBe('pelajar@email.com')
     expect(email().attributes('required')).toBeDefined()
-    expect(wrapper!.get('label[for="student_email"]').text()).toBe('Email Pelajar')
+    expect(wrapper!.get('label[for="student_email"]').text()).toBe('Emel Pelajar')
     expect(wrapper!.get('#student_email_hint').text()).toBe(
-      'Email pelajar yang berdaftar dalam PrestasiPlus. Jika pelajar belum daftar, minta mereka daftar terlebih dahulu di sini.',
+      'Emel pelajar yang berdaftar dalam PrestasiPlus. Jika pelajar belum daftar, minta mereka daftar terlebih dahulu di sini.',
     )
     const link = wrapper!.get('#student_email_hint a')
     expect(link.text()).toBe('sini')
@@ -132,7 +132,7 @@ describe('S6 static copy (FR-M21-46, 48)', () => {
     expect(text).toContain('Apa yang berlaku selepas mohon?')
     expect(box.findAll('ol li').map((li) => li.text().replace(/^\d+\. /, ''))).toEqual([
       'Admin semak dan luluskan permohonan (1-3 hari bekerja)',
-      'Pelajar masuk ke pool — sponsor/keluarga angkat boleh pilih',
+      'Pelajar masuk ke kumpulan — sponsor/keluarga angkat boleh pilih',
       'Bila sponsor pilih, pelajar dapat akses PERCUMA PrestasiPlus selama 1 sesi persekolahan',
       'Keluarga angkat boleh pantau prestasi pelajar dari dashboard mereka',
     ])
@@ -155,7 +155,7 @@ describe('S6 examples (FR-M21-47)', () => {
       'Contoh sebab permohonan:',
     )
     expect(wrapper!.get('[data-testid="mohon-examples"]').text()).toContain(
-      'Klik mana-mana contoh untuk guna sebagai template. Sila ubahsuai mengikut situasi sebenar.',
+      'Klik mana-mana contoh untuk guna sebagai templat. Sila ubahsuai mengikut situasi sebenar.',
     )
   })
 
@@ -200,7 +200,7 @@ describe('S6 submit (FR-M21-49)', () => {
     await fill({ email: 'tiada.pelajar@demo.test' })
     await wrapper!.get('form').trigger('submit')
     await flushPromises()
-    expect(notice().text()).toBe('Email pelajar tidak dijumpai dalam PrestasiPlus.')
+    expect(notice().text()).toBe('Emel pelajar tidak dijumpai dalam PrestasiPlus.')
     expect(email().element.value).toBe('tiada.pelajar@demo.test')
     expect(reason().element.value).toBe('Sebab ujian')
     expect(email().classes()).toContain('ring-error')
@@ -221,7 +221,7 @@ describe('S6 submit (FR-M21-49)', () => {
       notice()
         .findAll('p')
         .map((p) => p.text()),
-    ).toEqual(['Format e-mel tidak sah.', 'Sila isi ruangan ini.'])
+    ).toEqual(['Format emel tidak sah.', 'Sila isi ruangan ini.'])
   })
 
   it('removes duplicate 422 messages', async () => {
