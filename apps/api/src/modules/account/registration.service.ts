@@ -52,7 +52,7 @@ export class RegistrationService {
     @Inject(IcService) private readonly ic: IcService,
     @Inject(SessionIssuer) private readonly issuer: SessionIssuer,
     @Inject(AuditService) private readonly audit: AuditService,
-    @Inject(AccountPorts) private readonly ports: AccountPorts,
+    @Inject(AccountPorts) private readonly accountPorts: AccountPorts,
     @Inject(ConfigService) config: Pick<ConfigService, 'get'>,
   ) {
     const flag = String(config.get<unknown>('REGISTRATION_OPEN') ?? 'true').trim().toLowerCase()
@@ -140,7 +140,7 @@ export class RegistrationService {
         // XR-M14-02(b) / BR-M14-19: the referral is applied once the user row exists, in this same transaction (a rollback
         // undoes both). The hook must not throw: an unknown, own, empty or used code is a no-op, and M14 runs the referral in a
         // savepoint, so a failure skips the referral and never the registration (the response never changes).
-        await this.ports.registrationHook?.onRegistered({ userId: id, role, pending, referralCode: text(data.referralCode), at: now, tx })
+        await this.accountPorts.registrationHook?.onRegistered({ userId: id, role, pending, referralCode: text(data.referralCode), at: now, tx })
         return grant
       }, ACCOUNT_TX)
     } catch (err) {
