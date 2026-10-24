@@ -197,6 +197,22 @@ preflight() {
   if [[ ! "$v" =~ ^[0-9]+$ ]] || [ "$v" -lt 3000 ]; then
     warn "THROTTLE_GLOBAL_PER_MINUTE is ${v:-unset (300)} in api.env: below the 3000 default of runbook section 20, a school behind one NAT address will get 429"
   fi
+  # PITR (MIG08-PREP): the archive folder must exist before the db starts, owned by the container's postgres (uid 70);
+  # otherwise Docker creates it root-owned and every archive_command fails (and WAL piles up in pgdata).
+  case "$(pp_cfg PP_PG_ARCHIVE_MODE off)" in
+    off) warn "PP_PG_ARCHIVE_MODE=off: no point-in-time recovery (the migration slot needs it on)" ;;
+    on|always)
+      v="$(pp_cfg PP_WAL_ARCHIVE_DIR /var/backups/pretasiplus/wal)"
+      # The WAL holds every row written (raw .cloud data during the slot): owner uid 70, mode 700, never in the checkout.
+      # Only the top folder is checked: its children are not readable by the deploy user once it is 700.
+      if [ ! -d "$v" ] || [ "$(stat -c %u:%a "$v" 2>/dev/null)" != 70:700 ]; then
+        err "PP_WAL_ARCHIVE_DIR $v must exist, owned by uid 70 with mode 700: sudo install -d -o 70 -g 70 -m 700 $v $v/wal $v/base"
+      fi
+      case "$(readlink -m "$v")/" in
+        "$(readlink -f "$PP_REPO")"/*) err "PP_WAL_ARCHIVE_DIR $v is inside the repository: put it on the encrypted backup volume" ;;
+      esac ;;
+    *) err "PP_PG_ARCHIVE_MODE must be on or off" ;;
+  esac
   if [ "$(pp_cfg PP_OFFSITE_KIND none)" = none ]; then warn "PP_OFFSITE_KIND=none: backups stay on this server only"
   elif [ -z "$(pp_cfg PP_BACKUP_GPG_RECIPIENT '')" ] && [ "$(pp_cfg PP_OFFSITE_ALLOW_PLAINTEXT false)" != true ]; then
     err "off-site copies are enabled but PP_BACKUP_GPG_RECIPIENT is empty: set the public key (private key stays off the server), or PP_OFFSITE_ALLOW_PLAINTEXT=true as a recorded LEAD decision"

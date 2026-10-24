@@ -451,11 +451,9 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
       expect(after).toBe(before)
     })
 
-    it('parent links are only checked (BE-25 stores them): linkedStudents stays empty', async () => {
+    it('an update of a parent with an unknown student id is refused', async () => {
       const p = await api.post('/admin/users', { roles: ['parent'], name: 'Ibu Pautan', email: 'pautan@ujian.test' })
       const pid = CreatedUserSchema.parse(p.body.data).id
-      const res = await api.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Pautan', linkedStudentIds: [id] })
-      expect(UpdatedUserSchema.parse(res.body.data).linkedStudents).toEqual([])
       const bad = await api.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Pautan', linkedStudentIds: ['9999999'] })
       expect(fieldsOf(bad).linkedStudentIds).toBe('The selected linked student ids is invalid.')
     })

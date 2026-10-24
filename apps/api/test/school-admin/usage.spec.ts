@@ -2,7 +2,7 @@ import { ErrorBodySchema, SchoolAdminUsageSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ADMIN, apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
-import { activePupilCount, activeTeacherCount, addPupil, addPupilsWithSessions, addSchoolAdmin, addSession } from './reports-fixtures'
+import { managedPupilCount, managedTeacherCount, addPupil, addPupilsWithSessions, addSchoolAdmin, addSession } from './reports-fixtures'
 
 /** The helpers' clock is 2026-10-19 09:00 MYT. DB spec: needs Docker/Testcontainers. */
 describe('GET /admin-sekolah/usage', () => {
@@ -33,8 +33,8 @@ describe('GET /admin-sekolah/usage', () => {
     expect(u.label).toBe('30 Hari')
     expect(u.school).toEqual({ id: s1, name: 'SMK Demo Satu' })
     expect(u.tiles).toMatchObject({
-      pupils: await activePupilCount(t.db, s1),
-      teachers: await activeTeacherCount(t.db, s1),
+      pupils: await managedPupilCount(t.db, s1),
+      teachers: await managedTeacherCount(t.db, s1),
       activePupils: 0,
       sessions: 0,
       answers: 0,
@@ -72,7 +72,7 @@ describe('GET /admin-sekolah/usage', () => {
 
     const month = SchoolAdminUsageSchema.parse((await admin.get('/admin-sekolah/usage')).body.data)
     expect(month.tiles).toMatchObject({ sessions: 8, answers: 90, activePupils: 5 })
-    const pupils = await activePupilCount(t.db, s1)
+    const pupils = await managedPupilCount(t.db, s1)
     expect(month.tiles.participationPct).toBe(Math.round((5 / pupils) * 100))
   })
 

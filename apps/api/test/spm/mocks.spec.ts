@@ -122,17 +122,23 @@ describe('AC9 Paper 1: 30 pool items', () => {
     const rows = await keysOf(id)
     expect(new Set(rows.map((r) => r.question_id)).size).toBe(30)
     expect((await t.db.query<{ max_score: number }>('select max_score from spm_mock_exams where id = $1', [id]))[0]?.max_score).toBe(30)
-    // Same stream, same draw: Fisher-Yates over the ascending pool ids with mulberry32(fnv1a32("m06.mock:<id>")).
-    const pool = (await t.db.query<{ id: string }>(`select q.id::text from questions q join question_versions v on v.question_id = q.id join subjects s on s.id = v.subject_id where s.code = 'MATH' and v.type = 'mcq' and q.is_active and v.status = 'published' order by q.id`)).map((r) => r.id)
-    expect(pool).toHaveLength(45)
-    const rng = mulberry32(fnv1a32(`m06.mock:${id}`))
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = rng.int(0, i)
-      const tmp = pool[i] as string
-      pool[i] = pool[j] as string
-      pool[j] = tmp
-    }
-    expect(rows.map((r) => r.question_id)).toEqual(pool.slice(0, 30))
+    // Same stream, same draw: the seed is the first `int(0, 0xffffffff)` of mulberry32(fnv1a32("m06.mock:<id>")) and the draw is
+    // the pool ordered by hashtextextended(id, seed), id (SQL, LIMIT): checked here with an independent query over the whole pool.
+    const seed = mulberry32(fnv1a32(`m06.mock:${id}`)).int(0, 0xffffffff)
+    const expected = (
+      await t.db.query<{ id: string }>(
+        `select q.id::text from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no join subjects s on s.id = v.subject_id
+          where s.code = 'MATH' and v.type = 'mcq' and q.is_active and v.status = 'published'
+            and exists (select 1 from question_tags t where t.question_id = q.id and t.kind = 'pool')
+          order by hashtextextended(q.id::text, $1::bigint), q.id limit 30`,
+        [seed],
+      )
+    ).map((r) => r.id)
+    expect(expected).toHaveLength(30)
+    expect(rows.map((r) => r.question_id)).toEqual(expected)
+    expect(
+      (await t.db.query<{ n: number }>(`select count(*)::int as n from questions q join question_versions v on v.question_id = q.id join subjects s on s.id = v.subject_id where s.code = 'MATH' and v.type = 'mcq' and q.is_active and v.status = 'published'`))[0]?.n,
+    ).toBe(45)
     // Creating a mock writes nothing to practice, mastery, the revision queue or the wallet.
     expect(await snapshot()).toEqual(before)
   })

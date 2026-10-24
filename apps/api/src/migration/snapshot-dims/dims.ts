@@ -48,7 +48,7 @@ export interface DimMaps {
   topics: ReadonlyMap<string, string>
 }
 
-/** .cloud `questions.question_type` -> v2 question type. `objektif` is the value in the BE-35 fixture (Perlu pengesahan). */
+/** .cloud `questions.type` -> v2 question type. `objektif` is the value in the BE-35 fixture (Perlu pengesahan). */
 export const QUESTION_TYPE_MAP: Readonly<Record<string, string>> = {
   objektif: 'mcq',
   mcq: 'mcq',

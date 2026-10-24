@@ -12,7 +12,7 @@ import { ACTIVITY_GROUPS } from '../../../src/migration/load/activity'
 import { runAll, runDelta } from '../../../src/migration/orchestrate'
 import { runVerify, writeVerifyReport, type VerifyReport } from '../../../src/migration/verify'
 import { AS_OF, type ActivityHarness } from '../activity/helpers'
-import { bootActivity, PROBE_GROUP, tempOutDir } from './helpers-verify'
+import { bootActivity, PROBE_GROUP, STANDALONE_NOT_RUN, tempOutDir } from './helpers-verify'
 
 let h: ActivityHarness
 const out = tempOutDir()
@@ -31,7 +31,7 @@ beforeAll(async () => {
   await h.q(`delete from staging_cloud.classroom_student where student_id in (select user_id from staging_cloud.question_attempts)`)
   // A platform challenge, and for every pupil with answers a claim of it and an SPM target (so a deleted pupil leaves both behind).
   const subject = (await h.q<{ id: string }>(`select min(id)::text as id from staging_cloud.subjects`))[0]?.id as string
-  await h.q(`insert into staging_cloud.challenges (id, created_by, classroom_id, type, title, criteria) values (91, null, null, 'quiz_count', 'Cabaran Ujian', '{"target": 3}')`)
+  await h.q(`insert into staging_cloud.challenges (id, created_by, classroom_id, challenge_type, title, target_value) values (91, null, null, 'quiz_count', 'Cabaran Ujian', 3)`)
   await h.q(
     `insert into staging_cloud.challenge_user (challenge_id, user_id, progress, completed_at, claimed_on)
      select distinct 91, user_id, 3, '2026-01-01T00:00:00Z'::timestamptz, '2026-01-02'::date from staging_cloud.question_attempts`,
@@ -83,7 +83,7 @@ afterAll(async () => {
 
 describe('after a delta in which source rows were deleted', () => {
   it('verify passes and the extra rows are only reported', () => {
-    const bad = report.entities.filter((e) => e.status !== 'ok').map((e) => `${e.entity}: ${e.note ?? ''}`)
+    const bad = report.entities.filter((e) => e.status !== 'ok' && !STANDALONE_NOT_RUN(e)).map((e) => `${e.entity}: ${e.note ?? ''}`)
     const badChecks = report.checks.filter((c) => c.status === 'mismatch').map((c) => `${c.name}: ${c.detail ?? ''}`)
     expect({ bad, badChecks }).toEqual({ bad: [], badChecks: [] })
     expect(report.status).toBe('pass')

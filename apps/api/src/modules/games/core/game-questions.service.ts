@@ -31,6 +31,9 @@ export interface GameQuestionFilter {
 /** Samples nothing beyond `n * OVERSAMPLE` ids so a bank of unusable questions cannot make a draw unbounded. */
 const OVERSAMPLE = 4
 
+/** What `toServed` accepts, in SQL: the draw (`sample`) and the gate (`eligibleCount`) share it, so a gate never passes while a draw is short. */
+const GAME_SHAPE = { type: 'mcq', ungrouped: true, mcqShape: { minOptions: 2, maxOptions: 4 } } as const
+
 /**
  * Draws game questions through `QuestionsRepository` (BE-09, the owner): published, active, single-part MCQ with
  * at most 4 options (labels A..D). The draw uses the supplied named PRNG stream.
@@ -42,7 +45,8 @@ export class GameQuestions {
   /** Up to `n` servable questions for the filter, in the order of the seeded sample. */
   async sample(filter: GameQuestionFilter, n: number, rng: Prng): Promise<ServedQuestion[]> {
     if (n <= 0) return []
-    const ids = await this.questions.sample({ ...filter, type: 'mcq' }, n * OVERSAMPLE, rng)
+    // Plain MCQ with 2 to 4 options only (what `toServed` accepts), so the oversampled window is rarely short.
+    const ids = await this.questions.sample({ ...filter, ...GAME_SHAPE }, n * OVERSAMPLE, rng)
     return this.servedFrom(await this.questions.getMany(ids, 'live'), n)
   }
 
@@ -51,9 +55,9 @@ export class GameQuestions {
     return this.servedFrom(await this.questions.getMany(ids, 'live'), ids.length)
   }
 
-  /** Eligible (published, active) MCQ ids for a filter, ascending (counts, e.g. "at least 15 for Jutawan"). */
+  /** Servable (published, active, plain 2 to 4 option MCQ) questions for a filter (counts, e.g. "at least 15 for Jutawan"). */
   async eligibleCount(filter: GameQuestionFilter): Promise<number> {
-    return this.questions.count({ ...filter, type: 'mcq', status: 'published', active: true })
+    return this.questions.count({ ...filter, ...GAME_SHAPE, status: 'published', active: true })
   }
 
   private servedFrom(records: QuestionRecord[], limit: number): ServedQuestion[] {
