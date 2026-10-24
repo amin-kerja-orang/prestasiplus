@@ -430,15 +430,16 @@ test.describe('M08 T5 pelajar (account 2)', { tag: [moduleTag(8)] }, () => {
     await loginAs(2)
   })
 
-  test('S1 shows the own-school view', async ({ page, gotoApp }) => {
+  test('S1 is the 403 page; /prestasi is the own Prestasi 360 (UAT M-09)', async ({
+    page,
+    gotoApp,
+  }) => {
     await gotoApp('/prestasi')
-    await expect(page.getByTestId('prestasi-sekolah-page')).toBeVisible()
-    expect(new URL(page.url()).pathname).toBe('/prestasi/sekolah')
-    // Own school 900001 = the same figures as the Admin Sekolah anchor (§6.10): 2 kelas · 9 murid.
-    await expect(page.getByTestId('header-summary')).toHaveText(
-      'Ringkasan prestasi keseluruhan · 2 kelas · 9 murid',
-    )
+    await expect(page.getByTestId('prestasi360-page')).toBeVisible()
+    expect(new URL(page.url()).pathname).toBe('/prestasi/2')
     await expectNoHorizontalScroll(page)
+    await gotoApp('/prestasi/sekolah')
+    await expectForbidden(page)
   })
 
   test('S4 is empty for a pelajar', async ({ page, gotoApp }) => {
@@ -459,16 +460,15 @@ test.describe('M08 T5 pelajar (account 2)', { tag: [moduleTag(8)] }, () => {
     await expectForbidden(page)
   })
 
-  test('S9 by URL shows the own school; another school is the 403 page', async ({
+  test('S9 is the 403 page for a pelajar, own school included (UAT M-09)', async ({
     page,
     gotoApp,
   }) => {
     await gotoApp('/analisa-item/sekolah')
-    await expect(page.getByTestId('school-card')).toBeVisible()
-    await expect(page.getByTestId('school-students')).toHaveText('9')
-    await expectNoHorizontalScroll(page)
+    await expectForbidden(page)
     await gotoApp('/analisa-item/sekolah/8880')
     await expectForbidden(page)
+    await expectNoHorizontalScroll(page)
   })
 
   test(

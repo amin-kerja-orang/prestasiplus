@@ -4,7 +4,7 @@
  */
 
 import type { MockRequest, MockResponse } from '@/mock/define'
-import { forbidden, notFound } from '@/mock/define'
+import { forbidden, notFound, requireRole } from '@/mock/define'
 import { users, type UserRow } from '@/modules/m01-authentication/mock'
 import { schools } from '@/modules/m02-users-schools/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
@@ -23,6 +23,20 @@ export function viewerOf(req: MockRequest): Viewer {
   if (!user) throw new Error(`session user ${String(req.session.userId)} is not in the users store`)
   return { id: user.id, role: req.session.role, user, schoolId: user.schoolId }
 }
+
+/**
+ * S1–S3 and S9 are school-level boards: every role but the pelajar (UAT M-09; the pelajar's own view is
+ * #6 with self-only access). 401 without a session, 403 for a pelajar.
+ */
+export const schoolViewRoles = requireRole(
+  'admin',
+  'teacher',
+  'school_admin',
+  'parent',
+  'sponsor',
+  'ppd_officer',
+  'jpn_officer',
+)
 
 export const NOT_FOUND = (): MockResponse => notFound()
 export const FORBIDDEN = (): MockResponse => forbidden()

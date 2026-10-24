@@ -2,6 +2,8 @@ import type { RouteRecordRaw } from 'vue-router'
 
 import { useSessionStore } from '@/stores/session'
 
+import { SCHOOL_VIEW_ROLES } from './prestasi'
+
 /**
  * `/analisa-item` (the sidebar "Analisa Item"; FR-M08-09, OD-R4): admin and teacher → S10, school admin →
  * S9 (the dead-link fix of DV-M08-02, INFERRED), every other role, pelajar included → `/dashboard`
@@ -17,7 +19,7 @@ export function analisaItemTarget(role: string | null): string {
 /**
  * M08 route fragment "analisa-item" (M08-T5; build-plan §S.3 rule 2): the redirect, S9 (own school or
  * `{id}`), S10 and S11. S10 / S11 are admin and teacher only: every other role gets the 403 page
- * in place (FR-M08-08, §9). S9 is open to every role; the API decides (own school, else 403).
+ * in place (FR-M08-08, §9). S9 is open to every role but the pelajar (403 page, UAT M-09); the API decides the school (own, else 403).
  */
 const routes: RouteRecordRaw[] = [
   { path: '/analisa-item', redirect: () => analisaItemTarget(useSessionStore().role) },
@@ -28,6 +30,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
+      roles: SCHOOL_VIEW_ROLES,
+      onForbidden: '403',
       title: 'Analisa Item Sekolah | PRESTASIPLUS',
       header: { title: 'Analisa Item — Sekolah' },
       module: 'M08',
@@ -41,6 +45,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
+      roles: SCHOOL_VIEW_ROLES,
+      onForbidden: '403',
       title: 'Analisa Item Sekolah | PRESTASIPLUS',
       header: { title: 'Analisa Item — Sekolah' },
       module: 'M08',

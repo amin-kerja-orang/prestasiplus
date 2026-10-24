@@ -112,8 +112,23 @@ describe('S6 access (§9)', () => {
   })
 })
 
+describe('S1 / S2 / S3 access (UAT M-09)', () => {
+  it('the school-level boards are 403 for a pelajar and open for the other roles', async () => {
+    for (const url of [
+      '/api/performance/school',
+      '/api/performance/levels',
+      '/api/performance/levels/t4',
+    ]) {
+      expect((await getAs(runtime, PELAJAR, url)).status, `pelajar ${url}`).toBe(403)
+      for (const id of [ADMIN, GURU, ADMIN_SEKOLAH]) {
+        expect((await getAs(runtime, id, url)).status, `${String(id)} ${url}`).toBe(200)
+      }
+    }
+  })
+})
+
 describe('S9 / S10 / S11 access', () => {
-  it('S9: parents 403; own school for pelajar and school admin; another school by id is 403', async () => {
+  it('S9: parents and pelajar 403; own school for the school admin; another school by id is 403', async () => {
     expect((await getAs(runtime, PARENT, '/api/item-analysis/school')).status).toBe(403)
     expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/8880')).status).toBe(403)
     const own = await dataAs<SchoolItemAnalysis>(
@@ -127,7 +142,9 @@ describe('S9 / S10 / S11 access', () => {
     expect(own.students).toBe(9)
     expect(own.answers).toBeGreaterThan(80)
     expect(own.subjects.length).toBeGreaterThan(0)
-    expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/900001')).status).toBe(200)
+    // UAT M-09: the school-level boards are not for the pelajar, not even the own school.
+    expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/900001')).status).toBe(403)
+    expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school')).status).toBe(403)
     const officer = (await getAs(runtime, PPD, '/api/item-analysis/school/8880')).status
     expect([200, 403]).toContain(officer)
   })
