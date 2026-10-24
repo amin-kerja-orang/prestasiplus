@@ -111,7 +111,7 @@ describe('resolvePrefill (FR-M13-21, 22)', () => {
     expect(full.consumedEssay).toBe(true)
     expect(full.text).toBe(
       'Tolong tanda karangan ini menggunakan rubrik Sejarah — Karangan Esei (20 markah). ' +
-        'Subjek: Sejarah. Level: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
+        'Subjek: Sejarah. Tahap: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
         `Karangan: ${essay}`,
     )
     const bare = resolvePrefill(

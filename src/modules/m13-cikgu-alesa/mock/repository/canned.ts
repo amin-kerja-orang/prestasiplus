@@ -109,7 +109,7 @@ export function parseHandoff(message: string): ParsedHandoff {
     rest = dot === -1 ? '' : text.slice(dot + 1)
   }
   const m =
-    /^(?: Subjek: ([\s\S]*?)\.)?(?: Level: ([\s\S]*?)\.)?(?: Pelajar: ([\s\S]*?)\.)?(?: Tajuk: ([\s\S]*?)\.)?(?: Karangan:([\s\S]*))?$/.exec(
+    /^(?: Subjek: ([\s\S]*?)\.)?(?: Tahap: ([\s\S]*?)\.)?(?: Pelajar: ([\s\S]*?)\.)?(?: Tajuk: ([\s\S]*?)\.)?(?: Karangan:([\s\S]*))?$/.exec(
       rest,
     )
   return {

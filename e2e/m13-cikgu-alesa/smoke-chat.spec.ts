@@ -420,7 +420,7 @@ test.describe('M13 S1 chat', MODULE, () => {
     )
     await expect(input(page)).toHaveValue(
       'Tolong tanda karangan ini menggunakan rubrik Sejarah — Karangan Esei (20 markah). ' +
-        'Subjek: Sejarah. Level: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
+        'Subjek: Sejarah. Tahap: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
         `Karangan: ${ESSAY}`,
     )
     await expect(input(page)).toBeFocused()

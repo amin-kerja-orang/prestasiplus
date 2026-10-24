@@ -7,7 +7,7 @@ export const RPH_COPY = {
   title: '📋 Rancangan Pengajaran Harian (RPH)',
   sub: 'RPH yang dijana oleh Cikgu Alesa atau cikgu sendiri.',
   create: 'Jana RPH Baharu',
-  headers: ['Tarikh', 'Subjek / Level', 'Tajuk', 'Status', 'Tindakan'],
+  headers: ['Tarikh', 'Subjek / Tahap', 'Tajuk', 'Status', 'Tindakan'],
   emptyBefore: 'Belum ada RPH. Klik "Jana RPH Baharu" dan minta Cikgu Alesa: ',
   emptyExample: '"Tolong jana RPH untuk Matematik T4 Bab 3 esok"',
   statusGenerated: 'Dijana',
@@ -31,7 +31,7 @@ export const RPH_COPY = {
   loadFailed: 'Maklumat tidak dapat dimuatkan. Sila cuba lagi.',
   saveFailed: 'RPH tidak dapat dijana. Sila cuba lagi.',
   retry: 'Cuba lagi',
-  viewLabels: { date: 'Tarikh', subject: 'Subjek / Level', tajuk: 'Tajuk', status: 'Status' },
+  viewLabels: { date: 'Tarikh', subject: 'Subjek / Tahap', tajuk: 'Tajuk', status: 'Status' },
 } as const
 
 export const ESSAY_COPY = {
@@ -50,7 +50,7 @@ export const ESSAY_COPY = {
   rubric: 'Rubrik',
   subject: 'Subjek',
   subjectPh: 'cth: Bahasa Melayu',
-  level: 'Level',
+  level: 'Tahap',
   levelPh: 'T4',
   student: 'Nama Pelajar',
   essayTitle: 'Tajuk Karangan',

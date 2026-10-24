@@ -112,7 +112,7 @@ export function buildHandoffMessage(input: {
   return (
     `${HANDOFF_PREFIX}${rubricOf(input.rubric).label}.` +
     part('Subjek', input.subject) +
-    part('Level', input.level) +
+    part('Tahap', input.level) +
     part('Pelajar', input.student) +
     part('Tajuk', input.title) +
     ` Karangan: ${essay}`

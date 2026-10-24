@@ -197,7 +197,7 @@ test.describe('M13 S2 / S3 / V1 RPH', MODULE, () => {
     await expect(tid(page, 'rph-create')).toHaveAttribute('href', '/cikgu/rph/baharu')
     await expect(tid(page, 'rph-create')).toHaveText('Jana RPH Baharu')
     const heads = page.locator('[data-testid="rph-table"] th')
-    await expect(heads).toHaveText(['Tarikh', 'Subjek / Level', 'Tajuk', 'Status', 'Tindakan'])
+    await expect(heads).toHaveText(['Tarikh', 'Subjek / Tahap', 'Tajuk', 'Status', 'Tindakan'])
     expect(await headerCase(heads.first())).toBe('uppercase')
     await expect(tid(page, 'rph-empty')).toContainText('Belum ada RPH. Klik "Jana RPH Baharu"')
     await expect(tid(page, 'rph-empty').locator('em')).toHaveText(
@@ -590,7 +590,7 @@ test.describe('M13 S4 / S5 / V2 essay', MODULE, () => {
     )
     await expect(page.locator('#cikgu-input')).toHaveValue(
       'Tolong tanda karangan ini menggunakan rubrik Sejarah — Karangan Esei (20 markah). ' +
-        'Subjek: Sejarah. Level: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
+        'Subjek: Sejarah. Tahap: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
         `Karangan: ${ESSAY_TEXT}`,
     )
     expect((await mock.requests('/api/cikgu/send')).length).toBe(0)
