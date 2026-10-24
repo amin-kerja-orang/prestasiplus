@@ -3,7 +3,9 @@
  * Pure functions, no I/O. A staged row is text; the result is the v2 column values or a reason-coded reject.
  *
  * Sessions
- *  - `mode` goes through an explicit map to the `ck_practice_sessions_mode` list. `spm` and `battle` (modes that
+ *  - `mode` goes through an explicit map to the `ck_practice_sessions_mode` list. The real .cloud modes are
+ *    spm_tahun_lepas, revision, chapter, latih_tubi, battle, pksk, spm, spm_mock and spm_ramalan: `spm_tahun_lepas` and
+ *    `spm_mock` become `past_year`, `spm_ramalan` becomes `ramalan` (LEAD, FIT-FIX). `spm` and `battle` (modes that
  *    have no v2 practice mode, LEAD Q5) are UNKNOWN_ENUM and counted by the loader; nothing is defaulted.
  *  - `completed_at` is `started_at + duration_seconds` (.cloud keeps no completion time; Perlu pengesahan). The
  *    loader computes it in SQL; this file leaves the field null.
@@ -24,8 +26,11 @@ export const SESSION_MODE_MAP = {
   chapter: 'chapter',
   revision: 'revision',
   past_year: 'past_year',
+  spm_tahun_lepas: 'past_year',
+  spm_mock: 'past_year',
   latih_tubi: 'latih_tubi',
   ramalan: 'ramalan',
+  spm_ramalan: 'ramalan',
   mission: 'mission',
   remedial: 'remedial',
   question_set: 'question_set',

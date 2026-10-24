@@ -15,6 +15,7 @@ import { DUMMY_ARGON2_HASH, NOT_A_HASH, dummyBcryptHash } from '../anonymise/pas
 import { classroomsStep, enrolmentsStep, subscriptionsStep } from './class-steps'
 import { CoreContext, type CoreOptions } from './context'
 import { parentLinksStep, usersStep } from './identity-steps'
+import { roleRejectLabel } from '../transform/users'
 import {
   chaptersStep,
   educationLevelsStep,
@@ -58,7 +59,7 @@ export const NOT_MIGRATED: readonly { table: string; reason: string }[] = [
   { table: 'pksk_packages / pksk_accesses', reason: 'BE-29 wave (PKSK)' },
   { table: 'student_wallets', reason: 'BE-29 wave (wallet)' },
   { table: 'users.parent_invite_token', reason: 'redacted at staging (M4); pending invites are re-issued by the product, not migrated' },
-  { table: 'users.faith / google_id / referral_code / spm_targets / notifications_read_at', reason: 'dropped (Q7) or no v2 target' },
+  { table: 'users.faith / google_id / referral_code / spm_targets / notifications_read_at', reason: '`faith` and `google_id` are not staged (PDPA minimisation, FIT-FIX); the others are dropped (Q7) or have no v2 target' },
 ]
 
 /** Known synthetic password markers (BE-35): staging data carrying them must never reach a production database. */
@@ -131,5 +132,21 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
   ])
   const runner = new Runner({ pool: options.pool, env: options.env })
   const report = await runner.run({ mode, steps, inputHash, gitSha, batchSize })
+  // A resumed apply skipped the batches a checkpoint already committed, so the role counts those batches would have added
+  // are missing: recount them from this run's rejects so the report equals that of an uninterrupted run.
+  if (report.mode === 'apply' && report.resumedBatches > 0) await rebuildCoreNotes(options.pool, core, report.runId)
   return { report, core }
+}
+
+/** Recounts `users.role_rejected.*` from the run's `etl_rejects` (role names only through `roleRejectLabel`, never raw text). */
+export async function rebuildCoreNotes(pool: Pick<pg.Pool, 'query'>, core: CoreContext, runId: string): Promise<void> {
+  const prefix = 'users.role_rejected'
+  for (const k of [...core.notes.counters.keys()]) if (k === prefix || k.startsWith(`${prefix}.`)) core.notes.counters.delete(k)
+  const res = await pool.query<{ role: string | null }>(
+    `SELECT u.role::text AS role FROM etl_rejects r
+     JOIN "${STAGING_SCHEMA}"."users" u ON u.id::text = r.legacy_id
+     WHERE r.run_id = $1::bigint AND r.entity = 'users' AND r.column_name = 'role'`,
+    [runId],
+  )
+  for (const r of res.rows) core.notes.count(`${prefix}.${roleRejectLabel(r.role)}`)
 }

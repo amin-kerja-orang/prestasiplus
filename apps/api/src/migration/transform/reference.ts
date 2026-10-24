@@ -87,15 +87,18 @@ export interface SubjectValues {
   updated_at: string
 }
 
-/** The seeded row adopted by code keeps its English name and colour (.cloud has neither). */
+/**
+ * The seeded row adopted by code keeps its English name and colour (.cloud has no colour; its `name_en` only fills
+ * a subject that has no seeded row).
+ */
 export interface ExistingSubject {
   name_en: string
   color: string
 }
 
 export function transformSubject(row: Staged, existing?: ExistingSubject): Outcome<SubjectValues> {
-  const name = squash(row.name)
-  if (name === null) return reject('INVALID_VALUE', 'name')
+  const name = squash(row.name_bm)
+  if (name === null) return reject('INVALID_VALUE', 'name_bm')
   const core = flag(row.is_core, false)
   if (core === 'invalid') return reject('INVALID_VALUE', 'is_core')
   const sort = integer(row.sort_order)
@@ -105,7 +108,7 @@ export function transformSubject(row: Staged, existing?: ExistingSubject): Outco
   return ok({
     code,
     name,
-    name_en: existing?.name_en ?? name,
+    name_en: existing?.name_en ?? squash(row.name_en) ?? name,
     color: color !== null && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : (existing?.color ?? DEFAULT_SUBJECT_COLOR),
     is_core: core,
     sort_order: sort ?? 0,
