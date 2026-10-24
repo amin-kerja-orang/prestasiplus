@@ -19,6 +19,7 @@ import {
   type ListResult,
 } from '@/api'
 
+import { COPY } from '../components/soalan/lib'
 import type {
   BidangOption,
   ChapterOption,
@@ -273,12 +274,17 @@ export function uploadQuestionImage(file: Blob, options: Signal = {}): Promise<U
 
 type ImageInput = Blob | string | null | undefined
 
+/** Token of each file already uploaded, so a retry after a refused save does not upload it again. */
+const uploaded = new WeakMap<Blob, string>()
+
 /**
  * http mode, SW12-01-A: uploads every picked file first (one by one, in the given order) and returns
- * the ids in the same order. A stored image (string) passes through, nothing is `null`. A refused
- * upload is reported on its own field key (`questionImage`, `optionImages.<i>`) with the message of
- * the files API; the request that would carry the ids is then not sent. A session loss (401) and
- * an abort are rethrown as they are.
+ * the ids in the same order. A stored image (string) passes through, nothing is `null`. A file
+ * uploaded before (a retry) is not sent again. Only a 422 with `fields.file` (wrong type, too large,
+ * not a file) is a field error: it is reported on its own key (`questionImage`, `optionImages.<i>`)
+ * with the image message, and the request that would carry the ids is then not sent. Any other
+ * failure (network, 401, 403, 429, 5xx, a non-JSON proxy answer) and an abort are rethrown as they
+ * are, so the page shows its normal save-failed text.
  */
 async function resolveImages(
   entries: readonly (readonly [key: string, value: ImageInput])[],
@@ -287,23 +293,29 @@ async function resolveImages(
   const ids: (string | null)[] = []
   for (const [key, value] of entries) {
     if (value instanceof Blob) {
+      const known = uploaded.get(value)
+      if (known !== undefined) {
+        ids.push(known)
+        continue
+      }
       try {
-        ids.push((await uploadQuestionImage(value)).id)
+        const id = (await uploadQuestionImage(value)).id
+        uploaded.set(value, id)
+        ids.push(id)
       } catch (err) {
-        if (!isApiError(err) || err.status === 401) throw err
-        fields[key] = err.fields?.file ?? err.message
+        if (!isApiError(err) || err.status !== 422 || err.fields?.file === undefined) throw err
+        fields[key] = COPY.imageInvalid
         ids.push(null)
       }
     } else {
       ids.push(typeof value === 'string' && value.trim() !== '' ? value : null)
     }
   }
-  const [first] = Object.values(fields)
-  if (first !== undefined) {
+  if (Object.keys(fields).length > 0) {
     throw new ApiError({
       status: 422,
       code: API_ERROR_CODES.VALIDATION_ERROR,
-      message: first,
+      message: COPY.imageInvalid,
       fields,
     })
   }

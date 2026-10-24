@@ -202,6 +202,29 @@ describe('S24 edit', () => {
     expect(router.currentRoute.value.path).toBe('/guru/soalan/522425')
   })
 
+  it('SW12-01-A: the image field says what the files API takes (JPEG / PNG / WebP, 2 MB)', async () => {
+    const w = await mountPage(SumbangSoalanEditPage)
+    expect(t(w, 'e-image').attributes('accept')).toBe('image/jpeg,image/png,image/webp')
+    expect(w.text()).toContain('Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.')
+    expect(w.text()).not.toContain('max 5MB')
+    const big = new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' })
+    await pickFiles(w, 'e-image', [big])
+    expect(w.text()).toContain('Fail melebihi saiz maksimum 2 MB.')
+  })
+
+  it('SW12-01-A: "Batal" is disabled while the changes are being saved', async () => {
+    let finish: (v: unknown) => void = () => undefined
+    guru.updateContributedQuestion.mockReturnValue(new Promise((r) => (finish = r)))
+    const w = await mountPage(SumbangSoalanEditPage)
+    expect(t(w, 'form-cancel').attributes('href')).toBe('/guru/soalan/522425')
+    await t(w, 'edit-form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'form-cancel').attributes('href')).toBeUndefined()
+    expect(t(w, 'form-cancel').attributes('aria-disabled')).toBe('true')
+    finish(detail())
+    await flushPromises()
+  })
+
   it('sends no image when none is chosen', async () => {
     guru.updateContributedQuestion.mockResolvedValue(detail())
     const w = await mountPage(SumbangSoalanEditPage)

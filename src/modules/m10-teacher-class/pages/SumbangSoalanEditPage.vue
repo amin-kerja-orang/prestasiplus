@@ -30,6 +30,8 @@ import {
   COPY,
   correctItems,
   EDIT_DIFFICULTIES,
+  IMAGE_ACCEPT,
+  IMAGE_MAX_MB,
   isLoadableImage,
   OPTION_LETTERS,
 } from '../components/soalan/lib'
@@ -170,7 +172,7 @@ async function save(): Promise<void> {
           <DsFormField
             label="Tambah Gambarajah (optional)"
             name="e-image"
-            help="JPG, PNG, max 5MB."
+            :help="COPY.imageInvalid"
             :error="fields.questionImage ?? fields.image"
           >
             <DsArt3D
@@ -184,8 +186,8 @@ async function save(): Promise<void> {
             <DsFileField
               :model-value="image"
               name="image"
-              accept="image/jpeg,image/png"
-              :max-size-mb="5"
+              :accept="IMAGE_ACCEPT"
+              :max-size-mb="IMAGE_MAX_MB"
               data-testid="e-image"
               @update:model-value="image = Array.isArray($event) ? ($event[0] ?? null) : $event"
             />
@@ -277,6 +279,7 @@ async function save(): Promise<void> {
           >
           <UButton
             :to="back"
+            :disabled="saving"
             color="neutral"
             variant="soft"
             class="min-h-11"

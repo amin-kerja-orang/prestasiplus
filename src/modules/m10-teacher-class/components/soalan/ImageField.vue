@@ -8,6 +8,8 @@
  */
 import { DsFileField } from '@/ds'
 
+import { IMAGE_ACCEPT, IMAGE_MAX_MB } from './lib'
+
 defineProps<{
   variant: 'question' | 'option'
   /** Names the input (`question_image`, `options[i][image]`) and the test ids. */
@@ -32,7 +34,8 @@ function onPick(value: File | File[] | null): void {
         :icon="variant === 'question' ? 'i-ph-upload-simple' : 'i-ph-image'"
         :label="variant === 'question' ? 'Muat Naik' : 'Gambar'"
         :name="name"
-        accept="image/*"
+        :accept="IMAGE_ACCEPT"
+        :max-size-mb="IMAGE_MAX_MB"
         preview="image"
         class="w-auto"
         :data-testid="`${testid}-input`"

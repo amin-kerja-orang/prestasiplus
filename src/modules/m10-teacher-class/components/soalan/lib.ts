@@ -8,6 +8,10 @@ import type { QuestionType, ScriptType } from '../../api/types'
  * Texts that are not the live copy. Every entry except `confirmDelete` is UNVERIFIED COPY (SRS §8.3):
  * the live pages redirect with flashes that were never observed, or show nothing.
  */
+/** What the files API accepts for `question_image` (SW12-01-A). */
+export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp'
+export const IMAGE_MAX_MB = 2
+
 export const COPY = {
   /** Live (FR-M10-97). */
   confirmDelete: (id: number): string =>
@@ -19,6 +23,8 @@ export const COPY = {
   created: 'Soalan berjaya dihantar untuk semakan.',
   updated: 'Soalan berjaya dikemas kini.',
   saveFailed: 'Gagal menyimpan soalan. Sila cuba lagi.',
+  /** The files API purpose `question_image`: JPEG / PNG / WebP, at most 2 MB. Same text as the M10 mock `MSG.image`. */
+  imageInvalid: 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.',
   importDone: (n: number): string => `${String(n)} soalan berjaya diimport.`,
   templateFailed: 'Gagal memuat turun template.',
   listEmpty: 'Belum ada soalan.',

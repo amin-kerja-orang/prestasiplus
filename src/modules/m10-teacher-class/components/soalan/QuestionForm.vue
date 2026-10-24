@@ -765,6 +765,7 @@ function submit(): void {
     <div class="flex items-center justify-between gap-3">
       <UButton
         to="/guru/soalan"
+        :disabled="saving"
         color="neutral"
         variant="ghost"
         icon="i-ph-x"

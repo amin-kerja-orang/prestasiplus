@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createHttpTransport, installTransport, isApiError } from '@/api'
 
+import { COPY } from '../../components/soalan/lib'
 import { createContributedQuestion, updateContributedQuestion } from '../../api/guru'
 import type { CreateQuestionRequest } from '../../api/types'
 
@@ -20,7 +21,7 @@ interface Call {
 let calls: Call[] = []
 let uploads = 0
 /** Per upload (0-based): a status other than 201 answers that error instead of a file. */
-let uploadFailures: Record<number, { status: number; body: unknown }> = {}
+let uploadFailures: Record<number, { status: number; body: unknown } | 'network' | 'html413'> = {}
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -42,6 +43,15 @@ beforeEach(() => {
         if (url.startsWith('/api/files')) {
           const n = uploads++
           const failure = uploadFailures[n]
+          if (failure === 'network') return Promise.reject(new TypeError('Failed to fetch'))
+          if (failure === 'html413') {
+            return Promise.resolve(
+              new Response('<html>413 Request Entity Too Large</html>', {
+                status: 413,
+                headers: { 'content-type': 'text/html' },
+              }),
+            )
+          }
           if (failure) return Promise.resolve(json(failure.status, failure.body))
           const id = `tok${String(n)}`
           return Promise.resolve(
@@ -164,49 +174,113 @@ describe('createContributedQuestion images, http mode', () => {
     }).catch((e: unknown) => e)
     expect(isApiError(err, 'VALIDATION_ERROR')).toBe(true)
     if (!isApiError(err)) throw new Error('expected an ApiError')
-    expect(err.fields).toEqual({ 'optionImages.1': 'Fail terlalu besar.' })
-    expect(err.message).toBe('Fail terlalu besar.')
+    // The server text is English / Laravel style: the BM image message is shown instead.
+    expect(err.fields).toEqual({ 'optionImages.1': COPY.imageInvalid })
+    expect(err.message).toBe(COPY.imageInvalid)
     expect(questionCalls()).toHaveLength(0)
   })
 
-  it('reports every refused upload on its own key (stem and option), using the error message without fields', async () => {
-    uploadFailures[0] = {
+  it('reports every refused upload (422 with fields.file) on its own key with the BM image message', async () => {
+    const refuse = {
       status: 422,
       body: {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'x',
-          fields: { file: 'Jenis fail tidak sah.' },
+          fields: { file: 'The file field must not be greater than 2048 kilobytes.' },
         },
       },
     }
-    uploadFailures[1] = {
-      status: 403,
-      body: { error: { code: 'FORBIDDEN', message: 'Akses ditolak.' } },
-    }
+    uploadFailures[0] = refuse
+    uploadFailures[1] = refuse
     const err = await createContributedQuestion(base, {
       questionImage: png('stem.png'),
       optionImages: [png('a.png'), null, null, null],
     }).catch((e: unknown) => e)
     if (!isApiError(err)) throw new Error('expected an ApiError')
     expect(err.fields).toEqual({
-      questionImage: 'Jenis fail tidak sah.',
-      'optionImages.0': 'Akses ditolak.',
+      questionImage: 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.',
+      'optionImages.0': 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.',
     })
     expect(questionCalls()).toHaveLength(0)
   })
 
-  it('a session loss (401) on an upload is not turned into a field error', async () => {
-    uploadFailures[0] = {
-      status: 401,
-      body: { error: { code: 'UNAUTHORIZED', message: 'Sesi tamat.' } },
-    }
-    const err = await createContributedQuestion(base, { questionImage: png('s.png') }).catch(
-      (e: unknown) => e,
-    )
-    if (!isApiError(err)) throw new Error('expected an ApiError')
-    expect(err.status).toBe(401)
-    expect(err.fields).toBeUndefined()
+  describe.each([
+    [
+      '401 session loss',
+      { status: 401, body: { error: { code: 'UNAUTHORIZED', message: 'Sesi tamat.' } } },
+      401,
+    ],
+    [
+      '403 forbidden',
+      { status: 403, body: { error: { code: 'FORBIDDEN', message: 'Akses ditolak.' } } },
+      403,
+    ],
+    [
+      '429 rate limit',
+      { status: 429, body: { error: { code: 'RATE_LIMITED', message: 'Too many.' } } },
+      429,
+    ],
+    [
+      '500 server error',
+      { status: 500, body: { error: { code: 'SERVER_ERROR', message: 'Ralat.' } } },
+      500,
+    ],
+    ['non-JSON proxy 413', 'html413' as const, 413],
+    ['network down', 'network' as const, 0],
+    [
+      '422 without fields.file',
+      { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Tidak sah.' } } },
+      422,
+    ],
+  ])('an upload failing with %s', (_label, failure, status) => {
+    it('create: is rethrown as it is, maps no field and sends no question request', async () => {
+      uploadFailures[1] = failure
+      const err = await createContributedQuestion(base, {
+        questionImage: png('stem.png'),
+        optionImages: [null, png('b.png'), null, null],
+      }).catch((e: unknown) => e)
+      if (!isApiError(err)) throw new Error('expected an ApiError')
+      expect(err.status).toBe(status)
+      expect(err.fields).toBeUndefined()
+      expect(Object.values(err.fields ?? {})).not.toContain(COPY.imageInvalid)
+      expect(questionCalls()).toHaveLength(0)
+    })
+
+    it('update: is rethrown as it is and sends no PUT', async () => {
+      uploadFailures[0] = failure
+      const err = await updateContributedQuestion(
+        7,
+        { questionText: 'Soalan contoh' },
+        png('s.png'),
+      ).catch((e: unknown) => e)
+      if (!isApiError(err)) throw new Error('expected an ApiError')
+      expect(err.status).toBe(status)
+      expect(err.fields).toBeUndefined()
+      expect(calls.filter((c) => c.method === 'PUT')).toHaveLength(0)
+    })
+  })
+
+  it('a retry after a refused save does not upload the same files again', async () => {
+    const stem = png('stem.png')
+    const optionB = png('b.png')
+    const images = { questionImage: stem, optionImages: [null, optionB, null, null] }
+    await createContributedQuestion(base, images)
+    await createContributedQuestion(base, images)
+    expect(uploadCalls()).toHaveLength(2)
+    expect(questionCalls().map((c) => (c.body as Record<string, unknown>).questionImage)).toEqual([
+      'tok0',
+      'tok0',
+    ])
+    expect((questionCalls()[1]?.body as Record<string, unknown>).optionImages).toEqual([
+      null,
+      'tok1',
+      null,
+      null,
+    ])
+    // A file the user picks again is a new File and is uploaded.
+    await createContributedQuestion(base, { questionImage: png('stem.png') })
+    expect(uploadCalls()).toHaveLength(3)
   })
 
   it('maps the JSON 422 image keys as they come (questionImage, optionImages.<i>)', async () => {
@@ -277,7 +351,7 @@ describe('updateContributedQuestion image, http mode', () => {
     }
     const err = await updateContributedQuestion(7, body, png('s.png')).catch((e: unknown) => e)
     if (!isApiError(err)) throw new Error('expected an ApiError')
-    expect(err.fields).toEqual({ questionImage: 'Fail terlalu besar.' })
+    expect(err.fields).toEqual({ questionImage: COPY.imageInvalid })
     expect(calls.filter((c) => c.method === 'PUT')).toHaveLength(0)
   })
 })

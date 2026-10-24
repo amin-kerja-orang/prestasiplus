@@ -137,6 +137,30 @@ describe('S22 save path', () => {
     expect(t(w, 'q-option-image-error-1').exists()).toBe(false)
   })
 
+  it('SW12-01-A: the image pickers take JPEG / PNG / WebP of at most 2 MB, as the files API', async () => {
+    const w = await mountPage()
+    for (const id of ['q-image-input', 'q-option-image-0-input']) {
+      expect(t(w, id).attributes('accept')).toBe('image/jpeg,image/png,image/webp')
+    }
+    const big = new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' })
+    await pickFiles(w, 'q-image-input', [big])
+    expect(w.text()).toContain('Fail melebihi saiz maksimum 2 MB.')
+  })
+
+  it('SW12-01-A: "Batal" is disabled while the question is being saved', async () => {
+    let finish: (v: unknown) => void = () => undefined
+    guru.createContributedQuestion.mockReturnValue(new Promise((r) => (finish = r)))
+    const w = await mountPage()
+    await fill(w)
+    expect(t(w, 'form-cancel').attributes('href')).toBe('/guru/soalan')
+    await w.find('form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'form-cancel').attributes('href')).toBeUndefined()
+    expect(t(w, 'form-cancel').attributes('aria-disabled')).toBe('true')
+    finish(detail())
+    await flushPromises()
+  })
+
   it('a generic failure shows the save-failed text @provisional UNVERIFIED COPY', async () => {
     guru.createContributedQuestion.mockRejectedValue(new Error('network'))
     const w = await mountPage()
