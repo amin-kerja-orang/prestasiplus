@@ -1,10 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
 import { GamificationService } from '../../gamification'
 import { practiceRewardSource, type PracticeRewardPort, type PracticeRewardResult, type PracticeSessionCompleted } from '../../practice/ports'
 import { StreakService, WalletService } from '../../wallet'
 import type { BijakRewardInput, BijakRewardPort } from '../attempts/ports'
+import { ACHIEVEMENT_PRACTICE_MODES } from './practice-facts'
 
 /**
  * Ledger `source` of a Bijak SPM paper reward: the SPM quiz code the M14 ledger already uses for SPM
@@ -54,7 +55,8 @@ export class WalletBijakReward implements BijakRewardPort {
  * result. The ledger `source` follows the mode (`practiceRewardSource(mode)`, M14 BR-M14-03: `quiz_spm` for
  * the SPM modes, `quiz_pksk` for pksk, else `quiz_practice`).
  *
- * Challenges: `GamificationService.settleChallenges` runs last (BR-M14-12/13, order: session credit, streak, challenges).
+ * Challenges: `GamificationService.settleChallenges` (BR-M14-12/13, order: session credit, streak, challenges), then
+ * the achievements (`evaluateAchievements`, BR-M14-16, practice modes only).
  *
  * Mod Pelajar: the practice card (BE-12 AC 8) only says the writes are stamped `is_test`; it has no
  * "no rewards" rule like Bijak AC-20.3, so the credit is written and stamped. The streak is not moved:
@@ -62,6 +64,8 @@ export class WalletBijakReward implements BijakRewardPort {
  */
 @Injectable()
 export class WalletPracticeReward implements PracticeRewardPort {
+  private readonly logger = new Logger(WalletPracticeReward.name)
+
   constructor(
     @Inject(WalletService) private readonly wallet: WalletService,
     @Inject(StreakService) private readonly streaks: StreakService,
@@ -97,6 +101,26 @@ export class WalletPracticeReward implements PracticeRewardPort {
     // is claimed once per Malaysia day (completion row + `daily_challenge` ledger row; Mod Pelajar rows are is_test).
     // The submit response keeps the session credit only (the contract block has no challenge field).
     await this.gamification.settleChallenges(input.userId, { tx, isTest: input.isTest, at: input.completedAt })
+    // BR-M14-16 / FR-M14-51: after the challenges, a PRACTICE-mode session (`random`, `chapter`, `revision`) evaluates the
+    // achievement criteria; each unlock is once per user and pays its syiling + XP once (ledger `achievement`, key `achievement:<id>`).
+    // An achievement is a bonus: it runs in a savepoint and its failure only skips the unlock, never the submit.
+    if ((ACHIEVEMENT_PRACTICE_MODES as readonly string[]).includes(input.mode)) await this.evaluateAchievementsSafely(input, tx)
     return { coinsEarned: result.coinsEarned, streakCount: result.streakCount, totalBalance: result.totalBalance }
+  }
+
+  /**
+   * `evaluateAchievements` inside a SAVEPOINT of the submit transaction. If it throws (a rule or a database error), the work it
+   * did is rolled back to the savepoint, the error is logged (no user data) and the submit carries on with the session, the
+   * answers, the credit and the challenges committed. (`settleChallenges` has no such guard: a throw there still rolls the submit back.)
+   */
+  private async evaluateAchievementsSafely(input: PracticeSessionCompleted, tx: TxClient): Promise<void> {
+    await tx.$executeRaw`SAVEPOINT achievements_eval`
+    try {
+      await this.gamification.evaluateAchievements(input.userId, { tx, isTest: input.isTest, at: input.completedAt })
+    } catch (err) {
+      this.logger.warn(`achievement evaluation skipped for session ${input.sessionId}: ${err instanceof Error ? err.name : 'unknown error'}`)
+      await tx.$executeRaw`ROLLBACK TO SAVEPOINT achievements_eval`
+    }
+    await tx.$executeRaw`RELEASE SAVEPOINT achievements_eval`
   }
 }
