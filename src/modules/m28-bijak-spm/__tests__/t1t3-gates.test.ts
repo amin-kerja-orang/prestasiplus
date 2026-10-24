@@ -8,11 +8,19 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
 import QuestionEditor from '../admin/intake/components/QuestionEditor.vue'
-import { fieldsToConfirm, validateBatch, validateRevision } from '../admin/intake/domain/validation'
+import { batchToSeeds } from '../admin/intake/domain/convert'
+import {
+  fieldsToConfirm,
+  lowToConfirm,
+  validateBatch,
+  validateRevision,
+} from '../admin/intake/domain/validation'
+import { demoBatch } from '../admin/intake/lib/seed'
 import { emptyTag } from '../admin/intake/lib/dskp'
 import type { IntakeQuestion } from '../admin/intake/types'
 import type { CurriculumTag, QuestionDef, SchemeDef } from '../domain/types'
 import { gateErrors } from '../server/admin'
+import { BijakServer, MemoryStorage } from '../server/store'
 
 function intakeQ(
   over: Partial<IntakeQuestion['tag']>,
@@ -134,11 +142,55 @@ describe('publish gate (gateErrors)', () => {
       ])
   })
 
-  it('the three gates agree on the same T1-T3 question', () => {
+  // T1-T3 only: for T4/T5 the publish gate checks the unit label alone (the full DSKP gate is FB-026).
+  it('the three gates agree on the same T1-T3 question (T1-T3 only)', () => {
     const q = intakeQ(t13, { lowFields: ['tag.unit', 'tag.sp'] })
     expect(messages(q)).toEqual([])
     expect(validateRevision(q, undefined, false)).toEqual([])
     expect(gateErrors([def(t13)], scheme)).toEqual([])
+  })
+})
+
+describe('"Perlu disahkan" count and review confidence (lowToConfirm)', () => {
+  it('counts only what can be confirmed: T1-T3 unit/SP are never counted', () => {
+    expect(lowToConfirm(intakeQ(t13, { lowFields: ['tag.unit', 'tag.sp'] }))).toEqual([])
+    expect(lowToConfirm(intakeQ(t13, { lowFields: ['tag.unit', 'marks'] }))).toEqual(['marks'])
+    expect(lowToConfirm(intakeQ(t4, { lowFields: ['tag.unit', 'tag.sp'] }))).toEqual([
+      'tag.unit',
+      'tag.sp',
+    ])
+    expect(
+      lowToConfirm(intakeQ(t4, { lowFields: ['tag.unit', 'tag.sp'], confirmed: ['tag.unit'] })),
+    ).toEqual(['tag.sp'])
+  })
+
+  const withLow = (formOrigin: 'T1-T3' | 'T4') => {
+    const b = demoBatch(1)
+    b.questions = b.questions.map((q) => ({
+      ...q,
+      tag: { ...q.tag, formOrigin },
+      lowFields: ['tag.unit', 'tag.sp'],
+      confirmed: [],
+    }))
+    return b
+  }
+
+  it('a T1-T3 batch with only unit/SP low fields has lowCount 0 and confidence tinggi', async () => {
+    const batch = withLow('T1-T3')
+    expect(new Set(batchToSeeds(batch).map((s) => s.confidence))).toEqual(new Set(['tinggi']))
+    const server = new BijakServer({ storage: new MemoryStorage() })
+    await server.saveExtracted(batch.id, { questions: batch.questions, stimuli: batch.stimuli })
+    const row = (await server.listIntakeBatches()).find((b) => b.id === batch.id)!
+    expect(row.lowCount).toBe(0)
+  })
+
+  it('a T4 batch with the same low fields still counts them and is sederhana', async () => {
+    const batch = withLow('T4')
+    expect(new Set(batchToSeeds(batch).map((s) => s.confidence))).toEqual(new Set(['sederhana']))
+    const server = new BijakServer({ storage: new MemoryStorage() })
+    await server.saveExtracted(batch.id, { questions: batch.questions, stimuli: batch.stimuli })
+    const row = (await server.listIntakeBatches()).find((b) => b.id === batch.id)!
+    expect(row.lowCount).toBe(batch.questions.length * 2)
   })
 })
 

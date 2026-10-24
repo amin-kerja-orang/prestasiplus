@@ -18,6 +18,7 @@ import type {
 } from '../../../domain/types'
 import type { IntakeBatch, IntakePart, IntakeQuestion, IntakeStimulus } from '../types'
 import { groupsOf } from './grouping'
+import { lowToConfirm } from './validation'
 
 const LETTERS = 'ABCDEFGH'
 
@@ -235,10 +236,7 @@ export function batchToSeeds(batch: IntakeBatch): ReviewSeed[] {
   const source = manual
     ? `Manual: ${batch.source} (${batch.paperType} ${batch.year})`
     : `${batch.source} (${batch.paperType} ${batch.year})`
-  const lows = batch.questions.reduce(
-    (n, q) => n + q.lowFields.filter((f) => !q.confirmed.includes(f)).length,
-    0,
-  )
+  const lows = batch.questions.reduce((n, q) => n + lowToConfirm(q).length, 0)
   const meta = {
     subject: batch.subject,
     kertas: batch.kertas,

@@ -10,7 +10,7 @@ import { blankQuestion } from '../admin/intake/domain/blank'
 import { batchToSeeds } from '../admin/intake/domain/convert'
 import { groupsOf } from '../admin/intake/domain/grouping'
 import { paperMarks } from '../admin/intake/domain/marks'
-import { validateBatch } from '../admin/intake/domain/validation'
+import { lowToConfirm, validateBatch } from '../admin/intake/domain/validation'
 import { demoBatch } from '../admin/intake/lib/seed'
 import type {
   ExtractedPaper,
@@ -881,10 +881,7 @@ export class BijakServer {
       fileName: b.fileName,
       questionCount: b.questions.length,
       groupCount: groupsOf(b.questions).length,
-      lowCount: b.questions.reduce(
-        (n, q) => n + q.lowFields.filter((f) => !q.confirmed.includes(f)).length,
-        0,
-      ),
+      lowCount: b.questions.reduce((n, q) => n + lowToConfirm(q).length, 0),
       marks: paperMarks(b.questions),
       updatedAt: b.updatedAt,
     }
