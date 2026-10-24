@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ACTIVITY_GROUPS } from '../../../src/migration/load/activity'
 import { hashRow } from '../../../src/migration/kit'
 import { runAll, runDelta } from '../../../src/migration/orchestrate'
-import { AS_OF, bootActivity, PROBE_GROUP, tempOutDir } from './helpers-verify'
+import { AS_OF, bootActivity, PROBE_GROUP, STANDALONE_NOT_RUN, tempOutDir } from './helpers-verify'
 import type { ActivityHarness } from '../activity/helpers'
 
 let h: ActivityHarness
@@ -32,7 +32,7 @@ const options = () => ({ pool: h.env.pool, env: h.runEnv, asOf: AS_OF, batchSize
 describe('real runVerify', () => {
   it('runAll --apply: every stage succeeds, verify passes and the report files are written', async () => {
     const r = await runAll({ ...options(), mode: 'apply' })
-    const bad = r.verify?.entities.filter((e) => e.status !== 'ok').map((e) => `${e.entity}: ${e.status} ${e.note ?? ''}`)
+    const bad = r.verify?.entities.filter((e) => e.status !== 'ok' && !STANDALONE_NOT_RUN(e)).map((e) => `${e.entity}: ${e.status} ${e.note ?? ''}`)
     expect({ stages: r.stages.map((s) => `${s.name}/${s.mode}/${s.status}`), bad }).toEqual({
       stages: ['core/dry-run/succeeded', 'core/apply/succeeded', 'activity/dry-run/succeeded', 'activity/apply/succeeded', 'verify/verify/succeeded'],
       bad: [],

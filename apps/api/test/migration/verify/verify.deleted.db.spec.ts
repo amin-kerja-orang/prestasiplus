@@ -12,7 +12,7 @@ import { ACTIVITY_GROUPS } from '../../../src/migration/load/activity'
 import { runAll, runDelta } from '../../../src/migration/orchestrate'
 import { runVerify, writeVerifyReport, type VerifyReport } from '../../../src/migration/verify'
 import { AS_OF, type ActivityHarness } from '../activity/helpers'
-import { bootActivity, PROBE_GROUP, tempOutDir } from './helpers-verify'
+import { bootActivity, PROBE_GROUP, STANDALONE_NOT_RUN, tempOutDir } from './helpers-verify'
 
 let h: ActivityHarness
 const out = tempOutDir()
@@ -83,7 +83,7 @@ afterAll(async () => {
 
 describe('after a delta in which source rows were deleted', () => {
   it('verify passes and the extra rows are only reported', () => {
-    const bad = report.entities.filter((e) => e.status !== 'ok').map((e) => `${e.entity}: ${e.note ?? ''}`)
+    const bad = report.entities.filter((e) => e.status !== 'ok' && !STANDALONE_NOT_RUN(e)).map((e) => `${e.entity}: ${e.note ?? ''}`)
     const badChecks = report.checks.filter((c) => c.status === 'mismatch').map((c) => `${c.name}: ${c.detail ?? ''}`)
     expect({ bad, badChecks }).toEqual({ bad: [], badChecks: [] })
     expect(report.status).toBe('pass')

@@ -192,13 +192,14 @@ export class PracticeStartPlanner {
     return Object.assign(plan, { subjectId, levelId, difficulty, served })
   }
 
-  /** BR-15: the chapters of a subject and level that have at least one eligible chapter question, in chapter order. */
+  /**
+   * BR-15: the chapters of a subject and level that have at least one eligible chapter question, in chapter order, each with
+   * its question count. One grouped count for all chapters: no question ids are loaded or hydrated.
+   */
   private async practiceChapters(subjectId: bigint, levelId: bigint) {
     const chapters = await this.curriculum.chapters(subjectId, levelId, { active: true })
-    const withIds = await Promise.all(
-      chapters.map(async (c) => ({ chapter: c, ids: await this.ports.questions.chapterQuestionIds(idToString(c.id)) })),
-    )
-    return withIds.filter((c) => c.ids.length > 0)
+    const counts = await this.ports.questions.chapterCounts(chapters.map((c) => idToString(c.id)))
+    return chapters.map((chapter) => ({ chapter, count: counts.get(idToString(chapter.id)) ?? 0 })).filter((c) => c.count > 0)
   }
 
   private async chapter(plan: StartPlan, userId: string, req: StartSessionRequest, isTest: boolean): Promise<StartPlan> {
@@ -206,19 +207,29 @@ export class PracticeStartPlanner {
     const ch = await this.curriculum.chapter(chapterId, { active: true })
     if (!ch || ch.educationLevelId === null) throw notFound()
     const count = countIn(req.count, COUNT_OPTIONS)
-    const eligible = (await this.ports.questions.chapterQuestionIds(idToString(ch.id))).sort(cmpId)
-    if (eligible.length === 0) throw notEnoughQuestions()
+    const chapterKey = idToString(ch.id)
+    // The exact (servable-shape) count of this one chapter: a chapter whose questions cannot be served is empty.
+    if (((await this.ports.questions.chapterCounts([chapterKey], true)).get(chapterKey) ?? 0) === 0) throw notEnoughQuestions()
 
     // BR-16: chapter 1 is open; chapter k needs chapter k - 1 complete with a score of at least 70.
     const list = await this.practiceChapters(ch.subjectId, ch.educationLevelId)
     const i = list.findIndex((c) => c.chapter.id === ch.id)
     if (i > 0) {
-      const prev = list[i - 1]
+      // The chapter before this one that can actually be served: its exact count is what "complete" is measured against, and a
+      // chapter whose questions are all unservable is skipped, so one non-servable question never locks the rest for good.
+      let prev: { chapter: (typeof list)[number]['chapter']; count: number } | null = null
+      for (let j = i - 1; j >= 0 && prev === null; j--) {
+        const candidate = list[j]
+        if (!candidate) continue
+        const key = idToString(candidate.chapter.id)
+        const exact = (await this.ports.questions.chapterCounts([key], true)).get(key) ?? 0
+        if (exact > 0) prev = { chapter: candidate.chapter, count: exact }
+      }
       if (prev) {
         const progress = await this.repo.chapterProgress(userId, idToString(prev.chapter.id), isTest)
         const answered = progress.size
         const correct = [...progress.values()].filter((p) => p.correct).length
-        const complete = answered >= prev.ids.length && prev.ids.length > 0
+        const complete = answered >= prev.count && prev.count > 0
         const score = answered === 0 ? 0 : (correct / answered) * 100
         if (!(complete && score >= UNLOCK_SCORE)) throw chapterLocked()
       }
@@ -226,13 +237,22 @@ export class PracticeStartPlanner {
       throw chapterLocked()
     }
 
-    // BR-17: unanswered questions first (ascending id), then the answered ones by oldest last answer.
-    const last = await this.repo.chapterProgress(userId, idToString(ch.id), isTest)
-    const fresh = eligible.filter((id) => !last.has(id))
-    const seen = eligible
-      .filter((id) => last.has(id))
-      .sort((a, b) => (last.get(a)?.lastAt.getTime() ?? 0) - (last.get(b)?.lastAt.getTime() ?? 0) || cmpId(a, b))
-    const served = await this.serve([...fresh, ...seen].slice(0, count))
+    // BR-17: unanswered questions first (ascending id), then the answered ones by oldest last answer. Only `count`
+    // ids are read: the unanswered ones in SQL, the answered ones from the user's own (bounded) history.
+    const last = await this.repo.chapterProgress(userId, chapterKey, isTest)
+    const fresh = await this.ports.questions.chapterPage(chapterKey, [...last.keys()], count)
+    const ids = [...fresh]
+    if (ids.length < count && last.size > 0) {
+      const seen = [...last.keys()].sort((a, b) => (last.get(a)?.lastAt.getTime() ?? 0) - (last.get(b)?.lastAt.getTime() ?? 0) || cmpId(a, b))
+      // Only answered questions that still belong to this chapter (a question moved to another chapter is not repeated here).
+      const live = await this.serve(seen.slice(0, Math.max(count * 4, 50)))
+      for (const q of live) if (ids.length < count && q.chapterId === chapterKey) ids.push(q.id)
+      // Rare: the oldest answered ones are mostly ineligible now, so read further in the history.
+      for (let at = Math.max(count * 4, 50); ids.length < count && at < seen.length; at += 200) {
+        for (const q of await this.serve(seen.slice(at, at + 200))) if (ids.length < count && q.chapterId === chapterKey) ids.push(q.id)
+      }
+    }
+    const served = await this.serve(ids)
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, {
       subjectId: idToString(ch.subjectId),

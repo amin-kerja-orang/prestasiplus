@@ -133,6 +133,7 @@ deploy/vps/migration/slot.sh etl staging:profile                                
 deploy/vps/migration/slot.sh etl migrate:all --dry-run --as-of=2026-10-29 --files-dir=<files export>   # B6
 deploy/vps/migration/slot.sh etl migrate:all --apply --as-of=2026-10-29 --files-dir=<files export>     # B7 (+ apply gate, uploads volume)
 deploy/vps/migration/slot.sh etl migrate:verify                                   # B8
+deploy/vps/migration/slot.sh etl migrate:questions --as-of=2026-10-29 [--apply]   # B11 (plan 4.8), after B8, before C5; dry-run first
 deploy/vps/migration/slot.sh etl migrate:export-question-reports                  # C5, the Q9 export first
 deploy/vps/migration/slot.sh etl migrate:archive-minimise --confirm <db> [--apply] # C5 (apply gate in both modes)
 deploy/vps/migration/slot.sh etl migrate:link-questions [--apply]                 # C6, optional
@@ -288,6 +289,7 @@ Step ids are the cutover plan's section 4.0 (the old ids A4, A12 and B11 to B13 
 | B6-B8 | watches `docker stats`, disk, `pitr.sh status` | `slot.sh etl staging:profile`, `migrate:all --dry-run`, `--apply` (with `--files-dir`), `migrate:verify` |
 | B9 | `slot.sh gonogo` output pasted (as text); the last line must be `gonogo: complete` | verify counts as text |
 | B10 | timers started again (all three) | morning report |
+| B11 (29 Oct, daylight, plan 4.8) | | `slot.sh etl migrate:questions`, then `--apply`, then `migrate:verify` (before C5 and `post_drop`) |
 | STOP block | `slot.sh wipe-dump ... --missing-ok` | the plan's common block |
 | C3 (30 Oct) | the v2 address goes live; pointer page handed to the `.cloud` operator (half AM) | |
 | C2-C4 | smoke with v2-born accounts; monitoring | SQL checks |
