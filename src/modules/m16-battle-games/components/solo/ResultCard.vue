@@ -2,7 +2,7 @@
 /**
  * The result of S13-S16 (URS FN-M16-6.2.4, 6.3.4, 6.4.4, 6.5.5) as a modal over a scrim: the 3D art
  * and the title emoji, the title (white-on-surface contrast, DV-M16-45), the subtitle, the stat tiles,
- * "🏆 REKOD BARU!" when the server says `is_new_record`, then the replay button and "🎮 Hub". The
+ * "🏆 REKOD BARU!" when the server says `is_new_record`, then the replay button and "🎮 Hab". The
  * syiling tile is built by the page from the credited amount (DV-M16-23).
  */
 import { computed } from 'vue'
@@ -22,11 +22,11 @@ const props = withDefaults(defineProps<{
   againLabel: string
   coinsCredited: number
   theme: 'indigo' | 'cyan' | 'ember' | 'teal'
-  /** Label of the hub link (S17 uses "🏠 Hub"). */
+  /** Label of the hub link (S17 uses "🏠 Hab"). */
   hubLabel?: string
   /** Test id of the scrim (S17 uses `solo-overlay`). */
   overlayTestid?: string
-}>(), { hubLabel: '🎮 Hub', overlayTestid: 'solo-result-overlay' })
+}>(), { hubLabel: '🎮 Hab', overlayTestid: 'solo-result-overlay' })
 
 defineEmits<{ again: [] }>()
 

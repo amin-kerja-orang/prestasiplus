@@ -114,7 +114,7 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     await mountPage()
     expect(wrapper!.get('[data-testid="pb-h1"]').text()).toBe('🎲 Papan Bijak')
     expect(wrapper!.get('[data-testid="pb-subtitle"]').text()).toBe(
-      'Board game quiz multiplayer — jemput kawan, gulung dadu, jawab soalan! 🐍🪜',
+      'Permainan papan kuiz berbilang pemain — jemput kawan, gulung dadu, jawab soalan! 🐍🪜',
     )
     expect(sel('create-subject').texts()).toEqual(['🔢 Matematik', '📝 Bahasa Melayu', '🔬 Sains', '🇬🇧 Bahasa Inggeris'])
     const auto = wrapper!.get('[data-testid="grade-auto"]').text()
@@ -278,7 +278,7 @@ describe('S7 Top 10 (FR-M16-61)', () => {
     expect(kadar[1]!.classes().join(' ')).toContain('success')
     expect(kadar[2]!.classes().join(' ')).toContain('error')
     expect(wrapper!.get('[data-testid="top10-card"]').text()).toContain(
-      'Papan Markah — Top 10 Juara',
+      'Papan Markah — 10 Juara Teratas',
     )
   })
 })

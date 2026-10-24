@@ -229,7 +229,7 @@ watch(darjah, () => void start(), { immediate: true })
         v-if="phase === 'countdown'"
         title="🎯 TEMBAK JAWAPAN"
         :count="count"
-        hint="Tap jawapan yang betul sebelum jatuh!"
+        hint="Ketik jawapan yang betul sebelum jatuh!"
       />
 
       <div v-if="phase === 'playing' && current" class="flex flex-col gap-3">

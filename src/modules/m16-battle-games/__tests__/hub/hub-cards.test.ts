@@ -23,7 +23,7 @@ const EXPECTED: [string, string, string][] = [
   ['Kuiz Relay', 'Main!', '/kuiz-relay'],
   ['Teka Silang Kata', 'Main!', '/teka-silang-kata'],
   ['Betul atau Salah', 'Mula', '/permainan/betul-salah'],
-  ['Roda Nasib', 'Spin Sekarang!', '/permainan/roda-nasib'],
+  ['Roda Nasib', 'Putar Sekarang!', '/permainan/roda-nasib'],
   ['Pertandingan Mingguan', 'Lihat Ranking', '/permainan/pertandingan'],
   ['Peta Pengembaraan', 'Jelajah', '/peta-belajar'],
   ['Uji Minda', 'Mula', '/permainan/uji-minda'],
@@ -44,12 +44,12 @@ describe('S6 hub card data', () => {
     const badges = HUB_CARDS.map((c) => c.badge ?? null)
     expect(badges).toEqual([
       null,
-      '🔥 HOT',
-      '👥 MULTIPLAYER',
-      '👥 MULTIPLAYER',
-      '👥 MULTIPLAYER',
-      '👥 MULTIPLAYER',
-      '👥 MULTIPLAYER',
+      '🔥 HANGAT',
+      '👥 BERBILANG PEMAIN',
+      '👥 BERBILANG PEMAIN',
+      '👥 BERBILANG PEMAIN',
+      '👥 BERBILANG PEMAIN',
+      '👥 BERBILANG PEMAIN',
       '✅❌ BARU!',
       '📅 HARIAN',
       '📅 MINGGUAN',
@@ -60,7 +60,7 @@ describe('S6 hub card data', () => {
       '🧩 BARU!',
       '🎯 BARU!',
       '🔗 BARU!',
-      '🧠 HOT!',
+      '🧠 HANGAT!',
     ])
   })
 

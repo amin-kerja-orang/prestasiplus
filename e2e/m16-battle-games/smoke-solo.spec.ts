@@ -195,7 +195,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     if (score > 38) await expect(page.getByTestId('solo-new-record')).toHaveText('🏆 REKOD BARU!')
     else await expect(page.getByTestId('solo-new-record')).toHaveCount(0)
     await expect(page.getByRole('button', { name: '🔄 Main Lagi' })).toBeVisible()
-    await expect(page.getByRole('link', { name: '🎮 Hub' })).toBeVisible()
+    await expect(page.getByRole('link', { name: '🎮 Hab' })).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
 
@@ -295,7 +295,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await openPaused(page, gotoApp, mock, '/permainan/tembak-jawapan?darjah=4')
     await expectTabTitle(page, 'Tembak Jawapan 🎯 — PRESTASIPLUS')
     await expect(page.getByText('🎯 TEMBAK JAWAPAN')).toBeVisible()
-    await expect(page.getByText('Tap jawapan yang betul sebelum jatuh!')).toBeVisible()
+    await expect(page.getByText('Ketik jawapan yang betul sebelum jatuh!')).toBeVisible()
     await throughCountdown(page, mock)
     await expect(page.getByTestId('solo-score')).toHaveText('0')
     await expect(page.getByTestId('solo-level')).toHaveText('1')
@@ -452,7 +452,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
       'Ketepatan',
       'Syiling 🪙',
       '🔄 Main Lagi',
-      '🏠 Hub',
+      '🏠 Hab',
     ]) {
       await expect(overlay).toContainText(s)
     }
@@ -480,7 +480,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     const width = (await canvas.boundingBox())!.width
     expect(width).toBe(page.viewportSize()!.width < 640 ? 320 : 380)
     const button = page.getByTestId('spin-button')
-    await expect(button).toHaveText('🎯 SPIN!')
+    await expect(button).toHaveText('🎯 PUTAR!')
     await expectTouchTarget(button)
     await expectNoHorizontalScroll(page)
 
@@ -497,14 +497,14 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expect(page.getByTestId('prize-amount')).toHaveCount(0)
     await page.getByTestId('prize-close').click()
     await expect(page.getByTestId('prize-overlay')).toHaveCount(0)
-    await expect(button).toHaveText('✅ Sudah Spin Hari Ini')
+    await expect(button).toHaveText('✅ Sudah Putar Hari Ini')
     await expect(button).toBeDisabled()
     await expect(page.getByTestId('spin-count')).toHaveText('🎰 3 kali spin')
     await expectNoHorizontalScroll(page)
 
     await go(page, '/permainan/jutawan')
     await go(page, '/permainan/roda-nasib')
-    await expect(page.getByTestId('spin-button')).toHaveText('✅ Sudah Spin Hari Ini')
+    await expect(page.getByTestId('spin-button')).toHaveText('✅ Sudah Putar Hari Ini')
   })
 
   test('E2E-M16-68 fixture spinNothing: "Cuba Lagi" modal @m16', async ({
@@ -545,7 +545,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
       await mock.advanceTime(24 * 3600 * 1000)
       await go(page, '/permainan/jutawan')
       await go(page, '/permainan/roda-nasib')
-      await expect(page.getByTestId('spin-button')).toHaveText('🎯 SPIN!')
+      await expect(page.getByTestId('spin-button')).toHaveText('🎯 PUTAR!')
     },
   )
 
@@ -618,7 +618,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
       await expect(result).toContainText(/Tahniah! Anda sampai L\d+\./)
       const level = Number(/L(\d+)\./.exec(await result.innerText())![1])
       await expect(page.getByRole('button', { name: '🔄 Main Lagi' })).toBeVisible()
-      await expect(page.getByRole('link', { name: '🎮 Hub' })).toBeVisible()
+      await expect(page.getByRole('link', { name: '🎮 Hab' })).toBeVisible()
 
       await go(page, '/permainan/jutawan?darjah=4')
       await expect(page.getByTestId('jutawan-best')).toHaveText(`L${String(level)}`)

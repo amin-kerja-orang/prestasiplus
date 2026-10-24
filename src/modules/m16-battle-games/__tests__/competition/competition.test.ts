@@ -109,7 +109,7 @@ describe('S20 PertandinganPage', () => {
   it('shows the hero, the week, the countdown, the three prizes and the rows', async () => {
     const w = await mountPage(PertandinganPage)
     expect(w.get('h1').text()).toBe('🏆 Pertandingan Mingguan')
-    expect(w.text()).toContain('Lumba dengan semua pelajar! Top 3 dapat Syiling bonus.')
+    expect(w.text()).toContain('Lumba dengan semua pelajar! 3 teratas dapat Syiling bonus.')
     expect(w.get('[data-testid="pertandingan-range"]').text()).toBe('21 Sep — 27 Sep 2026')
     expect(w.get('[data-testid="pertandingan-countdown"]').text()).toBe('2h 8j 19m')
     const prizes = w.findAll('[data-testid="pertandingan-prize"]').map((p) => p.text())
@@ -143,7 +143,7 @@ describe('S20 PertandinganPage', () => {
     const status = w.get('[data-testid="pertandingan-status"]')
     expect(status.text()).toContain('📝')
     expect(status.text()).toContain('Belum mula lagi minggu ini!')
-    expect(status.text()).toContain('Buat Latih Tubi untuk masuk ranking.')
+    expect(status.text()).toContain('Buat Latih Tubi untuk masuk kedudukan.')
     expect(w.get('[data-testid="pertandingan-start"]').attributes('href')).toBe('/practice')
   })
 
@@ -189,9 +189,9 @@ describe('S21 UjiMindaPage', () => {
     expect(text).toContain('📋 Apa Ibu/Bapa boleh tetap:')
     expect(w.findAll('[data-testid="uji-minda-list"] li').map((l) => l.text())).toEqual([
       '✅ Bilangan soalan setiap set',
-      '✅ Syiling per jawapan betul',
+      '✅ Syiling bagi setiap jawapan betul',
       '✅ Hadiah custom (cth: buku, jajan, trip)',
-      '✅ Syiling minimum untuk claim hadiah',
+      '✅ Syiling minimum untuk menuntut hadiah',
     ])
   })
 })

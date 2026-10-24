@@ -22,13 +22,13 @@ test(
   async ({ page, gotoApp, loginAs }) => {
     await loginAs(8)
     await gotoApp('/sekolah-bersaing')
-    await expectTabTitle(page, 'Sekolah Bersaing — Leaderboard Mingguan')
+    await expectTabTitle(page, 'Sekolah Bersaing — Papan Pendahulu Mingguan')
     await expect(page.getByTestId('shell-user-title')).toHaveText('Sekolah Bersaing')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Selamat datang kembali')
     await expect(page.getByRole('heading', { level: 1, name: '🏆 Sekolah Bersaing' })).toBeVisible()
     await expect(
       page.getByText(
-        'Leaderboard mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.',
+        'Papan pendahulu mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.',
       ),
     ).toBeVisible()
     await expect(page.getByTestId('sb-week')).toHaveText(
@@ -100,7 +100,7 @@ const WEEKS = [
   { query: '2026-09-07', label: '07 Sep 2026', check: async () => {} },
   {
     query: '2026-08-31',
-    label: '31 Aug 2026',
+    label: '31 Ogs 2026',
     check: async (page: Page) => {
       const rows = page.getByTestId('sb-row')
       await expect(rows.nth(16).getByTestId('sb-state')).toHaveText('Selangor')
@@ -134,7 +134,7 @@ test(
     await expect(page.getByRole('heading', { level: 1, name: '🏆 Sekolah Bersaing' })).toBeVisible()
     await expect(page.getByTestId('sb-empty')).toContainText('📊 Data minggu ini belum dijana.')
     await expect(page.getByTestId('sb-empty')).toContainText(
-      'Cron mingguan akan kira pada Isnin pagi. Tunggu kejap ya.',
+      'Penjadual mingguan akan mengira pada Isnin pagi. Tunggu sebentar ya.',
     )
     await expect(page.getByTestId('sb-row')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
@@ -164,7 +164,7 @@ for (const [name, who] of [
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(who)
       await gotoApp('/sekolah-bersaing')
-      await expectTabTitle(page, 'Sekolah Bersaing — Leaderboard Mingguan')
+      await expectTabTitle(page, 'Sekolah Bersaing — Papan Pendahulu Mingguan')
       await expect(page.getByTestId('shell-user-title')).toHaveText('Sekolah Bersaing')
       await expect(page.getByTestId('sb-row')).toHaveCount(49)
     },

@@ -96,8 +96,8 @@ describe('result titles', () => {
   })
   it('Tembak Jawapan', () => {
     expect([500, 200, 80, 79].map(tembakTitle)).toEqual([
-      '🏆 SNIPER!',
-      '🎯 SHARP!',
+      '🏆 PENEMBAK TEPAT!',
+      '🎯 TAJAM!',
       '💪 BAGUS!',
       '🔄 CUBA LAGI!',
     ])

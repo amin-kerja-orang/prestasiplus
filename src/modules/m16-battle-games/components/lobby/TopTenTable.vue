@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "🏆 Papan Markah — Top 10 Juara" of S7 (SRS M16 v1.6 FR-M16-61; URS FN-M16-5.3.1; BR-M16-22). The server
+ * "🏆 Papan Markah — 10 Juara Teratas" of S7 (SRS M16 v1.6 FR-M16-61; URS FN-M16-5.3.1; BR-M16-22). The server
  * sends the ordered rows, the 15-character names and the initials; this renders the medals, the initials
  * avatar and the Kadar badge. v2 look: one raised row per player (a card per row, so it reads the same at
  * 375, 768 and 1280 px) with the five figures as labelled stats; ranks 1-3 get the lime rank chip.
@@ -15,7 +15,7 @@ defineProps<{ rows: NonNullable<GameLobby['top10']> }>()
 
 <template>
   <UCard data-testid="top10-card">
-    <h2 class="text-subheading text-highlighted">🏆 Papan Markah — Top 10 Juara</h2>
+    <h2 class="text-subheading text-highlighted">🏆 Papan Markah — 10 Juara Teratas</h2>
     <ol class="mt-3 flex flex-col gap-2" data-testid="top10-table">
       <RankedRow
         v-for="row in rows"

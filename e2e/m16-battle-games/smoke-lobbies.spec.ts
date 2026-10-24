@@ -93,7 +93,7 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
     )
     await expect(page.getByTestId('pb-h1')).toHaveText('🎲 Papan Bijak')
     await expect(page.getByTestId('pb-subtitle')).toHaveText(
-      'Board game quiz multiplayer — jemput kawan, gulung dadu, jawab soalan! 🐍🪜',
+      'Permainan papan kuiz berbilang pemain — jemput kawan, gulung dadu, jawab soalan! 🐍🪜',
     )
     expect(await page.getByTestId('create-subject').locator('option').allTextContents()).toEqual([
       '🔢 Matematik',

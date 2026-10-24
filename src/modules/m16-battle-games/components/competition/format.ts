@@ -16,7 +16,7 @@ export function formatCountdown(endsAtMs: number, nowMs: number, ended = 'Tamat!
 
 /** "21 Sep — 27 Sep 2026" from two `YYYY-MM-DD` keys (Monday and Sunday, MYT). */
 export function formatWeekRange(weekStart: string, weekEnd: string): string {
-  return `${formatMyt(weekStart, 'dd MMM', { months: 'en' })} — ${formatMyt(weekEnd, 'dd MMM yyyy', { months: 'en' })}`
+  return `${formatMyt(weekStart, 'dd MMM', { months: 'ms' })} — ${formatMyt(weekEnd, 'dd MMM yyyy', { months: 'ms' })}`
 }
 
 /** "{x.x}%" (one decimal, as the stored `tepat`). */

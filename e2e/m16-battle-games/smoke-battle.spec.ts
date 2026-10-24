@@ -215,7 +215,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
   })
 
   test(
-    'E2E-M16-22 Quick Match: request, timer 0:00 to 0:06 and the arena after the 3rd poll @m16',
+    'E2E-M16-22 Padanan Pantas: request, timer 0:00 to 0:06 and the arena after the 3rd poll @m16',
     provisional('simulated matchmaking (SIMULATION, BR-M16-05)'),
     async ({ page, gotoApp, loginAs, mock, clock }) => {
       await loginAs(ADMIN)
@@ -312,7 +312,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await openLobby(page, gotoApp)
       await pickSubject(page, 'Bahasa Cina')
       await school(page).click()
-      await expect(err(page)).toHaveText('Ralat dari server. Sila cuba lagi.')
+      await expect(err(page)).toHaveText('Ralat dari pelayan. Sila cuba lagi.')
       await page.getByTestId('battle-error-close').click()
       await expect(err(page)).toBeHidden()
     },

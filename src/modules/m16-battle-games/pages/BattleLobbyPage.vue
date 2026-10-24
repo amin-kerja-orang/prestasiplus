@@ -84,12 +84,12 @@ function openChallenge(): void {
   if (ready.value) showChallenge.value = true
 }
 
-/** The three mode cards: Quick Match and Battle Sekolah need an idle search, Cabar Kawan only a selection. */
+/** The three mode cards: Padanan Pantas and Battle Sekolah need an idle search, Cabar Kawan only a selection. */
 const modes = computed(() => [
   {
     testid: 'battle-quick-match',
     art: 'bolt' as const,
-    title: 'Quick Match',
+    title: 'Padanan Pantas',
     text: 'Cari lawan rawak dari darjah yang sama',
     disabled: !ready.value || busy.value,
     run: () => startMode('quick-match'),

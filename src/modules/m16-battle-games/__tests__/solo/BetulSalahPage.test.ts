@@ -96,7 +96,7 @@ describe('S13 Betul atau Salah (FR-M16-71..75)', () => {
     expect(text()).toContain('🏆 REKOD BARU!')
     expect(wrapper.find('[data-testid="coin-fly"]').exists()).toBe(false)
     expect(text()).toContain('🔄 Main Lagi')
-    expect(text()).toContain('🎮 Hub')
+    expect(text()).toContain('🎮 Hab')
   })
 
   it('a wrong answer resets the streak and no record shows when the server says so', async () => {

@@ -1,13 +1,13 @@
 /** Copy and labels of S23 and the provisional tournament detail (SRS M16 v1.6 §8.1, §8.2; URS FN-M16-8.1.x, 8.3.1). */
 
-export const SUBTITLE = 'Senarai tournament antara sekolah'
+export const SUBTITLE = 'Senarai kejohanan antara sekolah'
 
 export const LIST_COPY = {
-  heading: 'Liga & Tournament',
+  heading: 'Liga & Kejohanan',
   sub: 'Bertanding antara sekolah dalam format liga, kalah mati, atau hibrid!',
-  create: 'Cipta Tournament Baru',
+  create: 'Cipta Kejohanan Baharu',
   createTo: '/tournament/admin/create',
-  empty: 'Tiada tournament aktif buat masa ini.',
+  empty: 'Tiada kejohanan aktif buat masa ini.',
 } as const
 
 /** The banner line of a tournament (FN-M16-1.3.2 / 1.3.3). */

@@ -199,7 +199,7 @@ onMounted(() => void start())
               🔄 Main Lagi
             </UButton>
             <UButton to="/permainan" size="xl" color="neutral" variant="soft" class="min-h-12 justify-center">
-              🎮 Hub
+              🎮 Hab
             </UButton>
           </div>
         </div>

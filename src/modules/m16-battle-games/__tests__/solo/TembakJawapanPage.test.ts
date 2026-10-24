@@ -47,7 +47,7 @@ describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
   it('counts down with the hint, then shows the HUD, the zone and the death line', async () => {
     wrapper = await mountAt(SoloTembakJawapanPage, '/permainan/tembak-jawapan?darjah=4')
     expect(wrapper.text()).toContain('🎯 TEMBAK JAWAPAN')
-    expect(wrapper.text()).toContain('Tap jawapan yang betul sebelum jatuh!')
+    expect(wrapper.text()).toContain('Ketik jawapan yang betul sebelum jatuh!')
     await vi.advanceTimersByTimeAsync(2400)
     expect(text('solo-score')).toBe('0')
     expect(text('solo-level')).toBe('1')

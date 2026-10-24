@@ -26,14 +26,14 @@ test.use({ mockInit: { latency: 0 } })
 /** The 18 cards in live order (discovery A.3): title, badge, button text, route. */
 const CARDS: [string, string | null, string, string][] = [
   ['Papan Bijak', null, 'Main Sekarang', '/papan-bijak'],
-  ['Battle Arena', '🔥 HOT', 'Battle!', '/battle'],
-  ['Perang Fakta', '👥 MULTIPLAYER', 'Main!', '/perang-fakta'],
-  ['Benteng Ilmu', '👥 MULTIPLAYER', 'Duel!', '/benteng-ilmu'],
-  ['Perlumbaan Matematik', '👥 MULTIPLAYER', 'Lumba!', '/perlumbaan-matematik'],
-  ['Kuiz Relay', '👥 MULTIPLAYER', 'Main!', '/kuiz-relay'],
-  ['Teka Silang Kata', '👥 MULTIPLAYER', 'Main!', '/teka-silang-kata'],
+  ['Battle Arena', '🔥 HANGAT', 'Battle!', '/battle'],
+  ['Perang Fakta', '👥 BERBILANG PEMAIN', 'Main!', '/perang-fakta'],
+  ['Benteng Ilmu', '👥 BERBILANG PEMAIN', 'Duel!', '/benteng-ilmu'],
+  ['Perlumbaan Matematik', '👥 BERBILANG PEMAIN', 'Lumba!', '/perlumbaan-matematik'],
+  ['Kuiz Relay', '👥 BERBILANG PEMAIN', 'Main!', '/kuiz-relay'],
+  ['Teka Silang Kata', '👥 BERBILANG PEMAIN', 'Main!', '/teka-silang-kata'],
   ['Betul atau Salah', '✅❌ BARU!', 'Mula', '/permainan/betul-salah'],
-  ['Roda Nasib', '📅 HARIAN', 'Spin Sekarang!', '/permainan/roda-nasib'],
+  ['Roda Nasib', '📅 HARIAN', 'Putar Sekarang!', '/permainan/roda-nasib'],
   ['Pertandingan Mingguan', '📅 MINGGUAN', 'Lihat Ranking', '/permainan/pertandingan'],
   ['Peta Pengembaraan', null, 'Jelajah', '/peta-belajar'],
   ['Uji Minda', '👨‍👩‍👧 IBU BAPA', 'Mula', '/permainan/uji-minda'],
@@ -42,7 +42,7 @@ const CARDS: [string, string | null, string, string][] = [
   ['Susun Jawapan', '🧩 BARU!', 'Susun!', '/permainan/susun-jawapan'],
   ['Tembak Jawapan', '🎯 BARU!', 'Tembak!', '/permainan/tembak-jawapan'],
   ['Sambung Kata', '🔗 BARU!', 'Mula!', '/permainan/sambung-kata'],
-  ['Kad Memori', '🧠 HOT!', 'Main!', '/permainan/kad-memori'],
+  ['Kad Memori', '🧠 HANGAT!', 'Main!', '/permainan/kad-memori'],
 ]
 
 /** Client-side navigation (keeps the mock state, unlike a page load). */

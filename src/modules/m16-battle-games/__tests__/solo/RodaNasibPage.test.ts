@@ -91,7 +91,7 @@ describe('S18 Roda Nasib (FR-M16-93..95)', () => {
     }
     expect(wrapper.find('canvas').attributes('width')).toBe('380')
     expect(wrapper.find('canvas').attributes('height')).toBe('380')
-    expect(button().text()).toBe('🎯 SPIN!')
+    expect(button().text()).toBe('🎯 PUTAR!')
     expect(button().attributes('disabled')).toBeUndefined()
   })
 
@@ -119,7 +119,7 @@ describe('S18 Roda Nasib (FR-M16-93..95)', () => {
     expect(wrapper.text()).not.toContain('+5 Syiling')
     expect(wrapper.get('[data-testid="spin-count"]').text()).toBe('🎰 3 kali spin')
     expect(wrapper.get('[data-testid="spin-won"]').text()).toBe('🪙 0 Syiling dimenangkan')
-    expect(button().text()).toBe('✅ Sudah Spin Hari Ini')
+    expect(button().text()).toBe('✅ Sudah Putar Hari Ini')
     expect(button().attributes('disabled')).toBeDefined()
     await wrapper.get('[data-testid="prize-close"]').trigger('click')
     expect(wrapper.find('[data-testid="prize-overlay"]').exists()).toBe(false)
@@ -152,7 +152,7 @@ describe('S18 Roda Nasib (FR-M16-93..95)', () => {
   it('a spin already used today is disabled on load', async () => {
     fetchSpinPage.mockResolvedValue(page({ alreadySpun: true }))
     wrapper = await mountAt(RodaNasibPage, '/permainan/roda-nasib')
-    expect(button().text()).toBe('✅ Sudah Spin Hari Ini')
+    expect(button().text()).toBe('✅ Sudah Putar Hari Ini')
     expect(button().attributes('disabled')).toBeDefined()
   })
 
@@ -168,7 +168,7 @@ describe('S18 Roda Nasib (FR-M16-93..95)', () => {
     await button().trigger('click')
     await vi.advanceTimersByTimeAsync(0)
     expect(alert).toHaveBeenCalledWith('Anda sudah spin hari ini.')
-    expect(button().text()).toBe('✅ Sudah Spin Hari Ini')
+    expect(button().text()).toBe('✅ Sudah Putar Hari Ini')
     expect(rotation()).toBe(0)
   })
 })

@@ -33,8 +33,8 @@ const prize = ref<{ icon: string; label: string; type: string; credited: number 
 
 const buttonLabel = computed(() => {
   if (spinning.value) return '⏳ Sedang Pusing...'
-  if (alreadySpun.value) return '✅ Sudah Spin Hari Ini'
-  return '🎯 SPIN!'
+  if (alreadySpun.value) return '✅ Sudah Putar Hari Ini'
+  return '🎯 PUTAR!'
 })
 
 async function loadPage(): Promise<void> {

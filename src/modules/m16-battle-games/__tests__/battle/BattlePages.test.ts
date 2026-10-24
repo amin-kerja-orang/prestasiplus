@@ -151,7 +151,7 @@ describe('S1 lobby', () => {
       { question_type: 'biasa', open_to_all: false, subject_id: 3 },
       expect.anything(),
     )
-    expect(byId('battle-error').text()).toBe('Ralat dari server. Sila cuba lagi.')
+    expect(byId('battle-error').text()).toBe('Ralat dari pelayan. Sila cuba lagi.')
     await byId('battle-error-close').trigger('click')
     expect(byId('battle-error').exists()).toBe(false)
   })

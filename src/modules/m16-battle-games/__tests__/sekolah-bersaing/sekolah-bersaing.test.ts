@@ -66,7 +66,7 @@ describe('route (FR-M16-127, DV-M16-02, roles-matrix L50)', () => {
     expect(r?.meta).toMatchObject({
       layout: 'user',
       access: 'auth',
-      title: 'Sekolah Bersaing — Leaderboard Mingguan',
+      title: 'Sekolah Bersaing — Papan Pendahulu Mingguan',
       header: { title: 'Sekolah Bersaing', subtitle: 'Selamat datang kembali' },
     })
     expect(r?.meta?.roles).toBeUndefined()
@@ -79,7 +79,7 @@ describe('S28 SekolahBersaingPage', () => {
     const w = await open('/sekolah-bersaing')
     expect(w.get('h1').text()).toBe('Sekolah Bersaing')
     expect(w.text()).toContain(
-      'Leaderboard mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.',
+      'Papan pendahulu mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.',
     )
     expect(w.get('[data-testid="sb-week"]').text()).toBe(
       'Minggu 21 Sep 2026 · 4 sekolah dalam pertandingan',
@@ -102,8 +102,8 @@ describe('S28 SekolahBersaingPage', () => {
     expect(rows[0]?.get('[data-testid="sb-school"]').text()).toBe('Sekolah 1')
     expect(rows[0]?.get('[data-testid="sb-state"]').text()).toBe('Kelantan')
     const cells = (i: number) => rows[i]?.findAll('td').map((c) => c.text())
-    expect(cells(0)?.slice(2)).toEqual(['0.0% aktif', '15.0 hari', '0.0 per 10'])
-    expect(cells(3)?.slice(2)).toEqual(['0.5% aktif', '1.6 hari', '2.3 per 10'])
+    expect(cells(0)?.slice(2)).toEqual(['0.0% aktif', '15.0 hari', '0.0 setiap 10'])
+    expect(cells(3)?.slice(2)).toEqual(['0.5% aktif', '1.6 hari', '2.3 setiap 10'])
     const tip = w.get('[data-testid="sb-tip"]').text()
     expect(tip).toContain('Untuk Cikgu Besar / PIBG:')
     expect(tip).toContain('Share ranking ini ke parent group WhatsApp.')
@@ -126,7 +126,7 @@ describe('S28 SekolahBersaingPage', () => {
     expect(w.get('h1').text()).toBe('Sekolah Bersaing')
     expect(w.get('[data-testid="sb-empty"]').text()).toContain('Data minggu ini belum dijana.')
     expect(w.get('[data-testid="sb-empty"]').text()).toContain(
-      'Cron mingguan akan kira pada Isnin pagi. Tunggu kejap ya.',
+      'Penjadual mingguan akan mengira pada Isnin pagi. Tunggu sebentar ya.',
     )
     expect(w.find('[data-testid="sb-table"]').exists()).toBe(false)
     expect(w.find('[data-testid="sb-tip"]').exists()).toBe(false)

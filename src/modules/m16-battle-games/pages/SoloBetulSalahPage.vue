@@ -119,7 +119,7 @@ async function finish(): Promise<void> {
 const tiles = computed(() => [
   { label: 'Skor Total', value: String(score.value), tone: 'text-primary-t' },
   { label: 'Ketepatan', value: ratio(correct.value, answered.value), tone: 'text-success' },
-  { label: 'Kombo Max', value: `${String(maxStreak.value)} 🔥`, tone: 'text-warning' },
+  { label: 'Kombo Maks', value: `${String(maxStreak.value)} 🔥`, tone: 'text-warning' },
   { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-info' },
 ])
 

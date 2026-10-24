@@ -93,8 +93,8 @@ describe('routes (FR-M16-03..05)', () => {
     expect(list?.meta).toMatchObject({
       layout: 'user',
       access: 'auth',
-      title: 'Liga & Tournament',
-      header: { title: 'Liga & Tournament', subtitle: 'Senarai tournament antara sekolah' },
+      title: 'Liga & Kejohanan',
+      header: { title: 'Liga & Kejohanan', subtitle: 'Senarai kejohanan antara sekolah' },
     })
     expect(routes.map((r) => r.path)).toEqual(['/tournament', '/tournament/:uuid'])
     for (const r of routes) expect(r.meta?.roles).toBeUndefined()
@@ -105,20 +105,20 @@ describe('S23 TournamentListPage', () => {
   it('shows the hero and the empty card for the default seed', async () => {
     loginAs('student')
     const w = await mountPage(TournamentListPage, '/tournament', '/tournament')
-    expect(w.get('h2').text()).toBe('Liga & Tournament')
+    expect(w.get('h2').text()).toBe('Liga & Kejohanan')
     expect(w.text()).toContain(
       'Bertanding antara sekolah dalam format liga, kalah mati, atau hibrid!',
     )
     expect(w.get('[data-testid="tournament-empty"]').text()).toBe(
-      'Tiada tournament aktif buat masa ini.',
+      'Tiada kejohanan aktif buat masa ini.',
     )
   })
 
-  it('shows "Cipta Tournament Baru" for the admin only', async () => {
+  it('shows "Cipta Kejohanan Baharu" for the admin only', async () => {
     loginAs('admin')
     let w = await mountPage(TournamentListPage, '/tournament', '/tournament')
     const create = w.get('[data-testid="tournament-create"]')
-    expect(create.text()).toBe('Cipta Tournament Baru')
+    expect(create.text()).toBe('Cipta Kejohanan Baharu')
     expect(create.attributes('href')).toBe('/tournament/admin/create')
     w.unmount()
 
