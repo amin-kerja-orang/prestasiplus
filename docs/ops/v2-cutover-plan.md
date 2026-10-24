@@ -443,7 +443,7 @@ A "no" on 1 or 2 is not a night STOP. Do not apply: write the result as text in 
 
 **Time budget.** Not in `W` (section 4.3 table): dry-run plus apply about 1 min per 100k questions on the VPS, no-op re-run a few seconds, rollback at most 1 min per 100k; A4 (27 Oct) measures all three on the production-like host and fills the table. Local figures on synthetic 100k questions: dry-run 23 s, apply 22 s, no-op 4 s, rollback 8 s.
 
-**Rehearsal.** A4 (27 Oct) runs B11 as an extra step after `migrate:all` (steps 1 to 3, then the no-op re-run and the rollback with a fresh dry-run after it), records the exit codes, recon, reject reasons, `note` counters and the three timings, and tests the refusal after a v2-born row references a migrated question.
+**Rehearsal.** A4 (27 Oct) runs B11 as an extra step after `migrate:all` (steps 1 to 3, then the no-op re-run and the rollback with a fresh dry-run after it), records the exit codes, recon, reject reasons, `note` counters and the three timings, and tests the refusal after a v2-born row references a migrated question. A4 also runs `EXPLAIN (ANALYZE)` on a battle pool count, a practice random draw and a chapter count to confirm the 0044 indexes are used on real volume (AM1-3 G4), and spot-checks about 200 loaded questions for a person's name in free text (no pattern can catch names), recording only the count found.
 
 ## 5. Go/no-go criteria
 
