@@ -69,12 +69,12 @@ async function apply(value: { schoolId: string; state: string }) {
     data-testid="kirk-overview-page"
     subtitle="Analisis Keberkesanan Platform — Model Penilaian 4 Tahap"
   >
-    <!-- Live copy: "Tapis" and "Reset" (FR-M12-19, 41). -->
+    <!-- Live copy: "Tapis" and "Set Semula" (FR-M12-19, 41). -->
     <DsFilterBar
       :chips="filters.chips.value"
       :show-reset="false"
       apply-label="Tapis"
-      reset-label="Reset"
+      reset-label="Set Semula"
       data-testid="kirk-filter"
       @apply="filters.apply"
       @remove-chip="filters.removeChip"

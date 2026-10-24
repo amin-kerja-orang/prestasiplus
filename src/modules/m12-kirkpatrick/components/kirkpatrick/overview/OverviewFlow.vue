@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S1 "Kirkpatrick Evaluation Flow" (FN-M12-2.3.1..2.3.3; FR-M12-24, 25, 92): from `sm` four steps T1 to T4,
+ * S1 "Aliran Penilaian Kirkpatrick" (FN-M12-2.3.1..2.3.3; FR-M12-24, 25, 92): from `sm` four steps T1 to T4,
  * each a link with an icon chip, label, sub-label and pill; below `sm` the same four as a vertical list with
  * a caret. `detail` off renders plain boxes (the alias has no level pages).
  */
@@ -62,8 +62,8 @@ const steps = computed<Step[]>(() => [
 
 <template>
   <DsPanel
-    title="Kirkpatrick Evaluation Flow"
-    description="Klik mana-mana tahap untuk lihat detail"
+    title="Aliran Penilaian Kirkpatrick"
+    description="Klik mana-mana tahap untuk lihat butiran"
     icon="i-ph-flow-arrow"
     data-testid="kirk-flow"
   >

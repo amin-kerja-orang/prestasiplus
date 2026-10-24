@@ -20,7 +20,7 @@ const routes: RouteRecordRaw[] = STAFF_MOUNTS.flatMap((mount): RouteRecordRaw[] 
       roles: rolesOf(mount),
       module: 'M12',
       v2: true,
-      title: 'Kirkpatrick Impact Chain',
+      title: 'Rantaian Impak Kirkpatrick',
       header: { title: 'Rantaian Impak' },
     },
   },
@@ -34,7 +34,7 @@ const routes: RouteRecordRaw[] = STAFF_MOUNTS.flatMap((mount): RouteRecordRaw[] 
       roles: rolesOf(mount),
       module: 'M12',
       v2: true,
-      title: 'Kirkpatrick Impact Chain',
+      title: 'Rantaian Impak Kirkpatrick',
     },
   },
 ])

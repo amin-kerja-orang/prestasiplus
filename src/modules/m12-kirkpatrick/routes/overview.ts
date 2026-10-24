@@ -17,9 +17,9 @@ const meta = (mount: KirkpatrickMount) => ({
   roles: mount.roles,
   module: 'M12' as const,
   v2: true,
-  title: 'Kirkpatrick Evaluation Dashboard',
+  title: 'Papan Pemuka Penilaian Kirkpatrick',
   header: {
-    title: 'Kirkpatrick Evaluation',
+    title: 'Penilaian Kirkpatrick',
     subtitle: 'Analisis Keberkesanan Platform — Model Penilaian 4 Tahap',
   },
 })

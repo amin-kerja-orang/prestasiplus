@@ -81,7 +81,7 @@ describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {
       ),
     )
     await vi.waitFor(() => expect(resetLink(w).exists()).toBe(true))
-    expect(resetLink(w).text()).toBe('Reset')
+    expect(resetLink(w).text()).toBe('Set Semula')
     await resetLink(w).trigger('click')
     await vi.waitFor(() =>
       expect(router.currentRoute.value.fullPath).toBe('/admin/kirkpatrick/behavior'),
@@ -172,7 +172,7 @@ describe('S4 band tiles (AC-M12-15.1)', () => {
         .replace(/&lt;/g, '<'),
     )
     expect(tiles).toEqual([
-      '513 Champion >50 soalan 12.3%',
+      '513 Juara >50 soalan 12.3%',
       '259 Konsisten 20-50 soalan 6.2%',
       '169 Berkembang 5-20 soalan 4.1%',
       '5 Minimum <5 soalan 0.1%',
@@ -334,7 +334,7 @@ describe('S4 alerts and mood (AC-M12-18.1 ... 18.4)', () => {
   it('shows the mood empty card while the mood count is 0', async () => {
     const { wrapper: w } = await open()
     expect(flat(t(w, 'beh-mood'))).toBe(
-      'Data Mood Belum Mencukupi Pelajar perlu check-in mood harian untuk analisis kesejahteraan vs prestasi.',
+      'Data Mood Belum Mencukupi Pelajar perlu mendaftar mood harian untuk analisis kesejahteraan vs prestasi.',
     )
   })
 })

@@ -77,7 +77,7 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
   it('shows the flow pills and the hint', async () => {
     const { wrapper: w } = await open()
     const flow = t(w, 'kirk-flow')
-    expect(flow.text()).toContain('Klik mana-mana tahap untuk lihat detail')
+    expect(flow.text()).toContain('Klik mana-mana tahap untuk lihat butiran')
     const pills = t(w, 'kirk-flow-circles').findAll('[data-testid="kirk-flow-pill"]')
     expect(pills.map((p) => p.text())).toEqual([
       '4.6/5',
@@ -134,7 +134,7 @@ describe('S1 filter (AC-M12-05.1, 05.2)', () => {
       )
     })
     await vi.waitFor(() => expect(resetLink(w).exists()).toBe(true))
-    expect(resetLink(w).text()).toBe('Reset')
+    expect(resetLink(w).text()).toBe('Set Semula')
     expect((w.get('select[name="school_id"]').element as HTMLSelectElement).value).toBe('8080')
     await resetLink(w).trigger('click')
     await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/admin/kirkpatrick'))

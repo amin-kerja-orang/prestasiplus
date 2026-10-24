@@ -13,11 +13,11 @@ import { count, gps, mean, pct, plain, type KirkColor } from '../common/kirkpatr
 const props = defineProps<{ chain: Chain }>()
 
 const LABELS: Record<string, string> = {
-  champion: 'Champion',
-  konsisten: 'Consistent',
-  berkembang: 'Developing',
-  minimum: 'Minimal',
-  tidakTerlibat: 'Disengaged',
+  champion: 'Juara',
+  konsisten: 'Konsisten',
+  berkembang: 'Berkembang',
+  minimum: 'Minimum',
+  tidakTerlibat: 'Tidak Terlibat',
 }
 
 interface Step {

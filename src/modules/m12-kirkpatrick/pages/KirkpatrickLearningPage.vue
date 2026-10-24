@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S3 T2 Pembelajaran (FR-M12-34..39; URS EP-M12-4): tab strip, six KPI cards, the Learning Gain card, the
+ * S3 T2 Pembelajaran (FR-M12-34..39; URS EP-M12-4): tab strip, six KPI cards, the Peningkatan Pembelajaran card, the
  * subject bars and the school table. `school_id` comes from the URL only (the page has no form).
  */
 import { computed } from 'vue'

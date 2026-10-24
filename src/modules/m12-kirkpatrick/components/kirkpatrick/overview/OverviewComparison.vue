@@ -27,7 +27,7 @@ const metrics = (p: ComparisonPanel | null): Metric[] => [
   { key: 'active', label: 'Pelajar Aktif', value: plain(p?.active ?? 0) },
   { key: 'accuracy', label: 'Ketepatan', value: pct(p?.accuracy ?? 0) },
   { key: 'answers', label: 'Jumlah Jawapan', value: count(p?.answers ?? 0) },
-  { key: 'champions', label: 'Champion', value: plain(p?.champions ?? 0) },
+  { key: 'champions', label: 'Juara', value: plain(p?.champions ?? 0) },
 ]
 
 /** "+56" for a gain, "-11" for a loss, "0" otherwise (no separator, as live). */
@@ -46,7 +46,7 @@ const deltas = computed(() => {
     { key: 'answers', label: 'Jumlah Jawapan', n: d?.answers ?? 0, text: signed(d?.answers ?? 0) },
     {
       key: 'champions',
-      label: 'Champion',
+      label: 'Juara',
       n: d?.champions ?? 0,
       text: signed(d?.champions ?? 0),
     },

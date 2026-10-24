@@ -16,6 +16,13 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
   Developing: 'warning',
   Beginning: 'error',
 }
+
+/** BM word of the API status (FB-025). */
+const STATUS_LABEL: Record<SubjectStatus, string> = {
+  Mastered: 'Dikuasai',
+  Developing: 'Berkembang',
+  Beginning: 'Permulaan',
+}
 </script>
 
 <template>
@@ -52,7 +59,7 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
           <UBadge
             :color="STATUS[s.status]"
             variant="soft"
-            :label="s.status"
+            :label="STATUS_LABEL[s.status]"
             data-testid="kirk-subject-status"
           />
           <span

@@ -35,8 +35,8 @@ const S3 = '/admin/kirkpatrick/learning'
 
 const TITLES = {
   s1: [
-    'Kirkpatrick Evaluation Dashboard',
-    'Kirkpatrick Evaluation',
+    'Papan Pemuka Penilaian Kirkpatrick',
+    'Penilaian Kirkpatrick',
     'Analisis Keberkesanan Platform — Model Penilaian 4 Tahap',
   ],
   s2: [
@@ -134,7 +134,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       const tabs = page.getByTestId('kirk-tabs').locator('a')
       await expect(tabs).toHaveText(
         [
-          'Overview',
+          'Gambaran Keseluruhan',
           'T1: Reaksi',
           'T2: Pembelajaran',
           'T3: Tingkah Laku',
@@ -312,7 +312,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await expect(group).toBeVisible()
     await expect(page.getByTestId(mobile ? 'kirk-flow-circles' : 'kirk-flow-list')).toBeHidden()
     await expect(page.getByTestId('kirk-flow')).toContainText(
-      'Klik mana-mana tahap untuk lihat detail',
+      'Klik mana-mana tahap untuk lihat butiran',
     )
     const links = group.locator('a')
     expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual([
@@ -464,7 +464,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     ])
     const sum = (await counts.allTextContents()).reduce((s, v) => s + Number(v), 0)
     expect(sum).toBe(4158)
-    await expect(page.getByTestId('kirk-bands')).toContainText('Taburan Engagement Pelajar')
+    await expect(page.getByTestId('kirk-bands')).toContainText('Taburan Penglibatan Pelajar')
     const tiles = page.getByTestId('kirk-bands').locator('a')
     expect(await tiles.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual(
       Array(5).fill('/admin/kirkpatrick/behavior'),
@@ -517,7 +517,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await expect(levelCaption(page, 't1')).toHaveText('Kepuasan purata · 336 respon', TEXT)
   })
 
-  test('E2E-M12-27 S3 KPI cards, Learning Gain card and 2 / 3 / 6 columns @m12', async ({
+  test('E2E-M12-27 S3 KPI cards, Peningkatan Pembelajaran card and 2 / 3 / 6 columns @m12', async ({
     page,
     gotoApp,
     loginAs,
@@ -530,7 +530,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       'Skor Purata',
       'Sesi Selesai',
       'Kadar Penyelesaian',
-      'Learning Gain',
+      'Peningkatan Pembelajaran',
     ])
     await expect(page.locator('[data-testid="kirk-stat-value"]')).toHaveText([
       '306,133',
@@ -545,9 +545,9 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     )
     await expect(page.getByTestId('kirk-kpi-gain')).toContainText('Perlu pre/post test')
     const gain = page.getByTestId('kirk-gain-card')
-    await expect(gain).toContainText('Pre-Test / Post-Test belum dimulakan')
+    await expect(gain).toContainText('Pra-Ujian / Pasca-Ujian belum dimulakan')
     await expect(gain).toContainText(
-      "Hake's Normalized Learning Gain akan dikira secara automatik.",
+      "Peningkatan Pembelajaran Ternormal Hake akan dikira secara automatik.",
     )
     await expect(gain).toContainText(
       'g = (Post - Pre) / (100 - Pre) · High: g≥0.7 · Medium: 0.3≤g<0.7 · Low: g<0.3',

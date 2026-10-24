@@ -41,7 +41,7 @@ const TITLES = {
   s4: [
     'Tahap 3: Tingkah Laku — Kirkpatrick',
     'Tahap 3: Tingkah Laku',
-    'Konsistensi penggunaan, engagement score, dan corak tingkah laku pelajar',
+    'Konsistensi penggunaan, skor penglibatan, dan corak tingkah laku pelajar',
   ],
   s5: [
     'Tahap 4: Hasil — Kirkpatrick',
@@ -197,7 +197,7 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     await gotoApp(S4)
     const tile = (k: string) => page.getByTestId(`beh-band-${k}`)
     const expected = [
-      ['champion', '513', 'Champion', '>50 soalan', '12.3%'],
+      ['champion', '513', 'Juara', '>50 soalan', '12.3%'],
       ['konsisten', '259', 'Konsisten', '20-50 soalan', '6.2%'],
       ['berkembang', '169', 'Berkembang', '5-20 soalan', '4.1%'],
       ['minimum', '5', 'Minimum', '<5 soalan', '0.1%'],
@@ -255,7 +255,7 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     )
     const tahap = await texts(page.getByTestId('cell-tahap'))
     const count = (t: string) => tahap.filter((x) => x === t).length
-    expect([count('Champion'), count('Konsisten'), count('Berkembang'), count('Minimum')]).toEqual([
+    expect([count('Juara'), count('Konsisten'), count('Berkembang'), count('Minimum')]).toEqual([
       8, 7, 2, 4,
     ])
     expect(count('Tidak Terlibat')).toBe(12)
@@ -370,7 +370,7 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     await expect(mood).toContainText('💭')
     await expect(mood).toContainText('Data Mood Belum Mencukupi')
     await expect(mood).toContainText(
-      'Pelajar perlu check-in mood harian untuk analisis kesejahteraan vs prestasi.',
+      'Pelajar perlu mendaftar mood harian untuk analisis kesejahteraan vs prestasi.',
     )
     await expectNoHorizontalScroll(page)
 
@@ -599,7 +599,7 @@ test.describe('M12 S5 T4 Hasil (admin)', MODULE, () => {
     )
     const n = (t: string) => tahap.filter((x) => x === t).length
     expect([
-      n('Champion'),
+      n('Juara'),
       n('Konsisten'),
       n('Berkembang'),
       n('Minimum'),
@@ -780,7 +780,7 @@ test.describe('M12 S5 T4 Hasil (admin)', MODULE, () => {
       TEXT,
     )
     await expect(page.getByTestId('insight-disclaimer')).toHaveText(
-      'Disclaimer: Data GPS Anggaran berdasarkan markah OTR headcount, bukan keputusan SPM sebenar.',
+      'Penafian: Data GPS Anggaran berdasarkan markah OTR headcount, bukan keputusan SPM sebenar.',
       TEXT,
     )
     await expectNoHorizontalScroll(page)
@@ -864,7 +864,7 @@ test.describe('M12 S6 Rantaian Impak (admin)', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(`${S6}?school_id=8080`)
-    await expectTabTitle(page, 'Kirkpatrick Impact Chain')
+    await expectTabTitle(page, 'Rantaian Impak Kirkpatrick')
     await expect(page.getByTestId('shell-admin-title')).toHaveText('Rantaian Impak')
     await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
     await expect(page.getByTestId('kirk-tabs')).toHaveCount(0)

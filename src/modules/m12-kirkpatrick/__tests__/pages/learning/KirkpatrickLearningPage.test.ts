@@ -30,7 +30,7 @@ afterEach(() => {
   wrapper = undefined
 })
 
-describe('S3 KPIs and Learning Gain (AC-M12-11.1..11.4)', () => {
+describe('S3 KPIs and Peningkatan Pembelajaran (AC-M12-11.1..11.4)', () => {
   it('shows the six KPI cards', async () => {
     const w = await open()
     expect(tiles(w).map((x) => x.label)).toEqual([
@@ -39,7 +39,7 @@ describe('S3 KPIs and Learning Gain (AC-M12-11.1..11.4)', () => {
       'Skor Purata',
       'Sesi Selesai',
       'Kadar Penyelesaian',
-      'Learning Gain',
+      'Peningkatan Pembelajaran',
     ])
     expect(tiles(w).map((x) => x.value)).toEqual([
       '306,133',
@@ -60,12 +60,12 @@ describe('S3 KPIs and Learning Gain (AC-M12-11.1..11.4)', () => {
     )
   })
 
-  it('static Learning Gain card', async () => {
+  it('static Peningkatan Pembelajaran card', async () => {
     const w = await open()
     const text = squash(t(w, 'kirk-gain-card').text())
-    expect(text).toContain('Pre-Test / Post-Test belum dimulakan')
+    expect(text).toContain('Pra-Ujian / Pasca-Ujian belum dimulakan')
     expect(text).toContain(
-      "Apabila ujian diagnostik dimulakan, Hake's Normalized Learning Gain akan dikira secara automatik.",
+      "Apabila ujian diagnostik dimulakan, Peningkatan Pembelajaran Ternormal Hake akan dikira secara automatik.",
     )
     expect(text).toContain(
       'g = (Post - Pre) / (100 - Pre) · High: g≥0.7 · Medium: 0.3≤g<0.7 · Low: g<0.3',
@@ -89,9 +89,9 @@ describe('S3 subjects (AC-M12-12.1..12.3)', () => {
     const w = await open()
     const rows = all(w, 'kirk-subject-row')
     expect(rows.map((r) => flat(r))).toEqual([
-      'Pendidikan Muzik 100.0% Mastered 20 soalan',
-      'Sejarah 76.3% Developing 57695 soalan',
-      'Biologi 33.3% Beginning 30 soalan',
+      'Pendidikan Muzik 100.0% Dikuasai 20 soalan',
+      'Sejarah 76.3% Berkembang 57695 soalan',
+      'Biologi 33.3% Permulaan 30 soalan',
     ])
     const bar = (i: number) => rows[i]!.get('[data-testid="kirk-subject-bar"]')
     expect(

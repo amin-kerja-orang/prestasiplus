@@ -42,7 +42,7 @@ export const BAND_ORDER: readonly BandKey[] = [
 ]
 
 export const BAND: Record<BandKey, BandStyle> = {
-  champion: { label: 'Champion', color: 'success', text: 'text-success' },
+  champion: { label: 'Juara', color: 'success', text: 'text-success' },
   konsisten: { label: 'Konsisten', color: 'primary', text: 'text-primary-t' },
   berkembang: { label: 'Berkembang', color: 'info', text: 'text-info' },
   minimum: { label: 'Minimum', color: 'warning', text: 'text-warning' },

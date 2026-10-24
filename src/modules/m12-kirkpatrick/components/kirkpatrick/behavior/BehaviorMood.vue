@@ -14,7 +14,7 @@ defineProps<{ moodCount: number }>()
     <DsEmptyState
       icon="chat-circle-dots"
       title="Data Mood Belum Mencukupi"
-      description="Pelajar perlu check-in mood harian untuk analisis kesejahteraan vs prestasi."
+      description="Pelajar perlu mendaftar mood harian untuk analisis kesejahteraan vs prestasi."
     />
   </UCard>
 </template>
