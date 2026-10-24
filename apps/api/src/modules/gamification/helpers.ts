@@ -22,6 +22,9 @@ export function initialsOf(name: string): string {
 /** The single initial of the share cards. */
 export const initialOf = (name: string): string => [...name.trim()][0]?.toUpperCase() ?? ''
 
+/** The Malaysia calendar day before `day` (`YYYY-MM-DD`, no time zone involved). */
+export const previousDay = (day: string): string => new Date(Date.parse(`${day}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+
 /** Share-link text as the live hrefs carry it: spaces become `%20`, everything else is raw. */
 export const shareEncode = (s: string): string => s.replace(/ /g, '%20')
 

@@ -100,11 +100,12 @@ describe('POST /admin/users/bulk-import (AC 6)', () => {
     ])
     expect(data.credentials.map((c) => [c.line, c.email])).toEqual([[2, 'guru1@import.test'], [3, 'GURU2@import.test']])
     expect(new Set(data.credentials.map((c) => c.generatedPassword)).size).toBe(2)
-    // The created accounts hold the role, school and must-change flag, and the generated password logs in.
+    expect(data.credentials.map((c) => c.mustChangePassword)).toEqual([false, false]) // R39: no forced change for imported accounts
+    // The created accounts hold the role and school, are NOT flagged must-change (R39), and the generated password logs in.
     const row = (await t.db.query<{ school_id: string; must: boolean; role: string }>(
       `select u.school_id::text, u.must_reset_password must, r.role from users u join user_roles r on r.user_id = u.id where lower(u.email) = 'guru1@import.test'`,
     ))[0]
-    expect(row).toEqual({ school_id: s1, must: true, role: 'teacher' })
+    expect(row).toEqual({ school_id: s1, must: false, role: 'teacher' })
     const s = await login(t, 'guru1@import.test', { password: data.credentials[0]?.generatedPassword as string })
     expect(s.session.user.email).toBe('guru1@import.test')
     // import_jobs holds the run with per-row failures and no passwords.

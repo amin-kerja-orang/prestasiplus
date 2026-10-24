@@ -351,11 +351,11 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     tags: ['school-admin'],
     summary: 'Create a teacher (S11)',
     description:
-      'Creates an active teacher of the caller school (createdBy = the caller). D59b: there is no password in the request; the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters), returns it once in credential.password and sets mustChangePassword true (the first login forces a change, BE-03). The password is never logged, never stored in plain text and never re-served; the 201 carries Cache-Control: no-store and Pragma: no-cache (D57b). LOST RESPONSE: recover with POST /admin-sekolah/guru/{id}/reset-password; the optional Idempotency-Key header prevents a duplicate account on a retry (a replayed key answers 409 CONFLICT, proposed). The e-mail is unique across all schools (accepted enumeration trade-off, see POST /admin-sekolah/pelajar). Unknown and protected body keys, a password key included, are ignored (mass-assignment waiver).',
+      'Creates an active teacher of the caller school (createdBy = the caller). D59b: there is no password in the request; the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters), returns it once in credential.password and returns mustChangePassword false (R39: no forced change; the teacher can change the password in /profile/edit). The password is never logged, never stored in plain text and never re-served; the 201 carries Cache-Control: no-store and Pragma: no-cache (D57b). LOST RESPONSE: recover with POST /admin-sekolah/guru/{id}/reset-password; the optional Idempotency-Key header prevents a duplicate account on a retry (a replayed key answers 409 CONFLICT, proposed). The e-mail is unique across all schools (accepted enumeration trade-off, see POST /admin-sekolah/pelajar). Unknown and protected body keys, a password key included, are ignored (mass-assignment waiver).',
     request: { headers: [csrf, IdempotencyKey], body: body(SchoolAdminTeacherCreateRequestSchema) },
     responses: {
       201: {
-        ...json(SchoolAdminTeacherCreatedResultSchema, 'Created, with the one-time credential and mustChangePassword true; status "Pengguna berjaya didaftarkan.". Never cached.'),
+        ...json(SchoolAdminTeacherCreatedResultSchema, 'Created, with the one-time credential and mustChangePassword false (R39); status "Pengguna berjaya didaftarkan.". Never cached.'),
         headers: NO_STORE,
       },
       401: UNAUTHORIZED,
@@ -470,14 +470,14 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     tags: ['school-admin'],
     summary: 'Create a pupil (S12)',
     description:
-      'Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. D55c: the response shows the password once, to the creating admin only (never logged, never stored in plain text, not retrievable again) and returns mustChangePassword true: the account is flagged so the first login forces a password change (BE-03). The 201 carries Cache-Control: no-store (D57b). ' +
+      'Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. D55c: the response shows the password once, to the creating admin only (never logged, never stored in plain text, not retrievable again) and returns mustChangePassword false (R39): the account is not flagged, so the first login does not force a password change; the pupil can change it in /profile/edit. The 201 carries Cache-Control: no-store (D57b). ' +
       'LOST RESPONSE: the credential is never re-served. If the 201 is lost, a retry answers 422 "The email has already been taken." and the password is gone; recover with POST /admin-sekolah/pelajar/{id}/reset-password (the admin sets a new password). The server must not store the plaintext to support a retry. The optional Idempotency-Key header prevents a duplicate account on a retry: a replayed key answers 409 CONFLICT and never re-serves the credential. ' +
       'ACCEPTED TRADE-OFF (e-mail enumeration): the e-mail is unique across all schools, so the 422 "The email has already been taken." reveals that an address is registered somewhere (a pupil of another school included). It cannot be hidden without dropping uniqueness; it is mitigated by the 429 rate limit and the audit trail. ' +
-      'D59b: there is no password in the request and no shared default password: the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters; exact policy in the implementation card) and returns it once in credential.password with mustChangePassword true. Mass assignment waiver: role, schoolId, isActive, grade, icNumber and a password key in the body are ignored, never bound (BE-NFR-05 exception, mock fidelity). 429 RATE_LIMITED guards bulk account creation.',
+      'D59b: there is no password in the request and no shared default password: the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters; exact policy in the implementation card) and returns it once in credential.password with mustChangePassword false (R39). Mass assignment waiver: role, schoolId, isActive, grade, icNumber and a password key in the body are ignored, never bound (BE-NFR-05 exception, mock fidelity). 429 RATE_LIMITED guards bulk account creation.',
     request: { headers: [csrf, IdempotencyKey], body: body(SchoolAdminPupilCreateRequestSchema) },
     responses: {
       201: {
-        ...json(SchoolAdminPupilCreatedResultSchema, 'Created, with the one-time credential and mustChangePassword true. Never cached.'),
+        ...json(SchoolAdminPupilCreatedResultSchema, 'Created, with the one-time credential and mustChangePassword false (R39). Never cached.'),
         headers: NO_STORE,
       },
       401: UNAUTHORIZED,
