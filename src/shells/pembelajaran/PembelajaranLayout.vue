@@ -143,16 +143,20 @@ watch(
 /**
  * Cikgu Alesa floating button: it stays out of the way while the learner reads. Scrolling down
  * tucks it away (it never sits on top of text or controls mid-page); scrolling up, reaching the
- * top or the end of the page, or focusing it brings it back. The bottom padding of the page body
- * clears it, so the last content is never under it either.
+ * top or the end of the page, or focusing it brings it back (below lg only; on desktop it always
+ * shows). A spacer at the end of the page body clears it, so the last content is never under it.
  */
 const alesaHidden = ref(false)
 let lastScrollTop = 0
+/** The scrolling panel body (parent of `#kandungan`), looked up once and kept. */
+let scrollBody: HTMLElement | null = null
+const bodyEl = (): HTMLElement | null =>
+  (scrollBody ??= document.getElementById('kandungan')?.parentElement ?? null)
 const SCROLL_STEP = 4
 const SCROLL_TOP_ZONE = 48
 const SCROLL_END_ZONE = 24
 function onBodyScroll(event: Event): void {
-  const body = document.getElementById('kandungan')?.parentElement
+  const body = bodyEl()
   if (!body || event.target !== body) return
   const top = body.scrollTop
   const delta = top - lastScrollTop
@@ -171,7 +175,7 @@ watch(
   () => {
     alesaHidden.value = false
     lastScrollTop = 0
-    void nextTick(() => document.getElementById('kandungan')?.parentElement?.scrollTo(0, 0))
+    void nextTick(() => bodyEl()?.scrollTo(0, 0))
   },
 )
 
@@ -266,7 +270,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
       data-layout="pembelajaran"
       data-portal="pembelajaran"
       :data-role="role ?? undefined"
-      @scroll.capture="onBodyScroll"
+      @scroll.capture.passive="onBodyScroll"
     >
       <a
         href="#kandungan"
@@ -510,7 +514,15 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 <p>Didikan penuh ❤️ dari Malaysia 🇲🇾</p>
               </footer>
               <!-- Clearance for the bottom nav (< lg) and the floating Cikgu Alesa button -->
-              <div class="h-[calc(11rem+env(safe-area-inset-bottom))] shrink-0 lg:h-24" aria-hidden="true" />
+              <div
+                class="shrink-0"
+                :class="
+                  showAlesa
+                    ? 'h-[calc(11rem+env(safe-area-inset-bottom))] lg:h-20'
+                    : 'h-[calc(6rem+env(safe-area-inset-bottom))] lg:h-12'
+                "
+                aria-hidden="true"
+              />
             </main>
           </template>
         </UDashboardPanel>
@@ -694,10 +706,17 @@ const chipClass = (chip: unknown, active: boolean): string =>
     opacity var(--transition-duration-base),
     transform var(--transition-duration-base);
 }
-[data-alesa][data-hidden='true'] {
-  opacity: 0;
-  transform: scale(0.75);
-  pointer-events: none;
+/* Tucked away below lg only; on desktop the button stays visible. */
+@media (width < 64rem) {
+  [data-alesa][data-hidden='true'] {
+    opacity: 0;
+    transform: scale(0.75);
+    pointer-events: none;
+  }
+}
+/* Keyboard focus brings it back at once, with no fade. */
+[data-alesa]:focus-visible {
+  transition: none;
 }
 @media (prefers-reduced-motion: reduce) {
   [data-alesa] {
