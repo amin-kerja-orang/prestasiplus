@@ -39,7 +39,7 @@ const loadFailed = computed(() => isLoadError(error.value))
 <template>
   <DsPage
     :back-to="`/pksk/level/${level}`"
-    back-label="Kembali ke Dashboard"
+    back-label="Kembali ke Papan Pemuka"
     data-testid="pksk-domains"
   >
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />

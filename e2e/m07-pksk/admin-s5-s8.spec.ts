@@ -102,7 +102,7 @@ test.describe('M07 S5 question list', MODULE, () => {
       'Soalan',
       'Bahagian',
       'Domain',
-      'Level',
+      'Tahap',
       'Status',
       'Tindakan',
     ])
@@ -171,7 +171,7 @@ test.describe('M07 S5 question list', MODULE, () => {
       'C - Esei',
     ])
     await expect(page.getByTestId('filter-level').locator('option')).toHaveText([
-      'Semua Level',
+      'Semua Tahap',
       'Tingkatan 1',
       'Tingkatan 4',
     ])

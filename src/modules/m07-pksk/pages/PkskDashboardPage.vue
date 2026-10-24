@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S2 `/pksk/level/:level` "Dashboard PKSK - {L}" (M07-T2; FR-M07-06..10, FN-M07-1.2.*): readiness
+ * S2 `/pksk/level/:level` "Papan Pemuka PKSK - {L}" (M07-T2; FR-M07-06..10, FN-M07-1.2.*): readiness
  * hero, the three shortcut cards and "Penguasaan Domain" (Bahagian B domains only). The level gate
  * (403 -> `/pksk`) is in `usePkskData`.
  */
@@ -22,7 +22,7 @@ watch(
   () => props.level,
   (level) => {
     pageMeta.setHeader({
-      title: `Dashboard PKSK - ${level}`,
+      title: `Papan Pemuka PKSK - ${level}`,
       subtitle: 'Pantau kemajuan latihan anda',
     })
   },

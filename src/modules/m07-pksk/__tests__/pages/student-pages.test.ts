@@ -220,7 +220,7 @@ describe('PkskDomainsPage (S3)', () => {
         level: 'T1',
       },
     )
-    expect(w.get('[data-ds=back-link]').text()).toBe('Kembali ke Dashboard')
+    expect(w.get('[data-ds=back-link]').text()).toBe('Kembali ke Papan Pemuka')
     expect(w.get('[data-ds=back-link]').attributes('href')).toBe('/pksk/level/T1')
     expect(w.get('[data-testid=section-B] h2').text()).toBe('Kecerdasan Intelek')
     expect(w.get('[data-testid=section-B] [data-testid=section-badge]').text()).toBe('B')

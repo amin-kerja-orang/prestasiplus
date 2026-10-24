@@ -141,9 +141,9 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
       await expect(page.getByTestId('badge-aktif')).toHaveCount(2)
       await page.getByTestId('start-T1').click()
       await expect(page).toHaveURL(/\/pksk\/level\/T1$/)
-      await expect(title(page)).toHaveText('Dashboard PKSK - T1')
+      await expect(title(page)).toHaveText('Papan Pemuka PKSK - T1')
       await gotoApp('/pksk/level/T4')
-      await expect(title(page)).toHaveText('Dashboard PKSK - T4')
+      await expect(title(page)).toHaveText('Papan Pemuka PKSK - T4')
     },
   )
 
@@ -173,7 +173,7 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
       await gotoApp(`/pksk/level/${lvl}`)
       await expect(page.getByTestId('score')).toBeVisible()
       await expectTabTitle(page, TAB)
-      await expect(title(page)).toHaveText(`Dashboard PKSK - ${lvl}`)
+      await expect(title(page)).toHaveText(`Papan Pemuka PKSK - ${lvl}`)
       await expect(subtitle(page)).toHaveText('Pantau kemajuan latihan anda')
       const back = page.getByTestId('back-link')
       await expect(back).toHaveText('Kembali ke PKSK')
@@ -273,7 +273,7 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
       await expect(title(page)).toHaveText(`Domain PKSK - ${lvl}`)
       await expect(subtitle(page)).toHaveText('Pilih domain untuk latih tubi')
       const back = page.getByTestId('back-link')
-      await expect(back).toHaveText('Kembali ke Dashboard')
+      await expect(back).toHaveText('Kembali ke Papan Pemuka')
       await expect(back).toHaveAttribute('href', `/pksk/level/${lvl}`)
 
       const sections = [
@@ -334,7 +334,7 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
     await expect(title(page)).toHaveText('Sejarah PKSK - T1')
     await expect(subtitle(page)).toHaveText('Lihat prestasi lepas')
     const back = page.getByTestId('back-link')
-    await expect(back).toHaveText('Kembali ke Dashboard')
+    await expect(back).toHaveText('Kembali ke Papan Pemuka')
     await expect(back).toHaveAttribute('href', '/pksk/level/T1')
     await expect(page.locator('th')).toHaveText(['Tarikh', 'Skor', 'Gred'])
     const rows = page.getByTestId('history-row')
@@ -429,7 +429,7 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
   )
 
   test(
-    'E2E-M07-10 Level gate: no access redirects every level route to /pksk',
+    'E2E-M07-10 Tahap gate: no access redirects every level route to /pksk',
     provisional('the gate is INFERRED, L-1'),
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs('pelajar2@demo.test')
@@ -460,7 +460,7 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
     for (const lvl of ['T1', 'T4']) {
       await gotoApp(`/pksk/level/${lvl}`)
       await expect(page).toHaveURL(new RegExp(`/pksk/level/${lvl}$`))
-      await expect(title(page)).toHaveText(`Dashboard PKSK - ${lvl}`)
+      await expect(title(page)).toHaveText(`Papan Pemuka PKSK - ${lvl}`)
     }
   })
 

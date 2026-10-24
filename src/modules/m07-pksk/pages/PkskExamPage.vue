@@ -59,7 +59,7 @@ async function submit(): Promise<void> {
 <template>
   <DsPage
     :back-to="`/pksk/level/${level}`"
-    back-label="Kembali ke Dashboard"
+    back-label="Kembali ke Papan Pemuka"
     class="max-w-2xl"
     data-testid="pksk-exam"
     data-provisional="L-3"
@@ -68,7 +68,7 @@ async function submit(): Promise<void> {
 
     <form v-else-if="data" class="flex flex-col gap-6" novalidate @submit.prevent="submit">
       <DsQuizHeader
-        close-label="Kembali ke Dashboard"
+        close-label="Kembali ke Papan Pemuka"
         :progress="progress"
         progress-label="Kemajuan peperiksaan"
         @close="router.push(`/pksk/level/${level}`)"
