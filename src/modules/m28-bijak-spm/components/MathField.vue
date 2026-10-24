@@ -14,6 +14,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 
 import { useClickOutside } from '@/composables/useClickOutside'
+import { DsCluster, DsStack, DsSurface, DsText } from '@/ds'
 
 import { latexToFriendly, plainToLatex, previewLatex } from '../domain/math-expr'
 import { openKeypad } from '../lib/keypad-owner'
@@ -38,7 +39,12 @@ const props = withDefaults(
 const emit = defineEmits<{ 'update:modelValue': [string]; remove: [] }>()
 
 const id = useId()
-const wrap = ref<HTMLElement | null>(null)
+const MD_PX = 768
+const MEDIA_FEATURE = 'min-width'
+const WIDE_QUERY = `(${MEDIA_FEATURE}: ${MD_PX}px)`
+const previewComp = ref<{ $el: HTMLElement } | null>(null)
+const wrapComp = ref<{ $el: HTMLElement } | null>(null)
+const wrap = computed<HTMLElement | null>(() => wrapComp.value?.$el ?? null)
 const dock = ref<HTMLElement | null>(null)
 const spacer = ref<HTMLElement | null>(null)
 /** From `md` (768 px) the keypad is inline and sticky; below it is a bottom sheet over the footer. */
@@ -49,7 +55,7 @@ const onWide = (e: MediaQueryListEvent): void => {
 }
 onMounted(() => {
   if (typeof window.matchMedia !== 'function') return
-  wideQuery = window.matchMedia('(min-width: 768px)')
+  wideQuery = window.matchMedia(WIDE_QUERY)
   wide.value = wideQuery.matches
   wideQuery.addEventListener('change', onWide)
 })
@@ -138,7 +144,7 @@ async function revealField(): Promise<void> {
   const free = (fixed ? rect.top : area.bottom - rect.height) - 8
   const f = field.getBoundingClientRect()
   const top = area.top + pinnedTop(sc, f.left + f.width / 2) + 4
-  const last = (!wide.value && field) || box.querySelector('[data-testid=math-preview]') || field
+  const last = (!wide.value && field) || previewComp.value?.$el || field
   const delta =
     f.top < top
       ? f.top - top
@@ -207,9 +213,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="wrap" class="flex flex-col gap-2" data-testid="math-field" @keydown.esc="onEsc">
-    <label v-if="!hideLabel" :for="id" class="text-label text-toned">{{ label }}</label>
-    <div class="flex items-center gap-2">
+  <DsStack ref="wrapComp" gap="xs" data-testid="math-field" @keydown.esc="onEsc">
+    <DsText v-if="!hideLabel" as="label" variant="label" tone="toned" :for="id">{{ label }}</DsText>
+    <DsCluster gap="xs" :wrap="false">
       <UInput
         :id="id"
         :model-value="text"
@@ -221,7 +227,7 @@ onBeforeUnmount(() => {
         autocapitalize="off"
         spellcheck="false"
         size="xl"
-        class="min-w-0 flex-1"
+        class="min-w-0 grow"
         data-testid="math-input"
         @update:model-value="onInput"
         @keydown.enter.prevent
@@ -231,7 +237,7 @@ onBeforeUnmount(() => {
         color="neutral"
         variant="soft"
         icon="i-ph-keyboard"
-        class="size-11 shrink-0 justify-center rounded-2xl"
+        class="size-11 shrink-0 justify-center"
         :aria-label="keypad ? 'Tutup papan kekunci matematik' : 'Buka papan kekunci matematik'"
         :aria-pressed="keypad"
         :disabled="disabled"
@@ -244,20 +250,23 @@ onBeforeUnmount(() => {
         color="neutral"
         variant="ghost"
         icon="i-ph-x"
-        class="size-11 shrink-0 justify-center rounded-2xl"
+        class="size-11 shrink-0 justify-center"
         :aria-label="`Buang ${label}`"
         :disabled="disabled"
         @click="emit('remove')"
       />
-    </div>
-    <p
+    </DsCluster>
+    <DsSurface
       v-if="hasContent && (wide || !keypad)"
-      class="rounded-xl bg-muted px-3 py-2 text-body text-highlighted"
+      ref="previewComp"
+      level="soft"
+      padding="sm"
+      radius="chip"
       data-testid="math-preview"
     >
-      <span class="sr-only">Pratonton: </span>
+      <DsText as="span" variant="body" sr-only>Pratonton: </DsText>
       <RichText :text="preview" math-only />
-    </p>
+    </DsSurface>
     <template v-if="keypad">
       <!-- Below md the keypad is a fixed bottom sheet; this spacer keeps the page scrollable past it. -->
       <div
@@ -269,35 +278,60 @@ onBeforeUnmount(() => {
       />
       <div
         ref="dock"
-        class="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-1 bg-accented shadow-bar-up md:sticky md:inset-x-auto md:bottom-0 md:z-20 md:bg-default md:shadow-none"
+        class="fixed inset-x-0 bottom-0 z-30 md:sticky"
         data-testid="math-keyboard-dock"
       >
-        <!-- Sheet display: the preview of the line next to the close key (the footer is under the sheet). -->
-        <div v-if="!wide" class="flex items-center gap-2 px-2 pt-1.5">
-          <p
-            class="flex min-h-11 min-w-0 flex-1 items-center overflow-x-auto rounded-xl bg-default px-3 text-body text-highlighted"
-            data-testid="math-preview"
-          >
-            <template v-if="hasContent">
-              <span class="sr-only">Pratonton: </span>
-              <RichText :text="preview" math-only />
-            </template>
-          </p>
-          <UButton
-            type="button"
-            color="neutral"
-            variant="subtle"
-            icon="i-ph-caret-down"
-            class="min-h-11 shrink-0 justify-center rounded-xl px-3 learner:min-h-11 learner:rounded-xl learner:px-3"
-            aria-label="Tutup papan kekunci"
-            data-testid="math-keyboard-close"
-            @mousedown.prevent
-            @click="closeKeypad()"
-            >Tutup</UButton
-          >
-        </div>
-        <MathKeyboard label="Papan kekunci matematik" @press="onKey" @close="closeKeypad(true)" />
+        <DsSurface
+          level="accented"
+          padding="none"
+          :radius="wide ? 'card' : 'none'"
+          shadow="none"
+          class="mx-auto w-full max-w-md"
+        >
+          <div class="p-1.5">
+            <DsStack gap="2xs">
+              <!-- Sheet display: the preview of the line next to the close key (the footer is under the sheet). -->
+              <DsCluster v-if="!wide" gap="xs" :wrap="false">
+                <DsSurface
+                  level="raised"
+                  padding="none"
+                  radius="chip"
+                  :clip="false"
+                  class="grow overflow-x-auto"
+                  data-testid="math-display"
+                >
+                  <div
+                    class="flex min-h-11 items-center px-3"
+                    :data-testid="hasContent ? 'math-preview' : undefined"
+                  >
+                    <template v-if="hasContent">
+                      <DsText as="span" variant="body" sr-only>Pratonton: </DsText>
+                      <RichText :text="preview" math-only />
+                    </template>
+                  </div>
+                </DsSurface>
+                <UButton
+                  type="button"
+                  color="neutral"
+                  variant="subtle"
+                  icon="i-ph-caret-down"
+                  class="min-h-11 shrink-0 learner:min-h-11"
+                  aria-label="Tutup papan kekunci"
+                  data-testid="math-keyboard-close"
+                  @mousedown.prevent
+                  @click="closeKeypad()"
+                  >Tutup</UButton
+                >
+              </DsCluster>
+              <MathKeyboard
+                label="Papan kekunci matematik"
+                @press="onKey"
+                @close="closeKeypad(true)"
+              />
+            </DsStack>
+          </div>
+        </DsSurface>
       </div>
     </template>
-  </div>
+  </DsStack>
 </template>

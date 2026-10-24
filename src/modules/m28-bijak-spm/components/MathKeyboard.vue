@@ -5,9 +5,11 @@
  * comma, %, ±, inequalities, =; both over `( ) π °` and a layer key) above a number block
  * (7 8 9 DEL AC / 4 5 6 × ÷ / 1 2 3 + − / 0 . ×10ˣ cursor). Keys are tab-reachable buttons; they
  * insert friendly notation at the caret of the field that owns the keypad. The key map lives in
- * `lib/math-keys.ts`.
+ * `lib/math-keys.ts`. Built from DS layout primitives only (the owner draws the surface).
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+
+import { DsGrid, DsStack } from '@/ds'
 
 import {
   FUNCTION_ROWS,
@@ -18,6 +20,7 @@ import {
   SHARED_KEYS,
   SYMBOL_ROWS,
 } from '../lib/math-keys'
+import RichText from './RichText.vue'
 
 export type { KeyPress }
 
@@ -25,11 +28,14 @@ defineProps<{ label: string }>()
 const emit = defineEmits<{ press: [KeyPress]; close: [] }>()
 
 const symbols = ref(false)
+/** The fraction key shows an empty stacked fraction (KaTeX), like the box-over-box key on a Casio. */
+const FRAC_GLYPH = '\\tfrac{\\square}{\\square}'
 
 type ButtonColor = 'primary' | 'neutral' | 'warning'
 type ButtonVariant = 'soft' | 'solid' | 'subtle'
+type Tone = KeyTone | 'layer'
 /** Tone of a key: function and symbol keys are primary-tinted, operators solid, DEL / AC warning. */
-const TONE: Record<KeyTone, { color: ButtonColor; variant: ButtonVariant }> = {
+const TONE: Record<Tone, { color: ButtonColor; variant: ButtonVariant }> = {
   fn: { color: 'primary', variant: 'soft' },
   sci: { color: 'primary', variant: 'soft' },
   sym: { color: 'primary', variant: 'soft' },
@@ -37,16 +43,58 @@ const TONE: Record<KeyTone, { color: ButtonColor; variant: ButtonVariant }> = {
   op: { color: 'primary', variant: 'solid' },
   del: { color: 'warning', variant: 'soft' },
   nav: { color: 'neutral', variant: 'soft' },
+  layer: { color: 'neutral', variant: 'subtle' },
 }
 
-function press(k: MathKey): void {
-  emit('press', k.action ? { action: k.action } : { insert: k.insert, cursor: k.cursor })
+interface KeyView {
+  id: string
+  label: string
+  aria: string
+  tone: Tone
+  key?: MathKey
+}
+
+/** The layer key sits at the end of the shared row; its label names the layer it switches to. */
+const layerKey = computed<KeyView>(() => ({
+  id: 'layer',
+  label: symbols.value ? 'Fungsi' : 'Simbol',
+  aria: symbols.value ? 'Papar kekunci fungsi' : 'Papar kekunci simbol',
+  tone: 'layer',
+}))
+
+const view = (k: MathKey): KeyView => ({
+  id: k.id,
+  label: k.label,
+  aria: k.aria,
+  tone: k.tone,
+  key: k,
+})
+
+/** Two groups of 5-column rows: the function area, then the number block. */
+const groups = computed<KeyView[][][]>(() => [
+  [
+    ...(symbols.value ? SYMBOL_ROWS : FUNCTION_ROWS).map((r) => r.map(view)),
+    [...SHARED_KEYS.map(view), layerKey.value],
+  ],
+  NUMBER_ROWS.map((r) => r.map(view)),
+])
+
+function press(k: KeyView): void {
+  if (!k.key) {
+    symbols.value = !symbols.value
+    return
+  }
+  emit(
+    'press',
+    k.key.action ? { action: k.key.action } : { insert: k.key.insert, cursor: k.key.cursor },
+  )
 }
 </script>
 
 <template>
-  <div
-    class="mx-auto flex w-full max-w-md flex-col gap-1 rounded-card bg-accented p-1.5 sm:gap-1.5 sm:p-2"
+  <DsStack
+    gap="2xs"
+    class="mx-auto w-full max-w-md"
     role="group"
     :aria-label="label"
     data-testid="math-keyboard"
@@ -55,85 +103,38 @@ function press(k: MathKey): void {
     <span class="sr-only" aria-live="polite" data-testid="math-layer-status">{{
       symbols ? 'Lapisan simbol' : 'Lapisan fungsi'
     }}</span>
-    <div
-      class="flex flex-col gap-1 sm:gap-1.5"
-      :data-testid="symbols ? 'math-area-simbol' : 'math-area-fungsi'"
+    <DsStack
+      v-for="(rows, g) in groups"
+      :key="g"
+      gap="2xs"
+      :data-testid="
+        g === 1 ? 'math-area-number' : symbols ? 'math-area-simbol' : 'math-area-fungsi'
+      "
     >
-      <div
-        v-for="(row, r) in symbols ? SYMBOL_ROWS : FUNCTION_ROWS"
-        :key="`${symbols}-${r}`"
-        class="grid grid-cols-5 gap-1 sm:gap-1.5"
-      >
+      <DsGrid v-for="(row, r) in rows" :key="`${symbols}-${r}`" :cols="5" gap="2xs">
         <UButton
           v-for="k in row"
           :key="k.id"
           type="button"
+          block
           :color="TONE[k.tone].color"
           :variant="TONE[k.tone].variant"
-          class="min-h-11 w-full min-w-0 justify-center rounded-xl px-0 text-label learner:min-h-11 learner:rounded-xl learner:px-0 learner:text-label"
+          :class="
+            k.tone === 'num' || k.tone === 'op'
+              ? 'min-h-11 sm:min-h-12 md:min-h-14 learner:min-h-11 sm:learner:min-h-12 md:learner:min-h-14'
+              : 'min-h-11 learner:min-h-11'
+          "
+          class="px-0 learner:px-0"
           :aria-label="k.aria"
           :data-key="k.id"
+          :data-testid="k.id === 'layer' ? 'math-layer' : undefined"
           @mousedown.prevent
           @click="press(k)"
         >
-          <span
-            v-if="k.id === 'frac'"
-            class="flex flex-col items-center gap-0.5"
-            aria-hidden="true"
-          >
-            <span class="size-2 rounded-none bg-primary-t opacity-60" />
-            <span class="h-0.5 w-4 bg-primary-t" />
-            <span class="size-2 rounded-none bg-primary-t opacity-60" />
-          </span>
+          <RichText v-if="k.id === 'frac'" :text="FRAC_GLYPH" math-only />
           <template v-else>{{ k.label }}</template>
         </UButton>
-      </div>
-      <div class="grid grid-cols-5 gap-1 sm:gap-1.5">
-        <UButton
-          v-for="k in SHARED_KEYS"
-          :key="k.id"
-          type="button"
-          :color="TONE[k.tone].color"
-          :variant="TONE[k.tone].variant"
-          class="min-h-11 w-full min-w-0 justify-center rounded-xl px-0 text-label learner:min-h-11 learner:rounded-xl learner:px-0 learner:text-label"
-          :aria-label="k.aria"
-          :data-key="k.id"
-          @mousedown.prevent
-          @click="press(k)"
-          >{{ k.label }}</UButton
-        >
-        <UButton
-          type="button"
-          color="neutral"
-          variant="subtle"
-          class="min-h-11 w-full min-w-0 justify-center rounded-xl px-0 text-caption learner:min-h-11 learner:rounded-xl learner:px-0 learner:text-caption"
-          :aria-label="symbols ? 'Papar kekunci fungsi' : 'Papar kekunci simbol'"
-          data-key="layer"
-          data-testid="math-layer"
-          @mousedown.prevent
-          @click="symbols = !symbols"
-          >{{ symbols ? 'Fungsi' : 'Simbol' }}</UButton
-        >
-      </div>
-    </div>
-
-    <div class="mt-1 flex flex-col gap-1 sm:gap-1.5" data-testid="math-area-number">
-      <div v-for="(row, r) in NUMBER_ROWS" :key="r" class="grid grid-cols-5 gap-1 sm:gap-1.5">
-        <UButton
-          v-for="k in row"
-          :key="k.id"
-          type="button"
-          :color="TONE[k.tone].color"
-          :variant="TONE[k.tone].variant"
-          class="min-h-11 w-full min-w-0 justify-center rounded-xl px-0 sm:min-h-12 md:min-h-14 learner:min-h-11 learner:rounded-xl learner:px-0 sm:learner:min-h-12 md:learner:min-h-14"
-          :class="k.tone === 'num' || k.tone === 'op' ? 'text-heading' : 'text-label'"
-          :aria-label="k.aria"
-          :data-key="k.id"
-          @mousedown.prevent
-          @click="press(k)"
-          >{{ k.label }}</UButton
-        >
-      </div>
-    </div>
-  </div>
+      </DsGrid>
+    </DsStack>
+  </DsStack>
 </template>
