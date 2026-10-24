@@ -113,7 +113,7 @@ function build(): Map<string, Row[]> {
   put('coin_transactions', ['earn', 'earn', 'spend', 'bonus', 'earn', 'mystery'].map((type, i) => ({
     id: i + 1, user_id: (i % 4) + 1, type, source: 'practice', amount: 5, balance_after: 5 * (i + 1), created_at: T0,
   })))
-  put('challenges', [{ id: 1, created_by: null, classroom_id: null, challenge_type: 'harian', title: 'Cabaran Contoh', target_value: 5 }])
+  put('challenges', [{ id: 1, created_by: null, classroom_id: null, challenge_type: 'harian', title: 'Cabaran Contoh', target_value: 5, reward_syiling: 10, reward_xp: 5, difficulty: 'medium', is_active: '1', sort_order: 1 }])
   put('challenge_user', [{ challenge_id: 1, user_id: 1, progress: 3, completed_at: T0, claimed_on: '2026-01-02' }])
   put('achievements', [{ id: 1, name: 'Pencapaian Contoh', criteria: 'Contoh' }])
   put('achievement_user', [{ achievement_id: 1, user_id: 1, unlocked_at: T0 }])

@@ -45,11 +45,15 @@ async function plant(): Promise<void> {
     (1, 'Gangsa', 'a,b', 1), (2, 'PERAK', null, 2), (3, 'Tidak Wujud', null, 3)`)
   await q(`insert into staging_cloud.achievements (id, name, criteria) values
     (1, 'latih tubi pertama', 'Contoh'), (2, 'Pencapaian Baharu', 'Syarat contoh')`)
-  await q(`insert into staging_cloud.challenges (id, created_by, classroom_id, challenge_type, title, target_value) values
-    (1, null, null, 'quiz_count', 'Cabaran Platform', 3),
-    (2, ${u[0]}, null, 'quiz_count', 'Cabaran Guru', 3),
-    (3, null, null, 'harian', 'Jenis Tidak Dikenali', 3),
-    (4, null, null, 'accuracy', 'Tanpa Sasaran', null)`)
+  await q(`insert into staging_cloud.challenges (id, created_by, classroom_id, challenge_type, title, target_value,
+      reward_syiling, reward_xp, difficulty, is_active, sort_order) values
+    (1, null, null, 'quiz_count', 'Cabaran Platform', 3, null, null, null, null, null),
+    (2, ${u[0]}, null, 'quiz_count', 'Cabaran Guru', 3, null, null, null, null, null),
+    (3, null, null, 'harian', 'Jenis Tidak Dikenali', 3, null, null, null, null, null),
+    (4, null, null, 'accuracy', 'Tanpa Sasaran', null, null, null, null, null, null),
+    (5, null, null, 'streak', 'Cabaran Ganjaran', 7, 15, 5, ' HARD ', '0', 3),
+    (6, null, null, 'time_spent', 'Kesukaran Tidak Dipetakan', 2, 1, 1, 'sukar', '1', 4),
+    (7, null, null, 'accuracy', 'Bendera Tidak Sah', 2, 1, 1, 'easy', 'mungkin', 5)`)
   await q(`insert into staging_cloud.reward_settings (id, reward_budget_sen_month, flat_quiz_reward, current_session_year, games_award_syiling)
     values (1, 300, 2, '2026', -1)`)
   await q(`insert into staging_cloud.challenge_user (challenge_id, user_id, progress, completed_at, claimed_on) values
@@ -126,11 +130,30 @@ describe('catalogue', () => {
   })
 
   it('loads platform challenges only: the teacher row is excluded, a bad type or no target is rejected', async () => {
-    const rows = await h.q<{ legacy_id: string; metric: string | null; target_value: number }>(`select legacy_id, metric, target_value from challenges order by legacy_id`)
+    const rows = await h.q<{ legacy_id: string; metric: string | null; target_value: number }>(
+      `select legacy_id, metric, target_value from challenges where legacy_id in ('1', '2', '3', '4') order by legacy_id`,
+    )
     expect(rows).toEqual([{ legacy_id: '1', metric: null, target_value: 3 }])
-    expect(recon.challenges).toEqual({ source: 4, eligible: 3, loaded: 1, rejected: 2 })
+    expect(recon.challenges).toEqual({ source: 7, eligible: 6, loaded: 3, rejected: 3 })
     expect(reject('challenges', 'UNKNOWN_ENUM', 'challenge_type')).toBe(1)
     expect(reject('challenges', 'INVALID_VALUE', 'target_value')).toBe(1)
+  })
+
+  it('stages and maps reward, xp, difficulty, flag and order (FIT-FIX OQ5); a source with none keeps the v2 defaults', async () => {
+    const rows = await h.q<{ legacy_id: string; reward_syiling: number; reward_xp: number; difficulty: string; is_active: boolean; sort_order: number }>(
+      `select legacy_id, reward_syiling, reward_xp, difficulty, is_active, sort_order from challenges order by legacy_id::int`,
+    )
+    expect(rows).toEqual([
+      { legacy_id: '1', reward_syiling: 0, reward_xp: 0, difficulty: 'medium', is_active: true, sort_order: 0 },
+      { legacy_id: '5', reward_syiling: 15, reward_xp: 5, difficulty: 'hard', is_active: false, sort_order: 3 },
+      { legacy_id: '6', reward_syiling: 1, reward_xp: 1, difficulty: 'medium', is_active: true, sort_order: 4 },
+    ])
+  })
+
+  it('rejects an invalid flag and counts an unmapped difficulty word in the notes (count only)', () => {
+    expect(reject('challenges', 'INVALID_VALUE', 'is_active')).toBe(1)
+    expect(notes['challenges.difficulty_unmapped']).toBe(1)
+    expect(Object.keys(notes).filter((k) => k.includes('sukar'))).toEqual([])
   })
 
   it('pivots reward_settings into key/value rows, adopting the seeded key', async () => {

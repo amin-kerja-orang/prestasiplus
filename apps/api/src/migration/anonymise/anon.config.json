@@ -247,7 +247,12 @@
       "classroom_id": "keep",
       "challenge_type": "keep",
       "title": "scrub-text",
-      "target_value": "keep"
+      "target_value": "keep",
+      "reward_syiling": "keep",
+      "reward_xp": "keep",
+      "difficulty": "keep",
+      "is_active": "keep",
+      "sort_order": "keep"
     },
     "challenge_user": {
       "challenge_id": "keep",

@@ -12,6 +12,7 @@ import type { AnyEntityStep, BatchContext, BatchResult } from '../../kit/runner'
 import { assertSurrogateLegacyId, quoteIdent } from '../../kit/sql'
 import type { LegacyRow } from '../../kit/upsert'
 import {
+  challengeDifficulty,
   isPlatformChallenge,
   SETTING_KEYS,
   settingEntries,
@@ -183,6 +184,7 @@ export function challengesStep(a: ActivityContext): AnyEntityStep {
     keyOf: idOf,
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
       let teacher = 0
+      let difficultyUnmapped = 0
       const items: LegacyRow[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
@@ -192,9 +194,14 @@ export function challengesStep(a: ActivityContext): AnyEntityStep {
         }
         const out = transformChallenge(row)
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
-        else items.push({ legacyId, values: out.value as unknown as Record<string, unknown> })
+        else {
+          // A difficulty word outside easy/medium/hard keeps the default `medium`; only the count is reported, never the word.
+          if (challengeDifficulty(row.difficulty).unmapped) difficultyUnmapped++
+          items.push({ legacyId, values: out.value as unknown as Record<string, unknown> })
+        }
       }
       a.notes.count('challenges.teacher_excluded', teacher)
+      if (difficultyUnmapped > 0) a.notes.count('challenges.difficulty_unmapped', difficultyUnmapped)
       const res = await upsertAndMap(
         ctx, entity, 'challenges',
         ['title', 'challenge_type', 'metric', 'target_value', 'reward_syiling', 'reward_xp', 'difficulty', 'sort_order', 'is_active', 'created_at', 'updated_at'],

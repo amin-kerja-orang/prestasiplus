@@ -8,7 +8,7 @@
  * put in a reject.
  */
 import { enumMapper, invalid, orphan } from './activity-common'
-import { ok, squash, stamps, text, type Outcome, type Staged } from './activity-common'
+import { enumKey, flag, ok, squash, stamps, text, type Outcome, type Staged } from './activity-common'
 
 // ---------------------------------------------------------------- tiers
 
@@ -50,6 +50,33 @@ export function challengeTarget(raw: string | null | undefined): number | null {
   return Number.isInteger(n) && n >= 1 && n <= 1_000_000 ? n : null
 }
 
+/** Upper bound of a challenge reward: the v2 admin bound (`MAX_AMOUNT_PER_CALL`, BE-23), so a paid reward never trips the wallet limit. */
+export const CHALLENGE_REWARD_MAX = 100_000
+const INT4_MAX = 2_147_483_647
+const INT4_MIN = -2_147_483_648
+
+/** v2 `challenges.difficulty` codes. Only the identity map is known (OD-25: never from a hunch); a Malay code is not mapped. */
+const CHALLENGE_DIFFICULTIES: ReadonlySet<string> = new Set(['easy', 'medium', 'hard'])
+
+/** A whole number given as text (a bigint column staged as text): blank is null, anything that is not a plain integer in `[min, max]` is 'invalid'. */
+function wholeNumber(raw: string | null | undefined, min: number, max: number): number | null | 'invalid' {
+  const t = text(raw)
+  if (t === null) return null
+  if (!/^-?\d{1,12}$/.test(t)) return 'invalid'
+  const n = Number(t)
+  return n >= min && n <= max ? n : 'invalid'
+}
+
+/**
+ * The difficulty from `challenges.difficulty`: `easy`, `medium` or `hard` (any case, spaces trimmed) map to themselves.
+ * Blank is `medium` and not unmapped; any other word keeps `medium` and is `unmapped` so the loader counts it (the word is never recorded).
+ */
+export function challengeDifficulty(raw: string | null | undefined): { value: string; unmapped: boolean } {
+  const key = enumKey(raw)
+  if (key === null) return { value: 'medium', unmapped: false }
+  return CHALLENGE_DIFFICULTIES.has(key) ? { value: key, unmapped: false } : { value: 'medium', unmapped: true }
+}
+
 export interface ChallengeValues {
   title: string
   challenge_type: string
@@ -64,7 +91,10 @@ export interface ChallengeValues {
   updated_at: string
 }
 
-/** Platform rows only (the caller has filtered teacher rows). `metric` stays null (OD-25); amounts take the v2 defaults (no source). */
+/**
+ * Platform rows only (the caller has filtered teacher rows). `metric` stays null (OD-25). The rewards, difficulty, flag and order come
+ * from the staged columns (FIT-FIX OQ5); a missing value takes the v2 default (0 / 0 / medium / 0 / active), an invalid one rejects the row.
+ */
 export function transformChallenge(row: Staged): Outcome<ChallengeValues> {
   const title = squash(row.title)
   if (title === null || Array.from(title).length > 200) return invalid('title')
@@ -73,16 +103,24 @@ export function transformChallenge(row: Staged): Outcome<ChallengeValues> {
   if (type.value === null) return invalid('challenge_type')
   const target = challengeTarget(row.target_value)
   if (target === null) return invalid('target_value')
+  const syiling = wholeNumber(row.reward_syiling, 0, CHALLENGE_REWARD_MAX)
+  if (syiling === 'invalid') return invalid('reward_syiling')
+  const xp = wholeNumber(row.reward_xp, 0, CHALLENGE_REWARD_MAX)
+  if (xp === 'invalid') return invalid('reward_xp')
+  const order = wholeNumber(row.sort_order, INT4_MIN, INT4_MAX)
+  if (order === 'invalid') return invalid('sort_order')
+  const active = flag(row.is_active, true)
+  if (active === 'invalid') return invalid('is_active')
   return ok({
     title,
     challenge_type: type.value,
     metric: null,
     target_value: target,
-    reward_syiling: 0,
-    reward_xp: 0,
-    difficulty: 'medium',
-    sort_order: 0,
-    is_active: true,
+    reward_syiling: syiling ?? 0,
+    reward_xp: xp ?? 0,
+    difficulty: challengeDifficulty(row.difficulty).value,
+    sort_order: order ?? 0,
+    is_active: active,
     ...stamps(row),
   })
 }
