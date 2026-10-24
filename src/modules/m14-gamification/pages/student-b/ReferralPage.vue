@@ -2,7 +2,7 @@
 /**
  * S16 `/gamification/referral` "Rujuk Kawan, Dapat Syiling!" (M14-T2b; FR-M14-56..59, BR-M14-18/19;
  * FN-M14-7.1.*). Reward tiles (50 / 25), the viewer's code with "Salin Kod" ("✓ Disalin!"),
- * WhatsApp and Telegram links (new tab), "Salin Link" ("✓ Link Disalin!") and the three statistics.
+ * WhatsApp and Telegram links (new tab), "Salin Pautan" ("✓ Pautan Disalin!") and the three statistics.
  * A copied label stays until the page is reloaded (as live).
  */
 import { ref } from 'vue'

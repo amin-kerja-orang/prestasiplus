@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** S12 "📊 Kadar Penukaran Mengikut Tier" + tip (FN-M14-3.1.6, 3.1.7; FR-M14-32). */
+/** S12 "📊 Kadar Penukaran Mengikut Peringkat" + tip (FN-M14-3.1.6, 3.1.7; FR-M14-32). */
 import { formatCount } from '@/lib/number'
 
 import type { TierGridItem } from '../../api'
@@ -11,7 +11,7 @@ defineProps<{ tiers: readonly TierGridItem[] }>()
   <UCard class="min-w-0" data-testid="s12-rates-card">
     <div class="flex flex-col gap-4">
       <h2 class="font-display text-subheading font-bold text-highlighted">
-        📊 Kadar Penukaran Mengikut Tier
+        📊 Kadar Penukaran Mengikut Peringkat
       </h2>
       <ul class="flex flex-col gap-2">
         <li
@@ -39,8 +39,8 @@ defineProps<{ tiers: readonly TierGridItem[] }>()
       </ul>
       <UAlert color="info" variant="subtle" data-testid="s12-tip">
         <template #description>
-          💡 <strong>Tips:</strong> Naik tier untuk dapatkan kadar penukaran yang lebih baik!
-          Semakin tinggi tier, semakin sedikit syiling diperlukan untuk 1 token.
+          💡 <strong>Petua:</strong> Naik peringkat untuk dapatkan kadar penukaran yang lebih baik!
+          Semakin tinggi peringkat, semakin sedikit syiling diperlukan untuk 1 token.
         </template>
       </UAlert>
     </div>

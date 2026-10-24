@@ -79,7 +79,7 @@ const titleChip = computed(() =>
           :model-value="gamClampPct(pct)"
           :max="100"
           color="secondary"
-          aria-label="Kemajuan ke tier seterusnya"
+          aria-label="Kemajuan ke peringkat seterusnya"
           :data-value="pct"
           data-testid="s11-next-bar"
         />

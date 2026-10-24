@@ -298,7 +298,7 @@ test.describe('S12 convert', MODULE, () => {
     await expect(tiers.nth(1)).toContainText('40')
     await expect(tiers.nth(1)).toContainText('syiling/token')
     await expect(text(page, 's12-tip')).toContainText(
-      'Naik tier untuk dapatkan kadar penukaran yang lebih baik!',
+      'Naik peringkat untuk dapatkan kadar penukaran yang lebih baik!',
     )
     await expectTouchTarget(text(page, 's12-quick-rate'))
     await expectTouchTarget(text(page, 's12-submit'))

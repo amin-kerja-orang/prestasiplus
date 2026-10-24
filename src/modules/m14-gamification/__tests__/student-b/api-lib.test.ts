@@ -103,7 +103,7 @@ describe('kadkongsi-lib', () => {
   })
 
   it('capitalises the English tier key', () => {
-    expect(tierName('bronze')).toBe('Bronze')
+    expect(tierName('bronze')).toBe('Gangsa')
   })
 
   it('builds the four card texts (DV-M14-03 inserts the ranking value)', () => {

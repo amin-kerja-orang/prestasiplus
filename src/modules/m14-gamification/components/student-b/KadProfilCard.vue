@@ -47,7 +47,7 @@ defineProps<{ data: ShareCards }>()
         >{{ data.profile.tierIcon }} {{ tierName(data.profile.tierKey) }}</span
       >
       <span class="rounded-full bg-white/20 px-3 py-1" data-testid="kad-profil-level"
-        >Lvl {{ data.profile.level }}</span
+        >Tahap {{ data.profile.level }}</span
       >
       <span class="rounded-full bg-white/20 px-3 py-1" data-testid="kad-profil-syiling"
         >🪙 {{ formatNumber(data.profile.currentSyiling) }}</span

@@ -92,7 +92,7 @@ describe('S12 convert (AC-M14-07, 08)', () => {
     expect(tiers[1]!.text()).toContain('500+ syiling')
     expect(tiers[1]!.text()).toContain('syiling/token')
     expect(t('s12-tip').text().replace(/\s+/g, ' ')).toContain(
-      'Tips: Naik tier untuk dapatkan kadar penukaran yang lebih baik!',
+      'Petua: Naik peringkat untuk dapatkan kadar penukaran yang lebih baik!',
     )
   })
 
