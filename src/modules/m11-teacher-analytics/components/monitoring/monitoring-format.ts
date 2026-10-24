@@ -10,7 +10,7 @@ import type { TahapKey, TopicBadge } from '../../api/types'
 
 /**
  * A failed CSV export (401 / 403 / 429 / 5xx / offline) shows this toast, never the API text (DV-M11-32).
- * SRS M11 §8.2 request-error copy (= M01 GENERIC_ERROR; PROPOSED).
+ * The same copy as SRS M11 §8.2 S1/S6 request errors (= M01 GENERIC_ERROR; PROPOSED).
  */
 export const EXPORT_ERROR = 'Ralat berlaku. Sila cuba lagi.'
 
