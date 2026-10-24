@@ -340,7 +340,7 @@ async function submit(): Promise<void> {
             </h3>
             <ul class="flex flex-col gap-2 text-body text-muted">
               <li>
-                • Pelajar login guna <strong>emel DELIMa</strong> dan
+                • Pelajar log masuk guna <strong>emel DELIMa</strong> dan
                 <strong>kata laluan DELIMa</strong>
               </li>
               <li>• ID yang sudah wujud akan dilangkau automatik</li>

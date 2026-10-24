@@ -100,7 +100,7 @@ describe('CompStudentDetailPage (M02 S8) content', () => {
     const w = await render()
     expect(usePageMeta().state.header).toEqual({
       title: 'PELAJAR DEMO SATU BIN DEMO',
-      subtitle: 'Detail pelajar komplimen',
+      subtitle: 'Butiran pelajar komplimen',
     })
     expect(document.title).toBe('Pelajar Komplimen - PELAJAR DEMO SATU BIN DEMO')
     expect(w.findAll('dt').map((d) => d.text())).toEqual([

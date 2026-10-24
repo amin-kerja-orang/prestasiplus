@@ -50,7 +50,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       ...adminMeta,
       title: 'Pelajar Komplimen - Panel Admin',
-      header: { title: 'Pelajar Komplimen', subtitle: 'Detail pelajar komplimen' },
+      header: { title: 'Pelajar Komplimen', subtitle: 'Butiran pelajar komplimen' },
     },
   },
 ]

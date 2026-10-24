@@ -53,7 +53,7 @@ watch(
   student,
   (row) => {
     if (!row) return
-    pageMeta.setHeader({ title: row.name, subtitle: 'Detail pelajar komplimen' })
+    pageMeta.setHeader({ title: row.name, subtitle: 'Butiran pelajar komplimen' })
     pageMeta.setTitle(`Pelajar Komplimen - ${row.name}`)
   },
   { immediate: true },
@@ -88,7 +88,7 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
 <template>
   <DsPage
     title="Pelajar Komplimen"
-    subtitle="Detail pelajar komplimen"
+    subtitle="Butiran pelajar komplimen"
     :back-to="COMP_LIST_PATH"
     back-label="Senarai pelajar komplimen"
     data-testid="comp-detail-page"

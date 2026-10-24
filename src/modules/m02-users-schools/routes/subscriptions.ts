@@ -50,7 +50,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       ...adminMeta,
       title: 'Langganan - Admin PRESTASIPLUS',
-      header: { title: 'Detail Langganan' },
+      header: { title: 'Butiran Langganan' },
     },
   },
   {

@@ -81,7 +81,7 @@ watch(
   sub,
   (row) => {
     if (!row) return
-    pageMeta.setHeader({ title: 'Detail Langganan', subtitle: row.school.name })
+    pageMeta.setHeader({ title: 'Butiran Langganan', subtitle: row.school.name })
     pageMeta.setTitle(`Langganan ${row.school.name} - Admin PRESTASIPLUS`)
   },
   { immediate: true },
