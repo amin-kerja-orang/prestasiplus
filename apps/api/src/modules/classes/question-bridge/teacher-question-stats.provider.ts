@@ -26,7 +26,7 @@ export function usedCountQuery(owner: bigint): Prisma.Sql {
      WHERE q.created_by_id = ${owner} AND ${NOT_PKSK}`
 }
 
-const NO_STATS = (): TeacherQuestionStats => ({ total: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
+const NO_STATS = (): TeacherQuestionStats => ({ total: 0, structured: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
 
 /**
  * The real `ClassesPorts` question source (SW12-02): the numbers of S21 `/guru/soalan`, the S1 dashboard
@@ -36,6 +36,7 @@ const NO_STATS = (): TeacherQuestionStats => ({ total: 0, approved: 0, pending: 
  * PKSK excluded, the same rows as `GET /api/guru/questions`. The status is the one of the LATEST version, the
  * one the teacher sees in that list (and `QuestionsService.contributionCountsFor` counts):
  *  - `total`    every owned question, whatever its status (draft and archived included);
+ *  - `structured` of `total`, the questions whose latest version is `structured`; the rest are objective (M27 splits them);
  *  - `approved` "Diluluskan": status `approved` or `published` (mock `approved` maps to v2 `published`, and the
  *               v2 `approved` step is a reviewer approval too);
  *  - `pending`  "Menunggu": status `review` (submitted, awaiting the reviewer; mock `pending_review`);
@@ -60,17 +61,18 @@ export class TeacherQuestionStatsProvider implements TeacherQuestionsProvider {
       return NO_STATS()
     }
     const db = this.prisma.client
-    const rows = await db.$queryRaw<{ status: string; subject: string | null; n: number }[]>`
-      SELECT v.status AS status, s.name AS subject, count(*)::int AS n
+    const rows = await db.$queryRaw<{ status: string; subject: string | null; structured: boolean; n: number }[]>`
+      SELECT v.status AS status, s.name AS subject, (v.type = 'structured') AS structured, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
         LEFT JOIN subjects s ON s.id = v.subject_id
        WHERE q.created_by_id = ${owner} AND ${NOT_PKSK}
-       GROUP BY 1, 2`
+       GROUP BY 1, 2, 3`
     const out = NO_STATS()
     const bySubject = new Map<string, number>()
     for (const r of rows) {
       out.total += r.n
+      if (r.structured) out.structured = (out.structured ?? 0) + r.n
       if (r.status === 'approved' || r.status === 'published') out.approved += r.n
       else if (r.status === 'review') out.pending += r.n
       if (r.subject !== null) bySubject.set(r.subject, (bySubject.get(r.subject) ?? 0) + r.n)

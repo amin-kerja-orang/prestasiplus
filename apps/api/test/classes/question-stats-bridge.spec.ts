@@ -124,6 +124,21 @@ describe('teacher question stats bridge (SW12-02)', () => {
     expect(stats.pending).toBe(counts.byStatus.review)
   })
 
+  it('structured is the structured subset of total (A: 1 of 7, B: 0 of 1, nobody: 0)', async () => {
+    const ports = t.app.get(ClassesPorts)
+    const mine = await ports.questions.statsOf(teacherA)
+    expect(mine).toMatchObject({ total: 7, structured: 1 })
+    expect(await ports.questions.statsOf(teacherB)).toMatchObject({ total: 1, structured: 0 })
+    const none = await ports.questions.statsOf('999999999')
+    expect(none.structured).toBe(0)
+    // A second structured question (a draft one) moves from the objective share to the structured one, total unchanged.
+    await setOwner('SEED-STR-ECF', teacherA)
+    await setStatus('SEED-STR-ECF', 'draft')
+    expect(await ports.questions.statsOf(teacherA)).toMatchObject({ total: 8, structured: 2 })
+    await setOwner('SEED-STR-ECF', await idOfEmail(t, 'admin@demo.test'))
+    expect(await ports.questions.statsOf(teacherA)).toMatchObject({ total: 7, structured: 1 })
+  })
+
   it("another teacher's questions are not counted: B sees only the own published question", async () => {
     const body = TeacherContributionsSchema.parse((await b.get('/guru/contributions')).body)
     expect(body.stats).toEqual({ total: 1, approved: 1, pending: 0, used: 1 })
@@ -138,8 +153,8 @@ describe('teacher question stats bridge (SW12-02)', () => {
     const d = envelopeOf(TeacherDashboardSchema).parse((await c.get('/guru/dashboard')).body).data
     expect(d.stats).toMatchObject({ questions: 0, questionsApproved: 0 })
     const ports = t.app.get(ClassesPorts)
-    expect(await ports.questions.statsOf('999999999')).toEqual({ total: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
-    expect(await ports.questions.statsOf('not-an-id')).toEqual({ total: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
+    expect(await ports.questions.statsOf('999999999')).toEqual({ total: 0, structured: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
+    expect(await ports.questions.statsOf('not-an-id')).toEqual({ total: 0, structured: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
   })
 
   it('PKSK questions never count and the numbers follow the tables on each call', async () => {
