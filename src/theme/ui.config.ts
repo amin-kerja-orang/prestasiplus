@@ -36,6 +36,13 @@ const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staf
 /** `sm`: the same field kept at 44px in the learner portal too (answer lines that share a phone screen with a keypad). */
 const fieldSizeCompact = 'min-h-11 rounded-sm px-3.5 text-base md:staff:text-body'
 
+/*
+ * Size scale (FB-073). Pages say `size="xl"` for the big, tappable variant of a control (96 buttons,
+ * 21 inputs, 12 selects, 1 textarea). The DS has ONE large size per personality, so `xl` is an alias of
+ * the large step, never a fifth look: fields share one height at md / lg / xl (staff 44px, learner
+ * 52px; `sm` keeps 44px in the learner portal), buttons xl = lg (staff 48px, learner 56px), badges
+ * lg / xl = the md badge with a larger type role. Only the glyph size stays with Nuxt UI per step.
+ */
 const fieldConfig = {
   slots: { leadingIcon: 'text-muted', trailingIcon: 'text-muted' },
   defaultVariants: { variant: 'soft' },
@@ -45,6 +52,7 @@ const fieldConfig = {
       sm: { base: fieldSizeCompact },
       md: { base: fieldSize },
       lg: { base: fieldSize },
+      xl: { base: fieldSize },
     },
   },
   // Error / highlight state: 2px inset ring (the theme default is 1px).
@@ -52,7 +60,25 @@ const fieldConfig = {
 }
 
 /** Closed field plus its popup list (item states, checked, empty, group labels). */
-const menuField = { ...fieldConfig, slots: { ...fieldConfig.slots, ...selectSlots } }
+const menuField = {
+  ...fieldConfig,
+  slots: { ...fieldConfig.slots, ...selectSlots },
+  variants: {
+    ...fieldConfig.variants,
+    size: {
+      ...fieldConfig.variants.size,
+      // `xl` popup rows = `lg` (Nuxt UI would give them 16px text and a different padding).
+      xl: {
+        base: fieldSize,
+        label: 'p-2 text-xs gap-2',
+        item: 'p-2 text-sm gap-2',
+        itemLeadingIcon: 'size-5',
+        itemTrailingIcon: 'size-5',
+        empty: 'p-3 text-sm',
+      },
+    },
+  },
+}
 
 /**
  * Nuxt UI's internal icons, remapped from Lucide to Phosphor (design system section 10.1: Lucide is
@@ -136,6 +162,10 @@ const disabledPrimaryStaff = [
   'staff:dark:disabled:bg-muted staff:dark:aria-disabled:bg-muted',
 ].join(' ')
 
+/** The large button: staff 48px, learner 56px. Used by `size="lg"` and `size="xl"`. */
+const buttonLarge =
+  'min-h-12 gap-2.5 px-5 text-label learner:min-h-14 learner:rounded-md learner:px-6 learner:text-base'
+
 export const uiConfig = {
   // tailwind-merge must know the type roles are font sizes, so `text-label` replaces a stock `text-sm`
   // instead of sitting beside it.
@@ -192,13 +222,20 @@ export const uiConfig = {
         md: {
           base: 'min-h-11 gap-2 px-4 text-label learner:min-h-13 learner:rounded-md learner:px-5 learner:text-base',
         },
-        lg: {
-          base: 'min-h-12 gap-2.5 px-5 text-label learner:min-h-14 learner:rounded-md learner:px-6 learner:text-base',
-        },
+        lg: { base: buttonLarge },
+        // `xl` is the large step again (see the size-scale note above); only the glyphs stay at lg size.
+        xl: { base: buttonLarge, leadingIcon: 'size-5', trailingIcon: 'size-5' },
       },
     },
     compoundVariants: [
       { variant: ['outline', 'subtle'], class: 'ring-0' },
+      // An icon-only `xl` button stays a 44px square (shell icon buttons): neither the large height
+      // nor the learner's wide `px-6` belongs to it (the `learner:` utilities would beat Nuxt UI's `p-2`).
+      {
+        size: 'xl',
+        square: true,
+        class: 'min-h-11 min-w-11 learner:min-h-11 learner:min-w-11 learner:px-2',
+      },
       {
         color: ['primary', 'neutral'],
         variant: ['outline', 'subtle'],
@@ -395,8 +432,9 @@ export const uiConfig = {
           base: 'rounded-full text-xs px-2 py-0.5 learner:text-caption learner:px-2.5 learner:py-1',
         },
         md: { base: 'rounded-full text-xs px-2.5 py-1 learner:text-label learner:px-3' },
-        lg: { base: 'rounded-full' },
-        xl: { base: 'rounded-full' },
+        // lg / xl: the md badge with a larger type role (lg 14px staff / 15px learner, xl 16px).
+        lg: { base: 'rounded-full text-label px-3 py-1' },
+        xl: { base: 'rounded-full text-base px-3.5 py-1' },
       },
     },
     compoundVariants: [
