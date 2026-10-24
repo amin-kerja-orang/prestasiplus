@@ -20,7 +20,7 @@ import { DirReader, PgReader } from '../../../src/migration/staging/readers'
 import { withDatabase } from '../../support/global-setup'
 import { capture, createStagingDb, FIXTURE_DIR, stagingEnv, type StagingDb } from './helpers'
 
-// Only the tables the tests read: creating all 118 takes seconds on a Docker-on-Windows Postgres.
+// Only the tables the tests read: creating all 127 takes seconds on a Docker-on-Windows Postgres.
 const SUBSET = ['users', 'schools'].map((n) => findTable(n) as TableSpec)
 
 const adminUrl = inject('testDbAdminUrl')
@@ -143,7 +143,7 @@ describe('read-only guard (AC2, BE-MIG-05)', () => {
       expect(await source.tableExists('cache')).toBe(false)
       let rows = 0
       for await (const batch of source.read('users', 5)) rows += batch.length
-      expect(rows).toBe(13)
+      expect(rows).toBe(15)
     } finally {
       await source.close()
     }

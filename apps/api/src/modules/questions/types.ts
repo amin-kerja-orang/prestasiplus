@@ -212,9 +212,29 @@ export interface QuestionFilter {
   type?: StoreQuestionType
   /** `true`: only questions with a `pool` tag (flat `spmPool`); `false`: only questions without one. */
   spmPool?: boolean
+  /**
+   * `true`: only questions outside any stimulus group (`questions.group_id IS NULL`), the practice, games and battle servable
+   * shape. A single-leaf MCQ that sits inside a stimulus group is therefore no longer served by the SPM pool, battle or games.
+   */
+  ungrouped?: boolean
+  /**
+   * Only questions whose live version has the plain servable MCQ shape: exactly one part, an `mcq` leaf, no stimulus on the
+   * version or the part, between `minOptions` and `maxOptions` options, no option image, and a key naming one of the options.
+   * `maxOptions: 4` is the battle / games shape (key index always 0..3). In `sampleIds` it is checked only on a window of
+   * hash-ordered candidates (never on the whole subject).
+   */
+  mcqShape?: { minOptions: number; maxOptions: number }
+  /** Only versions with exactly one part and that part an `mcq` leaf (what the SPM pool's `mcqItemOf` accepts; no stimulus or image rule). */
+  singleMcqLeaf?: boolean
+  /** Any of these chapters (ANDed with `chapterId` when both are set); `[]` matches nothing. */
+  chapterIds?: readonly string[]
+  /** Only ids in this list (`q.id = ANY(...)`): "which of these are still eligible". `[]` matches nothing. */
+  idIn?: readonly string[]
+  /** Keyset: only ids strictly above this one (use with `eligibleIdsPage`, ascending id). */
+  idAfter?: string
 }
 export type SampleFilter = QuestionFilter
-export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit'
+export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit' | 'chapter'
 
 export interface GuruListFilter {
   ownerId: string

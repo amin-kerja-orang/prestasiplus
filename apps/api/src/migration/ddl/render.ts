@@ -24,6 +24,9 @@ export function renderDdl(tables: readonly TableSpec[] = TABLES): string {
     cols.push('  "_loaded_at" timestamptz default now()', '  "_row_hash" text')
     if (t.pk) cols.push(`  primary key (${quoteIdent(t.pk)})`)
     out.push(`create table ${quoteIdent(schemaOf(t))}.${quoteIdent(t.name)} (`, cols.join(',\n'), ');', '')
+    for (const c of t.columns) {
+      if (c.index) out.push(`create index ${quoteIdent(`ix_${t.name}_${c.name}`)} on ${quoteIdent(schemaOf(t))}.${quoteIdent(t.name)} (${quoteIdent(c.name)});`, '')
+    }
   }
   return out.join('\n')
 }

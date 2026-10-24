@@ -19,7 +19,7 @@ const note = (body: string) => ({
   body, created_at: '2026-03-01T00:00:00Z',
 })
 const video = (url: string, extra: Record<string, string> = {}) => ({
-  id: '1', title: 'Video', url, category: 'tutorial', is_published: '1', created_at: '2026-03-01T00:00:00Z', ...extra,
+  id: '1', title: 'Video', url, category: 'tutorial', created_at: '2026-03-01T00:00:00Z', ...extra,
 })
 
 const articleContent = (html: string): string => {

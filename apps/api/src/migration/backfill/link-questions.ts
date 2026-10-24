@@ -10,7 +10,7 @@
  *  - `number_label` is compared the same way (`lower(btrim())`) against `question_versions.number_label`.
  *  - A v2 question is linked to its paper through its LIVE version's `question_versions.source_paper_id`
  *    (a soft pointer, no FK yet). A question has no paper column of its own.
- *  - `source_papers.content_hash` is a hash of a whole PAPER; it cannot match an answer. The answer's
+ *  - `source_papers.file_hash` (.cloud and v2 alike) is a hash of a whole PAPER; it cannot match an answer. The answer's
  *    `legacy_content_hash` is a QUESTION-level hash (BE-29: SHA-256 of normalised stem plus sorted normalised
  *    option texts). The v2 side has no stored question-level hash, so it is computed here from the live version
  *    with the very same function (`snapshot-dims/content-hash.ts` `contentHash`): stem = `stem_ms` (else
@@ -88,6 +88,8 @@ export interface LinkQuestionsReport {
   /** Surrogate ids (practice_answers.id) of ambiguous rows, capped for printing. */
   ambiguousIds: string[]
   unmatchedIds: string[]
+  /** Of `linked`: found exactly through `etl_id_map` (`migrate:questions`: `legacy_question_ref` = the old question id). */
+  linkedByExact?: number
   /** Of `linked`: found by natural key + number label. */
   linkedByNaturalKey?: number
   /** Of `linked`: found by content hash (natural key had no candidate). */
@@ -125,11 +127,26 @@ const NEXT_ANSWERS_SQL = `
 SELECT id::text AS id,
        NULLIF(lower(btrim(source_natural_key)), '') AS nk,
        NULLIF(lower(btrim(number_label)), '') AS nl,
-       NULLIF(lower(btrim(legacy_content_hash)), '') AS hash
+       NULLIF(lower(btrim(legacy_content_hash)), '') AS hash,
+       NULLIF(btrim(legacy_question_ref), '') AS ref
 FROM practice_answers
 WHERE legacy_source = $1 AND question_id IS NULL AND id > $2::bigint
 ORDER BY practice_answers.id
 LIMIT $3`
+
+/**
+ * Step 0 (QLOAD): the exact link. `migrate:questions` registers `(source, 'questions', old question id) -> new question id`
+ * in `etl_id_map`, and a migrated answer keeps the old id in `legacy_question_ref`. One match at most per answer (the map is
+ * unique), so there is no ambiguity. Same candidate rule as everywhere: active and live-published (a question held for a
+ * missing image is not linked).
+ */
+const EXACT_MATCH_SQL = `
+SELECT pa.id::text AS id, q.id::text AS question_id
+FROM practice_answers pa
+JOIN etl_id_map m ON m.legacy_source = $2 AND m.entity = 'questions' AND m.legacy_id = NULLIF(btrim(pa.legacy_question_ref), '')
+JOIN questions q ON q.id = m.new_id::bigint AND q.is_active
+JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'published'
+WHERE pa.id = ANY($1::bigint[])`
 
 /** Up to two distinct candidate question ids per answer by natural key + number label (two is enough to call it ambiguous). */
 const KEY_MATCH_SQL = `
@@ -157,6 +174,7 @@ LIMIT $2`
 
 interface AnswerRow {
   id: string
+  ref: string | null
   nk: string | null
   nl: string | null
   hash: string | null
@@ -186,7 +204,7 @@ async function buildHashIndex(db: Pick<pg.PoolClient, 'query'>): Promise<HashInd
   }
 }
 
-type Outcome = { kind: 'linked'; questionId: string; by: 'key' | 'hash' } | { kind: 'ambiguous' } | { kind: 'unmatched' }
+type Outcome = { kind: 'linked'; questionId: string; by: 'exact' | 'key' | 'hash' } | { kind: 'ambiguous' } | { kind: 'unmatched' }
 
 export async function linkQuestions(options: LinkQuestionsOptions): Promise<LinkQuestionsReport> {
   const { pool, env, source } = options
@@ -208,6 +226,7 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
     alreadyLinked: 0,
     ambiguousIds: [],
     unmatchedIds: [],
+    linkedByExact: 0,
     linkedByNaturalKey: 0,
     linkedByHash: 0,
     raced: 0,
@@ -271,20 +290,26 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
           }
           after = (rows[rows.length - 1] as AnswerRow).id
 
+          const byExact = new Map<string, string>()
+          const referenced = rows.filter((r) => r.ref !== null).map((r) => r.id)
+          if (referenced.length > 0) {
+            const res = await client.query<{ id: string; question_id: string }>(EXACT_MATCH_SQL, [referenced, source])
+            for (const r of res.rows) byExact.set(r.id, r.question_id)
+          }
           const byKey = new Map<string, string[]>()
-          const keyed = rows.filter((r) => r.nk !== null && r.nl !== null).map((r) => r.id)
+          const keyed = rows.filter((r) => !byExact.has(r.id) && r.nk !== null && r.nl !== null).map((r) => r.id)
           if (keyed.length > 0) {
             const res = await client.query<{ id: string; question_ids: string[] }>(KEY_MATCH_SQL, [keyed])
             for (const r of res.rows) byKey.set(r.id, r.question_ids)
           }
-          if (hashIndex === undefined && rows.some((r) => r.hash !== null && !byKey.has(r.id))) {
+          if (hashIndex === undefined && rows.some((r) => r.hash !== null && !byExact.has(r.id) && !byKey.has(r.id))) {
             hashIndex = await buildHashIndex(client)
           }
 
-          const links: { id: string; questionId: string; by: 'key' | 'hash' }[] = []
+          const links: { id: string; questionId: string; by: 'exact' | 'key' | 'hash' }[] = []
           for (const r of rows) {
             report.examined += 1
-            const outcome = decide(r, byKey, hashIndex)
+            const outcome = decide(r, byExact, byKey, hashIndex)
             if (outcome.kind === 'linked') links.push({ id: r.id, questionId: outcome.questionId, by: outcome.by })
             else if (outcome.kind === 'ambiguous') {
               report.ambiguous += 1
@@ -299,8 +324,7 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
             // Simulation of the guarded UPDATE: these rows were read with `question_id IS NULL` in this snapshot.
             for (const l of links) {
               report.linked += 1
-              if (l.by === 'key') report.linkedByNaturalKey = (report.linkedByNaturalKey ?? 0) + 1
-              else report.linkedByHash = (report.linkedByHash ?? 0) + 1
+              bumpBy(report, l.by)
             }
           } else if (links.length > 0) {
             await options.onBeforeUpdate?.(links.map((l) => l.id))
@@ -319,8 +343,7 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
                 continue
               }
               report.linked += 1
-              if (l.by === 'key') report.linkedByNaturalKey = (report.linkedByNaturalKey ?? 0) + 1
-              else report.linkedByHash = (report.linkedByHash ?? 0) + 1
+              bumpBy(report, l.by)
             }
           }
           if (mode === 'apply') {
@@ -343,7 +366,15 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
   return report
 }
 
-function decide(row: AnswerRow, byKey: Map<string, string[]>, hashIndex: HashIndex | undefined): Outcome {
+function bumpBy(report: LinkQuestionsReport, by: 'exact' | 'key' | 'hash'): void {
+  if (by === 'exact') report.linkedByExact = (report.linkedByExact ?? 0) + 1
+  else if (by === 'key') report.linkedByNaturalKey = (report.linkedByNaturalKey ?? 0) + 1
+  else report.linkedByHash = (report.linkedByHash ?? 0) + 1
+}
+
+function decide(row: AnswerRow, byExact: Map<string, string>, byKey: Map<string, string[]>, hashIndex: HashIndex | undefined): Outcome {
+  const exact = byExact.get(row.id)
+  if (exact !== undefined) return { kind: 'linked', questionId: exact, by: 'exact' }
   const keyIds = byKey.get(row.id)
   if (keyIds !== undefined && keyIds.length > 0) {
     return keyIds.length === 1 ? { kind: 'linked', questionId: keyIds[0] as string, by: 'key' } : { kind: 'ambiguous' }
