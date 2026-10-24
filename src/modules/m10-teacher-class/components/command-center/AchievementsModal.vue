@@ -13,7 +13,7 @@ import { fetchCommandCenterAchievements } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
 import { statItems, useOpenTab } from './composables'
-import { rarityOf, studentPath } from './copy'
+import { rarityOf, S2_COPY, studentPath } from './copy'
 import type { DrillRow } from './drill-table'
 import HoldersModal from './HoldersModal.vue'
 
@@ -45,7 +45,7 @@ const collectors = computed<DrillRow[]>(() =>
     wide
     @close="$emit('close')"
   >
-    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
+    <p v-if="error" class="text-body text-error">{{ S2_COPY.loadFailed }}</p>
     <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
       Mengimbas pencapaian semua pelajar...
     </p>

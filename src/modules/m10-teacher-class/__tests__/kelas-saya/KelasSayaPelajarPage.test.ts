@@ -153,4 +153,24 @@ describe('joinErrorMessage', () => {
     )
     expect(joinErrorMessage(new Error('boom'))).toBe('Gagal menyertai kelas. Sila cuba lagi.')
   })
+
+  it('returns the join-failed copy for a 5xx and the API generic English defaults (SWE-11)', () => {
+    const fail = (status: number, message: string) => new ApiError({ status, code: 'X', message })
+    expect(joinErrorMessage(fail(500, 'Server Error'))).toBe(
+      'Gagal menyertai kelas. Sila cuba lagi.',
+    )
+    expect(joinErrorMessage(fail(404, 'Not Found.'))).toBe('Gagal menyertai kelas. Sila cuba lagi.')
+    expect(joinErrorMessage(fail(403, 'This action is unauthorized.'))).toBe(
+      'Gagal menyertai kelas. Sila cuba lagi.',
+    )
+    expect(joinErrorMessage(fail(502, 'HTTP 502'))).toBe('Gagal menyertai kelas. Sila cuba lagi.')
+  })
+
+  it('keeps the class module BM 404 and 409 messages (SWE-11)', () => {
+    const fail = (status: number, message: string) => new ApiError({ status, code: 'X', message })
+    expect(joinErrorMessage(fail(404, 'Kod kelas tidak sah.'))).toBe('Kod kelas tidak sah.')
+    expect(joinErrorMessage(fail(409, 'Anda sudah menyertai kelas ini.'))).toBe(
+      'Anda sudah menyertai kelas ini.',
+    )
+  })
 })

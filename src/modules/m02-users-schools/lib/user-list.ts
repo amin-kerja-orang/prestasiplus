@@ -6,6 +6,7 @@
 import { isApiError } from '@/api'
 
 import type { AdminUserRole, RoleCounts } from '../api/users'
+import { isGenericServerText } from './generic-server-text'
 
 export const USERS_LIST_PATH = '/admin/users'
 
@@ -119,6 +120,13 @@ export function errorLines(err: unknown): string[] {
   if (err.status === 0 || err.code === 'NETWORK_ERROR') return [GENERIC_ERROR]
   const fieldTexts = err.fields ? Object.values(err.fields) : []
   if (fieldTexts.length > 0) return [...new Set(fieldTexts)]
-  if (err.message === '' || /^HTTP \d+$/.test(err.message)) return [GENERIC_ERROR]
+  if (
+    err.message === '' ||
+    /^HTTP \d+$/.test(err.message) ||
+    err.status >= 500 ||
+    isGenericServerText(err.message)
+  ) {
+    return [GENERIC_ERROR]
+  }
   return [err.message]
 }

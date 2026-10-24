@@ -225,7 +225,10 @@ describe('CompStudentListPage (M02 S6) bulk bar', () => {
     await w.findAll('[data-testid=comp-select]')[0]!.trigger('click')
     await t(w, 'comp-bulk-deactivate').trigger('click')
     await flushPromises()
-    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Gagal.'] })
+    expect(useFlashStore().current).toEqual({
+      type: 'error',
+      message: ['Ralat berlaku. Sila cuba lagi.'],
+    })
     expect(w.find('[data-testid=comp-bulk-bar]').exists()).toBe(true)
   })
 

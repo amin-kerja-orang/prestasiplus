@@ -10,6 +10,7 @@ import { useRouteOutcome } from '@/app/router/outcome'
 import { useFlashStore } from '@/stores/flash'
 
 import { pickFiles } from './pick-file'
+import { COPY } from '../../components/soalan/lib'
 import SumbangSoalanDetailPage from '../../pages/SumbangSoalanDetailPage.vue'
 import SumbangSoalanEditPage from '../../pages/SumbangSoalanEditPage.vue'
 import { detail, makeRouter } from './fixtures'
@@ -187,6 +188,25 @@ describe('S24 edit', () => {
     await flushPromises()
     expect(t(w, 'form-errors').text()).toContain('Sila isi soalan.')
     expect(router.currentRoute.value.path).toBe('/guru/soalan/522425')
+  })
+
+  it('shows the save-failed text for a 500 and keeps a module BM 409 (SWE-09)', async () => {
+    guru.updateContributedQuestion.mockRejectedValueOnce(
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }),
+    )
+    let w = await mountPage(SumbangSoalanEditPage)
+    await t(w, 'edit-form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'form-errors').text()).toContain(COPY.saveFailed)
+    expect(t(w, 'form-errors').text()).not.toContain('Server Error')
+    w.unmount()
+    guru.updateContributedQuestion.mockRejectedValueOnce(
+      new ApiError({ status: 409, code: 'CONFLICT', message: 'Soalan sedang disemak.' }),
+    )
+    w = await mountPage(SumbangSoalanEditPage)
+    await t(w, 'edit-form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'form-errors').text()).toContain('Soalan sedang disemak.')
   })
 
   it('offers no option block for a question that is not MCQ', async () => {

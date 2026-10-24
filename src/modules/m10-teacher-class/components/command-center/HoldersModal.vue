@@ -12,7 +12,7 @@ import { fetchBadgeHolders } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
 import { useOpenTab } from './composables'
-import { accuracyTone, studentPath } from './copy'
+import { accuracyTone, S2_COPY, studentPath } from './copy'
 import type { DrillRow } from './drill-table'
 
 const props = defineProps<{ badge: { id: number; name: string } }>()
@@ -40,7 +40,7 @@ const rows = computed<DrillRow[]>(() =>
     testid="cc-holders-modal"
     @close="$emit('close')"
   >
-    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
+    <p v-if="error" class="text-body text-error">{{ S2_COPY.loadFailed }}</p>
     <p v-else-if="!data" class="text-body text-muted" data-testid="cc-holders-loading">
       Memuatkan senarai pelajar...
     </p>

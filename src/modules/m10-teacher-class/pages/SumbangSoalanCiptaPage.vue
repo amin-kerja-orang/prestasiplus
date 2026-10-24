@@ -15,6 +15,7 @@ import { createContributedQuestion } from '../api/guru'
 import type { CreateQuestionRequest } from '../api/types'
 import { COPY } from '../components/soalan/lib'
 import QuestionForm from '../components/soalan/QuestionForm.vue'
+import { moduleMessage } from '../lib/generic-server-text'
 
 const router = useRouter()
 const flash = useFlash()
@@ -41,7 +42,7 @@ async function save(
       fields.value = err.fields
       general.value = Object.values(err.fields)
     } else {
-      general.value = [isApiError(err) ? err.message : COPY.saveFailed]
+      general.value = [moduleMessage(err) ?? COPY.saveFailed]
     }
     window.scrollTo?.({ top: 0 })
   } finally {

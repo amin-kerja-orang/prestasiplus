@@ -31,6 +31,8 @@ export const S2_COPY = {
   loadingBody: 'Memuatkan data...',
   classHint: 'Klik: lihat pelajar dalam kelas',
   bandHint: 'Klik: senarai pelajar',
+  /** Fixed BM line of a failed modal load (the server text is English; SWE). */
+  loadFailed: 'Ralat memuatkan data. Sila cuba semula.',
 } as const
 
 export const TAB_TITLE = (name: string) => `Command Center — Guru: ${name}`
