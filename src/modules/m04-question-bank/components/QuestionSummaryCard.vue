@@ -25,7 +25,7 @@ const props = defineProps<{
 const isActiveSubject = (id: number | string): boolean =>
   props.activeSubjectId !== null && String(id) === String(props.activeSubjectId)
 
-type SortKey ='name' | 'total' | 'approved' | 'rate' | 'group'
+type SortKey = 'name' | 'total' | 'approved' | 'rate' | 'group'
 const STORAGE_KEY = 'pp_questions_summary_open'
 
 function readOpen(): boolean {
