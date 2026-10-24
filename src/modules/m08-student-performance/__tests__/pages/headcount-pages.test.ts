@@ -367,6 +367,17 @@ describe('S14 HeadcountCreatePage', () => {
     expect(prop(w, 'field-subject', 'modelValue')).toBe('3')
   })
 
+  it('a generic English 409 "Conflict." shows the BM load error instead (SWE)', async () => {
+    api.fetchHeadcountFormOptions.mockResolvedValue(OPTIONS)
+    api.createHeadcount.mockRejectedValue(apiError(409, { code: 'CONFLICT', message: 'Conflict.' }))
+    const w = await render(HeadcountCreatePage, '/headcount/create')
+    await fill(w)
+    await t(w, 'create-form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'form-error').text()).toContain('Maaf, berlaku ralat. Sila cuba semula.')
+    expect(t(w, 'form-error').text()).not.toContain('Conflict.')
+  })
+
   it('a 422 lists the field messages', async () => {
     api.fetchHeadcountFormOptions.mockResolvedValue(OPTIONS)
     api.createHeadcount.mockRejectedValue(
