@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 
 import { formStubs } from '@/test-support/form-stubs'
 
-import { plainToLatex, previewLatex } from '../domain/math-expr'
+import { answersEquivalent, plainToLatex, previewLatex } from '../domain/math-expr'
 import MathField from '../components/MathField.vue'
 import MathKeyboard from '../components/MathKeyboard.vue'
+import { openKeypad } from '../lib/keypad-owner'
 import {
   ALL_KEYS,
   applyKey,
@@ -18,6 +19,12 @@ import {
   SHARED_KEYS,
   SYMBOL_ROWS,
 } from '../lib/math-keys'
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  openKeypad.value = null
+  document.body.innerHTML = ''
+})
 
 /** The 35 keys of the previous keypad (id, accessible name, what it inserts or does). */
 const OLD_KEYS: Record<
@@ -93,7 +100,7 @@ describe('keypad key map (Casio style)', () => {
       expect(all).toContain(id)
     }
     expect(ALL_KEYS.find((k) => k.id === 'clear')).toMatchObject({
-      aria: 'Kosongkan semua',
+      aria: 'AC, kosongkan semua',
       action: 'clear',
     })
   })
@@ -276,7 +283,8 @@ describe('keypad keeps the field and its preview in view (FB-047)', () => {
     ).toEqual(['input', 'math-preview', 'math-keyboard-dock'])
     expect(dock.classes()).toContain('fixed')
     expect(dock.classes()).toContain('md:sticky')
-    expect(w.find('[data-testid=math-keyboard-spacer]').exists()).toBe(true)
+    // inline from md: no spacer, the dock is sticky
+    expect(w.find('[data-testid=math-keyboard-spacer]').exists()).toBe(false)
     w.unmount()
   })
 
@@ -298,6 +306,118 @@ describe('keypad keeps the field and its preview in view (FB-047)', () => {
     expect(inputs[0]!.attributes('inputmode')).toBe('text')
     expect(inputs[1]!.attributes('inputmode')).toBe('none')
     await w.get('[data-testid=math-keyboard]').trigger('keydown', { key: 'Escape' })
+    expect(w.find('[data-testid=math-keyboard]').exists()).toBe(false)
+    w.unmount()
+  })
+})
+
+describe('new keys: accessible names and what the marker makes of them', () => {
+  const OLD_IDS = new Set(Object.keys(OLD_KEYS))
+
+  it('names every new key starting with its visible text (WCAG 2.5.3)', () => {
+    const fresh = ALL_KEYS.filter((k) => !OLD_IDS.has(k.id))
+    expect(fresh.map((k) => k.id).sort()).toEqual(
+      ['clear', 'cos', 'deg', 'e10', 'inv', 'ln', 'log', 'sin', 'tan'].sort(),
+    )
+    for (const k of fresh) expect(k.aria.toLowerCase().startsWith(k.label.toLowerCase())).toBe(true)
+  })
+
+  it('announces the layer switch', async () => {
+    const w = mount(MathKeyboard, {
+      props: { label: 'Papan kekunci matematik' },
+      global: { components: { UButton: UButtonStub } },
+    })
+    expect(w.get('[data-testid=math-layer-status]').text()).toBe('Lapisan fungsi')
+    await w.get('[data-key=layer]').trigger('click')
+    expect(w.get('[data-testid=math-layer-status]').text()).toBe('Lapisan simbol')
+    expect(w.get('[data-key=layer]').text()).toBe('Fungsi')
+  })
+
+  it.each([
+    ['sin(30°)', '1/2'],
+    ['cos(60°)', '0.5'],
+    ['tan(45)', '1'],
+    ['log(100)', '2'],
+    ['ln(1)', '0'],
+    ['3×10^(4)', '30000'],
+    ['2.5×10^(-3)', '0.0025'],
+    ['x^(-1)', '1/x'],
+    ['(7)/(3)^2', '7/9'],
+  ])(
+    'the marker reads %s as %s (typed through the keypad and stored as LaTeX)',
+    (typed, expected) => {
+      expect(answersEquivalent(typed, expected)).toBe(true)
+      expect(answersEquivalent(plainToLatex(typed), expected)).toBe(true)
+    },
+  )
+})
+
+describe('keypad closing (FB-047 follow-up)', () => {
+  const global = {
+    components: { ...formStubs, UButton: UButtonStub, UIcon: { template: '<i />' } },
+  }
+  const phone = (): void => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: !q.includes('min-width'),
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
+  }
+
+  it('resets the open keypad when its field goes away', async () => {
+    const w = mount(MathField, { props: { modelValue: '', label: 'Langkah 1' }, global })
+    await w.get('[data-testid=math-keypad-toggle]').trigger('click')
+    expect(openKeypad.value).not.toBeNull()
+    w.unmount()
+    expect(openKeypad.value).toBeNull()
+  })
+
+  it('on a phone the sheet shows the preview and a Tutup key that closes it', async () => {
+    phone()
+    const w = mount(MathField, {
+      props: { modelValue: '(7)/(3)', label: 'Langkah 1' },
+      global,
+      attachTo: document.body,
+    })
+    await w.get('[data-testid=math-keypad-toggle]').trigger('click')
+    // one preview only, inside the sheet
+    const previews = w.findAll('[data-testid=math-preview]')
+    expect(previews).toHaveLength(1)
+    expect(
+      w.get('[data-testid=math-keyboard-dock]').find('[data-testid=math-preview]').exists(),
+    ).toBe(true)
+    expect(previews[0]!.find('.mfrac').exists()).toBe(true)
+    expect(w.find('[data-testid=math-keyboard-spacer]').exists()).toBe(true)
+    const close = w.get('[data-testid=math-keyboard-close]')
+    expect(close.attributes('aria-label')).toBe('Tutup papan kekunci')
+    expect(close.text()).toBe('Tutup')
+    await close.trigger('click')
+    expect(w.find('[data-testid=math-keyboard]').exists()).toBe(false)
+    expect(w.find('[data-testid=math-preview]').exists()).toBe(true)
+    w.unmount()
+  })
+
+  it('closes on a tap or focus outside the field and keypad, never on a key', async () => {
+    phone()
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    const w = mount(MathField, {
+      props: { modelValue: '', label: 'Langkah 1' },
+      global,
+      attachTo: document.body,
+    })
+    await w.get('[data-testid=math-keypad-toggle]').trigger('click')
+    await w.get('[data-key="7"]').trigger('click')
+    await w.get('[data-testid=math-keyboard-dock]').trigger('click')
+    expect(w.find('[data-testid=math-keyboard]').exists()).toBe(true)
+    outside.click()
+    await w.vm.$nextTick()
+    expect(w.find('[data-testid=math-keyboard]').exists()).toBe(false)
+
+    await w.get('[data-testid=math-keypad-toggle]').trigger('click')
+    expect(w.find('[data-testid=math-keyboard]').exists()).toBe(true)
+    outside.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await w.vm.$nextTick()
     expect(w.find('[data-testid=math-keyboard]').exists()).toBe(false)
     w.unmount()
   })
