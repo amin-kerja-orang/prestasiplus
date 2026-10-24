@@ -37,7 +37,7 @@ test.describe('M05 S1 dashboard smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     gotoApp,
   }) => {
     await openDashboard(page, loginAs, gotoApp, ADMIN)
-    await expectTabTitle(page, 'Dashboard - PRESTASIPLUS')
+    await expectTabTitle(page, 'Papan Pemuka - PRESTASIPLUS')
     await expect(tid(page, 'dash-hero')).toContainText(/Selamat Petang, .+ 👋/)
     await expect(tid(page, 'dash-hero')).toContainText('Jom teruskan latihan hari ini! 🚀')
     await expect(tid(page, 'dash-friend-bubble')).toBeVisible()

@@ -13,8 +13,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      title: 'Dashboard - PRESTASIPLUS',
-      header: { title: 'Dashboard', subtitle: 'Selamat datang kembali' },
+      title: 'Papan Pemuka - PRESTASIPLUS',
+      header: { title: 'Papan Pemuka', subtitle: 'Selamat datang kembali' },
       module: 'M05',
       v2: true,
     },

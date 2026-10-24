@@ -242,7 +242,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
                 >
                   <span class="flex min-w-0 flex-col">
                     <span class="text-label">{{ d.label }}</span>
-                    <span class="text-caption">Level {{ d.value }}</span>
+                    <span class="text-caption">Tahap {{ d.value }}</span>
                   </span>
                   <span class="tabular text-label" data-testid="difficulty-count">
                     {{ formatCount(diffCount(config, selectedLevel, d.value)) }}

@@ -541,7 +541,7 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
     expect(await hrefOf('Latih Tubi')).toBe('/practice')
     expect(await hrefOf('Soalan Mengikut Bab')).toBe('/practice/chapter')
     expect(await hrefOf('Soalan Berstruktur')).toBe('/latihan-berstruktur')
-    expect(await hrefOf('Dashboard')).toBe('/dashboard')
+    expect(await hrefOf('Papan Pemuka')).toBe('/dashboard')
     expect(await hrefOf('Pembetulan')).toBe('/pembetulan')
     expect(await hrefOf('Penguasaan')).toBe('/penguasaan')
     const extras = ['Target SPM', 'Misi Harian', 'Remedial']
