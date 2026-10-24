@@ -446,7 +446,7 @@ describe('Q-M12 populations and practice figures', () => {
       'Peningkatan 53.7% dalam ketepatan jawapan.',
       '56 pelajar baru mula aktif.',
       'Jumlah jawapan meningkat 465500%.',
-      '28 pelajar naik ke tahap Champion.',
+      '28 pelajar naik ke tahap Juara.',
     ])
     const c8 = comparisonOf(school(8080), NOW)
     expect(c8.subtitle).toBe('April 2026 vs September 2026')

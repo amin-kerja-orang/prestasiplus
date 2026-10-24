@@ -170,7 +170,7 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
       expect(d.getAttribute('data-tone')).toBe('up')
     }
     expect(squash(t(w, 'kirk-summary').text())).toBe(
-      'Ringkasan: Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. Jumlah jawapan meningkat 465500%. 28 pelajar naik ke tahap Champion.',
+      'Ringkasan: Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. Jumlah jawapan meningkat 465500%. 28 pelajar naik ke tahap Juara.',
     )
   })
 

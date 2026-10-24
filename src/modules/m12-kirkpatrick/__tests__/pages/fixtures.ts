@@ -36,7 +36,7 @@ export const overview = (over: Partial<Overview> = {}): Overview => ({
       'Peningkatan 53.7% dalam ketepatan jawapan.',
       '56 pelajar baru mula aktif.',
       'Jumlah jawapan meningkat 465500%.',
-      '28 pelajar naik ke tahap Champion.',
+      '28 pelajar naik ke tahap Juara.',
     ],
   },
   kpi: { t4t5: 4158, answers: 306133, teachersLoggedIn: 277, teachers: 522, accuracy: 82.8 },

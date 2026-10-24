@@ -375,7 +375,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       await expect(page.getByTestId(`kirk-delta-${k}`)).toHaveAttribute('data-tone', 'up')
     }
     await expect(page.getByTestId('kirk-summary')).toHaveText(
-      'Ringkasan: Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. Jumlah jawapan meningkat 465500%. 28 pelajar naik ke tahap Champion.',
+      'Ringkasan: Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. Jumlah jawapan meningkat 465500%. 28 pelajar naik ke tahap Juara.',
       TEXT,
     )
     const b = await before.boundingBox()
