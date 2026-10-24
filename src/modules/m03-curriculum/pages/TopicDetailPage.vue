@@ -44,9 +44,9 @@ watch(
 )
 
 const BADGES = [
-  { label: 'Level 1', color: 'success' },
-  { label: 'Level 2', color: 'warning' },
-  { label: 'Level 3', color: 'error' },
+  { label: 'Tahap 1', color: 'success' },
+  { label: 'Tahap 2', color: 'warning' },
+  { label: 'Tahap 3', color: 'error' },
 ] as const
 </script>
 

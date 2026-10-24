@@ -164,9 +164,9 @@ describe('TopicDetailPage (S13)', () => {
     expect(cards).toHaveLength(2)
     expect(cards[1]?.get('[data-testid=subtopic-number]').text()).toBe('2')
     expect(cards[0]?.findAll('[data-testid=subtopic-badge]').map((b) => b.text())).toEqual([
-      'Level 1',
-      'Level 2',
-      'Level 3',
+      'Tahap 1',
+      'Tahap 2',
+      'Tahap 3',
     ])
     expect(cards[0]?.get('[data-testid=subtopic-bar] [role=progressbar]').attributes('aria-valuenow')).toBe('15')
     expect(cards[0]?.get('[data-testid=subtopic-practice]').attributes('href')).toBe('/practice/MATH')

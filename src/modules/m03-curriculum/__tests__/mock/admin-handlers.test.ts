@@ -352,7 +352,7 @@ describe('education levels #7-#12', () => {
   it('#9 creates a level (upper-case code, active, grade null) and lists it with 0 counts', async () => {
     const res = await call('POST', '/api/admin/education-levels', 'admin', {
       name: 'Tahap Ujian',
-      nameEn: 'Test Level',
+      nameEn: 'Test Tahap',
       code: 'tu1',
       stage: 'primary',
       curriculum: 'KSSR',
