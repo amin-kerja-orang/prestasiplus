@@ -1,5 +1,5 @@
 /**
- * M25 S1 `/buku-nota/heatmap` Heatmap Topik Lemah at 375 / 768 / 1280 (M25-T2; SRS M25 v1.2 §12:
+ * M25 S1 `/buku-nota/heatmap` Peta Haba Topik Lemah at 375 / 768 / 1280 (M25-T2; SRS M25 v1.2 §12:
  * E2E-M25-01 to 30). Accounts: admin (id 1, 6 cells, 116 / 45), pelajarmaju (id 4, 3 cells), pelajar2
  * (id 3, empty; fixtures `m25-bands` / `m25-ties`). Tests marked provisional assert INFERRED or PROPOSED
  * behaviour or non-admin accounts (SRS §12 list: 01, 03, 04, 06, 14, 15, 17, 20, 21, 24, 25, 26, 29).
@@ -119,7 +119,7 @@ async function slugOf(page: Page): Promise<string> {
   return slug as string
 }
 
-test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
+test.describe('M25 S1 Peta Haba Topik Lemah', MODULE, () => {
   test('E2E-M25-01 student menu: href /buku-nota/heatmap and active item; the admin sidebar has no entry @m25', provisional('student shell item is INFERRED (OQ-M25-01)'), async ({
     page,
     gotoApp,
@@ -131,14 +131,14 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
       ? page.getByTestId('shell-user-sidebar')
       : page.getByTestId('shell-user-drawer')
     if (!isDesktopShell(page)) await page.getByTestId('shell-user-hamburger').click()
-    const item = menu.getByRole('link', { name: 'Heatmap Topik Lemah' })
+    const item = menu.getByRole('link', { name: 'Peta Haba Topik Lemah' })
     await expect(item).toHaveAttribute('href', '/buku-nota/heatmap')
     await expect(item).not.toHaveAttribute('href', '/heatmap-topik-lemah')
     // AC-M25-01.5: the entry is the highlighted item while S1 is open.
     await expect(item).toHaveClass(/\bactive\b/)
   })
 
-  test('E2E-M25-01 the admin menu has no Heatmap Topik Lemah entry @m25', async ({
+  test('E2E-M25-01 the admin menu has no Peta Haba Topik Lemah entry @m25', async ({
     page,
     gotoApp,
     loginAs,
@@ -147,13 +147,13 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     await gotoApp(PATH)
     if (isDesktopShell(page)) {
       await expect(
-        page.getByTestId('shell-user-sidebar').getByRole('link', { name: 'Heatmap Topik Lemah' }),
+        page.getByTestId('shell-user-sidebar').getByRole('link', { name: 'Peta Haba Topik Lemah' }),
       ).toHaveCount(0)
     } else {
       await page.getByTestId('shell-user-hamburger').click()
       await expect(page.getByTestId('shell-user-drawer')).toBeVisible()
       await expect(
-        page.getByTestId('shell-user-drawer').getByRole('link', { name: 'Heatmap Topik Lemah' }),
+        page.getByTestId('shell-user-drawer').getByRole('link', { name: 'Peta Haba Topik Lemah' }),
       ).toHaveCount(0)
     }
   })
@@ -166,8 +166,8 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(PATH)
     await expect(page.getByTestId('heatmap-hero')).toBeVisible()
-    await expectTabTitle(page, 'Heatmap Topik Lemah')
-    await expect(page.getByTestId('shell-user-title').first()).toHaveText('Heatmap Topik Lemah')
+    await expectTabTitle(page, 'Peta Haba Topik Lemah')
+    await expect(page.getByTestId('shell-user-title').first()).toHaveText('Peta Haba Topik Lemah')
     await expect(page.getByTestId('shell-user-title').first()).not.toHaveText('Dashboard')
     if (isDesktopShell(page)) {
       await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Selamat datang kembali')
@@ -372,7 +372,7 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(PATH)
     const hero = page.getByTestId('heatmap-hero')
-    await expect(hero.locator('h1')).toHaveText('Heatmap Topik Lemah')
+    await expect(hero.locator('h1')).toHaveText('Peta Haba Topik Lemah')
     await expect(hero.locator('p')).toHaveText(
       'Topik mana anda kuat, mana lemah — semua dalam satu paparan. Klik kotak merah untuk fokus belajar.',
     )
@@ -488,7 +488,7 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     expect(ids).toEqual(['14', '12', '13'])
   })
 
-  test('E2E-M25-16 all six cells link to /practice/chapter; a click opens Soalan by Chapter and starts no session @m25', async ({
+  test('E2E-M25-16 all six cells link to /practice/chapter; a click opens Soalan Mengikut Bab and starts no session @m25', async ({
     page,
     gotoApp,
     loginAs,
@@ -501,7 +501,7 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     expect(hrefs).toEqual(Array<string>(6).fill('/practice/chapter'))
     await cells(page).filter({ hasText: 'Kemahiran Menulis' }).click()
     await expect(page).toHaveURL(/\/practice\/chapter$/)
-    await expect(page.getByTestId('shell-user-title').first()).toHaveText('Soalan by Chapter')
+    await expect(page.getByTestId('shell-user-title').first()).toHaveText('Soalan Mengikut Bab')
     const posts = (await mock.requests('/api/practice/sessions')).filter((r) => r.method === 'POST')
     expect(posts).toHaveLength(0)
   })
@@ -520,7 +520,7 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     await expect(page.locator('[data-band=gray]')).toHaveCount(0)
     await expect(page.getByTestId('heatmap-error')).toHaveCount(0)
     const empty = page.getByTestId('heatmap-empty')
-    await expect(empty).toContainText('Belum ada data heatmap.')
+    await expect(empty).toContainText('Belum ada data peta haba.')
     await expect(empty).toContainText(
       'Jawab soalan latih tubi dahulu — topik kuat dan lemah anda akan dipaparkan di sini.',
     )
@@ -669,7 +669,7 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(PATH)
     await expect(cells(page)).toHaveCount(6)
-    // M25's figures, then the same chapters on M05's "Soalan by Chapter" lists (client-side navigation).
+    // M25's figures, then the same chapters on M05's "Soalan Mengikut Bab" lists (client-side navigation).
     const wanted: [number, string, string][] = [
       [382, '40 cuba · 35% betul', '35'],
       [35, '18 cuba · 44% betul', '44.4'],
@@ -684,7 +684,7 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
       await expect(page.getByTestId(`chapter-stats-${String(id)}`)).toContainText(`${score}%`)
     }
     // Sejarah Tingkatan 5 KSSM (40 · 14 · 35 %) is M05 S8 / S12 data (not built yet, M05-T6): M05's
-    // "Soalan by Chapter" lists only Darjah levels, so that half stays on the M25 side (above).
+    // "Soalan Mengikut Bab" lists only Darjah levels, so that half stays on the M25 side (above).
   })
 
   test('E2E-M25-24 D2 chapter appears only at 5 attempts, between Membaca and Menulis, attempts 121 @m25', provisional('the minimum-5 rule is INFERRED (DV-M25-06)'), async ({

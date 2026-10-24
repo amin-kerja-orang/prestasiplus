@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S1 `/buku-nota/heatmap` "Heatmap Topik Lemah" (SRS M25 v1.2 FR-M25-02..25; roles-matrix row L19). User shell.
+ * S1 `/buku-nota/heatmap` "Peta Haba Topik Lemah" (SRS M25 v1.2 FR-M25-02..25; roles-matrix row L19). User shell.
  * Two read-only calls from the view: #1 the viewer's heatmap and #2 the Cikgu Pakar card (M24 contract). While
  * #1 is pending only the spinner shows (no partial cell); a failed #1 shows the error box; a failed or empty #2
  * hides only the Cikgu Pakar block. No AI call, no write.
@@ -27,7 +27,7 @@ const card = computed(() => (duta.error.value ? null : (duta.data.value ?? null)
 
 <template>
   <DsPage data-testid="heatmap-page">
-    <h1 v-if="!heatmap.data.value" class="sr-only">Heatmap Topik Lemah</h1>
+    <h1 v-if="!heatmap.data.value" class="sr-only">Peta Haba Topik Lemah</h1>
     <template v-if="heatmap.data.value">
       <!-- Prototype scope (D43): the card links to Bilik Duta, which is outside the matrix. -->
       <CikguPakarBlock v-if="card && allows('/bilik-duta')" :card="card" />

@@ -28,9 +28,9 @@ describe('M25 S1 route', () => {
 
   it('sets the DV-M25-01 header and the exact tab title', () => {
     const r = router.getRoutes().find((x) => x.path === '/buku-nota/heatmap')
-    expect(r?.meta.title).toBe('Heatmap Topik Lemah')
+    expect(r?.meta.title).toBe('Peta Haba Topik Lemah')
     expect(r?.meta.header).toEqual({
-      title: 'Heatmap Topik Lemah',
+      title: 'Peta Haba Topik Lemah',
       subtitle: 'Selamat datang kembali',
     })
   })

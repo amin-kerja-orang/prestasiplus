@@ -6,12 +6,12 @@
 import type { HeatmapBand } from '../../api'
 
 export const HEATMAP_COPY = {
-  title: 'Heatmap Topik Lemah',
+  title: 'Peta Haba Topik Lemah',
   intro:
     'Topik mana anda kuat, mana lemah — semua dalam satu paparan. Klik kotak merah untuk fokus belajar.',
   cikguHeading: '🌟 Cikgu Pakar Untuk Topik Lemah',
   dutaTier: '🥇 Duta Bintang',
-  emptyTitle: 'Belum ada data heatmap.',
+  emptyTitle: 'Belum ada data peta haba.',
   emptyHint: 'Jawab soalan latih tubi dahulu — topik kuat dan lemah anda akan dipaparkan di sini.',
   emptyButton: 'Mula Latih Tubi',
 } as const
