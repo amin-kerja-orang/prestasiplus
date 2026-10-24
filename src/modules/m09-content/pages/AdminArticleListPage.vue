@@ -24,6 +24,7 @@ import {
   DsRowActions,
   DsStatRow,
   DsStatusBadge,
+  statusMap,
   useConfirm,
 } from '@/ds'
 import type { CardField, RowAction, StatItem } from '@/ds'
@@ -219,6 +220,7 @@ interface TableRow extends Record<string, unknown> {
   gradeLevel: string
   views: number
   date: string
+  statusText: string
   raw: AdminArticleItem
 }
 
@@ -230,6 +232,8 @@ const tableRows = computed<TableRow[]>(() =>
     gradeLevel: r.gradeLevel,
     views: r.views,
     date: listDate(r.createdAt),
+    // The same word as the table's status cell (DsStatusBadge), for the card list below md.
+    statusText: statusMap[r.isPublished ? 'published' : 'draft'].word,
     raw: r,
   })),
 )
@@ -246,6 +250,7 @@ const columns: TableColumn<TableRow>[] = [
 const cardFields: CardField[] = [
   { key: 'categoryLabel', label: 'Kategori' },
   { key: 'gradeLevel', label: 'Tahap' },
+  { key: 'statusText', label: 'Status' },
   { key: 'views', label: 'Views' },
   { key: 'date', label: 'Tarikh' },
 ]

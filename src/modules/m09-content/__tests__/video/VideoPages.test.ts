@@ -379,6 +379,71 @@ describe('VideoFormPage (S20 add)', () => {
     expect(radios[1]?.description).toBe('SMK DEMO')
   })
 
+  describe('visibility in http mode (SW12-05, DV-M09-23)', () => {
+    const values = (w: VueWrapper) =>
+      (visibility(w).props('items') as { value: string }[]).map((o) => o.value)
+
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    it('a pupil defaults to "Sekolah Saya", has no "Semua Pengguna" and posts school', async () => {
+      vi.stubEnv('VITE_API_MODE', 'http')
+      login('student')
+      api.fetchVideoFormContext.mockResolvedValue({
+        uploader: { name: 'Pelajar Demo', initial: 'P', roleLabel: 'student' },
+        school: { id: 900001, name: 'SMK DEMO' },
+      })
+      api.createVideo.mockResolvedValue({
+        data: detail(2261),
+        status: 'Video berjaya diterbitkan.',
+      })
+      const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
+      expect(values(w)).toEqual(['school'])
+      expect(visibility(w).props('modelValue')).toBe('school')
+      await t(w, 'video-url').setValue('https://youtu.be/abc123XYZ00')
+      await t(w, 'video-title-input').setValue('Tajuk')
+      category(w).vm.$emit('update:modelValue', 'tutorial')
+      await flushPromises()
+      await t(w, 'video-form').trigger('submit')
+      await flushPromises()
+      expect(api.createVideo).toHaveBeenCalledWith(
+        expect.objectContaining({ visibility: 'school' }),
+      )
+    })
+
+    it('a pupil without a school keeps "school" selected (never flipped to global)', async () => {
+      vi.stubEnv('VITE_API_MODE', 'http')
+      login('student')
+      const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
+      expect(values(w)).toEqual(['school'])
+      expect(visibility(w).props('modelValue')).toBe('school')
+    })
+
+    it.each(['admin', 'teacher'] as const)(
+      '%s keeps both options and the global default',
+      async (role) => {
+        vi.stubEnv('VITE_API_MODE', 'http')
+        useSessionStore().setSession({
+          token: 't',
+          remember: false,
+          expiresAt: '2099-01-01T00:00:00+08:00',
+          user: { id: 2, role, landingPath: '/dashboard' } as never,
+        })
+        const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
+        expect(values(w)).toEqual(['global', 'school'])
+        expect(visibility(w).props('modelValue')).toBe('global')
+      },
+    )
+
+    it('mock mode keeps the live two-option form for a pupil', async () => {
+      login('student')
+      const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
+      expect(values(w)).toEqual(['global', 'school'])
+      expect(visibility(w).props('modelValue')).toBe('global')
+    })
+  })
+
   it('detects the platform 500 ms after the last input and shows nothing for other URLs', async () => {
     login()
     const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })

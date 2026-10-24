@@ -5,7 +5,7 @@
  * breadcrumb, 403 and error states. Figures from the owners are covered by the handler tests and the E2E.
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
@@ -85,6 +85,10 @@ beforeEach(() => {
   api.fetchSchoolUsage.mockReset()
   setRouteOutcome(null)
   usePageMeta().reset()
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
 })
 
 describe('route (FR-M27-38, 40, 44)', () => {
@@ -334,5 +338,38 @@ describe('states (FR-M27-48)', () => {
     expect(useRouteOutcome().value).toBeNull()
     expect(text(w, 'su-error')).toContain('Ralat pelayan.')
     expect(has(w, 'su-tiles')).toBe(false)
+  })
+})
+
+describe('accuracy hidden by the 5-pupil rule (SW7-04, DV-M27-25)', () => {
+  const HIDDEN = usage({
+    tiles: { ...usage().tiles, activePupils: 3, sessions: 4, answers: 40, accuracy: null },
+  })
+  const GENUINE = 'Ketepatan dipaparkan sebagai “—” kerana belum ada sesi latihan direkodkan dalam skop ini.'
+  const COHORT = 'Disembunyikan kerana kurang daripada 5 pelajar aktif.'
+
+  it('http mode, answers but no accuracy: the footnote names the 5-pupil rule', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    const w = await mountPage(HIDDEN)
+    expect(text(w, 'su-footnote')).toBe(COHORT)
+    expect(text(w, 'su-tile-accuracy')).toContain('—')
+  })
+
+  it('http mode, genuinely no sessions: keeps "belum ada sesi latihan direkodkan"', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    const w = await mountPage(usage({ tiles: EMPTY_TILES, modes: [] }))
+    expect(text(w, 'su-footnote')).toBe(GENUINE)
+  })
+
+  it('http mode, accuracy present: no footnote', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    const w = await mountPage(usage())
+    expect(has(w, 'su-footnote')).toBe(false)
+  })
+
+  it('mock mode (replicates live): the footnote is unchanged even with answers and no accuracy', async () => {
+    vi.stubEnv('VITE_API_MODE', 'mock')
+    const w = await mountPage(HIDDEN)
+    expect(text(w, 'su-footnote')).toBe(GENUINE)
   })
 })

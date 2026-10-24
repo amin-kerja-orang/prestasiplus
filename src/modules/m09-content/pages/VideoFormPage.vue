@@ -18,6 +18,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { isHttpMode } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useDebounce, useFlash, usePageMeta, useSession } from '@/composables'
 import { DsFormBar, DsFormField, DsLoadError, DsPage, DsPanel } from '@/ds'
@@ -31,6 +32,7 @@ import {
   CATEGORY_OPTIONS,
   COPY,
   VIDEO_PATH,
+  VIDEO_STAFF_ROLES,
   VIDEO_TITLES,
   detectPlatform,
   errorLines,
@@ -48,6 +50,13 @@ const pageMeta = usePageMeta()
 const session = useSession()
 
 const isEdit = computed(() => props.mode === 'edit')
+
+/**
+ * http mode only (the real API refuses `global` from non-staff with a 422; the mock does not, so mock
+ * mode keeps the live two-option form): outside admin/teacher the form defaults to "Sekolah Saya"
+ * and does not offer "Semua Pengguna".
+ */
+const globalRefused = isHttpMode() && !VIDEO_STAFF_ROLES.includes(session.role.value ?? '')
 
 const { data: context } = useApi((signal) => fetchVideoFormContext({ signal }))
 const { data: subjectList } = useApi((signal) => fetchSubjectOptions({ signal }))
@@ -106,7 +115,7 @@ const form = reactive<FormState>({
   description: '',
   category: '',
   subjectId: '',
-  visibility: 'global',
+  visibility: globalRefused ? 'school' : 'global',
 })
 
 const preview = ref<DetectedPlatform | null>(null)
@@ -114,7 +123,12 @@ const preview = ref<DetectedPlatform | null>(null)
 // A stored "school" visibility without a video-form school cannot stay selected: the radio is
 // disabled, so the form shows "Semua Pengguna" (live form semantics).
 function normalizeVisibility(): void {
-  if (context.value !== null && context.value.school === null && form.visibility === 'school') {
+  if (
+    !globalRefused &&
+    context.value !== null &&
+    context.value.school === null &&
+    form.visibility === 'school'
+  ) {
     form.visibility = 'global'
   }
 }
@@ -203,13 +217,8 @@ const categoryModel = computed({
     form.category = v ?? ''
   },
 })
-const visibilityItems = computed(() => [
-  {
-    label: COPY.visibilityGlobal,
-    description: isEdit.value ? undefined : COPY.visibilityGlobalHint,
-    value: 'global',
-  },
-  {
+const visibilityItems = computed(() => {
+  const schoolItem = {
     label: COPY.visibilitySchool,
     description: school.value
       ? school.value.name
@@ -218,8 +227,18 @@ const visibilityItems = computed(() => [
         : COPY.visibilityNoSchool,
     value: 'school',
     disabled: school.value === null,
-  },
-])
+  }
+  // A stored `global` video stays visible on its own edit form so the selection is not blank.
+  if (globalRefused && !(isEdit.value && video.value?.visibility === 'global')) return [schoolItem]
+  return [
+    {
+      label: COPY.visibilityGlobal,
+      description: isEdit.value ? undefined : COPY.visibilityGlobalHint,
+      value: 'global',
+    },
+    schoolItem,
+  ]
+})
 </script>
 
 <template>

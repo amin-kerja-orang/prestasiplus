@@ -3,7 +3,8 @@
  * S4 "Statistik Bulanan" (restyle spec AS-50): `DsDataTable` with Bulan, Soalan Dijawab, Soalan Betul,
  * Pelajar Aktif, Purata/Pelajar and Accuracy, one row per month (newest first as the server sends them).
  * With more than one month the "Jumlah" row closes the table. No month at all: "Tiada data" and
- * "Tiada aktiviti direkodkan buat masa ini". Below `md` every month is a card.
+ * "Tiada aktiviti direkodkan buat masa ini" (http mode, month hidden by the 5-pupil rule: "Disembunyikan kerana
+ * kurang daripada 5 pelajar aktif.", DV-M27-25). Below `md` every month is a card.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
@@ -13,7 +14,12 @@ import { DsDataTable, DsEmptyState, DsPanel, type CardField } from '@/ds'
 import type { MonthlyReport } from '../../api/school-admin'
 import { count, dec1, NO_DATA, pct1 } from './monthly-format'
 
-const props = defineProps<{ months: MonthlyReport['months']; total: MonthlyReport['total'] }>()
+const props = defineProps<{
+  months: MonthlyReport['months']
+  total: MonthlyReport['total']
+  /** http mode only: the month has answers but fewer than 5 pupils, so the API left it out (DV-M27-25). */
+  cohortHidden?: boolean
+}>()
 
 interface Row extends Record<string, unknown> {
   month: string
@@ -76,7 +82,11 @@ const cardFields: CardField[] = [
     <DsPanel v-if="months.length === 0" data-testid="lb-table-empty">
       <DsEmptyState
         title="Tiada data"
-        description="Tiada aktiviti direkodkan buat masa ini"
+        :description="
+          cohortHidden
+            ? 'Disembunyikan kerana kurang daripada 5 pelajar aktif.'
+            : 'Tiada aktiviti direkodkan buat masa ini'
+        "
         icon="chart-bar"
       />
     </DsPanel>
