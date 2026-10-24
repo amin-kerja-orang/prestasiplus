@@ -10,8 +10,8 @@
  * "Cetak / PDF" (`window.print`). Inside the sheet (light scheme): head, four tiles, "Taburan Risiko", kombo
  * figures, the subject card (only with rows) or the school card, and the footer.
  *
- * States: loading skeleton; 403 and 404 render the global page in place; any other failure shows the server's
- * message with "Cuba Semula".
+ * States: loading skeleton; 403 and 404 render the global page in place; any other failure shows the BM line chosen by
+ * status (`loadErrorMessage`, DV-M18-52) with "Cuba Semula".
  */
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
