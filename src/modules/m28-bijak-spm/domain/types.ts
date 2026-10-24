@@ -74,7 +74,12 @@ export interface CurriculumTag {
   sp: string[]
   tp: number
   formOrigin: 'T1-T3' | 'T4' | 'T5'
+  /** Optional KBAT (higher-order thinking) level (FB-026); null/absent = not a KBAT question. Not gated. */
+  kbat?: KbatLevel | null
 }
+
+/** KBAT levels a question can be tagged with (FB-026). */
+export type KbatLevel = 'Mengaplikasi' | 'Menganalisis' | 'Menilai' | 'Mencipta'
 
 export interface GroupDef {
   id: string
