@@ -163,6 +163,21 @@ describe('QuestionListPage (M04 S1)', () => {
     expect(questions.fetchQuestions.mock.calls[0]?.[0]).toMatchObject({ subjectId: '8' })
   })
 
+  // SWY-08: in http mode the summary's subject ids are strings, the id read from `?subject_id=` is a number.
+  it('marks the active tile and shows "Dipilih" when the API subject ids are strings (SWY-08)', async () => {
+    questions.fetchQuestionSummary.mockResolvedValue({
+      ...SUMMARY,
+      subjects: SUMMARY.subjects.map((s) => ({ ...s, id: String(s.id) })),
+    })
+    const w = await render('/admin/questions?subject_id=8')
+    await t(w, 'questions-summary-toggle').trigger('click')
+    const active = w
+      .findAll('[data-testid="questions-tile"]')
+      .filter((n) => n.attributes('aria-current') === 'true')
+    expect(active.map((n) => n.attributes('data-subject-id'))).toEqual(['8'])
+    expect(active[0]?.text()).toContain('Dipilih')
+  })
+
   it('renders the rows in API order with badges, source and status', async () => {
     const w = await render()
     const rows = w.findAll('tbody tr')

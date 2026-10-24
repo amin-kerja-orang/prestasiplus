@@ -21,7 +21,11 @@ const props = defineProps<{
   activeSubjectId: number | null
 }>()
 
-type SortKey = 'name' | 'total' | 'approved' | 'rate' | 'group'
+/** Compared as strings: the API sends string subject ids, the active id is parsed from the URL as a number. */
+const isActiveSubject = (id: number | string): boolean =>
+  props.activeSubjectId !== null && String(id) === String(props.activeSubjectId)
+
+type SortKey ='name' | 'total' | 'approved' | 'rate' | 'group'
 const STORAGE_KEY = 'pp_questions_summary_open'
 
 function readOpen(): boolean {
@@ -218,7 +222,7 @@ const pct = (s: Row): string => (s.total > 0 ? `${String(Math.round(s.rate * 100
               class="flex flex-wrap items-center gap-2"
               data-testid="questions-tile"
               :data-subject-id="row.original.id"
-              :aria-current="row.original.id === activeSubjectId ? 'true' : undefined"
+              :aria-current="isActiveSubject(row.original.id) ? 'true' : undefined"
             >
               <ULink
                 :to="{ path: QUESTIONS_LIST_PATH, query: { subject_id: String(row.original.id) } }"
@@ -226,7 +230,7 @@ const pct = (s: Row): string => (s.total > 0 ? `${String(Math.round(s.rate * 100
                 >{{ row.original.name }}</ULink
               >
               <UBadge
-                v-if="row.original.id === activeSubjectId"
+                v-if="isActiveSubject(row.original.id)"
                 color="primary"
                 variant="soft"
                 size="sm"
