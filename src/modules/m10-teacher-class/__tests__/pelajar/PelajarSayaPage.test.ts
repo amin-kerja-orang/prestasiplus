@@ -94,6 +94,25 @@ describe('S6 PelajarSayaPage', () => {
     expect(w.findAll('[data-testid="student-name"]')[0]?.text()).toBe('Murid Demo 01')
   })
 
+  it('links a student name to Prestasi 360 on the mine tab (D54/T3)', async () => {
+    const w = await mountPage()
+    const names = w.findAll('[data-testid="student-name"]')
+    expect(names.map((n) => n.element.tagName)).toEqual(['A', 'A'])
+    expect(names.map((n) => n.attributes('href'))).toEqual(['/prestasi/3001', '/prestasi/3002'])
+  })
+
+  it('links only school-tab students who are in one of the guru classes (D54/T3)', async () => {
+    const w = await mountPage()
+    await w.get('[data-testid="tab-school"]').trigger('click')
+    await flushPromises()
+    const names = w.findAll('[data-testid="student-name"]')
+    // 3001 is in class 2001 (link); student 2 is in none of the guru's classes (plain text)
+    expect(names[0]?.element.tagName).toBe('A')
+    expect(names[0]?.attributes('href')).toBe('/prestasi/3001')
+    expect(names[1]?.element.tagName).toBe('SPAN')
+    expect(names[1]?.text()).toBe('Murid Demo Dua')
+  })
+
   it('shows the empty card with a link to the create-class page', async () => {
     state.mine = []
     const w = await mountPage()

@@ -3,8 +3,13 @@
  * One student row of S6 (PROPOSED, FR-M10-36/37): name, level, the viewer's class chips. On the
  * "Pelajar Saya" tab each chip with a known class id has a remove button (#17); on the school tab
  * the row has an add button (#16) for the class chosen in the "Tambah pelajar ke:" bar. A card at
- * every width (layers, no lines); the name links to the student's prestasi page.
+ * every width (layers, no lines). D54/T3 (DV-M10-35): the name links to the student's Prestasi 360
+ * (`/prestasi/{id}`) when the viewer may open it, i.e. the student is in one of the viewer's own
+ * classes (M08 BR-M08-26: a teacher opens only pupils of own classes, else 403); the "Pelajar
+ * Sekolah" rows of other students stay plain text.
  */
+import { computed } from 'vue'
+
 import { DsIdentity, DsPanel, DsStatusBadge } from '@/ds'
 
 import type { GuruStudent } from '../../api/types'
@@ -20,7 +25,7 @@ function initialsOf(name: string): string {
     .join('')
 }
 
-defineProps<{
+const props = defineProps<{
   student: GuruStudent
   mode: 'mine' | 'school'
   /** Class name → id for the chips that can be removed (unique active class names only). */
@@ -31,6 +36,10 @@ defineProps<{
   alreadyIn?: boolean
   busy?: boolean
 }>()
+/** The viewer teaches this student (`classNames` = the viewer's own active classes). */
+const prestasiTo = computed(() =>
+  props.student.classNames.length > 0 ? `/prestasi/${String(props.student.id)}` : null,
+)
 defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: number] }>()
 </script>
 
@@ -46,7 +55,14 @@ defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: num
               :initials="initialsOf(student.name)"
             >
               <template #name
-                ><span data-testid="student-name">{{ student.name }}</span></template
+                ><RouterLink
+                  v-if="prestasiTo"
+                  :to="prestasiTo"
+                  class="-my-3 block truncate py-3 text-primary-t"
+                  data-testid="student-name"
+                  >{{ student.name }}</RouterLink
+                >
+                <span v-else data-testid="student-name">{{ student.name }}</span></template
               >
             </DsIdentity>
             <ul v-if="student.classNames.length > 0" class="mt-2 flex flex-wrap items-center gap-2">

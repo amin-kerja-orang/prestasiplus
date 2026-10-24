@@ -120,6 +120,22 @@ describe('S4 KelasListPage', () => {
     expect(cards[1]?.get('[data-testid="class-subject"]').text()).toBe('Tiada Subjek')
   })
 
+  it('links each class card to its student list in Prestasi, next to the QR button (D54/T3)', async () => {
+    api.fetchGuruClasses.mockResolvedValue(list([cls(2001), cls(2002)]))
+    const w = await mountPage(KelasListPage)
+    const cards = w.findAll('[data-testid="class-card"]')
+    const links = cards.map((c) => c.get('[data-testid="class-students"]'))
+    expect(links.map((l) => l.attributes('href'))).toEqual([
+      '/prestasi/kelas/2001',
+      '/prestasi/kelas/2002',
+    ])
+    expect(links[0]?.text()).toBe('Lihat Pelajar')
+    // the QR button stays a separate button, not nested in the link
+    const qr = cards[0]!.get('[data-testid="class-qr"]')
+    expect(qr.element.tagName).toBe('BUTTON')
+    expect(qr.element.closest('a')).toBeNull()
+  })
+
   it('opens the QR modal with placeholders, then fills it; Salin toasts "Disalin!"; Tutup closes', async () => {
     api.fetchGuruClasses.mockResolvedValue(list([cls(2001)]))
     let resolve!: (v: unknown) => void

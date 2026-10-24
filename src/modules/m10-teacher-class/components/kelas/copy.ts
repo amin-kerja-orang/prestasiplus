@@ -7,6 +7,8 @@ export const KELAS_COPY = {
   emptyBody: 'Cipta kelas pertama anda untuk memulakan pengajaran',
   noSubject: 'Tiada Subjek',
   qrButton: 'Kod QR',
+  /** D54/T3: link to the class's student list in Prestasi. */
+  studentsButton: 'Lihat Pelajar',
   joinLink: 'Pautan sertai:',
   copied: 'Disalin!',
   print: 'Cetak',
