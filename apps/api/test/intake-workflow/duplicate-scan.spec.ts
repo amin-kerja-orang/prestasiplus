@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest'
 
 import { DuplicateDetector } from '../../src/modules/intake/workflow/duplicate-detector'
 
-/** A bank of `total` questions with ids total..1 (newest first), served like `QuestionsRepository.listIds`. */
+/** A bank of `total` questions with ids total..1 (newest first), served like `QuestionsRepository.listIdsKeyset` (no totals). */
 function detectorOver(total: number, limit: number) {
   const calls: Array<{ pageSize: number; idBelow?: string }> = []
   const questions = {
-    async listIds(f: { pageSize: number; idBelow?: string; page: number }) {
-      calls.push({ pageSize: f.pageSize, ...(f.idBelow === undefined ? {} : { idBelow: f.idBelow }) })
-      const below = f.idBelow === undefined ? total + 1 : Number(f.idBelow)
+    async listIdsKeyset(_filter: unknown, idBelow: string | undefined, limit: number) {
+      calls.push({ pageSize: limit, ...(idBelow === undefined ? {} : { idBelow }) })
+      const below = idBelow === undefined ? total + 1 : Number(idBelow)
       const ids: string[] = []
-      for (let id = below - 1; id >= 1 && ids.length < f.pageSize; id--) ids.push(String(id))
-      return { ids, total, counts: {} }
+      for (let id = below - 1; id >= 1 && ids.length < limit; id--) ids.push(String(id))
+      return ids
     },
     async getMany(ids: string[]) {
       return ids.map((id) => ({ id, version: { status: 'draft', parts: [], stemMs: `Soalan ${id}` } }))

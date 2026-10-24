@@ -42,9 +42,16 @@ export class SpmTrackingService implements PracticeRamalanSource {
   }
 
   private async views(rows: readonly TrackingSetRow[], sizes: ReadonlyMap<string, number>): Promise<SetView[]> {
+    // Only the ids the sets hold are checked (one bounded query per subject), never the whole subject.
+    const idsBySubject = new Map<string, Set<string>>()
+    for (const r of rows) {
+      const set = idsBySubject.get(r.subjectId) ?? new Set<string>()
+      for (const id of r.questionIds) set.add(id)
+      idsBySubject.set(r.subjectId, set)
+    }
     const eligibleBySubject = new Map<string, Set<string>>()
-    for (const subjectId of new Set(rows.map((r) => r.subjectId))) {
-      eligibleBySubject.set(subjectId, new Set(await this.questions.eligibleIds({ subjectId })))
+    for (const [subjectId, ids] of idsBySubject) {
+      eligibleBySubject.set(subjectId, new Set(await this.questions.eligibleAmong([...ids], { subjectId })))
     }
     return rows.map((row) => {
       const size = sizes.get(row.subjectId) ?? DEFAULT_SET_SIZE

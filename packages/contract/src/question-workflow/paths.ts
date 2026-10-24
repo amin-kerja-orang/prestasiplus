@@ -362,7 +362,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     tags: ['question-workflow', 'question-quality'],
     summary: 'Quality dashboard',
     description:
-      'Admin only. Every figure is computed from the question store. Bands: Cemerlang 76 to 100, Baik 51 to 75, Lemah 26 to 50, Kritikal 0 to 25 (BR-M04-21). `actionList` holds non-legacy rows scoring 50 or less, id descending; `legacyGeneric` counts scored rows with sourceType ai_generated.',
+      'Admin only. Every figure is computed from the question store. Bands: Cemerlang 76 to 100, Baik 51 to 75, Lemah 26 to 50, Kritikal 0 to 25 (BR-M04-21). `actionList` holds non-legacy rows scoring 50 or less, id descending, at most 200 rows (QLOAD); `legacyGeneric` counts scored rows with sourceType ai_generated.',
     responses: { 200: json(envelopeOf(QuestionQualitySummarySchema), 'The summary.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN },
   })
 
@@ -374,7 +374,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     description:
       'Admin only. No request body, no confirmation. Re-scores questions with the mock\'s score function (v2: every question, one `quality_audits` row per run) and stores the time. Flash: "Audit kualiti selesai.".',
     request: { headers: [csrf] },
-    responses: { 200: json(QuestionQualityAuditedSchema, 'Audit done; status is the flash text.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN_WRITE },
+    responses: { 200: json(QuestionQualityAuditedSchema, 'Audit done; status is the flash text.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN_WRITE, 409: err('CONFLICT: another quality audit is still running ("Audit kualiti sedang berjalan.").') },
   })
 
   // -------------------------------------------------------------------------------------------

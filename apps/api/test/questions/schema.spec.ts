@@ -55,11 +55,13 @@ describe('question bank schema (migration 0011_question_bank)', () => {
     await rejects(`insert into stimuli (id, kind) values (999, 'passage')`)
   })
 
-  it('enums are text plus check (no Postgres enum types) and have no legacy columns', async () => {
+  it('enums are text plus check (no Postgres enum types); only questions has legacy columns (QLOAD, 0043)', async () => {
     expect(await count(db, `select count(*) n from pg_type where typtype = 'e'`)).toBe(0)
-    expect(
-      await count(db, `select count(*) n from information_schema.columns where table_schema = 'public' and table_name = any($1) and column_name like 'legacy_%'`, [TABLES]),
-    ).toBe(0)
+    const legacy = await db.query<{ table_name: string; column_name: string }>(
+      `select table_name, column_name from information_schema.columns where table_schema = 'public' and table_name = any($1) and column_name like 'legacy_%' order by 1, 2`,
+      [TABLES],
+    )
+    expect(legacy.map((r) => `${r.table_name}.${r.column_name}`)).toEqual(['questions.legacy_id', 'questions.legacy_source'])
     await rejects(`insert into stimuli (kind) values ('video')`)
     await rejects(`insert into stimulus_groups (scope) values ('exam')`)
     const q = await newQuestion()

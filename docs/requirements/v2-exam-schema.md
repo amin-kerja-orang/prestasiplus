@@ -501,7 +501,7 @@ Keep `v2-question-bank.md` 4.1 exactly: question Draf -> Semakan -> Lulus -> Ter
 | legacy `structured_questions` (stimulus, kbat_level, total_marks) + `structured_sub_questions` (number, body, marks, scheme) | question + group of parts | `kbat_level` text -> `cognitive_level` (LOTS 1-2, MOTS 3, HOTS 4-6 -> integer after "n"); scheme free text -> `points` needing re-marking (68.3% empty) |
 | legacy `pksk_questions` | question with a PKSK tag set | separate vocabulary (bahagian, domain) |
 
-Per D29(a) questions are not migrated automatically; this table is the contract if the user later decides to reload part of the archive through the intake pipeline.
+Per D29(a) questions are not migrated automatically; this table is the contract if the user later decides to reload part of the archive through the intake pipeline. **Update (2026-10-24, LEAD decision A):** the approved legacy MCQs (`diluluskan`, `mcq`) are loaded by `migrate:questions` as published, live, active single-part MCQs; difficulty 1-5 is stored as `difficulty_tp` unchanged, there is no unit or SP, and images are held inactive (deviations row 2026-10-24).
 
 ## 8. Cross-reference of the real papers with the DSKP extracts
 
