@@ -9,7 +9,7 @@ import { join } from 'node:path'
 import { runCore } from '../../../src/migration/load'
 import { ACTIVITY_GROUPS } from '../../../src/migration/load/activity'
 import { AS_OF, bootActivity, PROBE_GROUP, type ActivityHarness } from '../activity/helpers'
-import { REPO_ROOT } from '../staging/helpers'
+import { REPO_ROOT, testOutDir } from '../staging/helpers'
 
 export { AS_OF, REPO_ROOT, PROBE_GROUP }
 
@@ -25,7 +25,7 @@ export const realGroups = () => ACTIVITY_GROUPS.filter((g) => g !== PROBE_GROUP)
 
 /** Core then activity, dry-run then apply each; throws when a run does not succeed. Returns the apply run ids. */
 export async function migrateAll(h: ActivityHarness): Promise<string[]> {
-  const base = { pool: h.env.pool, env: h.runEnv, source: 'cloud' as const, asOf: AS_OF, batchSize: 2 }
+  const base = { pool: h.env.pool, env: h.runEnv, source: 'cloud' as const, asOf: AS_OF, batchSize: 2, outDir: testOutDir() }
   const ids: string[] = []
   for (const mode of ['dry-run', 'apply'] as const) {
     const core = await runCore({ ...base, mode })

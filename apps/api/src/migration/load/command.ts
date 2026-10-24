@@ -5,7 +5,7 @@
  *
  * Environment: DATABASE_URL (the v2 database that also holds staging_cloud), IC_HASH_KEY (else
  * SESSION_SECRET outside production), PP_MIGRATE_ROSTER_DEFAULT_HASHES (optional; the lead's comma-separated
- * list of shared roster default hashes, never logged), and for --apply PP_ALLOW_MIGRATE_APPLY=1.
+ * list of shared roster default hashes, never logged; --apply warns when it is unset), and for --apply PP_ALLOW_MIGRATE_APPLY=1.
  * Reads only the fixtures / anonymised staging copy; it never connects to a source database.
  */
 import { mytDay, SystemClock, type Clock } from '../../db/clock'
@@ -38,8 +38,8 @@ export const migrateCore: MigrateCommand = {
     if (batchSize !== undefined && (!Number.isInteger(batchSize) || batchSize < 1)) throw new ApplyGuardError('--batch-size must be a positive integer.')
 
     // Dry-run and apply both take the per-source lock (the orchestrator's key); runCore itself stays lock-free for it.
-    const { report, core } = await withSourceLock(ctx.pool, 'cloud', () =>
-      runCore({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, mode: args.mode, batchSize, gitSha: resolveGitSha(ctx.env) }),
+    const { report, core, restrictedFile } = await withSourceLock(ctx.pool, 'cloud', () =>
+      runCore({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, mode: args.mode, batchSize, gitSha: resolveGitSha(ctx.env), warn: ctx.err }),
     )
 
     ctx.out(`migrate:core ${report.mode}: run ${report.runId} ${report.status}`)
@@ -53,6 +53,8 @@ export const migrateCore: MigrateCommand = {
       const ids = core.notes.ids.get(name)
       if (ids && ids.length > 0) ctx.out(`ids ${name}: ${ids.slice(0, 200).join(',')}${ids.length > 200 ? ',...' : ''}`)
     }
+    // The ids behind nullHashAccounts / flaggedWithoutLoginId are real people: only the mode-0600 file holds them (7 days, runbook).
+    if (restrictedFile !== undefined) ctx.out(`restricted id file (mode 0600, delete within 7 days): ${restrictedFile}`)
     for (const n of NOT_MIGRATED) ctx.out(`not migrated ${n.table}: ${n.reason}`)
     return report.status === 'succeeded' ? 0 : 1
   },
