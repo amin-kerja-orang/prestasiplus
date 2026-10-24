@@ -222,7 +222,7 @@ async function dropPhoto(key: string): Promise<void> {
           role="status"
           data-testid="final-hint"
         >
-          Masukkan nombor sahaja, cth. 13, 3.5 atau 1/2.
+          Masukkan nombor sahaja, cth. 13 atau 3.5. Pecahan dan tanda tolak ada pada papan kekunci.
         </p>
       </div>
 

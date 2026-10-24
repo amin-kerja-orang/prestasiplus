@@ -679,12 +679,34 @@ export function numericValue(raw: string): number | null {
   return stripped.unit ? numericOf(stripped.value) : null
 }
 
+/** A parsed answer that is a number, or a list of numbers ("3, 5", "3 dan 5"). */
+function isNumericParsed(p: Parsed): boolean {
+  if (p.kind === 'list') return p.items.every(isNumericParsed)
+  const e = valueOf(p)
+  if (!e || variablesOf(e).size) return false
+  return Number.isFinite(evalExpr(e, {}))
+}
+
+const PLAIN_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/
+/** A number, then a space, then a free unit word ("7 hari", "30 °C"); group 1 is the number part. */
+const SPACED_UNIT = /^(.*?\d\.?)\s+(?!(?:dan|atau|and|or)\b)[^\d\s=<>+*/^()×÷.,;-].*$/
+
 /**
- * A numeric-kind final answer the marker can read (FB-050): a number, a fraction, an optional unit or
- * "RM". A blank field is not an error here ("belum dijawab" is counted elsewhere).
+ * Whether a numeric-kind final answer is something the marker can read at all (FB-050): a number
+ * (also `1.2E3`, `5.`, thousands spaces), a fraction, a list of numbers ("3, 5", "3 dan 5"), or any
+ * of those followed by a unit ("12 cm", "RM12", "7 hari", "30 °C"). A blank field is not an error
+ * ("belum dijawab" is counted elsewhere). Letters glued to the number ("68ab") are not readable.
  */
 export function isReadableNumber(raw: string): boolean {
-  return !raw.trim() || numericValue(raw) !== null
+  if (!raw.trim()) return true
+  const plain = latexToPlain(raw).replace(/[\u00a0\u202f\u2009]/g, '')
+  if (PLAIN_NUMBER.test(plain.trim())) return true
+  const whole = parseAnswer(plain)
+  if (whole && isNumericParsed(whole)) return true
+  if (numericValue(raw) !== null) return true
+  const spaced = SPACED_UNIT.exec(plain.trim())
+  const lead = spaced ? parseAnswer(spaced[1]!) : null
+  return !!lead && isNumericParsed(lead)
 }
 
 /* -------------------------------------------------------------------------------- units */
