@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
  * S5 "Pelajar Sedia Ada ({used} orang)" (FR-M02-60). The toggle opens the panel; the first opening calls
- * `GET /api/admin/schools/:id/students`. The panel has "Cari nama / email / ID..." (300 ms) and a class
+ * `GET /api/admin/schools/:id/students`. The panel has "Cari nama / emel / ID..." (300 ms) and a class
  * select ("Semua Kelas" + D1–D6 for a primary school, T1–T5 otherwise), both reloading the list; the table
- * "#", "Nama", "Email / ID Delima", "Kelas" scrolls inside the panel (cards below `md`); "Memuatkan..."
+ * "#", "Nama", "Emel / ID Delima", "Kelas" scrolls inside the panel (cards below `md`); "Memuatkan..."
  * while loading, "Tiada pelajar dijumpai" when empty and the 200-row notice at 200 rows. Errors are silent
  * (console).
  */
@@ -35,7 +35,7 @@ type StudentRow = ExistingStudent & Record<string, unknown>
 const COLUMNS: TableColumn<StudentRow>[] = [
   { id: 'no', header: '#' },
   { accessorKey: 'name', header: 'Nama' },
-  { id: 'email', header: 'Email / ID Delima' },
+  { id: 'email', header: 'Emel / ID Delima' },
   { id: 'class', header: 'Kelas' },
 ]
 const tableRows = computed(() => rows.value as StudentRow[])
@@ -104,7 +104,7 @@ watch(classLevel, () => {
             v-model="search"
             type="text"
             autocomplete="off"
-            placeholder="Cari nama / email / ID..."
+            placeholder="Cari nama / emel / ID..."
             icon="i-ph-magnifying-glass"
             aria-label="Cari pelajar"
             class="min-w-0 flex-1"

@@ -25,7 +25,7 @@ export interface ParentInviteView {
   parents: LinkedParent[]
 }
 
-/** #2 data. `status` = "Link jemputan baru telah dijana!". */
+/** #2 data. `status` = "Pautan jemputan baharu telah dijana!". */
 export interface GeneratedParentInvite {
   token: string
   createdAt: string

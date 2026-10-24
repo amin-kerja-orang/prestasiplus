@@ -106,19 +106,19 @@ describe('StudentImportPage (M02 S5) content', () => {
     expect(t(w, 'student-format-paste').text()).toContain('Format DELIMa (3-4 baris per pelajar):')
     expect(t(w, 'student-format-paste').text()).toContain('(No. KP — pilihan)')
     expect(w.get('[data-ds="back-link"]').attributes('href')).toBe('/admin')
-    expect(t(w, 'student-notes').text()).toContain('Nama pelajar akan ditukar ke Title Case')
+    expect(t(w, 'student-notes').text()).toContain('Nama pelajar akan ditukar kepada Huruf Besar Setiap Perkataan')
     expect(
       t(w, 'student-notes')
         .findAll('strong')
         .map((s) => s.text()),
-    ).toEqual(['email DELIMa', 'kata laluan DELIMa'])
+    ).toEqual(['emel DELIMa', 'kata laluan DELIMa'])
   })
 
   it('CSV mode shows the DELIMa CSV format instead of the paste help', async () => {
     const w = await render()
     await t(w, 'import-mode-csv').trigger('click')
     expect(t(w, 'student-format-csv').text()).toContain(
-      'Nama, Email DELIMa, Kata Laluan, No KP (pilihan)',
+      'Nama, Emel DELIMa, Kata Laluan, No KP (pilihan)',
     )
     expect(t(w, 'student-format-csv').text()).toContain(
       'Contoh: Muhammad Fulan bin Fulan, m-XXXXXXXX@moe-dl.edu.my, katalaluan123, 031215101234',

@@ -47,16 +47,16 @@ describe('S1 content (FR-L45-04..07)', () => {
     await render()
     expect(t('jemput-hero').text()).toContain('Jemput Ibu Bapa 👨‍👩‍👧')
     expect(t('jemput-hero').text()).toContain(
-      'Kongsi link ini dengan ibu bapa untuk pantau perkembangan anda',
+      'Kongsi pautan ini dengan ibu bapa untuk pantau perkembangan anda',
     )
     const card = t('jemput-link-card').text()
-    expect(card).toContain('Link Jemputan')
+    expect(card).toContain('Pautan Jemputan')
     expect(card).toContain(
-      'Salin link ini dan hantar kepada ibu bapa anda melalui WhatsApp atau mesej.',
+      'Salin pautan ini dan hantar kepada ibu bapa anda melalui WhatsApp atau mesej.',
     )
     expect(t('jemput-copy').text()).toBe('Salin')
-    expect(t('jemput-whatsapp').text()).toBe('Hantar via WhatsApp')
-    expect(t('jemput-regenerate').text()).toBe('Jana Link Baru')
+    expect(t('jemput-whatsapp').text()).toBe('Hantar melalui WhatsApp')
+    expect(t('jemput-regenerate').text()).toBe('Jana Pautan Baharu')
     const input = t('jemput-url').element as HTMLInputElement
     expect(input.readOnly).toBe(true)
     expect(input.value).toBe(`${window.location.origin}/ibu-bapa/terima/${TOKEN_A}`)
@@ -69,7 +69,7 @@ describe('S1 content (FR-L45-04..07)', () => {
     expect(a.attributes('href')).toBe(
       'https://wa.me/?text=' +
         encodeURIComponent(
-          `Salam ibu/bapa! Klik link ini untuk pantau perkembangan saya di PRESTASIPLUS: ${url}`,
+          `Salam ibu/bapa! Klik pautan ini untuk pantau perkembangan saya di PRESTASIPLUS: ${url}`,
         ),
     )
     expect(a.attributes('target')).toBe('_blank')
@@ -86,7 +86,7 @@ describe('connected parents (FR-L45-14..16)', () => {
     const text = t('jemput-parents-card').text()
     expect(text).toContain('Ibu Bapa Dihubungkan')
     expect(text).toContain('Belum ada ibu bapa dihubungkan')
-    expect(text).toContain('Hantar link jemputan di atas')
+    expect(text).toContain('Hantar pautan jemputan di atas')
   })
 
   it('lists parents by name A to Z with no remove control', async () => {
@@ -149,7 +149,7 @@ describe('regenerate (FR-L45-10..12)', () => {
     resolve({
       token: TOKEN_B,
       createdAt: '2026-10-02T09:05:00+08:00',
-      status: 'Link jemputan baru telah dijana!',
+      status: 'Pautan jemputan baharu telah dijana!',
     })
     await flushPromises()
     expect(t('jemput-regenerate').attributes('disabled')).toBeUndefined()
@@ -157,7 +157,7 @@ describe('regenerate (FR-L45-10..12)', () => {
     expect(t('jemput-whatsapp').attributes('href')).toContain(
       encodeURIComponent(`/ibu-bapa/terima/${TOKEN_B}`),
     )
-    expect(t('jemput-flash').text()).toContain('Link jemputan baru telah dijana!')
+    expect(t('jemput-flash').text()).toContain('Pautan jemputan baharu telah dijana!')
   })
 
   it('keeps the old link and shows the red alert when it fails', async () => {

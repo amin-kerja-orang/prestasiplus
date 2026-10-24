@@ -40,7 +40,7 @@ defineProps<{ parents: readonly LinkedParent[] }>()
     <div v-else class="py-6 text-center" data-testid="jemput-empty">
       <div class="text-display">👨‍👩‍👧</div>
       <p class="mt-3 text-label text-highlighted">Belum ada ibu bapa dihubungkan</p>
-      <p class="mt-1 text-caption text-muted">Hantar link jemputan di atas</p>
+      <p class="mt-1 text-caption text-muted">Hantar pautan jemputan di atas</p>
     </div>
   </section>
 </template>

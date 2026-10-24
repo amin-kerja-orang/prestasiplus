@@ -281,7 +281,7 @@ export function toggleUserActive(id: number): Promise<UserMutation<{ isActive: b
 }
 
 /**
- * #9 `POST /api/admin/users/:id/impersonate` ("Login As"): the caller replaces the client session with the
+ * #9 `POST /api/admin/users/:id/impersonate` ("Log Masuk Sebagai"): the caller replaces the client session with the
  * returned one and navigates to `user.landingPath`, with no message and no return control (FR-M02-12).
  */
 export function impersonateUser(id: number): Promise<ImpersonationSession> {

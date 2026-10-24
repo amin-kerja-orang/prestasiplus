@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S7 `/admin/comp-students/create` "Daftar Pelajar Komplimen - Admin Panel" (M02-T7; FR-M02-70…73; BR-18),
+ * S7 `/admin/comp-students/create` "Daftar Pelajar Komplimen - Panel Admin" (M02-T7; FR-M02-70…73; BR-18),
  * v2 staff theme.
  *
  * Blue info alert (with the configured default password), then the form: "Guru" (not submitted; every

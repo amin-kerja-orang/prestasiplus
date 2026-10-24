@@ -340,13 +340,13 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     }
   })
 
-  test('E2E-M02-09: dismissing Login As stays on the list', async ({ page, gotoApp }) => {
+  test('E2E-M02-09: dismissing Log Masuk Sebagai stays on the list', async ({ page, gotoApp }) => {
     await gotoApp('/admin/users?role=student')
     const first = byId(page, 'user-row').first()
     const name = (await first.getByTestId('user-name').innerText()).trim()
     const dismissed = dismissNextDialog(page, {
       type: 'confirm',
-      message: `Login sebagai ${name}?`,
+      message: `Log masuk sebagai ${name}?`,
     })
     await first.getByTestId('user-login-as').click()
     await dismissed
@@ -355,7 +355,7 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     const auth = await page.evaluate(() => JSON.parse(localStorage.getItem('pp.auth') ?? 'null'))
     expect(auth.user.role).toBe('admin')
     // Every non-own row has the title on the control.
-    await expect(first.getByTestId('user-login-as')).toHaveAttribute('title', 'Login As')
+    await expect(first.getByTestId('user-login-as')).toHaveAttribute('title', 'Log Masuk Sebagai')
     await expect(first.getByTestId('user-delete')).toHaveAttribute('title', 'Padam')
   })
 
@@ -406,7 +406,7 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(rows).toHaveCount(2)
     await byId(page, 'users-select-all').check()
     await expect(byId(page, 'users-selected-count')).toHaveText('1')
-    // Own row: has the toggle and Edit, no checkbox / Login As / delete.
+    // Own row: has the toggle and Edit, no checkbox / Log Masuk Sebagai / delete.
     const own = rows.filter({ hasText: 'admin@demo.test' })
     await expect(own.getByTestId('user-toggle')).toBeVisible()
     await expect(own.getByTestId('user-edit')).toBeVisible()

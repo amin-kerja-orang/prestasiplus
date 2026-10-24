@@ -1,13 +1,13 @@
 ﻿<script setup lang="ts">
 /**
- * S1 `/admin/users` "Pengurusan Pengguna - Admin Panel" (M02-T4; FR-M02-01..19), v2 staff theme.
+ * S1 `/admin/users` "Pengurusan Pengguna - Panel Admin" (M02-T4; FR-M02-01..19), v2 staff theme.
  *
  * - 7 role KPI tiles (all users, unaffected by the filters), a one-row toolbar with filter chips and
  *   three header actions.
  * - Table of 25 rows per page (`AdminTable`, cards below `md`): bulk select (own row excluded), status
- *   badge, Edit and a "..." menu (Pakej / Nyahaktifkan / Login As / Padam). The query string is the
+ *   badge, Edit and a "..." menu (Pakej / Nyahaktifkan / Log Masuk Sebagai / Padam). The query string is the
  *   state; the form navigates and the list follows it.
- * - `useConfirm` for the toggle and Login As (same BM text as the native confirm), dialogs for delete
+ * - `useConfirm` for the toggle and Log Masuk Sebagai (same BM text as the native confirm), dialogs for delete
  *   and bulk delete.
  */
 import { computed, ref, watch } from 'vue'
@@ -218,7 +218,7 @@ function toggleOne(id: number, checked: boolean | 'indeterminate'): void {
       : selected.value.filter((v) => v !== id)
 }
 
-// --- Toggle, Login As (confirm), delete.
+// --- Toggle, Log Masuk Sebagai (confirm), delete.
 const busy = ref(false)
 const togglingId = ref<number | null>(null)
 
@@ -249,7 +249,7 @@ async function toggle(user: AdminUserListItem): Promise<void> {
 }
 
 async function loginAs(user: AdminUserListItem): Promise<void> {
-  if (!(await confirm({ message: `Login sebagai ${user.name}?` }))) return
+  if (!(await confirm({ message: `Log masuk sebagai ${user.name}?` }))) return
   if (busy.value) return
   busy.value = true
   try {
@@ -307,7 +307,7 @@ async function confirmBulk(): Promise<void> {
   }
 }
 
-/** Row menu: Pakej (school admins), the status toggle, Login As (not the own row) and Padam. */
+/** Row menu: Pakej (school admins), the status toggle, Log Masuk Sebagai (not the own row) and Padam. */
 function menuActions(user: AdminUserListItem): RowAction[] {
   const actions: RowAction[] = []
   if (user.role === 'school_admin')
@@ -322,7 +322,7 @@ function menuActions(user: AdminUserListItem): RowAction[] {
     onSelect: () => void toggle(user),
   })
   if (user.id === ownId.value) return actions
-  actions.push({ label: 'Login As', icon: 'i-ph-sign-in', onSelect: () => void loginAs(user) })
+  actions.push({ label: 'Log Masuk Sebagai', icon: 'i-ph-sign-in', onSelect: () => void loginAs(user) })
   actions.push({
     label: 'Padam',
     icon: 'i-ph-trash',

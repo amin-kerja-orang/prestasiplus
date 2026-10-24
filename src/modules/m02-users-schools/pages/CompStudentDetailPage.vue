@@ -116,7 +116,7 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
 
           <dl class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="min-w-0">
-              <dt class="text-label text-muted">Username</dt>
+              <dt class="text-label text-muted">Nama Pengguna</dt>
               <dd
                 class="mt-1 min-w-0 text-body break-all text-highlighted"
                 data-testid="comp-username"
@@ -161,7 +161,7 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
                   :color="coinsColor(student.coinsEnabled)"
                   variant="subtle"
                   size="lg"
-                  :label="student.coinsEnabled ? 'ON' : 'OFF (tak boleh kumpul/claim)'"
+                  :label="student.coinsEnabled ? 'HIDUP' : 'MATI (tidak boleh kumpul/tuntut)'"
                 />
               </dd>
             </div>
@@ -172,9 +172,9 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
               </dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-label text-muted">Baki syiling / coins</dt>
+              <dt class="text-label text-muted">Baki syiling / koin</dt>
               <dd class="mt-1 min-w-0 text-body text-highlighted" data-testid="comp-balance">
-                {{ student.syilingBalance }} syiling · {{ student.coinBalance }} coins
+                {{ student.syilingBalance }} syiling · {{ student.coinBalance }} koin
               </dd>
             </div>
           </dl>

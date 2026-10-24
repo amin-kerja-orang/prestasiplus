@@ -183,7 +183,7 @@ describe('UserEditPage (M02 S3) student record', () => {
   it('toggles the password panel with its copy', async () => {
     const w = await render()
     expect(t(w, 'user-password-toggle').text()).toContain('Tukar Kata Laluan')
-    expect(w.text()).toContain('Klik untuk buka bahagian reset kata laluan')
+    expect(w.text()).toContain('Klik untuk buka bahagian set semula kata laluan')
     expect(t(w, 'user-password-panel').isVisible()).toBe(false)
     await t(w, 'user-password-toggle').trigger('click')
     expect(t(w, 'user-password-panel').isVisible()).toBe(true)

@@ -245,7 +245,7 @@ async function submit(): Promise<void> {
               v-model="form.reference"
               type="text"
               name="payment_reference"
-              placeholder="cth: Bank transfer ref, nombor resit"
+              placeholder="cth: Rujukan pindahan bank, nombor resit"
               class="w-full"
               data-testid="sub-reference"
             />

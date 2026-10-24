@@ -21,7 +21,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Jemput Ibu Bapa - PRESTASIPLUS',
       header: {
         title: 'Jemput Ibu Bapa',
-        subtitle: 'Kongsi link ini dengan ibu bapa untuk pantau perkembangan anda',
+        subtitle: 'Kongsi pautan ini dengan ibu bapa untuk pantau perkembangan anda',
       },
       module: 'M02',
       v2: true,

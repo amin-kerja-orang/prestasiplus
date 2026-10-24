@@ -12,7 +12,7 @@ export const JEMPUT_GENERIC_ERROR = 'Ralat berlaku. Sila cuba lagi.'
 
 /** FR-L45-09: the prepared WhatsApp message, before the URL. */
 export const WHATSAPP_MESSAGE_PREFIX =
-  'Salam ibu/bapa! Klik link ini untuk pantau perkembangan saya di PRESTASIPLUS: '
+  'Salam ibu/bapa! Klik pautan ini untuk pantau perkembangan saya di PRESTASIPLUS: '
 
 /** BR-L45-11: the origin is read at render time and never stored. */
 export function inviteUrl(token: string, origin: string): string {

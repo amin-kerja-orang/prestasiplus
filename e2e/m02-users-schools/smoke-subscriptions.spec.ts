@@ -516,7 +516,7 @@ test.describe('M02 S15 renewal invoice', { tag: [TAG.smoke, moduleTag(2)] }, () 
     await expect(page).toHaveURL('/admin/school-subscriptions/10/renewal-invoice')
     await expect(page.getByTestId('invoice-sheet')).toBeVisible()
     await expect(page.getByTestId('invoice-row').first()).toBeVisible()
-    await expectTabTitle(page, `Invoice Pembaharuan - ${school}`)
+    await expectTabTitle(page, `Invois Pembaharuan - ${school}`)
     // Standalone: no shell around it.
     await expect(page.locator('.admin-shell')).toHaveCount(0)
 
@@ -555,7 +555,7 @@ test.describe('M02 S15 renewal invoice', { tag: [TAG.smoke, moduleTag(2)] }, () 
     await expectNoHorizontalScroll(page)
   })
 
-  test('"Cetak Invoice" calls window.print, the toolbar hides in print, "Kembali" returns', async ({
+  test('"Cetak Invois" calls window.print, the toolbar hides in print, "Kembali" returns', async ({
     page,
     loginAs,
     gotoApp,
@@ -598,7 +598,7 @@ test.describe('M02 S16 assign SPM packages', { tag: [TAG.smoke, moduleTag(2)] },
     await loginAs(ADMIN)
     await gotoApp('/admin/users/5601/packages')
     await expect(page.getByTestId('packages-school')).toBeVisible()
-    await expect(page).toHaveTitle(/^Assign Pakej SPM - .+/)
+    await expect(page).toHaveTitle(/^Tetapkan Pakej SPM - .+/)
     await expect(page.getByTestId('packages-school')).toContainText('Admin Sekolah')
 
     const t4 = page.getByTestId('package-card-t4')

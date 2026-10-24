@@ -83,8 +83,8 @@ export function quotaPercent(used: number, quota: number): number {
 export const EXISTING_STUDENTS_CAP = 200
 
 export const IMPORT_MODE_LABELS: Record<ImportMode, string> = {
-  paste: 'Paste Manual',
-  csv: 'Upload CSV',
+  paste: 'Tampal Manual',
+  csv: 'Muat Naik CSV',
 }
 
 /** FR-M02-54 / FR-M02-62 paste placeholders (DV-M02-17: the sample name is generic). */

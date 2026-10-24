@@ -273,7 +273,7 @@ async function submit(): Promise<void> {
                       <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
                       Format CSV:
                     </p>
-                    <p class="break-words">Nama, Email DELIMa, Kata Laluan, No KP (pilihan)</p>
+                    <p class="break-words">Nama, Emel DELIMa, Kata Laluan, No KP (pilihan)</p>
                     <p class="break-words">
                       Contoh: Muhammad Fulan bin Fulan, m-XXXXXXXX@moe-dl.edu.my, katalaluan123,
                       031215101234
@@ -311,7 +311,7 @@ async function submit(): Promise<void> {
           <div class="flex flex-col gap-4 p-4 sm:p-6">
             <div class="flex items-center gap-4">
               <DsIconChip icon="identification-card" accent="trial" size="lg" />
-              <h3 class="text-subheading text-highlighted">Login pelajar</h3>
+              <h3 class="text-subheading text-highlighted">Log masuk pelajar</h3>
             </div>
             <div class="flex flex-wrap gap-2">
               <UBadge
@@ -326,7 +326,7 @@ async function submit(): Promise<void> {
                 variant="subtle"
                 size="lg"
                 icon="i-ph-envelope-simple"
-                label="Email DELIMa"
+                label="Emel DELIMa"
               />
             </div>
           </div>
@@ -340,11 +340,11 @@ async function submit(): Promise<void> {
             </h3>
             <ul class="flex flex-col gap-2 text-body text-muted">
               <li>
-                • Pelajar login guna <strong>email DELIMa</strong> dan
+                • Pelajar login guna <strong>emel DELIMa</strong> dan
                 <strong>kata laluan DELIMa</strong>
               </li>
               <li>• ID yang sudah wujud akan dilangkau automatik</li>
-              <li>• Nama pelajar akan ditukar ke Title Case</li>
+              <li>• Nama pelajar akan ditukar kepada Huruf Besar Setiap Perkataan</li>
             </ul>
           </div>
         </DsPanel>

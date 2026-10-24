@@ -15,7 +15,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'admin',
       access: 'auth',
       roles: ['admin'],
-      title: 'Tambah Pengguna - Admin Panel',
+      title: 'Tambah Pengguna - Panel Admin',
       header: {
         title: 'Tambah Pengguna Baru',
         subtitle: 'Daftarkan akaun pengguna baru ke sistem',
@@ -33,7 +33,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'admin',
       access: 'auth',
       roles: ['admin'],
-      title: 'Edit Pengguna - Admin Panel',
+      title: 'Edit Pengguna - Panel Admin',
       header: { title: 'Edit Pengguna', subtitle: 'Kemaskini maklumat pengguna' },
       module: 'M02',
       v2: true,

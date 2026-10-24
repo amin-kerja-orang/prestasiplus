@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S16 `/admin/users/:id/packages` "Assign Pakej SPM - {name}" (M02-T9; FR-M02-47..50, BR-13), v2 staff theme.
+ * S16 `/admin/users/:id/packages` "Tetapkan Pakej SPM - {name}" (M02-T9; FR-M02-47..50, BR-13), v2 staff theme.
  *
  * Header card (school, "{type} · {state} · {district}", badges name / "Admin Sekolah" / code) and one
  * card per package (T4, T5) with its status badge ("Belum Ditetapkan", or "Ditetapkan" once assigned,
@@ -46,10 +46,10 @@ watch(
   (value) => {
     if (!value) return
     pageMeta.setHeader({
-      title: 'Assign Pakej SPM',
+      title: 'Tetapkan Pakej SPM',
       subtitle: `${value.user.name} — ${value.school?.name ?? ''}`,
     })
-    pageMeta.setTitle(`Assign Pakej SPM - ${value.user.name}`)
+    pageMeta.setTitle(`Tetapkan Pakej SPM - ${value.user.name}`)
     for (const card of value.packages) {
       if (seeded.has(card.formLevel)) continue
       seeded.add(card.formLevel)

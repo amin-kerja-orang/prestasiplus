@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S15 `/admin/school-subscriptions/:id/renewal-invoice` "Invoice Pembaharuan - {school name}" (M02-T9;
+ * S15 `/admin/school-subscriptions/:id/renewal-invoice` "Invois Pembaharuan - {school name}" (M02-T9;
  * FR-M02-97, BR-30). Standalone (`bare` layout, no shell): a white A4-like page. The buttons "Cetak
  * Invoice" (`window.print()`) and "Kembali" (-> S14) are hidden when printing. The page fits the
  * viewport below 640 px (DV-M02-06: live overflows at 375): header blocks stack and the student table
@@ -42,7 +42,7 @@ watch(
 watch(
   invoice,
   (inv) => {
-    if (inv) pageMeta.setTitle(`Invoice Pembaharuan - ${inv.school.name}`)
+    if (inv) pageMeta.setTitle(`Invois Pembaharuan - ${inv.school.name}`)
   },
   { immediate: true },
 )
@@ -74,7 +74,7 @@ const TD = 'px-3 py-2 text-sm text-slate-700'
         data-testid="invoice-print"
         @click="print"
       >
-        Cetak Invoice
+        Cetak Invois
       </button>
       <RouterLink
         :to="{ name: SUBSCRIPTION_ROUTES.detail, params: { id } }"
@@ -116,7 +116,7 @@ const TD = 'px-3 py-2 text-sm text-slate-700'
           </div>
           <div class="sm:text-right">
             <h2 class="font-heading text-xl font-bold tracking-widest text-slate-600 uppercase">
-              Invoice Pembaharuan
+              Invois Pembaharuan
             </h2>
             <p class="mt-1 text-xs text-slate-400" data-testid="invoice-date">
               Tarikh: {{ formatDate(invoice.date) }}
@@ -215,7 +215,7 @@ const TD = 'px-3 py-2 text-sm text-slate-700'
             <span data-testid="invoice-count">{{ formatNumber(invoice.studentCount) }} orang</span>
           </div>
           <div class="flex justify-between gap-4">
-            <span class="text-slate-500">Harga per pelajar / tahun</span>
+            <span class="text-slate-500">Harga bagi setiap pelajar / tahun</span>
             <span data-testid="invoice-price">{{ money(invoice.pricePerStudent) }}</span>
           </div>
           <div class="flex justify-between gap-4 border-t-2 border-amber-500 pt-2 font-bold">

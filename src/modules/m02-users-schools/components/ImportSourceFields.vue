@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S4 / S5 "Kaedah Import *" (FR-M02-54, FR-M02-62): the buttons "Upload CSV" / "Paste Manual" (active one
+ * S4 / S5 "Kaedah Import *" (FR-M02-54, FR-M02-62): the buttons "Muat Naik CSV" / "Tampal Manual" (active one
  * highlighted, default paste), then the paste textarea or the CSV drop zone ("Seret & Lepas fail CSV di
  * sini" / "atau" / "Pilih Fail", `accept=".csv,.txt"`; a drop copies the file into the input; status "Tiada
  * fail dipilih" / "Fail dipilih: {name}"). The format box differs per screen and comes in the `format` slot.
@@ -36,7 +36,7 @@ function onPick(value: File | File[] | null): void {
         :color="mode === 'csv' ? 'primary' : 'neutral'"
         :variant="mode === 'csv' ? 'solid' : 'soft'"
         icon="i-ph-file-csv"
-        label="Upload CSV"
+        label="Muat Naik CSV"
         data-testid="import-mode-csv"
         @click="mode = 'csv'"
       />
@@ -46,7 +46,7 @@ function onPick(value: File | File[] | null): void {
         :color="mode === 'paste' ? 'primary' : 'neutral'"
         :variant="mode === 'paste' ? 'solid' : 'soft'"
         icon="i-ph-clipboard-text"
-        label="Paste Manual"
+        label="Tampal Manual"
         data-testid="import-mode-paste"
         @click="mode = 'paste'"
       />

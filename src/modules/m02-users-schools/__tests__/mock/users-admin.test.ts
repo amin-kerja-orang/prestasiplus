@@ -1087,7 +1087,7 @@ describe('DELETE /api/admin/users/:id (#6) and bulk delete (#7)', () => {
 })
 
 // -------------------------------------------------------------------------------------------------
-describe('POST /api/admin/users/:id/impersonate (#9, "Login As")', () => {
+describe('POST /api/admin/users/:id/impersonate (#9, "Log Masuk Sebagai")', () => {
   it.each([
     [2, 'student', '/dashboard'],
     [5, 'teacher', '/dashboard'],
@@ -1149,7 +1149,7 @@ describe('POST /api/admin/users/:id/impersonate (#9, "Login As")', () => {
     expect((await post('/api/admin/users/8000000/impersonate')).status).toBe(404)
     const own = await post('/api/admin/users/1/impersonate')
     expect(own.status).toBe(422)
-    expect(own.body.error?.fields?.id).toBe('Anda tidak boleh Login As akaun sendiri.')
+    expect(own.body.error?.fields?.id).toBe('Anda tidak boleh log masuk sebagai akaun sendiri.')
     const unmapped = users.adminList({ role: 'unmapped' }).rows[0]!
     const r = await post(`/api/admin/users/${String(unmapped.id)}/impersonate`)
     expect(r.status).toBe(422)

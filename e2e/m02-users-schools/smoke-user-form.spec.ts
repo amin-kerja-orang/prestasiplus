@@ -57,7 +57,7 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/users/create')
-    await expectTabTitle(page, 'Tambah Pengguna - Admin Panel')
+    await expectTabTitle(page, 'Tambah Pengguna - Panel Admin')
     await expect(page.getByText('Tambah Pengguna Baru').first()).toBeVisible()
     await expect(page.getByText('Daftarkan akaun pengguna baru ke sistem').first()).toBeVisible()
     await expect(page.getByText('Borang Pendaftaran Pengguna')).toBeVisible()
@@ -199,7 +199,7 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await submitAndLeave(page)
 
     await gotoApp(`/admin/users/${String(FIRST_NEW_USER_ID)}/edit`)
-    await expectTabTitle(page, 'Edit Pengguna - Admin Panel')
+    await expectTabTitle(page, 'Edit Pengguna - Panel Admin')
     await expect(byId(page, 'user-name')).toHaveValue('Muhammad Fulan bin Fulan')
     await expect(byId(page, 'user-email')).toHaveValue('fulan.e2e@contoh.test')
     await expect(byId(page, 'user-phone')).toHaveValue('0191234567')
@@ -286,7 +286,7 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(rows.first()).toBeVisible()
     await rows.filter({ hasNotText: 'Tiada kod' }).first().click()
     await expect(byId(page, 'gen-chosen')).toContainText('Sekolah Dipilih')
-    await expect(byId(page, 'gen-reset')).toHaveAttribute('title', 'Reset')
+    await expect(byId(page, 'gen-reset')).toHaveAttribute('title', 'Set Semula')
     await expect(byId(page, 'form-submit')).toBeDisabled()
     await expect(byId(page, 'gen-generate')).toHaveText('Janakan Akaun Admin Sekolah')
 
@@ -419,7 +419,7 @@ test.describe('M02 S3 edit user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/users/2/edit')
-    await expectTabTitle(page, 'Edit Pengguna - Admin Panel')
+    await expectTabTitle(page, 'Edit Pengguna - Panel Admin')
     await expect(page.getByText('Kemaskini maklumat pengguna').first()).toBeVisible()
     await expect(byId(page, 'user-profile-name')).toHaveText('Pelajar Demo')
     await expect(byId(page, 'user-profile-email')).toHaveText('pelajar@demo.test')

@@ -147,7 +147,7 @@ describe('UserListPage (M02 S1)', () => {
     expect(api.fetchAdminUsers.mock.calls[0]?.[0]).toMatchObject({ role: 'teacher' })
   })
 
-  it('leaves the own row without checkbox, Login As and delete; Pakej only for school admins', async () => {
+  it('leaves the own row without checkbox, Log Masuk Sebagai and delete; Pakej only for school admins', async () => {
     const w = await render()
     const own = rowOf(w, ME)
     expect(own.find('[data-testid="user-select"]').exists()).toBe(false)
@@ -156,7 +156,7 @@ describe('UserListPage (M02 S1)', () => {
     closeMenus()
     expect(await openRowMenu(w, '[data-user-id="2"]')).toEqual([
       'Nyahaktifkan',
-      'Login As',
+      'Log Masuk Sebagai',
       'Padam',
     ])
     closeMenus()
@@ -209,15 +209,15 @@ describe('UserListPage (M02 S1)', () => {
     expect(w.find('[data-testid="users-bulk-bar"]').exists()).toBe(false)
   })
 
-  it('Login As replaces the session and goes to the landing path', async () => {
+  it('Log Masuk Sebagai replaces the session and goes to the landing path', async () => {
     api.impersonateUser.mockResolvedValue({
       token: 'student-token',
       expiresAt: '2099-01-01T00:00:00+08:00',
       user: { id: 2, role: 'student', landingPath: '/dashboard' },
     })
     const w = await render()
-    await pickRowMenuItem(w, '[data-user-id="2"]', 'Login As')
-    expect(dialogs.confirmNative).toHaveBeenLastCalledWith('Login sebagai Pengguna Contoh 2?')
+    await pickRowMenuItem(w, '[data-user-id="2"]', 'Log Masuk Sebagai')
+    expect(dialogs.confirmNative).toHaveBeenLastCalledWith('Log masuk sebagai Pengguna Contoh 2?')
     expect(useSessionStore().token).toBe('student-token')
     expect(router.currentRoute.value.path).toBe('/dashboard')
   })

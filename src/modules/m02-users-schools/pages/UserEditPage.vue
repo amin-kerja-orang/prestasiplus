@@ -445,7 +445,7 @@ async function submit(): Promise<void> {
               @click="passwordOpen = !passwordOpen"
             />
             <p v-if="!passwordOpen" class="text-label text-muted">
-              Klik untuk buka bahagian reset kata laluan
+              Klik untuk buka bahagian set semula kata laluan
             </p>
             <DsPanel
               v-show="passwordOpen"

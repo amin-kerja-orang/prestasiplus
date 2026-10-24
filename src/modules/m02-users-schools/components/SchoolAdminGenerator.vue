@@ -156,8 +156,8 @@ function metaLine(s: SchoolSummary): string {
           color="error"
           variant="ghost"
           icon="i-ph-x-circle"
-          title="Reset"
-          aria-label="Reset"
+          title="Set Semula"
+          aria-label="Set Semula"
           data-testid="gen-reset"
           @click="reset"
         />
@@ -205,7 +205,7 @@ function metaLine(s: SchoolSummary): string {
             data-testid="gen-name"
           />
         </DsFormField>
-        <DsFormField native for="gen-email" label="ID Login (Emel)">
+        <DsFormField native for="gen-email" label="ID Log Masuk (Emel)">
           <div class="flex items-center gap-1">
             <UInput
               id="gen-email"

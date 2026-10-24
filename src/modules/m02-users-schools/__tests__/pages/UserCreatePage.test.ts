@@ -414,7 +414,7 @@ describe('UserCreatePage (M02 S2) school admin', () => {
     expect(chosen.text()).toContain('SEKOLAH KEBANGSAAN CONTOH BARU')
     expect(chosen.text()).toContain('Selangor')
     expect(chosen.text()).toContain('PPD GOMBAK')
-    expect(t(w, 'gen-reset').attributes('title')).toBe('Reset')
+    expect(t(w, 'gen-reset').attributes('title')).toBe('Set Semula')
     expect(t(w, 'form-submit').attributes('disabled')).toBeDefined()
 
     expect(t(w, 'gen-generate').text()).toBe('Janakan Akaun Admin Sekolah')
