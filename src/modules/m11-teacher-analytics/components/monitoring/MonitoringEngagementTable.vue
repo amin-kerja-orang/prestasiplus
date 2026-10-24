@@ -30,7 +30,7 @@ const sectionId = computed(() => (isStudent.value ? 'section-pelajar' : 'section
 const title = computed(() =>
   isStudent.value ? 'Analisis Penglibatan Pelajar T4/T5' : 'Analisis Penglibatan Guru',
 )
-const activeLabel = computed(() => (isStudent.value ? 'Aktif' : 'Login'))
+const activeLabel = computed(() => (isStudent.value ? 'Aktif' : 'Log Masuk'))
 
 type Row = (SchoolEngagementRow | TeacherEngagementRow) & { rank: number } & Record<string, unknown>
 const data = computed<Row[]>(() => props.rows.map((r, i) => ({ ...r, rank: i + 1 })))

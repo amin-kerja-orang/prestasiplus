@@ -66,5 +66,5 @@ export const TOPIC_COLOR: Record<TopicBadge, UiColor> = {
   Lemah: 'error',
 }
 
-export const STATUS_LABEL = { aktif: 'Aktif', login: 'Login sahaja', never: 'Belum login' } as const
+export const STATUS_LABEL = { aktif: 'Aktif', login: 'Log Masuk sahaja', never: 'Belum log masuk' } as const
 export const STATUS_COLOR = { aktif: 'success', login: 'warning', never: 'neutral' } as const

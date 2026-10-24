@@ -51,7 +51,7 @@ function scrollTo(event: MouseEvent, id: string) {
       <div class="flex flex-col gap-6">
         <div class="flex items-start justify-between gap-2">
           <h2 class="flex items-center gap-2 text-heading text-highlighted">
-            <UIcon name="i-ph-book-open" class="size-6 text-primary-t" />Panduan Monitoring
+            <UIcon name="i-ph-book-open" class="size-6 text-primary-t" />Panduan Pemantauan
             Penglibatan
           </h2>
           <UButton
@@ -117,7 +117,7 @@ function scrollTo(event: MouseEvent, id: string) {
               <UIcon name="i-ph-chalkboard-teacher" class="size-4" />Table Guru
             </ULink>
             <p>
-              Berapa guru yang <strong class="text-highlighted">pernah login</strong> ke platform
+              Berapa guru yang <strong class="text-highlighted">pernah log masuk</strong> ke platform
               mengikut sekolah.
             </p>
           </div>
