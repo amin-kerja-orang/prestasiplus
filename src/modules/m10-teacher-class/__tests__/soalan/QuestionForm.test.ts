@@ -32,6 +32,8 @@ vi.mock('../../components/soalan/data', () => ({
 }))
 
 const t = (w: VueWrapper, id: string) => w.find(`[data-testid="${id}"]`)
+const enter = (init: KeyboardEventInit = {}): KeyboardEvent =>
+  new KeyboardEvent('keydown', { key: 'Enter', cancelable: true, bubbles: true, ...init })
 
 async function mountForm(props: Record<string, unknown> = {}): Promise<VueWrapper> {
   const router = makeRouter()
@@ -98,7 +100,9 @@ describe('S22 form fields', () => {
         .map((o) => o.text()),
     ).toEqual(['Rumi (Latin)', 'Arab', 'Jawi', 'Campuran (Rumi + Arab/Jawi)'])
     expect(t(w, 'q-text').attributes('maxlength')).toBe('2000')
-    expect(w.findAll('[data-testid="q-correct"] [role="radio"]')[0]!.attributes('aria-checked')).toBe('true')
+    expect(
+      w.findAll('[data-testid="q-correct"] [role="radio"]')[0]!.attributes('aria-checked'),
+    ).toBe('true')
     expect(t(w, 'q-option-0').attributes('placeholder')).toBe('Pilihan A')
     expect(t(w, 'q-option-3').attributes('maxlength')).toBe('500')
   })
@@ -180,15 +184,17 @@ describe('S22 inline add', () => {
     expect(guru.createChapter).not.toHaveBeenCalled()
   })
 
-  it('saves the Bidang panel on Enter without submitting the question form (UAT G-49)', async () => {
+  it('saves the Bidang panel on Enter and blocks the implicit form submit (UAT G-49)', async () => {
     guru.createBidang.mockResolvedValue({ id: 55, code: 'B9', name: 'Bidang Baru' })
     const w = await mountForm()
     await pickLevelAndSubject(w)
     await t(w, 'q-bidang-add').trigger('click')
     await t(w, 'q-bidang-field-code').setValue('B9')
     await t(w, 'q-bidang-field-name').setValue('Bidang Baru')
-    await t(w, 'q-bidang-field-name').trigger('keydown', { key: 'Enter' })
+    const event = enter()
+    t(w, 'q-bidang-field-name').element.dispatchEvent(event)
     await flushPromises()
+    expect(event.defaultPrevented).toBe(true)
     expect(guru.createBidang).toHaveBeenCalledWith({
       subjectId: 1,
       educationLevelId: 11,
@@ -196,7 +202,40 @@ describe('S22 inline add', () => {
       name: 'Bidang Baru',
     })
     expect((t(w, 'q-bidang-select').element as HTMLSelectElement).value).toBe('55')
-    expect(w.emitted('submit')).toBeUndefined()
+  })
+
+  it('saves the SP panel on Enter the same way', async () => {
+    guru.createSp.mockResolvedValue({ id: 222, code: '1.1.2', description: 'SP dua' })
+    const w = await mountForm()
+    await pickLevelAndSubject(w)
+    await t(w, 'q-bidang-select').setValue('1')
+    await flushPromises()
+    await t(w, 'q-sk-select').setValue('11')
+    await flushPromises()
+    await t(w, 'q-sp-add').trigger('click')
+    await t(w, 'q-sp-field-code').setValue('1.1.2')
+    await t(w, 'q-sp-field-description').setValue('SP dua')
+    const event = enter()
+    t(w, 'q-sp-field-description').element.dispatchEvent(event)
+    await flushPromises()
+    expect(event.defaultPrevented).toBe(true)
+    expect(guru.createSp).toHaveBeenCalledWith({ skId: 11, code: '1.1.2', description: 'SP dua' })
+    expect((t(w, 'q-sp-select').element as HTMLSelectElement).value).toBe('222')
+  })
+
+  it('does not save on an IME-confirming or held Enter, but still blocks the form submit', async () => {
+    const w = await mountForm()
+    await pickLevelAndSubject(w)
+    await t(w, 'q-bidang-add').trigger('click')
+    await t(w, 'q-bidang-field-code').setValue('B9')
+    await t(w, 'q-bidang-field-name').setValue('Bidang Baru')
+    for (const init of [{ isComposing: true }, { repeat: true }]) {
+      const event = enter(init)
+      t(w, 'q-bidang-field-name').element.dispatchEvent(event)
+      await flushPromises()
+      expect(event.defaultPrevented).toBe(true)
+    }
+    expect(guru.createBidang).not.toHaveBeenCalled()
   })
 
   it('keeps the typed values when the panel is cancelled and ignores a refused add', async () => {
@@ -321,7 +360,10 @@ describe('S22 submit', () => {
   it('takes a chosen question image into the model and drops it again', async () => {
     const w = await mountForm()
     const upload = () =>
-      w.findAllComponents({ name: 'FileUpload' }).find((c) => { const el = t(w, 'q-image-input').element; return c.element === el || c.element.contains(el) || el.contains(c.element) })!
+      w.findAllComponents({ name: 'FileUpload' }).find((c) => {
+        const el = t(w, 'q-image-input').element
+        return c.element === el || c.element.contains(el) || el.contains(c.element)
+      })!
     await pickFiles(w, 'q-image-input', [new File(['x'], 'rajah.png', { type: 'image/png' })])
     expect((upload().props('modelValue') as File).name).toBe('rajah.png')
     await pickFiles(w, 'q-image-input', [])

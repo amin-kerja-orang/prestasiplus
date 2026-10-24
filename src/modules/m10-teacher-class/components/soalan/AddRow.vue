@@ -37,6 +37,16 @@ function save(): void {
   emit('add', { ...values })
 }
 
+/**
+ * Enter in a panel field never submits the surrounding question form (UAT G-49); it saves the panel
+ * unless it only confirms an IME composition or is a held-down key repeat.
+ */
+function onEnter(e: KeyboardEvent): void {
+  e.preventDefault()
+  if (e.isComposing || e.repeat) return
+  save()
+}
+
 /** Called by the owner after a successful add: empties and hides the panel. */
 function done(): void {
   for (const f of props.panelFields) values[f.key] = ''
@@ -49,7 +59,12 @@ defineExpose({ done })
   <div class="min-w-0" :data-testid="testid">
     <label :for="id" class="mb-2 block text-label text-highlighted">{{ label }}</label>
     <div class="flex min-w-0 items-center gap-2">
-      <DsNativeSelect :id="id" v-model="model" :disabled="disabled" :data-testid="`${testid}-select`">
+      <DsNativeSelect
+        :id="id"
+        v-model="model"
+        :disabled="disabled"
+        :data-testid="`${testid}-select`"
+      >
         <option value="">{{ placeholder }}</option>
         <option v-for="o in options" :key="o.value" :value="o.value">{{ o.label }}</option>
       </DsNativeSelect>
@@ -67,38 +82,38 @@ defineExpose({ done })
       />
     </div>
     <DsPanel v-show="open" tone="inset" class="mt-2" :data-testid="`${testid}-panel`">
-<div class="flex min-w-0 flex-col gap-2">
-      <p class="text-label text-highlighted">{{ panelTitle }}</p>
-      <div class="flex min-w-0 flex-wrap gap-2">
-        <UInput
-          v-for="f in panelFields"
-          :key="f.key"
-          v-model="values[f.key]"
-          :type="f.type ?? 'text'"
-          :min="f.min"
-          :max="f.max"
-          :placeholder="f.placeholder"
-          :aria-label="f.placeholder"
-          class="min-w-0 flex-1 basis-40"
-          :data-testid="`${testid}-field-${f.key}`"
-          @keydown.enter.prevent="save"
-        />
+      <div class="flex min-w-0 flex-col gap-2">
+        <p class="text-label text-highlighted">{{ panelTitle }}</p>
+        <div class="flex min-w-0 flex-wrap gap-2">
+          <UInput
+            v-for="f in panelFields"
+            :key="f.key"
+            v-model="values[f.key]"
+            :type="f.type ?? 'text'"
+            :min="f.min"
+            :max="f.max"
+            :placeholder="f.placeholder"
+            :aria-label="f.placeholder"
+            class="min-w-0 flex-1 basis-40"
+            :data-testid="`${testid}-field-${f.key}`"
+            @keydown.enter="onEnter"
+          />
+        </div>
+        <div class="flex gap-2">
+          <UButton type="button" class="min-h-11" :data-testid="`${testid}-save`" @click="save"
+            >Simpan</UButton
+          >
+          <UButton
+            type="button"
+            color="neutral"
+            variant="ghost"
+            class="min-h-11"
+            :data-testid="`${testid}-cancel`"
+            @click="open = false"
+            >Batal</UButton
+          >
+        </div>
       </div>
-      <div class="flex gap-2">
-        <UButton type="button" class="min-h-11" :data-testid="`${testid}-save`" @click="save"
-          >Simpan</UButton
-        >
-        <UButton
-          type="button"
-          color="neutral"
-          variant="ghost"
-          class="min-h-11"
-          :data-testid="`${testid}-cancel`"
-          @click="open = false"
-          >Batal</UButton
-        >
-      </div>
-    </div>
-</DsPanel>
+    </DsPanel>
   </div>
 </template>
