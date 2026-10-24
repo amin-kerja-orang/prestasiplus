@@ -26,8 +26,8 @@ const SUBJECTS = ['Matematik', 'Matematik Tambahan', 'Kimia', 'Sejarah', 'Bahasa
 
 describe('routing (BR-M13-04)', () => {
   it('picks the first match, case-insensitively', () => {
-    expect(routeOf('Tolong mark karangan ini menggunakan rubric X')).toBe('mark_essay')
-    expect(routeOf('  tolong MARK karangan ini menggunakan rubric X')).toBe('mark_essay')
+    expect(routeOf('Tolong tanda karangan ini menggunakan rubrik X')).toBe('mark_essay')
+    expect(routeOf('  tolong TANDA karangan ini menggunakan rubrik X')).toBe('mark_essay')
     expect(routeOf('Jana rph untuk saya, minta latihan')).toBe('rph')
     expect(routeOf('Minta Latihan topik ini')).toBe('practice')
     expect(routeOf('ada soalan?')).toBe('practice')
@@ -55,7 +55,7 @@ describe('canned marks (BR-M13-09)', () => {
       [14, 20],
       [70, 100],
     ])
-    expect(markingReply(RUBRICS[0]!, 35)).toContain('Markah: 35/50\nRubric: SPM Bahasa Melayu')
+    expect(markingReply(RUBRICS[0]!, 35)).toContain('Markah: 35/50\nRubrik: SPM Bahasa Melayu')
   })
 })
 
@@ -72,7 +72,7 @@ describe('hand-off message (BR-M13-08)', () => {
     })
     expect(
       m.startsWith(
-        'Tolong mark karangan ini menggunakan rubric Sejarah — Karangan Esei (20 markah).',
+        'Tolong tanda karangan ini menggunakan rubrik Sejarah — Karangan Esei (20 markah).',
       ),
     ).toBe(true)
     expect(m).not.toContain('Pelajar:')
@@ -88,7 +88,7 @@ describe('hand-off message (BR-M13-08)', () => {
 
   it('falls back to the first rubric for an unknown key', () => {
     expect(buildHandoffMessage({ rubric: 'nope', essay: 'x' })).toContain(
-      'rubric SPM Bahasa Melayu',
+      'rubrik SPM Bahasa Melayu',
     )
     expect(parseHandoff(buildHandoffMessage({ rubric: 'zzz', essay: 'abc' })).rubric.key).toBe(
       'spm_bm_karangan',

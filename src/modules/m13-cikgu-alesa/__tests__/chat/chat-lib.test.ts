@@ -69,13 +69,13 @@ describe('resolveChat (FR-M13-19, 20)', () => {
     })
     expect(resolveChat(422, {}, false)).toEqual({
       kind: 'error',
-      text: 'Cikgu Alesa tak boleh respon. Cuba lagi.',
+      text: 'Cikgu Alesa tidak dapat membalas. Cuba lagi.',
       meta: '',
     })
     expect(resolveChat(429, { quota_exhausted: true }, false)).toEqual({
       kind: 'error',
-      text: 'Cikgu Alesa tak boleh respon. Cuba lagi.',
-      meta: 'Quota habis untuk hari ni.',
+      text: 'Cikgu Alesa tidak dapat membalas. Cuba lagi.',
+      meta: 'Kuota habis untuk hari ini.',
     })
   })
 
@@ -110,7 +110,7 @@ describe('resolvePrefill (FR-M13-21, 22)', () => {
     )
     expect(full.consumedEssay).toBe(true)
     expect(full.text).toBe(
-      'Tolong mark karangan ini menggunakan rubric Sejarah — Karangan Esei (20 markah). ' +
+      'Tolong tanda karangan ini menggunakan rubrik Sejarah — Karangan Esei (20 markah). ' +
         'Subjek: Sejarah. Level: T5. Pelajar: Murid Demo 03. Tajuk: Semangat Patriotisme. ' +
         `Karangan: ${essay}`,
     )
@@ -120,7 +120,7 @@ describe('resolvePrefill (FR-M13-21, 22)', () => {
       buildHandoffMessage,
     )
     expect(bare.text).toBe(
-      `Tolong mark karangan ini menggunakan rubric SPM Bahasa Melayu — Karangan (Bahagian B) (50 markah). Karangan: ${essay}`,
+      `Tolong tanda karangan ini menggunakan rubrik SPM Bahasa Melayu — Karangan (Bahagian B) (50 markah). Karangan: ${essay}`,
     )
   })
 

@@ -32,22 +32,22 @@ describe('S4 essay list', () => {
     api.fetchEssayList.mockResolvedValue({ data: [], meta: listMeta(0) })
     const m = await mountAt(EssayListPage, '/cikgu/essay')
     wrapper = m.wrapper
-    expect(wrapper.get('h1').text()).toBe('📝 Marking Karangan AI')
+    expect(wrapper.get('h1').text()).toBe('📝 Penandaan Karangan AI')
     expect(wrapper.text()).toContain(
-      'Karangan yang dimark oleh Cikgu Alesa berdasarkan rubric SPM/PT3.',
+      'Karangan yang ditanda oleh Cikgu Alesa berdasarkan rubrik SPM/PT3.',
     )
     const cta = wrapper.get('[data-testid="essay-create"]')
-    expect(cta.text()).toBe('Mark Karangan Baharu')
+    expect(cta.text()).toBe('Tanda Karangan Baharu')
     expect(cta.attributes('href')).toBe('/cikgu/essay/baharu')
     expect(wrapper.findAll('th').map((t) => t.text())).toEqual([
       'Pelajar',
-      'Subjek / Rubric',
+      'Subjek / Rubrik',
       'Tajuk',
       'Markah',
       'Tindakan',
     ])
     expect(wrapper.get('[data-testid="essay-empty"]').text()).toBe(
-      'Belum ada karangan dimark. Klik "Mark Karangan Baharu" untuk mula.',
+      'Belum ada karangan ditanda. Klik "Tanda Karangan Baharu" untuk mula.',
     )
   })
 
@@ -98,7 +98,7 @@ describe('S5 essay form', () => {
     const m = await mountAt(EssayFormPage, '/cikgu/essay/baharu')
     wrapper = m.wrapper
     expect(wrapper.get('[data-testid="essay-back"]').text()).toBe('← Senarai')
-    expect(wrapper.get('h1').text()).toBe('📝 Mark Karangan Baharu')
+    expect(wrapper.get('h1').text()).toBe('📝 Tanda Karangan Baharu')
     expect(wrapper.text()).toContain('Salin & tampal karangan pelajar di bawah.')
     const form = wrapper.get('#essay-form')
     expect(form.attributes('action')).toBeUndefined()
@@ -189,7 +189,7 @@ describe('V2 essay view', () => {
     })
     const m = await mountAt(EssayViewPage, '/cikgu/essay/13201', { id: 13201 })
     wrapper = m.wrapper
-    expect(wrapper.get('h1').text()).toBe('📝 Marking Karangan AI')
+    expect(wrapper.get('h1').text()).toBe('📝 Penandaan Karangan AI')
     expect(wrapper.get('[data-testid="essay-back"]').text()).toBe('← Senarai')
     expect(wrapper.get('[data-testid="essay-view-student"]').text()).toBe('Murid Demo 01')
     expect(wrapper.get('[data-testid="essay-view-subject"]').text()).toBe(

@@ -65,11 +65,11 @@ describe('M13 registered routes (S1 to S6)', () => {
   it.each([
     ['/cikgu/rph', 'RPH — Cikgu Alesa'],
     ['/cikgu/rph/baharu', 'Jana RPH Baharu'],
-    ['/cikgu/essay', 'Marking Karangan'],
-    ['/cikgu/essay/baharu', 'Mark Karangan Baharu'],
-    ['/cikgu/pbd', 'PBD Auto-Tag Queue'],
+    ['/cikgu/essay', 'Penandaan Karangan'],
+    ['/cikgu/essay/baharu', 'Tanda Karangan Baharu'],
+    ['/cikgu/pbd', 'Auto-Tag PBD — Baris Gilir'],
     ['/cikgu/rph/13101', 'RPH — Cikgu Alesa'],
-    ['/cikgu/essay/13201', 'Marking Karangan'],
+    ['/cikgu/essay/13201', 'Penandaan Karangan'],
   ])('%s is teacher / admin only with the live tab title', (path, title) => {
     const r = router.resolve(path)
     expect(r.name).not.toBe('core.not-found')

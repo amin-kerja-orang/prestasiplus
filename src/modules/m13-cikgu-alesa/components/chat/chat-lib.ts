@@ -10,13 +10,13 @@ export const CHAT_COPY = {
   userPrefix: 'Anda: ',
   thinking: 'Cikgu Alesa sedang berfikir…',
   noReply: '(tiada respon)',
-  failed: 'Cikgu Alesa tak boleh respon. Cuba lagi.',
-  quota: 'Quota habis untuk hari ni.',
+  failed: 'Cikgu Alesa tidak dapat membalas. Cuba lagi.',
+  quota: 'Kuota habis untuk hari ini.',
   network: 'Ralat sambungan. Cuba lagi sebentar.',
   listening: 'Mendengar...',
   noHear: 'Maaf, tak dengar.',
   micTitle: 'Tekan untuk cakap',
-  micUnsupported: 'Browser tidak sokong voice — guna Chrome/Edge',
+  micUnsupported: 'Pelayar tidak menyokong suara — guna Chrome/Edge',
 } as const
 
 /** The two storage keys keep their live names (NFR-M13-07). */

@@ -46,26 +46,26 @@ const routes: RouteRecordRaw[] = [
     path: '/cikgu/essay',
     name: 'cikgu-essay',
     component: () => import('../pages/EssayListPage.vue'),
-    meta: meta('Marking Karangan', 'Marking Karangan AI'),
+    meta: meta('Penandaan Karangan', 'Penandaan Karangan AI'),
   },
   {
     path: '/cikgu/essay/baharu',
     name: 'cikgu-essay-baharu',
     component: () => import('../pages/EssayFormPage.vue'),
-    meta: meta('Mark Karangan Baharu', 'Mark Karangan Baharu'),
+    meta: meta('Tanda Karangan Baharu', 'Tanda Karangan Baharu'),
   },
   {
     path: '/cikgu/essay/:id(\\d+)',
     name: 'cikgu-essay-view',
     component: () => import('../pages/EssayViewPage.vue'),
     props: (route) => ({ id: Number(route.params.id) }),
-    meta: meta('Marking Karangan', 'Marking Karangan AI'),
+    meta: meta('Penandaan Karangan', 'Penandaan Karangan AI'),
   },
   {
     path: '/cikgu/pbd',
     name: 'cikgu-pbd',
     component: () => import('../pages/PbdQueuePage.vue'),
-    meta: meta('PBD Auto-Tag Queue', 'PBD Auto-Tag — Antrian Semakan'),
+    meta: meta('Auto-Tag PBD — Baris Gilir', 'PBD Auto-Tag — Antrian Semakan'),
   },
 ]
 

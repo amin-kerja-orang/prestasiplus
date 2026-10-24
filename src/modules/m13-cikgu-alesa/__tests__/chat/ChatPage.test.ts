@@ -79,7 +79,7 @@ describe('S1 chat page: static copy (FR-M13-12..16)', () => {
     expect(msgs()[0]!.text()).toBe(
       'Cikgu Alesa: Hai! Saya Cikgu Alesa. Apa nak belajar hari ni? Cuba tanya pasal subjek tertentu, atau minta latihan soalan.',
     )
-    expect(wrapper!.get('#cikgu-voice-toolbar').text()).toContain('🎙️ Voice Mode:')
+    expect(wrapper!.get('#cikgu-voice-toolbar').text()).toContain('🎙️ Mod Suara:')
     expect(wrapper!.get('#cikgu-voice-mode').attributes('aria-checked')).toBe('false')
     expect(input().attributes('placeholder')).toBe('Taip atau tekan 🎤 untuk cakap…')
     expect(input().attributes('required')).toBeDefined()
@@ -132,11 +132,11 @@ describe('S1 sending (FR-M13-17..20, 23)', () => {
     expect(meta()).toBe('')
     sendChat.mockResolvedValueOnce({ status: 429, body: { quota_exhausted: true } })
     await submit('b')
-    expect(msgs()[4]!.text()).toBe('Cikgu Alesa: Cikgu Alesa tak boleh respon. Cuba lagi.')
-    expect(meta()).toBe('Quota habis untuk hari ni.')
+    expect(msgs()[4]!.text()).toBe('Cikgu Alesa: Cikgu Alesa tidak dapat membalas. Cuba lagi.')
+    expect(meta()).toBe('Kuota habis untuk hari ini.')
     sendChat.mockResolvedValueOnce({ status: 422, body: {} })
     await submit('c')
-    expect(msgs()[6]!.text()).toBe('Cikgu Alesa: Cikgu Alesa tak boleh respon. Cuba lagi.')
+    expect(msgs()[6]!.text()).toBe('Cikgu Alesa: Cikgu Alesa tidak dapat membalas. Cuba lagi.')
     expect(meta()).toBe('')
   })
 
@@ -184,7 +184,7 @@ describe('S1 entry points (FR-M13-21, 22)', () => {
     sessionStorage.setItem('cikgu_pending_essay', 'Karangan ujian yang cukup panjang untuk lulus.')
     await mountPage('/cikgu?action=mark_essay&rubric=sejarah_essay&subject=&level=&student=&title=')
     expect(input().element.value).toBe(
-      'Tolong mark karangan ini menggunakan rubric Sejarah — Karangan Esei (20 markah). Karangan: Karangan ujian yang cukup panjang untuk lulus.',
+      'Tolong tanda karangan ini menggunakan rubrik Sejarah — Karangan Esei (20 markah). Karangan: Karangan ujian yang cukup panjang untuk lulus.',
     )
     expect(sessionStorage.getItem('cikgu_pending_essay')).toBeNull()
     expect(sendChat).not.toHaveBeenCalled()
@@ -294,7 +294,7 @@ describe('S1 simulated recogniser (FR-M13-31..33, BR-M13-20)', () => {
     configureVoice({ supported: false })
     await mountPage()
     expect(mic().element.disabled).toBe(true)
-    expect(mic().attributes('title')).toBe('Browser tidak sokong voice — guna Chrome/Edge')
+    expect(mic().attributes('title')).toBe('Pelayar tidak menyokong suara — guna Chrome/Edge')
     expect(mic().attributes('data-unsupported')).toBe('true')
   })
 

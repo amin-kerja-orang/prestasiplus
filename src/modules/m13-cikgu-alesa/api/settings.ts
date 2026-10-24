@@ -89,7 +89,7 @@ export const GREETING =
 export const SPEAKING_STATUS = '🔊 Cikgu sedang bercakap…'
 
 /** BR-M13-08 start of the hand-off message. */
-export const HANDOFF_PREFIX = 'Tolong mark karangan ini menggunakan rubric '
+export const HANDOFF_PREFIX = 'Tolong tanda karangan ini menggunakan rubrik '
 
 export function rubricOf(key: string | null | undefined): Rubric {
   return RUBRICS.find((r) => r.key === key) ?? (RUBRICS[0] as Rubric)

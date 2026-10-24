@@ -48,7 +48,7 @@ export const cannedMarks = (max: number): number => Math.round(0.7 * max)
 export function markingReply(rubric: Rubric, marks: number): string {
   return (
     `Markah: ${String(marks)}/${String(rubric.max)}\n` +
-    `Rubric: ${rubric.label}\n` +
+    `Rubrik: ${rubric.label}\n` +
     'Komen membina:\n' +
     '1. Isi: idea utama jelas; tambah satu contoh untuk setiap isi.\n' +
     '2. Bahasa: ayat gramatis; kurangkan pengulangan perkataan.\n' +
