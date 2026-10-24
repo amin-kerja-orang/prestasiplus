@@ -172,6 +172,13 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
           >{{ unit }}</span
         >
         <span
+          v-if="sub"
+          class="line-clamp-3 text-caption text-muted"
+          data-ds="stat-tile-sub"
+          :data-testid="subTestid ?? part('sub')"
+          >{{ sub }}</span
+        >
+        <span
           v-if="error"
           class="truncate text-caption text-error"
           role="alert"
