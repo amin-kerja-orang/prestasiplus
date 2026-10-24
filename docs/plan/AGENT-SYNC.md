@@ -251,6 +251,8 @@ Rules for `contract-only`:
   - What may start is set only by the Open list.
   - When the Open list has nothing free for you, stop and report `idle`; the LEAD opens more cards as merges land.
 
+- 2026-10-24 **DT-1 superseded by the LEAD (D71 in `docs/TRACKER.md`; #109 comment 6371548855, 24 Oct 02:15 MYT).** DT-1 is now **B (UTC)**, not A: the .cloud export has no `DATETIME` columns (every date-time column is a `TIMESTAMP`; app and DB session are UTC), so the sitting passes `--datetime-offset +00:00`. The tool default in `apps/api/src/migration/dump/cloud.ts` stays `+08:00` (no code change), so always pass the flag. The DT-1 A in the D66 line above no longer applies. Q8 is unchanged. **Perlu pengesahan** (LEAD / data owner): the date-only columns may hold the UTC day, not the Malaysia day. That comment stays authoritative.
+
 ## 0b. Any number of PCs
 
 - There is no fixed number of PCs and no fixed PC-to-lane split. Every PC **pulls** the next ready card from the whole tracker (section 1). A PC can join or leave at any time; a new PC only needs the setup in [agent-kickoff/README.md](agent-kickoff/README.md) section 1.
