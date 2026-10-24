@@ -4,6 +4,8 @@ Slug: `v2-portals` · Date: 2026-10-18 · User decision: unbuilt menu items are 
 
 Source of each item: `docs/requirements/v2-portals.md` section 6 (Evidence column). Mapping: B = .my (Blade admin), P = .cloud (admin React panel), F = filament (`/admin-filament`).
 
+Label decision 2026-10-24 (system audit FB-039, delegated to LEAD): KS-02 is **"Bank Soalan SPM"** (the single merged canonical bank, not only the old Databank lane); "Databank Soalan" is retired.
+
 Built since: KS-02 Bank Soalan SPM, KS-09 Pembina Kertas, and new rows KS-13 Muat Naik Kertas, KS-14 Senarai Ekstrak, KS-15 Baris Gilir Semakan (slug `v2-question-bank`).
 
 To bring an item back: build its screen and route, then pass its route as the third value of its row in `menu.ts` (the item then becomes `built` and is rendered).
@@ -34,7 +36,7 @@ Hidden items: 68
 | PM-28 | Sekolah Bersaing | Pemantauan | n/a | Not built |
 | BS-03 | Sumber Kertas | Bank Soalan | .my (Blade admin) | Not built |
 | KS-01 | Gambaran SPM | Kertas & SPM | .my (Blade admin), .cloud (React panel) | Not built |
-| KS-02 | Databank Soalan | Kertas & SPM | .my (Blade admin), filament | Not built |
+| KS-02 | Bank Soalan SPM | Kertas & SPM | .my (Blade admin), filament | Not built |
 | KS-03 | Latih Tubi | Kertas & SPM | .my (Blade admin) | Not built |
 | KS-04 | Tracking A | Kertas & SPM | .my (Blade admin), .cloud (React panel), filament | Not built |
 | KS-05 | Subjektif | Kertas & SPM | .my (Blade admin), .cloud (React panel) | Not built |

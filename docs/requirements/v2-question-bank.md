@@ -148,7 +148,7 @@ One form for a single question of any type in the structure [Schema] (stem, opti
 - **KBAT:** a separate field, optional (not mandatory), **not derived from TP** (supersedes "KBAT derived as TP >= 4" in `v2-exam-schema.md` D9). Proposed form, **pending user confirmation**: optional "Aras KBAT" select with Mengaplikasi / Menganalisis / Menilai / Mencipta; empty = not KBAT; bank filter on it.
 - **Pendidikan Islam:** SK/SP text uses the Jawi text from `docs/reference/dskp/pendidikan-islam.json`, flagged "perlu semakan ejaan" (spelling review needed).
 - **Seed questions:** every seed question gets real DSKP tags; those with no matching SP are flagged for review (no guessing; D11).
-- **Publish gate (Lulus -> Terbit) additionally requires:** subject, tingkatan, unit, at least one SP (picked from the catalogue, no free text) and TP; Tingkatan 1-3 questions outside the DSKP are exempt (FIXLOG FB-004 implemented this for the unit; exemption of SP and TP for T1-T3 follows the user's note "T1-T3 exempt" and should be confirmed in G1/G2). The submit gate and the publish gate use the same tag rule.
+- **Publish gate (Lulus -> Terbit) additionally requires:** subject, tingkatan, unit, at least one SP (picked from the catalogue, no free text) and TP; Tingkatan 1-3 questions outside the DSKP ("di luar DSKP") are exempt from **unit and SP**; **TP stays required** (LEAD decision FB-072, 2026-10-24; resolves the earlier open question on SP/TP exemption; FB-004 already implemented the unit exemption). The submit gate and the publish gate use the same tag rule.
 
 ### 4.9 Serving to students (tags and pools)
 
