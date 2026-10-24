@@ -10,7 +10,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsPanel } from '@/ds'
+import { DsFormField, DsPanel, DsSurface } from '@/ds'
 
 import { searchSchools, type SchoolSummary } from '../api/schools'
 import { generatedAdminEmail, SEARCH_MIN_CHARS } from '../lib/user-form-options'
@@ -104,8 +104,14 @@ function metaLine(s: SchoolSummary): string {
         />
         <span v-if="searching" class="sr-only" data-testid="gen-loading">Mencari...</span>
         <!-- In flow, not `behavior="float"`: the form section card clips its overflow (RS5-M1, DV-M02-27). -->
-        <div v-if="showDropdown" class="max-h-64 overflow-y-auto">
-          <DsPanel padding="none" data-testid="gen-dropdown">
+        <DsSurface
+          v-if="showDropdown"
+          level="elevated"
+          shadow="lift"
+          padding="none"
+          data-testid="gen-dropdown"
+        >
+          <div class="max-h-64 overflow-y-auto">
             <UButton
               v-for="item in results"
               :key="item.id"
@@ -134,8 +140,8 @@ function metaLine(s: SchoolSummary): string {
             >
               Tiada sekolah dijumpai
             </p>
-          </DsPanel>
-        </div>
+          </div>
+        </DsSurface>
       </div>
     </DsFormField>
 
