@@ -1,18 +1,13 @@
 /*
  * State rings of the composites (v2-ds-hardening 4.1). Lines are forbidden as utility classes
- * (G-3b), so focus-visible, selected and error rings live here, keyed on `data-ds` / `data-state`,
- * and read the theme colour tokens. T-H0 / T-H1 may move them into `ui.config` / `tokens.css`.
+ * (G-3b), so selected and error rings live here, keyed on `data-ds` / `data-state`, and read the
+ * theme colour tokens. T-H0 / T-H1 may move them into `ui.config` / `tokens.css`.
+ *
+ * Keyboard focus is not drawn here: `outline*` is forbidden in strict CSS (G-3b), and the theme
+ * already gives every focusable element inside a `[data-personality]` scope one 2px primary outline
+ * (`src/theme/ds-extras.css`), the same ring `focusRing` in `src/theme/ui/components.ts` gives
+ * tabs, menus and table rows. The composites below take that ring instead of a second one.
  */
-:is(
-    [data-ds='stat-tile'],
-    [data-ds='pill-nav'] a,
-    [data-ds='pill-nav'] button,
-    [data-ds='native-select'],
-    [data-ds='media-card'] a
-  ):focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--ui-primary);
-}
 
 [data-ds='stat-tile'][data-state='selected'],
 [data-ds='shop-card'][data-state='selected'] {
