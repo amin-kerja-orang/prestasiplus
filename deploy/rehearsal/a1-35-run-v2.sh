@@ -182,13 +182,24 @@ const kind = process.env.PP_A135_HASH === 'argon2' ? 'argon2' : 'legacy'
 
 const client = new Client({ connectionString: process.env.DATABASE_URL })
 await client.connect()
-// Active, not suspended, NOT must_reset_password (such an account logs in but is then locked into the
-// password-change flow and every other read answers 403), with an e-mail (a username can repeat across
-// schools and would then need schoolId), a student role, and an etl_id_map row for legacy_source 'cloud'.
+// Every condition here mirrors one that AuthService.attemptLogin would otherwise refuse with, so the
+// pick can never fail on data the API is right to reject:
+//   is_active / not is_suspended      -> 403 ACCOUNT_INACTIVE  (auth.service.ts)
+//   school is active                  -> 403 SCHOOL_INACTIVE   (schools.is_active is carried over by
+//                                        transformSchool, so the real .cloud data will have some)
+//   exactly one role                  -> 403 ACCOUNT_INACTIVE  (buildGrants refuses student + any other)
+//   not must_reset_password           -> logs in, but then every read except the password-change flow
+//                                        answers 403 (900 of 15 179 in the medium fixture)
+//   a non-null password_hash          -> nothing to verify
+//   an e-mail identifier              -> a username can repeat across schools and would need schoolId
+// and an etl_id_map row for legacy_source 'cloud', which is what makes it a MIGRATED account.
 const WHERE = `from users u
      join user_roles r on r.user_id = u.id and r.role = 'student'
      join etl_id_map m on m.entity = 'users' and m.legacy_source = 'cloud' and m.new_id = u.id::text
+     left join schools s on s.id = u.school_id
     where u.is_active and not u.is_suspended and not u.must_reset_password
+      and (s.id is null or s.is_active)
+      and (select count(*) from user_roles ur where ur.user_id = u.id) = 1
       and u.email is not null and u.password_hash is not null`
 const eligible = Number((await client.query<{ n: string }>(`select count(*) as n ${WHERE}`)).rows[0]?.n ?? 0)
 // One random row out of the whole eligible set (tablesample would skip the join; order by random()

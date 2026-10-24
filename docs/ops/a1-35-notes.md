@@ -107,8 +107,13 @@ for the account it logs in as). `rehearsal-db.sh restore-snapshot after_full --y
 6. **Picking "any active student" is not safe.** 900 of 15 179 migrated active students have
    `must_reset_password = true`: they log in, but every route except the password-change flow answers
    403, so the authenticated read fails for about 6 % of random picks. 300 have no hash at all, and a
-   username can repeat across schools (login then needs `schoolId`). a1-35 filters on
-   `must_reset_password = false`, a non-null hash and an e-mail identifier.
+   username can repeat across schools (login then needs `schoolId`). Two more refusals are possible on
+   real `.cloud` data even though the medium fixture happens to contain none: an account whose school
+   has `is_active = false` is refused with 403 `SCHOOL_INACTIVE` (`auth.service.ts`; `transformSchool`
+   carries the flag over), and an account holding `student` plus any second role is refused with 403
+   `ACCOUNT_INACTIVE` (`buildGrants`, `session-view.ts`). Every one of these would look like a
+   migration bug at 3 a.m. and is none. The selection query now mirrors each refusal, so it can only
+   ever pick an account the API is willing to log in.
 7. **`shred` is not on a stock macOS.** The close-out step would have failed on the LEAD's Mac. a1-35
    falls back to `gshred`, then to an overwrite plus `rm -P`.
 8. **The API binds `0.0.0.0`** (`apps/api/src/main.ts`), not loopback. During the rehearsal the machine
