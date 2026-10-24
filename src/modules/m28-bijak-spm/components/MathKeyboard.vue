@@ -121,7 +121,7 @@ function press(k: KeyView): void {
           :variant="TONE[k.tone].variant"
           :class="
             k.tone === 'num' || k.tone === 'op'
-              ? 'min-h-11 sm:min-h-12 md:min-h-14 learner:min-h-11 sm:learner:min-h-12 md:learner:min-h-14'
+              ? 'min-h-11 sm:min-h-12 learner:min-h-11 sm:learner:min-h-12'
               : 'min-h-11 learner:min-h-11'
           "
           class="px-0 learner:px-0"
