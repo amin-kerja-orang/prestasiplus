@@ -7,7 +7,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { h } from 'vue'
 
-import { DsDataTable, DsFormBar } from '@/ds'
+import { DsDataTable, DsFormBar, DsStatRow, DsStatTile } from '@/ds'
 
 const wait = (ms = 30) => new Promise((r) => setTimeout(r, ms))
 
@@ -51,6 +51,35 @@ const columns = [
   { accessorKey: 'title', header: 'Soalan' },
   { accessorKey: 'status', header: 'Status' },
 ]
+
+describe('DsStatTile compact sub line (FB-023)', () => {
+  it('renders sub in the compact tile, clamped to three lines', () => {
+    const w = mount(DsStatTile, {
+      props: { value: 72, unit: 'Jumlah soalan', sub: '72 Terbit · 7 menunggu semakan', density: 'compact' },
+    })
+    const sub = w.find('[data-ds="stat-tile-sub"]')
+    expect(sub.text()).toBe('72 Terbit · 7 menunggu semakan')
+    expect(sub.classes()).toContain('line-clamp-3')
+    expect(w.attributes('data-compact')).toBe('true')
+  })
+  it('compact without sub renders no sub element; the sub test id follows partPrefix', () => {
+    const none = mount(DsStatTile, { props: { value: 1, unit: 'A', density: 'compact' } })
+    expect(none.find('[data-ds="stat-tile-sub"]').exists()).toBe(false)
+    const w = mount(DsStatTile, {
+      props: { value: 1, unit: 'A', sub: 'x', density: 'compact', partPrefix: 'bank' },
+    })
+    expect(w.find('[data-testid="bank-sub"]').exists()).toBe(true)
+  })
+  it('DsStatRow passes the item sub to compact tiles', () => {
+    const w = mount(DsStatRow, {
+      props: {
+        density: 'compact',
+        items: [{ key: 'a', label: 'Matematik', value: 61, sub: '61 Terbit · 2 menunggu semakan' }],
+      },
+    })
+    expect(w.find('[data-ds="stat-tile-sub"]').text()).toContain('61 Terbit')
+  })
+})
 
 describe('DsDataTable phone cards', () => {
   it('a card field with cell: true renders the <key>-cell slot, others stay plain text', async () => {
