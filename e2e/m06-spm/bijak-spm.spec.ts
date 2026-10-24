@@ -132,6 +132,13 @@ test.describe('Bijak SPM', () => {
       expect(v).not.toContain('\\')
     }
     await shot(page, 'maths-keyboard')
+    // Below md the keypad is a bottom sheet over the footer: its "Tutup" key gives the footer back.
+    const sheetClose = page.getByTestId('math-keyboard-close')
+    if (await sheetClose.isVisible()) {
+      await sheetClose.click()
+      await expect(page.getByTestId('math-keyboard')).toHaveCount(0)
+      await expect(page.getByTestId('next')).toBeVisible()
+    }
     // replace by the real answer typed with the physical keyboard
     await inputs.nth(1).fill('13')
     await page.locator('input[data-testid=unit-input]').fill('cm')
