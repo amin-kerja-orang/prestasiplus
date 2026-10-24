@@ -62,10 +62,14 @@ async function seedSets(db: PrismaClient, now: Date): Promise<void> {
     })
     if (existing) continue
     // Other owner's data only through its doorway (ADR-0014): the SPM pool of the subject, in id order.
-    const ids = await questions.eligibleIds({ subjectId: String(c.subjectId), type: 'mcq' })
+    // Keyset pages of the SPM pool (live, active, `pool` tag, MCQ), hydrated 200 at a time to keep only single-leaf MCQs.
     const rows: { id: bigint }[] = []
-    for (let i = 0; i < ids.length; i += 200) {
-      for (const r of await questions.getMany(ids.slice(i, i + 200), 'live')) if (r.spmPool && mcqItemOf(r.version.stemMs, r.version.parts) !== null) rows.push({ id: BigInt(r.id) })
+    for (let after: string | undefined; ; ) {
+      const page = await questions.eligibleIdsPage({ subjectId: String(c.subjectId), type: 'mcq', spmPool: true }, after, 200)
+      if (page.length === 0) break
+      for (const r of await questions.getMany(page, 'live')) if (r.spmPool && mcqItemOf(r.version.stemMs, r.version.parts) !== null) rows.push({ id: BigInt(r.id) })
+      after = page[page.length - 1]
+      if (page.length < 200) break
     }
     rows.sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
     if (rows.length === 0) continue

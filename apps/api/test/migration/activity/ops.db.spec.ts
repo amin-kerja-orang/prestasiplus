@@ -12,6 +12,7 @@ import { runCore } from '../../../src/migration/load'
 import { migrateActivity } from '../../../src/migration/load/activity/command'
 import { opsGroup } from '../../../src/migration/load/activity/part-b'
 import { ROLE_MAP } from '../../../src/migration/transform/enums'
+import { testOutDir } from '../staging/helpers'
 import { AS_OF, bootActivity, type ActivityHarness } from './helpers'
 
 let h: ActivityHarness
@@ -196,7 +197,7 @@ describe('feedback of a user deleted at the source (delta, staging has no cascad
       const sourceBefore = await h.count('staging_cloud.feedback')
       // The delta: BE-28 is re-run on the changed staging (it never deletes a mapped user), so the preflight passes.
       for (const mode of ['dry-run', 'apply'] as const) {
-        const core = await runCore({ pool: h.env.pool, env: h.runEnv, source: 'cloud', asOf: AS_OF, mode, batchSize: 2 })
+        const core = await runCore({ pool: h.env.pool, env: h.runEnv, source: 'cloud', asOf: AS_OF, mode, batchSize: 2, outDir: testOutDir() })
         expect(core.report.status).toBe('succeeded')
       }
       expect((await h.run('dry-run', { groups })).report.status).toBe('succeeded')

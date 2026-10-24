@@ -25,7 +25,7 @@ import { QuestionsRepository } from '../questions'
 import { SpmCatalogService, type SpmSubject, type SubjectMeta } from './catalog.service'
 import { BAHASA_CODES, READINESS_ORDER, SUBJEKTIF_CODES, SUBJEKTIF_TERAS_CODES, TRACKING_YEAR } from './config'
 import { SpmPorts } from './ports'
-import { countOf, SpmPoolService, type PoolFact } from './pool.service'
+import { countOf, SpmPoolService, type PoolCell } from './pool.service'
 import { isStartable } from './rules'
 import { SpmTrackingService, type SetView } from './tracking.service'
 import { CurriculumRepository } from '../curriculum'
@@ -40,7 +40,7 @@ export interface SpmCaller {
   isTest: boolean
 }
 
-/** Subjects whose pool facts are loaded at the same time (each is one hydration of the subject's questions). */
+/** Subjects whose pool counts are read at the same time (each is one grouped SQL statement). */
 export const POOL_LOAD_CONCURRENCY = 4
 
 /** Maps `items` with at most `limit` calls in flight; the result order is the input order. */
@@ -64,7 +64,7 @@ const notFound = (): ApiError => ApiError.of('NOT_FOUND')
 const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
 const sumReady = (sets: readonly SetView[]): number => sum(sets.map((s) => s.readyCount))
 
-function diffCounts(facts: readonly PoolFact[], levelId?: string): SpmDifficultyCounts {
+function diffCounts(facts: readonly PoolCell[], levelId?: string): SpmDifficultyCounts {
   const filter = levelId === undefined ? {} : { levelId }
   const n = (d: number): number => countOf(facts, { ...filter, difficulty: d })
   return { '1': n(1), '2': n(2), '3': n(3), '4': n(4), '5': n(5) }
@@ -94,7 +94,7 @@ export class SpmHubService {
     return this.questions.count({ subjectId, status: 'published', active: true, type: 'structured' })
   }
 
-  /** Pool sizes of the configured subjects: one hydration each, at most POOL_LOAD_CONCURRENCY at a time. */
+  /** Pool sizes of the configured subjects: one grouped count each, at most POOL_LOAD_CONCURRENCY at a time. */
   private async poolSizes(subjects: readonly SpmSubject[]): Promise<Map<string, number>> {
     const sizes = await mapBounded(subjects, POOL_LOAD_CONCURRENCY, (s) => this.pool.count(s.subjectId))
     return new Map(subjects.map((s, i) => [s.subjectId, sizes[i] as number]))
@@ -155,14 +155,14 @@ export class SpmHubService {
     const s = (await this.catalog.spmSubjects()).find((x) => x.code === code.toUpperCase())
     if (!s) throw notFound()
     const levelIds = await this.catalog.spmLevelIds()
-    const facts = await this.pool.facts(s.subjectId)
+    const facts = await this.pool.cells(s.subjectId)
     const target = s.targetSize
     return {
       code: s.code,
       name: s.name,
       icon: s.icon,
       color: s.color,
-      total: facts.length,
+      total: countOf(facts),
       targetType: s.targetType,
       targetSize: target,
       levelCounts: Object.fromEntries(levelIds.map((id) => [id, countOf(facts, { levelId: id })])),

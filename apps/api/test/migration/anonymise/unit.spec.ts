@@ -125,6 +125,7 @@ describe('default deny (AC1)', () => {
       ['question_reports', 'description', 'scrub-text'],
       ['media_assets', 'path', 'pseudonym:path'],
       ['questions', 'image_path', 'pseudonym:path'],
+      ['question_options', 'image_path', 'pseudonym:path'],
     ]
     const show = (r: { rule: string; kind?: string } | undefined): string | undefined => (r === undefined ? undefined : r.kind ? `${r.rule}:${r.kind}` : r.rule)
     for (const [t, c, rule] of expected) {

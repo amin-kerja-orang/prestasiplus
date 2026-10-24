@@ -247,6 +247,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   missions: async (query) => ({ teacher_id: await parentUser(query), title: 'Misi Contoh', mission_type: 'latih_tubi', mission_date: '2026-10-20', subject_id: await parentSubject(query), question_count: 10 }),
   // question_sets (BE-18): teacher and class must exist.
   question_sets: async (query) => ({ teacher_id: await parentUser(query), classroom_id: await parentClassroom(query), title: 'Set Contoh' }),
+  // questions (QLOAD): every column is nullable or defaulted, so the row needs one data column for the upsert.
+  questions: { source_type: 'manual' },
   // pksk_packages / pksk_accesses (BE-42): level is checked (T1/T4/ALL); an access needs a user and a package.
   pksk_packages: { level: 'T1' },
   pksk_accesses: async (query) => ({
