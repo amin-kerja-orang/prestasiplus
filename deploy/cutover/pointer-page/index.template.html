@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  PrestasiPlus .cloud pointer page (MIG-08 switch option A). Prepared by half AZ; placed on .cloud by the .cloud operator (half AM) as an
+  operational change (no .cloud code or data is changed). Render it with render.sh, never by hand: the script fills
+  the three placeholders, checks them and refuses to leave one unfilled. Self-contained: no script, no external
+  file, no tracking, no cookies. The BM text needs the LEAD's approval (the same as the notice to schools).
+-->
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>PrestasiPlus telah berpindah</title>
+<style>
+  :root { --bg: #f5f7fb; --card: #ffffff; --ink: #1d2433; --muted: #4a5568; --brand: #1f5fbf; --brand-ink: #ffffff; --line: #d8dee9; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #11151c; --card: #1a202b; --ink: #edf1f7; --muted: #b8c2d3; --brand: #5b9bff; --brand-ink: #0b1220; --line: #2c3442; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; min-height: 100vh;
+         display: flex; align-items: center; justify-content: center; padding: 16px; }
+  main { width: 100%; max-width: 560px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 28px 24px; }
+  h1 { font-size: 1.5rem; line-height: 1.25; margin: 0 0 12px; }
+  p { margin: 0 0 14px; color: var(--muted); overflow-wrap: anywhere; }
+  .go { display: block; text-align: center; background: var(--brand); color: var(--brand-ink); text-decoration: none;
+        font-weight: 600; padding: 14px 16px; border-radius: 8px; margin: 20px 0; min-height: 48px; }
+  .go:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .addr { font-weight: 600; color: var(--ink); }
+  ul { margin: 0 0 14px; padding-left: 20px; color: var(--muted); }
+  li { margin-bottom: 6px; }
+  .help { border-top: 1px solid var(--line); padding-top: 14px; font-size: 0.95rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>PrestasiPlus telah berpindah ke alamat baharu</h1>
+  <p>Mulai 30 Oktober 2026, PrestasiPlus digunakan di alamat baharu:</p>
+  <p class="addr">{{V2_URL}}</p>
+  <a class="go" href="{{V2_URL}}">Pergi ke PrestasiPlus</a>
+  <ul>
+    <li>Akaun dan rekod anda telah dipindahkan. Sila log masuk semula di alamat baharu.</li>
+    <li>Jika kata laluan lama tidak diterima, pilih <strong>Lupa Kata Laluan</strong> dan guna <strong>Reset Melalui No IC</strong>, atau minta guru atau admin sekolah anda menetapkan semula kata laluan.</li>
+    <li>Sistem lama ini kini dalam mod baca sahaja. Rekod baharu hanya disimpan di alamat baharu.</li>
+  </ul>
+  <p class="help">Bantuan: Meja Bantuan PrestasiPlus, e-mel {{SUPPORT_EMAIL}}, WhatsApp {{SUPPORT_WHATSAPP}}.</p>
+</main>
+</body>
+</html>

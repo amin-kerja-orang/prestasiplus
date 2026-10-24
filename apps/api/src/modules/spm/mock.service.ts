@@ -47,17 +47,6 @@ export function parseAnswers(value: unknown, maxNo: number): Map<number, string>
   return byNo
 }
 
-/** Fisher-Yates in place with the stream. */
-function shuffle<T>(items: T[], rng: Prng): T[] {
-  for (let i = items.length - 1; i > 0; i--) {
-    const j = rng.int(0, i)
-    const tmp = items[i] as T
-    items[i] = items[j] as T
-    items[j] = tmp
-  }
-  return items
-}
-
 /**
  * Mock exams (M06-08 to M06-12). Writes only `spm_mock_exams` and `spm_mock_exam_items`: never a practice session,
  * answer, revision-queue, mastery or wallet row (SRS 6.5). Only the owner opens a mock (BR-M06-26: others get 404).
@@ -111,16 +100,23 @@ export class SpmMockService {
   }
 
   private async paper2Items(subjectId: string, subjectName: string, rng: Prng): Promise<MockItemRow[]> {
-    const ids = shuffle(await this.questions.eligibleIds({ subjectId, type: 'structured' }), rng)
+    // Drawn in SQL (seeded, LIMIT) in widening windows; only the drawn ids are hydrated.
+    const seed = rng.int(0, 0xffffffff)
     const picked: { record: QuestionRecord; item: { text: string; modelAnswer: string } }[] = []
-    for (let i = 0; i < ids.length && picked.length < P2_ITEMS; i += P2_ITEMS) {
-      const chunk = ids.slice(i, i + P2_ITEMS)
-      const records = new Map((await this.questions.getMany(chunk, 'live')).map((r) => [r.id, r]))
-      for (const id of chunk) {
+    const seen = new Set<string>()
+    let limit = P2_ITEMS * 4
+    for (let round = 0; round < 3 && picked.length < P2_ITEMS; round++) {
+      const ids = await this.questions.sampleIds({ subjectId, type: 'structured' }, limit, seed)
+      const fresh = ids.filter((id) => !seen.has(id))
+      for (const id of fresh) seen.add(id)
+      const records = new Map((await this.questions.getMany(fresh, 'live')).map((r) => [r.id, r]))
+      for (const id of fresh) {
         const record = records.get(id)
         const item = record && record.isActive && record.version.status === 'published' ? structuredItemOf(record.version.stemMs, record.version.parts) : null
         if (record && item && picked.length < P2_ITEMS) picked.push({ record, item })
       }
+      if (ids.length < limit) break
+      limit *= 4
     }
     const topics = await this.topics(picked.map((p) => p.record), subjectName)
     return picked.map((p, i) => ({

@@ -20,11 +20,9 @@ create table "staging_cloud"."users" (
   "role" text,
   "school_id" bigint,
   "kelas" text,
-  "faith" text,
   "is_active" text,
   "is_suspended" text,
   "is_complimentary" text,
-  "google_id" text,
   "referral_code" text,
   "referred_by" bigint,
   "parent_invite_token" text,
@@ -122,7 +120,8 @@ create table "staging_cloud"."education_levels" (
 
 create table "staging_cloud"."subjects" (
   "id" bigint,
-  "name" text,
+  "name_bm" text,
+  "name_en" text,
   "code" text,
   "is_core" text,
   "color" text,
@@ -219,7 +218,8 @@ create table "staging_cloud"."structured_attempts" (
   "user_id" bigint,
   "structured_question_id" bigint,
   "score" numeric,
-  "status" text,
+  "max_score" numeric,
+  "track" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -231,8 +231,8 @@ create table "staging_cloud"."structured_attempt_answers" (
   "id" bigint,
   "structured_attempt_id" bigint,
   "structured_sub_question_id" bigint,
-  "awarded_marks" numeric,
-  "answer_text" text,
+  "awarded" numeric,
+  "max_marks" numeric,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -244,8 +244,6 @@ create table "staging_cloud"."student_notes" (
   "id" bigint,
   "user_id" bigint,
   "subject_id" bigint,
-  "title" text,
-  "body" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -259,7 +257,6 @@ create table "staging_cloud"."study_schedules" (
   "classroom_id" bigint,
   "subject_id" bigint,
   "day" text,
-  "focus_topic_id" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -326,7 +323,6 @@ create table "staging_cloud"."mood_checkins" (
   "id" bigint,
   "user_id" bigint,
   "mood" text,
-  "note" text,
   "checked_in_on" date,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -337,7 +333,7 @@ create table "staging_cloud"."mood_checkins" (
 
 create table "staging_cloud"."wellbeing_alerts" (
   "id" bigint,
-  "user_id" bigint,
+  "student_id" bigint,
   "type" text,
   "severity" text,
   "resolved" text,
@@ -362,14 +358,11 @@ create table "staging_cloud"."psychometric_results" (
 create table "staging_cloud"."interventions" (
   "id" bigint,
   "student_id" bigint,
-  "teacher_id" bigint,
+  "recorded_by" bigint,
   "alert_type" text,
-  "action_taken" text,
   "action_date" date,
-  "accuracy_before" numeric,
-  "accuracy_after" numeric,
-  "mood_before" text,
-  "mood_after" text,
+  "before_accuracy" numeric,
+  "after_accuracy" numeric,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -381,7 +374,7 @@ create table "staging_cloud"."aspirations" (
   "id" bigint,
   "user_id" bigint,
   "career_path_id" bigint,
-  "university_id" bigint,
+  "target_university_id" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -412,7 +405,6 @@ create table "staging_cloud"."universities" (
 create table "staging_cloud"."scholarships" (
   "id" bigint,
   "name" text,
-  "university_id" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -479,8 +471,9 @@ create table "staging_cloud"."challenges" (
   "id" bigint,
   "created_by" bigint,
   "classroom_id" bigint,
-  "type" text,
+  "challenge_type" text,
   "title" text,
+  "target_value" numeric,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -629,7 +622,6 @@ create table "staging_cloud"."battle_participants" (
 create table "staging_cloud"."battle_queue" (
   "id" bigint,
   "user_id" bigint,
-  "uuid" text,
   "grade" text,
   "status" text,
   "created_at" timestamptz,
@@ -641,8 +633,8 @@ create table "staging_cloud"."battle_queue" (
 
 create table "staging_cloud"."battle_invites" (
   "id" bigint,
-  "inviter_id" bigint,
-  "invitee_id" bigint,
+  "from_user_id" bigint,
+  "to_user_id" bigint,
   "uuid" text,
   "status" text,
   "created_at" timestamptz,
@@ -704,7 +696,7 @@ create table "staging_cloud"."leagues" (
   "id" bigint,
   "name" text,
   "invite_code" text,
-  "owner_id" bigint,
+  "created_by" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -772,7 +764,6 @@ create table "staging_cloud"."videos" (
   "title" text,
   "url" text,
   "duration_seconds" bigint,
-  "is_published" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -833,8 +824,7 @@ create table "staging_cloud"."chatbot_conversations" (
 create table "staging_cloud"."chatbot_messages" (
   "id" bigint,
   "chatbot_conversation_id" bigint,
-  "role" text,
-  "body" text,
+  "sender" text,
   "rating" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -935,8 +925,8 @@ create table "staging_cloud"."invoices" (
 
 create table "staging_cloud"."dunning_logs" (
   "id" bigint,
-  "invoice_id" bigint,
-  "step" text,
+  "subscription_id" bigint,
+  "event" text,
   "sent_at" timestamptz,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1011,7 +1001,6 @@ create table "staging_cloud"."marketplace_orders" (
 
 create table "staging_cloud"."sponsors" (
   "id" bigint,
-  "user_id" bigint,
   "organisation" text,
   "category" text,
   "officer_name" text,
@@ -1053,7 +1042,7 @@ create table "staging_cloud"."foster_applications" (
 create table "staging_cloud"."duta_profiles" (
   "id" bigint,
   "user_id" bigint,
-  "status" text,
+  "is_active" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1075,7 +1064,6 @@ create table "staging_cloud"."duta_applications" (
 create table "staging_cloud"."duta_bookings" (
   "id" bigint,
   "duta_profile_id" bigint,
-  "user_id" bigint,
   "status" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1089,6 +1077,7 @@ create table "staging_cloud"."exam_attempts" (
   "user_id" bigint,
   "exam_paper_id" bigint,
   "mode" text,
+  "status_id" bigint,
   "score" numeric,
   "max_score" numeric,
   "section_scores" jsonb,
@@ -1117,6 +1106,54 @@ create table "staging_cloud"."part_responses" (
   primary key ("id")
 );
 
+create table "staging_cloud"."attempt_statuses" (
+  "id" bigint,
+  "slug" text,
+  "_loaded_at" timestamptz default now(),
+  "_row_hash" text,
+  primary key ("id")
+);
+
+create table "staging_cloud"."paper_statuses" (
+  "id" bigint,
+  "slug" text,
+  "_loaded_at" timestamptz default now(),
+  "_row_hash" text,
+  primary key ("id")
+);
+
+create table "staging_cloud"."question_statuses" (
+  "id" bigint,
+  "slug" text,
+  "_loaded_at" timestamptz default now(),
+  "_row_hash" text,
+  primary key ("id")
+);
+
+create table "staging_cloud"."answer_modes" (
+  "id" bigint,
+  "slug" text,
+  "_loaded_at" timestamptz default now(),
+  "_row_hash" text,
+  primary key ("id")
+);
+
+create table "staging_cloud"."answer_key_kinds" (
+  "id" bigint,
+  "slug" text,
+  "_loaded_at" timestamptz default now(),
+  "_row_hash" text,
+  primary key ("id")
+);
+
+create table "staging_cloud"."stimulus_kinds" (
+  "id" bigint,
+  "slug" text,
+  "_loaded_at" timestamptz default now(),
+  "_row_hash" text,
+  primary key ("id")
+);
+
 create table "archive_cloud"."questions" (
   "id" bigint,
   "subject_id" bigint,
@@ -1124,9 +1161,11 @@ create table "archive_cloud"."questions" (
   "chapter_id" bigint,
   "topic_id" bigint,
   "difficulty_level" text,
-  "question_type" text,
+  "type" text,
   "status" text,
   "body" text,
+  "explanation" text,
+  "image_path" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1139,6 +1178,7 @@ create table "archive_cloud"."question_options" (
   "question_id" bigint,
   "label" text,
   "body" text,
+  "image_path" text,
   "is_correct" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1147,12 +1187,13 @@ create table "archive_cloud"."question_options" (
   primary key ("id")
 );
 
+create index "ix_question_options_question_id" on "archive_cloud"."question_options" ("question_id");
+
 create table "archive_cloud"."structured_questions" (
   "id" bigint,
   "subject_id" bigint,
-  "chapter_id" bigint,
   "status" text,
-  "body" text,
+  "stimulus" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1163,7 +1204,7 @@ create table "archive_cloud"."structured_questions" (
 create table "archive_cloud"."structured_sub_questions" (
   "id" bigint,
   "structured_question_id" bigint,
-  "label" text,
+  "number" text,
   "marks" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1176,7 +1217,7 @@ create table "archive_cloud"."structured_rubric_points" (
   "id" bigint,
   "structured_sub_question_id" bigint,
   "marks" bigint,
-  "body" text,
+  "text" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1200,9 +1241,10 @@ create table "archive_cloud"."pksk_questions" (
 create table "archive_cloud"."question_reports" (
   "id" bigint,
   "question_id" bigint,
-  "user_id" bigint,
+  "reporter_id" bigint,
   "status" text,
-  "reason" text,
+  "report_type" text,
+  "description" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1212,7 +1254,7 @@ create table "archive_cloud"."question_reports" (
 
 create table "archive_cloud"."question_submissions" (
   "id" bigint,
-  "user_id" bigint,
+  "teacher_id" bigint,
   "status" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1223,7 +1265,7 @@ create table "archive_cloud"."question_submissions" (
 
 create table "archive_cloud"."question_imports" (
   "id" bigint,
-  "user_id" bigint,
+  "imported_by" bigint,
   "status" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1246,8 +1288,7 @@ create table "archive_cloud"."question_set_items" (
 
 create table "archive_cloud"."spm_sets" (
   "id" bigint,
-  "user_id" bigint,
-  "title" text,
+  "subject_id" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1256,20 +1297,16 @@ create table "archive_cloud"."spm_sets" (
 );
 
 create table "archive_cloud"."spm_set_question" (
-  "id" bigint,
   "spm_set_id" bigint,
   "question_id" bigint,
-  "created_at" timestamptz,
-  "updated_at" timestamptz,
+  "position" bigint,
   "_loaded_at" timestamptz default now(),
-  "_row_hash" text,
-  primary key ("id")
+  "_row_hash" text
 );
 
 create table "archive_cloud"."exam_papers" (
   "id" bigint,
-  "source_paper_id" bigint,
-  "status" text,
+  "status_id" bigint,
   "title" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1281,8 +1318,9 @@ create table "archive_cloud"."exam_papers" (
 create table "archive_cloud"."paper_sections" (
   "id" bigint,
   "exam_paper_id" bigint,
-  "title" text,
-  "sort_order" bigint,
+  "label" text,
+  "position" bigint,
+  "selection_rule_id" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1292,7 +1330,10 @@ create table "archive_cloud"."paper_sections" (
 
 create table "archive_cloud"."exam_questions" (
   "id" bigint,
-  "status" text,
+  "source_paper_id" bigint,
+  "exam_paper_id" bigint,
+  "paper_section_id" bigint,
+  "status_id" bigint,
   "number_label" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1303,7 +1344,6 @@ create table "archive_cloud"."exam_questions" (
 
 create table "archive_cloud"."exam_paper_questions" (
   "id" bigint,
-  "exam_paper_id" bigint,
   "exam_question_id" bigint,
   "paper_section_id" bigint,
   "created_at" timestamptz,
@@ -1327,7 +1367,7 @@ create table "archive_cloud"."question_stimulus" (
 create table "archive_cloud"."question_parts" (
   "id" bigint,
   "exam_question_id" bigint,
-  "answer_mode" text,
+  "answer_mode_id" bigint,
   "marks" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1351,8 +1391,8 @@ create table "archive_cloud"."part_options" (
 create table "archive_cloud"."part_answer_keys" (
   "id" bigint,
   "question_part_id" bigint,
-  "kind" text,
-  "value" text,
+  "answer_key_kind_id" bigint,
+  "content" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1362,7 +1402,7 @@ create table "archive_cloud"."part_answer_keys" (
 
 create table "archive_cloud"."stimuli" (
   "id" bigint,
-  "kind" text,
+  "stimulus_kind_id" bigint,
   "body" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1385,7 +1425,6 @@ create table "archive_cloud"."media_assets" (
 create table "archive_cloud"."question_revisions" (
   "id" bigint,
   "exam_question_id" bigint,
-  "status" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1407,8 +1446,10 @@ create table "archive_cloud"."question_snapshots" (
 create table "archive_cloud"."source_papers" (
   "id" bigint,
   "natural_key" text,
-  "content_hash" text,
+  "file_hash" text,
   "year" bigint,
+  "exam_board_id" bigint,
+  "exam_type_id" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1430,7 +1471,7 @@ create table "archive_cloud"."import_items" (
   "id" bigint,
   "import_batch_id" bigint,
   "exam_question_id" bigint,
-  "status" text,
+  "review_status" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1465,8 +1506,6 @@ create table "archive_cloud"."unify_quarantine" (
 
 create table "archive_cloud"."paper_documents" (
   "id" bigint,
-  "exam_paper_id" bigint,
-  "path" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1477,8 +1516,7 @@ create table "archive_cloud"."paper_documents" (
 create table "archive_cloud"."paper_document_pages" (
   "id" bigint,
   "paper_document_id" bigint,
-  "page_number" bigint,
-  "image_path" text,
+  "position" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1488,8 +1526,7 @@ create table "archive_cloud"."paper_document_pages" (
 
 create table "archive_cloud"."paper_blueprints" (
   "id" bigint,
-  "name" text,
-  "status" text,
+  "subject_id" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1500,8 +1537,9 @@ create table "archive_cloud"."paper_blueprints" (
 create table "archive_cloud"."blueprint_sections" (
   "id" bigint,
   "paper_blueprint_id" bigint,
-  "title" text,
-  "sort_order" bigint,
+  "label" text,
+  "position" bigint,
+  "selection_rule_id" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1511,8 +1549,7 @@ create table "archive_cloud"."blueprint_sections" (
 
 create table "archive_cloud"."teacher_reference_documents" (
   "id" bigint,
-  "user_id" bigint,
-  "path" text,
+  "teacher_id" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1522,10 +1559,33 @@ create table "archive_cloud"."teacher_reference_documents" (
 
 create table "archive_cloud"."teacher_reference_papers" (
   "id" bigint,
-  "teacher_reference_document_id" bigint,
-  "title" text,
+  "teacher_id" bigint,
   "created_at" timestamptz,
   "updated_at" timestamptz,
+  "_loaded_at" timestamptz default now(),
+  "_row_hash" text,
+  primary key ("id")
+);
+
+create table "archive_cloud"."exam_boards" (
+  "id" bigint,
+  "slug" text,
+  "_loaded_at" timestamptz default now(),
+  "_row_hash" text,
+  primary key ("id")
+);
+
+create table "archive_cloud"."exam_types" (
+  "id" bigint,
+  "slug" text,
+  "_loaded_at" timestamptz default now(),
+  "_row_hash" text,
+  primary key ("id")
+);
+
+create table "archive_cloud"."selection_rules" (
+  "id" bigint,
+  "slug" text,
   "_loaded_at" timestamptz default now(),
   "_row_hash" text,
   primary key ("id")

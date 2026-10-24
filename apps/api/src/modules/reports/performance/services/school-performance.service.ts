@@ -2,6 +2,7 @@ import { Inject, Injectable, Optional } from '@nestjs/common'
 
 import { ApiError } from '../../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../../db/clock'
+import { canOpenClassDashboard } from '../domain/access-policy'
 import {
   COUNTED_MODES,
   LEVEL_CODES,
@@ -30,12 +31,12 @@ import {
   achievementOf,
   distinctStudents,
   entryGrade,
-  gpsBand,
   gpsOf,
   gradeOfPoints,
   gradedEntries,
   liveEntries,
   pairCounts,
+  schoolGps,
   studentStatuses,
 } from './headcount-figures'
 import { distinctMembers, nameMap, ownPupilIds, viewScope, type ViewScope } from './support'
@@ -252,9 +253,7 @@ export class SchoolPerformanceService {
     const staff = isStaff(ctx.role)
     const graded = gradedEntries(entries)
     const shownGps = staff || distinctStudents(graded) >= MIN_COHORT
-    const g = gpsOf(graded)
-    const gps: PerformanceSchool['gps'] =
-      shownGps && g.value !== null ? { value: g.value, band: gpsBand(g.value), entries: g.entries } : { value: null, band: null, entries: 0 }
+    const gps: PerformanceSchool['gps'] = schoolGps(entries, staff)
 
     const counts = new Map<string, number>()
     for (const e of shownGps ? graded : []) {
@@ -369,7 +368,8 @@ export class SchoolPerformanceService {
           accuracy: s.accuracy,
           onTrack: st.on,
           below: st.below,
-          href: c.kind === 'classroom' ? `/prestasi/kelas/${c.id}` : null,
+          // Only a link the viewer can open: the class dashboard answers 404 otherwise.
+          href: canOpenClassDashboard(ctx, c) ? `/prestasi/kelas/${c.id}` : null,
         }
       })
 

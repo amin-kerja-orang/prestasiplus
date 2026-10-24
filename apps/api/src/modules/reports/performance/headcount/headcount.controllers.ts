@@ -82,14 +82,14 @@ export class HeadcountController {
   @Post()
   @RateLimit(WRITE)
   async create(@Body() body: unknown, @Req() req: Req) {
-    return ok(await overloadTo429(async () => this.headcounts.create(await this.ctx.of(req), body)))
+    return ok(await overloadTo429(async () => this.headcounts.create(writeCtxOf(req), body)))
   }
 
   @Post('auto-setup')
   @RateLimit(WRITE)
   @HttpCode(200)
   async autoSetup(@Body() body: unknown, @Req() req: Req) {
-    return ok(await overloadTo429(async () => this.headcounts.autoSetup(await this.ctx.of(req), body)))
+    return ok(await overloadTo429(async () => this.headcounts.autoSetup(writeCtxOf(req), body)))
   }
 
   @Get(':id/summary')
@@ -125,7 +125,7 @@ export class HeadcountController {
   @RateLimit(WRITE)
   @HttpCode(200)
   async dropStudents(@Param('id', SafeIdPipe) id: string, @Body() body: unknown, @Req() req: Req) {
-    return ok(await overloadTo429(async () => this.headcounts.dropStudents(await this.ctx.of(req), id, body)))
+    return ok(await overloadTo429(async () => this.headcounts.dropStudents(writeCtxOf(req), id, body)))
   }
 
   @Post(':id/reset')

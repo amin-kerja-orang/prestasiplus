@@ -5,11 +5,13 @@
  *
  * Environment: DATABASE_URL (the v2 database that also holds staging_cloud), IC_HASH_KEY (else
  * SESSION_SECRET outside production), PP_MIGRATE_ROSTER_DEFAULT_HASHES (optional; the lead's comma-separated
- * list of shared roster default hashes, never logged), and for --apply PP_ALLOW_MIGRATE_APPLY=1.
+ * list of shared roster default hashes, never logged; --apply warns when it is unset), and for --apply PP_ALLOW_MIGRATE_APPLY=1.
  * Reads only the fixtures / anonymised staging copy; it never connects to a source database.
  */
-import { registerMigrateCommand, type CliContext, type CommandArgs, type MigrateCommand } from '../kit'
+import { mytDay, SystemClock, type Clock } from '../../db/clock'
+import { registerMigrateCommand, withSourceLock, type CliContext, type CommandArgs, type MigrateCommand } from '../kit'
 import { ApplyGuardError } from '../kit/apply-guard'
+import { resolveGitSha } from './git-sha'
 import { NOT_MIGRATED, runCore } from './index'
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -20,17 +22,25 @@ function flagValue(args: CommandArgs, name: string): string | undefined {
   return v
 }
 
+/** The default `--as-of`: today's calendar day in Malaysia (Asia/Kuala_Lumpur, UTC+8), not the UTC day (OD-10 Q8). */
+export function defaultAsOf(clock: Clock = new SystemClock()): string {
+  return mytDay(clock.now())
+}
+
 export const migrateCore: MigrateCommand = {
   name: 'migrate:core',
   summary: 'ETL of reference data, identity and classes from staging_cloud (dry-run by default)',
   async run(args: CommandArgs, ctx: CliContext): Promise<number> {
-    const asOf = flagValue(args, 'as-of') ?? new Date().toISOString().slice(0, 10)
+    const asOf = flagValue(args, 'as-of') ?? defaultAsOf()
     if (!DATE.test(asOf) || Number.isNaN(Date.parse(`${asOf}T00:00:00Z`))) throw new ApplyGuardError('--as-of must be YYYY-MM-DD.')
     const sizeText = flagValue(args, 'batch-size')
     const batchSize = sizeText === undefined ? undefined : Number(sizeText)
     if (batchSize !== undefined && (!Number.isInteger(batchSize) || batchSize < 1)) throw new ApplyGuardError('--batch-size must be a positive integer.')
 
-    const { report, core } = await runCore({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, mode: args.mode, batchSize })
+    // Dry-run and apply both take the per-source lock (the orchestrator's key); runCore itself stays lock-free for it.
+    const { report, core, restrictedFile } = await withSourceLock(ctx.pool, 'cloud', () =>
+      runCore({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, mode: args.mode, batchSize, gitSha: resolveGitSha(ctx.env), warn: ctx.err }),
+    )
 
     ctx.out(`migrate:core ${report.mode}: run ${report.runId} ${report.status}`)
     ctx.out('entity | source | eligible | loaded | rejected | status')
@@ -43,6 +53,8 @@ export const migrateCore: MigrateCommand = {
       const ids = core.notes.ids.get(name)
       if (ids && ids.length > 0) ctx.out(`ids ${name}: ${ids.slice(0, 200).join(',')}${ids.length > 200 ? ',...' : ''}`)
     }
+    // The ids behind nullHashAccounts / flaggedWithoutLoginId are real people: only the mode-0600 file holds them (7 days, runbook).
+    if (restrictedFile !== undefined) ctx.out(`restricted id file (mode 0600, delete within 7 days): ${restrictedFile}`)
     for (const n of NOT_MIGRATED) ctx.out(`not migrated ${n.table}: ${n.reason}`)
     return report.status === 'succeeded' ? 0 : 1
   },

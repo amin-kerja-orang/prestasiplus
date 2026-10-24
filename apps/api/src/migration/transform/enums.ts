@@ -5,7 +5,13 @@
  * profile report of the real dump (BE-27), never from a hunch.
  */
 
-/** .cloud `users.role` -> v2 role code (T-01, v2-data-migration.md 4.1). `jpn_officer` has no .cloud source. */
+/**
+ * .cloud `users.role` -> v2 role code (T-01, v2-data-migration.md 4.1). The real .cloud roles are pelajar, guru, ibu_bapa,
+ * admin_sekolah, agent, penaja, pegawai_ppd, admin and jpn_officer. `agent` is not migrated (`ROLES_NOT_MIGRATED`).
+ * v2 has no `jpn_officer` role (D31a: one PPD/JPN role, ck_user_roles_role allows seven), so a JPN officer becomes a
+ * `ppd_officer` whose scope is STATE level (`STATE_SCOPE_SOURCE_ROLES`, `transformUser`). Default taken from the pre-G4
+ * review; the LEAD confirms it.
+ */
 export const ROLE_MAP: Readonly<Record<string, string>> = {
   pelajar: 'student',
   guru: 'teacher',
@@ -13,9 +19,20 @@ export const ROLE_MAP: Readonly<Record<string, string>> = {
   penaja: 'sponsor',
   admin_sekolah: 'school_admin',
   pegawai_ppd: 'ppd_officer',
+  jpn_officer: 'ppd_officer',
   admin: 'admin',
 }
 export const ROLE_SOURCE_CODES: readonly string[] = Object.keys(ROLE_MAP)
+
+/** Source roles whose `ppd_officer` gets a STATE scope (the school's state) instead of a district scope. */
+export const STATE_SCOPE_SOURCE_ROLES: readonly string[] = ['jpn_officer']
+
+/**
+ * Known .cloud roles that are deliberately NOT migrated (LEAD, FIT-FIX): the account is rejected and counted by name
+ * (`users.role_rejected.<role>` in the report notes), the same way the deferred practice modes are. Their dependent rows
+ * (sessions, wallet, ...) then fall out as ORPHAN_PARENT.
+ */
+export const ROLES_NOT_MIGRATED: readonly string[] = ['agent']
 
 /** .cloud `schools.type` -> v2 `SCHOOL_TYPES`. */
 export const SCHOOL_TYPE_MAP: Readonly<Record<string, string>> = {

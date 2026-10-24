@@ -24,6 +24,10 @@ export interface BatchContext {
   /** 1-based number of this batch within the entity. */
   batch: number
   mode: RunMode
+  /** Runs `undo` (best effort, errors ignored) if this batch does not commit: removes what the batch made outside the database. */
+  onRollback(undo: () => Promise<void>): void
+  /** Runs `done` (best effort, errors ignored) once this batch has committed. */
+  afterCommit(done: () => Promise<void>): void
 }
 
 /** What a step reports for a batch; omitted numbers count as 0. */
@@ -61,6 +65,11 @@ export interface RunOptions {
   batchSize?: number
   /** `--apply` continues an unfinished apply run on the same input. Default true. */
   resume?: boolean
+  /**
+   * Called once the run row of THIS invocation exists (started, or reopened for a resume) and before any batch runs. Nothing is
+   * called when the run stops earlier (apply guard, held lock, apply refused), so a caller knows whether a row is its own.
+   */
+  onRunStart?: (runId: string) => void
 }
 
 export interface RunReport {
@@ -166,6 +175,8 @@ export class Runner {
         runId = await this.ledger.start({ mode, sources, entitySet: names, gitSha: options.gitSha, inputHash: options.inputHash })
       }
 
+      options.onRunStart?.(runId)
+
       const rejects = new Rejects()
       let resumedBatches = 0
       try {
@@ -189,7 +200,10 @@ export class Runner {
       await this.ledger.writeRecon(runId, recon)
       const status = recon.every((r) => r.status === 'ok') ? 'succeeded' : 'failed'
       await this.ledger.finish(runId, status, counters)
-      return { runId, mode, status, recon, counters, resumedBatches }
+      // A resumed row's `counters` JSON can carry keys that are not entities (the core command keeps its `notes` there):
+      // the report holds the entity counters of this run's steps only.
+      const entityCounters = Object.fromEntries(names.filter((n) => counters[n] !== undefined).map((n) => [n, counters[n]])) as RunCounters
+      return { runId, mode, status, recon, counters: entityCounters, resumedBatches }
     } finally {
       await lock.query(`SELECT pg_advisory_unlock_all()`).catch(() => undefined)
       lock.release()
@@ -220,6 +234,9 @@ export class Runner {
             runId,
             batch: batchNo,
             mode: 'dry-run',
+            // A dry-run writes nothing outside the database and its transaction is always rolled back.
+            onRollback: () => undefined,
+            afterCommit: () => undefined,
           })
           addBatch(c, rows.length, result)
         }
@@ -245,6 +262,8 @@ export class Runner {
       const next: EntityCounters = { ...(counters[step.entity] as EntityCounters) }
       const client = await this.pool.connect()
       let released = false
+      const undo: (() => Promise<void>)[] = []
+      const done: (() => Promise<void>)[] = []
       try {
         await client.query('BEGIN')
         const result = await step.load(rows, {
@@ -255,6 +274,8 @@ export class Runner {
           runId,
           batch: batchNo,
           mode: 'apply',
+          onRollback: (fn) => void undo.push(fn),
+          afterCommit: (fn) => void done.push(fn),
         })
         addBatch(next, rows.length, result)
         await rejects.flush(client, runId)
@@ -264,10 +285,12 @@ export class Runner {
         })
         await this.ledger.saveCounters(runId, { ...counters, [step.entity]: next }, client)
         await client.query('COMMIT')
+        await Promise.allSettled(done.map((fn) => fn()))
       } catch (err) {
         rejects.clear()
         await rollbackAndRelease(client)
         released = true
+        await Promise.allSettled(undo.map((fn) => fn()))
         throw err
       } finally {
         if (!released) client.release()

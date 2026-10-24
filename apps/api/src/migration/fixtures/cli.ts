@@ -61,7 +61,7 @@ export function writeFixture(size: FixtureSize, seed: number, outDir: string): s
       synthetic = false
     }
     if (!synthetic) throw new FixtureOutputError('The output directory is not empty and is not a synthetic fixture. Use a new directory.')
-    for (const name of existing) if (/^[a-z][a-z0-9_]*\.ndjson$|^manifest\.json$|^anomalies\.json$/.test(name)) rmSync(join(dir, name), { force: true })
+    for (const name of existing) if (/^[a-z][a-z0-9_]*\.ndjson$|^manifest\.json$|^anomalies\.json$|^SHA256SUMS$/.test(name)) rmSync(join(dir, name), { force: true })
   }
   for (const [name, content] of files) writeFileSync(join(dir, name), content, { encoding: 'utf8', flag: 'wx' })
   return [...files.keys()]

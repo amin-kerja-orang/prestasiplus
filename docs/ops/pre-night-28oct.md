@@ -189,7 +189,7 @@ deploy/vps/migration/slot.sh gonogo
 - First line: `GO/NO-GO EVIDENCE (infrastructure part, cutover plan section 5; counts and names only)`.
 - `criterion 8: restore point pre_etl present, sha256 ok` and the same for `pre_delta`.
 - `criterion 8: PITR on, last archived WAL <segment> at <UTC time>, failed_count 0`.
-- `stage: archive_cloud:0 staging_cloud:0 in the target (expected archive_cloud:35 staging_cloud:83 while the slot runs)`. Zeros are right before the copy.
+- `stage: archive_cloud:0 staging_cloud:0 in the target (expected archive_cloud:38 staging_cloud:89 while the slot runs)`. Zeros are right before the copy.
 - `backup: newest dump pp-backup-<UTC>Z.dump is <n> h old` with n below 24.
 - `disk: <n>% free on the backup volume` with n above 30.
 - `api: /api/ready through the edge -> 200`.

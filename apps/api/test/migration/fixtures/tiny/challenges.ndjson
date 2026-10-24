@@ -1,5 +1,5 @@
-{"id":1,"created_by":null,"classroom_id":null,"type":"harian","title":"Cabaran Contoh 1"}
-{"id":2,"created_by":null,"classroom_id":null,"type":"harian","title":"Cabaran Contoh 2"}
-{"id":3,"created_by":null,"classroom_id":null,"type":"harian","title":"Cabaran Contoh 3"}
-{"id":4,"created_by":null,"classroom_id":null,"type":"harian","title":"Cabaran Contoh 4"}
-{"id":5,"created_by":null,"classroom_id":null,"type":"harian","title":"Cabaran Contoh 5"}
+{"id":1,"created_by":null,"classroom_id":null,"challenge_type":"quiz_count","title":"Cabaran Contoh 1","target_value":5}
+{"id":2,"created_by":null,"classroom_id":null,"challenge_type":"accuracy","title":"Cabaran Contoh 2","target_value":6}
+{"id":3,"created_by":null,"classroom_id":null,"challenge_type":"topic_variety","title":"Cabaran Contoh 3","target_value":7}
+{"id":4,"created_by":null,"classroom_id":null,"challenge_type":"streak","title":"Cabaran Contoh 4","target_value":8}
+{"id":5,"created_by":null,"classroom_id":null,"challenge_type":"time_spent","title":"Cabaran Contoh 5","target_value":9}

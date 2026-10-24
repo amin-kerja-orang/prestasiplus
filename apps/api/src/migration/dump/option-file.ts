@@ -1,0 +1,215 @@
+/**
+ * The MySQL option file (AM-10). All connection details (host, port, user, password, database, ssl-mode) live in ONE
+ * file named by `CLOUD_MYSQL_DEFAULTS_FILE`; the spawned client gets `--defaults-file=<file>`, so nothing secret is
+ * ever on a command line, in the environment of the child, or in shell history.
+ *
+ * The file must exist, be a regular file, sit OUTSIDE the repository and the working directory (real paths), and on
+ * POSIX not be readable by group or others (chmod 600). `!include` directives are refused (they could pull in a second,
+ * unchecked file). The values of user, password and host are collected as secrets so every client message is scrubbed.
+ *
+ * TLS: a host that is not local (anything but localhost, 127.0.0.1, ::1, or no host at all = a socket) is refused unless
+ * the file demands certificate verification: `ssl-mode=VERIFY_IDENTITY` or `VERIFY_CA` (MySQL client), or, when no
+ * ssl-mode is set, `ssl-verify-server-cert` with ssl on (MariaDB client). REQUIRED, PREFERRED, DISABLED, `ssl=0` or no
+ * setting on a remote host are refused. A local host (an SSH tunnel to 127.0.0.1) needs no TLS.
+ */
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { isAbsolute, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { DumpUsageError } from './errors'
+
+export const WINDOWS_WARNING =
+  'File permissions are not enforced on Windows; keep the option file, the key and the output in your user profile on an encrypted disk.'
+
+type Env = Readonly<Record<string, string | undefined>>
+
+export const repoRoot = (): string => fileURLToPath(new URL('../../../../../', import.meta.url))
+
+export const real = (p: string): string => {
+  try {
+    return realpathSync.native(p)
+  } catch {
+    return resolve(p)
+  }
+}
+
+export const isInside = (child: string, parent: string): boolean => {
+  const rel = relative(parent, child)
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+}
+
+export interface OptionFile {
+  /** Absolute path (not real path) of the file, for `--defaults-file`. */
+  path: string
+  /** Strings to scrub from every message: password (any length), user and host (3+ characters). */
+  secrets: string[]
+  warnings: string[]
+}
+
+function unquote(value: string): string {
+  const v = value.trim()
+  if (v.length >= 2 && ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))) return v.slice(1, -1)
+  return v
+}
+
+/**
+ * The only keys the export needs. Anything else is refused (exit 2) by `loadOptionFile`: `init-command`, `execute`,
+ * `plugin-dir`, `default-auth`, `tee`, `pager`, `loose-*` and every abbreviation (`hos=`, `ssl-mod=`) could make the client run
+ * something or hide a setting from the checks below. `_` and `-` are the same character in a key.
+ */
+export const ALLOWED_OPTION_KEYS: readonly string[] = [
+  'host',
+  'port',
+  'user',
+  'password',
+  'database',
+  'socket',
+  'protocol',
+  'ssl-mode',
+  'ssl',
+  'ssl-ca',
+  'ssl-capath',
+  'ssl-cert',
+  'ssl-key',
+  'ssl-verify-server-cert',
+  'skip-ssl',
+  'default-character-set',
+]
+
+export interface ParsedOptions {
+  /** Effective values: options of [client] and [mysql] in file order, the last one wins. */
+  values: Map<string, string>
+  /** The same without removing a trailing ` # comment` from the value. */
+  raw: Map<string, string>
+  /** Every key seen in the [client] and [mysql] groups (normalised: lower case, `_` as `-`). */
+  keys: string[]
+  /** Lines without `=`: the key and the 1-based line number. Never printed. */
+  bareLines: { key: string; line: number }[]
+  hasInclude: boolean
+  groups: string[]
+  outsideGroup: boolean
+}
+
+/** Reads `key=value` pairs of the `[client]` and `[mysql]` groups. Pure; exported for tests. */
+export function parseOptionText(text: string): ParsedOptions {
+  // ONE map per reading, filled in FILE ORDER across [client] and [mysql]: the client applies the options in that order and the last
+  // one wins (checked with `mariadb --defaults-file=… --print-defaults`); [mysql] does not always override [client].
+  const values = new Map<string, string>()
+  const raw = new Map<string, string>()
+  const keys = new Set<string>()
+  const bareLines: { key: string; line: number }[] = []
+  let hasInclude = false
+  let outsideGroup = false
+  const groups = new Set<string>()
+  let group = ''
+  const rows = text.split(/\r?\n/)
+  for (let n = 0; n < rows.length; n++) {
+    const rawLine = rows[n] as string
+    const line = rawLine.trim()
+    if (line === '' || line.startsWith('#') || line.startsWith(';')) continue
+    if (line.startsWith('!include')) {
+      hasInclude = true
+      continue
+    }
+    const g = /^\[([^\]]*)\]$/.exec(line)
+    if (g) {
+      group = (g[1] as string).trim().toLowerCase()
+      groups.add(group)
+      continue
+    }
+    if (group === '') outsideGroup = true
+    if (group !== 'client' && group !== 'mysql') continue
+    const eq = line.indexOf('=')
+    const key = (eq === -1 ? line : line.slice(0, eq)).trim().toLowerCase().replace(/_/g, '-')
+    keys.add(key)
+    if (eq === -1) {
+      bareLines.push({ key, line: n + 1 })
+      values.set(key, '') // a bare flag such as `ssl-verify-server-cert`
+      raw.set(key, '')
+      continue
+    }
+    raw.set(key, unquote(line.slice(eq + 1)))
+    values.set(key, unquote(line.slice(eq + 1).replace(/\s+#.*$/, '')))
+  }
+  return { values, raw, keys: [...keys], bareLines, hasInclude, groups: [...groups], outsideGroup }
+}
+
+const OFF = new Set(['0', 'false', 'off', 'no'])
+/** A bare flag (empty value) or an explicit on value. */
+const flagOn = (v: string | undefined): boolean => v !== undefined && !OFF.has(v.toLowerCase())
+
+export function isLocalHost(host: string): boolean {
+  const h = host.trim().toLowerCase().replace(/^\[|\]$/g, '')
+  return h === '' || h === 'localhost' || h === '127.0.0.1' || h === '::1'
+}
+
+const TLS_REFUSED =
+  'The option file points to a remote host without verified TLS: use VERIFY_IDENTITY or an SSH tunnel to 127.0.0.1 (ssl-mode=VERIFY_IDENTITY or VERIFY_CA under [client]; MariaDB client: ssl plus ssl-verify-server-cert).'
+
+/** Exported for tests: the TLS rule on parsed option values. */
+export function assertTransportSafe(values: ReadonlyMap<string, string>): void {
+  if (isLocalHost(values.get('host') ?? '')) return
+  // For a remote host TLS must not be switched off, whatever else is set (also next to ssl-mode=VERIFY_*).
+  const skipSsl = values.has('skip-ssl') && flagOn(values.get('skip-ssl'))
+  const sslOff = values.has('ssl') && !flagOn(values.get('ssl'))
+  if (skipSsl || sslOff) throw new DumpUsageError(TLS_REFUSED)
+  const mode = values.get('ssl-mode')
+  if (mode !== undefined) {
+    if (/^VERIFY_(IDENTITY|CA)$/i.test(mode.trim())) return
+    throw new DumpUsageError(TLS_REFUSED)
+  }
+  // MariaDB client style: ssl on AND the server certificate verified.
+  if (flagOn(values.get('ssl')) && flagOn(values.get('ssl-verify-server-cert'))) return
+  throw new DumpUsageError(TLS_REFUSED)
+}
+
+export function loadOptionFile(env: Env, platform: string, roots: readonly string[] = [repoRoot(), process.cwd()]): OptionFile {
+  const file = env.CLOUD_MYSQL_DEFAULTS_FILE
+  if (file === undefined || file === '') {
+    throw new DumpUsageError(
+      'CLOUD_MYSQL_DEFAULTS_FILE is not set. Point it to a MySQL option file ([client] host, port, user, password, database, ssl-mode) outside the repository. Connection details are never accepted as flags.',
+    )
+  }
+  const path = resolve(file)
+  if (!existsSync(path) || !statSync(path).isFile()) throw new DumpUsageError('CLOUD_MYSQL_DEFAULTS_FILE does not name a readable file.')
+  const where = real(path)
+  if (roots.some((r) => isInside(where, real(r)))) {
+    throw new DumpUsageError('CLOUD_MYSQL_DEFAULTS_FILE is inside the repository or the working directory. Keep the option file outside it.')
+  }
+  const warnings: string[] = []
+  if (platform === 'win32') warnings.push(WINDOWS_WARNING)
+  else if ((statSync(path).mode & 0o077) !== 0) {
+    throw new DumpUsageError('CLOUD_MYSQL_DEFAULTS_FILE must not be readable by group or others (chmod 600).')
+  }
+  const { values, raw, keys, bareLines, hasInclude, groups, outsideGroup } = parseOptionText(readFileSync(path, 'utf8'))
+  if (hasInclude) throw new DumpUsageError('The option file uses !include or !includedir; put all settings in the one file.')
+  if (outsideGroup) throw new DumpUsageError('The option file has settings outside any [group]; put them under [client].')
+  for (const g of groups) {
+    // Only [client] (and [mysql]) are read. Other groups ([client-server], [client-mariadb], [mariadb], [mysqldump], ...) are refused:
+    // they are not what the export uses and could carry settings the client would pick up. The message names the group only.
+    if (g !== 'client' && g !== 'mysql') {
+      const shown = /^[a-z0-9_.-]{1,40}$/.test(g) ? g : '(unprintable name)'
+      throw new DumpUsageError(`The option file has a [${shown}] group. Only [client] is accepted; remove the other groups.`)
+    }
+  }
+  // A line without `=` may be a pasted password: only its line number is shown, never its text.
+  if (bareLines.length > 0) {
+    const bad = bareLines.find((b) => !ALLOWED_OPTION_KEYS.includes(b.key))
+    if (bad) throw new DumpUsageError(`The option file has a line with a key that is not allowed: (key not allowed) at line ${bad.line}. Allowed keys: ${ALLOWED_OPTION_KEYS.join(', ')}.`)
+  }
+  for (const k of keys) {
+    if (!ALLOWED_OPTION_KEYS.includes(k)) {
+      const shown = /^[a-z0-9-]{1,40}$/.test(k) ? k : '(unprintable key)'
+      throw new DumpUsageError(`The option file uses the key "${shown}", which is not accepted. Allowed keys: ${ALLOWED_OPTION_KEYS.join(', ')}.`)
+    }
+  }
+
+  const secrets: string[] = []
+  // Both readings of the value (with and without an inline comment): whichever the client used gets scrubbed.
+  for (const v of [values.get('password'), raw.get('password')]) if (v) secrets.push(v)
+  for (const key of ['user', 'host'] as const) {
+    for (const v of [values.get(key), raw.get(key)]) if (v && v.length >= 3) secrets.push(v)
+  }
+  assertTransportSafe(values)
+  return { path, secrets, warnings }
+}

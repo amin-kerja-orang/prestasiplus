@@ -8,7 +8,7 @@ import type { AssignmentKind, AssignmentResolution, PracticeAssignmentSource } f
 import { QuestionSetAssignments } from '../question-sets'
 import { MissionsRepository, type MissionRecord } from './missions.repository'
 import { QuestionPool } from './question-pool'
-import { round, shuffled } from './remedial.rules'
+import { round } from './remedial.rules'
 
 const isRealId = (s: string): boolean => isIdString(s) && s !== '0'
 
@@ -52,13 +52,11 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
   private async missionQuestionIds(mission: MissionRecord, userId: string): Promise<string[]> {
     if (mission.missionType !== 'latih_tubi') return []
     const rng = prngStream(`m10:mission:${mission.id}:${userId}`)
-    const pool = await this.pool.catalog({ subjectId: mission.subjectId }) // one read, reused for the fallback
     if (mission.chapterId !== null) {
-      const inChapter = pool.filter((e) => e.chapterId === mission.chapterId).map((e) => e.id)
-      if (inChapter.length > 0) return shuffled(inChapter, rng).slice(0, mission.questionCount)
+      const inChapter = await this.pool.draw({ subjectId: mission.subjectId, chapterId: mission.chapterId }, mission.questionCount, rng)
+      if (inChapter.length > 0) return inChapter
     }
-    const spm = pool.filter((e) => e.spmPool).map((e) => e.id)
-    return shuffled(spm, rng).slice(0, mission.questionCount)
+    return this.pool.draw({ subjectId: mission.subjectId, spmPool: true }, mission.questionCount, rng)
   }
 
   private async remedial(input: { userId: string; id: string }): Promise<AssignmentResolution> {

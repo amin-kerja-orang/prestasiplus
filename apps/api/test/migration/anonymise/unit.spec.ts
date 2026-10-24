@@ -7,7 +7,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { findTable, TABLES, type TableSpec } from '../../../src/migration/ddl/spec'
 import { ConfigError, CoverageError, KeyError } from '../../../src/migration/anonymise/errors'
 import { loadHmacKey } from '../../../src/migration/anonymise/key'
-import { patternKinds } from '../../../src/migration/anonymise/leak-scan'
+import { OriginalsIndex, patternKinds } from '../../../src/migration/anonymise/leak-scan'
 import { DUMMY_ARGON2_HASH, DUMMY_PASSWORD, dummyPasswordHash, NOT_A_HASH } from '../../../src/migration/anonymise/passwords'
 import { Pseudonymiser, PSEUDONYM_KINDS } from '../../../src/migration/anonymise/pseudonyms'
 import { applyRule, checkCoverage, findCoverageGaps, parseConfig, ruleFor, type AnonConfig } from '../../../src/migration/anonymise/rules'
@@ -45,17 +45,100 @@ describe('default deny (AC1)', () => {
     expect(gaps.unknown.sort()).toEqual(['ghost_table.*', 'users.ghost_column'])
   })
 
-  it('every personal column of the DDL has a rule that is not "keep"', () => {
-    const mustChange: [string, string][] = [
-      ['users', 'name'], ['users', 'email'], ['users', 'phone'], ['users', 'ic'], ['users', 'username'], ['users', 'password'],
-      ['users', 'remember_token'], ['users', 'parent_invite_token'], ['users', 'google_id'], ['users', 'referral_code'], ['users', 'bio'],
-      ['users', 'faith'], ['sponsors', 'officer_name'], ['sponsors', 'organisation'], ['foster_applications', 'applicant_name'],
-      ['foster_applications', 'reason'], ['support_tickets', 'subject'], ['support_tickets', 'admin_reply'], ['student_notes', 'body'],
-      ['mood_checkins', 'note'], ['feedback', 'comment'], ['chatbot_messages', 'body'], ['chatbot_conversations', 'visitor_id'],
-      ['audit_logs', 'ip'], ['settings', 'value'], ['psychometric_results', 'details'], ['part_responses', 'response'],
-      ['structured_attempt_answers', 'answer_text'], ['schools', 'name'], ['schools', 'join_code'], ['marketplace_sellers', 'organisation'],
+  it('every DDL column has an explicit per-table rule and every config column exists in the DDL (no drift either way)', () => {
+    // Only id, created_at and updated_at may rely on the `global` rules; every other column needs its own entry.
+    const globalOk = new Set(['id', 'created_at', 'updated_at'])
+    const missing: string[] = []
+    for (const spec of TABLES) {
+      const rules = DEFAULT_CONFIG.tables[spec.name] ?? {}
+      for (const col of spec.columns) {
+        if (!(col.name in rules) && !globalOk.has(col.name)) missing.push(`${spec.name}.${col.name}`)
+      }
+    }
+    expect(missing, 'spec columns without an explicit rule in anon.config.json').toEqual([])
+    const stale: string[] = []
+    const specByName = new Map(TABLES.map((s) => [s.name, new Set(s.columns.map((c) => c.name))]))
+    for (const [table, rules] of Object.entries(DEFAULT_CONFIG.tables)) {
+      const cols = specByName.get(table)
+      if (!cols) {
+        stale.push(`${table}.*`)
+        continue
+      }
+      for (const col of Object.keys(rules)) if (!cols.has(col)) stale.push(`${table}.${col}`)
+    }
+    expect(stale, 'anon.config.json columns that are not in ddl/spec.ts').toEqual([])
+  })
+
+  it('every personal or free-text column of the DDL has the expected non-"keep" rule, and nothing else is changed (fixed list)', () => {
+    // A fixed list on purpose: it is NOT derived from the config. Flipping one of these to "keep", or adding a
+    // non-keep rule without listing it here, fails the test. Columns that were dropped from the spec are not listed.
+    const expected: [table: string, column: string, rule: string][] = [
+      ['users', 'name', 'pseudonym:name'],
+      ['users', 'email', 'pseudonym:email'],
+      ['users', 'phone', 'pseudonym:phone'],
+      ['users', 'ic', 'pseudonym:ic'],
+      ['users', 'username', 'pseudonym:username'],
+      ['users', 'password', 'hash-password-dummy'],
+      ['users', 'remember_token', 'null'],
+      ['users', 'referral_code', 'pseudonym:code'],
+      ['users', 'parent_invite_token', 'null'],
+      ['users', 'bio', 'scrub-text'],
+      ['users', 'spm_targets', 'scrub-text'],
+      ['users', 'teaching_qualification', 'scrub-text'],
+      ['schools', 'name', 'pseudonym:org'],
+      ['schools', 'code', 'pseudonym:code'],
+      ['schools', 'join_code', 'pseudonym:code'],
+      ['classrooms', 'name', 'scrub-text'],
+      ['classrooms', 'code', 'pseudonym:code'],
+      ['practice_sessions', 'client_uuid', 'pseudonym:opaque'],
+      ['broadcasts', 'body', 'scrub-text'],
+      ['timeline_entries', 'title', 'scrub-text'],
+      ['timeline_entries', 'body', 'scrub-text'],
+      ['question_sets', 'title', 'scrub-text'],
+      ['psychometric_results', 'details', 'scrub-text'],
+      ['feedback', 'comment', 'scrub-text'],
+      ['challenges', 'title', 'scrub-text'],
+      ['battle_invites', 'uuid', 'pseudonym:opaque'],
+      ['game_rooms', 'state', 'scrub-text'],
+      ['leagues', 'name', 'scrub-text'],
+      ['leagues', 'invite_code', 'pseudonym:code'],
+      ['banners', 'image_path', 'pseudonym:path'],
+      ['audio_kbat', 'audio_path', 'pseudonym:path'],
+      ['notifications', 'title', 'scrub-text'],
+      ['notifications', 'target', 'scrub-text'],
+      ['support_tickets', 'subject', 'scrub-text'],
+      ['support_tickets', 'admin_reply', 'scrub-text'],
+      ['chatbot_conversations', 'visitor_id', 'pseudonym:opaque'],
+      ['chatbot_conversations', 'start_url', 'scrub-text'],
+      ['settings', 'value', 'scrub-text'],
+      ['audit_logs', 'subject_id', 'pseudonym:opaque'],
+      ['audit_logs', 'ip', 'pseudonym:ip'],
+      ['marketplace_sellers', 'organisation', 'pseudonym:org'],
+      ['marketplace_products', 'name', 'scrub-text'],
+      ['sponsors', 'organisation', 'pseudonym:org'],
+      ['sponsors', 'officer_name', 'pseudonym:name'],
+      ['foster_applications', 'applicant_name', 'pseudonym:name'],
+      ['foster_applications', 'reason', 'scrub-text'],
+      ['part_responses', 'response', 'scrub-text'],
+      ['part_responses', 'ai_grade', 'scrub-text'],
+      ['part_responses', 'graded_by', 'scrub-text'],
+      ['question_reports', 'description', 'scrub-text'],
+      ['media_assets', 'path', 'pseudonym:path'],
+      ['questions', 'image_path', 'pseudonym:path'],
+      ['question_options', 'image_path', 'pseudonym:path'],
     ]
-    for (const [t, c] of mustChange) expect(ruleFor(DEFAULT_CONFIG, t, c)?.rule, `${t}.${c}`).not.toBe('keep')
+    const show = (r: { rule: string; kind?: string } | undefined): string | undefined => (r === undefined ? undefined : r.kind ? `${r.rule}:${r.kind}` : r.rule)
+    for (const [t, c, rule] of expected) {
+      // Strict: the column must exist in the DDL and have an explicit rule (an undefined rule is not "not keep").
+      expect(findTable(t)?.columns.some((col) => col.name === c), `${t}.${c} is not in the DDL`).toBe(true)
+      const actual = DEFAULT_CONFIG.tables[t]?.[c]
+      expect(actual, `${t}.${c} has no explicit rule`).toBeDefined()
+      expect(show(actual as { rule: string; kind?: string }), `${t}.${c}`).toBe(rule)
+    }
+    const nonKeep = Object.entries(DEFAULT_CONFIG.tables)
+      .flatMap(([t, cols]) => Object.entries(cols).filter(([, r]) => r.rule !== 'keep').map(([c, r]) => `${t}.${c}=${show(r as { rule: string; kind?: string })}`))
+      .sort()
+    expect(nonKeep, 'non-keep rules in anon.config.json that the fixed list does not know').toEqual(expected.map(([t, c, r]) => `${t}.${c}=${r}`).sort())
     expect(ruleFor(DEFAULT_CONFIG, 'users', 'password')?.rule).toBe('hash-password-dummy')
     expect(ruleFor(DEFAULT_CONFIG, 'users', 'remember_token')?.rule).toBe('null')
     expect(ruleFor(DEFAULT_CONFIG, 'users', 'parent_invite_token')?.rule).toBe('null')
@@ -74,9 +157,9 @@ describe('default deny (AC1)', () => {
 
   it('the shipped config covers the quasi-identifier and upload columns (M4)', () => {
     const expected: [string, string, string][] = [
-      ['practice_sessions', 'client_uuid', 'pseudonym'], ['audit_logs', 'subject_id', 'pseudonym'], ['users', 'spm_targets', 'scrub-text'],
+      ['practice_sessions', 'client_uuid', 'pseudonym'], ['audit_logs', 'subject_id', 'pseudonym'], ['users', 'spm_targets', 'scrub-text'], ['challenges', 'target_value', 'keep'], ['challenges', 'title', 'scrub-text'],
       ['notifications', 'title', 'scrub-text'], ['notifications', 'target', 'scrub-text'], ['media_assets', 'path', 'pseudonym'],
-      ['paper_documents', 'path', 'pseudonym'], ['paper_document_pages', 'image_path', 'pseudonym'], ['banners', 'image_path', 'pseudonym'],
+      ['banners', 'image_path', 'pseudonym'],
       ['audio_kbat', 'audio_path', 'pseudonym'],
     ]
     for (const [t, c, r] of expected) expect(ruleFor(DEFAULT_CONFIG, t, c)?.rule, `${t}.${c}`).toBe(r)
@@ -111,6 +194,65 @@ describe('rules keep structure', () => {
     expect(apply({ rule: 'scrub-text' }, { a: 'secret', n: 3, b: true, list: ['x', 1, null], deep: { s: 'y' } })).toEqual({
       a: 'Teks anonim.', n: 3, b: true, list: ['Teks anonim.', 1, null], deep: { s: 'Teks anonim.' },
     })
+  })
+})
+
+describe('scrub-json', () => {
+  const p = new Pseudonymiser(key(TEST_KEY))
+  const rule = { rule: 'scrub-json' } as const
+  const apply = (v: unknown) => applyRule(rule, v, p)
+  const criteria = '{"type":"questions","target_value":50,"daily":true,"note":"Untuk Aina Contoh Fiktif","tags":["Kelas 5 Fiktif",3,null],"deep":{"who":"Budi Contoh","n":1.5}}'
+
+  it('keeps keys, numbers, booleans and null; every nested string leaf is scrubbed', () => {
+    const out = apply(criteria) as string
+    expect(typeof out).toBe('string')
+    expect(JSON.parse(out)).toEqual({
+      type: 'Teks anonim.', target_value: 50, daily: true, note: 'Teks anonim.', tags: ['Teks anonim.', 3, null], deep: { who: 'Teks anonim.', n: 1.5 },
+    })
+  })
+
+  it('no original string value or name survives in the output', () => {
+    const out = apply(criteria) as string
+    for (const original of ['Aina Contoh Fiktif', 'Kelas 5 Fiktif', 'Budi Contoh', 'Aina', 'Budi']) expect(out).not.toContain(original)
+  })
+
+  it('an already parsed value is handled the same way', () => {
+    expect(apply(JSON.parse(criteria))).toEqual(JSON.parse(apply(criteria) as string))
+  })
+
+  it('numbers and booleans at the top level are kept', () => {
+    expect(apply('50')).toBe('50')
+    expect(apply('false')).toBe('false')
+    expect(apply('"Aina Contoh"')).toBe('"Teks anonim."')
+  })
+
+  it('NULL stays NULL and empty text stays empty', () => {
+    expect(apply(null)).toBeNull()
+    expect(apply(undefined)).toBeNull()
+    expect(apply('')).toBe('')
+  })
+
+  it('a value that is not valid JSON is replaced exactly as scrub-text would (fail closed)', () => {
+    for (const bad of ['Aina bin Contoh', '{"target_value": 5, "note": "Aina"', "{'a': 'Aina'}", '  ', '{"a":1} trailing Aina']) {
+      expect(apply(bad), bad).toBe(applyRule({ rule: 'scrub-text' }, bad, p))
+      expect(apply(bad), bad).toBe('Teks anonim.')
+    }
+  })
+
+  it('is deterministic for the same input and key', () => {
+    const other = new Pseudonymiser(key(TEST_KEY))
+    expect(apply(criteria)).toBe(applyRule(rule, criteria, other))
+    expect(apply(criteria)).toBe(apply(criteria))
+  })
+
+  it('the leak index records the string leaves of the original json text, and the scrubbed output is clean', () => {
+    const original = '{"target_value":5,"note":"Catatan untuk Aina Contoh Fiktif sahaja"}'
+    const out = apply(original)
+    const index = new OriginalsIndex()
+    index.record(rule, original, out)
+    expect(index.size).toBeGreaterThan(0)
+    expect(index.match('Catatan untuk Aina Contoh Fiktif sahaja')).toBe('original-value')
+    expect(index.match(out as string)).toBeNull()
   })
 })
 

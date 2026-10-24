@@ -22,7 +22,7 @@ import { capture, createStagingDb, stagingEnv, type StagingDb } from '../staging
 /**
  * AC5 and "one shape": the generated `small` fixture AND its anonymised copy load into staging_cloud with
  * `staging:load`, and the BE-27 profiler reports the planted anomalies with counts equal to the manifest.
- * Each full load creates 118 tables, so the file shares two loads.
+ * Each full load creates 127 tables, so the file shares two loads.
  */
 const FULL = 180_000
 const work = scratch()
