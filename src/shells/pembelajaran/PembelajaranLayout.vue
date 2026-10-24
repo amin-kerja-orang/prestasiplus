@@ -139,10 +139,40 @@ watch(
   },
   { immediate: true },
 )
+
+/**
+ * Cikgu Alesa floating button: it stays out of the way while the learner reads. Scrolling down
+ * tucks it away (it never sits on top of text or controls mid-page); scrolling up, reaching the
+ * top or the end of the page, or focusing it brings it back. The bottom padding of the page body
+ * clears it, so the last content is never under it either.
+ */
+const alesaHidden = ref(false)
+let lastScrollTop = 0
+const SCROLL_STEP = 4
+const SCROLL_TOP_ZONE = 48
+const SCROLL_END_ZONE = 24
+function onBodyScroll(event: Event): void {
+  const body = document.getElementById('kandungan')?.parentElement
+  if (!body || event.target !== body) return
+  const top = body.scrollTop
+  const delta = top - lastScrollTop
+  const toEnd = body.scrollHeight - body.clientHeight - top
+  lastScrollTop = top
+  if (top < SCROLL_TOP_ZONE || toEnd < SCROLL_END_ZONE || delta < -SCROLL_STEP) {
+    alesaHidden.value = false
+  } else if (delta > SCROLL_STEP) {
+    alesaHidden.value = true
+  }
+}
+
 // The panel body is the scroll container: start every page at the top.
 watch(
   () => route.path,
-  () => void nextTick(() => document.getElementById('kandungan')?.parentElement?.scrollTo(0, 0)),
+  () => {
+    alesaHidden.value = false
+    lastScrollTop = 0
+    void nextTick(() => document.getElementById('kandungan')?.parentElement?.scrollTo(0, 0))
+  },
 )
 
 function onPicked(chosen: 'aiman' | 'aisyah'): void {
@@ -236,6 +266,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
       data-layout="pembelajaran"
       data-portal="pembelajaran"
       :data-role="role ?? undefined"
+      @scroll.capture="onBodyScroll"
     >
       <a
         href="#kandungan"
@@ -451,7 +482,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
             <main
               id="kandungan"
               :key="route.path"
-              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 py-4 pb-32 sm:py-6 lg:pb-12"
+              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 pt-4 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:pt-6 lg:pb-24"
               data-testid="pembelajaran-main"
               tabindex="-1"
             >
@@ -493,9 +524,12 @@ const chipClass = (chip: unknown, active: boolean): string =>
       <RouterLink
         v-if="showAlesa"
         to="/cikgu"
-        class="fixed end-4 bottom-24 z-30 grid size-14 place-items-center rounded-full bg-ai text-primary-on shadow-lift lg:bottom-6"
+        class="fixed end-4 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-30 grid size-14 place-items-center rounded-full bg-ai text-primary-on shadow-lift transition duration-200 motion-reduce:transition-none lg:bottom-6"
+        :class="alesaHidden ? 'pointer-events-none scale-75 opacity-0' : ''"
         aria-label="Cikgu Alesa"
         data-testid="pembelajaran-alesa"
+        :data-hidden="alesaHidden ? 'true' : undefined"
+        @focus="alesaHidden = false"
       >
         <DsArt3D v-if="learner" name="books" size="sm" />
         <DsIcon v-else name="sparkle" class="size-7" />

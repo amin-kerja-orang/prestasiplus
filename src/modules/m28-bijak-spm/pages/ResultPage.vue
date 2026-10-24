@@ -131,7 +131,7 @@ const home = computed(() => landingPath.value || '/dashboard')
 </script>
 
 <template>
-  <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-6" data-testid="bijak-result">
+  <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 py-6" data-testid="bijak-result">
     <DsEmptyState
       v-if="error"
       title="Semakan belum tersedia"

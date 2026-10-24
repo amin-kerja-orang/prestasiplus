@@ -65,7 +65,7 @@ async function begin(restart: boolean): Promise<void> {
 </script>
 
 <template>
-  <main class="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6" data-testid="bijak-cover">
+  <main class="mx-auto flex w-full max-w-3xl flex-col gap-6 py-6" data-testid="bijak-cover">
     <UButton
       to="/spm/bijak"
       icon="i-ph-arrow-left"
@@ -114,10 +114,18 @@ async function begin(restart: boolean): Promise<void> {
           </p>
           <p>Masa berlalu setakat ini: {{ formatClock(open.elapsedSeconds) }}</p>
           <div class="mt-3 flex flex-col gap-2 sm:flex-row">
-            <UButton :loading="starting" data-testid="resume" @click="begin(false)"
+            <UButton
+              :loading="starting"
+              class="h-auto min-h-11 justify-center py-2 text-center whitespace-normal"
+              data-testid="resume"
+              @click="begin(false)"
               >Sambung — teruskan jawapan &amp; masa sedia ada</UButton
             >
-            <UButton color="neutral" data-testid="restart" @click="confirmRestart = true"
+            <UButton
+              color="neutral"
+              class="h-auto min-h-11 justify-center py-2 text-center whitespace-normal"
+              data-testid="restart"
+              @click="confirmRestart = true"
               >Mula Semula — kosongkan jawapan &amp; masa</UButton
             >
           </div>
