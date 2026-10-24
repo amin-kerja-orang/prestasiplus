@@ -50,7 +50,7 @@ function panel(title: string | null, message: string): HTMLElement {
 /** Replaces the page with the error panel (idempotent). */
 export function showBootError(error?: unknown): void {
   if (typeof document === 'undefined' || document.getElementById(PANEL_ID)) return
-  if (error !== undefined) console.error('Boot failed', error)
+  if (error !== undefined) console.error('Gagal memulakan aplikasi', error)
   document.body.append(panel(BOOT_ERROR_TITLE, BOOT_ERROR_MESSAGE))
 }
 

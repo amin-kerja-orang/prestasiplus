@@ -260,7 +260,7 @@ describe('AdminShell: menu per role', () => {
       'Panel Pentadbir',
       'Laporan Eksekutif',
       'Ke Dashboard',
-      'Student View',
+      'Paparan Pelajar',
       'Aktiviti Harian',
       'data-nav-id="ke-dashboard"',
       'href="/admin/',
@@ -437,7 +437,7 @@ describe('AdminShell: "Lagi" popover', () => {
     expect(isOpen(w)).toBe(false)
   })
 
-  it('lists the observed headings, rows and links; ends with "Student View" and "Log Keluar"', async () => {
+  it('lists the observed headings, rows and links; ends with "Paparan Pelajar" and "Log Keluar"', async () => {
     const w = await open('/admin')
     const headings = lagi(w)
       .findAll('p')
@@ -461,7 +461,7 @@ describe('AdminShell: "Lagi" popover', () => {
       'Kirkpatrick',
     ])
     expect(rows.slice(-2).map((a) => [a.text(), a.attributes('href')])).toEqual([
-      ['Student View', '/dashboard'],
+      ['Paparan Pelajar', '/dashboard'],
       ['Log Keluar', '/logout'],
     ])
     expect(lagi(w).get('[data-testid="shell-admin-lagi-tail"]').classes()).toContain('border-t')
@@ -513,7 +513,7 @@ describe('AdminShell: "Lagi" popover', () => {
     expect(rows).not.toContain('Dashboard Guru')
     expect(rows).not.toContain('Kelas Saya')
     expect(rows).not.toContain('Monitoring')
-    expect(rows).not.toContain('Student View')
+    expect(rows).not.toContain('Paparan Pelajar')
     expect(rows).toContain('Headcount')
     expect(rows.at(-1)).toBe('Log Keluar')
     expect(lagi(w).find('a[href="/logout"]').exists()).toBe(true)
@@ -585,10 +585,10 @@ describe('AdminShell: server-status pill (admin only)', () => {
     await flushPromises()
     expect(transport.requests.filter((r) => r.url === '/api/admin/server-status')).toHaveLength(1)
     expect(values(w)).toEqual(['6%', '52%', '50%', '204d 2h'])
-    expect(cell(w, 'cpu').attributes('title')).toBe('Load: 0.15 / 8 cores')
+    expect(cell(w, 'cpu').attributes('title')).toBe('Beban: 0.15 / 8 teras')
     expect(cell(w, 'ram').attributes('title')).toBe('16.2GB / 31.1GB')
     expect(cell(w, 'disk').attributes('title')).toBe('199.3GB / 398.7GB')
-    expect(cell(w, 'uptime').attributes('title')).toBe('Uptime')
+    expect(cell(w, 'uptime').attributes('title')).toBe('Masa Aktif')
     expect(cell(w, 'cpu').get('span:last-child').classes()).toContain('text-emerald-600')
     expect(cell(w, 'ram').get('span:last-child').classes()).toContain('text-emerald-600')
     expect(cell(w, 'disk').get('span:last-child').classes()).toContain('text-emerald-600')

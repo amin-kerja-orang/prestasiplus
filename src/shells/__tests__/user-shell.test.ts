@@ -122,7 +122,7 @@ describe('UserShell: menu per role (hidden, not disabled)', () => {
     expect(labels).toContain('Latih Tubi')
     expect(labels).toContain('Tetapan Peribadi')
     expect(labels).toContain('Profil Saya')
-    expect(labels).not.toContain('Ke Admin Panel')
+    expect(labels).not.toContain('Ke Panel Admin')
     expect(labels.some((l) => l.startsWith('Command Center'))).toBe(false)
     expect(w.find('[data-nav-id="ke-admin-panel"]').exists()).toBe(false)
     // User card (FR-M01-52) and logout (FR-M01-36).

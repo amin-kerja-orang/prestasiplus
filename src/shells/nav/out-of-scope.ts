@@ -21,7 +21,7 @@ export interface OutOfScopeRoute {
 }
 
 const DUTA = { module: 'M24 Duta', reason: 'belum dibina' } as const
-const PUSAT_AI = { module: 'M25 Pusat AI', reason: 'belum dibina (hanya Heatmap Topik Lemah dalam skop)' } as const
+const PUSAT_AI = { module: 'M25 Pusat AI', reason: 'belum dibina (hanya Peta Haba Topik Lemah dalam skop)' } as const
 const M26 = { module: 'M26 Visi & Ciri Khas', reason: 'belum dibina' } as const
 const GURU_TOOLS = {
   module: 'Portal Guru (lanjutan)',
@@ -53,9 +53,9 @@ export const OUT_OF_SCOPE_ROUTES: readonly OutOfScopeRoute[] = [
   { to: '/kombo', ...M26 },
   { to: '/liga', ...M26 },
   { to: '/perutusan', ...M26 },
-  { to: '/wellbeing/alerts', module: 'M26 Wellbeing', reason: 'belum dibina' },
+  { to: '/wellbeing/alerts', module: 'M26 Kesejahteraan', reason: 'belum dibina' },
 
-  // ── Pusat AI (M25) selain Heatmap Topik Lemah
+  // ── Pusat AI (M25) selain Peta Haba Topik Lemah
   { to: '/pusat-nota-ringkas', ...PUSAT_AI },
   { to: '/buku-nota-saya', ...PUSAT_AI },
   { to: '/pusat-ai/mood', ...PUSAT_AI },

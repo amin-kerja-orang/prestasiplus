@@ -91,7 +91,7 @@ describe('navFor with the prototype scope on', () => {
       'Analisis Item',
       'Video',
       'Kelas Saya',
-      'Soalan by Chapter',
+      'Soalan Mengikut Bab',
       'Monitoring',
       'Kirkpatrick',
       'T1: Reaksi',
@@ -126,7 +126,7 @@ describe('navFor with the prototype scope on', () => {
       'Kirkpatrick',
       'Analitik Adaptif',
       'Statistik Penggunaan',
-      'DSKP Heatmap',
+      'Peta Haba DSKP',
       'Analisa Item',
       'Laporan Aktiviti',
       'Video',
@@ -143,9 +143,9 @@ describe('navFor with the prototype scope on', () => {
       'Perutusan',
       'Kombo Harian',
       'Liga Pertandingan',
-      'Tournament',
+      'Kejohanan',
       'Soalan Berstruktur',
-      'Audit Log',
+      'Log Audit',
     ]) {
       expect(shown, label).not.toContain(label)
     }

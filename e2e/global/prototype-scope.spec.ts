@@ -60,7 +60,7 @@ const CASES: Record<string, RoleCase> = {
       'Langganan',
       'Invois',
       'Kombo Harian',
-      'Tournament',
+      'Kejohanan',
     ],
     blocked: '/admin-sekolah/pengguna',
   },

@@ -52,7 +52,7 @@ export interface Transport {
 export class TransportNetworkError extends Error {
   override readonly name = 'TransportNetworkError'
 
-  constructor(message = 'Network request failed', options?: { cause?: unknown }) {
+  constructor(message = 'Sambungan terputus. Semak internet anda dan cuba semula.', options?: { cause?: unknown }) {
     super(message, options)
   }
 }

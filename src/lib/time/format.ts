@@ -106,22 +106,24 @@ export const formatTime12 = (input: DateInput) => formatMyt(input, 'h:mm A')
 // ---------------------------------------------------------------------------
 // English month abbreviations (Laravel `M`)
 // ---------------------------------------------------------------------------
+// FB-025 (user decision 2026-10-24): the Laravel `M` layouts below now print BM short months
+// (Mac, Mei, Ogs, Okt, Dis); the example outputs in the comments show the BM spelling.
 
 /** `dd Mon yyyy` → "08 Apr 2026" (M04 FR-M04-88/93, M09 BR-M09-10 S4/S8/S16/S18). */
-export const formatDateEn = (input: DateInput) => formatMyt(input, 'dd MMM yyyy', { months: 'en' })
+export const formatDateEn = (input: DateInput) => formatMyt(input, 'dd MMM yyyy', { months: 'ms' })
 
-/** `d MMM yyyy` → "8 Apr 2026", "12 May 2027" (M08 "Direkod: …", M11 BR-M11-11/33). */
+/** `d MMM yyyy` → "8 Apr 2026", "12 Mei 2027" (M08 "Direkod: …", M11 BR-M11-11/33). */
 export const formatDateEnUnpadded = (input: DateInput) =>
-  formatMyt(input, 'd MMM yyyy', { months: 'en' })
+  formatMyt(input, 'd MMM yyyy', { months: 'ms' })
 
-/** Laravel `d M Y, H:i` → "19 May 2026, 03:49" (M05 BR-03 S9). */
+/** Laravel `d M Y, H:i` → "19 Mei 2026, 03:49" (M05 BR-03 S9). */
 export const formatDateTimeEn = (input: DateInput) =>
-  formatMyt(input, 'dd MMM yyyy, HH:mm', { months: 'en' })
+  formatMyt(input, 'dd MMM yyyy, HH:mm', { months: 'ms' })
 
-/** `d MMM yyyy, hh:mm A` → "19 May 2026, 03:49 PM" (M06 FR-M06-64, BR-M06 history). */
+/** `d MMM yyyy, hh:mm A` → "19 Mei 2026, 03:49 PM" (M06 FR-M06-64, BR-M06 history). */
 export const formatDateTimeEn12 = (input: DateInput) =>
-  formatMyt(input, 'd MMM yyyy, hh:mm A', { months: 'en' })
+  formatMyt(input, 'd MMM yyyy, hh:mm A', { months: 'ms' })
 
-/** `dd Mon yyyy, h:mmAM` → "17 Mar 2026, 11:23PM" (M09 BR-M09-10 S23). */
+/** `dd Mon yyyy, h:mmAM` → "17 Mac 2026, 11:23PM" (M09 BR-M09-10 S23). */
 export const formatDateTimeEnCompact12 = (input: DateInput) =>
-  formatMyt(input, 'dd MMM yyyy, h:mmA', { months: 'en' })
+  formatMyt(input, 'dd MMM yyyy, h:mmA', { months: 'ms' })

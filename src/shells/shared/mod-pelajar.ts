@@ -17,11 +17,11 @@ export const MOD_PELAJAR_HOME = '/dashboard'
 /** Opens Mod Pelajar and resolves to the learner home path. Rejects when the switch is refused. */
 export async function enterModPelajar(): Promise<string> {
   const session = useSessionStore()
-  if (session.role !== 'admin') throw new Error('Mod Pelajar is for the admin')
+  if (session.role !== 'admin') throw new Error('Mod Pelajar hanya untuk admin')
   const student = await api.post<{ token: string; expiresAt: string; user: UserMe }>(
     `/api/admin/users/${String(MOD_PELAJAR_STUDENT_ID)}/impersonate`,
   )
-  if (!session.enterModPelajar(student, MOD_PELAJAR_RETURN)) throw new Error('Mod Pelajar is on')
+  if (!session.enterModPelajar(student, MOD_PELAJAR_RETURN)) throw new Error('Mod Pelajar sedang aktif')
   return MOD_PELAJAR_HOME
 }
 

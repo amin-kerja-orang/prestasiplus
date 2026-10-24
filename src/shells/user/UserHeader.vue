@@ -53,7 +53,7 @@ const BELL_BADGE =
         <button
           type="button"
           class="hidden h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-indigo-50 hover:text-indigo-600 lg:flex"
-          title="Toggle Sidebar"
+          title="Togol Bar Sisi"
           data-testid="shell-user-sidebar-toggle"
           @click="emit('toggle-sidebar')"
         >

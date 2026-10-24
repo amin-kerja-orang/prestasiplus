@@ -73,12 +73,12 @@ describe('DsFormField', () => {
   })
   it('default mode wraps UFormField and prints the server error', () => {
     const w = mount(DsFormField, {
-      props: { label: 'E-mel', name: 'email', hint: 'Guna e-mel sekolah', error: 'E-mel sudah wujud' },
+      props: { label: 'Emel', name: 'email', hint: 'Guna emel sekolah', error: 'Emel sudah wujud' },
       slots: { default: '<input />' },
     })
-    expect(w.text()).toContain('E-mel')
-    expect(w.text()).toContain('Guna e-mel sekolah')
-    expect(w.get('[data-testid="field-error"]').text()).toBe('E-mel sudah wujud')
+    expect(w.text()).toContain('Emel')
+    expect(w.text()).toContain('Guna emel sekolah')
+    expect(w.get('[data-testid="field-error"]').text()).toBe('Emel sudah wujud')
   })
 })
 

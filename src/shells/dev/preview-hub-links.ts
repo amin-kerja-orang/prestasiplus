@@ -34,10 +34,10 @@ export const PREVIEW_HUB_LINKS: readonly PreviewHubLink[] = [
     path: '/practice/MATH/quiz?level=1&count=5',
     roles: STUDENT,
   },
-  { module: M05, label: 'Soalan by Chapter', path: '/practice/chapter', roles: STUDENT_TEACHER },
+  { module: M05, label: 'Soalan Mengikut Bab', path: '/practice/chapter', roles: STUDENT_TEACHER },
   {
     module: M05,
-    label: 'Soalan by Chapter — Matematik',
+    label: 'Soalan Mengikut Bab — Matematik',
     path: '/practice/chapter/MATH',
     roles: STUDENT_TEACHER,
   },
@@ -172,8 +172,8 @@ export const PREVIEW_HUB_LINKS: readonly PreviewHubLink[] = [
   },
   { module: M08, label: 'Kedudukan', path: '/ranking', roles: ALL },
   { module: M08, label: 'Papan Pendahulu', path: '/leaderboard', roles: ALL },
-  { module: M08, label: 'Timeline Saya', path: '/timeline', roles: ALL },
-  { module: M08, label: 'Tambah Post (Timeline)', path: '/timeline/create', roles: ALL },
+  { module: M08, label: 'Garis Masa Saya', path: '/timeline', roles: ALL },
+  { module: M08, label: 'Tambah Hantaran (Garis Masa)', path: '/timeline/create', roles: ALL },
   { module: M08, label: 'Profil Awam (Admin Demo)', path: '/pelajar/1', roles: ALL },
   { module: M08, label: 'Profil Awam (Pelajar Demo)', path: '/pelajar/2', roles: ALL },
 ]

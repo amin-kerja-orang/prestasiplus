@@ -232,7 +232,7 @@ describe('Pembelajaran menus (section 8, US-14)', () => {
       'Pusat AI',
       '🏆 Bilik Duta',
       '✨ Visi & Pertandingan',
-      '💎 Killer Features',
+      '💎 Ciri Utama',
       'Akaun & Bantuan',
     ])
     expect(labels('teacher')).toEqual([

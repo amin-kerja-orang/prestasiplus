@@ -2,7 +2,7 @@
 /**
  * "Lagi" popover (< lg, shells.md §2.4): one panel above the bottom nav, right-anchored, `w-56`,
  * scrolling inside `max-h-[70vh]`, generated from the nav data (`lagiFor`). Small headings, coloured
- * icon rows (>= 44 px high, DV-SH-11), a `border-t` and the tail rows ("Student View" for the
+ * icon rows (>= 44 px high, DV-SH-11), a `border-t` and the tail rows ("Paparan Pelajar" for the
  * admin, "Log Keluar"). Closes by a second tap on "Lagi", a tap outside, or following a link
  * (the router closes the overlays). Escape and focus trapping are not added (D10).
  */

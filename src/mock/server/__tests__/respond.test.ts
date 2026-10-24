@@ -37,20 +37,20 @@ describe('responders', () => {
 
   it('fail builds the master SRS §7.3 error body that the client maps to ApiError', () => {
     const res = fail(422, 'VALIDATION_ERROR', 'Sila lengkapkan semua medan wajib.', {
-      email: 'Format e-mel tidak sah.',
+      email: 'Format emel tidak sah.',
     })
     expect(res.body).toEqual({
       error: {
         code: 'VALIDATION_ERROR',
         message: 'Sila lengkapkan semua medan wajib.',
-        fields: { email: 'Format e-mel tidak sah.' },
+        fields: { email: 'Format emel tidak sah.' },
       },
     })
     const err = errorFromResponse(res)
     expect(err).toMatchObject({
       status: 422,
       code: 'VALIDATION_ERROR',
-      fields: { email: 'Format e-mel tidak sah.' },
+      fields: { email: 'Format emel tidak sah.' },
     })
     expect(() => fail(200, 'X', 'no')).toThrow(RangeError)
     // Empty fields are left out.

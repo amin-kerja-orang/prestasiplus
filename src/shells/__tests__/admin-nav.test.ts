@@ -25,6 +25,7 @@ import {
   type LagiEntry,
 } from '../nav/admin-nav'
 import { shellIcon } from '../shared/shell-icons'
+import { bmLive } from './fb025-live-labels'
 import { USER_NAV, navFor } from '../nav/user-nav'
 
 // ---------------------------------------------------------------------------------------------
@@ -50,7 +51,7 @@ const inventory = JSON.parse(
 ) as { elements: InventoryElement[] }
 
 const pathOf = (e: InventoryElement): string => new URL(e.absHref ?? e.href ?? '').pathname
-const clean = (text: string | undefined): string => (text ?? '').replace(/\s+/g, ' ').trim()
+const clean = (text: string | undefined): string => bmLive((text ?? '').replace(/\s+/g, ' ').trim())
 
 /** Sidebar links (desktop), in live order. `absHref` is absent on the logo link only. */
 const liveSidebar = inventory.elements.filter(
@@ -127,7 +128,7 @@ describe('ADMIN_NAV data (shells.md §2.7)', () => {
       '🏆 Bilik Duta',
       '🤖 Pusat AI',
       '✨ Visi & Pertandingan',
-      '💎 Killer Features',
+      '💎 Ciri Utama',
     ])
     const bilik = ADMIN_NAV.find((e) => e.id === 'sec-bilik-duta')
     expect(bilik?.kind === 'section' && bilik.badge?.text).toBe('DEV')
@@ -223,7 +224,7 @@ describe('adminMenuFor / chromeFor: the menu per role', () => {
 
   it('teacher menu holds no admin-only item', () => {
     const labels = teacherItems.map((i) => i.label)
-    for (const adminOnly of ['Ke Admin Panel', 'Ke Dashboard', 'Student View', 'Panel Pentadbir']) {
+    for (const adminOnly of ['Ke Panel Admin', 'Ke Dashboard', 'Paparan Pelajar', 'Panel Pentadbir']) {
       expect(labels).not.toContain(adminOnly)
     }
     // No route under /admin except the open item "Gambar Rajah" (shells.md §7.2 item 4).
@@ -280,7 +281,7 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(activeLabel('/admin/anak-angkat/permohonan')).toBe('Permohonan')
     expect(activeLabel('/battle/ranking-sekolah')).toBe('Ranking Sekolah')
     expect(activeLabel('/battle')).toBe('Battle Live')
-    expect(activeLabel('/admin/gamification/tiers')).toBe('Tier Config')
+    expect(activeLabel('/admin/gamification/tiers')).toBe('Konfigurasi Peringkat')
   })
 
   it('/admin (Dashboard) is exact and does not match every /admin/* page', () => {
@@ -299,7 +300,7 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(activeLabel('/admin/monitoring')).toBe('Monitoring')
     expect(activeLabel('/guru/monitoring')).toBe('Monitoring')
     expect(activeLabel('/guru/monitoring/sekolah/5/pelajar/9')).toBe('Monitoring')
-    expect(activeLabel('/guru/kirkpatrick')).toBe('Overview')
+    expect(activeLabel('/guru/kirkpatrick')).toBe('Gambaran Keseluruhan')
     expect(activeLabel('/guru/kirkpatrick/reaction')).toBe('T1: Reaksi')
     expect(activeLabel('/admin/kirkpatrick/interventions')).toBe('Intervensi')
   })
@@ -444,17 +445,17 @@ describe('"Lagi" popover (shells.md §2.4, §2.7)', () => {
       'Nota',
       'Push Notifikasi',
       'Chatbot',
-      'Upload Screenshot',
+      'Muat Naik Tangkapan Skrin',
     ])
     expect(rowsUnder('Sistem')).toEqual([
       'Sekolah',
       'Langganan Sekolah',
       'Tetapan',
       'Pembayaran',
-      'Billing Dashboard',
-      'Dunning Log',
+      'Papan Pemuka Pengebilan',
+      'Log Peringatan Bayaran',
       'Log Audit',
-      'Performance',
+      'Prestasi Sistem',
       'Import Pelajar',
       'Import Pengguna',
     ])
@@ -483,9 +484,9 @@ describe('"Lagi" popover (shells.md §2.4, §2.7)', () => {
     expect(row).toMatchObject({ to: '/admin/kirkpatrick', groupKey: 'kirkpatrick' })
   })
 
-  it('ends with "Student View" and "Log Keluar"', () => {
+  it('ends with "Paparan Pelajar" and "Log Keluar"', () => {
     expect(admin.tail.map((r) => [r.label, r.to])).toEqual([
-      ['Student View', '/dashboard'],
+      ['Paparan Pelajar', '/dashboard'],
       ['Log Keluar', '/logout'],
     ])
   })

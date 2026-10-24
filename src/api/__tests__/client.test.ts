@@ -205,7 +205,7 @@ describe('ApiClient: errors', () => {
       error: {
         code: 'VALIDATION_ERROR',
         message: 'Sila lengkapkan semua medan wajib.',
-        fields: { email: 'Format e-mel tidak sah.' },
+        fields: { email: 'Format emel tidak sah.' },
       },
     }
     const { c } = client(json(422, body))
@@ -215,7 +215,7 @@ describe('ApiClient: errors', () => {
       status: 422,
       code: 'VALIDATION_ERROR',
       message: 'Sila lengkapkan semua medan wajib.',
-      fields: { email: 'Format e-mel tidak sah.' },
+      fields: { email: 'Format emel tidak sah.' },
       retryAfter: undefined,
       body,
       method: 'POST',

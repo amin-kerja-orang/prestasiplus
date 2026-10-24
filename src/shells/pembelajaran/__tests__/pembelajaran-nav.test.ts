@@ -42,11 +42,11 @@ describe('Pembelajaran shell selection', () => {
 })
 
 describe('Pembelajaran menus come from the scoped nav data', () => {
-  it('student tabs are Home, SPM, Game, Topik (Lagi is added by the layout)', () => {
+  it('student tabs are Utama, SPM, Permainan, Topik (Lagi is added by the layout)', () => {
     expect(pembelajaranTabs('student').map((t) => t.label)).toEqual([
-      'Home',
+      'Utama',
       'SPM',
-      'Game',
+      'Permainan',
       'Topik',
     ])
   })

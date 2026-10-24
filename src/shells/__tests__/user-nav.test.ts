@@ -20,6 +20,7 @@ import {
 } from '../nav/user-nav'
 import { OUT_OF_SCOPE_ROUTES, isOutOfScope } from '../nav/out-of-scope'
 import { SHELL_ICON_FALLBACKS, shellIcon } from '../shared/shell-icons'
+import { bmLive } from './fb025-live-labels'
 
 /** Full menu data (fidelity checks); the rendered menu hides out-of-scope items. */
 const FULL = { includeOutOfScope: true } as const
@@ -71,7 +72,7 @@ const liveMenuLinks = inventory.elements
   .filter((e) => e.kind === 'link' && e.landmark === 'nav' && e.absHref)
   .map((e) => ({
     href: new URL(e.absHref!).pathname,
-    text: (e.text ?? '').trim(),
+    text: bmLive((e.text ?? '').trim()),
     icon: e.icon ?? '',
   }))
 
@@ -157,11 +158,11 @@ describe('USER_NAV data', () => {
 
   it('bottom nav: Home, SPM, Game, Topik links, then Chat and Lagi buttons (live)', () => {
     expect(USER_BOTTOM_NAV.map((b) => b.label)).toEqual([
-      'Home',
+      'Utama',
       'SPM',
-      'Game',
+      'Permainan',
       'Topik',
-      'Chat',
+      'Sembang',
       'Lagi',
     ])
     expect(USER_BOTTOM_NAV.filter((b) => b.kind === 'link').map((b) => b.to)).toEqual([
@@ -202,7 +203,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Pusat AI',
     ])
     for (const hidden of [
-      'Ke Admin Panel',
+      'Ke Panel Admin',
       'Portal Guru',
       'Amaran Awal',
       'Kelulusan Hadiah',
@@ -215,7 +216,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
     ]) {
       expect(menu).not.toContain(hidden)
     }
-    expect(menu).toContain('Heatmap Topik Lemah')
+    expect(menu).toContain('Peta Haba Topik Lemah')
     expect(menu).toContain('Kedai Hadiah 🎁')
     expect(menu).toContain('Jemput Ibu Bapa')
     expect(menu.slice(-5)).toEqual([
@@ -229,10 +230,10 @@ describe('navFor (role filter: hidden, not disabled)', () => {
 
   it('admin sees every captured entry, including the admin-only ones', () => {
     const menu = labels(navFor('admin', 'sidebar', USER_NAV, FULL))
-    for (const label of ['Ke Admin Panel', 'Portal Guru', 'Amaran Awal', 'Pakej', 'Urus Tiket']) {
+    for (const label of ['Ke Panel Admin', 'Portal Guru', 'Amaran Awal', 'Pakej', 'Urus Tiket']) {
       expect(menu).toContain(label)
     }
-    expect(menu).not.toContain('Heatmap Topik Lemah')
+    expect(menu).not.toContain('Peta Haba Topik Lemah')
   })
 
   it('teacher: the full live guru sidebar, in order (roles-matrix/guru)', () => {
@@ -242,16 +243,16 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Dashboard Guru',
       'Headcount',
       'Misi Harian',
-      'Soalan by Chapter',
-      'Verify Soalan Struktur',
-      'Verify Soalan MCQ',
+      'Soalan Mengikut Bab',
+      'Sahkan Soalan Struktur',
+      'Sahkan Soalan MCQ',
       'Kelas Saya',
       'Pelajar Saya',
       'Kehadiran Digital',
       'PENGAJARAN',
       'Jadual Belajar',
-      'Broadcast',
-      'Kelas Live',
+      'Siaran',
+      'Kelas Langsung',
       'PENILAIAN',
       'Prestasi',
       'Laporan',
@@ -270,13 +271,13 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Sekolah Bersaing',
       'Tetapan Peribadi',
       '🤖 AI Pintar (Pelajar)',
-      'Wellbeing Alerts',
+      'Amaran Kesejahteraan',
       'Kamus AI',
       'Pendamping Motivasi',
       'Doa & Motivasi',
       '🎯 AI Pintar (Guru)',
       'Aktiviti Advisor',
-      'Whiteboard → Quiz',
+      'Papan Putih → Kuiz',
       'RPH (Cikgu Alesa)',
       'Semak Karangan (Cikgu Alesa)',
       'PBD (Cikgu Alesa)',
@@ -291,7 +292,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Penjana Peperiksaan',
       'AKTIVITI',
       'Liga Pertandingan',
-      'Tournament',
+      'Kejohanan',
       'Kombo',
       'Syiling & Ganjaran',
       'LAIN-LAIN',
@@ -327,19 +328,19 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Sekolah Bersaing',
       'Tetapan Peribadi',
       '🤖 AI Pintar (Pelajar)',
-      'Wellbeing Alerts',
+      'Amaran Kesejahteraan',
       'Kamus AI',
       'Pendamping Motivasi',
       'Doa & Motivasi',
       '🎯 AI Pintar (Guru)',
       'Aktiviti Advisor',
-      'Whiteboard → Quiz',
+      'Papan Putih → Kuiz',
       'RPH (Cikgu Alesa)',
       'Semak Karangan (Cikgu Alesa)',
       'PBD (Cikgu Alesa)',
       '🛡️ Kawalan Kualiti',
-      'Semakan Nota Master',
-      'Audit Log',
+      'Semakan Nota Induk',
+      'Log Audit',
       'HARIAN',
       'Dashboard',
       'Senarai Pelajar',
@@ -361,14 +362,14 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Kirkpatrick',
       'Analitik Adaptif',
       'Statistik Penggunaan',
-      'DSKP Heatmap',
+      'Peta Haba DSKP',
       'Analisa Item',
       'Laporan Aktiviti',
       'AKADEMIK',
       'Soalan Berstruktur',
       'Kombo Harian',
       'Liga Pertandingan',
-      'Tournament',
+      'Kejohanan',
       'LAIN-LAIN',
       'Perutusan',
       'Video',
