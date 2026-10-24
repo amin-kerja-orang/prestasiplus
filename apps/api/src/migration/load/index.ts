@@ -229,8 +229,11 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
   const out = outDir ?? DEFAULT_OUT_DIR
   // Fail before anything is written when the restricted file could not be placed afterwards (an unsafe folder).
   if (mode === 'apply') prepareOutputDir(out)
-  const writeFile = (runId: string): string | undefined =>
-    writeRestrictedIds(core.notes.restricted, { runId, generatedAt: new Date().toISOString() }, out)
+  const writeFile = (runId: string, interrupted = false): string | undefined =>
+    writeRestrictedIds(core.notes.restricted, { runId, generatedAt: new Date().toISOString(), interrupted }, out)
+  // The data is committed when these run, so a failure here is a warning, never a rejection (fixed text: no row data in it).
+  const warnFailed = (what: string): void =>
+    core.options.warn?.(`warning: ${what}; the loaded data is not affected (recount from the committed users and re-run the report)`)
   let report: RunReport
   let startedRunId: string | undefined
   try {
@@ -243,22 +246,36 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
     // an earlier one (a resume that skipped every users batch) committed it.
     if (mode === 'apply' && startedRunId !== undefined) {
       const runId = startedRunId
+      let eligible = false
       try {
-        if (await hasUsersCheckpoint(options.pool, runId)) {
-          await recountFromCommitted(options.pool, core)
-          try {
-            // The failed batch was rolled back after its role rejects were noted: recount them from the committed rejects
-            // of the failed run. Best effort: the id file comes first.
-            await rebuildCoreNotes(options.pool, core, runId)
-          } catch {
-            // the role counts stay as noted by this process
-          }
-          const file = writeFile('interrupted')
-          if (file !== undefined) core.options.warn?.(`restricted id file (mode 0600, delete within 7 days): ${file}`)
-          await saveNotesToRun(options.pool, core, runId)
-        }
+        eligible = await hasUsersCheckpoint(options.pool, runId)
       } catch {
-        // nothing more can be done here
+        warnFailed('could not check whether users were committed, so no id file or notes were written')
+      }
+      if (eligible) {
+        try {
+          await recountFromCommitted(options.pool, core)
+        } catch {
+          warnFailed('could not recount the login gaps from the committed users')
+        }
+        try {
+          // The failed batch was rolled back after its role rejects were noted: recount them from the committed rejects
+          // of the failed run. Best effort: the id file comes first.
+          await rebuildCoreNotes(options.pool, core, runId)
+        } catch {
+          warnFailed('could not recount the role rejects (they stay as noted by this process)')
+        }
+        try {
+          const file = writeFile(runId, true)
+          if (file !== undefined) core.options.warn?.(`restricted id file (mode 0600, delete within 7 days): ${file}`)
+        } catch {
+          warnFailed('could not write the restricted id file of the interrupted run')
+        }
+        try {
+          await saveNotesToRun(options.pool, core, runId)
+        } catch {
+          warnFailed('could not save the report notes to the interrupted run')
+        }
       }
     }
     throw err
@@ -268,12 +285,25 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
     if (report.resumedBatches > 0) {
       // A resumed apply skipped the batches a checkpoint already committed, so both the Q11 counts (rebuilt from the committed
       // users) and the `users.role_rejected.*` counts (rebuilt from this run's rejects) miss those batches. The two rebuilds
-      // touch disjoint counters, and both run BEFORE the notes are saved so the saved notes equal an uninterrupted run's.
-      await recountFromCommitted(options.pool, core)
-      await rebuildCoreNotes(options.pool, core, report.runId)
+      // touch disjoint counters, and both run BEFORE the file and the notes are written so they equal an uninterrupted run's.
+      try {
+        await recountFromCommitted(options.pool, core)
+        await rebuildCoreNotes(options.pool, core, report.runId)
+      } catch {
+        warnFailed('could not recount the report after the resume')
+      }
     }
-    await saveNotesToRun(options.pool, core, report.runId)
-    restrictedFile = writeFile(report.runId)
+    // The apply is committed: the id file comes first (it is the only copy of the ids), then the notes. Neither may fail the run.
+    try {
+      restrictedFile = writeFile(report.runId)
+    } catch {
+      warnFailed('could not write the restricted id file')
+    }
+    try {
+      await saveNotesToRun(options.pool, core, report.runId)
+    } catch {
+      warnFailed('could not save the report notes to etl_runs')
+    }
   }
   return { report, core, restrictedFile }
 }

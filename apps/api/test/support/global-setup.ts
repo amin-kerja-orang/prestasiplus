@@ -41,11 +41,19 @@ export async function applyMigrations(url: string): Promise<void> {
   }
 }
 
-/** The restricted id files of `runCore --apply` that specs write into `.migration-out/core-test-*` (`testOutDir`). */
-function removeMigrationTestOutputs(): void {
+/**
+ * The restricted id files of `runCore --apply`: the specs write into `.migration-out/core-test-*` (`testOutDir`), which is
+ * removed whole. A spec that applies through the CLI (no `outDir` seam) writes `core-login-gaps-*.json` straight into
+ * `.migration-out/`: those created since this run started are removed too, older ones (a real run) never.
+ */
+function removeMigrationTestOutputs(startedAtMs: number): void {
   const root = fileURLToPath(new URL('../../../../.migration-out/', import.meta.url))
   try {
-    for (const d of readdirSync(root)) if (d.startsWith('core-test-')) rmSync(join(root, d), { recursive: true, force: true })
+    for (const d of readdirSync(root)) {
+      const path = join(root, d)
+      if (d.startsWith('core-test-')) rmSync(path, { recursive: true, force: true })
+      else if (/^core-login-gaps-.+\.json$/.test(d) && statSync(path).mtimeMs >= startedAtMs) rmSync(path, { force: true })
+    }
   } catch {
     // no such folder: nothing to remove
   }
@@ -57,6 +65,7 @@ function removeMigrationTestOutputs(): void {
  * Testcontainers. If neither works, only the DB tests fail (with the reason); other tests still run.
  */
 export default async function setup(project: TestProject): Promise<() => Promise<void>> {
+  const startedAtMs = Date.now()
   let container: StartedPostgreSqlContainer | undefined
   let adminUrl = process.env.TEST_DATABASE_URL ?? ''
   const template = `pp_tpl_${randomBytes(6).toString('hex')}`
@@ -91,7 +100,7 @@ export default async function setup(project: TestProject): Promise<() => Promise
   }
 
   return async () => {
-    removeMigrationTestOutputs()
+    removeMigrationTestOutputs(startedAtMs)
     try {
       if (adminUrl && !container) {
         const admin = new pg.Client({ connectionString: adminUrl })

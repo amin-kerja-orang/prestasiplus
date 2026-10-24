@@ -400,9 +400,11 @@ describe('Q11 recovery when the resume fails after every users batch was skipped
     await expect(runCore({ ...base, mode: 'apply', outDir: out2, transformSteps: failOnce('classrooms', 1) })).rejects.toThrow('injected failure')
     const written = idFiles(out2)
     expect(written, 'the problem accounts are committed, so the failed resume still writes their list').toHaveLength(1)
-    const body = JSON.parse(readFileSync(join(out2, written[0] as string), 'utf8')) as { ids: Record<string, string[]> }
+    const body = JSON.parse(readFileSync(join(out2, written[0] as string), 'utf8')) as { runId: string; interrupted?: boolean; ids: Record<string, string[]> }
     expect(body.ids).toEqual({ flaggedWithoutLoginId: ['3', '10'], nullHashAccounts: ['9', '10', '11'] })
     const run = await envB.pool.query<{ id: string }>(`select id::text from etl_runs where mode = 'apply' order by id desc limit 1`)
+    expect(body.runId, 'the file names its etl_runs row, not a placeholder').toBe(run.rows[0]?.id)
+    expect(body.interrupted).toBe(true)
     const notes = expectNumbersOnly((await ledgerNotes(envB.pool, run.rows[0]?.id as string)).notes)
     expect(notes).toMatchObject({ nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1 })
 
@@ -412,6 +414,57 @@ describe('Q11 recovery when the resume fails after every users batch was skipped
     const done = await runCore({ ...base, mode: 'apply', outDir: out3 })
     expect(done.report.resumedBatches).toBeGreaterThan(0)
     expect(idFiles(out3)).toHaveLength(1)
+    const doneBody = JSON.parse(readFileSync(join(out3, idFiles(out3)[0] as string), 'utf8')) as Record<string, unknown>
+    expect(doneBody.runId).toBe(done.report.runId)
+    expect(doneBody).not.toHaveProperty('interrupted')
     expect(expectNumbersOnly((await ledgerNotes(envB.pool, done.report.runId)).notes)).toMatchObject({ nullHashAccounts: 3, flaggedWithoutLoginId: 2 })
+  }, 300_000)
+})
+
+describe('Q10 notes and id file after a committed apply', () => {
+  let envC: StagingDb
+  const dirsC: string[] = []
+  const newDir = (): string => {
+    const d = mkdtempSync(join(REPO_ROOT, '.migration-out', 'q10-warn-'))
+    dirsC.push(d)
+    return d
+  }
+  const idFiles = (d: string): string[] => readdirSync(d).filter((f) => f.startsWith('core-login-gaps-'))
+  beforeAll(async () => {
+    envC = await freshEnv()
+  }, 300_000)
+  afterAll(async () => {
+    for (const d of dirsC) rmSync(d, { recursive: true, force: true })
+    await envC?.close()
+  })
+
+  it('a failed notes save is a warning: the apply resolves, and the id file was written first', async () => {
+    // The notes are the only writes that put a `notes` key into etl_runs.counters on a fresh run: make exactly those fail.
+    await envC.pool.query(`
+      create function pp_test_refuse_notes() returns trigger language plpgsql as $$ begin raise exception 'notes refused'; end $$;
+      create trigger pp_test_refuse_notes before update on etl_runs for each row when (new.counters ? 'notes') execute function pp_test_refuse_notes();`)
+    try {
+      const warnings: string[] = []
+      const base = { pool: envC.pool, env: baseEnv, source: 'cloud' as const, asOf: AS_OF, batchSize: 2, warn: (l: string) => void warnings.push(l) }
+      expect((await runCore({ ...base, mode: 'dry-run' })).report.status).toBe('succeeded')
+
+      // interrupted apply: the swallowed notes failure is a warning too, and the id file is still written
+      const out1 = newDir()
+      await expect(runCore({ ...base, mode: 'apply', outDir: out1, transformSteps: failOnce('classrooms', 1) })).rejects.toThrow('injected failure')
+      expect(idFiles(out1)).toHaveLength(1)
+      expect(warnings.some((w) => w.includes('could not save the report notes to the interrupted run'))).toBe(true)
+
+      warnings.length = 0
+      const out2 = newDir()
+      const done = await runCore({ ...base, mode: 'apply', outDir: out2 })
+      expect(done.report.status).toBe('succeeded')
+      expect(warnings.some((w) => w.includes('could not save the report notes to etl_runs'))).toBe(true)
+      expect(done.restrictedFile, 'the file is written before the notes').toBeDefined()
+      expect(idFiles(out2)).toHaveLength(1)
+      const row = await envC.pool.query<{ status: string }>(`select status from etl_runs where id = $1::bigint`, [done.report.runId])
+      expect(row.rows[0]?.status).toBe('succeeded')
+    } finally {
+      await envC.pool.query(`drop trigger pp_test_refuse_notes on etl_runs; drop function pp_test_refuse_notes()`)
+    }
   }, 300_000)
 })

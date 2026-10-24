@@ -18,7 +18,7 @@ export const DEFAULT_OUT_DIR = join(fileURLToPath(new URL('../../../../../', imp
 /** Writes the non-empty id lists of `CoreNotes.restricted`; returns the path, or undefined when there is nothing to write. */
 export function writeRestrictedIds(
   restricted: ReadonlyMap<string, readonly string[]>,
-  meta: { runId: string; generatedAt: string },
+  meta: { runId: string; generatedAt: string; interrupted?: boolean },
   outDir: string = DEFAULT_OUT_DIR,
 ): string | undefined {
   const lists = Object.fromEntries([...restricted].filter(([, ids]) => ids.length > 0).sort(([a], [b]) => (a < b ? -1 : 1)))
@@ -26,7 +26,7 @@ export function writeRestrictedIds(
   const dir = prepareOutputDir(outDir)
   const stamp = meta.generatedAt.replace(/\.\d+Z$/, 'Z').replace(/[-:TZ]/g, '').slice(0, 14)
   const file = join(dir, `core-login-gaps-${stamp}-${randomBytes(4).toString('hex')}.json`)
-  const body = { generatedAt: meta.generatedAt, runId: meta.runId, ids: lists }
+  const body = { generatedAt: meta.generatedAt, runId: meta.runId, ...(meta.interrupted ? { interrupted: true } : {}), ids: lists }
   writeFileSync(file, `${JSON.stringify(body, null, 2)}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' })
   return file
 }
