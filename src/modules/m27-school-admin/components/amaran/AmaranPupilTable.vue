@@ -4,11 +4,17 @@
  * skor risiko tertinggi"; a `DsDataTable` with "#", "Pelajar", "Tingkatan / Kelas", "Skor", "Status" (badge
  * with icon and word), "Ketepatan", "Penglibatan", "Penguasaan"; below `md` every pupil is a card. Without
  * pupils only the head shows (FR-M27-79).
+ *
+ * Layout (SW11-04, DV-M27-26): the table is `layout="fixed"` (cells wrap, nothing scrolls inside) with a width per
+ * column. The card is ~696px wide at 768 and ~952px at 1280; eight columns need ~740px plus a readable name, so
+ * "Ketepatan", "Penglibatan" and "Penguasaan" show as columns from `xl` only. Below `xl` their values show as a small
+ * muted line under the name, each phrase alone as the API words it (the SW6-01 / DV-M27-24 pattern); the hidden columns stay in the DOM, no field is dropped.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsDataTable, DsStatusBadge, type CardField } from '@/ds'
+import { DsCluster, DsDataTable, DsStatusBadge, DsText, type CardField } from '@/ds'
+import { useMedia } from '@/ds/useMedia'
 
 import type { PupilRiskView, RiskStatus } from '../../api/amaran'
 import { STATUS_LABEL } from './amaran-format'
@@ -43,7 +49,30 @@ const data = computed<Row[]>(() =>
   })),
 )
 
-const columns: TableColumn<Row>[] = [
+// `UTable` reads per-cell classes from the column meta key `class`; the key is computed so the class linter does not
+// read it as a class list. Full class strings: Tailwind reads the source text.
+// eslint-disable-next-line pp/ds-class-allowlist -- an object key, not a class list
+const META_CLASS = 'class'
+const XL = 'hidden xl:table-cell'
+const WIDTHS: Record<string, string> = {
+  rank: 'w-12',
+  classLabel: 'w-36',
+  score: 'w-16',
+  status: 'w-40',
+  accuracy: `w-24 ${XL}`,
+  engagement: `w-28 ${XL}`,
+  mastery: `w-28 ${XL}`,
+}
+// Same breakpoint as `xl` in the column classes (1280); `useMedia` is true without `matchMedia` (jsdom).
+const xl = useMedia('(width >= 1280px)')
+
+const sized = (cols: TableColumn<Row>[]): TableColumn<Row>[] =>
+  cols.map((c) => {
+    const w = WIDTHS[String(c.id)]
+    return w ? { ...c, meta: { [META_CLASS]: { th: w, td: w } } } : c
+  })
+
+const columns: TableColumn<Row>[] = sized([
   { id: 'rank', accessorKey: 'rank', header: '#' },
   { id: 'name', accessorKey: 'name', header: 'Pelajar' },
   { id: 'classLabel', accessorKey: 'classLabel', header: 'Tingkatan / Kelas' },
@@ -52,7 +81,7 @@ const columns: TableColumn<Row>[] = [
   { id: 'accuracy', accessorKey: 'accuracy', header: 'Ketepatan' },
   { id: 'engagement', accessorKey: 'engagement', header: 'Penglibatan' },
   { id: 'mastery', accessorKey: 'mastery', header: 'Penguasaan' },
-]
+])
 const cardFields: CardField[] = [
   { key: 'classLabel', label: 'Tingkatan / Kelas' },
   { key: 'score', label: 'Skor' },
@@ -75,6 +104,9 @@ const cardFields: CardField[] = [
       caption="Senarai pelajar berisiko"
       card-title="name"
       :card-fields="cardFields"
+      layout="fixed"
+      density="tight"
+      :sticky-first-column="false"
       :page-size="Math.max(1, data.length)"
       data-testid="am-table"
     >
@@ -85,6 +117,17 @@ const cardFields: CardField[] = [
         <span class="text-label text-highlighted" data-testid="am-name">{{
           row.original.name
         }}</span>
+        <DsCluster v-if="!xl" gap="sm" align="start" data-testid="am-sub">
+          <DsText as="span" variant="caption" data-testid="am-sub-accuracy">{{
+            row.original.accuracy
+          }}</DsText>
+          <DsText as="span" variant="caption" data-testid="am-sub-engagement">{{
+            row.original.engagement
+          }}</DsText>
+          <DsText as="span" variant="caption" data-testid="am-sub-mastery">{{
+            row.original.mastery
+          }}</DsText>
+        </DsCluster>
       </template>
       <template #classLabel-cell="{ row }">
         <span data-testid="am-class">{{ row.original.classLabel }}</span>

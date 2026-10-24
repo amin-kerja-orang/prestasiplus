@@ -10,8 +10,12 @@ import {
   isOfficerRole,
   isStandardRole,
   PRIMARY_GRADES,
+  ROLE_OPTIONS,
+  roleOptionsFor,
   schoolMeta,
   SECONDARY_GRADES,
+  SEARCH_MIN_CHARS,
+  studentSearchMinChars,
   titleCase,
 } from '../../lib/user-form-options'
 
@@ -86,5 +90,30 @@ describe('user-form routes (SRS §2)', () => {
       title: 'Edit Pengguna',
       subtitle: 'Kemaskini maklumat pengguna',
     })
+  })
+})
+
+describe('http mode lookups (DV-M02-23, DV-M02-24)', () => {
+  it('keeps the 8 live roles in mock mode', () => {
+    expect(roleOptionsFor(ROLE_OPTIONS, false)).toBe(ROLE_OPTIONS)
+    expect(roleOptionsFor(ROLE_OPTIONS, false).map((o) => o.value)).toContain('jpn_officer')
+  })
+
+  it('drops jpn_officer (not a contract role) in http mode and keeps the order of the rest', () => {
+    const values = roleOptionsFor(ROLE_OPTIONS, true).map((o) => o.value)
+    expect(values).toEqual([
+      'student',
+      'teacher',
+      'parent',
+      'sponsor',
+      'school_admin',
+      'ppd_officer',
+      'admin',
+    ])
+  })
+
+  it('waits for 3 characters of a student search in http mode only', () => {
+    expect(studentSearchMinChars(false)).toBe(SEARCH_MIN_CHARS)
+    expect(studentSearchMinChars(true)).toBe(3)
   })
 })

@@ -17,7 +17,7 @@ import { useSearchPicker } from '@/composables'
 import { DsFormField, DsPanel, DsSurface } from '@/ds'
 
 import { searchStudents, type StudentSearchItem } from '../api/users'
-import { SEARCH_MIN_CHARS } from '../lib/user-form-options'
+import { studentSearchMinChars } from '../lib/user-form-options'
 
 const props = defineProps<{ variant: 'create' | 'edit' }>()
 
@@ -27,8 +27,10 @@ const root = ref<HTMLElement | null>(null)
 /** The term whose search last finished, so "Tiada pelajar dijumpai" never shows before the answer. */
 const doneTerm = ref('')
 
+const minChars = studentSearchMinChars()
+
 const picker = useSearchPicker<StudentSearchItem>({
-  minChars: SEARCH_MIN_CHARS,
+  minChars,
   root,
   search: async (term, signal) => {
     const rows = await searchStudents(term, { signal })
@@ -40,7 +42,7 @@ const { term, results, open, searching } = picker
 
 const isEdit = computed(() => props.variant === 'edit')
 const linkedIds = computed(() => new Set(linked.value.map((s) => s.id)))
-const longEnough = computed(() => term.value.length >= SEARCH_MIN_CHARS)
+const longEnough = computed(() => term.value.length >= minChars)
 const showEmpty = computed(
   () =>
     longEnough.value &&
