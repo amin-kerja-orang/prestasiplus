@@ -2,7 +2,7 @@ import { ErrorBodySchema, SchoolAdminActivityReportSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ADMIN, apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
-import { activePupilCount, addPupil, addSubject, addPupilsWithSessions, addSchoolAdmin, addSession, addTeacher } from './reports-fixtures'
+import { addPupil, addSubject, managedPupilCount, addPupilsWithSessions, addSchoolAdmin, addSession, addTeacher } from './reports-fixtures'
 
 /** The helpers' clock is 2026-10-19 09:00 MYT. DB spec: needs Docker/Testcontainers. */
 describe('GET /admin-sekolah/laporan-aktiviti', () => {
@@ -45,7 +45,7 @@ describe('GET /admin-sekolah/laporan-aktiviti', () => {
     expect(r.schoolId).toBe(s1)
     expect(r.trend).toHaveLength(30)
     expect(r.trend.at(-1)).toMatchObject({ label: '19/10', value: 5 })
-    expect(r.overview).toMatchObject({ pupils: await activePupilCount(t.db, s1), practised: 5, activity: 5 })
+    expect(r.overview).toMatchObject({ pupils: await managedPupilCount(t.db, s1), practised: 5, activity: 5 })
     expect(r.breakdown).toEqual({ quiz: 5, structured: 0, battle: 0, game: 0 })
     expect(r.tiles.pupils).toMatchObject({ practised: 5, sessions: 5, accuracy: 70 })
     const text = JSON.stringify(res.body)

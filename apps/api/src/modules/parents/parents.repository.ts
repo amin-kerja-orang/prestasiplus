@@ -84,6 +84,43 @@ export class ParentsRepository {
     return { link: toLink(row), created: made.count === 1 }
   }
 
+  /**
+   * Makes the links of one parent exactly `studentIds` (admin edit, AC-M02-15.4): missing pairs are added
+   * (an existing row keeps its id and relationship), the others are removed. With `schoolId` only links whose
+   * student is in that school are removed, so a school_admin never touches a link it cannot see.
+   * Returns the student ids really added and removed (opaque strings, for the audit row).
+   * Call inside the caller's transaction together with the user write.
+   */
+  async replaceLinksOfParent(
+    parentId: string,
+    studentIds: readonly string[],
+    schoolId: string | null = null,
+  ): Promise<{ added: string[]; removed: string[] }> {
+    const parent = idFromString(parentId)
+    const wanted = [...new Set(studentIds)]
+    const existing = await this.prisma.client.parentLink.findMany({
+      where: { parentId: parent },
+      select: { id: true, studentId: true, student: { select: { schoolId: true } } },
+      orderBy: { id: 'asc' },
+    })
+    const have = new Set(existing.map((r) => idToString(r.studentId)))
+    const inScope = (r: (typeof existing)[number]): boolean =>
+      schoolId === null || (r.student.schoolId !== null && idToString(r.student.schoolId) === schoolId)
+    const stale = existing.filter((r) => !wanted.includes(idToString(r.studentId)) && inScope(r))
+    if (stale.length > 0) await this.prisma.client.parentLink.deleteMany({ where: { id: { in: stale.map((r) => r.id) } } })
+    const fresh = wanted.filter((id) => !have.has(id))
+    let added: string[] = []
+    if (fresh.length > 0) {
+      const made = await this.prisma.client.parentLink.createManyAndReturn({
+        data: fresh.map((studentId) => ({ parentId: parent, studentId: idFromString(studentId), relationship: null })),
+        skipDuplicates: true,
+        select: { studentId: true },
+      })
+      added = made.map((r) => idToString(r.studentId))
+    }
+    return { added, removed: stale.map((r) => idToString(r.studentId)) }
+  }
+
   private linkWhere(scope: LinkScope): Prisma.ParentLinkWhereInput | null {
     const ids = [scope.parentId, scope.studentId, scope.schoolId]
     if (ids.some((i) => i !== undefined && !isIdString(i))) return null // a malformed id matches nothing

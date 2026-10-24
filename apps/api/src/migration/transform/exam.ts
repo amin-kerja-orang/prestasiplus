@@ -13,7 +13,7 @@
  * shape the attempts repository reads), provisional is false, pending_review 0, coins and points null.
  * Free-text answers, AI grading and the served composition are never read.
  */
-import { enumMapper, invalid, orphan } from './activity-common'
+import { enumKey, enumMapper, invalid, orphan } from './activity-common'
 import { ok, stamps, text, type Outcome, type Staged } from './common'
 
 export const EXAM_MODE_MAP = {
@@ -24,11 +24,13 @@ export const EXAM_MODE_MAP = {
 } as const
 
 /**
- * `exam_attempts.status` -> v2 status. `selesai` is the value in the BE-35 fixture. An attempt still in progress
- * has no v2 equivalent without a deadline and is UNKNOWN_ENUM (Perlu pengesahan against the real profile).
+ * `attempt_statuses.slug` (reached through `exam_attempts.status_id`) -> v2 status. The real slugs are `in_progress`,
+ * `submitted` and `marked`; a marked attempt is a submitted one that has been graded. `selesai` is the value in the
+ * BE-35 fixture. An attempt still `in_progress` has no v2 equivalent without a deadline and is UNKNOWN_ENUM.
  */
 export const EXAM_STATUS_MAP = {
   submitted: 'submitted',
+  marked: 'submitted',
   selesai: 'submitted',
   completed: 'submitted',
   auto_submitted: 'auto_submitted',
@@ -36,6 +38,15 @@ export const EXAM_STATUS_MAP = {
   abandoned: 'abandoned',
   ditinggalkan: 'abandoned',
 } as const
+
+/** Statuses that are known and deliberately not migrated (no v2 equivalent): rejected and counted by name. */
+export const EXAM_STATUSES_DEFERRED: readonly string[] = ['in_progress']
+
+/** Report label of a rejected status: the slug when it is one of `EXAM_STATUSES_DEFERRED`, else `other` (never raw text). */
+export function examStatusRejectLabel(raw: string | null | undefined): string {
+  const k = enumKey(raw)
+  return k !== null && EXAM_STATUSES_DEFERRED.includes(k) ? k : 'other'
+}
 
 export const EXAM_FALLBACK_TITLE = 'Percubaan peperiksaan lama'
 const SCORE = /^\d{1,5}(\.\d+)?$/
