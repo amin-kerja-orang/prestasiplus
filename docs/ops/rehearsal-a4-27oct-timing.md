@@ -100,7 +100,7 @@ One row per timed item. Fill every cell; the only blanks allowed are cells marke
 | T14 | `D_profile_dry`: `migrate:all --dry-run` (first load: core only) | B6 | see section 5 | | | | 0 | `N_core` | `r_core_dry` | R (and S) | Activity "skipped". **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T15 | `D_apply`: `migrate:all --apply` (includes the verify) | B7 | see section 5 | | | | 0 | `N_core + N_act` | `r_B7` | R (and S) | Four stage runs from `etl_runs`. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T15a | of which: core dry-run, core apply, activity dry-run, activity apply | B7 | query (a) of the A1 sheet, A1.11 | | | | | | | R | Seconds per run. |
-| T15q | `D_questions` (QLOAD, plan **B11**: daylight after the B10 close, **outside `W`**; LEAD decision 24 Oct 03:35 MYT, #113 6373295943; cutover plan 4.8 and runbook section 12 step 7 on #261): `migrate:questions` dry-run, then `PP_ALLOW_MIGRATE_APPLY=1 ... migrate:questions --apply`, then `migrate:verify`, a no-op re-run of the apply, and `migrate:rollback` coverage (A4 extra, plan 4.8) | after T16, as an extra step | Track R: `"$RDB" exec target -- npm run migrate:questions -w @pp/api -- --as-of="$ASOF"`, then the same with `env PP_ALLOW_MIGRATE_APPLY=1` and `--apply`; Track S: `S etl migrate:questions` (once `slot.sh etl` accepts it, half AZ) | | | | 0 | questions read / loaded / rejected | | R (and S) | **Precondition:** #261 merged and in the release sha, and the A4 dump made **after** `dump:grants` was re-run for the three new columns (`questions.explanation`, `questions.image_path`, `question_options.image_path`) and re-staged; else `migrate:questions` refuses (missing columns) and the row is "not run". Exit 4 when the source lock is held. Record the exit codes, the recon (loaded, rejected by reason), the `html_stripped` / `explanation_html_stripped` / `body_has_html` counters and the held-with-image count (text only), and the seconds of the dry-run, the apply, the no-op re-run and the rollback (#261 synthetic 100k: 18 s / 19 s / 4 s / 8 s). On the anonymised dump `image_path` is a pseudonym, so the image copy is not exercised. A1 runs without QLOAD. |
+| T15q | `D_questions` (QLOAD, plan **B11**: daylight after the B10 close, **outside `W`**; LEAD decision 24 Oct 03:35 MYT, #113 6373295943; cutover plan 4.8 and runbook section 12 step 7 on #261): `migrate:questions` dry-run, then `PP_ALLOW_MIGRATE_APPLY=1 ... migrate:questions --apply`, then `migrate:verify`, a no-op re-run of the apply, and `migrate:rollback` coverage (A4 extra, plan 4.8) | after T16, as an extra step | Track R: `"$RDB" exec target -- npm run migrate:questions -w @pp/api -- --as-of="$ASOF"`, then the same with `env PP_ALLOW_MIGRATE_APPLY=1` and `--apply`; Track S: `S etl migrate:questions` (#261 adds it to the `slot.sh etl` allow-list, `slot.sh:257` on #261) | | | | 0 | questions read / loaded / rejected | | R (and S) | **Precondition:** #261 merged and in the release sha, and the A4 dump made **after** `dump:grants` was re-run for the three new columns (`questions.explanation` and `questions.image_path`, on the tip since #258; `question_options.image_path`, which comes with #261) and re-staged; else `migrate:questions` refuses (missing columns) and the row is "not run". Exit 4 when the source lock is held. Record the exit codes, the recon (loaded, rejected by reason), the `html_stripped` / `explanation_html_stripped` / `body_has_html` counters and the held-with-image count (text only), and the seconds of the dry-run, the apply, the no-op re-run and the rollback (#261 synthetic 100k: 18 s / 19 s / 4 s / 8 s). On the anonymised dump `image_path` is a pseudonym, so the image copy is not exercised. A1 runs without QLOAD. |
 | T16 | `D_verify`: `migrate:verify` | B8 | `migrate:verify` | | | | 0 | | | R (and S) | `verify pass`. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T17 | Read-only SQL checks of plan 4.5 part 1 | B8 | `q "$(cat docs/ops/sql/smoke-readonly.sql)"` (or `psql -X -v ON_ERROR_STOP=1 -f` the file), against the restored copy | | | | 0 | checks | | R (read-only SQL counts only) or S | `Z0` = 0 FAIL, or on Track R with Q10 in the release `Z0` = 1 with F10 as the only `FAIL` (amber, R32; P-9); at the night `Z0` must be 0. Post the count of `ok` / `FAIL` / `info` rows and the check ids of any `FAIL` (no values). Synthetic data shows deliberate fixture FAILs on criteria 2 and 3. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T18 | `slot.sh gonogo` read by the rule | B0, B9 | `S gonogo` | | | | 0 | | | S | No `NO-GO`, `MISSING`, `PITR off`; `api` line `-> 200`; `throwaway: none running`; `reports: <dir> ready (owner uid 1000, mode 700)`; the last line `gonogo: complete (every check above ran)` (absent = the run stopped half way = NO-GO, `slot.sh:363-364`). The two `criterion 8` lines read `restore point <name> present, sha256 ok, migrations equal the release` (F8, `--expect-migrations repo`). The `raw data:` line is information, never a NO-GO: strings in section 5.2. A bare scratch VPS prints `PITR off` and `NO dump found -> NO-GO`: that is a P-6 failure, fix it first. |
@@ -123,7 +123,7 @@ One row per timed item. Fill every cell; the only blanks allowed are cells marke
 
 ## 5. Commands
 
-Same helpers as the A1 sheet, section 5 (`RDB`, `DB`, `ASOF=2026-10-29`, `step`, `q`). Track S uses `S=deploy/vps/migration/slot.sh` and `R=deploy/vps/migration/restore-point.sh` on the scratch VPS. **Track R steps follow the A1 sheet exactly** (A1.2 to A1.15) on a fresh `up` and a fresh load: the A1 sheet gives the expected output, the red conditions and the evidence queries; A4 adds what follows.
+Same helpers as the A1 sheet, section 5 (`RDB`, `DB`, `ASOF=2026-10-29`, `step`, `q`). Track S uses two shell functions on the scratch VPS, defined once from the repository root: `S() { deploy/vps/migration/slot.sh "$@"; }` and `R() { deploy/vps/migration/restore-point.sh "$@"; }` (plain variables `S=...` would not run as commands: `S: command not found`, exit 127). **Track R steps follow the A1 sheet exactly** (A1.2 to A1.15) on a fresh `up` and a fresh load: the A1 sheet gives the expected output, the red conditions and the evidence queries; A4 adds what follows.
 
 ### 5.1 D_xfer on the real-size dump (T03 to T07)
 
@@ -159,6 +159,7 @@ Both lines are read aloud to half AZ DevOps and compared with the **written prod
 Order is the card's (plan 4.6 and A5). `--files-dir` is not used in this track unless a files fixture exists (see the open points).
 
 ```bash
+S() { deploy/vps/migration/slot.sh "$@"; }; R() { deploy/vps/migration/restore-point.sh "$@"; }   # once, from the repository root
 # A5 analogue: restore points first (they refuse to be taken after staging_cloud exists)
 R take pre_etl   --operator "<role>"        # T19: RESTORE POINT TAKEN: pre_etl file=... bytes=... sha256=... tables_with_data=<n> raw_data=no ... duration_s=<n>
 R take pre_delta --operator "<role>"        # same state; the plan asks for it (A5 item 2; Perlu pengesahan, plan 3.1 gap a)
@@ -257,7 +258,7 @@ update staging_cloud.users u set password = 'not-a-hash-anonymised' from staging
 
 ```bash
 step guard1 "$RDB" exec target -- env NODE_ENV=production "PP_MIGRATE_TARGET_DB=$DB" PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:all -w @pp/api -- --apply --as-of="$ASOF"   # Track R
-step guard1s "$S" etl migrate:all --dry-run --as-of="$ASOF"   # Track S, scratch only
+step guard1s S etl migrate:all --dry-run --as-of="$ASOF"   # Track S, scratch only
 ```
 
 | Item | Expected (from the code) |
@@ -440,7 +441,7 @@ N_night_max = ETL_max / ( rho x ( kappa / r_B6 + 2 / r_B7 ) )
 
 **Every number in this block is synthetic, provisional.** It is a first reading for the LEAD, not a measurement of `.cloud` or of the VPS. The real `N_night` comes from the 24 Oct `dump:check` / manifest (P-5) and the real rates from the A1 and A4 runs; when they exist, this block is replaced by the table of 9.3.
 
-**Inputs (synthetic, provisional).** All on the synthetic medium fixture (118 tables, `N_manifest` = 366,026 rows, 20,000 users), on 4 vCPU / 15 GiB cloud VMs with a local PostgreSQL 16 (not production hardware, `fsync` on, default tuning):
+**Inputs (synthetic, provisional).** All on the synthetic medium fixture as generated before FIT-FIX (118 tables then; the stage after #258 has 127, `N_manifest` = 366,026 rows, 20,000 users), on 4 vCPU / 15 GiB cloud VMs with a local PostgreSQL 16 (not production hardware, `fsync` on, default tuning):
 
 | Source | Figures |
 |---|---|
