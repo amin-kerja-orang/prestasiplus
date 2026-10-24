@@ -19,7 +19,13 @@ defineProps<{
   tagline: string
 }>()
 
-defineSlots<{ welcome?: () => unknown; default: () => unknown; below?: () => unknown }>()
+defineSlots<{
+  welcome?: () => unknown
+  default: () => unknown
+  below?: () => unknown
+  /** Under the footer line; the S1 build stamp (demo builds only). */
+  footer?: () => unknown
+}>()
 
 useThemeMode('learner')
 </script>
@@ -99,6 +105,7 @@ useThemeMode('learner')
         <slot name="below" />
 
         <AuthFooter />
+        <slot name="footer" />
       </div>
     </div>
   </main>

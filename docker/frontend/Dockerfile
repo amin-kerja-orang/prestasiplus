@@ -21,11 +21,14 @@ ARG VITE_TEST_HOOKS=false
 ARG VITE_PROTOTYPE_SCOPE=on
 ARG VITE_MOCK_LATENCY_MS=400
 ARG VITE_API_BASE_URL=
+# Commit shown on the demo login screen; .git is not in the build context. Pass --build-arg VITE_BUILD_SHA=$(git rev-parse --short HEAD).
+ARG VITE_BUILD_SHA=
 ENV VITE_API_MODE=$VITE_API_MODE \
     VITE_TEST_HOOKS=$VITE_TEST_HOOKS \
     VITE_PROTOTYPE_SCOPE=$VITE_PROTOTYPE_SCOPE \
     VITE_MOCK_LATENCY_MS=$VITE_MOCK_LATENCY_MS \
-    VITE_API_BASE_URL=$VITE_API_BASE_URL
+    VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    VITE_BUILD_SHA=$VITE_BUILD_SHA
 
 # Type-check, lint and tests run in CI, not here. The demo guard fails the build if test hooks leak.
 RUN npx vite build --mode "$BUILD_MODE" --outDir dist \

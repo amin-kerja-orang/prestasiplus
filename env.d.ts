@@ -14,3 +14,8 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+/** Short commit SHA of the build (`vite.config.ts` `define`; 'unknown' without git or env). */
+declare const __BUILD_SHA__: string
+/** Build date, `YYYY-MM-DD` (UTC). */
+declare const __BUILD_DATE__: string

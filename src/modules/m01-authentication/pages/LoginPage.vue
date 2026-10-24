@@ -19,6 +19,7 @@ import { useSessionStore } from '@/stores/session'
 import { getPlatformStats, login } from '../api'
 import AuthLayout from '../components/auth/AuthLayout.vue'
 import AuthWelcomePanel from '../components/auth/AuthWelcomePanel.vue'
+import BuildStamp from '../components/auth/BuildStamp.vue'
 import PasswordInput from '../components/auth/PasswordInput.vue'
 import { LOGIN_TILES } from '../components/auth/welcome-tiles'
 import { errorLines } from '../lib/error-lines'
@@ -172,6 +173,10 @@ async function submit(): Promise<void> {
           <DsSticker art="trophy">{{ formatNumber(stats.levelCount) }} Tahap</DsSticker>
         </li>
       </ul>
+    </template>
+
+    <template #footer>
+      <BuildStamp />
     </template>
   </AuthLayout>
 </template>
