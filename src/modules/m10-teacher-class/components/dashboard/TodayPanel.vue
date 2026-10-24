@@ -29,7 +29,7 @@ defineProps<{ today: GuruDashboard['today'] }>()
           ]"
           :key="label"
           tone="inset"
-          class="sm:min-w-20"
+          class="max-sm:px-2 sm:min-w-20"
         >
           <div class="text-center">
             <p class="text-overline text-muted">{{ label }}</p>

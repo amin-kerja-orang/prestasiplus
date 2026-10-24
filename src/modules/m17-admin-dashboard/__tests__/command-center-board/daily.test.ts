@@ -145,6 +145,15 @@ describe('S3 admin', () => {
     w.unmount()
   })
 
+  it('lets the pulse card labels fit at 320 px (RS3-09: Engagement label)', async () => {
+    const w = await mountDaily(false)
+    const card = get(w, 'cc-pulse-engagement')
+    // Below `sm` the card body and the chip/label gap tighten so the label is not wider than its box.
+    expect(card.find('.max-sm\\:p-3').exists()).toBe(true)
+    expect(card.find('span.flex').classes()).toContain('max-sm:gap-1')
+    w.unmount()
+  })
+
   it('toggles the school drill with its sections, links and "Lihat penuh →"', async () => {
     const w = await mountDaily(false)
     await get(w, 'cc-school-row').trigger('click')

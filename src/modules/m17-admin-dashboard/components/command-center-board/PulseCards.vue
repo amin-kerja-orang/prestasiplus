@@ -119,9 +119,15 @@ const cards = computed<Card[]>(() => {
     data-testid="cc-pulse"
     aria-live="off"
   >
-    <UCard v-for="(c, ci) in cards" :key="c.id" class="min-w-0" :data-testid="`cc-pulse-${c.id}`">
+    <UCard
+      v-for="(c, ci) in cards"
+      :key="c.id"
+      class="min-w-0"
+      :ui="{ body: 'max-sm:p-3' }"
+      :data-testid="`cc-pulse-${c.id}`"
+    >
       <div class="flex min-w-0 flex-col items-start gap-1">
-        <span class="flex w-full min-w-0 items-center gap-2">
+        <span class="flex w-full min-w-0 items-center gap-2 max-sm:gap-1">
           <DsIconChip :icon="c.icon" :accent="accentAt(ci)" size="sm" />
           <span class="min-w-0 text-overline text-muted" data-testid="cc-pulse-label">{{
             c.label

@@ -130,6 +130,9 @@ describe('S1 GuruDashboardPage', () => {
     expect(w.get('[data-testid="today-counters"]').text().replace(/\s+/g, ' ')).toBe(
       'Pelajar0Topik0Tindakan0',
     )
+    // RS3-08: the counter tiles drop their side padding below `sm`, so "Tindakan" fits at 320 px.
+    for (const tile of w.get('[data-testid="today-counters"]').element.children)
+      expect(tile.classList.contains('max-sm:px-2')).toBe(true)
     expect(w.get('[data-testid="peer-empty"]').text()).toContain('Belum cukup signal')
     expect(w.findAll('[data-testid="quick-tile"]').map((t) => t.attributes('href'))).toEqual([
       '/guru/kelas/cipta',
