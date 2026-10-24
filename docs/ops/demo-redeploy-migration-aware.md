@@ -13,14 +13,19 @@ throwaway Postgres (section 8).
 
 | Situation | Path |
 |---|---|
-| New code, **no** new migration | the plain redeploy (`scripts/deploy-demo.sh`, `PP_MODE=redeploy`). Its rollback is code-only and still holds. |
-| New code **with** new migrations | **this script**. It refuses to run when there is nothing to migrate (exit 3) and points you back to the plain redeploy. |
+| New code, **no** new migration | the plain code redeploy: the Render and Pages steps of [demo-deploy-23oct.md](demo-deploy-23oct.md) sections 3 and 4. Its rollback is code-only and still holds. (`scripts/deploy-demo.sh` with `PP_MODE=redeploy` does the same end to end, but that workflow has not merged into this branch yet.) |
+| New code **with** new migrations | **this script**. It exits 3 when there is nothing to migrate and points you back to the plain redeploy. |
+| An earlier run of this script migrated, then stopped before the deploy | `run --resume` (section 5). |
 | The database must be wiped and re-seeded | the Path A full reset in [demo-deploy-23oct.md](demo-deploy-23oct.md) section 2. |
 
 **Why a separate path.** The plain redeploy promises a five-minute rollback: Render back to the old commit, Pages
 back to the previous deployment, database untouched. Once `0043` and `0044` are applied that promise is dead —
 code rolls back, a schema does not. So the default path here takes a database snapshot first and its rollback
 restores that snapshot.
+
+Note the two snapshot-related environment names, because the rollback depends on them: **`SNAPSHOT_DIR`** is where
+a run writes its snapshot, **`SNAPSHOT_FILE`** is the one `run --resume` carries forward, and
+**`ROLLBACK_SNAPSHOT`** is the one `rollback` restores. Write the path down when a run prints it.
 
 ## 2. Before you start
 
@@ -75,7 +80,9 @@ deploy/demo/redeploy-demo-migration-aware.sh run
 Order, and why:
 
 1. **Read-only checks** of Render (auto-deploy off, `BIJAK_POC_QUESTIONS=true`) and Pages (production branch, and
-   the current production deployment, which becomes the rollback target).
+   the current production deployment, which becomes the rollback target — the run prints that id and writes it to
+   `out/pages-previous-deployment.txt` in its work directory. Note it down: a later manual `rollback` takes it as
+   `ROLLBACK_PAGES_DEPLOYMENT_ID`.)
 2. **Build the SPA** — before anything is written, so a build failure never leaves a migrated database behind.
 3. **Snapshot** the `public` schema and **verify it**, then ask you to type `GO`.
 4. **Migrate**, then re-apply the Data API lockdown (a new table would otherwise inherit Supabase's default
@@ -106,7 +113,24 @@ that every non-empty table of the live database has data in the dump — but nob
 
 Every exit prints a `STATE` / `SNAPSHOT` / `EXIT` / `NEXT` block. `NEXT` is the instruction; follow it.
 
-## 5. Manual rollback
+## 5. If a run stops half way (`--resume`)
+
+Each exit prints a `STATE` line. If it says `migrated=1` with `api_deployed=0`, the schema has moved and the code
+has not — the database is ahead of the API. Two ways out, and the `NEXT` line names both:
+
+```bash
+SNAPSHOT_FILE=~/pp-demo-snapshots/demo-before-<stamp>.dump \
+  deploy/demo/redeploy-demo-migration-aware.sh run --resume     # finish: deploy + verify, no migration
+ROLLBACK_SNAPSHOT=~/pp-demo-snapshots/demo-before-<stamp>.dump \
+  deploy/demo/redeploy-demo-migration-aware.sh rollback          # give up: code and schema back
+```
+
+`--resume` re-checks the snapshot's `PGDMP` header and its `.sha256` before it trusts it, skips the migration
+step, and keeps the automatic rollback: if the resumed run's smoke fails, that snapshot is what gets restored. It
+refuses if migrations are in fact still pending (then it is an ordinary run, not a resume), and with
+`--no-snapshot` it finishes a forward-only run with no database rollback.
+
+## 6. Manual rollback
 
 ```bash
 ROLLBACK_SNAPSHOT=~/pp-demo-snapshots/demo-before-<stamp>.dump \
@@ -118,7 +142,15 @@ It checks the `.sha256` beside the snapshot, that the dump holds only schema `pu
 drops `public`, restores, re-applies the lockdown and checks that the newest migration is back to the running
 API's. Everything written to the demo since the snapshot is lost — that is the trade.
 
-## 6. Forward-only (`--no-snapshot`)
+**Which Pages deployment it goes back to** is decided by what is *live*, not by position in the list: only if the
+live production deployment is this run's own upload does it step back to the one below. A run that stopped before
+the SPA upload leaves the original SPA live, and the script says so and leaves Pages alone instead of rolling the
+frontend one version too far. `ROLLBACK_PAGES_DEPLOYMENT_ID` overrides the choice. If Pages cannot be rolled back
+at all (the list is unreadable, there is no earlier deployment, Cloudflare refuses), the script says so, **carries
+on with Render and the database** — a migrated database with no rollback is the worse half to leave behind — and
+ends by telling you the dashboard steps to roll the SPA back by hand.
+
+## 7. Forward-only (`--no-snapshot`)
 
 ```bash
 deploy/demo/redeploy-demo-migration-aware.sh run --no-snapshot
@@ -130,7 +162,7 @@ rollback afterwards moves Render and Pages back and leaves the schema where it i
 migration is additive, which the compatibility step tells you. The only way back to the old schema is then a
 Supabase backup you took yourself, or the Path A full reset.
 
-## 7. Expected results
+## 8. Expected results
 
 They are variables, not constants in the script, because the totals move as PRs merge:
 
@@ -147,7 +179,7 @@ current suite produces — do not edit the script.
 The write walkthrough (`CONFIRM_WRITES=1`) is **not** part of this path: it belongs to a database refresh, not to a
 migration top-up. Run it by hand if you want it, per [demo-deploy-23oct.md](demo-deploy-23oct.md) 5.3.
 
-## 8. Rehearsal record (24 Oct 2026, cloud container)
+## 9. Rehearsal record (24 Oct 2026, cloud container)
 
 Against a throwaway Supabase-shaped Postgres 16 (non-superuser `postgres` owner, pooler login
 `postgres.<ref>`, `pgcrypto` in `extensions`, the `anon` / `authenticated` / `service_role` roles with Supabase's
@@ -169,12 +201,15 @@ container image — same throwaway database, same client tools.
 | A deliberately breaking migration (`DROP COLUMN`, `SET NOT NULL`) | refused; `PP_ACCEPT_DOWNTIME=1` lets it through after the window is accepted |
 | Wrong `PP_RUNNING_BACKEND_SHA` | drift detected and refused; `PP_ACCEPT_DRIFT=1` goes by the database |
 | `SNAPSHOT_DIR` inside the repo, `DEMO_PASSWORD=Demo1234` | both refused before anything was written |
+| `run --resume` with the snapshot of an interrupted run | migration step skipped, deploy and verify ran, and the resumed run still restored that snapshot when its smoke failed (38 → 36, newest back to `0042`) |
+| `run --resume` with migrations still pending, and with a tampered snapshot | refused in both cases |
+| the Pages rollback target (stubbed Cloudflare, five cases) | this run's upload live → steps back one; a different commit live → leaves Pages alone; no earlier deployment, or the list unreadable → hands it to the operator and still restores the database; an explicit id wins |
 
 Not rehearsed, because no AI session touches the cloud demo: the Render and Cloudflare API calls, the real
 `/api/health` waits, the Pages upload, and the smoke and walkthrough against the real demo. Those are the LEAD's
 first run.
 
-## 9. Checklist
+## 10. Checklist
 
 - [ ] `PP_RUNNING_BACKEND_SHA` matches the commit Render actually serves
 - [ ] `plan` run and read; compatibility says `additive` (or the window is accepted and the demo is out of use)

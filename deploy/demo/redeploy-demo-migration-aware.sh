@@ -12,6 +12,8 @@
 #   deploy/demo/redeploy-demo-migration-aware.sh plan      # read-only: tips, new merge commits, migration plan
 #   deploy/demo/redeploy-demo-migration-aware.sh run       # snapshot -> migrate -> API -> SPA -> smoke (auto rollback)
 #   deploy/demo/redeploy-demo-migration-aware.sh run --no-snapshot   # forward-only; rollback is NOT possible
+#   deploy/demo/redeploy-demo-migration-aware.sh run --resume        # an earlier run migrated then stopped:
+#                                                                    # deploy and verify only, no migration
 #   deploy/demo/redeploy-demo-migration-aware.sh rollback  # manual rollback (code, and the snapshot if there is one)
 #
 # Exit codes: 0 = done, 1 = NO-GO (something failed; the NEXT block says what to do), 2 = usage/input error,
@@ -53,6 +55,9 @@
 #   PP_ACCEPT_DRIFT=1        the DB's pending set differs from the git delta: proceed anyway
 #   PP_ACCEPT_DOWNTIME=1     a pending migration is not backward compatible with the running API: accept the window
 #   PP_ASSUME_YES=1          skip the typed GO confirm of the DEFAULT path (never the --no-snapshot one)
+#   SNAPSHOT_FILE            with `run --resume`: the snapshot the interrupted run printed, so this run can
+#                            still roll the database back. Not needed with --no-snapshot (there is none).
+#   ROLLBACK_PAGES_DEPLOYMENT_ID / ROLLBACK_SNAPSHOT / RESTORE_DB   inputs of `rollback` (see the run sheet)
 #
 # Local rehearsal:
 #   PP_DEMO_STUB=1           stub every Render/Cloudflare call; loopback PGURL only; nothing leaves the machine
@@ -75,6 +80,7 @@ CF_API='https://api.cloudflare.com/client/v4'
 WRANGLER_VERSION='4.148.0'
 STUB="${PP_DEMO_STUB:-0}"
 SNAPSHOT_MODE=snapshot            # snapshot | none  (--no-snapshot)
+RESUME=0                          # 1 = --resume: an earlier run already migrated; only deploy and verify
 STEP=init
 SNAPSHOT=''                       # set once the dump exists
 PAGES_PREV=''                     # Pages production deployment before this run (the rollback target)
@@ -104,7 +110,7 @@ next_from_state() {
   if [ "$MIGRATED" = 0 ] && [ "$API_DEPLOYED" = 0 ] && [ "$SPA_DEPLOYED" = 0 ]; then
     next "Nothing was changed. Fix the problem named above and re-run."
   elif [ -n "$SNAPSHOT" ]; then
-    next "The demo is part way through a redeploy. Roll it back now: ROLLBACK_SNAPSHOT=$SNAPSHOT $0 rollback"
+    next "The demo is part way through a redeploy. Finish it with 'SNAPSHOT_FILE=$SNAPSHOT $0 run --resume', or roll it back now with 'ROLLBACK_SNAPSHOT=$SNAPSHOT $0 rollback'"
   else
     next "The demo is part way through a FORWARD-ONLY redeploy and there is no snapshot. Code can go back with '$0 rollback' (RESTORE_DB=0); the schema cannot. Agree the next step with the LEAD before anybody uses the demo."
   fi
@@ -428,7 +434,7 @@ step_migration_plan() {
   if [ -z "$git_new" ]; then
     log "new in the tree since the running API: none"
     RC_SEEN=3
-    next "No new migration: this is a plain code redeploy. Use scripts/deploy-demo.sh with PP_MODE=redeploy (its code-only rollback still holds). Nothing was changed."
+    next "No new migration: this is a plain code redeploy, whose code-only rollback still holds. Deploy the API and re-upload the SPA with the code-only steps of docs/ops/demo-deploy-23oct.md sections 3 and 4 (or scripts/deploy-demo.sh with PP_MODE=redeploy, once that workflow has merged - it is not in this repo yet). Nothing was changed."
     log ""; log "NOTHING TO DO: no migration is new since ${RUNNING_SHA:0:8}."
     exit 3
   fi
@@ -442,10 +448,28 @@ step_migration_plan() {
   db_pending=$(comm -13 <(printf '%s\n' "$applied" | sort) <(migs_at "$BACKEND_SHA"))
   log "pending according to the live database:"; indent "$db_pending"
   if [ -z "$db_pending" ]; then
+    log "pending according to the live database: none"
+    if [ "$RESUME" = 1 ]; then
+      ok "the database is already at $EXPECT_NEWEST: --resume skips the migration step and finishes the deploy"
+      PENDING=''; COMPAT=additive
+      return 0
+    fi
     RC_SEEN=3
-    next "The database already has every migration of ${BACKEND_SHA:0:8}: this is a plain code redeploy. Use scripts/deploy-demo.sh with PP_MODE=redeploy. Nothing was changed."
-    log ""; log "NOTHING TO DO: the database is already at $EXPECT_NEWEST."
+    log ""
+    log "NOTHING TO DO HERE: the database is already at $EXPECT_NEWEST, so there is no migration to apply."
+    log "Two ways to arrive here:"
+    log "  a) the demo was already refreshed, and only code is new -> a plain code redeploy, whose code-only"
+    log "     rollback still holds: docs/ops/demo-deploy-23oct.md sections 3 and 4."
+    log "  b) an earlier run of THIS script applied the migrations and then stopped before the API or the SPA"
+    log "     was deployed (its STATE line said migrated=1). The database has moved; the code has not."
+    log "     Finish it with: SNAPSHOT_FILE=<the snapshot that run printed> $0 run --resume"
+    log "     or roll the schema back: ROLLBACK_SNAPSHOT=<that snapshot> $0 rollback"
+    next "The database needs no migration. If an earlier run of this script left it migrated with the code behind (its STATE line said migrated=1), finish with 'SNAPSHOT_FILE=<snapshot> $0 run --resume' or roll back with 'ROLLBACK_SNAPSHOT=<snapshot> $0 rollback'. Otherwise this is a plain code redeploy: docs/ops/demo-deploy-23oct.md sections 3 and 4. Nothing was changed."
     exit 3
+  fi
+  if [ "$RESUME" = 1 ]; then
+    bad "--resume was given, but the database still needs $(n_lines "$db_pending") migration(s)"
+    nogo "drop --resume: a resume is for a run that already applied its migrations"
   fi
   if [ "$git_new" != "$db_pending" ]; then
     bad "the git delta and the database's pending set differ: the demo may not be running ${RUNNING_SHA:0:8}"
@@ -658,6 +682,7 @@ targets_check() {
   [ -n "$PAGES_PREV" ] || nogo "no successful Pages production deployment to roll back to"
   ok "Pages rollback target: $PAGES_PREV"
   printf '%s\n' "$PAGES_PREV" >"$WORK/out/pages-previous-deployment.txt"
+  log "     note it down: a later '$0 rollback' takes it as ROLLBACK_PAGES_DEPLOYMENT_ID=$PAGES_PREV"
 }
 
 # ------------------------------------------------------------------------------------------------ 4. apply, in a safe order
@@ -674,11 +699,11 @@ step_migrate() {
   out=$(cd "$BE_DIR" && with_only PGPASSWORD DATABASE_URL -- node scripts/demo-db-delta.mjs 2>&1) || {
     MIGRATED=1
     log "$out"
-    next "Applying the migrations failed part way. One migration is one transaction, so the database sits at the last committed one. Roll back now: $0 rollback (with ROLLBACK_SNAPSHOT=$SNAPSHOT)"
+    next "Applying the migrations failed part way. One migration is one transaction, so the database sits at the last committed one. Roll back now: ROLLBACK_SNAPSHOT=$SNAPSHOT $0 rollback"
     nogo "applying the migrations failed"
   }
   MIGRATED=1
-  next "The migrations are applied; the API is NOT redeployed yet. Finish with another run, or roll back: $0 rollback (ROLLBACK_SNAPSHOT=$SNAPSHOT)"
+  next "The migrations are applied; the API is NOT redeployed yet. Finish with 'SNAPSHOT_FILE=$SNAPSHOT $0 run --resume', or roll back with 'ROLLBACK_SNAPSHOT=$SNAPSHOT $0 rollback'"
   log "$out"
   grep -q "Done: $n migration(s) applied" <<<"$out" || nogo "the apply did not say Done: $n migration(s) applied"
   out=$(cd "$BE_DIR" && with_only PGPASSWORD DATABASE_URL -- node scripts/demo-db-delta.mjs 2>&1) || { log "$out"; nogo "the delta re-check failed"; }
@@ -725,7 +750,7 @@ step_edge_and_env() {
 step_deploy() {
   render_deploy "$BACKEND_SHA" "$BE_BRANCH"
   API_DEPLOYED=1
-  next "The API is live at ${BACKEND_SHA:0:8} but the SPA is still the old build. Finish the run, or roll back: $0 rollback"
+  next "The API is live at ${BACKEND_SHA:0:8} but the SPA is still the old build. Finish with 'SNAPSHOT_FILE=${SNAPSHOT:-<none>} $0 run --resume', or roll back with 'ROLLBACK_SNAPSHOT=${SNAPSHOT:-<none>} $0 rollback'"
   hdr "render-health"
   if [ "$STUB" = 1 ]; then log "STUB: health skipped"
   else health_db_up Render "$RENDER_URL" || nogo "the new API does not report db up: roll back"; fi
@@ -781,17 +806,45 @@ step_verify() {
 # ------------------------------------------------------------------------------------------------ rollback
 # Code first, database last. The other order would put the NEW API in front of the OLD schema, which it cannot
 # read; the old API in front of the new (additive) schema is the state the demo was already running in.
-pages_rollback() { # [deployment-id]
+# Which deployment to go back to is decided by what is LIVE, not by position in the list: a run that failed
+# before the SPA upload leaves the original SPA live, and "the second newest" would then roll the frontend one
+# version too far. A Pages problem is reported and handed to the operator - it never stops the database restore,
+# because a migrated database with no rollback is the worse half to leave behind.
+PAGES_MANUAL=0
+pages_rollback() { # [explicit deployment id]
   hdr "rollback: pages"
-  if [ "$STUB" = 1 ]; then log "STUB pages: POST deployments/<previous>/rollback"; return; fi
-  local dep="${1:-}" live
-  [ -n "$dep" ] || dep=$(pages_prod_deployments | sed -n 2p | cut -d' ' -f1) || true
-  [[ "$dep" =~ ^[A-Za-z0-9-]+$ ]] || nogo "no previous Pages deployment to roll back to (set ROLLBACK_PAGES_DEPLOYMENT_ID)"
-  live=$(pages_prod_deployments | head -1 | cut -d' ' -f1) || true
-  if [ "$live" = "$dep" ]; then ok "Pages deployment $dep is already live: nothing to roll back"; return; fi
-  cf POST "/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/deployments/$dep/rollback" \
-    | jq -e '.success == true' >/dev/null || nogo "the Pages rollback to $dep was refused"
-  ok "Pages rolled back to $dep"
+  if [ "$STUB" = 1 ]; then log "STUB pages: list production deployments, then POST deployments/<target>/rollback"; return 0; fi
+  local dep="${1:-}" lines live live_sha
+  lines=$(pages_prod_deployments) || true
+  if [ -z "$lines" ]; then
+    bad "cannot list the Pages production deployments"; PAGES_MANUAL=1; return 0
+  fi
+  live=$(head -1 <<<"$lines" | cut -d' ' -f1)
+  live_sha=$(head -1 <<<"$lines" | cut -d' ' -f2)
+  if [ -n "$dep" ]; then
+    log "using the deployment id given to this rollback: $dep"
+  elif [ "$live_sha" != "$FRONTEND_SHA" ]; then
+    ok "the live Pages production deployment ($live, commit ${live_sha:0:8}) is not this run's upload (${FRONTEND_SHA:0:8}): the SPA was never replaced, so there is nothing to roll back"
+    return 0
+  else
+    dep=$(sed -n 2p <<<"$lines" | cut -d' ' -f1)
+    if [ -z "$dep" ]; then
+      bad "this run's SPA (${FRONTEND_SHA:0:8}) is live and there is no earlier successful production deployment to go back to"
+      PAGES_MANUAL=1; return 0
+    fi
+    log "this run's SPA is live; going back to the deployment below it: $dep"
+  fi
+  if [[ ! "$dep" =~ ^[A-Za-z0-9-]+$ ]]; then
+    bad "'$dep' does not look like a Pages deployment id"; PAGES_MANUAL=1; return 0
+  fi
+  if [ "$live" = "$dep" ]; then ok "Pages deployment $dep is already live: nothing to roll back"; return 0; fi
+  if cf POST "/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/deployments/$dep/rollback" \
+       | jq -e '.success == true' >/dev/null; then
+    ok "Pages rolled back to $dep"
+  else
+    bad "the Pages rollback to $dep was refused"; PAGES_MANUAL=1
+  fi
+  return 0
 }
 
 db_restore() { # snapshot file
@@ -844,6 +897,13 @@ do_rollback() { # restore:0|1  [pages-deployment-id]
     health_db_up Render "$RENDER_URL" || log "BAD  Render /api/health is not db up yet: check the Render log"
     health_db_up Pages  "$PAGES_URL"  || log "BAD  Pages /api/health is not db up yet: check the worker and API_ORIGIN"
   fi
+  if [ "$PAGES_MANUAL" = 1 ]; then
+    log ""
+    log "The SPA was NOT rolled back (reason above). Do it by hand: Cloudflare -> Workers & Pages ->"
+    log "$PAGES_PROJECT -> Deployments -> the deployment from before this run -> Rollback to this deployment."
+    log "The deploy run recorded that id in its work directory as out/pages-previous-deployment.txt, and printed"
+    log "it as 'Pages rollback target'; you can also pass it as ROLLBACK_PAGES_DEPLOYMENT_ID."
+  fi
 }
 
 auto_rollback() { # reason
@@ -886,7 +946,27 @@ cmd_run() {
   targets_check
   step_checkout_build
   step_wrangler_install
-  if [ "$SNAPSHOT_MODE" = none ]; then
+  if [ "$RESUME" = 1 ]; then
+    hdr "resume"
+    MIGRATED=1                      # the earlier run applied them; this run owns the rollback from here on
+    if [ "$SNAPSHOT_MODE" = none ]; then
+      log "--resume --no-snapshot: finishing a forward-only run. There is no database rollback."
+    else
+      SNAPSHOT="${SNAPSHOT_FILE:-}"
+      [ -n "$SNAPSHOT" ] || usage_err "--resume needs SNAPSHOT_FILE=<the snapshot the interrupted run printed>, or --no-snapshot if it had none"
+      [ -s "$SNAPSHOT" ] || usage_err "no snapshot at $SNAPSHOT"
+      [ "$(head -c 5 "$SNAPSHOT")" = 'PGDMP' ] || usage_err "$SNAPSHOT has no PGDMP header"
+      if [ -f "$SNAPSHOT.sha256" ]; then
+        if (cd "$(dirname "$SNAPSHOT")" && sha256sum -c --status "$(basename "$SNAPSHOT").sha256"); then
+          ok "snapshot sha256 matches the value written when it was taken"
+        else
+          usage_err "the snapshot checksum does not match: do not use it"
+        fi
+      fi
+      ok "resuming with the snapshot $SNAPSHOT (an automatic rollback can still restore it)"
+    fi
+    log "the migration step is skipped; this run deploys the API and the SPA and then verifies."
+  elif [ "$SNAPSHOT_MODE" = none ]; then
     forward_only_warning
   else
     step_snapshot
@@ -896,7 +976,7 @@ cmd_run() {
       confirm_word 'GO' "Type GO to apply $(n_lines "$PENDING") migration(s) and redeploy: "
     fi
   fi
-  step_migrate
+  [ "$RESUME" = 1 ] || step_migrate
   step_edge_and_env
   step_deploy
   step_verify
@@ -949,12 +1029,14 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --no-snapshot) SNAPSHOT_MODE=none ;;
     --snapshot) SNAPSHOT_MODE=snapshot ;;
+    --resume) RESUME=1 ;;
     -h | --help) sed -n '2,62p' "${BASH_SOURCE[0]}"; RC_SEEN=0; next "No command was run."; exit 0 ;;
     *) usage_err "unexpected argument '$1'" ;;
   esac
   shift
 done
 [ "$SNAPSHOT_MODE" = snapshot ] || [ "$CMD" = run ] || usage_err "--no-snapshot applies to 'run' only"
+[ "$RESUME" = 0 ] || [ "$CMD" = run ] || usage_err "--resume applies to 'run' only"
 
 case "$CMD" in
   plan) cmd_plan ;;
