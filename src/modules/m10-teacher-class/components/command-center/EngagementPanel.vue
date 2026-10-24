@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** "Engagement Pelajar" (FN-M10-2.2.5): "Jumlah: {n} pelajar" and the five bands; a row opens its drill. */
+/** "Penglibatan Pelajar" (FN-M10-2.2.5): "Jumlah: {n} pelajar" and the five bands; a row opens its drill. */
 import { computed } from 'vue'
 
 import type { CcEngagement } from '../../api/command-center-types'
@@ -14,7 +14,7 @@ const share = (n: number) => (total.value === 0 ? 0 : Math.round((n / total.valu
 </script>
 
 <template>
-  <BoardPanel icon="users-three" accent="friend" title="Engagement Pelajar" testid="cc-panel-engagement">
+  <BoardPanel icon="users-three" accent="friend" title="Penglibatan Pelajar" testid="cc-panel-engagement">
     <p class="mb-2 text-end text-body text-muted" data-testid="cc-engagement-total">
       Jumlah: <b class="tabular text-highlighted">{{ total }}</b> pelajar
     </p>
@@ -27,7 +27,7 @@ const share = (n: number) => (total.value === 0 ? 0 : Math.round((n / total.valu
           class="h-auto min-h-11 justify-start gap-3 px-2 py-2 text-start"
           :title="S2_COPY.bandHint"
           :data-testid="`cc-band-${b.key}`"
-          @click="emit('drill', { type: 'engagement', filter: b.key, label: 'Engagement Pelajar' })"
+          @click="emit('drill', { type: 'engagement', filter: b.key, label: 'Penglibatan Pelajar' })"
         >
           <span class="w-24 shrink-0 text-body text-toned">{{ b.label }}</span>
           <UProgress

@@ -12,7 +12,7 @@
  *   is optional, so an empty one is stored as the year of the mock clock (SRS gap, reported). Nothing
  *   of the files is stored but their name, size and type.
  * - #63 (DV-M10-08, D24): the templates are those of the server copy. `/template` is
- *   `template-audio-kbat.csv` (`text/csv`, UTF-8 BOM, columns tajuk, kod_subjek, kod_tingkatan,
+ *   `templat-audio-kbat.csv` (`text/csv`, UTF-8 BOM, columns tajuk, kod_subjek, kod_tingkatan,
  *   nama_fail_audio and one example row, quoted as PHP `fputcsv` does); `/template-word` is a valid `.docx` (built by `docx.ts`, a
  *   stored ZIP) with a title, an intro line and a table of the same four columns and the example.
  */
@@ -25,7 +25,7 @@ import { bodyOf, fileOf, intOf, listOf, textOf, viewerId, teacherOnly } from './
 
 export const PAPER_TYPES = [
   'Soalan Umum',
-  'Trial Paper',
+  'Kertas Percubaan',
   'Soalan DSKP',
   'Buku Teks',
   'Buku Latihan',
@@ -132,18 +132,18 @@ export const extraRoutes: RouteDef[] = [
   route('GET', '/api/guru/audio-kbat/template', [teacherOnly], () =>
     blob(
       new Blob([TEMPLATE_CSV_TEXT], { type: 'text/csv; charset=UTF-8' }),
-      'template-audio-kbat.csv',
+      'templat-audio-kbat.csv',
     ),
   ),
 
   route('GET', '/api/guru/audio-kbat/template-word', [teacherOnly], () => {
     const bytes = new Uint8Array(
       tableDocx(
-        'Template Set Audio KBAT',
+        'Templat Set Audio KBAT',
         'Isi satu baris bagi setiap set. Muat naik fail audio melalui borang "Cipta Set" di /guru/audio-kbat.',
         [WORD_HEADINGS, WORD_EXAMPLE],
       ),
     )
-    return blob(new Blob([bytes], { type: DOCX_TYPE }), 'template-audio-kbat.docx')
+    return blob(new Blob([bytes], { type: DOCX_TYPE }), 'templat-audio-kbat.docx')
   }),
 ]

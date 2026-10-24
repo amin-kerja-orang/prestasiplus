@@ -988,7 +988,7 @@ describe('#57–#58 CSV template and import (S21; BR-M10-24, DV-M10-08)', () => 
     const a = await call('GET', '/api/guru/questions/template')
     expect(a.status).toBe(200)
     expect(a.res.headers['content-type']).toContain('text/csv')
-    expect(a.res.headers['content-disposition']).toContain('template-import-soalan.csv')
+    expect(a.res.headers['content-disposition']).toContain('templat-import-soalan.csv')
     const text = await (a.body as Blob).text()
     expect(text).toBe(IMPORT_TEMPLATE_CSV)
     expect(TEMPLATE_CSV).toBe(IMPORT_TEMPLATE_CSV)
@@ -1322,7 +1322,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
     for (const f of files) form.append('files[]', f)
     return call<Data<Record<string, unknown>>>('POST', '/api/guru/question-papers', { body: form })
   }
-  const valid = { jenisSoalan: 'Trial Paper', subject: 'SEJARAH SPM' }
+  const valid = { jenisSoalan: 'Kertas Percubaan', subject: 'SEJARAH SPM' }
 
   it('guards: 401 to a guest, 403 to a pupil', async () => {
     for (const [method, url] of [
@@ -1382,7 +1382,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
       subjectText: 'SEJARAH SPM',
       levelCode: 'T4',
       year: 2024,
-      paperType: 'Trial Paper',
+      paperType: 'Kertas Percubaan',
       authorCredit: 'Guru Demo',
       note: 'Dengan skema',
       status: 'pending',
@@ -1414,7 +1414,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
   it('#63 /template is the server CSV (BOM, four columns, one example row)', async () => {
     const a = await call('GET', '/api/guru/audio-kbat/template')
     expect(a.status).toBe(200)
-    expect(a.res.headers['content-disposition']).toContain('template-audio-kbat.csv')
+    expect(a.res.headers['content-disposition']).toContain('templat-audio-kbat.csv')
     expect(a.res.headers['content-type']).toContain('text/csv')
     const bytes = new Uint8Array(await (a.body as Blob).arrayBuffer())
     expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
@@ -1426,7 +1426,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
   it('#63 /template-word is a valid .docx with the four-column table', async () => {
     const a = await call('GET', '/api/guru/audio-kbat/template-word')
     expect(a.status).toBe(200)
-    expect(a.res.headers['content-disposition']).toContain('template-audio-kbat.docx')
+    expect(a.res.headers['content-disposition']).toContain('templat-audio-kbat.docx')
     expect(a.res.headers['content-type']).toContain('wordprocessingml.document')
     const bytes = new Uint8Array(await (a.body as Blob).arrayBuffer())
     const dv = new DataView(bytes.buffer)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "Leaderboard Minggu Ini" (FN-M10-2.2.5): rank, name, "{n} jwb", accuracy coloured; the optional
+ * "Papan Pendahulu Minggu Ini" (FN-M10-2.2.5): rank, name, "{n} jwb", accuracy coloured; the optional
  * "Lencana Terbaru" block; a row opens the student page in a new tab.
  */
 import type { CcRecentBadge, CcStudentRank } from '../../api/command-center-types'
@@ -13,7 +13,7 @@ const openTab = useOpenTab()
 </script>
 
 <template>
-  <BoardPanel icon="trophy" accent="win" title="Leaderboard Minggu Ini" testid="cc-panel-leaderboard">
+  <BoardPanel icon="trophy" accent="win" title="Papan Pendahulu Minggu Ini" testid="cc-panel-leaderboard">
     <p v-if="rows.length === 0" class="text-body text-muted" data-testid="cc-leaderboard-empty">
       {{ S2_COPY.noWeek }}
     </p>

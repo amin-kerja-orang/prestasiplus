@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "Evaluate" -> "Auto Evaluate — Penilaian Risiko Pelajar" (FR-M10-24, FN-M10-2.2.12, BR-M10-15; read-only):
+ * "Evaluate" -> "Penilaian Auto — Penilaian Risiko Pelajar" (FR-M10-24, FN-M10-2.2.12, BR-M10-15; read-only):
  * five cards, then "Semua pelajar dalam keadaan baik! Tiada risiko dikesan." or the alert table.
  */
 import type { TableColumn } from '@nuxt/ui'
@@ -42,7 +42,7 @@ const columns: TableColumn<Row>[] = [
 
 <template>
   <CcDialog
-    title="Auto Evaluate — Penilaian Risiko Pelajar"
+    title="Penilaian Auto — Penilaian Risiko Pelajar"
     testid="cc-evaluate-modal"
     wide
     @close="$emit('close')"
@@ -64,7 +64,7 @@ const columns: TableColumn<Row>[] = [
         <DsDrillTable
           :data="data.alerts"
           :columns="columns"
-          caption="Auto Evaluate — Penilaian Risiko Pelajar"
+          caption="Penilaian Auto — Penilaian Risiko Pelajar"
           @drill="(a: Row) => openTab(studentPath(a.studentId))"
         >
           <template #risk-cell="{ row }">

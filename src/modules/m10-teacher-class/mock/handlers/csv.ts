@@ -14,7 +14,7 @@
 import { IMPORT_TEMPLATE_CSV, planImport as planM04Import } from '@/modules/m04-question-bank/mock'
 import type { QuestionInput } from '@/modules/m04-question-bank/mock'
 
-export const TEMPLATE_NAME = 'template-import-soalan.csv'
+export const TEMPLATE_NAME = 'templat-import-soalan.csv'
 
 /** The template file text: M04 #11's. */
 export const TEMPLATE_CSV = IMPORT_TEMPLATE_CSV

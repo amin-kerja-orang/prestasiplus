@@ -76,12 +76,12 @@ describe('rules of S2 (FN-M10-2.2.3-2.2.13)', () => {
 
   it('labels the rarity by the number of holders', () => {
     expect([25, 20, 10, 5, 1, 0].map((n) => rarityOf(n).label)).toEqual([
-      'Common',
-      'Common',
-      'Uncommon',
-      'Rare',
-      'Epic',
-      'Legendary',
+      'Biasa',
+      'Biasa',
+      'Kurang Biasa',
+      'Jarang',
+      'Epik',
+      'Legenda',
     ])
   })
 

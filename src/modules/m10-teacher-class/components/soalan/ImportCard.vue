@@ -27,7 +27,7 @@ async function template(): Promise<void> {
   errors.value = []
   try {
     const res = await downloadQuestionTemplate()
-    saveBlob(res.blob, res.filename ?? 'template-import-soalan.csv')
+    saveBlob(res.blob, res.filename ?? 'templat-import-soalan.csv')
   } catch {
     errors.value = [COPY.templateFailed]
   }
@@ -70,7 +70,7 @@ async function submit(): Promise<void> {
           class="min-h-11"
           data-testid="import-template"
           @click="template"
-          >Template</UButton
+          >Templat</UButton
         >
         <UButton
           type="button"
@@ -147,7 +147,7 @@ async function submit(): Promise<void> {
           Panduan:
         </p>
         <ul class="flex flex-col gap-1 pl-4">
-          <li>Muat turun template → isi soalan → import kembali</li>
+          <li>Muat turun templat → isi soalan → import kembali</li>
           <li>
             Format: subjek, tahap, soalan, 4 pilihan, jawapan (A/B/C/D), kesukaran, penerangan
           </li>

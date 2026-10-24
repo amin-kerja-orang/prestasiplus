@@ -130,7 +130,7 @@ describe('S1 GuruDashboardPage', () => {
     expect(w.get('[data-testid="today-counters"]').text().replace(/\s+/g, ' ')).toBe(
       'Pelajar0Topik0Tindakan0',
     )
-    expect(w.get('[data-testid="peer-empty"]').text()).toContain('Belum cukup signal')
+    expect(w.get('[data-testid="peer-empty"]').text()).toContain('Belum cukup isyarat')
     expect(w.findAll('[data-testid="quick-tile"]').map((t) => t.attributes('href'))).toEqual([
       '/guru/kelas/cipta',
       '/guru/soalan/cipta',

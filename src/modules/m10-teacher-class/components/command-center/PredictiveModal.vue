@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "Ramalan SPM" -> "Ramalan SPM — Predictive Analytics" (FR-M10-21, FN-M10-2.2.9, BR-M10-14): four cards,
+ * "Ramalan SPM" -> "Ramalan SPM — Analitik Ramalan" (FR-M10-21, FN-M10-2.2.9, BR-M10-14): four cards,
  * the ten grade chips ("{g} ({n})" when n > 0), "Tiada data mencukupi untuk ramalan" or the 8-column table.
  */
 import { computed } from 'vue'
@@ -51,7 +51,7 @@ const chips = computed(() =>
     return n > 0 ? `${g} (${String(n)})` : g
   }),
 )
-const HEADERS = ['#', 'Pelajar', 'Accuracy', 'Trend', 'Konsistensi', 'Ramalan', 'GPS', 'Risiko']
+const HEADERS = ['#', 'Pelajar', 'Ketepatan', 'Trend', 'Konsistensi', 'Ramalan', 'GPS', 'Risiko']
 const TREND_TONE = { Naik: 'text-success', Turun: 'text-error', Stabil: 'text-toned' } as const
 const rows = computed<DrillRow[]>(() =>
   (data.value?.predictions ?? []).map((p, i) => ({
@@ -72,7 +72,7 @@ const rows = computed<DrillRow[]>(() =>
 
 <template>
   <CcDialog
-    title="Ramalan SPM — Predictive Analytics"
+    title="Ramalan SPM — Analitik Ramalan"
     testid="cc-predictive-modal"
     wide
     @close="$emit('close')"
@@ -103,7 +103,7 @@ const rows = computed<DrillRow[]>(() =>
         :rows="rows"
         testid="cc-predictive-table"
         row-testid="cc-predictive-row"
-        caption="Ramalan SPM — Predictive Analytics"
+        caption="Ramalan SPM — Analitik Ramalan"
         @open="openTab(studentPath($event))"
       />
     </template>

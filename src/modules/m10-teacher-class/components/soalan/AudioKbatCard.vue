@@ -31,7 +31,7 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
               Sumbang Set Audio KBAT / Ujian Mendengar
             </h2>
             <p class="text-body text-muted">
-              Format khas fixed sequence: 4 audio section, 30 soalan MCQ, skema A-D, dan transkrip
+              Format khas berturutan tetap: 4 bahagian audio, 30 soalan MCQ, skema A-D, dan transkrip
               untuk semakan admin.
             </p>
             <p class="text-body text-muted">
@@ -47,8 +47,8 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
             icon="i-ph-file-xls-duotone"
             class="min-h-11"
             data-testid="audio-template-xlsx"
-            @click.prevent="download('xlsx', 'template-audio-kbat.xlsx')"
-            >Template XLSX</UButton
+            @click.prevent="download('xlsx', 'templat-audio-kbat.xlsx')"
+            >Templat XLSX</UButton
           >
           <UButton
             href="/guru/audio-kbat/template-word"
@@ -57,8 +57,8 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
             icon="i-ph-file-doc-duotone"
             class="min-h-11"
             data-testid="audio-template-word"
-            @click.prevent="download('word', 'template-audio-kbat.docx')"
-            >Template Word</UButton
+            @click.prevent="download('word', 'templat-audio-kbat.docx')"
+            >Templat Word</UButton
           >
           <UButton
             to="/guru/audio-kbat/create"
@@ -84,8 +84,8 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
       <div class="flex min-w-0 items-center gap-3">
         <DsIconChip icon="sparkle" size="lg" />
         <div class="min-w-0">
-          <h2 class="text-subheading text-highlighted">AI Auto-Generate Soalan</h2>
-          <p class="text-body text-muted">Upload dokumen DOCX/PDF, AI extract soalan automatik</p>
+          <h2 class="text-subheading text-highlighted">Jana Soalan Auto AI</h2>
+          <p class="text-body text-muted">Muat naik dokumen DOCX/PDF, AI mengekstrak soalan secara automatik</p>
         </div>
       </div>
     </DsPanel>

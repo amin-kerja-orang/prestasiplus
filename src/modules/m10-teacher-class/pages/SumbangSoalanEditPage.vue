@@ -163,7 +163,7 @@ async function save(): Promise<void> {
           <DsFormField
             label="Tambah Gambarajah (optional)"
             name="e-image"
-            help="JPG, PNG, max 5MB."
+            help="JPG, PNG, maks 5MB."
             :error="fields.image"
           >
             <DsFileField
@@ -233,7 +233,7 @@ async function save(): Promise<void> {
             {{ fields.correctOptionId }}
           </p>
           <p class="mt-3 text-caption text-muted">
-            Pilih radio button untuk tandakan jawapan betul
+            Pilih butang radio untuk menandakan jawapan betul
           </p>
         </DsPanel>
 

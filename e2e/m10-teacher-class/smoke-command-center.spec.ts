@@ -86,10 +86,10 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     await expect(tid(page, 'cc-links').getByRole('link')).toHaveText([
       '🔬 Remedial',
       '📊 Rekod',
-      '⚠ Evaluate',
+      '⚠ Nilai',
       '🔮 Ramalan SPM',
       '👩‍🏫 Kelas',
-      '🏆 Badges',
+      '🏆 Lencana',
     ])
     await expect(tid(page, 'cc-link-rekod')).toHaveAttribute('href', '/guru/remedial-progress')
     await expect(tid(page, 'cc-live-badge')).toHaveText('LIVE')
@@ -126,7 +126,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     ])
     await expect(tid(page, 'cc-activity-today')).toHaveText('0 soalan')
     await expect(tid(page, 'cc-footer')).toHaveText(
-      'Powered by ALESA AI · PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat',
+      'Dikuasakan oleh ALESA AI · PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat',
     )
 
     // after 10 s a second live-data request
@@ -257,7 +257,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     await tid(page, 'cc-modal-close').click()
 
     await tid(page, 'cc-link-predictive').click()
-    await expect(tid(page, 'cc-modal-title')).toHaveText('Ramalan SPM — Predictive Analytics')
+    await expect(tid(page, 'cc-modal-title')).toHaveText('Ramalan SPM — Analitik Ramalan')
     await expect(tid(page, 'cc-grade-chip')).toHaveText([
       'A+',
       'A',
@@ -288,7 +288,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     await openBoard(page, gotoApp)
     await mock.setLatency(600, `GET ${API}/remedial/scan`)
     await tid(page, 'cc-link-remedial').click()
-    await expect(tid(page, 'cc-modal-title')).toHaveText('Smart Remedial — Scan Pelajar Lemah')
+    await expect(tid(page, 'cc-modal-title')).toHaveText('Remedial Pintar — Imbas Pelajar Lemah')
     await expect(tid(page, 'cc-modal-loading')).toHaveText('Mengimbas topik lemah pelajar...')
     await expect(tid(page, 'cc-remedial-empty')).toHaveText(
       'Tiada pelajar dengan topik lemah (<50% accuracy). Tahniah!',
@@ -309,7 +309,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
       await openBoard(page, gotoApp)
       await tid(page, 'cc-link-evaluate').click()
       await expect(tid(page, 'cc-modal-title')).toHaveText(
-        'Auto Evaluate — Penilaian Risiko Pelajar',
+        'Penilaian Auto — Penilaian Risiko Pelajar',
       )
       await expect(tid(page, 'cc-modal-card')).toHaveText([
         '0Jumlah Pelajar',
@@ -326,7 +326,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
 
       await tid(page, 'cc-link-badges').click()
       await expect(tid(page, 'cc-modal-title')).toHaveText(
-        'Achievement System — Scan & Award Badges',
+        'Sistem Pencapaian — Imbas & Anugerah Lencana',
       )
       await expect(tid(page, 'cc-modal-card').first()).toContainText('Pelajar')
       await expect(tid(page, 'cc-badge-chip').first()).toBeVisible()
@@ -467,7 +467,7 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
       await expect(tid(page, 'cc-remedial-table').locator('th')).toHaveText([
         'Pelajar',
         'Topik Lemah',
-        'Accuracy Terendah',
+        'Ketepatan Terendah',
         'Tindakan',
       ])
       await expectNoHorizontalScroll(page)

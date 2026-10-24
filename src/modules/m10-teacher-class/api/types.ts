@@ -345,7 +345,7 @@ export interface RajahGallery {
 /** The seven paper types of the S21 form (value = label). */
 export type PaperType =
   | 'Soalan Umum'
-  | 'Trial Paper'
+  | 'Kertas Percubaan'
   | 'Soalan DSKP'
   | 'Buku Teks'
   | 'Buku Latihan'

@@ -22,7 +22,7 @@ export const S2_COPY = {
   title: 'Command Center',
   live: 'LIVE',
   tz: 'MYT',
-  footer: 'Powered by ALESA AI · PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat',
+  footer: 'Dikuasakan oleh ALESA AI · PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat',
   noData: 'Tiada data',
   noActivity: 'Tiada aktiviti terkini',
   noWeek: 'Tiada data minggu ini',
@@ -42,10 +42,10 @@ export type NavAction = 'remedial' | 'evaluate' | 'predictive' | 'kelas' | 'badg
 export const NAV_LINKS: readonly { id: NavAction | 'rekod'; label: string; icon: string }[] = [
   { id: 'remedial', label: 'Remedial', icon: 'i-ph-flask' },
   { id: 'rekod', label: 'Rekod', icon: 'i-ph-chart-bar' },
-  { id: 'evaluate', label: 'Evaluate', icon: 'i-ph-warning' },
+  { id: 'evaluate', label: 'Nilai', icon: 'i-ph-warning' },
   { id: 'predictive', label: 'Ramalan SPM', icon: 'i-ph-crystal-ball' },
   { id: 'kelas', label: 'Kelas', icon: 'i-ph-chalkboard-teacher' },
-  { id: 'badges', label: 'Badges', icon: 'i-ph-trophy' },
+  { id: 'badges', label: 'Lencana', icon: 'i-ph-trophy' },
 ]
 export const REKOD_PATH = '/guru/remedial-progress'
 
@@ -60,11 +60,11 @@ export const MOODS: readonly { key: CcMoodName; icon: string; label: string }[] 
 export type BarColor = 'primary' | 'success' | 'warning' | 'error' | 'info' | 'neutral'
 
 export const BANDS: readonly { key: CcEngagementBand; label: string; bar: BarColor }[] = [
-  { key: 'champion', label: 'Champion', bar: 'success' },
+  { key: 'champion', label: 'Juara', bar: 'success' },
   { key: 'consistent', label: 'Konsisten', bar: 'primary' },
   { key: 'developing', label: 'Berkembang', bar: 'info' },
   { key: 'minimum', label: 'Minimum', bar: 'warning' },
-  { key: 'disengaged', label: 'Disengaged', bar: 'error' },
+  { key: 'disengaged', label: 'Tidak Terlibat', bar: 'error' },
 ]
 
 export const GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G'] as const
@@ -154,11 +154,11 @@ export function gpsTone(gps: number): string {
 
 /** FN-M10-2.2.13: Common >= 20, Uncommon >= 10, Rare >= 5, Epic >= 1, Legendary 0 holders. */
 export function rarityOf(holders: number): { label: string; tone: string } {
-  if (holders >= 20) return { label: 'Common', tone: 'text-muted' }
-  if (holders >= 10) return { label: 'Uncommon', tone: 'text-success' }
-  if (holders >= 5) return { label: 'Rare', tone: 'text-info' }
-  if (holders >= 1) return { label: 'Epic', tone: 'text-primary-t' }
-  return { label: 'Legendary', tone: 'text-warning' }
+  if (holders >= 20) return { label: 'Biasa', tone: 'text-muted' }
+  if (holders >= 10) return { label: 'Kurang Biasa', tone: 'text-success' }
+  if (holders >= 5) return { label: 'Jarang', tone: 'text-info' }
+  if (holders >= 1) return { label: 'Epik', tone: 'text-primary-t' }
+  return { label: 'Legenda', tone: 'text-warning' }
 }
 
 type AnyRisk = CcRisk | CcEvaluationRisk

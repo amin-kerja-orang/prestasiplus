@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * "Badges" -> "Achievement System — Scan & Award Badges" (FR-M10-25, FN-M10-2.2.13, BR-M10-16; read-only):
- * three cards, "Senarai Lencana" chips (name, "{n} pelajar", rarity), "Top Pengumpul Lencana",
+ * "Badges" -> "Sistem Pencapaian — Imbas & Anugerah Lencana" (FR-M10-25, FN-M10-2.2.13, BR-M10-16; read-only):
+ * three cards, "Senarai Lencana" chips (name, "{n} pelajar", rarity), "Pengumpul Lencana Teratas",
  * "Baru Dianugerahkan Hari Ini!"; a chip opens "Lencana: {nama}" (the holders of the badge).
  */
 import { computed, ref } from 'vue'
@@ -40,7 +40,7 @@ const collectors = computed<DrillRow[]>(() =>
 
 <template>
   <CcDialog
-    title="Achievement System — Scan & Award Badges"
+    title="Sistem Pencapaian — Imbas & Anugerah Lencana"
     testid="cc-badges-modal"
     wide
     @close="$emit('close')"
@@ -73,13 +73,13 @@ const collectors = computed<DrillRow[]>(() =>
       </ul>
 
       <template v-if="data.topCollectors.length">
-        <h4 class="text-subheading text-highlighted">Top Pengumpul Lencana</h4>
+        <h4 class="text-subheading text-highlighted">Pengumpul Lencana Teratas</h4>
         <CcTable
           :headers="COLLECTOR_HEADERS"
           :rows="collectors"
           testid="cc-collectors-table"
           row-testid="cc-collector-row"
-          caption="Top Pengumpul Lencana"
+          caption="Pengumpul Lencana Teratas"
         />
       </template>
 

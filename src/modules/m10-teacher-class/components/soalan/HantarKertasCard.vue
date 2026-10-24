@@ -16,15 +16,15 @@ import { COPY, fileKind, megabytes } from './lib'
 
 const TYPES = [
   'Soalan Umum',
-  'Trial Paper',
+  'Kertas Percubaan',
   'Soalan DSKP',
   'Buku Teks',
   'Buku Latihan',
   'Soalan Peperiksaan',
 ] as const
 const STEPS = [
-  { n: '1. Hantar', text: 'Upload fail anda' },
-  { n: '2. Proses', text: 'Admin extract soalan' },
+  { n: '1. Hantar', text: 'Muat naik fail anda' },
+  { n: '2. Proses', text: 'Admin ekstrak soalan' },
   { n: '3. Databank', text: 'Soalan tersedia' },
 ] as const
 
@@ -78,7 +78,7 @@ async function submit(): Promise<void> {
       <DsIconChip icon="i-ph-paper-plane-tilt-duotone" size="lg" />
       <div class="min-w-0">
         <h2 class="text-subheading text-highlighted">Hantar Kertas Soalan kepada Admin</h2>
-        <p class="text-body text-muted">Admin akan proses dan upload ke databank soalan</p>
+        <p class="text-body text-muted">Admin akan proses dan muat naik ke databank soalan</p>
       </div>
     </div>
 
@@ -102,7 +102,7 @@ async function submit(): Promise<void> {
         </p>
         <ul class="flex flex-col gap-1 pl-4">
           <li>Format diterima: <strong>PDF (teks), DOCX, XLSX</strong></li>
-          <li><strong>PDF scan imej TIDAK diterima</strong> — teks mesti boleh disalin</li>
+          <li><strong>PDF imbasan imej TIDAK diterima</strong> — teks mesti boleh disalin</li>
           <li><strong>Skema jawapan WAJIB</strong> disertakan bersama soalan</li>
           <li>Maksimum <strong>5 fail</strong>, saiz maksimum <strong>20MB</strong> setiap fail</li>
         </ul>

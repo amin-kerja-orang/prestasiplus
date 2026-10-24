@@ -8,7 +8,7 @@ export const DASH_COPY = {
   guideSteps: [
     {
       title: 'Buka Kelas',
-      text: 'Klik "Kelas Saya" di sidebar. Cipta kelas baru atau lihat kelas sedia ada.',
+      text: 'Klik "Kelas Saya" di bar sisi. Cipta kelas baru atau lihat kelas sedia ada.',
       link: 'Kelas Saya →',
       to: '/guru/kelas',
     },
@@ -26,8 +26,8 @@ export const DASH_COPY = {
     },
   ],
   tipLabel: 'Tip:',
-  tipText: 'Hover atas mana-mana menu di sidebar untuk lihat penerangan ringkas.',
-  checklistTitle: 'Checklist Guru',
+  tipText: 'Halakan tetikus ke atas mana-mana menu di bar sisi untuk melihat penerangan ringkas.',
+  checklistTitle: 'Senarai Semak Guru',
   checklistRows: [
     {
       key: 'hasClass',
@@ -38,7 +38,7 @@ export const DASH_COPY = {
     {
       key: 'hasStudents',
       title: 'Pelajar dalam kelas',
-      text: 'Admin akan import pelajar ke kelas anda',
+      text: 'Admin akan mengimport pelajar ke kelas anda',
       to: '/guru/pelajar',
     },
     {
@@ -63,23 +63,23 @@ export const DASH_COPY = {
   counterTopics: 'Topik',
   counterActions: 'Tindakan',
   colStudents: 'Pelajar Perlu Dibantu',
-  top3: 'Top 3',
+  top3: '3 Teratas',
   emptyStudents: 'Tiada pelajar berkeutamaan tinggi dikesan buat masa ini.',
   colTopics: 'Topik Kritikal',
   analytics: 'Analitik Kelas →',
   emptyTopics: 'Tiada topik kritikal menonjol dikesan daripada data semasa.',
   colActions: 'Tindakan Disyorkan',
-  ruleBased: 'Rule-based',
+  ruleBased: 'Berasaskan peraturan',
   actionTitle: 'Bina aktiviti pertama untuk pelajar',
   actionBadge: 'Permulaan',
   actionText: 'Data tindakan akan muncul selepas pelajar mula membuat latihan.',
   actionLink: 'Buka Kelas →',
-  peerLabel: 'Peer Tutor Matching',
+  peerLabel: 'Padanan Rakan Pembimbing',
   peerTitle: 'Cadangan rakan pembimbing pelajar',
   peerText:
-    'Cadangan peer tutor akan muncul apabila guru mempunyai pelajar aktif dan data prestasi yang mencukupi.',
+    'Cadangan rakan pembimbing akan muncul apabila guru mempunyai pelajar aktif dan data prestasi yang mencukupi.',
   peerEmpty:
-    'Belum cukup signal yang yakin untuk cadangan peer tutor. Modul ini akan jadi lebih tepat apabila data pelajar dan subjek bertambah.',
+    'Belum cukup isyarat yang yakin untuk cadangan rakan pembimbing. Modul ini akan jadi lebih tepat apabila data pelajar dan subjek bertambah.',
   quickTitle: 'Tindakan Pantas',
   quick: [
     { title: 'Cipta Kelas Baru', text: 'Tambah kelas pembelajaran', to: '/guru/kelas/cipta' },
@@ -98,6 +98,6 @@ export const DASH_COPY = {
   submissionsEmpty: 'Belum ada penghantaran tugasan.',
   submissionsHint: 'Buat tugasan di kelas untuk lihat penghantaran di sini.',
   // Load failure is unobserved on live: neutral PROPOSED text, as on sibling M10 pages.
-  loadFailed: 'Gagal memuatkan dashboard. Sila cuba lagi.',
-  retry: 'Cuba Lagi',
+  loadFailed: 'Gagal memuatkan papan pemuka. Sila cuba semula.',
+  retry: 'Cuba Semula',
 } as const
