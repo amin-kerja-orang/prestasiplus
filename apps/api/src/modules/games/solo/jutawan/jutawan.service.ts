@@ -56,6 +56,9 @@ function parseDarjah(raw: unknown): number | undefined {
   return r.data.darjah
 }
 
+/** How long the lobby tile counts of `page()` are reused (the `start` gate always counts fresh). */
+const TILE_COUNT_TTL_MS = 60_000
+
 /** Jutawan Ilmu (M16-36 to M16-39): 15 keyless questions on a difficulty ladder, one wrong answer ends the run. */
 @Injectable()
 export class JutawanService {
@@ -70,6 +73,26 @@ export class JutawanService {
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
+  private readonly tileCounts = new Map<string, { at: number; value: Promise<number> }>()
+
+  /**
+   * Eligible count of one (subject, level) tile for the lobby: cached `TILE_COUNT_TTL_MS` of Clock time, single flight, a failed
+   * read is dropped. Only the page uses it; `start` gates on a fresh `eligibleCount`.
+   */
+  private tileCount(subjectId: string, levelId: string): Promise<number> {
+    const key = `${subjectId}:${levelId}`
+    const now = this.clock.now().getTime()
+    const hit = this.tileCounts.get(key)
+    if (hit && now >= hit.at && now - hit.at < TILE_COUNT_TTL_MS) return hit.value
+    const value = this.questions.eligibleCount({ subjectId, educationLevelId: levelId })
+    const entry = { at: now, value }
+    this.tileCounts.set(key, entry)
+    value.catch(() => {
+      if (this.tileCounts.get(key) === entry) this.tileCounts.delete(key)
+    })
+    return value
+  }
+
   async page(caller: GamesCaller, darjahRaw: unknown): Promise<Record<string, unknown>> {
     const darjah = parseDarjah(darjahRaw)
     const base = await this.repo.stats(caller.userId)
@@ -77,13 +100,14 @@ export class JutawanService {
     const levelId = await this.subjects.levelIdOfGrade(darjah)
     const tiles: Record<string, unknown>[] = []
     if (levelId !== null) {
-      for (const s of await this.curriculum.subjects({ active: true })) {
-        const id = idToString(s.id)
-        const count = await this.questions.eligibleCount({ subjectId: id, educationLevelId: levelId })
-        if (count <= 0) continue
+      const subjects = await this.curriculum.subjects({ active: true })
+      const counts = await Promise.all(subjects.map((s) => this.tileCount(idToString(s.id), levelId)))
+      subjects.forEach((s, i) => {
+        const count = counts[i] as number
+        if (count <= 0) return
         const tile = TILES[s.code] ?? TILE_FALLBACK
-        tiles.push({ id, name: s.name, emoji: tile.emoji, colour: tile.colour, count })
-      }
+        tiles.push({ id: idToString(s.id), name: s.name, emoji: tile.emoji, colour: tile.colour, count })
+      })
     }
     return { ...base, heading: darjah <= 6 ? `DARJAH ${String(darjah)}` : `TINGKATAN ${String(darjah - 6)}`, subjects: tiles }
   }

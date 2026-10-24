@@ -573,6 +573,7 @@
       "question_id": "keep",
       "label": "keep",
       "body": "keep",
+      "image_path": "pseudonym:path",
       "is_correct": "keep"
     },
     "structured_questions": {

@@ -27,7 +27,7 @@ import { invalid, tryParseStrict } from '../strict-body'
 import { MISSION_AUDIT, REMEDIAL_MAX_QUESTIONS } from './missions.constants'
 import { MissionsRepository, type RemedialRecord } from './missions.repository'
 import { QuestionPool } from './question-pool'
-import { type AnswerFact, percent, round, shuffled, type TopicInfo, topicKeyOf, weakTopicsOf, type WeakTopic } from './remedial.rules'
+import { type AnswerFact, percent, round, type TopicInfo, topicKeyOf, weakTopicsOf, type WeakTopic } from './remedial.rules'
 
 const LETTERS = 'ABCDEFGH'
 /** Parallel reads of the scan (per-pupil answer logs, SP lookups). */
@@ -379,9 +379,6 @@ export class RemedialService {
       }
     }
     const base = { subjectId, ...(educationLevelId ? { educationLevelId } : {}) }
-    // Read at most once, and only when a chapter topic needs it; filtered in memory for every topic.
-    let catalog: Awaited<ReturnType<QuestionPool['catalog']>> | null = null
-
     for (const w of weak) {
       if (picked.length >= REMEDIAL_MAX_QUESTIONS) break
       const [kind, id = ''] = w.key.split(':')
@@ -390,9 +387,7 @@ export class RemedialService {
       if (kind === 'sp') {
         take(await this.questions.sample({ ...base, type: 'mcq', spId: id, excludeIds: [...taken] }, want, rng))
       } else {
-        catalog ??= await this.pool.catalog(base)
-        const inChapter = catalog.filter((e) => e.chapterId === id && !taken.has(e.id)).map((e) => e.id)
-        take(shuffled(inChapter, rng).slice(0, want))
+        take(await this.pool.draw({ ...base, chapterId: id, excludeIds: [...taken] }, want, rng))
       }
     }
     if (picked.length < REMEDIAL_MAX_QUESTIONS) {
