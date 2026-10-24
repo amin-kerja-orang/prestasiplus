@@ -296,7 +296,7 @@ const cardFields: CardField[] = [
                   type="number"
                   name="user_id"
                   required
-                  placeholder="User ID"
+                  placeholder="ID Pengguna"
                   class="w-full"
                   :color="invalid ? 'error' : undefined"
                   :aria-describedby="describedby"
@@ -362,7 +362,7 @@ const cardFields: CardField[] = [
           type="text"
           name="search"
           aria-label="Cari"
-          placeholder="Cari nama / email..."
+          placeholder="Cari nama / emel..."
           icon="i-ph-magnifying-glass"
           class="w-full md:min-w-72 md:grow"
           data-testid="access-search"

@@ -188,7 +188,7 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
       await expect(hero).toContainText('Purata Bahagian B')
       await expect(page.getByTestId('avg-b')).toHaveText('0.0%')
       const cuts = [
-        ['domains', 'Latih Tubi Domains', 'Fokus pada topik tertentu', 'domains'],
+        ['domains', 'Latih Tubi Domain', 'Fokus pada topik tertentu', 'domains'],
         ['exam', 'Peperiksaan Penuh', 'Simulasi peperiksaan sebenar', 'exam'],
         ['history', 'Sejarah', 'Lihat prestasi lepas', 'history'],
       ] as const

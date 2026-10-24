@@ -42,7 +42,7 @@ const shortcuts = computed(
         key: 'domains',
         icon: 'i-ph-target-duotone',
         accent: 'action',
-        title: 'Latih Tubi Domains',
+        title: 'Latih Tubi Domain',
         text: 'Fokus pada topik tertentu',
         to: `/pksk/level/${props.level}/domains`,
       },
