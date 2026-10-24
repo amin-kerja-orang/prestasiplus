@@ -2,7 +2,8 @@
 /**
  * Applied-filter chips (design language 9.2): each chip shows the value and is removable, followed
  * by a "Set Semula" link. Renders nothing without chips. The URL stays the state; the caller removes
- * the query param on `remove` / `reset`.
+ * the query param on `remove` / `reset`. A long chip value truncates so the row never widens the
+ * page (UAT T6 BUG-T6-01).
  */
 import { dsCopy, fillCopy } from './copy'
 
@@ -32,7 +33,8 @@ const emit = defineEmits<{ remove: [key: string]; reset: [] }>()
       type="button"
       color="neutral"
       variant="soft"
-      class="min-h-11"
+      class="min-h-11 max-w-full"
+      :ui="{ label: 'truncate min-w-0' }"
       trailing-icon="i-ph-x"
       :label="c.label"
       :aria-label="fillCopy(dsCopy.filterRemove, { name: c.label })"

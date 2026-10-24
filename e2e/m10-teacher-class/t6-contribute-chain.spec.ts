@@ -222,14 +222,12 @@ test.describe('M10 T6 contribution chain', MODULE, () => {
   })
 })
 
-test.describe('M10 T6 known layout defect', MODULE, () => {
+test.describe('M10 T6 layout', MODULE, () => {
   test('BUG-T6-01 a long search term keeps the active-filter chip inside the page at 375', async ({
     page,
     loginAs,
   }) => {
-    // Expected to fail below 640 px until DsActiveFilters truncates its chip (it is 576 px wide, so
-    // the page scrolls sideways by ~220 px). Playwright reports an unexpected pass once it is fixed.
-    test.fail(viewportWidth(page) < 640, 'BUG-T6-01: DsActiveFilters chip has no max width')
+    // BUG-T6-01: a long search chip used to widen the page by ~220 px at 375 px.
     await loginAs(ADMIN)
     await reopen(page, '/admin/questions')
     await expect(tid(page, 'questions-table')).toBeVisible()
