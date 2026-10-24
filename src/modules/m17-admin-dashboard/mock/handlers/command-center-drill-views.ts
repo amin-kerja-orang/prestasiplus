@@ -316,7 +316,7 @@ export function buildStudent(userId: number, scope: DrillScope, now: number): Cc
     weeks,
     moodTrend,
     headcount: headcountRows(userId, scope),
-    insight: { texts, source: 'Rule-based Analysis' },
+    insight: { texts, source: 'Analisis Berasaskan Peraturan' },
   }
 }
 

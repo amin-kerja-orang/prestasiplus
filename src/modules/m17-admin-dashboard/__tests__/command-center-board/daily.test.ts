@@ -72,7 +72,7 @@ describe('S3 admin', () => {
       'Pelajar Aktif',
       'Soalan Dijawab',
       'Sesi Latihan',
-      'Engagement',
+      'Penglibatan',
     ])
     expect(texts(w, 'cc-pulse-value')).toEqual(['1', '2', '1', '60', '3/3', '0'])
     expect(texts(w, 'cc-pulse-sub')).toEqual([
@@ -102,7 +102,7 @@ describe('S3 admin', () => {
     expect(w.find('[data-testid="cc-subjects-chart"]').exists()).toBe(true)
     expect(w.find('[data-testid="cc-heat-chart"]').exists()).toBe(true)
     expect(texts(w, 'cc-daily-feed-row')[0]).toContain('Pelajar Contoh Satu')
-    expect(texts(w, 'cc-login-role')).toEqual(['admin', 'student', 'student', 'teacher'])
+    expect(texts(w, 'cc-login-role')).toEqual(['Admin', 'Murid', 'Murid', 'Guru'])
     expect(texts(w, 'cc-login-package')).toEqual(['ADMIN', 'SEKOLAH', 'FREE', 'SEKOLAH'])
     expect(texts(w, 'cc-login-school')).toEqual([
       'SMK CONTOH EMPAT',
@@ -118,7 +118,7 @@ describe('S3 admin', () => {
     ])
     expect(texts(w, 'cc-daily-top-answers')).toEqual(['60 jwb'])
     expect(w.get('[data-testid="cc-panel-daily-mood"]').text()).toContain('Tiada data')
-    expect(w.get('[data-testid="cc-panel-badges"]').text()).toContain('Tiada badge baru')
+    expect(w.get('[data-testid="cc-panel-badges"]').text()).toContain('Tiada lencana baharu')
     w.unmount()
   })
 
@@ -221,7 +221,7 @@ describe('S3 admin', () => {
       'Tiada login',
       'Tiada data',
       'Tiada data',
-      'Tiada badge baru',
+      'Tiada lencana baharu',
     ])
     w.unmount()
   })

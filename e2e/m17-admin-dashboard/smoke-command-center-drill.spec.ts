@@ -74,7 +74,7 @@ test.describe('S4 school', MODULE, () => {
   }) => {
     await gotoApp(`${CC}/school/8082`)
     await expect(page.getByTestId('cc-teacher-row').first()).toBeVisible()
-    await expectHeader(page, '← Kembali ke Overview')
+    await expectHeader(page, '← Kembali ke Gambaran Keseluruhan')
     await expect(page.getByTestId('cc-back')).toHaveAttribute('href', CC)
     await expect(page.getByTestId('cc-crumb-current')).toHaveText(/\S/)
     const name = (await page.getByTestId('cc-crumb-current').innerText()).trim()
@@ -262,7 +262,7 @@ test.describe('S7 student', MODULE, () => {
       'Aktiviti Mingguan (8 Minggu)',
       'Trend Mood (30 Hari)',
       'HeadCount',
-      'ALESA AI Insight',
+      'Wawasan ALESA AI',
     ])
     // subject rows: "{subjek} 🔍", the ratio, the live title; free practice reads "Latihan Bebas" when present
     const subjectRow = page.getByTestId('cc-subject-row').first()
@@ -301,7 +301,7 @@ test.describe('S7 student', MODULE, () => {
       .evaluateAll((rows) => rows.map((r) => r.querySelectorAll('td')[5]?.textContent.trim()))
     for (const d of dates) expect(d).toMatch(/^\d{2}\/\d{2}\/\d{4}$/)
     await expect(page.getByTestId('cc-insight')).toContainText('Analisis ALESA')
-    await expect(page.getByTestId('cc-insight')).toContainText('Sumber: Rule-based Analysis')
+    await expect(page.getByTestId('cc-insight')).toContainText('Sumber: Analisis Berasaskan Peraturan')
     await expect(page.getByTestId('cc-insight-text')).toContainText('Ketepatan cemerlang (93.5%).')
   })
 

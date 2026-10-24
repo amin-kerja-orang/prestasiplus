@@ -4,7 +4,7 @@
  * and `/admin-sekolah/command-center` (school-scope alias).
  */
 export interface CcPaths {
-  /** The S2 board of the same scope ("Command Center", "← Kembali ke Overview"). */
+  /** The S2 board of the same scope ("Command Center", "← Kembali ke Gambaran Keseluruhan"). */
   overview: string
   school: (schoolId: number) => string
   teacher: (schoolId: number, userId: number) => string

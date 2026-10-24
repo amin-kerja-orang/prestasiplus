@@ -4,7 +4,7 @@
  * `/admin-sekolah/command-center` (M17 FR-M17-20..33, FR-M17-101..112; M17-T3b), v2: the staff theme in its own
  * frame (no shell wraps these `bare` routes). Polls `live-data` every 10 s, a 1 s MYT clock, four counters, the
  * panels and the footer. The alias (`alias` prop) renders the same board for the school the server derives from
- * the session: no "Top Sekolah", the SERVER-defined school copy and the school's own 7 days under "Engagement".
+ * the session: no "Sekolah Teratas", the SERVER-defined school copy and the school's own 7 days under "Engagement".
  * Panels stack in 1 column at 375, 2 at 768 and 3 from 1280 (DV-M17-01).
  */
 import { computed } from 'vue'

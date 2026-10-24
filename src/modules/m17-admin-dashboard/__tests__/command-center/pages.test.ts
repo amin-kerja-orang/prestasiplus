@@ -147,7 +147,7 @@ const student: CcStudent = {
   ],
   insight: {
     texts: ['Ketepatan cemerlang (93.5%).', 'Konsistensi rendah (27%) - perlu usaha lebih.'],
-    source: 'Rule-based Analysis',
+    source: 'Analisis Berasaskan Peraturan',
   },
 }
 const sessions: CcSessionList = {
@@ -293,7 +293,7 @@ describe('S4 school', () => {
   it('renders the header, breadcrumb, cards, teacher list and sets the tab title', async () => {
     const w = await render(CommandCenterSchoolPage, { schoolId: 8080 })
     expect(w.get('[data-testid=cc-title]').text()).toBe('PrestasiPlus Command Center')
-    expect(w.get('[data-testid=cc-back]').text()).toBe('Kembali ke Overview')
+    expect(w.get('[data-testid=cc-back]').text()).toBe('Kembali ke Gambaran Keseluruhan')
     expect(w.get('[data-testid=cc-back]').attributes('href')).toBe('/admin/command-center')
     expect(crumbLinks(w)[0]).toBe('Command Center')
     expect(crumbCurrent(w)).toBe('SMK Contoh')
@@ -458,7 +458,7 @@ describe('S7 student', () => {
       'Aktiviti Mingguan (8 Minggu)',
       'Trend Mood (30 Hari)',
       'HeadCount',
-      'ALESA AI Insight',
+      'Wawasan ALESA AI',
     ])
     expect(w.get('[data-testid=cc-subject-row]').text()).toContain('Latihan Bebas')
     expect(w.get('[data-testid=cc-subject-ratio]').text()).toBe('2223/2378')
@@ -482,7 +482,7 @@ describe('S7 student', () => {
       'Ketepatan cemerlang (93.5%). Konsistensi rendah (27%) - perlu usaha lebih.',
     )
     expect(w.get('[data-testid=cc-insight]').text()).toContain('Analisis ALESA')
-    expect(w.get('[data-testid=cc-insight]').text()).toContain('Sumber: Rule-based Analysis')
+    expect(w.get('[data-testid=cc-insight]').text()).toContain('Sumber: Analisis Berasaskan Peraturan')
     expect(document.title).toBe('Murid Satu - Command Center')
   })
 
@@ -657,7 +657,7 @@ describe('S7 student', () => {
     expect(modalStats()).toEqual(['TekananMood', 'PeperiksaanSebab'])
     // the week of 07/09 has no sessions: the page data proves it
     expect(body('cc-modal-empty')?.textContent.trim()).toBe(
-      'Tiada sesi latihan pada hari ini. Pelajar hanya checkin mood.',
+      'Tiada sesi latihan pada hari ini. Pelajar hanya mendaftar masuk mood.',
     )
     ;(body('cc-modal-close') as HTMLElement).click()
     await flushPromises()

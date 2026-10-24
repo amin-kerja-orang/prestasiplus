@@ -147,7 +147,7 @@ export interface CcHeadcountRow {
 
 export interface CcInsight {
   texts: string[]
-  source: 'Rule-based Analysis'
+  source: 'Analisis Berasaskan Peraturan'
 }
 
 export interface CcStudent {

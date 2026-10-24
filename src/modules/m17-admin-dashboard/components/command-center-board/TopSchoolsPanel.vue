@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** "Top Sekolah" (FR-M17-24, FN-M17-3.3.1): up to 5 rows, rank badge, school link to S4, "{n} plj". */
+/** "Sekolah Teratas" (FR-M17-24, FN-M17-3.3.1): up to 5 rows, rank badge, school link to S4, "{n} plj". */
 import { formatCount } from '@/lib/number'
 
 import type { CcTopSchool } from '../../api/command-center-board'
@@ -13,7 +13,7 @@ const paths = ccPaths(props.basePath)
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-trophy" title="Top Sekolah" testid="cc-panel-top-schools">
+  <BoardPanel icon="i-ph-trophy" title="Sekolah Teratas" testid="cc-panel-top-schools">
     <p v-if="rows === null" class="text-body text-muted">{{ S2_COPY.loading }}</p>
     <p v-else-if="rows.length === 0" class="text-body text-muted" data-testid="cc-empty">
       {{ S2_COPY.noData }}

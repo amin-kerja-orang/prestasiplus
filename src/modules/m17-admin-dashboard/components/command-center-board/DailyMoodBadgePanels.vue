@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * "Mood Pelajar" and "Badge Terkini" of S3 (FR-M17-47, FN-M17-4.4.6, 4.4.7): the period's mood check-ins as four
- * tiles ("Tiada data" when none) and the badges earned ("Tiada badge baru" when none). Two cards, stacked.
+ * "Mood Pelajar" and "Lencana Terkini" of S3 (FR-M17-47, FN-M17-4.4.6, 4.4.7): the period's mood check-ins as four
+ * tiles ("Tiada data" when none) and the badges earned ("Tiada lencana baharu" when none). Two cards, stacked.
  */
 import { formatCount } from '@/lib/number'
 
@@ -45,7 +45,7 @@ defineProps<{ data: CcDailyActivity | null; status: LoadStatus }>()
         </li>
       </ul>
     </DailyPanel>
-    <DailyPanel title="Badge Terkini" icon="i-ph-medal" testid="cc-panel-badges" :state="status">
+    <DailyPanel title="Lencana Terkini" icon="i-ph-medal" testid="cc-panel-badges" :state="status">
       <p
         v-if="!data || data.engagement.recentBadges.length === 0"
         class="text-body text-muted"

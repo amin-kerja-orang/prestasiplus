@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "Live Feed" (FR-M17-28, FN-M17-3.3.5): the 10 latest answers - time, pupil, subject, school (cut to 15
+ * "Suapan Langsung" (FR-M17-28, FN-M17-3.3.5): the 10 latest answers - time, pupil, subject, school (cut to 15
  * characters, link to S4, full name in `title`), "✓" / "✗". Names are text, never HTML (DV-M17-26).
  */
 import type { CcFeedRow } from '../../api/command-center-board'
@@ -14,7 +14,7 @@ const paths = ccPaths(props.basePath)
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-lightning" title="Live Feed" testid="cc-panel-feed">
+  <BoardPanel icon="i-ph-lightning" title="Suapan Langsung" testid="cc-panel-feed">
     <p v-if="rows === null" class="text-body text-muted">{{ S2_COPY.loading }}</p>
     <p v-else-if="rows.length === 0" class="text-body text-muted" data-testid="cc-empty">
       {{ S2_COPY.noFeed }}

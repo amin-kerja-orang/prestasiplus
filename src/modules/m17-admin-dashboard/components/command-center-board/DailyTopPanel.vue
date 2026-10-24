@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** "Top Pelajar" of S3 (FR-M17-46, FN-M17-4.4.5): up to 5 rows - rank, pupil link to S7, school, "{n} jwb", accuracy. */
+/** "Pelajar Teratas" of S3 (FR-M17-46, FN-M17-4.4.5): up to 5 rows - rank, pupil link to S7, school, "{n} jwb", accuracy. */
 import { formatCount, formatNumber } from '@/lib/number'
 
 import type { CcDailyActivity } from '../../api/command-center-board'
@@ -14,7 +14,7 @@ const paths = ccPaths(props.basePath)
 </script>
 
 <template>
-  <DailyPanel title="Top Pelajar" icon="i-ph-star" testid="cc-panel-daily-top" :state="status">
+  <DailyPanel title="Pelajar Teratas" icon="i-ph-star" testid="cc-panel-daily-top" :state="status">
     <p
       v-if="!data || data.topStudents.length === 0"
       class="py-2 text-body text-muted"

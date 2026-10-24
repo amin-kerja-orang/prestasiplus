@@ -6,7 +6,7 @@
 import type { CcDailyActivity, CcLoginRow } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
 import { shortSchool } from '../command-center/cc-format'
-import { S3_COPY } from './board-copy'
+import { ROLE_LABEL, S3_COPY } from './board-copy'
 import type { LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
 
@@ -52,7 +52,7 @@ function link(row: CcLoginRow): string | null {
           size="sm"
           class="shrink-0"
           data-testid="cc-login-role"
-          >{{ r.role }}</UBadge
+          >{{ ROLE_LABEL[r.role] ?? r.role }}</UBadge
         >
         <UButton
           v-if="link(r)"

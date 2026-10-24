@@ -116,7 +116,7 @@ describe('platform view: observed figures the owners reproduce', () => {
     expect(platform.answeredWeek).toBe(2508)
   })
 
-  it('"Top Pelajar Minggu Ini" (FR-M17-29): the observed five, names fictitious', () => {
+  it('"Pelajar Teratas Minggu Ini" (FR-M17-29): the observed five, names fictitious', () => {
     expect(
       platform.topStudents.map((s) => [s.studentId, s.answersCount, s.accuracy, s.schoolName]),
     ).toEqual([
@@ -130,7 +130,7 @@ describe('platform view: observed figures the owners reproduce', () => {
   })
 
   // 8082 / 8080 follow M11 (D9); 8078 / 8106 are the computed counts of the owners' datasets.
-  it('"Top Sekolah" (FR-M17-24): five schools by engaged pupils; 8082 and 8080 hold the M11 values (D9)', () => {
+  it('"Sekolah Teratas" (FR-M17-24): five schools by engaged pupils; 8082 and 8080 hold the M11 values (D9)', () => {
     const rows = platform.topSchools
     expect(rows).toHaveLength(5)
     expect(rows.map((r) => r.schoolId)).toEqual([8082, 8078, 8106, 8080, 8090])
@@ -146,7 +146,7 @@ describe('platform view: observed figures the owners reproduce', () => {
     }
   })
 
-  it('"Top Sekolah" figures equal an independent read of the answer facts', () => {
+  it('"Sekolah Teratas" figures equal an independent read of the answer facts', () => {
     for (const row of platform.topSchools) {
       const ids = pupilsOf(row.schoolId)
       const facts = practice.answerFacts(ids)
@@ -179,7 +179,7 @@ describe('platform view: observed figures the owners reproduce', () => {
     expect(platform.mood).toEqual({ happy: 307, okay: 280, sad: 72, stressed: 91 })
   })
 
-  it('"Live Feed" (FR-M17-28): the 10 latest answers, newest first, school name beside each', () => {
+  it('"Suapan Langsung" (FR-M17-28): the 10 latest answers, newest first, school name beside each', () => {
     expect(platform.recentFeed).toHaveLength(10)
     for (const row of platform.recentFeed) {
       expect(row.time).toMatch(/^\d{2}:\d{2}$/)
@@ -267,7 +267,7 @@ describe('school admin view (BR-M17-34, FR-M17-105…111)', () => {
     'Murid Demo 2013',
   ]
 
-  it('keeps the shape, scopes it to the session school and empties "Top Sekolah"', () => {
+  it('keeps the shape, scopes it to the session school and empties "Sekolah Teratas"', () => {
     expect(Object.keys(sa8078).sort()).toEqual(Object.keys(platform).sort())
     expect(sa8078.scope).toBe('school')
     expect(sa8078.school).toEqual({
@@ -327,7 +327,7 @@ describe('school admin view (BR-M17-34, FR-M17-105…111)', () => {
     )
   })
 
-  it('"Top Pelajar", "Live Feed" and the whole body hold no pupil or school of another school (FR-M17-110, FR-M17-115)', () => {
+  it('"Pelajar Teratas", "Suapan Langsung" and the whole body hold no pupil or school of another school (FR-M17-110, FR-M17-115)', () => {
     const ids = new Set(pupilsOf(8078))
     expect(sa8078.topStudents.length).toBeGreaterThan(0)
     for (const s of sa8078.topStudents) {

@@ -194,7 +194,7 @@ describe('platform view: the observed figures the owners reproduce', () => {
     }
   })
 
-  it('"Top Pelajar" (FR-M17-46): today 160 · 80 · 80 · 20; week the observed five; month the observed five', () => {
+  it('"Pelajar Teratas" (FR-M17-46): today 160 · 80 · 80 · 20; week the observed five; month the observed five', () => {
     const rows = (p: CcPeriod) => admin[p].topStudents.map((s) => [s.userId, s.answers, s.accuracy])
     expect(rows('today')).toEqual([
       [2016, 160, 73.8],
@@ -409,7 +409,7 @@ describe('platform view: figures against an independent read', () => {
     expect(names.get('BIO')).toBe('Biologi')
   })
 
-  it('"Live Feed" (FR-M17-43): at most 10 answers of the period, newest first', () => {
+  it('"Suapan Langsung" (FR-M17-43): at most 10 answers of the period, newest first', () => {
     for (const p of ['today', 'week', 'month'] as const) {
       const feed = admin[p].liveFeed
       expect(feed).toHaveLength(10)
