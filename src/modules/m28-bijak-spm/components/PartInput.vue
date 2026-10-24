@@ -6,7 +6,7 @@
  *  - short_text: a text area.
  * Every change emits a whole new answer; the page autosaves it.
  */
-import { computed, ref, type Directive } from 'vue'
+import { computed, ref } from 'vue'
 
 import { DsStack, DsText } from '@/ds'
 
@@ -40,28 +40,6 @@ const finalInvalid = computed(
     finalTouched.value &&
     !isReadableNumber(answer.value.final ?? ''),
 )
-/**
- * Numeric leaves ask the phone for the decimal keypad. The maths field owns its `inputmode` (it is
- * `none` while its on-screen keypad is open, `text` otherwise), so this directive turns `text` into
- * `decimal` on the field inside the wrapper and keeps doing so after every change.
- */
-type WithObserver = HTMLElement & { __decimalObserver?: MutationObserver }
-const vDecimalInputmode: Directive<WithObserver, boolean> = {
-  mounted(el, { value }) {
-    const input = el.querySelector('input')
-    if (!value || !input) return
-    const apply = (): void => {
-      if (input.getAttribute('inputmode') === 'text') input.setAttribute('inputmode', 'decimal')
-    }
-    apply()
-    el.__decimalObserver = new MutationObserver(apply)
-    el.__decimalObserver.observe(input, { attributes: true, attributeFilter: ['inputmode'] })
-  },
-  unmounted(el) {
-    el.__decimalObserver?.disconnect()
-  },
-}
-
 const photoError = ref('')
 const urls = ref<Record<string, string>>({})
 const fileInput = ref<{ $el: HTMLElement } | null>(null)
@@ -206,15 +184,12 @@ async function dropPhoto(key: string): Promise<void> {
         >
       </fieldset>
 
-      <DsStack
-        v-decimal-inputmode="leaf.kind === 'numeric'"
-        gap="xs"
-        @focusout="finalTouched = true"
-      >
+      <DsStack gap="xs" @focusout="finalTouched = true">
         <MathField
           :model-value="answer.final ?? ''"
           label="Jawapan akhir"
           placeholder="cth. 13"
+          :inputmode="leaf.kind === 'numeric' ? 'decimal' : 'text'"
           :disabled="disabled"
           @update:model-value="update({ final: $event })"
         />
