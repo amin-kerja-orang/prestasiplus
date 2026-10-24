@@ -1,7 +1,7 @@
 /**
  * `migrate:archive-minimise` (AM-09, LEAD decision 18 / Q12) against a real PostgreSQL on the `cloud-tiny` fixture with a
- * few synthetic rows (fictitious text only): dry-run changes nothing; apply nulls exactly user_id (five tables) and
- * question_reports.reason; a second apply changes 0 rows; refused without the Q9 export summary and without each gate;
+ * few synthetic rows (fictitious text only): dry-run changes nothing; apply nulls exactly the person columns (reporter_id,
+ * teacher_id, imported_by; five tables) and question_reports.description; a second apply changes 0 rows; refused without the Q9 export summary and without each gate;
  * refused (exit 4) while the source lock is held; output holds counts only.
  */
 import { mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -19,7 +19,15 @@ import '../../../src/migration/orchestrate'
 
 const outRoot = join(REPO_ROOT, '.migration-out', `am09-minimise-${process.pid}`)
 const MARK = 'ZQXJ-pelapor-penanda-9137'
-const TABLES = ['question_reports', 'question_submissions', 'question_imports', 'spm_sets', 'teacher_reference_documents']
+/** The columns the command empties, per table (the real .cloud names). `spm_sets` has no person column any more. */
+const PERSON: Record<string, string[]> = {
+  question_reports: ['reporter_id', 'description'],
+  question_submissions: ['teacher_id'],
+  question_imports: ['imported_by'],
+  teacher_reference_documents: ['teacher_id'],
+  teacher_reference_papers: ['teacher_id'],
+}
+const TABLES = Object.keys(PERSON)
 let env: StagingDb
 let summary: string
 
@@ -32,19 +40,21 @@ async function run(argv: string[], envOverride?: Record<string, string | undefin
 }
 const base = (extra: string[] = []) => ['migrate:archive-minimise', '--confirm', env.db.name, '--export-summary', summary, ...extra]
 
-/** Every column except user_id / reason, as JSON per row, per table. */
+/** Every column except the person columns and `_row_hash`, as JSON per row, per table. */
 async function others(pool: pg.Pool): Promise<Record<string, string[]>> {
   const out: Record<string, string[]> = {}
   for (const t of TABLES) {
-    const r = await pool.query<{ j: string }>(`select (to_jsonb(x) - 'user_id' - 'reason' - '_row_hash')::text as j from archive_cloud."${t}" x order by id`)
+    const minus = [...(PERSON[t] ?? []), '_row_hash'].map((c) => ` - '${c}'`).join('')
+    const r = await pool.query<{ j: string }>(`select (to_jsonb(x)${minus})::text as j from archive_cloud."${t}" x order by id`)
     out[t] = r.rows.map((x) => x.j)
   }
   return out
 }
 async function notNull(pool: pg.Pool): Promise<Record<string, number>> {
   const out: Record<string, number> = {}
-  for (const t of TABLES) out[`${t}.user_id`] = Number((await pool.query<{ n: string }>(`select count(user_id)::text n from archive_cloud."${t}"`)).rows[0]?.n)
-  out['question_reports.reason'] = Number((await pool.query<{ n: string }>(`select count(reason)::text n from archive_cloud.question_reports`)).rows[0]?.n)
+  for (const t of TABLES) {
+    for (const c of PERSON[t] ?? []) out[`${t}.${c}`] = Number((await pool.query<{ n: string }>(`select count("${c}")::text n from archive_cloud."${t}"`)).rows[0]?.n)
+  }
   return out
 }
 
@@ -69,11 +79,11 @@ async function hashes(pool: pg.Pool): Promise<Record<string, string[]>> {
   }
   return out
 }
-/** Ids whose user_id or reason is still set (the rows the apply touches). */
+/** Ids where a person column is still set (the rows the apply touches). */
 async function touchedIds(pool: pg.Pool): Promise<Record<string, string[]>> {
   const out: Record<string, string[]> = {}
   for (const t of TABLES) {
-    const cond = t === 'question_reports' ? 'user_id is not null or reason is not null' : 'user_id is not null'
+    const cond = (PERSON[t] ?? []).map((c) => `"${c}" is not null`).join(' or ')
     out[t] = (await pool.query<{ id: string }>(`select id::text from archive_cloud."${t}" where ${cond} order by id`)).rows.map((x) => x.id)
   }
   return out
@@ -85,15 +95,17 @@ beforeAll(async () => {
   env.pool.on('error', () => undefined)
   await loadStaging(env.pool, new DirReader(FIXTURE_DIR), { env: stagingEnv(env.db) })
   const ts = `'2026-03-01T17:15:00Z', '2026-03-02T00:00:00Z'`
-  for (const [id, u, status, reason] of [[9001, 1, 'baru', `${MARK} satu`], [9002, 2, 'selesai', `${MARK} dua`], [9003, 3, 'menunggu', null]] as const) {
-    await env.pool.query(`insert into archive_cloud.question_reports (id, question_id, user_id, status, reason, created_at, updated_at) values ($1, 1, $2, $3, $4, ${ts})`, [id, u, status, reason])
+  for (const [id, u, status, description] of [[9001, 1, 'baru', `${MARK} satu`], [9002, 2, 'selesai', `${MARK} dua`], [9003, 3, 'menunggu', null]] as const) {
+    await env.pool.query(`insert into archive_cloud.question_reports (id, question_id, reporter_id, status, report_type, description, created_at, updated_at) values ($1, 1, $2, $3, 'salah_jawapan', $4, ${ts})`, [id, u, status, description])
   }
   for (const [id, u, status] of [[9001, 1, 'menunggu'], [9002, 2, 'diluluskan']] as const) {
-    await env.pool.query(`insert into archive_cloud.question_submissions (id, user_id, status, created_at, updated_at) values ($1, $2, $3, ${ts})`, [id, u, status])
+    await env.pool.query(`insert into archive_cloud.question_submissions (id, teacher_id, status, created_at, updated_at) values ($1, $2, $3, ${ts})`, [id, u, status])
   }
-  await env.pool.query(`insert into archive_cloud.question_imports (id, user_id, status, created_at, updated_at) values (9001, 3, 'selesai', ${ts}), (9002, null, 'selesai', ${ts})`)
-  await env.pool.query(`insert into archive_cloud.spm_sets (id, user_id, title, created_at, updated_at) values (9001, 4, 'Set contoh', ${ts})`)
-  await env.pool.query(`insert into archive_cloud.teacher_reference_documents (id, user_id, path, created_at, updated_at) values (9001, 5, 'rujukan/contoh.pdf', ${ts})`)
+  await env.pool.query(`insert into archive_cloud.question_imports (id, imported_by, status, created_at, updated_at) values (9001, 3, 'selesai', ${ts}), (9002, null, 'selesai', ${ts})`)
+  await env.pool.query(`insert into archive_cloud.spm_sets (id, subject_id, created_at, updated_at) values (9001, 1, ${ts})`)
+  await env.pool.query(`insert into archive_cloud.teacher_reference_documents (id, teacher_id, created_at, updated_at) values (9001, 5, ${ts})`)
+  await env.pool.query(`delete from archive_cloud.teacher_reference_papers`)
+  await env.pool.query(`insert into archive_cloud.teacher_reference_papers (id, teacher_id, created_at, updated_at) values (9001, 6, ${ts})`)
   for (const t of TABLES) await env.pool.query(`update archive_cloud."${t}" set "_row_hash" = 'hash-' || id`)
   summary = (await exportOpenQuestionReports({ pool: env.pool, outDir: join(outRoot, 'export') })).summary
 }, 300_000)
@@ -111,12 +123,12 @@ describe('migrate:archive-minimise', () => {
     const r = await run(base())
     expect(r.code).toBe(0)
     expect(r.text).toMatch(/dry-run \(rolled back\)/)
-    expect(r.text).toMatch(/^\s*question_reports \| reason \| 2$/m)
-    expect(r.text).toMatch(/^\s*question_submissions \| user_id \| 2$/m)
+    expect(r.text).toMatch(/^\s*question_reports \| description \| 2$/m)
+    expect(r.text).toMatch(/^\s*question_submissions \| teacher_id \| 2$/m)
     expect(await notNull(env.pool)).toEqual(before.nn)
     expect(await others(env.pool)).toEqual(before.other)
     expect(await hashes(env.pool)).toEqual(before.hash)
-    expect(before.nn['question_reports.reason']).toBeGreaterThanOrEqual(2)
+    expect(before.nn['question_reports.description']).toBeGreaterThanOrEqual(2)
   })
 
   it('refuses without the export summary, with a wrong one, and with a summary of other counts (exit 2)', async () => {
@@ -171,15 +183,33 @@ describe('migrate:archive-minimise', () => {
     } finally {
       await env.pool.query('alter table if exists archive_cloud.trd_away rename to teacher_reference_documents')
     }
-    // spm_sets holds only the synthetic row above (user_id set), so the constraint can be added without touching any row.
-    await env.pool.query('alter table archive_cloud.spm_sets alter column user_id set not null')
+    // question_imports holds only the synthetic rows above, so the constraint can be added without touching a person value.
+    await env.pool.query('update archive_cloud.question_imports set imported_by = 3 where imported_by is null')
+    await env.pool.query('alter table archive_cloud.question_imports alter column imported_by set not null')
     try {
       const notNullCol = await run(base(['--apply']))
       expect(notNullCol.code).toBe(2)
-      expect(notNullCol.text).toMatch(/spm_sets\.user_id is NOT NULL/)
+      expect(notNullCol.text).toMatch(/question_imports\.imported_by is NOT NULL/)
       expect(notNullCol.text).not.toContain(MARK)
     } finally {
-      await env.pool.query('alter table archive_cloud.spm_sets alter column user_id drop not null')
+      await env.pool.query('alter table archive_cloud.question_imports alter column imported_by drop not null')
+      await env.pool.query('update archive_cloud.question_imports set imported_by = null where id = 9002')
+    }
+    expect(await notNull(env.pool)).toEqual(before.nn)
+    expect(await hashes(env.pool)).toEqual(before.hash)
+  })
+
+  it('refuses (exit 2, nothing changed) when a planned person column is missing from the archive, never skipping it silently', async () => {
+    const before = { nn: await notNull(env.pool), hash: await hashes(env.pool) }
+    await env.pool.query('alter table archive_cloud.question_reports rename column reporter_id to user_id')
+    try {
+      const r = await run(base(['--apply']))
+      expect(r.code).toBe(2)
+      expect(r.text).toMatch(/question_reports has no column reporter_id/)
+      expect(r.text).not.toContain(MARK)
+      expect((await run(base())).code).toBe(2) // the dry-run stops too
+    } finally {
+      await env.pool.query('alter table archive_cloud.question_reports rename column user_id to reporter_id')
     }
     expect(await notNull(env.pool)).toEqual(before.nn)
     expect(await hashes(env.pool)).toEqual(before.hash)
@@ -195,10 +225,10 @@ describe('migrate:archive-minimise', () => {
       await holder.query(`select pg_advisory_unlock(hashtextextended('etl:source:cloud', 0))`)
       holder.release()
     }
-    expect((await notNull(env.pool))['question_reports.reason']).toBeGreaterThan(0)
+    expect((await notNull(env.pool))['question_reports.description']).toBeGreaterThan(0)
   })
 
-  it('apply nulls exactly user_id and question_reports.reason; a second apply changes 0 rows; no value is printed', async () => {
+  it('apply nulls exactly the person columns and question_reports.description; a second apply changes 0 rows; no value is printed', async () => {
     const before = await others(env.pool)
     const outside = await untouched(env.pool)
     const touched = await touchedIds(env.pool)
@@ -220,7 +250,7 @@ describe('migrate:archive-minimise', () => {
     }
     expect(await hashes(env.pool)).toEqual(hashAfter)
     // Rows are kept, the free text is gone.
-    expect(Number((await env.pool.query<{ n: string }>(`select count(*)::text n from archive_cloud.question_reports where reason like $1`, [`%${MARK}%`])).rows[0]?.n)).toBe(0)
+    expect(Number((await env.pool.query<{ n: string }>(`select count(*)::text n from archive_cloud.question_reports where description like $1`, [`%${MARK}%`])).rows[0]?.n)).toBe(0)
 
     const second = await run(base(['--apply']))
     expect(second.code).toBe(0)

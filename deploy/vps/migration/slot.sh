@@ -199,8 +199,8 @@ cmd_copy() {
   "$PP_VPS_DIR/db-roles.sh" apply   # pp_etl: SELECT on both schemas comes from default privileges, UPDATE on archive_cloud from here
   b="$(schema_tables target_psql)"
   [ "$a" = "$b" ] || pp_die "STAGE COPY FAILED: $a in $staging_db, $b in the target"
-  # Cutover plan 4.6 B5: a count other than 83/35 is a STOP. PP_STAGE_EXPECT is the LEAD-approved override.
-  local want; want="$(pp_cfg PP_STAGE_EXPECT 'archive_cloud:35 staging_cloud:83')"
+  # Cutover plan 4.6 B5: a count other than 89/38 (staging/archive) is a STOP. PP_STAGE_EXPECT is the LEAD-approved override.
+  local want; want="$(pp_cfg PP_STAGE_EXPECT 'archive_cloud:38 staging_cloud:89')"
   [ "$b" = "$want" ] || pp_die "STAGE COPY COUNTS DIFFER: $b (expected $want): STOP and report to the half-AM operator" 4
   pp_log "STAGE COPY PASSED: $b, duration_s=$((SECONDS - t0))"
 }
@@ -253,8 +253,8 @@ cmd_wipe_dump() {
 cmd_etl() {
   local c="${1:-}"; [ $# -eq 0 ] || shift
   case "$c" in
-    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
-    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
+    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:questions|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
+    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:questions | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
   esac
   local a apply=0 envs=(NODE_ENV=production "PP_MIGRATE_TARGET_DB=$target_db") argv=() files_host="" files_seen=0 out_given=0 i=0
   local args=("$@")
@@ -344,7 +344,7 @@ cmd_gonogo() {
     lsn="$(target_psql "select coalesce(last_archived_wal, '-') from pg_stat_archiver")"
     echo "criterion 8: PITR on, last archived WAL $lsn at $last, failed_count $failed$([ "$failed" = 0 ] || echo '  -> check the archive before go')"
   fi
-  echo "stage: $(schema_tables target_psql) in the target (expected archive_cloud:35 staging_cloud:83 while the slot runs)"
+  echo "stage: $(schema_tables target_psql) in the target (expected archive_cloud:38 staging_cloud:89 while the slot runs)"
   f="$(find "$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)" -maxdepth 1 -name 'pp-backup-*.dump' -printf '%T@ %f\n' 2>/dev/null | sort -rn | head -n1)"
   if [ -n "$f" ]; then age=$(( ($(date +%s) - ${f%%.*}) / 3600 )); echo "backup: newest dump ${f#* } is ${age} h old$([ "$age" -le 24 ] || echo '  -> NO-GO (older than 24 h)')"; else echo "backup: NO dump found  -> NO-GO"; fi
   pct="$(df -P "$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)" | awk 'NR == 2 { gsub("%", "", $5); print $5 }')"

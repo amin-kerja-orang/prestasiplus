@@ -65,6 +65,11 @@ export interface RunOptions {
   batchSize?: number
   /** `--apply` continues an unfinished apply run on the same input. Default true. */
   resume?: boolean
+  /**
+   * Called once the run row of THIS invocation exists (started, or reopened for a resume) and before any batch runs. Nothing is
+   * called when the run stops earlier (apply guard, held lock, apply refused), so a caller knows whether a row is its own.
+   */
+  onRunStart?: (runId: string) => void
 }
 
 export interface RunReport {
@@ -170,6 +175,8 @@ export class Runner {
         runId = await this.ledger.start({ mode, sources, entitySet: names, gitSha: options.gitSha, inputHash: options.inputHash })
       }
 
+      options.onRunStart?.(runId)
+
       const rejects = new Rejects()
       let resumedBatches = 0
       try {
@@ -193,7 +200,10 @@ export class Runner {
       await this.ledger.writeRecon(runId, recon)
       const status = recon.every((r) => r.status === 'ok') ? 'succeeded' : 'failed'
       await this.ledger.finish(runId, status, counters)
-      return { runId, mode, status, recon, counters, resumedBatches }
+      // A resumed row's `counters` JSON can carry keys that are not entities (the core command keeps its `notes` there):
+      // the report holds the entity counters of this run's steps only.
+      const entityCounters = Object.fromEntries(names.filter((n) => counters[n] !== undefined).map((n) => [n, counters[n]])) as RunCounters
+      return { runId, mode, status, recon, counters: entityCounters, resumedBatches }
     } finally {
       await lock.query(`SELECT pg_advisory_unlock_all()`).catch(() => undefined)
       lock.release()

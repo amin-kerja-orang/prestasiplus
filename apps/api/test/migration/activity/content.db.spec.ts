@@ -94,13 +94,13 @@ beforeAll(async () => {
     (4, 'Sepanduk D', 'xyz', null, null, null, null, 0, '1')`)
   await q(`insert into staging_cloud.notes (id, title, note_type, body, views, is_published) values
     (1, 'Nota A', 'formula', '<p>Isi nota A</p><img src=x onerror=alert(1)><script>alert(2)</script>', 3, '1'), (2, 'Nota B', 'tidak_ada', 'Isi nota B', 0, '0')`)
-  await q(`insert into staging_cloud.videos (id, title, url, duration_seconds, is_published) values
-    (1, 'Video A', 'https://www.youtube.com/watch?v=abcdefghijk', 60, '1'),
-    (2, 'Video B', 'https://vimeo.com/123456', null, '0'),
-    (3, 'Video C', 'ftp://contoh.invalid/c', null, '1'),
-    (4, 'Video D', 'http://www.youtube.com/watch?v=abcdefghijk', null, '1'),
-    (5, 'Video E', 'https://contoh.invalid/video/5', null, '1'),
-    (6, 'Video F', 'https://www.youtube.com.contoh.invalid/watch?v=abcdefghijk', null, '1')`)
+  await q(`insert into staging_cloud.videos (id, title, url, duration_seconds) values
+    (1, 'Video A', 'https://www.youtube.com/watch?v=abcdefghijk', 60),
+    (2, 'Video B', 'https://vimeo.com/123456', null),
+    (3, 'Video C', 'ftp://contoh.invalid/c', null),
+    (4, 'Video D', 'http://www.youtube.com/watch?v=abcdefghijk', null),
+    (5, 'Video E', 'https://contoh.invalid/video/5', null),
+    (6, 'Video F', 'https://www.youtube.com.contoh.invalid/watch?v=abcdefghijk', null)`)
   await q(`insert into staging_cloud.audio_kbat (id, title, audio_path, status) values
     (1, 'Audio A', 'audio/a.mp3', 'draft'), (2, 'Audio B', null, 'tidak_dikenali')`)
 
@@ -143,7 +143,7 @@ describe('R2: owner, staging spec as it is', () => {
     expect(n(r2, 'articles', 'INVALID_VALUE', 'content')).toBe(2) // ids 1 and 2
     expect(n(r2, 'notes', 'INVALID_VALUE', 'subject')).toBe(1) // id 1; id 2 has an unknown type
     expect(n(r2, 'notes', 'UNKNOWN_ENUM', 'note_type')).toBe(1)
-    expect(n(r2, 'videos', 'INVALID_VALUE', 'category')).toBe(1)
+    expect(n(r2, 'videos', 'INVALID_VALUE', 'category')).toBe(2) // ids 1 and 2 (no category staged); the rest fail the url check first
     expect(n(r2, 'audio_kbat_sets', 'INVALID_VALUE', 'education_level_id')).toBe(1)
   })
 })
@@ -154,8 +154,12 @@ describe('R3: owner and the missing columns present', () => {
     const notes = await h.q<{ legacy_id: string; author_id: string; note_type: string; is_published: boolean }>(`select legacy_id, author_id::text, note_type, is_published from notes`)
     expect(notes).toEqual([{ legacy_id: '1', author_id: ownerV2, note_type: 'FORMULA', is_published: true }])
     const videos = await h.q<{ legacy_id: string; platform: string; uploader_id: string }>(`select legacy_id, platform, uploader_id::text from videos`)
-    expect(videos).toEqual([{ legacy_id: '1', platform: 'Youtube', uploader_id: ownerV2 }])
-    expect(n(r3, 'videos', 'UNSUPPORTED', 'is_published')).toBe(1) // v2 videos have no draft state
+    // .cloud videos have no publication flag: the Vimeo video (id 2) is loaded like the YouTube one.
+    expect(videos).toEqual([
+      { legacy_id: '1', platform: 'Youtube', uploader_id: ownerV2 },
+      { legacy_id: '2', platform: 'Vimeo', uploader_id: ownerV2 },
+    ])
+    expect(n(r3, 'videos', 'UNSUPPORTED', 'is_published')).toBe(0)
     expect(n(r3, 'videos', 'INVALID_VALUE', 'url')).toBe(1) // id 3: not http(s)
     expect(n(r3, 'videos', 'UNSUPPORTED', 'url')).toBe(3) // id 4 http, id 5 and 6 not an allow-listed host
     const sets = await h.q<{ legacy_id: string; created_by_id: string; status: string }>(`select legacy_id, created_by_id::text, status from audio_kbat_sets`)
@@ -188,9 +192,12 @@ describe('child safety: sanitised HTML, allow-listed video hosts, admin owner', 
     expect(row?.content).not.toMatch(/script|onerror|alert/i)
   })
 
-  it('loads only the https YouTube video; an http YouTube address and other hosts are UNSUPPORTED url', async () => {
+  it('loads only the https YouTube and Vimeo videos; an http YouTube address and other hosts are UNSUPPORTED url', async () => {
     const rows = await h.q<{ legacy_id: string; visibility: string; video_url: string }>(`select legacy_id, visibility, video_url from videos order by legacy_id::bigint`)
-    expect(rows).toEqual([{ legacy_id: '1', visibility: 'global', video_url: 'https://www.youtube.com/watch?v=abcdefghijk' }])
+    expect(rows).toEqual([
+      { legacy_id: '1', visibility: 'global', video_url: 'https://www.youtube.com/watch?v=abcdefghijk' },
+      { legacy_id: '2', visibility: 'global', video_url: 'https://vimeo.com/123456' },
+    ])
   })
 
   async function ownerRefused(userId: string): Promise<string> {

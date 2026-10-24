@@ -33,7 +33,7 @@ export const ACTIVITY_READ_TABLES: readonly string[] = [
   'users',
   'gamification_tiers', 'achievements', 'achievement_user', 'challenges', 'challenge_user', 'reward_settings',
   'student_wallets', 'coin_transactions',
-  'practice_sessions', 'question_attempts', 'exam_attempts',
+  'practice_sessions', 'question_attempts', 'exam_attempts', 'attempt_statuses',
   'banners', 'articles', 'notes', 'videos', 'audio_kbat', 'question_sets',
   'support_tickets', 'timeline_entries', 'feedback',
   'archive_cloud.question_set_items',
