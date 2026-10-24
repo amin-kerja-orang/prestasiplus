@@ -11,8 +11,8 @@ import { UsersRepository } from '../../src/modules/users'
 /**
  * BE-12 follow-up (#92 G4 nits 1 and 2), no database: `sample` over-fetches a bounded window (`n * 4`) and
  * widens it only when the draw comes up short, and hydrates each window or chapter in one `getMany` round
- * trip (per 500 ids). The shuffle is the REAL BE-09 `QuestionsRepository.sample`; only `eligibleIds` and
- * `getMany` are faked.
+ * trip (per 500 ids). `sample` is the REAL BE-09 `QuestionsRepository.sample` (seed from the stream); only `sampleIds`
+ * (the SQL draw, faked as a seeded order), `eligibleIds` and `getMany` are faked.
  */
 
 const now = new Date('2026-10-21T00:00:00Z')
@@ -89,7 +89,16 @@ function bank(total: number, servable: (i: number) => boolean): Bank {
   const repo = Object.create(QuestionsRepository.prototype) as QuestionsRepository
   const realSample = QuestionsRepository.prototype.sample
   Object.assign(repo, {
+    // Stands in for the SQL `ORDER BY hashtextextended(id, seed), id LIMIT n`: a fixed order per seed, cut to `n`.
+    sampleIds: async (_f: QuestionFilter, n: number, seed: number) =>
+      [...ids]
+        .map((id) => ({ id, key: mulberry32((seed + Number(id) * 2654435761) >>> 0).next() }))
+        .sort((a, b) => a.key - b.key || Number(a.id) - Number(b.id))
+        .slice(0, n)
+        .map((x) => x.id),
     eligibleIds: async () => [...ids],
+    eligibleIdsPage: async (_f: QuestionFilter, after: string | undefined, limit: number) =>
+      ids.filter((id) => after === undefined || Number(id) > Number(after)).slice(0, limit),
     sample: async function (this: QuestionsRepository, f: QuestionFilter, n: number, rng: Parameters<QuestionsRepository['sample']>[2]) {
       sampleLimits.push(n)
       return realSample.call(this, f, n, rng)
@@ -103,7 +112,7 @@ function bank(total: number, servable: (i: number) => boolean): Bank {
   return { source: new Be09PracticeQuestionSource(repo, users), sampleLimits, getManySizes }
 }
 
-/** The whole eligible list in the order a window shuffles it (same child seed as `sample` derives). */
+/** The whole eligible list in the order a window draws it (same child seed as `sample` derives). */
 async function fullOrder(total: number, seedName: string): Promise<string[]> {
   const seed = prngStream(seedName).int(0, 0xffffffff)
   const b = bank(total, () => true)

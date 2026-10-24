@@ -578,6 +578,7 @@ export const migrateLinkQuestions: MigrateCommand = {
     ctx.out(`migrate:link-questions ${r.mode}`)
     ctx.out('examined | linked | ambiguous | unmatched | already linked')
     ctx.out(`${r.examined} | ${r.linked} | ${r.ambiguous} | ${r.unmatched} | ${r.alreadyLinked}`)
+    ctx.out(`linked by: exact ${r.linkedByExact ?? 0} | natural key ${r.linkedByNaturalKey ?? 0} | hash ${r.linkedByHash ?? 0}`)
     // Surrogate answer ids only, capped.
     for (const [name, ids] of [['ambiguous', r.ambiguousIds], ['unmatched', r.unmatchedIds]] as const) {
       if (ids.length > 0) ctx.out(`ids ${name}: ${ids.slice(0, MAX_IDS_PRINTED).join(',')}${ids.length > MAX_IDS_PRINTED ? ',...' : ''}`)

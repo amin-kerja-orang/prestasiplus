@@ -253,8 +253,8 @@ cmd_wipe_dump() {
 cmd_etl() {
   local c="${1:-}"; [ $# -eq 0 ] || shift
   case "$c" in
-    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
-    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
+    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:questions|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
+    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:questions | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
   esac
   local a apply=0 envs=(NODE_ENV=production "PP_MIGRATE_TARGET_DB=$target_db") argv=() files_host="" files_seen=0 out_given=0 i=0
   local args=("$@")
