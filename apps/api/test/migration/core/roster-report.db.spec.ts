@@ -1,6 +1,6 @@
 /**
  * Q10/Q11 on a real PostgreSQL and the BE-35 `cloud-tiny` fixture: the roster default hash warning and the login-less
- * account report of `migrate:core`. Fixture facts: 11 users load; users 9, 10 and 11 end with a NULL password hash
+ * account report of `migrate:core`. Fixture facts: 15 users are read and 12 load; users 9, 10 and 11 end with a NULL password hash
  * (plaintext-like, empty, null); user 3 is a roster account whose username repeats user 1's in the same school, so
  * `dropDuplicateLogins` leaves it with neither username nor e-mail. The spec also strips users 5 and 10 of both identifiers: user 10 is flagged (NULL hash), user 5 keeps a good bcrypt hash and is NOT
  * flagged, so it must not be counted.
@@ -59,6 +59,26 @@ const expectNumbersOnly = (notes: Record<string, unknown> | null): Record<string
   expect(notes).not.toBeNull()
   for (const [k, v] of Object.entries(notes ?? {})) expect(typeof v, k).toBe('number')
   return notes as Record<string, number>
+}
+
+const failOnce = (entity: string, batch: number) => {
+  let failed = false
+  return (steps: AnyEntityStep[]): AnyEntityStep[] =>
+    steps.map((st) =>
+      st.entity !== entity
+        ? st
+        : {
+            ...st,
+            async load(rows: unknown[], ctx: Parameters<AnyEntityStep['load']>[1]) {
+              const result = await st.load(rows, ctx) // the batch is loaded (and noted), then its transaction is rolled back
+              if (ctx.batch === batch && !failed) {
+                failed = true
+                throw new Error('injected failure')
+              }
+              return result
+            },
+          },
+    )
 }
 
 const files = (): string[] => readdirSync(outDir).filter((f) => f.startsWith('core-login-gaps-'))
@@ -120,12 +140,12 @@ describe('Q11: accounts without a way to log in', () => {
     // the ledger carries the same counters under counters -> 'notes' (numbers only), next to the runner's entity counters
     const ledger = await ledgerNotes(env.pool, report.runId)
     const notes = expectNumbersOnly(ledger.notes)
-    expect(ledger.users, 'the runner counters are kept').toMatchObject({ read: 13 })
+    expect(ledger.users, 'the runner counters are kept').toMatchObject({ read: 15 })
     expect(notes).toMatchObject({
       rosterDefaultHashes: 0, rosterDefaultHashesWarning: 1, nullHashAccounts: 3, flaggedWithoutLoginId: 2,
       'must_reset.roster_account': 1, 'must_reset.shared_default': 0,
     })
-    expect(Object.keys(notes).every((k) => /^(must_reset\.|nullHashAccounts$|flaggedWithoutLoginId$|rosterDefaultHashes|countsFromCommittedRows$)/.test(k))).toBe(true)
+    expect(Object.keys(notes).every((k) => /^(must_reset\.|users\.role_rejected\.|nullHashAccounts$|flaggedWithoutLoginId$|rosterDefaultHashes|countsFromCommittedRows$)/.test(k))).toBe(true)
     expect(JSON.stringify(ledger.notes)).not.toMatch(/\[|"[0-9]+"/) // no id list, no id as a value
 
     expect(restrictedFile).toBeDefined()
@@ -175,26 +195,6 @@ describe('Q11 after an interrupted and resumed apply', () => {
   let env2: StagingDb
   const dir2 = (): string => mkdtempSync(join(REPO_ROOT, '.migration-out', 'q10-resume-'))
   const dirs: string[] = []
-  const failOnce = (entity: string, batch: number) => {
-    let failed = false
-    return (steps: AnyEntityStep[]): AnyEntityStep[] =>
-      steps.map((st) =>
-        st.entity !== entity
-          ? st
-          : {
-              ...st,
-              async load(rows: unknown[], ctx: Parameters<AnyEntityStep['load']>[1]) {
-                const result = await st.load(rows, ctx) // the batch is loaded (and noted), then its transaction is rolled back
-                if (ctx.batch === batch && !failed) {
-                  failed = true
-                  throw new Error('injected failure')
-                }
-                return result
-              },
-            },
-      )
-  }
-
   beforeAll(async () => {
     env2 = await createStagingDb()
     await loadStaging(env2.pool, new DirReader(FIXTURE_DIR), { env: stagingEnv(env2.db) })
@@ -247,7 +247,7 @@ describe('Q11 after an interrupted and resumed apply', () => {
     expect((await env2.pool.query(`select username, email from users where legacy_id = '3'`)).rows).toEqual([{ username: null, email: null }])
     expect(resumed.report.runId).toBe(failedRun.rows[0]?.id) // the resume continues the failed run, so notes and counts share one row
     const finalLedger = await ledgerNotes(env2.pool, resumed.report.runId)
-    expect(finalLedger.users, 'the runner counters survive the notes merge').toMatchObject({ read: 13 })
+    expect(finalLedger.users, 'the runner counters survive the notes merge').toMatchObject({ read: 15 })
     const final = expectNumbersOnly(finalLedger.notes)
     expect(final).toMatchObject({ nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1, 'must_reset.roster_account': 1 })
     const body = JSON.parse(readFileSync(resumed.restrictedFile as string, 'utf8')) as { ids: Record<string, string[]> }
@@ -274,4 +274,49 @@ describe('Q11 after an interrupted and resumed apply', () => {
     expect(readdirSync(out).filter((f) => f.startsWith('core-login-gaps-')), 'no id file for a run that loaded nothing').toEqual([])
     expect(warnings.some((w) => w.includes('restricted id file'))).toBe(false)
   }, 120_000)
+})
+
+describe('Q10 after an interrupted and resumed apply: role rejects', () => {
+  let env3: StagingDb
+  let out: string
+  beforeAll(async () => {
+    env3 = await createStagingDb()
+    await loadStaging(env3.pool, new DirReader(FIXTURE_DIR), { env: stagingEnv(env3.db) })
+    await runSeeds([schoolPackagesSeed, curriculumSeed], { prisma: env3.db.prisma })
+    await env3.pool.query(`update staging_cloud.users set kelas = '4 Amanah' where role = 'pelajar'`)
+    await env3.pool.query(`update staging_cloud.education_levels set name_bm = 'Darjah 1' where id = 1`)
+    await env3.pool.query(`update staging_cloud.users set email = null, username = null where id in (5, 10)`)
+    out = mkdtempSync(join(REPO_ROOT, '.migration-out', 'q10-roles-'))
+  }, 300_000)
+  afterAll(async () => {
+    if (out !== undefined) rmSync(out, { recursive: true, force: true })
+    await env3?.close()
+  })
+
+  it('saves the rebuilt users.role_rejected.* counts together with the roster counters', async () => {
+    const base = { pool: env3.pool, env: baseEnv, source: 'cloud' as const, asOf: AS_OF, batchSize: 2, outDir: out }
+    expect((await runCore({ ...base, mode: 'dry-run' })).report.status).toBe('succeeded')
+
+    // Users are read two per batch: batch 7 holds users 13 (unknown role `super_guru`, counted as `other`) and 14, committed;
+    // batch 8 holds user 15 (`agent`, not migrated), which fails after being noted and is rolled back.
+    await expect(runCore({ ...base, mode: 'apply', transformSteps: failOnce('users', 8) })).rejects.toThrow('injected failure')
+    const failedRun = await env3.pool.query<{ id: string }>(`select id::text from etl_runs where mode = 'apply' order by id desc limit 1`)
+    const failed = expectNumbersOnly((await ledgerNotes(env3.pool, failedRun.rows[0]?.id as string)).notes)
+    expect(failed['users.role_rejected.other'], 'committed reject of user 13').toBe(1)
+    expect(failed['users.role_rejected.agent'], 'the rolled-back batch is not counted').toBeUndefined()
+
+    const resumed = await runCore({ ...base, mode: 'apply' })
+    expect(resumed.report.status).toBe('succeeded')
+    expect(resumed.report.resumedBatches).toBeGreaterThan(0)
+    expect(resumed.report.runId).toBe(failedRun.rows[0]?.id)
+    // This process only loaded batch 8: the `other` reject of batch 7 comes from the rebuild, not from this process.
+    expect(resumed.core.notes.counters.get('users.role_rejected.other')).toBe(1)
+    expect(resumed.core.notes.counters.get('users.role_rejected.agent')).toBe(1)
+    const saved = expectNumbersOnly((await ledgerNotes(env3.pool, resumed.report.runId)).notes)
+    expect(saved).toMatchObject({
+      'users.role_rejected.other': 1, 'users.role_rejected.agent': 1, // rebuilt from the run's rejects
+      nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1, 'must_reset.roster_account': 1, // Q10/Q11 recount
+    })
+    expect(Object.keys(saved).filter((k) => k.startsWith('users.role_rejected')).sort()).toEqual(['users.role_rejected.agent', 'users.role_rejected.other'])
+  }, 300_000)
 })
