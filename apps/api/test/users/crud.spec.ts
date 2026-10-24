@@ -398,11 +398,12 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
         expect(res.status, JSON.stringify(res.body)).toBe(200)
         const d = UpdatedUserSchema.parse(res.body.data)
         expect(d.generatedPassword?.length).toBeGreaterThanOrEqual(12)
-        expect(d.mustChangePassword).toBe(true)
+        // R39 (#256): an admin password write clears the flag, even one a migrated account kept.
+        expect(d.mustChangePassword).toBe(false)
         expect(d.grade).toBeNull()
         const row = (await gradeless())[0]
         expect(row?.grade).toBeNull()
-        expect(row?.must).toBe(true)
+        expect(row?.must).toBe(false)
         expect(row?.hash).toMatch(/^\$argon2id\$/)
         const s = await login(t, 'tanpagred@ujian.test', { password: d.generatedPassword as string })
         expect(s.session.user.email).toBe('tanpagred@ujian.test')
