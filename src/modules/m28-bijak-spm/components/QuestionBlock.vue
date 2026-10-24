@@ -6,11 +6,11 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsCluster, DsQuizOption, DsStack, DsText } from '@/ds'
+import { DsCluster, DsQuizOption, DsStack, DsSurface, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import { leavesOf } from '../domain/paper-model'
-import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
+import type { MatchLayout, PartAnswer, QuestionResult, QuestionView } from '../domain/types'
 import PartNode from './PartNode.vue'
 import PartResultCard from './PartResultCard.vue'
 import RichText from './RichText.vue'
@@ -25,7 +25,16 @@ const props = defineProps<{
   /** Latihan after "Semak": the marked question (inputs lock, results show). */
   check?: QuestionResult
   disabled?: boolean
-  choose?: { chosen: boolean; dimmed: boolean; blocked: boolean; hint?: string }
+  /** match_letter layout draft (FB-064); the default shows the current list. */
+  matchLayout?: MatchLayout
+  choose?: {
+    chosen: boolean
+    dimmed: boolean
+    blocked: boolean
+    /** Mod Peperiksaan: the section is full and this question is not ticked, so it cannot be answered. */
+    locked?: boolean
+    hint?: string
+  }
 }>()
 const emit = defineEmits<{
   answer: [partId: string, answer: PartAnswer]
@@ -38,7 +47,7 @@ const phone = useMedia('(width < 640px)', false)
 const heading = ref<HTMLElement | null>(null)
 defineExpose({ focus: () => heading.value?.focus() })
 
-const locked = computed(() => !!props.check || props.disabled)
+const locked = computed(() => !!props.check || props.disabled || !!props.choose?.locked)
 const chosenOption = computed(() => props.answers[props.question.id]?.choice)
 const correctOption = computed(() => props.check?.parts[0]?.scheme.correctOption)
 const partResults = computed(() => props.check?.parts ?? [])
@@ -125,6 +134,24 @@ function pick(id: string): void {
         <RichText :text="question.stem" />
       </p>
 
+      <!-- Compact match draft: the lettered bank is listed once, the sub-parts only pick a letter. -->
+      <DsSurface
+        v-if="matchLayout === 'compact' && question.optionBank?.length && !question.mcq"
+        level="elevated"
+        padding="sm"
+        data-testid="match-bank-once"
+      >
+        <DsStack gap="2xs">
+          <DsText variant="label" tone="muted">Pilihan jawapan</DsText>
+          <DsCluster gap="md" row-gap="2xs" as="ul">
+            <li v-for="o in question.optionBank" :key="o.id">
+              <DsText as="span" variant="body-strong">{{ o.id }}</DsText>
+              <DsText as="span" variant="body"> — {{ o.text }}</DsText>
+            </li>
+          </DsCluster>
+        </DsStack>
+      </DsSurface>
+
       <DsStack v-if="question.mcq" gap="sm" role="group" aria-label="Pilihan jawapan">
         <DsQuizOption
           v-for="(o, i) in question.mcq.options"
@@ -132,7 +159,7 @@ function pick(id: string): void {
           :letter="String.fromCharCode(65 + i)"
           :state="optionState(o.id)"
           :data-testid="`option-${o.id}`"
-          @select="!disabled && pick(o.id)"
+          @select="!disabled && !choose?.locked && pick(o.id)"
         >
           <RichText :text="o.text" />
         </DsQuizOption>
@@ -147,6 +174,7 @@ function pick(id: string): void {
           :attempt-id="attemptId"
           :disabled="locked"
           :option-bank="question.optionBank"
+          :match-layout="matchLayout"
           @answer="(id, a) => emit('answer', id, a)"
         />
       </template>

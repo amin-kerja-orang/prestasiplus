@@ -8,11 +8,11 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsStack, DsText } from '@/ds'
+import { DsCluster, DsStack, DsText } from '@/ds'
 
 import { isReadableNumber, latexToPlain } from '../domain/math-expr'
 import type { Leaf } from '../domain/paper-model'
-import type { McqOption, PartAnswer } from '../domain/types'
+import type { MatchLayout, McqOption, PartAnswer } from '../domain/types'
 import { checkPhoto, photoUrl, putPhoto, removePhoto } from '../lib/photo-store'
 import MathField from './MathField.vue'
 
@@ -23,6 +23,8 @@ const props = defineProps<{
   disabled?: boolean
   /** Shared lettered bank of the question's group (match_letter). */
   optionBank?: McqOption[]
+  /** match_letter layout; the default is the current list of full-width buttons (FB-064). */
+  matchLayout?: MatchLayout
 }>()
 const emit = defineEmits<{ 'update:modelValue': [PartAnswer] }>()
 
@@ -118,6 +120,32 @@ async function dropPhoto(key: string): Promise<void> {
           · sasaran {{ leaf.wordRange.min }}–{{ leaf.wordRange.max }}</template
         >. Guru akan menilai esei ini mengikut band.
       </p>
+    </template>
+
+    <template v-else-if="leaf.kind === 'match_letter' && matchLayout === 'compact'">
+      <!-- Compact draft: one row of letters; the letter bank is listed once above the sub-parts. -->
+      <DsCluster
+        gap="xs"
+        role="group"
+        :aria-label="`Pilih huruf ${leaf.label}`.trim()"
+        data-testid="match-row"
+      >
+        <UButton
+          v-for="o in optionBank ?? []"
+          :key="o.id"
+          type="button"
+          :color="answer.choice === o.id ? 'primary' : 'neutral'"
+          :variant="answer.choice === o.id ? 'solid' : 'soft'"
+          :aria-pressed="answer.choice === o.id"
+          :aria-label="`${o.id}, ${o.text}`"
+          :disabled="disabled"
+          square
+          class="min-h-11 min-w-11"
+          :data-testid="`match-${o.id}`"
+          @click="update({ choice: answer.choice === o.id ? undefined : o.id })"
+          >{{ o.id }}</UButton
+        >
+      </DsCluster>
     </template>
 
     <template v-else-if="leaf.kind === 'match_letter'">

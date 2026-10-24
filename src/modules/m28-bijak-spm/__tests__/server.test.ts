@@ -195,14 +195,14 @@ describe('Jana Kertas on the server', () => {
 })
 
 describe('result: choose-N, marks and rewards', () => {
-  it('counts the best N attempted questions of a choose section, whatever was ticked', async () => {
+  it('Latihan: counts the best N attempted questions of a choose section, whatever was ticked', async () => {
     const { server } = make()
-    const { attemptId } = await server.startAttempt(USER, 'sn-k2-2025-a', 'exam')
+    const { attemptId } = await server.startAttempt(USER, 'sn-k2-2025-a', 'latihan')
     await server.submit(USER, attemptId, {
       idempotencyKey: 'k',
       changes: [
         // Bahagian B (choose 1 of 2): osmosis answered (2 of 4 points), photosynthesis blank,
-        // the student ticked the blank one: the tick never changes the score.
+        // the student ticked the blank one: in Latihan the tick never changes the score.
         {
           partId: 'sn2-osmosis-a',
           answer: {
