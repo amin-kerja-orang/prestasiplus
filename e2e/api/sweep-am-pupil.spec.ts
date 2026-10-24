@@ -45,10 +45,12 @@ async function expectNot404(page: Page): Promise<void> {
 }
 
 /**
- * Opens /prestasi/tingkatan/t4 and asserts the precondition: the API answered 200 with at least one
- * class row that carries a link target, and the class card rendered (a table on desktop, cards on mobile).
+ * Opens /prestasi/tingkatan/t4 and asserts the precondition: the API answered 200 with at least one class
+ * row, and the class card rendered (a table on desktop, cards on mobile). `staff` also requires a row with a
+ * link target. A pupil gets every `href` as null from the API since SW5-04 (#248), so the pupil test checks
+ * that no class link renders whatever the API sends.
  */
-async function openTingkatan(page: Page): Promise<void> {
+async function openTingkatan(page: Page, staff: boolean): Promise<void> {
   const levelCall = page.waitForResponse(
     (r) => r.url().includes('/api/performance/levels/t4') && r.request().method() === 'GET',
     { timeout: 30_000 },
@@ -57,10 +59,13 @@ async function openTingkatan(page: Page): Promise<void> {
   const res = await levelCall
   expect(res.status(), 'GET /api/performance/levels/t4').toBe(200)
   const body = (await res.json()) as { data: { classRows: { href: string | null }[] } }
-  expect(
-    body.data.classRows.filter((r) => r.href !== null).length,
-    'the level has class rows with a link target',
-  ).toBeGreaterThan(0)
+  expect(body.data.classRows.length, 'the level has class rows').toBeGreaterThan(0)
+  if (staff) {
+    expect(
+      body.data.classRows.filter((r) => r.href !== null).length,
+      'the level has class rows with a link target',
+    ).toBeGreaterThan(0)
+  }
   await expect(page.getByTestId('tingkatan-page')).toBeVisible({ timeout: 20_000 })
   await expect(page.getByTestId('class-card')).toBeVisible({ timeout: 20_000 })
 }
@@ -81,10 +86,12 @@ test.describe('pupil sweep: no dead links @api', () => {
     await expectNoHScroll(page)
   })
 
-  test('(b) pupil /prestasi/tingkatan/t4 has no class links and no 404 page @api', async ({ page }) => {
+  test('(b) pupil /prestasi/tingkatan/t4 has no class links and no 404 page @api', async ({
+    page,
+  }) => {
     const { user, pass } = account('studentB')
     await loginViaUi(page, user, pass)
-    await openTingkatan(page)
+    await openTingkatan(page, false)
     await expect(page.locator('a[href^="/prestasi/kelas/"]')).toHaveCount(0)
     await expectNot404(page)
     await expectNoHScroll(page)
@@ -108,7 +115,7 @@ test.describe('pupil sweep: no dead links @api', () => {
   test('(d) guru /prestasi/tingkatan/t4 still has the class links @api', async ({ page }) => {
     const { user, pass } = account('guru')
     await loginViaUi(page, user, pass)
-    await openTingkatan(page)
+    await openTingkatan(page, true)
     const links = page.locator('a[href^="/prestasi/kelas/"]')
     await expect.poll(() => links.count()).toBeGreaterThan(0)
     await expect(links.first()).toContainText('Lihat')
@@ -150,7 +157,9 @@ test.describe('pupil sweep: no dead links @api', () => {
       (r) => r.url().endsWith('/api/kelas-saya/join') && r.request().method() === 'POST',
     )
     await submit.click()
-    expect((await refused).status(), 'POST /api/kelas-saya/join of an already-joined code').toBe(409)
+    expect((await refused).status(), 'POST /api/kelas-saya/join of an already-joined code').toBe(
+      409,
+    )
     await expect(page.getByTestId('join-error')).toContainText(ALREADY_JOINED)
 
     // Empty the field and press "Sertai": the native `required` blocks the request; the message must go.
