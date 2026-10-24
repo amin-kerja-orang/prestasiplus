@@ -384,7 +384,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(header(page).title).toHaveText('Headcount Kimia')
     await expect(header(page).subtitle).toHaveText('Selamat datang kembali')
     await expect(page.locator('[data-testid=headcount-table-page] h1')).toHaveText('Kimia')
-    await expect(page.getByTestId('status-pill')).toHaveText('Active')
+    await expect(page.getByTestId('status-pill')).toHaveText('Aktif')
     await expect(page.getByTestId('table-subtitle')).toContainText(
       '5 MARIKH - Kimia · Tingkatan 5 · 2026 · Guru: Guru Demo',
     )

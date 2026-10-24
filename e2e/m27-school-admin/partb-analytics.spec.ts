@@ -650,7 +650,7 @@ test.describe('S3 Overview (E2E-M27-64, 65, 66)', MODULE, () => {
       }
       expect(of[0]).toBe(of[2])
       expect(digits(notes[0]!)).toBe(of[0]! - value[0]!)
-      expect(notes[0]).toMatch(/ belum pernah login$/)
+      expect(notes[0]).toMatch(/ belum pernah log masuk$/)
       expect(notes[1]).toBe(`${String(of[1]! - value[1]!)} belum pernah log masuk`)
       expect(notes[2]).toBe(`${String(r)} hari lepas`)
       // "Jumlah Aktiviti" = the sum of "Pecahan Aktiviti" (M17 DV-M17-16)

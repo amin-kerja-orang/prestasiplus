@@ -58,7 +58,7 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(first.getByTestId('question-source')).toContainText('Sumber:')
     await expect(first.getByTestId('question-stars').locator('.fa-star, svg, i')).not.toHaveCount(0)
     await expect(first.getByTestId('question-status')).toHaveText('Diluluskan')
-    await expect(first.getByTestId('question-active')).toHaveText(/^(ACTIVE|INACTIVE)$/)
+    await expect(first.getByTestId('question-active')).toHaveText(/^(Aktif|Tidak Aktif)$/)
     // Text cut to 80 chars + "..." on every row that is longer.
     const texts = await byId(page, 'question-text').allInnerTexts()
     for (const t of texts) expect(t.replace(/\s+/g, ' ').trim().length).toBeLessThanOrEqual(84 + 40)

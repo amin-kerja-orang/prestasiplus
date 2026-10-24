@@ -76,7 +76,7 @@ export function fetchQuestionImports(
   })
 }
 
-/** #11 `GET /api/question-imports/template`: the CSV file `templat-import-soalan.csv`. */
+/** #11 `GET /api/question-imports/template`: the CSV file `template-import-soalan.csv`. */
 export function downloadImportTemplate(): Promise<BlobResult> {
   return api.blob('/api/question-imports/template')
 }

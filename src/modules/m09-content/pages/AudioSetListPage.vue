@@ -143,7 +143,7 @@ const statItems = computed<StatItem[]>(() => [
   },
 ])
 
-/** Status word stays the live API label ("Draft", "Pending Review", ...); the badge adds icon and colour. */
+/** Status word is the BM API label ("Draf", "Menunggu Semakan", ...; FB-025); the badge adds icon and colour. */
 const STATUS_BADGE: Record<AdminAudioSetItem['status'], DsStatus> = {
   draft: 'draft',
   pending_review: 'awaiting-review',

@@ -186,13 +186,13 @@ describe('S21 import card', () => {
   it('downloads the template and toggles the form with the live attributes', async () => {
     guru.downloadQuestionTemplate.mockResolvedValue({
       blob: new Blob(['x']),
-      filename: 'templat-import-soalan.csv',
+      filename: 'template-import-soalan.csv',
     })
     const w = await mountPage()
     expect(t(w, 'import-form').exists()).toBe(false)
     await t(w, 'import-template').trigger('click')
     await flushPromises()
-    expect(saveBlob).toHaveBeenCalledWith(expect.any(Blob), 'templat-import-soalan.csv')
+    expect(saveBlob).toHaveBeenCalledWith(expect.any(Blob), 'template-import-soalan.csv')
 
     await t(w, 'import-toggle').trigger('click')
     const file = t(w, 'import-file')

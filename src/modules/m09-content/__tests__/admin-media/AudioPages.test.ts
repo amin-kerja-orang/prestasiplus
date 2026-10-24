@@ -171,17 +171,17 @@ describe('AudioSetListPage (S12)', () => {
 
   it('a template link downloads through the API and stays on the page', async () => {
     const blob = new Blob(['x'])
-    api.fetchAudioTemplate.mockResolvedValue({ blob, filename: 'templat-audio-kbat.xlsx' })
+    api.fetchAudioTemplate.mockResolvedValue({ blob, filename: 'template-audio-kbat.xlsx' })
     const { wrapper: w, router } = await mountAt(AudioSetListPage, '/page')
     wrapper = w
     await t(w, 'template-xlsx').trigger('click')
     await flushPromises()
     expect(api.fetchAudioTemplate).toHaveBeenCalledWith('xlsx')
-    expect(saver.saveBlob).toHaveBeenCalledWith(blob, 'templat-audio-kbat.xlsx')
+    expect(saver.saveBlob).toHaveBeenCalledWith(blob, 'template-audio-kbat.xlsx')
     await t(w, 'template-word').trigger('click')
     await flushPromises()
     expect(api.fetchAudioTemplate).toHaveBeenLastCalledWith('docx')
-    expect(saver.saveBlob).toHaveBeenLastCalledWith(blob, 'templat-audio-kbat.xlsx')
+    expect(saver.saveBlob).toHaveBeenLastCalledWith(blob, 'template-audio-kbat.xlsx')
     expect(router.currentRoute.value.path).toBe('/page')
   })
 })

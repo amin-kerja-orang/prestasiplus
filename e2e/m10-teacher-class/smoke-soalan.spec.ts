@@ -248,7 +248,7 @@ test.describe('S21 as the teacher', MODULE, () => {
     await expect(page.getByTestId('import-card')).toContainText('Muat naik banyak soalan sekaligus')
     const download = page.waitForEvent('download')
     await page.getByTestId('import-template').click()
-    expect((await download).suggestedFilename()).toBe('templat-import-soalan.csv')
+    expect((await download).suggestedFilename()).toBe('template-import-soalan.csv')
 
     await expect(page.getByTestId('import-form')).toHaveCount(0)
     await page.getByTestId('import-toggle').click()

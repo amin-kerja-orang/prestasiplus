@@ -213,7 +213,7 @@ test.describe('M09 S15 article list (guest)', MODULE, () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Artikel Pilihan')
     await expect(page.getByText('Terkini & Menarik')).toBeVisible()
     await expect(page.getByTestId('artikel-hero-line')).toHaveText(
-      'tips belajar, berita pendidikan, motivasi dan panduan untuk pelajar Malaysia!',
+      'petua belajar, berita pendidikan, motivasi dan panduan untuk pelajar Malaysia!',
     )
     await expect(page.locator('[data-testid="artikel-hero-line"] .font-bold')).toHaveCount(4)
     await expect(page.getByTestId('artikel-hot-card')).toHaveCount(6)

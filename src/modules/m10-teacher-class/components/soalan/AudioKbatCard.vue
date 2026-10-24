@@ -47,7 +47,7 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
             icon="i-ph-file-xls-duotone"
             class="min-h-11"
             data-testid="audio-template-xlsx"
-            @click.prevent="download('xlsx', 'templat-audio-kbat.xlsx')"
+            @click.prevent="download('xlsx', 'template-audio-kbat.xlsx')"
             >Templat XLSX</UButton
           >
           <UButton
@@ -57,7 +57,7 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
             icon="i-ph-file-doc-duotone"
             class="min-h-11"
             data-testid="audio-template-word"
-            @click.prevent="download('word', 'templat-audio-kbat.docx')"
+            @click.prevent="download('word', 'template-audio-kbat.docx')"
             >Templat Word</UButton
           >
           <UButton

@@ -83,7 +83,7 @@ describe('auth error copy and OpenAPI coverage', () => {
   const doc = buildOpenApiDocument() as unknown as Doc
 
   it('has the three live messages verbatim and tags every message', () => {
-    expect(AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS).toBe('Emel/Nama pengguna atau kata laluan tidak sah.')
+    expect(AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS).toBe('E-mel/Nama pengguna atau kata laluan tidak sah.')
     expect(AUTH_ERROR_MESSAGES.ACCOUNT_INACTIVE).toBe(
       'Akaun anda tidak aktif atau telah digantung. Sila hubungi pentadbir.',
     )

@@ -27,7 +27,7 @@ async function template(): Promise<void> {
   errors.value = []
   try {
     const res = await downloadQuestionTemplate()
-    saveBlob(res.blob, res.filename ?? 'templat-import-soalan.csv')
+    saveBlob(res.blob, res.filename ?? 'template-import-soalan.csv')
   } catch {
     errors.value = [COPY.templateFailed]
   }

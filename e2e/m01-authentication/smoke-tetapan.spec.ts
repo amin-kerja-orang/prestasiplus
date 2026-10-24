@@ -22,7 +22,7 @@ const DESCRIPTIONS = [
   'Paparan 2 saat sebelum kuiz bermula: "Bismillahi tawakkaltu \'alallah". Tetapan untuk Muslim.',
   'Notifikasi awal pagi untuk yang bangun Subuh — 30 minit waktu belajar selepas Subuh paling produktif.',
   'Notifikasi waktu sahur (~4:30 pagi) untuk belajar sebelum Subuh. Rentak lebih ringan semasa Ramadan.',
-  'Untuk mod rohani yang sesuai. Future: Hindu/Buddhist/Christian content akan ditambah.',
+  'Untuk mod rohani yang sesuai. Kandungan Hindu/Buddha/Kristian akan ditambah kemudian.',
 ]
 
 test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, () => {

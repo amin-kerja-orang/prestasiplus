@@ -176,13 +176,13 @@ test.describe('S7 Senarai Guru', MODULE, () => {
     await expect(page.getByTestId('user-add')).toHaveText('Cipta Pengguna')
     await expect(page.getByTestId('user-add')).toHaveAttribute('href', '/admin-sekolah/guru/baru')
     await expect(page.locator('thead th')).toHaveText([
-      '#', 'Nama', 'Emel', 'Telefon', 'Kelas', 'Login Terakhir', 'Aktif?', 'Tarikh', 'Tindakan',
+      '#', 'Nama', 'Emel', 'Telefon', 'Kelas', 'Log Masuk Terakhir', 'Aktif?', 'Tarikh', 'Tindakan',
     ])
     const t5 = page.locator('[data-testid="user-row"][data-user-id="5"]')
     await expect(t5.getByTestId('user-classes')).toHaveText('2 kelas')
     await expect(t5.getByTestId('user-toggle')).toContainText('Aktif')
     await expect(t5.getByTestId('user-name')).toHaveAttribute('href', '/admin-sekolah/guru/5')
-    await expect(t5.getByTestId('user-last-login')).toHaveText(/^(Belum login|\d+ .+ yang lepas)$/)
+    await expect(t5.getByTestId('user-last-login')).toHaveText(/^(Belum log masuk|\d+ .+ yang lepas)$/)
     await expect(page.getByText('Tambah Pelajar')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })

@@ -395,7 +395,7 @@ StructuredSubQuestion: `id`, `structuredQuestionId`, `partLabel` ("a"…; displa
 
 ### 6.4 DATA-M04-05 — QuestionSubmission (teacher paper; created in M10, managed in M04)
 
-`id`, `teacherId` (name, email, school via M02 User/School), `subjectText` (free text as typed, e.g. "SEJARAH SPM"), `levelCode` ("T1"–"T5" from the form value, or null), `year` int, `paperType` = one of the 7 values of the M10 form, stored as the live value = label: "Soalan Umum", "Trial Paper", "Soalan DSKP", "Buku Teks", "Buku Latihan", "Soalan Peperiksaan", "Lain-lain" (the 3 observed admin rows use "Buku Latihan", "Soalan Peperiksaan", "Lain-lain"), `authorCredit` string ("Oleh: …"), `note` string \| null, `files` [{ index, name, size, mime }], `status` BR-M04-18, `adminNotes` ≤1000, `createdAt`.
+`id`, `teacherId` (name, email, school via M02 User/School), `subjectText` (free text as typed, e.g. "SEJARAH SPM"), `levelCode` ("T1"–"T5" from the form value, or null), `year` int, `paperType` = one of the 7 values of the M10 form, stored as the live value = label: "Soalan Umum", "Kertas Percubaan" (was Trial Paper, FB-025), "Soalan DSKP", "Buku Teks", "Buku Latihan", "Soalan Peperiksaan", "Lain-lain" (the 3 observed admin rows use "Buku Latihan", "Soalan Peperiksaan", "Lain-lain"), `authorCredit` string ("Oleh: …"), `note` string \| null, `files` [{ index, name, size, mime }], `status` BR-M04-18, `adminNotes` ≤1000, `createdAt`.
 
 **S10 seeds (v1.17, as built).** The seeds contain two PROPOSED rows in addition to the 4 observed ones: id 5 (`pending`) and id 6 (`rejected`), which §6.11 mandates so that every status is covered. The S10 "all" count is therefore **6**, against 4 on live (DV-M04-19).
 

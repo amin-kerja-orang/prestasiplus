@@ -43,7 +43,7 @@ export const AUTH_ERROR_STATUS: Readonly<Record<AuthErrorCode, number>> = {
  * The rest is proposed copy (no live source).
  */
 export const AUTH_ERROR_MESSAGES = {
-  INVALID_CREDENTIALS: 'Emel/Nama pengguna atau kata laluan tidak sah.',
+  INVALID_CREDENTIALS: 'E-mel/Nama pengguna atau kata laluan tidak sah.',
   ACCOUNT_INACTIVE: 'Akaun anda tidak aktif atau telah digantung. Sila hubungi pentadbir.',
   SCHOOL_INACTIVE: 'Sekolah anda belum diaktifkan oleh pentadbir. Sila hubungi pihak sekolah.',
   AMBIGUOUS_USERNAME:

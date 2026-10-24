@@ -515,10 +515,10 @@ test.describe('M09 S12 Audio KBAT set list', MODULE, () => {
     await expect(page.getByTestId('audio-list-page')).toBeVisible()
     const xlsx = page.waitForEvent('download')
     await page.getByTestId('template-xlsx').click()
-    expect((await xlsx).suggestedFilename()).toBe('templat-audio-kbat.xlsx')
+    expect((await xlsx).suggestedFilename()).toBe('template-audio-kbat.xlsx')
     const word = page.waitForEvent('download')
     await page.getByTestId('template-word').click()
-    expect((await word).suggestedFilename()).toBe('templat-audio-kbat.docx')
+    expect((await word).suggestedFilename()).toBe('template-audio-kbat.docx')
     await expect(page).toHaveURL(/\/admin\/audio-kbat$/)
   })
 
@@ -527,8 +527,8 @@ test.describe('M09 S12 Audio KBAT set list', MODULE, () => {
     gotoApp,
   }) => {
     for (const [path, name] of [
-      ['/admin/audio-kbat/template', 'templat-audio-kbat.xlsx'],
-      ['/admin/audio-kbat/template-word', 'templat-audio-kbat.docx'],
+      ['/admin/audio-kbat/template', 'template-audio-kbat.xlsx'],
+      ['/admin/audio-kbat/template-word', 'template-audio-kbat.docx'],
     ] as const) {
       const download = page.waitForEvent('download')
       await gotoApp(path)

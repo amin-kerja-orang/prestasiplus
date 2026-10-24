@@ -284,9 +284,9 @@ Replicates .cloud `pelajar/layout.blade.php` and `guru/layout.blade.php` section
 
 | Role | Groups (in order) | Changes vs prototype |
 |---|---|---|
-| Murid | Top (Dashboard, Target SPM, Misi Harian, Remedial) · SPM · Pembelajaran · Pusat AI (✨ Cita-Cita Hijrah, 🔥 Streak & Syiling, 📝 Nota Ringkas, 🤖 Cikgu Alesa AI, ✨ Visi & Pertandingan, 🤖 AI Pintar (Pelajar)) · 🏆 Bilik Duta · ✨ Visi & Pertandingan · 💎 Killer Features · Akaun & Bantuan (Profil Saya, Tetapan Peribadi, Panduan, Tiket Bantuan, Log Keluar) | ▲ no admin-only blocks; ▲ no role-union rendering |
-| Guru | Command Center (LIVE) · HARIAN · PENGAJARAN · PENILAIAN · ANALITIK (Monitoring, Kirkpatrick) · PUSAT AI · BANK SOALAN · AKTIVITI · LAIN-LAIN · Bantuan | ▲ Monitoring/Kirkpatrick/Command Center render in the **learning** layout (prototype renders them in the admin chrome); ▲ Command Center drill-down shares components with PM-01 |
-| Ibu Bapa | Dashboard · linked-child views and consent approvals · Akaun & Bantuan | [P] only (no .cloud login role: parent invite = `/ibu-bapa/terima/{token}` `:1429`); minimal menu |
+| Murid | Top (Papan Pemuka (was Dashboard), Target SPM, Misi Harian, Remedial) · SPM · Pembelajaran · Pusat AI (✨ Cita-Cita Hijrah, 🔥 Streak & Syiling, 📝 Nota Ringkas, 🤖 Cikgu Alesa AI, ✨ Visi & Pertandingan, 🤖 AI Pintar (Pelajar)) · 🏆 Bilik Duta · ✨ Visi & Pertandingan · 💎 Ciri Utama (was Killer Features) · Akaun & Bantuan (Profil Saya, Tetapan Peribadi, Panduan, Tiket Bantuan, Log Keluar) | ▲ no admin-only blocks; ▲ no role-union rendering |
+| Guru | Command Center (LIVE) · HARIAN · PENGAJARAN · PENILAIAN · ANALITIK (Pemantauan (was Monitoring), Kirkpatrick) · PUSAT AI · BANK SOALAN · AKTIVITI · LAIN-LAIN · Bantuan | ▲ Pemantauan/Kirkpatrick/Command Center render in the **learning** layout (prototype renders them in the admin chrome); ▲ Command Center drill-down shares components with PM-01 |
+| Ibu Bapa | Papan Pemuka (was Dashboard) · linked-child views and consent approvals · Akaun & Bantuan | [P] only (no .cloud login role: parent invite = `/ibu-bapa/terima/{token}` `:1429`); minimal menu |
 | Penaja | Penaja home (`/sponsor`) · Akaun & Bantuan | [P] M21 only; Q3 |
 
 Items visible to Admin Pusat that duplicated other roles' blocks (Portal Guru, PPD/JPN, Cikgu Alesa Tools, Admin) are **removed** from the learning menu; admins reach those experiences only through Pratonton.

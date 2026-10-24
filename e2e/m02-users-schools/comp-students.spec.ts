@@ -196,7 +196,7 @@ test.describe('M02 S8 complimentary detail', { tag: [TAG.smoke, moduleTag(2)] },
     await expect(byId(page, 'comp-card')).toBeVisible()
     await expect.poll(() => page.title()).toMatch(/^Pelajar Komplimen - .+/)
     await expect(byId(page, 'comp-card').locator('dt')).toHaveText([
-      'Username',
+      'Nama Pengguna',
       'No. KP',
       'Sekolah asal',
       'Tingkatan',

@@ -284,13 +284,13 @@ export const adminAudioRoutes: RouteDef[] = [
           new Blob(['Templat Audio KBAT (contoh sahaja)\n'], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           }),
-          'templat-audio-kbat.xlsx',
+          'template-audio-kbat.xlsx',
         )
       : blob(
           new Blob(['Templat Audio KBAT (contoh sahaja)\n'], {
             type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           }),
-          'templat-audio-kbat.docx',
+          'template-audio-kbat.docx',
         )
   }),
 

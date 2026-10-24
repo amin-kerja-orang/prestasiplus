@@ -190,7 +190,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await expect(geo.getByTestId('tile-locked')).toHaveText('9')
     await expect(geo.getByTestId('tile-readiness')).toHaveText('10%')
     await expect(geo.getByTestId('tile-bank-note')).toHaveText(
-      'Set bank besar boleh dibuka, tetapi bank sumber melebihi target set. Rujuk page subjek untuk beza set bersih vs bank besar.',
+      'Set bank besar boleh dibuka, tetapi bank sumber melebihi target set. Rujuk halaman subjek untuk perbezaan set bersih berbanding bank besar.',
     )
     await expect(page.getByTestId('tile-bank-note')).toHaveCount(1)
     await expect(geo.getByTestId('tile-lock-chip')).toHaveText([

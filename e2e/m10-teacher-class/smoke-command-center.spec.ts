@@ -445,7 +445,7 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
     await expect(tid(page, 'cc-predictive-table').locator('th')).toHaveText([
       '#',
       'Pelajar',
-      'Accuracy',
+      'Ketepatan',
       'Trend',
       'Konsistensi',
       'Ramalan',

@@ -944,7 +944,7 @@ The URS §9 questions OQ-M10-01…18 apply; OQ-M10-19 is closed by XL2-02 (§6.2
 
 **R-M04-05 — reports from the databank.** BR-M04-15: add the MCQ reason `outdated` "Soalan sudah tidak relevan"; BR-M04-11: add source `teacher_databank`; #15 response: add `success: true` (the S28 script checks it). SOURCE-DERIVED from the S28 page script.
 
-**R-M04-06 — paper submissions.** DATA-M04-05 `paperType`: the 7 values of the M10 form (value = label: Soalan Umum, Trial Paper, Soalan DSKP, Buku Teks, Buku Latihan, Soalan Peperiksaan, Lain-lain); `levelCode` "T{n}" from the form value n (1–5) or null.
+**R-M04-06 — paper submissions.** DATA-M04-05 `paperType`: the 7 values of the M10 form (value = label: Soalan Umum, Kertas Percubaan (was Trial Paper, FB-025), Soalan DSKP, Buku Teks, Buku Latihan, Soalan Peperiksaan, Lain-lain); `levelCode` "T{n}" from the form value n (1–5) or null.
 
 **Other cross-module notes (XL gate):**
 1. **M01** — the admin's public profile URL `/guru/3` (id nature INFERRED); the teacher-profile school (not the user school) drives S6 (BR-M10-30).

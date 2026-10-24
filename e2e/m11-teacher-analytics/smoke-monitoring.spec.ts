@@ -85,7 +85,7 @@ test.describe('M11 S2 Monitoring Penglibatan (guru 5, /guru/monitoring)', MODULE
       'Cemerlang >60% | Sederhana 20-60% | Rendah 5-20% | Kritikal <5% | Tiada 0%',
     )
     await expect(tid(page, 'mon-guide-tip')).toContainText(
-      'Tip: Guna Filter untuk tapis negeri/tempoh/tahap. Export PDF/CSV untuk pembentangan.',
+      'Petua: Guna penapis untuk menapis negeri/tempoh/tahap. Eksport PDF/CSV untuk pembentangan.',
     )
     await expectTouchTarget(tid(page, 'mon-guide-close'), touchMin(page))
     await expectNoHorizontalScroll(page)

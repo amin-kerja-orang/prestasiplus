@@ -445,7 +445,7 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
       page.waitForEvent('download'),
       byId(page, 'import-template-download').click(),
     ])
-    expect(dl.suggestedFilename()).toBe('templat-import-soalan.csv')
+    expect(dl.suggestedFilename()).toBe('template-import-soalan.csv')
     const stream = await dl.createReadStream()
     const chunks: Buffer[] = []
     for await (const c of stream) chunks.push(c as Buffer)

@@ -61,16 +61,16 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
       '/admin/kirkpatrick/reaction',
     ])
     expect(flat(t(w, 'kirk-level-t4'))).toBe(
-      'Tahap 4: Hasil 4.30 GPS Sekolah · 4378 rekod headcount Lihat detail',
+      'Tahap 4: Hasil 4.30 GPS Sekolah · 4378 rekod headcount Lihat butiran',
     )
     expect(flat(t(w, 'kirk-level-t3'))).toBe(
-      'Tahap 3: Tingkah Laku 946 /4158 Pelajar aktif · 20991 sesi · 82.8% ketepatan Lihat detail',
+      'Tahap 3: Tingkah Laku 946 /4158 Pelajar aktif · 20991 sesi · 82.8% ketepatan Lihat butiran',
     )
     expect(flat(t(w, 'kirk-level-t2'))).toBe(
-      'Tahap 2: Pembelajaran 82.8% Ketepatan · 306,133 soalan dijawab Lihat detail',
+      'Tahap 2: Pembelajaran 82.8% Ketepatan · 306,133 soalan dijawab Lihat butiran',
     )
     expect(flat(t(w, 'kirk-level-t1'))).toBe(
-      'Tahap 1: Reaksi 4.6 /5 Kepuasan purata · 336 respon Lihat detail',
+      'Tahap 1: Reaksi 4.6 /5 Kepuasan purata · 336 respon Lihat butiran',
     )
   })
 
@@ -263,7 +263,7 @@ describe('mounts', () => {
     expect(t(w, 'kirk-kpi-registered').get('a').attributes('href')).toBe('/guru/monitoring')
   })
 
-  it('alias (detailLinks off): no level links, no "Lihat detail", monitoring links stay', async () => {
+  it('alias (detailLinks off): no level links, no "Lihat butiran", monitoring links stay', async () => {
     const { wrapper: w } = await open('/admin-sekolah/kirkpatrick', { detailLinks: false })
     const hrefs = w.findAll('a').map((a) => a.attributes('href') ?? '')
     expect(hrefs).toEqual(['/admin-sekolah/monitoring', '/admin-sekolah/monitoring'])

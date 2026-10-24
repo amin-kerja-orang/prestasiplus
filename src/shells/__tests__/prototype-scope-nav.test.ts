@@ -105,7 +105,7 @@ describe('navFor with the prototype scope on', () => {
     ]) {
       expect(shown, label).toContain(label)
     }
-    for (const label of ['Misi Harian', 'Broadcast', 'Databank Soalan', 'Liga Pertandingan']) {
+    for (const label of ['Misi Harian', 'Siaran', 'Databank Soalan', 'Liga Pertandingan']) {
       expect(shown, label).not.toContain(label)
     }
   })

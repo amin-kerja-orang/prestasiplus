@@ -883,11 +883,11 @@ test.describe('M12 S6 Rantaian Impak (admin)', MODULE, () => {
     await expect(v('chain-t3')).toHaveText(['946/4158 (22.8%)', '20,991'], TEXT)
     await expect(v('chain-t4')).toHaveText(['4.30', '0.1298', 'Lemah'])
     expect(await texts(page.getByTestId('chain-bands').locator('li'))).toEqual([
-      'Champion 513',
-      'Consistent 259',
-      'Developing 169',
-      'Minimal 5',
-      'Disengaged 3212',
+      'Juara 513',
+      'Konsisten 259',
+      'Berkembang 169',
+      'Minimum 5',
+      'Tidak Terlibat 3212',
     ])
     await expect(page.getByTestId('chain-t1')).toHaveClass(/border-green-300/)
     await expect(page.getByTestId('chain-t2')).toHaveClass(/border-green-300/)
@@ -1044,7 +1044,7 @@ test.describe('M12 S7 Intervensi (admin)', MODULE, () => {
     await expect(page.getByTestId('int-before-mood').locator('option')).toHaveText([
       '-- Pilih --',
       'Gembira',
-      'Okay',
+      'Biasa',
       'Sedih',
       'Tertekan',
     ])

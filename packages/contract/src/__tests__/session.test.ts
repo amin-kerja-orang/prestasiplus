@@ -195,7 +195,7 @@ describe('auth errors', () => {
       expect(AUTH_ERROR_STATUS[c]).toBeGreaterThanOrEqual(400)
       expect(AUTH_ERROR_MESSAGES[c].length).toBeGreaterThan(0)
     }
-    expect(AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS).toBe('Emel/Nama pengguna atau kata laluan tidak sah.')
+    expect(AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS).toBe('E-mel/Nama pengguna atau kata laluan tidak sah.')
     expect(AUTH_ERROR_MESSAGES.RATE_LIMITED).toMatch(/percubaan/)
   })
 })

@@ -46,7 +46,7 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
     await expect(tid(page, 'mock-warning')).toContainText('Persediaan sebelum mula:')
     await expect(tid(page, 'mock-warning').locator('b')).toHaveText('Persediaan sebelum mula:')
     await expect(tid(page, 'mock-warning')).toContainText(
-      'Setelah klik "Mula", timer akan jalan dan tak boleh stop. Kalau pause, score akan jejas.',
+      'Setelah klik "Mula", pemasa akan berjalan dan tidak boleh dihentikan. Jika dijeda, skor akan terjejas.',
     )
 
     const options = tid(page, 'mock-subject').locator('option')
