@@ -225,7 +225,7 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       expect(other.code).not.toBe(a.code)
       expect(a).toMatchObject({ rewardReferrer: 50, rewardReferee: 25, registerUrl: `https://app.example.test/register?ref=${a.code}`, stats: { referrals: 0, rewarded: 0, syilingEarned: 0 } })
       expect(a.whatsappUrl).toBe(`https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%20${a.code}%20untuk%20dapat%2025%20syiling%20PERCUMA!%20https://app.example.test/register?ref=${a.code}`)
-      expect(a.telegramUrl).toBe(`https://t.me/share/url?url=${a.registerUrl}&text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%20${a.code}`)
+      expect(a.telegramUrl).toBe(`https://t.me/share/url?url=${encodeURIComponent(a.registerUrl)}&text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%20${a.code}`)
       expect(await t.db.query(`select 1 from referral_codes where user_id = $1`, [await userIdOf(t.db, STUDENT)])).toHaveLength(1)
     })
 

@@ -2,7 +2,7 @@ import { GamificationAchievementsSchema } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { StreakService } from '../../src/modules/wallet'
-import { bareStudent, bootGamificationApp, dataOf, ledgerOf, signIn, userIdOf, walletOf, START, STUDENT_EMPTY, type GamificationTestApp } from './helpers'
+import { ADMIN, TEACHER, bareStudent, bootGamificationApp, dataOf, ledgerOf, signIn, userIdOf, walletOf, START, STUDENT_EMPTY, type GamificationTestApp } from './helpers'
 
 /**
  * SW10-03: the BR-M14-16 achievement criteria are evaluated after a practice-mode session (FR-M14-51). An achievement
@@ -166,6 +166,20 @@ describe('M14 achievements: evaluateAchievements (BR-M14-16, FR-M14-51)', () => 
     expect(out).toMatchObject({ syiling: 0, xp: 3 })
     expect(await unlockRows(u)).toHaveLength(1)
     expect(await ledgerOf(t, u)).toEqual([])
+  })
+
+  it('only a student account is evaluated: a teacher or an admin (also in Mod Pelajar) unlocks and earns nothing even when every fact is met', async () => {
+    t.facts.counts = { all: 600, practice: 600 }
+    t.facts.accurate = 600
+    for (const who of [TEACHER, ADMIN]) {
+      const id = await userIdOf(t.db, who)
+      const before = (await ledgerOf(t, id)).length
+      for (const isTest of [false, true]) {
+        expect(await t.gamification.evaluateAchievements(id, { isTest })).toEqual({ unlockedIds: [], syiling: 0, xp: 0 })
+      }
+      expect(await unlockRows(id)).toEqual([])
+      expect((await ledgerOf(t, id)).length).toBe(before)
+    }
   })
 
   it('Mod Pelajar stamps the unlock and its ledger row is_test', async () => {
