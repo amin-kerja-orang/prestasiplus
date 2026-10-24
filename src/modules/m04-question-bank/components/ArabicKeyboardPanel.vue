@@ -83,7 +83,7 @@ const MODE_BASE =
   <Teleport to="body">
     <div
       v-if="sheet"
-      class="fixed inset-0 z-40 bg-inverted/40"
+      class="fixed inset-0 z-40 bg-overlay"
       data-testid="vkb-backdrop"
       @click="emit('close')"
     ></div>
