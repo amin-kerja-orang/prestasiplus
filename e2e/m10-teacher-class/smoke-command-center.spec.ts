@@ -82,7 +82,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
 
     await expect(tid(page, 'cc-title')).toHaveText('Command Center')
     await expect(tid(page, 'cc-back')).toHaveAttribute('href', '/guru')
-    await expect(tid(page, 'cc-back')).toHaveText('← Dashboard')
+    await expect(tid(page, 'cc-back')).toHaveText('← Papan Pemuka')
     await expect(tid(page, 'cc-links').getByRole('link')).toHaveText([
       '🔬 Remedial',
       '📊 Rekod',
@@ -303,7 +303,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
   })
 
   test(
-    'E2E-M10-17 Evaluate and Badges for the admin: cards and the empty states',
+    'E2E-M10-17 Evaluate and Lencana for the admin: cards and the empty states',
     provisional('Evaluate and Badges were never opened on live (L-M10-03)'),
     async ({ page, gotoApp }) => {
       await openBoard(page, gotoApp)
@@ -369,7 +369,7 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
     const lastCells = await rows.evaluateAll((els) =>
       els.map((el) => el.querySelectorAll('td')[5]?.textContent?.trim()),
     )
-    expect(lastCells).toEqual(Array(8).fill('Login'))
+    expect(lastCells).toEqual(Array(8).fill('Log Masuk'))
     await expectNoHorizontalScroll(page)
   })
 

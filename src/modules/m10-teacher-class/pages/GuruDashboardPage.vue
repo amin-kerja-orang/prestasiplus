@@ -33,7 +33,7 @@ const { data, error, reload } = useApi((signal) => fetchGuruDashboard({ signal }
 
 watchEffect(() => {
   const name = session.user?.name
-  if (name) setHeader({ title: 'Dashboard Guru', subtitle: welcomeSubtitle(name) })
+  if (name) setHeader({ title: 'Papan Pemuka Guru', subtitle: welcomeSubtitle(name) })
 })
 
 /** FN-M10-2.1.3: four stat tiles, each with its own categorical accent (FR-M10-10, BR-M10-06). */

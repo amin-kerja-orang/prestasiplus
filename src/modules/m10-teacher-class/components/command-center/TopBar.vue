@@ -20,7 +20,7 @@ const clock = useClock()
       <template #breadcrumb>
         <DsBackLink
           to="/guru"
-          label="Dashboard"
+          label="Papan Pemuka"
           :aria-label="S2_COPY.back"
           data-testid="cc-back"
         />

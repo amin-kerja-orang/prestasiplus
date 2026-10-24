@@ -20,8 +20,8 @@ export const DASH_COPY = {
     },
     {
       title: 'Pantau Prestasi',
-      text: 'Buka Monitoring untuk lihat penglibatan pelajar dan topik lemah mereka.',
-      link: 'Monitoring →',
+      text: 'Buka Pemantauan untuk lihat penglibatan pelajar dan topik lemah mereka.',
+      link: 'Pemantauan →',
       to: '/guru/monitoring',
     },
   ],

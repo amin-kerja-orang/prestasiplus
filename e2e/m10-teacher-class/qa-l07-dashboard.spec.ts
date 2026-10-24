@@ -57,8 +57,8 @@ const GUIDE_STEPS = [
   ],
   [
     'Pantau Prestasi',
-    'Buka Monitoring untuk lihat penglibatan pelajar dan topik lemah mereka.',
-    'Monitoring →',
+    'Buka Pemantauan untuk lihat penglibatan pelajar dan topik lemah mereka.',
+    'Pemantauan →',
     '/guru/monitoring',
   ],
 ]
@@ -377,8 +377,8 @@ test.describe('L07 QA S1 Dashboard Guru', MODULE, () => {
   }) => {
     await loginAs(GURU)
     await gotoApp('/guru')
-    await expectTabTitle(page, 'Dashboard Guru - PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Guru')
+    await expectTabTitle(page, 'Papan Pemuka Guru - PRESTASIPLUS')
+    await expect(page.getByTestId('shell-user-title')).toHaveText('Papan Pemuka Guru')
     const sub = page.getByTestId('shell-user-subtitle')
     await expect(sub).toContainText('Selamat datang, ')
     const m = await sub.evaluate((el) => {

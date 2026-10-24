@@ -168,8 +168,8 @@ test.describe('S21 as the admin', MODULE, () => {
 
   test('SRS §12 #65 S23 and S24 of 522425', async ({ page, gotoApp }) => {
     await gotoApp('/guru/soalan/522425')
-    await expectTabTitle(page, 'Detail Soalan — Sumbang Soalan')
-    await expectHeader(page, 'Detail Soalan', 'Selamat datang kembali')
+    await expectTabTitle(page, 'Butiran Soalan — Sumbang Soalan')
+    await expectHeader(page, 'Butiran Soalan', 'Selamat datang kembali')
     // Subject name of 522425 is not asserted: the seed gives "Pendidikan Islam" (reported to M04).
     await expect(page.getByTestId('detail-subject')).not.toHaveText('')
     await expect(page.getByTestId('detail-source')).not.toHaveText('')

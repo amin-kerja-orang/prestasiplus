@@ -115,7 +115,7 @@ describe('S2 board (FR-M10-14..18)', () => {
     expect(labels).toEqual(['Remedial', 'Rekod', 'Nilai', 'Ramalan SPM', 'Kelas', 'Lencana'])
     expect(t('cc-link-rekod').attributes('href')).toBe('/guru/remedial-progress')
     expect(t('cc-back').attributes('href')).toBe('/guru')
-    expect(text('cc-back')).toBe('Dashboard')
+    expect(text('cc-back')).toBe('Papan Pemuka')
   })
 
   it('shows the KPI values of the teacher after the count animation', async () => {
@@ -316,7 +316,7 @@ describe('drill modal (FR-M10-19, FN-M10-2.2.7)', () => {
           answered: 30,
           accuracy: 86,
           lastActiveAt: '2026-09-24T10:00:00+08:00',
-          status: 'Login',
+          status: 'Log Masuk',
         },
         {
           studentId: 3002,

@@ -97,7 +97,7 @@ describe('S1 GuruDashboardPage', () => {
     expect(links.map((l) => [l.text(), l.attributes('href')])).toEqual([
       ['Kelas Saya →', '/guru/kelas'],
       ['Pelajar Saya →', '/guru/pelajar'],
-      ['Monitoring →', '/guru/monitoring'],
+      ['Pemantauan →', '/guru/monitoring'],
     ])
     expect(w.get('[data-testid="checklist-count"]').text()).toBe('0/3 langkah selesai')
     expect(w.get('[data-testid="checklist-percent"]').text()).toBe('0%')
@@ -217,7 +217,7 @@ describe('S1 route and header', () => {
       layout: 'user',
       access: 'auth',
       roles: ['teacher', 'admin'],
-      title: 'Dashboard Guru - PRESTASIPLUS',
+      title: 'Papan Pemuka Guru - PRESTASIPLUS',
     })
   })
 

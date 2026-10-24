@@ -45,8 +45,8 @@ test.describe('M10 S1 Dashboard Guru', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/guru')
     await expect(page.getByTestId('guru-dashboard')).toBeVisible({ timeout: 15_000 })
-    await expectTabTitle(page, 'Dashboard Guru - PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Guru')
+    await expectTabTitle(page, 'Papan Pemuka Guru - PRESTASIPLUS')
+    await expect(page.getByTestId('shell-user-title')).toHaveText('Papan Pemuka Guru')
     await expect(page.getByTestId('shell-user-subtitle')).toContainText('Selamat datang, ')
     await expect(page.getByTestId('shell-user-subtitle')).toContainText('👩‍🏫')
 
@@ -102,7 +102,7 @@ test.describe('M10 S1 Dashboard Guru', MODULE, () => {
     await expect(page.getByTestId('guide-link')).toHaveText([
       'Kelas Saya →',
       'Pelajar Saya →',
-      'Monitoring →',
+      'Pemantauan →',
     ])
     await expectNoHorizontalScroll(page)
 

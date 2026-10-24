@@ -195,7 +195,7 @@ describe('#3 drill (DV-M10-04 titles)', () => {
       status: string
     }[]
     expect(students).toHaveLength(8)
-    expect(students.every((s) => s.status === 'Login')).toBe(true)
+    expect(students.every((s) => s.status === 'Log Masuk')).toBe(true)
     expect((await drill('type=students&filter=active')).body.students).toEqual([])
     expect((await drill('type=today')).body.students).toEqual([])
     const subjects = (await drill('type=subjects')).body.students as {

@@ -18,7 +18,7 @@ import type {
 export const S2_BASE = '/guru/command-center'
 
 export const S2_COPY = {
-  back: '← Dashboard',
+  back: '← Papan Pemuka',
   title: 'Command Center',
   live: 'LIVE',
   tz: 'MYT',

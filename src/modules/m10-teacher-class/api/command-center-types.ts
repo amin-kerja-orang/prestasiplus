@@ -151,7 +151,7 @@ export interface CcDrillStudentRow {
   accuracy: number
   lastActiveAt: string | null
   /** "Aktif" when the student answered today, else "Login". */
-  status: 'Aktif' | 'Login'
+  status: 'Aktif' | 'Log Masuk'
 }
 
 export interface CcDrillTodayRow {
