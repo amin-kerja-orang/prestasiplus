@@ -193,6 +193,36 @@ describe('School: GPS, distribution, subjects and teachers', () => {
   })
 })
 
+describe('SW13-08: school GPS by subject keys the practice rows by the curriculum subject, not the Bijak code', () => {
+  beforeEach(() => {
+    // The aggregate stores the Bijak code MAT; classes and headcount entries know Matematik as curriculum id 3.
+    w.directory.addSubject('MAT', '3')
+    w.classes.add({ id: '11', schoolId: 's1', name: 'Kelas 4B', teacherId: 't1', teacherName: 'Cikgu Satu', subjectId: '3', subjectName: 'Matematik' }, ['1', '2'])
+    w.bijak.addSitting(sitting({ userId: '1', score: 7, subjectId: 'MAT', subjectCode: 'MAT', subjectName: 'Matematik BM' }))
+    w.facts.add(
+      ...['1', '2'].map((studentId) =>
+        entry({ studentId, configId: '5', classroomId: '11', subjectId: '3', subjectName: 'Matematik', targets: [null, 60], actuals: [null, 65] }),
+      ),
+    )
+  })
+
+  it('one Matematik row, with the headcount figures, under the curriculum id', async () => {
+    const r = await w.school.school(schoolAdmin)
+    const mat = r.subjects.filter((s) => s.name.startsWith('Matematik'))
+    expect(mat).toHaveLength(1)
+    expect(mat[0]).toMatchObject({ subjectId: '3', name: 'Matematik', entries: 2, onTrack: 2 })
+    expect(mat[0]?.gps).not.toBeNull()
+    expect(r.subjects.map((s) => s.subjectId)).not.toContain('MAT')
+    PerformanceSchoolSchema.parse(r)
+  })
+
+  it('a code with no curriculum subject keeps its own row', async () => {
+    w.bijak.addSitting(sitting({ userId: '3', score: 5, subjectId: 'XYZ', subjectCode: 'XYZ', subjectName: 'Lain' }))
+    const r = await w.school.school(schoolAdmin)
+    expect(r.subjects.map((s) => s.subjectId)).toContain('XYZ')
+  })
+})
+
 describe('Level detail: on track, below, at risk', () => {
   it('counts every pair, per class and for the level; at risk is the lowest gaps first with names for the own pupils', async () => {
     const r = await w.school.level(teacher, 't4')

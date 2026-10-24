@@ -216,7 +216,10 @@ export class SchoolPerformanceService {
           .sort((a, b) => a.name.localeCompare(b.name) || compareIds(a.userId, b.userId))
       : []
 
-    const hc = this.schoolFigures(ctx, entries, fr.classes, visibleSubjects)
+    // The aggregate keys subject totals by the Bijak CODE (`MAT`); classes and headcount entries use the curriculum
+    // subject id. Map code to id so one subject is one row with the headcount figures (SW13-08).
+    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(visibleSubjects.flatMap((r) => (r.subjectId === undefined ? [] : [r.subjectId])))])
+    const hc = this.schoolFigures(ctx, entries, fr.classes, visibleSubjects, idOfCode)
 
     return {
       scope: kind,
@@ -248,6 +251,7 @@ export class SchoolPerformanceService {
     entries: readonly HeadcountEntryView[],
     classes: readonly ClassInfo[],
     practiceRows: readonly BijakTotals[],
+    idOfCode: ReadonlyMap<string, string>,
   ): Pick<PerformanceSchool, 'gps' | 'distribution' | 'subjects'> {
     const staff = isStaff(ctx.role)
     const graded = gradedEntries(entries)
@@ -288,7 +292,10 @@ export class SchoolPerformanceService {
     }
     const rows = new Map<string, PerformanceSchool['subjects'][number]>()
     for (const r of practiceRows) {
-      if (r.subjectId !== undefined) rows.set(r.subjectId, rowOf(r.subjectId, r.subjectName ?? ''))
+      if (r.subjectId === undefined) continue
+      const id = idOfCode.get(r.subjectId) ?? r.subjectId
+      // The curriculum name (classes, headcount) wins over the Bijak name when the subject is known there.
+      rows.set(id, rowOf(id, nameOfSubject.get(id) ?? r.subjectName ?? ''))
     }
     for (const subjectId of bySubject.keys()) {
       const name = nameOfSubject.get(subjectId)
