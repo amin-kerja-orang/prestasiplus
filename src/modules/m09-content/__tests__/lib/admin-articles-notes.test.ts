@@ -39,7 +39,7 @@ describe('display helpers', () => {
   it('formats dates dd/mm/yyyy (list) and dd Mon yyyy in English (preview)', () => {
     expect(listDate('2026-02-22T10:00:00+08:00')).toBe('22/02/2026')
     expect(previewDate('2026-02-22T10:00:00+08:00')).toBe('22 Feb 2026')
-    expect(previewDate('2026-03-17T23:23:00+08:00')).toBe('17 Mar 2026')
+    expect(previewDate('2026-03-17T23:23:00+08:00')).toBe('17 Mac 2026')
   })
 
   it('reads query values and pages safely', () => {

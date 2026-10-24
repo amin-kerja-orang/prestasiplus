@@ -8,8 +8,8 @@ import { saveBlob } from '@/lib/save-blob'
 import { fetchAudioTemplate, type AudioTemplateFormat } from '../../api/admin-media'
 
 const FALLBACK_NAME: Record<AudioTemplateFormat, string> = {
-  xlsx: 'template-audio-kbat.xlsx',
-  docx: 'template-audio-kbat.docx',
+  xlsx: 'templat-audio-kbat.xlsx',
+  docx: 'templat-audio-kbat.docx',
 }
 
 /** Fetches the template through the API and saves it, as a live download link would. */

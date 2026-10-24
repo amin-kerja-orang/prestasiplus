@@ -239,7 +239,7 @@ const columns: TableColumn<TableRow>[] = [
   { accessorKey: 'categoryLabel', header: 'Kategori', ...cellClass('w-36') },
   { accessorKey: 'gradeLevel', header: 'Tahap', ...cellClass('w-28') },
   { id: 'status', header: 'Status', ...cellClass('w-40') },
-  { accessorKey: 'views', header: 'Views', ...cellClass('w-20') },
+  { accessorKey: 'views', header: 'Paparan', ...cellClass('w-20') },
   { accessorKey: 'date', header: 'Tarikh', ...cellClass('w-28') },
   { id: 'actions', header: 'Tindakan', ...cellClass('w-36') },
 ]
@@ -352,7 +352,7 @@ const cardFields: CardField[] = [
               v-if="row.original.raw.isFeatured"
               name="i-ph-star-fill"
               class="mr-1 size-4 text-warning"
-              title="Featured"
+              title="Pilihan"
               data-testid="article-featured"
             />
             <span data-testid="article-title">{{ row.original.title }}</span>

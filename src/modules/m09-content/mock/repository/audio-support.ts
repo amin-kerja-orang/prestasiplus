@@ -174,7 +174,7 @@ export const audioKbatRepo = defineRepository({
         return matching(filter)
       },
 
-      /** S12 stat cards: Set, Approved, Draft/Pending, Soalan = 30 × sets (BR-M09-15). */
+      /** S12 stat cards: Set, Approved, Draf/Menunggu, Soalan = 30 × sets (BR-M09-15). */
       stats(): { sets: number; approved: number; draftOrPending: number; questions: number } {
         const all = store.query().rows
         return {

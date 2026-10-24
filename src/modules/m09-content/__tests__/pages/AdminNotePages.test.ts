@@ -167,9 +167,9 @@ describe('AdminNoteListPage (M09 S5)', () => {
     expect(w.findAll('[data-testid=admin-notes-type] option').map((o) => o.text())).toEqual([
       'Semua Jenis',
       'Ringkasan',
-      'Mind Map',
-      'Flashcard',
-      'Cheat Sheet',
+      'Peta Minda',
+      'Kad Imbas',
+      'Helaian Rujukan Pantas',
       'Nota Penuh',
     ])
   })

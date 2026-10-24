@@ -82,7 +82,7 @@ test.describe('M09 S17 guest', MODULE, () => {
     await expect(page.getByTestId('video-guest-hero')).toContainText('Tonton & Fahami')
     await expect(page.getByTestId('video-guest-hero')).toContainText('VIDEO PEMBELAJARAN')
     await expect(page.getByTestId('video-guest-hero')).toContainText(
-      'Tutorial, tips SPM, motivasi dan banyak lagi — semua dalam satu platform!',
+      'Tutorial, petua SPM, motivasi dan banyak lagi — semua dalam satu platform!',
     )
     await expect(page.getByTestId('video-category-pill').first()).toHaveText('Semua (2260)')
     await expect(page.getByTestId('video-add')).toHaveCount(0)
@@ -144,14 +144,14 @@ for (const [label, email] of [
       await expectHeader(
         page,
         'Video Pembelajaran',
-        'Tonton video motivasi, tutorial dan tips peperiksaan',
+        'Tonton video motivasi, tutorial dan petua peperiksaan',
       )
       await expect(page.getByTestId('video-search')).toHaveAttribute('placeholder', 'Cari video...')
       await expect(page.getByTestId('video-category-pill')).toHaveText([
         'Semua (2260)',
         'Motivasi (3)',
         'Tutorial (12)',
-        'Tips SPM (3)',
+        'Petua SPM (3)',
         'Ceramah (2242)',
         'Lain-lain (0)',
       ])
@@ -238,7 +238,7 @@ for (const [label, email] of [
         'Semua (97)',
         'Motivasi (1)',
         'Tutorial (12)',
-        'Tips SPM (3)',
+        'Petua SPM (3)',
         'Ceramah (81)',
         'Lain-lain (0)',
       ])
@@ -332,7 +332,7 @@ for (const [label, email] of [
       await expect(page.getByTestId('video-player')).toHaveAttribute('data-embed-url', EMBED)
       await expect(page.getByTestId('video-player-frame')).toHaveAttribute('src', EMBED)
       await expect(page.getByTestId('video-views')).toHaveText(`${String(before)} tontonan`)
-      await expect(page.getByTestId('video-date')).toHaveText('03 Mar 2026')
+      await expect(page.getByTestId('video-date')).toHaveText('03 Mac 2026')
       await expect(page.getByTestId('video-chip-platform')).toHaveText('YouTube')
       await expect(page.getByTestId('video-chip-category')).toHaveText('Ceramah')
       await expect(page.getByTestId('video-chip-subject')).toHaveText('Sejarah')
@@ -404,7 +404,7 @@ test.describe('M09 S20 add video', MODULE, () => {
       'Kongsi video pembelajaran dari YouTube, Vimeo dan lain-lain',
     )
     await expect(page.getByTestId('video-form-sub')).toHaveText(
-      'Paste sahaja link video — kami akan buat selebihnya',
+      'Tampal sahaja pautan video — kami akan buat selebihnya',
     )
     await expect(page.getByTestId('video-url')).toHaveAttribute(
       'placeholder',
@@ -415,7 +415,7 @@ test.describe('M09 S20 add video', MODULE, () => {
     ).toBeVisible()
     await expect(page.getByTestId('video-title-input')).toHaveAttribute(
       'placeholder',
-      'Contoh: Tips Skor A+ Matematik SPM',
+      'Contoh: Petua Skor A+ Matematik SPM',
     )
     await expect(page.getByTestId('video-description-input')).toHaveAttribute(
       'placeholder',
@@ -428,7 +428,7 @@ test.describe('M09 S20 add video', MODULE, () => {
       'Pilih kategori...',
       'Motivasi',
       'Tutorial',
-      'Tips SPM',
+      'Petua SPM',
       'Ceramah',
       'Lain-lain',
     ])

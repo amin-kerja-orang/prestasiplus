@@ -110,7 +110,7 @@ function setRole(id: string): void {
               :to="`mailto:${config.email}`"
               icon="i-ph-envelope-simple-duotone"
               data-testid="panduan-email"
-              >E-mel Kami</UButton
+              >Emel Kami</UButton
             >
             <UButton
               :to="`https://wa.me/${config.whatsappNumber}`"

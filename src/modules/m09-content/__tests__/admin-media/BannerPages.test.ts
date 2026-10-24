@@ -178,7 +178,7 @@ describe('BannerFormPage create (S10)', () => {
       t(w, 'banner-type')
         .findAll('option')
         .map((o) => o.text()),
-    ).toEqual(['Pilih jenis banner', 'Hero', 'Promo', 'Pengumuman', 'Acara'])
+    ).toEqual(['Pilih jenis banner', 'Utama', 'Promosi', 'Pengumuman', 'Acara'])
     expect(
       t(w, 'banner-link-type')
         .findAll('option')
@@ -285,7 +285,7 @@ describe('BannerFormPage edit (S11)', () => {
       t(w, 'banner-type')
         .findAll('option')
         .map((o) => o.text()),
-    ).toEqual(['Pilih jenis banner', 'Hero', 'Promo', 'Pengumuman', 'Acara'])
+    ).toEqual(['Pilih jenis banner', 'Utama', 'Promosi', 'Pengumuman', 'Acara'])
     expect((t(w, 'banner-form').element as HTMLFormElement).checkValidity()).toBe(true)
   })
 

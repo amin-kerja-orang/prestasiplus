@@ -99,7 +99,7 @@ async function submit(): Promise<void> {
 <template>
   <DsPage :back-to="AUDIO_PATH" back-label="Kembali" data-testid="audio-create-page">
     <template #subtitle>
-      Format fixed: 4 audio section, 30 soalan MCQ, soalan dipaparkan serentak mengikut section.
+      Format tetap: 4 bahagian audio, 30 soalan MCQ, soalan dipaparkan serentak mengikut bahagian.
     </template>
     <UAlert
       color="info"

@@ -131,7 +131,7 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
     await expectTouchTarget(submit)
 
     await expect(page.getByTestId('audio-empty')).toHaveText(
-      'Belum ada set Audio KBAT yang approved.',
+      'Belum ada set Audio KBAT yang diluluskan.',
     )
     await page.getByTestId('filter-level').selectOption({ label: 'Tingkatan 4' })
     await page.getByTestId('filter-subject').selectOption({ label: 'Bahasa Melayu' })

@@ -3,7 +3,7 @@
  * S12 `/admin/audio-kbat` "Set Audio KBAT" (M09; FR-M09-61..65, BR-M09-15), v2 staff theme. Admin shell,
  * header title only (no subtitle, DV-M09-08).
  *
- * - Header row with the "Template XLSX" / "Template Word" downloads and "Cipta Set", the guide card, four
+ * - Header row with the "Templat XLSX" / "Templat Word" downloads and "Cipta Set", the guide card, four
  *   KPI tiles (always over every set, never filtered) and the GET filter (level, subject A-Z, status,
  *   search; values kept from the URL) with active-filter chips.
  * - No set: "Belum ada set Audio KBAT." Sets: one table row each (title, level, subject, status label,
@@ -122,14 +122,14 @@ const statItems = computed<StatItem[]>(() => [
   },
   {
     key: 'approved',
-    label: 'Approved',
+    label: 'Diluluskan',
     value: stats.value?.approved ?? 0,
     icon: 'check-circle',
     accent: 'win',
   },
   {
     key: 'draftPending',
-    label: 'Draft/Pending',
+    label: 'Draf/Menunggu',
     value: stats.value?.draftPending ?? 0,
     icon: 'hourglass',
     accent: 'heat',
@@ -190,7 +190,7 @@ const cardFields: CardField[] = [
     <template #meta>
       <UBadge color="warning" variant="subtle" icon="i-ph-headphones" label="Ujian Mendengar" />
     </template>
-    <template #subtitle>Senarai set soalan audio fixed sequence, bukan rawak.</template>
+    <template #subtitle>Senarai set soalan audio berturutan tetap, bukan rawak.</template>
     <template #actions>
       <AudioTemplateLink kind="xlsx" />
       <AudioTemplateLink kind="word" />

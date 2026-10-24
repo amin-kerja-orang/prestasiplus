@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S16 share card (FR-M09-35; URS FN-M09-2.3.6). WhatsApp / Facebook / Twitter open in a new tab;
- * the link button writes `location.href` to the clipboard and shows "Link Disalin!" for 2000 ms.
+ * the link button writes `location.href` to the clipboard and shows "Pautan Disalin!" for 2000 ms.
  * Brand glyphs: the shared WhatsApp icon and the simple-icons Facebook / Twitter glyphs
  * (design-system §6.9). No ARIA beyond live (D10).
  */

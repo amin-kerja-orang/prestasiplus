@@ -58,10 +58,10 @@ export const AUDIO_MAX_PAGE_SIZE = 100
 export const MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
 export const STATUS_LABELS: Readonly<Record<AudioKbatStatus, string>> = {
-  draft: 'Draft',
-  pending_review: 'Pending Review',
-  approved: 'Approved',
-  archived: 'Archived',
+  draft: 'Draf',
+  pending_review: 'Menunggu Semakan',
+  approved: 'Diluluskan',
+  archived: 'Diarkibkan',
 }
 const FILTER_STATUSES = Object.keys(STATUS_LABELS) as AudioKbatStatus[]
 /** BR-M09-15: the create form has no "Archived" option. */
@@ -281,16 +281,16 @@ export const adminAudioRoutes: RouteDef[] = [
     // OQ-M09-03: placeholder files, not real office documents.
     return format === 'xlsx'
       ? blob(
-          new Blob(['Template Audio KBAT (contoh sahaja)\n'], {
+          new Blob(['Templat Audio KBAT (contoh sahaja)\n'], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           }),
-          'template-audio-kbat.xlsx',
+          'templat-audio-kbat.xlsx',
         )
       : blob(
-          new Blob(['Template Audio KBAT (contoh sahaja)\n'], {
+          new Blob(['Templat Audio KBAT (contoh sahaja)\n'], {
             type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           }),
-          'template-audio-kbat.docx',
+          'templat-audio-kbat.docx',
         )
   }),
 

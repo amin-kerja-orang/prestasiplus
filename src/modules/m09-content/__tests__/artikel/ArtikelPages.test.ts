@@ -39,7 +39,7 @@ function card(id: number, extra: Partial<ArticleCard> = {}): ArticleCard {
     title: `Artikel ${String(id)}`,
     excerpt: `Ringkasan ${String(id)}`,
     category: 'TIPS_BELAJAR',
-    categoryLabel: 'Tips Belajar',
+    categoryLabel: 'Petua Belajar',
     isFeatured: false,
     views: 310,
     publishedAt: '2026-02-22T10:00:00+08:00',
@@ -135,7 +135,7 @@ describe('ArtikelListPage (S15)', () => {
     const pills = w.findAll('[data-testid=artikel-pill]')
     expect(pills.map((p) => p.text())).toEqual([
       'Semua',
-      'Tips Belajar',
+      'Petua Belajar',
       'Berita',
       'Motivasi',
       'Panduan Ibu Bapa',
@@ -180,7 +180,7 @@ describe('ArtikelListPage (S15)', () => {
     const w = await mountAt('/artikel', ArtikelListPage)
     expect(w.get('h1').text()).toBe('Artikel Pilihan')
     expect(w.findAll('[data-testid=artikel-hero-line] strong').map((s) => s.text())).toEqual([
-      'tips belajar',
+      'petua belajar',
       'berita pendidikan',
       'motivasi',
       'panduan',
@@ -189,7 +189,7 @@ describe('ArtikelListPage (S15)', () => {
       'Cari artikel menarik...',
     )
     expect(w.text()).toContain('Pilih Kategori:')
-    expect(w.findAll('[data-testid=artikel-pill]')[1]?.text()).toBe('Tips Belajar')
+    expect(w.findAll('[data-testid=artikel-pill]')[1]?.text()).toBe('Petua Belajar')
   })
 })
 
@@ -222,12 +222,12 @@ describe('ArtikelDetailPage (S16)', () => {
     expect(w.get('[data-testid=artikel-breadcrumb-current]').text()).toBe(
       'Teknik Pomodoro: Belajar 25 Minit, Rehat...',
     )
-    expect(w.get('[data-testid=artikel-chip-category]').text()).toBe('Tips Belajar')
+    expect(w.get('[data-testid=artikel-chip-category]').text()).toBe('Petua Belajar')
     expect(w.get('[data-testid=artikel-chip-level]').text()).toBe('Darjah 4')
     expect(w.get('[data-testid=artikel-chip-featured]').text()).toBe('Pilihan')
     expect(w.get('[data-testid=artikel-title]').text()).toBe(DETAIL.title)
     expect(w.get('[data-testid=artikel-author-name]').text()).toBe('Admin Demo')
-    expect(w.get('[data-testid=artikel-published]').text()).toBe('24 Dec 2025')
+    expect(w.get('[data-testid=artikel-published]').text()).toBe('24 Dis 2025')
     expect(w.get('[data-testid=artikel-views]').text()).toBe('597')
     expect(w.get('[data-testid=artikel-likes]').text()).toBe('6')
     expect(w.text()).toContain('Pembaca')
@@ -276,7 +276,7 @@ describe('ArtikelDetailPage (S16)', () => {
     await w.get('[data-testid=share-copy]').trigger('click')
     await flushPromises()
     expect(writeText).toHaveBeenCalledWith(url)
-    expect(w.get('[data-testid=share-copied]').text()).toBe('Link Disalin!')
+    expect(w.get('[data-testid=share-copied]').text()).toBe('Pautan Disalin!')
     vi.advanceTimersByTime(2000)
     await flushPromises()
     expect(w.find('[data-testid=share-copied]').exists()).toBe(false)

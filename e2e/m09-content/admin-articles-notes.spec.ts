@@ -98,10 +98,10 @@ test.describe('M09 S1 article list', MODULE, () => {
     expect(ids[19]).toBe(29)
 
     const row = articleRow(page, 10)
-    await expect(row.getByTestId('article-featured')).toHaveAttribute('title', 'Featured')
+    await expect(row.getByTestId('article-featured')).toHaveAttribute('title', 'Pilihan')
     await expect(row.getByTestId('article-title')).toContainText('Teknik Pomodoro')
     await expect(row.getByTestId('article-author')).toHaveText('Oleh: Admin Demo')
-    await expect(row.getByTestId('article-category')).toHaveText('Tips Belajar')
+    await expect(row.getByTestId('article-category')).toHaveText('Petua Belajar')
     await expect(row.getByTestId('article-category')).toHaveClass(/bg-blue-100/)
     await expect(row.getByTestId('article-category')).toHaveClass(/text-blue-700/)
     await expect(row.getByTestId('article-grade')).toHaveText('DARJAH_4')
@@ -271,7 +271,7 @@ test.describe('M09 S2 create article', MODULE, () => {
 
     const title = page.getByTestId('article-title')
     await expect(title).toHaveAttribute('required', '')
-    await expect(title).toHaveAttribute('placeholder', 'cth: 10 Tips Belajar Matematik')
+    await expect(title).toHaveAttribute('placeholder', 'cth: 10 Petua Belajar Matematik')
     await expect(page.getByTestId('article-excerpt')).toHaveAttribute(
       'placeholder',
       'Ringkasan artikel',
@@ -495,7 +495,7 @@ test.describe('M09 S5 note list', MODULE, () => {
         expect(text).toBe(stored)
       }
     }
-    for (const label of ['Mind Map', 'Flashcard', 'Cheat Sheet']) {
+    for (const label of ['Peta Minda', 'Kad Imbas', 'Helaian Rujukan Pantas']) {
       await gotoApp('/admin/notes')
       await expect(page.getByTestId('admin-note-row').first()).toBeVisible()
       await page.getByTestId('admin-notes-type').selectOption({ label })

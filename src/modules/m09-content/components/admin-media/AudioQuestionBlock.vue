@@ -90,7 +90,7 @@ const OPTIONS = [
             data-testid="q-marks"
           />
         </DsFormField>
-        <DsFormField native :for="`q${String(no)}-kbat`" label="KBAT Level">
+        <DsFormField native :for="`q${String(no)}-kbat`" label="Tahap KBAT">
           <UInput
             :id="`q${String(no)}-kbat`"
             v-model.number="question.kbatLevel"
@@ -109,7 +109,7 @@ const OPTIONS = [
             v-model.number="question.dskpSpId"
             type="number"
             :name="`questions[${String(no)}][dskp_sp_id]`"
-            placeholder="Optional"
+            placeholder="Pilihan"
             size="md"
             class="w-full"
             data-testid="q-dskp"

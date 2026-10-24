@@ -57,14 +57,14 @@ test.describe('M09 S15 article list (logged in)', MODULE, () => {
     await expect(page.locator('[data-layout="user"]')).toBeVisible()
     await expect(page.getByTestId('shell-user-title')).toHaveText('Artikel')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
-      'Tips belajar, berita pendidikan, motivasi dan panduan',
+      'Petua belajar, berita pendidikan, motivasi dan panduan',
     )
     const titles = await cardTitles(page)
     expect(titles[0]).toBe('AI Ini Apa Sebenarnya? Jom Fahami Bersama!')
     expect(titles[1]).toBe('5 Tips Belajar Matematik yang Menyeronokkan')
     expect(titles[2]).toBe('Cara Baca Buku Cerita dalam Bahasa Inggeris')
     const first = cards(page).first()
-    await expect(first.getByTestId('artikel-card-category')).toHaveText('Tips Belajar')
+    await expect(first.getByTestId('artikel-card-category')).toHaveText('Petua Belajar')
     await expect(first.getByTestId('artikel-card-initial')).toHaveText('C')
     await expect(first.getByTestId('artikel-card-author')).toHaveText('Cikgu Demo 01')
     await expect(first.getByTestId('artikel-card-views')).toHaveText('👁️ 310')
@@ -222,7 +222,7 @@ test.describe('M09 S15 article list (guest)', MODULE, () => {
       'Cari artikel menarik...',
     )
     await expect(page.getByText('Pilih Kategori:')).toBeVisible()
-    await expect(page.getByTestId('artikel-pill').nth(1)).toHaveText('✨ Tips Belajar')
+    await expect(page.getByTestId('artikel-pill').nth(1)).toHaveText('✨ Petua Belajar')
     await expect(cards(page).first().locator('[data-icon="clock"]')).toHaveCount(1)
     await expect(page.locator('nav[aria-label="Pagination Navigation"]')).toBeVisible()
     await expect(page.getByText('Nak Baca Lebih Banyak?')).toBeVisible()
@@ -256,12 +256,12 @@ test.describe('M09 S16 article detail', MODULE, () => {
     await expect(page.getByTestId('artikel-breadcrumb-current')).toHaveText(
       'Teknik Pomodoro: Belajar 25 Minit, Rehat...',
     )
-    await expect(page.getByTestId('artikel-chip-category')).toHaveText('Tips Belajar')
+    await expect(page.getByTestId('artikel-chip-category')).toHaveText('Petua Belajar')
     await expect(page.getByTestId('artikel-chip-level')).toHaveText('Darjah 4')
     await expect(page.getByTestId('artikel-chip-featured')).toHaveText('Pilihan')
     await expect(page.getByTestId('artikel-author-initial')).toHaveText('A')
     await expect(page.getByTestId('artikel-author-name')).toHaveText('Admin Demo')
-    await expect(page.getByTestId('artikel-published')).toHaveText('24 Dec 2025')
+    await expect(page.getByTestId('artikel-published')).toHaveText('24 Dis 2025')
     await expect(page.getByTestId('artikel-age')).toHaveText('9 bulan yang lepas')
     await expect(page.getByTestId('artikel-views')).toHaveText('597')
     await expect(page.getByTestId('artikel-likes')).toHaveText('6')
@@ -300,7 +300,7 @@ test.describe('M09 S16 article detail', MODULE, () => {
     }
     await expectTouchTarget(page.getByTestId('share-copy'), 44)
     await page.getByTestId('share-copy').click()
-    await expect(page.getByTestId('share-copied')).toHaveText('Link Disalin!')
+    await expect(page.getByTestId('share-copied')).toHaveText('Pautan Disalin!')
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(url)
     await clock.runFor(2100)
     await expect(page.getByTestId('share-copied')).toHaveCount(0)

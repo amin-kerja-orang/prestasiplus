@@ -257,7 +257,7 @@ describe('#3 POST /api/admin/articles (S2) and the reader', () => {
       isPublished: true,
       author: { id: ADMIN },
       youtubeUrl: null,
-      categoryLabel: 'Tips Belajar',
+      categoryLabel: 'Petua Belajar',
     })
     expect(r.body.data.publishedAt).toEqual(expect.any(String))
     createdId = r.body.data.id as number
@@ -957,7 +957,7 @@ describe('#23 POST /api/admin/audio-kbat-sets (S13, multipart)', () => {
     expect(JSON.stringify(detail.body.data)).not.toContain('correctAnswer')
   })
 
-  it('a draft or pending set counts in Draft/Pending and is not on the student list', async () => {
+  it('a draft or pending set counts in Draf/Menunggu and is not on the student list', async () => {
     const r = await call<DataBody<Json>>(
       'POST',
       '/api/admin/audio-kbat-sets',

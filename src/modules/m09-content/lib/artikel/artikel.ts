@@ -12,7 +12,7 @@ export const ARTIKEL_PAGE_SIZE = 18
 
 export const ARTIKEL_COPY = {
   headerTitle: 'Artikel',
-  headerSubtitle: 'Tips belajar, berita pendidikan, motivasi dan panduan',
+  headerSubtitle: 'Petua belajar, berita pendidikan, motivasi dan panduan',
   hotHeading: 'Artikel Paling Hangat',
   searchPlaceholder: 'Cari artikel...',
   guestSearchPlaceholder: 'Cari artikel menarik...',
@@ -33,7 +33,7 @@ export const ARTIKEL_COPY = {
   likes: 'Suka',
   shareTitle: 'Kongsi Artikel Ini 🎉',
   shareBody: 'Kongsi dengan kawan-kawan supaya mereka pun dapat belajar!',
-  copied: 'Link Disalin!',
+  copied: 'Pautan Disalin!',
   related: 'Artikel Berkaitan',
   latest: 'Artikel Terkini',
   seeAll: 'Lihat Semua Artikel',
@@ -44,7 +44,7 @@ export const ARTIKEL_COPY = {
 export const ARTIKEL_CATEGORIES = CATEGORY_OPTIONS
 
 /** The four bold topics of the guest hero line (FN-M09-2.2.2). */
-export const HERO_TOPICS = ['tips belajar', 'berita pendidikan', 'motivasi', 'panduan'] as const
+export const HERO_TOPICS = ['petua belajar', 'berita pendidikan', 'motivasi', 'panduan'] as const
 
 /** Query of a list state: `search` and `category` kept, `page` only beyond the first. */
 export function listQuery(state: {

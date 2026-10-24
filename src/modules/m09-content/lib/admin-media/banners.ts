@@ -12,8 +12,8 @@ export interface SelectOption {
 
 /** "Jenis Banner": live create set (FN-M09-4.2.4). */
 export const BANNER_TYPE_OPTIONS: readonly SelectOption[] = [
-  { value: 'hero', label: 'Hero' },
-  { value: 'promo', label: 'Promo' },
+  { value: 'hero', label: 'Utama' },
+  { value: 'promo', label: 'Promosi' },
   { value: 'announcement', label: 'Pengumuman' },
   { value: 'event', label: 'Acara' },
 ]

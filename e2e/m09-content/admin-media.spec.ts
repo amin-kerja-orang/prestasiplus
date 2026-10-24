@@ -421,14 +421,14 @@ test.describe('M09 S12 Audio KBAT set list', MODULE, () => {
     await expect(list.getByText('Ujian Mendengar')).toBeVisible()
     await expect(list.locator('h1')).toHaveText('Set Audio KBAT')
     await expect(
-      list.getByText('Senarai set soalan audio fixed sequence, bukan rawak.'),
+      list.getByText('Senarai set soalan audio berturutan tetap, bukan rawak.'),
     ).toBeVisible()
-    await expect(page.getByTestId('template-xlsx')).toHaveText('Template XLSX')
+    await expect(page.getByTestId('template-xlsx')).toHaveText('Templat XLSX')
     await expect(page.getByTestId('template-xlsx')).toHaveAttribute(
       'href',
       '/admin/audio-kbat/template',
     )
-    await expect(page.getByTestId('template-word')).toHaveText('Template Word')
+    await expect(page.getByTestId('template-word')).toHaveText('Templat Word')
     await expect(page.getByTestId('template-word')).toHaveAttribute(
       'href',
       '/admin/audio-kbat/template-word',
@@ -443,15 +443,15 @@ test.describe('M09 S12 Audio KBAT set list', MODULE, () => {
       'Panduan ringkas untuk cikgu yang ingin sumbang soalan Audio KBAT',
     )
     await expect(guide).toContainText(
-      'Set ini bukan soalan rawak. Cikgu perlu bekalkan satu set lengkap 30 soalan MCQ bersama 4 fail audio mengikut range tetap: audio 1 untuk soalan 1-8, audio 2 untuk soalan 9-16, audio 3 untuk soalan 17-24 dan audio 4 untuk soalan 25-30.',
+      'Set ini bukan soalan rawak. Cikgu perlu bekalkan satu set lengkap 30 soalan MCQ bersama 4 fail audio mengikut julat tetap: audio 1 untuk soalan 1-8, audio 2 untuk soalan 9-16, audio 3 untuk soalan 17-24 dan audio 4 untuk soalan 25-30.',
     )
     await expect(guide).toContainText(
-      'Jika cikgu mahu bahan yang mudah ditaip, gunakan Template Word. Jika mahu format paling senang diimport oleh admin, gunakan Template XLSX. Nama fail audio dalam template mesti sama dengan fail audio yang dihantar.',
+      'Jika cikgu mahu bahan yang mudah ditaip, gunakan Templat Word. Jika mahu format paling senang diimport oleh admin, gunakan Templat XLSX. Nama fail audio dalam template mesti sama dengan fail audio yang dihantar.',
     )
     const stats = page.getByTestId('audio-stats')
     await expect(stats).toContainText('Set')
     await expect(stats).toContainText('Approved')
-    await expect(stats).toContainText('Draft/Pending')
+    await expect(stats).toContainText('Draf/Menunggu')
     await expect(stats).toContainText('Soalan')
     expect(
       await page
@@ -472,10 +472,10 @@ test.describe('M09 S12 Audio KBAT set list', MODULE, () => {
     )
     expect(await optionLabels(page, 'filter-status')).toEqual([
       'Semua Status',
-      'Draft',
-      'Pending Review',
-      'Approved',
-      'Archived',
+      'Draf',
+      'Menunggu Semakan',
+      'Diluluskan',
+      'Diarkibkan',
     ])
     await expect(page.getByTestId('filter-search')).toHaveAttribute(
       'placeholder',
@@ -493,7 +493,7 @@ test.describe('M09 S12 Audio KBAT set list', MODULE, () => {
     await expect(page.getByTestId('audio-list-page')).toBeVisible()
     await page.getByTestId('filter-level').selectOption({ label: 'Tingkatan 4' })
     await page.getByTestId('filter-subject').selectOption({ label: 'Matematik' })
-    await page.getByTestId('filter-status').selectOption({ label: 'Approved' })
+    await page.getByTestId('filter-status').selectOption({ label: 'Diluluskan' })
     await page.getByTestId('filter-search').fill('sifir')
     await page.getByTestId('filter-submit').click()
     await expect(page).toHaveURL(
@@ -515,10 +515,10 @@ test.describe('M09 S12 Audio KBAT set list', MODULE, () => {
     await expect(page.getByTestId('audio-list-page')).toBeVisible()
     const xlsx = page.waitForEvent('download')
     await page.getByTestId('template-xlsx').click()
-    expect((await xlsx).suggestedFilename()).toBe('template-audio-kbat.xlsx')
+    expect((await xlsx).suggestedFilename()).toBe('templat-audio-kbat.xlsx')
     const word = page.waitForEvent('download')
     await page.getByTestId('template-word').click()
-    expect((await word).suggestedFilename()).toBe('template-audio-kbat.docx')
+    expect((await word).suggestedFilename()).toBe('templat-audio-kbat.docx')
     await expect(page).toHaveURL(/\/admin\/audio-kbat$/)
   })
 
@@ -527,8 +527,8 @@ test.describe('M09 S12 Audio KBAT set list', MODULE, () => {
     gotoApp,
   }) => {
     for (const [path, name] of [
-      ['/admin/audio-kbat/template', 'template-audio-kbat.xlsx'],
-      ['/admin/audio-kbat/template-word', 'template-audio-kbat.docx'],
+      ['/admin/audio-kbat/template', 'templat-audio-kbat.xlsx'],
+      ['/admin/audio-kbat/template-word', 'templat-audio-kbat.docx'],
     ] as const) {
       const download = page.waitForEvent('download')
       await gotoApp(path)
@@ -582,11 +582,11 @@ test.describe('M09 S13 create Audio KBAT set', MODULE, () => {
     await expect(page.getByTestId('audio-create-page').locator('h1')).toHaveText(
       'Cipta Set Audio KBAT',
     )
-    await expect(page.getByText('Format fixed: 4 audio section, 30 soalan MCQ')).toBeVisible()
+    await expect(page.getByText('Format tetap: 4 bahagian audio, 30 soalan MCQ')).toBeVisible()
     const guide = page.getByTestId('audio-guide')
     await expect(guide).toContainText('Apa yang cikgu perlu sediakan?')
     await expect(guide).toContainText('Lengkapkan 30 soalan mengikut turutan asal.')
-    await expect(guide).toContainText('Jika cikgu bekalkan bahan offline')
+    await expect(guide).toContainText('Jika cikgu bekalkan bahan luar talian')
     await expect(guide.getByTestId('template-word')).toHaveAttribute(
       'href',
       '/admin/audio-kbat/template-word',
@@ -655,7 +655,7 @@ test.describe('M09 S13 create Audio KBAT set', MODULE, () => {
     await expect(q1.getByTestId('q-marks')).toHaveAttribute('max', '20')
     await expect(q1.getByTestId('q-kbat')).toHaveValue('3')
     await expect(q1.getByTestId('q-kbat')).toHaveAttribute('max', '5')
-    await expect(q1.getByTestId('q-dskp')).toHaveAttribute('placeholder', 'Optional')
+    await expect(q1.getByTestId('q-dskp')).toHaveAttribute('placeholder', 'Pilihan')
     await expect(page.getByTestId('question-block').last()).toContainText('Soalan 30')
 
     // Options: one column below md, two from md.
@@ -738,9 +738,9 @@ test.describe('M09 S14 screenshot upload', MODULE, () => {
   }) => {
     await gotoApp('/admin/tools/screenshots')
     await expect(page.getByTestId('screenshots-page')).toBeVisible()
-    await expectTabTitle(page, 'Upload Screenshot - Admin PRESTASIPLUS')
-    await expectHeader(page, 'Upload Screenshot', 'Tool admin untuk upload & urus gambar (private)')
-    await expect(page.getByText('Upload Gambar')).toBeVisible()
+    await expectTabTitle(page, 'Muat Naik Tangkapan Skrin - Admin PRESTASIPLUS')
+    await expectHeader(page, 'Muat Naik Tangkapan Skrin', 'Alat admin untuk muat naik & urus gambar (peribadi)')
+    await expect(page.getByText('Muat Naik Gambar')).toBeVisible()
     await expect(
       page.getByText('Format: JPG, PNG, GIF, WebP, BMP. Maks 10MB setiap fail.'),
     ).toBeVisible()
@@ -748,7 +748,7 @@ test.describe('M09 S14 screenshot upload', MODULE, () => {
     await expect(zone).toContainText('Klik atau seret fail ke sini')
     await expect(zone).toContainText('Boleh pilih banyak fail')
     await expect(
-      page.getByText('Tip: guna nama fail yang ringkas. Sistem akan auto-sanitize nama fail.'),
+      page.getByText('Petua: guna nama fail yang ringkas. Sistem akan membersihkan nama fail secara automatik.'),
     ).toBeVisible()
     const input = page.getByTestId('file-input')
     await expect(input).toHaveAttribute('accept', 'image/*')
