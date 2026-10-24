@@ -7,6 +7,8 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
+import { useFlashStore } from '@/stores/flash'
+import { useSessionStore } from '@/stores/session'
 
 import type {
   MonitoringOverview,
@@ -420,6 +422,34 @@ describe('S2 Monitoring Penglibatan', () => {
     expect(tid('mon-export-csv')?.attributes('href')).toBe('/admin-sekolah/monitoring/export/csv?')
   })
 
+  it('offers the Negeri filter to the admin and the teacher', async () => {
+    await mountAt(MonitoringPage, '/guru/monitoring', { basePath: '/guru/monitoring' })
+    expect(tid('mon-state')?.exists()).toBe(true)
+    expect(tid('mon-period')?.exists()).toBe(true)
+    expect(tid('mon-tahap')?.exists()).toBe(true)
+  })
+
+  it('Admin Sekolah: no Negeri filter (own school only, D30) and a state in the URL is not sent', async () => {
+    useSessionStore().auth = {
+      token: 't',
+      remember: false,
+      expiresAt: '2030-01-01T00:00:00+08:00',
+      user: { role: 'school_admin', schoolId: 900001 },
+    } as never
+    await mountAt(MonitoringPage, '/admin-sekolah/monitoring?state=Johor&tahap=Rendah', {
+      basePath: '/admin-sekolah/monitoring',
+    })
+    expect(tid('mon-state')?.exists()).toBe(false)
+    expect(tid('mon-filters')?.text()).not.toContain('Negeri')
+    expect(tid('mon-period')?.exists()).toBe(true)
+    expect(tid('mon-tahap')?.exists()).toBe(true)
+    expect(api.fetchMonitoringOverview).toHaveBeenCalledWith(
+      { period: '', state: '', tahap: 'Rendah' },
+      expect.anything(),
+    )
+    expect(tid('mon-table-student')?.exists()).toBe(true)
+  })
+
   it('weekly table: week heads with titles, cell classes, best ring, trend and best', async () => {
     await mountAt(MonitoringPage, '/guru/monitoring')
     const heads = all('mon-week-head')
@@ -537,6 +567,16 @@ describe('S2 Monitoring Penglibatan', () => {
       state: '',
       tahap: '',
     })
+  })
+
+  it('a failed CSV export saves nothing and shows an error flash', async () => {
+    api.fetchMonitoringExport.mockRejectedValue(new Error('x'))
+    await mountAt(MonitoringPage, '/guru/monitoring')
+    await tid('mon-export-csv')?.trigger('click')
+    await flushPromises()
+    expect(saveBlob).not.toHaveBeenCalled()
+    const flash = useFlashStore()
+    expect(flash.current?.type).toBe('error')
   })
 
   it('shows the error copy when the fetch fails', async () => {

@@ -13,8 +13,8 @@
 import { computed, nextTick, ref } from 'vue'
 import { isNavigationFailure, NavigationFailureType, useRoute, useRouter } from 'vue-router'
 
-import { useApi } from '@/composables'
-import { DsFilterBar, DsFormField, DsLoadError, DsNativeSelect, DsPage } from '@/ds'
+import { useApi, useFlash, useSession } from '@/composables'
+import { dsCopy, DsFilterBar, DsFormField, DsLoadError, DsNativeSelect, DsPage } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { fetchMonitoringExport, fetchMonitoringOverview } from '../api'
@@ -45,11 +45,18 @@ const route = useRoute()
 const router = useRouter()
 const paths = computed(() => monitoringPaths(props.basePath))
 
+/**
+ * Admin Sekolah sees their own school only (D30; the handlers force the scope server-side), so the
+ * "Negeri" filter is not offered and a `state` in the URL is ignored.
+ */
+const { role } = useSession()
+const ownSchoolOnly = computed(() => role.value === 'school_admin')
+
 const one = (v: unknown) =>
   typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : ''
 const query = computed<MonitoringFilterQuery>(() => ({
   period: one(route.query.period),
-  state: one(route.query.state),
+  state: ownSchoolOnly.value ? '' : one(route.query.state),
   tahap: one(route.query.tahap),
 }))
 
@@ -74,26 +81,33 @@ async function apply(next: MonitoringFilterQuery) {
   refresh.restart()
 }
 
+const flash = useFlash()
+
 async function doExport(format: 'pdf' | 'csv') {
   if (format === 'pdf') {
     window.print()
     return
   }
-  const result = await fetchMonitoringExport('csv', query.value)
-  const csv = buildCsv(
-    ['#', 'Sekolah', 'Kod', 'Negeri', 'Daftar', 'Aktif', '%', 'Tahap'],
-    result.rows.map((r, i) => [
-      i + 1,
-      r.name,
-      r.code ?? '-',
-      r.state,
-      r.registered,
-      r.engaged,
-      pct(r.pct),
-      r.tahap,
-    ]),
-  )
-  saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), result.filename)
+  try {
+    const result = await fetchMonitoringExport('csv', query.value)
+    const csv = buildCsv(
+      ['#', 'Sekolah', 'Kod', 'Negeri', 'Daftar', 'Aktif', '%', 'Tahap'],
+      result.rows.map((r, i) => [
+        i + 1,
+        r.name,
+        r.code ?? '-',
+        r.state,
+        r.registered,
+        r.engaged,
+        pct(r.pct),
+        r.tahap,
+      ]),
+    )
+    saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), result.filename)
+  } catch {
+    // a failed export must say so (it used to end as an unhandled rejection and a silent click)
+    flash.show({ type: 'error', message: [dsCopy.loadError] })
+  }
 }
 const FORM_ID = 'mon-filters-form'
 const filters = useMonitoringFilters(query, (next) => void apply(next))
@@ -179,7 +193,13 @@ async function goto(sectionId: string) {
           <option v-for="[value, label] in PERIODS" :key="value" :value="value">{{ label }}</option>
         </DsNativeSelect>
       </DsFormField>
-      <DsFormField v-slot="{ id }" native label="Negeri" class="w-full md:w-56">
+      <DsFormField
+        v-if="!ownSchoolOnly"
+        v-slot="{ id }"
+        native
+        label="Negeri"
+        class="w-full md:w-56"
+      >
         <DsNativeSelect :id="id" v-model="filters.state.value" name="state" data-testid="mon-state">
           <option value="">Semua Negeri</option>
           <option v-for="s in STATES" :key="s" :value="s">{{ s }}</option>

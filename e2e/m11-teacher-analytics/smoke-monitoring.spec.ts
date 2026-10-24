@@ -38,6 +38,31 @@ async function adminHeader(page: Page, title: string, subtitle?: string) {
   if (subtitle) await expect(tid(page, 'shell-admin-subtitle')).toHaveText(subtitle)
 }
 
+/** Every school link on the page (table or card) is the own school (SMK DEMO 900001). */
+async function expectOwnSchoolOnly(page: Page) {
+  const links = tid(page, 'mon-table-student').getByTestId('mon-school-link')
+  await expect(links.first()).toHaveAttribute('href', '/admin-sekolah/monitoring/sekolah/900001')
+  await expect(
+    tid(page, 'mon-table-student').locator(
+      '[data-testid="mon-school-link"]:not([href$="/sekolah/900001"])',
+    ),
+  ).toHaveCount(0)
+}
+
+/** Below 768px the filter fields sit in a bottom sheet behind a button; open it when it is there. */
+async function openFilters(page: Page) {
+  const open = page.locator('[data-ds="filter-open"]')
+  if (await open.isVisible()) await open.click()
+  await expect(tid(page, 'mon-period')).toBeVisible()
+}
+
+/** Submit the filter form: the "Tapis" button (wide) or the first button of the sheet (narrow). */
+async function applyFilters(page: Page) {
+  const sheet = page.locator('[data-ds="filter-sheet"]')
+  if (await sheet.isVisible()) await sheet.getByRole('button').first().click()
+  else await tid(page, 'mon-filters').getByRole('button', { name: 'Tapis' }).click()
+}
+
 async function openOverview(page: Page, gotoApp: (p: string) => Promise<void>, path: string) {
   await gotoApp(path)
   await expect(tid(page, 'mon-kpis')).toBeVisible()
@@ -731,6 +756,49 @@ test.describe(
         await expectNoHorizontalScroll(page)
       },
     )
+
+    test('no Negeri filter for Admin Sekolah (own school only, D30); a state in the URL is ignored @m11', async ({
+      page,
+      gotoApp,
+      loginAs,
+    }) => {
+      await loginAs(ADMIN_SEKOLAH)
+      await gotoApp('/admin-sekolah/monitoring')
+      await expect(tid(page, 'mon-kpis')).toBeVisible()
+      await expectOwnSchoolOnly(page)
+      await openFilters(page)
+      await expect(tid(page, 'mon-state')).toHaveCount(0)
+      await expect(page.getByText('Negeri', { exact: true })).toHaveCount(0)
+      await expect(tid(page, 'mon-period')).toBeVisible()
+      await expect(tid(page, 'mon-tahap')).toBeVisible()
+
+      if (await page.locator('[data-ds="filter-sheet"]').isVisible()) {
+        await page.keyboard.press('Escape')
+        await expect(page.locator('[data-ds="filter-sheet"]')).toHaveCount(0)
+      }
+
+      // A forged `state` in the URL is ignored (in-app navigation, no second mock boot).
+      await page.evaluate(async () => {
+        const el = document.querySelector('#app') as Element & {
+          __vue_app__: {
+            config: { globalProperties: { $router: { push(to: string): Promise<unknown> } } }
+          }
+        }
+        await el.__vue_app__.config.globalProperties.$router.push(
+          '/admin-sekolah/monitoring?state=Johor',
+        )
+      })
+      await expect(tid(page, 'mon-kpis')).toBeVisible()
+      await expectOwnSchoolOnly(page)
+
+      await openFilters(page)
+      await tid(page, 'mon-period').selectOption('30d')
+      await applyFilters(page)
+      await expect(page).toHaveURL(/period=30d/)
+      await expect(page).not.toHaveURL(/state=Johor/)
+      await expectOwnSchoolOnly(page)
+      await expectNoHorizontalScroll(page)
+    })
 
     test(
       'S3 → S4 → S5 of the own school render; the breadcrumb stays on the alias @m11',
