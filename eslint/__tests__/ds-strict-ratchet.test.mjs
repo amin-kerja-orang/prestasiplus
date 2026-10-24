@@ -13,6 +13,7 @@ import {
   normalizeDsStrict,
   ratchetViolations,
   readDsStrict,
+  expandBraces,
   styleGlobs,
 } from '../ds-strict.mjs'
 
@@ -102,6 +103,18 @@ describe('config/ds-strict.json ratchet', () => {
       'src/ds/**/*.{css,vue}',
       'src/a/B.vue',
     ])
+  })
+
+  it('expands brace alternatives per item (a file stays a file, a directory gets the suffix)', () => {
+    expect(styleGlobs(['src/m08/components/{LeaderboardPodium.vue,timeline/**}'])).toEqual([
+      'src/m08/components/LeaderboardPodium.vue',
+      'src/m08/components/timeline/**/*.{css,vue}',
+    ])
+    expect(expandBraces('a/{b,c{d,e}}/f')).toEqual(['a/b/f', 'a/cd/f', 'a/ce/f'])
+    expect(expandBraces('a/b')).toEqual(['a/b'])
+    expect(styleGlobs(['p/{Lobby,Room}Page.vue'])).toEqual(['p/LobbyPage.vue', 'p/RoomPage.vue'])
+    // Script-only entries have no CSS for Stylelint to read.
+    expect(styleGlobs(['p/**/*.ts', 'q/{a,b}.ts', 'r/**'])).toEqual(['r/**/*.{css,vue}'])
   })
 
   it('accepts legacy string entries as page level', () => {
