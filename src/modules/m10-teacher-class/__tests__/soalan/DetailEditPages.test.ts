@@ -82,6 +82,22 @@ describe('S23 detail', () => {
     expect(w.find('img').exists()).toBe(false)
   })
 
+  it('SW12-01-A: shows the /api/files image URLs of the stem and of the options', async () => {
+    guru.fetchContributedQuestion.mockResolvedValue(
+      detail({
+        questionImage: '/api/files/Zk3Qx9vB2mLw7TnRa1YpUg',
+        optionImages: [null, '/api/files/Ab3Qx9vB2mLw7TnRa1YpUg', null, null],
+      }),
+    )
+    const w = await mountPage(SumbangSoalanDetailPage)
+    const srcs = w.findAll('img').map((i) => i.attributes('src'))
+    expect(srcs).toEqual([
+      '/api/files/Zk3Qx9vB2mLw7TnRa1YpUg',
+      '/api/files/Ab3Qx9vB2mLw7TnRa1YpUg',
+    ])
+    expect(all(w, 'detail-option-image')).toHaveLength(1)
+  })
+
   it('raises the in-place 404 for a question that is not own', async () => {
     guru.fetchContributedQuestion.mockRejectedValue(notFound())
     await mountPage(SumbangSoalanDetailPage, 1)
@@ -163,6 +179,27 @@ describe('S24 edit', () => {
     expect(id).toBe(522425)
     expect(body.questionText).toBe('Pilih ayat yang betul?')
     expect(image).toBe(png)
+  })
+
+  it('SW12-01-A: shows the saved image and puts a questionImage error on the image field', async () => {
+    guru.fetchContributedQuestion.mockResolvedValue(
+      detail({ questionImage: '/api/files/Zk3Qx9vB2mLw7TnRa1YpUg' }),
+    )
+    guru.updateContributedQuestion.mockRejectedValue(
+      new ApiError({
+        status: 422,
+        code: 'VALIDATION_ERROR',
+        message: 'Fail terlalu besar.',
+        fields: { questionImage: 'Fail terlalu besar.' },
+      }),
+    )
+    const w = await mountPage(SumbangSoalanEditPage)
+    expect(t(w, 'e-image-current').attributes('src')).toBe('/api/files/Zk3Qx9vB2mLw7TnRa1YpUg')
+    await pickFiles(w, 'e-image', [new File(['x'], 'rajah.png', { type: 'image/png' })])
+    await t(w, 'edit-form').trigger('submit')
+    await flushPromises()
+    expect(w.find('[data-testid="field-error"]').text()).toContain('Fail terlalu besar.')
+    expect(router.currentRoute.value.path).toBe('/guru/soalan/522425')
   })
 
   it('sends no image when none is chosen', async () => {

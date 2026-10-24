@@ -7,7 +7,17 @@
  * to the created record or to `{error}` and never throw for a refusal.
  */
 
-import { api, wireId, wireIdOpt, type BlobResult, type ListResult } from '@/api'
+import {
+  api,
+  ApiError,
+  API_ERROR_CODES,
+  isApiError,
+  isHttpMode,
+  wireId,
+  wireIdOpt,
+  type BlobResult,
+  type ListResult,
+} from '@/api'
 
 import type {
   BidangOption,
@@ -232,10 +242,72 @@ export function fetchContributedQuestions(
   })
 }
 
-/** Image files of #53: the question image and one optional image per option (A–D = index 0–3). */
+/**
+ * Image files of #53: the question image and one optional image per option (A–D = index 0–3).
+ * A `string` is an image that is already stored (its public id or its `/api/files/<id>` URL as
+ * read): http mode sends it back as it is and uploads nothing.
+ */
 export interface QuestionImages {
-  questionImage?: Blob | null
-  optionImages?: readonly (Blob | null | undefined)[]
+  questionImage?: Blob | string | null
+  optionImages?: readonly (Blob | string | null | undefined)[]
+}
+
+/** What `POST /api/files` returns (`FileRef`): `id` is the public token a question refers to. */
+export interface UploadedFile {
+  id: string
+  url: string
+  mime: string
+  size: number
+  purpose: string
+}
+
+/** `POST /api/files?purpose=question_image` (multipart, part `file`): the id to put in the JSON body. */
+export function uploadQuestionImage(file: Blob, options: Signal = {}): Promise<UploadedFile> {
+  const form = new FormData()
+  form.append('file', file)
+  return api.multipart<UploadedFile>('/api/files', form, {
+    query: { purpose: 'question_image' },
+    ...withSignal(options),
+  })
+}
+
+type ImageInput = Blob | string | null | undefined
+
+/**
+ * http mode, SW12-01-A: uploads every picked file first (one by one, in the given order) and returns
+ * the ids in the same order. A stored image (string) passes through, nothing is `null`. A refused
+ * upload is reported on its own field key (`questionImage`, `optionImages.<i>`) with the message of
+ * the files API; the request that would carry the ids is then not sent. A session loss (401) and
+ * an abort are rethrown as they are.
+ */
+async function resolveImages(
+  entries: readonly (readonly [key: string, value: ImageInput])[],
+): Promise<(string | null)[]> {
+  const fields: Record<string, string> = {}
+  const ids: (string | null)[] = []
+  for (const [key, value] of entries) {
+    if (value instanceof Blob) {
+      try {
+        ids.push((await uploadQuestionImage(value)).id)
+      } catch (err) {
+        if (!isApiError(err) || err.status === 401) throw err
+        fields[key] = err.fields?.file ?? err.message
+        ids.push(null)
+      }
+    } else {
+      ids.push(typeof value === 'string' && value.trim() !== '' ? value : null)
+    }
+  }
+  const [first] = Object.values(fields)
+  if (first !== undefined) {
+    throw new ApiError({
+      status: 422,
+      code: API_ERROR_CODES.VALIDATION_ERROR,
+      message: first,
+      fields,
+    })
+  }
+  return ids
 }
 
 /** Writes `body` into `form`: arrays as `key[]`, arrays of objects as `key[i][field]`. */
@@ -255,16 +327,19 @@ function appendFields(form: FormData, body: object): void {
 }
 
 /**
- * #53 `POST /api/guru/questions`: the new question (`pending_review`, active). With any image the
- * request is multipart (`questionImage`, `optionImages[i]`), otherwise JSON. The second argument
+ * #53 `POST /api/guru/questions`: the new question (`pending_review`, active). The second argument
  * is a `QuestionImages`, or a single Blob (the question image, the earlier signature).
+ *
+ * http mode (SW12-01-A): each picked file is uploaded first (`uploadQuestionImage`) and the request
+ * is JSON with `questionImage` and `optionImages` (four entries, `null` where none) carrying the
+ * returned ids; option images are only uploaded for an MCQ. Mock mode: with any image the request
+ * is multipart (`questionImage`, `optionImages[i]`), otherwise JSON, as before.
  */
-export function createContributedQuestion(
+export async function createContributedQuestion(
   body: CreateQuestionRequest,
   images?: Blob | QuestionImages | null,
 ): Promise<ContributedQuestionDetail> {
   const files: QuestionImages = images instanceof Blob ? { questionImage: images } : (images ?? {})
-  const optionFiles = (files.optionImages ?? []).flatMap((f, i) => (f ? [[i, f] as const] : []))
   // The contract ids are opaque strings (`idWith` / `idOrBlank`): http mode sends them as strings
   // (a number is 422 "Sila pilih tahap pendidikan." etc., SW7-08). null stays null, undefined absent.
   const wired = {
@@ -279,12 +354,36 @@ export function createContributedQuestion(
       : {}),
     ...(body.dskpSpId !== undefined ? { dskpSpId: wireIdOpt(body.dskpSpId) } : {}),
   }
-  if (!files.questionImage && optionFiles.length === 0) {
+  if (isHttpMode()) {
+    const optionEntries =
+      body.questionType === 'mcq'
+        ? Array.from(
+            { length: 4 },
+            (_, i) => [`optionImages.${String(i)}`, files.optionImages?.[i]] as const,
+          )
+        : []
+    const [stem, ...options] = await resolveImages([
+      ['questionImage', files.questionImage],
+      ...optionEntries,
+    ])
+    return api.post<ContributedQuestionDetail>('/api/guru/questions', {
+      body: {
+        ...wired,
+        ...(stem ? { questionImage: stem } : {}),
+        ...(options.some((id) => id !== null) ? { optionImages: options } : {}),
+      },
+    })
+  }
+  const optionFiles = (files.optionImages ?? []).flatMap((f, i) =>
+    f instanceof Blob ? [[i, f] as const] : [],
+  )
+  const stemFile = files.questionImage instanceof Blob ? files.questionImage : null
+  if (!stemFile && optionFiles.length === 0) {
     return api.post<ContributedQuestionDetail>('/api/guru/questions', { body: wired })
   }
   const form = new FormData()
   appendFields(form, wired)
-  if (files.questionImage) form.append('questionImage', files.questionImage)
+  if (stemFile) form.append('questionImage', stemFile)
   for (const [i, f] of optionFiles) form.append(`optionImages[${String(i)}]`, f)
   return api.multipart<ContributedQuestionDetail>('/api/guru/questions', form)
 }
@@ -301,16 +400,27 @@ export function fetchContributedQuestion(
 }
 
 /**
- * #55 `PUT /api/guru/questions/:id` (404 when not own, 422). With an `image` the request is one
- * multipart PUT (the options as `options[i][id]` / `options[i][optionText]`), otherwise JSON.
+ * #55 `PUT /api/guru/questions/:id` (404 when not own, 422).
+ *
+ * http mode (SW12-01-A): a picked file is uploaded first and the request is JSON with
+ * `questionImage` set to the returned id; a string (the image as read) is sent back as it is; no
+ * image leaves the saved one alone (the API keeps it; its PUT has no way to clear it). Mock mode:
+ * with an `image` the request is one multipart PUT (the options as `options[i][id]` /
+ * `options[i][optionText]`), otherwise JSON.
  */
-export function updateContributedQuestion(
+export async function updateContributedQuestion(
   id: number,
   body: UpdateQuestionRequest,
-  image?: Blob | null,
+  image?: Blob | string | null,
 ): Promise<ContributedQuestionDetail> {
   const url = `/api/guru/questions/${String(id)}`
-  if (!image) return api.put<ContributedQuestionDetail>(url, { body })
+  if (isHttpMode()) {
+    const [stem] = await resolveImages([['questionImage', image]])
+    return api.put<ContributedQuestionDetail>(url, {
+      body: stem ? { ...body, questionImage: stem } : body,
+    })
+  }
+  if (!(image instanceof Blob)) return api.put<ContributedQuestionDetail>(url, { body })
   const form = new FormData()
   appendFields(form, body)
   form.append('questionImage', image)

@@ -652,10 +652,20 @@ function submit(): void {
               :testid="`q-option-image-${String(i)}`"
               @update:file="optionImages[i] = $event"
             />
+            <p
+              v-if="fields[`optionImages.${String(i)}`]"
+              class="mt-1 text-caption text-error"
+              :data-testid="`q-option-image-error-${String(i)}`"
+            >
+              {{ fields[`optionImages.${String(i)}`] }}
+            </p>
           </div>
         </DsPanel>
       </div>
       <p v-if="fields.options" class="mt-2 text-caption text-error">{{ fields.options }}</p>
+      <p v-if="fields.optionImages" class="mt-2 text-caption text-error">
+        {{ fields.optionImages }}
+      </p>
       <p v-if="fields.correctAnswer" class="mt-2 text-caption text-error">
         {{ fields.correctAnswer }}
       </p>

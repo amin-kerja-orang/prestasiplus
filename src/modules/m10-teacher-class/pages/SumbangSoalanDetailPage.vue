@@ -120,6 +120,14 @@ watch(notFound, (is404) => {
                 >Betul</UBadge
               >
             </div>
+            <DsArt3D
+              v-if="isLoadableImage(data.optionImages?.[i] ?? null)"
+              variant="plain"
+              :src="data.optionImages[i]!"
+              :alt="`Imej pilihan ${OPTION_LETTERS[i] ?? ''}`"
+              class="mt-2 max-h-32 object-contain"
+              data-testid="detail-option-image"
+            />
 </DsPanel>
           </li>
         </ul>

@@ -14,6 +14,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash } from '@/composables'
 import {
+  DsArt3D,
   DsBackLink,
   DsFileField,
   DsFormField,
@@ -25,7 +26,13 @@ import {
 
 import { fetchContributedQuestion, updateContributedQuestion } from '../api/guru'
 import type { ContributedQuestionDetail, UpdateQuestionRequest } from '../api/types'
-import { COPY, correctItems, EDIT_DIFFICULTIES, OPTION_LETTERS } from '../components/soalan/lib'
+import {
+  COPY,
+  correctItems,
+  EDIT_DIFFICULTIES,
+  isLoadableImage,
+  OPTION_LETTERS,
+} from '../components/soalan/lib'
 
 const props = defineProps<{ id: number }>()
 
@@ -164,8 +171,16 @@ async function save(): Promise<void> {
             label="Tambah Gambarajah (optional)"
             name="e-image"
             help="JPG, PNG, max 5MB."
-            :error="fields.image"
+            :error="fields.questionImage ?? fields.image"
           >
+            <DsArt3D
+              v-if="isLoadableImage(data.questionImage)"
+              variant="plain"
+              :src="data.questionImage"
+              alt="Imej soalan"
+              class="mb-2 max-h-40 object-contain"
+              data-testid="e-image-current"
+            />
             <DsFileField
               :model-value="image"
               name="image"

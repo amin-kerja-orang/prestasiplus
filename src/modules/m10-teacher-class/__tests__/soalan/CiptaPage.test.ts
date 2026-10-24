@@ -119,6 +119,24 @@ describe('S22 save path', () => {
     expect(useFlashStore().pending).toBeNull()
   })
 
+  it('SW12-01-A: an image error shows under its own field (questionImage, optionImages.<i>)', async () => {
+    guru.createContributedQuestion.mockRejectedValue(
+      new ApiError({
+        status: 422,
+        code: 'VALIDATION_ERROR',
+        message: 'Fail terlalu besar.',
+        fields: { questionImage: 'Imej soalan salah.', 'optionImages.2': 'Imej pilihan salah.' },
+      }),
+    )
+    const w = await mountPage()
+    await fill(w)
+    await w.find('form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'q-image').element.parentElement?.textContent).toContain('Imej soalan salah.')
+    expect(t(w, 'q-option-image-error-2').text()).toBe('Imej pilihan salah.')
+    expect(t(w, 'q-option-image-error-1').exists()).toBe(false)
+  })
+
   it('a generic failure shows the save-failed text @provisional UNVERIFIED COPY', async () => {
     guru.createContributedQuestion.mockRejectedValue(new Error('network'))
     const w = await mountPage()
