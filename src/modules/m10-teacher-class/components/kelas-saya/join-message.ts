@@ -1,5 +1,6 @@
 import { ApiError } from '@/api'
 
+import { moduleMessage } from '../../lib/generic-server-text'
 import { KELAS_COPY } from './copy'
 
 /**
@@ -11,7 +12,7 @@ export function joinErrorMessage(err: unknown): string {
     if (err.status === 0) return KELAS_COPY.network
     const field = err.fields?.classCode
     if (field) return field
-    if (err.message) return err.message
+    return moduleMessage(err) ?? KELAS_COPY.joinFailed
   }
   return KELAS_COPY.joinFailed
 }

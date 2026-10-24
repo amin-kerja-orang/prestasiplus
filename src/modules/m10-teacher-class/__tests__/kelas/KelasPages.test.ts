@@ -273,6 +273,50 @@ describe('S5 KelasCreatePage', () => {
     expect(w.findAll('[data-testid="kelas-levels"] [role="radio"]')).toHaveLength(5)
   })
 
+  async function submitFailing(error: ApiError | Error): Promise<VueWrapper> {
+    api.createGuruClass.mockRejectedValue(error)
+    const w = await mountPage(KelasCreatePage)
+    await router.push('/guru/kelas/cipta')
+    await w.get('[data-testid="kelas-name"]').setValue('5 Bestari')
+    await w.get('[data-testid="kelas-subject"]').setValue('4')
+    await w.findAll('[data-testid="kelas-levels"] [role="radio"]')[10]?.trigger('click')
+    await w.get('[data-testid="kelas-form"]').trigger('submit')
+    await flushPromises()
+    return w
+  }
+
+  it('shows the BM create-failed line for a 500 "Server Error" (SWE-08)', async () => {
+    const w = await submitFailing(
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }),
+    )
+    const alert = w.get('[role="alert"]').text()
+    expect(alert).toContain('Gagal mencipta kelas. Sila cuba lagi.')
+    expect(alert).not.toContain('Server Error')
+    expect(router.currentRoute.value.path).toBe('/guru/kelas/cipta')
+  })
+
+  it('shows the network copy when the request never arrived (SWE-08)', async () => {
+    const w = await submitFailing(
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+    )
+    const alert = w.get('[role="alert"]').text()
+    expect(alert).toContain('Ralat rangkaian. Sila cuba lagi.')
+    expect(alert).not.toContain('Failed to fetch')
+  })
+
+  it('shows the generic BM line for a generic 4xx English default and keeps a module BM 409 (SWE-08)', async () => {
+    let w = await submitFailing(
+      new ApiError({ status: 403, code: 'FORBIDDEN', message: 'This action is unauthorized.' }),
+    )
+    expect(w.get('[role="alert"]').text()).toContain('Gagal mencipta kelas. Sila cuba lagi.')
+    expect(w.get('[role="alert"]').text()).not.toContain('unauthorized')
+    w.unmount()
+    w = await submitFailing(
+      new ApiError({ status: 409, code: 'CONFLICT', message: 'Nama kelas sudah digunakan.' }),
+    )
+    expect(w.get('[role="alert"]').text()).toContain('Nama kelas sudah digunakan.')
+  })
+
   it('creates the class, sets the flash and goes to /guru/kelas', async () => {
     api.createGuruClass.mockResolvedValue(cls(9000001))
     const w = await mountPage(KelasCreatePage)

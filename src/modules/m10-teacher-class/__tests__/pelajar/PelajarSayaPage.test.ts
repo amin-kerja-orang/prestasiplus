@@ -175,6 +175,27 @@ describe('S6 PelajarSayaPage', () => {
     })
   })
 
+  it('flashes the BM action-failed text for a 500, a lost connection and a generic 403 (SWE-10)', async () => {
+    for (const error of [
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }),
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+      new ApiError({ status: 403, code: 'FORBIDDEN', message: 'This action is unauthorized.' }),
+    ]) {
+      api.addStudentToClass.mockRejectedValueOnce(error)
+      const w = await mountPage()
+      await w.get('[data-testid="tab-school"]').trigger('click')
+      await flushPromises()
+      await w.get('[data-testid="pelajar-target"]').setValue('2002')
+      await w.findAll('[data-testid="student-add"]')[1]?.trigger('click')
+      await flushPromises()
+      expect(useFlashStore().current).toMatchObject({
+        type: 'error',
+        message: 'Tindakan tidak berjaya. Sila cuba lagi.',
+      })
+      w.unmount()
+    }
+  })
+
   it('removes a student from a class after confirm, and sends nothing when dismissed', async () => {
     api.removeStudentFromClass.mockResolvedValue({ removed: 1 })
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)

@@ -90,12 +90,7 @@ async function download(): Promise<void> {
       <AmaranSubjectCard v-if="data.weakness.length > 0" :rows="data.weakness" />
       <AmaranPupilTable :rows="data.pupils" />
     </template>
-    <DsLoadError
-      v-else-if="error && !refused"
-      :message="error.message"
-      testid="am-error"
-      @retry="reload"
-    />
+    <DsLoadError v-else-if="error && !refused" testid="am-error" @retry="reload" />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="am-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />

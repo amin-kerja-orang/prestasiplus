@@ -317,9 +317,10 @@ describe('states', () => {
     expect(api.fetchSchoolRisk).not.toHaveBeenCalled()
   })
 
-  it('shows the server message for another failure', async () => {
-    const w = await mountPage(apiError(500, 'SERVER_ERROR', 'Ralat pelayan'))
-    expect(text(w, 'am-error')).toContain('Ralat pelayan')
+  it('shows the BM load error, not the server text, for another failure (SWE)', async () => {
+    const w = await mountPage(apiError(500, 'SERVER_ERROR', 'Server Error'))
+    expect(text(w, 'am-error')).toContain('Tidak dapat memuatkan data. Sila cuba semula.')
+    expect(text(w, 'am-error')).not.toContain('Server Error')
     expect(useRouteOutcome().value).toBeNull()
   })
 

@@ -7,6 +7,7 @@ import type { Router } from 'vue-router'
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
+import { COPY } from '../../components/soalan/lib'
 import SumbangSoalanPage from '../../pages/SumbangSoalanPage.vue'
 import { listMeta, makeRouter, question, summary } from './fixtures'
 import { pickFiles } from './pick-file'
@@ -162,6 +163,26 @@ describe('S21 Sumbang Soalan', () => {
     await t(w, 'question-delete').trigger('click')
     await flushPromises()
     expect(t(w, 'soalan-delete-error').text()).toContain('Rekod tidak dijumpai.')
+  })
+
+  it('shows the save-failed text when a delete fails with a 500 or a lost connection (SWE-09)', async () => {
+    for (const error of [
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }),
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Not Found.' }),
+    ]) {
+      const w = await mountPage()
+      await all(w, 'question-toggle')[0]!.trigger('click')
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      guru.deleteContributedQuestion.mockRejectedValueOnce(error)
+      await t(w, 'question-delete').trigger('click')
+      await flushPromises()
+      expect(t(w, 'soalan-delete-error').text()).toContain(COPY.saveFailed)
+      expect(t(w, 'soalan-delete-error').text()).not.toMatch(
+        /Server Error|Failed to fetch|Not Found/,
+      )
+      w.unmount()
+    }
   })
 
   it('requests the page from ?page= and renders the pager', async () => {
