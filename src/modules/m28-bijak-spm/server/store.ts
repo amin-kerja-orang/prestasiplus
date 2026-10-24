@@ -26,7 +26,7 @@ import type {
   SaveExtractedPayload,
 } from '../admin/intake/types'
 import { AdminOps, seedAdminSlice, type AdminSlice } from './admin'
-import { composeFromBlueprint, poolUnits, type PoolUnit } from '../domain/blueprint'
+import { composeFromBlueprint, poolUnits, stemKeys, type PoolUnit } from '../domain/blueprint'
 import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registry'
 import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
@@ -336,7 +336,13 @@ export class BijakServer {
     for (const s of bp.sections) {
       unitsByPool.set(
         s.pool,
-        poolUnits(s.pool, BANK.pool, BANK.groups, (qid) => BANK.questions.get(qid)?.groupId),
+        poolUnits(
+          s.pool,
+          BANK.pool,
+          BANK.groups,
+          (qid) => BANK.questions.get(qid)?.groupId,
+          (qid) => stemKeys(qid, BANK.questions.get(qid)?.stem ?? ''),
+        ),
       )
     }
     const seen = new Set(
@@ -565,20 +571,25 @@ export class BijakServer {
 
   /**
    * An exam attempt the server already closed at the deadline still accepts what the device saved
-   * before the deadline, within 24 h, and is graded again (AC-05.4).
+   * before the deadline, within 24 h, and is graded again (AC-05.4). The ticks ("Pilih soalan ini")
+   * travel with those answers: in Mod Peperiksaan only ticked questions count, so a late answer the
+   * client auto-ticked would score 0 without them. Picks carry no time stamp, so they are taken
+   * only together with at least one change saved before the deadline.
    */
   private lateSync(
     a: Attempt,
     changes: Pick<SaveChange, 'partId' | 'answer' | 'rev' | 'savedAt'>[],
+    picks?: Record<string, string[]>,
   ): boolean {
     if (a.status !== 'auto_submitted' || !a.deadline) return false
     if (this.now() > a.deadline + LATE_SYNC_WINDOW_MS) return false
     const at = this.now()
     const ok = changes.filter((c) => Math.min(c.savedAt, at) <= a.deadline!)
     if (!ok.length) return false
-    const before = JSON.stringify(a.answers)
+    const before = JSON.stringify([a.answers, a.picks])
     this.merge(a, ok)
-    if (JSON.stringify(a.answers) === before) return false
+    if (picks) a.picks = { ...picks }
+    if (JSON.stringify([a.answers, a.picks]) === before) return false
     a.result = this.gradeAttempt(a)
     return true
   }
@@ -595,7 +606,7 @@ export class BijakServer {
     this.sweep()
     const a = this.attemptOf(userId, attemptId)
     if (a.status !== 'in_progress') {
-      const regraded = this.lateSync(a, payload.changes)
+      const regraded = this.lateSync(a, payload.changes, payload.picks)
       if (regraded) this.persist()
       return { savedAt: this.now(), closed: true, ...(regraded ? { regraded } : {}) }
     }
@@ -619,7 +630,7 @@ export class BijakServer {
       ...Object.entries(payload.answers ?? {}).map(([partId, v]) => ({ partId, ...v })),
     ]
     if (a.status !== 'in_progress') {
-      const regraded = this.lateSync(a, carried)
+      const regraded = this.lateSync(a, carried, payload.picks)
       if (regraded) this.persist()
       return {
         attemptId: a.id,
