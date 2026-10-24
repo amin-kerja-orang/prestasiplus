@@ -5,6 +5,7 @@ import { identitySeed } from '../../prisma/seed/core/identity'
 import { gamificationSeed } from '../../prisma/seed/gamification'
 import { walletSeed } from '../../prisma/seed/wallet'
 import { AccountPorts, type RegistrationHook } from '../../src/modules/account'
+import { AuthPorts } from '../../src/modules/auth'
 import { GamificationModule, GamificationService } from '../../src/modules/gamification'
 import { WalletModule } from '../../src/modules/wallet'
 import { schoolIdOf, userIdOf } from '../auth/helpers'
@@ -50,6 +51,9 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     db = await createTestDatabase()
     await runSeeds([identitySeed, walletSeed, gamificationSeed], { prisma: db.prisma })
     t = await bootAccountApp({ db, modules: [WalletModule, GamificationModule] })
+    // The referral is under test: the M14 login hook is switched off, so a registration's auto-login (FR-M01-69,
+    // LOGINHOOK-AUTO) adds no +2 daily_login to these balances. A no-op while no registration path fires it.
+    t.app.get(AuthPorts).overrideLoginHook(null)
     schoolId = await schoolIdOf(db, 'DEMO001')
     referrerId = await userIdOf(db, 'pelajar@demo.test')
     code = (await t.app.get(GamificationService).referral(referrerId)).code
