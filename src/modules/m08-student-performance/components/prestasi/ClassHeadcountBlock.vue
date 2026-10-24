@@ -20,7 +20,7 @@ const icon = usePhIcon()
         <li>
           <DsStatTile
             :value="block.onTrack"
-            unit="On Track / Above"
+            unit="Atas Landasan / Melebihi"
             :icon="icon('check-circle')"
             data-testid="hc-on"
           />
@@ -28,7 +28,7 @@ const icon = usePhIcon()
         <li>
           <DsStatTile
             :value="block.below"
-            unit="Below Target"
+            unit="Bawah Sasaran"
             :icon="icon('warning')"
             data-testid="hc-below"
           />
@@ -48,10 +48,10 @@ const icon = usePhIcon()
           :max="100"
           color="success"
           size="md"
-          aria-label="On Track"
+          aria-label="Atas Landasan"
         />
         <p class="tabular text-caption text-muted">
-          On Track {{ block.pct.on }}% · Below {{ block.pct.below }}% · Tiada Data
+          Atas Landasan {{ block.pct.on }}% · Below {{ block.pct.below }}% · Tiada Data
           {{ block.pct.none }}%
         </p>
       </div>

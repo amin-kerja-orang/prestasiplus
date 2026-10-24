@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S17 `/timeline/create` "Post Baru" (M08-T3; FR-M08-100..103, BR-M08-34, FN-M08-6.2.*): native HTML5
+ * S17 `/timeline/create` "Hantaran Baharu" (M08-T3; FR-M08-100..103, BR-M08-34, FN-M08-6.2.*): native HTML5
  * validation, the photo drop zone with previews and per-file captions (DV-30: a typed caption stays with its
  * file), and `POST /api/timeline`. 201 goes to `/timeline`; a 422 shows its messages above the form and keeps
  * every value. Photo uploads are simulated by the mock; the page only previews them.
@@ -114,8 +114,8 @@ const fieldError = (name: string): string | undefined => errors.value[name]
 </script>
 
 <template>
-  <DsPage title="📸 Post Baru" data-testid="timeline-create-page">
-    <DsBackLink to="/timeline" label="Kembali ke Timeline" data-testid="back-link" />
+  <DsPage title="📸 Hantaran Baharu" data-testid="timeline-create-page">
+    <DsBackLink to="/timeline" label="Kembali ke Garis Masa" data-testid="back-link" />
 
     <DsPanel>
       <form class="flex flex-col gap-6" data-testid="timeline-form" @submit.prevent="submit">

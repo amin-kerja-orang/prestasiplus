@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S22 `/headcount/{id}/summary` "Ringkasan Kelas" (M08-T6; FR-M08-128…132, BR-M08-08 rule 2, BR-M08-32).
- * Four tiles, the per-OTR distribution (Above / On Track ±2% / Below / N/A) and the two buttons. "Export
+ * Four tiles, the per-OTR distribution (Above / Atas Landasan ±2% / Below / N/A) and the two buttons. "Export
  * CSV" downloads the CSV of S23 (UNVERIFIED L-12). An unknown id is the 404 page, a config the viewer may
  * not open the 403 page.
  */
@@ -70,9 +70,9 @@ const labels = computed(() => (data.value?.otrs ?? []).map((o) => `OTR${String(o
 const series = computed(() => {
   const o = data.value?.otrs ?? []
   return [
-    { label: 'Above Target', data: o.map((x) => x.above), slot: 2 },
-    { label: 'On Track (±2%)', data: o.map((x) => x.onTrack), slot: 1 },
-    { label: 'Below Target', data: o.map((x) => x.below), slot: 3 },
+    { label: 'Melebihi Sasaran', data: o.map((x) => x.above), slot: 2 },
+    { label: 'Atas Landasan (±2%)', data: o.map((x) => x.onTrack), slot: 1 },
+    { label: 'Bawah Sasaran', data: o.map((x) => x.below), slot: 3 },
     { label: 'Belum Diisi', data: o.map((x) => x.na), slot: 4 },
   ]
 })
@@ -95,7 +95,7 @@ const series = computed(() => {
         <div class="flex flex-col gap-4">
           <DsChart
             type="bar"
-            title="Taburan Prestasi Per OTR"
+            title="Taburan Prestasi Setiap OTR"
             :heading-level="2"
             :labels="labels"
             :series="series"
@@ -112,10 +112,10 @@ const series = computed(() => {
                 ><UIcon name="i-ph-arrow-up" class="size-4" />Above: {{ o.above }}</span
               >
               <span class="inline-flex items-center gap-1 text-caption text-default"
-                ><UIcon name="i-ph-check" class="size-4" />On Track: {{ o.onTrack }}</span
+                ><UIcon name="i-ph-check" class="size-4" />Atas Landasan: {{ o.onTrack }}</span
               >
               <span class="inline-flex items-center gap-1 text-caption text-error"
-                ><UIcon name="i-ph-arrow-down" class="size-4" />Below: {{ o.below }}</span
+                ><UIcon name="i-ph-arrow-down" class="size-4" />Bawah: {{ o.below }}</span
               >
               <span class="text-caption text-dimmed">N/A: {{ o.na }}</span>
             </li>
@@ -138,7 +138,7 @@ const series = computed(() => {
           :to="`/headcount/${String(data.config.id)}`"
           size="lg"
           icon="i-ph-table"
-          label="Lihat Table Penuh"
+          label="Lihat Jadual Penuh"
           data-testid="full-table"
         />
         <UButton
@@ -147,7 +147,7 @@ const series = computed(() => {
           variant="soft"
           size="lg"
           icon="i-ph-download-simple"
-          label="Export CSV"
+          label="Eksport CSV"
           data-testid="export-csv"
           @click.prevent="exportCsv"
         />

@@ -342,7 +342,7 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     const cards = page.getByTestId('headcount-block').locator('article')
     await expect(cards).toHaveCount(5)
     const order = ['Sejarah', 'Matematik', 'Bahasa Melayu', 'Sains', 'Bahasa Inggeris']
-    const pills = ['Below', 'Below', 'On Track', '—', 'On Track']
+    const pills = ['Below', 'Below', 'Atas Landasan', '—', 'Atas Landasan']
     for (let i = 0; i < 5; i++) {
       await expect(cards.nth(i).locator('h3')).toHaveText(order[i]!)
       await expect(cards.nth(i)).toContainText('4 Simulasi · 2026')

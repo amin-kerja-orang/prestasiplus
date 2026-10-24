@@ -49,7 +49,7 @@ describe('the reader of the headcount port', () => {
     expect(on(by(10))).toHaveLength(34)
     expect(by(11)).toHaveLength(403)
     expect(on(by(11))).toHaveLength(114)
-    // The remaining graded entries sit in configs of the other levels (Auto-Setup levels 1-9).
+    // The remaining graded entries sit in configs of the other levels (Persediaan Auto levels 1-9).
     const other = entries.filter((e) => e.levelId < 10)
     expect(other).toHaveLength(330)
     expect(other.every((e) => latestAr(e) !== null)).toBe(true)

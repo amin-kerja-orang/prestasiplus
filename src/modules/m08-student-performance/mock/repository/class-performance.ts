@@ -149,7 +149,7 @@ function headcountBlock(cls: ClassroomRow): {
   for (const line of lines) {
     const l = latestAr(line.view)
     const s = l === null ? 'na' : bandStatus(l.ar, l.target)
-    // S5 counts Above + On Track as "On Track" (BR-M08-08 rule 2).
+    // S5 counts Above + Atas Landasan as "Atas Landasan" (BR-M08-08 rule 2).
     const badge = s === 'above' || s === 'on' ? 'on' : s === 'below' ? 'below' : 'na'
     badges.set(line.studentId, badge)
     if (badge === 'on') on++

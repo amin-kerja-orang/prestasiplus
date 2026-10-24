@@ -45,7 +45,7 @@ export function selisihText(diff: number): string {
 export const percentOf = (n: number, total: number): number =>
   total <= 0 ? 0 : Math.round((n / total) * 100)
 
-/** S13 "Keseluruhan On-Track" colour (FR-M08-85): ≥ 70 emerald-600, ≥ 50 amber-600, else red-500. */
+/** S13 "Keseluruhan Atas Landasan" colour (FR-M08-85): ≥ 70 emerald-600, ≥ 50 amber-600, else red-500. */
 export function onTrackTone(pct: number): string {
   if (pct >= 70) return 'text-emerald-600'
   if (pct >= 50) return 'text-amber-600'
@@ -97,7 +97,7 @@ export function dashboardLevels(
   return [...seen.entries()].sort((a, b) => a[0] - b[0]).map(([level, name]) => ({ level, name }))
 }
 
-/** S12 Auto-Setup checkboxes (FR-M08-78): Darjah D1–D6 post 1…6, Tingkatan T1–T5 post "T1"…"T5". */
+/** S12 Persediaan Auto checkboxes (FR-M08-78): Darjah D1–D6 post 1…6, Tingkatan T1–T5 post "T1"…"T5". */
 export const DARJAH_LEVELS: readonly { label: string; value: number }[] = [1, 2, 3, 4, 5, 6].map(
   (n) => ({ label: `D${String(n)}`, value: n }),
 )

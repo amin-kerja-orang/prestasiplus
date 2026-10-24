@@ -4,7 +4,7 @@
  * S9 `/analisa-item/sekolah[/{id}]`, S10 `/analisa-item/kelas`, S11 `/analisa-item/kelas/{id}`, S21
  * `/laporan-mingguan` and the `/analisa-item` redirect, as the demo admin, pelajar (account 2) and Admin
  * Sekolah (account 8) at 375 / 768 / 1280: the §6.10 anchors visible on these screens, the 403 / 404 /
- * redirect behaviour, titles and no horizontal page scroll. Headcount figures (GPS, On Track / Below,
+ * redirect behaviour, titles and no horizontal page scroll. Headcount figures (GPS, Atas Landasan / Below,
  * at-risk rows) are M08-T1b's and are not asserted here.
  */
 

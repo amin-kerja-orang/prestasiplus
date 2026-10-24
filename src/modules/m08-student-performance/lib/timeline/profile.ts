@@ -5,13 +5,13 @@
 import { formatNumber } from '@/lib/number'
 
 /**
- * The one table from the M14 tier key to the live English label ("🥉 Bronze", "397 syiling lagi ke
+ * The one table from the M14 tier key to the live English label ("🥉 Gangsa", "397 syiling lagi ke
  * Silver") and the badge colour (M14 catalogue colours, with the observed bronze `#CD7F32`).
  */
 const TIERS: Record<string, { label: string; colour: string }> = {
-  bronze: { label: 'Bronze', colour: '#cd7f32' },
-  silver: { label: 'Silver', colour: '#94a3b8' },
-  gold: { label: 'Gold', colour: '#d4a017' },
+  bronze: { label: 'Gangsa', colour: '#cd7f32' },
+  silver: { label: 'Perak', colour: '#94a3b8' },
+  gold: { label: 'Emas', colour: '#d4a017' },
   platinum: { label: 'Platinum', colour: '#64748b' },
 }
 export const tierName = (key: string): string => TIERS[key]?.label ?? key

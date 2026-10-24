@@ -44,17 +44,17 @@ test.describe('M08 T3 S16 / S17 admin', { tag: [moduleTag(8)] }, () => {
     mock,
   }) => {
     await gotoApp('/timeline')
-    await expect(page.getByTestId('timeline-empty')).toContainText('Timeline Kosong')
-    await expectTabTitle(page, 'Timeline Saya - PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Timeline Saya')
+    await expect(page.getByTestId('timeline-empty')).toContainText('Garis Masa Kosong')
+    await expectTabTitle(page, 'Garis Masa Saya - PRESTASIPLUS')
+    await expect(page.getByTestId('shell-user-title')).toHaveText('Garis Masa Saya')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
       'Kongsi pencapaian & cerita anda',
     )
-    await expect(page.getByRole('heading', { name: 'Timeline Saya', level: 2 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Garis Masa Saya', level: 2 })).toBeVisible()
     await expect(page.getByText('Kongsi sijil, pencapaian, aktiviti & cerita anda')).toBeVisible()
     await expect(page.getByText('Mula kongsi pencapaian, sijil, dan cerita anda')).toBeVisible()
     await expect(page.getByTestId('add-post')).toHaveAttribute('href', '/timeline/create')
-    await expect(page.getByTestId('add-first')).toHaveText('Tambah Post Pertama')
+    await expect(page.getByTestId('add-first')).toHaveText('Tambah Hantaran Pertama')
     await expect(page.getByTestId('add-first')).toHaveAttribute('href', '/timeline/create')
 
     const url = page.getByTestId('public-url')
@@ -77,9 +77,9 @@ test.describe('M08 T3 S16 / S17 admin', { tag: [moduleTag(8)] }, () => {
 
   test('S17 fields, defaults and limits; Batal discards', async ({ page, gotoApp }) => {
     await gotoApp('/timeline/create')
-    await expect(page.getByRole('heading', { name: 'Post Baru' })).toBeVisible()
-    await expectTabTitle(page, 'Tambah Post - Timeline')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Tambah Post')
+    await expect(page.getByRole('heading', { name: 'Hantaran Baharu' })).toBeVisible()
+    await expectTabTitle(page, 'Tambah Hantaran - Garis Masa')
+    await expect(page.getByTestId('shell-user-title')).toHaveText('Tambah Hantaran')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
       'Kongsi pencapaian atau cerita baru',
     )
@@ -287,7 +287,7 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('share')).toHaveText('Kongsi')
     await expect(page.getByTestId('home')).toHaveAttribute('href', '/')
 
-    await expect(page.getByTestId('tier-pill')).toHaveText('🥉 Bronze')
+    await expect(page.getByTestId('tier-pill')).toHaveText('🥉 Gangsa')
     await expect(page.getByTestId('chip-school')).toHaveText('SK Demo')
     await expect(page.getByTestId('chip-level')).toHaveText('Darjah 6')
     await expect(page.getByTestId('chip-joined')).toHaveText('Ahli sejak 25 Oktober 2025')
@@ -295,9 +295,9 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('mini-kombo')).toContainText('1')
     await expect(page.getByTestId('mini-kombo')).toContainText('Kombo')
     await expect(page.getByTestId('mini-tepat')).toContainText('0%')
-    await expect(page.getByTestId('tier-card')).toContainText('Bronze')
+    await expect(page.getByTestId('tier-card')).toContainText('Gangsa')
     await expect(page.getByTestId('tier-card')).toContainText('Tahap 1')
-    await expect(page.getByTestId('tier-next')).toHaveText('244 syiling lagi ke Silver')
+    await expect(page.getByTestId('tier-next')).toHaveText('244 syiling lagi ke Perak')
     const bar = await page.getByTestId('tier-bar').evaluate((el) => (el as HTMLElement).style.width)
     expect(bar).toBe('51.2%')
     await expect(page.getByRole('heading', { name: 'Ringkasan Aktiviti' })).toBeVisible()
@@ -352,7 +352,7 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('"Kongsi" without navigator.share copies the link and alerts "Link disalin!"', async ({
+  test('"Kongsi" without navigator.share copies the link and alerts "Pautan disalin!"', async ({
     page,
     gotoApp,
   }) => {
@@ -366,7 +366,7 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
       void d.accept()
     })
     await page.getByTestId('share').click()
-    await expect.poll(() => dialogs).toEqual(['Link disalin!'])
+    await expect.poll(() => dialogs).toEqual(['Pautan disalin!'])
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       new URL('/pelajar/1', page.url()).href,
     )

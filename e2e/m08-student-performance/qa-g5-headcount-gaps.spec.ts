@@ -74,8 +74,8 @@ test.describe('M08 G5 headcount gaps (admin)', { tag: [moduleTag(8)] }, () => {
       '4 Simulasi',
       '· 2026 · Kod: DEMO-4S',
       '📈 Headcount — Ringkasan Kelas',
-      '7 On Track / Above',
-      '8 Below Target',
+      '7 Atas Landasan / Melebihi',
+      '8 Bawah Sasaran',
       '0 Tiada Data',
       'Purata TOV: 62.1%',
       'Purata ETR: 71.9%',
@@ -92,7 +92,7 @@ test.describe('M08 G5 headcount gaps (admin)', { tag: [moduleTag(8)] }, () => {
     expect(html).toMatch(/width: 53\.33\d*%/)
   })
 
-  test('AC-35.2 class 516 ranking: 7 On Track / 8 Below, attention list 15 idle', async ({
+  test('AC-35.2 class 516 ranking: 7 Atas Landasan / 8 Below, attention list 15 idle', async ({
     page,
     gotoApp,
   }) => {
@@ -103,7 +103,7 @@ test.describe('M08 G5 headcount gaps (admin)', { tag: [moduleTag(8)] }, () => {
     const rankingStart = t.indexOf('Kedudukan Murid')
     expect(rankingStart).toBeGreaterThan(0)
     const ranking = t.slice(rankingStart)
-    expect((ranking.match(/\bOn Track\b/g) ?? []).length).toBe(7)
+    expect((ranking.match(/\bAtas Landasan\b/g) ?? []).length).toBe(7)
     expect((ranking.match(/\bBelow\b/g) ?? []).length).toBe(8)
     expect((t.match(/Belum mula berlatih/g) ?? []).length).toBe(15)
   })
@@ -135,7 +135,7 @@ test.describe('M08 G5 headcount gaps (admin)', { tag: [moduleTag(8)] }, () => {
 
   test('AC-36.1 / 36.3 S22 header, back link, cards and buttons', async ({ page, gotoApp }) => {
     await gotoApp('/headcount/213/summary')
-    await expect(page.getByText('Taburan Prestasi Per OTR')).toBeVisible()
+    await expect(page.getByText('Taburan Prestasi Setiap OTR')).toBeVisible()
     const t = await text(page)
     for (const f of [
       'Ringkasan Kelas',
@@ -147,11 +147,11 @@ test.describe('M08 G5 headcount gaps (admin)', { tag: [moduleTag(8)] }, () => {
     ]) {
       expect(t, f).toContain(f)
     }
-    await expect(page.getByRole('link', { name: /Lihat Table Penuh/ })).toHaveAttribute(
+    await expect(page.getByRole('link', { name: /Lihat Jadual Penuh/ })).toHaveAttribute(
       'href',
       '/headcount/213',
     )
-    await expect(page.getByRole('link', { name: /Export CSV/ })).toHaveAttribute(
+    await expect(page.getByRole('link', { name: /Eksport CSV/ })).toHaveAttribute(
       'href',
       '/headcount/213/export',
     )

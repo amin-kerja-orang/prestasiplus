@@ -70,7 +70,7 @@ describe('number display', () => {
     expect(percentOf(0, 0)).toBe(0)
   })
 
-  it('"Keseluruhan On-Track" tone: ≥ 70 emerald, ≥ 50 amber, else red (FR-M08-85)', () => {
+  it('"Keseluruhan Atas Landasan" tone: ≥ 70 emerald, ≥ 50 amber, else red (FR-M08-85)', () => {
     expect(onTrackTone(70)).toBe('text-emerald-600')
     expect(onTrackTone(50)).toBe('text-amber-600')
     expect(onTrackTone(49)).toBe('text-red-500')

@@ -135,7 +135,7 @@ describe('LeaderboardPage (M08 S20)', () => {
   it('shows the footer count and the real-time note', async () => {
     const w = await render()
     expect(w.get('[data-testid=leaderboard-footer]').text()).toBe(
-      '5 peserta bersaing Dikemaskini real-time',
+      '5 peserta bersaing Dikemaskini masa nyata',
     )
     expect(w.get('[data-testid=leaderboard-footer] .hidden').classes()).toContain('md:inline-flex')
   })

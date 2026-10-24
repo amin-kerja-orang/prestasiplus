@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * S23 "Reset Data" and "Padam" dialogs (FR-M08-136): the scrim, Esc and "Batal" close them without
- * calling the API; "Ya, Reset" / "Ya, Padam" emit `confirm-reset` / `confirm-delete` (effects INFERRED,
+ * S23 "Set Semula Data" and "Padam" dialogs (FR-M08-136): the scrim, Esc and "Batal" close them without
+ * calling the API; "Ya, Set Semula" / "Ya, Padam" emit `confirm-reset` / `confirm-delete` (effects INFERRED,
  * FR-M08-137).
  */
 import { DsDialog, DsPanel } from '@/ds'
@@ -18,7 +18,7 @@ defineEmits<{ 'confirm-reset': []; 'confirm-delete': [] }>()
 </script>
 
 <template>
-  <DsDialog v-model:open="resetOpen" title="Reset Semua Data?">
+  <DsDialog v-model:open="resetOpen" title="Set Semula Semua Data?">
     <div class="flex flex-col gap-4" data-testid="reset-modal">
       <p class="text-body text-default">
         Semua markah murid akan dikosongkan — <strong>TOV, ETR, OTR, AR &amp; RS</strong>.
@@ -52,7 +52,7 @@ defineEmits<{ 'confirm-reset': []; 'confirm-delete': [] }>()
         type="button"
         color="primary"
         icon="i-ph-arrow-counter-clockwise"
-        label="Ya, Reset"
+        label="Ya, Set Semula"
         :disabled="busy"
         data-testid="reset-confirm"
         @click="$emit('confirm-reset')"

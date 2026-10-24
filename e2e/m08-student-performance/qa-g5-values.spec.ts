@@ -209,13 +209,13 @@ test.describe('M08 G5 values (admin)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('tingkatan-page')).toBeVisible()
     expectInOrder(await text(page), [
       'Headcount Keseluruhan',
-      '45% On Track',
-      'On Track: 34',
-      'Below Target: 41',
+      '45% Atas Landasan',
+      'Atas Landasan: 34',
+      'Bawah Sasaran: 41',
     ])
     await gotoApp('/prestasi/tingkatan/t5')
     await expect(page.getByTestId('tingkatan-page')).toBeVisible()
-    expectInOrder(await text(page), ['28% On Track', 'On Track: 114', 'Below Target: 289'])
+    expectInOrder(await text(page), ['28% Atas Landasan', 'Atas Landasan: 114', 'Bawah Sasaran: 289'])
   })
 
   test('AC-09.4 S3 T5 header reads 645 kelas · 26 subjek', async ({ page, gotoApp }) => {

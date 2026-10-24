@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S3 `/prestasi/tingkatan/{t4|t5}` "Dashboard Tingkatan" (M08-T5; FR-M08-23…28). An unknown code is the
- * standard 404 (the API answers 404). "On Track" / "Below Target", the class On Track / Below and the
+ * standard 404 (the API answers 404). "Atas Landasan" / "Bawah Sasaran", the class Atas Landasan / Below and the
  * "Murid Berisiko" rows are headcount figures (M08-T1b) and read 0 / empty until they exist.
  */
 import { computed, watchEffect } from 'vue'
@@ -58,10 +58,10 @@ const stats = computed<StatSpec[]>(() => {
     { id: 'murid', label: 'Murid', value: plain(d.students), icon: 'users' },
     { id: 'ketepatan', label: 'Purata Ketepatan', value: pct1(capPct(d.accuracy)), icon: 'target' },
     { id: 'sesi', label: 'Jumlah Sesi', value: grouped(d.sessions), icon: 'lightning' },
-    { id: 'on', label: 'On Track', value: plain(d.onTrack), icon: 'check-circle' },
+    { id: 'on', label: 'Atas Landasan', value: plain(d.onTrack), icon: 'check-circle' },
     {
       id: 'below',
-      label: 'Below Target',
+      label: 'Bawah Sasaran',
       value: plain(d.below),
       icon: 'warning',
       accent: 'heat',
@@ -105,7 +105,7 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'students', header: 'Murid' },
   { accessorKey: 'sessions', header: 'Sesi' },
   { accessorKey: 'accuracyText', header: 'Ketepatan' },
-  { accessorKey: 'onTrack', header: 'On Track' },
+  { accessorKey: 'onTrack', header: 'Atas Landasan' },
   { accessorKey: 'below', header: 'Below' },
   { accessorKey: 'href', header: 'Aksi' },
 ]
@@ -115,7 +115,7 @@ const cardFields = [
   { key: 'students', label: 'Murid' },
   { key: 'sessions', label: 'Sesi' },
   { key: 'accuracyText', label: 'Ketepatan' },
-  { key: 'onTrack', label: 'On Track' },
+  { key: 'onTrack', label: 'Atas Landasan' },
   { key: 'below', label: 'Below' },
 ]
 const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
@@ -155,7 +155,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
           <div class="flex items-center justify-between gap-3">
             <h2 class="text-subheading text-highlighted">Headcount Keseluruhan</h2>
             <span class="tabular text-label text-highlighted" data-testid="headcount-pct"
-              >{{ data.onTrackPct }}% On Track</span
+              >{{ data.onTrackPct }}% Atas Landasan</span
             >
           </div>
           <UProgress
@@ -166,11 +166,11 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
           />
           <div class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted">
             <span class="flex items-center gap-2">
-              <UIcon :name="icon('check-circle')" class="size-4 text-success" />On Track:
+              <UIcon :name="icon('check-circle')" class="size-4 text-success" />Atas Landasan:
               {{ data.onTrack }}
             </span>
             <span class="flex items-center gap-2">
-              <UIcon :name="icon('warning')" class="size-4 text-error" />Below Target:
+              <UIcon :name="icon('warning')" class="size-4 text-error" />Bawah Sasaran:
               {{ data.below }}
             </span>
           </div>

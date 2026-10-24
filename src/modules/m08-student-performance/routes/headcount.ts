@@ -70,7 +70,7 @@ const routes: RouteRecordRaw[] = [
     path: '/headcount/:id([0-9]+)/results/:n([0-9]+)',
     name: 'm08.headcount.results',
     component: () => import('../pages/HeadcountShellPage.vue'),
-    meta: shell('Key-in AR'),
+    meta: shell('Masukkan AR'),
   },
   {
     path: '/headcount/:id([0-9]+)/edit',

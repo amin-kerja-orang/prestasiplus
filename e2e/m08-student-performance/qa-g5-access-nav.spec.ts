@@ -95,14 +95,14 @@ test.describe('M08 G5 menus (admin)', { tag: [moduleTag(8)] }, () => {
       ['Analisa Item', '/analisa-item'],
       ['Laporan Mingguan', '/laporan-mingguan'],
       ['Kedudukan', '/ranking'],
-      ['Timeline Saya', '/timeline'],
+      ['Garis Masa Saya', '/timeline'],
     ]) {
       expect(keys, `${label} -> ${href}`).toContain(`${label}|${href}`)
     }
     await expectNoHorizontalScroll(page)
   })
 
-  test('AC-01.1 the sidebar items are navigable: Prestasi, Kedudukan, Timeline Saya', async ({
+  test('AC-01.1 the sidebar items are navigable: Prestasi, Kedudukan, Garis Masa Saya', async ({
     page,
     gotoApp,
     loginAs,
@@ -221,13 +221,13 @@ const TITLES: TitleCase[] = [
   {
     who: 'admin',
     path: '/timeline',
-    title: 'Timeline Saya',
+    title: 'Garis Masa Saya',
     subtitle: 'Kongsi pencapaian & cerita anda',
   },
   {
     who: 'admin',
     path: '/timeline/create',
-    title: 'Tambah Post',
+    title: 'Tambah Hantaran',
     subtitle: 'Kongsi pencapaian atau cerita baru',
   },
   {

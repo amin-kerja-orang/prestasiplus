@@ -9,7 +9,7 @@ defineEmits<{ remove: [] }>()
     class="relative aspect-square overflow-hidden rounded-card bg-elevated"
     data-testid="photo-preview"
   >
-    <img :src="src" alt="Preview" class="size-full object-cover" />
+    <img :src="src" alt="Pratonton" class="size-full object-cover" />
     <UButton
       type="button"
       color="error"

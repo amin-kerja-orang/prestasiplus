@@ -3,7 +3,7 @@
  * owned by M08-T1b (`headcount*` files), which runs after this task. The S1 / S3 / S6 / S9 figures that
  * depend on headcount entries are computed here through this port, so they switch on the day T1b
  * registers its reader (`registerHeadcountReads`, called from the T1b seed). Until then the port is empty:
- * GPS "—", no On Track / Below pairs, no at-risk rows (documented in the T1 report).
+ * GPS "—", no Atas Landasan / Below pairs, no at-risk rows (documented in the T1 report).
  */
 
 /** One student × config pair (a HeadcountEntry with its config's class, subject and level). */
@@ -84,7 +84,7 @@ export function latestAr(e: HeadcountEntryView): LatestAr | null {
 /** BR-M08-01: an entry is graded when it has an AR. */
 export const isGraded = (e: HeadcountEntryView): boolean => latestAr(e) !== null
 
-/** BR-M08-07: On Track when the latest AR ≥ its target, otherwise Below (no target or AR counts as Below). */
+/** BR-M08-07: Atas Landasan when the latest AR ≥ its target, otherwise Below (no target or AR counts as Below). */
 export function pairIsOn(e: HeadcountEntryView): boolean {
   const l = latestAr(e)
   return l !== null && l.target !== null && l.ar >= l.target
@@ -97,7 +97,7 @@ export function pairStatus(e: HeadcountEntryView): 'on' | 'below' | 'none' {
   return l.ar >= l.target ? 'on' : 'below'
 }
 
-/** BR-M08-08 rule (2): the ±2 % band (Above > OTR; On Track OTR − 2…OTR; Below < OTR − 2). */
+/** BR-M08-08 rule (2): the ±2 % band (Above > OTR; Atas Landasan OTR − 2…OTR; Below < OTR − 2). */
 export function bandStatus(
   ar: number | null,
   target: number | null,

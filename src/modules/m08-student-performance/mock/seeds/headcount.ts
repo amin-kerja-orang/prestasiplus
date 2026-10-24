@@ -5,7 +5,7 @@
  * the M10 classes exist (D12: only their public mock entries are read).
  *
  * Population, all computed (never tuned) from `headcount-data.ts` and the rows below:
- * - class 516 "4 Simulasi" (8880, T4): configs 209–213, 75 pairs (34 On Track / 41 Below) with the live
+ * - class 516 "4 Simulasi" (8880, T4): configs 209–213, 75 pairs (34 Atas Landasan / 41 Below) with the live
  *   TOV / AR3 pairs of config 213 and the 14 at-risk rows of 209–212 (OBSERVED);
  * - the designed configs 501–506 of teacher 5 (SMK DEMO, school admin GPS 5.33 from 6 graded entries);
  * - the 73 T5 entries of 8880 pupils (class 517, 540, 628) → 148 graded entries for 8880 (GPS 2.49);
@@ -13,7 +13,7 @@
  *   entries; pupil 2022);
  * - generated filler (T5 level 11: 14 observed at-risk rows + 246; other levels: 330) that completes the
  *   platform allocation: 744 graded entries, grade counts and the 16 subject rows of discovery A.2,
- *   T5 pairs 114 On Track / 289 Below.
+ *   T5 pairs 114 Atas Landasan / 289 Below.
  *
  * DEFERRED (DL decision): XR-M18-06 KLUANG coverage (65 pupils in configs of KLUANG classes, 64 graded) is
  * not seeded; only 8880 has M10 classes in the district, and M18-T1a decides how to satisfy it. Accepted
@@ -484,7 +484,7 @@ function place(b: Builder, groups: readonly MarkGroup[], pool: readonly PoolClas
 }
 
 /**
- * The entries of configs of the other levels (Darjah, Tingkatan 1–3; Auto-Setup levels 1–9). The M10 classes
+ * The entries of configs of the other levels (Darjah, Tingkatan 1–3; Persediaan Auto levels 1–9). The M10 classes
  * of those levels have no member, so the pupils are the active pupils of that grade outside the pinned
  * schools (INFERRED); each (class, subject) holds distinct pupils.
  */

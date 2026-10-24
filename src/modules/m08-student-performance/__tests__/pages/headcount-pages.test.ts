@@ -110,7 +110,7 @@ describe('S12 HeadcountListPage', () => {
   it('shows the hero and the empty state with "Buat Sekarang"', async () => {
     api.fetchHeadcounts.mockResolvedValue([])
     const w = await render(HeadcountListPage, '/headcount')
-    expect(t(w, 'headcount-hero').text()).toContain('Tracking prestasi murid — TOV, OTR, AR & RS')
+    expect(t(w, 'headcount-hero').text()).toContain('Penjejakan prestasi murid — TOV, OTR, AR & RS')
     expect(t(w, 'hero-dashboard').attributes('href')).toBe('/headcount/dashboard')
     expect(t(w, 'hero-create').attributes('href')).toBe('/headcount/create')
     expect(t(w, 'headcount-empty').text()).toContain('Belum ada headcount.')
@@ -131,7 +131,7 @@ describe('S12 HeadcountListPage', () => {
     expect(tr(w, 'headcount-card-501').text()).toContain('8 murid')
   })
 
-  it('Auto-Setup: the submit is disabled until a level is ticked, shows the count and posts the ticks', async () => {
+  it('Persediaan Auto: the submit is disabled until a level is ticked, shows the count and posts the ticks', async () => {
     api.fetchHeadcounts.mockResolvedValue([])
     api.autoSetupHeadcounts.mockResolvedValue({ created: 1 })
     const w = await render(HeadcountListPage, '/headcount')
@@ -143,7 +143,7 @@ describe('S12 HeadcountListPage', () => {
       document.body.querySelectorAll('[data-testid=auto-setup-modal] [role=checkbox]'),
     ).toHaveLength(11)
     expect(submit.disabled).toBe(true)
-    expect(submit.textContent?.trim()).toBe('Auto-Setup')
+    expect(submit.textContent?.trim()).toBe('Persediaan Auto')
 
     const tick = async (id: string) => {
       ;(body(id) as HTMLElement).click()
@@ -152,7 +152,7 @@ describe('S12 HeadcountListPage', () => {
     await tick('level-D5')
     await tick('level-T2')
     expect(submit.disabled).toBe(false)
-    expect(submit.textContent?.replace(/\s+/g, ' ').trim()).toBe('Auto-Setup (2)')
+    expect(submit.textContent?.replace(/\s+/g, ' ').trim()).toBe('Persediaan Auto (2)')
     expect(box(body('level-D5'))?.getAttribute('aria-checked')).toBe('true')
     expect(box(body('level-T2'))?.getAttribute('aria-checked')).toBe('true')
 
@@ -391,7 +391,7 @@ describe('S15 HeadcountStudentPage', () => {
       'Headcount — Prestasi Individu · SMK DEMO',
     )
     const s = t(w, 'section-213')
-    expect(s.get('[data-testid=status-pill]').text()).toBe('Below Target')
+    expect(s.get('[data-testid=status-pill]').text()).toBe('Bawah Sasaran')
     expect(s.get('[data-testid=rs-badge]').text()).toBe('RS: 56.4% (C+)')
     expect(s.get('[data-testid=chip-tov]').text()).toBe('TOV: 67.0% (B+)')
     expect(s.get('[data-testid=chip-etr]').text()).toBe('ETR: 56.0% (C+)')
@@ -457,8 +457,8 @@ describe('S22 HeadcountSummaryPage', () => {
     expect(num(w, 'card-etr')).toBe('71.9')
     expect(num(w, 'card-otrs')).toBe('3')
     expect(t(w, 'otr-3').text()).toContain('Above: 5')
-    expect(t(w, 'otr-3').text()).toContain('On Track: 2')
-    expect(t(w, 'otr-3').text()).toContain('Below: 8')
+    expect(t(w, 'otr-3').text()).toContain('Atas Landasan: 2')
+    expect(t(w, 'otr-3').text()).toContain('Bawah: 8')
     expect(t(w, 'otr-1').text()).toContain('N/A: 15')
     expect(t(w, 'full-table').attributes('href')).toBe('/headcount/213')
     expect(t(w, 'export-csv').attributes('href')).toBe('/headcount/213/export')
@@ -470,7 +470,7 @@ describe('S22 HeadcountSummaryPage', () => {
     expect(num(w, 'card-etr')).toBe('—')
   })
 
-  it('"Export CSV" downloads the file without leaving the page', async () => {
+  it('"Eksport CSV" downloads the file without leaving the page', async () => {
     api.fetchHeadcountSummary.mockResolvedValue(SUMMARY)
     api.downloadHeadcountCsv.mockResolvedValue({ blob: new Blob(['x']), filename: 'h.csv' })
     const create = vi.fn(() => 'blob:x')
@@ -549,12 +549,12 @@ describe('S23 HeadcountTablePage', () => {
     const w = await render(HeadcountTablePage, '/headcount/501', '/headcount/:id')
     expect(api.fetchHeadcountDetail.mock.calls[0]?.[1]).toMatchObject({ sort: 'ranking' })
     expect(w.get('h1').text()).toBe('Kimia')
-    expect(t(w, 'status-pill').text()).toBe('Active')
+    expect(t(w, 'status-pill').text()).toBe('Aktif')
     expect(t(w, 'table-subtitle').text().replace(/\s+/g, ' ')).toBe(
       '5 A · Tingkatan 5 · 2026 · Guru: Guru Demo',
     )
-    expect(t(w, 'chip-on').text()).toBe('On Track: 1 (33%)')
-    expect(t(w, 'chip-below').text()).toBe('Below: 1 (33%)')
+    expect(t(w, 'chip-on').text()).toBe('Atas Landasan: 1 (33%)')
+    expect(t(w, 'chip-below').text()).toBe('Bawah: 1 (33%)')
     expect(t(w, 'chip-empty').text()).toBe('Belum Diisi: 1')
     expect(t(w, 'chip-total').text()).toBe('Jumlah: 3')
     expect(t(w, 'ar-1-1').classes()).toContain('text-success')
@@ -607,14 +607,14 @@ describe('S23 HeadcountTablePage', () => {
     expect(w.find('[data-testid=selection-bar]').exists()).toBe(false)
   })
 
-  it('"Reset Data" opens the modal; "Batal" closes it without a call; "Ya, Reset" resets and reloads', async () => {
+  it('"Set Semula Data" opens the modal; "Batal" closes it without a call; "Ya, Set Semula" resets and reloads', async () => {
     api.fetchHeadcountDetail.mockResolvedValue(DETAIL)
     api.resetHeadcount.mockResolvedValue({ reset: true })
     const w = await render(HeadcountTablePage, '/headcount/501', '/headcount/:id')
     await t(w, 'action-reset').trigger('click')
     await flushPromises()
     expect(body('reset-modal')?.textContent).toContain('Semua markah murid akan dikosongkan')
-    expect(document.body.textContent).toContain('Reset Semua Data?')
+    expect(document.body.textContent).toContain('Set Semula Semua Data?')
     body('reset-cancel')?.click()
     await flushPromises()
     expect(body('reset-modal')).toBeNull()
@@ -642,7 +642,7 @@ describe('S23 HeadcountTablePage', () => {
     expect(router.currentRoute.value.path).toBe('/headcount')
   })
 
-  it('the "Key-in AR" dropdown lists one link per active OTR', async () => {
+  it('the "Masukkan AR" dropdown lists one link per active OTR', async () => {
     api.fetchHeadcountDetail.mockResolvedValue(DETAIL)
     const w = await render(HeadcountTablePage, '/headcount/501', '/headcount/:id')
     expect(w.find('[data-testid=key-in-menu]').exists()).toBe(false)

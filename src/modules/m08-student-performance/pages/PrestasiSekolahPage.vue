@@ -2,7 +2,7 @@
 /**
  * S1 `/prestasi/sekolah` "Dashboard Sekolah" (M08-T5; FR-M08-11…21). From `GET /api/performance/school`:
  * the admin sees the platform, the school admin and every other role the own school (FR-M08-13).
- * GPS, grade distribution, subject rows and the teacher On Track / Below come from the headcount
+ * GPS, grade distribution, subject rows and the teacher Atas Landasan / Below come from the headcount
  * figures (M08-T1b) and show "—", 0 and "Tiada data headcount" until they exist.
  */
 import { computed } from 'vue'

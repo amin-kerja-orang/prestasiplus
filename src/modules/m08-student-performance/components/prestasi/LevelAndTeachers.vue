@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S1 "🎓 Perbandingan Tingkatan" (FR-M08-19) and "👩‍🏫 Prestasi Guru" (FR-M08-20). The level figures are the
- * S2/S3 level aggregate (DV-M08-05); "On Track" / "Below" per teacher are null until the headcount
+ * S2/S3 level aggregate (DV-M08-05); "Atas Landasan" / "Below" per teacher are null until the headcount
  * figures exist (M08-T1b), which shows "Tiada data headcount".
  */
 import { DsPanel } from '@/ds'
@@ -86,10 +86,10 @@ const teacherBar = (on: number, below: number): number =>
               >
               <template v-else>
                 <span class="text-success"
-                  >On Track: <strong>{{ t.onTrack }}</strong></span
+                  >Atas Landasan: <strong>{{ t.onTrack }}</strong></span
                 >
                 <span class="text-error"
-                  >Below: <strong>{{ t.below }}</strong></span
+                  >Bawah: <strong>{{ t.below }}</strong></span
                 >
               </template>
             </div>
@@ -99,7 +99,7 @@ const teacherBar = (on: number, below: number): number =>
               :max="100"
               color="success"
               size="sm"
-              :aria-label="`On Track ${t.name}`"
+              :aria-label="`Atas Landasan ${t.name}`"
             />
           </li>
         </ul>

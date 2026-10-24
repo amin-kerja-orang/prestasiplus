@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S13 `/headcount/dashboard` "Dashboard Headcount" (M08-T6; FR-M08-82…86, BR-M08-22). Level filter,
- * 4 stat tiles and the "Keseluruhan On-Track" bar over the filtered configs, then one small chart per
+ * 4 stat tiles and the "Keseluruhan Atas Landasan" bar over the filtered configs, then one small chart per
  * config (placement SOURCE-DERIVED, PROPOSED; DV-11: "Jumlah Murid" follows the filter, live shows the
  * unfiltered server value).
  */
@@ -32,8 +32,8 @@ const stats = computed(() => dashboardStats(filtered.value))
 const tiles = computed<StatSpec[]>(() => [
   { id: 'configs', label: 'Konfigurasi', value: stats.value.configs, icon: 'list-numbers' },
   { id: 'students', label: 'Jumlah Murid', value: stats.value.students, icon: 'users' },
-  { id: 'on', label: 'On Track', value: stats.value.onTrack, icon: 'check-circle' },
-  { id: 'off', label: 'Off Track', value: stats.value.offTrack, icon: 'warning', accent: 'heat' },
+  { id: 'on', label: 'Atas Landasan', value: stats.value.onTrack, icon: 'check-circle' },
+  { id: 'off', label: 'Luar Landasan', value: stats.value.offTrack, icon: 'warning', accent: 'heat' },
 ])
 
 /** A gap (no AR yet) is a `null` point; the chart draws it as a break. */
@@ -91,7 +91,7 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
       <DsPanel v-if="stats.tracked > 0" data-testid="overall-card">
         <div class="flex flex-col gap-3">
           <div class="flex items-baseline justify-between gap-3">
-            <h2 class="text-subheading text-highlighted">Keseluruhan On-Track</h2>
+            <h2 class="text-subheading text-highlighted">Keseluruhan Atas Landasan</h2>
             <span class="tabular text-heading text-highlighted" data-testid="overall-pct"
               >{{ stats.onPct }}%</span
             >
@@ -100,12 +100,12 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
             :model-value="stats.onPct"
             :max="100"
             color="success"
-            aria-label="Keseluruhan On-Track"
+            aria-label="Keseluruhan Atas Landasan"
             data-testid="bar-on"
           />
           <div class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted" data-testid="legend">
-            <span>On Track: {{ stats.onTrack }}</span>
-            <span>Off Track: {{ stats.offTrack }}</span>
+            <span>Atas Landasan: {{ stats.onTrack }}</span>
+            <span>Luar Landasan: {{ stats.offTrack }}</span>
             <span>Tiada Data: {{ stats.noData }}</span>
           </div>
         </div>
