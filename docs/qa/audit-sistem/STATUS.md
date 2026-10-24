@@ -4,13 +4,14 @@
 - **Base code SHA:** `3e192a7a46971adc07e27ac6add2036468bf2602` (`feature/student-prototype`, also on `origin/feature/student-prototype`)
 - **Feedback branch:** `audit/sistem-2026-10-23` (this file)
 - **Fix branch (cloud):** claude/determined-dijkstra-ju5q60 — verified at 4469dc02 (see VERIFY.md)
-- **Current screen:** Verification + user answers done (2026-10-24). Design-system conformance audit (all screens) in progress — will be added as a new report.
+- **Current screen:** DS conformance audit sent to cloud (2026-10-24); waiting for the next cloud fix batch to verify.
 
 ## Reports
 
 - [BIJAK-SPM-AUDIT-REPORT.md](BIJAK-SPM-AUDIT-REPORT.md) â€” consolidated old vs new matrix (audit findings only, no approved fixes).
 - [BIJAK-SPM-STUDENT-AUDIT-REPORT.md](BIJAK-SPM-STUDENT-AUDIT-REPORT.md) â€” student-scope old vs new report (audit findings only, no approved fixes).
 - [BIJAK-SPM-PARITY.md](BIJAK-SPM-PARITY.md) â€” detailed code/doc parity matrix with file:line citations.
+- [DS-CONFORMANCE-AUDIT.md](DS-CONFORMANCE-AUDIT.md) — design-system conformance of all screens (user: fix on all screens).
 
 ## How to read this folder
 
