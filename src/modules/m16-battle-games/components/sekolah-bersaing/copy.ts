@@ -11,7 +11,7 @@ export const SB_COPY = {
   per10: 'setiap 10',
   anonymous: 'Sekolah anonim',
   tipLabel: 'Untuk Cikgu Besar / PIBG:',
-  tip: 'Share ranking ini ke parent group WhatsApp. Pelajar nampak sekolah berbangga = lebih semangat. Sekolah yang opt-out akan paparkan sebagai "Sekolah anonim".',
+  tip: 'Share kedudukan ini ke parent group WhatsApp. Pelajar nampak sekolah berbangga = lebih semangat. Sekolah yang opt-out akan paparkan sebagai "Sekolah anonim".',
   emptyTitle: 'Data minggu ini belum dijana.',
   emptyHint: 'Penjadual mingguan akan mengira pada Isnin pagi. Tunggu sebentar ya.',
 } as const

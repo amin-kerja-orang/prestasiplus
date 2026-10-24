@@ -25,7 +25,7 @@ export const PERTANDINGAN_COPY = {
   notStartedHint: 'Buat Latih Tubi untuk masuk kedudukan.',
   startPractice: 'Mula Latih Tubi',
   startPracticeTo: '/practice',
-  boardHeading: '📊 Papan Ranking Mingguan',
+  boardHeading: '📊 Papan Kedudukan Mingguan',
   sessions: 'sesi',
   correct: 'betul',
   accuracy: 'tepat',
@@ -43,7 +43,7 @@ export const UJI_MINDA_COPY = {
   howTitle: 'Bagaimana nak mula?',
   howBefore: 'Minta ibu atau bapa kamu log masuk ke PRESTASIPLUS, pergi ke',
   howLink: '"Cabaran Uji Minda"',
-  howAfter: 'di dashboard mereka, dan tetapkan cabaran + hadiah untuk kamu!',
+  howAfter: 'di papan pemuka mereka, dan tetapkan cabaran + hadiah untuk kamu!',
   setHeading: '📋 Apa Ibu/Bapa boleh tetap:',
   setItems: [
     '✅ Bilangan soalan setiap set',

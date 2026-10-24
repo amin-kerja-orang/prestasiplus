@@ -541,7 +541,7 @@ onBeforeUnmount(() => {
           class="min-h-14 justify-center"
           data-testid="battle-link-students"
         >
-          Ranking Pelajar
+          Kedudukan Pelajar
         </UButton>
         <UButton
           to="/battle/ranking-sekolah"
@@ -552,7 +552,7 @@ onBeforeUnmount(() => {
           class="min-h-14 justify-center"
           data-testid="battle-link-schools"
         >
-          Ranking Sekolah
+          Kedudukan Sekolah
         </UButton>
       </div>
 

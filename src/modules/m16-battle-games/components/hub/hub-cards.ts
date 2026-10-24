@@ -141,9 +141,9 @@ export const HUB_CARDS: readonly HubCard[] = [
     emoji: '🏆',
     title: 'Pertandingan Mingguan',
     text: 'Lumba dengan semua pelajar setiap minggu! 3 teratas dapat Syiling bonus dan lencana istimewa.',
-    chips: [{ text: '📊 Ranking Live' }, { text: '🥇 Hadiah 3 Teratas' }],
+    chips: [{ text: '📊 Kedudukan Live' }, { text: '🥇 Hadiah 3 Teratas' }],
     icon: 'fa-trophy',
-    button: 'Lihat Ranking',
+    button: 'Lihat Kedudukan',
     to: '/permainan/pertandingan',
   },
   {
@@ -245,7 +245,7 @@ export const HUB_CARDS: readonly HubCard[] = [
 /** The hero copy (FN-M16-4.1.1). */
 export const HUB_HEADING = '🎮 Zona Permainan'
 export const HUB_INTRO =
-  'Main sambil belajar! Kumpul Syiling, naik ranking, dan jadi champion sekolah. Pilih permainan kegemaran kamu.'
+  'Main sambil belajar! Kumpul Syiling, naik kedudukan, dan jadi champion sekolah. Pilih permainan kegemaran kamu.'
 
 /** Open-rooms strip, empty state (FN-M16-4.1.2). */
 export const HUB_NO_ROOMS = {

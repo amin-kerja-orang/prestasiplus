@@ -151,7 +151,7 @@ const boxes = computed(() => {
           </h3>
           <dl v-if="b.box" class="mt-3 flex flex-col gap-2">
             <div class="flex items-center justify-between gap-3">
-              <dt class="text-body text-muted">Ranking Nasional</dt>
+              <dt class="text-body text-muted">Kedudukan Nasional</dt>
               <dd class="tabular text-label text-primary-t" data-testid="battle-box-rank">
                 #{{ b.box.rank }}
               </dd>

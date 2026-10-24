@@ -34,7 +34,7 @@ const CARDS: [string, string | null, string, string][] = [
   ['Teka Silang Kata', '👥 BERBILANG PEMAIN', 'Main!', '/teka-silang-kata'],
   ['Betul atau Salah', '✅❌ BARU!', 'Mula', '/permainan/betul-salah'],
   ['Roda Nasib', '📅 HARIAN', 'Putar Sekarang!', '/permainan/roda-nasib'],
-  ['Pertandingan Mingguan', '📅 MINGGUAN', 'Lihat Ranking', '/permainan/pertandingan'],
+  ['Pertandingan Mingguan', '📅 MINGGUAN', 'Lihat Kedudukan', '/permainan/pertandingan'],
   ['Peta Pengembaraan', null, 'Jelajah', '/peta-belajar'],
   ['Uji Minda', '👨‍👩‍👧 IBU BAPA', 'Mula', '/permainan/uji-minda'],
   ['Cabaran Kilat', '⚡ BARU!', 'Mula!', '/permainan/cabaran-kilat'],

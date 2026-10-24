@@ -79,15 +79,15 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       ['/battle', 'Battle Arena', 'Bertanding kuiz 1v1 dengan pelajar lain!', 'Battle Arena'],
       [
         '/battle/leaderboard',
-        'Ranking Pelajar Battle',
+        'Kedudukan Pelajar Battle',
         'Siapa pejuang terhebat minggu ini?',
-        'Ranking Pelajar Battle',
+        'Kedudukan Pelajar Battle',
       ],
       [
         '/battle/ranking-sekolah',
-        'Papan Ranking Sekolah',
-        'Ranking 10,218 sekolah seluruh Malaysia',
-        'Papan Ranking Sekolah',
+        'Papan Kedudukan Sekolah',
+        'Kedudukan 10,218 sekolah seluruh Malaysia',
+        'Papan Kedudukan Sekolah',
       ],
       ['/battle/history', 'Sejarah Battle', 'Rekod pertandingan anda', 'Sejarah Battle'],
     ] as const
@@ -573,7 +573,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       'Skor',
     ])
     await expect(page.getByTestId('battle-leaderboard-empty')).toHaveText(
-      'Belum ada data ranking. Mula battle untuk muncul di sini!',
+      'Belum ada data kedudukan. Mula battle untuk muncul di sini!',
     )
     await expectNoHorizontalScroll(page)
   })
@@ -602,7 +602,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await gotoApp('/battle/ranking-sekolah')
     await expect(page.getByTestId('battle-period-weekly')).toHaveClass(/bg-blue-500/)
     await expect(page.getByTestId('battle-schools-empty')).toHaveText(
-      'Belum ada data ranking. Mula battle untuk melihat ranking sekolah!',
+      'Belum ada data kedudukan. Mula battle untuk melihat kedudukan sekolah!',
     )
     await expect(page.getByTestId('battle-podium')).toBeHidden()
     await page.getByTestId('battle-period-monthly').click()

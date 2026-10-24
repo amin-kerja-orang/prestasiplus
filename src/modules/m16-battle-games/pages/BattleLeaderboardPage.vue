@@ -55,7 +55,7 @@ const PILLS = [
     </div>
     <DsEmptyState
       v-else-if="rows.length === 0"
-      title="Belum ada data ranking. Mula battle untuk muncul di sini!"
+      title="Belum ada data kedudukan. Mula battle untuk muncul di sini!"
       icon="medal"
       data-testid="battle-leaderboard-empty"
     />

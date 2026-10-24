@@ -24,7 +24,7 @@ const EXPECTED: [string, string, string][] = [
   ['Teka Silang Kata', 'Main!', '/teka-silang-kata'],
   ['Betul atau Salah', 'Mula', '/permainan/betul-salah'],
   ['Roda Nasib', 'Putar Sekarang!', '/permainan/roda-nasib'],
-  ['Pertandingan Mingguan', 'Lihat Ranking', '/permainan/pertandingan'],
+  ['Pertandingan Mingguan', 'Lihat Kedudukan', '/permainan/pertandingan'],
   ['Peta Pengembaraan', 'Jelajah', '/peta-belajar'],
   ['Uji Minda', 'Mula', '/permainan/uji-minda'],
   ['Cabaran Kilat', 'Mula!', '/permainan/cabaran-kilat'],

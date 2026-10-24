@@ -80,7 +80,7 @@ test(
 
     const tip = page.getByTestId('sb-tip')
     await expect(tip).toContainText('💡 Untuk Cikgu Besar / PIBG:')
-    await expect(tip).toContainText('Share ranking ini ke parent group WhatsApp.')
+    await expect(tip).toContainText('Share kedudukan ini ke parent group WhatsApp.')
     await expect(tip).toContainText('Sekolah yang opt-out akan paparkan sebagai "Sekolah anonim".')
     await expectNoHorizontalScroll(page)
   },

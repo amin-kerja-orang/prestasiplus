@@ -112,9 +112,9 @@ describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
     })
     expect(wrapper!.text()).toContain('1/1')
     expect(wrapper!.get('[data-testid="solo-result-title"]').text()).toBe('CUBA LAGI!')
-    expect(wrapper!.text()).toContain('Tembak Jawapan — Level 1')
+    expect(wrapper!.text()).toContain('Tembak Jawapan — Tahap 1')
     expect(wrapper!.text()).toContain('Tertinggi')
-    expect(wrapper!.text()).toContain('Level 1')
+    expect(wrapper!.text()).toContain('Tahap 1')
     expect(wrapper!.text()).toContain('0 🪙')
   })
 

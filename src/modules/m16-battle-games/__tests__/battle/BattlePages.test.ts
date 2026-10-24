@@ -229,7 +229,7 @@ describe('S2 leaderboard', () => {
     await mountPage(BattleLeaderboardPage, '/battle')
     expect(api.fetchStudentStandings.mock.calls[0]![0]).toBe('weekly')
     expect(byId('battle-leaderboard-empty').text()).toBe(
-      'Belum ada data ranking. Mula battle untuk muncul di sini!',
+      'Belum ada data kedudukan. Mula battle untuk muncul di sini!',
     )
     api.fetchStudentStandings.mockResolvedValue([
       {

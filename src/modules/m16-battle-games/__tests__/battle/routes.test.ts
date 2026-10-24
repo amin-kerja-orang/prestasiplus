@@ -18,8 +18,8 @@ describe('M16 battle routes', () => {
       'Battle Arena',
       'Bertanding kuiz 1v1 dengan pelajar lain!',
     ],
-    ['/battle/leaderboard', 'Ranking Pelajar Battle', 'Siapa pejuang terhebat minggu ini?'],
-    ['/battle/ranking-sekolah', 'Papan Ranking Sekolah', 'Ranking 10,218 sekolah seluruh Malaysia'],
+    ['/battle/leaderboard', 'Kedudukan Pelajar Battle', 'Siapa pejuang terhebat minggu ini?'],
+    ['/battle/ranking-sekolah', 'Papan Kedudukan Sekolah', 'Kedudukan 10,218 sekolah seluruh Malaysia'],
     ['/battle/history', 'Sejarah Battle', 'Rekod pertandingan anda'],
   ] as const
 

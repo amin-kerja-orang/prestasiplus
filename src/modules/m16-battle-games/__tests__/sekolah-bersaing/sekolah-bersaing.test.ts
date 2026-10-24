@@ -106,7 +106,7 @@ describe('S28 SekolahBersaingPage', () => {
     expect(cells(3)?.slice(2)).toEqual(['0.5% aktif', '1.6 hari', '2.3 setiap 10'])
     const tip = w.get('[data-testid="sb-tip"]').text()
     expect(tip).toContain('Untuk Cikgu Besar / PIBG:')
-    expect(tip).toContain('Share ranking ini ke parent group WhatsApp.')
+    expect(tip).toContain('Share kedudukan ini ke parent group WhatsApp.')
     expect(tip).toContain('"Sekolah anonim"')
   })
 

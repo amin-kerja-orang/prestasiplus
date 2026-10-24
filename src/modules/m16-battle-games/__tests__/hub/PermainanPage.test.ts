@@ -52,7 +52,7 @@ describe('S6 hub page', () => {
     expect(wrapper!.find('[data-testid="hub-loading"]').exists()).toBe(false)
     expect(wrapper!.get('[data-testid="hub-h1"]').text()).toBe('🎮 Zona Permainan')
     expect(wrapper!.text()).toContain(
-      'Main sambil belajar! Kumpul Syiling, naik ranking, dan jadi champion sekolah. Pilih permainan kegemaran kamu.',
+      'Main sambil belajar! Kumpul Syiling, naik kedudukan, dan jadi champion sekolah. Pilih permainan kegemaran kamu.',
     )
   })
 
