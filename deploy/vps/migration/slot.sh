@@ -114,10 +114,11 @@ migrate_run() {
 
 cmd_throwaway_up() {
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
-  rm -f "$(synthetic_marker)"   # a new load cycle starts: the marker of an earlier synthetic load no longer applies
   ! stage_running || pp_die "the throwaway cluster $stage_name is already running; run throwaway-down first (it is created empty for every load)" 3
   docker rm -f "$stage_name" >/dev/null 2>&1 || true
   [ ! -e "$stage_dir/pgdata" ] || pp_die "$stage_dir/pgdata exists from an earlier run: run throwaway-down first" 3
+  # A new, empty cluster is about to be made: only now does the marker of an earlier synthetic load stop applying.
+  rm -f "$(synthetic_marker)"
   mkdir -p "$stage_dir/pgdata"
   chmod 700 "$stage_dir"
   head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n' >"$(stage_pw_file)"
@@ -190,7 +191,10 @@ else: print("ok")
 }
 
 # The scratch marker is read from the prod.env FILE only, never from the process environment (pp_cfg prefers the
-# environment, so `PP_SCRATCH_HOST=yes slot.sh ...` on production must not count).
+# environment, so `PP_SCRATCH_HOST=yes slot.sh ...` on production must not count). Residual risk, by design: the path
+# variables (PP_PROD_ENV, PP_ENV_DIR, PP_STAGE_DIR) are still taken from the environment, so an operator who points them
+# at another file or folder on purpose can defeat the gate; the night card never sets them, and gonogo prints the file
+# it read.
 scratch_host() { [ "$(pp_env_value "$PP_PROD_ENV" PP_SCRATCH_HOST)" = yes ]; }
 synthetic_marker() { printf '%s/SYNTHETIC-LOADED' "$stage_dir"; }
 synthetic_loaded() { [ -e "$(synthetic_marker)" ]; }
@@ -229,8 +233,6 @@ cmd_load() {
     scratch_gate
     manifest_check "$from" synthetic   # again: the directory could have changed while the prompt waited
     : >"$(synthetic_marker)"
-  else
-    rm -f "$(synthetic_marker)"
   fi
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
   local url t0=$SECONDS
@@ -246,6 +248,8 @@ cmd_load() {
     -e NODE_ENV=development -e PP_ALLOW_STAGING_RESET=1 \
     migrate npm run staging:load -w @pp/api -- --from /dump
   rm -f "$envf"; trap - EXIT
+  # A raw load that SUCCEEDED replaced the stage, so an earlier synthetic marker no longer applies (a failed one keeps it).
+  [ "$synthetic" = 1 ] || rm -f "$(synthetic_marker)"
   pp_log "LOAD DONE: $(schema_tables stage_psql) in $staging_db, duration_s=$((SECONDS - t0))$([ "$synthetic" = 0 ] || echo ' (SYNTHETIC, scratch override)')"
 }
 
@@ -399,8 +403,8 @@ cmd_gonogo() {
   local f age lsn arch failed last ready disk pct
   pp_log "GO/NO-GO EVIDENCE (infrastructure part, cutover plan section 5; counts and names only)"
   local scratch_nogo=0
-  if scratch_host; then echo "host: PP_SCRATCH_HOST=yes in prod.env (A4 scratch host)  -> NO-GO on production"; scratch_nogo=1
-  else echo "host: not marked scratch"; fi
+  if scratch_host; then echo "host: PP_SCRATCH_HOST=yes in $PP_PROD_ENV (A4 scratch host)  -> NO-GO on production"; scratch_nogo=1
+  else echo "host: not marked scratch ($PP_PROD_ENV)"; fi
   if synthetic_loaded; then echo "stage data: SYNTHETIC fixture loaded (scratch override)  -> NO-GO on production"; scratch_nogo=1; fi
   # Cutover plan A5 / criterion 8: each point must hold as many applied migrations as the release has folders.
   for f in pre_etl pre_delta; do

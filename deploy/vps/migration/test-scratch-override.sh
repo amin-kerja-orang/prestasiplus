@@ -20,22 +20,29 @@ cat >"$w/bin/docker" <<'STUB'
 case "$1" in
   inspect) [ "${STUB_RUNNING:-0}" = 1 ] && echo true || echo false; exit 0 ;;
   exec) echo "archive_cloud:38 staging_cloud:89"; exit 0 ;;
+  compose) for a in "$@"; do [ "$a" = staging:load ] && [ "${STUB_FAIL_LOAD:-0}" = 1 ] && exit 1; done; exit 0 ;;
   *) exit 0 ;;
 esac
 STUB
-printf '#!/bin/sh\necho scratch1\n' >"$w/bin/hostname"
+# STUB_SWAP=1: the manifest is swapped for a raw one while the prompt waits (hostname is called just before it)
+cat >"$w/bin/hostname" <<STUB
+#!/bin/sh
+[ "\${STUB_SWAP:-0}" = 1 ] && printf '%s\\n' '{"format": "pp-staging-dump/1", "raw": true}' >"$w/fx/manifest.json"
+echo scratch1
+STUB
 chmod +x "$w/bin/docker" "$w/bin/hostname"
 pass=0; fail=0
 manifest() { printf '%s\n' "$1" >"$w/fx/manifest.json"; }
 prod() { printf '%s\n' "$@" >"$w/env/prod.env"; }
 SYN='{"format": "pp-staging-dump/1", "synthetic": true}'
 RAW='{"format": "pp-staging-dump/1", "raw": true}'
-# run EXPECTED_EXIT EXPECTED_TEXT TTY_INPUT|-notty ARGS...   (EXTRA_ENV may add "KEY=VAL ..." to the command's env)
+# run EXPECTED_EXIT EXPECTED_TEXT TTY_INPUT|-notty|-eof ARGS...   (EXTRA_ENV may add "KEY=VAL ..." to the command's env)
 run() {
   local want="$1" text="$2" input="$3"; shift 3
   local cmd rc=0 log="$w/log"
   cmd="env -u PP_SCRATCH_HOST -u PP_OFFSITE_KIND ${EXTRA_ENV:-} PATH=$w/bin:$PATH PP_ENV_DIR=$w/env PP_STAGE_DIR=$w/stage PP_MIGRATION_OUT=$w/out PP_LOCK_FILE=$w/lock PP_BACKUP_DIR=$w/backup bash $here/slot.sh $*"
   if [ "$input" = -notty ]; then $cmd </dev/null >"$log" 2>&1 || rc=$?
+  elif [ "$input" = -eof ]; then timeout 20 script -qec "$cmd" /dev/null </dev/null >"$log" 2>&1 || rc=$?
   else printf '%s\n' "$input" | script -qec "$cmd" /dev/null >"$log" 2>&1 || rc=$?; fi
   if [ "$rc" = "$want" ] && grep -qF -- "$text" "$log"; then pass=$((pass + 1)); echo "ok   exit $rc: $text"
   else fail=$((fail + 1)); echo "FAIL want exit $want + '$text', got exit $rc:"; sed 's/^/     /' "$log" | tail -8; fi
@@ -64,6 +71,12 @@ prod "${SCR[@]}"; STUB_RUNNING=0 run 3 'throwaway cluster is not running' scratc
 echo "-- typed confirmation"
 run 2 'needs the typed host name' -notty load --from "$w/fx" --synthetic-scratch
 run 2 'confirmation did not match' prod-host load --from "$w/fx" --synthetic-scratch
+# EOF at the prompt (N2): script(1) passes an empty stdin, so read gets end-of-file
+run 2 'no confirmation was typed' -eof load --from "$w/fx" --synthetic-scratch
+# the manifest changes while the prompt waits (N1): the re-check after the prompt refuses it
+STUB_SWAP=1 run 2 'top-level' scratch1 load --from "$w/fx" --synthetic-scratch
+check '! marker' 'no marker after a refused re-check'
+manifest "$SYN"
 
 echo "-- strict manifest (JSON, top level, no duplicate keys)"
 manifest "$RAW"; run 2 'top-level' scratch1 load --from "$w/fx" --synthetic-scratch
@@ -92,7 +105,20 @@ run 3 'the stage holds a SYNTHETIC fixture' -notty etl migrate:all --apply --as-
 EXTRA_ENV="PP_SCRATCH_HOST=yes" run 3 'the stage holds a SYNTHETIC fixture' -notty copy
 run 3 'stage data: SYNTHETIC fixture loaded' -notty gonogo
 check 'grep -qF "gonogo: NO-GO (scratch host or synthetic stage data)" "$w/log"' 'gonogo ends NO-GO on synthetic stage data'
-prod "${SCR[@]}"; EXTRA_ENV="PP_SCRATCH_HOST=no" run 3 'host: PP_SCRATCH_HOST=yes in prod.env' -notty gonogo
+prod "${SCR[@]}"; EXTRA_ENV="PP_SCRATCH_HOST=no" run 3 'host: PP_SCRATCH_HOST=yes in' -notty gonogo
+echo "-- the marker on a marked scratch host: copy and etl --apply are ALLOWED (A4 Track S)"
+run_absent() { # run_absent TEXT ARGS...: the refusal TEXT must not appear (the stubbed run may stop later for other reasons)
+  local text="$1"; shift; run_any "$@"; if grep -qF -- "$text" "$w/log"; then fail=$((fail + 1)); echo "FAIL refused: $*"; sed 's/^/     /' "$w/log" | tail -4; else pass=$((pass + 1)); echo "ok   not refused: $*"; fi; }
+run_any() { local cmd; cmd="env -u PP_SCRATCH_HOST -u PP_OFFSITE_KIND PATH=$w/bin:$PATH PP_ENV_DIR=$w/env PP_STAGE_DIR=$w/stage PP_MIGRATION_OUT=$w/out PP_LOCK_FILE=$w/lock PP_BACKUP_DIR=$w/backup bash $here/slot.sh $*"; $cmd </dev/null >"$w/log" 2>&1 || true; }
+run_absent 'the stage holds a SYNTHETIC fixture' copy
+run_absent 'the stage holds a SYNTHETIC fixture' etl migrate:all --apply --as-of=2026-10-29
+echo "-- D1: the marker survives a refused throwaway-up and a failed raw load"
+: >"$w/stage/SYNTHETIC-LOADED"; prod
+run 3 'already running' -notty throwaway-up
+check marker 'throwaway-up refused (cluster running): marker kept'
+manifest "$RAW"; STUB_FAIL_LOAD=1 run 1 '' -notty load --from "$w/fx"
+check marker 'a failed raw load keeps the marker'
+run 3 'the stage holds a SYNTHETIC fixture' -notty copy
 manifest "$RAW"; run 0 'LOAD DONE' -notty load --from "$w/fx"
 check '! marker' 'a raw load clears the marker'
 # throwaway-up clears the marker first, then stops at the (stubbed) missing db service
