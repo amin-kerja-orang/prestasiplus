@@ -247,7 +247,7 @@ For dumps made with `dump:produce`, the deletion steps and the written confirmat
 
 - **OD-2:** the hand-over format is `pp-staging-dump/1` plus a PostgreSQL restore.
 - **Retention:** an anonymised dump is treated as real data (pseudonymised, not anonymous): 7 days at most, section 10.
-- **Pseudonymised columns:** schools (name and code) are pseudonymised, `users.faith` and `users.google_id` are not staged at all (PDPA minimisation, FIT-FIX), `settings.value` is scrubbed. **The lead reviews `anon.config.json` before the first real run.**
+- **Pseudonymised columns:** schools (name and code) are pseudonymised, `users.faith` and `users.google_id` are not staged at all (PDPA minimisation, FIT-FIX), nor are the personal or free-text columns of the tables that are never read (PDPA-MIN: `psychometric_results.details`, `foster_applications.applicant_name` and `reason`, `sponsors.officer_name`, `audit_logs.ip` and `subject_id`, `chatbot_conversations.visitor_id` and `start_url`), `settings.value` is scrubbed. **The lead reviews `anon.config.json` before the first real run.**
 - **The key is new for every rehearsal and is never reused** (section 8).
 
 **Required review of kept free text (the lead, on the real dump, before sharing).** The kept columns below can hold free text. Rule: **no real person's name may appear in a shared dump.** `questions.explanation` stays `keep` (LEAD default), so the rehearsal runs the leak-scan over `questions.body`, `questions.explanation` and `question_options.body` before the dump is shared. The lead samples these columns on the real data (and the anonymised output) and looks specifically for REAL PERSONS' NAMES (a teacher, parent or pupil named in a note, comment or title), and changes the rule to `scrub-text` or `null` for any column that has one:
@@ -260,7 +260,7 @@ For dumps made with `dump:produce`, the deletion steps and the written confirmat
 - Open question for the auth owner: should the hash comparison be a startup check that fails when a production database holds the dummy hash, or a login-time refusal, or both?
 
 Decisions and assumptions:
-1. **Quasi-identifiers.** Ids and timestamps are kept (relations and day-boundary logic need them), so they match the raw source. Never share the dump with anyone who also has raw data. `practice_sessions.client_uuid`, `audit_logs.subject_id`, `notifications.title` and `notifications.target`, `users.spm_targets` and all upload paths are replaced (path fakes keep the extension).
+1. **Quasi-identifiers.** Ids and timestamps are kept (relations and day-boundary logic need them), so they match the raw source. Never share the dump with anyone who also has raw data. `practice_sessions.client_uuid`, `notifications.title` and `notifications.target`, `users.spm_targets` and all upload paths are replaced (path fakes keep the extension).
 2. **Privileged passwords.** Only `pelajar`, `guru` and `ibu_bapa` accounts get the usable dummy hash; all other roles get an unusable value (section 8).
 3. **Free text is scrubbed, not filtered.** A name inside a free-text column is gone because the whole text is replaced. `settings.value` is scrubbed too (it may hold keys), so numeric settings the ETL might need are lost in the dump.
 5. **Leak-scan precision.** Single words of a name are not matched alone (common words and surnames would flag public content); whole values and multi-word names are. A kept column that contains a phone, IC or e-mail shape fails the run even if it is harmless (fail closed).

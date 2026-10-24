@@ -190,8 +190,7 @@
       "resolved": "keep"
     },
     "psychometric_results": {
-      "user_id": "keep",
-      "details": "scrub-text"
+      "user_id": "keep"
     },
     "interventions": {
       "student_id": "keep",
@@ -404,9 +403,7 @@
       "admin_reply": "scrub-text"
     },
     "chatbot_conversations": {
-      "user_id": "keep",
-      "visitor_id": "pseudonym:opaque",
-      "start_url": "scrub-text"
+      "user_id": "keep"
     },
     "chatbot_messages": {
       "chatbot_conversation_id": "keep",
@@ -433,9 +430,7 @@
     "audit_logs": {
       "user_id": "keep",
       "action": "keep",
-      "subject_type": "keep",
-      "subject_id": "pseudonym:opaque",
-      "ip": "pseudonym:ip"
+      "subject_type": "keep"
     },
     "packages": {
       "name": "keep",
@@ -491,7 +486,6 @@
     "sponsors": {
       "organisation": "pseudonym:org",
       "category": "keep",
-      "officer_name": "pseudonym:name",
       "status": "keep"
     },
     "foster_sponsorships": {
@@ -502,10 +496,8 @@
       "status": "keep"
     },
     "foster_applications": {
-      "applicant_name": "pseudonym:name",
       "category": "keep",
-      "status": "keep",
-      "reason": "scrub-text"
+      "status": "keep"
     },
     "duta_profiles": {
       "user_id": "keep",
