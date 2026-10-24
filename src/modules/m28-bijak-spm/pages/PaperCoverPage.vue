@@ -183,7 +183,18 @@ async function begin(restart: boolean): Promise<void> {
         </UCollapsible>
       </section>
 
-      <section v-if="!needsChoice" class="flex flex-col gap-3" aria-labelledby="h-mod">
+      <!-- A sitting is open but still fresh (no resume block): the hero resumes, this restarts. -->
+      <section v-if="open && !needsChoice" data-testid="fresh-restart">
+        <UButton
+          color="neutral"
+          class="min-h-11 w-fit"
+          data-testid="restart"
+          @click="confirmRestart = true"
+          >Mula Semula</UButton
+        >
+      </section>
+
+      <section v-if="!open" class="flex flex-col gap-3" aria-labelledby="h-mod">
         <h2 id="h-mod" class="text-heading text-highlighted">Pilih mod</h2>
         <URadioGroup
           v-model="mode"
@@ -194,7 +205,6 @@ async function begin(restart: boolean): Promise<void> {
         />
         <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" />
         <UButton
-          v-if="!open"
           size="lg"
           trailing-icon="i-ph-arrow-right-bold"
           class="min-h-12 w-fit"
