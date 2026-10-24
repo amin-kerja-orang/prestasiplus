@@ -437,8 +437,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   :collapsed="true"
                   color="neutral"
                   variant="ghost"
-                  size="sm"
-                  class="hidden min-h-11 min-w-11 justify-center sm:inline-flex lg:hidden"
+                  size="xl"
+                  class="hidden min-h-11 min-w-11 sm:inline-flex lg:hidden"
                 />
                 <template v-if="learner">
                   <div class="hidden items-center gap-2 sm:flex">
@@ -449,9 +449,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 <UButton
                   color="neutral"
                   variant="ghost"
-                  size="sm"
+                  size="xl"
                   :icon="theme.scheme.value === 'dark' ? 'i-ph-sun' : 'i-ph-moon'"
-                  class="hidden min-h-11 min-w-11 justify-center sm:inline-flex"
+                  class="hidden min-h-11 min-w-11 sm:inline-flex"
                   :aria-label="themeLabel"
                   data-testid="pembelajaran-theme-toggle"
                   @click="theme.toggle()"
@@ -482,7 +482,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
             <main
               id="kandungan"
               :key="route.path"
-              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 pt-4 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:pt-6 lg:pb-24"
+              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 pt-4 sm:pt-6"
               data-testid="pembelajaran-main"
               tabindex="-1"
             >
@@ -509,6 +509,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 <p>&copy; 2026 PRESTASIPLUS. Hakcipta Terpelihara.</p>
                 <p>Didikan penuh ❤️ dari Malaysia 🇲🇾</p>
               </footer>
+              <!-- Clearance for the bottom nav (< lg) and the floating Cikgu Alesa button -->
+              <div class="h-[calc(11rem+env(safe-area-inset-bottom))] shrink-0 lg:h-24" aria-hidden="true" />
             </main>
           </template>
         </UDashboardPanel>
@@ -524,9 +526,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
       <RouterLink
         v-if="showAlesa"
         to="/cikgu"
-        class="fixed end-4 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-30 grid size-14 place-items-center rounded-full bg-ai text-primary-on shadow-lift transition duration-200 motion-reduce:transition-none lg:bottom-6"
-        :class="alesaHidden ? 'pointer-events-none scale-75 opacity-0' : ''"
+        class="fixed end-4 bottom-24 z-30 grid size-14 place-items-center rounded-full bg-ai text-primary-on shadow-lift lg:bottom-6"
         aria-label="Cikgu Alesa"
+        data-alesa
         data-testid="pembelajaran-alesa"
         :data-hidden="alesaHidden ? 'true' : undefined"
         @focus="alesaHidden = false"
@@ -682,3 +684,24 @@ const chipClass = (chip: unknown, active: boolean): string =>
     </div>
   </UApp>
 </template>
+
+<style scoped>
+/* Cikgu Alesa floating button: lifted above the home-indicator inset and tucked away while the
+   learner scrolls down (see onBodyScroll). */
+[data-alesa] {
+  margin-bottom: env(safe-area-inset-bottom);
+  transition:
+    opacity var(--transition-duration-base),
+    transform var(--transition-duration-base);
+}
+[data-alesa][data-hidden='true'] {
+  opacity: 0;
+  transform: scale(0.75);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-alesa] {
+    transition: none;
+  }
+}
+</style>

@@ -2,7 +2,8 @@
 /**
  * Hero card "Sambung latihan" (design system 6, "Hero card"): the gradient A1 card (flat primary
  * for staff) with on-primary text, an overline, title and sub line, a white pill CTA, an 84px
- * progress ring and optional 3D art overlapping the top-right corner over a soft glow.
+ * progress ring and optional 3D art overlapping the top-right corner over a soft glow. Below `sm`
+ * the card gets top padding when it has art, so the text sits under the art instead of beside it.
  */
 import { useId } from 'vue'
 
@@ -40,6 +41,7 @@ const hasRing = () => props.progress !== undefined && !!props.ringLabel
 <template>
   <article
     class="relative mt-3 flex items-center gap-4 rounded-sheet bg-gradient-primary p-4.5 text-primary-on shadow-hero"
+    :class="art ? 'max-sm:pt-16' : ''"
     :aria-labelledby="titleId"
     data-ds="hero-card"
   >
