@@ -30,6 +30,7 @@ import {
   KIND_LABEL,
   STATUS_BADGE,
   ageText,
+  emptyCopy,
 } from './ui'
 
 type Row = QueueItem & Record<string, unknown>
@@ -66,6 +67,8 @@ const counts = computed(() => data.value?.counts)
 const activeCount = computed(
   () => [applied.value.subject, applied.value.kertas, applied.value.kind].filter(Boolean).length,
 )
+/** The queue is only "empty" when nothing is filtered; otherwise say that nothing matched. */
+const emptyText = computed(() => emptyCopy(activeCount.value > 0, applied.value.status))
 const chips = computed(() => [
   ...(applied.value.subject
     ? [
@@ -200,8 +203,8 @@ function open(row: Row): void {
       density="compact"
       :loading="loading && !data"
       :filtered="activeCount > 0"
-      empty-title="Baris gilir kosong"
-      empty-description="Tiada soalan menunggu semakan."
+      :empty-title="emptyText.title"
+      :empty-description="emptyText.description"
       card-title="previewPlain"
       :card-fields="[
         { key: 'subjectName', label: 'Subjek' },

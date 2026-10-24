@@ -45,6 +45,20 @@ export const KIND_ITEMS = [
   { label: 'Esei', value: 'esei' },
 ]
 
+/** Empty-state copy of the review queue: nothing waiting, nothing in that tab, or no filter match. */
+export function emptyCopy(
+  filtered: boolean,
+  status: QuestionStatus | 'semua',
+): { title: string; description: string } {
+  if (filtered)
+    return { title: 'Tiada soalan dijumpai', description: 'Cuba ubah atau set semula penapis.' }
+  if (status === 'draf')
+    return { title: 'Tiada soalan perlu dibetulkan', description: 'Tiada soalan dipulangkan untuk pembetulan.' }
+  if (status === 'ditolak')
+    return { title: 'Tiada soalan ditolak', description: 'Belum ada soalan yang ditolak.' }
+  return { title: 'Baris gilir kosong', description: 'Tiada soalan menunggu semakan.' }
+}
+
 export function ageText(days: number): string {
   if (days <= 0) return 'Hari ini'
   return days === 1 ? '1 hari lalu' : `${days} hari lalu`

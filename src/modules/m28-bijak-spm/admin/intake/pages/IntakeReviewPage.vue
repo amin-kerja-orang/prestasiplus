@@ -7,6 +7,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { useFlash } from '@/composables/useFlash'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { DsPage, DsPanel, DsStateView, DsStatusBadge } from '@/ds'
 
@@ -30,6 +31,7 @@ import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '.
 
 const props = defineProps<{ batchId: string }>()
 const pageMeta = usePageMeta()
+const flash = useFlash()
 const server = bijakServer()
 
 const batch = ref<IntakeBatch | null>(null)
@@ -105,6 +107,17 @@ async function save(): Promise<void> {
   } catch {
     saveState.value = 'gagal'
   }
+}
+
+/** "Simpan draf": the same save, with a visible confirmation (autosave stays silent). */
+async function saveDraft(): Promise<void> {
+  clearTimeout(timer)
+  await save()
+  flash.show(
+    saveState.value === 'tersimpan'
+      ? { type: 'success', message: 'Draf disimpan.' }
+      : { type: 'error', message: 'Draf tidak dapat disimpan. Cuba lagi.' },
+  )
 }
 
 /* ------------------------------------------------------------------------------ derived */
@@ -299,7 +312,7 @@ async function submit(): Promise<void> {
                 color="neutral"
                 icon="i-ph-floppy-disk"
                 data-testid="save-draft"
-                @click="save"
+                @click="saveDraft"
               >
                 Simpan draf
               </UButton>

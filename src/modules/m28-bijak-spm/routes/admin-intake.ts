@@ -47,6 +47,18 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    // The editor of a manual batch: the same page as the review below, kept under Tulis Soalan Manual.
+    path: '/admin/spm/soalan/manual/:batchId',
+    name: INTAKE_ROUTES.manualEdit,
+    component: () => import('../admin/intake/pages/IntakeReviewPage.vue'),
+    props: true,
+    meta: {
+      ...base,
+      title: 'Tulis Soalan Manual - Admin PRESTASIPLUS',
+      header: { title: 'Tulis Soalan Manual', subtitle: 'Taip soalan sendiri tanpa PDF' },
+    },
+  },
+  {
     path: '/admin/spm/soalan/ekstrak/:batchId',
     name: INTAKE_ROUTES.review,
     component: () => import('../admin/intake/pages/IntakeReviewPage.vue'),
