@@ -33,7 +33,9 @@ export class StudentPerformanceService {
     const f = figuresOf(facts)
     const accuracy = accuracyOf(f.gradedScore, f.gradedMax)
 
-    const mastery = [...groupBy(facts, (s) => s.subjectId).values()]
+    // One row per curriculum subject: sittings of the same subject can carry different Bijak codes (SW13-08).
+    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(facts.map((s) => s.subjectCode))])
+    const mastery = [...groupBy(facts, (s) => idOfCode.get(s.subjectCode) ?? s.subjectId).values()]
       .map((list) => {
         const first = list[0] as BijakSittingFact
         const sf = figuresOf(list)
