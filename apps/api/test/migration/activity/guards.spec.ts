@@ -11,7 +11,7 @@ import { SyntheticDataRefusedError } from '../../../src/migration/load'
 import '../../../src/migration/load/activity/command'
 import { PreflightError } from '../../../src/migration/load/activity'
 import { activityInputHash, tableFingerprints } from '../../../src/migration/load/activity/preflight'
-import { capture } from '../staging/helpers'
+import { capture, testOutDir } from '../staging/helpers'
 import { bootActivity, PROBE_TABLE, type ActivityHarness } from './helpers'
 
 let h: ActivityHarness
@@ -171,7 +171,7 @@ describe('the source database is never touched', () => {
     // Fresh data for this test: re-stage the rows the previous test deleted by using the second harness.
     const env = guardedEnv({ ...bare.runEnv, CLOUD_SOURCE_URL: 'postgresql://never:read@127.0.0.1:1/none' })
     const { runCore } = await import('../../../src/migration/load')
-    await runCore({ pool: bare.env.pool, env: bare.runEnv, source: 'cloud', asOf: '2026-06-01', mode: 'apply', batchSize: 2 })
+    await runCore({ pool: bare.env.pool, env: bare.runEnv, source: 'cloud', asOf: '2026-06-01', mode: 'apply', batchSize: 2, outDir: testOutDir() })
     const dry = await bare.run('dry-run', { env })
     expect(dry.report.status).toBe('succeeded')
     const out = capture()

@@ -11,7 +11,7 @@ import type { CoreContext } from './context'
 import { rejectRow, sumResults, upsertAndMap } from './helpers'
 import { distinctValues, readById, readPairTable, resolveFk, type StagedRow } from './source'
 import { parentLinkLegacyId, transformParentLink } from '../transform/classes'
-import { transformUser, type UserOutput } from '../transform/users'
+import { roleRejectLabel, transformUser, type UserOutput } from '../transform/users'
 
 const idOf = (row: StagedRow): string => {
   const id = row.id ?? ''
@@ -62,14 +62,26 @@ export function usersStep(core: CoreContext): AnyEntityStep {
           ic: core.ic,
           defaultHashes: core.defaultHashes,
         })
-        if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
-        else accepted.push({ legacyId, out: out.value })
+        if (!out.ok) {
+          rejectRow(ctx, entity, legacyId, out.reject)
+          // Roles that are not migrated (agent) are counted by name; any other unknown role is counted together.
+          if (out.reject.column === 'role') core.notes.count(`users.role_rejected.${roleRejectLabel(row.role)}`)
+        } else accepted.push({ legacyId, out: out.value })
       }
 
       await dropDuplicateLogins(ctx, core, accepted)
 
+      // Q11: always present in the report, 0 when there is none.
+      core.notes.count('nullHashAccounts', 0)
+      core.notes.count('flaggedWithoutLoginId', 0)
+      for (const r of ['roster_account', 'non_bcrypt', 'shared_default']) core.notes.count(`must_reset.${r}`, 0) // C5 needs 0, not absent
       for (const { legacyId, out } of accepted) {
         core.notes.resetReason(out.notes.resetReasons)
+        // Q11 (after dropDuplicateLogins): ids go to the restricted file only, never to the aggregate report or stdout.
+        if (out.user.password_hash === null) core.notes.addRestricted('nullHashAccounts', legacyId)
+        if (out.user.must_reset_password && out.user.email === null && out.user.username === null) {
+          core.notes.addRestricted('flaggedWithoutLoginId', legacyId)
+        }
         if (out.notes.icInvalid) core.notes.addId('ic_invalid', legacyId)
         if (out.notes.emailInvalid) core.notes.addId('email_invalid', legacyId)
         if (out.notes.experienceInvalid) core.notes.addId('teaching_experience_invalid', legacyId)

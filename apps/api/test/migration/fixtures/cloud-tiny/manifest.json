@@ -4,7 +4,7 @@
   "synthetic": true,
   "tables": {
     "users": {
-      "rows": 13,
+      "rows": 15,
       "file": "users.ndjson"
     },
     "schools": {
@@ -289,6 +289,26 @@
     "part_responses": {
       "rows": 0
     },
+    "attempt_statuses": {
+      "rows": 3,
+      "file": "attempt_statuses.ndjson"
+    },
+    "paper_statuses": {
+      "rows": 4,
+      "file": "paper_statuses.ndjson"
+    },
+    "question_statuses": {
+      "rows": 0
+    },
+    "answer_modes": {
+      "rows": 0
+    },
+    "answer_key_kinds": {
+      "rows": 0
+    },
+    "stimulus_kinds": {
+      "rows": 0
+    },
     "questions": {
       "rows": 6,
       "file": "questions.ndjson"
@@ -399,6 +419,17 @@
     "teacher_reference_papers": {
       "rows": 1,
       "file": "teacher_reference_papers.ndjson"
+    },
+    "exam_boards": {
+      "rows": 1,
+      "file": "exam_boards.ndjson"
+    },
+    "exam_types": {
+      "rows": 1,
+      "file": "exam_types.ndjson"
+    },
+    "selection_rules": {
+      "rows": 0
     }
   }
 }
