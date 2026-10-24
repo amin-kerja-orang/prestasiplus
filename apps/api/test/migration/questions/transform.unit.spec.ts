@@ -241,6 +241,19 @@ describe('transformQuestion: HTML conversion, holds and entity decoding', () => 
     expect(expl.import_issues).toEqual([{ code: 'html_residual', target: 'explanation' }])
   })
 
+  it('holds real risky tags only: 9 tags are held, 8 maths or prose shapes are not (re-G4)', () => {
+    for (const body of ['<a href="x">y</a>', '</a>', '<script>', '<script src=x>', '<A HREF=x>', '<iframe/src=x>', '<svg onload=x>', '<meta http-equiv=x>', '<link rel=x/>', '&lt;script&gt;', '<img src=x>', '</math>']) {
+      const p = plan(row({ body }))
+      expect(p.is_active, body).toBe(false)
+      expect(p.import_issues?.some((i) => /^html_/.test(i.code)), body).toBe(true)
+    }
+    for (const body of ['0 < a < 1', 'if (x<a)', 'Jika x < a, maka', 'nilai < link', 'x<a dan b<c', 'a<b>c', '< script>', 'p<a+b', 'a<imgx dan m<mathx']) {
+      const p = plan(row({ body }))
+      expect(p.is_active, body).toBe(true)
+      expect(p.import_issues, body).toBeNull()
+    }
+  })
+
   it('does not hold plain maths or prose with a bare < or "on...=" words', () => {
     for (const body of ['Jika x < y dan a<b, maka one = 1 dan ratio=2?', 'Hitung 3 < 5 > 2']) {
       const p = plan(row({ body }))
@@ -261,6 +274,8 @@ describe('transformQuestion: personal-data screen (count only)', () => {
   const kinds = (body: string) => plan(row({ body })).import_issues?.map((i) => `${i.target}:${i.kind}`)
   it('holds a question whose text looks like an IC number, phone, e-mail, URL or @handle, naming only the kind', () => {
     expect(kinds('IC 990101-14-5678 ialah')).toEqual(['stem:ic'])
+    expect(kinds('IC 990101145678')).toEqual(['stem:ic'])
+    expect(plan(row({ body: 'Jawapan 123456789012 dan 991399-01-1234' })).import_issues).toBeNull()
     expect(kinds('Hubungi 012-3456789 atau +60123456789')).toEqual(['stem:phone'])
     expect(kinds('mel ke contoh@example.test')).toEqual(['stem:email'])
     expect(kinds('lawati https://example.test/x')).toEqual(['stem:url'])

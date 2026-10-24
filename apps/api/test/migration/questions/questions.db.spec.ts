@@ -3,7 +3,7 @@
  * excluded counters, preflight, the source lock and the printed report. Synthetic archive rows only.
  */
 import { randomBytes } from 'node:crypto'
-import { readdirSync, readFileSync, rmSync } from 'node:fs'
+import { readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -254,6 +254,7 @@ describe('the command', () => {
     expect(report.recon[0]).toMatchObject({ entity: 'questions', sourceCount: 2, eligibleCount: 0 })
     expect(report.notes['questions.excluded.status.draf']).toBe(1)
     expect(text).not.toMatch(/RAHSIA/)
+    expect(statSync(join(dir, files[0] as string)).mode & 0o777).toBe(0o600)
     rmSync(dir, { recursive: true, force: true })
   })
 

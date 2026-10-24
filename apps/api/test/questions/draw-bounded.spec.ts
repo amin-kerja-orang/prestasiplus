@@ -6,6 +6,7 @@ import { FixedClock } from '../../src/db/clock'
 import { BattleDeps } from '../../src/modules/battle/battle.deps'
 import { QuestionPool } from '../../src/modules/classes/missions/question-pool'
 import { GameQuestions } from '../../src/modules/games'
+import { JutawanService } from '../../src/modules/games/solo/jutawan/jutawan.service'
 import { DuplicateDetector } from '../../src/modules/intake/workflow/duplicate-detector'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge'
 import { ELIGIBLE_IDS_MAX, QuestionsRepository } from '../../src/modules/questions'
@@ -527,5 +528,83 @@ describe('G4 follow-ups', () => {
     const shaped = await timed({ ...filter, singleMcqLeaf: true })
     process.stdout.write(`QLOAD pool count timing over ${String(before)} pool rows: plain ${plain.toFixed(0)} ms, with single-leaf shape ${shaped.toFixed(0)} ms\n`)
     await t.db.query(`delete from question_tags where question_id = $1 and kind = 'pool'`, [twoPart])
+  })
+})
+
+describe('re-G4 minors', () => {
+  const actor = () => ({ userId: w.admin, role: 'admin', requestId: null, ip: null, isTest: false }) as const
+
+  it('battle: a rejected read is not cached (the next call re-reads), a resolved one is', async () => {
+    const clock = new FixedClock(new Date('2026-10-19T01:00:00Z'))
+    const count = vi.fn().mockRejectedValueOnce(new Error('db down')).mockResolvedValue(7)
+    const deps = new BattleDeps({} as never, {} as never, {} as never, { count } as never, {} as never, clock)
+    await expect(deps.spmPoolCount('1')).rejects.toThrow('db down')
+    await expect(deps.spmPoolCount('1')).resolves.toBe(7)
+    await expect(deps.spmPoolCount('1')).resolves.toBe(7)
+    expect(count).toHaveBeenCalledTimes(2)
+  })
+
+  it('Jutawan page: tile counts are read once per subject for N page views within 60 s, in parallel; a failed read is not cached', async () => {
+    const clock = new FixedClock(new Date('2026-10-19T01:00:00Z'))
+    let inflight = 0
+    let peak = 0
+    const eligibleCount = vi.fn(async (f: { subjectId: string }) => {
+      inflight += 1
+      peak = Math.max(peak, inflight)
+      await new Promise((r) => setTimeout(r, 20))
+      inflight -= 1
+      return f.subjectId === '1' ? 5 : 0
+    })
+    const svc = new JutawanService(
+      {} as never,
+      { stats: async () => ({}) } as never,
+      {} as never,
+      { eligibleCount } as never,
+      { levelIdOfGrade: async () => '9' } as never,
+      { subjects: async () => [{ id: 1n, code: 'MATH', name: 'Matematik' }, { id: 2n, code: 'BI', name: 'English' }] } as never,
+      {} as never,
+      clock,
+    )
+    const caller = { userId: '1' } as never
+    const pages = await Promise.all([svc.page(caller, '10'), svc.page(caller, '10'), svc.page(caller, '10')])
+    await svc.page(caller, '10')
+    expect(eligibleCount).toHaveBeenCalledTimes(2)
+    expect(peak).toBe(2)
+    expect((pages[0] as { subjects: { id: string; count: number }[] }).subjects).toEqual([expect.objectContaining({ id: '1', count: 5 })])
+    clock.set(new Date(clock.now().getTime() + 61_000))
+    await svc.page(caller, '10')
+    expect(eligibleCount).toHaveBeenCalledTimes(4)
+    eligibleCount.mockRejectedValueOnce(new Error('down'))
+    clock.set(new Date(clock.now().getTime() + 61_000))
+    await expect(svc.page(caller, '10')).rejects.toThrow('down')
+    await svc.page(caller, '10')
+    expect(eligibleCount.mock.calls.length).toBeGreaterThanOrEqual(6)
+  })
+
+  it('quality summary: the action list is the 200 highest ids (id descending) while the totals count every action row', async () => {
+    const quality = t.get(QualityService)
+    await quality.audit(actor())
+    await t.db.query(`update question_quality_scores set score = 10`)
+    const sum = await quality.summary()
+    const scored = (await t.db.query<{ n: number }>(`select count(*)::int n from question_quality_scores`))[0]?.n as number
+    expect(scored).toBeGreaterThan(400) // beyond the 2 x 200 trim point, so the bounded selection really ran
+    expect(sum.activeActionCount).toBe(scored)
+    expect(sum.buckets.lemahKritikal).toBe(scored)
+    expect(sum.actionList).toHaveLength(200)
+    const top = await t.db.query<{ id: string }>(`select question_id::text id from question_quality_scores order by question_id desc limit 200`)
+    expect(sum.actionList.map((r) => r.id)).toEqual(top.map((r) => r.id))
+  })
+
+  it('audit: a crashed (stale, unfinished) run is removed when the next run starts; a fresh one is kept and blocks', async () => {
+    const quality = t.get(QualityService)
+    const now = (t.clock as { now(): Date }).now()
+    await t.db.query(`delete from quality_audits where finished_at is null`)
+    await t.db.query(`insert into quality_audits (created_at) values ($1), ($2)`, [new Date(now.getTime() - 3 * 3600_000), new Date(now.getTime() - 2 * 3600_000)])
+    await quality.audit(actor())
+    expect((await t.db.query<{ n: number }>(`select count(*)::int n from quality_audits where finished_at is null`))[0]?.n).toBe(0)
+    await t.db.query(`insert into quality_audits (created_at) values ($1)`, [new Date(now.getTime() - 60_000)])
+    await expect(quality.audit(actor())).rejects.toMatchObject({ status: 409 })
+    expect((await t.db.query<{ n: number }>(`select count(*)::int n from quality_audits where finished_at is null`))[0]?.n).toBe(1)
+    await t.db.query(`delete from quality_audits where finished_at is null`)
   })
 })

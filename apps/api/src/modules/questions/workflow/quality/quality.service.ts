@@ -48,7 +48,9 @@ export class QualityService {
   async summary(): Promise<QuestionQualitySummary> {
     const subjects = new Map<string, { name: string; count: number; sum: number; excellent: number }>()
     const levelAgg = new Map<string, { count: number; sum: number }>()
-    const action: Scored[] = []
+    // Bounded top-K of the action rows (id descending): trimmed to ACTION_LIST_MAX whenever it doubles, so memory is O(K).
+    let action: Scored[] = []
+    let actionCount = 0
     let total = 0
     let scoredCount = 0
     let sum = 0
@@ -75,7 +77,11 @@ export class QualityService {
         else if (band === 'lemah') lemah += 1
         else if (band === 'kritikal') kritikal += 1
         if (q.isLegacy) legacyGeneric += 1
-        if (score <= QUESTION_QUALITY_ACTION_MAX_SCORE && !q.isLegacy) action.push({ q, score })
+        if (score <= QUESTION_QUALITY_ACTION_MAX_SCORE && !q.isLegacy) {
+          actionCount += 1
+          action.push({ q, score })
+          if (action.length >= 2 * ACTION_LIST_MAX) action = action.sort((a, b) => cmpId(b.q.id, a.q.id)).slice(0, ACTION_LIST_MAX)
+        }
         if (q.subjectId !== null) {
           const e = subjects.get(q.subjectId) ?? { name: q.subjectName ?? '', count: 0, sum: 0, excellent: 0 }
           e.count += 1
@@ -130,8 +136,8 @@ export class QualityService {
       average: scoredCount === 0 ? 0 : round1(sum / scoredCount),
       scoredCount,
       excellentCount,
-      activeActionCount: action.length,
-      buckets: { baik, lemahKritikal: action.length, legacyGeneric },
+      activeActionCount: actionCount,
+      buckets: { baik, lemahKritikal: actionCount, legacyGeneric },
       distribution: { cemerlang: share(excellentCount), baik: share(baik), lemah: share(lemah), kritikal: share(kritikal) },
       bySubject,
       byLevel,
@@ -153,6 +159,8 @@ export class QualityService {
     // unfinished run younger than AUDIT_STALE_MS refuses a second one (a crashed run stops blocking after that window).
     const run = await this.prisma.transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(${AUDIT_LOCK_KEY}::bigint)`
+      // Runs that crashed (unfinished and older than the stale window) are removed so they do not accumulate.
+      await tx.qualityAudit.deleteMany({ where: { finishedAt: null, createdAt: { lte: new Date(now.getTime() - AUDIT_STALE_MS) } } })
       const open = await tx.qualityAudit.findFirst({ where: { finishedAt: null, createdAt: { gt: new Date(now.getTime() - AUDIT_STALE_MS) } }, select: { id: true } })
       if (open) throw ApiError.of('CONFLICT', { message: AUDIT_RUNNING_MESSAGE })
       return tx.qualityAudit.create({ data: { runById: idFromString(actor.userId), createdAt: now } })

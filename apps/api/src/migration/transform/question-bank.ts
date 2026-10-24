@@ -162,12 +162,15 @@ export function plainFromHtml(value: string): { text: string; tags: boolean; ent
 
 type HoldCode = 'html_image' | 'html_math' | 'html_residual'
 
-/** Markup that must not reach a learner as it is, found AFTER the conversion above; null when the text is clean. */
+/**
+ * Markup that must not reach a learner as it is, found AFTER the conversion above; null when the text is clean. Real-tag
+ * matchers only (`<name`, then a space or `/`, then `>`), so maths such as `0 < a < 1` or `if (x<a)` is never held.
+ */
 export function htmlHoldOf(value: string): HoldCode | null {
   if (!value.includes('<') && !/javascript\s*:/i.test(value)) return null
-  if (/<\s*img\b/i.test(value)) return 'html_image'
-  if (/<\s*math\b/i.test(value)) return 'html_math'
-  if (/<\s*(?:script|a|iframe|style|svg|object|embed|link|meta)\b/i.test(value)) return 'html_residual'
+  if (/<img(?:[\s/][^<>]*)?>/i.test(value)) return 'html_image'
+  if (/<\/?math(?:[\s/][^<>]*)?>/i.test(value)) return 'html_math'
+  if (/<\/?(?:script|a|iframe|style|svg|object|embed|link|meta)(?:[\s/][^<>]*)?>/i.test(value)) return 'html_residual'
   if (/<[a-z][^<>]{0,500}\son[a-z]+\s*=[^<>]{0,500}>/i.test(value)) return 'html_residual'
   if (/javascript\s*:/i.test(value)) return 'html_residual'
   return null
@@ -181,7 +184,7 @@ export type PiiKind = 'ic' | 'phone' | 'email' | 'url' | 'handle'
  */
 export function piiKindsOf(value: string): PiiKind[] {
   const kinds: PiiKind[] = []
-  if (/(?<!\d)\d{6}-?\d{2}-?\d{4}(?!\d)/.test(value)) kinds.push('ic')
+  if (/(?<!\d)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])-?\d{2}-?\d{4}(?!\d)/.test(value)) kinds.push('ic')
   if (/(?<!\d)(?:\+?60|0)1\d[-\s]?\d{3,4}[-\s]?\d{4}(?!\d)/.test(value)) kinds.push('phone')
   if (value.includes('@')) {
     if (/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]{1,63}(?:\.[A-Za-z0-9-]{1,63}){1,4}/.test(value)) kinds.push('email')
