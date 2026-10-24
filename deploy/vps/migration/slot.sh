@@ -5,7 +5,9 @@
 #   deploy/vps/migration/slot.sh throwaway-up                         B0: the throwaway staging cluster
 #   deploy/vps/migration/slot.sh load --from DIR                      B4: staging:load of a RAW dump into it
 #   deploy/vps/migration/slot.sh load --from DIR --synthetic-scratch  A4 Track S ONLY: a SYNTHETIC fixture on a scratch host
-#                                                                     (PP_SCRATCH_HOST=yes, no off-site backup, typed host name)
+#                                                                     (PP_SCRATCH_HOST=yes and PP_OFFSITE_KIND=none in the prod.env FILE,
+#                                                                     the host name typed in a terminal; leaves a SYNTHETIC marker that
+#                                                                     copy, etl --apply and gonogo read until the next throwaway-up)
 #   deploy/vps/migration/slot.sh copy                                 B5: staging_cloud + archive_cloud -> target
 #   deploy/vps/migration/slot.sh throwaway-down                       B5: destroy the cluster and its data dir
 #   deploy/vps/migration/slot.sh wipe-dump DIR [FILE.gpg] [--missing-ok]  after a good load: delete the raw dump copies
@@ -112,6 +114,7 @@ migrate_run() {
 
 cmd_throwaway_up() {
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
+  rm -f "$(synthetic_marker)"   # a new load cycle starts: the marker of an earlier synthetic load no longer applies
   ! stage_running || pp_die "the throwaway cluster $stage_name is already running; run throwaway-down first (it is created empty for every load)" 3
   docker rm -f "$stage_name" >/dev/null 2>&1 || true
   [ ! -e "$stage_dir/pgdata" ] || pp_die "$stage_dir/pgdata exists from an earlier run: run throwaway-down first" 3
@@ -147,8 +150,32 @@ manifest_check() { # manifest_check DIR [synthetic]: a raw pp-staging-dump/1 fro
   grep -Eq '"format"[[:space:]]*:[[:space:]]*"pp-staging-dump/1"' "$m" || pp_die "manifest.json is not format pp-staging-dump/1" 2
   if [ "$mode" = synthetic ]; then
     # The scratch override loads fixtures:generate output and nothing else: never a raw or an anonymised (real-derived) dump.
-    grep -Eq '"synthetic"[[:space:]]*:[[:space:]]*true' "$m" || pp_die "--synthetic-scratch loads only a fixtures:generate dump (\"synthetic\": true)" 2
-    if grep -Eq '"(raw|anonymised)"[[:space:]]*:[[:space:]]*true' "$m"; then pp_die "--synthetic-scratch refuses a raw or anonymised dump: only synthetic fixtures" 2; fi
+    # Parsed as JSON (top level only, duplicate keys refused), not grepped: "raw": "true", a nested "synthetic" or
+    # "synthetic": true, "synthetic": false must not pass.
+    command -v python3 >/dev/null || pp_die "--synthetic-scratch needs python3 to read manifest.json" 3
+    local verdict
+    verdict="$(python3 -I -c '
+import json, sys
+def pairs(kv):
+    keys = [k for k, _ in kv]
+    if len(keys) != len(set(keys)): raise ValueError("duplicate key")
+    return dict(kv)
+try:
+    m = json.load(open(sys.argv[1], encoding="utf-8"), object_pairs_hook=pairs)
+except Exception:
+    print("unreadable"); sys.exit(0)
+if not isinstance(m, dict) or m.get("synthetic") is not True: print("not-synthetic")
+elif "raw" in m and m.get("raw") is not False or "anonymised" in m and m.get("anonymised") is not False: print("real")
+elif "large_integers" in m: print("large")
+else: print("ok")
+' "$m")"
+    case "$verdict" in
+      ok) ;;
+      not-synthetic) pp_die "--synthetic-scratch loads only a fixtures:generate dump (top-level \"synthetic\": true)" 2 ;;
+      real) pp_die "--synthetic-scratch refuses a raw or anonymised dump: only synthetic fixtures" 2 ;;
+      large) pp_die "the manifest lists large_integers: stop and ask half AM (cutover plan, N1)" 2 ;;
+      *) pp_die "--synthetic-scratch: manifest.json is not valid JSON or has a duplicate key" 2 ;;
+    esac
     if find "$d" -maxdepth 1 -name '*.partial' | grep -q .; then pp_die "$d still holds .partial files" 2; fi
     return 0
   fi
@@ -162,15 +189,26 @@ manifest_check() { # manifest_check DIR [synthetic]: a raw pp-staging-dump/1 fro
   if find "$d" -maxdepth 1 -name '*.partial' | grep -q .; then pp_die "$d still holds .partial files: the export did not finish" 2; fi
 }
 
+# The scratch marker is read from the prod.env FILE only, never from the process environment (pp_cfg prefers the
+# environment, so `PP_SCRATCH_HOST=yes slot.sh ...` on production must not count).
+scratch_host() { [ "$(pp_env_value "$PP_PROD_ENV" PP_SCRATCH_HOST)" = yes ]; }
+synthetic_marker() { printf '%s/SYNTHETIC-LOADED' "$stage_dir"; }
+synthetic_loaded() { [ -e "$(synthetic_marker)" ]; }
+
 scratch_gate() { # A4 Track S only: refuse anything that could be the production host
-  [ "$(pp_cfg PP_SCRATCH_HOST no)" = yes ] || pp_die "--synthetic-scratch: this host is not marked scratch (PP_SCRATCH_HOST=yes in prod.env; never on production)" 2
-  [ "$(pp_cfg PP_OFFSITE_KIND none)" = none ] || pp_die "--synthetic-scratch: PP_OFFSITE_KIND is not none; a scratch host has no off-site backup (A4 P-11)" 2
+  scratch_host || pp_die "--synthetic-scratch: this host is not marked scratch (PP_SCRATCH_HOST=yes in the prod.env file; never on production)" 2
+  local offsite; offsite="$(pp_env_value "$PP_PROD_ENV" PP_OFFSITE_KIND)"
+  [ "${offsite:-none}" = none ] || pp_die "--synthetic-scratch: PP_OFFSITE_KIND in prod.env is not none; a scratch host has no off-site backup (A4 P-11)" 2
   local host answer; host="$(hostname -s)"
   [ -t 0 ] || pp_die "--synthetic-scratch needs the typed host name (run it in a terminal)" 2
   printf 'SCRATCH OVERRIDE: load a SYNTHETIC fixture into %s on host %s. Type the host name to confirm: ' "$staging_db" "$host" >&2
-  read -r answer
+  read -r answer || pp_die "no confirmation was typed; nothing was loaded" 2
   [ "$answer" = "$host" ] || pp_die "confirmation did not match; nothing was loaded" 2
   pp_warn "SCRATCH OVERRIDE ACTIVE on $host: synthetic fixture, NOT the production path (A4 Track S)"
+}
+
+refuse_synthetic_unless_scratch() { # refuse_synthetic_unless_scratch WHAT
+  ! synthetic_loaded || scratch_host || pp_die "$1: the stage holds a SYNTHETIC fixture ($(synthetic_marker)) and this host is not marked scratch; never on production" 3
 }
 
 cmd_load() {
@@ -185,8 +223,15 @@ cmd_load() {
   { [ -n "$from" ] && [ -d "$from" ]; } || pp_die "load --from DIR: the extracted raw dump directory" 2
   from="$(readlink -f "$from")"
   pp_assert_outside_repo "$from"
-  if [ "$synthetic" = 1 ]; then manifest_check "$from" synthetic; scratch_gate; else manifest_check "$from"; fi
+  if [ "$synthetic" = 1 ]; then manifest_check "$from" synthetic; else manifest_check "$from"; fi
   stage_running || pp_die "the throwaway cluster is not running: throwaway-up first" 3
+  if [ "$synthetic" = 1 ]; then
+    scratch_gate
+    manifest_check "$from" synthetic   # again: the directory could have changed while the prompt waited
+    : >"$(synthetic_marker)"
+  else
+    rm -f "$(synthetic_marker)"
+  fi
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
   local url t0=$SECONDS
   url="postgresql://pp_stage:$(cat "$(stage_pw_file)")@$stage_name:5432/$staging_db"
@@ -206,6 +251,7 @@ cmd_load() {
 
 cmd_copy() {
   stage_running || pp_die "the throwaway cluster is not running" 3
+  refuse_synthetic_unless_scratch copy
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
   local a b t0=$SECONDS
   a="$(schema_tables stage_psql)"
@@ -293,6 +339,7 @@ cmd_etl() {
   done
   # The rollback and the archive minimisation need the apply gate in every mode (their dry-run too: the code calls
   # assertApplyAllowed for both). The rollback also needs its own switch (cutover plan 6.3).
+  [ "$apply" = 0 ] || refuse_synthetic_unless_scratch "etl $c --apply"
   case "$c" in
     migrate:rollback) envs+=(PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1) ;;
     migrate:archive-minimise) envs+=(PP_ALLOW_MIGRATE_APPLY=1) ;;
@@ -351,8 +398,10 @@ cmd_etl() {
 cmd_gonogo() {
   local f age lsn arch failed last ready disk pct
   pp_log "GO/NO-GO EVIDENCE (infrastructure part, cutover plan section 5; counts and names only)"
-  if [ "$(pp_cfg PP_SCRATCH_HOST no)" = yes ]; then echo "host: PP_SCRATCH_HOST=yes (A4 scratch host)  -> NO-GO on production"
+  local scratch_nogo=0
+  if scratch_host; then echo "host: PP_SCRATCH_HOST=yes in prod.env (A4 scratch host)  -> NO-GO on production"; scratch_nogo=1
   else echo "host: not marked scratch"; fi
+  if synthetic_loaded; then echo "stage data: SYNTHETIC fixture loaded (scratch override)  -> NO-GO on production"; scratch_nogo=1; fi
   # Cutover plan A5 / criterion 8: each point must hold as many applied migrations as the release has folders.
   for f in pre_etl pre_delta; do
     if "$PP_VPS_DIR/migration/restore-point.sh" verify "$f" --expect-migrations repo >/dev/null 2>&1; then
@@ -384,6 +433,7 @@ cmd_gonogo() {
     echo "reports: $out_dir ready (owner uid $(pp_cfg PP_MIGRATE_UID 1000), mode 700)"
   else echo "reports: $out_dir missing or wrong owner/mode  -> NO-GO (runbook section 1)"; fi
   # Last line: a gonogo that stopped half way (db down, set -e) never prints it, so a short output cannot pass as clean.
+  if [ "$scratch_nogo" = 1 ]; then echo "gonogo: NO-GO (scratch host or synthetic stage data)"; exit 3; fi
   echo "gonogo: complete (every check above ran)"
 }
 
