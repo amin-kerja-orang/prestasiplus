@@ -33,7 +33,7 @@ const saving = ref(false)
       <DsFormField label="Nama Penuh" name="nama" required hint="Seperti dalam kad pengenalan">
         <UInput class="w-full" placeholder="Murid Contoh" />
       </DsFormField>
-      <DsFormField label="E-mel" name="email" error="E-mel sudah digunakan">
+      <DsFormField label="Emel" name="email" error="Emel sudah digunakan">
         <UInput class="w-full" type="email" />
       </DsFormField>
       <DsFormField v-slot="{ id, describedby, invalid }" label="Tahap" native required>

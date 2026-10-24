@@ -2,7 +2,7 @@
  * L45 S2 `/ibu-bapa/terima/:token` (owner M01): E2E-L45-15..23 and the S2 half of 24 (SRS
  * docs/requirements/srs/L45-jemput-ibu-bapa.md §12), on the three projects.
  *
- * OBSERVED on live: the "Link Tidak Sah" page for an admin and for any unknown token (`0000`, `zzzz`,
+ * OBSERVED on live: the "Pautan Tidak Sah" page for an admin and for any unknown token (`0000`, `zzzz`,
  * 64 zeros). The guest / parent / non-parent views of it and every valid-token state are PROPOSED
  * or INFERRED, so those tests are `@provisional`.
  *
@@ -35,7 +35,7 @@ const STUDENT_4 = 'pelajarmaju@demo.test'
 const TOKEN_2 = 'a2'.repeat(32)
 const TOKEN_3 = 'a3'.repeat(32)
 const TOKEN_4 = 'a4'.repeat(32)
-const INVALID_TITLE = 'Link Tidak Sah — PRESTASIPLUS'
+const INVALID_TITLE = 'Pautan Tidak Sah — PRESTASIPLUS'
 const VALID_TITLE = 'Jemputan Ibu Bapa — PRESTASIPLUS'
 const PROPOSED = 'L45 S2 valid-token states are PROPOSED from the reference rebuild (SRS §3, D23a)'
 const INFERRED = 'L45 S2 behaviour is INFERRED (SRS §3)'
@@ -63,12 +63,12 @@ async function seedTokens(gotoApp: Goto, mock: Mock): Promise<void> {
 
 async function expectInvalidPage(page: Page): Promise<void> {
   await expectTabTitle(page, INVALID_TITLE)
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Link Tidak Sah')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Pautan Tidak Sah')
   const root = page.getByTestId('invite-invalid')
-  await expect(root).toContainText('Link jemputan ini tidak sah atau telah tamat tempoh.')
+  await expect(root).toContainText('Pautan jemputan ini tidak sah atau telah tamat tempoh.')
   await expect(page.getByTestId('invite-invalid-icon')).toBeVisible()
   await expect(page.getByTestId('invite-invalid-info')).toHaveText(
-    'Link ini mungkin telah tamat tempoh atau dibatalkan. Sila minta anak anda menghantar jemputan baharu.',
+    'Pautan ini mungkin telah tamat tempoh atau dibatalkan. Sila minta anak anda menghantar jemputan baharu.',
   )
   await expect(page.getByTestId('invite-invalid-info').locator('svg')).toHaveCount(1)
   const login = page.getByTestId('invite-invalid-login')
@@ -107,7 +107,7 @@ test.describe('L45 S2 /ibu-bapa/terima/:token', { tag }, () => {
   test.describe.configure({ timeout: 90_000 })
   test.use({ mockInit: { latency: 0 } })
 
-  test('E2E-L45-15 admin: "0000" shows the exact "Link Tidak Sah" page (OBSERVED)', async ({
+  test('E2E-L45-15 admin: "0000" shows the exact "Pautan Tidak Sah" page (OBSERVED)', async ({
     page,
     gotoApp,
     mock,
@@ -151,7 +151,7 @@ test.describe('L45 S2 /ibu-bapa/terima/:token', { tag }, () => {
   )
 
   test(
-    'E2E-L45-16 a link of a deactivated student is "Link Tidak Sah"',
+    'E2E-L45-16 a link of a deactivated student is "Pautan Tidak Sah"',
     tagP(PROPOSED),
     async ({ page, gotoApp, mock }) => {
       test.slow()
@@ -176,7 +176,7 @@ test.describe('L45 S2 /ibu-bapa/terima/:token', { tag }, () => {
   )
 
   for (const token of ['zzzz', '0'.repeat(64)]) {
-    test(`E2E-L45-17 "${token.slice(0, 8)}${token.length > 8 ? '…' : ''}" shows the same "Link Tidak Sah" page (OBSERVED)`, async ({
+    test(`E2E-L45-17 "${token.slice(0, 8)}${token.length > 8 ? '…' : ''}" shows the same "Pautan Tidak Sah" page (OBSERVED)`, async ({
       page,
       gotoApp,
       mock,

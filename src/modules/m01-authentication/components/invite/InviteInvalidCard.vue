@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * L45 S2 invalid state: the standalone "Link Tidak Sah" page (FR-L45-19, OBSERVED copy; layout from
+ * L45 S2 invalid state: the standalone "Pautan Tidak Sah" page (FR-L45-19, OBSERVED copy; layout from
  * `docs/discovery/img/L45/terima-invalid-token-desktop.png`). A raised card with a neutral header,
  * an info box, the "Log Masuk" and "Laman Utama" buttons and the footer line. Tap targets are at
  * least 44px.
@@ -22,9 +22,9 @@ useThemeMode('learner')
           class="mx-auto size-14 text-muted"
           data-testid="invite-invalid-icon"
         />
-        <h1 class="mt-3 font-display text-heading break-words text-highlighted">Link Tidak Sah</h1>
+        <h1 class="mt-3 font-display text-heading break-words text-highlighted">Pautan Tidak Sah</h1>
         <p class="mt-1 text-label text-muted">
-          Link jemputan ini tidak sah atau telah tamat tempoh.
+          Pautan jemputan ini tidak sah atau telah tamat tempoh.
         </p>
       </div>
       <div class="flex flex-col gap-3 p-5 sm:p-6">
@@ -32,7 +32,7 @@ useThemeMode('learner')
           color="warning"
           variant="subtle"
           icon="i-ph-info-duotone"
-          description="Link ini mungkin telah tamat tempoh atau dibatalkan. Sila minta anak anda menghantar jemputan baharu."
+          description="Pautan ini mungkin telah tamat tempoh atau dibatalkan. Sila minta anak anda menghantar jemputan baharu."
           data-testid="invite-invalid-info"
         />
         <UButton

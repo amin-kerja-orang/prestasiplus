@@ -145,7 +145,7 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     const email = w.get('[data-testid=profile-email-input]')
     expect(email.attributes('disabled')).toBeDefined()
     expect(email.attributes('name')).toBeUndefined()
-    expect(w.text()).toContain('Email tidak boleh diubah')
+    expect(w.text()).toContain('Emel tidak boleh diubah')
     expect(w.get('[data-testid=profile-phone-input]').attributes('placeholder')).toBe('012-3456789')
     expect(w.get('[data-testid=profile-bio-input]').attributes('maxlength')).toBe('500')
     expect(w.get('[data-testid=profile-bio-counter]').text()).toBe('Baki: 500 aksara')

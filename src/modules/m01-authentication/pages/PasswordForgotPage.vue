@@ -41,7 +41,7 @@ async function submit(): Promise<void> {
 <template>
   <PasswordCard
     heading="Lupa Kata Laluan?"
-    intro="Masukkan email anda dan kami akan hantar pautan untuk reset kata laluan."
+    intro="Masukkan emel anda dan kami akan menghantar pautan untuk set semula kata laluan."
   >
     <template #icon>🔑</template>
 
@@ -49,7 +49,7 @@ async function submit(): Promise<void> {
       <AuthAlert variant="success" :messages="status" data-testid="forgot-status" />
       <AuthAlert :messages="errors" data-testid="forgot-alert" />
 
-      <DsFormField native for="email" label="Alamat Email">
+      <DsFormField native for="email" label="Alamat Emel">
         <UInput
           id="email"
           ref="emailInput"
@@ -83,7 +83,7 @@ async function submit(): Promise<void> {
         icon="i-ph-paper-plane-tilt-duotone"
         data-testid="forgot-submit"
       >
-        {{ loading ? 'Menghantar...' : 'Hantar Pautan Reset' }}
+        {{ loading ? 'Menghantar...' : 'Hantar Pautan Set Semula' }}
       </UButton>
 
       <UButton

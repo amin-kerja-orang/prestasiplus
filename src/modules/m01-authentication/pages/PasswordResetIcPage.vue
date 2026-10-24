@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S5 `/password/reset-ic` "Reset Kata Laluan (No IC) - PRESTASIPLUS" (M01-T4; FR-M01-33..35, BR-12).
+ * S5 `/password/reset-ic` "Set Semula Kata Laluan (No IC) - PRESTASIPLUS" (M01-T4; FR-M01-33..35, BR-12).
  * Submit calls `POST /api/auth/password/reset-ic`; on a match the app goes to S4 pre-filled
  * (`/password/reset/{token}?email={email}`), otherwise the red alert shows the mismatch text and the
  * entered values stay. `maxlength=14` (DV-04; live 20).
@@ -43,8 +43,8 @@ async function submit(): Promise<void> {
 
 <template>
   <PasswordCard
-    heading="Reset Melalui No IC"
-    intro="Masukkan email dan No Kad Pengenalan yang didaftarkan dalam profil anda."
+    heading="Set Semula Melalui No IC"
+    intro="Masukkan emel dan No Kad Pengenalan yang didaftarkan dalam profil anda."
   >
     <template #icon
       ><UIcon name="i-ph-identification-card-duotone" class="size-10"
@@ -53,7 +53,7 @@ async function submit(): Promise<void> {
     <form data-testid="ic-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert :messages="errors" data-testid="ic-alert" />
 
-      <DsFormField native for="email" label="Alamat Email">
+      <DsFormField native for="email" label="Alamat Emel">
         <UInput
           id="email"
           ref="emailInput"
@@ -102,7 +102,7 @@ async function submit(): Promise<void> {
         icon="i-ph-lock-open-duotone"
         data-testid="ic-submit"
       >
-        {{ loading ? 'Memproses...' : 'Reset Kata Laluan' }}
+        {{ loading ? 'Memproses...' : 'Set Semula Kata Laluan' }}
       </UButton>
 
       <UButton

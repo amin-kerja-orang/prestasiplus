@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S4 `/password/reset/:token` "Reset Kata Laluan - PRESTASIPLUS" (M01-T4; FR-M01-30..32, BR-11).
+ * S4 `/password/reset/:token` "Set Semula Kata Laluan - PRESTASIPLUS" (M01-T4; FR-M01-30..32, BR-11).
  * Renders for any token (the token is checked on submit). The email is pre-filled from `?email=`,
  * otherwise empty and editable. On success the new session is stored and the app goes to the role
  * landing page with the status text as flash; a bad or expired token shows the red alert, keeps the
@@ -57,14 +57,14 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <PasswordCard heading="Reset Kata Laluan" intro="Masukkan kata laluan baru anda.">
+  <PasswordCard heading="Set Semula Kata Laluan" intro="Masukkan kata laluan baru anda.">
     <template #icon>🔒</template>
 
     <form data-testid="reset-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert :messages="errors" data-testid="reset-alert" />
       <UInput type="hidden" name="token" :model-value="token" class="hidden" />
 
-      <DsFormField native for="email" label="Alamat Email">
+      <DsFormField native for="email" label="Alamat Emel">
         <UInput
           id="email"
           v-model="email"

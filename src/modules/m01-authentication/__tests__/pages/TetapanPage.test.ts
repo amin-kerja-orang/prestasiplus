@@ -48,7 +48,7 @@ describe('TetapanPage', () => {
       'Atur pengalaman PrestasiPlus mengikut keperluan rohani & masa anda.',
     )
     expect(w.text()).toContain('🕌 Mod Rohani')
-    expect(w.text()).toContain('🌍 Latar Agama (opsyen)')
+    expect(w.text()).toContain('🌍 Latar Agama (pilihan)')
     for (const id of [
       'spiritual_mode',
       'show_bismillah_splash',

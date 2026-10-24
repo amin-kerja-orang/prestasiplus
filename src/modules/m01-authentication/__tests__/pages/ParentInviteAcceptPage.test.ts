@@ -54,16 +54,16 @@ afterEach(() => {
 })
 
 describe('invalid token (FR-L45-19, OBSERVED copy)', () => {
-  it.each(['0000', 'zzzz', '0'.repeat(64)])('shows "Link Tidak Sah" for %s', async (token) => {
+  it.each(['0000', 'zzzz', '0'.repeat(64)])('shows "Pautan Tidak Sah" for %s', async (token) => {
     m02.fetchInvitePreview.mockRejectedValue(notFound())
     await render(token)
     expect(m02.fetchInvitePreview).toHaveBeenCalledWith(token)
-    expect(t('invite-invalid').find('h1').text()).toBe('Link Tidak Sah')
+    expect(t('invite-invalid').find('h1').text()).toBe('Pautan Tidak Sah')
     expect(t('invite-invalid').text()).toContain(
-      'Link jemputan ini tidak sah atau telah tamat tempoh.',
+      'Pautan jemputan ini tidak sah atau telah tamat tempoh.',
     )
     expect(t('invite-invalid-info').text()).toBe(
-      'Link ini mungkin telah tamat tempoh atau dibatalkan. Sila minta anak anda menghantar jemputan baharu.',
+      'Pautan ini mungkin telah tamat tempoh atau dibatalkan. Sila minta anak anda menghantar jemputan baharu.',
     )
     expect(t('invite-invalid-login').text()).toBe('Log Masuk')
     expect(t('invite-invalid-login').attributes('href')).toBe('/login')
@@ -72,7 +72,7 @@ describe('invalid token (FR-L45-19, OBSERVED copy)', () => {
     expect(t('invite-invalid-footer').text()).toBe(
       'PRESTASIPLUS — Platform Latih Tubi Interaktif Malaysia',
     )
-    expect(document.title).toBe('Link Tidak Sah — PRESTASIPLUS')
+    expect(document.title).toBe('Pautan Tidak Sah — PRESTASIPLUS')
     expect(m02.acceptParentInvite).not.toHaveBeenCalled()
   })
 

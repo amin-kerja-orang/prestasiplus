@@ -116,7 +116,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     const email = page.getByTestId('profile-email-input')
     await expect(email).toBeDisabled()
     await expect(email).toHaveValue(STUDENT)
-    await expect(page.getByText('Email tidak boleh diubah')).toBeVisible()
+    await expect(page.getByText('Emel tidak boleh diubah')).toBeVisible()
     await expect(page.getByTestId('profile-phone-input')).toHaveAttribute(
       'placeholder',
       '012-3456789',

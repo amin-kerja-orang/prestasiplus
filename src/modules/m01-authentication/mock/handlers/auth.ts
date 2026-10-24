@@ -12,7 +12,7 @@
  * | 6 | `POST /api/auth/logout` | 204 whatever the session state |
  *
  * Error copy is the Laravel 11 English default (UNVERIFIED COPY, SRS §5/§8) except the observed
- * "Email atau kata laluan tidak sah." and the M01/M02 placeholders. Credentials and IC mismatches
+ * "Emel atau kata laluan tidak sah." and the M01/M02 placeholders. Credentials and IC mismatches
  * answer `422 VALIDATION_ERROR` with the message under `fields.email`, like Laravel.
  */
 
@@ -57,17 +57,17 @@ import { notifyLogin, notifyRegistered, schoolExists } from './auth-deps'
 import { bodyOf, intOrNull, textOrNull } from './auth-input'
 
 /** BR-01 (OBSERVED). */
-export const MSG_BAD_CREDENTIALS = 'Email atau kata laluan tidak sah.'
+export const MSG_BAD_CREDENTIALS = 'Emel atau kata laluan tidak sah.'
 /** BR-23 (placeholder shared with M02 §8). */
 export const MSG_ACCOUNT_INACTIVE = 'Akaun anda tidak aktif. Sila hubungi pentadbir.'
 /** SRS §8 (Laravel `passwords.*`, `auth.throttle`). */
-export const MSG_RESET_SENT = 'We have emailed your password reset link.'
-export const MSG_RESET_DONE = 'Your password has been reset.'
-export const MSG_USER_NOT_FOUND = "We can't find a user with that email address."
-export const MSG_RESET_THROTTLED = 'Please wait before retrying.'
-export const MSG_TOKEN_INVALID = 'This password reset token is invalid.'
+export const MSG_RESET_SENT = 'Kami telah menghantar pautan set semula kata laluan ke emel anda.'
+export const MSG_RESET_DONE = 'Kata laluan anda telah ditetapkan semula.'
+export const MSG_USER_NOT_FOUND = "Kami tidak menemui pengguna dengan alamat emel itu."
+export const MSG_RESET_THROTTLED = 'Sila tunggu sebelum mencuba semula.'
+export const MSG_TOKEN_INVALID = 'Token set semula kata laluan ini tidak sah.'
 /** SRS §5 (placeholder: Laravel has no default for an IC reset). */
-export const MSG_IC_MISMATCH = 'Email atau No Kad Pengenalan tidak sepadan.'
+export const MSG_IC_MISMATCH = 'Emel atau No Kad Pengenalan tidak sepadan.'
 
 export const ACCOUNT_INACTIVE_CODE = 'ACCOUNT_INACTIVE'
 
@@ -238,7 +238,7 @@ function forgotPassword(req: MockRequest, ctx: MockContext): MockResponse {
   ctx.outbox.send({
     type: PASSWORD_RESET_OUTBOX_TYPE,
     to: user.email,
-    subject: 'Reset Kata Laluan',
+    subject: 'Set Semula Kata Laluan',
     data: {
       token: reset.id,
       email: user.email,

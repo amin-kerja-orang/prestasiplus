@@ -24,7 +24,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'bare',
       access: 'public',
-      title: 'Reset Kata Laluan (No IC) - PRESTASIPLUS',
+      title: 'Set Semula Kata Laluan (No IC) - PRESTASIPLUS',
       module: 'M01',
     },
   },
@@ -35,7 +35,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'bare',
       access: 'public',
-      title: 'Reset Kata Laluan - PRESTASIPLUS',
+      title: 'Set Semula Kata Laluan - PRESTASIPLUS',
       module: 'M01',
     },
   },

@@ -18,10 +18,10 @@ import {
 } from '../support'
 
 const DESCRIPTIONS = [
-  'Master toggle — kalau off, semua spiritual touchpoints disable.',
-  'Splash 2-saat sebelum mula quiz: "Bismillahi tawakkaltu \'alallah". Tetapan untuk Muslim.',
-  'Push notifikasi pagi awal untuk yang bangun Subuh — 30 minit study window selepas Subuh = paling produktif.',
-  'Push waktu sahur (~4:30am) untuk study sebelum Subuh. Pace lebih ringan waktu Ramadan.',
+  'Suis utama — jika dimatikan, semua elemen rohani dinyahaktifkan.',
+  'Paparan 2 saat sebelum kuiz bermula: "Bismillahi tawakkaltu \'alallah". Tetapan untuk Muslim.',
+  'Notifikasi awal pagi untuk yang bangun Subuh — 30 minit waktu belajar selepas Subuh paling produktif.',
+  'Notifikasi waktu sahur (~4:30 pagi) untuk belajar sebelum Subuh. Rentak lebih ringan semasa Ramadan.',
   'Untuk mod rohani yang sesuai. Future: Hindu/Buddhist/Christian content akan ditambah.',
 ]
 
@@ -43,7 +43,7 @@ test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, (
       page.getByText('Atur pengalaman PrestasiPlus mengikut keperluan rohani & masa anda.'),
     ).toBeVisible()
     await expect(page.getByRole('heading', { name: '🕌 Mod Rohani' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: '🌍 Latar Agama (opsyen)' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '🌍 Latar Agama (pilihan)' })).toBeVisible()
     for (const text of DESCRIPTIONS)
       await expect(page.getByText(text, { exact: true })).toBeVisible()
 

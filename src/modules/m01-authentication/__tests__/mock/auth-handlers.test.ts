@@ -139,8 +139,8 @@ describe('POST /api/auth/login (#1)', () => {
       expect(r.status).toBe(422)
       expect(r.body.error).toMatchObject({
         code: 'VALIDATION_ERROR',
-        message: 'Email atau kata laluan tidak sah.',
-        fields: { email: 'Email atau kata laluan tidak sah.' },
+        message: 'Emel atau kata laluan tidak sah.',
+        fields: { email: 'Emel atau kata laluan tidak sah.' },
       })
     }
     // A failed attempt changes nothing (BR-25).
@@ -380,7 +380,7 @@ describe('password reset (#3, #4, #5)', () => {
     const r = await call('POST', '/api/auth/password/email', { email: 'tiada@demo.test' })
     expect(r.status).toBe(422)
     expect(r.body.error?.fields).toEqual({
-      email: "We can't find a user with that email address.",
+      email: "Kami tidak menemui pengguna dengan alamat emel itu.",
     })
     expect((await call('POST', '/api/auth/password/email', { email: '' })).status).toBe(422)
   })
@@ -388,7 +388,7 @@ describe('password reset (#3, #4, #5)', () => {
   it('forgot: sends the token to the outbox, then throttles for 60 s (BR-10)', async () => {
     const sent = await call('POST', '/api/auth/password/email', { email: 'guru@demo.test' })
     expect(sent.status).toBe(200)
-    expect(sent.body.data).toEqual({ status: 'We have emailed your password reset link.' })
+    expect(sent.body.data).toEqual({ status: 'Kami telah menghantar pautan set semula kata laluan ke emel anda.' })
     const mail = runtime.outbox.last(PASSWORD_RESET_OUTBOX_TYPE, 'guru@demo.test')
     expect(mail?.data?.token).toMatch(/^rt_/)
     expect(String(mail?.data?.link)).toContain(`/password/reset/${String(mail?.data?.token)}`)
@@ -397,7 +397,7 @@ describe('password reset (#3, #4, #5)', () => {
     expect(again.status).toBe(429)
     expect(again.body.error).toMatchObject({
       code: 'RATE_LIMITED',
-      message: 'Please wait before retrying.',
+      message: 'Sila tunggu sebelum mencuba semula.',
       retryAfter: 60,
     })
     clock.advance(61 * SECOND_MS)
@@ -415,7 +415,7 @@ describe('password reset (#3, #4, #5)', () => {
       password: 'baharu1',
       passwordConfirmation: 'baharu1',
     })
-    expect(oldUse.body.error?.fields?.email).toBe('This password reset token is invalid.')
+    expect(oldUse.body.error?.fields?.email).toBe('Token set semula kata laluan ini tidak sah.')
   })
 
   it('forgot then reset: new password, auto-login, single use (BR-11)', async () => {
@@ -432,14 +432,14 @@ describe('password reset (#3, #4, #5)', () => {
     }
     const r = await call('POST', '/api/auth/password/reset', body)
     expect(r.status).toBe(200)
-    expect(r.body.data).toMatchObject({ status: 'Your password has been reset.' })
+    expect(r.body.data).toMatchObject({ status: 'Kata laluan anda telah ditetapkan semula.' })
     expect(r.body.data?.user).toMatchObject({ id: 7, landingPath: '/dashboard' })
     expect(Date.parse(r.body.data!.user!.lastLoginAt!)).toBe(NOW + 59 * MINUTE_MS)
     expect((await login('penaja@demo.test', 'baharu1')).status).toBe(200)
     expect((await login('penaja@demo.test', DEMO_PASSWORD)).status).toBe(422)
     const reuse = await call('POST', '/api/auth/password/reset', body)
     expect(reuse.status).toBe(422)
-    expect(reuse.body.error?.message).toBe('This password reset token is invalid.')
+    expect(reuse.body.error?.message).toBe('Token set semula kata laluan ini tidak sah.')
   })
 
   it('reset: a token expires after 60 minutes (BR-10)', async () => {
@@ -454,7 +454,7 @@ describe('password reset (#3, #4, #5)', () => {
       password: 'baharu1',
       passwordConfirmation: 'baharu1',
     })
-    expect(r.body.error?.fields?.email).toBe('This password reset token is invalid.')
+    expect(r.body.error?.fields?.email).toBe('Token set semula kata laluan ini tidak sah.')
   })
 
   it('reset: wrong e-mail, unknown e-mail and bad passwords', async () => {
@@ -464,14 +464,14 @@ describe('password reset (#3, #4, #5)', () => {
       password: 'baharu1',
       passwordConfirmation: 'baharu1',
     })
-    expect(wrongOwner.body.error?.fields?.email).toBe('This password reset token is invalid.')
+    expect(wrongOwner.body.error?.fields?.email).toBe('Token set semula kata laluan ini tidak sah.')
     const unknown = await call('POST', '/api/auth/password/reset', {
       token: DEMO_RESET_TOKEN,
       email: 'tiada@demo.test',
       password: 'baharu1',
       passwordConfirmation: 'baharu1',
     })
-    expect(unknown.body.error?.fields?.email).toBe("We can't find a user with that email address.")
+    expect(unknown.body.error?.fields?.email).toBe("Kami tidak menemui pengguna dengan alamat emel itu.")
     const short = await call('POST', '/api/auth/password/reset', {
       token: DEMO_RESET_TOKEN,
       email: 'pelajar@demo.test',
@@ -498,7 +498,7 @@ describe('password reset (#3, #4, #5)', () => {
       passwordConfirmation: 'baharu1',
     })
     expect(expired.status).toBe(422)
-    expect(expired.body.error?.message).toBe('This password reset token is invalid.')
+    expect(expired.body.error?.message).toBe('Token set semula kata laluan ini tidak sah.')
   })
 
   it('reset: an inactive account with a real token is refused and nothing changes (BR-23, INFERRED)', async () => {
@@ -539,7 +539,7 @@ describe('password reset (#3, #4, #5)', () => {
   })
 
   it('IC reset: mismatch, no stored IC and unknown e-mail all fail alike', async () => {
-    const message = 'Email atau No Kad Pengenalan tidak sepadan.'
+    const message = 'Emel atau No Kad Pengenalan tidak sepadan.'
     for (const body of [
       { email: 'pelajar@demo.test', icNumber: '100101140002' },
       { email: 'pelajar2@demo.test', icNumber: '100101140001' },

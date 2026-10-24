@@ -80,7 +80,7 @@ async function submit(): Promise<void> {
     <form data-testid="login-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert :messages="errors" data-testid="login-alert" />
 
-      <DsFormField native for="email" label="Alamat Email">
+      <DsFormField native for="email" label="Alamat Emel">
         <UInput
           id="email"
           v-model="email"
@@ -124,7 +124,7 @@ async function submit(): Promise<void> {
             color="primary"
             icon="i-ph-identification-card-duotone"
             class="min-h-11"
-            >Reset melalui No IC</UButton
+            >Set Semula melalui No IC</UButton
           >
         </div>
       </div>

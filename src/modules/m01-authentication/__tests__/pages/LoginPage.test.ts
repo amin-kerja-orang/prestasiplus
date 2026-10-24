@@ -96,7 +96,7 @@ describe('LoginPage (M01 S1)', () => {
     })
     expect(w.get('form').attributes('novalidate')).toBeUndefined()
     expect(w.get('[data-testid=login-remember]').attributes('aria-checked')).toBe('false')
-    expect(w.text()).toContain('Alamat Email')
+    expect(w.text()).toContain('Alamat Emel')
     expect(w.text()).toContain('Kata Laluan')
     expect(w.text()).toContain('© 2026 PRESTASIPLUS. Platform Pendidikan Malaysia.')
   })
@@ -106,7 +106,7 @@ describe('LoginPage (M01 S1)', () => {
     const links = w.findAll('form a').map((a) => [a.text(), a.attributes('href')])
     expect(links).toEqual([
       ['Lupa kata laluan?', '/password/reset'],
-      ['Reset melalui No IC', '/password/reset-ic'],
+      ['Set Semula melalui No IC', '/password/reset-ic'],
       ['Belum ada akaun? Daftar Sekarang 🚀', '/register'],
       ['Kembali ke Laman Utama', '/'],
     ])
@@ -194,13 +194,13 @@ describe('LoginPage (M01 S1)', () => {
       new ApiError({
         status: 422,
         code: 'VALIDATION_ERROR',
-        message: 'Email atau kata laluan tidak sah.',
-        fields: { email: 'Email atau kata laluan tidak sah.' },
+        message: 'Emel atau kata laluan tidak sah.',
+        fields: { email: 'Emel atau kata laluan tidak sah.' },
       }),
     )
     const w = await render()
     await fillAndSubmit(w, 'x@demo.test', 'salah')
-    expect(w.get('[data-testid=login-alert]').text()).toBe('Email atau kata laluan tidak sah.')
+    expect(w.get('[data-testid=login-alert]').text()).toBe('Emel atau kata laluan tidak sah.')
     expect((w.get('[data-testid=login-email]').element as HTMLInputElement).value).toBe(
       'x@demo.test',
     )

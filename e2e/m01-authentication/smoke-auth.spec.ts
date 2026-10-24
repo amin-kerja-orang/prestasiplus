@@ -24,7 +24,7 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     const form = page.getByTestId('login-form')
     await expect(page.getByAltText('PRESTASIPLUS')).toBeVisible()
     await expect(page.getByText('Platform Latih Tubi Nasional 🇲🇾')).toBeVisible()
-    await expect(form.getByLabel('Alamat Email')).toHaveAttribute('placeholder', 'nama@email.com')
+    await expect(form.getByLabel('Alamat Emel')).toHaveAttribute('placeholder', 'nama@email.com')
     await expect(form.getByLabel('Kata Laluan')).toHaveAttribute('type', 'password')
     await expect(form.getByLabel('Ingat saya')).not.toBeChecked()
     await expect(form.getByRole('button', { name: 'Log Masuk' })).toBeEnabled()
@@ -32,7 +32,7 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
       'href',
       '/password/reset',
     )
-    await expect(form.getByRole('link', { name: 'Reset melalui No IC' })).toHaveAttribute(
+    await expect(form.getByRole('link', { name: 'Set Semula melalui No IC' })).toHaveAttribute(
       'href',
       '/password/reset-ic',
     )
@@ -77,7 +77,7 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await page.getByTestId('login-email').fill('pelajar@demo.test')
     await page.getByTestId('login-password').fill('salah-salah')
     await page.getByTestId('login-submit').click()
-    await expect(page.getByTestId('login-alert')).toContainText('Email atau kata laluan tidak sah.')
+    await expect(page.getByTestId('login-alert')).toContainText('Emel atau kata laluan tidak sah.')
     await expect(page.getByTestId('login-email')).toHaveValue('pelajar@demo.test')
     await expect(page.getByTestId('login-password')).toHaveValue('')
     await expect(page).toHaveURL('/login')
