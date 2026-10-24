@@ -4,6 +4,8 @@
 #
 #   deploy/vps/migration/slot.sh throwaway-up                         B0: the throwaway staging cluster
 #   deploy/vps/migration/slot.sh load --from DIR                      B4: staging:load of a RAW dump into it
+#   deploy/vps/migration/slot.sh load --from DIR --synthetic-scratch  A4 Track S ONLY: a SYNTHETIC fixture on a scratch host
+#                                                                     (PP_SCRATCH_HOST=yes, no off-site backup, typed host name)
 #   deploy/vps/migration/slot.sh copy                                 B5: staging_cloud + archive_cloud -> target
 #   deploy/vps/migration/slot.sh throwaway-down                       B5: destroy the cluster and its data dir
 #   deploy/vps/migration/slot.sh wipe-dump DIR [FILE.gpg] [--missing-ok]  after a good load: delete the raw dump copies
@@ -139,10 +141,17 @@ cmd_throwaway_up() {
   pp_die "the throwaway cluster did not become ready within 2 minutes (docker logs $stage_name)"
 }
 
-manifest_check() { # manifest_check DIR: a raw pp-staging-dump/1 from dump:cloud, nothing else
-  local d="$1" m="$1/manifest.json"
+manifest_check() { # manifest_check DIR [synthetic]: a raw pp-staging-dump/1 from dump:cloud; with "synthetic", a fixture only
+  local d="$1" m="$1/manifest.json" mode="${2:-raw}"
   [ -f "$m" ] || pp_die "$d has no manifest.json (expected a pp-staging-dump/1 directory from dump:cloud)" 2
   grep -Eq '"format"[[:space:]]*:[[:space:]]*"pp-staging-dump/1"' "$m" || pp_die "manifest.json is not format pp-staging-dump/1" 2
+  if [ "$mode" = synthetic ]; then
+    # The scratch override loads fixtures:generate output and nothing else: never a raw or an anonymised (real-derived) dump.
+    grep -Eq '"synthetic"[[:space:]]*:[[:space:]]*true' "$m" || pp_die "--synthetic-scratch loads only a fixtures:generate dump (\"synthetic\": true)" 2
+    if grep -Eq '"(raw|anonymised)"[[:space:]]*:[[:space:]]*true' "$m"; then pp_die "--synthetic-scratch refuses a raw or anonymised dump: only synthetic fixtures" 2; fi
+    if find "$d" -maxdepth 1 -name '*.partial' | grep -q .; then pp_die "$d still holds .partial files" 2; fi
+    return 0
+  fi
   grep -Eq '"raw"[[:space:]]*:[[:space:]]*true' "$m" || pp_die "the dump is not marked raw (\"raw\": true). Production loads only the dump:cloud output; anonymised and synthetic dumps belong to deploy/rehearsal/rehearsal-db.sh" 2
   if grep -Eq '"(anonymised|synthetic)"[[:space:]]*:[[:space:]]*true' "$m"; then
     pp_die "the dump is marked anonymised or synthetic: never loaded on the production path" 2
@@ -153,18 +162,30 @@ manifest_check() { # manifest_check DIR: a raw pp-staging-dump/1 from dump:cloud
   if find "$d" -maxdepth 1 -name '*.partial' | grep -q .; then pp_die "$d still holds .partial files: the export did not finish" 2; fi
 }
 
+scratch_gate() { # A4 Track S only: refuse anything that could be the production host
+  [ "$(pp_cfg PP_SCRATCH_HOST no)" = yes ] || pp_die "--synthetic-scratch: this host is not marked scratch (PP_SCRATCH_HOST=yes in prod.env; never on production)" 2
+  [ "$(pp_cfg PP_OFFSITE_KIND none)" = none ] || pp_die "--synthetic-scratch: PP_OFFSITE_KIND is not none; a scratch host has no off-site backup (A4 P-11)" 2
+  local host answer; host="$(hostname -s)"
+  [ -t 0 ] || pp_die "--synthetic-scratch needs the typed host name (run it in a terminal)" 2
+  printf 'SCRATCH OVERRIDE: load a SYNTHETIC fixture into %s on host %s. Type the host name to confirm: ' "$staging_db" "$host" >&2
+  read -r answer
+  [ "$answer" = "$host" ] || pp_die "confirmation did not match; nothing was loaded" 2
+  pp_warn "SCRATCH OVERRIDE ACTIVE on $host: synthetic fixture, NOT the production path (A4 Track S)"
+}
+
 cmd_load() {
-  local from=""
+  local from="" synthetic=0
   while [ $# -gt 0 ]; do
     case "$1" in
       --from) from="${2:?--from needs a directory}"; shift 2 ;;
+      --synthetic-scratch) synthetic=1; shift ;;
       *) pp_die "unknown argument: $1" 2 ;;
     esac
   done
   { [ -n "$from" ] && [ -d "$from" ]; } || pp_die "load --from DIR: the extracted raw dump directory" 2
   from="$(readlink -f "$from")"
   pp_assert_outside_repo "$from"
-  manifest_check "$from"
+  if [ "$synthetic" = 1 ]; then manifest_check "$from" synthetic; scratch_gate; else manifest_check "$from"; fi
   stage_running || pp_die "the throwaway cluster is not running: throwaway-up first" 3
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
   local url t0=$SECONDS
@@ -180,7 +201,7 @@ cmd_load() {
     -e NODE_ENV=development -e PP_ALLOW_STAGING_RESET=1 \
     migrate npm run staging:load -w @pp/api -- --from /dump
   rm -f "$envf"; trap - EXIT
-  pp_log "LOAD DONE: $(schema_tables stage_psql) in $staging_db, duration_s=$((SECONDS - t0))"
+  pp_log "LOAD DONE: $(schema_tables stage_psql) in $staging_db, duration_s=$((SECONDS - t0))$([ "$synthetic" = 0 ] || echo ' (SYNTHETIC, scratch override)')"
 }
 
 cmd_copy() {
@@ -330,6 +351,8 @@ cmd_etl() {
 cmd_gonogo() {
   local f age lsn arch failed last ready disk pct
   pp_log "GO/NO-GO EVIDENCE (infrastructure part, cutover plan section 5; counts and names only)"
+  if [ "$(pp_cfg PP_SCRATCH_HOST no)" = yes ]; then echo "host: PP_SCRATCH_HOST=yes (A4 scratch host)  -> NO-GO on production"
+  else echo "host: not marked scratch"; fi
   # Cutover plan A5 / criterion 8: each point must hold as many applied migrations as the release has folders.
   for f in pre_etl pre_delta; do
     if "$PP_VPS_DIR/migration/restore-point.sh" verify "$f" --expect-migrations repo >/dev/null 2>&1; then
