@@ -67,7 +67,7 @@ const cardFields = [
           color="neutral"
           variant="soft"
           icon="i-ph-gauge"
-          label="Dashboard"
+          label="Papan Pemuka"
           data-testid="hero-dashboard"
         />
         <UButton

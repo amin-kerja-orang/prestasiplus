@@ -354,7 +354,7 @@ describe('S6 Prestasi360Page', () => {
     expect(api.fetchStudentPerformance).toHaveBeenCalledWith(3001, expect.anything())
     expect(t(w, 'hero-name').text()).toBe('Murid Demo 01')
     expect(t(w, 'avatar').text()).toBe('M')
-    expect(t(w, 'hero').text()).toContain('Prestasi 360 — Dashboard Individu')
+    expect(t(w, 'hero').text()).toContain('Prestasi 360 — Papan Pemuka Individu')
     expect(t(w, 'hero-accuracy').text()).toBe('86%')
     expect(t(w, 'hero-streak').text()).toBe('2')
     expect(t(w, 'hero-mini').classes()).toContain('lg:flex')

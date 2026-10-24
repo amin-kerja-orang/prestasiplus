@@ -85,7 +85,7 @@ test.describe('M08 G5 menus (admin)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await loginAs('admin@demo.test')
     await gotoApp('/prestasi/sekolah')
-    await expect(header(page).title).toHaveText('Dashboard Sekolah')
+    await expect(header(page).title).toHaveText('Papan Pemuka Sekolah')
     const links = await navHrefs(page)
     const keys = [...links.keys()]
     for (const [label, href] of [
@@ -109,7 +109,7 @@ test.describe('M08 G5 menus (admin)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await loginAs('admin@demo.test')
     await gotoApp('/prestasi/sekolah')
-    await expect(header(page).title).toHaveText('Dashboard Sekolah')
+    await expect(header(page).title).toHaveText('Papan Pemuka Sekolah')
     await navHrefs(page)
     const scope = isDesktopShell(page)
       ? page.getByTestId('shell-user-sidebar')
@@ -125,7 +125,7 @@ test.describe('M08 G5 menus (admin)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await loginAs('admin@demo.test')
     await gotoApp('/prestasi/sekolah')
-    await expect(header(page).title).toHaveText('Dashboard Sekolah')
+    await expect(header(page).title).toHaveText('Papan Pemuka Sekolah')
     await navHrefs(page)
     const scope = isDesktopShell(page)
       ? page.getByTestId('shell-user-sidebar')
@@ -166,14 +166,14 @@ const TITLES: TitleCase[] = [
   {
     who: 'admin',
     path: '/prestasi/tingkatan',
-    title: 'Dashboard Tingkatan',
+    title: 'Papan Pemuka Tingkatan',
     subtitle: 'Pilih tingkatan untuk lihat prestasi keseluruhan',
   },
   {
     who: 'admin',
     path: '/prestasi/tingkatan/t4',
     title: 'Tingkatan 4',
-    subtitle: 'Dashboard Prestasi Tingkatan',
+    subtitle: 'Papan Pemuka Prestasi Tingkatan',
   },
   {
     who: 'admin',
@@ -239,7 +239,7 @@ const TITLES: TitleCase[] = [
   {
     who: 'admin',
     path: '/prestasi/sekolah',
-    title: 'Dashboard Sekolah',
+    title: 'Papan Pemuka Sekolah',
     subtitle: 'Selamat datang kembali',
   },
   { who: 'admin', path: '/prestasi/1', title: 'Prestasi 360', subtitle: 'Selamat datang kembali' },
@@ -247,7 +247,7 @@ const TITLES: TitleCase[] = [
   {
     who: 'admin',
     path: '/headcount/dashboard',
-    title: 'Dashboard Headcount',
+    title: 'Papan Pemuka Headcount',
     subtitle: 'Selamat datang kembali',
   },
   {
@@ -342,7 +342,7 @@ test.describe(
       await loginAs('admin@demo.test')
       await gotoApp('/prestasi')
       await expect.poll(() => new URL(page.url()).pathname).toBe('/prestasi/sekolah')
-      await expect(header(page).title).toHaveText('Dashboard Sekolah')
+      await expect(header(page).title).toHaveText('Papan Pemuka Sekolah')
     })
 
     for (const path of [

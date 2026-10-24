@@ -99,7 +99,7 @@ const activity = computed(() => {
       <div data-testid="hero">
         <DsPageHeader
           :show-title="true" :title="data.user.name"
-          subtitle="Prestasi 360 — Dashboard Individu"
+          subtitle="Prestasi 360 — Papan Pemuka Individu"
           title-testid="hero-name"
         >
           <template #breadcrumb>

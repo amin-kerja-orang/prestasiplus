@@ -34,7 +34,7 @@ const routes: RouteRecordRaw[] = [
     path: '/headcount/dashboard',
     name: 'm08.headcount.dashboard',
     component: () => import('../pages/HeadcountDashboardPage.vue'),
-    meta: base('Dashboard Headcount - PRESTASIPLUS', 'Dashboard Headcount'),
+    meta: base('Papan Pemuka Headcount - PRESTASIPLUS', 'Papan Pemuka Headcount'),
   },
   {
     path: '/headcount/create',

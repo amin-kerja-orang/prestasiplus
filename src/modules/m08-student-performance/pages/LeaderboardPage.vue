@@ -55,7 +55,7 @@ const meTiles = computed<StatItem[]>(() => {
   const m = me.value
   if (!m) return []
   return [
-    { key: 'rank', label: 'Ranking', icon: 'i-ph-ranking', accent: 'action', value: m.rank === null ? '#-' : `#${String(m.rank)}` },
+    { key: 'rank', label: 'Kedudukan', icon: 'i-ph-ranking', accent: 'action', value: m.rank === null ? '#-' : `#${String(m.rank)}` },
     { key: 'coins', label: 'Koin', icon: 'i-ph-coins', accent: 'win', value: formatNumber(m.coins) },
     { key: 'sessions', label: 'Sesi', icon: 'i-ph-books', accent: 'heat', value: formatNumber(m.sessions) },
     { key: 'accuracy', label: 'Ketepatan', icon: 'i-ph-target', accent: 'friend', value: percentText(m.accuracy) },

@@ -290,7 +290,7 @@ const exportHref = computed(
           :variant="sort === 'ranking' ? 'solid' : 'soft'"
           :aria-current="sort === 'ranking' ? 'true' : undefined"
           icon="i-ph-trophy"
-          label="Ranking"
+          label="Kedudukan"
           data-testid="sort-ranking"
         />
         <UButton

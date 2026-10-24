@@ -42,7 +42,7 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
 
 <template>
   <DsPage data-testid="headcount-dashboard-page">
-    <DsPageHeader title="Dashboard Headcount" subtitle="Ringkasan prestasi semua kelas anda">
+    <DsPageHeader title="Papan Pemuka Headcount" subtitle="Ringkasan prestasi semua kelas anda">
       <template #actions>
         <UButton
           to="/headcount"

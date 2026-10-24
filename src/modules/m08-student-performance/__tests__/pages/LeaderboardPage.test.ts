@@ -83,7 +83,7 @@ describe('LeaderboardPage (M08 S20)', () => {
 
   it('shows "#-", 0, 0, 0% for an unranked viewer', async () => {
     const w = await render()
-    expect(w.get('[data-testid=me-rank]').text()).toBe('#-Ranking')
+    expect(w.get('[data-testid=me-rank]').text()).toBe('#-Kedudukan')
     expect(w.get('[data-testid=me-coins]').text()).toBe('0Koin')
     expect(w.get('[data-testid=me-sessions]').text()).toBe('0Sesi')
     expect(w.get('[data-testid=me-accuracy]').text()).toBe('0%Ketepatan')
@@ -94,7 +94,7 @@ describe('LeaderboardPage (M08 S20)', () => {
       board({ me: { rank: 1050, coins: 12345, sessions: 4, accuracy: 21.8 } }),
     )
     const w = await render('/leaderboard?period=all')
-    expect(w.get('[data-testid=me-rank]').text()).toBe('#1050Ranking')
+    expect(w.get('[data-testid=me-rank]').text()).toBe('#1050Kedudukan')
     expect(w.get('[data-testid=me-coins]').text()).toBe('12,345Koin')
     expect(w.get('[data-testid=me-accuracy]').text()).toBe('22%Ketepatan')
   })

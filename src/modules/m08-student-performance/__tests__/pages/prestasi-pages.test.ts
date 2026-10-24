@@ -279,7 +279,7 @@ describe('S3 TingkatanPage', () => {
     api.fetchLevelDetail.mockResolvedValue(T4)
     const w = await render(TingkatanPage, '/prestasi/tingkatan/t4', '/prestasi/tingkatan/:code')
     expect(api.fetchLevelDetail.mock.calls[0]?.[0]).toBe('t4')
-    expect(t(w, 'level-summary').text()).toBe('Dashboard Prestasi Tingkatan · 13 kelas · 5 subjek')
+    expect(t(w, 'level-summary').text()).toBe('Papan Pemuka Prestasi Tingkatan · 13 kelas · 5 subjek')
     expect(t(w, 'stat-ketepatan').text()).toContain('63.9%')
     expect(t(w, 'headcount-pct').text()).toBe('0% Atas Landasan')
     expect(tr(w, 'class-row-5').text()).toContain('Lihat →')

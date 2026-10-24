@@ -43,10 +43,10 @@ const cards = computed<StatSpec[]>(() => {
 const quickNav = computed(() => [
   {
     to: '/prestasi/tingkatan',
-    label: '🎓 Dashboard Tingkatan',
+    label: '🎓 Papan Pemuka Tingkatan',
     icon: icon.value('graduation-cap'),
   },
-  { to: '/prestasi/kelas', label: '📊 Dashboard Kelas', icon: icon.value('chart-bar') },
+  { to: '/prestasi/kelas', label: '📊 Papan Pemuka Kelas', icon: icon.value('chart-bar') },
   { to: '/headcount', label: '📈 Headcount', icon: icon.value('chart-line-up') },
   { to: '/analisa-item/sekolah', label: '🔬 Analisa Item', icon: icon.value('list-numbers') },
 ])
@@ -59,7 +59,7 @@ const quickNav = computed(() => [
     <template v-else-if="data">
       <div data-testid="school-header">
         <DsPageHeader
-          title="Dashboard Sekolah"
+          title="Papan Pemuka Sekolah"
           :subtitle="`Ringkasan prestasi keseluruhan · ${plain(data.header.classCount)} kelas · ${plain(data.header.studentCount)} murid`"
           subtitle-testid="header-summary"
         >

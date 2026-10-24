@@ -236,7 +236,7 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     await expect(header(page).title).toHaveText('Prestasi 360')
     await expect(header(page).subtitle).toHaveText('Selamat datang kembali')
     await expect(page.getByTestId('hero-name')).toHaveText('Admin Demo')
-    await expect(page.getByTestId('hero')).toContainText('Prestasi 360 — Dashboard Individu')
+    await expect(page.getByTestId('hero')).toContainText('Prestasi 360 — Papan Pemuka Individu')
     await expect(page.getByTestId('avatar')).toHaveText('A')
     if (isDesktopShell(page)) {
       await expect(page.getByTestId('hero-accuracy')).toHaveText('0%')

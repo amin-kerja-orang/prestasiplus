@@ -46,8 +46,8 @@ test.describe('M08 T5 admin', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/prestasi')
     await expect(page.getByTestId('prestasi-sekolah-page')).toBeVisible()
     expect(new URL(page.url()).pathname).toBe('/prestasi/sekolah')
-    await expectTabTitle(page, 'Dashboard Sekolah — Prestasi')
-    await expect(header(page).title).toHaveText('Dashboard Sekolah')
+    await expectTabTitle(page, 'Papan Pemuka Sekolah — Prestasi')
+    await expect(header(page).title).toHaveText('Papan Pemuka Sekolah')
     await expect(header(page).subtitle).toHaveText('Selamat datang kembali')
 
     await expect(page.getByTestId('header-summary')).toHaveText(
@@ -106,7 +106,7 @@ test.describe('M08 T5 admin', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/prestasi/tingkatan')
     await expect(page.getByTestId('level-link-t4')).toBeVisible()
     await expectTabTitle(page, 'Pilih Tingkatan — Prestasi | PRESTASIPLUS')
-    await expect(header(page).title).toHaveText('Dashboard Tingkatan')
+    await expect(header(page).title).toHaveText('Papan Pemuka Tingkatan')
     await expect(header(page).subtitle).toHaveText(
       'Pilih tingkatan untuk lihat prestasi keseluruhan',
     )
@@ -124,11 +124,11 @@ test.describe('M08 T5 admin', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/prestasi/tingkatan/t4')
     await expect(page.getByTestId('tingkatan-page')).toBeVisible()
-    await expectTabTitle(page, 'Tingkatan 4 — Dashboard Tingkatan | PRESTASIPLUS')
+    await expectTabTitle(page, 'Tingkatan 4 — Papan Pemuka Tingkatan | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Tingkatan 4')
-    await expect(header(page).subtitle).toHaveText('Dashboard Prestasi Tingkatan')
+    await expect(header(page).subtitle).toHaveText('Papan Pemuka Prestasi Tingkatan')
     await expect(page.getByTestId('level-summary')).toHaveText(
-      'Dashboard Prestasi Tingkatan · 13 kelas · 5 subjek',
+      'Papan Pemuka Prestasi Tingkatan · 13 kelas · 5 subjek',
     )
     await expect(page.getByTestId('stat-kelas')).toContainText('13')
     await expect(page.getByTestId('stat-murid')).toContainText('149')

@@ -39,7 +39,7 @@ watchEffect(() => {
   if (code.value === 't4' || code.value === 't5') {
     pageMeta.setHeader({
       title: `Tingkatan ${String(levelNumber(code.value))}`,
-      subtitle: 'Dashboard Prestasi Tingkatan',
+      subtitle: 'Papan Pemuka Prestasi Tingkatan',
     })
   }
 })
@@ -132,7 +132,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
     <template v-else-if="data">
       <DsPageHeader
         :show-title="true" :title="`Tingkatan ${levelNumber(data.code)}`"
-        :subtitle="`Dashboard Prestasi Tingkatan · ${plain(data.classes)} kelas · ${plain(data.subjects)} subjek`"
+        :subtitle="`Papan Pemuka Prestasi Tingkatan · ${plain(data.classes)} kelas · ${plain(data.subjects)} subjek`"
         subtitle-testid="level-summary"
       >
         <template #breadcrumb>

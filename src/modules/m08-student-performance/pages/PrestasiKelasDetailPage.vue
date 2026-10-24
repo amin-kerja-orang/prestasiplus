@@ -43,7 +43,7 @@ const subtitle = computed(() => {
 watchEffect(() => {
   const c = data.value?.class
   if (!c) return
-  pageMeta.setTitle(`${c.name} — Dashboard Kelas`)
+  pageMeta.setTitle(`${c.name} — Papan Pemuka Kelas`)
   pageMeta.setHeader({ title: c.name, subtitle: subtitle.value })
 })
 
