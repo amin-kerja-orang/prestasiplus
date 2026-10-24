@@ -257,7 +257,7 @@ test.describe('M09 S16 article detail', MODULE, () => {
       'Teknik Pomodoro: Belajar 25 Minit, Rehat...',
     )
     await expect(page.getByTestId('artikel-chip-category')).toHaveText('Tips Belajar')
-    await expect(page.getByTestId('artikel-chip-level')).toHaveText('Darjah 4')
+    await expect(page.getByTestId('artikel-chip-level')).toHaveText('Tingkatan 4')
     await expect(page.getByTestId('artikel-chip-featured')).toHaveText('Pilihan')
     await expect(page.getByTestId('artikel-author-initial')).toHaveText('A')
     await expect(page.getByTestId('artikel-author-name')).toHaveText('Admin Demo')

@@ -58,12 +58,8 @@ export const CATEGORY_OPTIONS: readonly { value: ArticleCategory; label: string 
 /** BR-M09-01 levels of the S2/S3 select ("Semua" first, the default). */
 export const GRADE_OPTIONS: readonly { value: GradeLevel; label: string }[] = [
   { value: 'SEMUA', label: 'Semua' },
-  { value: 'DARJAH_1', label: 'Darjah 1' },
-  { value: 'DARJAH_2', label: 'Darjah 2' },
-  { value: 'DARJAH_3', label: 'Darjah 3' },
-  { value: 'DARJAH_4', label: 'Darjah 4' },
-  { value: 'DARJAH_5', label: 'Darjah 5' },
-  { value: 'DARJAH_6', label: 'Darjah 6' },
+  { value: 'TINGKATAN_4', label: 'Tingkatan 4' },
+  { value: 'TINGKATAN_5', label: 'Tingkatan 5' },
 ]
 
 /** The `published` filter (FR-M09-02). */
@@ -76,7 +72,11 @@ export const PUBLISHED_FILTER_OPTIONS: readonly { value: string; label: string }
 /** BR-M09-11 note subjects (code, label), the S5 filter and the note form. */
 export const NOTE_SUBJECT_OPTIONS: readonly { value: NoteSubject; label: string }[] = [
   { value: 'matematik', label: 'Matematik' },
+  { value: 'matematik_tambahan', label: 'Matematik Tambahan' },
   { value: 'sains', label: 'Sains' },
+  { value: 'fizik', label: 'Fizik' },
+  { value: 'kimia', label: 'Kimia' },
+  { value: 'biologi', label: 'Biologi' },
   { value: 'bahasa_melayu', label: 'Bahasa Melayu' },
   { value: 'bahasa_inggeris', label: 'Bahasa Inggeris' },
   { value: 'sejarah', label: 'Sejarah' },
@@ -103,10 +103,11 @@ export const NOTE_TYPE_FORM_OPTIONS: readonly { value: NoteType; label: string }
   { value: 'TIPS_TRICKS', label: 'TIPS_TRICKS' },
 ]
 
-/** The note form "Tahap" options: Darjah 1 to 6 (stored `DARJAH_n`). */
-export const NOTE_GRADE_OPTIONS: readonly { value: string; label: string }[] = [
-  1, 2, 3, 4, 5, 6,
-].map((n) => ({ value: `DARJAH_${String(n)}`, label: `Darjah ${String(n)}` }))
+/** The note form "Tahap" options: Tingkatan 4 and 5 (stored `TINGKATAN_n`; D54 replaces Darjah 1 to 6). */
+export const NOTE_GRADE_OPTIONS: readonly { value: string; label: string }[] = [4, 5].map((n) => ({
+  value: `TINGKATAN_${String(n)}`,
+  label: `Tingkatan ${String(n)}`,
+}))
 
 const SUBJECT_LABELS = new Map<string, string>(NOTE_SUBJECT_OPTIONS.map((o) => [o.value, o.label]))
 
@@ -115,7 +116,7 @@ export function noteSubjectText(code: string): string {
   return (SUBJECT_LABELS.get(code) ?? code).toUpperCase()
 }
 
-/** BR-M09-11: stored `DARJAH_2` shown "DARJAH 2". */
+/** BR-M09-11: stored `TINGKATAN_4` shown "TINGKATAN 4". */
 export function noteGradeText(grade: string): string {
   return grade.replace(/_/g, ' ')
 }

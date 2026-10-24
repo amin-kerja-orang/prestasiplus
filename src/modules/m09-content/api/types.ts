@@ -7,8 +7,7 @@
 export type ArticleCategory =
   'TIPS_BELAJAR' | 'BERITA' | 'MOTIVASI' | 'PANDUAN_IBU_BAPA' | 'PANDUAN_GURU' | 'KEJAYAAN' | 'UMUM'
 
-export type GradeLevel =
-  'SEMUA' | 'DARJAH_1' | 'DARJAH_2' | 'DARJAH_3' | 'DARJAH_4' | 'DARJAH_5' | 'DARJAH_6'
+export type GradeLevel = 'SEMUA' | 'TINGKATAN_4' | 'TINGKATAN_5'
 
 export interface AuthorRef {
   name: string

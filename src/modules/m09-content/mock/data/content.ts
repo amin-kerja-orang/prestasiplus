@@ -18,35 +18,102 @@ import type {
 const at = (stamp: string): string => toIsoMyt(Date.parse(`${stamp}:00+08:00`))
 
 // --- Notes (10, all by Admin Demo, published, 0 / 0) ---------------------------------------------
+// D54 (2026-10-24): secondary / SPM only. The 10 live Darjah 1-4 notes are replaced by 10 Tingkatan 4/5
+// PoC notes titled after the public KSSM chapter names in M03 (curriculum.json). The note types keep the
+// live 5 / 2 / 2 / 1 split; the subject counts are NOT the live ones (see M09 SRS deviation DV-M09-D54).
 
 const NOTE_CREATED = at('2026-02-06T10:00')
 
-const NOTE_TUPLES: readonly (readonly [number, string, NoteSubject, NoteType, string])[] = [
-  [1, 'Sifir 1 hingga 12 — Carta Lengkap', 'matematik', 'FORMULA', 'DARJAH_2'],
-  [2, 'Formula Perimeter dan Luas', 'matematik', 'FORMULA', 'DARJAH_4'],
-  [3, 'Sistem Pencernaan Manusia — Nota Ringkas', 'sains', 'RINGKASAN', 'DARJAH_4'],
-  [4, 'Benda Hidup dan Bukan Hidup', 'sains', 'RINGKASAN', 'DARJAH_1'],
-  [5, 'Imbuhan Awalan dan Akhiran — Nota Lengkap', 'bahasa_melayu', 'LENGKAP', 'DARJAH_3'],
-  [6, 'Kata Nama, Kata Kerja, Kata Adjektif', 'bahasa_melayu', 'RINGKASAN', 'DARJAH_2'],
-  [7, 'Common English Tenses — Quick Guide', 'bahasa_inggeris', 'RINGKASAN', 'DARJAH_4'],
-  [8, 'English Prepositions — In, On, At', 'bahasa_inggeris', 'TIPS_TRICKS', 'DARJAH_3'],
-  [9, 'Rantai Makanan — Sains Darjah 3', 'sains', 'RINGKASAN', 'DARJAH_3'],
-  [10, 'Pecahan — Nota dan Contoh', 'matematik', 'LENGKAP', 'DARJAH_3'],
+const NOTE_TUPLES: readonly (readonly [number, string, NoteSubject, NoteType, string, string])[] = [
+  [
+    1,
+    'Fungsi dan Persamaan Kuadratik — Formula Ringkas',
+    'matematik',
+    'FORMULA',
+    'TINGKATAN_4',
+    'Rumusan formula asas fungsi dan persamaan kuadratik.',
+  ],
+  [
+    2,
+    'Pembezaan — Formula Asas',
+    'matematik_tambahan',
+    'FORMULA',
+    'TINGKATAN_5',
+    'Senarai formula asas pembezaan untuk rujukan pantas.',
+  ],
+  [
+    3,
+    'Ikatan Kimia — Nota Ringkas',
+    'kimia',
+    'RINGKASAN',
+    'TINGKATAN_4',
+    'Ringkasan jenis ikatan kimia dan ciri-cirinya.',
+  ],
+  [
+    4,
+    'Biologi Sel dan Organisasi Sel — Nota Ringkas',
+    'biologi',
+    'RINGKASAN',
+    'TINGKATAN_4',
+    'Ringkasan struktur sel dan tahap organisasi sel.',
+  ],
+  [
+    5,
+    'Kemahiran Bahasa Tingkatan 5 — Nota Lengkap',
+    'bahasa_melayu',
+    'LENGKAP',
+    'TINGKATAN_5',
+    'Nota lengkap kemahiran bahasa untuk persediaan SPM.',
+  ],
+  [
+    6,
+    'Sejarah Tingkatan 4 — Nota Ringkas',
+    'sejarah',
+    'RINGKASAN',
+    'TINGKATAN_4',
+    'Ringkasan topik utama Sejarah Tingkatan 4.',
+  ],
+  [
+    7,
+    'English Form 5 — Quick Guide',
+    'bahasa_inggeris',
+    'RINGKASAN',
+    'TINGKATAN_5',
+    'A quick guide to the key language points for Form 5.',
+  ],
+  [
+    8,
+    'English Form 4 — Exam Tips',
+    'bahasa_inggeris',
+    'TIPS_TRICKS',
+    'TINGKATAN_4',
+    'Short tips for answering English paper questions.',
+  ],
+  [
+    9,
+    'Daun dan Fotosintesis — Nota Ringkas',
+    'biologi',
+    'RINGKASAN',
+    'TINGKATAN_5',
+    'Ringkasan struktur daun dan proses fotosintesis.',
+  ],
+  [
+    10,
+    'Termokimia — Nota dan Contoh',
+    'kimia',
+    'LENGKAP',
+    'TINGKATAN_5',
+    'Nota dan contoh ringkas tindak balas eksotermik dan endotermik.',
+  ],
 ]
 
 export const SEED_NOTES: readonly NoteRow[] = Object.freeze(
-  NOTE_TUPLES.map(([id, title, subject, noteType, grade]) =>
+  NOTE_TUPLES.map(([id, title, subject, noteType, grade, summary]) =>
     Object.freeze({
       id,
       title,
-      summary:
-        id === 1
-          ? 'Carta sifir lengkap dari 1 hingga 12 untuk hafalan mudah.'
-          : `Ringkasan contoh untuk ${title}.`,
-      content:
-        id === 1
-          ? '<h2>Sifir 1 hingga 12</h2> <p>Sifir adalah asas kepada semua operasi Matematik. Hafal sifir ini dan Matematik jadi mudah!</p> <h3>Sifir 2</h3> <p>2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24</p>'
-          : `<h2>${title}</h2><p>Nota contoh.</p>`,
+      summary,
+      content: `<h2>${title}</h2><p>Nota contoh.</p>`,
       subject,
       noteType,
       grade,

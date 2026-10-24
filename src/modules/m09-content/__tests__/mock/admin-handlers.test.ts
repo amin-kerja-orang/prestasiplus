@@ -107,7 +107,7 @@ const ARTICLE = {
   excerpt: 'Ringkasan ujian',
   content: '<p>Kandungan <b>HTML</b></p>',
   category: 'TIPS_BELAJAR',
-  gradeLevel: 'DARJAH_4',
+  gradeLevel: 'TINGKATAN_4',
   isPublished: true,
   isFeatured: false,
 }
@@ -282,7 +282,7 @@ describe('#3 POST /api/admin/articles (S2) and the reader', () => {
       title: ARTICLE.title,
       content: ARTICLE.content,
       views: 1,
-      gradeLabel: 'Darjah 4',
+      gradeLabel: 'Tingkatan 4',
     })
     expect((detail.body.data.related as Json[]).every((a) => a.category === 'TIPS_BELAJAR')).toBe(
       true,
@@ -313,7 +313,7 @@ describe('#3 POST /api/admin/articles (S2) and the reader', () => {
       title: '',
       content: '',
       category: 'NOPE',
-      gradeLevel: 'DARJAH_9',
+      gradeLevel: 'DARJAH_1', // D54: Darjah is no longer accepted
       featuredImage: 'bukan-url',
       excerpt: 'x'.repeat(501),
       isPublished: 'mungkin',
@@ -504,24 +504,24 @@ const NOTE = {
   content: '<p>Isi</p>',
   subject: 'sejarah',
   noteType: 'LENGKAP',
-  grade: 'DARJAH_5',
+  grade: 'TINGKATAN_5',
   isPublished: true,
 }
 
 describe('#10 GET /api/admin/notes (S5)', () => {
-  it('lists the 10 live notes in id order with the labels and author', async () => {
+  it('lists the 10 D54 notes in id order with the labels and author', async () => {
     const r = await get<ListBody<Json>>('/api/admin/notes', ADMIN)
     expect(r.status).toBe(200)
     expect(r.body.meta).toMatchObject({ page: 1, pageSize: 20, totalItems: 10, totalPages: 1 })
     expect(ids(r.body.data)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     expect(r.body.data[0]).toMatchObject({
       id: 1,
-      title: 'Sifir 1 hingga 12 — Carta Lengkap',
+      title: 'Fungsi dan Persamaan Kuadratik — Formula Ringkas',
       subject: 'matematik',
       subjectLabel: 'Matematik',
       noteType: 'FORMULA',
-      grade: 'DARJAH_2',
-      gradeLabel: 'Darjah 2',
+      grade: 'TINGKATAN_4',
+      gradeLabel: 'Tingkatan 4',
       isPublished: true,
       views: 0,
       downloads: 0,
@@ -532,15 +532,16 @@ describe('#10 GET /api/admin/notes (S5)', () => {
   it('filters by subject, the mapped note type (DV-M09-06) and search; no match is empty', async () => {
     const n = async (q: string) =>
       (await get<ListBody<Json>>(`/api/admin/notes?${q}`, ADMIN)).body.meta.totalItems
-    expect(await n('subject=matematik')).toBe(3)
-    expect(await n('subject=sains')).toBe(3)
-    expect(await n('subject=bahasa_melayu')).toBe(2)
+    expect(await n('subject=matematik')).toBe(1)
+    expect(await n('subject=kimia')).toBe(2)
+    expect(await n('subject=sains')).toBe(0)
+    expect(await n('subject=bahasa_inggeris')).toBe(2)
     expect(await n('subject=all')).toBe(10)
     expect(await n('noteType=summary')).toBe(5)
     expect(await n('noteType=full_notes')).toBe(2)
     expect(await n('noteType=mind_map')).toBe(0)
     expect(await n('noteType=cheat_sheet')).toBe(0)
-    expect(await n('search=SIFIR')).toBe(1)
+    expect(await n('search=TERMOKIMIA')).toBe(1)
     expect(await n('subject=matematik&noteType=summary')).toBe(0)
     const empty = await get<ListBody<Json>>('/api/admin/notes?search=zzzz', ADMIN)
     expect(empty.body.data).toEqual([])
@@ -554,9 +555,9 @@ describe('#11 GET /api/admin/notes/:id', () => {
     expect(r.status).toBe(200)
     expect(r.body.data).toMatchObject({
       id: 1,
-      summary: 'Carta sifir lengkap dari 1 hingga 12 untuk hafalan mudah.',
+      summary: 'Rumusan formula asas fungsi dan persamaan kuadratik.',
     })
-    expect(r.body.data.content).toContain('Sifir 1 hingga 12')
+    expect(r.body.data.content).toContain('Fungsi dan Persamaan Kuadratik')
     const nf = await get<ErrorBody>('/api/admin/notes/99', ADMIN)
     expect(nf.status).toBe(404)
     expect(nf.body.error.code).toBe('NOT_FOUND')
@@ -571,7 +572,7 @@ describe('#12–#14 POST, PUT, DELETE /api/admin/notes (DV-M09-01)', () => {
     expect(r.body.data).toMatchObject({
       id: 11,
       subjectLabel: 'Sejarah',
-      gradeLabel: 'Darjah 5',
+      gradeLabel: 'Tingkatan 5',
       views: 0,
       downloads: 0,
       author: { id: ADMIN },
@@ -603,7 +604,7 @@ describe('#12–#14 POST, PUT, DELETE /api/admin/notes (DV-M09-01)', () => {
       content: '',
       subject: 'geografi',
       noteType: 'MIND_MAP',
-      grade: 'DARJAH_7',
+      grade: 'DARJAH_2', // D54: Darjah is no longer accepted
     })
     expect(r.status).toBe(422)
     expect(r.body.error.fields).toEqual({

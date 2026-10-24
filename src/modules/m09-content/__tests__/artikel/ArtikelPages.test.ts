@@ -204,8 +204,8 @@ const DETAIL: ArticleDetail = {
   }),
   content:
     '<h2>Apa Itu Teknik Pomodoro?</h2><p>Isi</p><ol><li>1</li><li>2</li></ol><script>window.x=1</script><img src="x" onerror="window.x=2">',
-  gradeLevel: 'DARJAH_4',
-  gradeLabel: 'Darjah 4',
+  gradeLevel: 'TINGKATAN_4',
+  gradeLabel: 'Tingkatan 4',
   likes: 6,
   related: [card(9), card(1), card(2)],
 }
@@ -223,7 +223,7 @@ describe('ArtikelDetailPage (S16)', () => {
       'Teknik Pomodoro: Belajar 25 Minit, Rehat...',
     )
     expect(w.get('[data-testid=artikel-chip-category]').text()).toBe('Tips Belajar')
-    expect(w.get('[data-testid=artikel-chip-level]').text()).toBe('Darjah 4')
+    expect(w.get('[data-testid=artikel-chip-level]').text()).toBe('Tingkatan 4')
     expect(w.get('[data-testid=artikel-chip-featured]').text()).toBe('Pilihan')
     expect(w.get('[data-testid=artikel-title]').text()).toBe(DETAIL.title)
     expect(w.get('[data-testid=artikel-author-name]').text()).toBe('Admin Demo')

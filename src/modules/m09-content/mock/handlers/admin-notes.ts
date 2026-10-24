@@ -38,7 +38,11 @@ const NOTE_PAGE_SIZE = 20
 /** BR-M09-11 subject codes and labels. */
 export const NOTE_SUBJECTS: Readonly<Record<NoteSubject, string>> = {
   matematik: 'Matematik',
+  matematik_tambahan: 'Matematik Tambahan',
   sains: 'Sains',
+  fizik: 'Fizik',
+  kimia: 'Kimia',
+  biologi: 'Biologi',
   bahasa_melayu: 'Bahasa Melayu',
   bahasa_inggeris: 'Bahasa Inggeris',
   sejarah: 'Sejarah',
@@ -52,12 +56,13 @@ export const NOTE_FORM_TYPES: readonly NoteType[] = [
   'TIPS_TRICKS',
 ]
 
-export const NOTE_GRADES: readonly string[] = [1, 2, 3, 4, 5, 6].map((n) => `DARJAH_${String(n)}`)
+/** D54: secondary / SPM only (supersedes `DARJAH_1`..`DARJAH_6`). */
+export const NOTE_GRADES: readonly string[] = ['TINGKATAN_4', 'TINGKATAN_5']
 
 type NoteInput = Parameters<typeof notesRepo.create>[1]
 
-/** `grade` `DARJAH_2` as "Darjah 2" (the screens upper-case it by CSS). */
-const gradeLabel = (grade: string): string => grade.replace(/^DARJAH_(\d+)$/, 'Darjah $1')
+/** `grade` `TINGKATAN_4` as "Tingkatan 4" (the screens upper-case it by CSS). */
+const gradeLabel = (grade: string): string => grade.replace(/^TINGKATAN_(\d+)$/, 'Tingkatan $1')
 
 /** `NoteItem` (S5 row) and `NoteDetail` (S7/S8: adds `content`). */
 function itemOf(n: NoteRow) {

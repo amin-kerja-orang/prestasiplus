@@ -69,14 +69,11 @@ export const articleQueries = defineNamedQueries(articlesTable, {
     where: (gradeLevel: GradeLevel) => ({ gradeLevel }),
     expected: [
       { args: ['SEMUA'], value: 30 },
-      { args: ['DARJAH_1'], value: 4 },
-      { args: ['DARJAH_2'], value: 5 },
-      { args: ['DARJAH_3'], value: 7 },
-      { args: ['DARJAH_4'], value: 10 },
-      { args: ['DARJAH_5'], value: 9 },
-      { args: ['DARJAH_6'], value: 7 },
+      // D54: the live Darjah 1-4 (26 articles) are re-levelled to Tingkatan 4, Darjah 5-6 (16) to Tingkatan 5.
+      { args: ['TINGKATAN_4'], value: 26 },
+      { args: ['TINGKATAN_5'], value: 16 },
     ],
-    source: 'M09 §6.11',
+    source: 'M09 §6.11 (D54 remap)',
   },
 })
 
