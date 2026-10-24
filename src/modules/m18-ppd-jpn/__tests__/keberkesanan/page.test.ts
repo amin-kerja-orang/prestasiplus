@@ -101,6 +101,19 @@ function stubMedia(wide: boolean) {
   })) as unknown as typeof window.matchMedia
 }
 
+/** `matchMedia` answering for a viewport `width` (jsdom has none: every breakpoint counts as reached). */
+function atWidth(width: number) {
+  window.matchMedia = ((query: string) => {
+    const min = Number(/(?:min-width:|width >=)\s*(\d+)px/.exec(query)?.[1] ?? 0)
+    return {
+      matches: width >= min,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }
+  }) as unknown as typeof window.matchMedia
+}
+
 async function mountPage(value: AmaranEffectivenessResponse | ApiError): Promise<VueWrapper> {
   if (value instanceof ApiError) api.fetchAmaranEffectiveness.mockRejectedValue(value)
   else api.fetchAmaranEffectiveness.mockResolvedValue(value)
@@ -284,7 +297,7 @@ describe('zero state (total = 0)', () => {
 
 describe('mobile layout', () => {
   it('renders each teacher as a card (name + Jumlah, Berkesan, Belum Nilai, Kadar) below md', async () => {
-    stubMedia(false)
+    atWidth(375)
     const w = await mountPage(result())
     expect(w.find('[data-testid="kb-teacher-table"] table').exists()).toBe(false)
     expect(texts(w, 'kb-teacher-name')).toEqual(['Cikgu Contoh A', 'Cikgu Contoh B'])
@@ -292,6 +305,30 @@ describe('mobile layout', () => {
     for (const l of ['Jumlah', 'Berkesan', 'Belum Nilai', 'Kadar']) expect(card).toContain(l)
     expect(texts(w, 'kb-teacher-field').slice(0, 4)).toEqual(['5', '2', '1', '67%'])
     expect(texts(w, 'kb-teacher-field').slice(4)).toEqual(['3', '0', '3', '—'])
+  })
+})
+
+describe('teacher table layout (SW11-05, DV-M18-52)', () => {
+  it.each([768, 1280])('at %i the table is fixed and a long name wraps inside its own cell', async (width) => {
+    atWidth(width)
+    const longName = 'Muhammad Aiman Hakimi Bin Abdul Rahman Al-Mubarak Sulaiman Yusof Ibrahim Zakaria'
+    const base = result().report
+    const w = await mountPage(
+      result({ byTeacher: [{ ...base.byTeacher[0]!, name: longName }, ...base.byTeacher.slice(1)] }),
+    )
+    const table = w.get('[data-testid="kb-teacher-table"] table')
+    expect(table.classes()).toContain('table-fixed')
+    expect(texts(w, 'kb-teacher-cell-name')[0]).toBe(longName)
+    expect(w.get('[data-testid="kb-teacher-cell-name"]').classes()).toContain('break-words')
+    expect(table.findAll('th').map((th) => th.text())).toEqual([
+      '#',
+      'Guru',
+      'Jumlah',
+      'Berkesan',
+      'Belum Nilai',
+      'Kadar',
+    ])
+    expect(table.get('td').element.className).toContain('whitespace-normal')
   })
 })
 

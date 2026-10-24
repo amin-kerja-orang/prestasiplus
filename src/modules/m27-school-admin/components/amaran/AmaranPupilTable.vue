@@ -8,7 +8,7 @@
  * Layout (SW11-04, DV-M27-26): the table is `layout="fixed"` (cells wrap, nothing scrolls inside) with a width per
  * column. The card is ~696px wide at 768 and ~952px at 1280; eight columns need ~740px plus a readable name, so
  * "Ketepatan", "Penglibatan" and "Penguasaan" show as columns from `xl` only. Below `xl` their values show as a small
- * muted line under the name (the SW6-01 / DV-M27-24 pattern); the hidden columns stay in the DOM, no field is dropped.
+ * muted line under the name, each phrase alone as the API words it (the SW6-01 / DV-M27-24 pattern); the hidden columns stay in the DOM, no field is dropped.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
@@ -118,15 +118,15 @@ const cardFields: CardField[] = [
           row.original.name
         }}</span>
         <DsCluster v-if="!xl" gap="sm" align="start" data-testid="am-sub">
-          <DsText as="span" variant="caption" data-testid="am-sub-accuracy"
-            >Ketepatan: {{ row.original.accuracy }}</DsText
-          >
-          <DsText as="span" variant="caption" data-testid="am-sub-engagement"
-            >Penglibatan: {{ row.original.engagement }}</DsText
-          >
-          <DsText as="span" variant="caption" data-testid="am-sub-mastery"
-            >Penguasaan: {{ row.original.mastery }}</DsText
-          >
+          <DsText as="span" variant="caption" data-testid="am-sub-accuracy">{{
+            row.original.accuracy
+          }}</DsText>
+          <DsText as="span" variant="caption" data-testid="am-sub-engagement">{{
+            row.original.engagement
+          }}</DsText>
+          <DsText as="span" variant="caption" data-testid="am-sub-mastery">{{
+            row.original.mastery
+          }}</DsText>
         </DsCluster>
       </template>
       <template #classLabel-cell="{ row }">

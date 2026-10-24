@@ -38,6 +38,9 @@ export const GENERIC_LOAD_ERROR = 'Ralat berlaku. Sila cuba lagi.'
  * error", "Failed to fetch", "HTTP 503"). A network failure (status 0 or a plain `Error`), a 5xx and a 400 / 422
  * show the generic BM line; a 429 the BM rate-limit line; another status keeps the server's message unless it is
  * empty or the bare "HTTP {status}".
+ *
+ * Why the rest passes through: 403 renders the global page in place, and a 404, 409 or other business status carries
+ * the API's own message, which the user can act on. It can still be English; that is accepted (DV-M27-26).
  */
 export function loadErrorMessage(error: { message: string } | null | undefined): string {
   if (!isApiError(error)) return GENERIC_LOAD_ERROR

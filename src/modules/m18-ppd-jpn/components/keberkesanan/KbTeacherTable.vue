@@ -88,11 +88,15 @@ const cardFields: CardField[] = [
       <template #card="{ row }">
         <div class="min-w-0 break-words">
           <DsStack gap="xs">
-            <DsText variant="label" as="p" tone="highlighted" data-testid="kb-teacher-name">{{ row.name }}</DsText>
+            <DsText variant="label" as="p" tone="highlighted" data-testid="kb-teacher-name">{{
+              row.name
+            }}</DsText>
             <DsGrid as="ul" :cols="2" gap="xs">
               <DsGridItem v-for="f in cardFields" :key="f.key" as="li">
                 <DsText variant="caption">{{ f.label }}</DsText>
-                <DsText variant="body" tabular data-testid="kb-teacher-field">{{ row[f.key] }}</DsText>
+                <DsText variant="body" tabular data-testid="kb-teacher-field">{{
+                  row[f.key]
+                }}</DsText>
               </DsGridItem>
             </DsGrid>
           </DsStack>
