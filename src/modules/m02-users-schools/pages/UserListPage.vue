@@ -14,6 +14,7 @@ import { computed, ref, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
+import { isHttpMode } from '@/api/mode'
 import { useApi, useFlash, useSession } from '@/composables'
 import {
   DsDataTable,
@@ -46,7 +47,7 @@ import {
   errorLines,
   formatUserDate,
   initialsOf,
-  ROLE_FILTER_OPTIONS,
+  roleFilterOptionsFor,
   roleLabel,
   USERS_LIST_PATH,
 } from '../lib/user-list'
@@ -56,6 +57,9 @@ const router = useRouter()
 const flash = useFlash()
 const confirm = useConfirm()
 const { store: session, user: me } = useSession()
+/** Login As needs `POST /api/admin/users/:id/impersonate`, which the API does not have (DV-M02-22). */
+const http = isHttpMode()
+const roleFilterOptions = roleFilterOptionsFor(http)
 
 function queryText(value: LocationQueryValue | LocationQueryValue[] | undefined): string {
   const first = Array.isArray(value) ? value[0] : value
@@ -154,7 +158,7 @@ const chips = computed<{ key: string; label: string }[]>(() => {
   const out: { key: string; label: string }[] = []
   if (applied.value.role !== '') out.push({ key: 'role', label: roleLabel(applied.value.role) })
   if (applied.value.school !== null) {
-    const found = schoolOptions.value.find((s) => s.id === applied.value.school)
+    const found = schoolOptions.value.find((s) => String(s.id) === String(applied.value.school))
     out.push({ key: 'school', label: found?.name ?? `Sekolah ${String(applied.value.school)}` })
   }
   if (applied.value.isActive !== null)
@@ -192,10 +196,10 @@ function goToPage(page: number): void {
 
 // --- Selection (FR-M02-15): the own row is never selectable; page/filter changes clear it.
 const selected = ref<number[]>([])
-const ownId = computed(() => me.value?.id ?? null)
-const selectableIds = computed(() =>
-  rows.value.filter((u) => u.id !== ownId.value).map((u) => u.id),
-)
+/** The session id is a number in mock mode and the list ids are opaque strings in http mode: compare as text. */
+const ownId = computed(() => (me.value?.id == null ? null : String(me.value.id)))
+const isOwn = (id: number | string): boolean => ownId.value !== null && String(id) === ownId.value
+const selectableIds = computed(() => rows.value.filter((u) => !isOwn(u.id)).map((u) => u.id))
 const allSelected = computed(
   () =>
     selectableIds.value.length > 0 &&
@@ -321,8 +325,9 @@ function menuActions(user: AdminUserListItem): RowAction[] {
     icon: user.isActive ? 'i-ph-x-circle' : 'i-ph-check-circle',
     onSelect: () => void toggle(user),
   })
-  if (user.id === ownId.value) return actions
-  actions.push({ label: 'Login As', icon: 'i-ph-sign-in', onSelect: () => void loginAs(user) })
+  if (isOwn(user.id)) return actions
+  if (!http)
+    actions.push({ label: 'Login As', icon: 'i-ph-sign-in', onSelect: () => void loginAs(user) })
   actions.push({
     label: 'Padam',
     icon: 'i-ph-trash',
@@ -335,14 +340,28 @@ function menuActions(user: AdminUserListItem): RowAction[] {
 }
 
 const SKELETON_ROWS = 6
+// `UTable` column meta takes per-cell classes under the key `class`; the key is computed so the class linter
+// does not read it as a class list (same as `DsDataTable`).
+// eslint-disable-next-line pp/ds-class-allowlist -- an object key, not a class list
+const META_CLASS = 'class'
+/**
+ * DV-M02-25: eight columns do not fit the card at 1280 (~1140px in a 973px card) and the actions clip. "Tarikh"
+ * shows from `2xl`, "Telefon" from `xl`; the table is tight and the name / school cells are capped, so the
+ * "Tindakan" column is always inside the card.
+ */
+const HIDE_BELOW = {
+  // Full class strings: Tailwind reads the source text, so they cannot be built from a template.
+  xl: { [META_CLASS]: { th: 'hidden xl:table-cell', td: 'hidden xl:table-cell' } },
+  '2xl': { [META_CLASS]: { th: 'hidden 2xl:table-cell', td: 'hidden 2xl:table-cell' } },
+}
 const COLUMNS: TableColumn<UserRow>[] = [
   { id: 'select', header: '' },
   { id: 'name', header: 'Nama' },
-  { id: 'phone', header: 'Telefon' },
+  { id: 'phone', header: 'Telefon', meta: HIDE_BELOW.xl },
   { id: 'role', header: 'Peranan' },
   { id: 'school', header: 'Sekolah' },
   { id: 'active', header: 'Status' },
-  { id: 'date', header: 'Tarikh' },
+  { id: 'date', header: 'Tarikh', meta: HIDE_BELOW['2xl'] },
   { id: 'actions', header: 'Tindakan' },
 ]
 </script>
@@ -409,7 +428,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
         data-testid="users-role"
       >
         <option value="">Semua Peranan</option>
-        <option v-for="o in ROLE_FILTER_OPTIONS" :key="o.value" :value="o.value">
+        <option v-for="o in roleFilterOptions" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
       </DsNativeSelect>
@@ -479,6 +498,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
       :data="tableRows"
       :columns="COLUMNS"
       variant="flush"
+      density="tight"
       caption="Senarai pengguna"
       :total="data?.meta.totalItems ?? 0"
       :page="data?.meta.page ?? 1"
@@ -496,7 +516,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
       </template>
       <template #select-cell="{ row }">
         <UCheckbox
-          v-if="row.original.id !== ownId"
+          v-if="!isOwn(row.original.id)"
           :model-value="selected.includes(row.original.id)"
           :aria-label="`Pilih ${row.original.name}`"
           data-testid="user-select"
@@ -509,9 +529,12 @@ const COLUMNS: TableColumn<UserRow>[] = [
           :sub="row.original.email"
           :src="row.original.avatarUrl"
           :initials="initialsOf(row.original.name)"
+          class="max-w-44 xl:max-w-60"
         >
           <template #name
-            ><span data-testid="user-name">{{ row.original.name }}</span></template
+            ><span :title="row.original.name" data-testid="user-name">{{
+              row.original.name
+            }}</span></template
           >
         </DsIdentity>
       </template>
@@ -527,7 +550,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
         />
       </template>
       <template #school-cell="{ row }">
-        <span class="block max-w-28 truncate" :title="row.original.school?.name">{{
+        <span class="block max-w-20 truncate xl:max-w-28" :title="row.original.school?.name">{{
           row.original.school?.name || '-'
         }}</span>
       </template>
@@ -573,7 +596,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
       <template #card="{ row }">
         <div class="flex min-w-0 items-start gap-3">
           <UCheckbox
-            v-if="asUser(row).id !== ownId"
+            v-if="!isOwn(asUser(row).id)"
             :model-value="selected.includes(asUser(row).id)"
             :aria-label="`Pilih ${asUser(row).name}`"
             data-testid="user-select"
