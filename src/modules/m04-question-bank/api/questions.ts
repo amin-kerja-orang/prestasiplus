@@ -11,7 +11,7 @@
  * An unknown id rejects with a `404` `ApiError` (the screen shows the standard 404 page).
  */
 
-import { api, isHttpMode, type ListResult } from '@/api'
+import { api, isHttpMode, wireId, type ListResult } from '@/api'
 
 export type QuestionStatus =
   | 'draft'
@@ -363,7 +363,11 @@ export async function bulkQuestionAction(
   const result = await api.post<QuestionMutation<{ affected: number }>>(
     '/api/questions/bulk-action',
     {
-      body: { action: http ? wire(BULK_ACTION_TO_WIRE, action) : action, ids },
+      // `ids` are strings on the wire in http mode (`ids: string[]`; a number is 422); mock keeps the numbers.
+      body: {
+        action: http ? wire(BULK_ACTION_TO_WIRE, action) : action,
+        ids: ids.map((id) => wireId(id)),
+      },
       raw: true,
     },
   )

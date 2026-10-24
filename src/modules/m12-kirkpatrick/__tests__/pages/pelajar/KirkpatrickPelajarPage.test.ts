@@ -127,6 +127,17 @@ describe('S8 header (AC-M12-30.1)', () => {
     expect(t(w, 'pel-alesa').text()).toContain('AI')
   })
 
+  // SWY-03: http mode answers a string student id; the route prop `userId` is a number.
+  it('shows the student when the API id is a string and the route id a number (SWY-03)', async () => {
+    const a = studentA()
+    api.fetchKirkpatrickStudent.mockResolvedValue({
+      ...a,
+      student: { ...a.student, id: '4664' },
+    })
+    const w = await open(4664)
+    expect(t(w, 'pel-name').text()).toBe('Pelajar Demo 004664')
+  })
+
   it('prints the Tingkatan of the school year (grade 11 = 5, grade 10 = 4)', async () => {
     const w = await open()
     expect(squash(t(w, 'pel-school').text())).toBe('SMK Demo B · Tingkatan 5')

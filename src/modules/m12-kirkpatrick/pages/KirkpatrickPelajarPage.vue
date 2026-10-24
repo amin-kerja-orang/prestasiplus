@@ -38,8 +38,13 @@ const {
   () => props.userId,
 )
 
-/** `useApi` keeps the previous result while it reloads: show only the student of the current id (S8 to S8 navigation). */
-const data = computed(() => (loaded.value?.student.id === props.userId ? loaded.value : null))
+/**
+ * `useApi` keeps the previous result while it reloads: show only the student of the current id (S8 to S8 navigation).
+ * Compared as strings: the API answers a string id, the route prop is a number.
+ */
+const data = computed(() =>
+  loaded.value && String(loaded.value.student.id) === String(props.userId) ? loaded.value : null,
+)
 
 /** "{sekolah} · Tingkatan {n}" under the name. */
 const subtitle = computed(() => {
