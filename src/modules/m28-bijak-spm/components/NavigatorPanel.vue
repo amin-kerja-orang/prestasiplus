@@ -5,6 +5,8 @@
  */
 import { computed } from 'vue'
 
+import { DsCluster, DsStack, DsSurface, DsText } from '@/ds'
+
 import type { QuestionView, SectionView } from '../domain/types'
 
 export type NavState = 'answered' | 'flagged' | 'none'
@@ -31,11 +33,11 @@ const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda
 </script>
 
 <template>
-  <nav class="flex flex-col gap-4" aria-label="Peta soalan" data-testid="navigator">
+  <DsStack as="nav" aria-label="Peta soalan" data-testid="navigator">
     <p class="text-caption text-muted" data-testid="nav-counts">
       Dijawab {{ counts.answered }} · Ditanda {{ counts.flagged }} · Belum {{ counts.none }}
     </p>
-    <section v-for="s in sections" :key="s.id" class="flex flex-col gap-2">
+    <DsStack v-for="s in sections" :key="s.id" as="section" gap="xs">
       <h3 class="text-label text-highlighted">
         {{ s.label }}
         <span v-if="s.rule.type === 'choose'" class="text-caption text-muted">
@@ -45,15 +47,18 @@ const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda
       <p v-if="counters?.[s.id]" class="text-caption text-muted" role="status">
         {{ counters[s.id] }}
       </p>
-      <!-- The current question sits in a high-contrast frame (bg-inverted: dark in light mode, white
-           in dark mode) and keeps its own state fill, so "current + answered" shows both. A frame of
-           padding instead of a ring: the design system has no ring/outline utilities (G-3b). -->
-      <div class="flex flex-wrap gap-0">
-        <span
+      <!-- The current question sits in a high-contrast frame (the inverted surface: dark in light
+           mode, white in dark mode) and keeps its own state fill, so "current + answered" shows
+           both. A frame instead of a ring: the design system has no ring/outline utilities. -->
+      <DsCluster gap="none">
+        <DsSurface
           v-for="q in questions.filter((x) => x.sectionId === s.id)"
           :key="q.id"
-          class="flex shrink-0 rounded-xl p-1"
-          :class="q.id === current ? 'bg-inverted' : ''"
+          :level="q.id === current ? 'inverted' : 'raised'"
+          padding="none"
+          radius="card"
+          shadow="none"
+          :clip="false"
           :data-current="q.id === current ? 'true' : undefined"
         >
           <UButton
@@ -66,7 +71,7 @@ const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda
                   : 'neutral'
             "
             :variant="states[q.id] === 'answered' || states[q.id] === 'flagged' ? 'solid' : 'soft'"
-            class="tabular size-11 justify-center rounded-xl p-0 font-bold"
+            class="tabular m-1 size-11 justify-center rounded-xl p-0 font-bold"
             :aria-label="`Soalan ${q.number}, ${label[states[q.id] ?? 'none']}`"
             :aria-current="q.id === current ? 'true' : undefined"
             :data-testid="`nav-${q.number}`"
@@ -74,23 +79,48 @@ const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda
             @click="emit('go', q.id)"
             >{{ q.number }}</UButton
           >
-        </span>
-      </div>
-    </section>
-    <ul
-      class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted"
-      aria-hidden="true"
-      data-testid="nav-legend"
-    >
-      <li class="flex items-center gap-2">
-        <span class="size-3 rounded-xs bg-gradient-primary" data-swatch="answered" />Dijawab
+        </DsSurface>
+      </DsCluster>
+    </DsStack>
+    <DsCluster as="ul" gap="md" row-gap="2xs" aria-hidden="true" data-testid="nav-legend">
+      <li>
+        <DsCluster as="span" gap="xs" :wrap="false">
+          <DsSurface
+            tone="primary"
+            emphasis="strong"
+            padding="none"
+            radius="chip"
+            class="size-3"
+            data-swatch="answered"
+          />
+          <DsText as="span" variant="caption" tone="muted">Dijawab</DsText>
+        </DsCluster>
       </li>
-      <li class="flex items-center gap-2">
-        <span class="size-3 rounded-xs bg-warning" data-swatch="flagged" />Ditanda
+      <li>
+        <DsCluster as="span" gap="xs" :wrap="false">
+          <DsSurface
+            tone="warning"
+            emphasis="strong"
+            padding="none"
+            radius="chip"
+            class="size-3"
+            data-swatch="flagged"
+          />
+          <DsText as="span" variant="caption" tone="muted">Ditanda</DsText>
+        </DsCluster>
       </li>
-      <li class="flex items-center gap-2">
-        <span class="size-3 rounded-xs bg-elevated" data-swatch="none" />Belum
+      <li>
+        <DsCluster as="span" gap="xs" :wrap="false">
+          <DsSurface
+            level="elevated"
+            padding="none"
+            radius="chip"
+            class="size-3"
+            data-swatch="none"
+          />
+          <DsText as="span" variant="caption" tone="muted">Belum</DsText>
+        </DsCluster>
       </li>
-    </ul>
-  </nav>
+    </DsCluster>
+  </DsStack>
 </template>

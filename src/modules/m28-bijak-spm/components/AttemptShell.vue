@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
+import { ref, watchEffect } from 'vue'
 
 /**
  * Full-screen frame of the attempt (design: "quiz full-screen"). Mobile: one column, with a
@@ -10,27 +10,16 @@ import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
 const props = defineProps<{ hasStimulus: boolean }>()
 
 /**
- * FB-046: below `lg` the sticky stimulus strip (about 70 px) must never cover a field that is
- * focused or scrolled into view. `scroll-padding-top` keeps that band free of focus scrolling. The
- * design-system class allowlist has no `scroll-pt-*`, so it is set on the scroller from here.
+ * FB-046: the sticky stimulus strip (about 70 px, below `lg`) must never cover a field that is
+ * focused or scrolled into view. `scroll-padding-top` keeps that band free of focus scrolling; from
+ * `lg` the strip is gone and the extra slack above a focused field is harmless. The design-system
+ * class allowlist has no `scroll-pt-*`, so it is set on the scroller from here.
  */
 const STRIP_CLEARANCE = '5rem'
 const scroller = ref<HTMLElement | null>(null)
-const wide = ref(false)
-const stripShown = computed(() => props.hasStimulus && !wide.value)
-let query: MediaQueryList | undefined
-const onChange = (e: MediaQueryListEvent): void => {
-  wide.value = e.matches
-}
-onMounted(() => {
-  query = window.matchMedia('(min-width: 1024px)')
-  wide.value = query.matches
-  query.addEventListener('change', onChange)
-})
-onBeforeUnmount(() => query?.removeEventListener('change', onChange))
 watchEffect(() => {
   if (scroller.value)
-    scroller.value.style.scrollPaddingTop = stripShown.value ? STRIP_CLEARANCE : ''
+    scroller.value.style.scrollPaddingTop = props.hasStimulus ? STRIP_CLEARANCE : ''
 })
 </script>
 
