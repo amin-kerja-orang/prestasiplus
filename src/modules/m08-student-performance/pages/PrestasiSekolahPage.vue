@@ -52,7 +52,12 @@ const quickNav = computed(() => [
   },
   { to: '/prestasi/kelas', label: '📊 Dashboard Kelas', icon: icon.value('chart-bar') },
   { to: '/headcount', label: '📈 Headcount', icon: icon.value('chart-line-up') },
-  { to: '/analisa-item/sekolah', label: '🔬 Analisa Item', icon: icon.value('list-numbers') },
+  {
+    // The id-less S9 is the viewer's own school and refuses the admin, who has none (SW5-15, DV-M08-50).
+    to: session.role === 'admin' ? '/analisa-item/kelas' : '/analisa-item/sekolah',
+    label: '🔬 Analisa Item',
+    icon: icon.value('list-numbers'),
+  },
 ].filter((n) => n.to !== '/headcount' || canOpenHeadcount(session.role)))
 </script>
 
