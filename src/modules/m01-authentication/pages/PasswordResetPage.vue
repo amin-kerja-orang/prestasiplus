@@ -17,17 +17,28 @@ import { useSessionStore } from '@/stores/session'
 import { resetPassword } from '../api'
 import PasswordCard from '../components/auth/PasswordCard.vue'
 import PasswordInput from '../components/auth/PasswordInput.vue'
+import { useNoReferrer } from '../composables/useNoReferrer'
 import { errorLines } from '../lib/error-lines'
+
+// The URL may hold the token (path route): never send it as a Referer (SW8-07b).
+useNoReferrer()
+
+// SW8-07b: the mailed link carries the token in the URL fragment; `PasswordResetEntryPage` reads it
+// once and hands it over as props (client state only). Without props the token comes from the path
+// and the e-mail from `?email=`, as on the live site.
+const props = defineProps<{ token?: string; email?: string }>()
 
 const route = useRoute()
 const router = useRouter()
 const session = useSessionStore()
 const flash = useFlash()
 
-const token = String(Array.isArray(route.params.token) ? route.params.token[0] : route.params.token)
+const token =
+  props.token ??
+  String(Array.isArray(route.params.token) ? route.params.token[0] : route.params.token)
 const queryEmail = Array.isArray(route.query.email) ? route.query.email[0] : route.query.email
 
-const email = ref(queryEmail ?? '')
+const email = ref(props.email ?? queryEmail ?? '')
 const password = ref('')
 const confirmation = ref('')
 const loading = ref(false)
