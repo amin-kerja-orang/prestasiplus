@@ -221,7 +221,7 @@ const accountItems = computed(() => [
                     :title="name || 'Akaun'"
                     >{{ name || 'Akaun' }}</span
                   >
-                  <span class="block truncate text-caption text-muted" :title="SCOPE_CHIP">{{
+                  <span class="block text-caption text-muted" :title="SCOPE_CHIP">{{
                     SCOPE_CHIP
                   }}</span>
                 </span>

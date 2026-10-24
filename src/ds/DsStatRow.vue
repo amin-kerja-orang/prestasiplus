@@ -79,8 +79,9 @@ const grid = computed(() => {
   return GRID[String(n)]
 })
 
-// Staff: a strip of 2-3 tiles is capped (~22rem per tile) so it does not spread over a 1600px page.
-const CAP: Record<string, string> = { '2': 'staff:max-w-3xl', '3': 'staff:max-w-6xl' }
+// Staff: a strip of 2 tiles is capped (~22rem per tile) so it does not spread over a 1600px page. A
+// strip of 3 or more spans the page, so its right edge lines up with the filter bar and table below.
+const CAP: Record<string, string> = { '2': 'staff:max-w-3xl' }
 const cap = computed(() => CAP[String(Math.min(Math.max(props.items.length, 2), 5))] ?? '')
 
 function id(key: string): string | undefined {
