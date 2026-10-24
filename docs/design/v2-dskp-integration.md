@@ -252,9 +252,9 @@ stateDiagram-v2
 | Tingkatan changed and unit/SP were cleared | "Unit dan SP dikosongkan kerana tingkatan berubah." [PROPOSED, G1 AC-04.7] | under Tingkatan, `data-testid="tag-notice"` | the next change to any control of the block |
 | Unit changed and SP were cleared | "SP dikosongkan kerana unit berubah." [PROPOSED] | under Unit | same |
 
-**T1-T3 state (decision D-UX1: hide, not disable).** When Tingkatan is "Tingkatan 1-3 (di luar DSKP)":
+**T1-T3 state (D-UX1 — lead decision 13.x: render the three fields disabled with the caption below; the "hide" variant described here was not taken).** When Tingkatan is "Tingkatan 1-3 (di luar DSKP)":
 
-- Unit, SP and SK are **not rendered** (their values are already cleared). In their place, one caption line spanning the grid, `i-ph-info`: "Tingkatan 1-3 berada di luar DSKP. Unit dan SP tidak diperlukan; TP masih wajib." [PROPOSED]
+- Unit, SP and SK are rendered **disabled** and empty (`aria-disabled`; values cleared). Under them, one caption line spanning the grid, `i-ph-info`: "Tingkatan 1-3 berada di luar DSKP. Unit dan SP tidak diperlukan; TP masih wajib." [PROPOSED]
 - TP stays required; Aras KBAT stays optional; the TP description shows its T1-T3 line (3.5).
 - Switching back to T4/T5 renders the three fields empty.
 - Why hide rather than disable (G1 AC-04.6 says "disabled"): a disabled empty select and an empty disabled picker take about 300 px of height at 375 px for fields that can never be used; the caption says the same thing in one line. The G1 intent (not operable, not required, `unit`/`sp` stay empty) is met; only the e2e assertion "q-unit disabled" changes to "q-unit absent". If the lead prefers G1's wording, render the three fields disabled with the same caption and `aria-disabled` (no other change).
