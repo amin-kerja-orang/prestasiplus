@@ -630,13 +630,6 @@ export class QuestionsRepository {
     return row.createdById === null ? null : idToString(row.createdById)
   }
 
-  async stimuliExist(ids: readonly string[]): Promise<boolean> {
-    const keys = ids.map(bi)
-    if (keys.some((k) => k === null)) return false
-    const unique = [...new Set(keys as bigint[])]
-    return (await this.db.stimulus.count({ where: { id: { in: unique } } })) === unique.length
-  }
-
   /**
    * Every id is a stimulus the writer may link: a shared one (`reusable = true`), or, when `questionId` is given, a private
    * one that a version of that same question already uses (its own stem image). Another question's private stimulus is not.

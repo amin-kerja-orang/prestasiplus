@@ -295,10 +295,14 @@ describe('SW12-01-A: question images are referenced by the id POST /files return
       expect((await admin.get(`/api/questions/${id}`)).body.data.optionImages[0]).toBe(url(mine))
     })
 
-    it('an admin may reference any question_image', async () => {
+    it('an admin may reference any question_image, by public id or by the internal id of another owner file', async () => {
       const foreign = await otherSchool.upload('question_image')
       const res = await admin.post('/api/questions', mcqBody(refs, { optionImages: [foreign.id, null, null, null] }))
       expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const [row] = await t.db.query<{ id: string }>('select id::text from files where public_id = $1', [foreign.id])
+      const internal = row!.id
+      const byId = await admin.post('/api/questions', mcqBody(refs, { optionImages: [internal, null, null, null], questionImage: internal }))
+      expect(byId.status, JSON.stringify(byId.body)).toBe(201)
     })
 
     it('an unknown id, a malformed id and an internal id of nobody all give the same message', async () => {
