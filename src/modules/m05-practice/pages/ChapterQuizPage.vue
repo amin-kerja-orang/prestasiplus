@@ -47,7 +47,9 @@ async function resolveLevel(
   const signal = token.controller.signal
   const first = await fetchChapterSubject(subject, {}, { signal })
   if (token.cancelled) return null
-  const inLevel = (d: typeof first): boolean => d.chapters.some((c) => c.id === id)
+  // Compared as strings: the API sends string ids (`IdSchema`), the mock numbers, the route a string.
+  const inLevel = (d: typeof first): boolean =>
+    d.chapters.some((c) => String(c.id) === String(id))
   if (first.levelId !== null && inLevel(first)) {
     return { levelId: first.levelId, subjectName: first.subject.name }
   }
