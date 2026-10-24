@@ -8,7 +8,9 @@
   - Scope ON confirmed from the built bundle (`VITE_PROTOTYPE_SCOPE:\`on\`` in `dist-lanec-5311/assets/*.js`, `off` in `dist-lanec-5310`), and by the spec DOM: the failure snapshot of the S-55 tablet case shows `pembelajaran-bottom-nav`, i.e. the Pembelajaran layout rendered.
   - `.env.e2e` still sets `VITE_DATA_PROFILE=full` in both builds, so the data is the same; only the scope/layout differs.
 
-## Verdict: NOT READY (strict G5 reading), lane C fixes themselves are verified
+## Verdict: READY for the lane C rows (updated after BUG-C1 fix `bb3215f`, see Addendum)
+
+Original verdict before the BUG-C1 fix: NOT READY (strict G5 reading), lane C fixes themselves verified.
 
 Every lane C fix passes its spec at all three viewports in the build it targets. Two High layout defects that are NOT caused by lane C (both reproduce identically at base `3e192a7`) block a clean "no open Critical/High" G5. One of them (BUG-C1) makes the S-55 "Cetak / PDF" button unclickable on a tablet in the demo (scope ON) build, so S-55 is recorded as Fail at tablet in scope ON.
 
@@ -26,7 +28,7 @@ Counts are pass/fail per viewport (mobile / tablet / desktop). "Run 1" = scope O
 | G-16, A-PM11 (T9) single Kirkpatrick tab strip (12 cases) | d049646 | `e2e/m12-kirkpatrick/uat-single-tab-strip.spec.ts` | 10/2, 12/0, 12/0 (see note 1) | 12/0, 12/0, 12/0 | Pass in scope ON (the meaningful config); scope OFF has 2 unrelated failures (BUG-C2) |
 | G-47 (T10) Guru export | 59b72de | `e2e/m11-teacher-analytics/t10-guru-export.spec.ts` (7 cases) | 7/0, 7/0, 7/0 | 7/0, 7/0, 7/0 | Pass |
 | S-56 (T10) CSV export Senarai Pelajar / Guru | 59b72de | `e2e/m27-school-admin/t10-export-print.spec.ts` (2 CSV cases) | 2/0 x3 | 2/0 x3 | Pass |
-| S-55 (T10) Laporan Bulanan print (2 cases) | 59b72de | `e2e/m27-school-admin/t10-export-print.spec.ts` | 2/0 x3 | mobile 2/0, desktop 2/0, **tablet 1/1** | Pass scope OFF; **Fail at tablet in scope ON** (BUG-C1) |
+| S-55 (T10) Laporan Bulanan print (2 cases) | 59b72de | `e2e/m27-school-admin/t10-export-print.spec.ts` | 2/0 x3 | mobile 2/0, desktop 2/0, **tablet 1/1** → after BUG-C1 fix 2/0 x3 | Pass (was Fail at tablet in scope ON before BUG-C1 fix) |
 
 Run totals: Run 1 = 324 tests (225 pass, 99 fail; all 99 fail in files outside the lane C rows, see section 3). Run 2 = 114 + 60 tests (166 pass, 8 fail: 1 BUG-C1, 7 in the t5 Admin Sekolah group which is not a lane C row, see section 3).
 
@@ -75,7 +77,7 @@ Failure classification used for the rest of run 1 (99 failures) and run 2B (7 fa
 
 ## 3. Bugs and open issues
 
-### BUG-C1 (High, layout): fixed bottom nav covers the last content on a tablet in the v2 Pembelajaran layout
+### BUG-C1 (High, layout): fixed bottom nav covers the last content on a tablet in the v2 Pembelajaran layout — FIXED
 - Build: scope ON only. Viewport: 768x1024 (any width from 640 to 1023px). Pre-existing: the same markup is at base.
 - Steps: log in as `adminsekolah@demo.test` (password Demo1234), open `/admin-sekolah/laporan-bulanan`, scroll to the bottom of the page, try to tap "Cetak / PDF" (`data-testid=lb-print`).
 - Expected: the button is reachable above the bottom tab bar.
@@ -111,3 +113,9 @@ Failure classification used for the rest of run 1 (99 failures) and run 2B (7 fa
 
 - Nothing committed; no source, `datasets/`, `seeds/` or mock spec changed. The base worktree was removed (`git worktree list` shows only the main tree). My `dist-lanec-5310/5311` and `test-results-lanec-531x` outputs were deleted; `playwright.lanec.config.mjs` is left in place (uncommitted). Logs are in the scratchpad `.../scratchpad/qa/` (`run1-off.log`, `run2-on-a.log`, `run2-on-b.log`, `run3-reg.log`, `run3-base.log`, `run-base.log`, `redgreen-base*.log`, `rerun-s55.log`, `unit-*.log`).
 - Only processes I started were used; none remain running.
+
+## Addendum (2026-10-24): BUG-C1 fixed and re-tested
+
+- Fix: `src/shells/pembelajaran/PembelajaranLayout.vue` `<main>` padding `py-4 pb-32 sm:py-6 lg:pb-12` → `pt-4 pb-32 sm:pt-6 lg:pb-12` (the tab bar is `lg:hidden`, so content now clears it at 640-1023px). Regression spec `e2e/global/pembelajaran-bottom-clearance.spec.ts` (640/768/1023/1024px; fails on the old padding).
+- Re-run on a fresh scope ON build (port 5320), all three projects 375/768/1280: `pembelajaran-bottom-clearance`, `t10-export-print`, `uat-single-tab-strip`, `t7-heatmap-legibility`, `uat-command-center-same-tab` → **75 passed, 0 failed**.
+- S-55 is now Pass at all three viewports in both scope modes. BUG-C2 stays open (pre-existing, scope OFF legacy shell only, not the UAT configuration); it does not affect a lane C row in the demo build.
