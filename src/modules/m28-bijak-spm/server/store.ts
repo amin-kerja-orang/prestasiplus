@@ -26,7 +26,7 @@ import type {
   SaveExtractedPayload,
 } from '../admin/intake/types'
 import { AdminOps, seedAdminSlice, type AdminSlice } from './admin'
-import { composeFromBlueprint, poolUnits, type PoolUnit } from '../domain/blueprint'
+import { composeFromBlueprint, poolUnits, stemKeys, type PoolUnit } from '../domain/blueprint'
 import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registry'
 import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
@@ -336,7 +336,13 @@ export class BijakServer {
     for (const s of bp.sections) {
       unitsByPool.set(
         s.pool,
-        poolUnits(s.pool, BANK.pool, BANK.groups, (qid) => BANK.questions.get(qid)?.groupId),
+        poolUnits(
+          s.pool,
+          BANK.pool,
+          BANK.groups,
+          (qid) => BANK.questions.get(qid)?.groupId,
+          (qid) => stemKeys(qid, BANK.questions.get(qid)?.stem ?? ''),
+        ),
       )
     }
     const seen = new Set(
