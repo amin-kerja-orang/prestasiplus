@@ -65,9 +65,12 @@ const levelItems = computed(() =>
   })),
 )
 
+/** The select value is a number in mock mode and a digit string (the API id) in http mode. */
 function onLevelChange(id: unknown): void {
-  if (typeof id !== 'number' || Number.isNaN(id)) return
-  void router.push(chapterListHref(code.value, id))
+  const level =
+    typeof id === 'number' ? id : typeof id === 'string' && /^\d+$/.test(id) ? Number(id) : Number.NaN
+  if (Number.isNaN(level)) return
+  void router.push(chapterListHref(code.value, level))
 }
 </script>
 

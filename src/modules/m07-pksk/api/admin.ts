@@ -8,7 +8,7 @@
  * COPY). The row delete (#12) answers 204 and so resolves to nothing.
  */
 
-import { api, type ListResult } from '@/api'
+import { api, wireId, type ListResult } from '@/api'
 
 import type { Bahagian, PkskLevel } from './types'
 
@@ -59,7 +59,7 @@ export interface PkskQuestionDetail {
 /** #10 body (no `options` for Bahagian C). */
 export interface PkskQuestionCreateBody {
   bahagian: Bahagian
-  pkskDomainId: number
+  pkskDomainId: number | string
   pkskTargetLevel: PkskLevel
   questionText: string
   difficultyLevel: number
@@ -69,7 +69,7 @@ export interface PkskQuestionCreateBody {
 
 /** #11 body. */
 export interface PkskQuestionUpdateBody {
-  pkskDomainId: number
+  pkskDomainId: number | string
   pkskTargetLevel: PkskLevel
   status: QuestionStatus
   questionText: string
@@ -115,8 +115,8 @@ export interface PkskPackage {
 }
 
 export interface PkskAccessGrantBody {
-  userId: number
-  packageId: number
+  userId: number | string
+  packageId: number | string
   expiresAt: string | null
 }
 
@@ -160,7 +160,11 @@ export function fetchPkskQuestion(id: number, options: Signal = {}): Promise<Pks
 export function createPkskQuestion(
   body: PkskQuestionCreateBody,
 ): Promise<MutationResult<PkskQuestionDetail>> {
-  return api.post<MutationResult<PkskQuestionDetail>>(QUESTIONS, { body, raw: true })
+  // `pkskDomainId` is an `idInput` string on the wire in http mode (a number is 422); mock keeps the number.
+  return api.post<MutationResult<PkskQuestionDetail>>(QUESTIONS, {
+    body: { ...body, pkskDomainId: wireId(body.pkskDomainId) },
+    raw: true,
+  })
 }
 
 /** #11 `PUT /api/admin/pksk-questions/:id` (404; 422). */
@@ -169,7 +173,7 @@ export function updatePkskQuestion(
   body: PkskQuestionUpdateBody,
 ): Promise<MutationResult<PkskQuestionDetail>> {
   return api.put<MutationResult<PkskQuestionDetail>>(`${QUESTIONS}/${String(id)}`, {
-    body,
+    body: { ...body, pkskDomainId: wireId(body.pkskDomainId) },
     raw: true,
   })
 }
@@ -182,10 +186,10 @@ export function deletePkskQuestion(id: number): Promise<void> {
 /** #13 `POST /api/admin/pksk-questions/bulk` (422 for empty ids, a bad action or a non-PKSK id). */
 export function bulkPkskQuestions(
   action: BulkAction,
-  ids: number[],
+  ids: (number | string)[],
 ): Promise<MutationResult<{ affected: number }>> {
   return api.post<MutationResult<{ affected: number }>>(`${QUESTIONS}/bulk`, {
-    body: { action, ids },
+    body: { action, ids: ids.map((id) => wireId(id)) },
     raw: true,
   })
 }
@@ -213,7 +217,11 @@ export function fetchPkskAccessStats(options: Signal = {}): Promise<PkskAccessSt
 export function grantPkskAccess(
   body: PkskAccessGrantBody,
 ): Promise<MutationResult<PkskAccessItem>> {
-  return api.post<MutationResult<PkskAccessItem>>(ACCESS, { body, raw: true })
+  // `userId` and `packageId` are `idInput` strings on the wire in http mode (a number is 422).
+  return api.post<MutationResult<PkskAccessItem>>(ACCESS, {
+    body: { ...body, userId: wireId(body.userId), packageId: wireId(body.packageId) },
+    raw: true,
+  })
 }
 
 /** #17 `POST /api/admin/pksk-access/:id/revoke` (404; 409 when the row is not active). */

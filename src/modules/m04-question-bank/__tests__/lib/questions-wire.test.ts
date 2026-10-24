@@ -9,13 +9,14 @@ const h = vi.hoisted(() => ({
 vi.mock('@/api', () => ({
   api: { list: h.list, post: h.post, get: h.get },
   isHttpMode: () => h.http,
+  wireId: (id: number | string) => (h.http ? String(id) : id),
 }))
 
 import { bulkQuestionAction, fetchQuestions } from '../../api/questions'
 
 interface Req {
   query?: { status?: unknown }
-  body?: { action?: string; ids?: number[] }
+  body?: { action?: string; ids?: (number | string)[] }
 }
 /** The options object (2nd argument) of the nth call of a mock. */
 const reqOf = (fn: { mock: { calls: unknown[][] } }, n: number): Req =>
@@ -37,9 +38,9 @@ describe('request building by transport mode', () => {
     await fetchQuestions({ status: 'published' })
     expect(reqOf(h.list, 2).query?.status).toBe('published')
     await bulkQuestionAction('approve', [7])
-    expect(reqOf(h.post, 0).body).toEqual({ action: 'approved', ids: [7] })
+    expect(reqOf(h.post, 0).body).toEqual({ action: 'approved', ids: ['7'] })
     await bulkQuestionAction('publish', [7])
-    expect(reqOf(h.post, 1).body).toEqual({ action: 'published', ids: [7] })
+    expect(reqOf(h.post, 1).body).toEqual({ action: 'published', ids: ['7'] })
     await bulkQuestionAction('archive', [7])
     expect(reqOf(h.post, 2).body?.action).toBe('archived')
   })
