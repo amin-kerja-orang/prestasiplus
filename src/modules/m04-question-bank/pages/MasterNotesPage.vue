@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S12 `/admin/master-notes` "Master Notes — Admin Review" (M04-T7; FR-M04-102..105,
+ * S12 `/admin/master-notes` "Nota Induk — Semakan Admin" (M04-T7; FR-M04-102..105,
  * FN-M04-5.3.1..5.3.8). Rendered in the **user** shell with the admin role, as live.
  *
  * - Dark header card: white h1 (readable, DV-M04-14) and the summary line.
@@ -46,10 +46,10 @@ const activeTab = computed<MasterNoteTab>(() => data.value?.meta.activeTab ?? 'f
 const firstLoad = computed(() => data.value === null && error.value === null)
 
 const TABS: PillItem<MasterNoteTab>[] = [
-  { key: 'flagged', label: 'Flagged Review', to: { path: MASTER_NOTES_PATH, query: { tab: 'flagged' } } },
+  { key: 'flagged', label: 'Perlu Semakan', to: { path: MASTER_NOTES_PATH, query: { tab: 'flagged' } } },
   {
     key: 'approved',
-    label: 'Teacher Approved',
+    label: 'Diluluskan Guru',
     to: { path: MASTER_NOTES_PATH, query: { tab: 'approved' } },
   },
   { key: 'all', label: 'Semua', to: { path: MASTER_NOTES_PATH, query: { tab: 'all' } } },
@@ -58,14 +58,14 @@ const TABS: PillItem<MasterNoteTab>[] = [
 const kpis = computed<StatItem[]>(() => [
   {
     key: 'flagged',
-    label: 'Flagged (perlu semakan)',
+    label: 'Ditanda (perlu semakan)',
     value: summary.value?.flagged ?? 0,
     icon: 'flag',
     accent: 'heat',
   },
   {
     key: 'approved',
-    label: 'Teacher-approved',
+    label: 'Diluluskan guru',
     value: summary.value?.teacherApproved ?? 0,
     icon: 'check-circle',
     accent: 'win',
@@ -94,9 +94,9 @@ function goToPage(next: number): void {
     <div data-testid="notes-header" class="sr-only">
       <p class="text-body text-default" data-testid="notes-summary">
         <template v-if="summary">
-          Self-healing nota AI: {{ summary.flagged }} flagged ·
-          {{ summary.teacherApproved }} teacher-approved · {{ summary.total }} total. Review yang
-          flagged untuk improve quality.
+          Nota AI pemulihan sendiri: {{ summary.flagged }} ditanda ·
+          {{ summary.teacherApproved }} diluluskan guru · {{ summary.total }} jumlah. Semak nota yang
+          ditanda untuk meningkatkan kualiti.
         </template>
         <USkeleton v-else class="h-4 w-72 max-w-full" />
       </p>

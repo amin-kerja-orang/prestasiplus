@@ -22,7 +22,7 @@ import {
 const ADMIN = 'admin@demo.test'
 const PATH = '/admin/master-notes'
 const SUMMARY = (f: number, a: number) =>
-  `Self-healing nota AI: ${String(f)} flagged · ${String(a)} teacher-approved · 525 total. Review yang flagged untuk improve quality.`
+  `Nota AI pemulihan sendiri: ${String(f)} ditanda · ${String(a)} diluluskan guru · 525 jumlah. Semak nota yang ditanda untuk meningkatkan kualiti.`
 
 function rows(page: Page) {
   return page.getByTestId('note-row')
@@ -46,20 +46,20 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     await expect(page.getByTestId('notes-empty')).toHaveText('Tiada nota dalam tab ini.')
     await expect(page.locator('[data-layout="user"]')).toBeVisible()
     await expect(page.locator('[data-layout="admin"]')).toHaveCount(0)
-    await expectTabTitle(page, 'Master Notes — Admin Review')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Master Notes — Admin Review')
+    await expectTabTitle(page, 'Nota Induk — Semakan Admin')
+    await expect(page.getByTestId('shell-user-title')).toHaveText('Nota Induk — Semakan Admin')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveCount(0)
 
     // DV-M04-14: the card h1 is white on the dark card.
     const h1 = page.getByTestId('notes-header').getByRole('heading', { level: 1 })
-    await expect(h1).toHaveText('Master Notes — Admin Review')
+    await expect(h1).toHaveText('Nota Induk — Semakan Admin')
     expect(await h1.evaluate((el) => getComputedStyle(el).color)).toBe('rgb(255, 255, 255)')
     await expect(page.getByTestId('notes-summary')).toHaveText(SUMMARY(0, 0))
 
     // Tabs: flagged is the default and the dark pill.
     await expect(page.getByTestId('notes-tabs').locator('a')).toHaveText([
-      'Flagged Review',
-      'Teacher Approved',
+      'Perlu Semakan',
+      'Diluluskan Guru',
       'Semua',
     ])
     await expect(page.getByTestId('notes-tab-flagged')).toHaveAttribute('data-active', 'true')
@@ -72,7 +72,7 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     await expectNoHorizontalScroll(page)
   })
 
-  test('"Teacher Approved" is empty and "Semua" switches the active pill', async ({
+  test('"Diluluskan Guru" is empty and "Semua" switches the active pill', async ({
     page,
     loginAs,
     gotoApp,
@@ -106,8 +106,8 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     await expect(first).toContainText('tokens:')
     await expect(first.getByTestId('note-conf')).toHaveText(/^conf \d+$/)
     await expect(first.getByTestId('note-question')).toContainText('Soalan:')
-    await expect(first.getByTestId('note-trap')).toContainText('Trap:')
-    await expect(first.locator('button')).toHaveText(['Approve', 'Regenerate', 'Clear Flag'])
+    await expect(first.getByTestId('note-trap')).toContainText('Perangkap:')
+    await expect(first.locator('button')).toHaveText(['Luluskan', 'Jana Semula', 'Buang Tanda'])
     await expectTouchTarget(first.getByTestId('note-approve'))
 
     const pager = page.getByTestId('notes-pager')
@@ -127,7 +127,7 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
   })
 
   test(
-    'Approve shows "..." then "Done", dims the row, and a reload moves the note to Teacher Approved',
+    'Approve shows "..." then "Done", dims the row, and a reload moves the note to Diluluskan Guru',
     provisional('the effect of Approve is INFERRED (BR-M04-23)'),
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(ADMIN)
@@ -136,7 +136,7 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
       const id = await first.getAttribute('data-note-id')
       const approve = first.getByTestId('note-approve')
       await approve.click()
-      await expect(approve).toHaveText('Done')
+      await expect(approve).toHaveText('Selesai')
       await expect(approve).toBeDisabled()
       await expect.poll(() => first.evaluate((el) => getComputedStyle(el).opacity)).toBe('0.5')
       // The other buttons stay usable.
@@ -162,7 +162,7 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
       const before = await first.getByTestId('note-text').innerText()
       const regen = first.getByTestId('note-regen')
       await regen.click()
-      await expect(regen).toHaveText('Done')
+      await expect(regen).toHaveText('Selesai')
       await expect(regen).toBeDisabled()
 
       await page.getByTestId('notes-tab-approved').click()
@@ -189,7 +189,7 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
       })
       const unflag = rows(page).first().getByTestId('note-unflag')
       await unflag.click()
-      await expect(unflag).toHaveText('Done')
+      await expect(unflag).toHaveText('Selesai')
       await expect(unflag).toBeDisabled()
       expect(dialogs).toBe(0)
     },

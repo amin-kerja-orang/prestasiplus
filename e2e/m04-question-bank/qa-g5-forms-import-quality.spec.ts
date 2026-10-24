@@ -60,7 +60,7 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'q-language').locator('option:checked')).toHaveText('Bahasa Melayu')
     expect(
       (await byId(page, 'q-language').locator('option').allInnerTexts()).map((s) => s.trim()),
-    ).toEqual(['Bahasa Melayu', 'English'])
+    ).toEqual(['Bahasa Melayu', 'Bahasa Inggeris'])
     await expect(byId(page, 'q-points')).toHaveAttribute('min', '1')
     await expect(page.getByText('Mata yang diperoleh jika jawapan betul')).toBeVisible()
     await expect(byId(page, 'form-cancel')).toHaveAttribute('href', '/admin/questions')
@@ -273,7 +273,7 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'dskp-sp')).toBeEnabled()
     await expect.poll(() => byId(page, 'dskp-sp').locator('option').count()).toBeGreaterThan(1)
     await byId(page, 'dskp-sp').selectOption({ index: 1 })
-    await expect(byId(page, 'dskp-tagged')).toHaveText('DSKP tagged')
+    await expect(byId(page, 'dskp-tagged')).toHaveText('DSKP ditag')
 
     // AC-09.6: clearing Subjek keeps SK, SP and the tag (as live, AUD-M04-02); Bidang list empties.
     const spBefore = await byId(page, 'dskp-sp').inputValue()
@@ -369,7 +369,7 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
       'Muat naik fail CSV untuk menambah soalan secara pukal',
     )
     await expect(page.getByText('Saiz maksimum: 5MB. Format: CSV atau TXT')).toBeVisible()
-    await expect(page.getByText('Tetapan Lalai (Opsional)')).toBeVisible()
+    await expect(page.getByText('Tetapan Lalai (Pilihan)')).toBeVisible()
     await expect(
       page.getByText('Nilai ini digunakan jika kolum berkaitan tiada dalam CSV.'),
     ).toBeVisible()
@@ -389,7 +389,7 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'import-format-card')).toContainText(
       /education_level_id.*(atau guna Tetapan Lalai)/,
     )
-    await expect(byId(page, 'import-template-card')).toContainText('Muat Turun Template')
+    await expect(byId(page, 'import-template-card')).toContainText('Muat Turun Templat')
     await expect(byId(page, 'import-submit')).toContainText('Mula Import')
     await byId(page, 'import-submit').click()
     await expect(byId(page, 'import-file')).toHaveJSProperty('validity.valueMissing', true)
@@ -440,7 +440,7 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'question-status').first()).toHaveText('Draf')
   })
 
-  test('E2E-M04-32 Download Template: file name and header row (AC-13.6)', async ({ page }) => {
+  test('E2E-M04-32 Muat Turun Templat: file name and header row (AC-13.6)', async ({ page }) => {
     const [dl] = await Promise.all([
       page.waitForEvent('download'),
       byId(page, 'import-template-download').click(),
@@ -491,7 +491,7 @@ test.describe('QA G5 S6 quality', { tag: [moduleTag(4), '@qa'] }, () => {
     for (const [id, text] of [
       ['bucket-baik', 'Skor 51-75'],
       ['bucket-lemah', 'Skor ≤ 50'],
-      ['bucket-legacy', 'Legacy Generic'],
+      ['bucket-legacy', 'Generik Lama'],
     ] as Array<[string, string]>) {
       const title = byId(page, id).getByText(text, { exact: true })
       await expect(title).toBeVisible()

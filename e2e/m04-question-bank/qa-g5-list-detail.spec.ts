@@ -55,7 +55,7 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(first.getByTestId('question-id')).toHaveText('564159')
     await expect(first.getByTestId('question-dskp')).toContainText('DSKP')
     await expect(first.getByTestId('question-compliance')).toHaveText(/^[A-Z ]+$/)
-    await expect(first.getByTestId('question-source')).toContainText('Source:')
+    await expect(first.getByTestId('question-source')).toContainText('Sumber:')
     await expect(first.getByTestId('question-stars').locator('.fa-star, svg, i')).not.toHaveCount(0)
     await expect(first.getByTestId('question-status')).toHaveText('Diluluskan')
     await expect(first.getByTestId('question-active')).toHaveText(/^(ACTIVE|INACTIVE)$/)
@@ -132,15 +132,15 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     expect(await opts('questions-dskp')).toEqual(['Semua', 'Ada DSKP Tag', 'Belum Ditag'])
     expect(await opts('questions-compliance')).toEqual([
       'Semua',
-      'Verified',
-      'Pending Mapping',
-      'Quarantined',
-      'Rejected',
-      'Draft',
-      'Tiada Source PDF',
-      'AI Verified',
+      'Disahkan',
+      'Menunggu Pemetaan',
+      'Dikuarantin',
+      'Ditolak',
+      'Draf',
+      'Tiada PDF Sumber',
+      'Disahkan AI',
     ])
-    expect(await opts('questions-source')).toEqual(['Semua', 'Textbook', 'DSKP', 'Trial', 'Skema'])
+    expect(await opts('questions-source')).toEqual(['Semua', 'Buku Teks', 'DSKP', 'Percubaan', 'Skema'])
     await expect(byId(page, 'questions-search')).toHaveAttribute('placeholder', 'Cari soalan...')
   })
 
@@ -174,20 +174,20 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
   }) => {
     await gotoApp('/admin/questions?status=archived')
     await expect(byId(page, 'question-status').first()).toHaveText('Arkib')
-    await expect(byId(page, 'question-active').first()).toHaveText('INACTIVE')
+    await expect(byId(page, 'question-active').first()).toHaveText('Tidak Aktif')
 
     await gotoApp('/admin/questions?compliance_filter=pending_mapping')
-    await expect(byId(page, 'question-compliance').first()).toHaveText('PENDING MAPPING')
+    await expect(byId(page, 'question-compliance').first()).toHaveText('MENUNGGU PEMETAAN')
 
     await gotoApp('/admin/questions?compliance_filter=missing_source')
     await expect(byId(page, 'question-row').first()).toBeVisible()
     await expect(byId(page, 'question-source-file')).toHaveCount(0)
 
     await gotoApp('/admin/questions?compliance_filter=draft')
-    await expect(byId(page, 'question-source').first()).toContainText('Source: TIADA')
+    await expect(byId(page, 'question-source').first()).toContainText('Sumber: TIADA')
 
     await gotoApp('/admin/questions?compliance_filter=verified_generated')
-    await expect(byId(page, 'question-ai-verified').first()).toContainText('AI Verified')
+    await expect(byId(page, 'question-ai-verified').first()).toContainText('Disahkan AI')
 
     // type / question_type / sort are ignored.
     await gotoApp('/admin/questions?type=essay&question_type=essay&sort=id')

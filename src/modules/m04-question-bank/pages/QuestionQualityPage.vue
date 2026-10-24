@@ -208,7 +208,7 @@ const actionCardFields: CardField[] = [
           <p class="text-caption text-muted">Bucket ini patut jadi fokus tindakan segera.</p>
         </DsPanel>
         <DsPanel data-testid="bucket-legacy">
-          <p class="text-overline text-muted">Legacy Generic</p>
+          <p class="text-overline text-muted">Generik Lama</p>
           <p class="tabular my-1 text-display text-highlighted" data-testid="bucket-legacy-value">
             {{ formatNumber(data.buckets.legacyGeneric) }}
           </p>

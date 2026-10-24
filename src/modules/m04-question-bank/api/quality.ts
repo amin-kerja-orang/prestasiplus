@@ -40,7 +40,7 @@ export interface QualitySummary {
     baik: number
     /** Card "Skor ≤ 50" (non-legacy). */
     lemahKritikal: number
-    /** Card "Legacy Generic". */
+    /** Card "Generik Lama". */
     legacyGeneric: number
   }
   /** "Taburan Kualiti": share of the scored questions per band, in percent. */

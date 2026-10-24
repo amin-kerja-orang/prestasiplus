@@ -1,5 +1,5 @@
 /**
- * M04 master-note endpoints (SRS §7 #26–#27; build-plan M04-T2): S12 "Master Notes — Admin Review"
+ * M04 master-note endpoints (SRS §7 #26–#27; build-plan M04-T2): S12 "Nota Induk — Semakan Admin"
  * (rendered in the user shell, admin role). Every call needs an admin session. UI tasks read this
  * file and do not change it (build-plan §S.3 rule 5).
  */
@@ -33,7 +33,7 @@ export interface MasterNoteRow {
 export interface MasterNoteListMeta {
   /** The tab that was applied (an unknown `tab` falls back to `flagged`). */
   activeTab: MasterNoteTab
-  /** "{flagged} flagged · {teacherApproved} teacher-approved · {total} total". */
+  /** "{flagged} ditanda · {teacherApproved} diluluskan guru · {total} jumlah". */
   summary: { flagged: number; teacherApproved: number; total: number }
 }
 

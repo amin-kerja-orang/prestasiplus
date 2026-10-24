@@ -79,7 +79,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expect(strCards(page)).toHaveCount(20)
     const card = mcqCards(page).first()
     await expect(card.getByTestId('diagram-file')).toHaveAttribute('accept', 'image/*')
-    await expect(card.getByTestId('diagram-dismiss')).toHaveText('Dismiss')
+    await expect(card.getByTestId('diagram-dismiss')).toHaveText('Abaikan')
     await expectTouchTarget(card.getByTestId('diagram-upload'))
     await expectTouchTarget(card.getByTestId('diagram-dismiss'), 44)
 
@@ -167,7 +167,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
   })
 
   test(
-    'Dismiss removes the question and flashes the API text',
+    'Abaikan removes the question and flashes the API text',
     provisional('the dismiss result and the flash copy are INFERRED / UNVERIFIED (SRS §8)'),
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(ADMIN)

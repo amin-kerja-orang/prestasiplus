@@ -239,7 +239,7 @@ test.describe('QA G5 S7 report cards', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(six.getByTestId('report-question')).toContainText('Soalan #136891:')
     await expect(six.getByTestId('report-question')).toContainText('A.')
     await expect(six.getByTestId('report-question')).toContainText('D.')
-    await expect(six.getByTestId('report-question')).toContainText(/Compliance:/)
+    await expect(six.getByTestId('report-question')).toContainText(/Pematuhan:/)
     await expect(six.getByTestId('report-question')).toContainText(/ — Tingkatan/)
   })
 

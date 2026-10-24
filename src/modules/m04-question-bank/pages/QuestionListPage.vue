@@ -48,6 +48,7 @@ import {
   bulkConfirmText,
   COMPLIANCE_OPTIONS,
   complianceColor,
+  complianceLabel,
   DELETE_CONFIRM,
   DIFFICULTY_LABELS,
   DIFFICULTY_OPTIONS,
@@ -202,16 +203,16 @@ const MORE_FIELDS: FieldDef[] = [
   {
     key: 'compliance_filter',
     id: 'q-compliance',
-    label: 'Compliance',
-    empty: 'Semua Compliance',
+    label: 'Pematuhan',
+    empty: 'Semua Pematuhan',
     testid: 'questions-compliance',
     options: COMPLIANCE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
   },
   {
     key: 'source_filter',
     id: 'q-source',
-    label: 'Source',
-    empty: 'Semua Source',
+    label: 'Sumber',
+    empty: 'Semua Sumber',
     testid: 'questions-source',
     options: SOURCE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
   },
@@ -602,7 +603,7 @@ const cardFields: CardField[] = [
                 :color="complianceColor(row.original.raw.complianceStatus)"
                 variant="subtle"
                 size="sm"
-                :label="row.original.raw.complianceStatus.replaceAll('_', ' ').toUpperCase()"
+                :label="complianceLabel(row.original.raw.complianceStatus).toUpperCase()"
                 data-testid="question-compliance"
               />
               <UBadge
@@ -610,7 +611,7 @@ const cardFields: CardField[] = [
                 color="info"
                 variant="subtle"
                 size="sm"
-                label="AI Verified"
+                label="Disahkan AI"
                 data-testid="question-ai-verified"
               />
             </div>
@@ -619,7 +620,7 @@ const cardFields: CardField[] = [
               :title="row.original.raw.sourceFile ?? undefined"
             >
               <span data-testid="question-source"
-                >Source: {{ sourceLabel(row.original.raw.sourceType) }}</span
+                >Sumber: {{ sourceLabel(row.original.raw.sourceType) }}</span
               >
               <span v-if="row.original.raw.sourceFile" data-testid="question-source-file">
                 · {{ row.original.raw.sourceFile }}</span
@@ -659,11 +660,10 @@ const cardFields: CardField[] = [
               :label="statusLabel(row.original.raw.status, true)"
               data-testid="question-status"
             />
-            <!-- Live word: "ACTIVE" / "INACTIVE" under the status pill (discovery M04 S1). -->
+            <!-- Active flag under the status pill: glossary words Aktif / Tidak Aktif (FB-025). -->
             <DsStatusBadge
               size="sm"
               :status="row.original.raw.isActive ? 'active' : 'inactive'"
-              :label="row.original.raw.isActive ? 'ACTIVE' : 'INACTIVE'"
               data-testid="question-active"
             />
           </div>

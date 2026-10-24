@@ -284,7 +284,7 @@ test.describe('QA G5 S8/S9 details', { tag: [moduleTag(4), '@qa'] }, () => {
       '/guru/soalan-berstruktur/cipta',
     )
     await expect(byId(page, 'structured-stat-total')).toContainText('Jumlah Soalan')
-    await expect(byId(page, 'structured-stat-published')).toContainText('Published')
+    await expect(byId(page, 'structured-stat-published')).toContainText('Diterbitkan')
     const kbat = (await byId(page, 'structured-kbat').locator('option').allInnerTexts()).map((s) =>
       s.trim(),
     )

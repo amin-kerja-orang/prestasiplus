@@ -5,15 +5,15 @@ import type { DsStatus } from '@/ds'
 import type { SubmissionStatus } from '../api/submissions'
 
 export const SUBMISSION_STATUS_OPTIONS: { value: SubmissionStatus; label: string }[] = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'processing', label: 'Processing' },
+  { value: 'pending', label: 'Menunggu Semakan' },
+  { value: 'processing', label: 'Sedang Diproses' },
   { value: 'done', label: 'Selesai' },
   { value: 'rejected', label: 'Ditolak' },
 ]
 
 export const SUBMISSION_STATUS_LABEL: Record<SubmissionStatus, string> = {
-  pending: 'Pending',
-  processing: 'Processing',
+  pending: 'Menunggu Semakan',
+  processing: 'Sedang Diproses',
   done: 'Selesai',
   rejected: 'Ditolak',
 }

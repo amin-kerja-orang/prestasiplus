@@ -180,7 +180,7 @@ describe('QuestionCreatePage (M04 S2)', () => {
     expect(value(w, 'q-option-0')).toBe('Tersimpan')
   })
 
-  it('cascades Bidang, SK and SP and shows "DSKP tagged" for an SP', async () => {
+  it('cascades Bidang, SK and SP and shows "DSKP ditag" for an SP', async () => {
     const w = await render('create')
     expect(t(w, 'dskp-sk').attributes('disabled')).toBeDefined()
     expect(lookups.fetchDskpBidang).not.toHaveBeenCalled()
@@ -205,7 +205,7 @@ describe('QuestionCreatePage (M04 S2)', () => {
     expect(t(w, 'dskp-sp').attributes('disabled')).toBeUndefined()
     expect(w.find('[data-testid=dskp-tagged]').exists()).toBe(false)
     await t(w, 'dskp-sp').setValue('6192')
-    expect(t(w, 'dskp-tagged').text()).toBe('DSKP tagged')
+    expect(t(w, 'dskp-tagged').text()).toBe('DSKP ditag')
     expect(w.find('[data-testid=dskp-remove]').exists()).toBe(false)
   })
 
@@ -358,7 +358,7 @@ describe('QuestionEditPage (M04 S4)', () => {
     expect(value(w, 'dskp-bidang')).toBe('515')
     expect(value(w, 'dskp-sk')).toBe('2667')
     expect(value(w, 'dskp-sp')).toBe('6191')
-    expect(t(w, 'dskp-tagged').text()).toBe('DSKP tagged')
+    expect(t(w, 'dskp-tagged').text()).toBe('DSKP ditag')
     expect(t(w, 'form-submit').text()).toBe('Kemaskini Soalan')
     expect(t(w, 'form-cancel').attributes('href')).toBe('/admin/questions/564159')
   })
@@ -402,7 +402,7 @@ describe('QuestionEditPage (M04 S4)', () => {
       lookups[fn].mockRejectedValueOnce(new Error('x'))
       const w = await render('edit')
       expect(t(w, 'dskp-load-error').text()).toContain('Maaf, berlaku ralat. Sila cuba semula.')
-      expect(t(w, 'dskp-tagged').text()).toBe('DSKP tagged')
+      expect(t(w, 'dskp-tagged').text()).toBe('DSKP ditag')
       await w.get('form').trigger('submit')
       await flushPromises()
       expect(

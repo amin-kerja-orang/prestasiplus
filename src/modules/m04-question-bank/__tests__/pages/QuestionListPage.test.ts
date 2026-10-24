@@ -172,15 +172,15 @@ describe('QuestionListPage (M04 S1)', () => {
       '564161',
     ])
     expect(rows[0]?.text()).toContain('DSKP')
-    expect(rows[0]?.text()).toContain('VERIFIED')
-    expect(rows[0]?.text()).toContain('AI Verified')
-    expect(rows[0]?.text()).toContain('Source: TEXTBOOK')
+    expect(rows[0]?.text()).toContain('DISAHKAN')
+    expect(rows[0]?.text()).toContain('Disahkan AI')
+    expect(rows[0]?.text()).toContain('Sumber: BUKU TEKS')
     expect(rows[0]?.text()).toContain('buku-contoh.pdf')
     expect(rows[1]?.text()).toContain('Latihan Tambahan')
-    expect(rows[1]?.text()).toContain('Source: TIADA')
-    expect(rows[2]?.text()).toContain('PENDING MAPPING')
+    expect(rows[1]?.text()).toContain('Sumber: TIADA')
+    expect(rows[2]?.text()).toContain('MENUNGGU PEMETAAN')
     expect(rows[2]?.text()).toContain('Arkib')
-    expect(rows[2]?.text()).toContain('INACTIVE')
+    expect(rows[2]?.text()).toContain('Tidak Aktif')
   })
 
   it('cuts a long question text to 80 characters + "..."', async () => {

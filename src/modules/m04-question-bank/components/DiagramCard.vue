@@ -132,7 +132,7 @@ async function dismiss(): Promise<void> {
             data-testid="diagram-dismiss"
             @click="dismiss"
           >
-            Dismiss
+            Abaikan
           </UButton>
         </div>
       </div>

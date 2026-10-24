@@ -38,7 +38,7 @@ test.describe('M04 S5 question import', { tag: [TAG.smoke, moduleTag(4)] }, () =
     await expect(byId(page, 'import-default-difficulty')).toHaveValue('2')
     await expect(page.getByText('Soalan disimpan sebagai draf')).toBeVisible()
     await expect(byId(page, 'import-template-card')).toContainText(
-      'Template CSV dengan contoh soalan',
+      'Templat CSV dengan contoh soalan',
     )
     await expect(byId(page, 'import-format-card')).toContainText('Kolum diperlukan:')
     await expect(byId(page, 'import-tips-card').locator('li')).toHaveCount(4)

@@ -91,7 +91,7 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
       await expect(byId(page, 'dskp-sp')).toBeEnabled()
       await expect.poll(() => byId(page, 'dskp-sp').locator('option').count()).toBeGreaterThan(1)
       await byId(page, 'dskp-sp').selectOption({ index: 1 })
-      await expect(byId(page, 'dskp-tagged')).toHaveText('DSKP tagged')
+      await expect(byId(page, 'dskp-tagged')).toHaveText('DSKP ditag')
 
       await byId(page, 'q-image-input').setInputFiles({
         name: 'rajah.png',

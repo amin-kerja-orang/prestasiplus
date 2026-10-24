@@ -48,15 +48,15 @@ test.describe('M04 S10 teacher papers', { tag: [TAG.smoke, moduleTag(4)] }, () =
 
     // Counters: all 6, pending 1, processing 3, done 1 (no Ditolak card).
     await expect(page.getByTestId('submissions-count-all')).toHaveText(/6\s*Jumlah/)
-    await expect(page.getByTestId('submissions-count-pending')).toHaveText(/1\s*Pending/)
-    await expect(page.getByTestId('submissions-count-processing')).toHaveText(/3\s*Processing/)
+    await expect(page.getByTestId('submissions-count-pending')).toHaveText(/1\s*Menunggu Semakan/)
+    await expect(page.getByTestId('submissions-count-processing')).toHaveText(/3\s*Sedang Diproses/)
     await expect(page.getByTestId('submissions-count-done')).toHaveText(/1\s*Selesai/)
     await expect(page.locator('section [data-testid^="submissions-count-"]')).toHaveCount(4)
 
     await expect(page.getByTestId('submissions-status').locator('option')).toHaveText([
       'Semua Status',
-      'Pending',
-      'Processing',
+      'Menunggu Semakan',
+      'Sedang Diproses',
       'Selesai',
       'Ditolak',
     ])

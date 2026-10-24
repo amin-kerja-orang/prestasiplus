@@ -159,7 +159,7 @@ describe('DiagramAuditPage (M04 S11)', () => {
     const file = mcq.get('[data-testid=diagram-file]')
     expect(file.attributes('accept')).toBe('image/*')
     expect(file.attributes('required')).toBeDefined()
-    expect(mcq.get('[data-testid=diagram-dismiss]').text()).toBe('Dismiss')
+    expect(mcq.get('[data-testid=diagram-dismiss]').text()).toBe('Abaikan')
     const str = w.get('[data-testid=diagrams-structured] [data-testid=diagram-card]')
     expect(str.get('[data-testid=diagram-text]').classes()).toContain('whitespace-pre-line')
     expect(str.text()).not.toContain('ms.')

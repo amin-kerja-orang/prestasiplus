@@ -21,7 +21,7 @@ describe('question list helpers', () => {
 
   it('labels source, compliance codes and status', () => {
     expect(sourceLabel(null)).toBe('TIADA')
-    expect(sourceLabel('marking_scheme')).toBe('MARKING SCHEME')
+    expect(sourceLabel('marking_scheme')).toBe('SKEMA')
     expect(upperWords('pending_mapping')).toBe('PENDING MAPPING')
     expect(statusLabel('archived', true)).toBe('Arkib')
     expect(statusLabel('archived')).toBe('Diarkibkan')

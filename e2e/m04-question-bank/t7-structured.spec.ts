@@ -92,7 +92,7 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
       'Menunjukkan 1–25 daripada 4,064 soalan',
     )
 
-    // Column visibility: Subjek, Tgk, Markah from 640, Sub-Q from 768.
+    // Column visibility: Subjek, Tgk, Markah from 640, Sub-Soalan from 768.
     const width = viewportWidth(page)
     const th = (name: string) => page.locator('thead th', { hasText: new RegExp(`^${name}$`) })
     if (width < 640) {
@@ -104,8 +104,8 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
       await expect(th('Tgk')).toBeVisible()
       await expect(th('Markah')).toBeVisible()
     }
-    if (width < 768) await expect(th('Sub-Q')).toBeHidden()
-    else await expect(th('Sub-Q')).toBeVisible()
+    if (width < 768) await expect(th('Sub-Soalan')).toBeHidden()
+    else await expect(th('Sub-Soalan')).toBeVisible()
 
     // Pager: mobile "« Previous / Next »", otherwise the numbered strip that fits (DV-M04-09).
     if (isMobileWidth(page)) {
@@ -150,7 +150,7 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
     )
     await expect(rows(page).first().getByTestId('structured-kbat-pill')).toHaveText('L5')
     const reset = page.getByTestId('structured-reset')
-    await expect(reset).toHaveText('Reset')
+    await expect(reset).toHaveText('Set Semula')
     await expectNoHorizontalScroll(page)
     await reset.click()
     await expect(page).toHaveURL(/\/admin\/structured-questions$/)
@@ -221,7 +221,7 @@ test.describe('M04 S9 structured detail', { tag: [TAG.smoke, moduleTag(4)] }, ()
     await expect(page.getByTestId('structured-pill-marks')).toHaveText('8 Markah')
     await expect(page.getByTestId('structured-stimulus')).toContainText('Soalan Oleh:')
     await expect(page.getByTestId('structured-meta')).toContainText('Visibiliti: Public')
-    await expect(page.getByTestId('structured-meta')).toContainText('Published')
+    await expect(page.getByTestId('structured-meta')).toContainText('Diterbitkan')
     await expect(page.getByTestId('structured-subs-heading')).toHaveText(
       'Bahagian Soalan (1 sub-soalan)',
     )

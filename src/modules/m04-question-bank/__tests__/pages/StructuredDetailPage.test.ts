@@ -113,7 +113,7 @@ describe('StructuredDetailPage (M04 S9)', () => {
     expect(meta).toContain('Dicipta oleh: Admin Demo')
     expect(meta).toContain('08 Apr 2026')
     expect(meta).toContain('Visibiliti: Public')
-    expect(meta).toContain('Published')
+    expect(meta).toContain('Diterbitkan')
   })
 
   it('shows a dash when the creator name is unknown', async () => {
