@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import { json, type NextFunction, type Request, type Response } from 'express'
 import { Logger } from 'nestjs-pino'
 
+import { publicBaseUrlBootWarning } from './common/config/public-base-url'
 import { clientIpBootWarning, clientIpMiddleware } from './common/net/client-ip'
 import { MetricsService } from './common/metrics/metrics.service'
 import { securityHeaders } from './common/security/security-headers'
@@ -64,6 +65,8 @@ export function configureApp(app: INestApplication): void {
     EDGE_PROXY_SECRET: config.get('EDGE_PROXY_SECRET'),
   })
   if (ipWarning) new NestLogger('ClientIp').warn(ipWarning)
+  const urlWarning = publicBaseUrlBootWarning({ NODE_ENV: config.get('NODE_ENV'), PUBLIC_BASE_URL: config.get('PUBLIC_BASE_URL') })
+  if (urlWarning) new NestLogger('PublicBaseUrl').warn(urlWarning)
   app.use(clientIpMiddleware({ header: config.get<string>('CLIENT_IP_HEADER'), secret: config.get<string>('EDGE_PROXY_SECRET') }))
   app.setGlobalPrefix('api')
   app.use(securityHeaders({ production: app.get(ConfigService).get('NODE_ENV') === 'production' }))
