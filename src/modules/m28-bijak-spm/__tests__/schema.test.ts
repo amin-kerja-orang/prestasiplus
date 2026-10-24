@@ -312,6 +312,8 @@ describe('Sejarah K2 end to end', () => {
           savedAt: 1,
         },
       ],
+      // Mod Peperiksaan: only the question the student chose counts.
+      picks: { 'sej-k2-2025-a-s2': ['sej2-q3'] },
     })
     const { result } = await server.getResult(9, attemptId)
     expect(result.max).toBe(9 + 10)

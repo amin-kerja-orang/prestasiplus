@@ -18,11 +18,15 @@ import StimulusView from '../components/StimulusView.vue'
 import {
   chooseCounterLine,
   chooseFullHint,
+  chooseLockedHint,
   chooseOverflowHint,
   chooseState,
+  effectiveAnswered,
+  isLockedQuestion,
   pickOnAnswer,
   progressOf,
   unansweredIn,
+  type ChooseMode,
   type ChooseState,
 } from '../domain/choose-n'
 import { formatClock, isAnswered, sectionRuleLine } from '../domain/paper-model'
@@ -94,21 +98,29 @@ function questionAnswered(qid: string): boolean {
   return leafIds(qid).some((id) => isAnswered(answers.value[id]))
 }
 
+/** Choose-N rules follow the mode: Latihan answers everything, Peperiksaan only counts ticked ones. */
+const chooseMode = computed<ChooseMode>(() => (isExam.value ? 'exam' : 'latihan'))
+/** Questions that count as answered (an unticked question of a choose section does not, in exam). */
+const answeredIds = computed(() =>
+  effectiveAnswered(
+    view.value?.sections ?? [],
+    picks.value,
+    new Set(questions.value.filter((q) => questionAnswered(q.id)).map((q) => q.id)),
+    chooseMode.value,
+  ),
+)
+
 const navStates = computed(() => {
   const out: Record<string, NavState> = {}
   for (const q of questions.value) {
     out[q.id] = flags.value.includes(q.id)
       ? 'flagged'
-      : questionAnswered(q.id)
+      : answeredIds.value.has(q.id)
         ? 'answered'
         : 'none'
   }
   return out
 })
-
-const answeredIds = computed(
-  () => new Set(questions.value.filter((q) => questionAnswered(q.id)).map((q) => q.id)),
-)
 /** Answered over what can count: a choose-N section adds at most N (FB-048). */
 const progress = computed(() => {
   const { done, total } = progressOf(view.value?.sections ?? [], answeredIds.value)
@@ -144,12 +156,21 @@ const choose = computed(() => {
   const q = current.value
   if (!s || !q || s.rule.type !== 'choose') return undefined
   const chosen = picks.value[s.id]?.includes(q.id) ?? false
-  const full = chooseStates.value[s.id]?.full ?? false
+  const st = chooseStates.value[s.id]
+  const full = st?.full ?? false
+  // Peperiksaan: the other questions of a full section are locked, not only dimmed.
+  const locked = !!st && isLockedQuestion(chooseMode.value, st, chosen)
   return {
     chosen,
     dimmed: full && !chosen,
     blocked: full,
-    hint: full && !chosen ? chooseFullHint(s.rule.n) : undefined,
+    locked,
+    hint:
+      full && !chosen
+        ? locked
+          ? chooseLockedHint(s.rule.n)
+          : chooseFullHint(s.rule.n)
+        : undefined,
   }
 })
 

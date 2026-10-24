@@ -25,7 +25,14 @@ const props = defineProps<{
   /** Latihan after "Semak": the marked question (inputs lock, results show). */
   check?: QuestionResult
   disabled?: boolean
-  choose?: { chosen: boolean; dimmed: boolean; blocked: boolean; hint?: string }
+  choose?: {
+    chosen: boolean
+    dimmed: boolean
+    blocked: boolean
+    /** Mod Peperiksaan: the section is full and this question is not ticked, so it cannot be answered. */
+    locked?: boolean
+    hint?: string
+  }
 }>()
 const emit = defineEmits<{
   answer: [partId: string, answer: PartAnswer]
@@ -38,7 +45,7 @@ const phone = useMedia('(width < 640px)', false)
 const heading = ref<HTMLElement | null>(null)
 defineExpose({ focus: () => heading.value?.focus() })
 
-const locked = computed(() => !!props.check || props.disabled)
+const locked = computed(() => !!props.check || props.disabled || !!props.choose?.locked)
 const chosenOption = computed(() => props.answers[props.question.id]?.choice)
 const correctOption = computed(() => props.check?.parts[0]?.scheme.correctOption)
 const partResults = computed(() => props.check?.parts ?? [])
@@ -132,7 +139,7 @@ function pick(id: string): void {
           :letter="String.fromCharCode(65 + i)"
           :state="optionState(o.id)"
           :data-testid="`option-${o.id}`"
-          @select="!disabled && pick(o.id)"
+          @select="!disabled && !choose?.locked && pick(o.id)"
         >
           <RichText :text="o.text" />
         </DsQuizOption>

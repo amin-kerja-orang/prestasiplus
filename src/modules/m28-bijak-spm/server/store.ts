@@ -740,13 +740,14 @@ export class BijakServer {
       const qs = s.questionIds.map((qid) => this.gradeQuestion(a, qid, ++n, true))
       let counted = qs
       if (s.rule.type === 'choose') {
-        // Best N attempted by marks (ties: the lower position); a ticked blank question fills a
-        // free slot. Ticks never change the score (domain/choose-n.ts, AC-06.3).
+        // Latihan: best N attempted by marks, a ticked blank fills a free slot. Peperiksaan: only the
+        // ticked questions count (domain/choose-n.ts, AC-06.3).
         const ids = new Set(
           countedIds(
             qs.map((q) => ({ id: q.questionId, attempted: q.attempted, awarded: q.awarded })),
             s.rule.n,
             a.picks?.[s.id],
+            a.mode,
           ),
         )
         for (const q of qs) q.counted = ids.has(q.questionId)

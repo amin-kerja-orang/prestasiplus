@@ -4,7 +4,10 @@ import {
   chooseCounterLine,
   chooseFullHint,
   chooseOverflowHint,
+  chooseLockedHint,
   chooseState,
+  effectiveAnswered,
+  isLockedQuestion,
   countedIds,
   pickOnAnswer,
   progressOf,
@@ -120,5 +123,114 @@ describe('result counting on the server (FB-048)', () => {
   it('counts nothing when nothing is answered and nothing is ticked', async () => {
     const r = await run({}, [])
     expect(r.sections.find((s) => s.sectionId === SEC)!.counted).toEqual([])
+  })
+})
+
+describe('Mod Peperiksaan: the student must choose (FB-048 per mode)', () => {
+  const qs = [c('a', true, 5), c('b', true, 1), c('c', false)]
+
+  it('counts only the ticked questions, however well the others scored', () => {
+    expect(countedIds(qs, 1, ['b'], 'exam')).toEqual(['b'])
+    expect(countedIds(qs, 2, ['c', 'b'], 'exam')).toEqual(['b', 'c'])
+  })
+  it('counts a ticked blank question (0 marks) and nothing when nothing is ticked', () => {
+    expect(countedIds(qs, 1, ['c'], 'exam')).toEqual(['c'])
+    expect(countedIds(qs, 1, [], 'exam')).toEqual([])
+  })
+  it('an unticked answered question does not count (untick keeps the answer, loses the count)', () => {
+    expect(countedIds(qs, 1, [], 'exam')).not.toContain('a')
+  })
+  it('never counts more than N even if more were ticked', () => {
+    expect(countedIds(qs, 1, ['a', 'b', 'c'], 'exam')).toEqual(['a'])
+  })
+  it('Latihan is unchanged by the mode argument', () => {
+    expect(countedIds(qs, 1, ['c'])).toEqual(['a'])
+    expect(countedIds(qs, 1, ['c'], 'latihan')).toEqual(['a'])
+  })
+
+  it('locks the unticked questions once N are ticked, only in Peperiksaan', () => {
+    const full = chooseState(1, ['a', 'b'], ['a'], new Set(['a']))
+    expect(isLockedQuestion('exam', full, false)).toBe(true)
+    expect(isLockedQuestion('exam', full, true)).toBe(false)
+    expect(isLockedQuestion('latihan', full, false)).toBe(false)
+    const open = chooseState(1, ['a', 'b'], [], new Set())
+    expect(isLockedQuestion('exam', open, false)).toBe(false)
+  })
+  it('re-ticking at the cap: untick frees the slot, tick again re-locks the other', () => {
+    const ids = ['a', 'b']
+    // a ticked: b locked
+    expect(isLockedQuestion('exam', chooseState(1, ids, ['a'], new Set(['a'])), false)).toBe(true)
+    // a unticked (answer kept): nothing locked, b can be answered
+    const unticked = chooseState(1, ids, [], new Set(['a']))
+    expect(isLockedQuestion('exam', unticked, false)).toBe(false)
+    // b ticked now: a is locked, its answer is still there but does not count
+    const bTicked = chooseState(1, ids, ['b'], new Set(['a']))
+    expect(isLockedQuestion('exam', bTicked, false)).toBe(true)
+    expect(countedIds([c('a', true, 3), c('b', false)], 1, ['b'], 'exam')).toEqual(['b'])
+    // a ticked again after b was unticked: counts again
+    expect(countedIds([c('a', true, 3), c('b', false)], 1, ['a'], 'exam')).toEqual(['a'])
+  })
+  it('the lock hint copy', () => {
+    expect(chooseLockedHint(1)).toBe(
+      'Anda sudah memilih 1 soalan. Nyahpilih soalan lain untuk menjawab soalan ini.',
+    )
+  })
+
+  const sections = [
+    { id: 's1', rule: { type: 'all' } as const, questionIds: ['a1', 'a2'] },
+    { id: 's2', rule: { type: 'choose', n: 1 } as const, questionIds: ['b1', 'b2'] },
+  ]
+  it('answered / unanswered / progress follow the exam rule', () => {
+    const answered = new Set(['a1', 'b1', 'b2'])
+    const eff = effectiveAnswered(sections, { s2: ['b2'] }, answered, 'exam')
+    expect([...eff].sort()).toEqual(['a1', 'b2'])
+    expect(progressOf(sections, eff)).toEqual({ done: 2, total: 3 })
+    expect(unansweredIn(sections[1]!.rule, sections[1]!.questionIds, eff)).toBe(0)
+    expect(unansweredIn(sections[0]!.rule, sections[0]!.questionIds, eff)).toBe(1)
+    // unticked answers do not fill the slot
+    const none = effectiveAnswered(sections, { s2: [] }, answered, 'exam')
+    expect(unansweredIn(sections[1]!.rule, sections[1]!.questionIds, none)).toBe(1)
+    // Latihan: every answer counts as answered
+    expect(effectiveAnswered(sections, {}, answered, 'latihan').size).toBe(3)
+  })
+})
+
+describe('result counting per mode on the server', () => {
+  const USER = 7
+  const SEC = 'sej-k2-2025-a-s2'
+  const run = async (
+    mode: 'exam' | 'latihan',
+    picks: Record<string, string[]>,
+    typed: string[],
+  ) => {
+    const server = new BijakServer({ storage: new MemoryStorage(), now: () => 1_800_000_000_000 })
+    const { attemptId } = await server.startAttempt(USER, 'sej-k2-2025-a', mode)
+    await server.submit(USER, attemptId, {
+      idempotencyKey: 'k',
+      changes: typed.map((id, i) => ({
+        partId: `${id}-a`,
+        answer: { text: 'jawapan' },
+        rev: i + 1,
+        savedAt: i + 1,
+      })),
+      picks,
+    })
+    return (await server.getResult(USER, attemptId)).result.sections.find(
+      (s) => s.sectionId === SEC,
+    )!
+  }
+  it('exam: ticked blank counts; untick with an answer does not; re-tick counts again', async () => {
+    expect((await run('exam', { [SEC]: ['sej2-q4'] }, [])).counted).toEqual(['sej2-q4'])
+    expect((await run('exam', { [SEC]: [] }, ['sej2-q3'])).counted).toEqual([])
+    expect((await run('exam', { [SEC]: ['sej2-q3'] }, ['sej2-q3'])).counted).toEqual(['sej2-q3'])
+  })
+  it('exam: an answer in the unticked question is ignored although it exists', async () => {
+    const r = await run('exam', { [SEC]: ['sej2-q4'] }, ['sej2-q3'])
+    expect(r.counted).toEqual(['sej2-q4'])
+  })
+  it('latihan: answers count whatever was ticked (best N)', async () => {
+    const r = await run('latihan', { [SEC]: ['sej2-q4'] }, ['sej2-q3'])
+    expect(r.counted).toEqual(['sej2-q3'])
+    expect((await run('latihan', { [SEC]: ['sej2-q4'] }, [])).counted).toEqual(['sej2-q4'])
   })
 })
