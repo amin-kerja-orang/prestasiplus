@@ -35,12 +35,12 @@ export const HADIAH_CATEGORY_LABELS: Readonly<
   Record<HadiahCategory, { pill: string; option: string; table: string }>
 > = {
   flagship: { pill: '🏆 Mahkota', option: '🏆 Mahkota (RM500+)', table: '🏆 Mahkota' },
-  ewallet: { pill: '💳 E-Wallet', option: '💳 E-Wallet', table: '💳 E-Wallet' },
-  telco: { pill: '📱 Telco', option: '📱 Telco', table: '📱 Telco Topup' },
-  gaming: { pill: '🎮 Gaming', option: '🎮 Gaming', table: '🎮 Gaming' },
-  streaming: { pill: '🎬 Streaming', option: '🎬 Streaming', table: '🎬 Streaming' },
+  ewallet: { pill: '💳 Dompet Digital', option: '💳 Dompet Digital', table: '💳 Dompet Digital' },
+  telco: { pill: '📱 Telekomunikasi', option: '📱 Telekomunikasi', table: '📱 Tambah Nilai Telekomunikasi' },
+  gaming: { pill: '🎮 Permainan', option: '🎮 Permainan', table: '🎮 Permainan' },
+  streaming: { pill: '🎬 Penstriman', option: '🎬 Penstriman', table: '🎬 Penstriman' },
   food_beverage: { pill: '🍔 F&B', option: '🍔 F&B', table: '🍔 Makanan & Minuman' },
-  ecommerce: { pill: '🛒 E-Commerce', option: '🛒 E-Commerce', table: '🛒 E-Commerce' },
+  ecommerce: { pill: '🛒 E-Dagang', option: '🛒 E-Dagang', table: '🛒 E-Dagang' },
   education: { pill: '📚 Pembelajaran', option: '📚 Pembelajaran', table: '📚 Pembelajaran' },
   entertainment: { pill: '🎭 Hiburan', option: '🎭 Hiburan', table: '🎭 Hiburan' },
 }
