@@ -27,7 +27,7 @@ describe('users-format (BR-M27-36, 39)', () => {
   })
 
   it('shows "Belum login" for a null last login and a relative time otherwise', () => {
-    expect(lastLoginText(null)).toBe('Belum login')
+    expect(lastLoginText(null)).toBe('Belum log masuk')
     expect(lastLoginText('2000-01-01T00:00:00+08:00')).toMatch(/ tahun yang lepas$/)
   })
 

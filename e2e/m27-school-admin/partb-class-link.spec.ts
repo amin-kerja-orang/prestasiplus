@@ -19,7 +19,7 @@ test.describe('M27 Part B class link (school admin 900001)', () => {
   test('own-school class 2001 renders the class page', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/kelas/2001')
     await expect(page.getByTestId('prestasi-kelas-detail-page')).toBeVisible()
-    await expectTabTitle(page, '5 MARIKH - Kimia — Dashboard Kelas')
+    await expectTabTitle(page, '5 MARIKH - Kimia — Papan Pemuka Kelas')
     await expect(page.getByTestId('shell-user-title')).toHaveText('5 MARIKH - Kimia')
     await expect(page.getByTestId('hc-on')).toBeVisible()
     await expectNoHorizontalScroll(page)

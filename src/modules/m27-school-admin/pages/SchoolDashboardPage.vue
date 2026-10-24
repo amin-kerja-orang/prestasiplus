@@ -38,7 +38,7 @@ watch(
 watch(
   data,
   (d) => {
-    if (d) pageMeta.setHeader({ title: 'Dashboard Sekolah', subtitle: d.school.name })
+    if (d) pageMeta.setHeader({ title: 'Papan Pemuka Sekolah', subtitle: d.school.name })
   },
   { immediate: true },
 )

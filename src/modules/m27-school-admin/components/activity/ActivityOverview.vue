@@ -47,24 +47,24 @@ interface Card {
 const cards = computed<Card[]>(() => [
   {
     key: 'pupils-logged',
-    label: 'Murid Pernah Login',
+    label: 'Murid Pernah Log Masuk',
     icon: 'graduation-cap',
     accent: 'action',
     pct: wholePercent(o.value.pupilsLogged, o.value.pupils),
     value: count(o.value.pupilsLogged),
     of: `/ ${count(o.value.pupils)}`,
-    note: `${count(o.value.pupils - o.value.pupilsLogged)} belum pernah login`,
+    note: `${count(o.value.pupils - o.value.pupilsLogged)} belum pernah log masuk`,
     warn: true,
   },
   {
     key: 'teachers-logged',
-    label: 'Cikgu Pernah Login',
+    label: 'Cikgu Pernah Log Masuk',
     icon: 'chalkboard-teacher',
     accent: 'friend',
     pct: wholePercent(o.value.teachersLogged, o.value.teachers),
     value: count(o.value.teachersLogged),
     of: `/ ${count(o.value.teachers)}`,
-    note: `${count(o.value.teachers - o.value.teachersLogged)} belum pernah login`,
+    note: `${count(o.value.teachers - o.value.teachersLogged)} belum pernah log masuk`,
     warn: true,
   },
   {
@@ -195,7 +195,7 @@ const cards = computed<Card[]>(() => [
       </DsPanel>
 
       <DsPanel data-testid="la-never">
-        <h2 class="text-subheading text-highlighted">Cikgu Belum Login</h2>
+        <h2 class="text-subheading text-highlighted">Cikgu Belum Log Masuk</h2>
         <ul class="mt-3 flex flex-col text-body">
           <li
             v-for="t in report.teachersNeverLogged"

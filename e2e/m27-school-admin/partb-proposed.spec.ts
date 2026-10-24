@@ -171,7 +171,7 @@ for (const key of Object.keys(SCREENS) as ScreenKey[]) {
         prefix === 'kl'
           ? page.getByTestId('kl-crumb-back')
           : page.locator(`[data-testid="${prefix}-breadcrumb"] a`)
-      await expect(back).toHaveText('Dashboard Sekolah')
+      await expect(back).toHaveText('Papan Pemuka Sekolah')
       await expect(back).toHaveAttribute('href', '/admin-sekolah')
       if (prefix === 'kl') return
       const current = page.locator(`[data-testid="${prefix}-breadcrumb"] [aria-current="page"]`)

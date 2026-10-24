@@ -100,8 +100,8 @@ describe('route (FR-M27-01, 03, 07, 10)', () => {
       access: 'auth',
       roles: ['school_admin'],
       onForbidden: '403',
-      title: 'Dashboard Sekolah - PRESTASIPLUS',
-      header: { title: 'Dashboard Sekolah' },
+      title: 'Papan Pemuka Sekolah - PRESTASIPLUS',
+      header: { title: 'Papan Pemuka Sekolah' },
     })
   })
 
@@ -116,7 +116,7 @@ describe('header and Perutusan card (FR-M27-03, 12…17)', () => {
   it('sets the shell subtitle to the school name', async () => {
     await mountPage(dashboard())
     expect(usePageMeta().state.header).toEqual({
-      title: 'Dashboard Sekolah',
+      title: 'Papan Pemuka Sekolah',
       subtitle: 'SMK Contoh Ujian',
     })
   })
@@ -150,7 +150,7 @@ describe('breadcrumb and banner (FR-M27-18…21)', () => {
     expect(back.text()).toBe('Papan Pemuka')
     expect(back.attributes('href')).toBe('/dashboard')
     const current = w.get('[data-testid="sd-breadcrumb"] [aria-current="page"]')
-    expect(current.text()).toBe('Dashboard Sekolah')
+    expect(current.text()).toBe('Papan Pemuka Sekolah')
     expect(current.element.tagName).not.toBe('A')
     expect(current.classes()).toContain('text-highlighted')
     // order: card, breadcrumb, banner

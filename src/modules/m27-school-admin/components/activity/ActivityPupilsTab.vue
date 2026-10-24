@@ -23,8 +23,8 @@ const query = ref('')
 const PILLS: PillItem<Filter>[] = [
   { key: 'semua', label: 'Semua', testid: 'semua' },
   { key: 'aktif', label: 'Aktif', testid: 'aktif' },
-  { key: 'loginSahaja', label: 'Login Sahaja', testid: 'login-sahaja' },
-  { key: 'belumLogin', label: 'Belum Login', testid: 'belum-login' },
+  { key: 'loginSahaja', label: 'Log Masuk Sahaja', testid: 'login-sahaja' },
+  { key: 'belumLogin', label: 'Belum Log Masuk', testid: 'belum-login' },
 ]
 
 const t = computed(() => props.report.tiles.pupils)
@@ -65,7 +65,7 @@ const columns: TableColumn<Row>[] = [
   { id: 'accuracy', accessorKey: 'accuracy', header: 'Ketepatan' },
   { id: 'time', accessorKey: 'time', header: 'Masa' },
   { id: 'coins', accessorKey: 'coins', header: 'Syiling' },
-  { id: 'last', accessorKey: 'last', header: 'Login Terakhir' },
+  { id: 'last', accessorKey: 'last', header: 'Log Masuk Terakhir' },
 ]
 const cardFields: CardField[] = [
   { key: 'kelas', label: 'Kelas' },
@@ -73,7 +73,7 @@ const cardFields: CardField[] = [
   { key: 'accuracy', label: 'Ketepatan' },
   { key: 'time', label: 'Masa' },
   { key: 'coins', label: 'Syiling' },
-  { key: 'last', label: 'Login Terakhir' },
+  { key: 'last', label: 'Log Masuk Terakhir' },
 ]
 
 const tiles = computed<StatItem[]>(() => [

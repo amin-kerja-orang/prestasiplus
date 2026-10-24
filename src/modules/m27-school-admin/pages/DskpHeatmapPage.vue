@@ -23,7 +23,7 @@ import HeatmapMap from '../components/heatmap/HeatmapMap.vue'
 
 const TITLE = 'Peta Haba DSKP'
 
-const crumbs = [{ label: 'Dashboard Sekolah', to: '/admin-sekolah' }, { label: TITLE }]
+const crumbs = [{ label: 'Papan Pemuka Sekolah', to: '/admin-sekolah' }, { label: TITLE }]
 
 const route = useRoute()
 const router = useRouter()

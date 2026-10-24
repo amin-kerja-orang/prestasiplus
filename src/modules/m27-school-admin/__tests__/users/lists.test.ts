@@ -108,7 +108,7 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
       subtitle: 'SMK Contoh Ujian',
     })
     const back = w.get('[data-testid="user-crumb-back"]')
-    expect(back.text()).toBe('Dashboard Sekolah')
+    expect(back.text()).toBe('Papan Pemuka Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
   })
 
@@ -319,7 +319,7 @@ describe('S7 Senarai Guru (FR-M27-99 to 103)', () => {
       'Emel',
       'Telefon',
       'Kelas',
-      'Login Terakhir',
+      'Log Masuk Terakhir',
       'Aktif?',
       'Tarikh',
       'Tindakan',
@@ -330,7 +330,7 @@ describe('S7 Senarai Guru (FR-M27-99 to 103)', () => {
     const { wrapper: w } = await mountTeachers()
     const [a, b] = w.findAll('tbody tr')
     expect(a!.get('[data-testid="user-classes"]').text()).toBe('2 kelas')
-    expect(a!.get('[data-testid="user-last-login"]').text()).toBe('Belum login')
+    expect(a!.get('[data-testid="user-last-login"]').text()).toBe('Belum log masuk')
     expect(a!.get('[data-testid="user-phone"]').text()).toBe('-')
     expect(a!.get('[data-testid="user-toggle"]').text()).toBe('Aktif')
     expect(a!.get('[data-testid="user-name"]').attributes('href')).toBe('/admin-sekolah/guru/5')

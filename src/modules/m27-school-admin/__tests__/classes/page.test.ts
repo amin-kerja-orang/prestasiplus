@@ -120,7 +120,7 @@ describe('route and header (FR-M27-38, 40, 44)', () => {
       title: 'Kelas Sekolah',
       subtitle: 'SMK Contoh Ujian',
     })
-    expect(text(w, 'kl-crumb-back')).toBe('Dashboard Sekolah')
+    expect(text(w, 'kl-crumb-back')).toBe('Papan Pemuka Sekolah')
     expect(w.get('[data-testid="kl-crumb-back"]').attributes('href')).toBe('/admin-sekolah')
   })
 })

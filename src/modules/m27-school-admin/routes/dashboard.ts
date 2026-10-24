@@ -19,8 +19,8 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       roles: ['school_admin'],
       onForbidden: '403',
-      title: 'Dashboard Sekolah - PRESTASIPLUS',
-      header: { title: 'Dashboard Sekolah' },
+      title: 'Papan Pemuka Sekolah - PRESTASIPLUS',
+      header: { title: 'Papan Pemuka Sekolah' },
       module: 'M27',
 
       v2: true,

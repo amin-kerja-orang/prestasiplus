@@ -26,7 +26,7 @@ import SubjectPerformance from '../components/monthly/SubjectPerformance.vue'
 
 const TITLE = 'Laporan Bulanan'
 
-const crumbs = [{ label: 'Dashboard Sekolah', to: '/admin-sekolah' }, { label: TITLE }]
+const crumbs = [{ label: 'Papan Pemuka Sekolah', to: '/admin-sekolah' }, { label: TITLE }]
 
 const route = useRoute()
 const pageMeta = usePageMeta()

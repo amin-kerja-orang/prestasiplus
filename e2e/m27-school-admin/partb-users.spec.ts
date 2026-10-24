@@ -127,7 +127,7 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
     await signIn(page, P1)
     await openList(page, gotoApp, '/admin-sekolah/pelajar')
     const back = page.getByTestId('user-crumb-back')
-    await expect(back).toHaveText('Dashboard Sekolah')
+    await expect(back).toHaveText('Papan Pemuka Sekolah')
     await expect(back).toHaveAttribute('href', '/admin-sekolah')
     await expect(page.locator('main h1, h1').first()).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Senarai Pelajar' }).first()).toBeVisible()

@@ -129,7 +129,7 @@ describe('route and header (FR-M27-74, 44)', () => {
       subtitle: 'SMK Demo',
     })
     expect(w.find('nav[data-testid="am-breadcrumb"]').exists()).toBe(false)
-    expect(w.text()).not.toContain('Dashboard Sekolah')
+    expect(w.text()).not.toContain('Papan Pemuka Sekolah')
   })
 
   it('appends the level suffix to the sub-line with a level', async () => {

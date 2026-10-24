@@ -24,8 +24,8 @@ const t = computed(() => props.report.tiles.teachers)
 
 const pills = computed<PillItem<Filter>[]>(() => [
   { key: 'semua', label: 'Semua' },
-  { key: 'pernah', label: `Pernah Login (${count(t.value.logged)})` },
-  { key: 'belum', label: `Belum Login (${count(t.value.total - t.value.logged)})` },
+  { key: 'pernah', label: `Pernah Log Masuk (${count(t.value.logged)})` },
+  { key: 'belum', label: `Belum Log Masuk (${count(t.value.total - t.value.logged)})` },
 ])
 
 interface Row extends Record<string, unknown> {
@@ -69,20 +69,20 @@ const rows = computed<Row[]>(() =>
 const columns: TableColumn<Row>[] = [
   { id: 'index', accessorKey: 'index', header: '#' },
   { id: 'name', accessorKey: 'name', header: 'Nama' },
-  { id: 'login', accessorKey: 'login', header: 'Login' },
+  { id: 'login', accessorKey: 'login', header: 'Log Masuk' },
   { id: 'mcq', accessorKey: 'mcq', header: 'MCQ' },
   { id: 'structured', accessorKey: 'structured', header: 'Struktur' },
   { id: 'coins', accessorKey: 'coins', header: 'Syiling' },
   { id: 'headcount', accessorKey: 'headcount', header: 'Headcount' },
-  { id: 'last', accessorKey: 'last', header: 'Login Terakhir' },
+  { id: 'last', accessorKey: 'last', header: 'Log Masuk Terakhir' },
 ]
 const cardFields: CardField[] = [
-  { key: 'login', label: 'Login' },
+  { key: 'login', label: 'Log Masuk' },
   { key: 'mcq', label: 'MCQ' },
   { key: 'structured', label: 'Struktur' },
   { key: 'coins', label: 'Syiling' },
   { key: 'headcount', label: 'Headcount' },
-  { key: 'last', label: 'Login Terakhir' },
+  { key: 'last', label: 'Log Masuk Terakhir' },
 ]
 
 const tiles = computed<StatItem[]>(() => [
@@ -92,7 +92,7 @@ const tiles = computed<StatItem[]>(() => [
     value: count(t.value.total),
     icon: 'chalkboard-teacher', accent: 'action',
   },
-  { key: 'logged', label: 'Pernah Login', value: count(t.value.logged), icon: 'sign-in', accent: 'win' },
+  { key: 'logged', label: 'Pernah Log Masuk', value: count(t.value.logged), icon: 'sign-in', accent: 'win' },
   {
     key: 'questions',
     label: 'Jumlah Soalan',

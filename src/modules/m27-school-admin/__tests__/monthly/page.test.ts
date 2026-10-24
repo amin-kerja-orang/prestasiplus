@@ -144,7 +144,7 @@ describe('route and header (FR-M27-38, 40, 44)', () => {
       subtitle: 'SMK Contoh Ujian',
     })
     const back = w.get('[data-testid="lb-breadcrumb"] a')
-    expect(back.text()).toBe('Dashboard Sekolah')
+    expect(back.text()).toBe('Papan Pemuka Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
     const cur = w.get('[data-testid="lb-breadcrumb"] [aria-current="page"]')
     expect(cur.text()).toBe('Laporan Bulanan')

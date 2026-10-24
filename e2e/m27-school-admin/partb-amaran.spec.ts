@@ -133,7 +133,7 @@ test.describe('S4 header and sidebar (E2E-M27-41, 42; S4 part)', MODULE, () => {
     await expect(page.getByTestId('shell-user-title')).toHaveText('Amaran Awal — Sekolah')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
     await expectTabTitle(page, TAB_TITLE)
-    await expect(page.getByTestId('am-page')).not.toContainText('Dashboard Sekolah')
+    await expect(page.getByTestId('am-page')).not.toContainText('Papan Pemuka Sekolah')
     await expect(page.getByTestId('am-page').getByRole('link', { name: /←/ })).toHaveCount(0)
   })
 

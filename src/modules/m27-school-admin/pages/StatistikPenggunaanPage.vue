@@ -25,7 +25,7 @@ import { DASHBOARD_PATH, normalisePeriod } from '../components/usage/usage-forma
 
 const TITLE = 'Statistik Penggunaan'
 
-const crumbs = [{ label: 'Dashboard Sekolah', to: DASHBOARD_PATH }, { label: TITLE }]
+const crumbs = [{ label: 'Papan Pemuka Sekolah', to: DASHBOARD_PATH }, { label: TITLE }]
 
 const route = useRoute()
 const pageMeta = usePageMeta()

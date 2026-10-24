@@ -42,7 +42,7 @@ export function duration(seconds: number): string {
 
 /** M17 BR-M17-20 relative time, or "Belum login" for a null `lastLoginAt`. */
 export const lastLogin = (iso: string | null): string =>
-  iso === null ? 'Belum login' : diffForHumans(iso)
+  iso === null ? 'Belum log masuk' : diffForHumans(iso)
 
 /** Case-insensitive substring test used by the tab searches. */
 export const matches = (query: string, ...fields: (string | null)[]): boolean => {

@@ -676,7 +676,7 @@ test.describe('QA S8 Kelas Sekolah', TAG, () => {
     await loginAs(P2)
     await openS8(page, gotoApp)
     await expect(page).toHaveTitle('Kelas Sekolah - PRESTASIPLUS')
-    await expect(page.getByTestId('kl-crumb-back')).toHaveText('Dashboard Sekolah')
+    await expect(page.getByTestId('kl-crumb-back')).toHaveText('Papan Pemuka Sekolah')
     await expect(page.getByTestId('kl-crumb-back')).toHaveAttribute('href', '/admin-sekolah')
     await expect(page.getByTestId('kl-tile-label')).toHaveText('Kelas Aktif')
     await expect(page.getByTestId('kl-displayed')).toHaveText(/^\d+ kelas dipaparkan\s*$/)
