@@ -21,7 +21,7 @@ export const walletGroup: ActivityGroup = {
 export const activityGroupA: ActivityGroup = {
   name: 'activity',
   notMigrated: [],
-  // exam_paper_questions only feeds the optional source-paper key of an answer (snapshot join).
-  reads: ['archive_cloud.exam_paper_questions'],
+  // The snapshot join and the exam title read only tables already in ACTIVITY_READ_TABLES (exam_questions, source_papers,
+  // exam_papers, attempt_statuses): the source-paper key is `exam_questions.source_paper_id`, so no pivot table is read.
   steps: (a) => [practiceSessionsStep(a), practiceAnswersStep(a), streaksStep(a), examAttemptsStep(a)],
 }

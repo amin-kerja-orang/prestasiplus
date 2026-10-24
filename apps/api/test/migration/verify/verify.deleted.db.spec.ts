@@ -31,7 +31,7 @@ beforeAll(async () => {
   await h.q(`delete from staging_cloud.classroom_student where student_id in (select user_id from staging_cloud.question_attempts)`)
   // A platform challenge, and for every pupil with answers a claim of it and an SPM target (so a deleted pupil leaves both behind).
   const subject = (await h.q<{ id: string }>(`select min(id)::text as id from staging_cloud.subjects`))[0]?.id as string
-  await h.q(`insert into staging_cloud.challenges (id, created_by, classroom_id, type, title, criteria) values (91, null, null, 'quiz_count', 'Cabaran Ujian', '{"target": 3}')`)
+  await h.q(`insert into staging_cloud.challenges (id, created_by, classroom_id, challenge_type, title, target_value) values (91, null, null, 'quiz_count', 'Cabaran Ujian', 3)`)
   await h.q(
     `insert into staging_cloud.challenge_user (challenge_id, user_id, progress, completed_at, claimed_on)
      select distinct 91, user_id, 3, '2026-01-01T00:00:00Z'::timestamptz, '2026-01-02'::date from staging_cloud.question_attempts`,
