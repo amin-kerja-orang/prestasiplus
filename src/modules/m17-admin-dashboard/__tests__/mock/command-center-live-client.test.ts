@@ -229,9 +229,9 @@ describe('Kirkpatrick and engagement panels', () => {
 describe('S3 card texts (FR-M17-37…40, DV-M17-10)', () => {
   it('login card label per tab', () => {
     expect(CC_LOGIN_LABEL).toEqual({
-      today: 'Login Hari Ini',
-      week: 'Login Minggu Ini',
-      month: 'Login Bulan Ini',
+      today: 'Log Masuk Hari Ini',
+      week: 'Log Masuk Minggu Ini',
+      month: 'Log Masuk Bulan Ini',
     })
   })
 

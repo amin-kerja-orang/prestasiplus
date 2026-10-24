@@ -77,7 +77,7 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
                 hasAnswers(s) ? formatCount(s.activeTeachers) : formatCount(s.loginCount)
               }}</b>
               <span class="block text-caption text-muted">{{
-                hasAnswers(s) ? 'GURU' : 'LOGIN'
+                hasAnswers(s) ? 'GURU' : 'LOG MASUK'
               }}</span>
             </span>
             <span data-testid="cc-school-pupils">
@@ -176,7 +176,7 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
               </section>
               <section v-if="drill.data.logins.length > 0" data-testid="cc-drill-logins">
                 <h3 class="mb-1 text-overline text-muted">
-                  Login ({{ drill.data.logins.length }})
+                  Log Masuk ({{ drill.data.logins.length }})
                 </h3>
                 <ul class="max-h-64 overflow-y-auto">
                   <li

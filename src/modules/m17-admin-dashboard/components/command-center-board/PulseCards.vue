@@ -105,7 +105,7 @@ const cards = computed<Card[]>(() => {
       value: formatCount(total),
       sub: [
         {
-          text: `Mood:${String(e.moodCheckins)} Badge:${String(e.badgesEarned)} Misi:${String(e.missionsCompleted)}`,
+          text: `Mood:${String(e.moodCheckins)} Lencana:${String(e.badgesEarned)} Misi:${String(e.missionsCompleted)}`,
         },
       ],
     },

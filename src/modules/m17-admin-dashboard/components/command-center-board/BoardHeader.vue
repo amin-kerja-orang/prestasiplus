@@ -37,7 +37,7 @@ const clock = useBoardClock()
         color="neutral"
         variant="soft"
         icon="i-ph-arrow-left"
-        label="Dashboard"
+        label="Papan Pemuka"
         :aria-label="S2_COPY.back"
         data-testid="cc-s2-back"
       />

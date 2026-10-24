@@ -8,7 +8,7 @@ import type { CcMood } from '../../api/command-center-board-types'
 
 export const S2_COPY = {
   title: 'PrestasiPlus Command Center',
-  back: '← Dashboard',
+  back: '← Papan Pemuka',
   daily: 'Aktiviti Harian',
   live: 'LIVE',
   tz: 'MYT',
@@ -29,7 +29,7 @@ export const S3_COPY = {
   noData: 'Tiada data',
   noActivity: 'Tiada aktiviti',
   noSchools: 'Tiada aktiviti',
-  noLogins: 'Tiada login',
+  noLogins: 'Tiada log masuk',
   noBadges: 'Tiada lencana baharu',
   noDrill: 'Tiada data terperinci',
   loadFailed: 'Gagal memuatkan',

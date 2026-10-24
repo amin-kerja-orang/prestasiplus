@@ -67,7 +67,7 @@ describe('S2 admin board', () => {
 
     expect(text(w, 'cc-title')).toBe('PrestasiPlus Command Center')
     expect(text(w, 'cc-live-badge')).toBe('LIVE')
-    expect(text(w, 'cc-s2-back')).toBe('Dashboard')
+    expect(text(w, 'cc-s2-back')).toBe('Papan Pemuka')
     expect(w.get('[data-testid="cc-s2-back"]').attributes('href')).toBe('/admin')
     expect(w.get('[data-testid="cc-s2-daily"]').attributes('href')).toBe(
       '/admin/command-center/daily-activity',

@@ -31,7 +31,7 @@ function link(row: CcLoginRow): string | null {
 </script>
 
 <template>
-  <DailyPanel title="Login Terkini" icon="i-ph-sign-in" testid="cc-panel-logins" :state="status">
+  <DailyPanel title="Log Masuk Terkini" icon="i-ph-sign-in" testid="cc-panel-logins" :state="status">
     <p
       v-if="!data || data.logins.recent.length === 0"
       class="py-2 text-body text-muted"
