@@ -80,7 +80,8 @@ export interface ListPage {
 export interface CreatedAccount {
   data: SchoolAdminUserDetail
   credential: { name: string; school: string; email: string; password: string }
-  mustChangePassword: true
+  /** R39: always false now (no forced change at go-live); the field stays for the contract shape. */
+  mustChangePassword: boolean
 }
 
 export type NewAccount = { name: string; email: string; phone: string | null }
@@ -194,7 +195,7 @@ export class ManagedUsersService {
         schoolId: ctx.actor.schoolId,
         grade: null,
         passwordHash,
-        mustChangePassword: true,
+        mustChangePassword: false, // R39: an admin-created account is not forced to change its password
         icHash: null,
         icMasked: null,
         isActive: true,
@@ -217,7 +218,7 @@ export class ManagedUsersService {
     return {
       data: toUserDetail(created, kind.detailRole, school),
       credential: { name: created.name, school: school.name, email: created.email ?? input.email, password },
-      mustChangePassword: true,
+      mustChangePassword: false,
     }
   }
 
@@ -248,7 +249,8 @@ export class ManagedUsersService {
           name: input.name,
           email: input.email,
           ...(input.phone !== undefined ? { phone: input.phone } : {}),
-          ...(newHash !== null ? { passwordHash: newHash, mustChangePassword: true } : {}),
+          // R39: an admin password write clears the flag, so a migrated account that kept it is not locked out.
+          ...(newHash !== null ? { passwordHash: newHash, mustChangePassword: false } : {}),
           now,
         },
         ctx.caller,
@@ -287,7 +289,7 @@ export class ManagedUsersService {
     })
   }
 
-  /** The admin types the new password (8 to 255, confirmed). 404, 403 (inactive), 422. Sets mustChangePassword and revokes the target's sessions. */
+  /** The admin types the new password (8 to 255, confirmed). 404, 403 (inactive), 422. R39: clears must_reset_password (no forced change, and a flagged migrated account is unlocked); revokes the target's sessions. */
   async resetPassword(ctx: PeopleCtx, kind: PeopleKind, id: string, raw: unknown): Promise<SchoolAdminResetResult> {
     const target = await this.writable(ctx, kind, id)
     if (!target.isActive) throw ApiError.of('FORBIDDEN')
@@ -297,7 +299,7 @@ export class ManagedUsersService {
     const now = this.clock.now()
     await this.write(async (tx) => {
       await this.recheck(ctx, kind, id)
-      await this.users.update(id, { passwordHash: newHash, mustChangePassword: true, now }, ctx.caller)
+      await this.users.update(id, { passwordHash: newHash, mustChangePassword: false, now }, ctx.caller) // R39: clears the flag
       await this.users.revokeSessions([id])
       await this.audit.record({
         tx,
