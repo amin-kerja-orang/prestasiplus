@@ -49,8 +49,8 @@ const overBytes = (v: unknown): boolean => typeof v === 'string' && Buffer.byteL
  * 3. the DELIMa passwords are hashed BEFORE the transaction (argon2id is slow and the process allows
  *    2 hashes at once); the transaction then takes a per-school lock, reads the quota AGAIN, inserts
  *    the students, the `import_jobs` row and the audit row, so two parallel imports cannot overshoot.
- * The result never echoes a row or a password. An imported account must change its password at the
- * first login (D55c / D59b); the DELIMa password in the file is known to the importing admin.
+ * The result never echoes a row or a password. An imported account is NOT forced to change its password
+ * (R39); the DELIMa password in the file is known to the importing admin.
  */
 @Injectable()
 export class StudentImportService {
@@ -108,7 +108,7 @@ export class StudentImportService {
         schoolId,
         grade,
         passwordHash: hashes[i] as string,
-        mustChangePassword: true,
+        mustChangePassword: false, // R39: no forced change at first login
         idDelima: p.email,
         icHash: ic?.hash ?? null,
         icMasked: ic?.masked ?? null,
