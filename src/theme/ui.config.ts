@@ -33,6 +33,8 @@ const filled = [
  * the buttons beside them; a control inside a card is always smaller than the card.
  */
 const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staff:text-body'
+/** `sm`: the same field kept at 44px in the learner portal too (answer lines that share a phone screen with a keypad). */
+const fieldSizeCompact = 'min-h-11 rounded-sm px-3.5 text-base md:staff:text-body'
 
 const fieldConfig = {
   slots: { leadingIcon: 'text-muted', trailingIcon: 'text-muted' },
@@ -40,6 +42,7 @@ const fieldConfig = {
   variants: {
     variant: { soft: filled },
     size: {
+      sm: { base: fieldSizeCompact },
       md: { base: fieldSize },
       lg: { base: fieldSize },
     },
@@ -143,8 +146,17 @@ export const uiConfig = {
           'font-size': [
             {
               text: [
-                'display', 'title', 'heading', 'subheading', 'body', 'label', 'caption',
-                'overline', 'th', 'kpi', 'badge',
+                'display',
+                'title',
+                'heading',
+                'subheading',
+                'body',
+                'label',
+                'caption',
+                'overline',
+                'th',
+                'kpi',
+                'badge',
               ],
             },
           ],
@@ -379,7 +391,9 @@ export const uiConfig = {
       size: {
         // `text-xs` (not the `text-badge` role) so it replaces the stock xs/sm sizes (8px / 10px).
         xs: { base: 'rounded-full text-xs px-2 py-0.5 learner:text-caption' },
-        sm: { base: 'rounded-full text-xs px-2 py-0.5 learner:text-caption learner:px-2.5 learner:py-1' },
+        sm: {
+          base: 'rounded-full text-xs px-2 py-0.5 learner:text-caption learner:px-2.5 learner:py-1',
+        },
         md: { base: 'rounded-full text-xs px-2.5 py-1 learner:text-label learner:px-3' },
         lg: { base: 'rounded-full' },
         xl: { base: 'rounded-full' },
@@ -410,7 +424,11 @@ export const uiConfig = {
           item: `border-0 bg-elevated transition-colors duration-fast hover:bg-accented has-data-[state=checked]:bg-primary-soft has-data-[disabled]:opacity-(--ds-disabled-opacity) has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary`,
         },
       },
-      { variant: 'card', color: 'info', class: { item: 'has-data-[state=checked]:bg-info-strong' } },
+      {
+        variant: 'card',
+        color: 'info',
+        class: { item: 'has-data-[state=checked]:bg-info-strong' },
+      },
     ],
   },
 

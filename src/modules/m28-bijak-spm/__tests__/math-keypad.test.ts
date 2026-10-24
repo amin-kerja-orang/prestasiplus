@@ -458,4 +458,17 @@ describe('keypad closing (FB-047 follow-up)', () => {
     expect(w.get('input').attributes('inputmode')).toBe('decimal')
     w.unmount()
   })
+
+  it('the answer field is the 44 px size on phones and the 52 px size from md', async () => {
+    phone()
+    const small = mount(MathField, { props: { modelValue: '', label: 'Langkah 1' }, global })
+    await small.vm.$nextTick()
+    expect(small.findComponent({ name: 'Input' }).props('size')).toBe('sm')
+    small.unmount()
+    vi.unstubAllGlobals()
+    const wide = mount(MathField, { props: { modelValue: '', label: 'Langkah 1' }, global })
+    await wide.vm.$nextTick()
+    expect(wide.findComponent({ name: 'Input' }).props('size')).toBe('lg')
+    wide.unmount()
+  })
 })
