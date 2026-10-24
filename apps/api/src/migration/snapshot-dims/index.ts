@@ -18,26 +18,22 @@ const A = quoteIdent(ARCHIVE_SCHEMA)
 
 /**
  * One row per question that exists in the archive. The paper key and number label come from the canonical bridge
- * (`legacy_canonical_map` source `questions` -> `exam_questions`) and, for the key, the lowest-numbered canonical paper
- * that contains the question. Nothing here is a join on free text.
+ * (`legacy_canonical_map` source `questions` -> `exam_questions`); the key is the natural key of the question's own source
+ * paper (`exam_questions.source_paper_id` -> `source_papers.natural_key`, one paper per canonical question, so no
+ * tie-break is needed). Nothing here is a join on free text.
  */
 export const SNAPSHOT_SQL = `
 SELECT q.id::text AS id,
        q.subject_id::text AS subject_id, q.education_level_id::text AS education_level_id,
        q.chapter_id::text AS chapter_id, q.topic_id::text AS topic_id,
-       q.difficulty_level::text AS difficulty, q.question_type::text AS qtype,
+       q.difficulty_level::text AS difficulty, q.type::text AS qtype,
        q.body::text AS stem,
        coalesce((SELECT array_agg(o.body::text ORDER BY o.id) FROM ${A}."question_options" o WHERE o.question_id = q.id), ARRAY[]::text[]) AS options,
        k.natural_key AS natural_key, k.number_label AS number_label
 FROM ${A}."questions" q
 LEFT JOIN LATERAL (
   SELECT eq.number_label::text AS number_label,
-         (SELECT sp.natural_key::text
-          FROM ${A}."exam_paper_questions" epq
-          JOIN ${A}."exam_papers" ep ON ep.id = epq.exam_paper_id
-          JOIN ${A}."source_papers" sp ON sp.id = ep.source_paper_id
-          WHERE epq.exam_question_id = eq.id
-          ORDER BY ep.id LIMIT 1) AS natural_key
+         (SELECT sp.natural_key::text FROM ${A}."source_papers" sp WHERE sp.id = eq.source_paper_id) AS natural_key
   FROM ${A}."legacy_canonical_map" m
   JOIN ${A}."exam_questions" eq ON eq.id = m.canonical_id
   WHERE m.source = 'questions' AND m.legacy_id = q.id::text AND m.canonical_type = 'exam_question'

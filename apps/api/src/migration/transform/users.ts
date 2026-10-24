@@ -5,7 +5,7 @@
  * passes the facts in. The clear IC, the plaintext password, `faith`, `google_id` and every token are
  * never read into the output.
  */
-import { PRIMARY_SCHOOL_TYPES, ROLE_MAP, ROLE_SOURCE_CODES, SECONDARY_SCHOOL_TYPES } from './enums'
+import { PRIMARY_SCHOOL_TYPES, ROLE_MAP, ROLE_SOURCE_CODES, ROLES_NOT_MIGRATED, SECONDARY_SCHOOL_TYPES, STATE_SCOPE_SOURCE_ROLES } from './enums'
 import { enumKey, flag, integer, ok, reject, squash, stamps, text, type Outcome, type Staged } from './common'
 import { decidePassword, type IcHasher, type ResetReason } from './secrets'
 
@@ -41,7 +41,7 @@ export interface UserValues {
 
 export interface ScopeValues {
   role: string
-  level: 'national' | 'district'
+  level: 'national' | 'state' | 'district'
   state_code: string | null
   district_code: string | null
   school_id: null
@@ -85,6 +85,16 @@ export function gradeFromClassLabel(kelas: string | null, schoolType: string | n
   return null
 }
 
+/** Report label of a role that was rejected: the role name when it is one of `ROLES_NOT_MIGRATED`, else `other` (never raw text). */
+export function roleRejectLabel(raw: string | null | undefined): string {
+  const k = enumKey(raw)
+  return k !== null && ROLES_NOT_MIGRATED.includes(k) ? k : 'other'
+}
+
+/**
+ * A role outside `ROLE_MAP` is UNKNOWN_ENUM on `role` (the code is stored only when it looks like one). A role in
+ * `ROLES_NOT_MIGRATED` takes the same path, so reconciliation counts it as rejected; the loader counts it by name.
+ */
 export function transformUser(row: Staged, ctx: UserContext): Outcome<UserOutput> {
   const roleKey = enumKey(row.role)
   const role = roleKey === null ? undefined : ROLE_MAP[roleKey]
@@ -129,6 +139,14 @@ export function transformUser(row: Staged, ctx: UserContext): Outcome<UserOutput
   let ppdUnscoped = false
   if (role === 'admin') {
     scope = { role, level: 'national', state_code: null, district_code: null, school_id: null }
+  } else if (role === 'ppd_officer' && roleKey !== null && STATE_SCOPE_SOURCE_ROLES.includes(roleKey)) {
+    // A JPN officer: a ppd_officer scoped to the state of the school (ck_user_scopes_shape: state needs state_code).
+    const s = ctx.school
+    if (s !== null && s.state !== null) {
+      scope = { role, level: 'state', state_code: s.state, district_code: null, school_id: null }
+    } else {
+      ppdUnscoped = true
+    }
   } else if (role === 'ppd_officer') {
     const s = ctx.school
     if (s !== null && s.state !== null && s.district !== null) {

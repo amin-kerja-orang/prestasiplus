@@ -331,10 +331,18 @@ async function derivedCounts({ pool, source }: CheckContext): Promise<StatCheck[
   const attempts = await n(`SELECT count(*)::int AS n FROM exam_attempts a WHERE a.legacy_source = $1${await survivorSql(pool, 'exam_attempts', 'a')}`)
 
   // Exact rules of the transform: a national scope for every admin, a district scope for a ppd_officer whose school has a
-  // state and a district (`transformUser`). The inputs are the loaded rows themselves, so deleting scope rows is caught.
+  // state and a district, a state scope for a ppd_officer that came from the staged role `jpn_officer` when its school has a
+  // state (`transformUser`). The inputs are the loaded rows themselves, so deleting scope rows is caught. The staged role is
+  // read only to tell a JPN officer from a PPD officer; without it every officer is judged by the district rule.
+  const stagedUsers = await exists(pool, STAGING_SCHEMA, 'users')
+  const jpn = stagedUsers
+    ? `coalesce(lower(regexp_replace(btrim(su.role::text), '[\\s-]+', '_', 'g')) = 'jpn_officer', false)`
+    : 'false'
   const scopeRule = await n(
     `SELECT count(*)::int AS n FROM users x JOIN user_roles r ON r.user_id = x.id LEFT JOIN schools s ON s.id = x.school_id
-     WHERE x.legacy_source = $1${await user('x')} AND (r.role = 'admin' OR (r.role = 'ppd_officer' AND s.state IS NOT NULL AND s.district IS NOT NULL))`,
+     ${stagedUsers ? `LEFT JOIN ${S}."users" su ON su.id::text = x.legacy_id` : ''}
+     WHERE x.legacy_source = $1${await user('x')}
+       AND (r.role = 'admin' OR (r.role = 'ppd_officer' AND s.state IS NOT NULL AND (${jpn} OR s.district IS NOT NULL)))`,
   )
   const out: StatCheck[] = [
     {
@@ -350,7 +358,7 @@ async function derivedCounts({ pool, source }: CheckContext): Promise<StatCheck[
       expected: scopeRule,
       actual: scopes,
       status: scopes === scopeRule ? 'ok' : 'mismatch',
-      detail: 'one national scope per admin, one district scope per ppd_officer whose school has a state and a district',
+      detail: 'one national scope per admin, one district scope per ppd_officer whose school has a state and a district, one state scope per JPN officer whose school has a state',
     },
   ]
 

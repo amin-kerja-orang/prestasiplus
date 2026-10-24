@@ -31,7 +31,7 @@ export const CHALLENGE_TYPE_MAP: Readonly<Record<string, string>> = {
   streak: 'streak',
   time_spent: 'time_spent',
 }
-const challengeType = enumMapper('type', CHALLENGE_TYPE_MAP)
+const challengeType = enumMapper('challenge_type', CHALLENGE_TYPE_MAP)
 
 /** A platform challenge has no author and no class; the others are teacher challenges (no v2 target, GAP-11). */
 export function isPlatformChallenge(row: Staged): boolean {
@@ -39,25 +39,15 @@ export function isPlatformChallenge(row: Staged): boolean {
 }
 
 /**
- * The target of a challenge from its criteria. Only a JSON object with a positive integer `target_value` or
- * `target` is read (Perlu pengesahan: the real shape of `challenges.criteria`); anything else is null.
+ * The target of a challenge from `challenges.target_value` (a numeric column on .cloud, staged as text, e.g. `5` or
+ * `5.00`). Only a whole number from 1 to 1,000,000 is accepted (the v2 column is an integer with `>= 1`); anything
+ * else, including a fraction, is null.
  */
-export function criteriaTarget(criteria: string | null | undefined): number | null {
-  const t = text(criteria)
-  if (t === null || t.length > 4000 || !t.startsWith('{')) return null
-  try {
-    const parsed: unknown = JSON.parse(t)
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null
-    const obj = parsed as Record<string, unknown>
-    for (const key of ['target_value', 'target']) {
-      const v = obj[key]
-      if (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 1_000_000) return v
-      if (typeof v === 'string' && /^\d{1,7}$/.test(v) && Number(v) >= 1) return Number(v)
-    }
-  } catch {
-    return null
-  }
-  return null
+export function challengeTarget(raw: string | null | undefined): number | null {
+  const t = text(raw)
+  if (t === null || !/^\d{1,7}(\.0+)?$/.test(t)) return null
+  const n = Number(t)
+  return Number.isInteger(n) && n >= 1 && n <= 1_000_000 ? n : null
 }
 
 export interface ChallengeValues {
@@ -78,10 +68,10 @@ export interface ChallengeValues {
 export function transformChallenge(row: Staged): Outcome<ChallengeValues> {
   const title = squash(row.title)
   if (title === null || Array.from(title).length > 200) return invalid('title')
-  const type = challengeType(row.type)
+  const type = challengeType(row.challenge_type)
   if (!type.ok) return type
-  if (type.value === null) return invalid('type')
-  const target = criteriaTarget(row.criteria)
+  if (type.value === null) return invalid('challenge_type')
+  const target = challengeTarget(row.target_value)
   if (target === null) return invalid('target_value')
   return ok({
     title,

@@ -8,7 +8,7 @@ import { ApplyGuardError } from '../../../src/migration/kit/apply-guard'
 import { rollbackLegacy, RollbackRefusedError, runVerify } from '../../../src/migration/verify'
 import { countAll } from '../staging/helpers'
 import type { ActivityHarness } from '../activity/helpers'
-import { bootActivity, legacyTableCounts, migrateAll } from './helpers-verify'
+import { bootActivity, legacyTableCounts, migrateAll, STANDALONE_NOT_RUN } from './helpers-verify'
 
 let h: ActivityHarness
 let db = ''
@@ -93,7 +93,7 @@ describe('dry-run', () => {
     expect(report.status).toBe('succeeded')
     expect(report.database).toBe(db)
     const users = report.tables.find((t) => t.table === 'users')
-    expect(users?.deleted).toBe(11)
+    expect(users?.deleted).toBe(12)
     expect(report.idMapDeleted).toBeGreaterThan(0)
     expect(await legacyTableCounts(h)).toEqual(afterLoad)
     expect(await h.count('etl_id_map', `legacy_source = 'cloud'`)).toBe(report.idMapDeleted)
@@ -197,7 +197,7 @@ describe('rollback (AC3)', () => {
     expect(again.tables.every((t) => t.deleted === 0)).toBe(true)
     await migrateAll(h)
     const report = await runVerify({ pool: h.env.pool, env: h.runEnv, source: 'cloud' })
-    expect(report.entities.filter((e) => e.status !== 'ok')).toEqual([])
+    expect(report.entities.filter((e) => e.status !== 'ok' && !STANDALONE_NOT_RUN(e))).toEqual([])
     expect(report.status).toBe('pass')
   }, 120_000)
 })

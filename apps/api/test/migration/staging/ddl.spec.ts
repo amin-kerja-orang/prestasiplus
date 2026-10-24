@@ -17,16 +17,44 @@ describe('staging_cloud.sql', () => {
     expect(lf(readFileSync(DDL_FILE, 'utf8'))).toBe(renderDdl())
   })
 
-  it('has 83 migrated or staged tables and 35 archived question tables, with the final paper table names', () => {
-    expect(TABLES.filter((t) => t.group === 'staging')).toHaveLength(83)
-    expect(TABLES.filter((t) => t.group === 'archive')).toHaveLength(35)
+  it('has 89 migrated or staged tables and 38 archived question tables, with the final paper table names', () => {
+    expect(TABLES.filter((t) => t.group === 'staging')).toHaveLength(89)
+    expect(TABLES.filter((t) => t.group === 'archive')).toHaveLength(38)
+    expect(TABLES).toHaveLength(127)
     expect(findTable('exam_papers')?.group).toBe('archive')
     expect(findTable('teacher_reference_papers')?.group).toBe('archive')
     expect(findTable('question_sets')?.group).toBe('staging')
-    // framework, lookup and derived tables are not mirrored
-    for (const name of ['cache', 'jobs', 'personal_access_tokens', 'answer_modes', 'exam_boards', 'school_battle_rankings']) {
+    // framework, derived and backup tables are not mirrored (`_dedup_map` is pending the half AM answer)
+    for (const name of ['cache', 'jobs', 'migrations', 'personal_access_tokens', 'school_battle_rankings', '_dedup_map', 'question_options_prefix_bak_20260819']) {
       expect(findTable(name), name).toBeUndefined()
     }
+  })
+
+  it('mirrors the 9 lookup tables (id and slug only, no timestamps) for id to slug joins', () => {
+    const staged = ['attempt_statuses', 'paper_statuses', 'question_statuses', 'answer_modes', 'answer_key_kinds', 'stimulus_kinds']
+    const archived = ['exam_boards', 'exam_types', 'selection_rules']
+    for (const [names, group] of [[staged, 'staging'], [archived, 'archive']] as const) {
+      for (const name of names) {
+        const t = findTable(name)
+        expect(t?.group, name).toBe(group)
+        expect(t?.columns.map((c) => c.name), name).toEqual(['id', 'slug'])
+      }
+    }
+  })
+
+  it('uses the real .cloud column names for the renamed columns', () => {
+    const cols = (name: string) => findTable(name)?.columns.map((c) => c.name) ?? []
+    expect(cols('subjects')).toEqual(expect.arrayContaining(['name_bm', 'name_en']))
+    expect(cols('subjects')).not.toContain('name')
+    expect(cols('exam_attempts')).toContain('status_id')
+    expect(findTable('exam_attempts')?.columns.find((c) => c.name === 'status_id')?.fk).toBe('attempt_statuses')
+    expect(cols('questions')).toContain('type')
+    expect(cols('source_papers')).toEqual(expect.arrayContaining(['file_hash', 'exam_board_id', 'exam_type_id']))
+    expect(cols('exam_questions')).toEqual(expect.arrayContaining(['source_paper_id', 'exam_paper_id', 'paper_section_id', 'status_id']))
+    expect(cols('exam_paper_questions')).not.toContain('exam_paper_id')
+    const pivot = findTable('spm_set_question')
+    expect(pivot?.pk).toBeNull()
+    expect(pivot?.columns.map((c) => c.name)).toEqual(['spm_set_id', 'question_id', 'position'])
   })
 
   it('declares only foreign keys that point at a spec table, and enum columns are text', () => {

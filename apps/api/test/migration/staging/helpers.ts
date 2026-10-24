@@ -86,3 +86,14 @@ export function capture() {
 export function stagingEnv(db: { name: string }, extra: Record<string, string> = {}): Record<string, string> {
   return { NODE_ENV: 'test', PP_ALLOW_STAGING_RESET: '1', PP_STAGING_DB_ALLOWLIST: db.name, ...extra }
 }
+
+/**
+ * A fresh folder under `<repo>/.migration-out` (git-ignored) for the restricted id file that `runCore --apply` writes
+ * (Q11). Removed by the global teardown (`test/support/global-setup.ts`), also after a failed assertion.
+ */
+export function testOutDir(): string {
+  const root = join(REPO_ROOT, '.migration-out')
+  mkdirSync(root, { recursive: true })
+  const path = mkdtempSync(join(root, 'core-test-'))
+  return path
+}

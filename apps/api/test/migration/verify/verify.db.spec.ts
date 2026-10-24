@@ -6,7 +6,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ENTITY_MATRIX, runVerify, writeVerifyReport, type VerifyReport } from '../../../src/migration/verify'
-import { bootActivity, migrateAll, tempOutDir } from './helpers-verify'
+import { bootActivity, migrateAll, STANDALONE_NOT_RUN, tempOutDir } from './helpers-verify'
 import { PII_COLUMNS, type ActivityHarness } from '../activity/helpers'
 
 let h: ActivityHarness
@@ -31,13 +31,13 @@ describe('pass on the fixture', () => {
   let report: VerifyReport
   it('is green with one row per registered entity', async () => {
     report = await verify()
-    const bad = report.entities.filter((e) => e.status !== 'ok').map((e) => `${e.entity}: ${e.status} ${e.note ?? ''}`)
+    const bad = report.entities.filter((e) => e.status !== 'ok' && !STANDALONE_NOT_RUN(e)).map((e) => `${e.entity}: ${e.status} ${e.note ?? ''}`)
     const badChecks = report.checks.filter((c) => c.status === 'mismatch').map((c) => `${c.name}: ${c.detail ?? ''}`)
     expect({ bad, badChecks }).toEqual({ bad: [], badChecks: [] })
     expect(report.status).toBe('pass')
     expect(report.entities.map((e) => e.entity)).toEqual(ENTITY_MATRIX.map((m) => m.entity))
     expect(report.runIds.length).toBeGreaterThan(0)
-    for (const e of report.entities.filter((x) => x.entity !== 'wallet_ledger_drift')) expect(e.targetCount, e.entity).toBe(e.loaded)
+    for (const e of report.entities.filter((x) => x.entity !== 'wallet_ledger_drift' && !STANDALONE_NOT_RUN(x))) expect(e.targetCount, e.entity).toBe(e.loaded)
   })
 
   it('uses the runs it is given, and the dry-runs never count', async () => {

@@ -71473,7 +71473,7 @@
           "question-quality"
         ],
         "summary": "Quality dashboard",
-        "description": "Admin only. Every figure is computed from the question store. Bands: Cemerlang 76 to 100, Baik 51 to 75, Lemah 26 to 50, Kritikal 0 to 25 (BR-M04-21). `actionList` holds non-legacy rows scoring 50 or less, id descending; `legacyGeneric` counts scored rows with sourceType ai_generated.",
+        "description": "Admin only. Every figure is computed from the question store. Bands: Cemerlang 76 to 100, Baik 51 to 75, Lemah 26 to 50, Kritikal 0 to 25 (BR-M04-21). `actionList` holds non-legacy rows scoring 50 or less, id descending, at most 200 rows (QLOAD); `legacyGeneric` counts scored rows with sourceType ai_generated.",
         "responses": {
           "200": {
             "description": "The summary.",
@@ -71560,6 +71560,16 @@
           },
           "403": {
             "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: another quality audit is still running (\"Audit kualiti sedang berjalan.\").",
             "content": {
               "application/json": {
                 "schema": {

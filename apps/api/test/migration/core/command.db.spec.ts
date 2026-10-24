@@ -1,6 +1,6 @@
 /**
  * `migrate:core` command against a real PostgreSQL on the BE-35 fixture: the git sha reaches `etl_runs`, and the users
- * are read in full when there are more than one page (the fixture has 13 users, so ids 9 -> 10 cross a digit boundary
+ * are read in full when there are more than one page (the fixture has 15 users, so ids 9 -> 10 cross a digit boundary
  * with a page size of 4; a lexicographic page order skipped users there).
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -40,7 +40,7 @@ const reconOf = (r: { recon: { entity: string; sourceCount: number; eligibleCoun
 describe('migrate:core reads every staged row', () => {
   it('reads all users and all classrooms with a page size below the row count, same as the default page size', async () => {
     const staged = Number((await q<{ n: string }>('select count(*)::text n from staging_cloud.users'))[0]?.n)
-    expect(staged).toBe(13)
+    expect(staged).toBe(15)
     const small = await runCore({ pool: env.pool, env: coreEnv, source: 'cloud', asOf: AS_OF, mode: 'dry-run', batchSize: 2, pageSize: 4 })
     const big = await runCore({ pool: env.pool, env: coreEnv, source: 'cloud', asOf: AS_OF, mode: 'dry-run', batchSize: 2 })
     expect(small.report.status).toBe('succeeded')
