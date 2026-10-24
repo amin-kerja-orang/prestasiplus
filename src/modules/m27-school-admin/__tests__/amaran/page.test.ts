@@ -317,10 +317,20 @@ describe('states', () => {
     expect(api.fetchSchoolRisk).not.toHaveBeenCalled()
   })
 
-  it('shows the server message for another failure', async () => {
-    const w = await mountPage(apiError(500, 'SERVER_ERROR', 'Ralat pelayan'))
-    expect(text(w, 'am-error')).toContain('Ralat pelayan')
+  it.each([
+    [500, 'SERVER_ERROR', 'Internal server error'],
+    [503, 'SERVER_ERROR', 'HTTP 503'],
+    [422, 'VALIDATION_ERROR', 'The scope must be school, district or state.'],
+  ])('shows the generic BM line for a %i (SW11-08)', async (status, code, message) => {
+    const w = await mountPage(apiError(status, code, message))
+    expect(text(w, 'am-error')).toContain('Ralat berlaku. Sila cuba lagi.')
+    expect(text(w, 'am-error')).not.toContain(message)
     expect(useRouteOutcome().value).toBeNull()
+  })
+
+  it('shows the BM rate-limit line for a 429', async () => {
+    const w = await mountPage(apiError(429, 'RATE_LIMITED', 'Too Many Attempts.'))
+    expect(text(w, 'am-error')).toContain('Terlalu banyak percubaan. Cuba sebentar lagi.')
   })
 
   it('shows the spinner while loading', async () => {

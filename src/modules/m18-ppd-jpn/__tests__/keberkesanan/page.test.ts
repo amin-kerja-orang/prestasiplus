@@ -309,9 +309,10 @@ describe('loading, error and 403', () => {
     expect(has(w, 'kb-tiles')).toBe(false)
   })
 
-  it('shows the server message with "Cuba Semula" on a 500 and reloads on retry', async () => {
-    const w = await mountPage(apiError(500, 'Ralat pelayan.'))
-    expect(text(w, 'kb-error')).toContain('Ralat pelayan.')
+  it('shows the generic BM line with "Cuba Semula" on a 500 and reloads on retry', async () => {
+    const w = await mountPage(apiError(500, 'Internal server error'))
+    expect(text(w, 'kb-error')).toContain('Ralat berlaku. Sila cuba lagi.')
+    expect(text(w, 'kb-error')).not.toContain('Internal server error')
     expect(has(w, 'kb-tiles')).toBe(false)
     expect(useRouteOutcome().value).toBeNull()
     api.fetchAmaranEffectiveness.mockResolvedValue(result())
@@ -322,6 +323,11 @@ describe('loading, error and 403', () => {
     expect(api.fetchAmaranEffectiveness).toHaveBeenCalledTimes(2)
     expect(has(w, 'kb-tiles')).toBe(true)
     expect(has(w, 'kb-error')).toBe(false)
+  })
+
+  it('shows the BM rate-limit line on a 429', async () => {
+    const w = await mountPage(apiError(429, 'Too Many Attempts.'))
+    expect(text(w, 'kb-error')).toContain('Terlalu banyak percubaan. Cuba sebentar lagi.')
   })
 
   it.each([['an empty message', ''], ['the bare client fallback', 'HTTP 500']])(
