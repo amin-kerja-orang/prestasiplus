@@ -9,7 +9,7 @@ import type pg from 'pg'
 import { STAGING_SCHEMA } from '../ddl/spec'
 import { ApplyGuardError } from '../kit/apply-guard'
 import { hashInput, tableDigest } from '../kit/sql'
-import { ApplyRefusedError, RunInProgressError, Runner, type AnyEntityStep, type RunReport } from '../kit/runner'
+import { Runner, type AnyEntityStep, type RunReport } from '../kit/runner'
 import type { RunMode } from '../kit/types'
 import { prepareOutputDir } from '../profile'
 import { DUMMY_ARGON2_HASH, NOT_A_HASH, dummyBcryptHash } from '../anonymise/passwords'
@@ -136,6 +136,16 @@ function noteRosterHashes(core: CoreContext, mode: RunMode): void {
 }
 
 /**
+ * Q11: the login-gap and must-reset counters are always in the report, 0 when none (night check C5 needs 0, not absent). They
+ * start here, not in the users step, because a resume that skips every users batch never runs that step.
+ */
+function noteLoginCounters(core: CoreContext): void {
+  for (const k of ['nullHashAccounts', 'flaggedWithoutLoginId', 'must_reset.roster_account', 'must_reset.non_bcrypt', 'must_reset.shared_default']) {
+    core.notes.count(k, 0)
+  }
+}
+
+/**
  * Q11, after a resumed or interrupted apply: the notes only saw the batches this process loaded (a resume starts after the
  * checkpoint, and a failed batch was rolled back after its ids were noted). So the two counts and the id lists are rebuilt
  * from the committed v2 `users` rows (read-only), which is the truth whatever the batch history was. Also rebuilt:
@@ -182,24 +192,20 @@ const LEDGER_NOTES = /^(must_reset\..+|users\.role_rejected\..+|nullHashAccounts
 
 /**
  * Merges the report counters into the apply run's `counters` JSON under `notes` (`jsonb_set`, so the runner's per-entity
- * counts stay). The row is the one named by `runId` when the runner returned a report; without a report (a failed run) it
- * is the latest apply row of the input hash, i.e. the one that just failed.
+ * counts stay). The row is the one this invocation started or resumed (`Runner` `onRunStart`, or the report's `runId`).
  */
-async function saveNotesToRun(
-  pool: Pick<pg.Pool, 'query'>,
-  core: CoreContext,
-  target: { runId: string } | { inputHash: string },
-): Promise<void> {
+async function saveNotesToRun(pool: Pick<pg.Pool, 'query'>, core: CoreContext, runId: string): Promise<void> {
   const notes = Object.fromEntries([...core.notes.counters].filter(([k, v]) => LEDGER_NOTES.test(k) && Number.isFinite(v)))
-  const [where, key] =
-    'runId' in target
-      ? ['id = $1::bigint', target.runId]
-      : [`id = (SELECT max(id) FROM etl_runs WHERE mode = 'apply' AND input_hash = $1)`, target.inputHash]
   await pool.query(
-    `UPDATE etl_runs SET counters = jsonb_set(coalesce(counters, '{}'::jsonb), '{notes}', $2::jsonb)
-     WHERE ${where}`,
-    [key, JSON.stringify(notes)],
+    `UPDATE etl_runs SET counters = jsonb_set(coalesce(counters, '{}'::jsonb), '{notes}', $2::jsonb) WHERE id = $1::bigint`,
+    [runId, JSON.stringify(notes)],
   )
+}
+
+/** True when the run has committed at least one users batch (the checkpoint is saved in the batch's own transaction). */
+async function hasUsersCheckpoint(pool: Pick<pg.Pool, 'query'>, runId: string): Promise<boolean> {
+  const res = await pool.query(`SELECT 1 FROM etl_checkpoints WHERE run_id = $1::bigint AND entity = 'users' AND batch > 0`, [runId])
+  return (res.rowCount ?? 0) > 0
 }
 
 /** Runs the whole command through the kit runner (dry-run by default; apply needs a passing dry-run on the same input). */
@@ -208,6 +214,7 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
   const core = new CoreContext(coreOptions)
   await assertNotSyntheticInProduction(options.pool, options.env)
   noteRosterHashes(core, mode)
+  noteLoginCounters(core)
   const steps = buildCoreSteps(core)
   const runSteps = options.transformSteps ? options.transformSteps(steps) : steps
   const defaults = createHash('sha256').update([...core.defaultHashes].sort().join('\n')).digest('hex')
@@ -225,31 +232,31 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
   const writeFile = (runId: string): string | undefined =>
     writeRestrictedIds(core.notes.restricted, { runId, generatedAt: new Date().toISOString() }, out)
   let report: RunReport
+  let startedRunId: string | undefined
   try {
-    report = await runner.run({ mode, steps: runSteps, inputHash, gitSha, batchSize })
+    report = await runner.run({ mode, steps: runSteps, inputHash, gitSha, batchSize, onRunStart: (id) => void (startedRunId = id) })
   } catch (err) {
     // An apply that stopped after committing user batches still needs its list (best effort; the original error wins).
-    // A refused apply (no passing dry-run) or a held lock stops before this process has a run row: nothing was loaded, and the
-    // latest apply row of the input hash belongs to an earlier run, so its notes must stay as they are.
-    const noRunRow = err instanceof ApplyRefusedError || err instanceof RunInProgressError
-    if (mode === 'apply' && !noRunRow && core.notes.counters.has('nullHashAccounts')) {
+    // A refused apply (no passing dry-run), a held lock or a refused guard stops before this invocation has a run row
+    // (`startedRunId` unset): nothing was loaded, and the latest apply row of the input hash belongs to an earlier run, so its
+    // notes must stay as they are. Otherwise a users batch is committed when the run's checkpoint says so, whether this process or
+    // an earlier one (a resume that skipped every users batch) committed it.
+    if (mode === 'apply' && startedRunId !== undefined) {
+      const runId = startedRunId
       try {
-        await recountFromCommitted(options.pool, core)
-        try {
-          // The failed batch was rolled back after its role rejects were noted: recount them from the committed rejects of the
-          // failed run (the latest apply row of this input, as `saveNotesToRun` below). Best effort: the id file comes first.
-          const failed = await options.pool.query<{ id: string | null }>(
-            `SELECT max(id)::text AS id FROM etl_runs WHERE mode = 'apply' AND input_hash = $1`,
-            [inputHash],
-          )
-          const failedRunId = failed.rows[0]?.id
-          if (failedRunId) await rebuildCoreNotes(options.pool, core, failedRunId)
-        } catch {
-          // the role counts stay as noted by this process
+        if (await hasUsersCheckpoint(options.pool, runId)) {
+          await recountFromCommitted(options.pool, core)
+          try {
+            // The failed batch was rolled back after its role rejects were noted: recount them from the committed rejects
+            // of the failed run. Best effort: the id file comes first.
+            await rebuildCoreNotes(options.pool, core, runId)
+          } catch {
+            // the role counts stay as noted by this process
+          }
+          const file = writeFile('interrupted')
+          if (file !== undefined) core.options.warn?.(`restricted id file (mode 0600, delete within 7 days): ${file}`)
+          await saveNotesToRun(options.pool, core, runId)
         }
-        const file = writeFile('interrupted')
-        if (file !== undefined) core.options.warn?.(`restricted id file (mode 0600, delete within 7 days): ${file}`)
-        await saveNotesToRun(options.pool, core, { inputHash })
       } catch {
         // nothing more can be done here
       }
@@ -265,7 +272,7 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
       await recountFromCommitted(options.pool, core)
       await rebuildCoreNotes(options.pool, core, report.runId)
     }
-    await saveNotesToRun(options.pool, core, { runId: report.runId })
+    await saveNotesToRun(options.pool, core, report.runId)
     restrictedFile = writeFile(report.runId)
   }
   return { report, core, restrictedFile }

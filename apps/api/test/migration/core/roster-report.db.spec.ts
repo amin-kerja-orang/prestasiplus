@@ -320,3 +320,98 @@ describe('Q10 after an interrupted and resumed apply: role rejects', () => {
     expect(Object.keys(saved).filter((k) => k.startsWith('users.role_rejected')).sort()).toEqual(['users.role_rejected.agent', 'users.role_rejected.other'])
   }, 300_000)
 })
+
+/** A fresh staging database set up like the other Q11 specs. */
+async function freshEnv(): Promise<StagingDb> {
+  const e = await createStagingDb()
+  await loadStaging(e.pool, new DirReader(FIXTURE_DIR), { env: stagingEnv(e.db) })
+  await runSeeds([schoolPackagesSeed, curriculumSeed], { prisma: e.db.prisma })
+  await e.pool.query(`update staging_cloud.users set kelas = '4 Amanah' where role = 'pelajar'`)
+  await e.pool.query(`update staging_cloud.education_levels set name_bm = 'Darjah 1' where id = 1`)
+  await e.pool.query(`update staging_cloud.users set email = null, username = null where id in (5, 10)`)
+  return e
+}
+
+describe('Q10/Q11 when every users batch was committed before the failure', () => {
+  let envA: StagingDb
+  const dirsA: string[] = []
+  const newDir = (): string => {
+    const d = mkdtempSync(join(REPO_ROOT, '.migration-out', 'q10-allusers-'))
+    dirsA.push(d)
+    return d
+  }
+  beforeAll(async () => {
+    envA = await freshEnv()
+  }, 300_000)
+  afterAll(async () => {
+    for (const d of dirsA) rmSync(d, { recursive: true, force: true })
+    await envA?.close()
+  })
+
+  it('a resume that skips every users batch keeps the report counters out of the entity counters and the notes complete', async () => {
+    const base = { pool: envA.pool, env: baseEnv, source: 'cloud' as const, asOf: AS_OF, batchSize: 2 }
+    expect((await runCore({ ...base, mode: 'dry-run' })).report.status).toBe('succeeded')
+    await expect(runCore({ ...base, mode: 'apply', outDir: newDir(), transformSteps: failOnce('classrooms', 1) })).rejects.toThrow('injected failure')
+
+    const resumed = await runCore({ ...base, mode: 'apply', outDir: newDir() })
+    expect(resumed.report.status).toBe('succeeded')
+
+    // `notes` is not an entity
+    expect.soft(resumed.report.counters).not.toHaveProperty('notes')
+    for (const [entity, c] of Object.entries(resumed.report.counters)) expect.soft(typeof c.read, entity).toBe('number')
+    expect.soft(Object.keys(resumed.report.counters)).toContain('users')
+
+    // the always-present counters survive the notes overwrite
+    const saved = expectNumbersOnly((await ledgerNotes(envA.pool, resumed.report.runId)).notes)
+    for (const k of ['must_reset.roster_account', 'must_reset.non_bcrypt', 'must_reset.shared_default', 'nullHashAccounts', 'flaggedWithoutLoginId']) {
+      expect.soft(saved, k).toHaveProperty([k])
+    }
+    expect.soft(saved).toMatchObject({ nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1 })
+  }, 300_000)
+})
+
+describe('Q11 recovery when the resume fails after every users batch was skipped', () => {
+  let envB: StagingDb
+  const dirsB: string[] = []
+  const newDir = (): string => {
+    const d = mkdtempSync(join(REPO_ROOT, '.migration-out', 'q10-skipfail-'))
+    dirsB.push(d)
+    return d
+  }
+  const idFiles = (d: string): string[] => readdirSync(d).filter((f) => f.startsWith('core-login-gaps-'))
+  beforeAll(async () => {
+    envB = await freshEnv()
+  }, 300_000)
+  afterAll(async () => {
+    for (const d of dirsB) rmSync(d, { recursive: true, force: true })
+    await envB?.close()
+  })
+
+  it('writes the id file and saves the notes although no users batch ran in the failing process', async () => {
+    const base = { pool: envB.pool, env: baseEnv, source: 'cloud' as const, asOf: AS_OF, batchSize: 2 }
+    expect((await runCore({ ...base, mode: 'dry-run' })).report.status).toBe('succeeded')
+    const out1 = newDir()
+    await expect(runCore({ ...base, mode: 'apply', outDir: out1, transformSteps: failOnce('classrooms', 1) })).rejects.toThrow('injected failure')
+    // Simulate a process that died hard after the users commits, before any file or notes were written.
+    for (const f of idFiles(out1)) rmSync(join(out1, f))
+    await envB.pool.query(`update etl_runs set counters = counters - 'notes' where mode = 'apply'`)
+
+    const out2 = newDir()
+    await expect(runCore({ ...base, mode: 'apply', outDir: out2, transformSteps: failOnce('classrooms', 1) })).rejects.toThrow('injected failure')
+    const written = idFiles(out2)
+    expect(written, 'the problem accounts are committed, so the failed resume still writes their list').toHaveLength(1)
+    const body = JSON.parse(readFileSync(join(out2, written[0] as string), 'utf8')) as { ids: Record<string, string[]> }
+    expect(body.ids).toEqual({ flaggedWithoutLoginId: ['3', '10'], nullHashAccounts: ['9', '10', '11'] })
+    const run = await envB.pool.query<{ id: string }>(`select id::text from etl_runs where mode = 'apply' order by id desc limit 1`)
+    const notes = expectNumbersOnly((await ledgerNotes(envB.pool, run.rows[0]?.id as string)).notes)
+    expect(notes).toMatchObject({ nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1 })
+
+    // The success path covers the same state through resumedBatches > 0.
+    const out3 = newDir()
+    await envB.pool.query(`update etl_runs set counters = counters - 'notes' where mode = 'apply'`)
+    const done = await runCore({ ...base, mode: 'apply', outDir: out3 })
+    expect(done.report.resumedBatches).toBeGreaterThan(0)
+    expect(idFiles(out3)).toHaveLength(1)
+    expect(expectNumbersOnly((await ledgerNotes(envB.pool, done.report.runId)).notes)).toMatchObject({ nullHashAccounts: 3, flaggedWithoutLoginId: 2 })
+  }, 300_000)
+})
