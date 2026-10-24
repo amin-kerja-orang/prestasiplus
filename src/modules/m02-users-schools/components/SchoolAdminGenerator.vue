@@ -89,7 +89,7 @@ function metaLine(s: SchoolSummary): string {
   <div ref="root" class="flex flex-col gap-4" data-testid="school-admin-generator">
     <!-- FR-M02-27: search -->
     <DsFormField v-if="!school" native for="gen-search" label="Cari Sekolah" required>
-      <div class="relative">
+      <div>
         <UInput
           id="gen-search"
           :model-value="term"
@@ -103,32 +103,39 @@ function metaLine(s: SchoolSummary): string {
           @focus="picker.onFocus()"
         />
         <span v-if="searching" class="sr-only" data-testid="gen-loading">Mencari...</span>
-        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="gen-dropdown">
-          <UButton
-            v-for="item in results"
-            :key="item.id"
-            type="button"
-            block
-            color="neutral"
-            variant="ghost"
-            class="h-auto min-h-11 justify-start text-start whitespace-normal"
-            data-testid="gen-result"
-            @click="picker.select(item)"
-          >
-            <span class="flex w-full min-w-0 flex-col">
-              <span class="text-label text-highlighted">{{ item.name }}</span>
-              <span
-                class="flex flex-wrap items-center justify-between gap-x-3 text-caption text-muted"
-              >
-                <span>{{ metaLine(item) }}</span>
-                <span>{{ item.code === '' ? 'Tiada kod' : item.code }}</span>
+        <!-- In flow, not `behavior="float"`: the form section card clips its overflow (RS5-M1, DV-M02-27). -->
+        <div v-if="showDropdown" class="max-h-64 overflow-y-auto">
+          <DsPanel padding="none" data-testid="gen-dropdown">
+            <UButton
+              v-for="item in results"
+              :key="item.id"
+              type="button"
+              block
+              color="neutral"
+              variant="ghost"
+              class="h-auto min-h-11 justify-start text-start whitespace-normal"
+              data-testid="gen-result"
+              @click="picker.select(item)"
+            >
+              <span class="flex w-full min-w-0 flex-col">
+                <span class="text-label text-highlighted">{{ item.name }}</span>
+                <span
+                  class="flex flex-wrap items-center justify-between gap-x-3 text-caption text-muted"
+                >
+                  <span>{{ metaLine(item) }}</span>
+                  <span>{{ item.code === '' ? 'Tiada kod' : item.code }}</span>
+                </span>
               </span>
-            </span>
-          </UButton>
-          <p v-if="showEmpty" class="p-3 text-center text-label text-muted" data-testid="gen-empty">
-            Tiada sekolah dijumpai
-          </p>
-        </DsPanel>
+            </UButton>
+            <p
+              v-if="showEmpty"
+              class="p-3 text-center text-label text-muted"
+              data-testid="gen-empty"
+            >
+              Tiada sekolah dijumpai
+            </p>
+          </DsPanel>
+        </div>
       </div>
     </DsFormField>
 
