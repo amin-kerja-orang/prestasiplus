@@ -121,8 +121,10 @@ export const iconBundle = {
 const disabledPrimary = [
   'disabled:bg-none disabled:bg-elevated disabled:text-dimmed disabled:opacity-100 disabled:shadow-none disabled:hover:brightness-100',
   'aria-disabled:bg-none aria-disabled:bg-elevated aria-disabled:text-dimmed aria-disabled:opacity-100 aria-disabled:shadow-none aria-disabled:hover:brightness-100',
-  // Dark: the page layer (inset look) gives the dimmed label 5.1:1; elevated gave 3.85:1.
+  // Dark: the page layer (inset look) gives the dimmed label 5.3:1; elevated gave 3.85:1.
   'dark:disabled:bg-muted dark:aria-disabled:bg-muted',
+  // Learner light: dimmed (#6f7585) on #eceef2 is only 3.97:1, the muted step (#565c6b) is 6:1.
+  'learner:disabled:text-muted learner:aria-disabled:text-muted',
 ].join(' ')
 /** Same for the staff tonal-primary default (the learner tonal button keeps the stock disabled look). */
 const disabledPrimaryStaff = [
@@ -211,9 +213,11 @@ export const uiConfig = {
       { color: 'primary', variant: ['soft', 'ghost', 'link'], class: 'text-primary-t' },
       // Disabled primary: a flat neutral fill with the dimmed label at full opacity. The 40% opacity
       // on the gradient left the label at 1.6-1.9:1; flat, shadow-free and not-allowed still reads
-      // as "off" and the label keeps >= 4.6:1 (light) / ~5:1 (dark).
-      { color: 'primary', variant: 'solid', class: disabledPrimary },
-      { color: 'primary', variant: 'soft', class: disabledPrimaryStaff },
+      // as "off" and the label keeps >= 4.6:1 (staff light), 5.3:1 (dark), 6:1 (learner light).
+      // Not while loading: Nuxt UI also sets `disabled` then, and a busy button keeps its fill
+      // (stock 40% dimming) with the spinner.
+      { color: 'primary', variant: 'solid', loading: false, class: disabledPrimary },
+      { color: 'primary', variant: 'soft', loading: false, class: disabledPrimaryStaff },
     ],
   },
 

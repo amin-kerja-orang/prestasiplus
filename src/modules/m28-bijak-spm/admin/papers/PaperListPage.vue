@@ -6,7 +6,15 @@ import { useRouter } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
-import { DsDataTable, DsLoadError, DsPage, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
+import {
+  DsDataTable,
+  DsLoadError,
+  DsPage,
+  DsStack,
+  DsStatRow,
+  DsStatusBadge,
+  type StatItem,
+} from '@/ds'
 
 import type { AdminPaperSummary } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
@@ -152,7 +160,7 @@ async function remove(row: Row): Promise<void> {
         </div>
       </template>
       <template #card-actions="{ row }">
-        <div class="flex flex-col gap-1">
+        <DsStack gap="2xs">
           <UButton
             size="sm"
             icon="i-ph-pencil-simple"
@@ -171,7 +179,7 @@ async function remove(row: Row): Promise<void> {
             class="min-h-11 min-w-11"
             @click.stop="remove(row)"
           />
-        </div>
+        </DsStack>
       </template>
     </DsDataTable>
   </DsPage>

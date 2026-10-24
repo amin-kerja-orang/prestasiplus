@@ -10,14 +10,17 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import {
+  DsCluster,
   DsDataTable,
   DsFilterBar,
   DsLoadError,
   DsNativeSelect,
   DsPage,
   DsPanel,
+  DsStack,
   DsStatRow,
   DsStatusBadge,
+  DsText,
   type StatItem,
 } from '@/ds'
 
@@ -344,15 +347,13 @@ const siblings = computed(
               {{ detail.row.version }}
             </span>
           </div>
-          <div
+          <DsStack
             v-if="detail.sharers && detail.sharers.count > 1"
-            class="flex flex-col gap-1"
+            gap="2xs"
             data-testid="bank-siblings"
           >
-            <p class="text-caption font-semibold text-muted">
-              Dikongsi dengan:
-            </p>
-            <ul class="flex flex-wrap gap-x-3">
+            <DsText as="p" variant="label" tone="muted">Dikongsi dengan:</DsText>
+            <DsCluster as="ul" gap="sm">
               <li v-for="s in siblings" :key="s.id">
                 <UButton
                   variant="link"
@@ -364,8 +365,8 @@ const siblings = computed(
                   @click="selectedId = s.id"
                 />
               </li>
-            </ul>
-          </div>
+            </DsCluster>
+          </DsStack>
           <QuestionPreview
             :questions="[detail.question]"
             :stimulus="detail.stimulus"
