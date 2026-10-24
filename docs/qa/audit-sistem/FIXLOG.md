@@ -90,7 +90,7 @@ Priority (user): 1) FB-043, FB-044 critical; 2) keypad FB-045 to FB-047; 3) othe
 | FB-070 | VERIFY.md observation (2026-10-24) | Fast | Fixed | c2484362 | Review queue tiles show "{items} item · {questions} soalan" (e.g. "6 item · 7 soalan"); a group is one item, a revision adds no question; equals the bank's pending count. |  |
 | FB-071 | VERIFY.md observation (2026-10-24, unverified) | Fast | In progress | | After an unfinished attempt, "Mula Semula" on the cover may restart in Mod Peperiksaan because the mode choice is hidden. Verify; if true, let the student choose the mode on restart. | |
 | FB-072 | VERIFY.md observation, FB-004 / FB-026 | Fast | Fixed | d5921fe3, 02586606 | T1-T3 (di luar DSKP) is exempt from unit and SP in intake and revision (publish already exempt via FB-004; tests added); the unit/SP confirmations are hidden for T1-T3 and no longer counted in "Perlu disahkan" or the queue confidence; TP stays required. |  |
-| FB-073 | ANSWERS.md (user, 2026-10-24) | Standard | Planned | | UI components are inconsistent and do not properly use the design system (custom classes); fix on ALL screens. The local session is producing a per-screen DS conformance audit (lint:ds, lint:ds:css, census); cloud fixes from that list. | Menunggu senarai audit DS dari sesi local. |
+| FB-073 | ANSWERS.md (user, 2026-10-24) | Standard | In progress |  | Local DS conformance audit (`DS-CONFORMANCE-AUDIT.md` on the audit branch @ f7c04b66): 155 of 256 routes have findings; root causes are mostly in the theme/DS (unthemed size xl used 141x, 3-5 recipes per role) and lint blind spots (68 .vue files outside ds-strict incl. all m28 admin and shells; lint:ds scripts broken). Phased plan P-073 below; phase 1 (theme levers + tooling) in progress. | Fasa 2-3 menyentuh semua modul kedua-dua half: jadual LEAD (#280). |
 | FB-074 | ANSWERS.md FB-051 (2), user rule 2026-10-24 | Fast | In progress | | Cover resume buttons "Sambung" / "Mula Semula" wrap to 3 lines at 320; fit them on one line (fix only). | |
 
 ## Proposals for Planned items (Full track: G1 → G6, nothing built until the user answers)
@@ -239,3 +239,15 @@ Result if confirmed: **3 values** (Sebenar, Percubaan, Modul) used identically b
 
 1. Sahkan senarai: **Sebenar, Percubaan, Modul** sebagai jenis kertas (ikut sistem lama dan standard peperiksaan)?
 2. Soalan yang bukan kertas peperiksaan (Soalan Umum, Buku Teks, Buku Latihan, Topikal, Lain-lain): dibenarkan tanpa jenis kertas (hanya sumber / hak cipta), atau perlu satu pilihan "Lain-lain"?
+
+### P-073 Design-system conformance on all screens (FB-073, user request 2026-10-24)
+Source: `docs/qa/audit-sistem/DS-CONFORMANCE-AUDIT.md` (audit branch @ `f7c04b66`). Rule: improve, do not redesign; one implementation per role (`docs/design/v2-ds-consolidation.md`), fix at the highest lever (`docs/design/v2-ds-hardening.md` H1-H7). This plan follows the existing hardening plan instead of starting a parallel one.
+- **Phase 1 — theme levers and tooling (one change fixes many screens; in progress):**
+  - size `xl` themed (or mapped) for UButton / UInput / USelect / UTextarea / UBadge, and badge `lg/xl` shapes (P3, E3, E4, E5);
+  - `src/ds/states.css` focus ring without `outline` (E9);
+  - `scripts/lint-ds.mjs` command-line length on Windows and the brace-glob bug in `styleGlobs()` (B1, B2), so `npm run lint:ds` runs;
+  - add `src/modules/m28-bijak-spm/admin/**`, the two live shells and the 12 listed module files to `config/ds-strict.json` at `page` level (P1), with their current debt recorded so the ratchet holds;
+  - stale ds-debt baseline entries refreshed only where counts went down (MathField, MathKeyboard).
+- **Phase 2 — role recipes (one sweep per role):** status words → `DsStatusBadge`; primary/row/toolbar button recipe per role (P4, E4); card container `DsPanel` vs `UCard` (P9, E1) and deprecated `tone` props (E8); form fields `DsFormField` + one select per context (P10, E5); copy vocabulary E7 (with FB-025); stock radius/type sizes → tokens (P6, P8); palette/hex/arbitrary in lint-blind files (P5).
+- **Phase 3 — worst screens first:** the P1 list (score ≥ 30, 11 screens: RenewalInvoicePage, KadKongsiPage, IntakeReviewPage, BankEditPage, QuestionCreate/Edit + ArabicKeyboardPanel, Register, Achievements, Login…), then P2 (21), then P3.
+- **Risk:** 329 e2e class selectors in 62 specs break when classes are replaced (B3) — each sweep updates the specs it touches. Phase 2-3 touch modules of both halves → schedule with the LEAD.
