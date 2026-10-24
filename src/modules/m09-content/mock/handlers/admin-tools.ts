@@ -13,6 +13,7 @@
 import { created, route, unpaged, validationError, type RouteDef } from '@/mock/define'
 
 import { M09Error, supportRepo } from '../repository'
+import { previewUrlOf, pruneTo, rememberPreview } from '../repository/screenshot-previews'
 import type { ScreenshotRow } from '../types'
 import { ADMIN_FLASH, adminOnly, bodyOf, fileRefused, filesOf } from './admin-common'
 import { FIELD_REQUIRED, requireViewer } from './common'
@@ -32,16 +33,6 @@ export const MAX_BYTES = 10 * 1024 * 1024
 /** SRS §8.2 "Screenshot file type/size" (PROPOSED COPY). */
 export const SCREENSHOT_REFUSED = 'Fail mesti JPG, PNG, GIF, WebP atau BMP, maksimum 10 MB.'
 
-/** Object URLs of the files uploaded in this session, by row id (the bytes are never persisted). */
-const previewUrls = new Map<number, string>()
-
-function rememberPreview(id: number, file: Blob): void {
-  if (typeof URL.createObjectURL !== 'function') return
-  const old = previewUrls.get(id)
-  if (old) URL.revokeObjectURL(old)
-  previewUrls.set(id, URL.createObjectURL(file))
-}
-
 /** `ScreenshotFile` (§6.8) plus the preview URL (placeholder when the bytes are gone). */
 const shape = (s: ScreenshotRow) => ({
   id: s.id,
@@ -51,7 +42,7 @@ const shape = (s: ScreenshotRow) => ({
   mimeType: s.mimeType,
   uploadedById: s.uploadedById,
   createdAt: s.createdAt,
-  url: previewUrls.get(s.id) ?? `blob:mock/screenshots/${s.fileName}`,
+  url: previewUrlOf(s) ?? `blob:mock/screenshots/${s.fileName}`,
 })
 
 /**
@@ -68,7 +59,9 @@ function mimeOf(name: string, type: string): string {
 
 export const adminToolRoutes: RouteDef[] = [
   route('GET', '/api/admin/screenshots', [adminOnly], () => {
-    const rows = supportRepo.screenshots().map(shape)
+    const stored = supportRepo.screenshots()
+    pruneTo(stored) // drops previews of rows that no longer exist (e.g. after a mock reset)
+    const rows = stored.map(shape)
     return unpaged(rows, { total: supportRepo.screenshotCount() })
   }),
 
@@ -94,7 +87,7 @@ export const adminToolRoutes: RouteDef[] = [
           size: file.size,
           mime,
         })
-        if (file.blob) rememberPreview(row.id, file.blob)
+        if (file.blob) rememberPreview(row, file.blob)
         saved.push(shape(row))
       } catch (error) {
         if (!(error instanceof M09Error) || error.code !== 'VALIDATION_ERROR') throw error
