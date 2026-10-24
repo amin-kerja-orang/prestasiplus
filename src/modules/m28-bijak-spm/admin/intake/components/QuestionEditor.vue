@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsNativeSelect, DsText } from '@/ds'
+import { DsCluster, DsNativeSelect, DsStack, DsText } from '@/ds'
 
 import type { LeafKind } from '../../../domain/types'
 import RichText from '../../../components/RichText.vue'
@@ -147,8 +147,8 @@ function insertMath(field: 'stem'): void {
       </template>
     </UAlert>
 
-    <div class="grid grid-cols-1 gap-4" :class="hideNumber ? '@md:grid-cols-2' : '@md:grid-cols-3'">
-      <label v-if="!hideNumber" class="flex flex-col gap-1 text-sm">
+    <div class="grid gap-4" :class="hideNumber ? '@md:grid-cols-2' : '@md:grid-cols-3'">
+      <label v-if="!hideNumber" class="flex min-w-0 flex-col gap-1 text-sm">
         <span class="font-medium">Nombor soalan</span>
         <UInput
           :model-value="q.label"
@@ -157,7 +157,7 @@ function insertMath(field: 'stem'): void {
           @update:model-value="set({ label: String($event) })"
         />
       </label>
-      <label class="flex flex-col gap-1 text-sm">
+      <label class="flex min-w-0 flex-col gap-1 text-sm">
         <span class="font-medium">Jenis soalan</span>
         <DsNativeSelect
           :model-value="q.type"
@@ -167,7 +167,7 @@ function insertMath(field: 'stem'): void {
           <option v-for="t in TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
         </DsNativeSelect>
       </label>
-      <label v-if="q.parts.length === 0" class="flex flex-col gap-1 text-sm">
+      <label v-if="q.parts.length === 0" class="flex min-w-0 flex-col gap-1 text-sm">
         <span class="font-medium">Markah</span>
         <UInput
           :model-value="q.marks"
@@ -248,37 +248,39 @@ function insertMath(field: 'stem'): void {
         class="rounded-xl border border-default p-3"
         data-testid="q-part"
       >
-        <div class="grid grid-cols-1 gap-3 @lg:grid-cols-[6rem_minmax(0,1fr)_6rem]">
-          <label class="flex min-w-0 flex-col gap-1 text-sm">
-            <span class="text-muted">Label</span>
-            <UInput
-              :model-value="p.label"
-              class="w-full"
-              @update:model-value="setPart(i, { label: String($event) })"
-            />
-          </label>
-          <label class="flex min-w-0 flex-col gap-1 text-sm">
-            <span class="text-muted">Teks bahagian</span>
-            <UInput
-              :model-value="p.prompt"
-              class="w-full"
-              :aria-label="`Teks bahagian ${p.label}`"
-              @update:model-value="setPart(i, { prompt: String($event) })"
-            />
-          </label>
-          <label class="flex min-w-0 flex-col gap-1 text-sm">
-            <span class="text-muted">Markah</span>
-            <UInput
-              :model-value="p.marks"
-              type="number"
-              min="0"
-              class="w-full"
-              :aria-label="`Markah bahagian ${p.label}`"
-              @update:model-value="setPart(i, { marks: Number($event) || 0 })"
-            />
-          </label>
-          <div class="flex min-w-0 items-end gap-2 @lg:col-span-3">
-            <label class="flex min-w-0 flex-1 flex-col gap-1 text-sm @lg:max-w-xs">
+        <DsStack gap="sm">
+          <div class="grid gap-3 @lg:grid-cols-[6rem_minmax(0,1fr)_6rem]">
+            <label class="flex min-w-0 flex-col gap-1 text-sm">
+              <span class="text-muted">Label</span>
+              <UInput
+                :model-value="p.label"
+                class="w-full"
+                @update:model-value="setPart(i, { label: String($event) })"
+              />
+            </label>
+            <label class="flex min-w-0 flex-col gap-1 text-sm">
+              <span class="text-muted">Teks bahagian</span>
+              <UInput
+                :model-value="p.prompt"
+                class="w-full"
+                :aria-label="`Teks bahagian ${p.label}`"
+                @update:model-value="setPart(i, { prompt: String($event) })"
+              />
+            </label>
+            <label class="flex min-w-0 flex-col gap-1 text-sm">
+              <span class="text-muted">Markah</span>
+              <UInput
+                :model-value="p.marks"
+                type="number"
+                min="0"
+                class="w-full"
+                :aria-label="`Markah bahagian ${p.label}`"
+                @update:model-value="setPart(i, { marks: Number($event) || 0 })"
+              />
+            </label>
+          </div>
+          <DsCluster align="end" :wrap="false">
+            <label class="flex w-full min-w-0 flex-col gap-1 text-sm @lg:max-w-xs">
               <span class="text-muted">Mod jawapan</span>
               <DsNativeSelect
                 :model-value="p.mode"
@@ -296,8 +298,8 @@ function insertMath(field: 'stem'): void {
               :aria-label="`Buang bahagian ${p.label}`"
               @click="removePart(i)"
             />
-          </div>
-        </div>
+          </DsCluster>
+        </DsStack>
         <DsText v-if="p.lead?.length" variant="caption" tone="muted" data-testid="part-lead">
           Di bawah: <RichText :text="p.lead.map((l) => `${l.label} ${l.prompt}`).join(' ')" />
         </DsText>
@@ -342,7 +344,7 @@ function insertMath(field: 'stem'): void {
     <!-- tag -->
     <fieldset class="flex min-w-0 flex-col gap-3 rounded-xl border border-default p-3">
       <legend class="px-1 text-sm font-medium">Tag DSKP</legend>
-      <div class="grid grid-cols-1 gap-3 @md:grid-cols-2 @3xl:grid-cols-4">
+      <div class="grid gap-3 @md:grid-cols-2 @3xl:grid-cols-4">
         <label class="flex min-w-0 flex-col gap-1 text-sm">
           <span class="text-muted">Asal tingkatan</span>
           <DsNativeSelect
@@ -397,11 +399,13 @@ function insertMath(field: 'stem'): void {
           v-for="f in q.lowFields"
           :key="f"
           :model-value="q.confirmed.includes(f)"
-          :label="`Saya sahkan ${fieldName(f)} (keyakinan rendah)`"
-          :ui="{ root: 'items-center', label: 'flex min-h-11 cursor-pointer items-center' }"
           :data-testid="`confirm-${f}`"
           @update:model-value="(v: boolean | 'indeterminate') => confirm(f, v === true)"
-        />
+        >
+          <template #label>
+            <span class="block min-h-11 cursor-pointer">Saya sahkan {{ fieldName(f) }} (keyakinan rendah)</span>
+          </template>
+        </UCheckbox>
       </div>
     </fieldset>
   </div>
