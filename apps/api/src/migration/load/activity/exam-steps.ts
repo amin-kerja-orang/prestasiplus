@@ -14,21 +14,25 @@ import { quoteIdent, toJson } from '../../kit/sql'
 import { upsertByLegacy, type LegacyRow } from '../../kit/upsert'
 import { rejectRow } from '../helpers'
 import { distinctValues, resolveFk, type StagedRow } from '../source'
-import { EXAM_ATTEMPT_COLUMNS, snapshotTitle, transformExamAttempt, type ExamResultValues } from '../../transform/exam'
+import { EXAM_ATTEMPT_COLUMNS, examStatusRejectLabel, snapshotTitle, transformExamAttempt, type ExamResultValues } from '../../transform/exam'
 import type { ActivityContext } from './context'
 import { idOf } from './wallet-steps'
 
 /** Pages of `exam_attempts` with only the header and score columns, ascending by id after `afterKey`. */
 export async function* readExamAttempts(pool: pg.Pool, afterKey: string | null, pageSize: number): AsyncGenerator<StagedRow> {
   const from = `${quoteIdent(STAGING_SCHEMA)}.${quoteIdent('exam_attempts')}`
+  // The status is a lookup id on .cloud: `attempt_statuses.slug` is the code the status map reads. A missing id or a
+  // lookup row that is gone gives a null status (INVALID_VALUE); an unknown slug is UNKNOWN_ENUM, as before.
+  const lookup = `${quoteIdent(STAGING_SCHEMA)}.${quoteIdent('attempt_statuses')}`
   let after = afterKey
   for (;;) {
     const res = await pool.query<StagedRow>(
       // `t."id"` is the bigint column; a bare `ORDER BY "id"` would bind to the text output alias of the same name.
       `SELECT t."id"::text AS "id", t."user_id"::text AS "user_id", t."exam_paper_id"::text AS "exam_paper_id",
-              t."mode"::text AS "mode", t."status"::text AS "status", t."score"::text AS "score", t."max_score"::text AS "max_score",
+              t."mode"::text AS "mode", st."slug"::text AS "status", t."score"::text AS "score", t."max_score"::text AS "max_score",
               t."section_scores"::text AS "section_scores", t."created_at"::text AS "created_at", t."updated_at"::text AS "updated_at"
-       FROM ${from} t WHERE ($1::bigint IS NULL OR t."id" > $1::bigint) ORDER BY t."id" LIMIT $2`,
+       FROM ${from} t LEFT JOIN ${lookup} st ON st."id" = t."status_id"
+       WHERE ($1::bigint IS NULL OR t."id" > $1::bigint) ORDER BY t."id" LIMIT $2`,
       [after, pageSize],
     )
     for (const row of res.rows) yield row
@@ -37,14 +41,22 @@ export async function* readExamAttempts(pool: pg.Pool, afterKey: string | null, 
   }
 }
 
-/** `paper id -> snapshot title` from the archived papers (title text of a public paper, no personal data). */
+/**
+ * `paper id -> snapshot title` from the archived papers (title text of a public paper, no personal data). An exam paper
+ * has no source-paper column on .cloud: its source year is taken from its questions (`exam_questions.exam_paper_id` ->
+ * `exam_questions.source_paper_id` -> `source_papers`) and only when exactly ONE source paper matches (a composite paper
+ * of several source papers gets no year).
+ */
 async function paperTitles(pool: pg.Pool, paperIds: readonly string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>()
   if (paperIds.length === 0) return out
   const a = quoteIdent(ARCHIVE_SCHEMA)
   const res = await pool.query<{ id: string; title: string | null; year: string | null }>(
-    `SELECT ep.id::text AS id, ep.title::text AS title, sp.year::text AS year
-     FROM ${a}."exam_papers" ep LEFT JOIN ${a}."source_papers" sp ON sp.id = ep.source_paper_id
+    `SELECT ep.id::text AS id, ep.title::text AS title,
+            (SELECT CASE WHEN count(DISTINCT sp.id) = 1 THEN min(sp.year)::text END
+             FROM ${a}."exam_questions" eq JOIN ${a}."source_papers" sp ON sp.id = eq.source_paper_id
+             WHERE eq.exam_paper_id = ep.id) AS year
+     FROM ${a}."exam_papers" ep
      WHERE ep.id = ANY($1::bigint[])`,
     [paperIds.filter((id) => /^\d{1,18}$/.test(id))],
   )
@@ -87,6 +99,8 @@ export function examAttemptsStep(a: ActivityContext): AnyEntityStep {
         })
         if (!out.ok) {
           rejectRow(ctx, entity, legacyId, out.reject)
+          // A status that is rejected is counted by name (in_progress) so the LEAD sees the number; any other is `other`.
+          if (out.reject.column === 'status') a.notes.count(`exam_attempts.status_rejected.${examStatusRejectLabel(row.status)}`)
           continue
         }
         items.push({ legacyId, values: out.value.attempt as unknown as Record<string, unknown> })

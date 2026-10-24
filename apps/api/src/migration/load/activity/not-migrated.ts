@@ -23,7 +23,7 @@ export const NOT_MIGRATED_ACTIVITY: readonly NotMigrated[] = [
   { table: 'psychometric_results', reason: 'sensitive category (Q7); never read' },
   { table: 'aspirations', reason: 'sensitive category (Q7); never read' },
   { table: 'foster_applications / foster_sponsorships / sponsors', reason: 'sensitive category and Penaja is out of scope (D48, Q7); never read' },
-  { table: 'interventions', reason: 'OD-10 Q7 A decided (migrate); deferred: v2 `interventions.alert_description` is NOT NULL and has no staged .cloud column (OD-2 open column)' },
+  { table: 'interventions', reason: 'OD-10 Q7 A decided (migrate); deferred: v2 `interventions.alert_description` is NOT NULL; .cloud has an `alert_description` column but the staging spec does not list it and nothing reads it yet' },
   // Shop / draws skipped per Q8 (no fixed values for the catalogue fields v2 requires).
   { table: 'gifts', reason: 'Q8: category / vendor / token values not available from .cloud; skipped until the lead fixes the values' },
   { table: 'gift_redemptions', reason: 'Q8: depends on gifts (snapshot of the gift); skipped with it' },

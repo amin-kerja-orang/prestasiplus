@@ -25,7 +25,7 @@ let firstActivity: ActivityContext | undefined
 const ownRuns = () => `mode = 'apply' and entity_set @> array['${failEntity}']::text[]`
 
 /** Counters the rebuild after a resume must reproduce, and every drift kind with its ids (sorted). */
-const REBUILT_NOTES = /^(practice_sessions\.mode_rejected\.|wallets\.tier_unmapped$|coin_ledger\.rejected_amount$)/
+const REBUILT_NOTES = /^(practice_sessions\.mode_rejected\.|exam_attempts\.status_rejected\.|wallets\.tier_unmapped$|coin_ledger\.rejected_amount$)/
 const reportOf = (ctx: ActivityContext) => ({
   notes: Object.fromEntries([...ctx.notes.counters].filter(([k]) => REBUILT_NOTES.test(k)).sort(([x], [y]) => (x < y ? -1 : 1))),
   drift: ctx.drift.lines().map((l) => (l.startsWith('drift ids ') ? l.split(': ')[0] + ': ' + (l.split(': ')[1] ?? '').split(',').sort().join(',') : l)),
@@ -37,6 +37,13 @@ async function plantReportRows(h: ActivityHarness): Promise<void> {
     `insert into staging_cloud.practice_sessions (id, user_id, subject_id, mode, paper, client_uuid, total_questions, correct, accuracy, duration_seconds, syiling_earned, started_at, created_at)
      select 9000 + v.n, (select user_id from staging_cloud.student_wallets order by id limit 1), 1, v.m, 'paper1', null, 5, 1, 20, 60, 0, '2026-05-31T05:00:00Z', '2026-05-31T05:00:00Z'
      from (values (1, 'spm'), (2, 'battle'), (3, 'misteri')) as v(n, m)`,
+  )
+  // Two exam attempts still in progress (slug in_progress is rejected and counted by name). With the fixture's attempt 1 they
+  // make two batches (size 2): the first holds one of them, so the resume has to rebuild the count.
+  await h.q(
+    `insert into staging_cloud.exam_attempts (id, user_id, exam_paper_id, mode, status_id, score, max_score, created_at, updated_at)
+     select 9500 + v.n, (select user_id from staging_cloud.student_wallets order by id limit 1), 1, 'exam', 1, null, null, '2026-05-31T05:00:00Z', '2026-05-31T05:00:00Z'
+     from (values (1), (2)) as v(n)`,
   )
   await h.q(
     `insert into staging_cloud.coin_transactions (id, user_id, type, source, amount, balance_after, created_at)
@@ -107,7 +114,7 @@ describe('checkpoint resume (AC6)', () => {
   it('a failure after batch 1 rolls batch 2 back; the resume continues at batch 2 and ends equal to the uninterrupted run', async () => {
     expect((await b.run('dry-run')).report.status).toBe('succeeded')
     // One failure at batch 2 in each of these steps (in run order), so the report of the final resume has to be rebuilt.
-    const targets = new Set([failEntity, 'wallet_ledger_drift', 'practice_sessions'])
+    const targets = new Set([failEntity, 'wallet_ledger_drift', 'practice_sessions', 'exam_attempts'])
     const failed: string[] = []
     const failOnce = (steps: AnyEntityStep[]): AnyEntityStep[] =>
       steps.map((s) =>
@@ -147,6 +154,7 @@ describe('checkpoint resume (AC6)', () => {
     const want = reportOf(firstActivity as ActivityContext)
     expect(firstActivity?.drift.idsOf('wallet_ledger_mismatch').length, 'the planted ledger row must make a wallet drift').toBeGreaterThan(0)
     expect(Object.keys(want.notes).some((k) => k.startsWith('practice_sessions.mode_rejected.')), 'the planted modes must be rejected').toBe(true)
+    expect(want.notes['exam_attempts.status_rejected.in_progress'], 'the planted attempts must be counted by name').toBe(2)
     expect(reportOf(resumed.activity)).toEqual(want)
   }, 240_000)
 })

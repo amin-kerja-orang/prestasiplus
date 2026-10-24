@@ -84,8 +84,15 @@ pp_log "backup start: tag=$tag dir=$dir"
 
 # ---- 1. dump ----
 # Credentials come from the container environment; nothing secret is interpolated here.
+# Schemas left out of every routine dump (PP_BACKUP_EXCLUDE_SCHEMAS, default staging_cloud): the raw .cloud copy that
+# exists only during the migration slot must not spread into nightly, weekly and off-site copies (cutover plan
+# section 7). The named restore points of deploy/vps/migration/restore-point.sh keep it on purpose, locally only.
+excl="$(pp_cfg PP_BACKUP_EXCLUDE_SCHEMAS staging_cloud)"
+[[ "$excl" =~ ^([a-z_][a-z0-9_]*(,[a-z_][a-z0-9_]*)*)?$|^-$ ]] || pp_die "PP_BACKUP_EXCLUDE_SCHEMAS: comma-separated lowercase schema names, or - for none" 2
+[ "$excl" != - ] || excl=""
 # shellcheck disable=SC2016  # the variables must expand INSIDE the container
-pp_db_exec sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec pg_dump -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc --no-owner' \
+pp_db_exec sh -c 'set -f; IFS=,; x=""; for s in $1; do x="$x --exclude-schema=$s"; done; unset IFS
+  PGPASSWORD="$POSTGRES_PASSWORD" exec pg_dump -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc --no-owner $x' sh "$excl" \
   >"$partial"
 size="$(stat -c %s "$partial")"
 magic="$(head -c 5 "$partial" | tr -d '\0')"
@@ -100,7 +107,7 @@ toc="$(pp_db_exec pg_restore --list <"$partial" | grep -c ' TABLE DATA ' || true
 mv "$partial" "$final"
 sha="$(sha256sum "$final" | cut -d' ' -f1)"
 printf '%s  %s\n' "$sha" "$name" >"$final.sha256"
-pp_log "dump ok: $name  $size bytes  sha256 $sha  ($toc tables with data)"
+pp_log "dump ok: $name  $size bytes  sha256 $sha  ($toc tables with data; schemas left out: ${excl:-none})"
 
 # ---- 3. uploads ----
 produced=("$final" "$final.sha256")
@@ -160,6 +167,16 @@ if [ "$offsite" = 1 ]; then
   "$PP_VPS_DIR/backup/offsite.sh" "${produced[@]}"
 else
   pp_log "off-site copy skipped (--no-offsite)"
+fi
+
+# ---- 6. raw .cloud data retention (MIG08-PREP, cutover plan section 7): a reminder, never fails the backup ----
+if [ -x "$PP_VPS_DIR/migration/restore-point.sh" ]; then
+  raw_rc=0; "$PP_VPS_DIR/migration/restore-point.sh" raw-check >&2 || raw_rc=$?
+  case "$raw_rc" in
+    0) ;;
+    1) pp_alert "RAW DATA RETENTION OVERDUE: raw .cloud copies are still on the host past PP_RAW_PURGE_BY. Run restore-point.sh raw-check and the cutover plan section 7 clean-up." ;;
+    *) pp_warn "restore-point.sh raw-check could not run (exit $raw_rc); the raw-data retention reminder was skipped" ;;
+  esac
 fi
 
 finished=1

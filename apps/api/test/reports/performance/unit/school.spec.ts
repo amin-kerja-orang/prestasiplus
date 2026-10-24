@@ -241,6 +241,27 @@ describe('Tingkatan', () => {
     PerformanceLevelDetailSchema.parse(r)
   })
 
+  describe('SW5-04: href only where the viewer can open the class dashboard', () => {
+    const hrefs = async (ctx: ReturnType<typeof ctxOf>) => Object.fromEntries((await w.school.level(ctx, 't4')).classRows.map((c) => [c.classId, c.href]))
+
+    it('a teacher gets a link for own classes and null for another teacher class and the school class', async () => {
+      expect(await hrefs(ctxOf('teacher', 't1'))).toEqual({ '10': '/prestasi/kelas/10', '11': null, '12': null })
+      expect(await hrefs(ctxOf('teacher', 't2'))).toEqual({ '10': null, '11': '/prestasi/kelas/11', '12': null })
+    })
+
+    it('a school admin of the school and the platform admin keep a link for every classroom', async () => {
+      const all = { '10': '/prestasi/kelas/10', '11': '/prestasi/kelas/11', '12': null }
+      expect(await hrefs(schoolAdmin)).toEqual(all)
+      expect(await hrefs(admin)).toEqual(all)
+    })
+
+    it('a pupil and a parent get no link', async () => {
+      const none = { '10': null, '11': null, '12': null }
+      expect(await hrefs(ctxOf('student', '1'))).toEqual(none)
+      expect(await hrefs(ctxOf('parent', 'pa1'))).toEqual(none)
+    })
+  })
+
   it('top students need 3 sittings; a teacher sees names only of own pupils', async () => {
     const r = await w.school.level(schoolAdmin, 't4')
     expect(r.topStudents).toEqual([{ userId: '1', name: 'Murid Ujian 1', sessions: 3, answered: 15, accuracy: 80 }])

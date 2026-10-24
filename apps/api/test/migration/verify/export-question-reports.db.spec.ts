@@ -97,18 +97,18 @@ beforeAll(async () => {
   env = await createStagingDb()
   await loadStaging(env.pool, new DirReader(FIXTURE_DIR), { env: stagingEnv(env.db) })
   // The canonical bridge of legacy question 1 (the fixture has the map row and one paper, but no canonical questions).
-  await env.pool.query(`insert into archive_cloud.exam_questions (id, status, number_label) values (1, 'diterbitkan', '3')`)
-  await env.pool.query(`insert into archive_cloud.exam_paper_questions (id, exam_paper_id, exam_question_id) values (1, 1, 1)`)
+  // The canonical question points straight at its source paper (exam_questions.source_paper_id), not through a pivot.
+  await env.pool.query(`insert into archive_cloud.exam_questions (id, source_paper_id, exam_paper_id, status_id, number_label) values (1, 1, 1, 1, '3')`)
   for (const [id, q, u, status, reason] of REPORTS) {
     await env.pool.query(
-      `insert into archive_cloud.question_reports (id, question_id, user_id, status, reason, created_at, updated_at)
-       values ($1, $2, $3, $4, $5, '2026-03-01T17:15:00Z', '2026-03-02T00:00:00Z')`,
+      `insert into archive_cloud.question_reports (id, question_id, reporter_id, status, report_type, description, created_at, updated_at)
+       values ($1, $2, $3, $4, 'lain_lain', $5, '2026-03-01T17:15:00Z', '2026-03-02T00:00:00Z')`,
       [id, q, u, status, reason],
     )
   }
   for (const [id, u, status] of SUBMISSIONS) {
     await env.pool.query(
-      `insert into archive_cloud.question_submissions (id, user_id, status, created_at, updated_at)
+      `insert into archive_cloud.question_submissions (id, teacher_id, status, created_at, updated_at)
        values ($1, $2, $3, '2026-03-01T17:15:00Z', '2026-03-02T00:00:00Z')`,
       [id, u, status],
     )
@@ -155,7 +155,7 @@ describe('exportOpenQuestionReports', () => {
     expect(body.map((x) => col(x, 'legacy_report_id'))).toEqual(['1', '2', '4', '7', '9'])
 
     const first = body[0] as string[]
-    expect(first).toEqual(['1', '1', 'contoh-2025-1', '3', 'MP1', '1', '1', 'baru', 'Jawapan salah', '2026-03-02'])
+    expect(first).toEqual(['1', '1', 'contoh-2025-1', '3', 'MP1', '1', '1', 'baru', 'lain_lain', 'Jawapan salah', '2026-03-02'])
     // No canonical bridge for question 2 and question 999 is not in the archive: identifiers are empty, the id stays.
     expect(body[1]?.slice(2, 7)).toEqual(['', '', 'MP1', '1', '1'])
     expect(body[2]?.slice(0, 7)).toEqual(['4', '999', '', '', '', '', ''])
