@@ -158,8 +158,9 @@ function pick(id: string): void {
           :key="o.id"
           :letter="String.fromCharCode(65 + i)"
           :state="optionState(o.id)"
+          :disabled="locked"
           :data-testid="`option-${o.id}`"
-          @select="!disabled && !choose?.locked && pick(o.id)"
+          @select="pick(o.id)"
         >
           <RichText :text="o.text" />
         </DsQuizOption>

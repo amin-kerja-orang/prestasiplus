@@ -144,7 +144,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     :is="to ? RouterLink : 'div'"
     v-if="isCompact"
     v-bind="to ? { to } : {}"
-    class="flex min-w-0 items-center gap-3 rounded-card bg-default p-4 shadow-ds-xs max-sm:flex-col max-sm:items-start max-sm:gap-2 sm:gap-4 staff:p-4 md:staff:p-5"
+    class="relative flex min-w-0 items-center gap-3 rounded-card bg-default p-4 shadow-ds-xs max-sm:flex-col max-sm:items-start max-sm:gap-2 sm:gap-4 staff:p-4 md:staff:p-5"
     :class="[to ? 'hover:bg-elevated' : '', stateClass]"
     data-ds="stat-tile"
     data-compact="true"
@@ -187,12 +187,20 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
         >
       </div>
     </template>
+    <DsIcon
+      v-if="selected && !loading"
+      name="check-circle"
+      weight="bold"
+      class="absolute end-2 top-2 size-5 text-primary-t"
+      aria-hidden="true"
+      data-ds="stat-tile-check"
+    />
   </component>
   <component
     :is="to ? RouterLink : clickable ? 'button' : 'div'"
     v-else
     v-bind="to ? { to } : clickable ? { type: 'button', disabled: disabled || undefined } : {}"
-    class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift staff:p-4 sm:staff:flex-row sm:staff:items-center sm:staff:gap-4 md:staff:p-5"
+    class="relative flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift staff:p-4 sm:staff:flex-row sm:staff:items-center sm:staff:gap-4 md:staff:p-5"
     :class="[
       clickable ? 'cursor-pointer text-start' : '',
       isRoomy ? 'gap-3 p-6' : 'gap-2 px-2.5 pt-3.5 pb-3',
@@ -204,6 +212,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     :aria-busy="loading ? 'true' : undefined"
     :aria-disabled="disabled ? 'true' : undefined"
     :aria-current="selected ? 'true' : undefined"
+    :aria-pressed="clickable ? (selected ? 'true' : 'false') : undefined"
   >
     <template v-if="loading">
       <USkeleton class="size-10 rounded-chip" />
@@ -251,5 +260,13 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
         <slot />
       </div>
     </template>
+    <DsIcon
+      v-if="selected && !loading"
+      name="check-circle"
+      weight="bold"
+      class="absolute end-2 top-2 size-5 text-primary-t"
+      aria-hidden="true"
+      data-ds="stat-tile-check"
+    />
   </component>
 </template>

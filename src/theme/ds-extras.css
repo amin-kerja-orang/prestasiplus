@@ -143,3 +143,13 @@
   outline: 2px solid var(--ui-primary);
   outline-offset: 2px;
 }
+
+/* Pentadbiran sidebar: the nav list scrolls, but its scrollbar stays out of sight until the pointer is
+   over the rail, so it does not sit as a bright strip beside the icons. */
+[data-testid='pentadbiran-sidebar'] [data-slot='body'] {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+[data-testid='pentadbiran-sidebar'] [data-slot='body']:hover {
+  scrollbar-color: var(--ui-bg-accented) transparent;
+}
