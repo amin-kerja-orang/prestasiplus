@@ -311,6 +311,45 @@ export class FilesService {
     return row ? { purpose: row.purpose, ownerUserId: row.ownerUserId === null ? null : idToString(row.ownerUserId) } : null
   }
 
+  /**
+   * Purpose and owner of a stored file by reference, reading the row only. `ref` is the public token that
+   * `POST /files` returns (22 characters) or an internal id (decimal digits, at most 19). The two shapes cannot
+   * collide, so one lookup serves callers that hold either. Returns the internal id so the caller can keep it.
+   */
+  async refMeta(ref: string): Promise<{ id: string; publicId: string; purpose: string; ownerUserId: string | null } | null> {
+    let row: { id: bigint; publicId: string; purpose: string; ownerUserId: bigint | null } | null
+    const select = { id: true, publicId: true, purpose: true, ownerUserId: true } as const
+    if (PUBLIC_TOKEN.test(ref)) {
+      row = await this.prisma.client.file.findUnique({ where: { publicId: ref }, select })
+    } else {
+      let id: bigint
+      try {
+        id = idFromString(ref)
+      } catch {
+        return null
+      }
+      row = await this.prisma.client.file.findUnique({ where: { id }, select })
+    }
+    return row
+      ? { id: idToString(row.id), publicId: row.publicId, purpose: row.purpose, ownerUserId: row.ownerUserId === null ? null : idToString(row.ownerUserId) }
+      : null
+  }
+
+  /** Public tokens of stored files by internal id (ids that do not exist are absent from the map). One query. */
+  async publicIdsOf(idTexts: readonly string[]): Promise<Map<string, string>> {
+    const ids: bigint[] = []
+    for (const text of new Set(idTexts)) {
+      try {
+        ids.push(idFromString(text))
+      } catch {
+        // not an id: no token
+      }
+    }
+    if (ids.length === 0) return new Map()
+    const rows = await this.prisma.client.file.findMany({ where: { id: { in: ids } }, select: { id: true, publicId: true } })
+    return new Map(rows.map((r) => [idToString(r.id), r.publicId]))
+  }
+
   /** `DELETE /files/:token`: the owner only; someone else's file is 404. */
   async remove(auth: AuthContext, token: string, who: CallerInfo): Promise<void> {
     const row = await this.findByToken(token)

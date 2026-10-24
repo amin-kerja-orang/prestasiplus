@@ -145,6 +145,11 @@ export interface QuestionRecord {
 export interface QuestionView extends QuestionRecord {
   subject: NamedRef | null
   level: NamedRef | null
+  /**
+   * Image URLs (`/api/files/<publicId>`) of the stem and of each option, set on the single-record reads and writes that
+   * return an editor view. Absent on list rows (they carry no images).
+   */
+  images?: { question: string | null; options: (string | null)[] }
 }
 
 /** Admin detail: DSKP chain (unit/sk/sp) and creator name resolved through the owners' repositories. */

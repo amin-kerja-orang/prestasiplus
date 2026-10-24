@@ -138,9 +138,9 @@ export const QuestionSchema = z
     difficultyLevel: Difficulty,
     questionType: QuestionTypeSchema,
     questionText: z.string(),
-    questionImage: z.string().nullable(),
+    questionImage: z.string().nullable().meta({ description: 'File URL `/api/files/<id>` (the `id` of the `POST /files` upload), or null.' }),
     options: z.array(z.string()).nullable(),
-    optionImages: z.array(z.string().nullable()),
+    optionImages: z.array(z.string().nullable()).meta({ description: 'One file URL `/api/files/<id>` or null per option, in order; `[]` for a question without options.' }),
     correctAnswer: z.number().int().min(0).max(3).nullable(),
     tfAnswer: z.boolean().nullable(),
     correctAnswerText: z.string().nullable(),
@@ -216,24 +216,44 @@ const OPTION_MAX = 500
 const charLen = (t: string) => [...t].length
 
 /**
- * MCQ option list. Every per-element failure is ONE issue on the list itself, so the `fields` key is
- * `options` exactly as in the mock (never `options.1`). `indexed`: the Guru edit form, items
- * `{ id: 0..3, optionText }` whose four ids must be unique.
+ * The one message an MCQ option list earns, or null when it is fine. Every per-element failure is ONE issue on the
+ * list itself, so the `fields` key is `options` exactly as in the mock (never `options.1`). `indexed`: the Guru edit
+ * form, items `{ id: 0..3, optionText }` whose four ids must be unique. Exported for the service, which applies it
+ * to an edit (the saved type is not in the PUT body).
  */
-const optionList = (o: { long?: string; indexed?: boolean; item: Record<string, unknown> }) =>
-  z
-    .array(z.unknown(), { error: QUESTION_MESSAGES.options })
-    .superRefine((list, ctx) => {
-      const fail = (message: string) => ctx.addIssue({ code: 'custom', message })
-      const texts = list.map(optText)
-      if (o.indexed) {
-        const ids = new Set(list.map((e) => (typeof e === 'object' && e !== null ? Number((e as { id?: unknown }).id) : NaN)))
-        if (list.length !== 4 || ids.size !== 4 || [...ids].some((i) => !Number.isInteger(i) || i < 0 || i > 3)) return fail(QUESTION_MESSAGES.options)
-      } else if (list.length !== 4) return fail(QUESTION_MESSAGES.options)
-      if (texts.some((t) => t === '')) return fail(QUESTION_MESSAGES.options)
-      if (o.long && texts.some((t) => charLen(t) > OPTION_MAX)) fail(o.long)
-    })
-    .meta({ type: 'array', minItems: 4, maxItems: 4, items: o.item })
+export function questionOptionsIssue(list: readonly unknown[], o: { long?: string; indexed?: boolean } = {}): string | null {
+  const texts = list.map(optText)
+  if (o.indexed) {
+    const ids = new Set(list.map((e) => (typeof e === 'object' && e !== null ? Number((e as { id?: unknown }).id) : NaN)))
+    if (list.length !== 4 || ids.size !== 4 || [...ids].some((i) => !Number.isInteger(i) || i < 0 || i > 3)) return QUESTION_MESSAGES.options
+  } else if (list.length !== 4) return QUESTION_MESSAGES.options
+  if (texts.some((t) => t === '')) return QUESTION_MESSAGES.options
+  if (o.long && texts.some((t) => charLen(t) > OPTION_MAX)) return o.long
+  return null
+}
+
+/**
+ * MCQ option list. Every per-element failure is ONE issue on the list itself (see `questionOptionsIssue`).
+ * `strict` (the Guru edit form) checks the items in the field itself; the create/edit bodies of the bank only check
+ * that the field is a list here: its items matter for an MCQ only and are checked by the body (`superRefine` on
+ * create, the service on edit), so a blank `options[*]` sent with another question type is ignored.
+ */
+const optionList = (o: { long?: string; indexed?: boolean; strict?: boolean; item: Record<string, unknown> }) => {
+  const list = z.array(z.unknown(), { error: QUESTION_MESSAGES.options })
+  const checked = o.strict
+    ? list.superRefine((value, ctx) => {
+        const message = questionOptionsIssue(value, { ...(o.long ? { long: o.long } : {}), ...(o.indexed ? { indexed: true } : {}) })
+        if (message) ctx.addIssue({ code: 'custom', message })
+      })
+    : list
+  return checked.meta({ type: 'array', minItems: 4, maxItems: 4, items: o.item })
+}
+
+/** An image already uploaded with `POST /files` (purpose `question_image`): its `id` (or `url`) as returned there. */
+const ImageRef = z.string({ error: QUESTION_MESSAGES.image }).trim().max(200, QUESTION_MESSAGES.image)
+
+/** MCQ key as sent: a digit or letter, `''`/null meaning "none chosen" (never read as 0). */
+const blankToNull = (v: unknown): unknown => (typeof v === 'string' && v.trim() === '' ? null : v)
 
 const baseInput = z.object({
   subjectId: idWith(QUESTION_MESSAGES.subject),
@@ -243,7 +263,11 @@ const baseInput = z.object({
   dskpSpId: idOrBlank(QUESTION_MESSAGES.sp),
   /** MCQ: four texts A to D. A bad item is reported once, under `options`. */
   options: optionList({ item: { type: 'string', minLength: 1 } }).optional(),
-  correctAnswer: z.coerce.number({ error: QUESTION_MESSAGES.correctAnswer }).int(QUESTION_MESSAGES.correctAnswer).min(0, QUESTION_MESSAGES.correctAnswer).max(3, QUESTION_MESSAGES.correctAnswer).optional(),
+  /** MCQ: 0..3. `''`/null = none chosen (422 for an MCQ, ignored for other types). */
+  correctAnswer: z.preprocess(
+    blankToNull,
+    z.coerce.number({ error: QUESTION_MESSAGES.correctAnswer }).int(QUESTION_MESSAGES.correctAnswer).min(0, QUESTION_MESSAGES.correctAnswer).max(3, QUESTION_MESSAGES.correctAnswer).nullable(),
+  ).optional(),
   tfAnswer: z.boolean({ error: QUESTION_MESSAGES.tfAnswer }).nullable().optional(),
   correctAnswerText: z.string().trim().nullable().optional(),
   altAnswers: z.array(z.string()).optional(),
@@ -251,6 +275,10 @@ const baseInput = z.object({
   explanation: z.string().nullable().optional(),
   language: Language.optional(),
   pointsValue: z.coerce.number({ error: QUESTION_MESSAGES.points }).int(QUESTION_MESSAGES.points).min(1, QUESTION_MESSAGES.points).optional(),
+  /** Stem image: the `id` that `POST /files` returned for a `question_image` upload. Absent/null/blank keeps the saved image on edit. */
+  questionImage: ImageRef.nullable().optional(),
+  /** MCQ option images by index (A to D): uploaded ids, `null`/blank for none (on edit: keep the saved one). */
+  optionImages: z.array(ImageRef.nullable()).max(4).optional(),
   removeQuestionImage: z.boolean().optional(),
   removeOptionImage: z.array(z.boolean()).max(4).optional(),
   parts: z.array(QuestionPartSchema).min(1).optional(),
@@ -259,7 +287,7 @@ const baseInput = z.object({
 })
 
 /**
- * POST body (JSON; images arrive as multipart files `questionImage`, `optionImages[i]`, BE-04). `status`
+ * POST body (JSON only; images are uploaded first with `POST /files` and referenced by `questionImage`, `optionImages[i]`). `status`
  * defaults to `draft`; `published` is refused with 422 unless subject, level, unit, SP and TP are set.
  */
 export const QuestionCreateRequestSchema = baseInput
@@ -267,8 +295,9 @@ export const QuestionCreateRequestSchema = baseInput
   .superRefine((v, ctx) => {
     const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
     if (v.questionType === 'mcq') {
-      if (!v.options) bad('options', QUESTION_MESSAGES.options)
-      if (v.correctAnswer === undefined) bad('correctAnswer', QUESTION_MESSAGES.correctAnswer)
+      const message = v.options ? questionOptionsIssue(v.options) : QUESTION_MESSAGES.options
+      if (message) bad('options', message)
+      if (v.correctAnswer == null) bad('correctAnswer', QUESTION_MESSAGES.correctAnswer)
     }
     if ((v.questionType === 'short_answer' || v.questionType === 'fill_blank') && !v.correctAnswerText?.trim()) {
       bad('correctAnswerText', QUESTION_MESSAGES.answerText)
@@ -433,8 +462,8 @@ export const QuestionGuruSummarySchema = z
   .meta({ id: 'QuestionGuruSummary' })
 
 export const QuestionGuruDetailSchema = QuestionGuruSummarySchema.extend({
-  questionImage: z.string().nullable(),
-  optionImages: z.array(z.string().nullable()),
+  questionImage: z.string().nullable().meta({ description: 'File URL `/api/files/<id>`, or null.' }),
+  optionImages: z.array(z.string().nullable()).meta({ description: 'One file URL `/api/files/<id>` or null per option.' }),
   tfAnswer: z.boolean().nullable(),
   correctAnswerText: z.string().nullable(),
   altAnswers: z.array(z.string()),
@@ -467,7 +496,7 @@ const GuruOptionItem = { oneOf: [{ type: 'string' }, { type: 'object', propertie
  * POST /guru/questions: saved as `review`, owner = caller. Difficulty may be easy/medium/hard (2/3/4).
  * Rules per type are the mock's `parseCreate`; the issue key is the `fields` key: `options` (empty item,
  * or item over 500), `correctAnswer` (MCQ key; for short_answer/fill_blank the answer text, empty or over
- * 500), `tfAnswer`. Image errors use the key `questionImage` / `optionImages.<i>` (multipart). Chapter,
+ * 500), `tfAnswer`. Image errors use the key `questionImage` / `optionImages.<i>` (images are uploaded first with `POST /files`; JSON only). Chapter,
  * topic and SP ownership checks need the curriculum and are service rules (same keys and copy).
  */
 export const QuestionGuruCreateRequestSchema = z
@@ -479,6 +508,8 @@ export const QuestionGuruCreateRequestSchema = z
     questionText: GuruText,
     options: optionList({ long: QUESTION_MESSAGES.guruOptionLong, item: GuruOptionItem }).optional(),
     correctAnswer: z.union([z.number(), z.string()]).optional(),
+    questionImage: ImageRef.nullable().optional(),
+    optionImages: z.array(ImageRef.nullable()).max(4).optional(),
     tfAnswer: z.union([z.boolean(), z.string(), z.number()]).nullable().optional(),
     correctAnswerText: z.string().optional(),
     altAnswers: z.union([z.string(), z.array(z.string())]).optional(),
@@ -495,7 +526,8 @@ export const QuestionGuruCreateRequestSchema = z
   .superRefine((v, ctx) => {
     const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
     if (v.questionType === 'mcq') {
-      if (v.options === undefined) bad('options', QUESTION_MESSAGES.options)
+      const message = v.options === undefined ? QUESTION_MESSAGES.options : questionOptionsIssue(v.options, { long: QUESTION_MESSAGES.guruOptionLong })
+      if (message) bad('options', message)
       if (keyIndex(v.correctAnswer) === undefined) bad('correctAnswer', QUESTION_MESSAGES.correctAnswer)
     } else if (v.questionType === 'true_false') {
       if (!tfValid(v.tfAnswer)) bad('tfAnswer', QUESTION_MESSAGES.guruTf)
@@ -519,10 +551,13 @@ export const QuestionGuruUpdateRequestSchema = z
     options: optionList({
       long: QUESTION_MESSAGES.guruOptionLong,
       indexed: true,
+      strict: true,
       item: { type: 'object', required: ['id', 'optionText'], properties: { id: { type: 'integer', minimum: 0, maximum: 3 }, optionText: { type: 'string', minLength: 1, maxLength: 500 } } },
     }).optional(),
     correctOptionId: z.union([z.number(), z.string()]).optional(),
     explanation: z.string().nullable().optional(),
+    /** Stem image: the `id` that `POST /files` returned. Absent/null/blank keeps the saved image. */
+    questionImage: ImageRef.nullable().optional(),
   })
   .superRefine((v, ctx) => {
     if (v.options === undefined && v.correctOptionId === undefined) return

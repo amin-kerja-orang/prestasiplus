@@ -142,7 +142,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: admin,
     summary: 'Create a question',
     description:
-      'JSON, or multipart when images are sent (`questionImage`, `optionImages[i]`: JPG/PNG/WebP up to 2MB; their errors use the keys `questionImage` and `optionImages.<i>`). Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: "Soalan berjaya ditambah."',
+      'JSON only. Upload images first with `POST /files` (purpose `question_image`: JPG/PNG/WebP up to 2MB) and reference the returned `id` in `questionImage` and `optionImages[i]` (a file that is unknown, of another purpose or another user\'s is 422 on the key `questionImage` or `optionImages.<i>`). `options` and `correctAnswer` are read for an MCQ only. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: "Soalan berjaya ditambah."',
     request: { headers: [csrf], body: body(QuestionCreateRequestSchema) },
     responses: {
       201: json(mutationEnvelopeOf(QuestionSchema), 'Created.'),
@@ -164,7 +164,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     path: '/questions/{id}',
     tags: admin,
     summary: 'Edit a question',
-    description: 'Required: subjectId, educationLevelId, difficultyLevel, questionText. Flash: "Soalan berjaya dikemaskini." Status changes go through bulk-action / BE-10.',
+    description: 'JSON only (images are uploaded first with `POST /files` and referenced by `questionImage`, `optionImages[i]`; `removeQuestionImage` / `removeOptionImage[i]` clear a saved image; an absent image keeps the saved one). Required: subjectId, educationLevelId, difficultyLevel, questionText. Flash: "Soalan berjaya dikemaskini." Status changes go through bulk-action / BE-10.',
     request: { params: idParams, headers: [csrf], body: body(QuestionUpdateRequestSchema) },
     responses: {
       200: json(mutationEnvelopeOf(QuestionSchema), 'Updated.'),
@@ -225,7 +225,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     path: '/guru/questions',
     tags: guru,
     summary: 'Submit a question (saved as `review`, owner = caller)',
-    description: 'JSON or multipart (images). No flash. Counts toward the teacher contribution tiers (BE-17/BE-23 side effect).',
+    description: 'JSON only. Upload images first with `POST /files` (purpose `question_image`) and reference the returned `id` in `questionImage` / `optionImages[i]`. No flash. Counts toward the teacher contribution tiers (BE-17/BE-23 side effect).',
     request: { headers: [csrf], body: body(QuestionGuruCreateRequestSchema) },
     responses: {
       201: json(envelopeOf(QuestionGuruDetailSchema), 'Created.'),
@@ -247,6 +247,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     path: '/guru/questions/{id}',
     tags: guru,
     summary: 'Edit own question',
+    description: 'JSON only. `questionImage` is an id returned by `POST /files` (purpose `question_image`); absent keeps the saved image.',
     request: { params: idParams, headers: [csrf], body: body(QuestionGuruUpdateRequestSchema) },
     responses: {
       200: json(envelopeOf(QuestionGuruDetailSchema), 'Updated.'),

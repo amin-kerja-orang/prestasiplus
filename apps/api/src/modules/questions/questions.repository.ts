@@ -85,6 +85,8 @@ export interface NewStimulus {
   bodyEn: string | null
   altText: string | null
   assetFileId: bigint | null
+  /** `false` marks a stimulus that belongs to one question only (the stem image of a form-written question); default `true`. */
+  reusable?: boolean
 }
 
 export interface NewGroup {
@@ -743,9 +745,41 @@ export class QuestionsRepository {
 
   async createStimulus(input: NewStimulus): Promise<string> {
     const row = await this.db.stimulus.create({
-      data: { kind: input.kind, label: input.label, bodyMs: input.bodyMs, bodyEn: input.bodyEn, altText: input.altText, assetFileId: input.assetFileId },
+      data: {
+        kind: input.kind,
+        label: input.label,
+        bodyMs: input.bodyMs,
+        bodyEn: input.bodyEn,
+        altText: input.altText,
+        assetFileId: input.assetFileId,
+        ...(input.reusable === undefined ? {} : { reusable: input.reusable }),
+      },
     })
     return idToString(row.id)
+  }
+
+  /**
+   * The stem image of a version: its private (`reusable = false`) `image` stimulus that holds a file. Library stimuli
+   * (reusable, intake figures in a group) are never the stem image. Null when there is none.
+   */
+  async stemImageOf(stimulusIds: readonly string[]): Promise<{ stimulusId: string; fileId: string } | null> {
+    const keys = stimulusIds.map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return null
+    const row = await this.db.stimulus.findFirst({
+      where: { id: { in: keys }, kind: 'image', reusable: false, assetFileId: { not: null } },
+      orderBy: { id: 'asc' },
+      select: { id: true, assetFileId: true },
+    })
+    return row && row.assetFileId !== null ? { stimulusId: idToString(row.id), fileId: idToString(row.assetFileId) } : null
+  }
+
+  /** Deletes a private stimulus that no version, group or part uses any more (the replaced stem image). Never touches a shared one. */
+  async deleteStimulusIfUnused(id: string): Promise<void> {
+    const key = bi(id)
+    if (key === null) return
+    await this.db.stimulus.deleteMany({
+      where: { id: key, reusable: false, versionLinks: { none: {} }, groupLinks: { none: {} }, parts: { none: {} } },
+    })
   }
 
   async createGroup(input: NewGroup): Promise<string> {

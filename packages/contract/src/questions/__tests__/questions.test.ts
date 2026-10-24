@@ -290,12 +290,32 @@ describe('exact mock BM copy per field (create)', () => {
     ['dskpSpId', { dskpSpId: 3 }, m.sp],
     ['pointsValue', { pointsValue: 0 }, m.points],
     ['tfAnswer', { tfAnswer: 'maybe' }, m.tfAnswer],
-    ['options', { options: ['a', '', 'c', 'd'] }, m.options],
-    ['options', { options: ['a', 'b'] }, m.options],
     ['correctAnswer', { correctAnswer: 7 }, m.correctAnswer],
   ])('%s gives its mock message for %j', (field, patch, message) => {
     const r = QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'true_false', ...patch })
     expect(issuesOf(r)[field]).toBe(message)
+  })
+  it.each([
+    [{ options: ['a', '', 'c', 'd'], correctAnswer: 1 }, 'options'],
+    [{ options: ['a', 'b'], correctAnswer: 1 }, 'options'],
+    [{ options: ['a', 'b', 'c', 'd'], correctAnswer: '' }, 'correctAnswer'],
+    [{ options: ['a', 'b', 'c', 'd'], correctAnswer: null }, 'correctAnswer'],
+  ])('an MCQ with %j is refused on %s with the mock message', (patch, field) => {
+    const r = QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'mcq', ...patch })
+    expect(issuesOf(r)[field]).toBe(field === 'options' ? m.options : m.correctAnswer)
+  })
+  it('options and a blank key are read for an MCQ only', () => {
+    for (const questionType of ['true_false', 'essay'] as const) {
+      const r = QuestionCreateRequestSchema.safeParse({ ...good, questionType, tfAnswer: true, options: ['a', '', '', ''], correctAnswer: '' })
+      expect(r.success).toBe(true)
+    }
+  })
+  it('takes the uploaded ids of the stem and option images, and refuses a non-string one under the image key', () => {
+    const ok = QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'essay', questionImage: 'abcdefghijklmnopqrstuv', optionImages: [null, 'abcdefghijklmnopqrstuv'] })
+    expect(ok.success).toBe(true)
+    const bad = QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'essay', questionImage: 5, optionImages: [null, 7] })
+    expect(issuesOf(bad).questionImage).toBe(m.image)
+    expect(bad.error?.issues.map((i) => [i.path.join('.'), i.message])).toContainEqual(['optionImages.1', m.image])
   })
   it('gives the answer-text message for a short answer without one', () => {
     const r = QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'short_answer' })

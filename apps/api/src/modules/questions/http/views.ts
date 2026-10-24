@@ -48,10 +48,10 @@ function flatBase(q: QuestionView) {
     difficultyLevel: f.difficultyLevel,
     questionType: f.questionType,
     questionText: f.questionText,
-    // Images are existing `question_image` files referenced by id (Q-10): no upload on these routes.
-    questionImage: null,
+    // Images are `question_image` files uploaded first with `POST /files` (Q-10); the wire carries their file URLs.
+    questionImage: q.images?.question ?? null,
     options: f.options,
-    optionImages: f.options === null ? [] : f.optionImageIds,
+    optionImages: f.options === null ? [] : (q.images?.options ?? f.optionImageIds.map(() => null)),
     correctAnswer: f.correctAnswer,
     tfAnswer: f.tfAnswer,
     correctAnswerText: f.correctAnswerText,
@@ -176,8 +176,8 @@ export function guruDetailView(q: QuestionView): z.output<typeof QuestionGuruDet
   const c = constantFields(q)
   return QuestionGuruDetailSchema.parse({
     ...guruSummaryView(q),
-    questionImage: null,
-    optionImages: f.options === null ? [] : f.optionImageIds,
+    questionImage: q.images?.question ?? null,
+    optionImages: f.options === null ? [] : (q.images?.options ?? f.optionImageIds.map(() => null)),
     tfAnswer: f.tfAnswer,
     correctAnswerText: f.correctAnswerText,
     altAnswers: f.altAnswers,

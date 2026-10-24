@@ -3,6 +3,7 @@ import {
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
   QuestionPartSchema,
+  questionOptionsIssue,
   type QuestionPart,
 } from '@pp/contract'
 
@@ -27,7 +28,7 @@ import {
 } from './projection'
 import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
-import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
+import { draftsFromParts, MAX_PART_DEPTH, mapImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
 import type {
   AdminListFilter,
@@ -104,6 +105,25 @@ function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIss
 /** 422 text of a `pksk_choice` leaf sent to the general question routes (no `pksk` tag). */
 export const PKSK_LEAF_REFUSED = 'Jenis soalan PKSK hanya boleh disimpan sebagai soalan PKSK.'
 
+/** URL of a stored file as the question views carry it (the `url` that `POST /files` returns). */
+const FILE_URL_PREFIX = '/api/files/'
+const fileUrl = (publicId: string): string => `${FILE_URL_PREFIX}${publicId}`
+
+/**
+ * An image reference from a body: the id `POST /files` returned, or its URL (a form that posts back what it read).
+ * Blank and null mean "no new image" (undefined).
+ */
+function imageRef(value: string | null | undefined): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const text = value.trim()
+  const ref = text.startsWith(FILE_URL_PREFIX) ? text.slice(FILE_URL_PREFIX.length) : text
+  return ref === '' ? undefined : ref
+}
+
+/** Option image references by index for a flat MCQ body (null where none). */
+const optionRefs = (list: readonly (string | null)[] | undefined): (string | null)[] | undefined =>
+  list === undefined ? undefined : list.map((v) => imageRef(v) ?? null)
+
 const MAX_TOP_PARTS = 20
 const MAX_TOTAL_PARTS = 200
 const MAX_IMAGES = 50
@@ -153,6 +173,11 @@ interface Normalized {
   chapterId?: string | null | undefined
   topicId?: string | null | undefined
   stimulusGroupId?: string | null | undefined
+  /**
+   * Stem image: a file reference (id or public token) to set it, `null` to remove the saved one, `undefined` to keep it.
+   * It is stored as a private `image` stimulus of the version (no column).
+   */
+  stemImage?: string | null | undefined
   /** Who writes: image files must be theirs (or the actor is an admin). */
   actor: QuestionActor
   /** Message keys to use when a tag problem is found (flat bodies use `dskpSpId`). */
@@ -217,16 +242,17 @@ export class QuestionsService {
       questionType: input.questionType,
       questionText: input.questionText,
       ...(input.options === undefined ? {} : { options: input.options }),
-      ...(input.correctAnswer === undefined ? {} : { correctAnswer: input.correctAnswer }),
+      ...(input.correctAnswer == null ? {} : { correctAnswer: input.correctAnswer }),
       ...(input.tfAnswer === undefined ? {} : { tfAnswer: input.tfAnswer }),
       ...(input.correctAnswerText === undefined ? {} : { correctAnswerText: input.correctAnswerText }),
       ...(input.altAnswers === undefined ? {} : { altAnswers: input.altAnswers }),
       ...(input.modelAnswer === undefined ? {} : { modelAnswer: input.modelAnswer }),
       ...(input.pointsValue === undefined ? {} : { pointsValue: input.pointsValue }),
+      ...(input.questionType === 'mcq' && input.optionImages !== undefined ? { optionImageIds: optionRefs(input.optionImages) ?? [] } : {}),
     }
     const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
     const status = input.status ?? 'draft'
-    return this.createFrom(
+    const created = await this.createFrom(
       {
         subjectId: input.subjectId,
         educationLevelId: input.educationLevelId,
@@ -238,6 +264,7 @@ export class QuestionsService {
         tag: input.tag,
         dskpSpId: input.dskpSpId,
         stimulusGroupId: input.stimulusGroupId,
+        stemImage: imageRef(input.questionImage),
         actor,
         flatSp: input.tag === undefined,
       },
@@ -245,6 +272,7 @@ export class QuestionsService {
       actor,
       provenance,
     )
+    return this.withImages(created)
   }
 
   /**
@@ -259,7 +287,7 @@ export class QuestionsService {
   async update(id: string, input: QuestionUpdateInput, actor: QuestionActor): Promise<QuestionView> {
     const record = await this.repo.get(id, 'latest')
     if (!record) throw questionNotFound()
-    return this.viewOf(await this.applyUpdate(record, input, actor))
+    return this.withImages(await this.viewOf(await this.applyUpdate(record, input, actor)))
   }
 
   async remove(id: string, actor: QuestionActor): Promise<void> {
@@ -409,6 +437,7 @@ export class QuestionsService {
       ...(input.correctAnswerText === undefined ? {} : { correctAnswerText: input.correctAnswerText }),
       ...(input.altAnswers === undefined ? {} : { altAnswers: input.altAnswers }),
       ...(input.modelAnswer === undefined ? {} : { modelAnswer: input.modelAnswer }),
+      ...(input.questionType === 'mcq' && input.optionImages !== undefined ? { optionImageIds: optionRefs(input.optionImages) ?? [] } : {}),
     }
     const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
     const created = await this.createFrom(
@@ -424,6 +453,7 @@ export class QuestionsService {
         dskpSpId: input.dskpSpId,
         chapterId: input.curriculumChapterId,
         topicId: input.curriculumTopicId,
+        stemImage: imageRef(input.questionImage),
         actor: { userId, role: 'teacher' },
         flatSp: input.tag === undefined,
       },
@@ -446,6 +476,7 @@ export class QuestionsService {
       difficultyLevel: input.difficultyLevel === undefined ? flat.difficultyLevel : difficultyOf(input.difficultyLevel),
       questionText: input.questionText,
       ...(input.explanation === undefined ? {} : { explanation: input.explanation }),
+      ...(input.questionImage === undefined ? {} : { questionImage: input.questionImage }),
       ...(input.options === undefined
         ? {}
         : { options: [...input.options].sort((a, b) => Number((a as { id: number }).id) - Number((b as { id: number }).id)) }),
@@ -532,7 +563,7 @@ export class QuestionsService {
   }
 
   private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
-    const draft = await this.draftOf(n, status, null)
+    const { draft, stem } = await this.draftOf(n, status, null)
     if (provenance) {
       draft.numberLabel = provenance.numberLabel
       draft.sourcePage = provenance.sourcePage
@@ -551,6 +582,7 @@ export class QuestionsService {
     }
     const creator = parse(actor.userId)
     const id = await this.prisma.transaction(async () => {
+      if (stem) draft.stimulusIds = [...draft.stimulusIds, BigInt(await this.newStemImage(stem))]
       const groupId = n.stimulusGroupId ? n.stimulusGroupId : null
       const created = await this.repo.create({
         sourceType: provenance?.sourceType ?? 'manual',
@@ -585,7 +617,7 @@ export class QuestionsService {
    * their owners and builds the version columns. All failures land in one `fields` map.
    * `previous`: the version being edited (keeps its non-edited columns).
    */
-  private async draftOf(n: Normalized, status: QuestionStatus, previous: QuestionRecord | null): Promise<VersionDraft> {
+  private async draftOf(n: Normalized, status: QuestionStatus, previous: QuestionRecord | null): Promise<{ draft: VersionDraft; stem: bigint | null | undefined }> {
     const fields: Record<string, string> = {}
     const subjectKey = parse(n.subjectId)
     const levelKey = parse(n.educationLevelId)
@@ -642,20 +674,28 @@ export class QuestionsService {
       else topicKey = topic.id
     }
 
-    // Images are existing `question_image` files; stimuli and the group must exist.
+    // Images are existing `question_image` files, referenced by the id `POST /files` returned (or by an internal id);
+    // stimuli and the group must exist. Missing, wrong purpose and someone else's file all answer alike.
     const refs = referencedIds(n.parts)
     const imageIds = [...new Set(refs.imageIds)]
+    const resolved = new Map<string, string>()
     if (imageIds.length > MAX_IMAGES) {
       fields.imageIds = 'Satu soalan boleh mempunyai paling banyak ' + String(MAX_IMAGES) + ' imej.'
     } else {
       for (const imageId of imageIds) {
-        const meta = await this.files.metaOf(imageId)
-        // Missing, wrong purpose and someone else's file all answer alike (no existence oracle).
-        const foreign = meta !== null && meta.ownerUserId !== null && meta.ownerUserId !== n.actor.userId && n.actor.role !== 'admin'
-        if (!meta || meta.purpose !== 'question_image' || foreign) {
-          fields[this.imageKey(n.parts, imageId)] = QUESTION_MESSAGES.image
-        }
+        const fileId = await this.usableImage(imageId, n.actor)
+        if (fileId === null) fields[this.imageKey(n.parts, imageId)] = QUESTION_MESSAGES.image
+        else if (fileId !== imageId) resolved.set(imageId, fileId)
       }
+    }
+    const parts = resolved.size > 0 ? mapImageIds(n.parts, resolved) : n.parts
+    let stem: bigint | null | undefined
+    if (typeof n.stemImage === 'string') {
+      const fileId = await this.usableImage(n.stemImage, n.actor)
+      if (fileId === null) fields.questionImage = QUESTION_MESSAGES.image
+      else stem = BigInt(fileId)
+    } else if (n.stemImage === null) {
+      stem = null
     }
     if (refs.stimulusIds.length > 0 && !(await this.repo.stimuliExist(refs.stimulusIds))) fields.parts = 'Stimulus tidak sah.'
     if (n.stimulusGroupId && !(await this.repo.groupExists(n.stimulusGroupId))) fields.stimulusGroupId = 'Kumpulan stimulus tidak sah.'
@@ -663,9 +703,9 @@ export class QuestionsService {
     if (Object.keys(fields).length > 0) throw fail(fields)
 
     const v = previous?.version
-    return {
+    const draft: VersionDraft = {
       status,
-      type: versionTypeOf(n.parts),
+      type: versionTypeOf(parts),
       stemMs: n.stem,
       stemEn: v?.stemEn ?? null,
       numberLabel: v?.numberLabel ?? null,
@@ -684,8 +724,39 @@ export class QuestionsService {
       setLabel: v?.setLabel ?? null,
       spNodeIds: spKeys,
       stimulusIds: v?.stimulusIds.map((s) => BigInt(s)) ?? [],
-      parts: draftsFromParts(n.parts),
+      parts: draftsFromParts(parts),
     }
+    return { draft, stem }
+  }
+
+  /**
+   * The internal id of the `question_image` file `ref` names, or null when the writer may not use it. `ref` is the id
+   * that `POST /files` returned or an internal id. Unknown, another purpose and another user's file are all null (the
+   * same 422 for each, so nothing says which files exist); an admin may use any `question_image`.
+   */
+  private async usableImage(ref: string, actor: QuestionActor): Promise<string | null> {
+    const meta = await this.files.refMeta(ref)
+    if (!meta || meta.purpose !== 'question_image') return null
+    const foreign = meta.ownerUserId !== null && meta.ownerUserId !== actor.userId && actor.role !== 'admin'
+    return foreign ? null : meta.id
+  }
+
+  /** Stores the stem image of a version as a private `image` stimulus and returns its id. Call inside the write transaction. */
+  private newStemImage(fileId: bigint): Promise<string> {
+    return this.repo.createStimulus({ kind: 'image', label: null, bodyMs: null, bodyEn: null, altText: null, assetFileId: fileId, reusable: false })
+  }
+
+  /** Adds the image URLs (stem and options) a response carries; two reads at most. */
+  private async withImages(view: QuestionView): Promise<QuestionView> {
+    const optionIds = flatFromVersion(view.version).optionImageIds
+    const stem = await this.repo.stemImageOf(view.version.stimulusIds)
+    const wanted = [...optionIds.filter((id): id is string => id !== null), ...(stem ? [stem.fileId] : [])]
+    const tokens = await this.files.publicIdsOf(wanted)
+    const urlOf = (id: string | null): string | null => {
+      const token = id === null ? undefined : tokens.get(id)
+      return token === undefined ? null : fileUrl(token)
+    }
+    return { ...view, images: { question: urlOf(stem?.fileId ?? null), options: optionIds.map(urlOf) } }
   }
 
   private formOriginOf(levelCode: string | undefined): VersionDraft['formOrigin'] {
@@ -720,13 +791,22 @@ export class QuestionsService {
     if (input.parts) {
       parts = this.checkedParts(input.parts, true)
     } else if (flatShaped) {
-      const optionImageIds = flat.optionImageIds.map((id, i) => (input.removeOptionImage?.[i] ? null : id))
+      // A new image for an option replaces the saved one (even when `removeOptionImage` is also set); else remove or keep.
+      const optionImageIds = flat.optionImageIds.map((id, i) => imageRef(input.optionImages?.[i]) ?? (input.removeOptionImage?.[i] ? null : id))
+      if (flat.questionType === 'mcq') {
+        // The saved type decides what is read: an MCQ edit checks the option list and the key, other types ignore both.
+        if (input.options !== undefined) {
+          const message = questionOptionsIssue(input.options)
+          if (message) throw fail({ options: message })
+        }
+        if (input.correctAnswer === null) throw fail({ correctAnswer: QUESTION_MESSAGES.correctAnswer })
+      }
       const src: FlatSource = {
         questionType: flat.questionType as FlatType,
         questionText: input.questionText,
         pointsValue: input.pointsValue ?? flat.pointsValue,
         optionImageIds,
-        options: input.options ?? flat.options ?? [],
+        options: flat.questionType === 'mcq' ? (input.options ?? flat.options ?? []) : (flat.options ?? []),
         correctAnswer: input.correctAnswer ?? flat.correctAnswer ?? 0,
         tfAnswer: input.tfAnswer === undefined ? flat.tfAnswer : input.tfAnswer,
         correctAnswerText: input.correctAnswerText === undefined ? flat.correctAnswerText : input.correctAnswerText,
@@ -764,8 +844,11 @@ export class QuestionsService {
       flatSp: !input.tag && dskpSpId !== undefined,
     }
     if (input.stimulusGroupId !== undefined) normalized.stimulusGroupId = input.stimulusGroupId
+    // Stem image: a new reference sets it, `removeQuestionImage` clears it, nothing keeps it.
+    const newStem = imageRef(input.questionImage)
+    normalized.stemImage = newStem ?? (input.removeQuestionImage ? null : undefined)
 
-    const draft = await this.draftOf(normalized, statusAfterEdit(v.status, actor.role), record)
+    const { draft, stem } = await this.draftOf(normalized, statusAfterEdit(v.status, actor.role), record)
     const now = this.clock.now()
     await this.prisma.transaction(async () => {
       // Two concurrent edits serialise here; the second one sees the first one's version.
@@ -773,12 +856,28 @@ export class QuestionsService {
       const fresh = await this.repo.get(record.id, 'latest')
       if (!fresh) throw questionNotFound()
       const next = { ...draft, status: statusAfterEdit(fresh.version.status, actor.role) }
+      let replaced: string | null = null
+      if (stem !== undefined) {
+        // The stem image is the version's private `image` stimulus: swap it, leave every other stimulus alone.
+        const base = fresh.version.stimulusIds
+        const current = await this.repo.stemImageOf(base)
+        if (stem === null || current?.fileId !== stem.toString()) {
+          const kept = base.filter((sid) => sid !== current?.stimulusId)
+          if (stem !== null) kept.push(await this.newStemImage(stem))
+          next.stimulusIds = kept.map((sid) => BigInt(sid))
+          replaced = current?.stimulusId ?? null
+        } else {
+          next.stimulusIds = base.map((sid) => BigInt(sid))
+        }
+      }
       if (fresh.version.status === 'published') {
         // Q-5: the live version keeps serving; the edit is version n+1 as a draft.
         await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
       } else {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
       }
+      // A replaced stem image that no version still uses is removed (a published version keeps its own).
+      if (replaced !== null) await this.repo.deleteStimulusIfUnused(replaced)
       if (input.stimulusGroupId !== undefined) {
         const gid = input.stimulusGroupId
         await this.repo.setGroup(record.id, gid, gid === null ? null : await this.repo.nextGroupPosition(gid))
@@ -815,7 +914,7 @@ export class QuestionsService {
   }
 
   private async detail(record: QuestionRecord): Promise<QuestionDetailView> {
-    const view = await this.viewOf(record)
+    const view = await this.withImages(await this.viewOf(record))
     const creator = record.createdById ? await this.users.get(record.createdById) : null
     return {
       ...view,

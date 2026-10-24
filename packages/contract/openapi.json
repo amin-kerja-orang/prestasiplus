@@ -34423,7 +34423,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "File URL `/api/files/<id>` (the `id` of the `POST /files` upload), or null."
           },
           "options": {
             "type": [
@@ -34441,7 +34442,8 @@
                 "string",
                 "null"
               ]
-            }
+            },
+            "description": "One file URL `/api/files/<id>` or null per option, in order; `[]` for a question without options."
           },
           "correctAnswer": {
             "type": [
@@ -34758,7 +34760,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "File URL `/api/files/<id>` (the `id` of the `POST /files` upload), or null."
           },
           "options": {
             "type": [
@@ -34776,7 +34779,8 @@
                 "string",
                 "null"
               ]
-            }
+            },
+            "description": "One file URL `/api/files/<id>` or null per option, in order; `[]` for a question without options."
           },
           "correctAnswer": {
             "type": [
@@ -35250,6 +35254,24 @@
             "type": "integer",
             "minimum": 1
           },
+          "questionImage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
+          "optionImages": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 200
+            },
+            "maxItems": 4
+          },
           "removeQuestionImage": {
             "type": "boolean"
           },
@@ -35384,6 +35406,24 @@
           "pointsValue": {
             "type": "integer",
             "minimum": 1
+          },
+          "questionImage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
+          "optionImages": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 200
+            },
+            "maxItems": 4
           },
           "removeQuestionImage": {
             "type": "boolean"
@@ -36050,7 +36090,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "File URL `/api/files/<id>`, or null."
           },
           "optionImages": {
             "type": "array",
@@ -36059,7 +36100,8 @@
                 "string",
                 "null"
               ]
-            }
+            },
+            "description": "One file URL `/api/files/<id>` or null per option."
           },
           "tfAnswer": {
             "type": [
@@ -36281,6 +36323,24 @@
               }
             ]
           },
+          "questionImage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
+          "optionImages": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 200
+            },
+            "maxItems": 4
+          },
           "tfAnswer": {
             "anyOf": [
               {
@@ -36435,6 +36495,13 @@
               "string",
               "null"
             ]
+          },
+          "questionImage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
           }
         },
         "required": [
@@ -92361,7 +92428,7 @@
           "questions"
         ],
         "summary": "Create a question",
-        "description": "JSON, or multipart when images are sent (`questionImage`, `optionImages[i]`: JPG/PNG/WebP up to 2MB; their errors use the keys `questionImage` and `optionImages.<i>`). Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
+        "description": "JSON only. Upload images first with `POST /files` (purpose `question_image`: JPG/PNG/WebP up to 2MB) and reference the returned `id` in `questionImage` and `optionImages[i]` (a file that is unknown, of another purpose or another user's is 422 on the key `questionImage` or `optionImages.<i>`). `options` and `correctAnswer` are read for an MCQ only. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
         "parameters": [
           {
             "schema": {
@@ -92648,7 +92715,7 @@
           "questions"
         ],
         "summary": "Edit a question",
-        "description": "Required: subjectId, educationLevelId, difficultyLevel, questionText. Flash: \"Soalan berjaya dikemaskini.\" Status changes go through bulk-action / BE-10.",
+        "description": "JSON only (images are uploaded first with `POST /files` and referenced by `questionImage`, `optionImages[i]`; `removeQuestionImage` / `removeOptionImage[i]` clear a saved image; an absent image keeps the saved one). Required: subjectId, educationLevelId, difficultyLevel, questionText. Flash: \"Soalan berjaya dikemaskini.\" Status changes go through bulk-action / BE-10.",
         "parameters": [
           {
             "schema": {
@@ -93149,7 +93216,7 @@
           "guru"
         ],
         "summary": "Submit a question (saved as `review`, owner = caller)",
-        "description": "JSON or multipart (images). No flash. Counts toward the teacher contribution tiers (BE-17/BE-23 side effect).",
+        "description": "JSON only. Upload images first with `POST /files` (purpose `question_image`) and reference the returned `id` in `questionImage` / `optionImages[i]`. No flash. Counts toward the teacher contribution tiers (BE-17/BE-23 side effect).",
         "parameters": [
           {
             "schema": {
@@ -93300,6 +93367,7 @@
           "guru"
         ],
         "summary": "Edit own question",
+        "description": "JSON only. `questionImage` is an id returned by `POST /files` (purpose `question_image`); absent keeps the saved image.",
         "parameters": [
           {
             "schema": {

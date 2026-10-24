@@ -169,6 +169,20 @@ export function referencedIds(parts: readonly QuestionPart[]): { imageIds: strin
   return { imageIds, stimulusIds }
 }
 
+/** A copy of the tree with every option `imageId` replaced by `map` (an id that `map` does not know stays as it is). */
+export function mapImageIds(parts: readonly QuestionPart[], map: ReadonlyMap<string, string>): QuestionPart[] {
+  const walk = (list: readonly QuestionPart[]): QuestionPart[] =>
+    list.map((part): QuestionPart => {
+      if (!isLeaf(part)) return { ...part, children: walk(part.children as QuestionPart[]) } as QuestionPart
+      if (part.mode !== 'mcq' && part.mode !== 'pksk_choice') return part
+      return {
+        ...part,
+        options: part.options.map((o) => (o.imageId != null && map.has(o.imageId) ? { ...o, imageId: map.get(o.imageId) as string } : o)),
+      } as QuestionPart
+    })
+  return walk(parts)
+}
+
 /** Total marks of the leaves (flat `pointsValue`, structured `totalMarks`). */
 export function totalMarks(parts: readonly QuestionPart[]): number {
   return parts.reduce((s, p) => s + (isLeaf(p) ? p.marks : totalMarks(p.children as QuestionPart[])), 0)
