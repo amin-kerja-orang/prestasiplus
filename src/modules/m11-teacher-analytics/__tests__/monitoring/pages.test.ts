@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useToast } from '@nuxt/ui/composables'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -15,6 +16,7 @@ import type {
   StudentDetail,
   TeacherDetail,
 } from '../../api/types'
+import { EXPORT_ERROR } from '../../components/monitoring/monitoring-format'
 import MonitoringPage from '../../pages/MonitoringPage.vue'
 import MonitoringSchoolPage from '../../pages/MonitoringSchoolPage.vue'
 import MonitoringStudentPage from '../../pages/MonitoringStudentPage.vue'
@@ -537,6 +539,25 @@ describe('S2 Monitoring Penglibatan', () => {
       state: '',
       tahap: '',
     })
+  })
+
+  it('a failed CSV export shows the BM error toast (never the API text), saves nothing and does not throw (DV-M11-32)', async () => {
+    useToast().clear()
+    api.fetchMonitoringExport.mockRejectedValue(
+      new ApiError({ status: 503, code: 'SERVER_ERROR', message: 'Backend exploded: secret detail' }),
+    )
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    await mountAt(MonitoringPage, '/guru/monitoring')
+    await tid('mon-export-csv')?.trigger('click')
+    await flushPromises()
+    process.off('unhandledRejection', unhandled)
+    expect(unhandled).not.toHaveBeenCalled()
+    expect(saveBlob).not.toHaveBeenCalled()
+    const titles = useToast().toasts.value.map((t) => t.title)
+    expect(titles).toEqual([EXPORT_ERROR])
+    expect(EXPORT_ERROR).toBe('Ralat berlaku. Sila cuba lagi.')
+    expect(JSON.stringify(useToast().toasts.value)).not.toContain('Backend exploded')
   })
 
   it('shows the error copy when the fetch fails', async () => {

@@ -1,5 +1,6 @@
 import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
+import { isHttpMode } from '@/api/mode'
 import type { LayoutMode } from '@/app/router/meta'
 import type { Role } from '@/stores/session-types'
 
@@ -26,7 +27,11 @@ interface MountOptions {
   roles: readonly Role[]
 }
 
-const num = (route: RouteLocationNormalized, key: string) => Number(route.params[key])
+// http mode: ids are strings on the wire (never parsed), kept as-is; mock mode keeps numbers
+const num = (route: RouteLocationNormalized, key: string): number | string => {
+  const value = route.params[key]
+  return isHttpMode() ? String(value) : Number(value)
+}
 
 export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions): RouteRecordRaw[] {
   const meta = {

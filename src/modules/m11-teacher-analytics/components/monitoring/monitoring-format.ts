@@ -8,6 +8,12 @@ import { formatDateEnUnpadded, formatMyt } from '@/lib/time'
 
 import type { TahapKey, TopicBadge } from '../../api/types'
 
+/**
+ * A failed CSV export (401 / 403 / 429 / 5xx / offline) shows this toast, never the API text (DV-M11-32).
+ * SRS M11 §8.2 request-error copy (= M01 GENERIC_ERROR; PROPOSED).
+ */
+export const EXPORT_ERROR = 'Ralat berlaku. Sila cuba lagi.'
+
 export const count = formatCount
 /** Monitoring percentage: 1 decimal, ".0" dropped ("35.2%", "100%"). */
 export const pct = (value: number) => formatPercent(value, { decimals: 1, dropZeroFraction: true })
