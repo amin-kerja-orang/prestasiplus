@@ -77,6 +77,7 @@ async function render(
     routes: [
       { path: routePath, component },
       { path: '/timeline', component: { template: '<i />' } },
+      { path: '/pelajar/:id(\\d+)', component: { template: '<i />' } },
       ...extraRoutes,
     ],
   })
