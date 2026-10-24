@@ -33,12 +33,12 @@ async function startPaper(
 ): Promise<void> {
   await page.getByTestId(`open-${paperId}`).click()
   await expect(page.getByTestId('bijak-cover')).toBeVisible()
-  await expect(page.locator('[data-ds=hero-cta]')).toBeVisible()
+  await expect(page.getByTestId('cover-start')).toBeVisible()
   // the section rules ("Jawab 1 daripada 2 soalan.") are part of the cover screenshot
   await page.getByTestId('cover-sections').evaluate((el) => el.scrollIntoView({ block: 'center' }))
   await shot(page, `cover-${paperId}`)
   if (mode === 'latihan') await page.getByText('Mod Latihan', { exact: true }).click()
-  await page.locator('[data-ds=hero-cta]').click()
+  await page.getByTestId('cover-start').click()
   await expect(page.getByTestId('attempt-shell')).toBeVisible()
 }
 
