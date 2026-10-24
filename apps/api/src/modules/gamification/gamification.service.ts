@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import type {
   GamificationAchievements,
   GamificationChallengeProgress,
@@ -13,6 +14,8 @@ import type {
 } from '@pp/contract'
 import { GAMIFICATION_MESSAGES as MSG } from '@pp/contract'
 
+import type { Env } from '../../common/config/env.schema'
+import { publicBaseUrl } from '../../common/config/public-base-url'
 import { ApiError } from '../../common/errors/api-error'
 import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock, mytDay } from '../../db/clock'
@@ -20,20 +23,24 @@ import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { toMytTimestamp } from '../../common/time/myt'
 import { ClassesRepository } from '../classes/classes.repository'
-import { MAX_AMOUNT_PER_CALL, WalletService, walletLockOrder } from '../wallet'
+import { MAX_AMOUNT_PER_CALL, StreakService, WalletService, walletLockOrder } from '../wallet'
 import { titleOf } from '../wallet/rules'
 import {
+  ACCURATE_SESSION_PCT,
   LEADERBOARD_SIZE,
-  PUBLIC_HOST,
+  MATH_SUBJECT_NAME,
+  SCIENCE_SUBJECT_NAME,
   RARITY_COLORS,
   RARITY_LABELS,
+  DAILY_LOGIN_DESCRIPTION,
+  DAILY_LOGIN_REWARD,
   REFERRAL_REWARD_REFEREE,
   REFERRAL_REWARD_REFERRER,
 } from './gamification.constants'
-import { GamificationRepository, type ChallengeRecord, type Db } from './gamification.repository'
+import { GamificationRepository, type AchievementRecord, type ChallengeRecord, type Db } from './gamification.repository'
 import { RANKING_REDACTED_ID, canSeeRankedName, shortName, type NameScope, type RankingViewer } from './name-privacy'
-import { GamificationPorts } from './ports'
-import { activeTiers, defaultTier, initialOf, initialsOf, masteryLevel, masteryMultiplier, masteryNextTarget, masteryStage, round, shareEncode, tierView } from './helpers'
+import { GamificationPorts, type PracticeMasteryFact } from './ports'
+import { activeTiers, defaultTier, initialOf, initialsOf, masteryLevel, masteryMultiplier, masteryNextTarget, masteryStage, previousDay, round, shareEncode, tierView } from './helpers'
 import { validationFailure } from './validation'
 
 /** Who is calling: the signed-in user and whether an admin is in Mod Pelajar (`isTestActor`). */
@@ -144,6 +151,8 @@ export class GamificationService {
     @Inject(CLOCK) private readonly clock: Clock,
     private readonly ports: GamificationPorts,
     @Inject(ClassesRepository) private readonly classes: ClassesRepository,
+    @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
+    @Inject(StreakService) private readonly streaks: StreakService,
   ) {}
 
   private run<T>(tx: TxClient | undefined, fn: (db: Db) => Promise<T>): Promise<T> {
@@ -326,7 +335,7 @@ export class GamificationService {
     return {
       name,
       initial: initialOf(name),
-      profileUrl: `${PUBLIC_HOST}/pelajar/${userId}`,
+      profileUrl: `${publicBaseUrl(this.config)}/pelajar/${userId}`,
       profile: { answered, accuracy, sessions: counts.all, tierKey: wallet.tier.key, tierIcon: wallet.tier.icon, level: wallet.level, currentSyiling: wallet.currentSyiling },
       kombo: { current: streak.current, best: streak.best, multiplier: 1 },
       mastery: mastery.map((m) => ({ subjectName: m.subjectName, level: m.level, stage: m.stage, accuracy: m.accuracy1, correct: m.correct })),
@@ -338,7 +347,7 @@ export class GamificationService {
   async referral(userId: string): Promise<GamificationReferral> {
     const code = await this.referralCodeOf(userId)
     const stats = await this.repo.referralStats(this.repo.handle(), userId)
-    const registerUrl = `${PUBLIC_HOST}/register?ref=${code}`
+    const registerUrl = `${publicBaseUrl(this.config)}/register?ref=${code}`
     const text = `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(REFERRAL_REWARD_REFEREE)} syiling PERCUMA! ${registerUrl}`
     return {
       code,
@@ -502,24 +511,147 @@ export class GamificationService {
     })
   }
 
+  /**
+   * XR-M14-02(a) / BR-M14-14 / FR-M14-64 (called by the login hook after a STUDENT's successful password login; the
+   * caller filters the role, so an admin or teacher login never reaches it): moves the streak (a qualifying event;
+   * the same Malaysia day changes nothing) and, on the FIRST login of the Malaysia day, credits +2 syiling
+   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`). Idempotent: the day mark
+   * is unique per (user, day), so a second login the same day writes nothing, and the ledger key stops a replay.
+   * A complimentary student (`coinsEnabled` false) gets the streak but no row. The streak is locked before the wallet
+   * (BE-11 lock order). Never `is_test`: a login is not Mod Pelajar.
+   */
+  async onLogin(userId: string, opts: { tx?: TxClient; at?: Date } = {}): Promise<{ firstToday: boolean; credited: number; streak: number }> {
+    return this.run(opts.tx, async (db) => {
+      const tx = db as TxClient
+      const streak = await this.streaks.touch(userId, { ...(opts.at ? { at: opts.at } : {}), tx })
+      const mark = await this.streaks.markDailyLogin(userId, { tx })
+      if (!mark.firstToday || !(await this.coinsEnabled(userId, { tx }))) return { firstToday: mark.firstToday, credited: 0, streak: streak.current }
+      await this.wallet.credit(
+        { userId, amount: DAILY_LOGIN_REWARD, source: 'daily_login', sourceId: `daily_login:${mark.day}`, description: DAILY_LOGIN_DESCRIPTION, isTest: false },
+        { tx },
+      )
+      return { firstToday: true, credited: DAILY_LOGIN_REWARD, streak: streak.current }
+    })
+  }
+
   /** Unlocks one achievement once (unique user + achievement) and pays its reward only on the inserting call (ledger key `achievement` / `achievement:<id>`). */
   async unlockAchievement(userId: string, achievementId: string, opts: EntryOptions): Promise<{ unlocked: boolean; syiling: number; xp: number }> {
     return this.run(opts.tx, async (db) => {
       const a = await this.repo.achievement(db, idFromString(achievementId))
       if (!a) throw ApiError.of('NOT_FOUND')
-      const at = opts.at ?? this.clock.now()
-      if (!(await this.repo.insertUnlock(db, { userId, achievementId, at, isTest: opts.isTest }))) return { unlocked: false, syiling: 0, xp: 0 }
-      let syiling = 0
-      if (a.rewardSyiling > 0 && (await this.coinsEnabled(userId, { tx: db as TxClient }))) {
-        await this.wallet.credit(
-          { userId, amount: a.rewardSyiling, source: 'achievement', sourceId: `achievement:${achievementId}`, description: `Pencapaian: ${a.name}`, isTest: opts.isTest },
-          { tx: db as TxClient },
-        )
-        syiling = a.rewardSyiling
-      }
-      if (a.rewardXp > 0) await this.wallet.addXp({ userId, amount: a.rewardXp, isTest: opts.isTest }, { tx: db as TxClient })
-      return { unlocked: true, syiling, xp: a.rewardXp }
+      return this.unlockRecord(db, userId, a, opts)
     })
+  }
+
+  private async unlockRecord(db: Db, userId: string, a: AchievementRecord, opts: EntryOptions): Promise<{ unlocked: boolean; syiling: number; xp: number }> {
+    const at = opts.at ?? this.clock.now()
+    if (!(await this.repo.insertUnlock(db, { userId, achievementId: a.id, at, isTest: opts.isTest }))) return { unlocked: false, syiling: 0, xp: 0 }
+    let syiling = 0
+    if (a.rewardSyiling > 0 && (await this.coinsEnabled(userId, { tx: db as TxClient }))) {
+      await this.wallet.credit(
+        { userId, amount: a.rewardSyiling, source: 'achievement', sourceId: `achievement:${a.id}`, description: `Pencapaian: ${a.name}`, isTest: opts.isTest },
+        { tx: db as TxClient },
+      )
+      syiling = a.rewardSyiling
+    }
+    if (a.rewardXp > 0) await this.wallet.addXp({ userId, amount: a.rewardXp, isTest: opts.isTest }, { tx: db as TxClient })
+    return { unlocked: true, syiling, xp: a.rewardXp }
+  }
+
+  /**
+   * BR-M14-16 / FR-M14-51 (called after a practice-mode session completes, BE-12 binding, after the challenges):
+   * every locked achievement whose criterion is now met is unlocked, in catalogue (`id`) order. Idempotent: the
+   * unlock row is unique per (user, achievement) and the reward is credited only by the call that inserted it
+   * (`unlockRecord`), so a replay or a concurrent session unlocks and pays once. The criteria counters are read
+   * at call time (lazily, only for the kinds still locked); a reward changes `lifetime_syiling` and `unlocked`
+   * for the achievements after it in the same pass (the mock engine's live counters). Returns the ids unlocked by THIS call.
+   */
+  async evaluateAchievements(userId: string, opts: EntryOptions): Promise<{ unlockedIds: string[]; syiling: number; xp: number }> {
+    return this.run(opts.tx, async (db) => {
+      const out = { unlockedIds: [] as string[], syiling: 0, xp: 0 }
+      const [catalogue, unlocks] = await Promise.all([this.repo.achievements(db), this.repo.unlocksOf(db, userId)])
+      if (catalogue.every((a) => unlocks.has(a.id))) return out
+      const at = opts.at ?? this.clock.now()
+      const day = mytDay(at)
+      const memo = new Map<string, number>()
+      const count = async (key: string, read: () => Promise<number>): Promise<number> => {
+        const hit = memo.get(key)
+        if (hit !== undefined) return hit
+        const value = await read()
+        memo.set(key, value)
+        return value
+      }
+      let masteryRows: readonly PracticeMasteryFact[] | null = null
+      const masteryOnce = async (): Promise<readonly PracticeMasteryFact[]> => (masteryRows ??= await this.ports.practiceFacts.mastery(userId))
+      const subjectCorrect = async (name: string): Promise<number> => (await masteryOnce()).filter((m) => m.subjectName === name).reduce((a, m) => a + m.correct, 0)
+      const metric = async (a: AchievementRecord): Promise<number> => {
+        switch (a.criterionKind) {
+          case 'practice_sessions':
+            return count('practice_sessions', async () => (await this.ports.practiceFacts.sessionCounts(userId)).practice)
+          case 'streak':
+            return count('streak', async () => (await this.repo.streakOf(db, userId)).current)
+          case 'lifetime_syiling':
+            return count('lifetime_syiling', async () => (await this.wallet.summary(userId, { tx: db as TxClient })).totalSyilingEarned)
+          case 'accurate_sessions':
+            return count('accurate_sessions', () => this.ports.practiceFacts.accurateSessions(userId, ACCURATE_SESSION_PCT))
+          case 'subjects':
+            return (await masteryOnce()).filter((m) => m.answered > 0).length
+          case 'mystery_openings':
+            return count('mystery_openings', () => this.repo.mysteryOpenings(db, userId))
+          case 'completions':
+            return count('completions', () => this.repo.completionCount(db, userId))
+          case 'math_correct':
+            return subjectCorrect(MATH_SUBJECT_NAME)
+          case 'science_correct':
+            return subjectCorrect(SCIENCE_SUBJECT_NAME)
+          // BR-M14-16 "when recorded": the practice submit does not store per-answer times yet, so this stays 0 (as the mock engine).
+          case 'fast_answers':
+            return 0
+          case 'referrals':
+            return count('referrals', () => this.repo.rewardedReferralCount(db, userId))
+          case 'unlocked':
+            return unlocks.size
+          case 'answers_accuracy': {
+            const rows = await masteryOnce()
+            const answered = rows.reduce((n, m) => n + m.answered, 0)
+            const correct = rows.reduce((n, m) => n + m.correct, 0)
+            // The count of answers, but only while the overall accuracy holds; below it the criterion is not met at any count.
+            return answered > 0 && (correct / answered) * 100 >= (a.criterionAccuracy ?? 0) ? answered : 0
+          }
+          case 'perfect_days':
+            return count('perfect_days', () => this.perfectDays(db, userId, day, a.criterionMin ?? 0))
+          default:
+            return 0
+        }
+      }
+      for (const a of catalogue) {
+        if (unlocks.has(a.id) || a.criterionKind === null || a.criterionMin === null) continue
+        if ((await metric(a)) < a.criterionMin) continue
+        const r = await this.unlockRecord(db, userId, a, { ...opts, tx: db as TxClient, at })
+        if (!r.unlocked) continue
+        unlocks.set(a.id, at)
+        memo.delete('lifetime_syiling')
+        out.unlockedIds.push(a.id)
+        out.syiling += r.syiling
+        out.xp += r.xp
+      }
+      return out
+    })
+  }
+
+  /**
+   * BR-M14-16 "Wira JomBelajar": consecutive Malaysia days on which EVERY active challenge was completed, ending today
+   * (today counts only when all are done now). Looks back at most `need` days.
+   */
+  private async perfectDays(db: Db, userId: string, day: string, need: number): Promise<number> {
+    const active = await this.repo.challenges(db, true)
+    if (active.length === 0 || need < 1) return 0
+    const byDay = await this.repo.completionsByDay(db, userId, day, need)
+    const complete = (d: string): boolean => active.every((c) => byDay.get(d)?.has(c.id))
+    if (!complete(day)) return 0
+    let n = 1
+    for (let d = previousDay(day); n < need && complete(d); d = previousDay(d)) n++
+    return n
   }
 
   /** Papan Bijak coins per correct answer / per win of the user's wallet tier (the lowest tier without a wallet). */

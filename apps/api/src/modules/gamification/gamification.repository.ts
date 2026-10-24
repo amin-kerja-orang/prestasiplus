@@ -401,6 +401,23 @@ export class GamificationRepository {
     return db.challengeCompletion.count({ where: { userId: idFromString(userId) } })
   }
 
+  /** Challenge ids the user completed per Malaysia day, for the `days` days BEFORE `day` (BR-M14-16 perfect days). */
+  async completionsByDay(db: Db, userId: string, day: string, days: number): Promise<Map<string, Set<string>>> {
+    const from = new Date(dayDate(day).getTime() - days * 86_400_000)
+    const rows = await db.challengeCompletion.findMany({
+      where: { userId: idFromString(userId), completionDate: { gte: from, lte: dayDate(day) } },
+      select: { challengeId: true, completionDate: true },
+    })
+    const out = new Map<string, Set<string>>()
+    for (const r of rows) {
+      const key = dayOf(r.completionDate)
+      const set = out.get(key) ?? new Set<string>()
+      set.add(idToString(r.challengeId))
+      out.set(key, set)
+    }
+    return out
+  }
+
   // --- achievements --------------------------------------------------------------------------------
 
   async achievements(db: Db): Promise<AchievementRecord[]> {
