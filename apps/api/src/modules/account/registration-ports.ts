@@ -31,8 +31,9 @@ export interface RegistrationHook {
  * `onModuleInit`. Until then registration does nothing extra. Registering twice is a wiring error and throws.
  *
  * Unlike the login hook the registration hook runs INSIDE the registration transaction (the referral rows and the two
- * wallet credits commit or roll back with the new user). It must treat an unknown, own, empty or already-used code
- * as a no-op and not throw; an unexpected error rolls the whole registration back (no savepoints in this codebase).
+ * wallet credits commit or roll back with the new user). The hook MUST NOT throw: it treats an unknown, own, empty or
+ * already-used code as a no-op, and the plugged-in M14 hook guards itself with a SAVEPOINT, so a failure skips the
+ * referral and never the registration. `RegistrationService` does not catch for it.
  */
 @Injectable()
 export class AccountPorts {

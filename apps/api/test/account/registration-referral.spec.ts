@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
@@ -143,7 +143,7 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     expect(await syiling(db, referrerId)).toBe(referrerBefore + 50)
   })
 
-  it('the referral is written in the registration transaction: a failure after it rolls the new user and the credits back', async () => {
+  it('the referral is written in the registration transaction: a failure of the host after it rolls the new user and the credits back', async () => {
     const ports = t.app.get(AccountPorts)
     const real = ports.registrationHook as RegistrationHook
     ports.overrideRegistrationHook({
@@ -166,6 +166,68 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     } finally {
       ports.overrideRegistrationHook(real)
     }
+  })
+
+  describe('M14 failure never aborts a registration (savepoint `referral_apply`)', () => {
+    const sessionsOf = async (userId: string): Promise<number> =>
+      Number((await db.query<{ n: string }>('select count(*)::text as n from sessions where user_id = $1::bigint', [userId]))[0]?.n)
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('applyReferral throws: still 201, user and session exist (read from another connection), no referral or wallet rows', async () => {
+      vi.spyOn(t.app.get(GamificationService), 'applyReferral').mockRejectedValueOnce(new Error('boom'))
+      const referrerBefore = await syiling(db, referrerId)
+      const referralsBefore = await count(db, 'referrals')
+      const ledgerBefore = await count(db, 'coin_ledger')
+      const email = body().email
+      const res = await register(body({ email, referralCode: code }))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      // `db` is a separate pool from the app: this read sees only what the registration COMMITTED.
+      const row = await userRow(db, email)
+      expect(row).toBeDefined()
+      const id = row!.id
+      expect(await sessionsOf(id)).toBe(1)
+      expect(await ledger(db, id)).toEqual([])
+      expect(await syiling(db, id)).toBeUndefined()
+      expect(await syiling(db, referrerId)).toBe(referrerBefore)
+      expect(await count(db, 'referrals')).toBe(referralsBefore)
+      expect(await count(db, 'coin_ledger')).toBe(ledgerBefore)
+    })
+
+    it('a database error inside the hook after real referral writes: the savepoint is rolled back, the registration commits without them', async () => {
+      const service = t.app.get(GamificationService)
+      const real = service.applyReferral.bind(service)
+      vi.spyOn(service, 'applyReferral').mockImplementationOnce(async (newUserId, c, opts) => {
+        const out = await real(newUserId, c, opts) // writes the referral row and both credits ...
+        expect(out.applied).toBe(true)
+        await opts.tx!.$executeRawUnsafe('select * from table_that_does_not_exist') // ... then PG aborts the transaction
+        return out
+      })
+      const referrerBefore = await syiling(db, referrerId)
+      const referralsBefore = await count(db, 'referrals')
+      const ledgerBefore = await count(db, 'coin_ledger')
+      const email = body().email
+      const res = await register(body({ email, referralCode: code }))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const row = await userRow(db, email)
+      expect(row).toBeDefined()
+      expect(await sessionsOf(row!.id)).toBe(1)
+      expect(await ledger(db, row!.id)).toEqual([])
+      expect(await syiling(db, referrerId)).toBe(referrerBefore)
+      expect(await count(db, 'referrals')).toBe(referralsBefore)
+      expect(await count(db, 'coin_ledger')).toBe(ledgerBefore)
+    })
+
+    it('the next registration with the same code still pays (the failure left no state behind)', async () => {
+      const referrerBefore = (await syiling(db, referrerId)) ?? 0
+      const email = body().email
+      const res = await register(body({ email, referralCode: code }))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect(await syiling(db, (await userRow(db, email))!.id)).toBe(25)
+      expect(await syiling(db, referrerId)).toBe(referrerBefore + 50)
+    })
   })
 })
 
