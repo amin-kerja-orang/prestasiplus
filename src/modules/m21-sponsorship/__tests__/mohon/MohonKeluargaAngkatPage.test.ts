@@ -134,7 +134,7 @@ describe('S6 static copy (FR-M21-46, 48)', () => {
       'Admin semak dan luluskan permohonan (1-3 hari bekerja)',
       'Pelajar masuk ke kumpulan — sponsor/keluarga angkat boleh pilih',
       'Bila sponsor pilih, pelajar dapat akses PERCUMA PrestasiPlus selama 1 sesi persekolahan',
-      'Keluarga angkat boleh pantau prestasi pelajar dari dashboard mereka',
+      'Keluarga angkat boleh pantau prestasi pelajar dari papan pemuka mereka',
     ])
     expect(text).toContain('Siapa boleh mohon?')
     expect(box.findAll('ul li').map((li) => li.text())).toEqual([

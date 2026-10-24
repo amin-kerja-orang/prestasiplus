@@ -97,7 +97,7 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
     await loginAs(PELAJAR)
     await gotoApp(PATH)
     await expect(page.getByTestId('shell-user-title').first()).toHaveText('Mohon Keluarga Angkat')
-    await expect(page.getByTestId('shell-user-title').first()).not.toHaveText('Dashboard')
+    await expect(page.getByTestId('shell-user-title').first()).not.toHaveText('Papan Pemuka')
     await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
       'Selamat datang kembali',
     )
@@ -223,7 +223,7 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
       'Admin semak dan luluskan permohonan (1-3 hari bekerja)',
       'Pelajar masuk ke kumpulan — sponsor/keluarga angkat boleh pilih',
       'Bila sponsor pilih, pelajar dapat akses PERCUMA PrestasiPlus selama 1 sesi persekolahan',
-      'Keluarga angkat boleh pantau prestasi pelajar dari dashboard mereka',
+      'Keluarga angkat boleh pantau prestasi pelajar dari papan pemuka mereka',
     ])
     await expect(info).toContainText('Siapa boleh mohon?')
     await expect(info.locator('ul li')).toHaveText([
