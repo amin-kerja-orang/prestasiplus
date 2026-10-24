@@ -63,7 +63,7 @@ const groups = computed(() => {
         variant="link"
         class="min-h-11"
         data-testid="s17-back"
-        >← Dashboard</UButton
+        >← Papan Pemuka</UButton
       >
     </div>
 

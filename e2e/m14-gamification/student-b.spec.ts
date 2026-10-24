@@ -110,7 +110,7 @@ test.describe('M14 S14 /gamification/leaderboard', MODULE, () => {
     await expect(page.getByTestId('lb-row')).toHaveCount(47)
     await expect(page.getByTestId('lb-row-rank').first()).toHaveText('#4')
     await expect(page.getByTestId('lb-row-rank').last()).toHaveText('#50')
-    await expect(page.getByTestId('lb-row-title').first()).toHaveText('Mitos · Level 39')
+    await expect(page.getByTestId('lb-row-title').first()).toHaveText('Mitos · Tahap 39')
     await expect(page.getByTestId('lb-row-score').first()).toHaveText('65,129')
     await expect(page.getByTestId('lb-row-tier').first()).toHaveText('💎')
 
@@ -422,7 +422,7 @@ test.describe('M14 S18 /gamification/kad-kongsi', MODULE, () => {
     await page.getByTestId('kad-tab-penguasaan').click()
     await page.getByTestId('kad-penguasaan-0-share').click()
     expect(await last()).toBe(
-      `🧠 Saya sudah capai Level 2 (Aktif) dalam Bahasa Melayu di PRESTASIPLUS! Ketepatan 48.9%. Jom bersaing!${link}`,
+      `🧠 Saya sudah capai Tahap 2 (Aktif) dalam Bahasa Melayu di PRESTASIPLUS! Ketepatan 48.9%. Jom bersaing!${link}`,
     )
     await page.getByTestId('kad-tab-ranking').click()
     await page.getByTestId('kad-kedudukan-share').click()

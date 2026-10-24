@@ -43,7 +43,7 @@ const titleChip = computed(() =>
             >
               {{ wallet.tier.labelMs }} Tier
             </h1>
-            <p class="text-label text-muted" data-testid="s11-level">Level {{ wallet.level }}</p>
+            <p class="text-label text-muted" data-testid="s11-level">Tahap {{ wallet.level }}</p>
           </div>
         </div>
         <div class="flex shrink-0 gap-4 text-center">

@@ -93,7 +93,7 @@ describe('S14 LeaderboardPage', () => {
     const rows = tid(w, 'lb-row')
     expect(rows).toHaveLength(47)
     expect(rows[0]?.text()).toContain('4')
-    expect(rows[0]?.text()).toContain('Mitos · Level 39')
+    expect(rows[0]?.text()).toContain('Mitos · Tahap 39')
     expect(rows[0]?.text()).toContain('65,129')
   })
 
@@ -383,7 +383,7 @@ describe('S18 KadKongsiPage', () => {
     await w.get('[data-testid=kad-tab-penguasaan]').trigger('click')
     await w.get('[data-testid=kad-penguasaan-1-share]').trigger('click')
     expect(waText()).toBe(
-      `🧠 Saya sudah capai Level 1 (Mula Belajar) dalam Sejarah di PRESTASIPLUS! Ketepatan 35%. Jom bersaing!${link}`,
+      `🧠 Saya sudah capai Tahap 1 (Mula Belajar) dalam Sejarah di PRESTASIPLUS! Ketepatan 35%. Jom bersaing!${link}`,
     )
     await w.get('[data-testid=kad-tab-ranking]').trigger('click')
     await w.get('[data-testid=kad-kedudukan-share]').trigger('click')

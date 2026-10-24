@@ -276,7 +276,7 @@ function gameRow(
     case 'jutawan_ilmu':
       return {
         source: 'jutawan_ilmu',
-        description: `Jutawan Ilmu (${typeof d.subject === 'string' ? d.subject : 'Bahasa Melayu'}): Level ${String(n(d.level, 1))}`,
+        description: `Jutawan Ilmu (${typeof d.subject === 'string' ? d.subject : 'Bahasa Melayu'}): Tahap ${String(n(d.level, 1))}`,
       }
     case 'cabaran_kilat':
       return {

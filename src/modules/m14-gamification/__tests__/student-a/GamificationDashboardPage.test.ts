@@ -42,7 +42,7 @@ describe('S11 dashboard (AC-M14-04, 05)', () => {
     expect(t('s11-tier-icon').text()).toBe('🥉')
     expect(t('s11-title-chip').text()).toBe('📚 Permulaan')
     expect(t('s11-tier-name').text()).toBe('Gangsa Tier')
-    expect(t('s11-level').text()).toBe('Level 2')
+    expect(t('s11-level').text()).toBe('Tahap 2')
     expect(t('s11-hero-syiling').text()).toBe('256')
     expect(t('s11-hero-token').text()).toBe('0')
     expect(t('s11-next-tier').text()).toContain('Naik ke Perak')

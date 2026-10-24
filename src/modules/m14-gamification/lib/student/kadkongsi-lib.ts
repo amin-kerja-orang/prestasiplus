@@ -73,7 +73,7 @@ export const masteryText = (
   subject: string,
   accuracy: number,
 ): string =>
-  `🧠 Saya sudah capai Level ${String(level)} (${stage}) dalam ${subject} di PRESTASIPLUS! Ketepatan ${pct1(accuracy)}%. Jom bersaing!`
+  `🧠 Saya sudah capai Tahap ${String(level)} (${stage}) dalam ${subject} di PRESTASIPLUS! Ketepatan ${pct1(accuracy)}%. Jom bersaing!`
 
 /** DV-M14-03: the live text leaves the value empty; the card's value is inserted. */
 export const rankingText = (accuracy: number): string =>
