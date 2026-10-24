@@ -7,7 +7,7 @@
  */
 import { ref } from 'vue'
 
-import { isApiError, isErrorBody } from '@/api'
+import { isApiError } from '@/api'
 import { DsFileField, DsFormField, DsIconChip, DsNativeSelect, DsPanel } from '@/ds'
 
 import { submitQuestionPaper } from '../../api/guru'
@@ -67,15 +67,10 @@ async function submit(): Promise<void> {
   } catch (err) {
     if (isApiError(err) && err.fields) {
       errors.value = Object.values(err.fields)
-    } else if (
-      isApiError(err) &&
-      err.status === 503 &&
-      isErrorBody(err.body) &&
-      err.message.trim() !== ''
-    ) {
-      // SW12-08 (DV-M10-42): the paper intake is off in http mode; show the API's BM reason. Only the API's
-      // own error envelope counts: a bare proxy 503 carries the developer text "HTTP 503".
-      errors.value = [err.message]
+    } else if (isApiError(err) && err.status === 503 && err.message === COPY.paperUnavailable) {
+      // SW12-08 (DV-M10-42): the paper intake is off in http mode; show that known BM reason. Any other 503 text
+      // (an English default such as "Server Error", or a proxy's "HTTP 503") keeps the generic failed text.
+      errors.value = [COPY.paperUnavailable]
     } else {
       errors.value = [COPY.paperFailed]
     }

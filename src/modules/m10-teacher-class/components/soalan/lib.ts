@@ -24,6 +24,8 @@ export const COPY = {
   listEmpty: 'Belum ada soalan.',
   paperSent: 'Kertas soalan berjaya dihantar kepada admin.',
   paperFailed: 'Gagal menghantar kertas soalan.',
+  /** The API's 503 reason while the paper intake is off (`PAPER_INTAKE_UNAVAILABLE`, SW12-08). */
+  paperUnavailable: 'Muat naik kertas soalan belum tersedia buat masa ini.',
 } as const
 
 export const QUESTION_TYPES: readonly { value: QuestionType; label: string }[] = [

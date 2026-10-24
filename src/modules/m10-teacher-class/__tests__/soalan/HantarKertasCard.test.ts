@@ -17,7 +17,12 @@ async function fillAndSubmit(w: VueWrapper): Promise<void> {
   await t(w, 'paper-jenis').setValue('Trial Paper')
   await t(w, 'paper-subject').setValue('Kimia')
   await t(w, 'paper-tahun').setValue('2024')
-  await pickFiles(w, 'paper-files', [new File(['x'], 'kertas.pdf'), new File(['y'], 'skema.docx')], true)
+  await pickFiles(
+    w,
+    'paper-files',
+    [new File(['x'], 'kertas.pdf'), new File(['y'], 'skema.docx')],
+    true,
+  )
   await t(w, 'paper-form').trigger('submit')
   await flushPromises()
 }
@@ -100,7 +105,35 @@ describe('Hantar Kertas submit (contract #60)', () => {
 
   it('SW12-08: a bare 503 without the API envelope (proxy) keeps the generic failed text', async () => {
     guru.submitQuestionPaper.mockRejectedValue(
-      new ApiError({ status: 503, code: 'SERVER_ERROR', message: 'HTTP 503', body: '<html>503</html>' }),
+      new ApiError({
+        status: 503,
+        code: 'SERVER_ERROR',
+        message: 'HTTP 503',
+        body: '<html>503</html>',
+      }),
+    )
+    const w = mount(HantarKertasCard)
+    await fillAndSubmit(w)
+    expect(t(w, 'paper-errors').text()).toBe(COPY.paperFailed)
+  })
+
+  it('SW12-08: a 503 envelope with an English default message keeps the generic failed text', async () => {
+    guru.submitQuestionPaper.mockRejectedValue(
+      new ApiError({
+        status: 503,
+        code: 'SERVER_ERROR',
+        message: 'Server Error',
+        body: { error: { code: 'SERVER_ERROR', message: 'Server Error' } },
+      }),
+    )
+    const w = mount(HantarKertasCard)
+    await fillAndSubmit(w)
+    expect(t(w, 'paper-errors').text()).toBe(COPY.paperFailed)
+  })
+
+  it('SW12-08: a network error keeps the generic failed text', async () => {
+    guru.submitQuestionPaper.mockRejectedValue(
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
     )
     const w = mount(HantarKertasCard)
     await fillAndSubmit(w)
