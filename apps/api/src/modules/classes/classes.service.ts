@@ -18,6 +18,7 @@ import { ConfigService } from '@nestjs/config'
 
 import { AuditService } from '../../common/audit'
 import type { Env } from '../../common/config/env.schema'
+import { publicBaseUrl } from '../../common/config/public-base-url'
 import { ApiError } from '../../common/errors/api-error'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock, mytDay } from '../../db/clock'
@@ -47,9 +48,6 @@ const isRealId = (s: unknown): s is string => typeof s === 'string' && isIdStrin
 
 /** A query value that is a plain string (Express gives an array for a repeated key). */
 const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined)
-
-/** The default host of `joinUrl` outside production when `PUBLIC_BASE_URL` is not set. */
-const DEFAULT_BASE_URL = 'http://localhost:8080'
 
 @Injectable()
 export class ClassesService {
@@ -159,7 +157,7 @@ export class ClassesService {
   async qrData(actor: ClassActor, id: string): Promise<ClassQrData> {
     const cls = await this.ownClass(actor, id)
     const schools = await this.repo.schoolNames([cls.schoolId])
-    const base = (this.config.get('PUBLIC_BASE_URL', { infer: true }) ?? DEFAULT_BASE_URL).replace(/\/+$/, '')
+    const base = publicBaseUrl(this.config)
     return {
       name: cls.name,
       school: cls.schoolId === null ? null : (schools.get(cls.schoolId) ?? null),

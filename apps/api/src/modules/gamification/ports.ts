@@ -37,6 +37,8 @@ export interface PracticeFactsProvider {
   mastery(userId: string): Promise<readonly PracticeMasteryFact[]>
   /** Completed sessions, all modes (`all`, share cards) and the practice modes only (`practice`, achievement progress). */
   sessionCounts(userId: string): Promise<{ all: number; practice: number }>
+  /** BR-M14-16 "Tepat Sasaran": completed practice-mode sessions whose accuracy (correct / questions) is at least `minPct` percent. */
+  accurateSessions(userId: string, minPct: number): Promise<number>
 }
 
 export class NoPracticeFacts implements PracticeFactsProvider {
@@ -48,6 +50,9 @@ export class NoPracticeFacts implements PracticeFactsProvider {
   }
   async sessionCounts(): Promise<{ all: number; practice: number }> {
     return { all: 0, practice: 0 }
+  }
+  async accurateSessions(): Promise<number> {
+    return 0
   }
 }
 
