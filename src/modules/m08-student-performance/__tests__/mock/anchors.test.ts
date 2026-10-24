@@ -27,6 +27,7 @@ import type {
   StudentPerformance,
   Timeline,
 } from '../../api/types'
+import { DESIGNED_SP_PERFORMANCE } from '../../mock/data/dskp-performance'
 import { itemStatistics, schoolSpmHistory, spRecords } from '../../mock'
 import { ADMIN, GURU, MAJU, MemoryStorage, PELAJAR, bootM08, dataAs, getAs } from './boot'
 
@@ -459,14 +460,33 @@ describe('S7 Analitik Pembelajaran', () => {
   })
 
   it('designed pupils have SP records derived from their answers on the 9001–9004 questions', () => {
-    const recs = spRecords.forUser(3001)
+    const recs = spRecords.forUser(3001, 'log')
     expect(recs.map((r) => [r.dskpSpId, r.answered, r.correct])).toEqual([
       [9001, 2, 2],
       [9002, 3, 3],
       [9003, 2, 1],
       [9004, 2, 2],
     ])
-    expect(spRecords.forUser(PELAJAR)).toEqual([])
+    // pelajar answered nothing with a dskpSpId: only the designed `anchor` demo records (S-52) exist
+    expect(spRecords.forUser(PELAJAR, 'log')).toEqual([])
+  })
+
+  it('designed DSKP demo records (S-52) are anchors on the Tingkatan 4–5 demo standards', () => {
+    const designed = DESIGNED_SP_PERFORMANCE
+    expect(designed.length).toBeGreaterThan(30)
+    const ids = new Set(designed.map((r) => `${String(r.userId)}:${String(r.dskpSpId)}`))
+    expect(ids.size).toBe(designed.length)
+    for (const r of designed) {
+      expect(r.correct).toBeLessThanOrEqual(r.answered)
+      expect(dskp.spPath(r.dskpSpId)?.bidang.subjectId, `SP ${String(r.dskpSpId)}`).toBe(
+        r.subjectId,
+      )
+      const stored = spRecords.forUser(r.userId).find((x) => x.dskpSpId === r.dskpSpId)
+      expect(stored).toMatchObject({ origin: 'anchor', answered: r.answered, correct: r.correct })
+    }
+    // every demo pupil belongs to SMK DEMO's canonical pupils
+    const pupils = new Set([2, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008])
+    for (const r of designed) expect(pupils.has(r.userId)).toBe(true)
   })
 })
 

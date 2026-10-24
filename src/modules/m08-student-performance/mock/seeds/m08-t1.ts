@@ -23,6 +23,7 @@ import {
   fixtureQuestions,
   KIMIA,
 } from '../data/designed'
+import { DESIGNED_SP_PERFORMANCE } from '../data/dskp-performance'
 import { CRITICAL_QUESTIONS, ITEM_SEED_SETS } from '../data/item-statistics'
 import {
   ADMIN_GENERATED,
@@ -184,7 +185,20 @@ function spRecords(): SpRecordRow[] {
     })
   }
   out.push(...by.values())
-  return out.map((r, seq) => ({ ...r, seq, origin: r.userId === ADMIN ? 'anchor' : 'log' }))
+  const derived = out.map((r, seq): SpRecordRow => ({
+    ...r,
+    seq,
+    origin: r.userId === ADMIN ? 'anchor' : 'log',
+  }))
+  // Designed DSKP performance of the SMK DEMO pupils on the Tingkatan 4–5 demo standards (S-52): not
+  // derived from answers, so `anchor` (S6 weak topics read `log` only).
+  const designed = DESIGNED_SP_PERFORMANCE.map((r, i): SpRecordRow => ({
+    ...r,
+    id: spId(r.userId, r.subjectId, r.dskpSpId),
+    seq: derived.length + i,
+    origin: 'anchor',
+  }))
+  return [...derived, ...designed]
 }
 
 /** Class 2001 risk profiles (§6.10): per-pupil Kimia accuracy, stable trend, risk by pupil. */

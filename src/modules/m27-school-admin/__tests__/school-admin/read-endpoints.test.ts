@@ -279,6 +279,36 @@ describe('#3 DSKP heatmap (S2; BR-M27-24, 25)', () => {
     }
   })
 
+  it('P2 opens on a subject with data and shows several populated Bidang rows (S-52)', async () => {
+    const t4 = await data<SchoolDskpHeatmap>(P2, `${BASE}/dskp-heatmap`)
+    expect(t4.subject?.name).toBe('Matematik')
+    expect(t4.caption).toBe('KSSM Matematik Tingkatan 4')
+    expect(t4.bidang.map((b) => b.name)).toEqual([
+      'Fungsi dan Persamaan Kuadratik',
+      'Asas Nombor',
+      'Penaakulan Logik',
+      'Operasi Set',
+    ])
+    const sps = t4.bidang.flatMap((b) => b.sp)
+    expect(sps.filter((x) => x.pct !== null).length).toBeGreaterThanOrEqual(10)
+    expect(new Set(sps.map((x) => x.status))).toEqual(
+      new Set(['mahir', 'sederhana', 'lemah', 'belum']),
+    )
+    // SP 9506 (Asas Nombor 2.1.3) is the one tile nobody attempted.
+    expect(sps.find((x) => x.id === 9506)).toMatchObject({ answered: 0, pct: null })
+    // pooled over pupils: SP 8070 = (5 + 4 + 3) correct of (6 + 5 + 4) answered
+    expect(sps.find((x) => x.id === 8070)).toMatchObject({ answered: 15, correct: 12, pct: 80 })
+
+    const t5 = await data<SchoolDskpHeatmap>(P2, `${BASE}/dskp-heatmap?tingkatan=T5`)
+    expect(t5.subject?.name).toBe('Kimia')
+    expect(t5.bidang.length).toBeGreaterThanOrEqual(3)
+    const sej = await data<SchoolDskpHeatmap>(P2, `${BASE}/dskp-heatmap?subjectId=5`)
+    expect(sej.subject?.name).toBe('Sejarah')
+    expect(sej.bidang.flatMap((b) => b.sp).filter((x) => x.pct !== null).length).toBeGreaterThan(5)
+    // no placeholder wording anywhere in the payload
+    expect(JSON.stringify([t4, t5, sej])).not.toMatch(/fixture|INFERRED/i)
+  })
+
   it('P1 (no pupil) shows every tile "belum" without a percentage', async () => {
     const h = await data<SchoolDskpHeatmap>(P1, `${BASE}/dskp-heatmap`)
     expect(h.school.id).toBe(S3)
