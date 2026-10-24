@@ -191,7 +191,7 @@ export const accountScenarios: Scenario[] = [
     },
   },
   {
-    id: 'account-api/mustChangePassword: 403 PASSWORD_CHANGE_REQUIRED everywhere except GET /session and PUT /me/password',
+    id: 'account-api/mustChangePassword: an admin-created account is not flagged (R39); GET /session false, routes answer, PUT /me/password works',
     domain: 'account',
     targets: API_ONLY,
     async run(ctx) {
@@ -204,17 +204,17 @@ export const accountScenarios: Scenario[] = [
       const me: SessionClient = await sessionLogin(ctx.anonymous(), { identifier: email, password: generated })
       const session = await me.request('GET', '/session')
       ctx.expectStatus(session, 200)
-      ctx.check(dataOf(session).mustChangePassword === true, 'session.mustChangePassword is not true for a generated password')
-      for (const path of ['/me', '/me/settings', '/me/notifications']) {
-        const res = await me.request('GET', path)
-        expectError(ctx, res, 403, 'PASSWORD_CHANGE_REQUIRED')
-        ctx.check(errorOf(res).message === 'Sila tukar kata laluan anda sebelum meneruskan.', `${path}: message differs`)
-      }
-      expectError(ctx, await me.request('POST', '/session/role', { body: { role: 'teacher' } }), 403, 'PASSWORD_CHANGE_REQUIRED')
+      // R39 (LEAD 24 Oct): an admin-created account is NOT flagged, so the forced-change guard does not apply to it. No API route
+      // flags an account any more (only the operator admin bootstrap does), so the 403 PASSWORD_CHANGE_REQUIRED guard is covered by
+      // test/account/must-change.spec.ts, which sets the flag in the database. Here: the created account works at once.
+      ctx.check(dataOf(created).mustChangePassword === false, 'the create response flags a generated password as must-change')
+      ctx.check(dataOf(session).mustChangePassword === false, 'session.mustChangePassword is not false for an admin-created account')
+      for (const path of ['/me', '/me/settings', '/me/notifications']) ctx.expectStatus(await me.request('GET', path), 200)
+      // The user changes the password in /profile/edit (PUT /me/password); the flag stays false.
       const ok = await me.request('PUT', '/me/password', { body: { currentPassword: generated, password: 'Baharu-1234', passwordConfirmation: 'Baharu-1234' } })
       ctx.expectStatus(ok, 200)
       const after = await me.request('GET', '/session')
-      ctx.check(dataOf(after).mustChangePassword === false, 'the flag is still set after the password change')
+      ctx.check(dataOf(after).mustChangePassword === false, 'the flag is set after the password change')
       ctx.expectStatus(await me.request('GET', '/me'), 200)
     },
   },

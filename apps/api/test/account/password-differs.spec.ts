@@ -26,11 +26,14 @@ describe('PUT /me/password: the new password must differ from the current one (h
   const auditCount = async (action: string) =>
     Number((await t.db.query<{ n: string }>('select count(*)::text as n from audit_events where action = $1', [action]))[0]?.n)
 
-  it('a flagged account (admin-created, one-time password) cannot clear the flag with the same password', async () => {
+  it('a flagged account (flag set directly, one-time password) cannot clear the flag with the same password', async () => {
     const admin = await login(t, 'admin@demo.test')
     const created = await post(admin, '/admin/users', { roles: ['teacher'], name: 'Guru Sama', email: 'sama@ujian.test', schoolId: school })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     const generated = created.body.data.generatedPassword as string
+    // R39: an admin-created account is not flagged. This test is about a flagged account, so set the flag directly.
+    expect((await userRow(t.db, 'sama@ujian.test'))?.must_reset_password).toBe(false)
+    await t.db.query(`update users set must_reset_password = true where email = 'sama@ujian.test'`)
 
     const who = await login(t, 'sama@ujian.test', generated)
     const other = await login(t, 'sama@ujian.test', generated)

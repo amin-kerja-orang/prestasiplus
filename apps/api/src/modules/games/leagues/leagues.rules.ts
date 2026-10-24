@@ -90,13 +90,16 @@ export function parseLeagueInput(body: unknown): LeagueInput {
 /** Decimal string of a subject id, or null when it is not a valid id. */
 export const subjectIdOrNull = (value: string): string | null => (isIdString(value) ? value : null)
 
-/** WhatsApp share link (`+` for spaces and `%21` for "!", as live). */
-export function shareUrl(name: string, code: string): string {
+/**
+ * WhatsApp share link (`+` for spaces and `%21` for "!", as live). The closing pointer is the league page of THIS
+ * deployment, written like live ("prestasiplus.my/liga", no scheme): `baseUrl` is `PUBLIC_BASE_URL`, not the old system's host.
+ */
+export function shareUrl(name: string, code: string, baseUrl: string): string {
   const enc = (s: string): string =>
     encodeURIComponent(s)
       .replace(/%20/g, '+')
       .replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
-  const text = `Jom sertai Liga Pertandingan "${name}" di PrestasiPlus! Kod Jemputan: ${code} — prestasiplus.my/liga 🏆`
+  const text = `Jom sertai Liga Pertandingan "${name}" di PrestasiPlus! Kod Jemputan: ${code} — ${baseUrl.replace(/^https?:\/\//i, '').replace(/\/+$/, '')}/liga 🏆`
   return `https://wa.me/?text=${enc(text)}`
 }
 

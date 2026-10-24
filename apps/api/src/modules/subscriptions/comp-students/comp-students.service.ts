@@ -136,7 +136,7 @@ export class CompStudentsService {
     })
 
     // Initial passwords are random and hashed before the transaction; nobody is shown one (the
-    // contract has no credential field): the pupil signs in after the IC-based reset (must change).
+    // contract has no credential field): the pupil signs in after the IC-based reset.
     const hashes = await Promise.all(planned.map(() => this.passwords.hash(generatePassword())))
     const now = this.clock.now()
     const rows: NewUserRow[] = planned.map((p, i) => ({
@@ -147,7 +147,7 @@ export class CompStudentsService {
       schoolId: classroom.schoolId,
       grade: classroom.grade,
       passwordHash: hashes[i] as string,
-      mustChangePassword: true,
+      mustChangePassword: false, // R39: no forced change; the pupil signs in after the IC-based reset
       isComplimentary: true,
       icHash: p.hash,
       icMasked: p.masked,

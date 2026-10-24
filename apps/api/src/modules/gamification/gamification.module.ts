@@ -2,6 +2,7 @@ import { Inject, Module, type OnModuleInit } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit'
 import { ThrottleModule } from '../../common/throttle'
+import { AuthPorts, AuthPortsModule } from '../auth/ports'
 import { ClassesModule } from '../classes'
 import { GamesCoreModule, GamesPorts } from '../games'
 import { PerformanceModule } from '../reports/performance/performance.module'
@@ -11,6 +12,7 @@ import { GamificationAdminController, RewardControlController } from './admin.co
 import { GamificationAdminService } from './admin.service'
 import { GamesRewardsAdapter } from './games-rewards.adapter'
 import { GamificationController } from './gamification.controller'
+import { GamificationLoginHook } from './login-hook'
 import { GamificationRepository } from './gamification.repository'
 import { GamificationService } from './gamification.service'
 import { PerformanceGamificationAdapter } from './performance-gamification.adapter'
@@ -27,15 +29,15 @@ import { GamificationPorts } from './ports'
  * `GamificationPorts` carries what M14 reads but M05 owns (practice day facts, mastery, session counts); BE-12/13
  * call `ports.providePracticeFacts(...)` from their own `onModuleInit`. Until then it answers "nothing yet".
  *
- * On init it also binds `GamesRewardsAdapter` into the games' `GamesPorts.rewards` (BE-45), and
+ * On init it also binds the login hook into `AuthPorts` (`onLogin`: streak and the daily +2, XR-M14-02(a)), `GamesRewardsAdapter` into the games' `GamesPorts.rewards` (BE-45), and
  * `PerformanceGamificationAdapter` into BE-19's `PerformancePorts` (the reports'
  * `GamificationReadPort`: public profile, rankings).
  * `ClassesModule` (BE-17, owner of classes and enrolments) gives the teacher's pupils for the leaderboard name scope (#76).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, WalletModule, PerformanceModule, ClassesModule, GamesCoreModule],
+  imports: [AuditModule, ThrottleModule, AuthPortsModule, WalletModule, PerformanceModule, ClassesModule, GamesCoreModule],
   controllers: [GamificationController, GamificationAdminController, RewardControlController],
-  providers: [GamificationRepository, GamificationService, GamificationAdminService, GamificationPorts, PerformanceGamificationAdapter, GamesRewardsAdapter],
+  providers: [GamificationRepository, GamificationService, GamificationAdminService, GamificationPorts, PerformanceGamificationAdapter, GamesRewardsAdapter, GamificationLoginHook],
   exports: [GamificationService, GamificationAdminService, GamificationPorts],
 })
 export class GamificationModule implements OnModuleInit {
@@ -44,6 +46,8 @@ export class GamificationModule implements OnModuleInit {
     @Inject(PerformanceGamificationAdapter) private readonly gamificationRead: PerformanceGamificationAdapter,
     @Inject(GamesPorts) private readonly gamesPorts: GamesPorts,
     @Inject(GamesRewardsAdapter) private readonly gamesRewards: GamesRewardsAdapter,
+    @Inject(AuthPorts) private readonly authPorts: AuthPorts,
+    @Inject(GamificationLoginHook) private readonly loginHook: GamificationLoginHook,
   ) {}
 
   /** Binds the real gamification read port of BE-19's reports (once; `provideGamification` throws on a second call). */
@@ -51,5 +55,7 @@ export class GamificationModule implements OnModuleInit {
     this.performance.provideGamification(this.gamificationRead)
     // D-13: the games' syiling follows `games_award_syiling` (seed 0 = XP only) instead of the never-earning default.
     this.gamesPorts.provideRewards(this.gamesRewards)
+    // XR-M14-02(a): a student's password login moves the streak and pays the first daily +2 (M01 FR-M01-69).
+    this.authPorts.provideLoginHook(this.loginHook)
   }
 }

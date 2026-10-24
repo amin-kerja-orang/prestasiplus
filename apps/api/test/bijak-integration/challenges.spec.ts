@@ -68,9 +68,12 @@ const completions = (userId: string) =>
 const idOfChallenge = async (title: string) => (await t.db.query<{ id: string }>(`select id::text from challenges where title = $1`, [title]))[0]!.id
 
 describe('daily challenges follow completed practice sessions', () => {
-  it('1. nothing played: progress 0 everywhere', async () => {
+  it('1. nothing played: progress 0 everywhere, except the streak challenge (SW10-03b: the form login moved the streak to today, BR-M14-12 / BR-M14-14)', async () => {
     const c = await challenges(student)
-    expect(Object.values(c).every((x) => x.progress === 0 && !x.completed)).toBe(true)
+    expect(Object.values(c).every((x) => !x.completed)).toBe(true)
+    const moved = Object.values(c).filter((x) => x.progress !== 0)
+    expect(moved.map((x) => x.title)).toEqual(['Kombo 2 Hari'])
+    expect(moved[0]).toMatchObject({ progress: 1, target: 2 })
   })
 
   it('2. one completed session: sessions challenges advance, the target-1 challenge is claimed once (ledger daily_challenge, key challenge:<id>:<day>)', async () => {

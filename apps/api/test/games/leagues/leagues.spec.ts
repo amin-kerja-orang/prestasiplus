@@ -35,7 +35,7 @@ function expect422(res: { status: number; body: unknown }, field: string, messag
 describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
   let t: GamesTestApp
   beforeAll(async () => {
-    t = await bootGamesApp({ seeds: [gamesSeed] })
+    t = await bootGamesApp({ seeds: [gamesSeed], env: { PUBLIC_BASE_URL: 'https://app.example.test/' } })
   }, 180_000)
   afterAll(async () => {
     await t.close()
@@ -98,6 +98,10 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
       expect(d).toMatchObject({ name: 'Liga Matematik Sprint Test', inviteCode: 'TEST2026', classLevels: ['T4', 'T5'], scoringLabel: 'Jumlah Markah', canJoin: false })
       expect(d.shareUrl).toContain('https://wa.me/?text=')
       expect(d.shareUrl).toContain('TEST2026')
+      // SW10-06: the closing pointer is the league page of THIS deployment (PUBLIC_BASE_URL, scheme and trailing slash dropped), never the old system.
+      const text = decodeURIComponent(d.shareUrl.slice('https://wa.me/?text='.length).replace(/\+/g, ' '))
+      expect(text).toBe('Jom sertai Liga Pertandingan "Liga Matematik Sprint Test" di PrestasiPlus! Kod Jemputan: TEST2026 — app.example.test/liga 🏆')
+      expect(d.shareUrl).not.toContain('prestasiplus.my')
       expect(d.creatorName).not.toBe('')
       expect(d.schools).toHaveLength(2)
       expect(Object.keys(d.standings).sort()).toEqual(['T4', 'T5'])
