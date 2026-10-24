@@ -121,21 +121,25 @@ async function begin(restart: boolean): Promise<void> {
             Anda mempunyai percubaan <strong>{{ open.title }}</strong> yang masih berjalan.
           </p>
           <p>Masa berlalu setakat ini: {{ formatClock(open.elapsedSeconds) }}</p>
-          <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+          <div class="mt-3 flex flex-col gap-2">
             <UButton
               :loading="starting"
-              class="h-auto min-h-11 text-center whitespace-normal"
+              class="min-h-11 w-fit"
+              aria-label="Sambung — teruskan jawapan &amp; masa sedia ada"
               data-testid="resume"
               @click="begin(false)"
-              >Sambung — teruskan jawapan &amp; masa sedia ada</UButton
+              >Sambung</UButton
             >
+            <p>teruskan jawapan &amp; masa sedia ada</p>
             <UButton
               color="neutral"
-              class="h-auto min-h-11 text-center whitespace-normal"
+              class="min-h-11 w-fit"
+              aria-label="Mula Semula — kosongkan jawapan &amp; masa"
               data-testid="restart"
               @click="confirmRestart = true"
-              >Mula Semula — kosongkan jawapan &amp; masa</UButton
+              >Mula Semula</UButton
             >
+            <p>kosongkan jawapan &amp; masa</p>
           </div>
           <p class="mt-2 text-caption">
             “Sambung” mengekalkan semua jawapan anda. “Mula Semula” tidak boleh diundur.
