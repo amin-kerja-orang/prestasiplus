@@ -14,7 +14,7 @@ export const adminOnly = requireRole('admin')
 
 // --- BR-18 error flashes (OBSERVED) ---------------------------------------------------------
 export const CHAPTER_NOT_FOUND = 'Bab tidak dijumpai.'
-export const CHAPTER_ID_REQUIRED = 'Chapter ID diperlukan.'
+export const CHAPTER_ID_REQUIRED = 'ID Bab diperlukan.'
 export const TOPIC_NOT_FOUND = 'Topik tidak dijumpai.'
 export const SUBJECT_NOT_FOUND = 'Subjek tidak dijumpai.'
 export const LEVEL_NOT_FOUND = 'Tahap Pendidikan tidak dijumpai.'

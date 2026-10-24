@@ -396,7 +396,7 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
 
     await gotoApp('/admin/curriculum/topics/create')
     await expect(page).toHaveURL(/\/admin\/curriculum$/)
-    await expect(flash(page)).toHaveText('Chapter ID diperlukan.')
+    await expect(flash(page)).toHaveText('ID Bab diperlukan.')
   })
 
   test('E2E-M03-13c unknown topic redirects to S1 with the flash', async ({

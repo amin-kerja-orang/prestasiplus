@@ -80,7 +80,7 @@ export function isNotFound(err: unknown): boolean {
 /** Flash copy of the BR-18 redirects (exact live text). */
 export const FLASH_CHAPTER_NOT_FOUND = 'Bab tidak dijumpai.'
 export const FLASH_TOPIC_NOT_FOUND = 'Topik tidak dijumpai.'
-export const FLASH_CHAPTER_ID_REQUIRED = 'Chapter ID diperlukan.'
+export const FLASH_CHAPTER_ID_REQUIRED = 'ID Bab diperlukan.'
 
 /** A trimmed string or `null` (empty optional fields). */
 export function orNull(value: string): string | null {

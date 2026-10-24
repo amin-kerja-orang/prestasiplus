@@ -104,11 +104,11 @@ describe('TopicCreatePage (M03 S4)', () => {
     expect(useFlashStore().pending?.message).toBe('Topik berjaya ditambah.')
   })
 
-  it('without chapter_id redirects with "Chapter ID diperlukan." and never fetches', async () => {
+  it('without chapter_id redirects with "ID Bab diperlukan." and never fetches', async () => {
     const { router } = await render(TopicCreatePage, URL, URL)
     expect(api.fetchChapter).not.toHaveBeenCalled()
     expect(router.currentRoute.value.path).toBe('/admin/curriculum')
-    expect(useFlashStore().pending).toEqual({ type: 'error', message: 'Chapter ID diperlukan.' })
+    expect(useFlashStore().pending).toEqual({ type: 'error', message: 'ID Bab diperlukan.' })
   })
 
   it('an unknown chapter redirects with "Bab tidak dijumpai."', async () => {
