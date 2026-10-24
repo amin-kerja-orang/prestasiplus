@@ -18,9 +18,9 @@ describe('M04 S8-S12 helpers', () => {
     expect(partLabelText(3, '3(B)')).toBe('3(B)')
   })
 
-  it('formats dates as "dd Mon yyyy" with English months and times as HH:mm', () => {
+  it('formats dates as "dd Mon yyyy" with BM months and times as HH:mm', () => {
     expect(formatEnDate('2026-04-08T09:00:00+08:00')).toBe('08 Apr 2026')
-    expect(formatEnDate('2026-05-20T09:00:00+08:00')).toBe('20 May 2026')
+    expect(formatEnDate('2026-05-20T09:00:00+08:00')).toBe('20 Mei 2026')
     expect(formatTime('2026-03-09T08:49:00+08:00')).toBe('08:49')
   })
 

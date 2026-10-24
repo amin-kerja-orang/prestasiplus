@@ -143,7 +143,7 @@ describe('SubmissionListPage (M04 S10)', () => {
     expect(text).toContain('kertas-a.docx')
     expect(row?.get('[data-testid=submission-status]').text()).toBe('Selesai')
     expect(row?.get('[data-testid=submission-admin-notes]').text()).toBe('nota lama')
-    expect(text).toContain('09 Mar 2026')
+    expect(text).toContain('09 Mac 2026')
     expect(text).toContain('08:49')
     const second = w.findAll('tbody tr')[1]
     expect(second?.get('[data-testid=submission-status]').text()).toBe('Sedang Diproses')

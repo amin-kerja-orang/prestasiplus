@@ -59,7 +59,7 @@ test.describe('M04 S7 admin report triage', { tag: [TAG.smoke, moduleTag(4)] }, 
   }) => {
     await loginAs(ADMIN)
     await openS7(page, gotoApp)
-    await expectTabTitle(page, 'Laporan Soalan — Admin Panel')
+    await expectTabTitle(page, 'Laporan Soalan — Panel Admin')
     await expect(page.getByTestId('shell-admin-title')).toHaveText('Laporan Soalan')
     await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
     await expect(page.getByTestId('reports-title')).toHaveText('Laporan Soalan')

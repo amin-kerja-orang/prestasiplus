@@ -128,7 +128,7 @@ describe('QuestionImportPage (M04 S5)', () => {
     const blob = new Blob(['x'])
     imports.downloadImportTemplate.mockResolvedValue({
       blob,
-      filename: 'template-import-soalan.csv',
+      filename: 'templat-import-soalan.csv',
     })
     URL.createObjectURL = vi.fn(() => 'blob:x')
     URL.revokeObjectURL = vi.fn()

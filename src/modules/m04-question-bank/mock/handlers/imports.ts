@@ -5,7 +5,7 @@
  * |---|---|---|
  * | 9 | `POST /api/question-imports` | multipart `csvFile` + defaults; 201 `{data: ImportRun, status}`; 422 |
  * | 10 | `GET /api/question-imports` | S5h, newest first, 20 per page |
- * | 11 | `GET /api/question-imports/template` | `template-import-soalan.csv` |
+ * | 11 | `GET /api/question-imports/template` | `templat-import-soalan.csv` |
  *
  * The file is simulated: its extension (`.csv` / `.txt`), MIME type and size (5 MB) are checked and
  * its text is read, nothing is stored. The whole import (every question and the run) is one
@@ -45,7 +45,7 @@ export const IMPORT_NO_DATA = 'Fail CSV tiada baris data.'
 export const IMPORT_SUBJECT_MESSAGE = 'Sila pilih subjek.'
 export const IMPORT_LEVEL_MESSAGE = 'Sila pilih tahap pendidikan.'
 export const IMPORT_DIFFICULTY_MESSAGE = 'Sila pilih tahap kesukaran.'
-export const IMPORT_TEMPLATE_NAME = 'template-import-soalan.csv'
+export const IMPORT_TEMPLATE_NAME = 'templat-import-soalan.csv'
 
 /** Accepted declared MIME types of a CSV / TXT upload (an empty type is judged by the extension). */
 const CSV_MIMES: readonly string[] = [

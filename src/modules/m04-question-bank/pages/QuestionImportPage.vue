@@ -77,7 +77,7 @@ async function downloadTemplate(): Promise<void> {
   downloading.value = true
   try {
     const result = await downloadImportTemplate()
-    saveBlob(result.blob, result.filename ?? 'template-import-soalan.csv')
+    saveBlob(result.blob, result.filename ?? 'templat-import-soalan.csv')
   } catch (err) {
     flash.show({ type: 'error', message: errorLines(err) })
   } finally {

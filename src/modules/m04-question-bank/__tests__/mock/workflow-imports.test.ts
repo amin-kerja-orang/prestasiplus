@@ -310,11 +310,11 @@ describe('#9 validation (SRS §5, 422 with fields)', () => {
 })
 
 describe('#11 template (FR-M04-57, E2E-M04-32)', () => {
-  it('downloads template-import-soalan.csv with the documented header and two sample rows', async () => {
+  it('downloads templat-import-soalan.csv with the documented header and two sample rows', async () => {
     const r = await call<Blob>('GET', '/api/question-imports/template', ADMIN)
     expect(r.status).toBe(200)
     expect(r.headers['content-type']).toBe('text/csv')
-    expect(r.headers['content-disposition']).toContain('template-import-soalan.csv')
+    expect(r.headers['content-disposition']).toContain('templat-import-soalan.csv')
     const text = await r.body.text()
     const lines = text.split('\r\n').filter((l) => l !== '')
     expect(lines[0]).toBe(
@@ -330,7 +330,7 @@ describe('#11 template (FR-M04-57, E2E-M04-32)', () => {
   it('the template imports cleanly', async () => {
     dirty = true
     const t = await call<Blob>('GET', '/api/question-imports/template', ADMIN)
-    const r = await upload(await t.body.text(), {}, 'template-import-soalan.csv')
+    const r = await upload(await t.body.text(), {}, 'templat-import-soalan.csv')
     expect(runOf(r)).toMatchObject({ importedCount: 2, failedCount: 0 })
   })
 })
