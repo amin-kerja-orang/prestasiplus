@@ -6,7 +6,7 @@
     "users": 100,
     "schools": 3,
     "school_subscriptions": 3,
-    "parent_student": 12,
+    "parent_student": 10,
     "classrooms": 4,
     "classroom_student": 66,
     "education_levels": 4,
@@ -86,6 +86,12 @@
     "duta_bookings": 0,
     "exam_attempts": 13,
     "part_responses": 0,
+    "attempt_statuses": 3,
+    "paper_statuses": 4,
+    "question_statuses": 4,
+    "answer_modes": 14,
+    "answer_key_kinds": 6,
+    "stimulus_kinds": 15,
     "questions": 24,
     "question_options": 96,
     "structured_questions": 0,
@@ -120,7 +126,10 @@
     "paper_blueprints": 0,
     "blueprint_sections": 0,
     "teacher_reference_documents": 0,
-    "teacher_reference_papers": 3
+    "teacher_reference_papers": 3,
+    "exam_boards": 1,
+    "exam_types": 1,
+    "selection_rules": 2
   },
   "planted": {
     "duplicateEmail": {
@@ -176,6 +185,9 @@
     "redactedSecrets": {
       "users.remember_token": 3,
       "users.parent_invite_token": 2
+    },
+    "outOfRange": {
+      "feedback.score": 1
     }
   },
   "scanned": {
@@ -201,19 +213,17 @@
     "passwordPrefixes": {
       "$2y$": 93,
       "(empty)": 1,
-      "(other)": 1,
-      "$2b$": 2,
       "$argon2id$": 2,
-      "(null)": 1
+      "$2b$": 2,
+      "(null)": 1,
+      "(other)": 1
     },
     "nulls": {
       "users.email": 4,
       "users.password": 1,
       "users.remember_token": 97,
-      "users.school_id": 4,
+      "users.school_id": 5,
       "users.kelas": 35,
-      "users.faith": 100,
-      "users.google_id": 100,
       "users.referred_by": 88,
       "users.parent_invite_token": 98,
       "users.notifications_read_at": 100,
@@ -224,8 +234,8 @@
       "users.teaching_qualification": 100,
       "school_subscriptions.created_at": 3,
       "school_subscriptions.updated_at": 3,
-      "parent_student.created_at": 12,
-      "parent_student.updated_at": 12,
+      "parent_student.created_at": 10,
+      "parent_student.updated_at": 10,
       "classrooms.created_at": 4,
       "classrooms.updated_at": 4,
       "classroom_student.created_at": 66,
@@ -241,7 +251,6 @@
       "practice_sessions.question_set_id": 200,
       "question_sets.created_at": 4,
       "question_sets.updated_at": 4,
-      "mood_checkins.note": 63,
       "gamification_tiers.created_at": 4,
       "gamification_tiers.updated_at": 4,
       "challenges.created_by": 5,
@@ -273,6 +282,8 @@
       "packages.updated_at": 3,
       "exam_attempts.section_selections": 13,
       "exam_attempts.served_composition": 13,
+      "questions.explanation": 24,
+      "questions.image_path": 24,
       "questions.created_at": 24,
       "questions.updated_at": 24,
       "question_options.created_at": 96,
@@ -283,7 +294,7 @@
       "source_papers.updated_at": 3,
       "legacy_canonical_map.created_at": 24,
       "legacy_canonical_map.updated_at": 24,
-      "teacher_reference_papers.teacher_reference_document_id": 3,
+      "teacher_reference_papers.teacher_id": 3,
       "teacher_reference_papers.created_at": 3,
       "teacher_reference_papers.updated_at": 3
     },

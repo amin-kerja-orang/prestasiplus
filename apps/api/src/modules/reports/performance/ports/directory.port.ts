@@ -39,6 +39,11 @@ export interface DirectoryPort {
   countPupils(schoolIds: readonly string[]): Promise<Map<string, number>>
   /** Teacher accounts per school, one grouped read. Schools without any are present with 0. */
   countTeachers(schoolIds: readonly string[]): Promise<Map<string, number>>
+  /**
+   * Curriculum `subjects.id` of each Bijak sitting subject CODE (MAT maps to the MATH row), in one read; a code with no
+   * subject is absent from the map. A class stores the curriculum id; a sitting stores the code.
+   */
+  subjectIdsOfCodes(codes: readonly string[]): Promise<Map<string, string>>
 }
 
 export const DIRECTORY_PORT = Symbol('DIRECTORY_PORT')

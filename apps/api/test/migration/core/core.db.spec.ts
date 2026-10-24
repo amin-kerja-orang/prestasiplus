@@ -1,9 +1,9 @@
 /**
  * `migrate:core` against a real PostgreSQL (Testcontainers) on the BE-35 synthetic fixture (`cloud-tiny`).
  * The tests run in order and share one database: dry-run, refused apply, apply, second apply, seeds.
- * Fixture facts used below (apps/api/test/migration/fixtures/cloud-tiny): 13 users (id 4 points to a missing
+ * Fixture facts used below (apps/api/test/migration/fixtures/cloud-tiny): 15 users (id 4 points to a missing
  * school, id 13 has the unplanned role `super_guru`, id 2 repeats the e-mail of id 1, id 3 repeats the
- * username of id 1 in the same school), 3 schools, 3 classrooms, 6 roster rows (3 of them bad), 2 parent
+ * username of id 1 in the same school, id 14 is a `jpn_officer`, id 15 an `agent`), 3 schools, 3 classrooms, 6 roster rows (3 of them bad), 2 parent
  * links (1 orphan), 4 chapters (1 orphan), 5 topics (1 orphan).
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -96,7 +96,7 @@ describe('apply', () => {
     applyRunId = report.runId
     const by = Object.fromEntries(report.recon.map((r) => [r.entity, r]))
     for (const r of report.recon) expect(r.eligibleCount - r.loaded - r.rejected, r.entity).toBe(0)
-    expect(by.users).toMatchObject({ sourceCount: 13, loaded: 11, rejected: 2 })
+    expect(by.users).toMatchObject({ sourceCount: 15, loaded: 12, rejected: 3 }) // 13 and 15 (agent, not migrated) and 4 (orphan school)
     expect(by.schools).toMatchObject({ sourceCount: 3, loaded: 3, rejected: 0 })
     expect(by.chapters).toMatchObject({ sourceCount: 4, loaded: 3, rejected: 1 })
     expect(by.topics).toMatchObject({ sourceCount: 5, loaded: 4, rejected: 1 })
@@ -117,12 +117,13 @@ describe('apply', () => {
     expect(rejects).toEqual([
       { legacy_id: '4', reason: 'ORPHAN_PARENT', column_name: 'school_id', offending: null },
       { legacy_id: '13', reason: 'UNKNOWN_ENUM', column_name: 'role', offending: 'super_guru' },
+      { legacy_id: '15', reason: 'UNKNOWN_ENUM', column_name: 'role', offending: 'agent' }, // not migrated, counted by name
     ].map((r) => expect.objectContaining(r)))
-    expect(await count('users', `legacy_source = 'cloud' and legacy_id in ('4', '13')`)).toBe(0)
+    expect(await count('users', `legacy_source = 'cloud' and legacy_id in ('4', '13', '15')`)).toBe(0)
     const roles = await q<{ legacy_id: string; role: string }>(`select legacy_id, role from user_roles where legacy_source = 'cloud'`)
     const byId = Object.fromEntries(roles.map((r) => [r.legacy_id, r.role]))
-    expect(byId).toMatchObject({ 1: 'student', 7: 'teacher', 9: 'parent', 10: 'school_admin', 11: 'ppd_officer', 12: 'admin' })
-    expect(roles).toHaveLength(11)
+    expect(byId).toMatchObject({ 1: 'student', 7: 'teacher', 9: 'parent', 10: 'school_admin', 11: 'ppd_officer', 12: 'admin', 14: 'ppd_officer' }) // 14 = jpn_officer
+    expect(roles).toHaveLength(12)
   })
 
   it('adopts the seeded level of the same code and keeps one row per code (AC8)', async () => {
@@ -168,6 +169,8 @@ describe('apply', () => {
     expect(scopes).toEqual([
       expect.objectContaining({ legacy_id: '11', role: 'ppd_officer', level: 'district', state_code: 'Negeri B', district_code: 'Daerah B2' }),
       expect.objectContaining({ legacy_id: '12', role: 'admin', level: 'national' }),
+      // A JPN officer (staged jpn_officer) is a ppd_officer with a state scope from the school.
+      expect.objectContaining({ legacy_id: '14', role: 'ppd_officer', level: 'state', state_code: 'Negeri B', district_code: null }),
     ])
   })
 

@@ -19,7 +19,7 @@ import { columnNames, TABLES, type TableSpec } from '../ddl/spec'
 import { DUMP_FORMAT, type TableReader } from '../staging/readers'
 import { silentLogger, type Logger } from '../staging/log'
 import { prepareOutputDir } from '../profile'
-import { InputError, LeakScanError, OutputError, type LeakHit } from './errors'
+import { AnonymiseAbortedError, InputError, LeakScanError, OutputError, type LeakHit } from './errors'
 import { LeakScanner, OriginalsIndex, scanDumpDirectory, type ScanResult } from './leak-scan'
 import { Pseudonymiser, type PseudonymKind } from './pseudonyms'
 import { applyRule, checkCoverage, ruleFor, type AnonConfig, type Rule } from './rules'
@@ -43,6 +43,8 @@ export interface AnonymiseOptions {
   batchSize?: number
   /** Real path of the source directory, when the source is a dump directory. */
   sourceDir?: string
+  /** Optional: when it aborts, the run stops between tables and between batches, deletes its partial output and throws `AnonymiseAbortedError`. */
+  signal?: AbortSignal
   /** E-mail domains the leak scan accepts besides example.test (never needed for real runs). */
   extraAllowedEmailDomains?: readonly string[]
 }
@@ -126,11 +128,15 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
   const manifestTables: Record<string, { rows: number; file?: string }> = {}
   const results: { table: string; rows: number }[] = []
 
+  const stop = (): void => {
+    if (options.signal?.aborted) throw new AnonymiseAbortedError('The anonymiser was interrupted. The partial output was deleted.')
+  }
   const cleanup = (): void => rmSync(outDir, { recursive: true, force: true })
   const dummyRoles = new Set(options.config.dummyPasswordRoles.map((r) => r.toLowerCase()))
 
   try {
     for (const spec of tables) {
+      stop()
       if (!(await options.reader.has(spec.name))) {
         log.warn(`Table ${spec.name} is absent from the input; nothing written for it.`)
         continue
@@ -169,6 +175,7 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
           }
           await handle.write(`${lines.join('\n')}\n`)
           rows += lines.length
+          stop()
         }
       } finally {
         await handle?.close()

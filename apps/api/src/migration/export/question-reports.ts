@@ -5,13 +5,14 @@
  * Source: `archive_cloud.question_reports`, read-only (one REPEATABLE READ READ ONLY transaction, so nothing can be
  * written and the file is one consistent picture). The question is found again in the new bank by the same
  * identifiers the BE-29 snapshot join uses (`snapshot-dims/index.ts`): the source paper natural key and the number
- * label (canonical bridge `legacy_canonical_map` -> `exam_questions` -> lowest-numbered `exam_papers` -> `source_papers`),
+ * label (canonical bridge `legacy_canonical_map` -> `exam_questions` -> its own `source_papers` row through
+ * `exam_questions.source_paper_id`),
  * plus the legacy question id and the curriculum codes (subject code, chapter number, topic id). A question that is not
  * in the archive, or has no canonical bridge, gives empty identifier cells (the legacy question id is always there).
  *
- * Q9 A also covers `question_submissions` (teacher submissions). The staged spec holds only `user_id`, `status` and the
+ * Q9 A also covers `question_submissions` (teacher submissions). The staged spec holds only `teacher_id`, `status` and the
  * timestamps for them (no content, v2-data-migration.md 3.3), so the content team gets METADATA only in a second file,
- * `question-submissions-open-<stamp>.csv`: legacy submission id, status, Malaysia date. Never `user_id`. Open submissions
+ * `question-submissions-open-<stamp>.csv`: legacy submission id, status, Malaysia date. Never `teacher_id`. Open submissions
  * are those in the same open set, counted in the same summary. (Deviation row in v2-backend-deviations.md: LEAD to confirm.)
  *
  * Files are created with `wx` and are never replaced: a second run in the same second fails ("already exists") instead
@@ -22,8 +23,9 @@
  * lower-cased, is in `OPEN_REPORT_STATUSES`. The summary lists the count of EVERY status with `exported` true or false,
  * so the operator sees what was left out and can extend the set after profiling (MIG-01).
  *
- * PRIVACY / MINIMISATION: the file has NO user id and no user attribute (name, e-mail, school): the reporter is not
- * selected at all. `reason` is free text written by the reporter (possibly a minor), so it is kept for the content team
+ * PRIVACY / MINIMISATION: the file has NO user id and no user attribute (name, e-mail, school): the reporter
+ * (`reporter_id`) is not selected at all. The `reason` cell is `question_reports.description`, the free text written by the
+ * reporter (possibly a minor); `report_type` is the category and goes through the same minimiser. It is kept for the content team
  * but minimised by `redactReason`: e-mail addresses, Malaysian phone numbers and 12-digit IC / MyKad numbers become
  * `[dihapus]`, and the text is cut at `REASON_MAX` characters (marked `[dipotong]`). Names cannot be detected, so the CSV
  * is still personal-data bearing: custody and deletion (7 days at most, or at hand-over, whichever is first) are in the
@@ -52,6 +54,7 @@ export const CSV_COLUMNS = [
   'chapter_number',
   'topic_id',
   'status',
+  'report_type',
   'reason',
   'created_date',
 ] as const
@@ -111,7 +114,7 @@ const PAGE_SQL = `
 SELECT r.id::text AS legacy_report_id, r.question_id::text AS legacy_question_id,
        k.natural_key AS source_paper_natural_key, k.number_label AS number_label,
        sb.code::text AS subject_code, ch.number::text AS chapter_number, q.topic_id::text AS topic_id,
-       r.status::text AS status, r.reason::text AS reason,
+       r.status::text AS status, r.report_type::text AS report_type, r.description::text AS reason,
        to_char(r.created_at AT TIME ZONE 'Asia/Kuala_Lumpur', 'YYYY-MM-DD') AS created_date
 FROM ${A}."question_reports" r
 LEFT JOIN ${A}."questions" q ON q.id = r.question_id
@@ -119,12 +122,7 @@ LEFT JOIN ${S}."subjects" sb ON sb.id = q.subject_id
 LEFT JOIN ${S}."chapters" ch ON ch.id = q.chapter_id
 LEFT JOIN LATERAL (
   SELECT eq.number_label::text AS number_label,
-         (SELECT sp.natural_key::text
-          FROM ${A}."exam_paper_questions" epq
-          JOIN ${A}."exam_papers" ep ON ep.id = epq.exam_paper_id
-          JOIN ${A}."source_papers" sp ON sp.id = ep.source_paper_id
-          WHERE epq.exam_question_id = eq.id
-          ORDER BY ep.id LIMIT 1) AS natural_key
+         (SELECT sp.natural_key::text FROM ${A}."source_papers" sp WHERE sp.id = eq.source_paper_id) AS natural_key
   FROM ${A}."legacy_canonical_map" m
   JOIN ${A}."exam_questions" eq ON eq.id = m.canonical_id
   WHERE m.source = 'questions' AND m.legacy_id = r.question_id::text AND m.canonical_type = 'exam_question'
@@ -308,7 +306,7 @@ export async function exportOpenQuestionReports(options: ExportOptions): Promise
       reports = await exportTable(
         c,
         rfd,
-        { columns: CSV_COLUMNS, statusSql: STATUS_SQL, pageSql: PAGE_SQL, idColumn: 'legacy_report_id', cell: (k, v) => (k === 'reason' ? redactReason(v) : v) },
+        { columns: CSV_COLUMNS, statusSql: STATUS_SQL, pageSql: PAGE_SQL, idColumn: 'legacy_report_id', cell: (k, v) => (k === 'reason' || k === 'report_type' ? redactReason(v) : v) },
         pageSize,
       )
       subs = await exportTable(

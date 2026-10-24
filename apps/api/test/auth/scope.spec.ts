@@ -153,12 +153,49 @@ describe('ScopeFilter and ScopeContext (AC 7)', () => {
       expect(f.isInScope({ schoolId: null }, USER_COLS)).toBe(false)
     })
 
-    it('district: filters through the school relation', () => {
-      const f = new ScopeFilter(auth('ppd_officer', { level: 'district', districtCode: 'Muar', label: 'PPD' }))
-      expect(f.where(USER_COLS)).toEqual({ school: { is: { district: 'Muar' } } })
-      expect(f.isInScope({ school: { district: 'Muar' } }, USER_COLS)).toBe(true)
-      expect(f.isInScope({ school: { district: 'Petaling' } }, USER_COLS)).toBe(false)
+    it('district: filters through the school relation by state AND district', () => {
+      const f = new ScopeFilter(
+        auth('ppd_officer', { level: 'district', districtCode: 'Muar', stateCode: 'Johor', label: 'PPD' }),
+      )
+      expect(f.where(USER_COLS)).toEqual({ school: { is: { state: 'Johor', district: 'Muar' } } })
+      expect(f.isInScope({ school: { state: 'Johor', district: 'Muar' } }, USER_COLS)).toBe(true)
+      expect(f.isInScope({ school: { state: 'Johor', district: 'Petaling' } }, USER_COLS)).toBe(false)
       expect(f.isInScope({ school: null }, USER_COLS)).toBe(false)
+    })
+
+    it('district: a same-named district in another state is NOT in scope', () => {
+      const f = new ScopeFilter(
+        auth('ppd_officer', { level: 'district', districtCode: 'Kota', stateCode: 'Kedah', label: 'PPD' }),
+      )
+      expect(f.isInScope({ school: { state: 'Sabah', district: 'Kota' } }, USER_COLS)).toBe(false)
+      expect(f.isInScope({ school: { state: null, district: 'Kota' } }, USER_COLS)).toBe(false)
+      expect(f.isInScope({ school: { district: 'Kota' } }, USER_COLS)).toBe(false)
+      expect(f.isInScope({ school: { state: 'Kedah', district: 'Kota' } }, USER_COLS)).toBe(true)
+    })
+
+    it('a truncated session scope no longer matches the full school value (isInScope false)', () => {
+      const f = new ScopeFilter(
+        auth('ppd_officer', { level: 'district', districtCode: 'D'.repeat(32), stateCode: 'S'.repeat(16), label: 'x' }),
+      )
+      expect(f.isInScope({ school: { state: 'S'.repeat(20), district: 'D'.repeat(40) } }, USER_COLS)).toBe(false)
+    })
+
+    it.each([
+      ['district without a state', { level: 'district', districtCode: 'Muar', label: 'x' }],
+      ['district with an empty state', { level: 'district', districtCode: 'Muar', stateCode: '', label: 'x' }],
+      ['district without a district', { level: 'district', stateCode: 'Johor', label: 'x' }],
+      ['district with an empty district', { level: 'district', districtCode: '', stateCode: 'Johor', label: 'x' }],
+      ['state without a state code', { level: 'state', label: 'x' }],
+      ['state with an empty state code', { level: 'state', stateCode: '', label: 'x' }],
+    ] as Array<[string, Scope]>)('fails closed: %s matches nothing', (_name, scope) => {
+      const f = new ScopeFilter(auth('ppd_officer', scope))
+      const frag = JSON.stringify(f.where(USER_COLS))
+      expect(frag).not.toContain('undefined')
+      expect(f.where(USER_COLS)).toEqual({ school: { is: { id: { in: [] } } } })
+      expect(f.isInScope({ school: { state: 'Johor', district: 'Muar' } }, USER_COLS)).toBe(false)
+      expect(() => f.assertInScope({ school: { state: 'Johor', district: 'Muar' } }, USER_COLS)).toThrow(
+        expect.objectContaining({ code: 'NOT_FOUND' }),
+      )
     })
 
     it('self: owner column equals the user id', () => {

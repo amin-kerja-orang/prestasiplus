@@ -5,7 +5,7 @@
  * the final report equals the report of an uninterrupted run:
  *   - wallet / ledger drift and the streak drift: a scan of the whole staged `student_wallets` against the migrated
  *     wallets, ledger and streaks;
- *   - `practice_sessions.mode_rejected.*`, `coin_ledger.rejected_amount`: counted from this run's `etl_rejects`;
+ *   - `practice_sessions.mode_rejected.*`, `exam_attempts.status_rejected.*`, `coin_ledger.rejected_amount`: counted from this run's `etl_rejects`;
  *   - `wallets.tier_unmapped`: wallets that loaded with no tier although staging names one.
  * Only steps that were part of the run are rebuilt. Counts and surrogate ids only.
  */
@@ -13,6 +13,7 @@ import type pg from 'pg'
 
 import { SESSION_MODES_DEFERRED } from '../../transform/practice'
 import { enumKey } from '../../transform/common'
+import { examStatusRejectLabel } from '../../transform/exam'
 import { readById } from '../source'
 import type { ActivityContext } from './context'
 import { scanWalletDrift } from './wallet-steps'
@@ -67,6 +68,18 @@ export async function rebuildAfterResume(a: ActivityContext, pool: pg.Pool, runI
       const mode = enumKey(r.mode)
       a.notes.count(`practice_sessions.mode_rejected.${mode !== null && SESSION_MODES_DEFERRED.includes(mode) ? mode : 'other'}`)
     }
+  }
+
+  if (ran.has('exam_attempts')) {
+    resetNotes(a, 'exam_attempts.status_rejected')
+    const res = await pool.query<{ slug: string | null }>(
+      `SELECT st.slug::text AS slug FROM etl_rejects r
+       JOIN staging_cloud.exam_attempts t ON t.id::text = r.legacy_id
+       LEFT JOIN staging_cloud.attempt_statuses st ON st.id = t.status_id
+       WHERE r.run_id = $1::bigint AND r.entity = 'exam_attempts' AND r.column_name = 'status'`,
+      [runId],
+    )
+    for (const r of res.rows) a.notes.count(`exam_attempts.status_rejected.${examStatusRejectLabel(r.slug)}`)
   }
 
   if (ran.has('coin_ledger')) {

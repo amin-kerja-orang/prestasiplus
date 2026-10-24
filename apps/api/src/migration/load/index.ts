@@ -17,6 +17,7 @@ import { classroomsStep, enrolmentsStep, subscriptionsStep } from './class-steps
 import { CoreContext, type CoreOptions } from './context'
 import { DEFAULT_OUT_DIR, writeRestrictedIds } from './restricted'
 import { parentLinksStep, usersStep } from './identity-steps'
+import { roleRejectLabel } from '../transform/users'
 import {
   chaptersStep,
   educationLevelsStep,
@@ -60,7 +61,7 @@ export const NOT_MIGRATED: readonly { table: string; reason: string }[] = [
   { table: 'pksk_packages / pksk_accesses', reason: 'BE-29 wave (PKSK)' },
   { table: 'student_wallets', reason: 'BE-29 wave (wallet)' },
   { table: 'users.parent_invite_token', reason: 'redacted at staging (M4); pending invites are re-issued by the product, not migrated' },
-  { table: 'users.faith / google_id / referral_code / spm_targets / notifications_read_at', reason: 'dropped (Q7) or no v2 target' },
+  { table: 'users.faith / google_id / referral_code / spm_targets / notifications_read_at', reason: '`faith` and `google_id` are not staged (PDPA minimisation, FIT-FIX); the others are dropped (Q7) or have no v2 target' },
 ]
 
 /** Known synthetic password markers (BE-35): staging data carrying them must never reach a production database. */
@@ -177,7 +178,7 @@ async function recountFromCommitted(pool: Pick<pg.Pool, 'query'>, core: CoreCont
 }
 
 /** Counters copied into `etl_runs.counters -> 'notes'` (numbers only; the night SQL checks read them). Never ids or hashes. */
-const LEDGER_NOTES = /^(must_reset\..+|nullHashAccounts|flaggedWithoutLoginId|rosterDefaultHashes|rosterDefaultHashesWarning|countsFromCommittedRows)$/
+const LEDGER_NOTES = /^(must_reset\..+|users\.role_rejected\..+|nullHashAccounts|flaggedWithoutLoginId|rosterDefaultHashes|rosterDefaultHashesWarning|countsFromCommittedRows)$/
 
 /**
  * Merges the report counters into the apply run's `counters` JSON under `notes` (`jsonb_set`, so the runner's per-entity
@@ -234,6 +235,18 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
     if (mode === 'apply' && !noRunRow && core.notes.counters.has('nullHashAccounts')) {
       try {
         await recountFromCommitted(options.pool, core)
+        try {
+          // The failed batch was rolled back after its role rejects were noted: recount them from the committed rejects of the
+          // failed run (the latest apply row of this input, as `saveNotesToRun` below). Best effort: the id file comes first.
+          const failed = await options.pool.query<{ id: string | null }>(
+            `SELECT max(id)::text AS id FROM etl_runs WHERE mode = 'apply' AND input_hash = $1`,
+            [inputHash],
+          )
+          const failedRunId = failed.rows[0]?.id
+          if (failedRunId) await rebuildCoreNotes(options.pool, core, failedRunId)
+        } catch {
+          // the role counts stay as noted by this process
+        }
         const file = writeFile('interrupted')
         if (file !== undefined) core.options.warn?.(`restricted id file (mode 0600, delete within 7 days): ${file}`)
         await saveNotesToRun(options.pool, core, { inputHash })
@@ -245,9 +258,28 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
   }
   let restrictedFile: string | undefined
   if (mode === 'apply') {
-    if (report.resumedBatches > 0) await recountFromCommitted(options.pool, core)
+    if (report.resumedBatches > 0) {
+      // A resumed apply skipped the batches a checkpoint already committed, so both the Q11 counts (rebuilt from the committed
+      // users) and the `users.role_rejected.*` counts (rebuilt from this run's rejects) miss those batches. The two rebuilds
+      // touch disjoint counters, and both run BEFORE the notes are saved so the saved notes equal an uninterrupted run's.
+      await recountFromCommitted(options.pool, core)
+      await rebuildCoreNotes(options.pool, core, report.runId)
+    }
     await saveNotesToRun(options.pool, core, { runId: report.runId })
     restrictedFile = writeFile(report.runId)
   }
   return { report, core, restrictedFile }
+}
+
+/** Recounts `users.role_rejected.*` from the run's `etl_rejects` (role names only through `roleRejectLabel`, never raw text). */
+export async function rebuildCoreNotes(pool: Pick<pg.Pool, 'query'>, core: CoreContext, runId: string): Promise<void> {
+  const prefix = 'users.role_rejected'
+  for (const k of [...core.notes.counters.keys()]) if (k === prefix || k.startsWith(`${prefix}.`)) core.notes.counters.delete(k)
+  const res = await pool.query<{ role: string | null }>(
+    `SELECT u.role::text AS role FROM etl_rejects r
+     JOIN "${STAGING_SCHEMA}"."users" u ON u.id::text = r.legacy_id
+     WHERE r.run_id = $1::bigint AND r.entity = 'users' AND r.column_name = 'role'`,
+    [runId],
+  )
+  for (const r of res.rows) core.notes.count(`${prefix}.${roleRejectLabel(r.role)}`)
 }

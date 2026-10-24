@@ -41,7 +41,6 @@ export const PII_COLUMNS: Record<string, readonly string[]> = {
   support_tickets: ['subject', 'admin_reply'],
   timeline_entries: ['title', 'body'],
   feedback: ['comment'],
-  student_notes: ['title', 'body'],
   notes: ['title', 'body'],
 }
 

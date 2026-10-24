@@ -358,7 +358,7 @@ export class UsersRepository {
   // --- scope ------------------------------------------------------------------------------------
 
   private scopeWhere(caller: Caller): Prisma.UserWhereInput {
-    return new ScopeFilter(caller.auth).where({ schoolColumn: 'schoolId' }) as Prisma.UserWhereInput
+    return new ScopeFilter(caller.auth).where({ schoolColumn: 'schoolId', schoolRelation: 'school' }) as Prisma.UserWhereInput
   }
 
   /**
@@ -550,6 +550,16 @@ export class UsersRepository {
     return { total, active, inactive: total - active }
   }
 
+  /**
+   * Ids (decimal strings, ascending) of the accounts counted by `countsBySchoolRole` for `role`: the managed S6/S7 population,
+   * active, inactive and suspended alike. The school reports (S1/S3/S5) read their people from here so their counts equal S0 (SW6-04).
+   */
+  async managedIdsBySchoolRole(schoolId: string, role: ManagedRole): Promise<string[]> {
+    if (!isIdString(schoolId)) return []
+    const rows = await this.prisma.client.user.findMany({ where: { AND: this.managedBase(idFromString(schoolId), role) }, select: { id: true }, orderBy: [{ id: 'asc' }] })
+    return rows.map((r) => idToString(r.id))
+  }
+
   /** Every account for the CSV export (same filters as the list, no paging), id ascending, at most `MANAGED_EXPORT_MAX`. */
   async exportBySchoolRole(schoolId: string, role: ManagedRole, filter: { isActive?: boolean; search?: string }): Promise<UserRecord[]> {
     if (!isIdString(schoolId)) return []
@@ -654,12 +664,20 @@ export class UsersRepository {
     return new Set(rows.map((r) => r.e))
   }
 
-  /** True when every id is a user with the student role. */
-  async allStudents(ids: readonly string[]): Promise<boolean> {
+  /**
+   * True when every id is a user with the student role. With `caller`, a school_admin is limited to the
+   * students of its own school (an out-of-scope student answers like an unknown one); admin is not limited.
+   */
+  async allStudents(ids: readonly string[], caller?: Caller): Promise<boolean> {
     if (!ids.every(isIdString)) return false
     const unique = [...new Set(ids)].map(idFromString)
     if (unique.length === 0) return true
-    const n = await this.prisma.client.user.count({ where: { id: { in: unique }, roles: { some: { role: 'student' } } } })
+    const scope: Prisma.UserWhereInput = {}
+    if (caller && !caller.isAdmin) {
+      if (caller.schoolId === null || !isIdString(caller.schoolId)) return false
+      scope.schoolId = idFromString(caller.schoolId)
+    }
+    const n = await this.prisma.client.user.count({ where: { id: { in: unique }, roles: { some: { role: 'student' } }, ...scope } })
     return n === unique.length
   }
 

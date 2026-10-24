@@ -36,6 +36,7 @@ export interface BijakSittingQuery {
   userIds?: readonly string[]
   schoolIds?: readonly string[]
   state?: string
+  /** Needs `state` too (a district name is only unique inside its state); a district alone matches nothing. */
   district?: string
   subjectId?: string
   /** Default: both. */

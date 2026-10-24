@@ -11,7 +11,7 @@ import type { CoreContext } from './context'
 import { rejectRow, sumResults, upsertAndMap } from './helpers'
 import { distinctValues, readById, readPairTable, resolveFk, type StagedRow } from './source'
 import { parentLinkLegacyId, transformParentLink } from '../transform/classes'
-import { transformUser, type UserOutput } from '../transform/users'
+import { roleRejectLabel, transformUser, type UserOutput } from '../transform/users'
 
 const idOf = (row: StagedRow): string => {
   const id = row.id ?? ''
@@ -62,8 +62,11 @@ export function usersStep(core: CoreContext): AnyEntityStep {
           ic: core.ic,
           defaultHashes: core.defaultHashes,
         })
-        if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
-        else accepted.push({ legacyId, out: out.value })
+        if (!out.ok) {
+          rejectRow(ctx, entity, legacyId, out.reject)
+          // Roles that are not migrated (agent) are counted by name; any other unknown role is counted together.
+          if (out.reject.column === 'role') core.notes.count(`users.role_rejected.${roleRejectLabel(row.role)}`)
+        } else accepted.push({ legacyId, out: out.value })
       }
 
       await dropDuplicateLogins(ctx, core, accepted)

@@ -112,6 +112,6 @@ export function world(): World {
     student: new StudentPerformanceService(ports, directory, clock, facts),
     school: new SchoolPerformanceService(ports, directory, clock, facts),
     klass: new ClassPerformanceService(ports, directory, clock, facts),
-    items: new ItemAnalysisService(ports, directory, clock),
+    items: new ItemAnalysisService(ports, directory, clock, facts),
   }
 }
