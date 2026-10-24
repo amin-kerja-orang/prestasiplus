@@ -196,7 +196,7 @@ describe('bulk import', () => {
     expect(BulkImportMultipartSchema.safeParse({ role: 'teacher', schoolId: '10', importMode: 'csv', csvFile: 'a,b' }).success).toBe(true)
   })
   it('result and messages match the mock', () => {
-    const result = { created: 2, skipped: 1, failed: 1, credentials: [{ line: 2, email: 'a@example.test', generatedPassword: 'Xk3pQ9vL2m', mustChangePassword: true }], errors: [{ line: 4, message: 'Emel tidak sah.' }] }
+    const result = { created: 2, skipped: 1, failed: 1, credentials: [{ line: 2, email: 'a@example.test', generatedPassword: 'Xk3pQ9vL2m', mustChangePassword: false }], errors: [{ line: 4, message: 'Emel tidak sah.' }] }
     expect(ImportResultSchema.safeParse(result).success).toBe(true)
     expect(ImportResultSchema.safeParse({ ...result, errors: [{ line: 0, message: 'x' }] }).success).toBe(false)
     expect(usersImportedText(result)).toBe('Import selesai: 2 pengguna didaftarkan, 1 dilangkau, 1 gagal.')
@@ -383,11 +383,12 @@ describe('D58 decisions', () => {
     expect(JSON.stringify(op('/admin/users/bulk-import', 'post'))).not.toMatch(/defaultPassword/)
   })
 
-  it('D59: create returns a one-time generatedPassword with mustChangePassword true, no-store', () => {
-    const created = { ...detail, mustChangePassword: true, generatedPassword: 'Xk3pQ9vL2m' }
+  it('D59: create returns a one-time generatedPassword with mustChangePassword false (R39), no-store', () => {
+    const created = { ...detail, mustChangePassword: false, generatedPassword: 'Xk3pQ9vL2m' }
     expect(CreatedUserSchema.safeParse(created).success).toBe(true)
     expect(CreatedUserSchema.safeParse({ ...created, generatedPassword: undefined }).success).toBe(false)
-    expect(CreatedUserSchema.safeParse({ ...created, mustChangePassword: false }).success).toBe(false)
+    expect(CreatedUserSchema.safeParse({ ...created, mustChangePassword: true }).success).toBe(true) // R39: widened to boolean, a legacy true still parses
+    expect(CreatedUserSchema.safeParse({ ...created, mustChangePassword: undefined }).success).toBe(false)
     expect(AdminUserDetailSchema.parse(created)).not.toHaveProperty('generatedPassword')
     const post = op('/admin/users', 'post').responses['201'] as { headers?: Record<string, unknown>; content?: { 'application/json': { schema: unknown } } }
     expect(post.headers?.['Cache-Control']).toBeDefined()
@@ -402,7 +403,7 @@ describe('D58 decisions', () => {
     expect(UpdateUserRequestSchema.safeParse({ ...update, resetPassword: 'yes' }).success).toBe(false)
     for (const bad of [{ newPassword: 'secret1' }, { newPasswordConfirmation: 'secret1' }, { password: 'secret1' }])
       expect(UpdateUserRequestSchema.safeParse({ ...update, ...bad }).success, JSON.stringify(bad)).toBe(false)
-    const reset = { ...detail, mustChangePassword: true, generatedPassword: 'Xk3pQ9vL2m' }
+    const reset = { ...detail, mustChangePassword: false, generatedPassword: 'Xk3pQ9vL2m' }
     expect(UpdatedUserSchema.safeParse(reset).success).toBe(true)
     expect(UpdatedUserSchema.safeParse(detail).success).toBe(true)
     expect(UpdatedUserSchema.safeParse({ ...reset, generatedPassword: '' }).success).toBe(false)
@@ -417,9 +418,10 @@ describe('D58 decisions', () => {
   })
 
   it('D59: the import report carries one generated password per created account', () => {
-    const cred = { line: 2, email: 'a@example.test', generatedPassword: 'Xk3pQ9vL2m', mustChangePassword: true }
+    const cred = { line: 2, email: 'a@example.test', generatedPassword: 'Xk3pQ9vL2m', mustChangePassword: false } // R39
     expect(ImportCredentialSchema.safeParse(cred).success).toBe(true)
-    expect(ImportCredentialSchema.safeParse({ ...cred, mustChangePassword: false }).success).toBe(false)
+    expect(ImportCredentialSchema.safeParse({ ...cred, mustChangePassword: true }).success).toBe(true) // R39: widened to boolean, a legacy true still parses
+    expect(ImportCredentialSchema.safeParse({ ...cred, mustChangePassword: undefined }).success).toBe(false)
   })
 })
 
