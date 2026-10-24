@@ -103,6 +103,10 @@ export interface StageResult {
   skippedReason?: string
   /** Message of a failed verify stage (the run did not throw: it is part of the result). */
   error?: string
+  /** Core stage only (Q10/Q11): aggregate counts about roster default hashes and login-less accounts. No ids. */
+  notes?: Record<string, number>
+  /** Core apply only (Q11): path of the mode-0600 restricted id file (ids of real people; delete within 7 days). */
+  restrictedFile?: string
 }
 
 export interface DeltaEntity {
@@ -150,6 +154,8 @@ export interface PipelineOptions {
   /** Report directory (a `.migration-out` folder). Default `<repo>/.migration-out`. */
   outDir?: string
   gitSha?: string | null
+  /** Receives warning lines of the stages (no secret, no personal data). The CLI passes `ctx.err`. */
+  warn?: (line: string) => void
   /** Called with each stage as soon as it finishes (the CLI prints it), so completed stages survive a later throw. */
   onStage?: (stage: StageResult) => void
   /** Test seam: the reconciliation. Default `runVerify` (Part B). */
@@ -184,10 +190,22 @@ const fromReport = (name: 'core' | 'activity', report: RunReport): StageResult =
   counters: report.counters,
 })
 
+/** The core counters that `migrate:all` / `migrate:delta` print per core stage (counts only; the full list is `migrate:core`). */
+const CORE_STAGE_NOTES = ['rosterDefaultHashes', 'rosterDefaultHashesWarning', 'nullHashAccounts', 'flaggedWithoutLoginId',
+  'must_reset.roster_account', 'must_reset.non_bcrypt', 'must_reset.shared_default'] as const
+
 async function runStage(name: 'core' | 'activity', mode: RunMode, o: PipelineOptions): Promise<StageResult> {
   const source = o.source ?? 'cloud'
   const common = { pool: o.pool, env: o.env, source, asOf: o.asOf, mode, batchSize: o.batchSize, gitSha: o.gitSha }
-  if (name === 'core') return fromReport('core', (await runCore(common)).report)
+  if (name === 'core') {
+    const { report, core, restrictedFile } = await runCore({ ...common, outDir: o.outDir, warn: o.warn })
+    const notes: Record<string, number> = {}
+    for (const k of CORE_STAGE_NOTES) {
+      const n = core.notes.counters.get(k)
+      if (n !== undefined) notes[k] = n
+    }
+    return { ...fromReport('core', report), ...(Object.keys(notes).length > 0 ? { notes } : {}), ...(restrictedFile !== undefined ? { restrictedFile } : {}) }
+  }
   // Activity resolves ids from the core run that used the same as-of, so the preflight is told which one that was.
   return fromReport('activity', (await runActivity({ ...common, coreAsOf: o.asOf, contentOwnerUserId: o.contentOwner, filesDir: o.filesDir })).report)
 }
@@ -468,6 +486,8 @@ function printStage(ctx: CliContext, label: string, s: StageResult): void {
   } else {
     ctx.out(`${label} ${s.name} ${s.mode}: run ${s.runId} ${s.status}`)
     printRecon(ctx, s.recon ?? [])
+    for (const [k, n] of Object.entries(s.notes ?? {})) ctx.out(`note ${k}: ${n}`)
+    if (s.restrictedFile !== undefined) ctx.out(`restricted id file (mode 0600, delete within 7 days): ${s.restrictedFile}`)
   }
 }
 
@@ -505,7 +525,7 @@ export const migrateAll: MigrateCommand = {
   summary: 'core then activity (dry-run first, then apply) and the reconciliation (dry-run by default)',
   async run(args, ctx) {
     const f = commonFlags(args)
-    const result = await runAll({ pool: ctx.pool, env: ctx.env, mode: args.mode, ...f, gitSha: resolveGitSha(ctx.env), onStage: (s) => printStage(ctx, 'migrate:all', s) })
+    const result = await runAll({ pool: ctx.pool, env: ctx.env, mode: args.mode, ...f, gitSha: resolveGitSha(ctx.env), onStage: (s) => printStage(ctx, 'migrate:all', s), warn: ctx.err })
     printOutcome(ctx, 'migrate:all', result)
     return result.status === 'succeeded' ? 0 : 1
   },
@@ -519,7 +539,7 @@ export const migrateDelta: MigrateCommand = {
     if (since === undefined) throw new ApplyGuardError('--since is required (ISO-8601 timestamp, e.g. 2026-06-02T00:00:00Z).')
     parseSince(since)
     const f = commonFlags(args, true)
-    const result = await runDelta({ pool: ctx.pool, env: ctx.env, mode: args.mode, since, ...f, gitSha: resolveGitSha(ctx.env), onStage: (s) => printStage(ctx, 'migrate:delta', s) })
+    const result = await runDelta({ pool: ctx.pool, env: ctx.env, mode: args.mode, since, ...f, gitSha: resolveGitSha(ctx.env), onStage: (s) => printStage(ctx, 'migrate:delta', s), warn: ctx.err })
     printOutcome(ctx, 'migrate:delta', result)
     if (result.delta) {
       printDelta(ctx, result.delta)
@@ -578,6 +598,7 @@ export const migrateLinkQuestions: MigrateCommand = {
     ctx.out(`migrate:link-questions ${r.mode}`)
     ctx.out('examined | linked | ambiguous | unmatched | already linked')
     ctx.out(`${r.examined} | ${r.linked} | ${r.ambiguous} | ${r.unmatched} | ${r.alreadyLinked}`)
+    ctx.out(`linked by: exact ${r.linkedByExact ?? 0} | natural key ${r.linkedByNaturalKey ?? 0} | hash ${r.linkedByHash ?? 0}`)
     // Surrogate answer ids only, capped.
     for (const [name, ids] of [['ambiguous', r.ambiguousIds], ['unmatched', r.unmatchedIds]] as const) {
       if (ids.length > 0) ctx.out(`ids ${name}: ${ids.slice(0, MAX_IDS_PRINTED).join(',')}${ids.length > MAX_IDS_PRINTED ? ',...' : ''}`)

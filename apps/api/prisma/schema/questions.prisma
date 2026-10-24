@@ -109,6 +109,9 @@ model Question {
   isActive         Boolean  @default(true) @map("is_active")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  /// ETL pair (migration 0043, `migrate:questions`): cloud / old questions.id. NULL for seeded and v2-born rows.
+  legacySource     String?  @map("legacy_source")
+  legacyId         String?  @map("legacy_id")
 
   group    StimulusGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull, map: "fk_questions_group_id")
   versions QuestionVersion[]
@@ -117,7 +120,9 @@ model Question {
   @@index([liveVersionNo], map: "ix_questions_live_version_no")
   @@index([groupId, groupPosition], map: "ix_questions_group_id_group_position")
   @@index([familyId], map: "ix_questions_family_id")
+  @@index([parentQuestionId], map: "ix_questions_parent_question_id")
   @@index([createdById], map: "ix_questions_created_by_id")
+  @@unique([legacySource, legacyId], map: "uq_questions_legacy")
   @@map("questions")
 }
 
