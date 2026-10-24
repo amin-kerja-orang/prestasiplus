@@ -244,11 +244,12 @@ export class PracticeStartPlanner {
     const ids = [...fresh]
     if (ids.length < count && last.size > 0) {
       const seen = [...last.keys()].sort((a, b) => (last.get(a)?.lastAt.getTime() ?? 0) - (last.get(b)?.lastAt.getTime() ?? 0) || cmpId(a, b))
+      // Only answered questions that still belong to this chapter (a question moved to another chapter is not repeated here).
       const live = await this.serve(seen.slice(0, Math.max(count * 4, 50)))
-      for (const q of live) if (ids.length < count) ids.push(q.id)
+      for (const q of live) if (ids.length < count && q.chapterId === chapterKey) ids.push(q.id)
       // Rare: the oldest answered ones are mostly ineligible now, so read further in the history.
       for (let at = Math.max(count * 4, 50); ids.length < count && at < seen.length; at += 200) {
-        for (const q of await this.serve(seen.slice(at, at + 200))) if (ids.length < count) ids.push(q.id)
+        for (const q of await this.serve(seen.slice(at, at + 200))) if (ids.length < count && q.chapterId === chapterKey) ids.push(q.id)
       }
     }
     const served = await this.serve(ids)

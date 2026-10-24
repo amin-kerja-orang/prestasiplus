@@ -221,6 +221,8 @@ export interface QuestionFilter {
    * hash-ordered candidates (never on the whole subject).
    */
   mcqShape?: { minOptions: number; maxOptions: number }
+  /** Only versions with exactly one part and that part an `mcq` leaf (what the SPM pool's `mcqItemOf` accepts; no stimulus or image rule). */
+  singleMcqLeaf?: boolean
   /** Any of these chapters (ANDed with `chapterId` when both are set); `[]` matches nothing. */
   chapterIds?: readonly string[]
   /** Only ids in this list (`q.id = ANY(...)`): "which of these are still eligible". `[]` matches nothing. */

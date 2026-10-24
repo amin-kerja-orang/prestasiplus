@@ -5,6 +5,7 @@ import {
   type QuestionQualitySummary,
 } from '@pp/contract'
 
+import { ApiError } from '../../../../common/errors/api-error'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { CLOCK, type Clock } from '../../../../db/clock'
 import { idFromString, idToString } from '../../../../db/ids'
@@ -17,6 +18,11 @@ import { bucketOfScore, scoreQuestion } from './quality-score'
 
 /** Questions scored and written per statement (keyset batch of the audit and of the summary walk). */
 const AUDIT_BATCH = 2000
+/** An unfinished audit run older than this is treated as crashed and no longer blocks a new run. */
+const AUDIT_STALE_MS = 60 * 60 * 1000
+/** Advisory lock key of the audit start (check + insert of the run row). */
+const AUDIT_LOCK_KEY = 7_041_001
+export const AUDIT_RUNNING_MESSAGE = 'Audit kualiti sedang berjalan.'
 
 const round1 = (n: number): number => Math.round(n * 10) / 10
 const cmpId = (a: string, b: string): number => (BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0)
@@ -140,7 +146,25 @@ export class QualityService {
   async audit(actor: WorkflowActor): Promise<{ data: { lastAuditAt: string }; status: string }> {
     const now = this.clock.now()
     const db = this.prisma.client
-    const run = await db.qualityAudit.create({ data: { runById: idFromString(actor.userId), createdAt: now } })
+    // One run at a time: the check and the insert of the run row are serialised by a transaction advisory lock, and an
+    // unfinished run younger than AUDIT_STALE_MS refuses a second one (a crashed run stops blocking after that window).
+    const run = await this.prisma.transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${AUDIT_LOCK_KEY}::bigint)`
+      const open = await tx.qualityAudit.findFirst({ where: { finishedAt: null, createdAt: { gt: new Date(now.getTime() - AUDIT_STALE_MS) } }, select: { id: true } })
+      if (open) throw ApiError.of('CONFLICT', { message: AUDIT_RUNNING_MESSAGE })
+      return tx.qualityAudit.create({ data: { runById: idFromString(actor.userId), createdAt: now } })
+    })
+    try {
+      return await this.runAudit(run.id, now)
+    } catch (e) {
+      // A failed run must not look like a running one: drop its row (its scores keep, unstamped, until the next sweep).
+      await db.qualityAudit.delete({ where: { id: run.id } }).catch(() => undefined)
+      throw e
+    }
+  }
+
+  private async runAudit(runId: bigint, now: Date): Promise<{ data: { lastAuditAt: string }; status: string }> {
+    const db = this.prisma.client
     let scored = 0
     let changed = 0
     let sum = 0
@@ -157,7 +181,7 @@ export class QualityService {
       // One statement per batch (three array parameters).
       await db.$executeRaw`
         INSERT INTO question_quality_scores (question_id, score, bucket, audit_id, scored_at)
-        SELECT t.question_id, t.score, t.bucket, ${run.id}, ${now}
+        SELECT t.question_id, t.score, t.bucket, ${runId}, ${now}
           FROM unnest(${scores.map((x) => x.id)}::bigint[], ${scores.map((x) => x.score)}::int[], ${scores.map((x) => x.bucket)}::text[])
                AS t(question_id, score, bucket)
         ON CONFLICT (question_id) DO UPDATE
@@ -167,9 +191,9 @@ export class QualityService {
       sum += scores.reduce((a, s) => a + s.score, 0)
     }, AUDIT_BATCH)
     // Every current question was just stamped with this run; what is left belongs to deleted questions.
-    await db.$executeRaw`DELETE FROM question_quality_scores WHERE audit_id IS DISTINCT FROM ${run.id}`
+    await db.$executeRaw`DELETE FROM question_quality_scores WHERE audit_id IS DISTINCT FROM ${runId}`
     await db.qualityAudit.update({
-      where: { id: run.id },
+      where: { id: runId },
       data: { finishedAt: now, findingCount: changed, scoredCount: scored, averageScore: scored === 0 ? 0 : sum / scored },
     })
     return { data: { lastAuditAt: toMytTimestamp(now) }, status: QUESTION_QUALITY_FLASH }

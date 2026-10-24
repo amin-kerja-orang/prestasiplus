@@ -9,7 +9,7 @@ import { GameQuestions } from '../../src/modules/games'
 import { DuplicateDetector } from '../../src/modules/intake/workflow/duplicate-detector'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge'
 import { ELIGIBLE_IDS_MAX, QuestionsRepository } from '../../src/modules/questions'
-import { QualityService } from '../../src/modules/questions/workflow/quality/quality.service'
+import { AUDIT_RUNNING_MESSAGE, QualityService } from '../../src/modules/questions/workflow/quality/quality.service'
 import { SpmTrackingService } from '../../src/modules/spm'
 import { SpmPoolService } from '../../src/modules/spm/pool.service'
 import { bulkMcqs } from '../helpers/bulk-bank'
@@ -475,5 +475,57 @@ describe('quality audit timing (Q5)', () => {
     // 300k questions at this rate stay far below one hour; the old single transaction was capped at 120 s.
     expect((ms / total) * 300_000).toBeLessThan(600_000)
     expect((await t.db.query<{ n: number }>(`select count(*)::int n from quality_audits where finished_at is not null`))[0]?.n).toBeGreaterThan(0)
+  })
+})
+
+describe('G4 follow-ups', () => {
+  it('audit: an unfinished fresh run refuses a second one (409), a stale one does not, overlapping runs keep every score', async () => {
+    const quality = t.get(QualityService)
+    const actor = { userId: w.admin, role: 'admin', requestId: null, ip: null, isTest: false } as const
+    const total = (await t.db.query<{ n: number }>(`select count(*)::int n from questions`))[0]?.n as number
+    const clockNow = (t.clock as { now(): Date }).now()
+    const open = (await t.db.query<{ id: string }>(`insert into quality_audits (created_at) values ($1) returning id::text`, [new Date(clockNow.getTime() - 60_000)]))[0]?.id as string
+    await expect(quality.audit(actor)).rejects.toMatchObject({ status: 409, message: AUDIT_RUNNING_MESSAGE })
+    // The refused run wrote no row of its own.
+    expect((await t.db.query<{ n: number }>(`select count(*)::int n from quality_audits where finished_at is null`))[0]?.n).toBe(1)
+    // A crashed run older than the window no longer blocks.
+    await t.db.query(`update quality_audits set created_at = $2 where id = $1`, [open, new Date(clockNow.getTime() - 2 * 3600_000)])
+    const settled = await Promise.allSettled([quality.audit(actor), quality.audit(actor)])
+    expect(settled.some((r) => r.status === 'fulfilled')).toBe(true)
+    for (const r of settled) if (r.status === 'rejected') expect(r.reason).toMatchObject({ status: 409 })
+    // Whatever the interleaving, no score of the finished run was swept away by the other.
+    expect((await t.db.query<{ n: number }>(`select count(*)::int n from question_quality_scores`))[0]?.n).toBe(total)
+    expect((await t.db.query<{ n: number }>(`select count(*)::int n from question_quality_scores where audit_id is null`))[0]?.n).toBe(0)
+    await t.db.query(`delete from quality_audits where finished_at is null`)
+  })
+
+  it('Jutawan gate: eligibleCount counts only what a draw can serve (no five-option or two-part questions)', async () => {
+    const games = t.get(GameQuestions)
+    const count = await games.eligibleCount({ subjectId: w.tag.subjectId, educationLevelId: otherLevel })
+    expect(count).toBe(fourOption.length + 5) // the 45 plain ones plus 3 + 2 in the chapters; 300 five-option and the two-part one are out
+    const all = (await t.db.query<{ n: number }>(`select count(*)::int n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.is_active and v.status = 'published' and v.type = 'mcq' and v.subject_id = $1 and v.education_level_id = $2`, [w.tag.subjectId, otherLevel]))[0]?.n as number
+    expect(all).toBeGreaterThan(count + 250)
+    expect((await games.sample({ subjectId: w.tag.subjectId, educationLevelId: otherLevel }, count, prngStream('gate'))).length).toBeGreaterThan(0)
+  })
+
+  it('SPM pool counts use the same shape as the draw (a pool-tagged two-part question is in neither); timing note', async () => {
+    const pool = t.get(SpmPoolService)
+    const twoPart = (await t.db.query<{ id: string }>(`select question_id::text id from question_versions v where v.number_label like 'QL-CA-%' and (select count(*) from question_parts p where p.question_version_id = v.id) = 2`))[0]?.id as string
+    const before = await pool.count(w.tag.subjectId)
+    await t.db.query(`insert into question_tags (question_id, kind, code) values ($1, 'pool', 'spm')`, [twoPart])
+    const after = await new SpmPoolService(repo, { get: () => '0' } as never, { now: () => new Date() } as never).count(w.tag.subjectId)
+    expect(after).toBe(before)
+    const drawn = await pool.sample(w.tag.subjectId, 400, prngStream('shape'))
+    expect(drawn.map((r) => r.id)).not.toContain(twoPart)
+    const filter = { subjectId: w.tag.subjectId, type: 'mcq', spmPool: true, ungrouped: true, status: 'published', active: true } as const
+    const timed = async (f: Parameters<QuestionsRepository['count']>[0]): Promise<number> => {
+      const s0 = performance.now()
+      await repo.groupCountsByLevelTp(f)
+      return performance.now() - s0
+    }
+    const plain = await timed(filter)
+    const shaped = await timed({ ...filter, singleMcqLeaf: true })
+    process.stdout.write(`QLOAD pool count timing over ${String(before)} pool rows: plain ${plain.toFixed(0)} ms, with single-leaf shape ${shaped.toFixed(0)} ms\n`)
+    await t.db.query(`delete from question_tags where question_id = $1 and kind = 'pool'`, [twoPart])
   })
 })

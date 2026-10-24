@@ -269,6 +269,24 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
     )
   }
 
+  // ---- 1b. v2 edits INSIDE a migrated question: a later version, a changed live version or an extra version row would
+  // cascade away with the question. The loader writes version 1 only (latest 1, live 1), so anything else came from v2.
+  if (inSet.has('questions')) {
+    const edited = await db.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM questions q
+        WHERE q.legacy_source = $1
+          AND (q.latest_version_no IS DISTINCT FROM 1 OR q.live_version_no IS DISTINCT FROM 1
+               OR (SELECT count(*) FROM question_versions v WHERE v.question_id = q.id) <> 1)`,
+      [source],
+    )
+    const n = edited.rows[0]?.n ?? 0
+    if (n > 0) {
+      throw new RollbackRefusedError(
+        `Refusing rollback: ${n} migrated question(s) were edited in v2 (a later version, a changed live version or an extra version row); rolling back would delete that work. Withdraw or re-point them first. Nothing was changed.`,
+      )
+    }
+  }
+
   // ---- 2. derived rows that cascade with their parent (counted for the report)
   const derivedRows: { table: string; parent: string; rows: number }[] = []
   for (const [table, parent] of derived) {

@@ -71567,6 +71567,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "CONFLICT: another quality audit is still running (\"Audit kualiti sedang berjalan.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }

@@ -374,7 +374,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     description:
       'Admin only. No request body, no confirmation. Re-scores questions with the mock\'s score function (v2: every question, one `quality_audits` row per run) and stores the time. Flash: "Audit kualiti selesai.".',
     request: { headers: [csrf] },
-    responses: { 200: json(QuestionQualityAuditedSchema, 'Audit done; status is the flash text.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN_WRITE },
+    responses: { 200: json(QuestionQualityAuditedSchema, 'Audit done; status is the flash text.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN_WRITE, 409: err('CONFLICT: another quality audit is still running ("Audit kualiti sedang berjalan.").') },
   })
 
   // -------------------------------------------------------------------------------------------

@@ -69,6 +69,27 @@ describe('rollback of the question bank', () => {
     }
   })
 
+  it('a migrated question edited in v2 (a later version, a changed live version) refuses the rollback', async () => {
+    const migrated = (await h.q<{ id: string }>(`select id::text as id from questions where legacy_source = 'cloud' order by id limit 1`))[0]?.id as string
+    const counts = await questionTableCounts(h.pool)
+    for (const [label, set, undo] of [
+      ['latest_version_no', `latest_version_no = 2`, `latest_version_no = 1`],
+      ['live_version_no', `live_version_no = null`, `live_version_no = 1`],
+    ] as const) {
+      await h.q(`update questions set ${set} where id = $1`, [migrated])
+      const err = await call().catch((e: unknown) => e)
+      expect(err, label).toBeInstanceOf(RollbackRefusedError)
+      expect((err as Error).message, label).toMatch(/1 migrated question\(s\) were edited in v2.*Nothing was changed/)
+      await expect(call({ dryRun: true })).rejects.toThrow(RollbackRefusedError)
+      await h.q(`update questions set ${undo} where id = $1`, [migrated])
+    }
+    // An extra version row (a v2 draft) refuses too.
+    const v = (await h.q<{ id: string }>(`insert into question_versions (question_id, version_no, status, language, type, subject_id, education_level_id, stem_ms) select question_id, 2, 'draft', language, type, subject_id, education_level_id, stem_ms from question_versions where question_id = $1 returning id::text as id`, [migrated]))[0]?.id as string
+    await expect(call()).rejects.toThrow(/edited in v2/)
+    await h.q(`delete from question_versions where id = $1`, [v])
+    expect(await questionTableCounts(h.pool)).toEqual(counts)
+  })
+
   it('a dry-run reports the cascade and changes nothing; the apply removes exactly the migrated question rows', async () => {
     const loaded = await questionTableCounts(h.pool)
     const dry = await call({ dryRun: true })

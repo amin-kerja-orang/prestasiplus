@@ -133,6 +133,10 @@ const SAMPLE_MAX = 50_000
 /** Ids per `eligibleAmong` statement (one bind parameter array, chunked only for very long lists). */
 const AMONG_CHUNK = 5000
 
+/** SQL of `QuestionFilter.singleMcqLeaf` on the version alias `v`. */
+const SINGLE_MCQ_LEAF = Prisma.sql`(SELECT count(*) FROM question_parts sp WHERE sp.question_version_id = v.id) = 1
+  AND EXISTS (SELECT 1 FROM question_parts sp WHERE sp.question_version_id = v.id AND sp.mode = 'mcq')`
+
 /** SQL of `QuestionFilter.mcqShape` on the version alias `v`: the plain servable MCQ (see the filter doc). */
 function shapeSql(shape: { minOptions: number; maxOptions: number }): Prisma.Sql {
   return Prisma.sql`(SELECT count(*) FROM question_parts sp WHERE sp.question_version_id = v.id) = 1
@@ -344,14 +348,18 @@ export class QuestionsRepository {
   /**
    * Up to `n` eligible ids drawn in SQL: ordered by `hashtextextended(id, seed)` (then id) with a LIMIT, so memory and rows
    * returned stay O(n). Deterministic for a seed (same seed, same ids; a larger `n` keeps the smaller draw as its prefix).
+   *
+   * With `mcqShape` or `singleMcqLeaf` the draw is BEST EFFORT: the per-row shape check runs only on a hash-ordered window of
+   * the candidates (3n, then 12n, then 48n, capped at 50,000 rows) and the result may be SHORTER than `n` when too few of the
+   * window pass (callers treat a short draw as "not enough questions"). It never scans the whole subject with that check.
    */
   async sampleIds(filter: SampleFilter, n: number, seed: number): Promise<string[]> {
     if (!Number.isSafeInteger(n) || n <= 0) return []
     const limit = Math.min(n, SAMPLE_MAX)
-    const { mcqShape, ...plain } = filter
+    const { mcqShape, singleMcqLeaf, ...plain } = filter
     const { from, where } = this.scope({ ...plain, status: 'published', active: true })
     const key = Math.trunc(seed)
-    if (!mcqShape) {
+    if (!mcqShape && !singleMcqLeaf) {
       const rows = await this.db.$queryRaw<{ id: bigint }[]>`
         SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${key}::bigint), q.id LIMIT ${limit}`
       return rows.map((r) => idToString(r.id))
@@ -365,7 +373,7 @@ export class QuestionsRepository {
           SELECT q.id, v.id AS vid, hashtextextended(q.id::text, ${key}::bigint) AS h ${from} WHERE ${where}
            ORDER BY h, q.id LIMIT ${window}
         ) c JOIN question_versions v ON v.id = c.vid
-        WHERE ${shapeSql(mcqShape)}
+        WHERE ${mcqShape ? shapeSql(mcqShape) : Prisma.sql`TRUE`} AND ${singleMcqLeaf ? SINGLE_MCQ_LEAF : Prisma.sql`TRUE`}
         ORDER BY c.h, c.id LIMIT ${limit}`
       out = rows.map((r) => idToString(r.id))
       if (out.length >= limit || window >= SAMPLE_MAX) break
@@ -974,6 +982,7 @@ export class QuestionsRepository {
     }
     if (filter.ungrouped) conds.push(Prisma.sql`q.group_id IS NULL`)
     if (filter.mcqShape) conds.push(shapeSql(filter.mcqShape))
+    if (filter.singleMcqLeaf) conds.push(SINGLE_MCQ_LEAF)
     if (filter.difficultyTps !== undefined) {
       const tps = filter.difficultyTps.filter((n) => Number.isSafeInteger(n))
       conds.push(tps.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.difficulty_tp IN (${Prisma.join(tps)})`)
