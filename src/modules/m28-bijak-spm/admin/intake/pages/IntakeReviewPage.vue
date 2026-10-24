@@ -25,6 +25,7 @@ import {
 import { paperMarks, questionMarks } from '../domain/marks'
 import { validateBatch } from '../domain/validation'
 import { blankQuestion, nextLabel } from '../domain/blank'
+import { createDraftSaver, draftSavedFlash, type SaveState } from '../lib/draft-saver'
 import { INTAKE_LIST_PATH } from '../lib/intake-routes'
 import { getPageImages } from '../lib/page-images'
 import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
@@ -51,7 +52,7 @@ watch(isManual, (m) => {
 const mobileTab = ref<'soalan' | 'sumber'>('soalan')
 const pageNo = ref(1)
 const open = ref<Set<string>>(new Set())
-const saveState = ref<'tersimpan' | 'belum' | 'menyimpan' | 'gagal'>('tersimpan')
+const saveState = ref<SaveState>('tersimpan')
 const submitting = ref(false)
 const submittedNote = ref(false)
 const serverIssues = ref<IntakeIssue[]>([])
@@ -97,27 +98,22 @@ onBeforeUnmount(() => {
   if (saveState.value === 'belum') void save()
 })
 
-async function save(): Promise<void> {
-  const b = batch.value
-  if (!b || b.status !== 'draf') return
-  saveState.value = 'menyimpan'
-  try {
+const saver = createDraftSaver({
+  canSave: () => !!batch.value && batch.value.status === 'draf',
+  run: async () => {
+    const b = batch.value!
     await server.saveExtracted(b.id, { questions: b.questions, stimuli: b.stimuli })
-    saveState.value = 'tersimpan'
-  } catch {
-    saveState.value = 'gagal'
-  }
-}
+  },
+  onState: (s) => {
+    saveState.value = s
+  },
+})
+const save = (): Promise<boolean> => saver.save()
 
 /** "Simpan draf": the same save, with a visible confirmation (autosave stays silent). */
 async function saveDraft(): Promise<void> {
   clearTimeout(timer)
-  await save()
-  flash.show(
-    saveState.value === 'tersimpan'
-      ? { type: 'success', message: 'Draf disimpan.' }
-      : { type: 'error', message: 'Draf tidak dapat disimpan. Cuba lagi.' },
-  )
+  flash.show(draftSavedFlash(await save()))
 }
 
 /* ------------------------------------------------------------------------------ derived */
