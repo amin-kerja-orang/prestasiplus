@@ -12,6 +12,7 @@ import { LegacyBcryptPool } from './legacy-bcrypt'
 import { LoginThrottle } from './login-throttle.service'
 import { PasswordService } from './password.service'
 import { PasswordChangeGuard } from './password-change.guard'
+import { AuthPortsModule } from './ports'
 import { PostgresSessionResolver } from './session-resolver.service'
 import { SessionStore } from './session.store'
 
@@ -21,7 +22,7 @@ import { SessionStore } from './session.store'
  * route is default-deny unless it is marked `@Public()`.
  */
 @Module({
-  imports: [AuditModule],
+  imports: [AuditModule, AuthPortsModule],
   controllers: [AuthController, SessionController],
   providers: [
     AuthConfig,
