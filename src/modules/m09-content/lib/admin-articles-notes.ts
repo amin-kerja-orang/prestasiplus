@@ -30,6 +30,8 @@ export const NOTE_ROUTES = {
 /** Exact observed copy (SRS §8.1) and the PROPOSED COPY placeholders (§8.2). */
 export const COPY = {
   articleNotFound: 'Artikel tidak dijumpai.',
+  /** Same text as the mock's 404 for a note (`NOT_FOUND.note`); live has no note edit form to observe. */
+  noteNotFound: 'Nota tidak dijumpai.',
   confirmDeleteArticle: 'Adakah anda pasti mahu padam artikel ini?',
   confirmDeleteNote: 'Adakah anda pasti mahu padam nota ini?',
   articleEmpty: 'Tiada artikel dijumpai.',
