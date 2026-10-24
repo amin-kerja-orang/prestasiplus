@@ -6,7 +6,7 @@ import { GamificationService } from './gamification.service'
 /**
  * XR-M14-02(a) / BR-M14-14: M01's post-login hook -> `GamificationService.onLogin`. Only a student's password login
  * counts (an admin or teacher login adds neither a streak day nor a `daily_login` row, OBSERVED absence). Bound into
- * `AuthPorts` by `GamificationModule`; `AuthService` swallows any error and bounds the wait.
+ * `AuthPorts` by `GamificationModule`; callers go through `AuthPorts.fireLoginHook` (form login, and the registration and reset auto-login).
  */
 @Injectable()
 export class GamificationLoginHook implements LoginHook {

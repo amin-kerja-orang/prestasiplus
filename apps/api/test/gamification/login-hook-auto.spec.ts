@@ -1,10 +1,11 @@
-import { SessionSchema } from '@pp/contract'
+import { ACCOUNT_AUTH_MESSAGES, ErrorBodySchema, SessionSchema } from '@pp/contract'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { gamificationSeed } from '../../prisma/seed/gamification'
 import { walletSeed } from '../../prisma/seed/wallet'
+import { AccountDataRepository } from '../../src/modules/account/account-data.repository'
 import { AuthPorts, type LoginHook } from '../../src/modules/auth'
 import { GamificationModule } from '../../src/modules/gamification'
 import { WalletModule } from '../../src/modules/wallet'
@@ -236,6 +237,81 @@ describe('registration and reset auto-login fire the login hook after commit (FR
       const res = await t.http().post('/api/auth/password/reset').send({ token: 'x'.repeat(43), email: PUPIL, password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })
       expect(res.status).toBe(422)
       expect(onPasswordLogin).not.toHaveBeenCalled()
+    })
+
+    /** Requests a link for `email`, returns its raw token (a fresh throttle window first). */
+    const issueToken = async (email: string) => {
+      t.clock.advance(16 * 60_000)
+      expect((await link(email)).status).toBe(200)
+      return t.mail.last().token
+    }
+    const redeem = (token: string, email: string) =>
+      t.http().post('/api/auth/password/reset').send({ token, email, password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })
+
+    it('an expired reset token fires no hook and gets the usual refusal (422, token invalid)', async () => {
+      const onPasswordLogin = vi.fn(async () => undefined)
+      ports.overrideLoginHook({ onPasswordLogin })
+      const token = await issueToken('pelajarmaju@demo.test')
+      t.clock.advance(60 * 60_000 + 1_000)
+      const res = await redeem(token, 'pelajarmaju@demo.test')
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(ErrorBodySchema.parse(res.body).error.fields).toEqual({ email: ACCOUNT_AUTH_MESSAGES.tokenInvalid })
+      expect(cookieValue(res)).toBeUndefined()
+      expect(onPasswordLogin).not.toHaveBeenCalled()
+    })
+
+    it('an inactive account with a real token is refused (403 ACCOUNT_INACTIVE) and fires no hook', async () => {
+      const onPasswordLogin = vi.fn(async () => undefined)
+      ports.overrideLoginHook({ onPasswordLogin })
+      const token = await issueToken('pelajarmaju@demo.test')
+      await db.query(`update users set is_active = false where email = 'pelajarmaju@demo.test'`)
+      try {
+        const res = await redeem(token, 'pelajarmaju@demo.test')
+        expect(res.status, JSON.stringify(res.body)).toBe(403)
+        expect(ErrorBodySchema.parse(res.body).error.code).toBe('ACCOUNT_INACTIVE')
+        expect(cookieValue(res)).toBeUndefined()
+        expect(onPasswordLogin).not.toHaveBeenCalled()
+      } finally {
+        await db.query(`update users set is_active = true where email = 'pelajarmaju@demo.test'`)
+      }
+    })
+
+    it('the lost-race path (another request spent the token between the check and the transaction) fires no hook', async () => {
+      const onPasswordLogin = vi.fn(async () => undefined)
+      ports.overrideLoginHook({ onPasswordLogin })
+      const token = await issueToken('pelajarmaju@demo.test')
+      // Reaching the `!grant` branch over HTTP needs the exact interleaving, so the atomic single-use update is made to lose.
+      const consume = vi.spyOn(t.app.get(AccountDataRepository, { strict: false }), 'consumeToken').mockResolvedValueOnce(false)
+      const res = await redeem(token, 'pelajarmaju@demo.test')
+      expect(consume).toHaveBeenCalledTimes(1)
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(ErrorBodySchema.parse(res.body).error.fields).toEqual({ email: ACCOUNT_AUTH_MESSAGES.tokenInvalid })
+      expect(cookieValue(res)).toBeUndefined()
+      expect(onPasswordLogin).not.toHaveBeenCalled()
+    })
+
+    it('two parallel redemptions of one token: exactly one wins and the hook fires exactly once', async () => {
+      const onPasswordLogin = vi.fn(async () => undefined)
+      ports.overrideLoginHook({ onPasswordLogin })
+      const token = await issueToken('pelajarmaju@demo.test')
+      const [a, b] = await Promise.all([redeem(token, 'pelajarmaju@demo.test'), redeem(token, 'pelajarmaju@demo.test')])
+      expect([a.status, b.status].sort()).toEqual([200, 422])
+      expect(onPasswordLogin).toHaveBeenCalledTimes(1)
+    })
+
+    it('a teacher reset calls the hook with role teacher, and the student-only hook credits no daily_login', async () => {
+      const email = 'guru@demo.test'
+      const id = await idByEmail(email)
+      const onPasswordLogin = vi.fn((event: Parameters<LoginHook['onPasswordLogin']>[0]) => realHook.onPasswordLogin(event))
+      ports.overrideLoginHook({ onPasswordLogin })
+      const res = await redeem(await issueToken(email), email)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(SessionSchema.parse(res.body.data).active.role).toBe('teacher')
+      expect(onPasswordLogin).toHaveBeenCalledTimes(1)
+      expect(onPasswordLogin).toHaveBeenCalledWith(expect.objectContaining({ userId: id, role: 'teacher' }))
+      expect(await dailyRows(id)).toEqual([])
+      const streak = await db.query(`select 1 from streaks where user_id = $1`, [id])
+      expect(streak).toHaveLength(0)
     })
   })
 })
