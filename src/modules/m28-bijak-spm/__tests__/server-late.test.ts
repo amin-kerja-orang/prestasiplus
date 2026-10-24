@@ -69,6 +69,60 @@ describe('late sync and closed attempts (AC-05.4)', () => {
     expect((await server.getResult(USER, attemptId)).result.score).toBe(2)
   })
 
+  describe('Mod Peperiksaan choose-N: the ticks travel with the late answers', () => {
+    const SEC = 'sn-k2-2025-a-s2'
+    const OSMOSIS = {
+      partId: 'sn2-osmosis-a',
+      answer: { text: 'Air melalui membran separa telap ke dalam sel hingga sel menjadi turgid.' },
+      rev: 1,
+    }
+    async function sweptSains() {
+      const { server, now } = make()
+      const { attemptId } = await server.startAttempt(USER, 'sn-k2-2025-a', 'exam')
+      const { attempt } = await server.getAttemptView(USER, attemptId)
+      const deadline = attempt.deadline!
+      now.t = deadline + (GRACE_SECONDS + 5) * 1000
+      return { server, attemptId, deadline }
+    }
+    const counted = async (server: BijakServer, id: string) =>
+      (await server.getResult(USER, id)).result.sections.find((s) => s.sectionId === SEC)!
+
+    it('an offline answer the client auto-ticked is counted after the deadline sweep', async () => {
+      const { server, attemptId, deadline } = await sweptSains()
+      expect((await counted(server, attemptId)).counted).toEqual([])
+      const res = await server.saveAnswers(USER, attemptId, {
+        changes: [{ ...OSMOSIS, savedAt: deadline - 2000 }],
+        picks: { [SEC]: ['sn2-osmosis'] },
+      })
+      expect(res).toMatchObject({ closed: true, regraded: true })
+      const b = await counted(server, attemptId)
+      expect(b.counted).toEqual(['sn2-osmosis'])
+      expect(b.awarded).toBe(2)
+    })
+    it('the same holds when the late data arrives through submit', async () => {
+      const { server, attemptId, deadline } = await sweptSains()
+      const res = await server.submit(USER, attemptId, {
+        idempotencyKey: 'k',
+        changes: [{ ...OSMOSIS, savedAt: deadline - 2000 }],
+        picks: { [SEC]: ['sn2-osmosis'] },
+      })
+      expect(res).toMatchObject({ closed: true, regraded: true })
+      expect((await counted(server, attemptId)).counted).toEqual(['sn2-osmosis'])
+    })
+    it('without the ticks the answer does not count; ticks alone (no early change) are refused', async () => {
+      const { server, attemptId, deadline } = await sweptSains()
+      const lateOnly = await server.saveAnswers(USER, attemptId, {
+        changes: [{ ...OSMOSIS, savedAt: deadline + 2000 }],
+        picks: { [SEC]: ['sn2-osmosis'] },
+      })
+      expect(lateOnly.regraded).toBeUndefined()
+      expect((await counted(server, attemptId)).counted).toEqual([])
+      await server.saveAnswers(USER, attemptId, {
+        changes: [{ ...OSMOSIS, savedAt: deadline - 2000 }],
+      })
+      expect((await counted(server, attemptId)).counted).toEqual([])
+    })
+  })
   it('refuses answers stamped after the deadline, and a device clock in the future', async () => {
     const { server, attemptId, q, deadline } = await swept()
     const res = await server.saveAnswers(USER, attemptId, {
