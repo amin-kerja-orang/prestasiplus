@@ -5,10 +5,13 @@
  * the row has an add button (#16) for the class chosen in the "Tambah pelajar ke:" bar. A card at
  * every width (layers, no lines); the name links to the student's prestasi page.
  */
+import { computed } from 'vue'
+
 import { DsIdentity, DsPanel, DsStatusBadge } from '@/ds'
 
 import type { GuruStudent } from '../../api/types'
 import { PELAJAR_COPY } from './copy'
+import { chipsOf, type StudentChip } from './student-classes'
 
 /** Two-letter avatar initials of a name. */
 function initialsOf(name: string): string {
@@ -20,10 +23,13 @@ function initialsOf(name: string): string {
     .join('')
 }
 
-defineProps<{
+const props = defineProps<{
   student: GuruStudent
   mode: 'mine' | 'school'
-  /** Class name → id for the chips that can be removed (unique active class names only). */
+  /**
+   * Fallback for an API without `student.classes` (SW5-03): class name → id for the chips that can
+   * be removed (unique active class names only). Chips that carry an id never read it.
+   */
   classIds?: ReadonlyMap<string, number>
   /** School tab: a class is chosen. */
   canAdd?: boolean
@@ -32,6 +38,13 @@ defineProps<{
   busy?: boolean
 }>()
 defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: number] }>()
+
+const chips = computed(() => chipsOf(props.student))
+
+/** The class a chip's remove button acts on: its own id, else the name's id when the name is unique. */
+function removeIdOf(chip: StudentChip): number | undefined {
+  return chip.id ?? props.classIds?.get(chip.name)
+}
 </script>
 
 <template>
@@ -49,25 +62,25 @@ defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: num
                 ><span data-testid="student-name">{{ student.name }}</span></template
               >
             </DsIdentity>
-            <ul v-if="student.classNames.length > 0" class="mt-2 flex flex-wrap items-center gap-2">
+            <ul v-if="chips.length > 0" class="mt-2 flex flex-wrap items-center gap-2">
               <li
-                v-for="cls in student.classNames"
-                :key="cls"
+                v-for="chip in chips"
+                :key="chip.key"
                 class="inline-flex items-center gap-1"
                 data-testid="student-class"
               >
-                <UBadge color="primary" variant="subtle">{{ cls }}</UBadge>
+                <UBadge color="primary" variant="subtle">{{ chip.name }}</UBadge>
                 <UButton
-                  v-if="mode === 'mine' && classIds?.has(cls)"
+                  v-if="mode === 'mine' && removeIdOf(chip) !== undefined"
                   type="button"
                   color="neutral"
                   variant="ghost"
                   icon="i-ph-x"
-                  :aria-label="`Keluarkan daripada ${cls}`"
+                  :aria-label="`Keluarkan daripada ${chip.name}`"
                   class="size-11 justify-center"
                   :disabled="busy"
                   data-testid="student-remove"
-                  @click="$emit('remove', student.id, classIds?.get(cls) as number)"
+                  @click="$emit('remove', student.id, removeIdOf(chip) as number)"
                 />
               </li>
             </ul>
