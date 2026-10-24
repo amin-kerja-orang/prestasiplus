@@ -4,7 +4,7 @@
  * (tonal), submit (primary, `type="submit"`, loading while `saving`). `status` sits on the left.
  * Batal is a link when `cancelTo` is set, otherwise it emits `cancel`.
  */
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
 import { dsCopy } from './copy'
@@ -53,32 +53,41 @@ let scroller: HTMLElement | null = null
 let previous = ''
 let observer: ResizeObserver | null = null
 
-function scrollParent(el: HTMLElement | null): HTMLElement | null {
-  for (let p = el?.parentElement ?? null; p; p = p.parentElement) {
+function scrollParent(el: HTMLElement): HTMLElement {
+  for (let p = el.parentElement; p; p = p.parentElement) {
     if (/(auto|scroll)/.test(getComputedStyle(p).overflowY)) return p
   }
-  return null
+  // No scrolling ancestor: the window scrolls (admin, learner and public shells), so the padding
+  // goes on the root element.
+  return document.documentElement
 }
 function pad(): void {
   const el = panel.value?.$el
   if (scroller && el) scroller.style.scrollPaddingBottom = `${Math.ceil(el.offsetHeight) + 16}px`
 }
-onMounted(() => {
+function attach(): void {
   const el = panel.value?.$el
-  if (!props.sticky || !el) return
+  if (!props.sticky || !el || scroller) return
   scroller = scrollParent(el)
-  if (!scroller) return
   previous = scroller.style.scrollPaddingBottom
   pad()
   if (typeof ResizeObserver !== 'undefined') {
     observer = new ResizeObserver(pad)
     observer.observe(el)
   }
-})
-onBeforeUnmount(() => {
+}
+function detach(): void {
   observer?.disconnect()
+  observer = null
   if (scroller) scroller.style.scrollPaddingBottom = previous
-})
+  scroller = null
+}
+onMounted(attach)
+onBeforeUnmount(detach)
+watch(
+  () => props.sticky,
+  (on) => (on ? attach() : detach()),
+)
 </script>
 
 <template>
