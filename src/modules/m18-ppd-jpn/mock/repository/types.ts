@@ -49,7 +49,7 @@ export interface CorrectionSubjectRow {
   avgLevel: number | null
 }
 
-/** BR-M18-14 statuses: Hijau "On Track", Kuning "Perlu Perhatian", Merah "Berisiko Tinggi". */
+/** BR-M18-14 statuses: Hijau "Atas Landasan", Kuning "Perlu Perhatian", Merah "Berisiko Tinggi". */
 export type RiskStatus = 'on_track' | 'watch' | 'high'
 
 /** The tingkatan filter of the S22 / S28 pills (`T4` / `T5`). */
