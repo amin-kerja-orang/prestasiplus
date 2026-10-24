@@ -1178,6 +1178,7 @@ create table "archive_cloud"."question_options" (
   "question_id" bigint,
   "label" text,
   "body" text,
+  "image_path" text,
   "is_correct" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,

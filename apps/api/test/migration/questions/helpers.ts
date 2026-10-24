@@ -34,6 +34,7 @@ export interface ArchiveOption {
   label?: string | null
   body?: string | null
   correct?: boolean | string | null
+  image?: string | null
 }
 
 export interface ArchiveQuestion {
@@ -111,8 +112,8 @@ export async function addArchive(pool: pg.Pool, questions: readonly ArchiveQuest
     )
     for (const [i, o] of (x.options ?? four()).entries()) {
       await pool.query(
-        `insert into archive_cloud.question_options (id, question_id, label, body, is_correct) values ($1, $2, $3, $4, $5)`,
-        [x.id * 100 + i, x.id, has(o.label, 'ABCD'.charAt(i)), has(o.body, `Pilihan ${i}`), o.correct === undefined || o.correct === null ? '0' : String(o.correct === true ? 1 : o.correct === false ? 0 : o.correct)],
+        `insert into archive_cloud.question_options (id, question_id, label, body, image_path, is_correct) values ($1, $2, $3, $4, $5, $6)`,
+        [x.id * 100 + i, x.id, has(o.label, 'ABCD'.charAt(i)), has(o.body, `Pilihan ${i}`), has(o.image, null), o.correct === undefined || o.correct === null ? '0' : String(o.correct === true ? 1 : o.correct === false ? 0 : o.correct)],
       )
     }
   }

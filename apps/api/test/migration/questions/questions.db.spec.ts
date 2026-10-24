@@ -92,7 +92,7 @@ describe('dry-run, apply, reconciliation and the data written', () => {
     await addArchive(h.pool, [
       // loaded
       { id: ids.ok, difficulty: '4', explanation: 'Kerana contoh.', chapter: 1, topic: 4, body: 'Apakah warna langit?' },
-      { id: ids.held, image: 'questions/gambar.png' },
+      { id: ids.held, image: 'questions/gambar.png', options: four().map((o, i) => (i === 2 ? { ...o, image: 'options/c.png' } : o)) },
       { id: ids.t4, level: 2, subject: 2, chapter: 3, topic: 3, options: four(2) },
       { id: ids.noChapter, chapter: null, topic: null, difficulty: 'x' },
       // excluded (status / type)
@@ -174,6 +174,7 @@ describe('dry-run, apply, reconciliation and the data written', () => {
     expect(held).toMatchObject({ is_active: false, status: 'published', live_version_no: 1 })
     expect(held.import_issues).toEqual([
       { code: 'legacy_image_unresolved', target: 'question', path: 'questions/gambar.png' },
+      { code: 'legacy_image_unresolved', target: 'option', label: 'C', path: 'options/c.png' },
     ])
     // Tingkatan 4: form origin t4 and the SPM pool tag, nothing else.
     expect(t4).toMatchObject({ form_origin: 't4', tags: 'pool:spm', key: 'option:C', unit_node_id: null })

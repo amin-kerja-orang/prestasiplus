@@ -8,7 +8,7 @@
  *    names an option): the v2 reader fails closed on a stored leaf that does not, so nothing is inserted that it would refuse;
  *  - curriculum ids come from the `migrate:core` id maps; subject and level are required, chapter and topic are optional;
  *  - `difficulty_tp` is the raw 1 to 5 (as `practice_answers.difficulty`); `cognitive_level` stays empty;
- *  - a question image is NOT copied: the path is kept in `import_issues` and the question is held inactive (so is one whose
+ *  - a question or option image is NOT copied: the path is kept in `import_issues` and the question is held inactive (so is one whose
  *    text still holds an image, maths or script markup after the HTML conversion, or looks like it holds personal data);
  *  - the SPM pool tag is written for Tingkatan 4 and 5 only; no DSKP unit or SP exists in .cloud.
  * Reject reasons are the kit's five; the cause is the `column`. Text never goes into a reject or a counter.
@@ -28,6 +28,7 @@ export interface LegacyOption {
   id: string | null
   label: string | null
   body: string | null
+  image_path: string | null
   is_correct: string | null
 }
 
@@ -237,7 +238,7 @@ export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome
   if (correct === null) return reject('INVALID_VALUE', 'is_correct')
 
   const ordered = opts
-    .map((_, i) => ({ label: labels[i] as string, body: bodies[i] as string }))
+    .map((_, i) => ({ label: labels[i] as string, body: bodies[i] as string, image: text(opts[i]?.image_path) }))
     .sort((a, b) => (a.label < b.label ? -1 : 1))
     .map((o, i) => ({ ...o, position: i + 1 }))
 
@@ -287,8 +288,14 @@ export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome
   if (qImage !== null) {
     issues.push({ code: 'legacy_image_unresolved', target: 'question', path: qImage })
     notes.push('question_image')
-    notes.push('held_image')
   }
+  for (const o of ordered) {
+    if (o.image !== null) {
+      issues.push({ code: 'legacy_image_unresolved', target: 'option', label: o.label, path: o.image })
+      notes.push('option_image')
+    }
+  }
+  if (issues.length > 0) notes.push('held_image')
   const texts: { target: 'stem' | 'option' | 'explanation'; label?: string; value: string }[] = [
     { target: 'stem', value: stem },
     ...ordered.map((o) => ({ target: 'option' as const, label: o.label, value: o.body })),

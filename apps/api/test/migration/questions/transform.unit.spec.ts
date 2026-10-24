@@ -25,7 +25,7 @@ const cur: Curriculum = {
   topicChapter: new Map([['401', '301'], ['402', '302']]),
 }
 
-const opt = (label: string | null, body: string | null, correct: string | null): LegacyOption => ({ id: null, label, body, is_correct: correct })
+const opt = (label: string | null, body: string | null, correct: string | null, image: string | null = null): LegacyOption => ({ id: null, label, body, image_path: image, is_correct: correct })
 const four = (): LegacyOption[] => [opt('A', 'Satu', '0'), opt('B', 'Dua', '1'), opt('C', 'Tiga', '0'), opt('D', 'Empat', '0')]
 const row = (over: Record<string, string | null> = {}, options: LegacyOption[] = four()): LegacyQuestion => ({
   id: '7', subject_id: '1', education_level_id: '1', chapter_id: '1', topic_id: '1', difficulty_level: '3', type: 'mcq', status: 'diluluskan',
@@ -201,11 +201,20 @@ describe('transformQuestion: rejects', () => {
 })
 
 describe('transformQuestion: images are held, never copied', () => {
-  it('keeps the question image path as a structured list, holds the question inactive and counts', () => {
-    const p = plan(row({ image_path: 'questions/q.png' }))
+  it('keeps the image paths as a structured list, holds the question inactive and counts', () => {
+    const o = four()
+    o[1] = opt('B', 'Dua', '1', 'options/b.png')
+    const p = plan(row({ image_path: 'questions/q.png' }, o))
     expect(p.is_active).toBe(false)
-    expect(p.import_issues).toEqual([{ code: 'legacy_image_unresolved', target: 'question', path: 'questions/q.png' }])
-    expect(p.notes).toEqual(expect.arrayContaining(['question_image', 'held_image']))
+    expect(p.import_issues).toEqual([
+      { code: 'legacy_image_unresolved', target: 'question', path: 'questions/q.png' },
+      { code: 'legacy_image_unresolved', target: 'option', label: 'B', path: 'options/b.png' },
+    ])
+    expect(p.notes).toEqual(expect.arrayContaining(['question_image', 'option_image', 'held_image']))
+    // An option image alone also holds the question (counted held once per option-only question).
+    const only = plan(row({}, o))
+    expect(only.is_active).toBe(false)
+    expect(only.notes.filter((n) => n === 'held_image')).toHaveLength(1)
     expect(plan(row({ image_path: '  ' })).is_active).toBe(true)
   })
 })
