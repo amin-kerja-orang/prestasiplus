@@ -141,8 +141,18 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 
 **US-06 Sections and choose-N**
 - AC-06.1 Given a section, then its header shows its label, "[{n} markah]" (effective marks) and its rule line: the authored instruction, else "Jawab semua soalan." or "Jawab {N} daripada {M} soalan" [PROPOSED; .cloud: "Jawab {n} soalan sahaja."].
-- AC-06.2 Given a choose-N section, then a counter "{c} / {N} soalan dipilih" is shown; I can mark a question as chosen; when N are chosen the remaining questions are visibly dimmed but not hidden.
-- AC-06.3 Given I answer more than N questions in a choose-N section, then scoring uses the best N attempted by marks (ties: lower question position) and the Semakan states which questions counted. The tick state never changes the score.
+- AC-06.2 Given a choose-N section (both modes), then a counter "{c} / {N} soalan dipilih" is shown; I can tick a question as chosen; and when I type an answer into an unticked question while a slot is free (c < N), then that question is ticked automatically. *User decision 2026-10-24 (source: system audit FB-048); replaces "advisory tick" in both modes — the effect of the tick now depends on the mode (AC-06.3, AC-06.6).*
+- AC-06.3 **Mod Latihan.** Given a choose-N section in Mod Latihan, then I may answer all questions of the section, and:
+  - (a) Given I have ticked N questions (cap reached), then the checkbox of every other question is disabled with the message "Anda sudah memilih {n} soalan. Nyahpilih soalan lain untuk menukar pilihan."; the other questions stay visible and answerable.
+  - (b) Given I answer more than N questions, then the section shows "Anda telah menjawab {a} soalan. Hanya {n} soalan dengan markah tertinggi akan dikira." ({a} = questions answered, {n} = N).
+  - (c) Given marking, then the best N attempted questions by marks count (ties: lower question position); if fewer than N were attempted, ticked blank questions fill the remaining slots (so a chosen question is never shown "Tidak dikira"); the Semakan states which questions counted.
+  - (d) The progress count and the "Hantar" summary count at most N per choose-N section, using the same single rule as marking.
+- AC-06.6 **Mod Peperiksaan.** Given a choose-N section in Mod Peperiksaan, then:
+  - (a) Given N questions are ticked, then every other question in the section is locked (cannot be answered or ticked).
+  - (b) Given marking, then only ticked questions count; there is no best-N selection.
+  - (c) Given I untick a question, then its typed answer is kept but it is not counted; the lock lifts and I may tick it again (re-tick) or another question.
+  - (d) The Semakan states which questions counted.
+  - Locked-state copy and visual design are for the design phase (not specified by the user).
 - AC-06.4 Given a section transition, then the next section's header and instruction are shown before its first question.
 - AC-06.5 Given the total shown, then it equals the sum of the questions' marks after the choose-N reduction and equals the denominator of the result.
 
@@ -167,6 +177,13 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 - AC-09.3 Given plain-text entry like `1/2`, `x^2`, `√3`, the input accepts it and converts to the structured form without losing what I typed.
 - AC-09.4 Given the maths keyboard at 375 px, then it does not cover the question or final-answer box (the field scrolls into view) and keys are >= 44 px.
 - AC-09.5 Given the answer is saved, then both the structured and plain-text forms are stored so marking and staff review can read either.
+- AC-09.6 Given the maths keyboard (calculator-style, Casio-like; user-confirmed 2026-10-24, source: system audit FB-045), then it has two switchable layers plus a fixed number block:
+  - Layer "Fungsi" (default): a/b, √, x², xⁿ, x⁻¹; sin, cos, tan, log, ln; (, ), π, °; and a key that switches to "Simbol".
+  - Layer "Simbol": x, y, "," (comma), %, ±; <, >, ≤, ≥, =; (, ), π, °; and a key that switches back to "Fungsi".
+  - Number block (always visible): 7 8 9 DEL AC; 4 5 6 × ÷; 1 2 3 + −; 0 . ×10ˣ ◀ ▶ (cursor left/right).
+  - Every key is accepted by the marker (trigonometric functions in degrees).
+  - Not included: e, (−), Ans, an execute "=" key, RCL/M+ (an answer field does no calculation).
+  - Keys are shown as tiles/icons; the arrangement was confirmed as "dah elok" by the user.
 
 **US-10 Navigation**
 - AC-10.1 Given the question map, then each question shows one of: "Dijawab", "Ditanda", "Belum"; counts equal the number of questions; tapping a dot goes to that question or its stimulus group.
@@ -204,7 +221,7 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 - AC-14.2 Given a structured part with marking points (K/N/P [SKEMA], D41), then each point is listed with hit/miss, marks for that point, and what in my answer matched, so I can see why I lost marks.
 - AC-14.3 Given a part marked by the system with confidence below the High band, then it shows "Menunggu semakan" [PROPOSED] and counts per the Q-B3 default; the total shows "(sementara)" while any such mark exists.
 - AC-14.4 Given a choose-N section, then the result lists the questions that counted.
-- AC-14.5 Given the total, then it equals the sum of part marks after best-N reduction, and the denominator equals the recorded maximum of the composition I was served (never recomputed from later paper edits).
+- AC-14.5 Given the total, then it equals the sum of part marks after the choose-N reduction of the mode (best N in Mod Latihan, ticked questions in Mod Peperiksaan; AC-06.3, AC-06.6), and the denominator equals the recorded maximum of the composition I was served (never recomputed from later paper edits).
 - AC-14.6 Given a paper with unmarked self-mark parts, then the total excludes them and says how many marks are still unclaimed.
 - AC-14.7 Given the result screen at 375/768/1280 px, then no horizontal scroll and tables become cards.
 - AC-14.8 Given the result, then no grade letter is shown unless the Q-B5 decision enables it (default: marks and percentage only).
@@ -386,7 +403,7 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 | R7 | Autosave | Single map, 1 s debounce, localStorage mirror, beacon, merge-by-field (DISC §4.1) | **Keep** design; **add** durable offline queue, retry, ordering, per-part versioning | QBF "what v2 keeps"; N-09 |
 | R8 | Submit | Form with token only; async PATCH race (N-01) | **Change**: submit carries full answer set + idempotency key | N-01 |
 | R9 | Served composition snapshot | `served_composition` freezes questions, marks, rules (ESC:814-834) | **Keep** (with question versions) | QB AC-13.3, NFR-08 |
-| R10 | Scoring | Best-N for choose_n; recorded denominator; fold document marks (ExamBestNScorer) | **Keep** best-N and recorded denominator; drop document-section fold | Won't page-image Bahagian |
+| R10 | Scoring | Best-N for choose_n; recorded denominator; fold document marks (ExamBestNScorer) | **Keep** best-N (Mod Latihan only; Mod Peperiksaan counts ticked questions only, AC-06.6 — user decision 2026-10-24, FB-048) and recorded denominator; drop document-section fold | Won't page-image Bahagian |
 | R11 | Objective grading | Server-only, dichotomous, numeric compare only for pure numbers, tolerance 0 default | **Keep** trust model; **replace** matching with equivalence marking (numbers, units, fractions, notation) with confidence | D41(4), QBF D |
 | R12 | Subjective marking | Keyword suggestion; student self-marks 0..max (RubricKeywordMarker) | **Change**: structured marking points (K/N/P [SKEMA]) with per-point hit/miss and confidence; **keep** self-mark within clamps and "failure never awards 0" | D41(3)(4), QBF "keeps" |
 | R13 | AI essay marks | Proposal queue, counts only after human confirm; not wired (EssayReviewController) | **Keep** rule; queue under Pentadbiran for Admin Pusat first | D32(b), D43 |
@@ -394,7 +411,7 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 | R15 | Maths answers | Plain text; `working_shown` split is good | **Keep** working/final split; **add** maths keyboard, unit field, photo of working | D41(2), QBF B |
 | R16 | Answer controls | 14 widgets; sequence_order broken (N-02) | **Keep** the set via the schema; fix ordering; gate publish on working controls | N-02, schema [SKEMA] |
 | R17 | Paper skin and pagination | Light paper skin, weight-4 sheets, "Halaman x daripada y" (ATT:571-652) | **Change**: learner-portal layout, question/group steps, question map; structure kept | D35, D39, A5 |
-| R18 | Question map, flags, choose-N picks | Map dots, flag, pick checkbox (advisory) | **Keep** (advisory only; scoring ignores) | Fidelity, D29(b) |
+| R18 | Question map, flags, choose-N picks | Map dots, flag, pick checkbox (advisory) | **Keep** map dots and flags (flags never affect score). **Choose-N pick changed (user decision 2026-10-24, FB-048):** Mod Latihan = tick is a hint, best N attempted count, ticked blanks fill short slots; Mod Peperiksaan = only ticked questions count, other questions locked at N (AC-06.2, AC-06.3, AC-06.6) | Fidelity, D29(b); user decision FB-048 |
 | R19 | Reference sheet | Foldable panels on the cover, open by default | **Keep** | D29(b) |
 | R20 | Resume choice | "Sambung" / "Mula Semula" after > 60 s | **Keep** copy and 60 s rule; **add** closing of discarded attempt | N-08 |
 | R21 | Semakan | Scheme per part, verdict, self-mark; cover grid never filled | **Keep** scheme + verdict + self-mark; **drop** "Untuk Kegunaan Pemeriksa" grid and raw JSON mapping | N-14 |
@@ -461,3 +478,9 @@ Answer-mode list; mark-scheme structure; marking states (Betul / Separa / Salah 
 | Q-B10 | Guru confirm-marks screen is deferred; Admin Pusat queue first (D32b vs D43). | Add Guru screen when scope grows |
 | Q-B11 | Auto-close grace 5 min and device-sync window 24 h. | Tune in pilot |
 | Q-B12 | Exam mode drops the printed-paper skin and sheet paging (A5). | G2 design review |
+
+### 9.3 Open — pending decision (added 2026-10-24, system audit)
+
+| ID | Question | Blocks | Status / recommended default |
+|---|---|---|---|
+| Q-B13 | Answer field renders maths while typing (WYSIWYG, e.g. MathLive): stacked fractions, raised powers and √ shown in the field itself (like a Casio natural display) instead of raw text. Affects US-09 (AC-09.1, AC-09.3, AC-09.5) and would add a runtime dependency (ADR needed). | US-09 input model; timing relative to the 30 Okt go-live | **Pending LEAD/user decision** (new request from the user 2026-10-24, not approved yet); see `docs/qa/audit-sistem/FIXLOG.md` FB-069 / P-069. Until decided, the current keypad (AC-09.6) with preview stays. |

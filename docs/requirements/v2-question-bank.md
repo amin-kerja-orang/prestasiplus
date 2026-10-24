@@ -141,6 +141,15 @@ One form for a single question of any type in the structure [Schema] (stem, opti
 | Publish (Lulus -> Terbit) | **Answer key (or mark scheme for every part) present**; difficulty set from the controlled scale; DSKP topic chosen from the curriculum list (not free text); copyright declaration is not "belum jelas"; no open duplicate flag. For a paper: blueprint conformance (section count, marks, question count) [Schema]. |
 | No bypass | The same gate applies to single and paper-level publish and to any bulk action; a bulk action that includes a failing question reports it and skips it (E9). |
 
+**User decisions 2026-10-24 (system audit, FB-026; source: `docs/qa/audit-sistem/FIXLOG.md` P-026).** These refine the Publish gate and the DSKP tagging above:
+- **Ownership (D12):** M03 owns the DSKP catalogue (built from `docs/reference/dskp/*.json`; Tingkatan -> Bidang/Tema where printed -> unit/Tajuk -> SK -> SP); Bijak SPM (m28) only reads it through an M03 contract and keeps no DSKP schema of its own.
+- **Subjects:** all 13 DSKP subjects in v2.0, including Landskap dan Nurseri and Katering dan Penyajian (neither exists in the system today).
+- **TP:** Tahap Penguasaan 1-6 is mandatory on every question and has no default. A TP suggested by the AI must be confirmed by a person before it counts.
+- **KBAT:** a separate field, optional (not mandatory), **not derived from TP** (supersedes "KBAT derived as TP >= 4" in `v2-exam-schema.md` D9). Proposed form, **pending user confirmation**: optional "Aras KBAT" select with Mengaplikasi / Menganalisis / Menilai / Mencipta; empty = not KBAT; bank filter on it.
+- **Pendidikan Islam:** SK/SP text uses the Jawi text from `docs/reference/dskp/pendidikan-islam.json`, flagged "perlu semakan ejaan" (spelling review needed).
+- **Seed questions:** every seed question gets real DSKP tags; those with no matching SP are flagged for review (no guessing; D11).
+- **Publish gate (Lulus -> Terbit) additionally requires:** subject, tingkatan, unit, at least one SP (picked from the catalogue, no free text) and TP; Tingkatan 1-3 questions outside the DSKP are exempt (FIXLOG FB-004 implemented this for the unit; exemption of SP and TP for T1-T3 follows the user's note "T1-T3 exempt" and should be confirmed in G1/G2). The submit gate and the publish gate use the same tag rule.
+
 ### 4.9 Serving to students (tags and pools)
 
 - Features never copy questions; they ask for a **pool**: a saved filter over tags (subject, level, chapter, DSKP topic, difficulty, type, year, kertas, source paper, language, official-past-year flag) restricted to Terbit.
