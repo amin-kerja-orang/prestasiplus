@@ -550,6 +550,16 @@ export class UsersRepository {
     return { total, active, inactive: total - active }
   }
 
+  /**
+   * Ids (decimal strings, ascending) of the accounts counted by `countsBySchoolRole` for `role`: the managed S6/S7 population,
+   * active, inactive and suspended alike. The school reports (S1/S3/S5) read their people from here so their counts equal S0 (SW6-04).
+   */
+  async managedIdsBySchoolRole(schoolId: string, role: ManagedRole): Promise<string[]> {
+    if (!isIdString(schoolId)) return []
+    const rows = await this.prisma.client.user.findMany({ where: { AND: this.managedBase(idFromString(schoolId), role) }, select: { id: true }, orderBy: [{ id: 'asc' }] })
+    return rows.map((r) => idToString(r.id))
+  }
+
   /** Every account for the CSV export (same filters as the list, no paging), id ascending, at most `MANAGED_EXPORT_MAX`. */
   async exportBySchoolRole(schoolId: string, role: ManagedRole, filter: { isActive?: boolean; search?: string }): Promise<UserRecord[]> {
     if (!isIdString(schoolId)) return []
