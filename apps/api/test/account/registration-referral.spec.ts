@@ -137,14 +137,19 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     expect(await count(db, 'coin_ledger')).toBe(ledgerBefore)
   })
 
-  it('a pending teacher with a known code is created inactive and the referral is applied (docs silent: applied on account creation)', async () => {
-    const referrerBefore = (await syiling(db, referrerId)) ?? 0
+  it('a pending teacher with a known code is created inactive and earns no referral (no row, no credit for anyone)', async () => {
+    const referrerBefore = await syiling(db, referrerId)
+    const referralsBefore = await count(db, 'referrals')
+    const ledgerBefore = await count(db, 'coin_ledger')
     const res = await register({ name: 'Guru Rujuk', email: 'guru.rujuk@ujian.test', role: 'teacher', schoolId, password: 'rahsia1', passwordConfirmation: 'rahsia1', referralCode: code })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const row = (await userRow(db, 'guru.rujuk@ujian.test'))!
     expect(row.school_id).toBeNull()
-    expect(await syiling(db, row.id)).toBe(25)
-    expect(await syiling(db, referrerId)).toBe(referrerBefore + 50)
+    expect(await syiling(db, row.id)).toBeUndefined()
+    expect(await ledger(db, row.id)).toEqual([])
+    expect(await syiling(db, referrerId)).toBe(referrerBefore)
+    expect(await count(db, 'referrals')).toBe(referralsBefore)
+    expect(await count(db, 'coin_ledger')).toBe(ledgerBefore)
   })
 
   it('the referral is written in the registration transaction: a failure of the host after it rolls the new user and the credits back', async () => {

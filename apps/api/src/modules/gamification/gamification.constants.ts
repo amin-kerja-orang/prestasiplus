@@ -66,6 +66,8 @@ export const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_.:-]{1,100}$/
 /** Referral rewards (mock constants, contract `GAMIFICATION_REFERRAL_REWARDS`). */
 export const REFERRAL_REWARD_REFERRER = 50
 export const REFERRAL_REWARD_REFEREE = 25
+/** Follow-up to BR-M14-19: a referrer earns from at most this many referrals in any rolling 24 hours (deviations log). */
+export const REFERRAL_MAX_PER_REFERRER_PER_DAY = 10
 
 /** BR-M14-14 / FR-M14-64: the first student password login of a Malaysia day pays this many syiling, with this ledger text. */
 export const DAILY_LOGIN_REWARD = 2

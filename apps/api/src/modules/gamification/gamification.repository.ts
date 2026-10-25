@@ -471,11 +471,17 @@ export class GamificationRepository {
     return db.referral.count({ where: { referrerId: idFromString(userId), rewarded: true } })
   }
 
-  /** True when this call stored the referral (a person is referred once: unique referee). */
-  async insertReferral(db: Db, row: { referrerId: string; refereeId: string; code: string; at: Date }): Promise<boolean> {
+  /** The referrer's referrals stored in the 24 hours up to `at` (the lower bound is exclusive); `ix_referrals_referrer_id` narrows it to one referrer's rows. */
+  async referralsInLastDay(db: Db, referrerId: string, at: Date): Promise<number> {
+    const since = new Date(at.getTime() - 24 * 60 * 60 * 1000)
+    return db.referral.count({ where: { referrerId: idFromString(referrerId), createdAt: { gt: since, lte: at } } })
+  }
+
+  /** True when this call stored the referral (a person is referred once: unique referee). `rewarded`: the referrer was credited. */
+  async insertReferral(db: Db, row: { referrerId: string; refereeId: string; code: string; rewarded: boolean; at: Date }): Promise<boolean> {
     const rows = await db.$queryRaw<{ id: bigint }[]>`
       INSERT INTO referrals (referrer_id, referee_id, code_used, rewarded, created_at, updated_at)
-      VALUES (${idFromString(row.referrerId)}, ${idFromString(row.refereeId)}, ${row.code}, true, ${row.at}::timestamptz, ${row.at}::timestamptz)
+      VALUES (${idFromString(row.referrerId)}, ${idFromString(row.refereeId)}, ${row.code}, ${row.rewarded}, ${row.at}::timestamptz, ${row.at}::timestamptz)
       ON CONFLICT (referee_id) DO NOTHING
       RETURNING id`
     return rows.length === 1
