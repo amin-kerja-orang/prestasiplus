@@ -10,6 +10,7 @@ import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import {
   DsDataTable,
+  DsEmptyState,
   DsFilterBar,
   DsLoadError,
   DsNativeSelect,
@@ -22,6 +23,18 @@ import {
 import RichText from '../../components/RichText.vue'
 import type { QuestionStatus, QueueItem } from '../../domain/admin-types'
 import { bijakServer } from '../../server/client'
+import DskpFilterFields from './DskpFilterFields.vue'
+import {
+  appliedDskp,
+  dskpChips,
+  dskpServerFilter,
+  emptyDskpFilter,
+  removeDskpChip,
+  tpCardText,
+  type AppliedDskp,
+  type DskpFilterDraft,
+} from './dskp-filter'
+import TagBadges from './TagBadges.vue'
 import {
   ADMIN_ROUTES,
   CONFIDENCE_LABEL,
@@ -31,24 +44,35 @@ import {
   STATUS_BADGE,
   ageText,
 } from './ui'
+import { useDskpFilter } from './use-dskp-filter'
 
 type Row = QueueItem & Record<string, unknown>
 
 const server = bijakServer()
 const router = useRouter()
-const subjects = server.subjects()
-const draft = reactive<{
+// The 13 catalogue subjects (AC-03.1); papers and Jana Kertas keep the blueprint list.
+const subjects = server.tagSubjects()
+interface QueueDraft extends DskpFilterDraft {
   subject: string
   kertas: string
   kind: string
   status: QuestionStatus | 'semua'
-}>({
+}
+const draft = reactive<QueueDraft>({
   subject: '',
   kertas: '',
   kind: '',
   status: 'semakan',
+  ...emptyDskpFilter(),
 })
-const applied = ref({ ...draft })
+// The same five curriculum filters as the bank (without "Perlu semakan tag"): Unit and SP options
+// come from the catalogue of the chosen subject, and the clearing rules run as a field changes.
+const catalogue = useDskpFilter(draft)
+const snapshot = (): QueueDraft & AppliedDskp => ({
+  ...draft,
+  ...appliedDskp(draft, catalogue.view.value),
+})
+const applied = ref(snapshot())
 
 const { data, error, loading, reload } = useApi(
   () =>
@@ -57,6 +81,7 @@ const { data, error, loading, reload } = useApi(
       kertas: applied.value.kertas ? Number(applied.value.kertas) : undefined,
       kind: (applied.value.kind || undefined) as QueueItem['kind'] | undefined,
       status: applied.value.status,
+      ...dskpServerFilter(applied.value),
     }),
   applied,
 )
@@ -67,8 +92,11 @@ const questions = computed(() => data.value?.questions)
 /** "6 item · 7 soalan": the bank counts questions, the queue counts items (a group is one item). */
 const tileSub = (st: QuestionStatus): string =>
   `${counts.value?.[st] ?? 0} item · ${questions.value?.[st] ?? 0} soalan`
+const curriculumChips = computed(() => dskpChips(applied.value))
 const activeCount = computed(
-  () => [applied.value.subject, applied.value.kertas, applied.value.kind].filter(Boolean).length,
+  () =>
+    [applied.value.subject, applied.value.kertas, applied.value.kind].filter(Boolean).length +
+    curriculumChips.value.length,
 )
 const chips = computed(() => [
   ...(applied.value.subject
@@ -83,17 +111,19 @@ const chips = computed(() => [
   ...(applied.value.kind
     ? [{ key: 'kind', label: KIND_LABEL[applied.value.kind as keyof typeof KIND_LABEL] }]
     : []),
+  ...curriculumChips.value,
 ])
 
 function apply(): void {
-  applied.value = { ...draft }
+  applied.value = snapshot()
 }
 function reset(): void {
-  Object.assign(draft, { subject: '', kertas: '', kind: '' })
+  Object.assign(draft, { subject: '', kertas: '', kind: '', ...emptyDskpFilter() })
   apply()
 }
 function removeChip(key: string): void {
-  ;(draft as Record<string, string>)[key] = ''
+  if (curriculumChips.value.some((c) => c.key === key)) removeDskpChip(draft, key)
+  else (draft as unknown as Record<string, string>)[key] = ''
   apply()
 }
 watch(
@@ -166,6 +196,7 @@ function open(row: Row): void {
     <DsFilterBar
       :chips="chips"
       :active-count="activeCount"
+      :more-count="curriculumChips.length"
       data-testid="queue-filter"
       @apply="apply"
       @reset="reset"
@@ -196,6 +227,21 @@ function open(row: Row): void {
       >
         <option v-for="o in KIND_ITEMS" :key="o.value" :value="o.value">{{ o.label }}</option>
       </DsNativeSelect>
+      <template #more>
+        <DskpFilterFields
+          v-model:form-origin="draft.formOrigin"
+          v-model:unit-id="draft.unitId"
+          v-model:sp-id="draft.spId"
+          v-model:tp="draft.tp"
+          v-model:kbat="draft.kbat"
+          prefix="queue"
+          :subject="draft.subject"
+          :view="catalogue.view.value"
+          :loading="catalogue.loading.value"
+          :error="catalogue.error.value !== undefined"
+          @retry="catalogue.retry()"
+        />
+      </template>
     </DsFilterBar>
 
     <DsLoadError v-if="error" message="Tidak dapat memuatkan baris gilir." @retry="reload()" />
@@ -208,13 +254,14 @@ function open(row: Row): void {
       density="compact"
       :loading="loading && !data"
       :filtered="activeCount > 0"
-      empty-title="Baris gilir kosong"
-      empty-description="Tiada soalan menunggu semakan."
       card-title="previewPlain"
       :card-fields="[
         { key: 'subjectName', label: 'Subjek', cell: true },
         { key: 'marks', label: 'Markah' },
         { key: 'ageDays', label: 'Usia', cell: true },
+        { key: 'topic', label: 'Unit', cell: true, wide: true },
+        { key: 'spCodes', label: 'SP', cell: true },
+        { key: 'tp', label: 'TP', cell: true },
         { key: 'status', label: 'Status', cell: true, wide: true },
       ]"
       :page-size="20"
@@ -227,7 +274,7 @@ function open(row: Row): void {
           <span class="line-clamp-2 text-body text-default"
             ><RichText :text="row.original.preview"
           /></span>
-          <span class="flex flex-wrap gap-1">
+          <TagBadges :tag="row.original">
             <UBadge v-if="row.original.groupId" color="info" variant="subtle" icon="i-ph-image">
               Kumpulan {{ row.original.questionIds.length }} soalan
             </UBadge>
@@ -243,7 +290,7 @@ function open(row: Row): void {
               CONFIDENCE_LABEL[row.original.confidence]
             }}</UBadge>
             <span class="text-caption text-muted">{{ row.original.source }}</span>
-          </span>
+          </TagBadges>
         </div>
       </template>
       <template #subjectName-cell="{ row }">
@@ -253,6 +300,34 @@ function open(row: Row): void {
       </template>
       <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind] }}</template>
       <template #ageDays-cell="{ row }">{{ ageText(row.original.ageDays) }}</template>
+      <!-- Card field only: the table shows the unit as a badge in the Soalan cell. -->
+      <template #topic-cell="{ row }">
+        <span class="block whitespace-normal">{{ row.original.topic || '-' }}</span>
+      </template>
+      <template #spCodes-cell="{ row }">
+        <span class="block whitespace-normal">{{ row.original.spCodes.join(', ') || '-' }}</span>
+      </template>
+      <template #tp-cell="{ row }">
+        <span class="block whitespace-normal">{{ tpCardText(row.original) || '-' }}</span>
+      </template>
+      <template #empty>
+        <!-- Not "nothing found" while the first load runs (D9). A slot that renders only a comment
+             falls back to the table's own empty state, so the loading text stays in the DOM. -->
+        <span v-if="loading && !data" class="sr-only" role="status">Memuatkan...</span>
+        <DsEmptyState
+          v-else-if="activeCount > 0"
+          size="sm"
+          title="Tiada soalan dijumpai"
+          filtered
+          @reset="reset"
+        />
+        <DsEmptyState
+          v-else
+          size="sm"
+          title="Baris gilir kosong"
+          description="Tiada soalan menunggu semakan."
+        />
+      </template>
       <template #status-cell="{ row }">
         <DsStatusBadge :status="STATUS_BADGE[row.original.status]" />
       </template>

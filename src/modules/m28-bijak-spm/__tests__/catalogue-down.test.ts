@@ -53,7 +53,12 @@ describe('catalogue unavailable', () => {
       formOrigin: 'T1-T3',
     })
     const tagged = rows.find((r) => r.id === 'mat2-kuadratik-v1')!
-    expect(tagged).toMatchObject({ topic: '', unitTitle: null, spCodes: ['1.1.6'], tagReview: false })
+    expect(tagged).toMatchObject({
+      topic: '',
+      unitTitle: null,
+      spCodes: ['1.1.6'],
+      tagReview: false,
+    })
     expect(warn).toHaveBeenCalled()
 
     // tag filters still work on the stored ids
@@ -62,6 +67,43 @@ describe('catalogue unavailable', () => {
     expect((await server.getBankDetail('mat2-kuadratik-v1')).row.topic).toBe('')
     expect((await server.getBankEditable('mat2-kuadratik-v1')).row.id).toBe('mat2-kuadratik-v1')
     expect((await server.getPaperEditor('kp-seed-1')).questions.length).toBeGreaterThan(0)
+  })
+
+  it('the queue still lists with tag fields and tag filters when the catalogue is down', async () => {
+    const server = new BijakServer({ storage: new MemoryStorage() })
+    const id = 'mat2-kuadratik-v1'
+    const e = await server.getBankEditable(id)
+    expect(
+      (
+        await server.reviseQuestionFull(
+          id,
+          { ...e.question, stem: `${e.question.stem} Ulang.` },
+          undefined,
+          '',
+        )
+      ).ok,
+    ).toBe(true)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    setDskpCatalogForTests(down())
+
+    const all = await server.listReviewQueue({ status: 'semua' })
+    const rev = all.items.find((i) => i.key === `v:${id}`)!
+    // the unit title needs the catalogue; the stored ids and codes do not
+    expect(rev).toMatchObject({
+      formOrigin: 'T4',
+      unitTitle: null,
+      topic: '',
+      spCodes: ['1.1.6'],
+      tp: 2,
+      tagReview: false,
+    })
+    expect(warn).toHaveBeenCalled()
+    const t4 = await server.listReviewQueue({ status: 'semua', formOrigin: 'T4' })
+    expect(t4.items.map((i) => i.key)).toEqual([`v:${id}`])
+    const t13 = await server.listReviewQueue({ status: 'semua', formOrigin: 'T1-T3' })
+    expect(t13.items.length).toBeGreaterThan(0)
+    expect(t13.items.every((i) => i.formOrigin === 'T1-T3' || i.key === 'mat2-rev-g1')).toBe(true)
+    expect(t13.items.find((i) => i.key === 'mat1-rev-1')?.topic).toBe(T1_T3_TOPIC)
   })
 
   it('the gates and the changes fail closed: no publish, no new version, nothing written', async () => {
@@ -88,8 +130,8 @@ describe('catalogue unavailable', () => {
     await expect(server.getReviewItem(`v:${id}`)).rejects.toMatchObject({ name: 'DskpLoadError' })
 
     // Tolak does not need the catalogue and still works
-    expect((await server.reviewDecision(`v:${id}`, { action: 'tolak', reason: 'Ditolak' })).ok).toBe(
-      true,
-    )
+    expect(
+      (await server.reviewDecision(`v:${id}`, { action: 'tolak', reason: 'Ditolak' })).ok,
+    ).toBe(true)
   })
 })
