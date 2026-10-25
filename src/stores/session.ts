@@ -211,6 +211,8 @@ export const useSessionStore = defineStore('session', () => {
   const role = computed<Role | null>(() => auth.value?.user.role ?? null)
   const landingPath = computed<string | null>(() => auth.value?.user.landingPath ?? null)
   const remember = computed(() => auth.value?.remember ?? false)
+  /** Real API: the account is flagged and must open `/password/change` first (AM2-A1, DV-26). */
+  const mustChangePassword = computed(() => auth.value?.mustChangePassword === true)
   const expiresAt = computed<string | null>(() => auth.value?.expiresAt ?? null)
   /** The actor of an impersonated session (XR-M27-21); `null` otherwise. The shell banner reads it. */
   const impersonator = computed(() => auth.value?.impersonator ?? null)
@@ -367,6 +369,7 @@ export const useSessionStore = defineStore('session', () => {
     user,
     role,
     landingPath,
+    mustChangePassword,
     remember,
     expiresAt,
     impersonator,

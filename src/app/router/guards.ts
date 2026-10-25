@@ -6,6 +6,9 @@
  *    shared clock).
  * 2. **Auth**: `access: 'auth'` and no session → `/login?redirect=<requested path>` (v2; the 401
  *    policy goes to plain `/login`), no message (FR-M01-14, BR-08).
+ * 2b. **Forced password change** (AM2-A1, DV-26): a session flagged `mustChangePassword` can open
+ *    only `/password/change` and `/logout`; every other path (login, register, reset links
+ *    included) goes to `/password/change`, ahead of the role and scope checks.
  * 3. **Role**: `roles` set and the role not in it → `onForbidden`: `landing` redirects to the
  *    server-given `landingPath` (BR-07); `403` / `404` render the error page in place.
  * 4. **Guest pages have no guard**: `/login` and `/register` render for a logged-in user too
@@ -46,6 +49,10 @@ import {
 } from './outcome'
 
 export const LOGIN_PATH = '/login'
+export const PASSWORD_CHANGE_PATH = '/password/change'
+
+/** The only paths a flagged session may open (the API refuses everything else, 403). */
+const PASSWORD_CHANGE_ALLOWED = [PASSWORD_CHANGE_PATH, '/logout']
 
 /** A same-origin app path that is worth returning to (not `/`, not an auth page, no `//host`). */
 export function isSafeRedirect(value: unknown): value is string {
@@ -63,6 +70,8 @@ export interface GuardSession {
   readonly isLoggedIn: boolean
   readonly role: Role | null
   readonly landingPath: string | null
+  /** The session is flagged: only `/password/change` and `/logout` may open (AM2-A1). */
+  readonly mustChangePassword?: boolean
 }
 
 export type AccessDecision =
@@ -74,6 +83,10 @@ const ALLOW: AccessDecision = { kind: 'allow' }
 export function decideAccess(to: RouteLocationNormalized, session: GuardSession): AccessDecision {
   const access = to.meta.access ?? DEFAULT_ACCESS
   const roles = to.meta.roles
+
+  if (session.isLoggedIn && session.mustChangePassword === true) {
+    return PASSWORD_CHANGE_ALLOWED.includes(to.path) ? ALLOW : { kind: 'redirect', to: PASSWORD_CHANGE_PATH }
+  }
 
   // A role list implies a session.
   if ((access === 'auth' || roles !== undefined) && !session.isLoggedIn) {

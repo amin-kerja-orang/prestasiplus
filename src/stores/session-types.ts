@@ -65,6 +65,8 @@ export interface ClientSession {
   user: UserMe
   /** Real API only (V2-T31): the CSRF token of the cookie session, sent as `X-CSRF-Token` on writes. */
   csrf?: string
+  /** Real API only: the account must change its password first (AM2-A1, DV-26). Absent = false. */
+  mustChangePassword?: boolean
   /** Only on an impersonated session (XR-M27-21): the actor and the path "Kembali ke Admin" uses. */
   impersonator?: { id: number; name: string; returnTo: string }
   /** Only in Mod Pelajar (v2-portals US-07): the admin session parked while the student view is open. */
