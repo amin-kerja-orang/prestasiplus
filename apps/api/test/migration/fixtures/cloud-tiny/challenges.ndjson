@@ -1,1 +1,6 @@
 {"id":1,"created_by":null,"classroom_id":null,"challenge_type":"harian","title":"Cabaran Contoh","target_value":5,"reward_syiling":10,"reward_xp":5,"difficulty":"medium","is_active":"1","sort_order":1}
+{"id":2,"created_by":null,"classroom_id":null,"challenge_type":"bilangan_kuiz","title":"Cabaran Kod 1","target_value":3,"reward_syiling":5,"reward_xp":2,"difficulty":"medium","is_active":"1","sort_order":2}
+{"id":3,"created_by":null,"classroom_id":null,"challenge_type":"ketepatan","title":"Cabaran Kod 2","target_value":4,"reward_syiling":5,"reward_xp":2,"difficulty":"medium","is_active":"1","sort_order":3}
+{"id":4,"created_by":null,"classroom_id":null,"challenge_type":"topik_berbeza","title":"Cabaran Kod 3","target_value":5,"reward_syiling":5,"reward_xp":2,"difficulty":"medium","is_active":"1","sort_order":4}
+{"id":5,"created_by":null,"classroom_id":null,"challenge_type":"kombo","title":"Cabaran Kod 4","target_value":6,"reward_syiling":5,"reward_xp":2,"difficulty":"medium","is_active":"1","sort_order":5}
+{"id":6,"created_by":null,"classroom_id":null,"challenge_type":"masa","title":"Cabaran Kod 5","target_value":7,"reward_syiling":5,"reward_xp":2,"difficulty":"medium","is_active":"1","sort_order":6}

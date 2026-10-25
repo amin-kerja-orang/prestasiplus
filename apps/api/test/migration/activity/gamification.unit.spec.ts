@@ -3,6 +3,8 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { generateTinyFixture } from '../fixtures/generate-tiny'
+
 import {
   ARTICLE_CATEGORY_MAP,
   BANNER_TYPE_MAP,
@@ -70,13 +72,54 @@ describe('tiers and challenges', () => {
   })
 
   it('maps the challenge type with an explicit table and rejects the rest; metric stays null', () => {
-    expect(Object.keys(CHALLENGE_TYPE_MAP).sort()).toEqual(['accuracy', 'quiz_count', 'streak', 'time_spent', 'topic_variety'])
+    expect(Object.keys(CHALLENGE_TYPE_MAP).sort()).toEqual([
+      'accuracy', 'bilangan_kuiz', 'ketepatan', 'kombo', 'masa', 'quiz_count', 'streak', 'time_spent', 'topic_variety', 'topik_berbeza',
+    ])
     const ok = transformChallenge({ title: ' Cabaran  Satu ', challenge_type: 'Quiz Count', target_value: '3.00' })
     expect(ok.ok && ok.value).toMatchObject({ title: 'Cabaran Satu', challenge_type: 'quiz_count', metric: null, target_value: 3, difficulty: 'medium' })
     expect(rejectOf(transformChallenge({ title: 'A', challenge_type: 'harian', target_value: '3' }))).toBe('UNKNOWN_ENUM:challenge_type')
     expect(rejectOf(transformChallenge({ title: 'A', challenge_type: 'accuracy', target_value: 'teks' }))).toBe('INVALID_VALUE:target_value')
     expect(rejectOf(transformChallenge({ title: '', challenge_type: 'accuracy', target_value: '3' }))).toBe('INVALID_VALUE:title')
     expect(rejectOf(transformChallenge({ title: 'x'.repeat(201), challenge_type: 'accuracy', target_value: '3' }))).toBe('INVALID_VALUE:title')
+  })
+
+  describe('the .cloud challenge_type codes map to the v2 types (FIT-FIX OQ5, LEAD 25 Oct 13:15 MYT)', () => {
+    const typeOf = (raw: string | null) => {
+      const o = transformChallenge({ title: 'A', challenge_type: raw, target_value: '3' })
+      return o.ok ? o.value.challenge_type : rejectOf(o)
+    }
+    it.each([
+      ['bilangan_kuiz', 'quiz_count'],
+      ['ketepatan', 'accuracy'],
+      ['topik_berbeza', 'topic_variety'],
+      ['kombo', 'streak'],
+      ['masa', 'time_spent'],
+    ])('maps %s to %s', (code, v2) => {
+      expect(typeOf(code)).toBe(v2)
+    })
+
+    it('is case- and space-insensitive (the enumKey rule)', () => {
+      expect(typeOf(' KOMBO ')).toBe('streak')
+      expect(typeOf('Topik Berbeza')).toBe('topic_variety')
+      expect(typeOf('Bilangan-Kuiz')).toBe('quiz_count')
+      expect(typeOf('MASA')).toBe('time_spent')
+      expect(typeOf('Ketepatan')).toBe('accuracy')
+    })
+
+    it('maps every challenge of the cloud-tiny fixture except its one unknown code (harian)', () => {
+      const rows = generateTinyFixture().get('challenges.ndjson')!.trim().split('\n').map((l) => JSON.parse(l) as Record<string, string>)
+      expect(rows.map((r) => typeOf(r.challenge_type ?? null))).toEqual([
+        'UNKNOWN_ENUM:challenge_type', 'quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent',
+      ])
+    })
+
+    it('keeps the identity codes and still rejects an unknown or blank code', () => {
+      for (const v2 of ['quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent']) expect(typeOf(v2)).toBe(v2)
+      expect(typeOf('harian')).toBe('UNKNOWN_ENUM:challenge_type')
+      expect(typeOf('kombo_harian')).toBe('UNKNOWN_ENUM:challenge_type')
+      expect(typeOf('')).toBe('INVALID_VALUE:challenge_type')
+      expect(typeOf(null)).toBe('INVALID_VALUE:challenge_type')
+    })
   })
 
   describe('challenge rewards, difficulty, flag and order (FIT-FIX OQ5)', () => {

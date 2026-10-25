@@ -25,13 +25,24 @@ export function tierMatchKey(labelMs: string | null | undefined): string | null 
 
 // ---------------------------------------------------------------- challenges
 
-/** v2 `challenge_type` codes. Only the identity map is known; extend it from the BE-27 profile, never from a hunch (OD-25). */
+/**
+ * v2 `challenge_type` codes. The identity codes plus the five Malay `.cloud` codes (FIT-FIX OQ5, LEAD 25 Oct 13:15 MYT, #109 6393823280),
+ * each mapped by what the v2 evaluator measures (`DEFAULT_METRIC_BY_TYPE`, BR-M14-12) and by the "Jenis" select of URS FN-M14-9.3.4:
+ * `bilangan_kuiz` "Bilangan Kuiz" -> quiz_count (sessions), `ketepatan` "Ketepatan (%)" -> accuracy (best accuracy),
+ * `topik_berbeza` "Topik Berbeza" -> topic_variety (distinct chapters), `kombo` "Kombo" -> streak (day streak),
+ * `masa` "Masa (min)" -> time_spent (minutes). Any other word stays UNKNOWN_ENUM (OD-25: never from a hunch).
+ */
 export const CHALLENGE_TYPE_MAP: Readonly<Record<string, string>> = {
   quiz_count: 'quiz_count',
   accuracy: 'accuracy',
   topic_variety: 'topic_variety',
   streak: 'streak',
   time_spent: 'time_spent',
+  bilangan_kuiz: 'quiz_count',
+  ketepatan: 'accuracy',
+  topik_berbeza: 'topic_variety',
+  kombo: 'streak',
+  masa: 'time_spent',
 }
 const challengeType = enumMapper('challenge_type', CHALLENGE_TYPE_MAP)
 

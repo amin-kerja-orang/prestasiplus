@@ -113,8 +113,16 @@ function build(): Map<string, Row[]> {
   put('coin_transactions', ['earn', 'earn', 'spend', 'bonus', 'earn', 'mystery'].map((type, i) => ({
     id: i + 1, user_id: (i % 4) + 1, type, source: 'practice', amount: 5, balance_after: 5 * (i + 1), created_at: T0,
   })))
-  put('challenges', [{ id: 1, created_by: null, classroom_id: null, challenge_type: 'harian', title: 'Cabaran Contoh', target_value: 5, reward_syiling: 10, reward_xp: 5, difficulty: 'medium', is_active: '1', sort_order: 1 }])
-  put('challenge_user', [{ challenge_id: 1, user_id: 1, progress: 3, completed_at: T0, claimed_on: '2026-01-02' }])
+  // Row 1 keeps an unknown code on purpose; rows 2-6 carry the five Malay `.cloud` challenge_type codes (FIT-FIX OQ5), each claimed by one of pupils 2-6 (pupil 1 keeps a single claim, which the deleted-at-source verify test counts).
+  const CLOUD_CHALLENGE_CODES = ['bilangan_kuiz', 'ketepatan', 'topik_berbeza', 'kombo', 'masa'] as const
+  put('challenges', [
+    { id: 1, created_by: null, classroom_id: null, challenge_type: 'harian', title: 'Cabaran Contoh', target_value: 5, reward_syiling: 10, reward_xp: 5, difficulty: 'medium', is_active: '1', sort_order: 1 },
+    ...CLOUD_CHALLENGE_CODES.map((code, i) => ({ id: i + 2, created_by: null, classroom_id: null, challenge_type: code, title: `Cabaran Kod ${i + 1}`, target_value: 3 + i, reward_syiling: 5, reward_xp: 2, difficulty: 'medium', is_active: '1', sort_order: i + 2 })),
+  ])
+  put('challenge_user', [
+    { challenge_id: 1, user_id: 1, progress: 3, completed_at: T0, claimed_on: '2026-01-02' },
+    ...CLOUD_CHALLENGE_CODES.map((_, i) => ({ challenge_id: i + 2, user_id: i + 2, progress: 3, completed_at: T0, claimed_on: '2026-01-02' })),
+  ])
   put('achievements', [{ id: 1, name: 'Pencapaian Contoh', criteria: 'Contoh' }])
   put('achievement_user', [{ achievement_id: 1, user_id: 1, unlocked_at: T0 }])
   put('battles', [{ id: 1, mode: '1v1', total_questions: 5, duration_seconds: 120, status: 'selesai' }, { id: 2, mode: 'quick_match', total_questions: 5, duration_seconds: 120, status: 'selesai' }])
