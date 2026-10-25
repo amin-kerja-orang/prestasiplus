@@ -10,14 +10,21 @@
  * | admin | A3 2026-05-11 14:27 | latih_tubi · BM | 34 · 11 | 01:45 |
  * | admin | A4 2026-05-19 03:26 | past_year · BM | 5 · 1 | 00:36 |
  * | admin | A5 2026-05-19 03:49 | past_year · BM (one wrong answer repeats an A4 wrong question) | 5 · 0 | 00:14 |
- * | pelajar (2) | P1 2026-09-22 19:00 | past_year · MATH | 10 · 4 | 05:00 |
- * | pelajar | P2 2026-09-24 20:15 | latih_tubi · BM | 34 · 26 | 06:00 |
- * | pelajar | P3 2026-09-24 20:40 | past_year · SEJ | 10 · 6 | 04:30 |
- * | pelajar | P4 2026-09-25 08:30 | ramalan · AKAUN Set 1 | 40 · 34 | 15:00 |
- * | pelajarmaju (4) | M1 2026-09-23 16:10 | chapter · MATH D1 Bab 1 (questions 1–10) | 10 · 8 | 04:20 |
- * | pelajarmaju | M2 2026-09-24 17:05 | chapter · MATH D1 Bab 1 (questions 11–20) | 10 · 9 | 03:50 |
- * | pelajarmaju | M3 2026-09-25 09:15 | random · MATH D1 (5 of Bab 2, 3 correct; 5 of Bab 3, 3 correct) | 10 · 6 | 05:10 |
+ * | pelajar (2) | P1 2026-09-22 19:00 | past_year · MATH (5 in T4 Bab 1, 3 correct; 5 in Bab 2, 1 correct) | 10 · 4 | 05:00 |
+ * | pelajar | P2 2026-09-24 20:15 | latih_tubi · BM (all in T4 Bab 1) | 34 · 26 | 06:00 |
+ * | pelajar | P3 2026-09-24 20:40 | past_year · SEJ (all in T4 Bab 1) | 10 · 6 | 04:30 |
+ * | pelajar | P4 2026-09-25 08:30 | ramalan · AKAUN Set 1 (8 each in T4 Bab 1–5; 8, 6, 7, 5, 8 correct) | 40 · 34 | 15:00 |
+ * | pelajarmaju (4) | M1 2026-09-23 16:10 | chapter · MATH T4 Bab 1 (questions 1–10) | 10 · 8 | 04:20 |
+ * | pelajarmaju | M2 2026-09-24 17:05 | chapter · MATH T4 Bab 1 (questions 11–20) | 10 · 9 | 03:50 |
+ * | pelajarmaju | M3 2026-09-25 09:15 | random · MATH T4 (5 of Bab 2, 3 correct; 5 of Bab 3, 3 correct) | 10 · 6 | 05:10 |
  * | pelajarmaju | M4 2026-09-25 10:00 | revision · MATH (the 7 queued; correct: 2 of Bab 1, 1 of Bab 3) | 7 · 3 | 02:30 |
+ *
+ * D54 (2026-10-24, secondary school and SPM only): pelajar (Tingkatan 4) and pelajarmaju (now
+ * Tingkatan 4 at SMK DEMO) practise on M03 Tingkatan 4 chapters. pelajarmaju's Matematik anchors and
+ * sessions moved from Darjah 1 Bab 1–3 (chapters 1/143/136) to T4 Bab 1–3 (91/92/220); the correct
+ * counts are unchanged, because the M14 hand-over (wallet, ledger) and the revision queue are built
+ * on them. pelajar's SPM answers carry the chapter on the answer (`chapterId`, the XR-M25-02 b
+ * pattern below) so the murid heatmap shows several T4 topics; no answer is added, no total moves.
  *
  * Questions: the M05 practice anchors 600001–600065 (M04 §6.15 groups, contributed by this module)
  * and, for the SPM sessions, M04 SPM pool rows drawn once when the answer log compiles (M04 has
@@ -33,7 +40,7 @@ import type { PracticeMode } from './types'
 /** M03 subject ids. */
 export const SUBJECT = { BM: 1, MATH: 3, SEJ: 5, AKAUN: 21 } as const
 
-/** M04 §6.15 anchor groups (ids, subject, level, M03 chapter id). */
+/** M04 §6.15 anchor groups (ids, subject, level, M03 chapter id); the Matematik ones are T4 (D54). */
 export const M05_QUESTION_ANCHORS: readonly {
   ids: readonly [number, number]
   subjectId: number
@@ -44,9 +51,9 @@ export const M05_QUESTION_ANCHORS: readonly {
   { ids: [600019, 600023], subjectId: 1, levelId: 1, chapterId: 36 },
   { ids: [600024, 600033], subjectId: 1, levelId: 1, chapterId: 2 },
   { ids: [600034, 600035], subjectId: 1, levelId: 2, chapterId: 4 },
-  { ids: [600036, 600055], subjectId: 3, levelId: 1, chapterId: 1 },
-  { ids: [600056, 600060], subjectId: 3, levelId: 1, chapterId: 143 },
-  { ids: [600061, 600065], subjectId: 3, levelId: 1, chapterId: 136 },
+  { ids: [600036, 600055], subjectId: 3, levelId: 10, chapterId: 91 },
+  { ids: [600056, 600060], subjectId: 3, levelId: 10, chapterId: 92 },
+  { ids: [600061, 600065], subjectId: 3, levelId: 10, chapterId: 220 },
 ]
 
 const ids = (from: number, to: number): number[] =>
@@ -104,6 +111,34 @@ const BM_ADMIN = SUBJECT.BM
  */
 const inChapter = (rows: DesignedAnswer[], chapterId: number | null): DesignedAnswer[] =>
   rows.map((r) => ({ ...r, chapterId }))
+/**
+ * D54: pelajar's SPM answers by M03 Tingkatan 4 chapter, so the murid heatmap (M25, 5 attempts per
+ * topic) shows a believable mix. `pattern` is one character per draw, `1` = correct, `0` = wrong;
+ * the draws, the totals per session and the wrong-answer count (24 queued) are unchanged.
+ */
+const inChapterPattern = (
+  pool: number,
+  from: number,
+  chapterId: number,
+  pattern: string,
+): DesignedAnswer[] =>
+  [...pattern].map((c, i) => ({
+    question: { pool, draw: from + i },
+    isCorrect: c === '1',
+    chapterId,
+  }))
+/** MATH T4 Bab 1–2 (M03 91, 92); AKAUN T4 Bab 1–5 (M03 1173–1177). */
+const P1: DesignedAnswer[] = [
+  ...inChapterPattern(-SUBJECT.MATH, 0, 91, '11100'),
+  ...inChapterPattern(-SUBJECT.MATH, 5, 92, '10000'),
+]
+const P4: DesignedAnswer[] = [
+  ...inChapterPattern(-SUBJECT.AKAUN, 0, 1173, '11111111'),
+  ...inChapterPattern(-SUBJECT.AKAUN, 8, 1174, '11011011'),
+  ...inChapterPattern(-SUBJECT.AKAUN, 16, 1175, '11101111'),
+  ...inChapterPattern(-SUBJECT.AKAUN, 24, 1176, '10110101'),
+  ...inChapterPattern(-SUBJECT.AKAUN, 32, 1177, '11111111'),
+]
 const A3: DesignedAnswer[] = [
   ...inChapter(drawn(BM_ADMIN, 0, 33, 11), 413),
   ...inChapter([{ question: { pool: BM_ADMIN, draw: 33 }, isCorrect: false }], null),
@@ -195,7 +230,7 @@ export const DESIGNED_SESSIONS: readonly DesignedSession[] = [
     setNo: null,
     completedAt: '2026-09-22T19:00:00+08:00',
     timeSpent: 300,
-    answers: drawn(-SUBJECT.MATH, 0, 10, 4),
+    answers: P1,
   },
   {
     id: 'P2',
@@ -208,7 +243,7 @@ export const DESIGNED_SESSIONS: readonly DesignedSession[] = [
     setNo: null,
     completedAt: '2026-09-24T20:15:00+08:00',
     timeSpent: 360,
-    answers: drawn(-SUBJECT.BM, 0, 34, 26),
+    answers: inChapter(drawn(-SUBJECT.BM, 0, 34, 26), 87),
   },
   {
     id: 'P3',
@@ -221,7 +256,7 @@ export const DESIGNED_SESSIONS: readonly DesignedSession[] = [
     setNo: null,
     completedAt: '2026-09-24T20:40:00+08:00',
     timeSpent: 270,
-    answers: drawn(-SUBJECT.SEJ, 0, 10, 6),
+    answers: inChapter(drawn(-SUBJECT.SEJ, 0, 10, 6), 381),
   },
   {
     id: 'P4',
@@ -234,15 +269,15 @@ export const DESIGNED_SESSIONS: readonly DesignedSession[] = [
     setNo: 1,
     completedAt: '2026-09-25T08:30:00+08:00',
     timeSpent: 900,
-    answers: drawn(-SUBJECT.AKAUN, 0, 40, 34),
+    answers: P4,
   },
   {
     id: 'M1',
     userId: 4,
     mode: 'chapter',
     subjectId: SUBJECT.MATH,
-    levelId: 1,
-    chapterId: 1,
+    levelId: 10,
+    chapterId: 91,
     year: null,
     setNo: null,
     completedAt: '2026-09-23T16:10:00+08:00',
@@ -254,8 +289,8 @@ export const DESIGNED_SESSIONS: readonly DesignedSession[] = [
     userId: 4,
     mode: 'chapter',
     subjectId: SUBJECT.MATH,
-    levelId: 1,
-    chapterId: 1,
+    levelId: 10,
+    chapterId: 91,
     year: null,
     setNo: null,
     completedAt: '2026-09-24T17:05:00+08:00',
@@ -267,7 +302,7 @@ export const DESIGNED_SESSIONS: readonly DesignedSession[] = [
     userId: 4,
     mode: 'random',
     subjectId: SUBJECT.MATH,
-    levelId: 1,
+    levelId: 10,
     chapterId: null,
     year: null,
     setNo: null,

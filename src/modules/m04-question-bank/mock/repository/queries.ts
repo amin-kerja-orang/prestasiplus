@@ -27,6 +27,7 @@ import {
   SPM_POOL,
   S10_DIFFICULTY,
   STRUCTURED_BY_SUBJECT,
+  TABLE_A,
   TEACHER_CONTRIB,
   TOTALS,
   USER1_BY_SUBJECT,
@@ -47,8 +48,12 @@ type QW = Where<Question>
 const OBJECTIVE: QW = { pkskDomainId: null }
 const ELIGIBLE: QW = { pkskDomainId: null, status: 'approved', isActive: true }
 
-/** Levels of Q-PRACTICE (Darjah 1–4, M05 S3). */
-export const PRACTICE_LEVEL_IDS = [1, 2, 3, 4] as const
+/** Levels of Q-PRACTICE (D54: Tingkatan 4–5; Darjah 1–4 before, M05 S3). */
+export const PRACTICE_LEVEL_IDS = [10, 11] as const
+
+/** Table A cell of (subject, level) — the active rows of the pair. */
+const tableA = (subjectId: number, levelId: number): number =>
+  TABLE_A[subjectId]?.[levelId - 1] ?? 0
 
 const perSubject = (table: Readonly<Record<number, number>>) =>
   Object.entries(table).map(([s, value]) => ({ args: [Number(s)] as const, value }))
@@ -146,13 +151,16 @@ const baseQuestionQueries = defineNamedQueries(questionsDataset, {
         subjectId,
         educationLevelId: levelId ?? [...PRACTICE_LEVEL_IDS],
       }),
+    // D54: Tingkatan 4–5 (before: Darjah 1–4 = 4,833 for BM, 958 / 2,540 at D1 / D2, 2,734 for MATH
+    // D1). Derived from Table A (all of these subjects hold MCQ rows only at T4/T5).
     expected: [
-      { args: [1], value: 4833 },
-      { args: [1, 1], value: 958 },
-      { args: [1, 2], value: 2540 },
-      { args: [3, 1], value: 2734 },
+      { args: [3], value: tableA(3, 10) + tableA(3, 11) },
+      { args: [3, 10], value: tableA(3, 10) },
+      { args: [3, 11], value: tableA(3, 11) },
+      { args: [10], value: tableA(10, 10) + tableA(10, 11) },
+      { args: [21, 11], value: tableA(21, 11) },
     ],
-    source: 'M04 §4.1 (M05 S3/S4)',
+    source: 'M04 §4.1 (M05 S3/S4), D54',
   },
   'Q-CHAPTER': {
     where: (chapterId: number): QW => ({
@@ -160,15 +168,17 @@ const baseQuestionQueries = defineNamedQueries(questionsDataset, {
       questionType: 'mcq',
       curriculumChapterId: chapterId,
     }),
+    // D54: the Darjah 1–4 chapters carry no question any more (before: 464, 302, 316, 320, 317,
+    // 321 for chapters 1, 143, 136, 35, 36, 2). What stays are the admin's observed BM anchors
+    // 600001–600033 (M05 §6.15: 18 + 5 + 10 answers) in chapters 35, 36 and 2.
     expected: [
-      { args: [1], value: 464 },
-      { args: [143], value: 302 },
-      { args: [136], value: 316 },
-      { args: [35], value: 320 },
-      { args: [36], value: 317 },
-      { args: [2], value: 321 },
+      { args: [1], value: 0 },
+      { args: [143], value: 0 },
+      { args: [35], value: 18 },
+      { args: [36], value: 5 },
+      { args: [2], value: 10 },
     ],
-    source: 'M04 §6.13.1 curriculumChapterId (M05 S5 chapter totals)',
+    source: 'M04 §6.13.1 curriculumChapterId (M05 anchors), D54',
   },
   'Q-DIFFICULTY': {
     where: (difficulty: number): QW => ({ isActive: true, difficultyLevel: difficulty }),

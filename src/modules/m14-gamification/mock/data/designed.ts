@@ -12,8 +12,8 @@
 
 import type { DaySession } from '../repository/engine'
 
-/** M03 ids of MATH D1 Bab 1–3 (M03 fixture: chapterNumber 1 → 1, 2 → 143, 3 → 136). */
-export const MATH_D1_CHAPTERS = { bab1: 1, bab2: 143, bab3: 136 } as const
+/** M03 ids of MATH T4 Bab 1–3 (chapterNumber 1 → 91, 2 → 92, 3 → 220); Darjah 1 chapters 1/143/136 before D54. */
+export const MATH_T4_CHAPTERS = { bab1: 91, bab2: 92, bab3: 220 } as const
 
 export interface DesignedSession extends DaySession {
   userId: number
@@ -45,7 +45,7 @@ const s = (
   chapterIds,
 })
 
-const { bab1, bab2, bab3 } = MATH_D1_CHAPTERS
+const { bab1, bab2, bab3 } = MATH_T4_CHAPTERS
 
 /** M05 §6.12 sessions of accounts 2 and 4, in completion order. */
 export const DESIGNED_SESSIONS: readonly DesignedSession[] = [

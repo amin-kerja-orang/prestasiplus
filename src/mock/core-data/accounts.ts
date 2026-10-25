@@ -24,13 +24,14 @@ export const DEMO_PASSWORD = 'Demo1234'
 
 /** The M02 schools the canonical accounts reference (records are M02 dataset anchors, built in F-23). */
 export const CANONICAL_SCHOOL_IDS = {
-  /** 900001 "SMK DEMO" (BEA4001, Selangor, PPD PETALING UTAMA): accounts 2, 5, 8. */
+  /** 900001 "SMK DEMO" (BEA4001, Selangor, PPD PETALING UTAMA): accounts 2, 4, 5, 8. */
   smkDemo: 900_001,
   /** 900002 "SK Demo" (Johor): account 1. */
   skDemo: 900_002,
   /**
-   * 900004 "SK Demo Bestari" (fixture, Johor): account 4 (moved from 900002 on 2026-09-27,
-   * XR-M08-01; final per XL3 R2-01, M01 v1.11 / M02 v1.16).
+   * 900004 "SK Demo Bestari" (fixture, Johor): no canonical account since D54 (2026-10-24: account
+   * 4 became a Tingkatan 4 pupil at SMK DEMO; before that it was moved here from 900002 on
+   * 2026-09-27, XR-M08-01; XL3 R2-01, M01 v1.11 / M02 v1.16).
    */
   skDemoBestari: 900_004,
 } as const
@@ -124,9 +125,9 @@ export const CANONICAL_ACCOUNTS: readonly CanonicalAccount[] = Object.freeze([
     email: 'pelajarmaju@demo.test',
     role: 'student',
     name: 'Pelajar Maju Demo',
-    grade: 1,
+    grade: 10,
     icNumber: null,
-    schoolId: CANONICAL_SCHOOL_IDS.skDemoBestari,
+    schoolId: CANONICAL_SCHOOL_IDS.smkDemo,
     lastLoginAt: '2026-09-24T18:00:00+08:00',
   }),
   account({

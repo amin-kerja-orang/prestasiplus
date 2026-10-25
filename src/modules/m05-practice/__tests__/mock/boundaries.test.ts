@@ -42,28 +42,44 @@ const data = async <T>(userId: number, url: string): Promise<T> => {
   return r.body.data
 }
 
-/** MATH D1 practice questions. */
+/** MATH T4 practice questions (D54: the practice levels are Tingkatan 4-5). */
 const pick = (n: number) =>
   questions
-    .practiceQuery({ subjectId: 3, educationLevelIds: [1], limit: n, seed: 'boundaries' })
+    .practiceQuery({ subjectId: 3, educationLevelIds: [10], limit: n, seed: 'boundaries' })
     .map((q) => q.id)
 
 describe('BR-16: the chapter unlock bar is a score of 70 %', () => {
-  // BM D1 Bab 1 (chapter 35) has 320 questions: 224 correct is exactly 70.0 %, 223 is 69.7 %.
-  it('exactly 70.0 % (224 of 320) opens the next chapter', async () => {
-    expect(answerChapter(PELAJAR2, 35, { correctPct: 70 })).toEqual({ answered: 320, correct: 224 })
-    const c = await data<ChapterSubjectDetail>(PELAJAR2, '/api/practice/chapter-subjects/BM')
-    expect(c.chapters[0]).toMatchObject({ complete: true, scorePct: 70, state: 'open' })
+  // D54: MATH T4 Bab 1 (chapter 91, "Fungsi dan Persamaan Kuadratik") is the first chapter of the
+  // first offered level. Its question count is read from M04 (no tuned number): 70 % of it is not a
+  // whole number, so the bar sits between ceil(0.7 n) (at or above 70 %) and floor(0.7 n) (below).
+  const n = () => questions.count('Q-CHAPTER', 91)
+  const above = () => Math.ceil(0.7 * n())
+  const below = () => Math.floor(0.7 * n())
+
+  it('a score at or above 70.0 % opens the next chapter', async () => {
+    const pct = (above() / n()) * 100
+    expect(pct).toBeGreaterThanOrEqual(70)
+    expect(answerChapter(PELAJAR2, 91, { correctPct: pct })).toEqual({
+      answered: n(),
+      correct: above(),
+    })
+    const c = await data<ChapterSubjectDetail>(PELAJAR2, '/api/practice/chapter-subjects/MATH')
+    expect(c.levelId).toBe(10)
+    expect(c.chapters[0]).toMatchObject({ id: 91, complete: true, state: 'open' })
+    expect(c.chapters[0]?.scorePct).toBeGreaterThanOrEqual(70)
     expect(c.chapters[1]?.state).toBe('open')
   }, 60_000)
 
-  it('69.7 % (223 of 320) keeps it locked', async () => {
-    expect(answerChapter(GURU, 35, { correctPct: 69.6875 })).toEqual({
-      answered: 320,
-      correct: 223,
+  it('a score just below 70 % keeps it locked', async () => {
+    const pct = (below() / n()) * 100
+    expect(pct).toBeLessThan(70)
+    expect(answerChapter(GURU, 91, { correctPct: pct })).toEqual({
+      answered: n(),
+      correct: below(),
     })
-    const c = await data<ChapterSubjectDetail>(GURU, '/api/practice/chapter-subjects/BM')
-    expect(c.chapters[0]).toMatchObject({ complete: true, scorePct: 69.7 })
+    const c = await data<ChapterSubjectDetail>(GURU, '/api/practice/chapter-subjects/MATH')
+    expect(c.chapters[0]).toMatchObject({ id: 91, complete: true })
+    expect(c.chapters[0]?.scorePct).toBeLessThan(70)
     expect(c.chapters[1]?.state).toBe('locked')
   }, 60_000)
 })

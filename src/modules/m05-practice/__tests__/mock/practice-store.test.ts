@@ -419,12 +419,12 @@ describe('canonical accounts (§6.12)', () => {
     ])
   })
 
-  it('admin: S5 BM D1 Bab 1 18/320 44.4 %, Bab 2 5/317 60 %, Bab 3 10/321 80 %; S11 May 74 · 25', () => {
+  it('admin: BM D1 Bab 1 18/18 44.4 %, Bab 2 5/5 60 %, Bab 3 10/10 80 % (D54: only the observed anchors carry a Darjah chapter); S11 May 74 · 25', () => {
     const s = (ch: number) => practice.chapterStats(1, ch)
-    expect(s(35)).toMatchObject({ total: 320, answered: 18, remaining: 302 })
+    expect(s(35)).toMatchObject({ total: 18, answered: 18, remaining: 0 })
     expect(pct1(s(35).scorePct)).toBe(44.4)
-    expect(s(36)).toMatchObject({ total: 317, answered: 5, scorePct: 60 })
-    expect(s(2)).toMatchObject({ total: 321, answered: 10, scorePct: 80 })
+    expect(s(36)).toMatchObject({ total: 5, answered: 5, scorePct: 60 })
+    expect(s(2)).toMatchObject({ total: 10, answered: 10, scorePct: 80 })
     // BR-18: the questions first answered in May, excluding `past_year` answers: 74, 25 correct.
     const may = practice
       .answers(1, {
@@ -469,7 +469,7 @@ describe('canonical accounts (§6.12)', () => {
     ])
   })
 
-  it('pelajarmaju: M1–M4 as the M14 hand-over; M3 / M4 answers on MATH D1 chapters 1, 143, 136', () => {
+  it('pelajarmaju: M1–M4 as the M14 hand-over; M3 / M4 answers on MATH T4 chapters 91, 92, 220 (D54)', () => {
     const rows = practice.history(4).reverse()
     expect(rows.map((s) => [s.id, s.mode, s.completedAt, s.correct, s.total, s.timeSpent])).toEqual(
       [
@@ -480,18 +480,28 @@ describe('canonical accounts (§6.12)', () => {
       ],
     )
     const chapters = (id: string) => new Set(practice.sessionAnswers(id).map((a) => a.chapterId))
-    expect(chapters('M1')).toEqual(new Set([1]))
-    expect(chapters('M3')).toEqual(new Set([143, 136]))
-    expect(chapters('M4')).toEqual(new Set([1, 143, 136]))
-    // S5: Bab 1 20/464 95 % (open, 444 baki), Bab 2 5/302 60 % (locked), Bab 3 5/316 80 % (locked).
-    expect(practice.chapterStats(4, 1)).toMatchObject({
-      total: 464,
+    expect(chapters('M1')).toEqual(new Set([91]))
+    expect(chapters('M3')).toEqual(new Set([92, 220]))
+    expect(chapters('M4')).toEqual(new Set([91, 92, 220]))
+    // S5: Bab 1 20 answered 95 % (open), Bab 2 5 answered 60 % (locked), Bab 3 5 answered 80 %
+    // (locked); the totals are the chapters' M04 question counts (derived, not tuned).
+    const total = (ch: number) => questions.count('Q-CHAPTER', ch)
+    expect(practice.chapterStats(4, 91)).toMatchObject({
+      total: total(91),
       answered: 20,
       scorePct: 95,
-      remaining: 444,
+      remaining: total(91) - 20,
     })
-    expect(practice.chapterStats(4, 143)).toMatchObject({ total: 302, answered: 5, scorePct: 60 })
-    expect(practice.chapterStats(4, 136)).toMatchObject({ total: 316, answered: 5, scorePct: 80 })
+    expect(practice.chapterStats(4, 92)).toMatchObject({
+      total: total(92),
+      answered: 5,
+      scorePct: 60,
+    })
+    expect(practice.chapterStats(4, 220)).toMatchObject({
+      total: total(220),
+      answered: 5,
+      scorePct: 80,
+    })
     // S6 MATH 4, each "Salah 2x"; S12 MATH 26 / 37; S8 30 days 37 / 70.3 % / "15m".
     expect(practice.queue(4).map((q) => q.wrongTimes)).toEqual([2, 2, 2, 2])
     expect(practice.mastery(4).map((m) => [m.subjectId, m.correct, m.answered])).toEqual([
@@ -641,8 +651,8 @@ describe('write path (BR-31)', () => {
   }
 
   const MODES: readonly [string, number, Record<string, unknown>][] = [
-    ['random', 3, { mode: 'random', subjectCode: 'MATH', levelId: 1, count: 5 }],
-    ['chapter', 4, { mode: 'chapter', chapterId: 1, count: 5 }],
+    ['random', 3, { mode: 'random', subjectCode: 'MATH', levelId: 10, count: 5 }],
+    ['chapter', 4, { mode: 'chapter', chapterId: 91, count: 5 }],
     ['revision', 4, { mode: 'revision', subjectCode: 'MATH', count: 20 }],
     ['past_year', 3, { mode: 'past_year', subjectCode: 'SEJ', count: 5 }],
     ['latih_tubi', 3, { mode: 'latih_tubi', subjectCode: 'PERNIAGA', count: 5 }],
@@ -1012,7 +1022,7 @@ describe('write path (BR-31)', () => {
     const post = (b: unknown) => request(runtime, 'POST', '/api/practice/sessions', token, b)
     expect((await post({ mode: 'random', subjectCode: 'XXX', count: 5 })).status).toBe(404)
     expect((await post({ mode: 'random', subjectCode: 'MATH', count: 7 })).status).toBe(422)
-    const locked = await post({ mode: 'chapter', chapterId: 143, count: 5 })
+    const locked = await post({ mode: 'chapter', chapterId: 92, count: 5 })
     expect(locked.status).toBe(409)
     expect((locked.body as { error: { code: string } }).error.code).toBe('CHAPTER_LOCKED')
     const none = await request(runtime, 'POST', '/api/practice/sessions', setUser(3).token, {

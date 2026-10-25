@@ -301,12 +301,14 @@ describe('GET /api/admin/users (#1)', () => {
 
 // -------------------------------------------------------------------------------------------------
 describe('GET /api/admin/users/filters (#2)', () => {
-  it('lists the 61 schools with ≥ 1 user, sorted by name (BR-03, DV-M02-13)', async () => {
+  it('lists the 60 schools with ≥ 1 user, sorted by name (BR-03, DV-M02-13, D54)', async () => {
     const r = await get('/api/admin/users/filters')
     const list = data<{ schools: { id: number; name: string }[] }>(r).schools
-    expect(list).toHaveLength(61)
+    expect(list).toHaveLength(60)
     const ids = list.map((s) => s.id)
-    for (const fixture of [900_001, 900_002, 900_003, 900_004]) expect(ids).toContain(fixture)
+    for (const fixture of [900_001, 900_002, 900_003]) expect(ids).toContain(fixture)
+    // D54: SK Demo Bestari has no user since pelajarmaju moved to SMK DEMO.
+    expect(ids).not.toContain(900_004)
     for (const anchor of [987, 8078, 8082, 8102, 8106, 8300, 1014, 995])
       expect(ids).toContain(anchor)
     const names = list.map((s) => s.name.toLowerCase())
@@ -360,8 +362,8 @@ describe('GET /api/admin/users/:id (#3) and the anchors (§6.14, §6.15)', () =>
     })
     expect(d.linkedStudents[1]).toMatchObject({
       id: 4,
-      classLevel: 'D1',
-      schoolName: 'SK Demo Bestari',
+      classLevel: 'T4',
+      schoolName: 'SMK DEMO',
     })
     expect(parentLinks.all().map((l) => l.id)).toEqual(expect.arrayContaining([1, 2]))
     expect((await detail(5401)).linkedStudents).toEqual([])
@@ -1291,8 +1293,8 @@ describe('GET /api/students/search (#39)', () => {
     expect(two.find((s) => s.id === 4)).toEqual({
       id: 4,
       name: 'Pelajar Maju Demo',
-      classLevel: 'D1',
-      schoolName: 'SK Demo Bestari',
+      classLevel: 'T4',
+      schoolName: 'SMK DEMO',
     })
     const none = data<StudentSearchItem[]>(await get('/api/students/search?q=pelajar2@demo'))
     expect(none).toEqual([{ id: 3, name: 'Pelajar Dua Demo', classLevel: 'D5', schoolName: null }])
@@ -1375,7 +1377,7 @@ describe('the typed api/ client against the handlers', () => {
     expect(page.data.every((u) => u.role === 'jpn_officer')).toBe(true)
     const inactive = await fetchAdminUsers({ isActive: false, role: '', search: '' })
     expect(inactive.meta.totalItems).toBe(users.countWhere({ isActive: false }))
-    expect((await fetchUserFilters()).length).toBeGreaterThanOrEqual(61)
+    expect((await fetchUserFilters()).length).toBeGreaterThanOrEqual(60)
     expect((await fetchAdminUser(6)).linkedStudents).toHaveLength(2)
     await expect(fetchAdminUser(8_000_000)).rejects.toMatchObject({ status: 404 })
   })

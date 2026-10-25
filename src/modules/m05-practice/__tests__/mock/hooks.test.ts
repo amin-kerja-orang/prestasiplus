@@ -54,10 +54,10 @@ const data = async <T>(userId: number, url: string): Promise<T> => {
 const call = <T = unknown>(name: string, ...args: unknown[]): Promise<T> =>
   (hooks[name] as (...a: unknown[]) => Promise<T>)(...args)
 
-/** Two MATH D1 practice questions that are not practice anchors. */
+/** MATH T4 practice questions (D54: practice levels are Tingkatan 4-5). */
 const mathQuestions = () =>
   questions
-    .practiceQuery({ subjectId: 3, educationLevelIds: [1], limit: 4, seed: 't1-hooks' })
+    .practiceQuery({ subjectId: 3, educationLevelIds: [10], limit: 4, seed: 't1-hooks' })
     .map((q) => q.id)
 
 describe('registration', () => {
@@ -272,14 +272,17 @@ describe('setSpmProgress(userId, subjectId, {answered, correct})  (BR-27)', () =
 })
 
 describe('answerChapter(userId, chapterId, {correctPct})  (BR-16 unlock)', () => {
-  it('100 % of MATH D1 Bab 1 completes it at 100 % and opens Bab 2 (#8); a start of Bab 2 then succeeds', async () => {
-    const r = await call('answerChapter', ADMIN_SEKOLAH, 1, { correctPct: 100 })
-    expect(r).toEqual({ answered: 464, correct: 464 })
+  // D54: MATH T4 Bab 1 = chapter 91, Bab 2 = chapter 92 (Darjah 1 chapters 1 / 143 before).
+  const n91 = () => questions.count('Q-CHAPTER', 91)
+
+  it('100 % of MATH T4 Bab 1 completes it at 100 % and opens Bab 2 (#8); a start of Bab 2 then succeeds', async () => {
+    const r = await call('answerChapter', ADMIN_SEKOLAH, 91, { correctPct: 100 })
+    expect(r).toEqual({ answered: n91(), correct: n91() })
     const c = await data<ChapterSubjectDetail>(ADMIN_SEKOLAH, '/api/practice/chapter-subjects/MATH')
     expect(c.chapters[0]).toMatchObject({
-      total: 464,
-      answered: 464,
-      correct: 464,
+      total: n91(),
+      answered: n91(),
+      correct: n91(),
       scorePct: 100,
       remaining: 0,
       complete: true,
@@ -294,7 +297,7 @@ describe('answerChapter(userId, chapterId, {correctPct})  (BR-16 unlock)', () =>
       setUser(ADMIN_SEKOLAH).token,
       {
         mode: 'chapter',
-        chapterId: 143,
+        chapterId: 92,
         count: 5,
       },
     )
@@ -302,10 +305,12 @@ describe('answerChapter(userId, chapterId, {correctPct})  (BR-16 unlock)', () =>
   }, 60_000)
 
   it('60 % completes the chapter below the 70 % bar: Bab 2 stays locked and a start answers 409 CHAPTER_LOCKED', async () => {
-    const r = await call('answerChapter', PELAJAR2, 1, { correctPct: 60 })
-    expect(r).toEqual({ answered: 464, correct: 278 })
+    const r = await call('answerChapter', PELAJAR2, 91, { correctPct: 60 })
+    const correct = Math.round((n91() * 60) / 100)
+    expect(r).toEqual({ answered: n91(), correct })
     const c = await data<ChapterSubjectDetail>(PELAJAR2, '/api/practice/chapter-subjects/MATH')
-    expect(c.chapters[0]).toMatchObject({ complete: true, scorePct: 59.9 })
+    expect(c.chapters[0]).toMatchObject({ complete: true })
+    expect(c.chapters[0]?.scorePct).toBeCloseTo((correct / n91()) * 100, 1)
     expect(c.chapters[1]?.state).toBe('locked')
     const start = await request(
       runtime,
@@ -314,7 +319,7 @@ describe('answerChapter(userId, chapterId, {correctPct})  (BR-16 unlock)', () =>
       setUser(PELAJAR2).token,
       {
         mode: 'chapter',
-        chapterId: 143,
+        chapterId: 92,
         count: 5,
       },
     )

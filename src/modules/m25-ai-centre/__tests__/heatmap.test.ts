@@ -130,9 +130,9 @@ describe('pelajarmaju (id 4) and empty users', () => {
     expect(
       topics.map((t) => [t.chapterId, t.name, t.attempts, t.correct, t.percent, t.band]),
     ).toEqual([
-      [143, 'Sukatan dan Geometri', 7, 3, 43, 'red'],
-      [136, 'Pecahan', 7, 4, 57, 'amber'],
-      [1, 'Nombor Bulat hingga 100', 23, 19, 83, 'green'],
+      [92, 'Asas Nombor', 7, 3, 43, 'red'],
+      [220, 'Penaakulan Logik', 7, 4, 57, 'amber'],
+      [91, 'Fungsi dan Persamaan Kuadratik', 23, 19, 83, 'green'],
     ])
     expect(sum(topics)).toEqual({ attempts: 37, correct: 26 })
     expect(heatmap.hiddenForUser(PELAJARMAJU)).toEqual({ answers: 0, correct: 0 })
@@ -178,11 +178,11 @@ describe('fixtures (write answers for Pelajar 2; keep last)', () => {
     expect(m25Hooks.loadFixture('m25-bands')).toBe(330)
     const topics = heatmap.forUser(PELAJAR2).flatMap((s) => s.topics)
     expect(topics.map((t) => [t.chapterId, t.attempts, t.percent, t.band])).toEqual([
-      [12, 10, 40, 'red'],
-      [13, 10, 50, 'amber'],
-      [14, 100, 79, 'amber'],
-      [15, 200, 80, 'green'],
-      [16, 10, 80, 'green'],
+      [562, 10, 40, 'red'],
+      [563, 10, 50, 'amber'],
+      [564, 100, 79, 'amber'],
+      [565, 200, 80, 'green'],
+      [566, 10, 80, 'green'],
     ])
     expect(heatmap.hiddenForUser(PELAJAR2)).toEqual({ answers: 0, correct: 0 })
   })

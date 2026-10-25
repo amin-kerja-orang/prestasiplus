@@ -253,7 +253,8 @@ describe('S3 school detail: the other anchor schools (E2E-M11-31/52)', () => {
 
   it('a fixture school renders its detail page (BR-M11-34, INFERRED)', async () => {
     const d = await school(900001)
-    expect(d.cards.students).toBe(9)
+    // 9 pupils (2, 3001-3008) + pelajarmaju, who joined SMK DEMO on D54.
+    expect(d.cards.students).toBe(10)
     expect(d.students.map((s) => s.id)).toContain(3001)
   })
 })
@@ -592,7 +593,7 @@ describe('404 rules and the guards (FR-M11-07, §9)', () => {
   })
 
   it('school admin (SMK DEMO 900001): own school only, 404 for any other (alias scope, INFERRED)', async () => {
-    expect((await school(900001, ADMIN_SEKOLAH)).cards.students).toBe(9)
+    expect((await school(900001, ADMIN_SEKOLAH)).cards.students).toBe(10)
     expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/8080')).toBe(404)
     expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/99999999')).toBe(404)
     expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/8080/students/2008')).toBe(404)

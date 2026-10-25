@@ -7,8 +7,11 @@
  *
  * | Fixture | Chapter (M03 id) · attempts · correct |
  * |---|---|
- * | `m25-bands` | 12 · 10 · 4, 13 · 10 · 5, 14 · 100 · 79, 15 · 200 · 159, 16 · 10 · 8 |
- * | `m25-ties` | 12, 13, 14 · 10 · 5 each |
+ * | `m25-bands` | 562 · 10 · 4, 563 · 10 · 5, 564 · 100 · 79, 565 · 200 · 159, 566 · 10 · 8 |
+ * | `m25-ties` | 562, 563, 564 · 10 · 5 each |
+ *
+ * D54: the chapters are Kimia Tingkatan 4 Bab 1-5 (562-566); they were BM Darjah 3-4 chapters
+ * (12-16), which carry no question any more.
  */
 
 import { clock } from '@/lib/time'
@@ -23,16 +26,16 @@ export const M25_FIXTURES: Readonly<
   Record<string, readonly (readonly [number, number, number])[]>
 > = {
   'm25-bands': [
-    [12, 10, 4],
-    [13, 10, 5],
-    [14, 100, 79],
-    [15, 200, 159],
-    [16, 10, 8],
+    [562, 10, 4],
+    [563, 10, 5],
+    [564, 100, 79],
+    [565, 200, 159],
+    [566, 10, 8],
   ],
   'm25-ties': [
-    [12, 10, 5],
-    [13, 10, 5],
-    [14, 10, 5],
+    [562, 10, 5],
+    [563, 10, 5],
+    [564, 10, 5],
   ],
 }
 

@@ -34,8 +34,8 @@ Buka **https://claude.ai/artifact/5My2fSJfDXivvSUBmcVtbT** di telefon atau deskt
 
 | Peranan | E-mel | Kegunaan |
 |---|---|---|
-| Murid (ada data) | `pelajar@demo.test` | Portal Pembelajaran: Dashboard, latihan, **Bijak SPM**, syiling dan lain-lain |
-| Murid (maju) | `pelajarmaju@demo.test` | Murid dengan kemajuan lebih tinggi |
+| Murid (ada data) | `pelajar@demo.test` | Portal Pembelajaran (Tingkatan 4, SMK DEMO): Dashboard, latihan, **Bijak SPM**, syiling dan lain-lain |
+| Murid (maju) | `pelajarmaju@demo.test` | Murid dengan kemajuan lebih tinggi (Tingkatan 4, SMK DEMO) |
 | Murid (kosong) | `pelajar2@demo.test` | Keadaan kosong (tiada data) |
 | Guru | `guru@demo.test` | Skrin Guru (15 skrin matrix) |
 | Admin Sekolah | `adminsekolah@demo.test` | Skrin Admin Sekolah (18 skrin matrix) |

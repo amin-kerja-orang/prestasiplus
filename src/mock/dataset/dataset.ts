@@ -475,6 +475,7 @@ export function defineVirtualDataset<
         facetNames,
         anchorInputs.map((a) => facetsOf(a.row)),
         pocScale,
+        def.pocScale,
       )
     }
     const { spec, issues } = prepareSpec<Row>({

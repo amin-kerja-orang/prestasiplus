@@ -4,9 +4,8 @@
  * - Tables A (active), B (inactive) and C (scored) by subject × level — M04 §6.13.1;
  * - S1 tile values (Q-ALL / Q-APPROVED per subject) — M04 discovery §2.1, DV-M04-18;
  * - SPM pool per subject × T4/T5 × difficulty — M06 §6.10 (the allocation input M06 supplies);
- * - D1–D4 difficulty and Darjah 1 chapter counts — M05 `_practice-data.json` (`difficultyByLevel`,
- *   S5 chapter pages), with the chapter ids of M03 (`curriculum.json`), per M04 §6.13.1
- *   "curriculumChapterId";
+ * - D1–D4 difficulty — M05 `_practice-data.json` (`difficultyByLevel`); the T4/T5 chapter ids of
+ *   M03 (`curriculum.json`), per M04 §6.13.1 "curriculumChapterId" (D54: no Darjah chapters);
  * - PKSK domain × level totals — M07 §6.8; SP availability — M08/M10 (XL2-20);
  * - S6 per-subject and per-level scored means — M04 discovery §2.6.
  *
@@ -283,386 +282,232 @@ export const SPM_POOL: Readonly<Record<number, readonly [readonly number[], read
 /** The 19 SPM (Latih Tubi) subjects: runtime S2/S5 rows at T4/T5 join the pool (BR-M04-32). */
 export const SPM_POOL_SUBJECTS: readonly number[] = Object.keys(SPM_POOL).map(Number)
 
-export interface PracticeLevelData {
-  /** Eligible rows by difficulty 1–4 (M05 `difficultyByLevel`; difficulty 5 = 0). */
+/**
+ * D54 (2026-10-24): the Darjah 1-4 cells no longer carry chapter links (v2 is secondary school and
+ * SPM only; chapter practice is offered at Tingkatan 4-5, see `T45_CHAPTERS`). What stays is the
+ * observed difficulty split of each Darjah 1-4 (subject, level) cell (M05 `difficultyByLevel`): the
+ * S10 coverage fit (`coveredDeficit`) is built on it.
+ */
+export interface DarjahDifficultyPin {
+  /** Eligible rows by difficulty 1-4 (M05 `difficultyByLevel`; difficulty 5 = 0). */
   difficulty: readonly [number, number, number, number]
-  /** `[chapterId, count]`: Darjah 1 counts OBSERVED (M05 S5); `null` = not observed (even split). */
-  chapters: readonly (readonly [number, number | null])[]
 }
 
-/** The ten practice subjects' Darjah 1–4 cells (M05 S3 pins, XL-30). */
-export const PRACTICE_LEVELS: Readonly<
-  Record<number, Readonly<Record<number, PracticeLevelData>>>
+/** The ten practice subjects' Darjah 1-4 difficulty pins (M05 S3 pins, XL-30; chapters dropped, D54). */
+export const DARJAH_DIFFICULTY_PINS: Readonly<
+  Record<number, Readonly<Record<number, DarjahDifficultyPin>>>
 > = {
   18: {
     1: {
       difficulty: [136, 132, 132, 0],
-      chapters: [
-        [263, 100],
-        [1039, 100],
-        [1040, 100],
-        [1041, 100],
-      ],
     },
     2: {
       difficulty: [136, 132, 132, 0],
-      chapters: [
-        [1042, null],
-        [1043, null],
-        [1044, null],
-        [1045, null],
-      ],
     },
     3: {
       difficulty: [136, 132, 132, 0],
-      chapters: [
-        [1046, null],
-        [1047, null],
-        [1048, null],
-        [1049, null],
-      ],
     },
     4: {
       difficulty: [170, 165, 165, 0],
-      chapters: [
-        [1050, null],
-        [1051, null],
-        [1052, null],
-        [1053, null],
-        [1054, null],
-      ],
     },
   },
   2: {
     1: {
       difficulty: [737, 189, 0, 0],
-      chapters: [
-        [57, 309],
-        [88, 306],
-        [89, 311],
-      ],
     },
     2: {
       difficulty: [596, 629, 0, 0],
-      chapters: [
-        [90, null],
-        [93, null],
-        [94, null],
-        [95, null],
-      ],
     },
     3: {
       difficulty: [0, 296, 550, 0],
-      chapters: [
-        [96, null],
-        [97, null],
-        [98, null],
-        [99, null],
-      ],
     },
     4: {
       difficulty: [0, 298, 196, 30],
-      chapters: [
-        [100, null],
-        [101, null],
-        [102, null],
-      ],
     },
   },
   1: {
     1: {
       difficulty: [689, 211, 13, 45],
-      chapters: [
-        [35, 320],
-        [36, 317],
-        [2, 321],
-      ],
     },
     2: {
       difficulty: [73, 1482, 632, 353],
-      chapters: [
-        [4, null],
-        [5, null],
-        [6, null],
-        [7, null],
-        [8, null],
-        [9, null],
-        [10, null],
-        [11, null],
-      ],
     },
     3: {
       difficulty: [15, 156, 601, 33],
-      chapters: [
-        [12, null],
-        [13, null],
-        [14, null],
-        [15, null],
-      ],
     },
     4: {
       difficulty: [15, 19, 481, 15],
-      chapters: [
-        [16, null],
-        [17, null],
-        [19, null],
-      ],
     },
   },
   12: {
     1: {
       difficulty: [192, 2, 4, 2],
-      chapters: [
-        [179, 100],
-        [617, 100],
-      ],
     },
     2: {
       difficulty: [192, 2, 4, 2],
-      chapters: [
-        [618, null],
-        [619, null],
-      ],
     },
     3: {
       difficulty: [192, 2, 4, 2],
-      chapters: [
-        [620, null],
-        [621, null],
-      ],
     },
     4: {
       difficulty: [192, 2, 4, 2],
-      chapters: [
-        [622, null],
-        [623, null],
-      ],
     },
   },
   26: {
     1: {
       difficulty: [288, 6, 3, 3],
-      chapters: [
-        [325, 100],
-        [1224, 100],
-        [1225, 100],
-      ],
     },
     2: {
       difficulty: [288, 6, 3, 3],
-      chapters: [
-        [1226, null],
-        [1227, null],
-        [1228, null],
-      ],
     },
     3: {
       difficulty: [288, 6, 3, 3],
-      chapters: [
-        [1229, null],
-        [1230, null],
-        [1231, null],
-      ],
     },
     4: {
       difficulty: [384, 8, 4, 4],
-      chapters: [
-        [1232, null],
-        [1233, null],
-        [1234, null],
-        [1235, null],
-      ],
     },
   },
   3: {
     1: {
       difficulty: [558, 695, 1402, 79],
-      chapters: [
-        [1, 464],
-        [143, 302],
-        [136, 316],
-        [137, 319],
-        [138, 352],
-        [139, 316],
-        [140, 329],
-        [141, 336],
-      ],
     },
     2: {
       difficulty: [278, 635, 780, 436],
-      chapters: [
-        [3, null],
-        [150, null],
-        [144, null],
-        [145, null],
-        [146, null],
-        [147, null],
-        [148, null],
-        [149, null],
-      ],
     },
     3: {
       difficulty: [316, 326, 27, 13],
-      chapters: [
-        [151, null],
-        [152, null],
-        [153, null],
-      ],
     },
     4: {
       difficulty: [188, 474, 302, 29],
-      chapters: [
-        [154, null],
-        [155, null],
-        [156, null],
-        [157, null],
-        [158, null],
-        [159, null],
-      ],
     },
   },
   6: {
     1: {
       difficulty: [318, 645, 11, 11],
-      chapters: [
-        [120, 319],
-        [383, 333],
-        [384, 333],
-      ],
     },
     2: {
       difficulty: [296, 781, 30, 17],
-      chapters: [
-        [385, null],
-        [386, null],
-        [387, null],
-        [388, null],
-      ],
     },
     3: {
       difficulty: [0, 33, 839, 21],
-      chapters: [
-        [389, null],
-        [390, null],
-        [391, null],
-        [392, null],
-      ],
     },
     4: {
       difficulty: [0, 8, 345, 16],
-      chapters: [
-        [393, null],
-        [394, null],
-        [395, null],
-      ],
     },
   },
   7: {
     1: {
       difficulty: [1005, 8, 0, 0],
-      chapters: [
-        [142, 327],
-        [452, 343],
-        [453, 343],
-      ],
     },
     2: {
       difficulty: [1248, 17, 0, 0],
-      chapters: [
-        [454, null],
-        [455, null],
-        [456, null],
-        [457, null],
-      ],
     },
     3: {
       difficulty: [0, 545, 172, 0],
-      chapters: [
-        [458, null],
-        [459, null],
-        [460, null],
-        [461, null],
-      ],
     },
     4: {
       difficulty: [0, 159, 140, 13],
-      chapters: [
-        [462, null],
-        [463, null],
-        [464, null],
-      ],
     },
   },
   4: {
     1: {
       difficulty: [689, 618, 1557, 366],
-      chapters: [
-        [18, 314],
-        [229, 343],
-        [230, 330],
-        [231, 332],
-        [232, 326],
-        [233, 325],
-        [234, 307],
-        [235, 315],
-        [236, 319],
-        [237, 319],
-      ],
     },
     2: {
       difficulty: [317, 266, 16, 12],
-      chapters: [
-        [238, null],
-        [239, null],
-      ],
     },
     3: {
       difficulty: [88, 393, 23, 11],
-      chapters: [
-        [240, null],
-        [241, null],
-        [242, null],
-      ],
     },
     4: {
       difficulty: [96, 395, 45, 11],
-      chapters: [
-        [243, null],
-        [244, null],
-        [245, null],
-      ],
     },
   },
   5: {
     1: {
       difficulty: [9, 641, 0, 0],
-      chapters: [
-        [164, 342],
-        [335, 308],
-      ],
     },
     2: {
       difficulty: [0, 451, 0, 0],
-      chapters: [
-        [336, null],
-        [337, null],
-      ],
     },
     3: {
       difficulty: [3, 315, 75, 25],
-      chapters: [
-        [338, null],
-        [339, null],
-      ],
     },
     4: {
       difficulty: [0, 366, 25, 21],
-      chapters: [
-        [340, null],
-        [341, null],
-      ],
     },
   },
+}
+
+/**
+ * The M03 chapters of Tingkatan 4 and 5 per subject (D54): `[T4 chapter ids, T5 chapter ids]` in
+ * `chapterNumber` order, from `m03-curriculum/mock/data/curriculum.json` (references; a unit test
+ * checks every id against the M03 repository). The spec links every eligible T4/T5 row of a
+ * subject to one of its chapters (chapter x difficulty, `questions-spec.ts` step 11), so chapter
+ * practice (M05 `Q-CHAPTER`) and the murid heatmap (M25) work on the SPM levels.
+ */
+export const T45_CHAPTERS: Readonly<
+  Record<number, readonly [readonly number[], readonly number[]]>
+> = {
+  1: [[87], [413]], // Bahasa Melayu
+  2: [[134], [135]], // Bahasa Inggeris
+  3: [[91, 92, 220, 221, 222, 223, 224, 225, 226, 227], [228]], // Matematik
+  4: [
+    [322, 323, 324, 326, 327, 328, 329, 330, 331, 332, 333, 334],
+    [362, 363, 347, 364, 365, 366, 367, 368, 369],
+  ], // Sains
+  5: [[381], [382]], // Sejarah
+  6: [[450], [451]], // Pendidikan Islam
+  7: [
+    [520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530],
+    [531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541],
+  ], // Pendidikan Moral
+  8: [
+    [542, 543, 544, 545, 546, 547, 548, 549, 550, 551],
+    [552, 553, 554, 555, 556, 557, 558, 559],
+  ], // Matematik Tambahan
+  9: [[560], [561]], // Fizik
+  10: [
+    [562, 563, 564, 565, 566, 567, 568, 569, 570],
+    [571, 572, 573, 574, 575],
+  ], // Kimia
+  11: [
+    [576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590],
+    [
+      591, 592, 593, 594, 595, 596, 597, 598, 599, 600, 601, 602, 603, 604, 605, 606, 607, 608, 609,
+      610, 611, 612, 613, 614, 615, 616,
+    ],
+  ], // Biologi
+  12: [[664], [665]], // Geografi
+  13: [
+    [813, 814, 815, 816],
+    [817, 818, 819, 820],
+  ], // Pendidikan Seni Visual
+  18: [
+    [1081, 1082, 1083, 1084, 1085, 1086],
+    [1087, 1088, 1089, 1090, 1091, 1092],
+  ], // Bahasa Arab
+  21: [
+    [1173, 1174, 1175, 1176, 1177, 1178, 1179],
+    [1180, 1181, 1182, 1183, 1184, 1185, 1186],
+  ], // Prinsip Perakaunan
+  22: [
+    [1187, 1188, 1189, 1190, 1191],
+    [1192, 1193, 1194, 1195, 1196],
+  ], // Ekonomi
+  23: [
+    [1197, 1198, 1199, 1200, 1201, 1202, 1203],
+    [258, 259, 260, 261, 262, 1280, 1281],
+  ], // Perniagaan
+  24: [
+    [1204, 1205, 1206, 1207, 1208],
+    [1209, 1210, 1211, 1212, 1213],
+  ], // Pendidikan Al-Quran & As-Sunnah
+  25: [
+    [1214, 1215, 1216, 1217, 1218],
+    [1219, 1220, 1221, 1222, 1223],
+  ], // Tasawwur Islam
+  27: [[1244, 1245, 1246, 1247, 1248], [1249]], // Pendidikan Syariah Islamiah
 }
 
 /** Inactive rows at difficulty 1 (= 45,686 − (39,694 − 253), v1.11); difficulties 2–5 split evenly. */

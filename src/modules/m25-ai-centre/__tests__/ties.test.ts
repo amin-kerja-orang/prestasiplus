@@ -29,9 +29,9 @@ describe('m25-ties', () => {
     expect(m25Hooks.loadFixture('m25-ties')).toBe(30)
     const topics = heatmap.forUser(3).flatMap((s) => s.topics)
     expect(topics.map((t) => [t.chapterId, t.name, t.attempts, t.percent])).toEqual([
-      [14, 'Aspek Tatabahasa D3', 10, 50],
-      [12, 'Kemahiran Membaca D3', 10, 50],
-      [13, 'Kemahiran Menulis D3', 10, 50],
+      [563, 'Jirim dan Struktur Atom', 10, 50],
+      [564, 'Konsep Mol, Formula dan Persamaan Kimia', 10, 50],
+      [562, 'Pengenalan kepada Kimia', 10, 50],
     ])
   })
 })
