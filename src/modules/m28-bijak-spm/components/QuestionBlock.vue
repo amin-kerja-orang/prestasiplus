@@ -134,7 +134,11 @@ function pick(id: string): void {
 
       <!-- Match questions: the lettered bank is listed once, the sub-parts only pick a letter. -->
       <DsSurface
-        v-if="question.optionBank?.length && !question.mcq"
+        v-if="
+          question.optionBank?.length &&
+          !question.mcq &&
+          leavesOf(question.parts ?? []).some((l) => l.kind === 'match_letter')
+        "
         level="elevated"
         padding="sm"
         data-testid="match-bank-once"
