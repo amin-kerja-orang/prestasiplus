@@ -16,7 +16,7 @@ import { PrismaService } from '../../db/prisma.service'
 import { AccountRepository, type AccountRecord, type LoginCandidate } from './account.repository'
 import { AuthConfig } from './auth.config'
 import { authError, isOverloadError, rateLimited } from './auth.errors'
-import { LOGIN_HOOK_TIMEOUT_MS, LOGIN_TX, MAX_LEGACY_CHECKS_PER_LOGIN } from './auth.constants'
+import { LOGIN_TX, MAX_LEGACY_CHECKS_PER_LOGIN } from './auth.constants'
 import { isLegacyBcrypt, LegacyBcryptBusyError } from './legacy-bcrypt'
 import { LoginThrottle, type ThrottleKeys } from './login-throttle.service'
 import { PasswordService } from './password.service'
@@ -209,36 +209,9 @@ export class AuthService {
       // The login already succeeded; a stale counter only expires with its window.
       this.logger.warn(`login throttle reset failed (requestId=${info.requestId ?? '-'})`)
     }
-    await this.runLoginHook(granted.session.user.id, activeRole, now, info)
+    // FR-M01-69 / BR-26: after the commit, bounded and swallowed (`AuthPorts.fireLoginHook`).
+    await this.ports.fireLoginHook({ userId: granted.session.user.id, role: activeRole, at: now }, info.requestId)
     return granted
-  }
-
-  /**
-   * FR-M01-69 / BR-26: after a committed password login, tell the plugged-in hook once (M14 `onLogin`). Never throws and
-   * never waits longer than `LOGIN_HOOK_TIMEOUT_MS`: the login already succeeded and must not fail or stall because of it.
-   * The refreshed session endpoints (`/session/role`, `/session/mode`) are not logins and never call it.
-   */
-  private async runLoginHook(userId: string, role: RoleCode, at: Date, info: RequestInfo): Promise<void> {
-    const hook = this.ports.loginHook
-    if (!hook) return
-    let timer: NodeJS.Timeout | undefined
-    try {
-      const run = hook.onPasswordLogin({ userId, role, at })
-      run.catch(() => undefined) // a late rejection after the timeout is already accounted for below
-      await Promise.race([
-        run,
-        new Promise<void>((resolve) => {
-          timer = setTimeout(() => {
-            this.logger.warn(`login hook timed out (requestId=${info.requestId ?? '-'})`)
-            resolve()
-          }, LOGIN_HOOK_TIMEOUT_MS)
-        }),
-      ])
-    } catch {
-      this.logger.warn(`login hook failed (requestId=${info.requestId ?? '-'})`)
-    } finally {
-      if (timer) clearTimeout(timer)
-    }
   }
 
   /** Logout: the session row stops resolving at once. Safe to call with no session. */

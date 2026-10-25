@@ -151,7 +151,7 @@ describe('anonymise:run on a fixture seeded with recognisable fake PII (AC3)', (
     expect(text).not.toMatch(/example\.test|Nama Anon/)
     for (const line of result.log.lines) {
       expect(line, line).toMatch(
-        /^(Pseudonymisation key loaded from ANON_HMAC_KEY\.|ANON_HMAC_KEY was set inline: it may be in your shell history\. Prefer ANON_HMAC_KEY_FILE\.|File permissions are not enforced on Windows; keep the key and the output in your user profile on an encrypted disk\.|Anonymised [a-z_]+: \d+ rows\.|Table [a-z_]+ is absent from the input; nothing written for it\.|Leak scan: clean \(\d+ rows, \d+ cells checked\)\.|Done: \d+ tables, \d+ rows\.|Output: \d+ tables, \d+ rows in .+\. Share it out-of-band, encrypted, and delete it after the rehearsal\.)$/,
+        /^(Pseudonymisation key loaded from ANON_HMAC_KEY\.|ANON_HMAC_KEY was set inline: it may be in your shell history\. Prefer ANON_HMAC_KEY_FILE\.|File permissions are not enforced on Windows; keep the key and the output in your user profile on an encrypted disk\.|Anonymised [a-z_]+: \d+ rows\.|Table [a-z_]+ is absent from the input; nothing written for it\.|Index pass: originals of \d+ table\(s\) indexed for redact-pii \(nothing written\)\.|Leak scan: clean \(\d+ rows, \d+ cells checked\)\.|Done: \d+ tables, \d+ rows\.|Output: \d+ tables, \d+ rows in .+\. Share it out-of-band, encrypted, and delete it after the rehearsal\.)$/,
       )
     }
   })
