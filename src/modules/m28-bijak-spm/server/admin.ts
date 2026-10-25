@@ -44,13 +44,14 @@ import type {
 } from '../domain/admin-types'
 import { leavesOf } from '../domain/paper-model'
 import { tagChanges } from '../domain/tag-audit'
+import { tagMatchesFilter } from '../domain/tag-filter'
 import { tagIssues } from '../domain/tag-rule'
 import type { TagLookup } from '../domain/tag-rule'
 import { topicOf } from '../domain/topic'
 import { dskpCodeOf, dskpSubjects, tagLookupFor } from '../lib/dskp-source'
 import type {
   Blueprint,
-  DskpSpId,
+  CurriculumTag,
   PaperDef,
   QuestionDef,
   SchemeDef,
@@ -412,6 +413,22 @@ const lookupForView = (qs: Iterable<QuestionDef | undefined>): Promise<TagLookup
     return tagLookupFor([])
   })
 
+/** The tag fields a bank row and a queue item both carry (`lookup` must know the unit's subject). */
+function tagFields(
+  c: CurriculumTag,
+  lookup: TagLookup,
+): Pick<BankRow, 'formOrigin' | 'unitId' | 'unitTitle' | 'spCodes' | 'tp' | 'kbat' | 'tagReview'> {
+  return {
+    formOrigin: c.formOrigin,
+    unitId: c.unitId,
+    unitTitle: (c.unitId && lookup.unit(c.unitId)?.title) || null,
+    spCodes: c.spIds.map(dskpCodeOf),
+    tp: c.tp,
+    kbat: c.kbat,
+    tagReview: c.review === 'perlu-semakan',
+  }
+}
+
 /** A tag that passed the rule is complete: the `perlu-semakan` marker is cleared (as `normaliseTag` does). */
 function settled(q: QuestionDef): QuestionDef {
   if (!q.curriculum.review) return q
@@ -558,6 +575,7 @@ export class AdminOps {
       kertas: seed.kertas,
       kind: kindOf(q0),
       topic: topicOf(q0.curriculum, lookup),
+      ...tagFields(q0.curriculum, lookup),
       preview: previewOf(q0),
       previewPlain: plainMath(previewOf(q0)),
       marks: seed.questions.reduce((n, q) => n + marksOf(q), 0),
@@ -587,6 +605,7 @@ export class AdminOps {
       kertas: kertasOf(qid),
       kind: kindOf(nq, lookup),
       topic: topicOf(nq.curriculum, tags),
+      ...tagFields(nq.curriculum, tags),
       preview: previewOf(nq, rev.stem),
       previewPlain: plainMath(previewOf(nq, rev.stem)),
       marks: marksOf(nq, lookup),
@@ -612,15 +631,22 @@ export class AdminOps {
     return qs
   }
 
-  private allItems(lookup: TagLookup): QueueItem[] {
-    const items: QueueItem[] = []
+  /** Each queue item with the tags of all its questions (a revision: the tag it would publish). */
+  private allEntries(lookup: TagLookup): { item: QueueItem; tags: CurriculumTag[] }[] {
+    const out: { item: QueueItem; tags: CurriculumTag[] }[] = []
     for (const seed of allSeeds(this.host.slice())) {
       if (seed.questions.some((q) => this.review[q.id]?.status !== 'terbit' || !this.review[q.id]))
-        items.push(this.unitItem(seed, lookup))
+        out.push({
+          item: this.unitItem(seed, lookup),
+          tags: seed.questions.map((q) => q.curriculum),
+        })
     }
-    for (const [qid, rec] of Object.entries(this.review))
-      if (rec.revision) items.push(this.revisionItem(qid, lookup))
-    return items
+    for (const [qid, rec] of Object.entries(this.review)) {
+      if (!rec.revision) continue
+      const nq = rec.revision.content?.question ?? getQ(qid)!
+      out.push({ item: this.revisionItem(qid, lookup), tags: [nq.curriculum] })
+    }
+    return out
   }
 
   async listReviewQueue(f: QueueFilter = {}): Promise<{
@@ -634,7 +660,8 @@ export class AdminOps {
     questions: Record<QuestionStatus, number>
   }> {
     await this.host.tick()
-    const all = this.allItems(await lookupForView(this.queueQuestions()))
+    const entries = this.allEntries(await lookupForView(this.queueQuestions()))
+    const all = entries.map((e) => e.item)
     const counts: Record<QuestionStatus, number> = { semakan: 0, terbit: 0, draf: 0, ditolak: 0 }
     const questions: Record<QuestionStatus, number> = { semakan: 0, terbit: 0, draf: 0, ditolak: 0 }
     for (const i of all) {
@@ -642,14 +669,17 @@ export class AdminOps {
       if (!i.isRevision) questions[i.status] += i.questionIds.length
     }
     const status = f.status ?? 'semakan'
-    const items = all
+    // An item stays when any of its questions passes the tag filters.
+    const items = entries
       .filter(
-        (i) =>
+        ({ item: i, tags }) =>
           (status === 'semua' || i.status === status) &&
           (!f.subject || i.subject === f.subject) &&
           (!f.kertas || i.kertas === f.kertas) &&
-          (!f.kind || i.kind === f.kind),
+          (!f.kind || i.kind === f.kind) &&
+          tags.some((t) => tagMatchesFilter(t, f)),
       )
+      .map((e) => e.item)
       .sort((a, b) => b.ageDays - a.ageDays || a.key.localeCompare(b.key))
     return { items, counts, questions }
   }
@@ -982,13 +1012,7 @@ export class AdminOps {
       kertas: kertasOf(qid),
       kind: kindOf(q),
       topic: topicOf(c, lookup),
-      formOrigin: c.formOrigin,
-      unitId: c.unitId,
-      unitTitle: (c.unitId && lookup.unit(c.unitId)?.title) || null,
-      spCodes: c.spIds.map(dskpCodeOf),
-      tp: c.tp,
-      kbat: c.kbat,
-      tagReview: c.review === 'perlu-semakan',
+      ...tagFields(c, lookup),
       marks: marksOf(q),
       preview: previewOf(q),
       previewPlain: plainMath(previewOf(q)),
@@ -1022,16 +1046,7 @@ export class AdminOps {
           (!f.subject || r.subject === f.subject) &&
           (!f.kertas || r.kertas === f.kertas) &&
           (!f.kind || r.kind === f.kind) &&
-          (!f.formOrigin || t.formOrigin === f.formOrigin) &&
-          (!f.unitId || t.unitId === f.unitId) &&
-          (!f.spId || t.spIds.includes(f.spId as DskpSpId)) &&
-          (f.tp === undefined || t.tp === f.tp) &&
-          (!f.kbat ||
-            (f.kbat === 'ya'
-              ? t.kbat != null
-              : f.kbat === 'tidak'
-                ? t.kbat == null
-                : t.kbat === f.kbat)) &&
+          tagMatchesFilter(t, f) &&
           (!f.tagReview || r.tagReview) &&
           (!term ||
             r.preview.toLowerCase().includes(term) ||
