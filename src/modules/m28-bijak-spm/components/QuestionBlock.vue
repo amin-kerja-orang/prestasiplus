@@ -6,7 +6,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsQuizOption } from '@/ds'
+import { DsQuizOption, DsStack, DsText } from '@/ds'
 
 import { leavesOf } from '../domain/paper-model'
 import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
@@ -89,23 +89,24 @@ function pick(id: string): void {
       >
     </header>
 
-    <UCheckbox
-      v-if="choose"
-      :model-value="choose.chosen"
-      :disabled="choose.blocked && !choose.chosen"
-      label="Pilih soalan ini untuk dijawab"
-      :aria-describedby="choose.hint ? `choose-hint-${question.id}` : undefined"
-      data-testid="choose-checkbox"
-      @update:model-value="emit('toggle-choose')"
-    />
-    <p
-      v-if="choose?.hint"
-      :id="`choose-hint-${question.id}`"
-      class="-mt-2 text-caption text-muted"
-      data-testid="choose-hint"
-    >
-      {{ choose.hint }}
-    </p>
+    <DsStack v-if="choose" gap="2xs">
+      <UCheckbox
+        :model-value="choose.chosen"
+        :disabled="choose.blocked && !choose.chosen"
+        label="Pilih soalan ini untuk dijawab"
+        :aria-describedby="choose.hint ? `choose-hint-${question.id}` : undefined"
+        data-testid="choose-checkbox"
+        @update:model-value="emit('toggle-choose')"
+      />
+      <DsText
+        v-if="choose.hint"
+        :id="`choose-hint-${question.id}`"
+        variant="caption"
+        data-testid="choose-hint"
+      >
+        {{ choose.hint }}
+      </DsText>
+    </DsStack>
 
     <p v-if="question.stem" class="text-body text-default" data-testid="question-stem">
       <RichText :text="question.stem" />

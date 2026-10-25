@@ -11,6 +11,8 @@
  */
 import { computed, ref, type Directive } from 'vue'
 
+import { DsStack, DsText } from '@/ds'
+
 import { isReadableNumber, latexToPlain } from '../domain/math-expr'
 import type { Leaf } from '../domain/paper-model'
 import type { McqOption, PartAnswer } from '../domain/types'
@@ -208,9 +210,9 @@ async function dropPhoto(key: string): Promise<void> {
         >
       </fieldset>
 
-      <div
+      <DsStack
         v-decimal-inputmode="leaf.kind === 'numeric'"
-        class="flex flex-col gap-2"
+        gap="xs"
         @focusout="finalTouched = true"
       >
         <MathField
@@ -220,15 +222,16 @@ async function dropPhoto(key: string): Promise<void> {
           :disabled="disabled"
           @update:model-value="update({ final: $event })"
         />
-        <p
+        <DsText
           v-if="finalInvalid"
-          class="text-caption text-error"
+          variant="caption"
+          tone="error"
           role="status"
           data-testid="final-hint"
         >
           Masukkan nombor sahaja, cth. 13 atau 3.5. Pecahan dan tanda tolak ada pada papan kekunci.
-        </p>
-      </div>
+        </DsText>
+      </DsStack>
 
       <UFormField v-if="leaf.unit" label="Unit" class="w-full sm:w-1/2">
         <UInput

@@ -8,7 +8,16 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsEmptyState, DsFeedbackSheet, DsQuizHeader, DsLoadError, DsStack } from '@/ds'
+import {
+  DsCluster,
+  DsEmptyState,
+  DsFeedbackSheet,
+  DsQuizHeader,
+  DsLoadError,
+  DsStack,
+  DsText,
+} from '@/ds'
+import { useMedia } from '@/ds/useMedia'
 
 import AttemptShell from '../components/AttemptShell.vue'
 import NavigatorPanel, { type NavState } from '../components/NavigatorPanel.vue'
@@ -54,6 +63,8 @@ const confirmSubmit = ref(false)
 const confirmExit = ref(false)
 const navOpen = ref(false)
 const stimOpen = ref(false)
+/** Phones (below sm): the footer buttons use the compact size so they fit 320 px. */
+const phone = useMedia('(width < 640px)', false)
 const now = ref(Date.now())
 const clockOffset = ref(0)
 const warned = ref(false)
@@ -508,14 +519,15 @@ const feedback = computed(() => {
           >
             {{ counters[section.id] }}
           </p>
-          <p
+          <DsText
             v-if="overflowNote"
-            class="text-caption text-warning"
+            variant="caption"
+            tone="warning"
             role="status"
             data-testid="choose-overflow"
           >
             {{ overflowNote }}
-          </p>
+          </DsText>
         </div>
 
         <QuestionBlock
@@ -568,83 +580,86 @@ const feedback = computed(() => {
     </template>
 
     <template #footer>
-      <div
-        v-if="view && current"
-        class="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2"
-      >
-        <UButton
-          type="button"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          class="size-11 shrink-0 justify-center px-0 learner:px-0"
-          aria-label="Sebelum"
-          :disabled="index === 0"
-          data-testid="prev"
-          @click="goTo(index - 1)"
-        />
-        <UButton
-          type="button"
-          color="neutral"
-          variant="soft"
-          class="min-h-11 shrink-0 whitespace-nowrap max-sm:gap-2 max-sm:px-3 lg:hidden max-sm:learner:px-3"
-          data-testid="open-map"
-          @click="navOpen = true"
-        >
-          <!-- The icon goes below sm: at 320 px the footer has room for the label, not both. -->
-          <UIcon
-            name="i-ph-squares-four"
-            class="hidden size-5 shrink-0 sm:block"
-            aria-hidden="true"
+      <div v-if="view && current" class="mx-auto w-full max-w-7xl">
+        <DsCluster gap="xs">
+          <UButton
+            type="button"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-arrow-left"
+            class="size-11 justify-center"
+            aria-label="Sebelum"
+            :disabled="index === 0"
+            data-testid="prev"
+            @click="goTo(index - 1)"
           />
-          Peta {{ current?.number ?? 0 }}/{{ questions.length }}
-        </UButton>
-        <p
-          class="tabular hidden min-w-0 flex-1 truncate text-center text-caption text-muted sm:block"
-          data-testid="position"
-        >
-          Soalan {{ current?.number ?? 0 }} / {{ questions.length }}
-        </p>
-        <UButton
-          v-if="!isExam && current && !currentCheck"
-          type="button"
-          color="primary"
-          variant="soft"
-          class="min-h-11 shrink-0 whitespace-nowrap max-sm:px-3 max-sm:learner:px-3"
-          data-testid="check-button"
-          @click="check"
-          >Semak</UButton
-        >
-        <UButton
-          v-if="!isLast"
-          type="button"
-          color="primary"
-          class="min-h-11 shrink-0 whitespace-nowrap max-sm:ml-auto max-sm:gap-2 max-sm:px-3 max-sm:learner:px-3"
-          trailing-icon="i-ph-arrow-right"
-          data-testid="next"
-          @click="goTo(index + 1)"
-          >Seterusnya</UButton
-        >
-        <UButton
-          v-else
-          type="button"
-          color="primary"
-          class="min-h-11 shrink-0 whitespace-nowrap max-sm:ml-auto max-sm:px-3 max-sm:learner:px-3"
-          :loading="submitting"
-          data-testid="submit"
-          @click="confirmSubmit = true"
-          >{{ isExam ? 'Hantar' : 'Selesai' }}</UButton
-        >
-        <UButton
-          v-if="isExam && !isLast"
-          type="button"
-          color="neutral"
-          variant="ghost"
-          class="hidden min-h-11 sm:inline-flex"
-          data-testid="submit-early"
-          @click="confirmSubmit = true"
-          >Hantar</UButton
-        >
+          <UButton
+            type="button"
+            color="neutral"
+            variant="soft"
+            :size="phone ? 'sm' : undefined"
+            class="min-h-11 text-nowrap lg:hidden"
+            data-testid="open-map"
+            @click="navOpen = true"
+          >
+            <!-- The icon goes below sm: at 320 px the footer has room for the label, not both. -->
+            <UIcon
+              name="i-ph-squares-four"
+              class="hidden size-5 shrink-0 sm:block"
+              aria-hidden="true"
+            />
+            Peta {{ current?.number ?? 0 }}/{{ questions.length }}
+          </UButton>
+          <p
+            class="tabular hidden min-w-0 flex-1 truncate text-center text-caption text-muted sm:block"
+            data-testid="position"
+          >
+            Soalan {{ current?.number ?? 0 }} / {{ questions.length }}
+          </p>
+          <UButton
+            v-if="!isExam && current && !currentCheck"
+            type="button"
+            color="primary"
+            variant="soft"
+            :size="phone ? 'sm' : undefined"
+            class="min-h-11 text-nowrap"
+            data-testid="check-button"
+            @click="check"
+            >Semak</UButton
+          >
+          <UButton
+            v-if="!isLast"
+            type="button"
+            color="primary"
+            :size="phone ? 'sm' : undefined"
+            class="ms-auto min-h-11 text-nowrap"
+            trailing-icon="i-ph-arrow-right"
+            data-testid="next"
+            @click="goTo(index + 1)"
+            >Seterusnya</UButton
+          >
+          <UButton
+            v-else
+            type="button"
+            color="primary"
+            :size="phone ? 'sm' : undefined"
+            class="ms-auto min-h-11 text-nowrap"
+            :loading="submitting"
+            data-testid="submit"
+            @click="confirmSubmit = true"
+            >{{ isExam ? 'Hantar' : 'Selesai' }}</UButton
+          >
+          <UButton
+            v-if="isExam && !isLast"
+            type="button"
+            color="neutral"
+            variant="ghost"
+            class="hidden min-h-11 sm:inline-flex"
+            data-testid="submit-early"
+            @click="confirmSubmit = true"
+            >Hantar</UButton
+          >
+        </DsCluster>
       </div>
     </template>
   </AttemptShell>
@@ -665,26 +680,28 @@ const feedback = computed(() => {
     description="Pilih soalan untuk melompat ke sana."
   >
     <template #body>
-      <NavigatorPanel
-        v-if="view && current"
-        :sections="view.sections"
-        :questions="questions"
-        :states="navStates"
-        :current="current.id"
-        :counters="counters"
-        @go="goToId"
-      />
-      <!-- Phones: the footer has no room for Hantar, so it lives here on every question (FB-044). -->
-      <UButton
-        v-if="isExam"
-        type="button"
-        block
-        size="lg"
-        class="mt-4 min-h-11"
-        data-testid="submit-from-map"
-        @click="openSubmitFromMap"
-        >Hantar</UButton
-      >
+      <DsStack gap="md">
+        <NavigatorPanel
+          v-if="view && current"
+          :sections="view.sections"
+          :questions="questions"
+          :states="navStates"
+          :current="current.id"
+          :counters="counters"
+          @go="goToId"
+        />
+        <!-- Phones: the footer has no room for Hantar, so it lives here on every question (FB-044). -->
+        <UButton
+          v-if="isExam"
+          type="button"
+          block
+          size="lg"
+          class="min-h-11"
+          data-testid="submit-from-map"
+          @click="openSubmitFromMap"
+          >Hantar</UButton
+        >
+      </DsStack>
     </template>
   </UDrawer>
 

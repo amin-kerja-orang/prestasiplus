@@ -6,6 +6,8 @@
  */
 import { computed } from 'vue'
 
+import { DsIconChip } from '@/ds'
+
 import type { StimulusDef } from '../domain/types'
 import RichText from './RichText.vue'
 
@@ -37,17 +39,14 @@ const tableRows = computed(() =>
       <!-- eslint-disable-next-line vue/no-v-html -- bundled seed SVG, not user input -->
       <div aria-hidden="true" v-html="stimulus.svg" />
     </div>
-    <div
+    <DsIconChip
       v-else-if="thumb"
-      class="flex size-10 items-center justify-center rounded-xl bg-default text-highlighted"
-      role="img"
-      :aria-label="stimulus.alt"
+      :icon="stimulus.table ? 'table' : 'file-text'"
+      tone="neutral"
+      size="lg"
       :data-kind="stimulus.table ? 'table' : 'passage'"
       data-testid="stimulus-thumb-icon"
-    >
-      <UIcon v-if="stimulus.table" name="i-ph-table" class="size-6" aria-hidden="true" />
-      <UIcon v-else name="i-ph-article" class="size-6" aria-hidden="true" />
-    </div>
+    />
     <p v-else-if="stimulus.text" class="rounded-xl bg-muted p-3 text-body text-default">
       <RichText :text="stimulus.text" />
     </p>
