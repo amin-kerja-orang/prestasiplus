@@ -51,7 +51,7 @@ export const UNKNOWN_MODE = 'mod_tidak_dikenali'
 const SESSION_MODES = ['latih_tubi', 'chapter', 'spm', 'battle', 'pksk'] as const
 /**
  * Coin ledger (type, source, sign) combinations from M14 (docs/requirements/urs/M14-gamification.md 8.1 and 8.3). The weights mirror
- * "mostly quiz credits"; the sources the ETL does not map yet (LEDGER_SOURCE_MAP) are kept so the rehearsal counts them as rejects.
+ * "mostly quiz credits"; the sources LEDGER_SOURCE_MAP aliases or keeps as history (A1-FIX) all load, and an unlisted source would still be an UNKNOWN_ENUM reject.
  */
 const COIN_KINDS: readonly (readonly [type: string, source: string, sign: 1 | -1])[] = [
   ['earn', 'quiz_spm', 1], ['earn', 'quiz_spm', 1], ['earn', 'quiz_spm', 1], ['earn', 'quiz_spm', 1],
@@ -176,7 +176,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
   })))
   put('subjects', Array.from({ length: 6 }, (_, i) => ({ id: i + 1, name_bm: `Mata Pelajaran Contoh ${i + 1}`, name_en: `Sample Subject ${i + 1}`, code: `MP${i + 1}`, is_core: i < 3 ? '1' : '0', color: '#cccccc', sort_order: i + 1 })))
   // Names follow `levelIdentity` (`Darjah N` -> D<N>, `Tingkatan N` -> T<N>, so a grade is derived and classrooms load); stages are
-  // the three the ETL accepts (STAGE_MAP). The real name set is Perlu pengesahan until the BE-27 profile of the real dump.
+  // the three codes STAGE_MAP accepts. The real .cloud source holds the BM names (`Rendah`, `Menengah Rendah`, `Menengah Atas`), which STAGE_MAP maps too (A1-FIX).
   const LEVELS: readonly { bm: string; en: string; stage: string }[] = [
     { bm: 'Darjah 1', en: 'Year 1', stage: 'primary' },
     { bm: 'Darjah 6', en: 'Year 6', stage: 'primary' },

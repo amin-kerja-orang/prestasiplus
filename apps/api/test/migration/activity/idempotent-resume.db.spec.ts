@@ -40,9 +40,11 @@ async function plantReportRows(h: ActivityHarness): Promise<void> {
   )
   // Two exam attempts still in progress (slug in_progress is a documented exclusion, counted by name, not a reject). With the fixture's attempt 1 they
   // make two batches (size 2): the first holds one of them, so the resume has to rebuild the count.
+  // The second one has a differently written slug (` In-Progress `): the step excludes it through `enumKey`, so the rebuilt note must too.
+  await h.q(`insert into staging_cloud.attempt_statuses (id, slug) values (8, ' In-Progress ')`)
   await h.q(
     `insert into staging_cloud.exam_attempts (id, user_id, exam_paper_id, mode, status_id, score, max_score, created_at, updated_at)
-     select 9500 + v.n, (select user_id from staging_cloud.student_wallets order by id limit 1), 1, 'exam', 1, null, null, '2026-05-31T05:00:00Z', '2026-05-31T05:00:00Z'
+     select 9500 + v.n, (select user_id from staging_cloud.student_wallets order by id limit 1), 1, 'exam', case when v.n = 1 then 1 else 8 end, null, null, '2026-05-31T05:00:00Z', '2026-05-31T05:00:00Z'
      from (values (1), (2)) as v(n)`,
   )
   await h.q(

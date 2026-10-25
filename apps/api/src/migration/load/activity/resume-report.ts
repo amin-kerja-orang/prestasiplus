@@ -79,11 +79,12 @@ export async function rebuildAfterResume(a: ActivityContext, pool: pg.Pool, runI
     )
     const nRej = Number(rej.rows[0]?.n ?? 0)
     if (nRej > 0) a.notes.count('exam_attempts.status_rejected.other', nRej)
-    // Excluded attempts leave no reject: recount them from the staged status lookup.
+    // Excluded attempts leave no reject: recount them from the staged status lookup. The slug is folded like `enumKey` (trim, lower-case,
+    // runs of whitespace or dashes to `_`), so `In Progress` and `in-progress` are found as the step found them.
     const exc = await pool.query<{ slug: string; n: string }>(
       `SELECT st.slug::text AS slug, count(*)::text AS n FROM staging_cloud.exam_attempts t
        JOIN staging_cloud.attempt_statuses st ON st.id = t.status_id
-       WHERE lower(btrim(st.slug)) = ANY($1::text[]) GROUP BY st.slug`,
+       WHERE regexp_replace(lower(btrim(st.slug, E' \\t\\r\\n\\f\\v')), '[\\s-]+', '_', 'g') = ANY($1::text[]) GROUP BY st.slug`,
       [EXAM_STATUSES_EXCLUDED],
     )
     for (const r of exc.rows) a.notes.count(`exam_attempts.excluded.${enumKey(r.slug) ?? 'other'}`, Number(r.n))

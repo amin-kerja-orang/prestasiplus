@@ -188,7 +188,7 @@ describe('the exclusion notes after a resumed core apply', () => {
     await r?.close()
   })
 
-  it('equals a clean run: classrooms and enrolments batches committed before the crash are recounted from staging', async () => {
+  it('equals a clean run: classrooms and enrolments batches committed before the crash are recounted from the run counters', async () => {
     const core = (mode: 'dry-run' | 'apply', transformSteps?: (steps: AnyEntityStep[]) => AnyEntityStep[]) =>
       runCore({ pool: r.env.pool, env: r.runEnv, source: 'cloud', asOf: AS_OF, mode, batchSize: 2, outDir: testOutDir(), transformSteps })
     // The crash comes after the classrooms and the enrolments steps have committed all their batches.
@@ -220,5 +220,39 @@ describe('the exclusion notes after a resumed core apply', () => {
     // What the night SQL checks read, and the same as the clean run of the harness above.
     expect(pick(await savedNotes(r))).toEqual(want)
     expect(pick(await savedNotes(h))).toEqual(want)
+  }, 300_000)
+
+  it('sets no exclusion note for an interrupted run that died before the classrooms step (nothing has been excluded yet)', async () => {
+    const r2 = await bootActivity({ core: false, prepare: plantA1 })
+    try {
+      const core = (mode: 'dry-run' | 'apply', transformSteps?: (steps: AnyEntityStep[]) => AnyEntityStep[]) =>
+        runCore({ pool: r2.env.pool, env: r2.runEnv, source: 'cloud', asOf: AS_OF, mode, batchSize: 2, outDir: testOutDir(), transformSteps })
+      let failed = 0
+      // `parent_links` is the first step after `users`: the users batches have committed, the classrooms step has not started.
+      const failParentLinks = (steps: AnyEntityStep[]): AnyEntityStep[] =>
+        steps.map((s) =>
+          s.entity !== 'parent_links'
+            ? s
+            : {
+                ...s,
+                async load() {
+                  failed += 1
+                  throw new Error('injected failure before classrooms')
+                },
+              },
+        )
+      expect((await core('dry-run')).report.status).toBe('succeeded')
+      await expect(core('apply', failParentLinks)).rejects.toThrow('injected failure before classrooms')
+      expect(failed).toBe(1)
+      expect(await r2.count('etl_checkpoints', `entity = 'users'`)).toBeGreaterThan(0)
+      expect(await r2.count('etl_checkpoints', `entity in ('classrooms', 'enrolments')`)).toBe(0)
+      const notes = (await r2.q<{ notes: Record<string, number> | null }>(
+        `select counters -> 'notes' as notes from etl_runs where mode = 'apply' and status = 'failed' order by id desc limit 1`,
+      ))[0]?.notes
+      expect(notes, 'the interrupted run still saves its notes').toBeTruthy()
+      expect(Object.keys(notes ?? {}).filter((k) => /\.excluded\./.test(k))).toEqual([])
+    } finally {
+      await r2.close()
+    }
   }, 300_000)
 })
