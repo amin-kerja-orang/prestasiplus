@@ -373,7 +373,7 @@ Notes on the table:
 | **Cognitive level** (`cognitive_level`) | integer 1 to 6, aligned to DSKP Tahap Penguasaan TP1 to TP6 (descriptors in each subject JSON, general and per unit/SK). Derived label: `LOTS` = 1-2, `MOTS` = 3, `HOTS` = 4-6 (the legacy structured bank uses exactly this: "LOTS 2", "MOTS 3", "HOTS 4/5/6" with counts in 2.1; "KBAT" = HOTS = TP4 and above; **note 2026-10-24:** the `LOTS`/`MOTS`/`HOTS` label stays a TP band only — the KBAT flag itself is no longer derived from TP, see D9 `kbat` row) | DSKP + DATA |
 | **Difficulty** (`difficulty_tp`) | integer 1 to 6 = intended TP of the question; band `Rendah` (1-2), `Sederhana` (3-4), `Tinggi` (5-6); later `difficulty_empirical` (share correct from student attempts, not in this schema's v2.0 scope) | user brief (TP mapping) |
 | **Language** (`language`) | `ms`, `en`, `ms+en` (stacked bilingual, both texts stored), `ar` (Arab), `jawi` | PAPER (Matematik, Fizik K1/K2 are `ms+en`; BM `ms`; BI `en`; Sejarah `ms`); NFR-09 |
-| **Paper type / exam type** | `sebenar` (SPM), `percubaan`, `modul`, `topikal` (the Drive has a folder of topical questions "SOALAN TOPIKAL"), `latihan` | DATA (`exam_types`: percubaan, sebenar, modul) + PAPER |
+| **Paper type / exam type** | `sebenar` (Sebenar: official LPM/KPM past-year SPM paper), `percubaan` (Percubaan: state, MRSM/SBP or school trial paper; source detail stays in the board/source fields), `modul` (Modul: revision module). **User decision 2026-10-25 (system audit, FB-040): these three are the only paper types.** (was `sebenar`, `percubaan`, `modul`, `topikal`, `latihan`, FB-040.) `topikal` (the Drive has a folder of topical questions "SOALAN TOPIKAL") and `latihan` are not paper types and are removed from `exam_type`: topic grouping is already carried by the DSKP unit tag, and exercise-book or textbook origin is recorded as source kind `publisher` (below). Mapping of the old values: `docs/qa/audit-sistem/FIXLOG.md` section "P-040 Paper type mapping". An item that is none of the three types is saved without a paper type. | DATA (`exam_types`: percubaan, sebenar, modul) + PAPER; user decision FB-040 |
 | **Exam board / body** | the 22 values in .cloud `exam_boards`: 16 states (Johor ... WP Putrajaya), MRSM, SBP, SABK, SMKA, SPM(U), PPD; add `lpm` (Lembaga Peperiksaan, official) and `mpsm` (Majlis Pengetua Sekolah Malaysia, issuer of the Selangor trial papers) | DATA + PAPER |
 | **Kertas label** | `K1`, `K2`, `K3`, `P1`, `P2`, `P3`, `P4`; printed code kept (1449/1) | PAPER |
 | **Section rule** | `all`, `choose` | DATA |
@@ -381,7 +381,7 @@ Notes on the table:
 | **Stimulus kind** | D6 list | |
 | **Mark-point code** | K, N, P, B, M, F, C | D4 |
 | **Question status words** | Draf, Semakan, Lulus, Terbit, Diarkib (no change) | v2-question-bank 4.1 |
-| **Source kind** | `lpm_official`, `state_trial`, `school`, `publisher`, `teacher_own`, `ai_variant` | NFR-05, Q4 |
+| **Source kind** | `lpm_official`, `state_trial`, `school`, `publisher`, `teacher_own`, `ai_variant`. Textbook (Buku Teks) and exercise-book (Buku Latihan, former `latihan`) content is recorded as `publisher` (user decision 2026-10-25, FB-040). | NFR-05, Q4 |
 
 ## 5. Decisions D9 to D12: curriculum tag, metadata, duplicates, lifecycle
 
@@ -411,7 +411,7 @@ What a question carries (final rule, with evidence in section 8.2):
 | `tp` | required at Terbit | cognitive level; DSKP gives TP descriptors per unit, so it cannot be derived from the SP |
 | `textbook_ref` | optional `{bab, tingkatan, muka_surat}` | Sejarah's own marking scheme tags every answer this way ("B3T4 M56"); Bab does not equal SK (10 Bab per form against 12 / 11 SK) so it is a second, optional key with a lookup Bab -> SK maintained by Admin |
 | `form_origin` | `T1`..`T5` | SPM Matematik K1 mixes Tingkatan 1 to 5 content; DSKP extracts cover T4-5 only. A question outside the loaded DSKP carries `unit_code = null` and `form_origin = T1..T3` and may be tagged to a "T1-T3" holding unit (see open question Q-S2) |
-| `kbat` | ~~derived: `tp >= 4`~~ **Superseded by user decision 2026-10-24 (system audit FB-026):** KBAT is a separate, optional field, not derived from `tp` and not required at Terbit. Proposed form (pending user confirmation): optional "Aras KBAT" with Mengaplikasi / Menganalisis / Menilai / Mencipta; empty = not KBAT. See `v2-question-bank.md` §4.8 "User decisions 2026-10-24". | user decision FB-026 |
+| `kbat` | ~~derived: `tp >= 4`~~ **Superseded by user decision 2026-10-24 (system audit FB-026):** KBAT is a separate, optional field, not derived from `tp` and not required at Terbit. **Form decided, User decision 2026-10-25 (system audit), Q-D1 option (a):** optional select "Aras KBAT (pilihan)" with Bukan KBAT / Mengaplikasi / Menganalisis / Menilai / Mencipta; empty or "Bukan KBAT" = not KBAT (stored as null); stored separately from `tp`; bank filter KBAT: Ya / Tidak / per level. See `v2-question-bank.md` §4.8 "User decisions 2026-10-24" and `v2-dskp-integration.md` Q-D1. | user decision FB-026 |
 
 Rules: free-text topic is removed (DATA: 68 of 5,704 use it); the AI suggests `unit`, `sp`, `tp` with confidence (v2-question-bank US-05); curriculum nodes are data, versioned by edition (DSKP "September 2018" and later reissues), so a corrected DSKP extract updates the tree without touching questions (they reference stable node codes).
 

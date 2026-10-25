@@ -5,7 +5,7 @@
 | Slug | `v2-dskp-integration` |
 | Task | DSKP-T00 (ui-ux-designer) |
 | Date | 2026-10-24 |
-| Status | Proposed, for the frontend tasks DSKP-T07 (editor) and DSKP-T08 (bank and queue) |
+| Status | Proposed, for the frontend tasks DSKP-T07 (editor) and DSKP-T08 (bank and queue). The G2 architecture (A1 to A10, ADR-0022) this spec builds on was **approved by the user 2026-10-25**; the KBAT control is **decided** (section 13.y; field 6 in 3.1). Items marked [PROPOSED] are unchanged. |
 | Requirements | `docs/requirements/v2-dskp-integration.md` (US-04 to US-10, AC-02.2, AC-03.2, AC-03.3, AC-08.3) |
 | Architecture | `docs/architecture/v2-dskp-integration.md` (tag v2 shape 2.6, AI fields 2.7, flags 2.3, TP resolver 2.4, gates 5.2, filters 5.4, history 5.6, A1 to A10) |
 | Design system | `docs/design/v2-design-system.md` (staff personality), `docs/design/v2-copy-glossary.md` |
@@ -76,7 +76,7 @@ Container steps used: base (under 28rem), `@md` (28rem = 448 px), `@3xl` (48rem 
 | 3 | SP (Standard Pembelajaran) | `DskpSpPicker` | yes for T4/T5; not rendered for T1-T3 | replaces "SP (asingkan dengan koma)" |
 | 4 | SK (Standard Kandungan) | read-only text list | n/a; not rendered for T1-T3 | derived from the chosen SP |
 | 5 | TP (1-6) (label unchanged) | `DsNativeSelect`, placeholder "Pilih TP", options "TP 1" to "TP 6" | yes, every tingkatan | replaces the number input; **no default** |
-| 6 | Aras KBAT (pilihan) | `DsNativeSelect`, blank option text "Bukan KBAT" (value empty) + Mengaplikasi, Menganalisis, Menilai, Mencipta | no | placed after TP, independent of it; hint "Tidak ditentukan oleh TP." [PROPOSED]. The parallel draft select must be reconciled with this (same options, same position). If Q-D1 becomes a yes/no switch, only this control and the filter option list change. |
+| 6 | Aras KBAT (pilihan) | `DsNativeSelect`, blank option text "Bukan KBAT" (value empty) + Mengaplikasi, Menganalisis, Menilai, Mencipta | no | placed after TP, independent of it; hint "Tidak ditentukan oleh TP." [PROPOSED]. The control form is **decided (Q-D1, user decision 2026-10-25, option (a))**: optional select, empty or "Bukan KBAT" = not KBAT, stored separately from TP with no derivation, not required by the submit or publish gates. The parallel draft select (commit 867b8342, evidence `docs/qa/audit-sistem/evidence/FB-026-kbat-select-375.png`, `-1280.png`) must be reconciled with this (same options, same position). |
 | 7 | TP description | text block, `id` referenced by the TP select's `aria-describedby` | n/a | 3.5 |
 
 The confirmation checkboxes (3.6) move from the end of the fieldset to **directly under the control they confirm**, so the reviewer confirms in context. The `data-testid="confirm-{field}"` values are kept.
@@ -518,7 +518,7 @@ Existing strings keep exact wording. [PROPOSED] = new.
 - Component tests (T07): picker search by code and by text, clear on tingkatan change with notice, T1-T3 hides unit/SP/SK, confirmation checkbox appears only for a suggested value and disappears when changed, TP description fallback lines, Jawi row carries `dir="rtl"` and `lang="ms-Arab"`. T08: filter dependency clearing, chips, row count equals rows, empty states.
 - Screenshots required at 375, 768, 1280 in light and dark: block (base, `@md`, `@3xl`), picker with Jawi rows and flagged rows, filter sheet, popover, bank card, history with tag lines.
 
-## 13. Decisions needing approval and open UX questions
+## 13. Decisions needing approval and open UX questions (G2 approved and Q-D1 decided by the user 2026-10-25, see 13.y)
 
 | # | Item | Default used here | Needs |
 |---|---|---|---|
@@ -537,3 +537,7 @@ Open questions where the G1 and G2 documents give no answer: D-UX1, D-UX3 and UQ
 - **D-UX1:** follow G1 AC-04.6 — for T1-T3 the Unit, SP and SK fields stay visible but **disabled**, with the same one-line caption (matches today's disabled Unit; e2e `q-unit` stays "disabled").
 - **D-UX3, D-UX5, UQ-1, UQ-2:** accepted as proposed (filters in the "more" slot of both filter bars; tag badges in the Soalan cell; new message for unconfirmed AI TP/KBAT; the queue gets the same five filters; read-only "Subjek: {nama}" caption).
 - **UQ-3:** seed TP is not flagged for review (G2 default); no extra state is designed.
+
+### 13.y User decisions (2026-10-25, system audit; the user replied "ok proceed yang terbaik" to the cloud lead's recommendations)
+- **G2 approved:** decisions A1 to A10 in `docs/architecture/v2-dskp-integration.md` and ADR-0022 are approved as written. This spec's tasks DSKP-T07 and DSKP-T08 therefore build against an approved architecture. Build order: DSKP is the first post-go-live item (LEAD decision 5, 2026-10-24).
+- **Q-D1, KBAT field form: option (a), level select.** Field 6 (section 3.1, "Aras KBAT (pilihan)") is an optional `DsNativeSelect` with the options Bukan KBAT / Mengaplikasi / Menganalisis / Menilai / Mencipta; empty or "Bukan KBAT" means not KBAT. It is stored separately from TP with no derivation and is not required by the submit or publish gates. The bank filter (section 6.1, filter 5) is KBAT: Ya / Tidak / per level, as already specified there. The yes/no switch (option (b), `FB-026-kbat-switch-*.png`) was not chosen and is not built.

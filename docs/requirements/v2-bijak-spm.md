@@ -170,6 +170,7 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 - AC-08.4 Given an answer mode that has no working student control in the build, then a paper using it cannot be published (US-26 gate).
 - AC-08.5 Given an MCQ, then my choice is stored by option identity, not by letter, so reshuffled options cannot change its meaning.
 - AC-08.6 Given graph and drawing answers (code is dropped, FB-037), then they are saved as structured data and are marked by self-mark or staff review; the UI says so ("dinilai sendiri") [PROPOSED].
+- AC-08.7 Given a match question (AC-08.3) in the student attempt, then the compact layout is the only layout (**User decision 2026-10-25 (system audit), FB-064**): the lettered option bank is shown once, under the heading "Pilihan jawapan", and each sub-part (gap/item) has one row of letter buttons (A–E for a five-option bank) in place of the full "A — 1946" buttons per sub-part; there is no layout switch and the earlier layout is removed. At 375 px the sub-part rows do not overlap, and there is no horizontal page scroll from 320 to 1280 px. *D9 fix: the earlier full-button layout overlapped at 375 px (Sejarah Q2 column height 1364 px against 762 px compact). Evidence: `docs/qa/audit-sistem/evidence/FB-064-current-375.png`, `FB-064-compact-375.png`, `FB-064-current-1280.png`, `FB-064-compact-1280.png`.*
 
 **US-09 Maths answer input (D41)**
 - AC-09.1 Given a maths part, then I can write step lines (one line per step) with a maths keyboard (fractions, powers, roots, subscripts, units, symbols), a separate "Jawapan akhir" box, and a unit field when the part defines a unit.
@@ -184,6 +185,16 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
   - Every key is accepted by the marker (trigonometric functions in degrees).
   - Not included: e, (−), Ans, an execute "=" key, RCL/M+ (an answer field does no calculation).
   - Keys are shown as tiles/icons; the arrangement was confirmed as "dah elok" by the user.
+- **Planned (FB-069, after go-live), not built. User decision 2026-10-25 (system audit), Q-B13 option (a).** AC-09.1 to AC-09.6 above describe the current build and are not rewritten. Target behaviour:
+  - The maths answer field becomes a WYSIWYG math field (MathLive, MIT licence), driven by the Casio keypad (AC-09.6): fractions, powers and √ are shown in the field itself while typing.
+  - Built after go-live as a Full-track item (G1 to G6; the new runtime dependency needs an ADR).
+  - Consequences accepted by the user:
+    - the phone's own keyboard no longer opens (keypad only);
+    - key order changes (x² is pressed inside the fraction box);
+    - saved answers need a small migration (for example sin to \sin);
+    - the separate preview row becomes redundant;
+    - a lazy chunk of +216 KB gzip is added on attempt pages.
+  - Build notes from the prototype check (`docs/qa/audit-sistem/evidence/FB-069-notes.md`; observations, not new requirements): the 11 sample answers tested were all accepted by the marker without change; the degree key must insert ° as text; an unfilled template must not count as "answered"; assistive-technology reading (TalkBack/VoiceOver) was not tested.
 
 **US-10 Navigation**
 - AC-10.1 Given the question map, then each question shows one of: "Dijawab", "Ditanda", "Belum"; counts equal the number of questions; tapping a dot goes to that question or its stimulus group.
@@ -408,8 +419,8 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 | R12 | Subjective marking | Keyword suggestion; student self-marks 0..max (RubricKeywordMarker) | **Change**: structured marking points (K/N/P [SKEMA]) with per-point hit/miss and confidence; **keep** self-mark within clamps and "failure never awards 0" | D41(3)(4), QBF "keeps" |
 | R13 | AI essay marks | Proposal queue, counts only after human confirm; not wired (EssayReviewController) | **Keep** rule; queue under Pentadbiran for Admin Pusat first | D32(b), D43 |
 | R14 | Stimulus | Pinned only if one stimulus is common to the whole section (PaperSection.php:187-207) | **Change**: stimulus groups as first-class, pinned/side-panel, kept whole in every assembly | D41(1), QBF A |
-| R15 | Maths answers | Plain text; `working_shown` split is good | **Keep** working/final split; **add** maths keyboard, unit field, photo of working | D41(2), QBF B |
-| R16 | Answer controls | 14 widgets; sequence_order broken (N-02) | **Keep** the set defined by exam schema D1/D47 (MCQ, match, short/numeric, structured, working, essay, drawing/graph, table fill); **drop** numbered list, ordering, code and cloze (user decision 2026-10-24, FB-037); gate publish on working controls | N-02 (moot: ordering dropped), schema D1/D47 |
+| R15 | Maths answers | Plain text; `working_shown` split is good | **Keep** working/final split; **add** maths keyboard, unit field, photo of working. *Planned, after go-live (user decision 2026-10-25, FB-069 / Q-B13): WYSIWYG maths field (MathLive) driven by the keypad; see US-09 "Planned" note.* | D41(2), QBF B |
+| R16 | Answer controls | 14 widgets; sequence_order broken (N-02) | **Keep** the set defined by exam schema D1/D47 (MCQ, match, short/numeric, structured, working, essay, drawing/graph, table fill); **drop** numbered list, ordering, code and cloze (user decision 2026-10-24, FB-037); gate publish on working controls. **Match layout (D9 fix, user decision 2026-10-25, FB-064):** letter bank shown once ("Pilihan jawapan") with one row of letter buttons per sub-part, replacing the overlapping full "A — 1946" buttons at 375 px (AC-08.7) | N-02 (moot: ordering dropped), schema D1/D47; user decision FB-064 |
 | R17 | Paper skin and pagination | Light paper skin, weight-4 sheets, "Halaman x daripada y" (ATT:571-652) | **Change**: learner-portal layout, question/group steps, question map; structure kept | D35, D39, A5 |
 | R18 | Question map, flags, choose-N picks | Map dots, flag, pick checkbox (advisory) | **Keep** map dots and flags (flags never affect score). **Choose-N pick changed (user decision 2026-10-24, FB-048):** Mod Latihan = tick is a hint, best N attempted count, ticked blanks fill short slots; Mod Peperiksaan = only ticked questions count, other questions locked at N (AC-06.2, AC-06.3, AC-06.6) | Fidelity, D29(b); user decision FB-048 |
 | R19 | Reference sheet | Foldable panels on the cover, open by default | **Keep** | D29(b) |
@@ -479,8 +490,8 @@ Answer-mode list; mark-scheme structure; marking states (Betul / Separa / Salah 
 | Q-B11 | Auto-close grace 5 min and device-sync window 24 h. | Tune in pilot |
 | Q-B12 | Exam mode drops the printed-paper skin and sheet paging (A5). | G2 design review |
 
-### 9.3 Open — pending decision (added 2026-10-24, system audit)
+### 9.3 Added 2026-10-24 (system audit); Q-B13 answered 2026-10-25
 
 | ID | Question | Blocks | Status / recommended default |
 |---|---|---|---|
-| Q-B13 | Answer field renders maths while typing (WYSIWYG, e.g. MathLive): stacked fractions, raised powers and √ shown in the field itself (like a Casio natural display) instead of raw text. Affects US-09 (AC-09.1, AC-09.3, AC-09.5) and would add a runtime dependency (ADR needed). | US-09 input model; timing relative to the 30 Okt go-live | **Pending LEAD/user decision** (new request from the user 2026-10-24, not approved yet); see `docs/qa/audit-sistem/FIXLOG.md` FB-069 / P-069. Until decided, the current keypad (AC-09.6) with preview stays. |
+| Q-B13 | Answer field renders maths while typing (WYSIWYG, e.g. MathLive): stacked fractions, raised powers and √ shown in the field itself (like a Casio natural display) instead of raw text. Affects US-09 (AC-09.1, AC-09.3, AC-09.5) and would add a runtime dependency (ADR needed). | US-09 input model; timing relative to the 30 Okt go-live | **ANSWERED, user decision 2026-10-25 (system audit): option (a), MathLive (MIT).** The user replied "ok proceed yang terbaik" to the cloud lead's recommendation. Built **after go-live** as a **Full-track** item; the accepted consequences and the target behaviour are under "Planned (FB-069, after go-live)" in US-09. Until it is built, the current keypad (AC-09.6) with preview stays. Source: `docs/qa/audit-sistem/FIXLOG.md` FB-069 / P-069 and `docs/qa/audit-sistem/evidence/FB-069-notes.md`. |

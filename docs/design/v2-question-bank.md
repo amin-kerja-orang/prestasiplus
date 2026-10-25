@@ -185,7 +185,7 @@ Purpose: declaration plus file(s) (US-01, US-17). Single page form; two sections
 | Muat naik kertas                |
 |                                 |
 | [Card 1] Maklumat kertas        |
-|  Jenis kertas *     [v Pilih  ] |
+|  Jenis kertas       [v Pilih  ] |
 |  Subjek *           [v Pilih  ] |
 |  Tahap *            [v Pilih  ] |
 |  Tahun *            [ 2026    ] |
@@ -213,7 +213,7 @@ Purpose: declaration plus file(s) (US-01, US-17). Single page form; two sections
 ```
 
 - 768: single column `max-w-2xl`, cards stacked. 1280: two columns `lg:grid-cols-[1fr_1fr]`: left = Card 1 + Card 2, right = Card 3 (file list sticky `top-0`). Submit button stays in a sticky bottom bar on < `lg`, inline at bottom of right column on `lg+`.
-- Fields (all `UFormField` + labelled, filled inputs): **Jenis kertas** `USelect` (Soalan Umum, Percubaan/Trial, DSKP, Buku Teks, Buku Latihan, Peperiksaan, Lain-lain - the .cloud list); **Subjek** `USelectMenu` (searchable; subject dot slot shown); **Tahap** `USelect` (launch default Tingkatan 4 and 5 only, D40b; other levels hidden, not disabled); **Tahun** `UInputNumber`; **Catatan** `UTextarea` max 500 with counter. Bilingual-paper flag and language fields are `[SKEMA]` (not on this form until the schema defines language codes).
+- Fields (all `UFormField` + labelled, filled inputs): **Jenis kertas** `USelect` (Sebenar, Percubaan, Modul; **User decision 2026-10-25, FB-040** (was Soalan Umum, Percubaan/Trial, DSKP, Buku Teks, Buku Latihan, Peperiksaan, Lain-lain - the .cloud list). The field carries no required marker: an item that is none of the three is saved without a paper type (P-040 mapping), see `v2-question-bank.md` requirements 4.2); **Subjek** `USelectMenu` (searchable; subject dot slot shown); **Tahap** `USelect` (launch default Tingkatan 4 and 5 only, D40b; other levels hidden, not disabled); **Tahun** `UInputNumber`; **Catatan** `UTextarea` max 500 with counter. Bilingual-paper flag and language fields are `[SKEMA]` (not on this form until the schema defines language codes).
 - **Source declaration** (`URadioGroup variant="card"`, mandatory, AC-17.1): Hasil kerja sendiri; Milik sekolah; Kertas rasmi KPM/LPM; Buku komersial / pihak ketiga. D40c = "any paper is allowed", so no option is blocked. For the last option, show an inline `UAlert` (info): "Kertas pihak ketiga memerlukan keputusan hak cipta daripada Admin Pusat sebelum soalan boleh diterbitkan. Anda masih boleh memuat naik dan menyemak." Plus a required `UCheckbox`: "Saya mengesahkan maklumat sumber ini benar. Fail asal tidak akan dipaparkan kepada murid." (NFR-05).
 - **Files** `UFileUpload` (multiple, drag-drop, `accept` PDF/JPG/PNG, [PROPOSED] per Q10 default). Buttons: "Pilih fail" and, on `pointer-coarse`, **"Ambil gambar"** (opens `capture="environment"`; multiple photos allowed up to the 5-file limit) so a Guru can photograph a paper on a phone. Each file row: icon, name (truncate), size `tabular`, per-file upload `UProgress` (value in `status`), remove `x` (44px, `aria-label` "Buang {nama fail}"). Files are validated on selection (type, size, count) before any upload (AC-01.2).
 - Submit: `UButton` solid primary "Hantar untuk diproses", disabled until required fields + declaration + at least 1 valid file. On click: button `loading`, then navigate to G4 (detail) with toast "Kertas dihantar. Pemprosesan bermula." Status "Sedang diproses" must show within 5 s (AC-01.3).
@@ -841,7 +841,7 @@ New token proposal: `--ds-hl-region` (source region fill, both personalities, bo
 | G1 empty recent | Belum ada penghantaran. Mulakan dengan memuat naik kertas. |
 | G2 title | Muat naik kertas |
 | G2 fields | Jenis kertas · Subjek · Tahap · Tahun · Catatan (pilihan) · Sumber kertas |
-| G2 jenis options | Soalan Umum · Percubaan (Trial) · DSKP · Buku Teks · Buku Latihan · Peperiksaan · Lain-lain |
+| G2 jenis options | Sebenar · Percubaan · Modul (User decision 2026-10-25, FB-040; was Soalan Umum · Percubaan (Trial) · DSKP · Buku Teks · Buku Latihan · Peperiksaan · Lain-lain) |
 | G2 source options | Hasil kerja sendiri · Milik sekolah · Kertas rasmi KPM / LPM · Buku komersial / pihak ketiga |
 | G2 third-party note | Kertas pihak ketiga memerlukan keputusan hak cipta daripada Admin Pusat sebelum soalan boleh diterbitkan. Anda masih boleh memuat naik dan menyemak. |
 | G2 confirm | Saya mengesahkan maklumat sumber ini benar. Fail asal tidak akan dipaparkan kepada murid. |
