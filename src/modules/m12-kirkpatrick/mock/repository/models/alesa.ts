@@ -72,7 +72,7 @@ function resolveStored(
           Number(a.tenths !== target) - Number(b.tenths !== target) ||
           Math.abs((position.get(a.userId) as number) - (s.rank - 1)) -
             Math.abs((position.get(b.userId) as number) - (s.rank - 1)) ||
-          a.userId - b.userId,
+          Number(a.userId) - Number(b.userId),
       )
     const pick = candidates[0] ?? (at && !used.has(at.userId) ? at : undefined)
     if (!pick) {
@@ -112,7 +112,7 @@ export function alesaOf(scope: Scope, predictions: readonly PredictionRow[]): Al
   else if (only !== undefined && alesaRepo.stored(only).length > 0) {
     rows = resolveStored(only, predictions)
   } else rows = generated(predictions)
-  rows.sort((a, b) => gradeIndex(a.grade) - gradeIndex(b.grade) || a.userId - b.userId)
+  rows.sort((a, b) => gradeIndex(a.grade) - gradeIndex(b.grade) || Number(a.userId) - Number(b.userId))
   return {
     lulus: rows.filter((r) => isPass(r.grade)).length,
     gagal: rows.filter((r) => isFail(r.grade)).length,

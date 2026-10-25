@@ -300,3 +300,23 @@ describe('S8 access (AC-M12-03.4, 30.5)', () => {
     expect(useRouteOutcome().value).toBeNull()
   })
 })
+
+describe('S8 string ids in http mode (BUG-01)', () => {
+  it('renders the student when the API sends student.id as a string (contract IdSchema)', async () => {
+    const stringId = studentA()
+    stringId.student.id = '4664'
+    api.fetchKirkpatrickStudent.mockResolvedValue(stringId)
+    const w = await open(4664)
+    expect(api.fetchKirkpatrickStudent).toHaveBeenCalledWith(4664, expect.anything())
+    expect(t(w, 'pel-name').text()).toBe('Pelajar Demo 004664')
+    expect(t(w, 'pel-alesa').exists()).toBe(true)
+  })
+
+  it('still hides a previous student of another id (S8 to S8 navigation)', async () => {
+    const other = studentB()
+    other.student.id = '4644'
+    api.fetchKirkpatrickStudent.mockResolvedValue(other)
+    const w = await open(4664)
+    expect(w.find('[data-testid="pel-alesa"]').exists()).toBe(false)
+  })
+})
