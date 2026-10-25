@@ -2,7 +2,9 @@
 /**
  * S3 `/prestasi/tingkatan/{t4|t5}` "Dashboard Tingkatan" (M08-T5; FR-M08-23…28). An unknown code is the
  * standard 404 (the API answers 404). "On Track" / "Below Target", the class On Track / Below and the
- * "Murid Berisiko" rows are headcount figures (M08-T1b) and read 0 / empty until they exist.
+ * "Murid Berisiko" rows are headcount figures (M08-T1b) and read 0 / empty until they exist. The "Lihat →"
+ * class link (and its "Aksi" column) is shown only to a role that may open the class page (staff), so a pupil gets
+ * no dead link and no empty column (DV-M08-47).
  */
 import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -26,9 +28,11 @@ import {
   plain,
 } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { useCanOpen } from '../lib/route-access'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
 
 const statItems = useStatItems()
+const { canOpen } = useCanOpen()
 
 const route = useRoute()
 const code = computed(() => String(route.params.code ?? ''))
@@ -98,7 +102,7 @@ const rows = computed<Row[]>(() =>
     href: r.href,
   })),
 )
-const columns: TableColumn<Row>[] = [
+const baseColumns: TableColumn<Row>[] = [
   { accessorKey: 'name', header: 'Kelas' },
   { accessorKey: 'subject', header: 'Subjek' },
   { accessorKey: 'teacher', header: 'Guru' },
@@ -107,8 +111,12 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'accuracyText', header: 'Ketepatan' },
   { accessorKey: 'onTrack', header: 'On Track' },
   { accessorKey: 'below', header: 'Below' },
-  { accessorKey: 'href', header: 'Aksi' },
 ]
+// "Aksi" only when at least one row can be opened, so a pupil gets no column of empty cells.
+const hasActions = computed(() => rows.value.some((r) => r.href !== null && canOpen(r.href)))
+const columns = computed<TableColumn<Row>[]>(() =>
+  hasActions.value ? [...baseColumns, { accessorKey: 'href', header: 'Aksi' }] : baseColumns,
+)
 const cardFields = [
   { key: 'subject', label: 'Subjek' },
   { key: 'teacher', label: 'Guru' },
@@ -212,7 +220,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
           </template>
           <template #href-cell="{ row }">
             <UButton
-              v-if="row.original.href"
+              v-if="row.original.href && canOpen(row.original.href)"
               :to="row.original.href"
               color="neutral"
               variant="link"
@@ -222,7 +230,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
           </template>
           <template #card-actions="{ row }">
             <UButton
-              v-if="row.href"
+              v-if="row.href && canOpen(row.href as string)"
               :to="row.href as string"
               color="neutral"
               variant="soft"
