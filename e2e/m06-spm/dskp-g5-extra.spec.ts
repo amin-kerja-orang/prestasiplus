@@ -317,30 +317,30 @@ test.describe('Touch targets (NFR-06)', () => {
   })
 })
 
-/* ------------------------------------------------------------------ QA findings (expected to fail) */
+/* ------------------------------------------------------------------ QA findings (fixed) */
 
-test.describe('Defects found by QA, kept as expected-fail tests until fixed', () => {
-  test('BUG DSKP-G5-01 (AC-03.1, design 8): the intake list Subjek filter lists the 13 catalogue subjects', async ({
+test.describe('Defects found by QA, fixed (regression tests)', () => {
+  test('DSKP-G5-01 (AC-03.1, design 8): the intake list Subjek filter lists the 13 catalogue subjects', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
-    test.fail(true, 'DSKP-G5-01: IntakeListPage still lists server.subjects() (3 blueprint subjects)')
     await loginAs(ADMIN)
     await gotoApp('/admin/spm/soalan/ekstrak')
     await expect(tid(page, 'intake-list-page')).toBeVisible()
-    const sel = tid(page, 'intake-filter').getByLabel('Subjek')
+    // Below md the selects live in the "Penapis" sheet (outside the bar), from md they sit in the bar.
+    if (viewportWidth(page) < 768) await page.getByRole('button', { name: /^Penapis( \d+)?$/ }).first().click()
+    const sel = page.getByLabel('Subjek', { exact: true })
     await expect(sel).toBeVisible()
     expect(await optionTexts(sel)).toEqual(['Semua subjek', ...SUBJECTS_13])
   })
 
-  test('BUG DSKP-G5-02 (AC-04.9, design 3.6): a question the AI cannot place at all says "AI tidak menjumpai unit yang sepadan"', async ({
+  test('DSKP-G5-02 (AC-04.9, design 3.6): a question the AI cannot place at all says "AI tidak menjumpai unit yang sepadan"', async ({
     page,
     browser,
     loginAs,
     gotoApp,
   }) => {
-    test.fail(true, 'DSKP-G5-02: the no-match caption needs a tagSuggestion; none exists without a command word')
     const pdf = await makePaperPdf(browser, [
       ['Kertas QA', 'Bahagian A', '1. Apakah warna langit pada waktu pagi? [1 markah]'].join('\n'),
     ])
@@ -358,11 +358,13 @@ test.describe('Defects found by QA, kept as expected-fail tests until fixed', ()
     await tid(page, 'intake-submit').click()
     await expect(tid(page, 'intake-review-page')).toBeVisible({ timeout: 90_000 })
     const card = page.locator('[data-testid="question-card"][data-label="1"]')
-    await card.locator('button[aria-expanded]').first().click()
+    const head = card.locator('button[aria-expanded]').first()
+    if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click()
     const block = card.getByTestId('tag-block')
     await block.scrollIntoViewIfNeeded()
     await expect(block.getByTestId('q-unit')).toHaveValue('') // not auto-filled: this part is right
-    expect(await openIssues(page)).toContain('Soalan 1: Medan keyakinan rendah belum disahkan: unit DSKP.')
+    // Nothing to confirm for an empty unit: the gate asks for a value, not for a confirmation.
+    expect(await openIssues(page)).not.toContain('Soalan 1: Medan keyakinan rendah belum disahkan: unit DSKP.')
     await shot(block, 'intake-no-match-q1')
     await expect(block.getByTestId('ai-no-match')).toContainText(
       'AI tidak menjumpai unit yang sepadan. Pilih secara manual.',
@@ -445,7 +447,8 @@ test.describe('The one tag rule at the server (US-07): same messages on submit, 
     const submit = (): Promise<{ ok: boolean; issues?: { where: string; message: string }[] }> =>
       page.evaluate(
         async ([url, batch]) => {
-          const m = (await import(/* @vite-ignore */ url!)) as {
+          // A fresh module copy per call: its server instance reads the autosaved batch from storage again.
+          const m = (await import(/* @vite-ignore */ `${url!}?fresh=${Date.now()}`)) as {
             bijakServer: () => { submitForReview: (b: string) => Promise<{ ok: boolean; issues?: { where: string; message: string }[] }> }
           }
           return await m.bijakServer().submitForReview(batch!)
@@ -461,7 +464,10 @@ test.describe('The one tag rule at the server (US-07): same messages on submit, 
       ]),
     )
     await tid(page, 'q-form').selectOption('T4')
-    await expect(tid(page, 'save-state')).toContainText('Semua perubahan disimpan')
+    // The autosave is debounced and the label still reads "saved" right after the change: poll the server.
+    await expect
+      .poll(async () => (await submit()).issues?.some((i) => i.message === 'Unit DSKP belum dipilih.'))
+      .toBe(true)
     const r2 = await submit()
     expect(r2.ok).toBe(false)
     expect(r2.issues!.map((i) => `${i.where}: ${i.message}`)).toEqual(
@@ -541,15 +547,11 @@ test.describe('When nothing is flagged any more (AC-08.3, design 6.3)', () => {
   })
 
   for (const bar of ['bank', 'queue'] as const) {
-    test(`BUG DSKP-G5-03 (AC-09.3, design 6.1): the long Unit chip of the ${bar} filter stays inside its row (clipped at 375)`, async ({
+    test(`DSKP-G5-03 (AC-09.3, design 6.1): the long Unit chip of the ${bar} filter stays inside its row (truncated, not clipped, at 375)`, async ({
       page,
       loginAs,
       gotoApp,
     }) => {
-      test.fail(
-        viewportWidth(page) < 768,
-        'DSKP-G5-03: the Unit chip is 524 px wide in a 319 px row at 375 px; its remove icon is off screen',
-      )
       await loginAs(ADMIN)
       await gotoApp(bar === 'bank' ? '/admin/spm/soalan' : '/admin/spm/semakan')
       await expect(tid(page, `${bar}-filter`)).toBeVisible()
@@ -563,6 +565,10 @@ test.describe('When nothing is flagged any more (AC-08.3, design 6.3)', () => {
       const row = (await tid(page, 'active-filters').boundingBox())!
       expect(box.x + box.width, 'chip right edge').toBeLessThanOrEqual(row.x + row.width + 1)
       expect(box.x + box.width, 'chip right edge in the viewport').toBeLessThanOrEqual(viewportWidth(page))
+      await expectTouchTarget(chip)
+      await shot(tid(page, 'active-filters'), `${bar}-filter-unit-chip`)
+      await shot(page, `${bar}-filter-unit-page`)
+      await expect(chip).toHaveAttribute('aria-label', /^Buang penapis Unit 1\.0/)
     })
   }
 })

@@ -351,7 +351,11 @@ export interface AiFieldState {
 export function aiFieldState(q: IntakeQuestion, f: TagField, needsConfirm: boolean): AiFieldState {
   const none: AiFieldState = { badge: null, confirm: false, confirmed: false, changedFrom: undefined, noMatch: false }
   const s = q.tagSuggestion
-  if (!s) return none
+  if (!s) {
+    // The AI could not place the question at all (no suggestion): the unit is empty and asked for.
+    const noMatch = f === 'unit' && !filled(q.tag.unitId) && q.lowFields.includes(tagFieldPath('unit'))
+    return noMatch ? { ...none, noMatch } : none
+  }
   const suggested = suggestedOf(s, f)
   const value = currentOf(q.tag, f)
   if (!filled(suggested)) {
