@@ -70,7 +70,7 @@ export interface BoardPaths {
   /**
    * "← Dashboard" (S1 for the admin, M27 `/admin-sekolah` for the Admin Sekolah alias). `null` for the admin
    * until S1 is built: `/admin` only redirects back to S2 (D48), so the link would loop (AM2-G5M17, D9;
-   * deviation row pending in the URS; same as `report`).
+   * DV-M17-50; same as `report`).
    */
   dashboard: string | null
   /**
