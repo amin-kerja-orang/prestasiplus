@@ -19,6 +19,7 @@ import {
   enrolmentLegacyId,
   transformClassroom,
   transformEnrolment,
+  withTeacherSchool,
   type ClassroomValues,
 } from '../transform/classes'
 import { transformSubscription } from '../transform/subscriptions'
@@ -76,6 +77,16 @@ async function loadedLevels(ctx: BatchContext, legacyIds: readonly string[]): Pr
   return new Map(res.rows.map((r) => [r.legacy_id, r.education_level_id]))
 }
 
+/** The current v2 school of each given v2 user (users without a school are left out). The source of 0090's backfill (`users.school_id`). */
+async function teacherSchools(ctx: BatchContext, teacherIds: readonly string[]): Promise<Map<string, string>> {
+  if (teacherIds.length === 0) return new Map()
+  const res = await ctx.db.query<{ id: string; school_id: string }>(
+    `SELECT id::text AS id, school_id::text AS school_id FROM users WHERE id = ANY($1::bigint[]) AND school_id IS NOT NULL`,
+    [teacherIds],
+  )
+  return new Map(res.rows.map((r) => [r.id, r.school_id]))
+}
+
 export function classroomsStep(core: CoreContext): AnyEntityStep {
   const entity = 'classrooms'
   return {
@@ -92,7 +103,17 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
       // Only the classes without any pupil in staging can keep their level, so look up the loaded rows for those alone.
       const loaded = await loadedLevels(ctx, rows.map((r) => idOf(r)).filter((id) => (grades.get(id) ?? []).length === 0))
 
+      // SW7-01: one read for the teachers of the classes that have no source school (a source school that is set but not loaded is an
+      // orphan and is rejected by the transform, so it never gets here).
+      const teacherSchoolOf = await teacherSchools(ctx, [...new Set(
+        rows.flatMap((r) => {
+          const teacher = resolveFk(r.teacher_id, teachers)
+          return resolveFk(r.school_id, schools) === null && teacher ? [teacher] : []
+        }),
+      )])
+
       const kept = new Set<string>()
+      const fromTeacher = new Set<string>()
       let items: { legacyId: string; values: ClassroomValues }[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
@@ -111,7 +132,9 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
         })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
         else {
-          items.push({ legacyId, values: out.value })
+          const values = withTeacherSchool(out.value, out.value.teacher_id === null ? null : teacherSchoolOf.get(out.value.teacher_id))
+          if (values !== out.value) fromTeacher.add(legacyId)
+          items.push({ legacyId, values })
           if (level.kept) kept.add(legacyId)
         }
       }
@@ -122,6 +145,8 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
       // Counted once the class survives the join-code check: it is written with its old level.
       const keptCount = items.filter((i) => kept.has(i.legacyId)).length
       if (keptCount > 0) core.notes.count('classrooms.level_kept_no_pupils', keptCount)
+      const fromTeacherCount = items.filter((i) => fromTeacher.has(i.legacyId)).length
+      if (fromTeacherCount > 0) core.notes.count('classrooms.school_from_teacher', fromTeacherCount)
       return upsertAndMap(ctx, entity, 'classrooms', CLASSROOM_COLUMNS, items.map((i) => ({
         legacyId: i.legacyId,
         values: i.values as unknown as Record<string, unknown>,
