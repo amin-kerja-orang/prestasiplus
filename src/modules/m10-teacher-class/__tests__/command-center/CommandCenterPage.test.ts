@@ -53,10 +53,10 @@ const wrap = (e: Element) => {
   const w = new DOMWrapper(e)
   const trigger = w.trigger.bind(w)
   // the portalled dialog mounts a few ticks after a click
-  w.trigger = (async (...a: Parameters<typeof trigger>) => {
+  w.trigger = async (...a: Parameters<typeof trigger>) => {
     await trigger(...a)
     await flushPromises()
-  })
+  }
   return w
 }
 const q = (sel: string) => Array.from(document.body.querySelectorAll(sel)).map(wrap)
@@ -570,6 +570,26 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     expect(done.attributes('href')).toBe('/remedial/7602')
     expect(t('cc-remedial-cancel').exists()).toBe(false)
     expect(t('cc-remedial-generate').text()).toBe('Jana Kimia')
+  })
+
+  it('picks the latest completed test by numeric id when ids are strings (http mode, SWX-04)', async () => {
+    const weak = { ...SCAN.weakStudents[1]!, studentId: '3008' }
+    const done = (id: string, afterAccuracy: number) => ({
+      id,
+      studentId: '3008',
+      status: 'completed',
+      totalQuestions: 5,
+      afterAccuracy,
+    })
+    // "10" sorts before "9" as text, but test 10 is the later one
+    api.fetchRemedialScan.mockResolvedValue({
+      weakStudents: [weak],
+      existingRemedials: [done('10', 70), done('9', 30)],
+    })
+    await mountPage()
+    await openRemedial()
+    expect(t('cc-remedial-done').text()).toBe('Selesai (70%)')
+    expect(t('cc-remedial-done').attributes('href')).toBe('/remedial/10')
   })
 
   it('generates a test: "Menjana..." then the "{Subjek} ({n})" link @provisional UNVERIFIED COPY', async () => {
