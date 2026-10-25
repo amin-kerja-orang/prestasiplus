@@ -179,7 +179,7 @@ export class PasswordResetService {
     return overloadTo429(async () => {
       const started = performance.now()
       // D55a: counted before anything is compared, per account and per address, match or not.
-      await this.throttle.resetIcAttempt(body.email, info.ip)
+      const ipWindowEnd = await this.throttle.resetIcAttempt(body.email, info.ip)
 
       const user = await this.users.findCredentialsByEmail(body.email)
       const digits = this.ic.normalise(body.icNumber)
@@ -191,7 +191,7 @@ export class PasswordResetService {
         throw icMismatch()
       }
 
-      await this.throttle.resetIcSucceeded(info.ip)
+      await this.throttle.resetIcSucceeded(info.ip, ipWindowEnd)
       const issued = await this.issueToken(user, 'ic')
       await this.auditSafe(ACCOUNT_AUDIT.RESET_IC_ISSUED, user, info, { channel: 'ic', resetId: issued.resetId })
       await this.notify(user, ACCOUNT_SECURITY_NOTIFICATIONS.resetIcIssued)

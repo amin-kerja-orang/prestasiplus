@@ -1,5 +1,6 @@
 import { ACCOUNT_AUTH_MESSAGES, ACCOUNT_SECURITY_NOTIFICATIONS, ErrorBodySchema, SessionSchema } from '@pp/contract'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { Logger } from '@nestjs/common'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IcService } from '../../src/modules/users/credentials'
 import { type AccountTestApp, bootAccountApp, cookieValue, DEMO_PASSWORD, errorOf, fieldsOf, login, userRow } from './account-helpers'
@@ -311,14 +312,33 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
         for (let i = 0; i < 40; i++) expect((await resetIc(mail(i), wrong)).status, `pupil ${String(i)}`).toBe(422)
       })
 
-      it('the per-address ceiling is 60 failures per 15 minutes; the 61st is 429 with the unchanged BM body', async () => {
-        for (let i = 0; i < 60; i++) expect((await resetIc(mail(i), wrong)).status, `attempt ${String(i)}`).toBe(422)
+      it('the per-address ceiling is 45 failures per 15 minutes; the 46th is 429 with the unchanged BM body', async () => {
+        for (let i = 0; i < 45; i++) expect((await resetIc(mail(i), wrong)).status, `attempt ${String(i)}`).toBe(422)
         const blocked = await resetIc(mail(99), wrong)
         expect(blocked.status).toBe(429)
         expect(blocked.body.error.code).toBe('RATE_LIMITED')
         expect(blocked.body.error.message).toBe(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
         expect(blocked.body.error.retryAfter).toBeGreaterThan(0)
         expect(blocked.headers['retry-after']).toBeDefined()
+      })
+
+      it('warns once at 30 failures and on the per-address 429, with a hashed address and no PII', async () => {
+        const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+        try {
+          for (let i = 0; i < 45; i++) await resetIc(mail(i), wrong)
+          await resetIc(mail(99), wrong)
+          const events = warn.mock.calls.map((c) => c[0]).filter((m): m is Record<string, unknown> => typeof m === 'object' && m !== null && 'event' in m)
+          expect(events.map((e) => [e.event, e.count])).toEqual([
+            ['reset_ic.ip_failures_high', 30],
+            ['reset_ic.ip_limited', 46],
+          ])
+          const text = JSON.stringify(events)
+          expect(Object.keys(events[1] ?? {}).sort()).toEqual(['count', 'event', 'ipHash', 'windowEnd'])
+          expect(events[1]?.ipHash).toMatch(/^[0-9a-f]{64}$/)
+          for (const secret of ['sekolah.test', 'murid', wrong, '127.0.0.1', '::ffff:127.0.0.1', '::1']) expect(text).not.toContain(secret)
+        } finally {
+          warn.mockRestore()
+        }
       })
 
       it('the per-account limit stays at 5: the 6th attempt on one e-mail is 429', async () => {
@@ -336,7 +356,7 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
         }
         // 4 successes in one window (account budget 5), then failures from the same address
         for (let i = 0; i < 4; i++) expect((await resetIc(STUDENT, IC)).status).toBe(200)
-        for (let i = 0; i < 60; i++) expect((await resetIc(mail(i), wrong)).status, `fail ${String(i)}`).toBe(422)
+        for (let i = 0; i < 45; i++) expect((await resetIc(mail(i), wrong)).status, `fail ${String(i)}`).toBe(422)
         expect((await resetIc(mail(99), wrong)).status).toBe(429)
       })
     })
@@ -390,8 +410,8 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
       expect((await resetIc(STUDENT, IC)).status).toBe(200)
     })
 
-    it('D55a: 60 failed attempts per 15 minutes per address across different accounts (M01 BUG-01)', async () => {
-      for (let i = 0; i < 60; i++) await resetIc(`orang${i}@ujian.test`, IC)
+    it('D55a: 45 failed attempts per 15 minutes per address across different accounts (M01 BUG-01)', async () => {
+      for (let i = 0; i < 45; i++) await resetIc(`orang${i}@ujian.test`, IC)
       const blocked = await resetIc('orang-lain@ujian.test', IC)
       expect(ErrorBodySchema.parse(blocked.body).error.message).toBe(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
       expect(blocked.status).toBe(429)
