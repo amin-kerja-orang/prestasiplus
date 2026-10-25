@@ -7,6 +7,7 @@ import { CLOCK, type Clock } from '../../db/clock'
 import { PrismaService } from '../../db/prisma.service'
 import type { RequestInfo, SessionGrant } from '../auth/auth.service'
 import { PasswordService } from '../auth/password.service'
+import { AuthPorts } from '../auth/ports'
 import { SchoolsRepository } from '../schools'
 import { IcService } from '../users/credentials'
 import { UsersRepository, uniqueField } from '../users'
@@ -51,6 +52,7 @@ export class RegistrationService {
     @Inject(PasswordService) private readonly passwords: PasswordService,
     @Inject(IcService) private readonly ic: IcService,
     @Inject(SessionIssuer) private readonly issuer: SessionIssuer,
+    @Inject(AuthPorts) private readonly ports: AuthPorts,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(AccountPorts) private readonly accountPorts: AccountPorts,
     @Inject(ConfigService) config: Pick<ConfigService, 'get'>,
@@ -105,8 +107,9 @@ export class RegistrationService {
 
     const passwordHash = await this.passwords.hash(data.password, 'high')
     const now = this.clock.now()
+    let outcome: SessionGrant | 'pending'
     try {
-      return await this.prisma.transaction(async (tx) => {
+      outcome = await this.prisma.transaction(async (tx) => {
         const id = await this.users.create({
           name: data.name,
           email: data.email,
@@ -150,5 +153,11 @@ export class RegistrationService {
       }
       throw err
     }
+    // FR-M01-69: the auto-login of a pupil fires the login hook AFTER the commit (never inside the transaction), bounded and
+    // swallowed. A pending teacher got no session, so no login and no hook.
+    if (outcome !== 'pending') {
+      await this.ports.fireLoginHook({ userId: outcome.session.user.id, role: outcome.session.active.role, at: this.clock.now() }, info.requestId)
+    }
+    return outcome
   }
 }
