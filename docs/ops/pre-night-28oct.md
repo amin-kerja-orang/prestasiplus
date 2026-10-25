@@ -16,7 +16,7 @@ Each step has **Command**, **Expected output** (the strings the scripts print), 
 
 ## Conventions for all commands
 
-Run as `ppdeploy` on `<vps-host>` from `/opt/pretasiplus` (same helpers as the 26 Oct sheet):
+Run as `ppdeploy` on `<vps-host>` from `/opt/pretasiplus` (same helpers as the 26 Oct sheets, `vps-dark-26oct-runsheet.md` and `vps-dark-setup-26oct.md`):
 
 ```
 cd /opt/pretasiplus
@@ -84,7 +84,7 @@ tail -n 3 /var/lib/pretasiplus-deploy/history.log
 
 **STOP if**
 
-- applied is lower than folders: the LEAD decides whether to run `deploy/vps/deploy.sh` (step 6a of the 26 Oct sheet) now; then repeat this step. If the sha is not `<release_sha>`, any ETL change after the code freeze means the rehearsal is repeated (plan P2): tell the LEAD, do not go on.
+- applied is lower than folders: the LEAD decides whether to run `deploy/vps/deploy.sh` (step 6a of `vps-dark-setup-26oct.md`) now; then repeat this step. If the sha is not `<release_sha>`, any ETL change after the code freeze means the rehearsal is repeated (plan P2): tell the LEAD, do not go on.
 - a migration was applied after 26 Oct: re-run the grant lines of 26 Oct step 8b if the roles were created (new tables need grants), and tell the LEAD.
 - `/api/ready` is not 200 or the unfinished count is not `0`.
 
