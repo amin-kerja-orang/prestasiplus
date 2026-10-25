@@ -12,7 +12,8 @@
  * `mustChangePassword: false`); only migrated and bootstrapped accounts carry the flag, and no
  * endpoint sets it. The spec therefore creates the account through the API (one-time generated
  * password, held in memory only, never logged or attached) and then sets `users.must_reset_password`
- * with `psql` on the test database (`E2E_DATABASE_URL`, else `DATABASE_URL`; never logged).
+ * with `psql` on the test database (`E2E_DATABASE_URL` only; local host or `E2E_DB_IS_TEST=1`; the
+ * connection goes through PG* environment variables, never argv; never logged).
  *
  * Flow per role: the flagged user logs in and lands on the change page (not an error page; other
  * pages redirect back to it) -> a wrong current password shows the server 422 in the alert -> a right
@@ -68,25 +69,75 @@ const ROLES: RoleCase[] = [
   },
 ]
 
-/** Flags the account (the API cannot): `users.must_reset_password = true`, by id, on the test database. */
-function flagAccount(id: string): void {
-  const url = process.env.E2E_DATABASE_URL || process.env.DATABASE_URL
-  if (!url) throw new Error('E2E_DATABASE_URL (or DATABASE_URL) is needed to flag the account')
-  if (!/^\d+$/.test(id)) throw new Error('unexpected user id')
-  execFileSync(
-    'psql',
-    [
-      url,
-      '-v',
-      'ON_ERROR_STOP=1',
-      '-q',
-      '-c',
-      `update users set must_reset_password = true where id = ${id}`,
-    ],
-    {
-      stdio: ['ignore', 'ignore', 'pipe'],
-    },
-  )
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
+/** The e-mails this spec creates: `am2a1.<base36 time><project><role>@example.test`. */
+const TEST_EMAIL = /^am2a1\.[a-z0-9]+@example\.test$/
+
+/**
+ * Flags the account the spec just created (the API cannot): `users.must_reset_password = true`, on
+ * the TEST database `E2E_DATABASE_URL` only (no `DATABASE_URL` fallback). The host must be
+ * localhost / 127.0.0.1 / ::1, or `E2E_DB_IS_TEST=1` must say that it is a throw-away database. The
+ * connection goes to `psql` through the PG* environment variables only: no URL (and so no password)
+ * in argv, in `ps` or in an error. The update is scoped to the id AND the e-mail just created and
+ * must change exactly one row. A failure throws a fixed message (no command line, no stderr).
+ */
+function flagAccount(id: string, email: string): void {
+  const raw = process.env.E2E_DATABASE_URL
+  if (!raw) throw new Error('E2E_DATABASE_URL (the test database) is needed to flag the account')
+  if (!/^\d+$/.test(id)) throw new Error('flagging refused: unexpected user id')
+  if (!TEST_EMAIL.test(email)) throw new Error('flagging refused: not a test account e-mail')
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    throw new Error('E2E_DATABASE_URL is not a valid URL')
+  }
+  const host = url.hostname.replace(/^\[|\]$/g, '')
+  if (!LOCAL_HOSTS.has(host) && process.env.E2E_DB_IS_TEST !== '1') {
+    throw new Error(
+      'flagging refused: the database host is not local (set E2E_DB_IS_TEST=1 for a test database)',
+    )
+  }
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    PGHOST: host,
+    PGPORT: url.port || '5432',
+    PGUSER: decodeURIComponent(url.username),
+    PGPASSWORD: decodeURIComponent(url.password),
+    PGDATABASE: decodeURIComponent(url.pathname.replace(/^\//, '')) || 'postgres',
+  }
+  let out: string
+  try {
+    out = execFileSync(
+      'psql',
+      [
+        '-X',
+        '-q',
+        '-t',
+        '-A',
+        '-v',
+        'ON_ERROR_STOP=1',
+        '-v',
+        `id=${id}`,
+        '-v',
+        `email=${email}`,
+        '-f',
+        '-',
+      ],
+      {
+        env,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+        input:
+          "update users set must_reset_password = true where id = :'id'::bigint and email = :'email' returning id;\n",
+      },
+    )
+  } catch (err) {
+    const status = (err as { status?: number | null }).status
+    throw new Error(`flagging the test account failed (psql exit ${String(status ?? 'none')})`)
+  }
+  if (out.trim() !== id)
+    throw new Error('flagging the test account changed an unexpected number of rows')
 }
 
 // Top level (a describe-level `use` forces a new worker): applies to this file only.
@@ -130,7 +181,7 @@ test.describe('forced password change (AM2-A1) @api', () => {
         expect(created.status(), 'POST /api/admin/users').toBe(201)
         const initialPassword = body?.generatedPassword ?? ''
         expect(initialPassword.length).toBeGreaterThan(0)
-        flagAccount(id ?? '')
+        flagAccount(id ?? '', email)
 
         // 1. Login lands on the change page (the router guard).
         await loginViaUi(page, email, initialPassword)

@@ -36,6 +36,7 @@ const loading = ref(false)
 const errors = ref<string[]>([])
 
 async function submit(): Promise<void> {
+  if (loading.value) return
   loading.value = true
   errors.value = []
   let result: Awaited<ReturnType<typeof changePasswordAndRefresh>>
@@ -47,10 +48,13 @@ async function submit(): Promise<void> {
     })
   } catch (err) {
     errors.value = errorLines(err)
-    password.value = ''
-    confirmation.value = ''
     loading.value = false
     return
+  } finally {
+    // Never keep a typed password in the page state, whatever the outcome.
+    currentPassword.value = ''
+    password.value = ''
+    confirmation.value = ''
   }
   if (!result.refreshed) {
     // The password is changed but the new session could not be read: sign in again.

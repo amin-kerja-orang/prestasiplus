@@ -186,6 +186,37 @@ describe('PasswordChangeRequiredPage (AM2-A1)', () => {
     expect(useSessionStore().token).toBe('csrf-new')
   })
 
+  it('shows the generic BM error on a network failure and keeps no typed password', async () => {
+    apiMocks.changePassword.mockRejectedValue(
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+    )
+    const w = await render()
+    await fillAndSubmit(w)
+    const text = w.get('[data-testid=change-alert]').text()
+    expect(text).toContain('Ralat berlaku. Sila cuba lagi.')
+    expect(text).not.toContain('Failed to fetch')
+    expect(apiMocks.getSession).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/password/change')
+    for (const id of ['change-current', 'change-new', 'change-confirm']) {
+      expect((w.get(`[data-testid=${id}]`).element as HTMLInputElement).value).toBe('')
+    }
+  })
+
+  it('ignores a second submit while the first is still running', async () => {
+    let finish: (v: string) => void = () => undefined
+    apiMocks.changePassword.mockReturnValue(new Promise<string>((resolve) => (finish = resolve)))
+    apiMocks.getSession.mockResolvedValue(FRESH)
+    const w = await render()
+    await w.get('[data-testid=change-current]').setValue('lama123')
+    await w.get('[data-testid=change-new]').setValue('baru123')
+    await w.get('[data-testid=change-confirm]').setValue('baru123')
+    await w.get('form').trigger('submit')
+    await w.get('form').trigger('submit')
+    expect(apiMocks.changePassword).toHaveBeenCalledTimes(1)
+    finish('Kata laluan berjaya ditukar.')
+    await flushPromises()
+  })
+
   it('shows the server throttle text on a 429 and stays on the page', async () => {
     apiMocks.changePassword.mockRejectedValue(
       new ApiError({
