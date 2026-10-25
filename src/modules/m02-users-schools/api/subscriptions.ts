@@ -134,6 +134,14 @@ export interface SubscriptionStudentsQuery {
   signal?: AbortSignal
 }
 
+/** #42 `students[]` row (BE #354 option A: no, name, classLevel; option B and the mock add `idDelima`). */
+export interface RenewalInvoiceStudent {
+  no: number
+  name: string
+  classLevel: string | null
+  idDelima?: string | null
+}
+
 /** #42 (DATA-M02-12). Money is a decimal string ("30.00", "23280.00"); the screen prefixes "RM". */
 export interface RenewalInvoice {
   /** "INV-{subscription id}-{yyyymmdd of today}". */
@@ -145,7 +153,8 @@ export interface RenewalInvoice {
   currentPeriod: { start: string; end: string }
   /** `endsAt` → `endsAt` + 1 year (BR-30). */
   renewalPeriod: { start: string; end: string }
-  students: { no: number; name: string; idDelima: string | null; classLevel: string | null }[]
+  /** Every student of the school, by name, numbered from 1 (FR-M02-97). `idDelima` is sent only by the mock (and BE option B). */
+  students: RenewalInvoiceStudent[]
   studentCount: number
   pricePerStudent: string
   total: string
