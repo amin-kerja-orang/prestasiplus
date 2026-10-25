@@ -404,6 +404,28 @@ describe('UserCreatePage (M02 S2) school admin', () => {
     expect(t(w, 'gen-empty').text()).toBe('Tiada sekolah dijumpai')
   })
 
+  it('draws both school result lists in the flow, not floating: the form-section card clips its overflow (RS5-M1)', async () => {
+    const w = await render()
+    await type(w, 'user-role', 'school_admin')
+    await search(w, 'gen-search', 'contoh')
+    // An `absolute` list is cut by the card (`overflow-clip`); the list is a surface in the flow that scrolls inside.
+    const inFlow = (id: string): void => {
+      const list = t(w, id)
+      expect(list.attributes('data-ds')).toBe('surface')
+      expect(list.classes()).not.toContain('absolute')
+      expect(list.attributes('data-behavior')).toBeUndefined()
+      const scroller = list.element.firstElementChild
+      expect(scroller?.className).toContain('max-h-64')
+      expect(scroller?.className).toContain('overflow-y-auto')
+    }
+    inFlow('gen-dropdown')
+    expect(t(w, 'school-admin-generator').element.contains(t(w, 'gen-dropdown').element)).toBe(true)
+    // The student / teacher picker (same card clip) follows the same pattern.
+    await type(w, 'user-role', 'student')
+    await search(w, 'std-school-search', 'contoh')
+    inFlow('std-school-dropdown')
+  })
+
   it('shows "Sekolah Dipilih", generates the credentials, copies with the toast and submits', async () => {
     users.createAdminUser.mockResolvedValue({ data: {}, status: 'ok' })
     const w = await render()
