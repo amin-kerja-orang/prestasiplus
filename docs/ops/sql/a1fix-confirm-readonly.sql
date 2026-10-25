@@ -3,7 +3,7 @@
 -- change, PR #319, branch be/AM-A1-FIX) on the A4 rehearsal DB. Companion of smoke-readonly.sql (same style, same rules).
 --
 -- WHAT IT IS
---   One transaction, BEGIN TRANSACTION READ ONLY ... ROLLBACK, holding nine SELECTs (sections A to F). Postgres refuses any
+--   One transaction, BEGIN TRANSACTION READ ONLY ... ROLLBACK, holding ten SELECTs (sections A to G). Postgres refuses any
 --   write inside a READ ONLY transaction, so the file fails closed. No DDL, no DML, no temp table. The only function that
 --   runs SQL text is query_to_xml(), and only on SELECT text that is fixed in this file.
 --
@@ -16,7 +16,7 @@
 -- HOW TO RUN (psql 16; the file has no psql meta-commands)
 --   Run on the A4 rehearsal DB, which is the v2 target and still holds the staging_cloud schema (the stage copy):
 --     PGOPTIONS='-c statement_timeout=120000' psql -X -v ON_ERROR_STOP=1 -f docs/ops/sql/a1fix-confirm-readonly.sql
---   It prints nine result sets. The `q` helper of the A1 sheet prints only one statement, so use psql.
+--   It prints ten result sets. The `q` helper of the A1 sheet prints only one statement, so use psql.
 --
 -- WORKS BEFORE AND AFTER #319 IS MERGED
 --   Only columns that exist on both are read. The "alias" and "mapped" columns are computed in this file from the
@@ -24,7 +24,7 @@
 --   STAGE_MAP); they say what #319 does, whichever build was applied. Section E needs a build that has applied
 --   `migrate:all --apply`; on a build without #319 it shows `none` for the exclusion notes (the notes are new in #319).
 --
--- STAGING-DEPENDENT SECTIONS: A, B, C and F1 (read staging_cloud)
+-- STAGING-DEPENDENT SECTIONS: A, B1, C, F1 and G (read staging_cloud)
 --   Each is guarded: when the staged table or one of its columns is absent (staging_cloud dropped, or a different spec)
 --   the section prints ONE row whose `code` starts with 'n/a' and the file goes on, so ON_ERROR_STOP never trips.
 --   Sections B2, D1, D2, E and F2 read public.* and etl_runs only; they never need staging_cloud.
@@ -32,7 +32,8 @@
 -- SECTIONS (one comment line above each query names the LEAD confirmation it answers)
 --   A    staged coin_transactions: ledger source aliases of #319 and the positive amounts that a debit-only alias rejects
 --   B1   staged banners.type against the BANNER_TYPE_MAP of #319;  B2 the same on v2 (banners.banner_type)
---   C    staged challenges: challenge_type with min and max target_value (OQ5, #318)
+--   C    staged challenges: challenge_type with min and max target_value (OQ5, #318); covers type and target only,
+--        the difficulty words are section G
 --   D1   v2 users flagged must_reset_password that still hold a bcrypt hash;  D2 users with a NULL hash
 --   E    exclusion counters of the latest succeeded apply run of the core stage and of the activity stage
 --        In an activity run counters -> 'notes' is the counter of the content entity `notes` (it has the key `batches`), not
@@ -40,6 +41,11 @@
 --        kind 'counter' rows are the runner's per-entity `excluded` totals above 0 (also other documented exclusions
 --        of the tip, for example streaks); a zero is not listed. kind 'none' = no note name contains "excluded".
 --   F1   staged education_levels.stage against the STAGE_MAP of #319;  F2 the v2 education_levels.stage values
+--   G    staged challenges.difficulty against the OQ5 map of #318 (challengeDifficulty): the unmapped total is the
+--        number behind `note challenges.difficulty_unmapped`, which migrate:all does not print. `difficulty` exists in the
+--        staging spec only since #318, so on an older build G prints the n/a row. The total counts platform challenges
+--        (no author, no class, as the loader does); the note also leaves out a challenge rejected for another reason
+--        (title, type, target, reward), so the note can be lower than this total, never higher.
 -- =====================================================================================================================
 
 BEGIN TRANSACTION READ ONLY;
@@ -208,5 +214,44 @@ ORDER BY 2;
 -- F2: LEAD confirms the stage values the migrated education levels hold in v2 (the check constraint allows only primary, lower_secondary, upper_secondary).
 SELECT 'F2' AS q, stage, count(*) AS n
 FROM education_levels WHERE legacy_source = 'cloud' GROUP BY stage ORDER BY stage;
+
+-- G: OQ5 #318 `challenges.difficulty_unmapped` (not printed by `migrate:all`): LEAD confirms that every staged difficulty word is easy, medium or hard (any case, spaces trimmed, blank or NULL = default medium and NOT unmapped), so the unmapped total is 0; a non-zero total means .cloud stores other words and those challenges became medium.
+WITH g AS (
+  SELECT CASE WHEN to_regclass('staging_cloud.challenges') IS NOT NULL
+               AND (SELECT count(*) FROM information_schema.columns
+                    WHERE table_schema = 'staging_cloud' AND table_name = 'challenges'
+                      AND column_name IN ('difficulty', 'created_by', 'classroom_id')) = 3
+              THEN query_to_xml($q$
+    SELECT lower(btrim(difficulty)) AS code,
+           count(*) FILTER (WHERE created_by IS NULL AND classroom_id IS NULL) AS n_platform,
+           count(*) FILTER (WHERE created_by IS NOT NULL OR classroom_id IS NOT NULL) AS n_teacher
+    FROM staging_cloud.challenges GROUP BY 1
+  $q$, false, false, '') END AS x
+),
+r AS (
+  SELECT (xpath('/row/code/text()', e))[1]::text AS code,
+         (xpath('/row/n_platform/text()', e))[1]::text::bigint AS n_platform,
+         (xpath('/row/n_teacher/text()', e))[1]::text::bigint AS n_teacher
+  FROM g, unnest(xpath('/table/row', g.x)) AS e
+),
+k AS (
+  -- The key of enumKey(): trim, lower case, runs of space and dash folded to one underscore; an empty key is blank.
+  -- query_to_xml() writes NULL and '' alike as no text, so both come back as NULL here and are shown as one row.
+  SELECT CASE WHEN btrim(coalesce(code, '')) = '' THEN '(blank or null)' ELSE code END AS code,
+         regexp_replace(regexp_replace(coalesce(code, ''), '^\s+|\s+$', '', 'g'), '[\s-]+', '_', 'g') AS key,
+         n_platform, n_teacher
+  FROM r
+),
+m AS (
+  SELECT code, key, sum(n_platform) AS n_platform, sum(n_teacher) AS n_teacher,
+         (key = '' OR key IN ('easy', 'medium', 'hard')) AS mapped
+  FROM k GROUP BY code, key
+)
+SELECT 'G' AS q, code, n_platform, n_teacher, mapped,
+       (sum(n_platform) FILTER (WHERE NOT mapped) OVER ())::bigint AS unmapped_total
+FROM m
+UNION ALL
+SELECT 'G', 'n/a: staging_cloud.challenges.difficulty not present', NULL, NULL, NULL, NULL FROM g WHERE x IS NULL
+ORDER BY 2;
 
 ROLLBACK;
