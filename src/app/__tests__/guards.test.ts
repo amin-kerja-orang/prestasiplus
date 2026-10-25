@@ -563,6 +563,31 @@ describe('forced password change (AM2-A1, DV-26)', () => {
     expect(router.currentRoute.value.path).toBe('/login')
   })
 
+  it('ignores one trailing slash, a query and a hash on the exempt paths, but not nesting', () => {
+    const flagged = { isLoggedIn: true, role: 'student' as const, landingPath: '/dashboard', mustChangePassword: true }
+    const route = (path: string) => ({ path, meta: {} }) as unknown as RouteLocationNormalized
+    const redirect = { kind: 'redirect', to: '/password/change' }
+    expect(decideAccess(route('/logout/'), flagged)).toEqual({ kind: 'allow' })
+    expect(decideAccess(route('/password/change/'), flagged)).toEqual({ kind: 'allow' })
+    expect(decideAccess(route('/password/change/x'), flagged)).toEqual(redirect)
+    expect(decideAccess(route('/logout/x'), flagged)).toEqual(redirect)
+    expect(decideAccess(route('/password/change//'), flagged)).toEqual(redirect)
+    expect(decideAccess(route('/dashboard/'), flagged)).toEqual(redirect)
+  })
+
+  it('keeps the query and hash out of the match when navigating', async () => {
+    logIn(STUDENT, { mustChangePassword: true })
+    const router = flaggedRouter()
+    await router.push('/dashboard?x=1')
+    expect(router.currentRoute.value.path).toBe('/password/change')
+    await router.push('/password/change?x=1#h')
+    expect(router.currentRoute.value.fullPath).toBe('/password/change?x=1#h')
+    await router.push('/password/change/')
+    expect(router.currentRoute.value.path).toBe('/password/change/')
+    await router.push('/logout/')
+    expect(router.currentRoute.value.path).toBe('/login')
+  })
+
   it('does not refresh /api/me or the bell badge while flagged, and does once unflagged', async () => {
     logIn(STUDENT, { mustChangePassword: true })
     const router = flaggedRouter()
