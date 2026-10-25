@@ -43,7 +43,8 @@ export function patternKinds(text: string, options: ScanPatternOptions = {}): st
 function rawPatternKinds(text: string, options: ScanPatternOptions): string[] {
   const allowed = new Set((options.allowedEmailDomains ?? [EMAIL_DOMAIN]).map((d) => d.toLowerCase()))
   const kinds: string[] = []
-  if (text.length >= 5) {
+  // no `@` means no address, and the address pattern is quadratic on a long run of local-part characters, so look for one first
+  if (text.length >= 5 && text.includes('@')) {
     for (const m of text.matchAll(EMAIL)) {
       if (!allowed.has((m[1] as string).toLowerCase())) {
         kinds.push('email')
@@ -79,7 +80,7 @@ const IC_G = globalOf(IC)
 export function patternSpans(text: string, options: ScanPatternOptions = {}): PiiSpan[] {
   const allowed = new Set((options.allowedEmailDomains ?? [EMAIL_DOMAIN]).map((d) => d.toLowerCase()))
   const spans: PiiSpan[] = []
-  for (const m of text.matchAll(EMAIL_G)) {
+  for (const m of text.includes('@') ? text.matchAll(EMAIL_G) : []) {
     if (!allowed.has((m[1] as string).toLowerCase())) spans.push({ start: m.index, end: m.index + m[0].length, kind: 'email' })
   }
   for (const re of [MOBILE_G, LANDLINE_G]) for (const m of text.matchAll(re)) spans.push({ start: m.index, end: m.index + m[0].length, kind: 'phone' })
@@ -132,10 +133,18 @@ function foldWithOffsets(text: string): { folded: string; start: number[]; end: 
 
 /** Every string (and long integer) leaf of a cell. */
 export function* leaves(value: unknown): Generator<string> {
-  if (typeof value === 'string') yield value
-  else if (typeof value === 'number' && Number.isInteger(value) && Math.abs(value) >= 100_000_000) yield String(value)
-  else if (Array.isArray(value)) for (const v of value) yield* leaves(v)
-  else if (value !== null && typeof value === 'object') for (const v of Object.values(value)) yield* leaves(v)
+  // iterative (an explicit stack, same order as a depth-first walk): a deeply nested json cell cannot overflow the call stack
+  const stack: unknown[] = [value]
+  while (stack.length > 0) {
+    const v = stack.pop()
+    if (typeof v === 'string') yield v
+    else if (typeof v === 'number' && Number.isInteger(v) && Math.abs(v) >= 100_000_000) yield String(v)
+    else if (Array.isArray(v)) for (let i = v.length - 1; i >= 0; i--) stack.push(v[i])
+    else if (v !== null && typeof v === 'object') {
+      const values = Object.values(v)
+      for (let i = values.length - 1; i >= 0; i--) stack.push(values[i])
+    }
+  }
 }
 
 /** The parsed value of a json text cell (so its string leaves are indexed, not the whole text); anything else as it is. */

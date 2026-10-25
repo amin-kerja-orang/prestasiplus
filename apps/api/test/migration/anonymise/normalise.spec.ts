@@ -9,10 +9,11 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-import { LeakScanner, OriginalsIndex, patternKinds } from '../../../src/migration/anonymise/leak-scan'
+import { leaves, LeakScanner, OriginalsIndex, patternKinds, patternSpans } from '../../../src/migration/anonymise/leak-scan'
 import { normaliseForScan, scanViews } from '../../../src/migration/anonymise/normalise'
 import { Pseudonymiser } from '../../../src/migration/anonymise/pseudonyms'
-import { PiiRedactor, REDACTED_TOKEN } from '../../../src/migration/anonymise/redact'
+import { EMAIL, IC, LANDLINE, MOBILE } from '../../../src/migration/anonymise/patterns'
+import { MAX_JSON_DEPTH, PiiRedactor, REDACTED_TOKEN } from '../../../src/migration/anonymise/redact'
 import { runAnonymise } from '../../../src/migration/anonymise/run'
 import { applyRule, parseConfig, type Rule } from '../../../src/migration/anonymise/rules'
 import { LeakScanError } from '../../../src/migration/anonymise/errors'
@@ -463,5 +464,113 @@ describe('fuzz: the guarantee holds on obfuscated random cells', () => {
       if (out !== text) changed++
     }
     expect(changed).toBeGreaterThan(500)
+  })
+})
+
+describe('deeply nested json cannot overflow the stack (fail closed past MAX_JSON_DEPTH)', () => {
+  const deepArray = (n: number, leaf: string): string => `${'['.repeat(n)}${JSON.stringify(leaf)}${']'.repeat(n)}`
+  const deepObject = (n: number, leaf: string): string => `${'{"a":'.repeat(n)}${JSON.stringify(leaf)}${'}'.repeat(n)}`
+  const depthOf = (v: unknown): number => {
+    let d = 0
+    let cur = v
+    while (cur !== null && typeof cur === 'object') {
+      cur = Array.isArray(cur) ? cur[0] : (cur as Record<string, unknown>).a
+      d++
+    }
+    return d
+  }
+
+  it.each([
+    ['array, a number in the leaf', deepArray(10_000, 'Hubungi 012-345 6789')],
+    ['object, a number in the leaf', deepObject(10_000, 'Hubungi 012-345 6789')],
+    ['array, a view-only number (zero-width space)', deepArray(10_000, `Hubungi 012${ZW}-345 6789`)],
+    ['object, a tag-split name', deepObject(10_000, '<b>Qwertyus</b> Plorbinski')],
+    ['array, a number behind a json escape', `${'['.repeat(10_000)}"Hubungi \\u0030\\u0031\\u0032-345 6789"${']'.repeat(10_000)}`],
+  ])('%s: no crash, the output is clean and still valid json of bounded depth', (_label, text) => {
+    const out = redact(text) as string
+    expect(typeof out).toBe('string')
+    expect(scanHits(out)).toEqual([])
+    expect(patternKinds(out)).toEqual([])
+    expect(out).toContain(T)
+    const parsed: unknown = JSON.parse(out)
+    expect(depthOf(parsed)).toBeLessThanOrEqual(MAX_JSON_DEPTH + 2)
+  })
+
+  it('a deep json text that holds nothing to redact is returned byte for byte; one at the limit is still walked', () => {
+    const clean = deepArray(10_000, 'biasa')
+    expect(redact(clean)).toBe(clean)
+    const shallow = deepArray(MAX_JSON_DEPTH - 1, 'Hubungi 012-345 6789')
+    expect(redact(shallow)).toBe(shallow.replace('012-345 6789', T))
+  })
+
+  it('a deep object value (json column) is redacted and scanned without overflow either', () => {
+    let v: unknown = 'Hubungi 012-345 6789'
+    for (let i = 0; i < 50_000; i++) v = { a: v }
+    const out = redact(v)
+    expect(scanHits(out)).toEqual([])
+    expect(JSON.stringify(out)).toContain(T)
+    expect([...leaves(v)]).toEqual(['Hubungi 012-345 6789'])
+  })
+
+  it('leaves keeps the order of a depth-first walk', () => {
+    expect([...leaves({ a: ['x', { b: 'y', c: 123456789 }, 'z'], d: 'w', e: [1, null, true] })]).toEqual(['x', 'y', '123456789', 'z', 'w'])
+  })
+})
+
+describe('availability: the e-mail pattern is not run where it cannot match', () => {
+  const oldKinds = (text: string): string[] => {
+    const kinds: string[] = []
+    if (text.length >= 5) for (const m of text.matchAll(EMAIL)) if ((m[1] as string).toLowerCase() !== 'example.test') { kinds.push('email'); break }
+    if (text.length >= 9) {
+      if (MOBILE.test(text) || LANDLINE.test(text)) kinds.push('phone')
+      if (IC.test(text)) kinds.push('ic')
+    }
+    return kinds
+  }
+  const oldSpans = (text: string): string[] =>
+    [...text.matchAll(new RegExp(EMAIL.source, 'g'))].filter((m) => (m[1] as string).toLowerCase() !== 'example.test').map((m) => `${m.index}:${m.index + m[0].length}`)
+
+  it('long runs without an @ (digits, letters, Arabic-Indic or zero-width separated digits) are scanned fast', () => {
+    for (const run of ['0'.repeat(400_000), 'a'.repeat(400_000), '\u0660'.repeat(400_000), `0${ZW}`.repeat(200_000), '6'.repeat(400_000)]) {
+      const t0 = performance.now()
+      patternKinds(run)
+      patternSpans(run)
+      expect(performance.now() - t0, run.slice(0, 3)).toBeLessThan(1500)
+    }
+  })
+
+  it('MOBILE, LANDLINE and IC are linear on long digit runs (measured, so no run splitting is needed)', () => {
+    for (const run of ['0'.repeat(400_000), '60'.repeat(200_000), '0-'.repeat(200_000), '012345678901'.repeat(30_000)]) {
+      const t0 = performance.now()
+      for (const re of [MOBILE, LANDLINE, IC]) re.test(run)
+      expect(performance.now() - t0, run.slice(0, 3)).toBeLessThan(1000)
+    }
+  })
+
+  it('never looser: over 120k random strings the new kinds contain the old ones, and equal them where no view applies; spans are the old spans', () => {
+    function rng(seed: number): () => number {
+      let x = seed >>> 0
+      return () => {
+        x = (Math.imul(x, 1664525) + 1013904223) >>> 0
+        return x / 0x100000000
+      }
+    }
+    const next = rng(120_000)
+    const pieces = ['0', '1', '3', '6', '012', '345', '6789', '-', ' ', '+60', '900101', '14', '5555', 'a', 'b.c', 'x@y.invalid', 'a@b.example.test', '@', '@@', '.', 'Mel', '<b>', '</b>', '&nbsp;', '&#64;', '\u200b', '\u0661', '\\', 'z']
+    let compared = 0
+    for (let i = 0; i < 120_000; i++) {
+      const n = 1 + Math.floor(next() * 14)
+      let text = ''
+      for (let k = 0; k < n; k++) text += pieces[Math.floor(next() * pieces.length)]
+      const old = oldKinds(text)
+      const now = patternKinds(text)
+      for (const k of old) expect(now, text).toContain(k)
+      if (scanViews(text).length === 0) {
+        expect(now, text).toEqual(old)
+        compared++
+      }
+      expect(patternSpans(text).filter((sp) => sp.kind === 'email').map((sp) => `${sp.start}:${sp.end}`), text).toEqual(oldSpans(text))
+    }
+    expect(compared).toBeGreaterThan(5000)
   })
 })

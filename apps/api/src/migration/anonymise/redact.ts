@@ -26,7 +26,8 @@
  * JSON (an object, or a text that parses to an object, array or string): every string leaf is redacted on its own,
  * keys, numbers, booleans and null are kept. A long integer that the scan would flag (it scans integers of 9 digits or
  * more) is the one number that cannot stay: it becomes the token as a string. A text cell whose JSON form was changed
- * is written back with JSON.stringify; one that needs no redaction is returned byte for byte.
+ * is written back with JSON.stringify; one that needs no redaction is returned byte for byte. Nesting deeper than MAX_JSON_DEPTH (100)
+ * is not walked: that part becomes the token (fail closed).
  *
  * Nothing here logs or returns a value: callers get per-kind counts only.
  */
@@ -41,6 +42,8 @@ export type RedactKind = PiiSpan['kind']
 export type RedactCounts = Partial<Record<RedactKind, number>>
 
 const MAX_ROUNDS = 8
+/** Deepest json nesting that `redact-pii` walks; what lies deeper is replaced by the token (fail closed), so no input can overflow the stack. */
+export const MAX_JSON_DEPTH = 100
 const KIND_ORDER: readonly RedactKind[] = ['email', 'phone', 'ic', 'original-value', 'original-name']
 
 const isObject = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v)
@@ -97,7 +100,11 @@ export class PiiRedactor {
     return REDACTED_TOKEN
   }
 
-  private redactLeaf(value: unknown, count?: (kind: RedactKind) => void): unknown {
+  private redactLeaf(value: unknown, count?: (kind: RedactKind) => void, depth = 0): unknown {
+    if (depth > MAX_JSON_DEPTH && value !== null && typeof value === 'object') {
+      count?.('original-value')
+      return REDACTED_TOKEN
+    }
     if (typeof value === 'string') return value === '' ? '' : this.redactString(value, count)
     if (typeof value === 'number') {
       // the scan reads integers of 9+ digits as text; one that would be flagged cannot stay a number
@@ -106,8 +113,8 @@ export class PiiRedactor {
       count?.('original-value')
       return REDACTED_TOKEN
     }
-    if (Array.isArray(value)) return value.map((v) => this.redactLeaf(v, count))
-    if (isObject(value)) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, this.redactLeaf(v, count)]))
+    if (Array.isArray(value)) return value.map((v) => this.redactLeaf(v, count, depth + 1))
+    if (isObject(value)) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, this.redactLeaf(v, count, depth + 1)]))
     return value
   }
 
