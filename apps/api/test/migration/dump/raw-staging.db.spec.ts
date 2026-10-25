@@ -27,7 +27,7 @@ const USERS = [
   '{"id":2,"name":null,"email":null,"is_active":0,"created_at":null,"last_login_at":null,"remember_token":null,"parent_invite_token":null}',
 ]
 const SCHOOLS = ['{"id":1,"name":"Sekolah Satu","created_at":"2026-01-01T10:00:00.000000+08:00","updated_at":null}']
-const PSYCHO = ['{"id":1,"user_id":1,"details":{"score":7,"flags":[true,"x"]},"created_at":"2026-01-01T02:00:00.000000Z","updated_at":null}']
+const ROOMS = ['{"id":1,"state":{"score":7,"flags":[true,"x"]},"status":"open","created_at":"2026-01-01T02:00:00.000000Z","updated_at":null}']
 
 beforeAll(async () => {
   db = await createStagingDb()
@@ -35,12 +35,12 @@ beforeAll(async () => {
     tables: {
       users: sourceTable('users', USERS, { types: { created_at: 'datetime', last_login_at: 'timestamp', is_active: 'tinyint' }, drop: ['teaching_qualification'] }),
       schools: sourceTable('schools', SCHOOLS, { types: { created_at: 'datetime' } }),
-      psychometric_results: sourceTable('psychometric_results', PSYCHO, { types: { details: 'json' } }),
+      game_rooms: sourceTable('game_rooms', ROOMS, { types: { state: 'json' } }),
     },
   })
   out = work.out('raw-staging')
   const log = capture()
-  const code = await runDumpCli(['dump:cloud', '--out', out, '--tables', 'users,schools,psychometric_results'], { env: fx.env, out: log.out, err: log.err })
+  const code = await runDumpCli(['dump:cloud', '--out', out, '--tables', 'users,schools,game_rooms'], { env: fx.env, out: log.out, err: log.err })
   expect(code, log.text()).toBe(DUMP_EXIT.ok)
   manifest = JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8')) as Record<string, unknown>
 }, FULL_LOAD_TIMEOUT)
@@ -63,7 +63,7 @@ describe('a raw dump:cloud output loaded by staging:load', () => {
     expect(result.tables.find((t) => t.table === 'users')).toMatchObject({ rowsRead: 2, rowsLoaded: 2, expected: 2, extraColumns: [] })
     expect(await countRows(db.pool, 'users')).toBe(2)
     expect(await countRows(db.pool, 'schools')).toBe(1)
-    expect(await countRows(db.pool, 'psychometric_results')).toBe(1)
+    expect(await countRows(db.pool, 'game_rooms')).toBe(1)
     expect(result.totalRows).toBe(4)
 
     // DATETIME 10:00 at +08:00 is 02:00 UTC; the TIMESTAMP was already UTC (Z); both are timestamptz.
@@ -78,7 +78,7 @@ describe('a raw dump:cloud output loaded by staging:load', () => {
     expect(nulls.rows[0]).toEqual({ created_at: null, last_login_at: null, name: null })
 
     // JSON arrives as real jsonb, not as a string.
-    const j = await db.pool.query(`select jsonb_typeof(details) as kind, details->'flags'->>1 as second, (details->>'score')::int as score from staging_cloud.psychometric_results`)
+    const j = await db.pool.query(`select jsonb_typeof(state) as kind, state->'flags'->>1 as second, (state->>'score')::int as score from staging_cloud.game_rooms`)
     expect(j.rows[0]).toEqual({ kind: 'object', second: 'x', score: 7 })
   }, FULL_LOAD_TIMEOUT)
 
