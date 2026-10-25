@@ -8,7 +8,12 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { questions } from '@/modules/m04-question-bank/mock'
 
 import { dskp } from '../../mock'
-import { ADMIN_FILLER_SP_IDS, DSKP_PAIRS, dskpPairCount } from '../../mock/data/dskp'
+import {
+  ADMIN_FILLER_SP_IDS,
+  DEMO_STANDARD_SP_IDS,
+  DSKP_PAIRS,
+  dskpPairCount,
+} from '../../mock/data/dskp'
 import { bootM10 } from './helpers'
 
 beforeAll(async () => {
@@ -64,7 +69,7 @@ describe('DSKP records (M10 §6.9)', () => {
     expect(names).toEqual(['Sel Elektrolisis', 'Polimer', 'Siri Homolog', 'Getah Asli'])
     expect(dskp.getSp(9001)?.code).toBe('1.1.1')
     const path = dskp.spPath(9001)
-    expect(path?.sk).toMatchObject({ id: 9011, code: '1.1', description: 'Kimia T5 — fixture SK' })
+    expect(path?.sk).toMatchObject({ id: 9011, code: '1.1' })
     expect(path?.bidang).toMatchObject({
       id: 9021,
       subjectId: 10,
@@ -157,10 +162,70 @@ describe('DSKP records (M10 §6.9)', () => {
       code: null,
       subjectId: 3,
       educationLevelId: 10,
-      name: 'Matematik T4 — fixture bidang',
+      name: 'Fungsi dan Persamaan Kuadratik',
     })
     expect(dskp.getSk(8070)?.code).toBe('1.1')
     expect(dskp.getSp(8070)?.code).toBe('1.1.1')
+  })
+})
+
+describe('Tingkatan 4–5 demo standards (UAT 2026-10-24, S-52; D54)', () => {
+  const textOf = () =>
+    [
+      ...dskp.bidang().map((b) => b.name),
+      ...dskp.bidang().flatMap((b) => dskp.sk(b.id).map((k) => k.description)),
+      ...dskp
+        .bidang()
+        .flatMap((b) => dskp.sk(b.id).flatMap((k) => dskp.sp(k.id).map((p) => p.description))),
+    ].join('\n')
+
+  it('carries no placeholder wording in any Bidang, SK or SP text', () => {
+    expect(textOf()).not.toMatch(/fixture|INFERRED|placeholder/i)
+  })
+
+  it('has Matematik T4 Bab 1–4 as name-only Bidang with their SK / SP codes', () => {
+    const bidang = dskp.bidang({ subjectId: 3, educationLevelId: 10 })
+    expect(bidang.map((b) => b.name)).toEqual([
+      'Fungsi dan Persamaan Kuadratik',
+      'Asas Nombor',
+      'Penaakulan Logik',
+      'Operasi Set',
+    ])
+    expect(bidang.every((b) => b.code === null)).toBe(true)
+    const codes = (id: number) => dskp.sk(id).flatMap((k) => dskp.sp(k.id).map((p) => p.code))
+    expect(codes(8070)).toEqual(['1.1.1', '1.1.2', '1.2.1', '1.2.2'])
+    expect(codes(9502)).toEqual(['3.1.1', '3.1.2', '3.2.1'])
+  })
+
+  it('has Sejarah T4 and Kimia T5 Bidang aligned with the M03 chapters', () => {
+    expect(
+      dskp.bidang({ subjectId: 5, educationLevelId: 10 }).map((b) => `${b.code ?? ''} ${b.name}`),
+    ).toEqual([
+      '1.0 Kemunculan Tamadun Awal',
+      '2.0 Tamadun Hwang Ho dan Mesir Purba',
+      '3.0 Kemajuan Kerajaan Awal Asia Tenggara',
+      '4.0 Masyarakat Arab Jahiliah dan Penyebaran Islam',
+    ])
+    expect(
+      dskp.bidang({ subjectId: 10, educationLevelId: 11 }).map((b) => `${b.code ?? ''} ${b.name}`),
+    ).toEqual([
+      '1.0 Elektrokimia, Sebatian Karbon dan Polimer',
+      '2.0 Termokimia',
+      '3.0 Kimia Konsumer dan Industri',
+    ])
+  })
+
+  it('lists every demo SP under the right subject and level', () => {
+    const expected = { matematikT4: [3, 10], sejarahT4: [5, 10], kimiaT5: [10, 11] } as const
+    for (const [key, ids] of Object.entries(DEMO_STANDARD_SP_IDS)) {
+      const [subjectId, levelId] = expected[key as keyof typeof expected]
+      for (const id of ids) {
+        expect(dskp.spPath(id)?.bidang, `SP ${String(id)}`).toMatchObject({
+          subjectId,
+          educationLevelId: levelId,
+        })
+      }
+    }
   })
 })
 
@@ -250,9 +315,9 @@ describe('teacher-created rows', () => {
     expect([b.id, k.id, p.id]).toEqual([9_000_001, 9_000_001, 9_000_001])
     expect([b.createdBy, k.createdBy, p.createdBy]).toEqual([5, 5, 5])
     expect(dskp.spPath(p.id)?.bidang.name).toBe('Ujian')
-    expect(dskp.bidang({ subjectId: 10, educationLevelId: 11 }).map((x) => x.code)).toEqual([
-      '1.0',
-      '2.0',
+    // the seeded Kimia T5 Bidang 1.0, 2.0, 3.0 plus the teacher's 2.0 (after the seeded one: id order)
+    expect(dskp.bidang({ subjectId: 10, educationLevelId: 11 }).map((x) => x.id)).toEqual([
+      9021, 9514, 9_000_001, 9515,
     ])
     expect(() => dskp.createSk({ bidangId: 123456789, code: 'x', description: 'x' }, 5)).toThrow()
   })

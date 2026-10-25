@@ -63,9 +63,32 @@ export function buildSchoolDskpHeatmap(
     .map((id) => ({ id, name: curriculum.subject(id)?.name ?? `Subjek ${String(id)}` }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ms-MY') || a.id - b.id)
 
+  // Σ answered and Σ correct over the school's pupils, per SP of the level (BR-M27-24).
+  const subjectOfSp = new Map<number, number>()
+  for (const x of withSp) for (const s of x.sp) subjectOfSp.set(s.id, x.bidang.subjectId)
+  const totals = new Map<number, { answered: number; correct: number }>()
+  for (const pupil of peopleOf(viewer.schoolId, 'student')) {
+    for (const r of spRecords.forUser(pupil.id)) {
+      if (!subjectOfSp.has(r.dskpSpId)) continue
+      const t = totals.get(r.dskpSpId) ?? { answered: 0, correct: 0 }
+      t.answered += r.answered
+      t.correct += r.correct
+      totals.set(r.dskpSpId, t)
+    }
+  }
+
+  // Default subject: the first (by name) that has answers at this level, so the opening view is not an
+  // all-"Belum Cuba" grid; the first subject when the school has none (UAT 2026-10-24, S-52).
+  const withAnswers = new Set(
+    [...totals.entries()].filter(([, t]) => t.answered > 0).map(([sp]) => subjectOfSp.get(sp)),
+  )
   const asked =
     query.subjectId !== undefined && /^\d+$/.test(query.subjectId) ? Number(query.subjectId) : null
-  const subject = subjects.find((s) => s.id === asked) ?? subjects[0] ?? null
+  const subject =
+    subjects.find((s) => s.id === asked) ??
+    subjects.find((s) => withAnswers.has(s.id)) ??
+    subjects[0] ??
+    null
   const school = schoolRefOf(viewer)
   if (!subject) {
     return {
@@ -79,19 +102,6 @@ export function buildSchoolDskpHeatmap(
   }
 
   const chosen = withSp.filter((x) => x.bidang.subjectId === subject.id)
-  const spIds = new Set(chosen.flatMap((x) => x.sp.map((s) => s.id)))
-
-  // Σ answered and Σ correct over the school's pupils, only for the SPs shown.
-  const totals = new Map<number, { answered: number; correct: number }>()
-  for (const pupil of peopleOf(viewer.schoolId, 'student')) {
-    for (const r of spRecords.forUser(pupil.id)) {
-      if (!spIds.has(r.dskpSpId)) continue
-      const t = totals.get(r.dskpSpId) ?? { answered: 0, correct: 0 }
-      t.answered += r.answered
-      t.correct += r.correct
-      totals.set(r.dskpSpId, t)
-    }
-  }
 
   const bidang: HeatmapBidang[] = chosen.map(({ bidang: b, sp }) => ({
     id: b.id,
