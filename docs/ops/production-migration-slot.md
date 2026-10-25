@@ -162,6 +162,11 @@ deploy/vps/migration/slot.sh etl migrate:delta --since=<T-dump1> --as-of=... [--
 - **Role.** Every `etl` run connects as the migration role `pp_etl`: `compose run --env-from-file etl.env`, whose
   `DATABASE_URL` overrides the `migrate` service's `env_file` (`api.env`, then `migrate.env` = `pp_owner`). `etl`
   stops (exit 3) when `etl.env` is missing (`sudo deploy/vps/db-roles.sh secrets`).
+  `etl.env` also carries one line `PP_MIGRATE_ROSTER_DEFAULT_HASHES=<value from the LEAD's credentials>` (name only here; never write
+  the value in the repo, an issue or a chat). It must be there for **every** `migrate:*` run, B6 to B11, with the same value: it is
+  part of the core input hash (`load/activity/preflight.ts:166-168`), so `migrate:questions` (B11) exits 2 when it differs from
+  the one of the core apply; unset, smoke row F10 FAILs and `Z0` is 1 or more at B8 (a STOP). `db-roles.sh secrets` keeps other
+  lines of an existing `etl.env` (`db-roles.sh:127-131`). `slot.sh etl` logs its own env list, not the file, so the value is not logged.
 - Every run gets `NODE_ENV=production` and `PP_MIGRATE_TARGET_DB=<POSTGRES_DB>`; every `migrate:*` run also gets
   `PP_GIT_SHA=<release sha>` (`PP_RELEASE_SHA`, else `git rev-parse HEAD` of the checkout), so `etl_runs.git_sha` is
   recorded: the image has no `.git`. `migrate:all` and `migrate:delta` refuse to run without a 40-character sha.
