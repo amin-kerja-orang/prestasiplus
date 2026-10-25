@@ -14,7 +14,14 @@
  *
  * The result is re-checked with the scanner's own functions; spans are replaced round after round until nothing is left
  * (replacing a span can lift a look-around guard of a neighbouring match), and if the text still would not scan clean
- * the whole cell becomes the token (fail closed). NULL, "" and values that are not text stay as they are.
+ * the whole cell becomes the token (fail closed).
+ *
+ * The scan also reads a NORMALISED view of every string (normalise.ts: tags and entities removed, NFKC, Arabic-Indic and
+ * other non-ASCII digits and zero-width characters folded, JSON escapes decoded; A1-LEAK F1). Spans are cut from the RAW text
+ * only (offsets of the view cannot be mapped back exactly), so PII that only the view shows (`<b>012</b>-345 6789`, a zero-width
+ * character inside a number, `&#64;`, full-width digits, a name split by a tag) is not cut: the check after the raw spans
+ * finds the cell still dirty and the whole cell becomes the token. The guarantee is: redacted output scans clean, raw and
+ * normalised. NULL, "" and values that are not text stay as they are.
  *
  * JSON (an object, or a text that parses to an object, array or string): every string leaf is redacted on its own,
  * keys, numbers, booleans and null are kept. A long integer that the scan would flag (it scans integers of 9 digits or
@@ -86,7 +93,7 @@ export class PiiRedactor {
       cur = out + cur.slice(at)
     }
     // Still flagged without a span to cut (or not settled after MAX_ROUNDS): fail closed, the whole cell goes.
-    count?.((this.index?.match(cur) as RedactKind | null) ?? 'original-value')
+    count?.((this.index?.match(cur) as RedactKind | null) ?? (patternKinds(cur, this.patterns)[0] as RedactKind | undefined) ?? 'original-value')
     return REDACTED_TOKEN
   }
 

@@ -9,6 +9,9 @@
  *      digit sequences of phone/IC values, and multi-word names inside longer text count. Single words
  *      of a name are NOT matched on their own: common words (and surnames) would flag public content.
  *
+ * Both checks read the raw string AND its normalised views (normalise.ts: tags and entities removed, NFKC, non-ASCII digits and
+ * zero-width characters folded, JSON escapes decoded); a hit on either counts (A1-LEAK F1).
+ *
  * Any hit fails the run. A hit names the table, the column, the kind and a count, never a value.
  * The scan also works on its own on a finished dump directory (patterns only), see `anonymise:scan`.
  */
@@ -17,6 +20,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { DirReader } from '../staging/readers'
 import { TABLES, type TableSpec } from '../ddl/spec'
 import type { LeakHit } from './errors'
+import { scanViews } from './normalise'
 import { EMAIL, IC, LANDLINE, MOBILE } from './patterns'
 import { EMAIL_DOMAIN } from './pseudonyms'
 import type { Rule } from './rules'
@@ -28,8 +32,15 @@ export interface ScanPatternOptions {
   allowedEmailDomains?: readonly string[]
 }
 
-/** The pattern kinds found in one string (each kind once). */
+/** The pattern kinds found in one string (each kind once), in the raw text or in a normalised view of it (normalise.ts). */
 export function patternKinds(text: string, options: ScanPatternOptions = {}): string[] {
+  const kinds = rawPatternKinds(text, options)
+  for (const view of scanViews(text)) for (const kind of rawPatternKinds(view, options)) if (!kinds.includes(kind)) kinds.push(kind)
+  return kinds
+}
+
+/** `patternKinds` on exactly this string. */
+function rawPatternKinds(text: string, options: ScanPatternOptions): string[] {
   const allowed = new Set((options.allowedEmailDomains ?? [EMAIL_DOMAIN]).map((d) => d.toLowerCase()))
   const kinds: string[] = []
   if (text.length >= 5) {
@@ -189,9 +200,23 @@ export class OriginalsIndex {
     }
   }
 
-  /** `original-value` or `original-name` when the cell text is or contains an indexed original, else null. */
+  /**
+   * `original-value` or `original-name` when the cell text is or contains an indexed original, else null. The raw text is
+   * checked first, then its normalised views (normalise.ts); a hit on either counts.
+   */
   match(text: string): string | null {
     if (this.size === 0) return null
+    const raw = this.matchExact(text)
+    if (raw !== null) return raw
+    for (const view of scanViews(text)) {
+      const hit = this.matchExact(view)
+      if (hit !== null) return hit
+    }
+    return null
+  }
+
+  /** `match` on exactly this string. */
+  private matchExact(text: string): string | null {
     const n = collapse(text)
     if (n.length >= 5 && this.whole.has(this.h('w', n))) return 'original-value'
     if (this.digitSeq.size > 0) {
