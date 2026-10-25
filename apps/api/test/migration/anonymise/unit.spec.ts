@@ -103,6 +103,9 @@ describe('default deny (AC1)', () => {
       ['leagues', 'name', 'scrub-text'],
       ['leagues', 'invite_code', 'pseudonym:code'],
       ['banners', 'image_path', 'pseudonym:path'],
+      ['banners', 'target', 'null-content'], // A1-LEAK: a link can hold a phone number or an e-mail; v2 keeps no link without a valid http(s) target
+      ['articles', 'slug', 'slug-from-id'], // A1-LEAK (LEAD): artikel-<id>, unique because the id is
+      ['articles', 'title', 'redact-pii'],
       ['audio_kbat', 'audio_path', 'pseudonym:path'],
       ['notifications', 'title', 'scrub-text'],
       ['notifications', 'target', 'scrub-text'],
@@ -126,6 +129,14 @@ describe('default deny (AC1)', () => {
       ['media_assets', 'path', 'pseudonym:path'],
       ['questions', 'image_path', 'pseudonym:path'],
       ['question_options', 'image_path', 'pseudonym:path'],
+      // A1-LEAK (redact-pii), exactly the 8 columns the LEAD named: readable content, only the flagged spans are masked.
+      ['questions', 'body', 'redact-pii'],
+      ['questions', 'explanation', 'redact-pii'],
+      ['question_options', 'body', 'redact-pii'],
+      ['part_options', 'body', 'redact-pii'],
+      ['stimuli', 'body', 'redact-pii'],
+      ['structured_questions', 'stimulus', 'redact-pii'],
+      ['part_answer_keys', 'content', 'redact-pii'],
     ]
     const show = (r: { rule: string; kind?: string } | undefined): string | undefined => (r === undefined ? undefined : r.kind ? `${r.rule}:${r.kind}` : r.rule)
     for (const [t, c, rule] of expected) {
@@ -186,6 +197,8 @@ describe('rules keep structure', () => {
     expect(apply({ rule: 'pseudonym', kind: 'name' }, '')).toBe('')
     expect(apply({ rule: 'scrub-text' }, '')).toBe('')
     expect(apply({ rule: 'null' }, 'anything')).toBeNull()
+    expect(apply({ rule: 'null-content' }, 'anything')).toBeNull()
+    expect(apply({ rule: 'null-content' }, null)).toBeNull()
     expect(apply({ rule: 'keep' }, 'kept')).toBe('kept')
     expect(apply({ rule: 'fixed', value: 'tetap' }, 'asal')).toBe('tetap')
   })
@@ -253,6 +266,56 @@ describe('scrub-json', () => {
     expect(index.size).toBeGreaterThan(0)
     expect(index.match('Catatan untuk Aina Contoh Fiktif sahaja')).toBe('original-value')
     expect(index.match(out as string)).toBeNull()
+  })
+})
+
+describe('slug-from-id (A1-LEAK)', () => {
+  const p = new Pseudonymiser(key(TEST_KEY))
+  const rule = { rule: 'slug-from-id' } as const
+  const apply = (v: unknown, row: Record<string, unknown>) => applyRule(rule, v, p, false, { row })
+
+  it('sets the slug to artikel-<id> of the row, so two rows never share one, whatever their old slugs', () => {
+    expect(apply('tajuk-asal-ada-nama', { id: 7 })).toBe('artikel-7')
+    expect(apply('tajuk-asal-ada-nama', { id: '12345678901234567890' })).toBe('artikel-12345678901234567890')
+    const out = [1, 2, 3, 4, 5].map((id) => apply('sama', { id }))
+    expect(new Set(out).size).toBe(5)
+    for (const s of out) expect(s).toMatch(/^artikel-\d+$/)
+    expect(`artikel-${'9'.repeat(20)}`.length).toBeLessThanOrEqual(200)
+  })
+
+  it('NULL stays NULL and "" stays ""; a row without a usable id is refused without echoing anything', () => {
+    expect(apply(null, { id: 7 })).toBeNull()
+    expect(apply(undefined, { id: 7 })).toBeNull()
+    expect(apply('', { id: 7 })).toBe('')
+    for (const row of [{}, { id: null }, { id: 'abc' }, { id: '1; drop' }, { id: 1.5 }, { id: '1'.repeat(21) }]) {
+      expect(() => apply('x-geheim', row), JSON.stringify(row)).toThrow(/slug-from-id: the row has no usable numeric id/)
+    }
+    expect(() => applyRule(rule, 'x', p)).toThrow(/slug-from-id/)
+  })
+
+  it('does not index the original slug (content, not PII), but a name inside it is still indexed from the identity tables', () => {
+    const slug = 'wawancara-qwertyus-plorbinski-sekolah'
+    const index = new OriginalsIndex()
+    index.record(rule, slug, apply(slug, { id: 3 }))
+    expect(index.size).toBe(0)
+    expect(index.match(slug)).toBeNull()
+    // the same text as a null-content value (a banner link) is not indexed either; a plain `null` secret is
+    index.record({ rule: 'null-content' }, 'https://promo.example.test/kempen', null)
+    expect(index.size).toBe(0)
+    index.record({ rule: 'null' }, 'rt_ThisIsARememberTokenValue123456', null)
+    expect(index.match('rt_ThisIsARememberTokenValue123456')).toBe('original-value')
+    // the person's name, indexed from the users rule, is still found inside the old slug
+    index.record({ rule: 'pseudonym', kind: 'name' }, 'Qwertyus Plorbinski', 'Nama Anon X')
+    expect(index.match(slug)).toBe('original-name')
+  })
+
+  it('parses from the config, and the output holds nothing the leak scan flags', () => {
+    expect(parseConfig({ version: 1, tables: { articles: { slug: 'slug-from-id' } } }).tables.articles?.slug).toEqual(rule)
+    const index = new OriginalsIndex()
+    index.record(rule, 'wawancara-nama-fiktif-panjang', apply('wawancara-nama-fiktif-panjang', { id: 3 }))
+    expect(index.match('wawancara-nama-fiktif-panjang')).toBeNull() // content, not indexed (see the test above)
+    expect(index.match('artikel-3')).toBeNull()
+    expect(patternKinds('artikel-3')).toEqual([])
   })
 })
 
