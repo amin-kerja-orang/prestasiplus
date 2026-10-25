@@ -242,6 +242,7 @@ export class SchoolPerformanceService {
   /**
    * GPS, grade distribution and subject rows from the headcount entries (BR-M08-01 to 04). Non-staff: GPS and distribution are
    * empty below MIN_COHORT graded pupils, and a subject row with fewer than MIN_COHORT pupils is dropped (practice rows keep their own rule).
+   * While the overall figures are shown, the subject breakdown is shown only when no subject with graded entries falls below MIN_COHORT.
    */
   private schoolFigures(
     ctx: Ctx,
@@ -297,8 +298,12 @@ export class SchoolPerformanceService {
       // A subject known only from headcount is listed to non-staff only when it clears the cohort.
       if (staff || row.gps !== null) rows.set(subjectId, row)
     }
+    // Non-staff: the overall GPS and entry count are served with the rows, so a breakdown that leaves out a subject below
+    // MIN_COHORT would not stay consistent with them. It is shown only when every subject with graded entries is in it.
+    const complete = [...bySubject].every(([subjectId, list]) => distinctStudents(list) >= MIN_COHORT && rows.has(subjectId))
+    const withheld = !staff && shownGps && !complete
     // BR-M08-04: GPS ascending, subjects without data last, then by name.
-    const subjects = [...rows.values()].sort(
+    const subjects = (withheld ? [] : [...rows.values()]).sort(
       (a, b) => (a.gps === null ? 1 : 0) - (b.gps === null ? 1 : 0) || (a.gps ?? 0) - (b.gps ?? 0) || a.name.localeCompare(b.name) || compareIds(a.subjectId, b.subjectId),
     )
     return { gps, distribution, subjects }
