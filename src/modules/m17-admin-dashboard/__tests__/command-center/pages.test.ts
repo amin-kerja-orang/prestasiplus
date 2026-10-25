@@ -431,8 +431,8 @@ describe('S6 class', () => {
     expect(scroller.classes()).toEqual(expect.arrayContaining(['max-w-full', 'overflow-x-auto']))
     const table = scroller.get('[data-testid=cc-students-table]')
     expect(table.classes()).toContain('min-w-140')
-    // Below sm the table is as wide as its columns (never squeezed below its floor); from sm it fills the card.
-    expect(table.classes()).toEqual(expect.arrayContaining(['max-sm:w-fit', 'max-sm:max-w-none']))
+    // Below md the table is as wide as its columns (never squeezed below its floor), so only the scroll container scrolls; from md it fills the card.
+    expect(table.classes()).toEqual(expect.arrayContaining(['max-md:w-fit', 'max-md:max-w-none']))
     expect(scroller.findAll('th').map((h) => h.text())).toEqual([
       '#',
       'Nama Pelajar',

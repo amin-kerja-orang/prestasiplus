@@ -102,7 +102,7 @@ function open(userId: number | string) {
       <DsPanel icon="i-ph-student" :title="`Senarai Pelajar (${data.students.length})`">
         <div class="max-w-full overflow-x-auto" data-testid="cc-table-scroller">
           <DsDrillTable
-            class="min-w-140 max-sm:w-fit max-sm:max-w-none"
+            class="min-w-140 max-md:w-fit max-md:max-w-none"
             :data="data.students"
             :columns="columns"
             caption="Senarai Pelajar"
