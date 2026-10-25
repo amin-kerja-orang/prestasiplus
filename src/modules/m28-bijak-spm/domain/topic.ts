@@ -14,9 +14,20 @@ export const REVIEW_TOPIC = 'Perlu semakan tag'
  */
 export function topicOf(c: CurriculumTag, lookup: Pick<TagLookup, 'unit'>): string {
   if (c.formOrigin === 'T1-T3') return T1_T3_TOPIC
-  if (c.unitId !== null) {
+  // Truthy test on purpose: an old-shape tag (no `unitId` at all) must not throw before the
+  // storage migration has run (DSKP-T05 wires `migrateTagsInState` into load()).
+  if (c.unitId) {
     const unit = lookup.unit(c.unitId)
     if (unit) return unit.title
   }
   return c.review === 'perlu-semakan' ? REVIEW_TOPIC : ''
+}
+
+/**
+ * Topic a student sees (question view, result weak topics): the same as `topicOf`, but a flagged
+ * tag (`review` set) gives '' so the admin-only "Perlu semakan tag" copy never reaches a student.
+ * An empty topic is skipped by the result page. A flagged question keeps serving (AC-07.5).
+ */
+export function studentTopicOf(c: CurriculumTag, lookup: Pick<TagLookup, 'unit'>): string {
+  return c.review ? '' : topicOf(c, lookup)
 }

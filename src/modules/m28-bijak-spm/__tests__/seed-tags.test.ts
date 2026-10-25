@@ -12,7 +12,7 @@ import { SEED_TAGS, tagOfSpec } from '../data/seed-tags'
 import type { SeedTagSpec } from '../data/seed-tags'
 import { tagIssues } from '../domain/tag-rule'
 import type { TagLookup } from '../domain/tag-rule'
-import { REVIEW_TOPIC, T1_T3_TOPIC } from '../domain/topic'
+import { T1_T3_TOPIC } from '../domain/topic'
 import type { QuestionDef } from '../domain/types'
 import { dskpSource, tagLookupFor } from '../lib/dskp-source'
 import { BijakServer, MemoryStorage } from '../server/store'
@@ -153,13 +153,13 @@ describe('seed tags: outcome (computed, printed for the architecture doc 6.3)', 
 })
 
 describe('seed tags: what a student sees', () => {
-  it('the result topic of a tagged seed is the real unit title, T1-T3 and flagged keep their copy', async () => {
+  it('the result topic of a tagged seed is the real unit title, a flagged one is empty (the admin copy never reaches a student), T1-T3 keeps its copy', async () => {
     const server = new BijakServer({ storage: new MemoryStorage() })
     const { attemptId } = await server.startAttempt(1, 'sn-k2-2025-a', 'exam')
     const view = await server.getAttemptView(1, attemptId)
     const topicOf = (id: string) => view.questions.find((q) => q.id === id)?.topic
     expect(topicOf('sn2-laju-v1')).toBe('Force and Motion')
-    expect(topicOf('sn2-sel-q1')).toBe(REVIEW_TOPIC)
+    expect(topicOf('sn2-sel-q1')).toBe('')
 
     const mat = await server.startAttempt(1, 'mat-k2-2025-a', 'exam')
     const matView = await server.getAttemptView(1, mat.attemptId)

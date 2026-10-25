@@ -20,6 +20,7 @@ export const TAG_MESSAGES = {
   outsideDskpHasUnit: 'Tingkatan 1-3 (di luar DSKP) tidak mempunyai unit atau SP.',
   unitNotInCatalogue: 'Unit DSKP tidak wujud dalam katalog.',
   noSp: 'Standard Pembelajaran (SP) belum dipilih.',
+  duplicateSp: 'SP yang sama dipilih lebih daripada sekali.',
   spNotInUnit: 'SP tidak wujud dalam unit yang dipilih.',
   noTp: 'Tahap Penguasaan (TP) belum dipilih.',
   tpOutOfRange: 'Tahap Penguasaan (TP) mesti antara 1 dan 6.',
@@ -44,8 +45,16 @@ export interface TagLookup {
   sp(id: string): { unitId: string; selectable: boolean } | undefined
 }
 
-/** Every problem that stops `tag` from being submitted, revised or published (empty = it passes). */
-export function tagIssues(tag: CurriculumTag, lookup: TagLookup): TagIssue[] {
+/**
+ * Every problem that stops `tag` from being submitted, revised or published (empty = it passes).
+ * `maxSp` is the most SP one question may carry; it defaults to `MAX_SP_PER_QUESTION` (no cap) and
+ * is a parameter so the cap branch can be tested and a caller can apply a stricter limit.
+ */
+export function tagIssues(
+  tag: CurriculumTag,
+  lookup: TagLookup,
+  maxSp: number | null = MAX_SP_PER_QUESTION,
+): TagIssue[] {
   const out: TagIssue[] = []
   const add = (field: TagIssue['field'], message: string): void => {
     out.push({ field, message })
@@ -76,8 +85,10 @@ export function tagIssues(tag: CurriculumTag, lookup: TagLookup): TagIssue[] {
       })
       if (bad) add('sp', TAG_MESSAGES.spNotInUnit)
     }
-    if (MAX_SP_PER_QUESTION !== null && tag.spIds.length > MAX_SP_PER_QUESTION)
-      add('sp', TAG_MESSAGES.tooManySp(MAX_SP_PER_QUESTION))
+    // The same SP twice is an inconsistent tag (the editor never produces it); refuse it rather
+    // than let it count twice or reach storage. `normaliseTag` drops repeats for the editor.
+    if (new Set(tag.spIds).size !== tag.spIds.length) add('sp', TAG_MESSAGES.duplicateSp)
+    if (maxSp !== null && new Set(tag.spIds).size > maxSp) add('sp', TAG_MESSAGES.tooManySp(maxSp))
   }
 
   // TP is required for every tingkatan, T1-T3 included (FB-072). A stale `0` or a fraction from a
@@ -102,11 +113,12 @@ export function tagIssues(tag: CurriculumTag, lookup: TagLookup): TagIssue[] {
 export function partitionByTagRule<T extends { tag: CurriculumTag }>(
   items: readonly T[],
   lookup: TagLookup,
+  maxSp: number | null = MAX_SP_PER_QUESTION,
 ): { pass: T[]; skipped: { item: T; issues: TagIssue[] }[] } {
   const pass: T[] = []
   const skipped: { item: T; issues: TagIssue[] }[] = []
   for (const item of items) {
-    const issues = tagIssues(item.tag, lookup)
+    const issues = tagIssues(item.tag, lookup, maxSp)
     if (issues.length === 0) pass.push(item)
     else skipped.push({ item, issues })
   }

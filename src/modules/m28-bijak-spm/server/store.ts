@@ -33,7 +33,7 @@ import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
 import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
 import type { TagLookup } from '../domain/tag-rule'
-import { topicOf } from '../domain/topic'
+import { studentTopicOf } from '../domain/topic'
 import { tagLookup, tagLookupFor } from '../lib/dskp-source'
 import type { BankFilter, DecisionAction, PaperPatch, QueueFilter } from '../domain/admin-types'
 import type {
@@ -491,7 +491,7 @@ export class BijakServer {
           id: q.id,
           number: numberOf.get(q.id)!,
           sectionId: s.id,
-          topic: topicOf(q.curriculum, lookup),
+          topic: studentTopicOf(q.curriculum, lookup),
           formOrigin: q.curriculum.formOrigin,
           ...(q.groupId ? { groupId: q.groupId } : {}),
           ...(q.groupId && BANK.groups.get(q.groupId)?.optionBank

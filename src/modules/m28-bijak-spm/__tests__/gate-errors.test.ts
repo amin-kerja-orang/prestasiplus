@@ -5,7 +5,7 @@ import type { IntakeQuestion } from '../admin/intake/types'
 import { emptyTag } from '../domain/tag-edit'
 import type { TagLookup } from '../domain/tag-rule'
 import type { CurriculumTag, QuestionDef, SchemeDef } from '../domain/types'
-import { REVIEW_TOPIC, T1_T3_TOPIC, topicOf } from '../domain/topic'
+import { REVIEW_TOPIC, T1_T3_TOPIC, studentTopicOf, topicOf } from '../domain/topic'
 import { gateErrors } from '../server/admin'
 import { BijakServer, MemoryStorage } from '../server/store'
 import { loadTagLookup, matTag, t13Tag } from './tag-fixtures'
@@ -101,6 +101,28 @@ describe('topic display (FB-004 follow-up, DSKP v2)', () => {
   it('a flagged question shows the "perlu semakan" copy and an untagged one nothing', () => {
     expect(topicOf(tag({ formOrigin: null, unitId: null, spIds: [], review: 'perlu-semakan' }), lookup)).toBe(REVIEW_TOPIC)
     expect(topicOf(tag({ formOrigin: 'T4', unitId: null, spIds: [] }), lookup)).toBe('')
+  })
+
+  it('an old-shape tag (no unitId at all) does not throw before the migration runs', () => {
+    const old = {
+      subject: 'MAT',
+      level: 'T4',
+      unit: 'MAT-T4-02',
+      unitLabel: 'Asas Nombor',
+      sp: ['1.1'],
+      tp: 2,
+      formOrigin: 'T4',
+    } as unknown as CurriculumTag
+    expect(topicOf(old, lookup)).toBe('')
+    expect(studentTopicOf(old, lookup)).toBe('')
+    expect(topicOf({ ...old, formOrigin: 'T1-T3' }, lookup)).toBe(T1_T3_TOPIC)
+  })
+
+  it('a student never sees the admin "perlu semakan" copy', () => {
+    const flagged = tag({ formOrigin: null, unitId: null, spIds: [], review: 'perlu-semakan' })
+    expect(studentTopicOf(flagged, lookup)).toBe('')
+    expect(studentTopicOf(tag({}), lookup)).toBe('Fungsi dan Persamaan Kuadratik dalam Satu Pemboleh Ubah')
+    expect(studentTopicOf(t13Tag(), lookup)).toBe(T1_T3_TOPIC)
   })
 
   it('a unit the lookup does not know (subject not loaded) shows nothing, not a guess', () => {
