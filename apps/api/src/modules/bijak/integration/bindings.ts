@@ -100,27 +100,31 @@ export class WalletPracticeReward implements PracticeRewardPort {
     // BR-M14-13 (FIX-3 D-07): after the streak and the session credit, every active challenge whose target is now met
     // is claimed once per Malaysia day (completion row + `daily_challenge` ledger row; Mod Pelajar rows are is_test).
     // The submit response keeps the session credit only (the contract block has no challenge field).
-    await this.gamification.settleChallenges(input.userId, { tx, isTest: input.isTest, at: input.completedAt })
+    // A challenge reward is a bonus too: it runs in a savepoint and its failure only skips the challenge progress and rewards
+    // of this call, never the submit (the session, the answers and the session credit stay committed).
+    await this.inSavepoint('challenges_settle', 'challenge settlement', input, tx, () =>
+      this.gamification.settleChallenges(input.userId, { tx, isTest: input.isTest, at: input.completedAt }),
+    )
     // BR-M14-16 / FR-M14-51: after the challenges, a PRACTICE-mode session (`random`, `chapter`, `revision`) evaluates the
     // achievement criteria; each unlock is once per user and pays its syiling + XP once (ledger `achievement`, key `achievement:<id>`).
     // An achievement is a bonus: it runs in a savepoint and its failure only skips the unlock, never the submit.
-    if ((ACHIEVEMENT_PRACTICE_MODES as readonly string[]).includes(input.mode)) await this.evaluateAchievementsSafely(input, tx)
+    if ((ACHIEVEMENT_PRACTICE_MODES as readonly string[]).includes(input.mode)) await this.inSavepoint('achievements_eval', 'achievement evaluation', input, tx, () => this.gamification.evaluateAchievements(input.userId, { tx, isTest: input.isTest, at: input.completedAt }))
     return { coinsEarned: result.coinsEarned, streakCount: result.streakCount, totalBalance: result.totalBalance }
   }
 
   /**
-   * `evaluateAchievements` inside a SAVEPOINT of the submit transaction. If it throws (a rule or a database error), the work it
-   * did is rolled back to the savepoint, the error is logged (no user data) and the submit carries on with the session, the
-   * answers, the credit and the challenges committed. (`settleChallenges` has no such guard: a throw there still rolls the submit back.)
+   * Runs a bonus step of the submit inside a SAVEPOINT of the submit transaction. If it throws (a rule or a database error), the
+   * work it did is rolled back to the savepoint, the error name is logged (no user data) and the submit carries on with the
+   * session, the answers and the credit committed. `savepoint` is one of the two fixed names below, never client input.
    */
-  private async evaluateAchievementsSafely(input: PracticeSessionCompleted, tx: TxClient): Promise<void> {
-    await tx.$executeRaw`SAVEPOINT achievements_eval`
+  private async inSavepoint(savepoint: 'achievements_eval' | 'challenges_settle', label: string, input: PracticeSessionCompleted, tx: TxClient, step: () => Promise<unknown>): Promise<void> {
+    await tx.$executeRawUnsafe(`SAVEPOINT ${savepoint}`)
     try {
-      await this.gamification.evaluateAchievements(input.userId, { tx, isTest: input.isTest, at: input.completedAt })
+      await step()
     } catch (err) {
-      this.logger.warn(`achievement evaluation skipped for session ${input.sessionId}: ${err instanceof Error ? err.name : 'unknown error'}`)
-      await tx.$executeRaw`ROLLBACK TO SAVEPOINT achievements_eval`
+      this.logger.warn(`${label} skipped for session ${input.sessionId}: ${err instanceof Error ? err.name : 'unknown error'}`)
+      await tx.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${savepoint}`)
     }
-    await tx.$executeRaw`RELEASE SAVEPOINT achievements_eval`
+    await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${savepoint}`)
   }
 }
