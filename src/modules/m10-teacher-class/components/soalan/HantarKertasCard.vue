@@ -65,7 +65,15 @@ async function submit(): Promise<void> {
     tingkatanSel.value = ''
     files.value = []
   } catch (err) {
-    errors.value = isApiError(err) && err.fields ? Object.values(err.fields) : [COPY.paperFailed]
+    if (isApiError(err) && err.fields) {
+      errors.value = Object.values(err.fields)
+    } else if (isApiError(err) && err.status === 503 && err.message === COPY.paperUnavailable) {
+      // SW12-08 (DV-M10-42): the paper intake is off in http mode; show that known BM reason. Any other 503 text
+      // (an English default such as "Server Error", or a proxy's "HTTP 503") keeps the generic failed text.
+      errors.value = [COPY.paperUnavailable]
+    } else {
+      errors.value = [COPY.paperFailed]
+    }
   } finally {
     busy.value = false
   }
