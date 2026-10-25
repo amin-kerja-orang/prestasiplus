@@ -5,17 +5,18 @@
 | Field | Value |
 |---|---|
 | Document | SRS — M07 Premium PKSK |
-| Version | 1.7 |
-| Date | 2026-09-27 |
+| Version | 1.8 |
+| Date | 2026-10-24 |
 | Status | Approved (G1) |
 | Authors | product-analyst (functional: §1–5, 8–10, 12–13) and solution-architect (data entities §6, mock API §7, NFR/SEC §11) — agent |
-| Source URS | [urs/M07-pksk.md](../urs/M07-pksk.md) v1.7 |
+| Source URS | [urs/M07-pksk.md](../urs/M07-pksk.md) v1.8 |
 | Evidence | [discovery/M07-pksk.md](../../discovery/M07-pksk.md), inventory `docs/discovery/inventory/M07/`, screenshots `docs/discovery/img/M07/` |
 
 **Change log**
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8 | 2026-10-24 | **UAT A-BS06 (D9 fix, Fast track).** New DV-M07-14: FR-M07-43 amended (S7 of a saved Bahagian C question shows the options card once an A or B domain is chosen). `PkskQuestionFormPage` follows the chosen domain's Bahagian for a saved C record; mock `parseOptions` unchanged (alternative A rejected, URS §7). No FR, AC or E2E added, removed or renumbered. |
 | 1.7 | 2026-09-27 | **XL batch 3 round 1** (`docs/qa/audit/cross-module-logic-M12-M18.md`, XL3-22; M17 XR-M17-10, M04 v1.11, M14 XR-M14-08, M16 XR-M16-08). (a) PKSK seed difficulty split **253 / 253 / 191 / 66 / 0** (was 190/191/191/191), cited as the M04 named query Q-PKSK-DIFFICULTY (new request XR-M07-01; M04 v1.11 §6.13 already holds these cells); Σ 763 = Q-PKSK; the observed anchors (difficulty 2 × 3, difficulty 3 × 2) fit; Q-DIFFICULTY unchanged (§6.2, §6.8). (b) PKSK domain-practice sessions are recorded in the M05 session store with the new mode **`pksk`** and complete through M05 BR-31 with the steps of new BR-M07-26 (M14 syiling at the tier's PKSK rate); request XR-M07-02 to M05; §7 #21 returns `sessionId`; new FR-M07-65, E2E-M07-45 (provisional); M07, M05, M14 and M16 use the same token `pksk`. Exam attempts stay M07 records (SQ-M07-03). (c) New §13.1 cross-module requests and answers (XR-M07-01…03; XR-M14-08, XR-M16-08, XR-M17-10 answered). 65 FRs, 26 business rules, 45 E2E; traceability re-run 0 errors. Status stays Approved (G1). |
 | 1.6 | 2026-09-25 | XL-37: BR-M07-24 and DATA-M07-02 `id` follow the M04 runtime id range (from 9,000,001, never max + 1); AC-M07-15.3 and E2E-M07-29 assert #9000001 for the first created question. Status stays Approved (G1). |
 | 1.5 | 2026-09-25 | XL-31 (M04 v1.5 Q-DIFFICULTY): PKSK seed difficulty limited to 1–4 with the exact split 190/191/191/191 and no difficulty 5 (§6.2, §6.8); observed anchor values kept (2, 3). No AC/E2E assumed difficulty 5 or another spread. Status stays Approved (G1). |
@@ -29,7 +30,7 @@ Conventions as in the URS §0: OBSERVED / SOURCE-DERIVED / INFERRED / UNVERIFIED
 
 ### 0.1 Fidelity deviations referenced here
 
-DV-M07-01 history page (PROPOSED COPY) · DV-M07-02 edit subtitle "Kemaskini soalan #{id}" · DV-M07-03 domain icons shown on S2/S3 · DV-M07-04 hub h1 white · DV-M07-05 Bahagian C can be saved · DV-M07-08 domain value reset on Bahagian change · DV-M07-09 stable access order (Delivery Lead choice) · DV-M07-12 404 "Mula Latihan" → `/practice` (= M01 DV-02) · DV-M07-13 no content text below 12px (XL-22). Replicated (not changed): DV-M07-06 generic tab titles, DV-M07-07 in-card table scroll, DV-M07-10 Bahagian colours. Withdrawn: DV-M07-11 (practice/exam are provisional pages, not a deviation). Full table: URS §7.
+DV-M07-01 history page (PROPOSED COPY) · DV-M07-02 edit subtitle "Kemaskini soalan #{id}" · DV-M07-03 domain icons shown on S2/S3 · DV-M07-04 hub h1 white · DV-M07-05 Bahagian C can be saved · DV-M07-08 domain value reset on Bahagian change · DV-M07-09 stable access order (Delivery Lead choice) · DV-M07-12 404 "Mula Latihan" → `/practice` (= M01 DV-02) · DV-M07-13 no content text below 12px (XL-22) · DV-M07-14 S7 of a saved Bahagian C question shows the options card (empty rows) once an A or B domain is chosen, instead of refusing the save with no field to fix (UAT A-BS06, 2026-10-24). Replicated (not changed): DV-M07-06 generic tab titles, DV-M07-07 in-card table scroll, DV-M07-10 Bahagian colours. Withdrawn: DV-M07-11 (practice/exam are provisional pages, not a deviation). Full table: URS §7.
 
 ## 1. Scope
 
@@ -106,7 +107,7 @@ Not routes (as live, not linked): `/admin/pksk`, `/admin/pksk/packages`, `/admin
 | FR-M07-40 | "Kembali" (`fa-arrow-left`, S6 and S7) SHALL navigate to `/admin/pksk/questions` without a dialog and without saving. | 2.2.7, 2.3.7 | US-15, US-16; AC-15.4, AC-16.6 |
 | FR-M07-41 | S7 SHALL set the header "Edit Soalan PKSK" / "Kemaskini soalan #{id}" (DV-M07-02). | 2.3.1 | US-16; AC-16.1 |
 | FR-M07-42 | S7 SHALL load §7 #9 and preselect/prefill: `pksk_domain_id` (15 options "[{Bahagian}] {name}"), `pksk_target_level` ("Tingkatan 1" / "Tingkatan 4"), `status` ("Menunggu" / "Diluluskan" / "Ditolak", required), `question_text` (required, no label/placeholder), "Kesukaran" `difficulty_level` ("1"–"5", not required), "Penjelasan"; card layout 1 → 3 columns from `md` and "Kesukaran" in a 2-column grid at every width. | 2.3.2, 2.3.3 | US-16; AC-16.2 |
-| FR-M07-43 | S7 SHALL render "Pilihan Jawapan" (no suffix) only when the saved Bahagian is A or B, with the saved options (no placeholder), "Betul" visible only when the saved Bahagian is B (A: checkbox hidden, state kept and sent), remove at >2, "Tambah Pilihan" at <6; changing the domain SHALL NOT change the card. | 2.3.4, 2.3.5, 2.3.6 | US-16; AC-16.3, AC-16.4 |
+| FR-M07-43 | S7 SHALL render "Pilihan Jawapan" (no suffix) only when the saved Bahagian is A or B, with the saved options (no placeholder), "Betul" visible only when the saved Bahagian is B (A: checkbox hidden, state kept and sent), remove at >2, "Tambah Pilihan" at <6; changing the domain SHALL NOT change the card, except that a saved Bahagian C question (no card, no options) SHALL get the card with 4 empty rows ("Betul" only for a B domain) as soon as an A or B domain is chosen and lose it again for a C domain (DV-M07-14; BR-M07-04 requires 2-6 options for A/B). | 2.3.4, 2.3.5, 2.3.6 | US-16; AC-16.3, AC-16.4 |
 | FR-M07-44 | "Kemaskini" (`fa-save`, indigo-600) SHALL call §7 #11; on 200 the list opens with the §8.2 flash (INFERRED, L-5); on 422 errors show under the fields. | 2.3.7, 2.3.9 | US-16; AC-16.5 |
 | FR-M07-45 | S8 SHALL set the header "Akses PKSK" / "Urus akses premium pengguna" and render three stat cards from §7 #15 ("Jumlah Akses Aktif" indigo-600, "Akses T1" blue-600, "Akses T4" purple-600; `grid-cols-3` at every width), unaffected by search and page. | 3.1.1, 3.1.2 | US-17; AC-17.1 |
 | FR-M07-46 | S8 SHALL render the table of URS FN-M07-3.1.6 from §7 #14: "Pengguna" (name bold, e-mail text-xs), "Pakej" chip (package name without the level suffix), "Diberi Oleh" (granter name or "-"), "Tarikh" (`grantedAt` dd/mm/yyyy), "Tamat" (`expiresAt` dd/mm/yyyy or "Tiada had"), "Status" (§8.2 label), "Tindakan" ("Tarik" only on active rows). | 3.1.6 | US-17; AC-17.2 |

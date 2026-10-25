@@ -10,7 +10,8 @@
  *   Bahagian is C the options card is hidden and its inputs are disabled, so a C question can be
  *   saved (DV-M07-05). Options 2-6, "Betul" only for B.
  * - S7: no Bahagian select; the options card follows the saved Bahagian (not rendered for C) and
- *   the domain change does not alter it. An unknown id shows the standard 404 page (FR-M07-18).
+ *   the domain change does not alter it, except that a saved C question gets the card (empty rows)
+ *   as soon as an A or B domain is chosen (DV-M07-14). An unknown id shows the standard 404 page (FR-M07-18).
  * - 422: the field messages show under the fields in red and the input is kept (L-5, INFERRED).
  *   Success queues the flash and opens S5.
  */
@@ -157,13 +158,32 @@ function onBahagianChange(): void {
   form.domainId = ''
 }
 
-// Options card visibility (S6: unless Bahagian C; S7: the saved Bahagian is A or B).
+/**
+ * S7: the Bahagian the options card follows. It is the saved Bahagian, except for a saved C question
+ * (it has no options): once its domain is changed to an A or B domain the question needs 2-6
+ * options, so the card follows the chosen domain (DV-M07-14; without it the save was refused with
+ * "Sila masukkan 2 hingga 6 pilihan jawapan." and no field to fix it).
+ */
+const editBahagian = computed<Bahagian | null>(() => {
+  if (savedBahagian.value !== 'C') return savedBahagian.value
+  const chosen = (domains.value ?? []).find((d) => String(d.id) === form.domainId)
+  return chosen?.bahagian ?? 'C'
+})
+
+// Options card visibility (S6: unless Bahagian C; S7: the followed Bahagian is A or B).
 const optionsShown = computed(() =>
-  editing.value ? savedBahagian.value !== 'C' : form.bahagian !== 'C',
+  editing.value ? editBahagian.value !== 'C' : form.bahagian !== 'C',
 )
 const showCorrect = computed(() =>
-  editing.value ? savedBahagian.value === 'B' : form.bahagian === 'B',
+  editing.value ? editBahagian.value === 'B' : form.bahagian === 'B',
 )
+
+// A saved C question has no option rows: give the card its first rows when it appears.
+watch(optionsShown, (shown) => {
+  if (editing.value && shown && options.value.length < 2) {
+    options.value = [newOption(), newOption(), newOption(), newOption()]
+  }
+})
 
 const saving = ref(false)
 const topErrors = ref<string[]>([])
@@ -446,7 +466,7 @@ async function submit(): Promise<void> {
 
       <!-- Card 3: Pilihan Jawapan (S7: not rendered for a saved Bahagian C). -->
       <OptionsCard
-        v-if="!editing || savedBahagian !== 'C'"
+        v-if="!editing || optionsShown"
         v-model="options"
         :shown="optionsShown"
         :disabled="!editing && form.bahagian === 'C'"

@@ -14,7 +14,7 @@ const baseURL = `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: 'e2e',
-  testMatch: '**/bijak-spm.spec.ts',
+  testMatch: ['**/bijak-spm.spec.ts', '**/t6-intake-chain.spec.ts'],
   fullyParallel: true,
   workers: 2,
   timeout: 120_000,

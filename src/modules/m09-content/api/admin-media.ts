@@ -258,7 +258,10 @@ export interface ScreenshotFile {
   mimeType: string
   uploadedById: number
   createdAt: string
-  /** `blob:mock/screenshots/{fileName}`: a placeholder, never shown as an image (S14 lists names). */
+  /**
+   * Image URL. The mock returns an object URL for a file uploaded in this session and the
+   * `blob:mock/screenshots/{fileName}` placeholder otherwise (the page draws a glyph for that).
+   */
   url?: string
 }
 

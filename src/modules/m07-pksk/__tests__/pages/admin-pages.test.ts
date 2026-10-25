@@ -475,6 +475,54 @@ describe('PkskQuestionFormPage edit (S7)', () => {
     expect(w.find('[data-testid=options-card]').exists()).toBe(false)
   })
 
+  it('gives a saved C question the options card once an A or B domain is chosen (DV-M07-14)', async () => {
+    admin.fetchPkskQuestion.mockResolvedValue(
+      detail({ bahagian: 'C', pkskDomainId: 15, options: [] }),
+    )
+    admin.updatePkskQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    const w = await mountEdit()
+    expect(w.find('[data-testid=options-card]').exists()).toBe(false)
+
+    // A B domain: 4 empty rows and the "Betul" checkbox.
+    await attr(w, 'q-domain').setValue('2')
+    expect(w.find('[data-testid=options-card]').exists()).toBe(true)
+    expect(w.findAll('[data-testid=option-text]')).toHaveLength(4)
+    expect(correctVisible(w)).toBe(4)
+
+    // A domain of A: no "Betul".
+    await attr(w, 'q-domain').setValue('1')
+    expect(correctVisible(w)).toBe(0)
+
+    // Back to C: the card goes away again and no options are sent.
+    await attr(w, 'q-domain').setValue('15')
+    expect(w.find('[data-testid=options-card]').exists()).toBe(false)
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(admin.updatePkskQuestion.mock.calls[0]![1]).not.toHaveProperty('options')
+  })
+
+  it('sends the typed options when a saved C question moves to a B domain (DV-M07-14)', async () => {
+    admin.fetchPkskQuestion.mockResolvedValue(
+      detail({ bahagian: 'C', pkskDomainId: 15, options: [] }),
+    )
+    admin.updatePkskQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    const w = await mountEdit()
+    await attr(w, 'q-domain').setValue('2')
+    const inputs = w.findAll('[data-testid=option-text]')
+    for (const [i, input] of inputs.entries()) await input.setValue(`Pilihan ${String(i)}`)
+    await w.findAll('[data-testid=option-correct]')[1]!.trigger('click')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    const body = admin.updatePkskQuestion.mock.calls[0]![1] as {
+      pkskDomainId: number
+      options: { text: string; isCorrect: boolean }[]
+    }
+    expect(body.pkskDomainId).toBe(2)
+    expect(body.options).toHaveLength(4)
+    expect(body.options[1]).toEqual({ text: 'Pilihan 1', isCorrect: true })
+    expect(body.options[0]!.isCorrect).toBe(false)
+  })
+
   it('hides "Betul" for a saved A but keeps and sends the flag', async () => {
     admin.fetchPkskQuestion.mockResolvedValue(detail({ bahagian: 'A', pkskDomainId: 1 }))
     admin.updatePkskQuestion.mockResolvedValue({ data: {}, status: 'ok' })

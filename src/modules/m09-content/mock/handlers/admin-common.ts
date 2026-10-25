@@ -113,6 +113,8 @@ export interface UploadedFile {
   name: string
   size: number
   type: string
+  /** The uploaded `File`/`Blob` itself (multipart only; absent for a JSON stand-in). */
+  blob?: Blob
 }
 
 /**
@@ -125,7 +127,7 @@ export function fileOf(value: unknown): UploadedFile | null {
     const blob = value as Blob & { name?: string }
     const name = blob.name ?? ''
     if (name === '' && blob.size === 0) return null
-    return { name: name === '' ? 'fail' : name, size: blob.size, type: blob.type }
+    return { name: name === '' ? 'fail' : name, size: blob.size, type: blob.type, blob }
   }
   if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
     const v = value as { name?: unknown; fileName?: unknown; size?: unknown; type?: unknown }

@@ -6,16 +6,17 @@
  * - Card "Upload Gambar": format line, drop zone (click to pick, drag-over highlight, drop sends at once),
  *   the hidden `files` input (`accept="image/*"`, multiple) whose change sends at once, and the tip.
  * - Card "Fail Sedia Ada": "Jumlah: {n} fail" and a grid of file tiles with the sanitised names (provisional,
- *   L-5; the mock keeps no image data, so a tile shows an image glyph) or "Tiada fail lagi.".
+ *   L-5) each with its image as a thumbnail (an image glyph when the file has no usable image URL,
+ *   e.g. the mock after a reload, or the image fails to load) or "Tiada fail lagi.".
  * - The server decides what is accepted (JPG, PNG, GIF, WebP, BMP, 10 MB each); refused files come
  *   back as an error flash, kept files as the success flash and in the list.
  */
-import { ref, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsEmptyState, DsFileField, DsFormSection, DsLoadError, DsPage } from '@/ds'
+import { DsArt3D, DsEmptyState, DsFileField, DsFormSection, DsLoadError, DsPage } from '@/ds'
 
-import { fetchScreenshots, uploadScreenshots } from '../api/admin-media'
+import { fetchScreenshots, uploadScreenshots, type ScreenshotFile } from '../api/admin-media'
 import { COPY, errorLines } from '../lib/admin-media/common'
 
 const flash = useFlash()
@@ -23,6 +24,15 @@ const flash = useFlash()
 const { data: files, error, reload } = useApi((signal) => fetchScreenshots({ signal }))
 
 const sending = ref(false)
+
+/** Files whose image failed to load: they fall back to the glyph. */
+const broken = reactive(new Set<number>())
+
+/** The thumbnail URL of a file, or null when it has none (the mock placeholder `blob:mock/...`). */
+function imageSrc(file: ScreenshotFile): string | null {
+  if (broken.has(file.id) || !file.url || file.url.startsWith('blob:mock/')) return null
+  return file.url
+}
 
 /** The picked files; sending starts at once and the field is cleared again. */
 const picked = ref<File | File[] | null>(null)
@@ -114,10 +124,20 @@ async function send(list: File[]): Promise<void> {
                 data-testid="file-item"
               >
                 <div
-                  class="grid aspect-video place-items-center bg-soft text-dimmed"
+                  class="grid aspect-video place-items-center overflow-hidden bg-soft text-dimmed"
                   aria-hidden="true"
                 >
-                  <UIcon name="i-ph-image" class="size-8" />
+                  <DsArt3D
+                    v-if="imageSrc(file)"
+                    variant="plain"
+                    ratio="video"
+                    :src="imageSrc(file) ?? undefined"
+                    alt=""
+                    class="size-full"
+                    data-testid="file-image"
+                    @error="broken.add(file.id)"
+                  />
+                  <UIcon v-else name="i-ph-image" class="size-8" />
                 </div>
                 <span class="line-clamp-2 text-caption break-all text-default">{{
                   file.fileName

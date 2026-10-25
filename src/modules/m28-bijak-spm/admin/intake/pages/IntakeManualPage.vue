@@ -13,7 +13,7 @@ import { DsCluster, DsPage, DsStack } from '@/ds'
 import { useBijakUser } from '../../../lib/use-bijak'
 import { bijakServer } from '../../../server/client'
 import IntakeMetaFields, { type IntakeForm } from '../components/IntakeMetaFields.vue'
-import { INTAKE_LIST_PATH, intakeReviewPath } from '../lib/intake-routes'
+import { INTAKE_LIST_PATH, intakeManualEditPath } from '../lib/intake-routes'
 import { PAPER_TYPES } from '../types'
 
 const router = useRouter()
@@ -69,7 +69,7 @@ async function submit(): Promise<void> {
       notes: form.notes.trim(),
       ...(forPaperId.value ? { forPaperId: forPaperId.value } : {}),
     })
-    await router.push(intakeReviewPath(batch.id))
+    await router.push(intakeManualEditPath(batch.id))
   } catch (e) {
     failure.value = e instanceof Error ? e.message : 'Tidak dapat memulakan soalan manual.'
   } finally {
