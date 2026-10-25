@@ -1,5 +1,6 @@
 <script setup lang="ts">
-/** One class card (PROPOSED, FR-M10-29): name, subject, level, "{n} pelajar", join code, QR button. */
+/** One class card (PROPOSED, FR-M10-29): name, subject, level, "{n} pelajar", join code, QR button.
+ * D54/T3 (DV-M10-35): "Lihat Pelajar" opens the class's student list in Prestasi (`/prestasi/kelas/{id}`). */
 import { DsIconChip, DsPanel } from '@/ds'
 
 import type { GuruClass } from '../../api/types'
@@ -36,17 +37,27 @@ defineEmits<{ qr: [id: number] }>()
           </p>
         </div>
       </div>
-      <UButton
-        type="button"
-        color="neutral"
-        variant="soft"
-        icon="i-ph-qr-code-duotone"
-        class="mt-3 min-h-11"
-        data-testid="class-qr"
-        @click="$emit('qr', item.id)"
-      >
-        {{ KELAS_COPY.qrButton }}
-      </UButton>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <UButton
+          :to="`/prestasi/kelas/${String(item.id)}`"
+          icon="i-ph-users-three-duotone"
+          class="min-h-11"
+          data-testid="class-students"
+        >
+          {{ KELAS_COPY.studentsButton }}
+        </UButton>
+        <UButton
+          type="button"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-qr-code-duotone"
+          class="min-h-11"
+          data-testid="class-qr"
+          @click="$emit('qr', item.id)"
+        >
+          {{ KELAS_COPY.qrButton }}
+        </UButton>
+      </div>
     </DsPanel>
   </li>
 </template>

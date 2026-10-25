@@ -122,6 +122,11 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
       await expect(page.getByTestId('tab-mine-count')).toHaveText('8')
       await expect(page.getByTestId('student-row')).toHaveCount(8)
       await expect(page.getByTestId('student-name').first()).toContainText('Murid Demo')
+      // D54/T3 (DV-M10-35): the name opens the student's Prestasi 360
+      await expect(page.getByTestId('student-name').first()).toHaveAttribute(
+        'href',
+        /^\/prestasi\/\d+$/,
+      )
       await expect(page.getByTestId('student-class').first()).toBeVisible()
       await expectNoHorizontalScroll(page)
     },

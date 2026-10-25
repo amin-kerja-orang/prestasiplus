@@ -90,6 +90,11 @@ test.describe('M10 S4 Kelas Saya', MODULE, () => {
       if (isMobileWidth(page)) expect(Math.abs(a!.x - b!.x)).toBeLessThan(2)
       else expect(Math.abs(a!.y - b!.y)).toBeLessThan(2)
       await expectTouchTarget(cards.nth(0).getByTestId('class-qr'))
+      // D54/T3 (DV-M10-35): each card links to its class in Prestasi
+      const students = cards.nth(0).getByTestId('class-students')
+      await expect(students).toHaveAttribute('href', '/prestasi/kelas/2001')
+      await expect(students).toHaveText('Lihat Pelajar')
+      await expectTouchTarget(students)
       await expectNoHorizontalScroll(page)
     },
   )
