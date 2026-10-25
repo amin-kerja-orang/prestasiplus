@@ -48,14 +48,20 @@ export function setUnit(
 
 /**
  * Add or remove one SP (`on` forces the direction; without it the SP is toggled). Adding is refused
- * silently once `MAX_SP_PER_QUESTION` is reached; with no cap (Q-D6) it never is.
+ * silently once `maxSp` SP are chosen; it defaults to `MAX_SP_PER_QUESTION`, and with no cap
+ * (Q-D6) adding never is refused.
  */
-export function toggleSp(tag: CurriculumTag, spId: DskpSpId, on?: boolean): CurriculumTag {
+export function toggleSp(
+  tag: CurriculumTag,
+  spId: DskpSpId,
+  on?: boolean,
+  maxSp: number | null = MAX_SP_PER_QUESTION,
+): CurriculumTag {
   const has = tag.spIds.includes(spId)
   const want = on ?? !has
   if (want === has) return tag
   if (!want) return { ...tag, spIds: tag.spIds.filter((id) => id !== spId), catalogueVersion: null }
-  if (MAX_SP_PER_QUESTION !== null && tag.spIds.length >= MAX_SP_PER_QUESTION) return tag
+  if (maxSp !== null && tag.spIds.length >= maxSp) return tag
   return { ...tag, spIds: [...tag.spIds, spId], catalogueVersion: null }
 }
 

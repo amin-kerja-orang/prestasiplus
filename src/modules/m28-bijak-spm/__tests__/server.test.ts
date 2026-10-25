@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { BANK } from '../data/registry'
+import { REVIEW_TOPIC } from '../domain/topic'
 import { BijakError, BijakServer, GRACE_SECONDS, MemoryStorage } from '../server/store'
 
 const USER = 7
@@ -16,6 +17,30 @@ const correctChoice = (qid: string): string => {
   if (s.kind !== 'option') throw new Error('mcq')
   return s.correct
 }
+
+describe('flagged tags and students (DSKP-T03 review F1)', () => {
+  it('a question that still needs a tag has an empty topic and no "Perlu semakan tag" weak-topic bucket', async () => {
+    const { server } = make()
+    const { attemptId } = await server.startAttempt(USER, 'mat-k1-2025-a', 'exam')
+    const view = await server.getAttemptView(USER, attemptId)
+    const flagged = view.questions.filter((q) => BANK.questions.get(q.id)!.curriculum.review)
+    expect(flagged.length).toBeGreaterThan(0)
+    for (const q of flagged) expect(q.topic).toBe('')
+    expect(view.questions.some((q) => q.topic === REVIEW_TOPIC)).toBe(false)
+
+    // submit with nothing answered: every counted mark is lost, as the result page's weak topics sum
+    await server.submit(USER, attemptId, { changes: [], idempotencyKey: 'k-f1' })
+    const res = await server.getResult(USER, attemptId)
+    const topicOfQ = new Map(res.paper.questions.map((q) => [q.id, q.topic]))
+    const lost = new Map<string, number>()
+    for (const q of res.result.questions) {
+      const topic = topicOfQ.get(q.questionId)
+      if (q.counted && topic) lost.set(topic, (lost.get(topic) ?? 0) + (q.marks - q.awarded))
+    }
+    expect(lost.has(REVIEW_TOPIC)).toBe(false)
+    expect([...topicOfQ.values()].includes(REVIEW_TOPIC)).toBe(false)
+  })
+})
 
 describe('scheme reveal rules (US-15)', () => {
   it('serves a paper without keys and refuses the result before submit', async () => {

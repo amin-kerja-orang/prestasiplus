@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { emptyTag, normaliseTag, setFormOrigin, setUnit, toggleSp, willClearOnFormOrigin } from '../domain/tag-edit'
-import { TAG_MESSAGES, partitionByTagRule, tagIssues } from '../domain/tag-rule'
+import { MAX_SP_PER_QUESTION, TAG_MESSAGES, partitionByTagRule, tagIssues } from '../domain/tag-rule'
 import type { TagLookup } from '../domain/tag-rule'
 import type { CurriculumTag, KbatLevel, TpLevel } from '../domain/types'
 import { catalogueVersion, tagLookup, tagLookupFor } from '../lib/dskp-source'
@@ -109,6 +109,31 @@ describe('tagIssues: Tingkatan 4 and 5', () => {
   it('a flagged tag (perlu semakan, no tingkatan) never passes', () => {
     const flagged: CurriculumTag = { ...emptyTag('MAT'), tp: 2, review: 'perlu-semakan' }
     expect(messages(flagged)).toEqual(['Subjek dan tingkatan perlu ditetapkan.'])
+  })
+})
+
+describe('tagIssues: SP count and repeats', () => {
+  it('no cap by default (Q-D6)', () => {
+    expect(MAX_SP_PER_QUESTION).toBeNull()
+    expect(messages(matTag({ spIds: [MAT_T4_SP, MAT_T4_SP2] }))).toEqual([])
+  })
+
+  it('refuses more SP than maxSp when a cap is given, and allows exactly maxSp', () => {
+    const two = matTag({ spIds: [MAT_T4_SP, MAT_T4_SP2] })
+    expect(tagIssues(two, lookup, 2)).toEqual([])
+    expect(tagIssues(two, lookup, 1)).toEqual([{ field: 'sp', message: 'Pilih paling banyak 1 SP.' }])
+    expect(tagIssues(two, lookup, null)).toEqual([])
+    expect(partitionByTagRule([{ tag: two }], lookup, 1).skipped).toHaveLength(1)
+    expect(partitionByTagRule([{ tag: two }], lookup, 2).pass).toHaveLength(1)
+  })
+
+  it('refuses the same SP twice (it would count twice and reach storage)', () => {
+    const dup = matTag({ spIds: [MAT_T4_SP, MAT_T4_SP] })
+    expect(tagIssues(dup, lookup)).toEqual([
+      { field: 'sp', message: 'SP yang sama dipilih lebih daripada sekali.' },
+    ])
+    // a repeat is not counted twice against the cap
+    expect(tagIssues(dup, lookup, 1).map((i) => i.message)).toEqual([TAG_MESSAGES.duplicateSp])
   })
 })
 
@@ -227,6 +252,14 @@ describe('tag-edit helpers', () => {
     expect(toggleSp(t, MAT_T4_SP, false)).toBe(t)
   })
 
+  it('toggleSp refuses to add beyond maxSp but still removes', () => {
+    const one = matTag({ spIds: [MAT_T4_SP] })
+    expect(toggleSp(one, MAT_T4_SP2, undefined, 1)).toBe(one)
+    expect(toggleSp(one, MAT_T4_SP2, undefined, 2).spIds).toEqual([MAT_T4_SP, MAT_T4_SP2])
+    expect(toggleSp(one, MAT_T4_SP2, true, null).spIds).toEqual([MAT_T4_SP, MAT_T4_SP2])
+    expect(toggleSp(one, MAT_T4_SP, undefined, 1).spIds).toEqual([])
+  })
+
   it('normaliseTag: T1-T3 clears unit and SP and the version', () => {
     const t = normaliseTag(t13Tag({ unitId: MAT_T4_UNIT, spIds: [MAT_T4_SP], catalogueVersion: 'x' }), lookup, 'v1')
     expect(t).toMatchObject({ unitId: null, spIds: [], catalogueVersion: null })
@@ -280,8 +313,16 @@ describe('the tag domain is movable to exam-core (ADR-0021)', () => {
 
   it('tag-rule.ts, tag-edit.ts and types.ts import only relative modules (no src/**, vue, node:)', () => {
     for (const f of ['tag-rule.ts', 'tag-edit.ts', 'types.ts']) {
-      const imports = [...read(f).matchAll(/^\s*(?:import|export)\b[^'"\n]*from\s+['"]([^'"]+)['"]/gm)].map((m) => m[1]!)
-      for (const spec of imports) expect(spec, `${f} imports ${spec}`).toMatch(/^\.\.?\//)
+      const src = read(f)
+      // `from '...'` (also when the specifiers span several lines) and side-effect `import '...'`
+      const specs = [
+        ...[...src.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)].map((m) => m[1]!),
+        ...[...src.matchAll(/^\s*import\s+['"]([^'"]+)['"]/gm)].map((m) => m[1]!),
+        ...[...src.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]/g)].map((m) => m[1]!),
+      ]
+      // types.ts has no imports at all; the others must have some, or the scan is not reading them
+      if (f !== 'types.ts') expect(specs.length, `${f} should import something`).toBeGreaterThan(0)
+      for (const spec of specs) expect(spec, `${f} imports ${spec}`).toMatch(/^\.\.?\//)
     }
   })
 })
