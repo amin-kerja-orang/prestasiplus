@@ -43,6 +43,7 @@ const ALIAS = '/admin-sekolah/kirkpatrick'
 
 interface Overview {
   scope: { schoolId: string | null; state: string | null }
+  t4: { gps: number | null; recordsLabel: number }
   t3: { active: number; t4t5: number; sessions: number; accuracy: number }
   t2: { accuracy: number; answers: number }
   t1: { satisfaction: number; responses: number }
@@ -67,12 +68,26 @@ interface Reaction {
   satisfaction: number
 }
 interface Learning {
-  kpi: { answers: number; accuracy: number; sessionsCompleted: number; sessions: number }
+  kpi: {
+    answers: number
+    accuracy: number
+    avgScore: number
+    sessionsCompleted: number
+    sessions: number
+    completionPct: number
+  }
   subjects: { name: string; answers: number; accuracy: number; status: string }[]
   schools: { schoolId: string; name: string; students: number; answers: number }[]
 }
 interface Behavior {
-  kpi: { t4t5: number; active: number; sessions: number; answers: number }
+  kpi: {
+    t4t5: number
+    active: number
+    sessions: number
+    answers: number
+    accuracy: number
+    teacherPct: number
+  }
   bands: { key: string; count: number; pct: number }[]
   schools: { schoolId: string; name: string; students: number; active: number }[]
   alerts: unknown[]
@@ -177,6 +192,18 @@ async function applyFilters(page: Page): Promise<void> {
 const rowsOf = (scope: Locator): Locator =>
   scope.locator('tbody tr, [data-ds=data-table-cards] > li')
 
+/** `Number(n.toFixed(1))` as text: one decimal, ".0" dropped (src/lib/number, `mean` / `pct`). */
+const mean = (n: number): string => String(Number(n.toFixed(1)))
+const count = (n: number): string => n.toLocaleString('en-US')
+
+/** A stat tile shows its label and the figure as one exact line (a bare "0" elsewhere cannot pass). */
+async function expectTileValue(tile: Locator, label: string, value: string): Promise<void> {
+  await expect(tile, label).toContainText(label)
+  await expect
+    .poll(async () => (await tile.innerText()).split('\n').map((l) => l.trim()), { message: label })
+    .toContain(value)
+}
+
 const TAB_LABELS = [
   'Overview',
   'T1: Reaksi',
@@ -266,6 +293,14 @@ test.describe('M12 S1 Overview @api', () => {
     // The four level cards, in the documented order (T4, T3, T2, T1), with the response figures.
     const t4 = page.getByTestId('kirk-level-t4')
     await expect(t4).toContainText('Tahap 4: Hasil')
+    await expect(t4.getByTestId('kirk-level-value')).toHaveText(
+      d.t4.gps === null ? 'Belum Ada Data' : d.t4.gps.toFixed(2),
+    )
+    await expect(t4.getByTestId('kirk-level-caption')).toHaveText(
+      d.t4.gps === null
+        ? 'Import keputusan peperiksaan'
+        : `GPS Sekolah · ${d.t4.recordsLabel} rekod headcount`,
+    )
     const t3 = page.getByTestId('kirk-level-t3')
     await expect(t3).toContainText('Tahap 3: Tingkah Laku')
     await expect(t3.getByTestId('kirk-level-value')).toHaveText(`${d.t3.active}/${d.t3.t4t5}`)
@@ -279,7 +314,7 @@ test.describe('M12 S1 Overview @api', () => {
     )
     const t1 = page.getByTestId('kirk-level-t1')
     await expect(t1).toContainText('Tahap 1: Reaksi')
-    await expect(t1.getByTestId('kirk-level-value')).toContainText('/5')
+    await expect(t1.getByTestId('kirk-level-value')).toHaveText(`${mean(d.t1.satisfaction)}/5`)
     await expect(t1.getByTestId('kirk-level-caption')).toContainText(`${d.t1.responses} respon`)
     for (const card of [t4, t3, t2, t1]) await expect(card).toContainText('Lihat detail')
 
@@ -287,10 +322,25 @@ test.describe('M12 S1 Overview @api', () => {
     await expect(page.getByTestId('kirk-flow')).toContainText('Kirkpatrick Evaluation Flow')
     await expect(page.getByTestId('kirk-comparison-subtitle')).toHaveText(d.comparison.subtitle)
     await expect(page.getByText('Perbandingan Sebelum & Selepas')).toBeVisible()
-    await expect(page.getByTestId('kirk-kpis')).toContainText('Pelajar Berdaftar (T4/T5)')
-    await expect(page.getByTestId('kirk-kpis')).toContainText(d.kpi.t4t5.toLocaleString('en-US'))
-    await expect(page.getByTestId('kirk-kpis')).toContainText(
+    await expectTileValue(
+      page.getByTestId('kirk-kpi-registered'),
+      'Pelajar Berdaftar (T4/T5)',
+      count(d.kpi.t4t5),
+    )
+    await expectTileValue(
+      page.getByTestId('kirk-kpi-answers'),
+      'Soalan Dijawab',
+      count(d.kpi.answers),
+    )
+    await expectTileValue(
+      page.getByTestId('kirk-kpi-teachers'),
+      'Guru Aktif',
       `${d.kpi.teachersLoggedIn}/${d.kpi.teachers}`,
+    )
+    await expectTileValue(
+      page.getByTestId('kirk-kpi-accuracy'),
+      'Ketepatan Keseluruhan',
+      `${mean(d.kpi.accuracy)}%`,
     )
     await expect(page.getByText('Taburan Engagement Pelajar')).toBeVisible()
     await expect(page.getByTestId('kirk-band-count')).toHaveCount(5)
@@ -314,7 +364,7 @@ test.describe('M12 S1 Overview @api', () => {
     await openWith<Overview>(page, ADMIN, '/api/kirkpatrick/overview')
     const options = await bodyOf<FilterOptions>(await filterApi)
     const school = options.schools[0]
-    expect(school, 'filter-options lists a school').toBeTruthy()
+    expect(school, 'seed: filter-options lists a school').toBeDefined()
     await expect(page.getByTestId('kirk-levels')).toBeVisible(SLOW)
 
     const scoped = page.waitForResponse(
@@ -371,13 +421,15 @@ test.describe('M12 S2-S7 level screens @api', () => {
     await expectTabStrip(page, ADMIN, 'reaction')
 
     const cards = page.getByTestId('kirk-reaction-cards')
-    for (const label of ['NPS Pelajar', 'NPS Guru', 'NPS Admin', 'Kepuasan Purata']) {
-      await expect(cards.getByText(label, { exact: true }), label).toBeVisible()
+    await expect(cards).toBeVisible()
+    for (const [key, label, value] of [
+      ['nps-student', 'NPS Pelajar', `${mean(d.npsStudent)}/10`],
+      ['nps-teacher', 'NPS Guru', `${mean(d.npsTeacher)}/10`],
+      ['nps-admin', 'NPS Admin', `${mean(d.npsAdmin)}/10`],
+      ['satisfaction', 'Kepuasan Purata', `${mean(d.satisfaction)}/5`],
+    ] as const) {
+      await expectTileValue(page.getByTestId(`kirk-${key}`), label, value)
     }
-    await expect(cards).toContainText(`${d.npsStudent}/10`)
-    await expect(cards).toContainText(`${d.npsTeacher}/10`)
-    await expect(cards).toContainText(`${d.npsAdmin}/10`)
-    await expect(cards).toContainText('/5')
     await expectNoHScroll(page)
   })
 
@@ -397,32 +449,30 @@ test.describe('M12 S2-S7 level screens @api', () => {
     ).toBeVisible()
     await expectTabStrip(page, ADMIN, 'learning')
 
-    const kpis = page.getByTestId('kirk-learning-kpis')
-    for (const label of [
-      'Soalan Dijawab',
-      'Ketepatan',
-      'Skor Purata',
-      'Sesi Selesai',
-      'Kadar Penyelesaian',
-      'Learning Gain',
-    ]) {
-      await expect(kpis.getByText(label, { exact: true }), label).toBeVisible()
+    await expect(page.getByTestId('kirk-learning-kpis')).toBeVisible()
+    for (const [key, label, value] of [
+      ['answers', 'Soalan Dijawab', count(d.kpi.answers)],
+      ['accuracy', 'Ketepatan', `${mean(d.kpi.accuracy)}%`],
+      ['score', 'Skor Purata', `${mean(d.kpi.avgScore)}%`],
+      ['sessions', 'Sesi Selesai', `${d.kpi.sessionsCompleted}/${d.kpi.sessions}`],
+      ['completion', 'Kadar Penyelesaian', `${mean(d.kpi.completionPct)}%`],
+      ['gain', 'Learning Gain', '-'],
+    ] as const) {
+      await expectTileValue(page.getByTestId(`kirk-kpi-${key}`), label, value)
     }
-    await expect(kpis).toContainText(d.kpi.answers.toLocaleString('en-US'))
-    await expect(kpis).toContainText(`${d.kpi.accuracy}%`)
     await expect(page.getByTestId('kirk-gain-card')).toContainText(
       'Pre-Test / Post-Test belum dimulakan',
     )
 
     await expect(page.getByText('Prestasi Mengikut Subjek')).toBeVisible()
     await expect(page.getByTestId('kirk-subject-row')).toHaveCount(d.subjects.length)
-    if (d.subjects[0]) {
-      await expect(page.getByTestId('kirk-subject-name').first()).toHaveText(d.subjects[0].name)
-      await expect(page.getByTestId('kirk-subject-count').first()).toContainText(
-        `${d.subjects[0].answers} soalan`,
-      )
-      await expect(page.getByTestId('kirk-subject-status').first()).toHaveText(d.subjects[0].status)
-    }
+    const subject = d.subjects[0]!
+    expect(subject, 'seed: the platform has answers in at least one subject').toBeDefined()
+    await expect(page.getByTestId('kirk-subject-name').first()).toHaveText(subject.name)
+    await expect(page.getByTestId('kirk-subject-count').first()).toContainText(
+      `${subject.answers} soalan`,
+    )
+    await expect(page.getByTestId('kirk-subject-status').first()).toHaveText(subject.status)
     await expect(page.getByRole('heading', { name: 'Pembelajaran Mengikut Sekolah' })).toBeVisible()
     await expect(rowsOf(page.getByTestId('kirk-schools'))).toHaveCount(d.schools.length)
     await expect(page.getByTestId('kirk-schools')).toContainText(d.schools[0]!.name)
@@ -448,19 +498,16 @@ test.describe('M12 S2-S7 level screens @api', () => {
     await expect(page.getByLabel('Sekolah', { exact: true })).toBeVisible()
     await closeFilters(page)
 
-    const kpis = page.getByTestId('beh-kpis')
-    for (const label of [
-      'Pelajar T4/T5',
-      'Pernah Aktif',
-      'Jumlah Sesi',
-      'Soalan Dijawab',
-      'Ketepatan',
-      'Guru Aktif',
-    ]) {
-      await expect(kpis.getByText(label, { exact: true }), label).toBeVisible()
+    for (const [key, label, value] of [
+      ['t4t5', 'Pelajar T4/T5', count(d.kpi.t4t5)],
+      ['active', 'Pernah Aktif', String(d.kpi.active)],
+      ['sessions', 'Jumlah Sesi', String(d.kpi.sessions)],
+      ['answers', 'Soalan Dijawab', count(d.kpi.answers)],
+      ['accuracy', 'Ketepatan', `${mean(d.kpi.accuracy)}%`],
+      ['teachers', 'Guru Aktif', `${mean(d.kpi.teacherPct)}%`],
+    ] as const) {
+      await expectTileValue(page.getByTestId(`beh-kpi-${key}`), label, value)
     }
-    await expect(kpis).toContainText(String(d.kpi.t4t5))
-    await expect(kpis).toContainText(d.kpi.answers.toLocaleString('en-US'))
 
     await expect(page.getByText('Taburan Tahap Engagement')).toBeVisible()
     await expect(page.getByTestId('band-count')).toHaveText(d.bands.map((b) => String(b.count)))
@@ -586,10 +633,11 @@ test.describe('M12 S2-S7 level screens @api', () => {
     page,
   }) => {
     await signIn(page, 'adminPusat')
-    const posts: string[] = []
+    // Any write (not a GET/HEAD) to the Kirkpatrick API would break the read-only rule of this suite.
+    const writes: string[] = []
     page.on('request', (r) => {
-      if (r.method() === 'POST' && r.url().includes('/api/kirkpatrick/interventions'))
-        posts.push(r.url())
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(r.method()) && r.url().includes('/api/kirkpatrick/'))
+        writes.push(`${r.method()} ${r.url()}`)
     })
     const d = await openWith<Interventions>(
       page,
@@ -605,11 +653,14 @@ test.describe('M12 S2-S7 level screens @api', () => {
     ).toBeVisible()
     await expectTabStrip(page, ADMIN, 'interventions')
 
-    const kpis = page.getByTestId('int-kpis')
-    for (const label of ['Jumlah Intervensi', 'Menunggu Semakan', 'Meningkat', 'Menurun']) {
-      await expect(kpis.getByText(label, { exact: true }), label).toBeVisible()
+    for (const [key, label, value] of [
+      ['total', 'Jumlah Intervensi', d.kpi.total],
+      ['pending', 'Menunggu Semakan', d.kpi.pending],
+      ['up', 'Meningkat', d.kpi.up],
+      ['down', 'Menurun', d.kpi.down],
+    ] as const) {
+      await expectTileValue(page.getByTestId(`int-kpi-${key}`), label, String(value))
     }
-    await expect(kpis).toContainText(String(d.kpi.total))
     await expect(page.getByText('Senarai Intervensi')).toBeVisible()
     if (d.rows.length === 0) {
       await expect(page.getByTestId('int-empty')).toHaveText('Tiada intervensi direkodkan lagi.')
@@ -642,7 +693,7 @@ test.describe('M12 S2-S7 level screens @api', () => {
     await page.getByTestId('int-submit').click()
     await expect(page.getByTestId('int-student')).toHaveJSProperty('validity.valueMissing', true)
     await expect(page).toHaveURL(/\/admin\/kirkpatrick\/interventions$/)
-    expect(posts, 'no POST /api/kirkpatrick/interventions was sent').toEqual([])
+    expect(writes, 'no write to /api/kirkpatrick/ was sent').toEqual([])
 
     await page.getByTestId('int-form-toggle').click()
     await expect(page.getByTestId('int-form')).toBeHidden()
@@ -677,8 +728,12 @@ test.describe('M12 S8 Pelajar @api', () => {
       'ALESA — Analisis Tingkah Laku Kirkpatrick',
     )
     await expect(page.getByTestId('pel-paragraph')).toContainText(d.student.name)
-    await expect(page.getByTestId('pel-tile-answers')).toContainText(String(d.answers))
-    await expect(page.getByTestId('pel-tile-accuracy')).toContainText(`${d.accuracy}%`)
+    await expectTileValue(page.getByTestId('pel-tile-answers'), 'Soalan', count(d.answers))
+    await expectTileValue(
+      page.getByTestId('pel-tile-accuracy'),
+      'Ketepatan',
+      `${mean(d.accuracy)}%`,
+    )
     await expect(page.getByTestId('pel-headcount')).toContainText('Tahap 2 — Head Count')
     await expect(page.getByTestId('pel-platform')).toContainText('Tahap 2 — Prestasi Platform')
     await expect(page.getByTestId('pel-plat-row')).toHaveCount(d.platform.length)
@@ -688,7 +743,7 @@ test.describe('M12 S8 Pelajar @api', () => {
     await expect(page).toHaveURL(/\/admin\/kirkpatrick\/behavior$/)
   })
 
-  test('AC-M12-03.4 AC-M12-30.4 a pupil without answers renders; an inaccessible id shows the 403 page; a non-numeric id the 404 page @api', async ({
+  test('AC-M12-30.4 AC-M12-03.4 a pupil without answers opens from the M11 school page link; an inaccessible id shows the 403 page; a non-numeric id the 404 page @api', async ({
     page,
   }) => {
     await signIn(page, 'adminPusat')
@@ -701,17 +756,22 @@ test.describe('M12 S8 Pelajar @api', () => {
       `/api/monitoring/schools/${overview.studentRows[0]!.schoolId}`,
     )
     const idle = school.students.find((s) => s.answers === 0)
-    if (idle) {
-      const d = await openWith<StudentKirkpatrick>(
-        page,
-        `${ADMIN}/pelajar/${idle.id}`,
-        `/api/kirkpatrick/students/${idle.id}`,
-      )
-      await expect(page.getByTestId('pel-name')).toHaveText(d.student.name)
-      await expect(page.getByTestId('pel-tile-answers')).toContainText('0')
-      await expectHealthy(page)
-      await expectNoHScroll(page)
-    }
+    expect(idle, 'seed: a pupil without answers').toBeDefined()
+    // The M11 school page links a pupil without answers to this page (AC-M12-30.4).
+    await gotoApi(page, `/guru/monitoring/sekolah/${school.school.id}`)
+    const link = page.locator(`a[href$="/kirkpatrick/pelajar/${idle!.id}"]`).first()
+    await expect(link).toBeVisible(SLOW)
+    const idleApi = page.waitForResponse(
+      (r) => r.url().includes(`/api/kirkpatrick/students/${idle!.id}`),
+      SLOW,
+    )
+    await link.click()
+    expect((await idleApi).status()).toBe(200)
+    await expect(page).toHaveURL(new RegExp(`/guru/kirkpatrick/pelajar/${idle!.id}$`))
+    await expect(page.getByTestId('pel-name')).toHaveText(idle!.name)
+    await expectTileValue(page.getByTestId('pel-tile-answers'), 'Soalan', '0')
+    await expectHealthy(page)
+    await expectNoHScroll(page)
 
     // An id that is not an accessible pupil: the API answers 403 and the 403 page renders in place.
     const denied = page.waitForResponse(
@@ -795,7 +855,7 @@ test.describe('M12 mounts and guards @api', () => {
     await expectNoHScroll(page)
   })
 
-  test('AC-M12-06.4 AC-M12-30 school admin alias: S1 only, own school, no detail links; other screens are not routed @api', async ({
+  test('AC-M12-35.1 AC-M12-35.2 school admin alias: S1 only, own school, no detail links; other screens are not routed; the API is scoped to the own school @api', async ({
     page,
   }) => {
     await signIn(page, 'adminSekolah')
@@ -834,6 +894,33 @@ test.describe('M12 mounts and guards @api', () => {
       await gotoApi(page, path)
       await expect(page, path).toHaveURL(new RegExp(`${HOME.adminSekolah}$`), SLOW)
     }
+
+    // API: AC-M12-35.2 says 403 for S2-S7 data, but the API (apps/api kirkpatrick controllers,
+    // `@Roles('admin', 'teacher', 'school_admin')`) answers 200 SCOPED to the own school, observed on the
+    // R3 stack. The screens are unreachable through the SPA (no route), so this asserts the observed
+    // scoping: every list holds the own school only, whatever the query says.
+    const own = d.scope.schoolId!
+    const forced = await getData<Overview>(
+      page,
+      '/api/kirkpatrick/overview?schoolId=99999&state=Johor',
+    )
+    expect(forced.scope.schoolId, 'a foreign school id in the query is ignored').toBe(own)
+    const learning = await getData<Learning>(page, '/api/kirkpatrick/learning?schoolId=99999')
+    const behavior = await getData<Behavior>(page, '/api/kirkpatrick/behavior?schoolId=99999')
+    const results = await getData<Results>(page, '/api/kirkpatrick/results?schoolId=99999')
+    for (const [name, schools] of [
+      ['learning', learning.schools],
+      ['behavior', behavior.schools],
+      ['results', results.schools],
+    ] as const) {
+      expect(
+        schools.map((x) => x.schoolId),
+        `${name}: the own school only`,
+      ).toEqual([own])
+    }
+    expect((await page.request.get('/api/kirkpatrick/interventions')).status()).toBe(200)
+    // A pupil that is not accessible answers 403 (S8).
+    expect((await page.request.get('/api/kirkpatrick/students/99999999')).status()).toBe(403)
   })
 
   test('AC-M12-03.1 without a session every M12 route is sent to /login @api', async ({ page }) => {

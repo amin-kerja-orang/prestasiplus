@@ -11,11 +11,18 @@
  *
  * Roles (route meta): S1, S6 and `/guru/monitoring` = teacher + admin; `/admin-sekolah/monitoring` =
  * school_admin. A role the route does not allow is sent to its landing page (M10 §7 "T" guard); the API
- * answers 403 for it. Seed: BE-07 poc profile (school DEMO001, password `Demo1234`, see helpers.ts).
+ * answers 403 for it. Seed: BE-07 poc profile (school DEMO001, accounts and password in helpers.ts).
  *
  * The seed is relative to "now" and other specs log the demo pupil in, so figures are NEVER hard-coded:
  * each test reads the same endpoint the page reads and compares the rendered numbers with that response.
- * That also proves the page shows the real API and not the in-browser mock. Layout: every screen is
+ * That also proves the page shows the real API and not the in-browser mock.
+ *
+ * What the fresh poc seed leaves EMPTY (so these paths are only exercised when other data exists, and
+ * each has an explicit populated-branch assertion beside the empty one): the teacher's "Paling Aktif"
+ * list and activity total (no attempts in the last 30 days), the S6 item-analysis rows, the S4 question
+ * list, "Jawapan Salah" and gap cards (the answers have no question rows), and the admin's classes.
+ * Anything the specs REQUIRE from the seed (a pupil, a teacher, the admin owning no class) is asserted
+ * with `expect(...)`, never skipped, so a seed change fails loudly. Layout: every screen is
  * measured for horizontal page overflow on the three Playwright projects (375 / 768 / 1280).
  *
  * Env: E2E_DEMO_PASSWORD (or BIJAK_GURU_PASS / BIJAK_ADMIN_PASS / BIJAK_ADMIN_SEKOLAH_PASS /
@@ -26,7 +33,14 @@ import type { Locator, Page, Response } from '@playwright/test'
 
 import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
 import { viewportWidth } from '../support'
-import { account, type ApiRole, expectNoHScroll, FORBIDDEN_TITLE, HOME } from './helpers'
+import {
+  account,
+  type ApiRole,
+  expectNoHScroll,
+  FORBIDDEN_TITLE,
+  HOME,
+  newPeerContext,
+} from './helpers'
 
 const SLOW = { timeout: 30_000 }
 const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
@@ -58,7 +72,7 @@ interface TeacherReport {
 }
 interface ItemAnalysis {
   options: { subjects: { id: string; name: string }[]; classes: { id: string; name: string }[] }
-  rows: unknown[]
+  rows: { subjectName: string; attempts: number; pct: number }[]
 }
 interface OverviewRow {
   schoolId: string
@@ -73,9 +87,12 @@ interface Overview {
     schools: number
     students: number
     engaged: number
+    engagementPct: number
     answers: number
+    avgPerStudent: number
     teachers: number
     teachersLoggedIn: number
+    teacherPct: number
   }
   studentRows: OverviewRow[]
   teacherRows: OverviewRow[]
@@ -83,7 +100,13 @@ interface Overview {
 }
 interface SchoolDetail {
   school: { id: string; name: string; code: string | null; state: string }
-  cards: { students: number; engaged: number; answers: number; teachers: number }
+  cards: {
+    students: number
+    engaged: number
+    answers: number
+    teachers: number
+    teachersLoggedIn: number
+  }
   students: { id: string; name: string; email: string; answers: number }[]
   teachers: { id: string; name: string; email: string }[]
 }
@@ -170,6 +193,14 @@ async function applyFilters(page: Page): Promise<void> {
 const rowsOf = (scope: Locator): Locator =>
   scope.locator('tbody tr, [data-ds=data-table-cards] > li')
 
+/** A stat tile shows its label and the figure as one exact line (a bare "0" elsewhere cannot pass). */
+async function expectTileValue(tile: Locator, label: string, value: string): Promise<void> {
+  await expect(tile, label).toContainText(label)
+  await expect
+    .poll(async () => (await tile.innerText()).split('\n').map((l) => l.trim()), { message: label })
+    .toContain(value)
+}
+
 const pctInt = (part: number, whole: number): string =>
   `${whole === 0 ? 0 : Math.round((part / whole) * 100)}%`
 
@@ -240,17 +271,26 @@ test.describe('M11 S1 Laporan Statistik @api', () => {
     )
 
     // Trend and the two lists; each shows the rows of the response or its empty-state copy.
-    await expect(page.getByTestId('trend-card')).toBeVisible()
+    const trend = page.getByTestId('trend-card')
+    await expect(trend).toBeVisible()
     await expect(page.getByText('Trend Aktiviti').first()).toBeVisible()
+    await expect(page.getByTestId('trend-range')).toHaveText('30 hari lepas')
+    expect(d.trend.length, 'one trend point per day of the range').toBe(30)
+    // The chart's data table lists "{dd/mm}{n} aktiviti" for each day of the response.
+    for (const point of d.trend) {
+      await expect(trend, point.date).toContainText(
+        new RegExp(`${point.date}\\s*${point.count} aktiviti`),
+      )
+    }
     await expect(
       page.getByTestId('list-active').getByRole('heading', { name: 'Paling Aktif' }),
     ).toBeVisible()
     if (d.mostActive.length === 0) {
       await expect(page.getByTestId('list-active-empty')).toHaveText('Belum ada aktiviti')
     } else {
-      await expect(page.getByTestId('list-active-rows').getByTestId('student-row')).toHaveCount(
-        d.mostActive.length,
-      )
+      const active = page.getByTestId('list-active-rows').getByTestId('student-row')
+      await expect(active).toHaveCount(d.mostActive.length)
+      await expect(active.first().getByTestId('student-name')).toHaveText(d.mostActive[0]!.name)
     }
     await expect(
       page.getByTestId('list-idle').getByRole('heading', { name: 'Belum Pernah Buat Latihan' }),
@@ -376,11 +416,9 @@ test.describe('M11 S1 Laporan Statistik @api', () => {
     await expect(page.getByTestId('laporan-page')).toBeVisible(SLOW)
     await expectHealthy(page)
     await expect(page).toHaveTitle('Laporan Statistik - Portal Guru')
-    // The admin owns no class in the seed: one population of 0 pupils.
-    test.skip(
-      d.population.total !== 0,
-      'the admin has classes in this database; the zero state does not apply',
-    )
+    // Seed precondition: the admin owns no class, so the population is 0 pupils (fails loudly otherwise).
+    expect(d.population.total, 'seed: the admin owns no class').toBe(0)
+    expect(d.options.classes, 'seed: the admin owns no class').toEqual([])
 
     await expect(page.getByTestId('filter-classroom').locator('option')).toHaveText(['Semua Kelas'])
     await expect(page.getByTestId('card-login').getByTestId('card-value')).toHaveText('0%')
@@ -460,8 +498,13 @@ test.describe('M11 S6 Analisis Item Soalan @api', () => {
       await expect(empty).toContainText('Pelajar perlu membuat latihan dahulu.')
       await expect(page.getByTestId('item-table-card')).toHaveCount(0)
     } else {
+      // Populated branch (needs practice attempts in the teacher's classes; the fresh seed has none).
       await expect(page.getByTestId('item-empty')).toHaveCount(0)
-      await expect(page.getByTestId('item-row')).toHaveCount(d.rows.length)
+      const table = page.getByTestId('item-table-card')
+      await expect(table).toBeVisible()
+      await expect(table).toContainText(d.rows[0]!.subjectName)
+      await expect(table).toContainText(String(d.rows[0]!.attempts))
+      await expect(table).toContainText(`${Number(d.rows[0]!.pct.toFixed(1))}%`)
     }
     await expectNoHScroll(page)
   })
@@ -473,7 +516,7 @@ test.describe('M11 S6 Analisis Item Soalan @api', () => {
     const d = await openWith<ItemAnalysis>(page, ITEM, '/api/teacher/item-analysis')
     const subject =
       d.options.subjects.find((s) => s.name === 'Bahasa Melayu') ?? d.options.subjects[0]
-    expect(subject, 'the subject list is not empty').toBeTruthy()
+    expect(subject, 'the subject list is not empty').toBeDefined()
 
     const filtered = page.waitForResponse(
       (r) =>
@@ -575,22 +618,24 @@ test.describe('M11 S2 Monitoring Penglibatan @api', () => {
     }
     await closeFilters(page)
 
-    // KPI cards: labels in the documented order and the response figures.
-    const kpis = page.getByTestId('mon-kpis')
-    for (const label of [
-      'Jumlah Sekolah',
-      'Pelajar T4/T5',
-      'Pernah Aktif',
-      '% Penglibatan',
-      'Soalan Dijawab',
-      'Purata/Pelajar',
-      'Guru Berdaftar',
-      'Guru Pernah Login',
-      '% Penglibatan Guru',
-    ]) {
-      await expect(kpis.getByText(label, { exact: false }).first(), label).toBeVisible()
+    // KPI cards: the nine tiles in the documented order, each with its label and its exact figure
+    // (counts with thousands separators, percentages with one decimal and ".0" dropped).
+    const count = (n: number): string => n.toLocaleString('en-US')
+    const pct = (n: number): string => `${Number(n.toFixed(1))}%`
+    const tiles: [string, string, string][] = [
+      ['schools', 'Jumlah Sekolah', count(d.kpi.schools)],
+      ['students', 'Pelajar T4/T5', count(d.kpi.students)],
+      ['engaged', 'Pernah Aktif', count(d.kpi.engaged)],
+      ['engagement', '% Penglibatan', pct(d.kpi.engagementPct)],
+      ['answers', 'Soalan Dijawab', count(d.kpi.answers)],
+      ['average', 'Purata/Pelajar', String(Number(d.kpi.avgPerStudent.toFixed(1)))],
+      ['teachers', 'Guru Berdaftar', count(d.kpi.teachers)],
+      ['teachersLoggedIn', 'Guru Pernah Login', count(d.kpi.teachersLoggedIn)],
+      ['teacherPct', '% Penglibatan Guru', pct(d.kpi.teacherPct)],
+    ]
+    for (const [key, label, value] of tiles) {
+      await expectTileValue(page.getByTestId(`mon-kpi-${key}`), label, value)
     }
-    await expect(kpis).toContainText(d.kpi.answers.toLocaleString('en-US'))
 
     // Tabs and the student-by-school table (default tab).
     const tabs = page.getByTestId('mon-tabs')
@@ -601,7 +646,14 @@ test.describe('M11 S2 Monitoring Penglibatan @api', () => {
       'Sekolah Cemerlang / Perhatian Segera',
       'Cadangan Tindakan',
     ]) {
-      await expect(tabs.getByRole('tab', { name }), name).toBeVisible()
+      const tab = tabs.getByRole('tab', { name })
+      await expect(tab, name).toBeVisible()
+      // The full label shows (G5-M11 bug 1: `truncate` clipped it): nothing inside the tab overflows.
+      const clipped = await tab.evaluate(
+        (el) =>
+          [el, ...el.querySelectorAll('*')].filter((n) => n.scrollWidth > n.clientWidth).length,
+      )
+      expect(clipped, `${name}: label is not clipped`).toBe(0)
     }
     const table = page.getByTestId('mon-table-student')
     await expect(table.getByTestId('mon-table-count')).toHaveText(`${d.studentRows.length} sekolah`)
@@ -683,7 +735,7 @@ test.describe('M11 S2 Monitoring Penglibatan @api', () => {
     await signIn(page, 'guru')
     const overview = await openWith<Overview>(page, MON, '/api/monitoring/overview')
     const row = overview.studentRows[0]!
-    expect(row, 'the overview has a school row').toBeTruthy()
+    expect(row, 'seed: the overview has a school row').toBeDefined()
 
     // S2 -> S3 through the school link.
     const schoolApi = page.waitForResponse(
@@ -701,7 +753,19 @@ test.describe('M11 S2 Monitoring Penglibatan @api', () => {
     await expect(page.getByTestId('mon-school-name')).toHaveText(school.school.name)
     await expect(page.getByTestId('mon-school-code')).toContainText(school.school.code ?? '-')
     await expect(page.getByTestId('mon-school-state')).toContainText(school.school.state)
-    await expect(page.getByTestId('mon-school-cards')).toContainText(String(school.cards.students))
+    for (const [key, label, value] of [
+      ['students', 'Pelajar T4/T5', school.cards.students],
+      ['engaged', 'Pernah Aktif', school.cards.engaged],
+      ['answers', 'Soalan Dijawab', school.cards.answers],
+      ['teachers', 'Guru Berdaftar', school.cards.teachers],
+      ['teachersLoggedIn', 'Guru Pernah Login', school.cards.teachersLoggedIn],
+    ] as const) {
+      await expectTileValue(
+        page.getByTestId(`mon-stat-${key}`),
+        label,
+        value.toLocaleString('en-US'),
+      )
+    }
     await expect(page.getByText('Senarai Pelajar T4/T5')).toBeVisible()
     await expect(page.getByTestId('mon-pill-all')).toHaveText(`Semua (${school.students.length})`)
     await expect(page.getByTestId('mon-pill-never')).toHaveText('Belum login')
@@ -721,38 +785,37 @@ test.describe('M11 S2 Monitoring Penglibatan @api', () => {
     const teacherTab = page.getByRole('tab', { name: `Guru (${school.teachers.length})` })
     await expect(teacherTab).toBeVisible()
     await teacherTab.click()
-    const teacher = school.teachers[0]
-    if (teacher) {
-      await expect(rowsOf(page.getByTestId('mon-teacher-scroller'))).toHaveCount(
-        school.teachers.length,
-      )
-      await expectNoHScroll(page)
-      const teacherApi = page.waitForResponse(
-        (r) => r.url().endsWith(`/api/monitoring/schools/${row.schoolId}/teachers/${teacher.id}`),
-        SLOW,
-      )
-      await page.locator(`a[href$="/guru/${teacher.id}"]`).first().click()
-      expect((await teacherApi).status()).toBe(200)
-      await expect(page).toHaveURL(new RegExp(`${MON}/sekolah/${row.schoolId}/guru/${teacher.id}$`))
-      await expect(page.getByTestId('monitoring-teacher-page')).toBeVisible(SLOW)
-      await expectHealthy(page)
-      await expect(page.getByTestId('mon-teacher-name').first()).toBeVisible()
-      await expect(page.getByTestId('mon-teacher-cards')).toBeVisible()
-      await expect(page.getByTestId('mon-teacher-students')).toContainText('Prestasi Pelajar')
-      await expect(page.getByTestId('mon-teacher-suggestions')).toContainText('Cadangan Tindakan')
-      await expectNoHScroll(page)
-      await page.goBack()
-      await expect(page.getByTestId('monitoring-school-page')).toBeVisible(SLOW)
-    }
+    const teacher = school.teachers[0]!
+    expect(teacher, 'seed: the school has a teacher').toBeDefined()
+    await expect(rowsOf(page.getByTestId('mon-teacher-scroller'))).toHaveCount(
+      school.teachers.length,
+    )
+    await expectNoHScroll(page)
+    const teacherApi = page.waitForResponse(
+      (r) => r.url().endsWith(`/api/monitoring/schools/${row.schoolId}/teachers/${teacher.id}`),
+      SLOW,
+    )
+    await page.locator(`a[href$="/guru/${teacher.id}"]`).first().click()
+    expect((await teacherApi).status()).toBe(200)
+    await expect(page).toHaveURL(new RegExp(`${MON}/sekolah/${row.schoolId}/guru/${teacher.id}$`))
+    await expect(page.getByTestId('monitoring-teacher-page')).toBeVisible(SLOW)
+    await expectHealthy(page)
+    await expect(page.getByTestId('mon-teacher-name').first()).toBeVisible()
+    await expect(page.getByTestId('mon-teacher-cards')).toBeVisible()
+    await expect(page.getByTestId('mon-teacher-students')).toContainText('Prestasi Pelajar')
+    await expect(page.getByTestId('mon-teacher-suggestions')).toContainText('Cadangan Tindakan')
+    await expectNoHScroll(page)
+    await page.goBack()
+    await expect(page.getByTestId('monitoring-school-page')).toBeVisible(SLOW)
 
-    // S3 -> S4 through a pupil row.
+    // S3 -> S4 through the pupil link of the list (first tab of S3).
     const pupil = school.students[0]!
-    expect(pupil, 'the school has a pupil').toBeTruthy()
+    expect(pupil, 'seed: the school has a pupil').toBeDefined()
     const pupilApi = page.waitForResponse(
       (r) => r.url().endsWith(`/api/monitoring/schools/${row.schoolId}/students/${pupil.id}`),
       SLOW,
     )
-    await page.goto(`${MON}/sekolah/${row.schoolId}/pelajar/${pupil.id}`)
+    await page.locator(`a[href$="/sekolah/${row.schoolId}/pelajar/${pupil.id}"]`).first().click()
     expect((await pupilApi).status()).toBe(200)
     await expect(page.getByTestId('monitoring-student-page')).toBeVisible(SLOW)
     await expect(page.getByTestId('mon-student-name')).toHaveText(pupil.name)
@@ -766,13 +829,14 @@ test.describe('M11 S2 Monitoring Penglibatan @api', () => {
     const overview = await getData<Overview>(page, '/api/monitoring/overview')
     const schoolId = overview.studentRows[0]!.schoolId
     const school = await getData<SchoolDetail>(page, `/api/monitoring/schools/${schoolId}`)
-    expect(school.students.length, 'the school has pupils').toBeGreaterThan(0)
 
-    // Prefer a pupil without answers (AC-M11-21.5: the page renders), then one with answers.
-    const pupils = [
-      ...school.students.filter((s) => s.answers === 0).slice(0, 1),
-      ...school.students.filter((s) => s.answers > 0).slice(0, 1),
-    ]
+    // Seed preconditions (fail loudly): one pupil without answers (AC-M11-21.5: the page renders) and
+    // one with answers.
+    const idle = school.students.find((s) => s.answers === 0)
+    const active = school.students.find((s) => s.answers > 0)
+    expect(idle, 'seed: a pupil without answers').toBeDefined()
+    expect(active, 'seed: a pupil with answers').toBeDefined()
+    const pupils = [idle!, active!]
     for (const pupil of pupils) {
       const d = await openWith<StudentDetail>(
         page,
@@ -845,9 +909,10 @@ test.describe('M11 S2 Monitoring Penglibatan @api', () => {
     }
   })
 
-  test('AC-M11-30 school admin alias shows only the own school; another school answers 404 @api', async ({
+  test('AC-M11-30.1 AC-M11-30.2 school admin alias shows only the own school; another school, its teacher and a cross-school pupil answer 404 @api', async ({
     page,
-  }) => {
+    browser,
+  }, info) => {
     await signIn(page, 'adminSekolah')
     const d = await openWith<Overview>(page, MON_SA, '/api/monitoring/overview')
     await expect(page.getByTestId('monitoring-page')).toBeVisible(SLOW)
@@ -875,18 +940,54 @@ test.describe('M11 S2 Monitoring Penglibatan @api', () => {
     await expect(page.getByTestId('mon-pill-all')).toHaveText(`Semua (${school.students.length})`)
     expect(school.cards.students, 'S3 equals the S2 row for the school admin').toBe(own.registered)
     await expectNoHScroll(page)
+    const ownPupil = school.students[0]!
+    expect(ownPupil, 'seed: the own school has a pupil').toBeDefined()
 
-    // Another school (and an unknown id): same API 404 and the same 404 page.
-    const otherId = String(Number(own.schoolId) + 1)
-    for (const id of [otherId, '99999999']) {
-      const res = await page.request.get(`/api/monitoring/schools/${id}`)
-      expect(res.status(), `GET /api/monitoring/schools/${id}`).toBe(404)
-      await gotoApi(page, `${MON_SA}/sekolah/${id}`)
+    // A REAL second school and one of its teachers, as the platform admin sees them (own context).
+    const adminContext = await newPeerContext(browser, info)
+    let other: { schoolId: string; teacherId: string }
+    try {
+      const adminPage = await adminContext.newPage()
+      await signIn(adminPage, 'adminPusat')
+      const options = await getData<{ schools: { id: string }[] }>(
+        adminPage,
+        '/api/kirkpatrick/filter-options',
+      )
+      const second = options.schools.find((s) => s.id !== own.schoolId)
+      expect(second, 'seed: a second school exists').toBeDefined()
+      const detail = await getData<SchoolDetail>(adminPage, `/api/monitoring/schools/${second!.id}`)
+      expect(detail.teachers[0], 'seed: the second school has a teacher').toBeDefined()
+      other = { schoolId: second!.id, teacherId: detail.teachers[0]!.id }
+    } finally {
+      await adminContext.close()
+    }
+
+    // The school admin gets 404 for everything of the other school, identical to an unknown id
+    // (AC-M11-30.2): the school (S3), its teacher (S5), the teacher under the own school id, and an
+    // own pupil asked for through the other school (S4).
+    const foreign = [
+      `/api/monitoring/schools/${other.schoolId}`,
+      `/api/monitoring/schools/${other.schoolId}/teachers/${other.teacherId}`,
+      `/api/monitoring/schools/${own.schoolId}/teachers/${other.teacherId}`,
+      `/api/monitoring/schools/${other.schoolId}/students/${ownPupil.id}`,
+      '/api/monitoring/schools/99999999',
+    ]
+    for (const api of foreign) {
+      expect((await page.request.get(api)).status(), `GET ${api}`).toBe(404)
+    }
+    for (const path of [
+      `${MON_SA}/sekolah/${other.schoolId}`,
+      `${MON_SA}/sekolah/${other.schoolId}/guru/${other.teacherId}`,
+      `${MON_SA}/sekolah/${own.schoolId}/guru/${other.teacherId}`,
+      `${MON_SA}/sekolah/${other.schoolId}/pelajar/${ownPupil.id}`,
+      `${MON_SA}/sekolah/99999999`,
+    ]) {
+      await gotoApi(page, path)
       await expectNotFoundPage(page)
     }
   })
 
-  test('AC-M11-28.2 teacher: Laporan Mingguan is the prototype placeholder, not an error page @api', async ({
+  test('D43 teacher: Laporan Mingguan shows the prototype-scope page (the AC-M11-28.2 empty-state copy is not built), not an error page @api', async ({
     page,
   }) => {
     await signIn(page, 'guru')
@@ -915,7 +1016,7 @@ test.describe('M11 guards @api', () => {
     await expectNoHScroll(page)
   })
 
-  test('AC-M11-03.4 AC-M11-30.2 a pupil is sent to the pupil dashboard and the API answers 403 @api', async ({
+  test('INFERRED (no AC for the pupil role): a pupil is sent to the pupil dashboard and the API answers 403 @api', async ({
     page,
   }) => {
     await signIn(page, 'student')
@@ -1010,12 +1111,11 @@ test.describe('M11 responsive @api', () => {
     await expectNoHScroll(page)
     await page.getByRole('tab', { name: /^Guru \(/ }).click()
     await expectNoHScroll(page)
-    const teacher = school.teachers[0]
-    if (teacher) {
-      await gotoApi(page, `${MON}/sekolah/${schoolId}/guru/${teacher.id}`)
-      await expect(page.getByTestId('mon-teacher-header')).toBeVisible(SLOW)
-      await expectNoHScroll(page)
-    }
+    const teacher = school.teachers[0]!
+    expect(teacher, 'seed: the school has a teacher').toBeDefined()
+    await gotoApi(page, `${MON}/sekolah/${schoolId}/guru/${teacher.id}`)
+    await expect(page.getByTestId('mon-teacher-header')).toBeVisible(SLOW)
+    await expectNoHScroll(page)
     for (const pupil of school.students.slice(0, 2)) {
       await gotoApi(page, `${MON}/sekolah/${schoolId}/pelajar/${pupil.id}`)
       await expect(page.getByTestId('mon-student-header')).toBeVisible(SLOW)
