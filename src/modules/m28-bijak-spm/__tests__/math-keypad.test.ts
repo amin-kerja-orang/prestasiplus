@@ -421,4 +421,41 @@ describe('keypad closing (FB-047 follow-up)', () => {
     expect(w.find('[data-testid=math-keyboard]').exists()).toBe(false)
     w.unmount()
   })
+
+  it('Tutup gives the focus to the keypad toggle, not to the page', async () => {
+    phone()
+    const w = mount(MathField, {
+      props: { modelValue: '1', label: 'Langkah 1' },
+      global,
+      attachTo: document.body,
+    })
+    await w.get('[data-testid=math-keypad-toggle]').trigger('click')
+    await w.get('[data-testid=math-keyboard-close]').trigger('click')
+    expect(document.activeElement).toBe(w.get('[data-testid=math-keypad-toggle]').element)
+    w.unmount()
+  })
+
+  it('asks the matching media query for md (48rem) and lets the owner pick the inputmode', async () => {
+    const queries: string[] = []
+    vi.stubGlobal('matchMedia', (q: string) => {
+      queries.push(q)
+      return {
+        matches: true,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }
+    })
+    const w = mount(MathField, {
+      props: { modelValue: '', label: 'Jawapan akhir', inputmode: 'decimal' },
+      global,
+      attachTo: document.body,
+    })
+    expect(queries).toContain('(min-width: 48rem)')
+    expect(w.get('input').attributes('inputmode')).toBe('decimal')
+    await w.get('[data-testid=math-keypad-toggle]').trigger('click')
+    expect(w.get('input').attributes('inputmode')).toBe('none')
+    await w.get('[data-testid=math-keypad-toggle]').trigger('click')
+    expect(w.get('input').attributes('inputmode')).toBe('decimal')
+    w.unmount()
+  })
 })

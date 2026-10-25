@@ -33,18 +33,27 @@ const props = withDefaults(
     hideLabel?: boolean
     /** Allow removing this line (step lines). */
     removable?: boolean
+    /** Soft keyboard hint while the on-screen keypad is closed (it is `none` while it is open). */
+    inputmode?: 'text' | 'decimal'
   }>(),
-  { placeholder: 'cth. 2x + 6', disabled: false, hideLabel: false, removable: false },
+  {
+    placeholder: 'cth. 2x + 6',
+    disabled: false,
+    hideLabel: false,
+    removable: false,
+    inputmode: 'text',
+  },
 )
 const emit = defineEmits<{ 'update:modelValue': [string]; remove: [] }>()
 
 const id = useId()
-const MD_PX = 768
+const MD_REM = 48
 const MEDIA_FEATURE = 'min-width'
-const WIDE_QUERY = `(${MEDIA_FEATURE}: ${MD_PX}px)`
+const WIDE_QUERY = `(${MEDIA_FEATURE}: ${MD_REM}rem)`
 const previewComp = ref<{ $el: HTMLElement } | null>(null)
 const wrapComp = ref<{ $el: HTMLElement } | null>(null)
 const wrap = computed<HTMLElement | null>(() => wrapComp.value?.$el ?? null)
+const toggleBtn = ref<{ $el: HTMLElement } | null>(null)
 const dock = ref<HTMLElement | null>(null)
 const spacer = ref<HTMLElement | null>(null)
 /** From `md` (768 px) the keypad is inline and sticky; below it is a bottom sheet over the footer. */
@@ -144,11 +153,14 @@ async function revealField(): Promise<void> {
   const free = (fixed ? rect.top : area.bottom - rect.height) - 8
   const f = field.getBoundingClientRect()
   const top = area.top + pinnedTop(sc, f.left + f.width / 2) + 4
-  const last = (!wide.value && field) || previewComp.value?.$el || field
-  const delta =
-    f.top < top
-      ? f.top - top
-      : Math.max(0, Math.min(last.getBoundingClientRect().bottom - free, f.top - top))
+  const boxTop = box.getBoundingClientRect().top
+  const last = ((!wide.value && field) || previewComp.value?.$el || field).getBoundingClientRect()
+  let delta: number
+  if (boxTop >= top && last.bottom <= free)
+    delta = 0 // already in the free area
+  else if (last.bottom - (boxTop - top) <= free)
+    delta = boxTop - top // whole field, label first
+  else delta = f.top - top // too little room: the line first, its label under the strip
   if (delta !== 0) sc.scrollTop += delta
 }
 
@@ -162,16 +174,18 @@ function toggleKeypad(): void {
   void revealField()
 }
 
-function closeKeypad(refocus = false): void {
+function closeKeypad(focus?: 'input' | 'toggle'): void {
   openKeypad.value = null
-  if (refocus) input()?.focus({ preventScroll: true })
+  const el =
+    focus === 'toggle' ? (toggleBtn.value?.$el ?? null) : focus === 'input' ? input() : null
+  el?.focus({ preventScroll: true })
 }
 
 /** Esc closes the open keypad from the input line too (the keypad's own Esc handles its keys). */
 function onEsc(e: KeyboardEvent): void {
   if (!keypad.value) return
   e.stopPropagation()
-  closeKeypad(true)
+  closeKeypad('input')
 }
 
 // A tap or focus outside the field and its keypad closes it (keys are inside, so they never do).
@@ -222,17 +236,18 @@ onBeforeUnmount(() => {
         :placeholder="placeholder"
         :disabled="disabled"
         :aria-label="hideLabel ? label : undefined"
-        :inputmode="keypad ? 'none' : 'text'"
+        :inputmode="keypad ? 'none' : inputmode"
         autocomplete="off"
         autocapitalize="off"
         spellcheck="false"
-        size="xl"
+        size="lg"
         class="min-w-0 grow"
         data-testid="math-input"
         @update:model-value="onInput"
         @keydown.enter.prevent
       />
       <UButton
+        ref="toggleBtn"
         type="button"
         color="neutral"
         variant="soft"
@@ -278,7 +293,7 @@ onBeforeUnmount(() => {
       />
       <div
         ref="dock"
-        class="fixed inset-x-0 bottom-0 z-30 md:sticky"
+        class="fixed inset-x-0 bottom-0 z-30 max-h-dvh overflow-y-auto md:sticky"
         data-testid="math-keyboard-dock"
       >
         <DsSurface
@@ -290,43 +305,41 @@ onBeforeUnmount(() => {
         >
           <div class="p-1.5">
             <DsStack gap="2xs">
-              <!-- Sheet display: the preview of the line next to the close key (the footer is under the sheet). -->
-              <DsCluster v-if="!wide" gap="xs" :wrap="false">
-                <DsSurface
-                  level="raised"
-                  padding="none"
-                  radius="chip"
-                  :clip="false"
-                  class="grow overflow-x-auto"
-                  data-testid="math-display"
-                >
-                  <div
-                    class="flex min-h-11 items-center px-3"
-                    :data-testid="hasContent ? 'math-preview' : undefined"
+              <!-- Sheet display: the preview of the line next to the close key (the footer is under the sheet).
+                   It stays on top when a short (landscape) screen scrolls the sheet. -->
+              <div v-if="!wide" class="sticky top-0 z-10 bg-accented">
+                <DsCluster gap="xs" :wrap="false">
+                  <DsSurface
+                    level="raised"
+                    padding="sm"
+                    radius="chip"
+                    :clip="false"
+                    class="min-h-11 grow overflow-x-auto"
+                    data-testid="math-display"
                   >
                     <template v-if="hasContent">
                       <DsText as="span" variant="body" sr-only>Pratonton: </DsText>
-                      <RichText :text="preview" math-only />
+                      <RichText :text="preview" math-only data-testid="math-preview" />
                     </template>
-                  </div>
-                </DsSurface>
-                <UButton
-                  type="button"
-                  color="neutral"
-                  variant="subtle"
-                  icon="i-ph-caret-down"
-                  class="min-h-11 shrink-0 learner:min-h-11"
-                  aria-label="Tutup papan kekunci"
-                  data-testid="math-keyboard-close"
-                  @mousedown.prevent
-                  @click="closeKeypad()"
-                  >Tutup</UButton
-                >
-              </DsCluster>
+                  </DsSurface>
+                  <UButton
+                    type="button"
+                    color="neutral"
+                    variant="subtle"
+                    icon="i-ph-caret-down"
+                    class="min-h-11 shrink-0 learner:min-h-11"
+                    aria-label="Tutup papan kekunci"
+                    data-testid="math-keyboard-close"
+                    @mousedown.prevent
+                    @click="closeKeypad('toggle')"
+                    >Tutup</UButton
+                  >
+                </DsCluster>
+              </div>
               <MathKeyboard
                 label="Papan kekunci matematik"
                 @press="onKey"
-                @close="closeKeypad(true)"
+                @close="closeKeypad('input')"
               />
             </DsStack>
           </div>
