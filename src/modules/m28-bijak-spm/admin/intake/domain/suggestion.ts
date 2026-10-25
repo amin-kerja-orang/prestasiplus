@@ -17,13 +17,15 @@ export const tagFieldPath = (f: TagField): string => `tag.${f}`
  * Tag fields that need a person to confirm (AC-05.2, AC-05.3, AC-06.4):
  * - `tp` and `kbat` whenever the AI suggested a value, at any confidence;
  * - `unit` and `sp` when the suggestion carries confidence `rendah`;
- * - `unit` when the AI found no catalogue node (nothing was filled, AC-04.9).
+ * - `unit` when the AI found no catalogue node (nothing was filled, AC-04.9);
+ * - `unit` when the AI suggested a unit without an SP: the tag is incomplete, so a person must confirm
+ *   the unit (Delivery Lead decision, DSKP-T06 G4: "never guess").
  */
 export function suggestionLowFields(s: TagSuggestion | undefined): string[] {
   const out: string[] = []
   if (!s || !s.unitId) out.push(tagFieldPath('unit'))
   else {
-    if (s.confidence.unit === 'rendah') out.push(tagFieldPath('unit'))
+    if (s.confidence.unit === 'rendah' || (s.spIds?.length ?? 0) === 0) out.push(tagFieldPath('unit'))
     if ((s.spIds?.length ?? 0) > 0 && s.confidence.sp === 'rendah') out.push(tagFieldPath('sp'))
   }
   if (s?.tp != null) out.push(tagFieldPath('tp'))

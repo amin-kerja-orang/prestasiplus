@@ -169,20 +169,9 @@ describe('confidence mapping', () => {
     expect(q.tagSuggestion?.spIds).toBeUndefined()
     expect(q.tagSuggestion?.confidence.sp).toBeUndefined()
     expect(q.tag.spIds).toEqual([])
-  })
-
-  it('never uses rendah for a unit or an SP', async () => {
-    const view = await fixtureView()
-    for (const stem of [
-      'Selesaikan persamaan kuadratik menggunakan pemfaktoran.',
-      'Pemfaktoran kuadratik.',
-      'Terangkan hukum indeks bagi persamaan kuadratik.',
-      'Tentukan kecerunan garis lurus.',
-    ]) {
-      const c = (extractOne(stem, view)).tagSuggestion?.confidence
-      expect(c?.unit).not.toBe('rendah')
-      expect(c?.sp).not.toBe('rendah')
-    }
+    // An incomplete tag (unit without SP): the unit must be confirmed by a person (lead decision).
+    expect(q.lowFields).toEqual(['tag.unit', 'tag.tp']) // "Terangkan" also gives a TP suggestion
+    expect(pendingTagFields(q)).toEqual(['unit', 'tp'])
   })
 
   it('a unit matched on too small a share of the question words is not suggested', async () => {
@@ -201,6 +190,41 @@ describe('confidence mapping', () => {
       { providerId: 'mock', model: 'm' },
     )
     expect(edge).toMatchObject({ unitId: 'MAT:T4:u:1.0', confidence: { unit: 'sederhana' } })
+  })
+})
+
+describe('evidence must be corroborated and measured against all topic words', () => {
+  const opts = { providerId: 'mock', model: 'm' }
+
+  it('two hits in different SPs out of ten topic words give no suggestion', async () => {
+    const view = await fixtureView()
+    // "bentuk" is only in SP 1.1.1 and "pemfaktoran" only in SP 1.1.2 (both of unit 1.0); the other
+    // eight words hit nothing. No single SP holds two words, and 2/10 is below the threshold.
+    const stem = 'bentuk pemfaktoran alpha bravo charlie delta foxtrot hotel india juliet'
+    expect(topicTokens(stem)).toHaveLength(10)
+    expect(suggestTag({ stem, partPrompts: [] }, view, opts)).toBeUndefined()
+  })
+
+  it('scattered words are no evidence even when they are all of the question', async () => {
+    const view = await fixtureView()
+    // Two words, both inside unit 1.0 but in different SPs: score 1000, still no corroboration.
+    expect(suggestTag({ stem: 'bentuk pemfaktoran', partPrompts: [] }, view, opts)).toBeUndefined()
+  })
+
+  it('two words in one SP out of ten topic words are below the threshold', async () => {
+    const view = await fixtureView()
+    const stem = 'persamaan kuadratik alpha bravo charlie delta foxtrot hotel india juliet'
+    expect(suggestTag({ stem, partPrompts: [] }, view, opts)).toBeUndefined()
+  })
+
+  it('zero-hit words count in the denominator', async () => {
+    const view = await fixtureView()
+    // The same two words in one SP: 2/3 = 667 with one filler word, 2/4 = 500 with two, 2/5 = 400 with three.
+    const at = (filler: string) =>
+      suggestTag({ stem: `persamaan kuadratik ${filler}`, partPrompts: [] }, view, opts)?.confidence.unit
+    expect(at('alpha')).toBe('sederhana')
+    expect(at('alpha bravo')).toBe('sederhana')
+    expect(at('alpha bravo charlie')).toBeUndefined()
   })
 })
 
@@ -392,13 +416,16 @@ describe('lowFields and confirmed', () => {
     expect(suggestionLowFields(undefined)).toEqual(['tag.unit'])
     expect(suggestionLowFields({ ...base, confidence: {} })).toEqual(['tag.unit'])
     const unit = 'MAT:T4:u:1.0' as never
-    expect(suggestionLowFields({ ...base, unitId: unit, confidence: { unit: 'tinggi' } })).toEqual([])
-    expect(suggestionLowFields({ ...base, unitId: unit, confidence: { unit: 'rendah' } })).toEqual(['tag.unit'])
+    const spIds = ['MAT:T4:sp:1.1.1' as never]
+    expect(suggestionLowFields({ ...base, unitId: unit, spIds, confidence: { unit: 'tinggi', sp: 'tinggi' } })).toEqual([])
+    // a unit without an SP is incomplete: the unit is confirmed by a person
+    expect(suggestionLowFields({ ...base, unitId: unit, confidence: { unit: 'sederhana' } })).toEqual(['tag.unit'])
+    expect(suggestionLowFields({ ...base, unitId: unit, spIds, confidence: { unit: 'rendah' } })).toEqual(['tag.unit'])
     expect(
       suggestionLowFields({ ...base, unitId: unit, spIds: ['MAT:T4:sp:1.1.1' as never], confidence: { unit: 'rendah', sp: 'rendah' } }),
     ).toEqual(['tag.unit', 'tag.sp'])
-    expect(suggestionLowFields({ ...base, unitId: unit, tp: 2, confidence: { tp: 'tinggi' } })).toEqual(['tag.tp'])
-    expect(suggestionLowFields({ ...base, unitId: unit, kbat: 'menilai', confidence: { kbat: 'tinggi' } })).toEqual(['tag.kbat'])
+    expect(suggestionLowFields({ ...base, unitId: unit, spIds, tp: 2, confidence: { tp: 'tinggi' } })).toEqual(['tag.tp'])
+    expect(suggestionLowFields({ ...base, unitId: unit, spIds, kbat: 'menilai', confidence: { kbat: 'tinggi' } })).toEqual(['tag.kbat'])
   })
 
   it('a field is resolved when ticked or changed away from the suggestion', async () => {
@@ -469,21 +496,38 @@ describe('extract() loads the catalogue once', () => {
 })
 
 describe('real catalogue smoke test', () => {
-  it('the sample paper extracts with only catalogue nodes and TP from the command word', async () => {
+  it('the sample paper gets a TP from the command word and no unit it cannot back up', async () => {
     const r = await mockExtractor.extract({ pages: SAMPLE_PAGES, subject: 'MAT', kertas: 2 })
+    // Q3 ("hitung panjang AC", "hitung luas segi tiga") used to be tagged T5 unit 5.0 from words
+    // scattered over unrelated SPs; it must now be left empty for a person.
+    expect(
+      r.questions.map((q) => ({
+        label: q.label,
+        formOrigin: q.tag.formOrigin,
+        unitId: q.tag.unitId,
+        spIds: q.tag.spIds,
+        tp: q.tag.tp,
+        lowFields: q.lowFields,
+      })),
+    ).toEqual([
+      { label: '1', formOrigin: null, unitId: null, spIds: [], tp: 3, lowFields: ['tag.unit', 'tag.tp'] },
+      { label: '2', formOrigin: null, unitId: null, spIds: [], tp: null, lowFields: ['tag.unit'] },
+      { label: '3', formOrigin: null, unitId: null, spIds: [], tp: 3, lowFields: ['tag.unit', 'tag.tp'] },
+      { label: '4', formOrigin: null, unitId: null, spIds: [], tp: 1, lowFields: ['tag.unit', 'tag.tp'] },
+      { label: '5', formOrigin: null, unitId: null, spIds: [], tp: 1, lowFields: ['tag.unit', 'tag.tp'] },
+    ])
+  })
+
+  it('whatever it does suggest on the real catalogue is a node of the subject', async () => {
     const view = await dskpCatalog.load('MAT')
-    for (const q of r.questions) {
-      if (q.tag.unitId) {
-        expect(view.unit(q.tag.unitId)).toBeDefined()
-        expect(q.tag.formOrigin).toBe(view.unit(q.tag.unitId)!.tingkatan)
-        expect(q.tag.catalogueVersion).toBe(dskpCatalog.version)
-      } else {
-        expect(q.tag.spIds).toEqual([])
-        expect(q.tag.formOrigin).toBeNull()
-        expect(q.lowFields).toContain('tag.unit')
-      }
-      for (const id of q.tag.spIds) expect(view.sp(id)?.unitId).toBe(q.tag.unitId)
-    }
-    expect(r.questions.map((q) => q.tag.tp)).toEqual([3, null, 3, 1, 1])
+    const out = parsePaper(
+      paper('1. Selesaikan persamaan kuadratik dalam satu pemboleh ubah. [2 markah]'),
+      { view, version: dskpCatalog.version },
+    )
+    const q = out.questions[0]!
+    expect(q.tag.unitId).toBe('MAT:T4:u:1.0')
+    expect(view.unit(q.tag.unitId!)?.tingkatan).toBe('T4')
+    for (const id of q.tag.spIds) expect(view.sp(id)?.unitId).toBe(q.tag.unitId)
+    expect(q.tag.catalogueVersion).toBe(dskpCatalog.version)
   })
 })

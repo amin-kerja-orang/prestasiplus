@@ -105,7 +105,11 @@ export interface ExtractInput {
   images?: PageImage[]
   subject: SubjectCode
   kertas: 1 | 2
-  /** Narrows the DSKP unit/SP suggestion when the batch declares a tingkatan (none does yet). */
+  /**
+   * Narrows the DSKP unit/SP suggestion when the batch declares a tingkatan (none does yet).
+   * TODO(DSKP-T07): wire this from the intake declaration (IntakeUploadPage) once the batch form asks
+   * for a tingkatan; until then T4 and T5 are both searched.
+   */
   tingkatan?: 'T4' | 'T5'
 }
 

@@ -25,9 +25,16 @@ export type DskpView = NonNullable<ReturnType<Catalogue['loaded']>>
 export const MIN_TOKEN_LENGTH = 4
 /** A word that starts more than this many catalogue nodes of the subject is too common to say anything. */
 export const GENERIC_NODE_LIMIT = 40
-/** A suggestion needs at least this many distinct question words in the node. */
+/**
+ * A suggestion needs at least this many distinct question words in the unit (or SP), and the words
+ * must be corroborated: one SK or SP of the unit has to contain at least `MIN_MATCHED_TOKENS` of
+ * them by itself, so words scattered over unrelated SPs are no evidence.
+ */
 export const MIN_MATCHED_TOKENS = 2
-/** The score is out of 1000 like the catalogue's own word-start score, with the denominator capped here. */
+/**
+ * The score is out of 1000 like the catalogue's own word-start score: matched words over ALL topic
+ * words of the question (generic and zero-hit words dilute it), both capped at this value.
+ */
 export const COVERAGE_CAP = 6
 /** Score at which a unit or SP is suggested at all (confidence `sederhana`). */
 export const SUGGEST_THRESHOLD = 500
@@ -155,6 +162,9 @@ export function suggestTag(
     const byUnit = new Map<string, Set<string>>()
     const bySp = new Map<string, Set<string>>()
     const spUnit = new Map<string, string>()
+    // Words found by one SK or SP alone, per unit (the corroboration rule).
+    const bestSingle = new Map<string, number>()
+    const bySkSp = new Map<string, Set<string>>()
     const specific: string[] = []
     for (const tok of tokens) {
       const hits = view
@@ -165,6 +175,10 @@ export function suggestTag(
       for (const h of hits) {
         const unitId = h.kind === 'u' ? h.node.id : h.node.unitId
         add(byUnit, unitId, tok)
+        if (h.kind !== 'u') {
+          const own = add(bySkSp, h.node.id, tok)
+          bestSingle.set(unitId, Math.max(bestSingle.get(unitId) ?? 0, own.size))
+        }
         if (h.kind === 'sp') {
           add(bySp, h.node.id, tok)
           spUnit.set(h.node.id, unitId)
@@ -173,7 +187,9 @@ export function suggestTag(
     }
     if (specific.length >= MIN_MATCHED_TOKENS) {
       const unit = best(
-        [...byUnit].map(([id, set]) => ({ id, matched: set.size, score: scoreOf(set.size, specific.length) })),
+        [...byUnit]
+          .filter(([id]) => (bestSingle.get(id) ?? 0) >= MIN_MATCHED_TOKENS)
+          .map(([id, set]) => ({ id, matched: set.size, score: scoreOf(set.size, tokens.length) })),
       )
       const unitConf = unit ? confidenceFor(unit.score, unit.matched) : null
       const unitNode = unit && unitConf ? view.unit(unit.id as DskpUnitId) : undefined
@@ -184,7 +200,7 @@ export function suggestTag(
         const sp = best(
           [...bySp]
             .filter(([id]) => spUnit.get(id) === unit.id)
-            .map(([id, set]) => ({ id, matched: set.size, score: scoreOf(set.size, specific.length) })),
+            .map(([id, set]) => ({ id, matched: set.size, score: scoreOf(set.size, tokens.length) })),
         )
         const spConf = sp ? confidenceFor(sp.score, sp.matched) : null
         if (sp && spConf) {
@@ -208,8 +224,8 @@ export function suggestTag(
   return s.unitId || s.tp != null ? s : undefined
 }
 
-function add(m: Map<string, Set<string>>, key: string, tok: string): void {
-  const set = m.get(key)
-  if (set) set.add(tok)
-  else m.set(key, new Set([tok]))
+function add(m: Map<string, Set<string>>, key: string, tok: string): Set<string> {
+  const set = m.get(key) ?? new Set<string>()
+  m.set(key, set)
+  return set.add(tok)
 }
