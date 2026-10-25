@@ -147,7 +147,7 @@ describe('UserShell: menu per role (hidden, not disabled)', () => {
     expect(labels).toContain('Laporan Mingguan')
     expect(labels).not.toContain('Target SPM')
     const cc = sidebar(w).get('[data-nav-id="t-command-center"]')
-    expect(cc.attributes('target')).toBeUndefined()
+    expect(cc.attributes('target')).toBe('_blank')
     expect(cc.text()).toContain('LIVE')
   })
 
