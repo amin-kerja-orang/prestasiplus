@@ -152,3 +152,14 @@ describe('non-selectable slots', () => {
     expect(ids(bi.search('1.1.4', { tingkatan: 'T4' }))).not.toContain(slot?.id)
   })
 })
+
+describe('substring-only matches', () => {
+  it('score 0, are still returned, and rank after scored hits', () => {
+    const hits = mat.search('faktoran', { tingkatan: 'T4' })
+    expect(hits.length).toBeGreaterThan(0)
+    expect(hits.every((h) => h.score === 0)).toBe(true)
+    const mixed = mat.search('a')
+    const scores = mixed.map((h) => h.score)
+    expect(scores).toEqual([...scores].sort((x, y) => y - x))
+  })
+})

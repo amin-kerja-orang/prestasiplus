@@ -293,7 +293,7 @@ function buildSubjectView(info: DskpSubjectInfo, data: DskpSubjectData): DskpSub
   }
   const tpContext: TpContext = {
     info: frozenInfo,
-    generalTp: data.generalTp,
+    generalTp: data.generalTp ? deepFreeze(data.generalTp) : null,
     unit: (id) => unitMap.get(id),
     sk: (id) => skMap.get(id),
     sp: (id) => spMap.get(id),
@@ -403,7 +403,14 @@ export function createDskpCatalog(
     if (data?.code !== code || !Array.isArray(data.units) || !Array.isArray(data.groups)) {
       throw new DskpLoadError(code, 'invalid-data', 'unexpected shape')
     }
-    const view = buildSubjectView(info, data)
+    let view: DskpSubjectView
+    try {
+      view = buildSubjectView(info, data)
+    } catch (cause) {
+      if (cause instanceof DskpLoadError) throw cause
+      const msg = cause instanceof Error ? cause.message : String(cause)
+      throw new DskpLoadError(code, 'invalid-data', msg, cause)
+    }
     views.set(code, view)
     return view
   }

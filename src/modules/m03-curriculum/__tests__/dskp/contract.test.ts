@@ -7,7 +7,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createDskpCatalog, DskpLoadError, dskpCatalog } from '../../dskp'
-import type { DskpSpId, DskpSubjectData, DskpSubjectInfo, DskpUnitId } from '../../dskp'
+import type { DskpSpId, DskpSubjectData, DskpSubjectInfo, DskpUnit, DskpUnitId } from '../../dskp'
 import { DSKP_LOADERS } from '../../dskp/loaders'
 import { DSKP_SUBJECTS } from '../../dskp/subjects'
 import { DSKP_SUBJECT_CODES } from '../../dskp/types'
@@ -215,5 +215,25 @@ describe('createDskpCatalog (test seam)', () => {
   it('keeps two catalogues apart: the real cache is not touched by a fixture catalogue', async () => {
     await cat.load('MAT')
     expect((await dskpCatalog.load('MAT')).units('T4')).toHaveLength(10)
+  })
+})
+
+describe('malformed data is wrapped as DskpLoadError', () => {
+  const load = (data: unknown) =>
+    createDskpCatalog(
+      { MAT: () => Promise.resolve(JSON.stringify(data)) },
+      { subjects: [FIXTURE_INFO] },
+    ).load('MAT')
+  const unit0 = FIXTURE.units[0] as DskpUnit
+
+  it.each([
+    ['an unknown tingkatan', { ...FIXTURE, units: [{ ...unit0, tingkatan: 'T9' }] }],
+    ['a colon in a code', { ...FIXTURE, units: [{ ...unit0, code: '1:0' }] }],
+    ['a unit without sks', { ...FIXTURE, units: [{ ...unit0, sks: undefined }] }],
+    ['a group index out of range', { ...FIXTURE, units: [{ ...unit0, group: 5 }] }],
+  ])('%s', async (_name, data) => {
+    const err = await load(data).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(DskpLoadError)
+    expect(err).toMatchObject({ reason: 'invalid-data', subject: 'MAT' })
   })
 })

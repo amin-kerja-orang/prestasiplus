@@ -243,3 +243,23 @@ describe('table and row selection helpers', () => {
     expect(matchTpRow(undefined, 1)).toBeUndefined()
   })
 })
+
+describe('resolved descriptors are read-only', () => {
+  it('freezes the descriptor for the general, unit and sk sources', () => {
+    const general = view('BM').tpFor({ unitId: unitId('BM', 'T4', '4.0') }, 2)
+    const unit = view('MAT').tpFor({ unitId: unitId('MAT', 'T4', '1.0') }, 2)
+    const sk = view('SEJ').tpFor(
+      { unitId: unitId('SEJ', 'T4', 'Tajuk 9'), spIds: [spId('SEJ', 'T4', '9.1.1')] },
+      2,
+    )
+    expect(general.map((r) => r.source)).toEqual(['general'])
+    expect(unit.map((r) => r.source)).toEqual(['unit'])
+    expect(sk.map((r) => r.source)).toEqual(['sk'])
+    for (const r of [...general, ...unit, ...sk]) {
+      expect(Object.isFrozen(r.descriptor)).toBe(true)
+      expect(() => {
+        ;(r.descriptor as { text: string }).text = 'x'
+      }).toThrow(TypeError)
+    }
+  })
+})
