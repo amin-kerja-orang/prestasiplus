@@ -1,6 +1,6 @@
 /**
  * M10 S6 `/guru/pelajar` at 375 / 768 / 1280 (M10-T5; SRS M10 §12 E2E-M10-25 and 26, and the S6 part
- * of 02 and 79). Accounts: the admin (no teacher-profile school, no classes) and 5 guru
+ * of 02 and 79). Accounts: guru2 (no teacher-profile school, no classes; the admin is redirected, DV-M10-48) and 5 guru
  * (`guru@demo.test`: 8 students in classes 2001 and 2002, profile school SMK DEMO). The populated
  * rows and the add / remove actions are PROPOSED / INFERRED (FR-M10-36, FR-M10-37), so those tests
  * are `@provisional`.
@@ -8,6 +8,7 @@
 
 import type { Page } from '@playwright/test'
 
+import { addInitSession } from '../fixtures/mock-page'
 import { expect, test } from '../fixtures/test'
 import {
   acceptNextDialog,
@@ -21,6 +22,8 @@ import {
 
 const GURU = 'guru@demo.test'
 const ADMIN = 'admin@demo.test'
+/** Mock teacher with no class and no profile school (id 5301): the observed empty state of S6 (DV-M10-48: the admin no longer reaches it). */
+const GURU_NO_CLASS = 'guru2@demo.test'
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(10)] }
 
@@ -32,12 +35,11 @@ async function expectHeader(page: Page): Promise<void> {
 }
 
 test.describe('M10 S6 Pelajar Saya', MODULE, () => {
-  test('SRS §12 #25 admin: counter, link label, tabs and badge, empty card @m10', async ({
+  test('SRS §12 #25 teacher with no class: counter, link label, tabs and badge, empty card @m10', async ({
     page,
     gotoApp,
-    loginAs,
   }) => {
-    await loginAs(ADMIN)
+    await addInitSession(page, GURU_NO_CLASS)
     await gotoApp('/guru/pelajar')
     await expectTabTitle(page, 'Pelajar Saya - PRESTASIPLUS')
     await expectHeader(page)
@@ -65,12 +67,11 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('SRS §12 #25 admin: "Cipta Pelajar" returns to /guru/pelajar with no message @m10', async ({
+  test('SRS §12 #25 teacher with no class: "Cipta Pelajar" returns to /guru/pelajar with no message @m10', async ({
     page,
     gotoApp,
-    loginAs,
   }) => {
-    await loginAs(ADMIN)
+    await addInitSession(page, GURU_NO_CLASS)
     await gotoApp('/guru/pelajar')
     await page.getByTestId('pelajar-create').click()
     await expect(page).toHaveURL(/\/guru\/pelajar$/)
@@ -80,12 +81,11 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
     await expect(page).toHaveURL(/\/guru\/pelajar$/)
   })
 
-  test('SRS §12 #25 admin school tab: class select and the no-school card with "Tetapan Profil" @m10', async ({
+  test('SRS §12 #25 teacher with no class school tab: class select and the no-school card with "Tetapan Profil" @m10', async ({
     page,
     gotoApp,
-    loginAs,
   }) => {
-    await loginAs(ADMIN)
+    await addInitSession(page, GURU_NO_CLASS)
     await gotoApp('/guru/pelajar')
     await page.getByTestId('tab-school').click()
     await expect(page.getByText('Tambah pelajar ke:')).toBeVisible()
@@ -167,6 +167,16 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
       await expect(page.getByTestId('student-class')).toHaveCount(chips - 1)
     },
   )
+
+  test('SRS §9 / DV-M10-48 the admin leaves /guru/pelajar for its landing page @m10', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    await loginAs(ADMIN)
+    await gotoApp('/guru/pelajar')
+    await expect(page).not.toHaveURL(/\/guru\//)
+  })
 
   test(
     'SRS §9 a guest is sent to /login; a pelajar leaves /guru/pelajar for its landing page @m10',
