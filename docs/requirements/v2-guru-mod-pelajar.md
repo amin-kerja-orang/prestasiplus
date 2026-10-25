@@ -1,6 +1,6 @@
 # v2 Guru and Admin Sekolah Mod Pelajar (`guru-mod-pelajar`)
 
-Status: **G1 answered 2026-10-25** (user answers applied, see section 8). One confirmation (Q-N2) is recommended before G1 is closed; the ACs already contain the recommended default.
+Status: **G1 answered 2026-10-25** (user answers applied, see section 8). Q-N2 answered the same day (option C, hide). No blocking question remains; Q-N1 and Q-N3 keep their recommended defaults.
 Track: Full (new capability for two roles, touches session, guard, learner screens and test-data handling).
 Related: `docs/requirements/v2-portals.md` (US-07, US-08, AC-15.1), TRACKER D31(c), D32(b), D33(b), D43, D48, D53(c), D54, `docs/adr/0017-role-list-active-role-scope.md`, `docs/qa/uat-2026-10-24-triage.md` (T2).
 
@@ -68,7 +68,7 @@ Priority in brackets (MoSCoW).
 - **US-07 [Must] Test data is kept apart.** As a product owner, I want everything a staff member writes in the mode stamped as test data and excluded from real aggregates, so that class and school reports, rankings, leaderboards and analytics stay correct.
 - **US-08 [Must] Guard rules while in the mode.** As a product owner, I want the mode to behave like a student session (no staff data, no nesting, no role switching), so that portals stay separate (AC-15.1).
 - **US-09 [Should] Audit trail.** As an admin, I want every enter/exit by staff recorded, so that use is traceable.
-- **US-10 [Must, depends on Q-N2] No side effects on other real users.** As a product owner, I want actions that reach other real users blocked in the mode, so that students and parents are not disturbed by test activity.
+- **US-10 [Must] No side effects on other real users (Q-N2 resolved: hide).** As a product owner, I want the screens whose actions reach other real users hidden while a staff member is in the mode, so that students, parents and sponsors are not disturbed by test activity.
 
 ## 4. Acceptance criteria
 
@@ -118,15 +118,15 @@ Where the recommended default of an open question (section 8) shapes a criterion
 - AC-05.7 After exit, no student menu item or student route is available (AC-08.1 applies again with the staff role).
 
 ### US-06 The learner portal for a staff account
-Scope of the mode: **all 37 Murid items** of the role-access matrix (`STUDENT_ITEMS`, rows 2-9 and 12-40) plus section A account screens, exactly as a murid sees them. No screen is added or removed. The staff account has `grade = null`, no class, no parents and no student record. [AS-BUILT: `accounts.ts` ids 5 and 8 have `grade: null`.]
-- AC-06.1 Given a staff member in the mode, when each of the 37 Murid screens is opened (QA checklist, one row per matrix item), then the screen renders without an error page, a blank page or a console error, at 375 / 768 / 1280 px.
+Scope of the mode: the **30 Murid items** of the role-access matrix (`STUDENT_ITEMS`, rows 2-9 and 12-40) that remain after the 7 cross-user items of US-10 are hidden (rows 15, 21, 22, 23, 32, 36, 40), plus section A account screens, exactly as a murid sees them. No screen is added. The staff account has `grade = null`, no class, no parents and no student record. [AS-BUILT: `accounts.ts` ids 5 and 8 have `grade: null`.]
+- AC-06.1 Given a staff member in the mode, when each of the 30 visible Murid screens is opened (QA checklist, one row per matrix item), then the screen renders without an error page, a blank page or a console error, at 375 / 768 / 1280 px.
 - AC-06.2 Given a screen needs a form/level and the account has none, then it uses **Tingkatan 4** (PROPOSED default, same as the demo student after D54; value 10 in the current grade scale [AS-BUILT: Pelajar Demo `grade: 10`]), and any existing form/level selector on that screen still works and keeps its choice for the rest of the mode. The default is applied in the learner view only; the staff account record is not changed (`grade` stays null). (Q-N3)
 - AC-06.3 Given a screen depends on class, teacher or parent links (for example Kelas Saya, Set Soalan Guru, Remedial, Jemput Ibu Bapa, Prestasi, Headcount, Dashboard widgets), then it shows its existing empty state with the existing BM copy for a learner without a class. No new empty-state wording is introduced unless the screen has none, in which case the architect/designer proposes it and QA records it.
 - AC-06.4 Given the dashboard and gamification screens (Syiling & Token, Cabaran Harian, Kedai Hadiah, Pencapaian, Kotak Misteri, Timeline), then they show the staff member's own test-data balances and history, starting from empty/zero for an account that never used the mode, and they persist between uses of the mode (not reset on exit or login).
-- AC-06.5 Given the leaderboards and rankings (Kedudukan, Papan Pendahulu, Papan Bijak, Tournament standings), then the staff member is not listed as a ranked participant and sees the real list unchanged; where the screen normally shows "my position", it shows the existing "not ranked / no data" state. [Because of US-07]
+- AC-06.5 Given the leaderboards and rankings (Kedudukan, Papan Pendahulu, Papan Bijak, Tournament standings), then (for those that stay visible: Kedudukan, Papan Pendahulu) the staff member is not listed as a ranked participant and sees the real list unchanged; where the screen normally shows "my position", it shows the existing "not ranked / no data" state. [Because of US-07]
 - AC-06.6 Given account screens (Profil Saya, Tetapan Peribadi, Panduan, Tiket Bantuan) in the mode, then they operate on the real account, the same data as in the staff view: changes made there are real, are not stamped as test data, and are visible after exit. Learner-only fields (form, class, parent) are not shown or written for a staff account.
 - AC-06.7 Given Cikgu Alesa (AI chat) in the mode, then it works as for a learner; the conversation is test data (US-07).
-- AC-06.8 Given a typed or linked student-only URL in the mode, then it opens (it is in the student scope); given the same URL outside the mode, the existing guard rule applies (redirect to the staff home).
+- AC-06.8 Given a typed or linked student-only URL in the mode, then it opens (it is in the student scope), except the 7 hidden screens of US-10 (AC-10.2); given the same URL outside the mode, the existing guard rule applies (redirect to the staff home).
 
 ### US-07 Test data (resolved Q2)
 - AC-07.1 Given the mode is on, when the staff member writes learner data, then the write is allowed and saved. Writes covered: practice sessions and answers, revision/mastery, Bijak SPM and SPM attempts, structured answers, notes and bookmarks, coins/tokens/streak/achievements/challenges/mystery box/reward claims, games results, timeline entries, notifications created for the user, Cikgu Alesa messages, referrals and articles/video progress.
@@ -140,7 +140,7 @@ Scope of the mode: **all 37 Murid items** of the role-access matrix (`STUDENT_IT
 ### US-08 Guard rules
 - AC-08.1 Given a staff member in the mode, then for every access decision (menu, Ctrl+K, bottom nav, "Lagi", route guard, landing, 403/404 pages) the effective view is the student view with self scope. The signed-in account's own role is unchanged and is restored on exit.
 - AC-08.2 Given a staff member in the mode, when a staff-only URL is typed (for example `/guru`, `/guru/kelas`, `/guru/command-center`, `/admin-sekolah`, `/admin-sekolah/pelajar`), then no staff data is shown and the user lands on `/dashboard`.
-- AC-08.3 Given the mode is on, then the sidebar, bottom nav, "Lagi" sheet and Ctrl+K show the 37 Murid items and the account items only; no guru or Admin Sekolah item is listed, and "Masuk Mod Pelajar" is not offered (no nesting; v2-portals AC-07.6 intent).
+- AC-08.3 Given the mode is on, then the sidebar, bottom nav, "Lagi" sheet and Ctrl+K show the 30 visible Murid items (37 minus the 7 hidden by US-10) and the account items only; no guru or Admin Sekolah item is listed, and "Masuk Mod Pelajar" is not offered (no nesting; v2-portals AC-07.6 intent).
 - AC-08.4 Given a user with two roles and a role switcher, when the mode is on, then switching role is blocked (v2-portals AC-08.6). (The switcher is not built for the prototype roles; this is a guard for when it is.)
 - AC-08.5 Given the mode is on, when the browser Back button reaches a staff page opened earlier, then AC-08.2 applies (no cached staff data).
 - AC-08.6 Given the mode is on, when an API call for staff-only data is made (for example class lists, other students' records), then it is refused by the server/mock, not only hidden in the UI; learner calls of the account are accepted. (Security NFR.)
@@ -152,11 +152,13 @@ Scope of the mode: **all 37 Murid items** of the role-access matrix (`STUDENT_IT
 - AC-09.2 Audit entries are visible to Admin Pusat where an audit screen exists; never to murid or other gurus. No audit screen is built here.
 - AC-09.3 Given the session expires while in the mode, then a system exit entry is written or the architect documents why not.
 
-### US-10 No side effects on other real users (default A of Q-N2; PROPOSED)
-- AC-10.1 Given the mode is on, when the staff member tries an action whose result is delivered to, or visible to, other real users, then the action is blocked and a themed message is shown: PROPOSED "Tindakan ini tidak tersedia dalam Mod Pelajar kerana melibatkan pengguna sebenar." No record is written.
-- AC-10.2 Candidate actions to block (the architect confirms each against the built screens; unobserved behaviour is not claimed here): joining or creating live multiplayer rooms with other users (Permainan family: Battle Arena, Perang Fakta, Benteng Ilmu, Perlumbaan Matematik, Kuiz Relay, Teka Silang Kata, Papan Bijak), Tournament registration, Cabutan Bertuah entry, Jemput Ibu Bapa (sends an invitation to a real address), Mohon Keluarga Angkat (request visible to sponsors), Rujuk Kawan invitations, Marketplace listings or trades with other users.
-- AC-10.3 Blocked entries remain visible in the menu (the 37 items stay, AC-06.1); the block applies at the action, so the screen still opens and shows its content.
-- AC-10.4 Given an action only changes the staff member's own test data (practice, notes, own rewards), then it is never blocked.
+### US-10 No side effects on other real users (Q-N2 resolved 2026-10-25: option C, hide)
+- AC-10.1 Hidden items. Given the mode is on, then these 7 Murid matrix items are hidden everywhere they can be entered (sidebar, bottom nav, "Lagi" sheet, Ctrl+K results, dashboard cards and shortcuts, in-page links and buttons from other screens): Mohon Keluarga Angkat (row 15, `/mohon-keluarga-angkat`), Permainan (row 21, the whole game family: `/permainan`, `/battle`, `/papan-bijak`, `/perang-fakta`, `/benteng-ilmu`, `/perlumbaan-matematik`, `/kuiz-relay`, `/teka-silang-kata`), Cabutan Bertuah (row 22, `/cabutan`), Tournament (row 23, `/tournament`), Marketplace (row 32, `/marketplace`), Rujuk Kawan (row 36, `/gamification/referral`, `/gamification/kad-kongsi`) and Jemput Ibu Bapa (row 40, `/jemput-ibu-bapa`, `/ibu-bapa/terima`). The list is the screens whose actions reach other real users (live rooms, sponsor requests, invitations, trades); the architect confirms each against the built screens (unobserved behaviour is not claimed here) and records any further item found by the sweep, which the user must approve.
+- AC-10.2 Direct URL. Given the mode is on, when a hidden screen is opened by typed URL, bookmark or Back, then no content of that screen is shown and the user lands on the learner home `/dashboard`, the same outcome as a staff-only URL in the mode (AC-08.2). The existing "Belum tersedia dalam prototaip" page is not used for this. No flash message is required.
+- AC-10.3 Outside the mode, the 7 items are unchanged for a murid, and a staff member's normal view is unaffected (staff already have no access to these routes). After exit, the hidden items are not part of the staff menu either.
+- AC-10.4 Given a screen that stays visible (practice, notes, SPM, topics, rewards, Kedai Hadiah, Syiling & Token, Cabaran Harian, Kotak Misteri, Pencapaian, Kedudukan, Papan Pendahulu, Cikgu Alesa, Timeline and the rest), then it is never blocked by this story, because it only changes the staff member's own test data or reads shared content.
+- AC-10.5 Given a visible screen contains an entry point into a hidden screen (for example a game banner on the dashboard), then that entry point is not rendered in the mode and leaves no empty gap or dead link; QA checks every visible screen for links to the 7 hidden routes.
+- AC-10.6 Given a staff member has already joined or been given a record in a hidden feature outside the mode, nothing is changed or deleted; hiding applies only to access in the mode.
 
 ## 5. Non-functional requirements
 
@@ -167,11 +169,11 @@ Scope of the mode: **all 37 Murid items** of the role-access matrix (`STUDENT_IT
 | Data integrity | Stamping and exclusion are complete: every learner write path in the mode stamps, every aggregate listed in AC-07.3 excludes (US-07). A missed path is a Major finding. |
 | Responsive | Entry action, dialog, banner and exit work at 375 / 768 / 1280 px, no horizontal page scroll, touch targets >= 44 px (v2-portals AC-16.1, AC-16.3, AC-16.5). |
 | Accessibility | Replicates the existing admin Mod Pelajar (D10): `role="status"` banner, keyboard-reachable buttons, dialog focus per the design system. No enhancements beyond that, except the 44 px target (AC-04.5). |
-| Localisation | All UI copy in Bahasa Melayu. Reused: "Masuk Mod Pelajar", "Keluar Mod Pelajar", "Mod Pelajar tidak dapat dibuka. Sila cuba lagi.". New strings are marked PROPOSED (AC-03.2, AC-04.1, AC-04.2, AC-10.1) for the user to approve at G2. |
+| Localisation | All UI copy in Bahasa Melayu. Reused: "Masuk Mod Pelajar", "Keluar Mod Pelajar", "Mod Pelajar tidak dapat dibuka. Sila cuba lagi.". New strings are marked PROPOSED (AC-03.2, AC-04.1, AC-04.2) for the user to approve at G2. |
 | Theme | Light and dark both supported; banner and dialog use theme tokens (D29e). |
 | Performance | Enter and exit complete without a full page reload; the student home shows within normal navigation time. |
 | Reliability | No half-switched state after any failure (AC-01.8). |
-| Testability | Unit: session mode for `teacher` and `school_admin`, effective-role resolution, stamping, aggregate exclusion. Guard tests: staff URLs in the mode, learner URLs outside it. E2E at three widths for Guru and Admin Sekolah: enter, banner, `/practice` renders, a write is stamped and absent from a staff dashboard, exit, Back button, reload. 37-screen sweep with a staff account (AC-06.1). Existing admin tests keep passing. |
+| Testability | Unit: session mode for `teacher` and `school_admin`, effective-role resolution, stamping, aggregate exclusion. Guard tests: staff URLs in the mode, learner URLs outside it. E2E at three widths for Guru and Admin Sekolah: enter, banner, `/practice` renders, a write is stamped and absent from a staff dashboard, exit, Back button, reload. 30-screen sweep with a staff account (AC-06.1), plus a check that the 7 hidden routes redirect to `/dashboard` and no visible screen links to them (AC-10.1, AC-10.2, AC-10.5). Existing admin tests keep passing. |
 
 ## 6. Proposed defaults (not asked; user told "take the recommended defaults")
 
@@ -197,9 +199,9 @@ Scope of the mode: **all 37 Murid items** of the role-access matrix (`STUDENT_IT
 - Own-account mode: the same user id viewed through the student layout, menu, guard and API authorisation.
 - Contextual behaviour of "Latih Tubi Rawak" on `/practice/chapter` for a guru.
 - Mode banner (adapted copy, 44 px exit) and exit with return destination.
-- What the learner portal shows for a staff account (default form, empty states, 37-screen sweep).
+- What the learner portal shows for a staff account (default form, empty states, 30-screen sweep).
 - Test-data stamping and aggregate exclusion for all learner writes in the mode.
-- Blocking actions that reach other real users (pending Q-N2).
+- Hiding the 7 screens that reach other real users while the mode is on, with `/dashboard` as the direct-URL outcome (US-10).
 - Audit of transitions (Should).
 - Doc updates listed in section 9.
 
@@ -232,7 +234,7 @@ Scope of the mode: **all 37 Murid items** of the role-access matrix (`STUDENT_IT
 - R5 Stamping and exclusion are not built (A7). Without them, AC-07 fails and staff test activity pollutes leaderboards and reports. Sequencing against V2-T19 is a lead/architect decision.
 - R6 Staff with no class/grade may crash screens that assume `grade != null` or class membership (AC-06.1 sweep).
 - R7 Layout personality, menu builders, scope helpers and landing read `session.role` (for example `learner = role === 'student'` in `PembelajaranLayout.vue`); all must read the effective role in the mode, or the staff menu leaks into the student view.
-- R8 Cross-user side effects (Q-N2): a guru in a live game room, a sponsor request or an invitation to a real parent would reach real people.
+- R8 Cross-user side effects (Q-N2 resolved: hide): a guru in a live game room, a sponsor request or an invitation to a real parent would reach real people. Mitigated by hiding the 7 screens; residual risk is an unlisted screen or a visible screen with an entry point into a hidden one (AC-10.5 sweep).
 - R9 Admin Sekolah moving to Portal Pentadbiran (A6) will need the entry re-provided.
 
 ## 8. Open questions
@@ -246,11 +248,11 @@ Scope of the mode: **all 37 Murid items** of the role-access matrix (`STUDENT_IT
 | Q3 | "Latih Tubi Rawak" for a guru | **"Tanya, kemudian masuk mod"** (option A) | US-03 |
 | Q4 | Exit destination | Recommended default **A**: page where the mode started, fallback role home (`/guru` or `/admin-sekolah`) | US-05 |
 | Q5 | Admin Sekolah in this change | **"Tambah Admin Sekolah"** (option B). Resolves the D33(b)/ADR-0017 versus `v2-frontend.md` OQ-1 conflict: Admin Sekolah is included. | US-02; ADR-0017 item 7, contract `MOD_PELAJAR_ROLES`, `v2-frontend.md` OQ-1 to be aligned (section 9) |
+| Q-N2 | Which actions that reach other real users are handled in the mode? (asked after the first draft) | **"Sembunyikan menu itu"** (option C, 2026-10-25): live game rooms, Tournament, Cabutan, Jemput Ibu Bapa, Mohon Keluarga Angkat, Rujuk Kawan, Marketplace are hidden from menus and entry points; a direct URL lands on `/dashboard` (choice made in this doc, same as staff-only URLs in the mode). Replaces the draft default "block with a message". | US-10 (AC-10.1 to AC-10.6); US-06 scope is 30 visible screens; R8 mitigated |
 
-### New
+### New (open, non-blocking; defaults applied)
 
 - **Q-N1 (non-blocking, default applied). Should Admin Pusat's Mod Pelajar also become own-account, for consistency?** Today Admin Pusat views as the shared test student "Pelajar Demo" by impersonation, which contradicts D31(c), ADR-0017 and D53(c) (all say "as themselves"). Options: (A) leave Admin Pusat unchanged now and move it to the same own-account mechanism in the already-planned realignment V2-T31; (B) migrate Admin Pusat in this change; (C) keep Admin Pusat on the test student permanently and amend D31(c)/ADR-0017. **Recommended: A** (no behaviour change to a built, working feature without being asked; the mechanism is built once so the move is small). AC-08.8 assumes A.
-- **Q-N2 (confirm before G1 closes; default written into US-10). Which actions reaching other real users are blocked in the mode?** The user allowed writes, stamped as test data, but stamping does not protect real people from a staff member appearing in a live game room, sending a parent invitation or filing a sponsor request. Options: (A) block those actions with a message and keep them visible (AC-10.1 to AC-10.4); (B) allow them all, stamped, with no block; (C) hide the affected menu items in the mode. **Recommended: A** (keeps the "boleh tulis" decision for all own-data actions and avoids disturbing real students and parents).
 - **Q-N3 (non-blocking, default applied). Which form does the learner view use for a staff account with no form?** Options: (A) Tingkatan 4 (matches the D54 demo student); (B) Tingkatan 5 (SPM candidates); (C) ask the staff member on entry. **Recommended: A** (AC-06.2); the existing form/level selectors on each screen still let the staff member change it.
 
 ## 9. Impact list (for the architect)
@@ -268,7 +270,7 @@ Likely code touched (no code is written in this phase):
 | Guard / scope | `src/app/router/guards.ts` (role step and scope step read `session.role`), `src/app/prototype-scope.ts` (`isPathAllowed`, `shellHomePath`, `scopeHomePath` must use the effective role; no new Guru/Admin Sekolah item), `src/app/router/layouts.ts` (portal by role, lines 35 and 49), `src/composables/usePrototypeScope.ts` |
 | Mock server | Authorisation of learner endpoints by token role (R2'); M01 session handlers (`POST/DELETE /api/session/mode` if adopted, D53c); `src/modules/m02-users-schools/mock/handlers/users-admin.ts` impersonate route stays admin-only and unchanged; any shared mock data or handler change follows the isolated-worktree rule |
 | Test data | M05 sessions/answers/revision/mastery, wallet/gamification, notes, notifications, games, referral, Cikgu Alesa history: `is_test` stamping at the owner store (V2-T19, ADR-0014/0017); exclusion in aggregates of AC-07.3 (M08 Prestasi/Headcount/Analitik/Analisa Item, M17 Command Center/Pemantauan, M10 classes, M27 Admin Sekolah reports, leaderboards/rankings, M14 economy totals) |
-| Cross-user actions | Screens of AC-10.2 (games M16, Tournament, Cabutan, Jemput Ibu Bapa, Mohon Keluarga Angkat M21, Rujuk Kawan, Marketplace M20): action-level block and message |
+| Hidden screens | The 7 items of AC-10.1 (games M16, Tournament, Cabutan, Jemput Ibu Bapa, Mohon Keluarga Angkat M21, Rujuk Kawan, Marketplace M20): filter in the menu builders, Ctrl+K, dashboard/in-page links; guard outcome `landing` (`/dashboard`) for their routes in the mode; the rules are keyed on the mode, not on the role |
 | Audit | Audit store/handler of the mock (none for Mod Pelajar today); backend cards BE-03/BE-21 |
 | Tests | `src/shells/__tests__/mod-pelajar.test.ts` (extend for `teacher`, `school_admin`), guard and prototype-scope tests, M05 chapter page test, 37-screen staff sweep, aggregate-exclusion tests, E2E at 375/768/1280 |
 
@@ -277,3 +279,4 @@ Docs to update when built: `docs/requirements/role-access-matrix.md` (Guru and A
 ## 10. Change log
 
 - 2026-10-25: Applied user answers (own account, writes stamped as test data, dialog then enter, Admin Sekolah added); rewrote stories/ACs for Guru and Admin Sekolah, resolved Q1-Q5, added Q-N1 to Q-N3, restated risks (R2 removed, R2' added) and the impact list.
+- 2026-10-25: Q-N2 answered "Sembunyikan menu itu" (option C): US-10 rewritten from "block with message" to "hide 7 cross-user screens in the mode, direct URL lands on `/dashboard`"; Murid scope in the mode is now 30 visible screens; Q-N2 marked resolved; R8 and impact list updated.
