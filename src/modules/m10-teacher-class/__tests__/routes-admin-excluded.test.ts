@@ -25,7 +25,7 @@ describe('S4, S5, S6 route access (DV-M10-48)', () => {
     const to = { path: r.path, meta: r.meta ?? {} } as unknown as RouteLocationNormalized
     it(`${r.path}: teacher allowed, admin and student redirected`, () => {
       expect(decideAccess(to, session('teacher'))).toEqual({ kind: 'allow' })
-      expect(decideAccess(to, session('admin'))).not.toEqual({ kind: 'allow' })
+      expect(decideAccess(to, session('admin'))).toEqual({ kind: 'redirect', to: landing })
       expect(decideAccess(to, session('student'))).toEqual({ kind: 'redirect', to: landing })
     })
   }
