@@ -106,9 +106,10 @@ describe('S3 subjects (AC-M12-12.1..12.3)', () => {
       expect(r.find('a').exists()).toBe(false)
       expect(r.classes()).not.toContain('cursor-pointer')
     }
-    expect(rows[0]!.get('[data-testid="kirk-subject-name"]').classes()).toEqual(
-      expect.arrayContaining(['w-24', 'sm:w-40', 'truncate']),
-    )
+    // BUG-05: the name wraps at word boundaries (no ellipsis) at every width.
+    const nameClasses = rows[0]!.get('[data-testid="kirk-subject-name"]').classes()
+    expect(nameClasses).toEqual(expect.arrayContaining(['w-24', 'sm:w-40', 'break-words']))
+    expect(nameClasses).not.toContain('truncate')
   })
 })
 

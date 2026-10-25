@@ -29,7 +29,7 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
         :data-status="s.status"
       >
         <span
-          class="w-24 shrink-0 truncate text-body text-highlighted sm:w-40"
+          class="w-24 shrink-0 text-body break-words text-highlighted sm:w-40"
           data-testid="kirk-subject-name"
           >{{ s.name }}</span
         >
