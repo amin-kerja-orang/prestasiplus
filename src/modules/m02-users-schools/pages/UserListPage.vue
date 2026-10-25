@@ -20,7 +20,6 @@ import {
   DsDataTable,
   DsEmptyState,
   DsFilterBar,
-  DsIdentity,
   DsLoadError,
   DsNativeSelect,
   DsPage,
@@ -42,6 +41,7 @@ import {
   type AdminUserRole,
 } from '../api/users'
 import UserDeleteModals from '../components/UserDeleteModals.vue'
+import UserIdentityCell from '../components/UserIdentityCell.vue'
 import UserStatCards from '../components/UserStatCards.vue'
 import {
   errorLines,
@@ -524,19 +524,13 @@ const COLUMNS: TableColumn<UserRow>[] = [
         />
       </template>
       <template #name-cell="{ row }">
-        <DsIdentity
+        <UserIdentityCell
           :name="row.original.name"
-          :sub="row.original.email"
+          :email="row.original.email"
           :src="row.original.avatarUrl"
           :initials="initialsOf(row.original.name)"
           class="max-w-44 xl:max-w-60"
-        >
-          <template #name
-            ><span :title="row.original.name" data-testid="user-name">{{
-              row.original.name
-            }}</span></template
-          >
-        </DsIdentity>
+        />
       </template>
       <template #phone-cell="{ row }">
         <span class="text-nowrap">{{ row.original.phone || '-' }}</span>
@@ -550,7 +544,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
         />
       </template>
       <template #school-cell="{ row }">
-        <span class="block max-w-20 truncate xl:max-w-28" :title="row.original.school?.name">{{
+        <span class="block max-w-20 break-words whitespace-normal xl:max-w-28" data-testid="user-school">{{
           row.original.school?.name || '-'
         }}</span>
       </template>
@@ -603,9 +597,9 @@ const COLUMNS: TableColumn<UserRow>[] = [
             @update:model-value="(v: boolean | 'indeterminate') => toggleOne(asUser(row).id, v)"
           />
           <div class="flex min-w-0 flex-col gap-1">
-            <DsIdentity
+            <UserIdentityCell
               :name="asUser(row).name"
-              :sub="asUser(row).email"
+              :email="asUser(row).email"
               :src="asUser(row).avatarUrl"
               :initials="initialsOf(asUser(row).name)"
             />

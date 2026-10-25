@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S1 role KPI tiles (FR-M02-02, DV-M02-02, DV-M02-10): 7 link tiles (`DsStatRow`, compact), coloured icon
+ * S1 role KPI tiles (FR-M02-02, DV-M02-02, DV-M02-10): 7 link tiles (`DsStatRow`, default density: the compact tile truncates the label), coloured icon
  * chip + count + label. The tile of the active role filter is framed (`data-active`).
  */
 import { computed } from 'vue'
@@ -40,7 +40,6 @@ const items = computed<StatItem[]>(() =>
     prefix="users-stat"
     :items="items"
     :loading="counts === null"
-    density="compact"
     :cols="4"
     aria-label="Ringkasan pengguna mengikut peranan"
     data-testid="users-stats"
