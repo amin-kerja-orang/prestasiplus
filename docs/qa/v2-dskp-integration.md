@@ -8,7 +8,7 @@
 | Requirements | `docs/requirements/v2-dskp-integration.md` (US-01 to US-11, 63 acceptance criteria, NFR-01 to NFR-08) |
 | Design / architecture | `docs/design/v2-dskp-integration.md`, `docs/architecture/v2-dskp-integration.md` |
 | Role | qa-engineer. No application code was changed; only the new e2e specs below and this report were written. |
-| Verdict | **NOT READY** (1 High, 1 Medium, 1 Low open; see section 4) |
+| Verdict | **READY** after the re-test of section 7 (all three G5 bugs fixed and verified, 63 of 63 ACs Pass, no open bug). The first run (sections 2 to 6) was Not ready because of DSKP-G5-03 (High). |
 
 ## 1. How it was tested
 
@@ -19,7 +19,7 @@
 | New e2e specs (committed, `e2e/m06-spm/`) | `dskp-g5.spec.ts` (manual entry, Tag DSKP block, upload and AI, T1-T3, seed gates, flagged lifecycle), `dskp-g5-bank.spec.ts` (bank and queue filters), `dskp-g5-subjects.spec.ts` (all 13 subjects), `dskp-g5-extra.spec.ts` (student side, dark mode, server gates, performance, touch targets, 320 px, expected-fail defect tests), `dskp-g5-support.ts` (helpers), `dskp-g5.config.mjs` (config). Run: `E2E_BOOT_TIMEOUT_MS=90000 BIJAK_DEV=1 npx playwright test -c e2e/m06-spm/dskp-g5.config.mjs` from the repo root. |
 | Screenshots | `/tmp/claude-0/-home-user-prestasiplus/2b4fb9d7-0908-5472-a089-6ef819b4f201/scratchpad/dskp-g5/shots/` (suffix `-375`, `-768`, `-1280`; light and dark). Short names below are relative to that folder. Raw logs in the parent folder: `unit.txt`, `dskp-check.txt`, `bijak-e2e.txt`, `e2e-final.txt`. |
 | Test environment note | The worktree had no `node_modules`; a symlink to the main checkout made the dev server serve `pdfjs-dist/build/pdf.worker.min.mjs?url` as a raw module, so PDF upload failed with "Invalid `workerSrc` type". This is an environment artefact, not a product defect: with a real (hard-linked) `node_modules` inside the worktree, upload works. |
-| Defects kept as tests | Three defects are kept as `test.fail()` expected-fail tests (they pass the suite while the defect exists and will start failing when it is fixed, which is the signal to remove the annotation). |
+| Defects kept as tests | In the first run the three defects were kept as `test.fail()` expected-fail tests. After the fixes (section 7) the annotations are removed and the same tests are ordinary regression tests. |
 
 ## 2. Suites run (real output)
 
@@ -84,7 +84,7 @@ Evidence key: **E1** `dskp-g5.spec.ts`, **E2** `dskp-g5-bank.spec.ts`, **E3** `d
 | AC-04.6 | T1-T3: Unit, SP search and SK disabled, caption "Tingkatan 1-3 berada di luar DSKP. Unit dan SP tidak diperlukan; TP masih wajib."; gate asks only TP; TP required. | 3 | Pass | E1 "AC-04.6 AC-07.2 ..."; screenshot `tag-block-t1t3-*`, `dark-dark-tag-block-t1t3-*` |
 | AC-04.7 | T4 to T5 with unit and SP set: both cleared and "Unit dan SP dikosongkan kerana tingkatan berubah." under Tingkatan. | 3 | Pass | E1 "AC-04.2..04.5 ..."; screenshot `tag-block-form-notice-*` |
 | AC-04.8 | No horizontal page scroll at 375/768/1280 (and 320); touch targets >= 44 px (selects, SP rows, chip remove, clear-search); SP list scrolls inside itself; search by code or text. | 3 + 320 | Pass | E1, E3 (`expectNoHorizontalScroll` on every test); E4 "Touch targets" and "Narrowest width (320)"; screenshots `w320-tag-block-375`, `w320-pi-375` |
-| AC-04.9 | Upload a PDF: a question with no catalogue match keeps Tingkatan, Unit and SP empty (no guessed code); a question with only a TP suggestion shows "AI tidak menjumpai unit yang sepadan. Pilih secara manual." The gate marks the unit ("Medan keyakinan rendah belum disahkan: unit DSKP."). | 3 | Pass (with Low bug DSKP-G5-02) | E1 "AC-04.9 AC-05.2 AC-05.3 AC-10.1"; screenshot `intake-ai-no-match-*` |
+| AC-04.9 | Upload a PDF: a question with no catalogue match keeps Tingkatan, Unit and SP empty (no guessed code); a question with only a TP suggestion shows "AI tidak menjumpai unit yang sepadan. Pilih secara manual." The gate marks the unit ("Medan keyakinan rendah belum disahkan: unit DSKP."). | 3 | Pass (first run: with Low bug DSKP-G5-02; fixed and re-verified, section 7) | E1 "AC-04.9 AC-05.2 AC-05.3 AC-10.1"; screenshot `intake-ai-no-match-*` |
 
 ### US-05 TP mandatory, AI confirmation
 
@@ -135,7 +135,7 @@ Evidence key: **E1** `dskp-g5.spec.ts`, **E2** `dskp-g5-bank.spec.ts`, **E3** `d
 |---|---|---|---|---|
 | AC-09.1 | Subjek (13), Tingkatan, Unit (disabled until a subject, hint "Pilih subjek dahulu."; grouped "Tingkatan 4"/"Tingkatan 5" without tingkatan), SP (disabled until a unit, hint "Pilih unit dahulu."), TP, KBAT, "Perlu semakan tag"; dependent clearing (tingkatan change clears unit/SP; subject change clears unit/SP and keeps tingkatan, TP, KBAT; removing the Unit chip removes the SP chip; T1-T3 disables Unit). Each filter returns the independently expected set. Queue: the same five without the checkbox. | 3 | Pass | E2 (3 tests); screenshots `bank-filters-open-*`, `queue-filters-open-*` |
 | AC-09.2 | Pager total equals rows (44 rows at page size 50, 7, 2, 1, 0); chips equal the applied filters; empty states use the filtered copy ("Tiada soalan dijumpai", "Cuba ubah atau set semula penapis.", "Set Semula"); the queue's filtered empty state is not "Baris gilir kosong". | 3 | Pass | E2; screenshots `bank-empty-filtered-*`, `queue-empty-filtered-*` |
-| AC-09.3 | No horizontal page scroll with the bar, popover/sheet, chips, results, empty state and drawer open at 375, 768, 1280 (and 320). The inline bar, "Lagi Penapis" popover (md+) and "Penapis" sheet (<md) work. | 3 + 320 | Pass for page scroll. A long Unit chip is clipped at 375, see bug DSKP-G5-03. | E2, E4 "Narrowest width"; E4 BUG DSKP-G5-03 (expected-fail); screenshot `bank-filter-unit-sp-375` |
+| AC-09.3 | No horizontal page scroll with the bar, popover/sheet, chips, results, empty state and drawer open at 375, 768, 1280 (and 320). The inline bar, "Lagi Penapis" popover (md+) and "Penapis" sheet (<md) work. | 3 + 320 | Pass (first run: page scroll Pass, long Unit chip clipped at 375 = DSKP-G5-03; fixed and re-verified, section 7) | E2, E4 "Narrowest width"; E4 BUG DSKP-G5-03 (expected-fail); screenshot `bank-filter-unit-sp-375` |
 | AC-09.4 | Rows show catalogue unit title, SP codes, TP (and KBAT); T1-T3 rows "Tingkatan 1-3 (di luar DSKP)" with no SP; flagged rows "Perlu semakan tag"; cards show Unit, SP, TP fields. Drawer shows the same badges and the flagged alert. | 3 | Pass | E2 "AC-09.4"; E2 rows; screenshots `bank-drawer-tagged-*`, `bank-filter-t1t3-*`, `bank-kbat-row-*` |
 
 ### US-10 Tag audit
@@ -173,11 +173,13 @@ Evidence key: **E1** `dskp-g5.spec.ts`, **E2** `dskp-g5-bank.spec.ts`, **E3** `d
 
 ## 4. Bugs
 
-| ID | Severity | Title | Owner |
-|---|---|---|---|
-| DSKP-G5-03 | **High** | Long Unit chip is clipped at 375 px in the bank and queue filter bars | frontend-developer (DSKP-T08 / `DsActiveFilters`) |
-| DSKP-G5-01 | Medium | Senarai Ekstrak "Subjek" filter still lists 3 subjects, not the 13 | frontend-developer (DSKP-T07) |
-| DSKP-G5-02 | Low | "AI tidak menjumpai unit yang sepadan" caption is missing when the AI produced no suggestion at all | frontend-developer / backend-developer (extractor) |
+| ID | Severity | Title | Owner | Status |
+|---|---|---|---|---|
+| DSKP-G5-03 | **High** | Long Unit chip is clipped at 375 px in the bank and queue filter bars | frontend-developer (DSKP-T08 / `DsActiveFilters`) | **Fixed and verified** (9e4472ca, section 7) |
+| DSKP-G5-01 | Medium | Senarai Ekstrak "Subjek" filter still lists 3 subjects, not the 13 | frontend-developer (DSKP-T07) | **Fixed and verified** (9e4472ca, section 7) |
+| DSKP-G5-02 | Low | "AI tidak menjumpai unit yang sepadan" caption is missing when the AI produced no suggestion at all | frontend-developer / backend-developer (extractor) | **Fixed and verified** (9e4472ca, section 7) |
+
+The bug descriptions below are as found in the first run.
 
 ### DSKP-G5-03 (High): active-filter chip for a long unit title overflows its row at 375 px
 
@@ -224,7 +226,7 @@ From design section 13 (13.x lead decisions, 13.z build deviations) and the task
 - Unit options show `(perlu semakan)` only for non-informational flags (`codeQuirk` is informational: Sains T5 6.0 is unflagged); Bahasa Inggeris T4 is flagged as a whole (draft edition).
 - Seed TP values are authored (76 of 79 equal 2), per R-A.
 
-## 6. Verdict
+## 6. Verdict of the first run (superseded by section 7)
 
 **Not ready.**
 
@@ -234,4 +236,55 @@ Reasons:
 
 What passed: all 63 acceptance criteria executed with Pass (52 with a browser step at 375, 768 and 1280; 11 by unit test, code inspection or diff review as marked); the unit suite (514 files, 8,618 tests, no failure), `npm run dskp:check`, and the existing bijak e2e (18/18) are green; the gates give the same exact messages at submit, revision and publish; the flagged seed `mat2-rev-g1` cannot be published; tagging a flagged question in Sunting clears the flag and publishes; the 13 subjects, Jawi (right-to-left), the TP descriptors at the printed level, KBAT, the filters, the history lines, dark mode and 320 px all hold.
 
-Re-test needed after the fix: `dskp-g5-extra.spec.ts` (chip and intake-list tests) on all three widths, then re-issue this verdict.
+Re-test after the fix: see section 7.
+
+## 7. Re-test after the G5 fixes (commit 9e4472ca merged into this branch)
+
+The fixes were merged with a no-fast-forward merge of `worktree-agent-a4f704fdb96909b49` (9e4472ca: `DsActiveFilters` chip `min-w-0 max-w-full`; `IntakeListPage` uses `tagSubjects()`; the no-match caption without a suggestion; lead decision: an empty field needs no confirmation and the gate shows only "Unit DSKP belum dipilih."; the `test.fail` annotations removed; the submit race fixed in `dskp-g5-extra.spec.ts`).
+
+### 7.1 Results (real output)
+
+| Suite | Command | Result |
+|---|---|---|
+| DSKP G5 e2e, all three widths | `DSKP_REUSE=1 DSKP_SHOTS=... E2E_BOOT_TIMEOUT_MS=90000 npx playwright test -c e2e/m06-spm/dskp-g5.config.mjs` (Vite started from the repository root with `VITE_PROTOTYPE_SCOPE=on npx vite --mode e2e --port 5391`) | **135 tests (45 x mobile 375, tablet 768, desktop 1280): 133 passed, 2 skipped, 0 failed** (44.4 m). The 2 skipped are the 320 px test on tablet and desktop (it sets its own width, runs once on mobile). No expected-fail test is left: the three defect tests (8 runs) now pass as normal tests. |
+| Bijak e2e (existing) | `BIJAK_DEV=1 E2E_BOOT_TIMEOUT_MS=90000 npx playwright test -c playwright.bijak.config.mjs` | **18 passed (6.9 m)** |
+| Unit, m28 and DS | `npx vitest run --project unit src/modules/m28-bijak-spm src/ds` | **Test Files 73 passed (73); Tests 969 passed (969)**, exit 0 |
+| `npm run dskp:check` | | `dskp:check ok: 15 files match` |
+| Config self-start | `BIJAK_DEV=1 DSKP_PORT=5392 npx playwright test -c e2e/m06-spm/dskp-g5.config.mjs --project=desktop -g "13 subjects in the declaration"` (no `DSKP_REUSE`) | 1 passed: after the config fix below the config starts its own Vite from the root |
+
+The full unit suite of the first run (514 files, 8,618 tests, exit 0) was not repeated; the merge changed only `tag-view.ts`, `validation.ts`, `IntakeListPage.vue`, `DsActiveFilters.vue` and two m28 test files, and both folders were re-run above.
+
+### 7.2 Bug verification
+
+| ID | Verified how | Result |
+|---|---|---|
+| DSKP-G5-03 | Tests `DSKP-G5-03 ... bank` and `... queue` x 3 widths: chip right edge inside its row and inside the viewport, touch target >= 44 px, `aria-label` "Buang penapis Unit 1.0 ...". Screenshot `shots2/bank-filter-unit-chip-375.png` shows "Unit 1.0 Fungsi dan Persamaan Kuad..." truncated with the remove icon visible. | **Fixed, verified** (375, 768, 1280; bank and queue) |
+| DSKP-G5-01 | Test `DSKP-G5-01`: "Semua subjek" plus the 13 subjects in the intake list filter at 375 (sheet), 768 and 1280. | **Fixed, verified** |
+| DSKP-G5-02 | Test `DSKP-G5-02`: a PDF question with no command word and no match shows "AI tidak menjumpai unit yang sepadan. Pilih secara manual."; the unit stays empty; the issue list no longer holds "Medan keyakinan rendah belum disahkan: unit DSKP." and keeps "Unit DSKP belum dipilih." after a tingkatan is chosen. | **Fixed, verified** |
+| Observation 1 (duplicate wording of the gate for an empty unit) | Resolved by the same lead decision. The earlier assertions in the upload test (AC-05.3 refusal names, Q2 messages after T4 and after a unit) still pass. | Closed |
+
+AC-04.9 and AC-09.3 are now plain Pass. All 63 acceptance criteria remain Pass; the rows of section 3 hold with the fixes (the full G5 suite above covers every browser-executed AC again).
+
+### 7.3 The two student-side tests that failed for the developer
+
+Tests: "AC-08.1 AC-07.5: a tagged seed shows its catalogue unit title as topic ..." and "AC-07.5: a paper made only of flagged seeds ...".
+
+- In my first full run they passed on all three widths. On the retest, started on a freshly restarted Vite, they failed on the first attempt (`element was detached from the DOM`, snapshot at "Soalan 1 / 5" with an empty-looking attempt). So they do fail in my environment too, under load (load average 4, tests 2 to 3 times slower than before).
+- **Root cause: a race in the spec, not a product bug.** The spec walked the attempt with `while (await next.isVisible()) click next`. `isVisible()` does not wait. On a slow start the attempt shell is visible before the first question and its footer are rendered, so `next` is not visible yet, the loop ran zero times, and the spec clicked `submit` while the page was still rendering the question: Playwright found the button, the page re-rendered it, and the click retried until the timeout. An exploratory spec confirmed it (`NEXT CLICKS 0`, no navigation, no console error, no page error).
+- **Fix (spec only):** wait for `next` to be visible before the loop and for `submit` after it. With that, both tests pass at 375, 768 and 1280 on the loaded machine (6 of 6, then again inside the full run).
+- Not a product defect: the attempt screen shows its shell for a moment before the question loads, which is existing M06 behaviour and outside DSKP.
+
+### 7.4 Config defects found and fixed in `e2e/m06-spm/dskp-g5.config.mjs`
+
+1. **`webServer` ran from `e2e/m06-spm`** (Playwright's default cwd is the config's folder), so Vite had no `index.html` there and served 404. Fixed with `cwd: '../..'` (verified by the self-start run above).
+2. **`outputDir` was inside the Vite project root** (`test-results-dskp-g5`). Trace files written there are seen by Vite's file watcher and logged as "page reload"; they can reload open pages during a run (the Vite log shows these lines during the failing runs). The default is now `../../test-results/dskp-g5`, which Vite ignores by default and `.gitignore` covers. This was not the cause of the student-test race (the failure persisted after the move; the race was), but it is a real hazard and is fixed.
+3. The developer's note that `node_modules` must be real (hard-linked) inside the worktree is correct: with a symlink to another checkout the dev server serves the pdf.js worker URL wrongly and PDF upload fails.
+
+## 8. Final verdict
+
+**Ready.**
+
+- 63 of 63 acceptance criteria executed and Pass (52 with a browser step, 11 by unit test, code inspection or diff review as marked).
+- No open bug of any severity: DSKP-G5-03 (High), DSKP-G5-01 (Medium) and DSKP-G5-02 (Low) are fixed and verified at 375, 768 and 1280.
+- Suites: DSKP G5 e2e 133 passed, 2 skipped (by design), 0 failed; bijak e2e 18 of 18; unit m28 + DS 969 of 969; first-run full unit suite 8,618 passed; `dskp:check` ok.
+- Remaining notes (not bugs): observation 2 (the student weak-topic list names "Tingkatan 1-3 (di luar DSKP)", from FB-004) and observation 3 (first-question tag for a stimulus group, accepted deviation); the known pre-existing FB-075.
