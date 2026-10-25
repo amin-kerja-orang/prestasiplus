@@ -55,12 +55,12 @@ defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: num
               :initials="initialsOf(student.name)"
             >
               <template #name
-                ><RouterLink
+                ><ULink
                   v-if="prestasiTo"
                   :to="prestasiTo"
-                  class="-my-3 block truncate py-3 text-primary-t"
+                  class="block truncate"
                   data-testid="student-name"
-                  >{{ student.name }}</RouterLink
+                  >{{ student.name }}</ULink
                 >
                 <span v-else data-testid="student-name">{{ student.name }}</span></template
               >

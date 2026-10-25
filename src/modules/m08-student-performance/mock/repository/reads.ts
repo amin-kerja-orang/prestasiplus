@@ -10,10 +10,22 @@
  * harmless here because every output is an aggregate or a capped list (top 10 / 15 / 50, 90 heatmap days).
  */
 
-import { practice, practiceAnswers, PRACTICE_MODES } from '@/modules/m05-practice/mock'
+import { practice, practiceAnswers, PRACTICE_MODES, SPM_MODES } from '@/modules/m05-practice/mock'
 import { classrooms, type ClassroomRow } from '@/modules/m10-teacher-class/mock'
 
 export const PRACTICE_MODE_SET: ReadonlySet<string> = new Set(PRACTICE_MODES)
+/**
+ * The modes Prestasi 360 (S6) counts for one student: the practice modes and, since D54 (v2 is
+ * Tingkatan 4-5 / SPM only; DV-M08-D54), the SPM modes. The class views keep PRACTICE_MODE_SET.
+ */
+export const STUDENT_MODE_SET: ReadonlySet<string> = new Set([...PRACTICE_MODES, ...SPM_MODES])
+
+/**
+ * The modes counted on a user's own S6 / S18 figures: learner accounts count the SPM modes too
+ * (D54), any other account (the admin) keeps the OBSERVED practice-modes-only figures (DV-20).
+ */
+export const modesOfUser = (role: string): ReadonlySet<string> =>
+  role === 'student' ? STUDENT_MODE_SET : PRACTICE_MODE_SET
 
 export interface Totals {
   sessions: number

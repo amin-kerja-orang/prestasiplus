@@ -13,7 +13,7 @@ const NOW = '2026-09-25T15:40:00+08:00'
 
 let runtime: MockRuntime
 
-type As = 'admin' | 'student' | 'maju' | 'teacher' | null
+type As = 'admin' | 'student' | 'maju' | 'empty' | 'teacher' | null
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface Answer<T = any> {
@@ -46,6 +46,8 @@ beforeAll(async () => {
         if (token === 'tok-admin') return { token, userId: 1, role: 'admin' }
         if (token === 'tok-student') return { token, userId: 2, role: 'student' }
         if (token === 'tok-maju') return { token, userId: 4, role: 'student' }
+        // pelajar2: the demo account without any practice history.
+        if (token === 'tok-empty') return { token, userId: 3, role: 'student' }
         if (token === 'tok-teacher') return { token, userId: 5, role: 'teacher' }
         return null
       },
@@ -242,16 +244,30 @@ describe('GET /api/topics/:id (#26, S13)', () => {
     )
   })
 
-  it('derives progress from the M05 answer log for the current user (pelajarmaju, SRS §6.9)', async () => {
-    const t1 = (await get<{ data: TopicDetail }>('/api/topics/1', 'maju')).body.data
-    expect(t1.progress).toEqual({ questionsAnswered: 23, progress: 95 })
-    expect(t1.subtopics.map((s) => s.progress)).toEqual([95, 95, 95])
-    expect((await get<{ data: TopicDetail }>('/api/topics/7', 'maju')).body.data.progress).toEqual({
+  it('derives progress from the M05 answer log for the current user (pelajarmaju, SRS §6.9, D54)', async () => {
+    // D54: pelajarmaju is Tingkatan 4 and the Matematik history sits on the T4 chapters (M05 seed:
+    // Bab 1-3 = chapters 91/92/220 = topics 86/87/88), so the progress is on those topics.
+    const t86 = (await get<{ data: TopicDetail }>('/api/topics/86', 'maju')).body.data
+    expect(t86.progress).toEqual({ questionsAnswered: 23, progress: 95 })
+    expect(t86.subtopics.map((s) => s.progress)).toEqual([95, 95])
+    expect((await get<{ data: TopicDetail }>('/api/topics/87', 'maju')).body.data.progress).toEqual({
       questionsAnswered: 7,
       progress: 15,
     })
-    // Another user has no history.
-    const other = (await get<{ data: TopicDetail }>('/api/topics/1', 'student')).body.data
+    expect((await get<{ data: TopicDetail }>('/api/topics/88', 'maju')).body.data.progress).toEqual({
+      questionsAnswered: 7,
+      progress: 20,
+    })
+    // The former Darjah 1 topics (1 Nombor, 7) no longer carry any history.
+    for (const id of [1, 7]) {
+      const old = (await get<{ data: TopicDetail }>(`/api/topics/${String(id)}`, 'maju')).body.data
+      expect(old.progress, `topic ${String(id)}`).toEqual({ questionsAnswered: 0, progress: 0 })
+    }
+    // pelajar (Tingkatan 4) has own SPM answers on chapters 91/92 (5 each).
+    const own = (await get<{ data: TopicDetail }>('/api/topics/86', 'student')).body.data
+    expect(own.progress).toEqual({ questionsAnswered: 5, progress: 15 })
+    // pelajar2 has no history.
+    const other = (await get<{ data: TopicDetail }>('/api/topics/86', 'empty')).body.data
     expect(other.progress).toEqual({ questionsAnswered: 0, progress: 0 })
   })
 })
@@ -262,7 +278,8 @@ describe('GET /api/learning-map (#27, S14)', () => {
   })
 
   it('defaults to MATEMATIK + TINGKATAN_4 for every user (FR-84, D54)', async () => {
-    const res = await get<{ data: LearningMap }>('/api/learning-map')
+    // pelajar2 (no history), so the "no history" island states below are not pelajar's own.
+    const res = await get<{ data: LearningMap }>('/api/learning-map', 'empty')
     expect(res.status).toBe(200)
     const d = res.body.data
     expect(d.subject).toBe('MATEMATIK')
@@ -283,6 +300,39 @@ describe('GET /api/learning-map (#27, S14)', () => {
     ])
     expect(d.stats).toEqual({ done: 0, total: 3, progress: 0 })
     expect(d.topics[0]).toMatchObject({ progress: 0, sessions: 0, questionsAnswered: 0 })
+    // Every user gets the same default scope.
+    for (const as of ['student', 'maju'] as const) {
+      const other = (await get<{ data: LearningMap }>('/api/learning-map', as)).body.data
+      expect(other.subject, as).toBe('MATEMATIK')
+      expect(other.grade, as).toBe('TINGKATAN_4')
+      expect(other.topics.map((t) => t.name), as).toEqual(d.topics.map((t) => t.name))
+    }
+  })
+
+  it('island states and stats follow the seeded M05 history of the user (BR-14, BR-19, D54)', async () => {
+    // pelajar: SPM answers on chapters 91 and 92 (one session each, 5 answers each), none on 220.
+    const own = (await get<{ data: LearningMap }>('/api/learning-map')).body.data
+    expect(own.topics.map((t) => t.state)).toEqual(['started', 'started', 'unlocked'])
+    expect(own.topics.map((t) => [t.progress, t.sessions, t.questionsAnswered])).toEqual([
+      [15, 1, 5],
+      [5, 1, 5],
+      [0, 0, 0],
+    ])
+    expect(own.topics.map((t) => t.practiceUrl)).toEqual([
+      '/practice?topic_id=86',
+      '/practice?topic_id=87',
+      '/practice?topic_id=88',
+    ])
+    expect(own.stats).toEqual({ done: 0, total: 3, progress: 7 })
+    // pelajarmaju: Matematik Bab 1-3 (M1-M4); Bab 1 reaches the mastered threshold.
+    const maju = (await get<{ data: LearningMap }>('/api/learning-map', 'maju')).body.data
+    expect(maju.topics.map((t) => t.state)).toEqual(['mastered', 'started', 'started'])
+    expect(maju.topics.map((t) => [t.progress, t.sessions, t.questionsAnswered])).toEqual([
+      [95, 3, 23],
+      [15, 2, 7],
+      [20, 2, 7],
+    ])
+    expect(maju.stats).toEqual({ done: 1, total: 3, progress: 43 })
   })
 
   it('lists the 7 subject pills with observed colours; Geografi is not a pill (DV-M03-08)', async () => {

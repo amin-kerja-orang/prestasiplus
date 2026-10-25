@@ -346,6 +346,30 @@ describe('S6 Prestasi 360', () => {
     expect(s.suggestions.map((x) => x.kind)).toEqual(['inactive', 'start'])
   })
 
+  it('pelajar (id 2, Tingkatan 4): SPM-mode sessions count on Prestasi 360 (DV-M08-D54, D54)', async () => {
+    // The seeded sessions P1-P4 are all SPM modes (past_year, latih_tubi, ramalan). Before D54 S6
+    // showed "0 Soalan Dijawab / Belum ada data latihan" while /practice/progress showed 94 answers.
+    const s = await get<StudentPerformance>(ADMIN, '/api/performance/students/2')
+    expect(s.stats).toEqual({ sessions: 4, accuracy: 74.5, answered: 94, seconds: 1830 })
+    expect(s.heroAccuracy).toBe(74)
+    // The same figures as the M05 SPM history that /practice/progress reads.
+    const spm = practice.historyPage(2, { modes: ['past_year', 'latih_tubi', 'ramalan'] }).stats
+    expect(s.stats.sessions).toBe(spm.sessions)
+    expect(s.stats.answered).toBe(spm.answered)
+    expect(s.mastery.map((m) => [m.subjectCode, m.sessions, m.answered, m.accuracy])).toEqual([
+      ['AKAUN', 1, 40, 85],
+      ['BM', 1, 34, 76.5],
+      ['MATH', 1, 10, 40],
+      ['SEJ', 1, 10, 60],
+    ])
+    // Matematik 40 % and Sejarah 60 % are under 70 %; with data there is no "start" suggestion.
+    expect(s.suggestions.map((x) => x.kind)).toEqual(['subject', 'subject'])
+    // S18 shows the same sessions / accuracy for the learner.
+    const pub = await get<PublicProfile>(null, '/api/public/students/2')
+    expect(pub.activity.sessions).toBe(4)
+    expect(pub.accuracy).toBe(74.5)
+  })
+
   it('pupil 3008: weak topic Sel Elektrolisis, 2 attempts, Fokus capped at 25', async () => {
     const s = await get<StudentPerformance>(ADMIN, '/api/performance/students/3008')
     const w = s.weakTopics.find((x) => x.spId === 9001)

@@ -25,7 +25,7 @@ import { practice } from '@/modules/m05-practice/mock'
 import { streak, tiers, wallet } from '@/modules/m14-gamification/mock'
 
 import type { PublicProfile, Timeline, TimelineCategory, TimelinePost } from '../../api/types'
-import { PRACTICE_MODE_SET } from '../repository/reads'
+import { modesOfUser } from '../repository/reads'
 import { capPercent, pct, round } from '../repository/rules'
 import { PERIODS, leaderboardOf, rankingOf, type RankingQuery } from '../repository/social'
 import { activityRepo, timelineRepo } from '../repository/stores'
@@ -147,7 +147,7 @@ export const socialRoutes: RouteDef[] = [
       if (!user) return notFound()
       const now = ctx.clock.now()
       const stats = activityRepo.get(user.id)
-      const sessions = practice.history(user.id).filter((s) => PRACTICE_MODE_SET.has(s.mode))
+      const sessions = practice.history(user.id).filter((s) => modesOfUser(user.role).has(s.mode))
       const correct = sessions.reduce((a, s) => a + s.correctCount, 0)
       const asked = sessions.reduce((a, s) => a + s.questionCount, 0)
       const joinedAt = stats?.joinedAt ?? user.createdAt

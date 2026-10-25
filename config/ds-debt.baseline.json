@@ -742,7 +742,7 @@
     "src/modules/m10-teacher-class/components/dashboard/TodayPanel.vue": 15,
     "src/modules/m10-teacher-class/components/kelas-saya/JoinClassForm.vue": 5,
     "src/modules/m10-teacher-class/components/kelas-saya/JoinedClassCard.vue": 7,
-    "src/modules/m10-teacher-class/components/kelas/ClassCard.vue": 4,
+    "src/modules/m10-teacher-class/components/kelas/ClassCard.vue": 3,
     "src/modules/m10-teacher-class/components/kelas/QrModal.vue": 2,
     "src/modules/m10-teacher-class/components/kelas/SchoolPicker.vue": 7,
     "src/modules/m10-teacher-class/components/pelajar/StudentRow.vue": 5,
