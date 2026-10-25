@@ -572,7 +572,7 @@ const feedback = computed(() => {
           color="neutral"
           variant="soft"
           icon="i-ph-arrow-left"
-          class="size-11 justify-center"
+          class="size-11 shrink-0 justify-center px-0 learner:px-0"
           aria-label="Sebelum"
           :disabled="index === 0"
           data-testid="prev"
@@ -582,12 +582,18 @@ const feedback = computed(() => {
           type="button"
           color="neutral"
           variant="soft"
-          icon="i-ph-squares-four"
-          class="min-h-11 lg:hidden"
+          class="min-h-11 shrink-0 whitespace-nowrap max-sm:gap-2 max-sm:px-3 lg:hidden max-sm:learner:px-3"
           data-testid="open-map"
           @click="navOpen = true"
-          >Peta {{ current?.number ?? 0 }}/{{ questions.length }}</UButton
         >
+          <!-- The icon goes below sm: at 320 px the footer has room for the label, not both. -->
+          <UIcon
+            name="i-ph-squares-four"
+            class="hidden size-5 shrink-0 sm:block"
+            aria-hidden="true"
+          />
+          Peta {{ current?.number ?? 0 }}/{{ questions.length }}
+        </UButton>
         <p
           class="tabular hidden min-w-0 flex-1 truncate text-center text-caption text-muted sm:block"
           data-testid="position"
@@ -608,7 +614,7 @@ const feedback = computed(() => {
           v-if="!isLast"
           type="button"
           color="primary"
-          class="min-h-11"
+          class="min-h-11 shrink-0 whitespace-nowrap max-sm:gap-2 max-sm:px-3 max-sm:learner:px-3"
           trailing-icon="i-ph-arrow-right"
           data-testid="next"
           @click="goTo(index + 1)"
