@@ -47,6 +47,7 @@ Read [plan/onboarding.md](plan/onboarding.md) first on a new PC, then the guide 
 | [qa/v2-test-strategy.md](qa/v2-test-strategy.md) | Test levels (unit, Testcontainers integration, conformance, e2e, migration), gate matrix G3–G6, test data, severity |
 | [ops/platform-settings.md](ops/platform-settings.md) | Platform settings checklist per environment (Render, Supabase, Cloudflare Pages worker, production VPS): edge secret, client IP, throttles, cookies, seeds, metrics, AI |
 | [ops/db-password-rotation.md](ops/db-password-rotation.md) | Database password rotation (demo and production), SESSION_SECRET rotation, IC_HASH_KEY warning, rotation log template |
+| [ops/hypercare-amin2-30oct.md](ops/hypercare-amin2-30oct.md) | Draft: hypercare 30 Oct to 6 Nov for the half-AM modules (symptom, read-only check, PR or decision, who responds, rollback trigger or not) |
 
 Reading order for newcomers: TRACKER decisions D28–D38, then `requirements/v2-portals.md`,
 `requirements/v2-cloud-gap.md`, `architecture/overview.md`, `architecture/v2-data-migration.md`.
