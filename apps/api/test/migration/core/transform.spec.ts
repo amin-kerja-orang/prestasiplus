@@ -52,6 +52,21 @@ describe('levels, subjects, chapters, topics', () => {
     expect(bad).toEqual({ ok: false, reject: expect.objectContaining({ reason: 'UNKNOWN_ENUM', column: 'stage', enumValue: 'secondary' }) })
   })
 
+  // A1-FIX: the real source stores the BM stage names (the complete distinct set, confirmed by the LEAD). One case per value.
+  it.each([
+    ['Rendah', 'primary'],
+    ['Menengah Rendah', 'lower_secondary'],
+    ['Menengah Atas', 'upper_secondary'],
+  ])('maps the stage "%s" to %s', (raw, v2) => {
+    expect(transformLevel({ id: '1', name_bm: 'Darjah 1', stage: raw, curriculum: 'kssr', sort_order: '1' })).toMatchObject({ ok: true, value: { stage: v2 } })
+  })
+
+  it('keeps the three v2 stage codes as accepted source values', () => {
+    for (const code of ['primary', 'lower_secondary', 'upper_secondary']) {
+      expect(transformLevel({ id: '1', name_bm: 'Darjah 1', stage: code, curriculum: 'kssr' })).toMatchObject({ ok: true, value: { stage: code } })
+    }
+  })
+
   it('keeps the English name and colour of a seeded subject and falls back otherwise', () => {
     const seeded = transformSubject({ id: '1', name_bm: 'Matematik', name_en: 'Maths', code: 'math', is_core: '1', color: null }, { name_en: 'Mathematics', color: '#EF4444' })
     expect(seeded).toMatchObject({ ok: true, value: { code: 'MATH', name: 'Matematik', name_en: 'Mathematics', color: '#EF4444', is_core: true } })
@@ -276,6 +291,12 @@ describe('school subscriptions', () => {
     expect(transformSubscription({ ...sub, package: 'premium' }, { ...base, schoolType: 'SMK', asOf: '2027-01-01' })).toMatchObject({
       ok: true, value: { package_tier: 'full', school_package_id: '12', status: 'expired' },
     })
+  })
+
+  // A1-FIX (LEAD, 25 Oct 2026): the monitoring-only package is the basic tier.
+  it('maps Pemantauan to the basic tier', () => {
+    expect(transformSubscription({ ...sub, package: 'Pemantauan' }, base)).toMatchObject({ ok: true, value: { package_tier: 'basic', school_package_id: '11' } })
+    expect(transformSubscription({ ...sub, package: ' PEMANTAUAN ' }, base)).toMatchObject({ ok: true, value: { package_tier: 'basic' } })
   })
 
   it('rejects an unknown package, a bad quota or dates, a missing catalogue row and an orphan school', () => {

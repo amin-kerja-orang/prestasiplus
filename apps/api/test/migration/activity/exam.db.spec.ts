@@ -8,7 +8,7 @@
  *
  * Planted (S1, S2 are migrated pupils of the fixture; fictitious values, surrogate ids from 7001 up):
  *   attempts 7001 (submitted, score 30/40, sections), 7002 (auto-submitted, no score, no paper), 7003 (status still
- *   in progress = rejected), 7004 (abandoned, score 5/40), 7005 (marked = submitted, 12/40), 7006 (no status id =
+ *   in progress = EXCLUDED, A1-FIX: not loaded, not a reject), 7004 (abandoned, score 5/40), 7005 (marked = submitted, 12/40), 7006 (no status id =
  *   rejected INVALID_VALUE), 7007 (a status id with no lookup row = INVALID_VALUE), 7008 (a slug outside the map =
  *   UNKNOWN_ENUM). The status is `exam_attempts.status_id` -> `attempt_statuses.slug`.
  */
@@ -97,9 +97,14 @@ describe('exam attempts (AC2)', () => {
     expect(applied.report.status).toBe('succeeded')
     for (const r of applied.report.recon) expect(r.eligibleCount - r.loaded - r.rejected, r.entity).toBe(0)
     runId = applied.report.runId
-    // Rejected statuses are counted by name: 7003 is in_progress; 7006 (no id), 7007 (no lookup row) and 7008 (unknown slug) are `other`.
-    expect(applied.activity.notes.counters.get('exam_attempts.status_rejected.in_progress')).toBe(1)
+    // A1-FIX: 7003 (in_progress) is excluded and counted by name. 7006 (no id), 7007 (no lookup row) and 7008 (unknown slug) are rejected as `other`.
+    expect(applied.activity.notes.counters.get('exam_attempts.excluded.in_progress')).toBe(1)
+    expect(applied.activity.notes.counters.get('exam_attempts.status_rejected.in_progress')).toBeUndefined()
     expect(applied.activity.notes.counters.get('exam_attempts.status_rejected.other')).toBe(3)
+    // The exclusion leaves `eligible_count`: read - eligible = 1 and no reject row exists for it.
+    const recon = applied.report.recon.find((r) => r.entity === 'exam_attempts')
+    expect(recon && recon.sourceCount - recon.eligibleCount).toBe(1)
+    expect(recon?.status).toBe('ok')
   }, 180_000)
 
   it('loads the header with the documented sentinels and the result with the score only', async () => {
@@ -140,7 +145,6 @@ describe('exam attempts (AC2)', () => {
       [runId],
     )
     expect(rejected).toEqual([
-      { legacy_id: '7003', reason: 'UNKNOWN_ENUM', column_name: 'status' }, // slug in_progress
       { legacy_id: '7006', reason: 'INVALID_VALUE', column_name: 'status' }, // no status_id
       { legacy_id: '7007', reason: 'INVALID_VALUE', column_name: 'status' }, // status_id without a lookup row
       { legacy_id: '7008', reason: 'UNKNOWN_ENUM', column_name: 'status' }, // slug the map does not know

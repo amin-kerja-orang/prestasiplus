@@ -188,7 +188,7 @@ async function recountFromCommitted(pool: Pick<pg.Pool, 'query'>, core: CoreCont
 }
 
 /** Counters copied into `etl_runs.counters -> 'notes'` (numbers only; the night SQL checks read them). Never ids or hashes. */
-const LEDGER_NOTES = /^(must_reset\..+|users\.role_rejected\..+|nullHashAccounts|flaggedWithoutLoginId|rosterDefaultHashes|rosterDefaultHashesWarning|countsFromCommittedRows)$/
+const LEDGER_NOTES = /^(must_reset\..+|users\.role_rejected\..+|nullHashAccounts|flaggedWithoutLoginId|rosterDefaultHashes|rosterDefaultHashesWarning|countsFromCommittedRows|classrooms\.excluded\..+|enrolments\.excluded\..+)$/
 
 /**
  * Merges the report counters into the apply run's `counters` JSON under `notes` (`jsonb_set`, so the runner's per-entity

@@ -13,7 +13,7 @@ import type pg from 'pg'
 
 import { SESSION_MODES_DEFERRED } from '../../transform/practice'
 import { enumKey } from '../../transform/common'
-import { examStatusRejectLabel } from '../../transform/exam'
+import { EXAM_STATUSES_EXCLUDED } from '../../transform/exam'
 import { readById } from '../source'
 import type { ActivityContext } from './context'
 import { scanWalletDrift } from './wallet-steps'
@@ -72,14 +72,21 @@ export async function rebuildAfterResume(a: ActivityContext, pool: pg.Pool, runI
 
   if (ran.has('exam_attempts')) {
     resetNotes(a, 'exam_attempts.status_rejected')
-    const res = await pool.query<{ slug: string | null }>(
-      `SELECT st.slug::text AS slug FROM etl_rejects r
-       JOIN staging_cloud.exam_attempts t ON t.id::text = r.legacy_id
-       LEFT JOIN staging_cloud.attempt_statuses st ON st.id = t.status_id
-       WHERE r.run_id = $1::bigint AND r.entity = 'exam_attempts' AND r.column_name = 'status'`,
+    resetNotes(a, 'exam_attempts.excluded')
+    const rej = await pool.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM etl_rejects WHERE run_id = $1::bigint AND entity = 'exam_attempts' AND column_name = 'status'`,
       [runId],
     )
-    for (const r of res.rows) a.notes.count(`exam_attempts.status_rejected.${examStatusRejectLabel(r.slug)}`)
+    const nRej = Number(rej.rows[0]?.n ?? 0)
+    if (nRej > 0) a.notes.count('exam_attempts.status_rejected.other', nRej)
+    // Excluded attempts leave no reject: recount them from the staged status lookup.
+    const exc = await pool.query<{ slug: string; n: string }>(
+      `SELECT st.slug::text AS slug, count(*)::text AS n FROM staging_cloud.exam_attempts t
+       JOIN staging_cloud.attempt_statuses st ON st.id = t.status_id
+       WHERE lower(btrim(st.slug)) = ANY($1::text[]) GROUP BY st.slug`,
+      [EXAM_STATUSES_EXCLUDED],
+    )
+    for (const r of exc.rows) a.notes.count(`exam_attempts.excluded.${enumKey(r.slug) ?? 'other'}`, Number(r.n))
   }
 
   if (ran.has('coin_ledger')) {

@@ -197,7 +197,7 @@ describe('content', () => {
   })
 
   it('maps the banner type, keeps dates and counts files and dropped targets', () => {
-    expect(Object.values(BANNER_TYPE_MAP).sort()).toEqual(['ANNOUNCEMENT', 'EVENT', 'HERO', 'PROMO'])
+    expect([...new Set(Object.values(BANNER_TYPE_MAP))].sort()).toEqual(['ANNOUNCEMENT', 'EVENT', 'HERO', 'PROMO'])
     const o = transformBanner({ title: 'Sepanduk', type: 'Hero', image_path: 'a.png', target: '/dalam', sort_order: '2', is_active: '1' }, { start: '2026-03-02', end: '2026-03-10' })
     expect(o.hadImage).toBe(true)
     expect(o.droppedTarget).toBe(true)
@@ -206,6 +206,11 @@ describe('content', () => {
     expect(ext.out.ok && ext.out.value).toMatchObject({ link_type: 'EXTERNAL', external_url: 'https://contoh.invalid/x' })
     expect(rejectOf(transformBanner({ title: 'S', type: 'promo' }, { start: '2026-03-10', end: '2026-03-01' }).out)).toBe('INVALID_VALUE:end_date')
     expect(rejectOf(transformBanner({ title: 'S', type: 'xyz' }, { start: null, end: null }).out)).toBe('UNKNOWN_ENUM:type')
+    // A1-FIX: the two legacy .cloud codes map to a code v2 can store (`ck_banners_banner_type`).
+    for (const type of ['FEATURE', 'PROMOTIONAL']) {
+      const legacy = transformBanner({ title: 'S', type }, { start: null, end: null })
+      expect(legacy.out.ok && legacy.out.value.banner_type, type).toBe('PROMO')
+    }
   })
 
   it('needs the content owner for notes, videos and audio sets (ORPHAN_PARENT) and never invents the missing columns', () => {

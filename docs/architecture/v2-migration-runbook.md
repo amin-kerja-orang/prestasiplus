@@ -329,6 +329,16 @@ Exit codes (all commands): 0 ok, 1 failed or reconciliation mismatch, 2 usage or
 
 `pass` means every entity row is `ok` and no check is `mismatch`. Ledger, correct-sum, drift and deleted-at-source rows are `reported` and never fail the run, so the lead must read them (section 14).
 
+**Documented exclusions are not rejects (A1-FIX, LEAD 25 Oct 2026).** A row left out by a documented rule is counted in `source` but removed from `eligible`, writes no `etl_rejects` row, and is named in the report notes (`note <name>: n`; for `migrate:core` also saved in `etl_runs.counters -> 'notes'`). So `eligible - loaded - rejected = 0` still holds, and the reject rate does not include them:
+
+| Entity | Rule | Note counter | Still a reject |
+|---|---|---|---|
+| `exam_attempts` | Status `in_progress` (an unfinished attempt; `submitted` and `marked` migrate). | `exam_attempts.excluded.in_progress` | Any other status outside the map: `exam_attempts.status_rejected.other`. |
+| `classrooms` | `teacher_id` is set but the teacher has NO row in the source `users` (deleted account). The pupils still migrate. | `classrooms.excluded.teacher_absent_from_source` | A teacher who IS in the source `users` but was not loaded (for example an `agent`): `ORPHAN_PARENT teacher_id`. |
+| `enrolments` | The class is excluded by the rule above. | `enrolments.excluded.class_teacher_absent_from_source` | An enrolment of a class that is in the source but not loaded for another reason, or of a class that does not exist in the source: `ORPHAN_PARENT classroom_id`. |
+
+Other orphans are genuine and stay rejects, explained in the deviations log (A1-FIX): practice sessions and answers of deleted source users, and wallet rows of non-student roles (`UNSUPPORTED user_id`, by design: v2 wallets are student-only) or of users absent from the source. The enum maps added by A1-FIX (education stage, coin ledger source, banner type, subscription tier) are listed in the same section of the deviations log.
+
 **Deleted at source.** A delta never deletes v2 rows (section 15), so after a delta on a re-staged dump a v2 table can hold more rows of the source than the run loaded. Verify measures that difference directly: the v2 rows with `legacy_source = 'cloud'` whose legacy id the current staging no longer produces.
 
 - An entity is `ok` when `target count - deleted at source = loaded`.
