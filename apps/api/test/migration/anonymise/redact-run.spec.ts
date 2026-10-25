@@ -18,7 +18,7 @@ import { DirReader } from '../../../src/migration/staging/readers'
 import { allText, capture, originalValues, PII, piiTables, readDump, scratch, TEST_KEY, writeDump, type Rows } from './helpers'
 
 const T = REDACTED_TOKEN
-/** Held ONLY by `sponsors.officer_name`, a table that comes after `articles` in the table order. */
+/** Held ONLY by `sponsors.organisation` (pseudonym:org, indexed like a name), a table that comes after `articles` in the table order. */
 const LATE_NAME = 'Vexilor Quendrath'
 const work = scratch()
 afterAll(() => work.cleanup())
@@ -30,7 +30,7 @@ const config = parseConfig(configJson)
 function contentTables(): Record<string, Rows> {
   return {
     ...piiTables(),
-    sponsors: [...(piiTables().sponsors as Rows), { id: 2, organisation: 'Syarikat Fiktif', category: 'korporat', officer_name: LATE_NAME, status: 'aktif' }],
+    sponsors: [...(piiTables().sponsors as Rows), { id: 2, organisation: LATE_NAME, category: 'korporat', status: 'aktif' }],
     articles: [
       { id: 1, slug: 'tips-belajar-matematik-spm', category: 'tips', title: `Wawancara dengan ${LATE_NAME} tentang SPM`, views: 3, is_published: '1', author_id: 1, created_at: '2026-01-01T00:00:00Z' },
       { id: 2, slug: 'tips-belajar-matematik-spm-2', category: 'tips', title: 'Tajuk biasa tanpa data peribadi', views: 0, is_published: '1', author_id: 2 },
