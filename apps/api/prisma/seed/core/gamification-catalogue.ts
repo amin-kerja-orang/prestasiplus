@@ -17,6 +17,9 @@
 import { ACHIEVEMENT_ROWS, CHALLENGE_ROWS, SETTING_ROWS } from '../gamification-data'
 import type { SeedModule } from '../index'
 
+/** The natural key of an achievement name or a challenge title: trimmed and lower-cased (the ETL matches the same way). */
+const naturalKey = (value: string): string => value.trim().toLowerCase()
+
 export const gamificationCatalogueSeed: SeedModule = {
   name: 'core-gamification-catalogue',
   kind: 'reference',
@@ -33,14 +36,20 @@ export const gamificationCatalogueSeed: SeedModule = {
       })
     }
 
+    // Exact match on the trimmed, lower-cased key, like the ETL's `claimSeeded`. Not Prisma's `mode: 'insensitive'`: that is
+    // an unescaped ILIKE, so a `%` or `_` in a key (e.g. 'Ketepatan 90%') would match another row and skip this one.
+    const names = new Set((await prisma.achievement.findMany({ select: { name: true } })).map((r) => naturalKey(r.name)))
     for (const a of ACHIEVEMENT_ROWS) {
-      if (await prisma.achievement.findFirst({ where: { name: { equals: a.name, mode: 'insensitive' } }, select: { id: true } })) continue
+      if (names.has(naturalKey(a.name))) continue
       await prisma.achievement.create({ data: { ...a, ...stamp } })
+      names.add(naturalKey(a.name))
     }
 
+    const titles = new Set((await prisma.challenge.findMany({ select: { title: true } })).map((r) => naturalKey(r.title)))
     for (const c of CHALLENGE_ROWS) {
-      if (await prisma.challenge.findFirst({ where: { title: { equals: c.title, mode: 'insensitive' } }, select: { id: true } })) continue
+      if (titles.has(naturalKey(c.title))) continue
       await prisma.challenge.create({ data: { ...c, ...stamp } })
+      titles.add(naturalKey(c.title))
     }
   },
 }

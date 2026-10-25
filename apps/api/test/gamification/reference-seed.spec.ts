@@ -74,6 +74,21 @@ describe('core-gamification-catalogue (reference seed)', () => {
     expect(await n(db, `select count(*)::text n from gamification_settings`)).toBe(10)
   })
 
+  it('matches keys exactly: a row whose title only looks like a catalogue title with a wildcard (`%`, `_`) does not block it', async () => {
+    const probe = await createTestDatabase()
+    try {
+      await probe.query(`insert into challenges (title, challenge_type, target_value) values ('Ketepatan 900', 'accuracy', 90), ('Ketepatan 90 hari', 'accuracy', 90)`)
+      await probe.query(`insert into achievements (name, legacy_criteria_text) values ('Tepat_Sasaran', 'Contoh')`)
+      await runSeeds([gamificationCatalogueSeed], { prisma: probe.prisma, env: { NODE_ENV: 'production' } })
+      expect(await n(probe, `select count(*)::text n from challenges where title = 'Ketepatan 90%'`)).toBe(1)
+      expect(await n(probe, `select count(*)::text n from challenges`)).toBe(CHALLENGE_ROWS.length + 2)
+      expect(await n(probe, `select count(*)::text n from achievements where name = 'Tepat Sasaran'`)).toBe(1)
+      expect(await n(probe, `select count(*)::text n from achievements`)).toBe(ACHIEVEMENT_ROWS.length + 1)
+    } finally {
+      await probe.drop()
+    }
+  })
+
   it('does not break the demo `gamification` module that runs after it (no twin, the demo-only rows still load)', async () => {
     const demo = await createTestDatabase()
     try {
