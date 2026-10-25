@@ -18,9 +18,7 @@ const props = defineProps<{ distribution: readonly DashboardGrade[]; total: numb
 const labels = computed(() =>
   props.distribution.map((d) => `${d.grade} (${formatNumber(d.pct, { decimals: 1 })}%)`),
 )
-const series = computed(() => [
-  { label: 'Rekod', data: props.distribution.map((d) => d.count) },
-])
+const series = computed(() => [{ label: 'Rekod', data: props.distribution.map((d) => d.count) }])
 </script>
 
 <template>
@@ -41,6 +39,7 @@ const series = computed(() => [
       v-if="distribution.length > 0"
       type="bar"
       horizontal
+      height="lg"
       title="Bilangan rekod mengikut gred"
       table-label="Taburan gred"
       :labels="labels"
