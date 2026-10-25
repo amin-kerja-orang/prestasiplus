@@ -64,12 +64,79 @@ function isGenericServerText(message: string): boolean {
   return GENERIC_SERVER_TEXTS.includes(message.trim().replace(/\.$/, '').toLowerCase())
 }
 
+/**
+ * BM labels (the on-screen field labels of S9 to S12) for the English attribute words in Laravel's
+ * default validation texts; a word not listed gets the generic "Ruang ini" line, never English.
+ * INFERRED copy, mirrors M01 `error-lines.ts` (PR #345): Perlu pengesahan.
+ */
+const FIELD_LABELS: Record<string, string> = {
+  name: 'Nama',
+  email: 'Emel',
+  phone: 'No. Telefon',
+  password: 'Kata Laluan',
+  'password confirmation': 'Sahkan Kata Laluan',
+  'class id': 'Kelas',
+  classroom: 'Kelas',
+  'classroom id': 'Kelas',
+  role: 'Peranan',
+}
+
+const fieldLabel = (attr = ''): string | null => FIELD_LABELS[attr.toLowerCase()] ?? null
+
+const VALIDATION_RULES: Array<[RegExp, (m: RegExpExecArray) => string]> = [
+  [
+    /^The (.+?) field is required\.$/,
+    (m) => (fieldLabel(m[1]) ? `Ruang ${fieldLabel(m[1])} wajib diisi.` : 'Ruang ini wajib diisi.'),
+  ],
+  [
+    /^The (.+?) field must be a valid email address\.$/,
+    (m) =>
+      fieldLabel(m[1])
+        ? `Ruang ${fieldLabel(m[1])} mestilah alamat emel yang sah.`
+        : 'Alamat emel tidak sah.',
+  ],
+  [
+    /^The (.+?) has already been taken\.$/,
+    (m) =>
+      fieldLabel(m[1]) ? `${fieldLabel(m[1])} ini telah digunakan.` : 'Nilai ini telah digunakan.',
+  ],
+  [
+    /^The (.+?) field must be at least (\d+) characters\.$/,
+    (m) => `Ruang ${fieldLabel(m[1]) ?? 'ini'} mestilah sekurang-kurangnya ${m[2]} aksara.`,
+  ],
+  [
+    /^The (.+?) field must not be greater than (\d+) characters\.$/,
+    (m) => `Ruang ${fieldLabel(m[1]) ?? 'ini'} tidak boleh melebihi ${m[2]} aksara.`,
+  ],
+  [
+    /^The (.+?) field confirmation does not match\.$/,
+    (m) =>
+      fieldLabel(m[1])
+        ? `Pengesahan ${fieldLabel(m[1])} tidak sepadan.`
+        : 'Pengesahan tidak sepadan.',
+  ],
+  [
+    /^The selected (.+?) is invalid\.$/,
+    (m) => (fieldLabel(m[1]) ? `Pilihan ${fieldLabel(m[1])} tidak sah.` : 'Pilihan ini tidak sah.'),
+  ],
+]
+
+/** Laravel English default -> BM by exact template; any other text (BM from the mock) passes through. */
+export function translateValidationText(text: string): string {
+  const t = text.trim()
+  for (const [re, fn] of VALIDATION_RULES) {
+    const m = re.exec(t)
+    if (m) return fn(m)
+  }
+  return text
+}
+
 /** One line per validation error, or the server message (FR-M27-48: no M27 copy of its own). */
 export function errorLines(err: unknown): string[] {
   if (!isApiError(err)) return [GENERIC_ERROR]
   if (err.status === 0 || err.code === 'NETWORK_ERROR') return [GENERIC_ERROR]
   const fieldTexts = err.fields ? Object.values(err.fields) : []
-  if (fieldTexts.length > 0) return [...new Set(fieldTexts)]
+  if (fieldTexts.length > 0) return [...new Set(fieldTexts.map(translateValidationText))]
   if (
     err.message === '' ||
     /^HTTP \d+$/.test(err.message) ||
@@ -121,7 +188,9 @@ export function lastLoginText(iso: string | null): string {
 
 /** "{code} · {district} · {state}" with "·" only between the present parts (FR-M27-108, 117). */
 export function schoolMeta(school: Pick<SchoolInfo, 'code' | 'district' | 'state'>): string {
-  return [school.code, school.district, school.state].filter((v) => v !== null && v !== '').join(' · ')
+  return [school.code, school.district, school.state]
+    .filter((v) => v !== null && v !== '')
+    .join(' · ')
 }
 
 /** Phone cell: "-" when empty (BR-M27-36). */

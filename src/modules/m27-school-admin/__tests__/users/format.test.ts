@@ -11,6 +11,7 @@ import {
   lastLoginText,
   phoneText,
   schoolMeta,
+  translateValidationText,
 } from '../../components/users/users-format'
 
 describe('users-format (BR-M27-36, 39)', () => {
@@ -38,7 +39,9 @@ describe('users-format (BR-M27-36, 39)', () => {
   })
 
   it('joins the school meta without empty parts', () => {
-    expect(schoolMeta({ code: 'A1', district: 'PPD X', state: 'Selangor' })).toBe('A1 · PPD X · Selangor')
+    expect(schoolMeta({ code: 'A1', district: 'PPD X', state: 'Selangor' })).toBe(
+      'A1 · PPD X · Selangor',
+    )
     expect(schoolMeta({ code: null, district: null, state: 'Selangor' })).toBe('Selangor')
     expect(schoolMeta({ code: 'A1', district: '', state: 'Selangor' })).toBe('A1 · Selangor')
   })
@@ -57,9 +60,33 @@ describe('users-format (BR-M27-36, 39)', () => {
     expect(errorLines(new Error('boom'))).toEqual([GENERIC_ERROR])
   })
 
+  it('maps the Laravel English validation defaults to BM, unknown attributes to the generic ruang line', () => {
+    const fields = new ApiError({
+      status: 422,
+      code: 'VALIDATION_ERROR',
+      message: 'The given data was invalid.',
+      fields: {
+        name: 'The name field is required.',
+        email: 'The email has already been taken.',
+        password: 'The password field must be at least 8 characters.',
+        x: 'The widget field is required.',
+        y: 'Nama diperlukan.',
+      },
+    })
+    expect(errorLines(fields)).toEqual([
+      'Ruang Nama wajib diisi.',
+      'Emel ini telah digunakan.',
+      'Ruang Kata Laluan mestilah sekurang-kurangnya 8 aksara.',
+      'Ruang ini wajib diisi.',
+      'Nama diperlukan.',
+    ])
+    expect(translateValidationText('The email field must be a valid email address.')).toBe(
+      'Ruang Emel mestilah alamat emel yang sah.',
+    )
+  })
+
   it('shows the generic BM line for a 5xx, a transport text and the API generic English defaults (SWE)', () => {
-    const fail = (status: number, message: string) =>
-      new ApiError({ status, code: 'X', message })
+    const fail = (status: number, message: string) => new ApiError({ status, code: 'X', message })
     expect(errorLines(fail(500, 'Server Error'))).toEqual([GENERIC_ERROR])
     expect(errorLines(fail(503, 'Ralat pelayan.'))).toEqual([GENERIC_ERROR])
     expect(errorLines(fail(0, 'Failed to fetch'))).toEqual([GENERIC_ERROR])
