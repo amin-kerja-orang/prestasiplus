@@ -38,3 +38,15 @@ Merge order: lane A first (seed changes affect re-tests of B and C), then B and 
 | T14 | P3 | Two scope questions for the client | client | S-53, A-KK07 | S-53 "generate only, or print too?"; KK07 primary-school notes in an SPM product (same root as T1?). |
 
 UAT row prefixes: M = Murid, G = Guru, S = Admin Sekolah, A = Admin (Portal Pentadbiran).
+
+## Phase 2 split (2026-10-25)
+
+Phase 1 lanes B (T6, T11) and C (T4, T5, T7–T10) are merged into `claude/wizardly-euler-glqplr` (merge commits `dd67a6b`, `e9e567c`). T8 was reverted by user decision D56 (Command Center keeps opening in a new tab).
+
+| Session | Scope | Owns | Must not edit |
+|---|---|---|---|
+| 1 — Lead (this branch) | Merge, G4/G5 for T0–T3, re-test all P0 rows, user decisions K1–K5/T12, deploy (after user confirmation), merge sessions 2 and 3 | integration; **stale Darjah e2e specs of M03, M05, M25** (fixed by the Lead as part of T1/T2 G4) | — |
+| 2 — Mod Pelajar | `guru-mod-pelajar` G2 → G5 (docs: requirements/design/architecture `v2-guru-mod-pelajar.md`, ADR-0020) | shells, session store, mod-pelajar, M05 `ChapterIndexPage.vue`, `is_test` stamping on repository write paths | any `datasets/`, `seeds/`, spec data |
+| 3 — Cleanup | D54 Darjah sweep (not PKSK), demo data gaps for review queues / m28, stale e2e of **other** modules (m02, m04, m06, m07, m14, m16 and spec-id drift), lint/DS debt, BUG-C2 | `datasets/`, `seeds/`, spec data | `src/shells/**`, `src/stores/session*`, mod-pelajar files, M05 `ChapterIndexPage.vue`, M05/M14 repository write paths; e2e of M03/M05/M25 |
+
+Open user decisions: T12, K1 (guru sees other schools' students in M11/M12), K2 (parent/sponsor on M08 school screens), K3 (BS-02 label), K4 (separate "Terbit" step in M04), K5 ("Sambung Kata" card), T13, T14.
