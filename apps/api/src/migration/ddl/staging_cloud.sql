@@ -347,7 +347,6 @@ create table "staging_cloud"."wellbeing_alerts" (
 create table "staging_cloud"."psychometric_results" (
   "id" bigint,
   "user_id" bigint,
-  "details" jsonb,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -817,8 +816,6 @@ create table "staging_cloud"."support_tickets" (
 create table "staging_cloud"."chatbot_conversations" (
   "id" bigint,
   "user_id" bigint,
-  "visitor_id" text,
-  "start_url" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -881,8 +878,6 @@ create table "staging_cloud"."audit_logs" (
   "user_id" bigint,
   "action" text,
   "subject_type" text,
-  "subject_id" text,
-  "ip" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),
@@ -1008,7 +1003,6 @@ create table "staging_cloud"."sponsors" (
   "id" bigint,
   "organisation" text,
   "category" text,
-  "officer_name" text,
   "status" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
@@ -1033,10 +1027,8 @@ create table "staging_cloud"."foster_sponsorships" (
 
 create table "staging_cloud"."foster_applications" (
   "id" bigint,
-  "applicant_name" text,
   "category" text,
   "status" text,
-  "reason" text,
   "created_at" timestamptz,
   "updated_at" timestamptz,
   "_loaded_at" timestamptz default now(),

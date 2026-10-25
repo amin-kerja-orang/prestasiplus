@@ -686,7 +686,7 @@ The command exists in code on `feature/v2-backend` (`apps/api/package.json`: `ad
 
 Flags (from the command's own usage): `--mode=create|reset`, `--email`, `--confirm` (must repeat `--email`), `--name`, `--reactivate` (reset only), `--password-stdin`. The password is typed twice at the hidden prompt, never on the line. Only without a terminal use `--password-stdin` with a one-line file owned by `ppdeploy`, then `shred -u` it. Use `--mode=reset` for a locked-out admin.
 
-**Expected output:** exit 0 and a line with the user id, the database name, and the number of sessions and reset links ended. The account must change its password at the next login. One `audit_events` row `admin.bootstrap.created` (or `.reset`) is written.
+**Expected output:** exit 0 and a line with the user id, the database name, and the number of sessions and reset links ended. No password change is required at the next login (R39b). One `audit_events` row `admin.bootstrap.created` (or `.reset`) is written.
 
 **STOP if** exit 3 (refused: `create` while an active Admin Pusat exists or the e-mail has an account; nothing written) or exit 2 (usage, confirmation missing, weak password under 12 characters). Do not work around it with raw SQL on `users`, the demo seed, or `ALLOW_DEMO_SEED` (runbook section 21 forbids all three).
 
