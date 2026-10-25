@@ -15,6 +15,9 @@
  * that response (this also proves the page shows the real API and not the in-browser mock). Layout: every
  * screen is measured for horizontal page overflow on the three Playwright projects (375 / 768 / 1280).
  *
+ * What the fresh poc seed leaves EMPTY: interventions (the S7 rows) and the T1 reaction responses. On this
+ * seed only their empty states run; populated S7 rows are checked by count only.
+ *
  * Env: E2E_DEMO_PASSWORD (or BIJAK_ADMIN_PASS / BIJAK_GURU_PASS / BIJAK_ADMIN_SEKOLAH_PASS /
  * BIJAK_STUDENT_PASS; see helpers.ts). Stack: npm run stack:up.
  */

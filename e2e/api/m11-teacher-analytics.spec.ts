@@ -17,10 +17,12 @@
  * each test reads the same endpoint the page reads and compares the rendered numbers with that response.
  * That also proves the page shows the real API and not the in-browser mock.
  *
- * What the fresh poc seed leaves EMPTY (so these paths are only exercised when other data exists, and
- * each has an explicit populated-branch assertion beside the empty one): the teacher's "Paling Aktif"
- * list and activity total (no attempts in the last 30 days), the S6 item-analysis rows, the S4 question
- * list, "Jawapan Salah" and gap cards (the answers have no question rows), and the admin's classes.
+ * What the fresh poc seed leaves EMPTY: the teacher's "Paling Aktif" list and activity total (no attempts
+ * in the last 30 days), the S6 item-analysis rows, the S4 question list, "Jawapan Salah" and gap cards (the
+ * answers have no question rows), and the admin's classes. On this seed only the EMPTY branch runs. The
+ * S1 "Paling Aktif" list, the S6 item rows and the S4 gap cards also carry a populated-branch assertion
+ * (it runs once other data exists); the S4 question list and "Jawapan Salah" are checked for their empty
+ * state only, so their populated rendering is not covered by these specs.
  * Anything the specs REQUIRE from the seed (a pupil, a teacher, the admin owning no class) is asserted
  * with `expect(...)`, never skipped, so a seed change fails loudly. Layout: every screen is
  * measured for horizontal page overflow on the three Playwright projects (375 / 768 / 1280).
