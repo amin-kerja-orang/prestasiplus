@@ -9,8 +9,8 @@
  *
  * The seed builders leave a placeholder tag (`untagged`); `applySeedTags` replaces it from this table
  * when the registry and the review seeds are built. Tagging adds metadata only: no seed question is
- * added, removed or edited. A flagged question is blocked at publish and revision after DSKP-T05 (the
- * gate in `gateErrors` is interim until then). Catalogue ids are the opaque keys M03 issues (`SUBJECT:T4|T5:u|sp:<code>`).
+ * added, removed or edited. A flagged question is blocked at publish and revision by the shared tag
+ * rule (`gateErrors`, DSKP-T05). Catalogue ids are the opaque keys M03 issues (`SUBJECT:T4|T5:u|sp:<code>`).
  */
 import type { CurriculumTag, DskpSpId, DskpUnitId, QuestionDef, TpLevel } from '../domain/types'
 import { catalogueVersion } from '../lib/dskp-source'

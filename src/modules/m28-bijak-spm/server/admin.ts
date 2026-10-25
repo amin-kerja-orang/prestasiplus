@@ -9,7 +9,7 @@
 import { defToIntake, intakeToDef } from '../admin/intake/domain/convert'
 import { validateRevision } from '../admin/intake/domain/validation'
 import type { IntakeQuestion, IntakeStimulus } from '../admin/intake/types'
-import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registry'
+import { BANK, BLUEPRINTS, PAPERS, subjectName } from '../data/registry'
 import { REVIEW_SEEDS } from '../data/review-seed'
 import { checkPaper, type PaperCheck } from '../domain/paper-builder'
 import type {
@@ -40,12 +40,17 @@ import type {
   RevisionContent,
   SchemeLine,
   StimulusSharers,
+  TagSuggestion,
 } from '../domain/admin-types'
 import { leavesOf } from '../domain/paper-model'
+import { tagChanges } from '../domain/tag-audit'
+import { tagIssues } from '../domain/tag-rule'
+import type { TagLookup } from '../domain/tag-rule'
 import { topicOf } from '../domain/topic'
-import { tagLookup, tagLookupFor } from '../lib/dskp-source'
+import { dskpCodeOf, dskpSubjects, tagLookupFor } from '../lib/dskp-source'
 import type {
   Blueprint,
+  DskpSpId,
   PaperDef,
   QuestionDef,
   SchemeDef,
@@ -344,12 +349,15 @@ function reviewQuestion(
 }
 
 /**
- * Publish gate (v2-question-bank 4.8): answer key present and consistent with the marks, and a DSKP
- * topic unless the question is tagged T1-T3 (outside DSKP).
+ * Publish gate (v2-question-bank 4.8): answer key present and consistent with the marks, and the
+ * shared DSKP tag rule (`tagIssues`, the same one submit and revision run) on every question.
+ * `lookup` must know the subjects of `qs` (load them first with `tagLookupFor`): a subject that is
+ * not loaded makes its units look absent.
  */
 export function gateErrors(
   qs: readonly QuestionDef[],
-  schemeOf: SchemeLookup = getScheme,
+  schemeOf: SchemeLookup,
+  lookup: TagLookup,
 ): string[] {
   const out: string[] = []
   qs.forEach((q, i) => {
@@ -367,13 +375,38 @@ export function gateErrors(
           out.push(`${n} ${l.label}: markah skema ${sc.marks} tidak sama dengan markah ${l.marks}`)
       }
     }
-    // T1-T3 content is outside DSKP and has no unit. A seed that still carries the `perlu-semakan`
-    // marker is not refused here yet: DSKP-T05 replaces this check with the shared `tagIssues` rule.
-    const c = q.curriculum
-    if (!c.unitId && c.formOrigin !== 'T1-T3' && c.review !== 'perlu-semakan')
-      out.push(`${n}: topik DSKP belum dipilih`)
+    // One tag rule for submit, revision and publish; a flagged question (`review`) has no
+    // tingkatan, unit or SP, so the rule refuses it until a person tags it (AC-07.5).
+    for (const issue of tagIssues(q.curriculum, lookup)) out.push(`${n}: ${issue.message}`)
   })
   return out
+}
+
+/**
+ * The tag rule for a revision that only changes the stem: the live tag must pass it, so a flagged
+ * question cannot be revised or re-published unchanged (AC-07.5). Same messages as a full edit.
+ */
+export function liveTagErrors(q: QuestionDef, lookup: TagLookup): string[] {
+  return tagIssues(q.curriculum, lookup).map((i) => `Soalan: ${i.message}`)
+}
+
+/** Subjects whose catalogue must be loaded to resolve the units of `qs` (a tag without a unit needs none). */
+const tagSubjectsOf = (qs: Iterable<QuestionDef | undefined>): Set<string> => {
+  const out = new Set<string>()
+  for (const q of qs) if (q?.curriculum.unitId) out.add(q.curriculum.subject)
+  return out
+}
+
+/** Loads (once per subject, M03 caches) what is needed to resolve the tags of `qs`. */
+const lookupFor = (qs: Iterable<QuestionDef | undefined>): Promise<TagLookup> =>
+  tagLookupFor(tagSubjectsOf(qs))
+
+/** A tag that passed the rule is complete: the `perlu-semakan` marker is cleared (as `normaliseTag` does). */
+function settled(q: QuestionDef): QuestionDef {
+  if (!q.curriculum.review) return q
+  const { review: _review, ...curriculum } = q.curriculum
+  void _review
+  return { ...q, curriculum }
 }
 
 function newPaper(id: string, bp: Blueprint, now: number): AdminPaper {
@@ -449,21 +482,38 @@ export class AdminOps {
     return s.batchId && !this.host.slice().dynSeeds?.[key] ? undefined : s
   }
 
-  /** Queues the units of a submitted intake batch for review (the gate already passed). */
-  enqueueSeeds(seeds: ReviewSeed[]): void {
+  /**
+   * Queues the units of a submitted intake batch for review (the gate already passed). The first
+   * history entry of each question records its first tagging (AC-10.1); `suggestions` holds what the
+   * AI said per bank question id, so the entry carries it beside the final value (AC-10.2 when none).
+   */
+  enqueueSeeds(
+    seeds: ReviewSeed[],
+    suggestions: ReadonlyMap<string, TagSuggestion | undefined> = new Map(),
+  ): void {
     const slice = this.host.slice()
     slice.dynSeeds ??= {}
     const at = this.host.now()
     for (const seed of seeds) {
-      slice.dynSeeds[seed.key] = plain(seed)
-      registerSeed(slice.dynSeeds[seed.key]!)
-      for (const q of seed.questions) {
+      // The gate passed, so the tag is complete: it no longer needs the `perlu-semakan` marker.
+      const stored = plain({ ...seed, questions: seed.questions.map(settled) })
+      slice.dynSeeds[seed.key] = stored
+      registerSeed(stored)
+      for (const q of stored.questions) {
+        const tag = tagChanges(undefined, q.curriculum, suggestions.get(q.id))
         this.review[q.id] = {
           status: 'semakan',
           version: 1,
           submittedAt: at,
           history: [
-            { at, by: seed.uploader, version: 1, action: 'Dihantar untuk semakan', note: seed.source },
+            {
+              at,
+              by: seed.uploader,
+              version: 1,
+              action: 'Dihantar untuk semakan',
+              note: seed.source,
+              ...(tag.length ? { tag } : {}),
+            },
           ],
         }
       }
@@ -484,7 +534,7 @@ export class AdminOps {
 
   /* ---------------------------------------------------------------- review queue */
 
-  private unitItem(seed: ReviewSeed): QueueItem {
+  private unitItem(seed: ReviewSeed, lookup: TagLookup): QueueItem {
     const q0 = seed.questions[0]!
     const rec = this.review[q0.id]!
     return {
@@ -496,7 +546,7 @@ export class AdminOps {
       subjectName: subjectName(seed.subject),
       kertas: seed.kertas,
       kind: kindOf(q0),
-      topic: topicOf(q0.curriculum, tagLookup()),
+      topic: topicOf(q0.curriculum, lookup),
       preview: previewOf(q0),
       previewPlain: plainMath(previewOf(q0)),
       marks: seed.questions.reduce((n, q) => n + marksOf(q), 0),
@@ -509,7 +559,7 @@ export class AdminOps {
     }
   }
 
-  private revisionItem(qid: string): QueueItem {
+  private revisionItem(qid: string, tags: TagLookup): QueueItem {
     const q = getQ(qid)!
     const rec = this.review[qid]!
     const rev = rec.revision!
@@ -525,7 +575,7 @@ export class AdminOps {
       subjectName: subjectName(nq.curriculum.subject),
       kertas: kertasOf(qid),
       kind: kindOf(nq, lookup),
-      topic: topicOf(nq.curriculum, tagLookup()),
+      topic: topicOf(nq.curriculum, tags),
       preview: previewOf(nq, rev.stem),
       previewPlain: plainMath(previewOf(nq, rev.stem)),
       marks: marksOf(nq, lookup),
@@ -538,14 +588,27 @@ export class AdminOps {
     }
   }
 
-  private allItems(): QueueItem[] {
+  /** The questions whose tags the review queue formats (the seed units and the pending revisions). */
+  private queueQuestions(): QuestionDef[] {
+    const qs: QuestionDef[] = []
+    for (const seed of allSeeds(this.host.slice())) qs.push(...seed.questions)
+    for (const [qid, rec] of Object.entries(this.review)) {
+      if (!rec.revision) continue
+      const live = getQ(qid)
+      if (live) qs.push(live)
+      if (rec.revision.content) qs.push(rec.revision.content.question)
+    }
+    return qs
+  }
+
+  private allItems(lookup: TagLookup): QueueItem[] {
     const items: QueueItem[] = []
     for (const seed of allSeeds(this.host.slice())) {
       if (seed.questions.some((q) => this.review[q.id]?.status !== 'terbit' || !this.review[q.id]))
-        items.push(this.unitItem(seed))
+        items.push(this.unitItem(seed, lookup))
     }
     for (const [qid, rec] of Object.entries(this.review))
-      if (rec.revision) items.push(this.revisionItem(qid))
+      if (rec.revision) items.push(this.revisionItem(qid, lookup))
     return items
   }
 
@@ -560,7 +623,7 @@ export class AdminOps {
     questions: Record<QuestionStatus, number>
   }> {
     await this.host.tick()
-    const all = this.allItems()
+    const all = this.allItems(await lookupFor(this.queueQuestions()))
     const counts: Record<QuestionStatus, number> = { semakan: 0, terbit: 0, draf: 0, ditolak: 0 }
     const questions: Record<QuestionStatus, number> = { semakan: 0, terbit: 0, draf: 0, ditolak: 0 }
     for (const i of all) {
@@ -588,9 +651,10 @@ export class AdminOps {
       if (!rec?.revision || !getQ(qid))
         throw this.host.error('not_found', 'Item semakan tidak ditemui')
       const q = getQ(qid)!
-      const item = this.revisionItem(qid)
       const rev = rec.revision
       const content = rev.content
+      const lookup = await lookupFor([q, content?.question])
+      const item = this.revisionItem(qid, lookup)
       return {
         item,
         questions: [
@@ -607,7 +671,9 @@ export class AdminOps {
         history: rec.history,
         gate: [
           ...(rev.stem.trim() ? [] : ['Teks soalan tidak boleh kosong']),
-          ...(content ? gateErrors([content.question], (id) => content.schemes[id]) : []),
+          ...(content
+            ? gateErrors([content.question], (id) => content.schemes[id], lookup)
+            : liveTagErrors(q, lookup)),
         ],
         liveStem: q.stem,
         revisionNote: rec.revision.note,
@@ -616,13 +682,14 @@ export class AdminOps {
     const seed = this.seed(key)
     if (!seed) throw this.host.error('not_found', 'Item semakan tidak ditemui')
     const rec = this.review[seed.questions[0]!.id]!
+    const lookup = await lookupFor(seed.questions)
     return {
-      item: this.unitItem(seed),
+      item: this.unitItem(seed, lookup),
       questions: seed.questions.map((q) => reviewQuestion(q)),
       ...(seed.group ? this.groupParts(seed.group.def.id) : {}),
       history: rec.history,
       ...(rec.reason ? { reason: rec.reason } : {}),
-      gate: rec.status === 'terbit' ? [] : gateErrors(seed.questions),
+      gate: rec.status === 'terbit' ? [] : gateErrors(seed.questions, getScheme, lookup),
     }
   }
 
@@ -660,10 +727,16 @@ export class AdminOps {
       const rev = rec.revision
       if (d.action === 'terbit') {
         if (!rev.stem.trim()) return { ok: false, errors: ['Teks soalan tidak boleh kosong'] }
-        if (rev.content) {
-          const errors = gateErrors([rev.content.question], (id) => rev.content!.schemes[id])
-          if (errors.length) return { ok: false, errors }
-        }
+        // Publish gate: a full edit is checked as a whole; a stem-only edit keeps the live tag, which
+        // must still pass the rule (a flagged question cannot be re-published unchanged, AC-07.5).
+        const live = getQ(qid)
+        const lookup = await lookupFor([live, rev.content?.question])
+        const errors = rev.content
+          ? gateErrors([rev.content.question], (id) => rev.content!.schemes[id], lookup)
+          : live
+            ? liveTagErrors(live, lookup)
+            : []
+        if (errors.length) return { ok: false, errors }
         rec.history.push(
           entry(rev.version, 'Diterbitkan', rev.note),
           entry(rec.version, 'Diarkibkan (digantikan)'),
@@ -697,7 +770,7 @@ export class AdminOps {
     if (recs.some((r) => r.status !== 'semakan'))
       return { ok: false, errors: ['Item ini tidak lagi menunggu semakan'] }
     if (d.action === 'terbit') {
-      const errors = gateErrors(seed.questions)
+      const errors = gateErrors(seed.questions, getScheme, await lookupFor(seed.questions))
       if (errors.length) return { ok: false, errors }
       for (const r of recs) {
         r.status = 'terbit'
@@ -748,6 +821,10 @@ export class AdminOps {
     if (!q || this.statusOf(qid) !== 'terbit')
       return { ok: false, errors: ['Hanya soalan Terbit boleh disunting'] }
     if (!stem.trim()) return { ok: false, errors: ['Teks soalan tidak boleh kosong'] }
+    // The live tag must pass the shared rule before a new version may be made (AC-07.5): a flagged
+    // question is tagged in Sunting (full edit) first.
+    const tagErrors = liveTagErrors(q, await lookupFor([q]))
+    if (tagErrors.length) return { ok: false, errors: tagErrors }
     const at = this.host.now()
     const rec = (this.review[qid] ??= {
       status: 'terbit',
@@ -779,7 +856,7 @@ export class AdminOps {
       throw this.host.error('bad_request', 'Hanya soalan Terbit boleh disunting')
     const stimulus = q.groupId ? getStimulus(q.groupId) : undefined
     return {
-      row: this.bankRow(qid),
+      row: this.bankRow(qid, await lookupFor([q])),
       question: defToIntake(q, getScheme, '1', stimulus?.id),
       ...(stimulus ? { stimulus: plain(stimulus) } : {}),
       pendingRevision: !!this.review[qid]?.revision,
@@ -829,8 +906,12 @@ export class AdminOps {
       ...(q.groupId ? { groupId: q.groupId } : {}),
       newPartId: (j) => `${qid}-n${at.toString(36)}${j}`,
     })
+    // The tag passed the rule, so it is complete: the `perlu-semakan` marker goes (as the editor does).
+    const question = settled(content.question)
+    // AC-10.3: the new version's history shows the before/after of the tag (live tag vs the edited one).
+    const tagChange = tagChanges(q.curriculum, question.curriculum)
     const revision: RevisionContent = {
-      question: content.question,
+      question,
       schemes: content.schemes,
       ...(nextStimulus ? { stimulus: nextStimulus } : {}),
     }
@@ -844,7 +925,7 @@ export class AdminOps {
     rec.lastVersion = next
     rec.revision = {
       version: next,
-      stem: content.question.stem,
+      stem: question.stem,
       note: note.trim(),
       at,
       content: revision,
@@ -855,6 +936,7 @@ export class AdminOps {
       version: rec.revision.version,
       action: `Versi ${rec.revision.version} dicipta (Draf, dihantar untuk semakan)`,
       ...(note.trim() ? { note: note.trim() } : {}),
+      ...(tagChange.length ? { tag: tagChange } : {}),
     })
     this.host.persist()
     return { ok: true, errors: [] }
@@ -871,16 +953,25 @@ export class AdminOps {
     }))
   }
 
-  private bankRow(qid: string): BankRow {
+  /** `lookup` must know the subject of the question's unit (load it with `lookupFor` first). */
+  private bankRow(qid: string, lookup: TagLookup): BankRow {
     const q = getQ(qid)!
+    const c = q.curriculum
     return {
       id: qid,
       ...(q.groupId ? { groupId: q.groupId, ...groupSizeProp(q.groupId) } : {}),
-      subject: q.curriculum.subject,
-      subjectName: subjectName(q.curriculum.subject),
+      subject: c.subject,
+      subjectName: subjectName(c.subject),
       kertas: kertasOf(qid),
       kind: kindOf(q),
-      topic: topicOf(q.curriculum, tagLookup()),
+      topic: topicOf(c, lookup),
+      formOrigin: c.formOrigin,
+      unitId: c.unitId,
+      unitTitle: (c.unitId && lookup.unit(c.unitId)?.title) || null,
+      spCodes: c.spIds.map(dskpCodeOf),
+      tp: c.tp,
+      kbat: c.kbat,
+      tagReview: c.review === 'perlu-semakan',
       marks: marksOf(q),
       preview: previewOf(q),
       previewPlain: plainMath(previewOf(q)),
@@ -903,19 +994,35 @@ export class AdminOps {
     await this.host.tick()
     const status = f.status ?? 'terbit'
     const term = f.q?.trim().toLowerCase()
-    return this.allQuestionIds()
-      .map((id) => this.bankRow(id))
+    const ids = this.allQuestionIds()
+    const lookup = await lookupFor(ids.map(getQ))
+    // Rows and tag filters are built in one pass, so the page's count is the length of this list.
+    return ids
+      .map((id) => ({ row: this.bankRow(id, lookup), tag: getQ(id)!.curriculum }))
       .filter(
-        (r) =>
+        ({ row: r, tag: t }) =>
           (status === 'semua' || r.status === status) &&
           (!f.subject || r.subject === f.subject) &&
           (!f.kertas || r.kertas === f.kertas) &&
           (!f.kind || r.kind === f.kind) &&
+          (!f.formOrigin || t.formOrigin === f.formOrigin) &&
+          (!f.unitId || t.unitId === f.unitId) &&
+          (!f.spId || t.spIds.includes(f.spId as DskpSpId)) &&
+          (f.tp === undefined || t.tp === f.tp) &&
+          (!f.kbat ||
+            (f.kbat === 'ya'
+              ? t.kbat !== null
+              : f.kbat === 'tidak'
+                ? t.kbat === null
+                : t.kbat === f.kbat)) &&
+          (!f.tagReview || r.tagReview) &&
           (!term ||
             r.preview.toLowerCase().includes(term) ||
             r.id.toLowerCase().includes(term) ||
-            r.topic.toLowerCase().includes(term)),
+            r.topic.toLowerCase().includes(term) ||
+            r.spCodes.some((c) => c.toLowerCase().includes(term))),
       )
+      .map(({ row }) => row)
       .sort(
         (a, b) =>
           a.subject.localeCompare(b.subject) || a.kertas - b.kertas || a.id.localeCompare(b.id),
@@ -924,18 +1031,31 @@ export class AdminOps {
 
   async bankStats(): Promise<BankStats> {
     await this.host.tick()
-    const rows = this.allQuestionIds().map((id) => this.bankRow(id))
+    const rows = this.allQuestionIds().map((id) => ({
+      subject: getQ(id)!.curriculum.subject,
+      status: this.statusOf(id),
+    }))
+    // Only subjects that hold at least one question (any status) get a tile, so the 13 catalogue
+    // subjects do not show ten empty ones (D11: computed from the data). Catalogue order first.
+    const order = dskpSubjects().map((s) => s.code as string)
+    const rank = (code: string): number => {
+      const i = order.indexOf(code)
+      return i < 0 ? order.length : i
+    }
+    const codes = [...new Set(rows.map((r) => r.subject))].sort(
+      (a, b) => rank(a) - rank(b) || a.localeCompare(b),
+    )
     // "Jumlah soalan" is the Terbit bank (what the list shows by default and what the subject cards
     // count); questions still in review are reported on their own, never added into the total.
     return {
       total: rows.filter((r) => r.status === 'terbit').length,
       semakan: rows.filter((r) => r.status === 'semakan').length,
-      bySubject: SUBJECTS.map((s) => {
-        const mine = rows.filter((r) => r.subject === s.code)
+      bySubject: codes.map((code) => {
+        const mine = rows.filter((r) => r.subject === code)
         const n = (st: QuestionStatus) => mine.filter((r) => r.status === st).length
         return {
-          code: s.code,
-          name: s.name,
+          code,
+          name: subjectName(code),
           terbit: n('terbit'),
           semakan: n('semakan'),
           draf: n('draf'),
@@ -951,7 +1071,7 @@ export class AdminOps {
     if (!q) throw this.host.error('not_found', 'Soalan tidak ditemui')
     const rec = this.review[qid]
     return {
-      row: this.bankRow(qid),
+      row: this.bankRow(qid, await lookupFor([q])),
       question: reviewQuestion(q),
       ...(q.groupId ? this.groupParts(q.groupId) : {}),
       history: rec?.history ?? [
@@ -1009,7 +1129,7 @@ export class AdminOps {
       })
   }
 
-  private builderQuestion(qid: string): BuilderQuestion {
+  private builderQuestion(qid: string, lookup: TagLookup): BuilderQuestion {
     const q = getQ(qid)!
     const st = q.groupId ? getStimulus(q.groupId) : undefined
     return {
@@ -1019,7 +1139,7 @@ export class AdminOps {
       preview: previewOf(q),
       marks: marksOf(q),
       kind: kindOf(q),
-      topic: topicOf(q.curriculum, tagLookup()),
+      topic: topicOf(q.curriculum, lookup),
       status: this.statusOf(qid),
       kertas: kertasOf(qid),
       subject: q.curriculum.subject,
@@ -1038,6 +1158,7 @@ export class AdminOps {
         kertasOf(qid) === paper.kertas,
     )
     const ids = [...new Set([...used, ...candidates])]
+    const lookup = await lookupFor(ids.map(getQ))
     const groupIds = [...new Set(ids.map(groupOf).filter((g): g is string => !!g))]
     const groups: BuilderGroup[] = groupIds.map((gid) => ({
       id: gid,
@@ -1048,7 +1169,7 @@ export class AdminOps {
     return {
       paper,
       blueprint: bp ? blueprintView(bp) : null,
-      questions: ids.map((qid) => this.builderQuestion(qid)),
+      questions: ids.map((qid) => this.builderQuestion(qid, lookup)),
       groups,
     }
   }
