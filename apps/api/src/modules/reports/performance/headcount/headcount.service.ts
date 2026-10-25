@@ -325,11 +325,13 @@ export class HeadcountService {
     const dropping = parsed.data.action === 'drop'
     const updated = await this.prisma.transaction(async (tx) => {
       const n = await this.repo.setDropped(config.id, [...new Set(parsed.data.studentIds)], dropping, this.clock.now())
-      // The count only, never the pupil ids.
-      await this.record(tx, AUDIT_ACTIONS.HEADCOUNT_STUDENTS_DROPPED, ctx, config.id, {
-        action: parsed.data.action,
-        [dropping ? 'dropped' : 'restored']: n,
-      })
+      // The count only, never the pupil ids. A call that changed nothing writes nothing and leaves no row.
+      if (n > 0) {
+        await this.record(tx, AUDIT_ACTIONS.HEADCOUNT_STUDENTS_DROPPED, ctx, config.id, {
+          action: parsed.data.action,
+          [dropping ? 'dropped' : 'restored']: n,
+        })
+      }
       return n
     })
     return { updated }
