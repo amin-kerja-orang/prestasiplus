@@ -18,7 +18,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { isHttpMode } from '@/api'
+import { isHttpMode, wireId } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useDebounce, useFlash, usePageMeta, useSession } from '@/composables'
 import { DsFormBar, DsFormField, DsLoadError, DsPage, DsPanel } from '@/ds'
@@ -105,7 +105,8 @@ interface FormState {
   title: string
   description: string
   category: VideoCategory | ''
-  subjectId: number | ''
+  /** The id as the API gave it (a number in mock mode, a string in http mode); '' = none. */
+  subjectId: number | string
   visibility: VideoVisibility
 }
 
@@ -175,7 +176,7 @@ function body(): VideoInput {
     title: form.title.trim(),
     description: form.description.trim() === '' ? null : form.description,
     category: form.category as VideoCategory,
-    subjectId: form.subjectId === '' ? null : form.subjectId,
+    subjectId: form.subjectId === '' ? null : wireId(form.subjectId),
     visibility: form.visibility,
   }
 }
@@ -208,7 +209,8 @@ const subjectItems = computed(() => [
 const subjectModel = computed({
   get: () => (form.subjectId === '' ? 'none' : String(form.subjectId)),
   set: (v: string) => {
-    form.subjectId = v === 'none' ? '' : Number(v)
+    // Keep the id as the list holds it; `body()` puts it on the wire as the transport expects.
+    form.subjectId = v === 'none' ? '' : (subjects.value.find((s) => String(s.id) === v)?.id ?? '')
   },
 })
 const categoryModel = computed({
