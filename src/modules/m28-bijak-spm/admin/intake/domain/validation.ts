@@ -2,6 +2,8 @@
  * Quality gate "Hantar untuk semakan" (v2-question-bank 4.8): the same function runs in the review
  * screen (live list of what is missing) and in the server (no bypass, E9).
  */
+import { tagIssues } from '../../../domain/tag-rule'
+import type { TagLookup } from '../../../domain/tag-rule'
 import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
 import { groupsOf } from './grouping'
 import { questionMarks, schemeTotal } from './marks'
@@ -24,6 +26,10 @@ export function fieldName(f: string): string {
       return 'unit DSKP'
     case 'tag.sp':
       return 'SP'
+    case 'tag.tp':
+      return 'TP'
+    case 'tag.kbat':
+      return 'Aras KBAT'
     case 'marks':
       return 'markah'
     case 'stem':
@@ -35,8 +41,13 @@ export function fieldName(f: string): string {
   }
 }
 
+/**
+ * `lookup` must know the subjects of the batch (load them first with `tagLookupFor`); the tag part
+ * is the shared rule `tagIssues`, the same one the publish gate runs.
+ */
 export function validateBatch(
   batch: Pick<IntakeBatch, 'questions' | 'stimuli' | 'source' | 'copyright'>,
+  lookup: TagLookup,
 ): IntakeIssue[] {
   const issues: IntakeIssue[] = []
   const add = (q: IntakeQuestion | undefined, where: string, message: string): void => {
@@ -88,13 +99,7 @@ export function validateBatch(
     if (questionMarks(q) <= 0 && q.type !== 'mcq' && q.parts.length > 0)
       add(q, w, 'Jumlah markah soalan ialah 0.')
 
-    const t = q.tag
-    if (!t.subject || !t.level) add(q, w, 'Subjek dan tingkatan perlu ditetapkan.')
-    if (!outsideDskp(t)) {
-      if (t.unit === null) add(q, w, 'Unit DSKP belum dipilih.')
-      if (t.sp.length === 0) add(q, w, 'Standard Pembelajaran (SP) belum dipilih.')
-    }
-    if (!(t.tp >= 1 && t.tp <= 6)) add(q, w, 'Tahap Penguasaan (TP) mesti antara 1 dan 6.')
+    for (const issue of tagIssues(q.tag, lookup)) add(q, w, issue.message)
     for (const f of lowToConfirm(q))
       add(q, w, `Medan keyakinan rendah belum disahkan: ${fieldName(f)}.`)
 
@@ -116,19 +121,21 @@ export function validateBatch(
 
 /**
  * The same gate for one question edited from the bank ("Sunting"): messages only, the question
- * number is dropped. A legacy question that never carried an SP is not blocked on SP alone.
+ * number is dropped. No question is waived: a bank question without a complete tag must be tagged
+ * before it can be revised (AC-07.5).
  */
 export function validateRevision(
   q: IntakeQuestion,
   stimulus: IntakeStimulus | undefined,
-  legacyTag: boolean,
+  lookup: TagLookup,
 ): string[] {
-  return validateBatch({
-    questions: [{ ...q, ...(stimulus ? { stimulusId: stimulus.id } : {}) }],
-    stimuli: stimulus ? [stimulus] : [],
-    source: '-',
-    copyright: '-',
-  })
-    .filter((i) => !(legacyTag && i.message.startsWith('Standard Pembelajaran')))
-    .map((i) => (i.questionId ? `${i.where.replace(/^Soalan 1/, 'Soalan')}: ${i.message}` : i.message))
+  return validateBatch(
+    {
+      questions: [{ ...q, ...(stimulus ? { stimulusId: stimulus.id } : {}) }],
+      stimuli: stimulus ? [stimulus] : [],
+      source: '-',
+      copyright: '-',
+    },
+    lookup,
+  ).map((i) => (i.questionId ? `${i.where.replace(/^Soalan 1/, 'Soalan')}: ${i.message}` : i.message))
 }

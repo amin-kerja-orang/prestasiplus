@@ -11,6 +11,7 @@ import type {
   StimulusDef,
   SubjectCode,
 } from '../../domain/types'
+import type { TagSuggestion } from '../../domain/admin-types'
 
 /* ---------------------------------------------------------------------------------- OCR input */
 
@@ -71,6 +72,8 @@ export interface IntakeQuestion {
   /** Answer key of a question without parts (MCQ key, short answer, essay points). */
   scheme?: SchemeDef
   tag: CurriculumTag
+  /** What the AI suggested for the tag (DSKP v2); the tag itself is pre-filled with it. */
+  tagSuggestion?: TagSuggestion
   /** Stimulus group (the figure is stored once on the batch). */
   stimulusId?: string
   /** Source page (1-based). */

@@ -13,7 +13,7 @@
  *   Mana-mana 2 x 1 m               "any N of M" group over the scheme's points
  */
 import type { LeafKind, PointCode, PointDef, SchemeDef } from '../../../domain/types'
-import { emptyTag, guessUnit, tagWithUnit } from '../lib/dskp'
+import { emptyTag } from '../../../domain/tag-edit'
 import type {
   ExtractedPaper,
   ExtractInput,
@@ -182,13 +182,10 @@ export function parsePaper(input: ExtractInput): ExtractedPaper {
       }
     })
     const type = typeOf({ ...d, marks: stemRaw.marks })
-    const unit = guessUnit(input.subject, `${stemRaw.text} ${parts.map((p) => p.prompt).join(' ')}`)
-    const lowFields: string[] = []
-    let tag = tagWithUnit(emptyTag(input.subject), unit)
-    if (unit) {
-      tag = { ...tag, sp: [`${unit.code.slice(-2)}.1`] }
-      lowFields.push('tag.sp')
-    } else lowFields.push('tag.unit')
+    // Interim until DSKP-T06 (catalogue-based suggestion): the prototype unit guess is gone, so the
+    // tag starts empty and the unit is always left for a person.
+    const lowFields: string[] = ['tag.unit']
+    const tag = emptyTag(input.subject)
     const marks =
       type === 'mcq' ? (stemRaw.marks ?? 1) : parts.length > 0 ? 0 : (stemRaw.marks ?? 0)
     if (type !== 'mcq' && parts.length === 0 && stemRaw.marks === undefined) lowFields.push('marks')

@@ -8,9 +8,12 @@ import { computed } from 'vue'
 
 import { DsCluster, DsFormField, DsNativeSelect, DsStack, DsText } from '@/ds'
 
-import type { KbatLevel, LeafKind } from '../../../domain/types'
+import { KBAT_LEVELS } from '../../../domain/types'
+import type { DskpSpId, DskpUnitId, FormOrigin, KbatLevel, LeafKind, TpLevel } from '../../../domain/types'
 import RichText from '../../../components/RichText.vue'
-import { unitByCode, unitsFor, tagWithUnit } from '../lib/dskp'
+import { normaliseTag, setFormOrigin, setUnit as setTagUnit, toggleSp } from '../../../domain/tag-edit'
+import type { CurriculumTag } from '../../../domain/types'
+import { catalogueVersion, tagLookup, useDskpSubject } from '../../../lib/dskp-source'
 import { fieldName, fieldsToConfirm } from '../domain/validation'
 import type { IntakePart, IntakeQType, IntakeQuestion } from '../types'
 import SchemeEditor from './SchemeEditor.vue'
@@ -40,7 +43,12 @@ const MODES: { value: LeafKind; label: string }[] = [
   { value: 'table_fill', label: 'Isi jadual' },
 ]
 const LETTERS = ['A', 'B', 'C', 'D', 'E']
-const KBAT_LEVELS: KbatLevel[] = ['Mengaplikasi', 'Menganalisis', 'Menilai', 'Mencipta']
+const KBAT_LABEL: Record<KbatLevel, string> = {
+  mengaplikasi: 'Mengaplikasi',
+  menganalisis: 'Menganalisis',
+  menilai: 'Menilai',
+  mencipta: 'Mencipta',
+}
 
 function set(patch: Partial<IntakeQuestion>): void {
   const next = { ...q.value, ...patch }
@@ -99,30 +107,39 @@ function removePart(i: number): void {
   set({ parts: q.value.parts.filter((_, k) => k !== i) })
 }
 
-/* tag */
-const units = computed(() => unitsFor(q.value.tag.subject))
-function setUnit(code: string): void {
-  const u = unitByCode(code)
-  set({ tag: tagWithUnit(q.value.tag, u) })
+/* tag (interim wiring over the catalogue; DSKP-T07 rewrites this block with DskpSpPicker) */
+const dskp = useDskpSubject(() => q.value.tag.subject)
+const tingkatan = computed(() =>
+  q.value.tag.formOrigin === 'T4' || q.value.tag.formOrigin === 'T5' ? q.value.tag.formOrigin : null,
+)
+const units = computed(() =>
+  dskp.view.value && tingkatan.value ? dskp.view.value.units(tingkatan.value) : [],
+)
+const sps = computed(() =>
+  dskp.view.value && q.value.tag.unitId
+    ? dskp.view.value.sps(q.value.tag.unitId)
+    : [],
+)
+function commitTag(tag: CurriculumTag): void {
+  set({ tag: normaliseTag(tag, tagLookup(), catalogueVersion()) })
 }
-function setForm(origin: 'T1-T3' | 'T4' | 'T5'): void {
-  set({
-    tag: {
-      ...q.value.tag,
-      formOrigin: origin,
-      level: origin === 'T1-T3' ? q.value.tag.level : origin,
-      ...(origin === 'T1-T3' ? { unit: null, unitLabel: '' } : {}),
-    },
-  })
+function setForm(origin: string): void {
+  commitTag(setFormOrigin(q.value.tag, origin === '' ? null : (origin as FormOrigin)))
+}
+function setUnit(id: string): void {
+  commitTag(setTagUnit(q.value.tag, id === '' ? null : (id as DskpUnitId), tagLookup()))
+}
+function setSp(id: string, on: boolean): void {
+  commitTag(toggleSp(q.value.tag, id as DskpSpId, on))
+}
+function setTp(v: string | number | undefined): void {
+  const n = v === undefined || v === '' ? null : Number(v)
+  set({ tag: { ...q.value.tag, tp: n as TpLevel | null } })
 }
 /** Low-confidence fields to confirm (no unit or SP confirmation for T1-T3). */
 const toConfirm = computed(() => fieldsToConfirm(q.value))
-const spText = computed(() => q.value.tag.sp.join(', '))
-function setSp(text: string): void {
-  set({ tag: { ...q.value.tag, sp: text.split(',').map((s) => s.trim()).filter(Boolean) } })
-}
 function setKbat(v: string): void {
-  set({ tag: { ...q.value.tag, kbat: (KBAT_LEVELS as string[]).includes(v) ? (v as KbatLevel) : null } })
+  set({ tag: { ...q.value.tag, kbat: (KBAT_LEVELS as readonly string[]).includes(v) ? (v as KbatLevel) : null } })
 }
 function confirm(field: string, on: boolean): void {
   const c = new Set(q.value.confirmed)
@@ -354,10 +371,11 @@ function insertMath(field: 'stem'): void {
         <label class="flex min-w-0 flex-col gap-1 text-sm">
           <span class="text-muted">Asal tingkatan</span>
           <DsNativeSelect
-            :model-value="q.tag.formOrigin"
+            :model-value="q.tag.formOrigin ?? ''"
             data-testid="q-form"
-            @update:model-value="setForm(String($event) as 'T1-T3' | 'T4' | 'T5')"
+            @update:model-value="setForm(String($event))"
           >
+            <option value="">Pilih tingkatan</option>
             <option value="T4">Tingkatan 4</option>
             <option value="T5">Tingkatan 5</option>
             <option value="T1-T3">Tingkatan 1-3 (di luar DSKP)</option>
@@ -366,26 +384,25 @@ function insertMath(field: 'stem'): void {
         <label class="flex min-w-0 flex-col gap-1 text-sm @3xl:col-span-2">
           <span class="text-muted">Unit</span>
           <DsNativeSelect
-            :model-value="q.tag.unit ?? ''"
-            :disabled="q.tag.formOrigin === 'T1-T3'"
+            :model-value="q.tag.unitId ?? ''"
+            :disabled="!tingkatan || !dskp.view.value"
             data-testid="q-unit"
             @update:model-value="setUnit(String($event))"
           >
             <option value="">Pilih unit</option>
-            <option v-for="u in units" :key="u.code" :value="u.code">
-              {{ u.form }} - {{ u.label }}
-            </option>
+            <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} {{ u.title }}</option>
           </DsNativeSelect>
         </label>
         <label class="flex min-w-0 flex-col gap-1 text-sm">
           <span class="text-muted">TP (1-6)</span>
           <UInput
-            :model-value="q.tag.tp"
+            :model-value="q.tag.tp ?? undefined"
             type="number"
             min="1"
             max="6"
             class="w-full"
-            @update:model-value="set({ tag: { ...q.tag, tp: Number($event) || 0 } })"
+            data-testid="q-tp"
+            @update:model-value="setTp"
           />
         </label>
         <DsFormField native for="q-kbat" label="Aras KBAT (pilihan)">
@@ -396,20 +413,30 @@ function insertMath(field: 'stem'): void {
             @update:model-value="setKbat(String($event))"
           >
             <option value="">— Bukan KBAT —</option>
-            <option v-for="k in KBAT_LEVELS" :key="k" :value="k">{{ k }}</option>
+            <option v-for="k in KBAT_LEVELS" :key="k" :value="k">{{ KBAT_LABEL[k] }}</option>
           </DsNativeSelect>
         </DsFormField>
-        <label class="flex min-w-0 flex-col gap-1 text-sm @md:col-span-2 @3xl:col-span-4">
-          <span class="text-muted">SP (asingkan dengan koma)</span>
-          <UInput
-            :model-value="spText"
-            type="text"
-            placeholder="cth. 3.1, 3.2"
-            class="w-full"
-            data-testid="q-sp"
-            @change="setSp(($event.target as HTMLInputElement).value)"
-          />
-        </label>
+        <div
+          v-if="q.tag.formOrigin !== 'T1-T3'"
+          class="flex min-w-0 flex-col gap-1 text-sm @md:col-span-2 @3xl:col-span-4"
+          data-testid="q-sp"
+        >
+          <span class="text-muted">SP</span>
+          <DsText v-if="sps.length === 0" variant="caption" tone="muted">
+            Pilih unit untuk melihat senarai SP.
+          </DsText>
+          <UCheckbox
+            v-for="sp in sps"
+            :key="sp.id"
+            :model-value="q.tag.spIds.includes(sp.id as DskpSpId)"
+            :data-testid="`q-sp-${sp.code}`"
+            @update:model-value="(v: boolean | 'indeterminate') => setSp(sp.id, v === true)"
+          >
+            <template #label>
+              <span class="block min-h-11 cursor-pointer">{{ sp.code }} {{ sp.text }}</span>
+            </template>
+          </UCheckbox>
+        </div>
       </div>
       <div v-if="toConfirm.length > 0" class="flex flex-col gap-1">
         <UCheckbox

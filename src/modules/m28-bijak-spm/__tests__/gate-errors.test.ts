@@ -1,12 +1,19 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 import { validateBatch } from '../admin/intake/domain/validation'
-import { emptyTag } from '../admin/intake/lib/dskp'
 import type { IntakeQuestion } from '../admin/intake/types'
+import { emptyTag } from '../domain/tag-edit'
+import type { TagLookup } from '../domain/tag-rule'
 import type { CurriculumTag, QuestionDef, SchemeDef } from '../domain/types'
-import { T1_T3_TOPIC, topicOf } from '../domain/topic'
+import { REVIEW_TOPIC, T1_T3_TOPIC, topicOf } from '../domain/topic'
 import { gateErrors } from '../server/admin'
 import { BijakServer, MemoryStorage } from '../server/store'
+import { loadTagLookup, matTag, t13Tag } from './tag-fixtures'
+
+let lookup: TagLookup
+beforeAll(async () => {
+  lookup = await loadTagLookup()
+})
 
 const scheme = (id: string): SchemeDef | undefined =>
   id === 'q1' ? { kind: 'option', marks: 1, correct: 'A', reason: 'Kunci' } : undefined
@@ -20,41 +27,37 @@ function question(curriculum: CurriculumTag): QuestionDef {
   }
 }
 
-const tag = (over: Partial<CurriculumTag>): CurriculumTag => ({
-  subject: 'MAT',
-  level: 'T4',
-  unit: 'MAT-T4-01',
-  unitLabel: 'Asas Nombor',
-  sp: ['1.1'],
-  tp: 3,
-  formOrigin: 'T4',
-  ...over,
-})
+const tag = (over: Partial<CurriculumTag>): CurriculumTag => matTag(over)
 
 describe('publish gate: DSKP topic (FB-004)', () => {
   it('a T1-T3 question without a unit can be published', () => {
-    const t = tag({ unit: null, unitLabel: '', level: 'T4+T5', formOrigin: 'T1-T3' })
+    const t = t13Tag()
     expect(gateErrors([question(t)], scheme)).toEqual([])
   })
 
-  it('T4 and T5 questions still need the unit label', () => {
+  it('T4 and T5 questions still need the unit', () => {
     for (const formOrigin of ['T4', 'T5'] as const) {
-      const t = tag({ unit: null, unitLabel: '', formOrigin })
+      const t = tag({ unitId: null, spIds: [], formOrigin })
       expect(gateErrors([question(t)], scheme)).toEqual(['Soalan 1: topik DSKP belum dipilih'])
     }
   })
 
-  it('a T4 question with a unit label passes', () => {
+  it('a flagged question (perlu semakan) is not refused by this check yet (DSKP-T05 wires tagIssues)', () => {
+    const t = tag({ formOrigin: null, unitId: null, spIds: [], review: 'perlu-semakan' })
+    expect(gateErrors([question(t)], scheme)).toEqual([])
+  })
+
+  it('a T4 question with a unit passes', () => {
     expect(gateErrors([question(tag({}))], scheme)).toEqual([])
   })
 
   it('other gate rules are unchanged for T1-T3', () => {
-    const t = tag({ unit: null, unitLabel: '', formOrigin: 'T1-T3' })
+    const t = t13Tag()
     expect(gateErrors([question(t)], () => undefined)).toEqual(['Soalan 1: skema jawapan belum ada'])
   })
 
   it('the intake gate and the publish gate agree on a T1-T3 question', () => {
-    const tagged: CurriculumTag = { ...emptyTag('MAT'), formOrigin: 'T1-T3', unit: null, unitLabel: '', sp: ['1.1'] }
+    const tagged: CurriculumTag = t13Tag()
     const q: IntakeQuestion = {
       id: 'q1',
       label: '1',
@@ -73,23 +76,36 @@ describe('publish gate: DSKP topic (FB-004)', () => {
       lowFields: [],
       confirmed: [],
     }
-    const intake = validateBatch({ questions: [q], stimuli: [], source: 'x', copyright: 'sendiri' })
+    const intake = validateBatch({ questions: [q], stimuli: [], source: 'x', copyright: 'sendiri' }, lookup)
     expect(intake.filter((i) => i.message.includes('Unit DSKP'))).toEqual([])
     expect(gateErrors([question(tagged)], scheme)).toEqual([])
     // and a T4 question without a unit is refused by both
-    const t4 = { ...tagged, formOrigin: 'T4' as const }
-    const intakeT4 = validateBatch({ questions: [{ ...q, tag: t4 }], stimuli: [], source: 'x', copyright: 'sendiri' })
+    const t4 = { ...emptyTag('MAT'), formOrigin: 'T4' as const, tp: 3 as const }
+    const intakeT4 = validateBatch({ questions: [{ ...q, tag: t4 }], stimuli: [], source: 'x', copyright: 'sendiri' }, lookup)
     expect(intakeT4.some((i) => i.message.includes('Unit DSKP'))).toBe(true)
     expect(gateErrors([question(t4)], scheme)).toHaveLength(1)
   })
 })
 
-describe('T1-T3 topic display (FB-004 follow-up)', () => {
-  it('falls back to the editor copy only for T1-T3 without a unit label', () => {
-    expect(topicOf(tag({ unit: null, unitLabel: '', formOrigin: 'T1-T3' }))).toBe(T1_T3_TOPIC)
+describe('topic display (FB-004 follow-up, DSKP v2)', () => {
+  it('T1-T3 shows the editor copy, whatever the unit id', () => {
+    expect(topicOf(t13Tag(), lookup)).toBe(T1_T3_TOPIC)
     expect(T1_T3_TOPIC).toBe('Tingkatan 1-3 (di luar DSKP)')
-    expect(topicOf(tag({ unitLabel: 'Pemfaktoran', formOrigin: 'T1-T3' }))).toBe('Pemfaktoran')
-    expect(topicOf(tag({ unit: null, unitLabel: '', formOrigin: 'T4' }))).toBe('')
+    expect(topicOf(tag({ formOrigin: 'T1-T3' }), lookup)).toBe(T1_T3_TOPIC)
+  })
+
+  it('a tagged question shows the catalogue unit title as printed', () => {
+    expect(topicOf(tag({}), lookup)).toBe('Fungsi dan Persamaan Kuadratik dalam Satu Pemboleh Ubah')
+  })
+
+  it('a flagged question shows the "perlu semakan" copy and an untagged one nothing', () => {
+    expect(topicOf(tag({ formOrigin: null, unitId: null, spIds: [], review: 'perlu-semakan' }), lookup)).toBe(REVIEW_TOPIC)
+    expect(topicOf(tag({ formOrigin: 'T4', unitId: null, spIds: [] }), lookup)).toBe('')
+  })
+
+  it('a unit the lookup does not know (subject not loaded) shows nothing, not a guess', () => {
+    const none: Pick<TagLookup, 'unit'> = { unit: () => undefined }
+    expect(topicOf(tag({}), none)).toBe('')
   })
 
   it('a published T1-T3 question without a unit shows the fallback topic in the bank', async () => {
@@ -98,7 +114,7 @@ describe('T1-T3 topic display (FB-004 follow-up)', () => {
     const e = await server.getBankEditable(id)
     const edited: IntakeQuestion = {
       ...e.question,
-      tag: { ...e.question.tag, formOrigin: 'T1-T3', unit: null, unitLabel: '' },
+      tag: { ...e.question.tag, ...t13Tag({ tp: e.question.tag.tp }) },
     }
     expect((await server.reviseQuestionFull(id, edited, undefined, '')).ok).toBe(true)
     expect((await server.reviewDecision(`v:${id}`, { action: 'terbit' })).ok).toBe(true)
