@@ -143,7 +143,6 @@ function print() {
     </template>
     <DsLoadError
       v-else-if="error && !refused"
-      :message="error.message"
       testid="lb-error"
       @retry="reload"
     />

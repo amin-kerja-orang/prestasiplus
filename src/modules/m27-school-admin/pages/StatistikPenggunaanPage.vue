@@ -86,7 +86,6 @@ watch(
     </template>
     <DsLoadError
       v-else-if="error && !refused"
-      :message="error.message"
       testid="su-error"
       @retry="reload"
     />

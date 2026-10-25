@@ -7,7 +7,9 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { ApiError } from '@/api'
 
 import type { SchoolPackage } from '../../api/subscriptions'
+import { searchSchools } from '../../api/schools'
 import SubscriptionCreatePage from '../../pages/SubscriptionCreatePage.vue'
+import { expectListInFlow } from './in-flow'
 
 const api = vi.hoisted(() => ({ fetchSchoolPackages: vi.fn(), createSubscription: vi.fn() }))
 vi.mock('../../api/subscriptions', () => api)
@@ -93,6 +95,31 @@ describe('SubscriptionCreatePage (M02 S13)', () => {
     expect(w.get('[data-testid=sub-summary-grand]').text()).toBe('Jumlah 6 tahun: RM18,000.00')
     await radios[1]!.trigger('click')
     expect(w.find('[data-testid=sub-summary-grand]').exists()).toBe(false)
+  })
+
+  it('draws the school result list in the flow, not floating (SWX4-05)', async () => {
+    vi.useFakeTimers()
+    vi.mocked(searchSchools).mockResolvedValue([
+      {
+        id: 77,
+        name: 'SEKOLAH KEBANGSAAN CONTOH BARU',
+        code: 'ABC0077',
+        type: 'SK',
+        state: 'Selangor',
+        district: 'PPD GOMBAK',
+        city: null,
+      },
+    ])
+    try {
+      const { w } = await render()
+      await w.get('[data-testid=sub-school-search]').setValue('SEKOLAH')
+      await vi.advanceTimersByTimeAsync(300)
+      await flushPromises()
+      expectListInFlow(w, 'sub-school-dropdown')
+    } finally {
+      vi.mocked(searchSchools).mockResolvedValue([])
+      vi.useRealTimers()
+    }
   })
 
   it('limits the quota natively to 1-2000', async () => {

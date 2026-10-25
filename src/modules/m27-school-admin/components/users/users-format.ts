@@ -49,13 +49,35 @@ export const newPasswordPlaceholder = (): string =>
 
 export const GENERIC_ERROR = 'Ralat berlaku. Sila cuba lagi.'
 
+/** The API's generic English defaults (api-error.ts): never shown in the BM UI (SWE). */
+const GENERIC_SERVER_TEXTS: readonly string[] = [
+  'server error',
+  'not found',
+  'this action is unauthorized',
+  'unauthenticated',
+  'conflict',
+  'the given data was invalid',
+  'payload too large',
+]
+
+function isGenericServerText(message: string): boolean {
+  return GENERIC_SERVER_TEXTS.includes(message.trim().replace(/\.$/, '').toLowerCase())
+}
+
 /** One line per validation error, or the server message (FR-M27-48: no M27 copy of its own). */
 export function errorLines(err: unknown): string[] {
   if (!isApiError(err)) return [GENERIC_ERROR]
   if (err.status === 0 || err.code === 'NETWORK_ERROR') return [GENERIC_ERROR]
   const fieldTexts = err.fields ? Object.values(err.fields) : []
   if (fieldTexts.length > 0) return [...new Set(fieldTexts)]
-  if (err.message === '' || /^HTTP \d+$/.test(err.message)) return [GENERIC_ERROR]
+  if (
+    err.message === '' ||
+    /^HTTP \d+$/.test(err.message) ||
+    err.status >= 500 ||
+    isGenericServerText(err.message)
+  ) {
+    return [GENERIC_ERROR]
+  }
   return [err.message]
 }
 

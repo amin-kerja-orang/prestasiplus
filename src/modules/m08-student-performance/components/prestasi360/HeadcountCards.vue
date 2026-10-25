@@ -2,11 +2,12 @@
 /**
  * S6 "Headcount — Prestasi SPM" (FR-M08-39): one card per config, newest update first. The status badge by
  * BR-M08-08 rule (1), the chip row TOV → OTRn (AR chips only) → ETR joined by chevrons; the row wraps
- * on narrow screens (DV-M08-10). "Lihat Penuh" → `/headcount/student/{id}`.
+ * on narrow screens (DV-M08-10). "Lihat Penuh" → `/headcount/student/{id}`, shown only to a role that may open it (staff; DV-M08-47).
  */
 import { DsPanel } from '@/ds'
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
+import { useCanOpen } from '../../lib/route-access'
 
 defineProps<{ userId: number; cards: StudentPerformance['headcount'] }>()
 
@@ -14,6 +15,7 @@ type Card = StudentPerformance['headcount'][number]
 type Chip = Card['chips'][number]
 
 const icon = usePhIcon()
+const { canOpen } = useCanOpen()
 
 const STATUS: Record<Card['status'], { text: string; color: 'success' | 'error' | 'neutral' }> = {
   on: { text: 'On Track', color: 'success' },
@@ -68,6 +70,7 @@ const chipText = (chip: Chip): string =>
             </template>
           </div>
           <UButton
+            v-if="canOpen(`/headcount/student/${String(userId)}`)"
             :to="`/headcount/student/${String(userId)}`"
             color="neutral"
             variant="link"
