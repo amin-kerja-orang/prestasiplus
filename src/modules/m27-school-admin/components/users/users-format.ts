@@ -75,68 +75,85 @@ const FIELD_LABELS: Record<string, string> = {
   phone: 'No. Telefon',
   password: 'Kata Laluan',
   'password confirmation': 'Sahkan Kata Laluan',
+  // BE `passwordPair` (people.input.ts) words the S9/S10 reset-password field "new password".
+  'new password': 'Kata Laluan Baru',
+  'new password confirmation': 'Sahkan Kata Laluan Baru',
   'class id': 'Kelas',
   classroom: 'Kelas',
   'classroom id': 'Kelas',
   role: 'Peranan',
 }
 
-const fieldLabel = (attr = ''): string | null => FIELD_LABELS[attr.toLowerCase()] ?? null
+/** Per-page label override (S12 labels the name field "Nama penuh"). */
+export type FieldLabelOverrides = Readonly<Record<string, string>>
 
-const VALIDATION_RULES: Array<[RegExp, (m: RegExpExecArray) => string]> = [
+/** Any other English Laravel template ("must be a string", "is not allowed", "required when" ...). */
+const GENERIC_VALIDATION = 'Ruang ini tidak sah.'
+
+type Rule = [RegExp, (m: RegExpExecArray, label: (attr?: string) => string | null) => string]
+
+const VALIDATION_RULES: Rule[] = [
   [
     /^The (.+?) field is required\.$/,
-    (m) => (fieldLabel(m[1]) ? `Ruang ${fieldLabel(m[1])} wajib diisi.` : 'Ruang ini wajib diisi.'),
+    (m, fieldLabel) =>
+      fieldLabel(m[1]) ? `Ruang ${fieldLabel(m[1])} wajib diisi.` : 'Ruang ini wajib diisi.',
   ],
   [
     /^The (.+?) field must be a valid email address\.$/,
-    (m) =>
+    (m, fieldLabel) =>
       fieldLabel(m[1])
         ? `Ruang ${fieldLabel(m[1])} mestilah alamat emel yang sah.`
         : 'Alamat emel tidak sah.',
   ],
   [
     /^The (.+?) has already been taken\.$/,
-    (m) =>
+    (m, fieldLabel) =>
       fieldLabel(m[1]) ? `${fieldLabel(m[1])} ini telah digunakan.` : 'Nilai ini telah digunakan.',
   ],
   [
     /^The (.+?) field must be at least (\d+) characters\.$/,
-    (m) => `Ruang ${fieldLabel(m[1]) ?? 'ini'} mestilah sekurang-kurangnya ${m[2]} aksara.`,
+    (m, fieldLabel) =>
+      `Ruang ${fieldLabel(m[1]) ?? 'ini'} mestilah sekurang-kurangnya ${m[2]} aksara.`,
   ],
   [
     /^The (.+?) field must not be greater than (\d+) characters\.$/,
-    (m) => `Ruang ${fieldLabel(m[1]) ?? 'ini'} tidak boleh melebihi ${m[2]} aksara.`,
+    (m, fieldLabel) => `Ruang ${fieldLabel(m[1]) ?? 'ini'} tidak boleh melebihi ${m[2]} aksara.`,
   ],
   [
     /^The (.+?) field confirmation does not match\.$/,
-    (m) =>
+    (m, fieldLabel) =>
       fieldLabel(m[1])
         ? `Pengesahan ${fieldLabel(m[1])} tidak sepadan.`
         : 'Pengesahan tidak sepadan.',
   ],
   [
     /^The selected (.+?) is invalid\.$/,
-    (m) => (fieldLabel(m[1]) ? `Pilihan ${fieldLabel(m[1])} tidak sah.` : 'Pilihan ini tidak sah.'),
+    (m, fieldLabel) =>
+      fieldLabel(m[1]) ? `Pilihan ${fieldLabel(m[1])} tidak sah.` : 'Pilihan ini tidak sah.',
   ],
+  // Final catch-all: never show an English template.
+  [/^The .+/, () => GENERIC_VALIDATION],
 ]
 
 /** Laravel English default -> BM by exact template; any other text (BM from the mock) passes through. */
-export function translateValidationText(text: string): string {
+export function translateValidationText(text: string, overrides?: FieldLabelOverrides): string {
   const t = text.trim()
+  const label = (attr = ''): string | null =>
+    overrides?.[attr.toLowerCase()] ?? FIELD_LABELS[attr.toLowerCase()] ?? null
   for (const [re, fn] of VALIDATION_RULES) {
     const m = re.exec(t)
-    if (m) return fn(m)
+    if (m) return fn(m, label)
   }
   return text
 }
 
 /** One line per validation error, or the server message (FR-M27-48: no M27 copy of its own). */
-export function errorLines(err: unknown): string[] {
+export function errorLines(err: unknown, labels?: FieldLabelOverrides): string[] {
   if (!isApiError(err)) return [GENERIC_ERROR]
   if (err.status === 0 || err.code === 'NETWORK_ERROR') return [GENERIC_ERROR]
   const fieldTexts = err.fields ? Object.values(err.fields) : []
-  if (fieldTexts.length > 0) return [...new Set(fieldTexts.map(translateValidationText))]
+  if (fieldTexts.length > 0)
+    return [...new Set(fieldTexts.map((t) => translateValidationText(t, labels)))]
   if (
     err.message === '' ||
     /^HTTP \d+$/.test(err.message) ||

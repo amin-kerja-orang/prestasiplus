@@ -35,6 +35,9 @@ import LockedSchoolLabel from '../components/users/LockedSchoolLabel.vue'
 import PupilCredentialBlock from '../components/users/PupilCredentialBlock.vue'
 import { errorLines, PUPIL_LIST_PATH } from '../components/users/users-format'
 
+/** S12 labels the name field "Nama penuh" (S9 to S11 say "Nama"). */
+const PUPIL_FIELD_LABELS = { name: 'Nama penuh' } as const
+
 const flash = useFlash()
 
 const {
@@ -78,7 +81,7 @@ async function submit(): Promise<void> {
     form.email = ''
     form.password = ''
   } catch (err) {
-    errors.value = errorLines(err)
+    errors.value = errorLines(err, PUPIL_FIELD_LABELS)
     form.password = ''
     await nextTick()
     alertBox.value?.scrollIntoView?.({ block: 'start' })
