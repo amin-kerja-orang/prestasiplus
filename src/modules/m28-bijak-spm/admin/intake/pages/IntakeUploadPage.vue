@@ -32,7 +32,6 @@ const form = reactive<IntakeForm>({
   source: '',
   copyright: '',
   notes: '',
-  tingkatan: '',
 })
 const file = ref<File | null>(null)
 const fileError = ref('')
@@ -78,13 +77,7 @@ const canSubmit = computed(
 async function run(pages: PageText[], images: PageImage[], fileName: string, hash: string): Promise<void> {
   phase.value = 'ekstrak'
   const kertas = Number(form.kertas) === 1 ? 1 : 2
-  const extracted = await extractor.extract({
-    pages,
-    images,
-    subject: form.subject,
-    kertas,
-    ...(form.tingkatan ? { tingkatan: form.tingkatan } : {}),
-  })
+  const extracted = await extractor.extract({ pages, images, subject: form.subject, kertas })
   phase.value = 'simpan'
   const batch = await server.createIntakeBatch(
     user.value,
@@ -161,7 +154,7 @@ async function useSample(): Promise<void> {
     data-testid="intake-upload-page"
   >
     <form class="flex w-full min-w-0 flex-col gap-6" @submit.prevent="submit">
-      <IntakeMetaFields v-model="form" ask-tingkatan />
+      <IntakeMetaFields v-model="form" />
 
       <DsFormSection
         title="Fail kertas"

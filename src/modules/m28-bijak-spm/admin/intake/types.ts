@@ -106,9 +106,9 @@ export interface ExtractInput {
   subject: SubjectCode
   kertas: 1 | 2
   /**
-   * Narrows the DSKP unit/SP suggestion to one tingkatan. Set from the optional "Tingkatan (pilihan)"
-   * of the upload declaration (IntakeUploadPage); when it is absent T4 and T5 are both searched and the
-   * suggested unit implies the tingkatan.
+   * Narrows the DSKP unit/SP suggestion when the batch declares a tingkatan (none does yet).
+   * TODO(later spec decision): the UX spec has no tingkatan field in the intake declaration, so nothing
+   * sets this; until a spec decision adds one, T4 and T5 are both searched.
    */
   tingkatan?: 'T4' | 'T5'
 }

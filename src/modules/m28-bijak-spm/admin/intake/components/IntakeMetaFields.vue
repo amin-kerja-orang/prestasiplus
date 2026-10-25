@@ -6,7 +6,7 @@
  */
 import { DsFormField, DsFormSection, DsNativeSelect } from '@/ds'
 
-import { dskpSubjects } from '../../../lib/dskp-source'
+import { bijakServer } from '../../../server/client'
 import { COPYRIGHT_OPTIONS, PAPER_TYPES } from '../types'
 
 export interface IntakeForm {
@@ -17,14 +17,11 @@ export interface IntakeForm {
   source: string
   copyright: string
   notes: string
-  /** Optional: narrows the AI suggestion of unit and SP to one tingkatan (upload path only). */
-  tingkatan?: '' | 'T4' | 'T5'
 }
 
 const form = defineModel<IntakeForm>({ required: true })
-withDefaults(defineProps<{ askTingkatan?: boolean }>(), { askTingkatan: false })
 /** The 13 catalogue subjects: every subject a question can be tagged with (AC-03.1). */
-const subjects = dskpSubjects()
+const subjects = bijakServer().tagSubjects()
 </script>
 
 <template>
@@ -51,24 +48,6 @@ const subjects = dskpSubjects()
     <DsFormField native for="in-type" label="Jenis kertas" required>
       <DsNativeSelect id="in-type" v-model="form.paperType">
         <option v-for="t in PAPER_TYPES" :key="t" :value="t">{{ t }}</option>
-      </DsNativeSelect>
-    </DsFormField>
-    <DsFormField
-      v-if="askTingkatan"
-      native
-      for="in-tingkatan"
-      label="Tingkatan (pilihan)"
-      hint="Menyempitkan cadangan unit dan SP oleh AI."
-    >
-      <DsNativeSelect
-        id="in-tingkatan"
-        v-model="form.tingkatan"
-        blank
-        placeholder="Tidak ditetapkan"
-        data-testid="intake-tingkatan"
-      >
-        <option value="T4">Tingkatan 4</option>
-        <option value="T5">Tingkatan 5</option>
       </DsNativeSelect>
     </DsFormField>
   </DsFormSection>

@@ -408,7 +408,7 @@ function insertMath(field: 'stem'): void {
         data-testid="tag-review-alert"
       />
 
-      <div class="grid gap-3 @3xl:grid-cols-4">
+      <div class="grid gap-3 @3xl:grid-cols-3">
         <DsFormField native :label="TAG_COPY.form" required :error="errors.form">
           <template #default="{ id, describedby, invalid }">
             <DsNativeSelect
@@ -430,7 +430,7 @@ function insertMath(field: 'stem'): void {
           </template>
         </DsFormField>
 
-        <div class="@3xl:col-span-3">
+        <div class="@3xl:col-span-2">
         <DsLoadError
           v-if="phase === 'error'"
           variant="inline"
