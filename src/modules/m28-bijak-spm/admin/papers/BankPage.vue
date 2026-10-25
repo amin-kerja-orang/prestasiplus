@@ -12,6 +12,7 @@ import { useApi } from '@/composables/useApi'
 import {
   DsCluster,
   DsDataTable,
+  DsEmptyState,
   DsFilterBar,
   DsLoadError,
   DsNativeSelect,
@@ -26,31 +27,56 @@ import {
 
 import RichText from '../../components/RichText.vue'
 import type { BankRow, QuestionStatus } from '../../domain/admin-types'
+import { useDskpSubject } from '../../lib/dskp-source'
 import { formatDateTime } from '../../lib/use-bijak'
 import { bijakServer } from '../../server/client'
+import DskpFilterFields from './DskpFilterFields.vue'
+import {
+  appliedDskp,
+  dskpChips,
+  dskpServerFilter,
+  emptyDskpFilter,
+  removeDskpChip,
+  tpCardText,
+  type AppliedDskp,
+  type DskpFilterDraft,
+} from './dskp-filter'
 import QuestionPreview from './QuestionPreview.vue'
+import TagBadges from './TagBadges.vue'
+import TagHistoryLines from './TagHistoryLines.vue'
 import { ADMIN_ROUTES, KERTAS_ITEMS, KIND_ITEMS, KIND_LABEL, STATUS_BADGE } from './ui'
+import { useDskpFilter } from './use-dskp-filter'
 
 type Row = BankRow & Record<string, unknown>
 
 const server = bijakServer()
 const route = useRoute()
-const subjects = server.subjects()
+// The 13 catalogue subjects (AC-03.1); papers and Jana Kertas keep the blueprint list.
+const subjects = server.tagSubjects()
 
-const draft = reactive<{
+interface BankDraft extends DskpFilterDraft {
   q: string
   subject: string
   kertas: string
   kind: string
   status: QuestionStatus | 'semua'
-}>({
+}
+const draft = reactive<BankDraft>({
   q: '',
   subject: '',
   kertas: '',
   kind: '',
   status: 'terbit',
+  ...emptyDskpFilter(),
 })
-const applied = ref({ ...draft })
+// Unit and SP options come from the catalogue of the chosen subject; the rules that clear them run
+// the moment a field changes.
+const catalogue = useDskpFilter(draft)
+const snapshot = (): BankDraft & AppliedDskp => ({
+  ...draft,
+  ...appliedDskp(draft, catalogue.view.value),
+})
+const applied = ref(snapshot())
 
 const { data: stats } = useApi(() => server.bankStats())
 const { data, error, loading, reload } = useApi(
@@ -61,6 +87,7 @@ const { data, error, loading, reload } = useApi(
       kertas: applied.value.kertas ? Number(applied.value.kertas) : undefined,
       kind: (applied.value.kind || undefined) as BankRow['kind'] | undefined,
       status: applied.value.status,
+      ...dskpServerFilter(applied.value),
     }),
   applied,
 )
@@ -96,12 +123,20 @@ function pick(code: string): void {
   apply()
 }
 function apply(): void {
-  applied.value = { ...draft }
+  applied.value = snapshot()
 }
 function reset(): void {
-  Object.assign(draft, { q: '', subject: '', kertas: '', kind: '', status: 'terbit' })
+  Object.assign(draft, {
+    q: '',
+    subject: '',
+    kertas: '',
+    kind: '',
+    status: 'terbit',
+    ...emptyDskpFilter(),
+  })
   apply()
 }
+const curriculumChips = computed(() => dskpChips(applied.value))
 const chips = computed(() => [
   ...(applied.value.subject
     ? [
@@ -115,12 +150,18 @@ const chips = computed(() => [
   ...(applied.value.kind
     ? [{ key: 'kind', label: KIND_LABEL[applied.value.kind as keyof typeof KIND_LABEL] }]
     : []),
+  ...curriculumChips.value,
   ...(applied.value.q ? [{ key: 'q', label: `"${applied.value.q}"` }] : []),
 ])
 function removeChip(key: string): void {
-  ;(draft as Record<string, string>)[key] = ''
+  if (curriculumChips.value.some((c) => c.key === key)) removeDskpChip(draft, key)
+  else (draft as unknown as Record<string, string>)[key] = ''
   apply()
 }
+/** "Semua soalan sudah bertag." is the good outcome of the flag filter, only when it is the only filter. */
+const emptyDescription = computed(() =>
+  applied.value.tagReview && chips.value.length === 1 ? 'Semua soalan sudah bertag.' : undefined,
+)
 
 const columns: TableColumn<Row>[] = [
   { accessorKey: 'id', header: 'ID' },
@@ -152,6 +193,8 @@ const {
   () => (selectedId.value ? server.getBankDetail(selectedId.value) : Promise.resolve(null)),
   selectedId,
 )
+// The history prints unit titles and SP codes of the question's subject.
+const detailCatalogue = useDskpSubject(() => detail.value?.row.subject)
 /** The other questions of the stimulus group of the question in the drawer. */
 const siblings = computed(
   () => detail.value?.sharers?.questions.filter((x) => x.id !== detail.value?.row.id) ?? [],
@@ -187,6 +230,7 @@ const siblings = computed(
     <DsFilterBar
       :chips="chips"
       :active-count="chips.length"
+      :more-count="curriculumChips.length"
       data-testid="bank-filter"
       @apply="apply"
       @reset="reset"
@@ -197,7 +241,7 @@ const siblings = computed(
           v-model="draft.q"
           type="text"
           aria-label="Cari"
-          placeholder="Cari teks, ID atau topik..."
+          placeholder="Cari teks, ID, topik atau kod SP..."
           icon="i-ph-magnifying-glass"
           class="w-full md:min-w-64 md:flex-1"
           data-testid="bank-search"
@@ -240,6 +284,23 @@ const siblings = computed(
         <option value="ditolak">Ditolak</option>
         <option value="semua">Semua status</option>
       </DsNativeSelect>
+      <template #more>
+        <DskpFilterFields
+          v-model:form-origin="draft.formOrigin"
+          v-model:unit-id="draft.unitId"
+          v-model:sp-id="draft.spId"
+          v-model:tp="draft.tp"
+          v-model:kbat="draft.kbat"
+          v-model:tag-review="draft.tagReview"
+          prefix="bank"
+          show-tag-review
+          :subject="draft.subject"
+          :view="catalogue.view.value"
+          :loading="catalogue.loading.value"
+          :error="catalogue.error.value !== undefined"
+          @retry="catalogue.retry()"
+        />
+      </template>
     </DsFilterBar>
 
     <DsLoadError v-if="error" message="Tidak dapat memuatkan bank soalan." @retry="reload()" />
@@ -258,6 +319,9 @@ const siblings = computed(
         { key: 'subjectName', label: 'Subjek', cell: true },
         { key: 'marks', label: 'Markah' },
         { key: 'usedIn', label: 'Digunakan', cell: true },
+        { key: 'topic', label: 'Unit', cell: true, wide: true },
+        { key: 'spCodes', label: 'SP', cell: true },
+        { key: 'tp', label: 'TP', cell: true },
         { key: 'status', label: 'Status', cell: true, wide: true },
       ]"
       :page-size="20"
@@ -274,8 +338,7 @@ const siblings = computed(
           <span class="line-clamp-2 text-body text-default"
             ><RichText :text="row.original.preview"
           /></span>
-          <span class="flex flex-wrap gap-1">
-            <UBadge color="neutral" variant="subtle">{{ row.original.topic }}</UBadge>
+          <TagBadges :tag="row.original">
             <UBadge
               v-if="row.original.groupId && (row.original.groupSize ?? 0) > 1"
               color="info" variant="subtle" icon="i-ph-image"
@@ -284,7 +347,7 @@ const siblings = computed(
             <UBadge v-if="row.original.version > 1" color="secondary" variant="subtle"
               >v{{ row.original.version }}</UBadge
             >
-          </span>
+          </TagBadges>
         </div>
       </template>
       <template #subjectName-cell="{ row }">
@@ -293,6 +356,25 @@ const siblings = computed(
         >
       </template>
       <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind] }}</template>
+      <!-- Card fields only: the table shows the tag as badges in the Soalan cell. -->
+      <template #topic-cell="{ row }">
+        <span class="block whitespace-normal">{{ row.original.topic || '-' }}</span>
+      </template>
+      <template #spCodes-cell="{ row }">
+        <span class="block whitespace-normal">{{ row.original.spCodes.join(', ') || '-' }}</span>
+      </template>
+      <template #tp-cell="{ row }">
+        <span class="block whitespace-normal">{{ tpCardText(row.original) || '-' }}</span>
+      </template>
+      <template #empty>
+        <DsEmptyState
+          size="sm"
+          title="Tiada soalan dijumpai"
+          :description="emptyDescription"
+          :filtered="chips.length > 0"
+          @reset="reset"
+        />
+      </template>
       <template #card-title="{ row }">
         <RichText :text="row.preview" />
       </template>
@@ -347,6 +429,16 @@ const siblings = computed(
               {{ detail.row.version }}
             </span>
           </div>
+          <TagBadges :tag="detail.row" data-testid="bank-tag" />
+          <UAlert
+            v-if="detail.row.tagReview && detail.row.status === 'terbit'"
+            color="warning"
+            variant="subtle"
+            icon="i-ph-warning"
+            title="Perlu semakan tag"
+            description="Soalan ini masih melayani murid. Sunting untuk menetapkan tag DSKP sebelum versi baharu boleh diterbitkan."
+            data-testid="bank-tag-alert"
+          />
           <DsStack
             v-if="detail.sharers && detail.sharers.count > 1"
             gap="2xs"
@@ -388,6 +480,11 @@ const siblings = computed(
                 }}
                 · <span class="font-semibold">{{ h.action }}</span>
                 <template v-if="h.note"> · {{ h.note }}</template>
+                <TagHistoryLines
+                  :entry="h"
+                  :view="detailCatalogue.view.value"
+                  :pending="detailCatalogue.loading.value"
+                />
               </li>
             </ol>
           </DsPanel>

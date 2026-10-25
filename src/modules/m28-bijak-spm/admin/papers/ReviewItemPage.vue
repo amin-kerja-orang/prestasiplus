@@ -13,9 +13,13 @@ import { DsDialog, DsGrid, DsGridItem, DsLoadError, DsPage, DsPanel, DsStatusBad
 
 import RichText from '../../components/RichText.vue'
 import type { DecisionAction } from '../../domain/admin-types'
+import { dskpCodeOf, useDskpSubject } from '../../lib/dskp-source'
 import { formatDateTime } from '../../lib/use-bijak'
 import { bijakServer } from '../../server/client'
+import type { TagBadgeData } from './dskp-filter'
 import QuestionPreview from './QuestionPreview.vue'
+import TagBadges from './TagBadges.vue'
+import TagHistoryLines from './TagHistoryLines.vue'
 import {
   ADMIN_ROUTES,
   CONFIDENCE_LABEL,
@@ -32,6 +36,26 @@ const flash = useFlash()
 
 const key = computed(() => String(route.params.key))
 const { data, error, reload } = useApi(() => server.getReviewItem(key.value), key)
+
+// The history prints unit titles and SP codes of the question's subject.
+const catalogue = useDskpSubject(() => data.value?.item.subject)
+/**
+ * The tag being reviewed, as badges: the display copy of the item (unit title, T1-T3 copy or the
+ * flag) and the codes, TP and KBAT of its first question (a revision shows the proposed version).
+ */
+const tagBadges = computed<TagBadgeData | null>(() => {
+  const d = data.value
+  const c = d?.questions[0]?.curriculum
+  if (!d || !c) return null
+  return {
+    topic: d.item.topic,
+    formOrigin: c.formOrigin,
+    spCodes: c.spIds.map((id) => dskpCodeOf(id)),
+    tp: c.tp,
+    kbat: c.kbat,
+    tagReview: c.review === 'perlu-semakan',
+  }
+})
 
 const dialog = ref<DecisionAction | null>(null)
 const reason = ref('')
@@ -132,10 +156,11 @@ async function resubmit(): Promise<void> {
               {{ KIND_LABEL[data.item.kind] }}
             </h2>
             <p class="text-caption text-muted">
-              {{ data.item.topic }} · {{ data.item.marks }} markah · versi {{ data.item.version }} ·
+              {{ data.item.marks }} markah · versi {{ data.item.version }} ·
               {{ data.item.source }} · {{ data.item.uploader }} · {{ ageText(data.item.ageDays) }} ·
               {{ CONFIDENCE_LABEL[data.item.confidence] }}
             </p>
+            <TagBadges v-if="tagBadges" :tag="tagBadges" data-testid="review-tag" />
           </div>
           <DsStatusBadge :status="STATUS_BADGE[data.item.status]" />
         </div>
@@ -223,6 +248,11 @@ async function resubmit(): Promise<void> {
             {{ formatDateTime(h.at) }} · {{ h.by }} · v{{ h.version }} ·
             <span class="font-semibold">{{ h.action }}</span>
             <template v-if="h.note"> · {{ h.note }}</template>
+            <TagHistoryLines
+              :entry="h"
+              :view="catalogue.view.value"
+              :pending="catalogue.loading.value"
+            />
           </li>
         </ol>
       </DsPanel>

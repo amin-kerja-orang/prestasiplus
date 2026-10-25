@@ -10,6 +10,7 @@ import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import {
   DsDataTable,
+  DsEmptyState,
   DsFilterBar,
   DsLoadError,
   DsNativeSelect,
@@ -22,6 +23,8 @@ import {
 import RichText from '../../components/RichText.vue'
 import type { QuestionStatus, QueueItem } from '../../domain/admin-types'
 import { bijakServer } from '../../server/client'
+import { REVIEW_TOPIC, type TagBadgeData } from './dskp-filter'
+import TagBadges from './TagBadges.vue'
 import {
   ADMIN_ROUTES,
   CONFIDENCE_LABEL,
@@ -36,7 +39,8 @@ type Row = QueueItem & Record<string, unknown>
 
 const server = bijakServer()
 const router = useRouter()
-const subjects = server.subjects()
+// The 13 catalogue subjects (AC-03.1); papers and Jana Kertas keep the blueprint list.
+const subjects = server.tagSubjects()
 const draft = reactive<{
   subject: string
   kertas: string
@@ -141,6 +145,16 @@ const columns: TableColumn<Row>[] = [
   { id: 'actions', header: 'Tindakan' },
 ]
 
+/** The queue item carries the display copy of the tag only (unit title, T1-T3 copy or the flag). */
+const tagOf = (r: QueueItem): TagBadgeData => ({
+  topic: r.topic,
+  formOrigin: null,
+  spCodes: [],
+  tp: null,
+  kbat: null,
+  tagReview: r.topic === REVIEW_TOPIC,
+})
+
 function open(row: Row): void {
   void router.push({ name: ADMIN_ROUTES.reviewItem, params: { key: row.key } })
 }
@@ -208,13 +222,12 @@ function open(row: Row): void {
       density="compact"
       :loading="loading && !data"
       :filtered="activeCount > 0"
-      empty-title="Baris gilir kosong"
-      empty-description="Tiada soalan menunggu semakan."
       card-title="previewPlain"
       :card-fields="[
         { key: 'subjectName', label: 'Subjek', cell: true },
         { key: 'marks', label: 'Markah' },
         { key: 'ageDays', label: 'Usia', cell: true },
+        { key: 'topic', label: 'Unit', cell: true, wide: true },
         { key: 'status', label: 'Status', cell: true, wide: true },
       ]"
       :page-size="20"
@@ -227,7 +240,7 @@ function open(row: Row): void {
           <span class="line-clamp-2 text-body text-default"
             ><RichText :text="row.original.preview"
           /></span>
-          <span class="flex flex-wrap gap-1">
+          <TagBadges :tag="tagOf(row.original)">
             <UBadge v-if="row.original.groupId" color="info" variant="subtle" icon="i-ph-image">
               Kumpulan {{ row.original.questionIds.length }} soalan
             </UBadge>
@@ -243,7 +256,7 @@ function open(row: Row): void {
               CONFIDENCE_LABEL[row.original.confidence]
             }}</UBadge>
             <span class="text-caption text-muted">{{ row.original.source }}</span>
-          </span>
+          </TagBadges>
         </div>
       </template>
       <template #subjectName-cell="{ row }">
@@ -253,6 +266,25 @@ function open(row: Row): void {
       </template>
       <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind] }}</template>
       <template #ageDays-cell="{ row }">{{ ageText(row.original.ageDays) }}</template>
+      <!-- Card field only: the table shows the unit as a badge in the Soalan cell. -->
+      <template #topic-cell="{ row }">
+        <span class="block whitespace-normal">{{ row.original.topic || '-' }}</span>
+      </template>
+      <template #empty>
+        <DsEmptyState
+          v-if="activeCount > 0"
+          size="sm"
+          title="Tiada soalan dijumpai"
+          filtered
+          @reset="reset"
+        />
+        <DsEmptyState
+          v-else
+          size="sm"
+          title="Baris gilir kosong"
+          description="Tiada soalan menunggu semakan."
+        />
+      </template>
       <template #status-cell="{ row }">
         <DsStatusBadge :status="STATUS_BADGE[row.original.status]" />
       </template>
