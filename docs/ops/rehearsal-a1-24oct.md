@@ -53,7 +53,7 @@ node -e 'const m=JSON.parse(require("fs").readFileSync(process.argv[1]+"/manifes
 step up "$RDB" up
 step status0 "$RDB" status
 
-# A1.3 seed. Expect: "seed: profile=migration, 3 module(s): ...", users count 0
+# A1.3 seed. Expect: "seed: profile=migration, 4 module(s): core-school-packages, core-wallet-tiers, spm-subject-configs, core-marketplace-categories", users count 0
 step seed "$RDB" exec target -- env NODE_ENV=production npm run db:seed -w @pp/api -- --profile=migration
 q 'select count(*) from users'
 
@@ -266,7 +266,9 @@ q 'select count(*) from users'
 ```
 
 Source: MIG-07 pass 2 (P2.1) and `mig07-rehearse.sh` (`seed_reference`, `assert_no_users`). It runs in `NODE_ENV=production` on purpose: only `kind: 'reference'` modules run and the demo modules are skipped (seed runner, `prisma/seed/index.ts`).
-Expect: exit 0; a line `seed: demo modules skipped: NODE_ENV is not development or test ...` (harmless, as intended), then a line `seed: profile=migration, <k> module(s): <names>` (MIG-07 saw 3 reference modules; record the number and names); the count of users is **0**. Any user means a demo seed ran: red.
+Expect: exit 0; a line `seed: demo modules skipped: NODE_ENV is not development or test ...` (harmless, as intended), then a line `seed: profile=migration, <k> module(s): <names>` (4 reference modules, in this order: `core-school-packages`, `core-wallet-tiers`, `spm-subject-configs`, `core-marketplace-categories`, the set of `prisma/seed/index.ts:72-82`; MIG-07 saw 3, the 4th is `core-wallet-tiers` (#230); record the number and names); the count of users is **0**. Any user means a demo seed ran: red.
+
+**Host mode on a shared or superuser PostgreSQL server.** `rehearsal-db.sh up` refuses a superuser admin role in host mode (`rehearsal-db.sh:330-331`: it can read files and run programs on the server, and the restored dump holds personal data). `PP_REHEARSAL_ALLOW_SUPERUSER=1` is the acknowledgement that the server is a throwaway local one and lets `up` go on (`rehearsal-db.sh:83`, `:330`); do not set it on a shared server, use a role with only `CREATEDB` and `CREATEROLE` there. `PP_REHEARSAL_READER_ROLE` (default `pp_staging_reader`, `rehearsal-db.sh:109`) names the read-only role that `up` creates for the source restore and that `CLOUD_SOURCE_URL` uses (`:339-345`, `:534`). A role is cluster-wide: on a server that another rehearsal also uses, an existing role of that name made by this tool is reused and its password is reset (`:345`), and one not made by this tool stops `up` with `role <name> exists but was not created by this tool` (`:342-343`). Set a private name (lowercase letters, digits and `_`, starting with a letter, at most 39 characters, checked at `:114-117`) so two rehearsals do not take over each other's reader role.
 
 ### A1.4 Load the dump (night analogue: B4)
 

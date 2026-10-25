@@ -26,7 +26,7 @@
 --
 -- STAGING-DEPENDENT SECTIONS: A, B1, C, F1 and G (read staging_cloud)
 --   Each is guarded: when the staged table or one of its columns is absent (staging_cloud dropped, or a different spec)
---   the section prints ONE row whose `code` starts with 'n/a' and the file goes on, so ON_ERROR_STOP never trips.
+--   the section prints ONE row whose `code` (section G: `note`) starts with 'n/a' and the file goes on, so ON_ERROR_STOP never trips.
 --   Sections B2, D1, D2, E and F2 read public.* and etl_runs only; they never need staging_cloud.
 --
 -- SECTIONS (one comment line above each query names the LEAD confirmation it answers)
@@ -41,11 +41,14 @@
 --        kind 'counter' rows are the runner's per-entity `excluded` totals above 0 (also other documented exclusions
 --        of the tip, for example streaks); a zero is not listed. kind 'none' = no note name contains "excluded".
 --   F1   staged education_levels.stage against the STAGE_MAP of #319;  F2 the v2 education_levels.stage values
---   G    staged challenges.difficulty against the OQ5 map of #318 (challengeDifficulty): the unmapped total is the
---        number behind `note challenges.difficulty_unmapped`, which migrate:all does not print. `difficulty` exists in the
---        staging spec only since #318, so on an older build G prints the n/a row. The total counts platform challenges
---        (no author, no class, as the loader does); the note also leaves out a challenge rejected for another reason
---        (title, type, target, reward), so the note can be lower than this total, never higher.
+--   G    staged challenges.difficulty against the OQ5 map of #318 (challengeDifficulty), TOTALS ONLY: ONE row with
+--        mapped_total (easy, medium, hard, and blank or NULL), unmapped_total, null_or_blank (part of mapped_total) and
+--        teacher_unmapped. No difficulty word is ever printed, not even a mapped one. unmapped_total is the number
+--        behind `note challenges.difficulty_unmapped`, which migrate:all does not print; it counts platform
+--        challenges (no author, no class, as the loader does), and the note also leaves out a challenge rejected for
+--        another reason (title, type, target, reward), so the note can be lower than this total, never higher.
+--        teacher_unmapped counts teacher challenges with an unmapped word (the loader skips those). `difficulty` exists
+--        in the staging spec only since #318, so on an older build G prints the n/a row.
 -- =====================================================================================================================
 
 BEGIN TRANSACTION READ ONLY;
@@ -215,43 +218,33 @@ ORDER BY 2;
 SELECT 'F2' AS q, stage, count(*) AS n
 FROM education_levels WHERE legacy_source = 'cloud' GROUP BY stage ORDER BY stage;
 
--- G: OQ5 #318 `challenges.difficulty_unmapped` (not printed by `migrate:all`): LEAD confirms that every staged difficulty word is easy, medium or hard (any case, spaces trimmed, blank or NULL = default medium and NOT unmapped), so the unmapped total is 0; a non-zero total means .cloud stores other words and those challenges became medium.
+-- G: OQ5 #318 `challenges.difficulty_unmapped` (not printed by `migrate:all`): LEAD confirms that every staged difficulty word is easy, medium or hard (any case, spaces trimmed, blank or NULL = default medium and NOT unmapped), so unmapped_total is 0; a non-zero total means .cloud stores other words and those challenges became medium. Totals only: no difficulty value is ever printed.
 WITH g AS (
   SELECT CASE WHEN to_regclass('staging_cloud.challenges') IS NOT NULL
                AND (SELECT count(*) FROM information_schema.columns
                     WHERE table_schema = 'staging_cloud' AND table_name = 'challenges'
                       AND column_name IN ('difficulty', 'created_by', 'classroom_id')) = 3
               THEN query_to_xml($q$
-    SELECT lower(btrim(difficulty)) AS code,
-           count(*) FILTER (WHERE created_by IS NULL AND classroom_id IS NULL) AS n_platform,
-           count(*) FILTER (WHERE created_by IS NOT NULL OR classroom_id IS NOT NULL) AS n_teacher
-    FROM staging_cloud.challenges GROUP BY 1
+    -- k is the key of enumKey(): trim, lower case, runs of space and dash folded to one underscore; an empty key is blank.
+    SELECT count(*) FILTER (WHERE platform AND mapped) AS mapped_total,
+           count(*) FILTER (WHERE platform AND NOT mapped) AS unmapped_total,
+           count(*) FILTER (WHERE platform AND k = '') AS null_or_blank,
+           count(*) FILTER (WHERE NOT platform AND NOT mapped) AS teacher_unmapped
+    FROM (SELECT (created_by IS NULL AND classroom_id IS NULL) AS platform, k, (k = '' OR k IN ('easy', 'medium', 'hard')) AS mapped
+          FROM (SELECT created_by, classroom_id,
+                       regexp_replace(regexp_replace(lower(coalesce(difficulty, '')), '^\s+|\s+$', '', 'g'), '[\s-]+', '_', 'g') AS k
+                FROM staging_cloud.challenges) t) u
   $q$, false, false, '') END AS x
 ),
 r AS (
-  SELECT (xpath('/row/code/text()', e))[1]::text AS code,
-         (xpath('/row/n_platform/text()', e))[1]::text::bigint AS n_platform,
-         (xpath('/row/n_teacher/text()', e))[1]::text::bigint AS n_teacher
+  SELECT (xpath('/row/mapped_total/text()', e))[1]::text::bigint AS mapped_total,
+         (xpath('/row/unmapped_total/text()', e))[1]::text::bigint AS unmapped_total,
+         (xpath('/row/null_or_blank/text()', e))[1]::text::bigint AS null_or_blank,
+         (xpath('/row/teacher_unmapped/text()', e))[1]::text::bigint AS teacher_unmapped
   FROM g, unnest(xpath('/table/row', g.x)) AS e
-),
-k AS (
-  -- The key of enumKey(): trim, lower case, runs of space and dash folded to one underscore; an empty key is blank.
-  -- query_to_xml() writes NULL and '' alike as no text, so both come back as NULL here and are shown as one row.
-  SELECT CASE WHEN btrim(coalesce(code, '')) = '' THEN '(blank or null)' ELSE code END AS code,
-         regexp_replace(regexp_replace(coalesce(code, ''), '^\s+|\s+$', '', 'g'), '[\s-]+', '_', 'g') AS key,
-         n_platform, n_teacher
-  FROM r
-),
-m AS (
-  SELECT code, key, sum(n_platform) AS n_platform, sum(n_teacher) AS n_teacher,
-         (key = '' OR key IN ('easy', 'medium', 'hard')) AS mapped
-  FROM k GROUP BY code, key
 )
-SELECT 'G' AS q, code, n_platform, n_teacher, mapped,
-       (sum(n_platform) FILTER (WHERE NOT mapped) OVER ())::bigint AS unmapped_total
-FROM m
+SELECT 'G' AS q, NULL::text AS note, mapped_total, unmapped_total, null_or_blank, teacher_unmapped FROM r
 UNION ALL
-SELECT 'G', 'n/a: staging_cloud.challenges.difficulty not present', NULL, NULL, NULL, NULL FROM g WHERE x IS NULL
-ORDER BY 2;
+SELECT 'G', 'n/a: staging_cloud.challenges.difficulty not present', NULL, NULL, NULL, NULL FROM g WHERE x IS NULL;
 
 ROLLBACK;
