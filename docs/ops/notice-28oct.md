@@ -11,6 +11,7 @@ Status: Draft — NOTICE-P10, LEAD card 25 Oct; send on 28 Oct. Not yet reviewed
 | N5 | Two ops docs still carry the pre-R39 wording. `docs/ops/v2-cutover-plan.md:87` (P10: roster and legacy-password accounts "must set a new password") and `docs/ops/pre-night-28oct.md:285` ("Support told to expect a password-reset spike"). Only accounts with no usable password (for example Google-only) still need a reset. | LEAD / ops |
 | N6 | The opening time on 30 Oct is not fixed in the docs, so the notice says only "30 Okt". | LEAD |
 | N7 | "Lupa kata laluan?" sends a reset link by e-mail, so it needs production mail to be working on 30 Oct. | ops |
+| N8 | "Keputusan latihan dan sejarah aktiviti ... dipindahkan" is true in general, but the LEAD decisions of 25 Oct 13:15 MYT (#113 comment 6393823432) exclude two kinds of records. Exam attempts still `in_progress` are not migrated. Classes whose teacher no longer exists in the source are dropped with their enrolments; the pupils themselves still migrate. The text stays general; the LEAD decides whether to mention these. | LEAD |
 
 ## Facts this notice relies on
 
@@ -30,8 +31,10 @@ Status: Draft — NOTICE-P10, LEAD card 25 Oct; send on 28 Oct. Not yet reviewed
 
 ## Short version (WhatsApp/SMS)
 
+About 380 characters with the placeholder: 3 SMS segments (GSM-7, 153 per segment). Keep the real help channel short so it stays within 459.
+
 ```text
-PrestasiPlus: Sistem lama (.cloud) hanya boleh dibaca (read-only) mulai 01:00 pagi, 29 Okt, sehingga sistem baharu dibuka pada 30 Okt. Kata laluan anda TIDAK berubah. Log masuk semula di sistem baharu dengan e-mel/nama pengguna dan kata laluan yang sama. Jika akaun anda tiada kata laluan (log masuk dengan Google), guna "Lupa kata laluan?" di halaman log masuk untuk mencipta satu. Bantuan: [SALURAN BANTUAN - Q27, belum diputuskan]. - Pasukan PrestasiPlus
+PrestasiPlus: .cloud jadi baca-sahaja mulai 01:00 pagi 29 Okt sehingga sistem baharu dibuka 30 Okt. Kata laluan anda TIDAK berubah: log masuk semula dengan e-mel/nama pengguna dan kata laluan yang sama. Akaun tanpa kata laluan (dulu log masuk dengan Google): guna "Lupa kata laluan?" di halaman log masuk. Bantuan: [SALURAN BANTUAN - Q27, belum diputuskan]. - Pasukan PrestasiPlus
 ```
 
 ## Full version (e-mail / announcement)
