@@ -12,8 +12,11 @@ export const GAMIFICATION_LIMITS = {
   adminWrite: { bucket: 'gamification.admin.write', env: 'THROTTLE_ADMIN_WRITE_PER_MINUTE', default: 30, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
 
-/** Mock constant: the host of share and register links (contract: "host is a mock constant"). */
-export const PUBLIC_HOST = 'https://prestasiplus.my'
+/** BR-M14-16: "Tepat Sasaran" counts practice sessions with accuracy of at least this percentage. */
+export const ACCURATE_SESSION_PCT = 90
+/** BR-M14-16: the curriculum subjects (by name, M03 owner) whose correct answers "Tokoh Matematik" / "Pakar Sains" count. */
+export const MATH_SUBJECT_NAME = 'Matematik'
+export const SCIENCE_SUBJECT_NAME = 'Sains'
 
 /** Page sizes fixed by the mock (the query `pageSize` is ignored). */
 export const STUDENTS_PAGE_SIZE = 20
@@ -63,6 +66,10 @@ export const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_.:-]{1,100}$/
 /** Referral rewards (mock constants, contract `GAMIFICATION_REFERRAL_REWARDS`). */
 export const REFERRAL_REWARD_REFERRER = 50
 export const REFERRAL_REWARD_REFEREE = 25
+
+/** BR-M14-14 / FR-M14-64: the first student password login of a Malaysia day pays this many syiling, with this ledger text. */
+export const DAILY_LOGIN_REWARD = 2
+export const DAILY_LOGIN_DESCRIPTION = 'Streak activity (daily_login)'
 
 /** 403 message when an admin in Mod Pelajar tries to spend (convert): Mod Pelajar never spends real coins. */
 export const MOD_PELAJAR_REFUSAL = 'Tidak dibenarkan dalam Mod Pelajar.'

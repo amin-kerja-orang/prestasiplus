@@ -42,5 +42,8 @@ export const DEFAULT_REMEMBER_DAYS_STAFF = 1
 /** Cost of the dummy bcrypt hash used when no account or hash is found (Laravel default). */
 export const DEFAULT_LEGACY_DUMMY_COST = 12
 
+/** The longest a login waits for the post-login hook (M14 `onLogin`); after it the login answers without it. */
+export const LOGIN_HOOK_TIMEOUT_MS = 2_000
+
 /** Interactive transaction limits of the login write (Prisma defaults are 2 s / 5 s). */
 export const LOGIN_TX = { maxWait: 10_000, timeout: 15_000 } as const
