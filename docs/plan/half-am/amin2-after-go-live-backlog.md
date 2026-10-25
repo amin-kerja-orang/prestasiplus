@@ -22,19 +22,19 @@ Items that cannot start until the LEAD answers. Questions were raised on #109 (c
 
 | ID | Item | Source | Owner | Waits on | Branch/PR | Size |
 |---|---|---|---|---|---|---|
-| L01 | M10 B1: admin gets "Gagal memuatkan" on `/guru/kelas`; drop the admin from that route or give admin a view | #109 / 6399195617 | Amin2 | Drop admin from the route? | n/a (no branch) **Perlu pengesahan** | S |
-| L02 | M10 B2: class-create school picker offers any school; restrict to the teacher's own school | #109 / 6399195617 | Amin2 | Own school only? | n/a | S |
+| L01 | M10 B1: admin gets "Gagal memuatkan" on `/guru/kelas`; drop the admin from that route or give admin a view | #109 / 6399195617 | Amin2 | Drop admin from the route? | `fe/AM2-G5M10-b1-admin-meta` (planned), #350 (draft) | S |
+| L02 | M10 B2: class-create school picker offers any school; restrict to the teacher's own school | #109 / 6399195617 | Amin2 | Own school only? | `fe/AM2-G5M10-b2-own-school` (planned), #347 (draft) | S |
 | L03 | M10 B4: teacher remedial link goes to `/guru`; patch the link target | #109 / 6399195617 | Amin2 | Patch or keep | n/a | S |
 | L04 | M02 BUG-01: renewal invoice table empty; contract needs `students[]` | #109 / 6399195617 | Amin2 (FE) with BE | Add `students[]` to the contract? | n/a | M |
 | L05 | M02 BUG-06: forms are two columns at 640-767 px and the modal is 512 px | #109 / 6399195617 | Amin2 | Keep live behaviour or fix | n/a (related: #323, #324) | S |
-| L06 | M08 B3: S6/S19/S20 read different sources; align the code or change the doc | #109 / 6399721389 | Amin2 | Doc vs align | n/a | M |
-| L07 | M11-B5: S2 counts vs the S3/S5 minimisation filter; change the filter or the doc | #109 / 6399721389 | Amin2 | Filter vs doc | n/a | M |
+| L06 | M08 B3: S6/S19/S20 read different sources; align the code or change the doc | #109 / 6399195617 row 6 | Amin2 | Doc vs align | n/a | M |
+| L07 | M11-B5: S2 counts vs the S3/S5 minimisation filter; change the filter or the doc | #109 / 6399195617 row 7 | Amin2 | Filter vs doc | `be/AM2-G5M11-b5-filter` (planned) | M |
 | L08 | #307 GAMIF-REF (a) reference seed for achievements, challenges and settings, (b) the settings defaults, (c) challenge adoption by title | #307; #109 / 6399195617 rows 8-10 | Amin2 (Dev4) | Options (a), (b), (c) | `be/AM2-GAMIF-REF-reference-catalogue`, #307 (draft) | M |
-| L08b | UAT M17 (a) display constants shown next to computed figures; M17 (b) the "← Dashboard" link loops back to S2 (G5-M17 sweep, #113 6394014060). Not related to GAMIF-REF | #113 / 6394014060 | Amin2 (Dev5) | LEAD call on (a); (b) may be a plain m17 bug | n/a | S |
-| L09 | Q18 questions 1 to 3 (pre-night and VPS setup wording and steps) | #109 / 6399721389 | Amin2 | Answers to Q18 1 to 3 | `be/AM2-Q18-DOCS`, #321 (held for the LEAD) | S |
+| L08b | UAT M17 (a) display constants shown next to computed figures; M17 (b) the "← Dashboard" link loops back to S2 (G5-M17 sweep, #113 6394014060). Not related to GAMIF-REF | #113 / 6394014060; 6400537203 (AM2-Dev5 M17 claim) | Amin2 (Dev5) | LEAD call on (a); (b) may be a plain m17 bug | n/a | S |
+| L09 | Q18 questions 1 to 3 (pre-night and VPS setup wording and steps) | #109 / 6399195617 rows 11-13 | Amin2 | Answers to Q18 1 to 3 | `be/AM2-Q18-DOCS`, #321 (held for the LEAD) | S |
 | L10 | REFERRAL-FU all/n: cap N=10 per 24 h, `coinsEnabled`, pending teacher. Open points: all vs n, and how a pending teacher is counted | #109 / 6399721389 | Amin2 | all vs n; the cap and coin rules | `be/AM2-REFERRAL-FU` `1fea2022` (no PR yet) | M |
-| L11 | N1 notice: reset wording vs AM-18 (A) | #109 / 6399721389 | Amin2 | Which wording wins | `docs/AM2-NOTICE-P10` (adds `docs/ops/notice-28oct.md`) | S |
-| L12 | Migrated accounts are still flagged `must_reset_password` by `decidePassword` in `apps/api/src/migration/transform/secrets.ts` (lines 23-55): non-bcrypt, shared default and roster accounts are flagged. Decide whether that forced reset stays after go-live | #109 / 6399721389 | Amin2 with BE | Keep or relax the flag | Related: `be/AM2-R39-no-must-reset`, `be/AM2-R39b-bootstrap-no-flag`, #226 | M |
+| L11 | N1 notice: reset wording vs AM-18 (A). Open items N4, N9, N10 | #317; #109 / 6399721389 | Amin2 | Which wording wins | `docs/AM2-NOTICE-P10` (adds `docs/ops/notice-28oct.md`), #317; held for the LEAD | S |
+| L12 | Migrated accounts are still flagged `must_reset_password` by `decidePassword` in `apps/api/src/migration/transform/secrets.ts` (lines 23-55): non-bcrypt, shared default and roster accounts are flagged. Decide whether that forced reset stays after go-live | #109 / 6399369645 (reply "R39-C4: 1 / 2 / 3"; Amin1 recommends 2) | Amin1 (migration) / Amin2 (notice) — Perlu pengesahan | R39-C4 (1 / 2 / 3) and N9. Notice #317 must not be sent until N9 and R39-C4 are decided | Related: `be/AM2-R39-no-must-reset`, `be/AM2-R39b-bootstrap-no-flag`, #226 | M |
 | L13 | M01 BUG-01: IC reset limit per address (5 per 15 min) can lock out a whole school behind one address | #113 / 6399706180 | Amin2 (BE) | New limit rule | n/a | M |
 | L14 | M01 BUG-07: notifications inbox not built; `/notifikasi` is 404 for a guest | #113 / 6399706180 | Amin2 | Build now (new scope) or drop | n/a | L |
 
@@ -45,26 +45,27 @@ Work with no open question. Merge only after the go-live freeze is lifted.
 | ID | Item | Source | Owner | Waits on | Branch/PR | Size |
 |---|---|---|---|---|---|---|
 | C01 | M27 B5: S8 "Kod Kelas" clipped at 768 px; class table fits | #340 | Amin2 (Dev7) | - (go-live freeze) | `fe/AM2-G5M27-b5-b6`, #340 (draft) | S |
-| C02 | M01 BUG-04: register and token server messages are in English; map to BM | #113 / 6399706180 | Amin2 (Dev6) | - | n/a **Perlu pengesahan** | S |
+| C02 | M01 BUG-04: register and token server messages are in English; map to BM | #113 / 6399706180 | Amin2 (Dev6) | - | `fe/AM-G5M01-fixes`, #345 (draft; G4 REQUEST CHANGES, 6400161521 and 6400531767; Major fixes pushed at 704790e9, delta G4 pending) | S |
 | C03 | M01 BUG-06: closed registration form stays usable until submit | #113 / 6399706180 | Amin2 (Dev6) | - | n/a | S |
-| C04 | M01 BUG-10: "Ingat saya" label misaligned | #113 / 6399706180 | Amin2 (Dev6) | - | n/a | S |
+| C04 | M01 BUG-10: "Ingat saya" label misaligned | #113 / 6399706180 | Amin2 (Dev6) | - | dropped from #345 in 1c5ffb04; DS owner | S |
 | C05 | Optional minor on #332: DV-M08-53/54 rows and a B7 `v-if` test | #332 | Amin2 | - | `fe/AM2-G5M08-b5-b7`, #332 | S |
-| C06 | Optional minor on #335: doubled subtitle | #335 | Amin2 | - | `fe/AM2-G5M11-layout-fixes`, #335 | S |
+| C06 | Optional minor on #335: doubled subtitle | #335 | Amin2 | LEAD M11-SUB (6400544380) | `fe/AM2-G5M11-layout-fixes`, #335 | S |
 | C07 | Optional minor on #336: MobileCard padding, the `dl`, DV-M27-28 | #336 | Amin2 | - | `fe/AM2-G5M27-fixes`, #336 | S |
 | C08 | Optional minor on #323: Remedial dialog 35 px; needs #324 DsDialog `xl` first | #323 | Amin2 | Half AZ merging #324 (H10) | `fe/AM2-G5M10-ccdialog-width`, #323 | S |
-| C09 | Forced password change screen (AM2-A1): M01 part waits for the LEAD decision and the half-AZ patch | #226 | Amin2 | Same decision as L12 | `fe/AM2-A1-forced-password-change`, #226 (draft) | M |
+| C09 | Forced password change screen (AM2-A1): M01 part waits for the LEAD decision and the half-AZ patch | #226 | Amin2 | Same decision as L12 (R39-C4, #109 6399369645) | `fe/AM2-A1-forced-password-change`, #226 (draft) | M |
 | C10 | Referral follow-up implementation once L10 is answered | #109 / 6399721389 | Amin2 | L10 | `be/AM2-REFERRAL-FU` | M |
 
 ## 3. Docs follow-ups
 
 | ID | Item | Source | Owner | Waits on | Branch/PR | Size |
 |---|---|---|---|---|---|---|
-| D01 | M10 B6 (`/guru/live-kelas/cipta` redirect, D43), B7 (Tetapan Profil link hidden), B8 (scan error copy): spec and deviation notes | #341 | Amin2 (Dev7) | Review and merge | `docs/AM2-G5M10-spec-notes`, #341 | S |
+| D01 | M10 B6 (`/guru/live-kelas/cipta` redirect, D43), B7 (Tetapan Profil link hidden), B8 (scan error copy): spec and deviation notes | #341 | Amin2 (Dev7) | Review; merge after #247 | `docs/AM2-G5M10-spec-notes`, #341 | S |
 | D02 | M01 BUG-03, BUG-05, BUG-08: deviation rows (credentials copy vs AC 01.4, `?redirect=` honoured, login field type) | #342 | Amin2 (Dev6) | Review and merge | `docs/AM-G5M01-deviations`, #342 | S |
 | D03 | Q18 docs changes to `docs/ops/pre-night-28oct.md` and `docs/ops/vps-dark-setup-26oct.md` | `be/AM2-Q18-DOCS` | Amin2 | L09 | `be/AM2-Q18-DOCS` | S |
-| D04 | M08 B3 and M11-B5: update the module docs once the LEAD picks doc vs align | #109 / 6399721389 | Amin2 | L06, L07 | n/a | S |
-| D05 | N1 notice file `docs/ops/notice-28oct.md` and its docs index line | `docs/AM2-NOTICE-P10` | Amin2 | L11 | `docs/AM2-NOTICE-P10` | S |
+| D04 | M08 B3 and M11-B5: update the module docs once the LEAD picks doc vs align | #109 / 6399195617 rows 6-7 | Amin2 | L06, L07 | n/a | S |
+| D05 | N1 notice file `docs/ops/notice-28oct.md` and its docs index line | #317; `docs/AM2-NOTICE-P10` | Amin2 | L11 (N4, N9, N10) | `docs/AM2-NOTICE-P10`, #317 (held for the LEAD) | S |
 | D06 | Gamification reference-data note in the docs after the L08 answer | #307 | Amin2 | L08 | `be/AM2-GAMIF-REF-reference-catalogue` | S |
+| D07 | #308 docs draft (AM2-Dev4), stacked on #260 | #308 | Amin2 (Dev4) | Retarget after #310 merges | #308 (draft, stacked on #260) | S |
 
 ## 4. Half-AZ shared-file proposals
 
