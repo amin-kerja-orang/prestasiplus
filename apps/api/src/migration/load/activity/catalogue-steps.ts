@@ -195,12 +195,30 @@ export function challengesStep(a: ActivityContext): AnyEntityStep {
         else items.push({ legacyId, values: out.value as unknown as Record<string, unknown> })
       }
       a.notes.count('challenges.teacher_excluded', teacher)
-      const res = await upsertAndMap(
+      // Seeded challenges (reference seed `core-gamification-catalogue`) are adopted by lower-cased title, like the achievements:
+      // the seed row keeps its metric, rewards, difficulty and order (a legacy row has metric null, so it can never be completed).
+      await claimSeeded(ctx.db, 'challenges', ctx.source, 'lower(btrim(t.title))', items.map((i) => ({ legacyId: i.legacyId, key: String(i.values.title).toLowerCase() })))
+      // A seed-origin row is told from a row this step inserted by its metric: the step always writes null (OD-25), a seed always sets one.
+      // Such a row keeps its own title, type and target (the NOT NULL columns the insert half of the upsert needs) and only takes the
+      // source timestamps, so a re-run never overwrites the seed values or an admin edit.
+      const kept = new Map<string, { title: string; challenge_type: string; target_value: number }>()
+      if (items.length > 0) {
+        const held = await ctx.db.query<{ legacy_id: string; title: string; challenge_type: string; target_value: number }>(
+          `SELECT legacy_id, title, challenge_type, target_value FROM challenges WHERE legacy_source = $1 AND legacy_id = ANY($2::text[]) AND metric IS NOT NULL`,
+          [ctx.source, items.map((i) => i.legacyId)],
+        )
+        for (const r of held.rows) kept.set(r.legacy_id, { title: r.title, challenge_type: r.challenge_type, target_value: r.target_value })
+      }
+      const fresh = await upsertAndMap(
         ctx, entity, 'challenges',
         ['title', 'challenge_type', 'metric', 'target_value', 'reward_syiling', 'reward_xp', 'difficulty', 'sort_order', 'is_active', 'created_at', 'updated_at'],
-        items,
+        items.filter((i) => !kept.has(i.legacyId)),
       )
-      return sumBatch(res, excludedResult(teacher))
+      const adopted = await upsertAndMap(
+        ctx, entity, 'challenges', ['title', 'challenge_type', 'target_value', 'created_at', 'updated_at'],
+        items.filter((i) => kept.has(i.legacyId)).map((i) => ({ legacyId: i.legacyId, values: { ...i.values, ...kept.get(i.legacyId) } })),
+      )
+      return sumBatch(fresh, adopted, excludedResult(teacher))
     },
   }
 }

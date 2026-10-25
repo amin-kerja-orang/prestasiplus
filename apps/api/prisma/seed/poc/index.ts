@@ -30,7 +30,8 @@
  *  21. practice               practice sessions and answers of the demo accounts
  *  22. core-marketplace-categories  REFERENCE: the 6 marketplace categories (BE-46; also runs in production)
  *  23. marketplace            demo seller, products and images (BE-46)
- *  24. gamification           achievements, challenges, rewards, draws
+ *  23a. core-gamification-catalogue  REFERENCE: the 25 achievements, 10 daily challenges and 10 gamification settings (GAMIF-REF; also runs in production)
+ *  24. gamification           Syiling rewards, Hadiah, learner badges, draws (the achievements, challenges and settings are already there; the rows are found by name/title/key)
  *  25. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
  *
  * Production: refused unless the operator opts in with ALLOW_DEMO_SEED=true; the `--force-demo` flag of the seed
@@ -66,6 +67,7 @@ export const POC_PROFILE_ORDER = [
   'practice',
   'core-marketplace-categories',
   'marketplace',
+  'core-gamification-catalogue',
   'gamification',
   'poc-profile',
 ] as const
