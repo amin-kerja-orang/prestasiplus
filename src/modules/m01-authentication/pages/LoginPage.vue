@@ -123,6 +123,12 @@ async function submit(): Promise<void> {
           v-model="remember"
           name="remember"
           label="Ingat saya"
+          class="min-h-11 items-center"
+          :ui="{
+            container: 'h-auto min-h-11 items-center',
+            wrapper: 'flex min-h-11 items-center',
+            label: 'flex min-h-11 cursor-pointer items-center',
+          }"
           data-testid="login-remember"
         />
         <div class="ml-auto flex flex-col items-end">

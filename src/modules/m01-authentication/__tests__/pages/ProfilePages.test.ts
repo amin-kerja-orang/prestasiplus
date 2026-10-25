@@ -219,7 +219,7 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     await flushPromises()
     expect(useFlashStore().current).toEqual({
       type: 'error',
-      message: ['The name field is required.'],
+      message: ['Ruang nama wajib diisi.'],
     })
     expect((w.get('[data-testid=profile-name-input]').element as HTMLInputElement).value).toBe(
       '   ',

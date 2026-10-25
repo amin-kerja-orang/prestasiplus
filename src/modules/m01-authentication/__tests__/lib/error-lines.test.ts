@@ -69,3 +69,38 @@ describe('errorLines: no English server text (SWE-02)', () => {
     expect(errorLines(fail(409, 'Emel sudah didaftarkan.'))).toEqual(['Emel sudah didaftarkan.'])
   })
 })
+
+describe('errorLines BM mapping (BUG-04)', () => {
+  const lines = (fields: Record<string, string>) =>
+    errorLines(new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'x', fields }))
+
+  it.each([
+    ['The grade field is required.', 'Ruang darjah wajib diisi.'],
+    ['The email has already been taken.', 'Alamat email ini telah digunakan.'],
+    ['The password confirmation does not match.', 'Pengesahan kata laluan tidak sepadan.'],
+    ['The password field confirmation does not match.', 'Pengesahan kata laluan tidak sepadan.'],
+    [
+      'The password must be at least 8 characters.',
+      'Ruang kata laluan mestilah sekurang-kurangnya 8 aksara.',
+    ],
+    [
+      'The password field must be at least 6 characters.',
+      'Ruang kata laluan mestilah sekurang-kurangnya 6 aksara.',
+    ],
+    ['This password reset token is invalid.', 'Token tetapan semula kata laluan ini tidak sah.'],
+  ])('maps %s', (en, bm) => {
+    expect(lines({ f: en })).toEqual([bm])
+  })
+
+  it('maps a message without fields and passes unknown or BM text through', () => {
+    expect(
+      errorLines(
+        new ApiError({ status: 422, code: 'X', message: 'This password reset token is invalid.' }),
+      ),
+    ).toEqual(['Token tetapan semula kata laluan ini tidak sah.'])
+    expect(lines({ a: 'Teks lain.', b: 'Email atau kata laluan tidak sah.' })).toEqual([
+      'Teks lain.',
+      'Email atau kata laluan tidak sah.',
+    ])
+  })
+})

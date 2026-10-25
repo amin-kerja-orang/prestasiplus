@@ -261,7 +261,9 @@ describe('PasswordResetPage (S4)', () => {
     await w.get('[data-testid=reset-confirm]').setValue('BaruBaru1')
     await w.get('form').trigger('submit')
     await flushPromises()
-    expect(w.get('[data-testid=reset-alert]').text()).toBe('This password reset token is invalid.')
+    expect(w.get('[data-testid=reset-alert]').text()).toBe(
+      'Token tetapan semula kata laluan ini tidak sah.',
+    )
     expect((w.get('[data-testid=reset-email]').element as HTMLInputElement).value).toBe(
       'pelajar@demo.test',
     )
