@@ -359,7 +359,7 @@
     "banners": {
       "title": "keep",
       "type": "keep",
-      "target": "keep",
+      "target": "null",
       "image_path": "pseudonym:path",
       "starts_at": "keep",
       "ends_at": "keep",
@@ -367,9 +367,9 @@
       "is_active": "keep"
     },
     "articles": {
-      "slug": "keep",
+      "slug": "pseudonym:opaque",
       "category": "keep",
-      "title": "keep",
+      "title": "redact-pii",
       "views": "keep",
       "is_published": "keep",
       "author_id": "keep"
@@ -565,21 +565,21 @@
       "difficulty_level": "keep",
       "type": "keep",
       "status": "keep",
-      "body": "keep",
-      "explanation": "keep",
+      "body": "redact-pii",
+      "explanation": "redact-pii",
       "image_path": "pseudonym:path"
     },
     "question_options": {
       "question_id": "keep",
       "label": "keep",
-      "body": "keep",
+      "body": "redact-pii",
       "image_path": "pseudonym:path",
       "is_correct": "keep"
     },
     "structured_questions": {
       "subject_id": "keep",
       "status": "keep",
-      "stimulus": "keep"
+      "stimulus": "redact-pii"
     },
     "structured_sub_questions": {
       "structured_question_id": "keep",
@@ -589,12 +589,12 @@
     "structured_rubric_points": {
       "structured_sub_question_id": "keep",
       "marks": "keep",
-      "text": "keep"
+      "text": "redact-pii"
     },
     "pksk_questions": {
       "bahagian": "keep",
       "domain": "keep",
-      "body": "keep",
+      "body": "redact-pii",
       "status": "keep"
     },
     "question_reports": {
@@ -658,16 +658,16 @@
     "part_options": {
       "question_part_id": "keep",
       "label": "keep",
-      "body": "keep"
+      "body": "redact-pii"
     },
     "part_answer_keys": {
       "question_part_id": "keep",
       "answer_key_kind_id": "keep",
-      "content": "keep"
+      "content": "redact-pii"
     },
     "stimuli": {
       "stimulus_kind_id": "keep",
-      "body": "keep"
+      "body": "redact-pii"
     },
     "media_assets": {
       "path": "pseudonym:path",
@@ -678,7 +678,7 @@
     },
     "question_snapshots": {
       "exam_question_id": "keep",
-      "content": "keep"
+      "content": "redact-pii"
     },
     "source_papers": {
       "natural_key": "keep",

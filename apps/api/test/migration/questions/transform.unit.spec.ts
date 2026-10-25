@@ -4,12 +4,14 @@
 import { QuestionLeafPartSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
+import { PiiRedactor, REDACTED_TOKEN } from '../../../src/migration/anonymise/redact'
 import { mapQuestionType } from '../../../src/migration/snapshot-dims/dims'
 
 import {
   exclusionOf,
   formOriginOf,
   normaliseLabels,
+  piiKindsOf,
   transformQuestion,
   type Curriculum,
   type LegacyOption,
@@ -301,6 +303,70 @@ describe('transformQuestion: personal-data screen (count only)', () => {
     const body = ('1234 a@' + 'b'.repeat(60) + ' ').repeat(200)
     plan(row({ body }))
     expect(Date.now() - t0).toBeLessThan(1000)
+  })
+})
+
+describe('transformQuestion: text masked by the anonymiser (redact-pii, A1-LEAK)', () => {
+  const T = REDACTED_TOKEN
+  const issues = (r: LegacyQuestion) => plan(r).import_issues
+
+  it('piiKindsOf reports "redacted" for the token, and only for it', () => {
+    expect(piiKindsOf(`Hubungi ${T} sekarang`)).toEqual(['redacted'])
+    expect(piiKindsOf(T)).toEqual(['redacted'])
+    expect(piiKindsOf('[maklumat peribadi]')).toEqual([])
+    expect(piiKindsOf('Soalan biasa 12 + 3')).toEqual([])
+  })
+
+  it('holds a question whose stem was masked: inactive, held_pii_suspect, kind "redacted", no text in the issue', () => {
+    const p = plan(row({ body: `Hubungi ${T} untuk jawapan` }))
+    expect(p.is_active).toBe(false)
+    expect(p.notes).toContain('held_pii_suspect')
+    expect(p.import_issues).toEqual([{ code: 'pii_suspect', target: 'stem', kind: 'redacted' }])
+    expect(JSON.stringify(p.import_issues)).not.toContain(T)
+  })
+
+  it('holds a question whose option was masked, naming the option label (an option or an answer key is never served)', () => {
+    const o = plan(row({}, [opt('A', 'Satu', '0'), opt('B', `Telefon ${T}`, '1'), opt('C', 'Tiga', '0')]))
+    expect(o.is_active).toBe(false)
+    expect(o.notes).toContain('held_pii_suspect')
+    expect(o.import_issues).toEqual([{ code: 'pii_suspect', target: 'option', label: 'B', kind: 'redacted' }])
+    // the masked option is the CORRECT one: the question is held all the same
+    expect(o.correct).toBe('B')
+  })
+
+  it('holds a question whose explanation was masked', () => {
+    const e = plan(row({ explanation: `Lihat ${T}` }))
+    expect(e.is_active).toBe(false)
+    expect(e.import_issues).toEqual([{ code: 'pii_suspect', target: 'explanation', kind: 'redacted' }])
+  })
+
+  it('counts per column: one issue per target and label, each once, and they add up with the other kinds', () => {
+    const p = plan(row({ body: `${T} dan ${T}`, explanation: `${T} lagi` }, [opt('A', `${T}`, '0'), opt('B', 'Dua', '1'), opt('C', `${T} ${T}`, '0')]))
+    expect(p.import_issues).toEqual([
+      { code: 'pii_suspect', target: 'stem', kind: 'redacted' },
+      { code: 'pii_suspect', target: 'option', label: 'A', kind: 'redacted' },
+      { code: 'pii_suspect', target: 'option', label: 'C', kind: 'redacted' },
+      { code: 'pii_suspect', target: 'explanation', kind: 'redacted' },
+    ])
+    const mixed = issues(row({ body: `IC 990101145678 dan ${T}` }))
+    expect(mixed?.map((i) => i.kind)).toEqual(['ic', 'redacted'])
+  })
+
+  it('end to end: the anonymiser masks a phone number in a question and QLOAD then holds the question', () => {
+    const redactor = new PiiRedactor(null)
+    const masked = (v: string) => redactor.redact(v) as string
+    const clean = plan(row({ body: masked('Hitung 2 + 3 =?') }))
+    expect(clean.is_active).toBe(true)
+    // a false positive on purpose: a maths string with the shape of a phone number is masked, and the question is held
+    for (const body of ['Hitung 0123456789 + 1', 'Cari 03-1234 5678 pada garis', '<p>Hubungi 012-345 6789</p>']) {
+      const p = plan(row({ body: masked(body) }))
+      expect(p.is_active, body).toBe(false)
+      expect(p.import_issues, body).toEqual([{ code: 'pii_suspect', target: 'stem', kind: 'redacted' }])
+    }
+    const inOption = plan(row({}, [opt('A', masked('Satu'), '0'), opt('B', masked('Mel a.b@leak-check.invalid'), '1'), opt('C', masked('Tiga'), '0')]))
+    expect(inOption.import_issues).toEqual([{ code: 'pii_suspect', target: 'option', label: 'B', kind: 'redacted' }])
+    const inExplanation = plan(row({ explanation: masked('Panggil 03-1234 5678') }))
+    expect(inExplanation.import_issues).toEqual([{ code: 'pii_suspect', target: 'explanation', kind: 'redacted' }])
   })
 })
 

@@ -15,6 +15,7 @@
  */
 import { QuestionLeafPartSchema } from '@pp/contract'
 
+import { REDACTED_TOKEN } from '../anonymise/redacted-token'
 import { mapQuestionType, parseDifficulty } from '../snapshot-dims/dims'
 import { enumKey, flag, ok, reject, stamps, text, type Outcome, type Staged } from './common'
 
@@ -176,11 +177,12 @@ export function htmlHoldOf(value: string): HoldCode | null {
   return null
 }
 
-export type PiiKind = 'ic' | 'phone' | 'email' | 'url' | 'handle'
+export type PiiKind = 'ic' | 'phone' | 'email' | 'url' | 'handle' | 'redacted'
 
 /**
  * Count-only screen for personal data in a free-text body (a Malaysian IC number, a phone number, an e-mail address, a URL,
- * an @handle). Every pattern is bounded or linear. Only the KIND is reported, never the text or the match.
+ * an @handle), or the anonymiser's `redact-pii` mark (`redacted`: part of the text was masked in an anonymised dump, so what
+ * it said is unknown). Every pattern is bounded or linear. Only the KIND is reported, never the text or the match.
  */
 export function piiKindsOf(value: string): PiiKind[] {
   const kinds: PiiKind[] = []
@@ -191,6 +193,7 @@ export function piiKindsOf(value: string): PiiKind[] {
     if (/(?<![\w.@])@[A-Za-z0-9_.]{3,30}/.test(value)) kinds.push('handle')
   }
   if (/https?:\/\//i.test(value) || /(?<![\w.])www\./i.test(value)) kinds.push('url')
+  if (value.includes(REDACTED_TOKEN)) kinds.push('redacted')
   return kinds
 }
 

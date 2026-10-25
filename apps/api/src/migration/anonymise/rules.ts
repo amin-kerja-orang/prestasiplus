@@ -13,6 +13,10 @@
  *   "scrub-json"              json held in a text column: parsed, keys/numbers/booleans/null kept, every string leaf
  *                             becomes `Teks anonim.`, written back with JSON.stringify; NULL stays NULL and a value
  *                             that is not valid JSON is replaced as scrub-text would (fail closed)
+ *   "redact-pii"              free-text CONTENT that must stay readable (A1-LEAK, redact.ts): only the spans that the leak
+ *                             scan would flag (e-mail, phone, IC, an indexed original value or multi-word name) become
+ *                             `[maklumat peribadi dipadam]`, the rest of the text is kept; in json every string leaf
+ *                             is handled the same way; NULL and "" stay as they are
  *   "hash-password-dummy"     see passwords.ts
  *   "pseudonym:<kind>"        keyed deterministic fake, kinds in pseudonyms.ts
  *
@@ -25,6 +29,7 @@ import { columnNames, type TableSpec } from '../ddl/spec'
 import { ConfigError, CoverageError } from './errors'
 import { dummyPasswordHash } from './passwords'
 import { PSEUDONYM_KINDS, type PseudonymKind, type Pseudonymiser } from './pseudonyms'
+import { PiiRedactor, type RedactKind } from './redact'
 
 export type Rule =
   | { rule: 'keep' }
@@ -32,6 +37,7 @@ export type Rule =
   | { rule: 'fixed'; value: unknown }
   | { rule: 'scrub-text' }
   | { rule: 'scrub-json' }
+  | { rule: 'redact-pii' }
   | { rule: 'hash-password-dummy' }
   | { rule: 'pseudonym'; kind: PseudonymKind }
 
@@ -54,13 +60,13 @@ const PLAIN_NAME = /^[a-z][a-z0-9_]{0,62}$/
 
 function parseRule(raw: unknown, where: string): Rule {
   if (typeof raw === 'string') {
-    if (raw === 'keep' || raw === 'null' || raw === 'scrub-text' || raw === 'scrub-json' || raw === 'hash-password-dummy') return { rule: raw }
+    if (raw === 'keep' || raw === 'null' || raw === 'scrub-text' || raw === 'scrub-json' || raw === 'redact-pii' || raw === 'hash-password-dummy') return { rule: raw }
     if (raw.startsWith('pseudonym:')) {
       const kind = raw.slice('pseudonym:'.length)
       if ((PSEUDONYM_KINDS as readonly string[]).includes(kind)) return { rule: 'pseudonym', kind: kind as PseudonymKind }
       throw new ConfigError(`${where}: unknown pseudonym kind. Allowed: ${PSEUDONYM_KINDS.join(', ')}.`)
     }
-    throw new ConfigError(`${where}: unknown rule. Allowed: keep, null, scrub-text, scrub-json, hash-password-dummy, pseudonym:<kind>, {"fixed": ...}.`)
+    throw new ConfigError(`${where}: unknown rule. Allowed: keep, null, scrub-text, scrub-json, redact-pii, hash-password-dummy, pseudonym:<kind>, {"fixed": ...}.`)
   }
   if (isObject(raw) && Object.keys(raw).length === 1 && 'fixed' in raw) return { rule: 'fixed', value: raw.fixed }
   throw new ConfigError(`${where}: a rule is a string or {"fixed": value}.`)
@@ -169,8 +175,18 @@ function scrubJsonText(value: string): string {
   return JSON.stringify(scrubJson(parsed))
 }
 
+const PATTERN_ONLY_REDACTOR = new PiiRedactor(null)
+
 /** Applies one rule to one value. `pseudo` is only needed for pseudonym rules. */
-export function applyRule(rule: Rule, value: unknown, pseudo: Pseudonymiser, lockPassword = false): unknown {
+export function applyRule(
+  rule: Rule,
+  value: unknown,
+  pseudo: Pseudonymiser,
+  lockPassword = false,
+  /** For `redact-pii`: the run's redactor (with the originals index). Without one only the scan patterns are redacted. */
+  redactor: PiiRedactor = PATTERN_ONLY_REDACTOR,
+  onRedact?: (kind: RedactKind) => void,
+): unknown {
   switch (rule.rule) {
     case 'keep':
       return value
@@ -187,6 +203,8 @@ export function applyRule(rule: Rule, value: unknown, pseudo: Pseudonymiser, loc
       if (typeof value === 'string') return scrubJsonText(value)
       if (typeof value === 'object') return scrubJson(value)
       return SCRUBBED_TEXT
+    case 'redact-pii':
+      return redactor.redact(value, onRedact)
     case 'hash-password-dummy':
       return dummyPasswordHash(value, lockPassword)
     case 'pseudonym':
