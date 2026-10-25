@@ -23,7 +23,9 @@ export default defineConfig({
   timeout: 240_000,
   retries: 0,
   reporter: 'list',
-  outputDir: process.env.DSKP_RESULTS ?? '../../test-results-dskp-g5',
+  // Not under a folder Vite watches: a trace file written there makes the dev server reload every open
+  // page ("element was detached"). `test-results/` is on Vite's default ignore list and in .gitignore.
+  outputDir: process.env.DSKP_RESULTS ?? '../../test-results/dskp-g5',
   use: {
     baseURL,
     locale: 'ms-MY',
@@ -61,6 +63,8 @@ export default defineConfig({
     command: process.env.BIJAK_DEV
       ? `npx vite --mode e2e --port ${PORT} --strictPort`
       : `npx vite build --mode e2e --outDir dist-e2e-dskp && npx vite preview --mode e2e --outDir dist-e2e-dskp --port ${PORT} --strictPort`,
+    // Playwright runs the command from the config's folder by default; Vite needs the repository root.
+    cwd: '../..',
     env: { VITE_PROTOTYPE_SCOPE: 'on' },
     url: baseURL,
     reuseExistingServer: !!process.env.DSKP_REUSE,

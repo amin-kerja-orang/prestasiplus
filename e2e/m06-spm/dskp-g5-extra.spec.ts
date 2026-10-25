@@ -41,7 +41,11 @@ test.describe('Student side (US-08, AC-07.5, G2 5.4)', () => {
     await expect(tid(page, 'bijak-cover')).toBeVisible()
     await tid(page, 'cover-start').click()
     await expect(tid(page, 'attempt-shell')).toBeVisible()
+    // `isVisible()` does not wait: let the first question render before walking to the last one,
+    // otherwise on a slow machine the loop is skipped and the page re-renders under the click.
+    await expect(tid(page, 'next')).toBeVisible()
     while (await tid(page, 'next').isVisible()) await tid(page, 'next').click()
+    await expect(tid(page, 'submit')).toBeVisible()
     await tid(page, 'submit').click()
     await tid(page, 'confirm-submit').click()
     await expect(tid(page, 'win-screen')).toBeVisible()
@@ -67,7 +71,11 @@ test.describe('Student side (US-08, AC-07.5, G2 5.4)', () => {
     await expect(tid(page, 'bijak-cover')).toBeVisible()
     await tid(page, 'cover-start').click()
     await expect(tid(page, 'attempt-shell')).toBeVisible()
+    // `isVisible()` does not wait: let the first question render before walking to the last one,
+    // otherwise on a slow machine the loop is skipped and the page re-renders under the click.
+    await expect(tid(page, 'next')).toBeVisible()
     while (await tid(page, 'next').isVisible()) await tid(page, 'next').click()
+    await expect(tid(page, 'submit')).toBeVisible()
     await tid(page, 'submit').click()
     await tid(page, 'confirm-submit').click()
     await expect(tid(page, 'win-screen')).toBeVisible()
