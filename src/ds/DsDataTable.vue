@@ -277,7 +277,7 @@ function cell(row: T, key: string): string {
                 <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
                   <div v-for="f in cardFields" :key="f.key" class="min-w-0">
                     <dt class="text-caption text-muted">{{ f.label }}</dt>
-                    <dd class="tabular truncate text-body">{{ cell(row, f.key) }}</dd>
+                    <dd class="tabular text-body break-words">{{ cell(row, f.key) }}</dd>
                   </div>
                 </dl>
               </slot>
