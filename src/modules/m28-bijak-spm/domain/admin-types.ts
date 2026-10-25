@@ -6,7 +6,10 @@
 import type { IntakeQuestion, IntakeStimulus } from '../admin/intake/types'
 import type {
   CurriculumTag,
+  DskpSpId,
+  DskpUnitId,
   GroupDef,
+  KbatLevel,
   McqOption,
   PartDef,
   PaperDef,
@@ -15,11 +18,42 @@ import type {
   SectionDef,
   StimulusDef,
   SubjectCode,
+  TpLevel,
 } from './types'
 
 export type QuestionStatus = 'semakan' | 'terbit' | 'draf' | 'ditolak'
 export type QuestionKind = 'objektif' | 'berstruktur' | 'esei'
 export type Confidence = 'tinggi' | 'sederhana' | 'rendah'
+
+/**
+ * What an AI provider suggested for the DSKP tag of an intake question (v2-dskp-integration 2.7).
+ * Transient: it is kept on the intake question until submit, where it is copied into the history as
+ * the `ai` side of a `TagChange`; the published tag never carries it.
+ */
+export interface TagSuggestion {
+  /** 'mock' now (ADR-0019). */
+  providerId: string
+  model: string
+  /** Implied by the suggested unit, otherwise absent. */
+  formOrigin?: CurriculumTag['formOrigin']
+  unitId?: DskpUnitId | null
+  spIds?: DskpSpId[]
+  tp?: TpLevel | null
+  kbat?: KbatLevel | null
+  /** Per field. */
+  confidence: Partial<Record<'unit' | 'sp' | 'tp' | 'kbat', Confidence>>
+}
+
+/** One field of the tag that a person (or the first tagging) set, read-only in the history list (AC-10.x). */
+export interface TagChange {
+  field: 'formOrigin' | 'unit' | 'sp' | 'tp' | 'kbat'
+  /** Undefined on first tagging. */
+  before?: unknown
+  after: unknown
+  /** The AI-suggested value; absent when there was none (AC-10.2). */
+  ai?: unknown
+  confidence?: Confidence
+}
 
 export interface HistoryEntry {
   at: number
@@ -27,6 +61,8 @@ export interface HistoryEntry {
   version: number
   action: string
   note?: string
+  /** Tag changes made in this step; the person is `by`. */
+  tag?: TagChange[]
 }
 
 /** Review state of one question (a published seed question without a record is Terbit, version 1). */
@@ -202,8 +238,6 @@ export interface BankEditable {
   stimulus?: IntakeStimulus
   /** The live version is read-only while a newer one waits for review. */
   pendingRevision: boolean
-  /** Whether the live question carries no SP (legacy seed): the SP check is waived on save. */
-  legacyTag: boolean
   /** The questions that share the stimulus being edited. */
   sharers?: StimulusSharers
 }

@@ -22,6 +22,7 @@ import {
   removeStimulus,
 } from '../domain/grouping'
 import { paperMarks, questionMarks } from '../domain/marks'
+import { tagLookup, useDskpSubject } from '../../../lib/dskp-source'
 import { validateBatch } from '../domain/validation'
 import { blankQuestion, nextLabel } from '../domain/blank'
 import { INTAKE_LIST_PATH } from '../lib/intake-routes'
@@ -108,7 +109,12 @@ async function save(): Promise<void> {
 }
 
 /* ------------------------------------------------------------------------------ derived */
-const issues = computed<IntakeIssue[]>(() => (batch.value ? validateBatch(batch.value) : []))
+// Interim wiring (DSKP-T07 rewrites the page): load the batch subject, then run the shared tag rule.
+const dskp = useDskpSubject(() => batch.value?.subject)
+const issues = computed<IntakeIssue[]>(() => {
+  void dskp.view.value
+  return batch.value ? validateBatch(batch.value, tagLookup()) : []
+})
 const groups = computed(() => groupsOf(batch.value?.questions ?? []))
 const total = computed(() => paperMarks(batch.value?.questions ?? []))
 const issuesByQuestion = computed(() => {

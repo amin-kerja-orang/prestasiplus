@@ -6,6 +6,7 @@ import type { IntakeQuestion, ManualMeta } from '../admin/intake/types'
 import { BANK } from '../data/registry'
 import type { QuestionDef, SchemeDef } from '../domain/types'
 import { BijakServer, MemoryStorage } from '../server/store'
+import { MAT_T4_SP2, matTag } from './tag-fixtures'
 
 const meta: ManualMeta = {
   subject: 'MAT',
@@ -22,15 +23,7 @@ function make(storage = new MemoryStorage()) {
   return { server: new BijakServer({ storage, now: () => now.t }), storage, now }
 }
 
-const tag = (sp = ['1.1']) => ({
-  subject: 'MAT',
-  level: 'T4' as const,
-  unit: 'MAT-T4-02',
-  unitLabel: 'Asas Nombor',
-  sp,
-  tp: 2,
-  formOrigin: 'T4' as const,
-})
+const tag = (spIds = [MAT_T4_SP2]) => matTag({ tp: 2, spIds })
 
 /** An objektif question with options A-D and key B. */
 function mcq(q: IntakeQuestion): IntakeQuestion {
@@ -194,7 +187,7 @@ describe('manual batch (no file)', () => {
     const fixed = b.questions.map((x) => ({
       ...x,
       confirmed: [...x.lowFields],
-      tag: { ...x.tag, unit: x.tag.unit ?? 'MAT-T4-02', unitLabel: 'u', sp: x.tag.sp.length ? x.tag.sp : ['1.1'] },
+      tag: matTag({ subject: x.tag.subject }),
     }))
     await server.saveExtracted(b.id, {
       questions: fixed,
@@ -216,7 +209,7 @@ describe('full revise from the bank', () => {
     expect(e.question.type).toBe('mcq')
     expect(e.question.options.map((o) => o.id)).toEqual(['A', 'B', 'C', 'D'])
     expect(e.question.scheme).toMatchObject({ kind: 'option' })
-    expect(e.legacyTag).toBe(true)
+    expect('legacyTag' in e).toBe(false)
     expect(e.pendingRevision).toBe(false)
   })
 

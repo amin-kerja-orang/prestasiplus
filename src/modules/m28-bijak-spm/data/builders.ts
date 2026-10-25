@@ -9,6 +9,7 @@ import type {
   QuestionDef,
   SchemeDef,
   StimulusDef,
+  TpLevel,
 } from '../domain/types'
 
 /** Matematik topics whose content belongs to Tingkatan 1-3 (Q-S2: formOrigin T1-T3, unit null). */
@@ -28,23 +29,17 @@ const MAT_T1_T3 = new Set([
   'Perimeter',
   'Luas',
 ])
-const T5_TOPICS = new Set(['Kebarangkalian'])
 
 /**
- * Curriculum tag for a seed question (exam schema D9). The DSKP unit codes are not loaded in this
- * prototype, so `unit` stays null (always for T1-T3 content) and `unitLabel` names the topic.
+ * Curriculum tag for a seed question (exam schema D9). Interim until DSKP-T04 (seed tagging): the
+ * seed unit labels are not catalogue nodes, so T1-T3 content stays T1-T3 (Q-S2) and everything else
+ * is flagged `perlu-semakan` with no tingkatan, unit or SP. `label` (the old free-text unit) is not
+ * kept. T04 replaces this helper with the authored `seed-tags.ts` table.
  */
-export function curr(subject: string, unitLabel: string, tp = 2): CurriculumTag {
-  const t13 = subject === 'MAT' && MAT_T1_T3.has(unitLabel)
-  return {
-    subject,
-    level: 'T4+T5',
-    unit: null,
-    unitLabel,
-    sp: [],
-    tp,
-    formOrigin: t13 ? 'T1-T3' : T5_TOPICS.has(unitLabel) ? 'T5' : 'T4',
-  }
+export function curr(subject: string, label: string, tp: TpLevel = 2): CurriculumTag {
+  const base = { subject, unitId: null, spIds: [], tp, kbat: null, catalogueVersion: null }
+  if (subject === 'MAT' && MAT_T1_T3.has(label)) return { ...base, formOrigin: 'T1-T3' }
+  return { ...base, formOrigin: null, review: 'perlu-semakan' }
 }
 
 export class Bank {

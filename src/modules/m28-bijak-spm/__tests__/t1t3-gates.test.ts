@@ -5,7 +5,7 @@
  * publish gate follow the same rule.
  */
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 import QuestionEditor from '../admin/intake/components/QuestionEditor.vue'
 import { batchToSeeds } from '../admin/intake/domain/convert'
@@ -16,11 +16,18 @@ import {
   validateRevision,
 } from '../admin/intake/domain/validation'
 import { demoBatch } from '../admin/intake/lib/seed'
-import { emptyTag } from '../admin/intake/lib/dskp'
 import type { IntakeQuestion } from '../admin/intake/types'
-import type { CurriculumTag, QuestionDef, SchemeDef } from '../domain/types'
+import { emptyTag } from '../domain/tag-edit'
+import type { TagLookup } from '../domain/tag-rule'
+import type { CurriculumTag, QuestionDef, SchemeDef, TpLevel } from '../domain/types'
 import { gateErrors } from '../server/admin'
 import { BijakServer, MemoryStorage } from '../server/store'
+import { loadTagLookup } from './tag-fixtures'
+
+let lookup: TagLookup
+beforeAll(async () => {
+  lookup = await loadTagLookup()
+})
 
 function intakeQ(
   over: Partial<IntakeQuestion['tag']>,
@@ -47,15 +54,16 @@ function intakeQ(
   }
 }
 
-const t13 = { formOrigin: 'T1-T3' as const, unit: null, unitLabel: '', sp: [] as string[] }
-const t4 = { formOrigin: 'T4' as const, unit: null, unitLabel: '', sp: [] as string[] }
+const t13 = { formOrigin: 'T1-T3' as const, unitId: null, spIds: [], tp: 3 as TpLevel }
+const t4 = { formOrigin: 'T4' as const, unitId: null, spIds: [], tp: 3 as TpLevel }
+const badTp = (n: number): TpLevel => n as TpLevel
 const batch = (q: IntakeQuestion) => ({
   questions: [q],
   stimuli: [],
   source: 'x',
   copyright: 'sendiri',
 })
-const messages = (q: IntakeQuestion) => validateBatch(batch(q)).map((i) => i.message)
+const messages = (q: IntakeQuestion) => validateBatch(batch(q), lookup).map((i) => i.message)
 
 describe('intake gate (validateBatch)', () => {
   it('T1-T3: no unit, no SP and no unit/SP confirmation needed', () => {
@@ -64,11 +72,14 @@ describe('intake gate (validateBatch)', () => {
   })
 
   it('T1-T3: TP is still required', () => {
-    expect(messages(intakeQ({ ...t13, tp: 0 }))).toEqual([
+    expect(messages(intakeQ({ ...t13, tp: badTp(0) }))).toEqual([
       'Tahap Penguasaan (TP) mesti antara 1 dan 6.',
     ])
-    expect(messages(intakeQ({ ...t13, tp: 7 }))).toEqual([
+    expect(messages(intakeQ({ ...t13, tp: badTp(7) }))).toEqual([
       'Tahap Penguasaan (TP) mesti antara 1 dan 6.',
+    ])
+    expect(messages(intakeQ({ ...t13, tp: null }))).toEqual([
+      'Tahap Penguasaan (TP) belum dipilih.',
     ])
   })
 
@@ -97,21 +108,18 @@ describe('intake gate (validateBatch)', () => {
 })
 
 describe('revision gate (validateRevision)', () => {
-  it('T1-T3: passes with no unit and no SP, even for a question that is not legacy', () => {
-    expect(validateRevision(intakeQ(t13, { lowFields: ['tag.sp'] }), undefined, false)).toEqual([])
+  it('T1-T3: passes with no unit and no SP', () => {
+    expect(validateRevision(intakeQ(t13, { lowFields: ['tag.sp'] }), undefined, lookup)).toEqual([])
   })
 
   it('T1-T3: TP is still required', () => {
-    expect(validateRevision(intakeQ({ ...t13, tp: 0 }), undefined, false)).toHaveLength(1)
+    expect(validateRevision(intakeQ({ ...t13, tp: badTp(0) }), undefined, lookup)).toHaveLength(1)
   })
 
-  it('T4: unit and SP are still required (SP waived only for a legacy question)', () => {
-    expect(validateRevision(intakeQ(t4), undefined, false)).toEqual([
+  it('T4: unit and SP are required, and nothing is waived for a question without SP (AC-07.5)', () => {
+    expect(validateRevision(intakeQ(t4), undefined, lookup)).toEqual([
       'Soalan: Unit DSKP belum dipilih.',
       'Soalan: Standard Pembelajaran (SP) belum dipilih.',
-    ])
-    expect(validateRevision(intakeQ(t4), undefined, true)).toEqual([
-      'Soalan: Unit DSKP belum dipilih.',
     ])
   })
 })
@@ -131,22 +139,22 @@ describe('publish gate (gateErrors)', () => {
     },
   })
 
-  it('T1-T3 without a unit label and without SP can be published', () => {
+  it('T1-T3 without a unit and without SP can be published', () => {
     expect(gateErrors([def(t13)], scheme)).toEqual([])
   })
 
-  it('T4 and T5 without a unit label are refused', () => {
+  it('T4 and T5 without a unit are refused', () => {
     for (const formOrigin of ['T4', 'T5'] as const)
       expect(gateErrors([def({ ...t4, formOrigin })], scheme)).toEqual([
         'Soalan 1: topik DSKP belum dipilih',
       ])
   })
 
-  // T1-T3 only: for T4/T5 the publish gate checks the unit label alone (the full DSKP gate is FB-026).
+  // T1-T3 only: for T4/T5 the publish gate checks the unit alone until DSKP-T05 wires the shared rule.
   it('the three gates agree on the same T1-T3 question (T1-T3 only)', () => {
     const q = intakeQ(t13, { lowFields: ['tag.unit', 'tag.sp'] })
     expect(messages(q)).toEqual([])
-    expect(validateRevision(q, undefined, false)).toEqual([])
+    expect(validateRevision(q, undefined, lookup)).toEqual([])
     expect(gateErrors([def(t13)], scheme)).toEqual([])
   })
 })
