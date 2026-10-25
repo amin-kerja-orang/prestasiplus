@@ -5,8 +5,8 @@
  * this (ADR-0019); these constants are a heuristic of the mock only.
  *
  * Rules:
- * - A unit or SP is only ever a catalogue node. Below the threshold the field stays empty (never
- *   `rendah`-filled, never a guessed code).
+ * - A unit or SP is only ever a catalogue node. Below the threshold the field stays empty (never a
+ *   guessed code). Evidence from only two words is `rendah`, so a person confirms it.
  * - The TP comes from the leading command word, always with confidence `rendah`.
  * - KBAT is not suggested by the mock in v2.0.
  */
@@ -36,7 +36,7 @@ export const MIN_MATCHED_TOKENS = 2
  * words of the question (generic and zero-hit words dilute it), both capped at this value.
  */
 export const COVERAGE_CAP = 6
-/** Score at which a unit or SP is suggested at all (confidence `sederhana`). */
+/** Score at which a unit or SP is suggested at all. */
 export const SUGGEST_THRESHOLD = 500
 /** Score at which a unit / SP counts as `tinggi` (also needs `HIGH_MIN_MATCHED_TOKENS` words). */
 export const HIGH_THRESHOLD = 750
@@ -108,10 +108,15 @@ export function tpFromCommandWord(stem: string, partPrompts: readonly string[]):
 const scoreOf = (matched: number, tokens: number): number =>
   Math.round((1000 * Math.min(matched, COVERAGE_CAP)) / Math.min(tokens, COVERAGE_CAP))
 
-/** Confidence of one node from its score alone (the unit/SP pair is joined in `suggestTag`). */
+/**
+ * Confidence of one node from its score and matched words (the unit/SP pair is joined in
+ * `suggestTag`). Two matched words are weak evidence whatever the score (two common words can sit in
+ * one long SP), so they give `rendah` and a person must confirm (lead decision, DSKP-T06 G4).
+ */
 export function confidenceFor(score: number, matched: number): Confidence | null {
   if (matched < MIN_MATCHED_TOKENS || score < SUGGEST_THRESHOLD) return null
-  return score >= HIGH_THRESHOLD && matched >= HIGH_MIN_MATCHED_TOKENS ? 'tinggi' : 'sederhana'
+  if (matched < HIGH_MIN_MATCHED_TOKENS) return 'rendah'
+  return score >= HIGH_THRESHOLD ? 'tinggi' : 'sederhana'
 }
 
 interface Ranked {
@@ -193,7 +198,7 @@ export function suggestTag(
       )
       const unitConf = unit ? confidenceFor(unit.score, unit.matched) : null
       const unitNode = unit && unitConf ? view.unit(unit.id as DskpUnitId) : undefined
-      if (unit && unitNode) {
+      if (unit && unitNode && unitConf) {
         s.unitId = unitNode.id
         s.formOrigin = unitNode.tingkatan
         // The SP must score on its own text, inside the chosen unit.
@@ -203,14 +208,16 @@ export function suggestTag(
             .map(([id, set]) => ({ id, matched: set.size, score: scoreOf(set.size, tokens.length) })),
         )
         const spConf = sp ? confidenceFor(sp.score, sp.matched) : null
+        // "tinggi" needs both the unit and the SP to clear the high threshold; a unit with no SP
+        // is never above "sederhana".
+        const cap = (c: Confidence, other: Confidence | null): Confidence =>
+          c === 'tinggi' && other !== 'tinggi' ? 'sederhana' : c
         if (sp && spConf) {
           s.spIds = [sp.id as DskpSpId]
-          const both: Confidence = unitConf === 'tinggi' && spConf === 'tinggi' ? 'tinggi' : 'sederhana'
-          s.confidence.unit = both
-          s.confidence.sp = both
+          s.confidence.unit = cap(unitConf, spConf)
+          s.confidence.sp = cap(spConf, unitConf)
         } else {
-          // "tinggi" needs both the unit and the SP to clear the high threshold.
-          s.confidence.unit = 'sederhana'
+          s.confidence.unit = cap(unitConf, null)
         }
       }
     }

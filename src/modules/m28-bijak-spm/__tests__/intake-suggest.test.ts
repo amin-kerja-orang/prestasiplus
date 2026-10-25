@@ -129,12 +129,14 @@ describe('topic words', () => {
 })
 
 describe('confidence mapping', () => {
-  it('maps score and matched words to tinggi / sederhana / none', () => {
+  it('maps score and matched words to tinggi / sederhana / rendah / none', () => {
     expect(confidenceFor(1000, 4)).toBe('tinggi')
     expect(confidenceFor(HIGH_THRESHOLD, 3)).toBe('tinggi')
     expect(confidenceFor(HIGH_THRESHOLD - 1, 5)).toBe('sederhana')
-    expect(confidenceFor(1000, 2)).toBe('sederhana') // a high score on two words is still only medium
-    expect(confidenceFor(SUGGEST_THRESHOLD, 2)).toBe('sederhana')
+    expect(confidenceFor(SUGGEST_THRESHOLD, 3)).toBe('sederhana')
+    // two words are weak evidence at any score (lead decision): a person confirms
+    expect(confidenceFor(1000, 2)).toBe('rendah')
+    expect(confidenceFor(SUGGEST_THRESHOLD, 2)).toBe('rendah')
     expect(confidenceFor(SUGGEST_THRESHOLD - 1, 4)).toBeNull()
     expect(confidenceFor(1000, 1)).toBeNull() // one word is never enough
   })
@@ -150,21 +152,36 @@ describe('confidence mapping', () => {
     })
   })
 
-  it('sederhana when the pair does not clear the high threshold', async () => {
-    const q = extractOne('Nyatakan pemfaktoran bagi ungkapan kuadratik.', await fixtureView())
+  it('sederhana when three words back the pair but the share is below the high threshold', async () => {
+    const q = extractOne('persamaan kuadratik pemfaktoran logaritma peristiwa kecerunan', await fixtureView())
     expect(q.tagSuggestion).toMatchObject({
       unitId: 'MAT:T4:u:1.0',
       spIds: ['MAT:T4:sp:1.1.2'],
       confidence: { unit: 'sederhana', sp: 'sederhana' },
     })
+    expect(q.lowFields).not.toContain('tag.unit')
+    expect(q.lowFields).not.toContain('tag.sp')
   })
 
-  it('suggests the unit alone when no SP text scores by itself (the unit is sederhana, never tinggi)', async () => {
+  it('two words give rendah for unit and SP, which a person must confirm', async () => {
+    // "pemfaktoran" and "kuadratik" are both in SP 1.1.2 (unit 1.0), but two words are weak evidence.
+    const q = extractOne('Nyatakan pemfaktoran bagi ungkapan kuadratik.', await fixtureView())
+    expect(q.tagSuggestion).toMatchObject({
+      unitId: 'MAT:T4:u:1.0',
+      spIds: ['MAT:T4:sp:1.1.2'],
+      confidence: { unit: 'rendah', sp: 'rendah' },
+    })
+    expect(q.tag).toMatchObject({ unitId: 'MAT:T4:u:1.0', spIds: ['MAT:T4:sp:1.1.2'] }) // still pre-filled
+    expect(q.lowFields).toEqual(['tag.unit', 'tag.sp', 'tag.tp'])
+    expect(pendingTagFields(q)).toEqual(['unit', 'sp', 'tp'])
+  })
+
+  it('suggests the unit alone when no SP text scores by itself (never tinggi)', async () => {
     // "persamaan kuadratik" is in both SP of the unit: a tie, so no SP is guessed.
     const q = extractOne('Terangkan persamaan kuadratik dalam kehidupan.', await fixtureView())
     expect(q.tagSuggestion).toMatchObject({
       unitId: 'MAT:T4:u:1.0',
-      confidence: { unit: 'sederhana' },
+      confidence: { unit: 'rendah' }, // two words
     })
     expect(q.tagSuggestion?.spIds).toBeUndefined()
     expect(q.tagSuggestion?.confidence.sp).toBeUndefined()
@@ -222,8 +239,8 @@ describe('evidence must be corroborated and measured against all topic words', (
     // The same two words in one SP: 2/3 = 667 with one filler word, 2/4 = 500 with two, 2/5 = 400 with three.
     const at = (filler: string) =>
       suggestTag({ stem: `persamaan kuadratik ${filler}`, partPrompts: [] }, view, opts)?.confidence.unit
-    expect(at('alpha')).toBe('sederhana')
-    expect(at('alpha bravo')).toBe('sederhana')
+    expect(at('alpha')).toBe('rendah')
+    expect(at('alpha bravo')).toBe('rendah')
     expect(at('alpha bravo charlie')).toBeUndefined()
   })
 })
@@ -496,6 +513,22 @@ describe('extract() loads the catalogue once', () => {
 })
 
 describe('real catalogue smoke test', () => {
+  it('regression: two common words inside one long SP never pass as a confident suggestion', async () => {
+    // "nilai" and "data" both sit in one long SP of MAT T4 unit 8.0; that is not topic evidence.
+    const r = await mockExtractor.extract(
+      paper('1. Nyatakan nilai min, mod dan median bagi data berikut. [2 markah]'),
+    )
+    const q = r.questions[0]!
+    // Still pre-filled (two words is enough to suggest), but rendah, so unit and SP are gated.
+    expect(q.tagSuggestion).toMatchObject({
+      unitId: 'MAT:T4:u:8.0',
+      spIds: ['MAT:T4:sp:8.2.4'],
+      confidence: { unit: 'rendah', sp: 'rendah', tp: 'rendah' },
+    })
+    expect(q.lowFields).toEqual(['tag.unit', 'tag.sp', 'tag.tp'])
+    expect(pendingTagFields(q)).toEqual(['unit', 'sp', 'tp'])
+  })
+
   it('the sample paper gets a TP from the command word and no unit it cannot back up', async () => {
     const r = await mockExtractor.extract({ pages: SAMPLE_PAGES, subject: 'MAT', kertas: 2 })
     // Q3 ("hitung panjang AC", "hitung luas segi tiga") used to be tagged T5 unit 5.0 from words
