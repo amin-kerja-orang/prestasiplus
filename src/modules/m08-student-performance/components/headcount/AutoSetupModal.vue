@@ -6,12 +6,11 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { isApiError } from '@/api'
 import { DsDialog } from '@/ds'
 
 import { autoSetupHeadcounts } from '../../api/headcount'
+import { headcountActionError } from '../../lib/headcount/error-text'
 import { DARJAH_LEVELS, TINGKATAN_LEVELS } from '../../lib/headcount/format'
-import { LOAD_ERROR } from '../../lib/prestasi/load'
 
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ done: [] }>()
@@ -43,7 +42,7 @@ async function submit() {
     open.value = false
     emit('done')
   } catch (err) {
-    error.value = isApiError(err) && err.message !== '' ? err.message : LOAD_ERROR
+    error.value = headcountActionError(err)
   } finally {
     submitting.value = false
   }

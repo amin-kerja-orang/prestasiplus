@@ -27,17 +27,30 @@ const submitting = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
 
+// A message belongs to the code that was sent: typing a new code clears it, so a refusal never stays
+// under an emptied field. (`code.value = ''` after a successful join must keep the success message.)
+// Each edit also bumps `attempt`, so a request still pending at that moment cannot write its message
+// back under the new code.
+let attempt = 0
+function clearMessages(): void {
+  attempt += 1
+  error.value = null
+  success.value = null
+}
+
 async function submit(): Promise<void> {
   if (submitting.value) return
   submitting.value = true
-  error.value = null
-  success.value = null
+  clearMessages()
+  const sent = attempt
   try {
     const res = await joinClass(code.value.trim())
+    emit('joined')
+    if (sent !== attempt) return
     success.value = res.message
     code.value = ''
-    emit('joined')
   } catch (err) {
+    if (sent !== attempt) return
     error.value = joinErrorMessage(err)
   } finally {
     submitting.value = false
@@ -66,6 +79,7 @@ async function submit(): Promise<void> {
           class="min-w-0 flex-1"
           :ui="{ base: 'font-mono tracking-wider uppercase' }"
           data-testid="class-code"
+          @input="clearMessages"
         />
         <UButton
           type="submit"

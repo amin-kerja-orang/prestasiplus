@@ -10,10 +10,11 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
+import { isHttpMode } from '@/api/mode'
 import { useFlash } from '@/composables/useFlash'
 import { useSessionStore } from '@/stores/session'
 
-import { updateProfile, type SchoolSummary, type UserMe } from '../api'
+import { getMe, updateProfile, type SchoolSummary, type UserMe } from '../api'
 import ProfileAvatarCard from '../components/profile/ProfileAvatarCard.vue'
 import ProfileGradePicker from '../components/profile/ProfileGradePicker.vue'
 import ProfilePasswordCard from '../components/profile/ProfilePasswordCard.vue'
@@ -23,6 +24,29 @@ import { errorLines } from '../lib/error-lines'
 const session = useSessionStore()
 const flash = useFlash()
 const user = computed(() => session.user)
+
+/**
+ * DV-28: the real API stores a self-chosen school only when the account has at least one role and EVERY role is
+ * student or parent (any other role ignores `schoolId`, so the card would "save" nothing). The client `UserMe`
+ * has only the active `role`, so in http mode the whole `roles[]` is read from the raw `GET /api/me` (and the
+ * `PUT /api/me` answer); until it is known the card stays hidden. Mock mode (live) shows it for every role.
+ */
+const SELF_SCHOOL_ROLES: readonly string[] = ['student', 'parent']
+const http = isHttpMode()
+const roles = ref<readonly string[] | null>(null)
+
+function readRoles(me: unknown): void {
+  const list = (me as { roles?: unknown } | null)?.roles
+  if (Array.isArray(list) && list.every((r) => typeof r === 'string')) roles.value = list
+}
+
+const showSchool = computed(
+  () =>
+    !http ||
+    (roles.value !== null &&
+      roles.value.length > 0 &&
+      roles.value.every((r) => SELF_SCHOOL_ROLES.includes(r))),
+)
 
 const name = ref('')
 const phone = ref('')
@@ -46,6 +70,13 @@ function seed(me: UserMe): void {
 if (session.user) seed(session.user)
 
 onMounted(async () => {
+  if (http) {
+    try {
+      readRoles(await getMe())
+    } catch {
+      // Roles stay unknown: the school card stays hidden (fail closed).
+    }
+  }
   const fresh = await session.refreshUser()
   if (fresh && !touched.value) seed(fresh)
 })
@@ -80,8 +111,9 @@ async function submit(): Promise<void> {
       phone: phone.value === '' ? null : phone.value,
       bio: bio.value === '' ? null : bio.value,
       grade: grade.value,
-      schoolId: school.value?.id ?? null,
+      ...(showSchool.value ? { schoolId: school.value?.id ?? null } : {}),
     })
+    readRoles(result.data)
     session.setUser(result.data)
     seed(result.data)
     touched.value = false
@@ -183,7 +215,7 @@ async function submit(): Promise<void> {
         </div>
       </UCard>
 
-      <UCard>
+      <UCard v-if="showSchool" data-testid="profile-school-card">
         <div class="flex flex-col gap-4">
           <h2 class="flex items-center gap-2 text-subheading text-highlighted">
             <UIcon name="i-ph-buildings" class="size-5" aria-hidden="true" />
