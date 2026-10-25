@@ -8,7 +8,6 @@ import { computed } from 'vue'
 
 import { DsDrillTable } from '@/ds'
 
-import CcScroll from './CcScroll.vue'
 import type { DrillRow } from './drill-table'
 
 const props = defineProps<{
@@ -30,7 +29,7 @@ const columns = computed<TableColumn<DrillRow>[]>(() =>
 </script>
 
 <template>
-  <CcScroll :data-testid="testid">
+  <div class="min-w-0" :data-testid="testid">
     <DsDrillTable
       :data="rows"
       :columns="columns"
@@ -55,5 +54,5 @@ const columns = computed<TableColumn<DrillRow>[]>(() =>
         >
       </template>
     </DsDrillTable>
-  </CcScroll>
+  </div>
 </template>

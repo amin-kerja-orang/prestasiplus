@@ -31,8 +31,6 @@ export const S2_COPY = {
   loadingBody: 'Memuatkan data...',
   classHint: 'Klik: lihat pelajar dalam kelas',
   bandHint: 'Klik: senarai pelajar',
-  /** Above a table that scrolls sideways inside a dialog (G5-M10 B3). */
-  scrollHint: 'Leret ke sisi untuk melihat semua lajur',
   /** Fixed BM line of a failed modal load (the server text is English; SWE). */
   loadFailed: 'Ralat memuatkan data. Sila cuba semula.',
 } as const
