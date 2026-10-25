@@ -181,3 +181,73 @@ export interface DskpVersionFile {
   /** SHA-256 over the 13 subject files and the index (see the generator). */
   sha256: string
 }
+
+// -----------------------------------------------------------------------------------------------
+// Runtime view (DSKP-T02): indexed nodes with ids, as returned by `DskpSubjectView`
+// -----------------------------------------------------------------------------------------------
+
+interface DskpNodeBase {
+  readonly subject: DskpSubjectCode
+  readonly tingkatan: DskpTingkatan
+  /**
+   * Effective flags in canonical order: the node's own flags plus the subject-wide and
+   * tingkatan-wide flags of the subject index, so the list is complete at read time.
+   */
+  readonly flags: readonly DskpFlag[]
+}
+
+export interface DskpGroupNode extends DskpNodeBase {
+  readonly kind: 'g'
+  readonly id: DskpGroupId
+  /** Pendidikan Moral only ("5.0"). */
+  readonly code?: string
+  readonly title: string
+}
+
+export interface DskpUnitNode extends DskpNodeBase {
+  readonly kind: 'u'
+  readonly id: DskpUnitId
+  readonly code: string
+  readonly title: string
+  readonly groupId?: DskpGroupId
+  readonly pkg?: string
+  /** Unit-level TP tables (only for `tpLevel: 'unit'` subjects, and absent where none is printed). */
+  readonly tp?: readonly TpTable[]
+}
+
+export interface DskpSkNode extends DskpNodeBase {
+  readonly kind: 'sk'
+  readonly id: DskpSkId
+  readonly code: string
+  readonly title: string
+  readonly unitId: DskpUnitId
+  /** SK-level TP tables (only for `tpLevel: 'sk'` subjects). */
+  readonly tp?: readonly TpTable[]
+}
+
+export interface DskpSpNode extends DskpNodeBase {
+  readonly kind: 'sp'
+  readonly id: DskpSpId
+  readonly code: string
+  readonly text: string
+  /** Parent SK, taken from the tree and never parsed from the code. */
+  readonly skId: DskpSkId
+  readonly unitId: DskpUnitId
+  readonly citizenship?: true
+  /** false for a printed "No learning standard" slot (`noStandard`). */
+  readonly selectable: boolean
+}
+
+export type DskpNode = DskpGroupNode | DskpUnitNode | DskpSkNode | DskpSpNode
+
+/** One TP descriptor found by `tpFor`. `nodeId` is the SK or unit it was read from; null for the general table. */
+export interface TpResolved {
+  source: 'sk' | 'unit' | 'general'
+  nodeId: DskpSkId | DskpUnitId | null
+  descriptor: TpDescriptor
+}
+
+export type DskpSearchHit =
+  | { kind: 'u'; node: DskpUnitNode; score: number }
+  | { kind: 'sk'; node: DskpSkNode; score: number }
+  | { kind: 'sp'; node: DskpSpNode; score: number }
