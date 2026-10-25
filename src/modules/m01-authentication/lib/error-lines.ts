@@ -40,7 +40,7 @@ const FIELD_LABELS: Record<string, string> = {
   bio: 'bio',
 }
 
-function label(attr: string): string {
+function label(attr = ''): string {
   return FIELD_LABELS[attr.toLowerCase()] ?? attr
 }
 
