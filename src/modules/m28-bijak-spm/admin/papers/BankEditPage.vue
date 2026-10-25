@@ -20,10 +20,12 @@ import {
   DsStack,
   DsStatusBadge,
   DsText,
+  dsCopy,
 } from '@/ds'
 
 import StimulusView from '../../components/StimulusView.vue'
 import QuestionEditor from '../intake/components/QuestionEditor.vue'
+import { TAG_COPY } from '../intake/domain/tag-view'
 import { tagLookup, useDskpSubject } from '../../lib/dskp-source'
 import { validateRevision } from '../intake/domain/validation'
 import type { IntakeQuestion, IntakeStimulus } from '../intake/types'
@@ -56,11 +58,23 @@ watch(
 )
 
 const locked = computed(() => data.value?.pendingRevision === true)
-// Interim wiring (DSKP-T07 rewrites the page): load the subject, then run the shared tag rule.
+// The question's subject catalogue is loaded once for the editor. While it loads (or failed) the tag
+// cannot be judged, so no tag issue is listed and the revision is not sent (DSKP-T03 review F6).
 const dskp = useDskpSubject(() => draft.value?.tag.subject)
+const tagPending = computed(() => dskp.loading.value || dskp.error.value !== undefined)
 const issues = computed<string[]>(() => {
   void dskp.view.value
-  return draft.value ? validateRevision(draft.value, stimulus.value, tagLookup()) : []
+  return draft.value
+    ? validateRevision(draft.value, stimulus.value, tagLookup(), { skipTag: tagPending.value })
+    : []
+})
+const gateTitle = computed(() => {
+  if (issues.value.length === 0 && serverErrors.value.length === 0) {
+    if (dskp.loading.value) return dsCopy.loading
+    if (dskp.error.value) return TAG_COPY.loadError
+    return 'Semua semakan kualiti lulus. Sedia dihantar sebagai versi baharu.'
+  }
+  return `${issues.value.length || serverErrors.value.length} perkara perlu dibaiki sebelum dihantar`
 })
 const nextVersion = computed(() => (data.value?.row.version ?? 1) + 1)
 
@@ -69,7 +83,7 @@ function patchStimulus(p: Partial<IntakeStimulus>): void {
 }
 
 async function save(): Promise<void> {
-  if (!draft.value || locked.value || issues.value.length > 0 || busy.value) return
+  if (!draft.value || locked.value || issues.value.length > 0 || tagPending.value || busy.value) return
   busy.value = true
   serverErrors.value = []
   try {
@@ -197,7 +211,14 @@ async function save(): Promise<void> {
       <DsPanel data-testid="edit-question">
         <fieldset :disabled="locked" class="min-w-0">
           <legend class="sr-only">Soalan</legend>
-          <QuestionEditor v-model="draft" hide-number />
+          <QuestionEditor
+            v-model="draft"
+            hide-number
+            :dskp="dskp"
+            :disabled="locked"
+            :show-errors="issues.length > 0 || serverErrors.length > 0"
+            @retry="dskp.retry()"
+          />
         </fieldset>
       </DsPanel>
 
@@ -217,15 +238,11 @@ async function save(): Promise<void> {
 
       <UAlert
         v-if="!locked"
-        :color="issues.length === 0 && serverErrors.length === 0 ? 'success' : 'warning'"
+        :color="issues.length === 0 && serverErrors.length === 0 && !tagPending ? 'success' : 'warning'"
         variant="subtle"
         role="status"
         aria-live="polite"
-        :title="
-          issues.length === 0 && serverErrors.length === 0
-            ? 'Semua semakan kualiti lulus. Sedia dihantar sebagai versi baharu.'
-            : `${issues.length || serverErrors.length} perkara perlu dibaiki sebelum dihantar`
-        "
+        :title="gateTitle"
         data-testid="edit-gate"
       >
         <template v-if="issues.length > 0 || serverErrors.length > 0" #description>
@@ -249,7 +266,7 @@ async function save(): Promise<void> {
           label="Hantar untuk semakan"
           class="min-h-11"
           :loading="busy"
-          :disabled="locked || issues.length > 0"
+          :disabled="locked || issues.length > 0 || tagPending"
           data-testid="edit-submit"
           @click="save"
         />

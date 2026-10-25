@@ -24,7 +24,7 @@ const user = useBijakUser()
 /** Coming from the paper builder: subject, kertas and the paper are pre-filled. */
 const q = route.query
 const one = (v: unknown): string => (typeof v === 'string' ? v : '')
-const knownSubject = server.subjects().some((s) => s.code === one(q.subject))
+const knownSubject = server.tagSubjects().some((s) => s.code === one(q.subject))
 /** Only a paper that exists is linked back to; anything else in the URL is ignored. */
 const forPaperId = ref('')
 onMounted(async () => {

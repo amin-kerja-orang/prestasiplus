@@ -8,7 +8,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsNativeSelect, DsPage, DsPanel, DsStateView, DsStatusBadge } from '@/ds'
+import { DsNativeSelect, DsPage, DsPanel, DsStateView, DsStatusBadge, dsCopy } from '@/ds'
 
 import StimulusView from '../../../components/StimulusView.vue'
 import { formatDateTime } from '../../../lib/use-bijak'
@@ -23,6 +23,7 @@ import {
 } from '../domain/grouping'
 import { paperMarks, questionMarks } from '../domain/marks'
 import { tagLookup, useDskpSubject } from '../../../lib/dskp-source'
+import { TAG_COPY } from '../domain/tag-view'
 import { validateBatch } from '../domain/validation'
 import { blankQuestion, nextLabel } from '../domain/blank'
 import { INTAKE_LIST_PATH } from '../lib/intake-routes'
@@ -109,11 +110,20 @@ async function save(): Promise<void> {
 }
 
 /* ------------------------------------------------------------------------------ derived */
-// Interim wiring (DSKP-T07 rewrites the page): load the batch subject, then run the shared tag rule.
+// The batch subject's DSKP catalogue is loaded once and shared by every question editor. While it
+// loads (or failed) the tag cannot be judged, so no tag issue is listed and the batch is not sent
+// (an unloaded subject would make every unit look absent, DSKP-T03 review F6).
 const dskp = useDskpSubject(() => batch.value?.subject)
+const tagPending = computed(() => dskp.loading.value || dskp.error.value !== undefined)
 const issues = computed<IntakeIssue[]>(() => {
   void dskp.view.value
-  return batch.value ? validateBatch(batch.value, tagLookup()) : []
+  return batch.value ? validateBatch(batch.value, tagLookup(), { skipTag: tagPending.value }) : []
+})
+const gateText = computed(() => {
+  if (issues.value.length > 0) return `${issues.value.length} perkara perlu dibaiki sebelum dihantar`
+  if (dskp.loading.value) return dsCopy.loading
+  if (dskp.error.value) return TAG_COPY.loadError
+  return 'Semua semakan kualiti lulus. Sedia dihantar.'
 })
 const groups = computed(() => groupsOf(batch.value?.questions ?? []))
 const total = computed(() => paperMarks(batch.value?.questions ?? []))
@@ -239,7 +249,7 @@ function goTo(i: IntakeIssue): void {
 
 async function submit(): Promise<void> {
   const b = batch.value
-  if (!b || issues.value.length > 0 || submitting.value) return
+  if (!b || issues.value.length > 0 || tagPending.value || submitting.value) return
   submitting.value = true
   try {
     clearTimeout(timer)
@@ -321,7 +331,7 @@ async function submit(): Promise<void> {
               </UButton>
               <UButton
                 icon="i-ph-paper-plane-tilt"
-                :disabled="issues.length > 0"
+                :disabled="issues.length > 0 || tagPending"
                 :loading="submitting"
                 data-testid="submit-review"
                 @click="submit"
@@ -369,18 +379,12 @@ async function submit(): Promise<void> {
             <button
               type="button"
               class="mt-4 flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 text-left"
-              :class="issues.length > 0 ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'"
+              :class="issues.length > 0 || tagPending ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'"
               :aria-expanded="showIssues"
               data-testid="issues-toggle"
               @click="showIssues = !showIssues"
             >
-              <span class="font-medium">
-                {{
-                  issues.length > 0
-                    ? `${issues.length} perkara perlu dibaiki sebelum dihantar`
-                    : 'Semua semakan kualiti lulus. Sedia dihantar.'
-                }}
-              </span>
+              <span class="font-medium">{{ gateText }}</span>
               <span class="i-ph-caret-down" aria-hidden="true" />
             </button>
             <ul
@@ -666,7 +670,11 @@ async function submit(): Promise<void> {
                     </label>
                     <QuestionEditor
                       :model-value="q"
+                      :dskp="dskp"
+                      :disabled="readonly"
+                      :show-errors="showIssues"
                       @update:model-value="updateQuestion(q.id, $event)"
+                      @retry="dskp.retry()"
                     />
                     <div class="flex justify-end">
                       <UButton

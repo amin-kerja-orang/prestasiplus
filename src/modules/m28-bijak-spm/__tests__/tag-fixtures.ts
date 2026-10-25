@@ -2,9 +2,12 @@
  * Shared fixtures for the DSKP tag tests: real catalogue ids (M03 is the owner, so the tests read
  * the catalogue through `dskp-source` and never copy its schema) and tag builders.
  */
+import { ref, shallowRef } from 'vue'
+
 import type { TagLookup } from '../domain/tag-rule'
 import type { CurriculumTag, DskpSpId, DskpUnitId } from '../domain/types'
-import { catalogueVersion, tagLookupFor } from '../lib/dskp-source'
+import { catalogueVersion, dskpSource, tagLookupFor } from '../lib/dskp-source'
+import type { DskpSubjectState } from '../lib/dskp-source'
 
 /** Matematik Tingkatan 4, unit 1.0 "Fungsi dan Persamaan Kuadratik dalam Satu Pemboleh Ubah". */
 export const MAT_T4_UNIT = 'MAT:T4:u:1.0' as DskpUnitId
@@ -49,5 +52,26 @@ export function t13Tag(over: Partial<CurriculumTag> = {}): CurriculumTag {
     kbat: null,
     catalogueVersion: null,
     ...over,
+  }
+}
+
+/** The state a page hands to `QuestionEditor` once the subject catalogue is loaded. */
+export async function loadedState(subject = 'MAT'): Promise<DskpSubjectState> {
+  const view = await dskpSource().load(subject)
+  return { view: shallowRef(view), loading: ref(false), error: ref(undefined), retry: () => {} }
+}
+
+/** The state while the catalogue is still loading (no view yet). */
+export function loadingState(): DskpSubjectState {
+  return { view: shallowRef(undefined), loading: ref(true), error: ref(undefined), retry: () => {} }
+}
+
+/** The state after the catalogue failed to load. */
+export function errorState(): DskpSubjectState {
+  return {
+    view: shallowRef(undefined),
+    loading: ref(false),
+    error: ref(new Error('load-failed')),
+    retry: () => {},
   }
 }

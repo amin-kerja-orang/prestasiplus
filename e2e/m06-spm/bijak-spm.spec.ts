@@ -8,10 +8,10 @@
  */
 import { mkdirSync } from 'node:fs'
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
-import { expectNoHorizontalScroll, isDesktopShell, viewportWidth } from '../support'
+import { expectNoHorizontalScroll, expectTouchTarget, isDesktopShell, viewportWidth } from '../support'
 
 test.skip(
   process.env.E2E_PROTOTYPE_SCOPE !== 'on',
@@ -24,6 +24,19 @@ async function shot(page: Page, name: string): Promise<void> {
   if (!SHOTS) return
   mkdirSync(SHOTS, { recursive: true })
   await page.screenshot({ path: `${SHOTS}/${name}-${viewportWidth(page)}.png` })
+}
+
+async function shotEl(el: Locator, name: string): Promise<void> {
+  if (!SHOTS) return
+  mkdirSync(SHOTS, { recursive: true })
+  const width = el.page().viewportSize()?.width ?? 0
+  // A tall block is taller than the viewport: grow the viewport (same width) for the capture.
+  const page = el.page()
+  const size = page.viewportSize()
+  if (!size) return
+  await page.setViewportSize({ width: size.width, height: 3200 })
+  await el.screenshot({ path: `${SHOTS}/${name}-${width}.png` })
+  await page.setViewportSize(size)
 }
 
 async function startPaper(
@@ -211,5 +224,89 @@ test.describe('Bijak SPM', () => {
       .evaluate((el) => el.scrollIntoView({ block: 'center' }))
     await shot(page, 'result-codes')
     await expectNoHorizontalScroll(page)
+  })
+
+  test('admin Tag DSKP editor: unit and SP from the catalogue, TP descriptor, T1-T3, no sideways scroll', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs('admin@demo.test')
+    await gotoApp('/admin/spm/soalan/manual')
+    await page.getByTestId('intake-source').fill('Kertas sekolah sendiri')
+    await page.getByTestId('intake-copyright').selectOption('sendiri')
+    await page.getByTestId('manual-start').click()
+    const block = page.getByTestId('tag-block')
+    await block.scrollIntoViewIfNeeded()
+    await expect(block).toBeVisible()
+    await expect(block.getByTestId('tag-subject')).toHaveText('Subjek: Matematik')
+
+    // Nothing is chosen for the reviewer: no default tingkatan and no default TP.
+    await expect(page.getByTestId('q-form')).toHaveValue('')
+    await expect(page.getByTestId('q-tp')).toHaveValue('')
+    await expect(page.getByTestId('q-unit')).toBeDisabled()
+    await expectNoHorizontalScroll(page)
+    await shotEl(block, 'tag-block-empty')
+
+    await page.getByTestId('q-form').selectOption('T4')
+    await page.getByTestId('q-unit').selectOption('MAT:T4:u:1.0')
+    await page.getByTestId('sp-search').fill('1.1.6')
+    await expect(page.locator('[data-testid^="sp-option-"]')).toHaveCount(1)
+    await expectTouchTarget(page.getByTestId('sp-option-1.1.6').locator('xpath=ancestor::li'))
+    await expectTouchTarget(page.getByTestId('q-form'))
+    await expectTouchTarget(page.getByTestId('q-unit'))
+    await expectTouchTarget(page.getByTestId('q-tp'))
+    await page.getByTestId('sp-option-1.1.6').click()
+    await expect(page.getByTestId('sp-chip-1.1.6')).toBeVisible()
+    await expect(page.getByTestId('q-sk')).toContainText('1.1')
+    await page.getByTestId('sp-search').fill('')
+    await page.getByTestId('q-tp').selectOption('3')
+    await expect(page.getByTestId('tp-descriptor')).toContainText('Mengikut Tajuk 1.0')
+    await page.getByTestId('q-kbat').selectOption('menilai')
+    await expectNoHorizontalScroll(page)
+    await block.scrollIntoViewIfNeeded()
+    await shotEl(block, 'tag-block-filled')
+
+    // A different tingkatan clears unit and SP and says so.
+    await page.getByTestId('q-form').selectOption('T5')
+    await expect(page.getByTestId('tag-notice')).toHaveText(
+      'Unit dan SP dikosongkan kerana tingkatan berubah.',
+    )
+    await expect(page.getByTestId('q-unit')).toHaveValue('')
+
+    // Tingkatan 1-3 is outside DSKP: unit, SP and SK are disabled, TP is still required.
+    await page.getByTestId('q-form').selectOption('T1-T3')
+    await expect(page.getByTestId('q-unit')).toBeDisabled()
+    await expect(page.getByTestId('sp-search')).toBeDisabled()
+    await expect(page.getByTestId('tag-outside')).toBeVisible()
+    await expectNoHorizontalScroll(page)
+    await shotEl(block, 'tag-block-t1t3')
+  })
+
+  test('admin Tag DSKP editor: Pendidikan Islam SP and SK are right-to-left Jawi', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs('admin@demo.test')
+    await gotoApp('/admin/spm/soalan/manual')
+    await page.getByTestId('intake-subject').selectOption('PI')
+    await page.getByTestId('intake-source').fill('Kertas sekolah sendiri')
+    await page.getByTestId('intake-copyright').selectOption('sendiri')
+    await page.getByTestId('manual-start').click()
+    const block = page.getByTestId('tag-block')
+    await block.scrollIntoViewIfNeeded()
+    await expect(block.getByTestId('tag-subject')).toHaveText('Subjek: Pendidikan Islam')
+    await page.getByTestId('q-form').selectOption('T4')
+    await page.getByTestId('q-unit').selectOption({ index: 1 })
+    const jawi = page.locator('[data-testid="sp-text-rtl"]').first()
+    await expect(jawi).toHaveAttribute('dir', 'rtl')
+    await expect(jawi).toHaveAttribute('lang', 'ms-Arab')
+    await page.locator('[data-testid^="sp-option-"]').first().click()
+    await expect(page.getByTestId('q-sk').locator('[dir="rtl"]').first()).toBeVisible()
+    await page.getByTestId('q-tp').selectOption('1')
+    await expect(page.getByTestId('tp-descriptor').locator('[dir="rtl"]')).toBeVisible()
+    await expectNoHorizontalScroll(page)
+    await shotEl(block, 'tag-block-jawi')
   })
 })

@@ -109,7 +109,25 @@ export interface ReviewSeed {
   group?: { def: GroupDef; stimulus: StimulusDef }
 }
 
-export interface QueueFilter {
+/** Filter on KBAT (AC-06.5): "Ya" (any level), "Tidak" (none) or one level. */
+export type KbatFilter = 'ya' | 'tidak' | KbatLevel
+
+/** The curriculum filters of the bank and the review queue (same types and meaning in both). */
+export interface TagFilter {
+  formOrigin?: FormOrigin
+  /** Catalogue unit id (the UI offers it once a subject and tingkatan are chosen). */
+  unitId?: string
+  /** Catalogue SP id (ids, not printed codes: a code repeats across T4 and T5). */
+  spId?: string
+  tp?: number
+  kbat?: KbatFilter
+}
+
+/**
+ * Queue filter. The tag filters keep an item when any of its questions matches (a unit or a
+ * stimulus group holds several); a revision is judged on the tag it would publish.
+ */
+export interface QueueFilter extends TagFilter {
   subject?: string
   kertas?: number
   kind?: QuestionKind
@@ -126,6 +144,17 @@ export interface QueueItem {
   kertas: number
   kind: QuestionKind
   topic: string
+  /**
+   * Tag fields as on `BankRow`, read from the first question of the item (as `topic` is); for a
+   * revision, from the tag it would publish. The queue filter looks at every question of the item.
+   */
+  formOrigin: FormOrigin | null
+  unitId: DskpUnitId | null
+  unitTitle: string | null
+  spCodes: string[]
+  tp: TpLevel | null
+  kbat: KbatLevel | null
+  tagReview: boolean
   /** Stem preview (first question of the unit); may hold `$latex$`. */
   preview: string
   /** The preview as plain text (card titles). */
@@ -181,23 +210,13 @@ export interface DecisionResult {
   errors: string[]
 }
 
-/** Bank filter on KBAT (AC-06.5): "Ya" (any level), "Tidak" (none) or one level. */
-export type KbatFilter = 'ya' | 'tidak' | KbatLevel
-
-export interface BankFilter {
+/** Tag filters (AC-09.1) are applied in the same pass that builds the rows. */
+export interface BankFilter extends TagFilter {
   q?: string
   subject?: string
   kertas?: number
   kind?: QuestionKind
   status?: QuestionStatus | 'semua'
-  /** Tag filters (AC-09.1). They are applied in the same pass that builds the rows. */
-  formOrigin?: FormOrigin
-  /** Catalogue unit id (the UI offers it once a subject and tingkatan are chosen). */
-  unitId?: string
-  /** Catalogue SP id (ids, not printed codes: a code repeats across T4 and T5). */
-  spId?: string
-  tp?: number
-  kbat?: KbatFilter
   /** Only questions flagged `perlu-semakan` (AC-08.3). */
   tagReview?: boolean
 }

@@ -7,7 +7,7 @@
 import { shallowRef, ref, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref, ShallowRef } from 'vue'
 
-import { dskpCatalog, parseDskpKey } from '@/modules/m03-curriculum'
+import { dskpCatalog, DSKP_FLAG_LABELS, DSKP_REVIEW_BADGE_FLAGS, parseDskpKey } from '@/modules/m03-curriculum'
 import type {
   DskpCatalog,
   DskpSpId as CatalogSpId,
@@ -17,6 +17,18 @@ import type {
 } from '@/modules/m03-curriculum'
 
 import type { TagLookup } from '../domain/tag-rule'
+
+export { DSKP_FLAG_LABELS, DSKP_REVIEW_BADGE_FLAGS }
+export type {
+  DskpFlag,
+  DskpGroupNode,
+  DskpSkNode,
+  DskpSpNode,
+  DskpSubjectInfo,
+  DskpSubjectView,
+  DskpUnitNode,
+  TpResolved,
+} from '@/modules/m03-curriculum'
 
 let catalog: DskpCatalog = dskpCatalog
 
