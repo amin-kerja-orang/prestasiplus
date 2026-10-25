@@ -14,13 +14,26 @@ for c in script python3 flock; do command -v "$c" >/dev/null || { echo "missing:
 w="$(mktemp -d)"; trap 'rm -rf "$w"' EXIT
 mkdir -p "$w/env" "$w/bin" "$w/stage" "$w/out" "$w/fx" "$w/backup"
 printf 'POSTGRES_DB=pp_test\n' >"$w/env/db.env"
+# dummy role URLs (test-only values, not secrets) so db-roles.sh apply gets past its checks against the stub db
+for r in app:api owner:migrate etl:etl; do
+  printf 'DATABASE_URL=postgresql://pp_%s:test-only-%s-pw-000000000000000000@db:5432/pp_test\n' "${r%%:*}" "${r%%:*}" >"$w/env/${r#*:}.env"
+done
 printf 'x\n' >"$w/stage/stage.pw"
 cat >"$w/bin/docker" <<'STUB'
 #!/bin/sh
 case "$1" in
   inspect) [ "${STUB_RUNNING:-0}" = 1 ] && echo true || echo false; exit 0 ;;
   exec) echo "archive_cloud:38 staging_cloud:89"; exit 0 ;;
-  compose) for a in "$@"; do [ "$a" = staging:load ] && [ "${STUB_FAIL_LOAD:-0}" = 1 ] && exit 1; done; exit 0 ;;
+  compose) for a in "$@"; do [ "$a" = staging:load ] && [ "${STUB_FAIL_LOAD:-0}" = 1 ] && exit 1; done
+    # STUB_TARGET=ok|short: the target db service runs and its psql answers with the expected schema counts (ok, the
+    # copy passes) or with fewer tables (short, the copy fails after the drop). Piped input (pg_dump, the db-roles SQL)
+    # is read first, so the writer never gets SIGPIPE (exit 141).
+    { [ -n "${STUB_TARGET:-}" ] || case "$*" in *pg_restore*) true ;; *) false ;; esac; } && { [ -t 0 ] || cat >/dev/null; }
+    case "${STUB_TARGET:-}:$*" in
+      ok:*" ps "*|short:*" ps "*) echo db1 ;;
+      ok:*psql*) echo "archive_cloud:38 staging_cloud:89" ;;
+      short:*psql*) echo "archive_cloud:38 staging_cloud:88" ;;
+    esac; exit 0 ;;
   *) exit 0 ;;
 esac
 STUB
@@ -151,6 +164,12 @@ run 3 'target data: SYNTHETIC copy in the target' -notty gonogo
 check 'grep -qF "gonogo: NO-GO" "$w/log"' 'gonogo ends NO-GO on a synthetic target'
 run_absent 'the target holds a SYNTHETIC copy' copy
 prod "${SCR[@]}"; run_absent 'the target holds a SYNTHETIC copy' etl migrate:all --apply --as-of=2026-10-29
+echo "-- the target marker after a copy from a raw stage"
+manifest "$RAW"; run 0 'LOAD DONE' -notty load --from "$w/fx"
+EXTRA_ENV="STUB_TARGET=short" run 1 'STAGE COPY FAILED' -notty copy
+check tmarker 'a raw copy that fails after the drop keeps the target marker'
+EXTRA_ENV="STUB_TARGET=ok" run 0 'STAGE COPY PASSED' -notty copy
+check '! tmarker' 'a raw copy that passes clears the target marker'
 rm -f "$w/stage/SYNTHETIC-IN-TARGET"
 
 echo "passed $pass, failed $fail"
