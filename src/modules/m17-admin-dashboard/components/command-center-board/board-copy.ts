@@ -67,8 +67,12 @@ export interface BoardPaths {
   board: string
   /** S3 of the scope. */
   daily: string
-  /** "← Dashboard". */
-  dashboard: string
+  /**
+   * "← Dashboard" (S1 for the admin, M27 `/admin-sekolah` for the Admin Sekolah alias). `null` for the admin
+   * until S1 is built: `/admin` only redirects back to S2 (D48), so the link would loop (AM2-G5M17, D9;
+   * deviation row pending in the URS; same as `report`).
+   */
+  dashboard: string | null
   /**
    * S3 "Laporan Eksekutif" (S8, admin only). `null` until S8 is built: the link is not rendered
    * (SWEEP-23OCT D4, D9: it would be a dead link; DV-M17-45).
@@ -84,7 +88,7 @@ export function boardPaths(alias: boolean): BoardPaths {
   return {
     board: basePath,
     daily: `${basePath}/daily-activity`,
-    dashboard: alias ? '/admin-sekolah' : '/admin',
+    dashboard: alias ? '/admin-sekolah' : null,
     report: null,
     basePath,
   }
