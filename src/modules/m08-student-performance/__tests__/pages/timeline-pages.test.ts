@@ -136,6 +136,18 @@ describe('S16 TimelinePage', () => {
     await flushPromises()
     expect(w.get('[data-testid=copy-url]').attributes('data-copied')).toBe('false')
   })
+
+  it('shows no copied feedback when the clipboard write is rejected', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'))
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const w = await render(TimelinePage, '/timeline', '/timeline')
+    await w.get('[data-testid=copy-url]').trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenCalled()
+    const btn = w.get('[data-testid=copy-url]')
+    expect(btn.attributes('data-copied')).toBe('false')
+    expect(btn.attributes('aria-label')).toBe('Salin pautan')
+  })
 })
 
 describe('S17 TimelineCreatePage', () => {
@@ -306,6 +318,17 @@ describe('S18 PublicProfilePage', () => {
       title: 'Admin Demo',
       url: `${window.location.origin}/pelajar/1`,
     })
+    expect(dialogs.alertNative).not.toHaveBeenCalled()
+  })
+
+  it('"Kongsi" without navigator.share does not alert "Link disalin!" when the clipboard write fails', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'))
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    Object.defineProperty(navigator, 'share', { value: undefined, configurable: true })
+    const w = await render18()
+    await w.get('[data-testid=share]').trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenCalled()
     expect(dialogs.alertNative).not.toHaveBeenCalled()
   })
 })

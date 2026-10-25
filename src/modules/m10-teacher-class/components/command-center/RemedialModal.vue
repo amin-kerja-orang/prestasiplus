@@ -2,7 +2,7 @@
 /**
  * "Remedial" -> "Smart Remedial — Scan Pelajar Lemah" (FR-M10-22, FR-M10-23, FN-M10-2.2.10, 2.2.11,
  * BR-M10-11/12): the scan works (DV-M10-03); per weak student either the open test ("Lihat Quiz ({n} soalan)"
- * + "Batal & Jana Semula") or one "Jana {Subjek}" button per weak subject. A failed scan shows "Ralat: {message}".
+ * + "Batal & Jana Semula") or one "Jana {Subjek}" button per weak subject. A failed scan shows the fixed BM line (SWE).
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed, reactive, watch } from 'vue'
@@ -17,9 +17,10 @@ import {
   generateRemedialTest,
 } from '../../api/command-center'
 import type { CcExistingRemedial, CcWeakStudent } from '../../api/command-center-types'
+import { moduleMessage } from '../../lib/generic-server-text'
 import CcDialog from './CcDialog.vue'
 import { useOpenTab } from './composables'
-import { plain, remedialPath, studentPath } from './copy'
+import { plain, remedialPath, S2_COPY, studentPath } from './copy'
 
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
 type Row = { [K in keyof CcWeakStudent]: CcWeakStudent[K] }
@@ -105,7 +106,7 @@ async function generate(s: CcWeakStudent, subject: string) {
     if (res.quizId) st.made[subject] = { quizId: res.quizId, total: res.totalQuestions }
     else st.failed[subject] = 'Gagal'
   } catch (err) {
-    st.failed[subject] = isApiError(err) ? err.message || 'Gagal' : 'Ralat'
+    st.failed[subject] = isApiError(err) ? (moduleMessage(err) ?? 'Gagal') : 'Ralat'
   } finally {
     st.busy[subject] = false
   }
@@ -138,7 +139,7 @@ async function cancel(s: CcWeakStudent, quizId: number) {
     @close="$emit('close')"
   >
     <p v-if="error" class="text-body text-error" data-testid="cc-remedial-error">
-      Ralat: {{ error.message }}
+      {{ S2_COPY.loadFailed }}
     </p>
     <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
       Mengimbas topik lemah pelajar...

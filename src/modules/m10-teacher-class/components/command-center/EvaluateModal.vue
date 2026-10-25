@@ -13,7 +13,7 @@ import { fetchCommandCenterEvaluation } from '../../api/command-center'
 import type { CcEvaluation } from '../../api/command-center-types'
 import CcDialog from './CcDialog.vue'
 import { statItems, useOpenTab } from './composables'
-import { riskLabel, riskStatus, studentPath } from './copy'
+import { riskLabel, riskStatus, S2_COPY, studentPath } from './copy'
 
 /** One student of the alert list; a mapped alias so the DS table gets an index signature. */
 type Row = { [K in keyof CcEvaluation['alerts'][number]]: CcEvaluation['alerts'][number][K] }
@@ -47,7 +47,7 @@ const columns: TableColumn<Row>[] = [
     wide
     @close="$emit('close')"
   >
-    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
+    <p v-if="error" class="text-body text-error">{{ S2_COPY.loadFailed }}</p>
     <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
       Menilai semua pelajar...
     </p>

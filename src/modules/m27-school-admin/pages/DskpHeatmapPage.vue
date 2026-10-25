@@ -112,12 +112,7 @@ function pickSubject(id: number) {
         :empty="empty"
       />
     </template>
-    <DsLoadError
-      v-else-if="error && !refused"
-      :message="error.message"
-      testid="dh-error"
-      @retry="reload"
-    />
+    <DsLoadError v-else-if="error && !refused" testid="dh-error" @retry="reload" />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="dh-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />

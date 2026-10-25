@@ -7,7 +7,7 @@
  * `csv` reads `csvFile`, `paste` reads `pasteContent`.
  */
 
-import { api } from '@/api'
+import { api, wireIdOpt, type EntityId } from '@/api'
 import { isHttpMode } from '@/api/mode'
 
 /** DATA-M02-11 (INFERRED, URS OQ-2). `errors` lists the failed lines only. */
@@ -64,7 +64,7 @@ export interface BulkImportInput extends ImportSource {
 }
 
 export interface StudentImportInput extends ImportSource {
-  schoolId: number | null
+  schoolId: EntityId | null
   classLevel: ImportClassLevel | ''
 }
 
@@ -125,7 +125,9 @@ export function importUsers(input: BulkImportInput): Promise<ImportResponse> {
 
 /** #13 `POST /api/admin/students/import` (422, incl. no active subscription or not enough quota). */
 export function importStudents(input: StudentImportInput): Promise<ImportResponse> {
-  const { csvFile, ...fields } = input
+  const { csvFile, ...rest } = input
+  // Contract `StudentImportRequestSchema`: `schoolId` is a string (SWX-2); null stays null.
+  const fields = { ...rest, schoolId: wireIdOpt(rest.schoolId) }
   return api.post<ImportResponse>('/api/admin/students/import', {
     body: importBody(fields, csvFile),
     raw: true,
