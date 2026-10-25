@@ -260,12 +260,14 @@ describe('school subscriptions (AC 1, AC 6)', () => {
       expect(inv.total).toBe('210.00')
       // M02 BUG-01: the S15 table lists every enrolled student (FR-M02-97, BR-24), unpaginated, numbered from 1.
       // The field is not in SubscriptionRenewalInvoiceSchema yet (contract patch pending), so assert on the wire body.
-      const students = res.body.data.students as { no: number; name: string; idDelima: string | null; classLevel: string | null }[]
+      const students = res.body.data.students as { no: number; name: string; classLevel: string | null }[]
       expect(students).toHaveLength(7)
       expect(students.map((s) => s.no)).toEqual([1, 2, 3, 4, 5, 6, 7])
       expect(students.map((s) => s.name)).toEqual([...students.map((s) => s.name)].sort((a, b) => a.localeCompare(b, 'ms')))
-      for (const s of students) expect(Object.keys(s).sort()).toEqual(['classLevel', 'idDelima', 'name', 'no'])
-      expect(students[0]).toMatchObject({ idDelima: null, classLevel: 'T4' })
+      for (const s of students) expect(Object.keys(s).sort()).toEqual(['classLevel', 'name', 'no'])
+      expect(students[0]).toMatchObject({ classLevel: 'T4' })
+      // Minors' personal data: no idDelima, IC or e-mail on the invoice (BE-25 privacy default).
+      for (const key of ['idDelima', 'icNumber', 'ic', 'email', 'id']) expect(students[0]).not.toHaveProperty(key)
       expect(students.length).toBe(inv.studentCount)
       expectError(await admin.get('/admin/school-subscriptions/999999/renewal-invoice'), 'NOT_FOUND')
     })

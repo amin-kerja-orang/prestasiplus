@@ -159,10 +159,11 @@ export class SchoolSubscriptionsService {
     const now = this.clock.now()
     const count = (await this.schools.memberCounts([row.schoolId])).get(row.schoolId)?.studentCount ?? 0
     // M02 BUG-01 (FR-M02-97, BR-24): every student of the school, name order, numbered from 1, not paginated.
+    // No idDelima, IC or e-mail: minors' personal data (BE-25 privacy default; the LEAD may add idDelima, see the deviations log).
     // `students` is not in SubscriptionRenewalInvoiceSchema yet (contract patch pending); this is the wire shape.
     const students: RenewalInvoiceStudent[] = (await this.users.studentsOfSchool(row.schoolId, '', ''))
       .sort(byNameThenId)
-      .map((s, i) => ({ no: i + 1, name: s.name, idDelima: s.idDelima, classLevel: classLevelOfGrade(s.grade) }))
+      .map((s, i) => ({ no: i + 1, name: s.name, classLevel: classLevelOfGrade(s.grade) }))
     return {
       ref: `INV-${row.id}-${compactDay(now)}`,
       date: toMytTimestamp(now),

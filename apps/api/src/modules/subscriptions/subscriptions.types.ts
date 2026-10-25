@@ -40,6 +40,5 @@ export type SubscriptionStudent = z.output<typeof SubscriptionStudentSchema>
 export interface RenewalInvoiceStudent {
   no: number
   name: string
-  idDelima: string | null
   classLevel: string | null
 }
