@@ -140,22 +140,22 @@ describe('publish gate (gateErrors)', () => {
   })
 
   it('T1-T3 without a unit and without SP can be published', () => {
-    expect(gateErrors([def(t13)], scheme)).toEqual([])
+    expect(gateErrors([def(t13)], scheme, lookup)).toEqual([])
   })
 
   it('T4 and T5 without a unit are refused', () => {
     for (const formOrigin of ['T4', 'T5'] as const)
-      expect(gateErrors([def({ ...t4, formOrigin })], scheme)).toEqual([
-        'Soalan 1: topik DSKP belum dipilih',
+      expect(gateErrors([def({ ...t4, formOrigin })], scheme, lookup)).toEqual([
+        'Soalan 1: Unit DSKP belum dipilih.',
+        'Soalan 1: Standard Pembelajaran (SP) belum dipilih.',
       ])
   })
 
-  // T1-T3 only: for T4/T5 the publish gate checks the unit alone until DSKP-T05 wires the shared rule.
-  it('the three gates agree on the same T1-T3 question (T1-T3 only)', () => {
+  it('the three gates agree on the same T1-T3 question', () => {
     const q = intakeQ(t13, { lowFields: ['tag.unit', 'tag.sp'] })
     expect(messages(q)).toEqual([])
     expect(validateRevision(q, undefined, lookup)).toEqual([])
-    expect(gateErrors([def(t13)], scheme)).toEqual([])
+    expect(gateErrors([def(t13)], scheme, lookup)).toEqual([])
   })
 })
 

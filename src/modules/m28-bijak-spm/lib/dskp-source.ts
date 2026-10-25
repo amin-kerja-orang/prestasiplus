@@ -71,6 +71,9 @@ export function tagLookup(): TagLookup {
   }
 }
 
+/** The code of a catalogue node as printed (`MAT:T4:sp:1.1.6` gives `1.1.6`); an unknown id is returned as it is. */
+export const dskpCodeOf = (id: string): string => parseDskpKey(id)?.code ?? id
+
 /**
  * Load each subject once (cached by M03) and return the lookup. Codes the catalogue does not list
  * are skipped, so a tag with an unknown subject fails the rule instead of rejecting here; a failed

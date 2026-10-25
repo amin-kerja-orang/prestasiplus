@@ -1,7 +1,7 @@
 /**
- * DSKP-T03, partial parity (design 5.2, risk R7): one matrix of tags goes to the entry points that
- * use `tagIssues` today (batch submit and Sunting revision) and both must report exactly the
- * messages of the rule. The publish gate joins in DSKP-T05, which completes this test.
+ * Parity of the tag rule (design 5.2, risk R7): one matrix of tags goes to every entry point that
+ * enforces it (batch submit, Sunting revision, stem-only revision and publish) and each must report
+ * exactly the messages of `tagIssues`, in the same order.
  */
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -10,8 +10,8 @@ import type { IntakeQuestion } from '../admin/intake/types'
 import { emptyTag } from '../domain/tag-edit'
 import { tagIssues } from '../domain/tag-rule'
 import type { TagLookup } from '../domain/tag-rule'
-import type { CurriculumTag, TpLevel } from '../domain/types'
-import { gateErrors } from '../server/admin'
+import type { CurriculumTag, QuestionDef, TpLevel } from '../domain/types'
+import { gateErrors, liveTagErrors } from '../server/admin'
 import {
   BI_T4_SLOT,
   MAT_T4_OTHER_SP,
@@ -75,9 +75,22 @@ const MATRIX: { name: string; tag: CurriculumTag }[] = [
   { name: 'KBAT invalid', tag: matTag({ kbat: 'x' as never }) },
 ]
 
-describe('tag rule parity (partial: submit and revision)', () => {
+const def = (tag: CurriculumTag): QuestionDef => ({
+  id: 'q1',
+  curriculum: tag,
+  stem: 'Hitung $2 + 3$.',
+  mcq: {
+    options: [
+      { id: 'A', text: '5' },
+      { id: 'B', text: '6' },
+    ],
+  },
+})
+const scheme = () => ({ kind: 'option' as const, marks: 1, correct: 'A', reason: 'Kunci' })
+
+describe('tag rule parity (submit, revision, stem-only revision and publish)', () => {
   for (const { name, tag } of MATRIX) {
-    it(`${name}: batch submit and Sunting revision report the messages of the rule`, () => {
+    it(`${name}: every entry point reports the messages of the rule`, () => {
       const expected = tagIssues(tag, lookup).map((i) => i.message)
       const q = question(tag)
       const submit = validateBatch(
@@ -86,32 +99,17 @@ describe('tag rule parity (partial: submit and revision)', () => {
       )
       expect(submit.map((i) => i.message)).toEqual(expected)
       expect(validateRevision(q, undefined, lookup)).toEqual(expected.map((m) => `Soalan: ${m}`))
+      expect(liveTagErrors(def(tag), lookup)).toEqual(expected.map((m) => `Soalan: ${m}`))
+      // Publish: the key and marks are fine here, so every error is a tag message.
+      expect(gateErrors([def(tag)], scheme, lookup)).toEqual(expected.map((m) => `Soalan 1: ${m}`))
     })
   }
 
-  it('the interim publish gate agrees on the unit check for T1-T3 and for T4/T5 without a unit', () => {
-    const scheme = () => ({ kind: 'option' as const, marks: 1, correct: 'A', reason: 'Kunci' })
-    const def = (tag: CurriculumTag) => ({
-      id: 'q1',
-      curriculum: tag,
-      stem: 'x',
-      mcq: {
-        options: [
-          { id: 'A', text: '5' },
-          { id: 'B', text: '6' },
-        ],
-      },
-    })
-    const unitMissing = (tag: CurriculumTag) =>
-      tagIssues(tag, lookup).some((i) => i.field === 'unit')
-    const cases = [
-      t13Tag(),
-      matTag(),
-      matTag({ unitId: null, spIds: [] }),
-      matTag({ formOrigin: 'T5', unitId: null, spIds: [] }),
-    ]
-    for (const tag of cases) expect(gateErrors([def(tag)], scheme).length > 0).toBe(unitMissing(tag))
+  it('publish runs the rule on every question of the unit, numbered', () => {
+    const qs = [def(matTag()), def(matTag({ spIds: [] })), def(t13Tag({ tp: null }))]
+    expect(gateErrors(qs, scheme, lookup)).toEqual([
+      'Soalan 2: Standard Pembelajaran (SP) belum dipilih.',
+      'Soalan 3: Tahap Penguasaan (TP) belum dipilih.',
+    ])
   })
-
-  it.todo('publish (gateErrors) runs tagIssues on every question of the unit: completed in DSKP-T05')
 })

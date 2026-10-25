@@ -14,8 +14,8 @@ export const REVIEW_TOPIC = 'Perlu semakan tag'
  */
 export function topicOf(c: CurriculumTag, lookup: Pick<TagLookup, 'unit'>): string {
   if (c.formOrigin === 'T1-T3') return T1_T3_TOPIC
-  // Truthy test on purpose: an old-shape tag (no `unitId` at all) must not throw before the
-  // storage migration has run (DSKP-T05 wires `migrateTagsInState` into load()).
+  // Truthy test on purpose: an old-shape tag (no `unitId` at all) must not throw in a caller that
+  // holds one outside the server (the server migrates stored state in `load()`).
   if (c.unitId) {
     const unit = lookup.unit(c.unitId)
     if (unit) return unit.title

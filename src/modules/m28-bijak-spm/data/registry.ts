@@ -3,6 +3,7 @@
  * question pool behind Jana Kertas. Built once at module load; fictitious practice content.
  */
 import type { Blueprint, PaperDef, Subject, SubjectCode } from '../domain/types'
+import { dskpSource } from '../lib/dskp-source'
 import { Bank } from './builders'
 import { seedMatK1 } from './mat-k1'
 import { seedMatK2 } from './mat-k2'
@@ -16,8 +17,9 @@ export const SUBJECTS: Subject[] = [
   { code: 'SEJ', name: 'Sejarah' },
 ]
 
+/** Name of a subject: the three blueprint subjects first, then the DSKP catalogue's name, else the code. */
 export const subjectName = (code: SubjectCode): string =>
-  SUBJECTS.find((s) => s.code === code)?.name ?? code
+  SUBJECTS.find((s) => s.code === code)?.name ?? dskpSource().subject(code)?.name ?? code
 
 const MAT_REFERENCE: NonNullable<PaperDef['reference']> = [
   {

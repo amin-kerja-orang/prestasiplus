@@ -7,7 +7,7 @@
  * result, i.e. after submit (exam) or after "Semak" on that one question (latihan).
  */
 import { blankQuestion } from '../admin/intake/domain/blank'
-import { batchToSeeds } from '../admin/intake/domain/convert'
+import { batchToSeeds, seedQuestionId } from '../admin/intake/domain/convert'
 import { groupsOf } from '../admin/intake/domain/grouping'
 import { paperMarks } from '../admin/intake/domain/marks'
 import { lowToConfirm, validateBatch } from '../admin/intake/domain/validation'
@@ -34,7 +34,8 @@ import { numericValue } from '../domain/math-expr'
 import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
 import type { TagLookup } from '../domain/tag-rule'
 import { studentTopicOf } from '../domain/topic'
-import { tagLookup, tagLookupFor } from '../lib/dskp-source'
+import { dskpSubjects, tagLookupFor } from '../lib/dskp-source'
+import { TAG_STATE_SCHEMA, migrateTagsInState } from '../lib/tag-migrate'
 import type { BankFilter, DecisionAction, PaperPatch, QueueFilter } from '../domain/admin-types'
 import type {
   Attempt,
@@ -59,6 +60,7 @@ import type {
   SectionSnapshot,
   SectionView,
   StoredAnswer,
+  Subject,
   SubjectCode,
   SubmitPayload,
 } from '../domain/types'
@@ -115,6 +117,8 @@ interface GeneratedPaper extends PaperDef {
 }
 
 interface State extends AdminSlice {
+  /** 2 after the DSKP tag migration (`migrateTagsInState`); absent in a state saved before v2. */
+  schema?: number
   seq: number
   attempts: Record<string, Attempt>
   generated: Record<string, GeneratedPaper>
@@ -166,11 +170,26 @@ export class BijakServer {
 
   private load(): State {
     let st: State = { seq: 0, attempts: {}, generated: {} }
+    let saved = false
     try {
       const raw = this.storage.getItem(this.key)
-      if (raw) st = JSON.parse(raw) as State
+      if (raw) {
+        st = JSON.parse(raw) as State
+        saved = true
+      }
     } catch {
       /* start empty */
+    }
+    // Old-shape DSKP tags are converted (never matched to the "closest" unit) before the admin slice
+    // is seeded, which registers the stored review units. Idempotent: a v2 state is left as it is.
+    const stale = st.schema !== TAG_STATE_SCHEMA
+    migrateTagsInState(st)
+    if (saved && stale) {
+      try {
+        this.storage.setItem(this.key, JSON.stringify(st))
+      } catch {
+        /* quota: the migration runs again on the next load */
+      }
     }
     seedAdminSlice(st, this.now())
     return st
@@ -321,8 +340,17 @@ export class BijakServer {
     }))
   }
 
+  /** The subjects that have a blueprint (papers and Jana Kertas stay blueprint-driven). */
   subjects() {
     return SUBJECTS
+  }
+
+  /**
+   * The 13 DSKP catalogue subjects a question can be tagged with (AC-03.1): intake declaration,
+   * intake list, review queue and bank filters. Names are as the catalogue prints them.
+   */
+  tagSubjects(): Subject[] {
+    return dskpSubjects().map((s) => ({ code: s.code, name: s.name }))
   }
 
   /** Jana Kertas (US-03). Returns a shortage list instead of a short paper. */
@@ -474,10 +502,11 @@ export class BijakServer {
         // Only a tagged question needs the catalogue (for its unit title); T1-T3 and flagged do not.
         if (q?.curriculum.unitId) subjects.add(q.curriculum.subject)
       }
-    // A failed catalogue load must not break an attempt: warn and leave the topic empty.
+    // A failed catalogue load must not break an attempt: warn and leave the topic empty (nothing
+    // more is loaded; the lookup answers from what is already loaded).
     return tagLookupFor(subjects).catch((error: unknown) => {
       console.warn('[bijak] DSKP catalogue not loaded; question topics are left empty', error)
-      return tagLookup()
+      return tagLookupFor([])
     })
   }
 
@@ -1029,7 +1058,8 @@ export class BijakServer {
     b.submittedAt = this.now()
     b.updatedAt = b.submittedAt
     // The questions enter the review queue: one unit per question, one per stimulus group.
-    this.ops.enqueueSeeds(batchToSeeds(b))
+    const suggestions = new Map(b.questions.map((q, i) => [seedQuestionId(b.id, i), q.tagSuggestion]))
+    this.ops.enqueueSeeds(batchToSeeds(b), suggestions)
     this.persist()
     return { ok: true, batch: jsonClone(b) }
   }

@@ -225,6 +225,9 @@ export function defToIntake(
 
 /* ---------------------------------------------------------------------- batch to queue units */
 
+/** Bank id of the question at 0-based `index` of batch `batchId` once it is submitted. */
+export const seedQuestionId = (batchId: string, index: number): string => `${batchId}-q${index + 1}`
+
 /**
  * A submitted batch as review-queue units: each stimulus group is one unit (decided together),
  * every other question is its own unit. Ids are derived from the batch id so they are stable and
@@ -232,7 +235,7 @@ export function defToIntake(
  */
 export function batchToSeeds(batch: IntakeBatch): ReviewSeed[] {
   const manual = batch.sourceKind === 'manual'
-  const qid = (i: number): string => `${batch.id}-q${i + 1}`
+  const qid = (i: number): string => seedQuestionId(batch.id, i)
   const source = manual
     ? `Manual: ${batch.source} (${batch.paperType} ${batch.year})`
     : `${batch.source} (${batch.paperType} ${batch.year})`
