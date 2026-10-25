@@ -128,12 +128,13 @@ export class AnalyticsRepository {
   }
 
   /** The T4/T5 segment (BR-M11-01): active pupils of grade 10 or 11 with a school, in scope. */
-  private segment(schoolIds: readonly string[] | null): Prisma.Sql {
+  private segment(schoolIds: readonly string[] | null, pupilIds: readonly string[] | null = null): Prisma.Sql {
     return Prisma.sql`SELECT u.id AS user_id, u.school_id
       FROM users u
       WHERE u.is_active AND u.grade IN (10, 11) AND u.school_id IS NOT NULL
         AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'student')
-        ${this.clause(schoolIds, Prisma.sql`u.school_id`)}`
+        ${this.clause(schoolIds, Prisma.sql`u.school_id`)}
+        ${this.clause(pupilIds, Prisma.sql`u.id`)}`
   }
 
   // --- schools -------------------------------------------------------------------------------------------------
@@ -160,10 +161,10 @@ export class AnalyticsRepository {
   }
 
   /** Registered T4/T5 pupils per school (Q-M11-T45). */
-  async registeredBySchool(ids: readonly string[] | null): Promise<Map<string, number>> {
-    if (ids !== null && ids.length === 0) return new Map()
+  async registeredBySchool(ids: readonly string[] | null, pupilIds: readonly string[] | null = null): Promise<Map<string, number>> {
+    if ((ids !== null && ids.length === 0) || (pupilIds !== null && pupilIds.length === 0)) return new Map()
     const rows = await this.db.$queryRaw<{ school_id: string; n: number }[]>`
-      WITH seg AS (${this.segment(ids)}) SELECT school_id::text AS school_id, count(*)::int AS n FROM seg GROUP BY school_id`
+      WITH seg AS (${this.segment(ids, pupilIds)}) SELECT school_id::text AS school_id, count(*)::int AS n FROM seg GROUP BY school_id`
     return new Map(rows.map((r) => [r.school_id, r.n]))
   }
 
@@ -181,11 +182,11 @@ export class AnalyticsRepository {
   }
 
   /** Answering pupils and answers per school since `from` (null = all time), over the T4/T5 segment (Q-ANS-SEG). */
-  async engagement(ids: readonly string[] | null, from: Date | null): Promise<Map<string, { engaged: number; answers: number }>> {
-    if (ids !== null && ids.length === 0) return new Map()
+  async engagement(ids: readonly string[] | null, from: Date | null, pupilIds: readonly string[] | null = null): Promise<Map<string, { engaged: number; answers: number }>> {
+    if ((ids !== null && ids.length === 0) || (pupilIds !== null && pupilIds.length === 0)) return new Map()
     const since = from === null ? Prisma.empty : Prisma.sql`AND a.answered_at >= ${from}`
     const rows = await this.db.$queryRaw<{ school_id: string; engaged: number; answers: number }[]>`
-      WITH seg AS (${this.segment(ids)})
+      WITH seg AS (${this.segment(ids, pupilIds)})
       SELECT seg.school_id::text AS school_id, count(DISTINCT a.user_id)::int AS engaged, count(*)::int AS answers
       FROM ${CLEAN_ANSWERS} JOIN seg ON seg.user_id = a.user_id
       WHERE ${CLEAN_WHERE} ${since}
@@ -194,11 +195,11 @@ export class AnalyticsRepository {
   }
 
   /** Answers per school per Monday-based week since M1 (BR-M11-15): `school -> week -> n`. */
-  async answersByWeek(ids: readonly string[] | null): Promise<Map<string, Map<number, number>>> {
-    if (ids !== null && ids.length === 0) return new Map()
+  async answersByWeek(ids: readonly string[] | null, pupilIds: readonly string[] | null = null): Promise<Map<string, Map<number, number>>> {
+    if ((ids !== null && ids.length === 0) || (pupilIds !== null && pupilIds.length === 0)) return new Map()
     const m1 = new Date(M1_START_MS)
     const rows = await this.db.$queryRaw<{ school_id: string; week: number; n: number }[]>`
-      WITH seg AS (${this.segment(ids)})
+      WITH seg AS (${this.segment(ids, pupilIds)})
       SELECT seg.school_id::text AS school_id,
         (floor(extract(epoch FROM (a.answered_at - ${m1}::timestamptz)) / 604800))::int + 1 AS week,
         count(*)::int AS n
