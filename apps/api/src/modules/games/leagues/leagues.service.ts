@@ -1,6 +1,7 @@
 import { randomInt } from 'node:crypto'
 
 import { Inject, Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import {
   GAMES_LEAGUE_CLASS_LEVELS,
   GAMES_MESSAGES,
@@ -13,6 +14,8 @@ import {
   type GamesSekolahBersaing,
 } from '@pp/contract'
 
+import type { Env } from '../../../common/config/env.schema'
+import { publicBaseUrl } from '../../../common/config/public-base-url'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, isIdString } from '../../../db/ids'
 import { CurriculumRepository } from '../../curriculum'
@@ -40,6 +43,7 @@ export class LeaguesService {
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
   ) {}
 
   private async subjectName(subjectId: string | null): Promise<string | null> {
@@ -126,7 +130,7 @@ export class LeaguesService {
       creatorName: await this.creatorName(caller, l.creatorId),
       classLevels: levels as GamesLeagueClassLevel[],
       inviteCode: l.inviteCode,
-      shareUrl: shareUrl(l.name, l.inviteCode),
+      shareUrl: shareUrl(l.name, l.inviteCode, publicBaseUrl(this.config)),
       canJoin: l.status !== 'ended' && (viewerSchool === null || !schoolIds.includes(viewerSchool)) && (l.maxSchools === null || total < l.maxSchools),
       schools: schoolIds.map((sid) => ({ id: sid, name: byId.get(sid)?.name ?? '' })),
       standings,
