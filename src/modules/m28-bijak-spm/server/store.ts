@@ -474,8 +474,11 @@ export class BijakServer {
         // Only a tagged question needs the catalogue (for its unit title); T1-T3 and flagged do not.
         if (q?.curriculum.unitId) subjects.add(q.curriculum.subject)
       }
-    // A failed catalogue load must not break an attempt: the topic is then empty.
-    return tagLookupFor(subjects).catch(() => tagLookup())
+    // A failed catalogue load must not break an attempt: warn and leave the topic empty.
+    return tagLookupFor(subjects).catch((error: unknown) => {
+      console.warn('[bijak] DSKP catalogue not loaded; question topics are left empty', error)
+      return tagLookup()
+    })
   }
 
   private buildView(a: Attempt, lookup: TagLookup): AttemptPaperView {

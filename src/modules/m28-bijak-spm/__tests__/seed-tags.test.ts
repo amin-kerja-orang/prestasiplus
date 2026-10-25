@@ -4,17 +4,21 @@
  * unit or SP. The outcome counts are computed here from the data and printed (the architecture doc
  * section 6.3 quotes this output; no count is typed by hand).
  */
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { createDskpCatalog, dskpCatalog } from '@/modules/m03-curriculum'
+import type { DskpSubjectInfo } from '@/modules/m03-curriculum'
+
+import { untagged } from '../data/builders'
 import { BANK } from '../data/registry'
 import { REVIEW_SEEDS } from '../data/review-seed'
-import { SEED_TAGS, tagOfSpec } from '../data/seed-tags'
+import { SEED_TAGS, applySeedTags, tagOfSpec } from '../data/seed-tags'
 import type { SeedTagSpec } from '../data/seed-tags'
 import { tagIssues } from '../domain/tag-rule'
 import type { TagLookup } from '../domain/tag-rule'
 import { T1_T3_TOPIC } from '../domain/topic'
 import type { QuestionDef } from '../domain/types'
-import { dskpSource, tagLookupFor } from '../lib/dskp-source'
+import { dskpSource, setDskpCatalogForTests, tagLookupFor } from '../lib/dskp-source'
 import { BijakServer, MemoryStorage } from '../server/store'
 
 /** Every seed question: the bank seeds and the review-queue seeds (by id). */
@@ -167,5 +171,48 @@ describe('seed tags: what a student sees', () => {
       'Fungsi dan Persamaan Kuadratik dalam Satu Pemboleh Ubah',
     )
     expect(matView.questions.find((q) => q.id === 'mat2-diskaun-v1')?.topic).toBe(T1_T3_TOPIC)
+  })
+})
+
+describe('seed tags: a catalogue that fails to load', () => {
+  afterEach(() => {
+    setDskpCatalogForTests()
+    vi.restoreAllMocks()
+  })
+
+  it('does not break a student attempt: the topic is empty and a warning is logged', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    setDskpCatalogForTests(
+      createDskpCatalog(
+        { SN: () => Promise.reject(new Error('network down')) },
+        { version: 'dskp-fixture', subjects: [dskpCatalog.subject('SN') as DskpSubjectInfo] },
+      ),
+    )
+    const server = new BijakServer({ storage: new MemoryStorage() })
+    const { attemptId } = await server.startAttempt(1, 'sn-k2-2025-a', 'exam')
+    const view = await server.getAttemptView(1, attemptId)
+    expect(view.questions.length).toBeGreaterThan(0)
+    expect(view.questions.find((q) => q.id === 'sn2-laju-v1')?.topic).toBe('')
+    expect(warn).toHaveBeenCalled()
+  })
+})
+
+describe('seed tags: applySeedTags refuses a bad seed', () => {
+  const question = (id: string, subject: string): QuestionDef => ({
+    id,
+    curriculum: untagged(subject),
+    stem: 'x',
+  })
+
+  it('a seed question without a row stops the load', () => {
+    expect(() => applySeedTags([question('no-such-seed', 'MAT')])).toThrow(
+      /no tag row for seed question "no-such-seed"/,
+    )
+  })
+
+  it('a row of another subject than the question stops the load', () => {
+    expect(() => applySeedTags([question('mat1-set-v1', 'SN')])).toThrow(
+      /the row for "mat1-set-v1" is MAT, the question is SN/,
+    )
   })
 })

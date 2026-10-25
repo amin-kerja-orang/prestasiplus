@@ -9,7 +9,8 @@
  *
  * The seed builders leave a placeholder tag (`untagged`); `applySeedTags` replaces it from this table
  * when the registry and the review seeds are built. Tagging adds metadata only: no seed question is
- * added, removed or edited. Catalogue ids are the opaque keys M03 issues (`SUBJECT:T4|T5:u|sp:<code>`).
+ * added, removed or edited. A flagged question is blocked at publish and revision after DSKP-T05 (the
+ * gate in `gateErrors` is interim until then). Catalogue ids are the opaque keys M03 issues (`SUBJECT:T4|T5:u|sp:<code>`).
  */
 import type { CurriculumTag, DskpSpId, DskpUnitId, QuestionDef, TpLevel } from '../domain/types'
 import { catalogueVersion } from '../lib/dskp-source'
@@ -94,7 +95,10 @@ const unionOfSets = (tp: TpLevel): SeedTagSpec =>
     'MAT:T4:sp:4.2.3',
     tp,
     'The stem gives n(A), n(B) and n(A and B) and asks for n(A or B), a problem that involves the union of ' +
-      'sets: SP 4.2.3 "Menyelesaikan masalah yang melibatkan kesatuan set". The reviewer confirms.',
+      'sets: SP 4.2.3 "Menyelesaikan masalah yang melibatkan kesatuan set". Considered and rejected: 4.2.1 ' +
+      '(identify and describe a union with representations; the stem asks for a count, not a description), ' +
+      '4.1.3 (intersection problems; n(A and B) is given, not asked) and 4.3.3 (problems on a combination of ' +
+      'set operations; the stem uses the union only). The reviewer confirms.',
   )
 
 /** Stem "Hitung laju kereta mainan" from a distance and a time. */
@@ -125,10 +129,14 @@ const NOTE = {
   KEBARANGKALIAN:
     'Single-event probability; Matematik T5 has no probability unit and T4 9.0 is combined events.',
   TRIGO:
-    'Tangent ratio in a right-angled triangle; Matematik T5 6.0 is quadrants II to IV and graphs.',
+    'A bare tangent ratio in a right-angled triangle: Matematik T5 6.1.1 and 6.1.2 are sin, cos and tan of ' +
+    'angles in quadrants II to IV (not this item), 6.1.3 gives the value and asks for the angle (not this ' +
+    'item) and 6.1.4 is problem solving (not this item). 6.1.3 and 6.1.4 were considered and rejected; 6.2 ' +
+    'is graphs. No Matematik T4/T5 SP covers it.',
   LUASTRIGO:
-    'Area of a triangle and sin/cos of an angle in a right-angled triangle; same reason as Trigonometri, ' +
-    'no Matematik T4/T5 SP covers it.',
+    'Area of a right-angled triangle and a sin/cos ratio from its sides. Area has no Matematik T4/T5 SP. The ' +
+    'ratio is not quadrants II to IV (T5 6.1.1, 6.1.2), not finding an angle from a value (6.1.3) and not ' +
+    'problem solving (6.1.4); 6.1.3 and 6.1.4 were considered and rejected. No SP covers it.',
   DAYA: 'The stem asks the SI unit of force; no Sains SP is about units of force.',
   OSMOSIS: 'The stem is about osmosis in root cells; no Sains T4/T5 SP covers osmosis.',
   FOTO: 'The stem asks the factors of the rate of photosynthesis; no Sains T4/T5 SP covers it.',
@@ -136,6 +144,16 @@ const NOTE = {
     'The stem spans several SK of Tajuk 10 and 11 and K-coded items; no single SP wording matches. A person ' +
     'picks the SP. Lead for the reviewer, not applied: the only unit whose title shares words with the old ' +
     'label is SEJ:T4:u:Tajuk 11.',
+  MERDEKA_Q3:
+    'The stem asks the importance of a constitution to a newly independent country. Nearest candidates, ' +
+    'neither applied: K11.3.8 "Mentafsir kepentingan menjunjung keluhuran perlembagaan" (T4) and, in T5, ' +
+    'K12.2.5 "Menerangkan kepentingan mendaulatkan perlembagaan negara". Both are K-coded values items on ' +
+    'upholding the constitution, in two forms, so no single SP wording matches. A person picks the SP.',
+  MERDEKA_Q4:
+    'The stem asks the role of inter-ethnic cooperation in building national unity. Nearest candidates, none ' +
+    'close enough to apply: 11.1.2 (the Communities Liaison Committee), K11.2.8 (power sharing among a ' +
+    'multi-ethnic society) and, in T5, 14.1.1 "Menyatakan usaha-usaha perpaduan dan integrasi nasional". No ' +
+    'close SP; a person picks.',
   KRONO:
     'Matching events to years (Persekutuan Tanah Melayu, the first general election, independence) spans ' +
     'Tajuk 10 and 11; no single SP matches.',
@@ -235,8 +253,8 @@ export const SEED_TAGS: Readonly<Record<string, SeedTagSpec>> = {
   // SEJ: flagged (no SP matches)
   'sej2-q1': flagged('SEJ', 'Kemerdekaan Tanah Melayu', 3, NOTE.MERDEKA),
   'sej2-q2': flagged('SEJ', 'Kronologi sejarah negara', 2, NOTE.KRONO),
-  'sej2-q3': flagged('SEJ', 'Kemerdekaan Tanah Melayu', 4, NOTE.MERDEKA),
-  'sej2-q4': flagged('SEJ', 'Kemerdekaan Tanah Melayu', 4, NOTE.MERDEKA),
+  'sej2-q3': flagged('SEJ', 'Kemerdekaan Tanah Melayu', 4, NOTE.MERDEKA_Q3),
+  'sej2-q4': flagged('SEJ', 'Kemerdekaan Tanah Melayu', 4, NOTE.MERDEKA_Q4),
 }
 
 /* --------------------------------------------------------------------------------- application */

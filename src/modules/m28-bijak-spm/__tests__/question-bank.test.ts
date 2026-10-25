@@ -11,9 +11,10 @@ const USER = 7
 const GROUP = 'mat2-rev-g1'
 
 // The second question of GROUP is a flagged seed (DSKP-T04: no SP matches "Luas dan trigonometri"),
-// and a flagged question cannot be published (AC-07.5). This file approves GROUP, so its fixture
-// stands in for the person who tags it in Sunting: a T1-T3 tag (TP as authored), set before any
-// server exists. The seed itself stays flagged (seed-tags.test.ts).
+// and after DSKP-T05 a flagged question cannot be published (AC-07.5; the gate is interim until then).
+// This file approves GROUP, so its fixture stands in for the person who tags it in Sunting: a T1-T3
+// tag (TP as authored), set before any server exists. The seed itself stays flagged
+// (seed-tags.test.ts).
 for (const seed of REVIEW_SEEDS)
   for (const q of seed.questions)
     if (q.id === `${GROUP}-q2`) q.curriculum = t13Tag({ tp: q.curriculum.tp })
