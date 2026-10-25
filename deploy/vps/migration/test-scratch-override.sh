@@ -124,8 +124,34 @@ check '! marker' 'a raw load clears the marker'
 # throwaway-up clears the marker first, then stops at the (stubbed) missing db service
 : >"$w/stage/SYNTHETIC-LOADED"; STUB_RUNNING=0 run 1 'the db service is not running' -notty throwaway-up
 check '! marker' 'throwaway-up clears the marker'
-prod; rm -f "$w/stage/SYNTHETIC-LOADED"; run 0 'gonogo: complete' -notty gonogo
+prod; rm -f "$w/stage/SYNTHETIC-LOADED" "$w/stage/SYNTHETIC-IN-TARGET"; run 0 'gonogo: complete' -notty gonogo
 check 'grep -qF "host: not marked scratch" "$w/log"' 'gonogo on a normal host: no NO-GO line'
+
+echo "-- Codex P2 (a): the stage marker is written only under the lock"
+prod "${SCR[@]}"; manifest "$SYN"; rm -f "$w/stage/SYNTHETIC-LOADED"
+flock "$w/lock" sleep 4 & holder=$!; sleep 0.5
+EXTRA_ENV="PP_LOCK_WAIT=1" run 75 'holds' scratch1 load --from "$w/fx" --synthetic-scratch
+wait "$holder" 2>/dev/null || true
+check '! marker' 'a synthetic load that never got the lock leaves no marker'
+
+echo "-- Codex P2 (b): the target keeps its own marker until a raw copy replaces it"
+tmarker() { [ -e "$w/stage/SYNTHETIC-IN-TARGET" ]; }
+prod "${SCR[@]}"; manifest "$SYN"; rm -f "$w/stage/SYNTHETIC-LOADED" "$w/stage/SYNTHETIC-IN-TARGET"
+run 0 'SCRATCH OVERRIDE ACTIVE on scratch1' scratch1 load --from "$w/fx" --synthetic-scratch
+run_any copy
+check tmarker 'a copy from a synthetic stage marks the target'
+manifest "$RAW"; run 0 'LOAD DONE' -notty load --from "$w/fx"
+check '! marker' 'the raw load clears the stage marker'
+check tmarker 'the raw load keeps the target marker (the target still holds the synthetic copy)'
+rm -rf "$w/stage/pgdata"; STUB_RUNNING=0 run 1 'the db service is not running' -notty throwaway-up
+check tmarker 'throwaway-up keeps the target marker'
+export STUB_RUNNING=1
+prod; run 3 'the target holds a SYNTHETIC copy' -notty etl migrate:all --apply --as-of=2026-10-29
+run 3 'target data: SYNTHETIC copy in the target' -notty gonogo
+check 'grep -qF "gonogo: NO-GO" "$w/log"' 'gonogo ends NO-GO on a synthetic target'
+run_absent 'the target holds a SYNTHETIC copy' copy
+prod "${SCR[@]}"; run_absent 'the target holds a SYNTHETIC copy' etl migrate:all --apply --as-of=2026-10-29
+rm -f "$w/stage/SYNTHETIC-IN-TARGET"
 
 echo "passed $pass, failed $fail"
 [ "$fail" = 0 ]

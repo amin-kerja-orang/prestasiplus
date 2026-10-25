@@ -198,6 +198,10 @@ else: print("ok")
 scratch_host() { [ "$(pp_env_value "$PP_PROD_ENV" PP_SCRATCH_HOST)" = yes ]; }
 synthetic_marker() { printf '%s/SYNTHETIC-LOADED' "$stage_dir"; }
 synthetic_loaded() { [ -e "$(synthetic_marker)" ]; }
+# The TARGET database keeps a synthetic copy after the throwaway stage is reloaded or rebuilt, so it has its own marker:
+# set by a copy from a synthetic stage, cleared only by a copy that replaced the target's schemas from a raw stage.
+target_marker() { printf '%s/SYNTHETIC-IN-TARGET' "$stage_dir"; }
+target_synthetic() { [ -e "$(target_marker)" ]; }
 
 scratch_gate() { # A4 Track S only: refuse anything that could be the production host
   scratch_host || pp_die "--synthetic-scratch: this host is not marked scratch (PP_SCRATCH_HOST=yes in the prod.env file; never on production)" 2
@@ -211,8 +215,10 @@ scratch_gate() { # A4 Track S only: refuse anything that could be the production
   pp_warn "SCRATCH OVERRIDE ACTIVE on $host: synthetic fixture, NOT the production path (A4 Track S)"
 }
 
-refuse_synthetic_unless_scratch() { # refuse_synthetic_unless_scratch WHAT
+refuse_synthetic_unless_scratch() { # refuse_synthetic_unless_scratch WHAT [target]: target also checks the target's marker
   ! synthetic_loaded || scratch_host || pp_die "$1: the stage holds a SYNTHETIC fixture ($(synthetic_marker)) and this host is not marked scratch; never on production" 3
+  [ "${2:-}" = target ] || return 0
+  ! target_synthetic || scratch_host || pp_die "$1: the target holds a SYNTHETIC copy ($(target_marker)) and this host is not marked scratch; never on production" 3
 }
 
 cmd_load() {
@@ -232,9 +238,10 @@ cmd_load() {
   if [ "$synthetic" = 1 ]; then
     scratch_gate
     manifest_check "$from" synthetic   # again: the directory could have changed while the prompt waited
-    : >"$(synthetic_marker)"
   fi
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
+  # Under the lock, so a raw load that held it cannot clear the marker of the synthetic load that waited for it.
+  [ "$synthetic" = 0 ] || : >"$(synthetic_marker)"
   local url t0=$SECONDS
   url="postgresql://pp_stage:$(cat "$(stage_pw_file)")@$stage_name:5432/$staging_db"
   pp_log "staging:load --from <raw dump> into $staging_db on $stage_name (NODE_ENV=development, PP_ALLOW_STAGING_RESET=1)"
@@ -261,6 +268,7 @@ cmd_copy() {
   a="$(schema_tables stage_psql)"
   case "$a" in *staging_cloud:0*) pp_die "staging_cloud is empty in $staging_db: run load first" 3 ;; esac
   pp_log "replacing staging_cloud and archive_cloud in the target with the copy from $staging_db"
+  if synthetic_loaded; then : >"$(target_marker)"; fi   # set first: a copy that stops half way still counts as synthetic
   "$PP_VPS_DIR/db-roles.sh" apply   # an older copy made by another role becomes pp_stager's, so it can drop it
   target_psql "drop schema if exists staging_cloud cascade" >/dev/null
   target_psql "drop schema if exists archive_cloud cascade" >/dev/null
@@ -273,6 +281,7 @@ cmd_copy() {
   # Cutover plan 4.6 B5: a count other than 89/38 (staging/archive) is a STOP. PP_STAGE_EXPECT is the LEAD-approved override.
   local want; want="$(pp_cfg PP_STAGE_EXPECT 'archive_cloud:38 staging_cloud:89')"
   [ "$b" = "$want" ] || pp_die "STAGE COPY COUNTS DIFFER: $b (expected $want): STOP and report to the half-AM operator" 4
+  synthetic_loaded || rm -f "$(target_marker)"   # the target's schemas now come from a raw stage
   pp_log "STAGE COPY PASSED: $b, duration_s=$((SECONDS - t0))"
 }
 
@@ -343,7 +352,7 @@ cmd_etl() {
   done
   # The rollback and the archive minimisation need the apply gate in every mode (their dry-run too: the code calls
   # assertApplyAllowed for both). The rollback also needs its own switch (cutover plan 6.3).
-  [ "$apply" = 0 ] || refuse_synthetic_unless_scratch "etl $c --apply"
+  [ "$apply" = 0 ] || refuse_synthetic_unless_scratch "etl $c --apply" target
   case "$c" in
     migrate:rollback) envs+=(PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1) ;;
     migrate:archive-minimise) envs+=(PP_ALLOW_MIGRATE_APPLY=1) ;;
@@ -406,6 +415,7 @@ cmd_gonogo() {
   if scratch_host; then echo "host: PP_SCRATCH_HOST=yes in $PP_PROD_ENV (A4 scratch host)  -> NO-GO on production"; scratch_nogo=1
   else echo "host: not marked scratch ($PP_PROD_ENV)"; fi
   if synthetic_loaded; then echo "stage data: SYNTHETIC fixture loaded (scratch override)  -> NO-GO on production"; scratch_nogo=1; fi
+  if target_synthetic; then echo "target data: SYNTHETIC copy in the target (scratch override)  -> NO-GO on production"; scratch_nogo=1; fi
   # Cutover plan A5 / criterion 8: each point must hold as many applied migrations as the release has folders.
   for f in pre_etl pre_delta; do
     if "$PP_VPS_DIR/migration/restore-point.sh" verify "$f" --expect-migrations repo >/dev/null 2>&1; then
