@@ -7,12 +7,21 @@
  *
  *   "keep"                    the value is copied (ids, foreign keys, enums, numbers, dates, public content)
  *   "null"                    the value becomes NULL
+ *   "null-content"            as "null", for CONTENT text (a banner link): the original is not put in the originals index, so
+ *                             another kept cell that equals it does not fail the leak scan (names inside it are indexed from
+ *                             the identity tables anyway). `null` stays the rule for secrets (tokens), which are indexed
  *   {"fixed": <json>}         a non-NULL value becomes this constant (NULL stays NULL)
  *   "scrub-text"              free text becomes `Teks anonim.`; in json every string leaf is replaced,
  *                             numbers and booleans are kept (NULL and "" stay as they are)
  *   "scrub-json"              json held in a text column: parsed, keys/numbers/booleans/null kept, every string leaf
  *                             becomes `Teks anonim.`, written back with JSON.stringify; NULL stays NULL and a value
  *                             that is not valid JSON is replaced as scrub-text would (fail closed)
+ *   "redact-pii"              free-text CONTENT that must stay readable (A1-LEAK, redact.ts): only the spans that the leak
+ *                             scan would flag (e-mail, phone, IC, an indexed original value or multi-word name) become
+ *                             `[maklumat peribadi dipadam]`, the rest of the text is kept; in json every string leaf
+ *                             is handled the same way; NULL and "" stay as they are
+ *   "slug-from-id"            a non-NULL slug becomes `artikel-<id>` of the row's own id (unique because the id is unique,
+ *                             URL-safe, at most 28 characters); NULL and "" stay as they are
  *   "hash-password-dummy"     see passwords.ts
  *   "pseudonym:<kind>"        keyed deterministic fake, kinds in pseudonyms.ts
  *
@@ -22,16 +31,20 @@
  * NULL is never turned into a value, and "" stays "", so null ratios survive.
  */
 import { columnNames, type TableSpec } from '../ddl/spec'
-import { ConfigError, CoverageError } from './errors'
+import { AnonymiseError, ConfigError, CoverageError } from './errors'
 import { dummyPasswordHash } from './passwords'
 import { PSEUDONYM_KINDS, type PseudonymKind, type Pseudonymiser } from './pseudonyms'
+import { PiiRedactor, type RedactKind } from './redact'
 
 export type Rule =
   | { rule: 'keep' }
   | { rule: 'null' }
+  | { rule: 'null-content' }
   | { rule: 'fixed'; value: unknown }
   | { rule: 'scrub-text' }
   | { rule: 'scrub-json' }
+  | { rule: 'redact-pii' }
+  | { rule: 'slug-from-id' }
   | { rule: 'hash-password-dummy' }
   | { rule: 'pseudonym'; kind: PseudonymKind }
 
@@ -41,7 +54,7 @@ export interface AnonConfig {
   tables: Record<string, Record<string, Rule>>
   /** Roles whose accounts get the usable dummy password hash. Every other role (or none) gets an unusable value. */
   dummyPasswordRoles: string[]
-  /** `table.column` entries whose ORIGINAL-VALUE hits are tolerated (never pattern hits). Empty by default. */
+  /** `table.column` entries whose original-value and original-name hits are tolerated (never pattern hits). Empty by default. */
   leakScan: { allow: string[] }
 }
 
@@ -54,13 +67,13 @@ const PLAIN_NAME = /^[a-z][a-z0-9_]{0,62}$/
 
 function parseRule(raw: unknown, where: string): Rule {
   if (typeof raw === 'string') {
-    if (raw === 'keep' || raw === 'null' || raw === 'scrub-text' || raw === 'scrub-json' || raw === 'hash-password-dummy') return { rule: raw }
+    if (raw === 'keep' || raw === 'null' || raw === 'null-content' || raw === 'scrub-text' || raw === 'scrub-json' || raw === 'redact-pii' || raw === 'slug-from-id' || raw === 'hash-password-dummy') return { rule: raw }
     if (raw.startsWith('pseudonym:')) {
       const kind = raw.slice('pseudonym:'.length)
       if ((PSEUDONYM_KINDS as readonly string[]).includes(kind)) return { rule: 'pseudonym', kind: kind as PseudonymKind }
       throw new ConfigError(`${where}: unknown pseudonym kind. Allowed: ${PSEUDONYM_KINDS.join(', ')}.`)
     }
-    throw new ConfigError(`${where}: unknown rule. Allowed: keep, null, scrub-text, scrub-json, hash-password-dummy, pseudonym:<kind>, {"fixed": ...}.`)
+    throw new ConfigError(`${where}: unknown rule. Allowed: keep, null, null-content, scrub-text, scrub-json, redact-pii, slug-from-id, hash-password-dummy, pseudonym:<kind>, {"fixed": ...}.`)
   }
   if (isObject(raw) && Object.keys(raw).length === 1 && 'fixed' in raw) return { rule: 'fixed', value: raw.fixed }
   throw new ConfigError(`${where}: a rule is a string or {"fixed": value}.`)
@@ -169,11 +182,37 @@ function scrubJsonText(value: string): string {
   return JSON.stringify(scrubJson(parsed))
 }
 
+const PATTERN_ONLY_REDACTOR = new PiiRedactor(null)
+
 /** Applies one rule to one value. `pseudo` is only needed for pseudonym rules. */
-export function applyRule(rule: Rule, value: unknown, pseudo: Pseudonymiser, lockPassword = false): unknown {
+export interface ApplyContext {
+  /** `redact-pii`: the run's redactor (with the originals index). Without one only the scan patterns are redacted. */
+  redactor?: PiiRedactor
+  /** `redact-pii`: told the kind of every masked span (counts only). */
+  onRedact?: (kind: RedactKind) => void
+  /** `slug-from-id`: the whole input row (its `id` is read). */
+  row?: Record<string, unknown>
+}
+
+/** `artikel-<id>`: unique because the id is, URL-safe, and far below the 200-character slug limit. A bigint id is at most 20 digits. */
+function slugFromId(row: Record<string, unknown> | undefined): string {
+  const id = row?.id
+  const text = typeof id === 'number' || typeof id === 'bigint' || typeof id === 'string' ? String(id).trim() : ''
+  if (!/^\d{1,20}$/.test(text)) throw new AnonymiseError('slug-from-id: the row has no usable numeric id (a count of rows only, no value).')
+  return `artikel-${text}`
+}
+
+export function applyRule(
+  rule: Rule,
+  value: unknown,
+  pseudo: Pseudonymiser,
+  lockPassword = false,
+  ctx: ApplyContext = {},
+): unknown {
   switch (rule.rule) {
     case 'keep':
       return value
+    case 'null-content':
     case 'null':
       return null
     case 'fixed':
@@ -187,6 +226,10 @@ export function applyRule(rule: Rule, value: unknown, pseudo: Pseudonymiser, loc
       if (typeof value === 'string') return scrubJsonText(value)
       if (typeof value === 'object') return scrubJson(value)
       return SCRUBBED_TEXT
+    case 'redact-pii':
+      return (ctx.redactor ?? PATTERN_ONLY_REDACTOR).redact(value, ctx.onRedact)
+    case 'slug-from-id':
+      return value === null || value === undefined ? null : value === '' ? '' : slugFromId(ctx.row)
     case 'hash-password-dummy':
       return dummyPasswordHash(value, lockPassword)
     case 'pseudonym':
