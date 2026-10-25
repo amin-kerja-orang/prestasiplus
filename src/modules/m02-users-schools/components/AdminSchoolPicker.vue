@@ -12,7 +12,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsNativeSelect, DsPanel } from '@/ds'
+import { DsFormField, DsNativeSelect, DsPanel, DsSurface } from '@/ds'
 
 import { searchSchools, type SchoolSummary } from '../api/schools'
 import { schoolMeta, SEARCH_MIN_CHARS, STATE_FILTER_OPTIONS } from '../lib/user-form-options'
@@ -105,35 +105,46 @@ function clear(): void {
         </div>
       </DsPanel>
 
-      <div v-else class="flex flex-col gap-2 sm:flex-row">
-        <DsNativeSelect
-          v-model="state"
-          aria-label="Negeri"
-          class="sm:w-48 sm:shrink-0"
-          data-testid="admin-school-state"
-          @change="onState"
-        >
-          <option v-for="o in STATE_FILTER_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </DsNativeSelect>
-        <div class="relative min-w-0 flex-1">
-          <UInput
-            id="admin-school-search"
-            :model-value="term"
-            type="text"
-            autocomplete="off"
-            placeholder="Taip nama sekolah (min. 2 huruf)..."
-            :loading="searching"
-            class="w-full"
-            data-testid="admin-school-search"
-            @update:model-value="onInput"
-            @focus="picker.onFocus()"
-          />
-          <span v-if="searching" class="sr-only" data-testid="admin-school-loading"
-            >Mencari...</span
+      <template v-else>
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <DsNativeSelect
+            v-model="state"
+            aria-label="Negeri"
+            class="sm:w-48 sm:shrink-0"
+            data-testid="admin-school-state"
+            @change="onState"
           >
-          <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="admin-school-dropdown">
+            <option v-for="o in STATE_FILTER_OPTIONS" :key="o.value" :value="o.value">
+              {{ o.label }}
+            </option>
+          </DsNativeSelect>
+          <div class="min-w-0 flex-1">
+            <UInput
+              id="admin-school-search"
+              :model-value="term"
+              type="text"
+              autocomplete="off"
+              placeholder="Taip nama sekolah (min. 2 huruf)..."
+              :loading="searching"
+              class="w-full"
+              data-testid="admin-school-search"
+              @update:model-value="onInput"
+              @focus="picker.onFocus()"
+            />
+            <span v-if="searching" class="sr-only" data-testid="admin-school-loading"
+              >Mencari...</span
+            >
+          </div>
+        </div>
+        <!-- In flow, not `behavior="float"`: the form section card clips its overflow (SWX4, DV-M02-28). -->
+        <DsSurface
+          v-if="showDropdown"
+          level="elevated"
+          shadow="lift"
+          padding="none"
+          data-testid="admin-school-dropdown"
+        >
+          <div class="max-h-64 overflow-y-auto">
             <UButton
               v-for="item in results"
               :key="item.id"
@@ -157,9 +168,9 @@ function clear(): void {
             >
               Tiada sekolah dijumpai
             </p>
-          </DsPanel>
-        </div>
-      </div>
+          </div>
+        </DsSurface>
+      </template>
     </DsFormField>
   </div>
 </template>

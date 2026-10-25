@@ -6,7 +6,6 @@
  */
 import { computed, ref } from 'vue'
 
-import { ApiError } from '@/api'
 import { useApi, useDebouncedRef, useFlash, usePrototypeScope } from '@/composables'
 import {
   DsEmptyState,
@@ -30,6 +29,7 @@ import type { StudentTab } from '../api/types'
 import { PELAJAR_COPY } from '../components/pelajar/copy'
 import StudentRow from '../components/pelajar/StudentRow.vue'
 import { isInClass } from '../components/pelajar/student-classes'
+import { moduleMessage } from '../lib/generic-server-text'
 
 const flash = useFlash()
 const confirm = useConfirm()
@@ -102,7 +102,7 @@ async function act(run: () => Promise<unknown>, okMessage: string): Promise<void
   } catch (err) {
     flash.show({
       type: 'error',
-      message: err instanceof ApiError ? err.message : PELAJAR_COPY.actionFailed,
+      message: moduleMessage(err) ?? PELAJAR_COPY.actionFailed,
     })
   } finally {
     busy.value = false

@@ -322,14 +322,17 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     expect(save.saveBlob.mock.calls[0]![1]).toMatch(/^users-pelajar-\d{4}-\d{2}-\d{2}\.csv$/)
   })
 
-  it('a failed export shows the server message as a flash and saves nothing', async () => {
+  it('a failed export (500) shows the generic BM flash and saves nothing', async () => {
     api.downloadPupilsCsv.mockRejectedValue(
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Gagal.' }),
     )
     const { wrapper: w } = await mountPupils()
     await w.get('[data-testid="user-export"]').trigger('click')
     await flushPromises()
-    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Gagal.'] })
+    expect(useFlashStore().current).toEqual({
+      type: 'error',
+      message: ['Ralat berlaku. Sila cuba lagi.'],
+    })
     expect(save.saveBlob).not.toHaveBeenCalled()
   })
 
@@ -345,14 +348,14 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     expect(router.currentRoute.value.query).toEqual({ is_active: '1', search: 'a', page: '2' })
   })
 
-  it('renders the global 403 page for a 403 and the server message for another failure', async () => {
+  it('renders the global 403 page for a 403 and the generic BM line for another failure', async () => {
     await mountPupils(new ApiError({ status: 403, code: 'FORBIDDEN', message: 'x' }))
     expect(useRouteOutcome().value).toBe(403)
     setRouteOutcome(null)
     const { wrapper: w } = await mountPupils(
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' }),
     )
-    expect(text(w, 'user-error')).toContain('Ralat pelayan.')
+    expect(text(w, 'user-error')).toContain('Ralat berlaku. Sila cuba lagi.')
     expect(has(w, 'user-table')).toBe(false)
   })
 

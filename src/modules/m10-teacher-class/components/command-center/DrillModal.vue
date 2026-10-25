@@ -47,7 +47,7 @@ const vsCards = computed(() => {
     { label: 'Pelajar Baru', value: String(e.newStudents) },
   ]
 })
-const errorText = computed(() => (error.value ? `Ralat: ${error.value.message}` : ''))
+const errorText = computed(() => (error.value ? S2_COPY.loadFailed : ''))
 </script>
 
 <template>
