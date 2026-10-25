@@ -15,6 +15,7 @@
  */
 import { QuestionLeafPartSchema } from '@pp/contract'
 
+import { scanViews } from '../anonymise/normalise'
 import { LANDLINE } from '../anonymise/patterns'
 import { REDACTED_TOKEN } from '../anonymise/redacted-token'
 import { mapQuestionType, parseDifficulty } from '../snapshot-dims/dims'
@@ -184,8 +185,21 @@ export type PiiKind = 'ic' | 'phone' | 'email' | 'url' | 'handle' | 'redacted'
  * Count-only screen for personal data in a free-text body (a Malaysian IC number, a phone number, an e-mail address, a URL,
  * an @handle), or the anonymiser's `redact-pii` mark (`redacted`: part of the text was masked in an anonymised dump, so what
  * it said is unknown). Every pattern is bounded or linear. Only the KIND is reported, never the text or the match.
+ *
+ * The text is checked as it is AND in its normalised views (anonymise/normalise.ts, import-free like patterns.ts: tags and
+ * entities that are left, NFKC, Arabic-Indic and other non-ASCII digits, zero-width characters, JSON escapes), so a phone number
+ * with a zero-width character or in Arabic-Indic digits is held too (A1-LEAK F1). A hit on either counts; kinds come out in a fixed order.
  */
 export function piiKindsOf(value: string): PiiKind[] {
+  const found = new Set<PiiKind>(rawPiiKindsOf(value))
+  for (const view of scanViews(value)) for (const kind of rawPiiKindsOf(view)) found.add(kind)
+  return PII_KIND_ORDER.filter((k) => found.has(k))
+}
+
+const PII_KIND_ORDER: readonly PiiKind[] = ['ic', 'phone', 'email', 'handle', 'url', 'redacted']
+
+/** `piiKindsOf` on exactly this string. */
+function rawPiiKindsOf(value: string): PiiKind[] {
   const kinds: PiiKind[] = []
   if (/(?<!\d)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])-?\d{2}-?\d{4}(?!\d)/.test(value)) kinds.push('ic')
   // mobile (its own bounded pattern) or landline (the leak scan's LANDLINE, one source in anonymise/patterns.ts)
