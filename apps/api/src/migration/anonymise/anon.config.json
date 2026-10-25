@@ -359,7 +359,7 @@
     "banners": {
       "title": "keep",
       "type": "keep",
-      "target": "null",
+      "target": "null-content",
       "image_path": "pseudonym:path",
       "starts_at": "keep",
       "ends_at": "keep",

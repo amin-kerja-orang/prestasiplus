@@ -168,7 +168,7 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
       let indexed = 0
       for (const spec of tables) {
         stop()
-        const replacing = [...rulesOf(spec)].filter(([, r]) => r.rule !== 'keep' && r.rule !== 'redact-pii')
+        const replacing = [...rulesOf(spec)].filter(([, r]) => !['keep', 'redact-pii', 'slug-from-id', 'null-content'].includes(r.rule))
         if (replacing.length === 0 || !(await options.reader.has(spec.name))) continue
         const rules = new Map(replacing)
         for await (const batch of options.reader.read(spec.name, batchSize)) {

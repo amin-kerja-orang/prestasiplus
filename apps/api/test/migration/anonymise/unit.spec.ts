@@ -103,7 +103,7 @@ describe('default deny (AC1)', () => {
       ['leagues', 'name', 'scrub-text'],
       ['leagues', 'invite_code', 'pseudonym:code'],
       ['banners', 'image_path', 'pseudonym:path'],
-      ['banners', 'target', 'null'], // A1-LEAK: a link can hold a phone number or an e-mail; v2 keeps no link without a valid http(s) target
+      ['banners', 'target', 'null-content'], // A1-LEAK: a link can hold a phone number or an e-mail; v2 keeps no link without a valid http(s) target
       ['articles', 'slug', 'slug-from-id'], // A1-LEAK (LEAD): artikel-<id>, unique because the id is
       ['articles', 'title', 'redact-pii'],
       ['audio_kbat', 'audio_path', 'pseudonym:path'],
@@ -200,6 +200,8 @@ describe('rules keep structure', () => {
     expect(apply({ rule: 'pseudonym', kind: 'name' }, '')).toBe('')
     expect(apply({ rule: 'scrub-text' }, '')).toBe('')
     expect(apply({ rule: 'null' }, 'anything')).toBeNull()
+    expect(apply({ rule: 'null-content' }, 'anything')).toBeNull()
+    expect(apply({ rule: 'null-content' }, null)).toBeNull()
     expect(apply({ rule: 'keep' }, 'kept')).toBe('kept')
     expect(apply({ rule: 'fixed', value: 'tetap' }, 'asal')).toBe('tetap')
   })
@@ -294,11 +296,27 @@ describe('slug-from-id (A1-LEAK)', () => {
     expect(() => applyRule(rule, 'x', p)).toThrow(/slug-from-id/)
   })
 
+  it('does not index the original slug (content, not PII), but a name inside it is still indexed from the identity tables', () => {
+    const slug = 'wawancara-qwertyus-plorbinski-sekolah'
+    const index = new OriginalsIndex()
+    index.record(rule, slug, apply(slug, { id: 3 }))
+    expect(index.size).toBe(0)
+    expect(index.match(slug)).toBeNull()
+    // the same text as a null-content value (a banner link) is not indexed either; a plain `null` secret is
+    index.record({ rule: 'null-content' }, 'https://promo.example.test/kempen', null)
+    expect(index.size).toBe(0)
+    index.record({ rule: 'null' }, 'rt_ThisIsARememberTokenValue123456', null)
+    expect(index.match('rt_ThisIsARememberTokenValue123456')).toBe('original-value')
+    // the person's name, indexed from the users rule, is still found inside the old slug
+    index.record({ rule: 'pseudonym', kind: 'name' }, 'Qwertyus Plorbinski', 'Nama Anon X')
+    expect(index.match(slug)).toBe('original-name')
+  })
+
   it('parses from the config, and the output holds nothing the leak scan flags', () => {
     expect(parseConfig({ version: 1, tables: { articles: { slug: 'slug-from-id' } } }).tables.articles?.slug).toEqual(rule)
     const index = new OriginalsIndex()
     index.record(rule, 'wawancara-nama-fiktif-panjang', apply('wawancara-nama-fiktif-panjang', { id: 3 }))
-    expect(index.match('wawancara-nama-fiktif-panjang')).toBe('original-value')
+    expect(index.match('wawancara-nama-fiktif-panjang')).toBeNull() // content, not indexed (see the test above)
     expect(index.match('artikel-3')).toBeNull()
     expect(patternKinds('artikel-3')).toEqual([])
   })

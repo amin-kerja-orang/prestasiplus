@@ -154,11 +154,13 @@ export class OriginalsIndex {
   }
 
   /**
-   * Index what `rule` replaced. `keep`, `redact-pii` (public content, kept except for the masked spans) and values that
-   * the rule left unchanged are never recorded.
+   * Index what `rule` replaced. `keep`, `redact-pii` (public content, kept except for the masked spans), `slug-from-id` and
+   * `null-content` (content text such as an article slug or a banner link: it is not personal data in itself, and indexing it
+   * would fail the scan on any other kept cell that equals it; personal names inside it are indexed from the identity tables)
+   * and values that the rule left unchanged are never recorded.
    */
   record(rule: Rule, original: unknown, output: unknown): void {
-    if (rule.rule === 'keep' || rule.rule === 'redact-pii') return
+    if (rule.rule === 'keep' || rule.rule === 'redact-pii' || rule.rule === 'slug-from-id' || rule.rule === 'null-content') return
     for (const s of leaves(rule.rule === 'scrub-json' ? parsedJson(original) : original)) {
       if (typeof output === 'string' && output === s) continue
       this.add(rule, s)

@@ -7,6 +7,9 @@
  *
  *   "keep"                    the value is copied (ids, foreign keys, enums, numbers, dates, public content)
  *   "null"                    the value becomes NULL
+ *   "null-content"            as "null", for CONTENT text (a banner link): the original is not put in the originals index, so
+ *                             another kept cell that equals it does not fail the leak scan (names inside it are indexed from
+ *                             the identity tables anyway). `null` stays the rule for secrets (tokens), which are indexed
  *   {"fixed": <json>}         a non-NULL value becomes this constant (NULL stays NULL)
  *   "scrub-text"              free text becomes `Teks anonim.`; in json every string leaf is replaced,
  *                             numbers and booleans are kept (NULL and "" stay as they are)
@@ -36,6 +39,7 @@ import { PiiRedactor, type RedactKind } from './redact'
 export type Rule =
   | { rule: 'keep' }
   | { rule: 'null' }
+  | { rule: 'null-content' }
   | { rule: 'fixed'; value: unknown }
   | { rule: 'scrub-text' }
   | { rule: 'scrub-json' }
@@ -63,13 +67,13 @@ const PLAIN_NAME = /^[a-z][a-z0-9_]{0,62}$/
 
 function parseRule(raw: unknown, where: string): Rule {
   if (typeof raw === 'string') {
-    if (raw === 'keep' || raw === 'null' || raw === 'scrub-text' || raw === 'scrub-json' || raw === 'redact-pii' || raw === 'slug-from-id' || raw === 'hash-password-dummy') return { rule: raw }
+    if (raw === 'keep' || raw === 'null' || raw === 'null-content' || raw === 'scrub-text' || raw === 'scrub-json' || raw === 'redact-pii' || raw === 'slug-from-id' || raw === 'hash-password-dummy') return { rule: raw }
     if (raw.startsWith('pseudonym:')) {
       const kind = raw.slice('pseudonym:'.length)
       if ((PSEUDONYM_KINDS as readonly string[]).includes(kind)) return { rule: 'pseudonym', kind: kind as PseudonymKind }
       throw new ConfigError(`${where}: unknown pseudonym kind. Allowed: ${PSEUDONYM_KINDS.join(', ')}.`)
     }
-    throw new ConfigError(`${where}: unknown rule. Allowed: keep, null, scrub-text, scrub-json, redact-pii, slug-from-id, hash-password-dummy, pseudonym:<kind>, {"fixed": ...}.`)
+    throw new ConfigError(`${where}: unknown rule. Allowed: keep, null, null-content, scrub-text, scrub-json, redact-pii, slug-from-id, hash-password-dummy, pseudonym:<kind>, {"fixed": ...}.`)
   }
   if (isObject(raw) && Object.keys(raw).length === 1 && 'fixed' in raw) return { rule: 'fixed', value: raw.fixed }
   throw new ConfigError(`${where}: a rule is a string or {"fixed": value}.`)
@@ -208,6 +212,7 @@ export function applyRule(
   switch (rule.rule) {
     case 'keep':
       return value
+    case 'null-content':
     case 'null':
       return null
     case 'fixed':

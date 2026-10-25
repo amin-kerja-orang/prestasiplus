@@ -39,7 +39,13 @@ function contentTables(): Record<string, Rows> {
       { id: 4, slug: null, category: 'tips', title: 'Dua', views: 1, is_published: '1', author_id: 1 },
       { id: 5, slug: 'tips-belajar-matematik-spm', category: 'tips', title: 'Tiga', views: 1, is_published: '1', author_id: 1 },
     ],
+    // other KEPT cells that equal an old article slug or an old banner link: the replaced originals are content, not PII, so they are not indexed
+    videos: [
+      { id: 1, title: 'Video satu', url: 'tips-belajar-matematik-spm', duration_seconds: 60 },
+      { id: 2, title: 'Video dua', url: 'https://promo.example.test/kempen-hari-raya', duration_seconds: 90 },
+    ],
     banners: [
+      { id: 4, title: 'Kempen', type: 'promo', target: 'https://promo.example.test/kempen-hari-raya', image_path: null, is_active: '1' },
       { id: 1, title: 'Promosi', type: 'promo', target: `mailto:${PII.email2}`, image_path: 'banner/a.png', is_active: '1' },
       { id: 2, title: 'Tanpa pautan', type: 'hero', target: null, image_path: null, is_active: '1' },
       { id: 3, title: 'Kosong', type: 'hero', target: '', image_path: null, is_active: '1' },
@@ -146,13 +152,13 @@ describe('anonymise run with redact-pii (shipped config)', () => {
 
   it('banner targets become NULL (v2 keeps no link without a valid http(s) target); article slugs are regenerated from the id', () => {
     const o = readDump(out)
-    expect((o.banners as Rows).map((b) => b.target)).toEqual([null, null, null])
+    expect((o.banners as Rows).map((b) => b.target)).toEqual([null, null, null, null])
     const slugs = (o.articles as Rows).map((a) => String(a.slug))
     // from each row's own id, so unique (the duplicate in the source becomes distinct) and URL-safe; NULL stays NULL
     expect((o.articles as Rows).map((a) => a.slug)).toEqual(['artikel-1', 'artikel-2', 'artikel-3', null, 'artikel-5'])
     expect(slugs.filter((x) => x !== 'null')).toSatisfy((xs: string[]) => new Set(xs).size === xs.length && xs.every((x) => /^[a-z0-9-]+$/.test(x)))
-    expect(allText(out)).not.toContain('qwertyus-plorbinski')
-    expect(allText(out)).not.toContain('tips-belajar')
+    expect(JSON.stringify(o.articles)).not.toContain('tips-belajar')
+    expect(JSON.stringify(o.articles)).not.toContain('qwertyus-plorbinski')
   })
 
   it('reports redaction counts per table.column and kind, and logs the same, with no value', () => {
@@ -196,6 +202,23 @@ describe('anonymise run with redact-pii (shipped config)', () => {
     const code = await runAnonymiseCli(['anonymise:run', '--source', source, '--out', dir], { env: { ANON_HMAC_KEY: TEST_KEY }, out: l.out, err: l.err })
     expect(code, l.text()).toBe(ANON_EXIT.ok)
     expect(((readDump(dir).questions as Rows)[0] as Record<string, unknown>).body).toBe(`Hubungi ${T} di ${T} untuk jawapan bagi 12 + 3.`)
+  })
+})
+
+describe('old slugs and links are content, not PII (the originals index does not collect them)', () => {
+  it('another kept cell equal to an old slug or link passes (above), and the values are kept as they were', () => {
+    const o = readDump(out)
+    expect((o.videos as Rows).map((v) => v.url)).toEqual(['tips-belajar-matematik-spm', 'https://promo.example.test/kempen-hari-raya'])
+  })
+
+  it('a real name inside an old slug is still flagged where it is kept (the name is indexed from the users)', async () => {
+    const tables = contentTables()
+    ;(tables.videos as Rows).push({ id: 3, title: 'Video tiga', url: 'wawancara-qwertyus-plorbinski', duration_seconds: 5 })
+    const dump = work.out('slug-name-src')
+    writeDump(dump, tables)
+    const err = await runAnonymise({ reader: new DirReader(dump), outDir: work.out('slug-name-out'), config, key: Buffer.from(TEST_KEY, 'utf8'), sourceDir: dump }).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(LeakScanError)
+    expect((err as LeakScanError).hits.map((h) => `${h.table}.${h.column}:${h.kind}`)).toEqual(['videos.url:original-name'])
   })
 })
 
