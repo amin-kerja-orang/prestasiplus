@@ -14,6 +14,15 @@ import AttemptShell from '../components/AttemptShell.vue'
 import NavigatorPanel, { type NavState } from '../components/NavigatorPanel.vue'
 import QuestionBlock from '../components/QuestionBlock.vue'
 import StimulusView from '../components/StimulusView.vue'
+import {
+  chooseCounterLine,
+  chooseFullHint,
+  chooseOverflowHint,
+  chooseState,
+  pickOnAnswer,
+  unansweredIn,
+  type ChooseState,
+} from '../domain/choose-n'
 import { formatClock, isAnswered, sectionRuleLine } from '../domain/paper-model'
 import type { AttemptPaperView, PartAnswer, QuestionResult } from '../domain/types'
 import { createAutosave, clearLocal, type Autosave, type SaveStatus } from '../lib/autosave'
@@ -99,23 +108,46 @@ const navStates = computed(() => {
   return out
 })
 
-function chosenCount(sectionId: string): number {
-  return picks.value[sectionId]?.length ?? 0
-}
+const answeredIds = computed(
+  () => new Set(questions.value.filter((q) => questionAnswered(q.id)).map((q) => q.id)),
+)
+/** Choose-N state per section (ticks vs answers), the one source of the counter and the hints. */
+const chooseStates = computed(() => {
+  const out: Record<string, ChooseState> = {}
+  for (const s of view.value?.sections ?? []) {
+    if (s.rule.type === 'choose')
+      out[s.id] = chooseState(s.rule.n, s.questionIds, picks.value[s.id], answeredIds.value)
+  }
+  return out
+})
 const counters = computed(() => {
   const out: Record<string, string> = {}
   for (const s of view.value?.sections ?? []) {
-    if (s.rule.type === 'choose') out[s.id] = `${chosenCount(s.id)} / ${s.rule.n} soalan dipilih`
+    const st = chooseStates.value[s.id]
+    if (s.rule.type === 'choose' && st) out[s.id] = chooseCounterLine(st.chosen, s.rule.n)
   }
   return out
+})
+/** More answered than allowed: tells the student that only the best N count. */
+const overflowNote = computed(() => {
+  const s = section.value
+  const st = s ? chooseStates.value[s.id] : undefined
+  return s && s.rule.type === 'choose' && st?.overflow
+    ? chooseOverflowHint(st.answered, s.rule.n)
+    : ''
 })
 const choose = computed(() => {
   const s = section.value
   const q = current.value
   if (!s || !q || s.rule.type !== 'choose') return undefined
   const chosen = picks.value[s.id]?.includes(q.id) ?? false
-  const full = chosenCount(s.id) >= s.rule.n
-  return { chosen, dimmed: full && !chosen, blocked: full }
+  const full = chooseStates.value[s.id]?.full ?? false
+  return {
+    chosen,
+    dimmed: full && !chosen,
+    blocked: full,
+    hint: full && !chosen ? chooseFullHint(s.rule.n) : undefined,
+  }
 })
 
 /* ----------------------------------------------------------------------------- timer */
@@ -223,6 +255,18 @@ async function goResult(): Promise<void> {
 function onAnswer(partId: string, a: PartAnswer): void {
   answers.value = { ...answers.value, [partId]: a }
   autosave?.setAnswer(partId, a)
+  if (isAnswered(a)) tickOnAnswer()
+}
+/** Typing in a question of a choose-N section ticks it while the section has room (AC-06.2). */
+function tickOnAnswer(): void {
+  const s = section.value
+  const q = current.value
+  if (!s || !q || s.rule.type !== 'choose') return
+  const cur = picks.value[s.id] ?? []
+  const next = pickOnAnswer(cur, q.id, s.rule.n)
+  if (next === cur) return
+  picks.value = { ...picks.value, [s.id]: [...next] }
+  autosave?.setPicks(picks.value)
 }
 function toggleFlag(): void {
   const id = current.value?.id
@@ -273,7 +317,12 @@ async function check(): Promise<void> {
 }
 
 /** Counts shown in the Hantar dialog. */
-const unanswered = computed(() => questions.value.filter((q) => !questionAnswered(q.id)).length)
+const unanswered = computed(() =>
+  (view.value?.sections ?? []).reduce(
+    (n, s) => n + unansweredIn(s.rule, s.questionIds, answeredIds.value),
+    0,
+  ),
+)
 const flaggedCount = computed(() => flags.value.length)
 
 /**
@@ -456,6 +505,14 @@ const feedback = computed(() => {
             data-testid="choose-counter"
           >
             {{ counters[section.id] }}
+          </p>
+          <p
+            v-if="overflowNote"
+            class="text-caption text-warning"
+            role="status"
+            data-testid="choose-overflow"
+          >
+            {{ overflowNote }}
           </p>
         </div>
 

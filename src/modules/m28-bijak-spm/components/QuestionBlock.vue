@@ -24,7 +24,7 @@ const props = defineProps<{
   /** Latihan after "Semak": the marked question (inputs lock, results show). */
   check?: QuestionResult
   disabled?: boolean
-  choose?: { chosen: boolean; dimmed: boolean; blocked: boolean }
+  choose?: { chosen: boolean; dimmed: boolean; blocked: boolean; hint?: string }
 }>()
 const emit = defineEmits<{
   answer: [partId: string, answer: PartAnswer]
@@ -94,9 +94,18 @@ function pick(id: string): void {
       :model-value="choose.chosen"
       :disabled="choose.blocked && !choose.chosen"
       label="Pilih soalan ini untuk dijawab"
+      :aria-describedby="choose.hint ? `choose-hint-${question.id}` : undefined"
       data-testid="choose-checkbox"
       @update:model-value="emit('toggle-choose')"
     />
+    <p
+      v-if="choose?.hint"
+      :id="`choose-hint-${question.id}`"
+      class="-mt-2 text-caption text-muted"
+      data-testid="choose-hint"
+    >
+      {{ choose.hint }}
+    </p>
 
     <p v-if="question.stem" class="text-body text-default" data-testid="question-stem">
       <RichText :text="question.stem" />
