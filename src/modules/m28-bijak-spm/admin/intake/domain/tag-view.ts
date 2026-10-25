@@ -268,6 +268,7 @@ export interface TpDescriptorItem {
 export type TpDescription =
   | { kind: 'outside' }
   | { kind: 'need-target' }
+  | { kind: 'unavailable' }
   | { kind: 'need-tp' }
   | { kind: 'none' }
   | { kind: 'found'; items: TpDescriptorItem[]; rtl: boolean }
@@ -277,8 +278,11 @@ export function describeTp(
   view: DskpSubjectView | undefined,
   info: DskpSubjectInfo | undefined,
   tag: CurriculumTag,
+  loadFailed = false,
 ): TpDescription {
   if (tag.formOrigin === 'T1-T3') return { kind: 'outside' }
+  // The catalogue failed to load: the load error carries the message, not "Pilih unit dan SP".
+  if (loadFailed) return { kind: 'unavailable' }
   const needsSp = info?.tpLevel === 'sk'
   if (!view || !info || !tag.unitId || (needsSp && tag.spIds.length === 0))
     return { kind: 'need-target' }

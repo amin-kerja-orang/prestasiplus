@@ -121,7 +121,18 @@ describe('DskpSpPicker', () => {
   it('outside DSKP (T1-T3) it is disabled and silent', () => {
     const w = mountPicker({ unitId: null, outside: true })
     expect(w.find('[data-testid="sp-need-unit"]').exists()).toBe(false)
+    expect(w.find('[data-testid="sp-list-box"]').exists()).toBe(false)
     expect((w.get('[data-testid="sp-search"]').element as HTMLInputElement).disabled).toBe(true)
+  })
+
+  it('keeps the count live region mounted so its first announcement is reliable', async () => {
+    const w = mountPicker({ unitId: null })
+    const region = w.get('[data-testid="sp-count"]')
+    expect(region.attributes('aria-live')).toBe('polite')
+    expect(region.text()).toBe('')
+    await w.setProps({ unitId: MAT_T4_UNIT })
+    expect(w.get('[data-testid="sp-count"]').element).toBe(region.element)
+    expect(region.text()).toBe('0 SP dipilih · 8 SP dalam unit ini')
   })
 
   it('while the catalogue loads it shows a busy skeleton and no search box', () => {

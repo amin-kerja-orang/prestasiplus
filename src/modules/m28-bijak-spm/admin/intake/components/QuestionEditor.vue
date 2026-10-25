@@ -15,6 +15,7 @@ import {
   DsStack,
   DsSurface,
   DsText,
+  dsCopy,
 } from '@/ds'
 
 import RichText from '../../../components/RichText.vue'
@@ -169,6 +170,8 @@ const tpNote = computed(() => {
       return TAG_COPY.tpNeedTarget
     case 'need-tp':
       return TAG_COPY.tpNeedTp
+    case 'unavailable':
+      return ''
     default:
       return TAG_COPY.tpNone
   }
@@ -484,6 +487,7 @@ function insertMath(field: 'stem'): void {
             />
           </template>
         </DsFormField>
+        <DsText v-if="loading" variant="caption" as="span" sr-only>{{ dsCopy.loading }}</DsText>
         </div>
       </div>
 
@@ -518,7 +522,10 @@ function insertMath(field: 'stem'): void {
           data-testid="q-sk"
         >
           <DsText :id="skLabelId" variant="label" as="span">{{ TAG_COPY.sk }}</DsText>
-          <USkeleton v-if="loading" class="h-11 w-full" />
+          <template v-if="loading">
+            <USkeleton class="h-11 w-full" />
+            <DsText variant="caption" as="span" sr-only>{{ dsCopy.loading }}</DsText>
+          </template>
           <DsSurface v-else level="soft" padding="sm" radius="chip">
             <DsText v-if="sk.length === 0" variant="caption" tone="muted">{{ TAG_COPY.skEmpty }}</DsText>
             <DsStack v-else as="ul" gap="xs">
@@ -601,7 +608,10 @@ function insertMath(field: 'stem'): void {
 
         <div class="@md:col-span-2 @3xl:col-span-2">
         <DsStack :id="tpDescId" gap="xs" data-testid="tp-descriptor">
-          <USkeleton v-if="loading" class="h-11 w-full" />
+          <template v-if="loading">
+            <USkeleton class="h-11 w-full" />
+            <DsText variant="caption" as="span" sr-only>{{ dsCopy.loading }}</DsText>
+          </template>
           <template v-else-if="tpDescription.kind === 'found'">
             <DsStack v-for="(item, i) in tpDescription.items" :key="i" gap="2xs">
               <DsText variant="label" as="span">{{ item.heading }}</DsText>
@@ -612,7 +622,7 @@ function insertMath(field: 'stem'): void {
               </DsText>
             </DsStack>
           </template>
-          <DsText v-else variant="caption" tone="muted">{{ tpNote }}</DsText>
+          <DsText v-else-if="tpNote" variant="caption" tone="muted">{{ tpNote }}</DsText>
         </DsStack>
         </div>
       </div>

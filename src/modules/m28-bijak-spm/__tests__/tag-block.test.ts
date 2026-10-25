@@ -534,6 +534,10 @@ describe('Tag DSKP block: catalogue loading and error', () => {
     expect(w.find('[data-testid="q-unit"]').exists()).toBe(false)
     expect(w.find('[data-testid="sp-search"]').exists()).toBe(false)
     expect(w.findAll('[data-testid="sk-row"]')).toHaveLength(0)
+    // each skeleton carries the accessible loading text (spec 3.10): unit, SK and the descriptor
+    expect(text(w, 'q-sk')).toContain('Memuatkan...')
+    expect(text(w, 'tp-descriptor')).toContain('Memuatkan...')
+    expect(w.findAll('.sr-only').filter((n) => n.text() === 'Memuatkan...').length).toBeGreaterThanOrEqual(4)
     expect(sel(w, 'q-form').disabled).toBe(false)
     await w.get('[data-testid="q-tp"]').setValue('4')
     // the stored unit and SP are not touched while the catalogue is unknown
@@ -546,6 +550,8 @@ describe('Tag DSKP block: catalogue loading and error', () => {
     expect(err.text()).toContain('Tidak dapat memuatkan senarai DSKP bagi subjek ini. Sila cuba semula.')
     expect(w.find('[data-testid="q-unit"]').exists()).toBe(false)
     expect(w.find('[data-testid="q-sp"]').exists()).toBe(false)
+    // the load error carries the message: no "Pilih unit dan SP" under the TP
+    expect(text(w, 'tp-descriptor')).toBe('')
     await err.get('button').trigger('click')
     expect(w.emitted('retry')).toHaveLength(1)
     await w.get('[data-testid="q-form"]').setValue('T1-T3')

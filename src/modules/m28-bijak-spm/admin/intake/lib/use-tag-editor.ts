@@ -86,7 +86,9 @@ export function useTagEditor(opts: {
     const view = dskp.view.value
     return view && !outside.value ? skRows(view, q.value.tag.spIds) : []
   })
-  const tpDescription = computed(() => describeTp(dskp.view.value, info.value, q.value.tag))
+  const tpDescription = computed(() =>
+    describeTp(dskp.view.value, info.value, q.value.tag, phase.value === 'error'),
+  )
 
   const toConfirm = computed(() => fieldsToConfirm(q.value))
   const ai = computed(() => {

@@ -148,7 +148,15 @@ function clearSearch(): void {
         </DsCluster>
       </DsCluster>
 
-      <DsSurface level="elevated" padding="sm" radius="chip" :clip="false" class="max-h-72 overflow-y-auto">
+      <DsSurface
+        v-if="unitId || !outside"
+        level="elevated"
+        padding="sm"
+        radius="chip"
+        :clip="false"
+        class="max-h-72 overflow-y-auto"
+        data-testid="sp-list-box"
+      >
         <DsText v-if="!unitId && !outside" variant="caption" tone="muted" data-testid="sp-need-unit">
           {{ TAG_COPY.spNeedUnit }}
         </DsText>
@@ -199,8 +207,11 @@ function clearSearch(): void {
         </DsStack>
       </DsSurface>
 
+      <!-- The live region stays mounted; only its text changes, so the first announcement is reliable. -->
+      <DsText v-if="!outside" variant="caption" tone="muted" aria-live="polite" data-testid="sp-count">
+        {{ unitId && all.length > 0 ? countText : '' }}
+      </DsText>
       <template v-if="unitId && all.length > 0">
-        <DsText variant="caption" tone="muted" aria-live="polite" data-testid="sp-count">{{ countText }}</DsText>
         <DsText v-if="legend" variant="caption" tone="muted" data-testid="sp-legend">{{ legend }}</DsText>
       </template>
     </template>

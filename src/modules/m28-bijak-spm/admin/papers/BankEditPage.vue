@@ -216,7 +216,7 @@ async function save(): Promise<void> {
             hide-number
             :dskp="dskp"
             :disabled="locked"
-            :show-errors="serverErrors.length > 0"
+            :show-errors="issues.length > 0 || serverErrors.length > 0"
             @retry="dskp.retry()"
           />
         </fieldset>
