@@ -171,6 +171,25 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       expect(none.weekly).toEqual([])
     })
 
+    it('the school_admin alias ignores `state` (own school fixed, BR-M11-35); a national admin and a teacher keep the state filter', async () => {
+      const other = 'state=Negeri%20Ujian%20Dua' // school A is in "Negeri Ujian Satu"
+      const own = AnalyticsMonitoringOverviewSchema.parse((await adminA.get('/monitoring/overview')).body.data)
+      const viaState = AnalyticsMonitoringOverviewSchema.parse((await adminA.get(`/monitoring/overview?${other}`)).body.data)
+      expect(viaState.studentRows.map((r) => r.schoolId)).toEqual([w.schoolA])
+      expect(viaState.teacherRows.map((r) => r.schoolId)).toEqual([w.schoolA])
+      expect(viaState.kpi.schools).toBe(1)
+      expect(viaState.filters.state).toBe('')
+      expect(viaState.kpi).toEqual(own.kpi)
+      const exported = AnalyticsMonitoringExportSchema.parse((await adminA.get(`/monitoring/export?format=csv&${other}`)).body.data).rows
+      expect(exported.map((r) => r.schoolId)).toEqual([w.schoolA])
+      // Every other role is unchanged: the national admin filters by state, the teacher is still narrowed.
+      const national = AnalyticsMonitoringOverviewSchema.parse((await admin.get(`/monitoring/overview?${other}`)).body.data)
+      expect(national.studentRows.map((r) => r.schoolId)).toEqual([w.schoolB])
+      expect(national.filters.state).toBe('Negeri Ujian Dua')
+      const teacher = AnalyticsMonitoringOverviewSchema.parse((await teacherA.get(`/monitoring/overview?${other}`)).body.data)
+      expect(teacher.studentRows).toEqual([])
+    })
+
     it('the tahap filter narrows the student table only, not the KPIs, the weekly table or the signals (BR-M11-14)', async () => {
       const all = AnalyticsMonitoringOverviewSchema.parse((await admin.get('/monitoring/overview')).body.data)
       const best = AnalyticsMonitoringOverviewSchema.parse((await admin.get('/monitoring/overview?tahap=Cemerlang')).body.data)
@@ -213,8 +232,8 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
     it('teacher and school_admin are forced to the own school whatever the query says', async () => {
       for (const who of [teacherA, adminA]) {
         const body = AnalyticsMonitoringOverviewSchema.parse((await who.get(`/monitoring/overview?state=Negeri%20Ujian%20Dua&schoolId=${w.schoolB}`)).body.data)
-        // State Kedah narrows to nothing for school A; the other school is never visible.
-        expect(body.studentRows).toEqual([])
+        // The other school is never visible. A teacher's state still narrows (nothing for school A); the school admin's does not (next test).
+        expect(body.studentRows.map((r) => r.schoolId)).not.toContain(w.schoolB)
         const own = AnalyticsMonitoringOverviewSchema.parse((await who.get('/monitoring/overview')).body.data)
         expect(own.studentRows.map((r) => r.schoolId)).toEqual([w.schoolA])
         expect(own.teacherRows.map((r) => r.schoolId)).toEqual([w.schoolA])
@@ -256,7 +275,8 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
     it('is forced to the own school for teacher and school_admin; rows are not cell-neutralised (JSON, the client builds the file)', async () => {
       for (const who of [teacherA, adminA]) {
         const rows = AnalyticsMonitoringExportSchema.parse((await who.get(`/monitoring/export?format=csv&state=Negeri%20Ujian%20Dua`)).body.data).rows
-        expect(rows).toEqual([])
+        // Never school B; the teacher's state still narrows to nothing, the school admin's state is ignored (own school).
+        expect(rows.map((r) => r.schoolId)).toEqual(who === adminA ? [w.schoolA] : [])
         const own = AnalyticsMonitoringExportSchema.parse((await who.get('/monitoring/export?format=csv')).body.data).rows
         expect(own.map((r) => r.schoolId)).toEqual([w.schoolA])
       }
