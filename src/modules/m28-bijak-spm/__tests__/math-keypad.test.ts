@@ -282,8 +282,8 @@ describe('keypad keeps the field and its preview in view (FB-047)', () => {
       order.map((e) => (e.tagName === 'INPUT' ? 'input' : e.getAttribute('data-testid'))),
     ).toEqual(['input', 'math-preview', 'math-keyboard-dock'])
     expect(dock.classes()).toContain('fixed')
-    expect(dock.classes()).toContain('md:sticky')
-    // inline from md: no spacer, the dock is sticky
+    expect(dock.classes()).toContain('md:static')
+    // inline from md: no spacer, the dock is a normal block
     expect(w.find('[data-testid=math-keyboard-spacer]').exists()).toBe(false)
     w.unmount()
   })

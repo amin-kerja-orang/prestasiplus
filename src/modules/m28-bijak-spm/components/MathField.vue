@@ -5,11 +5,12 @@
  * shown. The stored value is LaTeX (converted on every change) and a KaTeX preview right under the
  * box shows how the line was understood (stacked fractions, powers, roots).
  *
- * The keypad stays out of the way of the line: it is docked at the bottom edge of the scrolling
- * area (a bottom sheet over the attempt footer below `md`, sticky above the footer from `md`), the
- * field is scrolled into the free area above it, and only one keypad is open. Below `md` the sheet
- * has its own display row (the preview) and a "Tutup" key, and it closes on a tap or focus outside
- * the field and the keypad, so the footer (Seterusnya / Hantar) is never out of reach.
+ * The keypad never covers the line being edited: from `md` it is a normal block right under the
+ * line and its preview (the page scrolls past it, nothing can sit under the footer); below `md` it
+ * is a bottom sheet over the attempt footer, and the field is scrolled into the free area above
+ * it. Only one keypad is open. The sheet has its own display row (the preview) and a "Tutup" key,
+ * and it closes on a tap or focus outside the field and the keypad, so the footer (Seterusnya /
+ * Hantar) is never out of reach.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 
@@ -50,13 +51,12 @@ const id = useId()
 const MD_REM = 48
 const MEDIA_FEATURE = 'min-width'
 const WIDE_QUERY = `(${MEDIA_FEATURE}: ${MD_REM}rem)`
-const previewComp = ref<{ $el: HTMLElement } | null>(null)
 const wrapComp = ref<{ $el: HTMLElement } | null>(null)
 const wrap = computed<HTMLElement | null>(() => wrapComp.value?.$el ?? null)
 const toggleBtn = ref<{ $el: HTMLElement } | null>(null)
 const dock = ref<HTMLElement | null>(null)
 const spacer = ref<HTMLElement | null>(null)
-/** From `md` (768 px) the keypad is inline and sticky; below it is a bottom sheet over the footer. */
+/** From `md` (768 px) the keypad is an in-flow block under the line; below it is a bottom sheet over the footer. */
 const wide = ref(true)
 let wideQuery: MediaQueryList | null = null
 const onWide = (e: MediaQueryListEvent): void => {
@@ -149,12 +149,20 @@ async function revealField(): Promise<void> {
   if (!box || !field || !sc || !sheet) return
   const area = sc.getBoundingClientRect()
   const rect = sheet.getBoundingClientRect()
-  const fixed = getComputedStyle(sheet).position === 'fixed'
-  const free = (fixed ? rect.top : area.bottom - rect.height) - 8
   const f = field.getBoundingClientRect()
   const top = area.top + pinnedTop(sc, f.left + f.width / 2) + 4
   const boxTop = box.getBoundingClientRect().top
-  const last = ((!wide.value && field) || previewComp.value?.$el || field).getBoundingClientRect()
+  if (wide.value) {
+    // In-flow keypad: the whole field (label first) under the strip, then as much of the keypad as
+    // fits, but never at the cost of the line itself.
+    let move = boxTop < top ? boxTop - top : 0
+    const cut = rect.bottom - move - area.bottom
+    if (cut > 0) move += Math.min(cut, Math.max(0, f.top - move - top))
+    if (move !== 0) sc.scrollTop += move
+    return
+  }
+  const free = rect.top - 8
+  const last = field.getBoundingClientRect()
   let delta: number
   if (boxTop >= top && last.bottom <= free)
     delta = 0 // already in the free area
@@ -273,7 +281,6 @@ onBeforeUnmount(() => {
     </DsCluster>
     <DsSurface
       v-if="hasContent && (wide || !keypad)"
-      ref="previewComp"
       level="soft"
       padding="sm"
       radius="chip"
@@ -293,7 +300,7 @@ onBeforeUnmount(() => {
       />
       <div
         ref="dock"
-        class="fixed inset-x-0 bottom-0 z-30 max-h-dvh overflow-y-auto md:sticky"
+        class="fixed inset-x-0 bottom-0 z-30 max-h-dvh overflow-y-auto md:static"
         data-testid="math-keyboard-dock"
       >
         <DsSurface
