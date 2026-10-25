@@ -2,7 +2,7 @@
 /**
  * S16 `/timeline` "Timeline Saya" (M08-T3; FR-M08-97..99, FN-M08-6.1.*), from `GET /api/timeline`: heading,
  * "Tambah Post", the empty card or the posts (newest first, PROPOSED layout), and the "Profil Awam Anda"
- * box with the viewer's own public link (DV-19) and a copy button (`fa-copy` / `fa-check` for 2,000ms).
+ * box with the viewer's own public link (DV-19) and a copy button (`fa-copy` / `fa-check` for 2,000ms, only when the write succeeds).
  */
 import { computed, onBeforeUnmount, ref } from 'vue'
 
@@ -24,7 +24,7 @@ const copied = ref(false)
 let timer: ReturnType<typeof setTimeout> | undefined
 
 async function copy(): Promise<void> {
-  await copyText(publicUrl.value)
+  if (!(await copyText(publicUrl.value))) return
   copied.value = true
   clearTimeout(timer)
   timer = setTimeout(() => {
