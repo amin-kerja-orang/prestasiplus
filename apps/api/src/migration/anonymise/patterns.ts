@@ -4,6 +4,9 @@
  * here, so the three can never drift and the pure transform does not pull in the anonymiser.
  */
 
+// EMAIL is GLOBAL (/g): `lastIndex` is stateful, so never call `.test` / `.exec` on it directly (it skips matches on the next call).
+// Use `patternKinds` / `patternSpans` (leak-scan.ts), `String.prototype.matchAll` (it copies the regex), or make a fresh copy.
+// MOBILE, LANDLINE and IC are not global and are safe with `.test`.
 export const EMAIL = /[A-Za-z0-9._%+'-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/g
 // +60/60/0 then 1x then 7-8 digits; separators (space or dash) allowed between the groups.
 export const MOBILE = /(?<![\d+])(?:\+?60|0)[ -]?1\d[ -]?\d{3,4}[ -]?\d{4}(?!\d)/
