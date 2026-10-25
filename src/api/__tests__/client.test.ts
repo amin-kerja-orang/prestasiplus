@@ -281,6 +281,44 @@ describe('ApiClient: errors', () => {
     }
   })
 
+  it.each([
+    ['login', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.'],
+    ['IC reset', 'Terlalu banyak percubaan. Sila cuba lagi dalam 15 minit.'],
+  ])('keeps the server BM 429 message in http mode (%s)', async (_label, message) => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    try {
+      const { c } = client(json(429, { error: { code: 'RATE_LIMITED', message, retryAfter: 900 } }))
+      const err = await catchError(c.post('/api/auth/login'))
+      expect(err.message).toBe(message)
+      expect(err.retryAfter).toBe(900)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it.each([
+    ['empty', ''],
+    ['blank', '   '],
+    ['English default, other case', 'too many requests'],
+  ])('falls back to the BM copy for a 429 message that is %s in http mode', async (_l, message) => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    try {
+      const { c } = client(json(429, { error: { code: 'RATE_LIMITED', message } }))
+      const err = await catchError(c.post('/api/auth/login'))
+      expect(err.message).toBe('Terlalu banyak percubaan. Cuba sebentar lagi.')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('leaves the 429 message untouched in mock mode', async () => {
+    const { c } = client(
+      json(429, { error: { code: 'RATE_LIMITED', message: 'Too Many Attempts.', retryAfter: 30 } }),
+    )
+    const err = await catchError(c.post('/api/auth/login'))
+    expect(err.message).toBe('Too Many Attempts.')
+  })
+
   it('falls back to the Retry-After header for retryAfter', async () => {
     const { c } = client(
       json(429, { error: { code: 'RATE_LIMITED', message: 'x' } }, { 'Retry-After': '42' }),
