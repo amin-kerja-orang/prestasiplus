@@ -64,9 +64,9 @@ The prototype implements every M10 screen of URS §1 (S1–S35) in the Vue 3 fro
 | `/guru` | S1 Dashboard Guru | Guru, Admin | user | guide state in `localStorage.hideGuruGuide` |
 | `/guru/command-center` | S2 Command Center | Guru, Admin | standalone dark | polls `live-data` every 10 s |
 | `/guru/remedial-progress` | S3 Remedial Progress | Guru, Admin | user | — |
-| `/guru/kelas` | S4 Kelas Saya | Guru, Admin | user | quick-QR modal |
+| `/guru/kelas` | S4 Kelas Saya | Guru (DV-M10-48) | user | quick-QR modal |
 | `/guru/kelas/cipta` | S5 Cipta Kelas | Guru, Admin | user | — |
-| `/guru/pelajar` | S6 Pelajar Saya | Guru, Admin | user | tabs `mine` (default) / `school` (client state) |
+| `/guru/pelajar` | S6 Pelajar Saya | Guru (DV-M10-48) | user | tabs `mine` (default) / `school` (client state) |
 | `/guru/pelajar/cipta` | — | Guru, Admin | — | redirects to `/guru/pelajar`, no message (DV-M10-07) |
 | `/guru/kehadiran-digital` | S7 Kehadiran Digital | Guru, Admin | user | `?date=YYYY-MM-DD` |
 | `/guru/jadual-belajar` | S8 Jadual Belajar | Guru, Admin | user | — |
@@ -849,7 +849,7 @@ Every scenario runs on the three Playwright projects **mobile 375×812, tablet 7
 | E2E-M10-17 | Evaluate and Badges: admin empty states and cards; teacher Evaluate table with risk badges; Badges chip → holders modal or its empty text. | FR-24, FR-25 | AC-10.1, AC-10.2, AC-10.3 | yes |
 | E2E-M10-18 | S3 admin: h1, subtitle, cards 0/0/0/"+0%", empty text; labels rendered upper case. | FR-27 | AC-11.1 | |
 | E2E-M10-19 | S3 teacher: 2 / 1 / 2 / "+27%" and two rows. | FR-27 | AC-11.2 | yes |
-| E2E-M10-20 | S4 admin: "0 kelas aktif", button href, empty card. | FR-28 | AC-12.1 | |
+| E2E-M10-20 | S4 empty state as observed for the admin (shown to a teacher with no class since DV-M10-48): "0 kelas aktif", button href, empty card; admin is redirected. | FR-28 | AC-12.1, AC-12.3 | |
 | E2E-M10-21 | S4 teacher: "2 kelas aktif", two cards (8/8 pelajar, DMO101–102); QR of 2001: spinner then name, "SMK DEMO", QR canvas 192px, URL; copy → clipboard + alert "Disalin!"; "Cetak" → print call; "Tutup" and backdrop close. | FR-29, FR-30 | AC-12.2, AC-13.1, AC-13.2 | yes |
 | E2E-M10-22 | S5: fields, placeholders, 32 subject options in id order, 11 tiles; search "de" (debounced request with `limit=15`, results "{daerah}, {negeri}"), "zzz" empty text, 1 char no request; SK school → Tahun tiles, SMK → Ting. tiles, clear → 11; no `required` on the radios; "Auto dari kelas sekolah" absent. | FR-31, FR-32, FR-33 | AC-14.1, AC-14.2, AC-14.3, AC-14.4 | |
 | E2E-M10-23 | S5 empty name → native validity message, no request. | FR-34 | AC-15.1 | |
@@ -857,7 +857,7 @@ Every scenario runs on the three Playwright projects **mobile 375×812, tablet 7
 | E2E-M10-83 | **(v1.19)** `GET /api/guru/audio-kbat/template` returns `text/csv` named `template-audio-kbat.csv` (BOM, header `tajuk,kod_subjek,kod_tingkatan,nama_fail_audio`, one example row; SERVER) and `/template-word` returns `template-audio-kbat.docx` (a valid Word document whose table has the same 4 headings; SERVER); both links answer 200. | FR-111 | AC-34.4 | |
 | E2E-M10-84 | **(v1.19)** `POST /api/kelas-saya/join` as a teacher → 403; as a student with an unknown code → 404, with a joined code → 409 (messages UNVERIFIED COPY). | FR-39 | AC-17.2, AC-17.3 | |
 | E2E-M10-85 | **(v1.19, provisional)** S21 Hantar Kertas with "Tahun" empty → 201 and the M04 submission's year = the mock clock's year; with a file → "Kertas soalan berjaya dihantar kepada admin."; `failNext` → "Gagal menghantar kertas soalan."; S21 with no contributions → "Belum ada soalan."; S33 / S34 failure → "Ralat memuatkan data. Sila cuba semula." and "Cuba semula" reloads; S34 "Mula" of a set with 0 attempts left is still a link (M05 Q6 → 409). | FR-98 | AC-36.3 | yes |
-| E2E-M10-25 | S6 admin: counter, link href and label ("Cipta" at 375), tabs and badge, empty card; "Cipta Pelajar" → back on `/guru/pelajar` without message; "Pelajar Sekolah" tab select and no-school card with "Tetapan Profil". | FR-35, FR-36, FR-37 | AC-16.1, AC-16.2, AC-16.3 | |
+| E2E-M10-25 | S6 empty state as observed for the admin (teacher with no class since DV-M10-48; admin is redirected, AC-16.5): counter, link href and label ("Cipta" at 375), tabs and badge, empty card; "Cipta Pelajar" → back on `/guru/pelajar` without message; "Pelajar Sekolah" tab select and no-school card with "Tetapan Profil". | FR-35, FR-36, FR-37 | AC-16.1, AC-16.2, AC-16.3 | |
 | E2E-M10-26 | S6 teacher: 8 in counter and badge, 8 rows (Murid Demo 01–08); school tab with 2 classes and SMK DEMO students; add pelajar (id 2) to 2002 → counter 9 and the student listed. | FR-36, FR-37 | AC-16.4 | yes |
 | E2E-M10-27 | S33: fields, `maxlength=6` (7 chars typed → 6), empty texts. | FR-38 | AC-17.1 | |
 | E2E-M10-28 | S33 as pelajar2: "DMO101" → enrolled, class listed; "ZZZ999" → refused; `?kod=DMO102` pre-fills. | FR-38, FR-39 | AC-17.2, AC-17.3 | yes |

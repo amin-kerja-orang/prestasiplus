@@ -9,3 +9,10 @@ import { isHttpMode } from '@/api'
 export const GURU_API_ROLES = isHttpMode()
   ? (['teacher'] as const)
   : (['teacher', 'admin'] as const)
+
+/**
+ * Roles of S4 `/guru/kelas`, S5 `/guru/kelas/cipta` and S6 `/guru/pelajar` in both modes (DV-M10-48): their API
+ * (`GET`/`POST /api/guru/classes`, `GET /api/guru/students`) is teacher-only and answers 403 to an admin, so the
+ * admin is redirected even in mock mode. S1 keeps `GURU_API_ROLES`.
+ */
+export const GURU_CLASS_ROLES = ['teacher'] as const

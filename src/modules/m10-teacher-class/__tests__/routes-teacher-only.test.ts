@@ -51,11 +51,12 @@ describe('M10 routes with a teacher-only API (SW5-06)', () => {
     }
   })
 
-  it('mock mode: meta.roles stays [teacher, admin] (the mock replicates live) and an admin is allowed', async () => {
+  it('mock mode: S1 stays [teacher, admin] (the mock replicates live); S4, S5, S6 are teacher only (DV-M10-48)', async () => {
     for (const r of await load('mock')) {
-      expect(r.meta?.roles, r.path).toEqual(['teacher', 'admin'])
+      const s1 = r.path === '/guru'
+      expect(r.meta?.roles, r.path).toEqual(s1 ? ['teacher', 'admin'] : ['teacher'])
       const to = { path: r.path, meta: r.meta ?? {} } as unknown as RouteLocationNormalized
-      expect(decideAccess(to, session('admin')), r.path).toEqual({ kind: 'allow' })
+      expect(decideAccess(to, session('admin')).kind === 'allow', r.path).toBe(s1)
       expect(decideAccess(to, session('student')), r.path).not.toEqual({ kind: 'allow' })
     }
   })
