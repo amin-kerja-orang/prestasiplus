@@ -193,7 +193,7 @@ test.describe('Bijak SPM', () => {
     await startPaper(page, 'sej-k2-2025-a')
     await page.getByTestId('short-text-input').first().fill('Rundingan dan pilihan raya.')
     await page.getByTestId('next').click()
-    await expect(page.getByTestId('match-bank').first()).toBeVisible()
+    await expect(page.getByTestId('match-bank-once')).toBeVisible()
     await page.getByTestId('match-B').first().click()
     await page.getByTestId('next').click()
     await page.getByTestId('short-text-input').fill('Perlembagaan melindungi hak rakyat.')

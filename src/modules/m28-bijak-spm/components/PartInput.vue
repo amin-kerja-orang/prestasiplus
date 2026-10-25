@@ -12,7 +12,7 @@ import { DsCluster, DsStack, DsText } from '@/ds'
 
 import { isReadableNumber, latexToPlain } from '../domain/math-expr'
 import type { Leaf } from '../domain/paper-model'
-import type { MatchLayout, McqOption, PartAnswer } from '../domain/types'
+import type { McqOption, PartAnswer } from '../domain/types'
 import { checkPhoto, photoUrl, putPhoto, removePhoto } from '../lib/photo-store'
 import MathField from './MathField.vue'
 
@@ -23,8 +23,6 @@ const props = defineProps<{
   disabled?: boolean
   /** Shared lettered bank of the question's group (match_letter). */
   optionBank?: McqOption[]
-  /** match_letter layout; the default is the current list of full-width buttons (FB-064). */
-  matchLayout?: MatchLayout
 }>()
 const emit = defineEmits<{ 'update:modelValue': [PartAnswer] }>()
 
@@ -122,8 +120,8 @@ async function dropPhoto(key: string): Promise<void> {
       </p>
     </template>
 
-    <template v-else-if="leaf.kind === 'match_letter' && matchLayout === 'compact'">
-      <!-- Compact draft: one row of letters; the letter bank is listed once above the sub-parts. -->
+    <template v-else-if="leaf.kind === 'match_letter'">
+      <!-- One row of letters per sub-part; the letter bank is listed once above the sub-parts (QuestionBlock). -->
       <DsCluster
         gap="xs"
         role="group"
@@ -146,29 +144,6 @@ async function dropPhoto(key: string): Promise<void> {
           >{{ o.id }}</UButton
         >
       </DsCluster>
-    </template>
-
-    <template v-else-if="leaf.kind === 'match_letter'">
-      <div
-        class="flex flex-col gap-2"
-        role="group"
-        aria-label="Pilih huruf"
-        data-testid="match-bank"
-      >
-        <UButton
-          v-for="o in optionBank ?? []"
-          :key="o.id"
-          type="button"
-          color="neutral"
-          :variant="answer.choice === o.id ? 'solid' : 'soft'"
-          :aria-pressed="answer.choice === o.id"
-          :disabled="disabled"
-          class="min-h-11 justify-start"
-          :data-testid="`match-${o.id}`"
-          @click="update({ choice: answer.choice === o.id ? undefined : o.id })"
-          >{{ o.id }} — {{ o.text }}</UButton
-        >
-      </div>
     </template>
 
     <template v-else-if="leaf.kind === 'drawing'">
