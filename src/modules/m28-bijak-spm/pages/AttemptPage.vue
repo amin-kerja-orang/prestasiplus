@@ -308,6 +308,12 @@ async function submit(auto = false): Promise<void> {
   }
 }
 
+/** Hantar from the Peta sheet: close the sheet first so the dialog opens over the paper. */
+function openSubmitFromMap(): void {
+  navOpen.value = false
+  confirmSubmit.value = true
+}
+
 function exitNow(): void {
   void autosave?.flush()
   void router.push({ name: 'm28.bijak' })
@@ -600,6 +606,17 @@ const feedback = computed(() => {
         :counters="counters"
         @go="goToId"
       />
+      <!-- Phones: the footer has no room for Hantar, so it lives here on every question (FB-044). -->
+      <UButton
+        v-if="isExam"
+        type="button"
+        block
+        size="lg"
+        class="mt-4 min-h-11"
+        data-testid="submit-from-map"
+        @click="openSubmitFromMap"
+        >Hantar</UButton
+      >
     </template>
   </UDrawer>
 
