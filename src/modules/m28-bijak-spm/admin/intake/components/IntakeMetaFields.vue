@@ -20,7 +20,8 @@ export interface IntakeForm {
 }
 
 const form = defineModel<IntakeForm>({ required: true })
-const subjects = bijakServer().subjects()
+/** The 13 catalogue subjects: every subject a question can be tagged with (AC-03.1). */
+const subjects = bijakServer().tagSubjects()
 </script>
 
 <template>

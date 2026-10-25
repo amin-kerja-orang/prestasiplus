@@ -10,7 +10,7 @@ import QuestionEditor from '../admin/intake/components/QuestionEditor.vue'
 import { validateBatch } from '../admin/intake/domain/validation'
 import type { IntakeQuestion } from '../admin/intake/types'
 import type { TagLookup } from '../domain/tag-rule'
-import { loadTagLookup, t13Tag } from './tag-fixtures'
+import { loadTagLookup, loadedState, t13Tag } from './tag-fixtures'
 
 let lookup: TagLookup
 beforeAll(async () => {
@@ -39,16 +39,16 @@ function intakeQ(tag: Partial<IntakeQuestion['tag']> = {}): IntakeQuestion {
 }
 
 describe('Aras KBAT field', () => {
-  it('offers "Bukan KBAT" plus the four levels, defaulting to empty', () => {
-    const w = mount(QuestionEditor, { props: { modelValue: intakeQ() } })
+  it('offers "Bukan KBAT" plus the four levels, defaulting to empty', async () => {
+    const w = mount(QuestionEditor, { props: { modelValue: intakeQ(), dskp: await loadedState() } })
     const sel = w.get('[data-testid="q-kbat"]')
     const opts = sel.findAll('option').map((o) => o.text())
-    expect(opts).toEqual(['— Bukan KBAT —', 'Mengaplikasi', 'Menganalisis', 'Menilai', 'Mencipta'])
+    expect(opts).toEqual(['Bukan KBAT', 'Mengaplikasi', 'Menganalisis', 'Menilai', 'Mencipta'])
     expect((sel.element as HTMLSelectElement).value).toBe('')
   })
 
   it('stores the chosen level in tag.kbat and clears it back to null', async () => {
-    const w = mount(QuestionEditor, { props: { modelValue: intakeQ() } })
+    const w = mount(QuestionEditor, { props: { modelValue: intakeQ(), dskp: await loadedState() } })
     await w.get('[data-testid="q-kbat"]').setValue('menilai')
     const first = w.emitted('update:modelValue')!.at(-1)![0] as IntakeQuestion
     expect(first.tag.kbat).toBe('menilai')

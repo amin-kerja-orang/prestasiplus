@@ -7,6 +7,8 @@ import type { TagLookup } from '../../../domain/tag-rule'
 import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
 import { groupsOf } from './grouping'
 import { questionMarks, schemeTotal } from './marks'
+import { tagFieldPath, tagFieldResolved } from './suggestion'
+import type { TagField } from './suggestion'
 
 /** T1-T3 content is outside DSKP: exempt from the unit and the SP (TP stays required). */
 export const outsideDskp = (tag: IntakeQuestion['tag']): boolean => tag.formOrigin === 'T1-T3'
@@ -16,9 +18,26 @@ export function fieldsToConfirm(q: IntakeQuestion): string[] {
   return outsideDskp(q.tag) ? q.lowFields.filter((f) => f !== 'tag.unit' && f !== 'tag.sp') : q.lowFields
 }
 
-/** Low-confidence fields of `q` still waiting for a person (T1-T3 unit/SP are never asked for). */
+const TAG_FIELDS: readonly TagField[] = ['unit', 'sp', 'tp', 'kbat']
+const tagFieldOf = (path: string): TagField | undefined => TAG_FIELDS.find((f) => tagFieldPath(f) === path)
+
+/**
+ * Fields of `q` still waiting for a person (T1-T3 unit/SP are never asked for). A tag field is
+ * resolved when it is ticked or the person changed the value away from the AI suggestion (QB
+ * "confirmed or edited"); any other field only when it is ticked.
+ */
 export const lowToConfirm = (q: IntakeQuestion): string[] =>
-  fieldsToConfirm(q).filter((f) => !q.confirmed.includes(f))
+  fieldsToConfirm(q).filter((f) => {
+    const tagField = tagFieldOf(f)
+    return tagField ? !tagFieldResolved(q, tagField) : !q.confirmed.includes(f)
+  })
+
+/** The refusal for a field that waits for a person: the unit and SP words are low confidence, TP and KBAT any AI value. */
+export function unconfirmedMessage(f: string): string {
+  return f === 'tag.tp' || f === 'tag.kbat'
+    ? `Cadangan AI belum disahkan: ${fieldName(f)}.`
+    : `Medan keyakinan rendah belum disahkan: ${fieldName(f)}.`
+}
 
 export function fieldName(f: string): string {
   switch (f) {
@@ -43,11 +62,14 @@ export function fieldName(f: string): string {
 
 /**
  * `lookup` must know the subjects of the batch (load them first with `tagLookupFor`); the tag part
- * is the shared rule `tagIssues`, the same one the publish gate runs.
+ * is the shared rule `tagIssues`, the same one the publish gate runs. `skipTag` leaves the tag
+ * messages out: a page whose subject catalogue is still loading (or failed) cannot judge them, and an
+ * unloaded subject would make every unit look absent (DSKP-T03 review F6).
  */
 export function validateBatch(
   batch: Pick<IntakeBatch, 'questions' | 'stimuli' | 'source' | 'copyright'>,
   lookup: TagLookup,
+  opts: { skipTag?: boolean } = {},
 ): IntakeIssue[] {
   const issues: IntakeIssue[] = []
   const add = (q: IntakeQuestion | undefined, where: string, message: string): void => {
@@ -99,9 +121,10 @@ export function validateBatch(
     if (questionMarks(q) <= 0 && q.type !== 'mcq' && q.parts.length > 0)
       add(q, w, 'Jumlah markah soalan ialah 0.')
 
-    for (const issue of tagIssues(q.tag, lookup)) add(q, w, issue.message)
-    for (const f of lowToConfirm(q))
-      add(q, w, `Medan keyakinan rendah belum disahkan: ${fieldName(f)}.`)
+    if (!opts.skipTag) {
+      for (const issue of tagIssues(q.tag, lookup)) add(q, w, issue.message)
+      for (const f of lowToConfirm(q)) add(q, w, unconfirmedMessage(f))
+    }
 
     if (q.stimulusId && !batch.stimuli.some((s) => s.id === q.stimulusId))
       add(q, w, 'Rajah / petikan yang dirujuk tidak wujud.')
@@ -128,6 +151,7 @@ export function validateRevision(
   q: IntakeQuestion,
   stimulus: IntakeStimulus | undefined,
   lookup: TagLookup,
+  opts: { skipTag?: boolean } = {},
 ): string[] {
   return validateBatch(
     {
@@ -137,5 +161,6 @@ export function validateRevision(
       copyright: '-',
     },
     lookup,
+    opts,
   ).map((i) => (i.questionId ? `${i.where.replace(/^Soalan 1/, 'Soalan')}: ${i.message}` : i.message))
 }
