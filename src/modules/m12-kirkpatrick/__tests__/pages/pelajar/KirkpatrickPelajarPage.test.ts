@@ -243,7 +243,9 @@ describe('S8 Head Count and platform cards (AC-M12-31.1, 31.2, 31.4)', () => {
       '0.0% (5)',
     ])
     expect(
-      all(b, 'pel-plat-bar').map((e) => ['bg-success', 'bg-warning', 'bg-error'].find((c) => e.html().includes(c))),
+      all(b, 'pel-plat-bar').map((e) =>
+        ['bg-success', 'bg-warning', 'bg-error'].find((c) => e.html().includes(c)),
+      ),
     ).toEqual(['bg-warning', 'bg-warning', 'bg-error', 'bg-error'])
   })
 
@@ -310,6 +312,20 @@ describe('S8 string ids in http mode (BUG-01)', () => {
     expect(api.fetchKirkpatrickStudent).toHaveBeenCalledWith(4664, expect.anything())
     expect(t(w, 'pel-name').text()).toBe('Pelajar Demo 004664')
     expect(has(w, 'pel-alesa')).toBe(true)
+  })
+
+  it('hides a loaded student whose string id only starts with the route id', async () => {
+    const other = studentB()
+    other.student.id = '46640'
+    api.fetchKirkpatrickStudent.mockResolvedValue(other)
+    const w = await open(4664)
+    expect(w.find('[data-testid="pel-name"]').exists()).toBe(false)
+  })
+
+  it('shows no student before the first load has finished', async () => {
+    api.fetchKirkpatrickStudent.mockReturnValue(new Promise(() => {}))
+    const w = await open(4664)
+    expect(w.find('[data-testid="pel-name"]').exists()).toBe(false)
   })
 
   it('still hides a previous student of another id (S8 to S8 navigation)', async () => {

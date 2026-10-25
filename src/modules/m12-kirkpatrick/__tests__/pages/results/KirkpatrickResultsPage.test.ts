@@ -6,6 +6,7 @@ import { ApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { DsChart } from '@/ds'
 
+import type { Results } from '../../../api/types'
 import KirkpatrickResultsPage from '../../../pages/KirkpatrickResultsPage.vue'
 import { all, captions, flat, has, mountPage, rowOf, squash, t, tiles } from '../fixtures'
 import { results, resultsNoCounts, resultsNoHistory } from './fixtures'
@@ -47,14 +48,7 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
       'Pelajar Aktif',
       'Rekod Headcount',
     ])
-    expect(tiles(w).map((x) => x.value)).toEqual([
-      '4.30',
-      '96.7%',
-      '52',
-      '82.8%',
-      '946',
-      '4378',
-    ])
+    expect(tiles(w).map((x) => x.value)).toEqual(['4.30', '96.7%', '52', '82.8%', '946', '4378'])
     expect(captions(w)).toEqual([
       '41 rekod · 2025',
       '174/180 calon',
@@ -88,14 +82,7 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
     )
     const { wrapper: w } = await open('/admin/kirkpatrick', '?school_id=8080')
     expect(api.fetchKirkpatrickResults).toHaveBeenCalledWith({ schoolId: 8080 }, expect.anything())
-    expect(tiles(w).map((x) => x.value)).toEqual([
-      '4.00',
-      '100%',
-      '0',
-      '75.6%',
-      '53',
-      '4378',
-    ])
+    expect(tiles(w).map((x) => x.value)).toEqual(['4.00', '100%', '0', '75.6%', '53', '4378'])
     expect(captions(w)).toEqual([
       '41 rekod · 2026',
       '1/1 calon',
@@ -132,7 +119,8 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
     api.fetchKirkpatrickResults.mockResolvedValue(resultsNoCounts())
     const { wrapper: w } = await open('/admin/kirkpatrick', '?school_id=8880')
     expect(
-      tiles(w).map((x) => x.value)
+      tiles(w)
+        .map((x) => x.value)
         .slice(0, 3),
     ).toEqual(['2.88', '-', '-'])
     const lines = captions(w)
@@ -475,5 +463,38 @@ describe('S5 states', () => {
     )
     await open('/guru/kirkpatrick')
     expect(useRouteOutcome().value).toBe(403)
+  })
+})
+
+describe('S5 string ids in http mode (contract IdSchema)', () => {
+  /** The API sends every id as a string; the mock sends numbers. */
+  const stringIds = (r: Results): Results => ({
+    ...r,
+    schools: r.schools.map((x) => ({ ...x, schoolId: String(x.schoolId) })),
+    predictions: r.predictions.map((x) => ({
+      ...x,
+      userId: String(x.userId),
+      schoolId: String(x.schoolId),
+    })),
+    alesa: { ...r.alesa, rows: r.alesa.rows.map((x) => ({ ...x, userId: String(x.userId) })) },
+  })
+
+  it('builds the school and student links from string ids and renders the ALESA rows', async () => {
+    api.fetchKirkpatrickResults.mockResolvedValue(stringIds(results()))
+    const { wrapper: w } = await open()
+    expect(all(w, 'res-school-link')[0]?.attributes('href')).toBe('/admin/monitoring/sekolah/9681')
+    expect(all(w, 'pred-school')[0]?.attributes('href')).toBe('/admin/monitoring/sekolah/8090')
+    expect(all(w, 'pred-student')[0]?.attributes('href')).toBe(
+      '/admin/monitoring/sekolah/8090/pelajar/1000',
+    )
+    expect(all(w, 'alesa-row')).toHaveLength(5)
+  })
+
+  it('navigates in-app from a row link built from string ids', async () => {
+    api.fetchKirkpatrickResults.mockResolvedValue(stringIds(results()))
+    const { wrapper: w, router } = await open()
+    const push = vi.spyOn(router, 'push')
+    await all(w, 'pred-student')[2]!.trigger('click')
+    expect(push).toHaveBeenCalledWith('/admin/monitoring/sekolah/8080/pelajar/1002')
   })
 })

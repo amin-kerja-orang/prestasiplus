@@ -275,3 +275,18 @@ describe('S7 list (AC-M12-28.2)', () => {
     expect(t(w, 'int-list').find('[data-ds="data-table"]').exists()).toBe(true)
   })
 })
+
+describe('S7 string ids in http mode (contract IdSchema)', () => {
+  it('lists rows whose id and studentId are strings', async () => {
+    api.fetchKirkpatrickInterventions.mockResolvedValue({
+      kpi: { total: 2, pending: 2, up: 0, down: 0 },
+      rows: [row({ id: '17', studentId: '4664' }), row({ id: '9', studentId: '10010' })],
+    } satisfies InterventionList)
+    const w = await open()
+    await vi.waitFor(() => expect(all(w, 'int-row-student')).toHaveLength(2))
+    expect(all(w, 'int-row-student').map((e) => squash(e.text()))).toEqual([
+      '4664Pelajar Demo 004664',
+      '10010Pelajar Demo 004664',
+    ])
+  })
+})
