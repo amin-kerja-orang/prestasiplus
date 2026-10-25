@@ -64,7 +64,7 @@ function contentTables(): Record<string, Rows> {
     part_options: [{ id: 1, question_part_id: 1, label: 'A', body: `Guru ${PII.name2} berkata` }],
     stimuli: [{ id: 1, stimulus_kind_id: 1, body: `Petikan oleh ${PII.name1}: "hubungi ${PII.email1}".` }],
     part_answer_keys: [{ id: 1, question_part_id: 1, answer_key_kind_id: 1, content: `Jawapan: ${PII.ic1} (lihat ${PII.phone1})` }],
-    question_snapshots: [{ id: 1, exam_question_id: 1, content: { stem: `Hubungi ${PII.phone2}`, marks: 2, tags: ['a', PII.email2], ok: true, none: null } }],
+    structured_questions: [{ id: 1, subject_id: 1, status: 'diluluskan', stimulus: `Petikan: ${PII.name2} (${PII.phone2}) menulis.` }],
   }
 }
 
@@ -114,8 +114,7 @@ describe('anonymise run with redact-pii (shipped config)', () => {
     expect((o.part_options as Rows)[0]?.body).toBe(`Guru ${T} berkata`)
     expect((o.stimuli as Rows)[0]?.body).toBe(`Petikan oleh ${T}: "hubungi ${T}".`)
     expect((o.part_answer_keys as Rows)[0]?.content).toBe(`Jawapan: ${T} (lihat ${T})`)
-    // json: keys, numbers, booleans and null kept
-    expect((o.question_snapshots as Rows)[0]?.content).toEqual({ stem: `Hubungi ${T}`, marks: 2, tags: ['a', T], ok: true, none: null })
+    expect((o.structured_questions as Rows)[0]?.stimulus).toBe(`Petikan: ${T} (${T}) menulis.`)
     const a = o.articles as Rows
     expect(a[0]?.title).toBe(`Wawancara dengan ${T} tentang SPM`) // the name comes from `sponsors`, a table AFTER articles
     expect(a[1]?.title).toBe('Tajuk biasa tanpa data peribadi')
@@ -176,6 +175,8 @@ describe('anonymise run with redact-pii (shipped config)', () => {
       'stimuli.body.email': 1,
       'part_answer_keys.content.ic': 1,
       'part_answer_keys.content.phone': 1,
+      'structured_questions.stimulus.original-name': 1,
+      'structured_questions.stimulus.phone': 1,
     })
     for (const r of result.redactions) {
       expect(Object.keys(r).sort()).toEqual(['column', 'count', 'kind', 'table'])

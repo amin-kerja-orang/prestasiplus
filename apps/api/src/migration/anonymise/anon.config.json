@@ -589,12 +589,12 @@
     "structured_rubric_points": {
       "structured_sub_question_id": "keep",
       "marks": "keep",
-      "text": "redact-pii"
+      "text": "keep"
     },
     "pksk_questions": {
       "bahagian": "keep",
       "domain": "keep",
-      "body": "redact-pii",
+      "body": "keep",
       "status": "keep"
     },
     "question_reports": {
@@ -678,7 +678,7 @@
     },
     "question_snapshots": {
       "exam_question_id": "keep",
-      "content": "redact-pii"
+      "content": "keep"
     },
     "source_papers": {
       "natural_key": "keep",

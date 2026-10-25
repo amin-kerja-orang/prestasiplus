@@ -129,17 +129,14 @@ describe('default deny (AC1)', () => {
       ['media_assets', 'path', 'pseudonym:path'],
       ['questions', 'image_path', 'pseudonym:path'],
       ['question_options', 'image_path', 'pseudonym:path'],
-      // A1-LEAK (redact-pii): free-text question-bank content that stays readable; only the flagged spans are masked.
+      // A1-LEAK (redact-pii), exactly the 8 columns the LEAD named: readable content, only the flagged spans are masked.
       ['questions', 'body', 'redact-pii'],
       ['questions', 'explanation', 'redact-pii'],
       ['question_options', 'body', 'redact-pii'],
       ['part_options', 'body', 'redact-pii'],
       ['stimuli', 'body', 'redact-pii'],
       ['structured_questions', 'stimulus', 'redact-pii'],
-      ['structured_rubric_points', 'text', 'redact-pii'],
       ['part_answer_keys', 'content', 'redact-pii'],
-      ['pksk_questions', 'body', 'redact-pii'],
-      ['question_snapshots', 'content', 'redact-pii'],
     ]
     const show = (r: { rule: string; kind?: string } | undefined): string | undefined => (r === undefined ? undefined : r.kind ? `${r.rule}:${r.kind}` : r.rule)
     for (const [t, c, rule] of expected) {
