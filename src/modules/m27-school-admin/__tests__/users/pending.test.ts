@@ -147,7 +147,7 @@ describe('S7b list', () => {
   it('shows the load error with a retry', async () => {
     api.fetchPendingTeachers.mockRejectedValue(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' }))
     const { wrapper: w } = await mountAt(GuruMenungguPage, '/admin-sekolah/guru/menunggu')
-    expect(text(w, 'pt-error')).toContain('Ralat pelayan.')
+    expect(text(w, 'pt-error')).toContain('Ralat berlaku. Sila cuba lagi.')
     expect(has(w, 'pt-table')).toBe(false)
   })
 

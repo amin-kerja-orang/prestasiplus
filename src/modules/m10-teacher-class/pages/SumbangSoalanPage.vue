@@ -8,7 +8,6 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { isApiError } from '@/api'
 import { useApi, useFlash, usePrototypeScope } from '@/composables'
 import { DsPage, useConfirm, DsPanel, DsLoadError } from '@/ds'
 
@@ -23,6 +22,7 @@ import HantarKertasCard from '../components/soalan/HantarKertasCard.vue'
 import ImportCard from '../components/soalan/ImportCard.vue'
 import { COPY } from '../components/soalan/lib'
 import QuestionCard from '../components/soalan/QuestionCard.vue'
+import { moduleMessage } from '../lib/generic-server-text'
 
 const route = useRoute()
 const router = useRouter()
@@ -52,7 +52,7 @@ async function remove(id: number): Promise<void> {
     flash.show({ type: 'success', message: COPY.deleted })
     await Promise.all([summary.reload(), list.reload()])
   } catch (err) {
-    deleteError.value = [isApiError(err) ? err.message : COPY.saveFailed]
+    deleteError.value = [moduleMessage(err) ?? COPY.saveFailed]
   } finally {
     deleting.value = false
   }

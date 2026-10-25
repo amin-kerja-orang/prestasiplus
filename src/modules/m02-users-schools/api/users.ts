@@ -8,7 +8,7 @@
  * All ids are integers (§6). Success texts of the mutations are the UNVERIFIED COPY of SRS §8.
  */
 
-import { api, type ListResult } from '@/api'
+import { api, wireId, type EntityId, type ListResult } from '@/api'
 import { isHttpMode } from '@/api/mode'
 import type { Role, UserMe } from '@/modules/m01-authentication'
 
@@ -199,8 +199,8 @@ export interface AdminUserPackages {
 
 export interface AssignPackageRequest {
   formLevel: FormLevel
-  /** 1 for `t4`, 2 for `t5`. */
-  packageId: number
+  /** 1 for `t4`, 2 for `t5` (a string id in http mode). */
+  packageId: EntityId
   /** 1–2000. */
   studentQuota: number
 }
@@ -282,8 +282,6 @@ export function rolesAfterEdit(original: readonly Role[], role: Role): Role[] {
   )
 }
 
-const wireId = (id: string | number): string => String(id)
-
 /** #3 `GET /api/admin/users/:id` (404 for an unknown id). */
 export async function fetchAdminUser(
   id: number,
@@ -357,10 +355,11 @@ export function deleteAdminUser(id: number): Promise<UserMutation<{ deleted: num
 
 /** #7 `POST /api/admin/users/bulk-delete` (422 for no ids or the admin's own id). */
 export function bulkDeleteAdminUsers(
-  ids: readonly number[],
+  ids: readonly EntityId[],
 ): Promise<UserMutation<{ deleted: number }>> {
+  // Contract `BulkDeleteRequestSchema`: `ids` are strings (SWX-2): never leave a number in the body in http mode.
   return api.post<UserMutation<{ deleted: number }>>('/api/admin/users/bulk-delete', {
-    body: { ids },
+    body: { ids: ids.map(wireId) },
     raw: true,
   })
 }
@@ -398,7 +397,8 @@ export function assignUserPackage(
   request: AssignPackageRequest,
 ): Promise<UserMutation<SchoolAdminPackage>> {
   return api.post<UserMutation<SchoolAdminPackage>>(`/api/admin/users/${String(id)}/packages`, {
-    body: request,
+    // Contract `SchoolPackageAssignRequestSchema`: `packageId` is a string (SWX-2).
+    body: { ...request, packageId: wireId(request.packageId) },
     raw: true,
   })
 }

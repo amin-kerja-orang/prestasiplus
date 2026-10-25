@@ -7,6 +7,7 @@
  * `/admin-sekolah/monitoring`).
  */
 
+import type { EntityId } from '@/api'
 import type { CrumbItem } from '@/ds'
 
 export const MONITORING_BASE = '/guru/monitoring'
@@ -19,14 +20,14 @@ export interface MonitoringFilterQuery {
 
 export interface MonitoringPaths {
   overview: string
-  school: (schoolId: number) => string
-  student: (schoolId: number, userId: number) => string
-  teacher: (schoolId: number, userId: number) => string
+  school: (schoolId: EntityId) => string
+  student: (schoolId: EntityId, userId: EntityId) => string
+  teacher: (schoolId: EntityId, userId: EntityId) => string
   /**
    * The M12 page of a pupil who has no answer (`…/kirkpatrick/pelajar/{id}`, FR-M11-58); `null` on the
    * school-admin alias, where Kirkpatrick is not open to the role (M12 rule), so no link is drawn.
    */
-  kirkpatrickStudent: (userId: number) => string | null
+  kirkpatrickStudent: (userId: EntityId) => string | null
   exportHref: (format: 'pdf' | 'csv', query: MonitoringFilterQuery) => string
 }
 
@@ -56,7 +57,7 @@ export function monitoringPaths(base: string = MONITORING_BASE): MonitoringPaths
 export function monitoringCrumbs(
   paths: MonitoringPaths,
   school: string,
-  schoolId?: number,
+  schoolId?: EntityId,
   person?: string,
 ): CrumbItem[] {
   const items: CrumbItem[] = [{ label: 'Monitoring', to: paths.overview }]

@@ -5,6 +5,8 @@
 
 import { isApiError } from '@/api'
 
+import { isGenericServerText } from '../generic-server-text'
+
 export const BANNERS_PATH = '/admin/banners'
 export const AUDIO_PATH = '/admin/audio-kbat'
 export const SCREENSHOTS_PATH = '/admin/tools/screenshots'
@@ -38,7 +40,14 @@ export function errorLines(err: unknown): string[] {
   if (err.status === 0 || err.code === 'NETWORK_ERROR') return [COPY.genericError]
   const fieldTexts = err.fields ? Object.values(err.fields) : []
   if (fieldTexts.length > 0) return [...new Set(fieldTexts)]
-  if (err.message === '' || /^HTTP \d+$/.test(err.message)) return [COPY.genericError]
+  if (
+    err.message === '' ||
+    /^HTTP \d+$/.test(err.message) ||
+    err.status >= 500 ||
+    isGenericServerText(err.message)
+  ) {
+    return [COPY.genericError]
+  }
   return [err.message]
 }
 

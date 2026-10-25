@@ -205,7 +205,10 @@ describe('CompStudentDetailPage (M02 S8) toggles', () => {
     const w = await render()
     await w.findAll('form')[0]!.trigger('submit')
     await flushPromises()
-    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Gagal.'] })
+    expect(useFlashStore().current).toEqual({
+      type: 'error',
+      message: ['Ralat berlaku. Sila cuba lagi.'],
+    })
     expect(t(w, 'comp-coins').text()).toBe('OFF (tak boleh kumpul/claim)')
   })
 })

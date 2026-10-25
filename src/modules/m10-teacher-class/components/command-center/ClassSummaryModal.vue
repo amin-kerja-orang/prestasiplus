@@ -12,7 +12,7 @@ import { fetchCommandCenterLiveData } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
 import { statItems, useOpenTab } from './composables'
-import { accuracyTone, classPath, levelText } from './copy'
+import { accuracyTone, classPath, levelText, S2_COPY } from './copy'
 import type { DrillRow } from './drill-table'
 
 defineEmits<{ close: [] }>()
@@ -45,7 +45,7 @@ const rows = computed<DrillRow[]>(() =>
 
 <template>
   <CcDialog title="Kelas Saya — Ringkasan Prestasi" testid="cc-kelas-modal" @close="$emit('close')">
-    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
+    <p v-if="error" class="text-body text-error">{{ S2_COPY.loadFailed }}</p>
     <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
       Menganalisis prestasi guru...
     </p>
