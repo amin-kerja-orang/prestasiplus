@@ -179,6 +179,11 @@ describe('S1 Laporan: teacher view (E2E-M11-10, 08)', () => {
     expect(rows[0]!.find('[data-testid="student-never"]').text()).toBe('Belum pernah login')
     expect(rows[1]!.find('[data-testid="student-never"]').exists()).toBe(false)
     expect(rows[0]!.get('[data-testid="student-email"]').classes()).toContain('truncate')
+    // SWEEP-320 F7: the cut name and e-mail can be read in full.
+    const email = rows[0]!.get('[data-testid="student-email"]')
+    expect(email.attributes('title')).toBe(email.text())
+    const name = rows[0]!.get('[data-testid="student-name"]')
+    expect(name.attributes('title')).toBe(name.text())
   })
 })
 
