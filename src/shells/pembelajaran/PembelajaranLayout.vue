@@ -26,6 +26,7 @@ import {
   DsIcon,
   DsPillNav,
   DsRewardChip,
+  provideShellSectionTabs,
   provideShellTitle,
 } from '@/ds'
 import { useGamificationSummary } from '@/shells/user/useGamificationSummary'
@@ -115,6 +116,8 @@ const current = computed(() => currentItem(sidebar.value, route.path))
 const sectionTabs = computed(() =>
   groupTabs(sidebar.value, current.value?.id).map((t) => ({ key: t.id, label: t.label, to: t.to })),
 )
+// A page with a tab strip of its own (Kirkpatrick) leaves it out while this one shows.
+provideShellSectionTabs(computed(() => sectionTabs.value.length > 0))
 const title = computed(() => route.meta.header?.title ?? current.value?.label ?? '')
 const crumb = computed(() => {
   const c = current.value ? sectionOf(sidebar.value, current.value.id) : ''
@@ -451,7 +454,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
             <main
               id="kandungan"
               :key="route.path"
-              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 py-4 pb-32 sm:py-6 lg:pb-12"
+              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 pt-4 pb-32 sm:pt-6 lg:pb-12"
               data-testid="pembelajaran-main"
               tabindex="-1"
             >

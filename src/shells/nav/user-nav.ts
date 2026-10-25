@@ -105,7 +105,7 @@ export interface NavItem extends EntryBase {
    * - `ai`: an item of the Pusat AI partial: `.nav-item` + `text-sm font-semibold` label and a
    *   base-size icon on **both** surfaces (live includes the same partial in both menus);
    * - `drawer-style`: live sidebar item rendered with the drawer classes (Audio KBAT, OBSERVED);
-   * - `command`: the dark "Command Center" card with the LIVE pill (`target="_blank"`);
+   * - `command`: the dark "Command Center" card with the LIVE pill (opens in the same tab, UAT G-06 / S-06);
    * - `admin-link`: "Ke Admin Panel" (indigo tint classes).
    */
   variant?: 'main' | 'ai' | 'drawer-style' | 'command' | 'admin-link'
@@ -229,12 +229,12 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'laporan-mingguan', label: 'Laporan Mingguan', to: '/laporan-mingguan', fa: 'fa-file-lines', color: 'text-indigo-500', roles: SA_ },
 
   // ── School admin: first entry (admin-sekolah screenshot). Href INFERRED. ──
-  { kind: 'item', id: 'sa-command-center', label: 'Command Center', to: '/admin-sekolah/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: SCH },
+  { kind: 'item', id: 'sa-command-center', label: 'Command Center', to: '/admin-sekolah/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', badge: { text: 'LIVE', cls: B_LIVE }, roles: SCH },
 
   // ── Teacher, part 1 (guru screenshots: Command Center, HARIAN, PENGAJARAN, PENILAIAN,
   //    ANALITIK; the Pusat AI block follows). Hrefs/icons as the admin drawer capture's teacher
   //    items where the same item exists; otherwise INFERRED (marked). ──
-  { kind: 'item', id: 't-command-center', label: 'Command Center', to: '/guru/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: T },
+  { kind: 'item', id: 't-command-center', label: 'Command Center', to: '/guru/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', badge: { text: 'LIVE', cls: B_LIVE }, roles: T },
   { kind: 'section', id: 't-sec-harian', label: 'HARIAN', text: 'text-teal-700', rule: 'from-teal-300', roles: T },
   { kind: 'item', id: 't-dashboard-guru', label: 'Dashboard Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: T },
   // The screenshot shows a small pill after "Headcount", hidden under a tick mark: not transcribed.
@@ -486,7 +486,7 @@ export const USER_NAV: readonly NavEntry[] = [
 
   // ── Teacher block as captured in the ADMIN identity's drawer (admin only; the teacher's own
   //    sidebar is transcribed above from the guru screenshots) ──
-  { kind: 'item', id: 'command-center-guru', label: 'Command Center', to: '/guru/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: A },
+  { kind: 'item', id: 'command-center-guru', label: 'Command Center', to: '/guru/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', badge: { text: 'LIVE', cls: B_LIVE }, roles: A },
   { kind: 'section', id: 'sec-harian', label: 'HARIAN', text: 'text-teal-700', rule: 'from-teal-300', roles: A },
   { kind: 'item', id: 'guru-dashboard', label: 'Dashboard Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'guru-misi-harian', label: 'Misi Harian', to: '/guru/misi-harian', fa: 'fa-rocket', color: 'text-amber-500', roles: A },
@@ -540,7 +540,7 @@ export const USER_NAV: readonly NavEntry[] = [
 
   // ── PPD / JPN (sidebar capture + drawer-only items) ──
   { kind: 'section', id: 'sec-ppd-jpn', label: 'PPD / JPN', text: 'text-indigo-700', rule: 'from-indigo-300', roles: ['admin', 'ppd_officer', 'jpn_officer'] },
-  { kind: 'item', id: 'command-center-ppd', label: 'Command Center', to: '/ppd/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: ['admin', 'ppd_officer'] },
+  { kind: 'item', id: 'command-center-ppd', label: 'Command Center', to: '/ppd/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', badge: { text: 'LIVE', cls: B_LIVE }, roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'dashboard-ppd', label: 'Dashboard PPD', to: '/ppd/dashboard', fa: 'fa-building-columns', color: 'text-indigo-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'statistik-ppd', label: 'Statistik PPD', to: '/ppd/statistik-penggunaan', fa: 'fa-chart-pie', color: 'text-violet-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'ranking-kebangsaan-ppd', label: 'Ranking Kebangsaan', to: '/ppd/ranking-kebangsaan', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin', 'ppd_officer'] },

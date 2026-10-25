@@ -67,12 +67,14 @@ function print() {
 </script>
 
 <template>
-  <DsPage data-testid="lb-page">
+  <DsPage data-testid="lb-page" data-print-area>
     <template #breadcrumb>
-      <DsBreadcrumb v-if="data" :items="crumbs" data-testid="lb-breadcrumb" />
+      <DsBreadcrumb v-if="data" :items="crumbs" class="print:hidden" data-testid="lb-breadcrumb" />
     </template>
     <template v-if="data">
-
+      <p class="hidden text-subheading text-highlighted print:block" data-testid="lb-print-school">
+        {{ data.school.name }}
+      </p>
       <div
         class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1"
         data-testid="lb-month-nav"
@@ -80,7 +82,7 @@ function print() {
         <h2 class="text-title text-highlighted" data-testid="lb-heading">
           Laporan {{ data.label }}
         </h2>
-        <div class="flex flex-wrap items-center gap-x-4">
+        <div class="flex flex-wrap items-center gap-x-4 print:hidden">
           <UButton
             :to="{ query: { bulan: data.prev } }"
             color="neutral"

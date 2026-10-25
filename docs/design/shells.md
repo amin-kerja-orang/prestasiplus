@@ -314,7 +314,7 @@ Decision recorded from OD-R5 (recommended option): F-18 stays in Release 1.0 and
 | Routes | §1.2 | `/guru/monitoring*` (M11 S2–S5), `/guru/kirkpatrick*` (M12 S1–S8; S8 is admin-only) |
 | Caption under the logo | "Panel Pentadbir" | "Portal Guru" (the tab-title suffix of the teacher pages, M11 S1/S6) |
 | Logo link | `/admin` | `/guru` (Dashboard Guru, user shell) |
-| Pinned block | Command Center + Aktiviti Harian + Audio KBAT | Command Center only → `/guru/command-center` (`_blank`, LIVE); it is the first entry of the observed teacher menu |
+| Pinned block | Command Center + Aktiviti Harian + Audio KBAT | Command Center only → `/guru/command-center` (LIVE; live used `_blank`, v2 opens it in the same tab per D30, UAT 2026-10-24 G-06/S-06); it is the first entry of the observed teacher menu |
 | Sidebar sections and items | §2.7 | The teacher's own menu, table below. It is **the same data** as the user-shell teacher menu (`USER_NAV` filtered by `navFor('teacher', 'sidebar')`): one definition, two renderings (DV-SH-04 extended). F-18 must import it, not copy it |
 | Item rendering | admin item style | admin item style for every teacher entry (`nav-item px-4 py-2.5`, icon `w-5`), including the Pusat AI block and the "Audio KBAT" entry, which the user shell draws smaller. Badges keep their class strings from the data. Hover tooltips (`tip`) are not rendered: the admin shell has none |
 | Collapsible groups | 12 keys | 1: `kirkpatrick` (items: Ringkasan, T1: Reaksi, T2: Pembelajaran, T3: Tingkah Laku, T4: Hasil, Rantaian Impak, Intervensi, with the teacher data's labels and icons) |

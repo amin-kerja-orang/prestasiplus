@@ -14,7 +14,14 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBrandLogo, DsConfirmHost, DsIcon, DsPillNav, provideShellTitle } from '@/ds'
+import {
+  DsBrandLogo,
+  DsConfirmHost,
+  DsIcon,
+  DsPillNav,
+  provideShellSectionTabs,
+  provideShellTitle,
+} from '@/ds'
 import { useShellUser } from '@/shells/pembelajaran/useShellUser'
 import { useThemeMode } from '@/theme/color-mode'
 import { uiLocale } from '@/theme/locale-ms'
@@ -85,6 +92,8 @@ const tabs = computed(() => {
     ? sectionTabs(PENTADBIRAN_MENU, sub).map((t) => ({ key: t.to, label: t.label, to: t.to }))
     : []
 })
+// A page with a tab strip of its own (Kirkpatrick) leaves it out while this one shows.
+provideShellSectionTabs(computed(() => tabs.value.length > 0))
 const chipOf = (id: unknown): string => groupTintClass(groupOf(String(id))?.key)
 
 const router = useRouter()

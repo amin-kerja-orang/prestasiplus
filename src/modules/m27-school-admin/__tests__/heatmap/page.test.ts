@@ -198,12 +198,37 @@ describe('tiles (FR-M27-60…63; AC-M27-17.2…17.4)', () => {
 
   it('shows the legend in order', async () => {
     const w = await mountPage(heatmap())
-    expect(w.findAll('[data-testid="dh-legend"] > li').map((e) => e.text())).toEqual([
+    expect(w.findAll('[data-ds="heat-legend"] > li').map((e) => e.text())).toEqual([
       'Mahir (75%+)',
       'Sederhana (50-74%)',
       'Lemah (<50%)',
       'Belum Cuba',
     ])
+  })
+})
+
+describe('colour legend matches the cells (UAT S-52)', () => {
+  it('colours a cell by its status band and draws one legend swatch per status', async () => {
+    const w = await mountPage(heatmap())
+    const cells = w.findAll('[data-ds="heat-cell"]')
+    // 90 = Mahir, 60 = Sederhana, 20 = Lemah, null = Belum Cuba
+    expect(cells[0]?.classes()).toContain('bg-primary')
+    expect(cells[1]?.classes()).toContain('bg-primary/60')
+    expect(cells[2]?.classes()).toContain('bg-primary/15')
+    expect(cells[3]?.classes()).toContain('border-dashed')
+    const swatches = w.findAll('[data-ds="heat-legend-swatch"]')
+    expect(swatches.map((e) => e.classes())).toEqual([
+      expect.arrayContaining(['bg-primary']),
+      expect.arrayContaining(['bg-primary/60']),
+      expect.arrayContaining(['bg-primary/15']),
+      expect.arrayContaining(['border-dashed']),
+    ])
+  })
+
+  it('draws one legend only: the status legend, not the low-to-high ramp', async () => {
+    const w = await mountPage(heatmap())
+    expect(w.findAll('[data-ds="heat-legend"]')).toHaveLength(1)
+    expect(w.find('[data-ds="heat-legend"]').element.tagName).toBe('UL')
   })
 })
 

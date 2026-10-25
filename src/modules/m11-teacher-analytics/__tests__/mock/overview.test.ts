@@ -428,6 +428,33 @@ describe('#7 export (PROPOSED) and the guards', () => {
     expect(exp.rows.map((r) => r.schoolId)).toEqual([900001])
   })
 
+  it('school admin: another state, school or district in the query never widens the scope (D30)', async () => {
+    const states = ['Johor', 'Selangor', 'Kedah', 'Sabah', 'Kuala Lumpur']
+    for (const state of states) {
+      const o = await overview(`?state=${encodeURIComponent(state)}`, ADMIN_SEKOLAH)
+      for (const r of [...o.studentRows, ...o.teacherRows, ...o.weekly]) {
+        expect(r.schoolId).toBe(900001)
+      }
+      expect(o.kpi.schools).toBeLessThanOrEqual(1)
+      expect(o.kpi.students).toBeLessThanOrEqual(9)
+      expect(
+        o.signals.best
+          .concat(o.signals.attention, o.signals.suggestions)
+          .every((x) => x.schoolId === 900001),
+      ).toBe(true)
+      const exp = await dataAs<MonitoringExport>(
+        runtime,
+        ADMIN_SEKOLAH,
+        `/api/monitoring/export?format=csv&state=${encodeURIComponent(state)}`,
+      )
+      expect(exp.rows.every((r) => r.schoolId === 900001)).toBe(true)
+    }
+    const other = await overview('?schoolId=8080&school=8080&district=X&period=30d', ADMIN_SEKOLAH)
+    expect(other.studentRows.map((r) => r.schoolId)).toEqual([900001])
+    expect(other.teacherRows.map((r) => r.schoolId)).toEqual([900001])
+    expect(other.weekly.map((r) => r.schoolId)).toEqual([900001])
+  })
+
   it('a school admin without a school sees an empty view', () => {
     const o = monitoring.overview({}, { now, scopeSchoolId: 0 })
     expect(o.studentRows).toEqual([])

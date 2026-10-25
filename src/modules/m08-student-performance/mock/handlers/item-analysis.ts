@@ -33,7 +33,6 @@ const SCHOOL_ROLES: readonly string[] = [
   'admin',
   'teacher',
   'school_admin',
-  'student',
   'ppd_officer',
   'jpn_officer',
 ]

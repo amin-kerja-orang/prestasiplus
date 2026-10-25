@@ -291,6 +291,21 @@ describe('footer and print (FR-M27-86; AC-M27-24.4)', () => {
   })
 })
 
+describe('print view (UAT S-55)', () => {
+  it('marks the report as the print area and hides the screen-only controls on paper', async () => {
+    const w = await mountPage(report())
+    expect(w.get('[data-testid="lb-page"]').attributes('data-print-area')).toBeDefined()
+    expect(w.get('[data-testid="lb-print"]').classes()).toContain('print:hidden')
+    expect(w.get('[data-testid="lb-breadcrumb"]').classes()).toContain('print:hidden')
+    expect(w.get('[data-testid="lb-prev"]').element.parentElement?.className).toContain(
+      'print:hidden',
+    )
+    const school = w.get('[data-testid="lb-print-school"]')
+    expect(school.classes()).toEqual(expect.arrayContaining(['hidden', 'print:block']))
+    expect(school.text()).not.toBe('')
+  })
+})
+
 describe('states (FR-M27-48)', () => {
   it('shows the spinner only while loading', async () => {
     api.fetchMonthlyReport.mockReturnValue(new Promise(() => undefined))

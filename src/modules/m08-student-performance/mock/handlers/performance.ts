@@ -1,6 +1,6 @@
 /**
  * SRS M08 v1.11 §7 #1 school performance (S1), #2 levels (S2), #3 level detail (S3), #4 own classes
- * (S4). Any session (A). Scope (FR-M08-13): the admin sees every school; the school admin the own
+ * (S4). Any session but the pelajar for #1–#3 (403, UAT M-09); #4 any session. Scope (FR-M08-13): the admin sees every school; the school admin the own
  * school; every other role the own school (INFERRED, OQ-M08-04). An unknown level code is a 404.
  */
 
@@ -15,7 +15,14 @@ import {
   schoolPerformance,
   type Scope,
 } from '../repository/performance'
-import { ownClasses, subjectColorOf, subjectNameOf, viewerOf, type Viewer } from './common'
+import {
+  ownClasses,
+  schoolViewRoles,
+  subjectColorOf,
+  subjectNameOf,
+  viewerOf,
+  type Viewer,
+} from './common'
 
 /** The data scope of a viewer (INFERRED for non-admin roles); no school → an empty school scope. */
 export function scopeOf(viewer: Viewer): Scope {
@@ -26,13 +33,13 @@ export function scopeOf(viewer: Viewer): Scope {
 const isLevel = (v: string | number | undefined): v is 't4' | 't5' => v === 't4' || v === 't5'
 
 export const performanceRoutes: RouteDef[] = [
-  route('GET', '/api/performance/school', [requireAuth()], (req, ctx) => {
+  route('GET', '/api/performance/school', [schoolViewRoles], (req, ctx) => {
     const year = new Date(ctx.clock.now() + 8 * 3_600_000).getUTCFullYear()
     const scope = scopeOf(viewerOf(req))
     return ok(schoolPerformance(scope, year))
   }),
 
-  route('GET', '/api/performance/levels', [requireAuth()], (req) => {
+  route('GET', '/api/performance/levels', [schoolViewRoles], (req) => {
     const scope = scopeOf(viewerOf(req))
     const cards: LevelCard[] = (['t4', 't5'] as const).map((code) => {
       const slug = code === 't4' ? 'tingkatan-4' : 'tingkatan-5'
@@ -50,7 +57,7 @@ export const performanceRoutes: RouteDef[] = [
   route(
     'GET',
     '/api/performance/levels/:code',
-    [requireAuth()],
+    [schoolViewRoles],
     (req) => {
       const code = req.params.code
       if (!isLevel(code)) return notFound()

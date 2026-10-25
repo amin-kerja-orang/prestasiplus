@@ -4,15 +4,15 @@
  * {Subjek} Tingkatan {n}" and a `DsHeatGrid` in the staff kobalt ramp. One row per Bidang ("{code} {name}",
  * a Bidang with more than 11 SP continues on further rows), one column per SP position, the percent in every
  * answered cell and a dash where the SP was not attempted. The popover of a cell names the SP, its status
- * and, when answered, "{n} cuba · {p}% betul" (FR-M27-63). The legend line explains the ramp and the
- * "Belum Cuba" cells. The empty text shows when the level or subject has no SP.
+ * and, when answered, "{n} cuba · {p}% betul" (FR-M27-63). The grid's own legend (swatch + label per
+ * status, then "Belum Cuba") explains the colours. The empty text shows when the level or subject has no SP.
  */
 import { computed } from 'vue'
 
 import { DsHeatGrid, DsPanel, type HeatRow } from '@/ds'
 
 import type { HeatmapBidang, HeatmapSp } from '../../api/school-admin'
-import { LEGEND, tileTitle } from './dskp-status'
+import { BANDS, tileTitle } from './dskp-status'
 
 const props = defineProps<{ caption: string | null; bidang: HeatmapBidang[]; empty: boolean }>()
 
@@ -71,8 +71,7 @@ function titleOf(rowId: string, column: number): string {
           :columns="columns"
           :rows="rows"
           label="Peta DSKP mengikut Bidang dan Standard Pembelajaran"
-          low-label="Lemah (<50%)"
-          high-label="Mahir (75%+)"
+          :bands="[...BANDS]"
           no-data-label="Belum Cuba"
           data-testid="dh-tiles"
         >
@@ -82,9 +81,6 @@ function titleOf(rowId: string, column: number): string {
         </DsHeatGrid>
       </template>
 
-      <ul class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted" data-testid="dh-legend">
-        <li v-for="l in LEGEND" :key="l.status">{{ l.label }}</li>
-      </ul>
     </div>
   </DsPanel>
 </template>
