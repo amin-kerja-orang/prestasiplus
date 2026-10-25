@@ -248,6 +248,29 @@ describe('S1 PrestasiSekolahPage', () => {
     expect(tr(w, 'trend-row-2026').text()).toContain('Tiada data')
   })
 
+  it.each([
+    ['admin', '/analisa-item/kelas'],
+    ['teacher', '/analisa-item/sekolah'],
+    ['school_admin', '/analisa-item/sekolah'],
+    ['student', '/analisa-item/sekolah'],
+  ] as const)(
+    'the "Analisa Item" quick link for %s goes to %s (the admin has no own school, SW5-15)',
+    async (role, href) => {
+      useSessionStore().setSession({
+        token: 't',
+        remember: false,
+        expiresAt: '2099-01-01T00:00:00+08:00',
+        user: { id: 2, role, landingPath: '/dashboard' } as never,
+      })
+      api.fetchSchoolPerformance.mockResolvedValue(S1)
+      const w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
+      const link = w
+        .findAll('[data-testid=quick-nav] a')
+        .find((a) => a.text().includes('Analisa Item'))
+      expect(link?.attributes('href')).toBe(href)
+    },
+  )
+
   it('shows the load-error box with a retry button', async () => {
     api.fetchSchoolPerformance.mockRejectedValue(
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' }),
@@ -513,7 +536,7 @@ describe('S9 AnalisaItemSekolahPage', () => {
     expect(t(w, 'school-empty').text()).not.toContain('latihan.')
   })
 
-  it('Admin Pusat (no school): the own-school 404 is the "Tiada Data Pelajar" state, not the 404 page (A6)', async () => {
+  it('a viewer without a school (not the admin, whom the route refuses): the own-school 404 is the "Tiada Data Pelajar" state, not the 404 page (A6, DV-M08-41)', async () => {
     api.fetchSchoolItemAnalysis.mockRejectedValue(
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),
     )

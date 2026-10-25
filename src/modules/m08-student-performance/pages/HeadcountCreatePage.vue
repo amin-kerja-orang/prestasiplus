@@ -14,6 +14,7 @@ import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel } from '@/ds'
 
 import { createHeadcount, fetchHeadcountFormOptions } from '../api/headcount'
 import type { HeadcountMode } from '../api/headcount-types'
+import { headcountActionError } from '../lib/headcount/error-text'
 import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
 
 const router = useRouter()
@@ -97,10 +98,9 @@ async function submit() {
   } catch (err) {
     if (isApiError(err) && err.fields !== undefined && Object.keys(err.fields).length > 0) {
       messages.value = Object.values(err.fields)
-    } else if (isApiError(err) && (err.status === 409 || err.status === 422)) {
-      messages.value = [err.message]
     } else {
-      messages.value = [LOAD_ERROR]
+      // A 409/422 shows the headcount service's BM message; generic English and transport texts do not (SWE).
+      messages.value = [headcountActionError(err)]
     }
   } finally {
     submitting.value = false

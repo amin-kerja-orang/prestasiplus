@@ -14,6 +14,7 @@ import { importUsers } from '../../api/imports'
 import {
   createAdminUser,
   fetchAdminUser,
+  fetchAdminUsers,
   rolesAfterEdit,
   updateAdminUser,
   type UpdateAdminUserRequest,
@@ -143,6 +144,35 @@ describe('http mode', () => {
     expect(u.id).toBe('45')
   })
 
+  it('list: maps roles[] to the first role per row (SW2-01), keeps string ids and the meta', async () => {
+    const row = (id: string, roles: string[]) => ({
+      id,
+      name: `Pengguna ${id}`,
+      email: `u${id}@example.test`,
+      username: null,
+      phone: null,
+      roles,
+      school: { id: '2', name: 'SEKOLAH CONTOH' },
+      isActive: true,
+      isSuspended: false,
+      createdAt: '2026-09-21T10:00:00+08:00',
+      avatarUrl: null,
+    })
+    respond = () => ({
+      status: 200,
+      headers: {},
+      body: {
+        data: [row('11', ['school_admin', 'teacher']), row('12', ['student']), row('13', [])],
+        meta: { page: 1, pageSize: 25, totalItems: 3, totalPages: 1, roleCounts: { student: 1 } },
+      },
+    })
+    const result = await fetchAdminUsers()
+    expect(result.data.map((u) => u.role)).toEqual(['school_admin', 'student', 'unmapped'])
+    expect(result.data.map((u) => u.id)).toEqual(['11', '12', '13'])
+    expect(result.data[0]).toMatchObject({ roles: ['school_admin', 'teacher'] })
+    expect(result.meta.totalItems).toBe(3)
+  })
+
   it('update: PUTs the whole role list, no password pair, no subscription fields, resetPassword and string ids', async () => {
     respond = () => ({
       status: 200,
@@ -266,6 +296,17 @@ describe('http mode', () => {
 })
 
 describe('mock mode (unchanged shapes)', () => {
+  it('list rows are returned as the mock sent them', async () => {
+    const rows = [{ id: 1, name: 'A', role: 'teacher' }]
+    respond = () => ({
+      status: 200,
+      headers: {},
+      body: { data: rows, meta: { page: 1, pageSize: 25, totalItems: 1, totalPages: 1 } },
+    })
+    const result = await fetchAdminUsers()
+    expect(result.data).toEqual(rows)
+  })
+
   it('create keeps role and the password pair', async () => {
     respond = () => ({ status: 201, headers: {}, body: { data: { id: 1 }, status: 'ok' } })
     await createAdminUser({
