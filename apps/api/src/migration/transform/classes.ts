@@ -52,6 +52,16 @@ export function transformClassroom(row: Staged, parents: ClassroomParents): Outc
 }
 
 /**
+ * SW7-01 (mirrors migration 0090): a teacher class (`kind = 'classroom'`) whose source has NO school takes its teacher's v2 school,
+ * so the school admin can see it. A school class, a class that has its own school, or a teacher without a school is returned as is.
+ * Pure; the loader reads the teacher's school.
+ */
+export function withTeacherSchool(values: ClassroomValues, teacherSchoolId: string | null | undefined): ClassroomValues {
+  if (values.kind !== 'classroom' || values.school_id !== null || !teacherSchoolId) return values
+  return { ...values, school_id: teacherSchoolId }
+}
+
+/**
  * The grade (1..11) of a class, T-09: an explicit `Darjah / Tahun / Tingkatan / Form N` in its name wins;
  * otherwise the most common grade of its pupils (derived from their class labels by the user transform);
  * a tie goes to the lower grade. Null when neither exists.

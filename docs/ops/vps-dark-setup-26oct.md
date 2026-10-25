@@ -1,12 +1,13 @@
 # Run sheet A3: production VPS set up dark, 26 Oct 2026
 
 - **Status:** docs only. Nothing in this sheet has been run on any server. No server was reachable when it was written.
+- **Re-checked against the tip `9924a2f6` on 24 Oct** (PR `[PC-5]`). Steps 0, 1b, 1c, 3 and 8, the "Script gaps" table and the "Where the plan and the scripts disagree" list were written at `515e440f`, before #123, #125 and #166 merged and before `deploy/vps/db-roles.sh` existed; they are corrected here. The command-by-command sheet with the measured timings of a local rehearsal is [vps-dark-26oct-runsheet.md](vps-dark-26oct-runsheet.md) — **follow that one on the night** and use this sheet for the evidence table and the open questions.
 - **Owner:** half AZ DevOps prepares this sheet. The LEAD runs each step by hand on the production VPS (half AZ DevOps may sit next to the LEAD). Every step that changes the server needs the LEAD's explicit go first; this sheet is the list of steps, not the permission.
 - **Plan:** [v2-cutover-plan.md](v2-cutover-plan.md) step **A3** (section 4.1), preconditions **P3, P4, P5** (section 3), 3.1, section 6 (rollback), section 7 (retention). The 28 Oct sheet is [pre-night-28oct.md](pre-night-28oct.md).
 - **Runbook behind it:** [production-vps.md](production-vps.md) sections 4, 6, 7, 9, 12, 14, 15, 16, 20; [db-backup.md](db-backup.md); [api-runbook.md](api-runbook.md) sections 2, 6, 10, 13.
-- **Refs read when writing:** branch `feature/v2-backend` at `515e440f`; PR #166 head `bf016ba0` (migration slot: `slot.sh`, `restore-point.sh`, `pitr.sh`, PITR settings, pointer page); PR #186 head `f60303be` (runbook section 21); PR #164 head `95994f1b`; PR #203 head `ed0d8c77` (malware scan, not merged); PR #123 head `3b196b43` (`migrate:*`); PR #125 head `d9562dc8` (`dump:*`).
+- **Refs read when writing:** branch `feature/v2-backend` at `515e440f`, re-checked at `9924a2f6` (migrations 0043/0044 from QLOAD; #123, #125 and #166 merged); PR #166 head `bf016ba0` (migration slot: `slot.sh`, `restore-point.sh`, `pitr.sh`, PITR settings, pointer page); PR #186 head `f60303be` (runbook section 21); PR #164 head `95994f1b`; PR #203 head `ed0d8c77` (malware scan, not merged); PR #123 head `3b196b43` (`migrate:*`); PR #125 head `d9562dc8` (`dump:*`).
 - **Abort rule (plan A3):** anything missing at the end: tell the LEAD on 27 Oct. Do not improvise a fix in production, and do not edit a script on the server.
-- **Placeholders used (public repo):** `<domain>` (public host name), `<vps-host>`, `<db>` (the `POSTGRES_DB` value), `<release_sha>` (the sha pinned at A2), `<bucket>`, `<s3_profile>`, `<migration_role>`, `<stage_role>`. Real values stay on the server and in the LEAD's password manager. Never paste a secret value into the issue.
+- **Placeholders used (public repo):** `<domain>` (public host name), `<vps-host>`, `<db>` (the `POSTGRES_DB` value), `<release_sha>` (the sha pinned at A2), `<bucket>`, `<s3_profile>`. The P3 role names are fixed in `deploy/vps/lib.sh` (`pp_owner`, `pp_app`, `pp_etl`, `pp_stager`) and are not secrets, so they are written out. Real values stay on the server and in the LEAD's password manager. Never paste a secret value into the issue.
 
 ## How to read a step
 
@@ -49,10 +50,10 @@ ls -d apps/api/prisma/migrations/*/ | wc -l
 **Expected output**
 
 - `git rev-parse HEAD` prints the 40-hex sha, equal to `<release_sha>` of A2.
-- `ls` lists the four files (they come from PR #166, `bf016ba0`).
-- The next two `grep -c` print `1` (`migrate:all` is from PR #123; `admin:bootstrap` is on `feature/v2-backend`).
+- `ls` lists the four files (merged from PR #166; they were still in that PR at `515e440f`).
+- The next two `grep -c` print `1` (`migrate:all` merged from PR #123; `admin:bootstrap` is on `feature/v2-backend`).
 - The `MALWARE_SCAN` count prints `0` (PR #203 is not in the release; see step 5).
-- The last line is the migration folder count at the release sha. Write it down: **N = ____** (it was 36 at `515e440f`).
+- The last line is the migration folder count at the release sha. Write it down: **N = ____** (it is **38** at `9924a2f6`: 36 at `515e440f` plus `0043_questions_legacy_columns` and `0044_question_draw_indexes` from QLOAD. A newer tip can be higher; the number itself is never the check — step 7 compares it with the applied count).
 
 **STOP if**
 
@@ -110,7 +111,12 @@ sudo install -m 640 -o root -g ppdeploy deploy/vps/db.env.example /etc/pretasipl
 sudoedit /etc/pretasiplus/prod.env
 sudoedit /etc/pretasiplus/api.env
 sudoedit /etc/pretasiplus/db.env
+# P3 least-privilege roles: migrate.env (pp_owner) and etl.env (pp_etl), and the pp_app URL in api.env.
+# This writes generated passwords; never type a DATABASE_URL by hand. Run it AFTER db.env has its real POSTGRES_DB.
+sudo deploy/vps/db-roles.sh secrets
 ```
+
+`db-roles.sh secrets` is **not optional**: `deploy.sh` refuses to run without `migrate.env` and `etl.env` (see 1c). It is idempotent — a second run prints `DATABASE_URL for <role> kept` three times and changes nothing.
 
 In `prod.env` the LEAD sets at least: `PP_DOMAIN`, `PP_LETSENCRYPT_EMAIL`, `PP_PG_ARCHIVE_MODE=on` (already the example value in #166), `PP_PROFILES=` (empty or `monitoring`, never `clamav`; step 5), `PP_JOBS_WORKER_ENABLED=true` (step 4). Choose the size profile of production-vps.md section 13.
 
@@ -120,9 +126,15 @@ In `prod.env` the LEAD sets at least: `PP_DOMAIN`, `PP_LETSENCRYPT_EMAIL`, `PP_P
 stat -c '%a %U:%G %n' /etc/pretasiplus/*.env
 ```
 
-prints `640 root:ppdeploy` for `api.env`, `db.env` and `prod.env`.
+prints `640 root:ppdeploy` for all **five** files: `api.env`, `db.env`, `prod.env`, `migrate.env` and `etl.env`. The `DATABASE_URL` user in each (names only, no values):
 
-**STOP if** a file shows another mode or owner (`deploy.sh` also refuses it), or the folder `/var/backups/pretasiplus/wal` is not owned by uid 70 (`stat -c '%u' /var/backups/pretasiplus/wal` must print `70`; `deploy.sh` refuses a deploy otherwise when PITR is on).
+```
+for f in api.env migrate.env etl.env; do printf '%-12s ' "$f"; sudo sed -n 's|^DATABASE_URL=postgresql://\([a-z_]*\):.*|\1|p' /etc/pretasiplus/$f; done
+```
+
+prints `pp_app`, `pp_owner`, `pp_etl` in that order.
+
+**STOP if** a file shows another mode or owner (`deploy.sh` also refuses it), fewer than five files exist, a `DATABASE_URL` user is not the role above, or the folder `/var/backups/pretasiplus/wal` is not owned by uid 70 (`stat -c '%u' /var/backups/pretasiplus/wal` must print `70`; `deploy.sh` refuses a deploy otherwise when PITR is on).
 
 Evidence: ____
 
@@ -140,6 +152,15 @@ deploy/vps/deploy.sh --dry-run
 
 - The first lines: `---- 1/9 preflight (tag <sha12>, domain <domain>, env dir /etc/pretasiplus) ----`.
 - **The only failure is the certificate line:** `PREFLIGHT FAILED: cannot read the certificate for <domain> (missing, ...): run deploy/vps/tls/init-cert.sh first (runbook section 6)`, followed by `preflight found 1 problem(s); nothing was changed`, exit 1. (The runbook text says `no certificate for ...`; the script's own wording is the one above.)
+- **If `db-roles.sh secrets` was skipped in 1b**, the preflight stops earlier and prints two different lines instead, and never reaches the certificate check at all (verified against `9924a2f6`):
+
+  ```
+  PREFLIGHT FAILED: env file missing or unreadable: /etc/pretasiplus/migrate.env (create it with: sudo deploy/vps/db-roles.sh secrets)
+  PREFLIGHT FAILED: env file missing or unreadable: /etc/pretasiplus/etl.env (create it with: sudo deploy/vps/db-roles.sh secrets)
+  ERROR: preflight found 2 problem(s); nothing was changed
+  ```
+
+  That is **not** a no-go: run `sudo deploy/vps/db-roles.sh secrets` (1b) and run the dry run again.
 - Warnings are allowed for now: `WARN: PP_OFFSITE_KIND=none: backups stay on this server only` (until step 9) and `WARN: PP_HEALTHCHECK_PING_URL is empty ...` (until step 12).
 - The tag in the first line is the first 12 characters of `<release_sha>`.
 
@@ -230,12 +251,12 @@ Evidence: ____
 
 ## Step 3. Secrets (precondition P5): names only, never values
 
-The secret store on this host is `/etc/pretasiplus/{api,db,prod}.env` (root:ppdeploy, mode 640) plus the LEAD's password manager (production-vps.md section 12). The plan says "platform secret store"; this stack has no other store.
+The secret store on this host is `/etc/pretasiplus/{api,db,prod,migrate,etl}.env` (root:ppdeploy, mode 640) plus the LEAD's password manager (production-vps.md section 12). The plan says "platform secret store"; this stack has no other store. `migrate.env` and `etl.env` hold one key each, written by `db-roles.sh secrets` (step 1b), never by hand.
 
 **Command: list the key names that exist (the sed prints a name only when the line is `NAME=...`; it can never print a value)**
 
 ```
-for f in api.env db.env prod.env; do echo "== $f"; sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' /etc/pretasiplus/$f | sort; done
+for f in api.env db.env prod.env migrate.env etl.env; do echo "== $f"; sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' /etc/pretasiplus/$f | sort; done
 ```
 
 **Command: presence and absence counts (grep -c prints a number, not a line)**
@@ -251,16 +272,16 @@ cd /opt/pretasiplus && grep -n 'FILE_STORAGE_DIR' deploy/vps/compose.prod.yaml
 
 **Expected output**
 
-- The first four counts are `1`; the db.env counts are `1`.
+- The first four counts are `1`; the db.env counts are `1`. `migrate.env` and `etl.env` each hold exactly one `DATABASE_URL` and no other key.
 - The six "any env file" counts are `0`, and the `env | grep -c` line prints `0`. These names are set **per run only**, by `slot.sh etl` (`PP_MIGRATE_TARGET_DB` on every run, `PP_ALLOW_MIGRATE_APPLY` only when `--apply` is on the line, `PP_ALLOW_MIGRATE_ROLLBACK` only for `migrate:rollback`); a permanent entry would defeat the guards.
 - The `FILE_STORAGE_DIR` line is the compose overlay forcing `/var/lib/pretasiplus/files` for the api (not an env-file entry).
-- `deploy.sh --dry-run` (step 1c) already checks: `SESSION_SECRET` and `IC_HASH_KEY` are 32+ characters and different, `DATABASE_URL` equals `db.env`, no placeholder.
+- `deploy.sh --dry-run` (step 1c) already checks: `SESSION_SECRET` and `IC_HASH_KEY` are 32+ characters and different; each `DATABASE_URL` names its own P3 role (`api.env`→`pp_app`, `migrate.env`→`pp_owner`, `etl.env`→`pp_etl`) on host `db` with the `POSTGRES_DB` of `db.env`; the three passwords differ from each other **and** from `POSTGRES_PASSWORD`; `POSTGRES_USER` is none of the role names; no placeholder.
 
 **Confirmation lines (the LEAD writes yes or no and the date; no values)**
 
 | Name | Rule | Confirmed |
 |---|---|---|
-| `DATABASE_URL` | in `api.env`; user, password and database equal `db.env` (`deploy.sh` checks); not the same string as any other secret | ____ |
+| `DATABASE_URL` | one per role file: `api.env`→`pp_app`, `migrate.env`→`pp_owner`, `etl.env`→`pp_etl`; same host (`db`) and database as `db.env`; each password 32-128 URL-safe characters, all three different from each other and from `POSTGRES_PASSWORD` (`deploy.sh` checks all of it). Written by `db-roles.sh secrets`, never typed | ____ |
 | `IC_HASH_KEY` | in `api.env`; **one value for the life of the system; never rotated, never deleted**; the LEAD holds a copy outside the server (a different key changes every IC hash; a restore without `IC_HASH_KEY` and `SESSION_SECRET` is not a full restore) | LEAD has a copy: ____ |
 | `PP_MIGRATE_TARGET_DB` | not stored; `slot.sh etl` sets it per run from `POSTGRES_DB` | absent: ____ |
 | `PP_ALLOW_MIGRATE_APPLY` | not stored; per run only, with `--apply` | absent: ____ |
@@ -436,114 +457,85 @@ Evidence: applied = ____, folders = ____, unfinished = ____, ready = ____
 
 ---
 
-## Step 8. P3 database roles (manual SQL, not a repo script)
+## Step 8. P3 database roles (`deploy/vps/db-roles.sh`, already run by the deploy)
 
-**Status: Perlu pengesahan** (plan P3: half AZ creates the roles; the LEAD confirms). No script in the repo creates these roles; the SQL below is a template written for this sheet, and the names are placeholders. Do not run it until the LEAD gives the go (Q1), and read "What the repo scripts do not do" first.
+**This step changed on `9924a2f6`.** The roles are no longer hand-written SQL: `deploy/vps/db-roles.sh` and `deploy/vps/db-roles/{apply,check}.sql` create and prove them, and **`deploy.sh` already ran `apply` (step 4), `apply` again and `check` (step 5) during step 6a** — a failed `check` stops a deploy before the api switches. So by the time you reach this step the four roles exist. What is left here is to read the evidence and paste it.
 
-What P3 asks for:
+The four fixed roles (`deploy/vps/lib.sh`; none is a superuser, none has CREATEDB / CREATEROLE / REPLICATION / BYPASSRLS, none is a member of any role):
 
-- a **migration role** for `migrate:*`: not a superuser, not the API role; read on `staging_cloud` and `archive_cloud`; read and write on the v2 tables the ETL writes and on `etl_*`; USAGE on the schemas it uses; USAGE and UPDATE on the sequences of the tables it writes; no other DDL;
-- a **stage-only role**, run by half AZ: CREATE and DROP on `staging_cloud` and `archive_cloud` only, no access to `public` or to the v2 tables;
-- `prisma migrate deploy` runs as the **schema owner role** (half AZ), which is neither of the above nor the API role;
-- the API role never gets access to `staging_cloud` or `archive_cloud`.
+| Role | Used by | Credentials in | Rights in short |
+|---|---|---|---|
+| `pp_owner` | the one-shot `migrate` service (`prisma migrate deploy`, the reference seed) | `migrate.env` | owns the database, schema `public` and every object in it; the only DDL in `public` |
+| `pp_app` | the API | `api.env` | CONNECT, USAGE on `public`, SELECT/INSERT/UPDATE/DELETE on every table (`_prisma_migrations`: SELECT only), USAGE/SELECT/UPDATE on every sequence, plus the owner's default privileges. No DDL, no TEMP, nothing on the stage schemas |
+| `pp_etl` | `migrate:*` through `slot.sh etl` | `etl.env` | the `pp_app` grants plus TEMP; USAGE and SELECT on `staging_cloud` and `archive_cloud`, UPDATE on `archive_cloud` |
+| `pp_stager` | `slot.sh copy` and the section 7 drops | none — **no password**, local socket in the db container only | CONNECT and CREATE on the database (so it can create and then own the two stage schemas). Nothing on `public` |
 
-**What the repo scripts do not do (read before running; details in Q2 to Q4)**
-
-1. As shipped, the API, the `migrate` job (so `prisma migrate deploy` and every `slot.sh etl` command) and `slot.sh copy` all connect as **one role**: the `POSTGRES_USER` of `db.env`. `deploy.sh` even refuses a `DATABASE_URL` whose user differs from `POSTGRES_USER`. The Postgres image makes that role a **superuser**. So the schema owner, the API role and the migration role are the same superuser, and a separate migration role is not used by any script.
-2. `slot.sh copy` drops and recreates `staging_cloud` and `archive_cloud` (`pg_restore --no-acl`), so grants on those schemas are **lost at every copy**. They can only be given after the copy.
-3. PostgreSQL has no "DROP on a schema" privilege: dropping needs ownership. The stage-only role below can create the schemas (CREATE on the database) and then owns them.
+The bootstrap `POSTGRES_USER` of `db.env` stays the cluster superuser and is used only by the ops scripts inside the db container (`db-roles.sh`, `backup.sh`, `restore-drill.sh`, a manual restore). `deploy.sh` refuses a `POSTGRES_USER` that is one of the four role names, and refuses a `DATABASE_URL` that does not name its own role.
 
 ### 8a. Show the facts first (read-only)
 
 **Command**
 
 ```
-pq "select rolname, rolsuper, rolcreaterole, rolcreatedb, rolcanlogin from pg_roles where rolname = current_user"
+pq "select rolname, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls, rolcanlogin from pg_roles where rolname in ('pp_owner','pp_app','pp_etl','pp_stager') order by 1"
 pq "select tableowner, count(*) from pg_tables where schemaname = 'public' group by 1"
-```
-
-**Expected output:** the role name is the `POSTGRES_USER` value; `rolsuper` is `t` as shipped (target for P3: the API role is not a superuser). The owner column shows the one owner of all `public` tables. **Record both as text.** `t` is not a reason to edit anything: it is the known gap Q2. Tell the LEAD on 27 Oct.
-
-Evidence: ____
-
-### 8b. Create the roles (template; run only after the LEAD's go)
-
-Open an interactive session in the production database as the bootstrap role (the passwords are typed at the `\password` prompt, never on a command line and never in a file):
-
-```
-$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-```
-
-Then paste (replace `<db>`, `<migration_role>`, `<stage_role>`; `<schema_owner_role>` is the role that runs `prisma migrate deploy`, which is the `POSTGRES_USER` value as shipped):
-
-```sql
--- NOT a repo script. Template written for run sheet A3 (plan P3). No passwords in this text.
-create role <migration_role> login nosuperuser nocreatedb nocreaterole noreplication nobypassrls;
-\password <migration_role>
-create role <stage_role> login nosuperuser nocreatedb nocreaterole noreplication nobypassrls;
-\password <stage_role>
-
--- migration role: v2 tables (wide form; narrowing to the ETL tables is Q3)
-grant connect on database <db> to <migration_role>;
-grant usage on schema public to <migration_role>;
-grant select, insert, update, delete on all tables in schema public to <migration_role>;
-grant usage, select, update on all sequences in schema public to <migration_role>;
--- tables created by later migrations: the schema owner's default privileges
-alter default privileges for role <schema_owner_role> in schema public grant select, insert, update, delete on tables to <migration_role>;
-alter default privileges for role <schema_owner_role> in schema public grant usage, select, update on sequences to <migration_role>;
-
--- stage-only role: may create the two schemas (and then owns them); no grant on public or any v2 table
-grant connect, create on database <db> to <stage_role>;
-```
-
-The read grants of the migration role on the stage schemas **cannot be given today**, because `staging_cloud` and `archive_cloud` do not exist until the copy (night step B5) and the copy recreates them. After a copy they would be:
-
-```sql
--- run only after `slot.sh copy`; lost again at the next copy (Q4)
-grant usage on schema staging_cloud, archive_cloud to <migration_role>;
-grant select on all tables in schema staging_cloud, archive_cloud to <migration_role>;
-```
-
-Do **not** pre-create the two schemas: `restore-point.sh take pre_etl` refuses when `staging_cloud` exists (`pre_etl must hold no .cloud data, but schema staging_cloud exists`).
-
-**Expected output:** `CREATE ROLE` twice, `Enter new password for user ...` twice (typed twice each, not echoed), then `GRANT` / `ALTER DEFAULT PRIVILEGES` lines without `ERROR`.
-
-**STOP if** any `ERROR` appears (stop pasting; tell the LEAD; a half-created role can be dropped with `drop owned by <role>; drop role <role>;` only with the LEAD's go).
-
-Evidence (role names and the grant text exactly as run, no passwords): ____
-
-### 8c. Role facts and the denied checks as the stage-only role
-
-**Command** (read-only; `set local role` makes the superuser session act as the stage role inside a rolled-back transaction, so no password is needed)
-
-```
-pq "select rolname, rolsuper, rolcreaterole, rolcreatedb, rolcanlogin from pg_roles where rolname in ('<migration_role>', '<stage_role>') order by 1"
-$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' <<'SQL'
-begin; set local role <stage_role>; select count(*) from public.users; rollback;
-begin; set local role <stage_role>; insert into public.users default values; rollback;
-SQL
+pq "select rolname, rolsuper from pg_roles where rolname = (select usename from pg_user where usesuper limit 1)"
 ```
 
 **Expected output**
 
-- Both roles show `f|f|f|t` (not superuser, no CREATEROLE, no CREATEDB, can log in).
-- The `select` prints `ERROR:  permission denied for table users` (a "permission denied for schema public" is also acceptable).
-- The `insert` prints `ERROR:  permission denied for table users`.
-- Paste both error lines as the P3 evidence ("a denied `select` and a denied `insert`, as text").
+- Four rows, one per role, every column `f` except `rolcanlogin` = `t`.
+- One owner line only: `pp_owner | <N>` (N is the public table count; it was **197** at `9924a2f6`). A second owner means something was created outside `migrate` — tell the LEAD.
+- The superuser line is the `POSTGRES_USER` value, not one of the four roles.
 
-**STOP if** either statement succeeds (a count or `INSERT 0 1` appears): the stage-only role can reach `public`. Run `revoke all on all tables in schema public from <stage_role>;` only with the LEAD's go, repeat the check, and tell the LEAD. If it still succeeds, do not continue to the 28 Oct sheet.
+**STOP if** a role is missing, any attribute other than `rolcanlogin` is `t`, or a `public` table is owned by anything but `pp_owner`. Do not hand-write SQL: run `deploy/vps/db-roles.sh apply` and then `check`.
 
-Evidence: ____
+Evidence: roles ____, public owner ____ / ____ tables, superuser is POSTGRES_USER: ____
 
-### 8d. The API role and the stage schemas
+### 8b. The proof run (`db-roles.sh check`)
+
+This is the P3 evidence. It is read-only: every SQL probe runs `AS` the role inside a block that is rolled back, and the login probes only log in.
+
+**Command**
+
+```
+deploy/vps/db-roles.sh check
+```
+
+**Expected output:** one `PASS | <role> | <probe> | <detail>` line per probe and a final `DB ROLES CHECK PASSED: <n> probes`. Before any `slot.sh copy` (so with no stage schemas) there are **44 probes**: 38 SQL probes + 3 network logins (`pp_app`, `pp_owner`, `pp_etl`, each `logged in, not a superuser`) + the `pp_app` TEMP-table refusal + the `pp_stager` network refusal + the `pp_stager` local-socket login. With both stage schemas present it is **50** (6 more SQL probes). The exact count is not the check — **no `FAIL` line and exit 0** is.
+
+Lines worth reading out loud, all of which were `PASS` in the 24 Oct local rehearsal on the same schema (PR `[PC-5]`):
+
+```
+PASS | app   | _prisma_migrations read-only | select=t insert=f update=f delete=f
+PASS | app   | CREATE TABLE in public -> expect denied | denied: permission denied for schema public
+PASS | app   | CREATE TEMP TABLE -> expect denied | denied: permission denied for schema pg_temp_N
+PASS | app   | TRUNCATE public.users -> expect denied | denied: permission denied for table users
+PASS | etl   | CREATE TABLE in public -> expect denied | denied: permission denied for schema public
+PASS | etl   | CREATE TEMP TABLE -> expect allowed | allowed
+PASS | stage | SELECT on public.users -> expect denied | denied: permission denied for schema public
+PASS | owner | owns every public table and sequence | objects owned by another role: 0 of 378
+PASS | owner | owns the database | owner: pp_owner
+PASS | stage | network login as pp_stager | refused (no password)
+```
+
+**STOP if** any line starts with `FAIL`, or the script exits non-zero (`DB ROLES CHECK FAILED: <k> of <n> probes`). The fix is `deploy/vps/db-roles.sh apply` followed by `check` again — never hand-written GRANTs. If a `FAIL` survives one `apply`, stop and tell the LEAD: do not continue to the 28 Oct sheet.
+
+Evidence: probes ____ , FAIL lines ____ , exit ____
+
+### 8c. The stage schemas are not pre-created
+
+The `pp_etl` read rights on `staging_cloud` and `archive_cloud` need no action tonight and are **not** lost at a copy any more: `slot.sh copy` runs `db-roles.sh apply` before the drop and again after the restore, and `apply.sql` carries a default-privileges rule for what `pp_stager` creates, so the migration role can read a fresh copy at once.
 
 **Command (read-only)**
 
 ```
-pq "select rolname, rolsuper from pg_roles where rolname = current_user"
+pq "select count(*) from information_schema.schemata where schema_name in ('staging_cloud','archive_cloud')"
 ```
 
-**Expected output (target):** the API role is not a superuser and has no privilege on `staging_cloud` or `archive_cloud`. **As shipped:** `rolsuper` is `t`, so this P3 line cannot be met by the scripts today (Q2). Record the actual answer. The schemas do not exist yet, so a privilege check cannot run today; after the first copy, this query shows the truth: `select has_schema_privilege(current_user, 'staging_cloud', 'USAGE')` (a superuser answers `t`).
+**Expected output:** `0`. Do **not** pre-create them: `restore-point.sh take pre_etl` refuses when `staging_cloud` exists (`pre_etl must hold no .cloud data, but schema staging_cloud exists`).
+
+**STOP if** the count is not `0`: a stage schema exists before the migration night. Tell the LEAD.
 
 Evidence: ____
 
@@ -791,36 +783,36 @@ One line each: question, plan reference, **default in force** if the LEAD does n
 
 ## Script gaps
 
-Every script or command named in this sheet that is not on `feature/v2-backend` (`515e440f`), and where it lives. "Not found anywhere" means no fetched ref (`feature/v2-backend`, PRs #123, #125, #164, #166, #186, #203) has it; nothing was invented.
+**Re-checked against `9924a2f6` on 24 Oct (PR `[PC-5]`).** Most of the table below was written at `515e440f`, when #123, #125 and #166 were still open. They are merged: the rows marked **ON THE TIP** are no longer gaps and need no workaround. Only the rows still marked "Not found" are open.
 
 | Named in the sheet | Where it lives |
 |---|---|
-| `deploy/vps/migration/slot.sh`, `restore-point.sh`, `pitr.sh` | Only in open PR #166 (`bf016ba0`) |
-| `deploy/cutover/pointer-page/render.sh` and `index.template.html` | Only in open PR #166 |
-| PITR settings: `PP_PG_ARCHIVE_MODE`, `PP_PG_ARCHIVE_TIMEOUT`, `PP_WAL_ARCHIVE_DIR`, `PP_STAGE_*`, `PP_MIGRATION_OUT` in `.env.prod.example`; the `archive_*` flags and `/walarchive` mount in `compose.prod.yaml`; the WAL-folder check in `deploy.sh` | Only in PR #166. (`deploy/vps/.env.prod.example` itself exists on `feature/v2-backend`; only these keys are new.) |
-| `PP_BACKUP_EXCLUDE_SCHEMAS` and the `schemas left out:` log text of `backup.sh` | Only in PR #166 |
-| `docs/ops/production-migration-slot.md` | Only in PR #166 |
-| `npm run migrate:all`, `migrate:delta`, `migrate:verify`, `migrate:rollback`, `migrate:link-questions`, `migrate:export-question-reports`, `migrate:archive-minimise` | Only in PR #123 (`feature/v2-backend` has `migrate:core` only) |
-| `npm run dump:check`, `dump:cloud`, `dump:produce`, `dump:wipe`, `dump:grants` | Only in PR #125 |
-| `npm run admin:bootstrap -w @pp/api` (AZ-36) | **In code on `feature/v2-backend`.** Its runbook text (section 21) is only in PR #186; production-vps.md on `feature/v2-backend` still says there is no command |
+| `deploy/vps/migration/slot.sh`, `restore-point.sh`, `pitr.sh` | **ON THE TIP** (was PR #166) |
+| `deploy/cutover/pointer-page/render.sh` and `index.template.html` | **ON THE TIP** (was PR #166) |
+| PITR settings: `PP_PG_ARCHIVE_MODE`, `PP_PG_ARCHIVE_TIMEOUT`, `PP_WAL_ARCHIVE_DIR`, `PP_STAGE_*`, `PP_MIGRATION_OUT` in `.env.prod.example`; the `archive_*` flags and `/walarchive` mount in `compose.prod.yaml`; the WAL-folder check in `deploy.sh` | **ON THE TIP** (was PR #166) |
+| `PP_BACKUP_EXCLUDE_SCHEMAS` and the `schemas left out:` log text of `backup.sh` | **ON THE TIP** (was PR #166). Verified 24 Oct: a dump taken with the default `staging_cloud` holds 0 `staging_cloud` entries and keeps `archive_cloud` |
+| `docs/ops/production-migration-slot.md` | **ON THE TIP** (was PR #166) |
+| `npm run migrate:all`, `migrate:delta`, `migrate:verify`, `migrate:rollback`, `migrate:link-questions`, `migrate:export-question-reports`, `migrate:archive-minimise`, `migrate:questions` | **ON THE TIP** (was PR #123). All eight are in `slot.sh etl`'s allow-list |
+| `npm run dump:check`, `dump:cloud`, `dump:produce`, `dump:wipe`, `dump:grants` | Only in PR #125 (still open at `9924a2f6`) — the 28/29 Oct sheets need it, this sheet does not |
+| `npm run admin:bootstrap -w @pp/api` (AZ-36) | **In code on the tip.** Its runbook text (section 21) is only in PR #186; production-vps.md on the tip still says there is no command |
 | `docker compose ... run ... migrate npm run admin:bootstrap` check of an installed image | Needs the `migrate` image built from the release; not run |
-| Creating `<migration_role>` and `<stage_role>` | Not found anywhere. The SQL in step 8b is a manual template written for this sheet, not a repo script |
-| A setting or script that closes registration | Not found anywhere |
-| An edge allow-list / "dark" switch | Not built (PR #166 section 10 point 3 says so) |
+| Creating the P3 roles | **ON THE TIP**: `deploy/vps/db-roles.sh` (`secrets`/`apply`/`check`) and `db-roles/{apply,check}.sql`, run by `deploy.sh` steps 4 and 5. Step 8 of this sheet was rewritten for it; the old manual SQL template is gone |
+| A setting or script that closes registration | **ON THE TIP**: `REGISTRATION_OPEN=false` in `api.env` (`deploy.sh` warns when it is unset, because unset means OPEN); the 30 Oct switch is runbook section 16 |
+| An edge allow-list / "dark" switch | Not built (production-migration-slot.md section 10 point 3 says so) |
 | A setting that blocks pupil/teacher uploads while ClamAV is off | Not found anywhere. The malware scan is PR #203 (not merged) |
 | Restoring an off-site (S3) copy on a scratch host | No script; manual steps in 9e with `aws`, `gpg`, `sha256sum`, `pg_restore` |
 | Migration count stored in a restore point | Not found anywhere (`restore-point.sh` records time, name, file, sha256, bytes, raw flag, WAL position, operator) |
-| Giving the migration role grants on `staging_cloud`/`archive_cloud` after `slot.sh copy` | Not found anywhere |
-| `--files-dir` / `FILE_STORAGE_DIR` for `slot.sh etl` | Not supported by `slot.sh` (mounts only the reports volume) |
-| `migrate:archive-minimise` in `slot.sh etl` | Not in its allow-list |
+| Giving the migration role grants on `staging_cloud`/`archive_cloud` after `slot.sh copy` | **ON THE TIP**: `slot.sh copy` runs `db-roles.sh apply` before the drop and after the restore, and `apply.sql` sets default privileges for what `pp_stager` creates. Verified 24 Oct: with both stage schemas present, `pp_etl` reads them and `pp_app` is denied |
+| `--files-dir` / `FILE_STORAGE_DIR` for `slot.sh etl` | **ON THE TIP**: `--files-dir HOST_DIR` mounts the export read-only at `/files`, and with `--apply` it also mounts the api `apifiles` volume and sets `FILE_STORAGE_DIR` (cutover plan P5) |
+| `migrate:archive-minimise` in `slot.sh etl` | **ON THE TIP**: in the allow-list, and it gets `PP_ALLOW_MIGRATE_APPLY=1` in every mode |
 | The `.cloud` maintenance switch | Not found anywhere |
 | DNS change, TTL change, uptime-checker accounts, bucket lifecycle rule | Done in the provider consoles; no repo script |
 
 ## Where the plan and the scripts disagree
 
-1. **Roles (P3).** The plan wants three separate roles and an API role without access to the stage schemas. The scripts run everything as the Postgres bootstrap role (a superuser): `deploy.sh` requires `DATABASE_URL` user = `POSTGRES_USER`; the `migrate` service and `slot.sh etl` take `DATABASE_URL` from `api.env`; `slot.sh copy` uses the db container's own credentials.
-2. **Stage schemas and grants.** `slot.sh copy` drops and recreates the two schemas without ACLs, so P3's "read on `staging_cloud` and `archive_cloud`" cannot be set in advance and is lost at each copy. "CREATE and DROP on a schema" is not a PostgreSQL privilege (drop needs ownership).
-3. **Registration closed / dark (A3, P3).** No setting or edge rule exists for either.
+1. ~~**Roles (P3).**~~ **RESOLVED on the tip** (re-checked 24 Oct, PR `[PC-5]`). `deploy/vps/db-roles.sh` creates four non-superuser roles and `deploy.sh` now requires the opposite of what this item said: `api.env`→`pp_app`, `migrate.env`→`pp_owner`, `etl.env`→`pp_etl`, each with its own password, and `POSTGRES_USER` must **not** be one of them. `slot.sh copy` runs as `pp_stager`. See step 8.
+2. ~~**Stage schemas and grants.**~~ **RESOLVED on the tip.** `slot.sh copy` runs `db-roles.sh apply` before the drop and after the restore, and `apply.sql` carries default privileges for objects `pp_stager` creates, so `pp_etl`'s read access survives every copy. Dropping still needs ownership — which is why `pp_stager` creates and therefore owns the two schemas.
+3. **Dark (A3, P3).** No edge allow-list or "dark" switch exists. The registration half of this item is **resolved**: `REGISTRATION_OPEN=false` in `api.env` closes self-registration (403 `REGISTRATION_CLOSED`) and the 30 Oct switch opens it.
 4. **DNS switch vs the edge.** The edge serves only `PP_DOMAIN` and the first certificate needs the name to resolve to the VPS; a DNS switch of an existing public name on 30 Oct has no script for the certificate and host-name change.
 5. **Runbook vs script wording.** production-vps.md section 4 step 5 says the dry run fails with `no certificate for ...`; the script prints `cannot read the certificate for <domain> ...`. Section 4 step 11 and F1/F11 say there is no bootstrap command; the code has one.
 6. **F1 "T-1 check (cutover plan step A10)".** A10 is the old numbering; the current plan has no such step.

@@ -5,6 +5,8 @@ import {
   transformClassroom,
   transformEnrolment,
   transformParentLink,
+  withTeacherSchool,
+  type ClassroomValues,
 } from '../../../src/migration/transform/classes'
 import {
   buildGeo,
@@ -284,5 +286,21 @@ describe('school subscriptions', () => {
     expect(transformSubscription(sub, { ...base, schoolType: null })).toMatchObject({ ok: false, reject: { reason: 'UNSUPPORTED' } })
     expect(transformSubscription(sub, { ...base, schoolId: undefined })).toMatchObject({ ok: false, reject: { reason: 'ORPHAN_PARENT' } })
     expect(dateOnly('2026-03-04 00:00:00+00')).toBe('2026-03-04')
+  })
+})
+
+describe('withTeacherSchool (SW7-01, mirrors migration 0090)', () => {
+  const base: ClassroomValues = {
+    kind: 'classroom', name: 'K', teacher_id: '7', school_id: null, subject_id: null, education_level_id: '1',
+    academic_year: 2026, join_code: null, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
+  }
+  it('a teacher class with no school takes the teacher school; everything else is returned unchanged', () => {
+    expect(withTeacherSchool(base, '5')).toEqual({ ...base, school_id: '5' })
+    expect(withTeacherSchool(base, null)).toBe(base)
+    expect(withTeacherSchool(base, undefined)).toBe(base)
+    const own = { ...base, school_id: '2' }
+    expect(withTeacherSchool(own, '5')).toBe(own)
+    const schoolClass: ClassroomValues = { ...base, kind: 'school_class', teacher_id: null }
+    expect(withTeacherSchool(schoolClass, '5')).toBe(schoolClass)
   })
 })
