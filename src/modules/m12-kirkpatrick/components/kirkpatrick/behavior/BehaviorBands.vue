@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * "Taburan Tahap Engagement" (FN-M12-5.3.1; FR-M12-43): five tiles, 2 columns below `sm` (the last spans both) and 5 from `sm` (DV-M12-33), each a link to
+ * "Taburan Tahap Engagement" (FN-M12-5.3.1; FR-M12-43): five tiles in a `DsGrid`: 2 columns below `sm` (the last spans both) and 5 from `sm` (DV-M12-33), each a link to
  * the monitoring overview with count, label, caption, mini bar (value = %) and the %.
  */
 import { RouterLink } from 'vue-router'
 
-import { DsPanel } from '@/ds'
+import { DsGrid, DsGridItem, DsPanel } from '@/ds'
 
 import type { BandCount } from '../../../api/types'
 import { BAND, pct, plain } from '../common/kirkpatrick-format'
@@ -16,36 +16,40 @@ defineProps<{ bands: BandCount[]; monitoringPath: string }>()
 
 <template>
   <DsPanel title="Taburan Tahap Engagement" icon="i-ph-chart-pie" data-testid="beh-bands">
-    <div class="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
-      <RouterLink
-        v-for="b in bands"
+    <DsGrid :cols="{ base: 2, sm: 5 }" gap="sm">
+      <DsGridItem
+        v-for="(b, i) in bands"
         :key="b.key"
-        :to="monitoringPath"
-        class="flex min-w-0 flex-col items-center gap-1 bg-muted p-2 text-center max-sm:last:col-span-2 sm:p-3"
-        :data-testid="`beh-band-${b.key}`"
+        :span="i === bands.length - 1 ? { base: 2, sm: 1 } : undefined"
       >
-        <p :class="['tabular text-subheading', BAND[b.key].text]" data-testid="band-count">
-          {{ plain(b.count) }}
-        </p>
-        <p class="text-body break-words text-highlighted" data-testid="band-label">
-          {{ BAND[b.key].label }}
-        </p>
-        <p class="text-body text-muted" data-testid="band-caption">
-          {{ BAND_CAPTION[b.key] }}
-        </p>
-        <UProgress
-          :model-value="b.pct"
-          :max="100"
-          :color="BAND[b.key].color"
-          size="sm"
-          class="w-full"
-          :aria-label="`${BAND[b.key].label} ${pct(b.pct)}`"
-          data-testid="band-bar"
-        />
-        <p :class="['tabular text-body', BAND[b.key].text]" data-testid="band-pct">
-          {{ pct(b.pct) }}
-        </p>
-      </RouterLink>
-    </div>
+        <RouterLink
+          :to="monitoringPath"
+          class="flex h-full min-w-0 flex-col items-center gap-1 bg-muted p-1 text-center sm:p-3"
+          :data-testid="`beh-band-${b.key}`"
+        >
+          <p :class="['tabular text-subheading', BAND[b.key].text]" data-testid="band-count">
+            {{ plain(b.count) }}
+          </p>
+          <p class="text-body break-words text-highlighted" data-testid="band-label">
+            {{ BAND[b.key].label }}
+          </p>
+          <p class="text-body text-muted" data-testid="band-caption">
+            {{ BAND_CAPTION[b.key] }}
+          </p>
+          <UProgress
+            :model-value="b.pct"
+            :max="100"
+            :color="BAND[b.key].color"
+            size="sm"
+            class="w-full"
+            :aria-label="`${BAND[b.key].label} ${pct(b.pct)}`"
+            data-testid="band-bar"
+          />
+          <p :class="['tabular text-body', BAND[b.key].text]" data-testid="band-pct">
+            {{ pct(b.pct) }}
+          </p>
+        </RouterLink>
+      </DsGridItem>
+    </DsGrid>
   </DsPanel>
 </template>

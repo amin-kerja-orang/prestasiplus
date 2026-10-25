@@ -309,7 +309,7 @@ describe('S8 string ids in http mode (BUG-01)', () => {
     const w = await open(4664)
     expect(api.fetchKirkpatrickStudent).toHaveBeenCalledWith(4664, expect.anything())
     expect(t(w, 'pel-name').text()).toBe('Pelajar Demo 004664')
-    expect(t(w, 'pel-alesa').exists()).toBe(true)
+    expect(has(w, 'pel-alesa')).toBe(true)
   })
 
   it('still hides a previous student of another id (S8 to S8 navigation)', async () => {

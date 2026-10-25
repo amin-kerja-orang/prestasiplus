@@ -256,7 +256,7 @@ describe('S1 KPI row, bands and info (AC-M12-09.1..09.3)', () => {
   it('BUG-04: the flow list rows wrap so the pill never overlaps the label', async () => {
     const { wrapper: w } = await open()
     const row = t(w, 'kirk-flow-list-t2')
-    expect(row.classes()).toContain('flex-wrap')
+    expect(row.get('[data-ds="cluster"]').classes()).toContain('flex-wrap')
     expect(row.find('.min-w-40').exists()).toBe(true)
   })
 

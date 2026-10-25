@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * S1 "Taburan Engagement Pelajar" (FN-M12-2.6.1; FR-M12-30): five band links (to the T3 page; plain boxes on
- * the alias), 2 columns below `sm` (the last tile spans both) and 5 from `sm` (DV-M12-33: 5 across at 320 / 375 overlapped
- * the labels), each an icon chip, count (no separator), label and "%" of T4/T5.
+ * the alias), a `DsGrid` of 2 columns below `sm` (the last tile spans both) and 5 from `sm` (was `grid-cols-5` at every
+ * width; DV-M12-33: 5 across at 320 / 375 overlapped the labels), each an icon chip, count (no separator), label and
+ * "%" of T4/T5.
  */
-import { DsIconChip, DsPanel } from '@/ds'
+import { DsGrid, DsGridItem, DsIconChip, DsPanel } from '@/ds'
 
 import type { BandCount, BandKey } from '../../../api/types'
 import { BAND, BAND_ORDER, KirkpatrickLink, pct, plain } from '../common'
@@ -25,25 +26,29 @@ const ordered = () =>
 
 <template>
   <DsPanel title="Taburan Engagement Pelajar" icon="i-ph-chart-pie" data-testid="kirk-bands">
-    <div class="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
-      <KirkpatrickLink
-        v-for="b in ordered()"
+    <DsGrid :cols="{ base: 2, sm: 5 }" gap="sm">
+      <DsGridItem
+        v-for="(b, i) in ordered()"
         :key="b.key"
-        :to="behaviorPath"
-        class="flex min-w-0 flex-col items-center gap-1 text-center max-sm:last:col-span-2"
-        :data-testid="`kirk-band-${b.key}`"
+        :span="i === BAND_ORDER.length - 1 ? { base: 2, sm: 1 } : undefined"
       >
-        <DsIconChip :icon="ICON[b.key]" size="sm" />
-        <span
-          :class="['tabular text-subheading', BAND[b.key].text]"
-          data-testid="kirk-band-count"
-          >{{ plain(b.count) }}</span
+        <KirkpatrickLink
+          :to="behaviorPath"
+          class="flex min-w-0 flex-col items-center gap-1 text-center"
+          :data-testid="`kirk-band-${b.key}`"
         >
-        <span class="text-body break-words text-muted">{{ BAND[b.key].label }}</span>
-        <span :class="['tabular text-body', BAND[b.key].text]" data-testid="kirk-band-pct">{{
-          pct(b.pct)
-        }}</span>
-      </KirkpatrickLink>
-    </div>
+          <DsIconChip :icon="ICON[b.key]" size="sm" />
+          <span
+            :class="['tabular text-subheading', BAND[b.key].text]"
+            data-testid="kirk-band-count"
+            >{{ plain(b.count) }}</span
+          >
+          <span class="text-body break-words text-muted">{{ BAND[b.key].label }}</span>
+          <span :class="['tabular text-body', BAND[b.key].text]" data-testid="kirk-band-pct">{{
+            pct(b.pct)
+          }}</span>
+        </KirkpatrickLink>
+      </DsGridItem>
+    </DsGrid>
   </DsPanel>
 </template>
