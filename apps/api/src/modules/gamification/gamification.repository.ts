@@ -471,6 +471,11 @@ export class GamificationRepository {
     return db.referral.count({ where: { referrerId: idFromString(userId), rewarded: true } })
   }
 
+  /** Serialises concurrent referrals of one referrer for the rest of the transaction (released at commit/rollback), so the daily cap's count-then-insert cannot overshoot. */
+  async lockReferrer(db: Db, referrerId: string): Promise<void> {
+    await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${'referral:' + referrerId}, 0))`
+  }
+
   /** The referrer's referrals stored in the 24 hours up to `at` (the lower bound is exclusive); `ix_referrals_referrer_id` narrows it to one referrer's rows. */
   async referralsInLastDay(db: Db, referrerId: string, at: Date): Promise<number> {
     const since = new Date(at.getTime() - 24 * 60 * 60 * 1000)

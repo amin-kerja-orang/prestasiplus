@@ -89,6 +89,30 @@ describe('referral rules (per-referrer daily cap, coinsEnabled)', () => {
     expect(await referralCount(db)).toBe(REFERRAL_MAX_PER_REFERRER_PER_DAY + 1)
   })
 
+  it('concurrent sign-ups on the same code cannot overshoot the cap (advisory lock per referrer)', async () => {
+    const referrer = await newReferrer()
+    const newUser = async (): Promise<string> => {
+      seq += 1
+      const rows = await db.query<{ id: string }>(
+        `insert into users (name, email, school_id, grade, created_at) values ('Rujukan Serentak', $1, $2, 4, '2020-01-01') returning id::text`,
+        [`serentak${String(seq)}@ujian.test`, schoolId],
+      )
+      return rows[0]!.id
+    }
+    const now = t.clock.now()
+    for (let i = 0; i < REFERRAL_MAX_PER_REFERRER_PER_DAY - 1; i++) {
+      await db.query(
+        `insert into referrals (referrer_id, referee_id, code_used, rewarded, created_at, updated_at) values ($1::bigint, $2::bigint, $3, true, $4::timestamptz, $4::timestamptz)`,
+        [referrer.id, await newUser(), referrer.code, now],
+      )
+    }
+    const referees = await Promise.all(Array.from({ length: 5 }, () => newUser()))
+    const results = await Promise.all(referees.map((id) => t.app.get(GamificationService).applyReferral(id, referrer.code, { isTest: false, at: now })))
+    expect(results.filter((r) => r.applied)).toHaveLength(1)
+    const [row] = await db.query<{ n: number }>(`select count(*)::int as n from referrals where referrer_id = $1::bigint`, [referrer.id])
+    expect(row!.n).toBe(REFERRAL_MAX_PER_REFERRER_PER_DAY)
+  })
+
   it('the cap is per referrer: another referrer is not affected by a full one', async () => {
     const full = await newReferrer()
     const other = await newReferrer()

@@ -716,6 +716,7 @@ export class GamificationService {
       const tx = db as TxClient
       const referrerId = await this.repo.referralOwner(tx, normalised)
       if (!referrerId || referrerId === newUserId || !(await this.repo.userBasics(tx, referrerId))) return { applied: false }
+      await this.repo.lockReferrer(tx, referrerId) // per-referrer lock: the cap's count-then-insert is race-free
       const at = opts.at ?? this.clock.now()
       if ((await this.repo.referralsInLastDay(tx, referrerId, at)) >= REFERRAL_MAX_PER_REFERRER_PER_DAY) return { applied: false }
       const refereeCoins = await this.coinsEnabled(newUserId, { tx })
