@@ -5,6 +5,7 @@
 import { isApiError, isErrorBody } from '@/api'
 
 import type { QuestionType, ScriptType } from '../../api/types'
+import { moduleMessage } from '../../lib/generic-server-text'
 
 /**
  * Texts that are not the live copy. Every entry except `confirmDelete` is UNVERIFIED COPY (SRS §8.3):
@@ -18,15 +19,14 @@ export const IMAGE_MAX_MB = 2
 export const isAcceptedImage = (file: File): boolean => IMAGE_ACCEPT.split(',').includes(file.type)
 
 /**
- * What the save alert shows for a failed save: the server message of a 4xx that came with the API's
- * error body, else `COPY.saveFailed` (no response, a 5xx, or an answer that is not the error body,
- * e.g. a proxy 413 page), so no raw "Failed to fetch" / "HTTP 413" text reaches the user.
+ * What the save alert shows for a failed save (SWE + SW12-01-A): the module's own BM message of a 4xx
+ * (`moduleMessage`: not a generic English default, not status 0 / 5xx), else `COPY.saveFailed`. An
+ * answer that carries a body which is not the API error envelope (e.g. a proxy 413 page) is also
+ * `COPY.saveFailed`, so no raw "Failed to fetch" / "HTTP 413" text reaches the user.
  */
 export function saveErrorMessage(err: unknown): string {
-  if (!isApiError(err)) return COPY.saveFailed
-  if (err.status === 0 || err.status >= 500) return COPY.saveFailed
-  if (err.body !== undefined && !isErrorBody(err.body)) return COPY.saveFailed
-  return err.message
+  if (isApiError(err) && err.body !== undefined && !isErrorBody(err.body)) return COPY.saveFailed
+  return moduleMessage(err) ?? COPY.saveFailed
 }
 
 export const COPY = {

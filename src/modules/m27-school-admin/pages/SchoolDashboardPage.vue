@@ -5,7 +5,7 @@
  * Terkini, breadcrumb, red school banner, four summary cards, "Ringkasan Prestasi".
  *
  * States: loading shows the spinner only; a 403 (a school admin without a school, FR-M27-08) renders the
- * global 403 page in place; any other failure shows the server's own error message (no M27 copy, FR-M27-28;
+ * global 403 page in place; any other failure shows the shared BM load-error line (SWE; the server text is English, FR-M27-28;
  * there is no M01 global error page in the app yet).
  */
 import { computed, watch } from 'vue'
@@ -52,12 +52,7 @@ watch(
       <SummaryCards :cards="data.cards" />
       <PerformanceSummary :performance="data.performance" />
     </template>
-    <DsLoadError
-      v-else-if="error && !refused"
-      :message="error.message"
-      testid="sd-error"
-      @retry="reload"
-    />
+    <DsLoadError v-else-if="error && !refused" testid="sd-error" @retry="reload" />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="sd-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />

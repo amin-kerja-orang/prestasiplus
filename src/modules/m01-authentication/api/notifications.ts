@@ -6,7 +6,7 @@
  * The "Notification" entity is shared with M22, which extends it (DATA-M01-04).
  */
 
-import { api, type ListResult } from '@/api'
+import { api, wireId, type EntityId, type ListResult } from '@/api'
 
 export type NotificationCategory = 'system' | 'reminder' | 'milestone'
 export type NotificationStatusFilter = 'unread' | 'read'
@@ -77,8 +77,11 @@ export function markNotificationRead(id: number): Promise<{ success: true }> {
 }
 
 /** #17 `POST /api/me/notifications/bulk-read`. */
-export function bulkMarkNotificationsRead(ids: readonly number[]): Promise<{ success: true }> {
-  return api.post<{ success: true }>('/api/me/notifications/bulk-read', { body: { ids } })
+export function bulkMarkNotificationsRead(ids: readonly EntityId[]): Promise<{ success: true }> {
+  // Contract `NotificationBulkRequestSchema`: `ids` are strings (SWX-2).
+  return api.post<{ success: true }>('/api/me/notifications/bulk-read', {
+    body: { ids: ids.map(wireId) },
+  })
 }
 
 /** #18 `DELETE /api/me/notifications/:id` (404 for an unknown or foreign id). */
@@ -87,6 +90,8 @@ export function deleteNotification(id: number): Promise<{ success: true }> {
 }
 
 /** #19 `POST /api/me/notifications/bulk-delete`. */
-export function bulkDeleteNotifications(ids: readonly number[]): Promise<{ success: true }> {
-  return api.post<{ success: true }>('/api/me/notifications/bulk-delete', { body: { ids } })
+export function bulkDeleteNotifications(ids: readonly EntityId[]): Promise<{ success: true }> {
+  return api.post<{ success: true }>('/api/me/notifications/bulk-delete', {
+    body: { ids: ids.map(wireId) },
+  })
 }

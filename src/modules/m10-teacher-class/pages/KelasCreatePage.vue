@@ -21,6 +21,8 @@ import type { EducationLevelSlug } from '../api/types'
 import { KELAS_COPY, tilesForSchoolType } from '../components/kelas/copy'
 import SchoolPicker from '../components/kelas/SchoolPicker.vue'
 import { fetchSubjectOptions } from '../components/kelas/subjects'
+import { KELAS_COPY as KELAS_SAYA_COPY } from '../components/kelas-saya/copy'
+import { moduleMessage } from '../lib/generic-server-text'
 
 const router = useRouter()
 const flash = useFlash()
@@ -63,6 +65,12 @@ watch(tiles, (next) => {
   if (level.value !== '' && !next.some((t) => t.slug === level.value)) level.value = ''
 })
 
+/** A module BM message of a refused request, the network copy for status 0, else the generic BM line (SWE). */
+function createFailureText(err: unknown): string {
+  if (err instanceof ApiError && err.status === 0) return KELAS_SAYA_COPY.network
+  return moduleMessage(err) ?? KELAS_COPY.createFailed
+}
+
 async function submit(): Promise<void> {
   if (submitting.value || schoolLookup.value) return
   submitting.value = true
@@ -86,7 +94,7 @@ async function submit(): Promise<void> {
       failure.value = Object.entries(err.fields)
         .filter(([key]) => !INLINE_FIELDS.includes(key))
         .map(([, message]) => message)
-    } else failure.value = [err instanceof Error ? err.message : KELAS_COPY.createFailed]
+    } else failure.value = [createFailureText(err)]
   } finally {
     submitting.value = false
   }

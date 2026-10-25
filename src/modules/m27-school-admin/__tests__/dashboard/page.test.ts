@@ -363,18 +363,19 @@ describe('states (FR-M27-28)', () => {
     expect(has(w, 'sd-perutusan')).toBe(false)
   })
 
-  it('shows the server message for another failure and no school data', async () => {
+  it('shows the BM load error, not the server text, for another failure (SWE) and no school data', async () => {
     const w = await mountPage(
       new ApiError({
         status: 500,
         code: 'SERVER_ERROR',
-        message: 'Ralat pelayan.',
+        message: 'Server Error',
         method: 'GET',
         url: '/api/admin-sekolah/dashboard',
       }),
     )
     expect(useRouteOutcome().value).toBeNull()
-    expect(text(w, 'sd-error')).toContain('Ralat pelayan.')
+    expect(text(w, 'sd-error')).toContain('Tidak dapat memuatkan data. Sila cuba semula.')
+    expect(text(w, 'sd-error')).not.toContain('Server Error')
     expect(has(w, 'sd-banner')).toBe(false)
   })
 })

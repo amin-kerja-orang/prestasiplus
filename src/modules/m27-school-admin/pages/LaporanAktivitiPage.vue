@@ -83,12 +83,7 @@ watch(
       <ActivityTeachersTab v-else-if="tab === 'guru'" :report="data" />
       <ActivityPupilsTab v-else :report="data" />
     </template>
-    <DsLoadError
-      v-else-if="error && !refused"
-      :message="error.message"
-      testid="la-error"
-      @retry="reload"
-    />
+    <DsLoadError v-else-if="error && !refused" testid="la-error" @retry="reload" />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="la-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />

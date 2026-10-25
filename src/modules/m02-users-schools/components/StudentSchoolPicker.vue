@@ -10,7 +10,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsPanel } from '@/ds'
+import { DsFormField, DsSurface } from '@/ds'
 
 import { searchSchools, type SchoolSummary } from '../api/schools'
 import { SEARCH_MIN_CHARS } from '../lib/user-form-options'
@@ -40,7 +40,7 @@ function onInput(value: string): void {
 <template>
   <div ref="root" data-testid="std-school">
     <DsFormField native for="std-school-search" label="Sekolah">
-      <div class="relative">
+      <div>
         <UInput
           id="std-school-search"
           :model-value="term"
@@ -53,21 +53,30 @@ function onInput(value: string): void {
           @update:model-value="onInput"
           @focus="picker.onFocus()"
         />
-        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="std-school-dropdown">
-          <UButton
-            v-for="item in results"
-            :key="item.id"
-            type="button"
-            block
-            color="neutral"
-            variant="ghost"
-            class="h-auto min-h-11 justify-start text-start whitespace-normal"
-            data-testid="std-school-result"
-            @click="picker.select(item)"
-          >
-            {{ item.name }} ({{ item.type }}, {{ item.state }})
-          </UButton>
-        </DsPanel>
+        <!-- In flow, not `behavior="float"`: the form section card clips its overflow (RS5-M1, DV-M02-27). -->
+        <DsSurface
+          v-if="showDropdown"
+          level="elevated"
+          shadow="lift"
+          padding="none"
+          data-testid="std-school-dropdown"
+        >
+          <div class="max-h-64 overflow-y-auto">
+            <UButton
+              v-for="item in results"
+              :key="item.id"
+              type="button"
+              block
+              color="neutral"
+              variant="ghost"
+              class="h-auto min-h-11 justify-start text-start whitespace-normal"
+              data-testid="std-school-result"
+              @click="picker.select(item)"
+            >
+              {{ item.name }} ({{ item.type }}, {{ item.state }})
+            </UButton>
+          </div>
+        </DsSurface>
       </div>
       <p v-if="school" class="text-caption text-success" data-testid="std-school-chosen">
         {{ school.name }}

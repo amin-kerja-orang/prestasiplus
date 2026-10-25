@@ -163,6 +163,40 @@ describe('S12 HeadcountListPage', () => {
     expect(api.fetchHeadcounts).toHaveBeenCalledTimes(2)
   })
 
+  it('Auto-Setup failures show the BM load error, a headcount BM 409/422 message as is (SWE-12)', async () => {
+    api.fetchHeadcounts.mockResolvedValue([])
+    const w = await render(HeadcountListPage, '/headcount')
+    await t(w, 'hero-auto-setup').trigger('click')
+    await flushPromises()
+    ;(body('level-D5') as HTMLElement).click()
+    await flushPromises()
+    const alertText = () => body('auto-setup-modal')?.textContent ?? ''
+    const submitWith = async (error: ApiError) => {
+      api.autoSetupHeadcounts.mockRejectedValueOnce(error)
+      ;(body('auto-setup-submit') as HTMLButtonElement).click()
+      await flushPromises()
+    }
+    const bm = 'Maaf, berlaku ralat. Sila cuba semula.'
+    await submitWith(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }))
+    expect(alertText()).toContain(bm)
+    expect(alertText()).not.toContain('Server Error')
+    await submitWith(new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }))
+    expect(alertText()).toContain(bm)
+    expect(alertText()).not.toContain('Failed to fetch')
+    await submitWith(new ApiError({ status: 403, code: 'FORBIDDEN', message: 'This action is unauthorized.' }))
+    expect(alertText()).toContain(bm)
+    await submitWith(new ApiError({ status: 409, code: 'CONFLICT', message: 'Conflict.' }))
+    expect(alertText()).toContain(bm)
+    await submitWith(
+      new ApiError({ status: 409, code: 'CONFLICT', message: 'Headcount sudah wujud untuk tahun ini.' }),
+    )
+    expect(alertText()).toContain('Headcount sudah wujud untuk tahun ini.')
+    await submitWith(
+      new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Pilih sekurang-kurangnya satu tahap.' }),
+    )
+    expect(alertText()).toContain('Pilih sekurang-kurangnya satu tahap.')
+  })
+
   it('"Batal" only hides the modal; reopening clears the ticks', async () => {
     api.fetchHeadcounts.mockResolvedValue([])
     const w = await render(HeadcountListPage, '/headcount')
@@ -331,6 +365,17 @@ describe('S14 HeadcountCreatePage', () => {
     )
     expect(router.currentRoute.value.path).toBe('/headcount/create')
     expect(prop(w, 'field-subject', 'modelValue')).toBe('3')
+  })
+
+  it('a generic English 409 "Conflict." shows the BM load error instead (SWE)', async () => {
+    api.fetchHeadcountFormOptions.mockResolvedValue(OPTIONS)
+    api.createHeadcount.mockRejectedValue(apiError(409, { code: 'CONFLICT', message: 'Conflict.' }))
+    const w = await render(HeadcountCreatePage, '/headcount/create')
+    await fill(w)
+    await t(w, 'create-form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'form-error').text()).toContain('Maaf, berlaku ralat. Sila cuba semula.')
+    expect(t(w, 'form-error').text()).not.toContain('Conflict.')
   })
 
   it('a 422 lists the field messages', async () => {

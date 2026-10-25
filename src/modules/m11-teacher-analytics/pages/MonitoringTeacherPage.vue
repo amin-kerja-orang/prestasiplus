@@ -8,6 +8,8 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import type { EntityId } from '@/api'
+
 import {
   DsBreadcrumb,
   DsDataTable,
@@ -36,7 +38,7 @@ import {
 } from '../components/monitoring/monitoring-paths'
 import { useMonitoringPage } from '../components/monitoring/use-monitoring-page'
 
-const props = withDefaults(defineProps<{ schoolId: number; userId: number; basePath?: string }>(), {
+const props = withDefaults(defineProps<{ schoolId: EntityId; userId: EntityId; basePath?: string }>(), {
   basePath: MONITORING_BASE,
 })
 const paths = computed(() => monitoringPaths(props.basePath))

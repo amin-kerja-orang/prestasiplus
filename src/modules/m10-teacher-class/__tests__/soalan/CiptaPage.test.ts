@@ -212,6 +212,32 @@ describe('S22 save path', () => {
     expect(t(w, 'form-cancel').attributes('aria-disabled')).toBe('true')
     finish(detail())
     await flushPromises()
+
+  it('a 500 "Server Error" and a lost connection show the save-failed text, a module BM 409 shows as is (SWE-09)', async () => {
+    const cases: [ApiError, string][] = [
+      [
+        new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }),
+        COPY.saveFailed,
+      ],
+      [
+        new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+        COPY.saveFailed,
+      ],
+      [
+        new ApiError({ status: 409, code: 'CONFLICT', message: 'Soalan ini sudah wujud.' }),
+        'Soalan ini sudah wujud.',
+      ],
+    ]
+    for (const [error, shown] of cases) {
+      guru.createContributedQuestion.mockRejectedValueOnce(error)
+      const w = await mountPage()
+      await fill(w)
+      await w.find('form').trigger('submit')
+      await flushPromises()
+      expect(t(w, 'form-errors').text()).toContain(shown)
+      expect(t(w, 'form-errors').text()).not.toMatch(/Server Error|Failed to fetch/)
+      w.unmount()
+    }
   })
 
   it('a generic failure shows the save-failed text @provisional UNVERIFIED COPY', async () => {
