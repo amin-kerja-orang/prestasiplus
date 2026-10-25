@@ -1,6 +1,6 @@
 # ADR-0022: The DSKP catalogue is an M03-owned, build-time-generated, in-process contract
 
-- **Status:** Proposed (G2, awaiting user approval of the key decisions)
+- **Status:** Accepted. Approved as written by the user 2026-10-25 (G2 approval of decisions A1 to A10 in `docs/architecture/v2-dskp-integration.md`; system audit, reply "ok proceed yang terbaik"). Build order: DSKP is the first post-go-live item (LEAD decision 5, 2026-10-24).
 - **Date:** 2026-10-24
 - **Related:** `docs/requirements/v2-dskp-integration.md` (US-01, US-11, Q-D3, Q-D4, Q-D5, Q-D8); `docs/architecture/v2-dskp-integration.md`; ADR-0009 (module boundaries), ADR-0014 (one owner per shared store, D12), ADR-0018 (contract-first schemas), ADR-0021 (`@pp/exam-core` shared package, on `feature/v2-backend`); `docs/requirements/v2-exam-schema.md` D9
 
@@ -10,7 +10,7 @@
 - The catalogue is read-only reference data, identical for every user, about 440 KB minified (about 90 KB gzip) in total. The demo bundle has a size budget (`scripts/check-demo-bundle.mjs`).
 - m28's server and intake code are not mock-plugin code: ESLint lets them import another module only through its public entry `@/modules/<slug>` and never a `mock/` folder (ADR-0009). Mock plugins of other modules may read M03 only through `@/modules/m03-curriculum/mock`.
 - Dynamic imports must be string literals and `import.meta.glob` is not allowed outside `src/mock/index.ts` (ADR-0009 amendment 1).
-- The real backend (BE-08 `curriculum_nodes`, BE-10 gates) is a separate programme and not decided in time order (Q-D5).
+- The real backend (BE-08 `curriculum_nodes`, BE-10 gates) is a separate programme; its order was decided as after the 30 Oct go-live, DSKP first (Q-D5, LEAD decision 5, 2026-10-24).
 
 ## Decision
 1. **Ownership and location.** The catalogue lives in `src/modules/m03-curriculum/dskp/`. M03 is its only writer. It is not a mock table or repository: it has no mutable state in this phase (AC-01.5).

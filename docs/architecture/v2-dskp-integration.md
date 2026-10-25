@@ -5,16 +5,16 @@
 | Document | Feature design, G2 (system architecture) |
 | Version | 0.1 |
 | Date | 2026-10-24 |
-| Status | Proposed, awaiting user approval of the key decisions in section 0 |
+| Status | **G2 approved by the user 2026-10-25** (decisions A1 to A10 in section 0, as written; see "User decision 2026-10-25 (system audit)" below section 0) |
 | Owner | solution-architect |
-| Requirements | `docs/requirements/v2-dskp-integration.md` (G1 draft; US-01 to US-11; Q-D2, Q-D3, Q-D4 defaults adopted; Q-D1 pending user; Q-D5 = LEAD) |
+| Requirements | `docs/requirements/v2-dskp-integration.md` (G1 draft; US-01 to US-11; Q-D2, Q-D3, Q-D4 defaults adopted; Q-D1 answered by the user 2026-10-25 (level select); Q-D5 answered by LEAD decision 5, 2026-10-24) |
 | Other inputs | `docs/requirements/v2-question-bank.md` 4.8; `docs/requirements/v2-exam-schema.md` D9; `docs/reference/dskp/README.md` and the 13 `*.json` extracts (structure inspected per file); `src/modules/m28-bijak-spm/**` (intake `lib/dskp.ts`, `QuestionEditor.vue`, `domain/validation.ts`, `server/admin.ts`, `domain/types.ts`, `data/builders.ts`, `ai/mock-extractor.ts`); `src/modules/m03-curriculum/**`; ADR-0009, 0014, 0018, 0019 |
 | Decision record | ADR-0022 (`docs/adr/0022-dskp-catalogue-in-m03.md`); related ADR-0021 (`@pp/exam-core`, on the integration branch) |
 | UI spec (not here) | `docs/design/v2-dskp-integration.md` (ui-ux-designer, task DSKP-T00). This document fixes data, contract, rules and file layout, not pixels. |
 
 Scope reminder: a front-end prototype with in-browser mock servers. The real NestJS backend is a separate programme; section 4.5 is a hand-over note only. No application code is written by this document; type snippets are contract sketches.
 
-## 0. Summary and decisions that need user approval
+## 0. Summary and decisions (approved by the user 2026-10-25)
 
 | # | Decision | Choice and reason |
 |---|---|---|
@@ -26,8 +26,10 @@ Scope reminder: a front-end prototype with in-browser mock servers. The real Nes
 | A6 | Tag shape | `CurriculumTag` v2: one tingkatan field (`formOrigin`, replaces `level` + `formOrigin`), `unitId`, `spIds`, `tp` (nullable until chosen), `kbat` (nullable enum), `catalogueVersion`, optional `review` marker. AI suggestion and audit live on the intake question and in the history, not on the published tag. |
 | A7 | One rule | `tagIssues(tag, lookup)` in `m28/domain/tag-rule.ts`, pure, called by submit, revision and publish; no `legacyTag` waiver. A parity test pins this. |
 | A8 | Seeds | Authored per-question table `m28/data/seed-tags.ts` with evidence per tagged row; everything else is flagged `perlu semakan` with no unit/SP and no tingkatan. Strict rule: 7 of 35 DSKP-form seed questions are proposed as tagged, 28 flagged, 44 are T1-T3 exempt (section 6). |
-| A9 | KBAT | Stored as `kbat: 'mengaplikasi' \| 'menganalisis' \| 'menilai' \| 'mencipta' \| null` (Q-D1 default). If the user chooses a yes/no switch, only one constant and one control change. |
-| A10 | Backend order (Q-D5) | Recommend catalogue contract and gates in the backend **after** 30 Oct go-live. The prototype side is independent of that order because the seam is `load(subject)` (section 4.5). LEAD decides. |
+| A9 | KBAT | Stored as `kbat: 'mengaplikasi' \| 'menganalisis' \| 'menilai' \| 'mencipta' \| null` (Q-D1, **confirmed by the user 2026-10-25**: option (a), level select). `null` = empty or "Bukan KBAT"; stored separately from `tp`, never derived; not required by the submit or publish gates. A yes/no switch was not chosen. |
+| A10 | Backend order (Q-D5) | Catalogue contract and gates in the backend **after** 30 Oct go-live. The prototype side is independent of that order because the seam is `load(subject)` (section 4.5). **Decided: LEAD decision 5 (2026-10-24), DSKP is the first post-go-live item.** |
+
+**User decision 2026-10-25 (system audit): G2 approved.** Decisions A1 to A10 above and ADR-0022 (`docs/adr/0022-dskp-catalogue-in-m03.md`) are approved as written. The user replied "ok proceed yang terbaik" to the cloud lead's recommendations. Build order: DSKP is the first post-go-live item (LEAD decision 5, 2026-10-24). Build tasks DSKP-T01 onwards follow section 7; T02 (M03 runtime) is no longer waiting for approval.
 
 ## 1. Architecture overview
 
@@ -198,7 +200,7 @@ Decisions:
 - **One tingkatan field.** The brief lists `tingkatan` and `formOrigin`; the prototype has `level` (`T4+T5` default) and `formOrigin`. Two fields can contradict each other and the default `T4+T5` hides an unset value (AC-04.1). The single field keeps the name `formOrigin` (no churn; UI label "Asal tingkatan" / "Tingkatan") and `level` is removed. `domain/types.ts` `Subject.code` and `curriculum.subject` keep their names.
 - `unit` -> `unitId`, `sp` -> `spIds`: renamed on purpose so an old free-text value can never be read as a key; `unitLabel` is removed (the label is looked up). TypeScript fails to compile every stale use.
 - Derived, not stored: SK ids (`lookup.skOf(sp)`), unit title, TP descriptor, display topic.
-- `KbatLevel` is the only place that knows the form of KBAT (Q-D1). A yes/no switch later means `KbatLevel = 'ya'` or a boolean in one type and one control; the bank filter options are derived from the same constant.
+- `KbatLevel` is the only place that knows the form of KBAT (Q-D1, level select decided 2026-10-25). The bank filter options ("Ya", "Tidak" and one per level) are derived from the same constant. A later change of form would touch only this type, one control and the filter option list.
 - No cap on SP count (Q-D6): `export const MAX_SP_PER_QUESTION: number | null = null` in `tag-rule.ts`; D9's "1 to 3" is one constant away.
 - The published tag is `CurriculumTag` only. Suggestion and audit data are carried as below.
 
@@ -573,7 +575,7 @@ flowchart LR
 
 Parallel groups: [T00 ∥ T01]; then [T02 ∥ T09]; then [T03]; then [T04 ∥ T06 ∥ T07]; then [T05]; then [T08]. T07 can start against a fixture catalogue as soon as T03 lands. Total about 14.5 ideal days; critical path T01 -> T02 -> T03 -> T04 -> T05 -> T08 about 10.5 days, shorter with T07 and T06 in parallel. Gate sequence after build: G3 evidence from `npm run verify`, G4 `code-reviewer` (security-engineer not required: no auth, personal data, upload or new external input), G5 `qa-engineer` against US-01 to US-11 at 375/768/1280.
 
-Documents to update by the Delivery Lead (not tasks): TRACKER (stage, D-number for A1 to A10 once approved), `docs/README.md` index (this document, ADR-0022), `v2-exam-schema.md` D9 (tag field names `formOrigin`/`unitId`/`spIds`; KBAT already noted).
+Documents to update by the Delivery Lead (not tasks): TRACKER (stage; D-number for A1 to A10: AUD-D1, recorded 2026-10-25), `docs/README.md` index (this document, ADR-0022), `v2-exam-schema.md` D9 (tag field names `formOrigin`/`unitId`/`spIds`; KBAT already noted).
 
 ## 8. Risks, conflicts with the G1 draft, open items
 
@@ -589,7 +591,7 @@ Documents to update by the Delivery Lead (not tasks): TRACKER (stage, D-number f
 | R-F | First admin call pays a lazy load (about 5 to 10 KB gzip). | Loaded once per subject and cached; skeleton state in the UX spec. |
 | R-G | m28 now depends on M03's public entry (new coupling, one direction). | Narrow interface, test seam `createDskpCatalog`, documented in ADR-0022. |
 | R-H | Front/back drift of the tag rule after hand-over. | Rule is pure and dependency-free so it moves to the shared package unchanged (section 4.5). |
-| R-I | Q-D1 answer changes the KBAT form late. | Isolated to `KbatLevel`, one control, one filter option list. |
+| R-I | Q-D1 answer changes the KBAT form late. | Closed: Q-D1 answered 2026-10-25 (level select). Isolation to `KbatLevel`, one control, one filter option list is kept should the form change again. |
 
 ### 8.2 Conflicts and clarifications against the G1 draft (`v2-dskp-integration.md`)
 
@@ -607,7 +609,7 @@ Documents to update by the Delivery Lead (not tasks): TRACKER (stage, D-number f
 
 ### 8.3 Open items for LEAD or the user
 
-- Approve A1 to A10 (G2). The user's explicit pending item is Q-D1 (KBAT form; default adopted).
-- Q-D5: backend order. Recommendation: after 30 Oct go-live; nothing here blocks it.
+- ~~Approve A1 to A10 (G2). The user's explicit pending item is Q-D1 (KBAT form; default adopted).~~ **Answered, user decision 2026-10-25 (system audit): A1 to A10 approved as written; Q-D1 = level select (option (a)).**
+- ~~Q-D5: backend order.~~ **Answered: LEAD decision 5 (2026-10-24), DSKP is the first post-go-live item.**
 - R-A: should seed TP also be flagged for review (default: no).
 - Admin Pusat review of table 6.3 before flagged questions are cleared (Q-D11).

@@ -1,6 +1,6 @@
 # v2 DSKP integration: curriculum catalogue and question tagging
 
-Slug: `v2-dskp-integration` · Date: 2026-10-24 · Track: Full (G1) · Priority: highest (user, system audit FB-026) · Status: **draft for G1 approval**
+Slug: `v2-dskp-integration` · Date: 2026-10-24 · Track: Full (G1) · Priority: highest (user, system audit FB-026) · Status: **G1 draft; blocking questions answered (Q-D1 by the user 2026-10-25; Q-D2 to Q-D4 lead defaults 2026-10-24; Q-D5 LEAD decision 5, 2026-10-24); G2 (A1 to A10, ADR-0022) approved by the user 2026-10-25**
 
 ## 1. Summary and goal
 
@@ -32,7 +32,7 @@ Priority: M = Must, S = Should, C = Could.
 | US-03 | M | As Admin Pusat, I want the two vocational subjects and the Jawi subject loaded correctly (Landskap dan Nurseri, Katering dan Penyajian, Pendidikan Islam), so that no DSKP subject is missing or mis-spelt. |
 | US-04 | M | As a reviewer, I want to tag a question by picking unit and SP from the catalogue (SK derived), so that tags are valid and consistent. |
 | US-05 | M | As a reviewer, I want TP 1-6 to be a deliberate choice with no default, and AI-suggested values to need my confirmation, so that a tag is never right by accident. |
-| US-06 | S | As a reviewer, I want an optional "Aras KBAT" field separate from TP, so that KBAT questions can be marked without being derived from TP. **Form pending user confirmation.** |
+| US-06 | S | As a reviewer, I want an optional "Aras KBAT" field separate from TP, so that KBAT questions can be marked without being derived from TP. *Form decided by the user 2026-10-25 (Q-D1): optional level select.* |
 | US-07 | M | As Admin Pusat, I want submit, revision and publish to enforce the same curriculum tag rule, so that no question reaches Terbit with a weaker tag than it needed for review. |
 | US-08 | M | As Admin Pusat, I want every seed question tagged from the catalogue, with unmatched ones flagged for review, so that the bank has real tags from day one (D11: nothing guessed). |
 | US-09 | M | As Admin Pusat, I want to filter the bank by unit, SP, TP and KBAT, so that I can find and review questions by curriculum. |
@@ -85,13 +85,14 @@ One editor block ("Tag DSKP") is used by Muat Naik Kertas -> Semak Ekstrak, Tuli
 - AC-05.4 Given a question in a Tingkatan 4/5 and a TP of 1-6, then the editor accepts it only if the value is an integer 1 to 6; no other value can be saved.
 - AC-05.5 Given the reviewer sets TP, then TP is independent of the difficulty field of the exam schema (`difficulty_tp` in D8 is a separate item; this feature neither sets nor derives it).
 
-### US-06 KBAT as a separate optional field (form pending user confirmation)
-- AC-06.1 Given the Tag DSKP block, then an optional select "Aras KBAT" offers Mengaplikasi, Menganalisis, Menilai, Mencipta; empty means "bukan KBAT" [PROPOSED form; **pending user confirmation**, see Q-D1].
-- AC-06.2 Given KBAT, then its value is never derived from TP and TP is never derived from it ("KBAT derived as TP >= 4" in `v2-exam-schema.md` D9 is superseded).
-- AC-06.3 Given KBAT is empty, then submit, revision and publish still pass (optional).
-- AC-06.4 Given the AI suggests a KBAT level, then it is a suggestion that follows AC-05.2 (confirm before submit) [PROPOSED].
-- AC-06.5 Given a bank filter on KBAT (US-09), then "Ya", "Tidak" and each of the four levels are available [PROPOSED].
-- If the user chooses a different form (for example a yes/no switch), only AC-06.1, AC-06.4 and AC-06.5 change.
+### US-06 KBAT as a separate optional field (form decided 2026-10-25, Q-D1)
+*User decision 2026-10-25 (system audit), Q-D1 option (a), level select. This replaces the earlier "form pending user confirmation" wording of AC-06.1, AC-06.3 and AC-06.5.*
+- AC-06.1 Given the Tag DSKP block, then an optional select "Aras KBAT (pilihan)" offers Bukan KBAT, Mengaplikasi, Menganalisis, Menilai, Mencipta; empty or "Bukan KBAT" means the question is not KBAT.
+- AC-06.2 Given KBAT, then its value is stored separately from TP, with no derivation in either direction ("KBAT derived as TP >= 4" in `v2-exam-schema.md` D9 is superseded).
+- AC-06.3 Given KBAT is empty or "Bukan KBAT", then submit, revision and publish still pass: KBAT is not required by the submit gate or the publish gate.
+- AC-06.4 Given the AI suggests a KBAT level, then it is a suggestion that follows AC-05.2 (confirm before submit) [PROPOSED; not part of the 2026-10-25 decision].
+- AC-06.5 Given a bank filter on KBAT (US-09), then the options are "Ya", "Tidak" and one option per level (Mengaplikasi, Menganalisis, Menilai, Mencipta).
+- A yes/no switch (option (b)) was not chosen.
 
 ### US-07 Gates (submit, revision, publish)
 - AC-07.1 Given a Tingkatan 4 or 5 question, then "Hantar untuk semakan", a revision submit and "Lulus & Terbit" (publish) all require: subject, tingkatan, unit, at least one SP and TP. The three gates call one shared rule (no separate weaker copy).
@@ -145,7 +146,7 @@ One editor block ("Tag DSKP") is used by Muat Naik Kertas -> Semak Ekstrak, Tuli
 
 ### In scope (v2.0)
 - M03 DSKP catalogue: 13 subjects, T4 and T5, tree to SP, TP descriptors at the printed level, flags (Jawi spelling, reconstructed), contract for readers.
-- m28 Tag DSKP block in intake, manual entry and Sunting: unit and SP pick lists, SK derived, TP mandatory with no default, confirmation of AI suggestions, T1-T3 exemption, optional KBAT (form pending).
+- m28 Tag DSKP block in intake, manual entry and Sunting: unit and SP pick lists, SK derived, TP mandatory with no default, confirmation of AI suggestions, T1-T3 exemption, optional KBAT level select (decided 2026-10-25).
 - One shared tag rule for submit, revision and publish; consistent BM messages.
 - Seed tagging and review flags; mapping of old prototype unit labels.
 - Bank filter by unit, SP, TP, KBAT; tag audit (AC-05.5).
@@ -157,7 +158,7 @@ One editor block ("Tag DSKP") is used by Muat Naik Kertas -> Semak Ekstrak, Tuli
 - Other curriculum dimensions the DSKP prints as general sections: Elemen Merentas Kurikulum, Standard Proses Matematik, Science Process Skills, Kemahiran Pemikiran Sejarah, Elemen Kewarganegaraan dan Nilai Sivik, Fizik key verbs. Not taggable in v2.0.
 - DSKP for Tingkatan 1-3, Darjah 1-6 and other forms (T1-T3 questions are only exempt, "di luar DSKP").
 - BM aliases for English-edition titles, correcting extract errors beyond the logged ones, verifying Jawi spelling (flagged only).
-- Duplicate detection, difficulty field (`difficulty_tp`), source/board field, paper-type list (FB-040), and the backend implementation (section 8).
+- Duplicate detection, difficulty field (`difficulty_tp`), source/board field, paper-type list (FB-040; decided 2026-10-25 as Sebenar / Percubaan / Modul, recorded in `v2-exam-schema.md` D8 and `v2-question-bank.md` §4.2, not built here), and the backend implementation (section 8).
 - Changing any old system (prestasiplus.my, prestasiplus.cloud).
 
 ### Assumptions
@@ -174,7 +175,10 @@ One editor block ("Tag DSKP") is used by Muat Naik Kertas -> Semak Ekstrak, Tuli
 | M03 owns the DSKP catalogue; m28 reads it | 2026-10-24 | user, FB-026 |
 | All 13 subjects in v2.0, incl. Landskap dan Nurseri and Katering dan Penyajian | 2026-10-24 | user, FB-026 |
 | TP 1-6 mandatory, no default; AI-suggested TP must be confirmed | 2026-10-24 | user, FB-026 |
-| KBAT is a separate optional field, not derived from TP (form pending) | 2026-10-24 | user, FB-026 |
+| KBAT is a separate optional field, not derived from TP | 2026-10-24 | user, FB-026 |
+| KBAT form (Q-D1): optional select "Aras KBAT (pilihan)" with Bukan KBAT / Mengaplikasi / Menganalisis / Menilai / Mencipta; empty or "Bukan KBAT" = not KBAT; stored separately from TP, no derivation; not required by the submit or publish gates; bank filter KBAT: Ya / Tidak / per level | 2026-10-25 | user, system audit (reply "ok proceed yang terbaik" to the cloud lead's recommendation), FB-026 |
+| G2 approved: decisions A1 to A10 in `docs/architecture/v2-dskp-integration.md` and ADR-0022 as written | 2026-10-25 | user, system audit |
+| Build order (Q-D5): DSKP is the first post-go-live item | 2026-10-24 (LEAD decision 5); confirmed with the G2 approval 2026-10-25 | LEAD, FB-026 |
 | Pendidikan Islam uses Jawi text from the repo, flagged "perlu semakan ejaan" | 2026-10-24 | user, FB-026 |
 | Seed questions tagged; unmatched flagged for review | 2026-10-24 | user, FB-026 |
 | T1-T3 (di luar DSKP) exempt from unit and SP; TP required | 2026-10-24 | LEAD, FB-072 |
@@ -183,7 +187,7 @@ One editor block ("Tag DSKP") is used by Muat Naik Kertas -> Semak Ekstrak, Tuli
 ## 8. Backend note (for G2, not a requirement on the "how")
 
 - Contract owner: lane PC-2 (BE-08 `curriculum`, `m03-curriculum/api`) for the catalogue (`curriculum_nodes` is already planned in `docs/architecture/v2-backend-plan.md`, tree from D9) and the DSKP source, and the question-workflow gates in BE-10 (`questions-workflow`, with DSKP source). Gate logic that today lives in the m28 mock server (`server/admin.ts` `gateErrors`) must be the same rule the backend enforces (one rule, no front/back drift).
-- This touches shared stores (M03 curriculum, m28 seed data) and the exam-core boundary; ownership is "half AZ". **LEAD decision required** on: the contract shape, which lane implements the loader, and the order relative to the 25 Oct freeze and 30 Oct go-live.
+- This touches shared stores (M03 curriculum, m28 seed data) and the exam-core boundary; ownership is "half AZ". **LEAD decision required** on: the contract shape, which lane implements the loader, and the order relative to the 25 Oct freeze and 30 Oct go-live. *Order answered (Q-D5): DSKP is the first post-go-live item, LEAD decision 5, 2026-10-24.*
 - Seed and fixture edits follow the shared working-tree rules (isolated worktree; `registry-boot.test.ts` green before merge).
 
 ## 9. Open questions
@@ -191,11 +195,11 @@ One editor block ("Tag DSKP") is used by Muat Naik Kertas -> Semak Ekstrak, Tuli
 ### Blocking (before G2 design)
 | ID | Question | Why it blocks | Recommended default |
 |---|---|---|---|
-| Q-D1 | KBAT form: optional select "Aras KBAT" with Mengaplikasi / Menganalisis / Menilai / Mencipta (empty = bukan KBAT), or a yes/no switch? **Pending user confirmation.** | US-06, editor design, bank filter, schema field type | The 4-level select (it is what the DSKP prints; same cost). |
+| Q-D1 | KBAT form: optional select "Aras KBAT" with Mengaplikasi / Menganalisis / Menilai / Mencipta (empty = bukan KBAT), or a yes/no switch? | US-06, editor design, bank filter, schema field type | The 4-level select (it is what the DSKP prints; same cost). **ANSWERED, user decision 2026-10-25 (system audit): option (a), level select.** Optional select "Aras KBAT (pilihan)" with Bukan KBAT / Mengaplikasi / Menganalisis / Menilai / Mencipta; empty or "Bukan KBAT" means not KBAT; stored separately from TP with no derivation; not required by the submit or publish gates; bank filter KBAT: Ya / Tidak / per level. The user replied "ok proceed yang terbaik" to the cloud lead's recommendation (FIXLOG FB-026 / P-026; evidence `docs/qa/audit-sistem/evidence/FB-026-kbat-select-*.png`). |
 | Q-D2 | TP for units whose DSKP prints no TP (Bahasa Melayu strands 4.0 and 5.0, Bahasa Inggeris 5.0 Literature in Action): TP is mandatory by the user's decision, so what does the reviewer choose against? | AC-02.3, AC-07.1 for those units | TP stays required, chosen against the subject's general TP table (no unit descriptor shown). **Lead decision 2026-10-24 under the user's rule ("convert from the old system, fix what is broken, ask only when the old system has no answer"): default adopted.** |
 | Q-D3 | Do M03's Bab/Topik taxonomy (D-B) and M10's fixture DSKP store (D-C, used by M08/M27 heatmaps and M04's legacy form) switch to the M03 DSKP catalogue now, later, or never? | Scope of US-11, risk to M04/M08/M10/M27 modules already approved | Not now: the catalogue is additional; D-B and D-C unchanged in v2.0; revisit after go-live. **Lead decision 2026-10-24 under the user's rule ("convert from the old system, fix what is broken, ask only when the old system has no answer"): default adopted.** |
 | Q-D4 | The M04 legacy .my "DSKP Tagging (Pilihan)" form: keep reading M10's fixtures (replicated old flow) or read the new catalogue? | AC-11.3, fidelity vs one source of truth | Keep as is (old-system replica); no change. **Lead decision 2026-10-24 under the user's rule ("convert from the old system, fix what is broken, ask only when the old system has no answer"): default adopted.** |
-| Q-D5 | Backend: who loads the catalogue and in what order (BE-08 contract, BE-10 gates), and is it before or after the 30 Oct go-live? | G2 task list and sequencing | LEAD decision; propose catalogue + gates after go-live unless the LEAD wants them before. |
+| Q-D5 | Backend: who loads the catalogue and in what order (BE-08 contract, BE-10 gates), and is it before or after the 30 Oct go-live? | G2 task list and sequencing | LEAD decision; propose catalogue + gates after go-live unless the LEAD wants them before. **ANSWERED: LEAD decision 5 (2026-10-24), confirmed by the user's G2 approval 2026-10-25 (system audit): DSKP is the first post-go-live item.** |
 
 ### Non-blocking (defaults used unless the user disagrees)
 | ID | Question | Default |
