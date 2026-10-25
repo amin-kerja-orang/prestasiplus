@@ -9,3 +9,4 @@ export {
   type NotificationPort,
   type PasswordResetMail,
 } from './ports'
+export { AccountPorts, AccountPortsModule, type RegisteredEvent, type RegistrationHook } from './registration-ports'
