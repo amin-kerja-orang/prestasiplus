@@ -14,12 +14,8 @@ export const CATEGORY_LABELS: Readonly<Record<ArticleCategory, string>> = {
 
 export const GRADE_LABELS: Readonly<Record<GradeLevel, string>> = {
   SEMUA: 'Semua',
-  DARJAH_1: 'Darjah 1',
-  DARJAH_2: 'Darjah 2',
-  DARJAH_3: 'Darjah 3',
-  DARJAH_4: 'Darjah 4',
-  DARJAH_5: 'Darjah 5',
-  DARJAH_6: 'Darjah 6',
+  TINGKATAN_4: 'Tingkatan 4',
+  TINGKATAN_5: 'Tingkatan 5',
 }
 
 export const VIDEO_CATEGORY_LABELS: Readonly<Record<VideoCategory, string>> = {

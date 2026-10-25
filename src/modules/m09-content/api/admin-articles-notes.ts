@@ -12,7 +12,16 @@ import { api, type ListResult } from '@/api'
 import type { ArticleCategory, GradeLevel, MutationResult } from './types'
 
 /** BR-M09-11 subject codes. */
-export type NoteSubject = 'matematik' | 'sains' | 'bahasa_melayu' | 'bahasa_inggeris' | 'sejarah'
+export type NoteSubject =
+  | 'matematik'
+  | 'matematik_tambahan'
+  | 'sains'
+  | 'fizik'
+  | 'kimia'
+  | 'biologi'
+  | 'bahasa_melayu'
+  | 'bahasa_inggeris'
+  | 'sejarah'
 
 /** BR-M09-11 stored note types (the S5 filter additionally accepts the three unused ones). */
 export type NoteType = 'FORMULA' | 'RINGKASAN' | 'LENGKAP' | 'TIPS_TRICKS'
@@ -83,7 +92,7 @@ export interface AdminNoteItem {
   title: string
   subject: NoteSubject
   noteType: NoteType
-  /** Stored `DARJAH_n`. */
+  /** Stored `TINGKATAN_4` or `TINGKATAN_5` (D54). */
   grade: string
   isPublished: boolean
   views: number

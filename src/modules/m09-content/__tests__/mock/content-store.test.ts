@@ -18,6 +18,7 @@ import { RepositoryError } from '@/mock/repository'
 import plugin, { articles, audioKbat, banners, notes, perutusan, support, videos } from '../../mock'
 import { excerptOf } from '../../mock/repository'
 import { SEED_ARTICLES } from '../../mock/data/articles'
+import { SEED_NOTES } from '../../mock/data/content'
 import { slugify } from '../../mock/data/labels'
 import { VIDEO_ORDER, cellOf } from '../../mock/data/video-cells'
 import { LIVE_VIDEOS } from '../../mock/data/video-live-data'
@@ -337,14 +338,12 @@ describe('articles (M09 §6.9, §6.11)', () => {
     })
     const level = Object.fromEntries(articles.groupCount('Q-ART-ALL', 'gradeLevel'))
     expect(level).toEqual({
+      // D54: Darjah 1-4 (26) re-levelled to Tingkatan 4, Darjah 5-6 (16) to Tingkatan 5; no Darjah left.
       SEMUA: 30,
-      DARJAH_1: 4,
-      DARJAH_2: 5,
-      DARJAH_3: 7,
-      DARJAH_4: 10,
-      DARJAH_5: 9,
-      DARJAH_6: 7,
+      TINGKATAN_4: 26,
+      TINGKATAN_5: 16,
     })
+    expect(SEED_ARTICLES.some((a) => /^DARJAH_/.test(a.gradeLevel))).toBe(false)
     expect(ids(SEED_ARTICLES)).toEqual(range(1, 72))
     expect(articles.count('Q-ART-CATEGORY', 'BERITA')).toBe(7)
   })
@@ -447,7 +446,7 @@ describe('articles (M09 §6.9, §6.11)', () => {
     const d = articles.detail('teknik-pomodoro-belajar-25-minit-rehat-5-minit', { countView: true })
     expect(d?.views).toBe(597)
     expect(d?.likes).toBe(6)
-    expect(d?.gradeLabel).toBe('Darjah 4')
+    expect(d?.gradeLabel).toBe('Tingkatan 4')
     expect(d?.categoryLabel).toBe('Tips Belajar')
     expect(d?.content).toContain('Apa Itu Teknik Pomodoro?')
     expect(articles.detail('tiada-slug')).toBeUndefined()
@@ -458,7 +457,7 @@ describe('articles (M09 §6.9, §6.11)', () => {
       title: 'Artikel Guru Baharu',
       content: '<p>Isi</p>',
       category: 'TIPS_BELAJAR',
-      gradeLevel: 'DARJAH_4',
+      gradeLevel: 'TINGKATAN_4',
       youtubeUrl: 'https://youtu.be/abcdefghijk',
       attachments: [
         { file: { name: 'Nota Bab 1.pdf', size: 1_000, mime: 'application/pdf' }, label: 'Nota' },
@@ -489,7 +488,7 @@ describe('articles (M09 §6.9, §6.11)', () => {
       title: 'Artikel Guru Baharu 2',
       content: '<p>Isi 2</p>',
       category: 'TIPS_BELAJAR',
-      gradeLevel: 'DARJAH_4',
+      gradeLevel: 'TINGKATAN_4',
     })
     expect(updated).toMatchObject({ slug: 'artikel-guru-baharu', isPublished: false })
     expect(() =>
@@ -594,12 +593,19 @@ describe('M05 dashboard inputs (M05 §6.12, §7 #1; M09 FR-M09-40)', () => {
 })
 
 describe('notes, perutusan, support', () => {
-  it('has the 10 live notes with the documented facets', () => {
+  it('has the 10 D54 Tingkatan 4/5 notes (note types keep the live split)', () => {
     expect(notes.count('Q-NOTE-ALL')).toBe(10)
-    expect(notes.count('Q-NOTE-SUBJECT', 'matematik')).toBe(3)
+    expect(notes.count('Q-NOTE-SUBJECT', 'matematik')).toBe(1)
+    expect(notes.count('Q-NOTE-SUBJECT', 'kimia')).toBe(2)
+    expect(notes.count('Q-NOTE-SUBJECT', 'sains')).toBe(0)
     expect(notes.count('Q-NOTE-TYPE', 'RINGKASAN')).toBe(5)
-    expect(notes.adminList({ subject: 'matematik' }).total).toBe(3)
-    expect(notes.adminList({ search: 'sifir' }).total).toBe(1)
+    expect(notes.adminList({ subject: 'biologi' }).total).toBe(2)
+    expect(notes.adminList({ search: 'termokimia' }).total).toBe(1)
+    expect(SEED_NOTES.map((n) => n.grade).sort()).toEqual([
+      ...Array<string>(5).fill('TINGKATAN_4'),
+      ...Array<string>(5).fill('TINGKATAN_5'),
+    ])
+    expect(SEED_NOTES.some((n) => /darjah/i.test(`${n.title} ${n.grade}`))).toBe(false)
     expect(notes.adminList({ noteType: 'summary' }).total).toBe(5)
     expect(notes.adminList({ noteType: 'full_notes' }).total).toBe(2)
   })

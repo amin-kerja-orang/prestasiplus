@@ -24,12 +24,13 @@ const C: Record<string, ArticleCategory> = {
 }
 const L: Record<string, GradeLevel> = {
   S: 'SEMUA',
-  '1': 'DARJAH_1',
-  '2': 'DARJAH_2',
-  '3': 'DARJAH_3',
-  '4': 'DARJAH_4',
-  '5': 'DARJAH_5',
-  '6': 'DARJAH_6',
+  // D54 (2026-10-24): no Darjah. The live Darjah 1-4 codes map to Tingkatan 4, Darjah 5-6 to Tingkatan 5.
+  '1': 'TINGKATAN_4',
+  '2': 'TINGKATAN_4',
+  '3': 'TINGKATAN_4',
+  '4': 'TINGKATAN_4',
+  '5': 'TINGKATAN_5',
+  '6': 'TINGKATAN_5',
 }
 const AUTHOR: Record<string, number> = { A: 1, C: 3101 }
 
@@ -113,7 +114,7 @@ const TUPLES: readonly Tuple[] = [
   ],
   [
     6,
-    'Cara Mudah Hafal Sifir untuk Darjah 2 dan 3',
+    'Cara Mudah Hafal Sifir dan Formula Matematik',
     'T',
     '3',
     0,
@@ -464,7 +465,7 @@ const TUPLES: readonly Tuple[] = [
   [51, 'Cara Bina Hubungan Positif dengan Pelajar', 'G', 'S', 0, 'C', 378, D22, '2026-01-21 21:00'],
   [
     52,
-    'Pelajar Darjah 6 Menang Pertandingan Inovasi Kebangsaan',
+    'Pelajar Tingkatan 5 Menang Pertandingan Inovasi Kebangsaan',
     'K',
     '6',
     1,
@@ -486,7 +487,7 @@ const TUPLES: readonly Tuple[] = [
   ],
   [
     54,
-    'Pelajar Darjah 4 Cipta Aplikasi Belajar untuk Adiknya',
+    'Pelajar Tingkatan 4 Cipta Aplikasi Belajar untuk Adiknya',
     'K',
     '4',
     0,
@@ -509,7 +510,7 @@ const TUPLES: readonly Tuple[] = [
   [56, 'Guru Muda Ubah Cara Pelajar Belajar Sains', 'K', '3', 0, 'A', 464, D22, '2026-01-24 19:00'],
   [
     57,
-    'Pasukan Robotik Sekolah Rendah Menang di Peringkat Antarabangsa',
+    'Pasukan Robotik Sekolah Menengah Menang di Peringkat Antarabangsa',
     'K',
     '5',
     0,
@@ -517,7 +518,7 @@ const TUPLES: readonly Tuple[] = [
     574,
     D22,
     '2026-01-25 09:00',
-    'pasukan-robotik-sekolah-rendah-menang-di-peringkat-antarabang',
+    'pasukan-robotik-sekolah-menengah-menang-di-peringkat-antaraba',
   ],
   [
     58,
@@ -718,12 +719,12 @@ const LIVE_EXCERPTS: Readonly<Record<number, string>> = {
   38: 'Tips untuk ibu bapa supaya waktu kerja rumah jadi produktif dan harmoni.',
   43: 'Panduan untuk ibu bapa yang sedang mempertimbangkan tuisyen.',
   57: 'Pelajar Malaysia bawa pulang emas dari pertandingan robotik di Jepun.',
-  64: 'Peluang untuk pelajar sekolah rendah tunjuk bakat menulis di peringkat kebangsaan.',
+  64: 'Peluang untuk pelajar sekolah menengah tunjuk bakat menulis di peringkat kebangsaan.',
   65: 'Projek perpustakaan bergerak bawa ribuan buku ke kampung terpencil.',
   66: 'Ketahui apa itu PRESTASIPLUS dan bagaimana ia boleh membantu pembelajaran anak anda.',
   67: 'Tips penting untuk kekal selamat semasa melayari internet.',
   68: 'Idea aktiviti yang produktif dan menyeronokkan untuk cuti sekolah.',
-  69: 'Pengenalan kepada STEM untuk pelajar sekolah rendah.',
+  69: 'Pengenalan kepada STEM untuk pelajar sekolah menengah.',
   70: 'Kurang tidur boleh menjejaskan prestasi sekolah. Ini yang kamu perlu tahu.',
   71: 'Pelajar yang banyak guna skrin perlu tahu cara jaga mata dengan betul.',
   72: 'Apa yang kamu makan mempengaruhi cara otak kamu berfungsi.',

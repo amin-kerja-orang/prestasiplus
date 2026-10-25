@@ -5,6 +5,8 @@ import { ApiError } from '@/api'
 import {
   CATEGORY_OPTIONS,
   GRADE_OPTIONS,
+  NOTE_GRADE_OPTIONS,
+  NOTE_SUBJECT_OPTIONS,
   errorLines,
   fieldErrors,
   isNotFoundError,
@@ -33,7 +35,7 @@ describe('display helpers', () => {
     expect(noteSubjectText('matematik')).toBe('MATEMATIK')
     expect(noteSubjectText('bahasa_melayu')).toBe('BAHASA MELAYU')
     expect(noteSubjectText('bahasa_inggeris')).toBe('BAHASA INGGERIS')
-    expect(noteGradeText('DARJAH_2')).toBe('DARJAH 2')
+    expect(noteGradeText('TINGKATAN_4')).toBe('TINGKATAN 4')
   })
 
   it('formats dates dd/mm/yyyy (list) and dd Mon yyyy in English (preview)', () => {
@@ -52,7 +54,7 @@ describe('display helpers', () => {
 })
 
 describe('options', () => {
-  it('has the 7 article categories and 7 levels in live order', () => {
+  it('has the 7 article categories and the D54 levels (Semua, Tingkatan 4, Tingkatan 5)', () => {
     expect(CATEGORY_OPTIONS.map((o) => o.value)).toEqual([
       'TIPS_BELAJAR',
       'BERITA',
@@ -62,14 +64,21 @@ describe('options', () => {
       'KEJAYAAN',
       'UMUM',
     ])
-    expect(GRADE_OPTIONS.map((o) => o.value)).toEqual([
-      'SEMUA',
-      'DARJAH_1',
-      'DARJAH_2',
-      'DARJAH_3',
-      'DARJAH_4',
-      'DARJAH_5',
-      'DARJAH_6',
+    expect(GRADE_OPTIONS.map((o) => o.value)).toEqual(['SEMUA', 'TINGKATAN_4', 'TINGKATAN_5'])
+    expect(NOTE_GRADE_OPTIONS).toEqual([
+      { value: 'TINGKATAN_4', label: 'Tingkatan 4' },
+      { value: 'TINGKATAN_5', label: 'Tingkatan 5' },
+    ])
+    expect(NOTE_SUBJECT_OPTIONS.map((o) => o.value)).toEqual([
+      'matematik',
+      'matematik_tambahan',
+      'sains',
+      'fizik',
+      'kimia',
+      'biologi',
+      'bahasa_melayu',
+      'bahasa_inggeris',
+      'sejarah',
     ])
   })
 })

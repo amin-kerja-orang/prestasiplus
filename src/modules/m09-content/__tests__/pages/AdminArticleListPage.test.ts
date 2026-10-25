@@ -22,7 +22,7 @@ function article(id: number, extra: Partial<AdminArticleItem> = {}): AdminArticl
     title: `Artikel ${String(id)}`,
     category: 'TIPS_BELAJAR',
     categoryLabel: 'Tips Belajar',
-    gradeLevel: 'DARJAH_4',
+    gradeLevel: 'TINGKATAN_4',
     isPublished: true,
     isFeatured: false,
     views: 596,
@@ -125,7 +125,7 @@ describe('AdminArticleListPage (M09 S1)', () => {
     expect(first.find('[data-testid=article-title]').text()).toBe('Artikel 10')
     expect(first.find('[data-testid=article-author]').text()).toBe('Oleh: Admin Demo')
     expect(first.find('[data-testid=article-category]').text()).toBe('Tips Belajar')
-    expect(first.find('[data-testid=article-grade]').text()).toBe('DARJAH_4')
+    expect(first.find('[data-testid=article-grade]').text()).toBe('TINGKATAN_4')
     expect(first.find('[data-testid=status-pill]').text()).toBe('Diterbitkan')
     expect(first.find('[data-testid=article-views]').text()).toBe('596')
     expect(first.find('[data-testid=article-date]').text()).toBe('22/02/2026')

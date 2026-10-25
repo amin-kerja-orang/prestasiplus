@@ -24,7 +24,7 @@ const ARTICLE: AdminArticleDetail = {
   content: BODY,
   featuredImage: null,
   category: 'TIPS_BELAJAR',
-  gradeLevel: 'DARJAH_4',
+  gradeLevel: 'TINGKATAN_4',
   isPublished: true,
   isFeatured: true,
   views: 596,

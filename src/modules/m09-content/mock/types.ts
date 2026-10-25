@@ -14,15 +14,8 @@ export const ARTICLE_CATEGORIES = [
 ] as const
 export type ArticleCategory = (typeof ARTICLE_CATEGORIES)[number]
 
-export const GRADE_LEVELS = [
-  'SEMUA',
-  'DARJAH_1',
-  'DARJAH_2',
-  'DARJAH_3',
-  'DARJAH_4',
-  'DARJAH_5',
-  'DARJAH_6',
-] as const
+/** Article levels. D54 (2026-10-24): secondary / SPM only, so no Darjah (supersedes BR-M09-01's list). */
+export const GRADE_LEVELS = ['SEMUA', 'TINGKATAN_4', 'TINGKATAN_5'] as const
 export type GradeLevel = (typeof GRADE_LEVELS)[number]
 
 /** DATA-M09-01. */
@@ -58,7 +51,17 @@ export interface ArticleAttachmentRow {
   createdAt: string
 }
 
-export type NoteSubject = 'matematik' | 'sains' | 'bahasa_melayu' | 'bahasa_inggeris' | 'sejarah'
+/** D54: the SPM subjects with Tingkatan 4/5 chapters in M03 (supersedes the BR-M09-11 primary list). */
+export type NoteSubject =
+  | 'matematik'
+  | 'matematik_tambahan'
+  | 'sains'
+  | 'fizik'
+  | 'kimia'
+  | 'biologi'
+  | 'bahasa_melayu'
+  | 'bahasa_inggeris'
+  | 'sejarah'
 export type NoteType =
   'FORMULA' | 'RINGKASAN' | 'LENGKAP' | 'TIPS_TRICKS' | 'MIND_MAP' | 'FLASHCARD' | 'CHEAT_SHEET'
 

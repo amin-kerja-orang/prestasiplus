@@ -142,12 +142,18 @@ export const noteQueries = defineNamedQueries(notesTable, {
   'Q-NOTE-SUBJECT': {
     where: (subject: NoteSubject) => ({ subject }),
     expected: [
-      { args: ['matematik'], value: 3 },
-      { args: ['sains'], value: 3 },
-      { args: ['bahasa_melayu'], value: 2 },
+      // D54: re-seeded Tingkatan 4/5 PoC notes (the live Darjah counts were 3 / 3 / 2 / 2).
+      { args: ['matematik'], value: 1 },
+      { args: ['matematik_tambahan'], value: 1 },
+      { args: ['sains'], value: 0 },
+      { args: ['fizik'], value: 0 },
+      { args: ['kimia'], value: 2 },
+      { args: ['biologi'], value: 2 },
+      { args: ['bahasa_melayu'], value: 1 },
       { args: ['bahasa_inggeris'], value: 2 },
+      { args: ['sejarah'], value: 1 },
     ],
-    source: 'M09 §6.11',
+    source: 'M09 §6.11 (D54 re-seed)',
   },
   'Q-NOTE-TYPE': {
     where: (noteType: NoteType) => ({ noteType }),
