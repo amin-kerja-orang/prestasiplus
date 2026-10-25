@@ -17,6 +17,7 @@ import { DsCluster, DsDataTable, DsStatusBadge, DsText, type CardField } from '@
 import { useMedia } from '@/ds/useMedia'
 
 import type { PupilRiskView, RiskStatus } from '../../api/amaran'
+import MobileCard from '../MobileCard.vue'
 import { STATUS_LABEL } from './amaran-format'
 
 const props = defineProps<{ rows: PupilRiskView[] }>()
@@ -157,6 +158,9 @@ const cardFields: CardField[] = [
       </template>
       <template #mastery-cell="{ row }">
         <span data-testid="am-mastery">{{ row.original.mastery }}</span>
+      </template>
+      <template #card="{ row }">
+        <MobileCard title="name" :fields="cardFields" :row="row" />
       </template>
     </DsDataTable>
   </section>
