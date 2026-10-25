@@ -6,6 +6,7 @@
  */
 import { computed, ref } from 'vue'
 
+import type { EntityId } from '@/api'
 import { DsBreadcrumb, DsIconChip, DsLoadError, DsPage, DsStatRow, type StatItem } from '@/ds'
 
 import { fetchStudentDetail } from '../api'
@@ -31,7 +32,7 @@ import StudentTopics from '../components/monitoring/StudentTopics.vue'
 import StudentWrongAnswers from '../components/monitoring/StudentWrongAnswers.vue'
 import { useMonitoringPage } from '../components/monitoring/use-monitoring-page'
 
-const props = withDefaults(defineProps<{ schoolId: number; userId: number; basePath?: string }>(), {
+const props = withDefaults(defineProps<{ schoolId: EntityId; userId: EntityId; basePath?: string }>(), {
   basePath: MONITORING_BASE,
 })
 const paths = computed(() => monitoringPaths(props.basePath))

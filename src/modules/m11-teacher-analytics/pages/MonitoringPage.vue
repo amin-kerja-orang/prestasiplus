@@ -10,6 +10,7 @@
  * Layout (Portal Pentadbiran admin pattern): header row (subtitle + actions), filter toolbar, KPI strip,
  * the sections in tabs, then the guide.
  */
+import { useToast } from '@nuxt/ui/composables'
 import { computed, nextTick, ref } from 'vue'
 import { isNavigationFailure, NavigationFailureType, useRoute, useRouter } from 'vue-router'
 
@@ -25,7 +26,7 @@ import MonitoringSignals from '../components/monitoring/MonitoringSignals.vue'
 import MonitoringTools from '../components/monitoring/MonitoringTools.vue'
 import MonitoringWeekly from '../components/monitoring/MonitoringWeekly.vue'
 import { buildCsv } from '../components/monitoring/monitoring-csv'
-import { pct } from '../components/monitoring/monitoring-format'
+import { EXPORT_ERROR, pct } from '../components/monitoring/monitoring-format'
 import {
   MONITORING_BASE,
   monitoringPaths,
@@ -43,6 +44,7 @@ const props = withDefaults(defineProps<{ basePath?: string }>(), { basePath: MON
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 const paths = computed(() => monitoringPaths(props.basePath))
 
 const one = (v: unknown) =>
@@ -79,7 +81,14 @@ async function doExport(format: 'pdf' | 'csv') {
     window.print()
     return
   }
-  const result = await fetchMonitoringExport('csv', query.value)
+  let result: Awaited<ReturnType<typeof fetchMonitoringExport>>
+  try {
+    result = await fetchMonitoringExport('csv', query.value)
+  } catch {
+    // Any failure (401 / 403 / 429 / 5xx / offline): a fixed BM message, never the API text (DV-M11-32).
+    toast.add({ title: EXPORT_ERROR, color: 'error' })
+    return
+  }
   const csv = buildCsv(
     ['#', 'Sekolah', 'Kod', 'Negeri', 'Daftar', 'Aktif', '%', 'Tahap'],
     result.rows.map((r, i) => [
