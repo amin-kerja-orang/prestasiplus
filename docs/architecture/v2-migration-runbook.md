@@ -337,6 +337,8 @@ Exit codes (all commands): 0 ok, 1 failed or reconciliation mismatch, 2 usage or
 | `classrooms` | `teacher_id` is set but the teacher has NO row in the source `users` (deleted account). The pupils still migrate. | `classrooms.excluded.teacher_absent_from_source` | A teacher who IS in the source `users` but was not loaded (for example an `agent`): `ORPHAN_PARENT teacher_id`. |
 | `enrolments` | The class is excluded by the rule above. | `enrolments.excluded.class_teacher_absent_from_source` | An enrolment of a class that is in the source but not loaded for another reason, or of a class that does not exist in the source: `ORPHAN_PARENT classroom_id`. |
 
+The two exclusion notes survive a resume: after a resumed (or interrupted) apply, `rebuildCoreNotes` sets both again from the full staging counts (a class with a `teacher_id` and no staged `users` row, and the `classroom_student` rows of those classes), so `etl_runs.counters -> 'notes'` equals a clean run's.
+
 Other orphans are genuine and stay rejects, explained in the deviations log (A1-FIX): practice sessions and answers of deleted source users, and wallet rows of non-student roles (`UNSUPPORTED user_id`, by design: v2 wallets are student-only) or of users absent from the source. The enum maps added by A1-FIX (education stage, coin ledger source, banner type, subscription tier) are listed in the same section of the deviations log.
 
 **Deleted at source.** A delta never deletes v2 rows (section 15), so after a delta on a re-staged dump a v2 table can hold more rows of the source than the run loaded. Verify measures that difference directly: the v2 rows with `legacy_source = 'cloud'` whose legacy id the current staging no longer produces.

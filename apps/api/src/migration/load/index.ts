@@ -319,4 +319,29 @@ export async function rebuildCoreNotes(pool: Pick<pg.Pool, 'query'>, core: CoreC
     [runId],
   )
   for (const r of res.rows) core.notes.count(`${prefix}.${roleRejectLabel(r.role)}`)
+  await rebuildExclusionNotes(pool, core)
+}
+
+/**
+ * A1-FIX: recounts the two documented class exclusions from staging (same rule as `classesWithAbsentTeacher`: a class whose
+ * `teacher_id` is set and has no row in the staged `users`, plus the `classroom_student` rows of those classes). The classrooms and
+ * enrolments steps read every staged row (no `--as-of` or `is_test` filter), so the full staging count equals the live count of a
+ * run that covered every row. The values are SET (not added to), so the rebuild is idempotent; a note is set only above 0,
+ * like the live path. Counts only, never ids.
+ */
+async function rebuildExclusionNotes(pool: Pick<pg.Pool, 'query'>, core: CoreContext): Promise<void> {
+  const classes = 'classrooms.excluded.teacher_absent_from_source'
+  const enrolments = 'enrolments.excluded.class_teacher_absent_from_source'
+  core.notes.counters.delete(classes)
+  core.notes.counters.delete(enrolments)
+  const absent = `SELECT c.id FROM "${STAGING_SCHEMA}"."classrooms" c
+     WHERE c.teacher_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM "${STAGING_SCHEMA}"."users" u WHERE u.id = c.teacher_id)`
+  const res = await pool.query<{ classes: string; enrolments: string }>(
+    `SELECT (SELECT count(*) FROM (${absent}) a)::text AS classes,
+            (SELECT count(*) FROM "${STAGING_SCHEMA}"."classroom_student" e WHERE e.classroom_id IN (${absent}))::text AS enrolments`,
+  )
+  const nClasses = Number(res.rows[0]?.classes ?? 0)
+  const nEnrolments = Number(res.rows[0]?.enrolments ?? 0)
+  if (nClasses > 0) core.notes.counters.set(classes, nClasses)
+  if (nEnrolments > 0) core.notes.counters.set(enrolments, nEnrolments)
 }

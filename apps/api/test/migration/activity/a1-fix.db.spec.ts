@@ -8,40 +8,45 @@
  *     of `eligible_count`, not a reject, pupils still migrate); a class whose teacher IS in the source but was not loaded (5002,
  *     an `agent`) is still an ORPHAN_PARENT reject, and so is its enrolment.
  *  3. In-progress exam attempts are covered by `exam.db.spec.ts`.
+ *  4. The two exclusion notes of a RESUMED `migrate:core` apply equal a clean run's (rebuilt from staging, not added to).
  */
+import type pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { bootActivity, type ActivityHarness } from './helpers'
+import { runCore } from '../../../src/migration/load'
+import type { AnyEntityStep } from '../../../src/migration/kit/runner'
+import { testOutDir } from '../staging/helpers'
+import { AS_OF, bootActivity, type ActivityHarness } from './helpers'
 
 let h: ActivityHarness
+
+async function plantA1(pool: pg.Pool): Promise<void> {
+  // The real source holds BM stage names. Level 1 and 2 are primary; a form 1 and a form 4 level are added.
+  await pool.query(`update staging_cloud.education_levels set stage = 'Rendah'`)
+  await pool.query(
+    `insert into staging_cloud.education_levels (id, name_bm, name_en, sort_order, curriculum, stage) values
+       (3, 'Tingkatan 1', 'Form 1', 3, 'kssm', 'Menengah Rendah'), (4, 'Tingkatan 4', 'Form 4', 4, 'kssm', 'Menengah Atas')`,
+  )
+  await pool.query(
+    `insert into staging_cloud.chapters (id, subject_id, education_level_id, number, title, strand) values
+       (5001, 1, 3, 1, 'Bab Tingkatan 1', 'A'), (5002, 1, 4, 1, 'Bab Tingkatan 4', 'A')`,
+  )
+  // Classes: 5001 teacher 99001 is not in the source users; 5002 teacher 15 is an agent (in the source, never loaded).
+  await pool.query(
+    `insert into staging_cloud.classrooms (id, name, code, teacher_id, school_id, subject_id, session_year) values
+       (5001, 'Darjah 1 Yatim', 'YTM5001', 99001, 1, 1, '2026'),
+       (5002, 'Darjah 1 Ejen', 'EJN5002', 15, 1, 1, '2026')`,
+  )
+  await pool.query(
+    `insert into staging_cloud.classroom_student (classroom_id, student_id) values (5001, 1), (5001, 2), (5001, 9999), (5002, 1)`,
+  )
+}
 
 const levelIdOf = async (legacyId: string): Promise<string | undefined> =>
   (await h.q<{ new_id: string }>(`select new_id from etl_id_map where legacy_source = 'cloud' and entity = 'education_levels' and legacy_id = $1`, [legacyId]))[0]?.new_id
 
 beforeAll(async () => {
-  h = await bootActivity({
-    async prepare(pool) {
-      // The real source holds BM stage names. Level 1 and 2 are primary; a form 1 and a form 4 level are added.
-      await pool.query(`update staging_cloud.education_levels set stage = 'Rendah'`)
-      await pool.query(
-        `insert into staging_cloud.education_levels (id, name_bm, name_en, sort_order, curriculum, stage) values
-           (3, 'Tingkatan 1', 'Form 1', 3, 'kssm', 'Menengah Rendah'), (4, 'Tingkatan 4', 'Form 4', 4, 'kssm', 'Menengah Atas')`,
-      )
-      await pool.query(
-        `insert into staging_cloud.chapters (id, subject_id, education_level_id, number, title, strand) values
-           (5001, 1, 3, 1, 'Bab Tingkatan 1', 'A'), (5002, 1, 4, 1, 'Bab Tingkatan 4', 'A')`,
-      )
-      // Classes: 5001 teacher 99001 is not in the source users; 5002 teacher 15 is an agent (in the source, never loaded).
-      await pool.query(
-        `insert into staging_cloud.classrooms (id, name, code, teacher_id, school_id, subject_id, session_year) values
-           (5001, 'Darjah 1 Yatim', 'YTM5001', 99001, 1, 1, '2026'),
-           (5002, 'Darjah 1 Ejen', 'EJN5002', 15, 1, 1, '2026')`,
-      )
-      await pool.query(
-        `insert into staging_cloud.classroom_student (classroom_id, student_id) values (5001, 1), (5001, 2), (5001, 9999), (5002, 1)`,
-      )
-    },
-  })
+  h = await bootActivity({ prepare: plantA1 })
 }, 300_000)
 afterAll(async () => {
   await h?.close()
@@ -165,4 +170,55 @@ describe('classes whose teacher is absent from the source', () => {
     expect(notes?.['classrooms.excluded.teacher_absent_from_source']).toBe(1)
     expect(notes?.['enrolments.excluded.class_teacher_absent_from_source']).toBe(3)
   })
+})
+
+describe('the exclusion notes after a resumed core apply', () => {
+  const NOTES = ['classrooms.excluded.teacher_absent_from_source', 'enrolments.excluded.class_teacher_absent_from_source']
+  const savedNotes = async (r: ActivityHarness): Promise<Record<string, number>> =>
+    (await r.q<{ notes: Record<string, number> }>(
+      `select counters -> 'notes' as notes from etl_runs where mode = 'apply' and status = 'succeeded' and entity_set @> array['classrooms']::text[] order by id desc limit 1`,
+    ))[0]?.notes ?? {}
+  const pick = (all: Record<string, number>) => Object.fromEntries(NOTES.map((k) => [k, all[k]]))
+
+  let r: ActivityHarness
+  beforeAll(async () => {
+    r = await bootActivity({ core: false, prepare: plantA1 })
+  }, 300_000)
+  afterAll(async () => {
+    await r?.close()
+  })
+
+  it('equals a clean run: classrooms and enrolments batches committed before the crash are recounted from staging', async () => {
+    const core = (mode: 'dry-run' | 'apply', transformSteps?: (steps: AnyEntityStep[]) => AnyEntityStep[]) =>
+      runCore({ pool: r.env.pool, env: r.runEnv, source: 'cloud', asOf: AS_OF, mode, batchSize: 2, outDir: testOutDir(), transformSteps })
+    // The crash comes after the classrooms and the enrolments steps have committed all their batches.
+    let failed = 0
+    const failSubscriptions = (steps: AnyEntityStep[]): AnyEntityStep[] =>
+      steps.map((s) =>
+        s.entity !== 'school_subscriptions'
+          ? s
+          : {
+              ...s,
+              async load() {
+                failed += 1
+                throw new Error('injected failure after enrolments')
+              },
+            },
+      )
+    expect((await core('dry-run')).report.status).toBe('succeeded')
+    await expect(core('apply', failSubscriptions)).rejects.toThrow('injected failure after enrolments')
+    expect(failed).toBe(1)
+    expect(await r.count('classrooms', `t.legacy_source = 'cloud'`)).toBeGreaterThan(0)
+    expect(await r.count('etl_checkpoints', `entity = 'enrolments'`)).toBeGreaterThan(0)
+
+    const resumed = await core('apply')
+    expect(resumed.report.status).toBe('succeeded')
+    expect(resumed.report.resumedBatches).toBeGreaterThanOrEqual(2)
+    // The resumed process skipped both steps, so its own context never counted the exclusions: the rebuild sets them.
+    const want = { [NOTES[0] as string]: 1, [NOTES[1] as string]: 3 }
+    expect(pick(Object.fromEntries(resumed.core.notes.counters))).toEqual(want)
+    // What the night SQL checks read, and the same as the clean run of the harness above.
+    expect(pick(await savedNotes(r))).toEqual(want)
+    expect(pick(await savedNotes(h))).toEqual(want)
+  }, 300_000)
 })
