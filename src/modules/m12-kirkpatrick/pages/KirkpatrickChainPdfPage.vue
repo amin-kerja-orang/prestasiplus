@@ -38,7 +38,7 @@ const { data, error, loading, reload } = useKirkpatrickPage((signal) =>
           <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
         </p>
         <template v-if="data">
-          <ChainCards :chain="data" />
+          <ChainCards :chain="data" grid />
           <ChainCorrelation :correlation="data.correlation" :strength="data.t4.strength" />
           <ChainConclusion />
         </template>
