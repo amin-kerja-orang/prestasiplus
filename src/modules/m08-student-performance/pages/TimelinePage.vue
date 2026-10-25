@@ -2,10 +2,12 @@
 /**
  * S16 `/timeline` "Timeline Saya" (M08-T3; FR-M08-97..99, FN-M08-6.1.*), from `GET /api/timeline`: heading,
  * "Tambah Post", the empty card or the posts (newest first, PROPOSED layout), and the "Profil Awam Anda"
- * box with the viewer's own public link (DV-19) and a copy button (`fa-copy` / `fa-check` for 2,000ms, only when the write succeeds).
+ * box with the viewer's own public link (DV-19) and a copy button (`fa-copy` / `fa-check` for 2,000ms, only when the write succeeds);
+ * the box is hidden when the viewer's role cannot open the profile (DV-M08-48).
  */
 import { computed, onBeforeUnmount, ref } from 'vue'
 
+import { usePrototypeScope, useRouteExists } from '@/composables'
 import { DsEmptyState, DsIconChip, DsLoadError, DsPage, DsPanel } from '@/ds'
 
 import { fetchTimeline } from '../api/performance'
@@ -19,6 +21,15 @@ const { data, error, reload } = useRouteData((signal) => fetchTimeline({ signal 
 const loadFailed = computed(() => isLoadError(error.value))
 const posts = computed(() => sortPosts(data.value?.posts ?? []))
 const publicUrl = computed(() => (data.value ? absoluteUrl(data.value.profileUrl) : ''))
+
+// The public profile is only linked when the viewer's role can open it (a pupil or a guest cannot in
+// the prototype scope): the whole box is hidden then, as its text and copy button only serve the link (DV-M08-48).
+const { allows } = usePrototypeScope()
+const { routeExists } = useRouteExists()
+const showProfile = computed(() => {
+  const path = data.value?.profileUrl
+  return !!path && allows(path) && routeExists(path)
+})
 
 const copied = ref(false)
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -82,7 +93,7 @@ onBeforeUnmount(() => {
         </li>
       </ol>
 
-      <DsPanel data-testid="public-profile-box">
+      <DsPanel v-if="showProfile" data-testid="public-profile-box">
         <div class="flex items-center gap-3">
         <DsIconChip icon="i-ph-globe" accent="friend" size="sm" />
         <div class="min-w-0 flex-1">
