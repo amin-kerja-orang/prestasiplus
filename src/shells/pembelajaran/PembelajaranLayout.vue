@@ -17,6 +17,7 @@ import { RouterLink, useRoute } from 'vue-router'
 
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
+import { usePageMeta } from '@/composables/usePageMeta'
 import { usePrototypeScope } from '@/composables/usePrototypeScope'
 import {
   DsArt3D,
@@ -115,7 +116,20 @@ const current = computed(() => currentItem(sidebar.value, route.path))
 const sectionTabs = computed(() =>
   groupTabs(sidebar.value, current.value?.id).map((t) => ({ key: t.id, label: t.label, to: t.to })),
 )
-const title = computed(() => route.meta.header?.title ?? current.value?.label ?? '')
+const pageMeta = usePageMeta()
+/**
+ * Topbar title. A page with a data-driven header (`usePageMeta().setHeader()`, e.g. "Headcount
+ * Sejarah") wins over the route's static header, as in the Pentadbiran portal and the admin / user
+ * shells. A page that prints its own h1 (`meta.ownsH1`) keeps the static title: its dynamic title is
+ * already on the page, so the topbar must not repeat it.
+ */
+const title = computed(
+  () =>
+    (route.meta.ownsH1 ? undefined : pageMeta.state.header?.title) ??
+    route.meta.header?.title ??
+    current.value?.label ??
+    '',
+)
 const crumb = computed(() => {
   const c = current.value ? sectionOf(sidebar.value, current.value.id) : ''
   return c && c !== title.value ? c : ''
