@@ -158,7 +158,8 @@ function remove(id: number): void {
                     v-if="student.schoolName"
                     color="neutral"
                     variant="subtle"
-                    class="max-w-full whitespace-normal break-words"
+                    class="max-w-full truncate sm:max-w-40"
+                    data-testid="linker-result-school"
                     :label="student.schoolName"
                   />
                 </span>
