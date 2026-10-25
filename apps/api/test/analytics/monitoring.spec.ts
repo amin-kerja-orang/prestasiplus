@@ -223,6 +223,11 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       expect(body.kpi.answers).toBe(detail.cards.answers)
       const weekly = rowOf(body.weekly, w.schoolA) as unknown as (typeof body.weekly)[number]
       expect(weekly.cells.reduce((n, c) => n + c.count, 0)).toBe(detail.cards.answers)
+      // Teachers: S2 teacher table and KPIs follow the S3 teacher list (the caller only).
+      expect(detail.teachers.map((x) => x.id)).toEqual([ids.teacherA])
+      expect(rowOf(body.teacherRows, w.schoolA)).toMatchObject({ registered: detail.cards.teachers, loggedIn: detail.cards.teachersLoggedIn })
+      expect(body.kpi.teachers).toBe(detail.cards.teachers)
+      expect(body.kpi.teachersLoggedIn).toBe(detail.cards.teachersLoggedIn)
       // The school admin still sees the whole school.
       expect(AnalyticsMonitoringOverviewSchema.parse((await adminA.get('/monitoring/overview')).body.data).kpi.students).toBe(4)
     })

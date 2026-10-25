@@ -169,14 +169,15 @@ export class AnalyticsRepository {
   }
 
   /** Teachers and teachers who logged in per school (Q-M11-TEACHERS). */
-  async teachersBySchool(ids: readonly string[] | null): Promise<Map<string, { n: number; logged: number }>> {
-    if (ids !== null && ids.length === 0) return new Map()
+  async teachersBySchool(ids: readonly string[] | null, teacherIds: readonly string[] | null = null): Promise<Map<string, { n: number; logged: number }>> {
+    if ((ids !== null && ids.length === 0) || (teacherIds !== null && teacherIds.length === 0)) return new Map()
     const rows = await this.db.$queryRaw<{ school_id: string; n: number; logged: number }[]>`
       SELECT u.school_id::text AS school_id, count(*)::int AS n, count(*) FILTER (WHERE u.last_login_at IS NOT NULL)::int AS logged
       FROM users u
       WHERE u.is_active AND u.school_id IS NOT NULL
         AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'teacher')
         ${this.clause(ids, Prisma.sql`u.school_id`)}
+        ${this.clause(teacherIds, Prisma.sql`u.id`)}
       GROUP BY u.school_id`
     return new Map(rows.map((r) => [r.school_id, { n: r.n, logged: r.logged }]))
   }

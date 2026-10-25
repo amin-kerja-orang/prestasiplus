@@ -78,7 +78,7 @@ export class MonitoringService {
     const [facts, registered, teachers, engagement, withUsers] = await Promise.all([
       this.repo.schools(scope),
       this.repo.registeredBySchool(scope, pupilIds),
-      this.repo.teachersBySchool(scope),
+      this.repo.teachersBySchool(scope, this.ownTeacherIds(ctx)),
       this.repo.engagement(scope, from === null ? null : new Date(from), pupilIds),
       this.repo.schoolsWithUsers(scope),
     ])
@@ -248,6 +248,17 @@ export class MonitoringService {
     return ctx.role === 'teacher' ? this.classes.teacherStudentIds(ctx.userId) : null
   }
 
+  /** Data minimisation for teachers: a teacher caller sees only themself; null = no teacher filter. */
+  private ownTeacherIds(ctx: Ctx): string[] | null {
+    return ctx.role === 'teacher' ? [ctx.userId] : null
+  }
+
+  /** The one teacher filter: S2 teacher counts (via `ownTeacherIds`) and the S3 teacher list. */
+  private visibleTeachers<T extends { id: string }>(ctx: Ctx, teachers: T[]): T[] {
+    const ids = this.ownTeacherIds(ctx)
+    return ids === null ? teachers : teachers.filter((t) => ids.includes(t.id))
+  }
+
   /** The one minimisation filter: S2 counts (via `ownPupilIds`), S3 and S5 lists all use it. */
   private async visiblePupils<T extends { id: string }>(ctx: Ctx, pupils: T[]): Promise<T[]> {
     const ids = await this.ownPupilIds(ctx)
@@ -273,7 +284,7 @@ export class MonitoringService {
       this.repo.latestSubscription(fact.id),
     ])
     const pupils = await this.visiblePupils(ctx, allPupils)
-    const teachers = ctx.role === 'teacher' ? allTeachers.filter((t) => t.id === ctx.userId) : allTeachers
+    const teachers = this.visibleTeachers(ctx, allTeachers)
     const [stats, flags] = await Promise.all([this.repo.pupilStats(pupils.map((p) => p.id)), this.repo.flagsOf(pupils.map((p) => p.id))])
 
     const students = pupils
