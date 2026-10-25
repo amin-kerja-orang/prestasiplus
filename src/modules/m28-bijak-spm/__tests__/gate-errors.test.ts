@@ -29,31 +29,51 @@ function question(curriculum: CurriculumTag): QuestionDef {
 
 const tag = (over: Partial<CurriculumTag>): CurriculumTag => matTag(over)
 
-describe('publish gate: DSKP topic (FB-004)', () => {
+describe('publish gate: the shared DSKP tag rule (FB-004, AC-07.x)', () => {
   it('a T1-T3 question without a unit can be published', () => {
     const t = t13Tag()
-    expect(gateErrors([question(t)], scheme)).toEqual([])
+    expect(gateErrors([question(t)], scheme, lookup)).toEqual([])
   })
 
   it('T4 and T5 questions still need the unit', () => {
     for (const formOrigin of ['T4', 'T5'] as const) {
       const t = tag({ unitId: null, spIds: [], formOrigin })
-      expect(gateErrors([question(t)], scheme)).toEqual(['Soalan 1: topik DSKP belum dipilih'])
+      expect(gateErrors([question(t)], scheme, lookup)).toEqual([
+        'Soalan 1: Unit DSKP belum dipilih.',
+        'Soalan 1: Standard Pembelajaran (SP) belum dipilih.',
+      ])
     }
   })
 
-  it('a flagged question (perlu semakan) is not refused by this check yet (DSKP-T05 wires tagIssues)', () => {
+  it('a flagged question (perlu semakan) is refused with the rule messages (AC-07.5)', () => {
     const t = tag({ formOrigin: null, unitId: null, spIds: [], review: 'perlu-semakan' })
-    expect(gateErrors([question(t)], scheme)).toEqual([])
+    expect(gateErrors([question(t)], scheme, lookup)).toEqual([
+      'Soalan 1: Subjek dan tingkatan perlu ditetapkan.',
+    ])
+  })
+
+  it('names the question number and checks every question of the unit', () => {
+    const qs = [question(tag({})), { ...question(tag({ tp: null })), id: 'q2' }, question(t13Tag())]
+    const keyed = (): SchemeDef => ({ kind: 'option', marks: 1, correct: 'A', reason: 'Kunci' })
+    expect(gateErrors(qs, keyed, lookup)).toEqual(['Soalan 2: Tahap Penguasaan (TP) belum dipilih.'])
+  })
+
+  it('the catalogue is checked, not only the presence of a unit (AC-07.4, AC-07.7)', () => {
+    expect(gateErrors([question(tag({ unitId: 'MAT-T4-02' as never }))], scheme, lookup)).toEqual([
+      'Soalan 1: Unit DSKP tidak wujud dalam katalog.',
+    ])
+    expect(gateErrors([question(tag({ spIds: [] }))], scheme, lookup)).toEqual([
+      'Soalan 1: Standard Pembelajaran (SP) belum dipilih.',
+    ])
   })
 
   it('a T4 question with a unit passes', () => {
-    expect(gateErrors([question(tag({}))], scheme)).toEqual([])
+    expect(gateErrors([question(tag({}))], scheme, lookup)).toEqual([])
   })
 
   it('other gate rules are unchanged for T1-T3', () => {
     const t = t13Tag()
-    expect(gateErrors([question(t)], () => undefined)).toEqual(['Soalan 1: skema jawapan belum ada'])
+    expect(gateErrors([question(t)], () => undefined, lookup)).toEqual(['Soalan 1: skema jawapan belum ada'])
   })
 
   it('the intake gate and the publish gate agree on a T1-T3 question', () => {
@@ -78,12 +98,15 @@ describe('publish gate: DSKP topic (FB-004)', () => {
     }
     const intake = validateBatch({ questions: [q], stimuli: [], source: 'x', copyright: 'sendiri' }, lookup)
     expect(intake.filter((i) => i.message.includes('Unit DSKP'))).toEqual([])
-    expect(gateErrors([question(tagged)], scheme)).toEqual([])
+    expect(gateErrors([question(tagged)], scheme, lookup)).toEqual([])
     // and a T4 question without a unit is refused by both
     const t4 = { ...emptyTag('MAT'), formOrigin: 'T4' as const, tp: 3 as const }
     const intakeT4 = validateBatch({ questions: [{ ...q, tag: t4 }], stimuli: [], source: 'x', copyright: 'sendiri' }, lookup)
     expect(intakeT4.some((i) => i.message.includes('Unit DSKP'))).toBe(true)
-    expect(gateErrors([question(t4)], scheme)).toHaveLength(1)
+    expect(gateErrors([question(t4)], scheme, lookup)).toEqual([
+      'Soalan 1: Unit DSKP belum dipilih.',
+      'Soalan 1: Standard Pembelajaran (SP) belum dipilih.',
+    ])
   })
 })
 

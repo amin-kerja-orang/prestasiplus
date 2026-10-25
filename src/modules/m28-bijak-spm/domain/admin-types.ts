@@ -8,6 +8,7 @@ import type {
   CurriculumTag,
   DskpSpId,
   DskpUnitId,
+  FormOrigin,
   GroupDef,
   KbatLevel,
   McqOption,
@@ -180,12 +181,25 @@ export interface DecisionResult {
   errors: string[]
 }
 
+/** Bank filter on KBAT (AC-06.5): "Ya" (any level), "Tidak" (none) or one level. */
+export type KbatFilter = 'ya' | 'tidak' | KbatLevel
+
 export interface BankFilter {
   q?: string
   subject?: string
   kertas?: number
   kind?: QuestionKind
   status?: QuestionStatus | 'semua'
+  /** Tag filters (AC-09.1). They are applied in the same pass that builds the rows. */
+  formOrigin?: FormOrigin
+  /** Catalogue unit id (the UI offers it once a subject and tingkatan are chosen). */
+  unitId?: string
+  /** Catalogue SP id (ids, not printed codes: a code repeats across T4 and T5). */
+  spId?: string
+  tp?: number
+  kbat?: KbatFilter
+  /** Only questions flagged `perlu-semakan` (AC-08.3). */
+  tagReview?: boolean
 }
 
 /** The questions that share one stimulus (figure / passage), in group order. */
@@ -207,7 +221,22 @@ export interface BankRow {
   subjectName: string
   kertas: number
   kind: QuestionKind
+  /**
+   * The unit title from the catalogue; "Tingkatan 1-3 (di luar DSKP)" for exempt questions and
+   * "Perlu semakan tag" for flagged ones (admin only; a student never sees the flag copy).
+   */
   topic: string
+  /** Tingkatan of the tag; null while the tag is flagged or untagged. */
+  formOrigin: FormOrigin | null
+  unitId: DskpUnitId | null
+  /** Catalogue title of `unitId`; null when there is no catalogue unit (T1-T3, flagged). */
+  unitTitle: string | null
+  /** Printed SP codes in tag order (the ids are in the tag; a code alone repeats across T4 and T5). */
+  spCodes: string[]
+  tp: TpLevel | null
+  kbat: KbatLevel | null
+  /** The tag is flagged `perlu-semakan`: it blocks publish and revision until a person tags it. */
+  tagReview: boolean
   marks: number
   preview: string
   previewPlain: string
