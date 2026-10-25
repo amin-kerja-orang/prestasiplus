@@ -116,6 +116,7 @@ const quickNav = computed(() => [
               variant="soft"
               size="xl"
               block
+              :ui="{ label: 'whitespace-normal' }"
               :icon="n.icon"
               :label="n.label"
             />
