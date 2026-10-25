@@ -52,6 +52,9 @@ describe('Pentadbiran menu data', () => {
     expect(activeItem('/admin/questions/import')?.id).toBe('BS-02')
     expect(activeItem('/admin/spm/soalan/manual')?.id).toBe('KS-16')
     expect(activeItem('/admin/spm/soalan/mat1-pub-1/sunting')?.id).toBe('KS-02')
+    // Monitoring is mounted on `/admin/monitoring` in this shell (M17, FR-M17-10), drill pages included.
+    expect(activeItem('/admin/monitoring')?.id).toBe('PM-03')
+    expect(activeItem('/admin/monitoring/sekolah/8080')?.id).toBe('PM-03')
   })
 })
 
