@@ -10,6 +10,7 @@ import { useFlashStore } from '@/stores/flash'
 import type { ExistingStudent, SchoolQuota } from '../../api/imports'
 import type { SchoolSummary } from '../../api/schools'
 import StudentImportPage from '../../pages/StudentImportPage.vue'
+import { expectListInFlow } from './in-flow'
 
 const imports = vi.hoisted(() => ({
   importStudents: vi.fn(),
@@ -124,6 +125,17 @@ describe('StudentImportPage (M02 S5) content', () => {
       'Contoh: Muhammad Fulan bin Fulan, m-XXXXXXXX@moe-dl.edu.my, katalaluan123, 031215101234',
     )
     expect(w.find('[data-testid=student-format-paste]').exists()).toBe(false)
+  })
+})
+
+describe('StudentImportPage (M02 S5) school picker', () => {
+  it('draws the school result list in the flow, not floating (SWX4-04)', async () => {
+    const w = await render()
+    schools.searchSchools.mockResolvedValue([SMK, SK])
+    await t(w, 'admin-school-search').setValue('SEKOLAH')
+    await vi.advanceTimersByTimeAsync(300)
+    await flushPromises()
+    expectListInFlow(w, 'admin-school-dropdown')
   })
 })
 

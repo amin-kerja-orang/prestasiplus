@@ -379,13 +379,13 @@ describe('drill modal (FR-M10-19, FN-M10-2.2.7)', () => {
     expect(t('cc-drill-empty').exists()).toBe(false)
   })
 
-  it('shows "Ralat: {message}" and the tile label when the drill fails', async () => {
+  it('shows the fixed BM load line and the tile label when the drill fails (SWE)', async () => {
     api.fetchCommandCenterDrill.mockRejectedValue(
       new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Jenis tidak sah' }),
     )
     await mountPage()
     await t('cc-mood-happy').trigger('click')
-    expect(text('cc-drill-error')).toBe('Ralat: Jenis tidak sah')
+    expect(text('cc-drill-error')).toBe('Ralat memuatkan data. Sila cuba semula.')
     expect(modalTitle()).toBe('Mood Pelajar')
   })
 
@@ -514,13 +514,13 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     )
   })
 
-  it('shows "Ralat: {message}" when the scan fails', async () => {
+  it('shows the fixed BM load line when the scan fails (SWE)', async () => {
     api.fetchRemedialScan.mockRejectedValue(
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan' }),
     )
     await mountPage()
     await openRemedial()
-    expect(text('cc-remedial-error')).toBe('Ralat: Ralat pelayan')
+    expect(text('cc-remedial-error')).toBe('Ralat memuatkan data. Sila cuba semula.')
   })
 
   it('lists the weak students with the count line and the open test of one @provisional UNVERIFIED COPY', async () => {
@@ -617,6 +617,30 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     expect(all('cc-remedial-generate')[0]!.text()).toBe('Jana Kimia')
   })
 
+  it('shows "Gagal" for a 500 "Server Error" and for a lost connection, never the English text (SWE-07)', async () => {
+    api.fetchRemedialScan.mockResolvedValue(SCAN)
+    await mountPage()
+    await openRemedial()
+    api.generateRemedialTest.mockRejectedValueOnce(
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }),
+    )
+    await all('cc-remedial-generate')[0]!.trigger('click')
+    await flushPromises()
+    expect(text('cc-remedial-gen-error')).toBe('Gagal')
+    api.generateRemedialTest.mockRejectedValueOnce(
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+    )
+    await all('cc-remedial-generate')[0]!.trigger('click')
+    await flushPromises()
+    expect(text('cc-remedial-gen-error')).toBe('Gagal')
+    api.generateRemedialTest.mockRejectedValueOnce(
+      new ApiError({ status: 403, code: 'FORBIDDEN', message: 'This action is unauthorized.' }),
+    )
+    await all('cc-remedial-generate')[0]!.trigger('click')
+    await flushPromises()
+    expect(text('cc-remedial-gen-error')).toBe('Gagal')
+  })
+
   it('cancels the open test after the confirm: "Membatal...", "Dibatalkan — boleh jana semula", Jana buttons back @provisional UNVERIFIED COPY', async () => {
     api.fetchRemedialScan.mockResolvedValue(SCAN)
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
@@ -683,6 +707,28 @@ describe('"⚠ Evaluate" (FR-M10-24) @provisional UNVERIFIED COPY', () => {
     expect(text('cc-evaluate-empty')).toBe(
       'Semua pelajar dalam keadaan baik! Tiada risiko dikesan.',
     )
+  })
+
+  it('shows the fixed BM load line for a 500 "Server Error", not the English text (SWE-06)', async () => {
+    api.fetchCommandCenterEvaluation.mockRejectedValue(
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }),
+    )
+    await mountPage()
+    await t('cc-link-evaluate').trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain('Ralat memuatkan data. Sila cuba semula.')
+    expect(document.body.textContent).not.toContain('Server Error')
+  })
+
+  it('shows the fixed BM load line when the connection is lost (SWE-06)', async () => {
+    api.fetchCommandCenterEvaluation.mockRejectedValue(
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+    )
+    await mountPage()
+    await t('cc-link-evaluate').trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain('Ralat memuatkan data. Sila cuba semula.')
+    expect(document.body.textContent).not.toContain('Failed to fetch')
   })
 
   it('lists the alerts with the risk badges and opens a row in a new tab', async () => {

@@ -10,6 +10,7 @@ import { useFlashStore } from '@/stores/flash'
 import type { Jpn, Ppd, SchoolSummary } from '../../api/schools'
 import type { StudentSearchItem } from '../../api/users'
 import UserCreatePage from '../../pages/UserCreatePage.vue'
+import { expectListInFlow } from './in-flow'
 
 const users = vi.hoisted(() => ({
   createAdminUser: vi.fn(),
@@ -373,6 +374,16 @@ describe('UserCreatePage (M02 S2) parent', () => {
     await type(w, 'user-role', 'sponsor')
     await type(w, 'user-role', 'parent')
     expect(w.findAll('[data-testid=linker-chip]')).toHaveLength(0)
+  })
+})
+
+describe('UserCreatePage (M02 S2) parent linker list', () => {
+  it('draws the student result list in the flow, not floating (SWX4-07, SWX4-08)', async () => {
+    const w = await render()
+    await type(w, 'user-role', 'parent')
+    await search(w, 'linker-search', 'pel')
+    expect(w.findAll('[data-testid=linker-result]')).toHaveLength(2)
+    expectListInFlow(w, 'linker-dropdown')
   })
 })
 

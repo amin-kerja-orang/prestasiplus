@@ -11,6 +11,7 @@ import { useFlashStore } from '@/stores/flash'
 import type { SchoolSummary } from '../../api/schools'
 import type { AdminUserDetail, StudentSearchItem } from '../../api/users'
 import UserEditPage from '../../pages/UserEditPage.vue'
+import { expectListInFlow } from './in-flow'
 
 const users = vi.hoisted(() => ({
   fetchAdminUser: vi.fn(),
@@ -244,6 +245,15 @@ describe('UserEditPage (M02 S3) student record', () => {
         newPasswordConfirmation: 'baru1234',
       }),
     )
+  })
+
+  it('draws the school result list in the flow, not floating (SWX4-03)', async () => {
+    const w = await render()
+    await t(w, 'admin-school-clear').trigger('click')
+    await t(w, 'admin-school-state').setValue('Melaka')
+    await vi.advanceTimersByTimeAsync(300)
+    await flushPromises()
+    expectListInFlow(w, 'admin-school-dropdown')
   })
 
   it('clears the school with the chip button and searches with a state and the 20-row limit', async () => {

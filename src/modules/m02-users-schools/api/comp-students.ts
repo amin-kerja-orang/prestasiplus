@@ -6,7 +6,7 @@
  * Mutations resolve to `{data, status}` (`status` = the flash text, UNVERIFIED COPY §8).
  */
 
-import { api, type ListResult } from '@/api'
+import { api, wireId, type EntityId, type ListResult } from '@/api'
 import { isHttpMode } from '@/api/mode'
 
 import type { ImportResponse } from './imports'
@@ -132,10 +132,11 @@ export function fetchCompStudent(
 /** #19 `POST …/bulk-action` (422 without ids or an unknown action). */
 export function bulkCompAction(
   action: CompBulkAction,
-  ids: number[],
+  ids: readonly EntityId[],
 ): Promise<CompMutation<{ updated: number }>> {
   return api.post<CompMutation<{ updated: number }>>(`${base}/bulk-action`, {
-    body: { action, ids },
+    // Contract `CompBulkActionRequestSchema`: `ids` are strings (SWX-2).
+    body: { action, ids: ids.map(wireId) },
     raw: true,
   })
 }
