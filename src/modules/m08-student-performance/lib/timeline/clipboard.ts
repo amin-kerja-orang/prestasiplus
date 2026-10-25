@@ -4,12 +4,18 @@
 
 import { alertNative } from '@/components/overlay/native-dialogs'
 
-/** Writes `text` to the clipboard (best effort: a refused write is ignored). */
-export async function copyText(text: string): Promise<void> {
+/**
+ * Writes `text` to the clipboard and reports whether it worked: `true` on success, `false` when
+ * `navigator.clipboard` is missing or the write is refused. It never throws; callers show their
+ * "copied" feedback only on `true` (DV-M08-52). No failure message is specified, so none is shown.
+ */
+export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)
+    return true
   } catch {
-    // No clipboard permission: live has the same dead end.
+    // Missing clipboard API or no permission: not copied.
+    return false
   }
 }
 
@@ -23,6 +29,5 @@ export async function shareProfile(title: string, url: string): Promise<void> {
     }
     return
   }
-  await copyText(url)
-  alertNative('Link disalin!')
+  if (await copyText(url)) alertNative('Link disalin!')
 }
