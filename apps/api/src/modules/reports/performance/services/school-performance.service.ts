@@ -216,7 +216,12 @@ export class SchoolPerformanceService {
           .sort((a, b) => a.name.localeCompare(b.name) || compareIds(a.userId, b.userId))
       : []
 
-    const hc = this.schoolFigures(ctx, entries, fr.classes, visibleSubjects)
+    // A sitting stores the Bijak subject CODE (MAT), a class and a headcount entry the curriculum subject id (3). Key the practice rows by
+    // the curriculum id so a subject with both practice and headcount data is one row (a code with no curriculum subject keeps its own id).
+    const idOfCode =
+      visibleSubjects.length === 0 ? new Map<string, string>() : await this.directory.subjectIdsOfCodes(visibleSubjects.flatMap((r) => (r.subjectId === undefined ? [] : [r.subjectId])))
+    const practiceRows = visibleSubjects.map((r) => (r.subjectId === undefined ? r : { ...r, subjectId: idOfCode.get(r.subjectId) ?? r.subjectId }))
+    const hc = this.schoolFigures(ctx, entries, fr.classes, practiceRows)
 
     return {
       scope: kind,

@@ -193,6 +193,38 @@ describe('School: GPS, distribution, subjects and teachers', () => {
   })
 })
 
+describe('School: a subject with practice and headcount data is one row (G5-M08 B1)', () => {
+  /** Practice rows carry the Bijak subject CODE (MAT); classes and headcount entries the curriculum subject id (3). */
+  const build = () => {
+    const x = world()
+    x.directory.addSchool({ id: 's1' }).addSubject('MAT', '3')
+    const ids = ['1', '2', '3', '4', '5']
+    ids.forEach((id) => x.directory.addPupil({ id, schoolId: 's1' }))
+    x.classes.add({ id: '30', schoolId: 's1', teacherId: 't1', subjectId: '3', subjectName: 'Matematik' }, ids)
+    for (const id of ids) x.bijak.addSitting(sitting({ userId: id, score: 6, subjectId: 'MAT', subjectCode: 'MAT', subjectName: 'Matematik' }))
+    x.facts.add(...ids.map((studentId) => entry({ studentId, configId: '9', classroomId: '30', subjectId: '3', subjectName: 'Matematik', targets: [null, 80], actuals: [null, 85] })))
+    return x
+  }
+
+  it('staff: the practice code and the curriculum id merge into one row keyed by the curriculum id', async () => {
+    const r = await build().school.school(schoolAdmin)
+    expect(r.subjects).toEqual([{ subjectId: '3', name: 'Matematik', gps: 1, grade: 'A', entries: 5, onTrack: 5, below: 0, noTarget: 0, achievementPct: 89 }])
+    PerformanceSchoolSchema.parse(r)
+  })
+
+  it('non-staff with 5 pupils behind the subject: still one row with the merged figures', async () => {
+    const r = await build().school.school(ctxOf('student', '1'))
+    expect(r.subjects.map((s) => [s.subjectId, s.name, s.entries])).toEqual([['3', 'Matematik', 5]])
+  })
+
+  it('a practice subject with no curriculum subject keeps its own id (one row, no headcount)', async () => {
+    const x = build()
+    x.bijak.addSitting(sitting({ userId: '1', subjectId: 'ZZZ', subjectCode: 'ZZZ', subjectName: 'Subjek Lain' }))
+    const r = await x.school.school(schoolAdmin)
+    expect(r.subjects.map((s) => [s.subjectId, s.name])).toEqual([['3', 'Matematik'], ['ZZZ', 'Subjek Lain']])
+  })
+})
+
 describe('Level detail: on track, below, at risk', () => {
   it('counts every pair, per class and for the level; at risk is the lowest gaps first with names for the own pupils', async () => {
     const r = await w.school.level(teacher, 't4')
