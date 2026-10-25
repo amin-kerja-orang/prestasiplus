@@ -182,7 +182,8 @@ export function runAfterNavigation(to: RouteLocationNormalized): void {
   useShellStore().closeOverlays()
 
   const session = useSessionStore()
-  if (session.isLoggedIn) {
+  // A flagged session gets 403 on both calls until the password is changed (AM2-A1).
+  if (session.isLoggedIn && !session.mustChangePassword) {
     void session.refreshUser()
     void useNotificationBadgeStore().refresh()
   }

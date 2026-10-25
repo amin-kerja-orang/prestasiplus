@@ -563,6 +563,24 @@ describe('forced password change (AM2-A1, DV-26)', () => {
     expect(router.currentRoute.value.path).toBe('/login')
   })
 
+  it('does not refresh /api/me or the bell badge while flagged, and does once unflagged', async () => {
+    logIn(STUDENT, { mustChangePassword: true })
+    const router = flaggedRouter()
+    await router.push('/dashboard')
+    await settle()
+    expect(router.currentRoute.value.path).toBe('/password/change')
+    const urls = () => transport.requests.map((r) => r.url)
+    expect(urls()).not.toContain('/api/me')
+    expect(urls()).not.toContain('/api/me/notifications/unread-count')
+
+    logIn(STUDENT)
+    useSessionStore().check()
+    await router.push('/dashboard')
+    await settle()
+    expect(urls()).toContain('/api/me')
+    expect(urls()).toContain('/api/me/notifications/unread-count')
+  })
+
   it('decideAccess redirects a flagged session and allows the exempt paths', () => {
     const flagged = { isLoggedIn: true, role: 'student' as const, landingPath: '/dashboard', mustChangePassword: true }
     const route = (path: string) => ({ path, meta: {} }) as unknown as RouteLocationNormalized
