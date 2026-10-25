@@ -34,7 +34,7 @@ Status: Draft — NOTICE-P10, LEAD card 25 Oct; send on 28 Oct. Not yet reviewed
 
 ## Short version (WhatsApp/SMS)
 
-About 423 characters with the placeholder: 3 SMS segments (GSM-7, 153 per segment). Keep the real help channel short so it stays within 459.
+About 425 GSM-7 septets with the placeholder (423 characters; `[` and `]` count double): 3 SMS segments (153 per segment). Keep the real help channel short so it stays within 459.
 
 ```text
 PrestasiPlus: .cloud jadi baca-sahaja kira-kira 01:00 pagi 29 Okt (masa muktamad dalam peringatan nanti) sehingga sistem baharu dibuka 30 Okt. Kata laluan anda TIDAK berubah: log masuk semula dengan e-mel/nama pengguna dan kata laluan yang sama. Akaun tanpa kata laluan (dulu log masuk dengan Google): guna "Lupa kata laluan?" di halaman log masuk. Bantuan: [SALURAN BANTUAN - Q27, belum diputuskan]. - Pasukan PrestasiPlus
