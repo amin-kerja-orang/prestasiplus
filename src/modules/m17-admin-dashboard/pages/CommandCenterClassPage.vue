@@ -54,17 +54,7 @@ const crumbs = computed(() => {
     { label: d.class.name },
   ]
 })
-// DV-M17-39 (FR-M17-52): the table fits its card at 768 px. Cell padding is 8 px and header
-// cells may wrap. `UTable` reads per-cell classes from the column meta key `class`; the key is computed
-// so the class linter does not read it as a class list. Full class strings: Tailwind reads the source text.
-// eslint-disable-next-line pp/ds-class-allowlist -- an object key, not a class list
-const META_CLASS = 'class'
-const CELL = 'p-2'
-const HEAD_CELL = `${CELL} whitespace-normal`
-const fitted = (cols: TableColumn<Row>[]): TableColumn<Row>[] =>
-  cols.map((c) => ({ ...c, meta: { [META_CLASS]: { th: HEAD_CELL, td: CELL } } }))
-
-const columns: TableColumn<Row>[] = fitted([
+const columns: TableColumn<Row>[] = [
   { id: 'no', header: '#' },
   { id: 'name', header: 'Nama Pelajar' },
   { id: 'answers', header: 'Jumlah Jawapan' },
@@ -72,7 +62,7 @@ const columns: TableColumn<Row>[] = fitted([
   { id: 'last', header: 'Terakhir Aktif' },
   { id: 'status', header: 'Status' },
   { id: 'mood', header: 'Mood' },
-])
+]
 
 const moodInfo = (mood: Mood): MoodInfo => MOOD[mood]
 

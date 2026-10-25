@@ -424,7 +424,7 @@ describe('S6 class', () => {
     expect(router.currentRoute.value.fullPath).toBe('/admin/command-center/student/2022')
   })
 
-  it('fits the pupil table in its card: wrapping headers, 8 px cells, 560 px floor, scroll below sm (DV-M17-39)', async () => {
+  it('keeps the pupil table inside its card: scroll container, 560 px floor, columns intact (DV-M17-39)', async () => {
     const w = await render(CommandCenterClassPage, { classroomId: 370 })
     const scroller = w.get('[data-testid=cc-table-scroller]')
     // The scroll container sits inside the card, so a table wider than the card scrolls there.
@@ -433,8 +433,7 @@ describe('S6 class', () => {
     expect(table.classes()).toContain('min-w-140')
     // Below sm the table is as wide as its columns (never squeezed below its floor); from sm it fills the card.
     expect(table.classes()).toEqual(expect.arrayContaining(['max-sm:w-fit', 'max-sm:max-w-none']))
-    const heads = scroller.findAll('th')
-    expect(heads.map((h) => h.text())).toEqual([
+    expect(scroller.findAll('th').map((h) => h.text())).toEqual([
       '#',
       'Nama Pelajar',
       'Jumlah Jawapan',
@@ -443,17 +442,7 @@ describe('S6 class', () => {
       'Status',
       'Mood',
     ])
-    for (const th of heads) {
-      expect(th.classes()).toContain('whitespace-normal')
-      expect(th.classes()).toContain('p-2')
-      expect(th.classes()).not.toContain('px-4')
-    }
-    const cells = scroller.findAll('td')
-    expect(cells).toHaveLength(14)
-    for (const td of cells) {
-      expect(td.classes()).toContain('p-2')
-      expect(td.classes()).not.toContain('px-4')
-    }
+    expect(scroller.findAll('td')).toHaveLength(14)
   })
 
   it('degrades the breadcrumb when the scope has no school', async () => {
