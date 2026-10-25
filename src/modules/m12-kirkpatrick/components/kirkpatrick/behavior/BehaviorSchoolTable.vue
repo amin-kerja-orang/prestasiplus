@@ -95,7 +95,8 @@ const pageSize = ref(20)
         <span class="flex flex-col">
           <RouterLink
             :to="schoolPath(row.original.schoolId)"
-            class="line-clamp-2 max-w-72 text-label text-primary-t"
+            :title="row.original.name"
+            class="line-clamp-2 max-w-72 text-label break-words whitespace-normal text-primary-t"
             data-testid="beh-school-link"
             >{{ row.original.name }}</RouterLink
           >

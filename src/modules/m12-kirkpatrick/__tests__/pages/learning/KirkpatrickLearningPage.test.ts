@@ -138,6 +138,17 @@ describe('S3 school table (AC-M12-13.1..13.3)', () => {
     ).toEqual(['text-success', 'text-warning', 'text-error'])
   })
 
+  it('wraps a long school name to two lines and keeps the full name as the title (G5-M12 F-C)', async () => {
+    const name = 'SEKOLAH MENENGAH KEBANGSAAN TAMAN DEMO JAYA BESTARI SEKSYEN LIMA'
+    api.fetchKirkpatrickLearning.mockResolvedValue(
+      learning({ schools: [{ ...learning().schools[0]!, name }] }),
+    )
+    const w = await open()
+    const link = all(w, 'kirk-school-link')[0]!
+    expect(link.attributes('title')).toBe(name)
+    expect(link.classes()).toEqual(expect.arrayContaining(['whitespace-normal', 'line-clamp-2']))
+  })
+
   it('scrolls inside its card; links follow the guru mount', async () => {
     const w = await open('/guru/kirkpatrick')
     expect(t(w, 'kirk-schools-scroller').attributes('data-ds')).toBe('data-table')

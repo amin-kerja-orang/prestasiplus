@@ -242,6 +242,17 @@ describe('S4 school table (AC-M12-16.1)', () => {
     expect(r940.get('[data-testid="cell-per-active"]').text()).toBe('0')
   })
 
+  it('wraps a long school name to two lines and keeps the full name as the title (G5-M12 F-C)', async () => {
+    const name = 'SEKOLAH MENENGAH KEBANGSAAN TAMAN DEMO JAYA BESTARI SEKSYEN LIMA'
+    api.fetchKirkpatrickBehavior.mockResolvedValue(
+      behavior({ schools: [{ ...behavior().schools[0]!, name }] }),
+    )
+    const { wrapper: w } = await open()
+    const link = all(w, 'beh-school-link')[0]!
+    expect(link.attributes('title')).toBe(name)
+    expect(link.classes()).toEqual(expect.arrayContaining(['whitespace-normal', 'line-clamp-2']))
+  })
+
   it('scrolls inside its own container (overflow-x-auto wrapper)', async () => {
     const { wrapper: w } = await open()
     expect(t(w, 'beh-schools').find('[data-ds="data-table"]').exists()).toBe(true)

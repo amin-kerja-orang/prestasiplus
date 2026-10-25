@@ -97,8 +97,9 @@ const pageSize = ref(20)
       <template #name-cell="{ row }">
         <RouterLink
           :to="schoolPath(row.original.schoolId)"
+          :title="row.original.name"
           :class="[
-            'line-clamp-2 max-w-72 text-label',
+            'line-clamp-2 max-w-72 text-label break-words whitespace-normal',
             row.original.faded ? 'text-dimmed' : 'text-primary-t',
           ]"
           :data-faded="row.original.faded ? 'true' : 'false'"

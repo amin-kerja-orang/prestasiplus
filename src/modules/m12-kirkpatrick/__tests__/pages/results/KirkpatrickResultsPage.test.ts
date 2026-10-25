@@ -278,6 +278,20 @@ describe('S5 school table (AC-M12-22.1)', () => {
   })
 })
 
+describe('S5 school name (G5-M12 F-C)', () => {
+  it('wraps a long name to two lines and keeps the full name as the title', async () => {
+    const name = 'SEKOLAH MENENGAH KEBANGSAAN TAMAN DEMO JAYA BESTARI SEKSYEN LIMA'
+    const base = results()
+    api.fetchKirkpatrickResults.mockResolvedValue(
+      results({ schools: [{ ...base.schools[0]!, name }] }),
+    )
+    const { wrapper: w } = await open()
+    const link = all(w, 'res-school-link')[0]!
+    expect(link.attributes('title')).toBe(name)
+    expect(link.classes()).toEqual(expect.arrayContaining(['whitespace-normal', 'line-clamp-2']))
+  })
+})
+
 describe('S5 prediction table (AC-M12-22.2, NFR-M12-01)', () => {
   it('renders the first 50 of the 946 rows with a pager (D9: one 946-row page is too heavy)', async () => {
     const { wrapper: w } = await open()
