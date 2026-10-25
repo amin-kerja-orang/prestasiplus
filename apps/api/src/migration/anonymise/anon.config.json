@@ -367,7 +367,7 @@
       "is_active": "keep"
     },
     "articles": {
-      "slug": "pseudonym:opaque",
+      "slug": "slug-from-id",
       "category": "keep",
       "title": "redact-pii",
       "views": "keep",

@@ -17,16 +17,11 @@ import { createHash, randomBytes } from 'node:crypto'
 import { DirReader } from '../staging/readers'
 import { TABLES, type TableSpec } from '../ddl/spec'
 import type { LeakHit } from './errors'
+import { EMAIL, IC, LANDLINE, MOBILE } from './patterns'
 import { EMAIL_DOMAIN } from './pseudonyms'
 import type { Rule } from './rules'
 
-export const EMAIL = /[A-Za-z0-9._%+'-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/g
-// +60/60/0 then 1x then 7-8 digits; separators (space or dash) allowed between the groups.
-export const MOBILE = /(?<![\d+])(?:\+?60|0)[ -]?1\d[ -]?\d{3,4}[ -]?\d{4}(?!\d)/
-// Landline: area code 3 to 9, then 7-8 digits.
-export const LANDLINE = /(?<![\d+])(?:\+?60|0)[ -]?[3-9][ -]?\d{3,4}[ -]?\d{4}(?!\d)/
-// YYMMDD (valid month and day) - place code - serial, separators optional.
-export const IC = /(?<!\d)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[ -]?\d{2}[ -]?\d{4}(?!\d)/
+export { EMAIL, IC, LANDLINE, MOBILE } from './patterns'
 
 export interface ScanPatternOptions {
   /** E-mail domains that are fakes and therefore allowed (default: example.test). */

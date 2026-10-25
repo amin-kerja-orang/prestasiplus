@@ -104,7 +104,7 @@ describe('default deny (AC1)', () => {
       ['leagues', 'invite_code', 'pseudonym:code'],
       ['banners', 'image_path', 'pseudonym:path'],
       ['banners', 'target', 'null'], // A1-LEAK: a link can hold a phone number or an e-mail; v2 keeps no link without a valid http(s) target
-      ['articles', 'slug', 'pseudonym:opaque'], // A1-LEAK: unique and URL-safe (20 lower-case letters and digits)
+      ['articles', 'slug', 'slug-from-id'], // A1-LEAK (LEAD): artikel-<id>, unique because the id is
       ['articles', 'title', 'redact-pii'],
       ['audio_kbat', 'audio_path', 'pseudonym:path'],
       ['notifications', 'title', 'scrub-text'],
@@ -267,6 +267,40 @@ describe('scrub-json', () => {
     expect(index.size).toBeGreaterThan(0)
     expect(index.match('Catatan untuk Aina Contoh Fiktif sahaja')).toBe('original-value')
     expect(index.match(out as string)).toBeNull()
+  })
+})
+
+describe('slug-from-id (A1-LEAK)', () => {
+  const p = new Pseudonymiser(key(TEST_KEY))
+  const rule = { rule: 'slug-from-id' } as const
+  const apply = (v: unknown, row: Record<string, unknown>) => applyRule(rule, v, p, false, { row })
+
+  it('sets the slug to artikel-<id> of the row, so two rows never share one, whatever their old slugs', () => {
+    expect(apply('tajuk-asal-ada-nama', { id: 7 })).toBe('artikel-7')
+    expect(apply('tajuk-asal-ada-nama', { id: '12345678901234567890' })).toBe('artikel-12345678901234567890')
+    const out = [1, 2, 3, 4, 5].map((id) => apply('sama', { id }))
+    expect(new Set(out).size).toBe(5)
+    for (const s of out) expect(s).toMatch(/^artikel-\d+$/)
+    expect(`artikel-${'9'.repeat(20)}`.length).toBeLessThanOrEqual(200)
+  })
+
+  it('NULL stays NULL and "" stays ""; a row without a usable id is refused without echoing anything', () => {
+    expect(apply(null, { id: 7 })).toBeNull()
+    expect(apply(undefined, { id: 7 })).toBeNull()
+    expect(apply('', { id: 7 })).toBe('')
+    for (const row of [{}, { id: null }, { id: 'abc' }, { id: '1; drop' }, { id: 1.5 }, { id: '1'.repeat(21) }]) {
+      expect(() => apply('x-geheim', row), JSON.stringify(row)).toThrow(/slug-from-id: the row has no usable numeric id/)
+    }
+    expect(() => applyRule(rule, 'x', p)).toThrow(/slug-from-id/)
+  })
+
+  it('parses from the config, and the output holds nothing the leak scan flags', () => {
+    expect(parseConfig({ version: 1, tables: { articles: { slug: 'slug-from-id' } } }).tables.articles?.slug).toEqual(rule)
+    const index = new OriginalsIndex()
+    index.record(rule, 'wawancara-nama-fiktif-panjang', apply('wawancara-nama-fiktif-panjang', { id: 3 }))
+    expect(index.match('wawancara-nama-fiktif-panjang')).toBe('original-value')
+    expect(index.match('artikel-3')).toBeNull()
+    expect(patternKinds('artikel-3')).toEqual([])
   })
 })
 

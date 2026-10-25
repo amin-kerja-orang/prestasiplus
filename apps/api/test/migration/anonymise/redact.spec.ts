@@ -251,7 +251,7 @@ describe('redact-pii: guarantee by construction', () => {
 
   it('applyRule redact-pii uses the given redactor and counts by kind; without one it still masks the patterns', () => {
     const counted: RedactKind[] = []
-    expect(applyRule({ rule: 'redact-pii' }, `Nama ${PII.name1} tel 012-345 6789`, pseudo, false, redactor, (k) => counted.push(k))).toBe(`Nama ${T} tel ${T}`)
+    expect(applyRule({ rule: 'redact-pii' }, `Nama ${PII.name1} tel 012-345 6789`, pseudo, false, { redactor, onRedact: (k) => counted.push(k) })).toBe(`Nama ${T} tel ${T}`)
     expect(counted.sort()).toEqual(['original-name', 'phone'])
     expect(applyRule({ rule: 'redact-pii' }, 'tel 012-345 6789', pseudo)).toBe(`tel ${T}`)
     expect(applyRule({ rule: 'redact-pii' }, null, pseudo)).toBeNull()

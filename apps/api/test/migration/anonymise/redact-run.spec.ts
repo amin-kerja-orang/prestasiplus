@@ -34,6 +34,10 @@ function contentTables(): Record<string, Rows> {
     articles: [
       { id: 1, slug: 'tips-belajar-matematik-spm', category: 'tips', title: `Wawancara dengan ${LATE_NAME} tentang SPM`, views: 3, is_published: '1', author_id: 1, created_at: '2026-01-01T00:00:00Z' },
       { id: 2, slug: 'tips-belajar-matematik-spm-2', category: 'tips', title: 'Tajuk biasa tanpa data peribadi', views: 0, is_published: '1', author_id: 2 },
+      // a slug that holds an original name (the flagged articles.slug original-name), a NULL slug, and a duplicate of row 1's slug
+      { id: 3, slug: 'wawancara-qwertyus-plorbinski', category: 'tips', title: 'Satu', views: 1, is_published: '1', author_id: 1 },
+      { id: 4, slug: null, category: 'tips', title: 'Dua', views: 1, is_published: '1', author_id: 1 },
+      { id: 5, slug: 'tips-belajar-matematik-spm', category: 'tips', title: 'Tiga', views: 1, is_published: '1', author_id: 1 },
     ],
     banners: [
       { id: 1, title: 'Promosi', type: 'promo', target: `mailto:${PII.email2}`, image_path: 'banner/a.png', is_active: '1' },
@@ -140,12 +144,14 @@ describe('anonymise run with redact-pii (shipped config)', () => {
     for (const rows of Object.values(o)) rows.forEach(walk)
   })
 
-  it('banner targets become NULL (v2 keeps no link without a valid http(s) target); article slugs are unique, URL-safe pseudonyms', () => {
+  it('banner targets become NULL (v2 keeps no link without a valid http(s) target); article slugs are regenerated from the id', () => {
     const o = readDump(out)
     expect((o.banners as Rows).map((b) => b.target)).toEqual([null, null, null])
     const slugs = (o.articles as Rows).map((a) => String(a.slug))
-    for (const s of slugs) expect(s).toMatch(/^[a-z0-9]{20}$/)
-    expect(new Set(slugs).size).toBe(2)
+    // from each row's own id, so unique (the duplicate in the source becomes distinct) and URL-safe; NULL stays NULL
+    expect((o.articles as Rows).map((a) => a.slug)).toEqual(['artikel-1', 'artikel-2', 'artikel-3', null, 'artikel-5'])
+    expect(slugs.filter((x) => x !== 'null')).toSatisfy((xs: string[]) => new Set(xs).size === xs.length && xs.every((x) => /^[a-z0-9-]+$/.test(x)))
+    expect(allText(out)).not.toContain('qwertyus-plorbinski')
     expect(allText(out)).not.toContain('tips-belajar')
   })
 

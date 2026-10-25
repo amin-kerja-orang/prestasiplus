@@ -15,6 +15,7 @@
  */
 import { QuestionLeafPartSchema } from '@pp/contract'
 
+import { LANDLINE } from '../anonymise/patterns'
 import { REDACTED_TOKEN } from '../anonymise/redacted-token'
 import { mapQuestionType, parseDifficulty } from '../snapshot-dims/dims'
 import { enumKey, flag, ok, reject, stamps, text, type Outcome, type Staged } from './common'
@@ -187,7 +188,8 @@ export type PiiKind = 'ic' | 'phone' | 'email' | 'url' | 'handle' | 'redacted'
 export function piiKindsOf(value: string): PiiKind[] {
   const kinds: PiiKind[] = []
   if (/(?<!\d)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])-?\d{2}-?\d{4}(?!\d)/.test(value)) kinds.push('ic')
-  if (/(?<!\d)(?:\+?60|0)1\d[-\s]?\d{3,4}[-\s]?\d{4}(?!\d)/.test(value)) kinds.push('phone')
+  // mobile (its own bounded pattern) or landline (the leak scan's LANDLINE, one source in anonymise/patterns.ts)
+  if (/(?<!\d)(?:\+?60|0)1\d[-\s]?\d{3,4}[-\s]?\d{4}(?!\d)/.test(value) || LANDLINE.test(value)) kinds.push('phone')
   if (value.includes('@')) {
     if (/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]{1,63}(?:\.[A-Za-z0-9-]{1,63}){1,4}/.test(value)) kinds.push('email')
     if (/(?<![\w.@])@[A-Za-z0-9_.]{3,30}/.test(value)) kinds.push('handle')

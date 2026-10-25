@@ -176,7 +176,7 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
             for (const [column, value] of Object.entries(row)) {
               const rule = rules.get(column)
               if (!rule) continue
-              index.record(rule, value, rule.rule === 'pseudonym' ? undefined : applyRule(rule, value, pseudo, lockedFor(rule, row)))
+              index.record(rule, value, rule.rule === 'pseudonym' ? undefined : applyRule(rule, value, pseudo, lockedFor(rule, row), { row }))
             }
           }
           stop()
@@ -211,11 +211,15 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
                   `Table ${spec.name}: the input has a column that the staging DDL does not define (${describe([column])}). Default deny: it is not copied. Add it to ddl/spec.ts and give it a rule.`,
                 )
               }
-              const result = applyRule(rule, value, pseudo, lockedFor(rule, row), redactor, (kind) => {
-                const key = `${spec.name}\0${column}\0${kind}`
-                const seen = redactions.get(key)
-                if (seen) seen.count++
-                else redactions.set(key, { table: spec.name, column, kind, count: 1 })
+              const result = applyRule(rule, value, pseudo, lockedFor(rule, row), {
+                redactor,
+                row,
+                onRedact: (kind) => {
+                  const key = `${spec.name}\0${column}\0${kind}`
+                  const seen = redactions.get(key)
+                  if (seen) seen.count++
+                  else redactions.set(key, { table: spec.name, column, kind, count: 1 })
+                },
               })
               index.record(rule, value, result)
               out[column] = result
@@ -255,7 +259,7 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
     const isOriginal = (h: LeakHit) => h.kind === 'original-value' || h.kind === 'original-name'
     const tolerated = scan.hits.filter((h) => isOriginal(h) && allow.has(`${h.table}.${h.column}`))
     const hits = scan.hits.filter((h) => !tolerated.includes(h))
-    for (const h of tolerated) log.warn(`Leak scan: ${h.count} original-value hit(s) in ${h.table}.${h.column} tolerated by leakScan.allow.`)
+    for (const h of tolerated) log.warn(`Leak scan: ${h.count} ${h.kind} hit(s) in ${h.table}.${h.column} tolerated by leakScan.allow.`)
     if (hits.length > 0) {
       for (const h of hits) log.warn(`Leak scan hit: ${h.table}.${h.column} (${h.kind}) x${h.count}.`)
       throw new LeakScanError(hits, true)

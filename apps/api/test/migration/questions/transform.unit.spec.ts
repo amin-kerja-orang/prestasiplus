@@ -4,6 +4,7 @@
 import { QuestionLeafPartSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
+import { LANDLINE } from '../../../src/migration/anonymise/patterns'
 import { PiiRedactor, REDACTED_TOKEN } from '../../../src/migration/anonymise/redact'
 import { mapQuestionType } from '../../../src/migration/snapshot-dims/dims'
 
@@ -294,6 +295,27 @@ describe('transformQuestion: personal-data screen (count only)', () => {
     expect(o.import_issues).toEqual([{ code: 'pii_suspect', target: 'option', label: 'A', kind: 'email' }])
     expect(plan(row({ explanation: 'lihat www.example.test' })).import_issues).toEqual([{ code: 'pii_suspect', target: 'explanation', kind: 'url' }])
     for (const body of ['Hitung 1234567 + 89 dan 3.14159 serta 2024-10-24', 'harga RM1,000,000 dan 12345']) {
+      expect(plan(row({ body })).is_active, body).toBe(true)
+    }
+  })
+
+  it('holds a question whose stem, option or explanation holds an invented landline number (the leak scan LANDLINE)', () => {
+    expect(kinds('Pejabat di 03-1234 5678 buka')).toEqual(['stem:phone'])
+    expect(kinds('Faks +6038765 4321 sahaja')).toEqual(['stem:phone'])
+    expect(kinds('Hubungi 0412345678')).toEqual(['stem:phone'])
+    const o = plan(row({}, [opt('A', 'Satu', '0'), opt('B', 'Telefon 03-1234 5678', '1'), opt('C', 'Tiga', '0')]))
+    expect(o.is_active).toBe(false)
+    expect(o.import_issues).toEqual([{ code: 'pii_suspect', target: 'option', label: 'B', kind: 'phone' }])
+    const e = plan(row({ explanation: 'telefon 04-123 4567 pada waktu pejabat' }))
+    expect(e.import_issues).toEqual([{ code: 'pii_suspect', target: 'explanation', kind: 'phone' }])
+    expect(plan(row({ body: 'Pejabat di 03-1234 5678' })).notes).toContain('held_pii_suspect')
+    expect(piiKindsOf('03-1234 5678')).toEqual(['phone'])
+    expect(LANDLINE.test('03-1234 5678')).toBe(true) // the one pattern the leak scan uses
+  })
+
+  it('maths text and ordinary numbers stay clean of the landline check', () => {
+    for (const body of ['Hitung 3 + 4 = 7', 'Cari 12-34 + 56-78', 'Tahun 2024-10-24 dan 1234 5678', 'Kira 3.14159 x 2', 'Nilai 0.5 + 0.25 = 0.75', 'Jumlah 1,234,567 dan 40 5678', 'x = 03 - 12']) {
+      expect(piiKindsOf(body), body).toEqual([])
       expect(plan(row({ body })).is_active, body).toBe(true)
     }
   })
