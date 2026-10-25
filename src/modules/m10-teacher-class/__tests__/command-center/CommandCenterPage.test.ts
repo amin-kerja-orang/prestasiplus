@@ -573,6 +573,26 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     expect(t('cc-remedial-generate').text()).toBe('Jana Kimia')
   })
 
+  it('picks the latest completed test by numeric id when ids are strings (http mode, SWX-04)', async () => {
+    const weak = { ...SCAN.weakStudents[1]!, studentId: '3008' }
+    const done = (id: string, afterAccuracy: number) => ({
+      id,
+      studentId: '3008',
+      status: 'completed',
+      totalQuestions: 5,
+      afterAccuracy,
+    })
+    // "10" sorts before "9" as text, but test 10 is the later one
+    api.fetchRemedialScan.mockResolvedValue({
+      weakStudents: [weak],
+      existingRemedials: [done('10', 70), done('9', 30)],
+    })
+    await mountPage()
+    await openRemedial()
+    expect(t('cc-remedial-done').text()).toBe('Selesai (70%)')
+    expect(t('cc-remedial-done').attributes('href')).toBe('/remedial/10')
+  })
+
   it('generates a test: "Menjana..." then the "{Subjek} ({n})" link @provisional UNVERIFIED COPY', async () => {
     api.fetchRemedialScan.mockResolvedValue(SCAN)
     let resolve!: (v: unknown) => void
