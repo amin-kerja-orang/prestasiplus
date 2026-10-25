@@ -53,7 +53,12 @@ describe('catalogue unavailable', () => {
       formOrigin: 'T1-T3',
     })
     const tagged = rows.find((r) => r.id === 'mat2-kuadratik-v1')!
-    expect(tagged).toMatchObject({ topic: '', unitTitle: null, spCodes: ['1.1.6'], tagReview: false })
+    expect(tagged).toMatchObject({
+      topic: '',
+      unitTitle: null,
+      spCodes: ['1.1.6'],
+      tagReview: false,
+    })
     expect(warn).toHaveBeenCalled()
 
     // tag filters still work on the stored ids
@@ -68,7 +73,16 @@ describe('catalogue unavailable', () => {
     const server = new BijakServer({ storage: new MemoryStorage() })
     const id = 'mat2-kuadratik-v1'
     const e = await server.getBankEditable(id)
-    expect((await server.reviseQuestionFull(id, { ...e.question, stem: `${e.question.stem} Ulang.` }, undefined, '')).ok).toBe(true)
+    expect(
+      (
+        await server.reviseQuestionFull(
+          id,
+          { ...e.question, stem: `${e.question.stem} Ulang.` },
+          undefined,
+          '',
+        )
+      ).ok,
+    ).toBe(true)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     setDskpCatalogForTests(down())
 
@@ -116,8 +130,8 @@ describe('catalogue unavailable', () => {
     await expect(server.getReviewItem(`v:${id}`)).rejects.toMatchObject({ name: 'DskpLoadError' })
 
     // Tolak does not need the catalogue and still works
-    expect((await server.reviewDecision(`v:${id}`, { action: 'tolak', reason: 'Ditolak' })).ok).toBe(
-      true,
-    )
+    expect(
+      (await server.reviewDecision(`v:${id}`, { action: 'tolak', reason: 'Ditolak' })).ok,
+    ).toBe(true)
   })
 })
