@@ -22,7 +22,7 @@ import type { TagLookup } from '../domain/tag-rule'
 import type { CurriculumTag, QuestionDef, SchemeDef, TpLevel } from '../domain/types'
 import { gateErrors } from '../server/admin'
 import { BijakServer, MemoryStorage } from '../server/store'
-import { loadTagLookup } from './tag-fixtures'
+import { MAT_T4_SP, MAT_T4_UNIT, loadTagLookup, loadedState } from './tag-fixtures'
 
 let lookup: TagLookup
 beforeAll(async () => {
@@ -203,24 +203,40 @@ describe('"Perlu disahkan" count and review confidence (lowToConfirm)', () => {
 })
 
 describe('QuestionEditor: unit confirmation', () => {
-  const confirmBoxes = (q: IntakeQuestion) => {
-    const w = mount(QuestionEditor, { props: { modelValue: q } })
+  const confirmBoxes = async (q: IntakeQuestion) => {
+    const w = mount(QuestionEditor, { props: { modelValue: q, dskp: await loadedState() } })
     return {
       ids: w.findAll('[data-testid^="confirm-"]').map((n) => n.attributes('data-testid')),
       text: w.text(),
     }
   }
+  const suggested = (tag: Partial<IntakeQuestion['tag']>): Partial<IntakeQuestion> => ({
+    lowFields: ['tag.unit', 'tag.sp'],
+    tagSuggestion: {
+      providerId: 'mock',
+      model: 'mock',
+      unitId: tag.unitId ?? undefined,
+      spIds: tag.spIds,
+      confidence: { unit: 'rendah', sp: 'rendah' },
+    },
+  })
+  const withUnit = { ...t4, unitId: MAT_T4_UNIT, spIds: [MAT_T4_SP] }
 
-  it('hides "Saya sahkan unit DSKP" and "Saya sahkan SP" for T1-T3', () => {
-    const r = confirmBoxes(intakeQ(t13, { lowFields: ['tag.unit', 'tag.sp'] }))
+  it('hides "Saya sahkan unit DSKP" and "Saya sahkan SP" for T1-T3', async () => {
+    const r = await confirmBoxes(intakeQ(t13, { lowFields: ['tag.unit', 'tag.sp'] }))
     expect(r.ids).toEqual([])
     expect(r.text).not.toContain('Saya sahkan')
   })
 
-  it('still shows them for T4', () => {
-    const r = confirmBoxes(intakeQ(t4, { lowFields: ['tag.unit', 'tag.sp'] }))
+  it('still shows them for T4 while the unit and SP are the AI suggestion', async () => {
+    const r = await confirmBoxes(intakeQ(withUnit, suggested(withUnit)))
     expect(r.ids).toEqual(['confirm-tag.unit', 'confirm-tag.sp'])
     expect(r.text).toContain('Saya sahkan unit DSKP (keyakinan rendah)')
     expect(r.text).toContain('Saya sahkan SP (keyakinan rendah)')
+  })
+
+  it('asks for nothing when there is no value to confirm', async () => {
+    const r = await confirmBoxes(intakeQ(t4, { lowFields: ['tag.unit', 'tag.sp'] }))
+    expect(r.ids).toEqual([])
   })
 })

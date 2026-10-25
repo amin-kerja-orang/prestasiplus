@@ -4,26 +4,45 @@
  * D1/D2), options + key or parts, the mark scheme, and the DSKP tag. Fields the extractor was unsure
  * of carry a "Sahkan" box that a person must tick (confidence gate).
  */
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
-import { DsCluster, DsFormField, DsNativeSelect, DsStack, DsText } from '@/ds'
+import {
+  DsCluster,
+  DsFormField,
+  DsLoadError,
+  DsNativeSelect,
+  DsRtlScope,
+  DsStack,
+  DsSurface,
+  DsText,
+} from '@/ds'
 
-import { KBAT_LEVELS } from '../../../domain/types'
-import type { DskpSpId, DskpUnitId, FormOrigin, KbatLevel, LeafKind, TpLevel } from '../../../domain/types'
 import RichText from '../../../components/RichText.vue'
-import { normaliseTag, setFormOrigin, setUnit as setTagUnit, toggleSp } from '../../../domain/tag-edit'
-import type { CurriculumTag } from '../../../domain/types'
-import { catalogueVersion, tagLookup, useDskpSubject } from '../../../lib/dskp-source'
-import { fieldName, fieldsToConfirm } from '../domain/validation'
+import { KBAT_LEVELS } from '../../../domain/types'
+import type { LeafKind } from '../../../domain/types'
+import { dskpSource } from '../../../lib/dskp-source'
+import type { DskpSubjectState } from '../../../lib/dskp-source'
+import { KBAT_LABEL, TAG_COPY, TINGKATAN_OPTIONS, TP_LEVELS } from '../domain/tag-view'
+import { useTagEditor } from '../lib/use-tag-editor'
 import type { IntakePart, IntakeQType, IntakeQuestion } from '../types'
+import DskpSpPicker from './DskpSpPicker.vue'
 import SchemeEditor from './SchemeEditor.vue'
+import TagAiBadge from './TagAiBadge.vue'
+import TagFieldExtras from './TagFieldExtras.vue'
+import TagNote from './TagNote.vue'
 
 const props = defineProps<{
   modelValue: IntakeQuestion
+  /** The question's subject catalogue; the page loads it once with `useDskpSubject`. */
+  dskp: DskpSubjectState
   /** Bank questions have no printed number: hide the field. */
   hideNumber?: boolean
+  /** The page locks the editor (batch not Draf, or Sunting waiting for a new version). */
+  disabled?: boolean
+  /** The page has shown its list of what is missing: empty required tag controls show their message. */
+  showErrors?: boolean
 }>()
-const emit = defineEmits<{ 'update:modelValue': [IntakeQuestion] }>()
+const emit = defineEmits<{ 'update:modelValue': [IntakeQuestion]; retry: [] }>()
 
 const q = computed(() => props.modelValue)
 
@@ -43,13 +62,6 @@ const MODES: { value: LeafKind; label: string }[] = [
   { value: 'table_fill', label: 'Isi jadual' },
 ]
 const LETTERS = ['A', 'B', 'C', 'D', 'E']
-const KBAT_LABEL: Record<KbatLevel, string> = {
-  mengaplikasi: 'Mengaplikasi',
-  menganalisis: 'Menganalisis',
-  menilai: 'Menilai',
-  mencipta: 'Mencipta',
-}
-
 function set(patch: Partial<IntakeQuestion>): void {
   const next = { ...q.value, ...patch }
   if (next.parts.length > 0) next.marks = next.parts.reduce((n, p) => n + p.marks, 0)
@@ -107,46 +119,62 @@ function removePart(i: number): void {
   set({ parts: q.value.parts.filter((_, k) => k !== i) })
 }
 
-/* tag (interim wiring over the catalogue; DSKP-T07 rewrites this block with DskpSpPicker) */
-const dskp = useDskpSubject(() => q.value.tag.subject)
-const tingkatan = computed(() =>
-  q.value.tag.formOrigin === 'T4' || q.value.tag.formOrigin === 'T5' ? q.value.tag.formOrigin : null,
+/* tag: the state and the edits of the Tag DSKP block live in `useTagEditor` */
+const {
+  phase,
+  inDskp,
+  outside,
+  info,
+  groups,
+  missingUnit,
+  sk,
+  tpDescription,
+  ai,
+  changedFrom,
+  notice,
+  errors,
+  setForm,
+  setUnit,
+  toggleSp,
+  setTp,
+  setKbat,
+  confirm,
+} = useTagEditor({
+  question: () => props.modelValue,
+  dskp: props.dskp,
+  commit: (next) => emit('update:modelValue', next),
+  showErrors: () => props.showErrors === true,
+})
+const subjectName = computed(
+  () => dskpSource().subject(q.value.tag.subject)?.name ?? q.value.tag.subject,
 )
-const units = computed(() =>
-  dskp.view.value && tingkatan.value ? dskp.view.value.units(tingkatan.value) : [],
-)
-const sps = computed(() =>
-  dskp.view.value && q.value.tag.unitId
-    ? dskp.view.value.sps(q.value.tag.unitId)
-    : [],
-)
-function commitTag(tag: CurriculumTag): void {
-  set({ tag: normaliseTag(tag, tagLookup(), catalogueVersion()) })
-}
-function setForm(origin: string): void {
-  commitTag(setFormOrigin(q.value.tag, origin === '' ? null : (origin as FormOrigin)))
-}
-function setUnit(id: string): void {
-  commitTag(setTagUnit(q.value.tag, id === '' ? null : (id as DskpUnitId), tagLookup()))
-}
-function setSp(id: string, on: boolean): void {
-  commitTag(toggleSp(q.value.tag, id as DskpSpId, on))
-}
-function setTp(v: string | number | undefined): void {
-  const n = v === undefined || v === '' ? null : Number(v)
-  set({ tag: { ...q.value.tag, tp: n as TpLevel | null } })
-}
-/** Low-confidence fields to confirm (no unit or SP confirmation for T1-T3). */
-const toConfirm = computed(() => fieldsToConfirm(q.value))
-function setKbat(v: string): void {
-  set({ tag: { ...q.value.tag, kbat: (KBAT_LEVELS as readonly string[]).includes(v) ? (v as KbatLevel) : null } })
-}
-function confirm(field: string, on: boolean): void {
-  const c = new Set(q.value.confirmed)
-  if (on) c.add(field)
-  else c.delete(field)
-  set({ confirmed: [...c] })
-}
+const tpDescId = `tp-desc-${useId()}`
+const skLabelId = `sk-label-${useId()}`
+const spRtl = computed(() => info.value?.rtlFields.includes('sp') ?? false)
+const skRtl = computed(() => info.value?.rtlFields.includes('sk') ?? false)
+const loading = computed(() => phase.value === 'loading')
+/** Unit can be used: the catalogue is loaded, the tingkatan is T4 or T5 and the page allows it. */
+const unitOpen = computed(() => phase.value === 'ready' && inDskp.value && !props.disabled)
+/** "Mengikut {Tajuk / Topic / ...} dalam DSKP", or why the list is empty. */
+const unitHint = computed(() => {
+  if (!inDskp.value || phase.value !== 'ready') return undefined
+  return groups.value.length > 0 ? TAG_COPY.unitHint(info.value?.unitNoun ?? '') : TAG_COPY.unitNone
+})
+/** Text under the TP select when there is no descriptor to show. */
+const tpNote = computed(() => {
+  switch (tpDescription.value.kind) {
+    case 'outside':
+      return TAG_COPY.tpOutside
+    case 'need-target':
+      return TAG_COPY.tpNeedTarget
+    case 'need-tp':
+      return TAG_COPY.tpNeedTp
+    default:
+      return TAG_COPY.tpNone
+  }
+})
+const describedBy = (...ids: (string | undefined)[]): string | undefined =>
+  ids.filter(Boolean).join(' ') || undefined
 
 function insertMath(field: 'stem'): void {
   set({ [field]: `${q.value[field]} $ $` })
@@ -365,92 +393,229 @@ function insertMath(field: 'stem'): void {
     </div>
 
     <!-- tag -->
-    <fieldset class="flex min-w-0 flex-col gap-3 border-0 p-0">
-      <legend class="p-0 text-sm font-medium">Tag DSKP</legend>
-      <div class="grid gap-3 @md:grid-cols-2 @3xl:grid-cols-4">
-        <label class="flex min-w-0 flex-col gap-1 text-sm">
-          <span class="text-muted">Asal tingkatan</span>
-          <DsNativeSelect
-            :model-value="q.tag.formOrigin ?? ''"
-            data-testid="q-form"
-            @update:model-value="setForm(String($event))"
-          >
-            <option value="">Pilih tingkatan</option>
-            <option value="T4">Tingkatan 4</option>
-            <option value="T5">Tingkatan 5</option>
-            <option value="T1-T3">Tingkatan 1-3 (di luar DSKP)</option>
-          </DsNativeSelect>
-        </label>
-        <label class="flex min-w-0 flex-col gap-1 text-sm @3xl:col-span-2">
-          <span class="text-muted">Unit</span>
-          <DsNativeSelect
-            :model-value="q.tag.unitId ?? ''"
-            :disabled="!tingkatan || !dskp.view.value"
-            data-testid="q-unit"
-            @update:model-value="setUnit(String($event))"
-          >
-            <option value="">Pilih unit</option>
-            <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} {{ u.title }}</option>
-          </DsNativeSelect>
-        </label>
-        <label class="flex min-w-0 flex-col gap-1 text-sm">
-          <span class="text-muted">TP (1-6)</span>
-          <UInput
-            :model-value="q.tag.tp ?? undefined"
-            type="number"
-            min="1"
-            max="6"
-            class="w-full"
-            data-testid="q-tp"
-            @update:model-value="setTp"
-          />
-        </label>
-        <DsFormField native for="q-kbat" label="Aras KBAT (pilihan)">
-          <DsNativeSelect
-            id="q-kbat"
-            :model-value="q.tag.kbat ?? ''"
-            data-testid="q-kbat"
-            @update:model-value="setKbat(String($event))"
-          >
-            <option value="">— Bukan KBAT —</option>
-            <option v-for="k in KBAT_LEVELS" :key="k" :value="k">{{ KBAT_LABEL[k] }}</option>
-          </DsNativeSelect>
+    <DsStack as="fieldset" gap="sm" data-testid="tag-block">
+      <DsText as="legend" variant="label">{{ TAG_COPY.legend }}</DsText>
+      <DsText variant="caption" tone="muted" data-testid="tag-subject">
+        {{ TAG_COPY.subject(subjectName) }}
+      </DsText>
+      <UAlert
+        v-if="q.tag.review === 'perlu-semakan'"
+        color="warning"
+        variant="subtle"
+        icon="i-ph-warning"
+        :title="TAG_COPY.reviewTitle"
+        :description="TAG_COPY.reviewText"
+        data-testid="tag-review-alert"
+      />
+
+      <div class="grid gap-3 @3xl:grid-cols-4">
+        <DsFormField native :label="TAG_COPY.form" required :error="errors.form">
+          <template #default="{ id, describedby, invalid }">
+            <DsNativeSelect
+              :id="id"
+              :model-value="q.tag.formOrigin ?? ''"
+              blank
+              :placeholder="TAG_COPY.formPlaceholder"
+              :disabled="disabled"
+              :invalid="invalid"
+              :aria-describedby="describedby"
+              data-testid="q-form"
+              @update:model-value="setForm(String($event))"
+            >
+              <option v-for="o in TINGKATAN_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+            </DsNativeSelect>
+            <TagNote v-if="notice === 'form'" status data-testid="tag-notice">
+              {{ TAG_COPY.noticeForm }}
+            </TagNote>
+          </template>
         </DsFormField>
-        <div
-          v-if="q.tag.formOrigin !== 'T1-T3'"
-          class="flex min-w-0 flex-col gap-1 text-sm @md:col-span-2 @3xl:col-span-4"
-          data-testid="q-sp"
+
+        <div class="@3xl:col-span-3">
+        <DsLoadError
+          v-if="phase === 'error'"
+          variant="inline"
+          :message="TAG_COPY.loadError"
+          data-testid="tag-load-error"
+          @retry="emit('retry')"
+        />
+        <DsFormField
+          v-else
+          native
+          :label="TAG_COPY.unit"
+          :required="inDskp"
+          :loading="loading"
+          :hint="unitHint"
+          :error="errors.unit"
         >
-          <span class="text-muted">SP</span>
-          <DsText v-if="sps.length === 0" variant="caption" tone="muted">
-            Pilih unit untuk melihat senarai SP.
-          </DsText>
-          <UCheckbox
-            v-for="sp in sps"
-            :key="sp.id"
-            :model-value="q.tag.spIds.includes(sp.id as DskpSpId)"
-            :data-testid="`q-sp-${sp.code}`"
-            @update:model-value="(v: boolean | 'indeterminate') => setSp(sp.id, v === true)"
-          >
-            <template #label>
-              <span class="block min-h-11 cursor-pointer">{{ sp.code }} {{ sp.text }}</span>
-            </template>
-          </UCheckbox>
+          <template #label-extra><TagAiBadge :state="ai.unit.badge" /></template>
+          <template #default="{ id, describedby, invalid }">
+            <DsNativeSelect
+              :id="id"
+              :model-value="q.tag.unitId ?? ''"
+              blank
+              :placeholder="TAG_COPY.unitPlaceholder"
+              :disabled="!unitOpen"
+              :invalid="invalid"
+              :aria-describedby="describedby"
+              data-testid="q-unit"
+              @update:model-value="setUnit(String($event))"
+            >
+              <option v-if="missingUnit" :value="missingUnit" disabled>
+                {{ TAG_COPY.unitMissing(missingUnit) }}
+              </option>
+              <template v-for="g in groups" :key="g.key">
+                <optgroup v-if="g.label" :label="g.label">
+                  <option v-for="u in g.units" :key="u.id" :value="u.id">{{ u.label }}</option>
+                </optgroup>
+                <template v-else>
+                  <option v-for="u in g.units" :key="u.id" :value="u.id">{{ u.label }}</option>
+                </template>
+              </template>
+            </DsNativeSelect>
+            <TagNote v-if="notice === 'unit'" status data-testid="tag-notice">
+              {{ TAG_COPY.noticeUnit }}
+            </TagNote>
+            <TagFieldExtras
+              field="unit"
+              :state="ai.unit"
+              :changed-label="changedFrom.unit"
+              :disabled="disabled"
+              @confirm="confirm('tag.unit', $event)"
+            />
+          </template>
+        </DsFormField>
         </div>
       </div>
-      <div v-if="toConfirm.length > 0" class="flex flex-col gap-1">
-        <UCheckbox
-          v-for="f in toConfirm"
-          :key="f"
-          :model-value="q.confirmed.includes(f)"
-          :data-testid="`confirm-${f}`"
-          @update:model-value="(v: boolean | 'indeterminate') => confirm(f, v === true)"
+
+      <template v-if="phase !== 'error'">
+        <DskpSpPicker
+          :view="dskp.view.value"
+          :unit-id="q.tag.unitId"
+          :model-value="q.tag.spIds"
+          :loading="loading"
+          :disabled="disabled || !inDskp"
+          :outside="outside"
+          :required="inDskp"
+          :rtl="spRtl"
+          :error="errors.sp"
+          @toggle="toggleSp"
         >
-          <template #label>
-            <span class="block min-h-11 cursor-pointer">Saya sahkan {{ fieldName(f) }} (keyakinan rendah)</span>
+          <template #label-extra><TagAiBadge :state="ai.sp.badge" /></template>
+          <TagFieldExtras
+            field="sp"
+            :state="ai.sp"
+            :changed-label="changedFrom.sp"
+            :disabled="disabled"
+            @confirm="confirm('tag.sp', $event)"
+          />
+        </DskpSpPicker>
+
+        <DsStack
+          gap="xs"
+          role="group"
+          :aria-labelledby="skLabelId"
+          :aria-disabled="outside ? 'true' : undefined"
+          data-testid="q-sk"
+        >
+          <DsText :id="skLabelId" variant="label" as="span">{{ TAG_COPY.sk }}</DsText>
+          <USkeleton v-if="loading" class="h-11 w-full" />
+          <DsSurface v-else level="soft" padding="sm" radius="chip">
+            <DsText v-if="sk.length === 0" variant="caption" tone="muted">{{ TAG_COPY.skEmpty }}</DsText>
+            <DsStack v-else as="ul" gap="xs">
+              <li v-for="s in sk" :key="s.id" data-testid="sk-row">
+                <DsCluster gap="xs" as="span">
+                  <DsText variant="body-strong" as="span" tabular dir="ltr">{{ s.code }}</DsText>
+                  <UBadge
+                    v-if="s.flag"
+                    color="warning"
+                    variant="subtle"
+                    size="sm"
+                    icon="i-ph-warning"
+                    :title="s.flag.reason"
+                  >
+                    {{ s.flag.text }}
+                  </UBadge>
+                </DsCluster>
+                <DsRtlScope v-if="skRtl" lang="ms-Arab">{{ s.title }}</DsRtlScope>
+                <DsText v-else variant="body" wrap="anywhere">{{ s.title }}</DsText>
+              </li>
+            </DsStack>
+          </DsSurface>
+          <DsText variant="caption" tone="muted">{{ TAG_COPY.skHint }}</DsText>
+        </DsStack>
+      </template>
+
+      <TagNote v-if="outside" data-testid="tag-outside">{{ TAG_COPY.outside }}</TagNote>
+
+      <div class="grid gap-3 @md:grid-cols-2 @3xl:grid-cols-4">
+        <DsFormField native :label="TAG_COPY.tp" required :error="errors.tp">
+          <template #label-extra><TagAiBadge :state="ai.tp.badge" /></template>
+          <template #default="{ id, describedby, invalid }">
+            <DsNativeSelect
+              :id="id"
+              :model-value="q.tag.tp ?? ''"
+              blank
+              :placeholder="TAG_COPY.tpPlaceholder"
+              :disabled="disabled"
+              :invalid="invalid"
+              :aria-describedby="describedBy(describedby, tpDescId)"
+              data-testid="q-tp"
+              @update:model-value="setTp($event)"
+            >
+              <option v-for="n in TP_LEVELS" :key="n" :value="n">TP {{ n }}</option>
+            </DsNativeSelect>
+            <TagFieldExtras
+              field="tp"
+              :state="ai.tp"
+              :changed-label="changedFrom.tp"
+              :disabled="disabled"
+              @confirm="confirm('tag.tp', $event)"
+            />
           </template>
-        </UCheckbox>
+        </DsFormField>
+
+        <DsFormField native :label="TAG_COPY.kbat" :hint="TAG_COPY.kbatHint">
+          <template #label-extra><TagAiBadge :state="ai.kbat.badge" /></template>
+          <template #default="{ id, describedby }">
+            <DsNativeSelect
+              :id="id"
+              :model-value="q.tag.kbat ?? ''"
+              blank
+              :placeholder="TAG_COPY.kbatNone"
+              :disabled="disabled"
+              :aria-describedby="describedby"
+              data-testid="q-kbat"
+              @update:model-value="setKbat(String($event))"
+            >
+              <option v-for="k in KBAT_LEVELS" :key="k" :value="k">{{ KBAT_LABEL[k] }}</option>
+            </DsNativeSelect>
+            <TagFieldExtras
+              field="kbat"
+              :state="ai.kbat"
+              :changed-label="changedFrom.kbat"
+              :disabled="disabled"
+              @confirm="confirm('tag.kbat', $event)"
+            />
+          </template>
+        </DsFormField>
+
+        <div class="@md:col-span-2 @3xl:col-span-2">
+        <DsStack :id="tpDescId" gap="xs" data-testid="tp-descriptor">
+          <USkeleton v-if="loading" class="h-11 w-full" />
+          <template v-else-if="tpDescription.kind === 'found'">
+            <DsStack v-for="(item, i) in tpDescription.items" :key="i" gap="2xs">
+              <DsText variant="label" as="span">{{ item.heading }}</DsText>
+              <DsRtlScope v-if="tpDescription.rtl" lang="ms-Arab">{{ item.text }}</DsRtlScope>
+              <DsText v-else variant="body" wrap="anywhere">{{ item.text }}</DsText>
+              <DsText variant="caption" tone="muted">
+                {{ item.range ? `${item.source} · ${item.range}` : item.source }}
+              </DsText>
+            </DsStack>
+          </template>
+          <DsText v-else variant="caption" tone="muted">{{ tpNote }}</DsText>
+        </DsStack>
+        </div>
       </div>
-    </fieldset>
+    </DsStack>
   </div>
 </template>
