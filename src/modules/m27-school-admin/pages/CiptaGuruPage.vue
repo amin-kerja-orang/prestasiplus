@@ -18,11 +18,7 @@ import { DsFormBar, DsFormField, DsFormSection, DsPage, DsPanel } from '@/ds'
 import { createSchoolTeacher, type CreatedCredential } from '../api/school-admin'
 import LockedSchoolLabel from '../components/users/LockedSchoolLabel.vue'
 import PupilCredentialBlock from '../components/users/PupilCredentialBlock.vue'
-import {
-  errorLines,
-  newPasswordPlaceholder,
-  TEACHER_LIST_PATH,
-} from '../components/users/users-format'
+import { errorLines, newPasswordPlaceholder, TEACHER_LIST_PATH } from '../components/users/users-format'
 
 const router = useRouter()
 const flash = useFlash()
@@ -45,7 +41,9 @@ async function submit(): Promise<void> {
       name: form.name,
       email: form.email,
       phone: form.phone,
-      ...(http ? {} : { password: form.password, passwordConfirmation: form.passwordConfirmation }),
+      ...(http
+        ? {}
+        : { password: form.password, passwordConfirmation: form.passwordConfirmation }),
     })
     flash.success(result.status)
     if (http && result.credential) {
@@ -113,10 +111,10 @@ async function submit(): Promise<void> {
       >
         <DsFormField label="Peranan">
           <DsPanel tone="inset">
-            <div class="flex min-h-11 items-center">
-              <p class="text-label text-highlighted" data-testid="user-role">Guru</p>
-            </div>
-          </DsPanel>
+<div class="flex min-h-11 items-center">
+            <p class="text-label text-highlighted" data-testid="user-role">Guru</p>
+          </div>
+</DsPanel>
         </DsFormField>
 
         <LockedSchoolLabel v-if="me?.school" :school="me.school" />

@@ -54,11 +54,7 @@ const flash = useFlash()
 const listPath = computed(() => ROLE_CONFIG[props.role].listPath)
 const isPupil = computed(() => props.role === 'student')
 
-const {
-  data: loaded,
-  error: loadError,
-  reload,
-} = useApi(
+const { data: loaded, error: loadError, reload } = useApi(
   (signal) =>
     props.role === 'student'
       ? fetchSchoolPupil(props.id, { signal })
@@ -80,13 +76,7 @@ const shownError = computed(() =>
   loadError.value && status.value !== 404 && status.value !== 403 ? loadError.value : null,
 )
 
-const form = reactive({
-  name: '',
-  email: '',
-  phone: '',
-  newPassword: '',
-  newPasswordConfirmation: '',
-})
+const form = reactive({ name: '', email: '', phone: '', newPassword: '', newPasswordConfirmation: '' })
 const passwordOpen = ref(false)
 
 function fill(user: SchoolUserDetail): void {
