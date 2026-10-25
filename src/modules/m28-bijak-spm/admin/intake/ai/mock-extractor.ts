@@ -11,9 +11,14 @@
  *   Skema 3(a)                      scheme heading
  *   K1 2x = 14 - 6 [1]              mark point: letter+seq, text (alternatives split by "atau"), marks
  *   Mana-mana 2 x 1 m               "any N of M" group over the scheme's points
+ *
+ * The DSKP tag is only suggested (`dskp-suggest.ts`): a catalogue unit/SP when the question words hit
+ * it clearly enough, a TP from the leading command word, never a guessed code (AC-04.9).
  */
 import type { LeafKind, PointCode, PointDef, SchemeDef } from '../../../domain/types'
 import { emptyTag } from '../../../domain/tag-edit'
+import { catalogueVersion, dskpSource } from '../../../lib/dskp-source'
+import { suggestionLowFields } from '../domain/suggestion'
 import type {
   ExtractedPaper,
   ExtractInput,
@@ -23,6 +28,8 @@ import type {
   IntakeQType,
   QuestionExtractor,
 } from '../types'
+import { suggestTag } from './dskp-suggest'
+import type { DskpView } from './dskp-suggest'
 
 interface Line {
   page: number
@@ -81,7 +88,19 @@ function typeOf(d: Draft): IntakeQType {
 let counter = 0
 const uid = (prefix: string): string => `${prefix}-${Date.now().toString(36)}${(counter++).toString(36)}`
 
-export function parsePaper(input: ExtractInput): ExtractedPaper {
+const PROVIDER = { id: 'mock', model: 'heuristik-1' } as const
+
+export interface ParseOptions {
+  /**
+   * The catalogue of the batch subject, loaded once per `extract`. Without it no unit or SP is
+   * suggested (the field stays empty and is marked for a person); a TP can still be suggested.
+   */
+  view?: DskpView
+  /** Catalogue version stamped on a suggested tag (default: the version of the catalogue m28 reads). */
+  version?: string
+}
+
+export function parsePaper(input: ExtractInput, opts: ParseOptions = {}): ExtractedPaper {
   const lines = toLines(input)
   const schemeAt = lines.findIndex((l) => /^(skema|jawapan\s*:)/i.test(l.text))
   const body = schemeAt === -1 ? lines : lines.slice(0, schemeAt)
@@ -182,10 +201,26 @@ export function parsePaper(input: ExtractInput): ExtractedPaper {
       }
     })
     const type = typeOf({ ...d, marks: stemRaw.marks })
-    // Interim until DSKP-T06 (catalogue-based suggestion): the prototype unit guess is gone, so the
-    // tag starts empty and the unit is always left for a person.
-    const lowFields: string[] = ['tag.unit']
+    // The suggestion is only a suggestion (AC-04.9, AC-05.2): the tag is pre-filled with it, the
+    // suggestion is kept beside it, and `lowFields` lists what a person must confirm or fill.
+    const suggestion = suggestTag(
+      { stem: stemRaw.text, partPrompts: parts.map((p) => p.prompt) },
+      opts.view,
+      {
+        providerId: PROVIDER.id,
+        model: PROVIDER.model,
+        ...(input.tingkatan ? { tingkatan: input.tingkatan } : {}),
+      },
+    )
+    const lowFields: string[] = suggestionLowFields(suggestion)
     const tag = emptyTag(input.subject)
+    if (suggestion?.unitId) {
+      tag.formOrigin = suggestion.formOrigin ?? null
+      tag.unitId = suggestion.unitId
+      tag.spIds = [...(suggestion.spIds ?? [])]
+      tag.catalogueVersion = opts.version ?? catalogueVersion()
+    }
+    if (suggestion?.tp != null) tag.tp = suggestion.tp
     const marks =
       type === 'mcq' ? (stemRaw.marks ?? 1) : parts.length > 0 ? 0 : (stemRaw.marks ?? 0)
     if (type !== 'mcq' && parts.length === 0 && stemRaw.marks === undefined) lowFields.push('marks')
@@ -199,6 +234,7 @@ export function parsePaper(input: ExtractInput): ExtractedPaper {
       mode: type === 'essay' ? 'essay' : modeFor(stemRaw.text, marks),
       parts: type === 'structured' ? parts : [],
       tag,
+      ...(suggestion ? { tagSuggestion: suggestion } : {}),
       page: d.page,
       lowFields,
       confirmed: [],
@@ -298,7 +334,7 @@ export function parsePaper(input: ExtractInput): ExtractedPaper {
   // Unit/partial marks: a structured question's marks come from its parts.
   for (const q of questions) if (q.parts.length > 0) q.marks = q.parts.reduce((n, p) => n + p.marks, 0)
 
-  return { provider: 'mock', model: 'heuristik-1', questions, stimuli, unmatched, warnings }
+  return { provider: PROVIDER.id, model: PROVIDER.model, questions, stimuli, unmatched, warnings }
 }
 
 export const mockExtractor: QuestionExtractor = {
@@ -307,6 +343,18 @@ export const mockExtractor: QuestionExtractor = {
   async extract(input: ExtractInput): Promise<ExtractedPaper> {
     // A short pause so the progress state is visible; the real providers take seconds.
     await new Promise((r) => setTimeout(r, 400))
-    return parsePaper(input)
+    // The catalogue of the batch subject is loaded once for the whole paper. A subject without a
+    // catalogue, or a chunk that fails to load, only costs the unit/SP suggestion: every question
+    // then carries the "unit not found" marker for a person (AC-04.9).
+    let view: DskpView | undefined
+    let warning: string | undefined
+    try {
+      if (dskpSource().subject(input.subject)) view = await dskpSource().load(input.subject)
+    } catch {
+      warning = 'Katalog DSKP tidak dapat dimuatkan; unit dan SP perlu dipilih secara manual.'
+    }
+    const out = parsePaper(input, { view, version: dskpSource().version })
+    if (warning) out.warnings.push(warning)
+    return out
   },
 }

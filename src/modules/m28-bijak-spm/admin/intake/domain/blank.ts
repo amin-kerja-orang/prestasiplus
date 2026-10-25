@@ -1,4 +1,8 @@
-/** A blank question ready to type into (review page "Tambah soalan" and a new manual batch). */
+/**
+ * A blank question ready to type into (review page "Tambah soalan" and a new manual batch). The tag
+ * is empty with no default (AC-04.1, AC-05.1) and there is no AI suggestion, so nothing is listed in
+ * `lowFields`: the tag rule alone asks for the missing fields.
+ */
 import type { SubjectCode } from '../../../domain/types'
 import { emptyTag } from '../../../domain/tag-edit'
 import type { IntakeQuestion } from '../types'
