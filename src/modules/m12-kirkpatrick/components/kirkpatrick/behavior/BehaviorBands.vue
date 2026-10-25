@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "Taburan Tahap Engagement" (FN-M12-5.3.1; FR-M12-43): five tiles, 5 columns at every width, each a link to
+ * "Taburan Tahap Engagement" (FN-M12-5.3.1; FR-M12-43): five tiles, 2 columns below `sm` (the last spans both) and 5 from `sm` (DV-M12-33), each a link to
  * the monitoring overview with count, label, caption, mini bar (value = %) and the %.
  */
 import { RouterLink } from 'vue-router'
@@ -16,12 +16,12 @@ defineProps<{ bands: BandCount[]; monitoringPath: string }>()
 
 <template>
   <DsPanel title="Taburan Tahap Engagement" icon="i-ph-chart-pie" data-testid="beh-bands">
-    <div class="grid grid-cols-5 gap-1 sm:gap-3">
+    <div class="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
       <RouterLink
         v-for="b in bands"
         :key="b.key"
         :to="monitoringPath"
-        class="flex min-w-0 flex-col items-center gap-1 bg-muted p-1 text-center sm:p-3"
+        class="flex min-w-0 flex-col items-center gap-1 bg-muted p-2 text-center max-sm:last:col-span-2 sm:p-3"
         :data-testid="`beh-band-${b.key}`"
       >
         <p :class="['tabular text-subheading', BAND[b.key].text]" data-testid="band-count">
