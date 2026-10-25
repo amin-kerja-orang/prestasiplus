@@ -15,7 +15,6 @@ import { createContributedQuestion } from '../api/guru'
 import type { CreateQuestionRequest } from '../api/types'
 import { COPY, saveErrorMessage } from '../components/soalan/lib'
 import QuestionForm from '../components/soalan/QuestionForm.vue'
-import { moduleMessage } from '../lib/generic-server-text'
 
 const router = useRouter()
 const flash = useFlash()

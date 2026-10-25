@@ -9,7 +9,6 @@ import { ApiError } from '@/api'
 import { useRouteOutcome } from '@/app/router/outcome'
 import { useFlashStore } from '@/stores/flash'
 
-import { COPY } from '../../components/soalan/lib'
 import { pickFiles } from './pick-file'
 import { COPY } from '../../components/soalan/lib'
 import SumbangSoalanDetailPage from '../../pages/SumbangSoalanDetailPage.vue'

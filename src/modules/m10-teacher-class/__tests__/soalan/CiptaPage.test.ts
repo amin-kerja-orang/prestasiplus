@@ -212,6 +212,7 @@ describe('S22 save path', () => {
     expect(t(w, 'form-cancel').attributes('aria-disabled')).toBe('true')
     finish(detail())
     await flushPromises()
+  })
 
   it('a 500 "Server Error" and a lost connection show the save-failed text, a module BM 409 shows as is (SWE-09)', async () => {
     const cases: [ApiError, string][] = [
