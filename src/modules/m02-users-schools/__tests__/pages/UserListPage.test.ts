@@ -162,7 +162,10 @@ describe('UserListPage (M02 S1)', () => {
     for (const id of ['user-name', 'user-email', 'user-school']) {
       const cell = row.get(`[data-testid="${id}"]`)
       expect(cell.classes(), id).not.toContain('truncate')
-      expect(cell.classes().some((c) => c === 'break-words' || c === 'break-all'), id).toBe(true)
+      expect(
+        cell.classes().some((c) => c === 'break-words' || c === 'break-all'),
+        id,
+      ).toBe(true)
     }
     // The table cell is `nowrap`; the two cells must undo it or "wrap" is only a class on paper.
     expect(row.get('[data-testid="user-school"]').classes()).toContain('whitespace-normal')

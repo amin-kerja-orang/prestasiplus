@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
- * S1 role KPI tiles (FR-M02-02, DV-M02-02, DV-M02-10): 7 link tiles (`DsStatRow`, default density: the compact tile truncates the label), coloured icon
- * chip + count + label. The tile of the active role filter is framed (`data-active`).
+ * S1 role KPI tiles (FR-M02-02, DV-M02-02, DV-M02-10): 7 link tiles (`DsStatRow`, default density, because
+ * the compact tile truncates the label), coloured icon chip + count + label. The tile of the active role
+ * filter is framed (`data-active`).
  */
 import { computed } from 'vue'
 
