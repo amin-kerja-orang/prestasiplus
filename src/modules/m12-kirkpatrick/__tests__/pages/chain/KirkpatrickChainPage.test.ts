@@ -236,7 +236,9 @@ describe('S6 print page level cards (BUG-09)', () => {
     )
     wrapper = m.wrapper
     const cards = t(m.wrapper, 'chain-cards')
-    expect(cards.classes()).toEqual(expect.arrayContaining(['grid', 'grid-cols-1', 'sm:grid-cols-2']))
+    expect(cards.classes()).toEqual(
+      expect.arrayContaining(['grid', 'grid-cols-1', 'sm:grid-cols-2']),
+    )
     expect(cards.classes()).not.toContain('lg:flex-row')
     expect(m.wrapper.findAll('[data-testid="chain-arrow"]')).toHaveLength(0)
     expect(m.wrapper.findAll('[data-testid^="chain-t"]').length).toBeGreaterThanOrEqual(4)

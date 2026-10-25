@@ -112,7 +112,9 @@ export function alesaOf(scope: Scope, predictions: readonly PredictionRow[]): Al
   else if (only !== undefined && alesaRepo.stored(only).length > 0) {
     rows = resolveStored(only, predictions)
   } else rows = generated(predictions)
-  rows.sort((a, b) => gradeIndex(a.grade) - gradeIndex(b.grade) || Number(a.userId) - Number(b.userId))
+  rows.sort(
+    (a, b) => gradeIndex(a.grade) - gradeIndex(b.grade) || Number(a.userId) - Number(b.userId),
+  )
   return {
     lulus: rows.filter((r) => isPass(r.grade)).length,
     gagal: rows.filter((r) => isFail(r.grade)).length,

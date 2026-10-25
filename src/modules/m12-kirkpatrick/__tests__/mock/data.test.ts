@@ -735,7 +735,9 @@ describe('Q-M12 populations and practice figures', () => {
     const conf = (c: string) => a.rows.filter((r) => r.confidence === c).length
     expect([conf('rendah'), conf('sederhana'), conf('tinggi')]).toEqual([38, 10, 2])
     const school = new Map(preds.map((p) => [Number(p.userId), Number(p.schoolId)]))
-    const got = a.rows.map((r) => `${String(school.get(Number(r.userId)))}:${String(r.accuracy)}`).sort()
+    const got = a.rows
+      .map((r) => `${String(school.get(Number(r.userId)))}:${String(r.accuracy)}`)
+      .sort()
     // DV-M12-F26c-03: the one 8880 student reads 87.8 in the 25-Sep model of M05 (live 26-Sep 87.7).
     const want = OBSERVED_ALESA_PLATFORM.map(([id, acc]) =>
       id === 8880

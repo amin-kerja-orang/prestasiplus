@@ -68,11 +68,7 @@ const pageSize = ref(20)
 </script>
 
 <template>
-  <DsPanel
-    :title="title"
-    icon="i-ph-book"
-    data-testid="res-subject-gps"
-  >
+  <DsPanel :title="title" icon="i-ph-book" data-testid="res-subject-gps">
     <DsDataTable
       v-model:page-size="pageSize"
       variant="bare"

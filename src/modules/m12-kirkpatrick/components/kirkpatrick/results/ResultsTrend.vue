@@ -18,9 +18,7 @@ const props = defineProps<{ trend: ResultsTrend }>()
 /** "Trend GPS (a–b)"; without years the heading has no "(range)" part (DV-M12-36). */
 const title = computed(() => {
   const years = props.trend.years
-  return years.length === 0
-    ? 'Trend GPS'
-    : `Trend GPS (${years[0]}–${years[years.length - 1]})`
+  return years.length === 0 ? 'Trend GPS' : `Trend GPS (${years[0]}–${years[years.length - 1]})`
 })
 
 interface Row extends Record<string, unknown> {
