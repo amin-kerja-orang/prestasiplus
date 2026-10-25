@@ -16,6 +16,7 @@ import { validateBatch } from '../admin/intake/domain/validation'
 import { SAMPLE_PAGES } from '../admin/intake/lib/sample-paper'
 import type { IntakeBatch, IntakeQuestion } from '../admin/intake/types'
 import { BijakServer, MemoryStorage } from '../server/store'
+import { loadTagLookup, matTag } from './tag-fixtures'
 
 const parse = () => parsePaper({ pages: SAMPLE_PAGES, subject: 'MAT', kertas: 2 })
 
@@ -29,7 +30,7 @@ function q(label: string, stimulusId?: string): IntakeQuestion {
     marks: 1,
     mode: 'short_text',
     parts: [],
-    tag: { subject: 'MAT', level: 'T4', unit: 'MAT-T4-02', unitLabel: 'x', sp: ['1'], tp: 2, formOrigin: 'T4' },
+    tag: matTag({ tp: 2 }),
     page: 1,
     lowFields: [],
     confirmed: [],
@@ -226,14 +227,17 @@ describe('stimulus grouping', () => {
     expect(groupsOf(r.questions)).toHaveLength(0)
   })
 
-  it('the quality gate flags a non-contiguous group', () => {
+  it('the quality gate flags a non-contiguous group', async () => {
     const qs = [q('1', 's1'), q('2'), q('3', 's1')]
-    const issues = validateBatch({
-      questions: qs,
-      stimuli: [{ id: 's1', kind: 'diagram', label: 'Rajah 1', alt: 'a' }],
-      source: 'x',
-      copyright: 'sendiri',
-    })
+    const issues = validateBatch(
+      {
+        questions: qs,
+        stimuli: [{ id: 's1', kind: 'diagram', label: 'Rajah 1', alt: 'a' }],
+        source: 'x',
+        copyright: 'sendiri',
+      },
+      await loadTagLookup(),
+    )
     expect(issues.some((i) => i.message.includes('berturutan'))).toBe(true)
   })
 })
@@ -279,7 +283,7 @@ describe('intake batches on the server', () => {
     fixed.questions = fixed.questions.map((x) => ({
       ...x,
       confirmed: [...x.lowFields],
-      tag: { ...x.tag, unit: x.tag.unit ?? 'MAT-T4-02', unitLabel: 'u', sp: x.tag.sp.length ? x.tag.sp : ['1.1'] },
+      tag: matTag({ subject: x.tag.subject }),
     }))
     fixed.stimuli = fixed.stimuli.map((x) => ({ ...x, alt: x.alt || 'Rajah segi tiga' }))
     await s.saveExtracted(batch.id, { questions: fixed.questions, stimuli: fixed.stimuli })

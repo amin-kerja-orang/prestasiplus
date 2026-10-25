@@ -63,23 +63,53 @@ export interface QuestionDef {
   parts?: PartDef[]
 }
 
-/** Curriculum tag (exam schema D9). T1-T3 Matematik content: `formOrigin: 'T1-T3'`, `unit: null` (Q-S2). */
-export interface CurriculumTag {
-  subject: SubjectCode
-  level: 'T4' | 'T5' | 'T4+T5'
-  /** Unit code from the loaded DSKP, or null when the content lies outside it. */
-  unit: string | null
-  /** Display name of the unit (stands in for the DSKP lookup in this prototype). */
-  unitLabel: string
-  sp: string[]
-  tp: number
-  formOrigin: 'T1-T3' | 'T4' | 'T5'
-  /** Optional KBAT (higher-order thinking) level (FB-026); null/absent = not a KBAT question. Not gated. */
-  kbat?: KbatLevel | null
-}
+/**
+ * DSKP ids as the catalogue (M03) issues them: opaque composite keys, `SUBJECT:T4|T5:u|sp:<code>`.
+ * Declared here with the same brand shape as M03's types, so the two are mutually assignable without
+ * this file importing M03 (the tag domain must stay free of `src/**` imports to move to exam-core).
+ */
+export type DskpUnitId = string & { readonly __dskpKind: 'u' }
+export type DskpSpId = string & { readonly __dskpKind: 'sp' }
 
-/** KBAT levels a question can be tagged with (FB-026). */
-export type KbatLevel = 'Mengaplikasi' | 'Menganalisis' | 'Menilai' | 'Mencipta'
+/** KBAT (higher-order thinking) level a question can be tagged with (FB-026, Q-D1: level select). */
+export type KbatLevel = 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta'
+export const KBAT_LEVELS: readonly KbatLevel[] = [
+  'mengaplikasi',
+  'menganalisis',
+  'menilai',
+  'mencipta',
+]
+
+/** Tahap Penguasaan 1 to 6. */
+export type TpLevel = 1 | 2 | 3 | 4 | 5 | 6
+
+/** The tingkatan a tag carries (`null` in `CurriculumTag.formOrigin` = not chosen yet). */
+export type FormOrigin = 'T4' | 'T5' | 'T1-T3'
+
+/**
+ * Curriculum tag v2 (exam schema D9, v2-dskp-integration 2.6). One tingkatan field; unit and SP are
+ * catalogue ids, never free text; the SK is derived from the SP and not stored. T1-T3 content is
+ * outside DSKP: no unit and no SP, but TP is still required. AI suggestions and the audit trail live
+ * on the intake question and in the history, not on the published tag.
+ */
+export interface CurriculumTag {
+  /** DskpSubjectInfo.code. */
+  subject: SubjectCode
+  /** The tingkatan the content belongs to. null = not chosen yet (a Draf only; every gate refuses it). */
+  formOrigin: FormOrigin | null
+  /** Catalogue unit, or null for T1-T3 / not chosen / flagged. */
+  unitId: DskpUnitId | null
+  /** Catalogue SP ids: at least one for T4/T5 at the gate; empty for T1-T3. */
+  spIds: DskpSpId[]
+  /** null until the reviewer chooses; there is no default. */
+  tp: TpLevel | null
+  /** Separate optional field; never derived from tp; not required by any gate. */
+  kbat: KbatLevel | null
+  /** Catalogue version the unit/SP were chosen against; null when unit/SP are empty. */
+  catalogueVersion: string | null
+  /** Seed or migrated question that still needs a person to tag it. Cleared when the tag becomes complete. */
+  review?: 'perlu-semakan'
+}
 
 export interface GroupDef {
   id: string

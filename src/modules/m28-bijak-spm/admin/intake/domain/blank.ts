@@ -1,6 +1,6 @@
 /** A blank question ready to type into (review page "Tambah soalan" and a new manual batch). */
 import type { SubjectCode } from '../../../domain/types'
-import { emptyTag } from '../lib/dskp'
+import { emptyTag } from '../../../domain/tag-edit'
 import type { IntakeQuestion } from '../types'
 
 export function blankQuestion(subject: SubjectCode, n: number, page = 1): IntakeQuestion {
