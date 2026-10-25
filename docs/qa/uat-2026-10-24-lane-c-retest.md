@@ -1,5 +1,7 @@
 # UAT 2026-10-24 lane C: targeted G5 re-test (Fast track)
 
+> **Note (2026-10-25):** T8 (G-06 / S-06, same-tab Command Center) was reverted on 2026-10-25 by user decision D56 (commit "revert(shells): Command Center menu opens in a new tab again"), and its spec `uat-command-center-same-tab.spec.ts` was removed. Every T8 result below is historical and no longer applies.
+
 - Branch `claude/keen-mayer-zpmv2g`, HEAD `baf0cb9` (lane C fixes: 54af0b9, 4d4d8c6, d049646, 96a1c67, 114f6fe, 59b72de, acb34a5).
 - Base for comparison: `3e192a7` (git worktree, removed after the run).
 - Source of the rows: `git show origin/claude/wizardly-euler-glqplr:docs/qa/uat-2026-10-24-triage.md`.

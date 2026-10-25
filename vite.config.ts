@@ -26,7 +26,10 @@ function resolveBuildSha(): string {
     if (sha) {
       let dirty = ''
       try {
-        dirty = git('status', '--porcelain', '--untracked-files=no') ? '+dirty' : ''
+        // Cloudflare Pages builds (CF_PAGES is set) may touch package-lock.json: never mark them dirty.
+        if (!process.env.CF_PAGES) {
+          dirty = git('status', '--porcelain', '--untracked-files=no') ? '+dirty' : ''
+        }
       } catch {
         // status unavailable: report the bare SHA
       }
@@ -35,7 +38,7 @@ function resolveBuildSha(): string {
   } catch {
     // git missing or not a repository: fall back to the env vars
   }
-  const fromEnv = (process.env.VITE_BUILD_SHA ?? process.env.CF_PAGES_COMMIT_SHA ?? '').trim()
+  const fromEnv = (process.env.VITE_BUILD_SHA || process.env.CF_PAGES_COMMIT_SHA || '').trim()
   return fromEnv ? fromEnv.slice(0, 7) : 'unknown'
 }
 

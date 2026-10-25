@@ -1,7 +1,7 @@
 /**
  * The Prestasi 360 read model (S6; SRS M08 v1.11 §7 #6; BR-M08-11, -12, -13). Sessions counted are the
  * practice modes and, for a learner account since D54 (v2 = Tingkatan 4-5 / SPM only), the SPM modes
- * too (DV-M08-D54; it supersedes the rejected DV-20 for learners: their SPM work is their practice and
+ * too (DV-M08-40; it supersedes the rejected DV-20 for learners: their SPM work is their practice and
  * /practice/progress counts it; the admin's observed S6 keeps DV-20). Coins, streak and badges are M14's,
  * read at request time (XL3-06); SP records come from the M08 store.
  */
@@ -148,7 +148,7 @@ function suggestionsOf(
 }
 
 export function studentPerformance(pupil: UserRow, now: number): StudentPerformance {
-  // D54 / DV-M08-D54: a learner account (role student) counts its SPM-mode sessions too; the admin's
+  // D54 / DV-M08-40: a learner account (role student) counts its SPM-mode sessions too; the admin's
   // own S6 keeps the OBSERVED practice-modes-only figures (0 sessions, DV-20 as live; the admin is
   // not a learner account).
   const modes = modesOfUser(pupil.role)

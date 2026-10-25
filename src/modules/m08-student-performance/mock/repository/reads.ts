@@ -16,7 +16,7 @@ import { classrooms, type ClassroomRow } from '@/modules/m10-teacher-class/mock'
 export const PRACTICE_MODE_SET: ReadonlySet<string> = new Set(PRACTICE_MODES)
 /**
  * The modes Prestasi 360 (S6) counts for one student: the practice modes and, since D54 (v2 is
- * Tingkatan 4-5 / SPM only; DV-M08-D54), the SPM modes. The class views keep PRACTICE_MODE_SET.
+ * Tingkatan 4-5 / SPM only; DV-M08-40), the SPM modes. The class views keep PRACTICE_MODE_SET.
  */
 export const STUDENT_MODE_SET: ReadonlySet<string> = new Set([...PRACTICE_MODES, ...SPM_MODES])
 

@@ -36,6 +36,11 @@ Cloudflare dashboard, Workers & Pages, project `prestasiplus-demo`, tab Deployme
 3. `CF_PAGES_COMMIT_SHA` env var (set by Cloudflare Pages git builds)
 4. `unknown`
 
+Two details:
+
+- An empty `VITE_BUILD_SHA` (the Docker / compose default when the variable is not exported) counts as unset: the lookup uses `||`, so it falls through to `CF_PAGES_COMMIT_SHA` and then `unknown`.
+- The `+dirty` suffix is skipped when `CF_PAGES` is set (any Cloudflare Pages build). Those builds can touch tracked files such as `package-lock.json` during install, which would otherwise mark every Pages build dirty. The SHA there is the checked-out commit.
+
 Docker builds have no `.git` in the context (`.dockerignore`), so pass it explicitly:
 
 ```

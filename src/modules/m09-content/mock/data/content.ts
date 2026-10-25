@@ -20,7 +20,7 @@ const at = (stamp: string): string => toIsoMyt(Date.parse(`${stamp}:00+08:00`))
 // --- Notes (10, all by Admin Demo, published, 0 / 0) ---------------------------------------------
 // D54 (2026-10-24): secondary / SPM only. The 10 live Darjah 1-4 notes are replaced by 10 Tingkatan 4/5
 // PoC notes titled after the public KSSM chapter names in M03 (curriculum.json). The note types keep the
-// live 5 / 2 / 2 / 1 split; the subject counts are NOT the live ones (see M09 SRS deviation DV-M09-D54).
+// live 5 / 2 / 2 / 1 split; the subject counts are NOT the live ones (see M09 SRS deviation DV-M09-22).
 
 const NOTE_CREATED = at('2026-02-06T10:00')
 

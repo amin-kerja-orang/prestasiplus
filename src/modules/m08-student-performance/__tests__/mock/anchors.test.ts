@@ -346,7 +346,7 @@ describe('S6 Prestasi 360', () => {
     expect(s.suggestions.map((x) => x.kind)).toEqual(['inactive', 'start'])
   })
 
-  it('pelajar (id 2, Tingkatan 4): SPM-mode sessions count on Prestasi 360 (DV-M08-D54, D54)', async () => {
+  it('pelajar (id 2, Tingkatan 4): SPM-mode sessions count on Prestasi 360 (DV-M08-40, D54)', async () => {
     // The seeded sessions P1-P4 are all SPM modes (past_year, latih_tubi, ramalan). Before D54 S6
     // showed "0 Soalan Dijawab / Belum ada data latihan" while /practice/progress showed 94 answers.
     const s = await get<StudentPerformance>(ADMIN, '/api/performance/students/2')

@@ -430,13 +430,17 @@ describe('#7 export (PROPOSED) and the guards', () => {
 
   it('school admin: another state, school or district in the query never widens the scope (D30)', async () => {
     const states = ['Johor', 'Selangor', 'Kedah', 'Sabah', 'Kuala Lumpur']
+    // The T4/T5 pupils of the admin's own school (derived from the M01 store; 10 after D54 moved
+    // pelajarmaju to SMK DEMO), the most the scoped KPI may ever show.
+    const ownPupils = users.query('Q-M11-T45', { sort: 'id' }, 900001).rows.length
+    expect(ownPupils).toBeGreaterThan(0)
     for (const state of states) {
       const o = await overview(`?state=${encodeURIComponent(state)}`, ADMIN_SEKOLAH)
       for (const r of [...o.studentRows, ...o.teacherRows, ...o.weekly]) {
         expect(r.schoolId).toBe(900001)
       }
       expect(o.kpi.schools).toBeLessThanOrEqual(1)
-      expect(o.kpi.students).toBeLessThanOrEqual(9)
+      expect(o.kpi.students).toBeLessThanOrEqual(ownPupils)
       expect(
         o.signals.best
           .concat(o.signals.attention, o.signals.suggestions)
