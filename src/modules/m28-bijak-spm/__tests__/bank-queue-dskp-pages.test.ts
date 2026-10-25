@@ -81,6 +81,7 @@ const summaryTotal = (): number => {
 }
 
 async function openMore(): Promise<void> {
+  if (document.body.querySelector('[data-ds="filter-more-panel"]')) return
   document.body.querySelector<HTMLElement>('[data-ds="filter-more"]')!.click()
   await flushPromises()
 }
@@ -386,6 +387,85 @@ describe('ReviewQueuePage (6.1, 6.3)', () => {
     expect(text(empty)).toContain('Tiada soalan dijumpai')
     expect(text(empty)).toContain('Cuba ubah atau set semula penapis.')
     expect([...empty.querySelectorAll('button')].some((b) => text(b) === 'Set Semula')).toBe(true)
+  })
+
+  it('rows show the full tag badges from the queue item (unit, TP, KBAT), as the bank does', async () => {
+    await render(ReviewQueuePage, '/semakan')
+    const q = await server.listReviewQueue()
+    const rows = tableRows()
+    expect(q.items.some((i) => i.tp !== null)).toBe(true)
+    q.items.slice(0, rows.length).forEach((item, i) => {
+      expect(text(rows[i]!.querySelector('[data-testid="tag-tp"]'))).toBe(
+        item.tp === null ? '' : `TP ${item.tp}`,
+      )
+      expect(rows[i]!.querySelector('[data-testid="tag-sp"]') !== null).toBe(
+        !item.tagReview && item.formOrigin !== 'T1-T3' && item.spCodes.length > 0,
+      )
+    })
+  })
+
+  it('has the curriculum filters but no "Perlu semakan tag" control', async () => {
+    await render(ReviewQueuePage, '/semakan')
+    await openMore()
+    for (const id of ['form', 'unit', 'sp', 'tp', 'kbat']) expect(t(`queue-${id}`)).not.toBeNull()
+    expect(t('queue-tag-review')).toBeNull()
+    expect(text(document.body.querySelector('[data-ds="filter-more-panel"]'))).not.toContain(
+      'Perlu semakan tag',
+    )
+  })
+
+  it('Tingkatan and TP go to the server; the rows equal listReviewQueue and the chips show them', async () => {
+    await render(ReviewQueuePage, '/semakan')
+    await openMore()
+    await setSelect('queue-form', 'T1-T3')
+    await setSelect('queue-tp', '2')
+    await search()
+    const expected = await server.listReviewQueue({ formOrigin: 'T1-T3', tp: 2 })
+    const unfiltered = await server.listReviewQueue()
+    expect(expected.items.length).toBeGreaterThan(0)
+    expect(expected.items.length).toBeLessThan(unfiltered.items.length)
+    expect(tableRows()).toHaveLength(expected.items.length)
+    expect(all('[data-testid="active-filter"]').map((c) => text(c))).toEqual([
+      'Tingkatan 1-3 (di luar DSKP)',
+      'TP 2',
+    ])
+    // the status tiles are not filtered by the curriculum filters
+    expect(expected.counts).toEqual(unfiltered.counts)
+  })
+
+  it('Unit and SP filter the queue; a new Subjek clears them; removing the Unit chip removes the SP', async () => {
+    await render(ReviewQueuePage, '/semakan')
+    await setSelect('queue-subject', 'MAT')
+    await dskpSource().load('MAT')
+    await openMore()
+    await setSelect('queue-form', 'T4')
+    await setSelect('queue-unit', 'MAT:T4:u:1.0')
+    await setSelect('queue-sp', 'MAT:T4:sp:1.1.6')
+    await search()
+    const expected = await server.listReviewQueue({
+      subject: 'MAT',
+      formOrigin: 'T4',
+      unitId: 'MAT:T4:u:1.0',
+      spId: 'MAT:T4:sp:1.1.6',
+    })
+    if (expected.items.length) expect(tableRows()).toHaveLength(expected.items.length)
+    else expect(document.body.querySelector('[data-ds="empty-state"]')).not.toBeNull()
+    const chips = all('[data-testid="active-filter"]').map((c) => text(c))
+    expect(chips).toHaveLength(4)
+    expect(chips[3]).toBe('SP 1.1.6')
+
+    all('[data-testid="active-filter"]')[2]!.click()
+    await flushPromises()
+    expect(all('[data-testid="active-filter"]').map((c) => text(c))).toEqual([
+      'Matematik',
+      'Tingkatan 4',
+    ])
+
+    await openMore()
+    await setSelect('queue-unit', 'MAT:T4:u:1.0')
+    await setSelect('queue-subject', 'SN')
+    expect((t('queue-unit') as HTMLSelectElement).value).toBe('')
+    expect((t('queue-sp') as HTMLSelectElement).value).toBe('')
   })
 })
 

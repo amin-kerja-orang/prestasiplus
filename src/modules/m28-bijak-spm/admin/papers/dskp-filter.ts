@@ -5,7 +5,7 @@
  */
 import type { DskpSubjectView, DskpTingkatan } from '@/modules/m03-curriculum'
 
-import type { BankFilter, Confidence, HistoryEntry, TagChange } from '../../domain/admin-types'
+import type { Confidence, HistoryEntry, TagChange, TagFilter } from '../../domain/admin-types'
 import type { FormOrigin, KbatLevel } from '../../domain/types'
 import { KBAT_LEVELS } from '../../domain/types'
 import { REVIEW_TOPIC, T1_T3_TOPIC } from '../../domain/topic'
@@ -100,13 +100,13 @@ export function clearOnUnit(d: DskpFilterDraft): void {
 }
 
 /** The `listBank` filter for a curriculum draft (empty fields are left out). */
-export function dskpServerFilter(d: DskpFilterDraft): Partial<BankFilter> {
+export function dskpServerFilter(d: DskpFilterDraft): TagFilter & { tagReview?: true } {
   return {
     ...(d.formOrigin ? { formOrigin: d.formOrigin } : {}),
     ...(d.unitId ? { unitId: d.unitId } : {}),
     ...(d.spId ? { spId: d.spId } : {}),
     ...(d.tp ? { tp: Number(d.tp) } : {}),
-    ...(d.kbat ? { kbat: d.kbat as NonNullable<BankFilter['kbat']> } : {}),
+    ...(d.kbat ? { kbat: d.kbat as NonNullable<TagFilter['kbat']> } : {}),
     ...(d.tagReview ? { tagReview: true } : {}),
   }
 }
