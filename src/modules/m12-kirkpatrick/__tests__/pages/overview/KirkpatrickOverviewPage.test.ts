@@ -246,6 +246,20 @@ describe('S1 KPI row, bands and info (AC-M12-09.1..09.3)', () => {
     expect(t(w, 'kirk-bands').text()).toContain('Tidak Terlibat')
   })
 
+  it('BUG-02: bands are 2 columns below sm and 5 from sm, not 5 across at every width', async () => {
+    const { wrapper: w } = await open()
+    const grid = t(w, 'kirk-bands').get('.grid').classes()
+    expect(grid).toEqual(expect.arrayContaining(['grid-cols-2', 'sm:grid-cols-5']))
+    expect(grid).not.toContain('grid-cols-5')
+  })
+
+  it('BUG-04: the flow list rows wrap so the pill never overlaps the label', async () => {
+    const { wrapper: w } = await open()
+    const row = t(w, 'kirk-flow-list-t2')
+    expect(row.classes()).toContain('flex-wrap')
+    expect(row.find('.min-w-40').exists()).toBe(true)
+  })
+
   it('static info card text', async () => {
     const { wrapper: w } = await open()
     const text = squash(t(w, 'kirk-info').text())

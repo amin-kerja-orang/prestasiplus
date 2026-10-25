@@ -88,18 +88,22 @@ const steps = computed<Step[]>(() => [
       <li v-for="s in steps" :key="s.key">
         <KirkpatrickLink
           :to="s.to"
-          class="flex min-h-11 items-center gap-3 p-2"
+          class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 p-2"
           :data-testid="`kirk-flow-list-${s.key}`"
         >
           <DsIconChip :icon="s.icon" size="sm" />
-          <span class="min-w-0 flex-1">
+          <span class="min-w-40 flex-1">
             <span class="block text-label text-highlighted">{{ s.label }}</span>
             <span class="block text-body text-muted">{{ s.sub }}</span>
           </span>
-          <span class="shrink-0 text-body text-primary-t" data-testid="kirk-flow-pill">{{
-            s.pill
-          }}</span>
-          <UIcon v-if="s.to !== null" name="i-ph-caret-right" class="size-4 shrink-0 text-dimmed" />
+          <span class="ml-auto flex shrink-0 items-center gap-2">
+            <span class="text-body text-primary-t" data-testid="kirk-flow-pill">{{ s.pill }}</span>
+            <UIcon
+              v-if="s.to !== null"
+              name="i-ph-caret-right"
+              class="size-4 shrink-0 text-dimmed"
+            />
+          </span>
         </KirkpatrickLink>
       </li>
     </ul>
