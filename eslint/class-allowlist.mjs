@@ -198,6 +198,7 @@ const LAYOUT_EXACT = new Set([
   'not-sr-only',
   'container',
   'break-words',
+  'wrap-anywhere',
   'text-wrap',
   'text-nowrap',
   'text-balance',
