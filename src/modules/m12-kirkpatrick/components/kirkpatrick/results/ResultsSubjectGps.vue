@@ -14,6 +14,13 @@ import type { ResultsSubjectGps } from './results-types'
 
 const props = defineProps<{ subjectGps: ResultsSubjectGps }>()
 
+/** The API sends year 0 when there is no data: the heading then has no "(year)" part (DV-M12-36). */
+const title = computed(() =>
+  props.subjectGps.year > 0
+    ? `GPS Mengikut Subjek (${props.subjectGps.year})`
+    : 'GPS Mengikut Subjek',
+)
+
 interface Row extends Record<string, unknown> {
   name: string
   index: number
@@ -62,7 +69,7 @@ const pageSize = ref(20)
 
 <template>
   <DsPanel
-    :title="`GPS Mengikut Subjek (${subjectGps.year})`"
+    :title="title"
     icon="i-ph-book"
     data-testid="res-subject-gps"
   >
