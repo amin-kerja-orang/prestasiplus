@@ -273,6 +273,34 @@ describe('mounts', () => {
   })
 })
 
+describe('S1 alias with a forced scope (BUG-11)', () => {
+  const url = '/admin-sekolah/kirkpatrick?school_id=8080&state=Johor'
+
+  it('shows no filter chips and sends no scope when the API forces the own school', async () => {
+    const { wrapper: w } = await open(url, { detailLinks: false, scopeForced: true })
+    expect(has(w, 'active-filters-reset')).toBe(false)
+    expect(w.text()).not.toContain('Penapis aktif')
+    expect(w.text()).not.toContain('Sekolah: SMK Demo Satu')
+    expect(w.text()).not.toContain('Negeri: Johor')
+    expect(resetLink(w).exists()).toBe(false)
+    expect((w.get('select[name="school_id"]').element as HTMLSelectElement).value).toBe('')
+    expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
+      { schoolId: null, state: '' },
+      expect.anything(),
+    )
+  })
+
+  it('still shows the chips of a normal mount with the same query', async () => {
+    const { wrapper: w } = await open('/admin/kirkpatrick?school_id=8080&state=Johor')
+    expect(w.text()).toContain('Sekolah: SMK Demo Satu')
+    expect(w.text()).toContain('Negeri: Johor')
+    expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
+      { schoolId: 8080, state: 'Johor' },
+      expect.anything(),
+    )
+  })
+})
+
 describe('states', () => {
   it('shows the loading line, then the content', async () => {
     let resolve!: (v: unknown) => void
