@@ -544,11 +544,9 @@ const COLUMNS: TableColumn<UserRow>[] = [
         />
       </template>
       <template #school-cell="{ row }">
-        <span
-          class="block max-w-20 break-words whitespace-normal xl:max-w-28"
-          data-testid="user-school"
-          >{{ row.original.school?.name || '-' }}</span
-        >
+        <span class="block max-w-28 whitespace-normal" data-testid="user-school">{{
+          row.original.school?.name || '-'
+        }}</span>
       </template>
       <template #active-cell="{ row }">
         <DsStatusBadge

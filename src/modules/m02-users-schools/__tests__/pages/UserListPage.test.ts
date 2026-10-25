@@ -159,7 +159,7 @@ describe('UserListPage (M02 S1)', () => {
     )
     const w = await render()
     const row = rowOf(w, 2)
-    for (const id of ['user-name', 'user-email', 'user-school']) {
+    for (const id of ['user-name', 'user-email']) {
       const cell = row.get(`[data-testid="${id}"]`)
       expect(cell.classes(), id).not.toContain('truncate')
       expect(
@@ -168,7 +168,12 @@ describe('UserListPage (M02 S1)', () => {
       ).toBe(true)
     }
     // The table cell is `nowrap`; the two cells must undo it or "wrap" is only a class on paper.
-    expect(row.get('[data-testid="user-school"]').classes()).toContain('whitespace-normal')
+    const school = row.get('[data-testid="user-school"]')
+    expect(school.classes()).toContain('whitespace-normal')
+    expect(school.classes()).not.toContain('truncate')
+    // School names wrap between words only: the 7rem cap fits the longest word ("KEBANGSAAN"), so no word is split.
+    expect(school.classes()).toContain('max-w-28')
+    expect(school.classes().some((c) => c === 'break-words' || c === 'break-all')).toBe(false)
     expect(row.get('[data-testid="user-identity"]').classes()).toContain('whitespace-normal')
     expect(row.get('[data-testid="user-email"]').text()).toBe(
       'alamat.emel.yang.sangat.panjang.sekali@contoh.test',
