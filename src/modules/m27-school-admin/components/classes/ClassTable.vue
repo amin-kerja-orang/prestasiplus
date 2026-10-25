@@ -91,6 +91,7 @@ function open(row: Item): void {
     :page-size="pageSize"
     :page="page"
     caption="Kelas Sekolah"
+    density="tight"
     card-title="name"
     :card-fields="cardFields"
     data-testid="kl-table"
