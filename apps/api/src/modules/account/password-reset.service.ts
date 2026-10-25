@@ -191,6 +191,7 @@ export class PasswordResetService {
         throw icMismatch()
       }
 
+      await this.throttle.resetIcSucceeded(info.ip)
       const issued = await this.issueToken(user, 'ic')
       await this.auditSafe(ACCOUNT_AUDIT.RESET_IC_ISSUED, user, info, { channel: 'ic', resetId: issued.resetId })
       await this.notify(user, ACCOUNT_SECURITY_NOTIFICATIONS.resetIcIssued)

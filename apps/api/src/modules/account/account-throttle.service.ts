@@ -7,6 +7,7 @@ import { AuthConfig } from '../auth/auth.config'
 import { hmacHex } from '../auth/tokens'
 import {
   ANY,
+  IC_IP_LIMIT,
   IC_LIMIT,
   IC_WINDOW_MS,
   MAIL_INTERVAL_MS,
@@ -100,7 +101,8 @@ export class AccountThrottle {
   // --- POST /auth/password/reset-ic (D55a) ----------------------------------------------------------
 
   /**
-   * Counts the attempt against the account and the address (5 per 15 minutes each), whichever result.
+   * Counts the attempt against the account (5 per 15 minutes) and the address (IC_IP_LIMIT per 15 minutes), whichever
+   * result; a match gives its address unit back through resetIcSucceeded.
    * Every attempt, match or not, also starts the 60 s interval of the link request, so a 429 there is no match oracle.
    */
   async resetIcAttempt(email: string, ip: string): Promise<void> {
@@ -108,11 +110,21 @@ export class AccountThrottle {
     const account = await this.hit(this.id(RESET_KEYS.icAccount, normaliseEmail(email)), ANY, IC_WINDOW_MS, now)
     const byIp = await this.hit(this.id(RESET_KEYS.icIp, ANY), this.ipOf(ip), IC_WINDOW_MS, now)
     await this.hit(this.id(RESET_KEYS.mailInterval, normaliseEmail(email)), ANY, MAIL_INTERVAL_MS, now)
-    const over = [account, byIp].filter((c) => c.attempts > IC_LIMIT)
+    const over = [
+      ...(account.attempts > IC_LIMIT ? [account] : []),
+      ...(byIp.attempts > IC_IP_LIMIT ? [byIp] : []),
+    ]
     if (over.length > 0) {
       const wait = Math.max(...over.map((c) => this.retryAfter(c, now)))
       throw tooMany(wait, ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
     }
+  }
+
+  /** A match: the unit reserved on the address is given back, so a school's successful resets never lock it out. */
+  async resetIcSucceeded(ip: string): Promise<void> {
+    await this.prisma.client.$executeRaw`
+      UPDATE login_attempts SET attempts = GREATEST(attempts - 1, 0)
+      WHERE identifier_hash = ${this.id(RESET_KEYS.icIp, ANY)} AND ip_hash = ${this.ipOf(ip)} AND expires_at > ${this.clock.now()}::timestamptz`
   }
 
   // --- POST /auth/password/reset: failed redemptions -------------------------------------------------

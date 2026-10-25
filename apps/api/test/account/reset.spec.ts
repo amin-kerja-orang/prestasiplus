@@ -303,6 +303,44 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
       expect(fieldsOf(await redeem(second.body.data.token as string, TEACHER))).toEqual({ email: ACCOUNT_AUTH_MESSAGES.tokenInvalid })
     })
 
+    describe('limits (M01 BUG-01)', () => {
+      const wrong = '999999999999'
+      const mail = (i: number) => `murid${String(i)}@sekolah.test`
+
+      it('one address serves a whole class: 40 pupils, one wrong IC each, none is blocked', async () => {
+        for (let i = 0; i < 40; i++) expect((await resetIc(mail(i), wrong)).status, `pupil ${String(i)}`).toBe(422)
+      })
+
+      it('the per-address ceiling is 60 failures per 15 minutes; the 61st is 429 with the unchanged BM body', async () => {
+        for (let i = 0; i < 60; i++) expect((await resetIc(mail(i), wrong)).status, `attempt ${String(i)}`).toBe(422)
+        const blocked = await resetIc(mail(99), wrong)
+        expect(blocked.status).toBe(429)
+        expect(blocked.body.error.code).toBe('RATE_LIMITED')
+        expect(blocked.body.error.message).toBe(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
+        expect(blocked.body.error.retryAfter).toBeGreaterThan(0)
+        expect(blocked.headers['retry-after']).toBeDefined()
+      })
+
+      it('the per-account limit stays at 5: the 6th attempt on one e-mail is 429', async () => {
+        for (let i = 0; i < 5; i++) expect((await resetIc(mail(1), wrong)).status).toBe(422)
+        const sixth = await resetIc(mail(1), wrong)
+        expect(sixth.status).toBe(429)
+        expect(sixth.body.error.message).toBe(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
+      })
+
+      it('successful resets do not consume the per-address budget', async () => {
+        for (let i = 0; i < 70; i++) {
+          // each success starts the 60 s e-mail interval only; the address budget is untouched
+          expect((await resetIc(STUDENT, IC)).status, `success ${String(i)}`).toBe(200)
+          t.clock.advance(16 * 60_000)
+        }
+        // 4 successes in one window (account budget 5), then failures from the same address
+        for (let i = 0; i < 4; i++) expect((await resetIc(STUDENT, IC)).status).toBe(200)
+        for (let i = 0; i < 60; i++) expect((await resetIc(mail(i), wrong)).status, `fail ${String(i)}`).toBe(422)
+        expect((await resetIc(mail(99), wrong)).status).toBe(429)
+      })
+    })
+
     it('a wrong IC, no stored IC, an unknown e-mail, an inactive account and a malformed IC all fail alike', async () => {
       await t.db.query(`update users set ic_hash = $1 where email = 'tidakaktif@demo.test'`, [ic.hash(IC)])
       const cases: [string, string][] = [
@@ -352,8 +390,8 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
       expect((await resetIc(STUDENT, IC)).status).toBe(200)
     })
 
-    it('D55a: 5 attempts per 15 minutes per address across different accounts', async () => {
-      for (let i = 0; i < 5; i++) await resetIc(`orang${i}@ujian.test`, IC)
+    it('D55a: 60 failed attempts per 15 minutes per address across different accounts (M01 BUG-01)', async () => {
+      for (let i = 0; i < 60; i++) await resetIc(`orang${i}@ujian.test`, IC)
       const blocked = await resetIc('orang-lain@ujian.test', IC)
       expect(ErrorBodySchema.parse(blocked.body).error.message).toBe(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
       expect(blocked.status).toBe(429)
