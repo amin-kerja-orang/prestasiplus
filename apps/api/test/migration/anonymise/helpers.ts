@@ -119,14 +119,16 @@ export function piiTables(): Record<string, Rows> {
       { id: 5, name: PII.name3, email: '', phone: '', ic: '', username: 'roster5', password: '', role: 'pelajar', school_id: 99, is_active: '1' },
       { id: 6, name: 'Roster Six', email: null, phone: null, ic: null, username: 'roster6', password: null, role: 'pelajar', school_id: null, is_active: '1' },
     ],
-    sponsors: [{ id: 1, organisation: PII.schoolName, category: 'korporat', officer_name: PII.name2, status: 'aktif' }],
-    foster_applications: [{ id: 1, applicant_name: PII.name1, category: 'a', status: 'baru', reason: `Anak saya ${PII.name3} perlukan bantuan` }],
+    sponsors: [{ id: 1, organisation: PII.schoolName, category: 'korporat', status: 'aktif' }],
+    foster_applications: [{ id: 1, category: 'a', status: 'baru' }],
     support_tickets: [{ id: 1, user_id: 1, subject: PII.ticketSubject, status: 'dibuka', admin_reply: null }],
     timeline_entries: [{ id: 1, user_id: 1, title: 'Nota peribadi', body: PII.noteBody, happened_on: '2026-01-02' }],
-    audit_logs: [{ id: 1, user_id: 1, action: 'login', subject_type: 'user', subject_id: '1', ip: PII.ip }],
-    chatbot_conversations: [{ id: 1, user_id: 1, visitor_id: PII.visitor, start_url: `https://example.org/?token=${PII.rememberToken}` }],
+    audit_logs: [{ id: 1, user_id: 1, action: 'login', subject_type: 'user' }],
+    chatbot_conversations: [{ id: 1, user_id: 1 }],
     settings: [{ id: 1, key: 'openai.api_key', value: PII.apiKey, group: 'ai' }],
-    psychometric_results: [{ id: 1, user_id: 1, details: { notes: 'Suka bersendirian', score: 7, flags: [true, 'cemas'] } }],
+    psychometric_results: [{ id: 1, user_id: 1 }],
+    // the one jsonb free-text column in the PII fixture: scrubbed value by value, numbers and booleans kept
+    game_rooms: [{ id: 1, state: { notes: 'Suka bersendirian', score: 7, flags: [true, 'cemas'] }, status: 'aktif' }],
   }
 }
 
