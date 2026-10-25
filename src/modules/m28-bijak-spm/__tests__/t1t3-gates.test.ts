@@ -22,7 +22,7 @@ import type { TagLookup } from '../domain/tag-rule'
 import type { CurriculumTag, QuestionDef, SchemeDef, TpLevel } from '../domain/types'
 import { gateErrors } from '../server/admin'
 import { BijakServer, MemoryStorage } from '../server/store'
-import { MAT_T4_SP, MAT_T4_UNIT, loadTagLookup, loadedState } from './tag-fixtures'
+import { MAT_T4_SP, MAT_T4_UNIT, loadTagLookup, loadedState, matTag } from './tag-fixtures'
 
 let lookup: TagLookup
 beforeAll(async () => {
@@ -88,14 +88,12 @@ describe('intake gate (validateBatch)', () => {
     expect(messages(q)).toEqual(['Medan keyakinan rendah belum disahkan: markah.'])
   })
 
-  it('T4 and T5: unit, SP and the confirmations are still required', () => {
+  it('T4 and T5: an empty unit and SP are asked for by name, with no confirmation (nothing to confirm)', () => {
     for (const formOrigin of ['T4', 'T5'] as const) {
       const q = intakeQ({ ...t4, formOrigin }, { lowFields: ['tag.unit', 'tag.sp'] })
       expect(messages(q)).toEqual([
         'Unit DSKP belum dipilih.',
         'Standard Pembelajaran (SP) belum dipilih.',
-        'Medan keyakinan rendah belum disahkan: unit DSKP.',
-        'Medan keyakinan rendah belum disahkan: SP.',
       ])
     }
   })
@@ -163,20 +161,23 @@ describe('"Perlu disahkan" count and review confidence (lowToConfirm)', () => {
   it('counts only what can be confirmed: T1-T3 unit/SP are never counted', () => {
     expect(lowToConfirm(intakeQ(t13, { lowFields: ['tag.unit', 'tag.sp'] }))).toEqual([])
     expect(lowToConfirm(intakeQ(t13, { lowFields: ['tag.unit', 'marks'] }))).toEqual(['marks'])
-    expect(lowToConfirm(intakeQ(t4, { lowFields: ['tag.unit', 'tag.sp'] }))).toEqual([
-      'tag.unit',
+    // A pre-filled (suggested) unit and SP are counted; an empty one has nothing to confirm.
+    const filled = { unitId: MAT_T4_UNIT, spIds: [MAT_T4_SP] }
+    const suggestion = { providerId: 'mock', model: 'mock', ...filled, confidence: {} }
+    const low = { lowFields: ['tag.unit', 'tag.sp'], tagSuggestion: suggestion }
+    expect(lowToConfirm(intakeQ({ ...t4, ...filled }, low))).toEqual(['tag.unit', 'tag.sp'])
+    expect(lowToConfirm(intakeQ({ ...t4, ...filled }, { ...low, confirmed: ['tag.unit'] }))).toEqual([
       'tag.sp',
     ])
-    expect(
-      lowToConfirm(intakeQ(t4, { lowFields: ['tag.unit', 'tag.sp'], confirmed: ['tag.unit'] })),
-    ).toEqual(['tag.sp'])
+    expect(lowToConfirm(intakeQ(t4, { lowFields: ['tag.unit', 'tag.sp'] }))).toEqual([])
   })
 
   const withLow = (formOrigin: 'T1-T3' | 'T4') => {
     const b = demoBatch(1)
     b.questions = b.questions.map((q) => ({
       ...q,
-      tag: { ...q.tag, formOrigin },
+      tag: formOrigin === 'T4' ? matTag({ tp: q.tag.tp }) : { ...q.tag, formOrigin },
+      tagSuggestion: { providerId: 'mock', model: 'mock', unitId: MAT_T4_UNIT, spIds: [MAT_T4_SP], confidence: {} },
       lowFields: ['tag.unit', 'tag.sp'],
       confirmed: [],
     }))

@@ -240,6 +240,7 @@ stateDiagram-v2
   - unit, SP: "Saya sahkan unit DSKP (keyakinan rendah)" and "Saya sahkan SP (keyakinan rendah)" (existing words).
   - TP, KBAT: "Saya sahkan TP (cadangan AI)" and "Saya sahkan Aras KBAT (cadangan AI)" [PROPOSED] (G2 section 5.1). The "(keyakinan rendah)" wording is not used here because TP and KBAT need confirmation at any confidence.
 - The checkbox is shown only when the field has a value to confirm and the person has not changed it away from the suggestion. For an empty or no-match field there is nothing to confirm; the gate asks for a value instead.
+- **Lead decision (DSKP G5):** the gate lists an empty field once, as "Unit DSKP belum dipilih." (no "Medan keyakinan rendah belum disahkan: unit DSKP." for an empty unit); the no-match caption also shows when the AI made no suggestion at all and the unit is in `lowFields`.
 - The suggestion is pre-selected visibly (the select shows it) so the reviewer sees what AI proposed; it is never styled as final.
 - T1-T3: no unit or SP confirmation is asked (existing `fieldsToConfirm` rule); TP and KBAT still follow the table.
 
@@ -320,7 +321,7 @@ One rule feeds all three paths (G2 5.2), so the wording is identical everywhere.
 | TP not an integer 1 to 6 | Tahap Penguasaan (TP) mesti antara 1 dan 6. | existing |
 | KBAT not a valid level | Aras KBAT tidak sah. | [PROPOSED] (G2 5.2) |
 | T1-T3 with a unit or SP (defensive; the editor cannot produce it) | Tingkatan 1-3 (di luar DSKP) tidak mempunyai unit atau SP. | [PROPOSED] (G2 5.2) |
-| Unit or SP AI-suggested with Low confidence, not confirmed or changed | Medan keyakinan rendah belum disahkan: unit DSKP. and Medan keyakinan rendah belum disahkan: SP. | existing |
+| Unit or SP AI-suggested (pre-filled) with Low confidence, not confirmed or changed (an empty field gets only its "belum dipilih" message) | Medan keyakinan rendah belum disahkan: unit DSKP. and Medan keyakinan rendah belum disahkan: SP. | existing |
 | TP or KBAT AI-suggested, not confirmed or changed | Cadangan AI belum disahkan: TP. and Cadangan AI belum disahkan: Aras KBAT. | [PROPOSED] (the existing "keyakinan rendah" wording is wrong for a High-confidence TP, which must still be confirmed) |
 | Bulk action skipped questions (no bulk UI exists in the prototype; wording reserved) | {n} diterbitkan, {m} dilangkau. (existing QB copy) followed by the list of skipped questions with the messages above | existing pattern, [PROPOSED] use |
 
