@@ -16,6 +16,7 @@ import { PrismaService } from '../../db/prisma.service'
 import { AuthConfig } from '../auth/auth.config'
 import type { RequestInfo, SessionGrant } from '../auth/auth.service'
 import { PasswordService } from '../auth/password.service'
+import { AuthPorts } from '../auth/ports'
 import { SessionStore } from '../auth/session.store'
 import { hmacHex, safeEqualHex } from '../auth/tokens'
 import { IcService } from '../users/credentials'
@@ -59,6 +60,7 @@ export class PasswordResetService {
     @Inject(AccountThrottle) private readonly throttle: AccountThrottle,
     @Inject(SessionStore) private readonly sessions: SessionStore,
     @Inject(SessionIssuer) private readonly issuer: SessionIssuer,
+    @Inject(AuthPorts) private readonly ports: AuthPorts,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(MAIL_PORT) private readonly mail: MailPort,
     @Inject(NOTIFICATION_PORT) private readonly notices: NotificationPort,
@@ -154,6 +156,8 @@ export class PasswordResetService {
         await this.refuseToken(body.email, info, started)
         throw tokenInvalid()
       }
+      // FR-M01-69: the reset logs the user in, so the login hook fires AFTER the commit (never inside the transaction), bounded and swallowed.
+      await this.ports.fireLoginHook({ userId: grant.session.user.id, role: grant.session.active.role, at: this.clock.now() }, info.requestId)
       await this.throttle.redeemSucceeded(body.email, info.ip).catch(() => undefined)
       await this.notify(user, ACCOUNT_SECURITY_NOTIFICATIONS.resetDone)
       return grant

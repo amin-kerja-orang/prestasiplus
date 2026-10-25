@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common'
 import { AuditModule } from '../../common/audit/audit.module'
 import { ThrottleModule } from '../../common/throttle'
 import { AccountRepository as AuthAccountRepository } from '../auth/account.repository'
-import { AuthModule } from '../auth'
+import { AuthModule, AuthPortsModule } from '../auth'
 import { FilesModule } from '../files'
 import { NotificationsModule } from '../notifications'
 import { SchoolsModule } from '../schools'
@@ -32,7 +32,7 @@ import { SettingsService, StatsService } from './settings.service'
  * so it is provided here again.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, AuthModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule],
+  imports: [AuditModule, ThrottleModule, AuthModule, AuthPortsModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule],
   controllers: [AccountPublicController, MeController, PublicStatsController],
   providers: [
     AccountDataRepository,
