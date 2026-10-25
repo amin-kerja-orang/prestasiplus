@@ -325,6 +325,7 @@ Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replace
 ### 4.8 M10 classes
 
 - `classrooms` single table vs prototype `kind` (school class vs teacher class) and string ids; derive `kind` by whether `teacher_id` is set (to confirm), and keep `code` as `joinCode`.
+- A migrated teacher class (`kind = 'classroom'`) whose source `school_id` is empty takes its teacher's v2 school (`users.school_id`, when set), like migration 0090 (SW7-01); counted in the core note `classrooms.school_from_teacher`. A school class, or a teacher without a school, keeps NULL.
 - `classroom_student` has no status/source: set `status=active`, `source='code'`.
 - `challenges` with `created_by`/`classroom_id` are teacher missions (M10); platform challenges go to M14.
 - Teacher `broadcasts` and `study_schedules` have no prototype store.
