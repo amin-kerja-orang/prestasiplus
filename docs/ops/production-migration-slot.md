@@ -34,6 +34,15 @@ dumps, and only with `NODE_ENV=development`. The production path is a different 
 - it refuses a manifest with `large_integers`. Integers of 2^53 or more would not survive `JSON.parse`; this is
   finding N1 on #124.
 
+The one exception is the A4 rehearsal on a scratch host (never production): `slot.sh load --from <fixture dir>
+--synthetic-scratch` (A4-OVERRIDE, #315) loads a `fixtures:generate` fixture (top-level `"synthetic": true`, nothing
+else) when the `prod.env` FILE says `PP_SCRATCH_HOST=yes` and `PP_OFFSITE_KIND=none` and the host name (`hostname -s`)
+is typed in a terminal; a variable exported in the shell does not count, and `python3` is needed. It leaves the
+markers `SYNTHETIC-LOADED` and `SYNTHETIC-IN-TARGET` in `PP_STAGE_DIR`: on a host not marked scratch, `copy` and
+`etl --apply` then refuse the data (exit 3), and on a scratch host `gonogo` always ends
+`gonogo: NO-GO (scratch host or synthetic stage data)` with exit 3. `throwaway-up` clears the stage marker; a copy
+from a raw stage clears the target marker. `deploy/vps/migration/test-scratch-override.sh` tests it with stubs.
+
 ## 1. Host preparation (T-5 d to T-2 d)
 
 All as `ppdeploy` unless `sudo` is shown. The values go in `/etc/pretasiplus/prod.env` (see `.env.prod.example`, block
@@ -137,10 +146,18 @@ deploy/vps/migration/slot.sh etl migrate:questions --as-of=2026-10-29 [--apply] 
 deploy/vps/migration/slot.sh etl migrate:export-question-reports                  # C5, the Q9 export first
 deploy/vps/migration/slot.sh etl migrate:archive-minimise --confirm <db> [--apply] # C5 (apply gate in both modes)
 deploy/vps/migration/slot.sh etl migrate:link-questions [--apply]                 # C6, optional
-deploy/vps/migration/slot.sh etl migrate:rollback --confirm=<db> [--apply]        # 6.3 R-b (both gates, every run)
+deploy/vps/migration/slot.sh etl migrate:rollback --confirm <db> [--apply]        # 6.3 R-b (both gates, every run)
 deploy/vps/migration/slot.sh etl migrate:delta --since=<T-dump1> --as-of=... [--apply]  # rehearsal / replan only (plan 4.7)
 ```
 
+- **Accepted commands and stops.** `etl` takes only `staging:profile`, `migrate:all`, `migrate:delta`, `migrate:verify`,
+  `migrate:rollback`, `migrate:questions`, `migrate:link-questions`, `migrate:export-question-reports` and
+  `migrate:archive-minimise`; anything else (including the standalone `migrate:core` and `migrate:activity`) exits 2
+  (`slot.sh:336-337`). Other stops: exit 3 for a missing `etl.env`, a `PP_MIGRATION_OUT` with the wrong owner or mode,
+  no release sha for `migrate:all` / `migrate:delta`, and (with `--apply`) no `staging_cloud` in the target; exit 3
+  when the stage or the target holds a synthetic fixture and the host is not marked scratch; exit 75 when another
+  operation holds the shared lock after the wait of `PP_LOCK_WAIT` (1800 s). Every `migrate:*` command accepts the
+  `--out-dir` that `etl` appends (ORCH-FLAGS; migration runbook, "Unknown flags are refused").
 - **Role.** Every `etl` run connects as the migration role `pp_etl`: `compose run --env-from-file etl.env`, whose
   `DATABASE_URL` overrides the `migrate` service's `env_file` (`api.env`, then `migrate.env` = `pp_owner`). `etl`
   stops (exit 3) when `etl.env` is missing (`sudo deploy/vps/db-roles.sh secrets`).
@@ -339,6 +356,8 @@ down, `set -e`) has no `NO-GO` line but also no end line, so it never reads as c
 | `reports: <dir> ready (owner uid 1000, mode 700)` | none (the ETL steps need it) | missing or wrong owner/mode: every `etl` step would stop |
 | `raw data: RAW CHECK ...` | none: cutover plan section 7 (information) | never a no-go; after 6 Nov it must read `RAW CHECK OK` (`RAW CHECK INCOMPLETE` = could not check) |
 | `gonogo: complete (every check above ran)` | the B9 checklist | missing: the run stopped half way, treat as NO-GO |
+| `host: PP_SCRATCH_HOST=yes in <prod.env> (A4 scratch host)  -> NO-GO on production`, `stage data: SYNTHETIC fixture loaded ...`, `target data: SYNTHETIC copy in the target ...` | none (A4 only) | any of them on the production host is a no-go; on the A4 scratch host they are expected |
+| `gonogo: NO-GO (scratch host or synthetic stage data)`, exit 3 | none (A4 only) | replaces the `complete` line; expected on the A4 scratch host only, a no-go anywhere else |
 
 These criteria are checked by people, not by the script:
 
@@ -356,7 +375,8 @@ replaced by a stand-in that maps `docker compose exec db` and `docker exec <thro
   back), both guards refuse correctly, `post_drop`, and `purge-raw` (deletes `pre_delta` and marks it deleted in
   custody).
 - **`slot.sh`:**
-  - `load` refuses an anonymised, a synthetic, an unmarked, a `large_integers` and a `.partial` dump;
+  - `load` refuses an anonymised, a synthetic, an unmarked, a `large_integers` and a `.partial` dump (the scratch
+    override above is covered by `deploy/vps/migration/test-scratch-override.sh`);
   - `load` builds the `compose run` line (`NODE_ENV=development`, `PP_ALLOW_STAGING_RESET=1`, URL through an env file);
   - `copy` gives equal table counts and warned when they are not 89/38 (a STOP since round 4);
   - the `etl` env composition is right (the apply gate only with `--apply`, both gates for rollback, `migrate:core`

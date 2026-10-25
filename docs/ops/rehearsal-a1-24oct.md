@@ -383,6 +383,8 @@ The first query is the one in `mig07-real-data-pass.md` section 3. The third mus
 q "select c.entity, c.source_count, c.rejected, round(100.0 * c.rejected / nullif(c.source_count, 0), 3) as reject_pct from etl_recon c join etl_runs r on r.id = c.run_id where r.mode = 'apply' and r.status = 'succeeded' order by c.entity"
 ```
 
+A1-FIX: a documented exclusion (`classrooms` whose teacher is absent from the source, their `enrolments`, `exam_attempts` with status `in_progress`) is counted in `source_count` but not in `eligible_count`, writes no reject row, and is named in the notes `classrooms.excluded.teacher_absent_from_source`, `enrolments.excluded.class_teacher_absent_from_source` and `exam_attempts.excluded.in_progress`. The percentage above divides by `source_count`, so for those three entities it is lower than the share of eligible rows; also post `rejected / eligible_count` for them (replace `c.source_count` by `c.eligible_count` in the query) and the three notes, counts only. **Perlu pengesahan (LEAD):** which denominator criterion 2 uses.
+
 (d) Size and WAL (optional, recipe section 11): run `"$RDB" status` after the apply and note the database sizes; take `q 'select pg_current_wal_lsn()'` before A1.9 and after A1.10, then `q "select pg_wal_lsn_diff('<after>','<before>')::bigint"`.
 
 (e) Forced password change after migration (input to BUG AM2-A1 on #113; counts only, never ids):
