@@ -84,7 +84,7 @@ export async function rebuildAfterResume(a: ActivityContext, pool: pg.Pool, runI
     const exc = await pool.query<{ slug: string; n: string }>(
       `SELECT st.slug::text AS slug, count(*)::text AS n FROM staging_cloud.exam_attempts t
        JOIN staging_cloud.attempt_statuses st ON st.id = t.status_id
-       WHERE regexp_replace(lower(btrim(st.slug, E' \\t\\r\\n\\f\\v')), '[\\s-]+', '_', 'g') = ANY($1::text[]) GROUP BY st.slug`,
+       WHERE regexp_replace(lower(btrim(st.slug, E' \\t\\r\\n\\f\\x0b')), '[\\s-]+', '_', 'g') = ANY($1::text[]) GROUP BY st.slug`,
       [EXAM_STATUSES_EXCLUDED],
     )
     for (const r of exc.rows) a.notes.count(`exam_attempts.excluded.${enumKey(r.slug) ?? 'other'}`, Number(r.n))
