@@ -53,11 +53,18 @@ export const SCHOOL_TYPE_SOURCE_CODES: readonly string[] = Object.keys(SCHOOL_TY
 export const PRIMARY_SCHOOL_TYPES: ReadonlySet<string> = new Set(['SK', 'SJK(C)', 'SJK(T)'])
 export const SECONDARY_SCHOOL_TYPES: ReadonlySet<string> = new Set(['SMK', 'MRSM', 'SBP'])
 
-/** .cloud `education_levels.stage` -> v2 `CurriculumStage` (identity map: a value outside the three is rejected). */
+/**
+ * .cloud `education_levels.stage` -> v2 `CurriculumStage`. The real source stores the BM stage names `Rendah`,
+ * `Menengah Rendah` and `Menengah Atas` (A1 reject analysis, LEAD-confirmed as the complete distinct set); the keys are
+ * their `enumKey` form. The three v2 codes stay as keys too. A value outside the map is rejected (UNKNOWN_ENUM).
+ */
 export const STAGE_MAP: Readonly<Record<string, string>> = {
   primary: 'primary',
   lower_secondary: 'lower_secondary',
   upper_secondary: 'upper_secondary',
+  rendah: 'primary',
+  menengah_rendah: 'lower_secondary',
+  menengah_atas: 'upper_secondary',
 }
 export const STAGE_SOURCE_CODES: readonly string[] = Object.keys(STAGE_MAP)
 
@@ -68,6 +75,8 @@ export const SUBSCRIPTION_TIER_MAP: Readonly<Record<string, 'basic' | 'full'>> =
   premium: 'full',
   penuh: 'full',
   full: 'full',
+  // A1-FIX (LEAD, 25 Oct 2026): the monitoring-only package is the basic tier.
+  pemantauan: 'basic',
 }
 export const SUBSCRIPTION_TIER_SOURCE_CODES: readonly string[] = Object.keys(SUBSCRIPTION_TIER_MAP)
 

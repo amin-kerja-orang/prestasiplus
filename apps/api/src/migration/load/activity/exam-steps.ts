@@ -10,11 +10,12 @@ import type pg from 'pg'
 
 import { ARCHIVE_SCHEMA, STAGING_SCHEMA } from '../../ddl/spec'
 import type { AnyEntityStep, BatchContext, BatchResult } from '../../kit/runner'
+import { excludedResult, sumBatch } from '../../transform/activity-common'
 import { quoteIdent, toJson } from '../../kit/sql'
 import { upsertByLegacy, type LegacyRow } from '../../kit/upsert'
 import { rejectRow } from '../helpers'
 import { distinctValues, resolveFk, type StagedRow } from '../source'
-import { EXAM_ATTEMPT_COLUMNS, examStatusRejectLabel, snapshotTitle, transformExamAttempt, type ExamResultValues } from '../../transform/exam'
+import { EXAM_ATTEMPT_COLUMNS, excludedExamStatus, snapshotTitle, transformExamAttempt, type ExamResultValues } from '../../transform/exam'
 import type { ActivityContext } from './context'
 import { idOf } from './wallet-steps'
 
@@ -91,23 +92,31 @@ export function examAttemptsStep(a: ActivityContext): AnyEntityStep {
       const titles = await paperTitles(a.pool, distinctValues(rows, 'exam_paper_id'))
       const items: LegacyRow[] = []
       const resultOf = new Map<string, ExamResultValues>()
+      let excluded = 0
       for (const row of rows) {
         const legacyId = idOf(row)
+        // A1-FIX: an unfinished attempt is a documented exclusion (left out of `eligible_count`), not a reject.
+        const left = excludedExamStatus(row.status)
+        if (left !== null) {
+          excluded += 1
+          a.notes.count(`exam_attempts.excluded.${left}`)
+          continue
+        }
         const out = transformExamAttempt(row, {
           userId: resolveFk(row.user_id, users) ?? undefined,
           paperTitle: titles.get((row.exam_paper_id ?? '').trim()) ?? null,
         })
         if (!out.ok) {
           rejectRow(ctx, entity, legacyId, out.reject)
-          // A status that is rejected is counted by name (in_progress) so the LEAD sees the number; any other is `other`.
-          if (out.reject.column === 'status') a.notes.count(`exam_attempts.status_rejected.${examStatusRejectLabel(row.status)}`)
+          // A status outside the map (the excluded ones never get here) is counted as `other`, never by raw text.
+          if (out.reject.column === 'status') a.notes.count('exam_attempts.status_rejected.other')
           continue
         }
         items.push({ legacyId, values: out.value.attempt as unknown as Record<string, unknown> })
         if (out.value.result) resultOf.set(legacyId, out.value.result)
         else a.notes.count('exam_attempts.no_result')
       }
-      if (items.length === 0) return { inserted: 0, updated: 0, unchanged: 0 }
+      if (items.length === 0) return sumBatch({ inserted: 0, updated: 0, unchanged: 0 }, excludedResult(excluded))
       const res = await upsertByLegacy(ctx.db, { table: 'exam_attempts', source: ctx.source, columns: EXAM_ATTEMPT_COLUMNS, rows: items })
       for (const legacyId of res.duplicates) rejectRow(ctx, entity, legacyId, { reason: 'DUPLICATE_KEY', column: 'id' })
       const written: { attempt_id: string; r: ExamResultValues }[] = []
@@ -116,7 +125,7 @@ export function examAttemptsStep(a: ActivityContext): AnyEntityStep {
         if (id !== undefined) written.push({ attempt_id: id, r })
       }
       await upsertResults(ctx, written)
-      return { inserted: res.inserted, updated: res.updated, unchanged: res.unchanged }
+      return { inserted: res.inserted, updated: res.updated, unchanged: res.unchanged, excluded }
     },
   }
 }
