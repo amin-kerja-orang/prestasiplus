@@ -125,7 +125,7 @@ const COLUMNS: TableColumn<Row>[] = [
       </DsNativeSelect>
       <DsNativeSelect v-model="subject" aria-label="Subjek">
         <option value="semua">Semua subjek</option>
-        <option v-for="s in server.subjects()" :key="s.code" :value="s.code">{{ s.name }}</option>
+        <option v-for="s in server.tagSubjects()" :key="s.code" :value="s.code">{{ s.name }}</option>
       </DsNativeSelect>
     </DsFilterBar>
 

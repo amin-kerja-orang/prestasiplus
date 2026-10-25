@@ -21,15 +21,20 @@ export function fieldsToConfirm(q: IntakeQuestion): string[] {
 const TAG_FIELDS: readonly TagField[] = ['unit', 'sp', 'tp', 'kbat']
 const tagFieldOf = (path: string): TagField | undefined => TAG_FIELDS.find((f) => tagFieldPath(f) === path)
 
+const tagValueEmpty = (tag: IntakeQuestion['tag'], f: TagField): boolean =>
+  f === 'unit' ? !tag.unitId : f === 'sp' ? tag.spIds.length === 0 : f === 'tp' ? tag.tp === null : !tag.kbat
+
 /**
  * Fields of `q` still waiting for a person (T1-T3 unit/SP are never asked for). A tag field is
  * resolved when it is ticked or the person changed the value away from the AI suggestion (QB
- * "confirmed or edited"); any other field only when it is ticked.
+ * "confirmed or edited"); any other field only when it is ticked. An empty tag field has nothing to
+ * confirm (lead decision, DSKP G5): the tag rule asks for a value instead ("Unit DSKP belum dipilih.").
  */
 export const lowToConfirm = (q: IntakeQuestion): string[] =>
   fieldsToConfirm(q).filter((f) => {
     const tagField = tagFieldOf(f)
-    return tagField ? !tagFieldResolved(q, tagField) : !q.confirmed.includes(f)
+    if (!tagField) return !q.confirmed.includes(f)
+    return !tagValueEmpty(q.tag, tagField) && !tagFieldResolved(q, tagField)
   })
 
 /** The refusal for a field that waits for a person: the unit and SP words are low confidence, TP and KBAT any AI value. */

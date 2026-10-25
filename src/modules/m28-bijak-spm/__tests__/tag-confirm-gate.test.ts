@@ -6,6 +6,7 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { aiFieldState } from '../admin/intake/domain/tag-view'
 import { lowToConfirm, validateBatch, validateRevision } from '../admin/intake/domain/validation'
 import type { IntakeQuestion } from '../admin/intake/types'
 import type { TagLookup } from '../domain/tag-rule'
@@ -94,6 +95,31 @@ describe('AI confirmation gate', () => {
     const x = q({ lowFields: ['marks'], confirmed: [] }, matTag({ tp: 3 }))
     expect(lowToConfirm(x)).toEqual(['marks'])
     expect(messages(x)).toContain('Medan keyakinan rendah belum disahkan: markah.')
+  })
+})
+
+describe('an empty unit has nothing to confirm (lead decision, DSKP G5)', () => {
+  const empty = matTag({ formOrigin: 'T4', unitId: null, spIds: [], tp: 3 })
+
+  it('asks for the unit by name only, never for a confirmation', () => {
+    const x = q({ lowFields: ['tag.unit'], tagSuggestion: undefined }, empty)
+    expect(lowToConfirm(x)).toEqual([])
+    const all = messages(x)
+    expect(all).toContain('Unit DSKP belum dipilih.')
+    expect(all).not.toContain('Medan keyakinan rendah belum disahkan: unit DSKP.')
+  })
+
+  it('a pre-filled unit in lowFields is still confirmed', () => {
+    expect(lowToConfirm(q({ lowFields: ['tag.unit'] }))).toEqual(['tag.unit'])
+  })
+
+  it('shows the no-match caption when the AI made no suggestion at all', () => {
+    const x = q({ lowFields: ['tag.unit'], tagSuggestion: undefined }, empty)
+    expect(aiFieldState(x, 'unit', true).noMatch).toBe(true)
+    expect(aiFieldState(x, 'sp', false).noMatch).toBe(false)
+    // Nothing in lowFields (a manual question): no caption; a chosen unit: no caption.
+    expect(aiFieldState({ ...x, lowFields: [] }, 'unit', false).noMatch).toBe(false)
+    expect(aiFieldState({ ...x, tag: matTag({ tp: 3 }) }, 'unit', true).noMatch).toBe(false)
   })
 })
 

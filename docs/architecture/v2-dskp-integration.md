@@ -227,6 +227,7 @@ export interface TagSuggestion {
 - A field needs confirmation when `tp` or `kbat` carries any AI suggestion, or when `unit`/`sp` carries a suggestion with confidence `rendah` (AC-05.2, AC-05.3, AC-06.4). A field counts as resolved when it is ticked, **or** the person changed the value away from the suggestion (QB "confirmed or edited").
 - The unit suggestion is always a catalogue node. No match above the threshold leaves unit and SP empty and adds `tag.unit` to `lowFields` (AC-04.9). The prototype's invented SP code (`NN.1`) is removed.
 - **Lead decision (DSKP-T06 G4, "never guess"):** a unit suggested without an SP is an incomplete tag, so `tag.unit` is also put in `lowFields` and the reviewer must confirm it (or change it) before submit, at any confidence.
+- **Lead decision (DSKP G5):** an empty tag field has nothing to confirm, so the client gate (`lowToConfirm`) does not ask for a confirmation for it; for an unmatched, empty unit only "Unit DSKP belum dipilih." is shown. The server tag rule is unchanged and still refuses an empty unit.
 
 Audit (read-only, in the existing history list, no new screen):
 
