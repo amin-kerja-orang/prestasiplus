@@ -1,7 +1,7 @@
-# v2 Guru Mod Pelajar (`guru-mod-pelajar`)
+# v2 Guru and Admin Sekolah Mod Pelajar (`guru-mod-pelajar`)
 
-Status: G1 draft, waiting for the user's answers to the open questions in section 8.
-Track: Full (new capability for a new role, touches session, guard and a shared screen).
+Status: **G1 answered 2026-10-25** (user answers applied, see section 8). One confirmation (Q-N2) is recommended before G1 is closed; the ACs already contain the recommended default.
+Track: Full (new capability for two roles, touches session, guard, learner screens and test-data handling).
 Related: `docs/requirements/v2-portals.md` (US-07, US-08, AC-15.1), TRACKER D31(c), D32(b), D33(b), D43, D48, D53(c), D54, `docs/adr/0017-role-list-active-role-scope.md`, `docs/qa/uat-2026-10-24-triage.md` (T2).
 
 Labels: **[AS-BUILT]** = observed in this repo today. **[PROPOSED]** = new wording or behaviour proposed here. Nothing is claimed about the live sites.
@@ -9,189 +9,249 @@ Labels: **[AS-BUILT]** = observed in this repo today. **[PROPOSED]** = new wordi
 ## 1. Summary and goal
 
 ### Problem
-- On "Soalan by Chapter" (`/practice/chapter`, shared Murid + Guru screen) the button "Latih Tubi Rawak" links to `/practice`. `/practice` is a Murid-only item (matrix row 16 "Latih Tubi"), not in the Guru prototype scope. The route guard (prototype scope, D43) therefore redirects a guru silently to `/guru`. The guru clicks and sees nothing happen. [AS-BUILT: `ChapterIndexPage.vue` `to="/practice"`; `guards.ts` scope step; `prototype-scope.ts` `TEACHER_ITEMS` has no `/practice` rule]
-- More generally a guru has no way to see or try the student portal.
+- On "Soalan by Chapter" (`/practice/chapter`, shared Murid + Guru screen) the button "Latih Tubi Rawak" links to `/practice`. `/practice` is a Murid-only item (matrix row 16 "Latih Tubi"), not in the Guru prototype scope. The route guard (prototype scope, D43) redirects a guru silently to `/guru`; the guru clicks and sees nothing happen. [AS-BUILT: `ChapterIndexPage.vue` `to="/practice"`; `guards.ts` scope step; `prototype-scope.ts` `TEACHER_ITEMS` has no `/practice` rule]
+- More generally, staff (Guru, Admin Sekolah) have no way to see or try the student portal.
 
-### User decision (2026-10-24, UAT triage T2, TRACKER D54)
-User reaction: "bukan ada mod pelajar untuk admin/guru?" and chose **"Beri guru Mod Pelajar"**. Today Mod Pelajar exists only for Admin Pusat.
+### User decisions
+- 2026-10-24 (UAT triage T2, TRACKER D54): "Beri guru Mod Pelajar".
+- **2026-10-25 (this G1 round):**
+  1. Which student: **"Akaun guru sendiri"**. The staff member uses THEIR OWN account inside the student layout (Portal Pembelajaran). No impersonation, no test student.
+  2. Writes: **"Boleh, ditanda data ujian"**. Practice answers, coins etc. are allowed, saved, stamped as test data and excluded from real aggregates.
+  3. "Latih Tubi Rawak" for a guru: **"Tanya, kemudian masuk mod"**. A themed dialog "Masuk Mod Pelajar?", then the mode is entered and `/practice` opens.
+  4. Admin Sekolah: **"Tambah Admin Sekolah"**. Admin Sekolah gets the same Mod Pelajar (own account, student layout) in this same change.
 
 ### Goal
-A guru can enter Mod Pelajar from the Portal Pembelajaran, use the student portal in an explicit, visible, reversible mode, and return to the guru portal without logging in again. The "Latih Tubi Rawak" button then leads somewhere meaningful for a guru.
+A Guru or Admin Sekolah can enter Mod Pelajar from the Portal Pembelajaran with their own account, use the whole student portal in an explicit, visible, reversible mode, and return to where they started without logging in again. Everything they do as a learner is test data and never reaches real students' figures. The "Latih Tubi Rawak" button then leads somewhere meaningful for a guru.
 
-### Admin Mod Pelajar as built, versus what was written
+### Model in one paragraph (own account)
+The session keeps the **same user id and token**. A `mode` flag (`mod_pelajar`) switches the *active view* to the learner portal: layout, menu, landing, route guard and API authorisation behave as role `student` with self scope while the flag is on (this matches the contract `Session.active.via = 'mod_pelajar'` and ADR-0017 item 7 [AS-BUILT in contract/ADR; not in the mock]). Nothing is parked or swapped; "Keluar Mod Pelajar" clears the flag.
 
-| Aspect | US-07 "Pratonton sebagai Pelajar" (v2-portals, as written) | Admin Mod Pelajar as built [AS-BUILT] |
+### Admin Pusat Mod Pelajar as built, versus staff Mod Pelajar (this feature)
+
+| Aspect | Admin Pusat as built [AS-BUILT] | Guru / Admin Sekolah (this feature) [PROPOSED] |
 |---|---|---|
-| Name | Pratonton sebagai Pelajar / "Keluar Pratonton" | "Masuk Mod Pelajar" / "Keluar Mod Pelajar" (D31c, D33c) |
-| Entry | PS-01 row action + Ctrl+K | Account menu item "Masuk Mod Pelajar" in `PentadbiranLayout.vue` only; no Ctrl+K command, no PS-01 row action, no confirm dialog |
-| Tab | New browser tab, admin tab unchanged | Same tab: the student session replaces the admin session in `pp.auth`; the admin session is parked in `session.mode.parent` |
-| Which student | Any chosen real student | The fixed demo test student: id 2, "Pelajar Demo" (`mod-pelajar.ts`); call goes to `POST /api/admin/users/2/impersonate` |
-| Read-only | Read-only by default (AC-07.5) | Not enforced. The student session is a normal session, so writes happen on the shared Pelajar Demo account. No `is_test` stamping exists in the mock |
-| Banner | "Pratonton sebagai Pelajar — anda melihat sebagai {nama murid}" | "Mod Pelajar: anda melihat portal pelajar sebagai {nama}" + "Keluar Mod Pelajar"; fixed bar, 40 px, non-dismissible, `role="status"` (`ModPelajarBanner.vue`) |
-| Exit lands | Close tab / return to admin portal | Restores the parked admin session, goes to `/admin/command-center`; if the parked session expired, session cleared and `/login` |
-| Who | Admin; Admin Sekolah own school; PPD no | `session.role === 'admin'` only; any other role throws |
-| Nesting | Not allowed | Refused (`enterModPelajar` returns false when a mode is on) |
-| Audit | Start/stop audit log (AC-07.7) | No audit write in the mock handler |
-| Survives reload | n/a | Yes (state is in `pp.auth`) |
+| Entry | Account menu item "Masuk Mod Pelajar" in `PentadbiranLayout.vue`; no Ctrl+K, no confirm | Account menu (desktop and "Lagi" sheet) + Ctrl+K in `PembelajaranLayout.vue`; guru also via the "Latih Tubi Rawak" dialog |
+| Who is viewed | Fixed demo test student id 2 "Pelajar Demo" via `POST /api/admin/users/2/impersonate`; session replaced, admin session parked in `session.mode.parent` | The signed-in user's own account; same id and token; no parked session, no impersonation call |
+| Writes | Normal session, writes land on the shared Pelajar Demo account; no `is_test` stamp | Allowed; stamped test data; excluded from aggregates (US-07) |
+| Banner | "Mod Pelajar: anda melihat portal pelajar sebagai {nama}" + "Keluar Mod Pelajar"; 40 px bar, button 32 px, `role="status"` | Same component, copy adapted to own-account viewing (US-04); exit button >= 44 px |
+| Exit lands | Fixed `/admin/command-center`; `/login` if parked session expired | Page where the mode started, else role home (`/guru` or `/admin-sekolah`) |
+| Nesting | Refused | Refused |
+| Audit | None | enter/exit logged (Should) |
+| Survives reload | Yes (`pp.auth`) | Yes (`pp.auth`) |
 
-Related doc conflicts, not resolved here: D33(b) and ADR-0017 say Admin Pusat + Admin Sekolah; `v2-frontend.md` OQ-1 and the build say Admin Pusat only; ADR-0017 says US-07 is superseded by D31(c) Mod Pelajar; D31(c) says "act as themselves" while the build views as the test student; D53(c) says impersonation is dropped in favour of `POST /api/session/mode` (the mock still uses the impersonate endpoint, realignment is V2-T31).
+Doc conflicts and their resolution:
+- **D33(b) / ADR-0017 item 7 versus `v2-frontend.md` OQ-1 and the build** (Admin Pusat + Admin Sekolah versus Admin Pusat only): **resolved 2026-10-25 by the user, Admin Sekolah is included.** The user also added Guru (D54). Roles allowed to enter Mod Pelajar become `admin`, `school_admin`, `teacher`; ADR-0017 item 7 and the contract constant `MOD_PELAJAR_ROLES` (`packages/contract/src/session/session.ts`) must be amended accordingly (see section 9).
+- **D31(c) "act as themselves" / ADR-0017 "never a real student's data" versus the admin build (test student by impersonation):** the user's choice for Guru and Admin Sekolah follows D31(c) and ADR-0017. The admin build remains the odd one out; see Q-N1.
+- D53(c) (impersonation dropped, `POST /api/session/mode` only) is consistent with the own-account model. The staff flow should use that contract shape, not the impersonate endpoint (architect decides how the mock does it, A4).
+- US-07 "Pratonton sebagai Pelajar" in `v2-portals.md` (chosen real student, new tab, read-only) stays superseded.
 
 ## 2. Users / personas
 
 | Persona | Need |
 |---|---|
-| Guru (role `teacher`, Portal Pembelajaran, e.g. Guru Demo, SMK DEMO) | See and try what a murid sees (practice, chapters, dashboard) without a second login, then come back to teaching screens |
-| Admin Pusat | Unchanged. Existing Mod Pelajar must keep working |
-| Murid (the test student) | Must not be disturbed or have real data polluted |
-| QA / demo presenter | Can show the student view from the guru account |
+| Guru (role `teacher`, Portal Pembelajaran, e.g. Guru Demo, SMK DEMO) | See and try what a murid sees (practice, chapters, rewards, dashboard) with their own account, then return to teaching screens |
+| Admin Sekolah (role `school_admin`, e.g. Pentadbir Sekolah Demo, SMK DEMO; currently rendered in the Pembelajaran layout, home `/admin-sekolah`) | Same, to understand what students in the school see |
+| Admin Pusat | Unchanged in this feature (Q-N1) |
+| Murid, other users | Must not see staff test activity anywhere (rankings, lobbies, reports) |
+| QA / demo presenter | Can show the student view from a guru or school admin account |
 
 ## 3. User stories
 
 Priority in brackets (MoSCoW).
 
-- **US-01 [Must] Enter Mod Pelajar from the guru shell.** As a guru, I want a clear "Masuk Mod Pelajar" action in my account menu, so that I can open the student portal myself.
-- **US-02 [Must] "Latih Tubi Rawak" works for a guru.** As a guru on Soalan by Chapter, I want the "Latih Tubi Rawak" button to do something understandable, so that I am not silently sent back to my dashboard.
-- **US-03 [Must] Clear, persistent mode indicator.** As a guru in Mod Pelajar, I want to be told at all times that I am viewing as a student, so that I never mistake it for my teacher view.
-- **US-04 [Must] Exit and return.** As a guru, I want "Keluar Mod Pelajar" to return me to the guru portal with my session intact, so that I do not log in again.
-- **US-05 [Must] Safe data handling.** As a product owner, I want anything a guru does in Mod Pelajar kept apart from real students' data, so that class reports, rankings and wallets stay correct.
-- **US-06 [Must] Guard rules while in the mode.** As a product owner, I want the mode to behave like a student session (no guru data, no nesting, no role switching), so that portals stay separate (AC-15.1).
-- **US-07 [Should] Audit trail.** As an admin, I want every enter/exit by a guru recorded, so that use is traceable.
+- **US-01 [Must] Guru enters Mod Pelajar.** As a guru, I want a clear "Masuk Mod Pelajar" action in my account menu, so that I can use the student portal with my own account.
+- **US-02 [Must] Admin Sekolah enters Mod Pelajar.** As an Admin Sekolah, I want the same action, so that I can see what students in my school see.
+- **US-03 [Must] "Latih Tubi Rawak" works for a guru.** As a guru on Soalan by Chapter, I want the "Latih Tubi Rawak" button to ask me and then take me to the practice screen, so that I am not silently sent back to my dashboard.
+- **US-04 [Must] Clear, persistent mode indicator.** As a staff member in Mod Pelajar, I want to be told at all times that I am in the student view, so that I never mistake it for my staff view.
+- **US-05 [Must] Exit and return.** As a staff member, I want "Keluar Mod Pelajar" to return me to where I started, so that I continue my work without logging in again.
+- **US-06 [Must] The learner portal works for a staff account.** As a staff member with no class or form, I want every student screen in the mode to open without errors and show a sensible default or empty state, so that the preview is usable.
+- **US-07 [Must] Test data is kept apart.** As a product owner, I want everything a staff member writes in the mode stamped as test data and excluded from real aggregates, so that class and school reports, rankings, leaderboards and analytics stay correct.
+- **US-08 [Must] Guard rules while in the mode.** As a product owner, I want the mode to behave like a student session (no staff data, no nesting, no role switching), so that portals stay separate (AC-15.1).
+- **US-09 [Should] Audit trail.** As an admin, I want every enter/exit by staff recorded, so that use is traceable.
+- **US-10 [Must, depends on Q-N2] No side effects on other real users.** As a product owner, I want actions that reach other real users blocked in the mode, so that students and parents are not disturbed by test activity.
 
 ## 4. Acceptance criteria
 
-Defaults assumed below follow section 6 (PROPOSED). Where an answer to section 8 changes a criterion, the criterion is marked "(Q#)".
+Where the recommended default of an open question (section 8) shapes a criterion, it is marked "(Q-N#)".
 
-### US-01 Enter from the guru shell
-- AC-01.1 Given a signed-in guru on any Portal Pembelajaran page at desktop width, when the account menu (sidebar footer or navbar) is opened, then it contains the item "Masuk Mod Pelajar" with the same icon as the admin item (`i-ph-student`).
-- AC-01.2 Given a guru at 375 px, when the "Lagi" sheet is opened, then the account block contains "Masuk Mod Pelajar" (touch target >= 44 px).
-- AC-01.3 Given a guru, when Ctrl+K search is opened and "Mod Pelajar" is typed, then the command "Masuk Mod Pelajar" is offered under the "Akaun" group. (Ctrl+K is not present for the admin item today; adding it satisfies v2-portals AC-10.4 "appears only for roles allowed".)
-- AC-01.4 Given a murid, Admin Sekolah, Ibu Bapa or any non-guru role in the Pembelajaran shell, then "Masuk Mod Pelajar" is not shown anywhere. (Admin Pusat keeps its existing entry in Portal Pentadbiran.) (Q5)
-- AC-01.5 Given a guru activates "Masuk Mod Pelajar", when the switch succeeds, then the guru is on the student home `/dashboard` in the same tab, the student sidebar/bottom nav is shown, and the banner (US-03) is visible. No confirm dialog is shown for the menu action (same as admin).
-- AC-01.6 Given the switch is refused or fails, then the guru stays on the current page, remains a guru, and sees the message "Mod Pelajar tidak dapat dibuka. Sila cuba lagi." [AS-BUILT copy, reused]
-- AC-01.7 Given the action is activated twice quickly, then only one switch happens (the control is disabled while switching) [AS-BUILT: `switching` flag].
-- AC-01.8 Given a guru account that is also marked as test or inactive, or has no school, then the action still works or fails with AC-01.6; it never leaves the guru in a half-switched state.
+### US-01 Guru enters Mod Pelajar
+- AC-01.1 Given a signed-in guru on any Portal Pembelajaran page at desktop width, when the account menu (sidebar footer or navbar avatar) is opened, then it contains the item "Masuk Mod Pelajar" with icon `i-ph-student` (same as the admin item).
+- AC-01.2 Given a guru at 375 px, when the "Lagi" sheet is opened, then the account block contains "Masuk Mod Pelajar" with a touch target >= 44 px.
+- AC-01.3 Given a guru, when Ctrl+K search is opened and "Mod Pelajar" is typed, then the command "Masuk Mod Pelajar" is offered under the "Akaun" group.
+- AC-01.4 Given a murid, Ibu Bapa, Penaja, Admin Pusat (in Portal Pentadbiran) or any other role, then "Masuk Mod Pelajar" is not added to the Pembelajaran account menu, "Lagi" sheet or Ctrl+K. (Admin Pusat keeps only its existing entry.)
+- AC-01.5 Given a guru activates "Masuk Mod Pelajar", when it succeeds, then in the same tab the guru is on `/dashboard`, the student sidebar/bottom nav is shown, the banner (US-04) is visible, and the signed-in user is still the same guru account (same name, same school, no new login). No confirm dialog is shown for the menu action.
+- AC-01.6 Given the switch is refused or fails, then the guru stays on the current page, remains in the staff view, and sees "Mod Pelajar tidak dapat dibuka. Sila cuba lagi." [AS-BUILT copy, reused]
+- AC-01.7 Given the action is activated twice quickly, then only one switch happens (the control is disabled while switching). [AS-BUILT `switching` flag]
+- AC-01.8 Given any failure during the switch, then the user is never half-switched: after the failure the staff view, menu and data are exactly those from before.
 
-### US-02 "Latih Tubi Rawak" for a guru (default: option A, Q3)
-- AC-02.1 Given a guru on `/practice/chapter` (not in Mod Pelajar), then the button "Latih Tubi Rawak" is still shown and is no longer a plain link to `/practice`.
-- AC-02.2 Given a guru clicks it, then a themed dialog (not a native confirm, D33a) appears. PROPOSED copy: title "Masuk Mod Pelajar?"; body "Latih Tubi Rawak ialah skrin pelajar. Anda akan melihat portal sebagai Pelajar Demo dan boleh keluar bila-bila masa."; buttons "Masuk Mod Pelajar" and "Batal".
-- AC-02.3 Given the guru confirms, when the switch succeeds, then the guru lands on `/practice` in Mod Pelajar with the banner visible, and the page renders (no redirect to `/guru`).
-- AC-02.4 Given the guru presses "Batal" or Esc, then the dialog closes, the guru stays a guru on `/practice/chapter`, nothing is written.
-- AC-02.5 Given a murid, or a guru already in Mod Pelajar (role is then student), when "Latih Tubi Rawak" is clicked, then it navigates straight to `/practice` as today with no dialog.
-- AC-02.6 Given the switch fails, then AC-01.6 applies and the guru stays on `/practice/chapter`.
-- AC-02.7 Regression: no guru click on any button of `/practice/chapter` ends in a silent redirect to `/guru`. QA clicks every button and chapter card on the screen as a guru, outside and inside the mode.
+### US-02 Admin Sekolah enters Mod Pelajar
+- AC-02.1 Given a signed-in Admin Sekolah on any Portal Pembelajaran page, then the account menu (desktop), the "Lagi" sheet (375 px, target >= 44 px) and Ctrl+K ("Akaun" group) offer "Masuk Mod Pelajar", with the same copy and icon as for the guru.
+- AC-02.2 Given an Admin Sekolah activates it and it succeeds, then in the same tab the user is on `/dashboard` with the student menu and the banner, still signed in as the same Admin Sekolah account (same school).
+- AC-02.3 AC-01.6, AC-01.7 and AC-01.8 apply unchanged.
+- AC-02.4 Given an Admin Sekolah, then "Latih Tubi Rawak" is not reachable from the Admin Sekolah menu (`/practice/chapter` is not in the Admin Sekolah matrix, rows 1-7, 10, 11, 45-53), so US-03 does not apply to this role.
+- AC-02.5 Given the Admin Sekolah view later moves into Portal Pentadbiran (D30), the entry must be offered in that portal's account menu too (see assumption A6); not testable in the current prototype.
 
-### US-03 Banner
-- AC-03.1 Given a guru in Mod Pelajar, then on every page of the mode a fixed bar is shown with the text "Mod Pelajar: anda melihat portal pelajar sebagai {nama murid}" and the button "Keluar Mod Pelajar" (same component and copy as admin, [AS-BUILT]).
-- AC-03.2 The bar cannot be dismissed and is exposed as `role="status"`.
-- AC-03.3 The bar never covers the top-most page content at 375 / 768 / 1280 px (content is offset, v2-portals AC-16.5), and "Keluar Mod Pelajar" is reachable by keyboard and touch (>= 44 px target at 375 px; the built button is 32 px high, so the architect must confirm or fix against this AC).
-- AC-03.4 Given the page is reloaded or reopened in the same browser while the mode is on, then the mode and the banner are still on (state kept in `pp.auth`).
+### US-03 "Latih Tubi Rawak" for a guru (resolved Q3)
+- AC-03.1 Given a guru on `/practice/chapter` outside the mode, then the button "Latih Tubi Rawak" is still shown and is no longer a plain link to `/practice`.
+- AC-03.2 Given the guru clicks it, then a themed dialog (not a native confirm, D33a) appears. PROPOSED copy: title "Masuk Mod Pelajar?"; body "Latih Tubi Rawak ialah skrin pelajar. Anda akan masuk Mod Pelajar dengan akaun sendiri. Jawapan dan ganjaran direkod sebagai data ujian. Anda boleh keluar bila-bila masa."; buttons "Masuk Mod Pelajar" and "Batal".
+- AC-03.3 Given the guru confirms and the switch succeeds, then the guru lands on `/practice` in the mode with the banner visible, and the page renders (no redirect to `/guru`).
+- AC-03.4 Given the guru presses "Batal" or Esc, then the dialog closes, the guru stays in the staff view on `/practice/chapter`, and nothing is written.
+- AC-03.5 Given a murid, or a guru already in the mode (effective view is student), when "Latih Tubi Rawak" is clicked, then it navigates straight to `/practice` with no dialog.
+- AC-03.6 Given the switch fails, then AC-01.6 applies and the guru stays on `/practice/chapter`.
+- AC-03.7 Regression: no guru click on any button or card of `/practice/chapter`, outside and inside the mode, ends in a silent redirect to `/guru`.
 
-### US-04 Exit
-- AC-04.1 Given a guru in Mod Pelajar, when "Keluar Mod Pelajar" is pressed, then the guru's own session is restored (same user, no password prompt) and the banner disappears.
-- AC-04.2 Exit lands on the page where Mod Pelajar was started when that page is allowed for a guru; otherwise on `/guru` (Dashboard Guru). (Q4; default A)
-- AC-04.3 Given the parked guru session has expired while in the mode, when exit is pressed, then the session is cleared and the user is sent to `/login`, with no stale guru data shown. [AS-BUILT behaviour for admin]
-- AC-04.4 Given the guru logs out (Log Keluar) while in the mode, then the whole session ends, including the parked one; Back does not show protected data (v2-portals AC-01.9).
-- AC-04.5 Given the mode was started via "Latih Tubi Rawak", then exit returns to `/practice/chapter`.
-- AC-04.6 After exit the guru menu, chip and landing are those of the guru; no student menu item remains visible.
+### US-04 Banner
+- AC-04.1 Given a guru or Admin Sekolah in the mode, then on every page a fixed bar shows the PROPOSED copy "Mod Pelajar: anda melihat portal pelajar sebagai diri sendiri" and the button "Keluar Mod Pelajar". (Admin Pusat's banner copy "... sebagai {nama}" is unchanged.)
+- AC-04.2 PROPOSED secondary line, shown from 640 px up and in the accessible text at all widths: "Aktiviti direkod sebagai data ujian." The primary text must stay fully readable at 375 px (wrapping allowed, no clipped words) and never be the only cue: the icon `i-ph-student` accompanies it.
+- AC-04.3 The bar cannot be dismissed and is exposed as `role="status"`. [AS-BUILT behaviour, replicated]
+- AC-04.4 The bar never covers the top of the page content at 375 / 768 / 1280 px (content is offset), and there is no horizontal page scroll.
+- AC-04.5 "Keluar Mod Pelajar" is reachable by keyboard and has a hit area >= 44 x 44 px at 375 px and on touch (the built button is 32 px high; the shared component must be fixed; the same change may apply to the admin banner as a style-only change).
+- AC-04.6 Given a reload or reopening of the app in the same browser while the mode is on, then the mode and the banner are still on. A second tab of the same browser shows the same mode on its next navigation. [AS-BUILT: state in `pp.auth`]
 
-### US-05 Data handling (default: option A in Q1 and Q2)
-- AC-05.1 Given the mode, then the guru views as exactly one student: the demo test student "Pelajar Demo" (id 2, SMK DEMO). There is no student picker. (Q1)
-- AC-05.2 Given the guru answers questions, earns coins or writes notes in the mode, then the write is allowed and stamped as test data (D31c, D32b). (Q2)
-- AC-05.3 Given test data exists, then it is excluded from other users' aggregates: class and school reports, rankings, leaderboards, Command Center and analytics shown to gurus, admins and murid. PROPOSED; in the current mock no `is_test` stamping exists, so the architect must state how the mock avoids polluting shared figures.
-- AC-05.4 Given the guru leaves the mode, then data created in it stays marked as test data and is not shown as the guru's own teaching data.
-- AC-05.5 The guru's own data (class lists, question contributions, reports) is not readable from inside the mode: it is not reachable through any student screen.
+### US-05 Exit and return (resolved Q4)
+- AC-05.1 Given a staff member in the mode, when "Keluar Mod Pelajar" is pressed, then the banner disappears, the staff menu, chip and landing return, and the user is still signed in as the same account without any password prompt.
+- AC-05.2 Exit lands on the page where the mode was started when that page is allowed for the staff role in the staff view; otherwise on the role home: `/guru` (Guru) or `/admin-sekolah` (Admin Sekolah). The remembered page is an internal path only (never an external URL).
+- AC-05.3 Given the mode was started from the "Latih Tubi Rawak" dialog, then exit returns to `/practice/chapter`.
+- AC-05.4 Given the remembered start page no longer exists or is no longer permitted, then exit lands on the role home with no error page.
+- AC-05.5 Given the session expires while in the mode, then the normal expiry rule applies (session cleared, `/login`), no staff or learner data stays visible, and the mode flag is gone at the next login. (There is no parked session in the own-account model, so the old "parked session expired" case does not exist for staff.)
+- AC-05.6 Given the user logs out ("Log Keluar") while in the mode, then the whole session ends including the mode; Back does not show protected data (v2-portals AC-01.9). The next login starts in the normal staff view.
+- AC-05.7 After exit, no student menu item or student route is available (AC-08.1 applies again with the staff role).
 
-### US-06 Guard rules
-- AC-06.1 Given a guru in the mode (active role student), when a guru-only URL is typed (for example `/guru`, `/guru/kelas`, `/guru/command-center`), then no guru data is shown and the user lands on the student home `/dashboard`. [AS-BUILT behaviour for admin URLs; here the role guard `landing` outcome applies]
-- AC-06.2 Given a guru in the mode, then the sidebar, bottom nav, "Lagi" sheet and Ctrl+K show the student menu only, with the 37 Murid items of the matrix; no guru item is listed.
-- AC-06.3 Given the mode is on, when "Masuk Mod Pelajar" is looked for, then it is not offered (no nesting, v2-portals AC-07.6).
-- AC-06.4 Given a user with two roles and a role switcher, when the mode is on, then switching role is blocked (v2-portals AC-08.6). (The switcher itself is not built for the Guru prototype; this AC is a guard for when it is.)
-- AC-06.5 Given the mode is on, when the browser Back button is used to reach a guru page that was open before, then AC-06.1 applies (no cached guru data shown).
-- AC-06.6 Given a guru outside the mode, then every route outside the Guru matrix still redirects to `/guru` as before; this feature does not add any student route to the Guru scope (`TEACHER_ITEMS` stays at 15 items).
-- AC-06.7 Given Admin Pusat, then the existing "Masuk Mod Pelajar", banner, exit to `/admin/command-center` and tests behave exactly as before.
+### US-06 The learner portal for a staff account
+Scope of the mode: **all 37 Murid items** of the role-access matrix (`STUDENT_ITEMS`, rows 2-9 and 12-40) plus section A account screens, exactly as a murid sees them. No screen is added or removed. The staff account has `grade = null`, no class, no parents and no student record. [AS-BUILT: `accounts.ts` ids 5 and 8 have `grade: null`.]
+- AC-06.1 Given a staff member in the mode, when each of the 37 Murid screens is opened (QA checklist, one row per matrix item), then the screen renders without an error page, a blank page or a console error, at 375 / 768 / 1280 px.
+- AC-06.2 Given a screen needs a form/level and the account has none, then it uses **Tingkatan 4** (PROPOSED default, same as the demo student after D54; value 10 in the current grade scale [AS-BUILT: Pelajar Demo `grade: 10`]), and any existing form/level selector on that screen still works and keeps its choice for the rest of the mode. The default is applied in the learner view only; the staff account record is not changed (`grade` stays null). (Q-N3)
+- AC-06.3 Given a screen depends on class, teacher or parent links (for example Kelas Saya, Set Soalan Guru, Remedial, Jemput Ibu Bapa, Prestasi, Headcount, Dashboard widgets), then it shows its existing empty state with the existing BM copy for a learner without a class. No new empty-state wording is introduced unless the screen has none, in which case the architect/designer proposes it and QA records it.
+- AC-06.4 Given the dashboard and gamification screens (Syiling & Token, Cabaran Harian, Kedai Hadiah, Pencapaian, Kotak Misteri, Timeline), then they show the staff member's own test-data balances and history, starting from empty/zero for an account that never used the mode, and they persist between uses of the mode (not reset on exit or login).
+- AC-06.5 Given the leaderboards and rankings (Kedudukan, Papan Pendahulu, Papan Bijak, Tournament standings), then the staff member is not listed as a ranked participant and sees the real list unchanged; where the screen normally shows "my position", it shows the existing "not ranked / no data" state. [Because of US-07]
+- AC-06.6 Given account screens (Profil Saya, Tetapan Peribadi, Panduan, Tiket Bantuan) in the mode, then they operate on the real account, the same data as in the staff view: changes made there are real, are not stamped as test data, and are visible after exit. Learner-only fields (form, class, parent) are not shown or written for a staff account.
+- AC-06.7 Given Cikgu Alesa (AI chat) in the mode, then it works as for a learner; the conversation is test data (US-07).
+- AC-06.8 Given a typed or linked student-only URL in the mode, then it opens (it is in the student scope); given the same URL outside the mode, the existing guard rule applies (redirect to the staff home).
 
-### US-07 Audit (Should)
-- AC-07.1 Given a guru enters or exits the mode, then one audit entry per transition is written with actor (guru id), role, action (enter / exit), target (test student id), time and the entry point (menu, Ctrl+K, Latih Tubi Rawak). PROPOSED; the admin flow writes no audit entry today.
-- AC-07.2 Audit entries for guru transitions are visible to Admin Pusat where an audit screen exists; they are never shown to murid or other gurus.
-- AC-07.3 Given the guru's session expires while in the mode, then a system exit entry is written (or the architect documents why not).
+### US-07 Test data (resolved Q2)
+- AC-07.1 Given the mode is on, when the staff member writes learner data, then the write is allowed and saved. Writes covered: practice sessions and answers, revision/mastery, Bijak SPM and SPM attempts, structured answers, notes and bookmarks, coins/tokens/streak/achievements/challenges/mystery box/reward claims, games results, timeline entries, notifications created for the user, Cikgu Alesa messages, referrals and articles/video progress.
+- AC-07.2 Each such record is stamped as test data (`is_test = true` in the contract/ADR-0017 sense) at the owner store (single-owner rule, CLAUDE.md section 6), together with the owning user id (the staff id). The stamp is set by the system from the session mode, never by a client-supplied field.
+- AC-07.3 Given test records exist, then they are excluded by default from every aggregate shown to anyone else, whether or not the staff member belongs to a class: class, school, district and national reports; Prestasi, Headcount, Analitik Adaptif and Analisa Item figures; Command Center / Pemantauan live counts; Kirkpatrick; Statistik Penggunaan; Laporan Aktiviti and Laporan Bulanan; Amaran Awal; DSKP Heatmap; Sekolah Bersaing; every leaderboard and ranking; wallet/economy totals; "active learners" and streak counts.
+- AC-07.4 Given the Admin Pusat, Admin Sekolah or Guru dashboards, then the figures are identical before and after a staff member answers 10 questions and earns coins in the mode (testable by comparing figures).
+- AC-07.5 Given the staff member leaves the mode, then their test records stay stamped, are not shown as teaching data and do not appear in the staff views (Prestasi of own classes, Pelajar Saya, reports). They remain visible to the same user the next time the mode is on (AC-06.4).
+- AC-07.6 Given a record that is not learner data (account/profile/ticket, AC-06.6), then it is not stamped.
+- AC-07.7 Given the PROPOSED rule "reads inside the mode include the user's own test rows and the real shared content, never other users' private data", then the learner screens show the staff member's own test history together with the normal shared content (questions, notes, videos, leaderboards of real students).
+
+### US-08 Guard rules
+- AC-08.1 Given a staff member in the mode, then for every access decision (menu, Ctrl+K, bottom nav, "Lagi", route guard, landing, 403/404 pages) the effective view is the student view with self scope. The signed-in account's own role is unchanged and is restored on exit.
+- AC-08.2 Given a staff member in the mode, when a staff-only URL is typed (for example `/guru`, `/guru/kelas`, `/guru/command-center`, `/admin-sekolah`, `/admin-sekolah/pelajar`), then no staff data is shown and the user lands on `/dashboard`.
+- AC-08.3 Given the mode is on, then the sidebar, bottom nav, "Lagi" sheet and Ctrl+K show the 37 Murid items and the account items only; no guru or Admin Sekolah item is listed, and "Masuk Mod Pelajar" is not offered (no nesting; v2-portals AC-07.6 intent).
+- AC-08.4 Given a user with two roles and a role switcher, when the mode is on, then switching role is blocked (v2-portals AC-08.6). (The switcher is not built for the prototype roles; this is a guard for when it is.)
+- AC-08.5 Given the mode is on, when the browser Back button reaches a staff page opened earlier, then AC-08.2 applies (no cached staff data).
+- AC-08.6 Given the mode is on, when an API call for staff-only data is made (for example class lists, other students' records), then it is refused by the server/mock, not only hidden in the UI; learner calls of the account are accepted. (Security NFR.)
+- AC-08.7 Given a guru outside the mode, then every route outside the Guru matrix still redirects to `/guru` as before; this feature adds no student route to the Guru or Admin Sekolah scope (`TEACHER_ITEMS` stays 15 items, `SCHOOL_ADMIN_ITEMS` stays 18).
+- AC-08.8 Given Admin Pusat, then the existing "Masuk Mod Pelajar", banner, exit to `/admin/command-center` and tests behave exactly as before (Q-N1).
+
+### US-09 Audit (Should)
+- AC-09.1 Given a guru or Admin Sekolah enters or exits the mode, then one audit entry per transition is written with actor (user id), role, action (enter / exit / system exit), time and entry point (menu, Ctrl+K, Latih Tubi Rawak). No target user is recorded because the target is the actor. PROPOSED; the admin flow writes none today.
+- AC-09.2 Audit entries are visible to Admin Pusat where an audit screen exists; never to murid or other gurus. No audit screen is built here.
+- AC-09.3 Given the session expires while in the mode, then a system exit entry is written or the architect documents why not.
+
+### US-10 No side effects on other real users (default A of Q-N2; PROPOSED)
+- AC-10.1 Given the mode is on, when the staff member tries an action whose result is delivered to, or visible to, other real users, then the action is blocked and a themed message is shown: PROPOSED "Tindakan ini tidak tersedia dalam Mod Pelajar kerana melibatkan pengguna sebenar." No record is written.
+- AC-10.2 Candidate actions to block (the architect confirms each against the built screens; unobserved behaviour is not claimed here): joining or creating live multiplayer rooms with other users (Permainan family: Battle Arena, Perang Fakta, Benteng Ilmu, Perlumbaan Matematik, Kuiz Relay, Teka Silang Kata, Papan Bijak), Tournament registration, Cabutan Bertuah entry, Jemput Ibu Bapa (sends an invitation to a real address), Mohon Keluarga Angkat (request visible to sponsors), Rujuk Kawan invitations, Marketplace listings or trades with other users.
+- AC-10.3 Blocked entries remain visible in the menu (the 37 items stay, AC-06.1); the block applies at the action, so the screen still opens and shows its content.
+- AC-10.4 Given an action only changes the staff member's own test data (practice, notes, own rewards), then it is never blocked.
 
 ## 5. Non-functional requirements
 
 | Area | Requirement |
 |---|---|
-| Security | The enter action must be authorised on the server for the guru role only and may only target the test student. Today the mock endpoint `POST /api/admin/users/:id/impersonate` is admin-only and takes any user id; a guru must not gain a general impersonation endpoint. A guru must not be able to choose another target by editing the request. The parked guru token is held client-side in `pp.auth`; the architect must confirm this is acceptable for the mock and what replaces it on the real backend (contract `POST/DELETE /api/session/mode`, D53c). |
-| Privacy | The mode shows a fictitious test student only. No real student's data is exposed to a guru by this feature (PDPA). No real person's name appears in docs or seeds (CLAUDE.md section 6). |
-| Responsive | Entry action, dialog, banner and exit work at 375 / 768 / 1280 px with no horizontal page scroll (v2-portals AC-16.1, AC-16.3, AC-16.5). |
-| Accessibility | Replicates existing admin Mod Pelajar behaviour (D10): `role="status"` banner, keyboard-reachable buttons, focus management of the dialog per the design system. No enhancements beyond that. |
-| Localisation | All UI copy in Bahasa Melayu. Reused strings: "Masuk Mod Pelajar", "Keluar Mod Pelajar", "Mod Pelajar: anda melihat portal pelajar sebagai {nama}", "Mod Pelajar tidak dapat dibuka. Sila cuba lagi." New strings (dialog) are marked PROPOSED in AC-02.2. |
+| Security | Entry is authorised on the server for `teacher`, `school_admin` and `admin` only. The request carries no target user id (own account), so no impersonation or privilege-escalation surface exists. While the mode is on the server resolves the effective role as student: learner endpoints accept the account, staff endpoints refuse it (AC-08.6). The mode flag is part of the server-side session (contract `POST/DELETE /api/session/mode`, D53c); it cannot be set by editing client storage alone. The remembered return path is validated as an internal path. Because the feature touches auth/session, `security-engineer` review is required at G4. |
+| Privacy | The mode exposes only the staff member's own data; no real student's data is shown by this feature (PDPA). No real person's name in docs, seeds or copy (CLAUDE.md section 6). Test data is attributable to the staff account for support but never exposed to other users. |
+| Data integrity | Stamping and exclusion are complete: every learner write path in the mode stamps, every aggregate listed in AC-07.3 excludes (US-07). A missed path is a Major finding. |
+| Responsive | Entry action, dialog, banner and exit work at 375 / 768 / 1280 px, no horizontal page scroll, touch targets >= 44 px (v2-portals AC-16.1, AC-16.3, AC-16.5). |
+| Accessibility | Replicates the existing admin Mod Pelajar (D10): `role="status"` banner, keyboard-reachable buttons, dialog focus per the design system. No enhancements beyond that, except the 44 px target (AC-04.5). |
+| Localisation | All UI copy in Bahasa Melayu. Reused: "Masuk Mod Pelajar", "Keluar Mod Pelajar", "Mod Pelajar tidak dapat dibuka. Sila cuba lagi.". New strings are marked PROPOSED (AC-03.2, AC-04.1, AC-04.2, AC-10.1) for the user to approve at G2. |
 | Theme | Light and dark both supported; banner and dialog use theme tokens (D29e). |
-| Performance | Enter and exit complete without a full page reload; the student home is shown within the normal navigation time. |
-| Reliability | The state is never half-switched: after any failure the guru is still a guru (AC-01.6, AC-01.8). |
-| Testability | Unit tests for the session mode with role `teacher` as `returnRole`; guard tests for guru URLs in the mode; E2E at the three widths (enter, banner, `/practice` renders, exit, Back button). Existing admin tests must keep passing. |
+| Performance | Enter and exit complete without a full page reload; the student home shows within normal navigation time. |
+| Reliability | No half-switched state after any failure (AC-01.8). |
+| Testability | Unit: session mode for `teacher` and `school_admin`, effective-role resolution, stamping, aggregate exclusion. Guard tests: staff URLs in the mode, learner URLs outside it. E2E at three widths for Guru and Admin Sekolah: enter, banner, `/practice` renders, a write is stamped and absent from a staff dashboard, exit, Back button, reload. 37-screen sweep with a staff account (AC-06.1). Existing admin tests keep passing. |
 
-## 6. Proposed defaults (for the lead to confirm quickly with the user)
+## 6. Proposed defaults (not asked; user told "take the recommended defaults")
 
-| # | Topic | Recommendation | Why |
+| # | Topic | Default | Why |
 |---|---|---|---|
-| D1 | Which student | The demo test student "Pelajar Demo" only, exactly as admin | Matches D31(c)/ADR-0017 (preview of a real student was dropped), avoids exposing real student data, smallest change; the guru already has "Pelajar Saya" and Prestasi for real students |
-| D2 | Writes | Allowed, stamped as test data and excluded from aggregates (D31c, D32b); not read-only | The feature exists so a guru can actually try practice ("Latih Tubi Rawak"); read-only would make the button pointless |
-| D3 | "Latih Tubi Rawak" for a guru | Keep the button; show a themed confirm dialog, then enter Mod Pelajar and open `/practice` | Satisfies the user's decision, no silent failure, no new route added to Guru scope |
-| D4 | Entry points | Account menu (desktop and "Lagi") + Ctrl+K + the contextual button above | One consistent explicit transition (D31c) |
-| D5 | Exit destination | The page where the mode was started when allowed for a guru, else `/guru` | Predictable; admin keeps its fixed `/admin/command-center` |
-| D6 | Banner | Reuse the existing admin banner component and copy unchanged | D33(c) already accepted this copy |
+| D1 | Which student | **Superseded: own account** (user, 2026-10-25) | Replaces the earlier default "demo test student" |
+| D2 | Writes | **Confirmed: allowed, stamped, excluded** (user, 2026-10-25) | |
+| D3 | "Latih Tubi Rawak" | **Confirmed: dialog, then enter the mode, then `/practice`** (user, 2026-10-25) | |
+| D4 | Entry points | Account menu (desktop and "Lagi") + Ctrl+K + the contextual button (guru only) | One consistent explicit transition (D31c) |
+| D5 | Exit destination | Page where the mode started when allowed, else role home (`/guru`, `/admin-sekolah`) | Predictable; admin keeps `/admin/command-center` |
+| D6 | Banner | Reuse the component; copy adapted for own account (AC-04.1); exit button >= 44 px | |
 | D7 | Role switcher | Blocked while in the mode | v2-portals AC-08.6 |
-| D8 | Audit | Enter/exit logged (Should) | v2-portals AC-07.7 intent, D31c "explicit and visible" |
-| D9 | Other roles | Guru only now; Admin Sekolah not changed in this feature | Not requested; docs conflict on Admin Sekolah (D33b vs OQ-1) is handled separately |
-| D10 | Prototype scope / matrix | No new route in `TEACHER_ITEMS`; Mod Pelajar is an account action, not a menu row; note it under Guru in `role-access-matrix.md` | Keeps D43 scope exact |
+| D8 | Audit | Enter/exit logged (Should) | v2-portals AC-07.7 intent |
+| D9 | Other roles | **Superseded: Guru and Admin Sekolah** (user, 2026-10-25); PPD/JPN, Ibu Bapa, Penaja unchanged (none) | |
+| D10 | Prototype scope / matrix | No new route in `TEACHER_ITEMS` or `SCHOOL_ADMIN_ITEMS`; Mod Pelajar is an account action, not a menu row; note it under Guru and Admin Sekolah in `role-access-matrix.md` | Keeps D43 scope exact |
+| D11 | Staff with no form | Learner view defaults to Tingkatan 4 (Q-N3) | Matches D54 demo student |
+| D12 | Persistence of test data | Kept between mode uses, never shown as teaching data | AC-06.4, AC-07.5 |
 
 ## 7. Scope
 
 ### In scope
-- "Masuk Mod Pelajar" for the `teacher` role in the Portal Pembelajaran (account menu, "Lagi" sheet, Ctrl+K).
+- "Masuk Mod Pelajar" for `teacher` and `school_admin` in the Portal Pembelajaran (account menu, "Lagi" sheet, Ctrl+K).
+- Own-account mode: the same user id viewed through the student layout, menu, guard and API authorisation.
 - Contextual behaviour of "Latih Tubi Rawak" on `/practice/chapter` for a guru.
-- Mode banner and exit for a guru (reuse), return destination, guard behaviour in the mode.
-- Test-data handling and audit of guru transitions.
-- Doc updates listed in the impact list.
+- Mode banner (adapted copy, 44 px exit) and exit with return destination.
+- What the learner portal shows for a staff account (default form, empty states, 37-screen sweep).
+- Test-data stamping and aggregate exclusion for all learner writes in the mode.
+- Blocking actions that reach other real users (pending Q-N2).
+- Audit of transitions (Should).
+- Doc updates listed in section 9.
 
 ### Out of scope
-- Viewing as a real student of the guru's classes (not in D1).
-- "Pratonton sebagai Pelajar" per US-07 as written (new tab, chosen student, PS-01 row action).
-- Mod Pelajar for Admin Sekolah, PPD/JPN, Ibu Bapa, Penaja (unchanged).
-- Adding any student route to the Guru prototype scope or menu.
-- Changing what Admin Pusat Mod Pelajar does, except shared-code refactors that keep its behaviour.
+- Viewing as another user or as a real student (any impersonation); a student picker.
+- "Pratonton sebagai Pelajar" per US-07 as written.
+- Mod Pelajar for PPD/JPN, Ibu Bapa, Penaja.
+- Changing the behaviour of Admin Pusat Mod Pelajar (test student by impersonation), except style-only shared-banner changes and shared-code refactors that keep its behaviour (Q-N1).
+- Adding any student route to the Guru or Admin Sekolah prototype scope or menu.
 - Role switcher (US-08) build; only the "blocked in mode" rule is stated.
 - The wider Darjah/primary removal (D54) and the other UAT triage tasks.
-- Any audit screen build.
+- Any audit screen build; a "reset my test data" feature.
+- Fixing other silent-redirect links on shared Murid + Guru screens (R3), unless the user decides otherwise.
 
 ### Assumptions
-- A1 The demo teacher (Guru Demo, SMK DEMO) and the test student (Pelajar Demo, SMK DEMO) exist in the seeds [AS-BUILT: `accounts.ts` ids 5 and 2]. Whether Pelajar Demo is a member of a Guru Demo class is not checked here; it does not matter for D1.
-- A2 The mode keeps the same-tab, session-replacement design of the admin build.
-- A3 `/practice` and `/dashboard` are allowed for role `student` in the prototype scope (matrix rows 2 and 16).
-- A4 The architect decides whether the mock reuses the impersonate endpoint with a new guard or moves to the contract `POST /api/session/mode` now (D53c).
+- A1 Guru Demo (id 5) and Pentadbir Sekolah Demo (id 8), both SMK DEMO with `grade: null`, exist in the seeds [AS-BUILT: `accounts.ts`].
+- A2 The mode stays in the same tab and survives reload (state in `pp.auth` for the mock).
+- A3 `/practice` and `/dashboard` are allowed for the student view in the prototype scope (matrix rows 2 and 16).
+- A4 The architect decides how the mock models the mode (the contract `POST/DELETE /api/session/mode`, D53c, or an interim mock-only mechanism) and how the mock resolves the effective role on learner endpoints.
+- A5 Admin Sekolah is rendered in the Pembelajaran layout in the prototype (`layouts.ts`), so one entry point serves Guru and Admin Sekolah.
+- A6 In v2 final, Admin Sekolah is planned for Portal Pentadbiran (D30); the entry must then exist there too. Not built now.
+- A7 Test-data stamping (V2-T19) does not exist in the mock today; this feature depends on it or builds the minimum needed (section 9, R5).
+- A8 A staff account has no parent links, class membership or student record; screens must not require them.
 
 ### Risks
-- R1 Without `is_test` stamping in the mock, a guru's practice answers and coins land on the shared Pelajar Demo account, which other demos and UAT use. Mitigation: stamping or a resettable test student; the architect must decide before build.
-- R2 Admin-only guard on the impersonate endpoint: widening it naively lets a guru impersonate any user (privilege escalation). Needs a target restriction and a security review (G4 `security-engineer`, because it touches auth/session).
-- R3 Other shared Murid + Guru screens may contain further links to student-only routes (same silent-redirect defect). An inventory is needed; fixing them is out of this story set unless the user decides otherwise.
-- R4 Banner button is 32 px high, below the 44 px touch target in AC-16.3/AC-03.3.
+- R1 (old, restated) Pollution of the shared Pelajar Demo account: **removed for Guru and Admin Sekolah** (own account, stamped). Still true for Admin Pusat, which is unchanged (Q-N1).
+- R2 (old) Widening the admin-only impersonate endpoint for gurus: **removed**. No impersonation, no target id, no endpoint widening. **Replaced by R2':** the mock authorises many learner endpoints by the token's role (`student`); with the same token as a `teacher`/`school_admin` they would answer 403. The server/mock must resolve the effective role from the session mode on every learner endpoint (and refuse staff endpoints in the mode, AC-08.6). Cross-owner mock handler changes follow the isolated-worktree rule and `registry-boot.test.ts`. G4 `security-engineer` required.
+- R3 Other shared Murid + Guru screens may contain further links to student-only routes (same silent-redirect defect). Inventory needed; fixing is out of scope unless the user decides.
+- R4 The banner exit button is 32 px high, below the 44 px target (AC-04.5).
+- R5 Stamping and exclusion are not built (A7). Without them, AC-07 fails and staff test activity pollutes leaderboards and reports. Sequencing against V2-T19 is a lead/architect decision.
+- R6 Staff with no class/grade may crash screens that assume `grade != null` or class membership (AC-06.1 sweep).
+- R7 Layout personality, menu builders, scope helpers and landing read `session.role` (for example `learner = role === 'student'` in `PembelajaranLayout.vue`); all must read the effective role in the mode, or the staff menu leaks into the student view.
+- R8 Cross-user side effects (Q-N2): a guru in a live game room, a sponsor request or an invitation to a real parent would reach real people.
+- R9 Admin Sekolah moving to Portal Pentadbiran (A6) will need the entry re-provided.
 
-## 8. Open questions (blocking G1)
+## 8. Open questions
 
-1. **Which student does the guru view as?**
-   Options: (A) the demo test student only, as admin; (B) any student of the guru's own classes (needs read-only, audit, PDPA review; conflicts with D31c and ADR-0017); (C) the guru's own account shown in a student layout.
-   Recommended: **A**.
-2. **Can the guru write while in the mode (answer questions, earn coins), or is it read-only?**
-   Options: (A) writes allowed, stamped as test data and excluded from real aggregates (D31c, D32b); (B) read-only, writes blocked with a message (US-07 AC-07.5).
-   Recommended: **A** (B makes "Latih Tubi Rawak" unusable).
-3. **What should "Latih Tubi Rawak" do for a guru on Soalan by Chapter?**
-   Options: (A) keep it, ask "Masuk Mod Pelajar?" in a dialog, then enter the mode and open `/practice`; (B) hide it for gurus; (C) leave as is (silent redirect, defect).
-   Recommended: **A**.
-4. **Where does "Keluar Mod Pelajar" return the guru?**
-   Options: (A) the page where the mode was started (fallback `/guru`); (B) always `/guru`.
-   Recommended: **A**.
-5. **Should Admin Sekolah get Mod Pelajar in this same change?** (Docs disagree: D33b/ADR-0017 yes, `v2-frontend.md` OQ-1 and the build no.)
-   Options: (A) Guru only now, settle Admin Sekolah separately; (B) add Admin Sekolah now.
-   Recommended: **A**.
+### Resolved (user, 2026-10-25)
+
+| # | Question | Answer | Effect |
+|---|---|---|---|
+| Q1 | Which student does the user view as? | **"Akaun guru sendiri"** (guru and Admin Sekolah use their own account in the student layout; no impersonation, no test student). Replaces proposed default D1 (option C). | Own-account model (section 1); US-06, US-07, US-08; R2 removed |
+| Q2 | Writes during the mode | **"Boleh, ditanda data ujian"** (option A) | US-07 |
+| Q3 | "Latih Tubi Rawak" for a guru | **"Tanya, kemudian masuk mod"** (option A) | US-03 |
+| Q4 | Exit destination | Recommended default **A**: page where the mode started, fallback role home (`/guru` or `/admin-sekolah`) | US-05 |
+| Q5 | Admin Sekolah in this change | **"Tambah Admin Sekolah"** (option B). Resolves the D33(b)/ADR-0017 versus `v2-frontend.md` OQ-1 conflict: Admin Sekolah is included. | US-02; ADR-0017 item 7, contract `MOD_PELAJAR_ROLES`, `v2-frontend.md` OQ-1 to be aligned (section 9) |
+
+### New
+
+- **Q-N1 (non-blocking, default applied). Should Admin Pusat's Mod Pelajar also become own-account, for consistency?** Today Admin Pusat views as the shared test student "Pelajar Demo" by impersonation, which contradicts D31(c), ADR-0017 and D53(c) (all say "as themselves"). Options: (A) leave Admin Pusat unchanged now and move it to the same own-account mechanism in the already-planned realignment V2-T31; (B) migrate Admin Pusat in this change; (C) keep Admin Pusat on the test student permanently and amend D31(c)/ADR-0017. **Recommended: A** (no behaviour change to a built, working feature without being asked; the mechanism is built once so the move is small). AC-08.8 assumes A.
+- **Q-N2 (confirm before G1 closes; default written into US-10). Which actions reaching other real users are blocked in the mode?** The user allowed writes, stamped as test data, but stamping does not protect real people from a staff member appearing in a live game room, sending a parent invitation or filing a sponsor request. Options: (A) block those actions with a message and keep them visible (AC-10.1 to AC-10.4); (B) allow them all, stamped, with no block; (C) hide the affected menu items in the mode. **Recommended: A** (keeps the "boleh tulis" decision for all own-data actions and avoids disturbing real students and parents).
+- **Q-N3 (non-blocking, default applied). Which form does the learner view use for a staff account with no form?** Options: (A) Tingkatan 4 (matches the D54 demo student); (B) Tingkatan 5 (SPM candidates); (C) ask the staff member on entry. **Recommended: A** (AC-06.2); the existing form/level selectors on each screen still let the staff member change it.
 
 ## 9. Impact list (for the architect)
 
@@ -199,15 +259,21 @@ Likely code touched (no code is written in this phase):
 
 | Area | Files |
 |---|---|
-| Mode logic | `src/shells/shared/mod-pelajar.ts` (role check is `admin` only; return path fixed to `/admin/command-center`; make return path and allowed roles parametric) |
-| Session | `src/stores/session.ts` (`enterModPelajar`/`leaveModPelajar`, `returnTo`), `src/stores/session-types.ts` (`ModPelajarMode.returnRole` already a `Role`), `src/mock/core-data/client-session.ts` (parser for `mode`) |
-| Entry UI | `src/shells/pembelajaran/PembelajaranLayout.vue` (account menu, "Lagi" sheet, Ctrl+K groups; banner is already mounted), `src/shells/pembelajaran/pembelajaran-nav.ts` / `src/shells/nav/user-nav.ts` (account links, if the item is modelled there) |
-| Banner | `src/shells/shared/ModPelajarBanner.vue` (reuse; touch-target check) |
+| Mode logic | `src/shells/shared/mod-pelajar.ts` (admin-only role check, fixed admin return path, impersonate call); add the own-account enter/exit for `teacher` and `school_admin` with a parametric return path; keep the admin path working (Q-N1) |
+| Session | `src/stores/session.ts` (`enterModPelajar`/`leaveModPelajar`, `mode` computed, `role` computed: add an effective/active view without parking a session), `src/stores/session-types.ts` (`ModPelajarMode` currently requires a parked `parent`; own-account mode needs no parent), `src/mock/core-data/client-session.ts` (parser for `mode`) |
+| Contract | `packages/contract/src/session/session.ts` (`MOD_PELAJAR_ROLES` is `['admin','school_admin']`: add `teacher`; confirm `mode.returnRole` and `active.via` fit own-account for teacher/school_admin), contract tests |
+| Entry UI | `src/shells/pembelajaran/PembelajaranLayout.vue` (account menu, "Lagi" sheet, `searchGroups` "Akaun" group; show the item for `teacher`/`school_admin` only and only when the mode is off; `learner` and `personality` currently derive from `role === 'student'`; `showAlesa`), `src/shells/pembelajaran/pembelajaran-nav.ts` (menus by role), `src/shells/pembelajaran/useShellUser.ts` |
+| Banner | `src/shells/shared/ModPelajarBanner.vue` (copy per role/mode, 44 px exit button, secondary line, offset of content `top-10!` in the layout if the bar grows) |
 | Contextual button | `src/modules/m05-practice/pages/ChapterIndexPage.vue` (button target and dialog; owner module M05) |
-| Guard / scope | `src/app/router/guards.ts`, `src/app/prototype-scope.ts` (no new Guru item; verify student-role rules apply in the mode), `src/app/router/layouts.ts` |
-| Mock server | `src/modules/m02-users-schools/mock/handlers/users-admin.ts` (impersonate route is `adminOnly`), M01 session handlers; any shared mock data change follows the isolated-worktree rule |
-| Test data | M05 sessions/answers, M14 wallet, notes, aggregates (rankings, leaderboards, Command Center): `is_test` stamping and exclusion (V2-T19), per the single-owner rule in CLAUDE.md section 6 |
-| Audit | Audit store/handler of the mock (none for Mod Pelajar today); backend card BE-03/BE-21 mention |
-| Tests | `src/shells/__tests__/mod-pelajar.test.ts` (extend for `teacher`), guard tests, M05 chapter page test, E2E at 375/768/1280 |
+| Guard / scope | `src/app/router/guards.ts` (role step and scope step read `session.role`), `src/app/prototype-scope.ts` (`isPathAllowed`, `shellHomePath`, `scopeHomePath` must use the effective role; no new Guru/Admin Sekolah item), `src/app/router/layouts.ts` (portal by role, lines 35 and 49), `src/composables/usePrototypeScope.ts` |
+| Mock server | Authorisation of learner endpoints by token role (R2'); M01 session handlers (`POST/DELETE /api/session/mode` if adopted, D53c); `src/modules/m02-users-schools/mock/handlers/users-admin.ts` impersonate route stays admin-only and unchanged; any shared mock data or handler change follows the isolated-worktree rule |
+| Test data | M05 sessions/answers/revision/mastery, wallet/gamification, notes, notifications, games, referral, Cikgu Alesa history: `is_test` stamping at the owner store (V2-T19, ADR-0014/0017); exclusion in aggregates of AC-07.3 (M08 Prestasi/Headcount/Analitik/Analisa Item, M17 Command Center/Pemantauan, M10 classes, M27 Admin Sekolah reports, leaderboards/rankings, M14 economy totals) |
+| Cross-user actions | Screens of AC-10.2 (games M16, Tournament, Cabutan, Jemput Ibu Bapa, Mohon Keluarga Angkat M21, Rujuk Kawan, Marketplace M20): action-level block and message |
+| Audit | Audit store/handler of the mock (none for Mod Pelajar today); backend cards BE-03/BE-21 |
+| Tests | `src/shells/__tests__/mod-pelajar.test.ts` (extend for `teacher`, `school_admin`), guard and prototype-scope tests, M05 chapter page test, 37-screen staff sweep, aggregate-exclusion tests, E2E at 375/768/1280 |
 
-Docs to update when built: `docs/requirements/role-access-matrix.md` (Guru note), `docs/requirements/v2-portals.md` (US-07 pointer to this doc), `docs/adr/0017-role-list-active-role-scope.md` and `docs/architecture/v2-frontend.md` (OQ-1, who may enter), `docs/AKAUN-DEMO.md` (Guru account), `docs/TRACKER.md` (D54 follow-up, status), backend plan cards BE-03/BE-21 (guru allowed on `POST /session/mode`).
+Docs to update when built: `docs/requirements/role-access-matrix.md` (Guru and Admin Sekolah note), `docs/requirements/v2-portals.md` (US-07 pointer to this doc), `docs/adr/0017-role-list-active-role-scope.md` (item 7 and amendment: add `teacher`; note the 2026-10-25 own-account confirmation), `docs/architecture/v2-frontend.md` (OQ-1: Admin Pusat, Admin Sekolah and Guru), `docs/AKAUN-DEMO.md` (Guru and Admin Sekolah accounts), `docs/TRACKER.md` (new decision row for the 2026-10-25 answers, D54 follow-up, status), backend plan cards BE-03/BE-21 (`teacher` and `school_admin` allowed on `POST /session/mode`).
+
+## 10. Change log
+
+- 2026-10-25: Applied user answers (own account, writes stamped as test data, dialog then enter, Admin Sekolah added); rewrote stories/ACs for Guru and Admin Sekolah, resolved Q1-Q5, added Q-N1 to Q-N3, restated risks (R2 removed, R2' added) and the impact list.
