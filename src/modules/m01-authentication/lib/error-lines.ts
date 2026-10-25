@@ -25,27 +25,94 @@ function isGenericServerText(message: string): boolean {
 }
 
 /**
- * BM labels for the English field names inside Laravel's default validation texts (BUG-04).
- * Unknown names fall back to the English name. Every BM string here is INFERRED: Perlu pengesahan.
+ * BM labels for the English attribute words in Laravel's default validation texts (BUG-04). Where a
+ * form shows the field, its on-screen label is reused. A word not listed here is never echoed in
+ * English: the generic "this field" line is used instead. All BM here is INFERRED: Perlu pengesahan.
  */
 const FIELD_LABELS: Record<string, string> = {
-  name: 'nama',
-  email: 'alamat email',
-  password: 'kata laluan',
-  'password confirmation': 'pengesahan kata laluan',
-  grade: 'darjah',
-  phone: 'no. telefon',
-  school: 'sekolah',
-  role: 'peranan',
-  bio: 'bio',
+  name: 'Nama Penuh',
+  email: 'Alamat Email',
+  phone: 'No. Telefon',
+  password: 'Kata Laluan',
+  'current password': 'Kata Laluan Semasa',
+  grade: 'Darjah',
+  'ic number': 'No. Kad Pengenalan',
+  school: 'Sekolah',
+  'school id': 'Sekolah',
+  role: 'Peranan',
+  bio: 'Bio / Motto',
+  token: 'Token',
+  'profile picture': 'Gambar Profil',
+  'subuh push time': 'Push waktu Subuh',
+  'sahur push time': 'Mod Ramadan',
+  faith: 'Agama',
 }
 
-function label(attr = ''): string {
-  return FIELD_LABELS[attr.toLowerCase()] ?? attr
+function label(attr = ''): string | null {
+  return FIELD_LABELS[attr.toLowerCase()] ?? null
 }
 
-/** Exact English token-reset text (Laravel `passwords.token`). */
-const TOKEN_INVALID_EN = 'This password reset token is invalid.'
+type Rule = [RegExp, (m: RegExpExecArray) => string]
+
+/** The attribute-bearing Laravel templates the M01 endpoints emit (contract `account/schema.ts`). */
+const RULES: Rule[] = [
+  [
+    /^The (.+?) field is required\.$/,
+    (m) => (label(m[1]) ? `Ruang ${label(m[1])} wajib diisi.` : 'Ruang ini wajib diisi.'),
+  ],
+  [
+    /^The (.+?) field must be a valid email address\.$/,
+    (m) =>
+      label(m[1])
+        ? `Ruang ${label(m[1])} mestilah alamat email yang sah.`
+        : 'Alamat email tidak sah.',
+  ],
+  [
+    /^The (.+?) has already been taken\.$/,
+    (m) => (label(m[1]) ? `${label(m[1])} ini telah digunakan.` : 'Nilai ini telah digunakan.'),
+  ],
+  [
+    /^The (.+?) field confirmation does not match\.$/,
+    (m) => (label(m[1]) ? `Pengesahan ${label(m[1])} tidak sepadan.` : 'Pengesahan tidak sepadan.'),
+  ],
+  [
+    /^The (.+?) confirmation does not match\.$/,
+    (m) => (label(m[1]) ? `Pengesahan ${label(m[1])} tidak sepadan.` : 'Pengesahan tidak sepadan.'),
+  ],
+  [
+    /^The (.+?) (?:field )?must be at least (\d+) characters\.$/,
+    (m) => `Ruang ${label(m[1]) ?? 'ini'} mestilah sekurang-kurangnya ${m[2]} aksara.`,
+  ],
+  [
+    /^The (.+?) field must not be greater than (\d+) characters\.$/,
+    (m) => `Ruang ${label(m[1]) ?? 'ini'} tidak boleh melebihi ${m[2]} aksara.`,
+  ],
+  [
+    /^The (.+?) field must not be greater than (\d+) kilobytes\.$/,
+    (m) => `Ruang ${label(m[1]) ?? 'ini'} tidak boleh melebihi ${m[2]} KB.`,
+  ],
+  [
+    /^The (.+?) field must be a file of type: (.+)\.$/,
+    (m) => `Ruang ${label(m[1]) ?? 'ini'} mestilah fail jenis: ${m[2]}.`,
+  ],
+  [
+    /^The selected (.+?) is invalid\.$/,
+    (m) => (label(m[1]) ? `Pilihan ${label(m[1])} tidak sah.` : 'Pilihan ini tidak sah.'),
+  ],
+  [
+    /^The (.+?) field must match the format H:i\.$/,
+    (m) => `Ruang ${label(m[1]) ?? 'ini'} mestilah dalam format JJ:MM.`,
+  ],
+]
+
+/** Fixed English texts of the M01 flows (Laravel `passwords.*` and the current-password check). */
+const FIXED: Record<string, string> = {
+  'This password reset token is invalid.': 'Token tetapan semula kata laluan ini tidak sah.',
+  'The password is incorrect.': 'Kata laluan tidak betul.',
+  'Please wait before retrying.': 'Sila tunggu sebentar sebelum mencuba lagi.',
+  "We can't find a user with that email address.":
+    'Kami tidak menjumpai pengguna dengan alamat email itu.',
+}
 
 /**
  * Laravel English default -> BM, matched on the exact default text. Anything else (including
@@ -53,24 +120,13 @@ const TOKEN_INVALID_EN = 'This password reset token is invalid.'
  */
 export function translateServerText(text: string): string {
   const t = text.trim()
-  if (t === TOKEN_INVALID_EN) return 'Token tetapan semula kata laluan ini tidak sah.'
-  let m = /^The (.+?) field is required\.$/.exec(t)
-  if (m) return `Ruang ${label(m[1])} wajib diisi.`
-  m = /^The (.+?) has already been taken\.$/.exec(t)
-  if (m) return `${capitalise(label(m[1]))} ini telah digunakan.`
-  m = /^The (.+?) (?:field )?confirmation does not match\.$/.exec(t)
-  if (m) return `Pengesahan ${label(m[1])} tidak sepadan.`
-  m = /^The (.+?) (?:field )?must be at least (\d+) characters\.$/.exec(t)
-  if (m) return `Ruang ${label(m[1])} mestilah sekurang-kurangnya ${m[2]} aksara.`
-  m = /^The (.+?) (?:field )?must not be greater than (\d+) characters\.$/.exec(t)
-  if (m) return `Ruang ${label(m[1])} tidak boleh melebihi ${m[2]} aksara.`
-  m = /^The (.+?) must be a valid email address\.$/.exec(t)
-  if (m) return `Ruang ${label(m[1])} mestilah alamat email yang sah.`
+  const fixed = FIXED[t]
+  if (fixed) return fixed
+  for (const [re, fn] of RULES) {
+    const m = re.exec(t)
+    if (m) return fn(m)
+  }
   return text
-}
-
-function capitalise(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 export function errorLines(err: unknown): string[] {

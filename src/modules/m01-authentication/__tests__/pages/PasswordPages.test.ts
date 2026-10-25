@@ -147,7 +147,7 @@ describe('PasswordForgotPage (S3)', () => {
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(w.get('[data-testid=forgot-alert]').text()).toBe(
-      "We can't find a user with that email address.",
+      'Kami tidak menjumpai pengguna dengan alamat email itu.',
     )
     expect((w.get('[data-testid=forgot-email]').element as HTMLInputElement).value).toBe(
       'tiada@demo.test',
@@ -164,7 +164,9 @@ describe('PasswordForgotPage (S3)', () => {
     )
     await w.get('form').trigger('submit')
     await flushPromises()
-    expect(w.get('[data-testid=forgot-alert]').text()).toBe('Please wait before retrying.')
+    expect(w.get('[data-testid=forgot-alert]').text()).toBe(
+      'Sila tunggu sebentar sebelum mencuba lagi.',
+    )
   })
 })
 

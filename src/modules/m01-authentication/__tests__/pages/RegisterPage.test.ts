@@ -290,7 +290,7 @@ describe('RegisterPage (M01 S2)', () => {
         .get('[data-testid=register-alert]')
         .findAll('p')
         .map((p) => p.text()),
-    ).toEqual(['Alamat email ini telah digunakan.', 'Pengesahan kata laluan tidak sepadan.'])
+    ).toEqual(['Alamat Email ini telah digunakan.', 'Pengesahan Kata Laluan tidak sepadan.'])
     expect((w.get('[data-testid=register-name]').element as HTMLInputElement).value).toBe(
       'Murid Baru',
     )
