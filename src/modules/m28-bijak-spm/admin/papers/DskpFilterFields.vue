@@ -60,7 +60,9 @@ const spHint = computed(() => (!unitId.value && !exempt.value ? 'Pilih unit dahu
 </script>
 
 <template>
-  <DsStack gap="sm" data-testid="dskp-filters">
+  <!-- From md the fields sit in the "Lagi Penapis" popover, which has no height limit of its own:
+       scroll inside it so the first field is never cut off by the top of a short window (D9). -->
+  <DsStack gap="sm" class="md:max-h-80 md:overflow-y-auto" data-testid="dskp-filters">
     <DsNativeSelect v-model="formOrigin" aria-label="Tingkatan" :data-testid="`${prefix}-form`">
       <option v-for="o in FORM_FILTER_ITEMS" :key="o.value" :value="o.value">{{ o.label }}</option>
     </DsNativeSelect>
@@ -129,11 +131,11 @@ const spHint = computed(() => (!unitId.value && !exempt.value ? 'Pilih unit dahu
       <option v-for="o in KBAT_FILTER_ITEMS" :key="o.value" :value="o.value">{{ o.label }}</option>
     </DsNativeSelect>
 
-    <UCheckbox
-      v-if="showTagReview"
-      v-model="tagReview"
-      label="Perlu semakan tag"
-      :data-testid="`${prefix}-tag-review`"
-    />
+    <UCheckbox v-if="showTagReview" v-model="tagReview" :data-testid="`${prefix}-tag-review`">
+      <!-- The theme puts the label at the top of the 44px box; this centres it on the box (D9). -->
+      <template #label>
+        <DsCluster as="span" class="min-h-11">Perlu semakan tag</DsCluster>
+      </template>
+    </UCheckbox>
   </DsStack>
 </template>

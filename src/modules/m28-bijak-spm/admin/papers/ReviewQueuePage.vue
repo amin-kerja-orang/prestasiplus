@@ -311,8 +311,11 @@ function open(row: Row): void {
         <span class="block whitespace-normal">{{ tpCardText(row.original) || '-' }}</span>
       </template>
       <template #empty>
+        <!-- Not "nothing found" while the first load runs (D9). A slot that renders only a comment
+             falls back to the table's own empty state, so the loading text stays in the DOM. -->
+        <span v-if="loading && !data" class="sr-only" role="status">Memuatkan...</span>
         <DsEmptyState
-          v-if="activeCount > 0"
+          v-else-if="activeCount > 0"
           size="sm"
           title="Tiada soalan dijumpai"
           filtered

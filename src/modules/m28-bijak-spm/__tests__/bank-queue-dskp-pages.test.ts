@@ -7,12 +7,13 @@
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { dskpSource } from '../lib/dskp-source'
 import BankPage from '../admin/papers/BankPage.vue'
 import DskpFilterFields from '../admin/papers/DskpFilterFields.vue'
+import TagHistoryLines from '../admin/papers/TagHistoryLines.vue'
 import ReviewItemPage from '../admin/papers/ReviewItemPage.vue'
 import ReviewQueuePage from '../admin/papers/ReviewQueuePage.vue'
 import { ADMIN_ROUTES } from '../admin/papers/ui'
@@ -237,9 +238,12 @@ describe('BankPage, DSKP filters (6.1)', () => {
       'KBAT: Tidak',
     ])
     // the "Lagi Penapis" button counts the curriculum filters
-    expect(text(document.body.querySelector('[data-ds="filter-more"]')!.parentElement)).toContain(
-      '2',
-    )
+    const chip = [
+      ...document.body
+        .querySelector('[data-ds="filter-more"]')!
+        .parentElement!.querySelectorAll('span'),
+    ].find((el) => /^\d+$/.test(text(el)))
+    expect(text(chip ?? null)).toBe('2')
   })
 
   it('Perlu semakan tag shows the flagged rows only, and the count equals the rows', async () => {
@@ -307,7 +311,20 @@ describe('BankPage, rows and empty states (6.2, 6.3)', () => {
     expect(all('[data-testid="active-filter"]')).toHaveLength(0)
   })
 
-  it('Perlu semakan tag alone with nothing left to tag says "Semua soalan sudah bertag."', async () => {
+  it('Perlu semakan tag alone, Terbit and nothing left to tag, says "Semua soalan sudah bertag."', async () => {
+    // Every Terbit seed question is flagged or tagged in the real data, so the empty answer is stubbed.
+    vi.spyOn(server, 'listBank').mockResolvedValue([])
+    await render(BankPage, '/soalan')
+    await openMore()
+    ;(t('bank-tag-review') as HTMLElement).click()
+    await flushPromises()
+    await search()
+    expect(text(document.body.querySelector('[data-ds="empty-state"]'))).toContain(
+      'Semua soalan sudah bertag.',
+    )
+  })
+
+  it('the same filter on Ditolak, or with another chip, does not claim everything is tagged', async () => {
     await render(BankPage, '/soalan')
     await setSelect('bank-status', 'ditolak')
     await openMore()
@@ -315,9 +332,87 @@ describe('BankPage, rows and empty states (6.2, 6.3)', () => {
     await flushPromises()
     await search()
     expect(await server.listBank({ status: 'ditolak', tagReview: true })).toHaveLength(0)
-    expect(text(document.body.querySelector('[data-ds="empty-state"]'))).toContain(
-      'Semua soalan sudah bertag.',
+    const empty = text(document.body.querySelector('[data-ds="empty-state"]'))
+    expect(empty).toContain('Tiada soalan dijumpai')
+    expect(empty).not.toContain('Semua soalan sudah bertag.')
+    expect(empty).toContain('Cuba ubah atau set semula penapis.')
+  })
+
+  it('Tingkatan 1-3 disables Unit and SP in the real bar', async () => {
+    await render(BankPage, '/soalan')
+    await setSelect('bank-subject', 'MAT')
+    await dskpSource().load('MAT')
+    await openMore()
+    await setSelect('bank-form', 'T4')
+    await setSelect('bank-unit', 'MAT:T4:u:1.0')
+    expect((t('bank-sp') as HTMLSelectElement).disabled).toBe(false)
+    await setSelect('bank-form', 'T1-T3')
+    expect((t('bank-unit') as HTMLSelectElement).disabled).toBe(true)
+    expect((t('bank-unit') as HTMLSelectElement).value).toBe('')
+    expect((t('bank-sp') as HTMLSelectElement).disabled).toBe(true)
+    expect((t('bank-sp') as HTMLSelectElement).value).toBe('')
+  })
+
+  it('KBAT Ya, one level and a level nobody has give the rows the server returns', async () => {
+    const e = await server.getBankEditable('mat2-kuadratik-v1')
+    await server.reviseQuestionFull(
+      'mat2-kuadratik-v1',
+      { ...e.question, tag: { ...e.question.tag, kbat: 'menilai' } },
+      undefined,
+      '',
     )
+    expect((await server.reviewDecision('v:mat2-kuadratik-v1', { action: 'terbit' })).ok).toBe(true)
+
+    await render(BankPage, '/soalan')
+    await openMore()
+    await setSelect('bank-kbat', 'ya')
+    await search()
+    const ya = await server.listBank({ kbat: 'ya' })
+    expect(ya.map((r) => r.id)).toEqual(['mat2-kuadratik-v1'])
+    expect(summaryTotal()).toBe(1)
+    expect(tableRows()).toHaveLength(1)
+    expect(all('[data-testid="active-filter"]').map((c) => text(c))).toEqual(['KBAT: Ya'])
+    expect(text(tableRows()[0]!.querySelector('[data-testid="tag-kbat"]'))).toBe('KBAT: Menilai')
+
+    await openMore()
+    await setSelect('bank-kbat', 'menilai')
+    await search()
+    expect(summaryTotal()).toBe((await server.listBank({ kbat: 'menilai' })).length)
+    expect(all('[data-testid="active-filter"]').map((c) => text(c))).toEqual(['KBAT: Menilai'])
+
+    await openMore()
+    await setSelect('bank-kbat', 'mencipta')
+    await search()
+    expect(await server.listBank({ kbat: 'mencipta' })).toHaveLength(0)
+    expect(document.body.querySelector('[data-ds="empty-state"]')).not.toBeNull()
+  })
+})
+
+describe('loading state (D9)', () => {
+  it('the tables do not say "Tiada soalan dijumpai" while the first load runs', async () => {
+    for (const [page, path] of [
+      [BankPage, '/soalan'],
+      [ReviewQueuePage, '/semakan'],
+    ] as const) {
+      const r = createRouter({
+        history: createMemoryHistory(),
+        routes: [
+          { path: '/soalan', name: ADMIN_ROUTES.bank, component: page },
+          { path: '/semakan', name: ADMIN_ROUTES.review, component: page },
+          { path: '/semakan/:key', name: ADMIN_ROUTES.reviewItem, component: page },
+        ],
+      })
+      await r.push(path)
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const w = mount(page, { attachTo: document.body, global: { plugins: [r, pinia] } })
+      await Promise.resolve()
+      expect(document.body.querySelector('[data-ds="empty-state"]')).toBeNull()
+      await flushPromises()
+      expect(tableRows().length).toBeGreaterThan(0)
+      w.unmount()
+      document.body.innerHTML = ''
+    }
   })
 })
 
@@ -530,5 +625,36 @@ describe('DskpFilterFields states (6.3)', () => {
     expect(
       mountFields({ showTagReview: true }).find('[data-testid="bank-tag-review"]').exists(),
     ).toBe(true)
+  })
+})
+
+describe('TagHistoryLines (7.2)', () => {
+  const entry = {
+    at: 0,
+    by: 'Admin Pusat',
+    version: 1,
+    action: 'Dihantar untuk semakan',
+    tag: [
+      { field: 'unit' as const, after: 'MAT:T4:u:1.0' },
+      { field: 'tp' as const, before: 2, after: 4 },
+    ],
+  }
+
+  it('shows nothing while the catalogue is pending, then the lines', async () => {
+    const view = await dskpSource().load('MAT')
+    const w = mount(TagHistoryLines, { props: { entry, view: undefined, pending: true } })
+    expect(w.find('[data-testid="history-tag"]').exists()).toBe(false)
+    await w.setProps({ view, pending: false })
+    const lines = w.findAll('li').map((li) => text(li.element))
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toContain(`${view.unit('MAT:T4:u:1.0' as never)!.code} - `)
+    expect(lines[1]).toBe('Tag: TP: 2 → kepada 4')
+  })
+
+  it('when the catalogue failed the lines show the bare code, never "tidak dijumpai"', () => {
+    const w = mount(TagHistoryLines, { props: { entry, view: undefined, pending: false } })
+    const lines = w.findAll('li').map((li) => text(li.element))
+    expect(lines[0]).toBe('Tag: Unit: 1.0')
+    expect(lines.join(' ')).not.toContain('tidak dijumpai')
   })
 })

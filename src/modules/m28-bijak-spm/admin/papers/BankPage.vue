@@ -158,9 +158,16 @@ function removeChip(key: string): void {
   else (draft as unknown as Record<string, string>)[key] = ''
   apply()
 }
-/** "Semua soalan sudah bertag." is the good outcome of the flag filter, only when it is the only filter. */
+/**
+ * "Semua soalan sudah bertag." is the good outcome of the flag filter: only when it is the only
+ * chip and the status is Terbit or Semua (a Draf or Ditolak list being empty says nothing about tags).
+ */
 const emptyDescription = computed(() =>
-  applied.value.tagReview && chips.value.length === 1 ? 'Semua soalan sudah bertag.' : undefined,
+  applied.value.tagReview &&
+  chips.value.length === 1 &&
+  (applied.value.status === 'terbit' || applied.value.status === 'semua')
+    ? 'Semua soalan sudah bertag.'
+    : undefined,
 )
 
 const columns: TableColumn<Row>[] = [
@@ -367,7 +374,11 @@ const siblings = computed(
         <span class="block whitespace-normal">{{ tpCardText(row.original) || '-' }}</span>
       </template>
       <template #empty>
+        <!-- Not "nothing found" while the first load runs (D9). A slot that renders only a comment
+             falls back to the table's own empty state, so the loading text stays in the DOM. -->
+        <span v-if="loading && !data" class="sr-only" role="status">Memuatkan...</span>
         <DsEmptyState
+          v-else
           size="sm"
           title="Tiada soalan dijumpai"
           :description="emptyDescription"
