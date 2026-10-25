@@ -147,6 +147,52 @@ describe('audit of create, auto-setup and drop-students (AM-13)', () => {
     expect(all[1]?.detail).toMatchObject({ action: 'restore', restored: 1 })
   })
 
+  it('a drop or restore that changes nothing returns updated 0 and writes no row; one that changes N writes one row with N (AM-13b)', async () => {
+    const cfg = await insertConfig(w, { teacher: 'guru@demo.test', classroomId: w.classId, year: 2046, otrs: 2 })
+    const t = as.guru as Client
+    const url = `/api/headcounts/${cfg}/drop-students`
+    const pupil = w.ids['pelajar2@demo.test'] as string
+    const mine = async (): Promise<Row[]> => (await rowsOf('headcount.students.dropped')).filter((r) => r.target_id === cfg)
+    const send = async (action: 'drop' | 'restore', studentIds: string[]): Promise<number> => {
+      const res = await t.post(url, { action, studentIds })
+      expect(res.status).toBe(200)
+      return parseData(res, z.object({ updated: z.number() })).updated
+    }
+
+    // Restoring a pupil that is not dropped changes nothing.
+    expect(await send('restore', [pupil])).toBe(0)
+    expect(await mine()).toHaveLength(0)
+
+    // The first drop changes one pupil: exactly one row with the count.
+    expect(await send('drop', [pupil])).toBe(1)
+    const afterDrop = await mine()
+    expect(afterDrop).toHaveLength(1)
+    expect(afterDrop[0]?.detail).toMatchObject({ action: 'drop', dropped: 1 })
+
+    // Repeating the drop of an already dropped pupil changes nothing: no new row.
+    expect(await send('drop', [pupil])).toBe(0)
+    expect(await mine()).toHaveLength(1)
+
+    // A restore that changes one pupil writes one row; repeating it writes none.
+    expect(await send('restore', [pupil])).toBe(1)
+    const afterRestore = await mine()
+    expect(afterRestore).toHaveLength(2)
+    expect(afterRestore[1]?.detail).toMatchObject({ action: 'restore', restored: 1 })
+    expect(await send('restore', [pupil])).toBe(0)
+    expect(await mine()).toHaveLength(2)
+
+    // Every pupil of the roster in one call: one row holding the full count.
+    const roster = ['pelajar@demo.test', 'pelajar2@demo.test', 'ujian1@demo.test'].map((e) => w.ids[e] as string)
+    const n = roster.length
+    // pelajar2 is restored (not dropped), so all three change.
+    expect(await send('drop', roster)).toBe(n)
+    const all = await mine()
+    expect(all).toHaveLength(3)
+    expect(all[2]?.detail).toMatchObject({ action: 'drop', dropped: n })
+    expect(await send('drop', roster)).toBe(0)
+    expect(await mine()).toHaveLength(3)
+  })
+
   it('a drop whose audit insert fails leaves the pupil undropped', async () => {
     const cfg = await insertConfig(w, { teacher: 'guru@demo.test', classroomId: w.classId, year: 2045, otrs: 2 })
     const pupil = w.ids['pelajar2@demo.test'] as string
