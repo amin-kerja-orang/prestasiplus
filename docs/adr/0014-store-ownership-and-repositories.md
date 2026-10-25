@@ -15,6 +15,7 @@ The XL review found parallel schemas for one store: M05 and M06 defined two prac
 | Users, auth sessions | M01 (base) / M02 (admin extensions); canonical accounts seeded by mock core | `users.get`, `findByEmail`, `me`, `search`, `isSubscribed`, `trial`, `incrementTrialUsed` |
 | Schools, JPN/PPD | M02 | `schools.search`, `get`, `options` |
 | Curriculum (levels, subjects, chapters, topics, subtopics, legacy topics, topic progress **derived on read** from the M05 answer log, M03 v1.6 BR-19) | M03 | `curriculum.subjects`, `levels`, `chapters`, `topicProgress` (computed from `practice.answers`) |
+| DSKP catalogue (13 subjects, Tingkatan 4 and 5: unit, SK, SP, TP descriptors; read-only, generated at build time, ADR-0022) | M03 | read through `dskpCatalog` (`subjects`, `load`, `loaded`, then `DskpSubjectView`: `units`, `sps`, `skOf`, `tpFor`, `search`); no repository, table or seed |
 | Questions (objective, SPM pool rows, PKSK rows), structured questions, reports | M04 | `questions.get/getMany/count/groupCount`, `eligibleForPractice`, `sample`, `gradeAnswer`, `deactivate`, `contributeAnchors`; `structured.list/get`; `reports.create/…` |
 | Practice sessions (all modes incl. SPM), answer log, revision queue, mastery counters, SPM targets, structured attempts | M05 | `practice.startSession`, `checkAnswer`, `completeSession`, `history`, `answers`, `queue`, `mastery` |
 | Wallet, streak | M14 (**provisional in M05**) | `wallet.credit`, `wallet.summary`, `streak.get` |

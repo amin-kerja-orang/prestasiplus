@@ -275,6 +275,7 @@ The server stamps `state.schema = 2` after migrating, and `load()` runs the migr
 - `index.json` and `version.json` are imported eagerly (about 3 KB); everything else is lazy. Measured raw minified sizes: per subject 20 to 71 KB (structure + TP), largest Pendidikan Islam at about 72 KB raw / 9 KB gzip; total about 440 KB raw / 90 KB gzip.
 - `catalogue.load(code)`: a cached promise per subject; the first call parses and indexes (about 2,000 nodes for the largest subject, a few ms); later calls return the same `SubjectView`. A failed import is not cached (retry works). `loaded(code)` is the synchronous accessor once loaded.
 - Budget: `scripts/check-demo-bundle.mjs` guards "all js" at about 2.1 MB gzip with 10 % headroom (about 200 KB). Expected growth is about 90 KB gzip in lazy chunks plus the indexer in the entry. DSKP-T02 measures before and after and raises the budget only with the reason in the PR. The entry chunk must not grow by the data.
+- **Measured in DSKP-T02 (2026-10-25, `vite build --mode demo`, base commit `ab5aa9ae` vs T02).** Entry js 633,421 raw / 160,688 gzip before, 648,487 / 165,105 after (+15,066 raw, +4,417 gzip: the indexer plus `index.json` at 7.2 KB raw, which is bundled into the entry because M03's `mock/index.ts` re-exports `dskpCatalog` and the mock plugins are in the entry; the re-export in `m03/index.ts` alone adds nothing because it is tree-shaken). All js 8,966,846 / 2,564,339 before, 9,457,299 / 2,639,264 after (+490,453 raw, +74,925 gzip). The 13 subject chunks are lazy: 473,195 raw / 69,522 gzip in total (3.4 to 9.7 KB gzip each); probe strings of two subjects were found only in their own chunks, never in the entry. **The budget already failed at the base commit** (entry js raw 633,421 > 310,300, gzip 160,688 > 83,800; all js raw 8,966,846 > 8,527,000, gzip 2,564,339 > 2,404,800), so `npm run build` was red before T02; T02 did not re-baseline it. Re-baselining (measured plus 10 %: entry 713,400 raw / 181,700 gzip, all js 10,403,100 raw / 2,903,200 gzip) is a separate decision for devops (DSKP-T09 or a budget task).
 - In development every consumer awaits `load` for the subjects it needs (editor page: the batch subject; bank: lazily per subject filter; server: the subjects present in the rows it formats).
 
 ### 3.3 Validation tests (`m03-curriculum/__tests__/dskp/`)
@@ -306,39 +307,49 @@ export interface DskpCatalog {
   /** The 13 subjects, sync (eager index). */
   subjects(): readonly DskpSubjectInfo[]
   subject(code: string): DskpSubjectInfo | undefined
-  /** Lazy, cached. Rejects with DskpLoadError for an unknown code or a failed chunk. */
+  /** Lazy, cached. Rejects with DskpLoadError ('unknown-subject' | 'no-loader' | 'load-failed' | 'invalid-data'); a failure is not cached. */
   load(code: string): Promise<DskpSubjectView>
   /** Sync accessor after load; undefined before. */
   loaded(code: string): DskpSubjectView | undefined
 }
 
+/** Runtime nodes are `Dskp{Group,Unit,Sk,Sp}Node` (the wire types keep `DskpGroup/Unit/Sk/Sp`). Their `flags` are already the effective flags. */
 export interface DskpSubjectView {
   readonly info: DskpSubjectInfo
-  groups(t: DskpTingkatan): readonly DskpGroup[]
-  units(t: DskpTingkatan): readonly DskpUnit[]            // print order, each with .groupId?
-  unit(id: DskpUnitId): DskpUnit | undefined
-  sks(unitId: DskpUnitId): readonly DskpSk[]
-  sps(unitId: DskpUnitId): readonly DskpSp[]              // selectable only, print order
-  sp(id: DskpSpId): DskpSp | undefined                    // includes non-selectable slots
-  skOf(spId: DskpSpId): DskpSk | undefined                // parent, not parsed from the code
-  unitOf(id: DskpSkId | DskpSpId): DskpUnit | undefined
-  skIdsOf(spIds: readonly DskpSpId[]): DskpSkId[]         // unique, print order
-  effectiveFlags(node: DskpNode): readonly DskpFlag[]     // node + subject-wide + tingkatan-wide
+  groups(t: DskpTingkatan): readonly DskpGroupNode[]
+  units(t: DskpTingkatan): readonly DskpUnitNode[]         // print order, each with .groupId?
+  group(id: DskpGroupId): DskpGroupNode | undefined
+  unit(id: DskpUnitId): DskpUnitNode | undefined
+  sk(id: DskpSkId): DskpSkNode | undefined
+  sks(unitId: DskpUnitId): readonly DskpSkNode[]
+  sps(unitId: DskpUnitId): readonly DskpSpNode[]           // selectable only, print order
+  sp(id: DskpSpId): DskpSpNode | undefined                 // includes non-selectable slots
+  skOf(spId: DskpSpId): DskpSkNode | undefined             // parent, not parsed from the code
+  unitOf(id: DskpSkId | DskpSpId): DskpUnitNode | undefined
+  skIdsOf(spIds: readonly DskpSpId[]): DskpSkId[]          // unique, SK print order
+  effectiveFlags(node: DskpNode): readonly DskpFlag[]      // node + subject-wide + tingkatan-wide
   tpFor(target: { unitId: DskpUnitId; spIds?: readonly DskpSpId[] }, tp: number): TpResolved[]
-  search(query: string, o?: { tingkatan?: DskpTingkatan; unitId?: DskpUnitId; limit?: number }): DskpSearchHit[]
+  search(query: string, o?: { tingkatan?: DskpTingkatan; unitId?: DskpUnitId; limit?: number /* default 50 */; kinds?: ('u' | 'sk' | 'sp')[] }): DskpSearchHit[]
 }
+
+/** source: where the row was read; nodeId: that SK or unit, null for the subject's general table. Descriptors are frozen. */
+export interface TpResolved { source: 'sk' | 'unit' | 'general'; nodeId: DskpSkId | DskpUnitId | null; descriptor: TpDescriptor }
+/** Discriminated by kind; hits cover units, SK and selectable SP. score: 3000 code-exact, 2000 code-prefix, else 1000 x (tokens that start a word / tokens). */
+export type DskpSearchHit = { kind: 'u'; node: DskpUnitNode; score: number } | { kind: 'sk'; node: DskpSkNode; score: number } | { kind: 'sp'; node: DskpSpNode; score: number }
 
 export function dskpKey(...): string
 export function parseDskpKey(key: string): { subject: string; tingkatan: DskpTingkatan; kind: 'g'|'u'|'sk'|'sp'; code: string } | null
-export function createDskpCatalog(loaders: Record<string, () => Promise<string>>, index?: ...): DskpCatalog   // test seam
+export function createDskpCatalog(loaders: Readonly<Record<string, () => Promise<string>>>, index?: { version?: string; subjects?: readonly DskpSubjectInfo[] }): DskpCatalog   // test seam
 ```
+
+Both doorways re-export one barrel, `m03/dskp/index.ts` (added in T02; not in the 1.1 layout list). It also exports `DskpLoadError`, `normaliseDskpText`, the flag label constants, the node and id types and the wire types (`DskpSubjectData` etc.) so a test can build a fixture for `createDskpCatalog`.
 
 Rules of the contract:
 - **Read-only.** Returned arrays are frozen; no setters. A node object is never mutated by a consumer (AC-01.5).
 - **Tingkatan is a parameter, never inferred.** There is no lookup by bare code; every lookup takes a key or a (subject, tingkatan).
 - **Order is print order**; the indexer never sorts codes (so "10.0" does not sort before "2.0").
 - **Cross-subject lookup** by key: `parseDskpKey` gives the subject, the caller loads it. There is no global `resolve(key)` that loads implicitly.
-- **Search** is token-AND over normalised code + text (NFC, lower-case, accents and Arabic tashkil stripped), scored by code-exact > code-prefix > fraction of tokens; no fuzzy matching. Deterministic.
+- **Search** is token-AND over normalised code + text (NFC, lower-case, accents and Arabic tashkil stripped), scored by code-exact > code-prefix > fraction of tokens; no fuzzy matching. Deterministic. Because matching is by substring, a hit whose tokens match only inside words (none at a word start) scores 0; it is still returned, after every scored hit, in print order (ties keep print order, T4 before T5).
 
 ### 4.3 What m28 uses
 

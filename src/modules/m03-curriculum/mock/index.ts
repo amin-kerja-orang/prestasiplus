@@ -61,6 +61,12 @@ const plugin = defineMockModule({
 
 export default plugin
 
+/**
+ * The DSKP catalogue (FB-026, DSKP-T02, ADR-0022) for mock code of other modules. It is read-only
+ * reference data, not a mock table: no store, seed or route, so the plugin `version` is unchanged.
+ */
+export * from '../dskp'
+
 export const {
   curriculum,
   curriculumLevels,
