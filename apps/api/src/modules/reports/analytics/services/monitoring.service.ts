@@ -69,8 +69,8 @@ export class MonitoringService {
     const now = this.clock.now()
     const scope = scopeOf(ctx)
     const period = periodOf(filters.period)
-    // The school admin is fixed to the own school (BR-M11-35, FR-M11-88): `state` is ignored for that role.
-    const state = ctx.role === 'school_admin' ? '' : (filters.state ?? '')
+    // Teacher and school admin are fixed to the own school (BE-20 teacher scope, BR-M11-35, FR-M11-88): `state` is ignored for them.
+    const state = isSchoolForced(ctx.role) ? '' : (filters.state ?? '')
     const tahap = filters.tahap ?? ''
     const from = periodFromMs(period, now.getTime())
     const [facts, registered, teachers, engagement, withUsers] = await Promise.all([
