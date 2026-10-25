@@ -4,8 +4,9 @@
  */
 import type { ReviewSeed } from '../domain/admin-types'
 import type { PointDef } from '../domain/types'
-import { Bank, curr, leaf, mcqQuestion } from './builders'
+import { Bank, leaf, mcqQuestion, untagged } from './builders'
 import { triangleSvg } from './diagrams'
+import { applySeedTags } from './seed-tags'
 
 type Meta = Omit<ReviewSeed, 'questions' | 'schemes' | 'group'>
 
@@ -40,7 +41,7 @@ function triangleGroupSeed(): ReviewSeed {
   const q2 = 'mat2-rev-g1-q2'
   b.addQuestion({
     id: q1,
-    curriculum: curr('MAT', 'Teorem Pythagoras'),
+    curriculum: untagged('MAT'),
     stem: 'Rajah menunjukkan segi tiga PQR bersudut tegak di Q. PQ = 9 cm dan QR = 12 cm.',
     parts: [leaf(`${q1}-a`, '(a)', 'Hitung panjang, dalam cm, PR.', 2, 'working', 'cm')],
   })
@@ -60,7 +61,7 @@ function triangleGroupSeed(): ReviewSeed {
   })
   b.addQuestion({
     id: q2,
-    curriculum: curr('MAT', 'Luas dan trigonometri'),
+    curriculum: untagged('MAT'),
     stem: 'Berdasarkan Rajah itu,',
     parts: [
       leaf(`${q2}-a`, '(a)', 'hitung luas, dalam cm², segi tiga PQR.', 2, 'working', 'cm²'),
@@ -128,7 +129,7 @@ function structuredSeed(): ReviewSeed {
   const id = 'sn2-rev-1'
   b.addQuestion({
     id,
-    curriculum: curr('SN', 'Sel'),
+    curriculum: untagged('SN'),
     stem: 'Sel darah merah manusia tidak mempunyai nukleus.',
     parts: [
       leaf(`${id}-a`, '(a)', 'Nyatakan satu fungsi sel darah merah.', 1, 'short_text'),
@@ -190,7 +191,6 @@ export const REVIEW_SEEDS: ReviewSeed[] = [
     },
     {
       id: 'mat1-rev-1',
-      topic: 'Pecahan',
       stem: 'Hitung nilai $\\frac{3}{4} + \\frac{1}{8}$.',
       correct: '$\\frac{7}{8}$',
       wrong: ['$\\frac{4}{12}$', '$\\frac{1}{2}$', '$\\frac{3}{32}$'],
@@ -210,7 +210,6 @@ export const REVIEW_SEEDS: ReviewSeed[] = [
     },
     {
       id: 'mat1-rev-2',
-      topic: 'Peratusan',
       stem: 'Harga sebuah buku ialah RM40. Selepas diskaun 25%, berapakah harga buku itu?',
       correct: 'RM30',
       wrong: ['RM10', 'RM35', 'RM15'],
@@ -231,7 +230,6 @@ export const REVIEW_SEEDS: ReviewSeed[] = [
     },
     {
       id: 'mat1-rev-3',
-      topic: 'Indeks',
       stem: 'Ringkaskan $a^5 \\times a^3$.',
       correct: '$a^8$',
       wrong: ['$a^{15}$', '$a^2$', '$2a^8$'],
@@ -255,7 +253,6 @@ export const REVIEW_SEEDS: ReviewSeed[] = [
     {
       id: 'sn1-rev-1',
       subject: 'SN',
-      topic: 'Daya dan gerakan',
       stem: 'Unit SI bagi daya ialah',
       correct: 'newton',
       wrong: ['joule', 'watt', 'pascal'],
@@ -276,7 +273,6 @@ export const REVIEW_SEEDS: ReviewSeed[] = [
     },
     {
       id: 'mat1-pub-1',
-      topic: 'Persamaan linear',
       stem: 'Selesaikan $3x - 5 = 10$.',
       correct: '$x = 5$',
       wrong: ['$x = 15$', '$x = 3$', '$x = \\frac{5}{3}$'],
@@ -296,7 +292,6 @@ export const REVIEW_SEEDS: ReviewSeed[] = [
     },
     {
       id: 'mat1-pub-2',
-      topic: 'Statistik',
       stem: 'Min bagi nombor 4, 6, 8, 10 dan 12 ialah',
       correct: '8',
       wrong: ['6', '10', '40'],
@@ -304,3 +299,6 @@ export const REVIEW_SEEDS: ReviewSeed[] = [
     },
   ),
 ]
+
+// Tags come from the one authored table (seed-tags.ts), not from the builders above.
+for (const seed of REVIEW_SEEDS) applySeedTags(seed.questions)

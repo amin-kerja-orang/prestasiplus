@@ -27,10 +27,9 @@ type Family = (bank: Bank, v: number) => void
 
 const id = (f: string, v: number): string => `mat1-${f}-v${v + 1}`
 
-const families: { key: string; topic: string; make: Family }[] = [
+const families: { key: string; make: Family }[] = [
   {
     key: 'pecahan',
-    topic: 'Pecahan',
     make(bank, v) {
       const sets = [
         [1, 2, 1, 3],
@@ -44,7 +43,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = frac(n, den)
       mcqQuestion(bank, {
         id: id('pecahan', v),
-        topic: 'Pecahan',
         stem: `Nilaikan $\\frac{${a}}{${b}} + \\frac{${c}}{${d}}$.`,
         correct,
         wrong: distinct(correct, [frac(a + c, b + d), frac(a * c, b * d), frac(n, b + d)], (i) =>
@@ -57,7 +55,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'peratus',
-    topic: 'Peratusan',
     make(bank, v) {
       const sets = [
         [15, 240],
@@ -70,7 +67,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = `RM${ans}`
       mcqQuestion(bank, {
         id: id('peratus', v),
-        topic: 'Peratusan',
         stem: `Hitung ${p}% daripada RM${n}.`,
         correct,
         wrong: distinct(
@@ -85,7 +81,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'bentuk-piawai',
-    topic: 'Bentuk piawai',
     make(bank, v) {
       const sets = [
         [4.5, 4],
@@ -99,7 +94,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = show(m, e)
       mcqQuestion(bank, {
         id: id('bentuk-piawai', v),
-        topic: 'Bentuk piawai',
         stem: `Ungkapkan ${value.toString().replace('.', ',')} dalam bentuk piawai.`,
         correct,
         wrong: distinct(
@@ -114,7 +108,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'persamaan',
-    topic: 'Persamaan linear',
     make(bank, v) {
       const sets = [
         [3, 4, 5],
@@ -127,7 +120,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = String(x)
       mcqQuestion(bank, {
         id: id('persamaan', v),
-        topic: 'Persamaan linear',
         stem: `Selesaikan persamaan $${a}x ${sgn(b)} = ${c}$.`,
         correct: `$x = ${x}$`,
         wrong: distinct(
@@ -142,7 +134,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'kembang',
-    topic: 'Ungkapan algebra',
     make(bank, v) {
       const sets = [
         [2, 3],
@@ -154,7 +145,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = `$${poly(p + q, p * q)}$`
       mcqQuestion(bank, {
         id: id('kembang', v),
-        topic: 'Ungkapan algebra',
         stem: `Kembangkan $(x + ${p})(x + ${q})$.`,
         correct,
         wrong: distinct(
@@ -169,7 +159,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'faktor',
-    topic: 'Pemfaktoran',
     make(bank, v) {
       const sets = [
         [2, 5],
@@ -182,7 +171,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = show(-p, -q)
       mcqQuestion(bank, {
         id: id('faktor', v),
-        topic: 'Pemfaktoran',
         stem: `Faktorkan $x^2 - ${p + q}x + ${p * q}$.`,
         correct,
         wrong: distinct(correct, [show(p, q), show(-p, q), show(p, -q)], (i) => show(i, i + 1)),
@@ -193,7 +181,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'indeks',
-    topic: 'Indeks',
     make(bank, v) {
       const sets = [
         [3, 5, 2],
@@ -207,7 +194,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = show(e)
       mcqQuestion(bank, {
         id: id('indeks', v),
-        topic: 'Indeks',
         stem: `Ringkaskan $${base}^{${m}} \\div ${base}^{${n}}$.`,
         correct,
         wrong: distinct(correct, [show(m + n), show(m * n), show(Math.round(m / n) || 1)], (i) =>
@@ -220,7 +206,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'kecerunan',
-    topic: 'Garis lurus',
     make(bank, v) {
       const sets = [
         [1, 2, 3, 8],
@@ -233,7 +218,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = frac(y2 - y1, x2 - x1)
       mcqQuestion(bank, {
         id: id('kecerunan', v),
-        topic: 'Garis lurus',
         stem: `Cari kecerunan garis lurus yang melalui titik $(${x1}, ${y1})$ dan $(${x2}, ${y2})$.`,
         correct,
         wrong: distinct(
@@ -248,7 +232,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'kebarangkalian',
-    topic: 'Kebarangkalian',
     make(bank, v) {
       const sets = [
         [3, 5, 2],
@@ -261,7 +244,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = frac(r, t)
       mcqQuestion(bank, {
         id: id('kebarangkalian', v),
-        topic: 'Kebarangkalian',
         stem: `Sebuah beg mengandungi ${r} bola merah, ${b} bola biru dan ${g} bola hijau. Sebiji bola dipilih secara rawak. Cari kebarangkalian bola itu merah.`,
         correct,
         wrong: distinct(correct, [frac(r, b + g), frac(b, t), frac(r + b, t)], (i) =>
@@ -274,7 +256,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'min',
-    topic: 'Statistik',
     make(bank, v) {
       const sets = [
         [4, 6, 7, 9, 14],
@@ -287,7 +268,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = String(mean)
       mcqQuestion(bank, {
         id: id('min', v),
-        topic: 'Statistik',
         stem: `Cari min bagi data ${xs.join(', ')}.`,
         correct,
         wrong: distinct(
@@ -302,7 +282,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'ketaksamaan',
-    topic: 'Ketaksamaan linear',
     make(bank, v) {
       const sets = [
         [2, 3, 11],
@@ -315,7 +294,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = `$x < ${x}$`
       mcqQuestion(bank, {
         id: id('ketaksamaan', v),
-        topic: 'Ketaksamaan linear',
         stem: `Selesaikan ketaksamaan $${a}x ${sgn(b)} < ${c}$.`,
         correct,
         wrong: distinct(
@@ -330,7 +308,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'laju',
-    topic: 'Laju, jarak dan masa',
     make(bank, v) {
       const sets = [
         [180, 3],
@@ -343,7 +320,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = `${s} km/j`
       mcqQuestion(bank, {
         id: id('laju', v),
-        topic: 'Laju, jarak dan masa',
         stem: `Sebuah bas bergerak sejauh ${d} km dalam masa ${String(t).replace('.', ',')} jam. Hitung laju purata bas itu.`,
         correct,
         wrong: distinct(
@@ -358,7 +334,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'poligon',
-    topic: 'Poligon',
     make(bank, v) {
       const ns = [5, 6, 8, 10] as const
       const n = ns[v]!
@@ -366,7 +341,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = `${a}°`
       mcqQuestion(bank, {
         id: id('poligon', v),
-        topic: 'Poligon',
         stem: `Hitung sudut pedalaman bagi sebuah poligon sekata yang mempunyai ${n} sisi.`,
         correct,
         wrong: distinct(
@@ -381,7 +355,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'pythagoras',
-    topic: 'Teorem Pythagoras',
     make(bank, v) {
       const sets = [
         [3, 4, 5],
@@ -393,7 +366,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = `${c} cm`
       mcqQuestion(bank, {
         id: id('pythagoras', v),
-        topic: 'Teorem Pythagoras',
         stem: `Dalam segi tiga bersudut tegak, dua sisi yang membentuk sudut tegak ialah ${a} cm dan ${b} cm. Hitung panjang hipotenus.`,
         correct,
         wrong: distinct(
@@ -408,7 +380,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'bulatan',
-    topic: 'Bulatan',
     make(bank, v) {
       const sets = [
         [7, 154],
@@ -420,7 +391,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = `${area} cm²`
       mcqQuestion(bank, {
         id: id('bulatan', v),
-        topic: 'Bulatan',
         stem: `Hitung luas sebuah bulatan berjejari ${String(r).replace('.', ',')} cm. [Guna $\\pi = \\frac{22}{7}$]`,
         correct,
         wrong: distinct(
@@ -435,7 +405,6 @@ const families: { key: string; topic: string; make: Family }[] = [
   },
   {
     key: 'set',
-    topic: 'Set',
     make(bank, v) {
       const sets = [
         [12, 9, 4],
@@ -447,7 +416,6 @@ const families: { key: string; topic: string; make: Family }[] = [
       const correct = String(a + b - c)
       mcqQuestion(bank, {
         id: id('set', v),
-        topic: 'Set',
         stem: `Diberi $n(A) = ${a}$, $n(B) = ${b}$ dan $n(A \\cap B) = ${c}$. Cari $n(A \\cup B)$.`,
         correct,
         wrong: distinct(correct, [String(a + b), String(a + b + c), String(a - c)], (i) =>
@@ -468,7 +436,6 @@ function addGroups(bank: Bank): void {
   const g1 = ['mat1-g1-q1', 'mat1-g1-q2', 'mat1-g1-q3', 'mat1-g1-q4']
   mcqQuestion(bank, {
     id: g1[0]!,
-    topic: 'Teorem Pythagoras',
     stem: 'Hitung panjang AC.',
     correct: '10 cm',
     wrong: ['14 cm', '2 cm', '48 cm'],
@@ -477,7 +444,6 @@ function addGroups(bank: Bank): void {
   })
   mcqQuestion(bank, {
     id: g1[1]!,
-    topic: 'Perimeter',
     stem: 'Hitung perimeter segi tiga ABC.',
     correct: '24 cm',
     wrong: ['14 cm', '48 cm', '22 cm'],
@@ -486,7 +452,6 @@ function addGroups(bank: Bank): void {
   })
   mcqQuestion(bank, {
     id: g1[2]!,
-    topic: 'Luas',
     stem: 'Hitung luas segi tiga ABC.',
     correct: '24 cm²',
     wrong: ['48 cm²', '14 cm²', '30 cm²'],
@@ -495,7 +460,6 @@ function addGroups(bank: Bank): void {
   })
   mcqQuestion(bank, {
     id: g1[3]!,
-    topic: 'Trigonometri',
     stem: 'Cari nilai $\\tan \\angle ACB$.',
     correct: '$\\frac{4}{3}$',
     wrong: ['$\\frac{3}{4}$', '$\\frac{4}{5}$', '$\\frac{3}{5}$'],
@@ -518,7 +482,6 @@ function addGroups(bank: Bank): void {
   const g2 = ['mat1-g2-q1', 'mat1-g2-q2', 'mat1-g2-q3', 'mat1-g2-q4']
   mcqQuestion(bank, {
     id: g2[0]!,
-    topic: 'Statistik',
     stem: 'Cari beza antara markah tertinggi dengan markah terendah.',
     correct: '45',
     wrong: ['35', '55', '90'],
@@ -527,7 +490,6 @@ function addGroups(bank: Bank): void {
   })
   mcqQuestion(bank, {
     id: g2[1]!,
-    topic: 'Statistik',
     stem: 'Hitung jumlah markah bagi kelima-lima mata pelajaran.',
     correct: '350',
     wrong: ['340', '360', '70'],
@@ -536,7 +498,6 @@ function addGroups(bank: Bank): void {
   })
   mcqQuestion(bank, {
     id: g2[2]!,
-    topic: 'Statistik',
     stem: 'Hitung min markah.',
     correct: '70',
     wrong: ['75', '80', '65'],
@@ -545,7 +506,6 @@ function addGroups(bank: Bank): void {
   })
   mcqQuestion(bank, {
     id: g2[3]!,
-    topic: 'Statistik',
     stem: 'Berapakah bilangan mata pelajaran dengan markah melebihi min?',
     correct: '3',
     wrong: ['2', '4', '5'],
@@ -573,7 +533,6 @@ function addGroups(bank: Bank): void {
   const g3 = ['mat1-g3-q1', 'mat1-g3-q2', 'mat1-g3-q3', 'mat1-g3-q4']
   mcqQuestion(bank, {
     id: g3[0]!,
-    topic: 'Garis lurus',
     stem: 'Cari kecerunan garis PQ.',
     correct: '$\\frac{3}{4}$',
     wrong: ['$\\frac{4}{3}$', '$3$', '$\\frac{5}{4}$'],
@@ -582,7 +541,6 @@ function addGroups(bank: Bank): void {
   })
   mcqQuestion(bank, {
     id: g3[1]!,
-    topic: 'Garis lurus',
     stem: 'Cari titik tengah PQ.',
     correct: '$(3, 3.5)$',
     wrong: ['$(3, 3)$', '$(4, 3.5)$', '$(2, 3.5)$'],
@@ -591,7 +549,6 @@ function addGroups(bank: Bank): void {
   })
   mcqQuestion(bank, {
     id: g3[2]!,
-    topic: 'Garis lurus',
     stem: 'Hitung jarak PQ.',
     correct: '5 unit',
     wrong: ['7 unit', '25 unit', '4 unit'],
@@ -600,7 +557,6 @@ function addGroups(bank: Bank): void {
   })
   mcqQuestion(bank, {
     id: g3[3]!,
-    topic: 'Garis lurus',
     stem: 'Cari pintasan-y bagi garis PQ.',
     correct: '$\\frac{5}{4}$',
     wrong: ['$2$', '$\\frac{3}{4}$', '$-\\frac{5}{4}$'],

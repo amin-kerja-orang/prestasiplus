@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest'
 
 import { BANK } from '../data/registry'
+import { REVIEW_SEEDS } from '../data/review-seed'
 import { addUnit, checkPaper, moveUnit, removeUnit, unitsOf } from '../domain/paper-builder'
 import { BijakServer, MemoryStorage } from '../server/store'
 
+import { t13Tag } from './tag-fixtures'
+
 const USER = 7
 const GROUP = 'mat2-rev-g1'
+
+// The second question of GROUP is a flagged seed (DSKP-T04: no SP matches "Luas dan trigonometri"),
+// and a flagged question cannot be published (AC-07.5). This file approves GROUP, so its fixture
+// stands in for the person who tags it in Sunting: a T1-T3 tag (TP as authored), set before any
+// server exists. The seed itself stays flagged (seed-tags.test.ts).
+for (const seed of REVIEW_SEEDS)
+  for (const q of seed.questions)
+    if (q.id === `${GROUP}-q2`) q.curriculum = t13Tag({ tp: q.curriculum.tp })
 
 function make(storage = new MemoryStorage()) {
   const now = { t: 1_800_000_000_000 }

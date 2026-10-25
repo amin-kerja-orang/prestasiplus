@@ -514,7 +514,7 @@ Student paths: `QuestionView.topic` shows the unit title; `formOrigin` is typed 
 
 ### 6.2 Where the table lives
 
-- Executable source: `src/modules/m28-bijak-spm/data/seed-tags.ts`, `Record<questionId, SeedTagSpec>`, applied once in `registry.ts` after the seed builders run (`curr()` is removed; `Bank.addQuestion` leaves the tag as a placeholder). Each tagged row has a non-empty `evidence` string; each flagged row a `note`. Keys are catalogue keys.
+- Executable source: `src/modules/m28-bijak-spm/data/seed-tags.ts`, `Record<questionId, SeedTagSpec>`, applied by `applySeedTags` once in `registry.ts` after the bank seeds are built and once in `review-seed.ts` for the review seeds (`curr()` is removed; the builders leave the `untagged(subject)` placeholder). A seed question without a row, or with a row of another subject, stops the load. Each tagged row has a non-empty `evidence` string; each flagged row a `note`. Keys are catalogue keys.
 - `seed-tags.test.ts`: every seed question id (bank + review seeds) has exactly one entry; every key exists in the catalogue; tagged rows pass `tagIssues`; T1-T3 rows have no unit/SP; the flagged count is computed (the test prints it; docs quote it only as "at the time of writing").
 - This section is the label-level proposal and the review checklist for Admin Pusat (Q-D11). After the build, the section is updated from the test output, not hand-typed.
 - Shared-store rule: the seed edit is done in an isolated worktree and merged only after `registry-boot.test.ts` and the m28 tests are green (CLAUDE.md shared working tree, AC-08.6). Seed questions are not added or removed, so counts shown anywhere are unchanged (AC-08.5).
@@ -542,11 +542,18 @@ Legend: **Proposed match** = tagged, with the SP evidence; **No match** = flagge
 | SEJ | Kemerdekaan Tanah Melayu | 3 | T4 | No match | none | Stems (efforts to independence, importance of the constitution, inter-ethnic cooperation) span several SK of Tajuk 11 and K-coded items; no single SP wording. A person picks the SP. The only unit whose title shares the label's words is `SEJ:T4:u:Tajuk 11` (a lead for the reviewer, not applied). |
 | SEJ | Kronologi sejarah negara | 1 | T4 | No match | none | Matching events to years across Tajuk 10 and 11 |
 
-Resulting split (35 DSKP-form questions): **7 proposed tagged** (MAT 4, SN 3), **28 flagged** (MAT 18, SN 6, SEJ 4); **44 T1-T3 exempt**; total 79. These numbers are design-time facts from a script over the registry; the test computes them again.
+**Result as built (DSKP-T04, from the output of `seed-tags.test.ts`; at the time of writing).** The test computes every figure below from the data and prints it; none is typed by hand.
 
-Note on the exempt row: the 44 are the T1-T3 questions of the 14 labels (bank and review seeds together; per-label counts are produced when `seed-tags.ts` is generated, not listed here).
+| Subject | Seed questions | T1-T3 (exempt) | Tagged | Flagged |
+|---|---|---|---|---|
+| Matematik (MAT) | 66 | 44 | 4 | 18 |
+| Sains (SN) | 9 | 0 | 3 | 6 |
+| Sejarah (SEJ) | 4 | 0 | 0 | 4 |
+| **Total** | **79** (70 bank, 9 review seeds) | **44** | **7** | **28** |
 
-Impact to handle in DSKP-T04: three review-queue seeds become flagged (`mat2-rev-g1`, `sn2-rev-1`, `sn1-rev-1`), so tests that approve them (`sharers.test.ts`, `question-bank.test.ts`, others found by grep) must approve a tagged or T1-T3 seed instead, or tag the seed in their fixture. This is a deliberate consequence of AC-07.5.
+The proposal above and the built result agree on every figure. The 44 T1-T3 questions by old label (bank and review seeds together): Statistik 9, Peratusan 6, Teorem Pythagoras 6, Pecahan 3, Indeks 3, Persamaan linear 3, Bentuk piawai 2, Bulatan 2, Laju jarak dan masa 2, Pemfaktoran 2, Poligon 2, Ungkapan algebra 2, Luas 1, Perimeter 1. Tagged rows: `mat1-set-v1/v2` (SP 4.2.3), `mat2-kuadratik-v1/v2` (SP 1.1.6), `sn2-laju-v1/v2/v3` (SP 11.1.3); every row carries its evidence in `seed-tags.ts`. TP is the authored value on all 79 (2 on 76, and 3, 4, 4 on three Sejarah questions; `sej2-q2` states 2).
+
+Impact handled in DSKP-T04: three review-queue units hold flagged seeds (`mat2-rev-g1` for its question 2, `sn2-rev-1`, `sn1-rev-1`). The only test that approves one of them is `question-bank.test.ts` (unit `mat2-rev-g1`); its fixture tags question 2 as T1-T3 before any server exists, standing in for the person who tags it in Sunting, and the seed itself stays flagged. `bank-stats.test.ts` approves the first single-question unit whose gate passes, so it needs no change. `sharers.test.ts` only reads the unit. This is a deliberate consequence of AC-07.5; the shared tag rule at publish arrives with DSKP-T05 (until then `gateErrors` still lets a flagged seed pass, see its comment).
 
 ## 7. Task list
 

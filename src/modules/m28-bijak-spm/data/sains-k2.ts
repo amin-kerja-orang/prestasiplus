@@ -1,5 +1,5 @@
 /** Sains Kertas 2 short sample: keyword-marked structured questions, a shared Rajah, a speed part. */
-import { Bank, curr, leaf } from './builders'
+import { Bank, untagged, leaf } from './builders'
 import { plantCellSvg } from './diagrams'
 import type { PointDef } from '../domain/types'
 
@@ -20,7 +20,7 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
   bank.addQuestion(
     {
       id: 'sn2-sel-q1',
-      curriculum: curr('SN', 'Sel'),
+      curriculum: untagged('SN'),
       stem: 'Rajah 1 menunjukkan struktur sebuah sel tumbuhan.',
       parts: [
         leaf('sn2-sel-q1-a', '(a)', 'Namakan organel P.', 1, 'short_text'),
@@ -39,7 +39,7 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
   bank.addQuestion(
     {
       id: 'sn2-sel-q2',
-      curriculum: curr('SN', 'Sel'),
+      curriculum: untagged('SN'),
       stem: 'Berdasarkan Rajah 1,',
       parts: [
         leaf('sn2-sel-q2-a', '(a)', 'namakan organel R.', 1, 'short_text'),
@@ -106,7 +106,7 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
     bank.addQuestion(
       {
         id,
-        curriculum: curr('SN', 'Daya dan gerakan'),
+        curriculum: untagged('SN'),
         stem: `Sebuah kereta mainan bergerak sejauh ${s.d} m dalam masa ${s.t} s.`,
         parts: [leaf(`${id}-a`, '(a)', 'Hitung laju kereta mainan itu.', 3, 'working', 'm/s')],
       },
@@ -146,7 +146,7 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
   bank.addQuestion(
     {
       id: 'sn2-osmosis',
-      curriculum: curr('SN', 'Pergerakan bahan merentasi membran'),
+      curriculum: untagged('SN'),
       stem: 'Terangkan bagaimana air meresap masuk ke dalam sel akar tumbuhan melalui osmosis.',
       parts: [leaf('sn2-osmosis-a', '', 'Jawapan anda.', 4, 'short_text')],
     },
@@ -173,7 +173,7 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
   bank.addQuestion(
     {
       id: 'sn2-fotosintesis',
-      curriculum: curr('SN', 'Fotosintesis'),
+      curriculum: untagged('SN'),
       stem: 'Nyatakan empat faktor yang mempengaruhi kadar fotosintesis.',
       parts: [leaf('sn2-fotosintesis-a', '', 'Jawapan anda.', 4, 'short_text')],
     },

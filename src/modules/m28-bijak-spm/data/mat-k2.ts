@@ -2,7 +2,7 @@
  * Matematik Kertas 2 (structured) seed. Question families with parts, marks, K1 / N1 / P1 mark
  * schemes (accepted equivalents, tolerance, ECF) and shared Rajah groups. Fictitious practice items.
  */
-import { Bank, branch, curr, leaf } from './builders'
+import { Bank, branch, untagged, leaf } from './builders'
 import { triangleSvg } from './diagrams'
 import type { PointDef, QuestionDef } from '../domain/types'
 
@@ -23,7 +23,7 @@ function algebra(bank: Bank, v: number): string {
   const id = `mat2-algebra-v${v + 1}`
   const q: QuestionDef = {
     id,
-    curriculum: curr('MAT', 'Algebra'),
+    curriculum: untagged('MAT'),
     stem: 'Jawab semua soalan.',
     parts: [
       leaf(`${id}-a`, '(a)', `Faktorkan sepenuhnya $${d.k}x^2 - ${d.c}$.`, 2, 'working'),
@@ -87,7 +87,7 @@ function triangleGroup(bank: Bank, v: number): string[] {
   bank.addQuestion(
     {
       id: q1,
-      curriculum: curr('MAT', 'Teorem Pythagoras'),
+      curriculum: untagged('MAT'),
       stem: `Rajah menunjukkan segi tiga ABC bersudut tegak di B. AB = ${d.ab} cm dan BC = ${d.bc} cm.`,
       parts: [leaf(`${q1}-a`, '(a)', 'Hitung panjang, dalam cm, AC.', 2, 'working', 'cm')],
     },
@@ -117,7 +117,7 @@ function triangleGroup(bank: Bank, v: number): string[] {
   bank.addQuestion(
     {
       id: q2,
-      curriculum: curr('MAT', 'Luas dan trigonometri'),
+      curriculum: untagged('MAT'),
       stem: 'Berdasarkan Rajah itu,',
       parts: [
         leaf(`${q2}-a`, '(a)', 'hitung luas, dalam cm², segi tiga ABC.', 2, 'working', 'cm²'),
@@ -189,7 +189,7 @@ function diskaun(bank: Bank, v: number): string {
   bank.addQuestion(
     {
       id,
-      curriculum: curr('MAT', 'Peratusan'),
+      curriculum: untagged('MAT'),
       stem: `Harga asal sehelai baju ialah RM${d.price}. Kedai itu memberi diskaun ${d.pct}%.`,
       parts: [
         leaf(`${id}-a`, '(a)', 'Hitung jumlah diskaun, dalam RM.', 2, 'working', 'RM'),
@@ -256,7 +256,7 @@ function garisLurus(bank: Bank, v: number): string {
   bank.addQuestion(
     {
       id,
-      curriculum: curr('MAT', 'Garis lurus'),
+      curriculum: untagged('MAT'),
       stem: `Persamaan satu garis lurus ialah $y = ${d.m}x + ${d.c}$.`,
       parts: [
         leaf(`${id}-a`, '(a)', 'Nyatakan kecerunan garis lurus itu.', 1, 'numeric'),
@@ -321,7 +321,7 @@ function statistik(bank: Bank, v: number): string {
   bank.addQuestion(
     {
       id,
-      curriculum: curr('MAT', 'Statistik'),
+      curriculum: untagged('MAT'),
       stem: `Data berikut menunjukkan bilangan buku yang dibaca oleh sekumpulan murid: ${d.xs.join(', ')}.`,
       parts: [
         leaf(`${id}-a`, '(a)', 'Hitung min data itu.', 2, 'working'),
@@ -386,7 +386,7 @@ function kuadratik(bank: Bank, v: number): string {
   bank.addQuestion(
     {
       id,
-      curriculum: curr('MAT', 'Persamaan kuadratik'),
+      curriculum: untagged('MAT'),
       stem: `Diberi persamaan kuadratik $x^2 - ${d.p + d.q}x + ${d.p * d.q} = 0$.`,
       parts: [
         leaf(`${id}-a`, '(a)', `Faktorkan $x^2 - ${d.p + d.q}x + ${d.p * d.q}$.`, 2, 'working'),
