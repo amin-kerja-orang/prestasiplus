@@ -196,9 +196,12 @@ describe('bootstrap / reset against the database', () => {
     })
   })
 
-  it('reset of the locked-out last admin: argon2id hash, forced change at next login, sessions ended, one audit row', async () => {
+  it('reset of the locked-out last admin: argon2id hash, an existing change flag cleared (R39b), sessions ended, one audit row', async () => {
     const before = await loginAs(t, ADMIN)
     expect(before.session.mustChangePassword).toBe(false)
+    // R39b: the CLI reset is a recovery path, so it must CLEAR a flag that is already set (for example from before R39).
+    await t.db.query(`update users set must_reset_password = true where id = $1::bigint`, [adminId])
+    expect(await userRow(ADMIN)).toMatchObject({ must_reset_password: true })
 
     // An earlier e-mail reset link (for example one an intruder holds) must be spent by the recovery.
     await t.db.query(`insert into password_resets (user_id, token_hash, channel, expires_at) values ($1::bigint, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'email', now() + interval '1 hour')`, [adminId])
@@ -209,14 +212,16 @@ describe('bootstrap / reset against the database', () => {
 
     const row = await userRow(ADMIN)
     expect(row?.password_hash.startsWith('$argon2id$')).toBe(true)
-    expect(row?.must_reset_password).toBe(true)
+    // R39b: the flag is cleared, not set.
+    expect(row?.must_reset_password).toBe(false)
 
-    // The old session is over; the old password no longer works; the new one signs in but must be changed first.
+    // The old session is over; the old password no longer works; the new one signs in with no forced change (R39b).
     expectError(await t.http().get('/api/session').set('Cookie', `${COOKIE_NAME}=${before.token}`), 'UNAUTHORIZED')
     expect((await t.http().post('/api/auth/login').send({ identifier: ADMIN, password: DEMO_PASSWORD, remember: false })).status).toBe(401)
     const after = await loginAs(t, ADMIN, { password: NEW_PASSWORD })
-    expect(after.session.mustChangePassword).toBe(true)
-    expectError(await after.agent.post('/api/session/role').set('X-CSRF-Token', after.csrf).send({ role: 'admin' }), 'PASSWORD_CHANGE_REQUIRED')
+    // R39b: no forced change; a guarded route is open at once (before R39b this answered 403 PASSWORD_CHANGE_REQUIRED).
+    expect(after.session.mustChangePassword).toBe(false)
+    expect((await after.agent.post('/api/session/role').set('X-CSRF-Token', after.csrf).send({ role: 'admin' })).status).toBe(200)
 
     const audit = await auditRows()
     expect(audit).toHaveLength(1)
@@ -227,21 +232,24 @@ describe('bootstrap / reset against the database', () => {
       target_type: 'user',
       target_id: adminId,
       scope_level: 'national',
-      detail: { mode: 'reset', hostUser: 'ppdeploy', mustChangePassword: true, sessionsRevoked: 1, resetTokensSpent: 1, reactivated: false, activeAdminsBefore: 1 },
+      detail: { mode: 'reset', hostUser: 'ppdeploy', mustChangePassword: false, sessionsRevoked: 1, resetTokensSpent: 1, reactivated: false, activeAdminsBefore: 1 },
     })
     const raw = JSON.stringify(audit[0])
     for (const secret of [NEW_PASSWORD, ADMIN, '$argon2']) expect(raw).not.toContain(secret)
   })
 
   it('reset with --reactivate brings back a suspended last admin, and says so in the audit row', async () => {
+    // R39b: start with the flag set, to prove the reset clears it on this path too.
+    await t.db.query(`update users set must_reset_password = true where id = $1::bigint`, [adminId])
     await t.db.query(`update users set is_active = false where id = $1::bigint`, [adminId])
     const out = await runAdminBootstrap(prisma, input({ reactivate: true, password: 'Lain-Kuat-2026!y' }))
     expect(out.reactivated).toBe(true)
-    expect(await userRow(ADMIN)).toMatchObject({ is_active: true, is_suspended: false, must_reset_password: true })
+    // R39b: reactivation keeps the flag cleared as well.
+    expect(await userRow(ADMIN)).toMatchObject({ is_active: true, is_suspended: false, must_reset_password: false })
     expect((await auditRows()).at(-1)?.detail).toMatchObject({ reactivated: true, activeAdminsBefore: 0 })
   })
 
-  it('create, when no active Admin Pusat exists: a national admin that must change its password', async () => {
+  it('create, when no active Admin Pusat exists: a national admin with no forced password change (R39b)', async () => {
     await t.db.query(`update users set is_active = false where id = $1::bigint`, [adminId])
     await expect(runAdminBootstrap(prisma, input({ mode: 'create', email: 'guru@demo.test' }))).rejects.toThrow(/already exists/)
 
@@ -255,7 +263,10 @@ describe('bootstrap / reset against the database', () => {
     expect(scope).toEqual([{ role: 'admin', level: 'national', school_id: null, state_code: null }])
 
     const me = await loginAs(t, 'pusat.baru@demo.test', { password: NEW_PASSWORD })
-    expect(me.session.mustChangePassword).toBe(true)
+    // R39b: create no longer sets must_reset_password.
+    expect(me.session.mustChangePassword).toBe(false)
+    expect(await userRow('pusat.baru@demo.test')).toMatchObject({ must_reset_password: false })
+    expect((await auditRows()).at(-1)?.detail).toMatchObject({ mustChangePassword: false })
     expect((await auditRows()).at(-1)).toMatchObject({ action: BOOTSTRAP_AUDIT.CREATED, target_id: out.userId, actor_role: HOST_ACTOR_ROLE })
 
     // A second create is refused now that an active admin exists again.
@@ -290,6 +301,9 @@ describe('bootstrap / reset against the database', () => {
       expect(cli(['--mode=create', '--email=empat@demo.test', '--confirm=empat@demo.test', '--password-stdin'], `${NEW_PASSWORD}\n`).status).toBe(3)
       const r = cli(['--mode=reset', '--email=pusat.baru@demo.test', '--confirm=pusat.baru@demo.test', '--password-stdin'], 'Ketiga-Kuat-2026!z\n')
       expect(r.stderr).toMatch(/OK reset/)
+      // R39b: the OK line says no change is required (it used to say the password must be changed at the next login).
+      expect(r.stderr).toContain('No password change is required at the next login.')
+      expect(r.stderr).not.toContain('must be changed')
       expect(r.status).toBe(0)
       expect(`${r.stdout}${r.stderr}`).not.toContain('Ketiga-Kuat-2026!z')
       await loginAs(t, 'pusat.baru@demo.test', { password: 'Ketiga-Kuat-2026!z' })
