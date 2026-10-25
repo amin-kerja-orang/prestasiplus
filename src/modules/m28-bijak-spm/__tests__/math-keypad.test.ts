@@ -1,0 +1,231 @@
+// @vitest-environment jsdom
+import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+import { defineComponent, h } from 'vue'
+
+import { formStubs } from '@/test-support/form-stubs'
+
+import MathField from '../components/MathField.vue'
+import MathKeyboard from '../components/MathKeyboard.vue'
+import {
+  ALL_KEYS,
+  applyKey,
+  FUNCTION_ROWS,
+  type KeyPress,
+  type MathKey,
+  NUMBER_ROWS,
+  SHARED_KEYS,
+  SYMBOL_ROWS,
+} from '../lib/math-keys'
+
+/** The 35 keys of the previous keypad (id, accessible name, what it inserts or does). */
+const OLD_KEYS: Record<
+  string,
+  { aria: string; insert?: string; cursor?: number; action?: string }
+> = {
+  frac: { aria: 'Pecahan', insert: '()/()', cursor: 1 },
+  pow: { aria: 'Kuasa', insert: '^()', cursor: 2 },
+  sq: { aria: 'Kuasa dua', insert: '^2' },
+  sqrt: { aria: 'Punca kuasa dua', insert: '√()', cursor: 2 },
+  pi: { aria: 'Pi', insert: 'π' },
+  pm: { aria: 'Tambah atau tolak', insert: '±' },
+  '7': { aria: '7', insert: '7' },
+  '8': { aria: '8', insert: '8' },
+  '9': { aria: '9', insert: '9' },
+  times: { aria: 'Darab', insert: '×' },
+  div: { aria: 'Bahagi', insert: '÷' },
+  back: { aria: 'Padam', action: 'backspace' },
+  '4': { aria: '4', insert: '4' },
+  '5': { aria: '5', insert: '5' },
+  '6': { aria: '6', insert: '6' },
+  plus: { aria: 'Tambah', insert: '+' },
+  minus: { aria: 'Tolak', insert: '-' },
+  left: { aria: 'Kursor ke kiri', action: 'left' },
+  '1': { aria: '1', insert: '1' },
+  '2': { aria: '2', insert: '2' },
+  '3': { aria: '3', insert: '3' },
+  lp: { aria: 'Kurungan buka', insert: '(' },
+  rp: { aria: 'Kurungan tutup', insert: ')' },
+  right: { aria: 'Kursor ke kanan', action: 'right' },
+  '0': { aria: '0', insert: '0' },
+  dot: { aria: 'Titik perpuluhan', insert: '.' },
+  x: { aria: 'Pemboleh ubah x', insert: 'x' },
+  y: { aria: 'Pemboleh ubah y', insert: 'y' },
+  eq: { aria: 'Sama dengan', insert: '=' },
+  lt: { aria: 'Kurang daripada', insert: '<' },
+  gt: { aria: 'Lebih daripada', insert: '>' },
+  le: { aria: 'Kurang daripada atau sama dengan', insert: '≤' },
+  ge: { aria: 'Lebih daripada atau sama dengan', insert: '≥' },
+  percent: { aria: 'Peratus', insert: '%' },
+  comma: { aria: 'Koma', insert: ', ' },
+}
+
+/** Stand-in for Nuxt UI's UButton (the plugin cannot load under Vitest): a native button. */
+const UButtonStub = defineComponent({
+  inheritAttrs: false,
+  setup(_p, { attrs, slots }) {
+    return () => h('button', attrs, slots.default?.())
+  },
+})
+
+const ids = (rows: MathKey[][]): string[][] => rows.map((r) => r.map((k) => k.id))
+
+describe('keypad key map (Casio style)', () => {
+  it('keeps every key of the previous keypad with the same name and effect', () => {
+    expect(Object.keys(OLD_KEYS)).toHaveLength(35)
+    const byId = new Map(ALL_KEYS.map((k) => [k.id, k]))
+    for (const [id, old] of Object.entries(OLD_KEYS)) {
+      const k = byId.get(id)
+      expect(k, `key ${id} is missing`).toBeDefined()
+      expect(k!.aria).toBe(old.aria)
+      expect(k!.insert).toBe(old.insert)
+      expect(k!.cursor).toBe(old.cursor)
+      expect(k!.action).toBe(old.action)
+    }
+  })
+
+  it('has unique ids, a BM accessible name on every key, and adds AC and the scientific keys', () => {
+    const all = ALL_KEYS.map((k) => k.id)
+    expect(new Set(all).size).toBe(all.length)
+    for (const k of ALL_KEYS) expect(k.aria.length).toBeGreaterThan(0)
+    for (const id of ['clear', 'inv', 'sin', 'cos', 'tan', 'log', 'ln', 'deg', 'e10']) {
+      expect(all).toContain(id)
+    }
+    expect(ALL_KEYS.find((k) => k.id === 'clear')).toMatchObject({
+      aria: 'Kosongkan semua',
+      action: 'clear',
+    })
+  })
+
+  it('lays the number block out like a Casio: digits contiguous, DEL AC and operators on the right', () => {
+    expect(ids(NUMBER_ROWS)).toEqual([
+      ['7', '8', '9', 'back', 'clear'],
+      ['4', '5', '6', 'times', 'div'],
+      ['1', '2', '3', 'plus', 'minus'],
+      ['0', 'dot', 'e10', 'left', 'right'],
+    ])
+  })
+
+  it('puts the function area above: fraction, root, powers first, then trig and log', () => {
+    expect(ids(FUNCTION_ROWS)).toEqual([
+      ['frac', 'sqrt', 'sq', 'pow', 'inv'],
+      ['sin', 'cos', 'tan', 'log', 'ln'],
+    ])
+    expect(SHARED_KEYS.map((k) => k.id)).toEqual(['lp', 'rp', 'pi', 'deg'])
+    expect(ids(SYMBOL_ROWS).flat().sort()).toEqual(
+      ['x', 'y', 'comma', 'percent', 'pm', 'lt', 'gt', 'le', 'ge', 'eq'].sort(),
+    )
+  })
+
+  it('renders the groups top to bottom and switches the layer', async () => {
+    const w = mount(MathKeyboard, {
+      props: { label: 'Papan kekunci matematik' },
+      global: { components: { UButton: UButtonStub } },
+    })
+    const order = w.findAll('button[data-key]').map((b) => b.attributes('data-key'))
+    expect(order).toEqual([
+      'frac',
+      'sqrt',
+      'sq',
+      'pow',
+      'inv',
+      'sin',
+      'cos',
+      'tan',
+      'log',
+      'ln',
+      'lp',
+      'rp',
+      'pi',
+      'deg',
+      'layer',
+      '7',
+      '8',
+      '9',
+      'back',
+      'clear',
+      '4',
+      '5',
+      '6',
+      'times',
+      'div',
+      '1',
+      '2',
+      '3',
+      'plus',
+      'minus',
+      '0',
+      'dot',
+      'e10',
+      'left',
+      'right',
+    ])
+    expect(w.get('[data-key=frac]').attributes('aria-label')).toBe('Pecahan')
+    await w.get('[data-key=layer]').trigger('click')
+    expect(w.find('[data-key=x]').exists()).toBe(true)
+    expect(w.find('[data-key=frac]').exists()).toBe(false)
+    expect(w.find('[data-key="7"]').exists()).toBe(true)
+    await w.get('[data-key=layer]').trigger('click')
+    expect(w.find('[data-key=frac]').exists()).toBe(true)
+  })
+
+  it('emits what a key inserts and closes on Escape', async () => {
+    const w = mount(MathKeyboard, {
+      props: { label: 'Papan kekunci matematik' },
+      global: { components: { UButton: UButtonStub } },
+    })
+    await w.get('[data-key=sqrt]').trigger('click')
+    await w.get('[data-key=clear]').trigger('click')
+    expect(w.emitted('press')).toEqual([[{ insert: '√()', cursor: 2 }], [{ action: 'clear' }]])
+    await w.get('[data-testid=math-keyboard]').trigger('keydown', { key: 'Escape' })
+    expect(w.emitted('close')).toHaveLength(1)
+  })
+})
+
+describe('applyKey (insert, DEL, AC, cursor)', () => {
+  const press = (k: string): KeyPress => {
+    const key = ALL_KEYS.find((x) => x.id === k)!
+    return key.action ? { action: key.action } : { insert: key.insert, cursor: key.cursor }
+  }
+
+  it('inserts at the caret and puts the caret inside a template', () => {
+    expect(applyKey('2+', 2, 2, press('frac'))).toEqual({ text: '2+()/()', caret: 3 })
+    expect(applyKey('', 0, 0, press('sin'))).toEqual({ text: 'sin()', caret: 4 })
+    expect(applyKey('3', 1, 1, press('e10'))).toEqual({ text: '3×10^()', caret: 6 })
+    expect(applyKey('x', 1, 1, press('inv'))).toEqual({ text: 'x^(-1)', caret: 6 })
+  })
+
+  it('DEL removes one character, or an empty () pair in one step, or the selection', () => {
+    expect(applyKey('12', 2, 2, press('back'))).toEqual({ text: '1', caret: 1 })
+    expect(applyKey('2√()', 3, 3, press('back'))).toEqual({ text: '2√', caret: 2 })
+    expect(applyKey('1234', 1, 3, press('back'))).toEqual({ text: '14', caret: 1 })
+    expect(applyKey('1', 0, 0, press('back'))).toEqual({ text: '1', caret: 0 })
+  })
+
+  it('AC clears the whole line', () => {
+    expect(applyKey('(1)/(2)+3', 4, 4, press('clear'))).toEqual({ text: '', caret: 0 })
+  })
+
+  it('right steps over )/( of a fraction; left stops at the start', () => {
+    expect(applyKey('(1)/(2)', 2, 2, press('right'))).toEqual({ text: '(1)/(2)', caret: 5 })
+    expect(applyKey('12', 2, 2, press('right'))).toEqual({ text: '12', caret: 2 })
+    expect(applyKey('12', 0, 0, press('left'))).toEqual({ text: '12', caret: 0 })
+  })
+})
+
+describe('MathField with the keypad', () => {
+  it('AC empties the line and the stored value', async () => {
+    const w = mount(MathField, {
+      props: { modelValue: '\\frac{1}{2}', label: 'Langkah 1' },
+      global: { components: { ...formStubs, UButton: UButtonStub, UIcon: { template: '<i />' } } },
+      attachTo: document.body,
+    })
+    expect((w.get('input').element as HTMLInputElement).value).toBe('1/2')
+    await w.get('[data-testid=math-keypad-toggle]').trigger('click')
+    await w.get('[data-key=clear]').trigger('click')
+    await w.vm.$nextTick()
+    expect((w.get('input').element as HTMLInputElement).value).toBe('')
+    expect(w.emitted('update:modelValue')?.at(-1)).toEqual([''])
+    w.unmount()
+  })
+})

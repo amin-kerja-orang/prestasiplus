@@ -8,7 +8,8 @@
 import { computed, nextTick, ref, useId, watch } from 'vue'
 
 import { latexToFriendly, plainToLatex } from '../domain/math-expr'
-import MathKeyboard, { type KeyPress } from './MathKeyboard.vue'
+import { applyKey, type KeyPress } from '../lib/math-keys'
+import MathKeyboard from './MathKeyboard.vue'
 import RichText from './RichText.vue'
 
 const props = withDefaults(
@@ -63,32 +64,12 @@ async function onKey(k: KeyPress): Promise<void> {
   const v = text.value
   const a = el.selectionStart ?? v.length
   const b = el.selectionEnd ?? a
-  let next = v
-  let caret = a
-  if (k.insert !== undefined) {
-    next = v.slice(0, a) + k.insert + v.slice(b)
-    caret = a + (k.cursor ?? k.insert.length)
-  } else if (k.action === 'backspace') {
-    if (a !== b) {
-      next = v.slice(0, a) + v.slice(b)
-      caret = a
-    } else if (a > 0) {
-      // An empty `()` pair goes in one step.
-      const pair = v.slice(a - 1, a + 1) === '()'
-      next = v.slice(0, a - 1) + v.slice(a + (pair ? 1 : 0))
-      caret = a - 1
-    }
-  } else if (k.action === 'left') {
-    caret = Math.max(0, a - 1)
-  } else if (k.action === 'right') {
-    // Step over the `)/(` of a fraction so "▶" goes from numerator to denominator.
-    caret = v.slice(a, a + 3) === ')/(' ? a + 3 : Math.min(v.length, a + 1)
-  }
-  if (next !== v) setText(next)
+  const r = applyKey(v, a, b, k)
+  if (r.text !== v) setText(r.text)
   await nextTick()
   const again = input()
   again?.focus()
-  again?.setSelectionRange(caret, caret)
+  again?.setSelectionRange(r.caret, r.caret)
 }
 
 function toggleKeypad(): void {
