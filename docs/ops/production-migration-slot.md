@@ -38,8 +38,8 @@ The one exception is the A4 rehearsal on a scratch host (never production): `slo
 --synthetic-scratch` (A4-OVERRIDE, #315) loads a `fixtures:generate` fixture (top-level `"synthetic": true`, nothing
 else) when the `prod.env` FILE says `PP_SCRATCH_HOST=yes` and `PP_OFFSITE_KIND=none` and the host name (`hostname -s`)
 is typed in a terminal; a variable exported in the shell does not count, and `python3` is needed. It leaves the
-markers `SYNTHETIC-LOADED` and `SYNTHETIC-IN-TARGET` in `PP_STAGE_DIR`: on a host not marked scratch, `copy` and
-`etl --apply` then refuse the data (exit 3), and on a scratch host `gonogo` always ends
+marker `SYNTHETIC-LOADED` in `PP_STAGE_DIR` (`load`, `slot.sh:244`); `copy` adds `SYNTHETIC-IN-TARGET` there (`:271`). On a host
+not marked scratch, `copy` and `etl --apply` then refuse the data (exit 3, `:219,221,355`), and on a scratch host `gonogo` always ends
 `gonogo: NO-GO (scratch host or synthetic stage data)` with exit 3. `throwaway-up` clears the stage marker; a copy
 from a raw stage clears the target marker. `deploy/vps/migration/test-scratch-override.sh` tests it with stubs.
 
@@ -155,7 +155,8 @@ deploy/vps/migration/slot.sh etl migrate:delta --since=<T-dump1> --as-of=... [--
   `migrate:archive-minimise`; anything else (including the standalone `migrate:core` and `migrate:activity`) exits 2
   (`slot.sh:336-337`). Other stops: exit 3 for a missing `etl.env`, a `PP_MIGRATION_OUT` with the wrong owner or mode,
   no release sha for `migrate:all` / `migrate:delta`, and (with `--apply`) no `staging_cloud` in the target; exit 3
-  when the stage or the target holds a synthetic fixture and the host is not marked scratch; exit 75 when another
+  for `copy`, and for `etl` only with `--apply`, when the stage or the target holds a synthetic fixture and the host is not
+  marked scratch; exit 75 when another
   operation holds the shared lock after the wait of `PP_LOCK_WAIT` (1800 s). Every `migrate:*` command accepts the
   `--out-dir` that `etl` appends (ORCH-FLAGS; migration runbook, "Unknown flags are refused").
 - **Role.** Every `etl` run connects as the migration role `pp_etl`: `compose run --env-from-file etl.env`, whose
