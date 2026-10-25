@@ -24,6 +24,7 @@ import {
 
 import StimulusView from '../../components/StimulusView.vue'
 import QuestionEditor from '../intake/components/QuestionEditor.vue'
+import { tagLookup, useDskpSubject } from '../../lib/dskp-source'
 import { validateRevision } from '../intake/domain/validation'
 import type { IntakeQuestion, IntakeStimulus } from '../intake/types'
 import { bijakServer } from '../../server/client'
@@ -55,11 +56,12 @@ watch(
 )
 
 const locked = computed(() => data.value?.pendingRevision === true)
-const issues = computed<string[]>(() =>
-  draft.value
-    ? validateRevision(draft.value, stimulus.value, data.value?.legacyTag ?? false)
-    : [],
-)
+// Interim wiring (DSKP-T07 rewrites the page): load the subject, then run the shared tag rule.
+const dskp = useDskpSubject(() => draft.value?.tag.subject)
+const issues = computed<string[]>(() => {
+  void dskp.view.value
+  return draft.value ? validateRevision(draft.value, stimulus.value, tagLookup()) : []
+})
 const nextVersion = computed(() => (data.value?.row.version ?? 1) + 1)
 
 function patchStimulus(p: Partial<IntakeStimulus>): void {

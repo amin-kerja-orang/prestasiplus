@@ -32,7 +32,8 @@ import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
 import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
-import { topicOf } from '../domain/topic'
+import { studentTopicOf } from '../domain/topic'
+import { tagLookup, tagLookupFor } from '../lib/dskp-source'
 import type { BankFilter, DecisionAction, PaperPatch, QueueFilter } from '../domain/admin-types'
 import type {
   Attempt,
@@ -476,7 +477,7 @@ export class BijakServer {
           id: q.id,
           number: numberOf.get(q.id)!,
           sectionId: s.id,
-          topic: topicOf(q.curriculum),
+          topic: studentTopicOf(q.curriculum, tagLookup()),
           formOrigin: q.curriculum.formOrigin,
           ...(q.groupId ? { groupId: q.groupId } : {}),
           ...(q.groupId && BANK.groups.get(q.groupId)?.optionBank
@@ -1005,7 +1006,7 @@ export class BijakServer {
     await this.tick()
     const b = this.intakeBatch(id)
     if (b.status !== 'draf') throw new BijakError('bad_request', 'Kumpulan sudah dihantar untuk semakan')
-    const issues = validateBatch(b)
+    const issues = validateBatch(b, await tagLookupFor(b.questions.map((q) => q.tag.subject)))
     if (issues.length > 0) return { ok: false, issues }
     b.status = 'semakan'
     b.submittedAt = this.now()

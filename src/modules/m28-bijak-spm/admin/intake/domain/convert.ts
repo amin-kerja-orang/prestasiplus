@@ -68,7 +68,7 @@ function placePart(
 
 export function intakeToDef(q: IntakeQuestion, o: ToDefOptions): QuestionContent {
   const schemes: Record<string, SchemeDef> = {}
-  const base = { id: o.qid, curriculum: { ...q.tag, sp: [...q.tag.sp] }, stem: q.stem.trim() }
+  const base = { id: o.qid, curriculum: { ...q.tag, spIds: [...q.tag.spIds] }, stem: q.stem.trim() }
   const def: QuestionDef = { ...base, ...(o.groupId ? { groupId: o.groupId } : {}) }
 
   if (q.type === 'mcq') {
@@ -167,7 +167,7 @@ export function defToIntake(
     id: q.id,
     label,
     stem: q.stem,
-    tag: { ...q.curriculum, sp: [...q.curriculum.sp] },
+    tag: { ...q.curriculum, spIds: [...q.curriculum.spIds] },
     page: 1,
     lowFields: [] as string[],
     confirmed: [] as string[],

@@ -252,8 +252,10 @@ Three places hold old-shape tags: (a) static seed questions (replaced by `seed-t
 |---|---|
 | `subject` | `subject` unchanged |
 | `formOrigin: 'T1-T3'` | `formOrigin: 'T1-T3'`, `unitId: null`, `spIds: []` |
-| `formOrigin: 'T4' \| 'T5'` and `unit` or `sp` present | `formOrigin: null`, `unitId: null`, `spIds: []`, `review: 'perlu-semakan'`. The old unit code (`MAT-T4-02`) and free-text SP are not copies of catalogue nodes, so nothing is carried (never "closest", AC-08.4). |
-| `tp` 1 to 6 | kept (cannot be told from a deliberate choice); other values -> `null` |
+| `formOrigin: 'T4' \| 'T5'` and `unit`, `unitLabel` or `sp` present | `formOrigin: null`, `unitId: null`, `spIds: []`, `review: 'perlu-semakan'`. The old unit code (`MAT-T4-02`), the label and free-text SP are not copies of catalogue nodes, so nothing is carried (never "closest", AC-08.4). A `unitLabel` alone counts: the old gate treated such a question as tagged. As built in DSKP-T03 (accepted at G4). |
+| `formOrigin: 'T4' \| 'T5'` with no unit, label or SP (an empty draft) | `formOrigin: null`, no `review` marker (untagged, not flagged) |
+| `tp` 1 to 6 | kept (cannot be told from a deliberate choice), also for T1-T3; other values -> `null` |
+| `kbat` `'Mengaplikasi'` etc. | kept, lower-cased to the v2 `KbatLevel` (`'mengaplikasi'`); an unknown value -> `null`. (T03 as built; the first draft reset it to `null`.) |
 | `level`, `unitLabel` | dropped |
 | (new) | `kbat: null`, `catalogueVersion: null` |
 
@@ -438,7 +440,7 @@ Field behaviour (AC-04.x):
 | Confirmations | existing checkbox pattern generalised: "Saya sahkan {unit DSKP \| SP \| TP \| Aras KBAT} (keyakinan rendah)" for unit/SP low confidence; for AI-suggested TP/KBAT "Saya sahkan TP (cadangan AI)" [PROPOSED] | rendered from `fieldsToConfirm(q)` |
 | T1-T3 | unit, SK and SP disabled and cleared; TP still required | AC-04.6 |
 
-Helpers (pure, in `domain/tag-edit.ts`): `setFormOrigin`, `setUnit`, `toggleSp`, `normaliseTag(tag)` (clears unit/SP for T1-T3, drops SP outside the unit, clears `review` when the tag is complete, stamps `catalogueVersion`). Layout rules (container queries, 320 px minimum, no horizontal page scroll) are in the UX spec; the block keeps its `@md`/`@3xl` container grid.
+Helpers (pure, in `domain/tag-edit.ts`): `setFormOrigin`, `setUnit`, `toggleSp`, `normaliseTag(tag, lookup, catalogueVersion)` (clears unit/SP for T1-T3, drops SP outside the unit and repeated SP, clears `review` once `tagIssues` is empty, stamps `catalogueVersion` when it is still null; `setUnit` and `toggleSp` reset it to null so the next normalise re-stamps). `setUnit(tag, unitId, lookup)` and `normaliseTag` need a `lookup` that already knows the tag's subject: **DSKP-T07 must call them only with a loaded subject view** (F4); with an unloaded one every SP looks like it is outside the unit and is dropped. `toggleSp(tag, spId, on?, maxSp?)` and `tagIssues(tag, lookup, maxSp?)` take an optional cap that defaults to `MAX_SP_PER_QUESTION`. Layout rules (container queries, 320 px minimum, no horizontal page scroll) are in the UX spec; the block keeps its `@md`/`@3xl` container grid.
 
 ### 5.2 One tag rule for submit, revision and publish (AC-07.x)
 
@@ -448,7 +450,8 @@ Helpers (pure, in `domain/tag-edit.ts`): `setFormOrigin`, `setUnit`, `toggleSp`,
 export interface TagIssue { field: 'subject' | 'formOrigin' | 'unit' | 'sp' | 'tp' | 'kbat'; message: string }
 export interface TagLookup {
   subject(code: string): boolean
-  unit(id: string): { subject: string; tingkatan: 'T4' | 'T5' } | undefined
+  /** `title` is the unit title as printed, for display only (topicOf); the rule does not read it. A backend lookup supplies it too. */
+  unit(id: string): { subject: string; tingkatan: 'T4' | 'T5'; title: string } | undefined
   sp(id: string): { unitId: string; selectable: boolean } | undefined
 }
 export function tagIssues(tag: CurriculumTag, lookup: TagLookup): TagIssue[]
@@ -464,6 +467,7 @@ export function partitionByTagRule<T extends { tag: CurriculumTag }>(items: T[],
 | every SP exists, selectable, child of the unit | required | n/a | "SP tidak wujud dalam unit yang dipilih." [PROPOSED] |
 | `tp` integer 1 to 6 | required | required | null: "Tahap Penguasaan (TP) belum dipilih." [PROPOSED]; out of range: "Tahap Penguasaan (TP) mesti antara 1 dan 6." (existing) |
 | `kbat` is null or a `KbatLevel` | optional | optional | "Aras KBAT tidak sah." [PROPOSED] |
+| `spIds` has no repeat; with a cap (`maxSp`, default `MAX_SP_PER_QUESTION` = none) not more than `maxSp` | enforced | n/a | repeat: "SP yang sama dipilih lebih daripada sekali."; over the cap: "Pilih paling banyak N SP." (both [PROPOSED], added in DSKP-T03) |
 
 Where it is called (all with a `TagLookup` built after `await tagLookupFor(subjects)`):
 
@@ -487,7 +491,7 @@ Where it is called (all with a `TagLookup` built after `await tagLookupFor(subje
 ### 5.4 Bank filter and display (AC-09.x)
 
 - `BankFilter` gains `formOrigin?`, `unitId?`, `spId?`, `tp?`, `kbat?: 'ya' | 'tidak' | KbatLevel`, `tagReview?: boolean`. `listBank` applies them in the same pass that builds the rows; the page shows `rows.length`. No second query feeds a count (AC-09.2, NFR-08). The KPI strip (`bankStats`) stays unfiltered.
-- `BankRow` gains `formOrigin`, `unitId`, `unitTitle`, `spCodes`, `tp`, `kbat`, `tagReview`; `topic` becomes the unit title from the catalogue ("Tingkatan 1-3 (di luar DSKP)" for exempt, "Perlu semakan tag" [PROPOSED] for flagged), and the search term also matches SP codes.
+- `BankRow` gains `formOrigin`, `unitId`, `unitTitle`, `spCodes`, `tp`, `kbat`, `tagReview`; `topic` becomes the unit title from the catalogue ("Tingkatan 1-3 (di luar DSKP)" for exempt, "Perlu semakan tag" [PROPOSED] for flagged), and the search term also matches SP codes. **Students never see the flag copy:** the student question view (`QuestionView.topic`, so also the result page's weak topics) is `studentTopicOf(tag, lookup)`, which is `''` for a tag with `review` set; only admin rows use `topicOf` and show "Perlu semakan tag". The result page skips empty topics, so a flagged question forms no weak-topic bucket.
 - Filter bar: Subjek (13, from the catalogue), Tingkatan [PROPOSED], Unit (disabled until a subject is chosen, scoped by subject and tingkatan), SP (scoped by the unit), TP 1 to 6, KBAT (Semua, Ya, Tidak, four levels), "Perlu semakan tag". Layout at 375/768/1280 is the UX spec's. Active filters appear as the existing chips.
 - Subject lists: `server.subjects()` (3 blueprint subjects) stays for paper authoring and Jana Kertas, which remain blueprint-driven (G1 out of scope). A new `server.tagSubjects()` returns the 13 catalogue subjects and feeds the intake declaration, intake list, review queue and bank filters. The bank KPI strip lists subjects that have at least one question in any status (computed), so it does not show ten empty tiles; its total still equals the sum of its tiles. `subjectName(code)` falls back to the catalogue name.
 
@@ -585,6 +589,11 @@ flowchart LR
 ```
 
 Parallel groups: [T00 ∥ T01]; then [T02 ∥ T09]; then [T03]; then [T04 ∥ T06 ∥ T07]; then [T05]; then [T08]. T07 can start against a fixture catalogue as soon as T03 lands. Total about 14.5 ideal days; critical path T01 -> T02 -> T03 -> T04 -> T05 -> T08 about 10.5 days, shorter with T07 and T06 in parallel. Gate sequence after build: G3 evidence from `npm run verify`, G4 `code-reviewer` (security-engineer not required: no auth, personal data, upload or new external input), G5 `qa-engineer` against US-01 to US-11 at 375/768/1280.
+
+Notes carried from the DSKP-T03 review (G4) for later tasks:
+
+- **DSKP-T05.** (a) `gateErrors` has an interim tag check (`!unitId`, not T1-T3, not `review`); replace it with `tagIssues` and flip its test in `gate-errors.test.ts` ("a flagged question ... not refused yet") to expect the refusal. (b) Replace the `it.todo` in `tag-rule.parity.test.ts` with the publish entry point. (c) **F3:** close the stem-only revision path (`reviseQuestion`, `reviewDecision` for `v:` without `content`) for flagged questions, so a question with `review` cannot be re-published unchanged. (d) Preload with `await tagLookupFor(...)` and drop the synchronous `tagLookup()` call sites in `server/admin.ts` and `server/store.ts`; wire `migrateTagsInState` into `load()` (until then `topicOf` tolerates an old-shape tag).
+- **DSKP-T07.** (a) **F6:** do not show tag issues (the live "what is missing" list) while the subject view is loading; an unloaded subject makes every unit look absent. (b) **F4:** call `setUnit`/`normaliseTag` only with a loaded subject view. (c) The interim Tag DSKP block in `QuestionEditor.vue` and the `useDskpSubject` wiring in `IntakeReviewPage.vue` / `BankEditPage.vue` are replaced by the final design.
 
 Documents to update by the Delivery Lead (not tasks): TRACKER (stage; D-number for A1 to A10: AUD-D1, recorded 2026-10-25), `docs/README.md` index (this document, ADR-0022), `v2-exam-schema.md` D9 (tag field names `formOrigin`/`unitId`/`spIds`; KBAT already noted).
 

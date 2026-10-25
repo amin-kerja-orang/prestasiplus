@@ -72,14 +72,18 @@ describe('paper sections follow the approved blueprint model', () => {
       expect(q.curriculum.subject).toBeTruthy()
       expect(q.curriculum.tp).toBeGreaterThanOrEqual(1)
       expect('topic' in q).toBe(false)
-      if (q.curriculum.formOrigin === 'T1-T3') expect(q.curriculum.unit).toBeNull()
+      if (q.curriculum.formOrigin === 'T1-T3') expect(q.curriculum.unitId).toBeNull()
     }
     expect(BANK.questions.get('mat1-pecahan-v1')!.curriculum).toMatchObject({
       subject: 'MAT',
       formOrigin: 'T1-T3',
-      unit: null,
+      unitId: null,
     })
-    expect(BANK.questions.get('mat1-kebarangkalian-v1')!.curriculum.formOrigin).toBe('T5')
+    // not a T1-T3 topic: flagged for a person to tag (DSKP-T04 tags the seeds), no tingkatan carried
+    expect(BANK.questions.get('mat1-kebarangkalian-v1')!.curriculum).toMatchObject({
+      formOrigin: null,
+      review: 'perlu-semakan',
+    })
   })
 })
 

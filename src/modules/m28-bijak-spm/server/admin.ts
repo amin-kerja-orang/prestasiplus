@@ -43,6 +43,7 @@ import type {
 } from '../domain/admin-types'
 import { leavesOf } from '../domain/paper-model'
 import { topicOf } from '../domain/topic'
+import { tagLookup, tagLookupFor } from '../lib/dskp-source'
 import type {
   Blueprint,
   PaperDef,
@@ -366,8 +367,10 @@ export function gateErrors(
           out.push(`${n} ${l.label}: markah skema ${sc.marks} tidak sama dengan markah ${l.marks}`)
       }
     }
-    // T1-T3 content is outside DSKP and has no unit (same rule as the intake gate, validation.ts).
-    if (!q.curriculum.unitLabel && q.curriculum.formOrigin !== 'T1-T3')
+    // T1-T3 content is outside DSKP and has no unit. A seed that still carries the `perlu-semakan`
+    // marker is not refused here yet: DSKP-T05 replaces this check with the shared `tagIssues` rule.
+    const c = q.curriculum
+    if (!c.unitId && c.formOrigin !== 'T1-T3' && c.review !== 'perlu-semakan')
       out.push(`${n}: topik DSKP belum dipilih`)
   })
   return out
@@ -493,7 +496,7 @@ export class AdminOps {
       subjectName: subjectName(seed.subject),
       kertas: seed.kertas,
       kind: kindOf(q0),
-      topic: topicOf(q0.curriculum),
+      topic: topicOf(q0.curriculum, tagLookup()),
       preview: previewOf(q0),
       previewPlain: plainMath(previewOf(q0)),
       marks: seed.questions.reduce((n, q) => n + marksOf(q), 0),
@@ -522,7 +525,7 @@ export class AdminOps {
       subjectName: subjectName(nq.curriculum.subject),
       kertas: kertasOf(qid),
       kind: kindOf(nq, lookup),
-      topic: topicOf(nq.curriculum),
+      topic: topicOf(nq.curriculum, tagLookup()),
       preview: previewOf(nq, rev.stem),
       previewPlain: plainMath(previewOf(nq, rev.stem)),
       marks: marksOf(nq, lookup),
@@ -780,7 +783,6 @@ export class AdminOps {
       question: defToIntake(q, getScheme, '1', stimulus?.id),
       ...(stimulus ? { stimulus: plain(stimulus) } : {}),
       pendingRevision: !!this.review[qid]?.revision,
-      legacyTag: q.curriculum.sp.length === 0,
       ...(stimulus ? sharersProp(q) : {}),
     }
   }
@@ -817,7 +819,7 @@ export class AdminOps {
     const issues = validateRevision(
       plain(edited),
       nextStimulus,
-      q.curriculum.sp.length === 0,
+      await tagLookupFor([edited.tag.subject]),
     )
     if (issues.length > 0) return { ok: false, errors: issues }
 
@@ -878,7 +880,7 @@ export class AdminOps {
       subjectName: subjectName(q.curriculum.subject),
       kertas: kertasOf(qid),
       kind: kindOf(q),
-      topic: topicOf(q.curriculum),
+      topic: topicOf(q.curriculum, tagLookup()),
       marks: marksOf(q),
       preview: previewOf(q),
       previewPlain: plainMath(previewOf(q)),
@@ -1017,7 +1019,7 @@ export class AdminOps {
       preview: previewOf(q),
       marks: marksOf(q),
       kind: kindOf(q),
-      topic: topicOf(q.curriculum),
+      topic: topicOf(q.curriculum, tagLookup()),
       status: this.statusOf(qid),
       kertas: kertasOf(qid),
       subject: q.curriculum.subject,
