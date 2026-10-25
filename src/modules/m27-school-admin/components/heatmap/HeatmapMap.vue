@@ -74,6 +74,7 @@ function titleOf(rowId: string, column: number): string {
           low-label="Lemah (<50%)"
           high-label="Mahir (75%+)"
           no-data-label="Belum Cuba"
+          :legend="false"
           data-testid="dh-tiles"
         >
           <template #popover="{ row, column }">

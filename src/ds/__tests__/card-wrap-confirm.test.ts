@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import DsConfirmHost from '../DsConfirmHost.vue'
 import DsDataTable from '../DsDataTable.vue'
+import DsHeatGrid from '../DsHeatGrid.vue'
 import { confirmState, settleConfirm, useConfirm } from '../useConfirm'
 
 /**
@@ -66,5 +67,16 @@ describe('DsConfirmHost', () => {
       'Pasti untuk menukar status pengguna ini?',
     )
     expect(w.findComponent({ name: 'DsDialog' }).props('description')).toBeUndefined()
+  })
+})
+
+describe('DsHeatGrid legend', () => {
+  const props = { columns: ['1'], rows: [{ id: 'a', label: 'A', cells: [50] }], label: 'Peta' }
+  it('shows the colour legend by default and hides it with legend=false (G5-M27 B6)', async () => {
+    const on = mount(DsHeatGrid, { props })
+    const off = mount(DsHeatGrid, { props: { ...props, legend: false } })
+    await flushPromises()
+    expect(on.findAll('[data-ds=heat-legend]')).toHaveLength(1)
+    expect(off.findAll('[data-ds=heat-legend]')).toHaveLength(0)
   })
 })
