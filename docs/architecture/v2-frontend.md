@@ -419,7 +419,7 @@ Total: 60 tasks. Sizes: S 4, M 25, L 31. By kind: 8 tooling and contract, 15 pla
 
 | # | Question | Recommended default (used if no answer) |
 |---|---|---|
-| OQ-1 | Who may enter Mod Pelajar? D31(c) says "admin". | Admin Pusat only. Admin Sekolah and Pegawai PPD do not get it in v2.0. |
+| OQ-1 | Who may enter Mod Pelajar? D31(c) says "admin". | Admin Pusat only. Admin Sekolah and Pegawai PPD do not get it in v2.0. **Superseded 2026-10-25 (TRACKER D55, user answers):** Admin Pusat, Admin Sekolah and Guru may enter Mod Pelajar; Guru and Admin Sekolah use their own account (no impersonation); Pegawai PPD still not. See `docs/architecture/v2-guru-mod-pelajar.md` and ADR-0020. |
 | OQ-2 | `v2-portals.md` US-07 (open a chosen real student's view, read-only) conflicts with D31(c) (admin acts as themselves). Is real-student preview dropped from v2.0? | Dropped; Mod Pelajar replaces it. The `mode.kind` field leaves room for a later audited preview. |
 | OQ-3 | PPD and state level: with one `pegawai_ppd` role and scope derived from the officer's school (D31a) only a district scope can be derived. Does any officer need a state-wide view in v2.0? | No; `ppd_officer` is district-scoped. The contract keeps `level: 'state'` so profiling (MIG-01 Q3) can add it without a break. |
 | OQ-4 | Pentadbiran path prefix `/admin/**` on the `admin.*` host (redundant on that host but keeps one site working in demo and avoids path clashes with learner routes such as `/spm/*`). Accept? | Accept. |
