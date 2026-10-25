@@ -77,7 +77,7 @@ function remove(id: number): void {
 <template>
   <div
     ref="root"
-    class="flex flex-col gap-3"
+    class="flex min-w-0 flex-col gap-3"
     :data-testid="isEdit ? 'parent-linker-edit' : 'parent-linker'"
   >
     <h3
@@ -93,7 +93,7 @@ function remove(id: number): void {
       for="linker-search"
       :label="isEdit ? 'Cari pelajar' : 'Pautkan Anak (Pelajar)'"
     >
-      <div>
+      <div class="min-w-0">
         <UInput
           id="linker-search"
           :model-value="term"
@@ -119,6 +119,7 @@ function remove(id: number): void {
           level="elevated"
           shadow="lift"
           padding="none"
+          class="min-w-0"
           data-testid="linker-dropdown"
         >
           <div class="max-h-64 overflow-y-auto">
@@ -137,13 +138,16 @@ function remove(id: number): void {
                 block
                 color="neutral"
                 variant="ghost"
-                class="h-auto min-h-11 justify-start text-start whitespace-normal"
+                class="h-auto min-h-11 min-w-0 text-start whitespace-normal"
                 :disabled="linkedIds.has(student.id)"
                 data-testid="linker-result"
                 @click="add(student)"
               >
-                <span class="flex w-full min-w-0 items-center gap-2">
-                  <span class="min-w-0 flex-1 truncate">{{ student.name }}</span>
+                <span
+                  class="flex w-full min-w-0 flex-wrap items-center gap-2"
+                  data-testid="linker-result-row"
+                >
+                  <span class="min-w-0 max-w-full grow break-words">{{ student.name }}</span>
                   <UBadge
                     v-if="student.classLevel"
                     color="neutral"
@@ -154,7 +158,7 @@ function remove(id: number): void {
                     v-if="student.schoolName"
                     color="neutral"
                     variant="subtle"
-                    class="max-w-40 truncate"
+                    class="max-w-full whitespace-normal break-words"
                     :label="student.schoolName"
                   />
                 </span>
