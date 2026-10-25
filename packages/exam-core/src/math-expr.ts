@@ -829,3 +829,24 @@ export function latexToFriendly(latex: string): string {
     .replace(/\\,|\\ /g, ' ')
   return s
 }
+
+const FRAC_OPERAND = '(\\d+(?:\\.\\d+)?|[a-zA-Z]|\\([^()]*\\))'
+
+/**
+ * LaTeX for the live preview of a friendly line, so the student sees what was understood: stacked
+ * fractions (also when the denominator has a power, `(7)/(3)^2` -> `\frac{7}{3^{2}}`), upright
+ * `\sin \cos \tan \log \ln`, `°` as a degree sign and a literal `%`. Preview only: the stored value
+ * stays `plainToLatex(friendly)`.
+ */
+export function previewLatex(friendly: string): string {
+  if (!friendly) return ''
+  const unwrap = (x: string): string => (x.startsWith('(') ? x.slice(1, -1) : x)
+  return plainToLatex(friendly)
+    .replace(
+      new RegExp(`${FRAC_OPERAND}\\s*\\/\\s*${FRAC_OPERAND}\\^\\{([^{}]*)\\}`, 'g'),
+      (_m, a: string, b: string, p: string) => `\\frac{${unwrap(a)}}{${unwrap(b)}^{${p}}}`,
+    )
+    .replace(/(?<![\\a-zA-Z])(sin|cos|tan|log|ln)(?![a-zA-Z])/g, '\\$1 ')
+    .replace(/°/g, '^{\\circ}')
+    .replace(/(?<!\\)%/g, '\\%')
+}
