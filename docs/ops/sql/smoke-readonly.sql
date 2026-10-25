@@ -25,6 +25,8 @@
 --   Through the `q` helper of the A1 sheet (only the SQL text is in argv; do not paste the text inside double quotes,
 --   the dollar-quote tags would be expanded by the shell; command substitution is safe):
 --     q "$(cat docs/ops/sql/smoke-readonly.sql)"
+--   This needs the `q` of the A1 sheet with `--` before "$1": this file starts with a `--` comment line, and without
+--   it `node` reads that line as an option and stops (`node: bad option`, exit 9; A4-DRY, 24 Oct).
 --   `q` prints rows with `|` between columns and no header (psql -At).
 --   Time (A4 dress run, local PostgreSQL 16, synthetic data): 0.1 s on an empty migrated DB, 1.4 s on the medium
 --   fixture (366k staged rows), about 10 s on a copy inflated to about 9 million rows (counts on indexed legacy

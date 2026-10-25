@@ -14,7 +14,7 @@ import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { PrismaService } from '../../src/db/prisma.service'
-import { AuthModule } from '../../src/modules/auth'
+import { AuthModule, AuthPorts } from '../../src/modules/auth'
 import { GamificationAdminService, GamificationModule, GamificationPorts, GamificationService, type PracticeDayFacts, type PracticeFactsProvider, type PracticeMasteryFact } from '../../src/modules/gamification'
 import { WalletModule, WalletService } from '../../src/modules/wallet'
 import { START, loginAs, type LoggedIn } from '../auth/helpers'
@@ -34,6 +34,7 @@ export class StubPracticeFacts implements PracticeFactsProvider {
   day: PracticeDayFacts = { sessions: [], chapterIds: [] }
   masteryRows: PracticeMasteryFact[] = []
   counts = { all: 0, practice: 0 }
+  accurate = 0
   async dayFacts(): Promise<PracticeDayFacts> {
     return this.day
   }
@@ -42,6 +43,9 @@ export class StubPracticeFacts implements PracticeFactsProvider {
   }
   async sessionCounts(): Promise<{ all: number; practice: number }> {
     return this.counts
+  }
+  async accurateSessions(): Promise<number> {
+    return this.accurate
   }
 }
 
@@ -54,6 +58,8 @@ export interface GamificationTestApp extends UsersTestApp {
 }
 
 export interface BootOptions {
+  /** Keep the M14 login hook (streak + the daily +2) on form logins. Default false: the other specs read the seeded wallets as they are (the doc's `setUser` fast login calls no hook). */
+  loginHook?: boolean
   seeds?: SeedModule[]
   env?: Record<string, string | undefined>
   start?: string
@@ -75,6 +81,7 @@ export async function bootGamificationApp(opts: BootOptions = {}): Promise<Gamif
     THROTTLE_ADMIN_WRITE_PER_MINUTE: undefined,
     THROTTLE_GAMIFICATION_CONVERT_PER_MINUTE: undefined,
     TRUST_PROXY_HOPS: undefined,
+    PUBLIC_BASE_URL: 'https://app.example.test',
     LEGACY_BCRYPT_DUMMY_COST: '4',
     LOGIN_FAILURE_FLOOR_MS: '0',
     LOGIN_IDENTIFIER_FAIL_LIMIT: undefined,
@@ -92,6 +99,7 @@ export async function bootGamificationApp(opts: BootOptions = {}): Promise<Gamif
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  if (!opts.loginHook) app.get(AuthPorts).overrideLoginHook(null)
   const facts = new StubPracticeFacts()
   app.get(GamificationPorts).providePracticeFacts(facts)
   return {
