@@ -19,6 +19,7 @@ import {
 import type { CcExistingRemedial, CcWeakStudent } from '../../api/command-center-types'
 import { moduleMessage } from '../../lib/generic-server-text'
 import CcDialog from './CcDialog.vue'
+import CcScroll from './CcScroll.vue'
 import { useOpenTab } from './composables'
 import { plain, remedialPath, S2_COPY, studentPath } from './copy'
 
@@ -155,7 +156,7 @@ async function cancel(s: CcWeakStudent, quizId: number) {
       <p class="text-body text-toned" data-testid="cc-remedial-count">
         {{ weak.length }} pelajar dikesan lemah dalam topik tertentu (accuracy &lt;50%)
       </p>
-      <div data-testid="cc-remedial-table">
+      <CcScroll data-testid="cc-remedial-table">
         <DsDrillTable :data="weak" :columns="columns" caption="Smart Remedial — Scan Pelajar Lemah">
           <template #name-cell="{ row }">
             <UButton
@@ -267,7 +268,7 @@ async function cancel(s: CcWeakStudent, quizId: number) {
             </div>
           </template>
         </DsDrillTable>
-      </div>
+      </CcScroll>
     </template>
   </CcDialog>
 </template>
