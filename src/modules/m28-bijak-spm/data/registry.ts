@@ -7,6 +7,7 @@ import { Bank } from './builders'
 import { seedMatK1 } from './mat-k1'
 import { seedMatK2 } from './mat-k2'
 import { seedSainsK2 } from './sains-k2'
+import { applySeedTags } from './seed-tags'
 import { seedSejarahK2 } from './sejarah-k2'
 
 export const SUBJECTS: Subject[] = [
@@ -36,6 +37,8 @@ const k1 = seedMatK1(bank)
 seedMatK2(bank)
 const sn = seedSainsK2(bank)
 const sej = seedSejarahK2(bank)
+// Every seed question gets its DSKP tag from the one authored table (seed-tags.ts).
+applySeedTags(bank.questions.values())
 
 const matK1Instructions = [
   // The count comes from the paper itself (this is a 10-question sample of the 40-question paper).

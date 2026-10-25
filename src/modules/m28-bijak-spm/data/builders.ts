@@ -9,37 +9,23 @@ import type {
   QuestionDef,
   SchemeDef,
   StimulusDef,
-  TpLevel,
 } from '../domain/types'
 
-/** Matematik topics whose content belongs to Tingkatan 1-3 (Q-S2: formOrigin T1-T3, unit null). */
-const MAT_T1_T3 = new Set([
-  'Pecahan',
-  'Peratusan',
-  'Bentuk piawai',
-  'Persamaan linear',
-  'Ungkapan algebra',
-  'Pemfaktoran',
-  'Indeks',
-  'Statistik',
-  'Laju, jarak dan masa',
-  'Poligon',
-  'Teorem Pythagoras',
-  'Bulatan',
-  'Perimeter',
-  'Luas',
-])
-
 /**
- * Curriculum tag for a seed question (exam schema D9). Interim until DSKP-T04 (seed tagging): the
- * seed unit labels are not catalogue nodes, so T1-T3 content stays T1-T3 (Q-S2) and everything else
- * is flagged `perlu-semakan` with no tingkatan, unit or SP. `label` (the old free-text unit) is not
- * kept. T04 replaces this helper with the authored `seed-tags.ts` table.
+ * Placeholder tag for a seed question. The seed unit labels were free text, not catalogue nodes, so
+ * the real tag (tingkatan, unit, SP, TP, or the review flag) is not authored here: `seed-tags.ts`
+ * holds one row per seed question and `applySeedTags` replaces this placeholder at load.
  */
-export function curr(subject: string, label: string, tp: TpLevel = 2): CurriculumTag {
-  const base = { subject, unitId: null, spIds: [], tp, kbat: null, catalogueVersion: null }
-  if (subject === 'MAT' && MAT_T1_T3.has(label)) return { ...base, formOrigin: 'T1-T3' }
-  return { ...base, formOrigin: null, review: 'perlu-semakan' }
+export function untagged(subject: string): CurriculumTag {
+  return {
+    subject,
+    formOrigin: null,
+    unitId: null,
+    spIds: [],
+    tp: null,
+    kbat: null,
+    catalogueVersion: null,
+  }
 }
 
 export class Bank {
@@ -100,7 +86,6 @@ export function mcqQuestion(
   bank: Bank,
   args: {
     id: string
-    topic: string
     subject?: string
     stem: string
     correct: string
@@ -120,7 +105,7 @@ export function mcqQuestion(
   }
   const q: QuestionDef = {
     id: args.id,
-    curriculum: curr(args.subject ?? 'MAT', args.topic),
+    curriculum: untagged(args.subject ?? 'MAT'),
     stem: args.stem,
     mcq: { options },
   }

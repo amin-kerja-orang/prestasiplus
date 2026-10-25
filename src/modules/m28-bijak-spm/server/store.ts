@@ -32,6 +32,7 @@ import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
 import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
+import type { TagLookup } from '../domain/tag-rule'
 import { studentTopicOf } from '../domain/topic'
 import { tagLookup, tagLookupFor } from '../lib/dskp-source'
 import type { BankFilter, DecisionAction, PaperPatch, QueueFilter } from '../domain/admin-types'
@@ -464,7 +465,23 @@ export class BijakServer {
     return { attemptId: id }
   }
 
-  private buildView(a: Attempt): AttemptPaperView {
+  /** The tag lookup for an attempt's paper: loads each subject it uses once (M03 caches), so a tagged question shows its unit title. */
+  private lookupOf(a: Attempt): Promise<TagLookup> {
+    const subjects = new Set<string>()
+    for (const s of a.sections)
+      for (const qid of s.questionIds) {
+        const q = BANK.questions.get(qid)
+        // Only a tagged question needs the catalogue (for its unit title); T1-T3 and flagged do not.
+        if (q?.curriculum.unitId) subjects.add(q.curriculum.subject)
+      }
+    // A failed catalogue load must not break an attempt: warn and leave the topic empty.
+    return tagLookupFor(subjects).catch((error: unknown) => {
+      console.warn('[bijak] DSKP catalogue not loaded; question topics are left empty', error)
+      return tagLookup()
+    })
+  }
+
+  private buildView(a: Attempt, lookup: TagLookup): AttemptPaperView {
     let n = 0
     const numberOf = new Map<string, number>()
     for (const s of a.sections) for (const qid of s.questionIds) numberOf.set(qid, ++n)
@@ -477,7 +494,7 @@ export class BijakServer {
           id: q.id,
           number: numberOf.get(q.id)!,
           sectionId: s.id,
-          topic: studentTopicOf(q.curriculum, tagLookup()),
+          topic: studentTopicOf(q.curriculum, lookup),
           formOrigin: q.curriculum.formOrigin,
           ...(q.groupId ? { groupId: q.groupId } : {}),
           ...(q.groupId && BANK.groups.get(q.groupId)?.optionBank
@@ -525,7 +542,7 @@ export class BijakServer {
     await this.tick()
     this.sweep()
     const a = this.attemptOf(userId, attemptId)
-    return this.buildView(a)
+    return this.buildView(a, await this.lookupOf(a))
   }
 
   private allowedParts(a: Attempt): Set<string> {
@@ -832,7 +849,7 @@ export class BijakServer {
     this.sweep()
     const a = this.attemptOf(userId, attemptId)
     if (!a.result) throw new BijakError('not_submitted', 'Skema hanya didedahkan selepas Hantar')
-    const paper = this.buildView(a)
+    const paper = this.buildView(a, await this.lookupOf(a))
     paper.checks = []
     return { attempt: paper.attempt, result: a.result, paper }
   }

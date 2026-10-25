@@ -3,7 +3,7 @@
  * "[mana-mana n x 1 m]" groups, a match_letter question with a shared lettered bank, and two essay
  * questions marked by a teacher against a band rubric. Original practice wording; no real paper text.
  */
-import { Bank, curr, leaf } from './builders'
+import { Bank, untagged, leaf } from './builders'
 import type { PointDef, PointGroup } from '../domain/types'
 
 const fc = (id: string, code: 'F' | 'C', items: { label: string; anyOf: string[] }[]): PointDef[] =>
@@ -25,7 +25,7 @@ export function seedSejarahK2(bank: Bank): { setA: string[]; setB: string[] } {
   // Bahan 1: a short source shared by Q1 (a) and (b).
   bank.addQuestion({
     id: 'sej2-q1',
-    curriculum: curr('SEJ', 'Kemerdekaan Tanah Melayu', 3),
+    curriculum: untagged('SEJ'),
     stem: 'Bahan 1 menerangkan usaha rakyat sebelum negara merdeka. Berdasarkan Bahan 1,',
     parts: [
       leaf(
@@ -87,7 +87,7 @@ export function seedSejarahK2(bank: Bank): { setA: string[]; setB: string[] } {
   // Q2: three items share one lettered bank (match_letter).
   bank.addQuestion({
     id: 'sej2-q2',
-    curriculum: curr('SEJ', 'Kronologi sejarah negara', 2),
+    curriculum: untagged('SEJ'),
     stem: 'Padankan setiap peristiwa dengan tahun yang betul daripada Bahan 2.',
     parts: [
       leaf('sej2-q2-a', '(a)', 'Persekutuan Tanah Melayu ditubuhkan.', 1, 'match_letter'),
@@ -169,7 +169,7 @@ export function seedSejarahK2(bank: Bank): { setA: string[]; setB: string[] } {
   ] as const) {
     bank.addQuestion({
       id,
-      curriculum: curr('SEJ', 'Kemerdekaan Tanah Melayu', 4),
+      curriculum: untagged('SEJ'),
       stem,
       parts: [
         {
