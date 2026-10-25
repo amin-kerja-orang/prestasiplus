@@ -692,10 +692,12 @@ const PLAIN_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/
 const SPACED_UNIT = /^(.*?\d\.?)\s+(?!(?:dan|atau|and|or)\b)[^\d\s=<>+*/^()×÷.,;-].*$/
 
 /**
- * Whether a numeric-kind final answer is something the marker can read at all (FB-050): a number
- * (also `1.2E3`, `5.`, thousands spaces), a fraction, a list of numbers ("3, 5", "3 dan 5"), or any
- * of those followed by a unit ("12 cm", "RM12", "7 hari", "30 °C"). A blank field is not an error
- * ("belum dijawab" is counted elsewhere). Letters glued to the number ("68ab") are not readable.
+ * Whether a numeric-kind final answer looks like a number to the student-side check (FB-050): a
+ * number (also `1.2E3`, `5.`, thousands spaces), a fraction, a list of numbers ("3, 5", "3 dan 5"),
+ * or any of those followed by a unit ("12 cm", "RM12", "7 hari", "30 °C"). A blank field is not an
+ * error ("belum dijawab" is counted elsewhere). Letters glued to the number ("68ab") are not readable.
+ * This check is looser than the marker: `matchFinal` still returns `unparseable` for some shapes
+ * it accepts (`5.`, or `7 hari` on a leaf without a unit), and those answers go to a teacher.
  */
 export function isReadableNumber(raw: string): boolean {
   if (!raw.trim()) return true

@@ -6,8 +6,9 @@
  *  1. The tick "Pilih soalan ini untuk dijawab" is advisory and never changes a score (AC-06.3).
  *  2. Marking counts the best N *attempted* questions by marks (ties: the lower position).
  *  3. When fewer than N were attempted, the remaining slots go to ticked questions that are still
- *     blank, in paper order, so a chosen question is never listed as "Tidak dikira". They score 0,
- *     so the total does not change.
+ *     blank, in paper order, until N slots are filled. They score 0, so the total does not change.
+ *     A ticked blank question can still be "Tidak dikira" when the free slots run out first
+ *     (e.g. N=2, Q1 and Q2 ticked and blank, Q3 answered: Q3 and Q1 count, Q2 does not).
  *  4. Nothing attempted and nothing ticked: no question counts ("Soalan yang dikira: tiada").
  *  5. On the attempt screen, typing in a question below the cap ticks it (the counter then equals
  *     the number of questions the student is working on); above the cap the student is told that
