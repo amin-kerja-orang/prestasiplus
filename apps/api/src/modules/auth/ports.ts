@@ -1,5 +1,7 @@
-import { Injectable, Module } from '@nestjs/common'
+import { Injectable, Logger, Module } from '@nestjs/common'
 import type { RoleCode } from '@pp/contract'
+
+import { LOGIN_HOOK_TIMEOUT_MS } from './auth.constants'
 
 /**
  * What the login tells other modules after a PASSWORD login succeeded (M01 FR-M01-69, BR-26; M14 XR-M14-02(a)).
@@ -21,11 +23,13 @@ export interface LoginHook {
  * pattern): the gamification module calls `ports.provideLoginHook(...)` from its own `onModuleInit`. Until then
  * the login does nothing extra. Registering twice is a wiring error and throws.
  *
- * The hook is best effort: `AuthService` calls it AFTER the login committed, bounds its wait and swallows its
- * errors, so a failing or slow hook never fails or delays a login.
+ * The hook is best effort: every caller (`AuthService` form login, and the registration and password reset
+ * auto-login of the account module) calls `fireLoginHook` AFTER its transaction committed, so the wait is bounded
+ * and the errors are swallowed: a failing or slow hook never fails or delays the login, the registration or the reset.
  */
 @Injectable()
 export class AuthPorts {
+  private readonly logger = new Logger(AuthPorts.name)
   private hook: LoginHook | null = null
 
   get loginHook(): LoginHook | null {
@@ -35,6 +39,35 @@ export class AuthPorts {
   provideLoginHook(hook: LoginHook): void {
     if (this.hook) throw new Error('AuthPorts: the login hook is already set')
     this.hook = hook
+  }
+
+  /**
+   * FR-M01-69 / BR-26: tells the plugged-in hook once (M14 `onLogin`). Call it only after the transaction that issued the
+   * session committed (never inside it) and only when a session was actually issued. Never throws and never waits longer
+   * than `LOGIN_HOOK_TIMEOUT_MS`: the caller already succeeded and must not fail or stall because of it.
+   * The refreshed session endpoints (`/session/role`, `/session/mode`) are not logins and never call it.
+   */
+  async fireLoginHook(event: PasswordLoginEvent, requestId: string | null): Promise<void> {
+    const hook = this.hook
+    if (!hook) return
+    let timer: NodeJS.Timeout | undefined
+    try {
+      const run = hook.onPasswordLogin(event)
+      run.catch(() => undefined) // a late rejection after the timeout is already accounted for below
+      await Promise.race([
+        run,
+        new Promise<void>((resolve) => {
+          timer = setTimeout(() => {
+            this.logger.warn(`login hook timed out (requestId=${requestId ?? '-'})`)
+            resolve()
+          }, LOGIN_HOOK_TIMEOUT_MS)
+        }),
+      ])
+    } catch {
+      this.logger.warn(`login hook failed (requestId=${requestId ?? '-'})`)
+    } finally {
+      if (timer) clearTimeout(timer)
+    }
   }
 
   /** Test seam: replaces (or, with `null`, removes) the plugged login hook, like the `setUser` fast login that calls none. Never called by application code. */
