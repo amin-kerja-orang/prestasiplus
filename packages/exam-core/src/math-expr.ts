@@ -679,6 +679,14 @@ export function numericValue(raw: string): number | null {
   return stripped.unit ? numericOf(stripped.value) : null
 }
 
+/**
+ * A numeric-kind final answer the marker can read (FB-050): a number, a fraction, an optional unit or
+ * "RM". A blank field is not an error here ("belum dijawab" is counted elsewhere).
+ */
+export function isReadableNumber(raw: string): boolean {
+  return !raw.trim() || numericValue(raw) !== null
+}
+
 /* -------------------------------------------------------------------------------- units */
 
 export function normaliseUnit(u: string): string {
