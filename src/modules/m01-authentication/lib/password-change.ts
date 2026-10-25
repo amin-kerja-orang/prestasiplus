@@ -1,11 +1,10 @@
 /**
- * The password change and the session re-read that must follow it (AM2-A1, DV-26, DV-27).
+ * The password change and the session re-read that must follow it (SW8-02, DV-27).
  *
  * `PUT /api/me/password` always rotates the caller's session (new cookie, new CSRF token), so the
  * stored `pp.auth.csrf` is stale after it: the next write would fail with 403 `CSRF_INVALID` until a
- * reload. Both callers (the forced-change page and the S8 profile card) use this one helper, which
- * re-reads `GET /api/session` and stores it (http mode only; in the mock `getSession` is `null` and
- * the session is kept).
+ * reload. The S8 profile card uses this helper, which re-reads `GET /api/session` and stores it
+ * (http mode only; in the mock `getSession` is `null` and the session is kept).
  */
 
 import { useSessionStore } from '@/stores/session'

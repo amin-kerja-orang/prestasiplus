@@ -8,7 +8,7 @@
  * All ids are integers (§6). Success texts of the mutations are the UNVERIFIED COPY of SRS §8.
  */
 
-import { api, type ListResult } from '@/api'
+import { api, wireId, type EntityId, type ListResult } from '@/api'
 import { isHttpMode } from '@/api/mode'
 import type { Role, UserMe } from '@/modules/m01-authentication'
 
@@ -199,8 +199,8 @@ export interface AdminUserPackages {
 
 export interface AssignPackageRequest {
   formLevel: FormLevel
-  /** 1 for `t4`, 2 for `t5`. */
-  packageId: number
+  /** 1 for `t4`, 2 for `t5` (a string id in http mode). */
+  packageId: EntityId
   /** 1–2000. */
   studentQuota: number
 }
@@ -216,10 +216,10 @@ export interface AdminDefaults {
 }
 
 /** #1 `GET /api/admin/users`: 25 per page, newest first; `meta.roleCounts` = the S1 stat cards. */
-export function fetchAdminUsers(
+export async function fetchAdminUsers(
   query: AdminUserListQuery = {},
 ): Promise<ListResult<AdminUserListItem, AdminUserListMeta>> {
-  return api.list<AdminUserListItem, AdminUserListMeta>('/api/admin/users', {
+  const result = await api.list<AdminUserListItem, AdminUserListMeta>('/api/admin/users', {
     query: {
       role: query.role || null,
       schoolId: query.schoolId ?? null,
@@ -230,6 +230,7 @@ export function fetchAdminUsers(
     },
     ...(query.signal ? { signal: query.signal } : {}),
   })
+  return isHttpMode() ? { ...result, data: result.data.map(fromWireListItem) } : result
 }
 
 /** #2 `GET /api/admin/users/filters`: the schools with at least one user, by name (FR-M02-04). */
@@ -241,6 +242,15 @@ export async function fetchUserFilters(
     options.signal ? { signal: options.signal } : {},
   )
   return data.schools
+}
+
+/**
+ * http mode: a wire list row carries `roles[]` and no `role`; the screens use the single `role` (the first role,
+ * `unmapped` without one, as {@link fromWireDetail}). The ids stay the wire strings.
+ */
+function fromWireListItem(wire: AdminUserListItem): AdminUserListItem {
+  const roles = (wire as AdminUserListItem & { roles?: Role[] }).roles
+  return { ...wire, role: roles?.[0] ?? 'unmapped' }
 }
 
 /**
@@ -271,8 +281,6 @@ export function rolesAfterEdit(original: readonly Role[], role: Role): Role[] {
     (r) => r !== 'student' && r !== 'admin',
   )
 }
-
-const wireId = (id: string | number): string => String(id)
 
 /** #3 `GET /api/admin/users/:id` (404 for an unknown id). */
 export async function fetchAdminUser(
@@ -347,10 +355,11 @@ export function deleteAdminUser(id: number): Promise<UserMutation<{ deleted: num
 
 /** #7 `POST /api/admin/users/bulk-delete` (422 for no ids or the admin's own id). */
 export function bulkDeleteAdminUsers(
-  ids: readonly number[],
+  ids: readonly EntityId[],
 ): Promise<UserMutation<{ deleted: number }>> {
+  // Contract `BulkDeleteRequestSchema`: `ids` are strings (SWX-2): never leave a number in the body in http mode.
   return api.post<UserMutation<{ deleted: number }>>('/api/admin/users/bulk-delete', {
-    body: { ids },
+    body: { ids: ids.map(wireId) },
     raw: true,
   })
 }
@@ -388,7 +397,8 @@ export function assignUserPackage(
   request: AssignPackageRequest,
 ): Promise<UserMutation<SchoolAdminPackage>> {
   return api.post<UserMutation<SchoolAdminPackage>>(`/api/admin/users/${String(id)}/packages`, {
-    body: request,
+    // Contract `SchoolPackageAssignRequestSchema`: `packageId` is a string (SWX-2).
+    body: { ...request, packageId: wireId(request.packageId) },
     raw: true,
   })
 }
@@ -412,6 +422,10 @@ export function searchStudents(
  * no http-mode code path may call this.
  */
 export function fetchAdminDefaults(options: { signal?: AbortSignal } = {}): Promise<AdminDefaults> {
+  // SWEEP-23OCT A5: the real API has no such route (and must not hand out default passwords), so http mode
+  // never fires the request; callers already treat a failure as "no defaults" (empty value / placeholder).
+  if (isHttpMode())
+    return Promise.reject(new Error('Tiada kata laluan lalai dalam mod API sebenar.'))
   return api.get<AdminDefaults>(
     '/api/admin/config/defaults',
     options.signal ? { signal: options.signal } : {},

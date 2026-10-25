@@ -2,6 +2,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createHttpTransport } from '@/api/http-transport'
+import { storedCsrfToken } from '@/stores/http-session'
 import { useSessionStore } from '@/stores/session'
 
 import type { ClientSession } from '../../api'
@@ -44,7 +46,7 @@ beforeEach(() => {
   apiMocks.getSession.mockReset()
 })
 
-describe('changePasswordAndRefresh (DV-26, DV-27)', () => {
+describe('changePasswordAndRefresh (DV-27)', () => {
   it('stores the re-read session (rotated CSRF) after the change', async () => {
     apiMocks.changePassword.mockResolvedValue('ok')
     apiMocks.getSession.mockResolvedValue(FRESH)
@@ -53,6 +55,29 @@ describe('changePasswordAndRefresh (DV-26, DV-27)', () => {
       refreshed: true,
     })
     expect(useSessionStore().auth?.csrf).toBe('csrf-new')
+  })
+
+  it('sends the new CSRF token on the next write through the HTTP transport', async () => {
+    apiMocks.changePassword.mockResolvedValue('ok')
+    apiMocks.getSession.mockResolvedValue(FRESH)
+    const fetchStub = vi.fn<typeof fetch>(() =>
+      Promise.resolve(new Response(null, { status: 204 })),
+    )
+    const transport = createHttpTransport({
+      fetch: fetchStub,
+      csrfToken: storedCsrfToken,
+      sendAuthorization: false,
+    })
+    const write = { method: 'PUT' as const, url: '/api/me', headers: {}, body: {} }
+
+    await transport.request(write)
+    await changePasswordAndRefresh(REQUEST)
+    await transport.request(write)
+
+    const sent = fetchStub.mock.calls.map(([, init]) =>
+      new Headers(init?.headers).get('x-csrf-token'),
+    )
+    expect(sent).toEqual(['csrf-old', 'csrf-new'])
   })
 
   it('keeps the session when there is nothing to re-read (mock mode)', async () => {

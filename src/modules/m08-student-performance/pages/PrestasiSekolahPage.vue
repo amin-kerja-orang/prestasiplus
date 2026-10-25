@@ -8,6 +8,7 @@
 import { computed } from 'vue'
 
 import { DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
+import { useSessionStore } from '@/stores/session'
 
 import { fetchSchoolPerformance } from '../api/performance'
 import GpsCard from '../components/prestasi/GpsCard.vue'
@@ -15,6 +16,7 @@ import GpsTrendCard from '../components/prestasi/GpsTrendCard.vue'
 import GradeDistribution from '../components/prestasi/GradeDistribution.vue'
 import LevelAndTeachers from '../components/prestasi/LevelAndTeachers.vue'
 import SubjectGpsTable from '../components/prestasi/SubjectGpsTable.vue'
+import { canOpenHeadcount } from '../lib/headcount-access'
 import { usePhIcon } from '../lib/icons'
 import { grouped, pct1, plain } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
@@ -25,6 +27,7 @@ const statItems = useStatItems()
 const { data, error, reload } = useRouteData((signal) => fetchSchoolPerformance({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
 const icon = usePhIcon()
+const session = useSessionStore()
 
 const cards = computed<StatSpec[]>(() => {
   const s = data.value?.stats
@@ -40,6 +43,7 @@ const cards = computed<StatSpec[]>(() => {
   ]
 })
 
+// "Headcount" is teacher tooling: pelajar (and any role the route refuses) would only reach the 403 page.
 const quickNav = computed(() => [
   {
     to: '/prestasi/tingkatan',
@@ -48,8 +52,13 @@ const quickNav = computed(() => [
   },
   { to: '/prestasi/kelas', label: '📊 Dashboard Kelas', icon: icon.value('chart-bar') },
   { to: '/headcount', label: '📈 Headcount', icon: icon.value('chart-line-up') },
-  { to: '/analisa-item/sekolah', label: '🔬 Analisa Item', icon: icon.value('list-numbers') },
-])
+  {
+    // The id-less S9 is the viewer's own school and refuses the admin, who has none (SW5-15, DV-M08-50).
+    to: session.role === 'admin' ? '/analisa-item/kelas' : '/analisa-item/sekolah',
+    label: '🔬 Analisa Item',
+    icon: icon.value('list-numbers'),
+  },
+].filter((n) => n.to !== '/headcount' || canOpenHeadcount(session.role)))
 </script>
 
 <template>

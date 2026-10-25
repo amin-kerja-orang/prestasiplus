@@ -7,6 +7,7 @@ import type { Router } from 'vue-router'
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
+import { COPY } from '../../components/soalan/lib'
 import SumbangSoalanPage from '../../pages/SumbangSoalanPage.vue'
 import { listMeta, makeRouter, question, summary } from './fixtures'
 import { pickFiles } from './pick-file'
@@ -19,6 +20,8 @@ const guru = vi.hoisted(() => ({
   downloadQuestionTemplate: vi.fn(),
 }))
 vi.mock('../../api/guru', () => guru)
+const sessionMock = vi.hoisted((): { role: string | null } => ({ role: 'teacher' }))
+vi.mock('@/stores/session', () => ({ useSessionStore: () => sessionMock }))
 const saveBlob = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/save-blob', () => ({ saveBlob }))
 
@@ -36,6 +39,7 @@ const all = (w: VueWrapper, id: string) => w.findAll(`[data-testid="${id}"]`)
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  sessionMock.role = 'teacher'
   router = makeRouter()
   guru.fetchContributions.mockResolvedValue(summary())
   guru.fetchContributedQuestions.mockResolvedValue({
@@ -83,8 +87,25 @@ describe('S21 Sumbang Soalan', () => {
     const ai = t(w, 'ai-card')
     expect(ai.text()).toContain('AI Auto-Generate Soalan')
     expect(ai.find('a, button, form').exists()).toBe(false)
-    expect(t(w, 'audio-create').attributes('href')).toBe('/guru/audio-kbat/create')
-    expect(t(w, 'audio-list').attributes('href')).toBe('/guru/audio-kbat')
+    expect(t(w, 'audio-template-xlsx').attributes('href')).toBe('/api/guru/audio-kbat/template')
+    expect(t(w, 'audio-template-word').attributes('href')).toBe(
+      '/api/guru/audio-kbat/template-word',
+    )
+  })
+
+  it('does not link a teacher to the missing /guru/audio-kbat* screens (DV-M10-36)', async () => {
+    sessionMock.role = 'teacher'
+    const w = await mountPage()
+    expect(t(w, 'audio-create').exists()).toBe(false)
+    expect(t(w, 'audio-list').exists()).toBe(false)
+    expect(w.html()).not.toContain('href="/guru/audio-kbat')
+  })
+
+  it('sends the admin to the M09 admin Audio KBAT screens', async () => {
+    sessionMock.role = 'admin'
+    const w = await mountPage()
+    expect(t(w, 'audio-create').attributes('href')).toBe('/admin/audio-kbat/create')
+    expect(t(w, 'audio-list').attributes('href')).toBe('/admin/audio-kbat')
   })
 
   it('lists the cards, toggles one open and links Edit', async () => {
@@ -142,6 +163,26 @@ describe('S21 Sumbang Soalan', () => {
     await t(w, 'question-delete').trigger('click')
     await flushPromises()
     expect(t(w, 'soalan-delete-error').text()).toContain('Rekod tidak dijumpai.')
+  })
+
+  it('shows the save-failed text when a delete fails with a 500 or a lost connection (SWE-09)', async () => {
+    for (const error of [
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }),
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Not Found.' }),
+    ]) {
+      const w = await mountPage()
+      await all(w, 'question-toggle')[0]!.trigger('click')
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      guru.deleteContributedQuestion.mockRejectedValueOnce(error)
+      await t(w, 'question-delete').trigger('click')
+      await flushPromises()
+      expect(t(w, 'soalan-delete-error').text()).toContain(COPY.saveFailed)
+      expect(t(w, 'soalan-delete-error').text()).not.toMatch(
+        /Server Error|Failed to fetch|Not Found/,
+      )
+      w.unmount()
+    }
   })
 
   it('requests the page from ?page= and renders the pager', async () => {

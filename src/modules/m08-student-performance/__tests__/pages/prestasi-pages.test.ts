@@ -8,6 +8,7 @@ import USelect from '@nuxt/ui/components/Select.vue'
 
 import { ApiError } from '@/api'
 import { useRouteOutcome } from '@/app/router'
+import { useSessionStore } from '@/stores/session'
 import { setRouteOutcome } from '@/app/router/outcome'
 
 import type {
@@ -141,6 +142,31 @@ async function render(component: object, path: string, route = path.replace(/\?.
   return wrapper
 }
 
+/** Signs a user of this role in the active pinia (the S1 / S4 pages read the role). */
+function signInAs(role: 'student' | 'teacher' | 'admin' | 'school_admin'): void {
+  useSessionStore().setSession({
+    token: 't',
+    remember: false,
+    expiresAt: '2099-01-01T00:00:00+08:00',
+    user: {
+      id: 1,
+      name: 'Pengguna Contoh',
+      email: 'u@demo.test',
+      phone: null,
+      role,
+      grade: null,
+      schoolId: null,
+      bio: null,
+      avatarUrl: null,
+      createdAt: '2026-01-01T00:00:00+08:00',
+      updatedAt: '2026-01-01T00:00:00+08:00',
+      lastLoginAt: null,
+      school: null,
+      landingPath: '/',
+    },
+  })
+}
+
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid=${id}]`)
 /** The table row (or card) that holds the element with this test id. */
 const tr = (w: VueWrapper, id: string) =>
@@ -157,6 +183,19 @@ afterEach(() => {
 })
 
 describe('S1 PrestasiSekolahPage', () => {
+  it('"Navigasi Pantas" has no Headcount link for a pelajar (403 page there, D2), but has it for staff', async () => {
+    api.fetchSchoolPerformance.mockResolvedValue(S1)
+    signInAs('student')
+    let w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
+    let hrefs = w.findAll('[data-testid=quick-nav] a').map((a) => a.attributes('href'))
+    expect(hrefs).toEqual(['/prestasi/tingkatan', '/prestasi/kelas', '/analisa-item/sekolah'])
+    w.unmount()
+    signInAs('teacher')
+    w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
+    hrefs = w.findAll('[data-testid=quick-nav] a').map((a) => a.attributes('href'))
+    expect(hrefs).toContain('/headcount')
+  })
+
   it('shows the stat cards, with only "Soalan Dijawab" grouped and the accuracy to 1 decimal', async () => {
     api.fetchSchoolPerformance.mockResolvedValue(S1)
     const w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
@@ -208,6 +247,29 @@ describe('S1 PrestasiSekolahPage', () => {
     expect(tr(w, 'trend-row-2026').text()).toContain('Semasa')
     expect(tr(w, 'trend-row-2026').text()).toContain('Tiada data')
   })
+
+  it.each([
+    ['admin', '/analisa-item/kelas'],
+    ['teacher', '/analisa-item/sekolah'],
+    ['school_admin', '/analisa-item/sekolah'],
+    ['student', '/analisa-item/sekolah'],
+  ] as const)(
+    'the "Analisa Item" quick link for %s goes to %s (the admin has no own school, SW5-15)',
+    async (role, href) => {
+      useSessionStore().setSession({
+        token: 't',
+        remember: false,
+        expiresAt: '2099-01-01T00:00:00+08:00',
+        user: { id: 2, role, landingPath: '/dashboard' } as never,
+      })
+      api.fetchSchoolPerformance.mockResolvedValue(S1)
+      const w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
+      const link = w
+        .findAll('[data-testid=quick-nav] a')
+        .find((a) => a.text().includes('Analisa Item'))
+      expect(link?.attributes('href')).toBe(href)
+    },
+  )
 
   it('shows the load-error box with a retry button', async () => {
     api.fetchSchoolPerformance.mockRejectedValue(
@@ -301,11 +363,26 @@ describe('S3 TingkatanPage', () => {
 })
 
 describe('S4 PrestasiKelasPilihPage', () => {
-  it('shows the observed empty state with the "Cipta Kelas" link', async () => {
+  it('shows the observed empty state with the "Cipta Kelas" link to a teacher and the admin', async () => {
+    for (const role of ['teacher', 'admin'] as const) {
+      signInAs(role)
+      api.fetchOwnClasses.mockResolvedValue([])
+      const w = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
+      expect(t(w, 'kelas-empty').text()).toContain('Anda belum mempunyai kelas aktif.')
+      expect(t(w, 'kelas-empty').text()).toContain('Cipta kelas terlebih dahulu')
+      expect(t(w, 'kelas-create').attributes('href')).toBe('/guru/kelas/cipta')
+      w.unmount()
+    }
+  })
+
+  it('shows a pelajar the empty state without the teacher copy and the dead "Cipta Kelas" button (D5)', async () => {
+    signInAs('student')
     api.fetchOwnClasses.mockResolvedValue([])
     const w = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
     expect(t(w, 'kelas-empty').text()).toContain('Anda belum mempunyai kelas aktif.')
-    expect(t(w, 'kelas-create').attributes('href')).toBe('/guru/kelas/cipta')
+    expect(t(w, 'kelas-empty').text()).not.toContain('Cipta')
+    expect(w.find('[data-testid=kelas-create]').exists()).toBe(false)
+    expect(w.find('a[href="/guru/kelas/cipta"]').exists()).toBe(false)
   })
 
   it('lists active classes as cards linking to the class dashboard', async () => {
@@ -457,6 +534,24 @@ describe('S9 AnalisaItemSekolahPage', () => {
     )
     expect(t(w, 'school-empty').text()).toContain('Tiada Data Pelajar')
     expect(t(w, 'school-empty').text()).not.toContain('latihan.')
+  })
+
+  it('a viewer without a school (not the admin, whom the route refuses): the own-school 404 is the "Tiada Data Pelajar" state, not the 404 page (A6, DV-M08-41)', async () => {
+    api.fetchSchoolItemAnalysis.mockRejectedValue(
+      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),
+    )
+    const w = await render(AnalisaItemSekolahPage, '/analisa-item/sekolah')
+    expect(useRouteOutcome().value).toBe(null)
+    expect(t(w, 'school-empty').text()).toContain('Tiada Data Pelajar')
+    expect(w.find('[data-testid=page-error]').exists()).toBe(false)
+  })
+
+  it('an unknown school {id} that the API reports as 404 stays the 404 page', async () => {
+    api.fetchSchoolItemAnalysis.mockRejectedValue(
+      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),
+    )
+    await render(AnalisaItemSekolahPage, '/analisa-item/sekolah/5', '/analisa-item/sekolah/:id')
+    expect(useRouteOutcome().value).toBe(404)
   })
 
   it('an unknown tingkatan value activates no chip and sends no filter', async () => {

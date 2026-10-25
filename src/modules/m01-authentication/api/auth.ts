@@ -84,10 +84,10 @@ export async function register(request: RegisterRequest): Promise<RegisterResult
 
 /**
  * `GET /api/session` (real API only; contract `Session`): the session the cookie now belongs to.
- * The forced password change needs it because `PUT /api/me/password` rotates the session, so the CSRF
- * token changes. Resolves to `null` only outside http mode (the mock session needs no refresh). In http
- * mode a 200 body that is not the API session throws, as does any API error (a 401 is also handled by
- * the 401 policy), so the caller's failure path runs.
+ * The profile password change needs it because `PUT /api/me/password` rotates the session, so the
+ * CSRF token changes (DV-27). Resolves to `null` only outside http mode (the mock session needs no refresh). In
+ * http mode a 200 body that is not the API session throws, as does any API error (a 401 is also
+ * handled by the 401 policy), so the caller's failure path runs.
  */
 export async function getSession(remember: boolean): Promise<ClientSession | null> {
   if (!isHttpMode()) return null
@@ -108,10 +108,14 @@ export async function sendPasswordResetLink(email: string): Promise<string> {
 export async function resetPassword(
   request: ResetPasswordRequest,
 ): Promise<{ session: ClientSession; status: string }> {
-  const { status, ...payload } = await api.post<ResetPasswordPayload>('/api/auth/password/reset', {
-    body: request,
-  })
-  return { session: toClientSession(payload, false), status }
+  // `raw`: the real API answers `{data: Session, status}`, and the client would unwrap that to
+  // `data` and drop `status` (SW8-07). The mock answers `{data: {...session, status}}`; both work.
+  const body = await api.post<{ data: ResetPasswordPayload; status?: string }>(
+    '/api/auth/password/reset',
+    { body: request, raw: true },
+  )
+  const { status: inner, ...payload } = body.data
+  return { session: toClientSession(payload, false), status: body.status ?? inner ?? '' }
 }
 
 /** #5 `POST /api/auth/password/reset-ic`: the broker token, then S4 (`FR-M01-35`). */

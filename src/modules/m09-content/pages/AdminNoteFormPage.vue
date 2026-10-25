@@ -8,7 +8,8 @@
  *   in a sticky action bar.
  * - The three selects have the "Pilih ..." placeholder on create only (FR-M09-46).
  * - 422: the field messages show under the fields and the input is kept. Success queues the flash and returns
- *   to S5. An unknown id returns to S5 with no flash (FR-M09-44).
+ *   to S5. An unknown id returns to S5 with the one-time flash "Nota tidak dijumpai.", like articles and
+ *   banners (DV-M09-25; live has no note edit form, and the earlier no-flash redirect was inconsistent).
  */
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -96,8 +97,9 @@ watch(
   { immediate: true },
 )
 
-/** FR-M09-44: an unknown note returns to S5 with no flash. */
+/** DV-M09-25: an unknown note returns to S5 with the one-time error flash (as FR-M09-10 for articles). */
 function backToList(): void {
+  flash.error(COPY.noteNotFound)
   void router.replace(NOTES_LIST_PATH)
 }
 

@@ -24,6 +24,7 @@ import {
   DsStatusBadge,
   DsTag,
   DsThumb,
+  statusMap,
   useConfirm,
 } from '@/ds'
 import type { CardField, RowAction, StatItem } from '@/ds'
@@ -96,6 +97,7 @@ interface TableRow extends Record<string, unknown> {
   displayOrder: number
   start: string
   end: string
+  activeText: string
   raw: AdminBanner
 }
 
@@ -109,6 +111,8 @@ const tableRows = computed<TableRow[]>(() =>
     displayOrder: b.displayOrder,
     start: dmy(b.startDate),
     end: dmy(b.endDate),
+    // The same word as the table's "Aktif?" cell (DsStatusBadge), for the card list below md.
+    activeText: statusMap[b.isActive ? 'active' : 'inactive'].word,
     raw: b,
   })),
 )
@@ -128,6 +132,7 @@ const cardFields: CardField[] = [
   { key: 'targetAudience', label: 'Sasaran' },
   { key: 'start', label: 'Mula' },
   { key: 'end', label: 'Tamat' },
+  { key: 'activeText', label: 'Aktif?' },
 ]
 </script>
 

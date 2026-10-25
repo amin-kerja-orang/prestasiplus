@@ -52,8 +52,28 @@ describe('users-format (BR-M27-36, 39)', () => {
     })
     expect(errorLines(fields)).toEqual(['Nama diperlukan.', 'Emel diperlukan.'])
     expect(
-      errorLines(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' })),
-    ).toEqual(['Ralat pelayan.'])
+      errorLines(new ApiError({ status: 409, code: 'CONFLICT', message: 'Emel sudah digunakan.' })),
+    ).toEqual(['Emel sudah digunakan.'])
     expect(errorLines(new Error('boom'))).toEqual([GENERIC_ERROR])
+  })
+
+  it('shows the generic BM line for a 5xx, a transport text and the API generic English defaults (SWE)', () => {
+    const fail = (status: number, message: string) =>
+      new ApiError({ status, code: 'X', message })
+    expect(errorLines(fail(500, 'Server Error'))).toEqual([GENERIC_ERROR])
+    expect(errorLines(fail(503, 'Ralat pelayan.'))).toEqual([GENERIC_ERROR])
+    expect(errorLines(fail(0, 'Failed to fetch'))).toEqual([GENERIC_ERROR])
+    expect(errorLines(fail(502, 'HTTP 502'))).toEqual([GENERIC_ERROR])
+    for (const text of [
+      'Not Found.',
+      'This action is unauthorized.',
+      'Unauthenticated.',
+      'Conflict.',
+      'The given data was invalid.',
+      'Payload Too Large.',
+    ]) {
+      expect(errorLines(fail(404, text))).toEqual([GENERIC_ERROR])
+    }
+    expect(errorLines(fail(404, 'Pelajar tidak dijumpai.'))).toEqual(['Pelajar tidak dijumpai.'])
   })
 })

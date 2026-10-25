@@ -238,9 +238,10 @@ describe('loading state', () => {
 })
 
 describe('error states', () => {
-  it('shows the server message with a retry that fetches again; the toolbar is hidden', async () => {
-    const w = await mountPage(apiError(500, 'SERVER_ERROR', 'Ralat pelayan.'))
-    expect(text(w, 'rk-error')).toContain('Ralat pelayan.')
+  it('shows the generic BM line with a retry that fetches again; the toolbar is hidden', async () => {
+    const w = await mountPage(apiError(500, 'SERVER_ERROR', 'Internal server error'))
+    expect(text(w, 'rk-error')).toContain('Ralat berlaku. Sila cuba lagi.')
+    expect(text(w, 'rk-error')).not.toContain('Internal server error')
     expect(has(w, 'rk-toolbar')).toBe(false)
     api.fetchAmaranSummary.mockResolvedValue(summary())
     const retry = w.get('[data-testid="rk-error"] button')
@@ -253,6 +254,11 @@ describe('error states', () => {
   it('falls back to the generic text for a bare HTTP message', async () => {
     const w = await mountPage(apiError(500, 'SERVER_ERROR', 'HTTP 500'))
     expect(text(w, 'rk-error')).toContain('Ralat berlaku. Sila cuba lagi.')
+  })
+
+  it('shows the BM rate-limit line on a 429', async () => {
+    const w = await mountPage(apiError(429, 'RATE_LIMITED', 'Too Many Attempts.'))
+    expect(text(w, 'rk-error')).toContain('Terlalu banyak percubaan. Cuba sebentar lagi.')
   })
 
   it('renders the global 403 in place for a 403', async () => {
@@ -375,13 +381,14 @@ describe('roles', () => {
     ])
   })
 
-  it('admin: 403 and 404 render the global pages in place, 422 the load error with the server message', async () => {
+  it('admin: 403 and 404 render the global pages in place, 422 the load error with the generic BM line', async () => {
     session.role = 'admin'
     await mountPage(apiError(403, 'FORBIDDEN', 'x'))
     expect(useRouteOutcome().value).toBe(403)
     setRouteOutcome(null)
     const w = await mountPage(apiError(422, 'VALIDATION_ERROR', 'The state is required.'), '/amaran/ringkasan-eksekutif?scope=state')
-    expect(text(w, 'rk-error')).toContain('The state is required.')
+    expect(text(w, 'rk-error')).toContain('Ralat berlaku. Sila cuba lagi.')
+    expect(text(w, 'rk-error')).not.toContain('The state is required.')
     expect(useRouteOutcome().value).toBeNull()
   })
 })

@@ -1567,3 +1567,50 @@ describe('seeds and hooks (SRS §6.11, §6.12)', () => {
     expect(() => m10Hooks.enrol(4, '')).toThrow(TypeError)
   })
 })
+
+describe('SW5-03 #15 classes: [{id, name}] next to classNames', () => {
+  type Row = { id: number; classNames: string[]; classes: { id: number; name: string }[] }
+  type Rows = { data: Row[] }
+
+  it('lists the ids of the own classes in the order of classNames, for both tabs', async () => {
+    const mine = await call<Rows>('GET', '/api/guru/students')
+    for (const row of mine.body.data) {
+      expect(row.classes.map((c) => c.name)).toEqual(row.classNames)
+      for (const c of row.classes) expect(classrooms.get('classroom', c.id)?.name).toBe(c.name)
+    }
+    const school = await call<Rows>('GET', '/api/guru/students?tab=school')
+    expect(school.body.data.length).toBeGreaterThan(0)
+    for (const row of school.body.data)
+      expect(row.classes.map((c) => c.name)).toEqual(row.classNames)
+  })
+
+  it('two own classes with the same name give two entries with distinct ids', async () => {
+    const ids: number[] = []
+    for (const level of ['tahun-3', 'tahun-4']) {
+      const made = await call<Data<{ id: number }>>('POST', '/api/guru/classes', {
+        body: { name: 'Kelas Kembar', subjectId: 1, educationLevel: level },
+      })
+      expect(made.status).toBe(201)
+      ids.push(made.body.data.id)
+      const put = await call('PUT', `/api/guru/students/${String(PELAJAR)}`, {
+        body: { classroomId: made.body.data.id },
+      })
+      expect(put.status).toBe(200)
+    }
+    expect(new Set(ids).size).toBe(2)
+    const row = (await call<Rows>('GET', '/api/guru/students')).body.data.find(
+      (s) => s.id === PELAJAR,
+    )
+    // the pupil may have other own classes from earlier tests; the two twins are the ones named so
+    const twins = row?.classes.filter((c) => c.name === 'Kelas Kembar') ?? []
+    expect(twins).toHaveLength(2)
+    expect(new Set(twins.map((c) => c.id))).toEqual(new Set(ids))
+    expect(row?.classNames.filter((n) => n === 'Kelas Kembar')).toHaveLength(2)
+    expect(row?.classes.map((c) => c.name)).toEqual(row?.classNames)
+    const school = (await call<Rows>('GET', '/api/guru/students?tab=school')).body.data.find(
+      (s) => s.id === PELAJAR,
+    )
+    expect(school?.classes).toEqual(row?.classes)
+    for (const id of ids) classrooms.unenrol('classroom', id, PELAJAR)
+  })
+})

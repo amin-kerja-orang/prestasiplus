@@ -379,6 +379,71 @@ describe('VideoFormPage (S20 add)', () => {
     expect(radios[1]?.description).toBe('SMK DEMO')
   })
 
+  describe('visibility in http mode (SW12-05, DV-M09-23)', () => {
+    const values = (w: VueWrapper) =>
+      (visibility(w).props('items') as { value: string }[]).map((o) => o.value)
+
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    it('a pupil defaults to "Sekolah Saya", has no "Semua Pengguna" and posts school', async () => {
+      vi.stubEnv('VITE_API_MODE', 'http')
+      login('student')
+      api.fetchVideoFormContext.mockResolvedValue({
+        uploader: { name: 'Pelajar Demo', initial: 'P', roleLabel: 'student' },
+        school: { id: 900001, name: 'SMK DEMO' },
+      })
+      api.createVideo.mockResolvedValue({
+        data: detail(2261),
+        status: 'Video berjaya diterbitkan.',
+      })
+      const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
+      expect(values(w)).toEqual(['school'])
+      expect(visibility(w).props('modelValue')).toBe('school')
+      await t(w, 'video-url').setValue('https://youtu.be/abc123XYZ00')
+      await t(w, 'video-title-input').setValue('Tajuk')
+      category(w).vm.$emit('update:modelValue', 'tutorial')
+      await flushPromises()
+      await t(w, 'video-form').trigger('submit')
+      await flushPromises()
+      expect(api.createVideo).toHaveBeenCalledWith(
+        expect.objectContaining({ visibility: 'school' }),
+      )
+    })
+
+    it('a pupil without a school keeps "school" selected (never flipped to global)', async () => {
+      vi.stubEnv('VITE_API_MODE', 'http')
+      login('student')
+      const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
+      expect(values(w)).toEqual(['school'])
+      expect(visibility(w).props('modelValue')).toBe('school')
+    })
+
+    it.each(['admin', 'teacher'] as const)(
+      '%s keeps both options and the global default',
+      async (role) => {
+        vi.stubEnv('VITE_API_MODE', 'http')
+        useSessionStore().setSession({
+          token: 't',
+          remember: false,
+          expiresAt: '2099-01-01T00:00:00+08:00',
+          user: { id: 2, role, landingPath: '/dashboard' } as never,
+        })
+        const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
+        expect(values(w)).toEqual(['global', 'school'])
+        expect(visibility(w).props('modelValue')).toBe('global')
+      },
+    )
+
+    it('mock mode keeps the live two-option form for a pupil', async () => {
+      login('student')
+      const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
+      expect(values(w)).toEqual(['global', 'school'])
+      expect(visibility(w).props('modelValue')).toBe('global')
+    })
+  })
+
   it('detects the platform 500 ms after the last input and shows nothing for other URLs', async () => {
     login()
     const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
@@ -423,6 +488,53 @@ describe('VideoFormPage (S20 add)', () => {
       visibility: 'global',
     })
     expect(router.currentRoute.value.path).toBe('/video')
+  })
+
+  describe('subject id on the wire (SWX-03, DV-M09-26)', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    async function submitWith(subjectValue: string | null) {
+      login('admin')
+      api.createVideo.mockResolvedValue({
+        data: detail(2261),
+        status: 'Video berjaya diterbitkan.',
+      })
+      const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
+      await t(w, 'video-url').setValue('https://youtu.be/abc123XYZ00')
+      await t(w, 'video-title-input').setValue('Tajuk baru')
+      category(w).vm.$emit('update:modelValue', 'tutorial')
+      if (subjectValue !== null) subject(w).vm.$emit('update:modelValue', subjectValue)
+      await flushPromises()
+      await t(w, 'video-form').trigger('submit')
+      await flushPromises()
+      return api.createVideo.mock.calls[0]?.[0] as { subjectId?: unknown }
+    }
+
+    it('http mode sends the chosen subject as a string', async () => {
+      vi.stubEnv('VITE_API_MODE', 'http')
+      expect((await submitWith('3')).subjectId).toBe('3')
+    })
+
+    it('http mode keeps string ids from the API unchanged (no numeric round trip)', async () => {
+      vi.stubEnv('VITE_API_MODE', 'http')
+      media.fetchSubjectOptions.mockResolvedValue({
+        data: [{ id: '12', name: 'Sains' }],
+      })
+      expect((await submitWith('12')).subjectId).toBe('12')
+    })
+
+    it('mock mode still sends the numeric id the mock expects', async () => {
+      expect((await submitWith('3')).subjectId).toBe(3)
+    })
+
+    it('"Tiada subjek" sends null in both modes', async () => {
+      expect((await submitWith('none')).subjectId).toBeNull()
+      api.createVideo.mockReset()
+      vi.stubEnv('VITE_API_MODE', 'http')
+      expect((await submitWith('none')).subjectId).toBeNull()
+    })
   })
 
   it('shows 422 field messages and stays on the form', async () => {
@@ -479,6 +591,27 @@ describe('VideoFormPage (S19 edit)', () => {
       expect.objectContaining({ title: 'Tajuk lain', subjectId: 5, category: 'ceramah' }),
     )
     expect(router.currentRoute.value.path).toBe('/video/2224')
+  })
+
+  it('http mode: editing a video that has a subject sends that subject as a string', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    try {
+      login('admin')
+      editApi.fetchVideoForEdit.mockResolvedValue(
+        detail(2224, { subject: { id: 5, name: 'Sejarah' } }),
+      )
+      api.updateVideo.mockResolvedValue({
+        data: detail(2224),
+        status: 'Video berjaya dikemaskini.',
+      })
+      const w = await mountAt(VideoFormPage, '/page', { mode: 'edit', id: 2224 })
+      expect(subject(w).props('modelValue')).toBe('5')
+      await t(w, 'video-form').trigger('submit')
+      await flushPromises()
+      expect(api.updateVideo.mock.calls[0]?.[1]).toMatchObject({ subjectId: '5' })
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('sends a user who cannot manage the video to their landing page', async () => {

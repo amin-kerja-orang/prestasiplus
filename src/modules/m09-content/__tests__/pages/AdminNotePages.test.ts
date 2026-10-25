@@ -89,6 +89,16 @@ async function mountAt(
   return wrapper
 }
 
+/** Below `md` (matches: false) DsDataTable renders the card list instead of the table. */
+function stubNarrowViewport(): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: false,
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+  }))
+}
+
 function t(w: VueWrapper, id: string) {
   return w.get(`[data-testid=${id}]`)
 }
@@ -120,6 +130,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllGlobals()
   confirmSpy.mockRestore()
   wrapper?.unmount()
   wrapper = null
@@ -151,6 +162,19 @@ describe('AdminNoteListPage (M09 S5)', () => {
     expect(rows[1]!.find('[data-testid=note-views]').text()).toBe('3 tontonan')
     expect(rows[1]!.find('[data-testid=note-downloads]').text()).toBe('2 muat turun')
     expect(rows[1]!.find('[data-testid=status-pill]').text()).toBe('Draf')
+  })
+
+  it('shows the status on each card below md (SW12-06, DV-M09-24)', async () => {
+    stubNarrowViewport()
+    const w = await mountAt(AdminNoteListPage, '/admin/notes')
+    const cards = w.findAll('[data-ds=data-table-cards] > li')
+    expect(cards).toHaveLength(2)
+    const status = (i: number) =>
+      cards[i]!.findAll('dl > div')
+        .map((d) => d.text())
+        .find((x) => x.startsWith('Status'))
+    expect(status(0)).toBe('StatusDiterbitkan')
+    expect(status(1)).toBe('StatusDraf')
   })
 
   it('has the filter options with the live labels (DV-M09-06)', async () => {
@@ -320,7 +344,7 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
     expect(t(w, 'form-submit').text()).toBe('Kemaskini Nota')
   })
 
-  it('edit: PUTs and returns to the list; an unknown id returns WITHOUT a flash', async () => {
+  it('edit: PUTs and returns to the list; an unknown id returns WITH the "Nota tidak dijumpai." flash (DV-M09-25)', async () => {
     api.updateAdminNote.mockResolvedValue({ data: NOTE, status: 'Nota berjaya dikemaskini.' })
     const w = await mountAt(AdminNoteFormPage, '/form', { mode: 'edit', id: '1' })
     await t(w, 'admin-note-form').trigger('submit')
@@ -338,7 +362,17 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
     )
     await mountAt(AdminNoteFormPage, '/form', { mode: 'edit', id: '9999' })
     expect(router.currentRoute.value.path).toBe('/admin/notes')
-    expect(useFlashStore().pending).toBeNull()
+    expect(useFlashStore().pending?.type).toBe('error')
+    expect(useFlashStore().pending?.message).toBe('Nota tidak dijumpai.')
+  })
+
+  it('edit: a non-numeric id returns to the list with the flash, without calling the API', async () => {
+    api.fetchAdminNote.mockClear()
+    useFlashStore().clear()
+    await mountAt(AdminNoteFormPage, '/form', { mode: 'edit', id: 'abc' })
+    expect(api.fetchAdminNote).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/admin/notes')
+    expect(useFlashStore().pending?.message).toBe('Nota tidak dijumpai.')
   })
 })
 

@@ -70,6 +70,16 @@ async function render(url = '/admin/articles'): Promise<VueWrapper> {
   return wrapper
 }
 
+/** Below `md` (matches: false) DsDataTable renders the card list instead of the table. */
+function stubNarrowViewport(): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: false,
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+  }))
+}
+
 function t(w: VueWrapper, id: string) {
   return w.get(`[data-testid=${id}]`)
 }
@@ -93,6 +103,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllGlobals()
   confirmSpy.mockRestore()
   wrapper?.unmount()
   wrapper = null
@@ -133,6 +144,19 @@ describe('AdminArticleListPage (M09 S1)', () => {
     expect(second.find('[data-testid=article-featured]').exists()).toBe(false)
     expect(second.find('[data-testid=article-title]').text()).toBe(`${'A'.repeat(50)}...`)
     expect(second.find('[data-testid=status-pill]').text()).toBe('Draf')
+  })
+
+  it('shows the status on each card below md (SW12-06, DV-M09-24)', async () => {
+    stubNarrowViewport()
+    const w = await render()
+    const cards = w.findAll('[data-ds=data-table-cards] > li')
+    expect(cards).toHaveLength(2)
+    const status = (i: number) =>
+      cards[i]!.findAll('dl > div')
+        .map((d) => d.text())
+        .find((x) => x.startsWith('Status'))
+    expect(status(0)).toBe('StatusDiterbitkan')
+    expect(status(1)).toBe('StatusDraf')
   })
 
   it('links the row actions in the row menu', async () => {

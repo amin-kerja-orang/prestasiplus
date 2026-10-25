@@ -308,8 +308,9 @@ export interface ItemAnalysisRow {
 
 export interface ItemAnalysis {
   options: {
-    subjects: { id: number; name: string }[]
-    classes: ReportClassOption[]
+    /** Ids are numbers in mock mode and strings over http (contract `IdSchema`): compare via `String()`. */
+    subjects: { id: number | string; name: string }[]
+    classes: { id: number | string; name: string }[]
   }
   rows: ItemAnalysisRow[]
 }

@@ -4,8 +4,10 @@
  */
 
 import { isApiError } from '@/api'
+import { isHttpMode } from '@/api/mode'
 
 import type { AdminUserRole, RoleCounts } from '../api/users'
+import { isGenericServerText } from './generic-server-text'
 
 export const USERS_LIST_PATH = '/admin/users'
 
@@ -34,6 +36,13 @@ export const ROLE_FILTER_OPTIONS: readonly { value: AdminUserRole; label: string
   { value: 'jpn_officer', label: 'Pegawai JPN' },
   { value: 'admin', label: 'Admin' },
 ]
+
+/** "Peranan" filter options for the mode: no "Pegawai JPN" in http mode (DV-M02-23, not a contract role). */
+export function roleFilterOptionsFor(
+  http: boolean = isHttpMode(),
+): readonly { value: AdminUserRole; label: string }[] {
+  return http ? ROLE_FILTER_OPTIONS.filter((o) => o.value !== 'jpn_officer') : ROLE_FILTER_OPTIONS
+}
 
 /** A role outside the 8 codes (`unmapped`) shows its raw text, as live shows a raw code. */
 export function roleLabel(role: string): string {
@@ -119,6 +128,13 @@ export function errorLines(err: unknown): string[] {
   if (err.status === 0 || err.code === 'NETWORK_ERROR') return [GENERIC_ERROR]
   const fieldTexts = err.fields ? Object.values(err.fields) : []
   if (fieldTexts.length > 0) return [...new Set(fieldTexts)]
-  if (err.message === '' || /^HTTP \d+$/.test(err.message)) return [GENERIC_ERROR]
+  if (
+    err.message === '' ||
+    /^HTTP \d+$/.test(err.message) ||
+    err.status >= 500 ||
+    isGenericServerText(err.message)
+  ) {
+    return [GENERIC_ERROR]
+  }
   return [err.message]
 }

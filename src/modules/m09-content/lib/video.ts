@@ -6,6 +6,8 @@
 
 import { isApiError } from '@/api'
 
+import { isGenericServerText } from './generic-server-text'
+
 import type { VideoCategory } from '../api/types'
 
 export const VIDEO_PATH = '/video'
@@ -29,6 +31,12 @@ export const VIDEO_TITLES = {
   edit: (title: string): string => `Edit Video - ${title}`,
   editFallback: 'Edit Video',
 } as const
+
+/**
+ * Roles that may publish a video for everyone (`visibility: global`). The API refuses `global` for any
+ * other active role with a 422 under `visibility` (videos.service `STAFF_ROLES`), so the form hides it.
+ */
+export const VIDEO_STAFF_ROLES: readonly string[] = ['admin', 'teacher']
 
 export const COPY = {
   listTitle: 'Video Pembelajaran',
@@ -196,7 +204,14 @@ export function errorLines(err: unknown): string[] {
   }
   const fieldTexts = err.fields ? Object.values(err.fields) : []
   if (fieldTexts.length > 0) return [...new Set(fieldTexts)]
-  if (err.message === '' || /^HTTP \d+$/.test(err.message)) return [COPY.genericError]
+  if (
+    err.message === '' ||
+    /^HTTP \d+$/.test(err.message) ||
+    err.status >= 500 ||
+    isGenericServerText(err.message)
+  ) {
+    return [COPY.genericError]
+  }
   return [err.message]
 }
 

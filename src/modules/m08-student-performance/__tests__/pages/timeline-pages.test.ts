@@ -2,7 +2,7 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter, type Router } from 'vue-router'
+import { createMemoryHistory, createRouter, type RouteRecordRaw, type Router } from 'vue-router'
 
 import type { PublicProfile, Timeline, TimelinePost } from '../../api/types'
 import PublicProfilePage from '../../pages/PublicProfilePage.vue'
@@ -66,12 +66,19 @@ const profile = (over: Partial<PublicProfile> = {}): PublicProfile => ({
 let wrapper: VueWrapper | null = null
 let router: Router
 
-async function render(component: object, path: string, routePath: string): Promise<VueWrapper> {
+async function render(
+  component: object,
+  path: string,
+  routePath: string,
+  extraRoutes: RouteRecordRaw[] = [],
+): Promise<VueWrapper> {
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: routePath, component },
       { path: '/timeline', component: { template: '<i />' } },
+      { path: '/pelajar/:id(\\d+)', component: { template: '<i />' } },
+      ...extraRoutes,
     ],
   })
   await router.push(path)
@@ -129,6 +136,18 @@ describe('S16 TimelinePage', () => {
     vi.advanceTimersByTime(2000)
     await flushPromises()
     expect(w.get('[data-testid=copy-url]').attributes('data-copied')).toBe('false')
+  })
+
+  it('shows no copied feedback when the clipboard write is rejected', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'))
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const w = await render(TimelinePage, '/timeline', '/timeline')
+    await w.get('[data-testid=copy-url]').trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenCalled()
+    const btn = w.get('[data-testid=copy-url]')
+    expect(btn.attributes('data-copied')).toBe('false')
+    expect(btn.attributes('aria-label')).toBe('Salin pautan')
   })
 })
 
@@ -259,9 +278,17 @@ describe('S18 PublicProfilePage', () => {
       '0Sesi Latihan',
       '0%Ketepatan',
     ])
-    expect(w.get('[data-testid=sponsor-link]').attributes('href')).toBe('/sponsor/register')
+    // D4 (23 Oct sweep): no `/sponsor/register` route is registered, so the CTA panel is hidden (not a 404 link).
+    expect(w.find('[data-testid=sponsor-cta]').exists()).toBe(false)
     expect(w.get('[data-testid=footer-line]').text()).toBe('Teruskan usaha Admin!')
     expect(w.find('[data-testid=profile-posts]').exists()).toBe(false)
+  })
+
+  it('shows the sponsor CTA linking to /sponsor/register once that route exists', async () => {
+    const w = await render(PublicProfilePage, '/pelajar/1', '/pelajar/:id', [
+      { path: '/sponsor/register', component: { template: '<i />' } },
+    ])
+    expect(w.get('[data-testid=sponsor-link]').attributes('href')).toBe('/sponsor/register')
   })
 
   it('shows posts as text only', async () => {
@@ -292,6 +319,17 @@ describe('S18 PublicProfilePage', () => {
       title: 'Admin Demo',
       url: `${window.location.origin}/pelajar/1`,
     })
+    expect(dialogs.alertNative).not.toHaveBeenCalled()
+  })
+
+  it('"Kongsi" without navigator.share does not alert "Link disalin!" when the clipboard write fails', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'))
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    Object.defineProperty(navigator, 'share', { value: undefined, configurable: true })
+    const w = await render18()
+    await w.get('[data-testid=share]').trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenCalled()
     expect(dialogs.alertNative).not.toHaveBeenCalled()
   })
 })

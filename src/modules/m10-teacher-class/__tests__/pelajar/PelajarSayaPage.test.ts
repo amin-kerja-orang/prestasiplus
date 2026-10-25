@@ -139,7 +139,7 @@ describe('S6 PelajarSayaPage', () => {
     // student 3001 is not in 2002; student 2 is not either
     await w.findAll('[data-testid="student-add"]')[1]?.trigger('click')
     await flushPromises()
-    expect(api.addStudentToClass).toHaveBeenCalledWith(2, { classroomId: 2002 })
+    expect(api.addStudentToClass).toHaveBeenCalledWith(2, { classroomId: '2002' })
     expect(useFlashStore().current).toMatchObject({ type: 'success', message: PELAJAR_COPY.added })
     // the lists were reloaded
     expect(
@@ -175,6 +175,27 @@ describe('S6 PelajarSayaPage', () => {
     })
   })
 
+  it('flashes the BM action-failed text for a 500, a lost connection and a generic 403 (SWE-10)', async () => {
+    for (const error of [
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }),
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+      new ApiError({ status: 403, code: 'FORBIDDEN', message: 'This action is unauthorized.' }),
+    ]) {
+      api.addStudentToClass.mockRejectedValueOnce(error)
+      const w = await mountPage()
+      await w.get('[data-testid="tab-school"]').trigger('click')
+      await flushPromises()
+      await w.get('[data-testid="pelajar-target"]').setValue('2002')
+      await w.findAll('[data-testid="student-add"]')[1]?.trigger('click')
+      await flushPromises()
+      expect(useFlashStore().current).toMatchObject({
+        type: 'error',
+        message: 'Tindakan tidak berjaya. Sila cuba lagi.',
+      })
+      w.unmount()
+    }
+  })
+
   it('removes a student from a class after confirm, and sends nothing when dismissed', async () => {
     api.removeStudentFromClass.mockResolvedValue({ removed: 1 })
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
@@ -190,6 +211,73 @@ describe('S6 PelajarSayaPage', () => {
     expect(useFlashStore().current).toMatchObject({
       type: 'success',
       message: PELAJAR_COPY.removed,
+    })
+  })
+
+  describe('two classes with the same name (SW5-03)', () => {
+    const twin = (id: number) => ({ id, name: 'Kelas Kembar' })
+
+    beforeEach(() => {
+      api.fetchGuruClasses.mockImplementation(() =>
+        Promise.resolve({
+          data: [klass(2001, 'Kelas Kembar'), klass(2002, 'Kelas Kembar')],
+          meta: {},
+        }),
+      )
+      state.mine = [
+        {
+          ...student(3001, 'Murid Demo 01', ['Kelas Kembar', 'Kelas Kembar']),
+          classes: [twin(2001), twin(2002)],
+        },
+      ]
+      state.school = [
+        { ...student(3001, 'Murid Demo 01', ['Kelas Kembar']), classes: [twin(2001)] },
+        { ...student(3002, 'Murid Demo 02', ['Kelas Kembar']), classes: [twin(2002)] },
+        student(3003, 'Murid Demo 03'),
+      ]
+    })
+
+    it('shows one chip per class, each with its own remove button', async () => {
+      api.removeStudentFromClass.mockResolvedValue({ removed: 1 })
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      const w = await mountPage()
+      const chips = w.findAll('[data-testid="student-class"]')
+      expect(chips.map((c) => c.text())).toEqual(['Kelas Kembar', 'Kelas Kembar'])
+      const buttons = w.findAll('[data-testid="student-remove"]')
+      expect(buttons).toHaveLength(2)
+
+      await buttons[1]?.trigger('click')
+      await flushPromises()
+      expect(api.removeStudentFromClass).toHaveBeenCalledWith(3001, 2002)
+    })
+
+    it('marks "already in class" per class id, not per name', async () => {
+      const w = await mountPage()
+      await w.get('[data-testid="tab-school"]').trigger('click')
+      await flushPromises()
+      const inClass = () =>
+        w
+          .findAll('[data-testid="student-row"]')
+          .filter((r) => r.find('[data-testid="student-in-class"]').exists())
+          .map((r) => r.attributes('data-student-id'))
+
+      expect(inClass()).toEqual([])
+      await w.get('[data-testid="pelajar-target"]').setValue('2001')
+      expect(inClass()).toEqual(['3001'])
+      await w.get('[data-testid="pelajar-target"]').setValue('2002')
+      expect(inClass()).toEqual(['3002'])
+    })
+
+    it('falls back to the names when the API sends no classes', async () => {
+      state.school = [
+        student(3001, 'Murid Demo 01', ['Kelas Kembar']),
+        student(3002, 'Murid Demo 02'),
+      ]
+      const w = await mountPage()
+      await w.get('[data-testid="tab-school"]').trigger('click')
+      await flushPromises()
+      await w.get('[data-testid="pelajar-target"]').setValue('2001')
+      expect(w.findAll('[data-testid="student-in-class"]')).toHaveLength(1)
     })
   })
 

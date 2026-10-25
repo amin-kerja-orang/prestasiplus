@@ -27,7 +27,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('getSession (AM2-A1)', () => {
+describe('getSession (SW8-02)', () => {
   it('reads GET /api/session in http mode and maps it, keeping the remember flag', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     const get = vi.spyOn(api, 'get').mockResolvedValue(API_SESSION)

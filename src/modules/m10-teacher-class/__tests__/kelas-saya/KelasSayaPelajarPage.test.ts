@@ -134,6 +134,36 @@ describe('S33 Kelas Saya (student)', () => {
     expect(t(w, 'join-error').text()).toContain('Anda sudah menyertai kelas ini.')
     expect(w.find('[data-testid="join-success"]').exists()).toBe(false)
   })
+
+  it('clears a stale refusal as soon as the code is edited or emptied (SWP-9)', async () => {
+    api.fetchJoinedClasses.mockResolvedValue(list([CLASS]))
+    api.joinClass.mockRejectedValueOnce(refusal(409, 'Anda sudah menyertai kelas ini.'))
+    const w = await mountPage()
+    await t(w, 'class-code').setValue('DMO102')
+    await t(w, 'join-form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'join-error').text()).toContain('Anda sudah menyertai kelas ini.')
+
+    await t(w, 'class-code').setValue('')
+    expect(w.find('[data-testid="join-error"]').exists()).toBe(false)
+    expect(w.find('[data-testid="join-success"]').exists()).toBe(false)
+    expect(api.joinClass).toHaveBeenCalledTimes(1)
+  })
+
+  it('drops the outcome of a request still pending when the code is edited (SWP-9)', async () => {
+    api.fetchJoinedClasses.mockResolvedValue(list([CLASS]))
+    let reject!: (e: unknown) => void
+    api.joinClass.mockReturnValueOnce(new Promise((_, rej) => (reject = rej)))
+    const w = await mountPage()
+    await t(w, 'class-code').setValue('DMO102')
+    await t(w, 'join-form').trigger('submit')
+    await t(w, 'class-code').setValue('DMO103')
+    reject(refusal(409, 'Anda sudah menyertai kelas ini.'))
+    await flushPromises()
+    expect(w.find('[data-testid="join-error"]').exists()).toBe(false)
+    expect((t(w, 'class-code').element as HTMLInputElement).value).toBe('DMO103')
+    expect(t(w, 'join-submit').attributes('disabled')).toBeUndefined()
+  })
 })
 
 describe('joinErrorMessage', () => {
@@ -152,5 +182,25 @@ describe('joinErrorMessage', () => {
       'Ralat rangkaian. Sila cuba lagi.',
     )
     expect(joinErrorMessage(new Error('boom'))).toBe('Gagal menyertai kelas. Sila cuba lagi.')
+  })
+
+  it('returns the join-failed copy for a 5xx and the API generic English defaults (SWE-11)', () => {
+    const fail = (status: number, message: string) => new ApiError({ status, code: 'X', message })
+    expect(joinErrorMessage(fail(500, 'Server Error'))).toBe(
+      'Gagal menyertai kelas. Sila cuba lagi.',
+    )
+    expect(joinErrorMessage(fail(404, 'Not Found.'))).toBe('Gagal menyertai kelas. Sila cuba lagi.')
+    expect(joinErrorMessage(fail(403, 'This action is unauthorized.'))).toBe(
+      'Gagal menyertai kelas. Sila cuba lagi.',
+    )
+    expect(joinErrorMessage(fail(502, 'HTTP 502'))).toBe('Gagal menyertai kelas. Sila cuba lagi.')
+  })
+
+  it('keeps the class module BM 404 and 409 messages (SWE-11)', () => {
+    const fail = (status: number, message: string) => new ApiError({ status, code: 'X', message })
+    expect(joinErrorMessage(fail(404, 'Kod kelas tidak sah.'))).toBe('Kod kelas tidak sah.')
+    expect(joinErrorMessage(fail(409, 'Anda sudah menyertai kelas ini.'))).toBe(
+      'Anda sudah menyertai kelas ini.',
+    )
   })
 })

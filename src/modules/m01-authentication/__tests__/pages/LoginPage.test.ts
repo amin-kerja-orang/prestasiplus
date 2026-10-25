@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
-import { ApiError } from '@/api'
+import { api, ApiError } from '@/api'
 import { useSessionStore } from '@/stores/session'
 
 import type { ClientSession } from '../../api'
@@ -73,6 +73,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.restoreAllMocks()
   wrapper?.unmount()
   wrapper = null
 })
@@ -81,10 +83,11 @@ describe('LoginPage (M01 S1)', () => {
   it('renders the live fields with native validation attributes and no novalidate', async () => {
     const w = await render()
     const email = w.get('[data-testid=login-email]')
+    // DV-25 (AM2-A1b): type=text so a roster username is not blocked by the browser's e-mail check.
     expect(email.attributes()).toMatchObject({
-      type: 'email',
+      type: 'text',
       required: '',
-      autocomplete: 'email',
+      autocomplete: 'username',
       placeholder: 'nama@email.com',
     })
     const password = w.get('[data-testid=login-password]')
@@ -96,7 +99,7 @@ describe('LoginPage (M01 S1)', () => {
     })
     expect(w.get('form').attributes('novalidate')).toBeUndefined()
     expect(w.get('[data-testid=login-remember]').attributes('aria-checked')).toBe('false')
-    expect(w.text()).toContain('Alamat Email')
+    expect(w.text()).toContain('Alamat Email / Nama Pengguna')
     expect(w.text()).toContain('Kata Laluan')
     expect(w.text()).toContain('© 2026 PRESTASIPLUS. Platform Pendidikan Malaysia.')
   })
@@ -245,5 +248,72 @@ describe('LoginPage (M01 S1)', () => {
     expect(w.get('[data-testid=login-alert]').text()).toBe(
       'Too many login attempts. Please try again in 30 seconds.',
     )
+  })
+
+  it('accepts a username: the input is not an e-mail field and the value is sent as typed (AM2-A1b)', async () => {
+    apiMocks.login.mockResolvedValue(SESSION)
+    const w = await render()
+    const input = w.get('[data-testid=login-email]')
+    expect(input.attributes('type')).not.toBe('email')
+    await fillAndSubmit(w, 'murid04', 'Demo1234')
+    expect((input.element as HTMLInputElement).validity.typeMismatch).toBe(false)
+    expect(apiMocks.login).toHaveBeenCalledWith({
+      email: 'murid04',
+      password: 'Demo1234',
+      remember: false,
+    })
+    expect(router.currentRoute.value.fullPath).toBe('/dashboard')
+  })
+
+  it('shows the server text of an ambiguous username (AMBIGUOUS_USERNAME) in the alert', async () => {
+    const text = 'Nama pengguna ini wujud di lebih daripada satu sekolah. Sila pilih sekolah anda.'
+    apiMocks.login.mockRejectedValue(
+      new ApiError({ status: 422, code: 'AMBIGUOUS_USERNAME', message: text }),
+    )
+    const w = await render()
+    await fillAndSubmit(w, 'murid01', 'Demo1234')
+    expect(w.get('[data-testid=login-alert]').text()).toBe(text)
+    expect((w.get('[data-testid=login-email]').element as HTMLInputElement).value).toBe('murid01')
+    expect(router.currentRoute.value.fullPath).toBe('/login')
+  })
+
+  describe('prototype scope (SWEEP-23OCT O1)', () => {
+    const PARENT: ClientSession = { ...SESSION, user: { ...SESSION.user, role: 'parent' } }
+
+    it('refuses an out-of-scope role: ends the server session, clears the client one, shows the message', async () => {
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+      const post = vi.spyOn(api, 'post').mockResolvedValue(undefined)
+      apiMocks.login.mockResolvedValue(PARENT)
+      const w = await render()
+      await fillAndSubmit(w, 'ibubapa@demo.test', 'Demo1234')
+      expect(post).toHaveBeenCalledWith('/api/auth/logout')
+      expect(useSessionStore().isLoggedIn).toBe(false)
+      expect(w.get('[data-testid=login-alert]').text()).toBe(
+        'Peranan ini tidak termasuk dalam prototaip.',
+      )
+      expect(router.currentRoute.value.fullPath).toBe('/login')
+      expect((w.get('[data-testid=login-password]').element as HTMLInputElement).value).toBe('')
+    })
+
+    it('lets an in-scope role through without calling logout', async () => {
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+      const post = vi.spyOn(api, 'post').mockResolvedValue(undefined)
+      apiMocks.login.mockResolvedValue(SESSION)
+      const w = await render()
+      await fillAndSubmit(w, 'pelajar@demo.test', 'Demo1234')
+      expect(post).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.fullPath).toBe('/dashboard')
+    })
+
+    it('does not refuse any role when the scope is off', async () => {
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'off')
+      apiMocks.login.mockResolvedValue({
+        ...PARENT,
+        user: { ...PARENT.user, landingPath: '/dashboard' },
+      })
+      const w = await render()
+      await fillAndSubmit(w, 'ibubapa@demo.test', 'Demo1234')
+      expect(useSessionStore().isLoggedIn).toBe(true)
+    })
   })
 })

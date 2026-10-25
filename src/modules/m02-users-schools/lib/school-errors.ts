@@ -6,6 +6,8 @@
 
 import { isApiError } from '@/api'
 
+import { isGenericServerText } from './generic-server-text'
+
 /** Shown only when the request produced no usable message (network failure, HTTP 500). INFERRED copy. */
 export const GENERIC_ERROR = 'Ralat berlaku. Sila cuba lagi.'
 
@@ -14,7 +16,14 @@ export function errorLines(err: unknown): string[] {
   if (err.status === 0 || err.code === 'NETWORK_ERROR') return [GENERIC_ERROR]
   const fieldTexts = err.fields ? Object.values(err.fields) : []
   if (fieldTexts.length > 0) return [...new Set(fieldTexts)]
-  if (err.message === '' || /^HTTP \d+$/.test(err.message)) return [GENERIC_ERROR]
+  if (
+    err.message === '' ||
+    /^HTTP \d+$/.test(err.message) ||
+    err.status >= 500 ||
+    isGenericServerText(err.message)
+  ) {
+    return [GENERIC_ERROR]
+  }
   return [err.message]
 }
 

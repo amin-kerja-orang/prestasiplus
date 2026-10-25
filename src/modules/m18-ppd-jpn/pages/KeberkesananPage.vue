@@ -6,7 +6,7 @@
  * "Kembali" goes to `/guru` and "Lihat Senarai Risiko" is hidden (S4 is a school-admin page, DV-M18-50). Four tiles, a
  * doughnut, a 6-month trend, and with data the type, teacher and follow-up cards. "Perbandingan Sekolah Daerah"
  * (`bySchool`) is not shown for one school; the follow-up arrow to S24 is hidden until S24 exists.
- * States: loading, error (server message + "Cuba Semula"), 403 (global 403 page in place), zero, data.
+ * States: loading, error (BM line by status + "Cuba Semula", `loadErrorMessage`), 403 (global 403 page in place), zero, data.
  */
 import { computed, watch } from 'vue'
 

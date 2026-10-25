@@ -106,6 +106,28 @@ describe('BannerListPage (S9)', () => {
     expect(wrapper.findAll('[data-testid=banner-active]')[4]?.text()).toBe('Tidak Aktif')
   })
 
+  it('shows the Aktif? value on each card below md (SW12-06, DV-M09-24)', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }))
+    try {
+      wrapper = (await mountAt(BannerListPage, '/page')).wrapper
+      const cards = wrapper.findAll('[data-ds=data-table-cards] > li')
+      expect(cards).toHaveLength(5)
+      const active = (i: number) =>
+        cards[i]!.findAll('dl > div')
+          .map((d) => d.text())
+          .find((x) => x.startsWith('Aktif?'))
+      expect(active(0)).toBe('Aktif?Aktif')
+      expect(active(4)).toBe('Aktif?Tidak Aktif')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('keeps the table inside its card (fixed layout, no page scroll)', async () => {
     wrapper = (await mountAt(BannerListPage, '/page')).wrapper
     expect(wrapper.find('table.table-fixed').exists()).toBe(true)

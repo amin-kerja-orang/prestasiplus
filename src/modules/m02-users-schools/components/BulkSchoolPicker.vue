@@ -11,7 +11,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsPanel } from '@/ds'
+import { DsFormField, DsSurface } from '@/ds'
 
 import { searchSchools, type SchoolSummary } from '../api/schools'
 import { SEARCH_MIN_CHARS } from '../lib/user-form-options'
@@ -74,7 +74,7 @@ function clear(): void {
 <template>
   <div ref="root" data-testid="bulk-school">
     <DsFormField native for="bulk-school-search" label="Sekolah" required hint="(taip untuk cari)">
-      <div class="relative">
+      <div>
         <UInput
           id="bulk-school-search"
           :model-value="term"
@@ -87,36 +87,45 @@ function clear(): void {
           @update:model-value="onInput"
           @focus="picker.onFocus()"
         />
-        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="bulk-school-dropdown">
-          <p v-if="searching" class="p-3" data-testid="bulk-school-loading">
-            <USkeleton class="h-4 w-full" />
-          </p>
-          <template v-else>
-            <UButton
-              v-for="item in results"
-              :key="item.id"
-              type="button"
-              block
-              color="neutral"
-              variant="ghost"
-              class="h-auto min-h-11 justify-start text-start whitespace-normal"
-              data-testid="bulk-school-result"
-              @click="picker.select(item)"
-            >
-              <span class="flex min-w-0 flex-col">
-                <span class="text-label text-highlighted">{{ label(item) }}</span>
-                <span class="text-caption text-muted">{{ item.state }}</span>
-              </span>
-            </UButton>
-            <p
-              v-if="showEmpty"
-              class="p-3 text-center text-label text-muted"
-              data-testid="bulk-school-empty"
-            >
-              Tiada sekolah dijumpai
+        <!-- In flow, not `behavior="float"`: the form section card clips its overflow (SWX4, DV-M02-28). -->
+        <DsSurface
+          v-if="showDropdown"
+          level="elevated"
+          shadow="lift"
+          padding="none"
+          data-testid="bulk-school-dropdown"
+        >
+          <div class="max-h-64 overflow-y-auto">
+            <p v-if="searching" class="p-3" data-testid="bulk-school-loading">
+              <USkeleton class="h-4 w-full" />
             </p>
-          </template>
-        </DsPanel>
+            <template v-else>
+              <UButton
+                v-for="item in results"
+                :key="item.id"
+                type="button"
+                block
+                color="neutral"
+                variant="ghost"
+                class="h-auto min-h-11 justify-start text-start whitespace-normal"
+                data-testid="bulk-school-result"
+                @click="picker.select(item)"
+              >
+                <span class="flex min-w-0 flex-col">
+                  <span class="text-label text-highlighted">{{ label(item) }}</span>
+                  <span class="text-caption text-muted">{{ item.state }}</span>
+                </span>
+              </UButton>
+              <p
+                v-if="showEmpty"
+                class="p-3 text-center text-label text-muted"
+                data-testid="bulk-school-empty"
+              >
+                Tiada sekolah dijumpai
+              </p>
+            </template>
+          </div>
+        </DsSurface>
       </div>
       <p
         v-if="school"

@@ -31,6 +31,8 @@ export const S2_COPY = {
   loadingBody: 'Memuatkan data...',
   classHint: 'Klik: lihat pelajar dalam kelas',
   bandHint: 'Klik: senarai pelajar',
+  /** Fixed BM line of a failed modal load (the server text is English; SWE). */
+  loadFailed: 'Ralat memuatkan data. Sila cuba semula.',
 } as const
 
 export const TAB_TITLE = (name: string) => `Command Center — Guru: ${name}`
@@ -43,7 +45,7 @@ export const NAV_LINKS: readonly { id: NavAction | 'rekod'; label: string; icon:
   { id: 'remedial', label: 'Remedial', icon: 'i-ph-flask' },
   { id: 'rekod', label: 'Rekod', icon: 'i-ph-chart-bar' },
   { id: 'evaluate', label: 'Evaluate', icon: 'i-ph-warning' },
-  { id: 'predictive', label: 'Ramalan SPM', icon: 'i-ph-crystal-ball' },
+  { id: 'predictive', label: 'Ramalan SPM', icon: 'i-ph-chart-line-up' },
   { id: 'kelas', label: 'Kelas', icon: 'i-ph-chalkboard-teacher' },
   { id: 'badges', label: 'Badges', icon: 'i-ph-trophy' },
 ]

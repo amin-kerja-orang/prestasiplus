@@ -3,26 +3,38 @@
  * S5 `/guru/kelas/cipta` (FR-M10-31..34; URS FT-M10-3.2): school search, "Maklumat Kelas" and the
  * level tiles filtered by the school type. Native validation only (name, subject); the level
  * radios carry no `required` (DV-M10-22). 201 → `/guru/kelas`; 422 → the shared red box.
+ *
+ * DV-M10-40 (http mode only): the picker opens with the teacher's own school selected, so a class
+ * left without a school choice is still visible to that school's admin. The teacher can clear it.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ApiError } from '@/api'
+import { ApiError, isHttpMode } from '@/api'
 import { useApi, useFlash } from '@/composables'
 import { DsBackLink, DsFormField, DsNativeSelect, DsPage, DsPanel } from '@/ds'
-import type { SchoolSummary } from '@/modules/m02-users-schools'
+import { searchSchools, type SchoolSummary } from '@/modules/m02-users-schools'
+import { useSessionStore } from '@/stores/session'
 
 import { createGuruClass } from '../api/guru'
 import type { EducationLevelSlug } from '../api/types'
 import { KELAS_COPY, tilesForSchoolType } from '../components/kelas/copy'
 import SchoolPicker from '../components/kelas/SchoolPicker.vue'
 import { fetchSubjectOptions } from '../components/kelas/subjects'
+import { KELAS_COPY as KELAS_SAYA_COPY } from '../components/kelas-saya/copy'
+import { moduleMessage } from '../lib/generic-server-text'
 
 const router = useRouter()
 const flash = useFlash()
 const { data: subjects } = useApi((signal) => fetchSubjectOptions(signal))
 
+const session = useSessionStore()
+
 const school = ref<SchoolSummary | null>(null)
+/** The teacher's own school, offered to the picker (DV-M10-40); `null` when none or in mock mode. */
+const ownSchool = ref<SchoolSummary | null>(null)
+/** True while that lookup runs: the form is not submitted meanwhile, so it cannot go out without the school. */
+const schoolLookup = ref(false)
 const name = ref('')
 const subjectId = ref('')
 const level = ref<EducationLevelSlug | ''>('')
@@ -34,13 +46,33 @@ const failure = ref<string[]>([])
 
 const tiles = computed(() => tilesForSchoolType(school.value?.type ?? null))
 
+onMounted(async () => {
+  const schoolId = session.user?.schoolId
+  if (!isHttpMode() || schoolId === null || schoolId === undefined) return
+  schoolLookup.value = true
+  try {
+    // `GET /api/schools/search?id=`: that one active school, `[]` for an inactive or unknown one.
+    ownSchool.value = (await searchSchools({ id: schoolId }))[0] ?? null
+  } catch {
+    // The picker simply stays empty; the teacher can still search.
+  } finally {
+    schoolLookup.value = false
+  }
+})
+
 // A level hidden by the chosen school's type is no longer chosen.
 watch(tiles, (next) => {
   if (level.value !== '' && !next.some((t) => t.slug === level.value)) level.value = ''
 })
 
+/** A module BM message of a refused request, the network copy for status 0, else the generic BM line (SWE). */
+function createFailureText(err: unknown): string {
+  if (err instanceof ApiError && err.status === 0) return KELAS_SAYA_COPY.network
+  return moduleMessage(err) ?? KELAS_COPY.createFailed
+}
+
 async function submit(): Promise<void> {
-  if (submitting.value) return
+  if (submitting.value || schoolLookup.value) return
   submitting.value = true
   fields.value = {}
   failure.value = []
@@ -62,7 +94,7 @@ async function submit(): Promise<void> {
       failure.value = Object.entries(err.fields)
         .filter(([key]) => !INLINE_FIELDS.includes(key))
         .map(([, message]) => message)
-    } else failure.value = [err instanceof Error ? err.message : KELAS_COPY.createFailed]
+    } else failure.value = [createFailureText(err)]
   } finally {
     submitting.value = false
   }
@@ -83,7 +115,7 @@ async function submit(): Promise<void> {
         role="alert"
       />
 
-      <SchoolPicker @select="school = $event" />
+      <SchoolPicker :preselect="ownSchool" @select="school = $event" />
 
       <DsPanel>
         <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
@@ -161,7 +193,7 @@ async function submit(): Promise<void> {
         size="xl"
         block
         :loading="submitting"
-        :disabled="submitting"
+        :disabled="submitting || schoolLookup"
         :icon="submitting ? undefined : 'i-ph-plus-circle-duotone'"
         data-testid="kelas-submit"
       >

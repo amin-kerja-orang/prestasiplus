@@ -6,7 +6,8 @@
  *   students with an active enrolment in an active class the viewer owns; `school` lists the active
  *   student accounts of the **teacher-profile** school (not the user school; no profile school →
  *   `[]` and `schoolSet: false`), at most 200 rows. `search` is a case-insensitive name filter. Rows
- *   are ordered by name A→Z; `classNames` = the viewer's own active classes the student is in.
+ *   are ordered by name A→Z; `classNames` = the viewer's own active classes the student is in;
+ *   `classes` = the same classes as `{id, name}`, same order (SW5-03: names are not unique).
  *   `meta.count` is the number of students matching the tab and search (before the 200 cap).
  * - #16 `{classroomId}`: adds a student of the profile school to an own class (source `teacher`).
  *   422 for a bad body, 404 unknown student or class, 403 not own class or a student of another
@@ -43,26 +44,35 @@ interface StudentRef {
   grade: number | null
 }
 
-/** Active classes the viewer owns → student id → the class names (the S6 chips). */
-function classNamesByStudent(userId: number): Map<number, string[]> {
-  const out = new Map<number, string[]>()
+interface ClassRef {
+  id: number
+  name: string
+}
+
+/** Active classes the viewer owns → student id → the classes (the S6 chips), id and name. */
+function classesByStudent(userId: number): Map<number, ClassRef[]> {
+  const out = new Map<number, ClassRef[]>()
   for (const c of classroomsRepo.forTeacher(userId)) {
     if (!c.isActive) continue
     for (const sid of classroomsRepo.memberIds(c.kind, c.classId)) {
       const list = out.get(sid)
-      if (list) list.push(c.name)
-      else out.set(sid, [c.name])
+      const ref = { id: c.classId, name: c.name }
+      if (list) list.push(ref)
+      else out.set(sid, [ref])
     }
   }
   return out
 }
 
-function studentBody(s: StudentRef, names: Map<number, string[]>) {
+/** SW5-03: `classes` is `classNames` with the ids, same order; class names are not unique. */
+function studentBody(s: StudentRef, classes: Map<number, ClassRef[]>) {
+  const own = classes.get(s.id) ?? []
   return {
     id: s.id,
     name: s.name,
     levelName: s.grade === null ? null : (curriculum.levelForGrade(s.grade)?.name ?? null),
-    classNames: names.get(s.id) ?? [],
+    classNames: own.map((c) => c.name),
+    classes: own.map((c) => ({ id: c.id, name: c.name })),
   }
 }
 
@@ -92,7 +102,7 @@ export const studentRoutes: RouteDef[] = [
     const tab = queryString(req.query, 'tab') === 'school' ? 'school' : 'mine'
     const term = (queryString(req.query, 'search') ?? '').trim().toLowerCase()
     const match = (s: StudentRef) => term === '' || s.name.toLowerCase().includes(term)
-    const names = classNamesByStudent(id)
+    const names = classesByStudent(id)
     const schoolId = teacherProfilesRepo.schoolOf(id)
 
     if (tab === 'school') {

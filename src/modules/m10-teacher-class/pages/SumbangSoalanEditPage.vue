@@ -26,6 +26,7 @@ import {
 import { fetchContributedQuestion, updateContributedQuestion } from '../api/guru'
 import type { ContributedQuestionDetail, UpdateQuestionRequest } from '../api/types'
 import { COPY, correctItems, EDIT_DIFFICULTIES, OPTION_LETTERS } from '../components/soalan/lib'
+import { moduleMessage } from '../lib/generic-server-text'
 
 const props = defineProps<{ id: number }>()
 
@@ -95,7 +96,7 @@ async function save(): Promise<void> {
       fields.value = err.fields
       general.value = Object.values(err.fields)
     } else {
-      general.value = [isApiError(err) ? err.message : COPY.saveFailed]
+      general.value = [moduleMessage(err) ?? COPY.saveFailed]
     }
   } finally {
     saving.value = false
