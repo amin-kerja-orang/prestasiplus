@@ -3,7 +3,10 @@ import { Inject, Injectable } from '@nestjs/common'
 import { CLOCK, type Clock } from '../../db/clock'
 import type { CompClassroom, CompClassroomPort, CompEnrolmentView } from '../subscriptions/comp-students/classroom.port'
 import { gradeOfLevel } from './classes.mapper'
-import { ClassesRepository } from './classes.repository'
+import { ClassesRepository, type ClassRecord } from './classes.repository'
+
+/** The classes a complimentary register accepts: an ACTIVE teacher class (kind `classroom`). One rule for `find` and the picker. */
+export const isCompTargetClass = (cls: ClassRecord): boolean => cls.kind === 'classroom' && cls.isActive
 
 /**
  * The real `COMP_CLASSROOM_PORT` of BE-25 (complimentary students): the seam between the central admin's
@@ -20,7 +23,7 @@ export class CompClassroomAdapter implements CompClassroomPort {
   /** An ACTIVE teacher class (kind `classroom`) with its school and the grade (1 to 11) of its level. */
   async find(classroomId: string): Promise<CompClassroom | null> {
     const cls = await this.repo.get(classroomId)
-    if (!cls || cls.kind !== 'classroom' || !cls.isActive) return null
+    if (!cls || !isCompTargetClass(cls)) return null
     const [levels, schools] = await Promise.all([this.repo.levelGrades([cls.educationLevelId]), this.repo.schoolNames([cls.schoolId])])
     return {
       id: cls.id,
