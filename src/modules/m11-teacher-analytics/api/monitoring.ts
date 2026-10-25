@@ -7,7 +7,7 @@
  * 404 for an unknown school, student or teacher.
  */
 
-import { api } from '@/api'
+import { api, type EntityId } from '@/api'
 
 import type {
   ExportFormat,
@@ -46,18 +46,18 @@ export const fetchMonitoringOverview = (query: MonitoringQuery = {}, o: Signal =
   })
 
 /** #4 `GET /api/monitoring/schools/:schoolId` (S3). */
-export const fetchSchoolDetail = (schoolId: number, o: Signal = {}) =>
+export const fetchSchoolDetail = (schoolId: EntityId, o: Signal = {}) =>
   api.get<SchoolDetail>(`/api/monitoring/schools/${String(schoolId)}`, withSignal(o))
 
 /** #5 `GET /api/monitoring/schools/:schoolId/students/:userId` (S4; the school is not checked, BR-M11-29). */
-export const fetchStudentDetail = (schoolId: number, userId: number, o: Signal = {}) =>
+export const fetchStudentDetail = (schoolId: EntityId, userId: EntityId, o: Signal = {}) =>
   api.get<StudentDetail>(
     `/api/monitoring/schools/${String(schoolId)}/students/${String(userId)}`,
     withSignal(o),
   )
 
 /** #6 `GET /api/monitoring/schools/:schoolId/teachers/:userId` (S5). */
-export const fetchTeacherDetail = (schoolId: number, userId: number, o: Signal = {}) =>
+export const fetchTeacherDetail = (schoolId: EntityId, userId: EntityId, o: Signal = {}) =>
   api.get<TeacherDetail>(
     `/api/monitoring/schools/${String(schoolId)}/teachers/${String(userId)}`,
     withSignal(o),

@@ -1,5 +1,6 @@
 import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
+import { isHttpMode } from '@/api/mode'
 import type { LayoutMode } from '@/app/router/meta'
 import type { Role } from '@/stores/session-types'
 
@@ -26,7 +27,11 @@ interface MountOptions {
   roles: readonly Role[]
 }
 
-const num = (route: RouteLocationNormalized, key: string) => Number(route.params[key])
+// http mode: ids are strings on the wire (never parsed), kept as-is; mock mode keeps numbers
+const routeId = (route: RouteLocationNormalized, key: string): number | string => {
+  const value = route.params[key]
+  return isHttpMode() ? String(value) : Number(value)
+}
 
 export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions): RouteRecordRaw[] {
   const meta = {
@@ -55,7 +60,7 @@ export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions):
       path: `${prefix}/sekolah/:schoolId(\\d+)`,
       name: `${name}-sekolah`,
       component: () => import('../pages/MonitoringSchoolPage.vue'),
-      props: (route) => ({ basePath: prefix, schoolId: num(route, 'schoolId') }),
+      props: (route) => ({ basePath: prefix, schoolId: routeId(route, 'schoolId') }),
       meta: { ...meta, title: 'Monitoring', header: { title: 'Detail Sekolah' } },
     },
     {
@@ -64,8 +69,8 @@ export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions):
       component: () => import('../pages/MonitoringStudentPage.vue'),
       props: (route) => ({
         basePath: prefix,
-        schoolId: num(route, 'schoolId'),
-        userId: num(route, 'userId'),
+        schoolId: routeId(route, 'schoolId'),
+        userId: routeId(route, 'userId'),
       }),
       meta: { ...meta, title: 'Detail Pelajar', header: { title: 'Detail Pelajar' } },
     },
@@ -75,8 +80,8 @@ export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions):
       component: () => import('../pages/MonitoringTeacherPage.vue'),
       props: (route) => ({
         basePath: prefix,
-        schoolId: num(route, 'schoolId'),
-        userId: num(route, 'userId'),
+        schoolId: routeId(route, 'schoolId'),
+        userId: routeId(route, 'userId'),
       }),
       meta: { ...meta, title: 'Detail Guru', header: { title: 'Detail Guru' } },
     },

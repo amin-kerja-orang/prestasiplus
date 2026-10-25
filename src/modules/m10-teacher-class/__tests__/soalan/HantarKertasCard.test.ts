@@ -17,7 +17,12 @@ async function fillAndSubmit(w: VueWrapper): Promise<void> {
   await t(w, 'paper-jenis').setValue('Trial Paper')
   await t(w, 'paper-subject').setValue('Kimia')
   await t(w, 'paper-tahun').setValue('2024')
-  await pickFiles(w, 'paper-files', [new File(['x'], 'kertas.pdf'), new File(['y'], 'skema.docx')], true)
+  await pickFiles(
+    w,
+    'paper-files',
+    [new File(['x'], 'kertas.pdf'), new File(['y'], 'skema.docx')],
+    true,
+  )
   await t(w, 'paper-form').trigger('submit')
   await flushPromises()
 }
@@ -65,5 +70,99 @@ describe('Hantar Kertas submit (contract #60)', () => {
     const w = mount(HantarKertasCard)
     await fillAndSubmit(w)
     expect(t(w, 'paper-errors').text()).toContain(COPY.paperFailed)
+  })
+
+  it('SW12-08: a 503 with a server message shows exactly that message', async () => {
+    const reason = 'Muat naik kertas soalan belum tersedia buat masa ini.'
+    guru.submitQuestionPaper.mockRejectedValue(
+      new ApiError({
+        status: 503,
+        code: 'SERVER_ERROR',
+        message: reason,
+        body: { error: { code: 'SERVER_ERROR', message: reason } },
+      }),
+    )
+    const w = mount(HantarKertasCard)
+    await fillAndSubmit(w)
+    expect(t(w, 'paper-errors').text()).toBe(reason)
+    expect(t(w, 'paper-errors').text()).not.toContain(COPY.paperFailed)
+    expect(t(w, 'paper-sent').exists()).toBe(false)
+  })
+
+  it('SW12-08: a 503 with an empty message keeps the generic failed text', async () => {
+    guru.submitQuestionPaper.mockRejectedValue(
+      new ApiError({
+        status: 503,
+        code: 'SERVER_ERROR',
+        message: '  ',
+        body: { error: { code: 'SERVER_ERROR', message: '  ' } },
+      }),
+    )
+    const w = mount(HantarKertasCard)
+    await fillAndSubmit(w)
+    expect(t(w, 'paper-errors').text()).toBe(COPY.paperFailed)
+  })
+
+  it('SW12-08: a bare 503 without the API envelope (proxy) keeps the generic failed text', async () => {
+    guru.submitQuestionPaper.mockRejectedValue(
+      new ApiError({
+        status: 503,
+        code: 'SERVER_ERROR',
+        message: 'HTTP 503',
+        body: '<html>503</html>',
+      }),
+    )
+    const w = mount(HantarKertasCard)
+    await fillAndSubmit(w)
+    expect(t(w, 'paper-errors').text()).toBe(COPY.paperFailed)
+  })
+
+  it('SW12-08: a 503 envelope with an English default message keeps the generic failed text', async () => {
+    guru.submitQuestionPaper.mockRejectedValue(
+      new ApiError({
+        status: 503,
+        code: 'SERVER_ERROR',
+        message: 'Server Error',
+        body: { error: { code: 'SERVER_ERROR', message: 'Server Error' } },
+      }),
+    )
+    const w = mount(HantarKertasCard)
+    await fillAndSubmit(w)
+    expect(t(w, 'paper-errors').text()).toBe(COPY.paperFailed)
+  })
+
+  it('SW12-08: a network error keeps the generic failed text', async () => {
+    guru.submitQuestionPaper.mockRejectedValue(
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+    )
+    const w = mount(HantarKertasCard)
+    await fillAndSubmit(w)
+    expect(t(w, 'paper-errors').text()).toBe(COPY.paperFailed)
+  })
+
+  it('SW12-08: a 500 never shows the raw server text', async () => {
+    guru.submitQuestionPaper.mockRejectedValue(
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Internal Server Error' }),
+    )
+    const w = mount(HantarKertasCard)
+    await fillAndSubmit(w)
+    expect(t(w, 'paper-errors').text()).toBe(COPY.paperFailed)
+  })
+
+  it('SW12-08: field errors are still listed, one per field', async () => {
+    guru.submitQuestionPaper.mockRejectedValue(
+      new ApiError({
+        status: 422,
+        code: 'VALIDATION_ERROR',
+        message: 'x',
+        fields: { subject: 'Sila isi matapelajaran.', files: 'Sila pilih fail.' },
+      }),
+    )
+    const w = mount(HantarKertasCard)
+    await fillAndSubmit(w)
+    const lines = t(w, 'paper-errors')
+      .findAll('p')
+      .map((p) => p.text())
+    expect(lines).toEqual(['Sila isi matapelajaran.', 'Sila pilih fail.'])
   })
 })
