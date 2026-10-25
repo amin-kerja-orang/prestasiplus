@@ -23,7 +23,7 @@ export type KeyTone = 'fn' | 'sci' | 'sym' | 'num' | 'op' | 'del' | 'nav'
 export interface MathKey {
   id: string
   label: string
-  /** Accessible name (BM). */
+  /** Accessible name (BM). New keys start with their visible label (WCAG 2.5.3, label in name). */
   aria: string
   insert?: string
   cursor?: number
@@ -48,14 +48,14 @@ export const FUNCTION_ROWS: MathKey[][] = [
     K('sqrt', '√', 'Punca kuasa dua', 'fn', { insert: '√()', cursor: 2 }),
     K('sq', 'x²', 'Kuasa dua', 'fn', { insert: '^2' }),
     K('pow', 'xⁿ', 'Kuasa', 'fn', { insert: '^()', cursor: 2 }),
-    K('inv', 'x⁻¹', 'Salingan', 'fn', { insert: '^(-1)' }),
+    K('inv', 'x⁻¹', 'x⁻¹ salingan', 'fn', { insert: '^(-1)' }),
   ],
   [
-    K('sin', 'sin', 'Sin', 'fn', { insert: 'sin()', cursor: 4 }),
-    K('cos', 'cos', 'Kos', 'fn', { insert: 'cos()', cursor: 4 }),
-    K('tan', 'tan', 'Tan', 'fn', { insert: 'tan()', cursor: 4 }),
-    K('log', 'log', 'Logaritma asas 10', 'fn', { insert: 'log()', cursor: 4 }),
-    K('ln', 'ln', 'Logaritma asli', 'fn', { insert: 'ln()', cursor: 3 }),
+    K('sin', 'sin', 'sin', 'fn', { insert: 'sin()', cursor: 4 }),
+    K('cos', 'cos', 'cos', 'fn', { insert: 'cos()', cursor: 4 }),
+    K('tan', 'tan', 'tan', 'fn', { insert: 'tan()', cursor: 4 }),
+    K('log', 'log', 'log, logaritma asas 10', 'fn', { insert: 'log()', cursor: 4 }),
+    K('ln', 'ln', 'ln, logaritma asli', 'fn', { insert: 'ln()', cursor: 3 }),
   ],
 ]
 
@@ -82,7 +82,7 @@ export const SHARED_KEYS: MathKey[] = [
   K('lp', '(', 'Kurungan buka', 'fn', { insert: '(' }),
   K('rp', ')', 'Kurungan tutup', 'fn', { insert: ')' }),
   K('pi', 'π', 'Pi', 'fn', { insert: 'π' }),
-  K('deg', '°', 'Darjah', 'fn', { insert: '°' }),
+  K('deg', '°', '° darjah', 'fn', { insert: '°' }),
 ]
 
 /** The number block, always visible: 5 columns x 4 rows. */
@@ -92,7 +92,7 @@ export const NUMBER_ROWS: MathKey[][] = [
     digit('8'),
     digit('9'),
     K('back', 'DEL', 'Padam', 'del', { action: 'backspace' }),
-    K('clear', 'AC', 'Kosongkan semua', 'del', { action: 'clear' }),
+    K('clear', 'AC', 'AC, kosongkan semua', 'del', { action: 'clear' }),
   ],
   [
     digit('4'),
@@ -111,7 +111,7 @@ export const NUMBER_ROWS: MathKey[][] = [
   [
     digit('0'),
     K('dot', '.', 'Titik perpuluhan', 'num', { insert: '.' }),
-    K('e10', '×10ˣ', 'Darab sepuluh kuasa', 'sci', { insert: '×10^()', cursor: 5 }),
+    K('e10', '×10ˣ', '×10ˣ darab sepuluh kuasa', 'sci', { insert: '×10^()', cursor: 5 }),
     K('left', '◀', 'Kursor ke kiri', 'nav', { action: 'left' }),
     K('right', '▶', 'Kursor ke kanan', 'nav', { action: 'right' }),
   ],

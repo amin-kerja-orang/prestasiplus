@@ -52,6 +52,9 @@ function press(k: MathKey): void {
     data-testid="math-keyboard"
     @keydown.esc.stop="emit('close')"
   >
+    <span class="sr-only" aria-live="polite" data-testid="math-layer-status">{{
+      symbols ? 'Lapisan simbol' : 'Lapisan fungsi'
+    }}</span>
     <div
       class="flex flex-col gap-1 sm:gap-1.5"
       :data-testid="symbols ? 'math-area-simbol' : 'math-area-fungsi'"
