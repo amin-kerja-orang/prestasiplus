@@ -33,10 +33,12 @@
     "check:trace": "node scripts/check-e2e-trace.mjs",
     "contract:emit": "npm run emit -w @pp/contract",
     "contract:check": "npm run check -w @pp/contract",
+    "dskp:build": "node --experimental-strip-types scripts/fixtures/build-m03-dskp.ts",
+    "dskp:check": "node --experimental-strip-types scripts/fixtures/build-m03-dskp.ts --check",
     "ds:debt": "node scripts/ds-debt.mjs",
     "ds:census": "node scripts/codemods/census.mjs",
     "page-shots": "node scripts/page-shots.mjs",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "verify": "npm run lint && npm run dskp:check && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
