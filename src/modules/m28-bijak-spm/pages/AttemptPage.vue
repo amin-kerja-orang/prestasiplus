@@ -566,7 +566,10 @@ const feedback = computed(() => {
     </template>
 
     <template #footer>
-      <div v-if="view && current" class="mx-auto flex w-full max-w-7xl items-center gap-2">
+      <div
+        v-if="view && current"
+        class="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2"
+      >
         <UButton
           type="button"
           color="neutral"
@@ -605,7 +608,7 @@ const feedback = computed(() => {
           type="button"
           color="primary"
           variant="soft"
-          class="min-h-11"
+          class="min-h-11 shrink-0 whitespace-nowrap max-sm:px-3 max-sm:learner:px-3"
           data-testid="check-button"
           @click="check"
           >Semak</UButton
@@ -614,7 +617,7 @@ const feedback = computed(() => {
           v-if="!isLast"
           type="button"
           color="primary"
-          class="min-h-11 shrink-0 whitespace-nowrap max-sm:gap-2 max-sm:px-3 max-sm:learner:px-3"
+          class="min-h-11 shrink-0 whitespace-nowrap max-sm:ml-auto max-sm:gap-2 max-sm:px-3 max-sm:learner:px-3"
           trailing-icon="i-ph-arrow-right"
           data-testid="next"
           @click="goTo(index + 1)"
@@ -624,7 +627,7 @@ const feedback = computed(() => {
           v-else
           type="button"
           color="primary"
-          class="min-h-11"
+          class="min-h-11 shrink-0 whitespace-nowrap max-sm:ml-auto max-sm:px-3 max-sm:learner:px-3"
           :loading="submitting"
           data-testid="submit"
           @click="confirmSubmit = true"
