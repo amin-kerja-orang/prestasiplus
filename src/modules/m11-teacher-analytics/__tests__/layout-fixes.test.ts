@@ -140,7 +140,7 @@ describe('S2 section tabs show the full label (bug 1)', () => {
   })
 })
 
-describe('S6 question column is capped (bug 2)', () => {
+describe('S6 question column is capped (bug 3)', () => {
   const rows: ItemAnalysis['rows'] = [
     {
       questionId: 1,
@@ -164,7 +164,7 @@ describe('S6 question column is capped (bug 2)', () => {
   })
 })
 
-describe('S1 and S6 render the route-meta subtitle (bug 4)', () => {
+describe('S1 and S6 render the route-meta subtitle (bug 8)', () => {
   it('S1 shows "Pantau penglibatan dan prestasi pelajar"', async () => {
     const w = await mountPage(LaporanPage, '/guru/laporan', withStub(laporanRoutes))
     const header = w.get('[data-ds="page-header"]')
@@ -184,7 +184,7 @@ describe('S1 and S6 render the route-meta subtitle (bug 4)', () => {
   })
 })
 
-describe('S3 e-mail wraps instead of truncating (bug 5)', () => {
+describe('S3 e-mail wraps instead of truncating (bug 10)', () => {
   it('the e-mail breaks (break-all) in the pupil and teacher cards and table cells', async () => {
     const w = await mountPage(MonitoringSchoolPage, '/guru/monitoring/sekolah/8080', undefined, {
       schoolId: 8080,
