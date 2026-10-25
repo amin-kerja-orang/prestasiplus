@@ -20,6 +20,7 @@ import { LOGIN_TX, MAX_LEGACY_CHECKS_PER_LOGIN } from './auth.constants'
 import { isLegacyBcrypt, LegacyBcryptBusyError } from './legacy-bcrypt'
 import { LoginThrottle, type ThrottleKeys } from './login-throttle.service'
 import { PasswordService } from './password.service'
+import { AuthPorts } from './ports'
 import type { ResolvedSession } from './session-resolver.service'
 import { assemble, buildGrants } from './session-view'
 import { SessionStore, type IssuedSession } from './session.store'
@@ -59,6 +60,7 @@ export class AuthService {
     @Inject(LoginThrottle) private readonly throttle: LoginThrottle,
     @Inject(SessionStore) private readonly store: SessionStore,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(AuthPorts) private readonly ports: AuthPorts,
   ) {}
 
   /**
@@ -207,6 +209,8 @@ export class AuthService {
       // The login already succeeded; a stale counter only expires with its window.
       this.logger.warn(`login throttle reset failed (requestId=${info.requestId ?? '-'})`)
     }
+    // FR-M01-69 / BR-26: after the commit, bounded and swallowed (`AuthPorts.fireLoginHook`).
+    await this.ports.fireLoginHook({ userId: granted.session.user.id, role: activeRole, at: now }, info.requestId)
     return granted
   }
 
