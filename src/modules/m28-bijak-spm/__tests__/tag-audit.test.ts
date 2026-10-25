@@ -112,6 +112,16 @@ describe('tagChanges (pure)', () => {
     expect(tagChanges(before, t13Tag({ tp: 2 })).map((c) => c.field)).toEqual(['formOrigin', 'unit', 'sp'])
   })
 
+  it('a pure reorder of the SP is not a change; a different set is', () => {
+    const before = matTag({ spIds: [MAT_T4_SP, MAT_T4_SP2] })
+    expect(tagChanges(before, { ...before, spIds: [MAT_T4_SP2, MAT_T4_SP] })).toEqual([])
+    expect(tagChanges(before, { ...before, spIds: [MAT_T4_SP2] })).toEqual([
+      { field: 'sp', before: [MAT_T4_SP, MAT_T4_SP2], after: [MAT_T4_SP2] },
+    ])
+    const reordered = tagChanges(before, { ...before, spIds: [MAT_T4_SP2, MAT_T4_SP], tp: 5 })
+    expect(reordered.map((c) => c.field)).toEqual(['tp'])
+  })
+
   it('does not alias the tag arrays', () => {
     const t = matTag()
     const [sp] = tagChanges(undefined, t).filter((c) => c.field === 'sp')

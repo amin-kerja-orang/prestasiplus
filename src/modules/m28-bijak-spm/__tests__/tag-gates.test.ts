@@ -132,3 +132,108 @@ describe('tagging a flagged question in Sunting (full edit) clears the flag', ()
     expect((await server.listBank({ tagReview: true })).some((r) => r.id === id)).toBe(false)
   })
 })
+
+describe('two decisions at the same time cannot both succeed (the gate loads the catalogue first)', () => {
+  const okCount = (rs: { ok: boolean }[]): number => rs.filter((r) => r.ok).length
+
+  it('Lulus & Terbit and Tolak together on a unit: exactly one wins and the record agrees', async () => {
+    for (const order of ['terbit-first', 'tolak-first'] as const) {
+      const { server } = make()
+      const terbit = () => server.reviewDecision('mat1-rev-2', { action: 'terbit' })
+      const tolak = () => server.reviewDecision('mat1-rev-2', { action: 'tolak', reason: 'Pendua' })
+      const rs = await Promise.all(
+        order === 'terbit-first' ? [terbit(), tolak()] : [tolak(), terbit()],
+      )
+      expect(okCount(rs)).toBe(1)
+      const lost = rs.find((r) => !r.ok)!
+      expect(lost.errors).toEqual(['Item ini tidak lagi menunggu semakan'])
+      const detail = await server.getReviewItem('mat1-rev-2')
+      const actions = detail.history.map((h) => h.action)
+      // never both "Diterbitkan" and "Ditolak" on the same record
+      expect(actions.includes('Diterbitkan') !== actions.includes('Ditolak')).toBe(true)
+      expect(BANK.questions.has('mat1-rev-2')).toBe(detail.item.status === 'terbit')
+      BANK.questions.delete('mat1-rev-2')
+    }
+  })
+
+  it('two Lulus & Terbit on a unit publish once', async () => {
+    const { server } = make()
+    const rs = await Promise.all([
+      server.reviewDecision('mat1-rev-1', { action: 'terbit' }),
+      server.reviewDecision('mat1-rev-1', { action: 'terbit' }),
+    ])
+    expect(okCount(rs)).toBe(1)
+    const h = (await server.getReviewItem('mat1-rev-1')).history.map((x) => x.action)
+    expect(h.filter((a) => a === 'Diterbitkan')).toHaveLength(1)
+  })
+
+  it('two Lulus & Terbit on a revision (v:) publish the new version once', async () => {
+    for (const full of [false, true]) {
+      const { server } = make()
+      const id = 'mat2-kuadratik-v1'
+      if (full) {
+        const e = await server.getBankEditable(id)
+        await server.reviseQuestionFull(
+          id,
+          { ...e.question, stem: `${e.question.stem} Ulang.` },
+          undefined,
+          '',
+        )
+      } else {
+        await server.reviseQuestion(id, 'Faktorkan $x^2 - 5x + 6$.', '')
+      }
+      const rs = await Promise.all([
+        server.reviewDecision(`v:${id}`, { action: 'terbit' }),
+        server.reviewDecision(`v:${id}`, { action: 'terbit' }),
+      ])
+      expect(okCount(rs)).toBe(1)
+      expect(rs.find((r) => !r.ok)!.errors).toEqual(['Item tiada dalam baris gilir'])
+      const d = await server.getBankDetail(id)
+      expect(d.row.version).toBe(2)
+      expect(d.history.filter((h) => h.action === 'Diterbitkan')).toHaveLength(1)
+      expect(d.history.filter((h) => h.action === 'Diarkibkan (digantikan)')).toHaveLength(1)
+    }
+  })
+
+  it('Terbit and Tolak together on a revision: exactly one wins', async () => {
+    const { server } = make()
+    await server.reviseQuestion('mat1-pub-1', 'Selesaikan $2x = 8$.', '')
+    const rs = await Promise.all([
+      server.reviewDecision('v:mat1-pub-1', { action: 'terbit' }),
+      server.reviewDecision('v:mat1-pub-1', { action: 'tolak', reason: 'Tidak sesuai' }),
+    ])
+    expect(okCount(rs)).toBe(1)
+    const h = (await server.getBankDetail('mat1-pub-1')).history.map((x) => x.action)
+    expect(h.includes('Diarkibkan (digantikan)') !== h.includes('Ditolak')).toBe(true)
+  })
+
+  it('two Sunting submits together create one new version', async () => {
+    const { server } = make()
+    const id = 'mat2-kuadratik-v1'
+    const e = await server.getBankEditable(id)
+    const rs = await Promise.all([
+      server.reviseQuestionFull(id, { ...e.question, stem: `${e.question.stem} A.` }, undefined, ''),
+      server.reviseQuestionFull(id, { ...e.question, stem: `${e.question.stem} B.` }, undefined, ''),
+    ])
+    expect(okCount(rs)).toBe(1)
+    expect(rs.find((r) => !r.ok)!.errors).toEqual(['Sudah ada versi baharu menunggu semakan'])
+    const created = (await server.getReviewItem(`v:${id}`)).history.filter((h) =>
+      h.action.startsWith('Versi'),
+    )
+    expect(created).toHaveLength(1)
+  })
+
+  it('a stem-only revision whose question has gone is not_found, not published', async () => {
+    const { server: a, storage } = make()
+    await a.reviseQuestion('mat1-pub-1', 'Selesaikan $2x = 8$.', '')
+    const doc = JSON.parse(storage.getItem(SERVER_STORAGE_KEY)!) as {
+      review: Record<string, unknown>
+    }
+    doc.review['tiada-soalan'] = doc.review['mat1-pub-1']
+    storage.setItem(SERVER_STORAGE_KEY, JSON.stringify(doc))
+    const server = new BijakServer({ storage })
+    await expect(
+      server.reviewDecision('v:tiada-soalan', { action: 'terbit' }),
+    ).rejects.toMatchObject({ code: 'not_found' })
+  })
+})

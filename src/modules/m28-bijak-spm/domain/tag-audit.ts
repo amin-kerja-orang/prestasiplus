@@ -52,8 +52,12 @@ const FIELDS: readonly { field: Field; confidence?: 'unit' | 'sp' | 'tp' | 'kbat
   { field: 'kbat', confidence: 'kbat' },
 ]
 
-/** An unset scalar and "no tag yet" are the same empty value; lists compare in order. */
-const key = (v: unknown): string => JSON.stringify(v ?? null)
+/**
+ * An unset scalar and "no tag yet" are the same empty value. Lists (SP) compare as sorted copies:
+ * choosing the same SP in another order is not a change of the tag.
+ */
+const key = (v: unknown): string =>
+  JSON.stringify(Array.isArray(v) ? ([...v] as unknown[]).sort() : (v ?? null))
 
 /**
  * The audit lines for a tag that goes from `before` (undefined = first tagging) to `after`, with the

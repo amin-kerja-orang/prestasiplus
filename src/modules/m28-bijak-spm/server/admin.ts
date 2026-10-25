@@ -401,6 +401,17 @@ const tagSubjectsOf = (qs: Iterable<QuestionDef | undefined>): Set<string> => {
 const lookupFor = (qs: Iterable<QuestionDef | undefined>): Promise<TagLookup> =>
   tagLookupFor(tagSubjectsOf(qs))
 
+/**
+ * The lookup for a read-only listing (bank, queue, detail, builder): a failed catalogue load must not
+ * blank the page, so it is warned and the page is answered from what is already loaded (topics stay
+ * empty). Gates and every path that mutates use `lookupFor` and fail closed.
+ */
+const lookupForView = (qs: Iterable<QuestionDef | undefined>): Promise<TagLookup> =>
+  lookupFor(qs).catch((error: unknown) => {
+    console.warn('[bijak] DSKP catalogue not loaded; topics are left empty', error)
+    return tagLookupFor([])
+  })
+
 /** A tag that passed the rule is complete: the `perlu-semakan` marker is cleared (as `normaliseTag` does). */
 function settled(q: QuestionDef): QuestionDef {
   if (!q.curriculum.review) return q
@@ -623,7 +634,7 @@ export class AdminOps {
     questions: Record<QuestionStatus, number>
   }> {
     await this.host.tick()
-    const all = this.allItems(await lookupFor(this.queueQuestions()))
+    const all = this.allItems(await lookupForView(this.queueQuestions()))
     const counts: Record<QuestionStatus, number> = { semakan: 0, terbit: 0, draf: 0, ditolak: 0 }
     const questions: Record<QuestionStatus, number> = { semakan: 0, terbit: 0, draf: 0, ditolak: 0 }
     for (const i of all) {
@@ -722,20 +733,25 @@ export class AdminOps {
 
     if (key.startsWith('v:')) {
       const qid = key.slice(2)
+      const queued = this.review[qid]?.revision
+      if (!queued) return { ok: false, errors: ['Item tiada dalam baris gilir'] }
+      // Load first; the status check, the gate and the change below run with no await in between,
+      // so two decisions made at the same time cannot both succeed.
+      const lookup =
+        d.action === 'terbit' ? await lookupFor([getQ(qid), queued.content?.question]) : undefined
       const rec = this.review[qid]
-      if (!rec?.revision) return { ok: false, errors: ['Item tiada dalam baris gilir'] }
+      if (!rec?.revision || rec.revision !== queued)
+        return { ok: false, errors: ['Item tiada dalam baris gilir'] }
       const rev = rec.revision
       if (d.action === 'terbit') {
         if (!rev.stem.trim()) return { ok: false, errors: ['Teks soalan tidak boleh kosong'] }
         // Publish gate: a full edit is checked as a whole; a stem-only edit keeps the live tag, which
         // must still pass the rule (a flagged question cannot be re-published unchanged, AC-07.5).
         const live = getQ(qid)
-        const lookup = await lookupFor([live, rev.content?.question])
+        if (!live) throw this.host.error('not_found', 'Soalan tidak ditemui')
         const errors = rev.content
-          ? gateErrors([rev.content.question], (id) => rev.content!.schemes[id], lookup)
-          : live
-            ? liveTagErrors(live, lookup)
-            : []
+          ? gateErrors([rev.content.question], (id) => rev.content!.schemes[id], lookup!)
+          : liveTagErrors(live, lookup!)
         if (errors.length) return { ok: false, errors }
         rec.history.push(
           entry(rev.version, 'Diterbitkan', rev.note),
@@ -766,11 +782,13 @@ export class AdminOps {
 
     const seed = this.seed(key)
     if (!seed) return { ok: false, errors: ['Item tiada dalam baris gilir'] }
+    // Load first; the status check, the gate and the change below run with no await in between.
+    const lookup = d.action === 'terbit' ? await lookupFor(seed.questions) : undefined
     const recs = seed.questions.map((q) => this.review[q.id]!)
     if (recs.some((r) => r.status !== 'semakan'))
       return { ok: false, errors: ['Item ini tidak lagi menunggu semakan'] }
     if (d.action === 'terbit') {
-      const errors = gateErrors(seed.questions, getScheme, await lookupFor(seed.questions))
+      const errors = gateErrors(seed.questions, getScheme, lookup!)
       if (errors.length) return { ok: false, errors }
       for (const r of recs) {
         r.status = 'terbit'
@@ -856,7 +874,7 @@ export class AdminOps {
       throw this.host.error('bad_request', 'Hanya soalan Terbit boleh disunting')
     const stimulus = q.groupId ? getStimulus(q.groupId) : undefined
     return {
-      row: this.bankRow(qid, await lookupFor([q])),
+      row: this.bankRow(qid, await lookupForView([q])),
       question: defToIntake(q, getScheme, '1', stimulus?.id),
       ...(stimulus ? { stimulus: plain(stimulus) } : {}),
       pendingRevision: !!this.review[qid]?.revision,
@@ -876,6 +894,9 @@ export class AdminOps {
     note: string,
   ): Promise<DecisionResult> {
     await this.host.tick()
+    // Load first: the checks and the change below run with no await in between, so two Sunting
+    // submits made at the same time cannot both create a version.
+    const lookup = await tagLookupFor([edited.tag.subject])
     const q = getQ(qid)
     if (!q || this.statusOf(qid) !== 'terbit')
       return { ok: false, errors: ['Hanya soalan Terbit boleh disunting'] }
@@ -893,11 +914,7 @@ export class AdminOps {
             : {}),
         }
       : undefined
-    const issues = validateRevision(
-      plain(edited),
-      nextStimulus,
-      await tagLookupFor([edited.tag.subject]),
-    )
+    const issues = validateRevision(plain(edited), nextStimulus, lookup)
     if (issues.length > 0) return { ok: false, errors: issues }
 
     const at = this.host.now()
@@ -995,7 +1012,7 @@ export class AdminOps {
     const status = f.status ?? 'terbit'
     const term = f.q?.trim().toLowerCase()
     const ids = this.allQuestionIds()
-    const lookup = await lookupFor(ids.map(getQ))
+    const lookup = await lookupForView(ids.map(getQ))
     // Rows and tag filters are built in one pass, so the page's count is the length of this list.
     return ids
       .map((id) => ({ row: this.bankRow(id, lookup), tag: getQ(id)!.curriculum }))
@@ -1011,9 +1028,9 @@ export class AdminOps {
           (f.tp === undefined || t.tp === f.tp) &&
           (!f.kbat ||
             (f.kbat === 'ya'
-              ? t.kbat !== null
+              ? t.kbat != null
               : f.kbat === 'tidak'
-                ? t.kbat === null
+                ? t.kbat == null
                 : t.kbat === f.kbat)) &&
           (!f.tagReview || r.tagReview) &&
           (!term ||
@@ -1071,7 +1088,7 @@ export class AdminOps {
     if (!q) throw this.host.error('not_found', 'Soalan tidak ditemui')
     const rec = this.review[qid]
     return {
-      row: this.bankRow(qid, await lookupFor([q])),
+      row: this.bankRow(qid, await lookupForView([q])),
       question: reviewQuestion(q),
       ...(q.groupId ? this.groupParts(q.groupId) : {}),
       history: rec?.history ?? [
@@ -1158,7 +1175,7 @@ export class AdminOps {
         kertasOf(qid) === paper.kertas,
     )
     const ids = [...new Set([...used, ...candidates])]
-    const lookup = await lookupFor(ids.map(getQ))
+    const lookup = await lookupForView(ids.map(getQ))
     const groupIds = [...new Set(ids.map(groupOf).filter((g): g is string => !!g))]
     const groups: BuilderGroup[] = groupIds.map((gid) => ({
       id: gid,
