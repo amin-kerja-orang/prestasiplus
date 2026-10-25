@@ -1,5 +1,9 @@
 <script setup lang="ts">
-/** A shared stimulus (Rajah, petikan, jadual). The diagram is bundled inline SVG that follows the theme. */
+/**
+ * A shared stimulus (Rajah, petikan, jadual). The diagram is bundled inline SVG that follows the theme.
+ * `thumb` is the 48 px slot of the sticky strip below `lg`: a figure shrinks into it, a passage or a
+ * table shows an icon tile instead (the full content only opens in the sheet).
+ */
 import { computed } from 'vue'
 
 import type { StimulusDef } from '../domain/types'
@@ -32,6 +36,17 @@ const tableRows = computed(() =>
     >
       <!-- eslint-disable-next-line vue/no-v-html -- bundled seed SVG, not user input -->
       <div aria-hidden="true" v-html="stimulus.svg" />
+    </div>
+    <div
+      v-else-if="thumb"
+      class="flex size-10 items-center justify-center rounded-xl bg-default text-highlighted"
+      role="img"
+      :aria-label="stimulus.alt"
+      :data-kind="stimulus.table ? 'table' : 'passage'"
+      data-testid="stimulus-thumb-icon"
+    >
+      <UIcon v-if="stimulus.table" name="i-ph-table" class="size-6" aria-hidden="true" />
+      <UIcon v-else name="i-ph-article" class="size-6" aria-hidden="true" />
     </div>
     <p v-else-if="stimulus.text" class="rounded-xl bg-muted p-3 text-body text-default">
       <RichText :text="stimulus.text" />
