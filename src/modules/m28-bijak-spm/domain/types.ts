@@ -543,10 +543,3 @@ export interface QuestionCheck {
   questionId: string
   result: QuestionResult
 }
-
-/**
- * How a match_letter question is laid out (FB-064, draft for the user to compare). `list` (default):
- * every sub-part repeats the whole lettered list as full-width buttons. `compact`: the letter bank
- * is shown once above the sub-parts and each sub-part has one row of letter buttons.
- */
-export type MatchLayout = 'list' | 'compact'
