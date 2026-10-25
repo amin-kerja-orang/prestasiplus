@@ -8,7 +8,7 @@
  * `/admin`, `/guru` and `/admin-sekolah` mounts share the components.
  */
 
-import type { WireId } from '../../../api/types'
+import type { EntityId } from '@/api'
 
 export const KIRKPATRICK_ADMIN_BASE = '/admin/kirkpatrick'
 
@@ -21,11 +21,11 @@ export interface KirkpatrickPaths {
   chain: string
   interventions: string
   /** S8 `.../pelajar/{id}`. */
-  pelajar: (userId: WireId) => string
+  pelajar: (userId: EntityId) => string
   /** The monitoring overview of the same mount (`/admin/monitoring`, `/guru/monitoring`, ...). */
   monitoring: string
   /** The monitoring school page of the same mount. */
-  monitoringSchool: (schoolId: WireId) => string
+  monitoringSchool: (schoolId: EntityId) => string
 }
 
 /** `/admin/kirkpatrick` -> `/admin/monitoring`; the same replacement for the other mounts. */

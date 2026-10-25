@@ -8,16 +8,17 @@ import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
+import type { EntityId } from '@/api'
 import { DsDataTable, DsPanel } from '@/ds'
 
-import type { Learning, WireId } from '../../../api/types'
+import type { Learning } from '../../../api/types'
 import { accuracyText, count, pct, plain, type KirkpatrickPaths } from '../common'
 
 const props = defineProps<{ schools: Learning['schools']; paths: KirkpatrickPaths }>()
 
 type School = Learning['schools'][number]
 interface Row extends Record<string, unknown> {
-  schoolId: WireId
+  schoolId: EntityId
   index: number
   name: string
   students: string

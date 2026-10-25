@@ -7,9 +7,10 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
+import type { EntityId } from '@/api'
 import { DsDataTable, DsEmptyState, DsPanel } from '@/ds'
 
-import type { InterventionRow, WireId } from '../../../api/types'
+import type { InterventionRow } from '../../../api/types'
 import { dateEn, pct } from '../common/kirkpatrick-format'
 import { alertLabel, moodLabel, STATUS_COLOR } from './intervention-format'
 
@@ -28,9 +29,9 @@ function accuracyCell(accuracy: number | null, mood: InterventionRow['beforeMood
 }
 
 interface Row extends Record<string, unknown> {
-  id: WireId
+  id: EntityId
   date: string
-  studentId: WireId
+  studentId: EntityId
   studentName: string | null
   alert: string
   description: string

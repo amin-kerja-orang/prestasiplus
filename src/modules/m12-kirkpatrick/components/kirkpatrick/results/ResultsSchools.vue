@@ -9,18 +9,19 @@ import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
+import type { EntityId } from '@/api'
 import { DsDataTable, DsPanel } from '@/ds'
 
-import type { BandKey, ResultsSchoolRow, WireId } from '../../../api/types'
+import type { BandKey, ResultsSchoolRow } from '../../../api/types'
 import { BAND, count, mean, pct, plain } from '../common/kirkpatrick-format'
 
-const props = defineProps<{ rows: ResultsSchoolRow[]; schoolPath: (id: WireId) => string }>()
+const props = defineProps<{ rows: ResultsSchoolRow[]; schoolPath: (id: EntityId) => string }>()
 
 /** Slot rows are untyped; this narrows the band key for the token lookups. */
 const band = (key: unknown) => BAND[key as BandKey]
 
 interface Row extends Record<string, unknown> {
-  schoolId: WireId
+  schoolId: EntityId
   index: number
   name: string
   faded: boolean

@@ -7,9 +7,10 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
+import type { EntityId } from '@/api'
 import { DsDataTable, DsPanel } from '@/ds'
 
-import type { Results, SpmGrade, WireId } from '../../../api/types'
+import type { Results, SpmGrade } from '../../../api/types'
 import { pct, plain } from '../common/kirkpatrick-format'
 import { CADANGAN, CONFIDENCE, GRADE_PILL } from './results-format'
 
@@ -20,7 +21,7 @@ type ConfKey = keyof typeof CONFIDENCE
 const gradeColor = (grade: unknown) => GRADE_PILL[grade as SpmGrade]
 
 type Row = Record<string, unknown> & {
-  userId: WireId
+  userId: EntityId
   index: number
   name: string
   schoolName: string

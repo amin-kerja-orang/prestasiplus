@@ -8,26 +8,27 @@ import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
+import type { EntityId } from '@/api'
 import { DsDataTable, DsPanel } from '@/ds'
 
-import type { SpmGrade, WireId } from '../../../api/types'
+import type { SpmGrade } from '../../../api/types'
 import { count, pct } from '../common/kirkpatrick-format'
 import { COLOR_TEXT, GRADE_PILL } from './results-format'
 import type { ResultsPrediction } from './results-types'
 
 const props = defineProps<{
   rows: ResultsPrediction[]
-  schoolPath: (id: WireId) => string
+  schoolPath: (id: EntityId) => string
 }>()
 
 /** Slot rows are untyped; this narrows the grade for the badge colour. */
 const gradeColor = (grade: unknown) => GRADE_PILL[grade as SpmGrade]
 
 interface Row extends Record<string, unknown> {
-  userId: WireId
+  userId: EntityId
   index: number
   name: string
-  schoolId: WireId
+  schoolId: EntityId
   schoolName: string
   answers: string
   accuracy: string
