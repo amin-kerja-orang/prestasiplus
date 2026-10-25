@@ -1,7 +1,7 @@
 /**
  * G5 acceptance of v2-dskp-integration, part 4: the student side (a tagged seed shows its unit
  * title, a flagged seed forms no bucket), dark mode, the subject lists outside the tag block, the
- * performance budget (NFR-01) and two defects found by QA (expected-fail tests, see the report).
+ * performance budget (NFR-01) and regression tests for the defects found by QA (fixed, see the report).
  */
 import type { Locator, Page } from '@playwright/test'
 
