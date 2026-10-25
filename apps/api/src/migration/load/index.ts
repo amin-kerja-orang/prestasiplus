@@ -176,9 +176,9 @@ async function recountFromCommitted(pool: Pick<pg.Pool, 'query'>, core: CoreCont
      FROM users x
      JOIN "${STAGING_SCHEMA}"."users" s ON s.id::text = x.legacy_id
      WHERE x.legacy_source = $1
-       AND nullif(btrim(s.username, E' \\t\\r\\n\\f\\v'), '') IS NOT NULL
-       AND (nullif(lower(btrim(s.email, E' \\t\\r\\n\\f\\v')), '') IS NULL
-            OR lower(btrim(s.email, E' \\t\\r\\n\\f\\v')) !~ '^[^\\s@]+@[^\\s@]+$')`,
+       AND nullif(btrim(s.username, E' \\t\\r\\n\\f\\x0b'), '') IS NOT NULL
+       AND (nullif(lower(btrim(s.email, E' \\t\\r\\n\\f\\x0b')), '') IS NULL
+            OR lower(btrim(s.email, E' \\t\\r\\n\\f\\x0b')) !~ '^[^\\s@]+@[^\\s@]+$')`,
     [core.source],
   )
   core.notes.counters.set('must_reset.roster_account', Number(roster.rows[0]?.n ?? 0))

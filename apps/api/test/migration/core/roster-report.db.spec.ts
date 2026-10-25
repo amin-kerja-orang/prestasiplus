@@ -468,3 +468,41 @@ describe('Q10 notes and id file after a committed apply', () => {
     }
   }, 300_000)
 })
+
+describe('VTAB-FU: the roster recount after a resume trims whitespace, not the letter v', () => {
+  let envV: StagingDb
+  let outV: string
+  beforeAll(async () => {
+    envV = await freshEnv()
+    // Users 6 to 8 are committed in batches 3 and 4, before the injected failure. The staged logins start with "v" on purpose:
+    // PostgreSQL E-strings have no `\v` escape (it is the letter v), so a `\v` in the btrim set stripped a leading or trailing "v".
+    //  6, 8: valid e-mail whose local part is just "v" (old trim gave "@x.invalid", invalid: wrongly a roster account, +2)
+    //  7:    username "v" and no e-mail                 (old trim gave "", no username: wrongly NOT a roster account, -1)
+    // so a wrong trim gives 3, not the right 2 (a single +1 and -1 would cancel out).
+    await envV.pool.query(`update staging_cloud.users set username = 'vina', email = 'v@x.invalid' where id = 6`)
+    await envV.pool.query(`update staging_cloud.users set username = 'v', email = null where id = 7`)
+    await envV.pool.query(`update staging_cloud.users set username = 'uv', email = 'v@y.invalid' where id = 8`)
+    outV = mkdtempSync(join(REPO_ROOT, '.migration-out', 'q10-vtab-'))
+  }, 300_000)
+  afterAll(async () => {
+    if (outV !== undefined) rmSync(outV, { recursive: true, force: true })
+    await envV?.close()
+  })
+
+  it('must_reset.roster_account counts user 3 and the username "v" only, after the recount of a resumed apply', async () => {
+    const base = { pool: envV.pool, env: baseEnv, source: 'cloud' as const, asOf: AS_OF, batchSize: 2, outDir: outV }
+    expect((await runCore({ ...base, mode: 'dry-run' })).report.status).toBe('succeeded')
+    await expect(runCore({ ...base, mode: 'apply', transformSteps: failOnce('users', 5) })).rejects.toThrow('injected failure')
+    // the three users are committed before the failure, so the recount joins them to their staged rows
+    const committed = await envV.pool.query<{ legacy_id: string }>(`select legacy_id from users where legacy_id in ('6', '7', '8') order by legacy_id`)
+    expect(committed.rows.map((r) => r.legacy_id)).toEqual(['6', '7', '8'])
+
+    const resumed = await runCore({ ...base, mode: 'apply' })
+    expect(resumed.report.status).toBe('succeeded')
+    expect(resumed.core.notes.counters.get('countsFromCommittedRows')).toBe(1) // the recount ran
+    // user 3 (username, no e-mail left) and user 7 (username "v", no e-mail): two. Users 6 and 8 have a valid e-mail.
+    expect(resumed.core.notes.counters.get('must_reset.roster_account')).toBe(2)
+    const saved = expectNumbersOnly((await ledgerNotes(envV.pool, resumed.report.runId)).notes)
+    expect(saved['must_reset.roster_account']).toBe(2)
+  }, 300_000)
+})
