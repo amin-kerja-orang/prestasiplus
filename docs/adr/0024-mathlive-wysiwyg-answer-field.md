@@ -1,0 +1,41 @@
+# ADR-0024: The maths answer field is a MathLive `<math-field>`, loaded lazily, storing LaTeX in the existing answer fields
+
+- **Status:** Proposed. The choice of MathLive (MIT) was made by the user on 2026-10-25 (system audit, Q-B13 option (a), TRACKER AUD-D5). The design decisions below (M1 to M12 in `docs/architecture/v2-math-wysiwyg.md`) await the G2 approval of the user. Build is after the 30 Oct go-live (Full track).
+- **Date:** 2026-10-25
+- **Related:** `docs/requirements/v2-bijak-spm.md` (US-09, AC-09.1 to AC-09.6, "Planned (FB-069, after go-live)", R15, Q-B13); `docs/architecture/v2-math-wysiwyg.md` (feature design); `docs/qa/audit-sistem/evidence/FB-069-notes.md` (scratch prototype measurements); `docs/qa/audit-sistem/FIXLOG.md` (FB-069, P-069); ADR-0009 (module boundaries), ADR-0014 (one owner per shared store, D12), ADR-0015 (Nuxt UI, strict DS lint), ADR-0018 (contract-first schemas), ADR-0021 (`@pp/exam-core`, on the integration branches)
+
+## Context
+- FB-045 gave the answer field a Casio-style keypad, but the field itself is a plain text input with friendly notation (`(7)/(3)^2+sin(30°)`); a KaTeX preview strip shows how the line was read. The user asked for the field itself to show real maths (stacked fractions, raised powers, roots) while typing, and chose MathLive (MIT) on 2026-10-25.
+- A scratch prototype (no code committed) showed: the marker accepts all 11 sample answers unchanged; the lazy chunk is 801 KB raw / 216 KB gzip (`mathlive` 0.111.1, MIT); the phone's own keyboard no longer opens; x² must be pressed inside the fraction box; saved answers need a small migration (`sin` to `\sin`); the preview strip becomes redundant. The user accepted these consequences.
+- The stored answer is already LaTeX. `PartAnswer.steps[]` and `final` are documented as LaTeX in `src/modules/m28-bijak-spm/domain/types.ts` and in the contract schema `BijakAttemptPartAnswerSchema` on the integration branches (`plain` is derived by `latexToPlain`). The marker reads LaTeX or plain through `latexToPlain`. The real backend marks with the same pure code (`@pp/exam-core`, ADR-0021, `apps/api/.../marking.ts`).
+- Go-live runs on the in-browser mock; contract changes come after go-live. The vite config pins every `node_modules` package that is not named to one `vendor` chunk (`vite.config.ts` `manualChunks`), so a new dependency would silently land in the eager `vendor` chunk unless it is named.
+- The m28 store owns attempts and answers (D12, ADR-0014); no other module may define its own answer schema.
+
+## Decision
+1. **Library and loading.** Add `mathlive`, pinned to an exact version (0.111.1 measured), as a runtime dependency. It is loaded only by `import('mathlive')` from a loader used by the attempt's maths field, in its own chunk `vendor-mathlive` (a named `manualChunks` rule placed before the generic `vendor` rule). Its fonts are served from `public/fonts/mathlive/` and its sounds are off; no request leaves the origin.
+2. **One stored format: LaTeX in the existing fields, no contract change.** The field stores MathLive's LaTeX (`mf.value`) in `steps[]` and `final`, lightly normalised (`\placeholder{}` becomes `{}`; an empty template becomes `''`). `plain` is still derived by `latexToPlain` in `PartInput`. The marker, `@pp/exam-core` and the backend `marking.ts` are unchanged; parity holds by construction and is pinned by one shared golden fixture run on both sides. No OpenAPI or schema change. The converter is the existing `latexToPlain`; additions to it, if the build-time spike finds a MathLive command it does not know, are additive and land in `@pp/exam-core`.
+3. **Migration is lazy and read-only.** Saved answers are not rewritten. When a stored value is loaded into the field, a pure, idempotent function (`legacyToMathLive`) converts the old form (`sin(30°)`, `50%`, `(7)/(3)^{2}`) to a form MathLive displays correctly. The stored value changes only when the student edits the line. There is no state schema bump, no localStorage rewrite and no server job.
+4. **The Casio keypad stays exactly as FB-045 built it.** Ids, labels, accessible names, tones, rows and the Fungsi/Simbol layers do not change. Each key's payload changes from friendly text to a MathLive operation (a LaTeX template for `insert`, or one of four commands). `applyKey` and the friendly-token inserts are removed from the success path.
+5. **Touch devices are keypad-only; one input model for every maths field.** MathLive keeps `inputmode="none"`; the virtual keyboard policy is `manual` and never shown. Numeric final answers (FB-050) use the same WYSIWYG field (no separate plain decimal input), because they accept fractions and the hint copy points to the keypad.
+6. **Fallback.** If the chunk fails to load (or times out), the field falls back to the previous plain text box (friendly text, `plainToLatex` on change, phone keyboard allowed, no keypad) with a retry. This keeps `plainToLatex` and `latexToFriendly` (with two additive rules) and `previewLatex` (for the migration).
+7. **The preview row is removed** (the field is the preview). Its two places (under the line; the sheet's display row) go; the sheet keeps its "Tutup" key.
+8. **Ownership and focus stay with `keypad-owner`.** One open keypad at a time, owner id = the field id, as today. D10: accessible names, keyboard and focus behaviour replicate the current field; no enhancements.
+9. **LaTeX source is never reachable.** MathLive's LaTeX mode (Escape, backslash), popover and context menu are disabled.
+
+## Alternatives considered
+- **Store the plain expression as canonical and convert LaTeX to plain on save:** the field cannot restore the 2-D structure from `((7)/(3^(2)))` without a parser, the contract and the type comment already say LaTeX, and Semakan renders the stored LaTeX with KaTeX. Rejected.
+- **A new field (for example `mathlive` or `format: 2`) next to `final`:** a contract change after go-live, `BijakAttemptPartAnswerSchema` is a strict object, and two sources of truth. Rejected.
+- **Rewrite saved answers in a bulk migration:** touches the shared store and the real DB for no marking benefit (old values already mark correctly), adds a rollback problem. Rejected in favour of read-time conversion.
+- **Custom contenteditable renderer (no dependency):** much more work and riskier on mobile; already rejected in P-069.
+- **Keep the plain decimal input for numeric answers:** two input models and two conversion paths, a field that looks different from the working lines, and the FB-050 hint copy (fractions and minus are on the keypad) would no longer hold. Rejected; reversible later because the field is one component.
+- **Bundle MathLive into the app entry or let it fall into `vendor`:** +216 KB gzip on every first load, including login and portals. Rejected.
+- **Load MathLive from a CDN:** third-party request on a student exam screen. Rejected.
+
+## Consequences
+- New runtime dependency with an exact pin; licence MIT (fonts are the KaTeX fonts MathLive ships, copied into `public/fonts/mathlive/` with their licence file). Security review for the dependency is added at G4.
+- `all js` budgets in `scripts/check-demo-bundle.mjs` are raised deliberately by the measured chunk plus 10 %, and a separate budget names the `vendor-mathlive` chunk; the entry budgets do not change.
+- jsdom cannot run MathLive: unit tests use a stub custom element; real behaviour is covered by Playwright. The existing keypad tests (`applyKey`, friendly insert) are replaced by a key-to-operation table test.
+- Students on a phone can type only what the keypad offers (digits, x, y and symbols); other letters need a physical keyboard. Accepted by the user as "keypad only"; a letters layer is a separate request (open question OQ-2 in the feature design).
+- The `math-preview` and `math-display` test ids disappear; `math-input` now names the `<math-field>` element.
+- A later upgrade of MathLive can change its LaTeX serialisation; the exact pin plus the golden fixture (marker verdicts on real key-pressed values) make that a visible test failure, not a silent marking change.
+- Rolling FB-069 back leaves MathLive-style LaTeX in saved answers. The marker still reads it; the old field would show it unpolished. Landing the `latexToFriendly` additive rules before the rest of FB-069 (task FB069-T02) removes that gap.
