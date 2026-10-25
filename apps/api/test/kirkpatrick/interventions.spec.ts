@@ -143,6 +143,35 @@ describe('GET/POST /api/kirkpatrick/interventions (AC 3, 4, 7)', () => {
       expect(fieldsOf(await teacherA.post('/kirkpatrick/interventions', { ...body('1'), studentId: 9876543210123 }))).toEqual({ studentId: 'Pelajar tidak dijumpai.' })
     })
 
+    it('BUG-10: only a Tingkatan 4 or 5 pupil is accepted; a Tingkatan 2 pupil gets the same 422 as an unknown id (FN-M12-8.2.4)', async () => {
+      const [form2] = await t.db.query<{ id: string }>(`select id::text from users where email like 'murid.demo001.%' and grade = 8 order by id limit 1`)
+      expect(form2, 'the fixture keeps generated pupils of school A in Tingkatan 2').toBeDefined()
+      const refuse = async (who: Client, id: string) => {
+        const res = await who.post('/kirkpatrick/interventions', body(id))
+        expect(res.status, id).toBe(422)
+        expect(fieldsOf(res), id).toEqual({ studentId: 'Pelajar tidak dijumpai.' })
+        expect(KirkpatrickInterventionRefusalSchema.parse(res.body).error.message).toBe('Pelajar tidak dijumpai.')
+      }
+      await refuse(admin, form2!.id)
+      await refuse(adminA, form2!.id)
+      // A teacher of the pupil's own class is refused too once the pupil is outside T4/T5 (grade 8, then no grade).
+      for (const grade of ['8', 'null']) {
+        await t.db.query(`update users set grade = ${grade} where id = $1`, [w.ids.p2])
+        try {
+          await refuse(teacherA, w.ids.p2)
+        } finally {
+          await t.db.query(`update users set grade = 10 where id = $1`, [w.ids.p2])
+        }
+      }
+      // Tingkatan 4 (grade 10) and Tingkatan 5 (grade 11) are still accepted.
+      for (const [who, id] of [[admin, w.ids.maju], [adminA, w.ids.p1], [teacherA, w.ids.p2]] as const) {
+        const res = await who.post('/kirkpatrick/interventions', body(id))
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        // Remove the row again: the list-scope tests below count the rows of the earlier tests.
+        await t.db.query(`delete from interventions where id = $1`, [res.body.data.id])
+      }
+    })
+
     it('stage order: field checks, then the pupil, then the calendar date', async () => {
       const badDate = await teacherA.post('/kirkpatrick/interventions', body(w.ids.p1, { actionDate: '2026-02-30' }))
       expect(fieldsOf(badDate)).toEqual({ actionDate: 'Tarikh tidak sah.' })

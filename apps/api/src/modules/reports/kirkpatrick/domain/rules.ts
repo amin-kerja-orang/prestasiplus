@@ -7,6 +7,12 @@ export type BandKey = 'champion' | 'konsisten' | 'berkembang' | 'minimum' | 'tid
 export type SubjectStatus = 'Mastered' | 'Developing' | 'Beginning'
 export type Grade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'C+' | 'C' | 'D' | 'E' | 'G'
 
+/** School grades of the T4/T5 population (Tingkatan 4 and 5, BR-M12-01); the repository segment SQL uses the same pair. */
+export const T4T5_GRADES: readonly number[] = [10, 11]
+
+/** True for a pupil of Tingkatan 4 or 5; an unset grade is not. */
+export const isT4T5Grade = (grade: number | null): boolean => grade !== null && T4T5_GRADES.includes(grade)
+
 export const BAND_KEYS: readonly BandKey[] = ['champion', 'konsisten', 'berkembang', 'minimum', 'tidakTerlibat']
 
 /** Rounds `value` half-up to one decimal (the displayed precision of every M12 percentage). */

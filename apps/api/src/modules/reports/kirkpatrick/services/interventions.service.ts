@@ -9,7 +9,7 @@ import { CLOCK, type Clock } from '../../../../db/clock'
 import { isIdString } from '../../../../db/ids'
 import { PrismaService } from '../../../../db/prisma.service'
 import { ClassesRepository } from '../../../classes'
-import { round1, statusOfIntervention } from '../domain/rules'
+import { isT4T5Grade, round1, statusOfIntervention } from '../domain/rules'
 import { type InterventionRecord, type InterventionScope, KirkpatrickRepository } from '../kirkpatrick.repository'
 import type { KirkpatrickInterventionCreateRequest, KirkpatrickInterventionList, KirkpatrickInterventionRow } from '../types'
 import type { Ctx } from './scope'
@@ -85,12 +85,12 @@ export class InterventionsService {
     }
   }
 
-  /** The pupil must be a student in the caller's scope; otherwise the same refusal as an unknown id. */
+  /** The pupil must be a T4/T5 student (FN-M12-8.2.4) in the caller's scope; otherwise the same refusal as an unknown id. */
   private async inScope(ctx: Ctx, rawId: string | number): Promise<string | null> {
     const id = String(typeof rawId === 'string' ? rawId.trim() : rawId)
     if (!isIdString(id)) return null
     const pupil = await this.repo.pupil(id)
-    if (!pupil?.isStudent) return null
+    if (!pupil?.isStudent || !isT4T5Grade(pupil.grade)) return null
     if (ctx.role === 'admin') return id
     if (ctx.role === 'school_admin') return ctx.schoolId !== null && pupil.schoolId === ctx.schoolId ? id : null
     return (await this.classes.teacherStudentIds(ctx.userId)).includes(id) ? id : null
