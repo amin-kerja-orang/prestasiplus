@@ -105,6 +105,8 @@ export interface ExtractInput {
   images?: PageImage[]
   subject: SubjectCode
   kertas: 1 | 2
+  /** Narrows the DSKP unit/SP suggestion when the batch declares a tingkatan (none does yet). */
+  tingkatan?: 'T4' | 'T5'
 }
 
 /** Provider-agnostic extraction (ADR 0019). Real providers run server-side. */
