@@ -844,8 +844,8 @@ deactivate the second one.
    release** (`PP_IMAGE_TAG` from `current.tag`), run as `ppdeploy`:
    - the password comes from a hidden prompt (or, with no terminal, a one-line `ppdeploy`-owned mode 600 file removed
      with `shred -u`), never from the command line or chat;
-   - it stores an argon2id hash, sets "must change password", ends that account's sessions and writes an
-     `audit_events` row;
+   - it stores an argon2id hash, does not force a password change (R39b; a reset clears an existing flag), ends that
+     account's sessions and writes an `audit_events` row;
    - a second person (another team member on the call) witnesses the run, and the run is logged as in step 4.
    If no Admin Pusat exists at all (none migrated), the same command with `--mode=create` makes the first one.
 3. **Never**, not even in an emergency:
@@ -887,7 +887,7 @@ never accepted as an argument: any password-like flag stops it.
 
 - **What it does.** Everything happens in one transaction, under the same lock as the users module's last-admin guard:
   - an argon2id hash (the same parameters as login);
-  - `must_reset_password` is set, so the account must change its password at the next login;
+  - `must_reset_password` is not set (R39b): `create` stores false and `reset` clears an existing flag, so no password change is forced at the next login;
   - the national `admin` scope is set;
   - every live session of that account ends;
   - open "Lupa Kata Laluan" reset links of that account are spent;

@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common'
 import { AuditModule } from '../../common/audit/audit.module'
 import { ThrottleModule } from '../../common/throttle'
 import { AccountRepository as AuthAccountRepository } from '../auth/account.repository'
-import { AuthModule } from '../auth'
+import { AuthModule, AuthPortsModule } from '../auth'
 import { FilesModule } from '../files'
 import { NotificationsModule } from '../notifications'
 import { SchoolsModule } from '../schools'
@@ -13,6 +13,7 @@ import { NotificationsAdapter } from './notifications.adapter'
 import { AccountPublicController, MeController, PictureInterceptor, PublicStatsController } from './account.controller'
 import { AccountDataRepository } from './account-data.repository'
 import { AccountThrottle } from './account-throttle.service'
+import { AccountPortsModule } from './registration-ports'
 import { PasswordResetService } from './password-reset.service'
 import { LoggingMailPort, MAIL_PORT, NOTIFICATION_PORT } from './ports'
 import { ProfileService } from './profile.service'
@@ -32,7 +33,7 @@ import { SettingsService, StatsService } from './settings.service'
  * so it is provided here again.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, AuthModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule],
+  imports: [AuditModule, ThrottleModule, AccountPortsModule, AuthModule, AuthPortsModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule],
   controllers: [AccountPublicController, MeController, PublicStatsController],
   providers: [
     AccountDataRepository,

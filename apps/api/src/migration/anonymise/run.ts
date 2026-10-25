@@ -9,7 +9,10 @@
  *   - files are created with mode 0600 and never overwritten (`wx`);
  *   - the leak scan (leak-scan.ts) runs on the finished output; on a hit, or on any error, everything
  *     written is deleted again;
- *   - the log carries table names and counts only.
+ *   - the log carries table names and counts only;
+ *   - `redact-pii` columns (free-text content, A1-LEAK) are masked with the COMPLETE originals index: before the main pass an
+ *     index pass reads every table that has a rule that replaces values (users, schools, sponsors, ...), in whatever order the
+ *     tables come, so a content table never sees a half-filled index. The index pass is skipped when no column uses redact-pii.
  */
 import { existsSync, readdirSync, realpathSync, renameSync, rmdirSync, rmSync, statSync } from 'node:fs'
 import { open, writeFile } from 'node:fs/promises'
@@ -22,6 +25,7 @@ import { prepareOutputDir } from '../profile'
 import { AnonymiseAbortedError, InputError, LeakScanError, OutputError, type LeakHit } from './errors'
 import { LeakScanner, OriginalsIndex, scanDumpDirectory, type ScanResult } from './leak-scan'
 import { Pseudonymiser, type PseudonymKind } from './pseudonyms'
+import { PiiRedactor, type RedactKind } from './redact'
 import { applyRule, checkCoverage, ruleFor, type AnonConfig, type Rule } from './rules'
 
 const OWN_COLUMNS = new Set(['_loaded_at', '_row_hash'])
@@ -54,6 +58,15 @@ export interface AnonymiseResult {
   totalRows: number
   scan: ScanResult
   pseudonyms: Record<PseudonymKind, number>
+  /** `redact-pii`: how many spans were masked, per table.column and kind. Counts only, never a value. */
+  redactions: RedactionCount[]
+}
+
+export interface RedactionCount {
+  table: string
+  column: string
+  kind: RedactKind
+  count: number
 }
 
 const real = (p: string): string => {
@@ -125,6 +138,10 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
 
   const pseudo = new Pseudonymiser(options.key)
   const index = new OriginalsIndex()
+  const patterns = { allowedEmailDomains: ['example.test', ...(options.extraAllowedEmailDomains ?? [])] }
+  // The same index and the same allowed domains as the leak scan below, so a masked output cannot be flagged by it.
+  const redactor = new PiiRedactor(index, patterns)
+  const redactions = new Map<string, RedactionCount>()
   const manifestTables: Record<string, { rows: number; file?: string }> = {}
   const results: { table: string; rows: number }[] = []
 
@@ -133,17 +150,49 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
   }
   const cleanup = (): void => rmSync(outDir, { recursive: true, force: true })
   const dummyRoles = new Set(options.config.dummyPasswordRoles.map((r) => r.toLowerCase()))
+  const lockedFor = (rule: Rule, row: Record<string, unknown>): boolean =>
+    rule.rule === 'hash-password-dummy' && !(typeof row.role === 'string' && dummyRoles.has(row.role.trim().toLowerCase()))
+  const rulesOf = (spec: TableSpec): Map<string, Rule> => {
+    const rules = new Map<string, Rule>()
+    for (const c of columnNames(spec)) rules.set(c, ruleFor(options.config, spec.name, c) as Rule)
+    return rules
+  }
 
   try {
+    // Index pass (only when some column uses redact-pii). The originals index is filled while rules replace values, row by
+    // row, so without this pass a content table could be masked before the user table (or any later table with a replaced
+    // name, phone, IC, ...) was indexed, and the leak scan at the end, which sees the complete index, would then fail the
+    // run. Here every table with a value-replacing rule is read once, only its replaced columns are looked at, and nothing
+    // is written. The pseudonymiser is not used (its fakes and its collision order stay those of the main pass).
+    if (tables.some((spec) => [...rulesOf(spec).values()].some((r) => r.rule === 'redact-pii'))) {
+      let indexed = 0
+      for (const spec of tables) {
+        stop()
+        const replacing = [...rulesOf(spec)].filter(([, r]) => !['keep', 'redact-pii', 'slug-from-id', 'null-content'].includes(r.rule))
+        if (replacing.length === 0 || !(await options.reader.has(spec.name))) continue
+        const rules = new Map(replacing)
+        for await (const batch of options.reader.read(spec.name, batchSize)) {
+          for (const row of batch) {
+            for (const [column, value] of Object.entries(row)) {
+              const rule = rules.get(column)
+              if (!rule) continue
+              index.record(rule, value, rule.rule === 'pseudonym' ? undefined : applyRule(rule, value, pseudo, lockedFor(rule, row), { row }))
+            }
+          }
+          stop()
+        }
+        indexed++
+      }
+      log.info(`Index pass: originals of ${indexed} table(s) indexed for redact-pii (nothing written).`)
+    }
+
     for (const spec of tables) {
       stop()
       if (!(await options.reader.has(spec.name))) {
         log.warn(`Table ${spec.name} is absent from the input; nothing written for it.`)
         continue
       }
-      const known = new Set(columnNames(spec))
-      const rules = new Map<string, Rule>()
-      for (const c of known) rules.set(c, ruleFor(options.config, spec.name, c) as Rule)
+      const rules = rulesOf(spec)
 
       const file = `${spec.name}.ndjson`
       const path = join(outDir, file)
@@ -162,8 +211,16 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
                   `Table ${spec.name}: the input has a column that the staging DDL does not define (${describe([column])}). Default deny: it is not copied. Add it to ddl/spec.ts and give it a rule.`,
                 )
               }
-              const locked = rule.rule === 'hash-password-dummy' && !(typeof row.role === 'string' && dummyRoles.has(row.role.trim().toLowerCase()))
-              const result = applyRule(rule, value, pseudo, locked)
+              const result = applyRule(rule, value, pseudo, lockedFor(rule, row), {
+                redactor,
+                row,
+                onRedact: (kind) => {
+                  const key = `${spec.name}\0${column}\0${kind}`
+                  const seen = redactions.get(key)
+                  if (seen) seen.count++
+                  else redactions.set(key, { table: spec.name, column, kind, count: 1 })
+                },
+              })
               index.record(rule, value, result)
               out[column] = result
             }
@@ -196,18 +253,26 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
       flag: 'wx',
     })
 
-    const scanner = new LeakScanner(index, { allowedEmailDomains: ['example.test', ...(options.extraAllowedEmailDomains ?? [])] })
+    const scanner = new LeakScanner(index, patterns)
     const scan = await scanDumpDirectory(outDir, scanner, tables, batchSize)
     const allow = new Set(options.config.leakScan.allow)
     const isOriginal = (h: LeakHit) => h.kind === 'original-value' || h.kind === 'original-name'
     const tolerated = scan.hits.filter((h) => isOriginal(h) && allow.has(`${h.table}.${h.column}`))
     const hits = scan.hits.filter((h) => !tolerated.includes(h))
-    for (const h of tolerated) log.warn(`Leak scan: ${h.count} original-value hit(s) in ${h.table}.${h.column} tolerated by leakScan.allow.`)
+    for (const h of tolerated) log.warn(`Leak scan: ${h.count} ${h.kind} hit(s) in ${h.table}.${h.column} tolerated by leakScan.allow.`)
     if (hits.length > 0) {
       for (const h of hits) log.warn(`Leak scan hit: ${h.table}.${h.column} (${h.kind}) x${h.count}.`)
       throw new LeakScanError(hits, true)
     }
     log.info(`Leak scan: clean (${scan.rowsScanned} rows, ${scan.cellsScanned} cells checked).`)
+
+    const redactionList = [...redactions.values()].sort((a, b) => `${a.table}.${a.column}.${a.kind}`.localeCompare(`${b.table}.${b.column}.${b.kind}`))
+    const perColumn = new Map<string, number>()
+    for (const r of redactionList) perColumn.set(`${r.table}.${r.column}`, (perColumn.get(`${r.table}.${r.column}`) ?? 0) + r.count)
+    for (const [where, n] of perColumn) {
+      const kinds = redactionList.filter((r) => `${r.table}.${r.column}` === where).map((r) => `${r.kind} x${r.count}`)
+      log.info(`Redacted ${n} span(s) in ${where} (${kinds.join(', ')}).`)
+    }
 
     const totalRows = results.reduce((sum, t) => sum + t.rows, 0)
     // Not atomic: the empty directory is removed, then the partial one is renamed. If either step fails the
@@ -222,7 +287,7 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
       )
     }
     log.info(`Done: ${results.length} tables, ${totalRows} rows.`)
-    return { tables: results, totalRows, scan, pseudonyms: pseudo.counts }
+    return { tables: results, totalRows, scan, pseudonyms: pseudo.counts, redactions: redactionList }
   } catch (e) {
     cleanup()
     throw e
