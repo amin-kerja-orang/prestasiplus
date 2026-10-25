@@ -31,6 +31,7 @@ import { account, expectNoHScroll, HOME, newPeerContext, type ApiRole } from './
 import {
   applyFilters,
   cancelOpenSubscriptions,
+  cancelOpenSubscriptionsQuietly,
   dataOf,
   filterControls,
   isPainted,
@@ -156,9 +157,9 @@ test.describe('M02 schools (Admin Pusat) @api', () => {
     const createdRes = await created
     expect(createdRes.status(), 'POST /api/admin/schools').toBe(201)
     const schoolId = ((await createdRes.json()) as { data: { id: string } }).data.id
-    await expect(page).toHaveURL(/\/admin\/schools$/, { timeout: 20_000 })
 
     try {
+      await expect(page).toHaveURL(/\/admin\/schools$/, { timeout: 20_000 })
       const stored = dataOf<WireSchool>(
         {
           status: 200,
@@ -441,7 +442,7 @@ test.describe('M02 school subscriptions (Admin Pusat) @api', () => {
         await expectNoHScroll(page)
       } finally {
         // Whatever happened above, the subscription must not stay active.
-        await cancelOpenSubscriptions(api, SUB_SCHOOL)
+        await cancelOpenSubscriptionsQuietly(api, SUB_SCHOOL)
       }
     } finally {
       await api.dispose()
@@ -512,7 +513,7 @@ test.describe('M02 school subscriptions (Admin Pusat) @api', () => {
         await expect(page.getByTestId('invoice-school')).toContainText(SUB_SCHOOL)
         await expectNoHScroll(page)
       } finally {
-        await cancelOpenSubscriptions(api, SUB_SCHOOL)
+        await cancelOpenSubscriptionsQuietly(api, SUB_SCHOOL)
       }
     } finally {
       await api.dispose()

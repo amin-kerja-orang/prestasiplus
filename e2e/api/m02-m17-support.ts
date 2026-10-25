@@ -10,7 +10,7 @@
 
 import type { APIRequestContext, Browser, BrowserContext, Page, TestInfo } from '@playwright/test'
 
-import { expect } from '../fixtures/api'
+import { expect, test } from '../fixtures/api'
 import { account, newPeerContext, type ApiRole } from './helpers'
 
 /** Tailwind `md`: lists are tables from here, card lists below. */
@@ -194,7 +194,16 @@ export function openTempSession(
 
 /** Best-effort delete of accounts a spec created; a failure here must not hide the real failure. */
 export async function removeUsers(admin: ApiSession, ids: string[]): Promise<void> {
-  for (const id of ids) await admin.send('DELETE', `/api/admin/users/${id}`).catch(() => undefined)
+  for (const id of ids) {
+    const res = await admin.send('DELETE', `/api/admin/users/${id}`).catch(() => null)
+    if (res === null || (res.status >= 300 && res.status !== 404)) {
+      // 404 = already deleted by the test itself. Only the id is recorded, never credentials.
+      test.info().annotations.push({
+        type: 'cleanup-leftover-user',
+        description: `${id} (DELETE ${res === null ? 'failed' : res.status})`,
+      })
+    }
+  }
 }
 
 interface WireSubscription {
@@ -207,6 +216,7 @@ interface WireSubscription {
 export async function cancelOpenSubscriptions(
   api: ApiSession,
   schoolName: string,
+  { strict = true }: { strict?: boolean } = {},
 ): Promise<string> {
   const list = (await api.get('/api/admin/school-subscriptions?perPage=200')).body as {
     data: WireSubscription[]
@@ -216,10 +226,15 @@ export async function cancelOpenSubscriptions(
     if (sub.school.name !== schoolName) continue
     schoolId = sub.school.id
     if (sub.status !== 'cancelled') {
-      expect(
-        (await api.send('POST', `/api/admin/school-subscriptions/${sub.id}/cancel`)).status,
-        `cancel subscription ${sub.id}`,
-      ).toBe(200)
+      const status = (await api.send('POST', `/api/admin/school-subscriptions/${sub.id}/cancel`))
+        .status
+      if (strict) expect(status, `cancel subscription ${sub.id}`).toBe(200)
+      else if (status !== 200) {
+        test.info().annotations.push({
+          type: 'cleanup-leftover-subscription',
+          description: `${sub.id} (cancel ${status})`,
+        })
+      }
     }
   }
   if (schoolId !== '') return schoolId
@@ -230,4 +245,19 @@ export async function cancelOpenSubscriptions(
   const found = options.find((o) => o.name === schoolName)
   expect(found, `the seed has the school ${schoolName}`).toBeTruthy()
   return found!.id
+}
+
+/** For `finally` blocks: cancels what is left, never throws, records a leftover as an annotation. */
+export async function cancelOpenSubscriptionsQuietly(
+  api: ApiSession,
+  schoolName: string,
+): Promise<void> {
+  try {
+    await cancelOpenSubscriptions(api, schoolName, { strict: false })
+  } catch (error) {
+    test.info().annotations.push({
+      type: 'cleanup-leftover-subscription',
+      description: `${schoolName}: ${error instanceof Error ? error.message.slice(0, 120) : 'failed'}`,
+    })
+  }
 }

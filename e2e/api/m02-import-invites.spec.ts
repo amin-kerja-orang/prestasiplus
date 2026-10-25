@@ -34,6 +34,7 @@ import { gotoApi, loginViaUi } from '../fixtures/api'
 import { account, expectNoHScroll, newPeerContext } from './helpers'
 import {
   cancelOpenSubscriptions,
+  cancelOpenSubscriptionsQuietly,
   createTempAdmin,
   createUser,
   dataOf,
@@ -391,7 +392,7 @@ test.describe('M02 bulk user import (Admin Pusat) @api', () => {
         ids.push(...found.map((u) => u.id))
       }
       await removeUsers(admin, [...ids, temp.id])
-      await cancelOpenSubscriptions(admin, SUB_SCHOOL)
+      await cancelOpenSubscriptionsQuietly(admin, SUB_SCHOOL)
       await admin.dispose()
     }
   })
@@ -405,17 +406,20 @@ test.describe('M02 parent invites @api', () => {
     browser,
   }, info) => {
     const admin = await openApiSession(browser, info, 'adminPusat')
-    const pupilAccount = await createUser(
-      admin,
-      info,
-      'student',
-      { schoolId: '2', grade: 10 },
-      'muridjemput',
-    )
-    const parentAccount = await createUser(admin, info, 'parent', {}, 'ibujemput')
     const guest = await newPeerContext(browser, info)
+    const made: string[] = []
     let linkId: string | null = null
     try {
+      const pupilAccount = await createUser(
+        admin,
+        info,
+        'student',
+        { schoolId: '2', grade: 10 },
+        'muridjemput',
+      )
+      made.push(pupilAccount.id)
+      const parentAccount = await createUser(admin, info, 'parent', {}, 'ibujemput')
+      made.push(parentAccount.id)
       const pupil = await openTempSession(browser, info, pupilAccount)
       const parent = await openTempSession(browser, info, parentAccount)
       try {
@@ -514,7 +518,7 @@ test.describe('M02 parent invites @api', () => {
       }
     } finally {
       await guest.close()
-      await removeUsers(admin, [parentAccount.id, pupilAccount.id])
+      await removeUsers(admin, made)
       await admin.dispose()
     }
   })
@@ -615,13 +619,11 @@ test.describe('M02 complimentary students (Admin Pusat) @api', () => {
     page,
     browser,
   }, info) => {
-    test.fail(
-      true,
-      'BUG BE lookups.controller.ts:42-47: admin/teachers/:id/classrooms always answers []',
-    )
     const admin = await openApiSession(browser, info, 'adminPusat')
     let compId: string | null = null
     const name = `Murid Komplimen ${stamp(info)}`
+    // The register call has an hourly limit per user: a throw-away Admin Pusat has its own bucket.
+    let temp: TempUser | null = null
     try {
       const teachers = dataOf<{ id: string; email: string }[]>(
         await admin.get('/api/admin/teachers'),
@@ -633,10 +635,15 @@ test.describe('M02 complimentary students (Admin Pusat) @api', () => {
         await admin.get(`/api/admin/teachers/${demoTeacher!.id}/classrooms`),
         'GET teacher classrooms',
       )
-      expect(classes.length, 'the demo teacher has active classes').toBeGreaterThan(0)
+      // Known while the endpoint is a stub (M02 BUG-02, fixed by #322); with classes the full flow must pass.
+      test.fail(
+        classes.length === 0,
+        'BUG BE lookups.controller.ts:42-47 (M02 BUG-02, fixed by #322): admin/teachers/:id/classrooms answers []',
+      )
 
-      const central = account('adminPusat')
-      await loginViaUi(page, central.user, central.pass)
+      temp = await createTempAdmin(admin, info)
+      await loginViaUi(page, temp.email, temp.password)
+
       await gotoApi(page, '/admin/comp-students/create')
       await expect(page.getByTestId('comp-form')).toBeVisible({ timeout: 20_000 })
       await page.getByTestId('comp-teacher').selectOption(demoTeacher!.id)
@@ -668,7 +675,10 @@ test.describe('M02 complimentary students (Admin Pusat) @api', () => {
         }
       ).data
       compId = rows?.find((r) => r.name.toLowerCase() === name.toLowerCase())?.id ?? null
-      if (compId) await removeUsers(admin, [compId])
+      await removeUsers(
+        admin,
+        [compId, temp?.id].filter((x): x is string => !!x),
+      )
       await admin.dispose()
     }
   })

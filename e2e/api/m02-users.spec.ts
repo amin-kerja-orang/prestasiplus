@@ -227,13 +227,15 @@ test.describe('M02 users (Admin Pusat) @api', () => {
       )
       await page.getByRole('button', { name: 'Daftar Pengguna' }).click()
       const res = await created
+      if (res.status() < 300) {
+        createdId = ((await res.json()) as { data: { id: string } }).data.id
+      }
       expect(res.status(), 'POST /api/admin/users').toBe(201)
       const body = JSON.parse(res.request().postData() ?? '{}') as Record<string, unknown>
       expect(body.roles).toEqual(['student'])
       expect(body.grade).toBe(10)
       expect(typeof body.schoolId, 'the school id goes over the wire as a string').toBe('string')
       expect(body).not.toHaveProperty('password')
-      createdId = ((await res.json()) as { data: { id: string } }).data.id
 
       // One-time credentials: shown now, never returned by a read.
       await expect(page.getByTestId('generated-credentials')).toBeVisible()
@@ -251,7 +253,7 @@ test.describe('M02 users (Admin Pusat) @api', () => {
       expect(stored, 'a read never returns the password').not.toHaveProperty('generatedPassword')
 
       // The new pupil signs in with the shown password.
-      const pupil = await openTempSession(browser, info, { id: createdId, email, password })
+      const pupil = await openTempSession(browser, info, { id: createdId!, email, password })
       try {
         const session = dataOf<{ active: { role: string } }>(
           await pupil.get('/api/session'),
@@ -267,7 +269,7 @@ test.describe('M02 users (Admin Pusat) @api', () => {
       await expect(page).toHaveURL(/\/admin\/users$/, { timeout: 20_000 })
       await expect(page.getByTestId('user-row').first()).toBeVisible({ timeout: 20_000 })
       await searchFor(page, email)
-      const row = rowOf(page, createdId)
+      const row = rowOf(page, createdId!)
       await expect(row).toHaveCount(1, { timeout: 15_000 })
       await row.getByTestId('row-menu').click()
       await page.getByRole('menuitem', { name: 'Padam' }).click()
@@ -281,7 +283,7 @@ test.describe('M02 users (Admin Pusat) @api', () => {
       )
       await page.getByTestId('users-delete-confirm').click()
       expect((await deleted).status(), 'DELETE /api/admin/users/:id').toBe(200)
-      await expect(rowOf(page, createdId)).toHaveCount(0, { timeout: 15_000 })
+      await expect(rowOf(page, createdId!)).toHaveCount(0, { timeout: 15_000 })
       expect((await admin.get(`/api/admin/users/${createdId}`)).status).toBe(404)
       createdId = null
     } finally {
@@ -366,9 +368,12 @@ test.describe('M02 users (Admin Pusat) @api', () => {
   }, info) => {
     const admin = await openApiSession(browser, info, 'adminPusat')
     const key = stamp(info)
-    const a = await createUser(admin, info, 'teacher', { schoolId: '2' }, `gurubulk.a${key}`)
-    const b = await createUser(admin, info, 'teacher', { schoolId: '2' }, `gurubulk.b${key}`)
+    const made: string[] = []
     try {
+      const a = await createUser(admin, info, 'teacher', { schoolId: '2' }, `gurubulk.a${key}`)
+      made.push(a.id)
+      const b = await createUser(admin, info, 'teacher', { schoolId: '2' }, `gurubulk.b${key}`)
+      made.push(b.id)
       await signIn(page, 'adminPusat')
       await gotoApi(page, '/admin/users')
       await expect(page.getByTestId('user-row').first()).toBeVisible({ timeout: 20_000 })
@@ -404,7 +409,7 @@ test.describe('M02 users (Admin Pusat) @api', () => {
       }
       await expectNoHScroll(page)
     } finally {
-      await removeUsers(admin, [a.id, b.id])
+      await removeUsers(admin, made)
       await admin.dispose()
     }
   })
