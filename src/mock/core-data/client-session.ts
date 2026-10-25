@@ -26,6 +26,8 @@ export interface ClientSession {
   user: UserMe
   /** Real API only (V2-T31): CSRF token of the cookie session; the mock never writes it. */
   csrf?: string
+  /** Real API only (AM2-A1): the account must change its password first; the mock never writes it. */
+  mustChangePassword?: boolean
   /**
    * Present only on an impersonated session (XR-M27-21): the actor (school admin) and the path
    * "Kembali ke Admin" returns to. Not derived from `UserMe`; the shell renders the banner from it.
