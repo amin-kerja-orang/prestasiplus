@@ -205,6 +205,7 @@ describe('S1 PrestasiSekolahPage', () => {
       .filter((s) => s.text().includes('Dashboard Tingkatan'))
     expect(labels).toHaveLength(1)
     expect(labels[0]!.classes()).toContain('whitespace-normal')
+    expect(labels[0]!.classes()).not.toContain('truncate')
   })
 
   it('shows the stat cards, with only "Soalan Dijawab" grouped and the accuracy to 1 decimal', async () => {

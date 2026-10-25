@@ -116,10 +116,10 @@ const quickNav = computed(() => [
               variant="soft"
               size="xl"
               block
-              :ui="{ label: 'whitespace-normal' }"
               :icon="n.icon"
-              :label="n.label"
-            />
+            >
+              <span class="whitespace-normal">{{ n.label }}</span>
+            </UButton>
           </div>
         </div>
       </DsPanel>
