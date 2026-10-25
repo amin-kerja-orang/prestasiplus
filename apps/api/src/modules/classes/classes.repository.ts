@@ -392,10 +392,14 @@ export class ClassesRepository {
     return rows.map((r) => idToString(r.student_id))
   }
 
-  /** The class names of the teacher's active classes per ACTIVE-account student (the "Pelajar Saya" chips), in class creation order (SW7-06). */
-  async classNamesByStudent(teacherId: string): Promise<Map<string, string[]>> {
+  /**
+   * The teacher's active classes per ACTIVE-account student (the "Pelajar Saya" chips), in class creation order (newest
+   * first; SW7-06: a deactivated pupil is left out). One query; the id travels with the name because class names are not
+   * unique (SW5-03).
+   */
+  async classesByStudent(teacherId: string): Promise<Map<string, { id: string; name: string }[]>> {
     const key = idOf(teacherId)
-    const out = new Map<string, string[]>()
+    const out = new Map<string, { id: string; name: string }[]>()
     if (key === null) return out
     const rows = await this.db.$queryRaw<{ student_id: bigint; class_id: bigint; name: string; created_at: Date }[]>`
       SELECT e.student_id, c.id AS class_id, c.name, c.created_at
@@ -404,9 +408,10 @@ export class ClassesRepository {
     rows.sort((a, b) => b.created_at.getTime() - a.created_at.getTime() || Number(a.class_id - b.class_id))
     for (const r of rows) {
       const id = idToString(r.student_id)
+      const entry = { id: idToString(r.class_id), name: r.name }
       const list = out.get(id)
-      if (list) list.push(r.name)
-      else out.set(id, [r.name])
+      if (list) list.push(entry)
+      else out.set(id, [entry])
     }
     return out
   }
