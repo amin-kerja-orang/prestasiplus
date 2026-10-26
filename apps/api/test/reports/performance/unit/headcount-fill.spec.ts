@@ -186,10 +186,76 @@ describe('School: GPS, distribution, subjects and teachers', () => {
     expect((await small.school.school(ctxOf('student', '1'))).gps).toMatchObject({ value: 3, entries: 5 })
   })
 
-  it('privacy (test 15): a headcount-only subject row below 5 pupils is not listed to non-staff', async () => {
+  it('privacy (test 15): a headcount-only subject below 5 pupils keeps the whole breakdown from non-staff; the overall figures and staff are unchanged', async () => {
     w.facts.add(entry({ studentId: '1', configId: '7', subjectId: '2', subjectName: 'Matematik', actuals: [null, 60], targets: [null, 60] }))
-    expect((await w.school.school(ctxOf('student', '1'))).subjects.map((s) => s.name)).toEqual(['Bahasa Melayu'])
-    expect((await w.school.school(schoolAdmin)).subjects.map((s) => s.name)).toEqual(['Bahasa Melayu', 'Matematik'])
+    const pupil = await w.school.school(ctxOf('student', '1'))
+    expect(pupil.subjects).toEqual([])
+    expect(pupil.gps).toEqual({ value: 3.17, band: 'Baik', entries: 6 })
+    PerformanceSchoolSchema.parse(pupil)
+    const staff = await w.school.school(schoolAdmin)
+    expect(staff.subjects.map((s) => s.name)).toEqual(['Bahasa Melayu', 'Matematik'])
+    expect(staff.gps).toEqual(pupil.gps)
+  })
+
+  it('cohort consistency: every subject with graded entries at 5 pupils or more keeps the full breakdown for non-staff', async () => {
+    for (const id of ['1', '2', '3', '4', '5']) {
+      w.facts.add(entry({ studentId: id, configId: '7', subjectId: '2', subjectName: 'Matematik', actuals: [null, 60], targets: [null, 60] }))
+    }
+    const pupil = await w.school.school(ctxOf('student', '1'))
+    expect(pupil.subjects.map((s) => [s.name, s.entries])).toEqual([
+      ['Bahasa Melayu', 5],
+      ['Matematik', 5],
+    ])
+    expect(pupil.subjects).toEqual((await w.school.school(schoolAdmin)).subjects)
+  })
+
+  it('cohort consistency: one subject below 5 pupils withholds the breakdown, for any non-staff role', async () => {
+    w.facts.add(entry({ studentId: '1', configId: '7', subjectId: '2', subjectName: 'Matematik', actuals: [null, 60], targets: [null, 60] }))
+    for (const ctx of [ctxOf('student', '1'), ctxOf('parent', 'p1'), ctxOf('ppd_officer', 'o1')]) {
+      const r = await w.school.school(ctx)
+      expect(r.subjects).toEqual([])
+      expect(r.gps.entries).toBe(6)
+    }
+  })
+})
+
+describe('SW13-08: school GPS by subject keys the practice rows by the curriculum subject, not the Bijak code', () => {
+  beforeEach(() => {
+    // The aggregate stores the Bijak code MAT; classes and headcount entries know Matematik as curriculum id 3.
+    w.directory.addSubject('MAT', '3')
+    w.classes.add({ id: '11', schoolId: 's1', name: 'Kelas 4B', teacherId: 't1', teacherName: 'Cikgu Satu', subjectId: '3', subjectName: 'Matematik' }, ['1', '2'])
+    w.bijak.addSitting(sitting({ userId: '1', score: 7, subjectId: 'MAT', subjectCode: 'MAT', subjectName: 'Matematik BM' }))
+    w.facts.add(
+      ...['1', '2'].map((studentId) =>
+        entry({ studentId, configId: '5', classroomId: '11', subjectId: '3', subjectName: 'Matematik', targets: [null, 60], actuals: [null, 65] }),
+      ),
+    )
+  })
+
+  it('one Matematik row, with the headcount figures, under the curriculum id', async () => {
+    const r = await w.school.school(schoolAdmin)
+    const mat = r.subjects.filter((s) => s.name.startsWith('Matematik'))
+    expect(mat).toHaveLength(1)
+    expect(mat[0]).toMatchObject({ subjectId: '3', name: 'Matematik', entries: 2, onTrack: 2 })
+    expect(mat[0]?.gps).not.toBeNull()
+    expect(r.subjects.map((s) => s.subjectId)).not.toContain('MAT')
+    PerformanceSchoolSchema.parse(r)
+  })
+
+  it("a migrated 'legacy' sitting is no subject row but stays in the school totals", async () => {
+    const before = (await w.school.school(schoolAdmin)).stats
+    w.bijak.addSitting(sitting({ userId: '3', score: 5, subjectId: 'legacy', subjectCode: 'legacy', subjectName: 'Tidak diketahui' }))
+    const r = await w.school.school(schoolAdmin)
+    expect(r.subjects.map((s) => s.subjectId)).not.toContain('legacy')
+    expect(r.subjects.filter((s) => s.name.startsWith('Matematik'))).toHaveLength(1)
+    expect(r.stats.sessions).toBe(before.sessions + 1)
+    expect(r.stats.answered).toBeGreaterThan(before.answered)
+  })
+
+  it('a code with no curriculum subject keeps its own row', async () => {
+    w.bijak.addSitting(sitting({ userId: '3', score: 5, subjectId: 'XYZ', subjectCode: 'XYZ', subjectName: 'Lain' }))
+    const r = await w.school.school(schoolAdmin)
+    expect(r.subjects.map((s) => s.subjectId)).toContain('XYZ')
   })
 })
 
