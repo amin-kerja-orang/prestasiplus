@@ -51,7 +51,7 @@ export const UNKNOWN_MODE = 'mod_tidak_dikenali'
 const SESSION_MODES = ['latih_tubi', 'chapter', 'spm', 'battle', 'pksk'] as const
 /**
  * Coin ledger (type, source, sign) combinations from M14 (docs/requirements/urs/M14-gamification.md 8.1 and 8.3). The weights mirror
- * "mostly quiz credits"; the sources the ETL does not map yet (LEDGER_SOURCE_MAP) are kept so the rehearsal counts them as rejects.
+ * "mostly quiz credits"; the sources LEDGER_SOURCE_MAP aliases or keeps as history (A1-FIX) all load, and an unlisted source would still be an UNKNOWN_ENUM reject.
  */
 const COIN_KINDS: readonly (readonly [type: string, source: string, sign: 1 | -1])[] = [
   ['earn', 'quiz_spm', 1], ['earn', 'quiz_spm', 1], ['earn', 'quiz_spm', 1], ['earn', 'quiz_spm', 1],
@@ -62,6 +62,7 @@ const COIN_KINDS: readonly (readonly [type: string, source: string, sign: 1 | -1
 ]
 // Perlu pengesahan (OD-2 / OD-25): the real sets of `challenges.challenge_type` and `banners.type`. These are values the ETL maps accept.
 const CHALLENGE_TYPES = ['quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent'] as const
+const CHALLENGE_DIFFICULTIES = ['easy', 'medium', 'hard'] as const
 const BANNER_TYPES = ['hero', 'promo', 'announcement'] as const
 
 /**
@@ -176,7 +177,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
   })))
   put('subjects', Array.from({ length: 6 }, (_, i) => ({ id: i + 1, name_bm: `Mata Pelajaran Contoh ${i + 1}`, name_en: `Sample Subject ${i + 1}`, code: `MP${i + 1}`, is_core: i < 3 ? '1' : '0', color: '#cccccc', sort_order: i + 1 })))
   // Names follow `levelIdentity` (`Darjah N` -> D<N>, `Tingkatan N` -> T<N>, so a grade is derived and classrooms load); stages are
-  // the three the ETL accepts (STAGE_MAP). The real name set is Perlu pengesahan until the BE-27 profile of the real dump.
+  // the three codes STAGE_MAP accepts. The real .cloud source holds the BM names (`Rendah`, `Menengah Rendah`, `Menengah Atas`), which STAGE_MAP maps too (A1-FIX).
   const LEVELS: readonly { bm: string; en: string; stage: string }[] = [
     { bm: 'Darjah 1', en: 'Year 1', stage: 'primary' },
     { bm: 'Darjah 6', en: 'Year 6', stage: 'primary' },
@@ -440,7 +441,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
     plantEnum('coin_transactions.type', UNKNOWN_COIN_TYPE)
   }
   put('coin_transactions', coins)
-  put('challenges', Array.from({ length: 5 }, (_, i) => ({ id: i + 1, created_by: null, classroom_id: null, challenge_type: CHALLENGE_TYPES[i % CHALLENGE_TYPES.length], title: `Cabaran Contoh ${i + 1}`, target_value: 5 + i })))
+  put('challenges', Array.from({ length: 5 }, (_, i) => ({ id: i + 1, created_by: null, classroom_id: null, challenge_type: CHALLENGE_TYPES[i % CHALLENGE_TYPES.length], title: `Cabaran Contoh ${i + 1}`, target_value: 5 + i, reward_syiling: 5 + 5 * i, reward_xp: 2 + i, difficulty: CHALLENGE_DIFFICULTIES[i % CHALLENGE_DIFFICULTIES.length], is_active: i === 4 ? '0' : '1', sort_order: i + 1 })))
   const cu: Row[] = pupils.filter((_, i) => i % 2 === 0).map((id, i) => {
     const ms = BASE_MS + (i % 60) * DAY + 5 * 60 * MIN
     return { challenge_id: (i % 5) + 1, user_id: id, progress: i % 10, completed_at: iso(ms), claimed_on: utcDate(ms), created_at: iso(ms), updated_at: iso(ms) }
