@@ -138,6 +138,7 @@ async function expectForbidden(page: Page): Promise<void> {
   await expectTabTitle(page, FORBIDDEN_TITLE)
 }
 
+// After #348 merges: cc-s2-daily reads 'Aktiviti Harian' (whichever of #348/#388 lands second carries it)
 test.describe('S2 admin', MODULE, () => {
   test.beforeEach(async ({ loginAs }) => {
     await loginAs(ADMIN)
@@ -237,10 +238,9 @@ test.describe('S2 admin', MODULE, () => {
     await expect(tid(page, 'cc-feed-time').first()).toHaveText('14:59')
     const school = tid(page, 'cc-feed-school').first()
     // v2 (bd419c8f): "SEKOLAH MENENGAH KEBANGSAAN X" is shown as "SMK X" instead of the first 15 characters.
-    const full = (await school.getAttribute('title')) ?? ''
-    expect(full).toMatch(/^SEKOLAH MENENGAH KEBANGSAAN /)
-    await expect(school).toHaveText(full.replace(/^SEKOLAH MENENGAH KEBANGSAAN/, 'SMK'))
-    expect((await school.innerText()).length).toBeLessThan(full.length)
+    // Fixed literals from the seed (first Live Feed row at the fixed mock clock), not the app's own `shortSchool()` rule.
+    await expect(school).toHaveAttribute('title', 'SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN')
+    await expect(school).toHaveText('SMK ENGKU HUSAIN')
     await expect(school).toHaveAttribute('href', /\/admin\/command-center\/school\/\d+$/)
   })
 
@@ -612,8 +612,16 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
       // v2: the 7 days are a `DsChart`; its hidden data table has one row per weekday.
       const days = await chartRows(tid(page, 'cc-engagement-days'))
       expect(days).toHaveLength(7)
-      for (const [label] of days) expect(label).toMatch(/^(Isn|Sel|Rab|Kha|Jum|Sab|Ahd)$/)
-      expect(Math.max(...days.map(([, n]) => Number(n)))).toBeGreaterThan(0)
+      // Pinned from the seeded answers of account 8 at the fixed mock clock (2026-09-25 15:40 MYT, a Friday; today is partial).
+      expect(days).toEqual([
+        ['Sab', '0'],
+        ['Ahd', '0'],
+        ['Isn', '0'],
+        ['Sel', '42'],
+        ['Rab', '0'],
+        ['Kha', '48'],
+        ['Jum', '40'],
+      ])
       await expect(tid(page, 'cc-engagement-bands')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
       expect(await minFontSize(page)).toBeGreaterThanOrEqual(12)
@@ -659,6 +667,7 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
     'E2E-M17-122 / 124 / 125 a school or pupil outside the school, and a non-numeric id, answer the 404 page',
     provisional('INFERRED / PROPOSED: 404 rule for objects outside the school'),
     async ({ page, gotoApp }) => {
+      test.slow() // five full page reloads (gotoApp -> waitForApp each time) exceed the 30 s default
       await gotoApp(`${SA}/school/8082`)
       await expectNotFound(page)
       await gotoApp(`${SA}/student/2022`)
