@@ -7,6 +7,33 @@
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, moduleTag, TAG } from '../support'
 
+type Fixtures = Parameters<Parameters<typeof test>[2]>[0]
+
+async function expectClosedUpFront({
+  page,
+  gotoApp,
+  mock,
+}: Pick<Fixtures, 'page' | 'gotoApp' | 'mock'>): Promise<void> {
+  // The mock handle exists only after boot: boot on /login, queue the fault, then go client-side.
+  await gotoApp('/login')
+  await mock.failNext('GET /api/public/stats', {
+    status: 200,
+    body: {
+      data: { questionCount: 1, subjectCount: 1, levelCount: 1, registrationOpen: false },
+    },
+  })
+  await page
+    .getByTestId('login-form')
+    .getByRole('link', { name: /Daftar Sekarang/ })
+    .click()
+  await expect(page).toHaveURL(/\/register$/)
+  await expect(page.getByTestId('register-alert')).toContainText(
+    'Pendaftaran akaun baharu ditutup buat sementara waktu. Sila cuba lagi kemudian.',
+  )
+  await expect(page.getByTestId('register-submit')).toBeDisabled()
+  await expectNoHorizontalScroll(page)
+}
+
 test.describe('M01 register: registration closed', { tag: [TAG.smoke, moduleTag(1)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
@@ -15,24 +42,19 @@ test.describe('M01 register: registration closed', { tag: [TAG.smoke, moduleTag(
     gotoApp,
     mock,
   }) => {
-    // The mock handle exists only after boot: boot on /login, queue the fault, then go client-side.
-    await gotoApp('/login')
-    await mock.failNext('GET /api/public/stats', {
-      status: 200,
-      body: {
-        data: { questionCount: 1, subjectCount: 1, levelCount: 1, registrationOpen: false },
-      },
+    await expectClosedUpFront({ page, gotoApp, mock })
+  })
+
+  test.describe('at 320px', () => {
+    test.use({ viewport: { width: 320, height: 700 } })
+
+    test('flag false at 320px: closed copy up front, submit disabled, no horizontal scroll', async ({
+      page,
+      gotoApp,
+      mock,
+    }) => {
+      await expectClosedUpFront({ page, gotoApp, mock })
     })
-    await page
-      .getByTestId('login-form')
-      .getByRole('link', { name: /Daftar Sekarang/ })
-      .click()
-    await expect(page).toHaveURL(/\/register$/)
-    await expect(page.getByTestId('register-alert')).toContainText(
-      'Pendaftaran akaun baharu ditutup buat sementara waktu. Sila cuba lagi kemudian.',
-    )
-    await expect(page.getByTestId('register-submit')).toBeDisabled()
-    await expectNoHorizontalScroll(page)
   })
 
   test('flag absent: form stays usable', async ({ page, gotoApp }) => {

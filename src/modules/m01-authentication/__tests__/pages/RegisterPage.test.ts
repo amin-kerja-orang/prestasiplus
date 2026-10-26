@@ -464,7 +464,7 @@ describe('RegisterPage closed registration (G5-M01 BUG-06)', () => {
 
   it('403 REGISTRATION_CLOSED on submit still shows the copy', async () => {
     apiMocks.register.mockRejectedValue(
-      new ApiError({ status: 403, code: 'FORBIDDEN', message: CLOSED }),
+      new ApiError({ status: 403, code: 'REGISTRATION_CLOSED', message: CLOSED }),
     )
     const w = await render()
     await fillRequired(w)
