@@ -9,7 +9,7 @@ import type { TableColumn } from '@nuxt/ui'
 
 import { DsDataTable, DsEmptyState, DsPanel } from '@/ds'
 
-import type { InterventionRow } from '../../../api/types'
+import type { InterventionRow, WireId } from '../../../api/types'
 import { dateEn, pct } from '../common/kirkpatrick-format'
 import { alertLabel, moodLabel, STATUS_COLOR } from './intervention-format'
 
@@ -28,9 +28,9 @@ function accuracyCell(accuracy: number | null, mood: InterventionRow['beforeMood
 }
 
 interface Row extends Record<string, unknown> {
-  id: number
+  id: WireId
   date: string
-  studentId: number
+  studentId: WireId
   studentName: string | null
   alert: string
   description: string

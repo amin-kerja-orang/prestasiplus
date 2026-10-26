@@ -146,6 +146,27 @@ describe('S2 admin board', () => {
     w.unmount()
   })
 
+  it('lets the Top Sekolah names wrap below xl and truncate from xl (DV-M17-43)', async () => {
+    api.fetchCcLiveData.mockResolvedValue(platformLive())
+    const w = await mountBoard(false)
+    await settle()
+    const names = w.findAll('[data-testid="cc-top-school-name"]')
+    expect(names).toHaveLength(5)
+    for (const name of names) {
+      expect(name.classes()).toEqual(
+        expect.arrayContaining(['min-w-0', 'break-words', 'whitespace-normal', 'xl:truncate']),
+      )
+      // No unconditional truncation (it would cut the name at every width).
+      expect(name.classes()).not.toContain('truncate')
+    }
+    const link = w.get('[data-testid="cc-top-school-link"]')
+    expect(link.classes()).toContain('min-w-0')
+    // The wrapping label is the link text, and the full name stays in the title.
+    expect(link.text()).toBe(names[0]?.text())
+    expect(link.attributes('title')).toBeTruthy()
+    w.unmount()
+  })
+
   it('abbreviates the feed school name to SMK with the full name in title and escapes names', async () => {
     api.fetchCcLiveData.mockResolvedValue(platformLive())
     const w = await mountBoard(false)
