@@ -106,11 +106,19 @@ export function transformArticle(
 
 // ---------------------------------------------------------------- banners
 
+/**
+ * .cloud `banners.type` -> v2 `banner_type`. v2 stores only the four form codes (`ck_banners_banner_type`: HERO, PROMO,
+ * ANNOUNCEMENT, EVENT). The two legacy .cloud codes cannot be stored as they are, so A1-FIX maps them: `PROMOTIONAL` is
+ * `PROMO` (same meaning), and `FEATURE` (a product-feature advert, e.g. "2,000+ Soalan Latihan Tersedia!") is `PROMO` too.
+ * The alternative for `FEATURE` was `ANNOUNCEMENT`; see the deviations log.
+ */
 export const BANNER_TYPE_MAP: Readonly<Record<string, string>> = {
   hero: 'HERO',
   promo: 'PROMO',
   announcement: 'ANNOUNCEMENT',
   event: 'EVENT',
+  promotional: 'PROMO',
+  feature: 'PROMO',
 }
 const bannerType = enumMapper('type', BANNER_TYPE_MAP)
 

@@ -278,7 +278,7 @@ Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replace
 
 - No `subject_levels` pivot in .cloud: derive from `chapters` (`subject_id`, `education_level_id`) and from the migrated attempts' dimensions.
 - `chapters.strand` and `dskp_code` exist; prototype has `inTree` (a .my display flag). Keep `strand`, `dskpCode`; set `inTree` by rule.
-- `education_levels.curriculum`, `stage`: check the values match the prototype `Stage` codes (`primary`, `lower_secondary`, `upper_secondary`).
+- `education_levels.curriculum`, `stage`: check the values match the prototype `Stage` codes (`primary`, `lower_secondary`, `upper_secondary`). **Decided after the A1 rehearsal (A1-FIX):** the real `stage` values are the BM names `Rendah`, `Menengah Rendah` and `Menengah Atas`, mapped (after `enumKey`) to `primary`, `lower_secondary` and `upper_secondary` in `STAGE_MAP` (`transform/enums.ts`); the same release maps the further `coin_ledger.source` codes, `banners.type` `FEATURE` and `PROMOTIONAL`, and `school_subscriptions.package` `Pemantauan` (see the A1-FIX section of `v2-backend-deviations.md`), and treats unfinished exam attempts and classes with a deleted teacher as documented exclusions (runbook, reading the recon report).
 - Subtopics and legacy topics are prototype-only.
 
 ### 4.3 M04: question bank
