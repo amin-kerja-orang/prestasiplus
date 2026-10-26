@@ -28,6 +28,7 @@ import type {
 import { AdminOps, seedAdminSlice, type AdminSlice } from './admin'
 import { composeFromBlueprint, poolUnits, type PoolUnit } from '../domain/blueprint'
 import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registry'
+import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
 import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
@@ -706,13 +707,15 @@ export class BijakServer implements BijakApi {
       const qs = s.questionIds.map((qid) => this.gradeQuestion(a, qid, ++n, true))
       let counted = qs
       if (s.rule.type === 'choose') {
-        // Best N attempted by marks (ties: the lower position). Ticks never change the score.
-        const ranked = qs
-          .map((q, pos) => ({ q, pos }))
-          .filter((x) => x.q.attempted)
-          .sort((x, y) => y.q.awarded - x.q.awarded || x.pos - y.pos)
-          .slice(0, s.rule.n)
-        const ids = new Set(ranked.map((x) => x.q.questionId))
+        // Best N attempted by marks (ties: the lower position); a ticked blank question fills a
+        // free slot. Ticks never change the score (domain/choose-n.ts, AC-06.3).
+        const ids = new Set(
+          countedIds(
+            qs.map((q) => ({ id: q.questionId, attempted: q.attempted, awarded: q.awarded })),
+            s.rule.n,
+            a.picks?.[s.id],
+          ),
+        )
         for (const q of qs) q.counted = ids.has(q.questionId)
         counted = qs.filter((q) => q.counted)
       }

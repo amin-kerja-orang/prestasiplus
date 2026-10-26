@@ -187,7 +187,10 @@ describe('S4 band tiles (AC-M12-15.1)', () => {
     expect(
       first.get('[data-testid="band-bar"] [role="progressbar"]').attributes('aria-valuenow'),
     ).toBe('12.3')
-    expect(t(w, 'beh-bands').get('.grid').classes()).toContain('grid-cols-5')
+    // BUG-02: 2 columns below sm (5 across overlapped the labels at 320 / 375), 5 from sm.
+    const grid = t(w, 'beh-bands').get('.grid').classes()
+    expect(grid).toEqual(expect.arrayContaining(['grid-cols-2', 'sm:grid-cols-5']))
+    expect(grid).not.toContain('grid-cols-5')
   })
 
   it('builds the monitoring link from the mount prefix on the /guru twin', async () => {

@@ -105,6 +105,22 @@ describe('CompStudentListPage (M02 S6) content', () => {
     expect(rows[0]!.text()).toContain('000001@prestasiplus.my')
   })
 
+  it('never cuts a stat label or the school and teacher cells (G5-M02 follow-up)', async () => {
+    const w = await render()
+    const tiles = w.get('[data-ds="stat-row"]')
+    expect(tiles.findAll('[data-compact]')).toHaveLength(0)
+    expect(tiles.findAll('.truncate')).toHaveLength(0)
+    const row = w.findAll('tbody tr')[0]!
+    for (const id of ['comp-school', 'comp-teacher']) {
+      const cell = row.get(`[data-testid=${id}]`)
+      expect(cell.classes(), id).not.toContain('truncate')
+      // The table cell is `nowrap`; the cell must undo it so the text wraps.
+      expect(cell.classes(), id).toEqual(
+        expect.arrayContaining(['break-words', 'whitespace-normal']),
+      )
+    }
+  })
+
   it('shows Tidak Aktif and ON for an inactive student with coins on', async () => {
     api.fetchCompStudents.mockResolvedValue(
       result([student(4, { isActive: false, coinsEnabled: true })]),

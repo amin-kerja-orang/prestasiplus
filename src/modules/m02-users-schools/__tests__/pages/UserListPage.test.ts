@@ -139,6 +139,51 @@ describe('UserListPage (M02 S1)', () => {
     expect(w.text()).toContain('0123456789')
   })
 
+  it('never cuts a stat label (DV-M02-02): default-density tiles, no truncate class', async () => {
+    const w = await render()
+    const stats = w.get('[data-testid="users-stats"]')
+    expect(stats.findAll('[data-compact]')).toHaveLength(0)
+    expect(stats.findAll('.truncate')).toHaveLength(0)
+    expect(stats.get('[data-testid="users-stat-ppd_officer"]').text()).toContain('Pegawai PPD')
+  })
+
+  it('lets the e-mail, name and school cells wrap instead of cutting them (DV-M02-01)', async () => {
+    api.fetchAdminUsers.mockResolvedValue(
+      listResult([
+        user(2, {
+          name: 'Pengguna Dengan Nama Yang Sangat Panjang Sekali',
+          email: 'alamat.emel.yang.sangat.panjang.sekali@contoh.test',
+          school: { id: 7, name: 'SEKOLAH MENENGAH KEBANGSAAN CONTOH' },
+        }),
+      ]),
+    )
+    const w = await render()
+    const row = rowOf(w, 2)
+    for (const id of ['user-name', 'user-email']) {
+      const cell = row.get(`[data-testid="${id}"]`)
+      expect(cell.classes(), id).not.toContain('truncate')
+      expect(
+        cell.classes().some((c) => c === 'break-words' || c === 'break-all'),
+        id,
+      ).toBe(true)
+    }
+    // The table cell is `nowrap`; the two cells must undo it or "wrap" is only a class on paper.
+    const school = row.get('[data-testid="user-school"]')
+    expect(school.classes()).toContain('whitespace-normal')
+    expect(school.classes()).not.toContain('truncate')
+    // School names wrap between words only: the 7rem cap fits the longest word ("KEBANGSAAN"), so no word is split.
+    expect(school.classes()).toContain('max-w-28')
+    expect(school.classes().some((c) => c === 'break-words' || c === 'break-all')).toBe(false)
+    expect(row.get('[data-testid="user-identity"]').classes()).toContain('whitespace-normal')
+    expect(row.get('[data-testid="user-email"]').text()).toBe(
+      'alamat.emel.yang.sangat.panjang.sekali@contoh.test',
+    )
+    expect(row.get('[data-testid="user-school"]').text()).toBe('SEKOLAH MENENGAH KEBANGSAAN CONTOH')
+    // The avatar initials carry their own `truncate`; the text column beside it must not.
+    const textColumn = row.get('[data-testid="user-name"]').element.parentElement
+    expect(textColumn?.querySelectorAll('.truncate')).toHaveLength(0)
+  })
+
   it('rings only the card of the active role filter', async () => {
     const w = await render('/admin/users?role=teacher')
     const ringed = w.findAll('[data-active="true"]')
