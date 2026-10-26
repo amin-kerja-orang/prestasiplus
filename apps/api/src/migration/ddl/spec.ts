@@ -149,7 +149,7 @@ const STAGING: TableSpec[] = [
   // Wellbeing, career, feedback
   s('mood_checkins', ['user_id:id:fk=users', 'mood:t:enum', 'checked_in_on:d']),
   s('wellbeing_alerts', ['student_id:id:fk=users', 'type:t:enum', 'severity:t:enum', 'resolved:t:enum']),
-  s('psychometric_results', ['user_id:id:fk=users', 'details:j']),
+  s('psychometric_results', ['user_id:id:fk=users']),
   s('interventions', [
     'student_id:id:fk=users', 'recorded_by:id:fk=users', 'alert_type:t:enum', 'action_date:d',
     'before_accuracy:n', 'after_accuracy:n',
@@ -211,13 +211,13 @@ const STAGING: TableSpec[] = [
   s('audio_kbat', ['title:t', 'audio_path:t', 'status:t:enum']),
   s('notifications', ['title:t', 'target:t:enum', 'recipients:i', 'sent_at:ts']),
   s('support_tickets', ['user_id:id:fk=users', 'subject:t', 'status:t:enum', 'admin_reply:t']),
-  s('chatbot_conversations', ['user_id:id:fk=users', 'visitor_id:t', 'start_url:t']),
+  s('chatbot_conversations', ['user_id:id:fk=users']),
   s('chatbot_messages', ['chatbot_conversation_id:id:fk=chatbot_conversations', 'sender:t:enum', 'rating:i']),
   // System
   s('settings', ['key:t', 'value:t', 'group:t:enum']),
   s('feature_flags', ['slug:t', 'enabled:t:enum', 'audience:t:enum']),
   s('ai_usage_logs', ['user_id:id:fk=users', 'event:t:enum', 'tool:t:enum', 'tokens:i', 'cost_sen:i']),
-  s('audit_logs', ['user_id:id:fk=users', 'action:t:enum', 'subject_type:t:enum', 'subject_id:t', 'ip:t']),
+  s('audit_logs', ['user_id:id:fk=users', 'action:t:enum', 'subject_type:t:enum']),
   // Billing
   s('packages', ['name:t', 'tier:t:enum', 'price:n', 'duration_days:i']),
   s('payments', ['user_id:id:fk=users', 'package_id:id:fk=packages', 'amount:n', 'status:t:enum']),
@@ -235,11 +235,11 @@ const STAGING: TableSpec[] = [
     'marketplace_product_id:id:fk=marketplace_products', 'buyer_id:id:fk=users', 'quantity:i', 'total:n',
     'status:t:enum',
   ]),
-  s('sponsors', ['organisation:t', 'category:t:enum', 'officer_name:t', 'status:t:enum']),
+  s('sponsors', ['organisation:t', 'category:t:enum', 'status:t:enum']),
   s('foster_sponsorships', [
     'sponsor_id:id:fk=sponsors', 'student_id:id:fk=users', 'category:t:enum', 'channel:t:enum', 'status:t:enum',
   ]),
-  s('foster_applications', ['applicant_name:t', 'category:t:enum', 'status:t:enum', 'reason:t']),
+  s('foster_applications', ['category:t:enum', 'status:t:enum']),
   s('duta_profiles', ['user_id:id:fk=users', 'is_active:t:enum']),
   s('duta_applications', ['user_id:id:fk=users', 'status:t:enum']),
   s('duta_bookings', ['duta_profile_id:id:fk=duta_profiles', 'status:t:enum']),
