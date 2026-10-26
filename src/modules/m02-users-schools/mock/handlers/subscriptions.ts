@@ -424,7 +424,12 @@ function renewalInvoice(req: MockRequest, ctx: MockContext): MockResponse {
     packageName: pkg.name,
     currentPeriod: { start: row.startsAt, end: row.endsAt },
     renewalPeriod: { start: row.endsAt, end: toIsoMyt(addMonthsMyt(Date.parse(row.endsAt), 12)) },
-    students: list.map((s, i) => ({ no: i + 1, ...s })),
+    students: list.map((s, i) => ({
+      no: i + 1,
+      name: s.name,
+      classLevel: s.classLevel,
+      idDelima: s.idDelima,
+    })),
     studentCount: list.length,
     pricePerStudent: pkg.priceAnnual,
     // BR-30: the enrolled students, not the quota.

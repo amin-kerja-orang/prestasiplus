@@ -73,7 +73,49 @@ afterEach(() => {
   setRouteOutcome(null)
 })
 
+const headers = (w: VueWrapper) => w.findAll('thead th').map((th) => th.text())
+const rows = (w: VueWrapper) =>
+  w.findAll('[data-testid=invoice-row]').map((r) => r.findAll('td').map((td) => td.text()))
+
 describe('RenewalInvoicePage (M02 S15)', () => {
+  it('http shape (BE option A, no idDelima): rows show no, name and classLevel and there is no ID Delima column', async () => {
+    api.fetchRenewalInvoice.mockResolvedValue({
+      ...invoice(),
+      students: [
+        { no: 1, name: 'Pelajar Satu', classLevel: 'T5' },
+        { no: 2, name: 'Pelajar Dua', classLevel: null },
+      ],
+      studentCount: 2,
+    })
+    const w = await render()
+    expect(headers(w)).toEqual(['No.', 'Nama Pelajar', 'Tingkatan'])
+    expect(rows(w)).toEqual([
+      ['1', 'Pelajar Satu', 'T5'],
+      ['2', 'Pelajar Dua', ''],
+    ])
+  })
+
+  it('shows the ID Delima column when the rows carry idDelima (mock / option B), even null', async () => {
+    const w = await render()
+    expect(headers(w)).toContain('ID Delima')
+    expect(rows(w)[0]).toEqual(['1', 'Pelajar Satu', 'm-1@moe-dl.edu.my', 'T5'])
+    w.unmount()
+    api.fetchRenewalInvoice.mockResolvedValue({
+      ...invoice(),
+      students: [{ no: 1, name: 'Pelajar Satu', classLevel: 'T5', idDelima: null }],
+    })
+    const w2 = await render()
+    expect(headers(w2)).toEqual(['No.', 'Nama Pelajar', 'ID Delima', 'Tingkatan'])
+  })
+
+  it('renders an empty students[] as a header-only table without crashing', async () => {
+    api.fetchRenewalInvoice.mockResolvedValue({ ...invoice(), students: [], studentCount: 0 })
+    const w = await render()
+    expect(w.findAll('[data-testid=invoice-row]')).toHaveLength(0)
+    expect(headers(w)).toEqual(['No.', 'Nama Pelajar', 'Tingkatan'])
+    expect(w.get('[data-testid=invoice-list-title]').text()).toBe('Senarai Pelajar (0 orang)')
+  })
+
   it('shows the header, date, ref, school, package and periods', async () => {
     const w = await render()
     expect(w.get('h1').text()).toBe('PRESTASIPLUS')
