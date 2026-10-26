@@ -2,6 +2,7 @@ import { CreatedUserSchema, TeacherClassroomOptionSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ADMIN, SCHOOL_ADMIN, STUDENT, TEACHER, apiOf, bootSubApp, expectError, login, schoolIdOf, userIdOf, type Api, type SubTestApp } from '../subscriptions/sub-helpers'
+import { loginAs } from '../auth/helpers'
 import { teacherBody } from '../users/helpers'
 
 /** BUG-02: `GET /admin/teachers/:id/classrooms` lists the teacher's ACTIVE classes, the ones `POST /admin/comp-students` accepts. */
@@ -14,6 +15,8 @@ describe('GET /admin/teachers/:id/classrooms (S7 "Kelas guru")', () => {
   let teacherId: string
   let emptyTeacher: string
   let otherSchoolTeacher: string
+  let movedTeacher: string
+  let adminOfB: Api
   const ids: Record<string, string> = {}
 
   const url = (id: string) => `/admin/teachers/${id}/classrooms`
@@ -34,6 +37,10 @@ describe('GET /admin/teachers/:id/classrooms (S7 "Kelas guru")', () => {
     teacherId = await userIdOf(t.db, TEACHER)
     emptyTeacher = CreatedUserSchema.parse((await admin.post('/admin/users', teacherBody(s1, { email: 'guru.kosong@ujian.test' }))).body.data).id
     otherSchoolTeacher = CreatedUserSchema.parse((await admin.post('/admin/users', teacherBody(s2, { email: 'guru.sekolah.lain@ujian.test' }))).body.data).id
+    // A teacher whose current school is B (s2) but who still owns an active classroom of the old school A (s1).
+    movedTeacher = CreatedUserSchema.parse((await admin.post('/admin/users', teacherBody(s2, { email: 'guru.berpindah@ujian.test' }))).body.data).id
+    const adminB = CreatedUserSchema.parse((await admin.post('/admin/users', { roles: ['school_admin'], name: 'Pentadbir Contoh B', email: 'pentadbir.b@ujian.test', schoolId: s2 })).body.data)
+    adminOfB = apiOf(await loginAs(t as never, 'pentadbir.b@ujian.test', { password: adminB.generatedPassword as string }))
     const level = await one(
       `insert into education_levels (code, name, name_en, stage, curriculum, grade) values ('T4', 'Tingkatan 4', 'Form 4', 'upper_secondary', 'KSSM', 10) returning id::text`,
       [],
@@ -45,6 +52,8 @@ describe('GET /admin/teachers/:id/classrooms (S7 "Kelas guru")', () => {
     ids.inactive = await newClass('4 Cemerlang', teacherId, s1, level, 'CEME01', { active: false })
     ids.schoolClass = await newClass('Kelas Sekolah 4', teacherId, s1, level, null, { kind: 'school_class' })
     ids.other = await newClass('5 Dedikasi', otherSchoolTeacher, s2, level, 'DEDI01')
+    ids.movedOld = await newClass('Kelas Lama A', movedTeacher, s1, level, 'LAMA01')
+    ids.movedNew = await newClass('Kelas Baharu B', movedTeacher, s2, level, 'BARU01')
   }, 120_000)
   afterAll(async () => {
     await t.close()
@@ -115,6 +124,23 @@ describe('GET /admin/teachers/:id/classrooms (S7 "Kelas guru")', () => {
       const res = await sa.get(url(otherSchoolTeacher))
       expect(res.status).toBe(200)
       expect(res.body).toEqual({ data: [] })
+    })
+
+    it("a teacher who moved schools: the new school's admin sees only the classes of their own school", async () => {
+      const res = await adminOfB.get(url(movedTeacher))
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data).toEqual([{ id: ids.movedNew, name: 'Kelas Baharu B', classCode: 'BARU01' }])
+    })
+
+    it("the old school's admin gets [] for the moved teacher (the teacher is not in their school)", async () => {
+      const res = await sa.get(url(movedTeacher))
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({ data: [] })
+    })
+
+    it('an admin still sees the moved teacher classes of both schools', async () => {
+      const res = await admin.get(url(movedTeacher))
+      expect(res.body.data.map((r: { id: string }) => r.id)).toEqual([ids.movedNew, ids.movedOld])
     })
 
     it('gets [] for an id that is not a teacher (a student of their own school)', async () => {

@@ -9,8 +9,11 @@ export interface TeacherClassroomRow {
 
 /** The class owner's answer to "which classes can a complimentary student be registered into for this teacher". */
 export interface TeacherClassroomsProvider {
-  /** The teacher's ACTIVE teacher-classes (kind `classroom`); any order, the service sorts them. */
-  activeOf(teacherId: string): Promise<TeacherClassroomRow[]>
+  /**
+   * The teacher's ACTIVE teacher-classes (kind `classroom`); any order, the service sorts them. With
+   * `scope.schoolId` only the classes whose own `school_id` equals it (a teacher who moved schools keeps the old rows).
+   */
+  activeOf(teacherId: string, scope?: { schoolId: string | null }): Promise<TeacherClassroomRow[]>
 }
 
 export class NoTeacherClassrooms implements TeacherClassroomsProvider {
