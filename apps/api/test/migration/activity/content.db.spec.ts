@@ -91,7 +91,9 @@ beforeAll(async () => {
     (1, 'Sepanduk A', 'hero', 'https://contoh.invalid/laman', 'banners/a.png', '2026-03-01T17:00:00Z', '2026-03-10T00:00:00Z', 2, '1'),
     (2, 'Sepanduk B', 'promo', '/relatif', null, null, null, 1, '0'),
     (3, 'Sepanduk C', 'event', null, null, '2026-03-10T00:00:00Z', '2026-03-01T00:00:00Z', 0, '1'),
-    (4, 'Sepanduk D', 'xyz', null, null, null, null, 0, '1')`)
+    (4, 'Sepanduk D', 'xyz', null, null, null, null, 0, '1'),
+    (5, 'Sepanduk E', 'FEATURE', null, null, null, null, 3, '1'),
+    (6, 'Sepanduk F', 'PROMOTIONAL', null, null, null, null, 4, '1')`)
   await q(`insert into staging_cloud.notes (id, title, note_type, body, views, is_published) values
     (1, 'Nota A', 'formula', '<p>Isi nota A</p><img src=x onerror=alert(1)><script>alert(2)</script>', 3, '1'), (2, 'Nota B', 'tidak_ada', 'Isi nota B', 0, '0')`)
   await q(`insert into staging_cloud.videos (id, title, url, duration_seconds) values
@@ -253,6 +255,9 @@ describe('banners', () => {
     expect(rows).toEqual([
       { legacy_id: '1', banner_type: 'HERO', link_type: 'EXTERNAL', external_url: 'https://contoh.invalid/laman', start_date: '2026-03-02', end_date: '2026-03-10', display_order: 2, is_active: true, image_file_id: null },
       { legacy_id: '2', banner_type: 'PROMO', link_type: 'NONE', external_url: null, start_date: null, end_date: null, display_order: 1, is_active: false, image_file_id: null },
+      // A1-FIX: the legacy FEATURE and PROMOTIONAL codes load as PROMO.
+      { legacy_id: '5', banner_type: 'PROMO', link_type: 'NONE', external_url: null, start_date: null, end_date: null, display_order: 3, is_active: true, image_file_id: null },
+      { legacy_id: '6', banner_type: 'PROMO', link_type: 'NONE', external_url: null, start_date: null, end_date: null, display_order: 4, is_active: true, image_file_id: null },
     ])
     expect(n(r1, 'banners', 'INVALID_VALUE', 'end_date')).toBe(1)
     expect(n(r1, 'banners', 'UNKNOWN_ENUM', 'type')).toBe(1)

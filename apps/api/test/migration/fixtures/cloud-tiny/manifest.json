@@ -123,11 +123,11 @@
       "file": "coin_transactions.ndjson"
     },
     "challenges": {
-      "rows": 1,
+      "rows": 6,
       "file": "challenges.ndjson"
     },
     "challenge_user": {
-      "rows": 1,
+      "rows": 6,
       "file": "challenge_user.ndjson"
     },
     "gifts": {

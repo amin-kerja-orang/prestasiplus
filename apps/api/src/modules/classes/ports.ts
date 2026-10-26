@@ -9,6 +9,8 @@ import { Injectable } from '@nestjs/common'
 export interface TeacherQuestionStats {
   /** Questions the teacher contributed (objective bank rows plus structured ones, BR-M10-06). */
   total: number
+  /** Of `total`, the structured questions (v2 `question_versions.type = 'structured'`); the rest are objective. Optional: fakes may omit it (read as 0). */
+  structured?: number
   approved: number
   pending: number
   used: number
@@ -22,7 +24,7 @@ export interface TeacherQuestionsProvider {
 
 export class NoTeacherQuestions implements TeacherQuestionsProvider {
   async statsOf(): Promise<TeacherQuestionStats> {
-    return { total: 0, approved: 0, pending: 0, used: 0, bySubject: [] }
+    return { total: 0, structured: 0, approved: 0, pending: 0, used: 0, bySubject: [] }
   }
 }
 
