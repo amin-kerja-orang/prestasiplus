@@ -120,6 +120,8 @@ describe('guest (FR-L45-22..25)', () => {
       'Belum mempunyai akaun Ibu Bapa? Daftar akaun Ibu Bapa terlebih dahulu, kemudian buka semula pautan jemputan ini.',
     )
     expect(t('invite-register-link').attributes('href')).toBe('/register')
+    // DV-30: inline link; vertical padding gives a >= 44 px tap target (20 px line + 2 x 12 px)
+    expect(t('invite-register-link').classes()).toContain('py-3')
     expect(t('invite-caption').text()).toBe(
       'Pautan jemputan ini dikongsi oleh Pelajar Demo melalui PRESTASIPLUS.',
     )

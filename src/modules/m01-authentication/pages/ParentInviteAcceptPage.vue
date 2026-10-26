@@ -95,7 +95,6 @@ async function switchAccount(): Promise<void> {
 onMounted(load)
 // The router reuses this component when only `:token` changes: load the new link from scratch.
 watch(() => props.token, load)
-
 </script>
 
 <template>
@@ -204,7 +203,7 @@ watch(() => props.token, load)
       >
         <template #description>
           Belum mempunyai akaun Ibu Bapa?
-          <ULink to="/register" class="text-highlighted" data-testid="invite-register-link"
+          <ULink to="/register" class="py-3 text-highlighted" data-testid="invite-register-link"
             >Daftar akaun Ibu Bapa</ULink
           >
           terlebih dahulu, kemudian buka semula pautan jemputan ini.
