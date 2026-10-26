@@ -41,6 +41,7 @@ const series = computed(() => [
       v-if="distribution.length > 0"
       type="bar"
       horizontal
+      height="lg"
       title="Bilangan rekod mengikut gred"
       table-label="Taburan gred"
       :labels="labels"
