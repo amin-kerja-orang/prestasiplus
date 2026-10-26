@@ -8,6 +8,7 @@
 
 import type { Page } from '@playwright/test'
 
+import { addInitSession } from '../fixtures/mock-page'
 import { expect, test } from '../fixtures/test'
 import {
   acceptNextDialog,
@@ -22,6 +23,8 @@ import {
 
 const GURU = 'guru@demo.test'
 const ADMIN = 'admin@demo.test'
+/** Mock teacher with no class (id 5301): the observed empty state of S4/S5 (DV-M10-48: the admin no longer reaches them). */
+const GURU_NO_CLASS = 'guru2@demo.test'
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(10)] }
 
@@ -49,12 +52,11 @@ async function pickSchool(page: Page, term: string, namePattern: RegExp): Promis
 }
 
 test.describe('M10 S4 Kelas Saya', MODULE, () => {
-  test('SRS §12 #20 admin: "0 kelas aktif", create link, empty card @m10', async ({
+  test('SRS §12 #20 teacher with no class: "0 kelas aktif", create link, empty card @m10', async ({
     page,
     gotoApp,
-    loginAs,
   }) => {
-    await loginAs(ADMIN)
+    await addInitSession(page, GURU_NO_CLASS)
     await gotoApp('/guru/kelas')
     await expectTabTitle(page, 'Kelas Saya - Portal Guru')
     await expectHeader(page, 'Portal Guru', 'Urus kelas dan tugasan anda 🏫')
@@ -146,9 +148,8 @@ test.describe('M10 S5 Cipta Kelas', MODULE, () => {
   test('SRS §12 #22 fields, 31 subjects in id order, 11 tiles, no required radios @m10', async ({
     page,
     gotoApp,
-    loginAs,
   }) => {
-    await loginAs(ADMIN)
+    await addInitSession(page, GURU_NO_CLASS)
     await gotoApp('/guru/kelas/cipta')
     await expectTabTitle(page, 'Cipta Kelas - Portal Guru')
     await expectHeader(page, 'Cipta Kelas Baru', 'Isi butiran kelas anda')
@@ -184,10 +185,9 @@ test.describe('M10 S5 Cipta Kelas', MODULE, () => {
   test('SRS §12 #22 school search: 1 character no request, "de" results, "zzz" empty, tiles follow the school type @m10', async ({
     page,
     gotoApp,
-    loginAs,
     mock,
   }) => {
-    await loginAs(ADMIN)
+    await addInitSession(page, GURU_NO_CLASS)
     await gotoApp('/guru/kelas/cipta')
     const input = page.getByTestId('school-search')
     await input.fill('d')
@@ -225,10 +225,9 @@ test.describe('M10 S5 Cipta Kelas', MODULE, () => {
   test('SRS §12 #23 empty name: native validity message, no request @m10', async ({
     page,
     gotoApp,
-    loginAs,
     mock,
   }) => {
-    await loginAs(ADMIN)
+    await addInitSession(page, GURU_NO_CLASS)
     await gotoApp('/guru/kelas/cipta')
     await page.getByTestId('kelas-submit').click()
     const valid = await page
@@ -275,6 +274,18 @@ test.describe('M10 S35 and role access', MODULE, () => {
       await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
       await expectNoHorizontalScroll(page)
     }
+  })
+
+  test('SRS §9 / DV-M10-48 the admin leaves /guru/kelas and /guru/kelas/cipta for its landing page @m10', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    await loginAs(ADMIN)
+    await gotoApp('/guru/kelas')
+    await expect(page).not.toHaveURL(/\/guru\//)
+    await gotoApp('/guru/kelas/cipta')
+    await expect(page).not.toHaveURL(/\/guru\//)
   })
 
   test(

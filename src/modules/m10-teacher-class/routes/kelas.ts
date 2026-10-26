@@ -1,14 +1,14 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-import { GURU_API_ROLES } from './roles'
+import { GURU_CLASS_ROLES } from './roles'
 
 /**
  * M10 route fragment: S4 Kelas Saya (`/guru/kelas`) and S5 Cipta Kelas (`/guru/kelas/cipta`), M10-T5.
- * User shell, teacher and admin in mock mode (SRS §2, §9); teacher only in http mode (DV-M10-37: the real
- * API is teacher-only), see `./roles`. Any other role goes to its landing page. The header and tab titles are the live ones (URS FN-M10-1.1.3). `/guru/kelas/:id` and `/:id/edit` match no
- * route here, so the catch-all renders S35 (404).
+ * User shell, teacher only in both modes (DV-M10-48: the real API is teacher-only), see `./roles`. Any
+ * other role goes to its landing page. The header and tab titles are the live ones (URS FN-M10-1.1.3).
+ * `/guru/kelas/:id` and `/:id/edit` match no route here, so the catch-all renders S35 (404).
  */
-const roles = GURU_API_ROLES
+const roles = GURU_CLASS_ROLES
 
 const routes: RouteRecordRaw[] = [
   {

@@ -91,7 +91,7 @@ Method key: E = E2E spec test (executed on all three projects, mapping by SRS §
 | 09.2 Remedial guru table, actions (P) | E: E2E-M10-16 | Pass |
 | 09.3 "Jana Kimia" states (P) | E: E2E-M10-16 | Pass |
 | 09.4 "Batal & Jana Semula" (P) | E: E2E-M10-16 | Pass |
-| 09.5 `failNext` scan, "Ralat: {message}" | E: E2E-M10-15 | Pass |
+| 09.5 `failNext` scan, "Ralat memuatkan data. Sila cuba semula." (DV-M10-44) | E: E2E-M10-15 | Pass |
 | 10.1 Evaluate admin (P) | E: E2E-M10-17 | Pass |
 | 10.2 Badges admin (P) | E: E2E-M10-17 | Pass |
 | 10.3 Evaluate and Badges guru (P) | E: E2E-M10-17 | Pass |
