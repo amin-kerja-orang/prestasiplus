@@ -188,7 +188,7 @@ async function recountFromCommitted(pool: Pick<pg.Pool, 'query'>, core: CoreCont
 }
 
 /** Counters copied into `etl_runs.counters -> 'notes'` (numbers only; the night SQL checks read them). Never ids or hashes. */
-const LEDGER_NOTES = /^(must_reset\..+|users\.role_rejected\..+|nullHashAccounts|flaggedWithoutLoginId|rosterDefaultHashes|rosterDefaultHashesWarning|countsFromCommittedRows)$/
+const LEDGER_NOTES = /^(must_reset\..+|users\.role_rejected\..+|nullHashAccounts|flaggedWithoutLoginId|rosterDefaultHashes|rosterDefaultHashesWarning|countsFromCommittedRows|classrooms\.excluded\..+|enrolments\.excluded\..+)$/
 
 /**
  * Merges the report counters into the apply run's `counters` JSON under `notes` (`jsonb_set`, so the runner's per-entity
@@ -319,4 +319,31 @@ export async function rebuildCoreNotes(pool: Pick<pg.Pool, 'query'>, core: CoreC
     [runId],
   )
   for (const r of res.rows) core.notes.count(`${prefix}.${roleRejectLabel(r.role)}`)
+  await rebuildExclusionNotes(pool, core, runId)
+}
+
+/**
+ * A1-FIX: sets the two documented class exclusion notes from the run's own persisted counters: the per-entity `excluded` totals
+ * that the runner commits with every batch (`etl_runs.counters -> <entity> -> excluded`, the same numbers behind recon's
+ * `eligible_count`). They are exactly what the live path counted, over every batch of the run (this process's and an earlier one's),
+ * and nothing the run has not reached yet: a step with no committed batch has no counters, so it sets no note. Staging is not
+ * read (a delta whose teacher is still in the id map is not excluded by the live step, so a staging recount would overstate).
+ * The values are SET (not added to), so the rebuild is idempotent; a note is set only above 0, like the live path. Counts only.
+ */
+async function rebuildExclusionNotes(pool: Pick<pg.Pool, 'query'>, core: CoreContext, runId: string): Promise<void> {
+  const notes: readonly (readonly [entity: string, note: string])[] = [
+    ['classrooms', 'classrooms.excluded.teacher_absent_from_source'],
+    ['enrolments', 'enrolments.excluded.class_teacher_absent_from_source'],
+  ]
+  for (const [, note] of notes) core.notes.counters.delete(note)
+  const res = await pool.query<{ classrooms: string | null; enrolments: string | null }>(
+    `SELECT counters -> 'classrooms' ->> 'excluded' AS classrooms, counters -> 'enrolments' ->> 'excluded' AS enrolments
+     FROM etl_runs WHERE id = $1::bigint`,
+    [runId],
+  )
+  const row = res.rows[0]
+  for (const [entity, note] of notes) {
+    const n = Number(row?.[entity as 'classrooms' | 'enrolments'] ?? 0)
+    if (Number.isFinite(n) && n > 0) core.notes.counters.set(note, n)
+  }
 }
