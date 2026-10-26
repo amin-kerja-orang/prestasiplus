@@ -114,8 +114,31 @@ function readFields(value: unknown): Record<string, string> | undefined {
   return fields
 }
 
-/** BM copy for a rate-limited response; the backend's 429 envelope carries English (BE-47 deferred). */
+/**
+ * BM fallback for a rate-limited response whose message is empty or a known English default.
+ * Auth and account 429s now carry BM copy (login "Sila cuba sebentar lagi.", IC reset with the wait
+ * time); the generic limiter still sends the English default "Too Many Attempts.".
+ */
 export const RATE_LIMITED_MESSAGE_BM = 'Terlalu banyak percubaan. Cuba sebentar lagi.'
+
+/** English 429 defaults (backend `DEFAULT_ERROR_MESSAGES.RATE_LIMITED`, Nest throttler), compared lower-cased. */
+const ENGLISH_RATE_LIMITED_DEFAULTS: ReadonlySet<string> = new Set([
+  'too many attempts.',
+  'too many attempts',
+  'too many requests.',
+  'too many requests',
+  'throttlerexception: too many requests',
+])
+
+/** Http mode: the server's message when it is present and not an English default, else the BM fallback. */
+function rateLimitedMessage(message: unknown): string {
+  if (typeof message !== 'string') return RATE_LIMITED_MESSAGE_BM
+  const text = message.trim()
+  if (text === '' || ENGLISH_RATE_LIMITED_DEFAULTS.has(text.toLowerCase())) {
+    return RATE_LIMITED_MESSAGE_BM
+  }
+  return message
+}
 
 /** Builds the `ApiError` for a non-2xx response. */
 export function errorFromResponse(res: {
@@ -133,10 +156,10 @@ export function errorFromResponse(res: {
     return new ApiError({
       ...base,
       code,
-      // Http mode only (mock unchanged): map by code/status, never by the English text.
+      // Http mode only (mock unchanged): keep the server's BM copy, replace English defaults.
       message:
         isHttpMode() && (code === API_ERROR_CODES.RATE_LIMITED || res.status === 429)
-          ? RATE_LIMITED_MESSAGE_BM
+          ? rateLimitedMessage(message)
           : message,
       fields: readFields(fields),
       retryAfter: typeof retryAfter === 'number' ? retryAfter : headerRetry,
