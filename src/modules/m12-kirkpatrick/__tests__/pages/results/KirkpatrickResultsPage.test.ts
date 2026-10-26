@@ -444,6 +444,23 @@ describe('S5 ROI and insights (AC-M12-24.1 ... 24.3)', () => {
   })
 })
 
+describe('S5 headings without data (BUG-08)', () => {
+  it('omits the year and the range when the API sends year 0 and no years', async () => {
+    api.fetchKirkpatrickResults.mockResolvedValue(
+      results({ subjectGps: { year: 0, rows: [] }, trend: { years: [], rows: [] } }),
+    )
+    const { wrapper: w } = await open()
+    expect(squash(t(w, 'res-subject-gps').get('h2').text())).toBe('GPS Mengikut Subjek')
+    expect(squash(t(w, 'res-trend').get('h2').text())).toBe('Trend GPS')
+  })
+
+  it('keeps the year and the range when there is data', async () => {
+    const { wrapper: w } = await open()
+    expect(squash(t(w, 'res-subject-gps').get('h2').text())).toBe('GPS Mengikut Subjek (2026)')
+    expect(squash(t(w, 'res-trend').get('h2').text())).toBe('Trend GPS (2022–2026)')
+  })
+})
+
 describe('S5 states', () => {
   it('shows the error line when the request fails', async () => {
     api.fetchKirkpatrickResults.mockRejectedValue(new Error('boom'))

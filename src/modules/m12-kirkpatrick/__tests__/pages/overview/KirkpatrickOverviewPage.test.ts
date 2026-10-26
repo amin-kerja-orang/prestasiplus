@@ -246,6 +246,20 @@ describe('S1 KPI row, bands and info (AC-M12-09.1..09.3)', () => {
     expect(t(w, 'kirk-bands').text()).toContain('Tidak Terlibat')
   })
 
+  it('BUG-02: bands are 2 columns below sm and 5 from sm, not 5 across at every width', async () => {
+    const { wrapper: w } = await open()
+    const grid = t(w, 'kirk-bands').get('.grid').classes()
+    expect(grid).toEqual(expect.arrayContaining(['grid-cols-2', 'sm:grid-cols-5']))
+    expect(grid).not.toContain('grid-cols-5')
+  })
+
+  it('BUG-04: the flow list rows wrap so the pill never overlaps the label', async () => {
+    const { wrapper: w } = await open()
+    const row = t(w, 'kirk-flow-list-t2')
+    expect(row.get('[data-ds="cluster"]').classes()).toContain('flex-wrap')
+    expect(row.find('.min-w-40').exists()).toBe(true)
+  })
+
   it('static info card text', async () => {
     const { wrapper: w } = await open()
     const text = squash(t(w, 'kirk-info').text())
@@ -270,6 +284,34 @@ describe('mounts', () => {
     expect(w.text()).not.toContain('Lihat detail')
     expect(t(w, 'kirk-level-t3').text()).toContain('946/4158')
     expect(all(w, 'kirk-band-count')).toHaveLength(5)
+  })
+})
+
+describe('S1 alias with a forced scope (BUG-11)', () => {
+  const url = '/admin-sekolah/kirkpatrick?school_id=8080&state=Johor'
+
+  it('shows no filter chips and sends no scope when the API forces the own school', async () => {
+    const { wrapper: w } = await open(url, { detailLinks: false, scopeForced: true })
+    expect(has(w, 'active-filters-reset')).toBe(false)
+    expect(w.text()).not.toContain('Penapis aktif')
+    expect(w.text()).not.toContain('Sekolah: SMK Demo Satu')
+    expect(w.text()).not.toContain('Negeri: Johor')
+    expect(resetLink(w).exists()).toBe(false)
+    expect((w.get('select[name="school_id"]').element as HTMLSelectElement).value).toBe('')
+    expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
+      { schoolId: null, state: '' },
+      expect.anything(),
+    )
+  })
+
+  it('still shows the chips of a normal mount with the same query', async () => {
+    const { wrapper: w } = await open('/admin/kirkpatrick?school_id=8080&state=Johor')
+    expect(w.text()).toContain('Sekolah: SMK Demo Satu')
+    expect(w.text()).toContain('Negeri: Johor')
+    expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
+      { schoolId: 8080, state: 'Johor' },
+      expect.anything(),
+    )
   })
 })
 

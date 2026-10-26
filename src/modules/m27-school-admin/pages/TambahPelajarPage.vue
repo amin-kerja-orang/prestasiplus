@@ -81,7 +81,7 @@ async function submit(): Promise<void> {
     errors.value = errorLines(err)
     form.password = ''
     await nextTick()
-    alertBox.value?.scrollIntoView?.({ block: 'start' })
+    alertBox.value?.scrollIntoView?.({ block: 'center' })
   } finally {
     saving.value = false
   }

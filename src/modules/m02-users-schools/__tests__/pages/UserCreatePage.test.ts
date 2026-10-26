@@ -11,6 +11,7 @@ import type { Jpn, Ppd, SchoolSummary } from '../../api/schools'
 import type { StudentSearchItem } from '../../api/users'
 import UserCreatePage from '../../pages/UserCreatePage.vue'
 import { expectListInFlow } from './in-flow'
+import { expectFinderWidthContract } from './parent-finder-width'
 
 const users = vi.hoisted(() => ({
   createAdminUser: vi.fn(),
@@ -384,6 +385,13 @@ describe('UserCreatePage (M02 S2) parent linker list', () => {
     await search(w, 'linker-search', 'pel')
     expect(w.findAll('[data-testid=linker-result]')).toHaveLength(2)
     expectListInFlow(w, 'linker-dropdown')
+  })
+
+  it('keeps the form column within the card while the results show (BUG-05, DV-M02-29)', async () => {
+    const w = await render()
+    await type(w, 'user-role', 'parent')
+    await search(w, 'linker-search', 'pel')
+    expectFinderWidthContract(w, 'parent-linker')
   })
 })
 
