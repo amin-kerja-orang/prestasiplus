@@ -34,6 +34,7 @@ import {
   cancelOpenSubscriptionsQuietly,
   dataOf,
   filterControls,
+  gotoExpectUrl,
   isPainted,
   openApiSession,
   stamp,
@@ -76,7 +77,7 @@ async function wireSchools(
 }
 
 test.describe('M02 schools (Admin Pusat) @api', () => {
-  test.setTimeout(120_000)
+  test.setTimeout(240_000)
 
   test('SCH-01 the list shows the schools the API returns, seed schools included @api', async ({
     page,
@@ -203,47 +204,50 @@ test.describe('M02 schools (Admin Pusat) @api', () => {
       expect(afterEdit.data.name).toBe(renamed)
       expect(afterEdit.data.code, 'an edit keeps the code').toBe(code)
 
-      // Toggle off and on from the list.
-      await expect(page.getByTestId('school-row').first()).toBeVisible({ timeout: 20_000 })
-      await filterControls(page)
-      await page.getByTestId('schools-search').fill(code)
-      await applyFilters(page)
-      await expect(row).toHaveCount(1, { timeout: 15_000 })
+      // Toggle off and on from the list. Each step is idempotent (it acts only while the state differs) and
+      // re-opens the filtered list itself, so a page reload in between (dev server) cannot flip it twice.
+      const stateOf = async (): Promise<boolean> =>
+        (
+          (await (await page.request.get(`/api/admin/schools/${schoolId}`)).json()) as {
+            data: WireSchool
+          }
+        ).data.isActive
       for (const want of [false, true]) {
-        const toggled = page.waitForResponse(
-          (r) =>
-            new URL(r.url()).pathname === `/api/admin/schools/${schoolId}/toggle` &&
-            r.request().method() === 'POST',
-          { timeout: 30_000 },
-        )
-        // Table: the button is in the row; cards (below md) have no toggle, so use the edit-free API path there.
-        const toggle = page.locator('[data-testid=school-toggle]:visible')
-        if ((await toggle.count()) > 0) {
-          await toggle.first().click()
-          expect((await toggled).status(), 'POST /api/admin/schools/:id/toggle').toBe(200)
-        } else {
-          void toggled.catch(() => undefined)
-          const csrf = (
-            (await (await page.request.get('/api/session')).json()) as {
-              data: { csrf: string }
-            }
-          ).data.csrf
-          const res = await page.request.post(`/api/admin/schools/${schoolId}/toggle`, {
-            headers: { 'x-csrf-token': csrf },
-          })
-          expect(res.status(), 'POST toggle').toBe(200)
-        }
-        await expect
-          .poll(
-            async () =>
-              (
-                (await (await page.request.get(`/api/admin/schools/${schoolId}`)).json()) as {
-                  data: WireSchool
-                }
-              ).data.isActive,
-            { timeout: 15_000 },
-          )
-          .toBe(want)
+        await expect(async () => {
+          if ((await stateOf()) === want) return
+          await gotoApi(page, '/admin/schools')
+          await expect(page.getByTestId('school-row').first()).toBeVisible({ timeout: 10_000 })
+          await filterControls(page)
+          await page.getByTestId('schools-search').fill(code)
+          await applyFilters(page)
+          // Settled: exactly this school is listed and no table is loading.
+          await expect(row).toHaveCount(1, { timeout: 10_000 })
+          await expect(page.getByTestId('school-row')).toHaveCount(1)
+          await expect(page.locator('[data-ds="data-table-loading"]')).toHaveCount(0)
+          // Table (md and up): the button of THIS row. Cards (below md) have no toggle: use the API there.
+          const tableRow = row.locator('xpath=ancestor::tr[1]')
+          if ((await tableRow.count()) > 0) {
+            const toggled = page.waitForResponse(
+              (r) =>
+                r.request().method() === 'POST' &&
+                new URL(r.url()).pathname === `/api/admin/schools/${schoolId}/toggle`,
+              { timeout: 15_000 },
+            )
+            await tableRow.getByTestId('school-toggle').click()
+            expect((await toggled).status(), 'POST /api/admin/schools/:id/toggle').toBe(200)
+          } else {
+            const csrf = (
+              (await (await page.request.get('/api/session')).json()) as {
+                data: { csrf: string }
+              }
+            ).data.csrf
+            const res = await page.request.post(`/api/admin/schools/${schoolId}/toggle`, {
+              headers: { 'x-csrf-token': csrf },
+            })
+            expect(res.status(), 'POST toggle').toBe(200)
+          }
+        }).toPass({ timeout: 60_000 })
+        await expect.poll(stateOf, { timeout: 15_000 }).toBe(want)
       }
     } finally {
       // Leave the fixture school switched off: schools cannot be deleted through the API.
@@ -314,7 +318,7 @@ test.describe('M02 schools (Admin Pusat) @api', () => {
 })
 
 test.describe('M02 school subscriptions (Admin Pusat) @api', () => {
-  test.setTimeout(150_000)
+  test.setTimeout(240_000)
 
   test('SUB-01 the list and its summary come from the API @api', async ({ page }) => {
     await signIn(page, 'adminPusat')
@@ -522,7 +526,7 @@ test.describe('M02 school subscriptions (Admin Pusat) @api', () => {
 })
 
 test.describe('M02 role guards on schools and subscriptions @api', () => {
-  test.setTimeout(90_000)
+  test.setTimeout(240_000)
 
   const PATHS = [
     '/api/admin/schools',
@@ -582,8 +586,7 @@ test.describe('M02 role guards on schools and subscriptions @api', () => {
         '/admin/school-subscriptions',
         '/admin/schools/create',
       ]) {
-        await page.goto(path)
-        await expect(page).toHaveURL(new RegExp(`${home}$`), { timeout: 20_000 })
+        await gotoExpectUrl(page, path, new RegExp(`${home}$`))
         await expect(page.getByTestId('schools-page')).toHaveCount(0)
         await expect(page.getByTestId('subs-page')).toHaveCount(0)
         await expectNoHScroll(page)

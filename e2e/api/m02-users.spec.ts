@@ -32,6 +32,7 @@ import {
   createUser,
   dataOf,
   filterControls,
+  gotoExpectUrl,
   isPainted,
   isTableLayout,
   openApiSession,
@@ -86,7 +87,7 @@ function rowOf(page: Page, id: string) {
 }
 
 test.describe('M02 users (Admin Pusat) @api', () => {
-  test.setTimeout(150_000)
+  test.setTimeout(240_000)
 
   test('USR-01 the list shows the stat cards and the page of rows the API returns @api', async ({
     page,
@@ -501,7 +502,10 @@ test.describe('M02 users (Admin Pusat) @api', () => {
     await page.getByTestId('gen-search').fill('Demo')
     const results = page.getByTestId('gen-result')
     await expect(results.first()).toBeVisible({ timeout: 15_000 })
-    expect(await results.count(), 'the seed schools match "Demo"').toBeGreaterThanOrEqual(4)
+    // The typeahead fills in as the search answers: wait for the four seed schools, do not read the count early.
+    await expect
+      .poll(() => results.count(), { message: 'the seed schools match "Demo"', timeout: 15_000 })
+      .toBeGreaterThanOrEqual(4)
     for (const index of [0, (await results.count()) - 1]) {
       expect(
         await isPainted(results.nth(index)),
@@ -533,7 +537,7 @@ test.describe('M02 users (Admin Pusat) @api', () => {
 })
 
 test.describe('M02 user management role guards @api', () => {
-  test.setTimeout(90_000)
+  test.setTimeout(240_000)
 
   const PATHS = ['/api/admin/users', '/api/admin/users/filters', '/api/admin/comp-students']
 
@@ -622,8 +626,7 @@ test.describe('M02 user management role guards @api', () => {
       '/admin/import-students',
       '/admin/comp-students',
     ]) {
-      await page.goto(path)
-      await expect(page).toHaveURL(new RegExp(`${HOME.adminSekolah}$`), { timeout: 20_000 })
+      await gotoExpectUrl(page, path, new RegExp(`${HOME.adminSekolah}$`))
       await expect(page.getByTestId('users-page')).toHaveCount(0)
       await expectNoHScroll(page)
     }

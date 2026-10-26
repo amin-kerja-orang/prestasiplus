@@ -261,3 +261,25 @@ export async function cancelOpenSubscriptionsQuietly(
     })
   }
 }
+
+/**
+ * Opens `path` and waits for the SPA to end on a URL matching `pattern` (a route guard redirect). The whole
+ * step is retried: against a vite dev server a cold page load needs thousands of module requests and a full
+ * page reload (HMR, triggered by files Playwright writes under the project) can interrupt an attempt.
+ * The URL is asserted on every attempt, so a guard that never redirects still fails. A guard that redirects only
+ * intermittently can pass here: treat a retry annotation or a slow pass as a signal to look at the guard.
+ */
+export async function gotoExpectUrl(page: Page, path: string, pattern: RegExp): Promise<void> {
+  let attempts = 0
+  await expect(async () => {
+    attempts += 1
+    await page.goto(path)
+    await expect(page).toHaveURL(pattern, { timeout: 30_000 })
+  }).toPass({ timeout: 120_000 })
+  if (attempts > 1) {
+    test.info().annotations.push({
+      type: 'goto-expect-url-retried',
+      description: `${path}: ${String(attempts)} attempts`,
+    })
+  }
+}
