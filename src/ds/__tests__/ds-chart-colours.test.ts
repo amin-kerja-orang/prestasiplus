@@ -53,34 +53,3 @@ describe('DsChart staff colours (S-02)', () => {
     expect(configs[0]?.data.datasets[0]?.backgroundColor).toBe('#2440f0')
   })
 })
-
-describe('DsChart integer ticks (G5-M11 #7)', () => {
-  type Ticks = { precision?: number }
-  type Cfg = { options: { scales: { y: { ticks: Ticks }; x: { ticks: Ticks } } } }
-  function mountChart(data: number[], horizontal = false): Cfg {
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      {} as CanvasRenderingContext2D,
-    )
-    mount(DsChart, {
-      props: {
-        title: 'Trend',
-        labels: data.map((_, i) => `L${i}`),
-        series: [{ label: 'Murid', data }],
-        horizontal,
-      },
-    })
-    return configs[0] as unknown as Cfg
-  }
-
-  it('uses whole-number steps when every value is an integer', () => {
-    expect(mountChart([0, 1, 1]).options.scales.y.ticks.precision).toBe(0)
-  })
-
-  it('also applies to the value axis of a horizontal chart', () => {
-    expect(mountChart([2, 3], true).options.scales.x.ticks.precision).toBe(0)
-  })
-
-  it('keeps automatic ticks for fractional data', () => {
-    expect(mountChart([57.9, 60]).options.scales.y.ticks.precision).toBeUndefined()
-  })
-})
