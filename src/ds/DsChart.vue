@@ -127,18 +127,34 @@ const dimmed = ref('')
 const swatch = computed(() =>
   personality.value === 'learner'
     ? ['bg-primary', 'bg-friend', 'bg-highlight', 'bg-heat']
-    : ['bg-cat-1', 'bg-cat-2', 'bg-cat-3', 'bg-cat-4', 'bg-cat-5', 'bg-cat-6', 'bg-cat-7', 'bg-cat-8'],
+    : [
+        'bg-cat-1',
+        'bg-cat-2',
+        'bg-cat-3',
+        'bg-cat-4',
+        'bg-cat-5',
+        'bg-cat-6',
+        'bg-cat-7',
+        'bg-cat-8',
+      ],
 )
 const legend = computed(() =>
   props.type === 'doughnut'
     ? props.labels.map((label, i) => ({ label, swatch: swatch.value[i % swatch.value.length] }))
     : props.series.map((s, i) => ({
         label: s.label,
-        swatch: swatch.value[(personality.value === 'learner' ? i : (s.slot ?? i + 1) - 1) % swatch.value.length],
+        swatch:
+          swatch.value[
+            (personality.value === 'learner' ? i : (s.slot ?? i + 1) - 1) % swatch.value.length
+          ],
       })),
 )
 const shape = computed(() =>
-  props.type === 'line' ? 'rounded-full' : props.type === 'doughnut' ? 'rounded-full' : 'rounded-chip',
+  props.type === 'line'
+    ? 'rounded-full'
+    : props.type === 'doughnut'
+      ? 'rounded-full'
+      : 'rounded-chip',
 )
 
 function readTokens(): void {
@@ -196,7 +212,14 @@ const valueLabels: Plugin = {
 }
 
 function build(): ChartConfiguration {
-  const tick = { color: dimmed.value, font: { size: 12 } }
+  // Integer counts must not get fractional axis ticks (0.0, 0.5, 1.0); `precision: 0` makes the
+  // linear scale use whole-number steps. Fractional data (rates, averages) keeps automatic ticks.
+  const wholeNumbers = props.series.every((s) => s.data.every((v) => Number.isInteger(v)))
+  const tick = {
+    color: dimmed.value,
+    font: { size: 12 },
+    ...(wholeNumbers ? { precision: 0 } : {}),
+  }
   const doughnut = props.type === 'doughnut'
   const datasets = props.series.map((s, i) => ({
     label: s.label,
@@ -215,7 +238,7 @@ function build(): ChartConfiguration {
       responsive: true,
       maintainAspectRatio: false,
       indexAxis: props.horizontal ? 'y' : 'x',
-      layout: { padding: { top: 18, right: props.horizontal ? 32 : 8 } },
+      layout: { padding: { top: 18, right: props.horizontal ? 32 : 16 } },
       plugins: { legend: { display: false } },
       scales: doughnut
         ? {}
@@ -259,9 +282,13 @@ onBeforeUnmount(() => {
   chart?.destroy()
   chart = null
 })
-watch(() => [props.type, props.labels, props.series, props.unit, props.horizontal, personality.value], render, {
-  deep: true,
-})
+watch(
+  () => [props.type, props.labels, props.series, props.unit, props.horizontal, personality.value],
+  render,
+  {
+    deep: true,
+  },
+)
 
 const tableColumns = computed<TableColumn<Record<string, string>>[]>(() => [
   { accessorKey: 'label', header: '' },
@@ -298,7 +325,12 @@ watch(view, async (v) => {
     <component :is="headingTag" class="text-subheading text-highlighted" data-ds="chart-title">
       {{ title }}
     </component>
-    <USkeleton v-if="view === 'loading'" class="w-full" :class="plotHeight" data-ds="chart-loading" />
+    <USkeleton
+      v-if="view === 'loading'"
+      class="w-full"
+      :class="plotHeight"
+      data-ds="chart-loading"
+    />
     <DsLoadError
       v-else-if="view === 'error'"
       :message="errorMessage"
@@ -311,7 +343,10 @@ watch(view, async (v) => {
     </div>
     <ul
       v-if="view === 'ready'"
-      class="flex flex-wrap gap-x-4 gap-y-2" data-ds="chart-legend" :aria-label="fillCopy(dsCopy.chartLegend, { title })">
+      class="flex flex-wrap gap-x-4 gap-y-2"
+      data-ds="chart-legend"
+      :aria-label="fillCopy(dsCopy.chartLegend, { title })"
+    >
       <li v-for="(l, i) in legend" :key="i" class="flex items-center gap-2 text-caption text-muted">
         <span class="size-3 shrink-0" :class="[l.swatch, shape]" aria-hidden="true" />
         {{ l.label }}
