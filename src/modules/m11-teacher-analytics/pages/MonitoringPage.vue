@@ -213,6 +213,7 @@ async function goto(sectionId: string) {
 
     <template v-if="data">
       <MonitoringKpis :kpi="data.kpi" />
+      <!-- G5-M11 bug 1: the theme label is `truncate`; `text-ellipsis` replaces it, so the full label shows and the list scrolls. -->
       <UTabs
         id="mon-tabs"
         v-model="tab"
@@ -221,7 +222,12 @@ async function goto(sectionId: string) {
         variant="link"
         size="lg"
         class="w-full"
-        :ui="{ content: 'pt-6' }"
+        :ui="{
+          content: 'pt-6',
+          list: 'overflow-x-auto',
+          trigger: 'shrink-0',
+          label: 'overflow-visible text-ellipsis whitespace-nowrap',
+        }"
         data-testid="mon-tabs"
       >
         <template #pelajar>
