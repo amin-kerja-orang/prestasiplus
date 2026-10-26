@@ -37,9 +37,70 @@ vi.mock('../../api/school-admin', async (importActual) => ({
 const validation = (fields: Record<string, string>) =>
   new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Data tidak sah.', fields })
 
+const scrollIntoView = vi.fn()
+
 beforeEach(() => {
   for (const fn of Object.values(api)) fn.mockReset()
   setRouteOutcome(null)
+  scrollIntoView.mockReset()
+  // jsdom has no `scrollIntoView`
+  Element.prototype.scrollIntoView = scrollIntoView
+})
+
+describe('failed submit scrolls the alert clear of the sticky header (G5-M27 B2)', () => {
+  const alertScrolledTo = (): unknown => scrollIntoView.mock.calls[0]?.[0]
+
+  it('S9 Edit Pelajar centres the alert', async () => {
+    api.fetchSchoolPupil.mockResolvedValue(detail())
+    api.updateSchoolPupil.mockRejectedValue(validation({ email: 'Emel telah digunakan.' }))
+    const { wrapper: w } = await mountAt(EditPelajarPage, '/admin-sekolah/pelajar/3001', {
+      id: 3001,
+    })
+    await w.get('[data-testid="user-form"]').trigger('submit')
+    await flushPromises()
+    expect(scrollIntoView.mock.contexts[0]).toBe(
+      w.get('[data-testid="user-form-alert"]').element.parentElement,
+    )
+    expect(alertScrolledTo()).toEqual({ block: 'center' })
+  })
+
+  it('S10 Edit Guru centres the alert', async () => {
+    api.fetchSchoolTeacher.mockResolvedValue(detail({ role: 'teacher' }))
+    api.updateSchoolTeacher.mockRejectedValue(validation({ email: 'Emel telah digunakan.' }))
+    const { wrapper: w } = await mountAt(EditGuruPage, '/admin-sekolah/guru/3001', { id: 3001 })
+    await w.get('[data-testid="user-form"]').trigger('submit')
+    await flushPromises()
+    expect(alertScrolledTo()).toEqual({ block: 'center' })
+  })
+
+  it('S11 Cipta Guru centres the alert', async () => {
+    api.createSchoolTeacher.mockRejectedValue(validation({ email: 'Emel telah digunakan.' }))
+    const { wrapper: w } = await mountAt(CiptaGuruPage, '/admin-sekolah/guru/baru')
+    await w.get('[data-testid="user-form"]').trigger('submit')
+    await flushPromises()
+    expect(alertScrolledTo()).toEqual({ block: 'center' })
+  })
+
+  it('S12 Tambah Pelajar centres the alert', async () => {
+    api.fetchSchoolPupilFormOptions.mockResolvedValue({
+      school: {
+        id: 900001,
+        name: 'SMK Contoh Ujian',
+        code: 'ABC1234',
+        district: 'PPD Contoh',
+        state: 'Selangor',
+      },
+      classes: [],
+      passwordPlaceholder: '',
+      passwordHint: 'Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara).',
+      passwordMinLength: 8,
+    } satisfies SchoolPupilFormOptions)
+    api.createSchoolPupil.mockRejectedValue(validation({ name: 'Nama diperlukan.' }))
+    const { wrapper: w } = await mountAt(TambahPelajarPage, '/admin-sekolah/pelajar/baru')
+    await w.get('[data-testid="user-form"]').trigger('submit')
+    await flushPromises()
+    expect(alertScrolledTo()).toEqual({ block: 'center' })
+  })
 })
 
 describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
@@ -68,8 +129,12 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
       'Kata Laluan Baru',
       'Sahkan Kata Laluan Baru',
     ])
-    expect((w.get('[data-testid="user-name"]').element as HTMLInputElement).value).toBe('Murid Contoh Satu')
-    expect((w.get('[data-testid="user-phone"]').element as HTMLInputElement).value).toBe('0191234567')
+    expect((w.get('[data-testid="user-name"]').element as HTMLInputElement).value).toBe(
+      'Murid Contoh Satu',
+    )
+    expect((w.get('[data-testid="user-phone"]').element as HTMLInputElement).value).toBe(
+      '0191234567',
+    )
     expect(text(w, 'user-status-line')).toBe('Status Aktif')
     expect(has(w, 'user-status-line')).toBe(true)
     expect(w.text()).not.toMatch(/Peranan|Sekolah|Tingkatan|Kad Pengenalan|Nota Keselamatan/)
@@ -89,7 +154,9 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
     expect(panel.attributes('style')).toContain('display: none')
     await toggle.trigger('click')
     expect(panel.attributes('style') ?? '').not.toContain('display: none')
-    expect(w.get('[data-testid="user-new-password"]').attributes('placeholder')).toBe('Minimum 6 aksara')
+    expect(w.get('[data-testid="user-new-password"]').attributes('placeholder')).toBe(
+      'Minimum 6 aksara',
+    )
     expect(w.get('[data-testid="user-new-password-confirm"]').attributes('placeholder')).toBe(
       'Taip semula kata laluan baru',
     )
@@ -99,7 +166,10 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
   })
 
   it('saves name, e-mail and phone only, flashes the status and returns to S6', async () => {
-    api.updateSchoolPupil.mockResolvedValue({ data: detail(), status: 'Pengguna berjaya dikemaskini.' })
+    api.updateSchoolPupil.mockResolvedValue({
+      data: detail(),
+      status: 'Pengguna berjaya dikemaskini.',
+    })
     const { wrapper: w, router } = await open()
     await w.get('[data-testid="user-name"]').setValue('Nama Baharu')
     await w.get('[data-testid="user-form"]').trigger('submit')
@@ -111,7 +181,10 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
     })
     expect(api.resetSchoolPupilPassword).not.toHaveBeenCalled()
     expect(router.currentRoute.value.path).toBe('/admin-sekolah/pelajar')
-    expect(useFlashStore().pending).toEqual({ type: 'success', message: 'Pengguna berjaya dikemaskini.' })
+    expect(useFlashStore().pending).toEqual({
+      type: 'success',
+      message: 'Pengguna berjaya dikemaskini.',
+    })
   })
 
   it('sends a typed new password in the same PUT (one call, no reset call)', async () => {
@@ -142,7 +215,9 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
     await w.get('[data-testid="user-form"]').trigger('submit')
     await flushPromises()
     expect(text(w, 'user-form-alert')).toContain('Emel telah digunakan.')
-    expect((w.get('[data-testid="user-name"]').element as HTMLInputElement).value).toBe('Nama Baharu')
+    expect((w.get('[data-testid="user-name"]').element as HTMLInputElement).value).toBe(
+      'Nama Baharu',
+    )
     expect((w.get('[data-testid="user-new-password"]').element as HTMLInputElement).value).toBe('')
     expect(router.currentRoute.value.path).toBe('/admin-sekolah/pelajar/3001')
     expect(useFlashStore().pending).toBeNull()
@@ -162,14 +237,20 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
   })
 
   it('renders the global 404 page for an unknown, foreign or wrong-role id', async () => {
-    api.fetchSchoolPupil.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }))
+    api.fetchSchoolPupil.mockRejectedValue(
+      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),
+    )
     await mountAt(EditPelajarPage, '/admin-sekolah/pelajar/9', { id: 9 })
     expect(useRouteOutcome().value).toBe(404)
   })
 
   it('renders the global 403 page for an inactive pupil', async () => {
-    api.fetchSchoolPupil.mockRejectedValue(new ApiError({ status: 403, code: 'FORBIDDEN', message: 'x' }))
-    const { wrapper: w } = await mountAt(EditPelajarPage, '/admin-sekolah/pelajar/3002', { id: 3002 })
+    api.fetchSchoolPupil.mockRejectedValue(
+      new ApiError({ status: 403, code: 'FORBIDDEN', message: 'x' }),
+    )
+    const { wrapper: w } = await mountAt(EditPelajarPage, '/admin-sekolah/pelajar/3002', {
+      id: 3002,
+    })
     expect(useRouteOutcome().value).toBe(403)
     expect(has(w, 'user-form')).toBe(false)
   })
@@ -178,7 +259,13 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
 describe('S10 Edit Guru (FR-M27-104 to 107)', () => {
   async function open() {
     api.fetchSchoolTeacher.mockResolvedValue(
-      detail({ id: 5, role: 'teacher', name: 'Guru Contoh Satu', email: 'guru@demo.test', phone: null }),
+      detail({
+        id: 5,
+        role: 'teacher',
+        name: 'Guru Contoh Satu',
+        email: 'guru@demo.test',
+        phone: null,
+      }),
     )
     return mountAt(EditGuruPage, '/admin-sekolah/guru/5', { id: 5 })
   }
@@ -186,21 +273,27 @@ describe('S10 Edit Guru (FR-M27-104 to 107)', () => {
   it('shows the form and the closed reset bar, no status line, no role / school / switch', async () => {
     const { wrapper: w } = await open()
     expect(api.fetchSchoolTeacher).toHaveBeenCalledWith(5, expect.anything())
-    expect(w.findAll('label').slice(0, 3).map((l) => l.text().replace(/\s+/g, ' ').trim())).toEqual([
-      'Nama',
-      'Emel',
-      'No. Telefon (Pilihan)',
-    ])
+    expect(
+      w
+        .findAll('label')
+        .slice(0, 3)
+        .map((l) => l.text().replace(/\s+/g, ' ').trim()),
+    ).toEqual(['Nama', 'Emel', 'No. Telefon (Pilihan)'])
     expect(has(w, 'user-status-line')).toBe(false)
     expect(w.text()).toContain('Reset Kata Laluan')
-    expect(w.get('[data-testid="user-password-panel"]').attributes('style')).toContain('display: none')
+    expect(w.get('[data-testid="user-password-panel"]').attributes('style')).toContain(
+      'display: none',
+    )
     expect(w.find('select').exists()).toBe(false)
     expect(w.get('[data-testid="form-cancel"]').attributes('href')).toBe('/admin-sekolah/guru')
     expect((w.get('[data-testid="user-phone"]').element as HTMLInputElement).value).toBe('')
   })
 
   it('saves through #13 with the password pair in the same call and returns to S7', async () => {
-    api.updateSchoolTeacher.mockResolvedValue({ data: detail({ role: 'teacher' }), status: 'Pengguna berjaya dikemaskini.' })
+    api.updateSchoolTeacher.mockResolvedValue({
+      data: detail({ role: 'teacher' }),
+      status: 'Pengguna berjaya dikemaskini.',
+    })
     const { wrapper: w, router } = await open()
     await w.get('[data-testid="user-new-password"]').setValue('rahsia123')
     await w.get('[data-testid="user-new-password-confirm"]').setValue('rahsia123')
@@ -219,11 +312,15 @@ describe('S10 Edit Guru (FR-M27-104 to 107)', () => {
   })
 
   it('renders the 403 page for an inactive teacher and the 404 page for a foreign id', async () => {
-    api.fetchSchoolTeacher.mockRejectedValue(new ApiError({ status: 403, code: 'FORBIDDEN', message: 'x' }))
+    api.fetchSchoolTeacher.mockRejectedValue(
+      new ApiError({ status: 403, code: 'FORBIDDEN', message: 'x' }),
+    )
     await mountAt(EditGuruPage, '/admin-sekolah/guru/6', { id: 6 })
     expect(useRouteOutcome().value).toBe(403)
     setRouteOutcome(null)
-    api.fetchSchoolTeacher.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }))
+    api.fetchSchoolTeacher.mockRejectedValue(
+      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),
+    )
     await mountAt(EditGuruPage, '/admin-sekolah/guru/7', { id: 7 })
     expect(useRouteOutcome().value).toBe(404)
   })
@@ -250,8 +347,12 @@ describe('S11 Cipta Pengguna (FR-M27-108 to 110)', () => {
       'Kata Laluan',
       'Sahkan Kata Laluan',
     ])
-    expect(w.get('[data-testid="user-password"]').attributes('placeholder')).toBe('Minimum 6 aksara')
-    expect(w.get('[data-testid="user-password-confirm"]').attributes('placeholder')).toBe('Taip semula kata laluan')
+    expect(w.get('[data-testid="user-password"]').attributes('placeholder')).toBe(
+      'Minimum 6 aksara',
+    )
+    expect(w.get('[data-testid="user-password-confirm"]').attributes('placeholder')).toBe(
+      'Taip semula kata laluan',
+    )
     expect(w.find('select').exists()).toBe(false)
     expect(text(w, 'form-cancel')).toBe('Batal')
     expect(text(w, 'form-submit')).toBe('Daftar Pengguna')
@@ -278,7 +379,10 @@ describe('S11 Cipta Pengguna (FR-M27-108 to 110)', () => {
       passwordConfirmation: 'rahsia123',
     })
     expect(router.currentRoute.value.path).toBe('/admin-sekolah/guru')
-    expect(useFlashStore().pending).toEqual({ type: 'success', message: 'Pengguna berjaya didaftarkan.' })
+    expect(useFlashStore().pending).toEqual({
+      type: 'success',
+      message: 'Pengguna berjaya didaftarkan.',
+    })
   })
 
   it('shows the server errors above the form, keeps the values and clears the passwords', async () => {
@@ -290,16 +394,26 @@ describe('S11 Cipta Pengguna (FR-M27-108 to 110)', () => {
     await w.get('[data-testid="user-form"]').trigger('submit')
     await flushPromises()
     expect(text(w, 'user-form-alert')).toContain('Emel telah digunakan.')
-    expect((w.get('[data-testid="user-name"]').element as HTMLInputElement).value).toBe('Guru Baharu')
+    expect((w.get('[data-testid="user-name"]').element as HTMLInputElement).value).toBe(
+      'Guru Baharu',
+    )
     expect((w.get('[data-testid="user-password"]').element as HTMLInputElement).value).toBe('')
-    expect((w.get('[data-testid="user-password-confirm"]').element as HTMLInputElement).value).toBe('')
+    expect((w.get('[data-testid="user-password-confirm"]').element as HTMLInputElement).value).toBe(
+      '',
+    )
     expect(router.currentRoute.value.path).toBe('/admin-sekolah/guru/baru')
   })
 })
 
 describe('S12 Tambah Pelajar (FR-M27-117, 118, 120)', () => {
   const OPTIONS: SchoolPupilFormOptions = {
-    school: { id: 900001, name: 'SMK Contoh Ujian', code: 'ABC1234', district: 'PPD Contoh', state: 'Selangor' },
+    school: {
+      id: 900001,
+      name: 'SMK Contoh Ujian',
+      code: 'ABC1234',
+      district: 'PPD Contoh',
+      state: 'Selangor',
+    },
     classes: [
       { id: 2001, name: '5 Amanah' },
       { id: 2002, name: '5 Bestari' },
@@ -335,13 +449,16 @@ describe('S12 Tambah Pelajar (FR-M27-117, 118, 120)', () => {
     ])
     expect(text(w, 'user-school-name')).toBe('SMK Contoh Ujian')
     expect(text(w, 'user-school-meta')).toBe('ABC1234 · PPD Contoh · Selangor')
-    expect(w.get('[data-testid="pupil-class"]').findAll('option').map((o) => o.text())).toEqual([
-      'Tiada kelas',
-      '5 Amanah',
-      '5 Bestari',
-    ])
+    expect(
+      w
+        .get('[data-testid="pupil-class"]')
+        .findAll('option')
+        .map((o) => o.text()),
+    ).toEqual(['Tiada kelas', '5 Amanah', '5 Bestari'])
     expect(w.get('[data-testid="pupil-password"]').attributes('placeholder')).toBe('••••••••')
-    expect(text(w, 'pupil-password-hint')).toBe('Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara).')
+    expect(text(w, 'pupil-password-hint')).toBe(
+      'Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara).',
+    )
     expect(text(w, 'form-submit')).toBe('Cipta Pelajar')
     expect(text(w, 'form-cancel')).toBe('Batal')
     expect(w.get('[data-testid="form-cancel"]').attributes('href')).toBe('/admin-sekolah/pelajar')
@@ -366,8 +483,15 @@ describe('S12 Tambah Pelajar (FR-M27-117, 118, 120)', () => {
       message: 'Pelajar "Murid Baharu" berjaya dicipta.',
     })
     const block = w.get('[data-testid="pupil-credential"]')
-    expect(block.text()).toContain('Maklumat log masuk pelajar — catat sekarang, ia tidak akan dipaparkan semula.')
-    expect(block.findAll('dt').map((e) => e.text())).toEqual(['Nama:', 'Sekolah:', 'Emel:', 'Kata laluan:'])
+    expect(block.text()).toContain(
+      'Maklumat log masuk pelajar — catat sekarang, ia tidak akan dipaparkan semula.',
+    )
+    expect(block.findAll('dt').map((e) => e.text())).toEqual([
+      'Nama:',
+      'Sekolah:',
+      'Emel:',
+      'Kata laluan:',
+    ])
     expect(text(w, 'credential-password')).toBe('Terjana-9999')
     expect((w.get('[data-testid="pupil-name"]').element as HTMLInputElement).value).toBe('')
     expect((w.get('[data-testid="pupil-email"]').element as HTMLInputElement).value).toBe('')
@@ -391,7 +515,9 @@ describe('S12 Tambah Pelajar (FR-M27-117, 118, 120)', () => {
   })
 
   it('shows the errors above the form, keeps the values and clears the password', async () => {
-    api.createSchoolPupil.mockRejectedValue(validation({ name: 'Nama mesti sekurang-kurangnya 3 aksara.' }))
+    api.createSchoolPupil.mockRejectedValue(
+      validation({ name: 'Nama mesti sekurang-kurangnya 3 aksara.' }),
+    )
     const { wrapper: w } = await open()
     await w.get('[data-testid="pupil-name"]').setValue('Ab')
     await w.get('[data-testid="pupil-password"]').setValue('rahsia')
@@ -418,7 +544,9 @@ describe('S12 Tambah Pelajar (FR-M27-117, 118, 120)', () => {
   })
 
   it('renders the 403 page when the form options answer 403', async () => {
-    api.fetchSchoolPupilFormOptions.mockRejectedValue(new ApiError({ status: 403, code: 'FORBIDDEN', message: 'x' }))
+    api.fetchSchoolPupilFormOptions.mockRejectedValue(
+      new ApiError({ status: 403, code: 'FORBIDDEN', message: 'x' }),
+    )
     const { wrapper: w } = await mountAt(TambahPelajarPage, '/admin-sekolah/pelajar/baru')
     expect(useRouteOutcome().value).toBe(403)
     expect(has(w, 'user-form')).toBe(false)

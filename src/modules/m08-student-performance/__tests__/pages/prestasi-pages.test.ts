@@ -196,6 +196,18 @@ describe('S1 PrestasiSekolahPage', () => {
     expect(hrefs).toContain('/headcount')
   })
 
+  it('B5: the "Navigasi Pantas" labels may wrap, so "Dashboard Tingkatan" is not truncated beside the sidebar', async () => {
+    api.fetchSchoolPerformance.mockResolvedValue(S1)
+    signInAs('teacher')
+    const w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
+    const labels = w
+      .findAll('[data-testid=quick-nav] a span')
+      .filter((s) => s.text().includes('Dashboard Tingkatan'))
+    expect(labels).toHaveLength(1)
+    expect(labels[0]!.classes()).toContain('whitespace-normal')
+    expect(labels[0]!.classes()).not.toContain('truncate')
+  })
+
   it('shows the stat cards, with only "Soalan Dijawab" grouped and the accuracy to 1 decimal', async () => {
     api.fetchSchoolPerformance.mockResolvedValue(S1)
     const w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
@@ -353,6 +365,37 @@ describe('S3 TingkatanPage', () => {
     expect(t(w, 'at-risk').text()).toContain('-26')
   })
 
+  it('B7: an empty list hides its panel; both empty hide the row; both filled keep two columns', async () => {
+    const mountWith = async (detail: LevelDetail) => {
+      api.fetchLevelDetail.mockResolvedValue(detail)
+      return render(TingkatanPage, '/prestasi/tingkatan/t4', '/prestasi/tingkatan/:code')
+    }
+    let w = await mountWith({ ...T4, topStudents: [], atRisk: [] })
+    expect(w.find('[data-testid=top-students]').exists()).toBe(false)
+    expect(w.find('[data-testid=at-risk]').exists()).toBe(false)
+    expect(w.text()).not.toContain('Murid Terbaik')
+    expect(w.text()).not.toContain('Murid Berisiko')
+    expect(w.find('.lg\\:grid-cols-2').exists()).toBe(false)
+    w.unmount()
+
+    w = await mountWith({ ...T4, topStudents: [] })
+    expect(w.find('[data-testid=top-students]').exists()).toBe(false)
+    expect(t(w, 'at-risk').text()).toContain('Murid Berisiko')
+    expect(w.find('.lg\\:grid-cols-2').exists()).toBe(false)
+    w.unmount()
+
+    w = await mountWith({ ...T4, atRisk: [] })
+    expect(t(w, 'top-students').text()).toContain('Murid Terbaik')
+    expect(w.find('[data-testid=at-risk]').exists()).toBe(false)
+    expect(w.find('.lg\\:grid-cols-2').exists()).toBe(false)
+    w.unmount()
+
+    w = await mountWith(T4)
+    expect(w.find('[data-testid=top-students]').exists()).toBe(true)
+    expect(w.find('[data-testid=at-risk]').exists()).toBe(true)
+    expect(w.find('.lg\\:grid-cols-2').exists()).toBe(true)
+  })
+
   it('an unknown level code is the 404 page', async () => {
     api.fetchLevelDetail.mockRejectedValue(
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),
@@ -372,6 +415,24 @@ describe('S4 PrestasiKelasPilihPage', () => {
       expect(t(w, 'kelas-empty').text()).toContain('Cipta kelas terlebih dahulu')
       expect(t(w, 'kelas-create').attributes('href')).toBe('/guru/kelas/cipta')
       w.unmount()
+    }
+  })
+
+  it('http mode: the admin gets no "Cipta Kelas" (the route is teacher-only there, DV-M10-37); the teacher keeps it', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    try {
+      api.fetchOwnClasses.mockResolvedValue([])
+      signInAs('admin')
+      const a = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
+      expect(t(a, 'kelas-empty').text()).toContain('Anda belum mempunyai kelas aktif.')
+      expect(a.find('[data-testid=kelas-create]').exists()).toBe(false)
+      a.unmount()
+      signInAs('teacher')
+      const g = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
+      expect(t(g, 'kelas-create').attributes('href')).toBe('/guru/kelas/cipta')
+      g.unmount()
+    } finally {
+      vi.unstubAllEnvs()
     }
   })
 
