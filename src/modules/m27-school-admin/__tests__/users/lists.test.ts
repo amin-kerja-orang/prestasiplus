@@ -294,6 +294,9 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
       expect(title.classes().filter((c) => /^(p|px|ps|pl)-\d/.test(c))).toEqual([])
       // a touch target of at least 44px stays
       expect(title.classes()).toContain('min-h-11')
+      // a real button that cannot submit a surrounding form
+      expect(title.element.tagName).toBe('BUTTON')
+      expect(title.attributes('type')).toBe('button')
     })
   })
 
