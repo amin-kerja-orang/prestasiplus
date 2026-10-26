@@ -33,6 +33,7 @@ const clock = useBoardClock()
     </DsPageHeader>
     <div class="flex flex-wrap items-center gap-2">
       <UButton
+        v-if="paths.dashboard"
         :to="paths.dashboard"
         color="neutral"
         variant="soft"

@@ -48,3 +48,13 @@ describe('M17 S3 "Laporan Eksekutif" link', () => {
     expect(boardPaths(false).report).toBeNull()
   })
 })
+
+describe('M17 S2 "← Dashboard" link', () => {
+  it('is not drawn for the admin while S1 is not built (`/admin` redirects back to S2)', () => {
+    expect(boardPaths(false).dashboard).toBeNull()
+  })
+
+  it('still opens the M27 school-admin dashboard for the Admin Sekolah alias', () => {
+    expect(boardPaths(true).dashboard).toBe('/admin-sekolah')
+  })
+})
