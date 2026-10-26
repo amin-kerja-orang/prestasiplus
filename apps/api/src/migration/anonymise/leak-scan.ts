@@ -9,6 +9,9 @@
  *      digit sequences of phone/IC values, and multi-word names inside longer text count. Single words
  *      of a name are NOT matched on their own: common words (and surnames) would flag public content.
  *
+ * Both checks read the raw string AND its normalised views (normalise.ts: tags and entities removed, NFKC, non-ASCII digits and
+ * zero-width characters folded, JSON escapes decoded); a hit on either counts (A1-LEAK F1).
+ *
  * Any hit fails the run. A hit names the table, the column, the kind and a count, never a value.
  * The scan also works on its own on a finished dump directory (patterns only), see `anonymise:scan`.
  */
@@ -17,6 +20,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { DirReader } from '../staging/readers'
 import { TABLES, type TableSpec } from '../ddl/spec'
 import type { LeakHit } from './errors'
+import { scanViews } from './normalise'
 import { EMAIL, IC, LANDLINE, MOBILE } from './patterns'
 import { EMAIL_DOMAIN } from './pseudonyms'
 import type { Rule } from './rules'
@@ -28,11 +32,19 @@ export interface ScanPatternOptions {
   allowedEmailDomains?: readonly string[]
 }
 
-/** The pattern kinds found in one string (each kind once). */
+/** The pattern kinds found in one string (each kind once), in the raw text or in a normalised view of it (normalise.ts). */
 export function patternKinds(text: string, options: ScanPatternOptions = {}): string[] {
+  const kinds = rawPatternKinds(text, options)
+  for (const view of scanViews(text)) for (const kind of rawPatternKinds(view, options)) if (!kinds.includes(kind)) kinds.push(kind)
+  return kinds
+}
+
+/** `patternKinds` on exactly this string. */
+function rawPatternKinds(text: string, options: ScanPatternOptions): string[] {
   const allowed = new Set((options.allowedEmailDomains ?? [EMAIL_DOMAIN]).map((d) => d.toLowerCase()))
   const kinds: string[] = []
-  if (text.length >= 5) {
+  // no `@` means no address, and the address pattern is quadratic on a long run of local-part characters, so look for one first
+  if (text.length >= 5 && text.includes('@')) {
     for (const m of text.matchAll(EMAIL)) {
       if (!allowed.has((m[1] as string).toLowerCase())) {
         kinds.push('email')
@@ -68,7 +80,7 @@ const IC_G = globalOf(IC)
 export function patternSpans(text: string, options: ScanPatternOptions = {}): PiiSpan[] {
   const allowed = new Set((options.allowedEmailDomains ?? [EMAIL_DOMAIN]).map((d) => d.toLowerCase()))
   const spans: PiiSpan[] = []
-  for (const m of text.matchAll(EMAIL_G)) {
+  for (const m of text.includes('@') ? text.matchAll(EMAIL_G) : []) {
     if (!allowed.has((m[1] as string).toLowerCase())) spans.push({ start: m.index, end: m.index + m[0].length, kind: 'email' })
   }
   for (const re of [MOBILE_G, LANDLINE_G]) for (const m of text.matchAll(re)) spans.push({ start: m.index, end: m.index + m[0].length, kind: 'phone' })
@@ -121,10 +133,18 @@ function foldWithOffsets(text: string): { folded: string; start: number[]; end: 
 
 /** Every string (and long integer) leaf of a cell. */
 export function* leaves(value: unknown): Generator<string> {
-  if (typeof value === 'string') yield value
-  else if (typeof value === 'number' && Number.isInteger(value) && Math.abs(value) >= 100_000_000) yield String(value)
-  else if (Array.isArray(value)) for (const v of value) yield* leaves(v)
-  else if (value !== null && typeof value === 'object') for (const v of Object.values(value)) yield* leaves(v)
+  // iterative (an explicit stack, same order as a depth-first walk): a deeply nested json cell cannot overflow the call stack
+  const stack: unknown[] = [value]
+  while (stack.length > 0) {
+    const v = stack.pop()
+    if (typeof v === 'string') yield v
+    else if (typeof v === 'number' && Number.isInteger(v) && Math.abs(v) >= 100_000_000) yield String(v)
+    else if (Array.isArray(v)) for (let i = v.length - 1; i >= 0; i--) stack.push(v[i])
+    else if (v !== null && typeof v === 'object') {
+      const values = Object.values(v)
+      for (let i = values.length - 1; i >= 0; i--) stack.push(values[i])
+    }
+  }
 }
 
 /** The parsed value of a json text cell (so its string leaves are indexed, not the whole text); anything else as it is. */
@@ -189,9 +209,23 @@ export class OriginalsIndex {
     }
   }
 
-  /** `original-value` or `original-name` when the cell text is or contains an indexed original, else null. */
+  /**
+   * `original-value` or `original-name` when the cell text is or contains an indexed original, else null. The raw text is
+   * checked first, then its normalised views (normalise.ts); a hit on either counts.
+   */
   match(text: string): string | null {
     if (this.size === 0) return null
+    const raw = this.matchExact(text)
+    if (raw !== null) return raw
+    for (const view of scanViews(text)) {
+      const hit = this.matchExact(view)
+      if (hit !== null) return hit
+    }
+    return null
+  }
+
+  /** `match` on exactly this string. */
+  private matchExact(text: string): string | null {
     const n = collapse(text)
     if (n.length >= 5 && this.whole.has(this.h('w', n))) return 'original-value'
     if (this.digitSeq.size > 0) {
