@@ -261,3 +261,15 @@ export async function cancelOpenSubscriptionsQuietly(
     })
   }
 }
+
+/**
+ * Opens `path` and waits for the SPA to end on a URL matching `pattern` (a route guard redirect). The whole
+ * step is retried: against a vite dev server a cold page load needs thousands of module requests and a full
+ * page reload (HMR, triggered by files Playwright writes under the project) can interrupt an attempt.
+ */
+export async function gotoExpectUrl(page: Page, path: string, pattern: RegExp): Promise<void> {
+  await expect(async () => {
+    await page.goto(path)
+    await expect(page).toHaveURL(pattern, { timeout: 30_000 })
+  }).toPass({ timeout: 120_000 })
+}

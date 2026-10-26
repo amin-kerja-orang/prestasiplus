@@ -16,8 +16,8 @@
  *  - PAR-02  creating a Ibu Bapa with the student linker: the result list is painted in the flow and the link is
  *            stored (SWX-4, SWX-2 string ids)
  *  - COMP-01 Pelajar Komplimen: the list loads from the API and the create page opens (UAT-ADM-13)
- *  - COMP-02 registering a pupil from the form: `test.fail()`, BUG BE `lookups.controller.ts:42-47`, the teacher
- *            classes endpoint always answers [] so the class select is empty (BR-18, FR-M02-71)
+ *  - COMP-02 registering a pupil from the form. Probes the teacher classes endpoint first: while it answers [] (M02 BUG-02,
+ *            `lookups.controller.ts:42-47`, fixed by #322) the test is marked `test.fail()`; with classes the full flow runs and passes
  *  - COMP-03 a pupil registered over the API is listed with a masked IC and coins off; coins go on in bulk (ids are strings)
  *
  * Data written: everything is created by the test with fictitious names and `@example.test` / `@moe-dl.edu.my`
@@ -75,7 +75,7 @@ async function signInAs(page: Page, user: TempUser): Promise<void> {
 }
 
 test.describe('M02 bulk user import (Admin Pusat) @api', () => {
-  test.setTimeout(150_000)
+  test.setTimeout(240_000)
 
   test('IMP-01 import two Guru from pasted lines, then the same lines again @api', async ({
     page,
@@ -399,7 +399,7 @@ test.describe('M02 bulk user import (Admin Pusat) @api', () => {
 })
 
 test.describe('M02 parent invites @api', () => {
-  test.setTimeout(150_000)
+  test.setTimeout(240_000)
 
   test('PAR-01 issue, accept, single use, list, regenerate, unlink @api', async ({
     page,
@@ -581,7 +581,7 @@ test.describe('M02 parent invites @api', () => {
 })
 
 test.describe('M02 complimentary students (Admin Pusat) @api', () => {
-  test.setTimeout(150_000)
+  test.setTimeout(240_000)
 
   /** A fictitious 12 digit IC, unique per call (month 01, day 01 style digits are not validated by the API). */
   const fakeIc = () =>
@@ -610,11 +610,10 @@ test.describe('M02 complimentary students (Admin Pusat) @api', () => {
     await expectNoHScroll(page)
   })
 
-  // KNOWN BUG (BE, M02): GET /api/admin/teachers/:id/classrooms is a stub that always answers `[]`
-  // (apps/api/src/modules/users/lookups.controller.ts:42-47, "the classes table arrives with BE-17"; BE-17 has landed).
-  // The "Kelas guru" select of S7 therefore never has a class and "Guru ini tiada kelas aktif." shows for a teacher
-  // who has active classes, so no complimentary pupil can be registered from the screen. Remove `test.fail()` when
-  // the endpoint returns the teacher's active classes.
+  // M02 BUG-02 (BE, fixed by #322): while GET /api/admin/teachers/:id/classrooms is the stub that answers `[]`
+  // (apps/api/src/modules/users/lookups.controller.ts:42-47), the "Kelas guru" select of S7 has no class and no
+  // complimentary pupil can be registered from the screen. The test probes the endpoint and is marked
+  // `test.fail()` only while it returns no classes; with classes it runs the whole flow and must pass.
   test('COMP-02 register one pupil in a teacher class from the form @api', async ({
     page,
     browser,
