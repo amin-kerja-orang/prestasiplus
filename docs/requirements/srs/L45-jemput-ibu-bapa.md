@@ -96,7 +96,7 @@ Router rule (OBSERVED, AUD-L45-01): S2 matches **any** `:token` string, with no 
 | FR-L45-29 | On accept failure (`mock.failNext`, 5xx) S2 SHALL keep the valid-link card without the linked state and show the red alert "Ralat berlaku. Sila cuba lagi." (UNVERIFIED COPY, shared with M01 §8). | 2.2.1 | 10 | INFERRED |
 | FR-L45-30 | Hand-off: S2 never carries the token through login or registration. After login or registration the parent lands on the role landing page (`/dashboard`, M01 BR-07), ignoring the requested URL (M01 BR-08); the parent then opens the link again to link (the guest copy says so). No change to M01 login or register. | 2.2.2 | 09, 10 | PROPOSED (consistent with OBSERVED BR-08) |
 | FR-L45-31 | The user-shell nav item "Jemput Ibu Bapa" → `/jemput-ibu-bapa` (already built: `src/shells/nav/user-nav.ts` id `jemput-ibu-bapa`, `fa-users`, `text-red-500`, roles Murid, placed after "Timeline Saya") stays as built. The label and the student-only visibility come from the murid screenshot of the roles matrix; the href is confirmed by live (guarded route); the icon and colour are unverified (the reference says `fa-user-friends`, `text-rose-500`). No change is requested. It is shown in the sidebar (≥1024px) and the drawer (<1024px) for Pelajar only. | 1.5.1 | 07 | OBSERVED (label, href) / INFERRED (icon, colour) |
-| FR-L45-32 | Every L45 screen SHALL follow §10 and the master NFR-RESP: no horizontal page scroll at 320–1920px, touch targets ≥44px, no content text below 12px (DV-16 rule). | all | 12 | — |
+| FR-L45-32 | Every L45 screen SHALL follow §10 and the master NFR-RESP: no horizontal page scroll at 320–1920px, touch targets ≥44px (v2: see DV-L45-09), no content text below 12px (DV-16 rule). | all | 12 | — |
 | FR-L45-33 | Tab titles SHALL match §2 exactly, and the S2 invalid and valid titles use an em dash. | all | 01, 08, 09 | OBSERVED (invalid) / PROPOSED |
 
 ### 3.1 Traceability (US → FR → E2E)
@@ -253,7 +253,7 @@ Mandatory 375 / 768 / 1280 (CLAUDE.md §7). The reference gives structure only; 
 | S2 valid / invalid | Standalone, page padding 16px; card full width (≤512px); header block, body and buttons stack; buttons full width. At 320px the card has ≥12px margins and nothing overflows. | Card centred, max width 512px. | Same, centred vertically for the invalid page (as observed). | — |
 | S2 invalid at 1280 | Matches `terima-invalid-token-desktop.png` (card ≈448px wide, centred). | — | — | — |
 
-No horizontal page scroll at 320–1920px; every button and link tap target ≥44px; content text ≥12px.
+No horizontal page scroll at 320–1920px; every button and link tap target ≥44px (v2: see DV-L45-09); content text ≥12px.
 
 ## 11. Non-functional requirements
 
@@ -297,7 +297,7 @@ Every scenario runs on the mobile (375×812), tablet (768×1024) and desktop (12
 | E2E-L45-21 | Refresh/reopen and a second student: no duplicate rows; the first link kept. | 10.3, 10.4 | 28 |
 | E2E-L45-22 | Accept fails (`failNext`): alert "Ralat berlaku. Sila cuba lagi.", no link. | 10.5 | 29 |
 | E2E-L45-23 | Logged-in student 2 opens student 3's link: non-parent text, button "Log Keluar & Log Masuk Sebagai Ibu Bapa" → session cleared → `/login`; no link created. | 11.1, 11.2 | 26 |
-| E2E-L45-24 | Responsive sweep of S1 (with and without parents) and S2 (invalid, guest, linked): no page h-scroll at 320/375/768/1280, taps ≥44px, text ≥12px, buttons stack below `sm`, long email and name truncate. | 12.1–12.5 | 32 |
+| E2E-L45-24 | Responsive sweep of S1 (with and without parents) and S2 (invalid, guest, linked): no page h-scroll at 320/375/768/1280, taps ≥44px (v2: see DV-L45-09), text ≥12px, buttons stack below `sm`, long email and name truncate. | 12.1–12.5 | 32 |
 
 **Coverage:** 52/52 URS ACs ≥1 scenario; 32/32 active FRs (FR-21 withdrawn) ≥1 scenario; 24 scenarios.
 
