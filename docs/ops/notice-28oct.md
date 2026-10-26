@@ -13,6 +13,7 @@ Open:
 | N7 | Moot under AM-18 A: there is no reset e-mail at go-live, so the notice uses the "Reset melalui No IC" path and no longer depends on production mail. Revisit only if the LEAD reverses AM-18 A. | ops |
 | N8 | "Keputusan latihan dan sejarah aktiviti ... dipindahkan" is true in general, but the LEAD decisions of 25 Oct 13:15 MYT (#113 comment 6393823432) exclude two kinds of records. Exam attempts still `in_progress` are not migrated. Classes whose teacher no longer exists in the source are dropped with their enrolments; the pupils themselves still migrate. The text stays general; the LEAD decides whether to mention these. | LEAD |
 | N10 (Perlu pengesahan LEAD, narrowed) | The switch type is still unconfirmed (Q21): the cutover plan says the dump operator makes `.cloud` "read-only or maintenance mode" (section 'What never happens' and row P8; pre-night Script gaps). Maintenance mode might block viewing. The notice therefore no longer promises that users can still view data: it says the old system "mungkin hanya boleh dibaca atau tidak boleh diakses buat sementara" and that new practice or changes cannot be made, which is true in both modes (AM1-3 N2). Resolved when the LEAD / dump operator confirms the mode; then the sentence may be made specific. | LEAD, dump operator |
+| N11 (send condition) | **Send this notice only if FE #226 and #357 are in the release sha.** Without them, a flagged user gets 403 `PASSWORD_CHANGE_REQUIRED` and the error banner, not the "Tukar Kata Laluan" screen the notice promises (P11-DRESS-2/3, #113 6402323393, 6402500822). | LEAD / FE |
 | N5 | Two ops docs still carry the pre-R39 wording: the cutover plan, row P10 (roster and legacy-password accounts "must set a new password") and the pre-night sheet, G6 checklist row ("Support told to expect a password-reset spike"). Under D34 the migration still flags roster, shared-default and argon2id accounts, and users with no usable password (for example Google-only) must also reset, so a support spike is still possible. Align those two docs with this notice. | LEAD / ops |
 
 Closed:
@@ -70,7 +71,7 @@ Apa yang perlu dilakukan
 
 2. Pengguna yang log masuk dengan Google di sistem lama (akaun tanpa kata laluan)
    - Pada halaman log masuk sistem baharu, pilih "Lupa kata laluan?", kemudian pilih "Reset melalui No IC".
-   - Reset melalui No IC memerlukan No IC anda direkodkan dalam sistem. Jika tidak berjaya, sila minta bantuan guru atau pentadbir sekolah anda.
+   - Reset melalui No IC meminta e-mel dan No IC anda, dan No IC itu mesti direkodkan dalam sistem. Jika tidak berjaya, sila minta bantuan guru atau pentadbir sekolah anda.
    - Selepas kata laluan ditetapkan, log masuk seperti biasa.
 
 Data anda
