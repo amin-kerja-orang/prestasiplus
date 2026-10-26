@@ -385,7 +385,6 @@ const tiles = computed<StatItem[]>(() => {
             <DsStatRow
               prefix="sub"
               :items="tiles"
-              density="compact"
               :cols="4"
               aria-label="Butiran langganan"
               data-testid="sub-tiles"
