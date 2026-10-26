@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 
-import type { INestApplication } from '@nestjs/common'
+import type { INestApplication, Type } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { ErrorBodySchema } from '@pp/contract'
 import request from 'supertest'
@@ -37,6 +37,8 @@ export interface BootOptions {
   env?: Record<string, string | undefined>
   /** Extra seeds after identity, schools, population and curriculum. */
   seeds?: SeedModule[]
+  /** Extra Nest modules next to auth and classes (for example the question bank and the classes question bridge). */
+  modules?: Type<unknown>[]
 }
 
 /** Nest app with auth and classes (curriculum comes with it) on a private migrated and seeded database. */
@@ -67,7 +69,7 @@ export async function bootClassesApp(opts: BootOptions = {}): Promise<ClassesTes
     else process.env[k] = v
   }
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, ClassesModule])] })
+  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, ClassesModule, ...(opts.modules ?? [])])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .compile()
