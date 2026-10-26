@@ -17301,7 +17301,7 @@
               "string",
               "null"
             ],
-            "description": "Optional; null or empty means no school. An unknown school gives fields.schoolId."
+            "description": "Optional; when absent, null or empty the class takes the own school of the caller (none if the caller has none). Only that school is accepted; any other or unknown school gives fields.schoolId."
           },
           "description": {
             "type": [
@@ -17377,13 +17377,33 @@
               "type": "string"
             },
             "description": "The own active classes the pupil is in."
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            },
+            "description": "The viewer's own active classes of this pupil, in the same order as classNames (which stays for compatibility)."
           }
         },
         "required": [
           "id",
           "name",
           "levelName",
-          "classNames"
+          "classNames",
+          "classes"
         ]
       },
       "TeacherStudentsMeta": {

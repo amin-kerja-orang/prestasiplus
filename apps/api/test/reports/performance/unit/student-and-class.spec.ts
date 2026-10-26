@@ -225,6 +225,55 @@ describe('Analitik', () => {
     PerformanceAnalyticsSchema.parse(r)
   })
 
+  describe('SW13-08: one subject is one row, whether a sitting stores the curriculum id or the Bijak code', () => {
+    beforeEach(() => {
+      w.directory.addSubject('MAT', '3')
+      const mat = { subjectCode: 'MAT', subjectName: 'Matematik' }
+      w.bijak
+        .addSitting(sitting({ userId: '1', score: 9, maxScore: 10, answeredCount: 5, subjectId: '3', ...mat }))
+        .addSitting(sitting({ userId: '1', score: 5, maxScore: 10, answeredCount: 4, subjectId: 'MAT', ...mat }))
+    })
+
+    it('me: exactly one row under the curriculum id, with the combined figures', async () => {
+      const r = await w.analytics.me(ctxOf('student', '1'))
+      expect(r.subjects).toHaveLength(1)
+      expect(r.subjects[0]).toMatchObject({ subjectId: '3', name: 'Matematik', code: 'MAT', accuracy: 70, answered: 9 })
+      PerformanceAnalyticsSchema.parse(r)
+    })
+
+    it('me: a code with no curriculum subject keeps the sitting id and stays its own row', async () => {
+      w.bijak.addSitting(sitting({ userId: '1', score: 5, maxScore: 10, subjectId: 'XYZ', subjectCode: 'XYZ', subjectName: 'Lain' }))
+      const r = await w.analytics.me(ctxOf('student', '1'))
+      expect(r.subjects.map((x) => x.subjectId)).toEqual(['3', 'XYZ'])
+    })
+
+    describe("migrated 'legacy' sittings are no subject row but still count in the totals", () => {
+      const legacy = { subjectId: 'legacy', subjectCode: 'legacy', subjectName: 'Tidak diketahui' }
+      beforeEach(() => {
+        w.bijak.addSitting(sitting({ userId: '1', score: 2, maxScore: 10, answeredCount: 3, ...legacy }))
+      })
+
+      it('me: one subject row (MAT to 3)', async () => {
+        const r = await w.analytics.me(ctxOf('student', '1'))
+        expect(r.subjects.map((x) => x.subjectId)).toEqual(['3'])
+        expect(r.subjects[0]).toMatchObject({ accuracy: 70, answered: 9 })
+      })
+
+      it('student: one mastery row, while stats and the heatmap still include the legacy sitting', async () => {
+        const r = await w.student.student(ctxOf('student', '1'), '1')
+        expect(r.mastery.map((m) => m.subjectCode)).toEqual(['MAT'])
+        expect(r.stats.answered).toBe(12)
+        expect(r.stats.sessions).toBe(3)
+      })
+    })
+
+    it('student mastery: one row per subject as well', async () => {
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      expect(r.mastery).toHaveLength(1)
+      expect(r.mastery[0]).toMatchObject({ subjectCode: 'MAT', accuracy: 70, sessions: 2, answered: 9 })
+    })
+  })
+
   it('me with no sittings is the empty payload', async () => {
     const r = await w.analytics.me(ctxOf('student', '2'))
     expect(r.subjects).toEqual([])
@@ -300,6 +349,16 @@ describe('Analitik', () => {
         const r = await w.analytics.classes(ctxOf('teacher', 't5'), {})
         expect(r.options.subjects).toEqual([{ id: '3', name: 'Matematik' }])
         expect(r.options.selected.subjectId).toBe('3')
+        expect(r.rows.map((x) => [x.userId, x.accuracy])).toEqual([
+          ['4', 90],
+          ['5', 30],
+        ])
+      })
+
+      it("a migrated 'legacy' sitting is not a subject option", async () => {
+        w.bijak.addSitting(sitting({ userId: '4', score: 5, maxScore: 10, subjectId: 'legacy', subjectCode: 'legacy', subjectName: 'Tidak diketahui' }))
+        const r = await w.analytics.classes(ctxOf('teacher', 't5'), {})
+        expect(r.options.subjects).toEqual([{ id: '3', name: 'Matematik' }])
         expect(r.rows.map((x) => [x.userId, x.accuracy])).toEqual([
           ['4', 90],
           ['5', 30],
