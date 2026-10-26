@@ -172,7 +172,7 @@ export class ClassesService {
     const tab = str(query.tab) === 'school' ? 'school' : 'mine'
     const term = (str(query.search) ?? '').trim()
     const schoolSet = actor.schoolId !== null
-    const names = await this.repo.classNamesByStudent(actor.userId)
+    const classesOf = await this.repo.classesByStudent(actor.userId)
 
     let lines
     let count: number
@@ -189,12 +189,16 @@ export class ClassesService {
     for (const grade of new Set(lines.flatMap((l) => (l.grade === null ? [] : [l.grade])))) {
       levelNames.set(grade, (await this.curriculum.levelForGrade(grade))?.name ?? null)
     }
-    const data: TeacherStudent[] = lines.map((l) => ({
-      id: l.id,
-      name: l.name,
-      levelName: l.grade === null ? null : (levelNames.get(l.grade) ?? null),
-      classNames: names.get(l.id) ?? [],
-    }))
+    const data: TeacherStudent[] = lines.map((l) => {
+      const classes = classesOf.get(l.id) ?? []
+      return {
+        id: l.id,
+        name: l.name,
+        levelName: l.grade === null ? null : (levelNames.get(l.grade) ?? null),
+        classNames: classes.map((c) => c.name),
+        classes,
+      }
+    })
     return { data, meta: { count, schoolSet } }
   }
 

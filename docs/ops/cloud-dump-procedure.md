@@ -249,6 +249,7 @@ If the exit code is not 0, go to section 6 now.
    node -e "const r=require('readline').createInterface({input:require('fs').createReadStream(process.argv[1])});let i=0,n=0;const k=+process.argv[3];r.on('line',l=>{if(i++%k===0&&n++<40){const v=JSON.parse(l)[process.argv[2]];console.log(typeof v==='string'?v:JSON.stringify(v))}})" "$work/anon/notes.ndjson" body 50
    ```
    If a listed table has 0 rows it has no `.ndjson` file in `anon`: skip it (the sample command would fail with ENOENT). Change the file (`<table>.ndjson`), the column (`body`) and the stride (50: choose about row count divided by 40). For a json column the whole value is printed. Look for a teacher, parent or pupil named in a note, title, comment or class label. The values stay in the terminal scrollback: close the terminal window after the sitting (`clear` does not remove scrollback).
+   In the 8 `redact-pii` columns (runbook section 11, marked "redacted, A1-LEAK") the token `[maklumat peribadi dipadam]` is expected, not a finding; a real name **outside** a token is still a STOP.
 3. A sample is not proof. If any real name is seen in any column, **stop**: the LEAD decides the new rule (`scrub-text` or `null`) for that column in `anon.config.json`, a developer applies it, and the whole sitting is repeated with a new key on another day (section 6, "Review failed"). Do not hand over this dump.
 4. If nothing is found, the operator writes the aggregate result for the LEAD (step 9), and the LEAD is present or accepts it on #109. **Open LEAD item (not decided here):** the sample size (40 values per column at a stride) is a proposal; the LEAD sets the size.
 
@@ -361,6 +362,7 @@ Post one comment with **only**:
 - sha256 of the `.gpg` file;
 - the offset used for `--datetime-offset`;
 - "free-text check passed (operator)" and "LEAD review: present in person" or "LEAD accepted on #109" (aggregates only);
+- the redaction counts that `dump:produce` logs (`Redacted <n> span(s) in <table.column> (<kind> x<n>, ...)`, one line per column), counts only (A1-LEAK, #303);
 - "raw wiped, key destroyed", and "local copies deleted" once step 8 is done;
 - "option file deleted" or "account locked" (step 8, checklist item c).
 
