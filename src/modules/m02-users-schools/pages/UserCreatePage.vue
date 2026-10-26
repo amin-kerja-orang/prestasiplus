@@ -383,7 +383,7 @@ async function submit(): Promise<void> {
             />
           </DsFormField>
 
-          <div v-if="role === 'parent'" class="sm:col-span-2">
+          <div v-if="role === 'parent'" class="min-w-0 sm:col-span-2">
             <ParentStudentLinker v-model="linked" variant="create" />
           </div>
 

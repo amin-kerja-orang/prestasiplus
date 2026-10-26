@@ -463,7 +463,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
             <main
               id="kandungan"
               :key="route.path"
-              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 py-4 pb-32 sm:py-6 lg:pb-12"
+              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 py-4 pb-32 sm:pt-6 lg:pb-12"
               data-testid="pembelajaran-main"
               tabindex="-1"
             >

@@ -9,7 +9,7 @@ import type { RouteRecordRaw } from 'vue-router'
  */
 const routes: RouteRecordRaw[] = [
   {
-    path: '/prestasi/kelas/:id',
+    path: '/prestasi/kelas/:id([0-9]+)',
     name: 'm08.prestasi.kelas.detail',
     component: () => import('../pages/PrestasiKelasDetailPage.vue'),
     meta: {
