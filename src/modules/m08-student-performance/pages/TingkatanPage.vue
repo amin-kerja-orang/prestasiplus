@@ -241,8 +241,12 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
         </DsDataTable>
       </section>
 
-      <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-        <DsPanel class="min-w-0" data-testid="top-students">
+      <div
+        v-if="data.topStudents.length > 0 || data.atRisk.length > 0"
+        class="grid grid-cols-1 gap-4 md:gap-6"
+        :class="{ 'lg:grid-cols-2': data.topStudents.length > 0 && data.atRisk.length > 0 }"
+      >
+        <DsPanel v-if="data.topStudents.length > 0" class="min-w-0" data-testid="top-students">
           <div class="flex flex-col gap-3">
             <h2 class="text-subheading text-highlighted">Murid Terbaik</h2>
             <ol class="flex max-h-96 flex-col gap-2 overflow-y-auto">
@@ -259,7 +263,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
           </div>
         </DsPanel>
 
-        <DsPanel class="min-w-0" data-testid="at-risk">
+        <DsPanel v-if="data.atRisk.length > 0" class="min-w-0" data-testid="at-risk">
           <div class="flex flex-col gap-3">
             <h2 class="text-subheading text-highlighted">Murid Berisiko</h2>
             <div class="flex max-h-96 flex-col gap-2 overflow-y-auto">

@@ -86,6 +86,13 @@ describe('SubscriptionListPage (M02 S12)', () => {
     expect(w.get('[data-testid=subs-stat-quota]').text()).toContain('Jumlah Kuota Pelajar')
   })
 
+  it('never cuts a stat label (DV-M02-02): default-density tiles, no truncate class', async () => {
+    const { w } = await render()
+    const tiles = w.get('[data-ds="stat-row"]')
+    expect(tiles.findAll('[data-compact]')).toHaveLength(0)
+    expect(tiles.findAll('.truncate')).toHaveLength(0)
+  })
+
   it('renders the rows with level, tier, quota, status labels and dd/mm/yyyy dates', async () => {
     const { w } = await render()
     const rows = w.findAll('tbody tr')
