@@ -1,5 +1,5 @@
 import { ACCOUNT_AUTH_MESSAGES, AUTH_ERROR_MESSAGES } from '@pp/contract'
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import { CLOCK, type Clock } from '../../db/clock'
 import { PrismaService } from '../../db/prisma.service'
@@ -7,6 +7,8 @@ import { AuthConfig } from '../auth/auth.config'
 import { hmacHex } from '../auth/tokens'
 import {
   ANY,
+  IC_IP_LIMIT,
+  IC_IP_WARN_AT,
   IC_LIMIT,
   IC_WINDOW_MS,
   MAIL_INTERVAL_MS,
@@ -39,6 +41,8 @@ export const normaliseEmail = (email: string): string => email.normalize('NFKC')
  */
 @Injectable()
 export class AccountThrottle {
+  private readonly logger = new Logger(AccountThrottle.name)
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuthConfig) private readonly config: AuthConfig,
@@ -100,19 +104,40 @@ export class AccountThrottle {
   // --- POST /auth/password/reset-ic (D55a) ----------------------------------------------------------
 
   /**
-   * Counts the attempt against the account and the address (5 per 15 minutes each), whichever result.
+   * Counts the attempt against the account (5 per 15 minutes) and the address (IC_IP_LIMIT per 15 minutes), whichever
+   * result; a match gives its address unit back through resetIcSucceeded.
    * Every attempt, match or not, also starts the 60 s interval of the link request, so a 429 there is no match oracle.
    */
-  async resetIcAttempt(email: string, ip: string): Promise<void> {
+  async resetIcAttempt(email: string, ip: string): Promise<Date> {
     const now = this.clock.now()
     const account = await this.hit(this.id(RESET_KEYS.icAccount, normaliseEmail(email)), ANY, IC_WINDOW_MS, now)
     const byIp = await this.hit(this.id(RESET_KEYS.icIp, ANY), this.ipOf(ip), IC_WINDOW_MS, now)
     await this.hit(this.id(RESET_KEYS.mailInterval, normaliseEmail(email)), ANY, MAIL_INTERVAL_MS, now)
-    const over = [account, byIp].filter((c) => c.attempts > IC_LIMIT)
+    // Failure signal (hashed address only: no e-mail, IC, user id or raw address).
+    if (byIp.attempts === IC_IP_WARN_AT || byIp.attempts > IC_IP_LIMIT) {
+      this.logger.warn({
+        event: byIp.attempts > IC_IP_LIMIT ? 'reset_ic.ip_limited' : 'reset_ic.ip_failures_high',
+        ipHash: this.ipOf(ip),
+        count: byIp.attempts,
+        windowEnd: byIp.expiresAt.toISOString(),
+      })
+    }
+    const over = [
+      ...(account.attempts > IC_LIMIT ? [account] : []),
+      ...(byIp.attempts > IC_IP_LIMIT ? [byIp] : []),
+    ]
     if (over.length > 0) {
       const wait = Math.max(...over.map((c) => this.retryAfter(c, now)))
       throw tooMany(wait, ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
     }
+    return byIp.expiresAt
+  }
+
+  /** A match: the unit reserved on the address is given back (only in the window it was reserved in, `windowEnd`). */
+  async resetIcSucceeded(ip: string, windowEnd: Date): Promise<void> {
+    await this.prisma.client.$executeRaw`
+      UPDATE login_attempts SET attempts = GREATEST(attempts - 1, 0)
+      WHERE identifier_hash = ${this.id(RESET_KEYS.icIp, ANY)} AND ip_hash = ${this.ipOf(ip)} AND expires_at = ${windowEnd}::timestamptz`
   }
 
   // --- POST /auth/password/reset: failed redemptions -------------------------------------------------

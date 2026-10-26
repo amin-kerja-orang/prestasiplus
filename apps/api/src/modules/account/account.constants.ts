@@ -69,7 +69,17 @@ export const ANY = 'any'
 export const MAIL_INTERVAL_MS = ACCOUNT_RESET_REQUEST_INTERVAL_SECONDS * 1000
 export const MAIL_IP_LIMIT = ACCOUNT_THROTTLE.ipCeilingPerWindow
 export const MAIL_IP_WINDOW_MS = ACCOUNT_THROTTLE.windowSeconds * 1000
+/** reset-ic attempts per account (e-mail, known or not) per window: the contract value, brute force on one IC stays this hard. */
 export const IC_LIMIT = ACCOUNT_RESET_IC_MAX_ATTEMPTS
+/**
+ * reset-ic FAILED attempts per client address per window (M01 BUG-01). One school sits behind one NAT address, so the
+ * old 5 locked out a whole class: 45 = one class (the Malaysian maximum is about 40-45 pupils) each
+ * mistyping once. Local to the API until the LEAD aligns the contract (a successful reset is
+ * refunded, so only failures consume it). Each e-mail still has IC_LIMIT, so a guess against one IC is no easier.
+ */
+export const IC_IP_LIMIT = 45
+/** A warn log is written once per window when an address's failures reach this count (and on every per-address 429). */
+export const IC_IP_WARN_AT = 30
 export const IC_WINDOW_MS = ACCOUNT_RESET_IC_WINDOW_MINUTES * 60_000
 export const REDEEM_PAIR_LIMIT = ACCOUNT_THROTTLE.failedAttemptsPerWindow
 export const REDEEM_IP_LIMIT = ACCOUNT_THROTTLE.ipCeilingPerWindow
