@@ -311,6 +311,7 @@ test.describe('S2 admin', MODULE, () => {
         )
       for (const b of bottoms) expect(b).toBeLessThanOrEqual(top + 1)
     }
+    await expectNoColumnHoles(page)
     expect(await minFontSize(page)).toBeGreaterThanOrEqual(12)
     await expect(tid(page, 'cc-clock')).toBeInViewport()
     await expect(tid(page, 'cc-live-badge')).toBeInViewport()
@@ -588,17 +589,8 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
           }),
         )
         for (const g of gaps) expect(g).toBeLessThanOrEqual(2)
-        // and every column's last panel reaches the grid's bottom (DV-M17-54)
-        const holes = await page.locator('[data-testid^="cc-col-"]').evaluateAll((cols) => {
-          const grid = document
-            .querySelector('[data-testid="cc-panels"]')!
-            .getBoundingClientRect().bottom
-          return cols.map((c) =>
-            Math.abs(grid - (c.lastElementChild?.getBoundingClientRect().bottom ?? 0)),
-          )
-        })
-        for (const h of holes) expect(h).toBeLessThanOrEqual(2)
       }
+      await expectNoColumnHoles(page)
     },
   )
 
@@ -715,3 +707,26 @@ test.describe('alias refusals', MODULE, () => {
     await expect(tid(page, 'cc-s2')).toHaveCount(0)
   })
 })
+
+/**
+ * No column ends in a hole (DV-M17-54): columns that share a row (same top) end together, and the last row reaches
+ * the bottom of the `cc-panels` grid. At 375 every column is its own row, at 768 cols 1-2 share a row and col 3
+ * spans the next one, at 1280 all three share one.
+ */
+async function expectNoColumnHoles(page: Page): Promise<void> {
+  const holes = await page.locator('[data-testid^="cc-col-"]').evaluateAll((cols) => {
+    const grid = document.querySelector('[data-testid="cc-panels"]')!.getBoundingClientRect().bottom
+    const boxes = cols.map((c) => ({
+      top: Math.round(c.getBoundingClientRect().top),
+      bottom: c.lastElementChild?.getBoundingClientRect().bottom ?? 0,
+    }))
+    const rowBottom = (top: number) =>
+      Math.max(...boxes.filter((b) => b.top === top).map((b) => b.bottom))
+    const lastRow = Math.max(...boxes.map((b) => b.top))
+    return [
+      ...boxes.map((b) => Math.abs(rowBottom(b.top) - b.bottom)),
+      Math.abs(grid - rowBottom(lastRow)),
+    ]
+  })
+  for (const h of holes) expect(h).toBeLessThanOrEqual(2)
+}
