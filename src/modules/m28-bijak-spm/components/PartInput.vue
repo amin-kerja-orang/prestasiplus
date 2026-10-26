@@ -11,7 +11,9 @@
  */
 import { computed, ref } from 'vue'
 
-import { latexToPlain } from '../domain/math-expr'
+import { DsStack, DsText } from '@/ds'
+
+import { isReadableNumber, latexToPlain } from '../domain/math-expr'
 import type { Leaf } from '../domain/paper-model'
 import type { McqOption, PartAnswer } from '../domain/types'
 import { checkPhoto, photoUrl, putPhoto, removePhoto } from '../lib/photo-store'
@@ -31,6 +33,15 @@ const answer = computed<PartAnswer>(() => props.modelValue ?? {})
 const steps = computed(() => (answer.value.steps?.length ? answer.value.steps : ['']))
 const words = computed(() =>
   (answer.value.text ?? '').trim() ? (answer.value.text ?? '').trim().split(/\s+/).length : 0,
+)
+/** Numeric leaf: the final answer must be something the marker can read (FB-050). */
+// The hint shows once the field was left, or at once for a stored answer that cannot be read.
+const finalTouched = ref(!isReadableNumber(props.modelValue?.final ?? ''))
+const finalInvalid = computed(
+  () =>
+    props.leaf.kind === 'numeric' &&
+    finalTouched.value &&
+    !isReadableNumber(answer.value.final ?? ''),
 )
 const photoError = ref('')
 const urls = ref<Record<string, string>>({})
@@ -177,13 +188,25 @@ async function dropPhoto(key: string): Promise<void> {
         >
       </fieldset>
 
-      <MathField
-        :model-value="answer.final ?? ''"
-        label="Jawapan akhir"
-        placeholder="cth. 13"
-        :disabled="disabled"
-        @update:model-value="update({ final: $event })"
-      />
+      <DsStack gap="xs" @focusout="finalTouched = true">
+        <MathField
+          :model-value="answer.final ?? ''"
+          label="Jawapan akhir"
+          placeholder="cth. 13"
+          :inputmode="leaf.kind === 'numeric' ? 'decimal' : 'text'"
+          :disabled="disabled"
+          @update:model-value="update({ final: $event })"
+        />
+        <DsText
+          v-if="finalInvalid"
+          variant="caption"
+          tone="error"
+          role="status"
+          data-testid="final-hint"
+        >
+          Masukkan nombor sahaja, cth. 13 atau 3.5. Pecahan dan tanda tolak ada pada papan kekunci.
+        </DsText>
+      </DsStack>
 
       <UFormField v-if="leaf.unit" label="Unit" class="w-full sm:w-1/2">
         <UInput

@@ -10,24 +10,24 @@ import { RouterLink } from 'vue-router'
 
 import { DsDataTable, DsPanel } from '@/ds'
 
-import type { SpmGrade } from '../../../api/types'
+import type { SpmGrade, WireId } from '../../../api/types'
 import { count, pct } from '../common/kirkpatrick-format'
 import { COLOR_TEXT, GRADE_PILL } from './results-format'
 import type { ResultsPrediction } from './results-types'
 
 const props = defineProps<{
   rows: ResultsPrediction[]
-  schoolPath: (id: number) => string
+  schoolPath: (id: WireId) => string
 }>()
 
 /** Slot rows are untyped; this narrows the grade for the badge colour. */
 const gradeColor = (grade: unknown) => GRADE_PILL[grade as SpmGrade]
 
 interface Row extends Record<string, unknown> {
-  userId: number
+  userId: WireId
   index: number
   name: string
-  schoolId: number
+  schoolId: WireId
   schoolName: string
   answers: string
   accuracy: string

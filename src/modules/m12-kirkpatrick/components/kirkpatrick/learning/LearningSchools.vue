@@ -10,14 +10,14 @@ import { RouterLink } from 'vue-router'
 
 import { DsDataTable, DsPanel } from '@/ds'
 
-import type { Learning } from '../../../api/types'
+import type { Learning, WireId } from '../../../api/types'
 import { accuracyText, count, pct, plain, type KirkpatrickPaths } from '../common'
 
 const props = defineProps<{ schools: Learning['schools']; paths: KirkpatrickPaths }>()
 
 type School = Learning['schools'][number]
 interface Row extends Record<string, unknown> {
-  schoolId: number
+  schoolId: WireId
   index: number
   name: string
   students: string
