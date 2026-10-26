@@ -201,6 +201,12 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await loginAs('admin@demo.test')
     await gotoApp('/profile/edit')
     const picker = page.getByTestId('grade-picker')
+    // The old spec asserted 'SEKOLAH RENDAH' (rendered upper case by CSS, innerText). v2 renders the
+    // group label with `text-overline`, whose token (src/theme/tokens.css) sets no text-transform, so
+    // computed text-transform is `none`. NOTE: docs/design/v2-design-system.md:334 lists text-overline
+    // as "Sans 700 uppercase", so this is a doc/implementation mismatch (owner: frontend), not a
+    // deliberate v2 decision; no v2 doc says the group label must stay mixed case. Not restored here
+    // because it would fail on a token gap outside this test-only PR.
     await expect(page.getByTestId('grade-group')).toHaveText('Sekolah Rendah')
     await expect(picker.getByRole('radio')).toHaveCount(6)
     await expect(page.getByRole('radio', { name: 'Darjah 4' })).toBeChecked()
@@ -334,6 +340,15 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     const input = page.getByTestId('picture-input')
     await expect(input).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp')
     await expect(page.getByTestId('picture-save')).toBeHidden()
+    // Measure the avatar upload trigger BEFORE a file is chosen (UFileUpload button variant,
+    // replacing the old choose button and the hover overlay). The assertion is at the end so a
+    // too-small target does not hide the steps below.
+    // depends on #386: it puts a size=lg UButton "Pilih Gambar" in the UFileUpload default slot;
+    // until it lands the trigger measures 36px and this test fails honestly (not skipped).
+    // (today it is the only button of the form: an icon-only 36px upload button)
+    const trigger = page.getByTestId('picture-form').getByRole('button').first()
+    await expect(trigger).toBeVisible()
+    const triggerBox = await trigger.boundingBox()
 
     await input.setInputFiles({ name: 'a.png', mimeType: 'image/png', buffer: PNG })
     await expect(page.getByTestId('picture-save')).toBeVisible()
@@ -343,9 +358,10 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     )
     expect(await mock.requests('POST /api/me/picture')).toHaveLength(0)
     await expectNoHorizontalScroll(page)
-    // UFileUpload (button variant) replaces the old choose button and the hover overlay
-    // (checked last so a too-small target does not hide the steps above)
-    await expectTouchTarget(page.getByTestId('picture-form').getByRole('button').first())
+    // depends on #386 (see above): the pre-pick trigger must be a 44px target
+    expect(triggerBox, 'avatar trigger has a box').not.toBeNull()
+    expect(triggerBox!.width, 'avatar trigger width').toBeGreaterThanOrEqual(43.9)
+    expect(triggerBox!.height, 'avatar trigger height').toBeGreaterThanOrEqual(43.9)
   })
 
   test(

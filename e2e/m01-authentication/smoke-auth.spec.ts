@@ -85,6 +85,8 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
+  // depends on #383 (R1 xl field size): the state select is 44px high but the school search input
+  // is 40px, so their tops are 2px apart and the "side by side" check (< 2px) fails at every width.
   test('register page: title, copy, role and level cards, no horizontal scroll', async ({
     page,
     gotoApp,

@@ -26,36 +26,58 @@ export function contrastRatio(a: number[], b: number[]): number {
  */
 export async function expectContrast(el: Locator, min = 4.5): Promise<void> {
   const { fg, backgrounds } = await el.evaluate((node) => {
-    const parse = (s: string): Rgba => {
-      const n = (s.match(/[\d.]+/g) ?? []).map(Number)
-      return [n[0] ?? 0, n[1] ?? 0, n[2] ?? 0, n[3] ?? 1]
+    // The browser normalises every CSS colour (rgb, oklch, color(), hsl, lab, named, ...) to sRGB:
+    // paint it on a 1x1 canvas and read the pixel back. An unsupported or malformed value throws
+    // instead of being misread as black.
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = 1
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+    const toRgba = (value: string): Rgba => {
+      if (!CSS.supports('color', value)) throw new Error(`contrast: cannot parse colour "${value}"`)
+      ctx.clearRect(0, 0, 1, 1)
+      ctx.fillStyle = '#000'
+      ctx.fillStyle = value
+      ctx.fillRect(0, 0, 1, 1)
+      const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data
+      return [r!, g!, b!, a! / 255]
     }
-    const fgc = parse(getComputedStyle(node).color)
+    const STOP = /(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\((?:[^()]|\([^()]*\))*\)/g
+    // composite `top` over an opaque `base`
+    const over = (top: Rgba, base: Rgba): Rgba => [
+      top[0] * top[3] + base[0] * (1 - top[3]),
+      top[1] * top[3] + base[1] * (1 - top[3]),
+      top[2] * top[3] + base[2] * (1 - top[3]),
+      1,
+    ]
+
     const layers: Rgba[] = []
     let gradient: Rgba[] = []
     for (let p: HTMLElement | null = node as HTMLElement; p; p = p.parentElement) {
       const cs = getComputedStyle(p)
       if (cs.backgroundImage && cs.backgroundImage !== 'none') {
-        const stops = cs.backgroundImage.match(/rgba?\([^)]*\)/g)
-        if (stops && stops.length) {
-          gradient = stops.map(parse)
-          break
+        const stops = cs.backgroundImage.match(STOP)
+        if (!stops?.length) {
+          throw new Error(
+            `contrast: cannot read colour stops of background-image "${cs.backgroundImage}"`,
+          )
         }
+        gradient = stops.map(toRgba)
+        break
       }
-      const bg = parse(cs.backgroundColor)
+      const bg = toRgba(cs.backgroundColor)
       if (bg[3] > 0) layers.push(bg)
       if (bg[3] === 1) break
     }
-    // composite translucent layers (top-most first in `layers`) onto white when nothing opaque was met
-    const flatten = (base: number[]): number[] =>
-      layers.reduceRight(
-        (acc, l) => acc.map((c, i) => (i < 3 ? l[i]! * l[3] + c * (1 - l[3]) : c)),
-        base,
-      )
-    const bgs = gradient.length
-      ? gradient.map((g) => g.slice(0, 3))
-      : [flatten([255, 255, 255, 1]).slice(0, 3)]
-    return { fg: fgc.slice(0, 3), backgrounds: bgs }
+    // layers are top-most first; flatten bottom-up onto the base (white when nothing opaque was met)
+    const flatten = (base: Rgba): Rgba => layers.reduceRight((acc, l) => over(l, acc), base)
+    const white: Rgba = [255, 255, 255, 1]
+    const bgs = (
+      gradient.length ? gradient.map((g) => flatten(over(g, white))) : [flatten(white)]
+    ).map((c) => c.slice(0, 3))
+    // text colour with alpha is composited over the first resolved background
+    const fgc = toRgba(getComputedStyle(node).color)
+    const fgFlat = over(fgc, [...(bgs[0] as number[]), 1] as Rgba)
+    return { fg: fgFlat.slice(0, 3), backgrounds: bgs }
   })
   for (const bg of backgrounds) {
     expect(contrastRatio(fg, bg), `text rgb(${fg}) on rgb(${bg})`).toBeGreaterThanOrEqual(min)

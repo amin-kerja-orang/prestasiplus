@@ -377,7 +377,11 @@ test.describe('L45 S2 /ibu-bapa/terima/:token', { tag }, () => {
           await expect(page.getByTestId(marker)).toBeVisible()
           await expectNoHorizontalScroll(page)
           // Every link and button >= 44px; buttons are full width of the card below sm.
-          const targets = page.locator('main a, main button')
+          // Only the inline "Daftar akaun Ibu Bapa" text link in the sentence is excluded
+          // (M01 R11 / #385: WCAG 2.5.8 inline exception (D9/D10)); it measures 20px at 375.
+          const targets = page.locator(
+            'main a:not([data-testid="invite-register-link"]), main button',
+          )
           const count = await targets.count()
           for (let i = 0; i < count; i++) await expectTouchTarget(targets.nth(i))
           // No text below 12px.
