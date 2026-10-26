@@ -34,6 +34,7 @@ import {
   logIn,
   NOW,
   STUDENT,
+  TEST_REGISTRY,
   testRouter,
 } from './router-fixtures'
 
@@ -509,5 +510,107 @@ describe('session survives a reload and returns to the requested page', () => {
     const router = testRouter()
     await router.push('/dashboard')
     expect(router.currentRoute.value.path).toBe('/login')
+  })
+})
+
+describe('forced password change (AM2-A1, DV-26)', () => {
+  // The real `/password/change` page lives in M01 (#226); here it and `/logout` are stubs.
+  const stub = (testId: string) => ({ render: () => testId })
+  const registry = [
+    ...TEST_REGISTRY,
+    {
+      id: 'M98' as const,
+      slug: 'm98-stub',
+      routes: [
+        { path: '/password/change', component: stub('change'), meta: { layout: 'bare' as const, access: 'auth' as const } },
+        { path: '/password/reset/:token', component: stub('reset'), meta: { layout: 'bare' as const, access: 'public' as const } },
+      ],
+    },
+  ]
+  const flaggedRouter = () => createAppRouter({ history: createMemoryHistory(), registry })
+
+  it.each(['/dashboard', '/admin', '/login', '/register', '/password/reset/abc', '/artikel', '/tetapan'])(
+    'sends a flagged session from %s to /password/change',
+    async (path) => {
+      logIn(path === '/admin' ? ADMIN : STUDENT, { mustChangePassword: true })
+      const router = flaggedRouter()
+      await router.push(path)
+      expect(router.currentRoute.value.path).toBe('/password/change')
+    },
+  )
+
+  it('lets a flagged session open /password/change and sign out via /logout', async () => {
+    logIn(STUDENT, { mustChangePassword: true })
+    const router = flaggedRouter()
+    await router.push('/password/change')
+    expect(router.currentRoute.value.path).toBe('/password/change')
+    // The core `/logout` route ends the session and lands on /login (not bounced to /password/change).
+    await router.push('/logout')
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(useSessionStore().isLoggedIn).toBe(false)
+  })
+
+  it('does not touch an unflagged session or a guest', async () => {
+    logIn(STUDENT)
+    const router = flaggedRouter()
+    await router.push('/login')
+    expect(router.currentRoute.value.path).toBe('/login')
+    await router.push('/dashboard')
+    expect(router.currentRoute.value.path).toBe('/dashboard')
+    localStorage.clear()
+    useSessionStore().check()
+    await router.push('/login')
+    expect(router.currentRoute.value.path).toBe('/login')
+  })
+
+  it('ignores one trailing slash, a query and a hash on the exempt paths, but not nesting', () => {
+    const flagged = { isLoggedIn: true, role: 'student' as const, landingPath: '/dashboard', mustChangePassword: true }
+    const route = (path: string) => ({ path, meta: {} }) as unknown as RouteLocationNormalized
+    const redirect = { kind: 'redirect', to: '/password/change' }
+    expect(decideAccess(route('/logout/'), flagged)).toEqual({ kind: 'allow' })
+    expect(decideAccess(route('/password/change/'), flagged)).toEqual({ kind: 'allow' })
+    expect(decideAccess(route('/password/change/x'), flagged)).toEqual(redirect)
+    expect(decideAccess(route('/logout/x'), flagged)).toEqual(redirect)
+    expect(decideAccess(route('/password/change//'), flagged)).toEqual(redirect)
+    expect(decideAccess(route('/dashboard/'), flagged)).toEqual(redirect)
+  })
+
+  it('keeps the query and hash out of the match when navigating', async () => {
+    logIn(STUDENT, { mustChangePassword: true })
+    const router = flaggedRouter()
+    await router.push('/dashboard?x=1')
+    expect(router.currentRoute.value.path).toBe('/password/change')
+    await router.push('/password/change?x=1#h')
+    expect(router.currentRoute.value.fullPath).toBe('/password/change?x=1#h')
+    await router.push('/password/change/')
+    expect(router.currentRoute.value.path).toBe('/password/change/')
+    await router.push('/logout/')
+    expect(router.currentRoute.value.path).toBe('/login')
+  })
+
+  it('does not refresh /api/me or the bell badge while flagged, and does once unflagged', async () => {
+    logIn(STUDENT, { mustChangePassword: true })
+    const router = flaggedRouter()
+    await router.push('/dashboard')
+    await settle()
+    expect(router.currentRoute.value.path).toBe('/password/change')
+    const urls = () => transport.requests.map((r) => r.url)
+    expect(urls()).not.toContain('/api/me')
+    expect(urls()).not.toContain('/api/me/notifications/unread-count')
+
+    logIn(STUDENT)
+    useSessionStore().check()
+    await router.push('/dashboard')
+    await settle()
+    expect(urls()).toContain('/api/me')
+    expect(urls()).toContain('/api/me/notifications/unread-count')
+  })
+
+  it('decideAccess redirects a flagged session and allows the exempt paths', () => {
+    const flagged = { isLoggedIn: true, role: 'student' as const, landingPath: '/dashboard', mustChangePassword: true }
+    const route = (path: string) => ({ path, meta: {} }) as unknown as RouteLocationNormalized
+    expect(decideAccess(route('/dashboard'), flagged)).toEqual({ kind: 'redirect', to: '/password/change' })
+    expect(decideAccess(route('/password/change'), flagged)).toEqual({ kind: 'allow' })
+    expect(decideAccess(route('/logout'), flagged)).toEqual({ kind: 'allow' })
   })
 })

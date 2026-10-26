@@ -34,6 +34,11 @@ describe('real API session adapter (V2-T31)', () => {
       user: { id: 42, name: 'Guru Demo', email: 'guru@demo.test', role: 'teacher', schoolId: 7, landingPath: '/guru' },
     })
   })
+
+  it('carries the forced-change flag only when it is set (AM2-A1)', () => {
+    expect(toClientSessionFromApi({ ...apiSession, mustChangePassword: true }, false).mustChangePassword).toBe(true)
+    expect('mustChangePassword' in toClientSessionFromApi(apiSession, false)).toBe(false)
+  })
 })
 
 describe('restoreHttpSession scope check (P4)', () => {

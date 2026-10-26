@@ -77,6 +77,8 @@ export function toClientSessionFromApi(session: ApiSession, remember: boolean): 
     expiresAt: session.expiresAt,
     user,
   }
+  // Only a flagged account carries the key, so a re-read after the change drops it.
+  if (session.mustChangePassword) out.mustChangePassword = true
   // Mod Pelajar is a server-side mode here: nothing is parked client-side, so `parent` is only a
   // placeholder (the staff identity under the return role) that keeps the stored shape valid.
   // Leaving is `DELETE /api/session/mode`, which returns the real staff session.

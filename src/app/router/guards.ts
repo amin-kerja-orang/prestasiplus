@@ -6,17 +6,23 @@
  *    shared clock).
  * 2. **Auth**: `access: 'auth'` and no session → `/login?redirect=<requested path>` (v2; the 401
  *    policy goes to plain `/login`), no message (FR-M01-14, BR-08).
+ * 2b. **Forced password change** (AM2-A1, DV-26), before the role check: a session flagged
+ *    `mustChangePassword` can open only `/password/change` and `/logout` (one trailing slash
+ *    ignored, query and hash ignored; a nested path is not exempt); every other path (login,
+ *    register, reset links included) goes to `/password/change`, ahead of the role and scope checks.
  * 3. **Role**: `roles` set and the role not in it → `onForbidden`: `landing` redirects to the
  *    server-given `landingPath` (BR-07); `403` / `404` render the error page in place.
  * 4. **Guest pages have no guard**: `/login` and `/register` render for a logged-in user too
- *    (FR-M01-13, BR-08). There is deliberately no guest-only guard.
+ *    (FR-M01-13, BR-08). There is deliberately no guest-only guard. This does not hold for a
+ *    flagged session (step 2b): it is sent to `/password/change` from `/login` and `/register` too.
  *
  * The guards never look at `isActive`: an inactive account is refused at login only; an already
  * open session is not ended (BR-23).
  *
  * After each successful navigation: reset the page meta, set the exact tab title, consume the
  * pending flash, close the shell overlays, and (logged in) refresh the cached user and the bell
- * badge in the background (FR-M01-52/53). Scrolling is the router's `scrollBehavior` (./index.ts).
+ * badge in the background (FR-M01-52/53), except while the session is flagged (both calls would be
+ * refused with 403 until the password is changed). Scrolling is the router's `scrollBehavior` (./index.ts).
  */
 
 import type { RouteLocationNormalized, RouteLocationRaw, Router } from 'vue-router'
@@ -46,6 +52,10 @@ import {
 } from './outcome'
 
 export const LOGIN_PATH = '/login'
+export const PASSWORD_CHANGE_PATH = '/password/change'
+
+/** The only paths a flagged session may open (the API refuses everything else, 403). */
+const PASSWORD_CHANGE_ALLOWED = [PASSWORD_CHANGE_PATH, '/logout']
 
 /** A same-origin app path that is worth returning to (not `/`, not an auth page, no `//host`). */
 export function isSafeRedirect(value: unknown): value is string {
@@ -63,6 +73,8 @@ export interface GuardSession {
   readonly isLoggedIn: boolean
   readonly role: Role | null
   readonly landingPath: string | null
+  /** The session is flagged: only `/password/change` and `/logout` may open (AM2-A1). */
+  readonly mustChangePassword?: boolean
 }
 
 export type AccessDecision =
@@ -74,6 +86,14 @@ const ALLOW: AccessDecision = { kind: 'allow' }
 export function decideAccess(to: RouteLocationNormalized, session: GuardSession): AccessDecision {
   const access = to.meta.access ?? DEFAULT_ACCESS
   const roles = to.meta.roles
+
+  if (session.isLoggedIn && session.mustChangePassword === true) {
+    return PASSWORD_CHANGE_ALLOWED.includes(
+      to.path.length > 1 && to.path.endsWith('/') ? to.path.slice(0, -1) : to.path,
+    )
+      ? ALLOW
+      : { kind: 'redirect', to: PASSWORD_CHANGE_PATH }
+  }
 
   // A role list implies a session.
   if ((access === 'auth' || roles !== undefined) && !session.isLoggedIn) {
@@ -169,7 +189,8 @@ export function runAfterNavigation(to: RouteLocationNormalized): void {
   useShellStore().closeOverlays()
 
   const session = useSessionStore()
-  if (session.isLoggedIn) {
+  // A flagged session gets 403 on both calls until the password is changed (AM2-A1).
+  if (session.isLoggedIn && !session.mustChangePassword) {
     void session.refreshUser()
     void useNotificationBadgeStore().refresh()
   }
