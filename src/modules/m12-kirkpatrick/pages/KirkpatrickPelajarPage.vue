@@ -39,7 +39,9 @@ const {
 )
 
 /** `useApi` keeps the previous result while it reloads: show only the student of the current id (S8 to S8 navigation). */
-const data = computed(() => (loaded.value?.student.id === props.userId ? loaded.value : null))
+const data = computed(() =>
+  String(loaded.value?.student.id) === String(props.userId) ? loaded.value : null,
+)
 
 /** "{sekolah} · Tingkatan {n}" under the name. */
 const subtitle = computed(() => {
