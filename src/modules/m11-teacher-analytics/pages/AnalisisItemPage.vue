@@ -86,7 +86,7 @@ const reset = (): void => void router.push('/guru/analisis-item')
 </script>
 
 <template>
-  <DsPage data-testid="analisis-item-page">
+  <DsPage :subtitle="route.meta.header?.subtitle" data-testid="analisis-item-page">
     <DsLoadError v-if="analysis.error.value" @retry="analysis.reload" />
 
     <div

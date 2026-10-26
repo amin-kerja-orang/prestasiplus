@@ -222,7 +222,6 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
       prefix="schools-stat"
       :items="stats"
       :loading="counts === null"
-      density="compact"
       :cols="3"
       aria-label="Ringkasan sekolah"
     />

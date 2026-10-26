@@ -53,6 +53,7 @@ import {
   type SchoolTeacherRow,
   type SchoolUserListMeta,
 } from '../../api/school-admin'
+import MobileCard from '../MobileCard.vue'
 import ImpersonateButton from './ImpersonateButton.vue'
 import PendingTeacherCallout from './PendingTeacherCallout.vue'
 import UserRowActions from './UserRowActions.vue'
@@ -302,6 +303,16 @@ const WIDTHS: Record<string, string> = {
   date: 'hidden',
   actions: 'w-40',
 }
+// The pupil table at `xl` (933px of scroller at 1280) needs "Tingkatan 5" unbroken (~90px of text) and a Kelas column
+// that does not run to four lines, so the pupil's #, Nama, Emel, Tingkatan and Kelas take these widths from `xl`
+// (920px summed; below `xl` the widths stay as they were).
+const PUPIL_WIDTHS: Record<string, string> = {
+  index: 'w-12 xl:w-10',
+  name: 'w-48',
+  email: 'w-44 xl:w-40',
+  grade: `w-32 ${XL}`,
+  kelas: `w-36 ${XL}`,
+}
 // Same breakpoints as the column classes (`xl` 1280, `2xl` 1536); `useMedia` is true without `matchMedia` (jsdom).
 const minWidth = (px: number) => useMedia(`(width >= ${px}px)`)
 const xl = minWidth(1280)
@@ -313,7 +324,7 @@ const sized = (cols: TableColumn<Item>[]): TableColumn<Item>[] =>
     // The teacher has one more visible column from `2xl` and an "Aktif?" button (icon + label, wider than the
     // pupil's badge), so the name and that column give way a little.
     const w = isPupil.value
-      ? WIDTHS[key]
+      ? (PUPIL_WIDTHS[key] ?? WIDTHS[key])
       : key === 'name'
         ? 'w-48 xl:w-64 2xl:w-56'
         : key === 'isActive'
@@ -596,8 +607,8 @@ function openRow(row: Item): void {
             />
           </UserRowActions>
         </template>
-        <template #card-actions="{ row }">
-          <div class="flex flex-col items-end gap-2">
+        <template #card="{ row }">
+          <MobileCard title="name" :fields="cardFields" :row="row" @open="openRow(row)">
             <DsStatusBadge
               v-if="isPupil"
               :status="row.isActive ? 'active' : 'inactive'"
@@ -623,7 +634,7 @@ function openRow(row: Item): void {
                 :role="role"
               />
             </UserRowActions>
-          </div>
+          </MobileCard>
         </template>
       </DsDataTable>
     </template>

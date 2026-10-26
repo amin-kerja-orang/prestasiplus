@@ -9,6 +9,9 @@ import { ref, watch } from 'vue'
 import { DsDialog } from '@/ds'
 
 defineProps<{ title: string; testid: string; wide?: boolean }>()
+// G5-M10 B3: the width is the DS `size` (its panel ignores a `class`). `lg` = 672px is the widest `DsDialog`
+// offers, so `wide` (the old `sm:max-w-4xl`) and the default both use it until the DS gains an `xl` size.
+const SIZE = { normal: 'lg', wide: 'lg' } as const
 const emit = defineEmits<{ close: [] }>()
 
 const open = ref(true)
@@ -18,7 +21,7 @@ watch(open, (value) => {
 </script>
 
 <template>
-  <DsDialog v-model:open="open" :title="title" :class="wide ? 'sm:max-w-4xl' : 'sm:max-w-2xl'">
+  <DsDialog v-model:open="open" :title="title" :size="wide ? SIZE.wide : SIZE.normal">
     <div class="flex min-w-0 flex-col gap-4" :data-testid="testid">
       <slot />
     </div>
