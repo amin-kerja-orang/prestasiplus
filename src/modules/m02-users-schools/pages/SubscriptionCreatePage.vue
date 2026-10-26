@@ -13,11 +13,12 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsFormField, DsFormSection, DsLoadError, DsPage, DsPanel } from '@/ds'
+import { DsFormField, DsLoadError, DsPage, DsPanel } from '@/ds'
 
 import type { SchoolSummary } from '../api/schools'
 import { createSubscription, fetchSchoolPackages, type PackageTier } from '../api/subscriptions'
 import SubscriptionSchoolPicker from '../components/SubscriptionSchoolPicker.vue'
+import ResponsiveFormSection from '../components/ResponsiveFormSection.vue'
 import { errorLines } from '../lib/school-errors'
 import {
   money,
@@ -145,22 +146,20 @@ async function submit(): Promise<void> {
           </template>
         </UAlert>
 
-        <DsFormSection
+        <ResponsiveFormSection
           title="Sekolah"
           description="Cari dan pilih sekolah untuk langganan ini."
           icon="buildings"
-          :columns="2"
         >
-          <div class="sm:col-span-2"><SubscriptionSchoolPicker v-model="school" /></div>
-        </DsFormSection>
+          <div class="md:col-span-2"><SubscriptionSchoolPicker v-model="school" /></div>
+        </ResponsiveFormSection>
 
-        <DsFormSection
+        <ResponsiveFormSection
           title="Pakej"
           description="Jenis pakej, tingkatan dan bilangan pelajar."
           icon="stack"
-          :columns="2"
         >
-          <div class="flex min-w-0 flex-col gap-3 sm:col-span-2">
+          <div class="flex min-w-0 flex-col gap-3 md:col-span-2">
             <p class="text-label text-default">Jenis Pakej <span class="text-error">*</span></p>
             <URadioGroup
               v-model="form.tier"
@@ -183,7 +182,7 @@ async function submit(): Promise<void> {
             />
           </div>
 
-          <div class="flex min-w-0 flex-col gap-3 sm:col-span-2">
+          <div class="flex min-w-0 flex-col gap-3 md:col-span-2">
             <p class="text-label text-default">Tingkatan <span class="text-error">*</span></p>
             <DsLoadError
               v-if="packagesError"
@@ -231,13 +230,12 @@ async function submit(): Promise<void> {
               data-testid="sub-quota"
             />
           </DsFormField>
-        </DsFormSection>
+        </ResponsiveFormSection>
 
-        <DsFormSection
+        <ResponsiveFormSection
           title="Pembayaran"
           description="Rujukan dan nota pembayaran."
           icon="receipt"
-          :columns="2"
         >
           <DsFormField native for="sub-reference" label="Rujukan Pembayaran">
             <UInput
@@ -251,7 +249,7 @@ async function submit(): Promise<void> {
             />
           </DsFormField>
 
-          <div class="sm:col-span-2">
+          <div class="md:col-span-2">
             <DsFormField native for="sub-notes" label="Nota">
               <UTextarea
                 id="sub-notes"
@@ -264,7 +262,7 @@ async function submit(): Promise<void> {
               />
             </DsFormField>
           </div>
-        </DsFormSection>
+        </ResponsiveFormSection>
       </div>
 
       <aside class="flex min-w-0 flex-col gap-6 xl:sticky xl:top-6">

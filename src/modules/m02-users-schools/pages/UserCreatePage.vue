@@ -176,7 +176,9 @@ function buildRequest(): CreateAdminUserRequest | null {
       name: genName.value,
       email: generatedAdminEmail(school.code),
       phone: genPhone.value,
-      ...(http || password === undefined ? {} : { password, passwordConfirmation: password }),
+      ...(http || password === undefined
+        ? {}
+        : { password, passwordConfirmation: password }),
       isActive: true,
       schoolId: school.id,
       ppdState: school.state,
