@@ -166,7 +166,6 @@ const COLUMNS: TableColumn<CompRow>[] = [
     <DsStatRow
       :items="stats"
       :loading="counts === null"
-      density="compact"
       :cols="3"
       aria-label="Ringkasan pelajar komplimen"
     />
@@ -258,7 +257,7 @@ const COLUMNS: TableColumn<CompRow>[] = [
         <span class="text-nowrap text-muted">{{ row.original.icNumber ?? '' }}</span>
       </template>
       <template #school-cell="{ row }">
-        <span class="block max-w-32 truncate" :title="row.original.schoolName ?? ''">{{
+        <span class="block max-w-32 break-words whitespace-normal" data-testid="comp-school">{{
           row.original.schoolName ?? ''
         }}</span>
       </template>
@@ -266,8 +265,8 @@ const COLUMNS: TableColumn<CompRow>[] = [
         <div class="flex min-w-0 flex-col">
           <span class="text-nowrap text-highlighted">{{ row.original.classLabel }}</span>
           <span
-            class="block max-w-36 truncate text-label text-muted"
-            :title="row.original.teacherName"
+            class="block max-w-36 text-label break-words whitespace-normal text-muted"
+            data-testid="comp-teacher"
             >{{ row.original.teacherName }}</span
           >
         </div>

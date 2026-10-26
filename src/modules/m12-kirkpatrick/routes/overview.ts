@@ -36,7 +36,7 @@ const routes: RouteRecordRaw[] = [
     path: SCHOOL_ADMIN_MOUNT.prefix,
     name: SCHOOL_ADMIN_MOUNT.name,
     component: () => import('../pages/KirkpatrickOverviewPage.vue'),
-    props: () => ({ basePath: SCHOOL_ADMIN_MOUNT.prefix, detailLinks: false }),
+    props: () => ({ basePath: SCHOOL_ADMIN_MOUNT.prefix, detailLinks: false, scopeForced: true }),
     meta: meta(SCHOOL_ADMIN_MOUNT),
   },
 ]

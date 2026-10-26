@@ -152,6 +152,22 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     expect(w.find('input[type="checkbox"]').exists()).toBe(false)
   })
 
+  it('lays out each teacher card with the "Aktif?" toggle and the actions below the fields (G5-M27 B1)', async () => {
+    await atWidth(375, async () => {
+      const { wrapper: w } = await mountTeachers()
+      const card = w.get('[data-ds="data-table-cards"] li')
+      expect(card.element.children).toHaveLength(1)
+      for (const dd of card.findAll('dd')) expect(dd.classes()).not.toContain('truncate')
+      const fields = card.get('[data-testid="m27-card-fields"]').element
+      const actions = card.get('[data-testid="m27-card-actions"]').element
+      expect(
+        fields.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      const toggle = actions.querySelector('button')
+      expect(toggle?.textContent?.trim()).toBe('Aktif')
+    })
+  })
+
   it('has the nine column heads in order', async () => {
     const { wrapper: w } = await mountPupils()
     expect(w.findAll('thead th').map((th) => th.text())).toEqual([
@@ -218,6 +234,63 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
       const card = w.get('[data-ds="data-table-cards"] li')
       expect(card.text()).toContain('Tarikh')
       expect(card.text()).toContain('04/03/2026')
+    })
+  })
+
+  it('sizes the pupil columns so the table fits 1280 and "Tingkatan 5" stays whole; below xl is unchanged (G5-M27 B7)', async () => {
+    const { wrapper: w } = await mountPupils()
+    const th = (label: string) => w.findAll('thead th').find((e) => e.text() === label)!
+    // base (below xl) widths, as before: # 48, Nama 192, Emel 176, Aktif? 96, Tindakan 160
+    expect(th('#').classes()).toEqual(expect.arrayContaining(['w-12', 'xl:w-10']))
+    expect(th('Nama').classes()).toContain('w-48')
+    expect(th('Nama').classes()).not.toContain('xl:w-64')
+    expect(th('Emel').classes()).toEqual(expect.arrayContaining(['w-44', 'xl:w-40']))
+    expect(th('Aktif?').classes()).toContain('w-24')
+    expect(th('Tindakan').classes()).toContain('w-40')
+    // Tingkatan (~90px of text) and Kelas show from xl only, wide enough for the text
+    expect(th('Tingkatan').classes()).toEqual(
+      expect.arrayContaining(['w-32', 'hidden', 'xl:table-cell']),
+    )
+    expect(th('Kelas').classes()).toEqual(
+      expect.arrayContaining(['w-36', 'hidden', 'xl:table-cell']),
+    )
+  })
+
+  it('lays out each pupil card as fields with the actions below them, values wrapping (G5-M27 B1)', async () => {
+    await atWidth(375, async () => {
+      const { wrapper: w } = await mountPupils()
+      const card = w.get('[data-ds="data-table-cards"] li')
+      // nothing sits beside the fields: the card body is the only child of the row
+      expect(card.element.children).toHaveLength(1)
+      const dds = card.findAll('dd')
+      expect(dds.map((d) => d.text())).toEqual([
+        'murid1@demo.test',
+        '0191234567',
+        'Tingkatan 5',
+        '5 Amanah, 5 Bestari',
+        '04/03/2026',
+      ])
+      for (const dd of dds) {
+        expect(dd.classes()).not.toContain('truncate')
+        expect(dd.classes()).toContain('break-words')
+      }
+      const fields = card.get('[data-testid="m27-card-fields"]').element
+      const actions = card.get('[data-testid="m27-card-actions"]').element
+      expect(
+        fields.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      expect(fields.contains(actions)).toBe(false)
+      expect(card.get('[data-testid="user-edit"]').text()).toBe('Edit')
+      expect(actions.textContent).toContain('Aktif')
+    })
+  })
+
+  it('opens the editor from the card title like the default card did', async () => {
+    await atWidth(375, async () => {
+      const { wrapper: w, router } = await mountPupils()
+      await w.get('[data-ds="data-table-cards"] li button').trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.path).toBe('/admin-sekolah/pelajar/3001')
     })
   })
 

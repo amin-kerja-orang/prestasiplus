@@ -1,5 +1,5 @@
 /** Shared helpers over the paper structure (used by the server and by the pages). */
-import type { LeafKind, PartAnswer, SectionSnapshot } from './types'
+import type { LeafKind, PartAnswer, QuestionResult, SectionSnapshot } from './types'
 
 interface PartLike {
   id: string
@@ -81,4 +81,18 @@ export function formatClock(totalSeconds: number): string {
   const r = s % 60
   const pad = (n: number): string => String(n).padStart(2, '0')
   return h > 0 ? `${h}:${pad(m)}:${pad(r)}` : `${pad(m)}:${pad(r)}`
+}
+
+/**
+ * Semakan tab "Perlu perhatian" (FB-049). One rule for every paper: a question that counts towards
+ * the score and either lost marks or still waits for a teacher. A question marked "Tidak dikira"
+ * never appears there (it cannot change the score), whatever its marks were.
+ */
+export function needsAttention(
+  q: Pick<QuestionResult, 'counted' | 'awarded' | 'marks'> & {
+    parts: readonly Pick<QuestionResult['parts'][number], 'status'>[]
+  },
+): boolean {
+  if (!q.counted) return false
+  return q.awarded < q.marks || q.parts.some((p) => p.status === 'belum_dimarkah')
 }
