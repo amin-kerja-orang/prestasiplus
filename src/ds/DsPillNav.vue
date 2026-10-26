@@ -35,8 +35,10 @@ withDefaults(
     label: string
     testidPrefix?: string
     size?: 'md' | 'lg'
+    /** Opt-in: the pills wrap onto further lines instead of a horizontal swipe strip. */
+    wrap?: boolean
   }>(),
-  { testidPrefix: undefined, size: 'md' },
+  { testidPrefix: undefined, size: 'md', wrap: false },
 )
 const emit = defineEmits<{ select: [key: K] }>()
 
@@ -45,7 +47,13 @@ const personality = usePersonality()
 
 <template>
   <nav :aria-label="label" class="max-w-full min-w-0" data-ds="pill-nav">
-    <div class="flex w-fit max-w-full gap-1 overflow-x-auto rounded-md bg-elevated p-1">
+    <div
+      :class="
+        wrap
+          ? 'flex w-fit max-w-full flex-wrap gap-1 rounded-md bg-elevated p-1'
+          : 'flex w-fit max-w-full gap-1 overflow-x-auto rounded-md bg-elevated p-1'
+      "
+    >
       <component
         :is="item.to && !item.disabled ? RouterLink : 'button'"
         v-for="item in items"

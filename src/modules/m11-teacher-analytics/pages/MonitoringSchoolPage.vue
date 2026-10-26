@@ -273,6 +273,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   :items="studentPills"
                   :active="studentFilter"
                   label="Penapis pelajar"
+                  wrap
                   testid-prefix="mon-pill"
                   data-testid="mon-student-pills"
                   @select="studentFilter = $event"
@@ -462,6 +463,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   :items="TEACHER_PILLS"
                   :active="teacherFilter"
                   label="Penapis guru"
+                  wrap
                   testid-prefix="mon-tpill"
                   data-testid="mon-teacher-pills"
                   @select="teacherFilter = $event"
