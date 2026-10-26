@@ -620,7 +620,7 @@ The "available" counts are M04 **Q-SP-AVAILABLE(sp)** (`questions.spAvailable`, 
 | 12 | GET | `/api/guru/classes` | T | no | — | 200 envelope `{data:[Classroom + {subjectName, levelLabel, studentCount}], meta}` (own) | 401 | `GET /guru/kelas` |
 | 13 | POST | `/api/guru/classes` | T | yes | `{schoolId?, name, subjectId, educationLevel, description?}` | 201 `{data: Classroom}` | 422 | `POST /guru/kelas` |
 | 14 | GET | `/api/guru/classes/:id/qr-data` | T | no | — | 200 `{name, school, joinUrl}` | 404 (not owned) | `GET /guru/kelas/{id}/qr-data` |
-| 15 | GET | `/api/guru/students` | T | no | `?tab=mine\|school&search=` | 200 `{data:[{id, name, levelName, classNames[]}], meta:{count, schoolSet: boolean}}` | 401 | server-rendered S6 |
+| 15 | GET | `/api/guru/students` | T | no | `?tab=mine\|school&search=` | 200 `{data:[{id, name, levelName, classNames[], classes:[{id, name}]}], meta:{count, schoolSet: boolean}}` | 401 | server-rendered S6 |
 | 16 | PUT | `/api/guru/students/:id` | T | yes | `{classroomId}` (own class; student of the profile school) | 200 `{data: ClassroomStudent}` | 403, 404, 409 | `PUT /guru/pelajar/{id}` (INFERRED) |
 | 17 | DELETE | `/api/guru/students/:id` | T | yes | `?classroomId=` | 200 `{data:{removed:1}}` | 403, 404 | `DELETE /guru/pelajar/{id}` (INFERRED) |
 | 18 | GET | `/api/guru/attendance` | T | no | `?date=YYYY-MM-DD` (> today → today) | 200 `{date, stats:{total, present, absent, percent}, trend:[{date, dayLabel, percent}] ×7, rows:[{no, name, levelName, answered, status:'hadir'\|'tidak_hadir', lastActiveAt\|null}]}` | 422 bad date | `GET /guru/kehadiran-digital` |

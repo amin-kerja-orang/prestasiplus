@@ -271,7 +271,7 @@ export function registerUsersPaths(registry: OpenAPIRegistry): void {
     path: '/admin/teachers/{id}/classrooms',
     tags,
     summary: 'Active classes of a teacher',
-    description: `${access('GET /admin/teachers/{id}/classrooms')} [] for none or an unknown teacher (no 404). Empty until the class module exists.`,
+    description: `${access('GET /admin/teachers/{id}/classrooms')} [] for none or an unknown teacher (no 404). The teacher's active classes (kind classroom), name A to Z then id: the classes POST /admin/comp-students accepts.`,
     request: { params: idParam },
     responses: { 200: json(envelopeOf(z.array(TeacherClassroomOptionSchema)), 'Classes.'), 401: unauthorized, 403: forbidden, 429: limited },
   })
