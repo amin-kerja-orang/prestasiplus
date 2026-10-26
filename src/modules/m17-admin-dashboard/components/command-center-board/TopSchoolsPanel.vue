@@ -33,10 +33,16 @@ const paths = ccPaths(props.basePath)
           variant="link"
           color="neutral"
           class="h-auto min-w-0 flex-1 justify-start p-0 text-start"
-          :label="shortSchool(s.schoolName)"
           :title="s.schoolName"
           data-testid="cc-top-school-link"
-        />
+        >
+          <!-- DV-M17-43: the name wraps below xl and truncates from xl -->
+          <span
+            class="min-w-0 break-words whitespace-normal xl:truncate"
+            data-testid="cc-top-school-name"
+            >{{ shortSchool(s.schoolName) }}</span
+          >
+        </UButton>
         <span class="tabular shrink-0 text-body text-muted" data-testid="cc-top-school-count"
           >{{ formatCount(s.activeCount) }} plj</span
         >
