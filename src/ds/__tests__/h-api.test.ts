@@ -77,6 +77,28 @@ describe('value tone (R2)', () => {
   })
 })
 
+describe('DsStatTile wrapping (G5 re-test: M02 BUG-04, M11 bug 6)', () => {
+  it('values break only between words, labels wrap inside the tile', () => {
+    for (const density of ['default', 'roomy'] as const) {
+      const w = mount(DsStatTile, {
+        props: { value: '26/10/2026', unit: 'Purata/Pelajar', density, icon: 'i-ph-x' },
+      })
+      const valueEl = w.get('.tabular').element
+      const value = [...valueEl.classList]
+      expect(value).toContain('break-words')
+      expect(value).not.toContain('wrap-anywhere')
+      expect(value).toContain('max-w-full')
+      const label = [...valueEl.nextElementSibling!.classList]
+      expect(label).toEqual(expect.arrayContaining(['min-w-0', 'max-w-full', 'break-words']))
+      expect(label).not.toContain('wrap-anywhere')
+      // The text column may not outgrow the tile (its auto width would follow the longest word).
+      expect([...valueEl.parentElement!.classList]).toEqual(
+        expect.arrayContaining(['max-w-full', 'min-w-0']),
+      )
+    }
+  })
+})
+
 describe('density replaces the exclusive booleans (R4)', () => {
   it('DsStatTile: density and the deprecated compact / roomy agree', () => {
     expect(

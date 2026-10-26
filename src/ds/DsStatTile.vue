@@ -208,15 +208,15 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     <template v-else>
       <DsArt3D v-if="art" :name="art" size="md" />
       <DsIconChip v-else-if="icon" :icon="icon" :accent="accent" :tone="tone" :size="chipSize" />
-      <div class="flex min-w-0 flex-col items-start gap-2 staff:gap-0.5">
+      <div class="flex max-w-full min-w-0 flex-col items-start gap-2 staff:gap-0.5">
         <span
-          class="tabular max-w-full font-display font-extrabold wrap-anywhere staff:text-kpi"
+          class="tabular max-w-full font-display font-extrabold break-words staff:text-kpi"
           :class="[numberClass, isRoomy ? 'text-title' : 'text-heading']"
           :data-testid="valueTestid ?? part('value')"
           >{{ value }}</span
         >
         <span
-          class="text-muted staff:text-body staff:font-medium"
+          class="max-w-full min-w-0 break-words text-muted staff:text-body staff:font-medium"
           :class="isRoomy ? 'text-body font-medium' : '-mt-1 text-caption font-semibold staff:mt-0'"
           :data-testid="part('label')"
           >{{ unit }}</span
