@@ -375,6 +375,24 @@ describe('S4 PrestasiKelasPilihPage', () => {
     }
   })
 
+  it('http mode: the admin gets no "Cipta Kelas" (the route is teacher-only there, DV-M10-37); the teacher keeps it', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    try {
+      api.fetchOwnClasses.mockResolvedValue([])
+      signInAs('admin')
+      const a = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
+      expect(t(a, 'kelas-empty').text()).toContain('Anda belum mempunyai kelas aktif.')
+      expect(a.find('[data-testid=kelas-create]').exists()).toBe(false)
+      a.unmount()
+      signInAs('teacher')
+      const g = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
+      expect(t(g, 'kelas-create').attributes('href')).toBe('/guru/kelas/cipta')
+      g.unmount()
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('shows a pelajar the empty state without the teacher copy and the dead "Cipta Kelas" button (D5)', async () => {
     signInAs('student')
     api.fetchOwnClasses.mockResolvedValue([])
