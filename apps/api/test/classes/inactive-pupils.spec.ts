@@ -74,9 +74,12 @@ describe('deactivated pupils in the teacher class views (SW7-06)', () => {
     // repository reads behind them (also used by the school-admin, reports and command-centre callers)
     expect((await repo.memberCounts([k1.id, k2.id])).get(k1.id)).toBe(2)
     expect(await repo.teacherStudentIds(await idOfEmail(t, TEACHER_A))).toEqual([s2, sMaju].sort((x, y) => Number(x) - Number(y)))
-    const names = await repo.classNamesByStudent(await idOfEmail(t, TEACHER_A))
-    expect(names.has(s1)).toBe(false)
-    expect(names.get(s2)).toEqual(['Kelas Dua Aktif', 'Kelas Satu Aktif'])
+    const classes = await repo.classesByStudent(await idOfEmail(t, TEACHER_A))
+    expect(classes.has(s1)).toBe(false)
+    expect(classes.get(s2)).toEqual([
+      { id: k2.id, name: 'Kelas Dua Aktif' },
+      { id: k1.id, name: 'Kelas Satu Aktif' },
+    ])
 
     // the enrolment rows are untouched
     const rows = await t.db.query<{ n: number }>(`select count(*)::int n from enrolments where student_id = $1 and status = 'active'`, [s1])
