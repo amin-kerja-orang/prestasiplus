@@ -1,31 +1,39 @@
 # User notice for 28 Oct 2026 (BM short and full)
 
-Status: Draft — NOTICE-P10, LEAD card 25 Oct; send on 28 Oct. Not yet reviewed by the LEAD. Facts checked against tip `4078bf53`.
+Status: Draft — NOTICE-P10, LEAD card 25 Oct; send on 28 Oct. Wording updated for LEAD decisions D20 and D34 (26 Oct 09:34 MYT, #113 comment 6406301354). Not yet reviewed by the LEAD. Facts checked against tip `4078bf53`.
 
 ## Open items before sending
 
+Open:
+
 | # | Item | Owner |
 |---|---|---|
-| Q27 | The help channel and the send time are not decided. Both messages carry the visible placeholder `[SALURAN BANTUAN - Q27, belum diputuskan]`. Replace it before sending. | LEAD |
-| N4 | **This notice is true only once the FIT-FIX PR (Amin1) is merged.** R39 says the migration must stop flagging roster accounts and the shared default hash (#113 comment 6371548446, item 1). At tip `4078bf53`, `decidePassword()` in `apps/api/src/migration/transform/secrets.ts` sets `mustResetPassword` whenever any reason is recorded (`:53`). Three cases are flagged: (a) a roster account, a username and no e-mail (`:50`); (b) the shared default hash (`:49`); (c) **any `$argon2id$` hash**: it is copied but gets reason `non_bcrypt` (`:43-45`, comment `:26`), so argon2id accounts are flagged too. Anything else that is not valid bcrypt (plaintext, other algorithm, empty, bcrypt cost outside 4-13) is stored as null and flagged (`:42`, `:46-48`). Only a valid bcrypt hash with no other reason is left unflagged. FIT-FIX must therefore drop the flag for argon2id-hash accounts as well as for roster and default-hash accounts, or those users are asked for a password change and "Kata laluan anda TIDAK berubah" is wrong for them. If FIT-FIX is not merged (or does not cover argon2id) before the 28 Oct run, the LEAD must narrow the sentence. | Amin1 (FIT-FIX), LEAD |
-| N5 | Two ops docs still carry the pre-R39 wording: the cutover plan, row P10 (roster and legacy-password accounts "must set a new password") and the pre-night sheet, G6 checklist row ("Support told to expect a password-reset spike"). Under R39, only accounts with no usable password (for example Google-only) still need a reset, but only once FIT-FIX lands: until then the argon2id, shared-default and roster accounts are flagged too (see N4). | LEAD / ops |
+| Q27 | The help channel and the send time are not decided. Both messages carry the visible placeholder `[SALURAN BANTUAN - Q27, belum diputuskan]`. Replace it before sending. The short version must stay within 459 septets after the replacement. | LEAD |
 | N6 | The opening time on 30 Oct is not fixed in the docs, so the notice says only "30 Okt". | LEAD |
-| N7 | "Lupa kata laluan?" sends a reset link by e-mail, so it needs production mail to be working on 30 Oct. | ops |
+| N7 | Moot under AM-18 A: there is no reset e-mail at go-live, so the notice uses the "Reset melalui No IC" path and no longer depends on production mail. Revisit only if the LEAD reverses AM-18 A. | ops |
 | N8 | "Keputusan latihan dan sejarah aktiviti ... dipindahkan" is true in general, but the LEAD decisions of 25 Oct 13:15 MYT (#113 comment 6393823432) exclude two kinds of records. Exam attempts still `in_progress` are not migrated. Classes whose teacher no longer exists in the source are dropped with their enrolments; the pupils themselves still migrate. The text stays general; the LEAD decides whether to mention these. | LEAD |
-| N9 (LEAD decision) | **Contradiction: the Google-only instruction vs AM-18 A.** The notice (short version and full version, point 2) sends Google-only users to "Lupa kata laluan?", which is the e-mail link. LEAD decision AM-18 A (22 Oct 2026, 10:30 MYT, `docs/ops/production-vps.md:790-795`, section 21) is go-live without password-reset e-mail: nothing sends mail, the API binds only the logging mail port (`:794-795`), and the "Lupa Kata Laluan" page shows its own BM text, links to "Reset Melalui No IC" and tells users to ask their teacher or school admin (`:793-794`). A Google-only user who follows the notice would get no e-mail. Options: (1) change the notice to point to "Reset melalui No IC" / the teacher / the school admin; (2) the LEAD reverses AM-18 A and production mail works on 30 Oct (this also resolves N7). The notice text is not changed here. | LEAD |
 | N10 (Perlu pengesahan LEAD, narrowed) | The switch type is still unconfirmed (Q21): the cutover plan says the dump operator makes `.cloud` "read-only or maintenance mode" (section 'What never happens' and row P8; pre-night Script gaps). Maintenance mode might block viewing. The notice therefore no longer promises that users can still view data: it says the old system "mungkin hanya boleh dibaca atau tidak boleh diakses buat sementara" and that new practice or changes cannot be made, which is true in both modes (AM1-3 N2). Resolved when the LEAD / dump operator confirms the mode; then the sentence may be made specific. | LEAD, dump operator |
+| N5 | Two ops docs still carry the pre-R39 wording: the cutover plan, row P10 (roster and legacy-password accounts "must set a new password") and the pre-night sheet, G6 checklist row ("Support told to expect a password-reset spike"). Under D34 the migration still flags roster, shared-default and argon2id accounts, and users with no usable password (for example Google-only) must also reset, so a support spike is still possible. Align those two docs with this notice. | LEAD / ops |
+
+Closed:
+
+| # | Item | Resolution |
+|---|---|---|
+| N9 | Google-only instruction vs AM-18 A (the e-mail link would send nothing). | Resolved by D20 (26 Oct 09:34 MYT): Google-only users are told to choose "Lupa kata laluan?" then "Reset melalui No IC" (an IC on record is needed), otherwise to ask their teacher or school admin. |
+| N4 / R39-C4 | Whether the migration stops flagging roster, shared-default and argon2id accounts (FIT-FIX). | Resolved by D34 = R39-C4 option 2: the code stays as it is (`decidePassword()` still flags them). FE #226 + #357 add a `/password/change` screen at first login, and the notice now says users "mungkin diminta" to change the password. |
 
 ## Facts this notice relies on
 
 | Fact | Source |
 |---|---|
 | The old system is read-only from 01:00 MYT on 29 Oct until the new system opens on 30 Oct. | The cutover plan, row P10; the pre-night sheet, Step 4; the LEAD card of 25 Oct 12:38 MYT. The docs say "about 01:00", with final times in a reminder, so the notice says "kira-kira 01:00" and mentions the reminder (AM1-3 N1). No sheet yet schedules or owns that reminder (LEAD / ops). |
-| No forced password change. Migrated users sign in with their existing username (or e-mail) and the same password. | R39, #113 comment 6371548446 item 1; `docs/architecture/v2-backend-deviations.md:740` (R39 row) |
+| Migrated users sign in with their existing username (or e-mail) and the same password, but **may** be asked to set a new one at first login. | D34 = R39-C4 option 2 and D20 (#113 comment 6406301354); R39, #113 comment 6371548446 item 1; `docs/architecture/v2-backend-deviations.md:740` (R39 row) |
+| Which accounts are flagged `must_reset_password`: roster accounts (a username and no e-mail), the shared default hash, any `$argon2id$` hash, and anything that is not valid bcrypt (stored as null). A valid bcrypt hash with no other reason is not flagged. | `apps/api/src/migration/transform/secrets.ts`, `decidePassword()` (flags `mustResetPassword` whenever any reason is recorded) |
+| A flagged user is sent to the screen "Tukar Kata Laluan" at first login (`/password/change`), with the message "Sila tukar kata laluan anda sebelum meneruskan." | FE PR #226 (page "Tukar Kata Laluan") and PR #357; message in `apps/api/src/common/errors/api-error.ts` (`PASSWORD_CHANGE_REQUIRED`) on `origin/be/integration-frontend` |
 | Login accepts an e-mail or a username. | `apps/api/src/modules/auth/auth.service.ts:67` (login by e-mail or username; #225) |
-| Only an account with no usable password keeps the reset flag (it cannot sign in otherwise). A Google-only account on `.cloud` has no password, so it is one of these. | R39 item 1; `apps/api/src/migration/transform/secrets.ts:46-48` (empty or unusable is stored as null and flagged; see N4 for the argon2id, default-hash and roster cases, which are also flagged at tip `4078bf53`) |
-| Users with no password (Google sign-in on `.cloud`) use "Lupa kata laluan?" on the new system. | LEAD addition, #113 comment 6393823432 (13:15 MYT) |
-| "Lupa kata laluan?" works for such an account. A reset link is sent to any active, non-suspended account with an e-mail, whether or not it has a password, and the reset stores the new password and clears the flag. | `apps/api/src/modules/account/password-reset.service.ts`: `usable()` is `:73-75` (active and not suspended); `requestLink()` sends the link when `usable(user) && user.email` (`:85`), with no check on the password (`:84-101`); the reset stores the new hash and sets `mustChangePassword: false` at `:136`. Delivery depends on the mail port: see N9 |
-| The exact link label on the v2 login page is "Lupa kata laluan?". A second link, "Reset melalui No IC", serves accounts without an e-mail. | `src/modules/m01-authentication/pages/LoginPage.vue:118-127` |
+| A Google-only account on `.cloud` has no password, so it cannot sign in until it resets. | `apps/api/src/migration/transform/secrets.ts:46-48` (empty or unusable is stored as null and flagged) |
+| Google-only users use "Lupa kata laluan?" on the login page of the new system, then "Reset melalui No IC". They need an IC on record; otherwise they ask their teacher or school admin. There is no reset e-mail at go-live. | LEAD decision D20 (#113 comment 6406301354); `docs/ops/production-vps.md`, section 21 "Account recovery and support contact at go-live (AM-18)", decision AM-18 A (the page shows its own BM text, links to "Reset Melalui No IC" and tells users to ask their teacher or school admin; nothing sends mail) |
+| Exact link labels on the v2 login page: "Lupa kata laluan?" and "Reset melalui No IC". | `src/modules/m01-authentication/pages/LoginPage.vue:130` ("Lupa kata laluan?") and `:138` ("Reset melalui No IC") on `origin/be/integration-frontend` |
 | "Reset melalui No IC" needs an IC on record: it is refused unless the account is usable, `user.icHash !== null`, the IC normalises and the hash matches. | `apps/api/src/modules/account/password-reset.service.ts:178-192` (condition at `:189`); `resetByIc` then issues the token (`:194-197`) |
 | Everyone signs in again, because sessions and tokens are not migrated. | `docs/architecture/v2-data-migration.md` section 2 (Not migrated) |
 | Practice sessions, answers and activity history are migrated. | `docs/architecture/v2-data-migration.md` section 6.1 |
@@ -34,10 +42,10 @@ Status: Draft — NOTICE-P10, LEAD card 25 Oct; send on 28 Oct. Not yet reviewed
 
 ## Short version (WhatsApp/SMS)
 
-About 425 GSM-7 septets with the placeholder (423 characters; `[` and `]` count double): 3 SMS segments (153 per segment). Keep the real help channel short so it stays within 459.
+447 GSM-7 septets with the placeholder (445 characters; `[` and `]` count double): 3 SMS segments (153 per segment, limit 459). Keep the real help channel short so it stays within 459.
 
 ```text
-PrestasiPlus: .cloud jadi baca-sahaja kira-kira 01:00 pagi 29 Okt (masa muktamad dalam peringatan nanti) sehingga sistem baharu dibuka 30 Okt. Kata laluan anda TIDAK berubah: log masuk semula dengan e-mel/nama pengguna dan kata laluan yang sama. Akaun tanpa kata laluan (dulu log masuk dengan Google): guna "Lupa kata laluan?" di halaman log masuk. Bantuan: [SALURAN BANTUAN - Q27, belum diputuskan]. - Pasukan PrestasiPlus
+PrestasiPlus: .cloud jadi baca-sahaja kira-kira 01:00 pagi 29 Okt (masa muktamad menyusul) sehingga sistem baharu dibuka 30 Okt. Log masuk semula dengan e-mel/nama pengguna dan kata laluan yang sama; anda mungkin diminta menukar kata laluan. Dulu guna Google? Pilih "Lupa kata laluan?" > "Reset melalui No IC" (perlu No IC dalam rekod) atau tanya guru/pentadbir sekolah. Bantuan: [SALURAN BANTUAN - Q27, belum diputuskan]. - Pasukan PrestasiPlus
 ```
 
 ## Full version (e-mail / announcement)
@@ -57,14 +65,13 @@ Kami ingin memaklumkan bahawa PrestasiPlus akan berpindah ke sistem baharu. Sila
 Apa yang perlu dilakukan
 
 1. Pengguna yang mempunyai kata laluan (guru, murid, ibu bapa dan pentadbir sekolah)
-   - Anda TIDAK perlu menukar kata laluan.
    - Gunakan e-mel atau nama pengguna dan kata laluan yang sama seperti sebelum ini.
-   - Anda hanya perlu log masuk semula di sistem baharu.
+   - Tuan/Puan mungkin diminta menukar kata laluan semasa log masuk kali pertama. Jika skrin "Sila tukar kata laluan anda sebelum meneruskan." dipaparkan, ikut langkah di skrin tersebut.
 
 2. Pengguna yang log masuk dengan Google di sistem lama (akaun tanpa kata laluan)
-   - Pada halaman log masuk sistem baharu, pilih pautan "Lupa kata laluan?".
-   - Ikut langkah yang diberikan untuk mencipta kata laluan anda.
-   - Selepas itu, log masuk seperti biasa.
+   - Pada halaman log masuk sistem baharu, pilih "Lupa kata laluan?", kemudian pilih "Reset melalui No IC".
+   - Reset melalui No IC memerlukan No IC anda direkodkan dalam sistem. Jika tidak berjaya, sila minta bantuan guru atau pentadbir sekolah anda.
+   - Selepas kata laluan ditetapkan, log masuk seperti biasa.
 
 Data anda
 
@@ -81,7 +88,8 @@ Pasukan PrestasiPlus
 
 ## Do not say
 
-- No "set a new password", "tukar kata laluan baharu" or "tetapkan kata laluan baharu" for users who have a password (R39). The old P10 and A5.4 wording is wrong.
+- No absolute "Kata laluan anda TIDAK berubah" or "Anda TIDAK perlu menukar kata laluan" (D20, D34). "Set a new password" / "tukar kata laluan" is allowed only as "mungkin diminta" (users may be asked at first login).
+- Do not tell Google-only users that a reset e-mail or link will be sent (AM-18 A: no reset e-mail at go-live). Use "Lupa kata laluan?" then "Reset melalui No IC", otherwise ask the teacher or school admin.
 - No exact opening time on 30 Oct (the docs do not fix one).
 - No real names, phone numbers, e-mails, addresses or URLs. Only `<domain>` is allowed as a placeholder.
 - No mention of any Google sign-in on the new system (v2 has none).
