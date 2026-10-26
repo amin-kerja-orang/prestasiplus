@@ -3,6 +3,8 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { generateTinyFixture } from '../fixtures/generate-tiny'
+
 import {
   ARTICLE_CATEGORY_MAP,
   BANNER_TYPE_MAP,
@@ -17,6 +19,7 @@ import {
 import {
   CHALLENGE_TYPE_MAP,
   completionLegacyId,
+  challengeDifficulty,
   challengeTarget,
   isPlatformChallenge,
   parseSpmTargets,
@@ -69,13 +72,102 @@ describe('tiers and challenges', () => {
   })
 
   it('maps the challenge type with an explicit table and rejects the rest; metric stays null', () => {
-    expect(Object.keys(CHALLENGE_TYPE_MAP).sort()).toEqual(['accuracy', 'quiz_count', 'streak', 'time_spent', 'topic_variety'])
+    expect(Object.keys(CHALLENGE_TYPE_MAP).sort()).toEqual([
+      'accuracy', 'bilangan_kuiz', 'ketepatan', 'kombo', 'masa', 'quiz_count', 'streak', 'time_spent', 'topic_variety', 'topik_berbeza',
+    ])
     const ok = transformChallenge({ title: ' Cabaran  Satu ', challenge_type: 'Quiz Count', target_value: '3.00' })
     expect(ok.ok && ok.value).toMatchObject({ title: 'Cabaran Satu', challenge_type: 'quiz_count', metric: null, target_value: 3, difficulty: 'medium' })
     expect(rejectOf(transformChallenge({ title: 'A', challenge_type: 'harian', target_value: '3' }))).toBe('UNKNOWN_ENUM:challenge_type')
     expect(rejectOf(transformChallenge({ title: 'A', challenge_type: 'accuracy', target_value: 'teks' }))).toBe('INVALID_VALUE:target_value')
     expect(rejectOf(transformChallenge({ title: '', challenge_type: 'accuracy', target_value: '3' }))).toBe('INVALID_VALUE:title')
     expect(rejectOf(transformChallenge({ title: 'x'.repeat(201), challenge_type: 'accuracy', target_value: '3' }))).toBe('INVALID_VALUE:title')
+  })
+
+  describe('the .cloud challenge_type codes map to the v2 types (FIT-FIX OQ5, LEAD 25 Oct 13:15 MYT)', () => {
+    const typeOf = (raw: string | null) => {
+      const o = transformChallenge({ title: 'A', challenge_type: raw, target_value: '3' })
+      return o.ok ? o.value.challenge_type : rejectOf(o)
+    }
+    it.each([
+      ['bilangan_kuiz', 'quiz_count'],
+      ['ketepatan', 'accuracy'],
+      ['topik_berbeza', 'topic_variety'],
+      ['kombo', 'streak'],
+      ['masa', 'time_spent'],
+    ])('maps %s to %s', (code, v2) => {
+      expect(typeOf(code)).toBe(v2)
+    })
+
+    it('is case- and space-insensitive (the enumKey rule)', () => {
+      expect(typeOf(' KOMBO ')).toBe('streak')
+      expect(typeOf('Topik Berbeza')).toBe('topic_variety')
+      expect(typeOf('Bilangan-Kuiz')).toBe('quiz_count')
+      expect(typeOf('MASA')).toBe('time_spent')
+      expect(typeOf('Ketepatan')).toBe('accuracy')
+    })
+
+    it('maps every challenge of the cloud-tiny fixture except its one unknown code (harian)', () => {
+      const rows = generateTinyFixture().get('challenges.ndjson')!.trim().split('\n').map((l) => JSON.parse(l) as Record<string, string>)
+      expect(rows.map((r) => typeOf(r.challenge_type ?? null))).toEqual([
+        'UNKNOWN_ENUM:challenge_type', 'quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent',
+      ])
+    })
+
+    it('keeps the identity codes and still rejects an unknown or blank code', () => {
+      for (const v2 of ['quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent']) expect(typeOf(v2)).toBe(v2)
+      expect(typeOf('harian')).toBe('UNKNOWN_ENUM:challenge_type')
+      expect(typeOf('kombo_harian')).toBe('UNKNOWN_ENUM:challenge_type')
+      expect(typeOf('')).toBe('INVALID_VALUE:challenge_type')
+      expect(typeOf(null)).toBe('INVALID_VALUE:challenge_type')
+    })
+  })
+
+  describe('challenge rewards, difficulty, flag and order (FIT-FIX OQ5)', () => {
+    const base = { title: 'A', challenge_type: 'accuracy', target_value: '3' }
+    const valueOf = (extra: Record<string, string | null>) => {
+      const o = transformChallenge({ ...base, ...extra })
+      return o.ok ? o.value : null
+    }
+
+    it('takes the v2 defaults when the columns are absent or NULL', () => {
+      expect(valueOf({})).toMatchObject({ reward_syiling: 0, reward_xp: 0, difficulty: 'medium', sort_order: 0, is_active: true })
+      expect(valueOf({ reward_syiling: null, reward_xp: ' ', difficulty: null, sort_order: null, is_active: null }))
+        .toMatchObject({ reward_syiling: 0, reward_xp: 0, difficulty: 'medium', sort_order: 0, is_active: true })
+    })
+
+    it('maps valid values', () => {
+      expect(valueOf({ reward_syiling: '15', reward_xp: '5', difficulty: 'hard', sort_order: '3', is_active: '0' }))
+        .toMatchObject({ reward_syiling: 15, reward_xp: 5, difficulty: 'hard', sort_order: 3, is_active: false })
+      expect(valueOf({ reward_syiling: '100000', reward_xp: '0', sort_order: '2147483647', is_active: 'true' }))
+        .toMatchObject({ reward_syiling: 100000, reward_xp: 0, sort_order: 2147483647, is_active: true })
+      expect(valueOf({ sort_order: '-2' })).toMatchObject({ sort_order: -2 })
+    })
+
+    it('rejects an invalid, negative or too large reward, order or flag, naming the column', () => {
+      for (const col of ['reward_syiling', 'reward_xp'] as const) {
+        for (const bad of ['-1', '1.5', 'banyak', '100001', '99999999999999']) {
+          expect(rejectOf(transformChallenge({ ...base, [col]: bad })), `${col}=${bad}`).toBe(`INVALID_VALUE:${col}`)
+        }
+      }
+      for (const bad of ['2147483648', '-2147483649', '1.5', 'x']) {
+        expect(rejectOf(transformChallenge({ ...base, sort_order: bad })), `sort_order=${bad}`).toBe('INVALID_VALUE:sort_order')
+      }
+      for (const bad of ['mungkin', '2', 'aktif']) {
+        expect(rejectOf(transformChallenge({ ...base, is_active: bad })), `is_active=${bad}`).toBe('INVALID_VALUE:is_active')
+      }
+    })
+
+    it('maps difficulty by identity only, case and space insensitive; anything else keeps medium and is flagged unmapped', () => {
+      for (const d of ['easy', 'medium', 'hard']) {
+        expect(challengeDifficulty(d)).toEqual({ value: d, unmapped: false })
+        expect(challengeDifficulty(` ${d.toUpperCase()} `)).toEqual({ value: d, unmapped: false })
+      }
+      expect(challengeDifficulty(null)).toEqual({ value: 'medium', unmapped: false })
+      expect(challengeDifficulty('  ')).toEqual({ value: 'medium', unmapped: false })
+      for (const d of ['mudah', 'sederhana', 'sukar', 'extreme']) expect(challengeDifficulty(d)).toEqual({ value: 'medium', unmapped: true })
+      expect(valueOf({ difficulty: 'Sukar' })).toMatchObject({ difficulty: 'medium' })
+      expect(valueOf({ difficulty: 'Hard' })).toMatchObject({ difficulty: 'hard' })
+    })
   })
 
   it('keeps the achievement criteria as legacy text only', () => {
@@ -197,7 +289,7 @@ describe('content', () => {
   })
 
   it('maps the banner type, keeps dates and counts files and dropped targets', () => {
-    expect(Object.values(BANNER_TYPE_MAP).sort()).toEqual(['ANNOUNCEMENT', 'EVENT', 'HERO', 'PROMO'])
+    expect([...new Set(Object.values(BANNER_TYPE_MAP))].sort()).toEqual(['ANNOUNCEMENT', 'EVENT', 'HERO', 'PROMO'])
     const o = transformBanner({ title: 'Sepanduk', type: 'Hero', image_path: 'a.png', target: '/dalam', sort_order: '2', is_active: '1' }, { start: '2026-03-02', end: '2026-03-10' })
     expect(o.hadImage).toBe(true)
     expect(o.droppedTarget).toBe(true)
@@ -206,6 +298,11 @@ describe('content', () => {
     expect(ext.out.ok && ext.out.value).toMatchObject({ link_type: 'EXTERNAL', external_url: 'https://contoh.invalid/x' })
     expect(rejectOf(transformBanner({ title: 'S', type: 'promo' }, { start: '2026-03-10', end: '2026-03-01' }).out)).toBe('INVALID_VALUE:end_date')
     expect(rejectOf(transformBanner({ title: 'S', type: 'xyz' }, { start: null, end: null }).out)).toBe('UNKNOWN_ENUM:type')
+    // A1-FIX: the two legacy .cloud codes map to a code v2 can store (`ck_banners_banner_type`).
+    for (const type of ['FEATURE', 'PROMOTIONAL']) {
+      const legacy = transformBanner({ title: 'S', type }, { start: null, end: null })
+      expect(legacy.out.ok && legacy.out.value.banner_type, type).toBe('PROMO')
+    }
   })
 
   it('needs the content owner for notes, videos and audio sets (ORPHAN_PARENT) and never invents the missing columns', () => {
@@ -286,5 +383,13 @@ describe('operations', () => {
     expect(rejectOf(transformFeedback(base, { ...ctx, userId: undefined }))).toBe('ORPHAN_PARENT:user_id')
     const sparse = transformFeedback({ satisfaction: '3' }, ctx)
     expect(sparse.ok && sparse.value).toMatchObject({ usability: null, relevance: null, score: null, comment: null })
+  })
+})
+
+describe('FIT-FIX OQ5 reward bound', () => {
+  it('is the wallet per-call ceiling, so a migrated reward can always be paid', async () => {
+    const { CHALLENGE_REWARD_MAX } = await import('../../../src/migration/transform/gamification')
+    const { MAX_AMOUNT_PER_CALL } = await import('../../../src/modules/wallet/wallet.constants')
+    expect(CHALLENGE_REWARD_MAX).toBe(MAX_AMOUNT_PER_CALL)
   })
 })

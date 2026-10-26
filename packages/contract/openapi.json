@@ -17301,7 +17301,7 @@
               "string",
               "null"
             ],
-            "description": "Optional; null or empty means no school. An unknown school gives fields.schoolId."
+            "description": "Optional; when absent, null or empty the class takes the own school of the caller (none if the caller has none). Only that school is accepted; any other or unknown school gives fields.schoolId."
           },
           "description": {
             "type": [
