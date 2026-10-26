@@ -3,7 +3,7 @@ import 'reflect-metadata'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 
-import { runSeeds } from '../../../prisma/seed'
+import { runSeeds, type SeedModule } from '../../../prisma/seed'
 import { identitySeed } from '../../../prisma/seed/core/identity'
 import { contentSeed } from '../../../prisma/seed/content'
 import { curriculumSeed } from '../../../prisma/seed/curriculum'
@@ -22,9 +22,9 @@ export { chapterIdOf, dropDatabase, idOf, loginAs, type Client } from '../../cur
 export { START }
 
 /** Nest app with auth, the overview reads module and the articles module on a private migrated and seeded database. */
-export async function bootOverviewApp(opts: { withArticles?: boolean; bankTtlMs?: number } = {}): Promise<CurriculumTestApp> {
+export async function bootOverviewApp(opts: { withArticles?: boolean; bankTtlMs?: number; seeds?: SeedModule[] } = {}): Promise<CurriculumTestApp> {
   const db = await createTestDatabase()
-  await runSeeds([identitySeed, curriculumSeed, walletSeed, contentSeed], { prisma: db.prisma })
+  await runSeeds(opts.seeds ?? [identitySeed, curriculumSeed, walletSeed, contentSeed], { prisma: db.prisma })
   Object.assign(process.env, {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',

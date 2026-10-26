@@ -145,6 +145,10 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       expect(first?.levelName).toBe('Tingkatan 4')
       expect([...(first?.classNames ?? [])].sort()).toEqual(['Kelas Dua', 'Kelas Roster'])
       expect(body.data[1]?.classNames).toEqual(['Kelas Dua'])
+      // SW5-03: `classes` carries the ids, in the same order as `classNames`
+      expect(first?.classes.map((c) => c.name)).toEqual(first?.classNames)
+      expect([...(first?.classes.map((c) => c.id) ?? [])].sort()).toEqual([k1.id, k2.id].sort())
+      expect(body.data[1]?.classes).toEqual([{ id: k2.id, name: 'Kelas Dua' }])
       // an unknown tab falls back to "mine"; a repeated key is read as absent
       expect(StudentsBody.parse((await a.get('/guru/students?tab=xyz')).body).meta.count).toBe(2)
       expect(StudentsBody.parse((await a.get('/guru/students?tab=school&tab=mine')).body).meta.count).toBe(2)
@@ -199,6 +203,26 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       const filtered = StudentsBody.parse((await a.get('/guru/students?tab=school&search=Murid%20Penuh')).body)
       expect(filtered.meta.count).toBe(205)
       expect(filtered.data).toHaveLength(200)
+    })
+
+    it('SW5-03: two own classes with the same name give two entries with distinct ids, in the order of classNames', async () => {
+      const twinA = await createClass(t, a, { name: 'Kelas Kembar', schoolId: school1 })
+      const twinB = await createClass(t, a, { name: 'Kelas Kembar', schoolId: school1 })
+      expect(twinA.id).not.toBe(twinB.id)
+      await a.put(`/guru/students/${sMaju}`, { classroomId: twinA.id })
+      await a.put(`/guru/students/${sMaju}`, { classroomId: twinB.id })
+      try {
+        const row = StudentsBody.parse((await a.get('/guru/students')).body).data.find((s) => s.id === sMaju)
+        expect(row?.classNames).toEqual(['Kelas Kembar', 'Kelas Kembar'])
+        expect(row?.classes).toHaveLength(2)
+        expect(row?.classes.map((c) => c.name)).toEqual(row?.classNames)
+        expect(new Set(row?.classes.map((c) => c.id))).toEqual(new Set([twinA.id, twinB.id]))
+        // the school tab fills the same field
+        const school = StudentsBody.parse((await a.get('/guru/students?tab=school')).body).data.find((s) => s.id === sMaju)
+        expect(school?.classes).toEqual(row?.classes)
+      } finally {
+        await t.db.query(`delete from enrolments where classroom_id = any($1::bigint[])`, [[twinA.id, twinB.id]])
+      }
     })
   })
 
