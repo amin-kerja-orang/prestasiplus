@@ -156,7 +156,8 @@ export class UsersService {
   /**
    * The teacher's active classes for the "Kelas guru" select, name A to Z then id. `[]` for none, for an unknown
    * teacher and (school_admin) for a teacher outside the caller's school: the contract has no 404 here, and
-   * an out-of-scope teacher must look the same as an unknown one.
+   * an out-of-scope teacher must look the same as an unknown one. A school_admin also sees only the classes of
+   * its own school: a teacher who moved schools keeps active classes of the old school, which are not shown.
    */
   async teacherClassrooms(caller: Caller, teacherId: string): Promise<{ id: string; name: string; classCode: string }[]> {
     if (!isIdString(teacherId)) return []
@@ -164,7 +165,7 @@ export class UsersService {
       const teacher = await this.users.get(teacherId)
       if (!teacher || !teacher.roles.includes('teacher') || teacher.schoolId !== caller.schoolId) return []
     }
-    const rows = await this.ports.classrooms.activeOf(teacherId)
+    const rows = await this.ports.classrooms.activeOf(teacherId, caller.isAdmin ? undefined : { schoolId: caller.schoolId })
     return rows.sort(byNameThenId)
   }
 
