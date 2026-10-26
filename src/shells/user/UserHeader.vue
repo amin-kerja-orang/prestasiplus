@@ -39,7 +39,7 @@ const home = computed(() => shellHomePath(props.user?.role ?? null))
 const emit = defineEmits<{ 'toggle-sidebar': []; 'toggle-drawer': [] }>()
 
 const BELL_BADGE =
-  'absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1'
+  'absolute -top-1 -right-1 bg-red-500 text-white text-[12px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1'
 </script>
 
 <template>
@@ -61,14 +61,14 @@ const BELL_BADGE =
         </button>
         <div class="min-w-0 flex-1">
           <h1
-            class="truncate font-heading text-base font-bold text-slate-800 sm:text-2xl"
+            class="line-clamp-2 font-heading text-base font-bold break-words text-slate-800 sm:line-clamp-1 sm:text-2xl"
             data-testid="shell-user-title"
           >
             {{ header.title }}
           </h1>
           <p
             v-if="header.subtitle"
-            class="mt-0.5 truncate text-[10px] font-medium text-slate-600 sm:text-sm"
+            class="mt-0.5 truncate text-[12px] font-medium text-slate-600 sm:text-sm"
             data-testid="shell-user-subtitle"
           >
             {{ header.subtitle }}
@@ -186,19 +186,19 @@ const BELL_BADGE =
         <span id="jb-coin-value-m" class="text-xs font-bold text-amber-800 sm:text-sm">
           {{ summary.coins }}
         </span>
-        <span class="text-[9px] font-semibold text-amber-700 sm:text-xs">koin</span>
+        <span class="text-[12px] font-semibold text-amber-700">koin</span>
       </div>
       <div id="jb-mata-target-m" class="flex items-center space-x-1">
         <NavIcon fa="fa-star" class="text-xs text-purple-500 sm:text-base" />
         <span id="jb-mata-value-m" class="text-xs font-bold text-purple-700 sm:text-sm">
           {{ summary.points }}
         </span>
-        <span class="text-[9px] font-semibold text-purple-600 sm:text-xs">mata</span>
+        <span class="text-[12px] font-semibold text-purple-600">mata</span>
       </div>
       <div class="flex items-center space-x-1">
         <NavIcon fa="fa-fire" class="text-xs text-orange-500 sm:text-base" />
         <span class="text-xs font-bold text-orange-800 sm:text-sm">{{ summary.streakDays }}</span>
-        <span class="text-[9px] font-semibold text-orange-700 sm:text-xs">🔥</span>
+        <span class="text-[12px] font-semibold text-orange-700">🔥</span>
       </div>
     </div>
   </div>

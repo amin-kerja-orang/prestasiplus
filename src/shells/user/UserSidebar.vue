@@ -51,8 +51,8 @@ const home = computed(() => shellHomePath(props.user?.role ?? null))
         <div class="flex items-center space-x-3">
           <img :src="avatarSrc(user)" alt="Avatar" class="avatar-ring h-11 w-11 rounded-full" />
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-bold text-slate-800">{{ user?.name }}</p>
-            <p class="truncate text-xs font-medium text-slate-600">{{ user?.email }}</p>
+            <p class="text-sm font-bold break-words text-slate-800">{{ user?.name }}</p>
+            <p class="text-xs font-medium break-all text-slate-600">{{ user?.email }}</p>
           </div>
           <ShellLink
             to="/logout"

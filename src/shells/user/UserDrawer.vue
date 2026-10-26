@@ -56,7 +56,7 @@ const accountLinks = computed(() =>
         <div class="flex items-center justify-between">
           <div>
             <img :src="LOGO_URL" alt="PRESTASIPLUS" class="h-7 w-auto sm:h-8" />
-            <p class="mt-0.5 text-[10px] font-medium text-slate-400">
+            <p class="mt-0.5 text-[12px] font-medium text-slate-400">
               Platform Latih Tubi Nasional
             </p>
           </div>
@@ -80,7 +80,7 @@ const accountLinks = computed(() =>
           />
           <div class="min-w-0">
             <p class="truncate text-sm font-bold text-slate-800">{{ user?.name }}</p>
-            <p class="text-[10px] text-slate-500 capitalize">{{ user?.role }}</p>
+            <p class="text-[12px] text-slate-500 capitalize">{{ user?.role }}</p>
           </div>
         </div>
       </div>
@@ -114,7 +114,7 @@ const accountLinks = computed(() =>
 
       <!-- Drawer Footer -->
       <div class="mt-auto border-t border-indigo-100 p-4">
-        <p class="text-center text-[10px] text-slate-400">&copy; 2026 PRESTASIPLUS 🇲🇾</p>
+        <p class="text-center text-[12px] text-slate-400">&copy; 2026 PRESTASIPLUS 🇲🇾</p>
       </div>
     </div>
   </div>
