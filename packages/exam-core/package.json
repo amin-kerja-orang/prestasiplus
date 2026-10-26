@@ -12,6 +12,7 @@
     "./math-expr": "./src/math-expr.ts",
     "./blueprint": "./src/blueprint.ts",
     "./paper-model": "./src/paper-model.ts",
+    "./choose-n": "./src/choose-n.ts",
     "./types": "./src/types.ts"
   },
   "files": [

@@ -424,6 +424,27 @@ describe('S6 class', () => {
     expect(router.currentRoute.value.fullPath).toBe('/admin/command-center/student/2022')
   })
 
+  it('keeps the pupil table inside its card: scroll container, 560 px floor, columns intact (DV-M17-39)', async () => {
+    const w = await render(CommandCenterClassPage, { classroomId: 370 })
+    const scroller = w.get('[data-testid=cc-table-scroller]')
+    // The scroll container sits inside the card, so a table wider than the card scrolls there.
+    expect(scroller.classes()).toEqual(expect.arrayContaining(['max-w-full', 'overflow-x-auto']))
+    const table = scroller.get('[data-testid=cc-students-table]')
+    expect(table.classes()).toContain('min-w-140')
+    // Below md the table is as wide as its columns (never squeezed below its floor), so only the scroll container scrolls; from md it fills the card.
+    expect(table.classes()).toEqual(expect.arrayContaining(['max-md:w-fit', 'max-md:max-w-none']))
+    expect(scroller.findAll('th').map((h) => h.text())).toEqual([
+      '#',
+      'Nama Pelajar',
+      'Jumlah Jawapan',
+      'Ketepatan',
+      'Terakhir Aktif',
+      'Status',
+      'Mood',
+    ])
+    expect(scroller.findAll('td')).toHaveLength(14)
+  })
+
   it('degrades the breadcrumb when the scope has no school', async () => {
     api.fetchCcClass.mockResolvedValue({ ...klass, school: null })
     const w = await render(CommandCenterClassPage, { classroomId: 370 })

@@ -75,7 +75,7 @@ const n = computed(() => d.value?.population.total ?? 0)
 </script>
 
 <template>
-  <DsPage data-testid="laporan-page">
+  <DsPage :subtitle="route.meta.header?.subtitle" data-testid="laporan-page">
     <DsLoadError v-if="report.error.value" @retry="report.reload" />
 
     <div v-else-if="!d" class="flex justify-center py-12 text-muted" data-testid="laporan-loading">
