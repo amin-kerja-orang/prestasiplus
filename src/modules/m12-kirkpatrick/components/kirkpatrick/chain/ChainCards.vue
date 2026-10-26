@@ -3,14 +3,15 @@
  * The four level cards of S6 (FN-M12-7.2.1 ... 7.2.5; FR-M12-62 ... 66): one column below `lg` (vertical
  * chain), four from `lg` with an arrow between the cards. The level badge is success for T1, T2 and warning
  * for T3, T4 as observed (words and `data-tone` carry the meaning, not colour alone). The T3 consistency
- * labels are the English ones of live (DV-M12-18 rejected).
+ * labels are the English ones of live (DV-M12-18 rejected). `stacked` (the print page, whose sheet is a fixed 768 px
+ * column) keeps one column at every width and drops the arrows instead of 4 across from `lg` (DV-M12-37).
  */
 import { computed } from 'vue'
 
 import type { Chain } from '../../../api/types'
 import { count, gps, mean, pct, plain, type KirkColor } from '../common/kirkpatrick-format'
 
-const props = defineProps<{ chain: Chain }>()
+const props = withDefaults(defineProps<{ chain: Chain; stacked?: boolean }>(), { stacked: false })
 
 const LABELS: Record<string, string> = {
   champion: 'Champion',
@@ -87,7 +88,11 @@ const steps = computed<Step[]>(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-2" data-testid="chain-cards">
+  <div
+    class="flex flex-col gap-3"
+    :class="stacked ? '' : 'lg:flex-row lg:items-stretch lg:gap-2'"
+    data-testid="chain-cards"
+  >
     <template v-for="(s, i) in steps" :key="s.key">
       <UCard class="min-w-0 flex-1" :data-testid="`chain-${s.key}`" :data-tone="s.color">
         <template #header>
@@ -127,7 +132,7 @@ const steps = computed<Step[]>(() => {
         </template>
       </UCard>
       <div
-        v-if="i < steps.length - 1"
+        v-if="i < steps.length - 1 && !stacked"
         class="hidden items-center text-dimmed lg:flex"
         data-testid="chain-arrow"
       >

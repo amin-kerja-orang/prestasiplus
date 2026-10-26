@@ -1,92 +1,140 @@
 <script setup lang="ts">
 /**
- * On-screen maths keyboard (US-09): fraction, power, root, pi, plus-minus, times, divide,
- * brackets, x / y, digits. Keys are 44 px and tab-reachable buttons; they insert LaTeX at the
- * caret of the field that owns the keyboard.
+ * On-screen maths keypad laid out like the Casio fx-570 / fx-991 SPM students use (US-09): a
+ * function area on top (layer "Fungsi": fraction, root, powers, trig, log; layer "Simbol": x, y,
+ * comma, %, ±, inequalities, =; both over `( ) π °` and a layer key) above a number block
+ * (7 8 9 DEL AC / 4 5 6 × ÷ / 1 2 3 + − / 0 . ×10ˣ cursor). Keys are tab-reachable buttons; they
+ * insert friendly notation at the caret of the field that owns the keypad. The key map lives in
+ * `lib/math-keys.ts`. Built from DS layout primitives only (the owner draws the surface).
  */
-export interface KeyPress {
-  insert?: string
-  /** Caret offset inside the inserted text (default: its end). */
-  cursor?: number
-  action?: 'backspace' | 'left' | 'right'
-}
+import { computed, ref } from 'vue'
 
-interface Key {
-  id: string
-  label: string
-  aria: string
-  insert?: string
-  cursor?: number
-  action?: KeyPress['action']
-  tone?: 'math' | 'num' | 'act'
-}
+import { DsGrid, DsStack } from '@/ds'
 
-const KEYS: Key[] = [
-  { id: 'frac', label: 'a/b', aria: 'Pecahan', insert: '()/()', cursor: 1, tone: 'math' },
-  { id: 'pow', label: 'xⁿ', aria: 'Kuasa', insert: '^()', cursor: 2, tone: 'math' },
-  { id: 'sq', label: 'x²', aria: 'Kuasa dua', insert: '^2', tone: 'math' },
-  { id: 'sqrt', label: '√', aria: 'Punca kuasa dua', insert: '√()', cursor: 2, tone: 'math' },
-  { id: 'pi', label: 'π', aria: 'Pi', insert: 'π', tone: 'math' },
-  { id: 'pm', label: '±', aria: 'Tambah atau tolak', insert: '±', tone: 'math' },
-  { id: '7', label: '7', aria: '7', insert: '7', tone: 'num' },
-  { id: '8', label: '8', aria: '8', insert: '8', tone: 'num' },
-  { id: '9', label: '9', aria: '9', insert: '9', tone: 'num' },
-  { id: 'times', label: '×', aria: 'Darab', insert: '×', tone: 'math' },
-  { id: 'div', label: '÷', aria: 'Bahagi', insert: '÷', tone: 'math' },
-  { id: 'back', label: '⌫', aria: 'Padam', action: 'backspace', tone: 'act' },
-  { id: '4', label: '4', aria: '4', insert: '4', tone: 'num' },
-  { id: '5', label: '5', aria: '5', insert: '5', tone: 'num' },
-  { id: '6', label: '6', aria: '6', insert: '6', tone: 'num' },
-  { id: 'plus', label: '+', aria: 'Tambah', insert: '+', tone: 'math' },
-  { id: 'minus', label: '−', aria: 'Tolak', insert: '-', tone: 'math' },
-  { id: 'left', label: '◀', aria: 'Kursor ke kiri', action: 'left', tone: 'act' },
-  { id: '1', label: '1', aria: '1', insert: '1', tone: 'num' },
-  { id: '2', label: '2', aria: '2', insert: '2', tone: 'num' },
-  { id: '3', label: '3', aria: '3', insert: '3', tone: 'num' },
-  { id: 'lp', label: '(', aria: 'Kurungan buka', insert: '(', tone: 'math' },
-  { id: 'rp', label: ')', aria: 'Kurungan tutup', insert: ')', tone: 'math' },
-  { id: 'right', label: '▶', aria: 'Kursor ke kanan', action: 'right', tone: 'act' },
-  { id: '0', label: '0', aria: '0', insert: '0', tone: 'num' },
-  { id: 'dot', label: '.', aria: 'Titik perpuluhan', insert: '.', tone: 'num' },
-  { id: 'x', label: 'x', aria: 'Pemboleh ubah x', insert: 'x', tone: 'math' },
-  { id: 'y', label: 'y', aria: 'Pemboleh ubah y', insert: 'y', tone: 'math' },
-  { id: 'eq', label: '=', aria: 'Sama dengan', insert: '=', tone: 'math' },
-  { id: 'lt', label: '<', aria: 'Kurang daripada', insert: '<', tone: 'math' },
-  { id: 'gt', label: '>', aria: 'Lebih daripada', insert: '>', tone: 'math' },
-  { id: 'le', label: '≤', aria: 'Kurang daripada atau sama dengan', insert: '≤', tone: 'math' },
-  { id: 'ge', label: '≥', aria: 'Lebih daripada atau sama dengan', insert: '≥', tone: 'math' },
-  { id: 'percent', label: '%', aria: 'Peratus', insert: '%', tone: 'math' },
-  { id: 'comma', label: ',', aria: 'Koma', insert: ', ', tone: 'math' },
-]
+import {
+  FUNCTION_ROWS,
+  type KeyPress,
+  type KeyTone,
+  type MathKey,
+  NUMBER_ROWS,
+  SHARED_KEYS,
+  SYMBOL_ROWS,
+} from '../lib/math-keys'
+import RichText from './RichText.vue'
+
+export type { KeyPress }
 
 defineProps<{ label: string }>()
 const emit = defineEmits<{ press: [KeyPress]; close: [] }>()
 
-function press(k: Key): void {
-  emit('press', k.action ? { action: k.action } : { insert: k.insert, cursor: k.cursor })
+const symbols = ref(false)
+/** The fraction key shows an empty stacked fraction (KaTeX), like the box-over-box key on a Casio. */
+const FRAC_GLYPH = '\\tfrac{\\square}{\\square}'
+
+type ButtonColor = 'primary' | 'neutral' | 'warning'
+type ButtonVariant = 'soft' | 'solid' | 'subtle'
+type Tone = KeyTone | 'layer'
+/** Tone of a key: function and symbol keys are primary-tinted, operators solid, DEL / AC warning. */
+const TONE: Record<Tone, { color: ButtonColor; variant: ButtonVariant }> = {
+  fn: { color: 'primary', variant: 'soft' },
+  sci: { color: 'primary', variant: 'soft' },
+  sym: { color: 'primary', variant: 'soft' },
+  num: { color: 'neutral', variant: 'subtle' },
+  op: { color: 'primary', variant: 'solid' },
+  del: { color: 'warning', variant: 'soft' },
+  nav: { color: 'neutral', variant: 'soft' },
+  layer: { color: 'neutral', variant: 'subtle' },
+}
+
+interface KeyView {
+  id: string
+  label: string
+  aria: string
+  tone: Tone
+  key?: MathKey
+}
+
+/** The layer key sits at the end of the shared row; its label names the layer it switches to. */
+const layerKey = computed<KeyView>(() => ({
+  id: 'layer',
+  label: symbols.value ? 'Fungsi' : 'Simbol',
+  aria: symbols.value ? 'Papar kekunci fungsi' : 'Papar kekunci simbol',
+  tone: 'layer',
+}))
+
+const view = (k: MathKey): KeyView => ({
+  id: k.id,
+  label: k.label,
+  aria: k.aria,
+  tone: k.tone,
+  key: k,
+})
+
+/** Two groups of 5-column rows: the function area, then the number block. */
+const groups = computed<KeyView[][][]>(() => [
+  [
+    ...(symbols.value ? SYMBOL_ROWS : FUNCTION_ROWS).map((r) => r.map(view)),
+    [...SHARED_KEYS.map(view), layerKey.value],
+  ],
+  NUMBER_ROWS.map((r) => r.map(view)),
+])
+
+function press(k: KeyView): void {
+  if (!k.key) {
+    symbols.value = !symbols.value
+    return
+  }
+  emit(
+    'press',
+    k.key.action ? { action: k.key.action } : { insert: k.key.insert, cursor: k.key.cursor },
+  )
 }
 </script>
 
 <template>
-  <div
-    class="grid grid-cols-7 gap-1 rounded-card bg-muted p-2"
+  <DsStack
+    gap="2xs"
+    class="mx-auto w-full max-w-md"
     role="group"
     :aria-label="label"
     data-testid="math-keyboard"
     @keydown.esc.stop="emit('close')"
   >
-    <UButton
-      v-for="k in KEYS"
-      :key="k.id"
-      type="button"
-      :color="k.tone === 'math' ? 'primary' : 'neutral'"
-      variant="soft"
-      class="min-h-11 justify-center rounded-xl text-body font-semibold"
-      :aria-label="k.aria"
-      :data-key="k.id"
-      @mousedown.prevent
-      @click="press(k)"
-      >{{ k.label }}</UButton
+    <span class="sr-only" aria-live="polite" data-testid="math-layer-status">{{
+      symbols ? 'Lapisan simbol' : 'Lapisan fungsi'
+    }}</span>
+    <DsStack
+      v-for="(rows, g) in groups"
+      :key="g"
+      gap="2xs"
+      :data-testid="
+        g === 1 ? 'math-area-number' : symbols ? 'math-area-simbol' : 'math-area-fungsi'
+      "
     >
-  </div>
+      <DsGrid v-for="(row, r) in rows" :key="`${symbols}-${r}`" :cols="5" gap="2xs">
+        <UButton
+          v-for="k in row"
+          :key="k.id"
+          type="button"
+          block
+          :color="TONE[k.tone].color"
+          :variant="TONE[k.tone].variant"
+          :class="
+            k.tone === 'num' || k.tone === 'op'
+              ? 'min-h-11 sm:min-h-12 learner:min-h-11 sm:learner:min-h-12'
+              : 'min-h-11 learner:min-h-11'
+          "
+          class="px-0 learner:px-0"
+          :aria-label="k.aria"
+          :data-key="k.id"
+          :data-testid="k.id === 'layer' ? 'math-layer' : undefined"
+          @mousedown.prevent
+          @click="press(k)"
+        >
+          <RichText v-if="k.id === 'frac'" :text="FRAC_GLYPH" math-only />
+          <template v-else>{{ k.label }}</template>
+        </UButton>
+      </DsGrid>
+    </DsStack>
+  </DsStack>
 </template>

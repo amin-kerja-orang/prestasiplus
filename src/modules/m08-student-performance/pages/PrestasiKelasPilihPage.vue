@@ -6,6 +6,7 @@
  */
 import { computed } from 'vue'
 
+import { isHttpMode } from '@/api'
 import { DsEmptyState, DsLoadError, DsPage, DsPageHeader } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
@@ -20,10 +21,13 @@ const active = computed(() => (data.value ?? []).filter((c) => c.isActive))
 /**
  * Only the teacher and the admin own / create classes (M10 `/guru/kelas/cipta` is theirs). Any other role
  * (pelajar, school admin) sees the same empty state without the "create a class" copy and button, which
- * would lead to a screen it cannot open (D5 of the 23 Oct sweep, D9).
+ * would lead to a screen it cannot open (D5 of the 23 Oct sweep, D9). In http mode `/guru/kelas/cipta` is teacher-only
+ * (M10 DV-M10-37: the real API refuses the admin), so the admin gets no button there either.
  */
 const session = useSessionStore()
-const canCreateClass = computed(() => session.role === 'teacher' || session.role === 'admin')
+const canCreateClass = computed(
+  () => session.role === 'teacher' || (session.role === 'admin' && !isHttpMode()),
+)
 </script>
 
 <template>
