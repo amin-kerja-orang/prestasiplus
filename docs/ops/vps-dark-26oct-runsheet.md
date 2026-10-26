@@ -434,8 +434,10 @@ deploy/vps/backup/backup.sh --tag daily
 Check it yourself:
 
 ```
-pg_restore -l "$(ls -t /var/backups/pretasiplus/pp-backup-*.dump | head -1)" | grep -c staging_cloud
+$PC exec -T db pg_restore --list < "$(ls -t /var/backups/pretasiplus/pp-backup-*.dump | head -1)" | grep -c staging_cloud
 ```
+
+(The host has no PostgreSQL client tools; `pg_restore` runs inside the `db` container, as `backup.sh` does.)
 
 **Green** — `0`. **Red** — anything above `0`: raw `.cloud` data would be leaving in a routine dump. Stop and tell the LEAD.
 
@@ -469,11 +471,13 @@ sudo install -m 644 deploy/vps/systemd/pretasiplus.tmpfiles.conf /etc/tmpfiles.d
 sudo install -m 644 deploy/vps/logrotate/pretasiplus /etc/logrotate.d/
 sudo systemd-tmpfiles --create
 sudo systemctl daemon-reload
-sudo systemctl enable --now pp-backup.timer pp-restore-drill.timer pp-cert-renew.timer pp-health-probe.timer
+sudo systemctl enable --now pp-backup.timer pp-cert-renew.timer pp-health-probe.timer
+# pp-restore-drill.timer (1st of the month, 03:30) would fire on 1 Nov 03:30, inside the cutover window, and it stops the
+# api: enable it only after the 1 Nov switch:  sudo systemctl enable --now pp-restore-drill.timer
 systemctl list-timers 'pp-*'
 ```
 
-**Green** — four timers listed with a next run. After this, `deploy/vps/deploy.sh --dry-run` no longer warns about `PP_OFFSITE_KIND` once `prod.env` says `s3`. **Red** — a timer that fails to enable, or `off-site copies are enabled but PP_BACKUP_GPG_RECIPIENT is empty` from the next dry run.
+**Green** — three timers listed with a next run (four once `pp-restore-drill.timer` is enabled after 1 Nov). After this, `deploy/vps/deploy.sh --dry-run` no longer warns about `PP_OFFSITE_KIND` once `prod.env` says `s3`. **Red** — a timer that fails to enable, or `off-site copies are enabled but PP_BACKUP_GPG_RECIPIENT is empty` from the next dry run.
 
 Evidence: timers ____ , off-site first copy ____
 
@@ -530,6 +534,15 @@ open items for 27 Oct      : ____
 ```
 
 ---
+
+## Notes for the UAT-mode plan of 26 Oct evening (A3 pack)
+
+The LEAD's plan of 26 Oct evening runs the whole v2 system on this VPS in UAT mode from tonight, with fixes redeployed until the 31 Oct cutover. The A3 pack (`a3-*.sh`, kept outside the repo because it names no host and is copied to the server by the LEAD) automates this sheet. Four points it handles that this sheet does not:
+
+1. **Two release trees.** The release pins a backend commit (`feature/v2-backend`) and a frontend commit (`be/integration-frontend`). `deploy.sh` builds all three images from one checkout, so it would ship the backend tree's SPA. The pack builds the frontend image from a second worktree at the frontend pin (same build arguments as `compose.prod.yaml`), re-tags it with the release tag and recreates `frontend`. **After any plain `deploy.sh` run this has to be repeated**, or the backend-tree SPA is served.
+2. **The "clean" restore point.** `restore-point.sh` accepts only `pre_etl`, `pre_delta`, `post_switch` and `post_drop`. Until the LEAD decides otherwise, the clean point the cutover restores before the final migration is `pre_etl` (with `pre_delta`, the same state), taken after the smoke accounts exist and before any `.cloud` data, verified with `--expect-migrations repo`. A schema migration deployed later makes it stale: take it again.
+3. **Roster hashes in `etl.env`** are written single-quoted (production-migration-slot.md, `etl` notes).
+4. **`pp-restore-drill.timer`** stays disabled until after the 1 Nov switch (step 10c).
 
 ## If something goes wrong
 
