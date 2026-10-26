@@ -32,7 +32,12 @@ const bulkOpen = computed({
 </script>
 
 <template>
-  <DsDialog v-model:open="singleOpen" title="Padam Pengguna?" data-testid="users-delete-modal">
+  <DsDialog
+    v-model:open="singleOpen"
+    title="Padam Pengguna?"
+    class="max-md:sm:max-w-none"
+    data-testid="users-delete-modal"
+  >
     <p v-if="single" class="text-body text-default">
       Anda pasti mahu memadam pengguna ini?
       <strong class="text-highlighted" data-testid="users-delete-name">{{ single.name }}</strong>
@@ -58,7 +63,12 @@ const bulkOpen = computed({
     </template>
   </DsDialog>
 
-  <DsDialog v-model:open="bulkOpen" title="Padam Pengguna Terpilih?" data-testid="users-bulk-modal">
+  <DsDialog
+    v-model:open="bulkOpen"
+    title="Padam Pengguna Terpilih?"
+    class="max-md:sm:max-w-none"
+    data-testid="users-bulk-modal"
+  >
     <div class="flex flex-col gap-1">
       <p class="text-body text-default">
         Anda pasti mahu memadam

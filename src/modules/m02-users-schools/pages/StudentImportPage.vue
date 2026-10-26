@@ -15,7 +15,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useFlash } from '@/composables'
-import { DsFormBar, DsFormSection, DsIconChip, DsPage, DsPanel } from '@/ds'
+import { DsFormBar, DsIconChip, DsPage, DsPanel } from '@/ds'
 
 import {
   fetchSchoolQuota,
@@ -29,6 +29,7 @@ import AdminSchoolPicker from '../components/AdminSchoolPicker.vue'
 import ExistingStudentsPanel from '../components/ExistingStudentsPanel.vue'
 import ImportSourceFields from '../components/ImportSourceFields.vue'
 import QuotaPanel from '../components/QuotaPanel.vue'
+import ResponsiveFormSection from '../components/ResponsiveFormSection.vue'
 import {
   classLevelInGroups,
   DELIMA_PASTE_PLACEHOLDER,
@@ -166,14 +167,13 @@ async function submit(): Promise<void> {
           </UAlert>
         </div>
 
-        <DsFormSection
+        <ResponsiveFormSection
           title="Sekolah"
           description="Pilih sekolah dan semak kuota pelajar."
           icon="buildings"
           accent="win"
-          :columns="2"
         >
-          <div class="flex flex-col gap-4 sm:col-span-2">
+          <div class="flex flex-col gap-4 md:col-span-2">
             <AdminSchoolPicker v-model="school" required />
             <QuotaPanel v-if="school" :loading="quotaLoading" :quota="quota" />
             <ExistingStudentsPanel
@@ -184,16 +184,15 @@ async function submit(): Promise<void> {
               :used="quota.used ?? 0"
             />
           </div>
-        </DsFormSection>
+        </ResponsiveFormSection>
 
-        <DsFormSection
+        <ResponsiveFormSection
           title="Darjah / Tingkatan"
           description="Pilih tahap pelajar yang diimport."
           icon="graduation-cap"
           accent="heat"
-          :columns="2"
         >
-          <div class="flex min-w-0 flex-col gap-4 sm:col-span-2" data-testid="student-classes">
+          <div class="flex min-w-0 flex-col gap-4 md:col-span-2" data-testid="student-classes">
             <p class="sr-only">Darjah / Tingkatan <span class="text-error">*</span></p>
             <div
               v-if="groups.includes('primary')"
@@ -250,16 +249,15 @@ async function submit(): Promise<void> {
               />
             </div>
           </div>
-        </DsFormSection>
+        </ResponsiveFormSection>
 
-        <DsFormSection
+        <ResponsiveFormSection
           title="Data Pelajar"
           description="Muat naik CSV atau tampal data DELIMa."
           icon="file-arrow-up"
           accent="friend"
-          :columns="2"
         >
-          <div class="sm:col-span-2">
+          <div class="md:col-span-2">
             <ImportSourceFields
               v-model:mode="mode"
               v-model:paste="paste"
@@ -295,7 +293,7 @@ async function submit(): Promise<void> {
               </template>
             </ImportSourceFields>
           </div>
-        </DsFormSection>
+        </ResponsiveFormSection>
 
         <DsFormBar
           :show-cancel="false"

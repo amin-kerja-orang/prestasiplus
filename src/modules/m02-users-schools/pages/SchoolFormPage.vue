@@ -16,15 +16,7 @@ import { useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash, usePageMeta } from '@/composables'
-import {
-  DsFormBar,
-  DsFormField,
-  DsFormSection,
-  DsLoadError,
-  DsNativeSelect,
-  DsPage,
-  DsPanel,
-} from '@/ds'
+import { DsFormBar, DsFormField, DsLoadError, DsNativeSelect, DsPage, DsPanel } from '@/ds'
 
 import {
   createSchool,
@@ -34,6 +26,7 @@ import {
   type SchoolType,
 } from '../api/schools-admin'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
+import ResponsiveFormSection from '../components/ResponsiveFormSection.vue'
 import { errorLines, fieldErrors } from '../lib/school-errors'
 import { SCHOOLS_LIST_PATH, SCHOOL_STATE_OPTIONS, SCHOOL_TYPE_OPTIONS } from '../lib/school-options'
 
@@ -184,13 +177,12 @@ async function submit(): Promise<void> {
         </template>
       </UAlert>
 
-      <DsFormSection
+      <ResponsiveFormSection
         title="Maklumat Sekolah"
         description="Nama, kod KPM dan jenis sekolah."
         icon="buildings"
-        :columns="2"
       >
-        <div class="sm:col-span-2">
+        <div class="md:col-span-2">
           <DsFormField
             native
             for="school-name"
@@ -247,13 +239,12 @@ async function submit(): Promise<void> {
             </option>
           </DsNativeSelect>
         </DsFormField>
-      </DsFormSection>
+      </ResponsiveFormSection>
 
-      <DsFormSection
+      <ResponsiveFormSection
         title="Lokasi dan Status"
         description="Negeri, daerah, bandar dan status sekolah."
         icon="map-pin"
-        :columns="2"
       >
         <DsFormField native for="school-state" label="Negeri" required :error="fieldMessages.state">
           <DsNativeSelect
@@ -305,7 +296,7 @@ async function submit(): Promise<void> {
             testid="school-active"
           />
         </div>
-      </DsFormSection>
+      </ResponsiveFormSection>
 
       <DsFormBar
         :cancel-to="SCHOOLS_LIST_PATH"

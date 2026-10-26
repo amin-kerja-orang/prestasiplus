@@ -106,11 +106,11 @@ function clear(): void {
       </DsPanel>
 
       <template v-else>
-        <div class="flex flex-col gap-2 sm:flex-row">
+        <div class="flex flex-col gap-2 md:flex-row">
           <DsNativeSelect
             v-model="state"
             aria-label="Negeri"
-            class="sm:w-48 sm:shrink-0"
+            class="md:w-48 md:shrink-0"
             data-testid="admin-school-state"
             @change="onState"
           >

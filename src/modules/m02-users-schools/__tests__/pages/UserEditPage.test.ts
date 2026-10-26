@@ -13,6 +13,7 @@ import type { AdminUserDetail, StudentSearchItem } from '../../api/users'
 import UserEditPage from '../../pages/UserEditPage.vue'
 import { expectListInFlow } from './in-flow'
 import { expectFinderWidthContract } from './parent-finder-width'
+import { expectOneColumnBelowMd } from './form-columns'
 
 const users = vi.hoisted(() => ({
   fetchAdminUser: vi.fn(),
@@ -538,5 +539,12 @@ describe('UserEditPage (M02 S3) errors and loading', () => {
       .trigger('click')
     await flushPromises()
     expect(w.find('[data-testid=user-form]').exists()).toBe(true)
+  })
+})
+
+describe('UserEditPage (M02 S3) one column below 768px (BUG-06, DV-M02-31)', () => {
+  it('keeps the two-column grid for md and up only', async () => {
+    const w = await render()
+    expectOneColumnBelowMd(w)
   })
 })

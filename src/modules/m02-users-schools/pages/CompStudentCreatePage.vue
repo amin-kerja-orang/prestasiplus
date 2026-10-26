@@ -16,7 +16,8 @@ import { useRouter } from 'vue-router'
 
 import { isHttpMode } from '@/api/mode'
 import { useApi, useFlash } from '@/composables'
-import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
+import { DsFormBar, DsFormField, DsNativeSelect, DsPage } from '@/ds'
+import ResponsiveFormSection from '../components/ResponsiveFormSection.vue'
 
 import {
   fetchTeacherClassrooms,
@@ -137,11 +138,10 @@ async function submit(): Promise<void> {
         </UAlert>
       </div>
 
-      <DsFormSection
+      <ResponsiveFormSection
         title="Kelas"
         description="Pilih guru, kelasnya dan tarikh tamat pakej."
         icon="chalkboard-teacher"
-        :columns="2"
       >
         <DsFormField native for="comp-teacher" label="Guru">
           <DsNativeSelect id="comp-teacher" v-model="teacherId" data-testid="comp-teacher">
@@ -186,15 +186,14 @@ async function submit(): Promise<void> {
             data-testid="comp-expiry"
           />
         </DsFormField>
-      </DsFormSection>
+      </ResponsiveFormSection>
 
-      <DsFormSection
+      <ResponsiveFormSection
         title="Senarai Pelajar"
         description="Satu pelajar setiap baris."
         icon="student"
-        :columns="2"
       >
-        <div class="sm:col-span-2">
+        <div class="md:col-span-2">
           <DsFormField native for="comp-students" label="Senarai pelajar">
             <p class="text-label text-muted" data-testid="comp-help">
               Satu pelajar setiap baris, format:
@@ -214,7 +213,7 @@ async function submit(): Promise<void> {
             />
           </DsFormField>
         </div>
-      </DsFormSection>
+      </ResponsiveFormSection>
 
       <DsFormBar
         :cancel-to="COMP_LIST_PATH"

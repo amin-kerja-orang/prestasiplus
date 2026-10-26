@@ -14,7 +14,7 @@ export function expectFinderWidthContract(w: VueWrapper, linkerTestId: string): 
   // The grid item of the form section that holds the finder.
   const gridItem = root.element.parentElement
   expect(gridItem?.classList.contains('min-w-0')).toBe(true)
-  expect(gridItem?.classList.contains('sm:col-span-2')).toBe(true)
+  expect(gridItem?.classList.contains('md:col-span-2')).toBe(true)
 
   const list = w.get('[data-testid=linker-dropdown]')
   expect(list.classes()).toContain('min-w-0')

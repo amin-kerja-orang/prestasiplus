@@ -8,6 +8,7 @@ import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
 import CompStudentCreatePage from '../../pages/CompStudentCreatePage.vue'
+import { expectOneColumnBelowMd } from './form-columns'
 
 const api = vi.hoisted(() => ({
   fetchTeachers: vi.fn(),
@@ -191,5 +192,12 @@ describe('CompStudentCreatePage (M02 S7) submit', () => {
       'PELAJAR DEMO SATU BIN DEMO, 090101101234',
     )
     expect(useFlashStore().pending).toBeNull()
+  })
+})
+
+describe('CompStudentCreatePage (M02 S7) one column below 768px (BUG-06, DV-M02-31)', () => {
+  it('keeps the two-column grid for md and up only', async () => {
+    const w = await render()
+    expectOneColumnBelowMd(w)
   })
 })
