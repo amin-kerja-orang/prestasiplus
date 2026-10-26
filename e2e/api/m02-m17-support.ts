@@ -277,11 +277,9 @@ export async function gotoExpectUrl(page: Page, path: string, pattern: RegExp): 
     await expect(page).toHaveURL(pattern, { timeout: 30_000 })
   }).toPass({ timeout: 120_000 })
   if (attempts > 1) {
-    test
-      .info()
-      .annotations.push({
-        type: 'goto-expect-url-retried',
-        description: `${path}: ${String(attempts)} attempts`,
-      })
+    test.info().annotations.push({
+      type: 'goto-expect-url-retried',
+      description: `${path}: ${String(attempts)} attempts`,
+    })
   }
 }
