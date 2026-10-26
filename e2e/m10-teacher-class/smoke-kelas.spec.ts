@@ -23,6 +23,8 @@ import {
 
 const GURU = 'guru@demo.test'
 const ADMIN = 'admin@demo.test'
+/** The admin landing `/admin` (D48); the prototype scope redirects it on to the Command Center. */
+const ADMIN_LANDING = /\/admin(\/command-center)?$/
 /** Mock teacher with no class (id 5301): the observed empty state of S4/S5 (DV-M10-48: the admin no longer reaches them). */
 const GURU_NO_CLASS = 'guru2@demo.test'
 const PELAJAR = 'pelajar@demo.test'
@@ -165,8 +167,11 @@ test.describe('M10 S5 Cipta Kelas', MODULE, () => {
     await expect(options).toHaveCount(32)
     await expect(options.nth(0)).toHaveText('-- Pilih Subjek --')
     await expect(options.nth(1)).toHaveText('Bahasa Melayu')
-    await expect(page.getByTestId('kelas-level')).toHaveCount(11)
-    await expect(page.locator('[data-testid="kelas-level"] input[required]')).toHaveCount(0)
+    await expect(page.getByTestId('kelas-levels').getByRole('radio')).toHaveCount(11)
+    await expect(page.getByTestId('kelas-levels')).toHaveAttribute('aria-required', 'false')
+    await expect(
+      page.locator('[data-testid="kelas-levels"] [role="radio"][aria-required="true"]'),
+    ).toHaveCount(0)
     await expect(page.getByTestId('kelas-description')).toHaveAttribute(
       'placeholder',
       'Penerangan ringkas tentang kelas ini...',
@@ -207,7 +212,7 @@ test.describe('M10 S5 Cipta Kelas', MODULE, () => {
 
     const smk = await pickSchool(page, 'SEKOLAH MENENGAH', /^SEKOLAH MENENGAH /)
     await expect(page.getByTestId('school-selected-name')).toHaveText(smk)
-    await expect(page.getByTestId('kelas-level')).toHaveText([
+    await expect(page.getByTestId('kelas-levels').locator('[data-slot="label"]')).toHaveText([
       'Ting. 1',
       'Ting. 2',
       'Ting. 3',
@@ -215,11 +220,13 @@ test.describe('M10 S5 Cipta Kelas', MODULE, () => {
       'Ting. 5',
     ])
     await page.getByTestId('school-clear').click()
-    await expect(page.getByTestId('kelas-level')).toHaveCount(11)
+    await expect(page.getByTestId('kelas-levels').getByRole('radio')).toHaveCount(11)
 
     await pickSchool(page, 'SEKOLAH KEBANGSAAN', /^SEKOLAH KEBANGSAAN /)
-    await expect(page.getByTestId('kelas-level')).toHaveCount(6)
-    await expect(page.getByTestId('kelas-level').first()).toHaveText('Tahun 1')
+    await expect(page.getByTestId('kelas-levels').getByRole('radio')).toHaveCount(6)
+    await expect(
+      page.getByTestId('kelas-levels').locator('[data-slot="label"]').first(),
+    ).toHaveText('Tahun 1')
   })
 
   test('SRS §12 #23 empty name: native validity message, no request @m10', async ({
@@ -284,8 +291,10 @@ test.describe('M10 S35 and role access', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/guru/kelas')
     await expect(page).not.toHaveURL(/\/guru\//)
+    await expect(page).toHaveURL(ADMIN_LANDING)
     await gotoApp('/guru/kelas/cipta')
     await expect(page).not.toHaveURL(/\/guru\//)
+    await expect(page).toHaveURL(ADMIN_LANDING)
   })
 
   test(

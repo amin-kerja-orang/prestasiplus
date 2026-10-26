@@ -22,6 +22,8 @@ import {
 
 const GURU = 'guru@demo.test'
 const ADMIN = 'admin@demo.test'
+/** The admin landing `/admin` (D48); the prototype scope redirects it on to the Command Center. */
+const ADMIN_LANDING = /\/admin(\/command-center)?$/
 /** Mock teacher with no class and no profile school (id 5301): the observed empty state of S6 (DV-M10-48: the admin no longer reaches it). */
 const GURU_NO_CLASS = 'guru2@demo.test'
 const PELAJAR = 'pelajar@demo.test'
@@ -43,7 +45,7 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
     await gotoApp('/guru/pelajar')
     await expectTabTitle(page, 'Pelajar Saya - PRESTASIPLUS')
     await expectHeader(page)
-    await expect(page.getByTestId('pelajar-count')).toHaveText('0')
+    await expect(page.getByTestId('pelajar-value')).toHaveText('0')
     await expect(page.getByText('Pelajar dalam kelas saya')).toBeVisible()
     const link = page.getByTestId('pelajar-create')
     await expect(link).toHaveAttribute('href', '/guru/pelajar/cipta')
@@ -53,7 +55,7 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
       .toBe(isMobileWidth(page) ? 'Cipta' : 'Cipta Pelajar')
     await expect(page.locator('[data-testid="pelajar-tabs"] button')).toHaveText([
       'Pelajar Sekolah',
-      'Pelajar Saya 0',
+      'Pelajar Saya (0)',
     ])
     const empty = page.getByTestId('pelajar-empty')
     await expect(empty).toContainText('Belum ada pelajar dalam kelas anda')
@@ -75,7 +77,7 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
     await gotoApp('/guru/pelajar')
     await page.getByTestId('pelajar-create').click()
     await expect(page).toHaveURL(/\/guru\/pelajar$/)
-    await expect(page.getByTestId('pelajar-count')).toHaveText('0')
+    await expect(page.getByTestId('pelajar-value')).toHaveText('0')
     await expect(page.getByTestId('flash-outlet')).toHaveCount(0)
     await gotoApp('/guru/pelajar/cipta')
     await expect(page).toHaveURL(/\/guru\/pelajar$/)
@@ -176,6 +178,7 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/guru/pelajar')
     await expect(page).not.toHaveURL(/\/guru\//)
+    await expect(page).toHaveURL(ADMIN_LANDING)
   })
 
   test(
