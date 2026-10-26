@@ -77,19 +77,28 @@ async function submit(): Promise<void> {
 
         <div class="flex min-w-0 flex-1 flex-col gap-2">
           <div class="flex flex-wrap items-center gap-2">
+            <!-- The default slot replaces the icon-only 36px base of the button variant (Nuxt UI never
+                 renders `label` there) with a labelled 44px button; the file input stays the same. -->
             <UFileUpload
+              v-slot="{ open }"
               v-model="file"
               variant="button"
               :preview="false"
-              label="Pilih Gambar"
-              icon="i-ph-upload-simple"
               accept="image/jpeg,image/png,image/webp"
               name="profile_picture"
-              color="primary"
-              size="lg"
               class="w-auto"
               data-testid="picture-input"
-            />
+            >
+              <UButton
+                type="button"
+                color="primary"
+                size="lg"
+                icon="i-ph-upload-simple"
+                label="Pilih Gambar"
+                data-testid="picture-choose"
+                @click="open()"
+              />
+            </UFileUpload>
             <UButton
               v-if="file"
               type="submit"
