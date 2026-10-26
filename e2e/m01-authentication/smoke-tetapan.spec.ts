@@ -57,8 +57,11 @@ test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, (
     }
     await expect(page.getByTestId('tetapan-subuh_push_enabled-time')).toHaveValue('05:30')
     await expect(page.getByTestId('tetapan-ramadan_mode_enabled-time')).toHaveValue('04:30')
-    await expect(page.getByTestId('tetapan-faith')).toHaveValue('')
-    await expect(page.getByTestId('tetapan-faith').locator('option')).toHaveText([
+    // USelect is a button role=combobox showing the selected label; the options live in a popup
+    const faith = page.getByTestId('tetapan-faith')
+    await expect(faith).toHaveText('— Tidak nyatakan —')
+    await faith.click()
+    await expect(page.getByRole('option')).toHaveText([
       '— Tidak nyatakan —',
       'Islam',
       'Hindu',
@@ -66,6 +69,7 @@ test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, (
       'Kristian',
       'Tiada',
     ])
+    await page.keyboard.press('Escape')
 
     // Independent: ticking every box changes nothing else; times are always editable.
     await page.getByTestId('tetapan-spiritual_mode').check()
@@ -92,7 +96,11 @@ test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, (
     expect(check).not.toBeNull()
     expect(time).not.toBeNull()
     if (viewportWidth(page) < SM_MIN_WIDTH) {
-      expect((time?.y ?? 0) > (check?.y ?? 0) + (check?.height ?? 0)).toBe(true)
+      // restyle spec: "stacked < sm" (no fixed order): the two controls do not share a row
+      const vertical =
+        (time?.y ?? 0) >= (check?.y ?? 0) + (check?.height ?? 0) ||
+        (check?.y ?? 0) >= (time?.y ?? 0) + (time?.height ?? 0)
+      expect(vertical, 'time input and switch are stacked below sm').toBe(true)
     } else {
       expect(Math.abs((time?.y ?? 0) - (check?.y ?? 0))).toBeLessThan(30)
     }
@@ -108,7 +116,8 @@ test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, (
         await gotoApp('/tetapan')
         await page.getByTestId('tetapan-spiritual_mode').check()
         await page.getByTestId('tetapan-ramadan_mode_enabled-time').fill('04:45')
-        await page.getByTestId('tetapan-faith').selectOption('muslim')
+        await page.getByTestId('tetapan-faith').click()
+        await page.getByRole('option', { name: 'Islam', exact: true }).click()
         await page.getByTestId('tetapan-submit').click()
         await expect(page.getByTestId('tetapan-status')).toContainText('Tetapan berjaya disimpan.')
         await expect(page.getByTestId('tetapan-spiritual_mode')).toBeChecked()
@@ -117,7 +126,7 @@ test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, (
         await expect(page.getByTestId('tetapan-form')).toBeVisible()
         await expect(page.getByTestId('tetapan-spiritual_mode')).toBeChecked()
         await expect(page.getByTestId('tetapan-ramadan_mode_enabled-time')).toHaveValue('04:45')
-        await expect(page.getByTestId('tetapan-faith')).toHaveValue('muslim')
+        await expect(page.getByTestId('tetapan-faith')).toHaveText('Islam')
         await expectNoHorizontalScroll(page)
       },
     )

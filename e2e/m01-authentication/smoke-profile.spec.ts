@@ -5,18 +5,32 @@
  * INFERRED / UNVERIFIED in the SRS §8, so the tests that assert it are `@provisional`.
  */
 
+import type { Locator, Page } from '@playwright/test'
+
 import { expect, test, DEMO_PASSWORD } from '../fixtures/test'
 import {
+  expectContrast,
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
-  isDesktopShell,
   moduleTag,
   provisional,
   TAG,
 } from '../support'
 
 const STUDENT = 'pelajar@demo.test'
+
+/** `USelect` renders a `button role=combobox`: open it and pick the option by its role and name. */
+async function chooseOption(page: Page, trigger: Locator, name: string): Promise<void> {
+  await trigger.click()
+  await page.getByRole('option', { name, exact: true }).click()
+}
+
+/** The Tahap card (the 44px target) of a grade label such as "Darjah 4"; `URadioGroup` hides the radio input itself. */
+function gradeCard(page: Page, label: string): Locator {
+  return page.getByTestId('grade-grid').locator('label').filter({ hasText: label })
+}
+
 /** 1x1 transparent PNG. */
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
@@ -52,14 +66,21 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
         'Ahli sejak 6 Februari 2026',
       )
       await expect(page.getByTestId('profile-crown')).toBeVisible()
-      await expect(page.getByTestId('profile-avatar')).toHaveAttribute('alt', 'Avatar')
+      // No picture: the UAvatar initials fallback (the `img alt` exists only once a picture is saved).
+      const name = (await page.getByTestId('profile-name').innerText()).trim()
+      const initials = name
+        .split(' ')
+        .map((w) => w.charAt(0))
+        .join('')
+        .slice(0, 2)
+      await expect(page.getByTestId('profile-avatar')).toHaveText(initials, { ignoreCase: true })
       // FR-M01-38: one hero card, no other blocks (no statistics).
       await expect(page.getByTestId('profile-page').locator('> *')).toHaveCount(1)
       await expectNoHorizontalScroll(page)
     })
   }
 
-  test('E2E-M01-26 S7 name is white with AA contrast for large text on the gradient (DV-14)', async ({
+  test('E2E-M01-26 S7 name has AA contrast against the card it sits on (DV-14)', async ({
     page,
     loginAs,
     gotoApp,
@@ -68,23 +89,8 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await gotoApp('/profile')
     const name = page.getByTestId('profile-name')
     await expect(name).toHaveText('Pelajar Demo')
-    const style = await name.evaluate((el) => {
-      const cs = getComputedStyle(el)
-      return { color: cs.color, size: cs.fontSize, weight: cs.fontWeight }
-    })
-    expect(style.color).toBe('rgb(255, 255, 255)')
-    expect(style.size).toBe('30px')
-    expect(Number(style.weight)).toBeGreaterThanOrEqual(700)
-    // White on #667EEA (the lighter gradient end) is 3.66:1, above the 3:1 large-text AA minimum.
-    const luminance = (r: number, g: number, b: number): number => {
-      const lin = (v: number): number => {
-        const s = v / 255
-        return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
-      }
-      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
-    }
-    const ratio = 1.05 / (luminance(0x66, 0x7e, 0xea) + 0.05)
-    expect(ratio).toBeGreaterThanOrEqual(3)
+    // v2 restyle (A1): a dark heading on a UCard, not white on a gradient; assert the real ratio.
+    await expectContrast(name, 4.5)
   })
 
   test('E2E-M01-26 S7 "Kemaskini Profil" goes to /profile/edit', async ({
@@ -171,7 +177,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
       await page.getByTestId('profile-name-input').fill('Pelajar Demo Ubah')
       await page.getByTestId('profile-phone-input').fill('0187654321')
       await page.getByTestId('profile-bio-input').fill('Motto saya')
-      await page.getByTestId('grade-9').click()
+      await gradeCard(page, 'Ting. 3').click()
       await page.getByTestId('profile-save').click()
       await expect(page.getByTestId('cmp-flash')).toContainText('Profil berjaya dikemaskini.')
       // Still "Baki: 500 aksara" with a non-empty saved bio.
@@ -181,7 +187,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
       await expect(page.getByTestId('profile-name-input')).toHaveValue('Pelajar Demo Ubah')
       await expect(page.getByTestId('profile-phone-input')).toHaveValue('0187654321')
       await expect(page.getByTestId('profile-bio-input')).toHaveValue('Motto saya')
-      await expect(page.getByTestId('grade-9')).toHaveAttribute('data-selected', 'true')
+      await expect(page.getByRole('radio', { name: 'Ting. 3' })).toBeChecked()
       await gotoApp('/profile')
       await expect(page.getByTestId('profile-name')).toHaveText('Pelajar Demo Ubah')
     },
@@ -195,33 +201,25 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await loginAs('admin@demo.test')
     await gotoApp('/profile/edit')
     const picker = page.getByTestId('grade-picker')
-    // Source text 'Sekolah Rendah' is rendered upper case by CSS.
-    await expect(page.getByTestId('grade-group')).toHaveText('SEKOLAH RENDAH', {
-      useInnerText: true,
-    })
-    await expect(picker.locator('input[type=radio]')).toHaveCount(6)
-    await expect(page.getByTestId('grade-4')).toHaveAttribute('data-selected', 'true')
-    await expect(page.getByTestId('grade-4')).toContainText('Darjah')
+    await expect(page.getByTestId('grade-group')).toHaveText('Sekolah Rendah')
+    await expect(picker.getByRole('radio')).toHaveCount(6)
+    await expect(page.getByRole('radio', { name: 'Darjah 4' })).toBeChecked()
     await expectNoHorizontalScroll(page)
-    // 44px touch targets even in the 6-column grid at 375px.
-    await expectTouchTarget(page.getByTestId('grade-1'))
+    // 44px touch targets even in the 6-column grid.
+    await expectTouchTarget(gradeCard(page, 'Darjah 1'))
 
-    await page.getByTestId('grade-2').click()
-    await expect(page.getByTestId('grade-2')).toHaveAttribute('data-selected', 'true')
-    await expect(page.getByTestId('grade-4')).toHaveAttribute('data-selected', 'false')
+    await gradeCard(page, 'Darjah 2').click()
+    await expect(page.getByRole('radio', { name: 'Darjah 2' })).toBeChecked()
+    await expect(page.getByRole('radio', { name: 'Darjah 4' })).not.toBeChecked()
   })
 
   test('E2E-M01-29 S8 Tahap for a student in Tingkatan', async ({ page, loginAs, gotoApp }) => {
     await loginAs(STUDENT)
     await gotoApp('/profile/edit')
     const picker = page.getByTestId('grade-picker')
-    await expect(page.getByTestId('grade-group')).toHaveText('SEKOLAH MENENGAH', {
-      useInnerText: true,
-    })
-    await expect(picker.locator('input[type=radio]')).toHaveCount(5)
-    await expect(page.getByTestId('grade-10')).toHaveAttribute('data-selected', 'true')
-    await expect(page.getByTestId('grade-10')).toContainText('Ting.')
-    await expect(page.getByTestId('grade-10')).toContainText('4')
+    await expect(page.getByTestId('grade-group')).toHaveText('Sekolah Menengah')
+    await expect(picker.getByRole('radio')).toHaveCount(5)
+    await expect(page.getByRole('radio', { name: 'Ting. 4' })).toBeChecked()
   })
 
   test('E2E-M01-30 S8 school: chip, clear, state-only load, pick', async ({
@@ -242,16 +240,20 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await page.getByTestId('school-clear').click()
     await expect(chip).toHaveCount(0)
     const state = page.getByTestId('profile-state')
-    await expect(state.locator('option')).toHaveCount(17)
-    await expect(state.locator('option').first()).toHaveText('Semua Negeri')
-    await expect(state.locator('option').nth(12)).toHaveText('Putrajaya')
+    await expect(state).toHaveText('Semua Negeri')
+    await state.click()
+    const options = page.getByRole('option')
+    await expect(options).toHaveCount(17)
+    await expect(options.first()).toHaveText('Semua Negeri')
+    await expect(options.nth(12)).toHaveText('Putrajaya')
+    await page.keyboard.press('Escape')
     await expect(page.getByTestId('profile-school-search')).toHaveAttribute(
       'placeholder',
       'Taip nama sekolah (min. 2 huruf)...',
     )
 
     // A state alone loads that state's schools (<= 20 rows), shown after focusing the input.
-    await state.selectOption('Perlis')
+    await chooseOption(page, state, 'Perlis')
     await page.getByTestId('profile-school-search').focus()
     const rows = page.getByTestId('school-option')
     await expect(rows.first()).toBeVisible()
@@ -259,7 +261,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await expect(rows.first()).toContainText('·')
     await expectNoHorizontalScroll(page)
 
-    const firstName = (await rows.first().locator('span.font-bold').innerText()).trim()
+    const firstName = (await rows.first().locator('span.text-highlighted').innerText()).trim()
     await rows.first().click()
     await expect(chip).toBeVisible()
     await expect(page.getByTestId('school-chip-name')).toHaveText(firstName)
@@ -306,11 +308,11 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs('pelajar2@demo.test')
       await gotoApp('/profile/edit')
-      await page.getByTestId('profile-state').selectOption('Perlis')
+      await chooseOption(page, page.getByTestId('profile-state'), 'Perlis')
       await page.getByTestId('profile-school-search').focus()
       const first = page.getByTestId('school-option').first()
       await expect(first).toBeVisible()
-      const name = (await first.locator('span.font-bold').innerText()).trim()
+      const name = (await first.locator('span.text-highlighted').innerText()).trim()
       await first.click()
       await page.getByTestId('profile-save').click()
       await expect(page.getByTestId('cmp-flash')).toBeVisible()
@@ -319,7 +321,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     },
   )
 
-  test('E2E-M01-27 S8 picture: accept list, hint, hover overlay, preview without a request', async ({
+  test('E2E-M01-27 S8 picture: accept list, hint, preview without a request', async ({
     page,
     loginAs,
     gotoApp,
@@ -331,16 +333,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await expect(page.getByText('JPG, PNG atau WEBP. Maks 2MB.')).toBeVisible()
     const input = page.getByTestId('picture-input')
     await expect(input).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp')
-    await expectTouchTarget(page.getByTestId('picture-choose'))
     await expect(page.getByTestId('picture-save')).toBeHidden()
-
-    if (isDesktopShell(page)) {
-      const overlay = page.getByTestId('picture-overlay')
-      await expect(overlay).toHaveCSS('opacity', '0')
-      await page.evaluate(() => window.scrollTo(0, 0))
-      await page.getByTestId('picture-overlay').hover({ force: true })
-      await expect(overlay).toHaveCSS('opacity', '1')
-    }
 
     await input.setInputFiles({ name: 'a.png', mimeType: 'image/png', buffer: PNG })
     await expect(page.getByTestId('picture-save')).toBeVisible()
@@ -350,6 +343,9 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     )
     expect(await mock.requests('POST /api/me/picture')).toHaveLength(0)
     await expectNoHorizontalScroll(page)
+    // UFileUpload (button variant) replaces the old choose button and the hover overlay
+    // (checked last so a too-small target does not hide the steps above)
+    await expectTouchTarget(page.getByTestId('picture-form').getByRole('button').first())
   })
 
   test(
@@ -468,7 +464,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
   }) => {
     await loginAs('pelajar2@demo.test')
     await gotoApp('/profile/edit')
-    await page.getByTestId('profile-state').selectOption('Selangor')
+    await chooseOption(page, page.getByTestId('profile-state'), 'Selangor')
     await page.getByTestId('profile-school-search').focus()
     await expect(page.getByTestId('school-option').first()).toBeVisible()
     await expectNoHorizontalScroll(page)
@@ -487,10 +483,10 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
       await expect(page.getByTestId('grade-grid')).toBeVisible()
       await expectNoHorizontalScroll(page)
       for (let n = 1; n <= 6; n++) {
-        const card = page.getByTestId(`grade-${String(n)}`)
+        const card = gradeCard(page, `Darjah ${String(n)}`)
         await expectTouchTarget(card)
         const clipped = await card.evaluate((el) =>
-          [...el.querySelectorAll('span')].some((s) => s.scrollWidth > s.clientWidth),
+          [el, ...el.querySelectorAll('*')].some((s) => s.scrollWidth > s.clientWidth),
         )
         expect(clipped, `grade ${String(n)} label clipped`).toBe(false)
       }

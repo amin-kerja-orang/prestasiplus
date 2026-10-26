@@ -160,15 +160,21 @@ test.describe('L45 S2 /ibu-bapa/terima/:token', { tag }, () => {
       await expect(page.getByTestId('invite-heading')).toContainText('Pelajar Dua Demo')
 
       await actAs(page, mock, gotoApp, ADMIN, '/admin/users?role=student')
-      await page.getByTestId('users-search').fill('pelajar2@demo.test')
-      await page.getByTestId('users-search-submit').click()
-      const row = page.getByTestId('user-row').filter({ hasText: 'pelajar2@demo.test' })
-      await expect(row).toHaveCount(1)
-      const toggle = row.getByTestId('user-toggle')
-      await expect(toggle).toHaveText('Aktif')
-      page.once('dialog', (dialog) => void dialog.accept())
-      await toggle.click()
-      await expect(toggle).toHaveText('Tidak')
+      // M02 users list (v2): DsFilterBar search (Enter applies it), row actions menu, DsConfirmHost dialog
+      const search = page.getByTestId('users-search')
+      await search.fill('pelajar2@demo.test')
+      await search.press('Enter')
+      const rowMenu = page.getByRole('button', { name: 'Tindakan lain untuk Pelajar Dua Demo' })
+      await expect(rowMenu).toHaveCount(1)
+      await rowMenu.click()
+      await page.getByRole('menuitem', { name: 'Nyahaktifkan' }).click()
+      await expect(page.locator('[data-ds=confirm-message]')).toHaveText(
+        'Pasti untuk menukar status pengguna ini?',
+      )
+      await page.locator('[data-ds=confirm-ok]').click()
+      await rowMenu.click()
+      await expect(page.getByRole('menuitem', { name: 'Aktifkan', exact: true })).toBeVisible()
+      await page.keyboard.press('Escape')
 
       await actAs(page, mock, gotoApp, null, `/ibu-bapa/terima/${TOKEN_3}`)
       await expectInvalidPage(page)
