@@ -32,7 +32,7 @@ const columns = computed<TableColumn<Row>[]>(() => [
     <DsDrillTable :data="data" :columns="columns" caption="Analisis item soalan">
       <template #textPlain-cell="{ row }">
         <div
-          class="min-w-48 break-words"
+          class="max-w-48 min-w-32 break-words whitespace-normal xl:max-w-72"
           data-testid="item-row"
           :data-question-id="row.original.questionId"
           :data-band="row.original.band"
