@@ -99,6 +99,7 @@ describe('isPathInScope', () => {
       '/permainan/betul-salah',
       '/papan-bijak/ABC123',
       '/topics/12',
+      '/remedial/12',
       '/marketplace/some-product',
       '/ibu-bapa/terima/tok',
     ]) {
@@ -127,6 +128,7 @@ describe('isPathInScope', () => {
       '/guru',
       '/guru/command-center/classroom/3',
       '/guru/remedial-progress',
+      '/remedial/12',
       '/guru/kelas/cipta',
       '/guru/kirkpatrick/reaction',
       '/guru/kirkpatrick/pelajar/5',

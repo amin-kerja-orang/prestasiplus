@@ -163,7 +163,14 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
 
 /** Guru: 15 module items (rows 1-11 and 41-44). */
 export const TEACHER_ITEMS: readonly MatrixItem[] = [
-  item(1, 'Command Center', p('/guru/command-center'), p('/guru/remedial-progress')),
+  item(
+    1,
+    'Command Center',
+    p('/guru/command-center'),
+    p('/guru/remedial-progress'),
+    // M05 Q4 read-only preview, opened from the Smart Remedial links (G5-M10 B4).
+    p('/remedial'),
+  ),
   item(2, 'Dashboard Guru', p('/guru', true)),
   item(3, 'Headcount', p('/headcount')),
   item(4, 'Prestasi', p('/prestasi')),
