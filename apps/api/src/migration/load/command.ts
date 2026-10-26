@@ -15,6 +15,8 @@ import { resolveGitSha } from './git-sha'
 import { NOT_MIGRATED, runCore } from './index'
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
+/** The flags `migrate:core` reads; any other flag is a usage error (exit 2), so a misspelt `--asof` never runs with today's date. */
+export const CORE_KNOWN_FLAGS: ReadonlySet<string> = new Set(['as-of', 'batch-size'])
 
 function flagValue(args: CommandArgs, name: string): string | undefined {
   const v = args.flags.get(name)
@@ -31,6 +33,8 @@ export const migrateCore: MigrateCommand = {
   name: 'migrate:core',
   summary: 'ETL of reference data, identity and classes from staging_cloud (dry-run by default)',
   async run(args: CommandArgs, ctx: CliContext): Promise<number> {
+    for (const name of args.flags.keys()) if (!CORE_KNOWN_FLAGS.has(name)) throw new ApplyGuardError(`unknown flag --${name}.`)
+    if (args.positional.length > 0) throw new ApplyGuardError('unexpected argument: this command takes flags only (--name=value).')
     const asOf = flagValue(args, 'as-of') ?? defaultAsOf()
     if (!DATE.test(asOf) || Number.isNaN(Date.parse(`${asOf}T00:00:00Z`))) throw new ApplyGuardError('--as-of must be YYYY-MM-DD.')
     const sizeText = flagValue(args, 'batch-size')
