@@ -62,6 +62,7 @@ const COIN_KINDS: readonly (readonly [type: string, source: string, sign: 1 | -1
 ]
 // Perlu pengesahan (OD-2 / OD-25): the real sets of `challenges.challenge_type` and `banners.type`. These are values the ETL maps accept.
 const CHALLENGE_TYPES = ['quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent'] as const
+const CHALLENGE_DIFFICULTIES = ['easy', 'medium', 'hard'] as const
 const BANNER_TYPES = ['hero', 'promo', 'announcement'] as const
 
 /**
@@ -440,7 +441,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
     plantEnum('coin_transactions.type', UNKNOWN_COIN_TYPE)
   }
   put('coin_transactions', coins)
-  put('challenges', Array.from({ length: 5 }, (_, i) => ({ id: i + 1, created_by: null, classroom_id: null, challenge_type: CHALLENGE_TYPES[i % CHALLENGE_TYPES.length], title: `Cabaran Contoh ${i + 1}`, target_value: 5 + i })))
+  put('challenges', Array.from({ length: 5 }, (_, i) => ({ id: i + 1, created_by: null, classroom_id: null, challenge_type: CHALLENGE_TYPES[i % CHALLENGE_TYPES.length], title: `Cabaran Contoh ${i + 1}`, target_value: 5 + i, reward_syiling: 5 + 5 * i, reward_xp: 2 + i, difficulty: CHALLENGE_DIFFICULTIES[i % CHALLENGE_DIFFICULTIES.length], is_active: i === 4 ? '0' : '1', sort_order: i + 1 })))
   const cu: Row[] = pupils.filter((_, i) => i % 2 === 0).map((id, i) => {
     const ms = BASE_MS + (i % 60) * DAY + 5 * 60 * MIN
     return { challenge_id: (i % 5) + 1, user_id: id, progress: i % 10, completed_at: iso(ms), claimed_on: utcDate(ms), created_at: iso(ms), updated_at: iso(ms) }
