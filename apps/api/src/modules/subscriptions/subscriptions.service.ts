@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { SchoolPackage, SubscriptionDetail, SubscriptionListItem, SubscriptionRenewalInvoice, SubscriptionStudent } from './subscriptions.types'
+import type { RenewalInvoiceStudent, SchoolPackage, SubscriptionDetail, SubscriptionListItem, SubscriptionRenewalInvoice, SubscriptionStudent } from './subscriptions.types'
 import {
   SubscriptionCreateRequestSchema,
   SUBSCRIPTION_DEFAULT_PER_PAGE,
@@ -152,12 +152,18 @@ export class SchoolSubscriptionsService {
     return { data, meta: listMeta(page, perPage, all.length) }
   }
 
-  async renewalInvoice(caller: Caller, id: string): Promise<SubscriptionRenewalInvoice> {
+  async renewalInvoice(caller: Caller, id: string): Promise<SubscriptionRenewalInvoice & { students: RenewalInvoiceStudent[] }> {
     const row = await this.repo.find(caller, id)
     if (!row) throw notFound()
     const { school, pkg } = await this.parts(row)
     const now = this.clock.now()
     const count = (await this.schools.memberCounts([row.schoolId])).get(row.schoolId)?.studentCount ?? 0
+    // M02 BUG-01 (FR-M02-97, BR-24): every student of the school, name order, numbered from 1, not paginated.
+    // No idDelima, IC or e-mail: minors' personal data (BE-25 privacy default; the LEAD may add idDelima, see the deviations log).
+    // `students` is not in SubscriptionRenewalInvoiceSchema yet (contract patch pending); this is the wire shape.
+    const students: RenewalInvoiceStudent[] = (await this.users.studentsOfSchool(row.schoolId, '', ''))
+      .sort(byNameThenId)
+      .map((s, i) => ({ no: i + 1, name: s.name, classLevel: classLevelOfGrade(s.grade) }))
     return {
       ref: `INV-${row.id}-${compactDay(now)}`,
       date: toMytTimestamp(now),
@@ -165,6 +171,7 @@ export class SchoolSubscriptionsService {
       packageName: pkg.name,
       currentPeriod: { start: dayTimestamp(row.startsOn), end: dayTimestamp(row.endsOn) },
       renewalPeriod: { start: dayTimestamp(row.endsOn), end: dayTimestamp(addMonthsDay(row.endsOn, RENEWAL_MONTHS)) },
+      students,
       studentCount: count,
       pricePerStudent: pkg.priceAnnual,
       // BR-30: the enrolled students, not the quota, in integer cents.
