@@ -18,7 +18,7 @@ describe('theme size variants keep the 44px touch floor', () => {
     expect(sizes(uiConfig.button).xl?.base).toMatch(/learner:min-h-/)
   })
 
-  it('every field component defines xl with min-h-11', () => {
+  it('every field component defines xl with min-h-11 and the learner min-h-13', () => {
     const fields = [
       'input',
       'textarea',
@@ -32,6 +32,7 @@ describe('theme size variants keep the 44px touch floor', () => {
     ] as const
     for (const name of fields) {
       expect(sizes(uiConfig[name]).xl?.base, `${name} xl`).toContain('min-h-11')
+      expect(sizes(uiConfig[name]).xl?.base, `${name} xl learner`).toContain('learner:min-h-13')
     }
   })
 })
