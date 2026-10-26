@@ -14,12 +14,20 @@
  *
  * The result is re-checked with the scanner's own functions; spans are replaced round after round until nothing is left
  * (replacing a span can lift a look-around guard of a neighbouring match), and if the text still would not scan clean
- * the whole cell becomes the token (fail closed). NULL, "" and values that are not text stay as they are.
+ * the whole cell becomes the token (fail closed).
+ *
+ * The scan also reads a NORMALISED view of every string (normalise.ts: tags and entities removed, NFKC, Arabic-Indic and
+ * other non-ASCII digits and zero-width characters folded, JSON escapes decoded; A1-LEAK F1). Spans are cut from the RAW text
+ * only (offsets of the view cannot be mapped back exactly), so PII that only the view shows (`<b>012</b>-345 6789`, a zero-width
+ * character inside a number, `&#64;`, full-width digits, a name split by a tag) is not cut: the check after the raw spans
+ * finds the cell still dirty and the whole cell becomes the token. The guarantee is: redacted output scans clean, raw and
+ * normalised. NULL, "" and values that are not text stay as they are.
  *
  * JSON (an object, or a text that parses to an object, array or string): every string leaf is redacted on its own,
  * keys, numbers, booleans and null are kept. A long integer that the scan would flag (it scans integers of 9 digits or
  * more) is the one number that cannot stay: it becomes the token as a string. A text cell whose JSON form was changed
- * is written back with JSON.stringify; one that needs no redaction is returned byte for byte.
+ * is written back with JSON.stringify; one that needs no redaction is returned byte for byte. Nesting deeper than MAX_JSON_DEPTH (100)
+ * is not walked: that part becomes the token (fail closed).
  *
  * Nothing here logs or returns a value: callers get per-kind counts only.
  */
@@ -34,6 +42,8 @@ export type RedactKind = PiiSpan['kind']
 export type RedactCounts = Partial<Record<RedactKind, number>>
 
 const MAX_ROUNDS = 8
+/** Deepest json nesting that `redact-pii` walks; what lies deeper is replaced by the token (fail closed), so no input can overflow the stack. */
+export const MAX_JSON_DEPTH = 100
 const KIND_ORDER: readonly RedactKind[] = ['email', 'phone', 'ic', 'original-value', 'original-name']
 
 const isObject = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v)
@@ -86,11 +96,15 @@ export class PiiRedactor {
       cur = out + cur.slice(at)
     }
     // Still flagged without a span to cut (or not settled after MAX_ROUNDS): fail closed, the whole cell goes.
-    count?.((this.index?.match(cur) as RedactKind | null) ?? 'original-value')
+    count?.((this.index?.match(cur) as RedactKind | null) ?? (patternKinds(cur, this.patterns)[0] as RedactKind | undefined) ?? 'original-value')
     return REDACTED_TOKEN
   }
 
-  private redactLeaf(value: unknown, count?: (kind: RedactKind) => void): unknown {
+  private redactLeaf(value: unknown, count?: (kind: RedactKind) => void, depth = 0): unknown {
+    if (depth > MAX_JSON_DEPTH && value !== null && typeof value === 'object') {
+      count?.('original-value')
+      return REDACTED_TOKEN
+    }
     if (typeof value === 'string') return value === '' ? '' : this.redactString(value, count)
     if (typeof value === 'number') {
       // the scan reads integers of 9+ digits as text; one that would be flagged cannot stay a number
@@ -99,8 +113,8 @@ export class PiiRedactor {
       count?.('original-value')
       return REDACTED_TOKEN
     }
-    if (Array.isArray(value)) return value.map((v) => this.redactLeaf(v, count))
-    if (isObject(value)) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, this.redactLeaf(v, count)]))
+    if (Array.isArray(value)) return value.map((v) => this.redactLeaf(v, count, depth + 1))
+    if (isObject(value)) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, this.redactLeaf(v, count, depth + 1)]))
     return value
   }
 
