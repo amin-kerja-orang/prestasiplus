@@ -561,14 +561,16 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
     provisional('INFERRED / PROPOSED: Pembetulan zeros, 7-day Engagement'),
     async ({ page, gotoApp }) => {
       await openBoard(page, gotoApp, SA)
-      for (const [id, text] of [
-        ['total', '0'],
-        ['avg', '+0.0%'],
-        ['rate', '0%'],
-      ] as const)
-        await expect(tid(page, `cc-correction-${id}`)).toContainText(text)
-      // "Engagement" is the DS 7-day chart (the per-day bars of v1 are now chart marks)
-      await expect(tid(page, 'cc-engagement-days')).toBeVisible()
+      await expect(tid(page, 'cc-correction-value')).toHaveText(['0', '+0.0%', '0%'])
+      await expect(tid(page, 'cc-day')).toHaveCount(7)
+      const labels = await tid(page, 'cc-day-label').allInnerTexts()
+      expect(labels).toHaveLength(7)
+      for (const l of labels) expect(l).toMatch(/^(Isn|Sel|Rab|Kha|Jum|Sab|Ahd)$/)
+      const heights = await tid(page, 'cc-day-bar').evaluateAll((els) =>
+        els.map((e) => parseFloat((e as HTMLElement).style.height)),
+      )
+      expect(Math.max(...heights)).toBeCloseTo(100, 1)
+      expect(Math.min(...heights)).toBeGreaterThanOrEqual(4)
       await expect(tid(page, 'cc-engagement-bands')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
       expect(await minFontSize(page)).toBeGreaterThanOrEqual(12)
