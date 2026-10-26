@@ -21,7 +21,7 @@
  *           the school name, no Top Sekolah panel, "sekolah anda" under the accuracy (FR-M17-106 b)
  *  - CC-09  the Pembetulan tiles keep their width and their numbers are not broken or clipped at each width
  *           (RS3-02, DV-M17-49)
- *  - CC-10  load time of the board on the PoC seed over http: the live data request answers in under 3 s and the tiles
+ *  - CC-10  load time of the board on the PoC seed over http: a direct probe of the live-data API answers in under 3 s and the tiles
  *           show numbers in under 5 s of the response; the measured milliseconds are attached as annotations
  *  - CC-11  Monitoring (`/admin/monitoring`) and Kirkpatrick (`/admin/kirkpatrick`) mounted in the Portal
  *           Pentadbiran load their data (UAT-ADM-04)
@@ -367,7 +367,7 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     })
     const tilesMs = Date.now() - answeredAt
     info.annotations.push(
-      { type: 'cc-live-data-ms', description: String(apiMs) },
+      { type: 'cc-live-data-direct-probe-ms', description: String(apiMs) },
       { type: 'cc-tiles-after-response-ms', description: String(tilesMs) },
     )
     // A shared CI runner is slower than a local stack: the bounds are three times wider under CI.
