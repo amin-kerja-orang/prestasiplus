@@ -197,7 +197,6 @@ const COLUMNS: TableColumn<SubRow>[] = [
       prefix="subs-stat"
       :items="stats"
       :loading="counts === null"
-      density="compact"
       :cols="4"
       aria-label="Ringkasan langganan"
     />

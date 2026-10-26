@@ -51,10 +51,13 @@ export const LEVEL_TILES = [
 
 export type LevelTile = (typeof LEVEL_TILES)[number]
 
-/** BR-M10-03: no school → 11 tiles; type `SK` → Tahun only; any other type → Ting. only. */
+/** A primary-school type: `SK`, `SJK(C)` and `SJK(T)` (DV-M10-38). */
+const PRIMARY_TYPE = /^(SK|SJK)(\b|$)/
+
+/** BR-M10-03: no school → 11 tiles; type `SK` / `SJK(C)` / `SJK(T)` → Tahun only; any other type → Ting. only. */
 export function tilesForSchoolType(type: string | null): readonly LevelTile[] {
   if (type === null) return LEVEL_TILES
-  const prefix = type === 'SK' ? 'tahun-' : 'tingkatan-'
+  const prefix = PRIMARY_TYPE.test(type) ? 'tahun-' : 'tingkatan-'
   return LEVEL_TILES.filter((t) => t.slug.startsWith(prefix))
 }
 

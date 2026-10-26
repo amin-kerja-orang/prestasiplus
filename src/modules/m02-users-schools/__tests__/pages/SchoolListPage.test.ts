@@ -106,6 +106,13 @@ describe('SchoolListPage (M02 S9)', () => {
     expect(add.attributes('href')).toBe('/admin/schools/create')
   })
 
+  it('never cuts a stat label (DV-M02-02): default-density tiles, no truncate class', async () => {
+    const w = await render()
+    const tiles = w.get('[data-ds="stat-row"]')
+    expect(tiles.findAll('[data-compact]')).toHaveLength(0)
+    expect(tiles.findAll('.truncate')).toHaveLength(0)
+  })
+
   it('renders the nine columns and one row per school', async () => {
     const w = await render()
     const headers = w.findAll('thead th').map((th) => th.text())

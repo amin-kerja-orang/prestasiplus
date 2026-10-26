@@ -350,7 +350,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                         data-testid="mon-student-name"
                         >{{ row.original.name }}</span
                       >
-                      <span class="truncate text-body text-muted">{{ row.original.email }}</span>
+                      <span class="text-body break-all text-muted">{{ row.original.email }}</span>
                       <UBadge
                         v-if="row.original.flag === 'review'"
                         color="warning"
@@ -416,7 +416,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                           <span v-else class="line-clamp-2 text-label text-muted">{{
                             (row as StudentRow).name
                           }}</span>
-                          <span class="truncate text-body text-muted">{{
+                          <span class="text-body break-all text-muted">{{
                             (row as StudentRow).email
                           }}</span>
                         </div>
@@ -496,7 +496,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                         data-testid="mon-teacher-link"
                         >{{ row.original.name }}</RouterLink
                       >
-                      <span class="truncate text-body text-muted">{{ row.original.email }}</span>
+                      <span class="text-body break-all text-muted">{{ row.original.email }}</span>
                     </div>
                   </template>
                   <template #status-cell="{ row }">
@@ -526,7 +526,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                             class="line-clamp-2 text-label text-primary-t"
                             >{{ (row as TeacherRow).name }}</RouterLink
                           >
-                          <span class="truncate text-body text-muted">{{
+                          <span class="text-body break-all text-muted">{{
                             (row as TeacherRow).email
                           }}</span>
                         </div>

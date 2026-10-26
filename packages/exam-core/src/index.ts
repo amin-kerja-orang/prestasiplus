@@ -3,7 +3,7 @@
  * no import from `src/**`. The server and the Bijak SPM UI mark with exactly this code.
  *
  * Anything else (math-expr helpers, ecfExpected, formatClock, ...) is reachable only through the
- * subpaths `@pp/exam-core/{grading,math-expr,blueprint,paper-model,types}`, which exist for the
+ * subpaths `@pp/exam-core/{grading,math-expr,blueprint,paper-model,choose-n,types}`, which exist for the
  * frontend re-export shims in `src/modules/m28-bijak-spm/domain/`. New server code uses this entry.
  */
 export { gradePart, isBlank } from './grading'
