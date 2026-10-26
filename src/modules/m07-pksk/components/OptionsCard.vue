@@ -78,7 +78,6 @@ function remove(uid: number): void {
             :name="`options[${String(idx)}][is_correct]`"
             value="1"
             :disabled="disabled"
-            :ui="{ root: 'min-h-11 items-center' }"
             data-testid="option-correct"
           />
           <UButton
