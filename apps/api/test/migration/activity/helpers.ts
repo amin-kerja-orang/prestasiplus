@@ -105,6 +105,8 @@ const PROBE_DDL = `
 export interface BootOptions {
   /** Run `migrate:core` (dry-run then apply) before the activity specs. Default true. */
   core?: boolean
+  /** Plants staging rows after the fixture is loaded and BEFORE `migrate:core` runs (the core step reads them). */
+  prepare?: (pool: pg.Pool) => Promise<void>
 }
 
 export async function bootActivity(options: BootOptions = {}): Promise<ActivityHarness> {
@@ -118,6 +120,7 @@ export async function bootActivity(options: BootOptions = {}): Promise<ActivityH
   await env.pool.query(`update staging_cloud.users set kelas = '4 Amanah' where role = 'pelajar'`)
   await env.pool.query(`update staging_cloud.education_levels set name_bm = 'Darjah 1' where id = 1`)
   await env.pool.query(PROBE_DDL)
+  if (options.prepare) await options.prepare(env.pool)
   if (options.core !== false) {
     const dry = await runCore({ pool: env.pool, env: runEnv, source: 'cloud', asOf: AS_OF, mode: 'dry-run', batchSize: 2 })
     if (dry.report.status !== 'succeeded') throw new Error('BE-28 dry-run did not succeed in the activity test boot.')

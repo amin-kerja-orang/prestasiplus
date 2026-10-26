@@ -103,7 +103,11 @@ describe('GET /api/metrics (BE-33)', () => {
     expect(text).toContain('http_requests_total{method="GET",route="/api/_probe/item/:id",status="200"} 2')
     expect(text).toContain('route="unmatched",status="404"')
     expect(text).toMatch(/route="\/api\/health"/)
-    expect(text).not.toMatch(/@|secret-query-value|987654321|55512345|4242|not-a-session/)
+    // Only the label sets can carry a URL, query or id. Sample values are numbers that can contain the probe digits by
+    // chance (process_resident_memory_bytes 424275968), so they are not matched.
+    const labels = (text.match(/\{[^}]*\}/g) ?? []).join('\n')
+    expect(labels).toContain('route="/api/_probe/item/:id"')
+    expect(labels).not.toMatch(/@|secret-query-value|987654321|55512345|4242|not-a-session/)
     expect(text).toMatch(/status="401"/)
   })
 
