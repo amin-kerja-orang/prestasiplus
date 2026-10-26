@@ -11,9 +11,11 @@
  *   anything else happens (the value is never echoed). It comes from a hidden TTY prompt or `--password-stdin`.
  * - `create` only when NO active, unsuspended Admin Pusat exists; `reset` only when the target is the LAST one
  *   (otherwise another admin resets it on the admin screen, runbook section 21).
- * - Both store an argon2id hash, set `must_reset_password`, give the account the national `admin` scope, end
- *   every live session of the account, spend its open password-reset tokens and write one `audit_events` row, all in one transaction under the same
+ * - Both store an argon2id hash, give the account the national `admin` scope, end every live session of the account,
+ *   spend its open password-reset tokens and write one `audit_events` row, all in one transaction under the same
  *   advisory lock as the users module's last-admin guard.
+ * - R39b (LEAD decision R39 item 1): neither mode forces a password change. `create` stores `must_reset_password = false`
+ *   and `reset` CLEARS an existing flag (the CLI reset is a recovery path; the operator typed the password at the hidden prompt).
  */
 import { hash } from '@node-rs/argon2'
 
@@ -26,7 +28,7 @@ export const HOST_ACTOR_ROLE = 'host_cli'
 
 export const EXIT = { ok: 0, failed: 1, usage: 2, refused: 3 } as const
 
-/** Same floor as an admin-typed initial password (`INITIAL_PASSWORD_MIN_LENGTH`); the user changes it at next login anyway. */
+/** Same floor as an admin-typed initial password (`INITIAL_PASSWORD_MIN_LENGTH`); the operator types it at the hidden prompt. */
 export const PASSWORD_MIN = 12
 export const PASSWORD_MAX = 255
 export const DEFAULT_NAME = 'Admin Pusat'
@@ -55,7 +57,7 @@ export const USAGE = `Usage (run on the host, inside the migrate image):
 
   The new password is read from a hidden prompt (typed twice), or with --password-stdin from standard input
   (for example "< /root/pp-admin-pass", a mode 600 file you delete right after). Never pass it as an argument.
-  The account must change the password at its next login.`
+  No password change is required at the next login.`
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 /** Flag names that look like a secret (`--password`, `--pass`, `--pwd`, `--pw`, `--secret`, `--new-password`, ...). */
@@ -186,7 +188,7 @@ export async function runAdminBootstrap(prisma: PrismaClient, input: BootstrapIn
         if (admins.length > 0) throw new RefusedError('Refused: an active Admin Pusat already exists. Use the admin user screen, or --mode=reset for a locked-out last admin.')
         if (existing) throw new RefusedError('Refused: an account with this e-mail already exists. Use --mode=reset if it is the locked-out last Admin Pusat.')
         const row = await tx.user.create({
-          data: { name: input.name, email: input.email, passwordHash, mustResetPassword: true, isActive: true, isSuspended: false, createdAt: input.now, updatedAt: input.now },
+          data: { name: input.name, email: input.email, passwordHash, mustResetPassword: false, isActive: true, isSuspended: false, createdAt: input.now, updatedAt: input.now },
           select: { id: true },
         })
         userId = row.id
@@ -202,7 +204,7 @@ export async function runAdminBootstrap(prisma: PrismaClient, input: BootstrapIn
         userId = existing.id
         await tx.user.update({
           where: { id: userId },
-          data: { passwordHash, mustResetPassword: true, updatedAt: input.now, ...(blocked ? { isActive: true, isSuspended: false } : {}) },
+          data: { passwordHash, mustResetPassword: false, updatedAt: input.now, ...(blocked ? { isActive: true, isSuspended: false } : {}) },
         })
       }
       await tx.userScope.upsert({
@@ -222,7 +224,7 @@ export async function runAdminBootstrap(prisma: PrismaClient, input: BootstrapIn
           targetType: 'user',
           targetId: userId.toString(),
           // Small facts only: never the e-mail, the password or its hash.
-          detail: { mode: input.mode, hostUser: input.hostUser.slice(0, 64), mustChangePassword: true, sessionsRevoked: revoked.count, resetTokensSpent: tokens.count, reactivated, activeAdminsBefore: admins.length },
+          detail: { mode: input.mode, hostUser: input.hostUser.slice(0, 64), mustChangePassword: false, sessionsRevoked: revoked.count, resetTokensSpent: tokens.count, reactivated, activeAdminsBefore: admins.length },
           createdAt: input.now,
         },
       })

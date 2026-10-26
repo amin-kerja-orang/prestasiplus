@@ -7,6 +7,7 @@ import { CLOCK, type Clock } from '../../db/clock'
 import { PrismaService } from '../../db/prisma.service'
 import type { RequestInfo, SessionGrant } from '../auth/auth.service'
 import { PasswordService } from '../auth/password.service'
+import { AuthPorts } from '../auth/ports'
 import { SchoolsRepository } from '../schools'
 import { IcService } from '../users/credentials'
 import { UsersRepository, uniqueField } from '../users'
@@ -15,6 +16,7 @@ import { setFieldOnce, strictFieldsOf } from '../../common/validation/strict-bod
 import { ACCOUNT_AUDIT, ACCOUNT_TX } from './account.constants'
 import { overloadTo429 } from './helpers'
 import { invalid, registrationClosed } from './account.errors'
+import { AccountPorts } from './registration-ports'
 import { SessionIssuer } from './session-issuer.service'
 
 const FIELD_ORDER = ['name', 'email', 'phone', 'role', 'grade', 'icNumber', 'schoolId', 'password', 'passwordConfirmation', 'referralCode']
@@ -33,7 +35,8 @@ const asRecord = (v: unknown): Record<string, unknown> => (typeof v === 'object'
  * Self-registration (mock `register()`, BR-04, BR-05). The role is limited to student, teacher and
  * parent by the contract schema. Rate limit (LEAD 2026-10-20): per client address through the common `RateLimit`
  * guard only, bucket `account.register`, `THROTTLE_REGISTER_PER_MINUTE` (default 30), so a school behind one NAT is
- * not refused and the login throttle is neither shared nor weakened.
+ * not refused and the login throttle is neither shared nor weakened. A `referralCode` is handed to the plugged-in M14
+ * registration hook (`AccountPorts`) inside the creating transaction.
  */
 @Injectable()
 export class RegistrationService {
@@ -49,7 +52,9 @@ export class RegistrationService {
     @Inject(PasswordService) private readonly passwords: PasswordService,
     @Inject(IcService) private readonly ic: IcService,
     @Inject(SessionIssuer) private readonly issuer: SessionIssuer,
+    @Inject(AuthPorts) private readonly ports: AuthPorts,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(AccountPorts) private readonly accountPorts: AccountPorts,
     @Inject(ConfigService) config: Pick<ConfigService, 'get'>,
   ) {
     const flag = String(config.get<unknown>('REGISTRATION_OPEN') ?? 'true').trim().toLowerCase()
@@ -102,8 +107,9 @@ export class RegistrationService {
 
     const passwordHash = await this.passwords.hash(data.password, 'high')
     const now = this.clock.now()
+    let outcome: SessionGrant | 'pending'
     try {
-      return await this.prisma.transaction(async () => {
+      outcome = await this.prisma.transaction(async (tx) => {
         const id = await this.users.create({
           name: data.name,
           email: data.email,
@@ -134,6 +140,10 @@ export class RegistrationService {
           ip: info.ip,
           details: { role, pending },
         })
+        // XR-M14-02(b) / BR-M14-19: the referral is applied once the user row exists, in this same transaction (a rollback
+        // undoes both). The hook must not throw: an unknown, own, empty or used code is a no-op, and M14 runs the referral in a
+        // savepoint, so a failure skips the referral and never the registration (the response never changes).
+        await this.accountPorts.registrationHook?.onRegistered({ userId: id, role, pending, referralCode: text(data.referralCode), at: now, tx })
         return grant
       }, ACCOUNT_TX)
     } catch (err) {
@@ -143,5 +153,11 @@ export class RegistrationService {
       }
       throw err
     }
+    // FR-M01-69: the auto-login of a pupil fires the login hook AFTER the commit (never inside the transaction), bounded and
+    // swallowed. A pending teacher got no session, so no login and no hook.
+    if (outcome !== 'pending') {
+      await this.ports.fireLoginHook({ userId: outcome.session.user.id, role: outcome.session.active.role, at: this.clock.now() }, info.requestId)
+    }
+    return outcome
   }
 }

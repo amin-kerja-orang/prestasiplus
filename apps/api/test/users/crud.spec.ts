@@ -378,6 +378,68 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
       expect(fieldsOf(await api.put(`/admin/users/${uid}`, { roles: ['student'], name: 'X', grade: 12 })).grade).toBeTruthy()
     })
 
+    describe('R73: a gradeless (migrated) pupil is resettable without a grade', () => {
+      let pid: string
+      const gradeless = () => t.db.query<{ grade: number | null; must: boolean; hash: string | null }>(
+        `select grade, must_reset_password as must, password_hash as hash from users where id = $1`, [pid])
+
+      beforeAll(async () => {
+        const rows = await t.db.query<{ id: string }>(
+          `insert into users (name, email, school_id, grade, password_hash, must_reset_password)
+           values ('Murid Tanpa Gred', 'tanpagred@ujian.test', $1, null, null, true) returning id::text`,
+          [school1],
+        )
+        pid = (rows[0] as { id: string }).id
+        await t.db.query(`insert into user_roles (user_id, role) values ($1, 'student')`, [pid])
+      })
+
+      it('a password-only reset of a student with a null grade is 200 with a one-time password, and the grade stays null', async () => {
+        const res = await api.put(`/admin/users/${pid}`, { roles: ['student'], name: 'Murid Tanpa Gred', resetPassword: true })
+        expect(res.status, JSON.stringify(res.body)).toBe(200)
+        const d = UpdatedUserSchema.parse(res.body.data)
+        expect(d.generatedPassword?.length).toBeGreaterThanOrEqual(12)
+        // R39 (#256): an admin password write clears the flag, even one a migrated account kept.
+        expect(d.mustChangePassword).toBe(false)
+        expect(d.grade).toBeNull()
+        const row = (await gradeless())[0]
+        expect(row?.grade).toBeNull()
+        expect(row?.must).toBe(false)
+        expect(row?.hash).toMatch(/^\$argon2id\$/)
+        const s = await login(t, 'tanpagred@ujian.test', { password: d.generatedPassword as string })
+        expect(s.session.user.email).toBe('tanpagred@ujian.test')
+      })
+
+      it('a name or e-mail edit of that pupil does not need a grade either', async () => {
+        const res = await api.put(`/admin/users/${pid}`, { roles: ['student'], name: 'Murid Tanpa Gred B', email: 'tanpagred2@ujian.test' })
+        expect(res.status, JSON.stringify(res.body)).toBe(200)
+        expect(UpdatedUserSchema.parse(res.body.data).grade).toBeNull()
+      })
+
+      it('sending grade: null for a student is still refused (the key is sent, so the grade is required)', async () => {
+        const res = await api.put(`/admin/users/${pid}`, { roles: ['student'], name: 'X', grade: null, resetPassword: true })
+        expect(res.status).toBe(422)
+        expect(fieldsOf(res).grade).toBe('The grade field is required when role is student.')
+      })
+
+      it('an out-of-range grade is still refused; a valid grade is stored', async () => {
+        expect(fieldsOf(await api.put(`/admin/users/${pid}`, { roles: ['student'], name: 'X', grade: 12 })).grade).toBeTruthy()
+        const ok = await api.put(`/admin/users/${pid}`, { roles: ['student'], name: 'Murid Tanpa Gred B', grade: 3 })
+        expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+        expect(UpdatedUserSchema.parse(ok.body.data).grade).toBe(3)
+      })
+
+      it('adding the student role without a grade is still refused, with or without resetPassword', async () => {
+        const made = await api.post('/admin/users', { roles: ['teacher'], name: 'Guru Jadi Murid', email: 'gurujadimurid@ujian.test', schoolId: school1 })
+        const uid = CreatedUserSchema.parse(made.body.data).id
+        const res = await api.put(`/admin/users/${uid}`, { roles: ['student'], name: 'X', resetPassword: true })
+        expect(res.status).toBe(422)
+        expect(fieldsOf(res).grade).toBe('The grade field is required when role is student.')
+        // refused update changed nothing: still a teacher
+        const roles = await t.db.query<{ role: string }>(`select role from user_roles where user_id = $1`, [uid])
+        expect(roles.map((r) => r.role)).toEqual(['teacher'])
+      })
+    })
+
     it('rejects unknown keys, including the old newPassword', async () => {
       const res = await api.put(`/admin/users/${id}`, { roles: ['student'], name: 'A', newPassword: 'rahsia123', newPasswordConfirmation: 'rahsia123' })
       expect(res.status).toBe(422)
