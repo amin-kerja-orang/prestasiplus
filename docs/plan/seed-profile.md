@@ -9,10 +9,11 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 1. `core-identity`: demo schools and the canonical demo accounts
 2. `core-schools`: extra fictitious schools
 3. `core-school-packages`: REFERENCE module (runs in production, like `spm-subject-configs`)
+3a. `core-wallet-tiers` (P11-B1): REFERENCE module, the 4 M14 wallet tiers (also runs in production, before `wallet`)
 4. `core-population`: generated pupils, teachers, officers and the out-of-scope demo accounts
 5. `curriculum`: levels, subjects, chapters, topics, DSKP nodes
 6. `questions`: the question bank
-7. `wallet`: tiers, wallets, coin ledger of the demo accounts
+7. `wallet`: wallets, coin ledger (the tiers come from `core-wallet-tiers`; its own tier upsert is a no-op after it) of the demo accounts
 8. `content`: articles, banners, videos, support
 9. `exam`: blueprints, papers, placements
 10. `exam-demo-blueprints`
