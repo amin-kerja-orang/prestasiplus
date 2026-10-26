@@ -11,10 +11,11 @@ import type { ClientSession } from '../../api'
 import RegisterPage from '../../pages/RegisterPage.vue'
 import { PENDING_REF_KEY, clearPendingRef, setPendingRef } from '../../lib/pending-ref'
 
-const apiMocks = vi.hoisted(() => ({ register: vi.fn() }))
+const apiMocks = vi.hoisted(() => ({ register: vi.fn(), getPlatformStats: vi.fn() }))
 vi.mock('../../api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../api')>()),
   register: apiMocks.register,
+  getPlatformStats: apiMocks.getPlatformStats,
 }))
 
 const SESSION: ClientSession = {
@@ -82,6 +83,8 @@ beforeEach(() => {
   clearPendingRef()
   setActivePinia(createPinia())
   apiMocks.register.mockReset()
+  apiMocks.getPlatformStats.mockReset()
+  apiMocks.getPlatformStats.mockResolvedValue({ questionCount: 1, subjectCount: 1, levelCount: 1 })
   getSpy.mockReset()
   getSpy.mockResolvedValue(SCHOOLS)
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
@@ -423,5 +426,50 @@ describe('RegisterPage (M01 S2)', () => {
       ['Mewakili organisasi? Daftar sebagai Penaja', '/sponsor/register'],
       ['Kembali ke Laman Utama', '/'],
     ])
+  })
+})
+
+describe('RegisterPage closed registration (G5-M01 BUG-06)', () => {
+  const CLOSED = 'Pendaftaran akaun baharu ditutup buat sementara waktu. Sila cuba lagi kemudian.'
+  const stats = (extra: object) => ({ questionCount: 1, subjectCount: 1, levelCount: 1, ...extra })
+
+  it('registrationOpen false: shows the closed copy up front and disables submit', async () => {
+    apiMocks.getPlatformStats.mockResolvedValue(stats({ registrationOpen: false }))
+    const w = await render()
+    expect(w.get('[data-testid=register-alert]').text()).toContain(CLOSED)
+    expect(w.get('[data-testid=register-submit]').attributes('disabled')).toBeDefined()
+    await w.get('form').trigger('submit')
+    expect(apiMocks.register).not.toHaveBeenCalled()
+  })
+
+  it('registrationOpen true: no alert, submit enabled', async () => {
+    apiMocks.getPlatformStats.mockResolvedValue(stats({ registrationOpen: true }))
+    const w = await render()
+    expect(w.find('[data-testid=register-alert]').exists()).toBe(false)
+    expect(w.get('[data-testid=register-submit]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('registrationOpen missing: fails open', async () => {
+    const w = await render()
+    expect(w.find('[data-testid=register-alert]').exists()).toBe(false)
+    expect(w.get('[data-testid=register-submit]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('stats call error: fails open', async () => {
+    apiMocks.getPlatformStats.mockRejectedValue(new Error('Failed to fetch'))
+    const w = await render()
+    expect(w.find('[data-testid=register-alert]').exists()).toBe(false)
+    expect(w.get('[data-testid=register-submit]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('403 REGISTRATION_CLOSED on submit still shows the copy', async () => {
+    apiMocks.register.mockRejectedValue(
+      new ApiError({ status: 403, code: 'FORBIDDEN', message: CLOSED }),
+    )
+    const w = await render()
+    await fillRequired(w)
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(w.get('[data-testid=register-alert]').text()).toContain(CLOSED)
   })
 })
