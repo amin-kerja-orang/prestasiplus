@@ -208,8 +208,9 @@ export class ActivityService {
       name: t.name,
       email: t.email,
       loggedIn: t.lastLoginAt !== null,
-      mcq: stats[i]?.total ?? 0,
-      structured: 0,
+      // `total` holds objective plus structured (BR-M10-06); `structured` is the subset, so the two columns add up to `total`.
+      mcq: (stats[i]?.total ?? 0) - (stats[i]?.structured ?? 0),
+      structured: stats[i]?.structured ?? 0,
       coins: coins.get(t.id) ?? 0,
       hasHeadcount: headcount.has(t.id),
       lastLoginAt: stamp(t.lastLoginAt),
