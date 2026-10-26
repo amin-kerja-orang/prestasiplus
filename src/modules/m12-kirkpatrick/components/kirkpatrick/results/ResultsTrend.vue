@@ -15,9 +15,10 @@ import type { ResultsTrend } from './results-types'
 
 const props = defineProps<{ trend: ResultsTrend }>()
 
-const range = computed(() => {
+/** "Trend GPS (a–b)"; without years the heading has no "(range)" part (DV-M12-36). */
+const title = computed(() => {
   const years = props.trend.years
-  return `${years[0] ?? ''}–${years[years.length - 1] ?? ''}`
+  return years.length === 0 ? 'Trend GPS' : `Trend GPS (${years[0]}–${years[years.length - 1]})`
 })
 
 interface Row extends Record<string, unknown> {
@@ -52,7 +53,7 @@ const pageSize = ref(20)
 </script>
 
 <template>
-  <DsPanel :title="`Trend GPS (${range})`" icon="i-ph-chart-line" data-testid="res-trend">
+  <DsPanel :title="title" icon="i-ph-chart-line" data-testid="res-trend">
     <DsDataTable
       v-model:page-size="pageSize"
       variant="bare"

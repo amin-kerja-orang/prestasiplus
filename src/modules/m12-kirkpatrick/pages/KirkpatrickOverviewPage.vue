@@ -6,6 +6,9 @@
  * links would be dead).
  *
  * The filter lives in the query (`school_id`, `state`); "Tapis" navigates to the same prefix with both.
+ * `scopeForced` (the alias): the API forces the viewer's own school whatever the query says, so `school_id` and
+ * `state` are ignored (no chips, no preselected selects, not sent) instead of showing a filter that is not applied
+ * (DV-M12-38).
  */
 import { computed } from 'vue'
 import { isNavigationFailure, NavigationFailureType, useRoute, useRouter } from 'vue-router'
@@ -28,17 +31,17 @@ import OverviewInfo from '../components/kirkpatrick/overview/OverviewInfo.vue'
 import OverviewKpis from '../components/kirkpatrick/overview/OverviewKpis.vue'
 import OverviewLevelCards from '../components/kirkpatrick/overview/OverviewLevelCards.vue'
 
-const props = withDefaults(defineProps<{ basePath?: string; detailLinks?: boolean }>(), {
-  basePath: KIRKPATRICK_ADMIN_BASE,
-  detailLinks: true,
-})
+const props = withDefaults(
+  defineProps<{ basePath?: string; detailLinks?: boolean; scopeForced?: boolean }>(),
+  { basePath: KIRKPATRICK_ADMIN_BASE, detailLinks: true, scopeForced: false },
+)
 
 const route = useRoute()
 const router = useRouter()
 const paths = computed(() => kirkpatrickPaths(props.basePath))
 
-const schoolId = computed(() => queryString(route.query.school_id))
-const state = computed(() => queryString(route.query.state))
+const schoolId = computed(() => (props.scopeForced ? '' : queryString(route.query.school_id)))
+const state = computed(() => (props.scopeForced ? '' : queryString(route.query.state)))
 
 const { data, error, loading, reload } = useKirkpatrickPage(
   (signal) =>

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
@@ -41,7 +42,7 @@ async function mountPage() {
   await router.push('/guru/command-center')
   await router.isReady()
   wrapper = mount(CommandCenterPage, {
-    global: { plugins: [router] },
+    global: { plugins: [router, createPinia()] },
     attachTo: document.body,
   })
   await flushPromises()
