@@ -154,6 +154,18 @@ describe('SubscriptionDetailPage (M02 S14)', () => {
     expect(w.get('[data-testid=sub-notes]').text()).toContain('Nota:')
   })
 
+  it('never cuts a tile value (BUG-04): default-density tiles, no truncate class', async () => {
+    api.fetchSubscription.mockResolvedValue(
+      detail({ packageTier: 'full', studentQuota: 500, questionLimit: null }),
+    )
+    const { w } = await render()
+    const tiles = w.get('[data-testid=sub-tiles]')
+    expect(tiles.findAll('[data-compact]')).toHaveLength(0)
+    expect(tiles.findAll('.truncate')).toHaveLength(0)
+    expect(w.get('[data-testid=sub-price]').text()).toContain('RM30.00')
+    expect(w.get('[data-testid=sub-total]').text()).toContain('RM15,000.00')
+  })
+
   it('shows a red full bar and price tiles for a full subscription, without the upgrade button', async () => {
     api.fetchSubscription.mockResolvedValue(
       detail({

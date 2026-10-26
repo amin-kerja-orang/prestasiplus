@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip, DsPanel } from '@/ds'
+import { DsCluster, DsIconChip, DsPanel } from '@/ds'
 
 import type { Overview } from '../../../api/types'
 import { gps, KirkpatrickLink, mean, pct, plain, type KirkpatrickPaths } from '../common'
@@ -88,18 +88,29 @@ const steps = computed<Step[]>(() => [
       <li v-for="s in steps" :key="s.key">
         <KirkpatrickLink
           :to="s.to"
-          class="flex min-h-11 items-center gap-3 p-2"
+          class="block min-h-11 p-2"
           :data-testid="`kirk-flow-list-${s.key}`"
         >
-          <DsIconChip :icon="s.icon" size="sm" />
-          <span class="min-w-0 flex-1">
-            <span class="block text-label text-highlighted">{{ s.label }}</span>
-            <span class="block text-body text-muted">{{ s.sub }}</span>
-          </span>
-          <span class="shrink-0 text-body text-primary-t" data-testid="kirk-flow-pill">{{
-            s.pill
-          }}</span>
-          <UIcon v-if="s.to !== null" name="i-ph-caret-right" class="size-4 shrink-0 text-dimmed" />
+          <!-- Wraps: below 320 the pill and caret drop to a second line instead of overlapping the label (DV-M12-34). -->
+          <DsCluster gap="sm" row-gap="2xs" align="center">
+            <DsIconChip :icon="s.icon" size="sm" />
+            <span class="min-w-40 flex-1">
+              <span class="block text-label text-highlighted">{{ s.label }}</span>
+              <span class="block text-body text-muted">{{ s.sub }}</span>
+            </span>
+            <span class="ms-auto shrink-0">
+              <DsCluster as="span" gap="xs" :wrap="false">
+                <span class="text-body text-primary-t" data-testid="kirk-flow-pill">{{
+                  s.pill
+                }}</span>
+                <UIcon
+                  v-if="s.to !== null"
+                  name="i-ph-caret-right"
+                  class="size-4 shrink-0 text-dimmed"
+                />
+              </DsCluster>
+            </span>
+          </DsCluster>
         </KirkpatrickLink>
       </li>
     </ul>

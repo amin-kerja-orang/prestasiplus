@@ -7,7 +7,7 @@ describe('tilesForSchoolType (BR-M10-03)', () => {
     expect(tilesForSchoolType(null)).toHaveLength(11)
     expect(tilesForSchoolType(null)).toBe(LEVEL_TILES)
   })
-  it('shows Tahun 1-6 for type SK and Ting. 1-5 for any other type', () => {
+  it('shows Tahun 1-6 for type SK, SJK(C) and SJK(T) and Ting. 1-5 for any other type (DV-M10-38)', () => {
     expect(tilesForSchoolType('SK').map((t) => t.label)).toEqual([
       'Tahun 1',
       'Tahun 2',
@@ -23,7 +23,13 @@ describe('tilesForSchoolType (BR-M10-03)', () => {
       'Ting. 4',
       'Ting. 5',
     ])
-    expect(tilesForSchoolType('SJK(C)')).toHaveLength(5)
+    for (const type of ['SJK(C)', 'SJK(T)']) {
+      expect(
+        tilesForSchoolType(type).map((t) => t.label),
+        type,
+      ).toEqual(tilesForSchoolType('SK').map((t) => t.label))
+    }
+    for (const type of ['MRSM', 'SBP']) expect(tilesForSchoolType(type), type).toHaveLength(5)
   })
 })
 
