@@ -12,6 +12,7 @@ import type { SchoolSummary } from '../../api/schools'
 import type { AdminUserDetail, StudentSearchItem } from '../../api/users'
 import UserEditPage from '../../pages/UserEditPage.vue'
 import { expectListInFlow } from './in-flow'
+import { expectFinderWidthContract } from './parent-finder-width'
 
 const users = vi.hoisted(() => ({
   fetchAdminUser: vi.fn(),
@@ -453,6 +454,12 @@ describe('UserEditPage (M02 S3) parent record', () => {
       isActive: true,
       linkedStudentIds: [4],
     })
+  })
+
+  it('keeps the linker within the card while the results show (BUG-05, DV-M02-29)', async () => {
+    const w = await render(6)
+    await search(w, 'linker-search', 'maj')
+    expectFinderWidthContract(w, 'parent-linker-edit')
   })
 
   it('the empty student search shows "Tiada pelajar dijumpai"', async () => {

@@ -122,7 +122,7 @@ async function submit(): Promise<void> {
     form.newPassword = ''
     form.newPasswordConfirmation = ''
     await nextTick()
-    alertBox.value?.scrollIntoView?.({ block: 'start' })
+    alertBox.value?.scrollIntoView?.({ block: 'center' })
   } finally {
     saving.value = false
   }

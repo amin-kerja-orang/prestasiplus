@@ -53,7 +53,7 @@ export function resultsOf(scope: Scope): Results {
       score,
     }
   })
-  schoolRows.sort((x, y) => y.score - x.score || x.schoolId - y.schoolId)
+  schoolRows.sort((x, y) => y.score - x.score || Number(x.schoolId) - Number(y.schoolId))
 
   const predictions = predictionsOf(scope)
   const alesa = alesaOf(scope, predictions)

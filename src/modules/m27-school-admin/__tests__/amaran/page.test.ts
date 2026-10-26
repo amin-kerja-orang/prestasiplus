@@ -147,7 +147,10 @@ describe('route and header (FR-M27-74, 44)', () => {
   })
 
   it('appends the level suffix to the sub-line with a level', async () => {
-    await mountPage(data({ levelFilter: 'T4', levelSuffix: ' — Tingkatan 4' }), '/amaran/sekolah?tingkatan=T4')
+    await mountPage(
+      data({ levelFilter: 'T4', levelSuffix: ' — Tingkatan 4' }),
+      '/amaran/sekolah?tingkatan=T4',
+    )
     expect(usePageMeta().state.header?.subtitle).toBe('SMK Demo — Tingkatan 4')
   })
 })
@@ -174,8 +177,14 @@ describe('pills (FR-M27-75)', () => {
   it('shows the three pills, links on the alias, and activates the current level', async () => {
     const w = await mountPage(data())
     expect(texts(w, 'am-pills').join('')).toContain('Semua Tingkatan')
-    const hrefs = ['all', 'T4', 'T5'].map((k) => w.get(`[data-testid="am-pill-${k}"]`).attributes('href'))
-    expect(hrefs).toEqual(['/amaran/sekolah', '/amaran/sekolah?tingkatan=T4', '/amaran/sekolah?tingkatan=T5'])
+    const hrefs = ['all', 'T4', 'T5'].map((k) =>
+      w.get(`[data-testid="am-pill-${k}"]`).attributes('href'),
+    )
+    expect(hrefs).toEqual([
+      '/amaran/sekolah',
+      '/amaran/sekolah?tingkatan=T4',
+      '/amaran/sekolah?tingkatan=T5',
+    ])
     expect(w.findAll('[data-testid^="am-pill-"]').map((e) => e.text())).toEqual([
       'Semua Tingkatan',
       'Tingkatan 4',
@@ -217,7 +226,9 @@ describe('tiles and distribution (FR-M27-75; AC-M27-21.2)', () => {
 
   it('keeps a zero level in the legend', async () => {
     const w = await mountPage(
-      data({ tally: { green: 4, yellow: 0, red: 0, total: 4, pct: { green: 100, yellow: 0, red: 0 } } }),
+      data({
+        tally: { green: 4, yellow: 0, red: 0, total: 4, pct: { green: 100, yellow: 0, red: 0 } },
+      }),
     )
     expect(text(w, 'am-bar')).toContain('Hijau (100%)')
     expect(text(w, 'am-legend-yellow')).toBe('Kuning: 0')
@@ -247,7 +258,10 @@ describe('buttons (FR-M27-77; AC-M27-22.1)', () => {
 
   it('downloads the CSV through M18 #30 with the session school and the server file name', async () => {
     const blob = new Blob(['x'])
-    api.downloadSchoolRiskCsv.mockResolvedValue({ blob, filename: 'amaran-sekolah-900001-20260925.csv' })
+    api.downloadSchoolRiskCsv.mockResolvedValue({
+      blob,
+      filename: 'amaran-sekolah-900001-20260925.csv',
+    })
     const w = await mountPage(data())
     await w.get('[data-testid="am-btn-csv"]').trigger('click')
     await flushPromises()
@@ -298,24 +312,46 @@ describe('subject card and risk list (FR-M27-76; AC-M27-21.3)', () => {
     expect(w.get('[data-testid="am-table"] table').classes()).toContain('table-fixed')
   })
 
+  it('below md each pupil card wraps its values instead of cutting them (G5-M27 B1)', async () => {
+    await atWidth(375, async () => {
+      const w = await mountPage(data())
+      await flushPromises()
+      const card = w.get('[data-ds="data-table-cards"] li')
+      expect(card.element.children).toHaveLength(1)
+      const dds = card.findAll('dd')
+      expect(dds).toHaveLength(6)
+      expect(dds[0]?.text()).toBe('Tingkatan 4 4 Contoh')
+      for (const dd of dds) {
+        expect(dd.classes()).not.toContain('truncate')
+        expect(dd.classes()).toContain('break-words')
+      }
+    })
+  })
+
   it('at 768 the three low-priority columns are hidden and each value shows alone under the name (SW11-04)', async () => {
     await atWidth(768, async () => {
       const w = await mountPage(data())
       await flushPromises()
-      const th = (label: string) => w.findAll('[data-testid="am-table"] th').find((e) => e.text() === label)
+      const th = (label: string) =>
+        w.findAll('[data-testid="am-table"] th').find((e) => e.text() === label)
       for (const label of ['Ketepatan', 'Penglibatan', 'Penguasaan']) {
         expect(th(label)?.classes()).toEqual(expect.arrayContaining(['hidden', 'xl:table-cell']))
       }
       expect(th('Status')?.classes()).not.toContain('hidden')
       expect(texts(w, 'am-sub')).toHaveLength(3)
-      expect(texts(w, 'am-sub-accuracy')).toEqual(['Purata ketepatan: 64%', 'Tiada data', 'Purata ketepatan: 64%'])
+      expect(texts(w, 'am-sub-accuracy')).toEqual([
+        'Purata ketepatan: 64%',
+        'Tiada data',
+        'Purata ketepatan: 64%',
+      ])
       expect(texts(w, 'am-sub-engagement')[0]).toBe('Terakhir aktif: 2026-02-27')
       expect(texts(w, 'am-sub-mastery')[0]).toBe('Purata tahap: L1')
-      expect(w.get('[data-testid="am-sub"]').findAll('span').map((e) => e.text())).toEqual([
-        'Purata ketepatan: 64%',
-        'Terakhir aktif: 2026-02-27',
-        'Purata tahap: L1',
-      ])
+      expect(
+        w
+          .get('[data-testid="am-sub"]')
+          .findAll('span')
+          .map((e) => e.text()),
+      ).toEqual(['Purata ketepatan: 64%', 'Terakhir aktif: 2026-02-27', 'Purata tahap: L1'])
     })
   })
 
@@ -324,7 +360,11 @@ describe('subject card and risk list (FR-M27-76; AC-M27-21.3)', () => {
       const w = await mountPage(data())
       await flushPromises()
       expect(has(w, 'am-sub')).toBe(false)
-      expect(texts(w, 'am-accuracy')).toEqual(['Purata ketepatan: 64%', 'Tiada data', 'Purata ketepatan: 64%'])
+      expect(texts(w, 'am-accuracy')).toEqual([
+        'Purata ketepatan: 64%',
+        'Tiada data',
+        'Purata ketepatan: 64%',
+      ])
     })
   })
 })

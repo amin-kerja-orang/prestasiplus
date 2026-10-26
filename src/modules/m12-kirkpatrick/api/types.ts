@@ -4,6 +4,9 @@
  * screens print them without a trailing ".0" (BR-M12-33). `null` marks "no data" ("-" on the screens).
  */
 
+/** An id on the wire: the contract (`IdSchema`) sends strings in http mode, the mock sends numbers. Compare with `String()`. */
+export type WireId = number | string
+
 export type BandKey = 'champion' | 'konsisten' | 'berkembang' | 'minimum' | 'tidakTerlibat'
 
 export type SpmGrade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'C+' | 'C' | 'D' | 'E' | 'G'
@@ -23,7 +26,7 @@ export interface BandCount {
 
 /** #14 `GET /api/kirkpatrick/filter-options`. */
 export interface FilterOptions {
-  schools: { id: number; name: string }[]
+  schools: { id: WireId; name: string }[]
   states: string[]
 }
 
@@ -51,7 +54,7 @@ export interface Comparison {
 
 /** #1 `GET /api/kirkpatrick/overview` (S1). */
 export interface Overview {
-  scope: { schoolId: number | null; state: string | null }
+  scope: { schoolId: WireId | null; state: string | null }
   t4: {
     /** `null` when the school has no SPM history row ("Belum Ada Data"). */
     gps: number | null
@@ -94,14 +97,14 @@ export interface Learning {
     completionPct: number
   }
   subjects: {
-    subjectId: number
+    subjectId: WireId
     name: string
     answers: number
     accuracy: number
     status: SubjectStatus
   }[]
   schools: {
-    schoolId: number
+    schoolId: WireId
     name: string
     students: number
     answers: number
@@ -112,7 +115,7 @@ export interface Learning {
 }
 
 export interface BehaviorSchoolRow {
-  schoolId: number
+  schoolId: WireId
   name: string
   /** School code, or `null` ("-"). */
   code: string | null
@@ -129,7 +132,7 @@ export interface BehaviorSchoolRow {
 export interface BehaviorAlert {
   /** 1 never logged in (red), 2 teacher logged in without answers (red), 3 active above 50% (green). */
   list: 1 | 2 | 3
-  schoolId: number
+  schoolId: WireId
   name: string
   kind: 'never' | 'teacher' | 'good'
   /** Students (list 1) or teachers (list 2). */
@@ -160,7 +163,7 @@ export interface Behavior {
 }
 
 export interface ResultsSchoolRow {
-  schoolId: number
+  schoolId: WireId
   name: string
   students: number
   active: number
@@ -175,7 +178,7 @@ export interface ResultsSchoolRow {
 }
 
 export interface AlesaRow {
-  userId: number
+  userId: WireId
   name: string
   schoolName: string
   accuracy: number
@@ -222,9 +225,9 @@ export interface Results {
   trend: { years: number[]; rows: { name: string; values: (number | null)[] }[] }
   schools: ResultsSchoolRow[]
   predictions: {
-    userId: number
+    userId: WireId
     name: string
-    schoolId: number
+    schoolId: WireId
     schoolName: string
     answers: number
     accuracy: number
@@ -258,8 +261,8 @@ export type InterventionStatus = 'Menunggu Semakan' | 'Meningkat' | 'Menurun' | 
 
 /** DATA-M12-02 (repository `kirkpatrickInterventions`). */
 export interface KirkpatrickIntervention {
-  id: number
-  studentId: number
+  id: WireId
+  studentId: WireId
   alertType: AlertType
   /** `YYYY-MM-DD`. */
   actionDate: string
@@ -301,7 +304,7 @@ export interface InterventionInput {
 
 /** #10 `GET /api/kirkpatrick/students/:id` (S8). */
 export interface StudentKirkpatrick {
-  student: { id: number; name: string; schoolName: string; grade: number | null }
+  student: { id: WireId; name: string; schoolName: string; grade: number | null }
   activeDays: number
   answers: number
   accuracy: number
@@ -331,10 +334,10 @@ export interface FeedbackStatus {
 /** DATA-M12-01. */
 export interface FeedbackResponse {
   id: number
-  userId: number
+  userId: WireId
   role: string
   /** The respondent's school at response time (the school filter of Q-M12-T1, XR-M17-21). */
-  schoolId: number | null
+  schoolId: WireId | null
   month: string
   nps: number
   satisfaction: number

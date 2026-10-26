@@ -15,7 +15,7 @@ import { useSession } from '@/composables/useSession'
 
 import PartResultCard from '../components/PartResultCard.vue'
 import RichText from '../components/RichText.vue'
-import { sectionRuleLine } from '../domain/paper-model'
+import { needsAttention, sectionRuleLine } from '../domain/paper-model'
 import type { QuestionResult, QuestionView } from '../domain/types'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
 import { bijakServer } from '../server/client'
@@ -74,8 +74,7 @@ const questionMap = computed(
 )
 const shown = computed<QuestionResult[]>(() =>
   (result.value?.questions ?? []).filter((q) => {
-    if (filter.value === 'semua') return true
-    return q.counted && (q.awarded < q.marks || q.parts.some((p) => p.status === 'belum_dimarkah'))
+    return filter.value === 'semua' || needsAttention(q)
   }),
 )
 

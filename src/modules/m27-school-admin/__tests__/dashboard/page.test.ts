@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
+import { DsChart } from '@/ds'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { usePageMeta } from '@/composables/usePageMeta'
 
@@ -294,6 +295,14 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
     expect(chart).toContain('G (9.0%)')
     expect(chart).toContain('90')
     expect(text(w, 'sd-grades-total')).toBe('Jumlah: 450 rekod')
+  })
+
+  it('draws the grade chart at the tall plot height so all ten grade labels stay on the axis (G5-M27 B4)', async () => {
+    const w = await mountPage(dashboard())
+    const chart = w.getComponent(DsChart)
+    expect(chart.props('height')).toBe('lg')
+    expect(chart.props('labels')).toHaveLength(10)
+    expect(chart.find('canvas').element.parentElement?.classList.contains('h-80')).toBe(true)
   })
 
   it('renders the no-data states (BR-M27-18)', async () => {
