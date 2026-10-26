@@ -149,6 +149,9 @@ deploy/vps/migration/slot.sh etl migrate:delta --since=<T-dump1> --as-of=... [--
   part of the core input hash (`load/activity/preflight.ts:166-168`), so `migrate:questions` (B11) exits 2 when it differs from
   the one of the core apply; unset, smoke row F10 FAILs and `Z0` is 1 or more at B8 (a STOP). `db-roles.sh secrets` keeps other
   lines of an existing `etl.env` (`db-roles.sh:127-131`). `slot.sh etl` logs its own env list, not the file, so the value is not logged.
+  **Write the value in single quotes**, `PP_MIGRATE_ROSTER_DEFAULT_HASHES='<hash>,<hash>'`: Compose interpolates `$` in an
+  `--env-from-file` file, so an unquoted bcrypt list (`$2y$10$...`) reaches the container as `$2y$10,...` without the hash bodies
+  (checked with Compose 5.6.1 on 26 Oct). Single quotes keep it literal; `deploy.sh` and `db-roles.sh` read quoted values as well.
 - Every run gets `NODE_ENV=production` and `PP_MIGRATE_TARGET_DB=<POSTGRES_DB>`; every `migrate:*` run also gets
   `PP_GIT_SHA=<release sha>` (`PP_RELEASE_SHA`, else `git rev-parse HEAD` of the checkout), so `etl_runs.git_sha` is
   recorded: the image has no `.git`. `migrate:all` and `migrate:delta` refuse to run without a 40-character sha.
