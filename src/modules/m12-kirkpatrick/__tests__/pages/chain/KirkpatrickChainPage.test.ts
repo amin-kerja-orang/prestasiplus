@@ -7,6 +7,7 @@ import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 
 import type { Chain } from '../../../api/types'
 import KirkpatrickChainPage from '../../../pages/KirkpatrickChainPage.vue'
+import KirkpatrickChainPdfPage from '../../../pages/KirkpatrickChainPdfPage.vue'
 import { all, flat, has, mountPage, squash, t } from '../fixtures'
 
 const api = vi.hoisted(() => ({ fetchKirkpatrickChain: vi.fn() }))
@@ -222,5 +223,28 @@ describe('S6 states', () => {
     )
     await open('/guru/kirkpatrick')
     expect(useRouteOutcome().value).toBe(403)
+  })
+})
+
+describe('S6 print page level cards (BUG-09)', () => {
+  it('stacks the cards in one column without arrows (the sheet is a fixed 768 px column)', async () => {
+    const m = await mountPage(
+      KirkpatrickChainPdfPage,
+      {},
+      '/admin/kirkpatrick/export-pdf',
+      '/admin/kirkpatrick/export-pdf',
+    )
+    wrapper = m.wrapper
+    const cards = t(m.wrapper, 'chain-cards')
+    expect(cards.classes()).toEqual(expect.arrayContaining(['flex', 'flex-col']))
+    expect(cards.classes()).not.toContain('lg:flex-row')
+    expect(m.wrapper.findAll('[data-testid="chain-arrow"]')).toHaveLength(0)
+    expect(m.wrapper.findAll('[data-testid^="chain-t"]').length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('keeps 4 cards across from lg with arrows on the S6 screen', async () => {
+    const w = await open()
+    expect(t(w, 'chain-cards').classes()).toContain('lg:flex-row')
+    expect(w.findAll('[data-testid="chain-arrow"]')).toHaveLength(3)
   })
 })

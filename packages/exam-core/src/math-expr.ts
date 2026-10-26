@@ -679,6 +679,38 @@ export function numericValue(raw: string): number | null {
   return stripped.unit ? numericOf(stripped.value) : null
 }
 
+/** A parsed answer that is a number, or a list of numbers ("3, 5", "3 dan 5"). */
+function isNumericParsed(p: Parsed): boolean {
+  if (p.kind === 'list') return p.items.every(isNumericParsed)
+  const e = valueOf(p)
+  if (!e || variablesOf(e).size) return false
+  return Number.isFinite(evalExpr(e, {}))
+}
+
+const PLAIN_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/
+/** A number, then a space, then a free unit word ("7 hari", "30 °C"); group 1 is the number part. */
+const SPACED_UNIT = /^(.*?\d\.?)\s+(?!(?:dan|atau|and|or)\b)[^\d\s=<>+*/^()×÷.,;-].*$/
+
+/**
+ * Whether a numeric-kind final answer looks like a number to the student-side check (FB-050): a
+ * number (also `1.2E3`, `5.`, thousands spaces), a fraction, a list of numbers ("3, 5", "3 dan 5"),
+ * or any of those followed by a unit ("12 cm", "RM12", "7 hari", "30 °C"). A blank field is not an
+ * error ("belum dijawab" is counted elsewhere). Letters glued to the number ("68ab") are not readable.
+ * This check is looser than the marker: `matchFinal` still returns `unparseable` for some shapes
+ * it accepts (`5.`, or `7 hari` on a leaf without a unit), and those answers go to a teacher.
+ */
+export function isReadableNumber(raw: string): boolean {
+  if (!raw.trim()) return true
+  const plain = latexToPlain(raw).replace(/[\u00a0\u202f\u2009]/g, '')
+  if (PLAIN_NUMBER.test(plain.trim())) return true
+  const whole = parseAnswer(plain)
+  if (whole && isNumericParsed(whole)) return true
+  if (numericValue(raw) !== null) return true
+  const spaced = SPACED_UNIT.exec(plain.trim())
+  const lead = spaced ? parseAnswer(spaced[1]!) : null
+  return !!lead && isNumericParsed(lead)
+}
+
 /* -------------------------------------------------------------------------------- units */
 
 export function normaliseUnit(u: string): string {
@@ -820,4 +852,25 @@ export function latexToFriendly(latex: string): string {
     .replace(/\\%/g, '%')
     .replace(/\\,|\\ /g, ' ')
   return s
+}
+
+const FRAC_OPERAND = '(\\d+(?:\\.\\d+)?|[a-zA-Z]|\\([^()]*\\))'
+
+/**
+ * LaTeX for the live preview of a friendly line, so the student sees what was understood: stacked
+ * fractions (also when the denominator has a power, `(7)/(3)^2` -> `\frac{7}{3^{2}}`), upright
+ * `\sin \cos \tan \log \ln`, `°` as a degree sign and a literal `%`. Preview only: the stored value
+ * stays `plainToLatex(friendly)`.
+ */
+export function previewLatex(friendly: string): string {
+  if (!friendly) return ''
+  const unwrap = (x: string): string => (x.startsWith('(') ? x.slice(1, -1) : x)
+  return plainToLatex(friendly)
+    .replace(
+      new RegExp(`${FRAC_OPERAND}\\s*\\/\\s*${FRAC_OPERAND}\\^\\{([^{}]*)\\}`, 'g'),
+      (_m, a: string, b: string, p: string) => `\\frac{${unwrap(a)}}{${unwrap(b)}^{${p}}}`,
+    )
+    .replace(/(?<![\\a-zA-Z])(sin|cos|tan|log|ln)(?![a-zA-Z])/g, '\\$1 ')
+    .replace(/°/g, '^{\\circ}')
+    .replace(/(?<!\\)%/g, '\\%')
 }

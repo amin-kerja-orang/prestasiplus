@@ -468,7 +468,7 @@ async function submit(): Promise<void> {
           icon="users"
           :columns="2"
         >
-          <div class="sm:col-span-2"><ParentStudentLinker v-model="linked" variant="edit" /></div>
+          <div class="min-w-0 sm:col-span-2"><ParentStudentLinker v-model="linked" variant="edit" /></div>
         </DsFormSection>
 
         <!-- FR-M02-43: password reset -->
