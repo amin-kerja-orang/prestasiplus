@@ -285,6 +285,48 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     })
   })
 
+  it('aligns the card title with the fields: the title button carries no padding (#336 follow-up AM1)', async () => {
+    await atWidth(375, async () => {
+      const { wrapper: w } = await mountPupils()
+      const title = w.get('[data-ds="data-table-cards"] li [data-testid="m27-card"] button')
+      expect(title.text()).toBe('Murid Contoh Satu')
+      // the theme's UButton adds px-4 (16px); the title must sit flush with the fields below it
+      expect(title.classes().filter((c) => /^(p|px|ps|pl)-\d/.test(c))).toEqual([])
+      // a touch target of at least 44px stays
+      expect(title.classes()).toContain('min-h-11')
+      // a real button that cannot submit a surrounding form
+      expect(title.element.tagName).toBe('BUTTON')
+      expect(title.attributes('type')).toBe('button')
+    })
+  })
+
+  it('keeps the card field list valid HTML: every dl holds only one dt and one dd (#336 follow-up AM2)', async () => {
+    await atWidth(375, async () => {
+      const { wrapper: w } = await mountPupils()
+      const fields = w.get(
+        '[data-ds="data-table-cards"] li [data-testid="m27-card-fields"]',
+      ).element
+      const lists = Array.from(fields.querySelectorAll('dl'))
+      expect(lists).toHaveLength(5)
+      // each dl holds a single dt/dd group (no div or grid between a dl and its terms)
+      for (const dl of lists) {
+        expect(Array.from(dl.children).map((c) => c.tagName)).toEqual(['DT', 'DD'])
+      }
+      // order kept
+      expect(lists.map((dl) => dl.querySelector('dt')?.textContent)).toEqual([
+        'Emel',
+        'Telefon',
+        'Tingkatan',
+        'Kelas',
+        'Tarikh',
+      ])
+      // a dt/dd is never a direct child of the grid container
+      expect(
+        Array.from(fields.children).some((c) => c.tagName === 'DT' || c.tagName === 'DD'),
+      ).toBe(false)
+    })
+  })
+
   it('opens the editor from the card title like the default card did', async () => {
     await atWidth(375, async () => {
       const { wrapper: w, router } = await mountPupils()

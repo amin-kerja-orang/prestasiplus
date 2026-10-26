@@ -6,7 +6,7 @@
  * fields keep the full card width at 375px. The card actions slot of the table stays empty.
  */
 import type { CardField } from '@/ds'
-import { DsCluster, DsGrid, DsStack, DsText } from '@/ds'
+import { DsCluster, DsGrid, DsGridItem, DsStack, DsText } from '@/ds'
 
 defineProps<{
   title: string
@@ -25,23 +25,18 @@ function cell(row: Record<string, unknown>, key: string): string {
 <template>
   <DsStack gap="xs" data-testid="m27-card">
     <DsCluster gap="none" justify="start">
-      <UButton
-        type="button"
-        color="neutral"
-        variant="link"
-        class="h-auto text-start whitespace-normal"
-        :label="cell(row, title)"
-        @click="$emit('open')"
-      />
+      <ULink as="button" type="button" class="min-h-11 text-start" @click="$emit('open')">
+        <DsText as="span" variant="label">{{ cell(row, title) }}</DsText>
+      </ULink>
     </DsCluster>
-    <dl data-testid="m27-card-fields">
-      <DsGrid :cols="2" gap="xs" align="start">
-        <DsStack v-for="f in fields" :key="f.key" gap="none">
+    <DsGrid :cols="2" gap="xs" align="start" data-testid="m27-card-fields">
+      <DsGridItem v-for="f in fields" :key="f.key">
+        <dl>
           <DsText as="dt" variant="caption">{{ f.label }}</DsText>
           <DsText as="dd" variant="body" wrap="anywhere" tabular>{{ cell(row, f.key) }}</DsText>
-        </DsStack>
-      </DsGrid>
-    </dl>
+        </dl>
+      </DsGridItem>
+    </DsGrid>
     <DsCluster v-if="$slots.default" gap="sm" align="center" data-testid="m27-card-actions">
       <slot />
     </DsCluster>
