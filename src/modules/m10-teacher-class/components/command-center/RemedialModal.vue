@@ -169,7 +169,11 @@ async function cancel(s: CcWeakStudent, quizId: number) {
             <span class="sr-only" data-testid="cc-remedial-row" />
           </template>
           <template #topics-cell="{ row }">
-            <div v-for="(t, i) in row.original.weakTopics" :key="i" class="text-body">
+            <div
+              v-for="(t, i) in row.original.weakTopics"
+              :key="i"
+              class="text-body whitespace-normal"
+            >
               {{ t.topicName }} ({{ plain(t.accuracy) }}%)
             </div>
           </template>
@@ -245,6 +249,7 @@ async function cancel(s: CcWeakStudent, quizId: number) {
                       v-else
                       color="primary"
                       variant="soft"
+                      class="h-auto min-h-11 text-start whitespace-normal"
                       :loading="state(row.original.studentId).busy[subject]"
                       :label="
                         state(row.original.studentId).busy[subject]
