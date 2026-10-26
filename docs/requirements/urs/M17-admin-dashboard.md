@@ -52,7 +52,7 @@ M17 is the admin's **platform-level view**: a dashboard of the question bank and
 |---|---|---|---|---|
 | S1 | `/admin` | "Dashboard - Admin Panel" | SHA · "Dashboard" / "Gambaran Keseluruhan Platform" | 200 |
 | S2 | `/admin/command-center` | "PRESTASIPLUS COMMAND CENTER" | standalone dark page; heading "PrestasiPlus Command Center" (upper case by CSS) | 200; polls live data every 10 s |
-| S3 | `/admin/command-center/daily-activity` | "AKTIVITI PLATFORM — PRESTASIPLUS" | own board frame `CcBoardFrame` (no admin shell), `DsPageHeader` title "PrestasiPlus Command Center" with subtitle "Aktiviti Platform" (DV-M17-53) | 200; reloads every 30 s |
+| S3 | `/admin/command-center/daily-activity` | "AKTIVITI PLATFORM — PRESTASIPLUS" | `bare` route in its own staff frame `CcBoardFrame` (brand bar, theme switch; with the prototype scope on, Admin Pusat sees it inside the Portal Pentadbiran, D30), `DsPageHeader` title "PrestasiPlus Command Center" with subtitle "Aktiviti Platform" (DV-M17-53) | 200; reloads every 30 s |
 | S4 | `/admin/command-center/school/{id}` (new) | "{sekolah} - Command Center" | standalone | 200; unknown id 404 |
 | S5 | `/admin/command-center/school/{sid}/teacher/{uid}` (new) | "{guru} - Command Center" | standalone | 200; unknown id 404 |
 | S6 | `/admin/command-center/classroom/{id}` (new) | "{kelas} - Command Center" | standalone | 200; unknown id 404 |
