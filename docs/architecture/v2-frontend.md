@@ -145,7 +145,7 @@ Legacy folders (`src/shells`, `src/components/*`, `src/styles/live-globals.css`)
 flowchart TD
   A[navigation] --> B[session.check: reload session, drop expired]
   B --> C{route.access = auth<br/>and no session?}
-  C -- yes --> L["redirect /login (no redirect param)"]
+  C -- yes --> L["redirect /login?redirect=path (D51)"]
   C -- no --> D{route.portal = awam?}
   D -- yes --> OK[allow]
   D -- no --> E{portal of active role<br/>= route.portal?}

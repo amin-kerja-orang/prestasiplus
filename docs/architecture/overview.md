@@ -231,7 +231,7 @@ Module folder names use the SRS slugs (`m01-authentication`, `m02-users-schools`
 | Key | Values | Meaning |
 |---|---|---|
 | `layout` | `admin` · `user` · `role` · `public-or-user` · `bare` | Which frame wraps the page (§5.3) |
-| `access` | `public` · `auth` | `auth` = session required; a guest goes to `/login` with no message and no `redirect` parameter (FR-M01-14, BR-08) |
+| `access` | `public` · `auth` | `auth` = session required; a guest goes to `/login?redirect=<original path>` with no message (FR-M01-14, BR-08; v2: D51, M01-DEV-02) |
 | `roles` | `Role[]` (optional) | Allowed roles. Omitted = any logged-in role |
 | `onForbidden` | `landing` (default) · `403` · `404` | Guard outcome for a logged-in user whose role is not allowed. `landing` = redirect to the role landing path (M02 FR-99, M03 FR-94, M07 FR-59, INFERRED); `403` = the standalone "Akses Ditolak" page (M08); `404` where an SRS says so |
 | `title` | string or `(route) => string` | Exact browser tab title from each SRS §2. No automatic suffix: live suffixes vary (" - PRESTASIPLUS", " - Admin Panel", " - Admin PRESTASIPLUS", " — PRESTASIPLUS", none) |
@@ -254,7 +254,7 @@ The shell component stays mounted while consecutive routes resolve to the same l
 
 ### 5.4 Guards (in order, `guards.ts`)
 1. **Session check:** the session store holds `pp.auth` (localStorage). An expired session (by the shared clock) is cleared.
-2. **Auth:** `access: 'auth'` and no session → `router.replace('/login')`. There is no `redirect` query and no message.
+2. **Auth:** `access: 'auth'` and no session → `router.replace('/login')` with `?redirect=<original path>` and no message (v2: D51, M01-DEV-02; BR-08 gives the post-login rules).
 3. **Role:** `roles` set and the role is not included → `onForbidden` (landing redirect by default).
 4. **Guest pages have no guard:** `/login` and `/register` render for logged-in users (FR-M01-13).
 5. **After navigation:** set `document.title`, reset `usePageMeta`, consume the pending flash message, and scroll to top. Hash links (e.g. `/panduan#pelajar`) scroll to the anchor. Live does a full page load on every navigation, including query-only filter changes, so the top is always the right place.
@@ -694,7 +694,7 @@ Hook names are global. A module registering a name that already exists throws at
 | Login | `POST /api/auth/login {email, password, remember}` (M01 #1): credentials check (one message for unknown email or wrong password), inactive check → `403 ACCOUNT_INACTIVE`, throttle → `429 RATE_LIMITED` | M01 BR-01, BR-02, BR-23 |
 | Session record | Mock `sessions` table `{token, userId, remember, expiresAt}`. Non-remember: 120 min **sliding** (every authenticated request extends it). Remember: +5 years | M01 BR-06, DATA-M01-02 |
 | Client storage | `localStorage['pp.auth'] = {token, remember, expiresAt, user: UserMe}`. The cached `user` feeds the shell identity blocks immediately and is refreshed by `GET /api/me` on each navigation (live renders it per page) | M01 DATA-M01-02, FR-M01-52 |
-| Role routing | After login, register or token reset: `router.replace(user.landingPath)`. Any previously requested URL is ignored | M01 FR-12, BR-07, BR-08 |
+| Role routing | After login, register or token reset: `router.replace(user.landingPath)`. A previously requested path is honoured only if same-origin, not an auth page and role-allowed (v2: D51, M01-DEV-02); otherwise ignored | M01 FR-12, BR-07, BR-08 |
 | Guards | §5.4. Menus are role-filtered from the nav definitions (hidden, not disabled) | FR-G-04 |
 | Logout | `/logout` route (§5.5) | M01 FR-36, FR-37 |
 | Impersonation | M02 "Login As": `POST /api/admin/users/:id/impersonate` returns the target's session, which replaces `pp.auth`, then goes to the target's landing path | M02 §7 #9 |

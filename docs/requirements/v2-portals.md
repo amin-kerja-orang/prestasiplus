@@ -297,7 +297,7 @@ Priority (MoSCoW) in brackets.
 
 ### US-01 [Must] Single login, role-based routing
 As any user, I want one login screen, so that I land in the right portal without choosing a URL.
-- AC-01.1 Given a guest on any protected URL, when it is requested, then the user is sent to the login screen with no redirect parameter (replicates BR-08; avoids `intended()` hijack noted in `web.php:472`).
+- AC-01.1 Given a guest on any protected URL, when it is requested, then the user is sent to `/login?redirect=<original path>`; after a successful login the user lands on that path only if it is same-origin, not an auth page and allowed for their role, otherwise on the role landing page; unsafe values (`//x`, `https://…`, `/\`, `javascript:`) fall back to the landing page (D51, M01-DEV-02; supersedes the earlier "no redirect parameter" rule of M01 BR-08).
 - AC-01.2 Given valid credentials of a staff user (email), when login succeeds, then the browser lands on the Portal Pentadbiran home for that role (§4.1).
 - AC-01.3 Given valid credentials of a Murid/Guru (school + username or email), when login succeeds, then the browser lands on the Portal Pembelajaran home for that role.
 - AC-01.4 Given invalid credentials, then the exact message is "E-mel/Nama pengguna atau kata laluan tidak sah." and no field reveals which part was wrong. [C `web.php:478`]
