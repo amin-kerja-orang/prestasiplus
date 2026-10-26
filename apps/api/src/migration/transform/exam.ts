@@ -26,7 +26,9 @@ export const EXAM_MODE_MAP = {
 /**
  * `attempt_statuses.slug` (reached through `exam_attempts.status_id`) -> v2 status. The real slugs are `in_progress`,
  * `submitted` and `marked`; a marked attempt is a submitted one that has been graded. `selesai` is the value in the
- * BE-35 fixture. An attempt still `in_progress` has no v2 equivalent without a deadline and is UNKNOWN_ENUM.
+ * BE-35 fixture. An attempt still `in_progress` has no v2 equivalent without a deadline: A1-FIX (LEAD, 25 Oct 2026)
+ * drops it as a documented exclusion (`EXAM_STATUSES_EXCLUDED`, `isExcludedExamStatus`), so it is neither loaded nor a
+ * reject. The transform itself still answers UNKNOWN_ENUM for it; the step filters it out before the transform.
  */
 export const EXAM_STATUS_MAP = {
   submitted: 'submitted',
@@ -39,13 +41,17 @@ export const EXAM_STATUS_MAP = {
   ditinggalkan: 'abandoned',
 } as const
 
-/** Statuses that are known and deliberately not migrated (no v2 equivalent): rejected and counted by name. */
-export const EXAM_STATUSES_DEFERRED: readonly string[] = ['in_progress']
+/**
+ * Statuses that are known and deliberately not migrated (A1-FIX): an unfinished attempt has no v2 equivalent. They are
+ * EXCLUDED (reconciliation `eligible_count` leaves them out, they are not rejects) and counted by name in the report note
+ * `exam_attempts.excluded.<status>`. Any other unmapped status is still a reject (`exam_attempts.status_rejected.other`).
+ */
+export const EXAM_STATUSES_EXCLUDED: readonly string[] = ['in_progress']
 
-/** Report label of a rejected status: the slug when it is one of `EXAM_STATUSES_DEFERRED`, else `other` (never raw text). */
-export function examStatusRejectLabel(raw: string | null | undefined): string {
+/** The `EXAM_STATUSES_EXCLUDED` slug of a raw status (after `enumKey`), or null when the attempt is not excluded. */
+export function excludedExamStatus(raw: string | null | undefined): string | null {
   const k = enumKey(raw)
-  return k !== null && EXAM_STATUSES_DEFERRED.includes(k) ? k : 'other'
+  return k !== null && EXAM_STATUSES_EXCLUDED.includes(k) ? k : null
 }
 
 export const EXAM_FALLBACK_TITLE = 'Percubaan peperiksaan lama'

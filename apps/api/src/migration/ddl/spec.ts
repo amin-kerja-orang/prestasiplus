@@ -168,7 +168,9 @@ const STAGING: TableSpec[] = [
   s('coin_transactions', [
     'user_id:id:fk=users', 'type:t:enum', 'source:t:enum', 'amount:i', 'balance_after:i',
   ]),
-  s('challenges', ['created_by:id:fk=users', 'classroom_id:id:fk=classrooms', 'challenge_type:t:enum', 'title:t', 'target_value:n']),
+  s('challenges', ['created_by:id:fk=users', 'classroom_id:id:fk=classrooms', 'challenge_type:t:enum', 'title:t', 'target_value:n',
+    'reward_syiling:i', 'reward_xp:i', 'difficulty:t:enum', 'is_active:t:enum', 'sort_order:i',
+  ]),
   s('challenge_user', [
     'challenge_id:id:fk=challenges', 'user_id:id:fk=users', 'progress:i', 'completed_at:ts', 'claimed_on:d',
   ], pivot),

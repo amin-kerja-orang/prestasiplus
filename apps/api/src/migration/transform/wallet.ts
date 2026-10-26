@@ -103,7 +103,16 @@ export const LEDGER_TYPE_MAP = {
  *  - `spm` (first SPM session of the day, +7), `streak_bonus` (historical kombo bonus) and `reward_claim` (legacy
  *    syiling reward claim, spend) are the M14 URS values (FN-M14-8.1.4, 8.1.5, 8.3.6): history only, BE-11 writes no
  *    new row of these, so the .cloud value is kept as is.
- * The full real value set is Perlu pengesahan (OD-2); an unlisted source stays UNKNOWN_ENUM.
+ *  - A1-FIX (LEAD decision, A1 reject analysis): the codes of the anonymised A1 dump are mapped. v2 has no source enum
+ *    (free text; `ck_coin_ledger_source` is a length check), so no enum value and no migration is added. Four codes are
+ *    aliases of the name v2 writes for the same event: `token_convert` and `tukar_token` (`tukar-token`) are
+ *    `token_conversion`, `cabaran_harian` (`cabaran-harian`) is `daily_challenge`, `kotak_misteri` (`kotak-misteri`) is
+ *    `mystery_box` (keys are `enumKey` forms: a dash becomes `_`). The game codes v2 itself writes (`papan_bijak`,
+ *    `benteng_*`, `perang_fakta_win`, `mathrace_play`, `jutawan_ilmu`, `betul_salah`) and the M14-listed history codes
+ *    (`quiz_complete`, `structured_question`) are kept. The rest have no v2 writer (retired activities): their history
+ *    keeps the .cloud value as it is (like `spm` and `streak_bonus`), so nothing is collapsed into a generic `legacy`
+ *    value and no ledger amount changes. The sign of a row is still decided by its type (debit-only sources: see below).
+ * An unlisted source stays UNKNOWN_ENUM.
  */
 export const LEDGER_SOURCE_MAP = {
   practice: 'quiz_practice',
@@ -119,6 +128,41 @@ export const LEDGER_SOURCE_MAP = {
   reward_claim: 'reward_claim',
   mystery_box: 'mystery_box',
   hadiah_redeem: 'hadiah_redeem',
+  // ---- A1-FIX: aliases of the v2 name for the same event
+  token_convert: 'token_conversion',
+  tukar_token: 'token_conversion',
+  cabaran_harian: 'daily_challenge',
+  kotak_misteri: 'mystery_box',
+  // ---- A1-FIX: names v2 writes for the game rewards, kept
+  jutawan_ilmu: 'jutawan_ilmu',
+  papan_bijak: 'papan_bijak',
+  papan_bijak_win: 'papan_bijak_win',
+  betul_salah: 'betul_salah',
+  perang_fakta_win: 'perang_fakta_win',
+  mathrace_play: 'mathrace_play',
+  benteng_play: 'benteng_play',
+  benteng_win: 'benteng_win',
+  // ---- A1-FIX: names listed by M14 (history), kept
+  quiz_complete: 'quiz_complete',
+  structured_question: 'structured_question',
+  // ---- A1-FIX: retired activities with no v2 writer: history keeps the .cloud value
+  latihan: 'latihan',
+  memory_game: 'memory_game',
+  daily_spin: 'daily_spin',
+  perang_fakta_play: 'perang_fakta_play',
+  remedial_quiz: 'remedial_quiz',
+  quiz: 'quiz',
+  mathrace_win: 'mathrace_win',
+  susun_jawapan: 'susun_jawapan',
+  crossword_play: 'crossword_play',
+  crossword_win: 'crossword_win',
+  homework_chapter: 'homework_chapter',
+  sambung_kata: 'sambung_kata',
+  notes_mastery: 'notes_mastery',
+  tembak_jawapan: 'tembak_jawapan',
+  speed_challenge: 'speed_challenge',
+  kuizrelay_play: 'kuizrelay_play',
+  data_sync: 'data_sync',
 } as const
 
 /**
