@@ -221,7 +221,7 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
       expect(mine.headers['cache-control']).toBe('no-store')
     })
 
-    it('GET /admin/teachers/:id/classrooms is [] until BE-17 (also for an unknown teacher)', async () => {
+    it('GET /admin/teachers/:id/classrooms is [] when no class owner is bound (users module alone; the real list is tested with the classes module)', async () => {
       expect((await admin.get(`/admin/teachers/${ownTeacher}/classrooms`)).body).toEqual({ data: [] })
       expect((await admin.get('/admin/teachers/987654321/classrooms')).body).toEqual({ data: [] })
     })

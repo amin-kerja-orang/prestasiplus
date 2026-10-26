@@ -88432,7 +88432,7 @@
           "users"
         ],
         "summary": "Active classes of a teacher",
-        "description": "Access: admin, school_admin. Scope: admin: any teacher; school_admin: own school teachers only. [] for none or an unknown teacher (no 404). Empty until the class module exists.",
+        "description": "Access: admin, school_admin. Scope: admin: any teacher; school_admin: own school teachers only. [] for none or an unknown teacher (no 404). The teacher's active classes (kind classroom), name A to Z then id: the classes POST /admin/comp-students accepts.",
         "parameters": [
           {
             "schema": {

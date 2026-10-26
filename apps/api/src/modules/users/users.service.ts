@@ -36,6 +36,7 @@ import { generatePassword, IcService } from './credentials'
 import { toDetail, toListItem, toStudentItem } from './users.mapper'
 import { BULK_DELETE_MAX_IDS, PAGE_NUMBER_MAX, USER_AUDIT } from './users.constants'
 import { FIELD_MESSAGES, forbidden, invalid, lastAdmin, notFound } from './users.errors'
+import { UsersPorts } from './users.ports'
 import { UsersRepository, uniqueField, type UserRecord } from './users.repository'
 
 type LinkChange = { added: string[]; removed: string[] }
@@ -82,6 +83,7 @@ export class UsersService {
     @Inject(IcService) private readonly ic: IcService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(ParentsRepository) private readonly parentLinks: ParentsRepository,
+    @Inject(UsersPorts) private readonly ports: UsersPorts,
   ) {}
 
   // --- reads --------------------------------------------------------------------------------------
@@ -148,6 +150,21 @@ export class UsersService {
 
   async teachers(caller: Caller): Promise<{ id: string; name: string; email: string | null }[]> {
     const rows = await this.users.teachers(caller)
+    return rows.sort(byNameThenId)
+  }
+
+  /**
+   * The teacher's active classes for the "Kelas guru" select, name A to Z then id. `[]` for none, for an unknown
+   * teacher and (school_admin) for a teacher outside the caller's school: the contract has no 404 here, and
+   * an out-of-scope teacher must look the same as an unknown one.
+   */
+  async teacherClassrooms(caller: Caller, teacherId: string): Promise<{ id: string; name: string; classCode: string }[]> {
+    if (!isIdString(teacherId)) return []
+    if (!caller.isAdmin) {
+      const teacher = await this.users.get(teacherId)
+      if (!teacher || !teacher.roles.includes('teacher') || teacher.schoolId !== caller.schoolId) return []
+    }
+    const rows = await this.ports.classrooms.activeOf(teacherId)
     return rows.sort(byNameThenId)
   }
 

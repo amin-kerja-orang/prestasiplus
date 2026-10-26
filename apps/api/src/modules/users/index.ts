@@ -11,3 +11,4 @@ export type {
   UserSearchInput,
 } from './users.repository'
 export { ImportJobsRepository } from './import'
+export { UsersPorts, type TeacherClassroomRow, type TeacherClassroomsProvider } from './users.ports'
