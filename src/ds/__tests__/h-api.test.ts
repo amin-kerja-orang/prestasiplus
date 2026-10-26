@@ -69,7 +69,16 @@ describe('value tone (R2)', () => {
     const old = mount(DsStatTile, { props: { value: 5, unit: 'Murid', valueClass: 'text-success' } })
     expect(old.get('.tabular').classes()).toContain('text-success')
   })
-  it('DsStatTile: values break only between words, labels wrap inside the tile', () => {
+  it('DsStatRow passes valueTone through', () => {
+    const w = mount(DsStatRow, {
+      props: { items: [{ key: 'a', label: 'A', value: 1, valueTone: 'warning' }] },
+    })
+    expect(w.get('.tabular').classes()).toContain('text-warning')
+  })
+})
+
+describe('DsStatTile wrapping (G5 re-test: M02 BUG-04, M11 bug 6)', () => {
+  it('values break only between words, labels wrap inside the tile', () => {
     for (const density of ['default', 'roomy'] as const) {
       const w = mount(DsStatTile, {
         props: { value: '26/10/2026', unit: 'Purata/Pelajar', density, icon: 'i-ph-x' },
@@ -87,12 +96,6 @@ describe('value tone (R2)', () => {
         expect.arrayContaining(['max-w-full', 'min-w-0']),
       )
     }
-  })
-  it('DsStatRow passes valueTone through', () => {
-    const w = mount(DsStatRow, {
-      props: { items: [{ key: 'a', label: 'A', value: 1, valueTone: 'warning' }] },
-    })
-    expect(w.get('.tabular').classes()).toContain('text-warning')
   })
 })
 
