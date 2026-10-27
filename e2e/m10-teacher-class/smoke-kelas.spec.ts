@@ -10,7 +10,6 @@ import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import {
-  acceptNextDialog,
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
@@ -41,7 +40,7 @@ async function pickSchool(page: Page, term: string, namePattern: RegExp): Promis
   await page.getByTestId('school-search').fill(term)
   const results = page.getByTestId('school-result')
   await expect(results.first()).toBeVisible()
-  const names = await results.locator('span:first-child').allTextContents()
+  const names = await results.locator('span > span:first-child').allTextContents()
   const index = names.findIndex((n) => namePattern.test(n.trim()))
   expect(index, 'a result matching ' + String(namePattern)).toBeGreaterThanOrEqual(0)
   await results.nth(index).click()
@@ -108,22 +107,25 @@ test.describe('M10 S4 Kelas Saya', MODULE, () => {
       await loginAs(GURU)
       await gotoApp('/guru/kelas')
       await page.getByTestId('class-card').first().getByTestId('class-qr').click()
-      await expect(page.getByTestId('quick-qr-modal')).toBeVisible()
-      await expect(page.getByTestId('qr-name')).not.toHaveText('-')
+      const modal = page.getByRole('dialog')
+      await expect(modal).toBeVisible()
+      await expect(modal.getByRole('heading')).not.toHaveText('-')
       await expect(page.getByTestId('qr-school')).toHaveText('SMK DEMO')
       const canvas = page.getByTestId('qr-canvas')
       await expect(canvas).toBeVisible()
-      const box = await canvas.boundingBox()
-      expect(Math.round(box!.width)).toBe(192)
-      expect(Math.round(box!.height)).toBe(192)
+      // the dialog scales in (200ms): poll until the canvas box settles at 192px
+      for (const side of ['width', 'height'] as const) {
+        await expect.poll(async () => Math.round((await canvas.boundingBox())![side])).toBe(192)
+      }
       const url = await page.getByTestId('qr-url').inputValue()
       expect(url).toMatch(/^https:\/\/prestasiplus\.my\/kelas-saya\?kod=DMO101$/)
       await expect(page.getByTestId('qr-url')).toHaveAttribute('readonly', '')
       await expectNoHorizontalScroll(page)
 
-      const dialog = acceptNextDialog(page, { type: 'alert', message: 'Disalin!' })
       await page.getByTestId('qr-copy').click()
-      await dialog
+      await expect(page.getByText('Disalin!', { exact: true })).toBeVisible()
+      // the toast overlays the bottom-sheet footer at 375px: wait until it is gone before the next click
+      await expect(page.getByText('Disalin!', { exact: true })).toHaveCount(0, { timeout: 10_000 })
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(url)
 
       await page.getByTestId('qr-print').click()
@@ -132,12 +134,12 @@ test.describe('M10 S4 Kelas Saya', MODULE, () => {
       ).toBe(1)
 
       await page.getByTestId('qr-close').click()
-      await expect(page.getByTestId('quick-qr-modal')).toHaveCount(0)
+      await expect(page.getByRole('dialog')).toHaveCount(0)
 
       await page.getByTestId('class-card').first().getByTestId('class-qr').click()
-      await expect(page.getByTestId('quick-qr-modal')).toBeVisible()
-      await page.getByTestId('cmp-modal-backdrop').click({ position: { x: 4, y: 4 } })
-      await expect(page.getByTestId('quick-qr-modal')).toHaveCount(0)
+      await expect(page.getByRole('dialog')).toBeVisible()
+      await page.locator('[data-slot="overlay"]').click({ position: { x: 4, y: 4 } })
+      await expect(page.getByRole('dialog')).toHaveCount(0)
     },
   )
 })
@@ -248,7 +250,7 @@ test.describe('M10 S5 Cipta Kelas', MODULE, () => {
       await pickSchool(page, 'SEKOLAH MENENGAH', /^SEKOLAH MENENGAH /)
       await page.getByTestId('kelas-name').fill('5 Bestari')
       await page.getByTestId('kelas-subject').selectOption({ label: 'Kimia' })
-      await page.getByTestId('kelas-level').filter({ hasText: 'Ting. 5' }).click()
+      await page.getByTestId('kelas-levels').getByRole('radio', { name: 'Ting. 5' }).click()
       await page.getByTestId('kelas-submit').click()
       await expect(page).toHaveURL(/\/guru\/kelas$/)
       await expect(page.getByTestId('kelas-active-count')).toHaveText('3 kelas aktif')
@@ -282,7 +284,7 @@ test.describe('M10 S35 and role access', MODULE, () => {
     provisional('other roles on /guru/* are INFERRED (OQ-M10-08)'),
     async ({ page, gotoApp, loginAs }) => {
       await gotoApp('/guru/kelas')
-      await expect(page).toHaveURL(/\/login$/)
+      await expect(page).toHaveURL(/\/login\?redirect=(%2F|\/)guru(%2F|\/)kelas$/)
       await loginAs(PELAJAR)
       await gotoApp('/guru/kelas/cipta')
       await expect(page).not.toHaveURL(/\/guru\//)

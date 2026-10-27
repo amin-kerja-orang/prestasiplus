@@ -8,7 +8,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
-import { actAs, moduleTag } from '../support'
+import { actAs, expectContrast, moduleTag } from '../support'
 
 function luminance([r = 0, g = 0, b = 0]: number[]): number {
   const c = [r, g, b].map((v) => {
@@ -61,14 +61,16 @@ test.describe('L45 QA: gradient heading contrast', { tag: [moduleTag(1)] }, () =
     await gotoApp('/jemput-ibu-bapa')
     await expect(page.getByTestId('jemput-hero')).toBeVisible()
     await expectReadable(page, '[data-testid=jemput-hero] h1')
-    expect(await page.locator('[data-testid=jemput-hero] h1').evaluate((e) => getComputedStyle(e).color)).toBe('rgb(255, 255, 255)')
+    expect(
+      await page.locator('[data-testid=jemput-hero] h1').evaluate((e) => getComputedStyle(e).color),
+    ).toBe('rgb(255, 255, 255)')
   })
 
-  test('S2 invalid page H1 is white (OBSERVED live) and readable', async ({ page, gotoApp }) => {
+  test('S2 invalid page H1 is readable', async ({ page, gotoApp }) => {
     await gotoApp('/ibu-bapa/terima/0000')
     await expect(page.getByTestId('invite-invalid')).toBeVisible()
-    await expectReadable(page, '[data-testid=invite-invalid] h1')
-    expect(await page.locator('[data-testid=invite-invalid] h1').evaluate((e) => getComputedStyle(e).color)).toBe('rgb(255, 255, 255)')
+    // v2 restyle (DsPage / UCard, dark heading): real contrast against the actual background, no exact colour
+    await expectContrast(page.locator('[data-testid=invite-invalid] h1'), 3)
   })
 
   test('S2 valid card H1 is readable (guest state)', async ({ page, gotoApp, mock }) => {
