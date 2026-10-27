@@ -10,7 +10,6 @@ import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import {
-  acceptNextDialog,
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
@@ -118,8 +117,8 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(GURU)
       await gotoApp('/guru/pelajar')
-      await expect(page.getByTestId('pelajar-count')).toHaveText('8')
-      await expect(page.getByTestId('tab-mine-count')).toHaveText('8')
+      await expect(page.getByTestId('pelajar-value')).toHaveText('8')
+      await expect(page.getByTestId('tab-mine')).toHaveText('Pelajar Saya (8)')
       await expect(page.getByTestId('student-row')).toHaveCount(8)
       await expect(page.getByTestId('student-name').first()).toContainText('Murid Demo')
       await expect(page.getByTestId('student-class').first()).toBeVisible()
@@ -143,7 +142,7 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
       await expectTouchTarget(row.getByTestId('student-add'))
       await expectNoHorizontalScroll(page)
       await row.getByTestId('student-add').click()
-      await expect(page.getByTestId('pelajar-count')).toHaveText('9')
+      await expect(page.getByTestId('pelajar-value')).toHaveText('9')
       await page.getByTestId('tab-mine').click()
       await expect(page.getByTestId('student-row').filter({ hasText: 'Pelajar Demo' })).toHaveCount(
         1,
@@ -161,9 +160,11 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
       const chips = await page.getByTestId('student-class').count()
       const remove = page.getByTestId('student-remove').first()
       await expectTouchTarget(remove)
-      const dialog = acceptNextDialog(page, { type: 'confirm' })
       await remove.click()
-      await dialog
+      await expect(page.locator('[data-ds="confirm-message"]')).toHaveText(
+        'Keluarkan pelajar ini daripada kelas?',
+      )
+      await page.locator('[data-ds="confirm-ok"]').click()
       await expect(page.getByTestId('student-class')).toHaveCount(chips - 1)
     },
   )
@@ -173,7 +174,7 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
     provisional('other roles on /guru/* are INFERRED (OQ-M10-08)'),
     async ({ page, gotoApp, loginAs }) => {
       await gotoApp('/guru/pelajar')
-      await expect(page).toHaveURL(/\/login$/)
+      await expect(page).toHaveURL(/\/login\?redirect=(%2F|\/)guru(%2F|\/)pelajar$/)
       await loginAs(PELAJAR)
       await gotoApp('/guru/pelajar')
       await expect(page).not.toHaveURL(/\/guru\//)
