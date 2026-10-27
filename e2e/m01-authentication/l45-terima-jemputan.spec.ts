@@ -160,15 +160,21 @@ test.describe('L45 S2 /ibu-bapa/terima/:token', { tag }, () => {
       await expect(page.getByTestId('invite-heading')).toContainText('Pelajar Dua Demo')
 
       await actAs(page, mock, gotoApp, ADMIN, '/admin/users?role=student')
-      await page.getByTestId('users-search').fill('pelajar2@demo.test')
-      await page.getByTestId('users-search-submit').click()
-      const row = page.getByTestId('user-row').filter({ hasText: 'pelajar2@demo.test' })
-      await expect(row).toHaveCount(1)
-      const toggle = row.getByTestId('user-toggle')
-      await expect(toggle).toHaveText('Aktif')
-      page.once('dialog', (dialog) => void dialog.accept())
-      await toggle.click()
-      await expect(toggle).toHaveText('Tidak')
+      // M02 users list (v2): DsFilterBar search (Enter applies it), row actions menu, DsConfirmHost dialog
+      const search = page.getByTestId('users-search')
+      await search.fill('pelajar2@demo.test')
+      await search.press('Enter')
+      const rowMenu = page.getByRole('button', { name: 'Tindakan lain untuk Pelajar Dua Demo' })
+      await expect(rowMenu).toHaveCount(1)
+      await rowMenu.click()
+      await page.getByRole('menuitem', { name: 'Nyahaktifkan' }).click()
+      await expect(page.locator('[data-ds=confirm-message]')).toHaveText(
+        'Pasti untuk menukar status pengguna ini?',
+      )
+      await page.locator('[data-ds=confirm-ok]').click()
+      await rowMenu.click()
+      await expect(page.getByRole('menuitem', { name: 'Aktifkan', exact: true })).toBeVisible()
+      await page.keyboard.press('Escape')
 
       await actAs(page, mock, gotoApp, null, `/ibu-bapa/terima/${TOKEN_3}`)
       await expectInvalidPage(page)
@@ -371,7 +377,11 @@ test.describe('L45 S2 /ibu-bapa/terima/:token', { tag }, () => {
           await expect(page.getByTestId(marker)).toBeVisible()
           await expectNoHorizontalScroll(page)
           // Every link and button >= 44px; buttons are full width of the card below sm.
-          const targets = page.locator('main a, main button')
+          // Only the inline "Daftar akaun Ibu Bapa" text link in the sentence is excluded
+          // (M01 R11 / #385: WCAG 2.5.8 inline exception (D9/D10)); it measures 20px at 375.
+          const targets = page.locator(
+            'main a:not([data-testid="invite-register-link"]), main button',
+          )
           const count = await targets.count()
           for (let i = 0; i < count; i++) await expectTouchTarget(targets.nth(i))
           // No text below 12px.

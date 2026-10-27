@@ -22,7 +22,8 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await expectTabTitle(page, 'Log Masuk - PRESTASIPLUS')
 
     const form = page.getByTestId('login-form')
-    await expect(page.getByAltText('PRESTASIPLUS')).toBeVisible()
+    // the logo renders a light and a display:none dark <img>; assert the visible one
+    await expect(page.locator('img[alt="PRESTASIPLUS"]:visible')).toHaveCount(1)
     await expect(page.getByText('Platform Latih Tubi Nasional 🇲🇾')).toBeVisible()
     await expect(form.getByLabel('Alamat Email')).toHaveAttribute('placeholder', 'nama@email.com')
     await expect(form.getByLabel('Kata Laluan')).toHaveAttribute('type', 'password')
@@ -84,6 +85,8 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
+  // depends on #383 (R1 xl field size): the state select is 44px high but the school search input
+  // is 40px, so their tops are 2px apart and the "side by side" check (< 2px) fails at every width.
   test('register page: title, copy, role and level cards, no horizontal scroll', async ({
     page,
     gotoApp,
