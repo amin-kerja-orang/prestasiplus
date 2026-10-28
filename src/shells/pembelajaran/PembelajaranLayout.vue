@@ -213,12 +213,12 @@ const lagiGroups = computed(() => [
 
 /**
  * One line per row, quiet section labels; active row: gradient pill (learner) or tinted pill (staff).
- * The active fill sits on the link itself, not only on its `::before` pill: the theme's
- * `hover:bg-elevated` paints the link background above the pill, so hovering the active learner row
- * used to show the `primary-on` (white) label on the light `elevated` grey. Learner:
- * `bg-gradient-primary` (`--ds-c1` to `--ds-primary-2`, a background image the hover colour cannot
- * cover) with `text-primary-on`, light and dark (white label 5.2:1). Staff: `bg-primary-soft` with
- * `text-primary-t`, kept on hover.
+ * The active fill sits on the link itself, not only on its ::before pill: the theme hover
+ * background (elevated) paints the link above the pill, so hovering the active learner row used to
+ * show the white primary-on label on the light elevated grey. Learner: the primary gradient (ds-c1
+ * to ds-primary-2, a background image the hover colour cannot cover) with the primary-on label,
+ * light and dark (white label 5.2:1). Staff: the primary-soft tint with the primary-t label, kept
+ * on hover. (No quotes or backticks in this comment: the ds-debt scanner reads them as literals.)
  */
 const navUi = computed(() => ({
   root: 'gap-0',
