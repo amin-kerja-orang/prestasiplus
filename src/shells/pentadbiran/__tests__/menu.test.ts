@@ -85,6 +85,8 @@ describe('Pentadbiran routing', () => {
 })
 
 describe('Pembelajaran menus (scope off, UAT build)', () => {
+  const LIVE_403_FOR_ALL: ReadonlySet<string> = new Set(['/laporan-mingguan'])
+
   const routes = (entries: readonly NavEntry[]): string[] =>
     entries.flatMap((e) =>
       e.kind === 'item' ? [e.to] : e.kind === 'group' ? e.children.map((c) => c.to) : [],
@@ -92,6 +94,8 @@ describe('Pembelajaran menus (scope off, UAT build)', () => {
 
   it('every visible link of every v2 role resolves to a real route the role may open', () => {
     const router = createAppRouter({ history: createMemoryHistory() })
+    // Every offender is collected so one run lists them all.
+    const bad: string[] = []
     for (const role of ['student', 'teacher', 'school_admin'] as const) {
       const all = [
         ...routes(navFor(role, 'sidebar')),
@@ -102,14 +106,18 @@ describe('Pembelajaran menus (scope off, UAT build)', () => {
       expect(all.length, role).toBeGreaterThan(0)
       for (const to of new Set(all)) {
         const resolved = router.resolve(to)
-        expect(resolved.matched.length, `${role} ${to}`).toBeGreaterThan(0)
-        expect(String(resolved.name), `${role} ${to}`).not.toMatch(/not-found|404/i)
-        for (const record of resolved.matched) {
-          const allowed = record.meta.roles
-          if (allowed) expect(allowed, `${role} ${to} roles`).toContain(role)
+        if (resolved.matched.length === 0 || /not-found|404/i.test(String(resolved.name))) {
+          bad.push(`${role} ${to} (no route)`)
+          continue
         }
+        // Observed live 403 page for every role (M08 S21, OQ-M08-01), kept by fidelity and also
+        // listed with the scope on (teacher matrix row 43): not a menu defect.
+        if (LIVE_403_FOR_ALL.has(to)) continue
+        const refused = resolved.matched.some((r) => r.meta.roles && !r.meta.roles.includes(role))
+        if (refused) bad.push(`${role} ${to} (role refused)`)
       }
     }
+    expect(bad).toEqual([])
   })
 
   it('lists at least every item the scoped menu lists (nothing lost with the scope off)', () => {
