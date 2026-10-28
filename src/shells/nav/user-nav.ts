@@ -761,11 +761,13 @@ export function navFor(
   // Release 1.0 scope: items listed in out-of-scope.ts stay in the data but are not rendered.
   // With the v2 prototype scope on (D43), role-access-matrix.md governs the menu instead, so the
   // Release 1.0 list is skipped there (it would hide matrix screens such as Laporan Mingguan).
+  // With the scope off the student also loses the items with no student screen (STUDENT_HIDDEN_IDS:
+  // `/headcount` refuses the role, `/analisa-item` bounces to /dashboard), as with the scope on.
   const inScope = (entry: NavEntry): boolean =>
     options.includeOutOfScope === true ||
     isPrototypeScopeOn() ||
     entry.kind !== 'item' ||
-    !isOutOfScope(entry.to)
+    (!isOutOfScope(entry.to) && !(role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)))
   const visible = scopeEntries(
     entries
       .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))
