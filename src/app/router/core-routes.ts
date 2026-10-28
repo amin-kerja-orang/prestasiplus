@@ -8,6 +8,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
 import { useNotificationBadgeStore } from '@/stores/notification-badge'
 import { useSessionStore } from '@/stores/session'
+import type { Role } from '@/stores/session-types'
 
 import { isPrototypeScopeOn } from '../prototype-scope'
 import { LOGIN_PATH } from './guards'
@@ -58,7 +59,18 @@ const notFoundRoute: RouteRecordRaw = {
 }
 
 /**
- * Dev-only routes (build-plan F-13 v1.6): registered only when `import.meta.env.DEV`, so the demo
+ * Where `/admin` goes outside the preview hub. The API lands both `admin` and `school_admin` on `/admin`;
+ * the Admin Pusat home is the Command Center (admin only), the school admin's is `/admin-sekolah` (M27). Sending
+ * a school admin to the Command Center would bounce back to `/admin` through the forbidden-landing guard and
+ * loop (G4 #394 B1), so the role decides here.
+ */
+export function adminLandingFor(role: Role | null): string {
+  return role === 'school_admin' ? '/admin-sekolah' : '/admin/command-center'
+}
+
+/**
+ * Dev-only routes (build-plan F-13 v1.6). Exception: the `/admin` landing redirect below is registered in
+ * every build that has no preview hub (production and e2e included).: registered only when `import.meta.env.DEV`, so the demo
  * and e2e builds drop them (and their chunks) entirely.
  */
 export function devRoutes(): RouteRecordRaw[] {
@@ -68,13 +80,12 @@ export function devRoutes(): RouteRecordRaw[] {
   // any mode; only the design-system sandbox `/__ds` stays. `VITE_PROTOTYPE_SCOPE=off` restores them.
   const scoped = isPrototypeScopeOn()
   // The admin landing `/admin` (D48; the API's LANDING_PATHS for admin and school_admin) has no M17
-  // dashboard page yet, so it opens the admin Command Center instead of a 404. Only dev and demo with the
-  // scope OFF show the preview hub there; every other build (production with VITE_PROTOTYPE_SCOPE=off
-  // included, UAT 28 Oct) keeps the redirect.
+  // dashboard page yet. Only dev and demo with the scope OFF show the preview hub there; every other build
+  // (production with VITE_PROTOTYPE_SCOPE=off included, UAT 28 Oct) redirects by role (adminLandingFor).
   const previewHub = !scoped && (import.meta.env.DEV || import.meta.env.MODE === 'demo')
   const hub: RouteRecordRaw[] = previewHub
     ? previewHubRoutes()
-    : [{ path: '/admin', redirect: '/admin/command-center' }]
+    : [{ path: '/admin', redirect: () => adminLandingFor(useSessionStore().role) }]
   // Design-system gallery (V2-T05): dev and demo, never the e2e build.
   const ds: RouteRecordRaw[] =
     import.meta.env.DEV || import.meta.env.MODE === 'demo'
