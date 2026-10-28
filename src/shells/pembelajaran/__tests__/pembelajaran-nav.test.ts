@@ -15,6 +15,8 @@ import {
   drawerEntries,
   flatItems,
   groupTabs,
+  labelTitle,
+  learnNavUi,
   pembelajaranTabs,
   phIconFor,
   sidebarEntries,
@@ -165,5 +167,38 @@ describe('Pembelajaran Nuxt UI menu data', () => {
       g.items.map((i) => i.id),
     )
     expect(ids.sort()).toEqual(flatItems(entries).map((i) => i.id).sort())
+  })
+})
+
+describe('sidebar active row (UAT: white label on a light grey pill when hovered)', () => {
+  const classes = (learner: boolean): string[] => (learnNavUi(learner).link ?? '').split(/\s+/)
+
+  it('learner: the gradient fill is on the link itself, so the hover grey cannot cover it', () => {
+    const c = classes(true)
+    expect(c).toContain('aria-[current=page]:bg-gradient-primary')
+    expect(c).toContain('aria-[current=page]:text-primary-on')
+    expect(c).toContain('aria-[current=page]:hover:text-primary-on')
+  })
+
+  it('staff: the primary-soft tint and primary-t label stay on hover', () => {
+    const c = classes(false)
+    expect(c).toContain('aria-[current=page]:bg-primary-soft')
+    expect(c).toContain('aria-[current=page]:hover:bg-primary-soft')
+    expect(c).toContain('aria-[current=page]:text-primary-t')
+    expect(c).toContain('aria-[current=page]:hover:text-primary-t')
+  })
+
+  it('uses design-system tokens only (no arbitrary colour values)', () => {
+    for (const learner of [true, false]) {
+      for (const cls of classes(learner)) {
+        expect(cls, cls).not.toMatch(/(bg|text)-\[|#[0-9a-f]{3,8}|(bg|text)-(white|black|gray|slate)/i)
+      }
+    }
+  })
+
+  it('a short label gets no browser tooltip; a long one keeps its full text', () => {
+    expect(labelTitle('Dashboard')).toBeUndefined()
+    expect(labelTitle(undefined)).toBeUndefined()
+    expect(labelTitle('Kedai Hadiah 🎁 (DIGITAL) untuk murid')).toBe('Kedai Hadiah 🎁 (DIGITAL) untuk murid')
   })
 })

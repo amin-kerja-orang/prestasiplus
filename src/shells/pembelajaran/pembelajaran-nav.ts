@@ -272,6 +272,38 @@ export const CHIP_CLASS: Record<number, string> = {
   8: 'bg-cat-8/15 text-cat-8',
 }
 
+/**
+ * `UNavigationMenu` slot classes of the sidebar and the "Lagi" panel. The active row's fill sits on
+ * the link itself, not only on its `::before` pill: the theme's `hover:bg-elevated` paints the link
+ * background above the pill, so hovering the active learner row used to show the `primary-on`
+ * (white) label on the light `elevated` grey. Learner: `bg-gradient-primary` (from `--ds-c1` to
+ * `--ds-primary-2`) with `text-primary-on`, light and dark (white label 5.2:1). Staff: the
+ * `primary-soft` tint with `text-primary-t`, kept on hover as well.
+ */
+export function learnNavUi(learner: boolean): Record<string, string> {
+  const active = learner
+    ? 'aria-[current=page]:bg-gradient-primary aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:hover:text-primary-on'
+    : 'aria-[current=page]:bg-primary-soft aria-[current=page]:hover:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:hover:text-primary-t'
+  return {
+    root: 'gap-0',
+    link: `h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated ${active} aria-[current=page]:font-semibold`,
+    linkLeadingIcon: 'size-4',
+    linkLabel: 'truncate',
+    linkTrailing: 'shrink-0',
+    label: 'px-2.5 pt-5 pb-1.5 text-overline font-semibold text-muted uppercase',
+  }
+}
+
+/**
+ * Native `title` of a menu label, only for a label long enough to be cut off: a short label is shown
+ * in full, and a browser tooltip on it only covers the next row.
+ */
+export function labelTitle(label: string | undefined): string | undefined {
+  // Labels up to this length fit the default sidebar width (16rem) in one line.
+  const fits = 22
+  return label && label.length > fits ? label : undefined
+}
+
 /** A heading without its leading emoji (the rows carry the icons; labels stay quiet text). */
 export function plainLabel(label: string): string {
   return label.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || label

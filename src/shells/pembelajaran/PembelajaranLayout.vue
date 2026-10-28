@@ -43,6 +43,8 @@ import {
   flatItems,
   groupTabs,
   currentItem,
+  labelTitle,
+  learnNavUi,
   drawerEntries,
   pembelajaranTabs,
   phClass,
@@ -211,16 +213,7 @@ const lagiGroups = computed(() => [
 ])
 
 /** One line per row, quiet section labels; active row: gradient pill (learner) or tinted pill (staff). */
-const navUi = computed(() => ({
-  root: 'gap-0',
-  link: learner.value
-    ? 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:font-semibold'
-    : 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:font-semibold',
-  linkLeadingIcon: 'size-4',
-  linkLabel: 'truncate',
-  linkTrailing: 'shrink-0',
-  label: 'px-2.5 pt-5 pb-1.5 text-overline font-semibold text-muted uppercase',
-}))
+const navUi = computed(() => learnNavUi(learner.value))
 
 const slotById = computed(() => {
   const m = new Map<string, number>()
@@ -312,7 +305,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 /></span>
               </template>
               <template #item-label="{ item }"
-                ><span class="truncate" :title="item.label">{{ item.label }}</span></template
+                ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span></template
               >
             </UNavigationMenu>
           </template>
@@ -597,7 +590,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
               /></span>
             </template>
             <template #item-label="{ item }"
-              ><span class="truncate" :title="item.label">{{ item.label }}</span></template
+              ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span></template
             >
           </UNavigationMenu>
         </template>
