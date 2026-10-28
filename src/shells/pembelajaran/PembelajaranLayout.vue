@@ -13,8 +13,9 @@
  * prototype scope). Legacy pages (routes without `meta.v2`) render unchanged inside a light island.
  */
 import { computed, nextTick, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { shellHomePath } from '@/app/prototype-scope'
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
 import { usePrototypeScope } from '@/composables/usePrototypeScope'
@@ -45,6 +46,7 @@ import {
   drawerEntries,
   pembelajaranTabs,
   phClass,
+  routeRoleCheck,
   sectionOf,
   sidebarEntries,
   tabActive,
@@ -60,6 +62,8 @@ const route = useRoute()
 const { role, name, schoolName } = useShellUser()
 const modeOn = computed(() => useSessionStore().mode !== null)
 const { allows } = usePrototypeScope()
+// Logo link: the role's own dashboard (teacher `/guru`, school admin `/admin-sekolah`), scope on or off.
+const home = computed(() => shellHomePath(role.value))
 const { flash } = useFlash()
 const toast = useToast()
 
@@ -84,8 +88,11 @@ const lagiOpen = ref(false)
 const sidebarOpen = ref(false)
 useExclusiveSheets(lagiOpen, pickerOpen, useMediaQuery(LG_QUERY))
 const tabs = computed(() => pembelajaranTabs(role.value))
-const sidebar = computed(() => sidebarEntries(role.value))
-const drawer = computed(() => drawerEntries(role.value))
+// Scope off (UAT): also drop the menu items whose route refuses the role (no visible-but-forbidden link).
+const router = useRouter()
+const canOpen = computed(() => routeRoleCheck(router, role.value))
+const sidebar = computed(() => sidebarEntries(role.value, canOpen.value))
+const drawer = computed(() => drawerEntries(role.value, canOpen.value))
 const links = computed(() => accountLinks(role.value))
 const showAlesa = computed(() => allows('/cikgu'))
 const isLegacy = computed(() => route.meta.v2 !== true)
@@ -271,7 +278,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
         >
           <template #header="{ collapsed }">
             <RouterLink
-              to="/dashboard"
+              :to="home"
               class="flex min-w-0 items-center gap-2"
               aria-label="Laman utama"
             >
@@ -370,7 +377,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   />
                 </div>
                 <RouterLink
-                  to="/dashboard"
+                  :to="home"
                   class="inline-flex min-h-11 shrink-0 items-center lg:hidden"
                   aria-label="Laman utama"
                   ><DsBrandLogo

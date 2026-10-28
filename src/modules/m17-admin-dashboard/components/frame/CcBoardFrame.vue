@@ -5,10 +5,10 @@
  * teleported to the body inherit the tokens), a brand bar with the theme switch, and the page column.
  * Inside the staff shell (the Guru mount) the pages do not use it.
  */
+import { getActivePinia } from 'pinia'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { isPrototypeScopeOn } from '@/app/prototype-scope'
 import { adminShellFor } from '@/app/router/layouts'
 import { useSession } from '@/composables/useSession'
 import { DsBrandLogo, DsIcon } from '@/ds'
@@ -17,8 +17,10 @@ import { useThemeMode } from '@/theme/color-mode'
 const theme = useThemeMode('staff')
 // Admin Pusat sees these boards inside the Portal Pentadbiran (D30), which already gives the brand
 // bar, theme switch and page column, so the frame only renders its content there.
-// The portal exists only with the prototype scope on, so the session store is not read otherwise.
-const inPortal = isPrototypeScopeOn() && adminShellFor(useSession().role.value) === 'pentadbiran'
+// The portal frames them in every build (scope on or off). A component test mounted without Pinia has
+// no session, so the frame stays standalone there.
+const inPortal =
+  getActivePinia() !== undefined && adminShellFor(useSession().role.value) === 'pentadbiran'
 const label = computed(() =>
   theme.scheme.value === 'dark' ? 'Tukar ke tema cerah' : 'Tukar ke tema gelap',
 )

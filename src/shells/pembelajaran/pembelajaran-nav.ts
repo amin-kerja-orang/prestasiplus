@@ -5,8 +5,9 @@
  * and the prototype scope (D43). The tab bar only chooses which of those entries become tabs.
  */
 import type { NavigationMenuItem } from '@nuxt/ui'
+import type { Router } from 'vue-router'
 
-import { isPathAllowed } from '@/app/prototype-scope'
+import { isPathAllowed, isPrototypeScopeOn } from '@/app/prototype-scope'
 import { FALLBACK_PH, FA_TO_PH } from '@/theme/learn-icons'
 import {
   bottomNavActive,
@@ -136,14 +137,58 @@ export function itemActive(item: NavItem, currentPath: string): boolean {
   return isActivePath(currentPath, item.to, item.activeExcept)
 }
 
+/** Whether the role may open a menu target (`true` when no check is given). */
+export type CanOpen = (to: string) => boolean
+
+/**
+ * `CanOpen` from the router: false when a matched route's `meta.roles` refuses the role. A route
+ * with `roles: []` is the observed live "403 for every role" page (M08 S21 Laporan Mingguan), kept
+ * in the menu as with the scope on. Used only with the prototype scope off: with it on, the
+ * role-access matrix already decides the menu.
+ */
+export function routeRoleCheck(router: Pick<Router, 'resolve'>, role: Role | null): CanOpen {
+  return (to) => {
+    if (isPrototypeScopeOn() || role === null || !to.startsWith('/')) return true
+    return !router
+      .resolve(to)
+      .matched.some((r) => r.meta.roles && r.meta.roles.length > 0 && !r.meta.roles.includes(role))
+  }
+}
+
+/** Drops the items (and group children) the role may not open; an emptied group goes too. */
+function openable(entries: readonly NavEntry[], canOpen?: CanOpen): NavEntry[] {
+  if (!canOpen) return [...entries]
+  const out: NavEntry[] = []
+  for (const entry of entries) {
+    if (entry.kind === 'item') {
+      if (canOpen(entry.to)) out.push(entry)
+    } else if (entry.kind === 'group') {
+      const children = entry.children.filter((c) => canOpen(c.to))
+      if (children.length > 0) out.push({ ...entry, children })
+    } else {
+      out.push(entry)
+    }
+  }
+  // A heading left with no item before the next heading goes too (as in `navFor`).
+  return out.filter((entry, index) => {
+    if (entry.kind !== 'section' && entry.kind !== 'subheading') return true
+    for (const next of out.slice(index + 1)) {
+      if (next.kind === 'item' || next.kind === 'group') return true
+      if (next.kind === 'section') return false
+      if (entry.kind === 'subheading') return false
+    }
+    return false
+  })
+}
+
 /** Full menu for the sidebar (>= lg). */
-export function sidebarEntries(role: Role | null): NavEntry[] {
-  return navFor(role, 'sidebar')
+export function sidebarEntries(role: Role | null, canOpen?: CanOpen): NavEntry[] {
+  return openable(navFor(role, 'sidebar'), canOpen)
 }
 
 /** Full menu for the "Lagi" panel (< lg). */
-export function drawerEntries(role: Role | null): NavEntry[] {
-  return navFor(role, 'drawer')
+export function drawerEntries(role: Role | null, canOpen?: CanOpen): NavEntry[] {
+  return openable(navFor(role, 'drawer'), canOpen)
 }
 
 /** Account links (Profil Saya, Tetapan, Panduan) for the "Lagi" panel; the logout is separate. */

@@ -35,9 +35,18 @@ describe('Pembelajaran shell selection', () => {
     expect(resolveShell('public-or-user', { isLoggedIn: false, role: null })).toBe('public')
   })
 
-  it('keeps the legacy user shell when the scope is off (e2e build)', () => {
+  it('picks the same v2 shells when the scope is off (UAT and e2e builds)', () => {
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'off')
-    expect(userShellFor('student')).toBe('user')
+    expect(userShellFor('student')).toBe('pembelajaran')
+    expect(userShellFor('teacher')).toBe('pembelajaran')
+    expect(userShellFor('school_admin')).toBe('pembelajaran')
+    expect(userShellFor('admin')).toBe('pentadbiran')
+    expect(resolveShell('admin', { isLoggedIn: true, role: 'teacher' })).toBe('pembelajaran')
+    expect(resolveShell('role', { isLoggedIn: true, role: 'admin' })).toBe('pentadbiran')
+    // Roles outside v2 keep the legacy user shell.
+    for (const role of ['parent', 'sponsor', 'ppd_officer'] as const) {
+      expect(userShellFor(role), role).toBe('user')
+    }
   })
 })
 

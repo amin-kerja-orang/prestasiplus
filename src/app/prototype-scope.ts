@@ -10,7 +10,9 @@
  *
  * The scope is ON in every mode (dev, demo, artifact). The only switch is
  * `VITE_PROTOTYPE_SCOPE=off` (set for the e2e build and for Vitest, so the admin/PPD/parent
- * regression specs and tests keep working).
+ * regression specs and tests keep working, and for UAT so every module and role is reachable). The
+ * switch only hides routes, menus and roles: which shell frames a page never depends on it
+ * (`src/app/router/layouts.ts`).
  *
  * Mapping to the live rows: `docs/ROLES-MATRIX-LINES.md` (L01-L59). Each `MatrixItem.no` is the
  * matrix row number of section B; section A items are `A1`-`A5`.
@@ -272,12 +274,13 @@ export function isPathAllowed(role: Role | null, path: string): boolean {
 }
 
 /**
- * Home of the user shell's logo link: the role's own dashboard in scope mode (a teacher or school
- * admin has no `/dashboard` in the prototype), `/dashboard` otherwise. A student's home is
- * `/dashboard` in both API modes (`GET /api/dashboard` is served by the real API).
+ * Home of the shell's logo link: the role's own dashboard for a v2 role (a teacher or school admin
+ * has no `/dashboard` of its own; Admin Pusat goes to its Command Center), `/dashboard` for every
+ * other role. The same with the scope on or off, since the v2 shells are used in every build. A
+ * student's home is `/dashboard` in both API modes (`GET /api/dashboard` is served by the real API).
  */
 export function shellHomePath(role: Role | null): string {
-  return isPrototypeScopeOn() && isPrototypeRole(role) ? scopeHomePath(role) : '/dashboard'
+  return isPrototypeRole(role) ? scopeHomePath(role) : '/dashboard'
 }
 
 /** Where the "back to the dashboard" button of the "not available" page goes. */

@@ -16,6 +16,13 @@ import { statusTone } from '../admin/server-status'
 import { useSessionStore } from '@/stores'
 import { ADMIN_SIDEBAR_STORAGE_KEY, setUnauthorizedRedirect, type UserMe } from '@/stores'
 
+// These specs cover the legacy shell component itself (still the frame of parent, sponsor and PPD).
+// The real layouts.ts frames the student / teacher / admin fixtures in the v2 layouts, so force the
+// legacy choice here.
+vi.mock('@/app/router/layouts', async (importOriginal) =>
+  (await import('@/app/__tests__/legacy-shells')).legacyLayoutsModule(importOriginal),
+)
+
 const TEACHER: UserMe = { ...STUDENT, id: 5, name: 'Guru Demo', role: 'teacher', grade: null }
 
 function page(testId: string, onSetup?: () => void) {

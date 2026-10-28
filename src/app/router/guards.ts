@@ -115,21 +115,25 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
     return { kind: 'redirect', to: landing }
   }
 
+  // The server-given landing of a teacher / school admin is `/dashboard` (the student page, M01
+  // BR-07, INFERRED); a v2 staff role lands on its own home instead (teacher `/guru`, school admin
+  // `/admin-sekolah`, Admin Pusat `/admin/command-center`). With the scope on or off, since the v2
+  // shells frame these roles in every build. None of those homes leads back to `/dashboard`.
+  const home = scopeHomePath(session.role)
+  if (
+    to.path === '/dashboard' &&
+    session.isLoggedIn &&
+    session.role !== 'student' &&
+    home !== '/dashboard' &&
+    isPrototypeRole(session.role)
+  ) {
+    return { kind: 'redirect', to: home }
+  }
+
   // Prototype scope (D43): a route outside the role's allowed set renders the friendly "Belum
   // tersedia" page in place (URL unchanged). That includes a path no screen exists for (an unbuilt
   // or mistyped URL): a logged-in user gets the friendly page, a guest keeps the plain 404.
   if (isPrototypeScopeOn() && (to.name !== NOT_FOUND_ROUTE_NAME || session.isLoggedIn)) {
-    // The server-given landing of a teacher / school admin is `/dashboard` (the student page, M01
-    // BR-07, INFERRED); in the prototype they land on their own dashboard instead.
-    const home = scopeHomePath(session.role)
-    if (
-      to.path === '/dashboard' &&
-      session.role !== 'student' &&
-      home !== '/dashboard' &&
-      isPrototypeRole(session.role)
-    ) {
-      return { kind: 'redirect', to: home }
-    }
     if (!isPathAllowed(session.role, to.path)) {
       // Never show "Belum tersedia": send a logged-in prototype role to its own home. The page
       // stays only where no home exists (guest, or the home itself is out of scope).

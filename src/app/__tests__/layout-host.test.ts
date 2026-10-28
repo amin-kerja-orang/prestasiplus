@@ -34,6 +34,19 @@ vi.mock('@/shells/admin/AdminShell.vue', async () => {
     h('div', { 'data-layout': 'admin' }, slots.default?.())
   return { __esModule: true, default: stub }
 })
+// Same for the v2 frames (Pembelajaran, Pentadbiran), chosen by role in every build.
+vi.mock('@/shells/pembelajaran/PembelajaranLayout.vue', async () => {
+  const { h } = await import('vue')
+  const stub: FunctionalComponent = (_props, { slots }) =>
+    h('div', { 'data-layout': 'pembelajaran' }, slots.default?.())
+  return { __esModule: true, default: stub }
+})
+vi.mock('@/shells/pentadbiran/PentadbiranLayout.vue', async () => {
+  const { h } = await import('vue')
+  const stub: FunctionalComponent = (_props, { slots }) =>
+    h('div', { 'data-layout': 'pentadbiran' }, slots.default?.())
+  return { __esModule: true, default: stub }
+})
 // Same for the F-20 public layout (lazy entry in layouts.ts).
 vi.mock('@/shells/public/PublicLayout.vue', async () => {
   const { h } = await import('vue')
@@ -86,31 +99,36 @@ describe('resolveShell (overview §5.3)', () => {
   const student = { isLoggedIn: true, role: 'student' as const }
   const admin = { isLoggedIn: true, role: 'admin' as const }
 
+  // Vitest runs with VITE_PROTOTYPE_SCOPE=off: the v2 frames are picked all the same.
   it('maps each layout mode', () => {
     expect(resolveShell('admin', student)).toBe('admin')
-    expect(resolveShell('user', admin)).toBe('user')
+    expect(resolveShell('user', admin)).toBe('pentadbiran')
     expect(resolveShell('bare', admin)).toBeNull()
   })
 
-  it("'role': admin shell for admin, user shell for every other role", () => {
-    expect(resolveShell('role', admin)).toBe('admin')
-    for (const role of ['student', 'teacher', 'parent', 'sponsor', 'school_admin'] as const) {
+  it("'role': Pentadbiran for admin, Pembelajaran for v2 roles, legacy user shell otherwise", () => {
+    expect(resolveShell('role', admin)).toBe('pentadbiran')
+    for (const role of ['student', 'teacher', 'school_admin'] as const) {
+      expect(resolveShell('role', { isLoggedIn: true, role })).toBe('pembelajaran')
+    }
+    for (const role of ['parent', 'sponsor', 'ppd_officer'] as const) {
       expect(resolveShell('role', { isLoggedIn: true, role })).toBe('user')
     }
   })
 
-  it("'public-or-user': public layout for a guest, user shell when logged in", () => {
+  it("'public-or-user': public layout for a guest, the role's user frame when logged in", () => {
     expect(resolveShell('public-or-user', guest)).toBe('public')
-    expect(resolveShell('public-or-user', student)).toBe('user')
+    expect(resolveShell('public-or-user', student)).toBe('pembelajaran')
+    expect(resolveShell('public-or-user', { isLoggedIn: true, role: 'parent' })).toBe('user')
   })
 })
 
 describe('LayoutHost', () => {
-  it('wraps a user route in the user shell and renders the page', async () => {
+  it('wraps a user route in the Pembelajaran frame for a student and renders the page', async () => {
     logIn(STUDENT)
     const w = await open('/dashboard')
-    expect(layoutOf(w)).toBe('user')
-    expect(w.find('[data-layout="user"] [data-testid="dashboard"]').exists()).toBe(true)
+    expect(layoutOf(w)).toBe('pembelajaran')
+    expect(w.find('[data-layout="pembelajaran"] [data-testid="dashboard"]').exists()).toBe(true)
   })
 
   it('renders a bare route with no shell', async () => {
@@ -121,27 +139,27 @@ describe('LayoutHost', () => {
 
   it("'role' layout follows the session role", async () => {
     logIn(ADMIN)
-    expect(layoutOf(await open('/tetapan'))).toBe('admin')
+    expect(layoutOf(await open('/tetapan'))).toBe('pentadbiran')
     wrapper?.unmount()
     logIn(STUDENT)
-    expect(layoutOf(await open('/tetapan'))).toBe('user')
+    expect(layoutOf(await open('/tetapan'))).toBe('pembelajaran')
   })
 
   it("'public-or-user' layout follows the session", async () => {
     expect(layoutOf(await open('/artikel'))).toBe('public')
     wrapper?.unmount()
     logIn(STUDENT)
-    expect(layoutOf(await open('/artikel'))).toBe('user')
+    expect(layoutOf(await open('/artikel'))).toBe('pembelajaran')
   })
 
   it('keeps the same shell mounted across routes of the same layout', async () => {
     logIn(STUDENT)
     const w = await open('/dashboard')
-    const shellEl = w.find('[data-layout="user"]').element
+    const shellEl = w.find('[data-layout="pembelajaran"]').element
     await router.push('/tetapan')
     await flushPromises()
     await flushPromises()
-    expect(w.find('[data-layout="user"]').element).toBe(shellEl)
+    expect(w.find('[data-layout="pembelajaran"]').element).toBe(shellEl)
     expect(w.find('[data-testid="tetapan"]').exists()).toBe(true)
   })
 
