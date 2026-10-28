@@ -70,11 +70,60 @@ describe('Pentadbiran routing', () => {
     expect(router.resolve('/admin/p/pm-04').matched[0]?.redirect).toBe('/admin/command-center')
   })
 
-  it('Admin Pusat gets the portal only while the prototype scope is on', () => {
+  it('Admin Pusat gets the portal with the prototype scope off too (vitest runs with it off)', () => {
     const admin = { isLoggedIn: true, role: 'admin' as const }
-    expect(resolveShell('admin', admin)).toBe('admin') // vitest runs with the scope off
-    expect(resolveShellForPath('bare', admin, '/admin/command-center')).toBeNull()
-    expect(adminShellFor('teacher')).toBe('admin')
+    expect(resolveShell('admin', admin)).toBe('pentadbiran')
+    expect(resolveShellForPath('bare', admin, '/admin/command-center')).toBe('pentadbiran')
+    expect(resolveShellForPath('bare', admin, '/admin/command-center/school/3')).toBe('pentadbiran')
+    expect(adminShellFor('teacher')).toBe('pembelajaran')
+    expect(adminShellFor('school_admin')).toBe('pembelajaran')
+    // Another bare page, or another role, keeps no shell.
+    expect(resolveShellForPath('bare', admin, '/login')).toBeNull()
+    const teacher = { isLoggedIn: true, role: 'teacher' as const }
+    expect(resolveShellForPath('bare', teacher, '/admin/command-center')).toBeNull()
+  })
+})
+
+describe('Pembelajaran menus (scope off, UAT build)', () => {
+  const routes = (entries: readonly NavEntry[]): string[] =>
+    entries.flatMap((e) =>
+      e.kind === 'item' ? [e.to] : e.kind === 'group' ? e.children.map((c) => c.to) : [],
+    )
+
+  it('every visible link of every v2 role resolves to a real route the role may open', () => {
+    const router = createAppRouter({ history: createMemoryHistory() })
+    for (const role of ['student', 'teacher', 'school_admin'] as const) {
+      const all = [
+        ...routes(navFor(role, 'sidebar')),
+        ...routes(navFor(role, 'drawer')),
+        ...userBottomNavFor(role).flatMap((e) => (e.kind === 'button' ? [] : [e.to])),
+        ...userDrawerAccountFor(role).map((i) => i.to),
+      ].filter((to) => to.startsWith('/'))
+      expect(all.length, role).toBeGreaterThan(0)
+      for (const to of new Set(all)) {
+        const resolved = router.resolve(to)
+        expect(resolved.matched.length, `${role} ${to}`).toBeGreaterThan(0)
+        expect(String(resolved.name), `${role} ${to}`).not.toMatch(/not-found|404/i)
+        for (const record of resolved.matched) {
+          const allowed = record.meta.roles
+          if (allowed) expect(allowed, `${role} ${to} roles`).toContain(role)
+        }
+      }
+    }
+  })
+
+  it('lists at least every item the scoped menu lists (nothing lost with the scope off)', () => {
+    const ids = (role: 'student' | 'teacher' | 'school_admin'): string[] =>
+      navFor(role, 'sidebar').flatMap((e) =>
+        e.kind === 'item' ? [e.id] : e.kind === 'group' ? e.children.map((c) => c.id) : [],
+      )
+    for (const role of ['student', 'teacher', 'school_admin'] as const) {
+      const off = new Set(ids(role))
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+      const on = ids(role)
+      vi.unstubAllEnvs()
+      for (const id of on) expect(off.has(id), `${role} ${id}`).toBe(true)
+    }
   })
 })
 

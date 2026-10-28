@@ -1,13 +1,17 @@
 /**
  * Layout resolution (overview §5.3, ADR-0008): route `meta.layout` + session → the shell to render.
  *
- * | `layout`         | Renders                                              |
- * |------------------|------------------------------------------------------|
- * | `admin`          | admin panel shell                                    |
- * | `user`           | user-portal shell                                    |
- * | `role`           | admin shell for role `admin`, user shell otherwise   |
- * | `public-or-user` | public layout for a guest, user shell when logged in |
- * | `bare`           | no shell: the page draws its full screen             |
+ * | `layout`         | Renders                                                  |
+ * |------------------|----------------------------------------------------------|
+ * | `admin`          | admin frame of the role (`adminShellFor`)                |
+ * | `user`           | user frame of the role (`userShellFor`)                  |
+ * | `role`           | admin frame for role `admin`, user frame otherwise       |
+ * | `public-or-user` | public layout for a guest, user frame when logged in     |
+ * | `bare`           | no shell: the page draws its full screen (see below)     |
+ *
+ * The v2 frames (Pembelajaran for student / teacher / school admin, Pentadbiran for Admin Pusat)
+ * are chosen by role alone, whatever `VITE_PROTOTYPE_SCOPE` says; the legacy shells remain for the
+ * roles outside v2.
  *
  * The admin shell is F-18 (`src/shells/admin/AdminShell.vue`), the user shell is F-19
  * (`src/shells/user/UserShell.vue`) and the public layout is F-20
@@ -19,31 +23,28 @@ import { defineAsyncComponent, type Component } from 'vue'
 
 import type { Role } from '@/stores/session-types'
 
-import { isPrototypeScopeOn } from '../prototype-scope'
-
 import type { LayoutMode } from './meta'
 
 export type ShellKind = 'admin' | 'user' | 'pembelajaran' | 'pentadbiran' | 'public'
 
 /**
- * The frame of a logged-in user: the v2 Pembelajaran layout for the student and the teacher (the
- * prototype portal roles) while the prototype scope is on (D43); the legacy user shell for every
- * other role and for the unscoped e2e build.
+ * The frame of a logged-in user: the v2 Pembelajaran layout for the student, the teacher and the
+ * school admin, the v2 Portal Pentadbiran for Admin Pusat (D29, D30, D43); the legacy user shell for
+ * every role outside v2 (parent, sponsor, PPD/JPN). The same in every build: the prototype scope
+ * (`VITE_PROTOTYPE_SCOPE`) only hides routes, menus and roles, it never picks the shell.
  */
 export function userShellFor(role: Role | null): ShellKind {
-  if (!isPrototypeScopeOn()) return 'user'
   if (role === 'student' || role === 'teacher' || role === 'school_admin') return 'pembelajaran'
   // Admin Pusat keeps its own portal on the shared account screens (Profil, Tetapan, Tiket).
   return role === 'admin' ? 'pentadbiran' : 'user'
 }
 
 /**
- * The admin frame: the v2 Portal Pentadbiran for Admin Pusat while the prototype scope is on (D30,
- * D48); the legacy admin shell for every other role (teacher on `/guru/monitoring`) and for the
- * unscoped e2e build.
+ * The admin frame: the v2 Portal Pentadbiran for Admin Pusat (D30, D48), the staff Pembelajaran
+ * layout for the teacher and the school admin (Monitoring, Kirkpatrick); the legacy admin shell for
+ * every other role. Independent of the prototype scope, like `userShellFor`.
  */
 export function adminShellFor(role: Role | null): ShellKind {
-  if (!isPrototypeScopeOn()) return 'admin'
   if (role === 'admin') return 'pentadbiran'
   // Guru and Admin Sekolah screens on the admin layout (Monitoring, Kirkpatrick) use the staff shell.
   return role === 'teacher' || role === 'school_admin' ? 'pembelajaran' : 'admin'
@@ -52,7 +53,10 @@ export function adminShellFor(role: Role | null): ShellKind {
 /** Standalone (`bare`) admin screens that sit inside the Pentadbiran portal for Admin Pusat. */
 const BARE_IN_PORTAL = ['/admin/command-center']
 
-/** `resolveShell`, plus the portal frame for the admin Command Center boards (layout `bare`). */
+/**
+ * `resolveShell`, plus the portal frame for the admin Command Center boards (layout `bare`), in
+ * every build (scope on or off).
+ */
 export function resolveShellForPath(
   mode: LayoutMode,
   session: { isLoggedIn: boolean; role: Role | null },
@@ -61,7 +65,6 @@ export function resolveShellForPath(
   if (
     mode === 'bare' &&
     session.role === 'admin' &&
-    isPrototypeScopeOn() &&
     BARE_IN_PORTAL.some((p) => path === p || path.startsWith(`${p}/`))
   ) {
     return 'pentadbiran'

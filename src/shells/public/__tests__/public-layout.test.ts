@@ -2,6 +2,7 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia, type Pinia } from 'pinia'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { FunctionalComponent } from 'vue'
 import { createMemoryHistory, type Router } from 'vue-router'
 
 import { api, installTransport } from '@/api'
@@ -14,10 +15,18 @@ import { setUnauthorizedRedirect } from '@/stores'
 import { PUBLIC_SECTIONS, publicSectionFor } from '../public-sections'
 import { DETAIL_TITLE, PUBLIC_REGISTRY, USER_TITLE } from './public-fixtures'
 
+// A logged-in student is framed by the v2 Pembelajaran layout (every build); a stub stands in for it.
+vi.mock('@/shells/pembelajaran/PembelajaranLayout.vue', async () => {
+  const { h } = await import('vue')
+  const stub: FunctionalComponent = (_props, { slots }) =>
+    h('div', { 'data-layout': 'pembelajaran' }, slots.default?.())
+  return { __esModule: true, default: stub }
+})
+
 // Both layouts are async components (layouts.ts); preload them so mounting resolves at once.
 beforeAll(async () => {
   await import('../PublicLayout.vue')
-  await import('@/shells/user/UserShell.vue')
+  await import('@/shells/pembelajaran/PembelajaranLayout.vue')
 })
 
 let pinia: Pinia
@@ -246,10 +255,10 @@ describe('PublicLayout: navigation and other paths', () => {
 })
 
 describe('public-or-user when logged in', () => {
-  it('a logged-in user on /artikel gets the user shell, not the public layout', async () => {
+  it('a logged-in user on /artikel gets Pembelajaran, not the public layout', async () => {
     logIn(STUDENT)
     const w = await open('/artikel')
-    expect(w.find('[data-layout="user"]').exists()).toBe(true)
+    expect(w.find('[data-layout="pembelajaran"]').exists()).toBe(true)
     expect(w.find('[data-layout="public"]').exists()).toBe(false)
     expect(w.find('[data-testid="public-layout-topbar"]').exists()).toBe(false)
     expect(document.title).toBe(USER_TITLE)

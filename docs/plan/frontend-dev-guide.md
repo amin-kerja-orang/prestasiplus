@@ -176,7 +176,7 @@ Steps:
 
 ### 4.2 Routing, roles, portals
 
-- Frames: `meta.layout` chooses `admin`, `user`, `role`, `public-or-user` or `bare`; `src/app/router/layouts.ts` maps it to the shell for the session role (Pembelajaran and Pentadbiran layouts under the prototype scope, legacy shells otherwise). A page never picks a shell itself.
+- Frames: `meta.layout` chooses `admin`, `user`, `role`, `public-or-user` or `bare`; `src/app/router/layouts.ts` maps it to the shell for the session role (Pembelajaran for student / teacher / school admin and Pentadbiran for Admin Pusat in every build, scope on or off; legacy shells only for the roles outside v2). A page never picks a shell itself.
 - Guard order (`src/app/router/guards.ts`): session check; `access: 'auth'` without a session goes to `/login`; `roles` mismatch follows `onForbidden` (`landing` redirect to the server-given `landingPath`, or in-place `403`/`404` with the URL unchanged). The guard never reads scope; scope is server-side.
 - The target model (route meta `portal`, `menuId`, `capability`, build modes `VITE_PORTAL=all|admin|learn`) is in [v2-frontend sections 3 and 4](../architecture/v2-frontend.md). **It is not in the code yet** (OQ-FE-2). Until a platform task lands it, new routes use `layout` and `roles`; do not invent `portal` meta.
 - Roles are English codes (`student`, `teacher`, `parent`, `sponsor`, `school_admin`, `ppd_officer`, `admin`; `jpn_officer` is dropped by D31a). Which screens each role may see is in [role-access-matrix](../requirements/role-access-matrix.md) and, for Pentadbiran, [v2-portals section 6](../requirements/v2-portals.md). Hide a menu item the role may not use; never show a visible-but-forbidden item (US-03).

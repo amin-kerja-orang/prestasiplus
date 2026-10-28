@@ -251,12 +251,16 @@ describe('home paths', () => {
     expect(scopeHomePath('parent')).toBe('/logout')
   })
 
-  it('shellHomePath keeps /dashboard when the scope is off', () => {
-    expect(shellHomePath('school_admin')).toBe('/dashboard')
-    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
-    expect(shellHomePath('school_admin')).toBe('/admin-sekolah')
-    expect(shellHomePath('teacher')).toBe('/guru')
-    expect(shellHomePath('student')).toBe('/dashboard')
+  it('shellHomePath is the v2 role home with the scope on or off', () => {
+    for (const scope of ['off', 'on']) {
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', scope)
+      expect(shellHomePath('school_admin'), scope).toBe('/admin-sekolah')
+      expect(shellHomePath('teacher'), scope).toBe('/guru')
+      expect(shellHomePath('student'), scope).toBe('/dashboard')
+      expect(shellHomePath('admin'), scope).toBe('/admin/command-center')
+      // A role outside v2 keeps the legacy user-shell home.
+      expect(shellHomePath('parent'), scope).toBe('/dashboard')
+    }
   })
 })
 
