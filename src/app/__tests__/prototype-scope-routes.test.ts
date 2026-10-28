@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { devRoutes } from '../router/core-routes'
+import { adminLandingFor, devRoutes } from '../router/core-routes'
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -13,10 +13,10 @@ describe('dev routes with the prototype scope on (D43)', () => {
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
     const found = paths()
     expect(found).toContain('/__ds')
-    // '/admin' is only a redirect to the admin Command Center (D48), not the preview hub.
-    expect(devRoutes().find((r) => r.path === '/admin')).toMatchObject({
-      redirect: '/admin/command-center',
-    })
+    // '/admin' is only a role-aware redirect to the admin landing (D48, UAT fix), not the preview hub.
+    const admin = devRoutes().find((r) => r.path === '/admin')
+    expect(typeof admin?.redirect).toBe('function')
+    expect(adminLandingFor('admin')).toBe('/admin/command-center')
     expect(found).not.toContain('/dashboard')
     expect(found.filter((p) => p.startsWith('/__dev'))).toEqual([])
   })
