@@ -13,6 +13,14 @@ import {
   type NavEntry,
 } from '@/shells/nav/user-nav'
 
+import {
+  accountLinks,
+  drawerEntries,
+  pembelajaranTabs,
+  routeRoleCheck,
+  sidebarEntries,
+} from '@/shells/pembelajaran/pembelajaran-nav'
+
 import { ALL_ITEMS, FULL_ITEMS, PENTADBIRAN_FULL_MENU, PENTADBIRAN_MENU, activeItem } from '../menu'
 
 const itemsOf = (label: string): string[] =>
@@ -97,11 +105,13 @@ describe('Pembelajaran menus (scope off, UAT build)', () => {
     // Every offender is collected so one run lists them all.
     const bad: string[] = []
     for (const role of ['student', 'teacher', 'school_admin'] as const) {
+      // What PembelajaranLayout renders: sidebar, "Lagi" panel, tab bar and account links.
+      const canOpen = routeRoleCheck(router, role)
       const all = [
-        ...routes(navFor(role, 'sidebar')),
-        ...routes(navFor(role, 'drawer')),
-        ...userBottomNavFor(role).flatMap((e) => (e.kind === 'button' ? [] : [e.to])),
-        ...userDrawerAccountFor(role).map((i) => i.to),
+        ...routes(sidebarEntries(role, canOpen)),
+        ...routes(drawerEntries(role, canOpen)),
+        ...pembelajaranTabs(role).map((t) => t.to),
+        ...accountLinks(role).map((l) => l.to),
       ].filter((to) => to.startsWith('/'))
       expect(all.length, role).toBeGreaterThan(0)
       for (const to of new Set(all)) {
@@ -121,8 +131,9 @@ describe('Pembelajaran menus (scope off, UAT build)', () => {
   })
 
   it('lists at least every item the scoped menu lists (nothing lost with the scope off)', () => {
+    const router = createAppRouter({ history: createMemoryHistory() })
     const ids = (role: 'student' | 'teacher' | 'school_admin'): string[] =>
-      navFor(role, 'sidebar').flatMap((e) =>
+      sidebarEntries(role, routeRoleCheck(router, role)).flatMap((e) =>
         e.kind === 'item' ? [e.id] : e.kind === 'group' ? e.children.map((c) => c.id) : [],
       )
     for (const role of ['student', 'teacher', 'school_admin'] as const) {

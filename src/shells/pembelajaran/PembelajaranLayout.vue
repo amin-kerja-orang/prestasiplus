@@ -13,7 +13,7 @@
  * prototype scope). Legacy pages (routes without `meta.v2`) render unchanged inside a light island.
  */
 import { computed, nextTick, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { shellHomePath } from '@/app/prototype-scope'
 import { FlashOutlet } from '@/components/feedback'
@@ -46,6 +46,7 @@ import {
   drawerEntries,
   pembelajaranTabs,
   phClass,
+  routeRoleCheck,
   sectionOf,
   sidebarEntries,
   tabActive,
@@ -87,8 +88,11 @@ const lagiOpen = ref(false)
 const sidebarOpen = ref(false)
 useExclusiveSheets(lagiOpen, pickerOpen, useMediaQuery(LG_QUERY))
 const tabs = computed(() => pembelajaranTabs(role.value))
-const sidebar = computed(() => sidebarEntries(role.value))
-const drawer = computed(() => drawerEntries(role.value))
+// Scope off (UAT): also drop the menu items whose route refuses the role (no visible-but-forbidden link).
+const router = useRouter()
+const canOpen = computed(() => routeRoleCheck(router, role.value))
+const sidebar = computed(() => sidebarEntries(role.value, canOpen.value))
+const drawer = computed(() => drawerEntries(role.value, canOpen.value))
 const links = computed(() => accountLinks(role.value))
 const showAlesa = computed(() => allows('/cikgu'))
 const isLegacy = computed(() => route.meta.v2 !== true)
