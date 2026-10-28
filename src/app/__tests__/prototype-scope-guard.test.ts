@@ -169,6 +169,45 @@ describe('decideAccess with the prototype scope on', () => {
   })
 })
 
+describe('v2 staff home from /dashboard, scope on or off (UAT runs with it off)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  const HOMES = [
+    ['teacher', '/guru'],
+    ['school_admin', '/admin-sekolah'],
+    ['admin', '/admin/command-center'],
+  ] as const
+
+  it.each(['on', 'off'])('scope %s: a v2 staff role leaves /dashboard for its own home', (scope) => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', scope)
+    for (const [role, home] of HOMES) {
+      expect(decideAccess(fakeRoute('/dashboard', 'm05.dashboard'), session(role)), role).toEqual({
+        kind: 'redirect',
+        to: home,
+      })
+      // No loop: the home itself is let through (it never leads back to /dashboard).
+      expect(decideAccess(fakeRoute(home, 'x'), session(role)), `${role} ${home}`).toEqual({
+        kind: 'allow',
+      })
+    }
+    // The student keeps /dashboard; a role outside v2 and a guest are not redirected there.
+    expect(decideAccess(fakeRoute('/dashboard', 'm05.dashboard'), session('student'))).toEqual({
+      kind: 'allow',
+    })
+    if (scope === 'off') {
+      expect(decideAccess(fakeRoute('/dashboard', 'm05.dashboard'), session('parent'))).toEqual({
+        kind: 'allow',
+      })
+    }
+    expect(decideAccess(fakeRoute('/dashboard', 'm05.dashboard'), session(null))).toEqual({
+      kind: 'redirect',
+      to: '/login',
+    })
+  })
+})
+
 describe('LayoutHost: "Belum tersedia dalam prototaip"', () => {
   let wrapper: VueWrapper | null = null
 

@@ -141,7 +141,7 @@ describe('UserShell: menu per role (hidden, not disabled)', () => {
   })
 
   it('admin: admin-only entries and the static sidebar counts', async () => {
-    const w = await open('/dashboard', ADMIN)
+    const w = await open('/peta-belajar', ADMIN)
     const side = sidebar(w)
     expect(side.get('[data-nav-id="ke-admin-panel"]').attributes('href')).toBe('/admin')
     expect(side.get('[data-nav-id="gambar-rajah"]').text()).toContain('6,144')
@@ -149,7 +149,7 @@ describe('UserShell: menu per role (hidden, not disabled)', () => {
   })
 
   it('teacher: teacher block and Command Center card, no student menu', async () => {
-    const w = await open('/dashboard', TEACHER)
+    const w = await open('/peta-belajar', TEACHER)
     const labels = navLabels(sidebar(w))
     expect(labels).toContain('Laporan Mingguan')
     expect(labels).not.toContain('Target SPM')
@@ -315,7 +315,7 @@ describe('UserShell: header', () => {
 
   it('teacher gets the single "syiling" chip and no mobile strip', async () => {
     summary = { coins: 0, points: 0, streakDays: 0 }
-    const w = await open('/dashboard', TEACHER)
+    const w = await open('/peta-belajar', TEACHER)
     expect(spans(w, 'shell-user-chips')).toBe('0 syiling')
     expect(w.find('[data-testid="shell-user-chips-strip"]').exists()).toBe(false)
   })
