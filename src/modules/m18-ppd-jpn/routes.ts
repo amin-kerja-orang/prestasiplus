@@ -10,6 +10,21 @@ import type { RouteRecordRaw } from 'vue-router'
  */
 const routes: RouteRecordRaw[] = [
   {
+    // UAT-M18-001: the API lands a PPD officer on `/admin/pemantauan/wilayah` (session-view LANDING_PATHS), but
+    // officers have no v2 screen or endpoint yet. Show the friendly "Belum tersedia" page (its button signs the
+    // officer out) instead of the 404 page. Bare layout: no shell is built for the officer role.
+    path: '/admin/pemantauan/:level(wilayah|negeri)',
+    name: 'm18.pemantauan-unavailable',
+    component: () => import('@/pages/PrototypeUnavailablePage.vue'),
+    meta: {
+      layout: 'bare',
+      access: 'auth',
+      title: 'Belum Tersedia | PRESTASIPLUS',
+      module: 'M18',
+      v2: true,
+    },
+  },
+  {
     path: '/amaran/ringkasan-eksekutif',
     name: 'm18.amaran-ringkasan',
     component: () => import('./pages/RingkasanEksekutifPage.vue'),
