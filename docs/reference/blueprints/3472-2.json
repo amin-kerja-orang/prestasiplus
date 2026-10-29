@@ -1,0 +1,57 @@
+{
+  "code": "3472/2",
+  "sections": [
+    {
+      "position": 1,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "1.0", "value": 7 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "2.0", "value": 8 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "4.0", "value": 8 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "8.0", "value": 6 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "1.0", "value": 6 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "2.0", "value": 7 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "6.0", "value": 8 }
+        ],
+        "levelShare": { "t4": 29, "t5": 21 }
+      },
+      "kbatMarks": 50,
+      "marksBand": [{ "from": 1, "to": 7, "marksMin": 5, "marksMax": 9 }],
+      "notes": "Bahagian A, 50 marks. observed (both bodies agree): T4 1.0 = 7; kbatMarks 50 (every question level 3+ in both). inferred (SBP used; Selangor in brackets): T4 2.0 = 8 (7), T4 4.0 = 8 (7), T4 8.0 = 6 (8), T5 1.0 = 6 (0), T5 2.0 = 7 (0), T5 6.0 = 8 (9). Selangor only: T4 3.0 = 5, T5 3.0 = 7. marksBand: SBP 6,7,6,8,7,8,8; Selangor 5,7,7,7,9,8,7."
+    },
+    {
+      "position": 2,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "6.0", "value": 10 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "7.0", "value": 10 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "3.0", "value": 10 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "5.0", "value": 10 }
+        ],
+        "levelShare": { "t4": 20, "t5": 20 }
+      },
+      "kbatMarks": 40,
+      "marksBand": [{ "from": 1, "to": 4, "marksMin": 10, "marksMax": 10 }],
+      "notes": "Bahagian B, offered 40 marks (choose 3, effective 30). observed (both bodies agree): T4 6.0, T4 7.0, T5 5.0 at 10 each; kbatMarks 40. inferred (SBP used): T5 3.0 = 10 (Selangor has T5 2.0 = 10 here and T5 3.0 in Bahagian A)."
+    },
+    {
+      "position": 3,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "9.0", "value": 10 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "10.0", "value": 10 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "7.0", "value": 10 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "8.0", "value": 10 }
+        ],
+        "levelShare": { "t4": 20, "t5": 20 }
+      },
+      "kbatMarks": 40,
+      "marksBand": [{ "from": 1, "to": 4, "marksMin": 10, "marksMax": 10 }],
+      "notes": "Bahagian C, offered 40 marks (choose 2, effective 20): exactly the four elective units. Units observed (both bodies agree, 10 each). kbatMarks 40 single-source: SBP all four questions level 3+; Selangor Q12-Q13 agree, Q14-Q15 were read for topic and total only, not classified."
+    }
+  ],
+  "kbatMarksTotal": 130
+}

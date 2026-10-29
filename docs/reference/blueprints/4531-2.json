@@ -1,0 +1,56 @@
+{
+  "code": "4531/2",
+  "sections": [
+    {
+      "position": 1,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "PHY", "level": "T4", "unitCode": "3.0", "value": 9 },
+          { "subject": "PHY", "level": "T4", "unitCode": "5.0", "value": 5 },
+          { "subject": "PHY", "level": "T4", "unitCode": "6.0", "value": 9 },
+          { "subject": "PHY", "level": "T5", "unitCode": "1.0", "value": 9 },
+          { "subject": "PHY", "level": "T5", "unitCode": "4.0", "value": 9 },
+          { "subject": "PHY", "level": "T5", "unitCode": "5.0", "value": 9 },
+          { "subject": "PHY", "level": "T5", "unitCode": "6.0", "value": 6 },
+          { "subject": "PHY", "level": "T5", "unitCode": "7.0", "value": 4 }
+        ],
+        "levelShare": { "t4": 23, "t5": 37 }
+      },
+      "marksBand": [
+        { "from": 1, "to": 1, "marksMin": 4, "marksMax": 4 },
+        { "from": 2, "to": 2, "marksMin": 5, "marksMax": 5 },
+        { "from": 3, "to": 3, "marksMin": 6, "marksMax": 6 },
+        { "from": 4, "to": 4, "marksMin": 9, "marksMax": 9 },
+        { "from": 5, "to": 6, "marksMin": 9, "marksMax": 9 },
+        { "from": 7, "to": 8, "marksMin": 9, "marksMax": 9 }
+      ],
+      "notes": "INCOMPLETE (kbatMarks omitted): Q4 (9 marks) has a cognitive level recorded as 'Memahami / Mengaplikasi', which straddles the KBAT boundary and no per-part level is recorded, so Bahagian A KBAT is between 42 and 51. Single body (SBP), skema confirms every total. single-source: all lines except T4 3.0 = 9, which is inferred (circular-motion question, the DSKP has centripetal force only inside Gravitation 3.1.5). Absent units (excluded): T4 1.0, T4 2.0."
+    },
+    {
+      "position": 2,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "PHY", "level": "T4", "unitCode": "4.0", "value": 20 },
+          { "subject": "PHY", "level": "T5", "unitCode": "2.0", "value": 20 }
+        ],
+        "levelShare": { "t4": 20, "t5": 20 }
+      },
+      "kbatMarks": 40,
+      "marksBand": [{ "from": 1, "to": 2, "marksMin": 20, "marksMax": 20 }],
+      "notes": "Bahagian B, offered 40 (choose 1, effective 20). single-source (SBP only): both lines and kbatMarks 40 (Q9 Menilai, Q10 Menilai / Mencipta; question-level level inherited by every part, including 1-mark recall parts)."
+    },
+    {
+      "position": 3,
+      "quota": {
+        "basis": "marks",
+        "lines": [{ "subject": "PHY", "level": "T5", "unitCode": "3.0", "value": 20 }],
+        "levelShare": { "t4": 0, "t5": 20 }
+      },
+      "kbatMarks": 20,
+      "marksBand": [{ "from": 1, "to": 1, "marksMin": 20, "marksMax": 20 }],
+      "notes": "Bahagian C, 20 marks. single-source (SBP only): line and kbatMarks 20 (Q11 Mencipta). Layer 1 caveat: the rule of Bahagian C (compulsory) was not read from the paper, only inferred from the Biologi 4551/2 cover."
+    }
+  ]
+}
