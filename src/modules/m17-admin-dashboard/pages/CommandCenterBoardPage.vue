@@ -5,7 +5,8 @@
  * frame (no shell wraps these `bare` routes). Polls `live-data` every 10 s, a 1 s MYT clock, four counters, the
  * panels and the footer. The alias (`alias` prop) renders the same board for the school the server derives from
  * the session: no "Top Sekolah", the SERVER-defined school copy and the school's own 7 days under "Engagement".
- * Panels stack in 1 column at 375, 2 at 768 and 3 from 1280 (DV-M17-01).
+ * Panels stack in 1 column at 375, 2 at 768 and 3 from 1280 (DV-M17-01). The columns stretch to the grid and
+ * the last panel of each grows (`grow`), so no column ends in a hole (FR-M17-107, DV-M17-54).
  */
 import { computed } from 'vue'
 
@@ -56,20 +57,27 @@ const { data, unavailable } = useLiveBoard()
               :base-path="paths.basePath"
             />
             <KirkpatrickPanel :data="data" />
-            <AlesaPanel :data="data" />
+            <AlesaPanel :data="data" class="grow" />
           </div>
           <div class="flex min-w-0 flex-col gap-4" data-testid="cc-col-2">
             <TodayPanel :data="data" />
             <FeedPanel :rows="data ? data.recentFeed : null" :base-path="paths.basePath" />
-            <TopPupilsPanel :rows="data ? data.topStudents : null" :base-path="paths.basePath" />
-            <MoodPanel v-if="!alias" :mood="data ? data.mood : null" />
+            <TopPupilsPanel
+              :rows="data ? data.topStudents : null"
+              :base-path="paths.basePath"
+              :class="{ grow: alias }"
+            />
+            <MoodPanel v-if="!alias" :mood="data ? data.mood : null" class="grow" />
           </div>
           <div
             class="flex min-w-0 flex-col gap-4 md:col-span-2 xl:col-span-1"
             data-testid="cc-col-3"
           >
-            <CorrectionPanel :correction="data ? data.correction : null" />
-            <MoodPanel v-if="alias" :mood="data ? data.mood : null" />
+            <CorrectionPanel
+              :correction="data ? data.correction : null"
+              :class="{ grow: !alias }"
+            />
+            <MoodPanel v-if="alias" :mood="data ? data.mood : null" class="grow" />
           </div>
         </div>
 
