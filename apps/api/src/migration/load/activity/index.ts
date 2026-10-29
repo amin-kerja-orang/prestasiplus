@@ -18,7 +18,7 @@ import { assertContentOwner } from './content-steps'
 import { openMigrationFiles } from './files'
 import { ACTIVITY_GROUPS } from './groups'
 import { NOT_MIGRATED_ACTIVITY, type NotMigrated } from './not-migrated'
-import { activityInputHash, assertCorePreflight } from './preflight'
+import { activityInputHash, assertCorePreflight, assertStagedColumns } from './preflight'
 import { rebuildAfterResume } from './resume-report'
 
 export { ActivityContext, ACTIVITY_GROUP_NAMES, type ActivityGroup, type ActivityGroupName, type ActivityOptions } from './context'
@@ -26,7 +26,7 @@ export { DriftCollector, writeReportFile } from './drift'
 export { MigrationFiles, openMigrationFiles, normaliseRelativePath, parseManifest } from './files'
 export { ACTIVITY_GROUPS } from './groups'
 export { NOT_MIGRATED_ACTIVITY, type NotMigrated } from './not-migrated'
-export { assertCorePreflight, PreflightError, ACTIVITY_READ_TABLES } from './preflight'
+export { assertCorePreflight, assertStagedColumns, PreflightError, ACTIVITY_READ_TABLES, STAGED_COLUMNS_NEEDED } from './preflight'
 
 /** There is nothing to run: no group registered, or the `--group` / `--table` filter matched no step. */
 export class NoActivityStepsError extends RangeError {}
@@ -125,6 +125,8 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
   let steps = buildActivitySteps(activity, chosen, only)
   if (transformSteps) steps = transformSteps(steps)
   if (steps.length === 0) throw new NoActivityStepsError('No activity steps to run: no group is registered, or the --group / --table filter matched nothing.')
+  // D1: a stage from an older DDL (no article excerpt / content) is refused here, not by a raw SQL error mid-run.
+  await assertStagedColumns(options.pool, steps.map((s) => s.entity))
 
   const extraTables = chosen.flatMap((g) => g.reads ?? [])
   const inputHash = await activityInputHash({

@@ -695,6 +695,12 @@ describe('dump:grants script', () => {
     expect(articles).toContain('`author_id`')
   })
 
+  it('tells the operator never to skip the articles GRANT line (D1: skipping it gives 0 articles silently)', () => {
+    const lines = buildGrantScript('pp_cloud', ACCOUNT, TABLES)
+    expect(lines.some((l) => l.startsWith('-- Never skip the `articles` line'))).toBe(true)
+    expect(lines.find((l) => l.includes('skip that line'))).toMatch(/ONLY when the table is absent/)
+  })
+
   it('validates the database and the account strictly', () => {
     for (const bad of ['pp-cloud', 'pp cloud', 'pp`x', "pp'; DROP", '']) expect(() => buildGrantScript(bad, ACCOUNT, small), bad).toThrow(DumpUsageError)
     for (const bad of ['user@host', "'user'@host", "user@'host'", "'us'er'@'host'", "'user'@'ho\\st'", "'user'@'host' IDENTIFIED BY 'x'", "'user'@'host';--", "''@'host'", "'user'@''", "'a b'@'host'"]) {

@@ -162,7 +162,6 @@ export function feedbackStep(a: ActivityContext): AnyEntityStep {
         for (const r of res.rows) schools.set(r.id, r.school_id)
       }
       const items: LegacyRow[] = []
-      let toNps = 0
       for (const row of rows) {
         const legacyId = idOf(row)
         const userKey = row.user_id?.trim() ?? null
@@ -178,12 +177,8 @@ export function feedbackStep(a: ActivityContext): AnyEntityStep {
           newest: m?.newest ?? false,
         })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
-        else {
-          if (out.value.nps !== null) toNps++
-          items.push(toRow(legacyId, out.value))
-        }
+        else items.push(toRow(legacyId, out.value))
       }
-      a.notes.count('feedback.score_to_nps', toNps)
       // A v2-born feedback row (no legacy pair) for the same (user, month, is_test) wins: the legacy row is rejected
       // DUPLICATE_KEY (month) instead of the unique violation aborting the batch (and the required dry-run).
       const keyOf = (i: LegacyRow): string => `${String(i.values.user_id)}|${String(i.values.month)}|${String(i.values.is_test)}`
@@ -191,6 +186,8 @@ export function feedbackStep(a: ActivityContext): AnyEntityStep {
         entity, table: 'feedback', column: 'month', expr: `user_id::text || '|' || month::text || '|' || is_test::text`,
         source: ctx.source, rejects: ctx.rejects, legacyIdOf: (i) => i.legacyId, valueOf: keyOf,
       })
+      // D4 (LEAD 29 Oct): loaded rows whose score went to nps (counted after the duplicate and conflict drops).
+      a.notes.count('feedback.score_to_nps', kept.filter((i) => i.values.nps !== null && i.values.nps !== undefined).length)
       return upsertAndMap(
         ctx, entity, 'feedback',
         ['user_id', 'role', 'school_id', 'month', 'nps', 'satisfaction', 'usability', 'relevance', 'score', 'comment', 'is_test', 'created_at', 'updated_at'],

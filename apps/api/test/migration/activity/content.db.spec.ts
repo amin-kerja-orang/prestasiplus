@@ -16,6 +16,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { SanitizeHtmlSanitizer } from '../../../src/modules/content/shared/sanitize-html.sanitizer'
 import type { AnyEntityStep } from '../../../src/migration/kit/runner'
 import { contentGroup } from '../../../src/migration/load/activity/part-b'
+import { PreflightError } from '../../../src/migration/load/activity'
 import { bootActivity, type ActivityHarness } from './helpers'
 
 let h: ActivityHarness
@@ -191,6 +192,21 @@ describe('R3: owner and the missing columns present', () => {
     expect(r2.notes.get('articles.author_from_content_owner')).toBe(0) // id 4 fell back but was rejected on content
     expect(r1.notes.get('articles.author_from_content_owner')).toBe(0)
     expect(n(r1, 'articles', 'ORPHAN_PARENT', 'author_id')).toBe(1) // id 4
+  })
+})
+
+describe('a stage from the older DDL (no article excerpt / content) is refused by the preflight (D1)', () => {
+  it('dry-run and apply refuse with PreflightError naming the columns, before any content row is read or written', async () => {
+    const before = await h.count('articles')
+    await h.q(`alter table staging_cloud.articles drop column excerpt, drop column content`)
+    try {
+      await expect(h.run('dry-run', { groups, contentOwnerUserId: ownerV2 })).rejects.toBeInstanceOf(PreflightError)
+      await expect(h.run('dry-run', { groups, contentOwnerUserId: ownerV2 })).rejects.toThrow(/staging_cloud\.articles lacks column\(s\) excerpt, content/)
+      await expect(h.run('apply', { groups, contentOwnerUserId: ownerV2 })).rejects.toBeInstanceOf(PreflightError)
+      expect(await h.count('articles')).toBe(before)
+    } finally {
+      await h.q(`alter table staging_cloud.articles add column excerpt text, add column content text`)
+    }
   })
 })
 

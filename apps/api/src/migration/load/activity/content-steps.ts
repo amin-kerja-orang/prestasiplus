@@ -104,24 +104,20 @@ export function articlesStep(a: ActivityContext): AnyEntityStep {
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
       const authors = await ctx.idMap.resolveMany('users', distinctValues(rows, 'author_id'))
       const ownerId = await contentOwner(a, ctx.db)
-      let items: { legacyId: string; values: ArticleValues }[] = []
-      let fromOwner = 0
+      let items: { legacyId: string; values: ArticleValues; fromOwner: boolean }[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
         const authorId = lookup(authors, row.author_id)
         const out = transformArticle(row, { authorId, ownerId, sanitizer })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
-        else {
-          if (articleAuthor(authorId, ownerId).fromOwner) fromOwner++
-          items.push({ legacyId, values: out.value })
-        }
+        else items.push({ legacyId, values: out.value, fromOwner: articleAuthor(authorId, ownerId).fromOwner })
       }
-      // D1 (LEAD 29 Oct): articles whose author did not resolve and that were loaded with the content owner as author.
-      a.notes.count('articles.author_from_content_owner', fromOwner)
       items = await dropConflicts(ctx.db, items, {
         entity, table: 'articles', column: 'slug', expr: 'slug', source: ctx.source, rejects: ctx.rejects,
         legacyIdOf: (i) => i.legacyId, valueOf: (i) => i.values.slug,
       })
+      // D1 (LEAD 29 Oct): articles loaded with the content owner as author (counted after the slug-conflict drop).
+      a.notes.count('articles.author_from_content_owner', items.filter((i) => i.fromOwner).length)
       return upsertAndMap(
         ctx, entity, 'articles',
         ['title', 'slug', 'excerpt', 'content', 'featured_image_file_id', 'category', 'grade_level', 'is_published', 'views', 'author_id', 'published_at', 'created_at', 'updated_at'],
