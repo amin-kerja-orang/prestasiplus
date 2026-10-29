@@ -38,7 +38,9 @@ afterEach(() => {
 
 describe('DsChart staff colours (S-02)', () => {
   it('falls back to palette tokens when --ds-cat-* is unset (no personality scope)', () => {
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as CanvasRenderingContext2D)
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    )
     vi.spyOn(window, 'getComputedStyle').mockImplementation(
       () =>
         ({
