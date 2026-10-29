@@ -272,6 +272,16 @@ export const CHIP_CLASS: Record<number, string> = {
   8: 'bg-cat-8/15 text-cat-8',
 }
 
+/**
+ * Native `title` of a menu label, only for a label long enough to be cut off: a short label is shown
+ * in full, and a browser tooltip on it only covers the next row.
+ */
+export function labelTitle(label: string | undefined): string | undefined {
+  // Labels up to this length fit the default sidebar width (16rem) in one line.
+  const fits = 22
+  return label && label.length > fits ? label : undefined
+}
+
 /** A heading without its leading emoji (the rows carry the icons; labels stay quiet text). */
 export function plainLabel(label: string): string {
   return label.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || label

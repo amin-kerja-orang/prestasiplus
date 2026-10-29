@@ -89,3 +89,4 @@ Hidden items: 68
 |---|---|---|---|
 | Analisa Item | /analisa-item | The route redirects a student to /dashboard (no student screen). Hidden from the student menu in `src/shells/nav/user-nav.ts` (`STUDENT_HIDDEN_IDS`); teacher and school admin keep it. | Not built for student |
 | Headcount | /headcount | `/headcount` is refused for a pupil (route, API, FR-M08-08), so the sidebar entry led to a 403. Hidden from the student menu (`STUDENT_HIDDEN_IDS` id `headcount`); teacher and school admin keep it. | Not for student |
+| Laporan Mingguan | /laporan-mingguan | The route is the observed live 403 page for every role (M08 S21), so with the scope off the student entry only led to a 403 (not in the student matrix, so already hidden with the scope on). Hidden from the student menu (`STUDENT_HIDDEN_IDS` id `laporan-mingguan`); the teacher keeps it (matrix row 43). | Not for student |

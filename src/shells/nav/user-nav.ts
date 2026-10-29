@@ -705,10 +705,15 @@ const SCOPE_DUPLICATE_IDS: ReadonlySet<string> = new Set(['cikgu-alesa-chat'])
 /** The "Tetapan Peribadi" entry lives in the Pusat AI block on live; scope mode moves it. */
 const SETTINGS_ID = 'tetapan-peribadi'
 /**
- * Student menu items with no student screen (the route redirects to /dashboard): hidden, recorded
- * in `docs/requirements/v2-pentadbiran-backlog.md` (student hidden items).
+ * Student menu items with no student screen (the route redirects to /dashboard or refuses the
+ * pupil with a 403): hidden, recorded in `docs/requirements/v2-pentadbiran-backlog.md` (student
+ * hidden items).
  */
-const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set(['analisa-item', 'headcount'])
+const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set([
+  'analisa-item',
+  'headcount',
+  'laporan-mingguan',
+])
 /** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
 const PROFILE_IDS: readonly string[] = ['profil-saya', 't-profil-saya', 'sa-profil-saya']
 

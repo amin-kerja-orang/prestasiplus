@@ -93,7 +93,10 @@ describe('Pentadbiran routing', () => {
 })
 
 describe('Pembelajaran menus (scope off, UAT build)', () => {
-  const LIVE_403_FOR_ALL: ReadonlySet<string> = new Set(['/laporan-mingguan'])
+  // `${role} ${path}` pairs allowed to open the observed live 403-for-every-role page (M08 S21,
+  // OQ-M08-01): only the teacher, whose matrix lists it with the scope on too (row 43). The student
+  // entry is hidden (STUDENT_HIDDEN_IDS), so the student is not exempt.
+  const LIVE_403_FOR_ALL: ReadonlySet<string> = new Set(['teacher /laporan-mingguan'])
 
   const routes = (entries: readonly NavEntry[]): string[] =>
     entries.flatMap((e) =>
@@ -120,9 +123,8 @@ describe('Pembelajaran menus (scope off, UAT build)', () => {
           bad.push(`${role} ${to} (no route)`)
           continue
         }
-        // Observed live 403 page for every role (M08 S21, OQ-M08-01), kept by fidelity and also
-        // listed with the scope on (teacher matrix row 43): not a menu defect.
-        if (LIVE_403_FOR_ALL.has(to)) continue
+        // The teacher's Laporan Mingguan: kept by fidelity, listed with the scope on as well.
+        if (LIVE_403_FOR_ALL.has(`${role} ${to}`)) continue
         const refused = resolved.matched.some((r) => r.meta.roles && !r.meta.roles.includes(role))
         if (refused) bad.push(`${role} ${to} (role refused)`)
       }

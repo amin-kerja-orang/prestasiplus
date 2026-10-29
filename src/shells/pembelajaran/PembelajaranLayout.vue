@@ -43,6 +43,7 @@ import {
   flatItems,
   groupTabs,
   currentItem,
+  labelTitle,
   drawerEntries,
   pembelajaranTabs,
   phClass,
@@ -210,12 +211,20 @@ const lagiGroups = computed(() => [
   ],
 ])
 
-/** One line per row, quiet section labels; active row: gradient pill (learner) or tinted pill (staff). */
+/**
+ * One line per row, quiet section labels; active row: gradient pill (learner) or tinted pill (staff).
+ * The active fill sits on the link itself, not only on its ::before pill: the theme hover
+ * background (elevated) paints the link above the pill, so hovering the active learner row used to
+ * show the white primary-on label on the light elevated grey. Learner: the primary gradient (ds-c1
+ * to ds-primary-2, a background image the hover colour cannot cover) with the primary-on label,
+ * light and dark (white label 5.2:1). Staff: the primary-soft tint with the primary-t label, kept
+ * on hover. (No quotes or backticks in this comment: the ds-debt scanner reads them as literals.)
+ */
 const navUi = computed(() => ({
   root: 'gap-0',
   link: learner.value
-    ? 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:font-semibold'
-    : 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:font-semibold',
+    ? 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-gradient-primary aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:hover:text-primary-on aria-[current=page]:font-semibold'
+    : 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-primary-soft aria-[current=page]:hover:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:hover:text-primary-t aria-[current=page]:font-semibold',
   linkLeadingIcon: 'size-4',
   linkLabel: 'truncate',
   linkTrailing: 'shrink-0',
@@ -312,7 +321,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 /></span>
               </template>
               <template #item-label="{ item }"
-                ><span class="truncate" :title="item.label">{{ item.label }}</span></template
+                ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span></template
               >
             </UNavigationMenu>
           </template>
@@ -597,7 +606,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
               /></span>
             </template>
             <template #item-label="{ item }"
-              ><span class="truncate" :title="item.label">{{ item.label }}</span></template
+              ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span></template
             >
           </UNavigationMenu>
         </template>

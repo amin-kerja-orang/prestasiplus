@@ -15,6 +15,7 @@ import {
   drawerEntries,
   flatItems,
   groupTabs,
+  labelTitle,
   pembelajaranTabs,
   phIconFor,
   sidebarEntries,
@@ -165,5 +166,14 @@ describe('Pembelajaran Nuxt UI menu data', () => {
       g.items.map((i) => i.id),
     )
     expect(ids.sort()).toEqual(flatItems(entries).map((i) => i.id).sort())
+  })
+})
+
+describe('sidebar label tooltip (UAT: the hover tooltip covered the next row)', () => {
+  it('a short label gets no browser tooltip; a long one keeps its full text', () => {
+    expect(labelTitle('Dashboard')).toBeUndefined()
+    expect(labelTitle(undefined)).toBeUndefined()
+    const long = 'Kedai Hadiah 🎁 (DIGITAL) untuk murid'
+    expect(labelTitle(long)).toBe(long)
   })
 })
