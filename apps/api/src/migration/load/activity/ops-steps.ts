@@ -187,7 +187,7 @@ export function feedbackStep(a: ActivityContext): AnyEntityStep {
         source: ctx.source, rejects: ctx.rejects, legacyIdOf: (i) => i.legacyId, valueOf: keyOf,
       })
       // D4 (LEAD 29 Oct): loaded rows whose score went to nps (counted after the duplicate and conflict drops).
-      a.notes.count('feedback.score_to_nps', kept.filter((i) => i.values.nps !== null && i.values.nps !== undefined).length)
+      a.notes.count('feedback.score_to_nps', kept.filter((i) => i.values.nps !== null).length)
       return upsertAndMap(
         ctx, entity, 'feedback',
         ['user_id', 'role', 'school_id', 'month', 'nps', 'satisfaction', 'usability', 'relevance', 'score', 'comment', 'is_test', 'created_at', 'updated_at'],

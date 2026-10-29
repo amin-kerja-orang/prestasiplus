@@ -61,6 +61,14 @@ export function buildActivitySteps(a: ActivityContext, groups: readonly Activity
   return all.filter((s) => only.includes(s.entity))
 }
 
+/**
+ * The entity names of every step of the registered groups (what `migrate:all` / `migrate:delta` run in the activity
+ * stage). Builds the steps on a throwaway context: nothing is read or written.
+ */
+export function activityStepEntities(options: Pick<ActivityContext['options'], 'pool' | 'env' | 'source' | 'asOf'>): string[] {
+  return buildActivitySteps(new ActivityContext({ ...options }), ACTIVITY_GROUPS).map((s) => s.entity)
+}
+
 /** The built-in list plus each group's own, without repeats, in print order. */
 export function notMigratedOf(groups: readonly ActivityGroup[]): NotMigrated[] {
   const out: NotMigrated[] = [...NOT_MIGRATED_ACTIVITY]

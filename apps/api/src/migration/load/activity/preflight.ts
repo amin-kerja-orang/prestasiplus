@@ -195,7 +195,11 @@ export const STAGED_COLUMNS_NEEDED: Readonly<Record<string, readonly string[]>> 
   articles: ['excerpt', 'content'],
 }
 
-/** Refuses (exit 2, dry-run too) when a chosen step's staged table lacks a column of `STAGED_COLUMNS_NEEDED`. */
+/**
+ * Refuses (exit 2, dry-run too) when a chosen step's staged table lacks a column of `STAGED_COLUMNS_NEEDED`. Called at the
+ * start of the `migrate:all` / `migrate:delta` pipeline (before the core dry-run, so nothing at all is written) and by
+ * `planActivity` (a standalone `migrate:activity`).
+ */
 export async function assertStagedColumns(pool: Pick<pg.Pool, 'query'>, stepEntities: readonly string[]): Promise<void> {
   for (const [table, columns] of Object.entries(STAGED_COLUMNS_NEEDED)) {
     if (!stepEntities.includes(table)) continue
