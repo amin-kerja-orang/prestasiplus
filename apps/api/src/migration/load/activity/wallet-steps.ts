@@ -103,7 +103,8 @@ export function coinLedgerStep(a: ActivityContext): AnyEntityStep {
         const out = transformLedger(row, { userId, isStudent: userId !== undefined && students.has(userId) })
         if (!out.ok) {
           rejectRow(ctx, entity, legacyId, out.reject)
-          // A wrong sign is reported by count: the row is never flipped (AC3).
+          // A wrong sign is reported by count: the row is never flipped (AC3). A blank or unparseable amount is
+          // `amount_unparseable` (D6) and is not part of this count.
           if (out.reject.column === 'amount') a.notes.count('coin_ledger.rejected_amount')
         } else items.push({ legacyId, values: out.value as unknown as Record<string, unknown> })
       }

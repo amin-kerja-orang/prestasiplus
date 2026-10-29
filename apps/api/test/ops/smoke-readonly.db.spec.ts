@@ -51,13 +51,20 @@ function row(rows: SmokeRow[], id: string): SmokeRow {
   return r
 }
 
-async function recon(run: number, entity: string, eligible: number, rejected: number): Promise<void> {
+/** One recon row; `source` defaults to `eligible` (no documented exclusion). `loaded` = eligible - rejected, at least 0. */
+async function recon(run: number, entity: string, eligible: number, rejected: number, source = eligible): Promise<void> {
   await db.query(
-    `INSERT INTO etl_recon (run_id, entity, source_count, eligible_count, loaded, rejected, status) VALUES ($1::bigint, $2::text, $3::int, $3::int, $3::int - $4::int, $4::int, 'ok')
+    `INSERT INTO etl_recon (run_id, entity, source_count, eligible_count, loaded, rejected, status)
+     VALUES ($1::bigint, $2::text, $5::int, $3::int, greatest($3::int - $4::int, 0), $4::int, 'ok')
      ON CONFLICT (run_id, entity) DO UPDATE SET eligible_count = EXCLUDED.eligible_count, source_count = EXCLUDED.source_count,
        loaded = EXCLUDED.loaded, rejected = EXCLUDED.rejected`,
-    [run, entity, eligible, rejected],
+    [run, entity, eligible, rejected, source],
   )
+}
+
+/** check_ids of the FAIL rows, Z0 left out. */
+function failIds(rows: SmokeRow[]): string[] {
+  return rows.filter((r) => r.ok === 'FAIL' && r.check_id !== 'Z0').map((r) => r.check_id).sort()
 }
 
 /** `n` reject rows; legacy ids start at `from` so a second call for the same entity does not repeat ids. */
@@ -85,8 +92,9 @@ async function plantBase(): Promise<void> {
   await rejects(1, 'users', 'UNKNOWN_ENUM', 'role', 'agent', 25, 1)
   await rejects(1, 'users', 'UNKNOWN_ENUM', 'role', 'Agent', 25, 26)
   await rejects(1, 'users', 'UNKNOWN_ENUM', 'role', 'hmac:0123456789abcdef', 10, 51)
-  // practice_sessions: 300 expected orphans (30 %) + residual 5 of 1000 = 0.5 %.
-  await recon(1, 'practice_sessions', 1000, 305)
+  // practice_sessions: 1200 source rows, 200 of them a documented exclusion, so 1000 eligible. 300 expected orphans (30 %)
+  // + residual 5 of 1000 = 0.5 % (the shares are of eligible rows: of source rows they would read 25 % and 0.4167 %).
+  await recon(1, 'practice_sessions', 1000, 305, 1200)
   await rejects(1, 'practice_sessions', 'ORPHAN_PARENT', 'user_id', null, 300, 1)
   await rejects(1, 'practice_sessions', 'INVALID_VALUE', 'correct', null, 5, 301)
   // wallets: both expected classes, nothing residual.
@@ -130,8 +138,8 @@ describe('smoke-readonly.sql criterion 2 (D6)', () => {
     expect(row(rows, 'X4.practice_sessions.ORPHAN_PARENT.user_id')).toMatchObject({ value: '300 of 1000 eligible (30.0000 %)', ok: 'info' })
     expect(row(rows, 'X4.wallets.UNSUPPORTED.user_id').value).toBe('30 of 200 eligible (15.0000 %)')
     expect(row(rows, 'X4.wallets.ORPHAN_PARENT.user_id').value).toBe('10 of 200 eligible (5.0000 %)')
-    expect(row(rows, 'X4.notes.*.*').value).toBe('10 of 10 eligible (100.0000 %)')
-    expect(row(rows, 'X4.support_tickets.*.*').value).toBe('3 of 3 eligible (100.0000 %)')
+    expect(row(rows, 'X4.notes.any.any').value).toBe('10 of 10 eligible (100.0000 %)')
+    expect(row(rows, 'X4.support_tickets.any.any').value).toBe('3 of 3 eligible (100.0000 %)')
     expect(row(rows, 'X4.coin_ledger.INVALID_VALUE.amount').value).toBe('0 (no recon row)')
     // Residual detail: the two entities at their threshold; none for wallets, notes, support_tickets.
     expect(row(rows, 'X3.users')).toMatchObject({ value: '10 of 10000 eligible (0.1000 %)', ok: 'info' })
@@ -193,5 +201,73 @@ describe('smoke-readonly.sql criterion 2 (D6)', () => {
     const fails = rows.slice(0, -1).filter((r) => r.ok === 'FAIL').length
     expect(last?.value).toBe(String(fails))
     expect(rows.filter((r) => r.check_id === 'Z0')).toHaveLength(1)
+  })
+  it('measures shares against eligible_count, not source_count: a residual that is small of source rows still FAILs X3', async () => {
+    // 6 of 1000 eligible = 0.6 % (FAIL); of the 2000 source rows it would be 0.3 % and pass.
+    await recon(1, 'practice_sessions', 1000, 306, 2000)
+    await rejects(1, 'practice_sessions', 'INVALID_VALUE', 'correct', null, 1, 306)
+    const rows = await runSmoke()
+    expect(row(rows, 'X3.practice_sessions').value).toBe('6 of 1000 eligible (0.6000 %)')
+    expect(row(rows, 'X3')).toMatchObject({ value: '1', ok: 'FAIL' })
+  })
+
+  it('measures the class ceiling against eligible_count: a class that is small of source rows still FAILs X5', async () => {
+    // 30 of 70 eligible = 42.9 % (above 40 %); of the 200 source rows it would be 15 % and pass.
+    await recon(1, 'wallets', 70, 40, 200)
+    const rows = await runSmoke()
+    expect(row(rows, 'X4.wallets.UNSUPPORTED.user_id')).toMatchObject({ value: '30 of 70 eligible (42.8571 %)', ok: 'info' })
+    expect(row(rows, 'X5')).toMatchObject({ value: '1', ok: 'FAIL' })
+    expect(row(rows, 'X3').ok).toBe('ok')
+  })
+
+  it('still FAILs X2 on an ORPHAN_PARENT user while users also has classed rejects', async () => {
+    await recon(1, 'users', 20000, 61)
+    await rejects(1, 'users', 'ORPHAN_PARENT', 'school_id', null, 1, 61)
+    const rows = await runSmoke()
+    expect(row(rows, 'X2')).toMatchObject({ value: '1', expected: '0', ok: 'FAIL' })
+    expect(row(rows, 'X4.users.UNKNOWN_ENUM.role.agent')).toMatchObject({ value: '50 of 20000 eligible (0.2500 %)', ok: 'info' })
+    // residual 11 of 20000 = 0.055 %: criterion 2 b passes, criterion 3 alone fails
+    expect(row(rows, 'X3').ok).toBe('ok')
+    expect(row(rows, 'X5').ok).toBe('ok')
+  })
+
+  it('FAILs X3 when an entity has residual rejects but no eligible row', async () => {
+    await recon(1, 'banners', 0, 2, 4)
+    await rejects(1, 'banners', 'INVALID_VALUE', 'image_path', null, 2, 1)
+    const rows = await runSmoke()
+    expect(row(rows, 'X3.banners')).toMatchObject({ value: '2 of 0 eligible (n/a %)', ok: 'info' })
+    expect(row(rows, 'X3')).toMatchObject({ value: '1', ok: 'FAIL' })
+  })
+
+  it('FAILs X5 when a class has rejects but its entity has no eligible row', async () => {
+    await recon(1, 'wallets', 0, 40, 200)
+    const rows = await runSmoke()
+    expect(row(rows, 'X4.wallets.UNSUPPORTED.user_id')).toMatchObject({ value: '30 of 0 eligible (n/a %)', ok: 'info' })
+    expect(row(rows, 'X4.wallets.ORPHAN_PARENT.user_id').value).toBe('10 of 0 eligible (n/a %)')
+    expect(row(rows, 'X5')).toMatchObject({ value: '2', ok: 'FAIL' })
+    expect(row(rows, 'X3').ok).toBe('ok')
+  })
+
+  it('raises Z0 by exactly one when X3 FAILs, and by exactly one when X5 FAILs', async () => {
+    const base = await runSmoke()
+    const baseZ0 = Number(row(base, 'Z0').value)
+    expect(baseZ0).toBe(failIds(base).length)
+
+    // residual breach on users (11 of 10000 = 0.11 %); the users recon row keeps a non-zero loaded, so block E is unchanged
+    await recon(1, 'users', 10000, 61)
+    await rejects(1, 'users', 'INVALID_VALUE', 'name', null, 1, 61)
+    const afterX3 = await runSmoke()
+    expect(failIds(afterX3).filter((id) => !failIds(base).includes(id))).toEqual(['X3'])
+    expect(failIds(base).filter((id) => !failIds(afterX3).includes(id))).toEqual([])
+    expect(Number(row(afterX3, 'Z0').value)).toBe(baseZ0 + 1)
+
+    // class above its ceiling on practice_sessions (450 of 1000 = 45 %), from the base ledger again
+    await plantBase()
+    await recon(1, 'practice_sessions', 1000, 455, 1200)
+    await rejects(1, 'practice_sessions', 'ORPHAN_PARENT', 'user_id', null, 150, 1001)
+    const afterX5 = await runSmoke()
+    expect(failIds(afterX5).filter((id) => !failIds(base).includes(id))).toEqual(['X5'])
+    expect(failIds(base).filter((id) => !failIds(afterX5).includes(id))).toEqual([])
+    expect(Number(row(afterX5, 'Z0').value)).toBe(baseZ0 + 1)
   })
 })

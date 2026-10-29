@@ -45,7 +45,7 @@
 --   staging_cloud.* is absent (an empty migrated DB, or after minimise) the row says ok = 'info' and value 'n/a:
 --   staging_cloud not present' instead of failing.
 --
--- CRITERION 2 SPLIT (LEAD decision D6, 29 Oct; cutover plan section 5 criterion 2 and decision 4c)
+-- CRITERION 2 SPLIT (LEAD D6 (29 Oct, cutover); cutover plan section 5 criterion 2 and decision 4c)
 --   (a) Expected reject classes: the inline list `xcls` (entity, reason, column_name, code, cause, accepted-by reference).
 --       Their rejects are the X4.* rows, 'info' with the count and the share of eligible_count; they never FAIL on their own.
 --       Guard X5: a class above its documented ceiling (default 40 % of eligible, 100 % for an entity accepted as dropped
@@ -288,7 +288,7 @@ rej AS (
   FROM etl_rejects j JOIN recon ON recon.run_id = j.run_id AND recon.entity = j.entity
   GROUP BY j.reason, j.entity
 ),
--- Block X, criterion 2 split (LEAD decision D6, 29 Oct). Same rows as `rej`, kept by (entity, reason, column_name) and the
+-- Block X, criterion 2 split (LEAD D6 (29 Oct, cutover)). Same rows as `rej`, kept by (entity, reason, column_name) and the
 -- offending code as the loader stores it (kit/rejects.ts: a code-like enum value is stored raw, anything else as `hmac:...`).
 -- `code` is the stored value folded like transform/common.ts enumKey (trim, lower case, spaces and dashes to `_`); a hashed
 -- value gives NULL, so it can never match a class that names a code. Only counts leave this CTE.
@@ -301,7 +301,8 @@ rejc AS (
   GROUP BY 1, 2, 3, 4
 ),
 -- Criterion 2 (a): the EXPECTED reject classes. A reject that matches a class is reported (X4.*, 'info') and is left out of
--- the residual share of criterion 2 (b) (X3). reason / column_name '*' = any; code NULL = any. Each class has a ceiling in % of
+-- the residual share of criterion 2 (b) (X3). reason / column_name 'any' = any value (no reject reason or loader column is
+-- called that); code NULL = any. Each class has a ceiling in % of
 -- the entity's eligible_count: above it the class is no longer "the known cause" and X5 FAILs. 40 % is the generous default
 -- (above every share the A1 and UAT loads showed for these causes); 100 % for an entity the LEAD accepted as dropped whole.
 -- Paths are under apps/api/src/migration/. Deviations = docs/architecture/v2-backend-deviations.md (dated rows).
@@ -312,34 +313,34 @@ xcls (entity, reason, column_name, code, cause, ref, ceiling_pct) AS (
   VALUES
     ('users'::text, 'UNKNOWN_ENUM'::text, 'role'::text, 'agent'::text,
      'source role agent is not migrated (ROLES_NOT_MIGRATED, transform/enums.ts; transform/users.ts)'::text,
-     'deviations 2026-10-24 FIT-FIX agent; D6'::text, 40.0::numeric),
+     'deviations 2026-10-24 FIT-FIX agent; LEAD D6 (29 Oct, cutover)'::text, 40.0::numeric),
     ('classrooms', 'ORPHAN_PARENT', 'teacher_id', NULL,
      'teacher present at source but not migrated (transform/classes.ts); teacher absent at source is an exclusion',
-     'deviations 2026-10-25 A1-FIX class exclusion; D6', 40.0),
+     'deviations 2026-10-25 A1-FIX class exclusion; LEAD D6 (29 Oct, cutover)', 40.0),
     ('wallets', 'UNSUPPORTED', 'user_id', NULL,
      'wallet of a non-student role, v2 wallets are student-only (D28c; transform/wallet.ts transformWallet)',
-     'deviations 2026-10-25 A1-FIX non-student wallets; D6', 40.0),
+     'deviations 2026-10-25 A1-FIX non-student wallets; LEAD D6 (29 Oct, cutover)', 40.0),
     ('wallets', 'ORPHAN_PARENT', 'user_id', NULL,
      'user absent at source or not migrated (transform/wallet.ts transformWallet)',
-     'deviations 2026-10-25 A1-FIX wallet orphans; D6', 40.0),
+     'deviations 2026-10-25 A1-FIX wallet orphans; LEAD D6 (29 Oct, cutover)', 40.0),
     ('coin_ledger', 'UNSUPPORTED', 'user_id', NULL,
      'ledger row of a non-student role (transform/wallet.ts transformLedger)',
-     'runbook section 19; deviations 2026-10-25 A1-FIX non-student wallets; D6', 40.0),
+     'runbook section 19; deviations 2026-10-25 A1-FIX non-student wallets; LEAD D6 (29 Oct, cutover)', 40.0),
     ('coin_ledger', 'INVALID_VALUE', 'amount', NULL,
-     'amount sign contradicts the type or source, never flipped (transform/wallet.ts ledgerSignOk, ledgerSourceSignOk)',
-     'runbook section 19; D6', 40.0),
+     'amount sign contradicts the type or source, never flipped (transform/wallet.ts ledgerSignOk, ledgerSourceSignOk); a blank or unparseable amount is amount_unparseable and stays residual',
+     'runbook section 19; LEAD D6 (29 Oct, cutover)', 40.0),
     ('practice_sessions', 'ORPHAN_PARENT', 'user_id', NULL,
-     'user absent at source (transform/practice.ts transformSession)',
-     'deviations 2026-10-25 A1-FIX deleted source users; D6', 40.0),
+     'user absent at source or not migrated (transform/practice.ts transformSession)',
+     'deviations 2026-10-25 A1-FIX deleted source users; LEAD D6 (29 Oct, cutover)', 40.0),
     ('practice_answers', 'ORPHAN_PARENT', 'user_id', NULL,
-     'user absent at source (transform/practice.ts transformAnswer)',
-     'deviations 2026-10-25 A1-FIX deleted source users; D6', 40.0),
-    ('notes', '*', '*', NULL,
+     'user absent at source or not migrated (transform/practice.ts transformAnswer)',
+     'deviations 2026-10-25 A1-FIX deleted source users; LEAD D6 (29 Oct, cutover)', 40.0),
+    ('notes', 'any', 'any', NULL,
      'accepted as dropped at go-live (blocked by spec, load/activity/index.ts SPEC_GAP_ENTITIES)',
-     'LEAD D2; D6', 100.0),
-    ('support_tickets', '*', '*', NULL,
+     'LEAD D2; LEAD D6 (29 Oct, cutover)', 100.0),
+    ('support_tickets', 'any', 'any', NULL,
      'accepted as dropped at go-live (blocked by spec, load/activity/index.ts SPEC_GAP_ENTITIES)',
-     'LEAD D3; D6', 100.0)
+     'LEAD D3; LEAD D6 (29 Oct, cutover)', 100.0)
 ),
 -- Per class: matched rejects of the entity's recon run, against that recon row's eligible_count.
 xm AS (
@@ -347,8 +348,8 @@ xm AS (
          'X4.' || x.entity || '.' || x.reason || '.' || x.column_name || coalesce('.' || x.code, '') AS check_id,
          (SELECT eligible_count FROM recon WHERE recon.entity = x.entity) AS eligible,
          coalesce((SELECT sum(r.n) FROM rejc r
-                   WHERE r.entity = x.entity AND (x.reason = '*' OR r.reason = x.reason)
-                     AND (x.column_name = '*' OR r.column_name = x.column_name) AND (x.code IS NULL OR r.code = x.code)), 0) AS n
+                   WHERE r.entity = x.entity AND (x.reason = 'any' OR r.reason = x.reason)
+                     AND (x.column_name = 'any' OR r.column_name = x.column_name) AND (x.code IS NULL OR r.code = x.code)), 0) AS n
   FROM xcls x
 ),
 -- Criterion 2 (b): per entity, the rejects that match NO expected class, against eligible_count (rows left after the
@@ -359,8 +360,8 @@ resid AS (
          rc.rejected - coalesce((SELECT sum(r.n) FROM rejc r
                                  WHERE r.entity = rc.entity AND EXISTS (
                                    SELECT 1 FROM xcls x
-                                   WHERE x.entity = r.entity AND (x.reason = '*' OR r.reason = x.reason)
-                                     AND (x.column_name = '*' OR r.column_name = x.column_name) AND (x.code IS NULL OR r.code = x.code))), 0) AS residual,
+                                   WHERE x.entity = r.entity AND (x.reason = 'any' OR r.reason = x.reason)
+                                     AND (x.column_name = 'any' OR r.column_name = x.column_name) AND (x.code IS NULL OR r.code = x.code))), 0) AS residual,
          CASE WHEN rc.entity IN ('users', 'schools') THEN 0.1 ELSE 0.5 END AS limit_pct
   FROM recon rc
 ),
@@ -491,12 +492,12 @@ checks AS (
          CASE WHEN coalesce((SELECT sum(n) FROM rej WHERE reason = 'ORPHAN_PARENT' AND entity IN ('users', 'schools')), 0) = 0 THEN 'ok' ELSE 'FAIL' END
   -- X3 (criterion 2 b): residual rejects, i.e. outside the expected classes of X4.*, as a share of eligible_count.
   -- An entity with residual rejects and no eligible row cannot happen (rejected is part of eligible) and counts as over.
-  UNION ALL SELECT 'X', 'X3', 'entities whose residual rejects (outside the expected classes X4.*) are above 0.1 % (users, schools) or 0.5 % (others) of eligible rows (criterion 2 b; D6)',
+  UNION ALL SELECT 'X', 'X3', 'entities whose residual rejects (outside the expected classes X4.*) are above 0.1 % (users, schools) or 0.5 % (others) of eligible rows (criterion 2 b; LEAD D6 (29 Oct, cutover))',
          (SELECT count(*) FROM resid WHERE residual > 0 AND (eligible <= 0 OR 100.0 * residual / eligible > limit_pct))::text, '0',
          CASE WHEN (SELECT count(*) FROM resid WHERE residual > 0 AND (eligible <= 0 OR 100.0 * residual / eligible > limit_pct)) = 0 THEN 'ok' ELSE 'FAIL' END
   -- X3.<entity>: one 'info' line per entity that has residual rejects, so the operator sees which entity X3 counts (no FAIL
   -- here: X3 is the gate, and Z0 counts each breach once).
-  UNION ALL SELECT 'X', 'X3.' || entity, 'residual rejects of ' || entity || ' against eligible rows (criterion 2 b; D6)',
+  UNION ALL SELECT 'X', 'X3.' || entity, 'residual rejects of ' || entity || ' against eligible rows (criterion 2 b; LEAD D6 (29 Oct, cutover))',
          residual::text || ' of ' || eligible::text || ' eligible (' || CASE WHEN eligible > 0 THEN round(100.0 * residual / eligible, 4)::text ELSE 'n/a' END || ' %)',
          '<= ' || limit_pct::text || ' % (above it X3 is FAIL)', 'info'
     FROM resid WHERE residual > 0
@@ -508,7 +509,7 @@ checks AS (
          'reported; at most ' || xm.ceiling_pct::text || ' % of eligible (X5)', 'info'
     FROM xm
   -- X5 (criterion 2 a guard): an expected class above its ceiling is no longer explained by its cause.
-  UNION ALL SELECT 'X', 'X5', 'expected reject classes X4.* above their documented ceiling of eligible rows (criterion 2 a guard; D6)',
+  UNION ALL SELECT 'X', 'X5', 'expected reject classes X4.* above their documented ceiling of eligible rows (criterion 2 a guard; LEAD D6 (29 Oct, cutover))',
          (SELECT count(*) FROM xm WHERE xm.n > 0 AND (coalesce(xm.eligible, 0) <= 0 OR 100.0 * xm.n / xm.eligible > xm.ceiling_pct))::text, '0',
          CASE WHEN (SELECT count(*) FROM xm WHERE xm.n > 0 AND (coalesce(xm.eligible, 0) <= 0 OR 100.0 * xm.n / xm.eligible > xm.ceiling_pct)) = 0 THEN 'ok' ELSE 'FAIL' END
 

@@ -243,6 +243,13 @@ describe('transformLedger', () => {
     expect(ledgerSignOk('convert', 1)).toBe(false)
   })
 
+  it('rejects a blank or unparseable amount on amount_unparseable, not on the sign column amount (D6)', () => {
+    expect(transformLedger(tx({ amount: null }), refs)).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'amount_unparseable' } })
+    expect(transformLedger(tx({ amount: '' }), refs)).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'amount_unparseable' } })
+    expect(transformLedger(tx({ amount: 'lima' }), refs)).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'amount_unparseable' } })
+    expect(transformLedger(tx({ amount: '5.5' }), refs)).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'amount_unparseable' } })
+  })
+
   it('rejects an unknown type or source and a non-student', () => {
     expect(transformLedger(tx({ type: 'mystery' }), refs)).toMatchObject({ ok: false, reject: { reason: 'UNKNOWN_ENUM', column: 'type' } })
     expect(transformLedger(tx({ source: 'lucky' }), refs)).toMatchObject({ ok: false, reject: { reason: 'UNKNOWN_ENUM', column: 'source' } })
