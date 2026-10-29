@@ -27,5 +27,9 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       # The e2e run logs in many times from one address (3 viewports); the default is 5 per minute.
       THROTTLE_LOGIN_PER_MINUTE: ${E2E_THROTTLE_LOGIN_PER_MINUTE:-200}
+      # The same address also sends every other e2e request (all specs, 3 viewports); the default global ceiling is 300 per minute.
+      THROTTLE_GLOBAL_PER_MINUTE: ${E2E_THROTTLE_GLOBAL_PER_MINUTE:-100000}
+      # The intake e2e (bijak/intake-review-http) needs the background job worker; the default is false (enqueue only).
+      JOBS_WORKER_ENABLED: 'true'
       # The demo seed (migrate job above) places the Bijak PoC questions; serve them here (staging/dev/e2e only).
       BIJAK_POC_QUESTIONS: 'true'
