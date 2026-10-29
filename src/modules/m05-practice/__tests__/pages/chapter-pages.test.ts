@@ -357,6 +357,21 @@ describe('Q2 ChapterQuizPage', () => {
     expect(outcome.setRouteOutcome).not.toHaveBeenCalled()
   })
 
+  it('matches the string chapter ids of the real API and starts the session (SW13-01)', async () => {
+    // http mode: `IdSchema` ids are strings ("137"), the route param is a string too.
+    const http = {
+      ...MATH,
+      levelId: '5',
+      levels: [{ id: '5', name: 'Darjah 5', count: 10 }],
+      chapters: [card({ id: '137' as unknown as number, number: 1 })],
+    } as unknown as ChapterSubjectDetail
+    api.fetchChapterSubject.mockResolvedValue(http)
+    const w = await render(ChapterQuizPage, '/practice/chapter/MATH/137/quiz?count=5')
+    expect(w.find('[data-testid=runner]').exists()).toBe(true)
+    expect(runnerProps(w).start).toMatchObject({ mode: 'chapter', count: 5 })
+    expect(outcome.setRouteOutcome).not.toHaveBeenCalled()
+  })
+
   it('finds the level of a chapter that is not in the default level', async () => {
     const w = await render(ChapterQuizPage, '/practice/chapter/MATH/3/quiz?count=5')
     expect(runnerProps(w).backUrl).toBe('/practice/chapter/MATH?level=2')
