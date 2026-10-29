@@ -52,6 +52,16 @@ export function transformClassroom(row: Staged, parents: ClassroomParents): Outc
 }
 
 /**
+ * SW7-01 (mirrors migration 0090): a teacher class (`kind = 'classroom'`) whose source has NO school takes its teacher's v2 school,
+ * so the school admin can see it. A school class, a class that has its own school, or a teacher without a school is returned as is.
+ * Pure; the loader reads the teacher's school.
+ */
+export function withTeacherSchool(values: ClassroomValues, teacherSchoolId: string | null | undefined): ClassroomValues {
+  if (values.kind !== 'classroom' || values.school_id !== null || !teacherSchoolId) return values
+  return { ...values, school_id: teacherSchoolId }
+}
+
+/**
  * The grade (1..11) of a class, T-09: an explicit `Darjah / Tahun / Tingkatan / Form N` in its name wins;
  * otherwise the most common grade of its pupils (derived from their class labels by the user transform);
  * a tie goes to the lower grade. Null when neither exists.
@@ -72,6 +82,23 @@ export function deriveClassGrade(name: string | null, pupilGrades: readonly (num
     }
   }
   return best
+}
+
+/**
+ * The v2 level of a class (BE-28, v2-backend-deviations.md). The level follows the pupils in staging; the one exception is a
+ * class that is already loaded and has NO pupils in staging any more (all deleted at the source, and no grade in its name):
+ * it keeps the level of its v2 row (`kept: true`) instead of being rejected. A class that was never loaded, or whose pupils exist
+ * but give no level, gets `levelId: null` (INVALID_VALUE education_level_id) as before.
+ */
+export function resolveClassLevel(input: {
+  grade: number | null
+  pupilCount: number
+  levelByGrade: ReadonlyMap<number, string>
+  loadedLevelId: string | null | undefined
+}): { levelId: string | null; kept: boolean } {
+  if (input.grade !== null) return { levelId: input.levelByGrade.get(input.grade) ?? null, kept: false }
+  if (input.pupilCount === 0 && input.loadedLevelId) return { levelId: input.loadedLevelId, kept: true }
+  return { levelId: null, kept: false }
 }
 
 // ---------------------------------------------------------------- enrolments

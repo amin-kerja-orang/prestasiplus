@@ -145,7 +145,7 @@ Legacy folders (`src/shells`, `src/components/*`, `src/styles/live-globals.css`)
 flowchart TD
   A[navigation] --> B[session.check: reload session, drop expired]
   B --> C{route.access = auth<br/>and no session?}
-  C -- yes --> L["redirect /login (no redirect param)"]
+  C -- yes --> L["redirect /login?redirect=path (D51)"]
   C -- no --> D{route.portal = awam?}
   D -- yes --> OK[allow]
   D -- no --> E{portal of active role<br/>= route.portal?}
@@ -168,7 +168,7 @@ Transport of the session: HTTP-only, `Secure`, `SameSite=Lax` cookie on the pare
 
 | Method and path | Purpose | Notes |
 |---|---|---|
-| `POST /auth/login` | body `{ identifier, password, schoolId?, remember }`; identifier is e-mail or username (+ school) | errors: `INVALID_CREDENTIALS` (exact BM message of AC-01.4), `ACCOUNT_INACTIVE`, `SCHOOL_INACTIVE`, `AMBIGUOUS_USERNAME` (422 with candidate schools). Regenerates the session id. Returns `Session`. |
+| `POST /auth/login` | body `{ identifier, password, schoolId?, remember }`; identifier is e-mail or username (+ school) | errors: `INVALID_CREDENTIALS` (AC-01.4 copy; v2 text "E-mel/Nama pengguna atau kata laluan tidak sah.", see deviation M01-DEV-01 in `v2-backend-deviations.md`), `ACCOUNT_INACTIVE`, `SCHOOL_INACTIVE`, `AMBIGUOUS_USERNAME` (422 with candidate schools). Regenerates the session id. Returns `Session`. |
 | `POST /auth/logout` | ends the session for both portals | |
 | `GET /session` | current `Session` | one call resolves role, scope, capabilities, landing (NFR Performance) |
 | `POST /session/role` | body `{ role }`; must be in the account's list | regenerates session id, audit entry, returns `Session`; `409 MODE_ACTIVE` while a mode is on |

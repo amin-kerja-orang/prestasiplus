@@ -104,7 +104,7 @@ Before a deploy that carries a migration: take a backup (section 10) and check t
 
 `npm run be:db:seed` (`apps/api/prisma/seed/index.ts`) runs the modules of the profile (default `poc`) in order.
 
-- `kind: 'reference'` modules (today only `core-school-packages`) run in every environment, production included. They contain no personal data.
+- `kind: 'reference'` modules (`core-school-packages`, `core-wallet-tiers`, `core-marketplace-categories`, `spm-subject-configs`; pinned by `test/subscriptions/seed-production.spec.ts`) run in every environment, production included. They contain no personal data.
 - Everything else is demo data (fictitious accounts with a published password). With `NODE_ENV=production` they are skipped, with a warning listing the skipped modules, unless `ALLOW_DEMO_SEED=true` (or `1`). Outside production the demo seed runs without the flag.
 - Production: run the seed without `ALLOW_DEMO_SEED`. Never set it to `true` in production. Staging may load the demo accounts with the explicit one-off command in [deploy-staging.md](deploy-staging.md).
 - Seeds are idempotent (upserts) and deterministic. `be:db:reset` refuses to run when `NODE_ENV=production`.

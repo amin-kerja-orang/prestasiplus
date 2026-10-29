@@ -9,6 +9,9 @@
  *      digit sequences of phone/IC values, and multi-word names inside longer text count. Single words
  *      of a name are NOT matched on their own: common words (and surnames) would flag public content.
  *
+ * Both checks read the raw string AND its normalised views (normalise.ts: tags and entities removed, NFKC, non-ASCII digits and
+ * zero-width characters folded, JSON escapes decoded); a hit on either counts (A1-LEAK F1).
+ *
  * Any hit fails the run. A hit names the table, the column, the kind and a count, never a value.
  * The scan also works on its own on a finished dump directory (patterns only), see `anonymise:scan`.
  */
@@ -17,27 +20,31 @@ import { createHash, randomBytes } from 'node:crypto'
 import { DirReader } from '../staging/readers'
 import { TABLES, type TableSpec } from '../ddl/spec'
 import type { LeakHit } from './errors'
+import { scanViews } from './normalise'
+import { EMAIL, IC, LANDLINE, MOBILE } from './patterns'
 import { EMAIL_DOMAIN } from './pseudonyms'
 import type { Rule } from './rules'
 
-const EMAIL = /[A-Za-z0-9._%+'-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/g
-// +60/60/0 then 1x then 7-8 digits; separators (space or dash) allowed between the groups.
-const MOBILE = /(?<![\d+])(?:\+?60|0)[ -]?1\d[ -]?\d{3,4}[ -]?\d{4}(?!\d)/
-// Landline: area code 3 to 9, then 7-8 digits.
-const LANDLINE = /(?<![\d+])(?:\+?60|0)[ -]?[3-9][ -]?\d{3,4}[ -]?\d{4}(?!\d)/
-// YYMMDD (valid month and day) - place code - serial, separators optional.
-const IC = /(?<!\d)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[ -]?\d{2}[ -]?\d{4}(?!\d)/
+export { EMAIL, IC, LANDLINE, MOBILE } from './patterns'
 
 export interface ScanPatternOptions {
   /** E-mail domains that are fakes and therefore allowed (default: example.test). */
   allowedEmailDomains?: readonly string[]
 }
 
-/** The pattern kinds found in one string (each kind once). */
+/** The pattern kinds found in one string (each kind once), in the raw text or in a normalised view of it (normalise.ts). */
 export function patternKinds(text: string, options: ScanPatternOptions = {}): string[] {
+  const kinds = rawPatternKinds(text, options)
+  for (const view of scanViews(text)) for (const kind of rawPatternKinds(view, options)) if (!kinds.includes(kind)) kinds.push(kind)
+  return kinds
+}
+
+/** `patternKinds` on exactly this string. */
+function rawPatternKinds(text: string, options: ScanPatternOptions): string[] {
   const allowed = new Set((options.allowedEmailDomains ?? [EMAIL_DOMAIN]).map((d) => d.toLowerCase()))
   const kinds: string[] = []
-  if (text.length >= 5) {
+  // no `@` means no address, and the address pattern is quadratic on a long run of local-part characters, so look for one first
+  if (text.length >= 5 && text.includes('@')) {
     for (const m of text.matchAll(EMAIL)) {
       if (!allowed.has((m[1] as string).toLowerCase())) {
         kinds.push('email')
@@ -52,16 +59,102 @@ export function patternKinds(text: string, options: ScanPatternOptions = {}): st
   return kinds
 }
 
+/** A span of a string that the leak scan would flag (UTF-16 offsets, `end` exclusive). `kind` is a scan kind. */
+export interface PiiSpan {
+  start: number
+  end: number
+  kind: 'email' | 'phone' | 'ic' | 'original-value' | 'original-name'
+}
+
+const globalOf = (re: RegExp): RegExp => new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`)
+const EMAIL_G = globalOf(EMAIL)
+const MOBILE_G = globalOf(MOBILE)
+const LANDLINE_G = globalOf(LANDLINE)
+const IC_G = globalOf(IC)
+
+/**
+ * Every span of `text` that `patternKinds` would report, built from the SAME regexes (so the scan and the redactor
+ * (redact.ts) cannot drift): each e-mail address whose domain is not allowed, each mobile or landline number, each IC.
+ * Overlapping spans are returned as they are; the caller merges them.
+ */
+export function patternSpans(text: string, options: ScanPatternOptions = {}): PiiSpan[] {
+  const allowed = new Set((options.allowedEmailDomains ?? [EMAIL_DOMAIN]).map((d) => d.toLowerCase()))
+  const spans: PiiSpan[] = []
+  for (const m of text.includes('@') ? text.matchAll(EMAIL_G) : []) {
+    if (!allowed.has((m[1] as string).toLowerCase())) spans.push({ start: m.index, end: m.index + m[0].length, kind: 'email' })
+  }
+  for (const re of [MOBILE_G, LANDLINE_G]) for (const m of text.matchAll(re)) spans.push({ start: m.index, end: m.index + m[0].length, kind: 'phone' })
+  for (const m of text.matchAll(IC_G)) spans.push({ start: m.index, end: m.index + m[0].length, kind: 'ic' })
+  return spans
+}
+
 const collapse = (s: string): string => s.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase()
 const DIGIT_RUN = /\d[\d -]{5,}\d/g
 const TOKEN_SPLIT = /[^\p{L}\p{N}]+/u
 
+/**
+ * `collapse` of `text` with, for every UTF-16 unit of the result, the offsets of the source characters it came from.
+ * NFKC is applied per base character with its combining marks and the lower case to the whole string, which gives the same
+ * string as `collapse` for all text except a few cross-character compositions; a mismatch can only make the caller fall back to
+ * redacting the whole cell, never miss a hit (redact.ts re-checks the output with `match`).
+ */
+function foldWithOffsets(text: string): { folded: string; start: number[]; end: number[] } {
+  const start: number[] = []
+  const end: number[] = []
+  const chunks: string[] = []
+  for (const m of text.matchAll(/\P{M}\p{M}*|\p{M}+/gu)) {
+    const f = m[0].normalize('NFKC')
+    chunks.push(f)
+    for (let i = 0; i < f.length; i++) {
+      start.push(m.index)
+      end.push(m.index + m[0].length)
+    }
+  }
+  const composed = chunks.join('')
+  // Lower case the whole string, as `collapse` does (a final sigma depends on its neighbours). The few characters whose
+  // lower case has another length (U+0130) are lower-cased one by one instead, so the offsets stay aligned.
+  const whole = composed.toLowerCase()
+  if (whole.length === composed.length) return { folded: whole, start, end }
+  const s2: number[] = []
+  const e2: number[] = []
+  let folded = ''
+  let at = 0
+  for (const chunk of chunks) {
+    const f = chunk.toLowerCase()
+    for (let i = 0; i < f.length; i++) {
+      s2.push(start[at] as number)
+      e2.push(end[at] as number)
+    }
+    at += chunk.length
+    folded += f
+  }
+  return { folded, start: s2, end: e2 }
+}
+
 /** Every string (and long integer) leaf of a cell. */
 export function* leaves(value: unknown): Generator<string> {
-  if (typeof value === 'string') yield value
-  else if (typeof value === 'number' && Number.isInteger(value) && Math.abs(value) >= 100_000_000) yield String(value)
-  else if (Array.isArray(value)) for (const v of value) yield* leaves(v)
-  else if (value !== null && typeof value === 'object') for (const v of Object.values(value)) yield* leaves(v)
+  // iterative (an explicit stack, same order as a depth-first walk): a deeply nested json cell cannot overflow the call stack
+  const stack: unknown[] = [value]
+  while (stack.length > 0) {
+    const v = stack.pop()
+    if (typeof v === 'string') yield v
+    else if (typeof v === 'number' && Number.isInteger(v) && Math.abs(v) >= 100_000_000) yield String(v)
+    else if (Array.isArray(v)) for (let i = v.length - 1; i >= 0; i--) stack.push(v[i])
+    else if (v !== null && typeof v === 'object') {
+      const values = Object.values(v)
+      for (let i = values.length - 1; i >= 0; i--) stack.push(values[i])
+    }
+  }
+}
+
+/** The parsed value of a json text cell (so its string leaves are indexed, not the whole text); anything else as it is. */
+function parsedJson(original: unknown): unknown {
+  if (typeof original !== 'string') return original
+  try {
+    return JSON.parse(original)
+  } catch {
+    return original
+  }
 }
 
 /** Salted hashes of the original values that rules replaced. Memory only; never written anywhere. */
@@ -80,10 +173,15 @@ export class OriginalsIndex {
     return createHash('sha256').update(this.salt).update(tag).update(text).digest('hex').slice(0, 32)
   }
 
-  /** Index what `rule` replaced. `keep` and values that the rule left unchanged are never recorded. */
+  /**
+   * Index what `rule` replaced. `keep`, `redact-pii` (public content, kept except for the masked spans), `slug-from-id` and
+   * `null-content` (content text such as an article slug or a banner link: it is not personal data in itself, and indexing it
+   * would fail the scan on any other kept cell that equals it; personal names inside it are indexed from the identity tables)
+   * and values that the rule left unchanged are never recorded.
+   */
   record(rule: Rule, original: unknown, output: unknown): void {
-    if (rule.rule === 'keep') return
-    for (const s of leaves(original)) {
+    if (rule.rule === 'keep' || rule.rule === 'redact-pii' || rule.rule === 'slug-from-id' || rule.rule === 'null-content') return
+    for (const s of leaves(rule.rule === 'scrub-json' ? parsedJson(original) : original)) {
       if (typeof output === 'string' && output === s) continue
       this.add(rule, s)
     }
@@ -92,7 +190,7 @@ export class OriginalsIndex {
   private add(rule: Rule, raw: string): void {
     const n = collapse(raw)
     const kind = rule.rule === 'pseudonym' ? rule.kind : null
-    const minWhole = rule.rule === 'scrub-text' ? 20 : kind === 'username' || kind === 'code' || kind === 'opaque' ? 5 : 6
+    const minWhole = rule.rule === 'scrub-text' || rule.rule === 'scrub-json' ? 20 : kind === 'username' || kind === 'code' || kind === 'opaque' ? 5 : 6
     if (n.length >= minWhole) this.whole.add(this.h('w', n))
     if (kind === 'phone' || kind === 'ic') {
       const d = raw.replace(/\D/g, '')
@@ -111,9 +209,23 @@ export class OriginalsIndex {
     }
   }
 
-  /** `original-value` or `original-name` when the cell text is or contains an indexed original, else null. */
+  /**
+   * `original-value` or `original-name` when the cell text is or contains an indexed original, else null. The raw text is
+   * checked first, then its normalised views (normalise.ts); a hit on either counts.
+   */
   match(text: string): string | null {
     if (this.size === 0) return null
+    const raw = this.matchExact(text)
+    if (raw !== null) return raw
+    for (const view of scanViews(text)) {
+      const hit = this.matchExact(view)
+      if (hit !== null) return hit
+    }
+    return null
+  }
+
+  /** `match` on exactly this string. */
+  private matchExact(text: string): string | null {
     const n = collapse(text)
     if (n.length >= 5 && this.whole.has(this.h('w', n))) return 'original-value'
     if (this.digitSeq.size > 0) {
@@ -133,6 +245,48 @@ export class OriginalsIndex {
       }
     }
     return null
+  }
+
+  /**
+   * The spans of `text` that `match` would flag, by the same rules: the whole cell when it is an indexed whole value;
+   * every digit run (and, when only the digits of the whole cell add up to it, the stretch from the first to the last
+   * digit) of an indexed phone/IC digit sequence of at least 7 digits; every run of tokens that is an indexed multi-word
+   * name (2 to 8 tokens, 8 characters). A single word is never a span on its own. Used by the redactor (redact.ts).
+   */
+  spans(text: string): PiiSpan[] {
+    if (this.size === 0) return []
+    if (this.whole.size > 0) {
+      const n = collapse(text)
+      if (n.length >= 5 && this.whole.has(this.h('w', n))) return [{ start: 0, end: text.length, kind: 'original-value' }]
+    }
+    const out: PiiSpan[] = []
+    if (this.digitSeq.size > 0) {
+      for (const m of text.matchAll(DIGIT_RUN)) {
+        const d = m[0].replace(/\D/g, '')
+        if (d.length >= 7 && this.digitSeq.has(this.h('d', d))) out.push({ start: m.index, end: m.index + m[0].length, kind: 'original-value' })
+      }
+      const all = text.replace(/\D/g, '')
+      if (all.length >= 7 && all.length <= 15 && this.digitSeq.has(this.h('d', all))) {
+        const first = text.search(/\d/)
+        let last = text.length - 1
+        while (last > first && !/\d/.test(text[last] as string)) last--
+        out.push({ start: first, end: last + 1, kind: 'original-value' })
+      }
+    }
+    if (this.nameGrams.size > 0) {
+      const { folded, start, end } = foldWithOffsets(text)
+      const tokens = [...folded.matchAll(/[\p{L}\p{N}]+/gu)]
+      for (const size of this.gramSizes) {
+        for (let i = 0; i + size <= tokens.length; i++) {
+          const first = tokens[i] as RegExpMatchArray
+          const last = tokens[i + size - 1] as RegExpMatchArray
+          if (this.nameGrams.has(this.h('g', tokens.slice(i, i + size).map((t) => t[0]).join(' ')))) {
+            out.push({ start: start[first.index as number] as number, end: end[(last.index as number) + last[0].length - 1] as number, kind: 'original-name' })
+          }
+        }
+      }
+    }
+    return out
   }
 }
 

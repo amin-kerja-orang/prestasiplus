@@ -37,6 +37,7 @@ const COLUMNS = `id::text, action, actor_user_id::text, actor_role, scope_level,
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/
 const IC_PLAIN = /(?<!\d)\d{12}(?!\d)/
 const IC_DASHED = /\d{6}-\d{2}-\d{4}/
+const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi
 
 let counter = 0
 const rid = (label: string) => `req-audit-${label}-${String(++counter)}`
@@ -55,7 +56,9 @@ describe('BE-33 AC4: audit coverage, one test per audited action', () => {
     // The keyed IP hash is a 64-character hex string: leave it out of the text scan (a digit run could occur by chance).
     const { ip_hash: _ip, ...rest } = row as Record<string, unknown>
     void _ip
-    const text = JSON.stringify(rest)
+    // A session uuid's last group is 12 hex characters and can be all digits by chance (about 0.4% per uuid), which the
+    // bare-IC check would read as an IC. Mask uuid-shaped tokens first; any other 12-digit run is still caught.
+    const text = JSON.stringify(rest).replace(UUID, '<uuid>')
     expect(text).not.toMatch(EMAIL)
     expect(text).not.toMatch(IC_DASHED)
     expect(text).not.toMatch(IC_PLAIN)

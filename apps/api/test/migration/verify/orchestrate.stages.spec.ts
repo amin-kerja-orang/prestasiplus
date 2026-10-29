@@ -1,0 +1,215 @@
+/**
+ * Stage control of the BE-30 orchestrator (no database; `runCore` and `runActivity` are mocked):
+ *   a failed stage stops the later ones (no activity apply, no verify) and the run is `failed` / exit 1;
+ *   an `ApplyRefusedError` from a stage exits 3, a preflight error exits 2, a busy run exits 4;
+ *   when a later stage throws, the stages that completed were already printed (the core apply committed).
+ */
+import { rmSync } from 'node:fs'
+import { join } from 'node:path'
+
+import type pg from 'pg'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { runCli } from '../../../src/migration/cli'
+import { ApplyRefusedError, RunInProgressError } from '../../../src/migration/kit'
+import { PreflightError } from '../../../src/migration/load/activity'
+import { runAll, type StageResult } from '../../../src/migration/orchestrate'
+import type { VerifyReport } from '../../../src/migration/verify'
+import { capture } from '../staging/helpers'
+
+const mocks = vi.hoisted(() => ({ runCore: vi.fn(), runActivity: vi.fn(), assertCorePreflight: vi.fn(), runVerify: vi.fn(), writeVerifyReport: vi.fn() }))
+vi.mock('../../../src/migration/load', async (orig) => ({ ...(await orig<object>()), runCore: mocks.runCore }))
+vi.mock('../../../src/migration/load/activity', async (orig) => ({
+  ...(await orig<object>()),
+  runActivity: mocks.runActivity,
+  assertCorePreflight: mocks.assertCorePreflight,
+}))
+vi.mock('../../../src/migration/verify', () => ({
+  runVerify: mocks.runVerify,
+  writeVerifyReport: mocks.writeVerifyReport,
+  rollbackLegacy: vi.fn(),
+}))
+
+// `query` answers the apply guard (current_database) and the source lock (ok); `connect` is the lock's dedicated client.
+const answer = async () => ({ rows: [{ db: 'pp_rehearsal', ok: true }], rowCount: 1 })
+const fakePool = { query: vi.fn(answer), connect: vi.fn(async () => ({ query: vi.fn(answer), release: vi.fn() })) } as unknown as pg.Pool
+const env = { NODE_ENV: 'test', PP_ALLOW_MIGRATE_APPLY: '1' }
+
+let nextRun = 0
+const report = (mode: 'dry-run' | 'apply', status: 'succeeded' | 'failed') => ({
+  core: { notes: { counters: new Map<string, number>() } },
+  report: {
+    runId: String(++nextRun), mode, status, counters: {}, resumedBatches: 0,
+    recon: [{ entity: 'e', sourceCount: 1, eligibleCount: 1, loaded: status === 'failed' ? 0 : 1, rejected: 0, expectedDelta: 0, status: status === 'failed' ? 'mismatch' : 'ok' }],
+  },
+})
+const passReport: VerifyReport = { generatedAt: '', source: 'cloud', runIds: [], status: 'pass', entities: [], checks: [] }
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  nextRun = 0
+  mocks.assertCorePreflight.mockResolvedValue(1)
+  mocks.runVerify.mockResolvedValue(passReport)
+  mocks.writeVerifyReport.mockReturnValue({ json: 'a.json', md: 'a.md' })
+})
+
+const options = (mode: 'dry-run' | 'apply') => ({ pool: fakePool, env, asOf: '2026-06-01', mode })
+const shape = (stages: readonly StageResult[]) => stages.map((s) => `${s.name}/${s.mode}/${s.status}`)
+
+describe('a failed stage stops the run', () => {
+  it('failed core dry-run: nothing else runs', async () => {
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'failed'))
+    const r = await runAll(options('apply'))
+    expect(r.status).toBe('failed')
+    expect(shape(r.stages)).toEqual(['core/dry-run/failed'])
+    expect(mocks.runCore).toHaveBeenCalledTimes(1)
+    expect(mocks.runActivity).not.toHaveBeenCalled()
+    expect(mocks.runVerify).not.toHaveBeenCalled()
+  })
+
+  it('failed core apply: no activity stage, no verify', async () => {
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'failed'))
+    const r = await runAll(options('apply'))
+    expect(r.status).toBe('failed')
+    expect(shape(r.stages)).toEqual(['core/dry-run/succeeded', 'core/apply/failed'])
+    expect(mocks.runActivity).not.toHaveBeenCalled()
+    expect(mocks.runVerify).not.toHaveBeenCalled()
+  })
+
+  it('failed activity dry-run: no activity apply, no verify; exit 1 through the CLI', async () => {
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'failed'))
+    const log = capture()
+    const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01'], { pool: fakePool, env, out: log.out, err: log.err })
+    expect(code).toBe(1)
+    expect(mocks.runActivity).toHaveBeenCalledTimes(1)
+    expect(mocks.runVerify).not.toHaveBeenCalled()
+    expect(log.text()).toMatch(/migrate:all stopped: stage activity \(dry-run\) failed/)
+  })
+
+  it('a failed core dry-run in dry-run mode skips the activity stage entirely', async () => {
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'failed'))
+    const r = await runAll(options('dry-run'))
+    expect(shape(r.stages)).toEqual(['core/dry-run/failed'])
+    expect(mocks.assertCorePreflight).not.toHaveBeenCalled()
+  })
+})
+
+describe('--files-dir (BE-29 AC9)', () => {
+  it('reaches the activity dry-run and its apply unchanged, so both input hashes cover the same files', async () => {
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    const log = capture()
+    const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01', '--files-dir=/srv/cloud-files'], { pool: fakePool, env, out: log.out, err: log.err })
+    expect(code).toBe(0)
+    expect(mocks.runActivity).toHaveBeenCalledTimes(2)
+    for (const [o] of mocks.runActivity.mock.calls) expect(o).toMatchObject({ filesDir: '/srv/cloud-files' })
+  })
+
+  it('is left unset without the flag (no file is migrated)', async () => {
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    await runAll(options('apply'))
+    for (const [o] of mocks.runActivity.mock.calls) expect((o as { filesDir?: string }).filesDir).toBeUndefined()
+  })
+})
+
+describe('etl_runs.git_sha', () => {
+  it('migrate:all hands the resolved git sha to every core and activity stage', async () => {
+    const sha = '0123456789abcdef0123456789abcdef01234567'
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    const log = capture()
+    const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01'], { pool: fakePool, env: { ...env, PP_GIT_SHA: sha }, out: log.out, err: log.err })
+    expect(code).toBe(0)
+    expect(mocks.runCore).toHaveBeenCalledTimes(2)
+    expect(mocks.runActivity).toHaveBeenCalledTimes(2)
+    for (const [o] of [...mocks.runCore.mock.calls, ...mocks.runActivity.mock.calls]) expect(o).toMatchObject({ gitSha: sha })
+  })
+
+  it('migrate:delta hands the resolved git sha to every core and activity stage', async () => {
+    const sha = 'fedcba9876543210fedcba9876543210fedcba98'
+    const outDir = join(process.cwd(), '.migration-out', `stages-delta-${process.pid}`)
+    // First-load check answers "yes"; the staged-changes scan finds no table with updated_at.
+    const query = vi.fn(async (sql: string) => (/information_schema\.columns/.test(sql) ? { rows: [], rowCount: 0 } : answer()))
+    const pool = { query, connect: vi.fn(async () => ({ query, release: vi.fn() })) } as unknown as pg.Pool
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    const log = capture()
+    try {
+      const code = await runCli(['migrate:delta', '--apply', '--since=2026-10-29T00:00:00Z', '--as-of=2026-10-29', `--out-dir=${outDir}`], {
+        pool, env: { ...env, PP_GIT_SHA: sha }, out: log.out, err: log.err,
+      })
+      expect(code, log.text()).toBe(0)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+    expect(mocks.runCore).toHaveBeenCalledTimes(2)
+    expect(mocks.runActivity).toHaveBeenCalledTimes(2)
+    for (const [o] of [...mocks.runCore.mock.calls, ...mocks.runActivity.mock.calls]) expect(o).toMatchObject({ gitSha: sha })
+  })
+})
+
+describe('a stage that throws', () => {
+  it('ApplyRefusedError exits 3', async () => {
+    mocks.runCore.mockRejectedValueOnce(new ApplyRefusedError('abc'))
+    const log = capture()
+    const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01'], { pool: fakePool, env, out: log.out, err: log.err })
+    expect(code).toBe(3)
+    expect(log.text()).toMatch(/Refusing --apply: no passing dry-run/)
+  })
+
+  it('a busy run exits 4', async () => {
+    mocks.runCore.mockRejectedValueOnce(new RunInProgressError('dry-run', 'abc'))
+    const log = capture()
+    expect(await runCli(['migrate:all', '--as-of=2026-06-01'], { pool: fakePool, env, out: log.out, err: log.err })).toBe(4)
+  })
+
+  it('the completed stages are printed before the error (the core apply committed)', async () => {
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    mocks.runActivity.mockRejectedValueOnce(new PreflightError('Preflight failed: run `migrate:core --apply` first.'))
+    const log = capture()
+    const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01'], { pool: fakePool, env, out: log.out, err: log.err })
+    expect(code).toBe(2)
+    const text = log.text()
+    expect(text).toMatch(/migrate:all core dry-run: run 1 succeeded/)
+    expect(text).toMatch(/migrate:all core apply: run 2 succeeded/)
+    expect(text.indexOf('core apply: run 2')).toBeLessThan(text.indexOf('Preflight failed'))
+  })
+
+  it('runAll reports each stage through onStage as it finishes', async () => {
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded'))
+    const seen: string[] = []
+    const r = await runAll({ ...options('dry-run'), onStage: (s) => void seen.push(`${s.name}/${s.mode}/${s.status}`) })
+    expect(seen).toEqual(shape(r.stages))
+  })
+})
+
+describe('Q10/Q11 in the core stage of migrate:all', () => {
+  const withCore = (r: ReturnType<typeof report>, counters: [string, number][], restrictedFile?: string) => ({
+    ...r,
+    core: { notes: { counters: new Map(counters) } },
+    ...(restrictedFile ? { restrictedFile } : {}),
+  })
+
+  it('prints the report counts (incl. the three must_reset.* of C5) and the restricted file path (no ids), and hands warn and outDir to runCore', async () => {
+    const counts: [string, number][] = [['rosterDefaultHashes', 0], ['rosterDefaultHashesWarning', 1], ['nullHashAccounts', 3], ['flaggedWithoutLoginId', 2], ['must_reset.roster_account', 4], ['must_reset.non_bcrypt', 5], ['must_reset.shared_default', 0], ['must_reset.other_reason', 9]]
+    mocks.runCore.mockResolvedValueOnce(withCore(report('dry-run', 'succeeded'), counts)).mockResolvedValueOnce(withCore(report('apply', 'succeeded'), counts, '/x/.migration-out/core-login-gaps-1.json'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    const log = capture()
+    const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01'], { pool: fakePool, env, out: log.out, err: log.err })
+    expect(code).toBe(0)
+    expect(log.text()).toContain('note nullHashAccounts: 3')
+    expect(log.text()).toContain('note flaggedWithoutLoginId: 2')
+    expect(log.text()).toContain('note rosterDefaultHashes: 0')
+    expect(log.text()).toContain('note rosterDefaultHashesWarning: 1')
+    // C5 (night SQL checks) compares these three with the database
+    expect(log.text()).toContain('note must_reset.roster_account: 4')
+    expect(log.text()).toContain('note must_reset.non_bcrypt: 5')
+    expect(log.text()).toContain('note must_reset.shared_default: 0')
+    expect(log.text()).not.toContain('must_reset.other_reason') // only the listed counters are printed per stage
+    expect(log.text()).toContain('restricted id file (mode 0600, delete within 7 days): /x/.migration-out/core-login-gaps-1.json')
+    for (const [o] of mocks.runCore.mock.calls) expect(o).toMatchObject({ warn: expect.any(Function) })
+  })
+})

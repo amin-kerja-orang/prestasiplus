@@ -88,6 +88,12 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       errorIs(await a.put(`/guru/students/${sOther}`, { classroomId: k1.id }), 403, 'FORBIDDEN', CLASS_MESSAGES.studentOtherSchool)
     })
 
+    it('SW5-10: a deactivated pupil of the school is 404 like an unknown pupil and no enrolment is written', async () => {
+      errorIs(await a.put(`/guru/students/${sInactive}`, { classroomId: k1.id }), 404, 'NOT_FOUND', CLASS_MESSAGES.studentNotFound)
+      expect(await t.db.query(`select 1 from enrolments where student_id = $1`, [sInactive])).toHaveLength(0)
+      expect(await t.db.query(`select 1 from audit_events where action = 'classes.student.added' and detail->>'studentId' = $1`, [sInactive])).toHaveLength(0)
+    })
+
     it('another teacher of the same school gets 403 "Kelas ini bukan milik anda."; a teacher of another school gets 404', async () => {
       errorIs(await b.put(`/guru/students/${s2}`, { classroomId: k1.id }), 403, 'FORBIDDEN', CLASS_MESSAGES.classNotOwn)
       errorIs(await c.put(`/guru/students/${sOther}`, { classroomId: k1.id }), 404, 'NOT_FOUND', CLASS_MESSAGES.classroom)
@@ -139,6 +145,10 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       expect(first?.levelName).toBe('Tingkatan 4')
       expect([...(first?.classNames ?? [])].sort()).toEqual(['Kelas Dua', 'Kelas Roster'])
       expect(body.data[1]?.classNames).toEqual(['Kelas Dua'])
+      // SW5-03: `classes` carries the ids, in the same order as `classNames`
+      expect(first?.classes.map((c) => c.name)).toEqual(first?.classNames)
+      expect([...(first?.classes.map((c) => c.id) ?? [])].sort()).toEqual([k1.id, k2.id].sort())
+      expect(body.data[1]?.classes).toEqual([{ id: k2.id, name: 'Kelas Dua' }])
       // an unknown tab falls back to "mine"; a repeated key is read as absent
       expect(StudentsBody.parse((await a.get('/guru/students?tab=xyz')).body).meta.count).toBe(2)
       expect(StudentsBody.parse((await a.get('/guru/students?tab=school&tab=mine')).body).meta.count).toBe(2)
@@ -193,6 +203,26 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       const filtered = StudentsBody.parse((await a.get('/guru/students?tab=school&search=Murid%20Penuh')).body)
       expect(filtered.meta.count).toBe(205)
       expect(filtered.data).toHaveLength(200)
+    })
+
+    it('SW5-03: two own classes with the same name give two entries with distinct ids, in the order of classNames', async () => {
+      const twinA = await createClass(t, a, { name: 'Kelas Kembar', schoolId: school1 })
+      const twinB = await createClass(t, a, { name: 'Kelas Kembar', schoolId: school1 })
+      expect(twinA.id).not.toBe(twinB.id)
+      await a.put(`/guru/students/${sMaju}`, { classroomId: twinA.id })
+      await a.put(`/guru/students/${sMaju}`, { classroomId: twinB.id })
+      try {
+        const row = StudentsBody.parse((await a.get('/guru/students')).body).data.find((s) => s.id === sMaju)
+        expect(row?.classNames).toEqual(['Kelas Kembar', 'Kelas Kembar'])
+        expect(row?.classes).toHaveLength(2)
+        expect(row?.classes.map((c) => c.name)).toEqual(row?.classNames)
+        expect(new Set(row?.classes.map((c) => c.id))).toEqual(new Set([twinA.id, twinB.id]))
+        // the school tab fills the same field
+        const school = StudentsBody.parse((await a.get('/guru/students?tab=school')).body).data.find((s) => s.id === sMaju)
+        expect(school?.classes).toEqual(row?.classes)
+      } finally {
+        await t.db.query(`delete from enrolments where classroom_id = any($1::bigint[])`, [[twinA.id, twinB.id]])
+      }
     })
   })
 

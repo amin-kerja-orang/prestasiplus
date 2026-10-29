@@ -5,6 +5,8 @@ import {
   transformClassroom,
   transformEnrolment,
   transformParentLink,
+  withTeacherSchool,
+  type ClassroomValues,
 } from '../../../src/migration/transform/classes'
 import {
   buildGeo,
@@ -17,7 +19,8 @@ import {
   transformTopic,
 } from '../../../src/migration/transform/reference'
 import { dateOnly, transformSubscription } from '../../../src/migration/transform/subscriptions'
-import { gradeFromClassLabel, transformUser, type UserContext } from '../../../src/migration/transform/users'
+import { ROLE_MAP, ROLES_NOT_MIGRATED } from '../../../src/migration/transform/enums'
+import { gradeFromClassLabel, roleRejectLabel, transformUser, type UserContext } from '../../../src/migration/transform/users'
 import { IcHasher } from '../../../src/migration/transform/secrets'
 
 const ic = new IcHasher({ IC_HASH_KEY: 'test-ic-key-0123456789' })
@@ -49,12 +52,31 @@ describe('levels, subjects, chapters, topics', () => {
     expect(bad).toEqual({ ok: false, reject: expect.objectContaining({ reason: 'UNKNOWN_ENUM', column: 'stage', enumValue: 'secondary' }) })
   })
 
+  // A1-FIX: the real source stores the BM stage names (the complete distinct set, confirmed by the LEAD). One case per value.
+  it.each([
+    ['Rendah', 'primary'],
+    ['Menengah Rendah', 'lower_secondary'],
+    ['Menengah Atas', 'upper_secondary'],
+  ])('maps the stage "%s" to %s', (raw, v2) => {
+    expect(transformLevel({ id: '1', name_bm: 'Darjah 1', stage: raw, curriculum: 'kssr', sort_order: '1' })).toMatchObject({ ok: true, value: { stage: v2 } })
+  })
+
+  it('keeps the three v2 stage codes as accepted source values', () => {
+    for (const code of ['primary', 'lower_secondary', 'upper_secondary']) {
+      expect(transformLevel({ id: '1', name_bm: 'Darjah 1', stage: code, curriculum: 'kssr' })).toMatchObject({ ok: true, value: { stage: code } })
+    }
+  })
+
   it('keeps the English name and colour of a seeded subject and falls back otherwise', () => {
-    const seeded = transformSubject({ id: '1', name: 'Matematik', code: 'math', is_core: '1', color: null }, { name_en: 'Mathematics', color: '#EF4444' })
-    expect(seeded).toMatchObject({ ok: true, value: { code: 'MATH', name_en: 'Mathematics', color: '#EF4444', is_core: true } })
-    const fresh = transformSubject({ id: '4', name: 'Sains', code: null, is_core: '0', color: 'not-a-colour' })
-    expect(fresh).toMatchObject({ ok: true, value: { code: 'SUBJ4', name_en: 'Sains', color: '#64748B' } })
-    expect(transformSubject({ id: '5', name: 'X', is_core: 'maybe' })).toMatchObject({ ok: false })
+    const seeded = transformSubject({ id: '1', name_bm: 'Matematik', name_en: 'Maths', code: 'math', is_core: '1', color: null }, { name_en: 'Mathematics', color: '#EF4444' })
+    expect(seeded).toMatchObject({ ok: true, value: { code: 'MATH', name: 'Matematik', name_en: 'Mathematics', color: '#EF4444', is_core: true } })
+    const fresh = transformSubject({ id: '4', name_bm: 'Sains', name_en: ' Science ', code: null, is_core: '0', color: 'not-a-colour' })
+    expect(fresh).toMatchObject({ ok: true, value: { code: 'SUBJ4', name: 'Sains', name_en: 'Science', color: '#64748B' } })
+    // No English name staged: the Malay name stands in, as before.
+    expect(transformSubject({ id: '6', name_bm: 'Sejarah', name_en: null, is_core: '0' })).toMatchObject({ ok: true, value: { name: 'Sejarah', name_en: 'Sejarah' } })
+    // The v2 name comes from name_bm: the old `name` column is not read, and a blank name_bm is rejected naming it.
+    expect(transformSubject({ id: '7', name: 'Lama', name_en: 'Old', is_core: '0' })).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'name_bm' } })
+    expect(transformSubject({ id: '5', name_bm: 'X', is_core: 'maybe' })).toMatchObject({ ok: false })
   })
 
   it('quarantines orphan chapters and topics and marks out-of-tree chapters', () => {
@@ -113,6 +135,43 @@ describe('users', () => {
     expect(transformUser(user({ role: 'super_guru' }), ctx())).toEqual({
       ok: false, reject: expect.objectContaining({ reason: 'UNKNOWN_ENUM', column: 'role', enumValue: 'super_guru' }),
     })
+  })
+
+  it('does not migrate the agent role: rejected by name on the role column, labelled for the report', () => {
+    expect(ROLES_NOT_MIGRATED).toEqual(['agent'])
+    expect(Object.keys(ROLE_MAP)).not.toContain('agent')
+    for (const raw of ['agent', ' Agent ']) {
+      expect(transformUser(user({ role: raw }), ctx())).toEqual({
+        ok: false, reject: expect.objectContaining({ reason: 'UNKNOWN_ENUM', column: 'role', enumValue: raw }),
+      })
+    }
+    expect(roleRejectLabel('agent')).toBe('agent')
+    expect(roleRejectLabel('AGENT ')).toBe('agent')
+    expect(roleRejectLabel('super_guru')).toBe('other')
+    expect(roleRejectLabel(null)).toBe('other')
+  })
+
+  it('maps jpn_officer to ppd_officer with a STATE scope from the school (v2 has no jpn_officer role, D31a)', () => {
+    expect(ROLE_MAP.jpn_officer).toBe('ppd_officer')
+    expect(Object.values(ROLE_MAP)).not.toContain('jpn_officer')
+    const jpn = transformUser(user({ role: 'jpn_officer' }), ctx())
+    expect(jpn).toMatchObject({
+      ok: true,
+      value: { role: 'ppd_officer', ppdUnscoped: false, scope: { role: 'ppd_officer', level: 'state', state_code: 'Selangor', district_code: null, school_id: null } },
+    })
+    // The state is enough: a school without a district still gives the scope (a PPD officer would be unscoped).
+    expect(transformUser(user({ role: 'jpn_officer' }), ctx({ school: { type: 'SMK', state: 'Selangor', district: null } }))).toMatchObject({
+      ok: true, value: { scope: { level: 'state', state_code: 'Selangor' }, ppdUnscoped: false },
+    })
+    // No school, or a school without a state: loaded as a ppd_officer without a scope and listed by id (like a PPD officer).
+    expect(transformUser(user({ role: 'jpn_officer', school_id: null }), ctx({ schoolId: null, school: null }))).toMatchObject({
+      ok: true, value: { role: 'ppd_officer', scope: null, ppdUnscoped: true },
+    })
+    expect(transformUser(user({ role: 'jpn_officer' }), ctx({ school: { type: 'SMK', state: null, district: null } }))).toMatchObject({
+      ok: true, value: { scope: null, ppdUnscoped: true },
+    })
+    // A pegawai_ppd keeps the district scope.
+    expect(transformUser(user({ role: 'pegawai_ppd' }), ctx())).toMatchObject({ ok: true, value: { scope: { level: 'district', district_code: 'PPD Petaling' } } })
   })
 
   it('rejects an orphan school and keeps a user without a school', () => {
@@ -234,6 +293,12 @@ describe('school subscriptions', () => {
     })
   })
 
+  // A1-FIX (LEAD, 25 Oct 2026): the monitoring-only package is the basic tier.
+  it('maps Pemantauan to the basic tier', () => {
+    expect(transformSubscription({ ...sub, package: 'Pemantauan' }, base)).toMatchObject({ ok: true, value: { package_tier: 'basic', school_package_id: '11' } })
+    expect(transformSubscription({ ...sub, package: ' PEMANTAUAN ' }, base)).toMatchObject({ ok: true, value: { package_tier: 'basic' } })
+  })
+
   it('rejects an unknown package, a bad quota or dates, a missing catalogue row and an orphan school', () => {
     expect(transformSubscription({ ...sub, package: 'emas' }, base)).toMatchObject({ ok: false, reject: { reason: 'UNKNOWN_ENUM', column: 'package' } })
     expect(transformSubscription({ ...sub, quota: '0' }, base)).toMatchObject({ ok: false, reject: { column: 'quota' } })
@@ -242,5 +307,21 @@ describe('school subscriptions', () => {
     expect(transformSubscription(sub, { ...base, schoolType: null })).toMatchObject({ ok: false, reject: { reason: 'UNSUPPORTED' } })
     expect(transformSubscription(sub, { ...base, schoolId: undefined })).toMatchObject({ ok: false, reject: { reason: 'ORPHAN_PARENT' } })
     expect(dateOnly('2026-03-04 00:00:00+00')).toBe('2026-03-04')
+  })
+})
+
+describe('withTeacherSchool (SW7-01, mirrors migration 0090)', () => {
+  const base: ClassroomValues = {
+    kind: 'classroom', name: 'K', teacher_id: '7', school_id: null, subject_id: null, education_level_id: '1',
+    academic_year: 2026, join_code: null, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
+  }
+  it('a teacher class with no school takes the teacher school; everything else is returned unchanged', () => {
+    expect(withTeacherSchool(base, '5')).toEqual({ ...base, school_id: '5' })
+    expect(withTeacherSchool(base, null)).toBe(base)
+    expect(withTeacherSchool(base, undefined)).toBe(base)
+    const own = { ...base, school_id: '2' }
+    expect(withTeacherSchool(own, '5')).toBe(own)
+    const schoolClass: ClassroomValues = { ...base, kind: 'school_class', teacher_id: null }
+    expect(withTeacherSchool(schoolClass, '5')).toBe(schoolClass)
   })
 })

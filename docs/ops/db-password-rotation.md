@@ -33,6 +33,11 @@ Rollback (if step 5 or 6 fails): the old password is gone, so there is no going 
 
 ## 2. Production (VPS, docker compose, Postgres 16)
 
+> **DB-ROLES (cutover plan P3, LEAD decision 23 Oct):** the API, the `migrate` job and the ETL no longer connect as `POSTGRES_USER`. Their
+> passwords (`DATABASE_URL` in `api.env`, `migrate.env`, `etl.env`) are rotated with `sudo deploy/vps/db-roles.sh secrets --rotate <app|owner|etl>`
+> then `deploy/vps/db-roles.sh apply` ([production-vps.md](production-vps.md) section 3.1). The steps below now apply **only to the bootstrap
+> superuser** `POSTGRES_PASSWORD` of `db.env`: skip the `.env.api` line of step 3 and the api restart of step 5 (no `DATABASE_URL` uses it).
+
 Applies once the production stack from the production VPS runbook (`docs/ops/production-vps.md`, AZ-09; arrives with PR #116) exists. Services: `db` (Postgres 16, volume `pgdata`, `.env.db`), `api` and `migrate` (read `.env.api`), backup job (`scripts/db-backup.mjs`). Commands run on the VPS from the compose directory. **Use the same `-f` files and env file as the deploy for every `docker compose` command below.** For production (AZ-09 pack) that is `docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env <command>`; staging uses `-f compose.yaml -f compose.staging.yaml`. The examples below write the short form `docker compose ...` for readability; without the right files compose targets a different project or config. The database port is not published; psql runs inside the `db` container.
 
 Zero or near-zero downtime: changing the role password does not drop existing connections, so the API keeps serving on its old pool until it restarts with the new `DATABASE_URL`. Only a connection opened between the `ALTER ROLE` and the api restart can fail. Prepare the new env files first (step 3, with the new password already known from step 2), then run steps 4 and 5 back to back; the window is still minutes, not seconds, because the api restart and its readiness check take time.

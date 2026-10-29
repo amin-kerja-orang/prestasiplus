@@ -322,9 +322,9 @@ Derived from the element inventory and the behaviour probes. "EL" lists inventor
 
 **US-M01-01 — Log in**
 - **AC-M01-01.1** Given I am on `/login`, when the page loads, then I see "Alamat Email" (placeholder `nama@email.com`), "Kata Laluan" (placeholder `••••••••`) and the button "Log Masuk" with a sign-in icon.
-- **AC-M01-01.2** Given a field is empty or the email has no valid format, when I press "Log Masuk", then the browser's native validation message appears on that field and no login request is sent.
+- **AC-M01-01.2** Given a field is empty or the email has no valid format, when I press "Log Masuk", then the browser's native validation message appears on that field and no login request is sent. *(v2 note: deviation M01-DEV-03 in `docs/architecture/v2-backend-deviations.md`; the field is `type=text`, so a malformed e-mail is sent and gets 401.)*
 - **AC-M01-01.3** Given valid credentials, when I press "Log Masuk", then the button is replaced by a disabled button with a spinner and "Sedang Memasuki...", and I am then redirected (US-M01-04) with no success or welcome message.
-- **AC-M01-01.4** Given the email is unknown or the password is wrong, when I press "Log Masuk", then a red alert "Email atau kata laluan tidak sah." appears above the fields, the email stays filled and the password is empty.
+- **AC-M01-01.4** Given the email is unknown or the password is wrong, when I press "Log Masuk", then a red alert "Email atau kata laluan tidak sah." appears above the fields, the email stays filled and the password is empty. *(v2 note: deviation M01-DEV-01 in `docs/architecture/v2-backend-deviations.md`; the v2 copy is "E-mel/Nama pengguna atau kata laluan tidak sah.".)*
 - **AC-M01-01.5** (INFERRED) Given 5 failed attempts for the same email within 1 minute, when I try again, then the same red alert area shows the throttle message (UNVERIFIED COPY, SRS §8) and I am not logged in.
 - **AC-M01-01.6** (INFERRED) Given my account is inactive (an admin switched it off in M02), when I enter my correct email and password and press "Log Masuk", then I am not logged in, and the red alert shows "Akaun anda tidak aktif. Sila hubungi pentadbir." (UNVERIFIED COPY, same placeholder as M02).
 - **AC-M01-01.7** (INFERRED; M14) Given I log in successfully with the form, when the login completes, then the gamification login hook runs once for me (M14 BR-M14-14: streak update and, for a student's first password login of the day, the +2 `daily_login` coins), so my header chips show the updated values.
@@ -341,7 +341,7 @@ Derived from the element inventory and the behaviour probes. "EL" lists inventor
 
 **US-M01-04 — Redirect after login**
 - **AC-M01-04.1** Given I am an admin, when login succeeds, then I land on `/admin` with no flash message.
-- **AC-M01-04.2** Given I was sent to `/login` while opening a protected page (for example `/notifikasi` or `/tetapan`), when login succeeds, then I still land on my role's landing page, not on the page I wanted.
+- **AC-M01-04.2** Given I was sent to `/login` while opening a protected page (for example `/notifikasi` or `/tetapan`), when login succeeds, then I still land on my role's landing page, not on the page I wanted. *(v2 note: deviation M01-DEV-02 in `docs/architecture/v2-backend-deviations.md`; v2 honours a safe same-origin `?redirect=`.)*
 - **AC-M01-04.3** (INFERRED) Given I am another role, when login succeeds, then I land on the landing page for my role (SRS BR-07).
 - **AC-M01-04.4** Given I am logged in, when I open `/login` or `/register`, then the page renders exactly as for a guest, with no redirect and no notice.
 

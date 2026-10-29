@@ -5,7 +5,13 @@
  * profile report of the real dump (BE-27), never from a hunch.
  */
 
-/** .cloud `users.role` -> v2 role code (T-01, v2-data-migration.md 4.1). `jpn_officer` has no .cloud source. */
+/**
+ * .cloud `users.role` -> v2 role code (T-01, v2-data-migration.md 4.1). The real .cloud roles are pelajar, guru, ibu_bapa,
+ * admin_sekolah, agent, penaja, pegawai_ppd, admin and jpn_officer. `agent` is not migrated (`ROLES_NOT_MIGRATED`).
+ * v2 has no `jpn_officer` role (D31a: one PPD/JPN role, ck_user_roles_role allows seven), so a JPN officer becomes a
+ * `ppd_officer` whose scope is STATE level (`STATE_SCOPE_SOURCE_ROLES`, `transformUser`). Default taken from the pre-G4
+ * review; the LEAD confirms it.
+ */
 export const ROLE_MAP: Readonly<Record<string, string>> = {
   pelajar: 'student',
   guru: 'teacher',
@@ -13,9 +19,20 @@ export const ROLE_MAP: Readonly<Record<string, string>> = {
   penaja: 'sponsor',
   admin_sekolah: 'school_admin',
   pegawai_ppd: 'ppd_officer',
+  jpn_officer: 'ppd_officer',
   admin: 'admin',
 }
 export const ROLE_SOURCE_CODES: readonly string[] = Object.keys(ROLE_MAP)
+
+/** Source roles whose `ppd_officer` gets a STATE scope (the school's state) instead of a district scope. */
+export const STATE_SCOPE_SOURCE_ROLES: readonly string[] = ['jpn_officer']
+
+/**
+ * Known .cloud roles that are deliberately NOT migrated (LEAD, FIT-FIX): the account is rejected and counted by name
+ * (`users.role_rejected.<role>` in the report notes), the same way the deferred practice modes are. Their dependent rows
+ * (sessions, wallet, ...) then fall out as ORPHAN_PARENT.
+ */
+export const ROLES_NOT_MIGRATED: readonly string[] = ['agent']
 
 /** .cloud `schools.type` -> v2 `SCHOOL_TYPES`. */
 export const SCHOOL_TYPE_MAP: Readonly<Record<string, string>> = {
@@ -36,11 +53,18 @@ export const SCHOOL_TYPE_SOURCE_CODES: readonly string[] = Object.keys(SCHOOL_TY
 export const PRIMARY_SCHOOL_TYPES: ReadonlySet<string> = new Set(['SK', 'SJK(C)', 'SJK(T)'])
 export const SECONDARY_SCHOOL_TYPES: ReadonlySet<string> = new Set(['SMK', 'MRSM', 'SBP'])
 
-/** .cloud `education_levels.stage` -> v2 `CurriculumStage` (identity map: a value outside the three is rejected). */
+/**
+ * .cloud `education_levels.stage` -> v2 `CurriculumStage`. The real source stores the BM stage names `Rendah`,
+ * `Menengah Rendah` and `Menengah Atas` (A1 reject analysis, LEAD-confirmed as the complete distinct set); the keys are
+ * their `enumKey` form. The three v2 codes stay as keys too. A value outside the map is rejected (UNKNOWN_ENUM).
+ */
 export const STAGE_MAP: Readonly<Record<string, string>> = {
   primary: 'primary',
   lower_secondary: 'lower_secondary',
   upper_secondary: 'upper_secondary',
+  rendah: 'primary',
+  menengah_rendah: 'lower_secondary',
+  menengah_atas: 'upper_secondary',
 }
 export const STAGE_SOURCE_CODES: readonly string[] = Object.keys(STAGE_MAP)
 
@@ -51,6 +75,8 @@ export const SUBSCRIPTION_TIER_MAP: Readonly<Record<string, 'basic' | 'full'>> =
   premium: 'full',
   penuh: 'full',
   full: 'full',
+  // A1-FIX (LEAD, 25 Oct 2026): the monitoring-only package is the basic tier.
+  pemantauan: 'basic',
 }
 export const SUBSCRIPTION_TIER_SOURCE_CODES: readonly string[] = Object.keys(SUBSCRIPTION_TIER_MAP)
 

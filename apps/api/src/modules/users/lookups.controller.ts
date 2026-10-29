@@ -38,12 +38,12 @@ export class LookupsController {
     return { data: await this.users.teachers(caller) }
   }
 
-  /** `[]` for now: the classes table arrives with BE-17 (mock shape, no 404 for an unknown teacher). */
+  /** The teacher's active classes (M10); `[]` for none or an unknown teacher (mock shape, no 404). */
   @Get('admin/teachers/:id/classrooms')
   @Roles('admin', 'school_admin')
   @RateLimit(USER_LIMITS.read)
-  classrooms() {
-    return { data: [] as never[] }
+  async classrooms(@CurrentCaller() caller: Caller, @Param('id') id: string) {
+    return { data: await this.users.teacherClassrooms(caller, id) }
   }
 
   @Get('admin/schools/:id/students')

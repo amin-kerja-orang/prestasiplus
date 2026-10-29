@@ -367,7 +367,7 @@ Errors (`UAlert` error above fields, `role="alert"`, focus moves to it):
 | Network | "Ralat rangkaian. Sila cuba lagi." |
 | Already signed in | redirect to role home (AC-01.8), no form flash |
 
-**Routing after login (AC-01.2/3/10, US-02):** Admin Pusat / Admin Sekolah → Pentadbiran Papan Pemuka; Pegawai PPD/JPN → Pemantauan › Papan Pemuka Wilayah; Guru → Dashboard Guru; Murid → Home (first run: friend picker); Ibu Bapa/Penaja → their home; dual role → last-active role (default first), no chooser. Transition: shell skeleton + top progress (≤ 800ms). Guest on protected URL → `/login` without redirect param. Learner opening a Pentadbiran URL → own home + toast "Halaman itu hanya untuk Portal Pentadbiran."; staff-only user opening a Pembelajaran role page → own home + toast "Halaman itu hanya untuk Portal Pembelajaran." Logout → `/login`; Back must not show protected data.
+**Routing after login (AC-01.2/3/10, US-02):** Admin Pusat / Admin Sekolah → Pentadbiran Papan Pemuka; Pegawai PPD/JPN → Pemantauan › Papan Pemuka Wilayah; Guru → Dashboard Guru; Murid → Home (first run: friend picker); Ibu Bapa/Penaja → their home; dual role → last-active role (default first), no chooser. Transition: shell skeleton + top progress (≤ 800ms). Guest on protected URL → `/login?redirect=<path>` (D51). Learner opening a Pentadbiran URL → own home + toast "Halaman itu hanya untuk Portal Pentadbiran."; staff-only user opening a Pembelajaran role page → own home + toast "Halaman itu hanya untuk Portal Pembelajaran." Logout → `/login`; Back must not show protected data.
 
 ---
 

@@ -18,6 +18,7 @@ import { ConfigService } from '@nestjs/config'
 
 import { AuditService } from '../../common/audit'
 import type { Env } from '../../common/config/env.schema'
+import { publicBaseUrl } from '../../common/config/public-base-url'
 import { ApiError } from '../../common/errors/api-error'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock, mytDay } from '../../db/clock'
@@ -47,9 +48,6 @@ const isRealId = (s: unknown): s is string => typeof s === 'string' && isIdStrin
 
 /** A query value that is a plain string (Express gives an array for a repeated key). */
 const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined)
-
-/** The default host of `joinUrl` outside production when `PUBLIC_BASE_URL` is not set. */
-const DEFAULT_BASE_URL = 'http://localhost:8080'
 
 @Injectable()
 export class ClassesService {
@@ -85,7 +83,9 @@ export class ClassesService {
 
   /**
    * `POST /guru/classes` (FR-M10-34): the owner is the caller; `name`, `subjectId` (an active subject) and
-   * `educationLevel` are required; `schoolId` is optional. All failing fields are reported together, like the mock.
+   * `educationLevel` are required; `schoolId` is optional and defaults to the teacher's own school (SW7-01: a class
+   * without a school would be invisible to the school admin), staying null only for a teacher without one. All failing
+   * fields are reported together, like the mock.
    */
   async createClass(actor: ClassActor, raw: unknown): Promise<TeacherClass> {
     const parsed = tryParseStrict(ClassCreateRequestSchema, raw)
@@ -94,7 +94,7 @@ export class ClassesService {
 
     let subjectId: string | null = null
     let levelId: string | null = null
-    let schoolId: string | null = null
+    let schoolId: string | null = actor.schoolId
     if (body) {
       if (isRealId(body.subjectId) && (await this.repo.activeSubjectExists(body.subjectId))) subjectId = body.subjectId
       else fields.subjectId = CLASS_MESSAGES.subject
@@ -159,7 +159,7 @@ export class ClassesService {
   async qrData(actor: ClassActor, id: string): Promise<ClassQrData> {
     const cls = await this.ownClass(actor, id)
     const schools = await this.repo.schoolNames([cls.schoolId])
-    const base = (this.config.get('PUBLIC_BASE_URL', { infer: true }) ?? DEFAULT_BASE_URL).replace(/\/+$/, '')
+    const base = publicBaseUrl(this.config)
     return {
       name: cls.name,
       school: cls.schoolId === null ? null : (schools.get(cls.schoolId) ?? null),
@@ -174,7 +174,7 @@ export class ClassesService {
     const tab = str(query.tab) === 'school' ? 'school' : 'mine'
     const term = (str(query.search) ?? '').trim()
     const schoolSet = actor.schoolId !== null
-    const names = await this.repo.classNamesByStudent(actor.userId)
+    const classesOf = await this.repo.classesByStudent(actor.userId)
 
     let lines
     let count: number
@@ -191,12 +191,16 @@ export class ClassesService {
     for (const grade of new Set(lines.flatMap((l) => (l.grade === null ? [] : [l.grade])))) {
       levelNames.set(grade, (await this.curriculum.levelForGrade(grade))?.name ?? null)
     }
-    const data: TeacherStudent[] = lines.map((l) => ({
-      id: l.id,
-      name: l.name,
-      levelName: l.grade === null ? null : (levelNames.get(l.grade) ?? null),
-      classNames: names.get(l.id) ?? [],
-    }))
+    const data: TeacherStudent[] = lines.map((l) => {
+      const classes = classesOf.get(l.id) ?? []
+      return {
+        id: l.id,
+        name: l.name,
+        levelName: l.grade === null ? null : (levelNames.get(l.grade) ?? null),
+        classNames: classes.map((c) => c.name),
+        classes,
+      }
+    })
     return { data, meta: { count, schoolSet } }
   }
 

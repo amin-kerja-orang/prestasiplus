@@ -53,4 +53,8 @@ export class PracticeFactsAdapter implements PracticeFactsProvider {
     ])
     return { all, practice }
   }
+
+  async accurateSessions(userId: string, minPct: number): Promise<number> {
+    return this.practice.accurateSessionCount(userId, { modes: ACHIEVEMENT_PRACTICE_MODES, minPct })
+  }
 }

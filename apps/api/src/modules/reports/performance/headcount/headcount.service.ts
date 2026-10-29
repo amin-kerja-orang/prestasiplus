@@ -196,7 +196,7 @@ export class HeadcountService {
 
   // --- writes ----------------------------------------------------------------------------
 
-  async create(ctx: Ctx, body: unknown): Promise<{ id: string }> {
+  async create(ctx: HeadcountWriteCtx, body: unknown): Promise<{ id: string }> {
     const raw = asRecord(body)
     const parsed = PerformanceHeadcountCreateRequestSchema.safeParse(raw)
     const fields: Record<string, string> = parsed.success ? {} : fieldsOf(parsed.error)
@@ -232,10 +232,19 @@ export class HeadcountService {
     try {
       // The key lock serialises this with a concurrent create or auto-setup of the same (class, subject, year);
       // the unique index stays the backstop for the same mode.
-      return await this.prisma.transaction(async () => {
+      return await this.prisma.transaction(async (tx) => {
         await this.repo.lockConfigKey(row.classroomId, row.subjectId, row.academicYear)
         if (await this.repo.duplicateOf(row)) throw duplicate()
-        return { id: await this.repo.createConfig(row) }
+        const id = await this.repo.createConfig(row)
+        await this.record(tx, AUDIT_ACTIONS.HEADCOUNT_CONFIG_CREATED, ctx, id, {
+          classroomId: row.classroomId,
+          subjectId: row.subjectId,
+          educationLevelId: row.educationLevelId,
+          academicYear: row.academicYear,
+          activeOtrs: row.activeOtrs,
+          mode: row.mode,
+        })
+        return { id }
       })
     } catch (err) {
       // A concurrent twin won the unique index.
@@ -245,7 +254,7 @@ export class HeadcountService {
   }
 
   /** BR-M08-21: one Auto config (3 OTRs) per own active class of the chosen levels that has a subject. Idempotent. */
-  async autoSetup(ctx: Ctx, body: unknown): Promise<{ created: number }> {
+  async autoSetup(ctx: HeadcountWriteCtx, body: unknown): Promise<{ created: number }> {
     const parsed = PerformanceHeadcountAutoSetupRequestSchema.safeParse(asRecord(body))
     if (!parsed.success) throw invalid(fieldsOf(parsed.error))
     const ids: string[] = []
@@ -270,7 +279,7 @@ export class HeadcountService {
     // Under the per-(class, subject, year) locks (sorted, so two runs cannot deadlock) the existence read is final: a
     // concurrent manual or auto create of the same key is either already committed here or waits for this run.
     return {
-      created: await this.prisma.transaction(async () => {
+      created: await this.prisma.transaction(async (tx) => {
         const keys = [...new Set(classes.map((c) => `${c.id}:${c.subjectId as string}`))].sort()
         for (const key of keys) {
           const [classroomId, subjectId] = key.split(':') as [string, string]
@@ -294,12 +303,15 @@ export class HeadcountService {
             now,
           }))
         // ON CONFLICT DO NOTHING stays as the backstop for the unique index.
-        return this.repo.createConfigsIfAbsent(rows)
+        const created = await this.repo.createConfigsIfAbsent(rows)
+        // One row for the run; a run that created nothing wrote nothing and leaves no row.
+        if (created > 0) await this.record(tx, AUDIT_ACTIONS.HEADCOUNT_CONFIGS_AUTO_SETUP, ctx, null, { created })
+        return created
       }),
     }
   }
 
-  async dropStudents(ctx: Ctx, id: string, body: unknown): Promise<{ updated: number }> {
+  async dropStudents(ctx: HeadcountWriteCtx, id: string, body: unknown): Promise<{ updated: number }> {
     const { config, lines } = await this.open(ctx, id)
     const raw = asRecord(body)
     const parsed = PerformanceHeadcountDropRequestSchema.safeParse(raw)
@@ -310,9 +322,18 @@ export class HeadcountService {
       if (!raw.studentIds.every((s) => typeof s === 'string' && roster.has(s))) fields.studentIds = MSG.studentsInvalid
     }
     if (Object.keys(fields).length > 0 || !parsed.success) throw invalid(fields)
-    const updated = await this.prisma.transaction(() =>
-      this.repo.setDropped(config.id, [...new Set(parsed.data.studentIds)], parsed.data.action === 'drop', this.clock.now()),
-    )
+    const dropping = parsed.data.action === 'drop'
+    const updated = await this.prisma.transaction(async (tx) => {
+      const n = await this.repo.setDropped(config.id, [...new Set(parsed.data.studentIds)], dropping, this.clock.now())
+      // The count only, never the pupil ids. A call that changed nothing writes nothing and leaves no row.
+      if (n > 0) {
+        await this.record(tx, AUDIT_ACTIONS.HEADCOUNT_STUDENTS_DROPPED, ctx, config.id, {
+          action: parsed.data.action,
+          [dropping ? 'dropped' : 'restored']: n,
+        })
+      }
+      return n
+    })
     return { updated }
   }
 
@@ -341,7 +362,7 @@ export class HeadcountService {
     tx: TxClient,
     action: string,
     ctx: HeadcountWriteCtx,
-    configId: string,
+    configId: string | null,
     details: Record<string, unknown>,
   ): Promise<void> {
     await this.audit.record({
@@ -357,7 +378,7 @@ export class HeadcountService {
       requestId: ctx.requestId,
       ip: ctx.ip,
       isTest: ctx.isTest,
-      details: { configId, ...details },
+      details: configId === null ? details : { configId, ...details },
     })
   }
 

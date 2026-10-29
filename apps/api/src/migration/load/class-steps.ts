@@ -3,6 +3,8 @@
  * (v2-data-migration.md 4.8, 4.1). The level of a classroom has no .cloud column; it is derived (T-09)
  * from the class name or from its pupils, and a class that cannot be placed is rejected (INVALID_VALUE).
  */
+import type pg from 'pg'
+
 import type { AnyEntityStep, BatchContext, BatchResult } from '../kit/runner'
 import { assertSurrogateLegacyId } from '../kit/sql'
 import type { LegacyRow } from '../kit/upsert'
@@ -11,13 +13,16 @@ import type { CoreContext } from './context'
 import { rejectRow, upsertAndMap } from './helpers'
 import { distinctValues, readById, readPairTable, resolveFk, type StagedRow } from './source'
 import { STAGING_SCHEMA } from '../ddl/spec'
+import { excludedResult, sumBatch } from '../transform/activity-common'
 import { enumKey } from '../transform/common'
 import { SCHOOL_TYPE_MAP } from '../transform/enums'
 import {
   deriveClassGrade,
+  resolveClassLevel,
   enrolmentLegacyId,
   transformClassroom,
   transformEnrolment,
+  withTeacherSchool,
   type ClassroomValues,
 } from '../transform/classes'
 import { transformSubscription } from '../transform/subscriptions'
@@ -64,6 +69,45 @@ async function levelsByGrade(ctx: BatchContext): Promise<Map<number, string>> {
   return new Map(res.rows.map((r) => [r.grade, r.id]))
 }
 
+/** The level of the v2 row of each class that is already loaded (by its legacy key), for the classes that lost all their pupils. */
+async function loadedLevels(ctx: BatchContext, legacyIds: readonly string[]): Promise<Map<string, string>> {
+  if (legacyIds.length === 0) return new Map()
+  const res = await ctx.db.query<{ legacy_id: string; education_level_id: string }>(
+    `SELECT legacy_id, education_level_id::text AS education_level_id FROM classrooms
+     WHERE legacy_source = $1 AND legacy_id = ANY($2::text[]) AND education_level_id IS NOT NULL`,
+    [ctx.source, legacyIds],
+  )
+  return new Map(res.rows.map((r) => [r.legacy_id, r.education_level_id]))
+}
+
+/** The current v2 school of each given v2 user (users without a school are left out). The source of 0090's backfill (`users.school_id`). */
+async function teacherSchools(ctx: BatchContext, teacherIds: readonly string[]): Promise<Map<string, string>> {
+  if (teacherIds.length === 0) return new Map()
+  const res = await ctx.db.query<{ id: string; school_id: string }>(
+    `SELECT id::text AS id, school_id::text AS school_id FROM users WHERE id = ANY($1::bigint[]) AND school_id IS NOT NULL`,
+    [teacherIds],
+  )
+  return new Map(res.rows.map((r) => [r.id, r.school_id]))
+}
+
+/**
+ * A1-FIX (LEAD, 25 Oct 2026): the ids (of the given source classes) whose `teacher_id` is set but has NO row in the source
+ * `users` table (the teacher account was deleted at the source). Such a class is dropped with its enrolments as a
+ * documented exclusion, not rejected. A teacher who IS in the source `users` but was not loaded (rejected, or an agent) is
+ * not in this set: that class stays an ORPHAN_PARENT reject. Counts and surrogate ids only.
+ */
+export async function classesWithAbsentTeacher(pool: Pick<pg.Pool, 'query'>, classroomIds: readonly string[]): Promise<Set<string>> {
+  const ids = classroomIds.filter((id) => /^\d{1,18}$/.test(id))
+  if (ids.length === 0) return new Set()
+  const res = await pool.query<{ id: string }>(
+    `SELECT c.id::text AS id FROM "${STAGING_SCHEMA}"."classrooms" c
+     WHERE c.id = ANY($1::bigint[]) AND c.teacher_id IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM "${STAGING_SCHEMA}"."users" u WHERE u.id = c.teacher_id)`,
+    [ids],
+  )
+  return new Set(res.rows.map((r) => r.id))
+}
+
 export function classroomsStep(core: CoreContext): AnyEntityStep {
   const entity = 'classrooms'
   return {
@@ -77,28 +121,70 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
       const subjects = await ctx.idMap.resolveMany('subjects', distinctValues(rows, 'subject_id'))
       const grades = await pupilGrades(core, rows.map((r) => idOf(r)))
       const levels = await levelsByGrade(ctx)
+      // Only the classes without any pupil in staging can keep their level, so look up the loaded rows for those alone.
+      const loaded = await loadedLevels(ctx, rows.map((r) => idOf(r)).filter((id) => (grades.get(id) ?? []).length === 0))
 
+      // SW7-01: one read for the teachers of the classes that have no source school (a source school that is set but not loaded is an
+      // orphan and is rejected by the transform, so it never gets here).
+      const teacherSchoolOf = await teacherSchools(ctx, [...new Set(
+        rows.flatMap((r) => {
+          const teacher = resolveFk(r.teacher_id, teachers)
+          return resolveFk(r.school_id, schools) === null && teacher ? [teacher] : []
+        }),
+      )])
+
+      // Only a class whose teacher id is set but not loaded can be an exclusion: ask the source about those alone.
+      const absentTeacher = await classesWithAbsentTeacher(
+        core.pool,
+        rows.filter((r) => resolveFk(r.teacher_id, teachers) === undefined).map((r) => idOf(r)),
+      )
+
+      const kept = new Set<string>()
+      const fromTeacher = new Set<string>()
+      let excluded = 0
       let items: { legacyId: string; values: ClassroomValues }[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
+        if (absentTeacher.has(legacyId)) {
+          excluded += 1
+          continue
+        }
         const grade = deriveClassGrade(squash(row.name), grades.get(legacyId) ?? [])
+        const level = resolveClassLevel({
+          grade,
+          pupilCount: (grades.get(legacyId) ?? []).length,
+          levelByGrade: levels,
+          loadedLevelId: loaded.get(legacyId),
+        })
         const out = transformClassroom(row, {
           teacherId: resolveFk(row.teacher_id, teachers),
           schoolId: resolveFk(row.school_id, schools),
           subjectId: resolveFk(row.subject_id, subjects),
-          levelId: grade === null ? null : (levels.get(grade) ?? null),
+          levelId: level.levelId,
         })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
-        else items.push({ legacyId, values: out.value })
+        else {
+          const values = withTeacherSchool(out.value, out.value.teacher_id === null ? null : teacherSchoolOf.get(out.value.teacher_id))
+          if (values !== out.value) fromTeacher.add(legacyId)
+          items.push({ legacyId, values })
+          if (level.kept) kept.add(legacyId)
+        }
       }
       items = await dropConflicts(ctx.db, items, {
         entity, table: 'classrooms', column: 'code', expr: 'upper(join_code)', source: ctx.source, rejects: ctx.rejects,
         legacyIdOf: (i) => i.legacyId, valueOf: (i) => i.values.join_code?.toUpperCase() ?? null,
       })
-      return upsertAndMap(ctx, entity, 'classrooms', CLASSROOM_COLUMNS, items.map((i) => ({
+      // Counted once the class survives the join-code check: it is written with its old level.
+      const keptCount = items.filter((i) => kept.has(i.legacyId)).length
+      if (keptCount > 0) core.notes.count('classrooms.level_kept_no_pupils', keptCount)
+      const fromTeacherCount = items.filter((i) => fromTeacher.has(i.legacyId)).length
+      if (fromTeacherCount > 0) core.notes.count('classrooms.school_from_teacher', fromTeacherCount)
+      if (excluded > 0) core.notes.count('classrooms.excluded.teacher_absent_from_source', excluded)
+      const written = await upsertAndMap(ctx, entity, 'classrooms', CLASSROOM_COLUMNS, items.map((i) => ({
         legacyId: i.legacyId,
         values: i.values as unknown as Record<string, unknown>,
       })))
+      return sumBatch(written, excludedResult(excluded))
     },
   }
 }
@@ -113,9 +199,19 @@ export function enrolmentsStep(core: CoreContext): AnyEntityStep {
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
       const classrooms = await ctx.idMap.resolveMany('classrooms', distinctValues(rows, 'classroom_id'))
       const students = await ctx.idMap.resolveMany('users', distinctValues(rows, 'student_id'))
+      // A1-FIX: an enrolment of a class dropped for its absent teacher is excluded with it (a class that is loaded is never in the set).
+      const droppedClasses = await classesWithAbsentTeacher(
+        core.pool,
+        distinctValues(rows, 'classroom_id').filter((id) => !classrooms.has(id)),
+      )
+      let excluded = 0
       const items: LegacyRow[] = []
       for (const row of rows) {
         const legacyId = enrolmentLegacyId(row)
+        if (droppedClasses.has((row.classroom_id ?? '').trim())) {
+          excluded += 1
+          continue
+        }
         const out = transformEnrolment(row, {
           classroomId: resolveFk(row.classroom_id, classrooms) ?? undefined,
           studentId: resolveFk(row.student_id, students) ?? undefined,
@@ -123,11 +219,13 @@ export function enrolmentsStep(core: CoreContext): AnyEntityStep {
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
         else items.push({ legacyId, values: out.value as unknown as Record<string, unknown> })
       }
-      return upsertAndMap(
+      if (excluded > 0) core.notes.count('enrolments.excluded.class_teacher_absent_from_source', excluded)
+      const written = await upsertAndMap(
         ctx, entity, 'enrolments',
         ['classroom_id', 'student_id', 'status', 'source', 'joined_at', 'is_test', 'created_at', 'updated_at'],
         items, { register: false },
       )
+      return sumBatch(written, excludedResult(excluded))
     },
   }
 }

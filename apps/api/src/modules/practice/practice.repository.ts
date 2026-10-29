@@ -658,6 +658,19 @@ export class PracticeRepository {
     })
   }
 
+  /** M14 BR-M14-16: completed sessions of `modes` whose accuracy is at least `minPct` percent (test rows excluded unless `includeTest`). */
+  async accurateSessionCount(userId: string, options: Pick<HistoryOptions, 'modes' | 'includeTest'> & { minPct: number }): Promise<number> {
+    const modes = [...options.modes]
+    const includeTest = options.includeTest === true
+    const rows = await this.db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(*) AS n
+        FROM practice_sessions
+       WHERE user_id = ${idFromString(userId)}::bigint AND status = 'completed'
+         AND mode = ANY(${modes}::text[]) AND (${includeTest}::boolean OR NOT is_test)
+         AND question_count > 0 AND correct_count * 100 >= ${options.minPct}::int * question_count`
+    return Number(rows[0]?.n ?? 0)
+  }
+
   /**
    * M14 BR-M14-12 read: the user's completed sessions (ALL modes) with `completed_at` in `[from, to)` (one Malaysia
    * day), and the chapter ids of the answers given in that window (one entry per answer, null chapters skipped).

@@ -2,6 +2,7 @@ import { Inject, Injectable, Optional } from '@nestjs/common'
 
 import { ApiError } from '../../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../../db/clock'
+import { canOpenClassDashboard } from '../domain/access-policy'
 import {
   COUNTED_MODES,
   LEVEL_CODES,
@@ -10,6 +11,7 @@ import {
   REDACTED_ID,
   TOP_STUDENT_LIMIT,
   TOP_STUDENT_MIN_SITTINGS,
+  isLegacySubject,
   type LevelCode,
 } from '../domain/constants'
 import { NO_SUBJECT_LABEL, SCHOOL_CLASS_LABEL } from '../domain/labels'
@@ -30,12 +32,12 @@ import {
   achievementOf,
   distinctStudents,
   entryGrade,
-  gpsBand,
   gpsOf,
   gradeOfPoints,
   gradedEntries,
   liveEntries,
   pairCounts,
+  schoolGps,
   studentStatuses,
 } from './headcount-figures'
 import { distinctMembers, nameMap, ownPupilIds, viewScope, type ViewScope } from './support'
@@ -215,7 +217,12 @@ export class SchoolPerformanceService {
           .sort((a, b) => a.name.localeCompare(b.name) || compareIds(a.userId, b.userId))
       : []
 
-    const hc = this.schoolFigures(ctx, entries, fr.classes, visibleSubjects)
+    // The aggregate keys subject totals by the Bijak CODE (`MAT`); classes and headcount entries use the curriculum
+    // subject id. Map code to id so one subject is one row with the headcount figures (SW13-08).
+    // Migrated 'legacy' sittings stay in the totals above but are not a subject row.
+    const subjectRowsShown = visibleSubjects.filter((r) => !isLegacySubject(r))
+    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(subjectRowsShown.flatMap((r) => (r.subjectId === undefined ? [] : [r.subjectId])))])
+    const hc = this.schoolFigures(ctx, entries, fr.classes, subjectRowsShown, idOfCode)
 
     return {
       scope: kind,
@@ -241,19 +248,19 @@ export class SchoolPerformanceService {
   /**
    * GPS, grade distribution and subject rows from the headcount entries (BR-M08-01 to 04). Non-staff: GPS and distribution are
    * empty below MIN_COHORT graded pupils, and a subject row with fewer than MIN_COHORT pupils is dropped (practice rows keep their own rule).
+   * While the overall figures are shown, the subject breakdown is shown only when no subject with graded entries falls below MIN_COHORT.
    */
   private schoolFigures(
     ctx: Ctx,
     entries: readonly HeadcountEntryView[],
     classes: readonly ClassInfo[],
     practiceRows: readonly BijakTotals[],
+    idOfCode: ReadonlyMap<string, string>,
   ): Pick<PerformanceSchool, 'gps' | 'distribution' | 'subjects'> {
     const staff = isStaff(ctx.role)
     const graded = gradedEntries(entries)
     const shownGps = staff || distinctStudents(graded) >= MIN_COHORT
-    const g = gpsOf(graded)
-    const gps: PerformanceSchool['gps'] =
-      shownGps && g.value !== null ? { value: g.value, band: gpsBand(g.value), entries: g.entries } : { value: null, band: null, entries: 0 }
+    const gps: PerformanceSchool['gps'] = schoolGps(entries, staff)
 
     const counts = new Map<string, number>()
     for (const e of shownGps ? graded : []) {
@@ -289,7 +296,10 @@ export class SchoolPerformanceService {
     }
     const rows = new Map<string, PerformanceSchool['subjects'][number]>()
     for (const r of practiceRows) {
-      if (r.subjectId !== undefined) rows.set(r.subjectId, rowOf(r.subjectId, r.subjectName ?? ''))
+      if (r.subjectId === undefined) continue
+      const id = idOfCode.get(r.subjectId) ?? r.subjectId
+      // The curriculum name (classes, headcount) wins over the Bijak name when the subject is known there.
+      rows.set(id, rowOf(id, nameOfSubject.get(id) ?? r.subjectName ?? ''))
     }
     for (const subjectId of bySubject.keys()) {
       const name = nameOfSubject.get(subjectId)
@@ -298,8 +308,12 @@ export class SchoolPerformanceService {
       // A subject known only from headcount is listed to non-staff only when it clears the cohort.
       if (staff || row.gps !== null) rows.set(subjectId, row)
     }
+    // Non-staff: the overall GPS and entry count are served with the rows, so a breakdown that leaves out a subject below
+    // MIN_COHORT would not stay consistent with them. It is shown only when every subject with graded entries is in it.
+    const complete = [...bySubject].every(([subjectId, list]) => distinctStudents(list) >= MIN_COHORT && rows.has(subjectId))
+    const withheld = !staff && shownGps && !complete
     // BR-M08-04: GPS ascending, subjects without data last, then by name.
-    const subjects = [...rows.values()].sort(
+    const subjects = (withheld ? [] : [...rows.values()]).sort(
       (a, b) => (a.gps === null ? 1 : 0) - (b.gps === null ? 1 : 0) || (a.gps ?? 0) - (b.gps ?? 0) || a.name.localeCompare(b.name) || compareIds(a.subjectId, b.subjectId),
     )
     return { gps, distribution, subjects }
@@ -364,7 +378,8 @@ export class SchoolPerformanceService {
           accuracy: s.accuracy,
           onTrack: st.on,
           below: st.below,
-          href: c.kind === 'classroom' ? `/prestasi/kelas/${c.id}` : null,
+          // Only a link the viewer can open: the class dashboard answers 404 otherwise.
+          href: canOpenClassDashboard(ctx, c) ? `/prestasi/kelas/${c.id}` : null,
         }
       })
 

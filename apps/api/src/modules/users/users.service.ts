@@ -28,6 +28,7 @@ import { isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { PasswordService } from '../auth/password.service'
 import { isOverloadError } from '../auth/auth.errors'
+import { ParentsRepository } from '../parents/parents.repository'
 import { SchoolsRepository } from '../schools'
 import type { Caller } from './caller'
 import { classLevelOfGrade } from './class-level'
@@ -35,7 +36,13 @@ import { generatePassword, IcService } from './credentials'
 import { toDetail, toListItem, toStudentItem } from './users.mapper'
 import { BULK_DELETE_MAX_IDS, PAGE_NUMBER_MAX, USER_AUDIT } from './users.constants'
 import { FIELD_MESSAGES, forbidden, invalid, lastAdmin, notFound } from './users.errors'
+import { UsersPorts } from './users.ports'
 import { UsersRepository, uniqueField, type UserRecord } from './users.repository'
+
+type LinkChange = { added: string[]; removed: string[] }
+/** Audit `details` of a link change: student ids only (no names), and no key at all when nothing changed. */
+const linkDetails = (c: LinkChange | null): { linkedStudents?: LinkChange } =>
+  c !== null && (c.added.length > 0 || c.removed.length > 0) ? { linkedStudents: c } : {}
 
 const WRITE_TX = { maxWait: 10_000, timeout: 15_000 } as const
 const SORT_LOCALE = 'ms'
@@ -75,6 +82,8 @@ export class UsersService {
     @Inject(PasswordService) private readonly passwords: PasswordService,
     @Inject(IcService) private readonly ic: IcService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(ParentsRepository) private readonly parentLinks: ParentsRepository,
+    @Inject(UsersPorts) private readonly ports: UsersPorts,
   ) {}
 
   // --- reads --------------------------------------------------------------------------------------
@@ -144,6 +153,21 @@ export class UsersService {
     return rows.sort(byNameThenId)
   }
 
+  /**
+   * The teacher's active classes for the "Kelas guru" select, name A to Z then id. `[]` for none, for an unknown
+   * teacher and (school_admin) for a teacher outside the caller's school: the contract has no 404 here, and
+   * an out-of-scope teacher must look the same as an unknown one.
+   */
+  async teacherClassrooms(caller: Caller, teacherId: string): Promise<{ id: string; name: string; classCode: string }[]> {
+    if (!isIdString(teacherId)) return []
+    if (!caller.isAdmin) {
+      const teacher = await this.users.get(teacherId)
+      if (!teacher || !teacher.roles.includes('teacher') || teacher.schoolId !== caller.schoolId) return []
+    }
+    const rows = await this.ports.classrooms.activeOf(teacherId)
+    return rows.sort(byNameThenId)
+  }
+
   /** Existing students of a school for the import screen: at most 200, name A to Z. */
   async schoolStudents(caller: Caller, schoolId: string, search: string | undefined, classLevel: string | undefined): Promise<ExistingStudent[]> {
     // Another school is 404 for a school_admin, the same as an unknown school.
@@ -176,7 +200,7 @@ export class UsersService {
     const schoolId = await this.resolveSchool(caller, blankToNull(body.schoolId), fields)
     const ppd = await this.resolveRegion(roles, blankToNull(body.ppdState), blankToNull(body.ppdDistrict), fields)
     const ic = isStudent ? this.icOf(blankToNull(body.icNumber), fields) : null
-    await this.checkLinked(roles, body.linkedStudentIds, fields)
+    await this.checkLinked(caller, roles, body.linkedStudentIds, fields)
     await this.checkUnique(fields, { email, username, schoolId })
     if (Object.keys(fields).length > 0) throw invalid(fields)
 
@@ -193,7 +217,7 @@ export class UsersService {
         schoolId,
         grade: isStudent ? gradeOf(body.grade) : null,
         passwordHash,
-        mustChangePassword: true,
+        mustChangePassword: false, // R39: an admin-created account is not forced to change its password
         icHash: ic?.hash ?? null,
         icMasked: ic?.masked ?? null,
         isActive: body.isActive === undefined ? true : toBool(body.isActive),
@@ -203,16 +227,18 @@ export class UsersService {
       await this.users.setRoles(newId, roles, now)
       await this.users.setAdminScope(newId, roles.includes('admin'), now)
       if (roles.includes('ppd_officer') && ppd) await this.users.setPpdScope(newId, ppd, now)
+      const linkChange =
+        roles.includes('parent') && body.linkedStudentIds !== undefined ? await this.storeLinked(caller, newId, body.linkedStudentIds) : null
       await this.audit.record({
         tx,
         ...this.auditBase(caller, USER_AUDIT.CREATED, { id: newId, schoolId }),
-        details: { roles },
+        details: { roles, ...linkDetails(linkChange) },
       })
       return newId
     })
     const created = await this.mustGet(id)
     const detail = await this.detailOf(caller, created)
-    return { data: { ...detail, mustChangePassword: true, generatedPassword: password }, status: USER_MESSAGES.created }
+    return { data: { ...detail, mustChangePassword: false, generatedPassword: password }, status: USER_MESSAGES.created }
   }
 
   // --- update -------------------------------------------------------------------------------------
@@ -259,14 +285,18 @@ export class UsersService {
       }
       if (roles.includes('school_admin') && schoolId === null && fields.schoolId === undefined) fields.schoolId = FIELD_MESSAGES.schoolRequired
 
-      // grade: required for a student that would have none.
+      // grade (R73): required only when the request makes the user a student that would have none (the
+      // student role is being added and no grade is stored or sent) or when a `grade` key is sent (null
+      // is refused, an out-of-range value is refused). An update of an existing student that does not
+      // touch the grade (password reset, name or e-mail edit) never fails on a stored null grade: a
+      // migrated pupil with no class label must stay resettable.
       let grade: number | null | undefined
       if (isStudent) {
         if (body.grade !== undefined) {
           const g = body.grade === null ? null : gradeOf(body.grade)
           if (g === null) fields.grade = FIELD_MESSAGES.gradeRequired
           else grade = g
-        } else if (target.grade === null) {
+        } else if (target.grade === null && !target.roles.includes('student')) {
           fields.grade = FIELD_MESSAGES.gradeRequired
         }
       }
@@ -294,7 +324,7 @@ export class UsersService {
       }
 
       const ic = isStudent && body.icNumber !== undefined ? this.icOf(blankToNull(body.icNumber), fields) : undefined
-      await this.checkLinked(roles, body.linkedStudentIds, fields)
+      await this.checkLinked(caller, roles, body.linkedStudentIds, fields)
       await this.checkUnique(fields, {
         email: body.email === undefined ? null : email,
         username: body.username === undefined && schoolId === target.schoolId ? null : username,
@@ -324,7 +354,8 @@ export class UsersService {
         ...(grade !== undefined ? { grade } : {}),
         ...(ic !== undefined ? { icHash: ic?.hash ?? null, icMasked: ic?.masked ?? null } : {}),
         ...(body.isActive !== undefined ? { isActive: nextActive } : {}),
-        ...(newHash !== null ? { passwordHash: newHash, mustChangePassword: true } : {}),
+        // R39: an admin password write clears the flag, so a migrated account that kept it is not locked out.
+        ...(newHash !== null ? { passwordHash: newHash, mustChangePassword: false } : {}),
         now,
         },
         caller,
@@ -336,6 +367,9 @@ export class UsersService {
         if (!roles.includes('ppd_officer')) await this.users.setPpdScope(id, null, now)
       }
       if (roles.includes('ppd_officer') && ppd) await this.users.setPpdScope(id, ppd, now)
+      // BR-10 / BR-11: the set is replaced only for a parent that sent it (absent keeps the stored links).
+      const linkChange =
+        roles.includes('parent') && body.linkedStudentIds !== undefined ? await this.storeLinked(caller, id, body.linkedStudentIds) : null
 
       // A role, status, school or password change ends the sessions of the target (BE-NFR-39).
       const deactivated = target.isActive && !nextActive
@@ -347,6 +381,7 @@ export class UsersService {
         ...this.auditBase(caller, USER_AUDIT.UPDATED, { id, schoolId }),
         details: {
           changed: changedFields(body),
+          ...linkDetails(linkChange),
           ...(rolesChanged ? { roles } : {}),
           ...(newHash !== null ? { credentialReset: true } : {}),
         },
@@ -509,10 +544,32 @@ export class UsersService {
     return parts
   }
 
-  /** Every linked id must be a student. Links are stored by BE-25 (parent links); until then they are only checked. */
-  private async checkLinked(roles: readonly RoleCode[], ids: readonly string[] | undefined, fields: Record<string, string>): Promise<void> {
+  /** Every linked id must be a student (a school_admin: of its own school; a student elsewhere reads as unknown). */
+  private async checkLinked(
+    caller: Caller,
+    roles: readonly RoleCode[],
+    ids: readonly string[] | undefined,
+    fields: Record<string, string>,
+  ): Promise<void> {
     if (!roles.includes('parent') || ids === undefined) return
-    if (!(await this.users.allStudents(ids))) fields.linkedStudentIds = FIELD_MESSAGES.linkedInvalid
+    if (!(await this.users.allStudents(ids, caller))) fields.linkedStudentIds = FIELD_MESSAGES.linkedInvalid
+  }
+
+  /**
+   * Stores the checked links of a parent in the user write's transaction: the set is replaced by `ids`
+   * (AC-M02-15.4). A school_admin only replaces the links of its own school's children, the ones it can see.
+   */
+  private async storeLinked(caller: Caller, parentId: string, ids: readonly string[]): Promise<LinkChange> {
+    // Re-check in the write transaction (after the admin lock on update): a student deleted or de-roled
+    // since the pre-check is a 422, not a 500 or a link to a non-student.
+    const gone = () => invalid({ linkedStudentIds: FIELD_MESSAGES.linkedInvalid })
+    if (!(await this.users.allStudents(ids, caller))) throw gone()
+    try {
+      return await this.parentLinks.replaceLinksOfParent(parentId, ids, caller.isAdmin ? null : caller.schoolId)
+    } catch (err) {
+      if (isForeignKeyBlock(err)) throw gone() // the student vanished between the re-check and the insert
+      throw err
+    }
   }
 
   /**

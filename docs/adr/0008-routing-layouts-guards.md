@@ -10,7 +10,7 @@
   - `/tetapan` (M01 S9) and `/spm-mock*` and `/pusat-ai/spm` (M06 S11–S13) use the admin shell for admins and the user shell for others;
   - `/artikel` and `/video` use a public layout for guests and the user shell when logged in (M09 discovery);
   - auth pages, 404, 403 and the renewal invoice have no shell.
-- Guests on protected routes go to `/login` with no message or redirect parameter (FR-M01-14, BR-08).
+- Guests on protected routes go to `/login?redirect=<original path>` with no message (FR-M01-14, BR-08; v2: D51, M01-DEV-02).
 - Non-admins on admin routes are redirected to their landing path (M02 FR-99, M03 FR-94, M07 FR-59), while some pages render a standalone 403 (M08).
 - Tab titles vary in suffix per screen.
 

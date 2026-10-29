@@ -16,7 +16,7 @@ Each step has **Command**, **Expected output** (the strings the scripts print), 
 
 ## Conventions for all commands
 
-Run as `ppdeploy` on `<vps-host>` from `/opt/pretasiplus` (same helpers as the 26 Oct sheet):
+Run as `ppdeploy` on `<vps-host>` from `/opt/pretasiplus` (same helpers as the 26 Oct sheets, `vps-dark-26oct-runsheet.md` and `vps-dark-setup-26oct.md`):
 
 ```
 cd /opt/pretasiplus
@@ -84,7 +84,7 @@ tail -n 3 /var/lib/pretasiplus-deploy/history.log
 
 **STOP if**
 
-- applied is lower than folders: the LEAD decides whether to run `deploy/vps/deploy.sh` (step 6a of the 26 Oct sheet) now; then repeat this step. If the sha is not `<release_sha>`, any ETL change after the code freeze means the rehearsal is repeated (plan P2): tell the LEAD, do not go on.
+- applied is lower than folders: the LEAD decides whether to run `deploy/vps/deploy.sh` (step 6a of `vps-dark-setup-26oct.md`) now; then repeat this step. If the sha is not `<release_sha>`, any ETL change after the code freeze means the rehearsal is repeated (plan P2): tell the LEAD, do not go on.
 - a migration was applied after 26 Oct: re-run the grant lines of 26 Oct step 8b if the roles were created (new tables need grants), and tell the LEAD.
 - `/api/ready` is not 200 or the unfinished count is not `0`.
 
@@ -96,10 +96,21 @@ Evidence: sha ____ applied ____ folders ____ unfinished ____ ready ____
 
 Four production smoke accounts, **created in v2, not migrated**: student, teacher, parent, admin. They are used for sign-in checks only (plan 4.5 part 2, C2). QA creates them in daylight and fixes the smoke list. They must exist **before** step 5 so that a restore of `pre_etl` keeps them. Names of people and real school data never appear in the issue; the list is roles only.
 
-**Command (QA; there is no repo script that creates these accounts, see Q18 and Script gaps)**
+**Command (operator, then the smoke admin; path from Q18-PROPOSAL, #109 6394041360, and `docs/qa/p11-production-smoke.md` section 2.3 case (a); no new script)**
 
-- The admin account: the 26 Oct sheet step 11 (`npm run admin:bootstrap -w @pp/api`), only if the LEAD has decided to use it; it refuses `--mode=create` while any active Admin Pusat exists.
-- Student, teacher, parent: self-registration is `POST /api/auth/register` with the roles student, teacher or parent. A teacher account stays unverified (inactive) until a school admin approves it. How to create all three while registration is "closed" and before any school exists is **not defined in the repo (Q18)**.
+0. **Tiers first (precondition).** `pq "select count(*) from tiers"` must be 4. They come from #230 (`core-wallet-tiers`, in TRAIN-R3 #310) via the reference seed: the runsheet `vps-dark-26oct-runsheet.md` step 8 (`vps-dark-setup-26oct.md` step 6b) loads them only if that release image was the R3 sha or later. If the count is 0, the operator deploys a release at R3 or later and runs `deploy/vps/deploy.sh --seed-reference` again (an upsert; it lists `core-school-packages`, `core-wallet-tiers`, `spm-subject-configs`, `core-marketplace-categories` and "demo modules skipped"). Without tiers every student dashboard answers 500 (P11-B1). Fallback if no R3 release is possible: p11 section 2.3 step 7a (one tier through the admin API).
+1. **The smoke admin.**
+   - **Normal case (runsheet `vps-dark-26oct-runsheet.md` step 9, which is step 11 of `vps-dark-setup-26oct.md`, has bootstrapped the LEAD's Admin Pusat):** that admin creates the smoke admin with `POST /api/admin/users` `{"roles":["admin"],"name":"<n>","email":"<smoke-admin>@<team-domain>"}` (or the admin user screen). It gets the national scope and a one-time `data.generatedPassword`. `admin:bootstrap --mode=create` would exit 3 here.
+   - **Only if no Admin Pusat exists yet:** the operator runs `PP_IMAGE_TAG="$(cat /var/lib/pretasiplus-deploy/current.tag)" $PC run --rm --no-deps migrate npm run -s admin:bootstrap -w @pp/api -- --mode=create --email=<SMOKE_ADMIN_EMAIL> --confirm=<SMOKE_ADMIN_EMAIL>` (runsheet `vps-dark-26oct-runsheet.md` step 9a/9b; without `PP_IMAGE_TAG`, `$PC` asks for the `:prod` image the deploy never built). Exit 3 means nothing was written: either an active Admin Pusat exists or an account with that e-mail exists. Treat it as a STOP and read the message.
+2. **Student, teacher, parent.** The smoke admin first creates one clearly fictitious school with `POST /api/admin/schools` (a code that cannot be a MOE code; a type and a state are required, `packages/contract/src/schools/schema.ts:148-149`; fictitious name; no district, no city, both optional, `:150-151`). It then creates the three users with `POST /api/admin/users` (or the admin SPA screens):
+   - The teacher and the student get that school. Check that each response's `data.school` is not null: a teacher without a school can never sign in (`ACCOUNT_INACTIVE`).
+   - The student gets `grade` 1 to 11.
+   - The parent gets no school and no linked child. The parent is checked through the API only (Q18-3, D11): `POST /api/auth/login`, then `GET /api/session` 200, then logout. The SPA is not used: the parent role is out of the prototype scope (D43), so the SPA sign-in row for the parent is not applicable (not a Fail).
+   - `REGISTRATION_OPEN=false` blocks only `POST /api/auth/register`, not these routes.
+   - A teacher created by an admin is active at once (the pending state comes only from self-registration), so no school admin approval is needed.
+   - Each one-time password (`data.generatedPassword`) goes straight to the password manager.
+3. **E-mails** (Q18-2, D11): all smoke e-mails use the team's own domain, written in this document only as the placeholder `<team-domain>` (for example `<role>-smoke@<team-domain>`; the real domain is never written in the repo). It cannot exist in `.cloud`, so the ETL never strips a real user's e-mail (p11 open question 8).
+4. **Known visibility.** The smoke school and users are kept out of every real school's roster and of PPD reports, but they **do** count in national, state and admin totals (+1 school, +4 users) until they are deactivated after hypercare. The student's first sign-in writes its own wallet and streak rows. Never pick the smoke admin as a content owner (for example a "lowest-id active admin" choice).
 
 After creation, count (no names):
 
@@ -107,7 +118,7 @@ After creation, count (no names):
 pq "select count(*) from users"
 ```
 
-**Expected output:** the number of users equals the number of smoke accounts (four, plus the bootstrap admin if that is a fifth). QA signs in once with each account on the dark site and confirms each reaches its dashboard (QA's own record, roles only).
+**Expected output:** `users` is the four smoke accounts plus the Admin Pusat bootstrapped on 26 Oct (five in the normal case; four only if the smoke admin was the bootstrap); `schools` is 1; `tiers` is 4 (at least 1 with the fallback); `select count(*) from users where must_reset_password` is 0. QA signs in once with each account on the dark site and confirms each reaches its dashboard (QA's own record, roles only); the parent is checked through the API only (Q18-3, D11).
 
 **STOP if** fewer than four accounts exist or the creation path is unknown at 12:00. Do not take the restore points; tell the LEAD. The LEAD decides: wait, or go without (then the accounts would be lost on a restore and C2 has nothing to use).
 
@@ -189,7 +200,7 @@ deploy/vps/migration/slot.sh gonogo
 - First line: `GO/NO-GO EVIDENCE (infrastructure part, cutover plan section 5; counts and names only)`.
 - `criterion 8: restore point pre_etl present, sha256 ok` and the same for `pre_delta`.
 - `criterion 8: PITR on, last archived WAL <segment> at <UTC time>, failed_count 0`.
-- `stage: archive_cloud:0 staging_cloud:0 in the target (expected archive_cloud:35 staging_cloud:83 while the slot runs)`. Zeros are right before the copy.
+- `stage: archive_cloud:0 staging_cloud:0 in the target (expected archive_cloud:38 staging_cloud:89 while the slot runs)`. Zeros are right before the copy.
 - `backup: newest dump pp-backup-<UTC>Z.dump is <n> h old` with n below 24.
 - `disk: <n>% free on the backup volume` with n above 30.
 - `api: /api/ready through the edge -> 200`.
@@ -364,7 +375,7 @@ Numbers Q1 to Q28 are the ones in [vps-dark-setup-26oct.md](vps-dark-setup-26oct
 | Q11 | Named storage location for the Q9 CSV. | Section 7, decision 19 | None named (needed before C5). |
 | Q12 | DNS switch or own address plus pointer page. | P9, 4.4 | DNS by the LEAD on 30 Oct; pointer page as fallback. |
 | Q13 | Host name and certificate when DNS moves. | P9 | Open; no script covers it. |
-| Q18 | How the four smoke accounts are created while registration is "closed". | P11 | Not defined; only the admin has a repo path. |
+| Q18 | How the four smoke accounts are created while registration is "closed". | P11 | Proposed in #109 6394041360 (step 3 above, p11 section 2.3 case (a)). **Decided** by D11 (LEAD 26 Oct 09:34 MYT, #113 6406301354): Q18-1 yes (the Admin Pusat creates the smoke admin; the smoke admin creates the school and users via `/api/admin/*`); Q18-2 team domain (placeholder `<team-domain>` only); Q18-3 API-only (parent checked through the API; the SPA row is out of prototype scope, D43). |
 | Q21 | `.cloud` maintenance switch and who gives access. | P8, P12 | Not in the repo. |
 | Q22 | Operator access list. | P12 | None granted; confirmed by 17:30 or no-go. |
 | Q23 | Migration count in the restore point. | A5 item 2 | Manual count before and after `take` (step 5). |
@@ -401,5 +412,5 @@ Named in this checklist and not on `feature/v2-backend` (`515e440f`); where each
 2. **`pre_delta`.** The plan takes it as "same state, no raw data" and the script has no guard for that; PR #166's document still describes `pre_delta` as holding a raw `staging_cloud` copy (old plan). `gonogo` demands it either way.
 3. **Time-to-live.** Plan 24 h; production-vps.md 48 h (Q24).
 4. **`PITR off` waiver.** `slot.sh gonogo` text mentions a written waiver; the night card forbids it at night.
-5. **Smoke accounts before `pre_etl` with registration closed (P11 and A3).** No consistent creation path exists in the repo (Q18).
+5. **Smoke accounts before `pre_etl` with registration closed (P11 and A3).** Path proposed in step 3 (Q18, #109 6394041360) and **decided** by D11 (LEAD 26 Oct 09:34 MYT, #113 6406301354: Q18-1 yes, Q18-2 team domain, Q18-3 API-only): the Admin Pusat bootstrapped on 26 Oct, or `admin:bootstrap` only if none exists, then the admin API. It needs #230 plus `--seed-reference` on an R3-or-later image for the student dashboard.
 6. **Night access.** The night card needs `sudo systemctl stop/start` of two timers for the dump operator; nothing in the repo grants it.

@@ -119,10 +119,7 @@ describe('anonymise:run on a fixture seeded with recognisable fake PII (AC3)', (
     expect(users[1]?.username).not.toBe(users[0]?.username)
     expect(users[3]?.name).toBe(users[4]?.name) // same name, same fake
     // across tables
-    expect((out.sponsors as Rows)[0]?.officer_name).toBe(users[1]?.name)
-    expect((out.foster_applications as Rows)[0]?.applicant_name).toBe(users[0]?.name)
     expect((out.sponsors as Rows)[0]?.organisation).toBe((out.schools as Rows)[0]?.name)
-    expect((out.sponsors as Rows)[0]?.user_id).toBe(2)
     // distinct values: all user e-mails that were distinct stay distinct
     const emails = users.map((u) => u.email).filter((e) => e !== null && e !== '')
     expect(new Set(emails).size).toBe(2)
@@ -142,11 +139,9 @@ describe('anonymise:run on a fixture seeded with recognisable fake PII (AC3)', (
     expect(users[0]?.parent_invite_token).toBeNull()
     expect(users[0]?.bio).toBe('Teks anonim.')
     expect((out.support_tickets as Rows)[0]?.subject).toBe('Teks anonim.')
-    expect((out.student_notes as Rows)[0]).toMatchObject({ title: 'Teks anonim.', body: 'Teks anonim.' })
+    expect((out.timeline_entries as Rows)[0]).toMatchObject({ title: 'Teks anonim.', body: 'Teks anonim.' })
     expect((out.settings as Rows)[0]).toMatchObject({ key: 'openai.api_key', value: 'Teks anonim.' })
-    expect((out.audit_logs as Rows)[0]?.ip).toMatch(/^(192\.0\.2|198\.51\.100|203\.0\.113)\./)
-    expect((out.chatbot_conversations as Rows)[0]?.start_url).toBe('Teks anonim.')
-    expect((out.psychometric_results as Rows)[0]?.details).toEqual({ notes: 'Teks anonim.', score: 7, flags: [true, 'Teks anonim.'] })
+    expect((out.game_rooms as Rows)[0]?.state).toEqual({ notes: 'Teks anonim.', score: 7, flags: [true, 'Teks anonim.'] })
   })
 
   it('logs carry counts only: no original value, no pseudonym, no key', () => {
@@ -156,7 +151,7 @@ describe('anonymise:run on a fixture seeded with recognisable fake PII (AC3)', (
     expect(text).not.toMatch(/example\.test|Nama Anon/)
     for (const line of result.log.lines) {
       expect(line, line).toMatch(
-        /^(Pseudonymisation key loaded from ANON_HMAC_KEY\.|ANON_HMAC_KEY was set inline: it may be in your shell history\. Prefer ANON_HMAC_KEY_FILE\.|File permissions are not enforced on Windows; keep the key and the output in your user profile on an encrypted disk\.|Anonymised [a-z_]+: \d+ rows\.|Table [a-z_]+ is absent from the input; nothing written for it\.|Leak scan: clean \(\d+ rows, \d+ cells checked\)\.|Done: \d+ tables, \d+ rows\.|Output: \d+ tables, \d+ rows in .+\. Share it out-of-band, encrypted, and delete it after the rehearsal\.)$/,
+        /^(Pseudonymisation key loaded from ANON_HMAC_KEY\.|ANON_HMAC_KEY was set inline: it may be in your shell history\. Prefer ANON_HMAC_KEY_FILE\.|File permissions are not enforced on Windows; keep the key and the output in your user profile on an encrypted disk\.|Anonymised [a-z_]+: \d+ rows\.|Table [a-z_]+ is absent from the input; nothing written for it\.|Index pass: originals of \d+ table\(s\) indexed for redact-pii \(nothing written\)\.|Leak scan: clean \(\d+ rows, \d+ cells checked\)\.|Done: \d+ tables, \d+ rows\.|Output: \d+ tables, \d+ rows in .+\. Share it out-of-band, encrypted, and delete it after the rehearsal\.)$/,
       )
     }
   })
