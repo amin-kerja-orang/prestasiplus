@@ -11,6 +11,7 @@ import {
   lastLoginText,
   phoneText,
   schoolMeta,
+  translateValidationText,
 } from '../../components/users/users-format'
 
 describe('users-format (BR-M27-36, 39)', () => {
@@ -38,7 +39,9 @@ describe('users-format (BR-M27-36, 39)', () => {
   })
 
   it('joins the school meta without empty parts', () => {
-    expect(schoolMeta({ code: 'A1', district: 'PPD X', state: 'Selangor' })).toBe('A1 · PPD X · Selangor')
+    expect(schoolMeta({ code: 'A1', district: 'PPD X', state: 'Selangor' })).toBe(
+      'A1 · PPD X · Selangor',
+    )
     expect(schoolMeta({ code: null, district: null, state: 'Selangor' })).toBe('Selangor')
     expect(schoolMeta({ code: 'A1', district: '', state: 'Selangor' })).toBe('A1 · Selangor')
   })
@@ -57,9 +60,88 @@ describe('users-format (BR-M27-36, 39)', () => {
     expect(errorLines(new Error('boom'))).toEqual([GENERIC_ERROR])
   })
 
+  it('maps the Laravel English validation defaults to BM, unknown attributes to the generic ruang line', () => {
+    const fields = new ApiError({
+      status: 422,
+      code: 'VALIDATION_ERROR',
+      message: 'The given data was invalid.',
+      fields: {
+        name: 'The name field is required.',
+        email: 'The email has already been taken.',
+        password: 'The password field must be at least 8 characters.',
+        x: 'The widget field is required.',
+        y: 'Nama diperlukan.',
+      },
+    })
+    expect(errorLines(fields)).toEqual([
+      'Ruang Nama wajib diisi.',
+      'Emel ini telah digunakan.',
+      'Ruang Kata Laluan mestilah sekurang-kurangnya 8 aksara.',
+      'Ruang ini wajib diisi.',
+      'Nama diperlukan.',
+    ])
+    expect(translateValidationText('The email field must be a valid email address.')).toBe(
+      'Ruang Emel mestilah alamat emel yang sah.',
+    )
+  })
+
+  it('keeps the field name and count for min/max, class id, new password and confirmation texts', () => {
+    const t = translateValidationText
+    expect(t('The name field must be at least 3 characters.')).toBe(
+      'Ruang Nama mestilah sekurang-kurangnya 3 aksara.',
+    )
+    expect(t('The phone field must not be greater than 14 characters.')).toBe(
+      'Ruang No. Telefon tidak boleh melebihi 14 aksara.',
+    )
+    expect(t('The email field must not be greater than 255 characters.')).toBe(
+      'Ruang Emel tidak boleh melebihi 255 aksara.',
+    )
+    expect(t('The selected class id is invalid.')).toBe('Pilihan Kelas tidak sah.')
+    expect(t('The new password field must be at least 8 characters.')).toBe(
+      'Ruang Kata Laluan Baru mestilah sekurang-kurangnya 8 aksara.',
+    )
+    expect(t('The new password field must not be greater than 255 characters.')).toBe(
+      'Ruang Kata Laluan Baru tidak boleh melebihi 255 aksara.',
+    )
+    expect(t('The new password field confirmation does not match.')).toBe(
+      'Pengesahan Kata Laluan Baru tidak sepadan.',
+    )
+    expect(t('The new password field is required.')).toBe('Ruang Kata Laluan Baru wajib diisi.')
+    expect(t('The password field confirmation does not match.')).toBe(
+      'Pengesahan Kata Laluan tidak sepadan.',
+    )
+    expect(t('The widget field confirmation does not match.')).toBe('Pengesahan tidak sepadan.')
+  })
+
+  it('never returns an English template: the catch-all gives the generic BM line, BM passes through', () => {
+    for (const text of [
+      'The phone field must be a string.',
+      'The name field is not allowed.',
+      'The code field is required when type is SK.',
+      'The selected widget is invalid.x',
+      'The is active field must be true or false.',
+    ]) {
+      expect(translateValidationText(text)).toBe('Ruang ini tidak sah.')
+    }
+    expect(translateValidationText('Nama diperlukan.')).toBe('Nama diperlukan.')
+    expect(translateValidationText('Emel sudah digunakan.')).toBe('Emel sudah digunakan.')
+  })
+
+  it('lets a page override a field label (S12 "Nama penuh")', () => {
+    const err = new ApiError({
+      status: 422,
+      code: 'VALIDATION_ERROR',
+      message: 'x',
+      fields: { name: 'The name field must be at least 3 characters.' },
+    })
+    expect(errorLines(err, { name: 'Nama penuh' })).toEqual([
+      'Ruang Nama penuh mestilah sekurang-kurangnya 3 aksara.',
+    ])
+    expect(errorLines(err)).toEqual(['Ruang Nama mestilah sekurang-kurangnya 3 aksara.'])
+  })
+
   it('shows the generic BM line for a 5xx, a transport text and the API generic English defaults (SWE)', () => {
-    const fail = (status: number, message: string) =>
-      new ApiError({ status, code: 'X', message })
+    const fail = (status: number, message: string) => new ApiError({ status, code: 'X', message })
     expect(errorLines(fail(500, 'Server Error'))).toEqual([GENERIC_ERROR])
     expect(errorLines(fail(503, 'Ralat pelayan.'))).toEqual([GENERIC_ERROR])
     expect(errorLines(fail(0, 'Failed to fetch'))).toEqual([GENERIC_ERROR])
