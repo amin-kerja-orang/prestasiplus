@@ -182,6 +182,21 @@ describe('room helpers (FR-M16-68..70)', () => {
     ).toBe(true)
   })
 
+  // SWY-02: http mode sends string ids (`host.id`, `state.humanId`); the session `user.id` is a number.
+  it('compares the host and the acting player by string id (SWY-02)', () => {
+    const base = room()
+    const r = { ...base, host: { ...base.host, id: '1' } } as unknown as RoomView
+    expect(isHost(r, 1)).toBe(true)
+    expect(isHost(r, 2)).toBe(false)
+    const playing = {
+      ...base,
+      status: 'playing',
+      state: { awaiting: 'answer', round: 1, total: 15, humanId: '1', log: [] },
+    } as unknown as RoomView
+    expect(canAct(playing, 1)).toBe(true)
+    expect(canAct(playing, 2)).toBe(false)
+  })
+
   it('polls only waiting and playing rooms', () => {
     expect(isOpenRoom(room({ status: 'waiting' }))).toBe(true)
     expect(isOpenRoom(room({ status: 'playing' }))).toBe(true)

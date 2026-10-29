@@ -328,6 +328,24 @@ describe('S5 ChapterSubjectPage', () => {
     expect(t(w, 'chapter-card-3').attributes('data-state')).toBe('open')
   })
 
+  // SWY-06: in http mode the level ids are API strings, so the select emits a digit string.
+  it('navigates to ?level= when the select emits a digit string (SWY-06)', async () => {
+    const w = await render(ChapterSubjectPage, '/practice/chapter/MATH')
+    const select = w.findComponent({ name: 'Select' })
+    select.vm.$emit('update:modelValue', 'x')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/practice/chapter/MATH')
+    select.vm.$emit('update:modelValue', '2')
+    await flushPromises()
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/practice/chapter/MATH?level=2')
+    expect(api.fetchChapterSubject).toHaveBeenLastCalledWith(
+      'MATH',
+      { levelId: 2 },
+      expect.anything(),
+    )
+  })
+
   it('shows the empty text and no select for a subject without a level (DV-M05-07)', async () => {
     api.fetchChapterSubject.mockResolvedValue(ADDMATH)
     const w = await render(ChapterSubjectPage, '/practice/chapter/ADDMATH')

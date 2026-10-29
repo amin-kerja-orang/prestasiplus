@@ -7,7 +7,7 @@
  * other function unwraps the `{data}` envelope and rejects with `ApiError` (404, 403, 409, 422 with `fields`).
  */
 
-import { api, type RawResponse } from '@/api'
+import { api, wireId, type RawResponse } from '@/api'
 
 import type {
   AdminGames,
@@ -173,8 +173,11 @@ export function fetchJutawanPage(darjah?: number, options: Signal = {}): Promise
 }
 
 /** #37 `POST /api/games/jutawan/start` (PROVISIONAL). */
-export function startJutawan(body: { subject: number; darjah: number }): Promise<JutawanStart> {
-  return api.post<JutawanStart>('/api/games/jutawan/start', { body })
+export function startJutawan(body: { subject: number | string; darjah: number }): Promise<JutawanStart> {
+  // `subject` is an `IdSchema` string on the wire in http mode (a number is 422); mock keeps the number.
+  return api.post<JutawanStart>('/api/games/jutawan/start', {
+    body: { ...body, subject: wireId(body.subject) },
+  })
 }
 
 /** #38 `POST /api/games/jutawan/{sessionId}/answer` (PROVISIONAL). */

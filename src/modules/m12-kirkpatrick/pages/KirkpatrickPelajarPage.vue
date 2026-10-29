@@ -38,7 +38,10 @@ const {
   () => props.userId,
 )
 
-/** `useApi` keeps the previous result while it reloads: show only the student of the current id (S8 to S8 navigation). */
+/**
+ * `useApi` keeps the previous result while it reloads: show only the student of the current id (S8 to S8 navigation).
+ * Compared as strings: the API answers a string id, the route prop is a number (DV-M12-39).
+ */
 const data = computed(() =>
   String(loaded.value?.student.id) === String(props.userId) ? loaded.value : null,
 )
