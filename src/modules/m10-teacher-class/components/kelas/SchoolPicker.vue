@@ -12,7 +12,13 @@ import { searchSchools, type SchoolSummary } from '@/modules/m02-users-schools'
 
 import { KELAS_COPY, schoolPlace } from './copy'
 
-const props = defineProps<{ preselect?: SchoolSummary | null }>()
+const props = defineProps<{
+  preselect?: SchoolSummary | null
+  /** DV-M10-49: only `preselect` is offered; no search and no clear button. */
+  locked?: boolean
+  /** The locked school is still being looked up. */
+  loading?: boolean
+}>()
 const emit = defineEmits<{ select: [school: SchoolSummary | null] }>()
 
 const root = ref<HTMLElement | null>(null)
@@ -40,7 +46,7 @@ function clear(): void {
 </script>
 
 <template>
-  <DsPanel data-testid="school-picker">
+  <DsPanel v-if="!locked || selected || loading" data-testid="school-picker">
     <h2 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
       <UIcon name="i-ph-buildings-duotone" class="size-5 text-primary-t" />{{
         KELAS_COPY.chooseSchool
@@ -56,6 +62,7 @@ function clear(): void {
           <p class="text-caption break-words text-muted">{{ schoolPlace(selected) }}</p>
         </div>
         <UButton
+          v-if="!locked"
           type="button"
           color="neutral"
           variant="ghost"
@@ -67,6 +74,8 @@ function clear(): void {
         />
       </div>
     </DsPanel>
+
+    <UProgress v-else-if="locked" animation="carousel" size="xs" data-testid="school-spinner" />
 
     <div v-else ref="root" class="flex flex-col gap-2">
       <UInput

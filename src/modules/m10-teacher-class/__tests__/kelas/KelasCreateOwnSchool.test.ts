@@ -6,7 +6,7 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import KelasCreatePage from '../../pages/KelasCreatePage.vue'
 
-// SW7-01 / DV-M10-40: in http mode S5 opens with the teacher's own school chosen.
+// SW7-01 / DV-M10-40 / DV-M10-49: in http mode S5 offers only the teacher's own school.
 
 const api = vi.hoisted(() => ({ createGuruClass: vi.fn() }))
 vi.mock('../../api/guru', () => api)
@@ -116,27 +116,35 @@ describe("S5 KelasCreatePage: the teacher's own school (DV-M10-40)", () => {
     expect(api.createGuruClass.mock.calls[0]?.[0]).not.toHaveProperty('schoolId')
   })
 
-  it('sends no schoolId after the teacher clears the preselected school', async () => {
+  it("offers only the teacher's own school: no search box and no clear button (DV-M10-49)", async () => {
     const w = await mountPage()
-    await w.get('[data-testid="school-clear"]').trigger('click')
-    expect(w.find('[data-testid="school-search"]').exists()).toBe(true)
-    expect(w.findAll('[data-testid="kelas-levels"] [role="radio"]')).toHaveLength(11)
-    await fillAndSubmit(w)
-    expect(api.createGuruClass).toHaveBeenCalledTimes(1)
-    expect(api.createGuruClass.mock.calls[0]?.[0]).not.toHaveProperty('schoolId')
+    expect(w.find('[data-testid="school-selected"]').exists()).toBe(true)
+    expect(w.find('[data-testid="school-search"]').exists()).toBe(false)
+    expect(w.find('[data-testid="school-results"]').exists()).toBe(false)
+    expect(w.find('[data-testid="school-clear"]').exists()).toBe(false)
+    // Only the lookup of the own school ran; no free-text school search.
+    expect(schools.searchSchools).toHaveBeenCalledTimes(1)
+    expect(schools.searchSchools).toHaveBeenCalledWith({ id: 12 })
   })
 
-  it('leaves the picker empty when the school lookup returns nothing or fails', async () => {
+  it('shows no school picker and sends no schoolId when the own-school lookup returns nothing or fails', async () => {
     schools.searchSchools.mockResolvedValueOnce([])
     let w = await mountPage()
-    expect(w.find('[data-testid="school-selected"]').exists()).toBe(false)
+    expect(w.find('[data-testid="school-picker"]').exists()).toBe(false)
+    expect(w.find('[data-testid="school-search"]').exists()).toBe(false)
     w.unmount()
 
     schools.searchSchools.mockRejectedValueOnce(new Error('boom'))
     w = await mountPage()
-    expect(w.find('[data-testid="school-selected"]').exists()).toBe(false)
+    expect(w.find('[data-testid="school-picker"]').exists()).toBe(false)
     await fillAndSubmit(w)
     expect(api.createGuruClass.mock.calls[0]?.[0]).not.toHaveProperty('schoolId')
+  })
+
+  it('keeps the live school search for a teacher without a school', async () => {
+    session.user = { schoolId: null }
+    const w = await mountPage()
+    expect(w.find('[data-testid="school-search"]').exists()).toBe(true)
   })
 
   it('keeps the mock-mode start state: no lookup, empty picker, no schoolId', async () => {

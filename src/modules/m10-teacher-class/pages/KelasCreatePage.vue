@@ -4,8 +4,9 @@
  * level tiles filtered by the school type. Native validation only (name, subject); the level
  * radios carry no `required` (DV-M10-22). 201 → `/guru/kelas`; 422 → the shared red box.
  *
- * DV-M10-40 (http mode only): the picker opens with the teacher's own school selected, so a class
- * left without a school choice is still visible to that school's admin. The teacher can clear it.
+ * DV-M10-40 / DV-M10-49 (http mode only): a teacher with a school gets that school selected and
+ * fixed (no search, no clear), so the class always belongs to the teacher's own school. A teacher
+ * without a school keeps the live search over all schools.
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -33,6 +34,10 @@ const session = useSessionStore()
 const school = ref<SchoolSummary | null>(null)
 /** The teacher's own school, offered to the picker (DV-M10-40); `null` when none or in mock mode. */
 const ownSchool = ref<SchoolSummary | null>(null)
+/** The session teacher has a school (http mode): the picker offers only that school (DV-M10-49). */
+const ownSchoolOnly = computed(
+  () => isHttpMode() && session.user?.schoolId !== null && session.user?.schoolId !== undefined,
+)
 /** True while that lookup runs: the form is not submitted meanwhile, so it cannot go out without the school. */
 const schoolLookup = ref(false)
 const name = ref('')
@@ -115,7 +120,12 @@ async function submit(): Promise<void> {
         role="alert"
       />
 
-      <SchoolPicker :preselect="ownSchool" @select="school = $event" />
+      <SchoolPicker
+        :preselect="ownSchool"
+        :locked="ownSchoolOnly"
+        :loading="schoolLookup"
+        @select="school = $event"
+      />
 
       <DsPanel>
         <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
