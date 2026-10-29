@@ -9,6 +9,7 @@ import {
   ARTICLE_CATEGORY_MAP,
   BANNER_TYPE_MAP,
   NOTE_TYPE_MAP,
+  articleAuthor,
   transformArticle,
   transformAudioSet,
   transformBanner,
@@ -37,6 +38,7 @@ import {
 } from '../../../src/migration/transform/gamification'
 import {
   TICKET_STATUS_MAP,
+  overallScore,
   transformFeedback,
   transformTicket,
   transformTimeline,
@@ -288,6 +290,36 @@ describe('content', () => {
     expect(rejectOf(transformArticle({ ...article, content: 'x', is_published: 'maybe' }, { authorId: '9' }))).toBe('INVALID_VALUE:is_published')
   })
 
+  describe('article author falls back to the content owner (D1, LEAD 29 Oct)', () => {
+    it('keeps a resolved author, even when an owner is configured', () => {
+      const out = transformArticle({ ...article, content: 'x' }, { authorId: '9', ownerId: '77' })
+      expect(out.ok && out.value.author_id).toBe('9')
+      expect(articleAuthor('9', '77')).toEqual({ id: '9', fromOwner: false })
+    })
+
+    it('uses the content owner when the author does not resolve', () => {
+      const out = transformArticle({ ...article, content: 'x' }, { authorId: undefined, ownerId: '77' })
+      expect(out.ok && out.value.author_id).toBe('77')
+      expect(articleAuthor(undefined, '77')).toEqual({ id: '77', fromOwner: true })
+    })
+
+    it('is ORPHAN_PARENT on author_id only when neither resolves', () => {
+      expect(rejectOf(transformArticle({ ...article, content: 'x' }, { authorId: undefined, ownerId: undefined }))).toBe('ORPHAN_PARENT:author_id')
+      expect(articleAuthor(undefined, undefined)).toEqual({ id: undefined, fromOwner: false })
+    })
+
+    it('the owner does not stand in for missing content: still INVALID_VALUE on content', () => {
+      expect(rejectOf(transformArticle(article, { authorId: undefined, ownerId: '77' }))).toBe('INVALID_VALUE:content')
+    })
+
+    it('keeps the staged excerpt (blank is null) next to the content', () => {
+      const out = transformArticle({ ...article, content: '<p>x</p>', excerpt: 'Ringkasan' }, { authorId: '9' })
+      expect(out.ok && out.value.excerpt).toBe('Ringkasan')
+      const blank = transformArticle({ ...article, content: '<p>x</p>', excerpt: '  ' }, { authorId: '9' })
+      expect(blank.ok && blank.value.excerpt).toBeNull()
+    })
+  })
+
   it('maps the banner type, keeps dates and counts files and dropped targets', () => {
     expect([...new Set(Object.values(BANNER_TYPE_MAP))].sort()).toEqual(['ANNOUNCEMENT', 'EVENT', 'HERO', 'PROMO'])
     const o = transformBanner({ title: 'Sepanduk', type: 'Hero', image_path: 'a.png', target: '/dalam', sort_order: '2', is_active: '1' }, { start: '2026-03-02', end: '2026-03-10' })
@@ -368,7 +400,7 @@ describe('operations', () => {
     expect(transformTimeline({ title: 'T', body: null, happened_on: null }, { userId: '3' }).ok).toBe(true)
   })
 
-  it('feedback: four scores kept, nps null, newest per month, scores 1 to 5', () => {
+  it('feedback: four scores kept, newest per month, satisfaction 1 to 5 and required', () => {
     const base = { satisfaction: '4', usability: '3', relevance: '5', score: '4', comment: 'Komen', created_at: '2026-05-20T10:00:00Z' }
     const ctx = { userId: '3', role: 'pelajar', schoolId: '8', month: '2026-05-01', newest: true }
     const ok = transformFeedback(base, ctx)
@@ -376,13 +408,49 @@ describe('operations', () => {
     expect(rejectOf(transformFeedback(base, { ...ctx, newest: false }))).toBe('DUPLICATE_KEY:month')
     expect(rejectOf(transformFeedback({ ...base, satisfaction: '6' }, ctx))).toBe('INVALID_VALUE:satisfaction')
     expect(rejectOf(transformFeedback({ ...base, satisfaction: '0' }, ctx))).toBe('INVALID_VALUE:satisfaction')
-    expect(rejectOf(transformFeedback({ ...base, score: '9' }, ctx))).toBe('INVALID_VALUE:score')
     expect(rejectOf(transformFeedback({ ...base, satisfaction: null }, ctx))).toBe('INVALID_VALUE:satisfaction')
     expect(rejectOf(transformFeedback(base, { ...ctx, role: 'super_guru' }))).toBe('UNKNOWN_ENUM:role')
     expect(rejectOf(transformFeedback(base, { ...ctx, month: null }))).toBe('INVALID_VALUE:created_at')
     expect(rejectOf(transformFeedback(base, { ...ctx, userId: undefined }))).toBe('ORPHAN_PARENT:user_id')
     const sparse = transformFeedback({ satisfaction: '3' }, ctx)
-    expect(sparse.ok && sparse.value).toMatchObject({ usability: null, relevance: null, score: null, comment: null })
+    expect(sparse.ok && sparse.value).toMatchObject({ usability: null, relevance: null, score: null, nps: null, comment: null })
+  })
+
+  describe('feedback score: 1 to 5 is score, 0 and 6 to 10 is nps (D4, LEAD 29 Oct)', () => {
+    const base = { satisfaction: '4', created_at: '2026-05-20T10:00:00Z' }
+    const ctx = { userId: '3', role: 'pelajar', schoolId: null, month: '2026-05-01', newest: true }
+    const values = (score: string | null) => {
+      const o = transformFeedback({ ...base, score }, ctx)
+      return o.ok ? { score: o.value.score, nps: o.value.nps } : rejectOf(o)
+    }
+
+    it('keeps 1 to 5 in score with nps null', () => {
+      for (const v of ['1', '3', '5']) expect(values(v)).toEqual({ score: Number(v), nps: null })
+    })
+
+    it('moves 0 and 6 to 10 to nps with score null', () => {
+      for (const v of ['0', '6', '9', '10']) expect(values(v)).toEqual({ score: null, nps: Number(v) })
+    })
+
+    it('a blank score is neither', () => {
+      expect(values(null)).toEqual({ score: null, nps: null })
+      expect(values('  ')).toEqual({ score: null, nps: null })
+    })
+
+    it('anything outside 0 to 10 is still INVALID_VALUE on score (no rescaling, no rounding)', () => {
+      for (const v of ['11', '-1', '100', '4.5', '7.0', 'x']) expect(values(v)).toBe('INVALID_VALUE:score')
+    })
+
+    it('a NULL satisfaction is still rejected, naming satisfaction, whatever the score', () => {
+      expect(rejectOf(transformFeedback({ score: '9', satisfaction: null }, ctx))).toBe('INVALID_VALUE:satisfaction')
+      expect(rejectOf(transformFeedback({ score: '9' }, ctx))).toBe('INVALID_VALUE:satisfaction')
+    })
+
+    it('overallScore is the same rule on its own', () => {
+      expect(overallScore('8')).toEqual({ ok: true, value: { score: null, nps: 8 } })
+      expect(overallScore('2')).toEqual({ ok: true, value: { score: 2, nps: null } })
+      expect(rejectOf(overallScore('12'))).toBe('INVALID_VALUE:score')
+    })
   })
 })
 

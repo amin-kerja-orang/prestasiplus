@@ -205,8 +205,10 @@ const STAGING: TableSpec[] = [
     'title:t', 'type:t:enum', 'target:t', 'image_path:t', 'starts_at:ts', 'ends_at:ts', 'sort_order:i',
     'is_active:t:enum',
   ]),
+  // `excerpt` and `content` (HTML): D1 (LEAD 29 Oct), the v2 NOT NULL `articles.content` needs a staged source.
   s('articles', [
-    'slug:t', 'category:t:enum', 'title:t', 'views:i', 'is_published:t:enum', 'author_id:id:fk=users',
+    'slug:t', 'category:t:enum', 'title:t', 'excerpt:t', 'content:t', 'views:i', 'is_published:t:enum',
+    'author_id:id:fk=users',
   ]),
   s('notes', ['title:t', 'note_type:t:enum', 'body:t', 'views:i', 'is_published:t:enum']),
   s('videos', ['title:t', 'url:t', 'duration_seconds:i']),

@@ -141,9 +141,10 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
 }
 
 /**
- * Entities whose v2 target needs a column the staging spec does not carry yet (articles, notes, videos, audio sets:
- * content columns; support tickets: the message body). With source rows and nothing loaded they are "blocked by
- * spec": the run can be green while the v2 table stays empty, so the report says so.
+ * Entities whose v2 target needs a column the staging spec does not carry yet (notes, videos, audio sets: content
+ * columns; support tickets: the message body). Articles stay in the list although `content` is staged since D1 (LEAD
+ * 29 Oct): a dump without the column (a missing GRANT) still leaves the table empty. With source rows and nothing
+ * loaded they are "blocked by spec": the run can be green while the v2 table stays empty, so the report says so.
  */
 export const SPEC_GAP_ENTITIES: readonly string[] = ['articles', 'notes', 'videos', 'audio_kbat_sets', 'support_tickets']
 

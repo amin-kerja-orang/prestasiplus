@@ -112,7 +112,7 @@ export interface FeedbackValues {
   role: string
   school_id: string | null
   month: string
-  nps: null
+  nps: number | null
   satisfaction: number
   usability: number | null
   relevance: number | null
@@ -124,6 +124,8 @@ export interface FeedbackValues {
 }
 
 const SCORE = /^[1-5]$/
+/** The 0 to 10 scale of `nps` (the v2 check `ck_feedback_nps`). */
+const NPS = /^(?:[0-9]|10)$/
 
 /** The v2 role code of the answering user's staged role (T-01). */
 export function feedbackRole(role: string | null | undefined): Outcome<string> {
@@ -136,6 +138,18 @@ function score(value: string | null | undefined, column: string, required: boole
   const t = text(value)
   if (t === null) return required ? invalid(column) : ok(null)
   return SCORE.test(t) ? ok(Number(t)) : invalid(column)
+}
+
+/**
+ * The .cloud `score` (D4, LEAD 29 Oct): 1 to 5 stays `score` (`nps` null); 0 or 6 to 10 (the 0 to 10 NPS scale) goes to
+ * `nps` with `score` null; anything else (blank is no score) is INVALID_VALUE on `score`. Nothing is rescaled.
+ */
+export function overallScore(value: string | null | undefined): Outcome<{ score: number | null; nps: number | null }> {
+  const t = text(value)
+  if (t === null) return ok({ score: null, nps: null })
+  if (SCORE.test(t)) return ok({ score: Number(t), nps: null })
+  if (NPS.test(t)) return ok({ score: null, nps: Number(t) })
+  return invalid('score')
 }
 
 export interface FeedbackContext {
@@ -151,8 +165,10 @@ export interface FeedbackContext {
 }
 
 /**
- * The four scores are kept, `nps` is null (the source has none). Every score must be 1 to 5 (the v2 checks), the
- * satisfaction is required. More than one row per (user, month): the newest stays, the rest are DUPLICATE_KEY.
+ * The four scores are kept. `satisfaction`, `usability` and `relevance` must be 1 to 5 (the v2 checks); `score` follows
+ * `overallScore` (D4: a 0 to 10 value outside 1 to 5 becomes `nps`). The satisfaction is required (v2 NOT NULL): a row
+ * without one is INVALID_VALUE on `satisfaction`, never filled in. More than one row per (user, month): the newest stays,
+ * the rest are DUPLICATE_KEY.
  */
 export function transformFeedback(row: Staged, c: FeedbackContext): Outcome<FeedbackValues> {
   if (c.userId === undefined) return orphan('user_id')
@@ -165,7 +181,7 @@ export function transformFeedback(row: Staged, c: FeedbackContext): Outcome<Feed
   if (!usability.ok) return usability
   const relevance = score(row.relevance, 'relevance', false)
   if (!relevance.ok) return relevance
-  const overall = score(row.score, 'score', false)
+  const overall = overallScore(row.score)
   if (!overall.ok) return overall
   if (!c.newest) return duplicate('month')
   return ok({
@@ -173,11 +189,11 @@ export function transformFeedback(row: Staged, c: FeedbackContext): Outcome<Feed
     role: role.value,
     school_id: c.schoolId,
     month: c.month,
-    nps: null,
+    nps: overall.value.nps,
     satisfaction: satisfaction.value as number,
     usability: usability.value,
     relevance: relevance.value,
-    score: overall.value,
+    score: overall.value.score,
     comment: text(row.comment),
     is_test: false,
     ...stamps(row),

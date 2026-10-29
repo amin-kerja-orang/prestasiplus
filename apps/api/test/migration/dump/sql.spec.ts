@@ -688,6 +688,13 @@ describe('dump:grants script', () => {
     expect(lines.join('\n')).not.toMatch(/INSERT|UPDATE|DELETE|ALL PRIVILEGES|GRANT OPTION/)
   })
 
+  it('grants the staged article text columns (D1, LEAD 29 Oct)', () => {
+    const articles = buildGrantScript('pp_cloud', ACCOUNT, TABLES).find((l) => l.includes('`pp_cloud`.`articles`')) as string
+    expect(articles).toContain('`excerpt`')
+    expect(articles).toContain('`content`')
+    expect(articles).toContain('`author_id`')
+  })
+
   it('validates the database and the account strictly', () => {
     for (const bad of ['pp-cloud', 'pp cloud', 'pp`x', "pp'; DROP", '']) expect(() => buildGrantScript(bad, ACCOUNT, small), bad).toThrow(DumpUsageError)
     for (const bad of ['user@host', "'user'@host", "user@'host'", "'us'er'@'host'", "'user'@'ho\\st'", "'user'@'host' IDENTIFIED BY 'x'", "'user'@'host';--", "''@'host'", "'user'@''", "'a b'@'host'"]) {

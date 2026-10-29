@@ -1,11 +1,13 @@
 /**
  * BE-29 Part B, content group against a real PostgreSQL: articles, banners, notes, videos and Audio KBAT sets.
  *
- * The staging spec does not carry every column the v2 content tables need (article content, note subject and grade, video
- * category, audio level and subject; the lead's Perlu pengesahan rows). Three runs show the three states:
- *   R1  no content owner:      owner-bound rows are ORPHAN_PARENT;
- *   R2  owner, spec as it is:  the unsourced NOT NULL columns reject the row INVALID_VALUE, never invented;
- *   R3  owner + the missing columns injected into the extract (what the steps do once the spec has them): rows load.
+ * The staging spec does not carry every column the v2 content tables need (note subject and grade, video category, audio
+ * level and subject; the lead's Perlu pengesahan rows). Article `content` and `excerpt` are staged (D1, LEAD 29 Oct) but
+ * the rows below leave them NULL. Three runs show the three states:
+ *   R1  no content owner:      owner-bound rows are ORPHAN_PARENT (an article whose author does not resolve too);
+ *   R2  owner, spec as it is:  the unsourced (or NULL) NOT NULL columns reject the row INVALID_VALUE, never invented;
+ *   R3  owner + the missing values injected into the extract (what the steps do once the source has them): rows load,
+ *       and an article whose author does not resolve gets the content owner as author (D1).
  * Only the content group runs. Staged values are synthetic. The content owner is an ACTIVE admin (child-safety rule, LEAD
  * 2026-10-20): the migrated videos are `global`; other owners are refused (see "content owner" below).
  */
@@ -142,7 +144,8 @@ describe('R1: no content owner', () => {
 describe('R2: owner, staging spec as it is', () => {
   it('rejects INVALID_VALUE naming the column that has no staged source', () => {
     expect(r2.status).toBe('succeeded')
-    expect(n(r2, 'articles', 'INVALID_VALUE', 'content')).toBe(2) // ids 1 and 2
+    expect(n(r2, 'articles', 'INVALID_VALUE', 'content')).toBe(3) // ids 1, 2 and 4 (4: the owner stands in for the author, D1)
+    expect(n(r2, 'articles', 'ORPHAN_PARENT', 'author_id')).toBe(0)
     expect(n(r2, 'notes', 'INVALID_VALUE', 'subject')).toBe(1) // id 1; id 2 has an unknown type
     expect(n(r2, 'notes', 'UNKNOWN_ENUM', 'note_type')).toBe(1)
     expect(n(r2, 'videos', 'INVALID_VALUE', 'category')).toBe(2) // ids 1 and 2 (no category staged); the rest fail the url check first
@@ -169,14 +172,25 @@ describe('R3: owner and the missing columns present', () => {
     expect(n(r3, 'audio_kbat_sets', 'UNKNOWN_ENUM', 'status')).toBe(1)
   })
 
-  it('articles: a slug clash is DUPLICATE_KEY, the category and author are checked, published_at follows is_published', async () => {
+  it('articles: a slug clash is DUPLICATE_KEY, the category is checked, published_at follows is_published', async () => {
     const rows = await h.q<{ legacy_id: string; slug: string; category: string; author_id: string; published: boolean }>(
-      `select legacy_id, slug, category, author_id::text, (published_at is not null) as published from articles`,
+      `select legacy_id, slug, category, author_id::text, (published_at is not null) as published from articles order by legacy_id::bigint`,
     )
-    expect(rows).toEqual([{ legacy_id: '1', slug: 'artikel-a', category: 'UMUM', author_id: await v2User(u[0] as string), published: true }])
+    expect(rows).toEqual([
+      { legacy_id: '1', slug: 'artikel-a', category: 'UMUM', author_id: await v2User(u[0] as string), published: true },
+      // id 4: author 99999 is not a v2 user, so the content owner is the author (D1, LEAD 29 Oct).
+      { legacy_id: '4', slug: 'artikel-d', category: 'MOTIVASI', author_id: ownerV2, published: true },
+    ])
     expect(n(r3, 'articles', 'DUPLICATE_KEY', 'slug')).toBe(1)
     expect(n(r3, 'articles', 'UNKNOWN_ENUM', 'category')).toBe(1)
-    expect(n(r3, 'articles', 'ORPHAN_PARENT', 'author_id')).toBe(1)
+    expect(n(r3, 'articles', 'ORPHAN_PARENT', 'author_id')).toBe(0)
+  })
+
+  it('articles: the owner fallback is counted; without an owner an unresolved author is ORPHAN_PARENT (D1)', () => {
+    expect(r3.notes.get('articles.author_from_content_owner')).toBe(1)
+    expect(r2.notes.get('articles.author_from_content_owner')).toBe(0) // id 4 fell back but was rejected on content
+    expect(r1.notes.get('articles.author_from_content_owner')).toBe(0)
+    expect(n(r1, 'articles', 'ORPHAN_PARENT', 'author_id')).toBe(1) // id 4
   })
 })
 

@@ -374,6 +374,8 @@
       "slug": "slug-from-id",
       "category": "keep",
       "title": "redact-pii",
+      "excerpt": "redact-pii",
+      "content": "redact-pii",
       "views": "keep",
       "is_published": "keep",
       "author_id": "keep"

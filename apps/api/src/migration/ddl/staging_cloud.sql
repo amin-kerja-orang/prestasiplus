@@ -739,6 +739,8 @@ create table "staging_cloud"."articles" (
   "slug" text,
   "category" text,
   "title" text,
+  "excerpt" text,
+  "content" text,
   "views" bigint,
   "is_published" text,
   "author_id" bigint,

@@ -7,7 +7,9 @@
  * notes (`file_migration_off.*`). Audio KBAT `audio_path` is never migrated: the v2 set keeps its audio inside authored
  * `sections` (title, transcript, question range) that the staging spec does not carry, so there is no single target. Notes, videos and audio sets need an
  * owner user in v2 that the staged tables do not carry; it comes from `--content-owner` (`contentOwnerUserId`),
- * and without it (or with an id that is not a v2 user) those rows are rejected ORPHAN_PARENT (LEAD Q7).
+ * and without it (or with an id that is not a v2 user) those rows are rejected ORPHAN_PARENT (LEAD Q7). An article whose
+ * `author_id` does not resolve to a v2 user gets the same owner as author (D1, LEAD 29 Oct; counted in the note
+ * `articles.author_from_content_owner`); only when neither resolves is it ORPHAN_PARENT on `author_id`.
  * A v2 NOT NULL column with no staged source rejects the row INVALID_VALUE naming the column (see transform/content.ts).
  *
  * Child safety (LEAD 2026-10-20, D9): migrated videos are `global`, which the API allows only for admin or teacher, so the
@@ -22,6 +24,7 @@ import { assertSurrogateLegacyId } from '../../kit/sql'
 import type { LegacyRow } from '../../kit/upsert'
 import { klDateSql } from '../../transform/activity-common'
 import {
+  articleAuthor,
   transformArticle,
   transformAudioSet,
   transformBanner,
@@ -100,14 +103,21 @@ export function articlesStep(a: ActivityContext): AnyEntityStep {
     keyOf: idOf,
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
       const authors = await ctx.idMap.resolveMany('users', distinctValues(rows, 'author_id'))
+      const ownerId = await contentOwner(a, ctx.db)
       let items: { legacyId: string; values: ArticleValues }[] = []
+      let fromOwner = 0
       for (const row of rows) {
         const legacyId = idOf(row)
         const authorId = lookup(authors, row.author_id)
-        const out = transformArticle(row, { authorId, sanitizer })
+        const out = transformArticle(row, { authorId, ownerId, sanitizer })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
-        else items.push({ legacyId, values: out.value })
+        else {
+          if (articleAuthor(authorId, ownerId).fromOwner) fromOwner++
+          items.push({ legacyId, values: out.value })
+        }
       }
+      // D1 (LEAD 29 Oct): articles whose author did not resolve and that were loaded with the content owner as author.
+      a.notes.count('articles.author_from_content_owner', fromOwner)
       items = await dropConflicts(ctx.db, items, {
         entity, table: 'articles', column: 'slug', expr: 'slug', source: ctx.source, rejects: ctx.rejects,
         legacyIdOf: (i) => i.legacyId, valueOf: (i) => i.values.slug,

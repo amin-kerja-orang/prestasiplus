@@ -49,6 +49,7 @@ let r1: Reasons
 let r2: Reasons
 let r1Blocked: unknown = null
 let r1BlockedNote: number | undefined
+let r1ScoreToNps: number | undefined
 let r2Blocked: unknown = null
 let r1Recon: Record<string, { source: number; eligible: number; loaded: number; rejected: number }> = {}
 
@@ -85,7 +86,9 @@ beforeAll(async () => {
     (5, ${u[1]}, 9, 3, 3, 3, null, '2026-07-01T10:00:00Z'),
     (6, ${u[1]}, 3, 3, 3, 3, null, '2026-06-01T00:00:00Z'),
     (7, 99999, 3, 3, 3, 3, null, '2026-06-01T00:00:00Z'),
-    (8, ${u[1]}, 5, 5, 5, 5, 'Komen lapan', '2026-06-15T00:00:00Z')`)
+    (8, ${u[1]}, 5, 5, 5, 5, 'Komen lapan', '2026-06-15T00:00:00Z'),
+    (10, ${u[1]}, 11, 3, 3, 3, null, '2026-08-01T10:00:00Z'),
+    (11, ${u[1]}, 4, null, 3, 3, null, '2026-10-05T10:00:00Z')`)
 
   const dry1 = await h.run('dry-run', { groups })
   expect(dry1.report.status).toBe('succeeded')
@@ -94,6 +97,7 @@ beforeAll(async () => {
   r1 = await reasonsOf(a1.report.runId)
   r1Blocked = a1.blockedBySpec
   r1BlockedNote = a1.activity.notes.counters.get('blocked_by_spec.support_tickets')
+  r1ScoreToNps = a1.activity.notes.counters.get('feedback.score_to_nps')
   r1Recon = Object.fromEntries(a1.report.recon.map((r) => [r.entity, { source: r.sourceCount, eligible: r.eligibleCount, loaded: r.loaded, rejected: r.rejected }]))
 
   const bodies = Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => [String(i), { body: 'Mesej contoh' }]))
@@ -161,12 +165,13 @@ describe('timeline_posts', () => {
 })
 
 describe('feedback', () => {
-  it('keeps the newest row per user and Malaysia month, nps null, role and school from the user', async () => {
-    const rows = await h.q<{ legacy_id: string; month: string; role: string; nps: number | null; satisfaction: number; comment: string | null }>(
-      `select legacy_id, month::text, role, nps, satisfaction, comment from feedback order by legacy_id::bigint`,
+  it('keeps the newest row per user and Malaysia month, role and school from the user', async () => {
+    const rows = await h.q<{ legacy_id: string; month: string; role: string; nps: number | null; score: number | null; satisfaction: number; comment: string | null }>(
+      `select legacy_id, month::text, role, nps, score, satisfaction, comment from feedback order by legacy_id::bigint`,
     )
-    expect(rows.map((r) => `${r.legacy_id}@${r.month}`)).toEqual(['2@2026-05-01', '3@2026-04-01', '8@2026-06-01'])
-    expect(rows.every((r) => r.nps === null)).toBe(true)
+    expect(rows.map((r) => `${r.legacy_id}@${r.month}`)).toEqual(['2@2026-05-01', '3@2026-04-01', '5@2026-07-01', '8@2026-06-01'])
+    // D4 (LEAD 29 Oct): a 1 to 5 score stays `score` (nps null); row 5 (score 9, the 0 to 10 scale) is `nps` 9, `score` null.
+    expect(rows.map((r) => [r.legacy_id, r.score, r.nps])).toEqual([['2', 5, null], ['3', 3, null], ['5', null, 9], ['8', 5, null]])
     expect(rows[0]?.role).toBe(ROLE_MAP[role0.toLowerCase()])
     expect(rows[0]?.comment).toBe('Komen dua')
   })
@@ -176,11 +181,15 @@ describe('feedback', () => {
     expect(n(r1, 'feedback', 'DUPLICATE_KEY', 'month')).toBe(2)
   })
 
-  it('rejects satisfaction or scores outside 1 to 5 and an unknown user', () => {
-    expect(n(r1, 'feedback', 'INVALID_VALUE', 'satisfaction')).toBe(1)
-    expect(n(r1, 'feedback', 'INVALID_VALUE', 'score')).toBe(1)
+  it('rejects a satisfaction outside 1 to 5 or missing, a score outside 0 to 10, and an unknown user', () => {
+    expect(n(r1, 'feedback', 'INVALID_VALUE', 'satisfaction')).toBe(2) // row 4 (6) and row 11 (NULL: v2 requires it, never filled in)
+    expect(n(r1, 'feedback', 'INVALID_VALUE', 'score')).toBe(1) // row 10 (11)
     expect(n(r1, 'feedback', 'ORPHAN_PARENT', 'user_id')).toBe(1)
-    expect(r1Recon.feedback).toEqual({ source: 8, eligible: 8, loaded: 3, rejected: 5 })
+    expect(r1Recon.feedback).toEqual({ source: 10, eligible: 10, loaded: 4, rejected: 6 })
+  })
+
+  it('counts the rows whose score went to nps (D4)', () => {
+    expect(r1ScoreToNps).toBe(1)
   })
 })
 
@@ -188,7 +197,7 @@ describe('feedback of a user deleted at the source (delta, staging has no cascad
   it('is rejected ORPHAN_PARENT on user_id, not UNKNOWN_ENUM on role, although the id map knows the user; loaded v2 rows stay', async () => {
     const keep = u[0] as string
     const v2Before = await h.q(`select legacy_id, user_id::text, role, month::text, satisfaction, comment from feedback order by legacy_id::bigint`)
-    expect(v2Before.length).toBe(3)
+    expect(v2Before.length).toBe(4)
     const mapped = await h.count('etl_id_map', `t.legacy_source = 'cloud' and t.entity = 'users' and t.legacy_id = '${keep}'`)
     expect(mapped).toBe(1)
     await h.q(`create table staging_cloud._user_bak as select * from staging_cloud.users where id = $1::bigint`, [keep])
@@ -246,7 +255,7 @@ describe('feedback already held by a v2-born row for the same (user, month, is_t
       expect(await h.count('feedback', `t.legacy_source = 'cloud' and t.legacy_id = '9'`)).toBe(0)
       const recon = a.report.recon.find((x) => x.entity === 'feedback')
       expect(recon?.status).toBe('ok')
-      expect(recon).toMatchObject({ sourceCount: 9, eligibleCount: 9, loaded: 3, rejected: 6 })
+      expect(recon).toMatchObject({ sourceCount: 11, eligibleCount: 11, loaded: 4, rejected: 7 })
     } finally {
       await h.q(`delete from feedback where month = '2026-09-01'`)
       await h.q(`delete from staging_cloud.feedback where id = 9`)
