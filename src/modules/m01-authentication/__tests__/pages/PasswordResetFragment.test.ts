@@ -122,7 +122,7 @@ describe('/password/reset#token=... (SW8-07b)', () => {
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(w.get('[data-testid=reset-alert]').text()).toContain(
-      'This password reset token is invalid.',
+      'Token tetapan semula kata laluan ini tidak sah.',
     )
     expect(emailValue(w)).toBe('pelajar+a@demo.test')
     expect((w.get('[data-testid=reset-password]').element as HTMLInputElement).value).toBe('')

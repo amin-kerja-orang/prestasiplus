@@ -219,7 +219,7 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     await flushPromises()
     expect(useFlashStore().current).toEqual({
       type: 'error',
-      message: ['The name field is required.'],
+      message: ['Ruang Nama Penuh wajib diisi.'],
     })
     expect((w.get('[data-testid=profile-name-input]').element as HTMLInputElement).value).toBe(
       '   ',
@@ -490,7 +490,7 @@ describe('S8 password card (FR-M01-45)', () => {
     await flushPromises()
     expect(useFlashStore().current).toEqual({
       type: 'error',
-      message: ['The password is incorrect.'],
+      message: ['Kata laluan tidak betul.'],
     })
     expect((w.get('[data-testid=password-current]').element as HTMLInputElement).value).toBe(
       'salah',
