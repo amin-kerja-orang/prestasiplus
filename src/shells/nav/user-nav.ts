@@ -32,6 +32,7 @@
  * resolve to the 404 page (overview §5.5, build-plan §S.5).
  */
 
+import { isKeluargaAngkatOn } from '@/app/features'
 import { isPathAllowed, isPrototypeScopeOn } from '@/app/prototype-scope'
 import type { Role } from '@/stores/session-types'
 
@@ -696,6 +697,17 @@ function visibleTo(entry: EntryBase, role: Role | null, surface: NavSurface): bo
   return role !== null && entry.roles.includes(role)
 }
 
+/** Menu entries of Mohon Keluarga Angkat: removed unless `VITE_KELUARGA_ANGKAT=on` (D74). */
+export const KELUARGA_ANGKAT_NAV_IDS: ReadonlySet<string> = new Set(['mohon-keluarga-angkat'])
+
+/** Drops the Mohon Keluarga Angkat entry when the flag is off; same array when it is on. */
+export function withoutKeluargaAngkat<T extends { id: string; kind: string }>(
+  entries: readonly T[],
+): readonly T[] {
+  if (isKeluargaAngkatOn()) return entries
+  return entries.filter((e) => !KELUARGA_ANGKAT_NAV_IDS.has(e.id))
+}
+
 /**
  * Pusat AI shortcuts that only repeat a matrix item under another label ("Cikgu Alesa Chat" is the
  * same screen as the matrix item "Cikgu Alesa"): not shown in scope mode.
@@ -774,7 +786,7 @@ export function navFor(
     entry.kind !== 'item' ||
     (!isOutOfScope(entry.to) && !(role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)))
   const visible = scopeEntries(
-    entries
+    withoutKeluargaAngkat(entries)
       .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))
       .map((entry) =>
         entry.kind === 'group' ? { ...entry, children: entry.children.filter(inScope) } : entry,

@@ -37,6 +37,16 @@ const labels = (role: Role, surface: 'sidebar' | 'drawer' = 'sidebar'): string[]
   ]
 }
 
+// Mohon Keluarga Angkat (D74) is hidden unless its flag is on: this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_KELUARGA_ANGKAT', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_KELUARGA_ANGKAT', 'on')
+})
+
 describe('navFor with the prototype scope on', () => {
   it('shows no item outside the role scope, on either surface', () => {
     for (const role of PROTOTYPE) {
