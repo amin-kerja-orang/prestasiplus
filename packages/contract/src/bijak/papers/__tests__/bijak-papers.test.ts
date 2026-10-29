@@ -155,6 +155,7 @@ const contracts = [
     code: '1449/1',
     durationMin: 75,
     sections: [{ label: 'Objektif', take: 10 }],
+    canGenerate: true,
   },
   {
     subject: 'MAT',
@@ -168,6 +169,8 @@ const contracts = [
       { label: 'Bahagian B', take: 1 },
       { label: 'Bahagian C', take: 2 },
     ],
+    canGenerate: false,
+    unavailableReason: 'NO_BLUEPRINT',
   },
   {
     subject: 'SN',
@@ -177,6 +180,7 @@ const contracts = [
     code: '4541/1',
     durationMin: 60,
     sections: [{ label: 'Bahagian A', take: 40 }],
+    canGenerate: true,
   },
 ]
 const subjects = [
@@ -525,7 +529,7 @@ describe('openapi document', () => {
       '403',
     ])
     const generate = ops('/bijak/papers/generate', 'post')
-    expect(Object.keys(generate.responses).sort()).toEqual(['201', '401', '403', '422'])
+    expect(Object.keys(generate.responses).sort()).toEqual(['201', '401', '403', '422', '503'])
     expect(generate.parameters?.some((p) => p.name === 'X-CSRF-Token' && p.in === 'header')).toBe(
       true,
     )
@@ -560,7 +564,7 @@ describe('openapi document', () => {
 
   it('contains every component of this card, all prefixed Bijak', () => {
     const names = Object.keys(BIJAK_PAPERS_COMPONENT_SCHEMAS)
-    expect(names).toHaveLength(13)
+    expect(names).toHaveLength(15)
     for (const name of names) {
       expect(name.startsWith('Bijak'), name).toBe(true)
       expect(doc.components.schemas[name], name).toBeDefined()

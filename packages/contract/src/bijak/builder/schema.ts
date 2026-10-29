@@ -8,6 +8,15 @@ import {
   BijakPaperReferencePanelSchema,
 } from '../papers/schema'
 import {
+  BijakBlueprintClientSourceSchema,
+  BijakBlueprintWarningSchema,
+  BijakReviewPaperSchema,
+  BijakVerificationSummarySchema,
+  bijakBlueprintStandardInputShape,
+  bijakSectionStandardInputShape,
+  bijakSectionStandardViewShape,
+} from '../standards/schema'
+import {
   BijakAttemptOptionSchema,
   BijakAttemptPartViewSchema,
   BijakAttemptStimulusSchema,
@@ -303,10 +312,11 @@ export const BijakBlueprintViewSectionSchema = z
         'Authored instruction, else the derived line ("Jawab semua soalan." or "Jawab N daripada M soalan."); never empty in the mock view.',
     }),
     rule: BijakBuilderSectionRuleSchema,
-    pool: z.string().min(1).meta({
+    pool: z.string().min(1).nullable().meta({
       description:
-        'Pool the section draws from in Jana Kertas; the builder uses it to suggest questions.',
+        'Optional narrowing tag of the section (null = no tag filter; the six launch blueprints use null). The builder uses it to suggest questions.',
     }),
+    ...bijakSectionStandardViewShape,
   })
   .meta({ id: 'BijakBlueprintViewSection' })
 
@@ -331,6 +341,33 @@ export const BijakBlueprintViewSchema = z
       .min(0)
       .meta({ description: 'Sum of the section mark budgets (derived).' }),
     sections: z.array(BijakBlueprintViewSectionSchema).min(1),
+    // Bijak SPM standard (BJS-01, architecture 6.3 / 6.3a)
+    version: z.number().int().min(1).meta({ description: 'Version number of the row shown.' }),
+    servesStudents: z.boolean().meta({
+      description:
+        'True on the single version real students generate from (the last Disahkan one). While a Spec head is being verified, an older Disahkan version keeps serving (Q-B22).',
+    }),
+    verification: BijakVerificationSummarySchema.nullable().meta({
+      description: 'Verifier, date and evidence in one glance; null when the version is not Disahkan.',
+    }),
+    evidenceCount: z.number().int().min(0),
+    notes: z.string().nullable(),
+    subPartRamp: z.boolean(),
+    kbatMarks: z.number().int().min(0).nullable().meta({ description: 'Paper-level KBAT marks.' }),
+    levelShare: z
+      .strictObject({ t4: z.number().int().min(0), t5: z.number().int().min(0) })
+      .nullable()
+      .meta({ description: 'Stated paper-level T4:T5 share.' }),
+    warnings: z.array(BijakBlueprintWarningSchema).meta({
+      description: 'Non-blocking warnings (KBAT_TP_BAND). Empty when there are none.',
+    }),
+    needsReview: z.boolean().meta({
+      description:
+        'O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text "Blueprint perlu disemak" [PROPOSED].',
+    }),
+    reviewPapers: z.array(BijakReviewPaperSchema).meta({
+      description: 'The papers behind needsReview; empty when needsReview is false.',
+    }),
   })
   .meta({ id: 'BijakBlueprintView' })
 export type BijakBlueprintView = z.infer<typeof BijakBlueprintViewSchema>
@@ -609,13 +646,17 @@ export const BijakBlueprintAdminSectionInputSchema = z
         'Authored instruction. Default: absent, and the view derives "Jawab semua soalan." or "Jawab N daripada M soalan.".',
     }),
     rule: BijakBuilderSectionRuleSchema,
-    pool: z.string().trim().min(1).max(64),
+    pool: z.string().trim().min(1).max(64).optional().meta({
+      description: 'Optional narrowing tag; absent = no tag filter (was required before the standard).',
+    }),
+    ...bijakSectionStandardInputShape,
   })
   .meta({ id: 'BijakBlueprintAdminSectionInput' })
 export type BijakBlueprintAdminSectionInput = z.infer<typeof BijakBlueprintAdminSectionInputSchema>
 
 const blueprintVersionInputShape = {
-  source: BijakBlueprintSourceSchema,
+  source: BijakBlueprintClientSourceSchema.optional(),
+  ...bijakBlueprintStandardInputShape,
   code: z.string().trim().min(1).max(32).meta({ example: '1449/2' }),
   durationMin: z.number().int().min(1).max(600),
   instructions: z.array(z.string().max(500)).max(30).optional().meta({
