@@ -86,6 +86,22 @@ model QuestionPart {
 - No backfill: existing rows have NULL part values and inherit. The publish gate keeps requiring version-level `difficulty_tp` (existing); it must **also** require `cognitive_level` (D2 already says "R at Terbit", the service today does not), grandfathering already-published versions (they surface as "tiada tahap kognitif" in the preview). Task BJS-06.
 - Legacy `kbat_level` migration (`v2-data-migration.md`): "LOTS 1-2" to 1/2, "MOTS 3" to 3, "HOTS 4-6" to 4-6. Level 3 is now Mengaplikasi = **KBAT**, so migrated MOTS questions count as KBAT. The migrated numbers were TP-like, not Bloom levels: treat as a first guess to confirm at bank review (open point O-3).
 
+### 3.1a Unit per leaf part (revised 2026-10-29, O-1)
+
+```prisma
+model QuestionPart {
+  /// Leaf only. FK curriculum_nodes (kind unit), SQL only. NULL = inherit question_versions.unit_node_id.
+  unitNodeId BigInt? @map("unit_node_id")
+  /// Leaf only. t1_t3, t4, t5 (CHECK). NULL = inherit question_versions.form_origin. 't1_t3' with a NULL unit = the bucket "T1-T3, luar DSKP".
+  formOrigin String? @map("form_origin")
+}
+```
+
+- Effective leaf unit = part value, else the question's (`coalesce`, in the same SQL as TP and cognitive level). The question's own `unit_node_id` stays the **primary unit** (the publish gate keeps requiring it); parts override only where they differ (Sejarah Q7: 12 marks Tajuk 12, 8 marks Tajuk 14).
+- Quota accounting: marks-basis lines sum leaf marks per effective unit; questions-basis lines count a question once under its primary unit. A paper's `unitCounts` in `standardReport` and `verifyComposition` use the same two rules, so the generator, the preview and the oracle agree.
+- Migration: two nullable columns, no backfill (all inherit). Bank forms (BJS-F6) show the per-part unit only as an override. Task BJS-06 carries the question-module change; BJS-02 the migration.
+- Not affected: `describeQuestion` still reports one `tp` (max) and one `kbatMarks` per question.
+
 ### 3.2 `blueprints` (one row = one version, unchanged rule)
 
 ```prisma
@@ -155,7 +171,7 @@ JSON documents (validated by the zod schemas of section 6.1 on write and re-pars
 
 - `UnitRef.unit.nodeId` is a `curriculum_nodes.id` of kind `unit` (stable, pins the DSKP edition). The API response adds `code`, `level` (`T4`/`T5`) and `title` for display. `t1_t3` is the bucket "T1-T3, luar DSKP" (questions with `form_origin = t1_t3` and no unit).
 - Why JSONB and not child tables: the data is only ever read and written as part of one section, never queried across blueprints; referential integrity is checked by the validator on save; this matches `reference_sheets`. Decision recorded in ADR-0023.
-- A question counts for a quota line by its **primary unit** (`question_versions.unit_node_id`). Marks-basis lines attribute all marks of the question to that unit (open point O-1).
+- (revised 2026-10-29, O-1) A quota line is credited by **leaf part**. Each leaf has an effective unit (the part's own unit, else the question's primary unit `question_versions.unit_node_id`) or the bucket `t1_t3`. **Marks-basis** lines add the marks of each leaf to its effective unit; **questions-basis** lines count a question once, for its primary unit. See 3.1a.
 
 ### 3.4 Evidence and verification (US-39, Q-B13)
 
@@ -297,7 +313,7 @@ interface QuestionFacts {
 }
 ```
 
-`describeQuestion` returns `{ marks, tp, kbatMarks, modes, bucket }` where `marks` = sum of leaf marks, `tp` = max leaf TP, `kbatMarks` = sum of marks of leaves with `isKbatLevel(cognitiveLevel)`, `bucket` = `UnitKey` (`T4:3.0` style key from node id, or `t1_t3`). It returns a reason list when something is missing, in this fixed order (so counts add up): `no_unit` (neither unit nor `form_origin = t1_t3`), `no_tp`, `no_cognitive_level`, `no_marks` (a leaf without marks >= 1), `no_key`. `eligibilityOf(facts, section)` additionally returns `mode_not_allowed` (a leaf mode outside `allowed_modes`), `pool_mismatch` (section `pool` set and not among `pools`), `unit_not_in_quota` (quota present and the bucket has no line with value > 0, AC-36.2/36.5). A stimulus group is an eligible **unit** only if every member is eligible for the section.
+`describeQuestion` returns `{ marks, tp, kbatMarks, modes, bucket, unitMarks }` where `marks` = sum of leaf marks, `tp` = max leaf TP, `kbatMarks` = sum of marks of leaves with `isKbatLevel(cognitiveLevel)`, `bucket` = the **primary** `UnitKey` (`T4:3.0` style key from node id, or `t1_t3`; used by questions-basis lines), and (revised 2026-10-29, O-1) `unitMarks` = map `UnitKey -> marks` summed over leaves by each leaf's effective unit (used by marks-basis lines). Leaf `unit` in the facts is the effective value (part, else question). It returns a reason list when something is missing, in this fixed order (so counts add up): `no_unit` (a leaf with neither an effective unit nor `form_origin = t1_t3`), `no_tp`, `no_cognitive_level`, `no_marks` (a leaf without marks >= 1), `no_key`. `eligibilityOf(facts, section)` additionally returns `mode_not_allowed` (a leaf mode outside `allowed_modes`), `pool_mismatch` (section `pool` set and not among `pools`), `unit_not_in_quota` (quota present and the primary bucket, or in a marks-basis section any key of `unitMarks`, has no line with value > 0, AC-36.2/36.5). A stimulus group is an eligible **unit** only if every member is eligible for the section.
 
 The pool preview breakdown (AC-29.5/38.2) is a count by first reason, with the bank query link filters (`subject`, `status=published`, `missing=unit|tp|cognitive_level|marks`).
 
@@ -364,7 +380,7 @@ flowchart TD
 
 ### 5.3 Types and units
 
-- A **single** question is described by the tuple `t = (bucket, tp, marks, kbatMarks)`. All singles with the same tuple form one **type** with a member list (sorted by id, then shuffled by the seeded RNG with unseen members first). Types make the search independent of pool size: 5,000 questions collapse to a few hundred types.
+- A **single** question is described by the tuple `t = (unitSignature, tp, marks, kbatMarks)` where `unitSignature` is the primary bucket in a questions-basis section and the sorted `unitMarks` map in a marks-basis section (revised 2026-10-29, O-1; most questions have one entry, so type counts stay small). Marks-basis quota lines are accounted per unit from the signature, so one multi-topic question feeds several lines at once, like a stimulus unit does. All singles with the same tuple form one **type** with a member list (sorted by id, then shuffled by the seeded RNG with unseen members first). Types make the search independent of pool size: 5,000 questions collapse to a few hundred types.
 - A **stimulus unit** (group of k questions) is kept as its own item (there are few per section). Its members each have a tuple; it consumes k consecutive slots.
 - For choose-N sections the candidate set is first reduced to `marks == mark_budget / N` (H2), which removes the marks dimension.
 
@@ -448,7 +464,7 @@ Seed = existing `generationSeed(clock, userId, blueprintCode, previousCount)` (`
 
 ### 5.10 Independent verification (AC-34.6)
 
-`verifyComposition(blueprint, composedSections, factsById)` recomputes everything from the composed paper and the question facts, **not** from solver internals: counts, duplicates, group integrity (whole, adjacent, in order), effective marks per section and total, per-slot TP band and marks band, exact TP counts, quota per line, `levelShare`, KBAT marks, eligibility, number continuity. It returns `Violation[]`. The generator calls it before persisting; any violation means the paper is **not served**, logs `bijak.generate.violation` with blueprint version, seed and violations, and answers 500 `INTERNAL`. The same function is the oracle of the property tests, and the publish contract check (`paper-check.ts`) reuses its structural tier (AC-26.2). The **standard tier** (profile, quota, KBAT) is a hard gate for generated papers. For curated Kertas Pilihan it **never blocks and raises no gap on the paper** (O-2, decided by the user: an official paper cannot be wrong, so a mismatch means the blueprint needs review). Instead the mismatch is reported on the blueprint as the computed `needsReview` signal (section 6.3a).
+`verifyComposition(blueprint, composedSections, factsById)` recomputes everything from the composed paper and the question facts, **not** from solver internals: counts, duplicates, group integrity (whole, adjacent, in order), effective marks per section and total, per-slot TP band and marks band, exact TP counts, quota per line (marks-basis from leaf-part units, questions-basis from the primary unit; revised 2026-10-29, O-1), `levelShare`, KBAT marks, eligibility, number continuity. It returns `Violation[]`. The generator calls it before persisting; any violation means the paper is **not served**, logs `bijak.generate.violation` with blueprint version, seed and violations, and answers 500 `INTERNAL`. The same function is the oracle of the property tests, and the publish contract check (`paper-check.ts`) reuses its structural tier (AC-26.2). The **standard tier** (profile, quota, KBAT) is a hard gate for generated papers. For curated Kertas Pilihan it **never blocks and raises no gap on the paper** (O-2, decided by the user: an official paper cannot be wrong, so a mismatch means the blueprint needs review). Instead the mismatch is reported on the blueprint as the computed `needsReview` signal (section 6.3a).
 
 ## 6. API and contract
 
@@ -469,7 +485,10 @@ BijakSlotGroup      = { from: int>=1, to: int>=from, tpMin: 1..6, tpMax: tpMin..
 BijakProfileKind    = 'ladder' | 'bahagian' | 'tema'
 BijakDifficultyProfile = { kind: BijakProfileKind, groups: BijakSlotGroup[] }          // 1..40 groups
 BijakQuotaBasis     = 'questions' | 'marks'
-BijakQuotaLine      = { unit: BijakUnitRef, value: int>=0 }
+BijakQuotaLine      = { unit: BijakUnitRef, value: int>=0, tag?: 'observed' | 'inferred' | 'single_source' }   // tag: G3 note (b), informational
+// Question part (questions contract, BJS-06), revised 2026-10-29, O-1; all optional, null = inherit the question:
+BijakPartUnit       = { unitNodeId?: Id | null, formOrigin?: 't1_t3' | 't4' | 't5' | null }   // on each leaf part, read and write
+BijakPartStandardTags = { difficultyTp?: 1..6 | null, cognitiveLevel?: 1..6 | null }          // on each leaf part (3.1)
 BijakTopicQuota     = { basis: BijakQuotaBasis, lines: BijakQuotaLine[], levelShare?: { t4: int>=0, t5: int>=0 } }
 BijakEvidenceKind   = 'trial_paper' | 'skema' | 'lpm_format'
 BijakEvidenceValues = { durationMin?: int, totalMarks?: int,
@@ -786,7 +805,7 @@ O-1, O-3, O-4, O-5, O-6, O-8, O-9 accepted as recommended below. O-6 is an expli
 
 | # | Decision | Recommendation |
 |---|---|---|
-| O-1 | **Unit granularity.** A question has one primary unit (as in the bank today). SPP unit tables attribute marks per sub-part (Matematik K2 Bahagian C is one multi-topic question), so quota lines count all marks of a question to its primary unit. Alternative: unit per leaf part. | Keep primary unit per question: no extra tagging burden; the seed author maps multi-topic questions to one unit and notes it. Revisit only if Matematik K2 C cannot be expressed. |
+| O-1 | **Unit granularity (revised 2026-10-29, O-1).** First accepted as one primary unit per question; the layer-2 files showed it cannot represent Matematik 1449/2 Bahagian C and Sejarah 1249/2 Bahagian B (multi-topic questions, marks on sub-parts; Sejarah Q7 = 12 marks Tajuk 12 + 8 marks Tajuk 14). **Now:** unit attribution is per leaf part. A leaf has an optional unit (or the T1-T3 bucket) and inherits the question's primary unit. Marks-basis lines count leaf marks per unit; questions-basis lines use the primary unit (3.1a). | Done as decided (principle: the official paper is right, the recipe is wrong). |
 | O-2 | **Standard tier for curated Kertas Pilihan.** **DECIDED (user, replaces the advisory proposal):** a real or official Kertas Pilihan is **never** blocked, and gets no gap, because of quota, profile or KBAT mismatches ("an official paper cannot be wrong, so the blueprint is the problem"). Only the structural tier (rules, N, counts, groups) blocks, as AC-26.2 says today. Signal instead: the blueprint carries a computed `needsReview` flag (6.3a). | Done as decided. |
 | O-3 | **Cognitive level encoding** 1..6 = Mengingat, Memahami, Mengaplikasi, Menganalisis, Menilai, Mencipta, KBAT = 3 to 6. Legacy `MOTS 3` becomes KBAT; migrated numbers are TP-like. | Accept the encoding (matches the DSKP wording); keep migrated numbers but require bank review confirmation before they count for seeds. |
 | O-4 | **Mixed-order rule (AC-36.6)** is best effort, scoped to sections with >= 4 units (chapter order) and >= 2 questions per level (T4/T5 block), never a reason to refuse. | Accept; the AC as written is unsatisfiable for tiny sections (2 questions) and conflicts with ladder bands. |
@@ -796,11 +815,17 @@ O-1, O-3, O-4, O-5, O-6, O-8, O-9 accepted as recommended below. O-6 is an expli
 | O-8 | **Optional marks band per slot group** (`marksMin`/`marksMax`) is added beyond the requirement text, to stop a 15-mark question landing in Matematik K2 Bahagian A. **ADOPTED**, values from the real papers (the section 8 seed table is the starting point; layer-2 files may refine `marksBand`). Optional; generalises AC-34.3 (min = max = exact marks). |
 | O-9 | **Solver choice**: custom bounded search in pure TypeScript, no external solver (ADR-0022). | Accept; reconsider after the pilot if `limit` rate is high. |
 
+### 13.1a G3 notes from the layer-2 data files (2026-10-29; user decisions unchanged)
+
+- **(a) SEJ unit code format.** The Sejarah DSKP extract codes units as `Tajuk 11` (MATH, ADDMATH, PHY use `4.0`). The layer-2 `unitCode` and the seed lookup `(subject, level, unitCode)` must use the code **exactly as stored in `curriculum_nodes.code`**; BJS-13 resolves by exact match first, then, for kind `unit` in SEJ only, by trimming a leading `Tajuk ` and comparing the number. A miss still fails loudly. Add a seed test that every unit code of the six files resolves.
+- **(b) Tags and "incomplete".** Cheap field added: optional `tag: 'observed' | 'inferred' | 'single_source'` on each `BijakQuotaLine` (informational, shown in the editor; no gate uses it). "Incomplete" is not stored: it is derived (`kbat_marks` null or `quota` null on a section), shown as such in the editor and by the verification completeness lines (`NO_KBAT`, `NO_QUOTA`). Free-text `notes` stay for alternatives and reasons. The layer-2 file shape gains the same optional `tag` per line (the seed copies it; unknown values are ignored with a log).
+- **(c) KBAT will be weakly discriminating for Matematik and Matematik Tambahan.** With KBAT = cognitive level 3 to 6 (user's explicit choice, DSKP), most parts are Mengaplikasi or above, so the layer-2 values come out near 100% of marks (for example 130 of 130 in 3472/2). The definition stays. Consequence: until the bank tags cognitive level **per leaf part** with real discrimination (BJS-06, BJS-F6, bank review), a near-100% KBAT quota excludes almost no question and the KBAT line adds little. Do not tighten the quota to compensate. Re-check the layer-2 KBAT values after the bank is tagged; the preview's `kbat` table (AC-29.4) will show when the line is trivially met.
+
 ### 13.2 Inconsistencies and infeasible points found in the requirements
 
 1. **AC-37.5 versus Q-B18.** The last sentence says TP is independent of KBAT, yet the same AC refuses a contract with all slots in TP1-2 and KBAT > 0. Cognitive level and TP are separate stored fields; whether the combination is satisfiable depends on the pool, not on the contract. Resolved as a warning (O-5).
 2. **AC-36.6 interleaving.** "Not all T4 before all T5" cannot hold in at least 29 of 30 papers for a section with one T4 and one T5 question (the two orders are equally likely), and ladder sections fix order by TP band. Scoped as in O-4.
-3. **Unit granularity versus SPP section 6** (O-1). Also SPP 6.4 lists Sejarah at SK level (10.4, 11.2 ...) while the unit of the schema is the Tajuk; seeds must aggregate to Tajuk, and 20 marks ("13.2 or 14.1") need an author decision.
+3. **Unit granularity versus SPP section 6** (O-1, resolved 2026-10-29 by per-leaf-part units, 3.1a). Also SPP 6.4 lists Sejarah at SK level (10.4, 11.2 ...) while the unit of the schema is the Tajuk; seeds must aggregate to Tajuk, and 20 marks ("13.2 or 14.1") need an author decision.
 4. **AC-40.2 versus the evidence base.** It asks for quota and KBAT values "derived from the per-question tables", which are outside the repo, and SPP 10.5 states that no skema or file gives cognitive level, KBAT, TP or topic. Layer 2 cannot be finished by design alone (O-7).
 5. **AC-29.4 "needed / available" per line** are independent necessary counts; a table with no "Kurang" line can still be "Tidak boleh dijana" because of combinations. The verdict line and `firstFailure` (kind `combination`, `blocking`) cover this; the UI should show the verdict above the tables.
 6. **AC-26.2 versus the new standard.** It lists only structural gaps; whether standard-tier gaps block curated papers was undefined (O-2).

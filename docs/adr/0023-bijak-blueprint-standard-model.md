@@ -19,3 +19,6 @@ The blueprint must carry an exact topic quota, a difficulty profile with slot gr
 - The editor, the API and the solver share one schema definition and one `validateBlueprint`.
 - Jsonb content cannot be constrained by foreign keys: the validator checks that every unit belongs to the subject, and a DSKP edition change needs a re-mapping step (risk R-B6).
 - Legacy MOTS-3 questions become KBAT under the new level encoding; their migrated levels need review (open point O-3).
+
+## Revision 2026-10-29 (O-1)
+Unit attribution moves from the question to the **leaf part**: `question_parts.unit_node_id` and `form_origin` are nullable overrides of the question's primary unit (same inheritance as TP and cognitive level). Marks-basis quota lines count leaf marks per effective unit; questions-basis lines count a question once under its primary unit. Reason: the layer-2 data files showed multi-topic questions (Matematik 1449/2 Bahagian C, Sejarah 1249/2 Bahagian B) that one primary unit cannot represent. Cost: two nullable columns and a unit signature in the solver's question types (`v2-bijak-spm-standards.md` 3.1a, 5.3).
