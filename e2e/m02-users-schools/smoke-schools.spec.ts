@@ -46,7 +46,7 @@ test.describe('M02 S9 school list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   test('header, stats, table, pager and no page h-scroll', async ({ page, loginAs, gotoApp }) => {
     await loginAs(ADMIN)
     await openList(page, gotoApp)
-    await expectTabTitle(page, 'Urus Sekolah - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Urus Sekolah | PRESTASIPLUS')
 
     await expect(page.getByTestId('schools-stat-total')).toHaveText(/10,220\s*Jumlah Sekolah/)
     await expect(page.getByTestId('schools-stat-active')).toHaveText(/10,212\s*Aktif/)
@@ -248,7 +248,7 @@ test.describe('M02 S10 / S11 school form', { tag: [TAG.smoke, moduleTag(2)] }, (
     await page.getByTestId('schools-add').click()
     await expect(page).toHaveURL('/admin/schools/create')
     await expect(page.getByTestId('school-form')).toBeVisible()
-    await expectTabTitle(page, 'Tambah Sekolah - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Tambah Sekolah | PRESTASIPLUS')
 
     await expect(page.getByTestId('school-back')).toHaveText('Kembali ke Senarai Sekolah')
     await expect(page.getByLabel('Nama Sekolah')).toHaveAttribute(
@@ -359,7 +359,7 @@ test.describe('M02 S10 / S11 school form', { tag: [TAG.smoke, moduleTag(2)] }, (
       await row.getByTestId('school-edit').click()
 
       await expect(page).toHaveURL(/\/admin\/schools\/\d+\/edit$/)
-      await expectTabTitle(page, 'Edit Sekolah - Admin PRESTASIPLUS')
+      await expectTabTitle(page, 'Edit Sekolah | PRESTASIPLUS')
       await expect(page.getByLabel('Nama Sekolah')).toHaveValue(name)
       await expect(page.getByLabel('Kod Sekolah')).toHaveValue(code)
       await expect(page.getByLabel('Jenis')).not.toHaveValue('')
@@ -396,7 +396,7 @@ test.describe('M02 S10 / S11 school form', { tag: [TAG.smoke, moduleTag(2)] }, (
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/schools/99999999/edit')
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     await expect(
       page.getByRole('heading', { level: 1, name: 'Halaman Tidak Dijumpai', exact: true }),
     ).toBeVisible()

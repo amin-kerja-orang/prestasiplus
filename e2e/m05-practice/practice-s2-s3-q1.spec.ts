@@ -25,7 +25,7 @@ const PELAJARMAJU = 'pelajarmaju@demo.test'
 const ADMIN = 'admin@demo.test'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
-const NOT_FOUND = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 /** Number of tracks of a CSS grid container. */
 const columnsOf = (page: Page, testId: string) =>
@@ -63,7 +63,7 @@ test.describe('M05 S2 subject list', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/practice')
-    await expectTabTitle(page, 'Latih Tubi - PRESTASIPLUS')
+    await expectTabTitle(page, 'Latih Tubi | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi')
     if (isDesktopShell(page)) {
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Pilih subjek dan mula berlatih')

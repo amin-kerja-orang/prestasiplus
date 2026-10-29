@@ -7,7 +7,7 @@ import { expect } from './fixtures'
 export const PELAJAR = 'pelajar@demo.test'
 export const PELAJAR2 = 'pelajar2@demo.test'
 export const ADMIN = 'admin@demo.test'
-export const NOT_FOUND = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+export const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 export const tid = (page: Page, id: string) => page.getByTestId(id)
 

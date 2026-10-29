@@ -136,7 +136,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openPaused(page, gotoApp, mock, '/permainan/betul-salah?darjah=4')
-    await expectTabTitle(page, 'Betul atau Salah ✅ — PRESTASIPLUS')
+    await expectTabTitle(page, 'Betul atau Salah ✅ | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title').first()).toHaveText('Betul atau Salah')
     await expect(page.getByText('✅❌ BETUL ATAU SALAH')).toBeVisible()
     await throughCountdown(page, mock)
@@ -207,7 +207,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openPaused(page, gotoApp, mock, '/permainan/cabaran-kilat?darjah=4')
-    await expectTabTitle(page, 'Cabaran Kilat ⚡ — PRESTASIPLUS')
+    await expectTabTitle(page, 'Cabaran Kilat ⚡ | PRESTASIPLUS')
     await expect(page.getByText('⚡ CABARAN KILAT')).toBeVisible()
     await throughCountdown(page, mock)
     await expect(page.getByText('Soalan 1')).toBeVisible()
@@ -293,7 +293,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openPaused(page, gotoApp, mock, '/permainan/tembak-jawapan?darjah=4')
-    await expectTabTitle(page, 'Tembak Jawapan 🎯 — PRESTASIPLUS')
+    await expectTabTitle(page, 'Tembak Jawapan 🎯 | PRESTASIPLUS')
     await expect(page.getByText('🎯 TEMBAK JAWAPAN')).toBeVisible()
     await expect(page.getByText('Tap jawapan yang betul sebelum jatuh!')).toBeVisible()
     await throughCountdown(page, mock)
@@ -335,7 +335,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan/susun-jawapan?darjah=4')
-    await expectTabTitle(page, 'Susun Jawapan 🧩 — PRESTASIPLUS')
+    await expectTabTitle(page, 'Susun Jawapan 🧩 | PRESTASIPLUS')
     await expect(page.getByText('Soalan 1 daripada 20')).toBeVisible()
     for (const s of [
       'Kembali',
@@ -395,7 +395,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openPaused(page, gotoApp, mock, '/permainan/kad-memori')
-    await expectTabTitle(page, 'Kad Memori — PRESTASIPLUS')
+    await expectTabTitle(page, 'Kad Memori | PRESTASIPLUS')
     await expect(page.getByText('🃏 Kad Memori')).toBeVisible()
     await expect(page.getByText('Padankan soalan dengan jawapan yang betul!')).toBeVisible()
     await expect(page.getByTestId('solo-time')).toHaveText(/^⏱️ 0:0\d$/)
@@ -470,7 +470,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan/roda-nasib')
-    await expectTabTitle(page, 'Roda Nasib — PRESTASIPLUS')
+    await expectTabTitle(page, 'Roda Nasib | PRESTASIPLUS')
     await expect(page.getByText('🎯 Roda Nasib', { exact: true })).toBeVisible()
     await expect(page.getByText('Pusing roda sekali sehari untuk hadiah misteri!')).toBeVisible()
     await expect(page.getByTestId('spin-count')).toHaveText('🎰 2 kali spin')
@@ -556,7 +556,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan/jutawan')
-    await expectTabTitle(page, 'Jutawan Ilmu 💰 — PRESTASIPLUS')
+    await expectTabTitle(page, 'Jutawan Ilmu 💰 | PRESTASIPLUS')
     await expect(page.getByTestId('darjah-picker')).toBeVisible()
     await expect(
       page.getByText('Pilih subjek, jawab 15 soalan — menang sampai 1,000 Syiling!'),
@@ -597,7 +597,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
       await gotoApp('/permainan/jutawan/main?subject=3&darjah=4')
-      await expectTabTitle(page, 'Jutawan Ilmu 💰 — PRESTASIPLUS')
+      await expectTabTitle(page, 'Jutawan Ilmu 💰 | PRESTASIPLUS')
       await expect(page.getByTestId('jutawan-rung')).toHaveCount(15)
       await expect(page.getByTestId('jutawan-option')).toHaveCount(4)
       const lifeline = page.getByTestId('jutawan-lifeline')

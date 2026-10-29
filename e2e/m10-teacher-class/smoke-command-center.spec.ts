@@ -25,7 +25,7 @@ const GURU = 'guru@demo.test'
 const ADMIN = 'admin@demo.test'
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(10)] }
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const CC = '/guru/command-center'
 const API = '/api/guru/command-center'
 

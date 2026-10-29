@@ -26,7 +26,7 @@ const PELAJAR2 = 'pelajar2@demo.test'
 const PELAJARMAJU = 'pelajarmaju@demo.test'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
-const NOT_FOUND = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 /** Number of tracks of a CSS grid container. */
 const columnsOf = (page: Page, testId: string) =>
@@ -68,7 +68,7 @@ test.describe('M05 S4 chapter subjects', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/practice/chapter')
-    await expectTabTitle(page, 'Soalan by Chapter - PRESTASIPLUS')
+    await expectTabTitle(page, 'Soalan by Chapter | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
     if (isDesktopShell(page) || viewportWidth(page) >= 640) {
       await expect(tid(page, 'shell-user-subtitle')).toHaveText(
@@ -161,7 +161,7 @@ test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs(PELAJAR2)
     await gotoApp('/practice/chapter/MATH')
-    await expectTabTitle(page, 'Chapter Matematik - PRESTASIPLUS')
+    await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
     if (viewportWidth(page) >= 640) {
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Matematik')
@@ -315,7 +315,7 @@ test.describe('M05 Q2 chapter quiz', { tag: [moduleTag(5)] }, () => {
       await expect(page).toHaveURL(/\/practice\/chapter\/MATH\/1\/quiz\?count=5$/)
       await expect(tid(page, 'quiz-title')).toHaveText('Bab 1: Nombor Bulat hingga 100')
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
-      await expectTabTitle(page, 'Chapter Matematik - PRESTASIPLUS')
+      await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
       await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
       await expect(tid(page, 'chip-revision')).toHaveCount(0)
       await expect(tid(page, 'pill-wrong-times')).toHaveCount(0)
@@ -395,7 +395,7 @@ test.describe('M05 S6 revision list', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/practice/revision')
-    await expectTabTitle(page, 'Soalan Aku Salah — PRESTASIPLUS')
+    await expectTabTitle(page, 'Soalan Aku Salah | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Aku Salah')
     await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
     await expect(tid(page, 'revision-list-page').getByRole('heading', { level: 1 })).toHaveText(

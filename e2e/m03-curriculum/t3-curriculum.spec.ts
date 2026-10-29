@@ -28,7 +28,7 @@ import {
 const ADMIN = 'admin@demo.test'
 const MATH_T4 = '/admin/curriculum?subject_id=3&education_level_id=10'
 const BM_D1 = '/admin/curriculum?subject_id=1&education_level_id=1'
-const TREE_TAB = 'Pengurusan Kurikulum - Admin PRESTASIPLUS'
+const TREE_TAB = 'Pengurusan Kurikulum | PRESTASIPLUS'
 
 const chapters = (page: Page) => page.getByTestId('chapter')
 const flash = (page: Page) => page.getByTestId('cmp-flash')
@@ -423,7 +423,7 @@ test.describe('M03 S2 create chapter', { tag: [TAG.smoke, moduleTag(3)] }, () =>
     await gotoApp(MATH_T4)
     await page.getByTestId('chapter-add').click()
     await expect(page.getByTestId('chapter-form')).toBeVisible()
-    await expectTabTitle(page, 'Tambah Bab - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Tambah Bab | PRESTASIPLUS')
     await expect(page.getByTestId('chapter-subject')).toHaveValue('3')
     await expect(page.getByTestId('chapter-level')).toHaveValue('10')
     await expect(page.getByTestId('chapter-name')).toHaveAttribute(
@@ -552,7 +552,7 @@ test.describe('M03 S3 edit chapter', { tag: [TAG.smoke, moduleTag(3)] }, () => {
     await chapters(page).first().getByTestId('chapter-edit').click()
     await expect(page).toHaveURL(/\/admin\/curriculum\/chapters\/91\/edit$/)
     await expect(page.getByTestId('chapter-form')).toBeVisible()
-    await expectTabTitle(page, 'Edit Bab - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Edit Bab | PRESTASIPLUS')
     await expect(page.getByTestId('chapter-subject')).toHaveValue('3')
     await expect(page.getByTestId('chapter-level')).toHaveValue('10')
     await expect(page.getByTestId('chapter-name')).toHaveValue('Fungsi dan Persamaan Kuadratik')
@@ -607,7 +607,7 @@ test.describe('M03 S4 create topic', { tag: [TAG.smoke, moduleTag(3)] }, () => {
       await gotoApp(MATH_T4)
       await chapters(page).first().getByTestId('topic-add').click()
       await expect(page.getByTestId('topic-form')).toBeVisible()
-      await expectTabTitle(page, 'Tambah Topik - Admin PRESTASIPLUS')
+      await expectTabTitle(page, 'Tambah Topik | PRESTASIPLUS')
       const context = page.getByTestId('chapter-context')
       await expect(context).toContainText('Bab')
       await expect(context).toContainText('Bab 1: Fungsi dan Persamaan Kuadratik')
@@ -662,7 +662,7 @@ test.describe('M03 S5 edit topic', { tag: [TAG.smoke, moduleTag(3)] }, () => {
       await chapters(page).first().getByTestId('topic-edit').first().click()
       await expect(page).toHaveURL(/\/admin\/curriculum\/topics\/126\/edit$/)
       await expect(page.getByTestId('topic-form')).toBeVisible()
-      await expectTabTitle(page, 'Edit Topik - Admin PRESTASIPLUS')
+      await expectTabTitle(page, 'Edit Topik | PRESTASIPLUS')
       await expect(page.getByTestId('chapter-context')).toContainText(
         'Bab 1: Fungsi dan Persamaan Kuadratik',
       )

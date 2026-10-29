@@ -17,8 +17,8 @@ import {
   provisional,
 } from '../support'
 
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const S7_SUBTITLE = 'Pantau prestasi dan kenal pasti topik yang perlu diperkukuhkan'
 
 const header = (page: Page) => ({
@@ -232,7 +232,7 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
   test('S6 /prestasi/1: the empty state of the admin', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/1')
     await expect(page.getByTestId('prestasi360-page')).toBeVisible()
-    await expectTabTitle(page, 'Prestasi 360 — Admin Demo — PRESTASIPLUS')
+    await expectTabTitle(page, 'Prestasi 360 — Admin Demo | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Prestasi 360')
     await expect(header(page).subtitle).toHaveText('Selamat datang kembali')
     await expect(page.getByTestId('hero-name')).toHaveText('Admin Demo')
@@ -303,7 +303,7 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('activity-card')).toContainText('Hari Latihan')
 
     const name = await page.getByTestId('hero-name').innerText()
-    await expectTabTitle(page, `Prestasi 360 — ${name} — PRESTASIPLUS`)
+    await expectTabTitle(page, `Prestasi 360 — ${name} | PRESTASIPLUS`)
 
     await expect(page.getByTestId('headcount-block')).toContainText('Headcount — Prestasi SPM')
     await expect(

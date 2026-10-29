@@ -34,7 +34,7 @@ test.describe('M02 S6 complimentary list', { tag: [TAG.smoke, moduleTag(2)] }, (
     page,
     gotoApp,
   }) => {
-    await expectTabTitle(page, 'Pelajar Komplimen - Admin Panel')
+    await expectTabTitle(page, 'Pelajar Komplimen | PRESTASIPLUS')
     await expect(byId(page, 'comp-summary')).toHaveText('Syiling OFF: 90 / 90 pelajar komplimen')
     await expect(byId(page, 'comp-add')).toHaveAttribute('href', '/admin/comp-students/create')
     await expect(byId(page, 'comp-row')).toHaveCount(50)
@@ -125,7 +125,7 @@ test.describe('M02 S7 register complimentary students', { tag: [TAG.smoke, modul
   test('title, info alert, fields, class select follows the teacher and no horizontal scroll', async ({
     page,
   }) => {
-    await expectTabTitle(page, 'Daftar Pelajar Komplimen - Admin Panel')
+    await expectTabTitle(page, 'Daftar Pelajar Komplimen | PRESTASIPLUS')
     await expect(byId(page, 'comp-info')).toContainText(
       'Setiap pelajar dapat: username 6 digit akhir IC@prestasiplus.my',
     )
@@ -194,7 +194,7 @@ test.describe('M02 S8 complimentary detail', { tag: [TAG.smoke, moduleTag(2)] },
 
   test('labels, values, wallet 0 / 0, classes table and no horizontal scroll', async ({ page }) => {
     await expect(byId(page, 'comp-card')).toBeVisible()
-    await expect.poll(() => page.title()).toMatch(/^Pelajar Komplimen - .+/)
+    await expect.poll(() => page.title()).toMatch(/^Pelajar Komplimen - .+ [|] PRESTASIPLUS$/)
     await expect(byId(page, 'comp-card').locator('dt')).toHaveText([
       'Username',
       'No. KP',
@@ -250,6 +250,6 @@ test.describe('M02 S8 complimentary detail', { tag: [TAG.smoke, moduleTag(2)] },
     const name = (await first.innerText()).trim()
     await first.click()
     await expect(page).toHaveURL(/\/admin\/comp-students\/\d+$/)
-    await expect.poll(() => page.title()).toBe(`Pelajar Komplimen - ${name}`)
+    await expect.poll(() => page.title()).toBe(`Pelajar Komplimen - ${name} | PRESTASIPLUS`)
   })
 })

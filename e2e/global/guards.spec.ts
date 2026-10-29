@@ -27,7 +27,7 @@ import {
   TAG,
 } from '../support'
 
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const START = '/tiada-halaman'
 const PROBE_REASON = 'probe route until M08/M01'
 

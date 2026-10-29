@@ -23,7 +23,7 @@ const TAG = { tag: ['@m27', '@qa-l51'] }
 const P1 = 'azlan@demo.test' // school 900003, no pupil / teacher / class
 const P2 = 'adminsekolah@demo.test' // school 900001, populated
 const SCHOOL_P1 = 'SMK Demo Seri Putra'
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const FORBIDDEN_COPY =
   'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.'
 

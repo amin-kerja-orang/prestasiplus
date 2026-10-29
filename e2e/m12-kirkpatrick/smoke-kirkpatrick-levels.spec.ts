@@ -1149,7 +1149,7 @@ test.describe('M12 S7 Intervensi (admin)', MODULE, () => {
     await loginAs(ADMIN)
     for (const path of [`${S7}/1`, `${S7}/create`]) {
       await gotoApp(path)
-      await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+      await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
       await expect(page.getByText('405')).toHaveCount(0)
     }
   })
@@ -1279,7 +1279,7 @@ test.describe('M12 S8 student detail (admin)', MODULE, () => {
     await loginAs(ADMIN)
     for (const id of [5571, 5551, 99_999_999]) {
       await gotoApp(S8(id))
-      await expectTabTitle(page, '403 - Akses Ditolak | PRESTASIPLUS')
+      await expectTabTitle(page, 'Akses Ditolak | PRESTASIPLUS')
       await expect(
         page.getByText('Anda tidak mempunyai kebenaran untuk mengakses halaman ini.'),
       ).toBeVisible()
@@ -1295,7 +1295,7 @@ test.describe('M12 S8 student detail (admin)', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(S8('abc'))
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
   })
 
   test(

@@ -63,7 +63,7 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/marketplace')
-    await expectTabTitle(page, 'Marketplace - PRESTASIPLUS')
+    await expectTabTitle(page, 'Marketplace | PRESTASIPLUS')
     await expectHeader(page, 'Marketplace', 'Peralatan sekolah untuk pelajar 🛒')
     await expect(page.getByTestId('marketplace-q')).toHaveAttribute(
       'placeholder',
@@ -308,7 +308,7 @@ test.describe('M20 S8 Kedai Penjual', MODULE, () => {
   test('E2E-M20-07/64 header, tab title and the shop card', async ({ page, gotoApp, loginAs }) => {
     await loginAs(PELAJAR)
     await gotoApp('/marketplace/penjual/1')
-    await expectTabTitle(page, 'JomBelajar Official - Marketplace PRESTASIPLUS')
+    await expectTabTitle(page, 'JomBelajar Official - Marketplace | PRESTASIPLUS')
     await expectHeader(page, 'Kedai Penjual', 'JomBelajar Official')
     await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali ke Marketplace')
     await expect(page.getByTestId('marketplace-back')).toHaveAttribute('href', '/marketplace')

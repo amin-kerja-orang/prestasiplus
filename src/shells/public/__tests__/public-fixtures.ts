@@ -6,7 +6,7 @@ import { usePageMeta } from '@/composables/usePageMeta'
 import { PUBLIC_SECTIONS } from '../public-sections'
 
 /** The logged-in tab title on live (the guest title differs). */
-export const USER_TITLE = 'PRESTASIPLUS - Platform Latih Tubi Nasional'
+export const USER_TITLE = 'Platform Latih Tubi Nasional | PRESTASIPLUS'
 /** A data-driven title the detail page sets itself (`usePageMeta().setTitle`). */
 export const DETAIL_TITLE = 'Tajuk Artikel'
 

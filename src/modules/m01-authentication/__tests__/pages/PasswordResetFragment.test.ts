@@ -88,7 +88,7 @@ describe('/password/reset#token=... (SW8-07b)', () => {
     expect(current.fullPath).not.toContain(TOKEN)
     // The form survives the scrub (the entry page captured the token once).
     expect(w.get('input[name=token]').attributes('value')).toBe(TOKEN)
-    expect(document.title).toBe('Reset Kata Laluan - PRESTASIPLUS')
+    expect(document.title).toBe('Reset Kata Laluan | PRESTASIPLUS')
   })
 
   it('submits the fragment token to POST /auth/password/reset', async () => {
@@ -180,7 +180,7 @@ describe('a token link pasted while the page is already open (B1x4)', () => {
     expect(w.get('input[name=token]').attributes('value')).toBe(TOKEN)
     expect(router.currentRoute.value.fullPath).toBe('/password/reset')
     expect(replace).toHaveBeenCalledTimes(1)
-    expect(document.title).toBe('Reset Kata Laluan - PRESTASIPLUS')
+    expect(document.title).toBe('Reset Kata Laluan | PRESTASIPLUS')
   })
 
   it('keeps S4 after the scrub (the empty hash does not flip back to S3)', async () => {

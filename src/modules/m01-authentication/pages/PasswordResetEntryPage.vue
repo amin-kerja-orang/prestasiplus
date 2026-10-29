@@ -11,10 +11,12 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { formatTabTitle } from '@/composables/tabTitle'
+
 import PasswordForgotPage from './PasswordForgotPage.vue'
 import PasswordResetPage from './PasswordResetPage.vue'
 
-const RESET_TITLE = 'Reset Kata Laluan - PRESTASIPLUS'
+const RESET_TITLE = formatTabTitle('Reset Kata Laluan')
 
 const route = useRoute()
 const router = useRouter()

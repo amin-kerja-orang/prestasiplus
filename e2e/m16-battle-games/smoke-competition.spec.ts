@@ -38,7 +38,7 @@ test.describe('S20 Pertandingan Mingguan', () => {
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
       await gotoApp('/permainan/pertandingan')
-      await expectTabTitle(page, 'Pertandingan Mingguan — PRESTASIPLUS')
+      await expectTabTitle(page, 'Pertandingan Mingguan | PRESTASIPLUS')
       await expect(page.getByTestId('shell-user-title')).toHaveText('Pertandingan Mingguan')
       await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SUBTITLE)
       await expect(

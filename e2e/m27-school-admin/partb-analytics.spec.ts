@@ -33,7 +33,7 @@ const SCHOOL_P1 = 'SMK Demo Seri Putra'
 
 const FORBIDDEN_COPY =
   'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.'
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const TILE_LABELS = [
   'Pelajar',
   'Guru',
@@ -140,7 +140,7 @@ test.describe('S1 header, breadcrumb, sidebar (E2E-M27-41, 42)', MODULE, () => {
     await open(page, gotoApp)
     await expect(page.getByTestId('shell-user-title')).toHaveText('Statistik Penggunaan')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
-    await expectTabTitle(page, 'Statistik Penggunaan - PRESTASIPLUS')
+    await expectTabTitle(page, 'Statistik Penggunaan | PRESTASIPLUS')
     const back = page.locator('[data-testid="su-breadcrumb"] a')
     await expect(back).toHaveText('Dashboard Sekolah')
     await expect(back).toHaveAttribute('href', '/admin-sekolah')
@@ -546,7 +546,7 @@ test.describe('S3 header, tabs, range (E2E-M27-41, 42, 63)', MODULE, () => {
     await openS3(page, gotoApp)
     await expect(page.getByTestId('shell-user-title')).toHaveText('Laporan Aktiviti')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
-    await expectTabTitle(page, 'Laporan Aktiviti - PRESTASIPLUS')
+    await expectTabTitle(page, 'Laporan Aktiviti | PRESTASIPLUS')
     const back = page.locator('[data-testid="la-breadcrumb"] a')
     await expect(back).toHaveText('Dashboard Sekolah')
     await expect(back).toHaveAttribute('href', '/admin-sekolah')

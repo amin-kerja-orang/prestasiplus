@@ -76,7 +76,7 @@ test.describe('M09 S17 guest', MODULE, () => {
   }) => {
     await gotoApp('/video')
     await expect(cards(page)).toHaveCount(24)
-    await expectTabTitle(page, 'Video Pembelajaran — PRESTASIPLUS')
+    await expectTabTitle(page, 'Video Pembelajaran | PRESTASIPLUS')
     await expect(page.getByTestId('public-layout-topbar')).toBeVisible()
     await expect(page.getByTestId('public-layout-section')).toContainText('Video')
     await expect(page.getByTestId('video-guest-hero')).toContainText('Tonton & Fahami')
@@ -140,7 +140,7 @@ for (const [label, email] of [
     }) => {
       await gotoApp('/video')
       await expect(cards(page)).toHaveCount(24)
-      await expectTabTitle(page, 'Video Pembelajaran - PRESTASIPLUS')
+      await expectTabTitle(page, 'Video Pembelajaran | PRESTASIPLUS')
       await expectHeader(
         page,
         'Video Pembelajaran',

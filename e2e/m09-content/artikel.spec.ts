@@ -21,8 +21,8 @@ import {
 
 const MODULE = { tag: [moduleTag(9)] }
 const STUDENT = 'pelajar@demo.test'
-const GENERIC_TITLE = 'PRESTASIPLUS - Platform Latih Tubi Nasional'
-const GUEST_TITLE = 'Artikel — PRESTASIPLUS'
+const GENERIC_TITLE = 'Platform Latih Tubi Nasional | PRESTASIPLUS'
+const GUEST_TITLE = 'Artikel | PRESTASIPLUS'
 const SLUG_10 = 'teknik-pomodoro-belajar-25-minit-rehat-5-minit'
 const SLUG_9 = 'ai-ini-apa-sebenarnya-jom-fahami-bersama'
 

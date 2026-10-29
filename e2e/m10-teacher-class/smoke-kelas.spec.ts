@@ -274,7 +274,7 @@ test.describe('M10 S35 and role access', MODULE, () => {
     for (const path of ['/guru/kelas/2001', '/guru/kelas/2001/edit', '/guru/kelas/999999']) {
       await gotoApp(path)
       await expect(page.getByText('Halaman Tidak Dijumpai')).toBeVisible()
-      await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+      await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
       await expectNoHorizontalScroll(page)
     }
   })

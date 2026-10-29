@@ -72,7 +72,7 @@ describe('invalid token (FR-L45-19, OBSERVED copy)', () => {
     expect(t('invite-invalid-footer').text()).toBe(
       'PRESTASIPLUS — Platform Latih Tubi Interaktif Malaysia',
     )
-    expect(document.title).toBe('Link Tidak Sah — PRESTASIPLUS')
+    expect(document.title).toBe('Link Tidak Sah | PRESTASIPLUS')
     expect(m02.acceptParentInvite).not.toHaveBeenCalled()
   })
 
@@ -124,7 +124,7 @@ describe('guest (FR-L45-22..25)', () => {
       'Pautan jemputan ini dikongsi oleh Pelajar Demo melalui PRESTASIPLUS.',
     )
     expect(t('invite-back').attributes('href')).toBe('/')
-    expect(document.title).toBe('Jemputan Ibu Bapa — PRESTASIPLUS')
+    expect(document.title).toBe('Jemputan Ibu Bapa | PRESTASIPLUS')
     expect(m02.acceptParentInvite).not.toHaveBeenCalled()
   })
 

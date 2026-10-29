@@ -246,7 +246,7 @@ test.describe('M15 S11 Tebusan Saya', MODULE, () => {
     await loginAs(ADMIN)
     for (const path of ['/kedai-hadiah', '/hadiah', '/kedai', '/cikgu/hadiah/1']) {
       await gotoApp(path)
-      await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+      await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
       await expect(page.getByRole('link', { name: 'Mula Latihan' })).toHaveAttribute(
         'href',
         '/practice',

@@ -151,12 +151,12 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     gotoApp,
   }) => {
     await open(page, loginAs, gotoApp, ADMIN)
-    await expectTabTitle(page, 'Dashboard - PRESTASIPLUS')
+    await expectTabTitle(page, 'Dashboard | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Dashboard')
     await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
     await navigateInApp(page, '/practice')
     await navigateInApp(page, '/dashboard')
-    await expectTabTitle(page, 'Dashboard - PRESTASIPLUS')
+    await expectTabTitle(page, 'Dashboard | PRESTASIPLUS')
   })
 
   test('AC-01.2 greeting h1, line and the decorative cap by width', async ({

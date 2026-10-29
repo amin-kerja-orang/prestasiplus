@@ -86,7 +86,7 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/papan-bijak')
-    await expectTabTitle(page, 'Papan Bijak — PRESTASIPLUS')
+    await expectTabTitle(page, 'Papan Bijak | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title').first()).toHaveText('Papan Bijak')
     await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
       'Selamat datang kembali',
@@ -266,7 +266,7 @@ test.describe('M16 S8-S12 lobbies', MODULE, () => {
     await gotoApp('/perang-fakta')
     for (const [slug, title, h1, rule] of LOBBIES) {
       await spaGo(page, `/${slug}`)
-      await expectTabTitle(page, `${title} — PRESTASIPLUS`)
+      await expectTabTitle(page, `${title} | PRESTASIPLUS`)
       await expect(page.getByTestId('shell-user-title').first()).toHaveText(title)
       await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
         'Selamat datang kembali',

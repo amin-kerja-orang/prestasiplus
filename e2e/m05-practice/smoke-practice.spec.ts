@@ -32,7 +32,7 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
   }) => {
     await loginAs(PELAJARMAJU)
     await gotoApp('/practice')
-    await expectTabTitle(page, 'Latih Tubi - PRESTASIPLUS')
+    await expectTabTitle(page, 'Latih Tubi | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi')
     await expect(tid(page, 'practice-title')).toHaveText('Latih Tubi 🎯')
     await expect(tid(page, 'chapter-banner')).toHaveAttribute('href', '/practice/chapter')
@@ -110,9 +110,9 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/practice/XYZ')
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     await gotoApp('/practice/XYZ/quiz?count=10')
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
   })
 })
 

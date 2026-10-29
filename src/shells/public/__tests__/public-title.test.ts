@@ -50,9 +50,9 @@ describe('guest title on the first load (no layout preload)', () => {
   it('is the guest title as soon as the navigation ends, before any render', async () => {
     const router = newRouter()
     await router.push('/artikel')
-    expect(document.title).toBe('Artikel — PRESTASIPLUS')
+    expect(document.title).toBe('Artikel | PRESTASIPLUS')
     await router.push('/video')
-    expect(document.title).toBe('Video Pembelajaran — PRESTASIPLUS')
+    expect(document.title).toBe('Video Pembelajaran | PRESTASIPLUS')
   })
 
   it('a logged-in user keeps the route title', async () => {
@@ -65,7 +65,7 @@ describe('guest title on the first load (no layout preload)', () => {
   it('the page setTitle still wins once the lazy layout has rendered it', async () => {
     const router = newRouter()
     await router.push('/artikel/x')
-    expect(document.title).toBe('Artikel — PRESTASIPLUS')
+    expect(document.title).toBe('Artikel | PRESTASIPLUS')
     wrapper = mount(LayoutHost, {
       global: { plugins: [pinia, router] },
       attachTo: document.body,
@@ -80,6 +80,6 @@ describe('guest title on the first load (no layout preload)', () => {
       { timeout: 10_000 },
     )
     expect(wrapper.find('[data-layout="public"]').exists()).toBe(true)
-    expect(document.title).toBe(DETAIL_TITLE)
+    expect(document.title).toBe(`${DETAIL_TITLE} | PRESTASIPLUS`)
   })
 })
