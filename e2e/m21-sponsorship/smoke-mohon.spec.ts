@@ -5,6 +5,10 @@
 
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag } from '../support'
+import { KELUARGA_ANGKAT_ON, KELUARGA_ANGKAT_SKIP_REASON } from '../support/keluarga-angkat'
+
+// Hidden unless VITE_KELUARGA_ANGKAT=on (D74): the route is not registered (404).
+test.skip(!KELUARGA_ANGKAT_ON, KELUARGA_ANGKAT_SKIP_REASON)
 
 test.use({ mockInit: { latency: 0 } })
 
