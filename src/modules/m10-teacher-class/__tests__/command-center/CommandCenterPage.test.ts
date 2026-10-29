@@ -554,6 +554,16 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     expect(rows[1]!.find('[data-testid="cc-remedial-generate"]').exists()).toBe(false)
   })
 
+  it('lets the topics and the "Jana {Subjek}" label wrap so the table fits the panel (G5-M10 B3-R)', async () => {
+    await mountPage()
+    await openRemedial()
+    const row = all('cc-remedial-row')[0]!.element.closest('tr')!
+    const topic = row.querySelector('td:nth-child(2) > div')!
+    expect(topic.classList.contains('whitespace-normal')).toBe(true)
+    const generate = all('cc-remedial-generate')[0]!.classes()
+    expect(generate).toEqual(expect.arrayContaining(['whitespace-normal', 'text-start', 'h-auto']))
+  })
+
   it('shows "Selesai ({x}%)" for a completed test and still offers "Jana {Subjek}" @provisional UNVERIFIED COPY', async () => {
     api.fetchRemedialScan.mockResolvedValue({
       weakStudents: [SCAN.weakStudents[1]!],
