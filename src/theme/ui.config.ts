@@ -275,6 +275,9 @@ export const uiConfig = {
       container: 'min-h-11 min-w-11 justify-center',
       // Borders are transparent (layers, not lines): an unchecked box needs its own fill to show.
       base: "relative overflow-visible rounded-xs bg-accented transition-colors duration-fast after:absolute after:-inset-2.5 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
+      // The wrapper (label + description) is as tall as the 44px box row and centres its content on it, so a one-line
+      // label sits on the box's centre; a multi-line label grows the wrapper and still starts at the top of the row.
+      wrapper: 'flex min-h-11 flex-col justify-center',
       label: 'text-label',
       description: 'text-caption text-muted',
     },
