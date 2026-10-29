@@ -27,6 +27,7 @@
 
 import type { RouteLocationNormalized, RouteLocationRaw, Router } from 'vue-router'
 
+import { formatTabTitle } from '@/composables/tabTitle'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { useFlashStore } from '@/stores/flash'
 import { useNotificationBadgeStore } from '@/stores/notification-badge'
@@ -187,7 +188,7 @@ export function runAfterNavigation(to: RouteLocationNormalized): void {
   pageMeta.reset()
 
   const title = titleFor(to)
-  if (title !== null && typeof document !== 'undefined') document.title = title
+  if (title !== null && typeof document !== 'undefined') document.title = formatTabTitle(title)
 
   useFlashStore().consume()
   useShellStore().closeOverlays()

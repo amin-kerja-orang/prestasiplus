@@ -55,6 +55,7 @@ import {
 import { FRIEND_OPTIONS, useFriend } from '@/composables/useFriend'
 import { LG_QUERY, useMediaQuery } from '@/shells/admin/useMinWidth'
 import ModPelajarBanner from '@/shells/shared/ModPelajarBanner.vue'
+import { useShellTabTitle } from '@/shells/shared/useShellTabTitle'
 import { useSessionStore } from '@/stores/session'
 import { useExclusiveSheets } from './useExclusiveSheets'
 import { useShellUser } from './useShellUser'
@@ -124,6 +125,7 @@ const sectionTabs = computed(() =>
   groupTabs(sidebar.value, current.value?.id).map((t) => ({ key: t.id, label: t.label, to: t.to })),
 )
 const title = computed(() => route.meta.header?.title ?? current.value?.label ?? '')
+useShellTabTitle(title)
 const crumb = computed(() => {
   const c = current.value ? sectionOf(sidebar.value, current.value.id) : ''
   return c && c !== title.value ? c : ''

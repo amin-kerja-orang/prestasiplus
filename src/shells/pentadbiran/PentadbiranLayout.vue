@@ -23,6 +23,7 @@ import { PENTADBIRAN_MENU, activeItem, groupOf } from './menu'
 import { groupTintClass } from './group-accent'
 import { buildNavItems, buildSearchGroups, sectionTabs } from './menu-nav'
 import { enterModPelajar } from '@/shells/shared/mod-pelajar'
+import { useShellTabTitle } from '@/shells/shared/useShellTabTitle'
 
 const route = useRoute()
 // The navbar prints the page title (h1), so DsPageHeader leaves its own out.
@@ -43,6 +44,7 @@ const title = computed(() => {
   if (header?.title) return header.title
   return current.value?.label ?? 'Pentadbiran'
 })
+useShellTabTitle(title)
 const crumb = computed(() => {
   const g = activeGroupDef.value
   return g && g.label !== title.value ? g.label : ''

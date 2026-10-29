@@ -26,8 +26,8 @@ const MODULE = { tag: [moduleTag(17)] }
 const ADMIN = 'admin@demo.test'
 const SCHOOL_ADMIN = 'adminsekolah@demo.test'
 const TEACHER = 'guru@demo.test'
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const CC = '/admin/command-center'
 const SA = '/admin-sekolah/command-center'
 const LIVE = 'GET /api/admin/command-center/live-data'
@@ -150,7 +150,7 @@ test.describe('S2 admin', MODULE, () => {
     mock,
   }) => {
     await openBoard(page, gotoApp, CC)
-    await expectTabTitle(page, 'PRESTASIPLUS COMMAND CENTER')
+    await expectTabTitle(page, 'COMMAND CENTER | PRESTASIPLUS')
     await expect(tid(page, 'shell-admin-sidebar')).toHaveCount(0)
     await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
     await expect(tid(page, 'cc-s2-back')).toHaveText('← Dashboard')
@@ -388,7 +388,7 @@ test.describe('S3 admin', MODULE, () => {
     gotoApp,
   }) => {
     await open(page, gotoApp, `${CC}/daily-activity?period=week`)
-    await expectTabTitle(page, 'AKTIVITI PLATFORM — PRESTASIPLUS')
+    await expectTabTitle(page, 'AKTIVITI PLATFORM | PRESTASIPLUS')
     await expect(tid(page, 'shell-admin-sidebar')).toHaveCount(0)
     // v2: the shell title is "PrestasiPlus Command Center"; the live "AKTIVITI PLATFORM" is the subtitle in normal case.
     await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
@@ -557,7 +557,7 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
     gotoApp,
   }) => {
     await openBoard(page, gotoApp, SA)
-    await expectTabTitle(page, 'PRESTASIPLUS COMMAND CENTER')
+    await expectTabTitle(page, 'COMMAND CENTER | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-sidebar')).toHaveCount(0)
     await expect(tid(page, 'cc-s2-subtitle')).toHaveText('Pemantauan langsung sekolah anda')
     await expect(tid(page, 'cc-kpi-sub').nth(3)).toHaveText('sekolah anda')
@@ -687,7 +687,7 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
     async ({ page, gotoApp }) => {
       await gotoApp(`${SA}/daily-activity`)
       await expect(tid(page, 'cc-pulse-value').first()).not.toHaveText('-')
-      await expectTabTitle(page, 'AKTIVITI SEKOLAH — PRESTASIPLUS')
+      await expectTabTitle(page, 'AKTIVITI SEKOLAH | PRESTASIPLUS')
       await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
       await expect(tid(page, 'cc-s3-subtitle')).toHaveText('Aktiviti Sekolah')
       await expect(tid(page, 'cc-s3-back')).toHaveAttribute('href', SA)

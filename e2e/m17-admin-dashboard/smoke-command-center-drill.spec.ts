@@ -20,7 +20,7 @@ import {
 } from '../support'
 
 const MODULE = { tag: [moduleTag(17)] }
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const CC = '/admin/command-center'
 
 test.use({ mockInit: { latency: 0 } })

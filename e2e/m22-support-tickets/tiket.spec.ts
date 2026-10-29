@@ -96,7 +96,7 @@ test.describe('S1 list', MODULE, () => {
       test.skip(viewportWidth(page) < 1280, 'sidebar at 1280 only')
       await loginAs(PELAJAR2)
       await openS1(page, gotoApp)
-      await expectTabTitle(page, 'Tiket Bantuan - PRESTASIPLUS')
+      await expectTabTitle(page, 'Tiket Bantuan | PRESTASIPLUS')
       await expect(
         page.getByTestId('shell-user-sidebar').locator('[data-nav-id="tiket-bantuan"]'),
       ).toHaveClass(/\bactive\b/)
@@ -470,7 +470,7 @@ test.describe('S2 queue', MODULE, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(ADMIN)
       await openS2(page, gotoApp)
-      await expectTabTitle(page, 'Tiket Sokongan - PRESTASIPLUS')
+      await expectTabTitle(page, 'Tiket Sokongan | PRESTASIPLUS')
     },
   )
 

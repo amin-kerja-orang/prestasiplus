@@ -34,8 +34,8 @@ const FORBIDDEN_COPY =
   'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.'
 const NOT_FOUND_COPY =
   'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?'
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
 
 test.use({ mockInit: { latency: 0 } })
@@ -207,7 +207,7 @@ test.describe('shell, header', MODULE, () => {
       await open(page, gotoApp)
       await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Sekolah')
       await expect(page.getByTestId('shell-user-subtitle')).toHaveText('SMK Demo Seri Putra')
-      await expectTabTitle(page, 'Dashboard Sekolah - PRESTASIPLUS')
+      await expectTabTitle(page, 'Dashboard Sekolah | PRESTASIPLUS')
       expect(
         decodeURIComponent(
           (await page.getByTestId('shell-user-header-avatar').getAttribute('src')) ?? '',

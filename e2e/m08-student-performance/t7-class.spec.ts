@@ -11,8 +11,8 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag } from '../support'
 
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const header = (page: Page) => ({
   title: page.getByTestId('shell-user-title'),

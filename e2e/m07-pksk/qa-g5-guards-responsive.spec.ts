@@ -20,7 +20,7 @@ import {
   viewportWidth,
 } from '../support'
 
-const NOT_FOUND = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const MODULE = { tag: [moduleTag(7)] }
 const LIST = '/admin/pksk/questions'
 const tid = (page: Page, id: string) => page.getByTestId(id)

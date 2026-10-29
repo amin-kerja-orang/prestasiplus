@@ -74,7 +74,7 @@ test.describe('M09 S1 article list', MODULE, () => {
   }) => {
     await gotoApp('/admin/articles')
     await expect(page.getByTestId('admin-article-row').first()).toBeVisible()
-    await expectTabTitle(page, 'Pengurusan Artikel - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Pengurusan Artikel | PRESTASIPLUS')
     await expectHeader(page, 'Pengurusan Artikel', 'Urus artikel dan konten pendidikan')
     if (isDesktopShell(page)) {
       await expect(
@@ -264,7 +264,7 @@ test.describe('M09 S2 create article', MODULE, () => {
   test('SRS §12 #08 the form fields, labels and footer @m09', async ({ page, gotoApp }) => {
     await gotoApp('/admin/articles/create')
     await expect(page.getByTestId('admin-article-form')).toBeVisible()
-    await expectTabTitle(page, 'Tambah Artikel - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Tambah Artikel | PRESTASIPLUS')
     await expectHeader(page, 'Tambah Artikel Baru', 'Cipta artikel pendidikan baharu')
     await expect(page.getByTestId('back-link')).toHaveText('Kembali ke Senarai')
     await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/admin/articles')
@@ -354,7 +354,7 @@ test.describe('M09 S3 edit article', MODULE, () => {
   }) => {
     await gotoApp('/admin/articles/10/edit')
     await expect(page.getByTestId('admin-article-form')).toBeVisible()
-    await expectTabTitle(page, 'Edit Artikel - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Edit Artikel | PRESTASIPLUS')
     await expectHeader(page, 'Edit Artikel', 'Kemaskini artikel')
     await expect(page.getByTestId('article-title')).toHaveValue(/Teknik Pomodoro/)
     await expect(page.getByTestId('article-category')).toHaveValue('TIPS_BELAJAR')
@@ -401,7 +401,7 @@ test.describe('M09 S4 preview article', MODULE, () => {
   test('SRS §12 #13 preview card and the escaped body @m09', async ({ page, gotoApp }) => {
     await gotoApp('/admin/articles/10')
     await expect(page.getByTestId('admin-article-card')).toBeVisible()
-    await expectTabTitle(page, 'Lihat Artikel - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Lihat Artikel | PRESTASIPLUS')
     await expect(page.getByTestId('shell-admin-title')).toContainText('Teknik Pomodoro')
     await expect(page.getByTestId('shell-admin-subtitle')).toHaveText('Paparan artikel')
     await expect(page.getByTestId('preview-author')).toHaveText('Admin Demo')
@@ -445,7 +445,7 @@ test.describe('M09 S5 note list', MODULE, () => {
   test('SRS §12 #28 default list @m09', async ({ page, gotoApp }) => {
     await gotoApp('/admin/notes')
     await expect(page.getByTestId('admin-note-row').first()).toBeVisible()
-    await expectTabTitle(page, 'Pengurusan Nota - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Pengurusan Nota | PRESTASIPLUS')
     await expectHeader(page, 'Pengurusan Nota', 'Urus nota pembelajaran dan sumber belajar')
     await expect(page.getByTestId('admin-notes-count')).toHaveText('Jumlah: 10 nota')
     await expect(page.getByTestId('admin-notes-add')).toHaveText('Tambah Nota')
@@ -557,7 +557,7 @@ test.describe('M09 S6/S7 note form (DV-M09-01)', MODULE, () => {
     await gotoApp('/admin/notes/create')
     await expect(page.getByTestId('admin-note-form')).toBeVisible()
     await expect(page.getByText('Ralat Pelayan')).toHaveCount(0)
-    await expectTabTitle(page, 'Tambah Nota - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Tambah Nota | PRESTASIPLUS')
     await expectHeader(page, 'Tambah Nota', 'Cipta nota baharu')
     await expect(page.getByTestId('back-link')).toHaveText('Kembali ke Senarai')
     await expect(page.getByTestId('note-subject').locator('option')).toHaveText([
@@ -626,7 +626,7 @@ test.describe('M09 S6/S7 note form (DV-M09-01)', MODULE, () => {
     await expect(page.getByTestId('admin-note-card')).toBeVisible()
     await page.getByTestId('preview-edit').click()
     await expect(page).toHaveURL(/\/admin\/notes\/1\/edit$/)
-    await expectTabTitle(page, 'Edit Nota - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Edit Nota | PRESTASIPLUS')
     await expectHeader(page, 'Edit Nota', 'Kemaskini nota')
     await expect(page.getByTestId('note-title')).toHaveValue(/Sifir 1 hingga 12/)
     await expect(page.getByTestId('note-subject')).toHaveValue('matematik')
@@ -647,7 +647,7 @@ test.describe('M09 S8 preview note', MODULE, () => {
   }) => {
     await gotoApp('/admin/notes/1')
     await expect(page.getByTestId('admin-note-card')).toBeVisible()
-    await expectTabTitle(page, 'Lihat Nota - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Lihat Nota | PRESTASIPLUS')
     await expect(page.getByTestId('shell-admin-title')).toContainText('Sifir 1 hingga 12')
     await expect(page.getByTestId('shell-admin-subtitle')).toHaveText('Paparan nota')
     await expect(page.getByTestId('preview-author')).toHaveText('Admin Demo')

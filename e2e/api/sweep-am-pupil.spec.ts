@@ -26,7 +26,7 @@ import type { Page } from '@playwright/test'
 import { expect, loginViaUi, test } from '../fixtures/api'
 import { account, expectNoHScroll } from './helpers'
 
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const ALREADY_JOINED = 'Anda sudah menyertai kelas ini.'
 const JOINED_CODE = process.env.SWP_JOINED_CODE || 'DEMO4S'
 const JOINED_CLASS_NAME = process.env.SWP_JOINED_CLASS_NAME || 'Kelas Demo Tingkatan 4'

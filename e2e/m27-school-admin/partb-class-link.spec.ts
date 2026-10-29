@@ -7,7 +7,7 @@
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle } from '../support'
 
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 test.describe('M27 Part B class link (school admin 900001)', () => {
   test.use({ mockInit: { latency: 0 } })

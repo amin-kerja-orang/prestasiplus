@@ -38,7 +38,7 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
     }) => {
       await loginAs(who)
       await gotoApp('/practice/chapter')
-      await expectTabTitle(page, 'Soalan by Chapter - PRESTASIPLUS')
+      await expectTabTitle(page, 'Soalan by Chapter | PRESTASIPLUS')
       await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
       await expect(tid(page, 'shell-user-subtitle')).toHaveText(
         'Latihan tersusun ikut bab buku teks dan DSKP',
@@ -52,7 +52,7 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
 
       await tid(page, 'chapter-subject-MATH').click()
       await expect(page).toHaveURL(/\/practice\/chapter\/MATH$/)
-      await expectTabTitle(page, 'Chapter Matematik - PRESTASIPLUS')
+      await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
       await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Matematik')
       await expect(tid(page, 'chapter-subject-name')).toHaveText('Matematik')
@@ -70,7 +70,7 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
     await expect(page).toHaveURL(/\/practice\/chapter\/MATH\/1\/quiz\?count=5$/)
     await expect(tid(page, 'quiz-title')).toContainText('Bab 1:')
     await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
-    await expectTabTitle(page, 'Chapter Matematik - PRESTASIPLUS')
+    await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
     await expectNoHorizontalScroll(page)
   })
 
@@ -103,7 +103,7 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/practice/revision')
-    await expectTabTitle(page, 'Soalan Aku Salah — PRESTASIPLUS')
+    await expectTabTitle(page, 'Soalan Aku Salah | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Aku Salah')
     await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
     await expect(tid(page, 'revision-total')).toContainText('soalan perlu diulang kaji')
@@ -131,7 +131,7 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
     }) => {
       await loginAs(PELAJAR)
       await gotoApp(path)
-      await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+      await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     })
   }
 })

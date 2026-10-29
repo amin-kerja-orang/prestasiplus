@@ -39,7 +39,7 @@ test.describe('M06 S2 databank', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/tahun-lepas')
-    await expectTabTitle(page, 'Databank Soalan SPM - PRESTASIPLUS')
+    await expectTabTitle(page, 'Databank Soalan SPM | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Databank Soalan SPM')
     if (isDesktopShell(page)) {
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
@@ -165,7 +165,7 @@ test.describe('M06 S3 latih tubi', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/latih-tubi')
-    await expectTabTitle(page, 'Latih Tubi SPM - PRESTASIPLUS')
+    await expectTabTitle(page, 'Latih Tubi SPM | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi SPM')
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-heading')).toHaveText('Latih Tubi SPM')

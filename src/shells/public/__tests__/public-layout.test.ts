@@ -192,9 +192,9 @@ describe('PublicLayout: guest on /artikel (FR-M09-29, FR-M09-31)', () => {
 
   it('shows the route guest title over the route title, also on query changes', async () => {
     await open('/artikel')
-    expect(document.title).toBe('Artikel — PRESTASIPLUS')
+    expect(document.title).toBe('Artikel | PRESTASIPLUS')
     await go('/artikel?page=2')
-    expect(document.title).toBe('Artikel — PRESTASIPLUS')
+    expect(document.title).toBe('Artikel | PRESTASIPLUS')
   })
 })
 
@@ -212,7 +212,7 @@ describe('PublicLayout: guest on /video (FR-M09-82)', () => {
     expect(decorations(w)).toEqual(['🎬', '📚', '🎯', '🚀', '🎓'])
     expect(decorations(w)).toEqual(PUBLIC_SECTIONS.video.cta.decorations)
     expect(w.get('[data-testid="public-layout-footer"]').findAll('a')).toHaveLength(5)
-    expect(document.title).toBe('Video Pembelajaran — PRESTASIPLUS')
+    expect(document.title).toBe('Video Pembelajaran | PRESTASIPLUS')
   })
 })
 
@@ -224,7 +224,7 @@ describe('PublicLayout: navigation and other paths', () => {
     expect(w.get('[data-layout="public"]').element).toBe(el)
     expect(section(w)).toEqual(['🎬', 'Video'])
     expect(w.get('[data-testid="public-layout-cta"] h2').text()).toBe('Nak Tonton Lebih Banyak?')
-    expect(document.title).toBe('Video Pembelajaran — PRESTASIPLUS')
+    expect(document.title).toBe('Video Pembelajaran | PRESTASIPLUS')
     expect(w.find('[data-testid="video"]').exists()).toBe(true)
   })
 
@@ -232,16 +232,16 @@ describe('PublicLayout: navigation and other paths', () => {
     const w = await open('/artikel/tips-belajar')
     expect(section(w)).toEqual(['📰', 'Artikel'])
     expect(w.find('[data-testid="artikel-detail"]').exists()).toBe(true)
-    expect(document.title).toBe(DETAIL_TITLE)
+    expect(document.title).toBe(`${DETAIL_TITLE} | PRESTASIPLUS`)
   })
 
   it('mounted on /artikel, then /artikel/x: the page setTitle wins over the guest title', async () => {
     const w = await open('/artikel')
-    expect(document.title).toBe('Artikel — PRESTASIPLUS')
+    expect(document.title).toBe('Artikel | PRESTASIPLUS')
     await go('/artikel/x')
     expect(w.find('[data-testid="artikel-detail"]').exists()).toBe(true)
     expect(section(w)).toEqual(['📰', 'Artikel'])
-    expect(document.title).toBe(DETAIL_TITLE)
+    expect(document.title).toBe(`${DETAIL_TITLE} | PRESTASIPLUS`)
   })
 
   it('another public-or-user path: no section label and no CTA, route title kept', async () => {
@@ -250,7 +250,7 @@ describe('PublicLayout: navigation and other paths', () => {
     expect(w.find('[data-testid="public-layout-section"]').exists()).toBe(false)
     expect(w.find('[data-testid="public-layout-cta"]').exists()).toBe(false)
     expect(w.find('[data-testid="public-layout-footer"]').exists()).toBe(true)
-    expect(document.title).toBe('Lain')
+    expect(document.title).toBe('Lain | PRESTASIPLUS')
   })
 })
 

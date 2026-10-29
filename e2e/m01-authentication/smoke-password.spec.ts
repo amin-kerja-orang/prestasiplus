@@ -20,7 +20,7 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/password/reset')
-    await expectTabTitle(page, 'Lupa Kata Laluan - PRESTASIPLUS')
+    await expectTabTitle(page, 'Lupa Kata Laluan | PRESTASIPLUS')
     await expect(page.getByRole('heading', { name: 'Lupa Kata Laluan?' })).toBeVisible()
     await expect(
       page.getByText('Masukkan email anda dan kami akan hantar pautan untuk reset kata laluan.'),
@@ -76,7 +76,7 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     expect(token).toBeTruthy()
 
     await gotoApp(`/password/reset/${token ?? ''}?email=${encodeURIComponent(STUDENT)}`)
-    await expectTabTitle(page, 'Reset Kata Laluan - PRESTASIPLUS')
+    await expectTabTitle(page, 'Reset Kata Laluan | PRESTASIPLUS')
     await expect(page.getByRole('heading', { name: 'Reset Kata Laluan' })).toBeVisible()
     await expect(page.getByTestId('reset-email')).toHaveValue(STUDENT)
     await expect(page.getByTestId('auth-footer')).toContainText('© 2026 PRESTASIPLUS.')
@@ -149,7 +149,7 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/password/reset-ic')
-    await expectTabTitle(page, 'Reset Kata Laluan (No IC) - PRESTASIPLUS')
+    await expectTabTitle(page, 'Reset Kata Laluan (No IC) | PRESTASIPLUS')
     await expect(page.getByRole('heading', { name: 'Reset Melalui No IC' })).toBeVisible()
     await expect(page.getByTestId('ic-number')).toHaveAttribute('maxlength', '14')
     await expect(page.getByTestId('auth-footer')).toContainText('© 2026 PRESTASIPLUS.')

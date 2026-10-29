@@ -11,7 +11,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, viewportWidth } from '../support'
 
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
@@ -45,7 +45,7 @@ test.describe('M08 T3 S16 / S17 admin', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/timeline')
     await expect(page.getByTestId('timeline-empty')).toContainText('Timeline Kosong')
-    await expectTabTitle(page, 'Timeline Saya - PRESTASIPLUS')
+    await expectTabTitle(page, 'Timeline Saya | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title')).toHaveText('Timeline Saya')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
       'Kongsi pencapaian & cerita anda',
@@ -279,7 +279,7 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/pelajar/1')
     await expect(page.getByTestId('name')).toHaveText('Admin Demo')
     await expect(page).toHaveURL(/\/pelajar\/1$/)
-    await expectTabTitle(page, 'Admin Demo — Pelajar PRESTASIPLUS')
+    await expectTabTitle(page, 'Admin Demo — Pelajar | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title')).toHaveCount(0)
 
     await expect(page.getByTestId('logo')).toHaveText('PRESTASIPLUS')
