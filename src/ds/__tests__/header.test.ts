@@ -185,6 +185,22 @@ describe('DsPillNav', () => {
     await b.trigger('click')
     expect(w.emitted('select')?.[0]).toEqual(['b'])
   })
+  it('wrap is opt-in: flex-wrap without overflow-x-auto; default keeps the swipe strip', () => {
+    const row = (props: Record<string, unknown>) =>
+      mount(DsPillNav, {
+        props: { items, active: 'a', label: 'Tempoh', ...props },
+        global: { plugins: [makeRouter()] },
+      }).get('[data-ds="pill-nav"] > div')
+    const plain = row({})
+    expect(plain.classes()).toContain('overflow-x-auto')
+    expect(plain.classes()).not.toContain('flex-wrap')
+    expect(plain.attributes('class')).toBe(
+      'flex w-fit max-w-full gap-1 overflow-x-auto rounded-md bg-elevated p-1',
+    )
+    const wrapped = row({ wrap: true })
+    expect(wrapped.classes()).toContain('flex-wrap')
+    expect(wrapped.classes()).not.toContain('overflow-x-auto')
+  })
   it('links: aria-current on the active one, no select', async () => {
     const w = mount(DsPillNav, {
       props: {

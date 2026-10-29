@@ -658,6 +658,15 @@ describe('S3 Detail Sekolah', () => {
     expect(all('mon-student-row')).toHaveLength(4)
   })
 
+  it('both S3 pill rows wrap instead of swiping (SRS §10, G5-M11 bug 10)', async () => {
+    await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8080', { schoolId: 8080 })
+    for (const id of ['mon-student-pills', 'mon-teacher-pills']) {
+      const row = tid(id)?.get('[data-ds="pill-nav"] > div') ?? tid(id)?.find('div')
+      expect(row?.classes()).toContain('flex-wrap')
+      expect(row?.classes()).not.toContain('overflow-x-auto')
+    }
+  })
+
   it('search combines with the pill and works for a name with an apostrophe (DV-M11-18)', async () => {
     await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8080', { schoolId: 8080 })
     await tid('mon-student-search')?.setValue("nur'ain")
