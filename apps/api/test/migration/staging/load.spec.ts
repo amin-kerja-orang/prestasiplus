@@ -158,6 +158,22 @@ describe('loader strictness', () => {
     expect(result.tables.find((t) => t.table === 'schools')?.absent).toBe(false)
   })
 
+  it('warns, by name only, about a spec column that no row carried (it is NULL on every row, not a source value)', async () => {
+    const warnings: string[] = []
+    const log = { info: () => undefined, warn: (m: string) => void warnings.push(m) }
+    // `name` is carried (null counts as carried); every other schools column is absent from the input.
+    const result = await run({ schools: [{ id: 1, name: null, code: 'SECRET-CODE-1' }] }, { log })
+    const schools = result.tables.find((t) => t.table === 'schools')
+    expect(schools?.missingColumns).toContain('join_code')
+    expect(schools?.missingColumns).not.toContain('name')
+    expect(schools?.missingColumns).not.toContain('code')
+    const line = warnings.find((w) => w.startsWith('Table schools: the input carries no column'))
+    expect(line).toBeDefined()
+    expect(line).toContain('join_code')
+    expect(line).toContain('holds NULL there on every row')
+    expect(warnings.join('\n')).not.toContain('SECRET-CODE-1')
+  })
+
   it('rejects a bad manifest: unknown table, non-object entry, path-like file name, wrong format', async () => {
     const dir = tempDir()
     try {

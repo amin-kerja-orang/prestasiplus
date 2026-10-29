@@ -16,7 +16,7 @@ import { registerMigrateCommand, withSourceLock, type CliContext, type CommandAr
 import { ApplyGuardError } from '../../kit/apply-guard'
 import { resolveGitSha } from '../git-sha'
 import { prepareOutputDir, ProfileOutputError } from '../../profile'
-import { eligibleGuard, runQuestions } from './index'
+import { chapterCoverageWarning, eligibleGuard, runQuestions } from './index'
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 const KNOWN_FLAGS: ReadonlySet<string> = new Set(['as-of', 'core-as-of', 'batch-size', 'out-dir'])
@@ -79,6 +79,8 @@ export const migrateQuestions: MigrateCommand = {
     for (const r of report.recon) ctx.out(`${r.entity} | ${r.sourceCount} | ${r.eligibleCount} | ${r.loaded} | ${r.rejected} | ${r.status}`)
     const notes = [...questions.notes.counters].sort(([a], [b]) => (a < b ? -1 : 1))
     for (const [name, n] of notes) ctx.out(`note ${name}: ${n}`)
+    const chapterWarning = chapterCoverageWarning(report, questions.notes.counters)
+    if (chapterWarning !== null) ctx.out(`warning: ${chapterWarning}`)
     const rejects = await ctx.pool.query<{ reason: string; column_name: string | null; n: number }>(
       `SELECT reason, column_name, count(*)::int AS n FROM etl_rejects WHERE run_id = $1 GROUP BY reason, column_name ORDER BY reason, column_name`,
       [report.runId],
@@ -87,7 +89,7 @@ export const migrateQuestions: MigrateCommand = {
     // Counts only: no question text, no row, no id.
     writeFileSync(
       file,
-      `${JSON.stringify({ command: 'migrate:questions', runId: report.runId, mode: report.mode, status: report.status, asOf, recon: report.recon, counters: report.counters, resumedBatches: report.resumedBatches, notes: Object.fromEntries(notes), rejects: rejects.rows.map((r) => ({ reason: r.reason, cause: r.column_name, count: r.n })) }, null, 2)}\n`,
+      `${JSON.stringify({ command: 'migrate:questions', runId: report.runId, mode: report.mode, status: report.status, asOf, recon: report.recon, counters: report.counters, resumedBatches: report.resumedBatches, notes: Object.fromEntries(notes), warnings: chapterWarning === null ? [] : [chapterWarning], rejects: rejects.rows.map((r) => ({ reason: r.reason, cause: r.column_name, count: r.n })) }, null, 2)}\n`,
       { encoding: 'utf8', mode: 0o600, flag: 'wx' },
     )
     ctx.out(`report: ${file}`)

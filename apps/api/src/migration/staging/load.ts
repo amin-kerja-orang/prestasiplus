@@ -7,7 +7,8 @@
  * Strictness (no guessing, plan 14.1 item 3):
  *   - a row column that is not in the DDL fails the load (listing column names) unless
  *     `allowExtraColumns`, because `jsonb_populate_recordset` would otherwise drop it silently;
- *   - rows read must equal the manifest count, and the final `count(*)` must equal rows read.
+ *   - rows read must equal the manifest count, and the final `count(*)` must equal rows read;
+ *   - a spec column that no row carried is warned about (names only): it is NULL on every row.
  * Messages carry table names, column names, counts and SQLSTATE codes only: never a row value
  * (a driver message such as `invalid input syntax for type bigint: "..."` is not forwarded).
  */
@@ -158,6 +159,11 @@ async function loadTable(
   }
   if (result.extraColumns.length > 0) {
     opts.log.warn(`Table ${spec.name}: dropped input columns ${describeNames(result.extraColumns)}.`)
+  }
+  // A spec column that no row carried is NULL on every row, and the DDL still has it, so a reader's column check passes.
+  // Say so (names only): the dump omitted it (`spec_columns_missing_in_source`, or not granted), it is not a source value.
+  if (result.missingColumns.length > 0) {
+    opts.log.warn(`Table ${spec.name}: the input carries no column ${describeNames(result.missingColumns)}; ${target} holds NULL there on every row.`)
   }
   return result
 }

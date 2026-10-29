@@ -44,6 +44,25 @@ export function eligibleGuard(report: Pick<RunReport, 'recon'>): string | null {
   return null
 }
 
+/**
+ * A warning (never a failure) when loaded questions carry no chapter: their archive row has neither `chapter_id` nor `topic_id`
+ * (`chapter_missing`), or has one that the core id maps do not know (`chapter_unmapped`). Such a question serves every subject
+ * and level draw, but chapter-mode practice, a chapter mission and the chapter heatmap never offer it. Counts only. Null when
+ * every new question has a chapter (or nothing was inserted, as on a no-op re-run).
+ */
+export function chapterCoverageWarning(report: Pick<RunReport, 'recon'>, counters: ReadonlyMap<string, number>): string | null {
+  const missing = counters.get('questions.chapter_missing') ?? 0
+  const unmapped = counters.get('questions.chapter_unmapped') ?? 0
+  if (missing + unmapped === 0) return null
+  const loaded = report.recon.find((x) => x.entity === 'questions')?.loaded ?? 0
+  return (
+    `${missing + unmapped} of ${loaded} new question(s) have no chapter (chapter_missing ${missing}: the archive row has no chapter_id and no topic_id; ` +
+    `chapter_unmapped ${unmapped}: its chapter_id is not in the migrate:core id map). They serve subject and level draws only: chapter-mode practice, ` +
+    'chapter missions and the chapter heatmap do not offer them. If staging:load warned "Table questions: the input carries no column chapter_id" ' +
+    'the dump omitted the column (re-run dump:grants and re-stage); otherwise .cloud holds no chapter for them (runbook section 12, migrate:questions).'
+  )
+}
+
 export interface QuestionsRunOptions extends Omit<QuestionsOptions, 'pool'> {
   pool: pg.Pool
   mode: RunMode
