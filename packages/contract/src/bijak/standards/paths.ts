@@ -26,6 +26,7 @@ import {
   BijakEvidenceValuesSchema,
   BijakPoolPreviewQuerySchema,
   BijakPoolPreviewSchema,
+  BijakSectionReviewInputSchema,
   BijakPoolPreviewSectionSchema,
   BijakVerificationCheckSchema,
   BijakVerificationFailedErrorSchema,
@@ -97,6 +98,7 @@ export const BIJAK_STANDARDS_COMPONENT_SCHEMAS: Record<string, z.ZodType> = {
   BijakPoolPreviewSection: BijakPoolPreviewSectionSchema,
   BijakPoolPreview: BijakPoolPreviewSchema,
   BijakPoolPreviewQuery: BijakPoolPreviewQuerySchema,
+  BijakSectionReviewInput: BijakSectionReviewInputSchema,
   BijakDskpUnit: BijakDskpUnitSchema,
   BijakDskpUnitsQuery: BijakDskpUnitsQuerySchema,
   BijakDraftGenerateRequest: BijakDraftGenerateRequestSchema,
@@ -127,7 +129,10 @@ const BlueprintParams = z.object({
   subject: z.string().min(1).max(32).meta({ description: 'Subject code.', example: 'MAT' }),
   kertas: z.coerce.number().int().min(1).meta({ description: 'Kertas number.', example: 2 }),
 })
-const EvidenceParams = BlueprintParams.extend({ evidenceId: IdSchema })
+const SectionParams = BlueprintParams.extend({
+  position: z.coerce.number().int().min(1).meta({ description: '1-based section position.', example: 1 }),
+})
+const EvidenceParams =BlueprintParams.extend({ evidenceId: IdSchema })
 
 const ROLE_NOTE =
   'Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.'
@@ -283,6 +288,23 @@ export function registerBijakStandardsPaths(registry: OpenAPIRegistry): void {
         z.union([BijakVerificationFailedErrorSchema, ErrorBodySchema]),
         `VERIFICATION_FAILED "${BIJAK_STANDARDS_MESSAGES.verificationFailed}" [PROPOSED] with details.check (every failure), or VALIDATION_ERROR for an invalid body.`,
       ),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/admin/blueprints/{subject}/{kertas}/sections/{position}/review',
+    tags: [BIJAK_STANDARDS_TAG],
+    summary: 'Blueprint: mark a section\'s seeded quota and KBAT values as reviewed (AC-39.9)',
+    description: `Empty strict body {}. Sets reviewed on every quota line and kbatReviewed on the section of the HEAD row, in place, without changing any value and without a new version. Sahkan is refused (UNREVIEWED) while any line or KBAT value is "Belum disemak". 404 NOT_FOUND for an unknown blueprint or section position. 409 CONFLICT "${BIJAK_STANDARDS_MESSAGES.evidenceLocked}" [PROPOSED] when the head is Disahkan (edit through a new version). ${SPEC} ${ROLE_NOTE}`,
+    request: { params: SectionParams, headers: [csrf], body: body(BijakSectionReviewInputSchema) },
+    responses: {
+      200: json(envelopeOf(BijakBlueprintViewSchema), 'The head blueprint with the section marked reviewed.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: err('NOT_FOUND (blueprint or section position).'),
+      409: err(`CONFLICT "${BIJAK_STANDARDS_MESSAGES.evidenceLocked}" [PROPOSED] (the head is Disahkan).`),
+      422: err('VALIDATION_ERROR (the body must be {}).'),
     },
   })
 

@@ -171,6 +171,12 @@ export const BijakVerifyInputSchema = z
   .meta({ id: 'BijakVerifyInput' })
 export type BijakVerifyInput = z.infer<typeof BijakVerifyInputSchema>
 
+/** `POST .../sections/{position}/review` body: empty and strict (AC-39.9). */
+export const BijakSectionReviewInputSchema = z
+  .strictObject({})
+  .meta({ id: 'BijakSectionReviewInput' })
+export type BijakSectionReviewInput = z.infer<typeof BijakSectionReviewInputSchema>
+
 /* ----------------------------------------------------------------------- version history */
 
 export const BijakBlueprintVersionItemSchema = z
