@@ -60,7 +60,10 @@ describe('bijak standards schema (migration 0092_bijak_standards)', () => {
     expect(await cols('blueprints')).toEqual(
       expect.arrayContaining(['notes', 'sub_part_ramp', 'kbat_marks', 'level_share', 'serves_students', 'structure_hash', 'verification_id', 'cognitive_mix']),
     )
-    expect(await cols('question_parts')).toEqual(expect.arrayContaining(['difficulty_tp', 'cognitive_level', 'unit_node_id', 'form_origin']))
+    expect(await cols('question_parts')).toEqual(expect.arrayContaining(['difficulty_tp', 'kbat', 'unit_node_id', 'form_origin']))
+    expect(await cols('question_parts')).not.toContain('cognitive_level')
+    expect(await cols('question_versions')).toEqual(expect.arrayContaining(['kbat', 'tag_review', 'catalogue_version']))
+    expect(await cols('question_versions')).not.toContain('cognitive_level')
     expect(await cols('papers')).toContain('standard_report')
     expect(await cols('blueprint_evidence')).toEqual(expect.arrayContaining(['blueprint_id', 'kind', 'body', 'values', 'origin', 'created_by_id']))
     expect(await cols('blueprint_verifications')).toEqual(expect.arrayContaining(['verified_by_id', 'check_result', 'evidence_snapshot']))
@@ -138,7 +141,7 @@ describe('bijak standards schema (migration 0092_bijak_standards)', () => {
     await rejects(`delete from users where id = ${uid}`) // restrict (verifier stays)
   })
 
-  it('question_parts: leaf-only TP, cognitive level, unit and form, values 1..6 and t1_t3/t4/t5', async () => {
+  it('question_parts: leaf-only TP, KBAT, unit and form; kbat enum with bukan; question kbat without bukan', async () => {
     const q = await one(`insert into questions (source_type) values ('manual') returning id::text`)
     const v = await one(`insert into question_versions (question_id, version_no, status, type, stem_ms) values ($1, 1, 'draft', 'structured', 'Soalan') returning id::text`, [q])
     const part = (pos: number, extra: string) =>
@@ -147,20 +150,32 @@ describe('bijak standards schema (migration 0092_bijak_standards)', () => {
     await part(1, '') // inherits everything
     await part(2, `difficulty_tp=${'6'}`)
     await db.query(
-      `insert into question_parts (question_version_id, position, depth, label, prompt_ms, marks, mode, difficulty_tp, cognitive_level, unit_node_id, form_origin)
-       values ($1, 3, 1, 'c', 'x', 2, 'short_text', 3, 4, $2, 't5')`,
+      `insert into question_parts (question_version_id, position, depth, label, prompt_ms, marks, mode, difficulty_tp, kbat, unit_node_id, form_origin)
+       values ($1, 3, 1, 'c', 'x', 2, 'short_text', 3, 'bukan', $2, 't5')`,
       [v, unitId],
     )
-    for (const bad of ['difficulty_tp=0', 'difficulty_tp=7', 'cognitive_level=0', 'cognitive_level=7', `form_origin='t6'`, 'unit_node_id=999999999']) {
+    for (const bad of ['difficulty_tp=0', 'difficulty_tp=7', `kbat='tinggi'`, `kbat='Menilai'`, `form_origin='t6'`, 'unit_node_id=999999999']) {
       await expect(part(9, bad)).rejects.toThrow()
     }
     // a branch part (mode and marks NULL) never carries the standard tags
     const branch = (col: string, val: string) =>
       db.query(`insert into question_parts (question_version_id, position, depth, label, prompt_ms, ${col}) values ($1, 8, 1, 'b', 'x', ${val})`, [v])
     await expect(branch('difficulty_tp', '3')).rejects.toThrow()
-    await expect(branch('cognitive_level', '3')).rejects.toThrow()
+    await expect(branch('kbat', `'menilai'`)).rejects.toThrow()
     await expect(branch('form_origin', `'t4'`)).rejects.toThrow()
     await expect(branch('unit_node_id', unitId)).rejects.toThrow()
+  })
+
+  it('question_versions: kbat is one of the four levels (no bukan), tag_review defaults false', async () => {
+    const q = await one(`insert into questions (source_type) values ('manual') returning id::text`)
+    const ins = (no: number, kbat: string | null) =>
+      db.query(`insert into question_versions (question_id, version_no, status, type, stem_ms, kbat) values ($1, $2, 'draft', 'mcq', 's', $3)`, [q, no, kbat])
+    await ins(1, null)
+    await ins(2, 'mencipta')
+    await expect(ins(3, 'bukan')).rejects.toThrow()
+    await expect(ins(4, 'rendah')).rejects.toThrow()
+    const r = (await db.query<{ tag_review: boolean; catalogue_version: string | null }>(`select tag_review, catalogue_version from question_versions where question_id = $1 and version_no = 1`, [q]))[0]
+    expect(r).toEqual({ tag_review: false, catalogue_version: null })
   })
 
   it('papers.standard_report is nullable JSONB', async () => {
@@ -171,7 +186,7 @@ describe('bijak standards schema (migration 0092_bijak_standards)', () => {
 })
 
 /** The upgrade path: data that exists BEFORE 0092 (backfill, downgrade, guard). Runs 0001..0091, seeds rows, then applies 0092. */
-describe('migration 0092 upgrade on existing rows', () => {
+describe('migration 0092 upgrade on existing rows', { timeout: 120_000 }, () => {
   const adminUrl = inject('testDbAdminUrl')
   const names: string[] = []
   const dirs = () =>
@@ -253,6 +268,36 @@ describe('migration 0092 upgrade on existing rows', () => {
       const h = Object.fromEntries((await c.query(`select id::text, structure_hash from blueprints`)).rows.map((r: { id: string; structure_hash: string }) => [r.id, r.structure_hash]))
       expect(h[a]).toBe(h[b]) // label and instruction are cosmetic... version is not hashed either (it is the row identity)
       expect(h[a]).not.toBe(h[d]) // question_count is structural
+    } finally {
+      await c.end()
+    }
+  })
+
+  it('copies cognitive_level 3..6 into kbat (1 and 2 become null), then drops the column', async () => {
+    const c = await preMigratedDb()
+    try {
+      const ids: string[] = []
+      for (const lvl of [1, 2, 3, 4, 5, 6, null]) {
+        const q = (await c.query(`insert into questions (source_type) values ('manual') returning id::text`)).rows[0].id as string
+        await c.query(`insert into question_versions (question_id, version_no, status, type, stem_ms, cognitive_level) values ($1, 1, 'draft', 'mcq', 's', $2)`, [q, lvl])
+        ids.push(q)
+      }
+      await c.query(sql0092)
+      const got = (await c.query(`select kbat from question_versions order by question_id`)).rows.map((r: { kbat: string | null }) => r.kbat)
+      expect(got).toEqual([null, null, 'mengaplikasi', 'menganalisis', 'menilai', 'mencipta', null])
+      const cols = (await c.query(`select column_name from information_schema.columns where table_name = 'question_versions'`)).rows.map((r: { column_name: string }) => r.column_name)
+      expect(cols).not.toContain('cognitive_level')
+    } finally {
+      await c.end()
+    }
+  })
+
+  it('aborts when a migrated (.cloud) question version still holds cognitive_level', async () => {
+    const c = await preMigratedDb()
+    try {
+      const q = (await c.query(`insert into questions (source_type, legacy_source, legacy_id) values ('manual', 'cloud', '1') returning id::text`)).rows[0].id as string
+      await c.query(`insert into question_versions (question_id, version_no, status, type, stem_ms, cognitive_level) values ($1, 1, 'draft', 'mcq', 's', 4)`, [q])
+      await expect(c.query(sql0092)).rejects.toThrow(/cognitive_level/)
     } finally {
       await c.end()
     }

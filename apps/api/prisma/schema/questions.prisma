@@ -156,7 +156,11 @@ model QuestionVersion {
   topicId           BigInt? @map("topic_id")
   /// t1_t3, t4, t5 (check constraint).
   formOrigin        String  @default("t4") @map("form_origin")
-  cognitiveLevel    Int?    @map("cognitive_level") @db.SmallInt
+  /// mengaplikasi, menganalisis, menilai, mencipta (check); NULL = Bukan KBAT (decision A9, design 14).
+  kbat              String?
+  /// true = "Perlu semakan tag": ineligible for Jana Kertas and blocked at Terbit (design 14.1 R-3).
+  tagReview         Boolean @default(false) @map("tag_review")
+  catalogueVersion  String? @map("catalogue_version")
   difficultyTp      Int?    @map("difficulty_tp") @db.SmallInt
   textbookBab       Int?    @map("textbook_bab") @db.SmallInt
   textbookTingkatan Int?    @map("textbook_tingkatan") @db.SmallInt
@@ -259,8 +263,8 @@ model QuestionPart {
   reveal            String   @default("after_submit")
   /// Leaf only. 1..6; NULL = inherit question_versions.difficulty_tp (check; NULL on branch parts).
   difficultyTp      Int?     @map("difficulty_tp") @db.SmallInt
-  /// Leaf only. 1..6 (Mengingat..Mencipta); NULL = inherit question_versions.cognitive_level (check).
-  cognitiveLevel    Int?     @map("cognitive_level") @db.SmallInt
+  /// Leaf only. The four levels or 'bukan' (explicitly not KBAT); NULL = inherit question_versions.kbat (check).
+  kbat              String?
   /// Leaf only. FK -> curriculum_nodes (kind unit), SQL only. NULL = inherit question_versions.unit_node_id.
   unitNodeId        BigInt?  @map("unit_node_id")
   /// Leaf only. t1_t3, t4, t5 (check). NULL = inherit question_versions.form_origin.

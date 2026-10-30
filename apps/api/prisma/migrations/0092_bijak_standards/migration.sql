@@ -20,19 +20,49 @@
 --     DROP COLUMN kbat_reviewed, ADD COLUMN topic_weights JSONB;   -- the column was empty (asserted)
 --   ALTER TABLE blueprints DROP COLUMN notes, sub_part_ramp, kbat_marks, level_share, serves_students,
 --     structure_hash, verification_id;                              -- the verified -> spec downgrade is not undone
---   ALTER TABLE question_parts DROP COLUMN difficulty_tp, cognitive_level, unit_node_id, form_origin;
+--   ALTER TABLE question_parts DROP COLUMN difficulty_tp, kbat, unit_node_id, form_origin;
+--   ALTER TABLE question_versions DROP COLUMN kbat, tag_review, catalogue_version, ADD COLUMN cognitive_level SMALLINT
+--     (+ ck_question_versions_cognitive_level 1..6); the copy back is lossy: only 3..6 were kept, and the numbers 1 and 2 are gone.
 -- (the indexes and CHECKs go with their tables/columns except uq_blueprints_serving, ix_blueprints_verification_id,
 -- ck_blueprints_*: drop those first.)
 
 -- ============================================================================
--- 1. question_parts: TP, cognitive level, unit and form per LEAF part (3.1, 3.1a). NULL = inherit the
---    question_versions value. No backfill: every existing row inherits.
+-- 1. question_parts: TP, KBAT, unit and form per LEAF part (3.1, 3.1a). NULL = inherit the
+--    question_versions value; 'bukan' on a part = explicitly not KBAT. No backfill: every existing row inherits.
+--    question_versions: the KBAT enum (decision A9, design 14.2) replaces the 1..6 cognitive_level.
 -- ============================================================================
 ALTER TABLE "question_parts"
   ADD COLUMN "difficulty_tp" SMALLINT,
-  ADD COLUMN "cognitive_level" SMALLINT,
+  ADD COLUMN "kbat" TEXT,
   ADD COLUMN "unit_node_id" BIGINT,
   ADD COLUMN "form_origin" TEXT;
+
+ALTER TABLE "question_versions"
+  ADD COLUMN "kbat" TEXT,
+  ADD COLUMN "tag_review" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN "catalogue_version" TEXT;
+
+-- Guard: rows migrated from .cloud/.my never carry a cognitive_level (the ETL leaves it empty). Abort rather than
+-- lose a value on such a row; dev/seed rows (no legacy pair) are converted below.
+DO $$
+DECLARE
+  n BIGINT;
+BEGIN
+  SELECT count(*) INTO n FROM "question_versions" v JOIN "questions" q ON q."id" = v."question_id"
+   WHERE v."cognitive_level" IS NOT NULL AND q."legacy_source" IS NOT NULL;
+  IF n > 0 THEN
+    RAISE EXCEPTION '0092_bijak_standards: % migrated question_versions row(s) hold cognitive_level; review before dropping the column', n;
+  END IF;
+END
+$$;
+
+-- 3 Mengaplikasi, 4 Menganalisis, 5 Menilai, 6 Mencipta become kbat; 1 and 2 (Mengingat, Memahami) were never
+-- KBAT and become NULL (= Bukan KBAT).
+UPDATE "question_versions" SET "kbat" = CASE "cognitive_level"
+  WHEN 3 THEN 'mengaplikasi' WHEN 4 THEN 'menganalisis' WHEN 5 THEN 'menilai' WHEN 6 THEN 'mencipta' END
+ WHERE "cognitive_level" >= 3;
+ALTER TABLE "question_versions" DROP CONSTRAINT "ck_question_versions_cognitive_level";
+ALTER TABLE "question_versions" DROP COLUMN "cognitive_level";
 
 -- ============================================================================
 -- 2. blueprints (3.2)
@@ -180,12 +210,14 @@ ALTER TABLE "blueprints" ADD CONSTRAINT "fk_blueprints_verification_id" FOREIGN 
 -- question_parts: 1..6 values, form codes, and "leaf only" (a branch part, mode IS NULL, never carries them).
 ALTER TABLE "question_parts" ADD CONSTRAINT "ck_question_parts_difficulty_tp"
   CHECK ("difficulty_tp" IS NULL OR "difficulty_tp" BETWEEN 1 AND 6);
-ALTER TABLE "question_parts" ADD CONSTRAINT "ck_question_parts_cognitive_level"
-  CHECK ("cognitive_level" IS NULL OR "cognitive_level" BETWEEN 1 AND 6);
+ALTER TABLE "question_parts" ADD CONSTRAINT "ck_question_parts_kbat"
+  CHECK ("kbat" IS NULL OR "kbat" IN ('mengaplikasi', 'menganalisis', 'menilai', 'mencipta', 'bukan'));
+ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_kbat"
+  CHECK ("kbat" IS NULL OR "kbat" IN ('mengaplikasi', 'menganalisis', 'menilai', 'mencipta'));
 ALTER TABLE "question_parts" ADD CONSTRAINT "ck_question_parts_form_origin"
   CHECK ("form_origin" IS NULL OR "form_origin" IN ('t1_t3', 't4', 't5'));
 ALTER TABLE "question_parts" ADD CONSTRAINT "ck_question_parts_standard_leaf_only"
-  CHECK ("mode" IS NOT NULL OR ("difficulty_tp" IS NULL AND "cognitive_level" IS NULL AND "unit_node_id" IS NULL AND "form_origin" IS NULL));
+  CHECK ("mode" IS NOT NULL OR ("difficulty_tp" IS NULL AND "kbat" IS NULL AND "unit_node_id" IS NULL AND "form_origin" IS NULL));
 
 -- blueprints: the verification and serving rules (3.2).
 ALTER TABLE "blueprints" ADD CONSTRAINT "ck_blueprints_verification"
