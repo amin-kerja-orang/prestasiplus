@@ -205,7 +205,11 @@ describe('BJS-08 create and the standard fields', () => {
     expectError(await admin.post(url(999, '/sections/1/review'), {}), 'NOT_FOUND', 404)
     expectError(await admin.post(url(10, '/sections/1/review'), { reviewed: true }), 'VALIDATION_ERROR')
     await verified(30)
-    expectError(await admin.post(url(30, '/sections/1/review'), {}), 'CONFLICT', 409, STD.alreadyVerified)
+    // the Disahkan head is never edited in place: the copy tells the admin to create a new version (AC-39.4)
+    expect(STD.evidenceLocked).toBe('Kontrak Disahkan tidak boleh diubah di tempat. Cipta versi baharu dahulu.')
+    expectError(await admin.post(url(30, '/sections/1/review'), {}), 'CONFLICT', 409, STD.evidenceLocked)
+    // the body is validated by the contract schema before the lock is evaluated for a bad body on a live head
+    expectError(await admin.post(url(10, '/sections/1/review'), { note: 'x' }), 'VALIDATION_ERROR')
   })
 
   it('refuses reviewed flags, the section reviewed flag and Disahkan on write (strict schemas, 422)', async () => {
@@ -530,7 +534,7 @@ describe('BJS-09 verification', () => {
 
   it('409 when already Disahkan; the verification record is insert-only', async () => {
     await verified(46)
-    expectError(await admin.post(url(46, '/verify'), {}), 'CONFLICT', 409, STD.alreadyVerified)
+    expectError(await admin.post(url(46, '/verify'), {}), 'CONFLICT', 409, STD.evidenceLocked)
     expect(await count(t.db, `select count(*) n from blueprint_verifications where blueprint_id = $1`, [(await bpRow('MAT/S46'))?.id])).toBe(1)
     await expect(rows(`update blueprint_verifications set note = 'x' where blueprint_id = $1`, [(await bpRow('MAT/S46'))?.id])).rejects.toThrow()
   })

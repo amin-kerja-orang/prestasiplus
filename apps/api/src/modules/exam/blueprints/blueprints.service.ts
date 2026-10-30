@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { z } from 'zod'
 import {
   BIJAK_BUILDER_MESSAGES as MSG,
   BIJAK_STANDARDS_MESSAGES,
   BijakBlueprintAdminCreateSchema,
   BijakBlueprintAdminVersionInputSchema,
   BijakBlueprintListQuerySchema,
+  BijakSectionReviewInputSchema,
   type BijakBlueprintAdminSectionInput,
   type BijakBlueprintView,
 } from '@pp/contract'
@@ -272,9 +272,9 @@ export class BlueprintsService {
     if (!head) throw notFound()
     const position = /^[1-9]\d{0,3}$/.test(positionText) ? Number(positionText) : 0
     if (!head.sections.some((s) => s.position === position)) throw notFound()
-    const locked409 = () => ApiError.of('CONFLICT', { message: BIJAK_STANDARDS_MESSAGES.alreadyVerified })
+    const locked409 = () => ApiError.of('CONFLICT', { message: BIJAK_STANDARDS_MESSAGES.evidenceLocked })
     if (head.source === 'verified') throw locked409()
-    new ZodValidationPipe(z.strictObject({})).transform(rawBody ?? {})
+    new ZodValidationPipe(BijakSectionReviewInputSchema).transform(rawBody ?? {})
     const row = await this.prisma.transaction(async () => {
       const current = await this.repo.lockActive(subject.id, kertas)
       if (!current) throw notFound()
