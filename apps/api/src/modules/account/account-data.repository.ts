@@ -3,6 +3,10 @@ import type { AccountFaith, AccountSettings } from '@pp/contract'
 
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from '../questions/learner-visibility'
+
+/** Live-version, active, non-PKSK questions of a learner-visible level (secondary-only, D72), the practice draw rule; the predicates have no parameters, so the text is static. */
+export const QUESTION_COUNT_SQL = `SELECT count(*) AS c FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no WHERE q.is_active AND v.status = 'published' AND ${NOT_PKSK_SQL.sql} AND ${LEARNER_LEVEL_SQL.sql}`
 
 export interface ResetRow {
   id: string
@@ -171,7 +175,7 @@ export class AccountDataRepository {
       return Number(rows[0]?.c ?? 0)
     }
     return {
-      questionCount: await count('questions', 'SELECT count(*) AS c FROM questions WHERE live_version_no IS NOT NULL'),
+      questionCount: await count('questions', QUESTION_COUNT_SQL),
       subjectCount: await count('subjects', 'SELECT count(*) AS c FROM subjects WHERE is_active'),
       levelCount: await count('education_levels', 'SELECT count(*) AS c FROM education_levels WHERE is_active'),
     }
