@@ -188,7 +188,7 @@ export type BijakBlueprintVersionItem = z.infer<typeof BijakBlueprintVersionItem
 
 /* ---------------------------------------------------------------------------- pool preview */
 
-export const BIJAK_EXCLUDED_REASONS = ['no_unit', 'no_tp', 'no_cognitive_level', 'no_marks', 'no_key'] as const
+export const BIJAK_EXCLUDED_REASONS = ['no_unit', 'no_tp', 'no_marks', 'no_key', 'tag_review'] as const
 const BankQuery = z.record(z.string(), z.string()).meta({
   description: 'Filters for the "Lihat soalan" link into the Bank Soalan (subject, status=published, missing=...).',
 })

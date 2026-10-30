@@ -59185,7 +59185,7 @@
             ],
             "minimum": 0,
             "maximum": 1000,
-            "description": "Exact KBAT marks of the OFFERED questions of the section (US-37, cognitive level 3 to 6). Absent or null = unconstrained; 0 is a value."
+            "description": "Exact KBAT marks of the OFFERED questions of the section (US-37, parts whose KBAT level is mengaplikasi, menganalisis, menilai or mencipta). Absent or null = unconstrained; 0 is a value."
           },
           "allowedModes": {
             "$ref": "#/components/schemas/BijakAllowedModes"
@@ -60527,9 +60527,9 @@
                       "enum": [
                         "no_unit",
                         "no_tp",
-                        "no_cognitive_level",
                         "no_marks",
-                        "no_key"
+                        "no_key",
+                        "tag_review"
                       ]
                     },
                     "count": {

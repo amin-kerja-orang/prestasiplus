@@ -349,7 +349,7 @@ describe('pool preview and draft generation', () => {
     firstFailure: { section: 'Bahagian A', need: 5, have: 3, kind: 'unit', basis: 'questions', unit: { kind: 'unit', nodeId: '101', code: '1.0', level: 'T4', title: 'Fungsi' } },
     excluded: {
       total: 4,
-      byReason: [{ reason: 'no_cognitive_level', count: 4, bankQuery: { subject: 'MAT', missing: 'cognitive_level' } }],
+      byReason: [{ reason: 'tag_review', count: 4, bankQuery: { subject: 'MAT', missing: 'tag_review' } }],
     },
     warnings: [],
     sections: [
@@ -382,6 +382,15 @@ describe('pool preview and draft generation', () => {
       }).success,
     ).toBe(true)
     expect(BijakPoolPreviewSchema.safeParse({ ...preview, verdict: 'mungkin' }).success).toBe(false)
+    const withReason = (reason: string) =>
+      BijakPoolPreviewSchema.safeParse({
+        ...preview,
+        excluded: { total: 1, byReason: [{ reason, count: 1, bankQuery: {} }] },
+      }).success
+    for (const reason of ['no_unit', 'no_tp', 'no_marks', 'no_key', 'tag_review']) {
+      expect(withReason(reason), reason).toBe(true)
+    }
+    expect(withReason('no_cognitive_level')).toBe(false)
   })
 
   it('parses the draft generate request and rejects unknown keys', () => {

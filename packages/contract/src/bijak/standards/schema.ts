@@ -280,7 +280,7 @@ export const bijakSectionStandardInputShape = {
   }),
   kbatMarks: z.number().int().min(0).max(1000).nullish().meta({
     description:
-      'Exact KBAT marks of the OFFERED questions of the section (US-37, cognitive level 3 to 6). Absent or null = unconstrained; 0 is a value.',
+      'Exact KBAT marks of the OFFERED questions of the section (US-37, parts whose KBAT level is mengaplikasi, menganalisis, menilai or mencipta). Absent or null = unconstrained; 0 is a value.',
   }),
   allowedModes: BijakAllowedModesSchema.optional(),
 }
