@@ -120,6 +120,20 @@ describe('RenewalInvoicePage (M02 S15)', () => {
     vi.unstubAllGlobals()
   })
 
+  it('prints: the invoice is inside the print sheet and the print bar is not', async () => {
+    const w = await render()
+    const sheet = w.get('[data-ds="print-sheet"]')
+    expect(sheet.find('h1').exists()).toBe(true)
+    expect(sheet.find('[data-testid=invoice-table]').exists()).toBe(true)
+    expect(sheet.find('[data-testid=invoice-totals]').exists()).toBe(true)
+    expect(sheet.find('[data-testid=invoice-total]').text()).toBe('RM16,860.00')
+    expect(sheet.find('[data-testid=invoice-toolbar]').exists()).toBe(false)
+    expect(sheet.find('[data-testid=invoice-print]').exists()).toBe(false)
+    expect(
+      w.get('[data-testid=invoice-toolbar]').element.closest('[data-ds="print-sheet"]'),
+    ).toBeNull()
+  })
+
   it('renders the standard 404 outcome, without a red box, for an unknown id', async () => {
     api.fetchRenewalInvoice.mockRejectedValue(
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Not found' }),

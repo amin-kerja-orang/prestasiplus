@@ -5,6 +5,9 @@
  * Invoice" (`window.print()`) and "Kembali" (-> S14) are hidden when printing. The page fits the
  * viewport below 640 px (DV-M02-06: live overflows at 375): header blocks stack and the student table
  * scrolls inside its own container. Payment is offline (D14); nothing is collected here.
+ * The invoice `<main>` carries `data-ds="print-sheet"`, the marker `src/theme/ds-extras.css` keeps visible
+ * when printing (every other element is hidden there). `DsPrintSheet` itself is not used: its theme scope
+ * adds a grey rounded panel and padding that would change the on-screen layout.
  */
 import { computed, watch } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -85,7 +88,11 @@ const TD = 'px-3 py-2 text-sm text-slate-700'
       </RouterLink>
     </div>
 
-    <main class="mx-auto w-full max-w-[794px] px-4 py-8 sm:px-6" data-testid="invoice-sheet">
+    <main
+      class="mx-auto w-full max-w-[794px] px-4 py-8 sm:px-6"
+      data-ds="print-sheet"
+      data-testid="invoice-sheet"
+    >
       <div v-if="error && !isNotFound(error)" class="space-y-3" data-testid="invoice-error">
         <AlertBox :messages="errorLines(error)" />
         <button
