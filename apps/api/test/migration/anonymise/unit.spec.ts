@@ -105,8 +105,7 @@ describe('default deny (AC1)', () => {
       ['banners', 'target', 'null-content'], // A1-LEAK: a link can hold a phone number or an e-mail; v2 keeps no link without a valid http(s) target
       ['articles', 'slug', 'slug-from-id'], // A1-LEAK (LEAD): artikel-<id>, unique because the id is
       ['articles', 'title', 'redact-pii'],
-      ['articles', 'excerpt', 'redact-pii'], // D1 (LEAD 29 Oct): article free text, readable, only PII spans masked
-      ['articles', 'content', 'redact-pii'],
+      ['articles', 'body', 'redact-pii'], // D1 (LEAD 29 Oct): article free text (HTML), readable, only PII spans masked
       ['audio_kbat', 'audio_path', 'pseudonym:path'],
       ['notifications', 'title', 'scrub-text'],
       ['notifications', 'target', 'scrub-text'],

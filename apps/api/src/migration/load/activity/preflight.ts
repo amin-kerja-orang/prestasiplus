@@ -186,13 +186,13 @@ export async function assertCorePreflight(options: PreflightOptions): Promise<nu
 }
 
 /**
- * Staged columns that a step reads by name and that an older staging DDL did not have (D1, LEAD 29 Oct: article `excerpt`
- * and `content`). A stage built from that older DDL makes the read fail with a raw SQL error (42703); this check refuses
+ * Staged columns that a step reads by name and that an older staging DDL did not have (D1, LEAD 29 Oct: article `body`,
+ * the .cloud column of the article HTML; .cloud has no `excerpt` or `content` column). A stage built from that older DDL makes the read fail with a raw SQL error (42703); this check refuses
  * first, names the table and columns, and tells the operator to re-stage. Keyed by the step entity; the staged table is
  * the same name in `staging_cloud`.
  */
 export const STAGED_COLUMNS_NEEDED: Readonly<Record<string, readonly string[]>> = {
-  articles: ['excerpt', 'content'],
+  articles: ['body'],
 }
 
 /**

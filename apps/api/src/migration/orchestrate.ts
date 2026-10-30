@@ -249,7 +249,7 @@ async function runPipeline(o: PipelineOptions): Promise<PipelineResult> {
     status: stages.every((s) => s.status !== 'failed') ? 'succeeded' : 'failed',
   })
 
-  // D1 (LEAD 29 Oct, G4 #399): a stage from an older DDL (no article excerpt / content) is refused before the core
+  // D1 (LEAD 29 Oct, G4 #399): a stage from an older DDL (no article `body`) is refused before the core
   // dry-run, so `migrate:all` and `migrate:delta` stop with exit 2 and write nothing at all (no core run either).
   // `planActivity` keeps the same check for a standalone `migrate:activity`.
   await assertStagedColumns(o.pool, activityStepEntities({ pool: o.pool, env: o.env, source: o.source ?? 'cloud', asOf: o.asOf }))

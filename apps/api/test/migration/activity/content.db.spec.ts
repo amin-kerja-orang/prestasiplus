@@ -2,8 +2,8 @@
  * BE-29 Part B, content group against a real PostgreSQL: articles, banners, notes, videos and Audio KBAT sets.
  *
  * The staging spec does not carry every column the v2 content tables need (note subject and grade, video category, audio
- * level and subject; the lead's Perlu pengesahan rows). Article `content` and `excerpt` are staged (D1, LEAD 29 Oct) but
- * the rows below leave them NULL. Three runs show the three states:
+ * level and subject; the lead's Perlu pengesahan rows). The article `body` (the v2 `content`) is staged (D1, LEAD 29 Oct)
+ * but the rows below leave it NULL. Three runs show the three states:
  *   R1  no content owner:      owner-bound rows are ORPHAN_PARENT (an article whose author does not resolve too);
  *   R2  owner, spec as it is:  the unsourced (or NULL) NOT NULL columns reject the row INVALID_VALUE, never invented;
  *   R3  owner + the missing values injected into the extract (what the steps do once the source has them): rows load,
@@ -114,7 +114,7 @@ beforeAll(async () => {
   r3 = await runApply({
     contentOwnerUserId: ownerV2,
     transformSteps: inject({
-      articles: { '1': { content: '<p>Isi <b>tebal</b></p><script>alert(1)</script><a href="javascript:alert(1)">klik</a>' }, '2': { content: '<p>Isi</p>' }, '3': { content: '<p>Isi</p>' }, '4': { content: '<p>Isi</p>' } },
+      articles: { '1': { body: '<p>Isi <b>tebal</b></p><script>alert(1)</script><a href="javascript:alert(1)">klik</a>' }, '2': { body: '<p>Isi</p>' }, '3': { body: '<p>Isi</p>' }, '4': { body: '<p>Isi</p>' } },
       notes: { '1': { subject: 'matematik', grade: 'Tingkatan 4' }, '2': { subject: 'matematik', grade: 'Tingkatan 4' } },
       videos: Object.fromEntries(['1', '2', '3', '4', '5', '6'].map((id) => [id, { category: 'tutorial' }])),
       audio_kbat_sets: { '1': { education_level_id: level, subject_id: subject }, '2': { education_level_id: level, subject_id: subject } },
@@ -189,23 +189,23 @@ describe('R3: owner and the missing columns present', () => {
 
   it('articles: the owner fallback is counted; without an owner an unresolved author is ORPHAN_PARENT (D1)', () => {
     expect(r3.notes.get('articles.author_from_content_owner')).toBe(1)
-    expect(r2.notes.get('articles.author_from_content_owner')).toBe(0) // id 4 fell back but was rejected on content
+    expect(r2.notes.get('articles.author_from_content_owner')).toBe(0) // id 4 fell back but was rejected on content (NULL body)
     expect(r1.notes.get('articles.author_from_content_owner')).toBe(0)
     expect(n(r1, 'articles', 'ORPHAN_PARENT', 'author_id')).toBe(1) // id 4
   })
 })
 
-describe('a stage from the older DDL (no article excerpt / content) is refused by the preflight (D1)', () => {
-  it('dry-run and apply refuse with PreflightError naming the columns, before any content row is read or written', async () => {
+describe('a stage from the older DDL (no article body) is refused by the preflight (D1)', () => {
+  it('dry-run and apply refuse with PreflightError naming the column, before any content row is read or written', async () => {
     const before = await h.count('articles')
-    await h.q(`alter table staging_cloud.articles drop column excerpt, drop column content`)
+    await h.q(`alter table staging_cloud.articles drop column body`)
     try {
       await expect(h.run('dry-run', { groups, contentOwnerUserId: ownerV2 })).rejects.toBeInstanceOf(PreflightError)
-      await expect(h.run('dry-run', { groups, contentOwnerUserId: ownerV2 })).rejects.toThrow(/staging_cloud\.articles lacks column\(s\) excerpt, content/)
+      await expect(h.run('dry-run', { groups, contentOwnerUserId: ownerV2 })).rejects.toThrow(/staging_cloud\.articles lacks column\(s\) body/)
       await expect(h.run('apply', { groups, contentOwnerUserId: ownerV2 })).rejects.toBeInstanceOf(PreflightError)
       expect(await h.count('articles')).toBe(before)
     } finally {
-      await h.q(`alter table staging_cloud.articles add column excerpt text, add column content text`)
+      await h.q(`alter table staging_cloud.articles add column body text`)
     }
   })
 })

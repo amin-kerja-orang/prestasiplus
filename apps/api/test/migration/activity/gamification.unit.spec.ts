@@ -277,46 +277,49 @@ describe('content', () => {
 
   it('maps the article category to its upper-case code and sets published_at from created_at', () => {
     expect(Object.values(ARTICLE_CATEGORY_MAP)).toContain('PANDUAN_GURU')
-    const out = transformArticle({ ...article, content: '<p>x</p>' }, { authorId: '9' })
+    const out = transformArticle({ ...article, body: '<p>x</p>' }, { authorId: '9' })
     expect(out.ok && out.value).toMatchObject({ category: 'PANDUAN_GURU', grade_level: 'SEMUA', published_at: '2026-01-01T00:00:00Z', author_id: '9', featured_image_file_id: null })
-    const draft = transformArticle({ ...article, is_published: '0', content: 'x' }, { authorId: '9' })
+    const draft = transformArticle({ ...article, is_published: '0', body: 'x' }, { authorId: '9' })
     expect(draft.ok && draft.value.published_at).toBeNull()
   })
 
-  it('rejects an article with no content, an unknown category or an unresolved author', () => {
+  it('rejects an article with no body (INVALID_VALUE on the v2 content), an unknown category or an unresolved author', () => {
     expect(rejectOf(transformArticle(article, { authorId: '9' }))).toBe('INVALID_VALUE:content')
     expect(rejectOf(transformArticle({ ...article, category: 'lain' }, { authorId: '9' }))).toBe('UNKNOWN_ENUM:category')
-    expect(rejectOf(transformArticle({ ...article, content: 'x' }, { authorId: undefined }))).toBe('ORPHAN_PARENT:author_id')
-    expect(rejectOf(transformArticle({ ...article, content: 'x', is_published: 'maybe' }, { authorId: '9' }))).toBe('INVALID_VALUE:is_published')
+    expect(rejectOf(transformArticle({ ...article, body: 'x' }, { authorId: undefined }))).toBe('ORPHAN_PARENT:author_id')
+    expect(rejectOf(transformArticle({ ...article, body: 'x', is_published: 'maybe' }, { authorId: '9' }))).toBe('INVALID_VALUE:is_published')
   })
 
   describe('article author falls back to the content owner (D1, LEAD 29 Oct)', () => {
     it('keeps a resolved author, even when an owner is configured', () => {
-      const out = transformArticle({ ...article, content: 'x' }, { authorId: '9', ownerId: '77' })
+      const out = transformArticle({ ...article, body: 'x' }, { authorId: '9', ownerId: '77' })
       expect(out.ok && out.value.author_id).toBe('9')
       expect(articleAuthor('9', '77')).toEqual({ id: '9', fromOwner: false })
     })
 
     it('uses the content owner when the author does not resolve', () => {
-      const out = transformArticle({ ...article, content: 'x' }, { authorId: undefined, ownerId: '77' })
+      const out = transformArticle({ ...article, body: 'x' }, { authorId: undefined, ownerId: '77' })
       expect(out.ok && out.value.author_id).toBe('77')
       expect(articleAuthor(undefined, '77')).toEqual({ id: '77', fromOwner: true })
     })
 
     it('is ORPHAN_PARENT on author_id only when neither resolves', () => {
-      expect(rejectOf(transformArticle({ ...article, content: 'x' }, { authorId: undefined, ownerId: undefined }))).toBe('ORPHAN_PARENT:author_id')
+      expect(rejectOf(transformArticle({ ...article, body: 'x' }, { authorId: undefined, ownerId: undefined }))).toBe('ORPHAN_PARENT:author_id')
       expect(articleAuthor(undefined, undefined)).toEqual({ id: undefined, fromOwner: false })
     })
 
-    it('the owner does not stand in for missing content: still INVALID_VALUE on content', () => {
+    it('the owner does not stand in for a missing body: still INVALID_VALUE on content', () => {
       expect(rejectOf(transformArticle(article, { authorId: undefined, ownerId: '77' }))).toBe('INVALID_VALUE:content')
     })
 
-    it('keeps the staged excerpt (blank is null) next to the content', () => {
-      const out = transformArticle({ ...article, content: '<p>x</p>', excerpt: 'Ringkasan' }, { authorId: '9' })
-      expect(out.ok && out.value.excerpt).toBe('Ringkasan')
-      const blank = transformArticle({ ...article, content: '<p>x</p>', excerpt: '  ' }, { authorId: '9' })
-      expect(blank.ok && blank.value.excerpt).toBeNull()
+    it('the staged body is the v2 content (sanitised); the excerpt is null (.cloud has none, nothing is derived)', () => {
+      const out = transformArticle({ ...article, body: '<p>Isi <b>x</b></p><script>alert(1)</script>' }, { authorId: '9' })
+      expect(out.ok && out.value.content).toBe('<p>Isi <b>x</b></p>')
+      expect(out.ok && out.value.excerpt).toBeNull()
+      // A stray `excerpt` / `content` key is never read: .cloud has no such column.
+      const stray = transformArticle({ ...article, body: '<p>x</p>', excerpt: 'Ringkasan', content: '<p>lain</p>' }, { authorId: '9' })
+      expect(stray.ok && stray.value).toMatchObject({ excerpt: null, content: '<p>x</p>' })
+      expect(rejectOf(transformArticle({ ...article, body: '  ' }, { authorId: '9' }))).toBe('INVALID_VALUE:content')
     })
   })
 

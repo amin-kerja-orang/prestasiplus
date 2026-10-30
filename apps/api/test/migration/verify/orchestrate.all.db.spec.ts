@@ -133,25 +133,25 @@ describe('source lock', () => {
   }, 120_000)
 })
 
-describe('a stage from the older DDL (no article excerpt / content), D1 / G4 #399', () => {
+describe('a stage from the older DDL (no article body), D1 / G4 #399', () => {
   it('migrate:all --dry-run refuses with PreflightError before the core dry-run: no run row, no id map, nothing written; the CLI exits 2', async () => {
     const before = await h.contentHashes()
     const runsBefore = await h.count('etl_runs')
-    await h.q(`alter table staging_cloud.articles drop column excerpt, drop column content`)
+    await h.q(`alter table staging_cloud.articles drop column body`)
     try {
       const f = fakes()
       await expect(runAll(options({ mode: 'dry-run', ...f }))).rejects.toBeInstanceOf(PreflightError)
-      await expect(runAll(options({ mode: 'apply', ...f }))).rejects.toThrow(/staging_cloud\.articles lacks column\(s\) excerpt, content .*Nothing was written/)
+      await expect(runAll(options({ mode: 'apply', ...f }))).rejects.toThrow(/staging_cloud\.articles lacks column\(s\) body .*Nothing was written/)
       const log = capture()
       const code = await runCli(['migrate:all', '--dry-run', `--as-of=${AS_OF}`, `--out-dir=${outDir}`], { pool: h.env.pool, env: h.runEnv, out: log.out, err: log.err })
       expect(code).toBe(2)
-      expect(log.text()).toContain('Preflight failed: staging_cloud.articles lacks column(s) excerpt, content')
+      expect(log.text()).toContain('Preflight failed: staging_cloud.articles lacks column(s) body')
       expect(f.verify).not.toHaveBeenCalled()
       expect(await h.count('etl_runs')).toBe(runsBefore)
       expect(await h.count('etl_id_map')).toBe(0)
       expect(await h.contentHashes()).toEqual(before)
     } finally {
-      await h.q(`alter table staging_cloud.articles add column excerpt text, add column content text`)
+      await h.q(`alter table staging_cloud.articles add column body text`)
     }
   }, 120_000)
 })

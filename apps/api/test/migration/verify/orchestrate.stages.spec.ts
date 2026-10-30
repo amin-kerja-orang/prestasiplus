@@ -168,14 +168,14 @@ describe('staged-column preflight (D1, G4 #399)', () => {
   })
 
   it('a stale stage stops migrate:all and migrate:delta before any stage runs; the CLI exits 2', async () => {
-    const stale = new PreflightError('Preflight failed: staging_cloud.articles lacks column(s) excerpt, content (staged from an older DDL): re-stage. Nothing was written.')
+    const stale = new PreflightError('Preflight failed: staging_cloud.articles lacks column(s) body (staged from an older DDL): re-stage. Nothing was written.')
     mocks.assertStagedColumns.mockRejectedValue(stale)
     await expect(runAll(options('apply'))).rejects.toBe(stale)
     await expect(runDelta({ ...options('dry-run'), since: '2026-06-02T00:00:00Z' })).rejects.toBe(stale)
     const log = capture()
     const code = await runCli(['migrate:all', '--dry-run', '--as-of=2026-06-01'], { pool: fakePool, env, out: log.out, err: log.err })
     expect(code).toBe(2)
-    expect(log.text()).toContain('staging_cloud.articles lacks column(s) excerpt, content')
+    expect(log.text()).toContain('staging_cloud.articles lacks column(s) body')
     expect(mocks.runCore).not.toHaveBeenCalled()
     expect(mocks.runActivity).not.toHaveBeenCalled()
     expect(mocks.runVerify).not.toHaveBeenCalled()

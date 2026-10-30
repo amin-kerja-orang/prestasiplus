@@ -688,11 +688,28 @@ describe('dump:grants script', () => {
     expect(lines.join('\n')).not.toMatch(/INSERT|UPDATE|DELETE|ALL PRIVILEGES|GRANT OPTION/)
   })
 
-  it('grants the staged article text columns (D1, LEAD 29 Oct)', () => {
+  it('grants the staged article text column `body` and no column that .cloud lacks (D1, LEAD 29 Oct)', () => {
     const articles = buildGrantScript('pp_cloud', ACCOUNT, TABLES).find((l) => l.includes('`pp_cloud`.`articles`')) as string
-    expect(articles).toContain('`excerpt`')
-    expect(articles).toContain('`content`')
+    expect(articles).toContain('`body`')
     expect(articles).toContain('`author_id`')
+    // .cloud `articles` has no `excerpt` and no `content` column: a GRANT naming one fails the whole articles line.
+    expect(articles).not.toContain('`excerpt`')
+    expect(articles).not.toContain('`content`')
+  })
+
+  it('the staged articles and feedback columns exist in .cloud (the LEAD\'s read-only schema export, column names only)', () => {
+    const cloud: Record<string, readonly string[]> = {
+      articles: ['id', 'title', 'slug', 'category', 'education_level_id', 'body', 'views', 'is_published', 'author_id', 'created_at', 'updated_at'],
+      // The data columns (the key and the two timestamps are checked on articles).
+      feedback: ['user_id', 'score', 'satisfaction', 'usability', 'relevance', 'comment'],
+    }
+    const keyAndStamps = ['id', 'created_at', 'updated_at']
+    for (const [name, columns] of Object.entries(cloud)) {
+      const spec = TABLES.find((t) => t.group === 'staging' && t.name === name)
+      expect(spec, name).toBeDefined()
+      const data = (spec?.columns ?? []).map((c) => c.name).filter((c) => name === 'articles' || !keyAndStamps.includes(c))
+      for (const c of data) expect(columns, `${name}.${c}`).toContain(c)
+    }
   })
 
   it('tells the operator never to skip the articles GRANT line (D1: skipping it gives 0 articles silently)', () => {
