@@ -29,3 +29,75 @@ export type {
   SectionSnapshot,
   Shortage,
 } from './types'
+
+/* ---------------------------------------------------------------- Bijak SPM exam standard (bijak-spm) */
+export {
+  ANSWER_MODES,
+  COGNITIVE_LEVELS,
+  T1_T3_KEY,
+  canonicalStructure,
+  isKbatLevel,
+  offeredMarks,
+  perQuestionMarks,
+  unitKeyOf,
+  unitRefOf,
+} from './standard-model'
+export type {
+  Profile,
+  ProfileKind,
+  Quota,
+  QuotaBasis,
+  QuotaLine,
+  SectionRule,
+  SlotGroup,
+  StandardBlueprint,
+  StandardSection,
+  UnitKey,
+  UnitRef,
+} from './standard-model'
+export {
+  INELIGIBLE_REASONS,
+  SECTION_REASONS,
+  describeQuestion,
+  eligibilityOf,
+  excludedReport,
+  quotaUnitKeys,
+} from './eligibility'
+export type {
+  DescribedQuestion,
+  Eligibility,
+  EligibilitySection,
+  ExcludedReport,
+  FormOrigin,
+  IneligibleReason,
+  LeafFact,
+  QuestionFacts,
+  SectionReason,
+  UnitFact,
+} from './eligibility'
+export { BLUEPRINT_PROBLEM_CODES, COMPLETENESS_CODES, validateBlueprint, validateForVerification } from './validate'
+export type {
+  BlueprintProblem,
+  BlueprintProblemCode,
+  BlueprintWarning,
+  CompletenessGap,
+  ValidateOptions,
+  ValidateResult,
+  VerificationGate,
+  VerificationGateOptions,
+} from './validate'
+export { checkEvidence } from './evidence'
+export type { EvidenceCheck, EvidenceItem, EvidenceKind, EvidenceLine, EvidenceStatus, EvidenceValues } from './evidence'
+export { SHORTAGE_KINDS, shortageLine, unitLabel } from './shortage'
+export type { ShortageKind, StandardShortage, UnitLabelRef } from './shortage'
+export { VIOLATION_CODES, buildStandardReport, measureSection, verifyComposition } from './verify'
+export type {
+  ComposedSection,
+  FactsInput,
+  SectionMeasure,
+  StandardReport,
+  VerifyOptions,
+  Violation,
+  ViolationCode,
+  ViolationTier,
+} from './verify'
