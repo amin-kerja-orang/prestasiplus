@@ -18,7 +18,7 @@ import { ScopeFilter } from '../../common/scope/scope-filter'
 import { idFromString, idToString } from '../../db/ids'
 import type { File as FileRow } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from '../questions/learner-visibility'
+import { pupilMayReadQuestionImageSql } from './question-image-access'
 import { EXTENSION_OF, inspectUpload, type DetectedMime } from './content-inspect'
 import { FILE_STORAGE, type FileStorage } from './file-storage'
 import { FilesConfig } from './files.config'
@@ -115,7 +115,7 @@ interface ReadContext {
   owns: boolean
   /** Loads the owner's school (id, state, district) for scope checks; null when the owner has none. */
   ownerSchool(): Promise<{ schoolId: bigint; school: { state: string | null; district: string | null } } | null>
-  /** True when the file is an option image or image stimulus of the LIVE version of an active, published question. */
+  /** See question-image-access.ts: live approved/published question, or a pinned version in a sittable published paper. */
   servedWithPublishedQuestion(): Promise<boolean>
 }
 
@@ -374,17 +374,16 @@ export class FilesService {
       return owner?.schoolId && owner.school ? { schoolId: owner.schoolId, school: owner.school } : null
     }
     const servedWithPublishedQuestion = async () => {
-      const hit = await this.prisma.client.$queryRaw<{ one: number }[]>`
-        SELECT 1 AS one
-          FROM question_versions v
-          JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no AND q.is_active
-         WHERE v.status = 'published'
-           AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
-           AND (EXISTS (SELECT 1 FROM question_parts p JOIN part_options o ON o.part_id = p.id
-                         WHERE p.question_version_id = v.id AND o.image_file_id = ${row.id})
-                OR EXISTS (SELECT 1 FROM question_version_stimuli vs JOIN stimuli s ON s.id = vs.stimulus_id
-                            WHERE vs.question_version_id = v.id AND s.asset_file_id = ${row.id}))
-         LIMIT 1`
+      if (!auth) return false
+      let userId: bigint
+      try {
+        userId = idFromString(auth.userId)
+      } catch {
+        return false
+      }
+      const hit = await this.prisma.client.$queryRaw<{ one: number }[]>(
+        pupilMayReadQuestionImageSql(row.id, userId, row.publicId),
+      )
       return hit.length > 0
     }
     return rule({ row, auth, owns, ownerSchool, servedWithPublishedQuestion })
