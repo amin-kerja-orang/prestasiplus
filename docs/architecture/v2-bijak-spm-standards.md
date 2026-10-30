@@ -142,6 +142,8 @@ model BlueprintSection {
   quota      Json?  @db.JsonB
   /// Exact KBAT marks of the OFFERED questions of this section (US-37). NULL = unconstrained; 0 is a value.
   kbatMarks  Int?   @map("kbat_marks") @db.SmallInt
+  /// false = value seeded from layer 2 and not yet reviewed by Admin Pusat; set true by the server on any admin write of kbatMarks (2026-10-30, BJS-01 review). Default true (hand-made values).
+  kbatReviewed Boolean @default(true) @map("kbat_reviewed")
   // topicWeights: DROPPED (never read or written; no seed sets it).
 }
 ```
@@ -165,7 +167,7 @@ JSON documents (validated by the zod schemas of section 6.1 on write and re-pars
 }
 // quota
 { basis: 'questions' | 'marks',          // default questions for objective sections, marks for structured (AC-36.1)
-  lines: [{ unit: { kind: 'unit', nodeId: '123' } | { kind: 't1_t3' }, value: 2 }],
+  lines: [{ unit: { kind: 'unit', nodeId: '123' } | { kind: 't1_t3' }, value: 2, reviewed?: boolean, tag?: string }], // reviewed: server-set, see 3.3a
   levelShare?: { t4: 56, t5: 44 } }      // optional, in the basis unit; must equal the share implied by the lines (AC-36.3)
 ```
 
@@ -182,7 +184,7 @@ model BlueprintEvidence {
   blueprintId BigInt   @map("blueprint_id")
   /// trial_paper, skema, lpm_format (CHECK)
   kind        String
-  /// exam board value of E-exam_board (exam schema D8), e.g. sbp, selangor_mpsm; 'lpm' for the official body
+  /// Lowercase snake_case id of the issuing body, `^[a-z0-9_]+$`, 1-64 chars (e.g. sbp, selangor_mpsm, lpm), so the two-body gate cannot be fooled by case; display labels are a UI concern (2026-10-30, BJS-01 review)
   body        String
   year        Int      @db.SmallInt
   paperCode   String   @map("paper_code")          // 1449/2
@@ -338,7 +340,7 @@ The pool preview breakdown (AC-29.5/38.2) is a count by first reason, with the b
 
 Not an error but a **warning** returned next to problems and shown in the preview: `KBAT_TP_BAND` (KBAT marks > 0 while every TP band of the section is 1-2; see O-5, AC-37.5 conflicts with "TP is independent of KBAT").
 
-Completeness for **Disahkan** (`validateForVerification`, AC-39.1 a-d) adds: every section has a profile covering every slot, quota lines, `kbat_marks` (0 counts), `levelShare` derivable where the subject has both levels. The evidence part (e) is `checkEvidence` (section 6.5).
+Completeness for **Disahkan** (`validateForVerification`, AC-39.1 a-d, f) adds, (2026-10-30, BJS-01 review), completeness code `UNREVIEWED` (`sectionPosition`, optional `unit`): every quota line and every `kbat_marks` must be `reviewed = true` (AC-39.1(f), "Belum disemak"); it blocks Sahkan. It also adds: every section has a profile covering every slot, quota lines, `kbat_marks` (0 counts), `levelShare` derivable where the subject has both levels. The evidence part (e) is `checkEvidence` (section 6.5).
 
 ## 5. Generator design
 
@@ -464,7 +466,7 @@ Seed = existing `generationSeed(clock, userId, blueprintCode, previousCount)` (`
 
 ### 5.10 Independent verification (AC-34.6)
 
-`verifyComposition(blueprint, composedSections, factsById)` recomputes everything from the composed paper and the question facts, **not** from solver internals: counts, duplicates, group integrity (whole, adjacent, in order), effective marks per section and total, per-slot TP band and marks band, exact TP counts, quota per line (marks-basis from leaf-part units, questions-basis from the primary unit; revised 2026-10-29, O-1), `levelShare`, KBAT marks, eligibility, number continuity. It returns `Violation[]`. The generator calls it before persisting; any violation means the paper is **not served**, logs `bijak.generate.violation` with blueprint version, seed and violations, and answers 500 `INTERNAL`. The same function is the oracle of the property tests, and the publish contract check (`paper-check.ts`) reuses its structural tier (AC-26.2). The **standard tier** (profile, quota, KBAT) is a hard gate for generated papers. For curated Kertas Pilihan it **never blocks and raises no gap on the paper** (O-2, decided by the user: an official paper cannot be wrong, so a mismatch means the blueprint needs review). Instead the mismatch is reported on the blueprint as the computed `needsReview` signal (section 6.3a).
+`verifyComposition(blueprint, composedSections, factsById)` recomputes everything from the composed paper and the question facts, **not** from solver internals: counts, duplicates, group integrity (whole, adjacent, in order), effective marks per section and total, per-slot TP band and marks band, exact TP counts, quota per line (marks-basis from leaf-part units, questions-basis from the primary unit; revised 2026-10-29, O-1), `levelShare`, KBAT marks, eligibility, number continuity. It returns `Violation[]`. The generator calls it before persisting; any violation means the paper is **not served**, logs `bijak.generate.violation` with blueprint version, seed and violations, and answers 500 `SERVER_ERROR` (2026-10-30, BJS-01 review). The same function is the oracle of the property tests, and the publish contract check (`paper-check.ts`) reuses its structural tier (AC-26.2). The **standard tier** (profile, quota, KBAT) is a hard gate for generated papers. For curated Kertas Pilihan it **never blocks and raises no gap on the paper** (O-2, decided by the user: an official paper cannot be wrong, so a mismatch means the blueprint needs review). Instead the mismatch is reported on the blueprint as the computed `needsReview` signal (section 6.3a).
 
 ## 6. API and contract
 
@@ -482,10 +484,11 @@ BijakUnitRefView    = BijakUnitRef & { code?: string, level?: 'T4' | 'T5', title
 BijakSlotGroup      = { from: int>=1, to: int>=from, tpMin: 1..6, tpMax: tpMin..6,
                         tpCounts?: { tp: 1..6, count: int>=1 }[], marksMin?: int>=1, marksMax?: int>=marksMin,
                         units?: BijakUnitRef[] }
+// Cross-field rules (2026-10-30, BJS-01 review): from <= to, tpMin <= tpMax, marksMin <= marksMax (each enforced by the schema, 422 VALIDATION_ERROR otherwise). `allowedModes` items are unique.
 BijakProfileKind    = 'ladder' | 'bahagian' | 'tema'
 BijakDifficultyProfile = { kind: BijakProfileKind, groups: BijakSlotGroup[] }          // 1..40 groups
 BijakQuotaBasis     = 'questions' | 'marks'
-BijakQuotaLine      = { unit: BijakUnitRef, value: int>=0, tag?: 'observed' | 'inferred' | 'single_source' }   // tag: G3 note (b), informational
+BijakQuotaLine      = { unit: BijakUnitRef, value: int>=0, reviewed?: boolean /* view: REQUIRED; write: omitted, server-set (2026-10-30, BJS-01 review) */, tag?: 'observed' | 'inferred' | 'single_source' }   // tag: G3 note (b), informational
 // Question part (questions contract, BJS-06), revised 2026-10-29, O-1; all optional, null = inherit the question:
 BijakPartUnit       = { unitNodeId?: Id | null, formOrigin?: 't1_t3' | 't4' | 't5' | null }   // on each leaf part, read and write
 BijakPartStandardTags = { difficultyTp?: 1..6 | null, cognitiveLevel?: 1..6 | null }          // on each leaf part (3.1)
@@ -504,6 +507,8 @@ Labels are never shown raw (AC-25.4/25.8): the UI maps `ladder` -> "Tangga mengi
 
 `BijakBlueprintAdminSectionInput` gains (all optional unless stated): `profile`, `quota`, `kbatMarks` (int or null), `allowedModes` (answer-mode enum array), `pool` becomes optional (was required). `BijakBlueprintAdminVersionInput` / `Create` gain: `totalMarks` (optional, must equal the sum), `notes`, `subPartRamp`, `kbatMarks`, `levelShare`; `source` narrows to `'Draf' | 'Spec'` (optional; server decides, section 3.5). `BijakBlueprintView` and its section gain the same fields plus: `version`, `servesStudents`, `verification` (summary or null), `evidenceCount`, `needsReview`, `reviewPapers` (6.3a), `warnings` (list of problem codes with `warning: true`).
 
+**Reviewed flags (AC-39.1(f), AC-39.9 "Belum disemak", (2026-10-30, BJS-01 review)).** `BijakQuotaLine` in the **view** gains required `reviewed: boolean`; the **section view** gains required `kbatReviewed: boolean`. On **write** both are optional and ignored: any quota line or `kbatMarks` value that Admin Pusat saves through the admin API is stored as `reviewed = true`; the server sets it and the client cannot send it. Storage: `reviewed` is a key of each quota line in the `quota` JSONB (absent = true) and `kbat_reviewed` is a boolean column on `blueprint_sections` (cheaper than a second JSONB). Seeded layer-2 values (BJS-12/13) are written `reviewed = false` / `kbat_reviewed = false`. New completeness code `UNREVIEWED` (with `sectionPosition`, optional `unit`) blocks `verify`; editing an unreviewed value in the editor and saving it marks it reviewed. A new version copies the flags of unchanged values; a changed value saved by the admin becomes reviewed.
+
 ```ts
 BijakVerificationSummary = { verifiedAt: string(date-time), verifierName: string, verifierRole: 'admin',
                              evidenceLabel: string, bodies: string[], note?: string }
@@ -521,13 +526,13 @@ BijakVerificationSummary = { verifiedAt: string(date-time), verifierName: string
 | `POST /admin/blueprints/{subject}/{kertas}/evidence` | **new** add item | `{ kind, body, year, paperCode, setLabel?, sourceRef?, values, note? }` | 201 item; 409 head is Disahkan (edit via a new version first) |
 | `DELETE /admin/blueprints/{subject}/{kertas}/evidence/{evidenceId}` | **new** | | 200; 409 same |
 | `GET /admin/blueprints/{subject}/{kertas}/verification` | **new** record (if any) + live check of the head | | `{ record: BijakVerificationRecord \| null, check: BijakVerificationCheck }` |
-| `POST /admin/blueprints/{subject}/{kertas}/verify` | **new** Spec -> Disahkan | `{ note?: string }` | 200 view; **422 `VERIFICATION_FAILED`** with `details.failures[]` (all at once); 409 already Disahkan |
+| `POST /admin/blueprints/{subject}/{kertas}/verify` | **new** Spec -> Disahkan | `{ note?: string }` | 200 view; **422 `VERIFICATION_FAILED`** with `details.check` (a `BijakVerificationCheck`, every failure at once; not `details.failures[]`) (2026-10-30, BJS-01 review); 409 already Disahkan |
 | `GET /admin/blueprints/{subject}/{kertas}/pool` | **new** Pratonton kolam | `version?` (default head) | `BijakPoolPreview` |
-| `POST /admin/papers/generate` | **new** Jana draf kertas (AC-29.2) | `{ subject, kertas }` | 201 `{ paperId }` (draft `pilihan` paper); same 422/503 as student generate |
+| `POST /admin/papers/generate` | **new** Jana draf kertas (AC-29.2) | `{ subject, kertas }` | 201 `{ paperId }` (draft `pilihan` paper); same 422/503/500 as student generate |
 
 ```ts
 BijakVerificationCheck = { passes: boolean, blueprintProblems: BijakBlueprintProblem[],
-                           completeness: { code: 'NO_PROFILE' | 'NO_QUOTA' | 'NO_KBAT' | 'NO_SHARE' | 'NO_DURATION' | 'NO_EVIDENCE_BODIES', sectionPosition?: int }[],
+                           completeness: { code: 'NO_PROFILE' | 'NO_QUOTA' | 'NO_KBAT' | 'UNREVIEWED' | 'NO_SHARE' | 'NO_DURATION' | 'NO_EVIDENCE_BODIES', sectionPosition?: int }[],
                            lines: BijakEvidenceLine[] }
 BijakEvidenceLine = { field: 'durationMin' | 'totalMarks' | 'markBudget' | 'rule' | 'questionCount',
                       sectionPosition?: int, expected: unknown,
@@ -566,8 +571,8 @@ BijakGenerateShortage = { section: string, need: int, have: int,
   blocking?: 'kbat' | 'tp' | 'marks' | 'quota', otherSection?: string }
 ```
 
-  - `503 GENERATE_LIMIT` [PROPOSED]: node budget or time cap reached; message "Kertas tidak dapat disusun sekarang. Cuba lagi." [PROPOSED]; `details.shortages[0]` names the section; a `Retry-After` hint is not needed.
-  - `500 INTERNAL`: `verifyComposition` found a violation (logged, never served).
+  - `503 GENERATE_LIMIT` [PROPOSED]: node budget or time cap reached; message "Kertas tidak dapat disusun sekarang. Cuba lagi." [PROPOSED]; details are `{ limitSections: { section?: string }[] }` (a separate shape, no invented need/have numbers) (2026-10-30, BJS-01 review); a `Retry-After` hint is not needed.
+  - `500 SERVER_ERROR` (documented on both generate routes, `/bijak/papers/generate` and `/admin/papers/generate`, (2026-10-30, BJS-01 review)): `verifyComposition` found a violation (logged, never served).
 - BM lines are produced by `shortageLine(s)` in exam-core from `kind` (the contract carries data, not prose): `count` "{Bahagian}: perlu {n} soalan, hanya {m} tersedia"; `marks` "{Bahagian}: tidak dapat menyusun {b} markah daripada soalan yang tersedia"; `tp` "{Bahagian} soalan {from}-{to}: tiada soalan layak pada TP {a}-{b}" (or "perlu {n} ... hanya {m}" when some exist); `unit` "{Bahagian}: perlu {n} soalan {unit}, hanya {m} tersedia" (marks: "perlu {n} markah"); `kbat` "{Bahagian}: perlu {n} markah KBAT, hanya {m} tersedia"; `level_share` "{Bahagian}: nisbah Tingkatan 4 : 5 tidak dapat dipenuhi daripada soalan yang tersedia"; `combination` "{Bahagian}: syarat {blocking} tidak dapat dipenuhi bersama syarat lain" and `overlap` "{Bahagian}: soalan yang diperlukan telah digunakan oleh {Bahagian lain}" [PROPOSED]. The first six are the AC wording; all are [PROPOSED].
 
 ### 6.5 Pool preview (AC-29.1, 29.4, 29.5, 38.2)
@@ -577,6 +582,7 @@ BijakPoolPreview = {
   blueprint: { version: int, source: 'Draf'|'Spec'|'Disahkan' },
   verdict: 'boleh' | 'tidak_boleh' | 'tidak_pasti',        // "Boleh dijana" / "Tidak boleh dijana" / budget hit
   firstFailure: BijakGenerateShortage | null,
+  warnings: BijakBlueprintProblem[],                   // KBAT_TP_BAND etc., same schema as on the view (2026-10-30, BJS-01 review)
   excluded: { total: int, byReason: { reason: 'no_unit'|'no_tp'|'no_cognitive_level'|'no_marks'|'no_key', count: int, bankQuery: Record<string,string> }[] },
   sections: [{
     position: int, label: string, slots: int, effectiveMarks: int, offeredMarks: int,
@@ -720,6 +726,8 @@ A new seed module `exam-launch-blueprints` (registered after `exam` and `exam-de
 The seed resolves `(subject, level, unitCode)` to `curriculum_nodes.id` and fails loudly if a unit is missing. Until a file exists the section seeds with `quota = null` and `kbat_marks = null`: valid as Spec (unconstrained), usable by Admin Pusat in Mod Pelajar for testing, **not verifiable** (AC-39.1 c, d). BJS-13 starts when the files land.
 
 **Worked example (3472/2, SBP column of SPP 6.2 and the skema-confirmed marks)**: A is the seven units T4 1.0 (7), T4 2.0 (8), T4 4.0 (8), T4 8.0 (6), T5 1.0 (6), T5 2.0 (7), T5 6.0 (8) = 50; B is T4 6.0, T4 7.0, T5 3.0, T5 5.0 at 10 each = 40 offered; C is the four electives T4 9.0, T4 10.0, T5 7.0, T5 8.0 at 10 each = 40 offered (confirmed in both bodies, SPP 10.2). Encoded with `basis = 'marks'` and one line per unit with the mark value, summing to the section's offered marks; `levelShare` is implied. Selangor differs in A (systems of equations and integration instead of circular measure); the note records the alternative and the choice (AC-40.2). KBAT marks stay null until re-measured.
+
+**Reviewed flags (2026-10-30, BJS-01 review):** every layer-2 quota line and every layer-2 `kbatMarks` is seeded with `reviewed = false` / `kbat_reviewed = false` ("Belum disemak"); layer-1 structure is unaffected. Admin Pusat must open and save each value (or confirm it) before `verify` can pass (`UNREVIEWED`).
 
 **Evidence (study):** each seeded blueprint also gets `blueprint_evidence` rows with `origin = 'study'`, `kind = 'trial_paper'` (and `skema` where SPP 10.2 confirms marks), one per body actually read, `values` from SPP section 4 / 10.2, `sourceRef` = "Kajian kertas percubaan 2025" [PROPOSED] (AC-39.5). No file, no question text, no person name (AC-40.3, NFR-15). Single-body papers (3472/1, 4531/2, 1249/2) and the unread items (Fizik C rule, Selangor 3472/2 Q13(b)-Q15) remain `not_covered` or `tidak_disahkan`, so they cannot be verified until more evidence is added (AC-40.4). No `verification` row is seeded.
 
