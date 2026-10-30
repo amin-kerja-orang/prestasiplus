@@ -459,8 +459,10 @@ export type BijakAttemptScheme = z.infer<typeof BijakAttemptSchemeSchema>
 
 /**
  * R1-B13: keyword suggestion for a mark-scheme-points part that waits for a person (V2
- * `RubricKeywordMarker`). A SUGGESTION only: it is never added to `awarded` or to the score; the pupil
- * confirms it with a self-mark. Absent for band_rubric parts and for automatically marked parts.
+ * `RubricKeywordMarker`). At submit a non-zero suggestion is ALSO stored as the part awarded mark (V2
+ * submit :408-414), flagged `autoSuggested`; the part stays `belum_dimarkah` (the total is provisional)
+ * and the pupil self-mark overrides it. A zero match is not stamped (awarded stays 0). Absent for
+ * band_rubric parts and for automatically marked parts.
  */
 export const BijakAttemptSuggestionSchema = z
   .strictObject({
@@ -490,6 +492,9 @@ export const BijakAttemptPartResultSchema = z
       description: 'R1-B12: `awarded` is the pupil own mark (Markah kendiri). Absent for an automatic mark.',
     }),
     band: z.string().optional().meta({ description: 'R1-B12: the rubric band the pupil chose with the self-mark.' }),
+    autoSuggested: z.literal(true).optional().meta({
+      description: 'R1-B13: `awarded` is the automatic keyword suggestion (provisional, the pupil should check it), not a confirmed mark. Absent once selfMarked.',
+    }),
     selfMarkable: z.literal(true).optional().meta({
       description: 'R1-B12: the pupil may set a self-mark on this part (scheme kind points or rubric).',
     }),

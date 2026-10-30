@@ -31,6 +31,7 @@ import {
   type SectionSnapshot,
   type StimulusDef,
 } from './exam-core.adapter'
+import { seedSuggestions } from './keyword-suggest'
 import type { BijakQuestionBundle } from './ports'
 
 export type Bundles = ReadonlyMap<string, BijakQuestionBundle>
@@ -149,6 +150,7 @@ export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: B
   let n = 0
   const questions: QuestionResult[] = []
   for (const s of composition) for (const qid of s.questionIds) questions.push(gradeQuestion(composition, bundles, answers, qid, ++n, true))
+  seedSuggestions(questions, bundles, answers)
   return assembleResult(composition, questions)
 }
 

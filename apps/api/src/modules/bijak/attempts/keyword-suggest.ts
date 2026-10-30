@@ -16,6 +16,9 @@
  * Same answer in, same suggestion out (case and spacing do not matter).
  */
 
+import type { PartAnswer, QuestionResult } from './exam-core.adapter'
+import type { AnswerMap, Bundles } from './marking'
+
 /** Function words that carry no topic signal (V2 STOPWORDS). */
 const STOPWORDS: ReadonlySet<string> = new Set([
   'yang', 'dan', 'atau', 'dengan', 'untuk', 'pada', 'dalam', 'ini', 'itu', 'adalah', 'ialah',
@@ -78,4 +81,39 @@ export function suggestFromPoints(points: readonly SuggestPoint[], answer: strin
   // PHP round() rounds half away from zero, Math.round half up: the same for non-negative numbers.
   const awarded = pointMarkSum > 0 ? matchedMarkSum : total > 0 ? Math.round((maxMarks * matchedCount) / total) : 0
   return { suggestedMark: Math.max(0, Math.min(awarded, maxMarks)), matched: matchedCount, total, points: rows }
+}
+
+/** The answer as one text for the keyword pass (V2 answerText: working + value; here steps, final, text). */
+export function answerTextOf(a: PartAnswer | undefined): string {
+  if (!a) return ''
+  return [...(a.steps ?? []), a.final ?? '', a.text ?? ''].filter((t) => t.trim() !== '').join('\n')
+}
+
+/**
+ * V2 submit :408-414: a points part that waits for a person and has a non-empty answer gets its keyword
+ * suggestion stored as the awarded mark, so a matched answer counts in the total at once. Only when the
+ * suggestion is above 0 (a zero match is not stamped). The part keeps `belum_dimarkah` (the total stays
+ * provisional) and is flagged `autoSuggested`; a self-mark replaces it. Mutates the graded questions.
+ */
+export function seedSuggestions(questions: QuestionResult[], bundles: Bundles, answers: AnswerMap): void {
+  for (const q of questions) {
+    const bundle = bundles.get(q.questionId)
+    let changed = false
+    for (const p of q.parts) {
+      const scheme = bundle?.schemes[p.partId]
+      if (scheme?.kind !== 'points' || p.status !== 'belum_dimarkah') continue
+      const text = answerTextOf(answers.get(p.partId))
+      if (text.trim() === '') continue
+      const s = suggestFromPoints(
+        scheme.points.map((pt) => ({ id: pt.id, label: pt.label, marks: pt.marks })),
+        text,
+        p.marks,
+      )
+      if (s.suggestedMark <= 0) continue
+      p.awarded = s.suggestedMark
+      ;(p as { autoSuggested?: true }).autoSuggested = true
+      changed = true
+    }
+    if (changed) q.awarded = q.parts.reduce((n, p) => n + p.awarded, 0)
+  }
 }

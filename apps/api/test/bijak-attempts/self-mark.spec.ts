@@ -75,23 +75,35 @@ const sejarah = () =>
   ])
 
 describe('R1-B13 keyword suggestion in the result', () => {
-  it('a written points part waiting for a person carries a suggestion and the automatic mark stays 0', async () => {
+  it('V2 submit :408-414: a matched suggestion is stored as the awarded mark, flagged autoSuggested, and the total stays provisional', async () => {
     const id = await sains()
     const r = await result(me, id)
     const p = partOf(r.result, SEL_B)
-    expect(p).toMatchObject({ awarded: 0, status: 'belum_dimarkah', selfMarkable: true })
+    expect(p).toMatchObject({ awarded: 1, status: 'belum_dimarkah', selfMarkable: true, autoSuggested: true })
     // "terlarut" is a keyword of point 1 only (V2: any token of 5+ letters of the point)
     expect(p.suggestion).toMatchObject({ suggestedMark: 1, matched: 1, total: 2 })
     expect((p.suggestion as { points: { matched: boolean }[] }).points.map((x) => x.matched)).toEqual([true, false])
-    expect(r.result.score).toBe(0) // suggestion only, never the final mark
+    expect(r.result.score).toBe(1) // counts at once, as in V2
     expect(r.result.provisional).toBe(true)
+    expect(r.result.pendingReview).toBe(1)
+    expect(p.selfMarked).toBeUndefined()
   })
 
-  it('no keyword match: the suggestion is 0 and the part is not "betul" (AC-R1-07.3)', async () => {
+  it('a self-mark overrides the automatic suggestion and clears autoSuggested', async () => {
+    const id = await sains()
+    await selfMark(me, id, { partId: SEL_B, mark: 0 })
+    const r = (await result(me, id)).result
+    expect(partOf(r, SEL_B)).toMatchObject({ awarded: 0, status: 'salah', selfMarked: true })
+    expect(partOf(r, SEL_B).autoSuggested).toBeUndefined()
+    expect(r.score).toBe(0)
+  })
+
+  it('no keyword match: nothing is stamped (awarded 0), the suggestion is 0 and the part is not "betul" (AC-R1-07.3)', async () => {
     const id = await sains('tidak tahu langsung jawapannya')
     const p = partOf((await result(me, id)).result, SEL_B)
     expect(p.suggestion).toMatchObject({ suggestedMark: 0, matched: 0 })
-    expect(p.status).not.toBe('betul')
+    expect(p).toMatchObject({ awarded: 0, status: 'belum_dimarkah' })
+    expect(p.autoSuggested).toBeUndefined()
   })
 
   it('same answer, same suggestion (AC-R1-07.4)', async () => {
@@ -129,10 +141,11 @@ describe('R1-B12 self-mark', () => {
     const res = await selfMark(me, id, { partId: SEL_B, mark: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const out = BijakAttemptSelfMarkResultSchema.parse(res.body.data)
-    expect(out).toMatchObject({ partId: SEL_B, awarded: 2, max: 2, status: 'betul', attemptScore: before.score + 2, attemptMax: before.max })
+    expect(out).toMatchObject({ partId: SEL_B, awarded: 2, max: 2, status: 'betul', attemptScore: 2, attemptMax: before.max })
     const again = (await result(me, id)).result
     expect(partOf(again, SEL_B)).toMatchObject({ awarded: 2, status: 'betul', selfMarked: true })
-    expect(again.score).toBe(before.score + 2)
+    expect(before.score).toBe(1) // the automatic suggestion, replaced (not added to) by the pupil's mark
+    expect(again.score).toBe(2)
     expect(again.pendingReview).toBe(before.pendingReview - 1)
     expect(again.coins).toBe(again.score * 2)
     // the Bahagian total moved too
@@ -237,7 +250,9 @@ describe('R1-B12 self-mark', () => {
       expectError(await selfMark(other, id, { partId: SEL_B, mark: 2 }), 'FORBIDDEN', 'Akses ditolak')
       expectError(await selfMark(me, '00000000-0000-4000-8000-000000000000', { partId: SEL_B, mark: 2 }), 'NOT_FOUND', 'Percubaan tidak ditemui')
       expectError(await selfMark(me, 'abc', { partId: SEL_B, mark: 2 }), 'NOT_FOUND', 'Percubaan tidak ditemui')
-      expect((await result(me, id)).result.score).toBe(0) // the refused call changed nothing
+      const r = (await result(me, id)).result
+      expect(partOf(r, SEL_B).selfMarked).toBeUndefined() // the refused call changed nothing
+      expect(r.score).toBe(1) // only the automatic keyword suggestion counts
     })
 
     it('students only: a teacher and an anonymous caller are refused; a missing CSRF header is refused', async () => {
@@ -312,13 +327,14 @@ describe('R1-B15 Cuba Lagi', () => {
     expect(hist.find((h) => h.attemptId === old)).toMatchObject({ status: 'submitted', score: 2 })
   })
 
-  it('keeps the mode (latihan stays latihan, with no deadline) and abandons another open sitting of the paper', async () => {
+  it('keeps the mode (latihan stays latihan, with no deadline) and leaves another open sitting alone (V2 retry)', async () => {
     const old = await sit(me, PAPER.sainsK2, [change(SEL_B, { text: 'x' })], 'latihan')
     const open = await startAttempt(me, PAPER.sainsK2, 'exam')
+    t.clock.advance(MIN)
     const { attemptId } = BijakAttemptStartResultSchema.parse((await me.post(`/api/bijak/attempts/${old}/retry`)).body.data)
     const view = (await me.get(`/api/bijak/attempts/${attemptId}`)).body.data
     expect(view.attempt).toMatchObject({ mode: 'latihan', deadline: null })
-    expect((await me.get(`/api/bijak/attempts/${open}`)).body.data.attempt.status).toBe('abandoned')
+    expect((await me.get(`/api/bijak/attempts/${open}`)).body.data.attempt.status).toBe('in_progress')
     expect((await me.get(`/api/bijak/papers/${PAPER.sainsK2}/in-progress`)).body.data.attemptId).toBe(attemptId)
   })
 

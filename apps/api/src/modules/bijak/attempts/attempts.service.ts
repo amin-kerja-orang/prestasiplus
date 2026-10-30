@@ -207,7 +207,7 @@ export class BijakAttemptsService {
   }
 
   /** Starts a sitting (201), or returns the open one (200) unless `restart` abandons it first. */
-  async start(auth: AuthContext, body: BijakAttemptStartRequest, who: CallerInfo): Promise<{ attemptId: string; created: boolean }> {
+  async start(auth: AuthContext, body: BijakAttemptStartRequest, who: CallerInfo, opts: { fresh?: boolean } = {}): Promise<{ attemptId: string; created: boolean }> {
     const userId = auth.userId
     const isTest = auth.mode !== null
     if (!isIdString(body.paperId)) throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
@@ -228,8 +228,9 @@ export class BijakAttemptsService {
       await this.repo.lockStart(userId, body.paperId)
       const open = await this.repo.openFor(userId, body.paperId)
       const newest = open[0]
-      if (newest && !body.restart) return { attempt: newest, created: false }
-      await this.repo.abandonMany(open.map((o) => o.id))
+      // `fresh` (Cuba Lagi, V2 retry :204-224): always a new attempt, other open sittings are left as they are.
+      if (newest && !body.restart && !opts.fresh) return { attempt: newest, created: false }
+      if (!opts.fresh) await this.repo.abandonMany(open.map((o) => o.id))
       const startedAt = this.now()
       const attempt = await this.repo.create({
         userId,
@@ -366,7 +367,7 @@ export class BijakAttemptsService {
   /**
    * V2 `retry`: from a CLOSED attempt, a brand-new blank sitting of the same paper (same mode). The
    * paper must still be offered (V2 `servable()`); the old attempt and its result are untouched. Other open
-   * sittings of the caller on the paper are abandoned so only one stays open.
+   * sittings of the caller on the paper are NOT abandoned (V2 retry does not).
    */
   async retry(auth: AuthContext, id: string, who: CallerInfo): Promise<{ attemptId: string }> {
     let row = await this.owned(auth.userId, id)
@@ -378,7 +379,7 @@ export class BijakAttemptsService {
     const gone = () => ApiError.of('CONFLICT', { message: MSG.retryPaperGone })
     if (row.paperId === null) throw gone()
     try {
-      const out = await this.start(auth, { paperId: row.paperId, mode: row.mode, restart: true }, who)
+      const out = await this.start(auth, { paperId: row.paperId, mode: row.mode }, who, { fresh: true })
       return { attemptId: out.attemptId }
     } catch (err) {
       if (err instanceof ApiError && err.code === 'NOT_FOUND') throw gone()

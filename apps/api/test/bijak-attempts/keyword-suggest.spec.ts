@@ -114,6 +114,15 @@ describe('applySelfMarks (V2 recomputeScore with best-N)', () => {
     expect(applySelfMarks(blankBase, composition, { 'q1-a': { mark: 0 } }).questions[0]!.parts[0]!.status).toBe('kosong')
   })
 
+  it('a self-mark makes its question "attempted" for best-N, like a V2 response row (ExamBestNScorer.php:75,114)', () => {
+    const onlyQ1 = gradeAttempt(composition, bundles, new Map([['q1-a', { text: 'jawapan satu' }]]))
+    expect(onlyQ1.questions[1]!.attempted).toBe(false)
+    const r = applySelfMarks(onlyQ1, composition, { 'q2-a': { mark: 6 } })
+    expect(r.questions[1]!.attempted).toBe(true)
+    expect(r.sections[0]).toMatchObject({ counted: ['q2'], awarded: 6 })
+    expect(onlyQ1.questions[1]!.attempted).toBe(false) // base untouched
+  })
+
   it('no marks returns the base result as it is', () => {
     expect(applySelfMarks(base, composition, {})).toBe(base)
   })

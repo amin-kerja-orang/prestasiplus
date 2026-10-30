@@ -10,13 +10,14 @@
  * - :679-:696 recomputeScore: the total is re-ranked with best-N (ExamBestNScorer), so a raised mark can
  *   change which choose-N questions count;
  * - :408-:414 the keyword suggestion exists only for mark-scheme-points parts with a non-empty answer.
- *   V2 stamps it as the awarded mark; here it is a SUGGESTION field only (task decision): it never enters
- *   the score until the pupil confirms it with a self-mark.
+ *   As in V2 a non-zero suggestion is stored as the awarded mark at submit (`seedSuggestions`, flagged
+ *   `autoSuggested`, part stays `belum_dimarkah`); `decorateResult` only adds the detail lines. A self-mark
+ *   replaces it. A self-mark makes its question "attempted" for best-N (ExamBestNScorer.php:75,114).
  */
 import type { BijakAttemptPartResult, BijakAttemptResult } from '@pp/contract'
 
-import { isBlank, type PartAnswer, type QuestionResult, type SchemeDef, type SectionSnapshot } from './exam-core.adapter'
-import { suggestFromPoints } from './keyword-suggest'
+import { isBlank, type QuestionResult, type SchemeDef, type SectionSnapshot } from './exam-core.adapter'
+import { answerTextOf, suggestFromPoints } from './keyword-suggest'
 import { assembleResult, type AnswerMap, type Bundles } from './marking'
 
 export interface SelfMarkEntry {
@@ -41,12 +42,6 @@ function statusFor(awarded: number, marks: number, blank: boolean): BijakAttempt
   if (awarded >= marks && marks > 0) return 'betul'
   if (awarded > 0) return 'separa'
   return 'salah'
-}
-
-/** The answer as one text for the keyword pass (V2 answerText: working + value; here steps, final, text). */
-export function answerTextOf(a: PartAnswer | undefined): string {
-  if (!a) return ''
-  return [...(a.steps ?? []), a.final ?? '', a.text ?? ''].filter((t) => t.trim() !== '').join('\n')
 }
 
 /**
@@ -92,10 +87,16 @@ export function applySelfMarks(base: BijakAttemptResult, composition: readonly S
       p.awarded = clamp(m.mark, 0, p.marks)
       p.status = statusFor(p.awarded, p.marks, isBlank(p.answer))
       p.selfMarked = true
+      delete p.autoSuggested // the pupil's mark replaces the automatic suggestion
       if (m.band !== undefined) p.band = m.band
       changed = true
     }
-    if (changed) q.awarded = q.parts.reduce((n, p) => n + p.awarded, 0)
+    if (changed) {
+      q.awarded = q.parts.reduce((n, p) => n + p.awarded, 0)
+      // V2: a self-mark creates a response row, and ExamBestNScorer counts a question as attempted once any
+      // response row exists (ExamBestNScorer.php:75,114; selfMark updateOrCreate ExamSimulationController.php:593-597).
+      q.attempted = true
+    }
   }
   // assembleResult only reads and sets fields both shapes share (marks, awarded, counted, attempted, parts[].status).
   const assembled = assembleResult(composition, questions as unknown as QuestionResult[])
