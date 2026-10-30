@@ -59,6 +59,10 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   }
   if (row.stimulusId !== null) candidate.stimulusId = idToString(row.stimulusId)
   if (row.reveal === 'never') candidate.reveal = 'never'
+  // BJS-06: per-leaf overrides; NULL stays absent (inherit the version value).
+  if (row.unitNodeId !== null) candidate.unitNodeId = idToString(row.unitNodeId)
+  if (row.formOrigin !== null) candidate.formOrigin = row.formOrigin
+  if (row.difficultyTp !== null) candidate.difficultyTp = row.difficultyTp
   if (row.mode === 'mcq' || row.mode === 'pksk_choice') {
     candidate.options = options.map((o) => ({
       label: o.label,
@@ -96,6 +100,9 @@ export interface PartDraft {
   wordMax: number | null
   stimulusId: bigint | null
   reveal: 'after_submit' | 'never'
+  unitNodeId: bigint | null
+  formOrigin: 't1_t3' | 't4' | 't5' | null
+  difficultyTp: number | null
   options: OptionDraft[]
   key: { kind: string; content: unknown } | null
   children: PartDraft[]
@@ -121,6 +128,9 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
         wordMax: null,
         stimulusId: null,
         reveal: 'after_submit' as const,
+        unitNodeId: null,
+        formOrigin: null,
+        difficultyTp: null,
         options: [],
         key: null,
         children: draftsFromParts(part.children as QuestionPart[], depth + 1),
@@ -135,6 +145,9 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
       wordMax: part.mode === 'essay' ? (part.wordRange?.max ?? null) : null,
       stimulusId: part.stimulusId === undefined ? null : idFromString(part.stimulusId),
       reveal: part.reveal ?? 'after_submit',
+      unitNodeId: part.unitNodeId == null ? null : idFromString(part.unitNodeId),
+      formOrigin: part.formOrigin ?? null,
+      difficultyTp: part.difficultyTp ?? null,
       options:
         part.mode === 'mcq' || part.mode === 'pksk_choice'
           ? part.options.map((o, j) => ({
@@ -152,8 +165,9 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
 }
 
 /** Every `imageId` and `stimulusId` the tree references (decimal strings), for existence checks. */
-export function referencedIds(parts: readonly QuestionPart[]): { imageIds: string[]; stimulusIds: string[] } {
+export function referencedIds(parts: readonly QuestionPart[]): { imageIds: string[]; stimulusIds: string[]; unitIds: string[] } {
   const imageIds: string[] = []
+  const unitIds: string[] = []
   const stimulusIds: string[] = []
   const walk = (list: readonly QuestionPart[]): void => {
     for (const part of list) {
@@ -162,11 +176,12 @@ export function referencedIds(parts: readonly QuestionPart[]): { imageIds: strin
         continue
       }
       if (part.stimulusId !== undefined) stimulusIds.push(part.stimulusId)
+      if (part.unitNodeId != null) unitIds.push(part.unitNodeId)
       if (part.mode === 'mcq' || part.mode === 'pksk_choice') for (const o of part.options) if (o.imageId != null) imageIds.push(o.imageId)
     }
   }
   walk(parts)
-  return { imageIds, stimulusIds }
+  return { imageIds, stimulusIds, unitIds }
 }
 
 /** Total marks of the leaves (flat `pointsValue`, structured `totalMarks`). */

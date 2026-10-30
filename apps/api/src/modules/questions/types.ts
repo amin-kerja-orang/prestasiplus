@@ -173,6 +173,8 @@ export interface AdminListFilter {
   difficultyLevel?: string
   status?: QuestionStatus
   dskpFilter?: string
+  tagReview?: boolean
+  missing?: 'unit' | 'tp' | 'marks' | 'key'
   complianceFilter?: string
   sourceFilter?: string
   search?: string

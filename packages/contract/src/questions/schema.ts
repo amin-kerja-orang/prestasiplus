@@ -108,6 +108,10 @@ export const QuestionListQuerySchema = PageQuerySchema.extend({
   complianceFilter: z.string().optional().meta({ description: 'missing_source | verified_generated | a compliance status' }),
   sourceFilter: z.string().optional().meta({ description: 'textbook | dskp | trial | marking_scheme' }),
   search: z.string().optional(),
+  /** BJS-06 (15.7): only questions flagged "Perlu semakan tag". */
+  tagReview: z.enum(['true']).optional(),
+  /** BJS-06 (15.7): questions with at least one leaf part lacking this EFFECTIVE value (after inheritance). */
+  missing: z.enum(['unit', 'tp', 'marks', 'key']).optional(),
 }).meta({ id: 'QuestionListQuery' })
 
 export const QuestionSummarySchema = z
