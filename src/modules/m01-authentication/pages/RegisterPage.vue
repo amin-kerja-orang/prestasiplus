@@ -10,21 +10,27 @@
  * on failure the red alert lists the server messages and every value is kept except the two
  * passwords (FR-M01-26, INFERRED).
  */
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { isPrototypeRole, isPrototypeScopeOn } from '@/app/prototype-scope'
 import { DsCluster, DsFormField, DsNativeSelect, DsPanel } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
-import { isRegisterPending, register, type RegisterRequest, type SchoolSummary } from '../api'
+import {
+  getPlatformStats,
+  isRegisterPending,
+  register,
+  type RegisterRequest,
+  type SchoolSummary,
+} from '../api'
 import AuthAlert from '../components/auth/AuthAlert.vue'
 import AuthLayout from '../components/auth/AuthLayout.vue'
 import AuthWelcomePanel from '../components/auth/AuthWelcomePanel.vue'
 import PasswordInput from '../components/auth/PasswordInput.vue'
 import { REGISTER_TILES } from '../components/auth/welcome-tiles'
 import { SCHOOL_MIN_QUERY, useSchoolSearch } from '../composables/useSchoolSearch'
-import { errorLines } from '../lib/error-lines'
+import { REGISTRATION_CLOSED_MESSAGE, errorLines } from '../lib/error-lines'
 import {
   DARJAH_GRADES,
   REGISTER_STATE_OPTIONS,
@@ -62,6 +68,24 @@ const errors = ref<string[]>([])
 // Set by a teacher registration: the server's pending-verification message (no session, AM2-N1).
 const pendingMessage = ref<string | null>(null)
 
+// G5-M01 BUG-06: `GET /api/public/stats` may carry `registrationOpen` (optional until the contract
+// has it). Only an explicit `false` closes the form up front; missing, `true` or a failed call keep
+// it open (fail open) and the 403 on submit still shows the same copy.
+const registrationClosed = ref(false)
+onMounted(async () => {
+  try {
+    const stats = (await getPlatformStats()) as { registrationOpen?: unknown } | null
+    registrationClosed.value = stats?.registrationOpen === false
+  } catch {
+    registrationClosed.value = false
+  }
+})
+const alertMessages = computed<readonly string[]>(() =>
+  registrationClosed.value && errors.value.length === 0
+    ? [REGISTRATION_CLOSED_MESSAGE]
+    : errors.value,
+)
+
 const pickerRoot = ref<HTMLElement | null>(null)
 const { picker, state, setState } = useSchoolSearch({ limit: 15, root: pickerRoot })
 
@@ -86,6 +110,7 @@ function schoolDetail(school: SchoolSummary, withDistrict: boolean): string {
 const STATE_ITEMS = REGISTER_STATE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))
 
 async function submit(): Promise<void> {
+  if (registrationClosed.value) return
   loading.value = true
   errors.value = []
   const isStudent = role.value === 'student'
@@ -154,7 +179,7 @@ async function submit(): Promise<void> {
     <form data-testid="register-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <!-- A teacher gets no session (AM2-N1, DV-22): the server's message replaces the fields. -->
       <template v-if="pendingMessage === null">
-        <AuthAlert :messages="errors" data-testid="register-alert" />
+        <AuthAlert :messages="alertMessages" data-testid="register-alert" />
 
         <DsFormField native for="name" label="Nama Penuh">
           <UInput
@@ -413,7 +438,7 @@ async function submit(): Promise<void> {
           size="xl"
           variant="solid"
           :loading="loading"
-          :disabled="loading"
+          :disabled="loading || registrationClosed"
           icon="i-ph-user-plus-duotone"
           data-testid="register-submit"
         >

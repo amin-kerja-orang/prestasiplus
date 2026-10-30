@@ -9,6 +9,13 @@ import { isApiError } from '@/api'
 /** Shown only when the request produced no usable message (network failure, HTTP 500). INFERRED copy. */
 export const GENERIC_ERROR = 'Ralat berlaku. Sila cuba lagi.'
 
+/**
+ * `403 REGISTRATION_CLOSED` copy (BE env `REGISTRATION_OPEN=false`); also shown up front (G5-M01 BUG-06).
+ * Mirrors the BE `ACCOUNT_REGISTRATION_CLOSED_MESSAGE`; keep the two in sync (a 403 still shows the server text).
+ */
+export const REGISTRATION_CLOSED_MESSAGE =
+  'Pendaftaran akaun baharu ditutup buat sementara waktu. Sila cuba lagi kemudian.'
+
 /** The API's generic English defaults (api-error.ts): never shown in the BM UI (SWE). */
 const GENERIC_SERVER_TEXTS: readonly string[] = [
   'server error',
