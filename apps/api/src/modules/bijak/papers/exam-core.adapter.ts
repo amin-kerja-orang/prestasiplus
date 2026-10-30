@@ -32,3 +32,16 @@ export type {
 
 /** `all` or `choose n` (the prototype does not export a name for it). */
 export type SectionRule = SectionSnapshot['rule']
+
+// BJS-07: the standard-eligibility domain (architecture 4.2), imported by package root.
+export { describeQuestion, eligibilityOf, excludedReport } from '@pp/exam-core'
+export type {
+  DescribedQuestion,
+  EligibilitySection,
+  FormOrigin,
+  ExcludedReport,
+  IneligibleReason,
+  LeafFact,
+  QuestionFacts,
+  UnitFact,
+} from '@pp/exam-core'

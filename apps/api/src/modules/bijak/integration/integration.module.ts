@@ -6,7 +6,7 @@ import { GamificationModule, GamificationPorts } from '../../gamification'
 import { PracticeModule } from '../../practice'
 import { PracticeAggregateService } from '../../practice/aggregate'
 import { PracticePorts } from '../../practice/ports'
-import { QuestionsModule } from '../../questions'
+import { QuestionsBijakPoolSource, QuestionsModule } from '../../questions'
 import { PerformanceModule, PerformancePorts } from '../../reports/performance'
 import { WalletModule } from '../../wallet'
 import { BijakAttemptsModule } from '../attempts'
@@ -15,8 +15,9 @@ import { BijakAttemptProgress } from '../attempts/progress-source'
 import { BijakPapersModule } from '../papers'
 import { BijakPapersAttemptSource } from '../papers/attempt-source'
 import { BijakPapersPorts } from '../papers/ports'
+import { PocPoolSource } from '../papers/poc-pool-source'
 import { PocQuestionSource } from '../papers/poc-question-source'
-import { Be09BijakQuestionSource, CompositeBijakQuestionSource, CompositePaperQuestionSource } from '../question-bridge'
+import { Be09BijakQuestionSource, CompositeBijakPoolSource, CompositeBijakQuestionSource, CompositePaperQuestionSource } from '../question-bridge'
 import { WalletBijakReward, WalletPracticeReward } from './bindings'
 import { PracticeFactsAdapter } from './practice-facts'
 import { PrismaBijakAggregate } from './performance-bijak-aggregate'
@@ -63,6 +64,7 @@ export class BijakIntegrationModule implements OnModuleInit {
     @Inject(WalletBijakReward) private readonly bijakReward: WalletBijakReward,
     @Inject(WalletPracticeReward) private readonly practiceReward: WalletPracticeReward,
     @Inject(Be09BijakQuestionSource) private readonly bankQuestions: Be09BijakQuestionSource,
+    @Inject(QuestionsBijakPoolSource) private readonly bankPool: QuestionsBijakPoolSource,
     @Inject(PerformancePorts) private readonly performancePorts: PerformancePorts,
     @Inject(PrismaBijakAggregate) private readonly performanceAggregate: PrismaBijakAggregate,
     @Inject(GamificationPorts) private readonly gamificationPorts: GamificationPorts,
@@ -87,6 +89,7 @@ export class BijakIntegrationModule implements OnModuleInit {
     const poc = this.pocEnabled()
     this.attemptPorts.provideQuestionSource(new CompositeBijakQuestionSource(poc ? new PocBijakQuestionSource() : null, this.bankQuestions))
     this.papersPorts.provideQuestionSource(new CompositePaperQuestionSource(poc ? new PocQuestionSource() : null, this.bankQuestions))
+    this.papersPorts.providePoolSource(new CompositeBijakPoolSource(poc ? new PocPoolSource() : null, this.bankPool, this.progress))
     this.performancePorts.provideBijak(this.performanceAggregate)
   }
 }
