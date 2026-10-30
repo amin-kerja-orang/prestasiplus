@@ -14,7 +14,7 @@ const props = withDefaults(
     title: string
     description?: string
     dismissible?: boolean
-    size?: 'sm' | 'md' | 'lg'
+    size?: 'sm' | 'md' | 'lg' | 'xl'
     tone?: 'default' | 'error'
     loading?: boolean
   }>(),
@@ -25,7 +25,7 @@ const open = defineModel<boolean>('open', { default: false })
 const roomy = useMedia('(min-width: 640px)')
 
 const canDismiss = computed(() => props.dismissible && !props.loading)
-const WIDTH = { sm: 'sm:max-w-sm', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl' } as const
+const WIDTH = { sm: 'sm:max-w-sm', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl', xl: 'sm:max-w-4xl' } as const
 const modalUi = computed(() => ({
   content: WIDTH[props.size],
   ...(props.tone === 'error' ? { title: 'text-error' } : {}),
