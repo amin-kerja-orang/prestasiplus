@@ -4,7 +4,7 @@
  * blocks Sahkan; `warning` is informational (KBAT_TP_BAND, AC-37.5). The server repeats the check
  * (422 BLUEPRINT_INVALID) and its problems map onto the same issue shape (`issueFromProblem`).
  */
-import type { BijakBlueprintProblem, BijakBlueprintProblemCode } from '@pp/contract'
+import type { BijakBlueprintProblem } from '@pp/contract'
 
 import {
   groupSize,
@@ -37,7 +37,7 @@ const labelOf = (s: FormSection, i: number): string => s.label.trim() || `Bahagi
 
 /** Error copy, design 4.8 [PROPOSED]. */
 export function problemMessage(
-  code: BijakBlueprintProblemCode | string,
+  code: string,
   ctx: { label?: string; a?: number; b?: number; x?: number; y?: number; unit?: string; c?: number; d?: number },
 ): string {
   const l = ctx.label ?? ''

@@ -115,8 +115,9 @@ export function formatValue(field: BijakEvidenceLine['field'], v: unknown): stri
     const r = v as { type?: string; n?: number }
     return r.type === 'choose' ? `Jawab ${r.n}` : 'Jawab semua'
   }
-  if (field === 'durationMin') return `${String(v)} min`
-  return String(v)
+  if (typeof v === 'object') return JSON.stringify(v)
+  const text = typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' ? String(v) : ''
+  return field === 'durationMin' ? `${text} min` : text
 }
 
 export const bodyName = (b: string): string => b.replace(/_/g, ' ').toUpperCase()

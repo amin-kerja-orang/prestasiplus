@@ -132,7 +132,7 @@ function setCount(gi: number, tp: number, v: number | null): void {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4" :id="fieldId(index, 'profil')" tabindex="-1">
+  <div :id="fieldId(index, 'profil')" class="flex flex-col gap-4" tabindex="-1">
     <fieldset class="min-w-0">
       <legend class="mb-2 text-label text-default">Profil kesukaran</legend>
       <URadioGroup

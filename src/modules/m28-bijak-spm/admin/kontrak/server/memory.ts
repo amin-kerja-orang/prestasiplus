@@ -76,6 +76,9 @@ const UNITS: Record<string, BijakUnitRefView[]> = {
   ],
 }
 
+/** One microtask, like the latency of a real call (keeps every method truly async). */
+const tick = (): Promise<void> => Promise.resolve()
+
 /* ------------------------------------------------------------------------------- state */
 
 interface Ver {
@@ -286,9 +289,11 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async list(): Promise<BijakBlueprintView[]> {
+    await tick()
     return [...this.recs.values()].filter((r) => !r.retired).map((r) => this.viewOfHead(r))
   }
   async get(subject: string, kertas: number): Promise<BijakBlueprintView> {
+    await tick()
     return this.viewOfHead(this.rec(subject, kertas))
   }
 
@@ -305,6 +310,7 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async create(body: BijakBlueprintAdminCreate): Promise<BijakBlueprintView> {
+    await tick()
     const k = this.key(body.subject, body.kertas)
     const old = this.recs.get(k)
     if (old && !old.retired) throw new KontrakError('conflict', 'Kontrak untuk subjek dan kertas ini sudah wujud.')
@@ -319,6 +325,7 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async saveVersion(subject: string, kertas: number, body: Input): Promise<BijakBlueprintView> {
+    await tick()
     const r = this.rec(subject, kertas)
     this.checkInput(body)
     const prev = r.versions[r.versions.length - 1]!
@@ -339,10 +346,12 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async retire(subject: string, kertas: number): Promise<void> {
+    await tick()
     this.rec(subject, kertas).retired = true
   }
 
   async versions(subject: string, kertas: number): Promise<BijakBlueprintVersionItem[]> {
+    await tick()
     const r = this.rec(subject, kertas)
     const serving = this.servingVersion(r)
     return [...r.versions]
@@ -359,6 +368,7 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async evidence(subject: string, kertas: number): Promise<BijakEvidenceItem[]> {
+    await tick()
     return this.head(subject, kertas).evidenceIds.map((id) => this.evidenceStore.get(id)!).filter(Boolean)
   }
 
@@ -368,6 +378,7 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async addEvidence(subject: string, kertas: number, body: BijakEvidenceInput): Promise<BijakEvidenceItem> {
+    await tick()
     const h = this.head(subject, kertas)
     this.lockedCheck(h)
     const item: BijakEvidenceItem = {
@@ -389,6 +400,7 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async removeEvidence(subject: string, kertas: number, evidenceId: string): Promise<void> {
+    await tick()
     const h = this.head(subject, kertas)
     this.lockedCheck(h)
     if (!h.evidenceIds.includes(evidenceId)) throw new KontrakError('not_found', 'Bukti tidak ditemui')
@@ -453,11 +465,13 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async verification(subject: string, kertas: number): Promise<BijakVerificationState> {
+    await tick()
     const h = this.head(subject, kertas)
     return { record: h.view.source === 'Disahkan' ? h.verification : null, check: this.computeCheck(h) }
   }
 
   async verify(subject: string, kertas: number, note: string): Promise<BijakBlueprintView> {
+    await tick()
     const r = this.rec(subject, kertas)
     const h = r.versions[r.versions.length - 1]!
     if (h.view.source === 'Disahkan') throw new KontrakError('conflict', 'Kontrak ini sudah Disahkan.')
@@ -478,6 +492,7 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async pool(subject: string, kertas: number): Promise<BijakPoolPreview> {
+    await tick()
     const h = this.head(subject, kertas)
     const v = h.view
     const q = { subject, kertas: String(kertas), status: 'published' }
@@ -552,6 +567,7 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async listUnits(subject: string): Promise<BijakDskpUnit[]> {
+    await tick()
     return (UNITS[subject] ?? []).flatMap((u) =>
       u.kind === 'unit' && u.code && u.level
         ? [{ nodeId: u.nodeId, code: u.code, level: u.level, title: u.title ?? '', elective: false }]
@@ -560,6 +576,7 @@ export class MockKontrakServer implements KontrakApi {
   }
 
   async subjectOptions(): Promise<{ code: string; name: string }[]> {
+    await tick()
     return SUBJECTS.map((s) => ({ code: s.code, name: s.name }))
   }
 }

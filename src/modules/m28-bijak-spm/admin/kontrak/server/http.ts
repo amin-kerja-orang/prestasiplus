@@ -98,10 +98,10 @@ export class HttpKontrakServer extends HttpBijakServer implements KontrakApi {
     return this.call('GET', this.base(subject, kertas))
   }
   create(body: BijakBlueprintAdminCreate): Promise<BijakBlueprintView> {
-    return this.call('POST', '/api/admin/blueprints', body as unknown as Record<string, unknown>)
+    return this.call('POST', '/api/admin/blueprints', body)
   }
   saveVersion(subject: string, kertas: number, body: BijakBlueprintAdminVersionInput): Promise<BijakBlueprintView> {
-    return this.call('POST', `${this.base(subject, kertas)}/versions`, body as unknown as Record<string, unknown>)
+    return this.call('POST', `${this.base(subject, kertas)}/versions`, body)
   }
   async retire(subject: string, kertas: number): Promise<void> {
     await this.call('POST', `${this.base(subject, kertas)}/retire`)
@@ -113,7 +113,7 @@ export class HttpKontrakServer extends HttpBijakServer implements KontrakApi {
     return this.call('GET', `${this.base(subject, kertas)}/evidence`)
   }
   addEvidence(subject: string, kertas: number, body: BijakEvidenceInput): Promise<BijakEvidenceItem> {
-    return this.call('POST', `${this.base(subject, kertas)}/evidence`, body as unknown as Record<string, unknown>)
+    return this.call('POST', `${this.base(subject, kertas)}/evidence`, body)
   }
   async removeEvidence(subject: string, kertas: number, evidenceId: string): Promise<void> {
     await this.call('DELETE', `${this.base(subject, kertas)}/evidence/${enc(evidenceId)}`)

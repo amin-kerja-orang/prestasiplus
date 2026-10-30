@@ -8,7 +8,7 @@ import type { KontrakApi } from './api'
 import { createHttpKontrakServer } from './http'
 
 const createMock =
-  import.meta.env.VITE_API_MODE === 'http' ? null : (await import('./mock')).createMockKontrakServer
+  import.meta.env.VITE_API_MODE === 'http' ? null : (await import('./local-kontrak')).createMockKontrakServer
 
 let instance: KontrakApi | null = null
 

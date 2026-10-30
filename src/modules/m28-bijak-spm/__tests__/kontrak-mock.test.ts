@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 
 import { formFromView, toInput } from '../admin/kontrak/domain/form'
 import { KontrakError } from '../admin/kontrak/server/api'
-import { MockKontrakServer } from '../admin/kontrak/server/mock'
+import { MockKontrakServer } from '../admin/kontrak/server/memory'
 
-const server = (): MockKontrakServer => new MockKontrakServer({ createPaper: async () => 'paper-1' })
+const server = (): MockKontrakServer => new MockKontrakServer({ createPaper: () => Promise.resolve('paper-1') })
 
 /** Sains Kertas 2 (no standard in the seed) completed so that it can be verified. */
 async function completeSn(s: MockKontrakServer): Promise<BijakBlueprintView> {

@@ -26,15 +26,24 @@ const emit = defineEmits<{ save: [body: BijakEvidenceInput] }>()
 const open = defineModel<boolean>('open', { default: false })
 
 const thisYear = new Date().getFullYear()
-const form = reactive({
-  kind: 'trial_paper' as BijakEvidenceInput['kind'],
+const form = reactive<{
+  kind: BijakEvidenceInput['kind']
+  body: string
+  year: number | null
+  paperCode: string
+  durationMin: number | null
+  totalMarks: number | null
+  note: string
+  rows: Row[]
+}>({
+  kind: 'trial_paper',
   body: '',
-  year: thisYear as number | null,
+  year: thisYear,
   paperCode: '',
-  durationMin: null as number | null,
-  totalMarks: null as number | null,
+  durationMin: null,
+  totalMarks: null,
   note: '',
-  rows: [] as Row[],
+  rows: [],
 })
 const errors = ref<Record<string, string>>({})
 
