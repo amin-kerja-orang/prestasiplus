@@ -1,0 +1,38 @@
+{
+  "code": "1249/2",
+  "sections": [
+    {
+      "position": 1,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "bucket": "t1_t3", "value": 10 },
+          { "subject": "SEJ", "level": "T4", "unitCode": "Tajuk 11", "value": 10 },
+          { "subject": "SEJ", "level": "T5", "unitCode": "Tajuk 12", "value": 10 },
+          { "subject": "SEJ", "level": "T5", "unitCode": "Tajuk 14", "value": 10 }
+        ],
+        "levelShare": { "t4": 10, "t5": 20 }
+      },
+      "kbatMarks": 16,
+      "marksBand": [{ "from": 1, "to": 4, "marksMin": 10, "marksMax": 10 }],
+      "notes": "Bahagian A, 40 marks. Single body (Selangor). single-source: t1_t3 = 10 (Kesultanan Melaka, Tingkatan 1-3), Tajuk 11 = 10 (SK 11.2), Tajuk 14 = 10 (SK 14.1). inferred: Tajuk 12 = 10 (SK 12.3; the reading is ambiguous with SK 11.2). kbatMarks 16 inferred: the last part (4 marks) of each question; Q2 to Q4 have a per-part level in the table, Q1 was derived from the part TP using the TP-to-level pairs the table states for other parts (TP4 = Menganalisis)."
+    },
+    {
+      "position": 2,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "SEJ", "level": "T4", "unitCode": "Tajuk 10", "value": 20 },
+          { "subject": "SEJ", "level": "T4", "unitCode": "Tajuk 11", "value": 20 },
+          { "subject": "SEJ", "level": "T5", "unitCode": "Tajuk 12", "value": 12 },
+          { "subject": "SEJ", "level": "T5", "unitCode": "Tajuk 13", "value": 20 },
+          { "subject": "SEJ", "level": "T5", "unitCode": "Tajuk 14", "value": 8 },
+          { "subject": "SEJ", "level": "T5", "unitCode": "Tajuk 15", "value": 20 }
+        ],
+        "levelShare": { "t4": 40, "t5": 60 }
+      },
+      "marksBand": [{ "from": 1, "to": 5, "marksMin": 20, "marksMax": 20 }],
+      "notes": "INCOMPLETE (kbatMarks omitted): Q5 sub-part split is unresolved (paper reading 6/6/8, the skema end-of-block suggests Q5(b) = 8 which would exceed 20) and the level of Q5(b) (TP3) has no stated pair, so Bahagian B KBAT is not fixed. Offered 100 marks (choose 3, effective 60). single-source (Selangor only): Tajuk 10 = 20 (SK 10.4), Tajuk 11 = 20 (SK 11.3), Tajuk 15 = 20 (SK 15.2), Tajuk 12 = 12 (SK 12.4), Tajuk 14 = 8 (SK 14.2). inferred: Tajuk 13 = 20 (the 13 Mei 1969 question, listed as '13.2 or 14.1'; chosen by DSKP text: SP 13.2.5 'tragedi hubungan antara kaum' is in SK 13.2, while SK 14.1 is about unity strategies). ATTENTION: Q7 spans two Tajuk (12 + 8 marks), so these are leaf-attributed marks; they cannot be met if a question counts only for one primary unit (architecture O-1). A primary-unit reading would give Q7 to Tajuk 12 (12 of 20 marks), not applied here."
+    }
+  ]
+}
