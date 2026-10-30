@@ -1,0 +1,2065 @@
+{
+  "subject": "Sains",
+  "subjectCode": null,
+  "levels": [
+    "T4",
+    "T5"
+  ],
+  "language": "en",
+  "source": "DSKP KSSM Science Form 4 and 5.pdf",
+  "edition": "KSSM Sains Tingkatan 4 dan 5 (Edisi Bahasa Inggeris), Bahagian Pembangunan Kurikulum, Mei 2019 (Terbitan 2019)",
+  "structureNote": "Hierarchy: Theme -> Learning Area (unit, N.0) -> Content Standard (SK) -> Learning Standard (SP). Performance Standard (levels 1-6, Recall..Create) is printed per Learning Area; units that share one table (Form 4 theme \"Scientific Methodology\") carry the theme-level table. Unit titles are as printed in the table headings (the overview lists use slightly different wording). Form 5 Electrochemistry heading is printed as \"7.0\" in the PDF while its SK/SP are numbered 6.x (a source typo); stored as code 6.0 with printedCode 7.0. Form 4 \"9.0 CHEMECAL IN INDUSTRY\" is a source typo kept as printed in titlePrinted.",
+  "generalPerformanceLevels": {
+    "source": "Table 9: Description of Performance Level of Knowledge and Skills (KSSM Science Form 4 and 5)",
+    "levels": [
+      {
+        "tp": 1,
+        "descriptor": "Recall the knowledge and scientific skills."
+      },
+      {
+        "tp": 2,
+        "descriptor": "Understand the knowledge and scientific skills as well as explain their understanding."
+      },
+      {
+        "tp": 3,
+        "descriptor": "Apply the knowledge and scientific skills to perform tasks."
+      },
+      {
+        "tp": 4,
+        "descriptor": "Analysing science knowledge and scientific skills in the context of problem solving."
+      },
+      {
+        "tp": 5,
+        "descriptor": "Evaluate science knowledge and scientific skills in the context of problem solving and making decision to perform task."
+      },
+      {
+        "tp": 6,
+        "descriptor": "Create by using science knowledge and scientific skills in the context of problem solving and making decision or in performing the tasks in a new situation creatively and innovatively."
+      }
+    ]
+  },
+  "manualCorrections": [
+    "T4 SP 4.3.1",
+    "T4 SP 11.3.3",
+    "T4 SP 12.2.3",
+    "T5 SP 1.2.2",
+    "T5 SP 2.6.2",
+    "T5 SP 4.2.1",
+    "T5 SP 5.5.5",
+    "T5 SP 5.5.6",
+    "T5 SP 5.5.5-5.5.7 reconstructed",
+    "audit 2026-10-16: T4 SP 6.3.3 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 7.2.1 - removed stray \"1.\" (Notes numbering) at the end"
+  ],
+  "units": [
+    {
+      "level": "T4",
+      "code": "1.0",
+      "title": "Safety Measures in Laboratory",
+      "titlePrinted": "SAFETY MEASURES IN LABORATORY",
+      "theme": "SCIENTIFIC METHODOLOGY",
+      "standards": [
+        {
+          "sk": "1.1",
+          "skTitle": "Self Protection Equipment",
+          "sp": [
+            {
+              "code": "1.1.1",
+              "text": "Explain with examples the self- protection equipments and their functions."
+            }
+          ]
+        },
+        {
+          "sk": "1.2",
+          "skTitle": "Disposable of Waste",
+          "sp": [
+            {
+              "code": "1.2.1",
+              "text": "Explain with examples wastes that can be disposed into wash basins."
+            },
+            {
+              "code": "1.2.2",
+              "text": "Characterize substances that cannot be disposed into wash basins."
+            },
+            {
+              "code": "1.2.3",
+              "text": "Manage biological waste substances."
+            },
+            {
+              "code": "1.2.4",
+              "text": "Communicate about steps to handle accidents in laboratory."
+            }
+          ]
+        },
+        {
+          "sk": "1.3",
+          "skTitle": "Fire Extinguisher",
+          "sp": [
+            {
+              "code": "1.3.1",
+              "text": "Communicate about the types of fire extinguisher"
+            },
+            {
+              "code": "1.3.2",
+              "text": "Explain the method of using fire extinguisher."
+            },
+            {
+              "code": "1.3.3",
+              "text": "Carry out an audit on the fire extinguishers at school."
+            },
+            {
+              "code": "1.3.4",
+              "text": "Create a simple fire extinguisher. ."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on safety measure in laboratory, emergency help, technique and prosedure."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand the safety measure in laboratory, emergency help, technique and prosedure and to explain their understanding."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the knowledge on safety in laboratory, emergency help, technique and prosedure to accomplish simple task."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse the knowledge and science skills on safety measures in laboratory, emergency help, technique and prosedure in the context of problem solving about event or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate the knowledge on safety measure in laboratory, emergency help, technique and procedure in the context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create by using the knowledge and science skills on safety measure in laboratory, emergency help , technique and procedure in the context of problem solving and decision making with regards to the social values/economy/culture of the community."
+        }
+      ],
+      "tpScope": "SCIENTIFIC METHODOLOGY",
+      "tpScopeNote": "theme-level performance standard shared by the units of this theme"
+    },
+    {
+      "level": "T4",
+      "code": "2.0",
+      "title": "Emergency Help",
+      "titlePrinted": "EMERGENCY HELP",
+      "theme": "SCIENTIFIC METHODOLOGY",
+      "standards": [
+        {
+          "sk": "2.1",
+          "skTitle": "Cardiopulmonary resuscitation (CPR)",
+          "sp": [
+            {
+              "code": "2.1.1",
+              "text": "State the meaning of CPR and the situation that requires CPR."
+            },
+            {
+              "code": "2.1.2",
+              "text": "Demonstrate CPR methods."
+            },
+            {
+              "code": "2.1.3",
+              "text": "Explain the importance of CPR."
+            }
+          ]
+        },
+        {
+          "sk": "2.2",
+          "skTitle": "Heimlich Maneuver",
+          "sp": [
+            {
+              "code": "2.2.1",
+              "text": "Explain Heimlich Maneuver and its importance."
+            },
+            {
+              "code": "2.2.2",
+              "text": "Demonstrate Heimlich Maneuver."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on safety measure in laboratory, emergency help, technique and prosedure."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand the safety measure in laboratory, emergency help, technique and prosedure and to explain their understanding."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the knowledge on safety in laboratory, emergency help, technique and prosedure to accomplish simple task."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse the knowledge and science skills on safety measures in laboratory, emergency help, technique and prosedure in the context of problem solving about event or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate the knowledge on safety measure in laboratory, emergency help, technique and procedure in the context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create by using the knowledge and science skills on safety measure in laboratory, emergency help , technique and procedure in the context of problem solving and decision making with regards to the social values/economy/culture of the community."
+        }
+      ],
+      "tpScope": "SCIENTIFIC METHODOLOGY",
+      "tpScopeNote": "theme-level performance standard shared by the units of this theme"
+    },
+    {
+      "level": "T4",
+      "code": "3.0",
+      "title": "Techniques of Measuring the Parameters of Body Health",
+      "titlePrinted": "TECHNIQUES OF MEASURING THE PARAMETERS OF BODY HEALTH",
+      "theme": "SCIENTIFIC METHODOLOGY",
+      "standards": [
+        {
+          "sk": "3.1",
+          "skTitle": "Body Temperature",
+          "sp": [
+            {
+              "code": "3.1.1",
+              "text": "Measure the body temperature with the correct technique."
+            },
+            {
+              "code": "3.1.2",
+              "text": "Interpret body temperature."
+            }
+          ]
+        },
+        {
+          "sk": "3.2",
+          "skTitle": "Pulse rate",
+          "sp": [
+            {
+              "code": "3.2.1",
+              "text": "Identify the pulse points on the body."
+            },
+            {
+              "code": "3.2.2",
+              "text": "Carry out experiment to determine human's pulse rate."
+            }
+          ]
+        },
+        {
+          "sk": "3.3",
+          "skTitle": "Blood Pressure",
+          "sp": [
+            {
+              "code": "3.3.1",
+              "text": "Identify the meter for measuring blood pressure."
+            },
+            {
+              "code": "3.3.2",
+              "text": "Measure and record blood pressure."
+            },
+            {
+              "code": "3.3.3",
+              "text": "Interpret data from blood pressure readings."
+            }
+          ]
+        },
+        {
+          "sk": "3.4",
+          "skTitle": "Body Mass Index (BMI)",
+          "sp": [
+            {
+              "code": "3.4.1",
+              "text": "Calculate and determine Body Mass Index."
+            },
+            {
+              "code": "3.4.2",
+              "text": "Interpret the Body Mass Index and make decision what to do next."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on safety measure in laboratory, emergency help, technique and prosedure."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand the safety measure in laboratory, emergency help, technique and prosedure and to explain their understanding."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the knowledge on safety in laboratory, emergency help, technique and prosedure to accomplish simple task."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse the knowledge and science skills on safety measures in laboratory, emergency help, technique and prosedure in the context of problem solving about event or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate the knowledge on safety measure in laboratory, emergency help, technique and procedure in the context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create by using the knowledge and science skills on safety measure in laboratory, emergency help , technique and procedure in the context of problem solving and decision making with regards to the social values/economy/culture of the community."
+        }
+      ],
+      "tpScope": "SCIENTIFIC METHODOLOGY"
+    },
+    {
+      "level": "T4",
+      "code": "4.0",
+      "title": "Green Technology for Environmental Sustainability",
+      "titlePrinted": "GREEN TECHNOLOGY FOR ENVIRONMENTAL SUSTAINABILITY",
+      "theme": "MAINTENANCE AND CONTINUITY OF LIFE",
+      "standards": [
+        {
+          "sk": "4.1",
+          "skTitle": "Sustainable Environment",
+          "sp": [
+            {
+              "code": "4.1.1",
+              "text": "Define and justify green technology in life."
+            },
+            {
+              "code": "4.1.2",
+              "text": "Relate energy efficiency with green technology."
+            },
+            {
+              "code": "4.1.3",
+              "text": "Identify sectors in green technology."
+            }
+          ]
+        },
+        {
+          "sk": "4.2",
+          "skTitle": "Energy Sector",
+          "sp": [
+            {
+              "code": "4.2.1",
+              "text": "Describe socio-scientific issues."
+            },
+            {
+              "code": "4.2.2",
+              "text": "Explain socio-scientific issues in the energy sector."
+            },
+            {
+              "code": "4.2.3",
+              "text": "Justify the application of green technology to overcome socio-scientific issues in the energy sector."
+            }
+          ]
+        },
+        {
+          "sk": "4.3",
+          "skTitle": "Waste and Waste Water Management Sector",
+          "sp": [
+            {
+              "code": "4.3.1",
+              "text": "Explain socio-scientific issues in the waste and waste water management sector."
+            },
+            {
+              "code": "4.3.2",
+              "text": "Justify the application of green technology to overcome socio-scientific issues in the waste and waste water management."
+            }
+          ]
+        },
+        {
+          "sk": "4.4",
+          "skTitle": "Agriculture and Forestry Sector",
+          "sp": [
+            {
+              "code": "4.4.1",
+              "text": "Explain socio-scientific issues in the agriculture and forestry sector."
+            },
+            {
+              "code": "4.4.2",
+              "text": "Justify the application of green technology to overcome socio-scientific issues in the agriculture and forestry sector."
+            }
+          ]
+        },
+        {
+          "sk": "4.5",
+          "skTitle": "Transportation Sector",
+          "sp": [
+            {
+              "code": "4.5.1",
+              "text": "Explain socio-scientific issues in the transportation sector."
+            },
+            {
+              "code": "4.5.2",
+              "text": "Justify the application of green technology to overcome socio-scientific issues in the transportation sector."
+            }
+          ]
+        },
+        {
+          "sk": "4.6",
+          "skTitle": "Green Technology and Life",
+          "sp": [
+            {
+              "code": "4.6.1",
+              "text": "Justify the role of individuals in addressing the phenomena of global warming and climate change in reducing carbon footprint."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall knowledge and science skill on green technology in sustainable nature."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand green technology in sustainable nature and able to explain based on the understanding."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Applying the knowledge on green technology in sustainable nature and able to accomplish simple task."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge on green technology in sustainable nature in context of problem solving on event or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge on green technology in sustainable nature in context of problem solving and decision making to accomplish task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create using knowledge and science skills on green technology in sustainable nature in context of problem solving and decision making or accomplish a task in a new situation in a creative and innovative way with regards to social values/economy /community culture ."
+        }
+      ],
+      "tpScope": "GREEN TECHNOLOGY IN SUSTAINABLE NATURE"
+    },
+    {
+      "level": "T4",
+      "code": "5.0",
+      "title": "Genetic",
+      "titlePrinted": "GENETIC",
+      "theme": "MAINTENANCE AND CONTINUITY OF LIFE",
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Cell Division",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Explain gene, deoxyribonucleic acid (DNA), and chromosomes in the nucleus."
+            },
+            {
+              "code": "5.1.2",
+              "text": "Compare and contrast mitosis and meiosis."
+            },
+            {
+              "code": "5.1.3",
+              "text": "Justify the importance of mitosis and meiosis."
+            }
+          ]
+        },
+        {
+          "sk": "5.2",
+          "skTitle": "Inheritance",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Explain inheritance in human."
+            },
+            {
+              "code": "5.2.2",
+              "text": "Communicate about the inheritance mechanisms."
+            }
+          ]
+        },
+        {
+          "sk": "5.3",
+          "skTitle": "Mutation",
+          "sp": [
+            {
+              "code": "5.3.1",
+              "text": "Describe mutation definition and types of mutation."
+            },
+            {
+              "code": "5.3.2",
+              "text": "Explain with examples the factors that cause gene mutation and chromosomal mutation."
+            },
+            {
+              "code": "5.3.3",
+              "text": "Explain with example gene disorder diseases with its characteristics and the screening method of the disease."
+            },
+            {
+              "code": "5.3.4",
+              "text": "Discuss genetic research application to increase living quality."
+            },
+            {
+              "code": "5.3.5",
+              "text": "Debate the effects of genetics research to human life."
+            }
+          ]
+        },
+        {
+          "sk": "5.4",
+          "skTitle": "Genetic Engineering Technology",
+          "sp": [
+            {
+              "code": "5.4.1",
+              "text": "Justify genetic engineering technology. ."
+            },
+            {
+              "code": "5.4.2",
+              "text": "Debate the effects of genetic engineering technology in life."
+            },
+            {
+              "code": "5.4.3",
+              "text": "Justify etiquette in genetic engineering technology."
+            }
+          ]
+        },
+        {
+          "sk": "5.5",
+          "skTitle": "Variation",
+          "sp": [
+            {
+              "code": "5.5.1",
+              "text": "Communicate about continuous variation and discontinuous variation."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on genetic"
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand genetic and able to explain based on the understanding."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge on genetic and able to accomplish easy task."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge on genetic in context of problem solving on events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menilai knowledge of genetic in context of problem solving and decision making to accomplish a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create using knowledge and science skills on genetic in context of problem solving and decision making or accomplish a task in a new situation in a creative and innovative way with regards to social values / economy / community culture"
+        }
+      ],
+      "tpScope": "GENETIC"
+    },
+    {
+      "level": "T4",
+      "code": "6.0",
+      "title": "Support, Movement and Growth",
+      "titlePrinted": "SUPPORT, MOVEMENT AND GROWTH",
+      "theme": "MAINTENANCE AND CONTINUITY OF LIFE",
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Support, Movement and Animal Growth",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Explain with examples the types of support in animals."
+            },
+            {
+              "code": "6.1.2",
+              "text": "Relate the size of exoskeleton with growth."
+            },
+            {
+              "code": "6.1.3",
+              "text": "Relate hydrostatic skeleton with movement."
+            },
+            {
+              "code": "6.1.4",
+              "text": "Elaborate the function of endoskeleton in animals."
+            },
+            {
+              "code": "6.1.5",
+              "text": "Dissect the human skeletal system."
+            },
+            {
+              "code": "6.1.6",
+              "text": "Carry out an experiment to differentiate the strength of compact bones with hollow bones."
+            },
+            {
+              "code": "6.1.7",
+              "text": "Relate support system with animal's stability."
+            }
+          ]
+        },
+        {
+          "sk": "6.2",
+          "skTitle": "Movement and Human Growth",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Explain the function of joints and muscles in movement."
+            },
+            {
+              "code": "6.2.2",
+              "text": "Generate ideas regarding problems with joints and muscles in daily life."
+            },
+            {
+              "code": "6.2.3",
+              "text": "Explain the pattern of human growth."
+            },
+            {
+              "code": "6.2.4",
+              "text": "Compare and contrast the growth pattern between male and female."
+            }
+          ]
+        },
+        {
+          "sk": "6.3",
+          "skTitle": "Support, Growth and Stability in Plants",
+          "sp": [
+            {
+              "code": "6.3.1",
+              "text": "Explain the support systems in terrestrial and aquatic plants."
+            },
+            {
+              "code": "6.3.2",
+              "text": "Determine the age of woody plants."
+            },
+            {
+              "code": "6.3.3",
+              "text": "Relate the support system with stability in plants."
+            },
+            {
+              "code": "6.3.4",
+              "text": "Carry out an experiment to determine a plant's growth pattern."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on support, movement and growth in human, animals and plants."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand support, movement and growth in human, animals and plants and able to explain based on the understanding."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge on support, movement and growth in human, animals and plants and able to accomplish simple task."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge on support, movement and growth in human, animals and plants in context of problem solving on events or natural phenomena"
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge on support, movement and growth in human, animals and plants in context of problem solving and decision making to accomplish a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create using knowledge and science skills on support, movement and growth in humans, animals and plants in context of problem solving and decision making or accomplish a task in a new situation in a creative and innovative way with regards to the social values / economy / community culture."
+        }
+      ],
+      "tpScope": "SUPPORT, MOVEMENT AND GROWTH"
+    },
+    {
+      "level": "T4",
+      "code": "7.0",
+      "title": "Body Coordination",
+      "titlePrinted": "BODY COORDINATION",
+      "theme": "MAINTENANCE AND CONTINUITY OF LIFE",
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Human Endocrine System",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Explain endocrine system and its functions."
+            },
+            {
+              "code": "7.1.2",
+              "text": "Explain with examples the cause and effects of hormonal imbalance on health."
+            }
+          ]
+        },
+        {
+          "sk": "7.2",
+          "skTitle": "Disturbances to the Body Coordination System",
+          "sp": [
+            {
+              "code": "7.2.1",
+              "text": "Explain with examples the types of drugs."
+            },
+            {
+              "code": "7.2.2",
+              "text": "do reasoning on the effects of drugs and alcohol abuse on body coordination and mental health."
+            }
+          ]
+        },
+        {
+          "sk": "7.3",
+          "skTitle": "Healthy Minds",
+          "sp": [
+            {
+              "code": "7.3.1",
+              "text": "Justify the need for a community who have healthy minds."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and scientific skills on body coordination"
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand the body coordination and able to explain based on the understanding"
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the knowledge on body coordination and able to accomplish simple task"
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse the knowledge on body coordination in context of problem solving on the occurances or natural phenomena"
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate the knowledge on body coordination in context of problem solving and decision making to accomplish or accomplish a task"
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create using knowledge and science skills on nutrition and food technology in context of problem solving and decision making or accomplish on a new situation in a creative and innovative way with regards to social values/economy/community culture"
+        }
+      ],
+      "tpScope": "BODY COORDINATION"
+    },
+    {
+      "level": "T4",
+      "code": "8.0",
+      "title": "Elements and Substances",
+      "titlePrinted": "ELEMENTS AND SUBSTANCES",
+      "theme": "EXPLORATION ELEMENTS IN NATURE",
+      "standards": [
+        {
+          "sk": "8.1",
+          "skTitle": "Matter",
+          "sp": [
+            {
+              "code": "8.1.1",
+              "text": "Explain with examples atoms, molecules and ions."
+            },
+            {
+              "code": "8.1.2",
+              "text": "Explain the existence of elements in various form."
+            }
+          ]
+        },
+        {
+          "sk": "8.2",
+          "skTitle": "Modern Periodic Table of Elments",
+          "sp": [
+            {
+              "code": "8.2.1",
+              "text": "Analyse the Modern Periodic Table of Elements."
+            },
+            {
+              "code": "8.2.2",
+              "text": "Deduce the principle of arranging the elements in the Modern Periodic Table of Elements."
+            },
+            {
+              "code": "8.2.3",
+              "text": "Draw and write the electron arrangement of elements in its group."
+            },
+            {
+              "code": "8.2.4",
+              "text": "Explain the formation of positive and negative ions."
+            },
+            {
+              "code": "8.2.5",
+              "text": "Justify the loss and gain of electrons to achieve the stable electron arrangement."
+            }
+          ]
+        },
+        {
+          "sk": "8.3",
+          "skTitle": "Isotope",
+          "sp": [
+            {
+              "code": "8.3.1",
+              "text": "Describe isotopes with examples."
+            },
+            {
+              "code": "8.3.2",
+              "text": "Determine the number of protons, number of neutrons and nucleon number of isotopes."
+            },
+            {
+              "code": "8.3.3",
+              "text": "Communicate about the use of isotopes in various fields."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on elements and substances."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understands elements and substances and able to explain the understanding."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge of elements and substances and able to accomplish simple task."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge of elements and substances in context of problem solving about events or natural phenomenon."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge of elements and substances in context problem solving and making decision to carry out a task"
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create by using knowledge and science skills of elements and substances in context of problem solving and decision making or in carry out a task in new situation creatively and innovatively with regards to the social/ economy/ culture of the community"
+        }
+      ],
+      "tpScope": "ELEMENTS AND SUBSTANCES"
+    },
+    {
+      "level": "T4",
+      "code": "9.0",
+      "title": "Chemecal in Industry",
+      "titlePrinted": "CHEMECAL IN INDUSTRY",
+      "theme": "EXPLORATION ELEMENTS IN NATURE",
+      "standards": [
+        {
+          "sk": "9.1",
+          "skTitle": "Alloy",
+          "sp": [
+            {
+              "code": "9.1.1",
+              "text": "Define and give examples of alloys based on their composition of elements."
+            },
+            {
+              "code": "9.1.2",
+              "text": "Carry out an experiment to compare alloys with its pure metals."
+            },
+            {
+              "code": "9.1.3",
+              "text": "Justify the use of alloys in daily life."
+            }
+          ]
+        },
+        {
+          "sk": "9.2",
+          "skTitle": "Glass and Ceramic",
+          "sp": [
+            {
+              "code": "9.2.1",
+              "text": "Describe the components of glass and ceramics."
+            },
+            {
+              "code": "9.2.2",
+              "text": "Explain with examples the application of glass and ceramics."
+            },
+            {
+              "code": "9.2.3",
+              "text": "Justify the suitability of using glass and ceramics in daily life."
+            }
+          ]
+        },
+        {
+          "sk": "9.3",
+          "skTitle": "Polymer",
+          "sp": [
+            {
+              "code": "9.3.1",
+              "text": "Explain natural polymers and synthetic polymers."
+            },
+            {
+              "code": "9.3.2",
+              "text": "Explain the process of addition polymerisation."
+            },
+            {
+              "code": "9.3.3",
+              "text": "Communicate about the characteristics and process of vulcanization of rubber."
+            },
+            {
+              "code": "9.3.4",
+              "text": "Generating ideas about the latest technology based on rubber."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on chemical industry."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understanding and can explain chemical industry."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge on industrial chemical and carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge on industrial chemical in the context of problem solving about events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge of industrial chemical in the context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create a task using science knowledge and skills on industrial chemical in the context of problem solving and decision making or in carrying out a task in a creative and innovative new situation by taking into account social/economic/cultural values of society."
+        }
+      ],
+      "tpScope": "CHEMICALS IN INDUSTRY"
+    },
+    {
+      "level": "T4",
+      "code": "10.0",
+      "title": "Chemicals in Medicine and Health",
+      "titlePrinted": "CHEMICALS IN MEDICINE AND HEALTH",
+      "theme": "EXPLORATION ELEMENTS IN NATURE",
+      "standards": [
+        {
+          "sk": "10.1",
+          "skTitle": "Traditional and complementary medicine",
+          "sp": [
+            {
+              "code": "10.1.1",
+              "text": "Explain the criteria of traditional medicine, modern medicine and complementary medicine. ."
+            },
+            {
+              "code": "10.1.2",
+              "text": "Explain the medicines used in traditional, modern and complementary medicine."
+            },
+            {
+              "code": "10.1.3",
+              "text": "Justify the use of traditional, modern and complementary medicine."
+            },
+            {
+              "code": "10.1.4",
+              "text": "Do reasoning about the use of medicine from natural resources and man-made resources in treatments and healthcare."
+            },
+            {
+              "code": "10.1.5",
+              "text": "Conclude the effect of misuse of medicine."
+            }
+          ]
+        },
+        {
+          "sk": "10.2",
+          "skTitle": "Food supplements and health foods",
+          "sp": [
+            {
+              "code": "10.2.1",
+              "text": "Define free radicals."
+            },
+            {
+              "code": "10.2.2",
+              "text": "Do reasoning about the impact of free radicals on human health."
+            }
+          ]
+        },
+        {
+          "sk": "10.3",
+          "skTitle": "Antioxidant",
+          "sp": [
+            {
+              "code": "10.3.1",
+              "text": "Describe the antioxidant substances."
+            },
+            {
+              "code": "10.3.2",
+              "text": "Explain the action of antioxidant substance on free radicals."
+            },
+            {
+              "code": "10.3.3",
+              "text": "Carry out an experiment to investigate the factors that affect the oxidation of food."
+            }
+          ]
+        },
+        {
+          "sk": "10.4",
+          "skTitle": "Health Products",
+          "sp": [
+            {
+              "code": "10.4.1",
+              "text": "Explain the meaning of active ingredients in health products."
+            },
+            {
+              "code": "10.4.2",
+              "text": "Justify the use of health products available in the market."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall science knowledge and skills on chemistry in medicine and health"
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and can explain the chemicals in medical and health."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge on chemistry in medicine and health and be able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge on chemistry in medicine and health in the context of problem solving about event or natural phenomena"
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge of chemistry in medicine and health in the context of problem solving and making decision on a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create a task using scientific knowledge and skills on chemistry in medicine and health in the context of problem solving and decision-making or in carrying out a task in a creative and innovative new situation taking into account the social / economic / cultural value of society."
+        }
+      ],
+      "tpScope": "CHEMICALS IN MEDICINE AND HEALTH"
+    },
+    {
+      "level": "T4",
+      "code": "11.0",
+      "title": "Force and Motion",
+      "titlePrinted": "FORCE AND MOTION",
+      "theme": "ENERGY AND SUSTAINABILITY OF LIFE",
+      "standards": [
+        {
+          "sk": "11.1",
+          "skTitle": "Linear motion",
+          "sp": [
+            {
+              "code": "11.1.1",
+              "text": "Explain the difference between distance and displacement and their units in daily life."
+            },
+            {
+              "code": "11.1.2",
+              "text": "Explain with examples the meaning of speed, average speed, velocity dan acceleration and their units in daily life."
+            },
+            {
+              "code": "11.1.3",
+              "text": "Solve problems that involve speed, average speed, velocity and acceleration in daily life."
+            },
+            {
+              "code": "11.1.4",
+              "text": "Distinguish between the various types of linear motion."
+            }
+          ]
+        },
+        {
+          "sk": "11.2",
+          "skTitle": "Graph of Linear motion",
+          "sp": [
+            {
+              "code": "11.2.1",
+              "text": "Interpret the different types of motion from the linear motion graphs to determine distance, displacement, velocity, average velocity and acceleration."
+            }
+          ]
+        },
+        {
+          "sk": "11.3",
+          "skTitle": "Gravitational Acceleration and Free Fall",
+          "sp": [
+            {
+              "code": "11.3.1",
+              "text": "Carry out an experiment to determine the acceleration of the earth's gravity, g."
+            },
+            {
+              "code": "11.3.2",
+              "text": "Interpret the motion graph for a free fall object."
+            },
+            {
+              "code": "11.3.3",
+              "text": "Carry out an experiment to study free fall and non-free fall."
+            }
+          ]
+        },
+        {
+          "sk": "11.4",
+          "skTitle": "Mass and inertia",
+          "sp": [
+            {
+              "code": "11.4.1",
+              "text": "Explain mass."
+            },
+            {
+              "code": "11.4.2",
+              "text": "Explain with examples the meaning of inertia."
+            },
+            {
+              "code": "11.4.3",
+              "text": "Carry out an experiment to study the relationship between mass and inertia."
+            },
+            {
+              "code": "11.4.4",
+              "text": "Communicate the effects of inertia in daily life."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall knowledge and science skills on force and motion."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and able to explain force and motion for sustainability."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the knowledge of force and motion and to be able to carry out simple related tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyze the knowledge of force and motion in the context of problem solving in daily occurrences or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate the knowledge of force and motion in the context of problem solving and decision making to carry out an assignment."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Creating using science knowledge and skills on force and motion in the context of problem solving and decision making or in carrying out an assignment in a creative and innovative new situation by taking into account the social / economic / cultural values of the society."
+        }
+      ],
+      "tpScope": "FORCE AND MOTION"
+    },
+    {
+      "level": "T4",
+      "code": "12.0",
+      "title": "Nuclear Energy",
+      "titlePrinted": "NUCLEAR ENERGY",
+      "theme": "ENERGY AND SUSTAINABILITY OF LIFE",
+      "standards": [
+        {
+          "sk": "12.1",
+          "skTitle": "The Use of Nuclear Energy",
+          "sp": [
+            {
+              "code": "12.1.1",
+              "text": "Justifies the use of nuclear energy for a country that has been identified."
+            }
+          ]
+        },
+        {
+          "sk": "12.2",
+          "skTitle": "The Production of Nuclear Energy",
+          "sp": [
+            {
+              "code": "12.2.1",
+              "text": "Describe the production of nuclear energy by nuclear fission and nuclear fusion."
+            },
+            {
+              "code": "12.2.2",
+              "text": "Describe the generation of electricity from nuclear energy."
+            },
+            {
+              "code": "12.2.3",
+              "text": "Justify the use of nuclear energy in countries using it."
+            }
+          ]
+        },
+        {
+          "sk": "12.3",
+          "skTitle": "Impact of Using Nuclear Energy",
+          "sp": [
+            {
+              "code": "12.3.1",
+              "text": "Tell a story about the impact of the usage of nuclear weapons on life and the environment."
+            },
+            {
+              "code": "12.3.2",
+              "text": "Conclude the impact of nuclear tests on the environment."
+            }
+          ]
+        },
+        {
+          "sk": "12.4",
+          "skTitle": "Nuclear Energy in Malaysia",
+          "sp": [
+            {
+              "code": "12.4.1",
+              "text": "Justify the constructing of nuclear power plant in Malaysia."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall knowledge and science skills on nuclear energy."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and able to explain nuclear energy."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the knowledge of nuclear energy and be able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyze the knowledge of nuclear energy in the context of problem solving in daily occurrences or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate the knowledge of nuclear energy in the context of problem solving and decision making to carry out an assignment."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Creating using science knowledge and skills on nuclear energy in the context of problem solving and decision making or in carrying out an assignment in a creative and innovative new situation by taking into account the social / economic / cultural values of the society."
+        }
+      ],
+      "tpScope": "NUCLEAR ENERGY"
+    },
+    {
+      "level": "T5",
+      "code": "1.0",
+      "title": "Microorganisms",
+      "titlePrinted": "MICROORGANISMS",
+      "theme": "MAINTENANCE AND CONTINUITY OF LIFE",
+      "standards": [
+        {
+          "sk": "1.1",
+          "skTitle": "World of microorganisms",
+          "sp": [
+            {
+              "code": "1.1.1",
+              "text": "Communicate about microorganisms."
+            },
+            {
+              "code": "1.1.2",
+              "text": "Conduct an experiment to show the presence of microorganisms."
+            },
+            {
+              "code": "1.1.3",
+              "text": "Conduct an experiment to investigate factors that affect the growth of microorganisms."
+            }
+          ]
+        },
+        {
+          "sk": "1.2",
+          "skTitle": "Useful microorganisms",
+          "sp": [
+            {
+              "code": "1.2.1",
+              "text": "Justify the application of useful microorganisms in life."
+            },
+            {
+              "code": "1.2.2",
+              "text": "Generate ideas on the potential use of microorganisms in biotechnology and sustainability of the environment."
+            }
+          ]
+        },
+        {
+          "sk": "1.3",
+          "skTitle": "Prevention and treatment of diseases caused by harmful microorganisms",
+          "sp": [
+            {
+              "code": "1.3.1",
+              "text": "Explain the concept of the statement `prevention is better than cure' for diseases caused by microorganisms."
+            },
+            {
+              "code": "1.3.2",
+              "text": "Explain the aseptic techniques to control the spreading of microorganisms."
+            },
+            {
+              "code": "1.3.3",
+              "text": "Conduct an experiment to study the effect of antibiotic on bacterial growth."
+            },
+            {
+              "code": "1.3.4",
+              "text": "Communicate about methods of treatment of infectious diseases."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on microorganisms."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and explain microorganisms."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge about microorganisms and able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge about microorganisms in context of problem solving on events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge about microorganisms in context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Design a task using knowledge and science skills on microorganisms in a creative and innovative ways to solve problems and making decision or carry out a task in a new situation taking into account the social/economic/cultural values of the community."
+        }
+      ],
+      "tpScope": "MICROORGANISMS"
+    },
+    {
+      "level": "T5",
+      "code": "2.0",
+      "title": "Nutrition and Food Technology",
+      "titlePrinted": "NUTRITION AND FOOD TECHNOLOGY",
+      "theme": "MAINTENANCE AND CONTINUITY OF LIFE",
+      "standards": [
+        {
+          "sk": "2.1",
+          "skTitle": "Balanced diet and calorific value",
+          "sp": [
+            {
+              "code": "2.1.1",
+              "text": "Describe balanced diet."
+            },
+            {
+              "code": "2.1.2",
+              "text": "Conduct an experiment to estimate the energy value in food samples."
+            },
+            {
+              "code": "2.1.3",
+              "text": "Justify the effects of consuming calories that do not meet individual requirements."
+            }
+          ]
+        },
+        {
+          "sk": "2.2",
+          "skTitle": "Nutrition requirements in plants",
+          "sp": [
+            {
+              "code": "2.2.1",
+              "text": "Explain with examples the functions of macronutrients and micronutrients to plants."
+            },
+            {
+              "code": "2.2.2",
+              "text": "Conduct an experiment to study the effect of macronutrients deficiency on plants."
+            }
+          ]
+        },
+        {
+          "sk": "2.3",
+          "skTitle": "Nitrogen cycle",
+          "sp": [
+            {
+              "code": "2.3.1",
+              "text": "Communicate about the nitrogen cycle and its importance."
+            }
+          ]
+        },
+        {
+          "sk": "2.4",
+          "skTitle": "Food production technology",
+          "sp": [
+            {
+              "code": "2.4.1",
+              "text": "Communicate about how to improve resources, quality and quantity of food production."
+            },
+            {
+              "code": "2.4.2",
+              "text": "Evaluate the use of pesticides and biological controls to increase the quality and quantity of food production."
+            }
+          ]
+        },
+        {
+          "sk": "2.5",
+          "skTitle": "Food processing technology",
+          "sp": [
+            {
+              "code": "2.5.1",
+              "text": "Communicate about food processing technology."
+            }
+          ]
+        },
+        {
+          "sk": "2.6",
+          "skTitle": "Food and supplements",
+          "sp": [
+            {
+              "code": "2.6.1",
+              "text": "Communicate about issues related to health foods and health supplements."
+            },
+            {
+              "code": "2.6.2",
+              "text": "Communicate about issues related to Halal Food Status."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on nutrition and food technology."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and explain nutrition and food technology."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge about nutrition and food technology and able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge about nutrition and food technology in context of problem solving on events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge about nutrition and food technology in context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Design a task using knowledge and science skills on nutrition and food technology in a creative and innovative ways to solve problems and making decision or carry out a task in a new situation taking into account the social/economic/cultural values of the community."
+        }
+      ],
+      "tpScope": "NUTRITION AND FOOD TECHNOLOGY"
+    },
+    {
+      "level": "T5",
+      "code": "3.0",
+      "title": "Sustainability of the Environment",
+      "titlePrinted": "SUSTAINABILITY OF THE ENVIRONMENT",
+      "theme": "MAINTENANCE AND CONTINUITY OF LIFE",
+      "standards": [
+        {
+          "sk": "3.1",
+          "skTitle": "Product life cycle",
+          "sp": [
+            {
+              "code": "3.1.1",
+              "text": "Explain the meaning of carbon footprint."
+            },
+            {
+              "code": "3.1.2",
+              "text": "Break down the product used by individual in a day."
+            },
+            {
+              "code": "3.1.3",
+              "text": "Justify the action that needs to be taken that is carbon handprint to reduce the emission of greenhouse gases in one day of one's life."
+            },
+            {
+              "code": "3.1.4",
+              "text": "Communicate about the life cycle of a product."
+            },
+            {
+              "code": "3.1.5",
+              "text": "Generate ideas about efficient management of plastic waste towards environmental sustainability."
+            }
+          ]
+        },
+        {
+          "sk": "3.2",
+          "skTitle": "Environmental pollution",
+          "sp": [
+            {
+              "code": "3.2.1",
+              "text": "Explain the types and sources of environmental pollution."
+            },
+            {
+              "code": "3.2.2",
+              "text": "Study the water pollution level from domestic waste."
+            },
+            {
+              "code": "3.2.3",
+              "text": "Create and design a purification method for contaminated water using green technology."
+            }
+          ]
+        },
+        {
+          "sk": "3.3",
+          "skTitle": "Environmental preservation and conservation",
+          "sp": [
+            {
+              "code": "3.3.1",
+              "text": "Justify the role of individuals in managing natural resources to maintain the balance in the environment."
+            },
+            {
+              "code": "3.3.2",
+              "text": "Debate on the role of United Nations in addressing environmental issues globally."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on sustainability of the environment."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and explain on sustainability of the environment."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge about on sustainability of the environment and able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge about on sustainability of the environment in context of problem solving on events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge about on sustainability of the environment in context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Design a task using knowledge and science skills on on sustainability of the environment in a creative and innovative ways to solve problems and making decision or carry out a task in a new situation taking into account the social/economic/cultural values of the community."
+        }
+      ],
+      "tpScope": "SUSTAINABILITY OF THE ENVIRONMENT"
+    },
+    {
+      "level": "T5",
+      "code": "4.0",
+      "title": "Rate of Reaction",
+      "titlePrinted": "RATE OF REACTION",
+      "theme": "EXPLORATION OF ELEMENTS IN NATURE",
+      "standards": [
+        {
+          "sk": "4.1",
+          "skTitle": "Introduction to rate of reaction",
+          "sp": [
+            {
+              "code": "4.1.1",
+              "text": "Explain with examples of fast reactions and slow reactions in daily life."
+            },
+            {
+              "code": "4.1.2",
+              "text": "Define the rate of reaction."
+            },
+            {
+              "code": "4.1.3",
+              "text": "Determine the rate of reaction."
+            }
+          ]
+        },
+        {
+          "sk": "4.2",
+          "skTitle": "Jg-1 OC-1x water mass(g) x water temperature(OCkJ)g-1",
+          "sp": [
+            {
+              "code": "4.2.1",
+              "text": "Carry out experiments to study factors affecting rate of reaction."
+            }
+          ]
+        },
+        {
+          "sk": "4.3",
+          "skTitle": "Aplication of rate of reaction",
+          "sp": [
+            {
+              "code": "4.3.1",
+              "text": "Communicate about the application of rate of reaction in daily life and industries."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on rate of reaction."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and explain rate of reaction."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge about rate of reaction and able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge about rate of reaction in context of problem solving on events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge about rate of reaction in context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Design a task using knowledge and science skills on rate of reaction in a creative and innovative ways to solve problems and making decision or carry out a task in a new situation taking into account the social/economic/cultural values of the community."
+        }
+      ],
+      "tpScope": "RATE OF REACTION"
+    },
+    {
+      "level": "T5",
+      "code": "5.0",
+      "title": "Carbon Compounds",
+      "titlePrinted": "CARBON COMPOUNDS",
+      "theme": "EXPLORATION OF ELEMENTS IN NATURE",
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Introduction to carbon compounds",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Identify carbon compounds in nature."
+            },
+            {
+              "code": "5.1.2",
+              "text": "Explain the importance of Carbon Cycle."
+            }
+          ]
+        },
+        {
+          "sk": "5.2",
+          "skTitle": "Hydrocarbons",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Describe hydrocarbon compounds and explain how carbon compounds are obtained from natural sources."
+            },
+            {
+              "code": "5.2.2",
+              "text": "Name members of the homologous group of alkanes and alkenes from carbon 1 to carbon 6."
+            },
+            {
+              "code": "5.2.3",
+              "text": "Communicate about alternative energy sources and renewable energy in daily life."
+            }
+          ]
+        },
+        {
+          "sk": "5.3",
+          "skTitle": "Alcohol",
+          "sp": [
+            {
+              "code": "5.3.1",
+              "text": "Describe the preparation of alcohol."
+            },
+            {
+              "code": "5.3.2",
+              "text": "Identify the physical properties and chemical properties of alcohol."
+            },
+            {
+              "code": "5.3.3",
+              "text": "Communicate about the uses of alcohol in daily life."
+            },
+            {
+              "code": "5.3.4",
+              "text": "Communicate about the effects of excessive alcohol consumption."
+            }
+          ]
+        },
+        {
+          "sk": "5.4",
+          "skTitle": "Fats",
+          "sp": [
+            {
+              "code": "5.4.1",
+              "text": "State the content of fats and its sources."
+            },
+            {
+              "code": "5.4.2",
+              "text": "Compare and contrast between saturated and unsaturated fats."
+            },
+            {
+              "code": "5.4.3",
+              "text": "Explain with examples, the effects of eating food containing excess fat on health."
+            }
+          ]
+        },
+        {
+          "sk": "5.5",
+          "skTitle": "Palm oil",
+          "sp": [
+            {
+              "code": "5.5.1",
+              "text": "Describe the structure of palm oil fruit."
+            },
+            {
+              "code": "5.5.2",
+              "text": "Identify the quantity of oil from pulp and kernel."
+            },
+            {
+              "code": "5.5.3",
+              "text": "Explain in order the process of palm oil extraction in industry."
+            },
+            {
+              "code": "5.5.4",
+              "text": "Describes components of palm oil."
+            },
+            {
+              "code": "5.5.5",
+              "text": "Compare and contrast the composition of palm oil with other vegetable oils."
+            },
+            {
+              "code": "5.5.6",
+              "text": "State the chemical properties of palm oil."
+            },
+            {
+              "code": "5.5.7",
+              "text": "Explain the emulsification process of palm oil."
+            },
+            {
+              "code": "5.5.8",
+              "text": "List the nutritional content of palm oil."
+            },
+            {
+              "code": "5.5.9",
+              "text": "Justify the use of palm oil in healthcare and food."
+            },
+            {
+              "code": "5.5.10",
+              "text": "Carry out an experiment to produce soap through saponification process."
+            },
+            {
+              "code": "5.5.11",
+              "text": "Communicate about the cleansing action of soap."
+            },
+            {
+              "code": "5.5.12",
+              "text": "Generate ideas on sustainable management and their importance in the palm oil industry."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on carbon compounds."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and explain carbon compounds."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge about carbon compounds and able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge about carbon compounds in context of problem solving on events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge about carbon compounds in context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Design a task using knowledge and science skills on carbon compounds in a creative and innovative ways to solve problems and making decision or carry out a task in a new situation taking into account the social/economic/cultural values of the community."
+        }
+      ],
+      "tpScope": "CARBON COMPOUNDS"
+    },
+    {
+      "level": "T5",
+      "code": "6.0",
+      "printedCode": "7.0",
+      "title": "Electrochemistry",
+      "titlePrinted": "ELECTROCHEMISTRY",
+      "theme": "EXPLORATION OF ELEMENTS IN NATURE",
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Electrolytic Cell",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Understand electrolysis."
+            },
+            {
+              "code": "6.1.2",
+              "text": "Carry out an experiment to study electrolysis of ionic compounds in various conditions."
+            },
+            {
+              "code": "6.1.3",
+              "text": "Carry out an experiment to study the factors affecting the products in electrolysis."
+            },
+            {
+              "code": "6.1.4",
+              "text": "Comunicate about application of electrolysis in the industries."
+            }
+          ]
+        },
+        {
+          "sk": "6.2",
+          "skTitle": "Chemical cell",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Explain the energy change in a simple chemical cell."
+            },
+            {
+              "code": "6.2.2",
+              "text": "Generate ideas on application of chemical cell concepts in generating electricity from a variety of sources."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on electrochemistry."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and explain electrochemistry."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge about electrochemistry and able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge about electrochemistry in context of problem solving on events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge about electrochemistry in context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Design a task using knowledge and science skills on electrochemistry in a creative and innovative ways to solve problems and making decision or carry out a task in a new situation taking into account the social/economic/cultural values of the community."
+        }
+      ],
+      "tpScope": "ELECTROCHEMISTRY"
+    },
+    {
+      "level": "T5",
+      "code": "7.0",
+      "title": "Light and Optics",
+      "titlePrinted": "LIGHT AND OPTICS",
+      "theme": "ENERGY AND SUSTAINABILITY OF LIFE",
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Formation of image by lenses",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Describe convex lenses as a converging lenses and concave lenses as a diverging lenses."
+            },
+            {
+              "code": "7.1.2",
+              "text": "Determine the focal length of a convex lens using a distant object."
+            },
+            {
+              "code": "7.1.3",
+              "text": "Determine the characteristics of images formed by convex and concave lenses using ray diagrams."
+            }
+          ]
+        },
+        {
+          "sk": "7.2",
+          "skTitle": "Optical instruments",
+          "sp": [
+            {
+              "code": "7.2.1",
+              "text": "Describes the formation of the final image formed by telescopes and microscopes."
+            },
+            {
+              "code": "7.2.2",
+              "text": "Design and build a simple telescope."
+            },
+            {
+              "code": "7.2.3",
+              "text": "Communicate about the application of lenses in optical instruments."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on light and optics."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and explain light and optics."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge about light and optics and able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge about light and optics in context of problem solving on events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge about light and optics in context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Design a task using knowledge and science skills on light and optics in a creative and innovative ways to solve problems and making decision or carry out a task in a new situation taking into account the social/economic/cultural values of the community."
+        }
+      ],
+      "tpScope": "LIGHT AND OPTICS"
+    },
+    {
+      "level": "T5",
+      "code": "8.0",
+      "title": "Force and Pressure",
+      "titlePrinted": "FORCE AND PRESSURE",
+      "theme": "ENERGY AND SUSTAINABILITY OF LIFE",
+      "standards": [
+        {
+          "sk": "8.1",
+          "skTitle": "Pressure in fluids",
+          "sp": [
+            {
+              "code": "8.1.1",
+              "text": "Explain the concept of pressure in fluids in an enclosed system"
+            },
+            {
+              "code": "8.1.2",
+              "text": "Communicate about the application of Pascal's principle in daily life."
+            },
+            {
+              "code": "8.1.3",
+              "text": "Explain the relationship between fluid velocity and pressure."
+            },
+            {
+              "code": "8.1.4",
+              "text": "Communicate about the application of Bernoulli's principle in daily life."
+            },
+            {
+              "code": "8.1.5",
+              "text": "Design a tool using the principle of pressure in fluids."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on force and pressure."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and explain force and pressure."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge about force and pressure and able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge about force and pressure in context of problem solving on events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge about force and pressure in context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Design a task using knowledge and science skills on force and pressure in a creative and innovative ways to solve problems and making decision or carry out a task in a new situation taking into account the social/economic/cultural values of the community."
+        }
+      ],
+      "tpScope": "FORCE AND PRESSURE"
+    },
+    {
+      "level": "T5",
+      "code": "9.0",
+      "title": "Space Technology",
+      "titlePrinted": "SPACE TECHNOLOGY",
+      "theme": "EARTH AND SPACE EXPLORATION",
+      "standards": [
+        {
+          "sk": "9.1",
+          "skTitle": "Satellite",
+          "sp": [
+            {
+              "code": "9.1.1",
+              "text": "Explain the types of satellite orbits."
+            },
+            {
+              "code": "9.1.2",
+              "text": "Explain with diagrams the apogee and perigee positions of a satellite in an elliptical orbit."
+            },
+            {
+              "code": "9.1.3",
+              "text": "Relate the height of an orbit and the velocity of a satellite."
+            },
+            {
+              "code": "9.1.4",
+              "text": "Explain how a satellite is launched and placed in orbit."
+            },
+            {
+              "code": "9.1.5",
+              "text": "Explain the function of the space station."
+            },
+            {
+              "code": "9.1.6",
+              "text": "Communicate about the methods for tracking space stations."
+            },
+            {
+              "code": "9.1.7",
+              "text": "Elaborate the impact of rapid development in space technology."
+            }
+          ]
+        },
+        {
+          "sk": "9.2",
+          "skTitle": "Global Positioning System (GPS)",
+          "sp": [
+            {
+              "code": "9.2.1",
+              "text": "Explain Global Positioning Systems (GPS)."
+            },
+            {
+              "code": "9.2.2",
+              "text": "Apply GPS coordinate system for navigation purposes."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall the knowledge and science skills on space technology."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand and explain space technology."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge about space technology and able to carry out simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse knowledge about space technology in context of problem solving on events or natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate knowledge about space technology in context of problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Design a task using knowledge and science skills on space technology in a creative and innovative ways to solve problems and making decision or carry out a task in a new situation taking into account the social/economic/cultural values of the community."
+        }
+      ],
+      "tpScope": "SPACE TECHNOLOGY"
+    }
+  ]
+}

@@ -1,0 +1,1689 @@
+{
+  "subject": "Pendidikan Seni Visual",
+  "subjectCode": null,
+  "levels": [
+    "T4",
+    "T5"
+  ],
+  "source": "Pend Seni Visual T4 n T5.pdf",
+  "edition": "Terbitan 2018, Bahagian Pembangunan Kurikulum KPM, September 2018 (KSSM Pendidikan Seni Visual Tingkatan 4 dan 5)",
+  "structureNote": "Hierarchy: Bidang (Sejarah dan Apresiasi Seni Visual, Seni Halus, Reka Bentuk, Seni Kraf, Komunikasi Visual) > Tajuk (topic = unit; T4: 9 topics, T5: 8 topics, each numbered 1.0..n.0 within its form, so always key by level + code) > four Standard Kandungan per topic with FIXED pattern n.1 Persepsi Seni, n.2 Eksplorasi Seni, n.3 Ekspresi Seni, n.4 Apresiasi Seni > Standard Pembelajaran (n.m.k). Each topic has ONE Standard Prestasi table (Tahap Penguasaan 1-6) and a list of objectives (Objektif) and minimum hours. Minimum hours: T4 64, T5 54. Practical / art-making subject; only the Persepsi Seni (knowledge: history, definitions, types, tools, concepts) and Apresiasi Seni (explaining artworks using Bahasa Seni Visual / Pemikiran Seni Visual) parts are plausible for written questions. Printed numbering quirks kept as printed: T5 topic 1.0 SK 1.2 has only SP 1.2.2 (no 1.2.1) and T5 topic 2.0 SK 2.1 has only SP 2.1.2 (no 2.1.1). The Catatan column (Cadangan Aktiviti / Nota with examples) is deliberately not extracted. A Glosari (T4 and T5 term lists, DSKP pp.104-114) exists in the PDF and is not extracted.",
+  "units": [
+    {
+      "level": "T4",
+      "code": "1.0",
+      "title": "ALAT KEBESARAN DAN PERHIASAN DIRAJA",
+      "bidang": "Sejarah dan Apresiasi Seni Visual",
+      "tajuk": "Alat Kebesaran dan Perhiasan Diraja",
+      "hoursMin": 4,
+      "objektif": [
+        "(i) Menjelaskan jenis alat kebesaran dan perhiasan Diraja.",
+        "(ii) Memerihalkan fungsi, peranan alat kebesaran dan perhiasan Diraja.",
+        "(iii) Menghasilkan model alat kebesaran dan perhiasan Diraja.",
+        "(iv) Mempamerkan model alat kebesaran dan perhiasan Diraja dan menjelaskan pengalaman sendiri dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual."
+      ],
+      "standards": [
+        {
+          "sk": "1.1",
+          "skTitle": "Persepsi Seni Dalam Alat Kebesaran dan Perhiasan Diraja",
+          "skDescription": "Pemahaman terhadap Alat Kebesaran dan Perhiasan Diraja",
+          "sp": [
+            {
+              "code": "1.1.1",
+              "text": "Menyenaraikan jenis alat kebesaran dan perhiasan Diraja"
+            },
+            {
+              "code": "1.1.2",
+              "text": "Menjelaskan fungsi dan peranan alat kebesaran dan perhiasan Diraja"
+            }
+          ]
+        },
+        {
+          "sk": "1.2",
+          "skTitle": "Eksplorasi Seni dalam Alat Kebesaran dan Perhiasan Diraja",
+          "skDescription": "Eksplorasi maklumat daripada pelbagai sumber bagi pengukuhan terhadap Alat Kebesaran dan Perhiasan Diraja",
+          "sp": [
+            {
+              "code": "1.2.1",
+              "text": "Mencirikan alat kebesaran dan perhiasan Diraja daripada aspek: (i) Fungsi (ii) Peranan"
+            }
+          ]
+        },
+        {
+          "sk": "1.3",
+          "skTitle": "Ekspresi Seni dalam Alat Kebesaran dan Perhiasan Diraja",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "1.3.1",
+              "text": "Menghasilkan model alat kebesaran dan perhiasan Diraja"
+            }
+          ]
+        },
+        {
+          "sk": "1.4",
+          "skTitle": "Apresiasi Seni dalam Alat Kebesaran dan Perhiasan Diraja",
+          "skDescription": "Penghayatan terhadap model Alat Kebesaran dan Perhiasan Diraja dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "1.4.1",
+              "text": "Mempamerkan model alat kebesaran dan perhiasan Diraja yang dihasilkan"
+            },
+            {
+              "code": "1.4.2",
+              "text": "Menghayati dan menjelaskan model alat kebesaran dan perhiasan Diraja sendiri dan rakan dengan menumpukan aspek Bahasa Seni Visual"
+            },
+            {
+              "code": "1.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan model alat kebesaran dan perhiasan Diraja"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti alat kebesaran dan perhiasan diraja dalam bidang Sejarah dan Apresiasi Seni Visual."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan jenis, fungsi dan peranan alat kebesaran dan perhiasan Diraja."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan pengetahuan dan kefahaman untuk membuat penerokaan bagi menghasilkan dokumentasi alat kebesaran dan perhiasan Diraja."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap alat kebesaran dan perhiasan Diraja dalam penghasilan dokumentasi."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap dokumentasi alat kebesaran dan perhiasan Diraja dalam penghasilan model secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan dokumentasi dan model alat kebesaran dan perhiasan Diraja dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual seterusnya menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "2.0",
+      "title": "SENI LUKISAN",
+      "bidang": "Seni Halus",
+      "tajuk": "Seni Lukisan",
+      "hoursMin": 6,
+      "objektif": [
+        "(i) Menjelaskan pelukis, karya, aliran dan gaya dalam seni lukisan Barat berdasarkan abad pilihan.",
+        "(ii) Mengaplikasikan pengetahuan tentang tema, tajuk, media, gaya, teknik dan pewujudan idea untuk menghasilkan karya seni lukisan.",
+        "(iii) Mencipta karya seni lukisan menerusi pemilihan media, teknik dan gaya pilihan.",
+        "(iv) Mempamerkan karya dan menjelaskan pengalaman sendiri dengan menumpukan aspek media dan teknik berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual."
+      ],
+      "standards": [
+        {
+          "sk": "2.1",
+          "skTitle": "Persepsi Seni dalam Seni Lukisan",
+          "skDescription": "Pemahaman terhadap konsep Seni Lukisan",
+          "sp": [
+            {
+              "code": "2.1.1",
+              "text": "Menjelaskan seni lukisan Barat mengikut abad pilihan dari aspek: (i) Aliran dan Gaya (ii) Pelukis dan Karya"
+            }
+          ]
+        },
+        {
+          "sk": "2.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Lukisan",
+          "skDescription": "Eksplorasi dan aplikasi pengetahuan dalam penghasilan Seni Lukisan",
+          "sp": [
+            {
+              "code": "2.2.1",
+              "text": "Membuat penerokaan secara kreatif berkaitan: (i) Tema dan Tajuk (ii) Pewujudan Idea"
+            }
+          ]
+        },
+        {
+          "sk": "2.3",
+          "skTitle": "Ekspresi Seni dalam Seni Lukisan",
+          "skDescription": "Menzahirkan idea dan konsep melalui pelbagai sumber dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "2.3.1",
+              "text": "Menghasilkan karya seni lukisan berdasarkan aliran dan gaya pilihan"
+            }
+          ]
+        },
+        {
+          "sk": "2.4",
+          "skTitle": "Apresiasi Seni dalam Seni Lukisan",
+          "skDescription": "Penghayatan terhadap hasil karya Seni Lukisan dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "2.4.1",
+              "text": "Mempamerkan hasil karya seni lukisan"
+            },
+            {
+              "code": "2.4.2",
+              "text": "Menghayati dan menjelaskan karya seni lukisan sendiri dan rakan dengan menumpukan aspek Bahasa Seni Visual"
+            },
+            {
+              "code": "2.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan karya seni lukisan"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti seni lukisan Barat mengikut abad pilihan."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan aliran, gaya, pelukis dan karya seni lukisan Barat berdasarkan abad pilihan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan pengetahuan dan kefahaman untuk membuat penerokaan terhadap seni lukisan melalui penggunaan media, teknik dan proses."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap seni lukisan melalui penggunaan media, teknik dan proses dalam penghasilan karya seni."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap seni lukisan dalam penghasilan karya seni secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan karya seni lukisan dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual seterusnya menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "3.0",
+      "title": "SENI CATAN",
+      "bidang": "Seni Halus",
+      "tajuk": "Seni Catan",
+      "hoursMin": 6,
+      "objektif": [
+        "(i) Menjelaskan pelukis, karya, aliran dan gaya dalam seni catan Barat berdasarkan abad pilihan.",
+        "(ii) Mengaplikasikan pengetahuan tentang tema, tajuk, media, gaya, teknik dan pewujudan idea untuk menghasilkan karya seni catan.",
+        "(iii) Menghasilkan karya seni catan menerusi pemilihan media, teknik dan gaya pilihan.",
+        "(iv) Mempamerkan karya dan menjelaskan pengalaman sendiri dengan menumpukan aspek media dan teknik berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual."
+      ],
+      "standards": [
+        {
+          "sk": "3.1",
+          "skTitle": "Persepsi Seni dalam Seni Catan",
+          "skDescription": "Pemahaman terhadap konsep Seni Catan",
+          "sp": [
+            {
+              "code": "3.1.1",
+              "text": "Menjelaskan seni catan Barat mengikut abad pilihan dari aspek: (i) Aliran dan Gaya (ii) Pelukis dan Karya"
+            }
+          ]
+        },
+        {
+          "sk": "3.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Catan",
+          "skDescription": "Eksplorasi dan aplikasi pengetahuan dalam penghasilan Seni Catan",
+          "sp": [
+            {
+              "code": "3.2.1",
+              "text": "Membuat penerokaan secara kreatif berkaitan: (i) Tema dan Tajuk (ii) Pewujudan Idea"
+            }
+          ]
+        },
+        {
+          "sk": "3.3",
+          "skTitle": "Ekspresi Seni dalam Seni Catan",
+          "skDescription": "Menzahirkan idea dan konsep melalui pelbagai sumber dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "3.3.1",
+              "text": "Menghasilkan karya seni catan"
+            }
+          ]
+        },
+        {
+          "sk": "3.4",
+          "skTitle": "Apresiasi Seni dalam Seni Catan",
+          "skDescription": "Penghayatan terhadap hasil karya Seni Catan dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "3.4.1",
+              "text": "Mempamerkan hasil karya seni catan"
+            },
+            {
+              "code": "3.4.2",
+              "text": "Menghayati dan menjelaskan karya seni catan sendiri dan rakan dengan menumpukan aspek Bahasa Seni Visual"
+            },
+            {
+              "code": "3.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan karya seni catan"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti seni catan Barat mengikut abad pilihan."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan aliran, gaya, pelukis dan karya seni catan Barat berdasarkan abad pilihan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan pengetahuan dan kefahaman untuk membuat penerokaan terhadap seni catan melalui penggunaan media, teknik dan proses."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap seni catan melalui penggunaan media, teknik dan proses dalam penghasilan karya seni."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap seni catan dalam penghasilan karya seni secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan karya seni catan dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual seterusnya menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "4.0",
+      "title": "SENI CETAKAN",
+      "bidang": "Seni Halus",
+      "tajuk": "Seni Cetakan",
+      "hoursMin": 6,
+      "objektif": [
+        "(i) Menjelaskan pelukis cetak, karya, aliran dan gaya dalam seni cetakan Barat berdasarkan abad pilihan.",
+        "(ii) Mengaplikasikan pengetahuan tentang tema, tajuk, media, gaya, teknik dan pewujudan idea untuk menghasilkan karya seni cetakan.",
+        "(iii) Menghasilkan karya seni cetakan menerusi pemilihan media, teknik dan gaya pilihan.",
+        "(iv) Mempamerkan karya dan menjelaskan pengalaman sendiri dengan menumpukan aspek media dan teknik berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual."
+      ],
+      "standards": [
+        {
+          "sk": "4.1",
+          "skTitle": "Persepsi Seni dalam Seni Cetakan",
+          "skDescription": "Pemahaman terhadap konsep Seni Cetakan",
+          "sp": [
+            {
+              "code": "4.1.1",
+              "text": "Menjelaskan seni cetakan Barat mengikut abad pilihan dari aspek: (i) Aliran dan Gaya (ii) Pelukis dan Karya"
+            }
+          ]
+        },
+        {
+          "sk": "4.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Cetakan",
+          "skDescription": "Eksplorasi dan aplikasi pengetahuan dalam penghasilan Seni Cetakan",
+          "sp": [
+            {
+              "code": "4.2.1",
+              "text": "Membuat penerokaan secara kreatif berkaitan : (i) Tema dan Tajuk (ii) Pewujudan Idea"
+            }
+          ]
+        },
+        {
+          "sk": "4.3",
+          "skTitle": "Ekspresi Seni dalam Seni Cetakan",
+          "skDescription": "Menzahirkan idea dan konsep melalui pelbagai sumber dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "4.3.1",
+              "text": "Menghasilkan karya seni cetakan berdasarkan aliran dan gaya pilihan"
+            }
+          ]
+        },
+        {
+          "sk": "4.4",
+          "skTitle": "Apresiasi Seni dalam Seni Cetakan",
+          "skDescription": "Penghayatan terhadap hasil karya Seni Cetakan dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "4.4.1",
+              "text": "Mempamerkan hasil karya seni cetakan"
+            },
+            {
+              "code": "4.4.2",
+              "text": "Menghayati dan menjelaskan karya seni cetakan sendiri dan rakan dengan menumpukan aspek Bahasa Seni Visual"
+            },
+            {
+              "code": "4.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan karya seni cetakan"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti seni cetakan Barat dalam bidang Seni Halus."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan aliran, gaya, pelukis dan karya seni cetakan Barat berdasarkan abad pilihan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan pengetahuan dan kefahaman untuk membuat penerokaan terhadap seni cetakan melalui penggunaan media, teknik dan proses."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap seni cetakan melalui penggunaan media, teknik dan proses dalam penghasilan karya seni."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap seni cetakan dalam penghasilan karya seni secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan karya seni cetakan dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual seterusnya menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "5.0",
+      "title": "REKA BENTUK LANDSKAP",
+      "bidang": "Reka Bentuk",
+      "tajuk": "Reka Bentuk Landskap",
+      "hoursMin": 10,
+      "objektif": [
+        "(i) Menjelaskan prospek dan hala tuju pereka landskap.",
+        "(ii) Mengklasifikasikan elemen dalam reka bentuk landskap berkonsepkan kontemporari.",
+        "(iii) Menghasilkan model reka bentuk landskap dengan menggunakan imaginasi dan idea secara kreatif dan inovatif.",
+        "(iv) Mempamerkan, menghayati dan menjelaskan pengalaman sendiri dalam penghasilan model reka bentuk landskap dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual."
+      ],
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Persepsi Seni Dalam Reka Bentuk Landskap",
+          "skDescription": "Pemahaman terhadap prospek kerjaya Pereka Bentuk Landskap",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Menerangkan prospek dan hala tuju pereka bentuk landskap"
+            }
+          ]
+        },
+        {
+          "sk": "5.2",
+          "skTitle": "Eksplorasi Seni dalam Reka Bentuk Landskap",
+          "skDescription": "Eksplorasi dan aplikasi pengetahuan dalam penghasilan konsep kontemporari",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Mengklasifikasikan elemen dalam reka bentuk landskap berkonsep kontemporari"
+            }
+          ]
+        },
+        {
+          "sk": "5.3",
+          "skTitle": "Ekspresi Seni dalam Reka Bentuk Landskap",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "5.3.1",
+              "text": "Menghasilkan pelan reka bentuk landskap mengikut skala"
+            },
+            {
+              "code": "5.3.2",
+              "text": "Menghasilkan model reka bentuk landskap mengikut skala"
+            }
+          ]
+        },
+        {
+          "sk": "5.4",
+          "skTitle": "Apresiasi Seni dalam Reka Bentuk Landskap",
+          "skDescription": "Penghayatan terhadap hasil karya Reka Bentuk Landskap dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "5.4.1",
+              "text": "Mempamerkan model reka bentuk landskap taman berkonsepkan kontemporari yang dihasilkan"
+            },
+            {
+              "code": "5.4.2",
+              "text": "Menghayati dan menjelaskan model reka bentuk landskap sendiri dan rakan dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual."
+            },
+            {
+              "code": "5.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan model reka bentuk landskap"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti prospek dan hala tuju pereka landskap dalam bidang Reka Bentuk."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan elemen dalam reka bentuk landskap berkonsep kontemporari."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan pengetahuan dan kefahaman untuk membuat penerokaan bagi menghasilkan model reka bentuk landskap melalui penggunaan alatan, bahan dan proses."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap reka bentuk landskap dalam penghasilan model reka bentuk landskap."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap reka bentuk landskap dalam penghasilan model reka bentuk landskap secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan model reka bentuk landskap dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual seterusnya menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "6.0",
+      "title": "REKA BENTUK HIASAN DALAMAN",
+      "bidang": "Reka Bentuk",
+      "tajuk": "Reka Bentuk Hiasan Dalaman",
+      "hoursMin": 10,
+      "objektif": [
+        "(i) Menjelaskan prospek dan hala tuju pereka hiasan dalaman.",
+        "(ii) Mengenal pasti kaedah reka bentuk hiasan dalaman berkonsep kontemporari.",
+        "(iii) Menghasilkan model reka bentuk hiasan dalaman dengan menggunakan imaginasi dan idea secara kreatif dan inovatif.",
+        "(iv) Mempamerkan, menghayati dan menjelaskan pengalaman sendiri dalam penghasilan model reka bentuk hiasan dalaman dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual."
+      ],
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Persepsi Seni dalam Reka Bentuk Hiasan Dalaman",
+          "skDescription": "Pemahaman terhadap prospek kerjaya Pereka Bentuk Hiasan Dalaman",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Menerangkan prospek dan hala tuju pereka hiasan dalaman"
+            }
+          ]
+        },
+        {
+          "sk": "6.2",
+          "skTitle": "Eksplorasi Seni dalam Reka Bentuk Hiasan Dalaman",
+          "skDescription": "Eksplorasi dan aplikasi pengetahuan dalam penghasilan konsep",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Mengenal pasti kaedah reka bentuk hiasan dalaman berkonsep kontemporari daripada aspek: (i) Susun atur ruang dan objek (ii) Kaedah pengudaraan (iii) Kaedah pencahayaan (iv) Antropometrik"
+            }
+          ]
+        },
+        {
+          "sk": "6.3",
+          "skTitle": "Ekspresi Seni dalam Reka Bentuk Hiasan Dalaman",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "6.3.1",
+              "text": "Melukis pelan lantai reka bentuk hiasan dalaman mengikut skala"
+            },
+            {
+              "code": "6.3.2",
+              "text": "Menghasilkan model reka bentuk hiasan dalaman mengikut skala"
+            }
+          ]
+        },
+        {
+          "sk": "6.4",
+          "skTitle": "Apresiasi Seni dalam Reka Bentuk Hiasan Dalaman",
+          "skDescription": "Penghayatan terhadap hasil karya Reka Bentuk Hiasan Dalaman dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "6.4.1",
+              "text": "Mempamerkan model reka bentuk hiasan dalaman berkonsepkan kontemporari yang dihasilkan"
+            },
+            {
+              "code": "6.4.2",
+              "text": "Menghayati dan menjelaskan model reka bentuk hiasan dalaman sendiri dan rakan dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual."
+            },
+            {
+              "code": "6.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan model reka bentuk hiasan dalaman"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti kerjaya pereka hiasan dalaman dalam bidang Reka Bentuk."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan kaedah reka bentuk hiasan dalaman berkonsep kontemporari."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan pengetahuan dan kefahaman untuk membuat penerokaan bagi menghasilkan model reka bentuk hiasan dalaman melalui penggunaan alatan, bahan dan proses."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap reka bentuk hiasan dalaman dalam penghasilan model reka bentuk hiasan dalaman."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap reka bentuk hiasan dalaman dalam penghasilan model reka bentuk hiasan dalaman secara sistematik"
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan model reka bentuk hiasan dalaman dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual seterusnya menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "7.0",
+      "title": "SENI UKIRAN",
+      "bidang": "Seni Kraf",
+      "tajuk": "Seni Ukiran",
+      "hoursMin": 10,
+      "objektif": [
+        "(i) Menjelaskan prinsip asas, jenis, alatan, bahan, motif dan proses seni ukiran.",
+        "(ii) Meneroka alatan, bahan dan proses berdasarkan kefahaman terhadap prinsip penghasilan seni ukiran.",
+        "(iii) Menghasilkan produk seni ukiran dengan menggunakan imaginasi dan idea secara kreatif dan inovatif.",
+        "(iv) Mempamerkan, menghayati dan menjelaskan pengalaman sendiri dalam penghasilan produk seni ukiran dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual."
+      ],
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Persepsi Seni dalam Seni Ukiran",
+          "skDescription": "Pemahaman terhadap prinsip Seni Ukiran",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Menjelaskan prinsip asas seni ukiran"
+            },
+            {
+              "code": "7.1.2",
+              "text": "Mengenal pasti alat dan bahan seni ukiran"
+            },
+            {
+              "code": "7.1.3",
+              "text": "Mengkategorikan motif seni ukiran"
+            },
+            {
+              "code": "7.1.4",
+              "text": "Menyenaraikan jenis seni ukiran"
+            },
+            {
+              "code": "7.1.5",
+              "text": "Menerangkan proses seni ukiran"
+            }
+          ]
+        },
+        {
+          "sk": "7.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Ukiran",
+          "skDescription": "Eksplorasi dan aplikasi proses Seni Ukiran bagi pengukuhan pemahaman terhadap prinsip asas Seni Ukiran",
+          "sp": [
+            {
+              "code": "7.2.1",
+              "text": "Mengolah motif seni ukiran"
+            },
+            {
+              "code": "7.2.2",
+              "text": "Meneroka jenis seni ukiran"
+            }
+          ]
+        },
+        {
+          "sk": "7.3",
+          "skTitle": "Ekspresi Seni dalam Seni Ukiran",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "7.3.1",
+              "text": "Menghasilkan produk seni ukiran secara kreatif dan inovatif"
+            }
+          ]
+        },
+        {
+          "sk": "7.4",
+          "skTitle": "Apresiasi Seni dalam Seni Ukiran",
+          "skDescription": "Penghayatan terhadap hasil produk Seni Ukiran dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "7.4.1",
+              "text": "Mempamerkan hasil produk seni ukiran"
+            },
+            {
+              "code": "7.4.2",
+              "text": "Menghayati dan menjelaskan produk seni ukiran sendiri dan rakan dengan menumpukan aspek Bahasa Seni Visual"
+            },
+            {
+              "code": "7.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan produk seni ukiran"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti seni ukiran dalam bidang Seni Kraf."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan prinsip asas, jenis, alatan, bahan, motif dan proses seni ukiran."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan pengetahuan dan kefahaman untuk membuat penerokaan terhadap seni ukiran melalui pengolahan motif, penggunaan alat, bahan dan proses."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap seni ukiran dalam penghasilan produk seni."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap seni ukiran dalam penghasilan produk seni secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan produk seni ukiran dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual seterusnya menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "8.0",
+      "title": "ILUSTRASI",
+      "bidang": "Komunikasi Visual",
+      "tajuk": "Seni Reka Grafik (Ilustrasi)",
+      "hoursMin": 6,
+      "objektif": [
+        "(i) Menjelaskan definisi, jenis dan fungsi ilustrasi.",
+        "(ii) Meneroka pelbagai media dan teknik dalam proses penghasilan karya ilustrasi.",
+        "(iii) Menghasilkan karya ilustrasi dengan menggunakan imaginasi dan idea secara kreatif dan inovatif hasil penerokaan ilustrasi ekspresi.",
+        "(iv) Mempamerkan karya dan menjelaskan pengalaman sendiri dengan menumpukan aspek media dan teknik berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual."
+      ],
+      "standards": [
+        {
+          "sk": "8.1",
+          "skTitle": "Persepsi Seni dalam Seni Reka Grafik",
+          "skDescription": "Pemahaman terhadap Seni Reka Grafik",
+          "sp": [
+            {
+              "code": "8.1.1",
+              "text": "Menjelaskan definisi ilustrasi"
+            },
+            {
+              "code": "8.1.2",
+              "text": "Memerihalkan ilustrasi dari aspek: (i) Jenis, media dan teknik ilustrasi (ii) Penjanaan idea bergambar"
+            }
+          ]
+        },
+        {
+          "sk": "8.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Reka Grafik",
+          "skDescription": "Eksplorasi dan aplikasi rekaan Ilustrasi bagi pengukuhan pemahaman terhadap Seni Reka Grafik",
+          "sp": [
+            {
+              "code": "8.2.1",
+              "text": "Membuat penerokaan ilustrasi dengan pelbagai media dan teknik"
+            }
+          ]
+        },
+        {
+          "sk": "8.3",
+          "skTitle": "Ekspresi Seni dalam Seni Reka Grafik",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "8.3.1",
+              "text": "Menghasilkan karya dengan menggunakan imaginasi dan idea secara kreatif dan inovatif hasil daripada penerokaan ilustrasi ekspresi: (i) Reka bentuk ilustrasi untuk menggambarkan ekspresi (ii) Reka bentuk ilustrasi yang terhasil dan disesuaikan dengan reka bentuk dalam pelbagai media"
+            }
+          ]
+        },
+        {
+          "sk": "8.4",
+          "skTitle": "Apresiasi Seni dalam Seni Reka Grafik",
+          "skDescription": "Penghayatan terhadap hasil karya Seni Reka Grafik dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "8.4.1",
+              "text": "Mempamerkan hasil karya ilustrasi"
+            },
+            {
+              "code": "8.4.2",
+              "text": "Menghayati dan menjelaskan hasil karya ilustrasi sendiri dan rakan dengan menumpukan aspek Bahasa Seni Visual"
+            },
+            {
+              "code": "8.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam hasil karya ilustrasi"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti ilustrasi dalam Seni Reka Grafik."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan definisi, jenis, media dan teknik ilustrasi dalam Seni Reka Grafik."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan pengetahuan dan kefahaman untuk membuat penerokaan terhadap ilustrasi dalam Seni Reka Grafik melalui penggunaan pelbagai media dan teknik."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap ilustrasi dalam penghasilan karya Seni Reka Grafik."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap ilustrasi dalam penghasilan karya Seni Reka Grafik secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan karya ilustrasi dalam Seni Reka Grafik dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual seterusnya menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "9.0",
+      "title": "GENRE FOTOGRAFI",
+      "bidang": "Komunikasi Visual",
+      "tajuk": "Seni Foto (Genre Fotografi)",
+      "hoursMin": 6,
+      "objektif": [
+        "(i) Menjelaskan definisi, jenis dan fungsi serta kepelbagaian genre fotografi.",
+        "(ii) Meneroka pelbagai media dan teknik dalam proses penghasilan karya genre fotografi.",
+        "(iii) Menghasilkan karya dengan menggunakan imaginasi dan idea secara kreatif dan inovatif hasil penerokaan genre fotografi.",
+        "(iv) Mempamerkan karya dan menjelaskan pengalaman sendiri dengan menumpukan aspek media dan teknik berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual."
+      ],
+      "standards": [
+        {
+          "sk": "9.1",
+          "skTitle": "Persepsi Seni dalam Seni Foto",
+          "skDescription": "Pemahaman terhadap Seni Foto",
+          "sp": [
+            {
+              "code": "9.1.1",
+              "text": "Menjelaskan definisi genre dalam fotografi"
+            },
+            {
+              "code": "9.1.2",
+              "text": "Memerihalkan jenis dan fungsi komunikasi visual dalam genre fotografi"
+            },
+            {
+              "code": "9.1.3",
+              "text": "Membincangkan kepelbagaian genre fotografi"
+            }
+          ]
+        },
+        {
+          "sk": "9.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Foto",
+          "skDescription": "Eksplorasi dan aplikasi penghasilan Genre Fotografi bagi pengukuhan pemahaman terhadap Seni Foto",
+          "sp": [
+            {
+              "code": "9.2.1",
+              "text": "Membuat penerokaan tentang genre fotografi daripada aspek: (i) Media (ii) Teknik"
+            }
+          ]
+        },
+        {
+          "sk": "9.3",
+          "skTitle": "Ekspresi Seni dalam Seni Foto",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "9.3.1",
+              "text": "Menghasilkan karya seni foto berdasarkan tema melalui genre fotografi pilihan"
+            }
+          ]
+        },
+        {
+          "sk": "9.4",
+          "skTitle": "Apresiasi Seni dalam Seni Foto",
+          "skDescription": "Penghayatan terhadap hasil karya Seni Foto dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "9.4.1",
+              "text": "Mempamerkan hasil karya seni foto"
+            },
+            {
+              "code": "9.4.2",
+              "text": "Menghayati dan menjelaskan hasil karya seni foto sendiri dan rakan dengan menumpukan aspek Bahasa Seni Visual"
+            },
+            {
+              "code": "9.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam hasil karya seni foto"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti genre fotografi dalam Seni Foto."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan definisi, jenis, fungsi dan kepelbagaian genre fotografi dalam Seni Foto."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan pengetahuan dan kefahaman untuk membuat penerokaan terhadap genre fotografi dalam Seni Foto melalui penggunaan pelbagai media dan teknik."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap genre fotografi dalam penghasilan karya Seni Foto."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap genre fotografi dalam penghasilan karya Seni Foto secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan karya Seni Foto dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual seterusnya menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "1.0",
+      "title": "SENI BINA",
+      "bidang": "Sejarah dan Apresiasi Seni Visual",
+      "tajuk": "Seni Bina",
+      "hoursMin": 4,
+      "objektif": [
+        "(i) Menjelaskan jenis seni bina di Malaysia.",
+        "(ii) Memerihalkan ciri reka bentuk dan ragam hias seni bina.",
+        "(iii) Menghasilkan model seni bina pilihan di Malaysia.",
+        "(iv) Menjelaskan pengalaman sendiri dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual berdasarkan hasil model seni bina yang dipamerkan."
+      ],
+      "standards": [
+        {
+          "sk": "1.1",
+          "skTitle": "Persepsi Seni dalam Seni Bina",
+          "skDescription": "Pemahaman terhadap Seni Bina",
+          "sp": [
+            {
+              "code": "1.1.1",
+              "text": "Menjelaskan jenis seni bina di Malaysia: (i) Rumah Tradisional (ii) Rumah Ibadat (iii) Istana (iv) Kompleks Makam"
+            }
+          ]
+        },
+        {
+          "sk": "1.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Bina",
+          "skDescription": "Eksplorasi maklumat daripada pelbagai sumber bagi pengukuhan terhadap Seni Bina",
+          "sp": [
+            {
+              "code": "1.2.2",
+              "text": "Mencirikan seni bina di Malaysia dari aspek: (i) Reka Bentuk (ii) Ragam Hias"
+            }
+          ]
+        },
+        {
+          "sk": "1.3",
+          "skTitle": "Ekspresi Seni dalam Seni Bina",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "1.3.1",
+              "text": "Menghasilkan satu model bangunan seni bina di Malaysia"
+            }
+          ]
+        },
+        {
+          "sk": "1.4",
+          "skTitle": "Apresiasi Seni dalam Seni Bina di Malaysia",
+          "skDescription": "Penghayatan terhadap hasil karya Seni Bina dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "1.4.1",
+              "text": "Mempamerkan model bangunan seni bina"
+            },
+            {
+              "code": "1.4.2",
+              "text": "Menghayati dan menjelaskan model bangunan seni bina dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual"
+            },
+            {
+              "code": "1.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan model bangunan seni bina"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti jenis seni bina di Malaysia."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan ciri reka bentuk dan ragam hias seni bina."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan kefahaman untuk membuat penerokaan bagi menghasilkan model bangunan seni bina di Malaysia."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap ciri reka bentuk dan ragam hias seni bina di Malaysia."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap seni bina di Malaysia dalam penghasilan model bangunan secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan model bangunan seni bina di Malaysia dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual serta boleh menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "2.0",
+      "title": "SENI LUKISAN",
+      "bidang": "Seni Halus",
+      "tajuk": "Seni Lukisan",
+      "hoursMin": 6,
+      "objektif": [
+        "(i) Menjelaskan aliran, gaya, pelukis dan karya dalam seni lukisan Barat berdasarkan abad pilihan.",
+        "(ii) Mengaplikasikan pengetahuan tentang tema dan tajuk serta pewujudan idea dalam penghasilan karya seni lukisan.",
+        "(iii) Mencipta karya seni lukisan melalui pemilihan media dan teknik berdasarkan aliran dan gaya mengikut abad pilihan.",
+        "(iv) Menjelaskan pengalaman sendiri dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual berdasarkan hasil karya seni lukisan yang dipamerkan."
+      ],
+      "standards": [
+        {
+          "sk": "2.1",
+          "skTitle": "Persepsi Seni dalam Seni Lukisan",
+          "skDescription": "Pemahaman terhadap konsep Seni Lukisan",
+          "sp": [
+            {
+              "code": "2.1.2",
+              "text": "Menjelaskan seni lukisan Barat mengikut abad pilihan dari aspek: (i) Aliran dan Gaya (ii) Pelukis dan Karya"
+            }
+          ]
+        },
+        {
+          "sk": "2.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Lukisan",
+          "skDescription": "Eksplorasi dan aplikasi pengetahuan dalam penghasilan Seni Lukisan",
+          "sp": [
+            {
+              "code": "2.2.1",
+              "text": "Meneroka hasil karya seni lukisan melalui aktiviti lakaran secara kreatif dengan menumpukan aspek: (i) Tema dan Tajuk (ii) Pewujudan Idea"
+            }
+          ]
+        },
+        {
+          "sk": "2.3",
+          "skTitle": "Ekspresi Seni dalam Seni Lukisan",
+          "skDescription": "Menzahirkan idea dan konsep melalui pelbagai sumber dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "2.3.1",
+              "text": "Menghasilkan karya seni lukisan berdasarkan aliran dan gaya mengikut abad pilihan"
+            }
+          ]
+        },
+        {
+          "sk": "2.4",
+          "skTitle": "Apresiasi Seni dalam Seni Lukisan",
+          "skDescription": "Penghayatan terhadap hasil karya Seni Lukisan dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "2.4.1",
+              "text": "Mempamerkan hasil karya seni lukisan"
+            },
+            {
+              "code": "2.4.2",
+              "text": "Menghayati dan menjelaskan hasil karya seni lukisan dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual"
+            },
+            {
+              "code": "2.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan karya seni lukisan"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti seni lukisan Barat dalam bidang Seni Halus."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan aliran, gaya, pelukis dan karya dalam seni lukisan Barat berdasarkan abad pilihan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan kefahaman untuk membuat penerokaan terhadap seni lukisan melalui penggunaan media, teknik dan proses."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan melalui penggunaan media, teknik dan proses dalam penghasilan karya seni lukisan."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap penghasilan karya seni lukisan secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan karya seni lukisan dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual serta boleh menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "3.0",
+      "title": "SENI CATAN",
+      "bidang": "Seni Halus",
+      "tajuk": "Seni Catan",
+      "hoursMin": 6,
+      "objektif": [
+        "(i) Menjelaskan aliran, gaya, pelukis dan karya dalam seni catan Barat berdasarkan abad pilihan.",
+        "(ii) Mengaplikasikan pengetahuan tentang tema dan tajuk serta pewujudan idea untuk menghasilkan karya seni catan.",
+        "(iii) Mencipta karya seni catan melalui pemilihan media dan teknik berdasarkan aliran dan gaya mengikut abad pilihan.",
+        "(iv) Menjelaskan pengalaman sendiri dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual berdasarkan hasil karya seni catan yang dipamerkan."
+      ],
+      "standards": [
+        {
+          "sk": "3.1",
+          "skTitle": "Persepsi Seni dalam Seni Catan",
+          "skDescription": "Pemahaman terhadap konsep Seni Catan",
+          "sp": [
+            {
+              "code": "3.1.1",
+              "text": "Menjelaskan seni catan Barat mengikut abad pilihan dari aspek: (i) Aliran dan Gaya (ii) Pelukis dan Karya"
+            }
+          ]
+        },
+        {
+          "sk": "3.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Catan",
+          "skDescription": "Eksplorasi dan aplikasi pengetahuan dalam penghasilan Seni Catan",
+          "sp": [
+            {
+              "code": "3.2.1",
+              "text": "Meneroka hasil karya seni catan melalui aktiviti lakaran secara kreatif dengan menumpukan aspek: (i) Tema dan Tajuk (ii) Pewujudan Idea"
+            }
+          ]
+        },
+        {
+          "sk": "3.3",
+          "skTitle": "Ekspresi Seni dalam Seni Catan",
+          "skDescription": "Menzahirkan idea dan konsep melalui pelbagai sumber dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "3.3.1",
+              "text": "Menghasilkan karya seni catan berdasarkan aliran dan gaya mengikut abad pilihan"
+            }
+          ]
+        },
+        {
+          "sk": "3.4",
+          "skTitle": "Apresiasi Seni dalam Seni Catan",
+          "skDescription": "Penghayatan terhadap hasil karya Seni Catan dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "3.4.1",
+              "text": "Mempamerkan hasil karya seni catan"
+            },
+            {
+              "code": "3.4.2",
+              "text": "Menghayati dan menjelaskan hasil karya seni catan dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual"
+            },
+            {
+              "code": "3.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan karya seni catan"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti seni catan Barat dalam bidang Seni Halus."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan aliran, gaya, pelukis dan karya dalam seni catan Barat berdasarkan abad pilihan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan kefahaman untuk membuat penerokaan terhadap seni catan melalui penggunaan media, teknik dan proses."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan melalui penggunaan media, teknik dan proses dalam penghasilan karya seni catan."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap penghasilan karya seni catan secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan karya seni catan dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual serta boleh menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "4.0",
+      "title": "SENI ARCA",
+      "bidang": "Seni Halus",
+      "tajuk": "Seni Arca",
+      "hoursMin": 6,
+      "objektif": [
+        "(i) Menjelaskan aliran, gaya, pengarca dan karya dalam seni arca Barat berdasarkan abad pilihan.",
+        "(ii) Mengaplikasikan pengetahuan tentang tema dan tajuk serta pewujudan idea dalam menghasilkan karya seni arca.",
+        "(iii) Mencipta karya seni arca melalui pemilihan bahan dan kaedah berdasarkan aliran dan gaya mengikut abad pilihan.",
+        "(iv) Menjelaskan pengalaman sendiri dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual berdasarkan hasil karya seni arca yang dipamerkan."
+      ],
+      "standards": [
+        {
+          "sk": "4.1",
+          "skTitle": "Persepsi Seni dalam Seni Arca",
+          "skDescription": "Pemahaman terhadap konsep Seni Arca",
+          "sp": [
+            {
+              "code": "4.1.1",
+              "text": "Menjelaskan seni arca Barat mengikut abad pilihan dari aspek: (i) Aliran dan Gaya (ii) Pengarca dan Karya"
+            }
+          ]
+        },
+        {
+          "sk": "4.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Arca",
+          "skDescription": "Eksplorasi dan aplikasi pengetahuan dalam penghasilan Seni Arca",
+          "sp": [
+            {
+              "code": "4.2.1",
+              "text": "Meneroka hasil karya seni arca melalui aktiviti lakaran secara kreatif dengan menumpukan aspek: (i) Tema dan Tajuk (ii) Pewujudan Idea"
+            }
+          ]
+        },
+        {
+          "sk": "4.3",
+          "skTitle": "Ekspresi Seni dalam Seni Arca",
+          "skDescription": "Menzahirkan idea dan konsep melalui pelbagai sumber dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "4.3.1",
+              "text": "Menghasilkan karya seni arca berdasarkan aliran dan gaya mengikut abad pilihan"
+            }
+          ]
+        },
+        {
+          "sk": "4.4",
+          "skTitle": "Apresiasi Seni dalam Seni Arca",
+          "skDescription": "Penghayatan terhadap hasil karya Seni Arca dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "4.4.1",
+              "text": "Mempamerkan hasil karya seni arca"
+            },
+            {
+              "code": "4.4.2",
+              "text": "Menghayati dan menjelaskan hasil karya seni arca dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual"
+            },
+            {
+              "code": "4.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan karya seni arca"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti seni arca Barat dalam bidang Seni Halus."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan aliran, gaya, pengarca dan karya dalam seni arca Barat berdasarkan abad pilihan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan kefahaman untuk membuat penerokaan terhadap seni arca melalui penggunaan bahan, kaedah dan proses."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan melalui penggunaan bahan, kaedah dan proses dalam penghasilan karya seni arca."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap penghasilan karya seni arca secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan karya seni arca dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual serta boleh menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "5.0",
+      "title": "REKA BENTUK INDUSTRI",
+      "bidang": "Reka Bentuk",
+      "tajuk": "Reka Bentuk Industri",
+      "hoursMin": 10,
+      "objektif": [
+        "(i) Menyatakan prospek dan hala tuju pereka bentuk industri.",
+        "(ii) Menjelaskan konsep produk dalam reka bentuk industri dan kepelbagaian model produk.",
+        "(iii) Meneroka hasil produk reka bentuk dengan menumpukan aspek kaedah, proses dan alatan serta bahan",
+        "(iv) Menghasilkan model produk reka bentuk industri dengan menggunakan imaginasi dan idea secara kreatif dan inovatif.",
+        "(v) Menjelaskan pengalaman sendiri dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual berdasarkan model reka bentuk industri yang dipamerkan."
+      ],
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Persepsi Seni dalam Reka Bentuk Industri",
+          "skDescription": "Pemahaman terhadap prospek kerjaya pereka bentuk industri.",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Menyatakan prospek dan hala tuju pereka bentuk industri"
+            },
+            {
+              "code": "5.1.2",
+              "text": "Menjelaskan konsep produk dalam reka bentuk industri dan kepelbagaian model produk"
+            }
+          ]
+        },
+        {
+          "sk": "5.2",
+          "skTitle": "Eksplorasi Seni dalam Reka Bentuk Industri",
+          "skDescription": "Eksplorasi dan aplikasi pengetahuan dalam penghasilan model produk dan perincian dalam reka bentuk industri",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Meneroka hasil produk reka bentuk dengan menumpukan aspek: (i) Kaedah (ii) Proses (iii) Alatan dan bahan"
+            }
+          ]
+        },
+        {
+          "sk": "5.3",
+          "skTitle": "Ekspresi Seni dalam Reka Bentuk Industri",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "5.3.1",
+              "text": "Mereka bentuk produk reka bentuk industri"
+            },
+            {
+              "code": "5.3.2",
+              "text": "Menghasilkan model produk mengikut skala"
+            }
+          ]
+        },
+        {
+          "sk": "5.4",
+          "skTitle": "Apresiasi Seni dalam Reka Bentuk Industri",
+          "skDescription": "Penghayatan terhadap hasil produk reka bentuk industri dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "5.4.1",
+              "text": "Mempamerkan model produk reka bentuk industri yang dihasilkan"
+            },
+            {
+              "code": "5.4.2",
+              "text": "Menghayati dan menjelaskan model produk reka bentuk industri dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual"
+            },
+            {
+              "code": "5.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan model produk reka bentuk industri"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti prospek dan hala tuju pereka bentuk industri dalam bidang Reka Bentuk."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan kaedah penghasilan produk reka bentuk industri."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan kefahaman untuk membuat penerokaan bagi menghasilkan model produk reka bentuk industri melalui kaedah, proses, penggunaan alatan dan bahan."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan melalui kaedah, proses, penggunaan alatan dan bahan dalam penghasilan model produk reka bentuk industri."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap penghasilan model produk reka bentuk industri secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan model produk reka bentuk industri dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual serta boleh menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "6.0",
+      "title": "SENI BATIK",
+      "bidang": "Seni Kraf",
+      "tajuk": "Seni Batik",
+      "hoursMin": 10,
+      "objektif": [
+        "(i) Menjelaskan prinsip asas, jenis, alatan, bahan dan motif serta proses seni batik.",
+        "(ii) Menerangkan proses penghasilan seni batik.",
+        "(iii) Meneroka pelbagai jenis teknik dalam proses penghasilan seni batik.",
+        "(iv) Menghasilkan produk seni batik dengan menggunakan imaginasi dan idea secara kreatif dan inovatif.",
+        "(v) Menjelaskan pengalaman sendiri dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual berdasarkan hasil produk seni batik yang dipamerkan."
+      ],
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Persepsi Seni dalam Seni Batik",
+          "skDescription": "Pemahaman terhadap prinsip Seni Batik",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Menjelaskan prinsip asas seni batik"
+            },
+            {
+              "code": "6.1.2",
+              "text": "Mencerakinkan jenis seni batik"
+            },
+            {
+              "code": "6.1.3",
+              "text": "Mengenal pasti alatan dan bahan seni batik"
+            },
+            {
+              "code": "6.1.4",
+              "text": "Mengkategorikan motif seni batik"
+            },
+            {
+              "code": "6.1.5",
+              "text": "Menerangkan proses seni batik"
+            }
+          ]
+        },
+        {
+          "sk": "6.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Batik",
+          "skDescription": "Eksplorasi dan aplikasi proses Seni Batik bagi pengukuhan pemahaman terhadap prinsip asas Seni Batik",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Meneroka pelbagai jenis teknik dalam proses penghasilan seni batik."
+            }
+          ]
+        },
+        {
+          "sk": "6.3",
+          "skTitle": "Ekspresi Seni dalam Seni Batik",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "6.3.1",
+              "text": "Menghasilkan produk seni batik secara kreatif dan inovatif"
+            }
+          ]
+        },
+        {
+          "sk": "6.4",
+          "skTitle": "Apresiasi Seni dalam Seni Batik",
+          "skDescription": "Penghayatan terhadap hasil produk Seni Batik dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "6.4.1",
+              "text": "Mempamerkan hasil produk seni batik"
+            },
+            {
+              "code": "6.4.2",
+              "text": "Menghayati dan menjelaskan produk seni batik dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual"
+            },
+            {
+              "code": "6.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan produk seni batik"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenalpasti seni batik dalam bidang Seni Kraf."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan prinsip asas, jenis, motif, alatan, bahan dan proses seni batik."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan kefahaman untuk membuat penerokaan terhadap seni batik melalui pelbagai teknik, penggunaan alatan, bahan dan proses."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan melalui pelbagai teknik, penggunaan alatan, bahan dan proses dalam penghasilan produk seni batik."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap penghasilan produk seni batik secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan produk seni batik dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual serta boleh menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "7.0",
+      "title": "INFOGRAFIK",
+      "bidang": "Komunikasi Visual",
+      "tajuk": "Seni Reka Grafik (Infografik)",
+      "hoursMin": 6,
+      "objektif": [
+        "(i) Menjelaskan definisi, prinsip, elemen, fungsi dan penjanaan idea infografik.",
+        "(ii) Meneroka pelbagai media dan teknik dalam proses penghasilan rekaan infografik.",
+        "(iii) Menghasilkan rekaan infografik dengan menggunakan imaginasi dan idea secara kreatif dan inovatif.",
+        "(iv) Menjelaskan pengalaman sendiri dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual berdasarkan hasil rekaan infografik yang dipamerkan."
+      ],
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Persepsi Seni dalam Seni Reka Grafik",
+          "skDescription": "Pemahaman terhadap Seni Reka Grafik",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Menjelaskan infografik dari aspek: (i) Definisi (ii) Prinsip dan Elemen (iii) Fungsi (iv) Penjanaan Idea"
+            }
+          ]
+        },
+        {
+          "sk": "7.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Reka Grafik",
+          "skDescription": "Eksplorasi dan aplikasi rekaan Infografik bagi pengukuhan pemahaman terhadap Seni Reka Grafik",
+          "sp": [
+            {
+              "code": "7.2.1",
+              "text": "Meneroka hasil rekaan infografik melalui pelbagai media dan teknik secara kreatif."
+            }
+          ]
+        },
+        {
+          "sk": "7.3",
+          "skTitle": "Ekspresi Seni dalam Seni Reka Grafik",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "7.3.1",
+              "text": "Menghasilkan rekaan infografik dengan menggunakan imaginasi dan idea secara kreatif dan inovatif"
+            }
+          ]
+        },
+        {
+          "sk": "7.4",
+          "skTitle": "Apresiasi Seni dalam Seni Reka Grafik",
+          "skDescription": "Penghayatan terhadap hasil produk Seni Reka Grafik dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "7.4.1",
+              "text": "Mempamerkan hasil rekaan infografik"
+            },
+            {
+              "code": "7.4.2",
+              "text": "Menghayati dan menjelaskan hasil rekaan infografik dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual"
+            },
+            {
+              "code": "7.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan rekaan infografik"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti infografik dalam Seni Reka Grafik."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan definisi, prinsip, elemen, fungsi dan penjanaan idea infografik dalam Seni Reka Grafik."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan kefahaman untuk membuat penerokaan dalam penghasilan rekaan infografik melalui penggunaan pelbagai media dan teknik."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan melalui penggunaan pelbagai media dan teknik dalam penghasilan rekaan infografik."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap penghasilan rekaan infografik secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan rekaan infografik dalam Seni Reka Grafik dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual serta boleh menjadi model teladan."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "8.0",
+      "title": "MANIPULASI IMEJ DAN e-PORTFOLIO",
+      "bidang": "Komunikasi Visual",
+      "tajuk": "Seni Foto (Manipulasi Imej dan e-Portfolio)",
+      "hoursMin": 6,
+      "objektif": [
+        "(i) Menjelaskan definisi, teknik dan fungsi kepelbagaian manipulasi imej dan e-portfolio.",
+        "(ii) Meneroka pelbagai teknik asas manipulasi imej dengan menggunakan perisian dan aplikasi dalam penghasilan karya seni foto.",
+        "(iii) Menghasilkan karya seni foto melalui penerokaan manipulasi imej dengan menggunakan imaginasi dan idea secara kreatif dan inovatif.",
+        "(iv) Menjelaskan pengalaman sendiri dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual berdasarkan hasil karya manipulasi imej dan e-portfolio yang dipamerkan."
+      ],
+      "standards": [
+        {
+          "sk": "8.1",
+          "skTitle": "Persepsi Seni dalam Seni Foto",
+          "skDescription": "Pemahaman terhadap Manipulasi Imej dan e-Portfolio",
+          "sp": [
+            {
+              "code": "8.1.1",
+              "text": "Menjelaskan definisi manipulasi imej dan e-portfolio"
+            },
+            {
+              "code": "8.1.2",
+              "text": "Menerangkan teknik asas manipulasi imej dan fungsi e-portfolio dalam Seni Foto"
+            },
+            {
+              "code": "8.1.3",
+              "text": "Membincangkan kepelbagaian: (i) Teknik asas manipulasi imej (ii) Aplikasi e-portfolio"
+            }
+          ]
+        },
+        {
+          "sk": "8.2",
+          "skTitle": "Eksplorasi Seni dalam Seni Foto",
+          "skDescription": "Eksplorasi dan aplikasi penghasilan Manipulasi Imej dan e-Portfolio bagi pengukuhan pemahaman terhadap Seni Foto",
+          "sp": [
+            {
+              "code": "8.2.1",
+              "text": "Meneroka pelbagai jenis teknik asas manipulasi imej dengan menggunakan perisian dan aplikasi secara kreatif"
+            }
+          ]
+        },
+        {
+          "sk": "8.3",
+          "skTitle": "Ekspresi Seni dalam Seni Foto",
+          "skDescription": "Penzahiran idea dan konsep melalui pelbagai sumber dan teknologi dalam penjanaan tugasan",
+          "sp": [
+            {
+              "code": "8.3.1",
+              "text": "Menghasilkan karya seni foto melalui penerokaan manipulasi imej dengan menggunakan imaginasi dan idea secara kreatif dan inovatif"
+            }
+          ]
+        },
+        {
+          "sk": "8.4",
+          "skTitle": "Apresiasi Seni dalam Seni Foto",
+          "skDescription": "Penghayatan terhadap hasil karya Seni Foto dengan menggunakan Bahasa Seni Visual dan Pemikiran Seni Visual",
+          "sp": [
+            {
+              "code": "8.4.1",
+              "text": "Mempamerkan hasil karya seni foto menggunakan aplikasi dan portal e-portfolio yang dipilih"
+            },
+            {
+              "code": "8.4.2",
+              "text": "Menghayati dan menjelaskan hasil karya seni foto dengan menumpukan aspek Bahasa Seni Visual dan Pemikiran Seni Visual"
+            },
+            {
+              "code": "8.4.3",
+              "text": "Menjelaskan pengalaman sendiri dalam penghasilan karya seni foto"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti manipulasi imej dan e-portfolio dalam Seni Foto."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan definisi dan teknik dan fungsi manipulasi imej dan e-portfolio dalam Seni Foto."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengaplikasikan kefahaman untuk membuat penerokaan terhadap manipulasi imej dan e-portfolio dalam Seni Foto melalui penggunaan pelbagai teknik, perisian dan aplikasi."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis hasil penerokaan terhadap manipulasi imej dan e-portfolio dalam penghasilan karya Seni Foto."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menzahirkan idea secara kreatif dan inovatif hasil daripada penerokaan terhadap penghasilan karya Seni Foto secara sistematik."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan karya Seni Foto dengan menggunakan idea sendiri secara kreatif dan inovatif serta membuat apresiasi berpandukan Bahasa Seni Visual dan Pemikiran Seni Visual serta boleh menjadi model teladan."
+        }
+      ]
+    }
+  ]
+}

@@ -4,7 +4,8 @@
  *
  * Sources (never `src/**` of the frontend): the JSON snapshots in `curriculum-data/` (the M03 mock
  * fixture exported once to compact JSON: public curriculum data observed on the live site, no
- * personal data) and `docs/reference/dskp/*.json` for the DSKP nodes.
+ * personal data) and the packaged DSKP extracts (`src/modules/curriculum/dskp/data/*.json`, a copy of
+ * `docs/reference/dskp`) for the DSKP nodes; the DSKP part runs the same code as `npm run dskp:load`.
  *
  * Idempotent and safe next to loaded rows (plan 14.9 item 4): rows are matched by natural key and
  * only the missing ones are inserted; existing rows are never updated or deleted, so an admin edit
@@ -17,12 +18,12 @@ import { readFileSync } from 'node:fs'
 import { z } from 'zod'
 
 import type { PrismaClient } from '../../src/db/client'
-import { parseDskpExtract, type DskpExtract } from '../../src/modules/curriculum/dskp/dskp-loader'
+import { applyDskpExtract, DSKP_FILES, DSKP_ONLY_SUBJECTS, readDskpSources } from '../../src/modules/curriculum/dskp/dskp-load'
+import type { DskpExtract } from '../../src/modules/curriculum/dskp/dskp-loader'
 import { deriveSubjectLevelPairs } from '../../src/modules/curriculum/rules'
 import type { SeedModule } from './index'
 
 const DATA_DIR = new URL('./curriculum-data/', import.meta.url)
-const DSKP_DIR = new URL('../../../../docs/reference/dskp/', import.meta.url)
 /** Rows per `createMany` (the pg driver allows 65,535 bind parameters per statement). */
 const BATCH = 1000
 
@@ -78,35 +79,17 @@ export function loadSnapshot(): CurriculumSnapshot {
   }
 }
 
-/**
- * The 13 DSKP extracts and the subject each belongs to. Two practical (MPV) subjects have no row in
- * the observed subject list; the seed adds them as inactive subjects with no level link so that the
- * node tree has a subject to hang on (BE-08 open question, deviations log).
- */
-export const DSKP_FILES: readonly { file: string; subject: string }[] = [
-  { file: 'bahasa-melayu.json', subject: 'BM' },
-  { file: 'bahasa-inggeris.json', subject: 'BI' },
-  { file: 'matematik.json', subject: 'MATH' },
-  { file: 'matematik-tambahan.json', subject: 'ADDMATH' },
-  { file: 'fizik.json', subject: 'PHY' },
-  { file: 'sains.json', subject: 'SCI' },
-  { file: 'sejarah.json', subject: 'SEJ' },
-  { file: 'pendidikan-islam.json', subject: 'PI' },
-  { file: 'tasawwur-islam.json', subject: 'TI' },
-  { file: 'pendidikan-moral.json', subject: 'PM' },
-  { file: 'pendidikan-seni-visual.json', subject: 'PSV' },
-  { file: 'landskap-dan-nurseri.json', subject: 'LNR' },
-  { file: 'katering-dan-penyajian.json', subject: 'KNP' },
-]
+// The file list, the DSKP-only subjects and the writer live in the API module (R1-B04); re-exported for the specs.
+export { DSKP_FILES, DSKP_ONLY_SUBJECTS }
 
-export const DSKP_ONLY_SUBJECTS = [
-  { code: 'LNR', name: 'Landskap dan Nurseri', nameEn: 'Landscape and Nursery', icon: null, color: '#16A34A', isCore: false, order: 32, isActive: false },
-  { code: 'KNP', name: 'Katering dan Penyajian', nameEn: 'Catering and Serving', icon: null, color: '#F97316', isCore: false, order: 33, isActive: false },
-] as const
-
-/** Reads and parses every DSKP extract (throws on a file that does not have the extract shape). */
+/** Reads and parses every packaged DSKP extract (throws on a file that does not have the extract shape). */
 export function loadDskp(): { subject: string; file: string; extract: DskpExtract }[] {
-  return DSKP_FILES.map(({ file, subject }) => ({ subject, file, extract: parseDskpExtract(readJson(DSKP_DIR, file)) }))
+  const sources = readDskpSources()
+  return DSKP_FILES.map(({ file, subject }) => {
+    const source = sources.find((s) => s.file === file)
+    if (!source?.extract) throw new Error(`DSKP extract ${file}: ${source?.error ?? 'missing from the packaged data'}`)
+    return { subject, file, extract: source.extract }
+  })
 }
 
 const chunks = <T>(rows: T[], size = BATCH): T[][] => {
@@ -273,6 +256,7 @@ async function seedLearnerCatalogue(db: Tx, snap: CurriculumSnapshot) {
   }
 }
 
+/** The DSKP tree goes through the same code as `npm run dskp:load` (R1-B04): `applyDskpExtract`. */
 async function seedDskp(
   db: Tx,
   dskp: ReturnType<typeof loadDskp>,
@@ -281,38 +265,7 @@ async function seedDskp(
   subjects: Map<string, bigint>,
 ) {
   for (const { subject, extract } of dskp) {
-    const subjectId = subjects.get(subject) as bigint
-    const editions = new Map<string, string>() // level -> edition
-    for (const n of extract.nodes) editions.set(n.level, n.edition)
-    const rows = await db.curriculumNode.findMany({ where: { subjectId }, select: { id: true, educationLevelId: true, edition: true, kind: true, code: true } })
-    const ids = new Map<string, bigint>() // draft key -> id
-    const levelCode = (id: bigint) => [...levels.entries()].find(([, v]) => v === id)?.[0]
-    for (const r of rows) {
-      const lc = levelCode(r.educationLevelId)
-      if (lc !== undefined && editions.get(lc) === r.edition) ids.set(`${lc}|${r.kind}|${r.code}`, r.id)
-    }
-    for (const kind of ['grouping', 'unit', 'sk', 'sp'] as const) {
-      const fresh = extract.nodes.filter((n) => n.kind === kind && !ids.has(n.key))
-      for (const batch of chunks(fresh)) {
-        await db.curriculumNode.createMany({
-          data: batch.map((n) => ({
-            subjectId, educationLevelId: levels.get(n.level) as bigint, kind: n.kind, code: n.code, title: n.title,
-            titlePrinted: n.titlePrinted, parentId: n.parentKey === null ? null : (ids.get(n.parentKey) as bigint),
-            sortOrder: n.order, edition: n.edition, isElective: n.isElective, createdAt: now, updatedAt: now,
-          })),
-        })
-      }
-      const created = await db.curriculumNode.findMany({ where: { subjectId, kind }, select: { id: true, educationLevelId: true, edition: true, code: true } })
-      for (const r of created) {
-        const lc = levelCode(r.educationLevelId)
-        if (lc !== undefined && editions.get(lc) === r.edition) ids.set(`${lc}|${kind}|${r.code}`, r.id)
-      }
-    }
-    // The unique index (subject, coalesce(node, 0), tp) makes a re-run a no-op.
-    const tps = extract.tps.map((t) => ({
-      subjectId, nodeId: t.nodeKey === null ? null : (ids.get(t.nodeKey) as bigint), tp: t.tp, descriptor: t.descriptor, scope: t.scope, createdAt: now,
-    }))
-    for (const batch of chunks(tps)) await db.curriculumTpDescriptor.createMany({ data: batch, skipDuplicates: true })
+    await applyDskpExtract(db, { subjectId: subjects.get(subject) as bigint, extract, levels, now, dryRun: false })
   }
 }
 
