@@ -101,10 +101,14 @@ function baseItems(ctx: PoolContext, section: StandardSection, ignoreQuota: bool
     if (done.has(f.id)) continue
     const group = f.groupId ? ctx.groups.get(f.groupId) : undefined
     let members: QuestionFacts[]
+    // A group declared larger than the members present is incomplete and never used (not even as a single).
+    const declared = group ? Math.max(...group.map((m) => m.groupSize ?? 0), group.length) : 0
+    if (group && declared > group.length) {
+      for (const m of group) done.add(m.id)
+      continue
+    }
     if (group && group.length > 1) {
       for (const m of group) done.add(m.id)
-      const declared = group[0]?.groupSize ?? group.length
-      if (declared > group.length) continue
       members = group
     } else {
       done.add(f.id)

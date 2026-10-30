@@ -206,7 +206,7 @@ export function precheckPool(
       if (row.short > 0) {
         const tpOnly = members.filter((d) => d.tp !== null && d.tp >= g.tpMin && d.tp <= g.tpMax).length
         if (tpOnly >= g.size && g.size > 0)
-          tpFail.push({ section: label, kind: 'marks', slot, need: g.size, have: inBand.length, marksBand: { min: g.mMin, max: Number.isFinite(g.mMax) ? g.mMax : g.mMin } })
+          tpFail.push({ section: label, kind: 'marks', slot, need: g.size, have: inBand.length, marksBand: { ...(g.mMin > 1 ? { min: g.mMin } : {}), ...(Number.isFinite(g.mMax) ? { max: g.mMax } : {}) } })
         else tpFail.push({ section: label, kind: 'tp', slot, tp: { min: g.tpMin, max: g.tpMax }, need: g.size, have: inBand.length })
       }
       if (g.counts)
@@ -288,7 +288,7 @@ export function precheckPool(
     const w = O + 1
     reachable = !!grid[M * w + O]
     for (let v = O; v >= 0; v--) if (grid[M * w + v]) { best = v; break }
-    if (!reachable && counts.short === 0) failures.push({ section: label, kind: 'marks', need: O, have: best })
+    if (!reachable && counts.short === 0) failures.push({ section: label, kind: 'marks', need: section.markBudget, have: best })
   }
 
   // Fixed reporting order: count, unit, tp (incl. marks bands), kbat, marks.

@@ -64,11 +64,13 @@ describe.each(launch.map((l) => [l.bp.code, l] as const))('property suite %s', (
 describe('property suite: soft preferences and statistics', () => {
   it('prefers unseen questions when an all-unseen paper exists', () => {
     for (const l of launch.slice(0, 4)) {
-      const { facts } = syntheticPool(l.bp, l.units, 1500, 77)
-      const seen = new Set(facts.filter((_, i) => i % 3 === 0).map((f) => f.id))
+      const { facts, planted } = syntheticPool(l.bp, l.units, 1500, 77)
+      // Every third question was served, but never one of the planted paper: an all-unseen paper exists.
+      const keep = new Set([...planted.values()].flat())
+      const seen = new Set(facts.filter((f, i) => i % 3 === 0 && !keep.has(f.id)).map((f) => f.id))
       const unseenOnly = facts.filter((f) => !seen.has(f.id))
       const possible = composeStandardPaper(l.bp, unseenOnly, { seed: 5 }).ok
-      if (!possible) continue
+      expect(possible).toBe(true)
       let clean = 0
       for (const seed of SEEDS.slice(0, 10)) {
         const r = composeStandardPaper(l.bp, facts, { seed, seen })

@@ -245,8 +245,8 @@ export function verifyComposition(
       const members = [...(membersOf.get(f.groupId) ?? [])].sort(
         (a, b) => (a.groupPosition ?? 0) - (b.groupPosition ?? 0) || (a.id < b.id ? -1 : 1),
       )
-      if (members.length <= 1) return
-      const declared = members[0]?.groupSize ?? members.length
+      const declared = Math.max(...members.map((mm) => mm.groupSize ?? 0), members.length)
+      if (members.length <= 1 && declared <= 1) return
       const run = ids.slice(i, i + members.length)
       const ok = declared <= members.length && members.every((mm, k) => run[k] === mm.id)
       if (!ok) v({ code: 'GROUP_BROKEN', tier: 'structural', sectionPosition: pos, slot: i + 1, detail: f.groupId })
