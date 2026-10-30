@@ -494,6 +494,12 @@ describe('student side: shortages, limit, canGenerate', () => {
     expect(
       BijakGenerateShortageSchema.safeParse({ section: 'A', need: 1, have: 0, kind: 'combination', blocking: 'kbat' }).success,
     ).toBe(true)
+    const marksBand = { section: 'A', need: 2, have: 0, kind: 'marks', slot: { from: 1, to: 10 } }
+    expect(BijakGenerateShortageSchema.safeParse({ ...marksBand, marksMin: 3, marksMax: 5 }).success).toBe(true)
+    expect(BijakGenerateShortageSchema.safeParse({ ...marksBand, marksMin: 4, marksMax: 4 }).success).toBe(true)
+    expect(BijakGenerateShortageSchema.safeParse(marksBand).success).toBe(true)
+    expect(BijakGenerateShortageSchema.safeParse({ ...marksBand, marksMin: -1 }).success).toBe(false)
+    expect(BijakGenerateShortageSchema.safeParse({ ...marksBand, marksMax: 2.5 }).success).toBe(false)
     expect(BijakGenerateShortageSchema.safeParse({ section: 'A', need: 1, have: 0, kind: 'lain' }).success).toBe(false)
     expect(BijakGenerateShortageSchema.safeParse({ section: 'A', need: 1, have: 0, blocking: 'x' }).success).toBe(false)
   })

@@ -246,6 +246,12 @@ export const BijakGenerateShortageSchema = z
       .strictObject({ min: z.number().int().min(1).max(6), max: z.number().int().min(1).max(6) })
       .optional()
       .meta({ description: 'TP band of the short group (kind tp).' }),
+    marksMin: z.number().int().min(0).optional().meta({
+      description: 'Kind marks on a slot group: minimum marks per question the group required (with `slot`).',
+    }),
+    marksMax: z.number().int().min(0).optional().meta({
+      description: 'Kind marks on a slot group: maximum marks per question the group required (with `slot`).',
+    }),
     blocking: z.enum(['kbat', 'tp', 'marks', 'quota']).optional().meta({
       description: 'Kind combination: the constraint family whose removal makes the section solvable.',
     }),

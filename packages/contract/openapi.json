@@ -10503,6 +10503,16 @@
             "additionalProperties": false,
             "description": "TP band of the short group (kind tp)."
           },
+          "marksMin": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Kind marks on a slot group: minimum marks per question the group required (with `slot`)."
+          },
+          "marksMax": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Kind marks on a slot group: maximum marks per question the group required (with `slot`)."
+          },
           "blocking": {
             "type": "string",
             "enum": [
