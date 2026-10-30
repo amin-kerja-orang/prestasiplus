@@ -59,7 +59,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     items: items([
       ['PM-01', 'Langsung', '/admin/command-center'],
       ['PM-02', 'Aktiviti Harian', '/admin/command-center/daily-activity'],
-      ['PM-03', 'Monitoring', '/guru/monitoring'],
+      ['PM-03', 'Monitoring', '/admin/monitoring'],
       ['PM-04', 'Analitik'],
       ['PM-05', 'Ringkasan', '/admin/kirkpatrick', K],
       ['PM-06', 'T1: Reaksi', '/admin/kirkpatrick/reaction', K],
