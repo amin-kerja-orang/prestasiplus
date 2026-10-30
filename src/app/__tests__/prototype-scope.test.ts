@@ -99,6 +99,7 @@ describe('isPathInScope', () => {
       '/permainan/betul-salah',
       '/papan-bijak/ABC123',
       '/topics/12',
+      '/remedial/12',
       '/marketplace/some-product',
       '/ibu-bapa/terima/tok',
     ]) {
@@ -127,6 +128,10 @@ describe('isPathInScope', () => {
       '/guru',
       '/guru/command-center/classroom/3',
       '/guru/remedial-progress',
+      '/remedial/12',
+      // Side effect of the `/remedial` prefix (DV-M10-50): the student list is reachable, unlinked;
+      // the API answers the teacher's own (empty) list.
+      '/remedial/saya',
       '/guru/kelas/cipta',
       '/guru/kirkpatrick/reaction',
       '/guru/kirkpatrick/pelajar/5',
