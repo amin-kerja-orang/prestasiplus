@@ -18,7 +18,7 @@ import { assertContentOwner } from './content-steps'
 import { openMigrationFiles } from './files'
 import { ACTIVITY_GROUPS } from './groups'
 import { NOT_MIGRATED_ACTIVITY, type NotMigrated } from './not-migrated'
-import { activityInputHash, assertCorePreflight } from './preflight'
+import { activityInputHash, assertCorePreflight, assertStagedColumns } from './preflight'
 import { rebuildAfterResume } from './resume-report'
 
 export { ActivityContext, ACTIVITY_GROUP_NAMES, type ActivityGroup, type ActivityGroupName, type ActivityOptions } from './context'
@@ -26,7 +26,7 @@ export { DriftCollector, writeReportFile } from './drift'
 export { MigrationFiles, openMigrationFiles, normaliseRelativePath, parseManifest } from './files'
 export { ACTIVITY_GROUPS } from './groups'
 export { NOT_MIGRATED_ACTIVITY, type NotMigrated } from './not-migrated'
-export { assertCorePreflight, PreflightError, ACTIVITY_READ_TABLES } from './preflight'
+export { assertCorePreflight, assertStagedColumns, PreflightError, ACTIVITY_READ_TABLES, STAGED_COLUMNS_NEEDED } from './preflight'
 
 /** There is nothing to run: no group registered, or the `--group` / `--table` filter matched no step. */
 export class NoActivityStepsError extends RangeError {}
@@ -59,6 +59,14 @@ export function buildActivitySteps(a: ActivityContext, groups: readonly Activity
     throw new RangeError(`Unknown --table value(s): ${unknown.join(', ')}. Known: ${names.join(', ') || '(none registered)'}.`)
   }
   return all.filter((s) => only.includes(s.entity))
+}
+
+/**
+ * The entity names of every step of the registered groups (what `migrate:all` / `migrate:delta` run in the activity
+ * stage). Builds the steps on a throwaway context: nothing is read or written.
+ */
+export function activityStepEntities(options: Pick<ActivityContext['options'], 'pool' | 'env' | 'source' | 'asOf'>): string[] {
+  return buildActivitySteps(new ActivityContext({ ...options }), ACTIVITY_GROUPS).map((s) => s.entity)
 }
 
 /** The built-in list plus each group's own, without repeats, in print order. */
@@ -125,6 +133,8 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
   let steps = buildActivitySteps(activity, chosen, only)
   if (transformSteps) steps = transformSteps(steps)
   if (steps.length === 0) throw new NoActivityStepsError('No activity steps to run: no group is registered, or the --group / --table filter matched nothing.')
+  // D1: a stage from an older DDL (no article `body`) is refused here, not by a raw SQL error mid-run.
+  await assertStagedColumns(options.pool, steps.map((s) => s.entity))
 
   const extraTables = chosen.flatMap((g) => g.reads ?? [])
   const inputHash = await activityInputHash({
@@ -141,9 +151,10 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
 }
 
 /**
- * Entities whose v2 target needs a column the staging spec does not carry yet (articles, notes, videos, audio sets:
- * content columns; support tickets: the message body). With source rows and nothing loaded they are "blocked by
- * spec": the run can be green while the v2 table stays empty, so the report says so.
+ * Entities whose v2 target needs a column the staging spec does not carry yet (notes, videos, audio sets: content
+ * columns; support tickets: the message body). Articles stay in the list although `body` (their v2 `content`) is staged
+ * since D1 (LEAD 29 Oct): a dump without the column (a missing GRANT) still leaves the table empty. With source rows and nothing
+ * loaded they are "blocked by spec": the run can be green while the v2 table stays empty, so the report says so.
  */
 export const SPEC_GAP_ENTITIES: readonly string[] = ['articles', 'notes', 'videos', 'audio_kbat_sets', 'support_tickets']
 

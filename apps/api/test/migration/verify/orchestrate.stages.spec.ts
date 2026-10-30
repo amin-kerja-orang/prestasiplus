@@ -13,16 +13,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { runCli } from '../../../src/migration/cli'
 import { ApplyRefusedError, RunInProgressError } from '../../../src/migration/kit'
 import { PreflightError } from '../../../src/migration/load/activity'
-import { runAll, type StageResult } from '../../../src/migration/orchestrate'
+import { runAll, runDelta, type StageResult } from '../../../src/migration/orchestrate'
 import type { VerifyReport } from '../../../src/migration/verify'
 import { capture } from '../staging/helpers'
 
-const mocks = vi.hoisted(() => ({ runCore: vi.fn(), runActivity: vi.fn(), assertCorePreflight: vi.fn(), runVerify: vi.fn(), writeVerifyReport: vi.fn() }))
+const mocks = vi.hoisted(() => ({ runCore: vi.fn(), runActivity: vi.fn(), assertCorePreflight: vi.fn(), assertStagedColumns: vi.fn(), runVerify: vi.fn(), writeVerifyReport: vi.fn() }))
 vi.mock('../../../src/migration/load', async (orig) => ({ ...(await orig<object>()), runCore: mocks.runCore }))
 vi.mock('../../../src/migration/load/activity', async (orig) => ({
   ...(await orig<object>()),
   runActivity: mocks.runActivity,
   assertCorePreflight: mocks.assertCorePreflight,
+  assertStagedColumns: mocks.assertStagedColumns,
 }))
 vi.mock('../../../src/migration/verify', () => ({
   runVerify: mocks.runVerify,
@@ -49,6 +50,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   nextRun = 0
   mocks.assertCorePreflight.mockResolvedValue(1)
+  mocks.assertStagedColumns.mockResolvedValue(undefined)
   mocks.runVerify.mockResolvedValue(passReport)
   mocks.writeVerifyReport.mockReturnValue({ json: 'a.json', md: 'a.md' })
 })
@@ -147,6 +149,36 @@ describe('etl_runs.git_sha', () => {
     expect(mocks.runCore).toHaveBeenCalledTimes(2)
     expect(mocks.runActivity).toHaveBeenCalledTimes(2)
     for (const [o] of [...mocks.runCore.mock.calls, ...mocks.runActivity.mock.calls]) expect(o).toMatchObject({ gitSha: sha })
+  })
+})
+
+describe('staged-column preflight (D1, G4 #399)', () => {
+  it('runs before the core dry-run of migrate:all and migrate:delta, with every activity step entity (articles included)', async () => {
+    mocks.runCore.mockResolvedValue(report('dry-run', 'succeeded'))
+    mocks.runActivity.mockResolvedValue(report('dry-run', 'succeeded'))
+    // As in the delta test above: the first-load check answers "yes"; the staged-changes scan finds no table with updated_at.
+    const query = vi.fn(async (sql: string) => (/information_schema\.columns/.test(sql) ? { rows: [], rowCount: 0 } : answer()))
+    const deltaPool = { query, connect: vi.fn(async () => ({ query, release: vi.fn() })) } as unknown as pg.Pool
+    await runAll(options('dry-run'))
+    await runDelta({ ...options('dry-run'), pool: deltaPool, since: '2026-06-02T00:00:00Z' })
+    expect(mocks.assertStagedColumns).toHaveBeenCalledTimes(2)
+    expect(mocks.assertStagedColumns.mock.calls.map(([pool]) => pool)).toEqual([fakePool, deltaPool])
+    for (const [, entities] of mocks.assertStagedColumns.mock.calls) expect(entities).toEqual(expect.arrayContaining(['articles', 'notes', 'feedback']))
+    expect(mocks.assertStagedColumns.mock.invocationCallOrder[0]).toBeLessThan(mocks.runCore.mock.invocationCallOrder[0] as number)
+  })
+
+  it('a stale stage stops migrate:all and migrate:delta before any stage runs; the CLI exits 2', async () => {
+    const stale = new PreflightError('Preflight failed: staging_cloud.articles lacks column(s) body (staged from an older DDL): re-stage. Nothing was written.')
+    mocks.assertStagedColumns.mockRejectedValue(stale)
+    await expect(runAll(options('apply'))).rejects.toBe(stale)
+    await expect(runDelta({ ...options('dry-run'), since: '2026-06-02T00:00:00Z' })).rejects.toBe(stale)
+    const log = capture()
+    const code = await runCli(['migrate:all', '--dry-run', '--as-of=2026-06-01'], { pool: fakePool, env, out: log.out, err: log.err })
+    expect(code).toBe(2)
+    expect(log.text()).toContain('staging_cloud.articles lacks column(s) body')
+    expect(mocks.runCore).not.toHaveBeenCalled()
+    expect(mocks.runActivity).not.toHaveBeenCalled()
+    expect(mocks.runVerify).not.toHaveBeenCalled()
   })
 })
 

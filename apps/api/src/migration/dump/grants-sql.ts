@@ -31,7 +31,8 @@ export function buildGrantScript(database: string, account: string, specs: reado
   const lines: string[] = [
     '-- Read-only account for the .cloud export (AM-10). Run as the data owner. Replace the password placeholder (including the < >) with a quoted strong password first; run unedited it is a syntax error.',
     '-- Column-level SELECT only: the spec columns minus the redacted ones (those are exported as NULL).',
-    '-- A GRANT for a table that does not exist in your database fails: skip that line.',
+    '-- A GRANT for a table that does not exist in your database fails: skip that line ONLY when the table is absent from the database.',
+    '-- Never skip the `articles` line: skipping it migrates 0 articles silently. A GRANT that fails on a column (for example articles body) means the spec and the database disagree: STOP and report the column names to the LEAD.',
     `CREATE USER IF NOT EXISTS ${account} IDENTIFIED BY <<SET-A-STRONG-PASSWORD>> REQUIRE SSL;`,
   ]
   for (const t of specs) {

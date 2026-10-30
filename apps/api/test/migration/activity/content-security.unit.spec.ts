@@ -10,9 +10,9 @@ import { isAllowedHost } from '../../../src/modules/content/videos/videos.servic
 
 const api = new SanitizeHtmlSanitizer([])
 
-const article = (content: string) => ({
+const article = (body: string) => ({
   id: '1', title: 'Artikel', slug: 'artikel', category: 'umum', grade_level: 'semua', is_published: '1', views: '0',
-  author_id: '1', content, created_at: '2026-03-01T00:00:00Z',
+  author_id: '1', body, created_at: '2026-03-01T00:00:00Z',
 })
 const note = (body: string) => ({
   id: '1', title: 'Nota', note_type: 'formula', subject: 'matematik', grade: 'Tingkatan 4', is_published: '1', views: '0',

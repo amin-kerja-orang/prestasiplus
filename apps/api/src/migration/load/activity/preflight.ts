@@ -184,3 +184,37 @@ export async function assertCorePreflight(options: PreflightOptions): Promise<nu
       `with another --as-of or roster default-hash setting). ${RUN_CORE_FIRST}; pass --core-as-of=YYYY-MM-DD if it ran on another date.`,
   )
 }
+
+/**
+ * Staged columns that a step reads by name and that an older staging DDL did not have (D1, LEAD 29 Oct: article `body`,
+ * the .cloud column of the article HTML; .cloud has no `excerpt` or `content` column). A stage built from that older DDL makes the read fail with a raw SQL error (42703); this check refuses
+ * first, names the table and columns, and tells the operator to re-stage. Keyed by the step entity; the staged table is
+ * the same name in `staging_cloud`.
+ */
+export const STAGED_COLUMNS_NEEDED: Readonly<Record<string, readonly string[]>> = {
+  articles: ['body'],
+}
+
+/**
+ * Refuses (exit 2, dry-run too) when a chosen step's staged table lacks a column of `STAGED_COLUMNS_NEEDED`. Called at the
+ * start of the `migrate:all` / `migrate:delta` pipeline (before the core dry-run, so nothing at all is written) and by
+ * `planActivity` (a standalone `migrate:activity`).
+ */
+export async function assertStagedColumns(pool: Pick<pg.Pool, 'query'>, stepEntities: readonly string[]): Promise<void> {
+  for (const [table, columns] of Object.entries(STAGED_COLUMNS_NEEDED)) {
+    if (!stepEntities.includes(table)) continue
+    const res = await pool.query<{ column_name: string }>(
+      `SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2`,
+      [STAGING_SCHEMA, table],
+    )
+    const have = new Set(res.rows.map((r) => r.column_name))
+    if (have.size === 0) throw new PreflightError(`Preflight failed: ${STAGING_SCHEMA}.${table} does not exist. Run staging:load first.`)
+    const missing = columns.filter((c) => !have.has(c))
+    if (missing.length > 0) {
+      throw new PreflightError(
+        `Preflight failed: ${STAGING_SCHEMA}.${table} lacks column(s) ${missing.join(', ')} (staged from an older DDL): ` +
+          're-stage with the current spec (staging:ddl, then staging:load from a dump made with the current dump:grants). Nothing was written.',
+      )
+    }
+  }
+}

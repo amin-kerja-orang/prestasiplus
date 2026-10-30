@@ -205,8 +205,10 @@ const STAGING: TableSpec[] = [
     'title:t', 'type:t:enum', 'target:t', 'image_path:t', 'starts_at:ts', 'ends_at:ts', 'sort_order:i',
     'is_active:t:enum',
   ]),
+  // `body` (HTML): D1 (LEAD 29 Oct), the source of the v2 NOT NULL `articles.content`. The .cloud table has no `excerpt`
+  // and no `content` column (LEAD's read-only schema export); the v2 `excerpt` stays null.
   s('articles', [
-    'slug:t', 'category:t:enum', 'title:t', 'views:i', 'is_published:t:enum', 'author_id:id:fk=users',
+    'slug:t', 'category:t:enum', 'title:t', 'body:t', 'views:i', 'is_published:t:enum', 'author_id:id:fk=users',
   ]),
   s('notes', ['title:t', 'note_type:t:enum', 'body:t', 'views:i', 'is_published:t:enum']),
   s('videos', ['title:t', 'url:t', 'duration_seconds:i']),

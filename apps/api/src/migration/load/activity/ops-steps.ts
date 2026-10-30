@@ -99,7 +99,8 @@ interface MonthInfo {
 /**
  * For the rows of a batch: the Malaysia month of `created_at` (first day, SQL) and whether the row is the newest VALID
  * row of its (user, month) in the whole staged table (not only in this batch). Newest = latest `created_at`, then the
- * highest id; a row with a score outside 1 to 5 never wins (the transform rejects it).
+ * highest id; a row the transform rejects for its scores never wins (satisfaction, usability, relevance outside 1 to 5,
+ * or `score` outside 0 to 10; D4: a `score` of 0 or 6 to 10 is valid and becomes `nps`).
  */
 async function monthInfo(pool: pg.Pool, rows: readonly StagedRow[]): Promise<Map<string, MonthInfo>> {
   const userIds = distinctValues(rows, 'user_id').filter((u) => /^\d{1,18}$/.test(u))
@@ -112,7 +113,7 @@ async function monthInfo(pool: pg.Pool, rows: readonly StagedRow[]): Promise<Map
               coalesce(satisfaction BETWEEN 1 AND 5
                 AND (usability IS NULL OR usability BETWEEN 1 AND 5)
                 AND (relevance IS NULL OR relevance BETWEEN 1 AND 5)
-                AND (score IS NULL OR score BETWEEN 1 AND 5), false) AS valid
+                AND (score IS NULL OR score BETWEEN 0 AND 10), false) AS valid
        FROM "${STAGING_SCHEMA}"."feedback" WHERE user_id = ANY($1::bigint[])
      ), w AS (
        SELECT DISTINCT ON (user_id, m) id FROM b WHERE m IS NOT NULL AND valid
@@ -127,9 +128,10 @@ async function monthInfo(pool: pg.Pool, rows: readonly StagedRow[]): Promise<Map
 }
 
 /**
- * `feedback`: the four scores are kept, `nps` is null, the month is the first day of the Malaysia month of `created_at`
- * (SQL), role and school come from the user. Every score must be 1 to 5. With more than one row for a (user, month) the
- * newest stays and the rest are DUPLICATE_KEY.
+ * `feedback`: the four scores are kept, the month is the first day of the Malaysia month of `created_at` (SQL), role and
+ * school come from the user. Satisfaction, usability and relevance must be 1 to 5; a `score` of 0 or 6 to 10 goes to
+ * `nps` with `score` null (D4, LEAD 29 Oct; counted as `feedback.score_to_nps`). With more than one row for a
+ * (user, month) the newest stays and the rest are DUPLICATE_KEY.
  */
 export function feedbackStep(a: ActivityContext): AnyEntityStep {
   const entity = 'feedback'
@@ -184,6 +186,8 @@ export function feedbackStep(a: ActivityContext): AnyEntityStep {
         entity, table: 'feedback', column: 'month', expr: `user_id::text || '|' || month::text || '|' || is_test::text`,
         source: ctx.source, rejects: ctx.rejects, legacyIdOf: (i) => i.legacyId, valueOf: keyOf,
       })
+      // D4 (LEAD 29 Oct): loaded rows whose score went to nps (counted after the duplicate and conflict drops).
+      a.notes.count('feedback.score_to_nps', kept.filter((i) => i.values.nps !== null).length)
       return upsertAndMap(
         ctx, entity, 'feedback',
         ['user_id', 'role', 'school_id', 'month', 'nps', 'satisfaction', 'usability', 'relevance', 'score', 'comment', 'is_test', 'created_at', 'updated_at'],

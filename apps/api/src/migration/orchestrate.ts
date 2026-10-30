@@ -80,7 +80,7 @@ import {
 import { quoteIdent } from './kit/sql'
 import { sourceLockKey } from './kit/source-lock'
 import { runCore } from './load'
-import { assertCorePreflight, PreflightError, runActivity } from './load/activity'
+import { activityStepEntities, assertCorePreflight, assertStagedColumns, PreflightError, runActivity } from './load/activity'
 import { resolveGitSha } from './load/git-sha'
 import { assertMinimiseAllowed, minimiseArchive } from './export/archive-minimise'
 import { exportOpenQuestionReports } from './export/question-reports'
@@ -248,6 +248,11 @@ async function runPipeline(o: PipelineOptions): Promise<PipelineResult> {
     verify,
     status: stages.every((s) => s.status !== 'failed') ? 'succeeded' : 'failed',
   })
+
+  // D1 (LEAD 29 Oct, G4 #399): a stage from an older DDL (no article `body`) is refused before the core
+  // dry-run, so `migrate:all` and `migrate:delta` stop with exit 2 and write nothing at all (no core run either).
+  // `planActivity` keeps the same check for a standalone `migrate:activity`.
+  await assertStagedColumns(o.pool, activityStepEntities({ pool: o.pool, env: o.env, source: o.source ?? 'cloud', asOf: o.asOf }))
 
   if ((o.mode ?? 'dry-run') === 'dry-run') {
     const core = await runStage('core', 'dry-run', o)

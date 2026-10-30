@@ -271,6 +271,7 @@
       "banners.ends_at": 3,
       "banners.created_at": 3,
       "banners.updated_at": 3,
+      "articles.body": 5,
       "articles.created_at": 5,
       "articles.updated_at": 5,
       "support_tickets.admin_reply": 3,

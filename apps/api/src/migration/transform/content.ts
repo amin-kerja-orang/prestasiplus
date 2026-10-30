@@ -1,10 +1,13 @@
 /**
  * Content transforms of `migrate:activity` (BE-29 Part B): articles, banners, notes, videos, Audio KBAT sets.
- * Pure functions; the loaders resolve the author / owner and the Malaysia dates.
+ * Pure functions; the loaders resolve the author / owner and the Malaysia dates. An article whose author does not resolve
+ * falls back to the content owner (D1, LEAD 29 Oct; `articleAuthor`).
  *
  * Without `--files-dir` every `*_file_id` stays null and the loader only counts the rows that had
- * a source path. A v2 NOT NULL column that the staged table cannot give (article content, note subject and
- * grade, video category, audio set level and subject) rejects the row as INVALID_VALUE naming the column; the
+ * a source path. A v2 NOT NULL column that the staged table cannot give (note subject and grade, video category,
+ * audio set level and subject; article content when the staged `body` is NULL) rejects the row as INVALID_VALUE
+ * naming the v2 column (the article `body` is staged since D1, LEAD 29 Oct, and becomes the v2 `content`; .cloud has no
+ * article excerpt, so the v2 `excerpt` is null); the
  * transforms read such a column from the staged row when the staging spec carries it (after the real export
  * completes the spec), so no code change is needed then. Nothing is invented.
  */
@@ -66,9 +69,24 @@ export interface ArticleValues {
   updated_at: string
 }
 
+/**
+ * The v2 author of an article (D1, LEAD 29 Oct): the staged `author_id` when it resolves to a v2 user, else the configured
+ * content owner (`--content-owner`, an ACTIVE admin), else undefined (the row is rejected ORPHAN_PARENT on `author_id`).
+ * `fromOwner` is true only when the owner stood in (the loader counts it as `articles.author_from_content_owner`).
+ */
+export function articleAuthor(authorId: string | undefined, ownerId: string | undefined): { id: string | undefined; fromOwner: boolean } {
+  if (authorId !== undefined) return { id: authorId, fromOwner: false }
+  return { id: ownerId, fromOwner: ownerId !== undefined }
+}
+
+/**
+ * .cloud `articles.body` (HTML) is the v2 `content`, sanitised like the API does on write; a NULL or blank `body` is
+ * INVALID_VALUE on `content` (v2 NOT NULL). .cloud has no excerpt column, so the v2 `excerpt` (optional, the API also
+ * stores null for an empty one) is null: nothing is derived or invented (D1, LEAD 29 Oct).
+ */
 export function transformArticle(
   row: Staged,
-  parents: { authorId: string | undefined; sanitizer?: HtmlSanitizer },
+  parents: { authorId: string | undefined; ownerId?: string | undefined; sanitizer?: HtmlSanitizer },
 ): Outcome<ArticleValues> {
   const title = squash(row.title)
   if (title === null) return invalid('title')
@@ -79,26 +97,27 @@ export function transformArticle(
   if (category.value === null) return invalid('category')
   const grade = articleGrade(row.grade_level)
   if (!grade.ok) return grade
-  if (parents.authorId === undefined) return orphan('author_id')
+  const author = articleAuthor(parents.authorId, parents.ownerId).id
+  if (author === undefined) return orphan('author_id')
   const published = flag(row.is_published, false)
   if (published === 'invalid') return invalid('is_published')
   const views = nonNegativeInt(row.views)
   if (views === 'invalid') return invalid('views')
-  const raw = optText(row, 'content')
+  const raw = optText(row, 'body')
   if (raw === null) return invalid('content')
   const content = (parents.sanitizer ?? DEFAULT_SANITIZER).sanitize(raw)
   const s = stamps(row)
   return ok({
     title,
     slug,
-    excerpt: optText(row, 'excerpt'),
+    excerpt: null,
     content,
     featured_image_file_id: null,
     category: category.value,
     grade_level: grade.value ?? 'SEMUA',
     is_published: published,
     views: views ?? 0,
-    author_id: parents.authorId,
+    author_id: author,
     published_at: published ? s.created_at : null,
     ...s,
   })
