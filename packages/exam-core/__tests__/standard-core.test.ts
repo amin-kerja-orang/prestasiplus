@@ -5,7 +5,6 @@ import { checkEvidence, type EvidenceItem } from '../src/evidence'
 import { shortageLine } from '../src/shortage'
 import {
   canonicalStructure,
-  isKbatLevel,
   offeredMarks,
   perQuestionMarks,
   unitKeyOf,
@@ -16,11 +15,6 @@ import { buildStandardReport, measureSection, verifyComposition } from '../src/v
 import { blueprint, facts, leaf, section, unit } from './support/builders'
 
 describe('standard model', () => {
-  it('KBAT is cognitive level 3 to 6', () => {
-    expect([1, 2, 3, 4, 5, 6].map(isKbatLevel)).toEqual([false, false, true, true, true, true])
-    expect(isKbatLevel(null)).toBe(false)
-  })
-
   it('offeredMarks: all gives the budget, choose N gives budget / N * M', () => {
     expect(offeredMarks({ rule: { type: 'all' }, markBudget: 40, questionCount: 10 })).toBe(40)
     expect(offeredMarks({ rule: { type: 'choose', n: 1 }, markBudget: 15, questionCount: 2 })).toBe(30)
@@ -32,6 +26,13 @@ describe('standard model', () => {
   it('unit keys round-trip', () => {
     expect(unitRefOf(unitKeyOf({ kind: 'unit', nodeId: '12' }))).toEqual({ kind: 'unit', nodeId: '12' })
     expect(unitRefOf(unitKeyOf({ kind: 't1_t3' }))).toEqual({ kind: 't1_t3' })
+  })
+
+  it('canonicalStructure string is pinned for one sample (the 0092 SQL backfill is a different legacy form)', () => {
+    const bp = blueprint([section({ allowedModes: ['working', 'mcq'] })], { durationMin: 90 })
+    expect(canonicalStructure(bp)).toBe(
+      '{"code":"1449/2","durationMin":90,"kbatMarks":null,"kertas":2,"levelShare":null,"sections":[{"allowedModes":["mcq","working"],"compulsory":false,"kbatMarks":null,"markBudget":8,"pool":null,"position":1,"profile":null,"questionCount":2,"quota":null,"rule":{"type":"all"}}],"subPartRamp":false,"subject":"MAT","totalMarks":8}',
+    )
   })
 
   it('canonicalStructure ignores cosmetic content and key order, and reviewed flags', () => {
@@ -52,9 +53,9 @@ describe('describeQuestion', () => {
     const d = describeQuestion(
       facts('1', {
         leaves: [
-          leaf({ marks: 2, tp: 2, cognitiveLevel: 2 }),
-          leaf({ marks: 3, tp: 5, cognitiveLevel: 3 }),
-          leaf({ marks: 4, tp: 4, cognitiveLevel: 6 }),
+          leaf({ marks: 2, tp: 2, kbat: false }),
+          leaf({ marks: 3, tp: 5, kbat: true }),
+          leaf({ marks: 4, tp: 4, kbat: true }),
         ],
       }),
     )
@@ -89,11 +90,12 @@ describe('describeQuestion', () => {
     const d = describeQuestion(
       facts('9', {
         unit: null,
+        tagReview: true,
         formOrigin: 't4',
-        leaves: [leaf({ tp: null, cognitiveLevel: null, marks: 0, hasKey: false })],
+        leaves: [leaf({ tp: null, marks: 0, hasKey: false })],
       }),
     )
-    expect(d.reasons).toEqual(['no_unit', 'no_tp', 'no_cognitive_level', 'no_marks', 'no_key'])
+    expect(d.reasons).toEqual(['no_unit', 'no_tp', 'no_marks', 'no_key', 'tag_review'])
   })
 
   it('a leaf with no effective unit is no_unit even when the question has one', () => {
@@ -110,6 +112,10 @@ describe('eligibilityOf', () => {
   const quota = (basis: 'questions' | 'marks') => ({
     basis,
     lines: [{ unit: { kind: 'unit' as const, nodeId: '1' }, value: 2 }, { unit: { kind: 'unit' as const, nodeId: '2' }, value: 0 }],
+  })
+
+  it('a question awaiting tag review is never eligible', () => {
+    expect(eligibilityOf(facts('1', { tagReview: true }), section()).reasons).toEqual(['tag_review'])
   })
 
   it('accepts a well-tagged question in a section without extra rules', () => {
@@ -434,8 +440,8 @@ describe('verifyComposition', () => {
       kbatMarks: 5,
     }),
   ])
-  const a = facts('a', { unit: unit('1', 'T4'), leaves: [leaf({ marks: 3, tp: 2, cognitiveLevel: 2 })] })
-  const b = facts('b', { unit: unit('2', 'T5'), leaves: [leaf({ marks: 5, tp: 4, cognitiveLevel: 5 })] })
+  const a = facts('a', { unit: unit('1', 'T4'), leaves: [leaf({ marks: 3, tp: 2, kbat: false })] })
+  const b = facts('b', { unit: unit('2', 'T5'), leaves: [leaf({ marks: 5, tp: 4, kbat: true })] })
   const pool = [a, b]
   const run = (ids: string[], p = pool, b2 = bp) => verifyComposition(b2, [{ position: 1, questionIds: ids }], p)
 
@@ -451,20 +457,20 @@ describe('verifyComposition', () => {
 
   it('flags the TP band, the exact TP count, the marks band and the marks total', () => {
     expect(run(['b', 'a']).map((v) => v.code)).toEqual(expect.arrayContaining(['TP_BAND', 'MARKS_BAND']))
-    const c = facts('c', { unit: unit('2', 'T5'), leaves: [leaf({ marks: 5, tp: 3, cognitiveLevel: 5 })] })
+    const c = facts('c', { unit: unit('2', 'T5'), leaves: [leaf({ marks: 5, tp: 3, kbat: true })] })
     expect(run(['a', 'c'], [a, c]).map((v) => v.code)).toContain('TP_COUNT')
-    const d = facts('d', { unit: unit('2', 'T5'), leaves: [leaf({ marks: 6, tp: 4, cognitiveLevel: 5 })] })
+    const d = facts('d', { unit: unit('2', 'T5'), leaves: [leaf({ marks: 6, tp: 4, kbat: true })] })
     expect(run(['a', 'd'], [a, d]).map((v) => v.code)).toContain('MARKS_TOTAL')
   })
 
   it('flags a quota line, level share and KBAT miss', () => {
-    const e = facts('e', { unit: unit('1', 'T4'), leaves: [leaf({ marks: 5, tp: 4, cognitiveLevel: 2 })] })
+    const e = facts('e', { unit: unit('1', 'T4'), leaves: [leaf({ marks: 5, tp: 4, kbat: false })] })
     const codes = run(['a', 'e'], [a, e]).map((v) => v.code)
     expect(codes).toEqual(expect.arrayContaining(['QUOTA', 'LEVEL_SHARE', 'KBAT']))
   })
 
   it('tiers: structural violations are separable from standard ones', () => {
-    const e = facts('e', { unit: unit('1', 'T4'), leaves: [leaf({ marks: 5, tp: 4, cognitiveLevel: 2 })] })
+    const e = facts('e', { unit: unit('1', 'T4'), leaves: [leaf({ marks: 5, tp: 4, kbat: false })] })
     const all = verifyComposition(bp, [{ position: 1, questionIds: ['a', 'e'] }], [a, e])
     const structural = verifyComposition(bp, [{ position: 1, questionIds: ['a', 'e'] }], [a, e], { tier: 'structural' })
     expect(all.length).toBeGreaterThan(structural.length)

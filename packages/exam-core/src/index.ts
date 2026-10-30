@@ -33,10 +33,9 @@ export type {
 /* ---------------------------------------------------------------- Bijak SPM exam standard (bijak-spm) */
 export {
   ANSWER_MODES,
-  COGNITIVE_LEVELS,
+  KBAT_LEVELS,
   T1_T3_KEY,
   canonicalStructure,
-  isKbatLevel,
   offeredMarks,
   perQuestionMarks,
   unitKeyOf,
@@ -45,6 +44,7 @@ export {
 export type {
   Profile,
   ProfileKind,
+  KbatLevel,
   Quota,
   QuotaBasis,
   QuotaLine,

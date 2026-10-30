@@ -3,7 +3,7 @@
  * (no content, no keys) with the EFFECTIVE leaf values; this module turns them into the numbers the
  * generator and the oracle use.
  */
-import { isKbatLevel, T1_T3_KEY, unitKeyOf, type StandardSection, type UnitKey } from './standard-model'
+import { T1_T3_KEY, unitKeyOf, type StandardSection, type UnitKey } from './standard-model'
 
 export type FormOrigin = 't1_t3' | 't4' | 't5'
 
@@ -18,8 +18,8 @@ export interface LeafFact {
   mode: string | null
   /** Effective TP (part, else question). */
   tp: number | null
-  /** Effective cognitive level (part, else question). */
-  cognitiveLevel: number | null
+  /** Resolved KBAT flag of the leaf (effective `kbat` level present). Adapters derive it; this package never sees level numbers. */
+  kbat: boolean
   hasKey: boolean
   /** Effective unit of the leaf. `undefined` = inherit the question's primary unit; `null` = none. */
   unit?: UnitFact | null
@@ -34,6 +34,8 @@ export interface QuestionFacts {
   /** Optional: when set, a group with fewer candidates than this is incomplete and never used. */
   groupSize?: number
   versionNo: number
+  /** true = the tags await review: the question is never eligible (reason `tag_review`). */
+  tagReview: boolean
   /** Primary unit of the question. */
   unit: UnitFact | null
   formOrigin: FormOrigin
@@ -42,7 +44,7 @@ export interface QuestionFacts {
 }
 
 /** Why a question is not in the pool at all, in the fixed order of the spec (so counts add up). */
-export const INELIGIBLE_REASONS = ['no_unit', 'no_tp', 'no_cognitive_level', 'no_marks', 'no_key'] as const
+export const INELIGIBLE_REASONS = ['no_unit', 'no_tp', 'no_marks', 'no_key', 'tag_review'] as const
 export type IneligibleReason = (typeof INELIGIBLE_REASONS)[number]
 
 /** Extra reasons that exist only relative to a section. */
@@ -58,7 +60,7 @@ export interface DescribedQuestion {
   marks: number
   /** Highest effective leaf TP (null when no leaf has one). */
   tp: number | null
-  /** Sum of the marks of leaves whose effective cognitive level is 3 to 6. */
+  /** Sum of the marks of leaves whose effective `kbat` is true. */
   kbatMarks: number
   /** Distinct leaf modes, sorted. */
   modes: string[]
@@ -85,7 +87,6 @@ export function describeQuestion(q: QuestionFacts): DescribedQuestion {
   const unitMarks = new Map<UnitKey, number>()
   let missingUnit = false
   let missingTp = false
-  let missingCog = false
   let missingMarks = q.leaves.length === 0
   let missingKey = false
   for (const leaf of q.leaves) {
@@ -94,8 +95,7 @@ export function describeQuestion(q: QuestionFacts): DescribedQuestion {
     marks += Math.max(0, m)
     if (leaf.tp === null || leaf.tp < 1 || leaf.tp > 6) missingTp = true
     else tp = tp === null ? leaf.tp : Math.max(tp, leaf.tp)
-    if (leaf.cognitiveLevel === null || leaf.cognitiveLevel < 1 || leaf.cognitiveLevel > 6) missingCog = true
-    else if (isKbatLevel(leaf.cognitiveLevel)) kbat += Math.max(0, m)
+    if (leaf.kbat) kbat += Math.max(0, m)
     if (!leaf.hasKey) missingKey = true
     if (leaf.mode) modes.add(leaf.mode)
     const k = leafKey(leaf, q)
@@ -107,9 +107,9 @@ export function describeQuestion(q: QuestionFacts): DescribedQuestion {
   const reasons: IneligibleReason[] = []
   if (missingUnit) reasons.push('no_unit')
   if (missingTp) reasons.push('no_tp')
-  if (missingCog) reasons.push('no_cognitive_level')
   if (missingMarks) reasons.push('no_marks')
   if (missingKey) reasons.push('no_key')
+  if (q.tagReview) reasons.push('tag_review')
   const sorted: Record<UnitKey, number> = {}
   for (const k of [...unitMarks.keys()].sort()) sorted[k] = unitMarks.get(k) ?? 0
   return {

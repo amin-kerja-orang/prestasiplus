@@ -12,7 +12,7 @@ export const leaf = (over: Partial<LeafFact> = {}): LeafFact => ({
   marks: 4,
   mode: 'working',
   tp: 3,
-  cognitiveLevel: 3,
+  kbat: true,
   hasKey: true,
   ...over,
 })
@@ -23,12 +23,36 @@ export function facts(id: string, over: Partial<QuestionFacts> = {}): QuestionFa
     groupId: null,
     groupPosition: null,
     versionNo: 1,
+    tagReview: false,
     unit: unit('1'),
     formOrigin: 't4',
     pools: [],
     leaves: [leaf()],
     ...over,
   }
+}
+
+/**
+ * A question with one unit, a top TP, total marks and `kbat` KBAT marks (split over two leaves when
+ * 0 < kbat < marks). Handy for solver tests.
+ */
+export function q(
+  id: string,
+  nodeId: string | null,
+  tp: number,
+  marks: number,
+  kbat = 0,
+  over: Partial<QuestionFacts> = {},
+): QuestionFacts {
+  const leaves = [] as ReturnType<typeof leaf>[]
+  if (kbat > 0) leaves.push(leaf({ marks: kbat, tp, kbat: true }))
+  if (marks - kbat > 0) leaves.push(leaf({ marks: marks - kbat, tp: kbat > 0 ? Math.max(1, tp - 1) : tp, kbat: false }))
+  return facts(id, {
+    unit: nodeId ? unit(nodeId, Number(nodeId) >= 20 ? 'T5' : 'T4') : null,
+    formOrigin: nodeId ? (Number(nodeId) >= 20 ? 't5' : 't4') : 't1_t3',
+    leaves,
+    ...over,
+  })
 }
 
 export function section(over: Partial<StandardSection> = {}): StandardSection {

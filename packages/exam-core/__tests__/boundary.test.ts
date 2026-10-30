@@ -22,7 +22,7 @@ describe('@pp/exam-core public API (BE-14 AC 3 and 4)', () => {
         // bijak-spm exam standard (BJS-03)
         'ANSWER_MODES',
         'BLUEPRINT_PROBLEM_CODES',
-        'COGNITIVE_LEVELS',
+        'KBAT_LEVELS',
         'COMPLETENESS_CODES',
         'INELIGIBLE_REASONS',
         'SECTION_REASONS',
@@ -35,7 +35,6 @@ describe('@pp/exam-core public API (BE-14 AC 3 and 4)', () => {
         'describeQuestion',
         'eligibilityOf',
         'excludedReport',
-        'isKbatLevel',
         'measureSection',
         'offeredMarks',
         'perQuestionMarks',

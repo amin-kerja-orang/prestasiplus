@@ -90,7 +90,7 @@ function measure(q: QuestionFacts): Measured {
     const m = leaf.marks ?? 0
     marks += m
     tp = Math.max(tp, leaf.tp ?? 0)
-    if ((leaf.cognitiveLevel ?? 0) >= 3) kbat += m
+    if (leaf.kbat) kbat += m
     const unit = leaf.unit !== undefined ? leaf.unit : q.unit
     const origin = leaf.formOrigin ?? q.formOrigin
     const key = unit ? `unit:${unit.nodeId}` : origin === 't1_t3' ? T1_T3_KEY : null

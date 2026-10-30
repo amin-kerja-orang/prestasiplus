@@ -5,20 +5,9 @@
  * `bijak/standards` (camelCase) but this package never imports the contract.
  */
 
-/** Cognitive levels of the DSKP (4.1). The BM display name is the key capitalised. */
-export const COGNITIVE_LEVELS = [
-  { n: 1, key: 'mengingat' },
-  { n: 2, key: 'memahami' },
-  { n: 3, key: 'mengaplikasi' },
-  { n: 4, key: 'menganalisis' },
-  { n: 5, key: 'menilai' },
-  { n: 6, key: 'mencipta' },
-] as const
-
-/** KBAT = cognitive level 3 to 6 (D76, AC-37.1). */
-export function isKbatLevel(level: number | null | undefined): boolean {
-  return typeof level === 'number' && level >= 3 && level <= 6
-}
+/** KBAT levels of the DSKP catalogue (v2-dskp-integration); a question or part without one is "Bukan KBAT". */
+export const KBAT_LEVELS = ['mengaplikasi', 'menganalisis', 'menilai', 'mencipta'] as const
+export type KbatLevel = (typeof KBAT_LEVELS)[number]
 
 /** `unit:<nodeId>` for a DSKP unit, `t1_t3` for the bucket "T1-T3, luar DSKP". */
 export type UnitKey = string
