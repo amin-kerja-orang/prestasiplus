@@ -46,6 +46,7 @@ describe('Pentadbiran menu data', () => {
       'KS-14',
       'KS-15',
       'KS-02',
+      'KS-08',
       'KS-09',
     ])
   })

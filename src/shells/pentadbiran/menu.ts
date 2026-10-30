@@ -117,7 +117,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['KS-05', 'Subjektif'],
       ['KS-06', 'Bijak SPM (Simulasi)'],
       ['KS-07', 'Kertas Subjektif'],
-      ['KS-08', 'Kontrak Simulasi'],
+      ['KS-08', 'Kontrak Blueprint', '/admin/spm/kontrak'],
       ['KS-09', 'Pembina Kertas', '/admin/spm/kertas'],
       ['KS-10', 'Tanda Karangan'],
       ['KS-11', 'Ramalan SPM'],
