@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { orderOk } from '../src/arrange'
+import { mulberry32 } from '../src/blueprint'
 import { composeStandardPaper, previewStandard } from '../src/compose'
 import { shortageLine } from '../src/shortage'
 import { makePoolContext } from '../src/pool'
@@ -316,6 +317,108 @@ describe('composeStandardPaper', () => {
     expect(slow).toMatchObject({ ok: false, reason: 'limit' })
     const same = expectOk(compose(bp, pool, 5, { clock: () => 0 }))
     expect(same.sections).toEqual(fast.sections)
+  })
+})
+
+describe('review fixes (BJS-04)', () => {
+  it('never truncates the stimulus start slots: a pair that must sit in slots 1-2 is found (r3)', () => {
+    const groups = Array.from({ length: 10 }, (_, i) =>
+      i < 2 ? { from: i + 1, to: i + 1, tpMin: 1, tpMax: 6, marksMin: 4, marksMax: 4 } : { from: i + 1, to: i + 1, tpMin: 1, tpMax: 6, marksMin: 1, marksMax: 4 },
+    )
+    const bp = blueprint([section({ questionCount: 10, markBudget: 16, profile: { kind: 'bahagian', groups } })])
+    for (let k = 0; k < 40; k++) {
+      const pool = [
+        q('G1', '1', 2, 4, 0, { groupId: 'G', groupPosition: 1, groupSize: 2 }),
+        q('G2', '1', 2, 4, 0, { groupId: 'G', groupPosition: 2, groupSize: 2 }),
+        ...Array.from({ length: 12 }, (_, i) => q(`b${i}`, '1', 1 + (i % (1 + (k % 6))), 1)),
+      ]
+      expect(previewStandard(bp, pool).verdict).toBe('boleh')
+    }
+  })
+
+  it('a group declared larger than the members present is incomplete: skipped by the pool, broken for the oracle (r1)', () => {
+    const bp = blueprint([section({ questionCount: 2, markBudget: 8 })])
+    const g1 = q('G1', '1', 2, 4, 0, { groupId: 'G', groupPosition: 1, groupSize: 3 })
+    const pool = [g1, q('s1', '1', 2, 4), q('s2', '1', 2, 4)]
+    const r = composeStandardPaper(bp, pool, { seed: 1 })
+    if (!r.ok) throw new Error('expected a paper')
+    expect([...r.sections[0]!.questionIds].sort()).toEqual(['s1', 's2'])
+    const codes = verifyComposition(bp, [{ position: 1, questionIds: ['G1', 's1'] }], pool).map((v) => v.code)
+    expect(codes).toContain('GROUP_BROKEN')
+    const only = composeStandardPaper(bp, [g1, q('s1', '1', 2, 4)], { seed: 1 })
+    expect(only).toMatchObject({ ok: false, reason: 'shortage' })
+  })
+
+  it('marks band copy: only a minimum, only a maximum', () => {
+    const base = { section: 'Bahagian A', kind: 'marks' as const, need: 1, have: 0, slot: { from: 1, to: 2 } }
+    expect(shortageLine({ ...base, marksBand: { min: 3 } })).toBe('Bahagian A soalan 1-2: tiada soalan layak dengan sekurang-kurangnya 3 markah')
+    expect(shortageLine({ ...base, marksBand: { max: 4 } })).toBe('Bahagian A soalan 1-2: tiada soalan layak dengan tidak lebih 4 markah')
+    const only = section({ questionCount: 2, markBudget: 8, profile: { kind: 'bahagian', groups: [{ from: 1, to: 2, tpMin: 1, tpMax: 6, marksMin: 5 }] } })
+    const f = precheckSection(makePoolContext([q('x', '1', 2, 4), q('y', '1', 2, 4)]), only).failures[0]!
+    expect(f.marksBand).toEqual({ min: 5 })
+  })
+
+  it('tiny exact-marks-band instances with stimulus pairs: no false refusal, at least 80% decided (r5)', () => {
+    let boleh = 0
+    let total = 0
+    for (let it = 0; it < 30; it++) {
+      const r = mulberry32(it + 1000)
+      const ri = (a: number, b: number) => a + Math.floor(r() * (b - a + 1))
+      const M = ri(8, 14)
+      const groups: { from: number; to: number; tpMin: number; tpMax: number; marksMin: number; marksMax: number }[] = []
+      for (let from = 1; from <= M; ) {
+        const to = Math.min(M, from + ri(0, 2))
+        const lo = ri(1, 4)
+        groups.push({ from, to, tpMin: 1, tpMax: 6, marksMin: lo, marksMax: ri(lo, 5) })
+        from = to + 1
+      }
+      const slotMarks: number[] = []
+      for (const g of groups) for (let s = g.from; s <= g.to; s++) slotMarks.push(ri(g.marksMin, g.marksMax))
+      const pool: QuestionFacts[] = []
+      const ids: string[] = Array<string>(M).fill('')
+      const place = (gid: string) => {
+        for (let t = 0; t < 30; t++) {
+          const s = ri(0, M - 2)
+          if (!ids[s] && !ids[s + 1]) {
+            ids[s] = `${gid}1`
+            ids[s + 1] = `${gid}2`
+            pool.push(q(`${gid}1`, '1', 2, slotMarks[s]!, 0, { groupId: gid, groupPosition: 1, groupSize: 2 }), q(`${gid}2`, '1', 2, slotMarks[s + 1]!, 0, { groupId: gid, groupPosition: 2, groupSize: 2 }))
+            return
+          }
+        }
+      }
+      place('GA')
+      place('GB')
+      for (let s = 0; s < M; s++) if (!ids[s]) {
+        ids[s] = `s${s}`
+        pool.push(q(`s${s}`, '1', 2, slotMarks[s]!))
+      }
+      for (let i = 0; i < 6; i++) pool.push(q(`n${i}`, '1', 2, ri(1, 5)))
+      const bp = blueprint([section({ questionCount: M, markBudget: slotMarks.reduce((a, b) => a + b, 0), profile: { kind: 'bahagian', groups } })])
+      if (verifyComposition(bp, [{ position: 1, questionIds: ids }], pool).length) continue
+      const verdict = previewStandard(bp, pool).verdict
+      // Never a false proof of infeasibility; a rare hard instance may hit the section cap (`tidak_pasti`).
+      expect(verdict).not.toBe('tidak_boleh')
+      if (verdict === 'boleh') boleh++
+      total++
+    }
+    expect(boleh).toBeGreaterThanOrEqual(Math.floor(total * 0.8))
+  })
+
+  it('TEMA_UNIT is flagged by the oracle', () => {
+    const bp = blueprint([
+      section({
+        questionCount: 2,
+        markBudget: 8,
+        profile: { kind: 'tema', groups: [{ from: 1, to: 1, tpMin: 1, tpMax: 6, units: [{ kind: 'unit', nodeId: '1' }] }, { from: 2, to: 2, tpMin: 1, tpMax: 6, units: [{ kind: 'unit', nodeId: '2' }] }] },
+      }),
+    ])
+    const pool = [q('a', '1', 2, 4), q('b', '2', 2, 4)]
+    expect(verifyComposition(bp, [{ position: 1, questionIds: ['a', 'b'] }], pool)).toEqual([])
+    expect(verifyComposition(bp, [{ position: 1, questionIds: ['b', 'a'] }], pool).map((v) => v.code)).toContain('TEMA_UNIT')
+    const r = composeStandardPaper(bp, pool, { seed: 1 })
+    if (!r.ok) throw new Error('expected a paper')
+    expect(r.sections[0]!.questionIds).toEqual(['a', 'b'])
   })
 })
 

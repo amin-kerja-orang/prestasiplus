@@ -33,7 +33,7 @@ export interface StandardShortage {
   blocking?: 'kbat' | 'tp' | 'marks' | 'quota'
   otherSection?: string
   /** Not on the wire (the contract has no field for it): marks band of a `marks` shortage on a slot group (AC-34.9). */
-  marksBand?: { min: number; max: number }
+  marksBand?: { min?: number; max?: number }
 }
 
 export function unitLabel(u: UnitLabelRef | undefined): string {
@@ -60,7 +60,15 @@ export function shortageLine(s: StandardShortage): string {
   switch (s.kind) {
     case 'marks':
       if (s.slot) {
-        const b = s.marksBand ? ` dengan ${range(s.marksBand.min, s.marksBand.max)} markah` : ' dengan markah yang ditetapkan'
+        const mb = s.marksBand
+        const b =
+          mb?.min !== undefined && mb.max !== undefined
+            ? ` dengan ${range(mb.min, mb.max)} markah`
+            : mb?.min !== undefined
+              ? ` dengan sekurang-kurangnya ${mb.min} markah`
+              : mb?.max !== undefined
+                ? ` dengan tidak lebih ${mb.max} markah`
+                : ' dengan markah yang ditetapkan'
         return `${s.section}${slotText(s.slot)}: tiada soalan layak${b}`
       }
       return `${s.section}: tidak dapat menyusun ${s.need} markah daripada soalan yang tersedia`

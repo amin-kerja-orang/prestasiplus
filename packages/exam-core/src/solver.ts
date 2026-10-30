@@ -237,6 +237,9 @@ class Search {
   private readonly singleCredit: boolean
   /** Extra line touches still available from multi-unit questions (each adds credit-lines - 1). */
   private multiLeft = 0
+  /** Cheapest / dearest question marks per slot group over the placeable single types. */
+  private readonly gMarksMin: number[] = []
+  private readonly gMarksMax: number[] = []
   readonly freeSlot: boolean[]
   private readonly reach: Uint8Array | null
   private readonly rDim: number
@@ -288,6 +291,18 @@ class Search {
     this.lineReach = this.buildLineReach()
     this.maxCredit = new Array<number>(this.L).fill(1)
     this.singleCredit = P.types.every((t) => t.credit.length === 2)
+    for (let g = 0; g < this.G; g++) {
+      let lo = Number.POSITIVE_INFINITY
+      let hi = 0
+      for (const t of P.types)
+        if (t.compat[g]) {
+          lo = Math.min(lo, t.marks)
+          hi = Math.max(hi, t.marks)
+        }
+      // No single fits the group: leave it open (only stimulus units can fill it); the supply check decides.
+      this.gMarksMin.push(Number.isFinite(lo) ? lo : 0)
+      this.gMarksMax.push(Number.isFinite(lo) ? hi : 1e9)
+    }
     for (const t of P.types) if (t.compat.some(Boolean) && t.credit.length > 2) this.multiLeft += t.avail * (t.credit.length / 2 - 1)
     const D0 = P.kbat === null || P.rFree ? -1 : P.offered - P.kbat
     if (
@@ -434,6 +449,17 @@ class Search {
       }
       if (!((cur >>> (this.R - this.K)) & 1)) return false
     }
+    if (!this.rFree) {
+      // Per-slot-group marks interval: the remaining marks must fit between the cheapest and dearest fill.
+      let lo = 0
+      let hi = 0
+      for (let g = 0; g < this.G; g++) {
+        const r = this.slotsRem[g]!
+        lo += r * this.gMarksMin[g]!
+        hi += r * this.gMarksMax[g]!
+      }
+      if (this.R < lo || this.R > hi) return false
+    }
     for (let g = 0; g < this.G; g++) {
       const need = this.slotsRem[g]!
       if (need <= 0) continue
@@ -545,8 +571,14 @@ class Search {
     return -1
   }
 
-  /** Distinct feasible start slots for a stimulus unit in the current state (deduplicated by group signature). */
-  private starts(c: StimCandidate): number[] {
+  /**
+   * Feasible start slots for a stimulus unit in the current state. Never truncated. With one slot group the
+   * lowest start is canonical (left-packing keeps the free slots contiguous). With several groups, starts that
+   * consume the same groups are interchangeable only for the LAST unit of a plan (nothing else needs contiguous
+   * free slots afterwards); earlier units keep every start, because where they sit changes how the free slots
+   * fragment.
+   */
+  private starts(c: StimCandidate, last: boolean): number[] {
     const k = c.item.size
     if (!this.creditFits(c.credit)) return []
     if (!this.rFree && c.marks > this.R) return []
@@ -581,8 +613,10 @@ class Search {
         out.push(s)
         break
       }
-      if (sigs.has(sig)) continue
-      sigs.add(sig)
+      if (last) {
+        if (sigs.has(sig)) continue
+        sigs.add(sig)
+      }
       out.push(s)
     }
     return out
@@ -634,13 +668,52 @@ class Search {
     this.K += c.kbat
   }
 
+  private groupMarkSums: Uint8Array[][] | null = null
+
+  /**
+   * Exact per-slot-group marks check, run once per stimulus plan (not per node): can the open slots of every
+   * group be filled so that the remaining marks come out exactly (any availability, any line)?
+   */
+  private groupMarksOk(): boolean {
+    if (this.rFree || this.R < 0) return this.R >= 0 || this.rFree
+    const top = this.R
+    const cap = this.P.offered
+    if (!this.groupMarkSums) {
+      this.groupMarkSums = this.P.groups.map((grp, g) => {
+        const marks = [...new Set(this.P.types.filter((t) => t.compat[g]).map((t) => t.marks))]
+        const tables: Uint8Array[] = [new Uint8Array(cap + 1)]
+        tables[0]![0] = 1
+        for (let r = 1; r <= grp.size; r++) {
+          const next = new Uint8Array(cap + 1)
+          const prev = tables[r - 1]!
+          for (let v = 0; v <= cap; v++) if (prev[v]) for (const m of marks) if (v + m <= cap) next[v + m] = 1
+          tables.push(next)
+        }
+        return tables
+      })
+    }
+    let cur = new Uint8Array(top + 1)
+    cur[0] = 1
+    for (let g = 0; g < this.G; g++) {
+      const r = this.slotsRem[g]!
+      if (r === 0) continue
+      const sums = this.groupMarkSums[g]![r]!
+      // Groups with no single type can only be filled by stimulus units: leave them out of the check.
+      if (!this.P.types.some((t) => t.compat[g])) return true
+      const next = new Uint8Array(top + 1)
+      for (let a = 0; a <= top; a++) if (cur[a]) for (let b = 0; a + b <= top; b++) if (sums[b]) next[a + b] = 1
+      cur = next
+    }
+    return cur[top] === 1
+  }
+
   /** Tries every plan of exactly `size` stimulus units (in a seeded order); true when singles then succeed. */
   private plans(order: StimCandidate[], from: number, size: number): boolean {
     this.meter.tick()
-    if (size === 0) return this.runSingles()
+    if (size === 0) return this.groupMarksOk() && this.runSingles()
     for (let i = from; i < order.length; i++) {
       const c = order[i]!
-      for (const s of shuffleInPlace(this.starts(c), this.rnd).slice(0, 6)) {
+      for (const s of shuffleInPlace(this.starts(c, size === 1), this.rnd)) {
         this.applyStim(c, s)
         if (this.plans(order, i + 1, size - 1)) return true
         this.undoStim()

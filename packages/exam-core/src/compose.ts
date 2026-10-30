@@ -73,7 +73,7 @@ interface Run {
 }
 
 /** Probe (5.7): which constraint family blocks a section that passed every pre-check but has no solution. */
-function probe(run: Run, s: StandardSection, used: ReadonlySet<string>, meter: Meter): StandardShortage {
+function probe(run: Run, s: StandardSection, used: ReadonlySet<string>, meter: Meter): StandardShortage | 'limit' {
   const base: StandardShortage = {
     section: s.label,
     kind: 'combination',
@@ -85,12 +85,16 @@ function probe(run: Run, s: StandardSection, used: ReadonlySet<string>, meter: M
   if (s.profile) families.push('tp')
   families.push('marks')
   if (s.quota) families.push('quota')
+  let sawLimit = false
   for (const family of families) {
     const pool = buildSectionPool(run.ctx, s, { used, seen: run.seen, ignoreQuota: family === 'quota' })
     const slice = meter.slice(Math.max(1000, Math.floor(run.budget.section * 0.1)))
     const r = solveSection(buildProblem(s, pool, family), 0x51ed, slice)
     if (r.status === 'ok') return { ...base, have: pool.eligibleQuestions, blocking: family }
+    if (r.status === 'limit') sawLimit = true
   }
+  // A probe that ran out of budget proves nothing: say `limit`, never a fabricated combination.
+  if (sawLimit) return 'limit'
   // Proven infeasible under every single relaxation: name the first applicable family.
   const pool = buildSectionPool(run.ctx, s, { used, seen: run.seen })
   return { ...base, have: pool.eligibleQuestions, blocking: families[0] ?? 'marks' }
@@ -159,7 +163,9 @@ function attempt(
         const alone = used.size === 0 ? null : solveSection(buildProblem(s, buildSectionPool(run.ctx, s, { seen: run.seen })), 0x51ed, sectionMeter.slice(Math.floor(run.budget.section * 0.1)))
         if (alone?.status === 'ok')
           return { ok: false, kind: 'shortage', shortage: { section: s.label, kind: 'overlap', need: s.questionCount, have: pool.eligibleQuestions, otherSection: culprit(run, s, solved) } }
-        return { ok: false, kind: 'shortage', shortage: probe(run, s, used, sectionMeter) }
+        const p = probe(run, s, used, sectionMeter)
+        if (p === 'limit') return { ok: false, kind: 'limit', section: s.label }
+        return { ok: false, kind: 'shortage', shortage: p }
       }
       chosen = r
     }

@@ -59,6 +59,7 @@ describe('perf: 40 questions, 100 marks, 5,000 eligible questions, all constrain
     }
     times.sort((a, b) => a - b)
     const p90 = times[Math.floor(times.length * 0.9) - 1]!
+    console.info(`PERF p90=${Math.round(p90)}ms median=${Math.round(times[10]!)}ms max=${Math.round(times[times.length - 1]!)}ms (20 papers, 5000 questions)`)
     expect(p90).toBeLessThanOrEqual(1500)
   })
 
