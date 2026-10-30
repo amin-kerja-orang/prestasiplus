@@ -721,7 +721,7 @@ const ops = Object.entries(paths).flatMap(([path, item]) =>
 const MUTATIONS = ops.filter((o) => o.method !== 'get')
 
 describe('OpenAPI document', () => {
-  it('registers exactly the ten attempt routes of the card', () => {
+  it('registers exactly the thirteen attempt routes (ten of BE-16 plus self-mark, retry and past sittings of R1)', () => {
     const got = ops.map((o) => `${o.method.toUpperCase()} ${o.path}`).sort()
     expect(got).toEqual(
       [
@@ -735,9 +735,12 @@ describe('OpenAPI document', () => {
         'GET /bijak/attempts/{id}/result',
         'GET /bijak/history',
         'POST /bijak/attempts/{id}/photos',
+        'POST /bijak/attempts/{id}/self-mark',
+        'POST /bijak/attempts/{id}/retry',
+        'GET /bijak/papers/{paperId}/attempts',
       ].sort(),
     )
-    expect(ops).toHaveLength(10)
+    expect(ops).toHaveLength(13)
   })
 
   it('has no clash with the papers routes of BE-15', () => {
@@ -758,7 +761,7 @@ describe('OpenAPI document', () => {
   })
 
   it('requires X-CSRF-Token and describes CSRF_INVALID on every mutation, and on no read', () => {
-    expect(MUTATIONS).toHaveLength(6)
+    expect(MUTATIONS).toHaveLength(8)
     for (const { method, path, op } of MUTATIONS) {
       const headers = (op.parameters as Json[]).filter((p) => p.in === 'header').map((p) => p.name)
       expect(headers, `${method} ${path}`).toContain('X-CSRF-Token')
@@ -779,7 +782,7 @@ describe('OpenAPI document', () => {
   })
 
   it('documents 429 RATE_LIMITED with retryAfter and a Retry-After header on every write route (D57a)', () => {
-    expect(MUTATIONS).toHaveLength(6)
+    expect(MUTATIONS).toHaveLength(8)
     for (const { method, path, op } of MUTATIONS) {
       const r = op.responses['429']
       expect(r, `${method} ${path}`).toBeDefined()
@@ -801,7 +804,7 @@ describe('OpenAPI document', () => {
 
   it('answers 403 "Akses ditolak" for another student attempt (D54b) and 404 for an unknown one', () => {
     const owned = ops.filter((o) => o.path.includes('{id}'))
-    expect(owned).toHaveLength(7)
+    expect(owned).toHaveLength(9)
     for (const { method, path, op } of owned) {
       expect(op.responses['403'].description, `${method} ${path}`).toContain('Akses ditolak')
       expect(op.responses['403'].description, `${method} ${path}`).toContain('D54b')

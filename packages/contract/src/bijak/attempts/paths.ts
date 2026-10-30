@@ -20,6 +20,11 @@ import {
   BijakAttemptPartAnswerSchema,
   BijakAttemptPartResultSchema,
   BijakAttemptPartStatusSchema,
+  BijakAttemptPastSittingSchema,
+  BijakAttemptPastSittingsSchema,
+  BijakAttemptSelfMarkRequestSchema,
+  BijakAttemptSelfMarkResultSchema,
+  BijakAttemptSuggestionSchema,
   BijakAttemptPartViewSchema,
   BijakAttemptPhotoSchema,
   BijakAttemptPhotoUploadSchema,
@@ -86,6 +91,11 @@ export const BIJAK_ATTEMPTS_COMPONENT_SCHEMAS = {
   BijakAttemptResultView: BijakAttemptResultViewSchema,
   BijakAttemptHistoryRow: BijakAttemptHistoryRowSchema,
   BijakAttemptNotSubmittedError: BijakAttemptNotSubmittedErrorSchema,
+  BijakAttemptSuggestion: BijakAttemptSuggestionSchema,
+  BijakAttemptSelfMarkRequest: BijakAttemptSelfMarkRequestSchema,
+  BijakAttemptSelfMarkResult: BijakAttemptSelfMarkResultSchema,
+  BijakAttemptPastSitting: BijakAttemptPastSittingSchema,
+  BijakAttemptPastSittings: BijakAttemptPastSittingsSchema,
   BijakAttemptPhotoUpload: BijakAttemptPhotoUploadSchema,
 } as const
 
@@ -329,6 +339,54 @@ export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
       422: err(
         `VALIDATION_ERROR with fields.file "${BIJAK_ATTEMPTS_MESSAGES.photoType}" or "${BIJAK_ATTEMPTS_MESSAGES.photoCount}", or fields.partId.`,
       ),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/bijak/attempts/{id}/self-mark',
+    tags: [TAG],
+    summary: 'Semakan: record the pupil own mark ("Markah kendiri") for one part',
+    description: `R1-B12 (V2 selfMark). Only after the attempt is closed (submitted or auto_submitted); before that 409 NOT_SUBMITTED "${BIJAK_ATTEMPTS_MESSAGES.schemeAfterSubmit}". The part must be a leaf part of this attempt whose scheme is points or rubric (selfMarkable in the result); another part gives 422 fields.partId "${BIJAK_ATTEMPTS_MESSAGES.selfMarkPartUnknown}" or "${BIJAK_ATTEMPTS_MESSAGES.selfMarkNotSubjective}". The mark is clamped to 0..part marks (never rejected for being too high or negative); for a rubric part a band may be sent and the mark is then kept inside the band range (unknown band: 422 fields.band "${BIJAK_ATTEMPTS_MESSAGES.selfMarkBandUnknown}"; band on a points part: "${BIJAK_ATTEMPTS_MESSAGES.selfMarkBandNotRubric}"). No lock: the mark can be changed again. Idempotent: the same body gives the same stored state. The score, the Bahagian totals (best-N choose-N re-ranked), provisional and pendingReview are recomputed and the performance aggregate is updated; the wallet reward given at submit is not repeated. The stored mark replaces the automatic mark of that part and is flagged selfMarked in GET /result. Student role, attempt owner only. A per-Bahagian mark (V2 semak-bahagian) does not exist: no Bahagian of a R1 paper is a single-mark document section (OQ-2).`,
+    request: { params: AttemptParams, headers: [csrf], body: body(BijakAttemptSelfMarkRequestSchema) },
+    responses: {
+      200: json(envelopeOf(BijakAttemptSelfMarkResultSchema), 'The stored mark and the recomputed result.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_OWNER_OR_CSRF,
+      404: NOT_FOUND_ATTEMPT,
+      409: json(BijakAttemptNotSubmittedErrorSchema, `NOT_SUBMITTED "${BIJAK_ATTEMPTS_MESSAGES.schemeAfterSubmit}" (the attempt is not closed).`),
+      422: VALIDATION,
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/bijak/attempts/{id}/retry',
+    tags: [TAG],
+    summary: 'Cuba Lagi: a new blank sitting of the same paper',
+    description: `R1-B15 (V2 retry). From a CLOSED attempt of the caller: starts a new in_progress attempt on the same paper in the same mode (deadline from the paper duration for exam, a fresh frozen composition) and abandons any other open sitting of the caller on that paper. Always 201 with the new attempt id; the old attempt, its result and its history row stay unchanged. An attempt that is not closed: 409 CONFLICT "${BIJAK_ATTEMPTS_MESSAGES.retryNotClosed}". A paper that is no longer offered (withdrawn, unpublished): 409 CONFLICT "${BIJAK_ATTEMPTS_MESSAGES.retryPaperGone}". A paper the caller may not sit: 403. Student role, attempt owner only.`,
+    request: { params: AttemptParams, headers: [csrf] },
+    responses: {
+      201: json(envelopeOf(BijakAttemptStartResultSchema), 'The new attempt.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_OWNER_OR_CSRF,
+      404: NOT_FOUND_ATTEMPT,
+      409: err(`CONFLICT "${BIJAK_ATTEMPTS_MESSAGES.retryNotClosed}" or "${BIJAK_ATTEMPTS_MESSAGES.retryPaperGone}".`),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'get',
+    path: '/bijak/papers/{paperId}/attempts',
+    tags: [TAG],
+    summary: 'Lihat semakan lepas: the caller closed sittings of a paper',
+    description:
+      'R1-B15 (V2 "Lihat semakan lepas"). The caller submitted or auto-submitted attempts on this paper, newest first (at most 20), with score and max, and lastSubmittedAttemptId (the newest, or null). Read one with GET /bijak/attempts/{id}/result. An unknown paper id or a paper without sittings answers 200 with an empty list. Student role.',
+    request: { params: PaperParams },
+    responses: {
+      200: json(envelopeOf(BijakAttemptPastSittingsSchema), 'The closed sittings of the paper.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ROLE,
     },
   })
 }
