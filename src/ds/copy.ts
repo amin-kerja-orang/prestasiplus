@@ -70,6 +70,7 @@ export const dsCopy = {
   reset: 'Set Semula',
   required: 'wajib',
   selectPlaceholder: 'Pilih',
+  selectSearch: 'Cari...',
   breadcrumbAria: 'Jejak navigasi',
   breadcrumbMore: 'Lagi',
   fileDrop: 'Seret fail ke sini atau klik untuk memilih',
@@ -107,6 +108,10 @@ export const dsCopy = {
     'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
   error500Title: 'Sesuatu tidak kena',
   error500Description: 'Kami tidak dapat memuatkan halaman ini. Cuba lagi sebentar.',
+  // Admin page templates (batch 0a)
+  viewAll: 'Lihat Semua',
+  close: 'Tutup',
+  emptyValue: '-',
   // Chart
   chartLegend: 'Petunjuk {title}',
   chartTable: 'Data bagi {title}',

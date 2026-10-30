@@ -18,6 +18,7 @@ import { ScopeFilter } from '../../common/scope/scope-filter'
 import { idFromString, idToString } from '../../db/ids'
 import type { File as FileRow } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from '../questions/learner-visibility'
 import { EXTENSION_OF, inspectUpload, type DetectedMime } from './content-inspect'
 import { FILE_STORAGE, type FileStorage } from './file-storage'
 import { FilesConfig } from './files.config'
@@ -114,6 +115,8 @@ interface ReadContext {
   owns: boolean
   /** Loads the owner's school (id, state, district) for scope checks; null when the owner has none. */
   ownerSchool(): Promise<{ schoolId: bigint; school: { state: string | null; district: string | null } } | null>
+  /** True when the file is an option image or image stimulus of the LIVE version of an active, published question. */
+  servedWithPublishedQuestion(): Promise<boolean>
 }
 
 type ReadRule = (c: ReadContext) => boolean | Promise<boolean>
@@ -142,8 +145,9 @@ async function ownerOrScopedStaff(c: ReadContext): Promise<boolean> {
 const READ_RULES: Readonly<Record<string, ReadRule>> = {
   // Working photos of a pupil: the owner only.
   bijak_photo: (c) => c.owns,
-  // Authoring material: staff only. Pupils see question images through published questions (a later card).
-  question_image: (c) => isRole(c, 'admin', 'teacher'),
+  // Authoring material: staff. Any other signed-in user (a pupil) reads it only while it belongs to the live version of a
+  // published question; a draft's image stays staff-only. A refused read is 404 like every other purpose (no oracle).
+  question_image: (c) => isRole(c, 'admin', 'teacher') || c.servedWithPublishedQuestion(),
   // Interim (F2): public, reachable only through the opaque token, until BE-24 gates it on publish state.
   cms_image: () => true,
   // BE-24: section audio of Audio KBAT sets. Admin only, fail closed: students never read it through /files, they
@@ -311,6 +315,31 @@ export class FilesService {
     return row ? { purpose: row.purpose, ownerUserId: row.ownerUserId === null ? null : idToString(row.ownerUserId) } : null
   }
 
+  /**
+   * The internal key of a file given either its public token (what `POST /files` returns) or an internal decimal id.
+   * Any other text, or a token that matches no file, is returned unchanged so the caller's own validation rejects it.
+   */
+  async internalIdOf(idText: string): Promise<string> {
+    if (!PUBLIC_TOKEN.test(idText)) return idText
+    const row = await this.prisma.client.file.findUnique({ where: { publicId: idText }, select: { id: true } })
+    return row ? idToString(row.id) : idText
+  }
+
+  /** Public tokens of the given internal ids (ids with no file are absent). */
+  async publicIdsOf(ids: readonly string[]): Promise<Map<string, string>> {
+    const keys: bigint[] = []
+    for (const id of ids) {
+      try {
+        keys.push(idFromString(id))
+      } catch {
+        /* not an internal id */
+      }
+    }
+    if (keys.length === 0) return new Map()
+    const rows = await this.prisma.client.file.findMany({ where: { id: { in: keys } }, select: { id: true, publicId: true } })
+    return new Map(rows.map((r) => [idToString(r.id), r.publicId]))
+  }
+
   /** `DELETE /files/:token`: the owner only; someone else's file is 404. */
   async remove(auth: AuthContext, token: string, who: CallerInfo): Promise<void> {
     const row = await this.findByToken(token)
@@ -344,7 +373,21 @@ export class FilesService {
       })
       return owner?.schoolId && owner.school ? { schoolId: owner.schoolId, school: owner.school } : null
     }
-    return rule({ row, auth, owns, ownerSchool })
+    const servedWithPublishedQuestion = async () => {
+      const hit = await this.prisma.client.$queryRaw<{ one: number }[]>`
+        SELECT 1 AS one
+          FROM question_versions v
+          JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no AND q.is_active
+         WHERE v.status = 'published'
+           AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
+           AND (EXISTS (SELECT 1 FROM question_parts p JOIN part_options o ON o.part_id = p.id
+                         WHERE p.question_version_id = v.id AND o.image_file_id = ${row.id})
+                OR EXISTS (SELECT 1 FROM question_version_stimuli vs JOIN stimuli s ON s.id = vs.stimulus_id
+                            WHERE vs.question_version_id = v.id AND s.asset_file_id = ${row.id}))
+         LIMIT 1`
+      return hit.length > 0
+    }
+    return rule({ row, auth, owns, ownerSchool, servedWithPublishedQuestion })
   }
 
   private summary(row: FileRow): StoredFile {

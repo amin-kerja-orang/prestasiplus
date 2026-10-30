@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S8 filter bar (FR-M27-114; PROPOSED): select "Tingkatan / Darjah" ("Semua" and the levels the school
+ * S8 filter bar (FR-M27-114; PROPOSED): select "Tingkatan" ("Semua" and the levels the school
  * has) and the search "Cari" ("Cari kelas...", class name). A GET filter: the select applies on change, the
  * search on Enter or after a short pause; both keep the other value and drop the page.
  */
@@ -66,7 +66,7 @@ function onReset() {
         />
       </DsFormField>
     </template>
-    <DsFormField label="Tingkatan / Darjah" native for="kl-level" class="min-w-48">
+    <DsFormField label="Tingkatan" native for="kl-level" class="min-w-48">
       <DsNativeSelect
         id="kl-level"
         v-model="levelValue"

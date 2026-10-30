@@ -80,7 +80,7 @@ const pageSize = ref(20)
       <template #name-cell="{ row }">
         <RouterLink
           :to="paths.monitoringSchool(row.original.schoolId)"
-          class="line-clamp-2 max-w-72 text-label text-primary-t"
+          class="block max-w-72 whitespace-normal break-words text-label text-primary-t"
           data-testid="kirk-school-link"
           >{{ row.original.name }}</RouterLink
         >

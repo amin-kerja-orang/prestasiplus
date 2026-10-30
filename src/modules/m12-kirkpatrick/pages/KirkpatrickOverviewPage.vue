@@ -72,6 +72,7 @@ async function apply(value: { schoolId: string; state: string }) {
     data-testid="kirk-overview-page"
     subtitle="Analisis Keberkesanan Platform — Model Penilaian 4 Tahap"
   >
+    <OverviewInfo />
     <!-- Live copy: "Tapis" and "Reset" (FR-M12-19, 41). -->
     <DsFilterBar
       :chips="filters.chips.value"
@@ -120,12 +121,11 @@ async function apply(value: { schoolId: string; state: string }) {
     </p>
 
     <template v-if="data">
+      <OverviewKpis :kpi="data.kpi" :paths="paths" :detail="detailLinks" />
       <OverviewLevelCards :data="data" :paths="paths" :detail="detailLinks" />
       <OverviewFlow :data="data" :paths="paths" :detail="detailLinks" />
       <OverviewComparison :comparison="data.comparison" />
-      <OverviewKpis :kpi="data.kpi" :paths="paths" :detail="detailLinks" />
       <OverviewBands :bands="data.bands" :behavior-path="detailLinks ? paths.behavior : null" />
-      <OverviewInfo />
     </template>
   </DsPage>
 </template>

@@ -5,7 +5,8 @@
  */
 import { computed } from 'vue'
 
-import { formatCount, formatNumber } from '@/lib/number'
+import { DsBadge, DsCluster, DsProgress, DsStack, DsText, formatCount, formatPercent } from '@/ds'
+import { formatNumber } from '@/lib/number'
 
 import { ccKirkpatrickBars, ccStars, type CcLiveData } from '../../api/command-center-board'
 import { S2_COPY } from './board-copy'
@@ -28,7 +29,7 @@ const rows = computed(() => {
       id: 't2',
       label: 'T2',
       width: bars.t2 * 100,
-      text: `${formatNumber(d.kirk.t2Accuracy, { decimals: 1 })}% ketepatan`,
+      text: `${formatPercent(d.kirk.t2Accuracy)} ketepatan`,
     },
     {
       id: 't3',
@@ -48,26 +49,25 @@ const rows = computed(() => {
 
 <template>
   <BoardPanel icon="i-ph-flask" title="Kirkpatrick" testid="cc-panel-kirkpatrick">
-    <p v-if="!data" class="text-body text-muted">{{ S2_COPY.loading }}</p>
-    <ul v-else class="flex flex-col gap-3">
-      <li
-        v-for="r in rows"
-        :key="r.id"
-        class="flex flex-wrap items-center gap-x-3 gap-y-1"
-        :data-testid="`cc-kirk-${r.id}`"
-      >
-        <span class="w-8 shrink-0 text-label text-primary-t">{{ r.label }}</span>
-        <UProgress
-          class="min-w-24 flex-1"
-          :model-value="r.width"
-          :max="100"
-          aria-hidden="true"
-          data-testid="cc-kirk-bar"
-        />
-        <span class="tabular shrink-0 text-end text-body text-toned" data-testid="cc-kirk-text">{{
-          r.text
-        }}</span>
+    <DsText v-if="!data" variant="body" tone="muted">{{ S2_COPY.loading }}</DsText>
+    <DsStack v-else as="ul" gap="md">
+      <li v-for="r in rows" :key="r.id" :data-testid="`cc-kirk-${r.id}`">
+        <DsStack gap="xs">
+          <DsCluster gap="sm" align="center" justify="between" :wrap="false">
+            <DsBadge :label="r.label" tone="primary" size="sm" />
+            <DsText variant="label" tone="toned" align="end" data-testid="cc-kirk-text">{{
+              r.text
+            }}</DsText>
+          </DsCluster>
+          <DsProgress
+            :value="r.width"
+            :show-value="false"
+            size="sm"
+            :aria-label="r.label"
+            data-testid="cc-kirk-bar"
+          />
+        </DsStack>
       </li>
-    </ul>
+    </DsStack>
   </BoardPanel>
 </template>

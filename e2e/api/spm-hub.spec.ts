@@ -22,7 +22,7 @@ import { expect, loginViaUi, test } from '../fixtures/api'
 import { account, csrfOf, expectNoHScroll, newPeerContext } from './helpers'
 
 /** Tab title of the global 404 page (src/app/router/outcome.ts `NOT_FOUND_TITLE`). */
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const digits = (s: string | null): string => (s ?? '').replace(/\D/g, '')
 

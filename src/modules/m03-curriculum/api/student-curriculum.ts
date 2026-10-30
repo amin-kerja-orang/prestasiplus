@@ -97,7 +97,7 @@ export interface LearningMap {
   subject: string
   /** Hero label (the pill label without its emoji). */
   subjectLabel: string
-  /** The served grade: `DARJAH_1`…`DARJAH_4`. */
+  /** The served grade: `TINGKATAN_4` or `TINGKATAN_5` (D54). */
   grade: string
   gradeOptions: string[]
   subjects: LearningMapSubject[]

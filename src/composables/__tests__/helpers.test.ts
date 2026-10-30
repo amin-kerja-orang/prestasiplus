@@ -72,12 +72,12 @@ describe('useSession', () => {
 })
 
 describe('usePageMeta', () => {
-  it('sets the exact tab title and a dynamic header; reset clears them', () => {
+  it('sets the tab title (formatted) and a dynamic header; reset clears them', () => {
     const meta = usePageMeta()
-    meta.setTitle('Latihan Sejarah - PRESTASIPLUS')
+    meta.setTitle('Latihan Sejarah | PRESTASIPLUS')
     meta.setHeader({ title: 'Sejarah', subtitle: 'Bab 1' })
-    expect(document.title).toBe('Latihan Sejarah - PRESTASIPLUS')
-    expect(meta.state.title).toBe('Latihan Sejarah - PRESTASIPLUS')
+    expect(document.title).toBe('Latihan Sejarah | PRESTASIPLUS')
+    expect(meta.state.title).toBe('Latihan Sejarah | PRESTASIPLUS')
     expect(usePageMeta().state.header).toEqual({ title: 'Sejarah', subtitle: 'Bab 1' })
     meta.reset()
     expect(meta.state.title).toBeNull()

@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, type DsAccent } from '@/ds'
 
 import type { Overview } from '../../../api/types'
 import { count, gps, KirkpatrickLink, mean, pct, plain, type KirkpatrickPaths } from '../common'
@@ -19,6 +19,7 @@ interface Level {
   key: string
   label: string
   icon: string
+  accent: DsAccent
   to: string | null
   value: string
   suffix?: string
@@ -28,12 +29,13 @@ interface Level {
 
 const levels = computed<Level[]>(() => {
   const d = props.data
-  return [
+  const list: Level[] = [
     d.t4.gps === null
       ? {
           key: 't4',
           label: 'Tahap 4: Hasil',
           icon: 'i-ph-trophy',
+          accent: 'friend',
           to: to(props.paths.results),
           value: 'Belum Ada Data',
           caption: 'Import keputusan peperiksaan',
@@ -43,6 +45,7 @@ const levels = computed<Level[]>(() => {
           key: 't4',
           label: 'Tahap 4: Hasil',
           icon: 'i-ph-trophy',
+          accent: 'friend',
           to: to(props.paths.results),
           value: gps(d.t4.gps),
           caption: `GPS Sekolah · ${plain(d.t4.recordsLabel)} rekod headcount`,
@@ -51,6 +54,7 @@ const levels = computed<Level[]>(() => {
       key: 't3',
       label: 'Tahap 3: Tingkah Laku',
       icon: 'i-ph-footprints',
+      accent: 'heat',
       to: to(props.paths.behavior),
       value: plain(d.t3.active),
       suffix: `/${plain(d.t3.t4t5)}`,
@@ -60,6 +64,7 @@ const levels = computed<Level[]>(() => {
       key: 't2',
       label: 'Tahap 2: Pembelajaran',
       icon: 'i-ph-brain',
+      accent: 'trial',
       to: to(props.paths.learning),
       value: pct(d.t2.accuracy),
       caption: `Ketepatan · ${count(d.t2.answers)} soalan dijawab`,
@@ -68,12 +73,14 @@ const levels = computed<Level[]>(() => {
       key: 't1',
       label: 'Tahap 1: Reaksi',
       icon: 'i-ph-smiley',
+      accent: 'win',
       to: to(props.paths.reaction),
       value: mean(d.t1.satisfaction),
       suffix: '/5',
       caption: `Kepuasan purata · ${plain(d.t1.responses)} respon`,
     },
   ]
+  return list.reverse() // T1 to T4, the order of the Evaluation Flow below
 })
 </script>
 
@@ -92,7 +99,7 @@ const levels = computed<Level[]>(() => {
       <UCard class="h-full">
         <div class="flex items-start justify-between gap-2">
           <p class="text-label text-muted">{{ l.label }}</p>
-          <DsIconChip :icon="l.icon" size="sm" />
+          <DsIconChip :icon="l.icon" :accent="l.accent" size="sm" />
         </div>
         <p
           :class="['tabular mt-2 text-title', l.muted ? 'text-dimmed' : 'text-highlighted']"
@@ -100,8 +107,8 @@ const levels = computed<Level[]>(() => {
         >
           {{ l.value }}<span v-if="l.suffix" class="text-label text-muted">{{ l.suffix }}</span>
         </p>
-        <p class="text-body text-muted" data-testid="kirk-level-caption">{{ l.caption }}</p>
-        <p v-if="detail" class="mt-2 flex items-center gap-1 text-body text-primary-t">
+        <p class="mb-3 text-body text-muted" data-testid="kirk-level-caption">{{ l.caption }}</p>
+        <p v-if="detail" class="flex items-center gap-1 pt-2 text-label text-primary-t">
           Lihat detail <UIcon name="i-ph-arrow-right" class="size-4" />
         </p>
       </UCard>

@@ -36,10 +36,10 @@ const click = async (testid: string) => {
 describe('S13 Betul atau Salah (FR-M16-71..75)', () => {
   it('shows the picker and starts nothing without ?darjah (DV-M16-18)', async () => {
     wrapper = await mountAt(SoloBetulSalahPage, '/permainan/betul-salah')
-    expect(text()).toContain('Pilih darjah / tingkatan kamu:')
-    expect(text()).toContain('🏫 Sekolah Rendah')
-    for (const n of [1, 2, 3, 4]) expect(text()).toContain(`Darjah ${String(n)}`)
-    expect(text()).not.toContain('Darjah 5')
+    expect(text()).toContain('Pilih tingkatan kamu:')
+    expect(text()).toContain('🏫 Sekolah Menengah')
+    for (const n of [1, 2, 3, 4, 5]) expect(text()).toContain(`Tingkatan ${String(n)}`)
+    expect(text()).not.toContain('Darjah')
     expect(text()).toContain('← Kembali ke Hub')
     await vi.advanceTimersByTimeAsync(60_000)
     expect(fetchSoloGame).not.toHaveBeenCalled()

@@ -26,6 +26,12 @@ vi.mock('@/api', async (orig) => ({
   api: { get: topic.get },
 }))
 
+// The Tingkatan 1-3 hold-back reads the session store, which the `@/api` mock below cannot serve.
+vi.mock('@/lib/lower-form', async (orig) => {
+  const { ref } = await import('vue')
+  return { ...(await orig<typeof import('@/lib/lower-form')>()), useIsLowerForm: () => ref(false) }
+})
+
 const outcome = vi.hoisted(() => ({ setRouteOutcome: vi.fn() }))
 vi.mock('@/app/router/outcome', async (orig) => ({
   ...(await orig<typeof import('@/app/router/outcome')>()),

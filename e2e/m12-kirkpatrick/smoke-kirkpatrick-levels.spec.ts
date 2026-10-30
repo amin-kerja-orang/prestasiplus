@@ -11,6 +11,7 @@
 
 import type { Locator, Page } from '@playwright/test'
 
+import { ALESA_ON, ALESA_SKIP_REASON } from '../support/alesa'
 import { expect, test } from '../fixtures/test'
 import {
   expectNoHorizontalScroll,
@@ -692,6 +693,7 @@ test.describe('M12 S5 T4 Hasil (admin)', MODULE, () => {
     gotoApp,
     loginAs,
   }) => {
+    test.skip(!ALESA_ON, ALESA_SKIP_REASON)
     await loginAs(ADMIN)
     await gotoApp(S5)
     const card = page.getByTestId('res-alesa')
@@ -925,10 +927,14 @@ test.describe('M12 S6 Rantaian Impak (admin)', MODULE, () => {
     await expect(bars.nth(0)).toHaveClass(/bg-yellow-500/)
     await expect(bars.nth(1)).toHaveClass(/bg-green-500/)
     await expect(bars.nth(2)).toHaveClass(/bg-green-500/)
-    await expect(page.getByTestId('corr-conclusion')).toHaveText(
-      'Kesimpulan ALESA: Pelajar yang menjawab 100+ soalan mencapai ketepatan 75.2%, berbanding 59.7% bagi pelajar dengan kurang 20 soalan (perbezaan +15.5%). Korelasi Pearson antara penggunaan dan ketepatan: r = 0.1298 (Lemah).',
-      TEXT,
-    )
+    if (ALESA_ON) {
+      await expect(page.getByTestId('corr-conclusion')).toHaveText(
+        'Kesimpulan ALESA: Pelajar yang menjawab 100+ soalan mencapai ketepatan 75.2%, berbanding 59.7% bagi pelajar dengan kurang 20 soalan (perbezaan +15.5%). Korelasi Pearson antara penggunaan dan ketepatan: r = 0.1298 (Lemah).',
+        TEXT,
+      )
+    } else {
+      await expect(page.getByTestId('corr-conclusion')).toHaveCount(0)
+    }
     const box = page.getByTestId('chain-conclusion')
     await expect(box.locator('h2')).toHaveText('Kesimpulan Model Kirkpatrick')
     await expect(box).toContainText('Empat-empat tahap Kirkpatrick dipenuhi dalam Prestasi Plus.')
@@ -1149,7 +1155,7 @@ test.describe('M12 S7 Intervensi (admin)', MODULE, () => {
     await loginAs(ADMIN)
     for (const path of [`${S7}/1`, `${S7}/create`]) {
       await gotoApp(path)
-      await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+      await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
       await expect(page.getByText('405')).toHaveCount(0)
     }
   })
@@ -1176,11 +1182,19 @@ test.describe('M12 S8 student detail (admin)', MODULE, () => {
     await expect(back).toHaveText('← Kembali ke Tahap 3')
     await expect(back).toHaveAttribute('href', S4)
     const alesa = page.getByTestId('pel-alesa')
-    await expect(alesa).toContainText('AI')
-    await expect(alesa).toContainText('ALESA — Analisis Tingkah Laku Kirkpatrick')
-    await expect(page.getByTestId('pel-paragraph')).toHaveText(
-      'Penggunaan Prestasi Plus oleh Pelajar Demo 004664 masih pada tahap minimum dengan hanya 4 hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi. Ketepatan jawapan pada 73.1% menunjukkan pemahaman yang baik. Subjek terkuat: Sejarah (78.9%).',
-    )
+    if (ALESA_ON) {
+      await expect(alesa).toContainText('AI')
+      await expect(alesa).toContainText('ALESA — Analisis Tingkah Laku Kirkpatrick')
+    } else {
+      await expect(alesa).toContainText('Ringkasan Pelajar')
+    }
+    if (ALESA_ON) {
+      await expect(page.getByTestId('pel-paragraph')).toHaveText(
+        'Penggunaan Prestasi Plus oleh Pelajar Demo 004664 masih pada tahap minimum dengan hanya 4 hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi. Ketepatan jawapan pada 73.1% menunjukkan pemahaman yang baik. Subjek terkuat: Sejarah (78.9%).',
+      )
+    } else {
+      await expect(page.getByTestId('pel-paragraph')).toHaveCount(0)
+    }
     await expect(page.getByTestId('pel-tile-answers')).toContainText('219')
     await expect(page.getByTestId('pel-tile-accuracy')).toContainText('73.1%')
     await expect(page.getByTestId('pel-tile-konsistensi')).toContainText('22.5')
@@ -1233,9 +1247,13 @@ test.describe('M12 S8 student detail (admin)', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(S8(4644))
-    await expect(page.getByTestId('pel-paragraph')).toHaveText(
-      'Penggunaan Prestasi Plus oleh Pelajar Demo 004644 masih pada tahap minimum dengan hanya 3 hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi. Subjek terkuat: Bahasa Melayu (60.0%).',
-    )
+    if (ALESA_ON) {
+      await expect(page.getByTestId('pel-paragraph')).toHaveText(
+        'Penggunaan Prestasi Plus oleh Pelajar Demo 004644 masih pada tahap minimum dengan hanya 3 hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi. Subjek terkuat: Bahasa Melayu (60.0%).',
+      )
+    } else {
+      await expect(page.getByTestId('pel-paragraph')).toHaveCount(0)
+    }
     await expect(page.getByTestId('pel-tile-answers')).toContainText('70')
     await expect(page.getByTestId('pel-tile-accuracy')).toContainText('38.6%')
     await expect(page.getByTestId('pel-tile-konsistensi')).toContainText('21.1')
@@ -1279,7 +1297,7 @@ test.describe('M12 S8 student detail (admin)', MODULE, () => {
     await loginAs(ADMIN)
     for (const id of [5571, 5551, 99_999_999]) {
       await gotoApp(S8(id))
-      await expectTabTitle(page, '403 - Akses Ditolak | PRESTASIPLUS')
+      await expectTabTitle(page, 'Akses Ditolak | PRESTASIPLUS')
       await expect(
         page.getByText('Anda tidak mempunyai kebenaran untuk mengakses halaman ini.'),
       ).toBeVisible()
@@ -1295,7 +1313,7 @@ test.describe('M12 S8 student detail (admin)', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(S8('abc'))
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
   })
 
   test(

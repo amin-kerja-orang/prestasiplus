@@ -41,8 +41,8 @@ describe('admin subjects and education levels', () => {
     name: 'Tahap Ujian',
     nameEn: 'Test Level',
     code: 'tu1',
-    stage: 'primary',
-    curriculum: 'KSSR',
+    stage: 'lower_secondary',
+    curriculum: 'KSSM',
     order: 12,
     ...over,
   })
@@ -57,9 +57,9 @@ describe('admin subjects and education levels', () => {
       expect(res.body.meta).toMatchObject({ totalItems: 33, page: 1, totalPages: 1 })
       const math = items.find((s) => s.code === 'MATH')!
       expect(math.questionCount).toBe(0)
-      expect(math.levels).toHaveLength(11)
-      expect(math.levels[0]).toEqual({ id: await idOf(t.db, 'education_levels', 'D1'), name: 'Darjah 1' })
-      expect(math.educationLevelIds).toHaveLength(11)
+      expect(math.levels).toHaveLength(5)
+      expect(math.levels[0]).toEqual({ id: await idOf(t.db, 'education_levels', 'T1'), name: 'Tingkatan 1' })
+      expect(math.educationLevelIds).toHaveLength(5)
       expect(items.find((s) => s.code === 'SS')!.levels).toEqual([])
       expect(items.find((s) => s.code === 'LNR')!.isActive).toBe(false)
     })
@@ -73,7 +73,7 @@ describe('admin subjects and education levels', () => {
     })
 
     it('#3 creates a subject (upper-case code, active, de-duplicated links, defaults) and persists it', async () => {
-      const [d1, d2] = [await idOf(t.db, 'education_levels', 'D1'), await idOf(t.db, 'education_levels', 'D2')]
+      const [d1, d2] = [await idOf(t.db, 'education_levels', 'T1'), await idOf(t.db, 'education_levels', 'T2')]
       const res = await admin.post('/api/admin/subjects', subjectWrite({ name: ' Subjek Ujian ', color: '#0f766e', isCore: true, order: 40, educationLevelIds: [d1, d2, d2] }))
       const { data, status } = parseStatus(res, CurriculumSubjectSchema, 201)
       expect(status).toBe('Subjek berjaya ditambah.')
@@ -154,7 +154,7 @@ describe('admin subjects and education levels', () => {
 
     it('#4 updates, replaces the links, allows keeping its own code and 404s an unknown id before it validates', async () => {
       const id = await idOf(t.db, 'subjects', 'SRT')
-      const d1 = await idOf(t.db, 'education_levels', 'D1')
+      const d1 = await idOf(t.db, 'education_levels', 'T1')
       const res = await admin.put(`/api/admin/subjects/${id}`, { name: 'Sains Rumah Tangga X', nameEn: 'Home Science', code: 'srt', color: '#123456', isCore: false, order: 28, educationLevelIds: [d1] })
       const { data, status } = parseStatus(res, CurriculumSubjectSchema, 200)
       expect(status).toBe('Subjek berjaya dikemaskini.')
@@ -208,10 +208,10 @@ describe('admin subjects and education levels', () => {
   })
 
   describe('education levels #7 to #12', () => {
-    it('#7 lists 11 levels with questionCount and subjectCount', async () => {
+    it('#7 lists 5 levels with questionCount and subjectCount', async () => {
       const items = parseList(await admin.get('/api/admin/education-levels'), CurriculumEducationLevelListItemSchema)
-      expect(items).toHaveLength(11)
-      expect(items[0]).toMatchObject({ code: 'D1', stage: 'primary', questionCount: 0 })
+      expect(items).toHaveLength(5)
+      expect(items[0]).toMatchObject({ code: 'T1', stage: 'lower_secondary', questionCount: 0 })
       // Earlier tests deleted Matematik and re-linked other subjects: the counts follow the pivot table.
       for (const l of items) {
         expect(l.subjectCount).toBe(await count(t.db, 'select count(*) n from subject_levels where education_level_id = $1', [l.id]))
@@ -231,8 +231,8 @@ describe('admin subjects and education levels', () => {
       expect(status).toBe('Tahap Pendidikan berjaya ditambah.')
       expect(data).toMatchObject({ code: 'TU1', isActive: true, grade: null, order: 12, name: 'Tahap Ujian' })
       const list = parseList(await admin.get('/api/admin/education-levels'), CurriculumEducationLevelListItemSchema)
-      expect(list).toHaveLength(12)
-      expect(list[11]).toMatchObject({ code: 'TU1', questionCount: 0, subjectCount: 0 })
+      expect(list).toHaveLength(6)
+      expect(list[5]).toMatchObject({ code: 'TU1', questionCount: 0, subjectCount: 0 })
       // order defaults to 0 when absent.
       const noOrder = parseStatus(await admin.post('/api/admin/education-levels', levelWrite({ code: 'TU2', order: undefined })), CurriculumEducationLevelSchema, 201)
       expect(noOrder.data.order).toBe(0)
@@ -251,7 +251,7 @@ describe('admin subjects and education levels', () => {
     it('#10 updates (own code allowed in any case), 422 on a clash, 404 on an unknown id', async () => {
       const id = await idOf(t.db, 'education_levels', 'D1')
       const { data, status } = parseStatus(
-        await admin.put(`/api/admin/education-levels/${id}`, { name: 'Tahun 1', nameEn: 'Year 1', code: 'd1', stage: 'primary', curriculum: 'KSSR', order: 1 }),
+        await admin.put(`/api/admin/education-levels/${id}`, { name: 'Tahun 1', nameEn: 'Year 1', code: 'd1', stage: 'lower_secondary', curriculum: 'KSSM', order: 1 }),
         CurriculumEducationLevelSchema,
         200,
       )
@@ -262,7 +262,7 @@ describe('admin subjects and education levels', () => {
       expectError(await admin.put('/api/admin/education-levels/99999999', {}), 'NOT_FOUND', 'Tahap Pendidikan tidak dijumpai.')
     })
 
-    it('#11 toggles active; the lookup drops it, the admin list keeps it; 422 and 404', async () => {
+    it('#11 toggles active; the lookup drops it, the admin list keeps it (non-primary levels are listed with isActive); 422 and 404', async () => {
       const id = await idOf(t.db, 'education_levels', 'T5')
       expect(parseData(await admin.patch(`/api/admin/education-levels/${id}/active`, { isActive: false }), CurriculumActiveStateSchema)).toEqual({ id, isActive: false })
       expect(parseList(await student.get('/api/education-levels'), CurriculumEducationLevelLookupSchema).map((l) => l.id)).not.toContain(id)

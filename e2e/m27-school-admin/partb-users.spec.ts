@@ -28,8 +28,8 @@ const MODULE = { tag: ['@m27'] }
 const WRITES = MODULE
 const P1 = 'azlan@demo.test'
 const P2 = 'adminsekolah@demo.test'
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 
 test.use({ mockInit: { latency: 0 } })
 
@@ -54,7 +54,7 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
   }) => {
     await loginAs(P2)
     await openList(page, gotoApp, '/admin-sekolah/pelajar')
-    await expectTabTitle(page, 'Senarai Pelajar - PRESTASIPLUS')
+    await expectTabTitle(page, 'Senarai Pelajar | PRESTASIPLUS')
     await expect(page.getByTestId('user-count-card').locator('> div')).toHaveCount(1)
     await expect(page.getByTestId('user-count-label')).toHaveText('Pelajar')
     await expect(page.locator('thead th')).toHaveText([
@@ -137,7 +137,7 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
     }
     await page.getByTestId('user-add').click()
     await expect(page).toHaveURL(/\/admin-sekolah\/pelajar\/baru$/)
-    await expectTabTitle(page, 'Tambah Pelajar - PRESTASIPLUS')
+    await expectTabTitle(page, 'Tambah Pelajar | PRESTASIPLUS')
     await expect(page.getByText('Cipta satu akaun pelajar').first()).toBeVisible()
     if (isDesktopShell(page)) {
       await expect(page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-senarai-pelajar"]')).toHaveClass(/\bactive\b/)
@@ -170,7 +170,7 @@ test.describe('S7 Senarai Guru', MODULE, () => {
   }) => {
     await loginAs(P2)
     await openList(page, gotoApp, '/admin-sekolah/guru')
-    await expectTabTitle(page, 'Senarai Guru - PRESTASIPLUS')
+    await expectTabTitle(page, 'Senarai Guru | PRESTASIPLUS')
     await expect(page.getByTestId('user-count-label')).toHaveText('Guru')
     await expect(page.getByTestId('user-export')).toHaveText('Eksport CSV')
     await expect(page.getByTestId('user-add')).toHaveText('Cipta Pengguna')
@@ -206,7 +206,7 @@ test.describe('S9, S10 edit pages (read part)', MODULE, () => {
     await loginAs(P2)
     await gotoApp('/admin-sekolah/pelajar/3001')
     await expect(page.getByTestId('user-form')).toBeVisible({ timeout: 60_000 })
-    await expectTabTitle(page, 'Edit Pengguna - PRESTASIPLUS')
+    await expectTabTitle(page, 'Edit Pengguna | PRESTASIPLUS')
     await expect(page.getByText('Kemaskini maklumat pengguna').first()).toBeVisible()
     await expect(page.getByTestId('user-profile-created')).toContainText('Daftar: ')
     await expect(page.getByTestId('user-profile-updated')).toContainText('Kemaskini: ')
@@ -297,7 +297,7 @@ test.describe('S11 and S12 forms (read part)', MODULE, () => {
     await openList(page, gotoApp, '/admin-sekolah/guru')
     await page.getByTestId('user-add').click()
     await expect(page).toHaveURL(/\/admin-sekolah\/guru\/baru$/)
-    await expectTabTitle(page, 'Cipta Pengguna - PRESTASIPLUS')
+    await expectTabTitle(page, 'Cipta Pengguna | PRESTASIPLUS')
     await expect(page.getByText('Daftarkan akaun guru ke sekolah anda').first()).toBeVisible()
     await expect(page.getByText('Borang Pendaftaran Pengguna')).toBeVisible()
     await expect(page.getByTestId('user-role')).toHaveText('Guru')

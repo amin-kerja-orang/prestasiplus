@@ -31,6 +31,8 @@ export const IMPORT_HEADER = [
   'difficulty_level',
   'marks',
   'explanation',
+  // Optional last column (v2): 1, 2 or 3, empty = none. The mock only carries it; it is not stored.
+  'kertas',
 ] as const
 
 /** Columns the file must have (subject and level may come from the form defaults). */
@@ -44,8 +46,8 @@ export const IMPORT_REQUIRED_COLUMNS = [
 /** FR-M04-57 / §6.12: the template file (header + 2 sample rows). */
 export const IMPORT_TEMPLATE_CSV = [
   IMPORT_HEADER.join(','),
-  '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,4,1,1,"Kuala Lumpur ialah ibu negara."',
-  '"2 + 3 = ?",4,5,6,7,B,3,1,1,1,',
+  '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,7,1,1,"Kuala Lumpur ialah ibu negara.",',
+  '"2 + 3 = ?",4,5,6,7,B,3,10,1,1,,',
   '',
 ].join('\r\n')
 

@@ -632,7 +632,7 @@ test.describe('M11 S1 / S6 access', MODULE, () => {
     await loginAs(ADMIN)
     for (const path of ['/guru/laporan/4', '/guru/analisis-item/1']) {
       await gotoApp(path)
-      await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+      await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
       await expect(page).toHaveURL(path)
     }
   })

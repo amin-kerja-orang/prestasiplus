@@ -1,0 +1,17 @@
+{
+  "$comment": "R7 (pp/ds-ui-allowlist): the only Nuxt UI tags a Portal Pentadbiran page or domain component may use. Adding a tag needs a design review and a one-line justification here. Tags with a Ds twin (UCard, UBadge, UTable, ...) are R6 and can never be listed.",
+  "allowed": [
+    { "tag": "UButton", "why": "actions" },
+    { "tag": "UInput", "why": "text field inside DsFormField" },
+    { "tag": "UTextarea", "why": "multi-line field inside DsFormField" },
+    { "tag": "USwitch", "why": "toggle" },
+    { "tag": "UCheckbox", "why": "checkbox" },
+    { "tag": "URadioGroup", "why": "radio group" },
+    { "tag": "USelectMenu", "why": "searchable select" },
+    { "tag": "UInputNumber", "why": "numeric field" },
+    { "tag": "UTooltip", "why": "hint on icon buttons" },
+    { "tag": "UDropdownMenu", "why": "row and header menus" },
+    { "tag": "UPopover", "why": "anchored panels" },
+    { "tag": "UKbd", "why": "keyboard hints" }
+  ]
+}

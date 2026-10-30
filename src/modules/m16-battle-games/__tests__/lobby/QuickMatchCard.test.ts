@@ -53,7 +53,7 @@ describe('Papan Bijak quick match', () => {
     expect(t).toContain('Sistem cari pemain sepadan secara automatik')
     expect(t).toContain('🔍 Cari Lawan Sekarang')
     expect(usel(wrapper, 'qm-subject').texts()).toEqual(['Matematik', 'Bahasa Melayu', 'Sains', 'Bahasa Inggeris'])
-    expect(usel(wrapper, 'qm-mode').texts()).toEqual(['Tahap sama', 'Semua darjah/tingkatan'])
+    expect(usel(wrapper, 'qm-mode').texts()).toEqual(['Tahap sama', 'Semua tingkatan'])
   })
 
   it('posts the subject and match mode, counts every second and polls every 3 s', async () => {

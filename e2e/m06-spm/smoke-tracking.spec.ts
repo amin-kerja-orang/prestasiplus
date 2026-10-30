@@ -45,7 +45,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/ramalan')
     await expect(tid(page, 'lanes')).toBeVisible(SLOW)
-    await expectTabTitle(page, 'Tracking A SPM - PRESTASIPLUS')
+    await expectTabTitle(page, 'Tracking A SPM | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A SPM')
     if (isDesktopShell(page)) {
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
@@ -538,7 +538,7 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR2)
     await gotoApp('/spm/subjektif')
-    await expectTabTitle(page, 'Latihan Subjektif SPM - PRESTASIPLUS')
+    await expectTabTitle(page, 'Latihan Subjektif SPM | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Subjektif SPM')
     if (isDesktopShell(page)) {
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')

@@ -58,6 +58,14 @@ interface LiveData {
 }
 
 const LIVE = '/api/admin/command-center/live-data'
+
+/** SPA navigation to `href` as a menu click would do (the menu may sit in a drawer at 375 / 768). */
+async function spaGo(page: Page, href: string): Promise<void> {
+  await page.evaluate((h) => {
+    history.pushState({}, '', h)
+    dispatchEvent(new PopStateEvent('popstate'))
+  }, href)
+}
 const SUB_SCHOOL = 'SK Demo Tiga'
 
 async function signIn(page: Page, role: ApiRole): Promise<void> {
@@ -84,10 +92,11 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     expect(data.scope).toBe('platform')
 
     await expect(page.getByTestId('cc-s2')).toBeVisible({ timeout: 20_000 })
-    await expect(page).toHaveTitle(/COMMAND CENTER/)
+    await expect(page).toHaveTitle(/Command Center/i)
     await expect(page.getByTestId('cc-s2-heading')).toBeVisible()
-    await expect(page.getByTestId('cc-live-badge')).toBeVisible()
-    await expect(page.getByTestId('cc-clock')).toHaveText(/\d{1,2}:\d{2}/)
+    // DV-M17-54: no LIVE pill, clock or header buttons
+    await expect(page.getByTestId('cc-live-badge')).toHaveCount(0)
+    await expect(page.getByTestId('cc-clock')).toHaveCount(0)
 
     const tile = (id: string) => page.getByTestId(`cc-kpi-${id}`).getByTestId('cc-kpi-value')
     await expect(page.getByTestId('cc-kpi-schools')).toContainText('Sekolah Berdaftar')
@@ -115,7 +124,7 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     const panels: [string, string][] = [
       ['cc-panel-top-schools', 'Top Sekolah'],
       ['cc-panel-kirkpatrick', 'Kirkpatrick'],
-      ['cc-panel-alesa', 'ALESA AI'],
+      ...(process.env.VITE_ALESA_AI === 'on' ? [['cc-panel-alesa', 'ALESA AI'] as [string, string]] : []),
       ['cc-panel-today', 'Aktiviti Hari Ini'],
       ['cc-panel-feed', 'Live Feed'],
       ['cc-panel-mood', 'Mood Pelajar'],
@@ -204,7 +213,7 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
       (r) => new URL(r.url()).pathname === '/api/command-center/daily-activity',
       { timeout: 30_000 },
     )
-    await page.getByTestId('cc-s2-daily').click()
+    await spaGo(page, '/admin/command-center/daily-activity')
     expect((await daily).status()).toBe(200)
     await expect(page).toHaveURL(/\/admin\/command-center\/daily-activity$/)
     await expect(page.getByTestId('cc-s3')).toBeVisible({ timeout: 20_000 })
@@ -241,7 +250,8 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
       await expectNoHScroll(page)
     }
 
-    await page.getByTestId('cc-s3-back').click()
+    await expect(page.getByTestId('cc-s3-back')).toHaveCount(0)
+    await spaGo(page, '/admin/command-center')
     await expect(page).toHaveURL(/\/admin\/command-center$/, { timeout: 20_000 })
     await expect(page.getByTestId('cc-s2')).toBeVisible()
   })
@@ -310,7 +320,7 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
       })
       await page.goto(path)
       expect((await answered).status(), `GET ${api}`).toBe(404)
-      await expect(page, path).toHaveTitle(/404/, { timeout: 15_000 })
+      await expect(page, path).toHaveTitle(/Halaman Tidak Dijumpai/, { timeout: 15_000 })
       await expect(page.getByTestId('cc-kpis')).toHaveCount(0)
       await expectNoHScroll(page)
     }
@@ -392,7 +402,7 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
       await page.goto(path)
       expect((await answered).status(), `GET ${api}`).toBe(200)
       await expect(page.locator('h1').first()).toHaveText(heading, { timeout: 20_000 })
-      await expect(page, path).not.toHaveTitle(/404|403/)
+      await expect(page, path).not.toHaveTitle(/Halaman Tidak Dijumpai|Akses Ditolak/)
       await expectNoHScroll(page)
     }
   })
@@ -568,7 +578,7 @@ test.describe('M17 Command Center board (Admin Sekolah) @api', () => {
       (r) => new URL(r.url()).pathname === '/api/command-center/daily-activity',
       { timeout: 30_000 },
     )
-    await page.getByTestId('cc-s2-daily').click()
+    await spaGo(page, '/admin-sekolah/command-center/daily-activity')
     const dailyRes = await daily
     expect(dailyRes.status()).toBe(200)
     expect(((await dailyRes.json()) as { data: { scope: string } }).data.scope).toBe('school')

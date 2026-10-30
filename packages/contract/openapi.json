@@ -2111,7 +2111,16 @@
           "DARJAH_3",
           "DARJAH_4",
           "DARJAH_5",
-          "DARJAH_6"
+          "DARJAH_6",
+          "TINGKATAN_4",
+          "TINGKATAN_5"
+        ]
+      },
+      "NoteWriteGrade": {
+        "type": "string",
+        "enum": [
+          "TINGKATAN_4",
+          "TINGKATAN_5"
         ]
       },
       "AdminNoteItem": {
@@ -2141,11 +2150,11 @@
           "grade": {
             "type": "string",
             "minLength": 1,
-            "description": "Stored `DARJAH_n`."
+            "description": "Stored `DARJAH_n` (legacy) or `TINGKATAN_4` / `TINGKATAN_5`."
           },
           "gradeLabel": {
             "type": "string",
-            "description": "\"Darjah n\"."
+            "description": "\"Darjah n\" or \"Tingkatan n\"."
           },
           "isPublished": {
             "type": "boolean"
@@ -2213,11 +2222,11 @@
           "grade": {
             "type": "string",
             "minLength": 1,
-            "description": "Stored `DARJAH_n`."
+            "description": "Stored `DARJAH_n` (legacy) or `TINGKATAN_4` / `TINGKATAN_5`."
           },
           "gradeLabel": {
             "type": "string",
-            "description": "\"Darjah n\"."
+            "description": "\"Darjah n\" or \"Tingkatan n\"."
           },
           "isPublished": {
             "type": "boolean"
@@ -2311,7 +2320,7 @@
             "$ref": "#/components/schemas/NoteFormType"
           },
           "grade": {
-            "$ref": "#/components/schemas/NoteGrade"
+            "$ref": "#/components/schemas/NoteWriteGrade"
           },
           "isPublished": {
             "type": "boolean",
@@ -2354,7 +2363,7 @@
             "$ref": "#/components/schemas/NoteFormType"
           },
           "grade": {
-            "$ref": "#/components/schemas/NoteGrade"
+            "$ref": "#/components/schemas/NoteWriteGrade"
           },
           "isPublished": {
             "type": "boolean",
@@ -34501,6 +34510,9 @@
               "null"
             ]
           },
+          "kertas": {
+            "$ref": "#/components/schemas/QuestionKertas"
+          },
           "aiExplanation": {
             "type": [
               "object",
@@ -34731,6 +34743,18 @@
           "usage"
         ]
       },
+      "QuestionKertas": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "1",
+          "2",
+          "3",
+          null
+        ]
+      },
       "QuestionDetail": {
         "type": "object",
         "properties": {
@@ -34835,6 +34859,9 @@
               "string",
               "null"
             ]
+          },
+          "kertas": {
+            "$ref": "#/components/schemas/QuestionKertas"
           },
           "aiExplanation": {
             "type": [
@@ -35280,6 +35307,39 @@
             },
             "maxItems": 4
           },
+          "questionImageFileId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "optionImageFileIds": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Id"
+                },
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              ]
+            },
+            "maxItems": 4
+          },
+          "kertas": {
+            "$ref": "#/components/schemas/QuestionKertas"
+          },
           "parts": {
             "type": "array",
             "items": {
@@ -35414,6 +35474,39 @@
               "type": "boolean"
             },
             "maxItems": 4
+          },
+          "questionImageFileId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "optionImageFileIds": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Id"
+                },
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              ]
+            },
+            "maxItems": 4
+          },
+          "kertas": {
+            "$ref": "#/components/schemas/QuestionKertas"
           },
           "parts": {
             "type": "array",
@@ -36342,6 +36435,36 @@
           "questionImageUrl": {
             "type": "string"
           },
+          "questionImageFileId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "optionImageFileIds": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Id"
+                },
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              ]
+            },
+            "maxItems": 4
+          },
           "curriculumChapterId": {
             "type": [
               "string",
@@ -36455,6 +36578,46 @@
               "string",
               "null"
             ]
+          },
+          "questionImageFileId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "optionImageFileIds": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Id"
+                },
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              ]
+            },
+            "maxItems": 4
+          },
+          "removeQuestionImage": {
+            "type": "boolean"
+          },
+          "removeOptionImage": {
+            "type": "array",
+            "items": {
+              "type": "boolean"
+            },
+            "maxItems": 4
           }
         },
         "required": [
@@ -92381,7 +92544,7 @@
           "questions"
         ],
         "summary": "Create a question",
-        "description": "JSON, or multipart when images are sent (`questionImage`, `optionImages[i]`: JPG/PNG/WebP up to 2MB; their errors use the keys `questionImage` and `optionImages.<i>`). Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
+        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 3) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
         "parameters": [
           {
             "schema": {
@@ -93169,7 +93332,7 @@
           "guru"
         ],
         "summary": "Submit a question (saved as `review`, owner = caller)",
-        "description": "JSON or multipart (images). No flash. Counts toward the teacher contribution tiers (BE-17/BE-23 side effect).",
+        "description": "JSON only (images as `questionImageFileId` / `optionImageFileIds`). No flash. Counts toward the teacher contribution tiers (BE-17/BE-23 side effect).",
         "parameters": [
           {
             "schema": {

@@ -23,7 +23,7 @@ const ADMIN = 'admin@demo.test'
 const ADMIN_SEKOLAH = 'adminsekolah@demo.test'
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(11)] }
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const S2_TITLE = 'Monitoring Penglibatan Sekolah - Admin'
 /** 44 px below `lg`, the live 36 px from `lg` (DV-M11-17, M03 precedent). */
 const touchMin = (page: Page) => (page.viewportSize()!.width >= 1024 ? 36 : 44)

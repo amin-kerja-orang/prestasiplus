@@ -14,7 +14,7 @@ afterAll(async () => {
   await t.close()
 })
 
-const NOTE = { title: 'Nota Ujian', summary: 'Ringkasan nota', content: '<p>Isi</p>', subject: 'sejarah', noteType: 'LENGKAP', grade: 'DARJAH_5', isPublished: true }
+const NOTE = { title: 'Nota Ujian', summary: 'Ringkasan nota', content: '<p>Isi</p>', subject: 'sejarah', noteType: 'LENGKAP', grade: 'TINGKATAN_4', isPublished: true }
 
 describe('AC 8 access', () => {
   it('401 without a session, 403 for other roles, 403 CSRF_INVALID without the token', async () => {
@@ -42,7 +42,7 @@ describe('admin notes', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     expect(res.body.status).toBe('Nota berjaya ditambah.')
     const n = AdminNoteDetailSchema.parse(res.body.data)
-    expect(n).toMatchObject({ subjectLabel: 'Sejarah', gradeLabel: 'Darjah 5', views: 0, downloads: 0, content: '<p>Isi</p>' })
+    expect(n).toMatchObject({ subjectLabel: 'Sejarah', gradeLabel: 'Tingkatan 4', views: 0, downloads: 0, content: '<p>Isi</p>' })
     const [adm] = await t.db.query<{ id: string }>(`select id::text from users where email = 'admin@demo.test'`)
     expect(n.author.id).toBe(adm?.id)
     id = n.id
@@ -54,13 +54,13 @@ describe('admin notes', () => {
   })
 
   it('normalises the case of the codes before checking them', async () => {
-    const res = await admin.post('/admin/notes', { ...NOTE, subject: 'SAINS', noteType: 'tips_tricks', grade: 'darjah_2', isPublished: false })
+    const res = await admin.post('/admin/notes', { ...NOTE, subject: 'SAINS', noteType: 'tips_tricks', grade: 'tingkatan_5', isPublished: false })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
-    expect(res.body.data).toMatchObject({ subject: 'sains', noteType: 'TIPS_TRICKS', grade: 'DARJAH_2', isPublished: false })
+    expect(res.body.data).toMatchObject({ subject: 'sains', noteType: 'TIPS_TRICKS', grade: 'TINGKATAN_5', isPublished: false })
   })
 
   it('422 with a message per field', async () => {
-    const res = await admin.post('/admin/notes', { title: ' ', content: '', subject: 'geografi', noteType: 'MIND_MAP', grade: 'DARJAH_7' })
+    const res = await admin.post('/admin/notes', { title: ' ', content: '', subject: 'geografi', noteType: 'MIND_MAP', grade: 'DARJAH_5' })
     expect(Object.keys(fieldsOf(res)).sort()).toEqual(['content', 'grade', 'noteType', 'subject', 'title'])
     expect(Object.keys(fieldsOf(await admin.post('/admin/notes', {}))).sort()).toEqual(['content', 'grade', 'noteType', 'subject', 'title'])
   })

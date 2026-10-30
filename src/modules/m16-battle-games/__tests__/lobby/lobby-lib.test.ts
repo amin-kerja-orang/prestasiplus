@@ -62,20 +62,18 @@ const room = (over: Partial<RoomView> = {}): RoomView => ({
 
 describe('lobby config (URS FN-M16-5.1.x, 5.4.x)', () => {
   it('relabels same_level by the chosen grade (FR-M16-55)', () => {
-    expect(sameLevelLabel('DARJAH_4')).toBe('Semua Darjah (1-6)')
     expect(sameLevelLabel('TINGKATAN_2')).toBe('Semua Tingkatan (1-5)')
-    expect(sameLevelLabel('')).toBe('Semua Darjah/Tingkatan')
+    expect(sameLevelLabel('')).toBe('Semua Tingkatan')
   })
 
-  it('has the grade optgroups and the custom range 1-11 (D1-D6, T1-T5)', () => {
+  it('has the Sekolah Menengah optgroup only and the custom range 7-11 (T1-T5)', () => {
     expect(GRADE_GROUPS.map((g) => [g.label, g.options.length])).toEqual([
-      ['Sekolah Rendah', 6],
       ['Sekolah Menengah', 5],
     ])
     expect(CUSTOM_GRADE_OPTIONS.map((o) => o.label).join(' ')).toBe(
-      'D1 D2 D3 D4 D5 D6 T1 T2 T3 T4 T5',
+      'T1 T2 T3 T4 T5',
     )
-    expect(CUSTOM_GRADE_OPTIONS[10]?.value).toBe(11)
+    expect(CUSTOM_GRADE_OPTIONS[4]?.value).toBe(11)
   })
 
   it('offers four Papan Bijak subjects with emoji', () => {

@@ -114,7 +114,7 @@ export class BoardReads {
       SELECT sc.id::text AS school_id, sc.name, count(*)::int AS students, sum(p.answers)::int AS answers
         FROM (SELECT a.user_id, count(*) AS answers FROM practice_answers a WHERE a.is_test = false AND a.answered_at <= ${to} GROUP BY a.user_id) p
         JOIN users u ON u.id = p.user_id JOIN schools sc ON sc.id = u.school_id
-       WHERE u.is_active AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
+       WHERE (sc.type IS NULL OR sc.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')) AND (u.grade IS NULL OR u.grade >= 7) AND u.is_active AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
        GROUP BY sc.id, sc.name ORDER BY students DESC, answers DESC, sc.id ASC LIMIT ${Math.max(0, Math.trunc(limit))}`)
     return rows.map((r) => ({ schoolId: String(r.school_id), schoolName: String(r.name), students: n(r.students), answers: n(r.answers) }))
   }
@@ -145,7 +145,7 @@ export class BoardReads {
       SELECT sc.id::text AS school_id, sc.name, count(DISTINCT a.user_id)::int AS pupils, count(*)::int AS answers,
              count(*) FILTER (WHERE a.is_correct)::int AS correct, max(a.answered_at) AS last_at
         FROM practice_answers a JOIN users u ON u.id = a.user_id JOIN schools sc ON sc.id = u.school_id
-       WHERE ${span(s)} GROUP BY sc.id, sc.name`)
+       WHERE ${span(s)} AND (sc.type IS NULL OR sc.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')) AND (u.grade IS NULL OR u.grade >= 7) GROUP BY sc.id, sc.name`)
     return rows.map((r) => ({
       schoolId: String(r.school_id),
       schoolName: String(r.name),

@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState, DsPanel } from '@/ds'
+import { DsDataTable, DsEmptyState, DsPanel, DsStack } from '@/ds'
 
 import type { InterventionRow, WireId } from '../../../api/types'
 import { dateEn, pct } from '../common/kirkpatrick-format'
@@ -81,9 +81,9 @@ const pageSize = ref(20)
 
 <template>
   <DsPanel title="Senarai Intervensi" icon="i-ph-clipboard-text" data-testid="int-list">
-    <UCard v-if="rows.length === 0" data-testid="int-empty">
-      <DsEmptyState icon="i-ph-clipboard" title="Tiada intervensi direkodkan lagi." />
-    </UCard>
+    <DsStack v-if="rows.length === 0" data-testid="int-empty">
+      <DsEmptyState size="sm" icon="i-ph-clipboard" title="Tiada intervensi direkodkan lagi." />
+    </DsStack>
     <DsDataTable
       v-else
       v-model:page-size="pageSize"

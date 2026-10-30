@@ -7,12 +7,15 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
+import { isAlesaAiOn } from '@/app/features'
 import { DsDataTable, DsPanel } from '@/ds'
-
 import { formatNumber } from '@/lib/number'
 
 import type { Chain } from '../../../api/types'
 import { pct, plain } from '../common/kirkpatrick-format'
+
+// The ALESA conclusion box is hidden unless VITE_ALESA_AI=on (D73).
+const alesaOn = isAlesaAiOn()
 
 const props = defineProps<{
   correlation: Chain['correlation']
@@ -94,7 +97,13 @@ const pageSize = ref(20)
           />
         </template>
       </DsDataTable>
-      <UAlert color="primary" variant="soft" icon="i-ph-sparkle" data-testid="corr-conclusion">
+      <UAlert
+        v-if="alesaOn"
+        color="primary"
+        variant="soft"
+        icon="i-ph-sparkle"
+        data-testid="corr-conclusion"
+      >
         <template #description>
           <strong>Kesimpulan ALESA:</strong> Pelajar yang menjawab 100+ soalan mencapai ketepatan
           {{ pct(high?.acc ?? 0) }}, berbanding {{ pct(low?.acc ?? 0) }} bagi pelajar dengan kurang

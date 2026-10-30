@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * A card of S3 with a tinted icon chip and the heading. While the period loads the body shows the
+ * A card of S3: the DS panel with the icon chip and the heading. While the period loads the body shows the
  * spinner and a failed load shows "Gagal memuatkan" (FR-M17-36); the default slot renders when `state` is `ok`.
  */
-import { DsIconChip } from '@/ds'
+import { DsPanel, DsText } from '@/ds'
 
 import { accentFor } from '../command-center/cc-format'
 import { S3_COPY } from './board-copy'
@@ -16,21 +16,21 @@ withDefaults(
     testid: string
     state?: LoadStatus
     heading?: string
+    stretch?: boolean
   }>(),
-  { state: 'ok', heading: undefined },
+  { state: 'ok', heading: undefined, stretch: true },
 )
 </script>
 
 <template>
-  <UCard class="min-w-0" :data-testid="testid">
-    <template #header>
-      <div class="flex min-w-0 items-center gap-2">
-        <DsIconChip :icon="icon" :accent="accentFor(icon)" size="sm" />
-        <h2 class="min-w-0 text-subheading text-highlighted" data-testid="daily-panel-title">
-          {{ heading ?? title }}
-        </h2>
-      </div>
-    </template>
+  <DsPanel
+    as="section"
+    :title="heading ?? title"
+    :icon="icon"
+    :accent="accentFor(icon)"
+    :stretch="stretch"
+    :data-testid="testid"
+  >
     <p
       v-if="state === 'loading'"
       class="flex justify-center py-4 text-muted"
@@ -38,13 +38,15 @@ withDefaults(
     >
       <UProgress class="w-24" aria-label="Memuatkan" />
     </p>
-    <p
+    <DsText
       v-else-if="state === 'error'"
-      class="py-4 text-center text-body text-error"
+      variant="body"
+      tone="error"
+      align="center"
       data-testid="daily-error"
     >
       {{ S3_COPY.loadFailed }}
-    </p>
+    </DsText>
     <slot v-else />
-  </UCard>
+  </DsPanel>
 </template>

@@ -285,7 +285,7 @@ describe('S1 DashboardPage (v2 Murid Home)', () => {
     expect(t(w, 'dash-subject-BM').text()).toContain('11688 soalan')
     expect(t(w, 'dash-subject-BM').text()).toContain('Subjek Teras')
     expect(t(w, 'dash-subject-GEO').text()).not.toContain('Subjek Teras')
-    expect(w.findAll('[data-testid=dash-level-pill]')).toHaveLength(3)
+    expect(w.findAll('[data-testid=dash-level-pill]')).toHaveLength(2)
     expect(t(w, 'dash-recent').text()).toContain('Soalan terkini satu')
     expect(w.findAll('[data-testid=dash-difficulty-row]')).toHaveLength(5)
     expect(t(w, 'dash-difficulty-total').text()).toBe('130152')

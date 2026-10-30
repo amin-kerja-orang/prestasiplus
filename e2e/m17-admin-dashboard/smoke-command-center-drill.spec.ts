@@ -20,7 +20,7 @@ import {
 } from '../support'
 
 const MODULE = { tag: [moduleTag(17)] }
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const CC = '/admin/command-center'
 
 test.use({ mockInit: { latency: 0 } })
@@ -78,7 +78,7 @@ test.describe('S4 school', MODULE, () => {
     await expect(page.getByTestId('cc-back')).toHaveAttribute('href', CC)
     await expect(page.getByTestId('cc-crumb-current')).toHaveText(/\S/)
     const name = (await page.getByTestId('cc-crumb-current').innerText()).trim()
-    await expectTabTitle(page, `${name} - Command Center`)
+    await expectTabTitle(page, `${name} - Command Center | PRESTASIPLUS`)
 
     const labels = await page
       .getByTestId('cc-stat')
@@ -142,7 +142,7 @@ test.describe('S5 teacher', MODULE, () => {
       'ketepatan',
     ])
     const name = (await page.getByTestId('cc-crumb-current').innerText()).trim()
-    await expectTabTitle(page, `${name} - Command Center`)
+    await expectTabTitle(page, `${name} - Command Center | PRESTASIPLUS`)
     const c370 = page.locator('[data-testid=cc-class-row][data-class-id="370"]')
     await expect(c370).toBeVisible()
     const cells = await c370.locator('td').allInnerTexts()
@@ -179,7 +179,7 @@ test.describe('S6 class', MODULE, () => {
     await expect(page.getByTestId('cc-info')).toContainText('T5')
     const name = (await page.getByTestId('cc-crumb-current').innerText()).trim()
     expect(name).toBe('5 PERNIAGAAN')
-    await expectTabTitle(page, '5 PERNIAGAAN - Command Center')
+    await expectTabTitle(page, '5 PERNIAGAAN - Command Center | PRESTASIPLUS')
 
     const first2022 = page.getByTestId('cc-student-row').first()
     await expect(first2022).toHaveAttribute('data-user-id', '2022')
@@ -230,7 +230,7 @@ test.describe('S7 student', MODULE, () => {
     const crumbs = page.getByTestId('cc-breadcrumb')
     await expect(crumbs).toContainText('Command Center')
     const name = (await page.getByTestId('cc-crumb-current').innerText()).trim()
-    await expectTabTitle(page, `${name} - Command Center`)
+    await expectTabTitle(page, `${name} - Command Center | PRESTASIPLUS`)
     const labels = await page
       .getByTestId('cc-stat')
       .evaluateAll((els) =>

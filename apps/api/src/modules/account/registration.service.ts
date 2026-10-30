@@ -83,12 +83,14 @@ export class RegistrationService {
     const schoolId = text(body.schoolId)
     if (fields.schoolId === undefined) {
       if (schoolId !== null) {
-        if (!(await this.schools.exists(schoolId))) fields.schoolId = ACCOUNT_AUTH_MESSAGES.schoolInvalid
+        if (!(await this.schools.existsSecondary(schoolId))) fields.schoolId = ACCOUNT_AUTH_MESSAGES.schoolInvalid
       } else if (roleText === 'teacher') {
         // A teacher's scope is its school: without one the account could never open a session.
         fields.schoolId = V.requiredWhen('school id', 'role is teacher')
       }
     }
+    // Secondary-only (2026-10-29): a new student cannot register in Darjah 1 to 6 (grades 7..11 = Tingkatan 1 to 5).
+    if (fields.grade === undefined && isStudent && typeof body.grade === 'number' && body.grade < 7) fields.grade = ACCOUNT_AUTH_MESSAGES.gradeInvalid
     const icText = isStudent ? text(body.icNumber) : null
     const icParts = icText !== null ? this.ic.parts(icText) : null
     if (fields.icNumber === undefined && icText !== null && icParts === null) fields.icNumber = IC_FORMAT

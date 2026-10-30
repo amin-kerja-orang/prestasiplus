@@ -218,6 +218,95 @@
     { "glob": "src/modules/m08-student-performance/pages/**", "level": "page" },
     { "glob": "src/modules/m08-student-performance/components/**", "level": "page" }
   ],
+  "$adminComment": "Portal Pentadbiran strict lint (docs/design/v2-ds-hardening.md, section Strict lint for Portal Pentadbiran). adminScope = every file of the portal that the admin rules (eslint/admin-strict.mjs) check; eslint/__tests__/ds-strict-scope.test.mjs fails when a file reachable from an /admin or /guru/monitoring route is outside it. adminExempt = never checked. enforce = per-batch globs where every violation is an error with no baseline; APPEND ONLY (ds-debt ratchet test refuses removal). adminAreas = report grouping for npm run lint:admin:report (first match wins).",
+  "adminScope": [
+    "src/modules/m02-users-schools/{pages,components}/**",
+    "src/modules/m03-curriculum/pages/{Chapter,Curriculum,Level,Subject}*Page.vue",
+    "src/modules/m03-curriculum/pages/Topic{Create,Edit}Page.vue",
+    "src/modules/m03-curriculum/components/{curriculum,subjects-levels}/**",
+    "src/modules/m04-question-bank/{pages,components}/**",
+    "src/modules/m07-pksk/pages/{PkskAccessPage,PkskQuestionFormPage,PkskQuestionListPage}.vue",
+    "src/modules/m07-pksk/components/OptionsCard.vue",
+    "src/modules/m09-content/pages/{Admin,AudioSet,AudioTemplate,Banner,Screenshots}*Page.vue",
+    "src/modules/m09-content/components/admin-media/**",
+    "src/modules/m11-teacher-analytics/pages/Monitoring*Page.vue",
+    "src/modules/m11-teacher-analytics/components/monitoring/**",
+    "src/modules/m12-kirkpatrick/{pages,components}/**",
+    "src/modules/m17-admin-dashboard/{pages,components}/**",
+    "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue",
+    "src/modules/m28-bijak-spm/admin/**",
+    "src/modules/m28-bijak-spm/components/{RichText,StimulusView}.vue",
+    "src/shells/pentadbiran/**"
+  ],
+  "adminExempt": [
+    "src/ds/**",
+    "src/theme/**",
+    "src/dev/**",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.d.ts"
+  ],
+  "adminAreas": [
+    {
+      "batch": 1,
+      "name": "m28 Bijak SPM admin",
+      "globs": [
+        "src/modules/m28-bijak-spm/admin/**"
+      ]
+    },
+    {
+      "batch": 3,
+      "name": "Kirkpatrick (m12)",
+      "globs": [
+        "src/modules/m12-kirkpatrick/**"
+      ]
+    },
+    {
+      "batch": 4,
+      "name": "Boards: Command Center (m17) + Monitoring (m11)",
+      "globs": [
+        "src/modules/m17-admin-dashboard/**",
+        "src/modules/m11-teacher-analytics/**"
+      ]
+    },
+    {
+      "batch": 7,
+      "name": "Shell (pentadbiran)",
+      "globs": [
+        "src/shells/pentadbiran/**"
+      ]
+    },
+    {
+      "batch": 6,
+      "name": "Detail pages + print",
+      "globs": [
+        "**/*{Detail,Preview,Packages}Page.vue",
+        "**/RenewalInvoicePage.vue"
+      ]
+    },
+    {
+      "batch": 5,
+      "name": "Forms, imports, selectors",
+      "globs": [
+        "**/*{Form,Create,Edit,Import}Page.vue",
+        "**/ScreenshotsPage.vue",
+        "**/CurriculumBrowserPage.vue",
+        "**/AudioTemplatePage.vue",
+        "src/modules/m02-users-schools/components/**",
+        "src/modules/m03-curriculum/components/**",
+        "src/modules/m04-question-bank/components/**",
+        "src/modules/m07-pksk/components/**",
+        "src/modules/m09-content/components/**"
+      ]
+    },
+    {
+      "batch": 2,
+      "name": "List pages + dashboard (rest)",
+      "globs": [
+        "src/modules/**"
+      ]
+    }
+  ],
   "exempt": [
     "src/theme/**"
   ]

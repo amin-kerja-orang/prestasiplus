@@ -21,7 +21,7 @@ import {
   viewportWidth,
 } from '../support'
 
-const NOT_FOUND = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
 test.describe.configure({ timeout: 300_000 })
@@ -93,7 +93,7 @@ test.describe('QA-G5 access guards', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs('guru@demo.test')
     await gotoApp('/practice/chapter')
-    await expectTabTitle(page, 'Soalan by Chapter - PRESTASIPLUS')
+    await expectTabTitle(page, 'Soalan by Chapter | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
     await expect(page.locator('[data-testid=chapter-subject-name]')).toHaveCount(10)
     await tid(page, 'chapter-subject-name').first().click()

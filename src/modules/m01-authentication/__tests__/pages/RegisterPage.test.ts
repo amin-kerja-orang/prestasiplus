@@ -149,12 +149,13 @@ describe('RegisterPage (M01 S2)', () => {
     expect(w.find('[data-testid=register-levels]').exists()).toBe(true)
   })
 
-  it('lists Darjah 1-6 (values 1-6) and Ting. 1-5 (values 7-11), none selected (FR-M01-20)', async () => {
+  it('lists only Ting. 1-5 (values 7-11), no Darjah, none selected (FR-M01-20)', async () => {
     const w = await render()
     const ids = w.findAll('[data-testid^=grade-]').map((g) => g.attributes('data-testid'))
-    expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((n) => `grade-${String(n)}`))
+    expect(ids).toEqual([7, 8, 9, 10, 11].map((n) => `grade-${String(n)}`))
     expect(w.findAll('[data-selected=true][data-testid^=grade-]')).toHaveLength(0)
-    expect(w.text()).toContain('Sekolah Rendah')
+    expect(w.text()).not.toContain('Sekolah Rendah')
+    expect(w.text()).not.toContain('Darjah')
     expect(w.text()).toContain('Sekolah Menengah')
     await w.get('[data-testid=grade-10]').trigger('click')
     expect(w.get('[data-testid=grade-10]').text()).toBe('Ting.4')
@@ -267,7 +268,7 @@ describe('RegisterPage (M01 S2)', () => {
     apiMocks.register.mockReturnValue(new Promise((_, r) => (reject = r)))
     const w = await render()
     await fillRequired(w)
-    await w.get('[data-testid=grade-3]').trigger('click')
+    await w.get('[data-testid=grade-9]').trigger('click')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(w.get('[data-testid=register-submit]').text()).toBe('Sedang Mendaftar...')
@@ -304,7 +305,7 @@ describe('RegisterPage (M01 S2)', () => {
     expect(
       (w.get('[data-testid=register-password-confirm]').element as HTMLInputElement).value,
     ).toBe('')
-    expect(w.get('[data-testid=grade-3]').attributes('data-selected')).toBe('true')
+    expect(w.get('[data-testid=grade-9]').attributes('data-selected')).toBe('true')
     expect(w.get('[data-testid=register-submit]').text()).toBe('Daftar Sekarang')
   })
 

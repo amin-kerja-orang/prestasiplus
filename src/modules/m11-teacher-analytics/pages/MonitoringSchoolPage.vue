@@ -11,10 +11,12 @@ import { RouterLink } from 'vue-router'
 import type { EntityId } from '@/api'
 
 import {
+  DsBadge,
   DsBreadcrumb,
   DsDataTable,
   DsLoadError,
   DsPage,
+  DsPanel,
   DsPillNav,
   DsStatRow,
   type PillItem,
@@ -111,33 +113,36 @@ const cards = computed<StatItem[]>(() => {
       key: 'students',
       label: 'Pelajar T4/T5',
       value: count(c.students),
-      icon: 'i-ph-graduation-cap', accent: 'friend',
+      icon: 'i-ph-graduation-cap',
+      accent: 'friend',
     },
     {
       key: 'engaged',
       label: 'Pernah Aktif',
       value: count(c.engaged),
-      icon: 'i-ph-check-circle', accent: 'win',
-      valueTone: 'success',
+      icon: 'i-ph-check-circle',
+      accent: 'win',
     },
     {
       key: 'answers',
       label: 'Soalan Dijawab',
       value: count(c.answers),
-      icon: 'i-ph-pencil-simple', accent: 'trial',
+      icon: 'i-ph-pencil-simple',
+      accent: 'trial',
     },
     {
       key: 'teachers',
       label: 'Guru Berdaftar',
       value: count(c.teachers),
-      icon: 'i-ph-chalkboard-teacher', accent: 'action',
-      valueTone: 'primary',
+      icon: 'i-ph-chalkboard-teacher',
+      accent: 'action',
     },
     {
       key: 'teachersLoggedIn',
       label: 'Guru Pernah Login',
       value: count(c.teachersLoggedIn),
-      icon: 'i-ph-sign-in', accent: 'heat',
+      icon: 'i-ph-sign-in',
+      accent: 'heat',
     },
   ]
 })
@@ -207,7 +212,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
       </p>
 
       <template v-if="data">
-        <UCard data-testid="mon-school-header">
+        <DsPanel data-testid="mon-school-header">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex min-w-0 flex-col gap-2">
               <h2 class="text-title break-words text-highlighted" data-testid="mon-school-name">
@@ -220,12 +225,9 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                 <span class="flex items-center gap-2" data-testid="mon-school-state"
                   ><UIcon name="i-ph-map-pin" class="size-5" />{{ data.school.state }}</span
                 >
-                <UBadge
+                <DsBadge
                   v-if="data.subscription"
-                  :color="SUBSCRIPTION_COLOR[data.subscription.status]"
-                  variant="subtle"
-                  size="lg"
-                  icon="i-ph-circle-fill"
+                  :tone="SUBSCRIPTION_COLOR[data.subscription.status]"
                   :data-status="data.subscription.status"
                   data-testid="mon-subscription"
                   :label="`${SUBSCRIPTION_LABEL[data.subscription.status]} — sehingga ${subscriptionDate(data.subscription.endsAt)}`"
@@ -235,21 +237,19 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                 >
               </div>
             </div>
-            <UBadge
-              :color="TAHAP[data.tahap].color"
-              variant="subtle"
-              size="lg"
+            <DsBadge
+              :tone="TAHAP[data.tahap].color"
               data-testid="mon-school-tahap"
               :label="`${data.tahap} — ${pct(data.pct)}`"
             />
           </div>
-        </UCard>
+        </DsPanel>
 
         <DsStatRow
           :items="cards"
           prefix="mon-stat"
           :cols="5"
-          density="roomy"
+          density="compact"
           data-testid="mon-school-cards"
         />
 

@@ -131,6 +131,7 @@ describe('RPH routes: POST/GET /cikgu/rph, GET /cikgu/rph/:id', () => {
     ['level missing', { subjectName: 'Kimia', tajuk: 'x' }, 'level', M.required],
     ['level T6', { subjectName: 'Kimia', level: 'T6', tajuk: 'x' }, 'level', M.invalid],
     ['level D0', { subjectName: 'Kimia', level: 'D0', tajuk: 'x' }, 'level', M.invalid],
+    ['level D1 (secondary-only)', { subjectName: 'Kimia', level: 'D1', tajuk: 'x' }, 'level', M.invalid],
     ['level lower case', { subjectName: 'Kimia', level: 't4', tajuk: 'x' }, 'level', M.invalid],
     ['tajuk blank', { subjectName: 'Kimia', level: 'T4', tajuk: '  ' }, 'tajuk', M.required],
     ['tajuk 201 chars', { subjectName: 'Kimia', level: 'T4', tajuk: 'a'.repeat(201) }, 'tajuk', M.tooLong(200)],
@@ -153,7 +154,7 @@ describe('RPH routes: POST/GET /cikgu/rph, GET /cikgu/rph/:id', () => {
   })
 
   it('AC8: limits are inclusive: 100/200/500 code points, 15 and 240 minutes, the 29th of February of a leap year', async () => {
-    const res = await teacher.post('/cikgu/rph', { subjectName: '🎤'.repeat(100), level: 'D1', tajuk: 'a'.repeat(200), pengajaranKeperluan: 'b'.repeat(500), className: 'c'.repeat(100), durationMinutes: 15, lessonDate: '2028-02-29' })
+    const res = await teacher.post('/cikgu/rph', { subjectName: '🎤'.repeat(100), level: 'T1', tajuk: 'a'.repeat(200), pengajaranKeperluan: 'b'.repeat(500), className: 'c'.repeat(100), durationMinutes: 15, lessonDate: '2028-02-29' })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     expect((await teacher.post('/cikgu/rph', { ...valid, durationMinutes: 240 })).status).toBe(201)
   })

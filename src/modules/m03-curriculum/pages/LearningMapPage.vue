@@ -2,23 +2,35 @@
 /**
  * S14 `/peta-belajar` "Peta Belajar — PRESTASIPLUS" (M03-T4; FR-M03-80..90, BR-14/15). Hero with the
  * subject label, stat tiles (`md` and up) and a static bar, the selectors card (7 subject pills,
- * Darjah 1-4 chips in one row) and the map: above 768 px a vertical path with a dot per node and
+ * Tingkatan 4 / 5 chips in one row) and the map: above 768 px a vertical path with a dot per node and
  * islands alternating right/left, at 768 px and below islands centred with no path or dots.
- * The server serves the effective subject and grade (defaults, fallback to Darjah 4).
+ * The server serves the effective subject and grade (defaults, fallback to Tingkatan 4).
  */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
 import { DsEmptyState, DsPage } from '@/ds'
+import { LOWER_FORM_COPY, useIsLowerForm } from '@/lib/lower-form'
+import { useSessionStore } from '@/stores/session'
 
 import { fetchLearningMap } from '../api/student-curriculum'
 import MapIsland from '../components/student/MapIsland.vue'
-import { LOAD_ERROR, MAP_GRADES, gradeLabel, mapTo, readFilter } from '../lib/student-catalogue'
+import {
+  LOAD_ERROR,
+  MAP_GRADES,
+  effectiveMapGrade,
+  gradeLabel,
+  mapTo,
+  readFilter,
+} from '../lib/student-catalogue'
 
 const route = useRoute()
+const session = useSessionStore()
+const lowerForm = useIsLowerForm()
 const subject = computed(() => readFilter(route.query.subject))
-const grade = computed(() => readFilter(route.query.grade))
+/** D54: Tingkatan 4 or 5 from the URL, else the student's form (4 by default). */
+const grade = computed(() => effectiveMapGrade(readFilter(route.query.grade), session.user?.grade))
 
 const { data: map, error } = useApi(
   (signal) => fetchLearningMap({ subject: subject.value, grade: grade.value, signal }),
@@ -28,6 +40,14 @@ const { data: map, error } = useApi(
 
 <template>
   <DsPage data-testid="map-page">
+    <DsEmptyState
+      v-if="lowerForm"
+      icon="books"
+      :title="LOWER_FORM_COPY.title"
+      :description="LOWER_FORM_COPY.description"
+      data-testid="lower-form-empty"
+    />
+    <template v-else>
     <h1 v-if="!map" class="sr-only">Peta Belajar</h1>
     <UAlert
       v-if="error"
@@ -87,7 +107,7 @@ const { data: map, error } = useApi(
             {{ s.emoji }} {{ s.label }}
           </UButton>
         </nav>
-        <nav class="grid grid-cols-2 gap-2 sm:flex" aria-label="Darjah" data-testid="map-grade-chips">
+        <nav class="grid grid-cols-2 gap-2 sm:flex" aria-label="Tingkatan" data-testid="map-grade-chips">
           <UButton
             v-for="g in MAP_GRADES"
             :key="g"
@@ -113,13 +133,14 @@ const { data: map, error } = useApi(
         <DsEmptyState
           icon="map-trifold"
           title="Tiada Topik Dijumpai"
-          description="Pilih subjek dan darjah yang lain untuk melihat peta belajar"
+          description="Pilih subjek dan tingkatan yang lain untuk melihat peta belajar"
         />
       </div>
 
       <div v-else class="flex flex-col gap-6 py-2" data-testid="map-container">
         <MapIsland v-for="(t, i) in map.topics" :key="t.id" :topic="t" :index="i" />
       </div>
+    </template>
     </template>
   </DsPage>
 </template>

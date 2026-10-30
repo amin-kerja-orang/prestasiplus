@@ -5,6 +5,9 @@
  */
 import { computed } from 'vue'
 
+import { isAlesaAiOn } from '@/app/features'
+import { DsPanel } from '@/ds'
+
 import type { StudentKirkpatrick } from '../../../api/types'
 import { count, mean, pct, pct1 } from '../common/kirkpatrick-format'
 import { alesaParagraph } from './pelajar-format'
@@ -12,17 +15,21 @@ import { alesaParagraph } from './pelajar-format'
 const props = defineProps<{ data: StudentKirkpatrick }>()
 
 const paragraph = computed(() => alesaParagraph(props.data))
+// VITE_ALESA_AI off (D73): the AI badge, the ALESA heading and the generated paragraph go; the real
+// figures (Soalan, Ketepatan, Konsistensi, Streak, Terkuat) stay under a plain heading.
+const alesaOn = isAlesaAiOn()
 </script>
 
 <template>
-  <UCard as="section" class="min-w-0" data-testid="pel-alesa">
-    <template #header>
-      <div class="flex items-center gap-3">
-        <UBadge color="primary" variant="soft" label="AI" />
-        <h2 class="text-subheading text-highlighted">ALESA — Analisis Tingkah Laku Kirkpatrick</h2>
-      </div>
-    </template>
-    <p class="text-body text-default" data-testid="pel-paragraph">{{ paragraph }}</p>
+  <DsPanel
+    as="section"
+    :title="alesaOn ? 'ALESA — Analisis Tingkah Laku Kirkpatrick' : 'Ringkasan Pelajar'"
+    :icon="alesaOn ? 'sparkle' : 'user-circle'"
+    class="min-w-0"
+    data-testid="pel-alesa"
+  >
+    <template v-if="alesaOn" #actions><UBadge color="primary" variant="soft" label="AI" /></template>
+    <p v-if="alesaOn" class="text-body text-default" data-testid="pel-paragraph">{{ paragraph }}</p>
     <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
       <UCard variant="soft" class="min-w-0 text-center" data-testid="pel-tile-answers">
         <p class="tabular text-heading text-highlighted">{{ count(data.answers) }}</p>
@@ -51,5 +58,5 @@ const paragraph = computed(() => alesaParagraph(props.data))
       · Perlu perhatian:
       <strong>{{ data.weakest.subjectName }} ({{ pct1(data.weakest.accuracy) }})</strong>
     </p>
-  </UCard>
+  </DsPanel>
 </template>

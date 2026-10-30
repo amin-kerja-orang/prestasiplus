@@ -6,6 +6,7 @@
 
 import type { Page } from '@playwright/test'
 
+import { ALESA_ON } from '../support/alesa'
 import { expect, test } from './fixtures'
 import { open } from './mock-exam-nav'
 import {
@@ -289,10 +290,11 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
       .then((a) => a.map((s) => Number(s.split(' ')[0])))
     expect(counts.reduce((a, b) => a + b, 0)).toBe(30)
     expect([...counts].sort((a, b) => b - a)).toEqual(counts)
-    await expect(tid(page, 'result-tip')).toContainText(
+    if (!ALESA_ON) await expect(tid(page, 'result-tip')).toHaveCount(0)
+    else await expect(tid(page, 'result-tip')).toContainText(
       '💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu. Boleh start dengan jana nota ringkas untuk topik tersebut.',
     )
-    await expect(tid(page, 'result-tip').getByRole('link')).toHaveAttribute(
+    if (ALESA_ON) await expect(tid(page, 'result-tip').getByRole('link')).toHaveAttribute(
       'href',
       '/pusat-nota-ringkas',
     )

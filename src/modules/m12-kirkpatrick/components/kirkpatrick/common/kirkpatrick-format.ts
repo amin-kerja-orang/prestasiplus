@@ -10,8 +10,8 @@ import type { BandKey } from '../../../api/types'
 
 /** Integer with thousands separators ("306,133"). */
 export const count = formatCount
-/** Integer without separators, as live prints sessions, active students, "{n} soalan". */
-export const plain = (value: number) => formatNumber(value, { grouping: false })
+/** Integer with thousands separators, like every other count (kept as an alias for the call sites). */
+export const plain = count
 /** Percent, 1 decimal, ".0" dropped ("82.8%", "87%", "0%"). */
 export const pct = (value: number) => formatPercent(value, { decimals: 1, dropZeroFraction: true })
 /** Percent that keeps the decimal ("100.0%": the S3 bars). */

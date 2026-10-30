@@ -38,8 +38,11 @@ export const NOTE_TYPE_FILTERS = {
   cheat_sheet: 'CHEAT_SHEET',
 } as const
 
-export const NOTE_GRADES = ['DARJAH_1', 'DARJAH_2', 'DARJAH_3', 'DARJAH_4', 'DARJAH_5', 'DARJAH_6'] as const
+/** Stored grades: Darjah values stay readable (existing and migrated rows); new writes accept NOTE_WRITE_GRADES only (secondary-only, 2026-10-29). */
+export const NOTE_GRADES = ['DARJAH_1', 'DARJAH_2', 'DARJAH_3', 'DARJAH_4', 'DARJAH_5', 'DARJAH_6', 'TINGKATAN_4', 'TINGKATAN_5'] as const
+export const NOTE_WRITE_GRADES = ['TINGKATAN_4', 'TINGKATAN_5'] as const
 export const NoteGradeSchema = z.enum(NOTE_GRADES).meta({ id: 'NoteGrade' })
+export const NoteWriteGradeSchema = z.enum(NOTE_WRITE_GRADES).meta({ id: 'NoteWriteGrade' })
 
 export const NOTE_PAGE_SIZE = 20
 export const NOTE_SUMMARY_MAX = 1000
@@ -51,8 +54,8 @@ const noteItemShape = {
   subject: NoteSubjectSchema,
   subjectLabel: z.string(),
   noteType: NoteStoredTypeSchema,
-  grade: z.string().min(1).meta({ description: 'Stored `DARJAH_n`.' }),
-  gradeLabel: z.string().meta({ description: '"Darjah n".' }),
+  grade: z.string().min(1).meta({ description: 'Stored `DARJAH_n` (legacy) or `TINGKATAN_4` / `TINGKATAN_5`.' }),
+  gradeLabel: z.string().meta({ description: '"Darjah n" or "Tingkatan n".' }),
   isPublished: z.boolean(),
   views: counter(),
   downloads: counter(),
@@ -87,7 +90,7 @@ const noteBodyShape = {
   content: z.string().trim().min(1).max(ARTICLE_CONTENT_MAX).meta({ description: 'Rich text HTML; sanitised on write.' }),
   subject: NoteSubjectSchema,
   noteType: NoteFormTypeSchema,
-  grade: NoteGradeSchema,
+  grade: NoteWriteGradeSchema,
   isPublished: z.boolean().optional().meta({ description: 'Default false on create.' }),
 }
 

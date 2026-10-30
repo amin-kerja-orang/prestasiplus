@@ -7,6 +7,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { isAlesaAiOn } from '@/app/features'
 import { DsLoadError, DsPage } from '@/ds'
 
 import { fetchKirkpatrickResults } from '../api'
@@ -31,6 +32,8 @@ const props = withDefaults(defineProps<{ basePath?: string }>(), {
   basePath: KIRKPATRICK_ADMIN_BASE,
 })
 
+// The ALESA panel is hidden unless VITE_ALESA_AI=on (D73).
+const alesaOn = isAlesaAiOn()
 const route = useRoute()
 const paths = computed(() => kirkpatrickPaths(props.basePath))
 
@@ -67,7 +70,7 @@ const { data, error, loading, reload } = useKirkpatrickPage(
       <ResultsTrend :trend="data.trend" />
       <ResultsSchools :rows="data.schools" :school-path="paths.monitoringSchool" />
       <ResultsPredictions :rows="data.predictions" :school-path="paths.monitoringSchool" />
-      <ResultsAlesa :alesa="data.alesa" />
+      <ResultsAlesa v-if="alesaOn" :alesa="data.alesa" />
       <ResultsRoi :roi="data.roi" />
       <ResultsInsights :insights="data.insights" />
     </template>

@@ -29,9 +29,8 @@ export const DIFFICULTY_ROWS: readonly { level: number; label: string; color: st
 /** FR-M05-27: the bar of row `i` grows after 150, 300, 450, 600, 750 ms. */
 export const DIFFICULTY_BAR_DELAY_MS = 150
 
-/** FR-M05-25: the three level groups, by `DashboardLevelPill.stage`. */
+/** FR-M05-25: the secondary level groups, by `DashboardLevelPill.stage` (v2: no primary group). */
 export const LEVEL_GROUPS = [
-  { stage: 'primary', emoji: '🏫', label: 'Sekolah Rendah (KSSR)' },
   { stage: 'lower_secondary', emoji: '🎒', label: 'Sekolah Menengah Rendah (KSSM)' },
   { stage: 'upper_secondary', emoji: '🎓', label: 'Sekolah Menengah Atas (KSSM)' },
 ] as const

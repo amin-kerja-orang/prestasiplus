@@ -34,7 +34,7 @@ describe('S14 Cabaran Kilat (FR-M16-76..78)', () => {
   it('shows the picker without ?darjah and fetches nothing', async () => {
     wrapper = await mountAt(SoloCabaranKilatPage, '/permainan/cabaran-kilat')
     expect(wrapper.text()).toContain('Cabaran Kilat')
-    expect(wrapper.text()).toContain('Pilih darjah / tingkatan kamu:')
+    expect(wrapper.text()).toContain('Pilih tingkatan kamu:')
     expect(fetchSoloGame).not.toHaveBeenCalled()
   })
 

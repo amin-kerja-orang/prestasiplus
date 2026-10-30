@@ -34,8 +34,8 @@ const FORBIDDEN_COPY =
   'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.'
 const NOT_FOUND_COPY =
   'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?'
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
 
 test.use({ mockInit: { latency: 0 } })
@@ -207,7 +207,7 @@ test.describe('shell, header', MODULE, () => {
       await open(page, gotoApp)
       await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Sekolah')
       await expect(page.getByTestId('shell-user-subtitle')).toHaveText('SMK Demo Seri Putra')
-      await expectTabTitle(page, 'Dashboard Sekolah - PRESTASIPLUS')
+      await expectTabTitle(page, 'Dashboard Sekolah | PRESTASIPLUS')
       expect(
         decodeURIComponent(
           (await page.getByTestId('shell-user-header-avatar').getAttribute('src')) ?? '',
@@ -653,7 +653,7 @@ test.describe('responsive and text size', MODULE, () => {
 })
 
 test.describe('navigation', MODULE, () => {
-  test('E2E-M27-25 sidebar or drawer "Dashboard" opens S0; the M17 "← Dashboard" opens S0', async ({
+  test('E2E-M27-25 sidebar or drawer "Dashboard" opens S0; the M17 board has no "← Dashboard" button', async ({
     page,
     gotoApp,
   }) => {
@@ -670,9 +670,11 @@ test.describe('navigation', MODULE, () => {
     await expect(page.getByTestId('sd-banner')).toBeVisible()
 
     await gotoApp('/admin-sekolah/command-center')
-    await page.getByTestId('cc-s2-back').click()
-    await expect(page).toHaveURL(new RegExp(`${PAGE}$`))
-    await expect(page.getByTestId('sd-banner')).toBeVisible()
+    // DV-M17-54 (user decision 2026-10-29): the header buttons are gone; the board sits inside the staff shell
+    await expect(page.getByTestId('cc-s2-alias')).toBeVisible()
+    await expect(page.getByTestId('cc-s2-back')).toHaveCount(0)
+    await expect(page.getByTestId('cc-s2-daily')).toHaveCount(0)
+    await expect(page.getByTestId('cc-brand-bar')).toHaveCount(0)
   })
 })
 

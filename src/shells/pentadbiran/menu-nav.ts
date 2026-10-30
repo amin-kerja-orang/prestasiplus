@@ -1,10 +1,10 @@
 /**
- * Pentadbiran menu as `UNavigationMenu` items. Two levels at most and one line per row: each group
- * is a quiet, non-clickable section label followed by its screens (icon + label). A second-level
- * heading (Kirkpatrick) is folded into ONE row that opens its first page; the other pages are
- * in-page tabs (`SECTION_TABS`). Pure data so it can be unit-tested and reused by the Ctrl+K palette.
+ * Pentadbiran menu as `DsAdminShell` data. Each group is a quiet label followed by its screens
+ * (icon + label, one line per row). A second-level heading (Kirkpatrick) is folded into ONE row that
+ * opens its first page; the other pages are in-page tabs (`sectionTabs`). Pure data (no class names)
+ * so it can be unit-tested and reused by the Ctrl+K palette.
  */
-import type { NavigationMenuItem } from '@nuxt/ui'
+import type { DsShellNavGroup, DsShellNavLink, DsShellSearchGroup } from '@/ds'
 
 import type { PentadbiranGroup, PentadbiranItem } from './menu'
 import { ITEM_ICON } from './menu-icons'
@@ -15,40 +15,41 @@ export interface NavBuildOptions {
   activeSub?: string | undefined
 }
 
-function row(
+function link(
   item: PentadbiranItem,
   group: PentadbiranGroup,
   opts: NavBuildOptions,
   label = item.label,
   active = item.id === opts.activeId,
-): NavigationMenuItem {
+): DsShellNavLink {
   return {
+    kind: 'link',
+    id: item.id,
     label,
     icon: ITEM_ICON[item.id] ?? `i-ph-${group.icon}`,
     to: item.to,
     active,
-    value: item.id,
   }
 }
 
-/** Groups as label + rows (array of arrays, the `UNavigationMenu` shape). */
-export function buildNavItems(
+/** Groups with their rows, in menu order. */
+export function buildNavGroups(
   groups: readonly PentadbiranGroup[],
   opts: NavBuildOptions,
-): NavigationMenuItem[][] {
+): DsShellNavGroup[] {
   return groups.map((group) => {
-    const rows: NavigationMenuItem[] = [{ label: group.label, type: 'label', value: group.key }]
+    const rows: DsShellNavLink[] = []
     const folded = new Set<string>()
     for (const item of group.items) {
       if (!item.sub) {
-        rows.push(row(item, group, opts))
+        rows.push(link(item, group, opts))
         continue
       }
       if (folded.has(item.sub)) continue
       folded.add(item.sub)
-      rows.push(row(item, group, opts, item.sub, opts.activeSub === item.sub))
+      rows.push(link(item, group, opts, item.sub, opts.activeSub === item.sub))
     }
-    return rows
+    return { key: group.key, label: group.label, rows }
   })
 }
 
@@ -64,7 +65,7 @@ export function sectionTabs(
 }
 
 /** Flat entries for the command palette: every visible screen, grouped. */
-export function buildSearchGroups(groups: readonly PentadbiranGroup[]) {
+export function buildSearchGroups(groups: readonly PentadbiranGroup[]): DsShellSearchGroup[] {
   return groups.map((g) => ({
     id: g.key,
     label: g.label,

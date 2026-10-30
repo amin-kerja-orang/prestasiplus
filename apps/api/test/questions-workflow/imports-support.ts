@@ -44,6 +44,6 @@ export function fixture(name: string, ids: { subject: string; level: string }): 
 /** A subject and a level that exist in the seeded curriculum. */
 export async function curriculumIds(t: WorkflowTestApp): Promise<{ subject: string; level: string }> {
   const [s] = await t.db.query<{ id: string }>('select id::text from subjects order by id limit 1')
-  const [l] = await t.db.query<{ id: string }>('select id::text from education_levels order by id limit 1')
+  const [l] = await t.db.query<{ id: string }>("select id::text from education_levels where stage <> 'primary' and is_active order by sort_order, id limit 1")
   return { subject: s!.id, level: l!.id }
 }

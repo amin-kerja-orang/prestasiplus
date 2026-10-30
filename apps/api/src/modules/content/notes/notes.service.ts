@@ -26,7 +26,7 @@ const NOT_FOUND = CONTENT_MESSAGES.noteNotFound
 type CreateBody = z.infer<typeof AdminNoteCreateRequestSchema>
 type UpdateBody = z.infer<typeof AdminNoteUpdateRequestSchema>
 
-const gradeLabel = (g: string): string => g.replace(/^DARJAH_(\d+)$/, 'Darjah $1')
+const gradeLabel = (g: string): string => g.replace(/^DARJAH_(\d+)$/, 'Darjah $1').replace(/^TINGKATAN_(\d+)$/, 'Tingkatan $1')
 
 function itemOf(n: NoteRow) {
   return {

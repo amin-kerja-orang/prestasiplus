@@ -1,6 +1,7 @@
 import { KIRKPATRICK_PDF } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
+import { answersSentence } from '../../src/modules/reports/kirkpatrick/services/levels.service'
 import { TextPdfAdapter } from '../../src/modules/reports/kirkpatrick/adapters/text-pdf.adapter'
 import { bandsOf, monthOf, monthsOf, populationOf, schoolsOf, studentsOf, subjectsOf, totalsOf } from '../../src/modules/reports/kirkpatrick/domain/aggregate'
 import {
@@ -196,5 +197,16 @@ describe('PDF writer (PdfPort adapter)', () => {
     const text = Buffer.from(new TextPdfAdapter().render('T', many)).toString('latin1')
     expect(text).toContain('Baris 0')
     expect(text).not.toContain('Baris 199')
+  })
+})
+
+describe('answersSentence (Perbandingan summary)', () => {
+  it('uses a percentage below 1000 %, and the absolute change with a thousands separator from 1000 % up', () => {
+    expect(answersSentence(65, 10)).toBe('Jumlah jawapan meningkat 650%.')
+    expect(answersSentence(13965, 3)).toBe('Jumlah jawapan bertambah 13,965.')
+    expect(answersSentence(990, 100)).toBe('Jumlah jawapan meningkat 990%.')
+    expect(answersSentence(1000, 100)).toBe('Jumlah jawapan bertambah 1,000.')
+    expect(answersSentence(0, 10)).toBeNull()
+    expect(answersSentence(5, 0)).toBeNull()
   })
 })

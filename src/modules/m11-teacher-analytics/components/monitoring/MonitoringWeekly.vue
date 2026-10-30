@@ -9,7 +9,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, h, ref } from 'vue'
 
-import { DsDataTable } from '@/ds'
+import { DsBadge, DsDataTable, DsPanel } from '@/ds'
 
 import type { WeeklyCellClass, WeeklyRow } from '../../api/types'
 import { count, type UiColor } from './monitoring-format'
@@ -45,10 +45,15 @@ const columns = computed<TableColumn<Row>[]>(() => [
     header: () =>
       h(
         'span',
-        { title: `${w.from} - ${w.to}`, 'data-testid': 'mon-week-head' },
+        {
+          title: `${w.from} - ${w.to}`,
+          class: 'block text-center',
+          'data-testid': 'mon-week-head',
+        },
         `M${String(w.k)}`,
       ),
     accessorFn: (r) => cellOf(r, w.k)?.count ?? 0,
+    meta: { width: 'xs' },
   })),
   { id: 'trend', header: 'Trend', accessorKey: 'trend' },
   { id: 'best', header: 'Best', accessorFn: (r) => r.best?.k ?? 0 },
@@ -57,123 +62,128 @@ const columns = computed<TableColumn<Row>[]>(() => [
 
 <template>
   <section id="section-mingguan" class="flex flex-col gap-6" data-testid="mon-weekly">
-    <div class="flex flex-col gap-1">
-      <h2 class="flex items-center gap-2 text-heading text-highlighted">
-        <UIcon name="i-ph-calendar-dots" class="size-6 text-primary-t" />Tracking Mingguan
-      </h2>
-      <p class="text-body text-muted">
-        Jumlah soalan dijawab mengikut minggu — warna menunjukkan trend naik/turun
-      </p>
-    </div>
-
-    <DsDataTable
-      v-model:page-size="pageSize"
-      variant="bare"
-      density="tight"
-      :page-size-options="PAGE_SIZES"
-      :data="data"
-      :columns="columns"
-      caption="Tracking mingguan"
+    <DsPanel
+      title="Tracking Mingguan"
+      description="Jumlah soalan dijawab mengikut minggu — warna menunjukkan trend naik/turun"
+      icon="calendar-dots"
+      accent="action"
     >
-      <template #school-cell="{ row }">
-        <div class="flex max-w-56 min-w-36 flex-col gap-1" data-testid="mon-weekly-row">
-          <RouterLink
-            :to="paths.school(row.original.schoolId)"
-            :title="row.original.name"
-            class="line-clamp-2 text-label text-primary-t"
-            >{{ row.original.name }}</RouterLink
+      <DsDataTable
+        v-model:page-size="pageSize"
+        variant="bare"
+        density="tight"
+        :page-size-options="PAGE_SIZES"
+        :data="data"
+        :columns="columns"
+        caption="Tracking mingguan"
+      >
+        <template #school-cell="{ row }">
+          <div
+            class="flex max-w-64 min-w-48 flex-col gap-1 whitespace-normal"
+            data-testid="mon-weekly-row"
           >
-          <span class="text-body text-muted">{{ row.original.code ?? '-' }}</span>
-        </div>
-      </template>
-      <template v-for="w in weeks" :key="w.k" #[`w${String(w.k)}-cell`]="{ row }">
-        <UBadge
-          v-if="cellOf(row.original, w.k)"
-          :color="CELL[cellOf(row.original, w.k)!.cls]"
-          :variant="cellOf(row.original, w.k)!.best ? 'solid' : 'subtle'"
-          :icon="cellOf(row.original, w.k)!.best ? 'i-ph-star-fill' : undefined"
-          size="lg"
-          class="tabular min-w-11 justify-center"
-          :data-cls="cellOf(row.original, w.k)!.cls"
-          :data-best="cellOf(row.original, w.k)!.best ? 'true' : 'false'"
-          data-testid="mon-weekly-cell"
-          :label="
-            cellOf(row.original, w.k)!.count === 0 ? '-' : count(cellOf(row.original, w.k)!.count)
-          "
-        />
-      </template>
-      <template #trend-cell="{ row }">
-        <span
-          :title="trendTitle(row.original.trend)"
-          class="inline-flex"
-          data-testid="mon-weekly-trend-icon"
-        >
-          <UIcon
-            v-if="row.original.trend === 'up'"
-            name="i-ph-arrow-up"
-            class="size-5 text-success"
+            <RouterLink
+              :to="paths.school(row.original.schoolId)"
+              :title="row.original.name"
+              class="line-clamp-2 text-label text-primary-t"
+              >{{ row.original.name }}</RouterLink
+            >
+            <span class="text-body text-muted">{{ row.original.code ?? '-' }}</span>
+          </div>
+        </template>
+        <template v-for="w in weeks" :key="w.k" #[`w${String(w.k)}-cell`]="{ row }">
+          <DsBadge
+            v-if="cellOf(row.original, w.k)"
+            :tone="CELL[cellOf(row.original, w.k)!.cls]"
+            :emphasis="cellOf(row.original, w.k)!.best ? 'strong' : 'soft'"
+            :icon="cellOf(row.original, w.k)!.best ? 'star' : undefined"
+            class="tabular min-w-10 justify-center"
+            :data-cls="cellOf(row.original, w.k)!.cls"
+            :data-best="cellOf(row.original, w.k)!.best ? 'true' : 'false'"
+            data-testid="mon-weekly-cell"
+            :label="
+              cellOf(row.original, w.k)!.count === 0 ? '-' : count(cellOf(row.original, w.k)!.count)
+            "
           />
-          <UIcon
-            v-else-if="row.original.trend === 'down'"
-            name="i-ph-arrow-down"
-            class="size-5 text-error"
-          />
-          <UIcon v-else name="i-ph-minus" class="size-5 text-muted" />
-        </span>
-      </template>
-      <template #best-cell="{ row }">
-        <span class="whitespace-nowrap" data-testid="mon-weekly-best">
-          <template v-if="row.original.best">
-            <span class="text-label text-highlighted">M{{ row.original.best.k }}</span
-            >{{ ' ' }}
-            <span class="tabular ml-1 text-body text-muted">{{
-              count(row.original.best.count)
-            }}</span>
-          </template>
-          <span v-else class="text-dimmed">-</span>
-        </span>
-      </template>
-      <template #card="{ row }">
-        <div class="flex flex-col gap-3">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex min-w-0 flex-col gap-1">
-              <RouterLink
-                :to="paths.school((row as Row).schoolId)"
-                class="line-clamp-2 text-label text-primary-t"
-                >{{ (row as Row).name }}</RouterLink
-              >
-              <span class="text-body text-muted">{{ (row as Row).code ?? '-' }}</span>
-            </div>
+        </template>
+        <template #trend-cell="{ row }">
+          <span
+            :title="trendTitle(row.original.trend)"
+            class="inline-flex"
+            data-testid="mon-weekly-trend-icon"
+          >
             <UIcon
-              v-if="(row as Row).trend === 'up'"
+              v-if="row.original.trend === 'up'"
               name="i-ph-arrow-up"
               class="size-5 text-success"
             />
             <UIcon
-              v-else-if="(row as Row).trend === 'down'"
+              v-else-if="row.original.trend === 'down'"
               name="i-ph-arrow-down"
               class="size-5 text-error"
             />
             <UIcon v-else name="i-ph-minus" class="size-5 text-muted" />
-          </div>
-          <ul class="flex flex-wrap gap-2">
-            <li v-for="w in weeks" :key="w.k" class="flex items-center gap-1 text-body text-muted">
-              M{{ w.k }}
-              <UBadge
-                v-if="cellOf(row as Row, w.k)"
-                :color="CELL[cellOf(row as Row, w.k)!.cls]"
-                :variant="cellOf(row as Row, w.k)!.best ? 'solid' : 'subtle'"
-                size="lg"
-                class="tabular"
-                :label="
-                  cellOf(row as Row, w.k)!.count === 0 ? '-' : count(cellOf(row as Row, w.k)!.count)
-                "
+          </span>
+        </template>
+        <template #best-cell="{ row }">
+          <span class="whitespace-nowrap" data-testid="mon-weekly-best">
+            <template v-if="row.original.best">
+              <span class="text-label text-highlighted">M{{ row.original.best.k }}</span
+              >{{ ' ' }}
+              <span class="tabular ml-1 text-body text-muted">{{
+                count(row.original.best.count)
+              }}</span>
+            </template>
+            <span v-else class="text-dimmed">-</span>
+          </span>
+        </template>
+        <template #card="{ row }">
+          <div class="flex flex-col gap-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 flex-col gap-1">
+                <RouterLink
+                  :to="paths.school((row as Row).schoolId)"
+                  class="line-clamp-2 text-label text-primary-t"
+                  >{{ (row as Row).name }}</RouterLink
+                >
+                <span class="text-body text-muted">{{ (row as Row).code ?? '-' }}</span>
+              </div>
+              <UIcon
+                v-if="(row as Row).trend === 'up'"
+                name="i-ph-arrow-up"
+                class="size-5 text-success"
               />
-            </li>
-          </ul>
-        </div>
-      </template>
-    </DsDataTable>
+              <UIcon
+                v-else-if="(row as Row).trend === 'down'"
+                name="i-ph-arrow-down"
+                class="size-5 text-error"
+              />
+              <UIcon v-else name="i-ph-minus" class="size-5 text-muted" />
+            </div>
+            <ul class="flex flex-wrap gap-2">
+              <li
+                v-for="w in weeks"
+                :key="w.k"
+                class="flex items-center gap-1 text-body text-muted"
+              >
+                M{{ w.k }}
+                <DsBadge
+                  v-if="cellOf(row as Row, w.k)"
+                  :tone="CELL[cellOf(row as Row, w.k)!.cls]"
+                  :emphasis="cellOf(row as Row, w.k)!.best ? 'strong' : 'soft'"
+                  class="tabular"
+                  :label="
+                    cellOf(row as Row, w.k)!.count === 0
+                      ? '-'
+                      : count(cellOf(row as Row, w.k)!.count)
+                  "
+                />
+              </li>
+            </ul>
+          </div>
+        </template>
+      </DsDataTable>
+    </DsPanel>
 
     <p class="flex flex-wrap gap-x-4 gap-y-1 text-body text-muted" data-testid="mon-week-footer">
       <span v-for="w in weeks" :key="w.k"

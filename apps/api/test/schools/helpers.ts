@@ -84,12 +84,12 @@ export async function bootSchoolsApp(opts: BootOptions = {}): Promise<SchoolsTes
 }
 
 /** Adds `n` active SK schools in Perak (no JPN/PPD link) named "SK Contoh 001"..., codes "CTH001"... */
-export async function insertFillerSchools(db: TestDatabase, n: number): Promise<void> {
+export async function insertFillerSchools(db: TestDatabase, n: number, type = 'SK'): Promise<void> {
   await db.query(
     `insert into schools (name, code, type, state, district, city, is_active)
-     select 'SK Contoh ' || lpad(i::text, 3, '0'), 'CTH' || lpad(i::text, 3, '0'), 'SK', 'Perak', 'PPD KINTA', 'Ipoh', (i % 10 <> 0)
+     select 'SK Contoh ' || lpad(i::text, 3, '0'), 'CTH' || lpad(i::text, 3, '0'), $2::text, 'Perak', 'PPD KINTA', 'Ipoh', (i % 10 <> 0)
        from generate_series(1, $1::int) as i`,
-    [n],
+    [n, type],
   )
 }
 

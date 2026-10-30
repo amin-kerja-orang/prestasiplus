@@ -3,8 +3,8 @@
  * and no I/O, so the scoring is unit-tested without mounting a page.
  */
 
-/** Darjah choices the picker offers (DV-M16-19: the list stays 1-4, `?darjah=5…11` also works). */
-export const PICKER_DARJAH = [1, 2, 3, 4] as const
+/** Grade choices the picker offers (v2: Tingkatan 1-5 = `?darjah=7…11`; Darjah is hidden). */
+export const PICKER_DARJAH = [7, 8, 9, 10, 11] as const
 
 /** `?darjah=` accepted by the games: an integer 1-11, else `null` (the picker shows). */
 export function parseDarjah(raw: unknown): number | null {

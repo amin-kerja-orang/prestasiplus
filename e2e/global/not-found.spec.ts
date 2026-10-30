@@ -7,7 +7,7 @@ import { expect, gotoApp, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, TAG } from '../support'
 import type { Page } from '@playwright/test'
 
-const TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const MESSAGE =
   'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?'
 

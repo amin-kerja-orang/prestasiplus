@@ -4,6 +4,7 @@ import {
   CIKGU_BULK_IDS_TOO_MANY,
   CIKGU_MESSAGE_MAX,
   CIKGU_PAGE_SIZE,
+  CIKGU_VALIDATION_MESSAGES,
   CIKGU_PBD_CSV_HEADER,
   CIKGU_RPH_FOLLOW_UP,
   CikguRphCreateRequestSchema,
@@ -347,6 +348,8 @@ export class CikguService {
       throw ApiError.of('VALIDATION_ERROR', { fields: fields as Record<string, string>, message: cikguSummarizeFieldErrors(fields) })
     }
     const v = CikguRphCreateRequestSchema.parse(input)
+    // Secondary-only (2026-10-29): a new RPH cannot be filed for Darjah 1 to 6 (D1..D6 stay in the contract enum).
+    if (v.level.startsWith('D')) throw ApiError.of('VALIDATION_ERROR', { fields: { level: CIKGU_VALIDATION_MESSAGES.invalid }, message: CIKGU_VALIDATION_MESSAGES.invalid })
     if (typeof v.lessonDate === 'string' && v.lessonDate !== '' && Number(v.lessonDate.slice(0, 4)) < 1) {
       throw ApiError.of('VALIDATION_ERROR', { fields: { lessonDate: CIKGU_DATE_INVALID }, message: CIKGU_DATE_INVALID })
     }

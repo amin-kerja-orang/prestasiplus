@@ -13,6 +13,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { expect, gotoApp as gotoAppOn, test } from '../fixtures/test'
+import { ALESA_ON } from '../support/alesa'
 import {
   expectNoHorizontalScroll,
   expectTabTitle,
@@ -26,8 +27,8 @@ const MODULE = { tag: [moduleTag(17)] }
 const ADMIN = 'admin@demo.test'
 const SCHOOL_ADMIN = 'adminsekolah@demo.test'
 const TEACHER = 'guru@demo.test'
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const CC = '/admin/command-center'
 const SA = '/admin-sekolah/command-center'
 const LIVE = 'GET /api/admin/command-center/live-data'
@@ -144,28 +145,22 @@ test.describe('S2 admin', MODULE, () => {
     await loginAs(ADMIN)
   })
 
-  test('E2E-M17-23 / 26 header, links, LIVE pill, MYT clock, footer, no shell', async ({
+  test('E2E-M17-23 / 26 header (no LIVE pill, clock or buttons), footer, no shell', async ({
     page,
     gotoApp,
-    mock,
   }) => {
     await openBoard(page, gotoApp, CC)
-    await expectTabTitle(page, 'PRESTASIPLUS COMMAND CENTER')
+    await expectTabTitle(page, 'COMMAND CENTER | PRESTASIPLUS')
     await expect(tid(page, 'shell-admin-sidebar')).toHaveCount(0)
     await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
-    await expect(tid(page, 'cc-s2-back')).toHaveText('← Dashboard')
-    await expect(tid(page, 'cc-s2-back')).toHaveAttribute('href', '/admin')
-    await expect(tid(page, 'cc-s2-daily')).toHaveText('📊 Aktiviti Harian')
-    await expect(tid(page, 'cc-s2-daily')).toHaveAttribute('href', `${CC}/daily-activity`)
-    await expect(tid(page, 'cc-live-badge')).toHaveText('LIVE')
-    await expectTouchTarget(tid(page, 'cc-s2-back'))
-    await expectTouchTarget(tid(page, 'cc-s2-daily'))
-    await expect(tid(page, 'cc-clock')).toHaveText(/^15:40:\d\d$/)
-    const first = await tid(page, 'cc-clock').innerText()
-    await mock.advanceTime(5000)
-    await expect(tid(page, 'cc-clock')).not.toHaveText(first)
+    // no LIVE pill, MYT clock or header buttons (owner request 2026-10-29)
+    for (const id of ['cc-s2-back', 'cc-s2-daily', 'cc-live-badge', 'cc-clock']) {
+      await expect(tid(page, id)).toHaveCount(0)
+    }
     await expect(tid(page, 'cc-footer')).toHaveText(
-      'Powered by ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
+      ALESA_ON
+        ? 'Powered by ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat'
+        : 'PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
     )
   })
 
@@ -183,11 +178,12 @@ test.describe('S2 admin', MODULE, () => {
       el.__vue_app__.config.globalProperties.$router.push(path)
     }, CC)
     await expect(tid(page, 'cc-kpi-value')).toHaveText(['--', '--', '--', '--'])
-    await expect(tid(page, 'cc-alesa')).toHaveText('Memuatkan wawasan...')
+    if (ALESA_ON) await expect(tid(page, 'cc-alesa')).toHaveText('Memuatkan wawasan...')
     await mock.clearLatency(LIVE)
     await mock.advanceTime(61_000)
     await expect(tid(page, 'cc-kpi-value').nth(3)).toHaveText('82.9%')
-    await expect(tid(page, 'cc-alesa')).not.toHaveText('Memuatkan wawasan...')
+    if (ALESA_ON) await expect(tid(page, 'cc-alesa')).not.toHaveText('Memuatkan wawasan...')
+    else await expect(tid(page, 'cc-panel-alesa')).toHaveCount(0)
   })
 
   test('E2E-M17-27 / 29 / 30 counters, Top Sekolah and Top Pelajar with links', async ({
@@ -263,10 +259,14 @@ test.describe('S2 admin', MODULE, () => {
     expect(parseFloat(bars[0] ?? '0')).toBeCloseTo(92, 0)
     expect(parseFloat(bars[1] ?? '0')).toBeCloseTo(82.9, 0)
     expect(parseFloat(bars[3] ?? '0')).toBeCloseTo(57.6, 0)
-    await expect(tid(page, 'cc-alesa')).toHaveText(
-      '"Platform menunjukkan penurunan 67% minggu ini. 3.6% pelajar terlibat aktif. ' +
-        'Ketepatan purata 82.9% dengan 9 sekolah aktif. GPS keseluruhan: 2.88."',
-    )
+    if (ALESA_ON) {
+      await expect(tid(page, 'cc-alesa')).toHaveText(
+        '"Platform menunjukkan penurunan 67% minggu ini. 3.6% pelajar terlibat aktif. ' +
+          'Ketepatan purata 82.9% dengan 9 sekolah aktif. GPS keseluruhan: 2.88."',
+      )
+    } else {
+      await expect(tid(page, 'cc-panel-alesa')).toHaveCount(0)
+    }
     await expect(tid(page, 'cc-today-bar')).toHaveText('340 soalan')
     await expect(tid(page, 'cc-week')).toHaveText('Minggu ini: 2,508')
     await expect(tid(page, 'cc-change')).toHaveText('▼ -67% vs minggu lepas')
@@ -347,8 +347,6 @@ test.describe('S2 admin', MODULE, () => {
       for (const b of bottoms) expect(b).toBeLessThanOrEqual(top + 1)
     }
     expect(await minFontSize(page)).toBeGreaterThanOrEqual(12)
-    await expect(tid(page, 'cc-clock')).toBeInViewport()
-    await expect(tid(page, 'cc-live-badge')).toBeInViewport()
     // v2 (D-RS-2: the v1 standalone kiosk layout is dropped): at every width the page scrolls and no panel
     // scrolls inside itself, so every panel is reachable and nothing is clipped.
     const clipped = await page.evaluate(() =>
@@ -388,16 +386,17 @@ test.describe('S3 admin', MODULE, () => {
     gotoApp,
   }) => {
     await open(page, gotoApp, `${CC}/daily-activity?period=week`)
-    await expectTabTitle(page, 'AKTIVITI PLATFORM — PRESTASIPLUS')
+    await expectTabTitle(page, 'AKTIVITI PLATFORM | PRESTASIPLUS')
     await expect(tid(page, 'shell-admin-sidebar')).toHaveCount(0)
     // v2: the shell title is "PrestasiPlus Command Center"; the live "AKTIVITI PLATFORM" is the subtitle in normal case.
     await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
     await expect(tid(page, 'cc-s3-subtitle')).toHaveText('Aktiviti Platform')
-    await expect(tid(page, 'cc-s3-back')).toHaveText('◀ Command Center')
-    await expect(tid(page, 'cc-s3-back')).toHaveAttribute('href', CC)
+    // no LIVE pill, MYT clock or back button (owner request 2026-10-29)
+    await expect(tid(page, 'cc-s3-back')).toHaveCount(0)
     // S8 is not built: the link is hidden rather than dead (DV-M17-45).
     await expect(tid(page, 'cc-s3-report')).toHaveCount(0)
-    await expect(tid(page, 'cc-clock')).toHaveText(/^15:40:\d\d$/)
+    await expect(tid(page, 'cc-clock')).toHaveCount(0)
+    await expect(tid(page, 'cc-live-badge')).toHaveCount(0)
     await expect(tid(page, 'cc-tab')).toHaveText(['Hari Ini', 'Minggu Ini', 'Bulan Ini'])
     await expect(page.locator('[data-testid=cc-tab][data-period=today]')).toHaveAttribute(
       'data-active',
@@ -539,7 +538,6 @@ test.describe('S3 admin', MODULE, () => {
     const cards = await columnsOf(tid(page, 'cc-pulse-label').locator('xpath=..'))
     expect(cards).toBe(w >= 1280 ? 6 : w >= 768 ? 3 : 2)
     for (const t of await tid(page, 'cc-tab').all()) await expectTouchTarget(t)
-    await expectTouchTarget(tid(page, 'cc-s3-back'))
     await page.locator('[data-testid=cc-tab][data-period=month]').click()
     await tid(page, 'cc-school-row').first().click()
     await expect(tid(page, 'cc-drill')).toBeVisible()
@@ -557,7 +555,7 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
     gotoApp,
   }) => {
     await openBoard(page, gotoApp, SA)
-    await expectTabTitle(page, 'PRESTASIPLUS COMMAND CENTER')
+    await expectTabTitle(page, 'COMMAND CENTER | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-sidebar')).toHaveCount(0)
     await expect(tid(page, 'cc-s2-subtitle')).toHaveText('Pemantauan langsung sekolah anda')
     await expect(tid(page, 'cc-kpi-sub').nth(3)).toHaveText('sekolah anda')
@@ -568,7 +566,7 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
     const values = await tid(page, 'cc-kpi-value').allInnerTexts()
     expect(values[1]).not.toBe('3,152')
     expect(values[2]).not.toBe('477,743')
-    await expect(tid(page, 'cc-alesa')).toContainText('Sekolah anda menunjukkan')
+    if (ALESA_ON) await expect(tid(page, 'cc-alesa')).toContainText('Sekolah anda menunjukkan')
     await expect(page.getByText('Platform menunjukkan')).toHaveCount(0)
   })
 
@@ -644,12 +642,11 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
   )
 
   test(
-    'E2E-M17-121 / 126 header links, feed school link and pupil link stay inside the alias prefix',
+    'E2E-M17-121 / 126 no header buttons, feed school link and pupil link stay inside the alias prefix',
     provisional('INFERRED / PROPOSED: alias drill paths and header targets'),
     async ({ page, gotoApp }) => {
       await openBoard(page, gotoApp, SA)
-      await expect(tid(page, 'cc-s2-back')).toHaveAttribute('href', '/admin-sekolah')
-      await expect(tid(page, 'cc-s2-daily')).toHaveAttribute('href', `${SA}/daily-activity`)
+      for (const id of ['cc-s2-back', 'cc-s2-daily']) await expect(tid(page, id)).toHaveCount(0)
       const link = tid(page, 'cc-feed-school').first()
       await expect(link).toHaveAttribute('href', /^\/admin-sekolah\/command-center\/school\/\d+$/)
       await expect(tid(page, 'cc-top-pupil-link').first()).toHaveAttribute(
@@ -687,10 +684,10 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
     async ({ page, gotoApp }) => {
       await gotoApp(`${SA}/daily-activity`)
       await expect(tid(page, 'cc-pulse-value').first()).not.toHaveText('-')
-      await expectTabTitle(page, 'AKTIVITI SEKOLAH — PRESTASIPLUS')
+      await expectTabTitle(page, 'AKTIVITI SEKOLAH | PRESTASIPLUS')
       await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
       await expect(tid(page, 'cc-s3-subtitle')).toHaveText('Aktiviti Sekolah')
-      await expect(tid(page, 'cc-s3-back')).toHaveAttribute('href', SA)
+      await expect(tid(page, 'cc-s3-back')).toHaveCount(0)
       await expect(tid(page, 'cc-s3-report')).toHaveCount(0)
       await expect(tid(page, 'cc-pulse-sub').nth(0)).toHaveText('daripada 1')
       await expect(tid(page, 'cc-panel-schools')).toHaveCount(0)
@@ -703,19 +700,6 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
       expect(body).not.toContain('AKTIVITI PLATFORM')
       await expectNoHorizontalScroll(page)
       expect(await minFontSize(page)).toBeGreaterThanOrEqual(12)
-    },
-  )
-
-  test(
-    'E2E-M17-126 the S2 link "Aktiviti Harian" opens the S3 alias and "◀ Command Center" returns',
-    provisional('INFERRED / PROPOSED: S3 alias path and header targets'),
-    async ({ page, gotoApp }) => {
-      await openBoard(page, gotoApp, SA)
-      await tid(page, 'cc-s2-daily').click()
-      await expect(page).toHaveURL(new RegExp(`${SA}/daily-activity$`))
-      await expect(tid(page, 'cc-s3-subtitle')).toHaveText('Aktiviti Sekolah')
-      await tid(page, 'cc-s3-back').click()
-      await expect(page).toHaveURL(new RegExp(`${SA}$`))
     },
   )
 })

@@ -121,6 +121,16 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases of each module.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+
 describe('UserShell: menu per role (hidden, not disabled)', () => {
   it('student: live murid items, no admin/teacher items, account links', async () => {
     const w = await open('/dashboard')

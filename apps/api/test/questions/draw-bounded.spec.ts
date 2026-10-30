@@ -57,18 +57,20 @@ beforeAll(async () => {
   dLevel = (
     await t.db.query<{ id: string }>(
       `select l.id::text id from education_levels l join subject_levels sl on sl.education_level_id = l.id
-        where sl.subject_id = $1 and l.code in ('D1','D2','D3','D4') order by l.sort_order, l.id limit 1`,
-      [w.tag.subjectId],
+        where sl.subject_id = $1 and l.code in ('T4','T5') and l.id <> $2::bigint and exists (select 1 from chapters c where c.subject_id = sl.subject_id and c.education_level_id = l.id and c.is_active) order by l.sort_order, l.id limit 1`,
+      [w.tag.subjectId, w.tag.levelId],
     )
   )[0]?.id as string
   chapterId = (await t.db.query<{ id: string }>(`select id::text id from chapters where subject_id = $1 and education_level_id = $2 and is_active order by id limit 1`, [w.tag.subjectId, dLevel]))[0]?.id as string
   expect(dLevel && chapterId).toBeTruthy()
   s1 = await client(t, STUDENT_1)
+  // Secondary-only: the fixture level is a real Tingkatan (the Darjah levels are hidden), which the seed already fills; switch those rows off so the bulk rows are the only eligible ones.
+  await t.db.query(`update questions set is_active = false where id in (select question_id from question_versions where subject_id = $1 and education_level_id = $2)`, [w.tag.subjectId, dLevel])
   repo = t.get(QuestionsRepository)
   primary = await bulkMcqs(t.db, { count: SUBJECT_BIG + 300, subjectId: w.tag.subjectId, levelId: dLevel, chapterId, heldEvery: 20, draftEvery: 25, label: 'QL-P' })
   form4 = await bulkMcqs(t.db, { count: POOLED, subjectId: w.tag.subjectId, levelId: w.tag.levelId, poolEvery: 2, heldEvery: 50, label: 'QL-F' })
   otherLevel = (
-    await t.db.query<{ id: string }>(`select education_level_id::text id from subject_levels where subject_id = $1 and education_level_id not in ($2, $3) order by education_level_id limit 1`, [w.tag.subjectId, dLevel, w.tag.levelId])
+    await t.db.query<{ id: string }>(`select sl.education_level_id::text id from subject_levels sl join education_levels l on l.id = sl.education_level_id where sl.subject_id = $1 and l.stage <> 'primary' and l.is_active and sl.education_level_id not in ($2, $3) order by l.sort_order limit 1`, [w.tag.subjectId, dLevel, w.tag.levelId])
   )[0]?.id as string
   expect(otherLevel).toBeTruthy()
   // Five-option questions keyed E (the loader admits 3 to 8 options): never battle- or games-servable.

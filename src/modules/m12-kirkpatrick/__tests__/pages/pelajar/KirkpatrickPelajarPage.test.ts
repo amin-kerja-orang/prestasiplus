@@ -115,6 +115,16 @@ afterEach(() => {
   wrapper = undefined
 })
 
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases below.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+
 describe('S8 header (AC-M12-30.1)', () => {
   it('shows the name, school and form, and the back link to Tahap 3', async () => {
     const w = await open()
@@ -318,5 +328,21 @@ describe('S8 string ids in http mode (BUG-01)', () => {
     api.fetchKirkpatrickStudent.mockResolvedValue(other)
     const w = await open(4664)
     expect(w.find('[data-testid="pel-alesa"]').exists()).toBe(false)
+  })
+})
+
+describe('S8 ALESA card with the ALESA AI flag off (D73)', () => {
+  it('drops the AI badge, the ALESA heading and the paragraph; the real figures stay', async () => {
+    vi.stubEnv('VITE_ALESA_AI', '')
+    const w = await open()
+    const card = t(w, 'pel-alesa')
+    expect(card.text()).not.toContain('ALESA')
+    expect(card.find('[data-testid="pel-paragraph"]').exists()).toBe(false)
+    expect(card.text()).toContain('Ringkasan Pelajar')
+    expect(t(w, 'pel-tile-answers').text()).toContain('Soalan')
+    expect(t(w, 'pel-tile-accuracy').text()).toContain('Ketepatan')
+    expect(t(w, 'pel-tile-konsistensi').text()).toContain('Konsistensi')
+    expect(t(w, 'pel-tile-streak').text()).toContain('Streak')
+    expect(t(w, 'pel-strength').text()).toContain('Terkuat')
   })
 })

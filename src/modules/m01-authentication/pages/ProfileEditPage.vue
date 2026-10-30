@@ -53,8 +53,6 @@ const phone = ref('')
 const bio = ref('')
 const grade = ref<number | null>(null)
 const school = ref<SchoolSummary | null>(null)
-/** Saved grade decides the "Tahap" group (7-11 = secondary); it does not flip while editing. */
-const secondary = ref(false)
 const saving = ref(false)
 const touched = ref(false)
 
@@ -64,7 +62,6 @@ function seed(me: UserMe): void {
   bio.value = me.bio ?? ''
   grade.value = me.grade
   school.value = me.school
-  secondary.value = me.grade !== null && me.grade >= 7
 }
 
 if (session.user) seed(session.user)
@@ -207,11 +204,7 @@ async function submit(): Promise<void> {
             </template>
           </UFormField>
 
-          <ProfileGradePicker
-            v-model="grade"
-            :secondary="secondary"
-            @update:model-value="touched = true"
-          />
+          <ProfileGradePicker v-model="grade" @update:model-value="touched = true" />
         </div>
       </UCard>
 

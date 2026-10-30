@@ -4,17 +4,18 @@
  * in the prototype: the mood store owner, M26, is not built). The populated mood analysis is unverified on live
  * and not built, so a count above 0 renders nothing.
  */
-import { DsEmptyState } from '@/ds'
+import { DsEmptyState, DsPanel } from '@/ds'
 
 defineProps<{ moodCount: number }>()
 </script>
 
 <template>
-  <UCard v-if="moodCount === 0" class="min-w-0" data-testid="beh-mood">
+  <DsPanel v-if="moodCount === 0" class="min-w-0" data-testid="beh-mood">
     <DsEmptyState
+      size="sm"
       icon="chat-circle-dots"
       title="Data Mood Belum Mencukupi"
       description="Pelajar perlu check-in mood harian untuk analisis kesejahteraan vs prestasi."
     />
-  </UCard>
+  </DsPanel>
 </template>

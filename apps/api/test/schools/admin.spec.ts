@@ -1,3 +1,4 @@
+import { treatDemoAsSecondary } from '../support/secondary'
 import {
   AdminSchoolSchema,
   SchoolListMetaSchema,
@@ -24,7 +25,7 @@ import {
 const VALID = {
   name: 'SK Contoh Baru',
   code: 'ZZZ9001',
-  type: 'SK',
+  type: 'SMK',
   state: 'Selangor',
   district: 'PPD Gombak',
   city: 'GOMBAK',
@@ -42,7 +43,8 @@ describe('admin school routes (AC 1, AC 8)', () => {
 
   beforeAll(async () => {
     t = await bootSchoolsApp({ env: { THROTTLE_ADMIN_WRITE_PER_MINUTE: '1000', THROTTLE_ADMIN_READ_PER_MINUTE: '1000' } })
-    await insertFillerSchools(t.db, 66) // 4 seeded + 66 = 70 schools: three pages of 30
+    await treatDemoAsSecondary(t.db)
+    await insertFillerSchools(t.db, 66, 'SMK') // 4 seeded + 66 = 70 schools: three pages of 30
     admin = await loginAs(t, 'admin@demo.test')
   })
   afterAll(async () => {
@@ -106,10 +108,10 @@ describe('admin school routes (AC 1, AC 8)', () => {
       expect(perak.meta.totalItems).toBe(66)
       expect(perak.meta.counts.total).toBe(70)
       expect(perak.data.every((s) => s.state === 'Perak')).toBe(true)
-      expect(ListBody.parse((await list('?type=SMK')).body).meta.totalItems).toBe(1)
+      expect(ListBody.parse((await list('?type=SMK')).body).meta.totalItems).toBe(70)
       expect(ListBody.parse((await list('?type=Nowhere')).body).meta.totalItems).toBe(0)
-      const both = ListBody.parse((await list('?state=Selangor&type=SK')).body)
-      expect(both.data.map((s) => s.code)).toEqual(['DEMO002'])
+      const both = ListBody.parse((await list('?state=Selangor&type=SMK')).body)
+      expect(both.data.map((s) => s.code)).toEqual(['DEMO002', 'DEMO001'])
       // name or code substring, case-insensitive
       expect(ListBody.parse((await list('?search=demo%20satu')).body).data.map((s) => s.code)).toEqual(['DEMO001'])
       expect(ListBody.parse((await list('?search=cth007')).body).data.map((s) => s.code)).toEqual(['CTH007'])
@@ -154,6 +156,18 @@ describe('admin school routes (AC 1, AC 8)', () => {
       expect(names).toEqual([...names].sort())
       const inactive = await schoolIdOf(t.db, 'CTH010')
       expect(options.map((o) => o.id)).toContain(inactive)
+    })
+
+    it('secondary-only: a primary-type school is out of the list, the options and the detail (404)', async () => {
+      const id = await schoolIdOf(t.db, 'CTH011')
+      await t.db.query(`update schools set type = 'SK' where id = $1`, [id])
+      try {
+        expect((await admin.agent.get(`/api/admin/schools/${id}`)).status).toBe(404)
+        expect(ListBody.parse((await list('?search=cth011')).body).data).toEqual([])
+        expect(JSON.stringify((await admin.agent.get('/api/admin/schools/options')).body)).not.toContain(`"${id}"`)
+      } finally {
+        await t.db.query(`update schools set type = 'SMK' where id = $1`, [id])
+      }
     })
 
     it('all=1 is required: 422 with fields.all', async () => {
@@ -308,11 +322,11 @@ describe('admin school routes (AC 1, AC 8)', () => {
     it('updates every field, keeps the id and the join code, sets updatedAt, lets a school keep its own code', async () => {
       const id = await schoolIdOf(t.db, 'DEMO003')
       t.clock.advance(60_000)
-      const res = await put(id, { name: 'SK Demo Tiga (Baru)', code: 'DEMO003', type: 'SMK', state: 'Perak', district: 'PPD KINTA', city: 'Ipoh', isActive: false })
+      const res = await put(id, { name: 'SK Demo Tiga (Baru)', code: 'DEMO003', type: 'MRSM', state: 'Perak', district: 'PPD KINTA', city: 'Ipoh', isActive: false })
       expect(res.status).toBe(200)
       const body = SavedBody.parse(res.body)
       expect(body.status).toBe('Sekolah berjaya disimpan.')
-      expect(body.data).toMatchObject({ id, name: 'SK Demo Tiga (Baru)', code: 'DEMO003', type: 'SMK', state: 'Perak', district: 'PPD KINTA', city: 'Ipoh', isActive: false, joinCode: 'DEMO0003' })
+      expect(body.data).toMatchObject({ id, name: 'SK Demo Tiga (Baru)', code: 'DEMO003', type: 'MRSM', state: 'Perak', district: 'PPD KINTA', city: 'Ipoh', isActive: false, joinCode: 'DEMO0003' })
       expect(body.data.updatedAt).toMatch(/^2026-10-19T09:01:00(\.000)?\+08:00$/)
       expect(body.data.createdAt).not.toBe(body.data.updatedAt)
       const audit = await t.db.query<{ detail: { changed: string[] } }>(`select detail from audit_events where action = 'school.updated' and target_id = $1`, [id])

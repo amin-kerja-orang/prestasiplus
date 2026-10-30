@@ -177,7 +177,7 @@ test.describe('M14 S15 /gamification/achievements', MODULE, () => {
   }) => {
     await gotoApp('/gamification/achievements')
     await expect(page.getByTestId('badge-card')).toHaveCount(25)
-    await expectTabTitle(page, 'Pencapaian — PRESTASIPLUS')
+    await expectTabTitle(page, 'Pencapaian | PRESTASIPLUS')
     await expectHeader(page, 'Pencapaian Anda', 'Selamat datang kembali')
     await expect(page.getByTestId('achievements-hero')).toContainText('🏅 Pencapaian Anda')
     await expect(page.getByTestId('achievements-subtitle')).toHaveText(
@@ -300,7 +300,7 @@ test.describe('M14 S16 /gamification/referral', MODULE, () => {
   test('SRS §12 #40 render, copy code, copy link, share links', async ({ page, gotoApp }) => {
     await gotoApp('/gamification/referral')
     await expect(page.getByTestId('referral-code')).toHaveText('4JURJTT')
-    await expectTabTitle(page, 'Rujuk Kawan — PRESTASIPLUS')
+    await expectTabTitle(page, 'Rujuk Kawan | PRESTASIPLUS')
     await expectHeader(page, 'Rujuk Kawan, Dapat Syiling!', 'Selamat datang kembali')
     await expect(page.getByTestId('referral-hero')).toContainText('🤝 Rujuk Kawan, Dapat Syiling!')
     await expect(page.getByTestId('referral-hero')).toContainText(
@@ -358,7 +358,7 @@ test.describe('M14 S18 /gamification/kad-kongsi', MODULE, () => {
   test('SRS §12 #37 tabs and card values', async ({ page, gotoApp }) => {
     await gotoApp('/gamification/kad-kongsi')
     await expect(page.getByTestId('kad-profil-card')).toBeVisible()
-    await expectTabTitle(page, 'Kad Kongsi — PRESTASIPLUS')
+    await expectTabTitle(page, 'Kad Kongsi | PRESTASIPLUS')
     await expectHeader(page, 'Kad Kongsi', 'Kongsi pencapaian anda')
     await expect(page.getByTestId('kad-tabs').getByRole('button')).toHaveText([
       'Profil',

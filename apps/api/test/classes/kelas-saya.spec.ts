@@ -79,7 +79,7 @@ describe('Kelas Saya: GET /api/kelas-saya and POST /api/kelas-saya/join (AC 1)',
     await s1.post('/kelas-saya/join', { classCode: k2.joinCode })
     const sc = (
       await t.db.query<{ id: string }>(
-        `insert into classrooms (kind, name, school_id, education_level_id, academic_year) select 'school_class', 'Kelas Sekolah', null, id, 2026 from education_levels limit 1 returning id::text`,
+        `insert into classrooms (kind, name, school_id, education_level_id, academic_year) select 'school_class', 'Kelas Sekolah', null, id, 2026 from education_levels where stage <> 'primary' order by id limit 1 returning id::text`,
       )
     )[0]?.id as string
     await t.db.query(`insert into enrolments (classroom_id, student_id, status, source) values ($1, $2, 'active', 'school_admin')`, [sc, s1Id])
@@ -103,7 +103,7 @@ describe('Kelas Saya: GET /api/kelas-saya and POST /api/kelas-saya/join (AC 1)',
   it('an unknown code is 404 "Kod kelas tidak sah."; so is the code of a school class', async () => {
     errorIs(await s2.post('/kelas-saya/join', { classCode: 'ZZZZZZ' }), 404, 'NOT_FOUND', CLASS_MESSAGES.joinNotFound)
     await t.db.query(
-      `insert into classrooms (kind, name, education_level_id, academic_year, join_code) select 'school_class', 'KS', id, 2026, 'SCHKLS' from education_levels limit 1`,
+      `insert into classrooms (kind, name, education_level_id, academic_year, join_code) select 'school_class', 'KS', id, 2026, 'SCHKLS' from education_levels where stage <> 'primary' order by id limit 1`,
     )
     errorIs(await s2.post('/kelas-saya/join', { classCode: 'schkls' }), 404, 'NOT_FOUND', CLASS_MESSAGES.joinNotFound)
     expect(await t.db.query(`select 1 from enrolments where student_id = $1`, [await idOfEmail(t, STUDENT_2)])).toHaveLength(0)

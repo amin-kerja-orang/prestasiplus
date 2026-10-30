@@ -49,6 +49,16 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases below.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+
 describe('S2 admin board', () => {
   it('shows the server placeholders until the first response (FN-M17-3.1.2)', async () => {
     api.fetchCcLiveData.mockReturnValue(new Promise(() => undefined))
@@ -56,7 +66,6 @@ describe('S2 admin board', () => {
     expect(texts(w, 'cc-kpi-value')).toEqual(['--', '--', '--', '--'])
     expect(text(w, 'cc-alesa')).toBe('Memuatkan wawasan...')
     expect(w.text()).toContain('Memuatkan...')
-    expect(text(w, 'cc-clock')).toBe('15:40:00')
     w.unmount()
   })
 
@@ -66,12 +75,10 @@ describe('S2 admin board', () => {
     await settle()
 
     expect(text(w, 'cc-title')).toBe('PrestasiPlus Command Center')
-    expect(text(w, 'cc-live-badge')).toBe('LIVE')
-    expect(text(w, 'cc-s2-back')).toBe('Dashboard')
-    expect(w.get('[data-testid="cc-s2-back"]').attributes('href')).toBe('/admin')
-    expect(w.get('[data-testid="cc-s2-daily"]').attributes('href')).toBe(
-      '/admin/command-center/daily-activity',
-    )
+    // no LIVE badge, MYT clock or header buttons (owner request 2026-10-29)
+    for (const id of ['cc-s2-back', 'cc-s2-daily', 'cc-live-badge', 'cc-clock']) {
+      expect(w.find(`[data-testid="${id}"]`).exists()).toBe(false)
+    }
     expect(w.find('[data-testid="cc-s2-subtitle"]').exists()).toBe(false)
 
     expect(texts(w, 'cc-kpi-value')).toEqual(['9', '3,152', '477,743', '82.9%'])
@@ -88,7 +95,7 @@ describe('S2 admin board', () => {
       '174 plj',
       '134 plj',
     ])
-    expect(w.get('[data-testid="cc-top-school-link"]').attributes('href')).toBe(
+    expect(w.get('[data-testid="cc-top-school"] a').attributes('href')).toBe(
       '/admin/command-center/school/8082',
     )
     expect(texts(w, 'cc-kirk-text')).toEqual([
@@ -105,9 +112,11 @@ describe('S2 admin board', () => {
     expect(text(w, 'cc-week')).toBe('Minggu ini: 2,508')
     expect(text(w, 'cc-change')).toBe('▼ -67% vs minggu lepas')
     expect(w.get('[data-testid="cc-change"]').classes()).toContain('text-error')
-    expect(texts(w, 'cc-medal')).toEqual(['1', '2', '3', '4', '5'])
-    expect(texts(w, 'cc-top-pupil-stat')[0]).toBe('452 jwb · 99.6%')
-    expect(w.get('[data-testid="cc-top-pupil-link"]').attributes('href')).toBe(
+    expect(
+      w.findAll('[data-testid="cc-panel-top-pupils"] [data-ds="list-row-rank"]').map((e) => e.text()),
+    ).toEqual(['1', '2', '3', '4', '5'])
+    expect(texts(w, 'cc-top-pupil-stat')[0]).toBe('452 jwb99.6%')
+    expect(w.get('[data-testid="cc-top-pupil"] a').attributes('href')).toBe(
       '/admin/command-center/student/2022',
     )
     expect(texts(w, 'cc-mood-count')).toEqual(['307', '280', '72', '91'])
@@ -115,7 +124,7 @@ describe('S2 admin board', () => {
       ...texts(w, 'cc-correction-total'),
       ...texts(w, 'cc-correction-avg'),
       ...texts(w, 'cc-correction-rate'),
-    ]).toEqual(['899Rekod', '+0.0%Purata Naik', '0%Kadar Baik'])
+    ]).toEqual(['Rekod899', 'Purata Naik+0.0%', 'Kadar Baik0%'])
     expect(w.text()).not.toContain('Top Improvers')
     expect(w.find('[data-testid="cc-engagement-bands"]').exists()).toBe(true)
     expect(text(w, 'cc-footer')).toBe(
@@ -124,25 +133,25 @@ describe('S2 admin board', () => {
     w.unmount()
   })
 
-  it('places the panels as live: column 2 ends with Mood, column 3 holds Pembetulan alone (S2 desktop)', async () => {
+  it('groups the panels in three rows: day at a glance, who is doing well, feed and engagement (S2 desktop)', async () => {
     api.fetchCcLiveData.mockResolvedValue(platformLive())
     const w = await mountBoard(false)
-    const ids = (col: string) =>
+    const ids = (row: string) =>
       w
-        .findAll(`[data-testid="${col}"] > [data-testid^="cc-panel"]`)
+        .findAll(`[data-testid="${row}"] [data-testid^="cc-panel"]`)
         .map((e) => e.attributes('data-testid'))
-    expect(ids('cc-col-1')).toEqual([
-      'cc-panel-top-schools',
-      'cc-panel-kirkpatrick',
+    expect(ids('cc-row-1')).toEqual([
       'cc-panel-alesa',
-    ])
-    expect(ids('cc-col-2')).toEqual([
       'cc-panel-today',
-      'cc-panel-feed',
+      'cc-panel-correction',
+      'cc-panel-kirkpatrick',
+    ])
+    expect(ids('cc-row-2')).toEqual([
+      'cc-panel-top-schools',
       'cc-panel-top-pupils',
       'cc-panel-mood',
     ])
-    expect(ids('cc-col-3')).toEqual(['cc-panel-correction'])
+    expect(ids('cc-row-3')).toEqual(['cc-panel-feed', 'cc-panel-engagement'])
     w.unmount()
   })
 
@@ -150,20 +159,15 @@ describe('S2 admin board', () => {
     api.fetchCcLiveData.mockResolvedValue(platformLive())
     const w = await mountBoard(false)
     await settle()
-    const names = w.findAll('[data-testid="cc-top-school-name"]')
+    const names = w.findAll('[data-testid="cc-panel-top-schools"] [data-ds="list-row-title"]')
     expect(names).toHaveLength(5)
     for (const name of names) {
-      expect(name.classes()).toEqual(
-        expect.arrayContaining(['min-w-0', 'break-words', 'whitespace-normal', 'xl:truncate']),
-      )
-      // No unconditional truncation (it would cut the name at every width).
-      expect(name.classes()).not.toContain('truncate')
+      // The row title wraps to two lines at most; the full name stays in the title attribute.
+      expect(name.classes()).toEqual(expect.arrayContaining(['min-w-0', 'break-words', 'line-clamp-2']))
+      expect(name.attributes('title')).toBeTruthy()
     }
-    const link = w.get('[data-testid="cc-top-school-link"]')
+    const link = w.get('[data-testid="cc-top-school"] a')
     expect(link.classes()).toContain('min-w-0')
-    // The wrapping label is the link text, and the full name stays in the title.
-    expect(link.text()).toBe(names[0]?.text())
-    expect(link.attributes('title')).toBeTruthy()
     w.unmount()
   })
 
@@ -174,14 +178,14 @@ describe('S2 admin board', () => {
     expect(school.text()).toBe('SMK CONTOH SATU')
     expect(school.attributes('title')).toBe('SEKOLAH MENENGAH KEBANGSAAN CONTOH SATU')
     expect(school.attributes('href')).toBe('/admin/command-center/school/8082')
-    const name = w.get('[data-testid="cc-feed-name"]')
+    const name = w.get('[data-testid="cc-feed-row"] [data-ds="list-row-title"]')
     expect(name.text()).toBe('Pelajar <b>Contoh</b>')
     expect(name.find('b').exists()).toBe(false)
     expect(texts(w, 'cc-feed-mark')).toEqual(['✓', '✗'])
     w.unmount()
   })
 
-  it('animates the big counters over 800 ms and ticks the clock every second', async () => {
+  it('animates the big counters over 800 ms', async () => {
     api.fetchCcLiveData.mockResolvedValue(platformLive())
     const w = await mountBoard(false)
     await vi.advanceTimersByTimeAsync(400)
@@ -190,7 +194,6 @@ describe('S2 admin board', () => {
     expect(mid).not.toBe('--')
     await vi.advanceTimersByTimeAsync(600)
     expect(texts(w, 'cc-kpi-value')[2]).toBe('477,743')
-    expect(text(w, 'cc-clock')).toBe('15:40:01')
     w.unmount()
   })
 
@@ -266,7 +269,7 @@ describe('S2 admin board', () => {
       platformLive({ topSchools: [], topStudents: [], recentFeed: [] }),
     )
     const w = await mountBoard(false)
-    expect(texts(w, 'cc-empty')).toEqual(['Tiada data', 'Tiada aktiviti terkini', 'Tiada data'])
+    expect(texts(w, 'cc-empty')).toEqual(['Tiada data', 'Tiada data', 'Tiada data'])
     w.unmount()
   })
 
@@ -304,15 +307,20 @@ describe('S2 Admin Sekolah alias', () => {
     return w
   }
 
-  it('reflows without "Top Sekolah": Mood moves under Pembetulan so no column has a hole', async () => {
+  it('reflows without "Top Sekolah": two panels in the second row', async () => {
     const w = await load()
-    const ids = (col: string) =>
+    const ids = (row: string) =>
       w
-        .findAll(`[data-testid="${col}"] > [data-testid^="cc-panel"]`)
+        .findAll(`[data-testid="${row}"] [data-testid^="cc-panel"]`)
         .map((e) => e.attributes('data-testid'))
-    expect(ids('cc-col-1')).toEqual(['cc-panel-kirkpatrick', 'cc-panel-alesa'])
-    expect(ids('cc-col-2')).toEqual(['cc-panel-today', 'cc-panel-feed', 'cc-panel-top-pupils'])
-    expect(ids('cc-col-3')).toEqual(['cc-panel-correction', 'cc-panel-mood'])
+    expect(ids('cc-row-1')).toEqual([
+      'cc-panel-alesa',
+      'cc-panel-today',
+      'cc-panel-correction',
+      'cc-panel-kirkpatrick',
+    ])
+    expect(ids('cc-row-2')).toEqual(['cc-panel-top-pupils', 'cc-panel-mood'])
+    expect(ids('cc-row-3')).toEqual(['cc-panel-feed', 'cc-panel-engagement'])
     w.unmount()
   })
 
@@ -329,16 +337,15 @@ describe('S2 Admin Sekolah alias', () => {
     w.unmount()
   })
 
-  it('links the header and the drill-down under the alias prefix', async () => {
+  it('has no header buttons and links the drill-down under the alias prefix', async () => {
     const w = await load()
-    expect(w.get('[data-testid="cc-s2-back"]').attributes('href')).toBe('/admin-sekolah')
-    expect(w.get('[data-testid="cc-s2-daily"]').attributes('href')).toBe(
-      '/admin-sekolah/command-center/daily-activity',
-    )
+    for (const id of ['cc-s2-back', 'cc-s2-daily', 'cc-live-badge', 'cc-clock']) {
+      expect(w.find(`[data-testid="${id}"]`).exists()).toBe(false)
+    }
     expect(w.get('[data-testid="cc-feed-school"]').attributes('href')).toBe(
       '/admin-sekolah/command-center/school/900001',
     )
-    expect(w.get('[data-testid="cc-top-pupil-link"]').attributes('href')).toBe(
+    expect(w.get('[data-testid="cc-top-pupil"] a').attributes('href')).toBe(
       '/admin-sekolah/command-center/student/5001',
     )
     w.unmount()
@@ -350,7 +357,7 @@ describe('S2 Admin Sekolah alias', () => {
       ...texts(w, 'cc-correction-total'),
       ...texts(w, 'cc-correction-avg'),
       ...texts(w, 'cc-correction-rate'),
-    ]).toEqual(['0Rekod', '+0.0%Purata Naik', '0%Kadar Baik'])
+    ]).toEqual(['Rekod0', 'Purata Naik+0.0%', 'Kadar Baik0%'])
     expect(w.find('[data-testid="cc-engagement-days"]').exists()).toBe(true)
     expect(w.find('[data-testid="cc-engagement-bands"]').exists()).toBe(false)
     w.unmount()
@@ -367,8 +374,23 @@ describe('S2 Admin Sekolah alias', () => {
       topStudents: [],
     })
     expect(texts(w, 'cc-kpi-value')[2]).toBe('0')
-    expect(texts(w, 'cc-empty')).toEqual(['Tiada aktiviti terkini', 'Tiada data'])
+    expect(texts(w, 'cc-empty')).toEqual(['Tiada data', 'Tiada data'])
     expect(text(w, 'cc-today-bar')).toBe('0 soalan')
+    w.unmount()
+  })
+})
+
+describe('S2 with the ALESA AI flag off (D73)', () => {
+  it('hides the ALESA AI panel and "Powered by ALESA AI"', async () => {
+    vi.stubEnv('VITE_ALESA_AI', '')
+    api.fetchCcLiveData.mockResolvedValue(platformLive())
+    const w = await mountBoard(false)
+    await settle()
+    expect(w.find('[data-testid="cc-panel-alesa"]').exists()).toBe(false)
+    expect(text(w, 'cc-footer')).toBe(
+      'PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
+    )
+    expect(w.text()).not.toContain('ALESA')
     w.unmount()
   })
 })

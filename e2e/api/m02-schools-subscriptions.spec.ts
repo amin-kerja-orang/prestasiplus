@@ -311,7 +311,7 @@ test.describe('M02 schools (Admin Pusat) @api', () => {
     )
     await page.goto('/admin/schools/99999999/edit')
     expect((await missing).status(), 'GET /api/admin/schools/99999999').toBe(404)
-    await expect(page).toHaveTitle(/404/, { timeout: 15_000 })
+    await expect(page).toHaveTitle(/Halaman Tidak Dijumpai/, { timeout: 15_000 })
     await expect(page.getByTestId('school-form')).toHaveCount(0)
     await expectNoHScroll(page)
   })

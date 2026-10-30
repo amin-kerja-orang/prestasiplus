@@ -32,8 +32,8 @@ export const MEMORY_LAYOUT = { columns: 4, rows: 3 } as const
 export const MEMORY_COINS = 6
 /** Susun Jawapan keeps questions whose correct option has at most this many characters. */
 export const SUSUN_MAX_ANSWER = 20
-/** Darjah used when the caller has no grade. */
-export const DEFAULT_DARJAH = 4
+/** Grade used when the caller has no (secondary) grade: Tingkatan 4 (secondary-only, 2026-10-29). */
+export const DEFAULT_GRADE = 10
 
 export interface Gain {
   points: number

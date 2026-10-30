@@ -6,6 +6,8 @@
  */
 import { computed, ref } from 'vue'
 
+import { DsBadge, DsEmptyState, DsPanel } from '@/ds'
+
 import type { MonitoringOverview, Signal } from '../../api/types'
 import { count, pct } from './monitoring-format'
 
@@ -45,8 +47,6 @@ function suggestion(s: Signal): string {
     return `${s.name}: Hubungi pihak sekolah secara langsung untuk mengenal pasti halangan dan memberi taklimat semula.`
   return `${s.name}: Guru telah login tetapi murid belum aktif. Cadangan: Adakan sesi hands-on dengan pelajar.`
 }
-
-const H = 'flex items-center gap-2 text-heading text-highlighted'
 </script>
 
 <template>
@@ -54,24 +54,25 @@ const H = 'flex items-center gap-2 text-heading text-highlighted'
     :id="part === 'cadangan' ? 'section-cadangan' : 'section-perhatian'"
     data-testid="mon-signals"
   >
-    <UCard v-if="empty" data-testid="mon-signals-empty">
-      <p class="py-6 text-center text-body text-muted">
-        Tiada pemerhatian yang perlu diberi perhatian buat masa ini.
-      </p>
-    </UCard>
-    <div v-else-if="part === 'perhatian'" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <UCard v-if="signals.best.length > 0" class="min-w-0" data-testid="mon-best">
+    <DsPanel v-if="empty" data-testid="mon-signals-empty">
+      <DsEmptyState
+        size="sm"
+        icon="check-circle"
+        title="Tiada pemerhatian yang perlu diberi perhatian buat masa ini."
+      />
+    </DsPanel>
+    <div v-else-if="part === 'perhatian'" class="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+      <DsPanel
+        v-if="signals.best.length > 0"
+        title="Sekolah Terbaik"
+        icon="trophy"
+        accent="win"
+        data-testid="mon-best"
+      >
+        <template #actions>
+          <DsBadge tone="success" class="tabular" :label="count(signals.best.length)" />
+        </template>
         <div class="flex flex-col gap-4">
-          <h2 :class="H">
-            <UIcon name="i-ph-trophy" class="size-6 text-success" />Sekolah Terbaik
-            <UBadge
-              color="success"
-              variant="subtle"
-              size="lg"
-              class="tabular"
-              :label="count(signals.best.length)"
-            />
-          </h2>
           <ul class="flex flex-col gap-3 text-body text-default">
             <li
               v-for="s in shown(signals.best, 'best')"
@@ -99,19 +100,18 @@ const H = 'flex items-center gap-2 text-heading text-highlighted'
             @click="open.best = !open.best"
           />
         </div>
-      </UCard>
-      <UCard v-if="signals.attention.length > 0" class="min-w-0" data-testid="mon-attention">
+      </DsPanel>
+      <DsPanel
+        v-if="signals.attention.length > 0"
+        title="Perhatian Segera"
+        icon="warning"
+        accent="heat"
+        data-testid="mon-attention"
+      >
+        <template #actions>
+          <DsBadge tone="error" class="tabular" :label="count(signals.attention.length)" />
+        </template>
         <div class="flex flex-col gap-4">
-          <h2 :class="H">
-            <UIcon name="i-ph-warning" class="size-6 text-error" />Perhatian Segera
-            <UBadge
-              color="error"
-              variant="subtle"
-              size="lg"
-              class="tabular"
-              :label="count(signals.attention.length)"
-            />
-          </h2>
           <ul class="flex flex-col gap-3 text-body text-default">
             <li
               v-for="s in shown(signals.attention, 'attention')"
@@ -136,20 +136,19 @@ const H = 'flex items-center gap-2 text-heading text-highlighted'
             @click="open.attention = !open.attention"
           />
         </div>
-      </UCard>
+      </DsPanel>
     </div>
-    <UCard v-else data-testid="mon-suggestions">
+    <DsPanel
+      v-else
+      title="Cadangan Tindakan"
+      icon="lightbulb"
+      accent="friend"
+      data-testid="mon-suggestions"
+    >
+      <template #actions>
+        <DsBadge tone="info" class="tabular" :label="count(signals.suggestions.length)" />
+      </template>
       <div class="flex flex-col gap-4">
-        <h2 :class="H">
-          <UIcon name="i-ph-lightbulb" class="size-6 text-info" />Cadangan Tindakan
-          <UBadge
-            color="info"
-            variant="subtle"
-            size="lg"
-            class="tabular"
-            :label="count(signals.suggestions.length)"
-          />
-        </h2>
         <ul class="grid grid-cols-1 gap-3 lg:grid-cols-2">
           <li
             v-for="s in shown(signals.suggestions, 'suggestions')"
@@ -176,6 +175,6 @@ const H = 'flex items-center gap-2 text-heading text-highlighted'
           @click="open.suggestions = !open.suggestions"
         />
       </div>
-    </UCard>
+    </DsPanel>
   </section>
 </template>

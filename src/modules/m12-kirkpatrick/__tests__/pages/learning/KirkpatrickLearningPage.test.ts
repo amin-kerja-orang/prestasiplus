@@ -45,11 +45,11 @@ describe('S3 KPIs and Learning Gain (AC-M12-11.1..11.4)', () => {
       '306,133',
       '82.8%',
       '80.3%',
-      '20991/20991',
+      '20,991/20,991',
       '100%',
       '-',
     ])
-    expect(t(w, 'kirk-kpi-sessions').text()).toContain('/20991')
+    expect(t(w, 'kirk-kpi-sessions').text()).toContain('/20,991')
     expect(t(w, 'kirk-kpi-gain').text()).toContain('Perlu pre/post test')
   })
 
@@ -90,7 +90,7 @@ describe('S3 subjects (AC-M12-12.1..12.3)', () => {
     const rows = all(w, 'kirk-subject-row')
     expect(rows.map((r) => flat(r))).toEqual([
       'Pendidikan Muzik 100.0% Mastered 20 soalan',
-      'Sejarah 76.3% Developing 57695 soalan',
+      'Sejarah 76.3% Developing 57,695 soalan',
       'Biologi 33.3% Beginning 30 soalan',
     ])
     const bar = (i: number) => rows[i]!.get('[data-testid="kirk-subject-bar"]')

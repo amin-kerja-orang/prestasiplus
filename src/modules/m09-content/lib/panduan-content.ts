@@ -60,7 +60,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
     id: 'pelajar',
     emoji: '👨‍🎓',
     label: 'Pelajar',
-    sub: 'Darjah 1 – Tingkatan 5',
+    sub: 'Tingkatan 1 – Tingkatan 5',
     stepsTitle: 'Cara Daftar Akaun Pelajar',
     stepsIcon: 'user-plus',
     accent: 'blue',
@@ -82,7 +82,7 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
         text: [
           'Masukkan ',
           b('nama penuh, e-mel, kata laluan'),
-          ', dan pilih tingkatan/darjah anda.',
+          ', dan pilih tingkatan anda.',
         ],
       },
       {

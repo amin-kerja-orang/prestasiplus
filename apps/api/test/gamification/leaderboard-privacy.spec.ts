@@ -42,7 +42,7 @@ describe('GET /api/gamification/leaderboard: names only within scope (#76)', () 
     return id
   }
   async function classOf(teacherId: string, schoolId: string, active: boolean, members: { id: string; isTest: boolean }[]): Promise<void> {
-    let level = (await t.db.query<{ id: string }>(`select id::text from education_levels order by id limit 1`))[0]?.id
+    let level = (await t.db.query<{ id: string }>(`select id::text from education_levels where stage <> 'primary' order by id limit 1`))[0]?.id
     level ??= (
       await t.db.query<{ id: string }>(`insert into education_levels (code, name, name_en, stage, curriculum, grade) values ('LBT4', 'Tingkatan 4', 'Form 4', 'upper_secondary', 'KSSM', 10) returning id::text`)
     )[0]!.id

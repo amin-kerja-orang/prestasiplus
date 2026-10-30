@@ -9,6 +9,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
+import { isAlesaAiOn } from '@/app/features'
 import { DsChart, DsDrillTable, DsLoadError, DsPanel, DsStatRow, type StatItem } from '@/ds'
 
 import { fetchCcStudent } from '../api/command-center'
@@ -276,7 +277,7 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
         </DsPanel>
       </div>
 
-      <DsPanel icon="i-ph-sparkle" title="ALESA AI Insight">
+      <DsPanel v-if="isAlesaAiOn()" icon="i-ph-sparkle" title="ALESA AI Insight">
         <div class="flex flex-col gap-2 bg-soft p-4" data-testid="cc-insight">
           <div class="text-overline text-primary-t">Analisis ALESA</div>
           <p class="text-body text-highlighted" data-testid="cc-insight-text">

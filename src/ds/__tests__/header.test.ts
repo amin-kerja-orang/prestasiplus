@@ -185,6 +185,20 @@ describe('DsPillNav', () => {
     await b.trigger('click')
     expect(w.emitted('select')?.[0]).toEqual(['b'])
   })
+  it('wrap: the strip wraps instead of scrolling; default keeps the scroll', () => {
+    const on = mount(DsPillNav, {
+      props: { items, active: 'a', label: 'Tempoh', wrap: true },
+      global: { plugins: [makeRouter()] },
+    })
+    const strip = on.get('[data-ds="pill-nav"] > div')
+    expect(strip.classes()).toContain('flex-wrap')
+    expect(strip.classes()).not.toContain('overflow-x-auto')
+    const off = mount(DsPillNav, {
+      props: { items, active: 'a', label: 'Tempoh' },
+      global: { plugins: [makeRouter()] },
+    })
+    expect(off.get('[data-ds="pill-nav"] > div').classes()).toContain('overflow-x-auto')
+  })
   it('links: aria-current on the active one, no select', async () => {
     const w = mount(DsPillNav, {
       props: {

@@ -54,6 +54,11 @@ export interface QuestionProvenance {
   sourceFileId: string | null
   aiRunId: string | null
   aiModel: string | null
+  /**
+   * Paper code of the source paper when it ends in `/<digit>` (`1449/2`): stored verbatim as `paper_code`, which is where the
+   * paper builder reads the kertas. Optional; when absent the flat `kertas` of the input (if any) decides.
+   */
+  paperCode?: string | null
 }
 
 /** Who performs a write. `role` is the ACTIVE role of the session. */
@@ -116,6 +121,10 @@ export interface QuestionVersionRecord {
   spIds: string[]
   /** `question_version_stimuli`, ordered by `position`. */
   stimulusIds: string[]
+  /** File id of the first image stimulus linked to this version: the flat stem image (null when none). */
+  stemImageId?: string | null
+  /** `question_versions.paper_code`; the paper builder reads the kertas from its trailing digit. */
+  paperCode?: string | null
   /** The part tree (keys included): admin/owner only; never hand it to a learner. */
   parts: QuestionPart[]
   createdAt: Date
@@ -145,6 +154,8 @@ export interface QuestionRecord {
 export interface QuestionView extends QuestionRecord {
   subject: NamedRef | null
   level: NamedRef | null
+  /** Internal file id to public token for the images of this question (stem and options). */
+  imageTokens?: Record<string, string>
 }
 
 /** Admin detail: DSKP chain (unit/sk/sp) and creator name resolved through the owners' repositories. */

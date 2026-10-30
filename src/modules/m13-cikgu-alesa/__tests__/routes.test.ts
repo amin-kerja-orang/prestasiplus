@@ -3,7 +3,7 @@
  * resolve to the core catch-all 404, never to a 405 page. M13 registers no route for them.
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type RouteLocationNormalized } from 'vue-router'
 
 import { buildRoutes } from '@/app/router'
@@ -11,6 +11,16 @@ import { buildRoutes } from '@/app/router'
 import routes from '../routes'
 
 const router = createRouter({ history: createMemoryHistory(), routes: buildRoutes() })
+
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases of each module.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
 
 describe('M13 404 outcomes (S7, S8)', () => {
   const dead = [

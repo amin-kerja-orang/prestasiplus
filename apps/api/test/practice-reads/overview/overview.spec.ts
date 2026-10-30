@@ -68,15 +68,15 @@ beforeAll(async () => {
     math: await idOf(t.db, 'subjects', 'MATH'),
     bm: await idOf(t.db, 'subjects', 'BM'),
     sej: await idOf(t.db, 'subjects', 'SEJ'),
-    d1: await idOf(t.db, 'education_levels', 'D1'),
-    d2: await idOf(t.db, 'education_levels', 'D2'),
-    d3: await idOf(t.db, 'education_levels', 'D3'),
-    d4: await idOf(t.db, 'education_levels', 'D4'),
-    t4: await idOf(t.db, 'education_levels', 'T4'),
-    c1: await chapterIdOf(t.db, 'MATH', 'D1', 1),
-    c2: await chapterIdOf(t.db, 'MATH', 'D1', 2),
-    c3: await chapterIdOf(t.db, 'MATH', 'D1', 3),
-    bmC1: await chapterIdOf(t.db, 'BM', 'D1', 1),
+    d1: await idOf(t.db, 'education_levels', 'T4'),
+    d2: await idOf(t.db, 'education_levels', 'T5'),
+    d3: await idOf(t.db, 'education_levels', 'T1'),
+    d4: await idOf(t.db, 'education_levels', 'T2'),
+    t4: await idOf(t.db, 'education_levels', 'T3'),
+    c1: await chapterIdOf(t.db, 'MATH', 'T4', 1),
+    c2: await chapterIdOf(t.db, 'MATH', 'T4', 2),
+    c3: await chapterIdOf(t.db, 'MATH', 'T4', 3),
+    bmC1: await chapterIdOf(t.db, 'BM', 'T4', 1),
   }
 }, 120_000)
 
@@ -253,9 +253,9 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(card('BM')).toMatchObject({ approvedCount: 1, bankCount: 1 })
     expect(card('SEJ')).toMatchObject({ approvedCount: 0, bankCount: 0 })
     const pill = (code: string) => d.levelPills.find((p) => p.code === code)
-    expect(pill('D1')?.count).toBe(3)
-    expect(pill('D2')?.count).toBe(1)
-    expect(pill('T4')?.count).toBe(1)
+    expect(pill('T4')?.count).toBe(3)
+    expect(pill('T5')?.count).toBe(1)
+    expect(pill('T3')?.count).toBe(1)
     expect(d.levelPills.length).toBe(d.stats.activeLevels)
     expect(d.difficultyChart).toEqual([
       { level: 1, count: 1 },
@@ -292,7 +292,7 @@ describe('#1 GET /api/dashboard (S1)', () => {
     await q({ subject: w.math, level: w.d1, status: 'draft', stem: 'Draf' })
     const d = Dashboard.parse((await pelajar.get('/api/dashboard')).body).data
     expect(d.recentQuestions.length).toBe(5)
-    expect(d.recentQuestions[0]).toMatchObject({ id: bankIds[6], subjectName: expect.any(String), levelCode: 'D1', difficulty: 1 })
+    expect(d.recentQuestions[0]).toMatchObject({ id: bankIds[6], subjectName: expect.any(String), levelCode: 'T4', difficulty: 1 })
     expect(d.recentQuestions[0]?.text).toBe(`${'x'.repeat(100)}...`)
     expect(d.recentQuestions[1]?.text).toBe('Soalan nombor 5')
     expect(d.recentQuestions.map((r) => r.id)).toEqual([bankIds[6], bankIds[5], bankIds[4], bankIds[3], bankIds[2]])
@@ -329,7 +329,7 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
     expect((await pelajar.get('/api/practice/subjects/SEJ')).status).toBe(404)
   })
 
-  it('#3 MATH: offered levels Darjah 1-4 with practice counts, difficulty splits overall and per level (BR-11, BR-12)', async () => {
+  it('#3 MATH: offered levels Tingkatan 4-5 with practice counts, difficulty splits overall and per level (BR-11, BR-12)', async () => {
     await q({ subject: w.math, level: w.d1, tp: 1 })
     await q({ subject: w.math, level: w.d1, tp: 2 })
     await q({ subject: w.math, level: w.d2, tp: 5 })
@@ -338,13 +338,13 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
     await q({ subject: w.math, level: w.t4, tp: 3 }) // not an offered level
     const d = SubjectConfig.parse((await pelajar.get('/api/practice/subjects/MATH')).body).data
     expect(d.subject).toMatchObject({ code: 'MATH', approvedCount: 6, bankCount: 6 })
-    expect(d.levels.map((l) => l.code)).toEqual(['D1', 'D2', 'D3', 'D4'])
-    expect(d.levels.map((l) => l.count)).toEqual([2, 2, 0, 0])
+    expect(d.levels.map((l) => l.code)).toEqual(['T4', 'T5'])
+    expect(d.levels.map((l) => l.count)).toEqual([2, 2])
     expect(d.total).toBe(4)
     expect(d.difficultyStats).toEqual({ '1': 1, '2': 1, '3': 0, '4': 0, '5': 2 })
     expect(d.difficultyByLevel[w.d1]).toEqual({ '1': 1, '2': 1, '3': 0, '4': 0, '5': 0 })
     expect(d.difficultyByLevel[w.d2]).toEqual({ '1': 0, '2': 0, '3': 0, '4': 0, '5': 2 })
-    expect(Object.keys(d.difficultyByLevel).sort()).toEqual([w.d1, w.d2, w.d3, w.d4].sort())
+    expect(Object.keys(d.difficultyByLevel).sort()).toEqual([w.d1, w.d2].sort())
     expect(d.subjectiveCounts).toEqual({})
     expect(d.trial.limit).toBe(50)
   })
@@ -356,7 +356,7 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
     expect(ErrorBodySchema.parse(unknown.body).error).toMatchObject({ code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' })
     const long = await pelajar.get(`/api/practice/subjects/${'A'.repeat(40)}`)
     expect(long.status).toBe(404)
-    const addmath = SubjectConfig.parse((await pelajar.get('/api/practice/subjects/ADDMATH')).body).data
+    const addmath = SubjectConfig.parse((await pelajar.get('/api/practice/subjects/SS')).body).data
     expect(addmath.levels).toEqual([])
     expect(addmath.total).toBe(0)
     expect(addmath.difficultyStats).toEqual({ '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 })
@@ -440,7 +440,7 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
   })
 
   it('#8 ?levelId= picks an offered level; an unknown, non-offered or non-numeric level falls back to the first offered one', async () => {
-    const d2c1 = await chapterIdOf(t.db, 'MATH', 'D2', 1)
+    const d2c1 = await chapterIdOf(t.db, 'MATH', 'T5', 1)
     await q({ subject: w.math, level: w.d1, chapter: w.c1 })
     await q({ subject: w.math, level: w.d2, chapter: d2c1 })
     await q({ subject: w.math, level: w.d2, chapter: d2c1 })
@@ -450,8 +450,6 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     expect(first.levels).toEqual([
       { id: w.d1, name: expect.any(String), count: 1 },
       { id: w.d2, name: expect.any(String), count: 2 },
-      { id: w.d3, name: expect.any(String), count: 0 },
-      { id: w.d4, name: expect.any(String), count: 0 },
     ])
     expect(first.subject).toMatchObject({ code: 'MATH' })
     const second = await get(`?levelId=${w.d2}`)
@@ -461,7 +459,7 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
   })
 
   it('#8 a subject offering no level answers empty levels and chapters; an unknown code is 404', async () => {
-    const d = ChapterDetail.parse((await pelajar.get('/api/practice/chapter-subjects/ADDMATH')).body).data
+    const d = ChapterDetail.parse((await pelajar.get('/api/practice/chapter-subjects/SS')).body).data
     expect(d).toMatchObject({ levels: [], levelId: null, chapters: [] })
     const unknown = await pelajar.get('/api/practice/chapter-subjects/TIADA')
     expect(unknown.status).toBe(404)

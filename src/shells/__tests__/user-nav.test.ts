@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { lookupFaName } from '@/components/icon'
 import type { Role } from '@/stores/session-types'
@@ -90,6 +90,16 @@ const STUDENT_ONLY_IDS = new Set(
     .filter((i) => i.roles?.length === 1 && i.roles[0] === 'student')
     .map((i) => i.id),
 )
+
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases of each module.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
 
 describe('USER_NAV data', () => {
   it('has unique ids', () => {
@@ -317,9 +327,24 @@ describe('navFor (role filter: hidden, not disabled)', () => {
     ])
   })
 
+  it('school_admin: Command Center opens in the same tab (LIVE badge kept), Aktiviti Harian sits under it (DV-M17-54)', () => {
+    const list = items(navFor('school_admin', 'sidebar', USER_NAV, FULL))
+    const cc = list.find((i) => i.id === 'sa-command-center')
+    expect(cc).toMatchObject({ to: '/admin-sekolah/command-center', badge: { text: 'LIVE' } })
+    expect(cc?.target).toBeUndefined()
+    const daily = list.find((i) => i.id === 'sa-aktiviti-harian')
+    expect(daily).toMatchObject({ label: 'Aktiviti Harian', to: '/admin-sekolah/command-center/daily-activity' })
+    expect(daily?.target).toBeUndefined()
+    expect(list.indexOf(daily!)).toBe(list.indexOf(cc!) + 1)
+    for (const role of ['teacher', 'student', 'admin'] as const) {
+      expect(items(navFor(role, 'sidebar', USER_NAV, FULL)).some((i) => i.id === 'sa-aktiviti-harian')).toBe(false)
+    }
+  })
+
   it('school_admin: the full live admin-sekolah sidebar, in order (roles-matrix/admin sekolah)', () => {
     expect(labels(navFor('school_admin', 'sidebar', USER_NAV, FULL))).toEqual([
       'Command Center',
+      'Aktiviti Harian',
       'Pusat AI',
       '🤖 Cikgu Alesa AI',
       'Cikgu Alesa Chat',

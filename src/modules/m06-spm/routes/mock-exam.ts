@@ -1,5 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { whenAlesaAi } from '@/app/features'
+
 import { mockIdPattern } from '../lib/wire-id'
 
 /**
@@ -51,6 +53,10 @@ const routes: RouteRecordRaw[] = [
       v2: true,
     },
   },
+]
+
+// S13 is a Cikgu Alesa AI page: hidden behind VITE_ALESA_AI (D73).
+const walkthroughRoutes: RouteRecordRaw[] = [
   {
     path: '/pusat-ai/spm',
     name: 'm06.walkthrough',
@@ -66,4 +72,4 @@ const routes: RouteRecordRaw[] = [
   },
 ]
 
-export default routes
+export default [...routes, ...whenAlesaAi(walkthroughRoutes)]

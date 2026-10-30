@@ -198,7 +198,7 @@ export class KirkpatrickRepository {
     const where = only === null ? Prisma.empty : Prisma.sql`AND s.id = ${idFromString(only)}`
     return this.db.$queryRaw<SchoolInfo[]>`
       SELECT s.id::text AS id, s.name, s.code, s.state FROM schools s
-      WHERE EXISTS (SELECT 1 FROM users u WHERE u.school_id = s.id) ${where}
+      WHERE (s.type IS NULL OR s.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')) AND EXISTS (SELECT 1 FROM users u WHERE u.school_id = s.id) ${where}
       ORDER BY s.name ASC, s.id ASC`
   }
 

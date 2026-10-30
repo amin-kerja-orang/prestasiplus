@@ -56,7 +56,7 @@ test.describe('M15 QA student rows', MODULE, () => {
     await openNavEntry(page)
     await expect(page).toHaveURL(/\/cikgu\/hadiah$/)
     await expect(page.getByTestId('digital-title')).toHaveText('🎁 Kedai Hadiah Digital')
-    await expect(page).toHaveTitle('Kedai Hadiah Digital')
+    await expect(page).toHaveTitle('Kedai Hadiah Digital | PRESTASIPLUS')
   })
 
   test('AC-24.5 "Kedai Hadiah" (plain) entry still opens S5 with its own copy @m15', async ({

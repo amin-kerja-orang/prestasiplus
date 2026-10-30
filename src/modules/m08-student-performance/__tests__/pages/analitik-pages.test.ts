@@ -364,7 +364,7 @@ describe('S6 Prestasi360Page', () => {
       '14',
       '14m',
     ])
-    expect(document.title).toBe('Prestasi 360 — Murid Demo 01 — PRESTASIPLUS')
+    expect(document.title).toBe('Prestasi 360 — Murid Demo 01 | PRESTASIPLUS')
   })
 
   it('shows the zero state for the admin: 0 / 0.0% / 0 / 0m, no headcount, no badge card', async () => {

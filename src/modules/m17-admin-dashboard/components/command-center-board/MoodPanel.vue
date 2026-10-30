@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** "Mood Pelajar" (FR-M17-30, FN-M17-3.3.7): Gembira, OK, Sedih, Tekanan with all-time counts. */
-import { formatCount } from '@/lib/number'
+import { DsIconChip, DsListRow, DsStack, DsText, formatCount } from '@/ds'
 
 import type { CcMoodCounts } from '../../api/command-center-board'
 import { MOODS, S2_COPY } from './board-copy'
@@ -11,20 +11,22 @@ defineProps<{ mood: CcMoodCounts | null }>()
 
 <template>
   <BoardPanel icon="i-ph-smiley" title="Mood Pelajar" testid="cc-panel-mood">
-    <p v-if="mood === null" class="text-body text-muted">{{ S2_COPY.loading }}</p>
-    <ul v-else class="grid grid-cols-2 gap-2">
-      <li
+    <DsText v-if="mood === null" variant="body" tone="muted">{{ S2_COPY.loading }}</DsText>
+    <DsStack v-else as="ul" gap="xs">
+      <DsListRow
         v-for="m in MOODS"
         :key="m.key"
-        class="flex min-h-11 min-w-0 items-center gap-2 bg-soft px-3 text-body text-toned"
+        :title="m.label"
+        density="tight"
         :data-testid="`cc-mood-${m.key}`"
       >
-        <UIcon :name="m.icon" class="size-5 shrink-0" aria-hidden="true" />
-        <span>{{ m.label }}</span>
-        <span class="tabular ms-auto text-label text-highlighted" data-testid="cc-mood-count">{{
-          formatCount(mood[m.key])
-        }}</span>
-      </li>
-    </ul>
+        <template #leading
+          ><DsIconChip :icon="m.icon.replace('i-ph-', '')" :accent="m.accent" size="sm"
+        /></template>
+        <template #meta
+          ><span data-testid="cc-mood-count">{{ formatCount(mood[m.key]) }}</span></template
+        >
+      </DsListRow>
+    </DsStack>
   </BoardPanel>
 </template>

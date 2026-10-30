@@ -25,3 +25,29 @@
 [data-ds='native-select'][data-state='loading'] {
   cursor: progress;
 }
+
+/* Select, plain variant (print views): no browser chrome, caret drawn by the wrapper. */
+[data-ds='native-select'][data-variant='native'] select {
+  appearance: none;
+}
+
+[data-ds='native-select'][data-variant='native'] select:focus-visible {
+  box-shadow: 0 0 0 2px var(--ui-primary);
+  outline: none;
+}
+
+[data-ds='native-select'][data-variant='native'] select:disabled {
+  cursor: not-allowed;
+  opacity: var(--ds-disabled-opacity);
+}
+
+/* Filter bar from md: fields cap their width so one select never fills the row. */
+@media (min-width: 768px) {
+  [data-ds='filter-bar'] > * {
+    max-width: 28rem;
+  }
+
+  [data-ds='filter-bar'] > [data-ds='active-filters'] {
+    max-width: none;
+  }
+}

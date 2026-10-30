@@ -34,7 +34,7 @@ const test = base.extend<{ gotoApp: (path: string) => Promise<void> }>({
 })
 
 const TAB = 'PRESTASIPLUS - Platform Latih Tubi Nasional'
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const B_CODES = [
   'PKSK_MATH',

@@ -127,6 +127,12 @@ export const QuestionSummarySchema = z
   })
   .meta({ id: 'QuestionSummary' })
 
+/** Kertas of a question for the paper builder (stored as the trailing digit of `paper_code`, e.g. `MATH/2`). */
+export const QuestionKertasSchema = z.enum(['1', '2', '3'], 'Kertas tidak sah.').meta({ id: 'QuestionKertas' })
+
+/** Id of an already uploaded `question_image` file (`POST /files?purpose=question_image`); never a client URL. */
+const ImageFileId = IdSchema.nullable()
+
 /* ------------------------------------------------------------------------------ question, detail */
 
 /** Admin/editor view: carries the answer key (`correctAnswer`, `tfAnswer`, `correctAnswerText`, `parts[].key`). */
@@ -138,6 +144,7 @@ export const QuestionSchema = z
     difficultyLevel: Difficulty,
     questionType: QuestionTypeSchema,
     questionText: z.string(),
+    /** Public file token of the stem image (an image stimulus of the version; download at `/api/files/<token>`), or null. */
     questionImage: z.string().nullable(),
     options: z.array(z.string()).nullable(),
     optionImages: z.array(z.string().nullable()),
@@ -147,6 +154,8 @@ export const QuestionSchema = z
     altAnswers: z.array(z.string()),
     modelAnswer: z.string().nullable(),
     explanation: z.string().nullable(),
+    /** Kertas for the paper builder (trailing digit of the paper code); null when not set. */
+    kertas: QuestionKertasSchema.nullable().optional(),
     aiExplanation: z.object({ markdown: z.string(), generatedAt: TimestampSchema }).nullable(),
     language: Language,
     pointsValue: z.number().int().min(1),
@@ -253,13 +262,19 @@ const baseInput = z.object({
   pointsValue: z.coerce.number({ error: QUESTION_MESSAGES.points }).int(QUESTION_MESSAGES.points).min(1, QUESTION_MESSAGES.points).optional(),
   removeQuestionImage: z.boolean().optional(),
   removeOptionImage: z.array(z.boolean()).max(4).optional(),
+  /** Stem image: uploaded `question_image` file id; null removes it; omitted keeps it. Error key `questionImage`. */
+  questionImageFileId: ImageFileId.optional(),
+  /** Option images by position A to D; omitted keeps the stored ones. Error keys `optionImages.<i>`. */
+  optionImageFileIds: z.array(ImageFileId).max(4).optional(),
+  /** Kertas for the paper builder; null clears it; omitted keeps it. Error key `kertas`. */
+  kertas: QuestionKertasSchema.nullable().optional(),
   parts: z.array(QuestionPartSchema).min(1).optional(),
   tag: QuestionCurriculumTagSchema.optional(),
   stimulusGroupId: IdSchema.nullable().optional(),
 })
 
 /**
- * POST body (JSON; images arrive as multipart files `questionImage`, `optionImages[i]`, BE-04). `status`
+ * POST body (JSON only; images are ids of files already uploaded with purpose `question_image`: `questionImageFileId`, `optionImageFileIds[i]`). `status`
  * defaults to `draft`; `published` is refused with 422 unless subject, level, unit, SP and TP are set.
  */
 export const QuestionCreateRequestSchema = baseInput
@@ -467,7 +482,7 @@ const GuruOptionItem = { oneOf: [{ type: 'string' }, { type: 'object', propertie
  * POST /guru/questions: saved as `review`, owner = caller. Difficulty may be easy/medium/hard (2/3/4).
  * Rules per type are the mock's `parseCreate`; the issue key is the `fields` key: `options` (empty item,
  * or item over 500), `correctAnswer` (MCQ key; for short_answer/fill_blank the answer text, empty or over
- * 500), `tfAnswer`. Image errors use the key `questionImage` / `optionImages.<i>` (multipart). Chapter,
+ * 500), `tfAnswer`. Image errors use the key `questionImage` / `optionImages.<i>`. Chapter,
  * topic and SP ownership checks need the curriculum and are service rules (same keys and copy).
  */
 export const QuestionGuruCreateRequestSchema = z
@@ -485,6 +500,8 @@ export const QuestionGuruCreateRequestSchema = z
     modelAnswer: z.string().optional(),
     explanation: z.string().optional(),
     questionImageUrl: z.string().optional(),
+    questionImageFileId: ImageFileId.optional(),
+    optionImageFileIds: z.array(ImageFileId).max(4).optional(),
     curriculumChapterId: idOrBlank(QUESTION_MESSAGES.guruChapter),
     curriculumTopicId: idOrBlank(QUESTION_MESSAGES.guruTopic),
     dskpSpId: idOrBlank(QUESTION_MESSAGES.sp),
@@ -523,6 +540,10 @@ export const QuestionGuruUpdateRequestSchema = z
     }).optional(),
     correctOptionId: z.union([z.number(), z.string()]).optional(),
     explanation: z.string().nullable().optional(),
+    questionImageFileId: ImageFileId.optional(),
+    optionImageFileIds: z.array(ImageFileId).max(4).optional(),
+    removeQuestionImage: z.boolean().optional(),
+    removeOptionImage: z.array(z.boolean()).max(4).optional(),
   })
   .superRefine((v, ctx) => {
     if (v.options === undefined && v.correctOptionId === undefined) return

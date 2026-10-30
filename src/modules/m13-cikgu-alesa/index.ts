@@ -1,5 +1,7 @@
 import type { ModuleManifest } from '@/app/modules'
 
+import { whenAlesaAi } from '@/app/features'
+
 import routes from './routes'
 
 /**
@@ -9,5 +11,6 @@ import routes from './routes'
 export const manifest: ModuleManifest = {
   id: 'M13',
   slug: 'm13-cikgu-alesa',
-  routes,
+  // Hidden behind VITE_ALESA_AI (D73): the paths then fall to the core 404 like an unbuilt route.
+  routes: whenAlesaAi(routes),
 }

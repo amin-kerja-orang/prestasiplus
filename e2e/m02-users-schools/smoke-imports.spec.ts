@@ -31,7 +31,7 @@ test.describe('M02 S4 bulk user import', { tag: [TAG.smoke, moduleTag(2)] }, () 
   })
 
   test('title, content, role cards, school picker and no horizontal scroll', async ({ page }) => {
-    await expectTabTitle(page, 'Import Pengguna Pukal - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Import Pengguna Pukal | PRESTASIPLUS')
     await expect(byId(page, 'bulk-hero')).toContainText('Import Pengguna Pukal')
     await expect(page.getByText('Borang Import Pengguna')).toBeVisible()
     await expect(page.locator('input[name=role]')).toHaveCount(4)
@@ -115,7 +115,7 @@ test.describe('M02 S5 DELIMa student import', { tag: [TAG.smoke, moduleTag(2)] }
   })
 
   test('title, content, both class groups, modes and no horizontal scroll', async ({ page }) => {
-    await expectTabTitle(page, 'Import Pelajar (ID Delima) - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Import Pelajar (ID Delima) | PRESTASIPLUS')
     await expect(byId(page, 'student-hero')).toContainText('Import Pelajar via ID Delima')
     await expect(page.getByText('Borang Import Pelajar')).toBeVisible()
     await expect(page.locator('input[name=class_level]')).toHaveCount(11)

@@ -49,15 +49,15 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
   })
 
   describe('GET /education-levels and /subjects', () => {
-    it('lists the 11 active levels in order with the lookup shape', async () => {
+    it('lists the 5 active levels (Tingkatan 1 to 5; Darjah is hidden) in order with the lookup shape', async () => {
       const res = await student.get('/api/education-levels')
       const items = parseList(res, CurriculumEducationLevelLookupSchema)
-      expect(items).toHaveLength(11)
-      expect(res.body.meta).toMatchObject({ page: 1, pageSize: 11, totalItems: 11, totalPages: 1, from: 1, to: 11 })
-      expect(items.map((l) => l.code)).toEqual(['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'T1', 'T2', 'T3', 'T4', 'T5'])
-      expect(items.map((l) => l.grade)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
-      expect(items[0]).toMatchObject({ name: 'Darjah 1', nameEn: 'Year 1', stage: 'primary' })
-      expect(items[10]).toMatchObject({ code: 'T5', stage: 'upper_secondary' })
+      expect(items).toHaveLength(5)
+      expect(res.body.meta).toMatchObject({ page: 1, pageSize: 5, totalItems: 5, totalPages: 1, from: 1, to: 5 })
+      expect(items.map((l) => l.code)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
+      expect(items.map((l) => l.grade)).toEqual([7, 8, 9, 10, 11])
+      expect(items[0]).toMatchObject({ name: 'Tingkatan 1', nameEn: 'Form 1', stage: 'lower_secondary' })
+      expect(items[4]).toMatchObject({ code: 'T5', stage: 'upper_secondary' })
       expect(typeof items[0]!.id).toBe('string')
     })
 
@@ -68,7 +68,7 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect(items.some((s) => s.code === 'LNR' || s.code === 'KNP')).toBe(false)
       const math = items.find((s) => s.code === 'MATH')!
       expect(math).toMatchObject({ name: 'Matematik', nameEn: 'Mathematics', icon: 'calculator', isCore: true })
-      expect(math.educationLevelIds).toHaveLength(11)
+      expect(math.educationLevelIds).toHaveLength(5)
       expect(items.find((s) => s.code === 'SS')!.educationLevelIds).toEqual([])
     })
 
@@ -88,7 +88,7 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       await t.db.query(`update education_levels set is_active = false where code = 'T5'`)
       try {
         expect(parseList(await student.get('/api/subjects'), CurriculumSubjectLookupSchema).some((s) => s.code === 'PN')).toBe(false)
-        expect(parseList(await student.get('/api/education-levels'), CurriculumEducationLevelLookupSchema)).toHaveLength(10)
+        expect(parseList(await student.get('/api/education-levels'), CurriculumEducationLevelLookupSchema)).toHaveLength(4)
       } finally {
         await t.db.query(`update subjects set is_active = true where code = 'PN'`)
         await t.db.query(`update education_levels set is_active = true where code = 'T5'`)

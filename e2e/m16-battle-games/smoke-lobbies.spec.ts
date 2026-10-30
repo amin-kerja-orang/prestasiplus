@@ -86,7 +86,7 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/papan-bijak')
-    await expectTabTitle(page, 'Papan Bijak — PRESTASIPLUS')
+    await expectTabTitle(page, 'Papan Bijak | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title').first()).toHaveText('Papan Bijak')
     await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
       'Selamat datang kembali',
@@ -104,7 +104,7 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
     await expect(page.getByTestId('grade-auto')).toContainText('Darjah 4')
     await expect(page.getByTestId('grade-auto')).toContainText('(auto dari profil anda)')
     await expect(page.getByTestId('create-mode').locator('option').nth(1)).toHaveText(
-      'Semua Darjah (1-6)',
+      'Semua Tingkatan',
     )
 
     await page.getByTestId('grade-switch').click()
@@ -113,7 +113,7 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
         .getByTestId('grade-select')
         .locator('optgroup')
         .evaluateAll((g) => g.map((x) => x.getAttribute('label'))),
-    ).toEqual(['Sekolah Rendah', 'Sekolah Menengah'])
+    ).toEqual(['Sekolah Menengah'])
     await page.getByTestId('grade-select').selectOption('TINGKATAN_2')
     await expect(page.getByTestId('create-mode').locator('option').nth(1)).toHaveText(
       'Semua Tingkatan (1-5)',
@@ -122,8 +122,8 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
     await expect(page.getByTestId('grade-auto')).toContainText('Darjah 4')
 
     await page.getByTestId('create-mode').selectOption('custom')
-    await expect(page.getByTestId('create-grade-min')).toHaveValue('1')
-    await expect(page.getByTestId('create-grade-max')).toHaveValue('6')
+    await expect(page.getByTestId('create-grade-min')).toHaveValue('7')
+    await expect(page.getByTestId('create-grade-max')).toHaveValue('11')
     await expect(page.getByTestId('create-max-players')).toHaveValue('4')
 
     const how = page.getByTestId('pb-how-to')
@@ -266,7 +266,7 @@ test.describe('M16 S8-S12 lobbies', MODULE, () => {
     await gotoApp('/perang-fakta')
     for (const [slug, title, h1, rule] of LOBBIES) {
       await spaGo(page, `/${slug}`)
-      await expectTabTitle(page, `${title} — PRESTASIPLUS`)
+      await expectTabTitle(page, `${title} | PRESTASIPLUS`)
       await expect(page.getByTestId('shell-user-title').first()).toHaveText(title)
       await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
         'Selamat datang kembali',
@@ -287,7 +287,7 @@ test.describe('M16 S8-S12 lobbies', MODULE, () => {
       await expect(page.getByTestId('grade-back')).toHaveCount(0)
       expect(await page.getByTestId('create-mode').locator('option').allTextContents()).toEqual([
         'Tahap sama sahaja',
-        'Semua Darjah / Semua Tingkatan',
+        'Semua Tingkatan',
       ])
       await expect(page.getByTestId('create-submit')).toContainText('Cipta Bilik')
       const input = page.getByTestId('join-input')

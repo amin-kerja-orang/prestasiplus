@@ -120,7 +120,7 @@ describe("S5 KelasCreatePage: the teacher's own school (DV-M10-40)", () => {
     const w = await mountPage()
     await w.get('[data-testid="school-clear"]').trigger('click')
     expect(w.find('[data-testid="school-search"]').exists()).toBe(true)
-    expect(w.findAll('[data-testid="kelas-levels"] [role="radio"]')).toHaveLength(11)
+    expect(w.findAll('[data-testid="kelas-levels"] [role="radio"]')).toHaveLength(5)
     await fillAndSubmit(w)
     expect(api.createGuruClass).toHaveBeenCalledTimes(1)
     expect(api.createGuruClass.mock.calls[0]?.[0]).not.toHaveProperty('schoolId')

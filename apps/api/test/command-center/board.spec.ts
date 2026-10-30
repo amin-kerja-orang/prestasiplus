@@ -1,3 +1,4 @@
+import { treatDemoAsSecondary } from '../support/secondary'
 import {
   CommandCenterDailyActivityResponseSchema,
   CommandCenterLiveDataResponseSchema,
@@ -33,6 +34,7 @@ let loginUser: { id: string }
 
 beforeAll(async () => {
   t = await bootCommandCenterApp()
+  await treatDemoAsSecondary(t.db)
   w = await buildWorld(t)
   // Two users who logged in today (07:00 and 08:30) and one yesterday; an inactive pupil with answers must never count.
   loginUser = await createUser(t.db, { role: 'student', schoolId: w.school1, name: 'Murid Log', lastLoginAt: '2026-10-19T07:00:00.000+08:00' })

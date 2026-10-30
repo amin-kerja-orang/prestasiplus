@@ -11,12 +11,10 @@ import CorrectionPanel from '../../components/command-center-board/CorrectionPan
 const correction = { total: 1234, avgImprovement: 4.5, improvedCount: 3, topImprovers: [] }
 
 describe('CorrectionPanel', () => {
-  it('renders the three tiles in a DS auto-fit list, not 3 fixed columns', () => {
+  it('renders the three figures as DS list rows', () => {
     const w = mount(CorrectionPanel, { props: { correction } })
     const list = w.get('ul')
-    expect(list.attributes('data-ds')).toBe('grid')
-    expect(list.classes()).toContain('grid-cols-[repeat(auto-fit,minmax(9rem,1fr))]')
-    expect(list.classes()).not.toContain('grid-cols-3')
+    expect(list.attributes('data-ds')).toBe('stack')
     const items = list.findAll(':scope > li')
     expect(items).toHaveLength(3)
     expect(items.map((li) => li.attributes('data-testid'))).toEqual([
@@ -24,7 +22,7 @@ describe('CorrectionPanel', () => {
       'cc-correction-avg',
       'cc-correction-rate',
     ])
-    for (const li of items) expect(li.classes()).toContain('min-w-0')
+    for (const li of items) expect(li.attributes('data-ds')).toBe('list-row')
     expect(items.map((li) => li.text())).toEqual([
       expect.stringContaining('Rekod'),
       expect.stringContaining('Purata Naik'),

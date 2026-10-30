@@ -11,13 +11,26 @@ import {
   DsFormBar,
   DsFormField,
   DsFormSection,
+  DsFilterBar,
   DsNativeSelect,
   DsRtlScope,
+  DsSwitchField,
 } from '@/ds'
 
 const tahap = ref('')
 const file = ref<File | File[] | null>(null)
 const saving = ref(false)
+const pick = ref('5')
+const longPick = ref('')
+const auto = ref(true)
+const auto2 = ref(false)
+const years = [
+  { label: 'Tahun 4', value: '4' },
+  { label: 'Tahun 5', value: '5' },
+  { label: 'Tahun 6', value: '6', disabled: true },
+  { label: 'Tingkatan 4', value: 'f4' },
+]
+const many = Array.from({ length: 24 }, (_, i) => ({ label: `Sekolah Contoh ${i + 1}`, value: String(i + 1) }))
 </script>
 
 <template>
@@ -54,6 +67,44 @@ const saving = ref(false)
         <DsNativeSelect :id="id" model-value="" :invalid="invalid" blank />
       </DsFormField>
     </DsFormSection>
+
+    <DsFormSection title="Pilihan (DsNativeSelect / DsSelect)" description="Senarai tersuai: caret berpadding, baris 40px+, tanda semak." :columns="2">
+      <DsFormField v-slot="{ id }" label="Tahap (items)" native>
+        <DsNativeSelect :id="id" v-model="pick" :items="years" data-testid="gal-select" />
+      </DsFormField>
+      <DsFormField v-slot="{ id }" label="Slot option + blank" native>
+        <DsNativeSelect :id="id" v-model="longPick" data-testid="gal-select-slot">
+          <option value="">Semua Negeri</option>
+          <option v-for="n in ['Johor', 'Kedah', 'Selangor']" :key="n" :value="n">{{ n }}</option>
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField v-slot="{ id }" label="Boleh dicari (searchable)" native>
+        <DsNativeSelect :id="id" v-model="longPick" searchable blank :items="many" />
+      </DsFormField>
+      <DsFormField v-slot="{ id }" label="Natif (cetak)" native>
+        <DsNativeSelect :id="id" v-model="pick" native :items="years" />
+      </DsFormField>
+      <DsFormField v-slot="{ id }" label="Baca sahaja / dimuatkan" native>
+        <DsNativeSelect :id="id" v-model="pick" readonly :items="years" />
+      </DsFormField>
+      <DsFormField v-slot="{ id }" label="Dilumpuhkan" native>
+        <DsNativeSelect :id="id" v-model="pick" disabled :items="years" />
+      </DsFormField>
+    </DsFormSection>
+
+    <DsFormSection title="Suis dengan label (DsSwitchField)" icon="i-ph-toggle-right" :columns="2">
+      <DsSwitchField v-model="auto" label="Muat semula automatik" data-testid="gal-switch" />
+      <DsSwitchField v-model="auto2" label="Aktifkan akaun" description="Pengguna boleh log masuk selepas diaktifkan." />
+    </DsFormSection>
+
+    <DsFilterBar :chips="[]" data-testid="gal-filterbar">
+      <DsNativeSelect v-model="pick" aria-label="Tahap" :items="years" />
+    </DsFilterBar>
+    <DsFilterBar :chips="[]">
+      <template #search><UInput class="w-full" placeholder="Cari sekolah..." icon="i-ph-magnifying-glass" aria-label="Cari" /></template>
+      <DsNativeSelect v-model="pick" aria-label="Tahap" :items="years" />
+      <DsNativeSelect v-model="longPick" aria-label="Negeri" blank placeholder="Semua Negeri" :items="many" />
+    </DsFilterBar>
 
     <DsFormSection title="Gambar" icon="i-ph-image" accent="friend">
       <DsFileField

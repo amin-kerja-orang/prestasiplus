@@ -73,6 +73,7 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
         'grade_level',
         M.roomGradeLevel,
       ],
+      ['darjah grade level (secondary-only)', 'perang-fakta', { ...FORM, grade_level: 'DARJAH_4', match_mode: 'same_level' }, 'grade_level', M.roomGradeLevel],
       [
         'no match mode',
         'perang-fakta',
@@ -355,16 +356,7 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       expect(
         (await maju.post(P('perang-fakta', undefined, '/join'), { room_code: sameLevel })).status,
       ).toBe(200)
-      const primary = await createRoom(student, 'perang-fakta', {
-        ...FORM,
-        grade_level: 'DARJAH_4',
-        match_mode: 'same_level',
-      })
-      expectError(
-        await maju.post(P('perang-fakta', undefined, '/join'), { room_code: primary }),
-        'NOT_FOUND',
-        M.roomNotFound,
-      )
+      // Secondary-only (2026-10-29): a Darjah room can no longer be created (see the refusal row in the validation table).
 
       const custom = await createRoom(student, 'papan-bijak', {
         ...PB_FORM,
@@ -384,7 +376,7 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       // a caller without a grade always fits
       const open = await createRoom(student, 'perang-fakta', {
         ...FORM,
-        grade_level: 'DARJAH_1',
+        grade_level: 'TINGKATAN_4',
         match_mode: 'same_grade',
       })
       expect(

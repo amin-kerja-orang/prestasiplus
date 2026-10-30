@@ -15,7 +15,7 @@ describe('BE-18 B: teacher DSKP picks (bidang, SK, SP)', () => {
     teacher = await client(t, TEACHER_A)
     teacherId = await idOfEmail(t, TEACHER_A)
     subjectId = (await t.db.query<{ id: string }>(`select id::text id from subjects order by id limit 1`))[0]?.id as string
-    levelId = (await t.db.query<{ id: string }>(`select id::text id from education_levels order by id limit 1`))[0]?.id as string
+    levelId = (await t.db.query<{ id: string }>(`select id::text id from education_levels where stage <> 'primary' order by id limit 1`))[0]?.id as string
   })
   afterAll(async () => {
     await t.close()

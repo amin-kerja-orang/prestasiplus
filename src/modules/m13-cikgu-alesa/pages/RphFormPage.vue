@@ -11,7 +11,7 @@ import { useApi } from '@/composables'
 import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
 import { clock, formatDateKey } from '@/lib/time'
 
-import { createRph, fetchCikguClasses, fetchCikguSubjects, LEVELS } from '../api'
+import { createRph, fetchCikguClasses, fetchCikguSubjects, RPH_LEVELS } from '../api'
 import { RPH_COPY as C } from '../components/teacher/copy'
 import { errorLines, levelCodeOfSlug } from '../components/teacher/lib'
 
@@ -160,7 +160,7 @@ async function onSubmit(): Promise<void> {
           <template #default="{ id }">
             <DsNativeSelect :id="id" v-model="level" name="level" required>
               <option value="">— Pilih —</option>
-              <option v-for="l in LEVELS" :key="l.code" :value="l.code">{{ l.label }}</option>
+              <option v-for="l in RPH_LEVELS" :key="l.code" :value="l.code">{{ l.label }}</option>
             </DsNativeSelect>
           </template>
         </DsFormField>

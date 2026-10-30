@@ -1,5 +1,7 @@
 <script setup lang="ts">
 /** "Live Feed" of S3 (FR-M17-43, FN-M17-4.4.3): the period's latest answers - time, name, subject, ✓/✗. */
+import { DsBadge, DsEmptyState, DsListRow, DsStack } from '@/ds'
+
 import type { CcDailyActivity } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
 import { S3_COPY } from './board-copy'
@@ -12,33 +14,32 @@ const paths = ccPaths(props.basePath)
 
 <template>
   <DailyPanel title="Live Feed" icon="i-ph-lightning" testid="cc-panel-daily-feed" :state="status">
-    <p
+    <DsEmptyState
       v-if="!data || data.liveFeed.length === 0"
-      class="py-6 text-center text-body text-muted"
+      size="sm"
+      :title="S3_COPY.noActivity"
       data-testid="cc-empty"
-    >
-      {{ S3_COPY.noActivity }}
-    </p>
-    <ul v-else class="flex flex-col gap-1" aria-live="off">
-      <li
+    />
+    <DsStack v-else as="ul" gap="xs" aria-live="off">
+      <DsListRow
         v-for="(r, i) in data.liveFeed"
         :key="i"
-        class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 bg-soft px-3 py-2 text-body"
+        :title="r.student"
+        :sub="r.subject"
+        :to="paths.student(r.studentId)"
+        density="tight"
         data-testid="cc-daily-feed-row"
       >
-        <span class="tabular shrink-0 text-caption text-muted">{{ r.time }}</span>
-        <UButton
-          :to="paths.student(r.studentId)"
-          variant="link"
-          color="neutral"
-          class="h-auto min-w-0 p-0 text-start"
-          :label="r.student"
-        />
-        <span class="shrink-0 text-caption text-toned">{{ r.subject }}</span>
-        <span :class="['ms-auto shrink-0', r.correct ? 'text-success' : 'text-error']">{{
-          r.correct ? '✓' : '✗'
-        }}</span>
-      </li>
-    </ul>
+        <template #leading
+          ><span class="tabular shrink-0 text-caption text-muted">{{ r.time }}</span></template
+        >
+        <template #meta
+          ><DsBadge
+            :tone="r.correct ? 'success' : 'error'"
+            :label="r.correct ? '✓' : '✗'"
+            size="sm"
+        /></template>
+      </DsListRow>
+    </DsStack>
   </DailyPanel>
 </template>

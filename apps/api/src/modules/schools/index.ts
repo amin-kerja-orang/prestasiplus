@@ -12,3 +12,4 @@ export type {
   SchoolSummaryRow,
   SchoolWriteInput,
 } from './schools.repository'
+export { isPrimarySchoolType, PRIMARY_SCHOOL_TYPES } from './schools.constants'

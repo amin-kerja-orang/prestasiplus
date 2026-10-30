@@ -1,3 +1,4 @@
+import { treatDemoAsSecondary } from '../support/secondary'
 import {
   KirkpatrickBehaviorSchema,
   KirkpatrickChainSchema,
@@ -54,6 +55,7 @@ describe('M12 levels S1 to S6 and filter options (AC 1 to 3)', () => {
 
   beforeAll(async () => {
     t = await bootKirkpatrickApp()
+    await treatDemoAsSecondary(t.db, false)
     w = await buildWorld(t)
     admin = await client(t, ADMIN)
     teacherA = await client(t, TEACHER_A)

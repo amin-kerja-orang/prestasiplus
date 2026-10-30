@@ -48,7 +48,7 @@ describe('S19 Jutawan Ilmu (FR-M16-96, 97)', () => {
     wrapper = await mountAt(JutawanPage, '/permainan/jutawan')
     const text = wrapper.text()
     for (const s of [
-      'Pilih darjah / tingkatan kamu:',
+      'Pilih tingkatan kamu:',
       '💰 Jutawan Ilmu',
       'Pilih subjek, jawab 15 soalan — menang sampai 1,000 Syiling!',
       'L0',
@@ -57,7 +57,7 @@ describe('S19 Jutawan Ilmu (FR-M16-96, 97)', () => {
       '1,000🪙',
       'Hadiah Utama',
       '👆',
-      'Pilih darjah atau tingkatan di atas untuk mula.',
+      'Pilih tingkatan di atas untuk mula.',
     ]) {
       expect(text).toContain(s)
     }

@@ -23,6 +23,7 @@ export const FIELD_MESSAGES = {
   linkedInvalid: V.invalid('linked student ids'),
   icFormat: 'The ic number field format is invalid.',
   gradeRequired: V.requiredWhen('grade', 'role is student'),
+  gradeInvalid: V.invalid('grade'),
   schoolRequired: V.requiredWhen('school id', 'role is school_admin'),
   emailRequired: V.required('email'),
   ppdStateRequired: V.required('ppd state'),

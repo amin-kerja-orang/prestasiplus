@@ -131,6 +131,10 @@ async function seedReference(db: Tx, snap: CurriculumSnapshot, now: Date) {
     })),
     skipDuplicates: true,
   })
+  // Secondary-only (2026-10-29): the Darjah levels are hidden (inactive), never deleted. createMany skips an existing row,
+  // so an already-seeded database is brought in line here; only rows still active are touched (a re-run is a no-op).
+  const hidden = snap.levels.filter((l) => !l.isActive).map((l) => l.code)
+  if (hidden.length > 0) await db.educationLevel.updateMany({ where: { code: { in: hidden }, isActive: true }, data: { isActive: false, updatedAt: now } })
   await db.subject.createMany({
     data: [...snap.subjects, ...DSKP_ONLY_SUBJECTS].map((s) => ({
       code: s.code, name: s.name, nameEn: s.nameEn, icon: s.icon, color: s.color,

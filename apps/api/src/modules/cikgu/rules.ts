@@ -107,7 +107,7 @@ export function parseRphRequest(message: string, subjectNames: readonly string[]
     const letter = (m[1] ?? (m[3] ?? '').charAt(0)).toUpperCase()
     const digit = m[2] ?? m[4] ?? ''
     const code = `${letter}${digit}`
-    const known = CIKGU_LEVELS.find((l) => l.code === code)
+    const known = CIKGU_LEVELS.find((l) => l.code === code && l.code.startsWith('T')) // secondary-only (2026-10-29)
     if (known) {
       level = known.code
       end = m.index + m[0].length

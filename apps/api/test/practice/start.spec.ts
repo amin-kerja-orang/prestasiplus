@@ -53,8 +53,8 @@ const post = (c: Client, body: unknown) => c.post('/api/practice/sessions', body
 
 describe('AC3 start: every module error with its exact status, code and BM message', () => {
   it('422 NOT_ENOUGH_QUESTIONS "Soalan tidak mencukupi." when the bank cannot fill the count', async () => {
-    // SEJ has no Darjah level: nothing to draw from (BR-11).
-    const none = await post(pelajar, { mode: 'random', subjectCode: 'SEJ', count: 5 })
+    // SS has no level link: nothing to draw from (BR-11).
+    const none = await post(pelajar, { mode: 'random', subjectCode: 'SS', count: 5 })
     expect(none.status).toBe(422)
     expect(none.body.error).toMatchObject({ code: 'NOT_ENOUGH_QUESTIONS', message: 'Soalan tidak mencukupi.' })
     // 30 MATH D1 questions: 20 fits, then only 4 are left eligible and a count of 5 does not.
@@ -87,8 +87,8 @@ describe('AC3 start: every module error with its exact status, code and BM messa
     expect(mode.body.error.fields.mode).toBe('Nilai tidak sah.')
     // pksk sessions are created by M07, never by this route.
     expect((await post(pelajar, { mode: 'pksk' })).status).toBe(422)
-    // A level outside Darjah 1 to 4 for random.
-    const level = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, levelId: w.level.t4 })
+    // A level that is not offered (Tingkatan 4 and 5 only) for random.
+    const level = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, levelId: w.level.t3 })
     expect(level.body.error.fields.levelId).toBe('Nilai tidak sah.')
     const difficulty = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, difficulty: 9 })
     expect(difficulty.status).toBe(422)
@@ -376,7 +376,7 @@ describe('SPM modes: past_year, latih_tubi, ramalan', () => {
   })
 
   it('latih_tubi levelId must be an SPM level and difficulty 2 to 5', async () => {
-    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.d1 })).body.error.fields.levelId).toBe('Nilai tidak sah.')
+    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.t3 })).body.error.fields.levelId).toBe('Nilai tidak sah.')
     expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, difficulty: 1 })).body.error.fields.difficulty).toBe('Nilai tidak sah.')
     const s = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.t4, difficulty: 2 })
     for (const q of s.questions) expect(t.bank.get(q.id).difficulty).toBe(2)

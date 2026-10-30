@@ -11,7 +11,7 @@
  * An unknown id rejects with a `404` `ApiError` (the screen shows the standard 404 page).
  */
 
-import { api, isHttpMode, type ListResult } from '@/api'
+import { api, isHttpMode, uploadQuestionImage, type ListResult } from '@/api'
 
 export type QuestionStatus =
   | 'draft'
@@ -144,6 +144,8 @@ export interface Question {
   altAnswers: string[]
   modelAnswer: string | null
   explanation: string | null
+  /** v2 admin response: the paper kertas, or null. */
+  kertas?: '1' | '2' | '3' | null
   aiExplanation: AiExplanation | null
   language: QuestionLanguage
   pointsValue: number
@@ -235,6 +237,10 @@ export interface QuestionInputBody {
   explanation?: string | null
   language?: QuestionLanguage
   pointsValue?: number | string | null
+  /** Kertas '1' | '2' | '3'; '' or null = none (clears on edit). Omitted keeps. http mode only. */
+  kertas?: string | null
+  /** Edit, http mode: the saved option image tokens, kept when a later option gets a new image. */
+  savedOptionImages?: readonly (string | null)[]
   /** Edit only: remove the saved question image / option image `i`. */
   removeQuestionImage?: boolean
   removeOptionImage?: readonly boolean[]
@@ -280,6 +286,99 @@ export function toQuestionFormData(input: QuestionInputBody): FormData {
   return form
 }
 
+/** Uploaded image ids (http mode). */
+interface ImageFileIds {
+  questionImageFileId?: string
+  optionImageFileIds?: (string | null)[]
+}
+
+/**
+ * http mode: uploads each newly chosen image first (`POST /api/files?purpose=question_image`) and
+ * returns the file ids the JSON body carries. The stem id is absent when no new stem image was
+ * picked. `optionImageFileIds` is positional (a `null` clears, a missing trailing position keeps), so
+ * an untouched position before a new one is filled with its saved token (`savedOptionImages`).
+ * A failed upload rejects with a 422 `ApiError` keyed `questionImage` / `optionImages.<i>`, before
+ * anything is sent.
+ */
+async function uploadNewImages(input: QuestionInputBody): Promise<ImageFileIds> {
+  const ids: ImageFileIds = {}
+  if (input.questionImage) {
+    ids.questionImageFileId = await uploadQuestionImage(input.questionImage, 'questionImage')
+  }
+  const picked = input.optionImages ?? []
+  let last = -1
+  picked.forEach((file, i) => {
+    if (file) last = i
+  })
+  if (last >= 0) {
+    const list: (string | null)[] = []
+    for (let i = 0; i <= last; i += 1) {
+      const file = picked[i]
+      list.push(
+        file
+          ? await uploadQuestionImage(file, `optionImages.${String(i)}`)
+          : (input.savedOptionImages?.[i] ?? null),
+      )
+    }
+    ids.optionImageFileIds = list
+  }
+  return ids
+}
+
+const blankToNull = (v: string | null | undefined): string | null =>
+  v === undefined || v === null || v.trim() === '' ? null : v
+
+/**
+ * http mode: the JSON body of `QuestionCreateRequestSchema` / `QuestionUpdateRequestSchema`
+ * (packages/contract questions). Only the fields of the question's type are sent (an empty hidden
+ * option list would fail the 4-option rule); ids stay strings; a blank `dskpSpId` is `null` (clear).
+ */
+export function toQuestionJson(
+  input: QuestionInputBody,
+  mode: 'create' | 'edit',
+  images: ImageFileIds = {},
+): Record<string, unknown> {
+  const type = input.questionType
+  const body: Record<string, unknown> = {
+    subjectId: String(input.subjectId ?? ''),
+    educationLevelId: String(input.educationLevelId ?? ''),
+    difficultyLevel: Number(input.difficultyLevel),
+    questionText: input.questionText,
+  }
+  if (mode === 'create') body.questionType = type
+  if (input.dskpSpId !== undefined) {
+    body.dskpSpId = input.dskpSpId === null || input.dskpSpId === '' ? null : String(input.dskpSpId)
+  }
+  if (input.language !== undefined) body.language = input.language
+  if (input.pointsValue !== undefined && input.pointsValue !== null && input.pointsValue !== '') {
+    body.pointsValue = Number(input.pointsValue)
+  }
+  if (input.explanation !== undefined) body.explanation = blankToNull(input.explanation)
+  if (input.kertas !== undefined) body.kertas = input.kertas === '' ? null : input.kertas
+  if (input.removeQuestionImage) body.removeQuestionImage = true
+  if (images.questionImageFileId !== undefined) body.questionImageFileId = images.questionImageFileId
+  if (images.optionImageFileIds !== undefined) body.optionImageFileIds = images.optionImageFileIds
+
+  // Create: only the chosen type's fields. Edit: the form already sends only the saved type's.
+  const wants = (...types: QuestionType[]): boolean => mode === 'edit' || (type !== undefined && types.includes(type))
+  if (input.options !== undefined && wants('mcq')) body.options = [...input.options]
+  if (input.correctAnswer !== undefined && input.correctAnswer !== null && wants('mcq')) {
+    body.correctAnswer = Number(input.correctAnswer)
+  }
+  if (input.removeOptionImage?.some(Boolean) && wants('mcq')) body.removeOptionImage = [...input.removeOptionImage]
+  if (input.tfAnswer !== undefined && wants('true_false')) body.tfAnswer = input.tfAnswer
+  if (input.correctAnswerText !== undefined && wants('short_answer', 'fill_blank')) {
+    body.correctAnswerText = input.correctAnswerText
+  }
+  if (input.altAnswers !== undefined && wants('short_answer', 'fill_blank')) {
+    const alt = input.altAnswers
+    const items = alt === null ? [] : typeof alt === 'string' ? alt.split(',') : alt
+    body.altAnswers = items.map((s) => s.trim()).filter((s) => s !== '')
+  }
+  if (input.modelAnswer !== undefined && wants('essay')) body.modelAnswer = blankToNull(input.modelAnswer)
+  return body
+}
+
 /** #1 `GET /api/questions`: 20 per page, newest first; PKSK rows never included. */
 export function fetchQuestions(query: QuestionListQuery = {}): Promise<ListResult<QuestionRow>> {
   return api.list<QuestionRow>('/api/questions', {
@@ -310,8 +409,17 @@ export function fetchQuestionSummary(
   )
 }
 
-/** #3 `POST /api/questions` (201; 422 with `fields`). */
-export function createQuestion(input: QuestionInputBody): Promise<QuestionMutation<Question>> {
+/** #3 `POST /api/questions` (201; 422 with `fields`). Multipart in mock mode, JSON in http mode. */
+export async function createQuestion(
+  input: QuestionInputBody,
+): Promise<QuestionMutation<Question>> {
+  if (isHttpMode()) {
+    const images = await uploadNewImages(input)
+    return api.post<QuestionMutation<Question>>('/api/questions', {
+      body: toQuestionJson(input, 'create', images),
+      raw: true,
+    })
+  }
   return api.post<QuestionMutation<Question>>('/api/questions', {
     body: toQuestionFormData(input),
     raw: true,
@@ -329,11 +437,18 @@ export function fetchQuestion(
   )
 }
 
-/** #5 `PUT /api/questions/:id` (404; 422). Sent as multipart, as the live form. */
-export function updateQuestion(
+/** #5 `PUT /api/questions/:id` (404; 422). Multipart in mock mode, JSON in http mode. */
+export async function updateQuestion(
   id: number,
   input: QuestionInputBody,
 ): Promise<QuestionMutation<Question>> {
+  if (isHttpMode()) {
+    const images = await uploadNewImages(input)
+    return api.put<QuestionMutation<Question>>(`/api/questions/${String(id)}`, {
+      body: toQuestionJson(input, 'edit', images),
+      raw: true,
+    })
+  }
   return api.put<QuestionMutation<Question>>(`/api/questions/${String(id)}`, {
     body: toQuestionFormData(input),
     raw: true,

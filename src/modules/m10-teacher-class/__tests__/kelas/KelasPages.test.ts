@@ -187,7 +187,7 @@ describe('S4 KelasListPage', () => {
 })
 
 describe('S5 KelasCreatePage', () => {
-  it('renders the fields, 2 subjects after the placeholder and 11 tiles without required radios', async () => {
+  it('renders the fields, 2 subjects after the placeholder and 5 tiles without required radios', async () => {
     const w = await mountPage(KelasCreatePage)
     expect(w.get('[data-testid="kelas-back"]').attributes('href')).toBe('/guru/kelas')
     const name = w.get('[data-testid="kelas-name"]')
@@ -197,7 +197,7 @@ describe('S5 KelasCreatePage', () => {
     expect(options).toEqual(['-- Pilih Subjek --', 'Bahasa Melayu', 'Sains'])
     expect(w.get('[data-testid="kelas-subject"]').attributes('required')).toBeDefined()
     const tiles = w.findAll('[data-testid="kelas-levels"] [role="radio"]')
-    expect(tiles).toHaveLength(11)
+    expect(tiles).toHaveLength(5)
     expect(tiles.every((t) => t.attributes('aria-required') !== 'true')).toBe(true)
     expect(w.text()).not.toContain('Auto dari kelas sekolah')
     expect(w.get('[data-testid="kelas-submit"]').text()).toBe('Cipta Kelas')
@@ -240,37 +240,23 @@ describe('S5 KelasCreatePage', () => {
     expect(w.get('[data-testid="school-none"]').text()).toBe('Tiada sekolah dijumpai')
   })
 
-  it('filters the tiles by school type and restores 11 on clear', async () => {
+  it('shows the five Tingkatan tiles whatever the school type', async () => {
     vi.useFakeTimers()
-    const make = (type: string) => [
-      { id: 1, name: 'Sekolah', code: '', type, state: 'Johor', district: null, city: null },
-    ]
-    const w = await mountPage(KelasCreatePage)
-    const input = w.get('[data-testid="school-search"]')
-
-    schools.searchSchools.mockResolvedValue(make('SK'))
-    await input.setValue('se')
-    await vi.advanceTimersByTimeAsync(400)
-    await flushPromises()
-    await w.get('[data-testid="school-result"]').trigger('click')
-    expect(w.findAll('[data-testid="kelas-levels"] label').map((t) => t.text())).toEqual([
-      'Tahun 1',
-      'Tahun 2',
-      'Tahun 3',
-      'Tahun 4',
-      'Tahun 5',
-      'Tahun 6',
+    schools.searchSchools.mockResolvedValue([
+      { id: 1, name: 'Sekolah', code: '', type: 'SK', state: 'Johor', district: null, city: null },
     ])
-
-    await w.get('[data-testid="school-clear"]').trigger('click')
-    expect(w.findAll('[data-testid="kelas-levels"] [role="radio"]')).toHaveLength(11)
-
-    schools.searchSchools.mockResolvedValue(make('SMK'))
+    const w = await mountPage(KelasCreatePage)
     await w.get('[data-testid="school-search"]').setValue('se')
     await vi.advanceTimersByTimeAsync(400)
     await flushPromises()
     await w.get('[data-testid="school-result"]').trigger('click')
-    expect(w.findAll('[data-testid="kelas-levels"] [role="radio"]')).toHaveLength(5)
+    expect(w.findAll('[data-testid="kelas-levels"] label').map((t) => t.text())).toEqual([
+      'Ting. 1',
+      'Ting. 2',
+      'Ting. 3',
+      'Ting. 4',
+      'Ting. 5',
+    ])
   })
 
   async function submitFailing(error: ApiError | Error): Promise<VueWrapper> {
@@ -279,7 +265,7 @@ describe('S5 KelasCreatePage', () => {
     await router.push('/guru/kelas/cipta')
     await w.get('[data-testid="kelas-name"]').setValue('5 Bestari')
     await w.get('[data-testid="kelas-subject"]').setValue('4')
-    await w.findAll('[data-testid="kelas-levels"] [role="radio"]')[10]?.trigger('click')
+    await w.findAll('[data-testid="kelas-levels"] [role="radio"]')[4]?.trigger('click')
     await w.get('[data-testid="kelas-form"]').trigger('submit')
     await flushPromises()
     return w
@@ -323,7 +309,7 @@ describe('S5 KelasCreatePage', () => {
     await router.push('/guru/kelas/cipta')
     await w.get('[data-testid="kelas-name"]').setValue(' 5 Bestari ')
     await w.get('[data-testid="kelas-subject"]').setValue('4')
-    await w.findAll('[data-testid="kelas-levels"] [role="radio"]')[10]?.trigger('click')
+    await w.findAll('[data-testid="kelas-levels"] [role="radio"]')[4]?.trigger('click')
     await w.get('[data-testid="kelas-form"]').trigger('submit')
     await flushPromises()
     expect(api.createGuruClass).toHaveBeenCalledWith({

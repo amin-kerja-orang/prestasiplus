@@ -5,8 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
-import { formatCount } from '@/lib/number'
+import { DsGrid, DsGridItem, DsStatTile, formatCount } from '@/ds'
 
 import {
   CC_LOGIN_LABEL,
@@ -16,7 +15,7 @@ import {
   type CcPeriod,
 } from '../../api/command-center-board'
 import { accentAt } from '../command-center/cc-format'
-import { S3_COPY } from './board-copy'
+import { roleLabel, S3_COPY } from './board-copy'
 
 const props = defineProps<{ data: CcDailyActivity | null; period: CcPeriod }>()
 
@@ -25,120 +24,100 @@ interface Card {
   icon: string
   label: string
   value: string
-  /** Sub-line pieces; `bold` pieces are the highlighted figures. */
-  sub: { text: string; bold?: boolean }[]
+  sub: string
 }
 
-const cards = computed<Card[]>(() => {
+/** The activity figures first (answers, pupils, schools), then sessions, logins and engagement. */
+const ORDER = ['answers', 'pupils', 'schools', 'sessions', 'logins', 'engagement']
+
+const all = computed<Card[]>(() => {
   const d = props.data
   const dash = S3_COPY.empty
   if (!d) {
     return [
-      { id: 'schools', icon: 'i-ph-buildings', label: 'Sekolah Aktif', value: dash, sub: [] },
+      { id: 'schools', icon: 'buildings', label: 'Sekolah Aktif', value: dash, sub: '' },
       {
         id: 'logins',
-        icon: 'i-ph-sign-in',
+        icon: 'sign-in',
         label: CC_LOGIN_LABEL[props.period],
         value: dash,
-        sub: [],
+        sub: '',
       },
-      { id: 'pupils', icon: 'i-ph-student', label: 'Pelajar Aktif', value: dash, sub: [] },
+      { id: 'pupils', icon: 'student', label: 'Pelajar Aktif', value: dash, sub: '' },
       {
         id: 'answers',
-        icon: 'i-ph-clipboard-text',
+        icon: 'clipboard-text',
         label: 'Soalan Dijawab',
         value: dash,
-        sub: [],
+        sub: '',
       },
-      { id: 'sessions', icon: 'i-ph-clock', label: 'Sesi Latihan', value: dash, sub: [] },
-      { id: 'engagement', icon: 'i-ph-fire', label: 'Engagement', value: dash, sub: [] },
+      { id: 'sessions', icon: 'clock', label: 'Sesi Latihan', value: dash, sub: '' },
+      { id: 'engagement', icon: 'fire', label: 'Engagement', value: dash, sub: '' },
     ]
   }
-  const acc = ccAccuracyLabel(d.practice.accuracy).split(': ')
   const e = d.engagement
   const total = e.moodCheckins + e.missionsCompleted + e.badgesEarned + e.quizSetsCreated
   const roles = Object.entries(d.logins.byRole)
-  const roleSub = roles.flatMap(([role, n], i) => [
-    { text: `${i > 0 ? ' · ' : ''}${role}: ` },
-    { text: String(n), bold: true },
-  ])
+  const roleSub = roles.map(([role, n]) => `${roleLabel(role)}: ${String(n)}`).join(' · ')
   return [
     {
       id: 'schools',
-      icon: 'i-ph-buildings',
+      icon: 'buildings',
       label: 'Sekolah Aktif',
       value: formatCount(d.summary.activeSchools),
-      sub: [{ text: `daripada ${formatCount(d.summary.totalSchools)}` }],
+      sub: `daripada ${formatCount(d.summary.totalSchools)}`,
     },
     {
       id: 'logins',
-      icon: 'i-ph-sign-in',
+      icon: 'sign-in',
       label: CC_LOGIN_LABEL[props.period],
       value: formatCount(d.logins.total),
       sub: roleSub,
     },
     {
       id: 'pupils',
-      icon: 'i-ph-student',
+      icon: 'student',
       label: 'Pelajar Aktif',
       value: formatCount(d.summary.activeStudents),
-      sub: [{ text: `daripada ${formatCount(d.summary.totalStudents)}` }],
+      sub: `daripada ${formatCount(d.summary.totalStudents)}`,
     },
     {
       id: 'answers',
-      icon: 'i-ph-clipboard-text',
+      icon: 'clipboard-text',
       label: 'Soalan Dijawab',
       value: formatCount(d.practice.totalAnswers),
-      sub: [{ text: `${acc[0] ?? ''}: ` }, { text: acc[1] ?? '', bold: true }],
+      sub: ccAccuracyLabel(d.practice.accuracy),
     },
     {
       id: 'sessions',
-      icon: 'i-ph-clock',
+      icon: 'clock',
       label: 'Sesi Latihan',
       value: `${formatCount(d.practice.sessionsCompleted)}/${formatCount(d.practice.sessionsStarted)}`,
-      sub: [{ text: ccAvgSessionLabel(d.practice.avgSessionSeconds) }],
+      sub: ccAvgSessionLabel(d.practice.avgSessionSeconds),
     },
     {
       id: 'engagement',
-      icon: 'i-ph-fire',
+      icon: 'fire',
       label: 'Engagement',
       value: formatCount(total),
-      sub: [
-        {
-          text: `Mood:${String(e.moodCheckins)} Badge:${String(e.badgesEarned)} Misi:${String(e.missionsCompleted)}`,
-        },
-      ],
+      sub: `Mood:${String(e.moodCheckins)} Badge:${String(e.badgesEarned)} Misi:${String(e.missionsCompleted)}`,
     },
   ]
 })
+const cards = computed<Card[]>(() => ORDER.flatMap((id) => all.value.filter((c) => c.id === id)))
 </script>
 
 <template>
-  <div
-    class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
-    data-testid="cc-pulse"
-    aria-live="off"
-  >
-    <UCard v-for="(c, ci) in cards" :key="c.id" class="min-w-0" :data-testid="`cc-pulse-${c.id}`">
-      <div class="flex min-w-0 flex-col items-start gap-1">
-        <span class="flex w-full min-w-0 items-center gap-2">
-          <DsIconChip :icon="c.icon" :accent="accentAt(ci)" size="sm" />
-          <span class="min-w-0 text-overline text-muted" data-testid="cc-pulse-label">{{
-            c.label
-          }}</span>
-        </span>
-        <span
-          class="tabular text-title break-words text-highlighted"
-          data-testid="cc-pulse-value"
-          >{{ c.value }}</span
-        >
-        <span class="text-caption text-muted" data-testid="cc-pulse-sub">
-          <template v-for="(s, i) in c.sub" :key="i"
-            ><b v-if="s.bold" class="text-highlighted">{{ s.text }}</b
-            ><template v-else>{{ s.text }}</template></template
-          >
-        </span>
-      </div>
-    </UCard>
-  </div>
+  <DsGrid :cols="{ base: 1, sm: 2, md: 3 }" gap="md" data-testid="cc-pulse" aria-live="off">
+    <DsGridItem v-for="(c, ci) in cards" :key="c.id" :data-testid="`cc-pulse-${c.id}`">
+      <DsStatTile
+        :value="c.value"
+        :unit="c.label"
+        :sub="c.sub"
+        :icon="c.icon"
+        :accent="accentAt(ci)"
+        part-prefix="cc-pulse"
+      />
+    </DsGridItem>
+  </DsGrid>
 </template>

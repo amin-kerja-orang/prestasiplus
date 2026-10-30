@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { displayName } from '../../src/modules/battle/privacy'
+import { treatDemoAsSecondary } from '../support/secondary'
 import type { LoggedIn } from '../auth/helpers'
 import { addBattle, bootStandings, getAs, S, schoolIdOf, userIdOf, type StandingsApp } from './standings-helpers'
 
@@ -33,6 +34,7 @@ describe('children names in battle surfaces (issue #76)', () => {
 
   beforeAll(async () => {
     t = await bootStandings(NOW, [curriculumSeed])
+    await treatDemoAsSecondary(t.db) // the DEMO002 pupils are Darjah / primary by default and would be hidden
     for (const [k, p] of Object.entries(PEOPLE)) {
       await t.db.query(`update users set name = $1 where email = $2`, [p.name, p.email])
       id[k as Key] = await userIdOf(t.db, p.email)
@@ -44,7 +46,7 @@ describe('children names in battle surfaces (issue #76)', () => {
     battle2 = await addBattle(t.db, { a: S.D1(2), b: S.D1(3), scoreA: 7000, scoreB: 3000, at: '2026-10-20T09:00:00+08:00' })
     // The teacher owns one class holding only Aina.
     const teacher = await userIdOf(t.db, S.TEACHER)
-    const level = (await t.db.query<{ id: string }>(`select id::text from education_levels order by id limit 1`))[0]!.id
+    const level = (await t.db.query<{ id: string }>(`select id::text from education_levels where stage <> 'primary' order by id limit 1`))[0]!.id
     const cls = (await t.db.query<{ id: string }>(`insert into classrooms (name, teacher_id, education_level_id, academic_year) values ('K', $1, $2, 2026) returning id::text`, [teacher, level]))[0]!.id
     await t.db.query(`insert into enrolments (classroom_id, student_id, status, source) values ($1, $2, 'active', 'teacher')`, [cls, id.aina])
     who.admin = await t.login(S.ADMIN)

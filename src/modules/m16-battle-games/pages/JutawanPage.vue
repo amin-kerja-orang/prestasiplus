@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S19 `/permainan/jutawan` Jutawan Ilmu (FR-M16-96, 97; URS FT-M16-7.2; BR-M16-30). Without `?darjah`
- * the picker overlay covers the page (amber hover) and the hint "👆 Pilih darjah…" shows behind it; with
+ * the picker overlay covers the page (amber hover) and the hint "👆 Pilih tingkatan…" shows behind it; with
  * `?darjah=n` the subjects and question counts of M04 Q-JUT-COUNT are listed.
  */
 import { computed, ref, watch } from 'vue'
@@ -88,7 +88,7 @@ watch(darjah, () => void load(), { immediate: true })
         />
         <UCard v-else class="text-center" data-testid="jutawan-hint">
           <div class="text-title" aria-hidden="true">👆</div>
-          <p class="mt-2 text-body text-muted">Pilih darjah atau tingkatan di atas untuk mula.</p>
+          <p class="mt-2 text-body text-muted">Pilih tingkatan di atas untuk mula.</p>
         </UCard>
       </template>
     </GamePanel>

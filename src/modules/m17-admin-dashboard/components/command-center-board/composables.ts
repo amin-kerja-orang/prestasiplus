@@ -1,5 +1,5 @@
 /**
- * Timers and loaders of S2 and S3 (SRS M17 FR-M17-20, 21, 34, 35, 36): the 1 s MYT clock, the counter
+ * Timers and loaders of S2 and S3 (SRS M17 FR-M17-20, 21, 34, 35, 36): the counter
  * animation, the 10 s live-data poll and the 30 s daily-activity reload. Everything is cleared when the
  * page is left; tests drive it with fake timers.
  */
@@ -10,7 +10,6 @@ import { isHttpMode } from '@/api/mode'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useIntervalWhileVisible } from '@/composables'
 import { formatCount } from '@/lib/number'
-import { formatMyt } from '@/lib/time'
 
 import {
   fetchCcDailyActivity,
@@ -22,19 +21,6 @@ import {
   type CcSchoolDrill,
 } from '../../api/command-center-board'
 import { COUNT_UP_MS, S2_COPY, S2_POLL_MS, S2_REQUEST_TIMEOUT_MS, S3_POLL_MS } from './board-copy'
-
-/** `HH:MM:SS` in Asia/Kuala_Lumpur, ticking every second (FR-M17-20, FR-M17-34, BR-M17-19). */
-export function useBoardClock(): Ref<string> {
-  const now = () => formatMyt(Date.now(), 'HH:mm:ss')
-  const text = ref(now())
-  const timer = setInterval(() => {
-    text.value = now()
-  }, 1000)
-  onScopeDispose(() => {
-    clearInterval(timer)
-  })
-  return text
-}
 
 /** A 403 of the first load (a school admin without a school) shows the 403 page; nothing else does. */
 function refusedAtFirstLoad(err: unknown, hasData: boolean): boolean {

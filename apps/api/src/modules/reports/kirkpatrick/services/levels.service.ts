@@ -91,6 +91,17 @@ interface Stats {
   accuracy: number
 }
 
+/**
+ * The "answers grew" line of the Perbandingan summary. A percentage of 1000 or more (a tiny base) reads as noise, so it is
+ * phrased with the absolute change and a thousands separator instead: "Jumlah jawapan bertambah 13,965."
+ */
+export function answersSentence(delta: number, base: number): string | null {
+  if (delta <= 0 || base <= 0) return null
+  const pct = (delta / base) * 100
+  if (pct >= 1000) return `Jumlah jawapan bertambah ${delta.toLocaleString('en-US')}.`
+  return `Jumlah jawapan meningkat ${fmt1(pct)}%.`
+}
+
 @Injectable()
 export class LevelsService {
   constructor(
@@ -161,7 +172,8 @@ export class LevelsService {
     else if (delta.accuracy < 0) text.push(`Penurunan ${fmt1(Math.abs(delta.accuracy))}% dalam ketepatan jawapan.`)
     if (delta.active > 0) text.push(`${String(delta.active)} pelajar baru mula aktif.`)
     else if (delta.active < 0) text.push(`${String(Math.abs(delta.active))} pelajar kurang aktif berbanding sebelumnya.`)
-    if (delta.answers > 0 && before.answers > 0) text.push(`Jumlah jawapan meningkat ${fmt1((delta.answers / before.answers) * 100)}%.`)
+    const answersLine = answersSentence(delta.answers, before.answers)
+    if (answersLine !== null) text.push(answersLine)
     if (delta.champions > 0) text.push(`${String(delta.champions)} pelajar naik ke tahap Champion.`)
     return { subtitle: `${monthLabel(first)} vs ${monthLabel(current)}`, before, after, delta, sentences: text }
   }

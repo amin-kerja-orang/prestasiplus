@@ -40,9 +40,9 @@ interface SessionPlan {
 }
 
 export const PRACTICE_SESSIONS: readonly SessionPlan[] = [
-  { clientUuid: '6c0f5a1e-0001-4a10-9b00-0000000000a1', email: 'pelajar@demo.test', mode: 'random', subject: 'MATH', level: 'D1', questions: 10, correct: 7, daysAgo: 3, timeSpentSec: 300 },
-  { clientUuid: '6c0f5a1e-0002-4a10-9b00-0000000000a2', email: 'pelajar@demo.test', mode: 'chapter', subject: 'MATH', level: 'D1', chapterNumber: 1, questions: 5, correct: 4, daysAgo: 1, timeSpentSec: 180 },
-  { clientUuid: '6c0f5a1e-0003-4a10-9b00-0000000000b1', email: 'pelajarmaju@demo.test', mode: 'random', subject: 'BM', level: 'D1', questions: 10, correct: 9, daysAgo: 2, timeSpentSec: 240 },
+  { clientUuid: '6c0f5a1e-0001-4a10-9b00-0000000000a1', email: 'pelajar@demo.test', mode: 'random', subject: 'MATH', level: 'T4', questions: 10, correct: 7, daysAgo: 3, timeSpentSec: 300 },
+  { clientUuid: '6c0f5a1e-0002-4a10-9b00-0000000000a2', email: 'pelajar@demo.test', mode: 'chapter', subject: 'MATH', level: 'T4', chapterNumber: 1, questions: 5, correct: 4, daysAgo: 1, timeSpentSec: 180 },
+  { clientUuid: '6c0f5a1e-0003-4a10-9b00-0000000000b1', email: 'pelajarmaju@demo.test', mode: 'random', subject: 'BM', level: 'T5', questions: 10, correct: 9, daysAgo: 2, timeSpentSec: 240 },
   { clientUuid: '6c0f5a1e-0004-4a10-9b00-0000000000b2', email: 'pelajarmaju@demo.test', mode: 'past_year', subject: 'SEJ', level: 'T4', questions: 5, correct: 2, daysAgo: 1, timeSpentSec: 200 },
 ]
 

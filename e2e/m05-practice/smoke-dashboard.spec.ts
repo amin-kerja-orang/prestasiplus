@@ -37,7 +37,7 @@ test.describe('M05 S1 dashboard smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     gotoApp,
   }) => {
     await openDashboard(page, loginAs, gotoApp, ADMIN)
-    await expectTabTitle(page, 'Dashboard - PRESTASIPLUS')
+    await expectTabTitle(page, 'Dashboard | PRESTASIPLUS')
     await expect(tid(page, 'dash-hero')).toContainText(/Selamat Petang, .+ 👋/)
     await expect(tid(page, 'dash-hero')).toContainText('Jom teruskan latihan hari ini! 🚀')
     await expect(tid(page, 'dash-friend-bubble')).toBeVisible()
@@ -169,9 +169,9 @@ test.describe('M05 S1 dashboard smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
       '/practice?subject=MATH',
     )
 
-    await expect(tid(page, 'dash-level-pill')).toHaveCount(11)
+    await expect(tid(page, 'dash-level-pill')).toHaveCount(5)
     await expect(tid(page, 'dash-level-pill').first()).toHaveText(/^Darjah 1\s*\(11396\)$/)
-    await expect(tid(page, 'dash-level-pill').first()).toHaveAttribute('href', '/practice?level=D1')
+    await expect(tid(page, 'dash-level-pill').first()).toHaveAttribute('href', '/practice?level=T1')
 
     await expect(tid(page, 'dash-recent-item')).toHaveCount(5)
     await expect(tid(page, 'dash-recent-item').first().locator('a')).toHaveCount(0)

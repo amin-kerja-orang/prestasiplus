@@ -15,7 +15,16 @@ import { computed, nextTick, ref } from 'vue'
 import { isNavigationFailure, NavigationFailureType, useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsFilterBar, DsFormField, DsLoadError, DsNativeSelect, DsPage } from '@/ds'
+import { useMedia } from '@/ds/useMedia'
+import {
+  DsFilterBar,
+  DsFormField,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPillNav,
+  type PillItem,
+} from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { fetchMonitoringExport, fetchMonitoringOverview } from '../api'
@@ -45,6 +54,8 @@ const props = withDefaults(defineProps<{ basePath?: string }>(), { basePath: MON
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+/** Wide: PDF / CSV / Refresh sit in the filter card; narrow: the filter card is a sheet, so they go under it. */
+const wide = useMedia('(width >= 48rem)')
 const paths = computed(() => monitoringPaths(props.basePath))
 
 const one = (v: unknown) =>
@@ -110,7 +121,7 @@ const filters = useMonitoringFilters(query, (next) => void apply(next))
 const resetFilters = () => void router.push(paths.value.overview)
 const SUBTITLE = 'Pantau penglibatan sekolah & pelajar T4/T5 dalam platform'
 
-const tab = ref('pelajar')
+const tab = ref<TabKey>('pelajar')
 const TAB_OF: Record<string, string> = {
   'section-pelajar': 'pelajar',
   'section-guru': 'guru',
@@ -118,33 +129,19 @@ const TAB_OF: Record<string, string> = {
   'section-perhatian': 'perhatian',
   'section-cadangan': 'cadangan',
 }
-const TABS = [
-  { value: 'pelajar', label: 'Analisis Sekolah', icon: 'i-ph-chart-bar', slot: 'pelajar' as const },
-  { value: 'guru', label: 'Analisis Guru', icon: 'i-ph-chalkboard-teacher', slot: 'guru' as const },
-  {
-    value: 'mingguan',
-    label: 'Tracking Mingguan',
-    icon: 'i-ph-calendar-dots',
-    slot: 'mingguan' as const,
-  },
-  {
-    value: 'perhatian',
-    label: 'Sekolah Cemerlang / Perhatian Segera',
-    icon: 'i-ph-warning',
-    slot: 'perhatian' as const,
-  },
-  {
-    value: 'cadangan',
-    label: 'Cadangan Tindakan',
-    icon: 'i-ph-lightbulb',
-    slot: 'cadangan' as const,
-  },
+type TabKey = 'pelajar' | 'guru' | 'mingguan' | 'perhatian' | 'cadangan'
+const TABS: PillItem<TabKey>[] = [
+  { key: 'pelajar', label: 'Analisis Sekolah', icon: 'chart-bar' },
+  { key: 'guru', label: 'Analisis Guru', icon: 'chalkboard-teacher' },
+  { key: 'mingguan', label: 'Tracking Mingguan', icon: 'calendar-dots' },
+  { key: 'perhatian', label: 'Sekolah Cemerlang / Perhatian Segera', icon: 'warning' },
+  { key: 'cadangan', label: 'Cadangan Tindakan', icon: 'lightbulb' },
 ]
 
 /** Guide tiles: open the tab that holds the section, then scroll to the tab strip (or the KPIs). */
 async function goto(sectionId: string) {
   const next = TAB_OF[sectionId]
-  if (next) tab.value = next
+  if (next) tab.value = next as TabKey
   await nextTick()
   document
     .getElementById(next ? 'mon-tabs' : sectionId)
@@ -156,12 +153,12 @@ async function goto(sectionId: string) {
   <DsPage data-testid="monitoring-page" :subtitle="SUBTITLE">
     <template #actions>
       <MonitoringTools
+        part="status"
         :query="query"
         :paths="paths"
         :form-id="FORM_ID"
         :refresh-display="refresh.display.value"
         :refresh-running="refresh.running.value"
-        @export="doExport"
         @toggle="refresh.toggle"
       />
     </template>
@@ -178,7 +175,7 @@ async function goto(sectionId: string) {
       @remove-chip="filters.removeChip"
       @reset="resetFilters"
     >
-      <DsFormField v-slot="{ id }" native label="Tempoh" class="w-full md:w-48">
+      <DsFormField v-slot="{ id }" native label="Tempoh" class="w-full md:min-w-0 md:flex-1">
         <DsNativeSelect
           :id="id"
           v-model="filters.period.value"
@@ -188,19 +185,41 @@ async function goto(sectionId: string) {
           <option v-for="[value, label] in PERIODS" :key="value" :value="value">{{ label }}</option>
         </DsNativeSelect>
       </DsFormField>
-      <DsFormField v-slot="{ id }" native label="Negeri" class="w-full md:w-56">
+      <DsFormField v-slot="{ id }" native label="Negeri" class="w-full md:min-w-0 md:flex-1">
         <DsNativeSelect :id="id" v-model="filters.state.value" name="state" data-testid="mon-state">
           <option value="">Semua Negeri</option>
           <option v-for="s in STATES" :key="s" :value="s">{{ s }}</option>
         </DsNativeSelect>
       </DsFormField>
-      <DsFormField v-slot="{ id }" native label="Tahap" class="w-full md:w-56">
+      <DsFormField v-slot="{ id }" native label="Tahap" class="w-full md:min-w-0 md:flex-1">
         <DsNativeSelect :id="id" v-model="filters.tahap.value" name="tahap" data-testid="mon-tahap">
           <option value="">Semua Tahap</option>
           <option v-for="t in TAHAPS" :key="t" :value="t">{{ t }}</option>
         </DsNativeSelect>
       </DsFormField>
+      <template v-if="wide" #actions>
+        <MonitoringTools
+          part="actions"
+          class="ml-6"
+          :query="query"
+          :paths="paths"
+          :form-id="FORM_ID"
+          :refresh-display="refresh.display.value"
+          :refresh-running="refresh.running.value"
+          @export="doExport"
+        />
+      </template>
     </DsFilterBar>
+    <MonitoringTools
+      v-if="!wide"
+      part="actions"
+      :query="query"
+      :paths="paths"
+      :form-id="FORM_ID"
+      :refresh-display="refresh.display.value"
+      :refresh-running="refresh.running.value"
+      @export="doExport"
+    />
 
     <DsLoadError v-if="error" testid="mon-error" @retry="reload" />
     <p
@@ -213,39 +232,37 @@ async function goto(sectionId: string) {
 
     <template v-if="data">
       <MonitoringKpis :kpi="data.kpi" />
-      <!-- G5-M11 bug 1: the theme label is `truncate`; `text-ellipsis` replaces it, so the full label shows and the list scrolls. -->
-      <UTabs
+      <DsPillNav
         id="mon-tabs"
-        v-model="tab"
         :items="TABS"
-        :unmount-on-hide="false"
-        variant="link"
-        size="lg"
-        class="w-full"
-        :ui="{
-          content: 'pt-6',
-          list: 'overflow-x-auto',
-          trigger: 'shrink-0',
-          label: 'overflow-visible text-ellipsis whitespace-nowrap',
-        }"
+        :active="tab"
+        label="Bahagian monitoring"
+        wrap
+        compact
+        testid-prefix="mon-tab-nav"
         data-testid="mon-tabs"
-      >
-        <template #pelajar>
-          <MonitoringEngagementTable kind="student" :rows="data.studentRows" :paths="paths" />
-        </template>
-        <template #guru>
-          <MonitoringEngagementTable kind="teacher" :rows="data.teacherRows" :paths="paths" />
-        </template>
-        <template #mingguan>
-          <MonitoringWeekly :weeks="data.weeks" :rows="data.weekly" :paths="paths" />
-        </template>
-        <template #perhatian>
-          <MonitoringSignals :signals="data.signals" part="perhatian" />
-        </template>
-        <template #cadangan>
-          <MonitoringSignals :signals="data.signals" part="cadangan" />
-        </template>
-      </UTabs>
+        @select="tab = $event"
+      />
+      <MonitoringEngagementTable
+        v-show="tab === 'pelajar'"
+        kind="student"
+        :rows="data.studentRows"
+        :paths="paths"
+      />
+      <MonitoringEngagementTable
+        v-show="tab === 'guru'"
+        kind="teacher"
+        :rows="data.teacherRows"
+        :paths="paths"
+      />
+      <MonitoringWeekly
+        v-show="tab === 'mingguan'"
+        :weeks="data.weeks"
+        :rows="data.weekly"
+        :paths="paths"
+      />
+      <MonitoringSignals v-show="tab === 'perhatian'" :signals="data.signals" part="perhatian" />
+      <MonitoringSignals v-show="tab === 'cadangan'" :signals="data.signals" part="cadangan" />
       <MonitoringGuide @goto="goto" />
     </template>
   </DsPage>

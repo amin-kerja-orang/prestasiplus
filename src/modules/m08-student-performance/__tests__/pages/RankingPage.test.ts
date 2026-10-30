@@ -73,7 +73,7 @@ describe('RankingPage (M08 S19)', () => {
     const w = await render()
     expect(w.get('h1').text()).toBe('Kedudukan')
     expect(w.get('[data-testid=ranking-subtitle]').text()).toBe('Nasional')
-    expect(document.title).toBe('Kedudukan Nasional')
+    expect(document.title).toBe('Kedudukan Nasional | PRESTASIPLUS')
     const pills = w.findAll('[data-testid=ranking-pills] a')
     expect(pills.map((p) => p.text())).toEqual(['Nasional', 'Negeri', 'Daerah', 'Sekolah'])
     expect(pills.map((p) => p.attributes('data-active'))).toEqual([
@@ -139,7 +139,7 @@ describe('RankingPage (M08 S19)', () => {
     api.fetchRankings.mockResolvedValue(ranking({ scope: 'negeri', showFooter: false }))
     const w = await render('/ranking?scope=negeri&negeri=Selangor')
     expect(w.get('[data-testid=ranking-subtitle]').text()).toBe('Selangor')
-    expect(document.title).toBe('Kedudukan Selangor')
+    expect(document.title).toBe('Kedudukan Selangor | PRESTASIPLUS')
     const options = (w.findAllComponents({ name: 'Select' })[2]?.props('items') as { label: string }[]).map(
       (o) => o.label,
     )

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-/** A panel of S2: a raised card with a tinted icon chip and the heading (FR-M17-33). */
-import { DsIconChip } from '@/ds'
+/** A panel of S2: the DS panel with the icon chip, the heading and the shared padding and radius (FR-M17-33). */
+import { DsPanel } from '@/ds'
 
 import { accentFor } from '../command-center/cc-format'
 
@@ -8,15 +8,14 @@ defineProps<{ icon: string; title: string; testid: string }>()
 </script>
 
 <template>
-  <UCard class="min-w-0" :data-testid="testid">
-    <template #header>
-      <div class="flex min-w-0 items-center gap-2">
-        <DsIconChip :icon="icon" :accent="accentFor(icon)" size="sm" />
-        <h2 class="min-w-0 text-subheading text-highlighted" data-testid="board-panel-title">
-          {{ title }}
-        </h2>
-      </div>
-    </template>
+  <DsPanel
+    as="section"
+    :title="title"
+    :icon="icon"
+    :accent="accentFor(icon)"
+    stretch
+    :data-testid="testid"
+  >
     <slot />
-  </UCard>
+  </DsPanel>
 </template>

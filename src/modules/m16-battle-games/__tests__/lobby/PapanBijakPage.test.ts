@@ -63,8 +63,8 @@ const top10 = [
 ]
 
 const lobby = (over: Partial<GameLobby> = {}): GameLobby => ({
-  autoGrade: 'DARJAH_4',
-  autoGradeName: 'Darjah 4',
+  autoGrade: 'TINGKATAN_4',
+  autoGradeName: 'Tingkatan 4',
   top10,
   ...over,
 })
@@ -118,7 +118,7 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     )
     expect(sel('create-subject').texts()).toEqual(['🔢 Matematik', '📝 Bahasa Melayu', '🔬 Sains', '🇬🇧 Bahasa Inggeris'])
     const auto = wrapper!.get('[data-testid="grade-auto"]').text()
-    expect(auto).toContain('Darjah 4')
+    expect(auto).toContain('Tingkatan 4')
     expect(auto).toContain('(auto dari profil anda)')
     expect(wrapper!.get('[data-testid="grade-auto-row"]').text()).toContain('Tukar')
     const how = wrapper!.get('[data-testid="pb-how-to"]')
@@ -138,15 +138,14 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     expect(wrapper!.find('[data-testid="grade-auto"]').exists()).toBe(false)
     const select = sel('grade-select')
     expect(select.labels()).toEqual([
-      'Sekolah Rendah',
       'Sekolah Menengah',
     ])
-    expect(select.value()).toBe('DARJAH_4')
+    expect(select.value()).toBe('TINGKATAN_4')
     await select.set('TINGKATAN_2')
     expect(sel('create-mode').texts()[1]).toBe('Semua Tingkatan (1-5)')
     await wrapper!.get('[data-testid="grade-back"]').trigger('click')
-    expect(wrapper!.get('[data-testid="grade-auto"]').text()).toContain('Darjah 4')
-    expect(sel('create-mode').texts()[1]).toBe('Semua Darjah (1-6)')
+    expect(wrapper!.get('[data-testid="grade-auto"]').text()).toContain('Tingkatan 4')
+    expect(sel('create-mode').texts()[1]).toBe('Semua Tingkatan (1-5)')
   })
 
   it('an account without a grade opens on the select (no auto box, no way back)', async () => {
@@ -157,15 +156,15 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     expect(wrapper!.find('[data-testid="grade-back"]').exists()).toBe(false)
   })
 
-  it('custom shows "Dari" / "Hingga" (default D1 / D6) and "Maks Pemain" 2-6 defaults to 4', async () => {
+  it('custom shows "Dari" / "Hingga" (default T1 / T5) and "Maks Pemain" 2-6 defaults to 4', async () => {
     await mountPage()
     expect(wrapper!.find('[data-testid="create-range"]').exists()).toBe(false)
     expect(sel('create-max-players').texts()).toEqual(['2 Pemain', '3 Pemain', '4 Pemain', '5 Pemain', '6 Pemain'])
     expect(sel('create-max-players').value()).toBe(4)
     await sel('create-mode').set('custom')
-    expect(sel('create-grade-min').value()).toBe(1)
-    expect(sel('create-grade-max').value()).toBe(6)
-    expect(sel('create-grade-max').items()).toHaveLength(11)
+    expect(sel('create-grade-min').value()).toBe(7)
+    expect(sel('create-grade-max').value()).toBe(11)
+    expect(sel('create-grade-max').items()).toHaveLength(5)
   })
 })
 
@@ -191,7 +190,7 @@ describe('S7 create and join (FR-M16-56, 57)', () => {
     await flushPromises()
     expect(createRoom).toHaveBeenCalledWith('papan-bijak', {
       subject: 'MATEMATIK',
-      grade_level: 'DARJAH_4',
+      grade_level: 'TINGKATAN_4',
       match_mode: 'same_grade',
       max_players: 4,
     })

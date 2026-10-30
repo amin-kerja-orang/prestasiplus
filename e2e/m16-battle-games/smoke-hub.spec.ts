@@ -68,7 +68,7 @@ test.describe('M16 S6 hub', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan')
-    await expectTabTitle(page, 'Permainan — PRESTASIPLUS')
+    await expectTabTitle(page, 'Permainan | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title').first()).toHaveText('Zona Permainan')
     await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
       'Selamat datang kembali',

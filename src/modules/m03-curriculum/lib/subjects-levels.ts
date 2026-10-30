@@ -36,7 +36,7 @@ export const COPY = {
   genericError: 'Ralat berlaku. Sila cuba lagi.',
 } as const
 
-/** FR-58 / FR-64 stage labels and the S10/S11 select options (BR-01). */
+/** FR-58 / FR-64 stage labels and the S10/S11 select options (BR-01). v2: the select offers no primary stage. */
 export const STAGE_LABELS: Record<EducationStage, string> = {
   primary: 'Rendah',
   lower_secondary: 'Menengah Rendah',
@@ -44,7 +44,6 @@ export const STAGE_LABELS: Record<EducationStage, string> = {
 }
 
 export const STAGE_OPTIONS: readonly { value: EducationStage; label: string }[] = [
-  { value: 'primary', label: 'Rendah (Primary)' },
   { value: 'lower_secondary', label: 'Menengah Rendah (Lower Secondary)' },
   { value: 'upper_secondary', label: 'Menengah Atas (Upper Secondary)' },
 ]

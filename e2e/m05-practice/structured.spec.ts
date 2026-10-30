@@ -20,7 +20,7 @@ import {
 } from '../support'
 
 const PELAJAR = 'pelajar@demo.test'
-const NOT_FOUND = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
@@ -38,7 +38,7 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
   test('header, heading, filter options and cards', async ({ page, loginAs, gotoApp }) => {
     await loginAs(PELAJAR)
     await gotoApp('/latihan-berstruktur')
-    await expectTabTitle(page, 'Soalan Berstruktur - PRESTASIPLUS')
+    await expectTabTitle(page, 'Soalan Berstruktur | PRESTASIPLUS')
     // DV-M05-01: no subtitle in the shell header.
     await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Berstruktur')
     await expect(tid(page, 'structured-h1')).toHaveText('Soalan Berstruktur')
@@ -152,7 +152,7 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(PELAJAR)
       await gotoApp('/latihan-berstruktur?scope=spm')
-      await expectTabTitle(page, 'Soalan Berstruktur - PRESTASIPLUS')
+      await expectTabTitle(page, 'Soalan Berstruktur | PRESTASIPLUS')
       await expect(tid(page, 'shell-user-title')).toHaveText('Subjektif SPM')
       await expect(tid(page, 'structured-h1')).toHaveText('Subjektif SPM')
       await expect(tid(page, 'structured-sub')).toHaveText(
@@ -238,7 +238,7 @@ test.describe('M05 Q3 structured answer', { tag: [moduleTag(5)] }, () => {
         .getByTestId('card-start')
         .click()
       await expect(page).toHaveURL(/\/latihan-berstruktur\/\d+\/jawab$/)
-      await expectTabTitle(page, 'Soalan Berstruktur - PRESTASIPLUS')
+      await expectTabTitle(page, 'Soalan Berstruktur | PRESTASIPLUS')
       await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Berstruktur')
       await expect(tid(page, 'answer-stimulus')).not.toBeEmpty()
       expect(await page.getByTestId('sub-answer').count()).toBeGreaterThan(0)

@@ -6,8 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
-import { formatCount, formatNumber } from '@/lib/number'
+import { DsGrid, DsGridItem, DsStatTile, formatCount, formatPercent } from '@/ds'
 
 import type { CcLiveData } from '../../api/command-center-board'
 import { accentAt } from '../command-center/cc-format'
@@ -21,7 +20,7 @@ const students = useCountUp(computed(() => props.data?.totalStudents ?? null))
 const answered = useCountUp(computed(() => props.data?.totalAnswered ?? null))
 
 const accuracy = computed(() =>
-  props.data ? `${formatNumber(props.data.accuracy, { decimals: 1 })}%` : S2_COPY.placeholder,
+  props.data ? formatPercent(props.data.accuracy) : S2_COPY.placeholder,
 )
 const active = computed(() => (props.data ? formatCount(props.data.activeStudents) : '--'))
 
@@ -32,46 +31,44 @@ const tiles = computed<{ id: string; label: string; value: string; sub: string; 
       label: 'Sekolah Berdaftar',
       value: schools.value,
       sub: 'langganan aktif',
-      icon: 'i-ph-buildings',
+      icon: 'buildings',
     },
     {
       id: 'students',
       label: 'Pelajar Berdaftar',
       value: students.value,
       sub: `${active.value} aktif menjawab`,
-      icon: 'i-ph-student',
+      icon: 'student',
     },
     {
       id: 'answered',
       label: 'Soalan Dijawab',
       value: answered.value,
       sub: 'sepanjang masa',
-      icon: 'i-ph-clipboard-text',
+      icon: 'clipboard-text',
     },
     {
       id: 'accuracy',
       label: 'Ketepatan Purata',
       value: accuracy.value,
       sub: props.school ? 'sekolah anda' : 'keseluruhan platform',
-      icon: 'i-ph-target',
+      icon: 'target',
     },
   ],
 )
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="cc-kpis" aria-live="off">
-    <UCard v-for="(t, i) in tiles" :key="t.id" class="min-w-0" :data-testid="`cc-kpi-${t.id}`">
-      <div class="flex min-w-0 flex-col items-start gap-1">
-        <span class="flex w-full min-w-0 items-center gap-2">
-          <DsIconChip :icon="t.icon" :accent="accentAt(i)" size="sm" />
-          <span class="min-w-0 text-overline text-muted">{{ t.label }}</span>
-        </span>
-        <span class="tabular text-title break-words text-highlighted" data-testid="cc-kpi-value">{{
-          t.value
-        }}</span>
-        <span class="text-caption text-muted" data-testid="cc-kpi-sub">{{ t.sub }}</span>
-      </div>
-    </UCard>
-  </div>
+  <DsGrid :cols="{ base: 2, md: 4 }" gap="md" data-testid="cc-kpis" aria-live="off">
+    <DsGridItem v-for="(t, i) in tiles" :key="t.id" :data-testid="`cc-kpi-${t.id}`">
+      <DsStatTile
+        :value="t.value"
+        :unit="t.label"
+        :sub="t.sub"
+        :icon="t.icon"
+        :accent="accentAt(i)"
+        part-prefix="cc-kpi"
+      />
+    </DsGridItem>
+  </DsGrid>
 </template>

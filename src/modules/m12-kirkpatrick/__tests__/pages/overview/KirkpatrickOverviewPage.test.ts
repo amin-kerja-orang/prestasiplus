@@ -55,16 +55,16 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
     const { wrapper: w } = await open()
     const cards = t(w, 'kirk-levels').findAll('a')
     expect(cards.map((c) => c.attributes('href'))).toEqual([
-      '/admin/kirkpatrick/results',
-      '/admin/kirkpatrick/behavior',
-      '/admin/kirkpatrick/learning',
       '/admin/kirkpatrick/reaction',
+      '/admin/kirkpatrick/learning',
+      '/admin/kirkpatrick/behavior',
+      '/admin/kirkpatrick/results',
     ])
     expect(flat(t(w, 'kirk-level-t4'))).toBe(
-      'Tahap 4: Hasil 4.30 GPS Sekolah · 4378 rekod headcount Lihat detail',
+      'Tahap 4: Hasil 4.30 GPS Sekolah · 4,378 rekod headcount Lihat detail',
     )
     expect(flat(t(w, 'kirk-level-t3'))).toBe(
-      'Tahap 3: Tingkah Laku 946 /4158 Pelajar aktif · 20991 sesi · 82.8% ketepatan Lihat detail',
+      'Tahap 3: Tingkah Laku 946 /4,158 Pelajar aktif · 20,991 sesi · 82.8% ketepatan Lihat detail',
     )
     expect(flat(t(w, 'kirk-level-t2'))).toBe(
       'Tahap 2: Pembelajaran 82.8% Ketepatan · 306,133 soalan dijawab Lihat detail',
@@ -165,12 +165,12 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
         .map((e) => e.text())
     expect(panel('kirk-panel-before')).toEqual(['2', '33.3%', '3', '0'])
     expect(panel('kirk-panel-after')).toEqual(['58', '87%', '13,968', '28'])
-    expect(values(w, 'kirk-delta-value')).toEqual(['+56', '+53.7%', '+13965', '+28'])
+    expect(values(w, 'kirk-delta-value')).toEqual(['+56', '+53.7%', '+13,965', '+28'])
     for (const d of t(w, 'kirk-deltas').element.children) {
       expect(d.getAttribute('data-tone')).toBe('up')
     }
     expect(squash(t(w, 'kirk-summary').text())).toBe(
-      'Ringkasan: Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. Jumlah jawapan meningkat 465500%. 28 pelajar naik ke tahap Champion.',
+      'Ringkasan: Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. Jumlah jawapan bertambah 13,965. 28 pelajar naik ke tahap Champion.',
     )
   })
 
@@ -241,7 +241,7 @@ describe('S1 KPI row, bands and info (AC-M12-09.1..09.3)', () => {
     expect(bandLinks.map((a) => a.attributes('href'))).toEqual(
       Array(5).fill('/admin/kirkpatrick/behavior'),
     )
-    expect(values(w, 'kirk-band-count')).toEqual(['513', '259', '169', '5', '3212'])
+    expect(values(w, 'kirk-band-count')).toEqual(['513', '259', '169', '5', '3,212'])
     expect(values(w, 'kirk-band-pct')).toEqual(['12.3%', '6.2%', '4.1%', '0.1%', '77.2%'])
     expect(t(w, 'kirk-bands').text()).toContain('Tidak Terlibat')
   })
@@ -282,7 +282,7 @@ describe('mounts', () => {
     const hrefs = w.findAll('a').map((a) => a.attributes('href') ?? '')
     expect(hrefs).toEqual(['/admin-sekolah/monitoring', '/admin-sekolah/monitoring'])
     expect(w.text()).not.toContain('Lihat detail')
-    expect(t(w, 'kirk-level-t3').text()).toContain('946/4158')
+    expect(t(w, 'kirk-level-t3').text()).toContain('946/4,158')
     expect(all(w, 'kirk-band-count')).toHaveLength(5)
   })
 })

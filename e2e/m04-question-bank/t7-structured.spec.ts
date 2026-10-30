@@ -258,7 +258,7 @@ test.describe('M04 S9 structured detail', { tag: [TAG.smoke, moduleTag(4)] }, ()
   test('an unknown id shows the standard 404 page', async ({ page, loginAs, gotoApp }) => {
     await loginAs(ADMIN)
     await gotoApp(`${LIST}/99999999`)
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     await expect(
       page.getByRole('heading', { level: 1, name: 'Halaman Tidak Dijumpai', exact: true }),
     ).toBeVisible()

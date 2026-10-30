@@ -80,6 +80,19 @@ Groups and items exactly `v2-portals.md` §5–§6 (94 items for Admin Pusat). R
 
 Group icon bases (Phosphor, Regular via `DsIcon`): Papan Pemuka `squares-four`, Pemantauan `pulse`, Bank Soalan `books`, Kertas & SPM `scroll`, Kurikulum & Kandungan `book-open`, Pengguna & Sekolah `student`, Penglibatan `trophy`, Kewangan `wallet`, Sistem `gear`. (DS-T0 verifies glyphs.)
 
+#### 2.2.1 Pentadbiran menu, crumbs and header (batch 1 unit 1d, `v2-admin-page-templates` 2.J, 8.3, 9.3)
+
+Built in `DsAdminShell` (`src/ds`), fed by `src/shells/pentadbiran/menu.ts`. Supersedes the rows above where they differ (the shipped sidebar shows one icon chip per item).
+
+| Item | Spec |
+|---|---|
+| Pemantauan | Langsung, Aktiviti Harian, Monitoring (`/guru/monitoring`), Analitik, then **Kirkpatrick** as ONE row that opens Ringkasan (`/admin/kirkpatrick`); its other pages (T1 Reaksi, T2 Pembelajaran, T3 Tingkah Laku, T4 Hasil, Rantaian Impak, Intervensi) are in-page tabs above the content (`sectionTabs`, `DsPillNav`). Original menu restored by D77. |
+| Crumbs | Sidebar group, plus sub-group for its items, then the `h1` (menu label), then the entity. Generated from `menu.ts`, so crumb groups always equal sidebar groups (no page types a crumb). Shown from `xl`. |
+| Entity title | `useShellEntityTitle(name)` (`@/ds`): a detail page names its entity; the shell adds it as the last crumb (from `md`) and the tab title becomes "{entity} · {label} | PRESTASIPLUS". `usePageMeta().setTitle` still wins over it. Cleared on unmount. |
+| `h1` size | 16px (`text-subheading`) below `lg`, `text-heading` from `lg` (measured 20px at 1280). |
+| Header rhythm | Sidebar header and navbar are both 64px with the same `shadow-bar` edge (the language has no border lines), logo centred in its row. |
+| "Cari menu" | First control in the sidebar body, under the header: same inset (12px), width and height as a nav row, placeholder "Cari menu…", small `Ctrl K` hint right-aligned inside. Collapsed: an icon button the size of a rail row. Below `lg` the top bar keeps a search icon ("Cari menu"). |
+
 ### 2.3 Top bar
 
 | Slot | ≥ md | < md (375) |

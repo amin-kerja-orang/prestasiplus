@@ -16,6 +16,13 @@ export const QUESTION_TYPE_OPTIONS: readonly { value: QuestionType; label: strin
   { value: 'essay', label: 'Esei / Subjektif' },
 ]
 
+/** The Kertas select (an empty choice means none). */
+export const KERTAS_OPTIONS = [
+  { value: '1', label: 'Kertas 1' },
+  { value: '2', label: 'Kertas 2' },
+  { value: '3', label: 'Kertas 3' },
+] as const
+
 export const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const
 
 /** The values of the S2 / S4 form (strings as the inputs hold them). */
@@ -38,6 +45,8 @@ export interface QuestionFormValues {
   explanation: string
   language: 'bm' | 'en'
   pointsValue: string
+  /** '' = none, else '1' | '2' | '3' (Kertas, v2). */
+  kertas: '' | '1' | '2' | '3'
 }
 
 export function emptyValues(): QuestionFormValues {
@@ -60,6 +69,7 @@ export function emptyValues(): QuestionFormValues {
     explanation: '',
     language: 'bm',
     pointsValue: '1',
+    kertas: '',
   }
 }
 
@@ -84,6 +94,7 @@ export function valuesFromQuestion(q: QuestionDetail): QuestionFormValues {
     explanation: q.explanation ?? '',
     language: q.language,
     pointsValue: String(q.pointsValue),
+    kertas: q.kertas ?? '',
   }
 }
 
@@ -108,8 +119,14 @@ export function buildBody(
     language: v.language,
     pointsValue: v.pointsValue,
   }
-  if (mode === 'create') body.questionType = v.questionType
-  else if (v.removeQuestionImage) body.removeQuestionImage = true
+  if (mode === 'create') {
+    body.questionType = v.questionType
+    if (v.kertas !== '') body.kertas = v.kertas
+  } else {
+    // Edit: always sent; '' clears it (http mode sends null; the mock ignores the key).
+    body.kertas = v.kertas
+    if (v.removeQuestionImage) body.removeQuestionImage = true
+  }
 
   const all = mode === 'create'
   if (all || v.questionType === 'mcq') {
@@ -144,6 +161,7 @@ export const FIELD_KEYS = [
   'pointsValue',
   'language',
   'dskpSpId',
+  'kertas',
 ] as const
 
 const isKnownKey = (key: string): boolean =>

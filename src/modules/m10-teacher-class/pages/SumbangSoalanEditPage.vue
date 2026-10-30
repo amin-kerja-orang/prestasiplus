@@ -165,7 +165,7 @@ async function save(): Promise<void> {
             label="Tambah Gambarajah (optional)"
             name="e-image"
             help="JPG, PNG, max 5MB."
-            :error="fields.image"
+            :error="fields.image ?? fields.questionImage"
           >
             <DsFileField
               :model-value="image"

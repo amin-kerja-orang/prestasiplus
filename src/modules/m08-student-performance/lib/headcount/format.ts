@@ -97,10 +97,7 @@ export function dashboardLevels(
   return [...seen.entries()].sort((a, b) => a[0] - b[0]).map(([level, name]) => ({ level, name }))
 }
 
-/** S12 Auto-Setup checkboxes (FR-M08-78): Darjah D1–D6 post 1…6, Tingkatan T1–T5 post "T1"…"T5". */
-export const DARJAH_LEVELS: readonly { label: string; value: number }[] = [1, 2, 3, 4, 5, 6].map(
-  (n) => ({ label: `D${String(n)}`, value: n }),
-)
+/** S12 Auto-Setup checkboxes (FR-M08-78): Tingkatan T1–T5 post "T1"…"T5" (v2: no Darjah group). */
 export const TINGKATAN_LEVELS: readonly { label: string; value: string }[] = [1, 2, 3, 4, 5].map(
   (n) => ({ label: `T${String(n)}`, value: `T${String(n)}` }),
 )

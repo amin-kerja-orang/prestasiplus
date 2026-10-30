@@ -116,7 +116,7 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       // a school class is not a class of the roster
       const sc = (
         await t.db.query<{ id: string }>(
-          `insert into classrooms (kind, name, school_id, education_level_id, academic_year) select 'school_class', 'KS', $1, id, 2026 from education_levels limit 1 returning id::text`,
+          `insert into classrooms (kind, name, school_id, education_level_id, academic_year) select 'school_class', 'KS', $1, id, 2026 from education_levels where stage <> 'primary' order by id limit 1 returning id::text`,
           [school1],
         )
       )[0]?.id as string

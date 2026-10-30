@@ -189,7 +189,7 @@ async function submit(): Promise<void> {
             type="text"
             name="name"
             required
-            placeholder="cth: Tahun 1"
+            placeholder="cth: Tingkatan 1"
             class="w-full"
             data-testid="level-name"
           />
@@ -202,7 +202,7 @@ async function submit(): Promise<void> {
             type="text"
             name="nameEn"
             required
-            placeholder="e.g: Year 1"
+            placeholder="e.g: Form 1"
             class="w-full"
             data-testid="level-name-en"
           />
@@ -223,7 +223,7 @@ async function submit(): Promise<void> {
             name="code"
             required
             maxlength="10"
-            placeholder="cth: Y1"
+            placeholder="cth: T1"
             class="w-full"
             data-testid="level-code"
           />

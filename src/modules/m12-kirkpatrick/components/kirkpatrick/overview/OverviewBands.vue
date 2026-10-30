@@ -5,7 +5,7 @@
  * width; DV-M12-33: 5 across at 320 / 375 overlapped the labels), each an icon chip, count (no separator), label and
  * "%" of T4/T5.
  */
-import { DsGrid, DsGridItem, DsIconChip, DsPanel } from '@/ds'
+import { DsGrid, DsGridItem, DsIconChip, DsPanel, DsSurface } from '@/ds'
 
 import type { BandCount, BandKey } from '../../../api/types'
 import { BAND, BAND_ORDER, KirkpatrickLink, pct, plain } from '../common'
@@ -32,6 +32,7 @@ const ordered = () =>
         :key="b.key"
         :span="i === BAND_ORDER.length - 1 ? { base: 2, sm: 1 } : undefined"
       >
+        <DsSurface level="soft" shadow="none" padding="sm">
         <KirkpatrickLink
           :to="behaviorPath"
           class="flex min-w-0 flex-col items-center gap-1 text-center"
@@ -48,6 +49,7 @@ const ordered = () =>
             pct(b.pct)
           }}</span>
         </KirkpatrickLink>
+        </DsSurface>
       </DsGridItem>
     </DsGrid>
   </DsPanel>

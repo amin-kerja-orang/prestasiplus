@@ -74,7 +74,7 @@ describe('tables, constraints and indexes (AC15)', () => {
   })
 
   it('PBD tags: status, tp and skor checks, and one tag per (teacher, class, student, sp)', async () => {
-    const level = (await t.db.query<{ id: string }>(`select id::text from education_levels limit 1`))[0]?.id as string
+    const level = (await t.db.query<{ id: string }>(`select id::text from education_levels where stage <> 'primary' order by id limit 1`))[0]?.id as string
     const cls = (await t.db.query<{ id: string }>(`insert into classrooms (name, teacher_id, education_level_id, academic_year) values ('K', $1, $2, 2026) returning id::text`, [userId, level]))[0]?.id as string
     const stu = await idOfEmail(t, STUDENT_1)
     const ins = `insert into pbd_tags (user_id, classroom_id, student_id, sp, skor, tp, status) values ($1, $2, $3, '1.1.1', $4, $5, $6)`

@@ -218,7 +218,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
         {
           await gotoApp(url)
           await expect(rowsOf(page)).toHaveCount(46)
-          await expectTabTitle(page, 'Papan Pendahulu - PRESTASIPLUS')
+          await expectTabTitle(page, 'Papan Pendahulu | PRESTASIPLUS')
           await expect(page.getByTestId('shell-user-title')).toHaveText('Papan Pendahulu')
           await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
             'Siapa juara minggu ini?',

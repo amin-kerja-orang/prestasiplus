@@ -7,6 +7,7 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import { isAlesaAiOn } from '@/app/features'
 import { usePageMeta } from '@/composables'
 import { DsPage } from '@/ds'
 
@@ -37,6 +38,8 @@ import RemedialModal from '../components/command-center/RemedialModal.vue'
 import TopBar from '../components/command-center/TopBar.vue'
 
 const { data, paused, togglePause } = useLiveData()
+// ALESA AI is hidden unless VITE_ALESA_AI=on (D73).
+const alesaOn = isAlesaAiOn()
 const d = computed(() => data.value ?? EMPTY_LIVE)
 
 const pageMeta = usePageMeta()
@@ -135,7 +138,7 @@ onBeforeUnmount(() => {
           <ClassPanel :classes="d.classes" />
           <KirkPanel :d="d" @drill="openDrill" />
           <MoodPanel :mood="d.mood" @drill="openDrill" />
-          <InsightPanel :d="d" />
+          <InsightPanel v-if="alesaOn" :d="d" />
         </div>
         <div class="flex min-w-0 flex-col gap-4 xl:col-span-2">
           <ActivityPanel :d="d" @drill="openDrill" />
@@ -149,7 +152,7 @@ onBeforeUnmount(() => {
     </div>
 
     <p class="text-center text-caption text-muted" data-testid="cc-footer">
-      {{ S2_COPY.footer }}
+      {{ alesaOn ? S2_COPY.footer : S2_COPY.footerPlain }}
     </p>
 
     <DrillModal

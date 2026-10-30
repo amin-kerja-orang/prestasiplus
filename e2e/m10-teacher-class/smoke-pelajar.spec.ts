@@ -38,7 +38,7 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/guru/pelajar')
-    await expectTabTitle(page, 'Pelajar Saya - PRESTASIPLUS')
+    await expectTabTitle(page, 'Pelajar Saya | PRESTASIPLUS')
     await expectHeader(page)
     await expect(page.getByTestId('pelajar-count')).toHaveText('0')
     await expect(page.getByText('Pelajar dalam kelas saya')).toBeVisible()

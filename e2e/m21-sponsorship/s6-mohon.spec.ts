@@ -13,6 +13,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { expect as baseExpect, test } from '../fixtures/test'
 import type { MockHandle } from '../fixtures/test'
+import { KELUARGA_ANGKAT_ON, KELUARGA_ANGKAT_SKIP_REASON } from '../support/keluarga-angkat'
 import {
   expectNoHorizontalScroll,
   expectTabTitle,
@@ -24,6 +25,9 @@ import {
 
 /** The shell re-renders once the session loads; give the first assertions room on a loaded machine. */
 const expect = baseExpect.configure({ timeout: 10_000 })
+
+// Hidden unless VITE_KELUARGA_ANGKAT=on (D74): the route is not registered (404).
+test.skip(!KELUARGA_ANGKAT_ON, KELUARGA_ANGKAT_SKIP_REASON)
 
 const PATH = '/mohon-keluarga-angkat'
 const POST = '/api/mohon-keluarga-angkat'

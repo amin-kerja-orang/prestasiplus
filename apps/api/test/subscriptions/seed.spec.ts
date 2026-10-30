@@ -27,7 +27,8 @@ describe('school packages catalogue seed', () => {
       ['D1_D6', 'primary-d1-d6', '30.00', 5],
       ['T1_T3', 'lower-sec-t1-t3', '30.00', 2],
     ])
-    expect(first.every((r) => r.legacy_source === null && r.legacy_id === null && r.is_active === true)).toBe(true)
+    // D1_D6 is seeded inactive (secondary-only, 2026-10-29): hidden from the lists, kept for migrated subscriptions.
+    expect(first.every((r) => r.legacy_source === null && r.legacy_id === null && r.is_active === (r.code !== 'D1_D6'))).toBe(true)
     await runSeeds([schoolPackagesSeed], { prisma: db.prisma })
     expect(await rowsOf(db)).toEqual(first)
   })
@@ -44,7 +45,7 @@ describe('on a freshly seeded database', () => {
 
   it('a subscription can be created with a seeded package', async () => {
     const admin = apiOf(await login(t, ADMIN))
-    const pkg = (await admin.get('/admin/school-packages')).body.data[3] as { id: string }
+    const pkg = (await admin.get('/admin/school-packages')).body.data[2] as { id: string }
     const res = await admin.post('/admin/school-subscriptions', {
       schoolId: await schoolIdOf(t.db, 'DEMO001'),
       packageTier: 'full',

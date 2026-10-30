@@ -36,6 +36,16 @@ afterEach(() => {
   wrapper = undefined
 })
 
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases below.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+
 describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
   it('shows the platform values and captions', async () => {
     const { wrapper: w } = await open()
@@ -53,7 +63,7 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
       '52',
       '82.8%',
       '946',
-      '4378',
+      '4,378',
     ])
     expect(captions(w)).toEqual([
       '41 rekod · 2025',
@@ -94,7 +104,7 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
       '0',
       '75.6%',
       '53',
-      '4378',
+      '4,378',
     ])
     expect(captions(w)).toEqual([
       '41 rekod · 2026',
@@ -434,7 +444,7 @@ describe('S5 ROI and insights (AC-M12-24.1 ... 24.3)', () => {
   it('shows the three insight sentences (DV-M12-13 "(22.8%)") and the disclaimer', async () => {
     const { wrapper: w } = await open()
     expect(all(w, 'insight-row').map((r) => squash(r.text()))).toEqual([
-      'Hanya 946 daripada 4158 pelajar T4/T5 (22.8%) menggunakan platform. Data perbandingan terhad kepada pelajar aktif sahaja.',
+      'Hanya 946 daripada 4,158 pelajar T4/T5 (22.8%) menggunakan platform. Data perbandingan terhad kepada pelajar aktif sahaja.',
       'Purata ketepatan pelajar aktif dalam platform: 82.8%. Ini bersamaan anggaran gred A.',
       'GPS keseluruhan dari headcount (tahun 2025): 4.30. Trend menunjukkan peningkatan dari tahun ke tahun.',
     ])
@@ -475,5 +485,14 @@ describe('S5 states', () => {
     )
     await open('/guru/kirkpatrick')
     expect(useRouteOutcome().value).toBe(403)
+  })
+})
+
+describe('S5 ALESA with the ALESA AI flag off (D73)', () => {
+  it('hides the "Ramalan ALESA" panel', async () => {
+    vi.stubEnv('VITE_ALESA_AI', '')
+    const { wrapper: w } = await open()
+    expect(w.find('[data-testid="res-alesa"]').exists()).toBe(false)
+    expect(w.text()).not.toContain('Ramalan ALESA')
   })
 })

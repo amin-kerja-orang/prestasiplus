@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Role } from '@/stores/session-types'
 
@@ -77,6 +77,16 @@ const ROLES: readonly Role[] = [
 ]
 
 // ---------------------------------------------------------------------------------------------
+
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases of each module.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
 
 describe('ADMIN_NAV data (shells.md §2.7)', () => {
   it('has unique ids and unique group keys', () => {
@@ -546,7 +556,9 @@ describe('exact routes of the adopted user-shell menus', () => {
   // is neither marked exact nor listed here as an intended prefix parent. (The longest match
   // already gives the child its own page; a parent stays active on the pages that have no item
   // of their own, which is the wanted behaviour only for the listed ones.)
-  const PREFIX_PARENTS = new Set(['/cikgu']) // M13 FN-1.1.4: /cikgu/* keeps "Cikgu Alesa Chat"
+  // M13 FN-1.1.4: /cikgu/* keeps "Cikgu Alesa Chat"; the school admin "Command Center" stays active on its drill-down pages (S4-S7),
+  // "Aktiviti Harian" is excluded by `activeExcept` (DV-M17-54)
+  const PREFIX_PARENTS = new Set(['/cikgu', '/admin-sekolah/command-center'])
 
   it.each(ROLES.filter((r) => r !== 'admin' && r !== 'student'))(
     '%s: every parent-path item is exact',

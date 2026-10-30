@@ -72,7 +72,7 @@ export const BAHAGIAN_CREATE_OPTIONS = [
 ] as const
 
 export const LEVEL_CREATE_OPTIONS = [
-  { value: 'T1', label: 'Tingkatan 1 (Darjah 6)' },
+  { value: 'T1', label: 'Tingkatan 1' },
   { value: 'T4', label: 'Tingkatan 4 (Tingkatan 3)' },
 ] as const
 

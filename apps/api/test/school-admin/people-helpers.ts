@@ -134,7 +134,7 @@ export async function insertClass(
   db: TestDatabase,
   c: { name: string; schoolId: string | null; teacherId?: string | null; isActive?: boolean; kind?: 'classroom' | 'school_class' },
 ): Promise<string> {
-  const level = (await db.query<{ id: string }>(`select id::text from education_levels order by id limit 1`))[0]?.id
+  const level = (await db.query<{ id: string }>(`select id::text from education_levels where stage <> 'primary' order by id limit 1`))[0]?.id
   const levelId =
     level ??
     ((

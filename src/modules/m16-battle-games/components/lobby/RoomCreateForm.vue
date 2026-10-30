@@ -34,10 +34,10 @@ const color = computed(() => ROOM_THEME[props.game].color)
 
 const form: CreateFormValues = reactive({
   subject: 'MATEMATIK',
-  gradeLevel: props.autoGrade ?? 'DARJAH_1',
+  gradeLevel: props.autoGrade ?? 'TINGKATAN_1',
   matchMode: 'same_grade',
-  gradeMin: 1,
-  gradeMax: 6,
+  gradeMin: 7,
+  gradeMax: 11,
   maxPlayers: 4,
 })
 
@@ -50,7 +50,7 @@ const subjectItems = computed(() =>
     : LOBBY_SUBJECTS.map((s) => ({ value: s.value, label: s.label })),
 )
 const sameLevelText = computed(() =>
-  isPb.value ? sameLevelLabel(form.gradeLevel) : 'Semua Darjah / Semua Tingkatan',
+  isPb.value ? sameLevelLabel(form.gradeLevel) : 'Semua Tingkatan',
 )
 const modeItems = computed(() => [
   { value: 'same_grade', label: 'Tahap sama sahaja' },

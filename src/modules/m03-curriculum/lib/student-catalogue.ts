@@ -15,11 +15,50 @@ export const EMPTY_TOPICS = 'Tiada topik tersedia buat masa ini.'
 /** Placeholder (SRS §8, no live equivalent). */
 export const LOAD_ERROR = 'Ralat memuatkan data. Sila cuba semula.'
 
-/** FR-M03-70: "Semua Darjah" + Darjah 1-6 (no Tingkatan chips, DV-M03-02 withdrawn). */
-export const GRADE_CHIPS: readonly { code: string | null; label: string }[] = [
-  { code: null, label: 'Semua Darjah' },
-  ...[1, 2, 3, 4, 5, 6].map((n) => ({ code: `DARJAH_${String(n)}`, label: `Darjah ${String(n)}` })),
+/** Secondary-school scope (D54): the only grade levels S12/S14 serve. */
+export const SCOPE_GRADES = ['TINGKATAN_4', 'TINGKATAN_5'] as const
+export type ScopeGrade = (typeof SCOPE_GRADES)[number]
+export const DEFAULT_GRADE: ScopeGrade = 'TINGKATAN_4'
+/** `grade_level` value of the "Semua Tingkatan" chip (T4 + T5). A bare URL means the student's form. */
+export const ALL_GRADES = 'SEMUA'
+
+/** `Tingkatan 4` for `TINGKATAN_4`. */
+export function gradeLabel(code: string): string {
+  return `Tingkatan ${code.replace('TINGKATAN_', '')}`
+}
+
+/**
+ * FR-M03-70 (D54, supersedes DV-M03-02): "Semua Tingkatan" + Tingkatan 4 + Tingkatan 5. No Darjah
+ * chips: the new system serves secondary school and SPM only.
+ */
+export const GRADE_CHIPS: readonly { code: string; label: string }[] = [
+  { code: ALL_GRADES, label: 'Semua Tingkatan' },
+  ...SCOPE_GRADES.map((code) => ({ code, label: gradeLabel(code) })),
 ]
+
+/** The student's form (`UserMe.grade`: 10 = Tingkatan 4, 11 = Tingkatan 5), else Tingkatan 4. */
+export function formGrade(grade: number | null | undefined): ScopeGrade {
+  return grade === 11 ? 'TINGKATAN_5' : DEFAULT_GRADE
+}
+
+const isScope = (code: string | null): code is ScopeGrade =>
+  code !== null && (SCOPE_GRADES as readonly string[]).includes(code)
+
+/**
+ * The grade S12 shows for the `grade_level` query value: `SEMUA` (all), Tingkatan 4 or 5, else the
+ * student's form (absent or out-of-scope values, e.g. an old Darjah link).
+ */
+export function effectiveTopicGrade(raw: string | null, grade: number | null | undefined): string {
+  const code = raw?.toUpperCase() ?? null
+  if (code === ALL_GRADES) return ALL_GRADES
+  return isScope(code) ? code : formGrade(grade)
+}
+
+/** The grade S14 asks for: Tingkatan 4 or 5 from the query, else the student's form. */
+export function effectiveMapGrade(raw: string | null, grade: number | null | undefined): string {
+  const code = raw?.toUpperCase() ?? null
+  return isScope(code) ? code : formGrade(grade)
+}
 
 /** FR-M03-71: the live subject chips (no GEOGRAFI). */
 export const SUBJECT_CHIPS: readonly { code: string | null; label: string }[] = [
@@ -44,9 +83,8 @@ export function readFilter(value: Raw): string | null {
 }
 
 /** S12 chip target: keeps the other filter (FR-M03-70/71). */
-export function topicsTo(gradeLevel: string | null, subject: string | null) {
-  const query: Record<string, string> = {}
-  if (gradeLevel !== null) query.grade_level = gradeLevel
+export function topicsTo(gradeLevel: string, subject: string | null) {
+  const query: Record<string, string> = { grade_level: gradeLevel }
   if (subject !== null) query.subject = subject
   return { path: TOPICS_PATH, query }
 }
@@ -60,12 +98,8 @@ export function moreSubtopics(count: number, shown: number): string | null {
   return count > shown ? `+${String(count - shown)} lagi...` : null
 }
 
-/** S14 grade chips (FR-M03-83). */
-export const MAP_GRADES = ['DARJAH_1', 'DARJAH_2', 'DARJAH_3', 'DARJAH_4'] as const
-
-export function gradeLabel(code: string): string {
-  return `Darjah ${code.replace('DARJAH_', '')}`
-}
+/** S14 grade chips (FR-M03-83, D54): Tingkatan 4 and 5. */
+export const MAP_GRADES = SCOPE_GRADES
 
 /** S14 selector target (FR-M03-82/83): both parameters always carried. */
 export function mapTo(subject: string, grade: string) {

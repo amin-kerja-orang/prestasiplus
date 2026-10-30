@@ -148,7 +148,8 @@ export class SubscriptionsRepository {
   // --- packages -----------------------------------------------------------------------------------
 
   async packages(): Promise<PackageRow[]> {
-    const rows = await this.prisma.client.schoolPackage.findMany({ orderBy: { id: 'asc' } })
+    // Secondary-only (2026-10-29): inactive packages (D1_D6) are hidden from the lists; the rows stay for migrated subscriptions.
+    const rows = await this.prisma.client.schoolPackage.findMany({ where: { isActive: true }, orderBy: { id: 'asc' } })
     return rows.map(toPackage)
   }
 

@@ -8,6 +8,7 @@ import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { ROLE_PRIORITY } from '../auth/auth.constants'
 import { SessionStore } from '../auth'
+import { PRIMARY_SCHOOL_TYPES } from '../schools/schools.constants'
 import type { Caller } from './caller'
 import { gradeOfClassLevel } from './class-level'
 import { SCHOOL_ADMIN_VISIBLE_ROLES } from './users.constants'
@@ -358,7 +359,16 @@ export class UsersRepository {
   // --- scope ------------------------------------------------------------------------------------
 
   private scopeWhere(caller: Caller): Prisma.UserWhereInput {
-    return new ScopeFilter(caller.auth).where({ schoolColumn: 'schoolId', schoolRelation: 'school' }) as Prisma.UserWhereInput
+    const scope = new ScopeFilter(caller.auth).where({ schoolColumn: 'schoolId', schoolRelation: 'school' }) as Prisma.UserWhereInput
+    // Secondary-only (2026-10-29): Darjah pupils (grade 1-6) and the people of primary-type schools are not visible to any
+    // caller, admin included. Written positively (no NOT) so NULL grade / NULL school stay visible.
+    const secondary: Prisma.UserWhereInput = {
+      AND: [
+        { OR: [{ grade: null }, { grade: { gt: 6 } }] },
+        { OR: [{ schoolId: null }, { school: { is: { OR: [{ type: null }, { type: { notIn: [...PRIMARY_SCHOOL_TYPES] } }] } } }] },
+      ],
+    }
+    return { AND: [scope, secondary] }
   }
 
   /**

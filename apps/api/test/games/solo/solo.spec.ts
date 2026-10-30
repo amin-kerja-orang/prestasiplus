@@ -43,7 +43,7 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
     t = await bootGamesApp({ ports: { rewards } })
     math = await insertMcqQuestions(t.db, { subject: 'MATH', level: 'T4', count: 60, prefix: 'S' })
     await shortenAnswers(t.db, math, 40)
-    for (const level of ['D1', 'D2', 'D3', 'D4']) await insertMcqQuestions(t.db, { subject: 'BM', level, count: 6, prefix: 'K' })
+    for (const level of ['T1', 'T2', 'T3']) await insertMcqQuestions(t.db, { subject: 'BM', level, count: 6, prefix: 'K' })
     student = await loginAs(t, ACCOUNTS.student)
     student2 = await loginAs(t, ACCOUNTS.student2)
   })
@@ -167,11 +167,11 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
     })
 
     it('the darjah query selects the level of the questions', async () => {
-      const { sessionId, res } = await open(student, 'cabaran-kilat', '?darjah=4')
+      const { sessionId, res } = await open(student, 'cabaran-kilat', '?darjah=7')
       const payload = parseData(res, GamesCabaranKilatPayloadSchema)
       expect(payload.questions.length).toBeGreaterThan(0)
-      expect((await sessionRow(sessionId))?.darjah).toBe(4)
-      for (const q of payload.questions) expect(math.some((m) => m.id === q.id)).toBe(false) // T4 questions are not served at D4
+      expect((await sessionRow(sessionId))?.darjah).toBe(7)
+      for (const q of payload.questions) expect(math.some((m) => m.id === q.id)).toBe(false) // T4 questions are not served at T1
     })
 
     it('Cabaran Kilat / Tembak Jawapan: 30 keyless questions with four options', async () => {

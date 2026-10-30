@@ -90,7 +90,7 @@ const modes = computed(() => [
     testid: 'battle-quick-match',
     art: 'bolt' as const,
     title: 'Quick Match',
-    text: 'Cari lawan rawak dari darjah yang sama',
+    text: 'Cari lawan rawak dari tingkatan yang sama',
     disabled: !ready.value || busy.value,
     run: () => startMode('quick-match'),
   },

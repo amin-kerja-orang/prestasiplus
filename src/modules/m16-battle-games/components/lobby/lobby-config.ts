@@ -137,12 +137,8 @@ export interface GradeOption {
 
 const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i + 1)
 
-/** `grade_level` select: optgroups "Sekolah Rendah" (Darjah 1–6) and "Sekolah Menengah" (Tingkatan 1–5). */
+/** `grade_level` select: the optgroup "Sekolah Menengah" (Tingkatan 1–5); v2 is secondary only, no Darjah group. */
 export const GRADE_GROUPS: readonly { label: string; options: GradeOption[] }[] = [
-  {
-    label: 'Sekolah Rendah',
-    options: range(6).map((n) => ({ value: `DARJAH_${String(n)}`, label: `Darjah ${String(n)}` })),
-  },
   {
     label: 'Sekolah Menengah',
     options: range(5).map((n) => ({
@@ -152,9 +148,9 @@ export const GRADE_GROUPS: readonly { label: string; options: GradeOption[] }[] 
   },
 ]
 
-/** Custom range 1–11 (BR-M16-02): D1–D6 = 1–6, T1–T5 = 7–11. */
-export const CUSTOM_GRADE_OPTIONS: readonly { value: number; label: string }[] = range(11).map(
-  (n) => ({ value: n, label: n <= 6 ? `D${String(n)}` : `T${String(n - 6)}` }),
+/** Custom range 7–11 (BR-M16-02): T1–T5 = 7–11 (v2: no Darjah 1–6). */
+export const CUSTOM_GRADE_OPTIONS: readonly { value: number; label: string }[] = range(5).map(
+  (n) => ({ value: n + 6, label: `T${String(n)}` }),
 )
 
 /** "Maks Pemain" 2–6. */
@@ -162,16 +158,15 @@ export const MAX_PLAYER_OPTIONS: readonly number[] = [2, 3, 4, 5, 6]
 
 /** The `same_level` label of S7 by the chosen grade (FN-M16-5.1.3; static fallback without a grade). */
 export function sameLevelLabel(gradeLevel: string): string {
-  if (gradeLevel.startsWith('DARJAH_')) return 'Semua Darjah (1-6)'
   if (gradeLevel.startsWith('TINGKATAN_')) return 'Semua Tingkatan (1-5)'
-  return 'Semua Darjah/Tingkatan'
+  return 'Semua Tingkatan'
 }
 
 // --- Papan Bijak quick match -------------------------------------------------------------------------------------------
 
 export const QM_MATCH_OPTIONS = [
   { value: 'same_grade', label: 'Tahap sama' },
-  { value: 'same_level', label: 'Semua darjah/tingkatan' },
+  { value: 'same_level', label: 'Semua tingkatan' },
 ] as const
 
 export const QM_MESSAGES = {

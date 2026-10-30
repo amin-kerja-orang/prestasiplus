@@ -151,12 +151,12 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     gotoApp,
   }) => {
     await open(page, loginAs, gotoApp, ADMIN)
-    await expectTabTitle(page, 'Dashboard - PRESTASIPLUS')
+    await expectTabTitle(page, 'Dashboard | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Dashboard')
     await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
     await navigateInApp(page, '/practice')
     await navigateInApp(page, '/dashboard')
-    await expectTabTitle(page, 'Dashboard - PRESTASIPLUS')
+    await expectTabTitle(page, 'Dashboard | PRESTASIPLUS')
   })
 
   test('AC-01.2 greeting h1, line and the decorative cap by width', async ({
@@ -821,7 +821,7 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     await expect(page.locator('[data-page="not-found"]')).toHaveCount(0)
   })
 
-  test('AC-09.3 level groups and 11 pills "{name} ({count})" with hrefs', async ({
+  test('AC-09.3 level groups (no Darjah, secondary only) and 5 pills "{name} ({count})" with hrefs', async ({
     page,
     loginAs,
     gotoApp,
@@ -832,22 +832,16 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     await expect(tid(page, 'dash-levels')).toContainText(/🎒\s*Sekolah Menengah Rendah \(KSSM\)/)
     await expect(tid(page, 'dash-levels')).toContainText(/🎓\s*Sekolah Menengah Atas \(KSSM\)/)
     const pills = tid(page, 'dash-level-pill')
-    await expect(pills).toHaveCount(11)
+    await expect(pills).toHaveCount(5)
     const names = [
-      'Darjah 1',
-      'Darjah 2',
-      'Darjah 3',
-      'Darjah 4',
-      'Darjah 5',
-      'Darjah 6',
       'Tingkatan 1',
       'Tingkatan 2',
       'Tingkatan 3',
       'Tingkatan 4',
       'Tingkatan 5',
     ]
-    const codes = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'T1', 'T2', 'T3', 'T4', 'T5']
-    for (let i = 0; i < 11; i++) {
+    const codes = ['T1', 'T2', 'T3', 'T4', 'T5']
+    for (let i = 0; i < 5; i++) {
       await expect(pills.nth(i)).toHaveText(new RegExp(`^${names[i]}\\s*\\(\\d+\\)$`))
       await expect(pills.nth(i)).toHaveAttribute('href', `/practice?level=${codes[i]}`)
     }

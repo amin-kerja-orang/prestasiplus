@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { formatCount } from '@/lib/number'
+import { DsProgress, DsStack, DsText, formatCount } from '@/ds'
 
 import { ccChangeLine, ccTodayBarPercent, type CcLiveData } from '../../api/command-center-board'
 import BoardPanel from './BoardPanel.vue'
@@ -15,25 +15,21 @@ const props = defineProps<{ data: CcLiveData | null }>()
 const today = computed(() => `${formatCount(props.data?.answeredToday ?? 0)} soalan`)
 const percent = computed(() => (props.data ? ccTodayBarPercent(props.data) : 0))
 const change = computed(() => (props.data ? ccChangeLine(props.data.weekChange) : null))
-const TONE = { down: 'text-error', up: 'text-success', same: 'text-muted' } as const
+const TONE = { down: 'error', up: 'success', same: 'muted' } as const
 </script>
 
 <template>
   <BoardPanel icon="i-ph-chart-line-up" title="Aktiviti Hari Ini" testid="cc-panel-today">
-    <div class="flex flex-col gap-2">
-      <span class="tabular text-heading text-highlighted" data-testid="cc-today-bar">{{
-        today
-      }}</span>
-      <UProgress :model-value="percent" :max="100" aria-hidden="true" />
-    </div>
-    <div class="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-body">
-      <span class="text-muted" data-testid="cc-week"
+    <DsStack gap="sm">
+      <DsText variant="kpi" data-testid="cc-today-bar">{{ today }}</DsText>
+      <DsProgress :value="percent" :show-value="false" aria-label="Aktiviti hari ini" />
+      <DsText variant="body" tone="muted" data-testid="cc-week"
         >Minggu ini:
-        <b class="text-highlighted">{{ data ? formatCount(data.answeredWeek) : 0 }}</b></span
+        <b class="text-highlighted">{{ data ? formatCount(data.answeredWeek) : 0 }}</b></DsText
       >
-      <span v-if="change" :class="TONE[change.tone]" data-testid="cc-change">{{
+      <DsText v-if="change" variant="body" :tone="TONE[change.tone]" data-testid="cc-change">{{
         change.text
-      }}</span>
-    </div>
+      }}</DsText>
+    </DsStack>
   </BoardPanel>
 </template>

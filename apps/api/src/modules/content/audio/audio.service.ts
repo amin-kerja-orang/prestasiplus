@@ -130,7 +130,7 @@ export class AudioService {
 
   /** All levels and subjects once per request: the curriculum is small (a few dozen rows). */
   private async refs(): Promise<Refs> {
-    const [levels, subjects] = await this.guard(() => Promise.all([this.curriculum.levels(), this.curriculum.subjects()]))
+    const [levels, subjects] = await this.guard(() => Promise.all([this.curriculum.levels({ includeInactive: true }), this.curriculum.subjects()]))
     const lv = new Map(levels.map((l) => [String(l.id), l.name]))
     const sb = new Map(subjects.map((x) => [String(x.id), x.name]))
     return {
@@ -153,7 +153,9 @@ export class AudioService {
     )
     const refs = await this.refs()
     return {
-      data: rows.map((r) => ({ id: r.id, title: r.title, educationLevel: refs.level(r.educationLevelId), subject: refs.subject(r.subjectId) })),
+      data: rows
+        .filter((r) => refs.hasLevel(r.educationLevelId)) // secondary-only (2026-10-29): sets of a primary level are not listed
+        .map((r) => ({ id: r.id, title: r.title, educationLevel: refs.level(r.educationLevelId), subject: refs.subject(r.subjectId) })),
       meta: listMeta(1, Math.max(1, rows.length), rows.length),
     }
   }

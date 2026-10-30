@@ -211,6 +211,11 @@ export function planImport(
       fail(MSG.optionTooLong)
       continue
     }
+    const kertasCell = get('kertas').trim()
+    if (kertasCell !== '' && kertasCell !== '1' && kertasCell !== '2' && kertasCell !== '3') {
+      fail(MSG.kertas)
+      continue
+    }
     const explanation = get('explanation')
     plan.rows.push({
       line: rec.line,
@@ -225,6 +230,7 @@ export function planImport(
         sourceType: 'excel',
         sourceSet: null,
         marks,
+        ...(kertasCell === '' ? {} : { kertas: kertasCell as '1' | '2' | '3' }),
       },
     })
   }

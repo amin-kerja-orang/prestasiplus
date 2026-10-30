@@ -588,7 +588,7 @@ test.describe('M02 S3 edit user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/users/99999999/edit')
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     await expect(byId(page, 'user-form')).toHaveCount(0)
     await expect(byId(page, 'user-load-error')).toHaveCount(0)
     await expectNoHorizontalScroll(page)

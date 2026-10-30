@@ -93,7 +93,8 @@ watch(
     form.content = article.content
     form.featuredImage = article.featuredImage ?? ''
     form.category = article.category
-    form.gradeLevel = article.gradeLevel
+    // v2 offers "Semua" only: a stored Darjah level reads as "Semua" so the select is never blank.
+    form.gradeLevel = article.gradeLevel.startsWith('DARJAH_') ? 'SEMUA' : article.gradeLevel
     form.isPublished = article.isPublished
     form.isFeatured = article.isFeatured
   },

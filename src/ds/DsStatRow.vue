@@ -15,7 +15,8 @@ import type { DsAccent, DsIconProp, DsTileDensity, DsTone, DsValueTone } from '.
 export interface StatItem {
   key: string
   label: string
-  value: string | number
+  /** A number is formatted ("1,271"); a string is shown as given; null prints "-". */
+  value: string | number | null
   icon?: DsIconProp
   accent?: DsAccent
   tone?: DsTone
@@ -68,20 +69,56 @@ const tileDensity = computed<DsTileDensity>(
   () => props.density ?? (props.compact ? 'compact' : props.roomy ? 'roomy' : 'default'),
 )
 
+/** Track per tile count (admin page templates 1.7): no orphan row at any width. */
 const GRID: Record<string, string> = {
+  '1': 'grid-cols-2',
+  '2': 'grid-cols-2',
+  '3': 'grid-cols-2 md:grid-cols-3',
+  '4': 'grid-cols-2 xl:grid-cols-4',
+  // A 6-column track at `md` lets the 3 + 2 rows each fill the width; 5 across at `xl`.
+  '5': 'grid-cols-2 md:grid-cols-6 xl:grid-cols-5',
+}
+/** Explicit `cols` (or more than 5 tiles): the plain column steps. */
+const GRID_PLAIN: Record<string, string> = {
   '2': 'grid-cols-2',
   '3': 'grid-cols-2 md:grid-cols-3',
   '4': 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4',
   '5': 'grid-cols-2 md:grid-cols-3 xl:grid-cols-5',
 }
+const count = computed(() => props.items.length)
+const auto = computed(() => props.cols === 'auto' && count.value >= 1 && count.value <= 5)
 const grid = computed(() => {
-  const n = props.cols === 'auto' ? Math.min(Math.max(props.items.length, 2), 5) : props.cols
-  return GRID[String(n)]
+  if (auto.value) return GRID[String(count.value)]
+  const n = props.cols === 'auto' ? Math.min(Math.max(count.value, 2), 5) : props.cols
+  return GRID_PLAIN[String(n)]
 })
+
+if (import.meta.env.DEV && import.meta.env.MODE !== 'test' && props.items.length > 5) {
+  console.warn('[ds] DsStatRow: 2 to 5 tiles per strip; pick the top five and move the rest to a panel.')
+}
+
+/**
+ * Per-tile span. Below `md` an odd count lets the first tile take the full row; from `md` the
+ * 5-tile strip spans 2/2/2 + 3/3 on the 6-column track and `xl` puts all five on one row.
+ */
+const FIVE = [
+  'col-span-2 md:col-span-2 xl:col-span-1',
+  'md:col-span-2 xl:col-span-1',
+  'md:col-span-2 xl:col-span-1',
+  'md:col-span-3 xl:col-span-1',
+  'md:col-span-3 xl:col-span-1',
+]
+function span(i: number): string {
+  if (i === 0 && auto.value && count.value === 5) return FIVE[0] ?? ''
+  if (auto.value && count.value === 5) return FIVE[i] ?? ''
+  if (i === 0 && count.value === 1) return 'col-span-2'
+  if (i === 0 && count.value % 2 === 1) return 'col-span-2 md:col-span-1'
+  return ''
+}
 
 // Staff: a strip of 2-3 tiles is capped (~22rem per tile) so it does not spread over a 1600px page.
 const CAP: Record<string, string> = { '2': 'staff:max-w-3xl', '3': 'staff:max-w-6xl' }
-const cap = computed(() => CAP[String(Math.min(Math.max(props.items.length, 2), 5))] ?? '')
+const cap = computed(() => CAP[String(Math.min(Math.max(count.value, 2), 5))] ?? '')
 
 function id(key: string): string | undefined {
   return props.prefix ? `${props.prefix}-${key}` : undefined
@@ -91,9 +128,10 @@ function id(key: string): string | undefined {
 <template>
   <ul class="grid min-w-0 gap-3 md:gap-4" :class="[grid, cap]" data-ds="stat-row">
     <li
-      v-for="item in items"
+      v-for="(item, i) in items"
       :key="item.key"
       class="flex min-w-0"
+      :class="span(i)"
       :data-testid="id(item.key)"
       :data-active="item.active ? 'true' : undefined"
     >
@@ -117,7 +155,9 @@ function id(key: string): string | undefined {
         :loading="loading"
         :part-prefix="partPrefix"
         @click="item.onClick?.()"
-      />
+      >
+        <template v-if="$slots.sub" #sub><slot name="sub" :item="item" /></template>
+      </DsStatTile>
     </li>
   </ul>
 </template>

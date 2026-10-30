@@ -19,7 +19,7 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
 
   test('login page: title, copy, links and no horizontal scroll', async ({ page, gotoApp }) => {
     await gotoApp('/login')
-    await expectTabTitle(page, 'Log Masuk - PRESTASIPLUS')
+    await expectTabTitle(page, 'Log Masuk | PRESTASIPLUS')
 
     const form = page.getByTestId('login-form')
     // the logo renders a light and a display:none dark <img>; assert the visible one
@@ -92,7 +92,7 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/register')
-    await expectTabTitle(page, 'Daftar - PRESTASIPLUS')
+    await expectTabTitle(page, 'Daftar | PRESTASIPLUS')
 
     const form = page.getByTestId('register-form')
     await expect(page.getByText('Daftar Akaun Baru 🇲🇾')).toBeVisible()

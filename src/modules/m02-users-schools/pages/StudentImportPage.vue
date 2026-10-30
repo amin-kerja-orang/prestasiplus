@@ -6,8 +6,7 @@
  * `/admin`, as live) and "Import"; the card "Nota Penting:" sits below.
  *
  * Choosing a school loads its quota (`GET .../quota`; a failed request reads as "no subscription", console
- * "Quota fetch error:") and narrows the class cards (SK, SJK(C), SJK(T) show Darjah, others Tingkatan; a
- * checked card that becomes hidden is unchecked). "Import" is never disabled by the quota (as live): the
+ * "Quota fetch error:") and offers the Tingkatan class cards only (v2 is secondary only). "Import" is never disabled by the quota (as live): the
  * server refuses with the red alert (no subscription, quota short), input kept. Success reloads S5 with the
  * green result flash (UNVERIFIED COPY, the API `status`) and the form
  * reset. The school is server-validated (the hidden `school_id` is not browser-checked, 5).
@@ -30,9 +29,7 @@ import ExistingStudentsPanel from '../components/ExistingStudentsPanel.vue'
 import ImportSourceFields from '../components/ImportSourceFields.vue'
 import QuotaPanel from '../components/QuotaPanel.vue'
 import {
-  classLevelInGroups,
   DELIMA_PASTE_PLACEHOLDER,
-  PRIMARY_CLASS_LEVELS,
   SECONDARY_CLASS_LEVELS,
   visibleClassGroups,
 } from '../lib/import-options'
@@ -63,7 +60,7 @@ const submitting = ref(false)
 const errors = ref<string[]>([])
 const alertBox = ref<HTMLElement | null>(null)
 
-const groups = computed(() => visibleClassGroups(school.value?.type ?? null))
+const groups = computed(() => visibleClassGroups())
 let quotaController: AbortController | null = null
 
 async function loadQuota(id: number): Promise<void> {
@@ -87,7 +84,7 @@ async function loadQuota(id: number): Promise<void> {
   }
 }
 
-// FR-M02-58, 59, 61: choosing a school checks its quota; a checked card that becomes hidden is unchecked.
+// FR-M02-58, 59: choosing a school checks its quota.
 watch(school, (next) => {
   if (next) void loadQuota(next.id)
   else {
@@ -96,7 +93,6 @@ watch(school, (next) => {
     quota.value = null
     quotaLoading.value = false
   }
-  if (!classLevelInGroups(classLevel.value, groups.value)) classLevel.value = ''
 })
 
 function reset(): void {
@@ -135,7 +131,7 @@ async function submit(): Promise<void> {
 <template>
   <DsPage
     title="Import Pelajar via ID Delima"
-    subtitle="Import pelajar dari Darjah 1 hingga Tingkatan 5 menggunakan ID Delima KPM."
+    subtitle="Import pelajar dari Tingkatan 1 hingga Tingkatan 5 menggunakan ID Delima KPM."
     :back-to="'/admin'"
     data-testid="student-import-page"
   >
@@ -187,41 +183,14 @@ async function submit(): Promise<void> {
         </DsFormSection>
 
         <DsFormSection
-          title="Darjah / Tingkatan"
+          title="Tingkatan"
           description="Pilih tahap pelajar yang diimport."
           icon="graduation-cap"
           accent="heat"
           :columns="2"
         >
           <div class="flex min-w-0 flex-col gap-4 sm:col-span-2" data-testid="student-classes">
-            <p class="sr-only">Darjah / Tingkatan <span class="text-error">*</span></p>
-            <div
-              v-if="groups.includes('primary')"
-              class="flex flex-col gap-3"
-              data-testid="class-group-primary"
-            >
-              <p class="flex items-center gap-2 text-label text-muted">
-                <UIcon name="i-ph-buildings" class="size-4" aria-hidden="true" />
-                Sekolah Rendah
-              </p>
-              <URadioGroup
-                :model-value="levelIn(PRIMARY_CLASS_LEVELS)"
-                :items="levelItems(PRIMARY_CLASS_LEVELS)"
-                legend="Sekolah Rendah"
-                name="class_level"
-                variant="card"
-                color="info"
-                indicator="hidden"
-                orientation="horizontal"
-                :ui="{
-                  fieldset: 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6',
-                  item: 'min-h-11 items-center justify-center p-2 text-center',
-                  wrapper: 'w-full text-center',
-                  legend: 'sr-only',
-                }"
-                @update:model-value="pickLevel"
-              />
-            </div>
+            <p class="sr-only">Tingkatan <span class="text-error">*</span></p>
             <div
               v-if="groups.includes('secondary')"
               class="flex flex-col gap-3"

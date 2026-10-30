@@ -10,10 +10,13 @@
  * `bulk` | `bar` | `float` mean `behavior`) and `flush` (= `padding="none"`).
  */
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 
+import { dsCopy } from './copy'
 import DsHeading from './DsHeading.vue'
 import DsIconChip from './DsIconChip.vue'
 import DsSurface from './DsSurface.vue'
+import DsText from './DsText.vue'
 import type { DsAccent, DsPadding } from './types'
 
 const props = withDefaults(
@@ -34,6 +37,11 @@ const props = withDefaults(
     /** Phosphor icon class for the header chip. */
     icon?: string
     accent?: DsAccent
+    /** Header link to the full list ("Lihat Semua"). */
+    moreTo?: RouteLocationRaw
+    moreLabel?: string
+    /** Fills the height of its grid cell, so the panels of one row share a bottom edge. */
+    stretch?: boolean
   }>(),
   {
     tone: 'raised',
@@ -46,6 +54,9 @@ const props = withDefaults(
     description: undefined,
     icon: undefined,
     accent: 'action',
+    moreTo: undefined,
+    moreLabel: dsCopy.viewAll,
+    stretch: false,
   },
 )
 
@@ -64,12 +75,13 @@ const hasHeader = computed(() => Boolean(props.title))
     :tone="tone === 'tint' ? 'primary' : 'neutral'"
     :shadow="bar || behavior === 'float' ? 'lift' : tone === 'inset' ? 'none' : 'auto'"
     :padding="
-      flush || padding === 'none' || behavior === 'float' || hasHeader || $slots.actions
+      flush || padding === 'none' || behavior === 'float' || hasHeader || $slots.actions || moreTo
         ? 'none'
         : (padding ?? 'md')
     "
     :clip="behavior !== 'float'"
     :class="[
+      stretch ? 'h-full' : '',
       behavior === 'float' ? 'absolute z-20 mt-1 max-h-64 w-full overflow-y-auto' : '',
       sticky && behavior === 'bulk' ? 'sticky top-2 z-20' : '',
       sticky && behavior === 'bar' ? 'sticky bottom-2 z-20' : '',
@@ -79,24 +91,35 @@ const hasHeader = computed(() => Boolean(props.title))
     data-ds="panel"
   >
     <header
-      v-if="hasHeader || $slots.actions"
-      class="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5"
+      v-if="hasHeader || $slots.actions || moreTo"
+      class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 p-4 sm:flex-nowrap sm:p-5"
       data-ds="panel-header"
     >
-      <div v-if="title" class="flex min-w-0 items-center gap-3">
+      <div v-if="title" class="flex min-w-0 grow basis-32 items-center gap-3 sm:basis-0">
         <DsIconChip v-if="icon" :icon="icon" :accent="accent" size="sm" />
         <div class="min-w-0">
           <DsHeading :level="2" variant="subheading">{{ title }}</DsHeading>
-          <p v-if="description" class="text-caption text-muted">{{ description }}</p>
+          <DsText v-if="description" variant="caption" tone="muted">{{ description }}</DsText>
         </div>
       </div>
-      <div v-if="$slots.actions" class="ml-auto flex flex-wrap items-center gap-2">
+      <div v-if="$slots.actions || moreTo" class="ml-auto flex shrink-0 flex-wrap items-center gap-2">
         <slot name="actions" />
+        <UButton
+          v-if="moreTo"
+          :to="moreTo"
+          color="primary"
+          variant="link"
+          trailing-icon="i-ph-arrow-right"
+          :label="moreLabel"
+          :aria-label="title ? `${moreLabel} ${title}` : undefined"
+          class="min-h-11"
+          data-ds="panel-more"
+        />
       </div>
     </header>
     <div
       :class="
-        !flush && padding !== 'none' && behavior !== 'float' && (hasHeader || $slots.actions)
+        !flush && padding !== 'none' && behavior !== 'float' && (hasHeader || $slots.actions || moreTo)
           ? 'px-4 pb-4 sm:px-5 sm:pb-5'
           : ''
       "

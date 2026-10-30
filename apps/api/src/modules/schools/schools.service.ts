@@ -19,7 +19,7 @@ import type { AuthContext } from '../../common/scope/auth-context'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock } from '../../db/clock'
 import { PrismaService } from '../../db/prisma.service'
-import { JOIN_CODE_ALPHABET, JOIN_CODE_LENGTH, SCHOOL_AUDIT, STATE_NAMES } from './schools.constants'
+import { isPrimarySchoolType, JOIN_CODE_ALPHABET, JOIN_CODE_LENGTH, SCHOOL_AUDIT, STATE_NAMES } from './schools.constants'
 import {
   type MemberCounts,
   type JpnRow,
@@ -171,7 +171,7 @@ export class SchoolsService {
 
   async get(id: string): Promise<AdminSchool> {
     const row = await this.repo.get(id)
-    if (!row) throw ApiError.of('NOT_FOUND')
+    if (!row || isPrimarySchoolType(row.type)) throw ApiError.of('NOT_FOUND')
     return this.present(row)
   }
 
@@ -214,7 +214,7 @@ export class SchoolsService {
 
   async update(id: string, body: unknown, auth: AuthContext, meta: RequestMeta): Promise<{ data: AdminSchool; status: string }> {
     const current = await this.repo.get(id)
-    if (!current) throw ApiError.of('NOT_FOUND')
+    if (!current || isPrimarySchoolType(current.type)) throw ApiError.of('NOT_FOUND')
     // An absent isActive stays out of the UPDATE, so a toggle made after the read above is kept.
     const input = await this.validate(body, id)
     try {
@@ -242,6 +242,8 @@ export class SchoolsService {
   }
 
   async toggle(id: string, auth: AuthContext, meta: RequestMeta): Promise<{ data: { isActive: boolean }; status: string }> {
+    const hidden = await this.repo.get(id)
+    if (hidden && isPrimarySchoolType(hidden.type)) throw ApiError.of('NOT_FOUND')
     const isActive = await this.prisma.transaction(async (tx) => {
       const value = await this.repo.toggle(id, this.clock.now())
       if (value === null) throw ApiError.of('NOT_FOUND')

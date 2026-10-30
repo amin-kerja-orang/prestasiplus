@@ -20,20 +20,28 @@ export default {
   meta: {
     type: 'problem',
     docs: { description: 'Only Phosphor icon names in strict files' },
-    schema: [],
-    messages: { icon: 'Icons must use the Phosphor collection `i-ph-*` (D38); got "{{name}}".' },
+    schema: [
+      { type: 'object', properties: { baseNamesOnly: { type: 'boolean' } }, additionalProperties: false },
+    ],
+    messages: {
+      icon: 'Icons must use the Phosphor collection `i-ph-*` (D38); got "{{name}}".',
+      full: 'Icon props take base names ("plus"), not full class names; got "{{name}}".',
+    },
   },
   create(context) {
+    const baseNamesOnly = context.options[0]?.baseNamesOnly === true
+    const FULL_PH = /^(?:i-ph-|ph:)/
     const seen = new WeakSet()
-    const flag = (node, name) => {
+    const flag = (node, name, messageId = 'icon') => {
       if (seen.has(node)) return
       seen.add(node)
-      context.report({ node, messageId: 'icon', data: { name } })
+      context.report({ node, messageId, data: { name } })
     }
     const checkLiteral = (node, iconPosition) => {
       if (typeof node.value !== 'string') return
       const v = node.value.trim()
       if (OTHER_ICON.test(v) || (iconPosition && ANY_ICON_NAME.test(v))) flag(node, node.value)
+      else if (baseNamesOnly && iconPosition && FULL_PH.test(v)) flag(node, node.value, 'full')
     }
     /** Checks every string literal reachable through arrays/objects/conditionals of `expr`. */
     const walk = (expr, iconPosition) => {
@@ -77,6 +85,7 @@ export default {
           if (typeof name === 'string' && ICON_ATTRS.test(name) && node.value?.value) {
             const v = node.value.value.trim()
             if (OTHER_ICON.test(v) || ANY_ICON_NAME.test(v)) flag(node, node.value.value)
+            else if (baseNamesOnly && FULL_PH.test(v)) flag(node, node.value.value, 'full')
           }
         },
         Literal(node) {

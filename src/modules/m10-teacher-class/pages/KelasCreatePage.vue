@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
  * S5 `/guru/kelas/cipta` (FR-M10-31..34; URS FT-M10-3.2): school search, "Maklumat Kelas" and the
- * level tiles filtered by the school type. Native validation only (name, subject); the level
+ * five Tingkatan level tiles (v2: secondary only). Native validation only (name, subject); the level
  * radios carry no `required` (DV-M10-22). 201 → `/guru/kelas`; 422 → the shared red box.
  *
  * DV-M10-40 (http mode only): the picker opens with the teacher's own school selected, so a class
  * left without a school choice is still visible to that school's admin. The teacher can clear it.
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ApiError, isHttpMode } from '@/api'
@@ -18,7 +18,7 @@ import { useSessionStore } from '@/stores/session'
 
 import { createGuruClass } from '../api/guru'
 import type { EducationLevelSlug } from '../api/types'
-import { KELAS_COPY, tilesForSchoolType } from '../components/kelas/copy'
+import { KELAS_COPY, LEVEL_TILES } from '../components/kelas/copy'
 import SchoolPicker from '../components/kelas/SchoolPicker.vue'
 import { fetchSubjectOptions } from '../components/kelas/subjects'
 import { KELAS_COPY as KELAS_SAYA_COPY } from '../components/kelas-saya/copy'
@@ -44,7 +44,7 @@ const INLINE_FIELDS = ['name', 'subjectId', 'educationLevel']
 const fields = ref<Record<string, string>>({})
 const failure = ref<string[]>([])
 
-const tiles = computed(() => tilesForSchoolType(school.value?.type ?? null))
+const tiles = LEVEL_TILES
 
 onMounted(async () => {
   const schoolId = session.user?.schoolId
@@ -58,11 +58,6 @@ onMounted(async () => {
   } finally {
     schoolLookup.value = false
   }
-})
-
-// A level hidden by the chosen school's type is no longer chosen.
-watch(tiles, (next) => {
-  if (level.value !== '' && !next.some((t) => t.slug === level.value)) level.value = ''
 })
 
 /** A module BM message of a refused request, the network copy for status 0, else the generic BM line (SWE). */
@@ -162,7 +157,7 @@ async function submit(): Promise<void> {
           <URadioGroup
             :model-value="level || undefined"
             :legend="`${KELAS_COPY.level} *`"
-            :items="tiles.map((t) => ({ label: t.label, value: t.slug }))"
+            :items="tiles.map((t) => ({ label: t.label, value: t.slug as string }))"
             variant="card"
             orientation="horizontal"
             name="education_level"

@@ -29,7 +29,7 @@ import { fieldError, gameNotFound, levelInvalid, rawMessage, soloAlreadyChecked,
 import { SoloItemBuilder } from './solo-items'
 import { type ItemRecord, SoloRepository } from './solo.repository'
 import {
-  DEFAULT_DARJAH,
+  DEFAULT_GRADE,
   isSoloGame,
   MEMORY_COINS,
   MEMORY_PAIRS,
@@ -52,11 +52,12 @@ export type SubmitOutcome = { status: 200 | 404 | 409 | 422; body: Record<string
 const refuse = (status: 404 | 409 | 422, message: string): SubmitOutcome => ({ status, body: rawMessage(message) })
 const objectOf = (body: unknown): Record<string, unknown> => (typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {})
 
-/** `?darjah=`: absent or empty = not given; an integer 1..11 else 422 "Tahap tidak sah." (darjah). */
+/** `?darjah=`: absent or empty = not given; an integer 7..11 (Tingkatan 1 to 5) else 422 "Tahap tidak sah." (darjah). */
 function parseDarjah(raw: unknown): number | undefined {
   if (raw === undefined || raw === '') return undefined
   const r = GamesSoloQuerySchema.safeParse({ darjah: raw })
   if (!r.success) throw levelInvalid()
+  if (r.data.darjah !== undefined && r.data.darjah < 7) throw levelInvalid() // secondary-only (2026-10-29)
   return r.data.darjah
 }
 
@@ -93,11 +94,11 @@ export class SoloService {
     let darjah: number | null = null
     let levelIds: string[]
     if (game === 'kad-memori') {
-      levelIds = (await Promise.all([1, 2, 3, 4].map((g) => this.subjects.levelIdOfGrade(g)))).filter((x): x is string => x !== null)
+      levelIds = (await Promise.all([7, 8, 9, 10, 11].map((g) => this.subjects.levelIdOfGrade(g)))).filter((x): x is string => x !== null)
     } else {
       const given = parseDarjah(darjahRaw)
       const grade = (await this.users.get(caller.userId))?.grade ?? null
-      darjah = given ?? (grade !== null && grade >= 1 && grade <= 11 ? grade : DEFAULT_DARJAH)
+      darjah = given ?? (grade !== null && grade >= 7 && grade <= 11 ? grade : DEFAULT_GRADE)
       const level = await this.subjects.levelIdOfGrade(darjah)
       levelIds = level === null ? [] : [level]
     }

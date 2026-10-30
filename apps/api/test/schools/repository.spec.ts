@@ -55,9 +55,10 @@ describe('SchoolsRepository (the interface other modules use)', () => {
   })
 
   it('options lists every school by name; search lists only active ones and caps by limit', async () => {
-    expect((await repo.options()).map((o) => o.name)).toEqual(['SJK(C) Demo Empat', 'SK Demo Dua', 'SK Demo Tiga', 'SMK Demo Satu'])
+    expect((await repo.options()).map((o) => o.name)).toEqual(['SMK Demo Satu'])
     await db.query(`update schools set is_active = false where code = 'DEMO003'`)
-    expect((await repo.search({ limit: 10 })).map((s) => s.code)).toEqual(['DEMO004', 'DEMO002', 'DEMO001'])
+    expect((await repo.search({ limit: 10 })).map((s) => s.code)).toEqual(['DEMO001'])
+    await db.query(`insert into schools (name, code, type, state, is_active) values ('SMK Repo Tambahan', 'REPOX', 'SMK', 'Selangor', true)`)
     expect((await repo.search({ limit: 2 })).length).toBe(2)
     expect(await repo.search({ limit: 10, id: (await schoolIdOf(db, 'DEMO003')) })).toEqual([])
     expect((await repo.search({ limit: 10, q: 'satu' })).map((s) => s.code)).toEqual(['DEMO001'])

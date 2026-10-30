@@ -96,7 +96,9 @@ export class StandingsRepository {
                row_number() OVER (PARTITION BY p.user_id ORDER BY b.created_at DESC, b.id DESC) AS rn
         FROM battle_participants p
         JOIN battles b ON b.id = p.battle_id
-        WHERE ${COUNTED} ${windowSql(w)}
+        LEFT JOIN users hu ON hu.id = p.user_id
+        LEFT JOIN schools hs ON hs.id = hu.school_id
+        WHERE ${COUNTED} ${windowSql(w)} AND (hu.grade IS NULL OR hu.grade >= 7) AND (hs.type IS NULL OR hs.type NOT IN ('SK', 'SJK(C)', 'SJK(T)'))
       )
       SELECT user_id,
              count(*) FILTER (WHERE win) AS menang,
@@ -147,7 +149,10 @@ export class StandingsRepository {
              sum((p.score + 50) / 100) AS skor
       FROM battle_participants p
       JOIN battles b ON b.id = p.battle_id
+      LEFT JOIN users hu ON hu.id = p.user_id
+      JOIN schools hs ON hs.id = p.school_id
       WHERE ${COUNTED} AND p.school_id IS NOT NULL ${windowSql(w)}
+        AND (hu.grade IS NULL OR hu.grade >= 7) AND (hs.type IS NULL OR hs.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')) -- secondary-only (2026-10-29)
       GROUP BY p.school_id
       ORDER BY sum((p.score + 50) / 100) DESC, p.school_id ASC`)
     return rows.map((r) => ({

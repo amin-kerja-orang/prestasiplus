@@ -172,7 +172,7 @@ export class UsersService {
   async schoolStudents(caller: Caller, schoolId: string, search: string | undefined, classLevel: string | undefined): Promise<ExistingStudent[]> {
     // Another school is 404 for a school_admin, the same as an unknown school.
     if (!caller.isAdmin && schoolId !== caller.schoolId) throw notFound()
-    if (!(await this.schools.exists(schoolId))) throw notFound()
+    if (!(await this.schools.existsSecondary(schoolId))) throw notFound()
     const rows = await this.users.studentsOfSchool(schoolId, search?.trim() ?? '', classLevel ?? '')
     return rows
       .sort(byNameThenId)
@@ -200,6 +200,8 @@ export class UsersService {
     const schoolId = await this.resolveSchool(caller, blankToNull(body.schoolId), fields)
     const ppd = await this.resolveRegion(roles, blankToNull(body.ppdState), blankToNull(body.ppdDistrict), fields)
     const ic = isStudent ? this.icOf(blankToNull(body.icNumber), fields) : null
+    // Secondary-only (2026-10-29): a new student cannot be created in Darjah 1 to 6.
+    if (isStudent && gradeOf(body.grade) !== null && (gradeOf(body.grade) as number) < 7) fields.grade = FIELD_MESSAGES.gradeInvalid
     await this.checkLinked(caller, roles, body.linkedStudentIds, fields)
     await this.checkUnique(fields, { email, username, schoolId })
     if (Object.keys(fields).length > 0) throw invalid(fields)
@@ -276,7 +278,7 @@ export class UsersService {
       if (body.schoolId !== undefined && !parentTarget) {
         const sent = blankToNull(body.schoolId)
         if (caller.isAdmin) {
-          if (sent !== null && !(await this.schools.exists(sent))) fields.schoolId = FIELD_MESSAGES.schoolInvalid
+          if (sent !== null && sent !== target.schoolId && !(await this.schools.existsSecondary(sent))) fields.schoolId = FIELD_MESSAGES.schoolInvalid
           else schoolId = sent
         } else if (sent !== caller.schoolId) {
           // A school_admin cannot move a user to another school or out of its own.
@@ -295,6 +297,7 @@ export class UsersService {
         if (body.grade !== undefined) {
           const g = body.grade === null ? null : gradeOf(body.grade)
           if (g === null) fields.grade = FIELD_MESSAGES.gradeRequired
+          else if (g < 7 && g !== target.grade) fields.grade = FIELD_MESSAGES.gradeInvalid // secondary-only (2026-10-29); an unchanged stored grade is kept
           else grade = g
         } else if (target.grade === null && !target.roles.includes('student')) {
           fields.grade = FIELD_MESSAGES.gradeRequired
@@ -500,7 +503,7 @@ export class UsersService {
       return caller.schoolId
     }
     if (sent === null) return null
-    if (!(await this.schools.exists(sent))) {
+    if (!(await this.schools.existsSecondary(sent))) {
       fields.schoolId = FIELD_MESSAGES.schoolInvalid
       return null
     }

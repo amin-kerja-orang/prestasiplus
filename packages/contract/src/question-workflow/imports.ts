@@ -40,6 +40,7 @@ export const QUESTION_IMPORT_ROW_MESSAGES = {
   level: 'Tahap pendidikan tidak sah.',
   difficulty: 'Tahap kesukaran mesti 1 hingga 5.',
   marks: 'Markah mesti nombor bulat sekurang-kurangnya 1.',
+  kertas: 'Kertas tidak sah.',
   /** Guru import only (SRS M10 S22 caps). */
   textTooLong: 'Soalan tidak boleh melebihi 2000 aksara.',
   optionTooLong: 'Pilihan jawapan tidak boleh melebihi 500 aksara.',
@@ -58,6 +59,8 @@ export const QUESTION_IMPORT_HEADER = [
   'difficulty_level',
   'marks',
   'explanation',
+  /** Optional column: 1, 2 or 3 (empty = none). The paper builder uses it to find the question. */
+  'kertas',
 ] as const
 
 /** Columns the file must have; subject, level and difficulty may come from the form defaults. */
@@ -70,8 +73,8 @@ export const QUESTION_IMPORT_REQUIRED_COLUMNS = ['question_text', 'option_a', 'o
  */
 export const QUESTION_IMPORT_TEMPLATE_CSV = [
   QUESTION_IMPORT_HEADER.join(','),
-  '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,4,1,1,"Kuala Lumpur ialah ibu negara."',
-  '"2 + 3 = ?",4,5,6,7,B,3,1,1,1,',
+  '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,7,1,1,"Kuala Lumpur ialah ibu negara.",',
+  '"2 + 3 = ?",4,5,6,7,B,3,10,1,1,,1',
   '',
 ].join('\r\n')
 
