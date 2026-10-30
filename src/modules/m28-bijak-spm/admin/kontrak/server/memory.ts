@@ -367,6 +367,29 @@ export class MockKontrakServer implements KontrakApi {
       }))
   }
 
+  /** `POST .../sections/{position}/review` (AC-39.9): stamps one section of the head reviewed in place (no new version). */
+  async reviewSection(subject: string, kertas: number, position: number): Promise<BijakBlueprintView> {
+    await tick()
+    const r = this.rec(subject, kertas)
+    const h = r.versions[r.versions.length - 1]!
+    const index = h.view.sections.findIndex((s) => s.position === position)
+    if (index < 0) throw new KontrakError('not_found', 'Kontrak tidak ditemui')
+    this.lockedCheck(h)
+    h.view = {
+      ...h.view,
+      sections: h.view.sections.map((s, i) =>
+        i === index
+          ? {
+              ...s,
+              ...(s.quota ? { quota: { ...s.quota, lines: s.quota.lines.map((l) => ({ ...l, reviewed: true })) } } : {}),
+              kbatReviewed: true,
+            }
+          : s,
+      ),
+    }
+    return this.viewOfHead(r)
+  }
+
   async evidence(subject: string, kertas: number): Promise<BijakEvidenceItem[]> {
     await tick()
     return this.head(subject, kertas).evidenceIds.map((id) => this.evidenceStore.get(id)!).filter(Boolean)

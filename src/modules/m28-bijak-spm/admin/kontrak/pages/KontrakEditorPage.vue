@@ -240,6 +240,28 @@ async function retire(): Promise<void> {
 }
 const retireError = ref('')
 
+/* Review stamp (AC-39.9): marks one section's seeded quota and KBAT values as reviewed, in place, no new version. */
+const reviewing = ref(false)
+const reviewError = ref('')
+const canReview = computed(() => !isNew.value && !dirty.value && view.value !== null && view.value.source !== 'Disahkan')
+async function reviewSection(index: number): Promise<void> {
+  if (!canReview.value || reviewing.value) return
+  reviewing.value = true
+  reviewError.value = ''
+  try {
+    const saved = await api.reviewSection(subject.value, kertas.value, index + 1)
+    view.value = saved
+    form.value = formFromView(saved)
+    baseline.value = serialize(form.value)
+    reloadKey.value += 1
+    flash.show({ type: 'success', message: 'Bahagian ditandakan sudah disemak.' })
+  } catch (e) {
+    reviewError.value = e instanceof Error ? e.message : 'Bahagian tidak dapat ditandakan.'
+  } finally {
+    reviewing.value = false
+  }
+}
+
 function onVerified(v: BijakBlueprintView): void {
   void (async () => {
     view.value = v
@@ -395,6 +417,10 @@ const poolReason = 'Simpan dahulu'
             :subject="subject"
             :issues="issues"
             :load-units="loadUnits"
+            :can-review="canReview"
+            :reviewing="reviewing"
+            :review-error="reviewError"
+            @review="reviewSection(activeSection)"
           />
           <VerifyPanel
             v-else-if="activeTab === 'pengesahan' && view"

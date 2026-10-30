@@ -64,6 +64,8 @@ export interface KontrakApi {
     kertas: number,
     body: BijakBlueprintAdminVersionInput,
   ): Promise<BijakBlueprintView>
+  /** `POST /admin/blueprints/{subject}/{kertas}/sections/{position}/review` (AC-39.9): stamps one section reviewed in place. */
+  reviewSection(subject: string, kertas: number, position: number): Promise<BijakBlueprintView>
   retire(subject: string, kertas: number): Promise<void>
   versions(subject: string, kertas: number): Promise<BijakBlueprintVersionItem[]>
   evidence(subject: string, kertas: number): Promise<BijakEvidenceItem[]>

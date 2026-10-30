@@ -21,8 +21,18 @@ const props = defineProps<{
   subject: string
   issues: readonly Issue[]
   loadUnits: (subject: string) => Promise<BijakUnitRefView[]>
+  /** The head is saved (not dirty) and not Disahkan: the review stamp can be sent (AC-39.9). */
+  canReview?: boolean
+  reviewing?: boolean
+  reviewError?: string
 }>()
+const emit = defineEmits<{ review: [] }>()
 const s = defineModel<FormSection>({ required: true })
+
+/** Quota lines or the KBAT value the server seeded and nobody has confirmed ("Belum disemak"). */
+const hasUnreviewed = computed(
+  () => s.value.quotaLines.some((l) => !l.reviewed) || (s.value.kbatMarks !== null && !s.value.kbatReviewed),
+)
 
 const MODES = [
   { value: 'mcq', label: 'Aneka pilihan' },
@@ -66,6 +76,28 @@ function setPerSlot(on: boolean): void {
 
 <template>
   <div class="flex min-w-0 flex-col gap-6">
+    <div
+      v-if="hasUnreviewed"
+      class="flex min-w-0 flex-col gap-2 rounded-md bg-elevated p-3 sm:flex-row sm:items-center sm:justify-between"
+      data-testid="review-bar"
+    >
+      <p class="text-body text-default">
+        Ada nilai kuota atau KBAT yang belum disemak dalam bahagian ini.
+        <span v-if="!canReview" class="text-muted">Simpan perubahan dahulu untuk menandakan bahagian ini.</span>
+      </p>
+      <UButton
+        class="min-h-11 self-start"
+        color="primary"
+        variant="soft"
+        icon="i-ph-check"
+        label="Tandakan sudah disemak"
+        :loading="reviewing"
+        :disabled="!canReview || reviewing"
+        data-testid="mark-reviewed"
+        @click="emit('review')"
+      />
+      <p v-if="reviewError" class="text-caption text-error" role="alert" data-testid="review-error">{{ reviewError }}</p>
+    </div>
     <DsFormSection title="Struktur Bahagian" icon="list-numbers" :columns="2">
       <DsFormField native :for="fieldId(index, 'label')" label="Label" required :error="errAt('label')">
         <template #default="f">

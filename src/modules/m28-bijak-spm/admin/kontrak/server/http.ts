@@ -103,6 +103,9 @@ export class HttpKontrakServer extends HttpBijakServer implements KontrakApi {
   saveVersion(subject: string, kertas: number, body: BijakBlueprintAdminVersionInput): Promise<BijakBlueprintView> {
     return this.call('POST', `${this.base(subject, kertas)}/versions`, body)
   }
+  reviewSection(subject: string, kertas: number, position: number): Promise<BijakBlueprintView> {
+    return this.call('POST', `${this.base(subject, kertas)}/sections/${position}/review`, {})
+  }
   async retire(subject: string, kertas: number): Promise<void> {
     await this.call('POST', `${this.base(subject, kertas)}/retire`)
   }
