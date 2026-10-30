@@ -87,7 +87,7 @@ function pageOf(text: string | undefined, max: number, fallback: number, key: st
 /** `GET /questions`. Unknown filter values match nothing; a bad `status` is a 422 on `status`. */
 export function parseAdminList(raw: unknown): AdminListFilter {
   const fields = newFields()
-  const q = cleanQuery(raw, ['page', 'pageSize', 'subjectId', 'educationLevelId', 'difficultyLevel', 'status', 'dskpFilter', 'complianceFilter', 'sourceFilter', 'search'], fields)
+  const q = cleanQuery(raw, ['page', 'pageSize', 'subjectId', 'educationLevelId', 'difficultyLevel', 'status', 'dskpFilter', 'complianceFilter', 'sourceFilter', 'search', 'tagReview', 'missing'], fields)
   const page = pageOf(q.page, MAX_PAGE, 1, 'page', fields)
   const pageSize = pageOf(q.pageSize, 100, ADMIN_PAGE_SIZE, 'pageSize', fields)
   for (const key of ['subjectId', 'educationLevelId', 'difficultyLevel', 'dskpFilter', 'complianceFilter', 'sourceFilter'] as const) {
@@ -114,6 +114,8 @@ export function parseAdminList(raw: unknown): AdminListFilter {
     ...(d.complianceFilter === undefined ? {} : { complianceFilter: d.complianceFilter }),
     ...(d.sourceFilter === undefined ? {} : { sourceFilter: d.sourceFilter }),
     ...(d.search === undefined ? {} : { search: d.search }),
+    ...(d.tagReview === undefined ? {} : { tagReview: true }),
+    ...(d.missing === undefined ? {} : { missing: d.missing }),
   }
 }
 

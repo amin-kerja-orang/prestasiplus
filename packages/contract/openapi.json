@@ -29518,6 +29518,15 @@
           "ms"
         ]
       },
+      "QuestionKbatLevel": {
+        "type": "string",
+        "enum": [
+          "mengaplikasi",
+          "menganalisis",
+          "menilai",
+          "mencipta"
+        ]
+      },
       "QuestionLeafMode": {
         "type": "string",
         "enum": [
@@ -29729,6 +29738,53 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
+              },
               "mode": {
                 "type": "string",
                 "enum": [
@@ -29795,6 +29851,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -29866,6 +29969,53 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
+              },
               "mode": {
                 "type": "string",
                 "enum": [
@@ -29929,6 +30079,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -30001,6 +30198,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -30104,6 +30348,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -30285,6 +30576,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -30592,6 +30930,53 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
+              },
               "mode": {
                 "type": "string",
                 "enum": [
@@ -30772,6 +31157,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -30870,6 +31302,53 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
+              },
               "mode": {
                 "type": "string",
                 "enum": [
@@ -30936,6 +31415,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -31007,6 +31533,53 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
+              },
               "mode": {
                 "type": "string",
                 "enum": [
@@ -31070,6 +31643,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -31142,6 +31762,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -31245,6 +31912,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -31426,6 +32140,53 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
               },
               "mode": {
                 "type": "string",
@@ -31733,6 +32494,53 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
+              },
               "mode": {
                 "type": "string",
                 "enum": [
@@ -31914,6 +32722,53 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
+              },
               "mode": {
                 "type": "string",
                 "enum": [
@@ -31992,6 +32847,53 @@
                             "never"
                           ]
                         },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
+                        "unitNodeId": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Id"
+                            },
+                            {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          ]
+                        },
+                        "formOrigin": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "t1_t3",
+                            "t4",
+                            "t5",
+                            null
+                          ]
+                        },
+                        "difficultyTp": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 6
+                        },
                         "mode": {
                           "type": "string",
                           "enum": [
@@ -32058,6 +32960,53 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
+                        "unitNodeId": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Id"
+                            },
+                            {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          ]
+                        },
+                        "formOrigin": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "t1_t3",
+                            "t4",
+                            "t5",
+                            null
+                          ]
+                        },
+                        "difficultyTp": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 6
                         },
                         "mode": {
                           "type": "string",
@@ -32129,6 +33078,53 @@
                             "never"
                           ]
                         },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
+                        "unitNodeId": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Id"
+                            },
+                            {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          ]
+                        },
+                        "formOrigin": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "t1_t3",
+                            "t4",
+                            "t5",
+                            null
+                          ]
+                        },
+                        "difficultyTp": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 6
+                        },
                         "mode": {
                           "type": "string",
                           "enum": [
@@ -32192,6 +33188,53 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
+                        "unitNodeId": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Id"
+                            },
+                            {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          ]
+                        },
+                        "formOrigin": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "t1_t3",
+                            "t4",
+                            "t5",
+                            null
+                          ]
+                        },
+                        "difficultyTp": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 6
                         },
                         "mode": {
                           "type": "string",
@@ -32264,6 +33307,53 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
+                        "unitNodeId": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Id"
+                            },
+                            {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          ]
+                        },
+                        "formOrigin": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "t1_t3",
+                            "t4",
+                            "t5",
+                            null
+                          ]
+                        },
+                        "difficultyTp": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 6
                         },
                         "mode": {
                           "type": "string",
@@ -32367,6 +33457,53 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
+                        "unitNodeId": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Id"
+                            },
+                            {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          ]
+                        },
+                        "formOrigin": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "t1_t3",
+                            "t4",
+                            "t5",
+                            null
+                          ]
+                        },
+                        "difficultyTp": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 6
                         },
                         "mode": {
                           "type": "string",
@@ -32548,6 +33685,53 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
+                        "unitNodeId": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Id"
+                            },
+                            {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          ]
+                        },
+                        "formOrigin": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "t1_t3",
+                            "t4",
+                            "t5",
+                            null
+                          ]
+                        },
+                        "difficultyTp": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 6
                         },
                         "mode": {
                           "type": "string",
@@ -32855,6 +34039,53 @@
                             "never"
                           ]
                         },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
+                        "unitNodeId": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Id"
+                            },
+                            {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          ]
+                        },
+                        "formOrigin": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "t1_t3",
+                            "t4",
+                            "t5",
+                            null
+                          ]
+                        },
+                        "difficultyTp": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 6
+                        },
                         "mode": {
                           "type": "string",
                           "enum": [
@@ -33035,6 +34266,53 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
+                        "unitNodeId": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Id"
+                            },
+                            {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          ]
+                        },
+                        "formOrigin": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "t1_t3",
+                            "t4",
+                            "t5",
+                            null
+                          ]
+                        },
+                        "difficultyTp": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 6
                         },
                         "mode": {
                           "type": "string",
@@ -34887,6 +36165,28 @@
           "tag": {
             "$ref": "#/components/schemas/QuestionCurriculumTag"
           },
+          "kbat": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionKbatLevel"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "tagReview": {
+            "type": "boolean"
+          },
+          "catalogueVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "stimulusGroup": {
             "allOf": [
               {
@@ -35218,6 +36518,28 @@
           },
           "tag": {
             "$ref": "#/components/schemas/QuestionCurriculumTag"
+          },
+          "kbat": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionKbatLevel"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "tagReview": {
+            "type": "boolean"
+          },
+          "catalogueVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "stimulusGroup": {
             "allOf": [
@@ -94724,6 +96046,31 @@
             },
             "required": false,
             "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            },
+            "required": false,
+            "name": "tagReview",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "unit",
+                "tp",
+                "marks",
+                "key"
+              ]
+            },
+            "required": false,
+            "name": "missing",
             "in": "query"
           }
         ],

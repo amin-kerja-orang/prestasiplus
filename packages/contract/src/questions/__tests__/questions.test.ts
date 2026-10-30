@@ -209,6 +209,29 @@ describe('part tree (D1 to D4)', () => {
   })
 })
 
+describe('per-leaf curriculum overrides (BJS-06)', () => {
+  const leaf = (extra: Record<string, unknown>) => ({ label: '', prompt: rt('x'), marks: 2, mode: 'short_text', key: { kind: 'accepted', values: ['a'] }, ...extra })
+  it('accepts unitNodeId, formOrigin and difficultyTp, each optional and nullable', () => {
+    expect(QuestionPartSchema.safeParse(leaf({})).success).toBe(true)
+    expect(QuestionPartSchema.safeParse(leaf({ unitNodeId: '12', formOrigin: 't1_t3', difficultyTp: 6 })).success).toBe(true)
+    expect(QuestionPartSchema.safeParse(leaf({ unitNodeId: null, formOrigin: null, difficultyTp: null })).success).toBe(true)
+  })
+  it('rejects TP outside 1..6 and an unknown form origin', () => {
+    for (const bad of [{ difficultyTp: 0 }, { difficultyTp: 7 }, { difficultyTp: 2.5 }, { formOrigin: 'T4' }, { formOrigin: 't6' }])
+      expect(QuestionPartSchema.safeParse(leaf(bad)).success, JSON.stringify(bad)).toBe(false)
+  })
+  it('kbat: the four levels or bukan, nullable; anything else is rejected', () => {
+    for (const k of ['mengaplikasi', 'menganalisis', 'menilai', 'mencipta', 'bukan', null])
+      expect(QuestionPartSchema.safeParse(leaf({ kbat: k })).success, String(k)).toBe(true)
+    for (const k of ['mengingat', 'KBAT', 3, ''])
+      expect(QuestionPartSchema.safeParse(leaf({ kbat: k })).success, String(k)).toBe(false)
+  })
+  it('is not exposed by the student-facing projection', () => {
+    const out = QuestionPublicSchema.parse({ ...question, parts: [leaf({ unitNodeId: '12', formOrigin: 't4', difficultyTp: 3 })] }) as { parts: Record<string, unknown>[] }
+    for (const k of ['unitNodeId', 'formOrigin', 'difficultyTp', 'key']) expect(k in (out.parts[0] ?? {})).toBe(false)
+  })
+})
+
 describe('student-facing projection', () => {
   it('strips the answer key, explanation and model answer from a full admin question', () => {
     const out = QuestionPublicSchema.parse({ ...question, parts: [mcqLeaf, numericLeaf] }) as Record<string, unknown>

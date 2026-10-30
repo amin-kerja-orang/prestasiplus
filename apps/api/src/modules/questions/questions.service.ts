@@ -657,6 +657,15 @@ export class QuestionsService {
         }
       }
     }
+    // BJS-06: a leaf unit override must be a unit node of this subject and level.
+    for (const unitId of new Set(refs.unitIds)) {
+      const key = parse(unitId)
+      const node = key === null ? null : await this.curriculum.nodeById(key)
+      if (!node || node.kind !== 'unit' || (subject && level && !belongs(node))) {
+        fields.parts = 'Unit DSKP bahagian soalan tidak sah.' // [PROPOSED] copy
+        break
+      }
+    }
     if (refs.stimulusIds.length > 0 && !(await this.repo.stimuliExist(refs.stimulusIds))) fields.parts = 'Stimulus tidak sah.'
     if (n.stimulusGroupId && !(await this.repo.groupExists(n.stimulusGroupId))) fields.stimulusGroupId = 'Kumpulan stimulus tidak sah.'
 
@@ -679,6 +688,9 @@ export class QuestionsService {
       topicId: n.topicId === undefined ? (v?.topicId ? BigInt(v.topicId) : null) : topicKey,
       formOrigin: v?.formOrigin ?? this.formOriginOf(level?.code),
       cognitiveLevel: v?.cognitiveLevel ?? null,
+      kbat: v?.kbat ?? null,
+      tagReview: v?.tagReview ?? false,
+      catalogueVersion: v?.catalogueVersion ?? null,
       difficultyTp: n.tp,
       sourcePage: v?.sourcePage ?? null,
       setLabel: v?.setLabel ?? null,
