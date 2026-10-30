@@ -148,9 +148,21 @@ export function gradeQuestion(
 export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: Bundles, answers: AnswerMap): BijakAttemptResult {
   let n = 0
   const questions: QuestionResult[] = []
+  for (const s of composition) for (const qid of s.questionIds) questions.push(gradeQuestion(composition, bundles, answers, qid, ++n, true))
+  return assembleResult(composition, questions)
+}
+
+/**
+ * Sections, choose-N ranking and totals from graded questions. Used by the first grading and again when
+ * a self-mark changes a part (R1-B12), so a raised mark can change WHICH questions count (V2 recomputeScore
+ * -> ExamBestNScorer). Sets `counted` on the questions it is given.
+ */
+export function assembleResult(composition: readonly SectionSnapshot[], questions: QuestionResult[]): BijakAttemptResult {
+  const byId = new Map(questions.map((q) => [q.questionId, q]))
   const sections: SectionResult[] = []
   for (const s of composition) {
-    const qs = s.questionIds.map((qid) => gradeQuestion(composition, bundles, answers, qid, ++n, true))
+    const qs = s.questionIds.map((qid) => byId.get(qid) as QuestionResult)
+    for (const q of qs) q.counted = true
     let counted = qs
     if (s.rule.type === 'choose') {
       // Best N attempted by marks (ties: the lower position). Ticks never change the score.
@@ -163,7 +175,6 @@ export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: B
       for (const q of qs) q.counted = ids.has(q.questionId)
       counted = qs.filter((q) => q.counted)
     }
-    questions.push(...qs)
     sections.push({
       sectionId: s.id,
       label: s.label,

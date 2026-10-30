@@ -22,9 +22,11 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express'
 import {
   BijakAttemptSavePayloadSchema,
+  BijakAttemptSelfMarkRequestSchema,
   BijakAttemptStartRequestSchema,
   BijakAttemptSubmitPayloadSchema,
   type BijakAttemptSavePayload,
+  type BijakAttemptSelfMarkRequest,
   type BijakAttemptStartRequest,
   type BijakAttemptSubmitPayload,
   IdSchema,
@@ -163,6 +165,32 @@ export class BijakAttemptsController {
   @Get('attempts/:id/result')
   async result(@Param('id') id: string, @Req() req: AuthedRequest) {
     return ok(await this.attempts.result(authOf(req).userId, id))
+  }
+
+  /** R1-B12: the pupil's own mark for one part (Semakan). */
+  @Post('attempts/:id/self-mark')
+  @HttpCode(200)
+  @RateLimit(ATTEMPT_RATE.save)
+  async selfMark(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(BijakAttemptSelfMarkRequestSchema)) body: BijakAttemptSelfMarkRequest,
+    @Req() req: AuthedRequest,
+  ) {
+    return ok(await this.attempts.selfMark(authOf(req), id, body))
+  }
+
+  /** R1-B15: "Cuba Lagi" - a new blank sitting of the same paper. */
+  @Post('attempts/:id/retry')
+  @HttpCode(201)
+  @RateLimit(ATTEMPT_RATE.lifecycle)
+  async retry(@Param('id') id: string, @Req() req: AuthedRequest) {
+    return ok(await this.attempts.retry(authOf(req), id, infoOf(req)))
+  }
+
+  /** R1-B15: "Lihat semakan lepas" - the caller's closed sittings of a paper. */
+  @Get('papers/:paperId/attempts')
+  async pastSittings(@Param('paperId') paperId: string, @Req() req: AuthedRequest) {
+    return ok(await this.attempts.pastSittings(authOf(req).userId, paperId.slice(0, 64)))
   }
 
   @Get('history')

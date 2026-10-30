@@ -7,7 +7,10 @@ import type {
   BijakAttemptPhoto,
   BijakAttemptQuestionResult,
   BijakAttemptResult,
+  BijakAttemptPastSittings,
   BijakAttemptResultView,
+  BijakAttemptSelfMarkRequest,
+  BijakAttemptSelfMarkResult,
   BijakAttemptSavePayload,
   BijakAttemptSaveResult,
   BijakAttemptStartRequest,
@@ -34,6 +37,7 @@ import {
   MAX_CHECKS_PER_QUESTION,
   MAX_PHOTOS_PER_PART,
   PAYLOAD_LIMITS,
+  PAST_SITTINGS_LIMIT,
   PAYLOAD_MESSAGES,
   SWEEP_BATCH,
 } from './attempts.constants'
@@ -56,6 +60,7 @@ import {
 } from './marking'
 import { assertAttemptPayload } from './payload-limits'
 import { BIJAK_REWARD_DESCRIPTION, BijakAttemptPorts } from './ports'
+import { applySelfMarks, clamp, decorateResult, isSelfMarkable, type SelfMarks } from './self-mark'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 /** Photos accept only these leaf answer modes (AC-09.2). */
@@ -92,6 +97,8 @@ const noEligibleQuestions = () => ApiError.of('VALIDATION_ERROR', { message: NO_
 const notFoundAttempt = () => ApiError.of('NOT_FOUND', { message: MSG.attemptNotFound })
 const forbiddenOwner = () => ApiError.of('FORBIDDEN', { message: MSG.forbidden })
 const attemptClosed = () => ApiError.of('CONFLICT', { message: MSG.attemptClosed })
+const notSubmitted = () => new ApiError({ code: 'NOT_SUBMITTED', status: 409, message: MSG.schemeAfterSubmit })
+const isClosed = (status: AttemptRow['status']) => status === 'submitted' || status === 'auto_submitted'
 
 @Injectable()
 export class BijakAttemptsService {
@@ -248,8 +255,8 @@ export class BijakAttemptsService {
 
   /* ---------------------------------------------------------------------------------- views */
 
-  private async buildView(row: AttemptRow, withChecks: boolean): Promise<BijakAttemptPaperView> {
-    const [answers, checks, bundles] = await Promise.all([this.repo.answers(row.id), this.repo.checkCounts(row.id), this.loadBundles(row.composition)])
+  private async buildView(row: AttemptRow, withChecks: boolean, preloaded?: Bundles): Promise<BijakAttemptPaperView> {
+    const [answers, checks, bundles] = await Promise.all([this.repo.answers(row.id), this.repo.checkCounts(row.id), preloaded ?? this.loadBundles(row.composition)])
     const served = buildServedPaper(row.composition, bundles)
     const showChecks = withChecks && row.status === 'in_progress' && row.mode === 'latihan'
     const map = this.answerMap(answers)
@@ -279,11 +286,122 @@ export class BijakAttemptsService {
       await this.closeExpired(row.id)
       row = await this.owned(userId, id)
     }
-    const result = await this.repo.result(row.id)
-    if (!result) throw new ApiError({ code: 'NOT_SUBMITTED', status: 409, message: MSG.schemeAfterSubmit })
+    const stored = await this.repo.gradedWithMarks(row.id)
+    if (!stored) throw notSubmitted()
     if (!row.resultViewedAt) await this.repo.markResultViewed(row.id, this.now())
-    const paper = await this.buildView(row, false)
+    const bundles = await this.loadBundles(row.composition)
+    const paper = await this.buildView(row, false, bundles)
+    const result = this.present(row, stored, this.answerMap(await this.repo.answers(row.id)), bundles)
     return { attempt: paper.attempt, result, paper }
+  }
+
+  /** The result as served: automatic grading + keyword suggestions (R1-B13) + the pupil's self-marks on top (R1-B12). */
+  private present(row: AttemptRow, stored: { result: BijakAttemptResult; selfMarks: SelfMarks }, answers: Map<string, PartAnswer>, bundles: Bundles): BijakAttemptResult {
+    return applySelfMarks(decorateResult(stored.result, bundles, answers), row.composition, stored.selfMarks)
+  }
+
+  /* ------------------------------------------------------------ self-mark (Semakan, R1-B12) */
+
+  /**
+   * V2 `selfMark`: the pupil's own mark for one subjective part of a CLOSED attempt. Owner only; the part
+   * must be on this attempt and have a points or rubric scheme; the mark is clamped (never rejected for being
+   * out of range); no lock, idempotent (a repeat with the same body changes nothing and records nothing).
+   * The totals are recomputed with best-N and the performance aggregate is told (regraded: the same attempt id
+   * replaces its earlier figures). The wallet reward given at submit is NOT repeated.
+   */
+  async selfMark(auth: AuthContext, id: string, body: BijakAttemptSelfMarkRequest): Promise<BijakAttemptSelfMarkResult> {
+    await this.owned(auth.userId, id)
+    const events: ClosedEvent[] = []
+    const out = await this.prisma.transaction(async (): Promise<BijakAttemptSelfMarkResult> => {
+      if (!(await this.repo.lock(id))) throw notFoundAttempt()
+      let row = (await this.repo.find(id)) as AttemptRow
+      const answers = await this.repo.answers(id)
+      const load = this.lazyBundles(row)
+      if (this.expired(row)) row = await this.finish(row, answers, 'auto_submitted', { key: null, swept: true }, load, events)
+      if (!isClosed(row.status)) throw notSubmitted()
+      const stored = await this.repo.gradedWithMarks(id)
+      if (!stored) throw notSubmitted()
+      const bundles = await load()
+      const found = stored.result.questions.flatMap((q) => q.parts.map((p) => ({ q, p }))).find((x) => x.p.partId === body.partId)
+      if (!found) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkPartUnknown } })
+      const scheme = bundles.get(found.q.questionId)?.schemes[body.partId]
+      if (!isSelfMarkable(scheme)) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkNotSubjective } })
+      const marks = found.p.marks
+      let mark = clamp(body.mark, 0, marks)
+      if (body.band !== undefined) {
+        if (scheme?.kind !== 'rubric') throw ApiError.of('VALIDATION_ERROR', { fields: { band: MSG.selfMarkBandNotRubric } })
+        const band = scheme.bands.find((b) => b.name === body.band)
+        if (!band) throw ApiError.of('VALIDATION_ERROR', { fields: { band: MSG.selfMarkBandUnknown } })
+        mark = clamp(mark, Math.min(band.range[0], marks), Math.min(band.range[1], marks))
+      }
+      const entry = body.band !== undefined ? { mark, band: body.band } : { mark }
+      const before = stored.selfMarks[body.partId]
+      const unchanged = before !== undefined && before.mark === entry.mark && before.band === body.band
+      const selfMarks: SelfMarks = unchanged ? stored.selfMarks : { ...stored.selfMarks, [body.partId]: entry }
+      const result = this.present(row, { result: stored.result, selfMarks }, this.answerMap(answers), bundles)
+      if (!unchanged) {
+        await this.repo.saveSelfMarks(id, selfMarks, result)
+        events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true })
+      }
+      const part = result.questions.flatMap((q) => q.parts).find((p) => p.partId === body.partId)!
+      return {
+        partId: body.partId,
+        awarded: part.awarded,
+        max: part.marks,
+        ...(entry.band !== undefined ? { band: entry.band } : {}),
+        status: part.status,
+        attemptScore: result.score,
+        attemptMax: result.max,
+        provisional: result.provisional,
+        pendingReview: result.pendingReview,
+        result,
+      }
+    }, TX)
+    await this.emit(events)
+    return out
+  }
+
+  /* ------------------------------------------------------- Cuba Lagi / Lihat semakan lepas (R1-B15) */
+
+  /**
+   * V2 `retry`: from a CLOSED attempt, a brand-new blank sitting of the same paper (same mode). The
+   * paper must still be offered (V2 `servable()`); the old attempt and its result are untouched. Other open
+   * sittings of the caller on the paper are abandoned so only one stays open.
+   */
+  async retry(auth: AuthContext, id: string, who: CallerInfo): Promise<{ attemptId: string }> {
+    let row = await this.owned(auth.userId, id)
+    if (this.expired(row)) {
+      await this.closeExpired(row.id)
+      row = await this.owned(auth.userId, id)
+    }
+    if (!isClosed(row.status)) throw ApiError.of('CONFLICT', { message: MSG.retryNotClosed })
+    const gone = () => ApiError.of('CONFLICT', { message: MSG.retryPaperGone })
+    if (row.paperId === null) throw gone()
+    try {
+      const out = await this.start(auth, { paperId: row.paperId, mode: row.mode, restart: true }, who)
+      return { attemptId: out.attemptId }
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'NOT_FOUND') throw gone()
+      throw err
+    }
+  }
+
+  /** V2 "Lihat semakan lepas": the caller's closed sittings of a paper, newest first; read one with the result route. */
+  async pastSittings(userId: string, paperId: string): Promise<BijakAttemptPastSittings> {
+    await this.sweepUser(userId)
+    if (!isIdString(paperId)) return { lastSubmittedAttemptId: null, sittings: [] }
+    const rows = await this.repo.closedForPaper(userId, paperId, PAST_SITTINGS_LIMIT)
+    const sittings = rows.map(({ row, score, max, provisional }) => ({
+      attemptId: row.id,
+      mode: row.mode,
+      status: row.status as FinishedStatus,
+      startedAt: ts(row.startedAt),
+      submittedAt: ts(row.submittedAt ?? row.startedAt),
+      score,
+      max,
+      provisional,
+    }))
+    return { lastSubmittedAttemptId: sittings[0]?.attemptId ?? null, sittings }
   }
 
   async history(userId: string): Promise<BijakAttemptHistoryRow[]> {
@@ -387,8 +505,11 @@ export class BijakAttemptsService {
     const index = await this.leafIndexOf(row, load)
     const changed = await this.merge(row, answers, ok, index, new Set())
     if (!changed) return false
-    const result = gradeAttempt(row.composition, await load(), this.answerMap(answers))
-    await this.repo.saveResult(row.id, result)
+    const base = gradeAttempt(row.composition, await load(), this.answerMap(answers))
+    // A self-mark made in between (R1-B12) stays: the new automatic grading gets the pupil's marks on top again.
+    const selfMarks = (await this.repo.gradedWithMarks(row.id))?.selfMarks ?? {}
+    const result = applySelfMarks(base, row.composition, selfMarks)
+    await this.repo.saveResult(row.id, base, selfMarks, result)
     events.push({ attempt: row, status: 'auto_submitted', result, swept: false, regraded: true })
     return true
   }
