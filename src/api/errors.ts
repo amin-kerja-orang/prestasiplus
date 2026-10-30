@@ -117,6 +117,34 @@ function readFields(value: unknown): Record<string, string> | undefined {
 /** BM copy for a rate-limited response; the backend's 429 envelope carries English (BE-47 deferred). */
 export const RATE_LIMITED_MESSAGE_BM = 'Terlalu banyak percubaan. Cuba sebentar lagi.'
 
+/**
+ * BM copy for the API's generic English envelope defaults (`api-error.ts`, `all-exceptions.filter.ts`),
+ * keyed by the EXACT message text, never by status, so a module's own BM message on the same status
+ * passes through untouched. Applied in http mode only. Perlu pengesahan (copy awaiting sign-off).
+ */
+export const GENERIC_API_MESSAGES_BM: Readonly<Record<string, string>> = {
+  'Server Error': 'Ralat pelayan. Sila cuba lagi.', // Perlu pengesahan
+  'Not Found.': 'Rekod tidak dijumpai.', // Perlu pengesahan
+  'This action is unauthorized.': 'Anda tidak dibenarkan melakukan tindakan ini.', // Perlu pengesahan
+  'Unauthenticated.': 'Sesi anda telah tamat. Sila log masuk semula.', // Perlu pengesahan
+  'Conflict.': 'Rekod telah berubah. Sila muat semula dan cuba lagi.', // Perlu pengesahan
+  'The given data was invalid.': 'Maklumat yang diberikan tidak sah.', // Perlu pengesahan
+  'Payload Too Large.': 'Saiz fail terlalu besar.', // Perlu pengesahan
+}
+
+/**
+ * The English tail the API's `summarizeFields` appends to a multi-field 422: the first field message
+ * plus ` (and 1 more error)` / ` (and N more errors)`.
+ */
+const MORE_ERRORS_TAIL = / \(and \d+ more errors?\)$/
+
+/** Http-mode message clean-up: strips the English "more errors" tail, then maps an exact generic default to BM. */
+function localizeEnvelopeMessage(message: string): string {
+  const stripped = message.replace(MORE_ERRORS_TAIL, '')
+  const base = stripped === '' ? message : stripped
+  return Object.hasOwn(GENERIC_API_MESSAGES_BM, base) ? GENERIC_API_MESSAGES_BM[base]! : base
+}
+
 /** Builds the `ApiError` for a non-2xx response. */
 export function errorFromResponse(res: {
   status: number
@@ -133,11 +161,12 @@ export function errorFromResponse(res: {
     return new ApiError({
       ...base,
       code,
-      // Http mode only (mock unchanged): map by code/status, never by the English text.
-      message:
-        isHttpMode() && (code === API_ERROR_CODES.RATE_LIMITED || res.status === 429)
+      // Http mode only (mock unchanged): 429 by code/status; the API's generic defaults by exact text.
+      message: !isHttpMode()
+        ? message
+        : code === API_ERROR_CODES.RATE_LIMITED || res.status === 429
           ? RATE_LIMITED_MESSAGE_BM
-          : message,
+          : localizeEnvelopeMessage(message),
       fields: readFields(fields),
       retryAfter: typeof retryAfter === 'number' ? retryAfter : headerRetry,
     })
