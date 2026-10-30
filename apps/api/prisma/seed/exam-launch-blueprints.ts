@@ -20,6 +20,7 @@ import { buildBlueprint, type BuiltBlueprint, type Layer2File, type ResolvedUnit
 import { EVIDENCE, EVIDENCE_SOURCE_REF, EVIDENCE_YEAR } from './bijak-standards/evidence'
 import { structureHashOf } from './bijak-standards/hash'
 import { LAYER1, type Layer1Blueprint } from './bijak-standards/layer1'
+import { loadLayer2 } from './bijak-standards/layer2'
 import type { SeedModule } from './index'
 
 /** Layer-2 data of a blueprint; null while no analyst file exists (quota and KBAT then seed null). */
@@ -154,12 +155,12 @@ async function seedOne(prisma: PrismaClient, now: Date, l1: Layer1Blueprint, lay
 }
 
 export interface LaunchBlueprintsOptions {
-  /** Layer-2 source; default: no analyst file (quota and KBAT null). */
+  /** Layer-2 source; default: the analyst files in docs/reference/blueprints (a missing file seeds quota and KBAT null). */
   layer2?: Layer2Loader
 }
 
 export function createExamLaunchBlueprintsSeed(options: LaunchBlueprintsOptions = {}): SeedModule {
-  const layer2 = options.layer2 ?? (() => null)
+  const layer2 = options.layer2 ?? loadLayer2
   return {
     name: 'exam-launch-blueprints',
     async run(ctx) {

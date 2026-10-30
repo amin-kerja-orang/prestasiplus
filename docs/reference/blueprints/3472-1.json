@@ -1,0 +1,45 @@
+{
+  "code": "3472/1",
+  "sections": [
+    {
+      "position": 1,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "2.0", "value": 7 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "3.0", "value": 7 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "4.0", "value": 6 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "5.0", "value": 5 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "6.0", "value": 4 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "7.0", "value": 5 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "8.0", "value": 6 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "1.0", "value": 3 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "3.0", "value": 6 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "4.0", "value": 6 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "5.0", "value": 5 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "6.0", "value": 4 }
+        ],
+        "levelShare": { "t4": 40, "t5": 24 }
+      },
+      "kbatMarks": 63,
+      "marksBand": [{ "from": 1, "to": 12, "marksMin": 3, "marksMax": 7 }],
+      "notes": "Bahagian A, 64 marks. Single body (SBP), skema confirms all totals. single-source: all lines except T4 3.0 = 7 and T4 6.0 = 4, which are inferred (the pattern table flags T4 3.0 as reachable only by 'form a model' and T4 6.0 as mixed with T4 1.0). kbatMarks 63 inferred: all questions are level 3+ except the first part (1 mark) of Q10, whose two listed levels (Mengingat / Mengaplikasi) were mapped to parts (a), (b) in order; 64 if both parts are level 3+. Selangor K1 not read."
+    },
+    {
+      "position": 2,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "1.0", "value": 8 },
+          { "subject": "ADDMATH", "level": "T4", "unitCode": "5.0", "value": 8 },
+          { "subject": "ADDMATH", "level": "T5", "unitCode": "2.0", "value": 8 }
+        ],
+        "levelShare": { "t4": 16, "t5": 8 }
+      },
+      "kbatMarks": 24,
+      "marksBand": [{ "from": 1, "to": 3, "marksMin": 8, "marksMax": 8 }],
+      "notes": "Bahagian B, offered 24 marks (choose 2, effective 16). All values single-source (SBP only): three lines, and kbatMarks 24 (Q13 Menilai, Q14 Mengaplikasi with a Menilai part, Q15 Menganalisis, question-level level inherited by every part). Q13 split is 5/3 per the skema."
+    }
+  ],
+  "kbatMarksTotal": 87
+}

@@ -1,0 +1,58 @@
+{
+  "code": "1449/2",
+  "sections": [
+    {
+      "position": 1,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "MATH", "level": "T4", "unitCode": "1.0", "value": 4 },
+          { "subject": "MATH", "level": "T4", "unitCode": "3.0", "value": 4 },
+          { "subject": "MATH", "level": "T4", "unitCode": "4.0", "value": 4 },
+          { "subject": "MATH", "level": "T4", "unitCode": "5.0", "value": 4 },
+          { "subject": "MATH", "level": "T4", "unitCode": "6.0", "value": 4 },
+          { "subject": "MATH", "level": "T4", "unitCode": "10.0", "value": 4 },
+          { "subject": "MATH", "level": "T5", "unitCode": "2.0", "value": 4 },
+          { "subject": "MATH", "level": "T5", "unitCode": "4.0", "value": 4 },
+          { "bucket": "t1_t3", "value": 8 }
+        ],
+        "levelShare": { "t4": 24, "t5": 8 }
+      },
+      "kbatMarks": 36,
+      "marksBand": [{ "from": 1, "to": 10, "marksMin": 3, "marksMax": 5 }],
+      "notes": "Bahagian A, 40 marks, SBP chosen where the bodies differ. observed (SBP = Selangor): T4 3.0 = 4, T4 6.0 = 4, T5 4.0 = 4. inferred (bodies differ, SBP used; Selangor value in brackets): T4 1.0 = 4 (3), T4 4.0 = 4 (0), T4 5.0 = 4 (5), T4 10.0 = 4 (0), T5 2.0 = 4 (0), t1_t3 = 8 (16; SBP Q6 is ambiguous and placed in the bucket). Selangor only: T5 1.0 = 4. kbatMarks 36 inferred (SBP: only Q4 is below level 3; Selangor gives 28). Question-level cognitive level inherited by every part. marksBand: SBP 4 each, Selangor 3,3,3,5,4,5,4,5,4,4."
+    },
+    {
+      "position": 2,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "MATH", "level": "T4", "unitCode": "7.0", "value": 9 },
+          { "subject": "MATH", "level": "T5", "unitCode": "3.0", "value": 9 },
+          { "subject": "MATH", "level": "T5", "unitCode": "5.0", "value": 9 },
+          { "subject": "MATH", "level": "T5", "unitCode": "6.0", "value": 9 },
+          { "subject": "MATH", "level": "T5", "unitCode": "7.0", "value": 9 }
+        ],
+        "levelShare": { "t4": 9, "t5": 36 }
+      },
+      "kbatMarks": 45,
+      "marksBand": [{ "from": 1, "to": 5, "marksMin": 8, "marksMax": 10 }],
+      "notes": "Bahagian B, 45 marks. observed (both bodies agree): T4 7.0 = 9, T5 5.0 = 9, T5 7.0 = 9; kbatMarks 45 (every question level 3+ in both). inferred (SBP chosen): T5 3.0 = 9 (Selangor 5, with 3 more on T4 10.0 in the same question), T5 6.0 = 9 (Selangor 0; Selangor has T5 2.0 = 10 instead). marksBand: SBP 9 each, Selangor 8,9,10,9,9."
+    },
+    {
+      "position": 3,
+      "quota": {
+        "basis": "marks",
+        "lines": [
+          { "subject": "MATH", "level": "T4", "unitCode": "2.0", "value": 7 },
+          { "subject": "MATH", "level": "T4", "unitCode": "8.0", "value": 8 },
+          { "subject": "MATH", "level": "T4", "unitCode": "9.0", "value": 8 },
+          { "bucket": "t1_t3", "value": 7 }
+        ],
+        "levelShare": { "t4": 23, "t5": 0 }
+      },
+      "marksBand": [{ "from": 1, "to": 2, "marksMin": 15, "marksMax": 15 }],
+      "notes": "INCOMPLETE (kbatMarks omitted): Q16 of the SBP paper has a cognitive level recorded only as a range ('up to Menilai') with no per-part levels, so its KBAT marks are not fixed (between 4 and 15; Q17 is 15). Offered 30 marks. All four lines inferred (bodies differ on every unit; SBP used; Selangor C has other units). SBP values are observed sub-part marks of two multi-topic questions (Q16: 4 outside DSKP, 3 T4 2.0, 4 T4 9.0, 4 T4 8.0; Q17: 3, 4, 4, 4). ATTENTION: these are leaf-attributed marks, they cannot be met if a question counts only for one primary unit (architecture O-1); no unit has a majority in either question. Selangor C: Q16 = 2 outside DSKP, 3 T4 4.0, 4 T4 9.0, 6 T4 8.0; Q17 = 4 ambiguous (T4 10.0 or outside), 3 outside, 4 T4 1.0, 4 T5 6.0 or 8.0."
+    }
+  ]
+}
