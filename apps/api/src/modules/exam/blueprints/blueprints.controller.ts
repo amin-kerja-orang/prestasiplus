@@ -7,9 +7,9 @@ import { Actor, type AuditActor } from './actor'
 import { BlueprintsService } from './blueprints.service'
 
 /**
- * Blueprint ("Kontrak") admin of the Bijak SPM paper builder (BE-39): Admin Pusat only. Bodies are read
- * raw and parsed in the service so that 404 and 409 come before 422 (mock order). CSRF on every POST is
- * enforced by the session guard.
+ * Blueprint ("Kontrak") admin of the Bijak SPM paper builder (BE-39, bijak-spm BJS-08): Admin Pusat only
+ * (AC-32.1, AC-39.3). Bodies are read raw and parsed in the service so that 404 and 409 come before 422 (mock
+ * order). CSRF on every write is enforced by the session guard.
  */
 @Roles('admin')
 @UseGuards(RateLimitGuard)

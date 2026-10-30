@@ -19,6 +19,10 @@
  * `PocQuestionLoader` against the BE-09 repository (insert with the reserved ids, status `published`)
  * and use `createExamSeed({ questionLoader })` in `seedModules`.
  */
+import { createHash } from 'node:crypto'
+
+import { canonicalStructure } from '@pp/exam-core'
+
 import type { PrismaClient } from '../../src/db/client'
 import { POC_BANK, type PocBank, type PocBlueprint, type PocPaper, pocQuestionId } from '../../src/modules/bijak/papers/poc'
 import { curriculumCodeOf } from '../../src/modules/bijak/papers/subject-codes'
@@ -53,6 +57,35 @@ export async function subjectIds(prisma: PrismaClient): Promise<Map<string, bigi
 }
 
 /**
+ * `structure_hash` of a PoC blueprint: the same canonical structure (exam-core) the blueprint service hashes,
+ * so a cosmetic edit of a seeded row is recognised as one. BJS-12 owns the real seeds; this is the minimum
+ * the NOT NULL column and its CHECK need.
+ */
+function structureHashOf(bp: PocBlueprint): string {
+  const canonical = canonicalStructure({
+    subject: bp.subject,
+    kertas: bp.kertas,
+    code: bp.code,
+    version: 1,
+    durationMin: bp.durationMin,
+    sections: bp.sections.map((s, i) => ({
+      position: i + 1,
+      label: s.label,
+      rule: s.rule,
+      questionCount: s.take,
+      markBudget: s.markBudget ?? s.take,
+      compulsory: s.compulsory ?? false,
+      pool: s.pool,
+      allowedModes: [],
+      profile: null,
+      quota: null,
+      kbatMarks: null,
+    })),
+  })
+  return createHash('sha256').update(canonical, 'utf8').digest('hex')
+}
+
+/**
  * Creates one blueprint (version 1, active) unless it exists: matched by (code, version 1), and skipped when
  * its subject and kertas already have an active blueprint. Shared with `exam-demo-blueprints.ts`.
  */
@@ -71,6 +104,7 @@ export async function createBlueprintIfAbsent(prisma: PrismaClient, subjectId: b
       status: 'active',
       source: SOURCE_TO_DB[bp.source],
       durationMin: bp.durationMin,
+      structureHash: structureHashOf(bp),
       instructions: bp.instructions,
       referenceSheets: bp.reference ?? [],
       sections: {

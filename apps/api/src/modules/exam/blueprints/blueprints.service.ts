@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   BIJAK_BUILDER_MESSAGES as MSG,
+  BIJAK_STANDARDS_MESSAGES,
   BijakBlueprintAdminCreateSchema,
   BijakBlueprintAdminVersionInputSchema,
   BijakBlueprintListQuerySchema,
   type BijakBlueprintAdminSectionInput,
-  type BijakBlueprintSource,
   type BijakBlueprintView,
 } from '@pp/contract'
 
@@ -13,15 +13,17 @@ import { AUDIT_ACTIONS, AuditService } from '../../../common/audit'
 import { ApiError } from '../../../common/errors/api-error'
 import { listMeta, ok, okList } from '../../../common/http/respond'
 import { ZodValidationPipe } from '../../../common/validation/zod-validation.pipe'
+import { CLOCK, type Clock } from '../../../db/clock'
 import type { Prisma } from '../../../db/generated/client'
 import { idToString } from '../../../db/ids'
-import { CLOCK, type Clock } from '../../../db/clock'
 import { PrismaService } from '../../../db/prisma.service'
-import { curriculumCodeOf } from '../../bijak/papers/subject-codes'
+import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers'
 import { BIJAK_BUILDER_PAGE_SIZE } from '../builder/builder.constants'
 import type { AuditActor } from './actor'
-import { blueprintView, type BlueprintWithSections } from './blueprint-view'
+import { profileToDoc, quotaToDoc, structureHashOf, toStandard, unitLevelsOf } from './blueprint-standard'
+import { BlueprintViewsService } from './blueprint-views.service'
 import { BlueprintsRepository, type NewBlueprint, type SubjectRef } from './blueprints.repository'
+import { validateBlueprint, type StandardBlueprint } from './exam-core.adapter'
 
 /** Largest kertas the `smallint` column holds. */
 const KERTAS_MAX = 32767
@@ -29,7 +31,23 @@ const KERTAS_MAX = 32767
 const CODE_TAKEN_MESSAGE = 'Kod kertas ini sudah digunakan oleh kontrak lain.'
 const INVALID_FIELD_MESSAGE = 'Medan ini tidak sah.'
 
-const SOURCE_TO_DB: Readonly<Record<BijakBlueprintSource, string>> = { Disahkan: 'verified', Spec: 'spec', Draf: 'draft' }
+/** The client may ask for Draf or Spec; the server decides about Disahkan (3.5 rule 2). */
+type ClientSource = 'Draf' | 'Spec'
+
+/** Body of a create or a new version (the create body adds `subject` and `kertas`). */
+interface BlueprintBody {
+  source?: ClientSource | undefined
+  code: string
+  durationMin: number
+  totalMarks?: number | undefined
+  notes?: string | null | undefined
+  subPartRamp?: boolean | undefined
+  kbatMarks?: number | null | undefined
+  levelShare?: { t4: number; t5: number } | null | undefined
+  instructions?: string[] | undefined
+  reference?: unknown[] | undefined
+  sections: BijakBlueprintAdminSectionInput[]
+}
 
 /** A choose rule cannot ask for more answers than the section holds (also keeps `n` inside smallint). */
 function assertRuleBounds(sections: BijakBlueprintAdminSectionInput[]): void {
@@ -50,10 +68,42 @@ function isUnique(e: unknown, index: string): boolean {
   return (code === 'P2002' || code === '23505') && text.includes(index)
 }
 
+/** The exam-core blueprint of a write body. Every quota line and KBAT value saved here is reviewed by this save (3.3a). */
+function standardOfBody(subject: string, kertas: number, version: number, b: BlueprintBody): StandardBlueprint {
+  return {
+    subject,
+    kertas,
+    code: b.code,
+    version,
+    durationMin: b.durationMin,
+    totalMarks: b.totalMarks ?? null,
+    kbatMarks: b.kbatMarks ?? null,
+    levelShare: b.levelShare ?? null,
+    subPartRamp: b.subPartRamp ?? false,
+    sections: b.sections.map((s, i) => ({
+      position: i + 1,
+      label: s.label,
+      rule: s.rule,
+      questionCount: s.questionCount,
+      markBudget: s.markBudget,
+      compulsory: s.compulsory ?? false,
+      pool: s.pool ?? null,
+      allowedModes: s.allowedModes ?? [],
+      profile: s.profile ?? null,
+      quota: s.quota ? { ...s.quota, lines: s.quota.lines.map((l) => ({ unit: l.unit, value: l.value, reviewed: true })) } : null,
+      kbatMarks: s.kbatMarks ?? null,
+      kbatReviewed: true,
+    })),
+  }
+}
+
 /**
- * Blueprint admin (BE-39). A blueprint is all rows of one (subject, kertas); the `active` row is the
- * current version. A new version retires the active row (its content stays) and inserts n+1; retire
- * retires the active row. Every write and its audit row share one transaction.
+ * Blueprint admin (BE-39, bijak-spm BJS-08). A blueprint is all rows of one (subject, kertas); every edit is a
+ * new row (architecture 3.5). The `active` row is the head; `serves_students` marks the row students generate
+ * from, which stays on the last Disahkan version while a Spec head is being edited (Q-B22). Only the verify
+ * endpoint writes Disahkan (BlueprintVerificationService), except for a cosmetic-only edit of a Disahkan head,
+ * which carries the verification and the serving flag to the new version. Every write and its audit row share
+ * one transaction. Admin Pusat only (the controller).
  */
 @Injectable()
 export class BlueprintsService {
@@ -62,14 +112,11 @@ export class BlueprintsService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(BlueprintViewsService) private readonly views: BlueprintViewsService,
   ) {}
 
-  private view(row: BlueprintWithSections, subject: SubjectRef): BijakBlueprintView {
-    return blueprintView(row, subject)
-  }
-
   /** Path (subject, kertas) -> curriculum subject and kertas, or the 404. */
-  private async resolve(subject: string, kertasText: string): Promise<{ subject: SubjectRef; kertas: number }> {
+  async resolve(subject: string, kertasText: string): Promise<{ subject: SubjectRef; kertas: number }> {
     const notFound = () => ApiError.of('NOT_FOUND', { message: MSG.blueprintNotFound })
     if (subject.length < 1 || subject.length > 32 || !/^[1-9]\d{0,8}$/.test(kertasText)) throw notFound()
     const kertas = Number(kertasText)
@@ -97,15 +144,22 @@ export class BlueprintsService {
       take: pageSize,
     })
     const subjects = new Map((await this.repo.subjectsByIds([...new Set(rows.map((r) => r.subjectId))])).map((s) => [s.id, s]))
-    const data = rows.map((r) => this.view(r, subjects.get(r.subjectId) as SubjectRef))
-    return okList(data, listMeta(page, pageSize, total))
+    return okList(await this.views.views(rows, subjects), listMeta(page, pageSize, total))
   }
 
   async get(subject: string, kertasText: string) {
     const { subject: s, kertas } = await this.resolve(subject, kertasText)
     const row = await this.repo.active(s.id, kertas)
     if (!row) throw ApiError.of('NOT_FOUND', { message: MSG.blueprintNotFound })
-    return ok(this.view(row, s))
+    return ok(await this.views.view(row, s))
+  }
+
+  /** Version history, newest first (architecture 6.3). 404 when the pair never had a row. */
+  async history(subject: string, kertasText: string) {
+    const { subject: s, kertas } = await this.resolve(subject, kertasText)
+    const rows = await this.repo.versions(s.id, kertas)
+    if (rows.length === 0) throw ApiError.of('NOT_FOUND', { message: MSG.blueprintNotFound })
+    return ok(await this.views.history(rows, s))
   }
 
   async create(actor: AuditActor, rawBody: unknown) {
@@ -119,16 +173,25 @@ export class BlueprintsService {
       const row = await this.prisma.transaction(async () => {
         if (await this.repo.active(subject.id, body.kertas)) throw exists()
         const version = (await this.repo.maxVersion(subject.id, body.kertas)) + 1
-        const created = await this.repo.insertActive(this.input(subject.id, body.kertas, version, body), this.clock.now())
+        const bp = await this.validated(subject, body.kertas, version, body)
+        const created = await this.repo.insertActive(
+          this.input(subject.id, body.kertas, version, body, {
+            source: body.source === 'Draf' ? 'draft' : 'spec',
+            structureHash: structureHashOf(bp),
+            referenceSheets: (body.reference ?? []) as Prisma.InputJsonValue,
+          }),
+          this.clock.now(),
+        )
         await this.record(actor, AUDIT_ACTIONS.BIJAK_BLUEPRINT_CREATED, created.id, subject, body.kertas, {
           from: null,
           to: 'active',
           fromVersion: null,
           toVersion: version,
+          source: created.source,
         })
         return created
       })
-      return { data: this.view(row, subject) }
+      return { data: await this.views.view(row, subject) }
     } catch (e) {
       if (isUnique(e, 'uq_blueprints_active_subject_id_kertas')) throw exists()
       if (isUnique(e, 'uq_blueprints_code_version')) throw ApiError.of('VALIDATION_ERROR', { fields: { code: CODE_TAKEN_MESSAGE } })
@@ -136,6 +199,12 @@ export class BlueprintsService {
     }
   }
 
+  /**
+   * Edit = new version (3.5). Rules: the new row becomes the head and the previous head is retired. The new row is
+   * Draf if asked for; else Disahkan only when the previous head is Disahkan and the structural hash is unchanged
+   * (a cosmetic edit: the verification, the evidence and the serving flag move to it); else Spec. A Spec head leaves
+   * `serves_students` on the older Disahkan version. Evidence rows are copied to every new version.
+   */
   async addVersion(actor: AuditActor, subjectText: string, kertasText: string, rawBody: unknown) {
     const { subject, kertas } = await this.resolve(subjectText, kertasText)
     const gone = () => ApiError.of('CONFLICT', { message: MSG.blueprintAlreadyRetired })
@@ -143,23 +212,45 @@ export class BlueprintsService {
     if (!(await this.repo.active(subject.id, kertas))) throw gone()
     const body = new ZodValidationPipe(BijakBlueprintAdminVersionInputSchema).transform(rawBody)
     assertRuleBounds(body.sections)
+    const subjectCode = bijakCodeOf(subject.code)
     try {
       const row = await this.prisma.transaction(async () => {
-        const current = await this.lockActive(subject.id, kertas)
+        const current = await this.repo.lockActive(subject.id, kertas)
         if (!current) throw gone()
         const version = (await this.repo.maxVersion(subject.id, kertas)) + 1
+        const bp = await this.validated(subject, kertas, version, body)
+        const hash = structureHashOf(bp)
+        // The stored hash of a legacy row came from the 0092 SQL backfill and differs from the canonical one:
+        // compare against the hash recomputed from its content, and store that value (first-write re-hash).
+        const previousHash = structureHashOf(toStandard(current, subjectCode))
+        if (current.structureHash !== previousHash && current.source !== 'verified') await this.repo.rehash(current.id, previousHash)
+        const carried = body.source !== 'Draf' && current.source === 'verified' && current.verificationId !== null && previousHash === hash
+        const source = body.source === 'Draf' ? 'draft' : carried ? 'verified' : 'spec'
         const at = this.clock.now()
-        await this.repo.setStatus(current.id, 'retired', at)
-        const created = await this.repo.insertActive(this.input(subject.id, kertas, version, body), at)
+        await this.repo.retireRow(current.id, at, !carried)
+        const created = await this.repo.insertActive(
+          {
+            ...this.input(subject.id, kertas, version, body, {
+              source,
+              structureHash: hash,
+              referenceSheets: (body.reference ?? current.referenceSheets) as Prisma.InputJsonValue,
+            }),
+            ...(carried ? { verificationId: current.verificationId, servesStudents: true } : {}),
+          },
+          at,
+        )
+        await this.repo.copyEvidence(current.id, created.id)
         await this.record(actor, AUDIT_ACTIONS.BIJAK_BLUEPRINT_VERSION_CREATED, created.id, subject, kertas, {
           from: 'active',
           to: 'active',
           fromVersion: current.version,
           toVersion: version,
+          source,
+          carried,
         })
         return created
       })
-      return { data: this.view(row, subject) }
+      return { data: await this.views.view(row, subject) }
     } catch (e) {
       if (isUnique(e, 'uq_blueprints_active_subject_id_kertas')) throw gone()
       if (isUnique(e, 'uq_blueprints_code_version')) throw ApiError.of('VALIDATION_ERROR', { fields: { code: CODE_TAKEN_MESSAGE } })
@@ -167,14 +258,15 @@ export class BlueprintsService {
     }
   }
 
+  /** Retires every version of the pair and clears the serving flag: the only way to stop serving (3.5 rule 6). */
   async retire(actor: AuditActor, subjectText: string, kertasText: string) {
     const { subject, kertas } = await this.resolve(subjectText, kertasText)
     const gone = () => ApiError.of('CONFLICT', { message: MSG.blueprintAlreadyRetired })
     if (!(await this.repo.hasRows(subject.id, kertas))) throw ApiError.of('NOT_FOUND', { message: MSG.blueprintNotFound })
     await this.prisma.transaction(async () => {
-      const current = await this.lockActive(subject.id, kertas)
+      const current = await this.repo.lockActive(subject.id, kertas)
       if (!current) throw gone()
-      await this.repo.setStatus(current.id, 'retired', this.clock.now())
+      await this.repo.retireAll(subject.id, kertas, this.clock.now())
       await this.record(actor, AUDIT_ACTIONS.BIJAK_BLUEPRINT_RETIRED, current.id, subject, kertas, {
         from: 'active',
         to: 'retired',
@@ -185,38 +277,47 @@ export class BlueprintsService {
     return ok({ ok: true as const })
   }
 
-  /** Locks the active row of the pair and re-reads it; null when none is active any more. Inside a transaction. */
-  private async lockActive(subjectId: bigint, kertas: number): Promise<BlueprintWithSections | null> {
-    const seen = await this.repo.active(subjectId, kertas)
-    if (!seen) return null
-    if (!(await this.repo.lock(seen.id))) return null
-    const fresh = await this.repo.byId(seen.id)
-    return fresh && fresh.status === 'active' ? fresh : null
+  /**
+   * Validates the body with exam-core (every problem at once) and returns the exam-core blueprint. The units of
+   * the subject give QUOTA_UNIT and LEVEL_SHARE their data. 422 BLUEPRINT_INVALID lists problems and warnings.
+   */
+  private async validated(subject: SubjectRef, kertas: number, version: number, b: BlueprintBody): Promise<StandardBlueprint> {
+    const bp = standardOfBody(bijakCodeOf(subject.code), kertas, version, b)
+    const units = await this.repo.unitsOfSubject(subject.id)
+    const { problems, warnings } = validateBlueprint(bp, { unitLevels: unitLevelsOf(units) })
+    if (problems.length > 0) {
+      throw new ApiError({
+        code: 'BLUEPRINT_INVALID',
+        status: 422,
+        message: BIJAK_STANDARDS_MESSAGES.blueprintInvalid,
+        details: { problems, ...(warnings.length > 0 ? { warnings } : {}) },
+      })
+    }
+    return bp
   }
 
   private input(
     subjectId: bigint,
     kertas: number,
     version: number,
-    b: {
-      source: BijakBlueprintSource
-      code: string
-      durationMin: number
-      instructions?: string[] | undefined
-      reference?: unknown[] | undefined
-      sections: BijakBlueprintAdminSectionInput[]
-    },
+    b: BlueprintBody,
+    extra: { source: string; structureHash: string; referenceSheets: Prisma.InputJsonValue },
   ): NewBlueprint {
     return {
       subjectId,
       kertas,
       version,
-      source: SOURCE_TO_DB[b.source],
+      source: extra.source,
       code: b.code,
       durationMin: b.durationMin,
       instructions: b.instructions ?? [],
-      referenceSheets: (b.reference ?? []) as Prisma.InputJsonValue,
+      referenceSheets: extra.referenceSheets,
       totalMarks: b.sections.reduce((n, s) => n + s.markBudget, 0),
+      notes: b.notes ?? null,
+      subPartRamp: b.subPartRamp ?? false,
+      kbatMarks: b.kbatMarks ?? null,
+      levelShare: b.levelShare ?? null,
+      structureHash: extra.structureHash,
       sections: b.sections.map((s) => ({
         label: s.label,
         instruction: s.instruction ?? null,
@@ -225,7 +326,13 @@ export class BlueprintsService {
         questionCount: s.questionCount,
         markBudget: s.markBudget,
         compulsory: s.compulsory ?? false,
-        pool: s.pool,
+        pool: s.pool ?? null,
+        allowedModes: s.allowedModes ?? [],
+        profile: profileToDoc(s.profile),
+        quota: quotaToDoc(s.quota),
+        kbatMarks: s.kbatMarks ?? null,
+        // The server sets it: any KBAT value saved through the admin API is reviewed (AC-39.9).
+        kbatReviewed: true,
       })),
     }
   }
@@ -251,3 +358,4 @@ export class BlueprintsService {
     })
   }
 }
+
