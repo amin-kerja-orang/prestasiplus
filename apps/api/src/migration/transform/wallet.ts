@@ -218,7 +218,9 @@ export function transformLedger(row: Staged, refs: LedgerRefs): Outcome<LedgerVa
   const source = mapLedgerSource(row.source)
   if (!source.ok) return source
   const amount = signedInt(row.amount)
-  if (amount === null || amount === 'invalid') return invalid('amount')
+  // A blank or unparseable amount gets its own column label (D6, 29 Oct): `amount` is kept for the contradicting sign below,
+  // the one ledger reject the cutover smoke check classes as expected (docs/ops/sql/smoke-readonly.sql X4.*).
+  if (amount === null || amount === 'invalid') return invalid('amount_unparseable')
   const after = signedInt(row.balance_after)
   if (after === null || after === 'invalid' || after < 0) return invalid('balance_after')
   if (type.value === null || source.value === null) return invalid('type')

@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ApplyGuardError } from '../../../src/migration/kit/apply-guard'
 import { ApplyRefusedError, Runner } from '../../../src/migration/kit/runner'
 import { SourceLockBusyError } from '../../../src/migration/kit/source-lock'
-import { buildQuestionsSteps, QuestionsContext, runQuestions } from '../../../src/migration/load/questions'
+import { buildQuestionsSteps, chapterCoverageWarning, QuestionsContext, runQuestions } from '../../../src/migration/load/questions'
 import { migrateQuestions } from '../../../src/migration/load/questions/command'
 import { PreflightError } from '../../../src/migration/load/activity/preflight'
 import { createStagingDb } from '../staging/helpers'
@@ -130,6 +130,8 @@ describe('dry-run, apply, reconciliation and the data written', () => {
     expect(applied.notes.get('questions.held_image')).toBe(1)
     expect(applied.notes.get('questions.difficulty_missing')).toBe(1)
     expect(applied.notes.get('questions.chapter_missing')).toBe(1)
+    // The run warns (counts only) that one new question has no chapter; it does not fail.
+    expect(chapterCoverageWarning(applied.report, applied.notes)).toMatch(/^1 of 4 new question\(s\) have no chapter \(chapter_missing 1: .*chapter_unmapped 0: /)
     // The run is recorded with its commit (best effort) and the id map points at the new questions.
     const run = await h.q<{ mode: string; status: string; entity_set: string[] }>(`select mode, status, entity_set from etl_runs where id = $1::bigint`, [applied.report.runId])
     expect(run[0]).toMatchObject({ mode: 'apply', status: 'succeeded', entity_set: ['questions'] })
@@ -238,6 +240,26 @@ describe('the command', () => {
     expect(text).toMatch(/questions \| 2 \| 1 \| 1 \| 0 \| ok/)
     expect(text).toContain('note questions.excluded.status.draf: 1')
     expect(text).not.toMatch(/RAHSIA/)
+    // Its one question has a chapter: no chapter warning.
+    expect(text).not.toContain('have no chapter')
+  })
+
+  it('warns, counts only, when new questions have no chapter (no chapter_id and no topic_id in the archive), and still exits 0', async () => {
+    await h.reset()
+    await addArchive(h.pool, [{ id: 400, chapter: null, topic: null, body: 'TEKS-RAHSIA-3' }, { id: 401, chapter: null, topic: null }, { id: 402 }])
+    const dir = join(process.cwd(), '.migration-out', `qload-test-${randomBytes(3).toString('hex')}`)
+    const { lines, ctx } = ctxOf()
+    expect(await migrateQuestions.run(args('dry-run', [['core-as-of', AS_OF], ['out-dir', dir]]), ctx)).toBe(0)
+    const text = lines.join('\n')
+    expect(text).toContain('note questions.chapter_missing: 2')
+    expect(text).toMatch(/warning: 2 of 3 new question\(s\) have no chapter \(chapter_missing 2: /)
+    expect(text).toContain('chapter-mode practice')
+    expect(text).not.toMatch(/RAHSIA/)
+    const files = readdirSync(dir).filter((f) => f.startsWith('questions-dry-run-'))
+    const report = JSON.parse(readFileSync(join(dir, files[0] as string), 'utf8')) as { warnings: string[] }
+    expect(report.warnings).toHaveLength(1)
+    expect(report.warnings[0]).toMatch(/^2 of 3 new question\(s\) have no chapter/)
+    rmSync(dir, { recursive: true, force: true })
   })
 
   it('writes a counts-only JSON report to --out-dir and exits 1 when the archive has rows but none is eligible', async () => {
