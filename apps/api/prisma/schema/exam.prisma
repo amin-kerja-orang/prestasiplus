@@ -42,12 +42,28 @@ model Blueprint {
   instructions  String[] @default([])
   /// Formula-sheet panels `[{ title, items[] }]` (a document, G-11).
   referenceSheets Json   @default("[]") @map("reference_sheets") @db.JsonB
+  /// Superseded by blueprint_sections.profile; no longer read or written (drop in a later cleanup).
   cognitiveMix  Json?    @map("cognitive_mix") @db.JsonB
+  notes         String?
+  /// "sub-bahagian menaik" (AC-25.1, AC-38.4): informs the bank review checklist only.
+  subPartRamp   Boolean  @default(false) @map("sub_part_ramp")
+  /// Optional paper-level KBAT marks (AC-37.2); must equal the sum of section values when both are set.
+  kbatMarks     Int?     @map("kbat_marks") @db.SmallInt
+  /// Optional stated paper-level T4:T5 share `{ t4, t5 }` in the quota basis (AC-36.3).
+  levelShare    Json?    @map("level_share") @db.JsonB
+  /// True on the single row real students generate from (partial unique index per subject and kertas, SQL only).
+  servesStudents Boolean @default(false) @map("serves_students")
+  /// sha-256 (hex) of the canonical STRUCTURAL content (design 3.5). Computed by the service.
+  structureHash String   @map("structure_hash")
+  /// -> blueprint_verifications.id (FK SQL only). Non-null iff source = verified (check).
+  verificationId BigInt? @map("verification_id")
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  sections BlueprintSection[]
-  papers   Paper[]
+  sections      BlueprintSection[]
+  papers        Paper[]
+  evidence      BlueprintEvidence[]
+  verifications BlueprintVerification[]
 
   @@unique([code, version], map: "uq_blueprints_code_version")
   @@index([subjectId, kertas], map: "ix_blueprints_subject_id_kertas")
@@ -72,13 +88,71 @@ model BlueprintSection {
   /// The pool tag the section draws from (the mock's `pool`).
   pool          String?
   allowedModes  String[] @default([]) @map("allowed_modes")
-  /// `{ unit_code: target_count }`, INFERRED until a JSU is shared.
-  topicWeights  Json?   @map("topic_weights") @db.JsonB
+  /// Difficulty profile (US-35). NULL = no profile (allowed in Draf/Spec only). Validated by the contract zod schema.
+  profile       Json?   @db.JsonB
+  /// Exact topic quota (US-36). NULL = no quota (any unit allowed). Lines carry an optional `reviewed` key (absent = true).
+  quota         Json?   @db.JsonB
+  /// Exact KBAT marks of the OFFERED questions of this section (US-37). NULL = unconstrained; 0 is a value.
+  kbatMarks     Int?    @map("kbat_marks") @db.SmallInt
+  /// false = seeded from layer 2 and not yet reviewed by Admin Pusat; the server sets true on any admin write of kbatMarks.
+  kbatReviewed  Boolean @default(true) @map("kbat_reviewed")
 
   blueprint Blueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade, map: "fk_blueprint_sections_blueprint_id")
 
   @@unique([blueprintId, position], map: "uq_blueprint_sections_blueprint_id_position")
   @@map("blueprint_sections")
+}
+
+/// One piece of evidence for a blueprint version: a trial paper, its skema, or an LPM format document.
+model BlueprintEvidence {
+  id          BigInt   @id @default(autoincrement())
+  blueprintId BigInt   @map("blueprint_id")
+  /// trial_paper, skema, lpm_format (check).
+  kind        String
+  /// Lowercase snake_case id of the issuing body, `^[a-z0-9_]+$`, 1-64 chars (check).
+  body        String
+  year        Int      @db.SmallInt
+  paperCode   String   @map("paper_code")
+  setLabel    String?  @map("set_label")
+  /// Free text pointer to where the paper is kept. Never the file, never question text.
+  sourceRef   String?  @map("source_ref")
+  /// EvidenceValues document; every field optional.
+  values      Json     @db.JsonB
+  /// study = seeded from SPP; admin = entered by Admin Pusat (check).
+  origin      String   @default("admin")
+  note        String?
+  /// FK -> users.id on delete set null (SQL only).
+  createdById BigInt?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  blueprint Blueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade, map: "fk_blueprint_evidence_blueprint_id")
+
+  @@index([blueprintId], map: "ix_blueprint_evidence_blueprint_id")
+  @@map("blueprint_evidence")
+}
+
+/// The recorded verification (AC-39.2). Insert-only: never updated, never deleted (trigger, SQL only).
+model BlueprintVerification {
+  id               BigInt   @id @default(autoincrement())
+  /// The version that was verified.
+  blueprintId      BigInt   @map("blueprint_id")
+  /// FK -> users.id on delete restrict (SQL only).
+  verifiedById     BigInt   @map("verified_by_id")
+  /// admin (check); only Admin Pusat verifies.
+  verifierRole     String   @map("verifier_role")
+  verifiedAt       DateTime @default(now()) @map("verified_at") @db.Timestamptz(6)
+  note             String?
+  /// The hash that was verified.
+  structureHash    String   @map("structure_hash")
+  /// Every line compared, frozen.
+  checkResult      Json     @map("check_result") @db.JsonB
+  /// Copy of the evidence rows at the moment of verification.
+  evidenceSnapshot Json     @map("evidence_snapshot") @db.JsonB
+
+  blueprint Blueprint @relation(fields: [blueprintId], references: [id], onDelete: Restrict, map: "fk_blueprint_verifications_blueprint_id")
+
+  @@index([blueprintId], map: "ix_blueprint_verifications_blueprint_id")
+  @@map("blueprint_verifications")
 }
 
 /// Both kinds of paper: `pilihan` (curated "Kertas Pilihan") and `jana` (generated "Jana Kertas",
@@ -113,6 +187,8 @@ model Paper {
   publishedAt        DateTime? @map("published_at") @db.Timestamptz(6)
   /// FK -> users.id on delete set null (SQL only).
   createdById        BigInt?   @map("created_by_id")
+  /// Immutable composition report of a generated paper (AC-34.7). NULL for curated papers.
+  standardReport     Json?     @map("standard_report") @db.JsonB
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
