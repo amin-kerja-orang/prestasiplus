@@ -6,6 +6,7 @@
 -- declaring it as @@index would make the next `prisma migrate dev` drop the WHERE clause, so schema.prisma is not changed.
 -- The name is 29 characters (PostgreSQL truncates identifiers longer than 63 bytes).
 --
+-- Idempotent (IF NOT EXISTS): local and dev databases that already ran this file as 0092 keep the same index under the new folder name.
 -- Reversible: DROP INDEX "ix_part_options_image_file_id";
 
-CREATE INDEX "ix_part_options_image_file_id" ON "part_options"("image_file_id") WHERE "image_file_id" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS "ix_part_options_image_file_id" ON "part_options"("image_file_id") WHERE "image_file_id" IS NOT NULL;

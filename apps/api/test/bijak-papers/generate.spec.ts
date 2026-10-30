@@ -8,7 +8,7 @@ import {
   type BijakServedSource,
 } from '../../src/modules/bijak/papers'
 import { POC_BANK, pocQuestionId } from '../../src/modules/bijak/papers/poc'
-import { count, expectError, loginAs, bootPapersApp, type Client, type PapersTestApp } from './helpers'
+import { count, expectError, loginAs, bootPapersApp, serveSeededBlueprints, type Client, type PapersTestApp } from './helpers'
 
 const served = new Set<string>()
 const fakeServed: BijakServedSource = { servedQuestionIds: async () => served }
@@ -36,6 +36,7 @@ describe('POST /api/bijak/papers/generate (Jana Kertas, BE-15)', () => {
 
   beforeAll(async () => {
     t = await bootPapersApp({ served: fakeServed })
+    await serveSeededBlueprints(t.db)
     student = await loginAs(t, 'pelajar@demo.test')
   })
   afterAll(async () => {
@@ -171,15 +172,63 @@ describe('POST /api/bijak/papers/generate (Jana Kertas, BE-15)', () => {
 
     it('a blueprint whose source is Draf, a retired or a draft version: no paper row', async () => {
       const before = await papers()
-      await t.db.query(`update blueprints set source = 'draft' where code = '1449/1'`)
+      await t.db.query(`update blueprints set source = 'draft', serves_students = false where code = '1449/1'`)
       expectError(await generate('MAT', 1), 'NO_BLUEPRINT', 422)
       await t.db.query(`update blueprints set source = 'spec', status = 'retired' where code = '1449/1'`)
       expectError(await generate('MAT', 1), 'NO_BLUEPRINT', 422)
       await t.db.query(`update blueprints set status = 'draft' where code = '1449/1'`)
       expectError(await generate('MAT', 1), 'NO_BLUEPRINT', 422)
       expect(await papers()).toBe(before)
-      await t.db.query(`update blueprints set status = 'active' where code = '1449/1'`)
+      await t.db.query(`update blueprints set status = 'active', source = 'verified', serves_students = true where code = '1449/1'`)
       expect((await generate('MAT', 1)).status).toBe(201)
+    })
+
+    // AC-R1-15.3 / D76 / O-6: a pupil generates from the serving (Disahkan) version only.
+    it('a Spec head that serves nobody is refused for a pupil and for Admin Sekolah in Mod Pelajar', async () => {
+      const before = await papers()
+      await t.db.query(`update blueprints set source = 'spec', serves_students = false where code = '1449/1'`)
+      expectError(await generate('MAT', 1), 'NO_BLUEPRINT', 422)
+      const school = await loginAs(t, 'adminsekolah@demo.test')
+      await school.enterMod()
+      expectError(await school.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 }), 'NO_BLUEPRINT', 422)
+      expect(await papers()).toBe(before)
+      await t.db.query(`update blueprints set source = 'verified', serves_students = true where code = '1449/1'`)
+    })
+
+    it('a Spec head over a retired serving version: the pupil still generates from the serving version', async () => {
+      // addVersion retires the Disahkan row (it keeps serves_students) and the new head is Spec.
+      await t.db.query(`update blueprints set status = 'retired', duration_min = 77 where code = '1449/1'`)
+      await t.db.query(
+        `insert into blueprints (structure_hash, subject_id, kertas, code, version, status, source, duration_min, instructions, reference_sheets)
+         select repeat('c', 64), subject_id, kertas, code, 2, 'active', 'spec', 99, instructions, reference_sheets from blueprints where code = '1449/1' and version = 1`,
+      )
+      await t.db.query(
+        `insert into blueprint_sections (blueprint_id, position, label, rule_type, rule_n, question_count, mark_budget, compulsory, pool, instruction)
+         select (select id from blueprints where code = '1449/1' and version = 2), position, label, rule_type, rule_n, question_count, mark_budget, compulsory, pool, instruction
+           from blueprint_sections where blueprint_id = (select id from blueprints where code = '1449/1' and version = 1)`,
+      )
+      const res = await generate('MAT', 1)
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const row = (await t.db.query<{ printed_duration_min: number }>(`select printed_duration_min from papers where id = $1`, [paperIdOf(res)]))[0]
+      expect(row?.printed_duration_min).toBe(77) // the serving version, not the Spec head (99)
+      // restore
+      await t.db.query(`delete from blueprints where code = '1449/1' and version = 2`)
+      await t.db.query(`update blueprints set status = 'active', duration_min = 75 where code = '1449/1' and version = 1`)
+    })
+
+    it('Admin Pusat in Mod Pelajar may generate from a Spec head (test data); Admin Sekolah may not', async () => {
+      await t.db.query(`update blueprints set source = 'spec', serves_students = false where code = '1449/1'`)
+      const admin = await loginAs(t, 'admin@demo.test')
+      await admin.enterMod()
+      const res = await admin.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const row = (await t.db.query<{ is_test: boolean }>(`select is_test from papers where id = $1`, [paperIdOf(res)]))[0]
+      expect(row?.is_test).toBe(true)
+      // a Draf head is refused even for Admin Pusat
+      await t.db.query(`update blueprints set source = 'draft' where code = '1449/1'`)
+      const again = await admin.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
+      expectError(again, 'NO_BLUEPRINT', 422)
+      await t.db.query(`update blueprints set source = 'verified', serves_students = true where code = '1449/1'`)
     })
   })
 
@@ -234,6 +283,7 @@ describe('Jana Kertas through the question port (a BE-09 stand-in)', () => {
 
   beforeAll(async () => {
     t = await bootPapersApp({ questionSource: source })
+    await serveSeededBlueprints(t.db)
     student = await loginAs(t, 'pelajar@demo.test')
   })
   afterAll(async () => {

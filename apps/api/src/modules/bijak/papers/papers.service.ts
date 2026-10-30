@@ -30,6 +30,8 @@ type Info = ReadonlyMap<string, BijakQuestionInfo>
 export interface PaperActor {
   userId: string
   isTest: boolean
+  /** Admin Pusat acting in Mod Pelajar: may generate from a Spec head (D76, O-6). Admin Sekolah follows the student rule. */
+  canUseSpec?: boolean
 }
 
 /**
@@ -175,9 +177,15 @@ export class PapersService {
 
   async generate(actor: PaperActor, body: BijakGenerateRequest): Promise<BijakGenerateResult> {
     const subject = await this.repo.subjectByCode(curriculumCodeOf(body.subject))
-    const row = subject ? await this.repo.findActiveBlueprint(subject.id, body.kertas) : null
-    // A missing pair and a Draf blueprint are the same answer, and no paper row is created (AC 3).
-    if (!subject || !row || row.source === 'draft') throw noBlueprint()
+    // AC-R1-15.3 / D76: a pupil generates from the serving (Disahkan) version only, which may be a retired row while
+    // a Spec head is being edited. Admin Pusat in Mod Pelajar (test data) may also use a Spec head (O-6).
+    let row = subject ? await this.repo.findServingBlueprint(subject.id, body.kertas) : null
+    if (subject && actor.canUseSpec) {
+      const head = await this.repo.findActiveBlueprint(subject.id, body.kertas)
+      if (head && head.source !== 'draft') row = head
+    }
+    // A missing pair, an unverified one and a Draf blueprint are the same answer; no paper row is created (AC 3).
+    if (!subject || !row) throw noBlueprint()
 
     const blueprint = toComposerBlueprint(bijakCodeOf(subject.code), body.kertas, row)
     const source = this.ports.questionSource
