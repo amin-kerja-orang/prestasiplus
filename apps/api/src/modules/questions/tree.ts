@@ -63,6 +63,7 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   if (row.unitNodeId !== null) candidate.unitNodeId = idToString(row.unitNodeId)
   if (row.formOrigin !== null) candidate.formOrigin = row.formOrigin
   if (row.difficultyTp !== null) candidate.difficultyTp = row.difficultyTp
+  if (row.kbat !== null) candidate.kbat = row.kbat
   if (row.mode === 'mcq' || row.mode === 'pksk_choice') {
     candidate.options = options.map((o) => ({
       label: o.label,
@@ -103,6 +104,7 @@ export interface PartDraft {
   unitNodeId: bigint | null
   formOrigin: 't1_t3' | 't4' | 't5' | null
   difficultyTp: number | null
+  kbat: 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta' | 'bukan' | null
   options: OptionDraft[]
   key: { kind: string; content: unknown } | null
   children: PartDraft[]
@@ -131,6 +133,7 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
         unitNodeId: null,
         formOrigin: null,
         difficultyTp: null,
+        kbat: null,
         options: [],
         key: null,
         children: draftsFromParts(part.children as QuestionPart[], depth + 1),
@@ -148,6 +151,7 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
       unitNodeId: part.unitNodeId == null ? null : idFromString(part.unitNodeId),
       formOrigin: part.formOrigin ?? null,
       difficultyTp: part.difficultyTp ?? null,
+      kbat: part.kbat ?? null,
       options:
         part.mode === 'mcq' || part.mode === 'pksk_choice'
           ? part.options.map((o, j) => ({

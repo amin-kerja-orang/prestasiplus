@@ -2,7 +2,7 @@ import { QuestionDetailSchema, QuestionSchema, mutationEnvelopeOf } from '@pp/co
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { PrismaService } from '../../src/db/prisma.service'
-import { loadEffectiveLeaves, questionTp, unitMarks } from '../../src/modules/questions/effective-leaf'
+import { kbatMarks, loadEffectiveLeaves, questionTp, unitMarks } from '../../src/modules/questions/effective-leaf'
 import { bootQuestionsApp, expectError, loginAs, parseData, type Client, type QuestionsTestApp } from './helpers'
 import { mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
 
@@ -106,20 +106,38 @@ describe('per-leaf curriculum overrides (BJS-06)', () => {
   })
 
   it('GET ?tagReview=true returns only flagged questions', async () => {
-    // The tag_review column arrives with the amended BJS-02 migration; until then this check cannot run.
-    const col = await t.db.query(`select 1 from information_schema.columns where table_name = 'question_versions' and column_name = 'tag_review'`)
-    if (col.length === 0) return
     const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
-    const res = await admin.post('/api/questions', essay([leaf('a', 2)], { tag }))
-    const { data } = mutationEnvelopeOf(QuestionSchema).parse(res.body)
-    await t.db.query(`update question_versions set tag_review = true where question_id = $1`, [data.id])
+    const make = async (): Promise<string> => {
+      const res = await admin.post('/api/questions', essay([leaf('a', 2)], { tag }))
+      return mutationEnvelopeOf(QuestionSchema).parse(res.body).data.id
+    }
+    const flagged = await make()
+    const plain = await make()
+    await t.db.query(`update question_versions set tag_review = true where question_id = $1`, [flagged])
     const list = await admin.get(`/api/questions?pageSize=100&tagReview=true`)
     expect(list.status, JSON.stringify(list.body)).toBe(200)
-    const found = (list.body as { data: { id: string }[] }).data.map((q) => q.id)
-    expect(found).toContain(data.id)
-    const other = await admin.get(`/api/questions?pageSize=100&subjectId=${refs.mathId}`)
-    expect((other.body as { data: { id: string }[] }).data.length).toBeGreaterThan(found.length - 1)
+    const found = (list.body as { data: { id: string }[] }).data
+    expect(found.map((q) => q.id)).toContain(flagged)
+    expect(found.map((q) => q.id)).not.toContain(plain)
     expectError(await admin.get('/api/questions?tagReview=false'), 'VALIDATION_ERROR')
+  })
+
+  it('kbat: per-leaf override persists, read model carries kbat/tagReview/catalogueVersion, bukan beats a KBAT question', async () => {
+    const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
+    const parts = [leaf('a', 2, { kbat: 'bukan' }), leaf('b', 3), leaf('c', 4, { kbat: 'mencipta' })]
+    const res = await admin.post('/api/questions', essay(parts, { tag }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const { data } = mutationEnvelopeOf(QuestionSchema).parse(res.body)
+    expect(data).toMatchObject({ kbat: null, tagReview: false, catalogueVersion: null })
+    await t.db.query(`update question_versions set kbat = 'menilai', catalogue_version = 'dskp-2026' where question_id = $1`, [data.id])
+    const read = parseData(await admin.get(`/api/questions/${data.id}`), QuestionDetailSchema)
+    expect(read).toMatchObject({ kbat: 'menilai', tagReview: false, catalogueVersion: 'dskp-2026' })
+    expect(read.parts?.map((p) => (p as { kbat?: string }).kbat)).toEqual(['bukan', undefined, 'mencipta'])
+    const versions = await t.db.query<{ id: string }>(`select id::text from question_versions where question_id = $1`, [data.id])
+    const leaves = await loadEffectiveLeaves(t.app.get(PrismaService).client, versions.map((v) => BigInt(v.id)))
+    expect(leaves.map((l) => l.kbat)).toEqual([null, 'menilai', 'mencipta'])
+    expect(kbatMarks(leaves)).toBe(7)
+    expectError(await admin.post('/api/questions', essay([leaf('a', 2, { kbat: 'mengingat' })])), 'VALIDATION_ERROR')
   })
 
   it('a leaf override survives an edit as a new version', async () => {

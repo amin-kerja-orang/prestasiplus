@@ -29508,6 +29508,15 @@
           "ms"
         ]
       },
+      "QuestionKbatLevel": {
+        "type": "string",
+        "enum": [
+          "mengaplikasi",
+          "menganalisis",
+          "menilai",
+          "mencipta"
+        ]
+      },
       "QuestionLeafMode": {
         "type": "string",
         "enum": [
@@ -29719,6 +29728,20 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
               "unitNodeId": {
                 "allOf": [
                   {
@@ -29817,6 +29840,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -29922,6 +29959,20 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
               "unitNodeId": {
                 "allOf": [
                   {
@@ -30017,6 +30068,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -30122,6 +30187,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -30258,6 +30337,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -30472,6 +30565,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -30813,6 +30920,20 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
               "unitNodeId": {
                 "allOf": [
                   {
@@ -31025,6 +31146,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -31157,6 +31292,20 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
               "unitNodeId": {
                 "allOf": [
                   {
@@ -31255,6 +31404,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -31360,6 +31523,20 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
               "unitNodeId": {
                 "allOf": [
                   {
@@ -31455,6 +31632,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -31560,6 +31751,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -31696,6 +31901,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -31910,6 +32129,20 @@
                 "enum": [
                   "after_submit",
                   "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
                 ]
               },
               "unitNodeId": {
@@ -32251,6 +32484,20 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
               "unitNodeId": {
                 "allOf": [
                   {
@@ -32465,6 +32712,20 @@
                   "never"
                 ]
               },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
               "unitNodeId": {
                 "allOf": [
                   {
@@ -32576,6 +32837,20 @@
                             "never"
                           ]
                         },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
                         "unitNodeId": {
                           "allOf": [
                             {
@@ -32674,6 +32949,20 @@
                           "enum": [
                             "after_submit",
                             "never"
+                          ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
                           ]
                         },
                         "unitNodeId": {
@@ -32779,6 +33068,20 @@
                             "never"
                           ]
                         },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
                         "unitNodeId": {
                           "allOf": [
                             {
@@ -32874,6 +33177,20 @@
                           "enum": [
                             "after_submit",
                             "never"
+                          ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
                           ]
                         },
                         "unitNodeId": {
@@ -32979,6 +33296,20 @@
                           "enum": [
                             "after_submit",
                             "never"
+                          ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
                           ]
                         },
                         "unitNodeId": {
@@ -33115,6 +33446,20 @@
                           "enum": [
                             "after_submit",
                             "never"
+                          ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
                           ]
                         },
                         "unitNodeId": {
@@ -33329,6 +33674,20 @@
                           "enum": [
                             "after_submit",
                             "never"
+                          ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
                           ]
                         },
                         "unitNodeId": {
@@ -33670,6 +34029,20 @@
                             "never"
                           ]
                         },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
                         "unitNodeId": {
                           "allOf": [
                             {
@@ -33882,6 +34255,20 @@
                           "enum": [
                             "after_submit",
                             "never"
+                          ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
                           ]
                         },
                         "unitNodeId": {
@@ -35768,6 +36155,28 @@
           "tag": {
             "$ref": "#/components/schemas/QuestionCurriculumTag"
           },
+          "kbat": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionKbatLevel"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "tagReview": {
+            "type": "boolean"
+          },
+          "catalogueVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "stimulusGroup": {
             "allOf": [
               {
@@ -36099,6 +36508,28 @@
           },
           "tag": {
             "$ref": "#/components/schemas/QuestionCurriculumTag"
+          },
+          "kbat": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionKbatLevel"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "tagReview": {
+            "type": "boolean"
+          },
+          "catalogueVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "stimulusGroup": {
             "allOf": [

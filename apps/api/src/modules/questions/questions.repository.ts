@@ -6,7 +6,7 @@ import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import type { Prng } from '../../db/prng'
-import { missingLeafSql } from './effective-leaf'
+import { kbatOf, missingLeafSql } from './effective-leaf'
 import { isQuestionStatus } from './status'
 import { partsFromRows, type PartDraft, StoredKeyError } from './tree'
 import type {
@@ -44,6 +44,9 @@ export interface VersionDraft {
   topicId: bigint | null
   formOrigin: QuestionVersionRecord['formOrigin']
   cognitiveLevel: number | null
+  kbat: QuestionVersionRecord['kbat']
+  tagReview: boolean
+  catalogueVersion: string | null
   difficultyTp: number | null
   sourcePage: number | null
   setLabel: string | null
@@ -891,6 +894,9 @@ export class QuestionsRepository {
       topicId: c.topicId,
       formOrigin: c.formOrigin,
       cognitiveLevel: c.cognitiveLevel,
+      kbat: c.kbat,
+      tagReview: c.tagReview,
+      catalogueVersion: c.catalogueVersion,
       difficultyTp: c.difficultyTp,
       sourcePage: c.sourcePage,
       setLabel: c.setLabel,
@@ -962,6 +968,7 @@ export class QuestionsRepository {
           unitNodeId: d.unitNodeId,
           formOrigin: d.formOrigin,
           difficultyTp: d.difficultyTp,
+          kbat: d.kbat,
         },
       })
       if (d.options.length > 0) {
@@ -1146,6 +1153,9 @@ export class QuestionsRepository {
       topicId: v.topicId === null ? null : idToString(v.topicId),
       formOrigin: v.formOrigin as QuestionVersionRecord['formOrigin'],
       cognitiveLevel: v.cognitiveLevel,
+      kbat: kbatOf(v.kbat),
+      tagReview: v.tagReview,
+      catalogueVersion: v.catalogueVersion,
       difficultyTp: v.difficultyTp,
       sourcePage: v.sourcePage,
       setLabel: v.setLabel,

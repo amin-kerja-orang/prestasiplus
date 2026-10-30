@@ -143,14 +143,18 @@ const AcceptedNumericKey = z.object({
 /**
  * BJS-06 (v2-bijak-spm-standards 3.1, 6): optional per-leaf overrides. Absent or null means "inherit the question
  * version's value" (effective = coalesce(part, version)); the question TP and the marks per unit are computed from
- * the effective leaf values, never stored. `cognitiveLevel` is deliberately not here yet (KBAT encoding pending, A9).
+ * the effective leaf values, never stored. KBAT is the DSKP field (14.1 R-1, A9); the 1..6 cognitive level is not on the wire.
  */
+export const QUESTION_KBAT_LEVELS = ['mengaplikasi', 'menganalisis', 'menilai', 'mencipta'] as const
+export const QuestionKbatLevelSchema = z.enum(QUESTION_KBAT_LEVELS).meta({ id: 'QuestionKbatLevel' })
 const leafCurriculum = {
+  /** The four KBAT levels, or 'bukan' (explicitly not KBAT: overrides a KBAT question). Absent or null = inherit. */
+  kbat: z.enum([...QUESTION_KBAT_LEVELS, 'bukan']).nullable().optional(),
   unitNodeId: IdSchema.nullable().optional(),
   formOrigin: z.enum(['t1_t3', 't4', 't5']).nullable().optional(),
   difficultyTp: z.number().int().min(1).max(6).nullable().optional(),
 }
-const leafCurriculumKeys = { unitNodeId: true, formOrigin: true, difficultyTp: true } as const
+const leafCurriculumKeys = { kbat: true, unitNodeId: true, formOrigin: true, difficultyTp: true } as const
 
 /** One answer key per mode (D3). A key of the wrong kind for the mode is rejected at the field `key`. */
 const leafBase = {

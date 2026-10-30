@@ -220,6 +220,12 @@ describe('per-leaf curriculum overrides (BJS-06)', () => {
     for (const bad of [{ difficultyTp: 0 }, { difficultyTp: 7 }, { difficultyTp: 2.5 }, { formOrigin: 'T4' }, { formOrigin: 't6' }])
       expect(QuestionPartSchema.safeParse(leaf(bad)).success, JSON.stringify(bad)).toBe(false)
   })
+  it('kbat: the four levels or bukan, nullable; anything else is rejected', () => {
+    for (const k of ['mengaplikasi', 'menganalisis', 'menilai', 'mencipta', 'bukan', null])
+      expect(QuestionPartSchema.safeParse(leaf({ kbat: k })).success, String(k)).toBe(true)
+    for (const k of ['mengingat', 'KBAT', 3, ''])
+      expect(QuestionPartSchema.safeParse(leaf({ kbat: k })).success, String(k)).toBe(false)
+  })
   it('is not exposed by the student-facing projection', () => {
     const out = QuestionPublicSchema.parse({ ...question, parts: [leaf({ unitNodeId: '12', formOrigin: 't4', difficultyTp: 3 })] }) as { parts: Record<string, unknown>[] }
     for (const k of ['unitNodeId', 'formOrigin', 'difficultyTp', 'key']) expect(k in (out.parts[0] ?? {})).toBe(false)

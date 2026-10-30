@@ -16,7 +16,13 @@ export interface EffectiveLeaf {
   /** Effective unit node id (decimal string), or null. */
   unitNodeId: string | null
   formOrigin: 't1_t3' | 't4' | 't5' | null
+  /** Effective KBAT: the part override ('bukan' wins over a KBAT question), else the question's; null = Bukan KBAT. */
+  kbat: KbatLevel | null
 }
+
+export type KbatLevel = 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta'
+const KBAT_LEVELS: readonly string[] = ['mengaplikasi', 'menganalisis', 'menilai', 'mencipta']
+export const kbatOf = (v: string | null): KbatLevel | null => (v !== null && KBAT_LEVELS.includes(v) ? (v as KbatLevel) : null)
 
 /**
  * The effective-value SQL: one row per leaf part (a leaf is a part with a `mode`) of the given versions.
@@ -29,7 +35,8 @@ export function effectiveLeavesSql(versionIds: readonly bigint[]): Prisma.Sql {
            p.marks AS marks,
            coalesce(p.difficulty_tp, v.difficulty_tp) AS tp,
            coalesce(p.unit_node_id, v.unit_node_id) AS unit_node_id,
-           coalesce(p.form_origin, v.form_origin) AS form_origin
+           coalesce(p.form_origin, v.form_origin) AS form_origin,
+           CASE coalesce(p.kbat, v.kbat) WHEN 'bukan' THEN NULL ELSE coalesce(p.kbat, v.kbat) END AS kbat
       FROM question_parts p
       JOIN question_versions v ON v.id = p.question_version_id
      WHERE p.mode IS NOT NULL
@@ -60,6 +67,7 @@ interface EffectiveRow {
   tp: number | null
   unit_node_id: bigint | null
   form_origin: string | null
+  kbat: string | null
 }
 
 export const effectiveLeafOf = (r: EffectiveRow): EffectiveLeaf => ({
@@ -69,6 +77,7 @@ export const effectiveLeafOf = (r: EffectiveRow): EffectiveLeaf => ({
   tp: r.tp,
   unitNodeId: r.unit_node_id === null ? null : idToString(r.unit_node_id),
   formOrigin: r.form_origin === 't1_t3' || r.form_origin === 't4' || r.form_origin === 't5' ? r.form_origin : null,
+  kbat: kbatOf(r.kbat),
 })
 
 /** Runs the helper against any Prisma client / transaction. */
@@ -86,6 +95,11 @@ export function questionTp(leaves: readonly EffectiveLeaf[]): number | null {
   let best: number | null = null
   for (const l of leaves) if (l.tp !== null && (best === null || l.tp > best)) best = l.tp
   return best
+}
+
+/** KBAT marks of a question: the marks of the leaves whose effective kbat is one of the four levels. */
+export function kbatMarks(leaves: readonly EffectiveLeaf[]): number {
+  return leaves.reduce((s, l) => (l.kbat === null ? s : s + l.marks), 0)
 }
 
 /** Marks per effective unit (marks-basis quota); leaves without a unit land under the key `null`. */
