@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { BijakPaperSummarySchema } from '@pp/contract'
 
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, START, STUDENT } from './helpers'
+import { serveSeededBlueprints } from '../support/serve-blueprints'
 
 async function seededPocPaper(c: Client): Promise<string> {
   const res = await c.get('/api/bijak/papers')
@@ -60,6 +61,7 @@ for (const on of [false, true]) {
 
     beforeAll(async () => {
       t = await bootIntegrationApp({ pocQuestions: on })
+      await serveSeededBlueprints(t.db)
       student = await loginAs(t, STUDENT)
     })
     afterAll(async () => {

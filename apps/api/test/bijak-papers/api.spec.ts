@@ -12,7 +12,7 @@ import { z } from 'zod'
 
 import type { BijakProgressSource, PaperProgress } from '../../src/modules/bijak/papers'
 import golden from './golden-mock.json'
-import { allKeys, bootPapersApp, expectError, loginAs, type Client, type PapersTestApp } from './helpers'
+import { allKeys, bootPapersApp, expectError, loginAs, serveSeededBlueprints, type Client, type PapersTestApp } from './helpers'
 
 /** Keys that would reveal an answer key, a scheme or a question (AC 6, US-15). */
 const FORBIDDEN_KEYS = [
@@ -180,6 +180,7 @@ describe('Bijak papers API (BE-15)', () => {
   })
 
   it('no answer key, scheme, accepted equivalent, explanation or question id in any response of this card (AC 6)', async () => {
+    await serveSeededBlueprints(t.db)
     const id = await idOf('1449/2', 2)
     const gen = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 2 })
     expect(gen.status).toBe(201)

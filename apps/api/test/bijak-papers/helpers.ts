@@ -135,5 +135,7 @@ export function allKeys(value: unknown, out = new Set<string>()): Set<string> {
   return out
 }
 
+export { serveSeededBlueprints } from '../support/serve-blueprints'
+
 export const count = async (db: TestDatabase, sql: string, params: unknown[] = []): Promise<number> =>
   Number((await db.query<{ n: string }>(sql, params))[0]?.n)

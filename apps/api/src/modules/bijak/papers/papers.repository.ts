@@ -88,6 +88,14 @@ export class PapersRepository {
     })
   }
 
+  /** The version students generate from (BJS-02 `serves_students`): may be a retired row while a Spec head is edited. */
+  findServingBlueprint(subjectId: bigint, kertas: number): Promise<BlueprintWithSections | null> {
+    return this.prisma.client.blueprint.findFirst({
+      where: { subjectId, kertas, servesStudents: true, source: 'verified' },
+      include: { sections: { orderBy: { position: 'asc' } } },
+    })
+  }
+
   async subjectsByIds(ids: readonly bigint[]): Promise<Map<string, SubjectRef>> {
     if (ids.length === 0) return new Map()
     const rows = await this.prisma.client.subject.findMany({
