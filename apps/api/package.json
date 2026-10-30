@@ -25,6 +25,7 @@
     "migrate:export-question-reports": "tsx src/migration/orchestrate.ts migrate:export-question-reports",
     "migrate:archive-minimise": "tsx src/migration/orchestrate.ts migrate:archive-minimise",
     "admin:bootstrap": "tsx src/ops/admin-bootstrap/cli.ts",
+    "bijak:k1-drafts": "tsx src/ops/bijak-k1-drafts/cli.ts",
     "staging:ddl": "tsx src/migration/ddl/generate.ts",
     "staging:load": "tsx src/migration/staging/cli.ts staging:load",
     "staging:profile": "tsx src/migration/staging/cli.ts staging:profile",

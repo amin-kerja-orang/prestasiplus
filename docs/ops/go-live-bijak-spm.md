@@ -300,7 +300,7 @@ Names only. Values live only in the platform dashboard or the operator's shell. 
 - [ ] **No PoC profile in production.** Run the seed with `ALLOW_DEMO_SEED` unset. Only the `kind:'reference'` modules run: `core-school-packages`, `core-wallet-tiers` (P11-B1: the 4 M14 tiers, without which every student dashboard answers 500), `core-marketplace-categories` and `spm-subject-configs` (`apps/api/prisma/seed/spm-subject-configs.ts`, on the tip since #73).
 - [ ] The guard is fail-closed (#80 and #74 merged; `--force-demo` handling is in `apps/api/prisma/seed/index.ts` at the tip): production refuses demo seeding, and `--force-demo` needs `ALLOW_DEMO_SEED=true` as well (two keys). The #90 question pool is PoC-only under the same guard.
 - [ ] `BIJAK_POC_QUESTIONS=false`, so the reserved PoC question ids are not served.
-- [ ] Real papers come from the Admin Pusat intake and builder. Who loads the real launch papers, and when, is **unverified** (D-6).
+- [ ] Real papers come from the Admin Pusat intake and builder. D-6 is decided as B2: legacy .cloud papers are not migrated; K1 draft papers are built from the migrated MCQs by `npm run bijak:k1-drafts` and published by Admin Pusat after review (5.1).
 
 ### 3.5 CORS, CSP, cookies
 - [ ] **CORS:** none is configured. The design is same-origin: `/api` goes through the Pages Function or worker, or through the frontend nginx. Keep it same-origin and do not add CORS.
@@ -416,10 +416,62 @@ D-1, D-2 and D-3 are the ones that need a decision now (see "Needs a decision" a
 | D-3 | Does go-live need users, schools or history migrated from the old system? If yes, BE-28/29/30 and OD-10 are on the critical path and 30 Oct is at risk. | user + LEAD |
 | D-4 | Error tracking (Sentry or none), and who receives the alerts | user + LEAD |
 | D-5 | The AI provider for intake in production (OD-14), its region and monthly cap. Or launch with intake on the mock provider and papers built by hand. | user |
-| D-6 | Who loads the real launch papers and question content, and by when | user + LEAD |
+| D-6 | Who loads the real launch papers and question content, and by when. **Decided B2 (LEAD, 30 Oct):** no papers at go-live except K1 drafts built from the migrated MCQs; see 5.1. | user + LEAD |
 | D-7 | SPA Content-Security-Policy: add one, or replicate live (no CSP) | LEAD |
 | D-8 | BE-33 OQ1 rate-limit numbers and OQ2 metrics access rule | LEAD |
 | D-9 | One API instance (per-process throttles), or a shared throttle store before scaling | LEAD |
 | D-10 | Backup cadence, retention and storage location, and who owns the monthly restore drill | user + LEAD |
 | D-11 | ~~Migration numbers 0037 (BE-36) and 0038 (BE-38)~~ **Settled:** both merged with those numbers (`lead/merge-final`). | LEAD |
 | D-12 | Password reset by e-mail is out of B1; reset links are only logged, and only in dev. Is that acceptable for launch, and what is the support path for a forgotten password? | user |
+
+### 5.1 D-6 (B2): K1 draft papers from the migrated MCQs
+
+Bijak SPM has no papers at go-live: the legacy .cloud papers are not migrated, and "Jana Kertas" reports a shortage because the
+migrated questions carry no chapter. So the LEAD builds **draft** K1 (Kertas 1, objective) papers from the MCQs that `migrate:questions`
+loaded; a human reviews them; Admin Pusat publishes them. Slug `bijak-k1-papers`.
+
+**What it makes.** For Matematik `1449/1`, Sejarah `1249/1`, Fizik `4531/1` and Sains: a Spec blueprint "Objektif" (one section, answer all,
+40 questions, 40 marks, when the subject has none) and up to 2 draft papers of 40 MCQs each, titled `Latihan SPM <subject> Kertas 1 Set <n>`.
+Paper 2 shares no question with paper 1. The 40 follows `docs/requirements/v2-exam-schema.md` D7 (a single section of 40 MCQs for these
+subjects). Durations: Matematik 75 min, Sejarah 90, Fizik 75, Sains 75 (Matematik and Sains are inferred; an admin can change a draft's duration).
+Per-paper level mix: Matematik 17 / 13 / 10 questions from Tingkatan 1-3 / 4 / 5 (PR #400 layer-2 data, inferred), Sejarah 20 / 20 from Tingkatan 4 / 5,
+Fizik and Sains an even Tingkatan 4 / 5 split (default). A level without enough stock passes its share to the others.
+
+**Which questions.** Migrated (`legacy_source = cloud`), active, published, no stimulus group, subject matched, Tingkatan 1-5 only (primary is
+left out), one MCQ part with 2 to 8 options that all have text and one key that names an option, and one copy of each stem. They are ordered by
+`legacy_id` and picked by an even spread over that order (no randomness), so the same stock gives the same papers on UAT and on production.
+
+**It does not publish.** A Spec blueprint also switches on the "Jana Kertas" button for that subject (it reads the blueprint); the pool tags
+of the migrated questions do not match, so Jana Kertas will still report a shortage until the questions are tagged. Say so to testers.
+
+**Run (LEAD, on the VPS, from the checkout of the release SHA, like `admin:bootstrap`).** `PC` and `TAG` are as in `vps-dark-26oct-runsheet.md`.
+No password or token is needed: it uses `DATABASE_URL` from `.env.api` inside the `migrate` image and writes the audit rows under the
+lowest-id active Admin Pusat user (`--actor-id=<id>` picks another). It prints counts only, never a question text, title or id.
+
+```
+# 1. Dry-run first (default): reads, writes nothing. Check the stock and "would create" per subject.
+PP_IMAGE_TAG="$TAG" $PC run --rm --no-deps migrate npm run bijak:k1-drafts -w @pp/api
+
+# 2. Create the drafts (after the final question load, on the night of 31 Oct).
+PP_IMAGE_TAG="$TAG" $PC run --rm --no-deps migrate npm run bijak:k1-drafts -w @pp/api -- --apply
+```
+
+Flags: `--sets=1` (one paper per subject), `--subjects=MAT,SEJ,PHY,SN`, `--sn-code=<code>`, `--replace-blueprints`, `--help`.
+Exit code 0 is done, 1 a write failed, 2 usage, 3 something is blocked and needs a decision. Re-running is safe: a draft is found by its title,
+or by holding the same questions after a rename, and nothing is created twice. An empty draft left by a failed run is filled on the next run.
+- **Sains** has no paper code in the repo and the stock may be short. It is skipped when it has fewer than 40 eligible questions, and blocked until
+  `--sn-code=<printed paper code>` is given (or a Sains K1 blueprint exists). The LEAD decides the code.
+- **A blueprint that does not fit** (for example the demo Matematik K1 of the PoC seed has 10 questions) blocks that subject. `--replace-blueprints`
+  adds a new Spec version over it. A Disahkan blueprint is never replaced.
+- Run the dry-run on UAT first; the numbers on production after the final load will be larger, the picks stay a function of the stock.
+
+**Reviewer checklist** (one human, per draft, in Admin Pusat "Kertas & SPM"; use "Pratonton sebagai Pelajar" to see it as a student):
+- [ ] The answer key of every question is correct (the review view shows the key). A wrong key: remove the question and add another of the same level, or leave the paper in draft.
+- [ ] The stem and every option read clearly (no broken markup, no missing text, no cut-off sentence, maths readable).
+- [ ] Images: the migration does not copy images, so a question that needs a picture was held out. Check that no question refers to "rajah" or "gambar" that is not shown.
+- [ ] No duplicates: the same question twice, or two questions that ask the same thing.
+- [ ] The title, the printed duration and the paper code are right for the subject.
+- [ ] Only then press publish. Publish refuses a paper that fails its own check (40 questions, all published, no duplicate) and lists why.
+
+**When.** The script runs after the final question load on the night of 31 Oct. The reviewer checks the drafts, and Admin Pusat publishes them
+after the review and **before the 1 Nov DNS switch**. Anything not reviewed by then stays a draft (students do not see drafts).
