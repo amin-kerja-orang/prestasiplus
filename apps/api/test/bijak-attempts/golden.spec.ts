@@ -89,7 +89,9 @@ describe('stored result equals the mock engine output', () => {
         const res = await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: 'g', changes })
         expect(res.status, JSON.stringify(res.body)).toBe(200)
         const got = (await me.get(`/api/bijak/attempts/${id}/result`)).body.data.result
-        expect(got).toEqual(JSON.parse(JSON.stringify(expected)))
+        // R1-B12/B13 add `selfMarkable` and `suggestion` to written parts; the marking itself must be unchanged.
+        const stripped = JSON.parse(JSON.stringify(got, (k, v) => (k === 'selfMarkable' || k === 'suggestion' ? undefined : v)))
+        expect(stripped).toEqual(JSON.parse(JSON.stringify(expected)))
         if (strategy === 'correct' && slug !== 'sej-k2-2025-a') expect(got.score).toBeGreaterThan(0)
       })
     }

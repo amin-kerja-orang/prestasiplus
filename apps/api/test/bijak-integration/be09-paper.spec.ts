@@ -197,11 +197,12 @@ describe('a paper built from BE-09 questions', () => {
     // The second match item was answered with a wrong letter on purpose.
     expect(byId.get(id('SEED-GRP-AYAT-2'))).toMatchObject({ marks: 1, awarded: 0 })
     expect(byId.get(ecf)).toMatchObject({ marks: 4, awarded: 4 })
-    // The answered essay (points without accept = manual) waits for a teacher: 0 now, result provisional.
-    expect(byId.get(id('SEED-STR-ANYN'))).toMatchObject({ marks: 3, awarded: 0 })
+    // The answered essay (points without accept = manual) waits for a person, result provisional. R1-B13 (V2 submit :408-414):
+    // its generous keyword suggestion is stored as the awarded mark (all 3 points are mentioned), flagged autoSuggested.
+    expect(byId.get(id('SEED-STR-ANYN'))).toMatchObject({ marks: 3, awarded: 3 })
     expect(result.provisional).toBe(true)
     expect(result.max).toBe(1 + 1 + 1 + 4 + 3)
-    expect(result.score).toBe(1 + 1 + 0 + 4 + 0)
+    expect(result.score).toBe(1 + 1 + 0 + 4 + 3)
   })
 
   it('4. closes the loop: one aggregate row and one wallet credit for the attempt', async () => {
@@ -257,7 +258,7 @@ describe('a paper built from BE-09 questions', () => {
     ).toEqual({ live_version_no: null })
     const r = await student.get(`/api/bijak/attempts/${attemptId}/result`)
     expect(r.status, JSON.stringify(r.body)).toBe(200)
-    expect(BijakAttemptResultViewSchema.parse(r.body.data).result.score).toBe(6)
+    expect(BijakAttemptResultViewSchema.parse(r.body.data).result.score).toBe(9)
     const res = await student.post('/api/bijak/attempts', { paperId, mode: 'exam' })
     expect(res.status, JSON.stringify(res.body)).toBe(403)
   })

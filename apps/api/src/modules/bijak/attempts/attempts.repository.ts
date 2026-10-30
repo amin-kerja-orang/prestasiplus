@@ -4,6 +4,7 @@ import type { BijakAttemptResult } from '@pp/contract'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import type { PartAnswer, SectionSnapshot } from './exam-core.adapter'
+import type { SelfMarks } from './self-mark'
 
 export type AttemptStatus = 'in_progress' | 'submitted' | 'auto_submitted' | 'abandoned'
 export type AttemptMode = 'exam' | 'latihan'
@@ -254,13 +255,20 @@ export class AttemptsRepository {
     })
   }
 
+  /** The AUTOMATIC grading of the attempt (self-marks not applied), or null before the first grading. */
   async result(attemptId: string): Promise<BijakAttemptResult | null> {
+    return (await this.gradedWithMarks(attemptId))?.result ?? null
+  }
+
+  /** The automatic grading plus the pupil's self-marks stored next to it (R1-B12). */
+  async gradedWithMarks(attemptId: string): Promise<{ result: BijakAttemptResult; selfMarks: SelfMarks } | null> {
     const r = await this.prisma.client.attemptResult.findUnique({ where: { attemptId } })
     if (!r) return null
-    const graded = r.graded as unknown as Pick<BijakAttemptResult, 'sections' | 'questions'>
+    const graded = r.graded as unknown as Pick<BijakAttemptResult, 'sections' | 'questions'> & { selfMarks?: SelfMarks }
     const score = Number(r.score)
     const max = Number(r.maxScore)
-    return {
+    // The score columns carry the totals WITH self-marks; the base result recomputes them from the graded rows.
+    const base = {
       score,
       max,
       percent: max ? Math.round((score / max) * 1000) / 10 : 0,
@@ -271,20 +279,59 @@ export class AttemptsRepository {
       coins: r.coins ?? score * 2,
       points: r.points ?? score * 10,
     }
+    return { result: base, selfMarks: graded.selfMarks ?? {} }
   }
 
-  /** Stores (or replaces, on a late-sync regrade) the result. One row per attempt: the primary key is the attempt id. */
-  async saveResult(attemptId: string, result: BijakAttemptResult): Promise<void> {
+  /**
+   * Stores (or replaces, on a late-sync regrade) the automatic result. One row per attempt: the primary key is the attempt id.
+   * `applied` is the result with the pupil's marks on top; the score columns then carry ITS totals and `graded.selfMarks` is kept.
+   */
+  async saveResult(attemptId: string, result: BijakAttemptResult, selfMarks: SelfMarks = {}, applied: BijakAttemptResult = result): Promise<void> {
     const data = {
-      score: result.score,
-      maxScore: result.max,
-      provisional: result.provisional,
-      pendingReview: result.pendingReview,
-      coins: result.coins,
-      points: result.points,
-      graded: { sections: result.sections, questions: result.questions } as unknown as object,
+      score: applied.score,
+      maxScore: applied.max,
+      provisional: applied.provisional,
+      pendingReview: applied.pendingReview,
+      coins: applied.coins,
+      points: applied.points,
+      graded: {
+        sections: result.sections,
+        questions: result.questions,
+        ...(Object.keys(selfMarks).length ? { selfMarks } : {}),
+      } as unknown as object,
     }
     await this.prisma.client.attemptResult.upsert({ where: { attemptId }, create: { attemptId, ...data }, update: data })
+  }
+
+  /** Stores the pupil's marks and the totals recomputed with them; the automatic rows in `graded` stay as graded. */
+  async saveSelfMarks(attemptId: string, selfMarks: SelfMarks, applied: BijakAttemptResult): Promise<void> {
+    const r = await this.prisma.client.attemptResult.findUnique({ where: { attemptId }, select: { graded: true } })
+    if (!r) throw new Error('Attempt result missing for a self-mark')
+    await this.prisma.client.attemptResult.update({
+      where: { attemptId },
+      data: {
+        score: applied.score,
+        maxScore: applied.max,
+        provisional: applied.provisional,
+        pendingReview: applied.pendingReview,
+        coins: applied.coins,
+        points: applied.points,
+        graded: { ...(r.graded as object), selfMarks } as unknown as object,
+      },
+    })
+  }
+
+  /** Closed (submitted or auto_submitted) attempts of the user on a paper that have a result, newest first. */
+  async closedForPaper(userId: string, paperId: string, limit: number): Promise<{ row: AttemptRow; score: number; max: number; provisional: boolean }[]> {
+    const rows = await this.prisma.client.examAttempt.findMany({
+      where: { userId: idFromString(userId), paperId: idFromString(paperId), status: { in: ['submitted', 'auto_submitted'] }, result: { isNot: null } },
+      orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+      include: { result: { select: { score: true, maxScore: true, provisional: true } } },
+    })
+    return rows.flatMap((r) =>
+      r.result ? [{ row: this.toRow(r), score: Number(r.result.score), max: Number(r.result.maxScore), provisional: r.result.provisional }] : [],
+    )
   }
 
   async history(userId: string, limit: number): Promise<HistoryRecord[]> {

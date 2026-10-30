@@ -38,6 +38,15 @@ export const BIJAK_ATTEMPTS_MESSAGES = {
   attemptClosed: 'Percubaan sudah tamat',
   photoType: 'Gambar mesti JPG atau PNG, maksimum 5 MB.',
   photoCount: 'Maksimum 3 gambar bagi setiap bahagian.',
+  /** R1-B12: a self-mark is accepted only for a closed attempt (409 NOT_SUBMITTED + `schemeAfterSubmit` before that). */
+  selfMarkPartUnknown: 'Bahagian ini tiada dalam kertas ini.',
+  selfMarkNotSubjective: 'Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.',
+  selfMarkBandUnknown: 'Band tidak sah untuk bahagian ini.',
+  selfMarkBandNotRubric: 'Bahagian ini tidak menggunakan band.',
+  /** R1-B15: "Cuba Lagi" on a paper that is no longer offered (withdrawn or unpublished). */
+  retryPaperGone: 'Kertas ini sudah tidak tersedia untuk dicuba semula.',
+  /** R1-B15: "Cuba Lagi" from an attempt that is not closed yet. */
+  retryNotClosed: 'Hantar percubaan ini dahulu sebelum mencuba semula.',
 } as const
 
 /** Constants of the mock server and `photo-store.ts`, kept so the backend and the docs share them. */
@@ -448,6 +457,25 @@ export const BijakAttemptSchemeSchema = z
   .meta({ id: 'BijakAttemptScheme' })
 export type BijakAttemptScheme = z.infer<typeof BijakAttemptSchemeSchema>
 
+/**
+ * R1-B13: keyword suggestion for a mark-scheme-points part that waits for a person (V2
+ * `RubricKeywordMarker`). At submit a non-zero suggestion is ALSO stored as the part awarded mark (V2
+ * submit :408-414), flagged `autoSuggested`; the part stays `belum_dimarkah` (the total is provisional)
+ * and the pupil self-mark overrides it. A zero match is not stamped (awarded stays 0). Absent for
+ * band_rubric parts and for automatically marked parts.
+ */
+export const BijakAttemptSuggestionSchema = z
+  .strictObject({
+    suggestedMark: NonNegInt.meta({
+      description: 'Sum of the matched points marks (proportional share when the points carry no marks), 0..part marks.',
+    }),
+    matched: NonNegInt.meta({ description: 'Points whose keywords were found in the answer ("{x}/{y} isi dikesan").' }),
+    total: NonNegInt,
+    points: z.array(z.strictObject({ id: IdSchema, label: z.string(), marks: NonNegInt, matched: z.boolean() })),
+  })
+  .meta({ id: 'BijakAttemptSuggestion' })
+export type BijakAttemptSuggestion = z.infer<typeof BijakAttemptSuggestionSchema>
+
 /** `PartResult`: marking of one leaf part with its revealed scheme. */
 export const BijakAttemptPartResultSchema = z
   .strictObject({
@@ -460,6 +488,17 @@ export const BijakAttemptPartResultSchema = z
     confidence: z.enum(['high', 'low']),
     points: z.array(BijakAttemptPointResultSchema),
     ecf: z.string().optional().meta({ description: 'Set when an own-figure-carried-forward mark was given.' }),
+    selfMarked: z.literal(true).optional().meta({
+      description: 'R1-B12: `awarded` is the pupil own mark (Markah kendiri). Absent for an automatic mark.',
+    }),
+    band: z.string().optional().meta({ description: 'R1-B12: the rubric band the pupil chose with the self-mark.' }),
+    autoSuggested: z.literal(true).optional().meta({
+      description: 'R1-B13: `awarded` is the automatic keyword suggestion (provisional, the pupil should check it), not a confirmed mark. Absent once selfMarked.',
+    }),
+    selfMarkable: z.literal(true).optional().meta({
+      description: 'R1-B12: the pupil may set a self-mark on this part (scheme kind points or rubric).',
+    }),
+    suggestion: BijakAttemptSuggestionSchema.optional(),
     answer: BijakAttemptPartAnswerSchema,
     scheme: BijakAttemptSchemeSchema,
   })
@@ -515,6 +554,63 @@ export const BijakAttemptResultSchema = z
 export type BijakAttemptResult = z.infer<typeof BijakAttemptResultSchema>
 
 /* ----------------------------------------------------------------------------- route payloads */
+
+/** R1-B12 `POST /bijak/attempts/{id}/self-mark` body. */
+export const BijakAttemptSelfMarkRequestSchema = z
+  .strictObject({
+    partId: IdSchema.meta({ description: 'A selfMarkable leaf part of the attempt (scheme kind points or rubric).' }),
+    mark: z.number().int().safe().meta({
+      description: 'Markah kendiri. The server clamps it to 0..part marks (and to the band range when `band` is sent).',
+      example: 2,
+    }),
+    band: z.string().min(1).max(100).optional().meta({
+      description: 'Rubric parts only: the band name the pupil chose; the mark is then kept inside that band range.',
+    }),
+  })
+  .meta({ id: 'BijakAttemptSelfMarkRequest' })
+export type BijakAttemptSelfMarkRequest = z.infer<typeof BijakAttemptSelfMarkRequestSchema>
+
+/** R1-B12 result: the clamped mark and the recomputed totals (best-N applied). */
+export const BijakAttemptSelfMarkResultSchema = z
+  .strictObject({
+    partId: IdSchema,
+    awarded: NonNegInt.meta({ description: 'The stored (clamped) self-mark.' }),
+    max: NonNegInt.meta({ description: 'Marks of the part.' }),
+    band: z.string().optional(),
+    status: BijakAttemptPartStatusSchema,
+    attemptScore: NonNegInt.meta({ description: 'Recomputed attempt score.' }),
+    attemptMax: NonNegInt,
+    provisional: z.boolean(),
+    pendingReview: NonNegInt,
+    result: BijakAttemptResultSchema.meta({ description: 'The recomputed result, the same shape as GET /result.' }),
+  })
+  .meta({ id: 'BijakAttemptSelfMarkResult' })
+export type BijakAttemptSelfMarkResult = z.infer<typeof BijakAttemptSelfMarkResultSchema>
+
+/** R1-B15 `GET /bijak/papers/{paperId}/attempts` ("Lihat semakan lepas"): one past closed sitting. */
+export const BijakAttemptPastSittingSchema = z
+  .strictObject({
+    attemptId: IdSchema,
+    mode: BijakAttemptModeSchema,
+    status: z.enum(['submitted', 'auto_submitted']),
+    startedAt: TimestampSchema,
+    submittedAt: TimestampSchema,
+    score: NonNegInt,
+    max: NonNegInt,
+    provisional: z.boolean(),
+  })
+  .meta({ id: 'BijakAttemptPastSitting' })
+export type BijakAttemptPastSitting = z.infer<typeof BijakAttemptPastSittingSchema>
+
+export const BijakAttemptPastSittingsSchema = z
+  .strictObject({
+    lastSubmittedAttemptId: IdSchema.nullable().meta({
+      description: 'The latest closed sitting (target of "Lihat semakan lepas"); null when there is none.',
+    }),
+    sittings: z.array(BijakAttemptPastSittingSchema).meta({ description: 'The caller closed sittings of this paper, newest first (at most 20).' }),
+  })
+  .meta({ id: 'BijakAttemptPastSittings' })
+export type BijakAttemptPastSittings = z.infer<typeof BijakAttemptPastSittingsSchema>
 
 /**
  * `AttemptPaperView`: the paper as served to an attempt with the saved-answers state. No answer

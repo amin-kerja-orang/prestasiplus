@@ -17,6 +17,9 @@ export const MAX_PHOTOS_PER_PART = BIJAK_ATTEMPTS_LIMITS.maxPhotosPerPart
 /** The history list is unbounded in the mock; the API returns the newest 500 (implementation cap). */
 export const HISTORY_LIMIT = 500
 
+/** "Lihat semakan lepas" lists at most this many past sittings of one paper. */
+export const PAST_SITTINGS_LIMIT = 20
+
 /** The sweeper looks at this many expired attempts per run. */
 export const SWEEP_BATCH = 200
 
