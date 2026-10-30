@@ -222,6 +222,8 @@ describe('tiles (FR-M27-60…63; AC-M27-17.2…17.4)', () => {
       'Lemah (<50%)',
       'Belum Cuba',
     ])
+    // One legend only (FR-M27-62): the DS colour ramp legend is switched off (G5-M27 B6).
+    expect(w.findAll('[data-ds="heat-legend"]')).toHaveLength(0)
   })
 })
 

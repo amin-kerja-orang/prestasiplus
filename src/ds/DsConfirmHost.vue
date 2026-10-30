@@ -22,7 +22,6 @@ function onOpen(value: boolean): void {
   <DsDialog
     :open="confirmState.open"
     :title="confirmState.title"
-    :description="confirmState.message"
     :tone="confirmState.tone === 'error' ? 'error' : 'default'"
     :loading="confirmState.loading"
     @update:open="onOpen"

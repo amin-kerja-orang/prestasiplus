@@ -31,8 +31,10 @@ const props = withDefaults(
     noDataLabel?: string
     /** Skeleton in place of the grid. */
     loading?: boolean
+    /** Show the low-to-high colour legend; false when the page renders its own legend. */
+    legend?: boolean
   }>(),
-  { lowLabel: dsCopy.heatLow, highLabel: dsCopy.heatHigh, unit: '%', noDataLabel: dsCopy.heatNoData, loading: false },
+  { lowLabel: dsCopy.heatLow, highLabel: dsCopy.heatHigh, unit: '%', noDataLabel: dsCopy.heatNoData, loading: false, legend: true },
 )
 
 const personality = usePersonality()
@@ -142,7 +144,7 @@ function detail(row: HeatRow, c: number): string {
         </ul>
       </li>
     </ul>
-    <div v-if="!loading" class="flex items-center gap-2 text-caption text-muted" data-ds="heat-legend">
+    <div v-if="!loading && legend" class="flex items-center gap-2 text-caption text-muted" data-ds="heat-legend">
       <span>{{ lowLabel }}</span>
       <span v-for="(cls, i) in ramp" :key="i" class="size-4 rounded-chip" :class="cls" aria-hidden="true" />
       <span>{{ highLabel }}</span>
