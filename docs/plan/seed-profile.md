@@ -17,6 +17,7 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 8. `content`: articles, banners, videos, support
 9. `exam`: blueprints, papers, placements
 10. `exam-demo-blueprints`
+10a. `exam-launch-blueprints`: the six SPM launch blueprints as Spec (bijak-spm BJS-12/13), their evidence rows
 11. `poc-classes`: classes and rosters
 12. `poc-bijak-sittings`: submitted Bijak SPM sittings, results, aggregates
 13. `battle` (BE-44): battle arena demo rows
@@ -50,8 +51,9 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | banners | 3 |
 | battle_participants | 142 |
 | battles | 71 |
-| blueprint_sections | 9 |
-| blueprints | 5 |
+| blueprint_evidence | 16 |
+| blueprint_sections | 23 |
+| blueprints | 11 |
 | challenges | 10 |
 | chapters | 1311 |
 | chat_threads | 1 |
@@ -140,7 +142,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 97 of 196. Total rows: 21845.
+Tables with rows: 98 of 198. Total rows: 21881.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.

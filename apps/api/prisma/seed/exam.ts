@@ -22,6 +22,7 @@
 import type { PrismaClient } from '../../src/db/client'
 import { POC_BANK, type PocBank, type PocBlueprint, type PocPaper, pocQuestionId } from '../../src/modules/bijak/papers/poc'
 import { curriculumCodeOf } from '../../src/modules/bijak/papers/subject-codes'
+import { structureHashOf } from './bijak-standards/hash'
 import type { SeedContext, SeedModule } from './index'
 
 const SOURCE_TO_DB: Readonly<Record<PocBlueprint['source'], string>> = { Disahkan: 'verified', Spec: 'spec', Draf: 'draft' }
@@ -52,6 +53,30 @@ export async function subjectIds(prisma: PrismaClient): Promise<Map<string, bigi
   return out
 }
 
+/** The exam-core structural form of a PoC blueprint (no profile, quota or KBAT: those exist from the bijak-spm layers on). */
+function pocStructureHash(bp: PocBlueprint): string {
+  return structureHashOf({
+    subject: curriculumCodeOf(bp.subject),
+    kertas: bp.kertas,
+    code: bp.code,
+    version: 1,
+    durationMin: bp.durationMin,
+    sections: bp.sections.map((s, i) => ({
+      position: i + 1,
+      label: s.label,
+      rule: s.rule,
+      questionCount: s.take,
+      markBudget: s.markBudget ?? s.take,
+      compulsory: s.compulsory ?? false,
+      pool: s.pool,
+      allowedModes: [],
+      profile: null,
+      quota: null,
+      kbatMarks: null,
+    })),
+  })
+}
+
 /**
  * Creates one blueprint (version 1, active) unless it exists: matched by (code, version 1), and skipped when
  * its subject and kertas already have an active blueprint. Shared with `exam-demo-blueprints.ts`.
@@ -68,6 +93,7 @@ export async function createBlueprintIfAbsent(prisma: PrismaClient, subjectId: b
       kertas: bp.kertas,
       code: bp.code,
       version: 1,
+      structureHash: pocStructureHash(bp),
       status: 'active',
       source: SOURCE_TO_DB[bp.source],
       durationMin: bp.durationMin,
