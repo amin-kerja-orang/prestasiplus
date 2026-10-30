@@ -57,12 +57,12 @@ describe('exam schema (migration 0012_bijak_papers)', () => {
   it('enums are text plus check with English codes (no Postgres enum types) (plan 14.9 item 3)', async () => {
     expect(await count(db, `select count(*) n from pg_type where typtype = 'e'`)).toBe(0)
     const sid = await subjectId()
-    await rejects(`insert into blueprints (subject_id, kertas, code, status, duration_min) values (${sid}, 1, 'X1', 'live', 60)`)
-    await rejects(`insert into blueprints (subject_id, kertas, code, source, duration_min) values (${sid}, 1, 'X2', 'Disahkan', 60)`)
-    await rejects(`insert into blueprints (subject_id, kertas, code, provenance, duration_min) values (${sid}, 1, 'X3', 'guess', 60)`)
-    await rejects(`insert into blueprints (subject_id, kertas, code, confidence, duration_min) values (${sid}, 1, 'X4', 'certain', 60)`)
-    await rejects(`insert into blueprints (subject_id, kertas, code, duration_min) values (${sid}, 0, 'X5', 60)`)
-    await rejects(`insert into blueprints (subject_id, kertas, code, duration_min) values (${sid}, 1, 'X6', 0)`)
+    await rejects(`insert into blueprints (structure_hash, subject_id, kertas, code, status, duration_min) values (repeat('a', 64), ${sid}, 1, 'X1', 'live', 60)`)
+    await rejects(`insert into blueprints (structure_hash, subject_id, kertas, code, source, duration_min) values (repeat('a', 64), ${sid}, 1, 'X2', 'Disahkan', 60)`)
+    await rejects(`insert into blueprints (structure_hash, subject_id, kertas, code, provenance, duration_min) values (repeat('a', 64), ${sid}, 1, 'X3', 'guess', 60)`)
+    await rejects(`insert into blueprints (structure_hash, subject_id, kertas, code, confidence, duration_min) values (repeat('a', 64), ${sid}, 1, 'X4', 'certain', 60)`)
+    await rejects(`insert into blueprints (structure_hash, subject_id, kertas, code, duration_min) values (repeat('a', 64), ${sid}, 0, 'X5', 60)`)
+    await rejects(`insert into blueprints (structure_hash, subject_id, kertas, code, duration_min) values (repeat('a', 64), ${sid}, 1, 'X6', 0)`)
     await rejects(`insert into papers (kind, title, subject_id, kertas, printed_duration_min) values ('other', 'x', ${sid}, 1, 60)`)
     await rejects(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, status) values ('pilihan', 'x', ${sid}, 1, 60, 'terbit')`)
     await rejects(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, level_scope) values ('pilihan', 'x', ${sid}, 1, 60, 'T4')`)
@@ -99,9 +99,9 @@ describe('exam schema (migration 0012_bijak_papers)', () => {
 
   it('(code, version) is unique, and only one version per subject and kertas is active', async () => {
     const sid = await subjectId()
-    await rejects(`insert into blueprints (subject_id, kertas, code, version, duration_min) values (${sid}, 1, '1449/1', 1, 60)`)
+    await rejects(`insert into blueprints (structure_hash, subject_id, kertas, code, version, duration_min) values (repeat('a', 64), ${sid}, 1, '1449/1', 1, 60)`)
     // A new version of the same code is a new row; only one may be active.
-    await db.query(`insert into blueprints (subject_id, kertas, code, version, status, duration_min) values (${sid}, 1, '1449/1', 2, 'draft', 60)`)
+    await db.query(`insert into blueprints (structure_hash, subject_id, kertas, code, version, status, duration_min) values (repeat('a', 64), ${sid}, 1, '1449/1', 2, 'draft', 60)`)
     await rejects(`update blueprints set status = 'active' where code = '1449/1' and version = 2`)
     await db.query(`update blueprints set status = 'retired' where code = '1449/1' and version = 1`)
     await db.query(`update blueprints set status = 'active' where code = '1449/1' and version = 2`)

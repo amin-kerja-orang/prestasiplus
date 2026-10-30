@@ -76,7 +76,7 @@ describe('exam seed (BE-15)', () => {
   it('does not clobber an active blueprint made by an admin for the same subject and kertas', async () => {
     await db.query(`delete from papers`)
     await db.query(`update blueprints set status = 'retired' where code = '1449/2'`)
-    await db.query(`insert into blueprints (subject_id, kertas, code, version, status, duration_min) select subject_id, 2, 'ADMIN/2', 1, 'active', 99 from blueprints where code = '1449/2'`)
+    await db.query(`insert into blueprints (structure_hash, subject_id, kertas, code, version, status, duration_min) select repeat('b', 64), subject_id, 2, 'ADMIN/2', 1, 'active', 99 from blueprints where code = '1449/2'`)
     await runSeeds([examSeed], { prisma: db.prisma })
     expect(await count(db, `select count(*) n from blueprints where code = '1449/2' and version = 1`)).toBe(1) // the retired one: not re-inserted
     expect(await count(db, `select count(*) n from blueprints where subject_id = (select subject_id from blueprints where code = 'ADMIN/2') and kertas = 2 and status = 'active'`)).toBe(1)
