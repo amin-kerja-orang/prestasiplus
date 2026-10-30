@@ -242,6 +242,15 @@ export class BlueprintsRepository {
     })
   }
 
+  /** Review stamp of one section: quota lines and KBAT value reviewed, in place (no content change, no hash change). */
+  async stampSectionReviewed(blueprintId: bigint, position: number, quota: Prisma.InputJsonValue | null, at: Date): Promise<void> {
+    await this.db.blueprintSection.update({
+      where: { blueprintId_position: { blueprintId, position } },
+      data: { kbatReviewed: true, ...(quota === null ? {} : { quota }) },
+    })
+    await this.db.blueprint.update({ where: { id: blueprintId }, data: { updatedAt: at } })
+  }
+
   insertActive(input: NewBlueprint, at: Date): Promise<BlueprintWithSections> {
     return this.db.blueprint.create({
       data: {

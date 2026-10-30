@@ -52,6 +52,19 @@ export class BlueprintsController {
     return this.blueprints.retire(actor, subject, kertas)
   }
 
+  @Post(':subject/:kertas/sections/:position/review')
+  @HttpCode(200)
+  @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  reviewSection(
+    @Actor() actor: AuditActor,
+    @Param('subject') subject: string,
+    @Param('kertas') kertas: string,
+    @Param('position') position: string,
+    @Body() body: unknown,
+  ) {
+    return this.blueprints.reviewSection(actor, subject, kertas, position, body)
+  }
+
   @Get(':subject/:kertas/versions')
   @RateLimit(BIJAK_BUILDER_LIMITS.read)
   versions(@Param('subject') subject: string, @Param('kertas') kertas: string) {

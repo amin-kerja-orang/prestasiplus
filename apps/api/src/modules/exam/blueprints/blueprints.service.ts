@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
+import { z } from 'zod'
 import {
   BIJAK_BUILDER_MESSAGES as MSG,
   BIJAK_STANDARDS_MESSAGES,
@@ -20,7 +21,8 @@ import { PrismaService } from '../../../db/prisma.service'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers'
 import { BIJAK_BUILDER_PAGE_SIZE } from '../builder/builder.constants'
 import type { AuditActor } from './actor'
-import { profileToDoc, quotaToDoc, structureHashOf, toStandard, unitLevelsOf } from './blueprint-standard'
+import type { BlueprintWithSections } from './blueprint-view'
+import { profileToDoc, quotaToDoc, reviewedQuotaDoc, structureHashOf, toStandard, unitLevelsOf, unreviewedLines } from './blueprint-standard'
 import { BlueprintViewsService } from './blueprint-views.service'
 import { BlueprintsRepository, type NewBlueprint, type SubjectRef } from './blueprints.repository'
 import { validateBlueprint, type StandardBlueprint } from './exam-core.adapter'
@@ -234,7 +236,7 @@ export class BlueprintsService {
               source,
               structureHash: hash,
               referenceSheets: (body.reference ?? current.referenceSheets) as Prisma.InputJsonValue,
-            }),
+            }, current),
             ...(carried ? { verificationId: current.verificationId, servesStudents: true } : {}),
           },
           at,
@@ -256,6 +258,37 @@ export class BlueprintsService {
       if (isUnique(e, 'uq_blueprints_code_version')) throw ApiError.of('VALIDATION_ERROR', { fields: { code: CODE_TAKEN_MESSAGE } })
       throw e
     }
+  }
+
+  /**
+   * Review stamp (AC-39.9): marks every quota line and the KBAT value of one section of the HEAD as reviewed, in
+   * place. It is not a content change: no new version, no hash change. 409 when the head is Disahkan (already fully
+   * reviewed), 404 for an unknown blueprint or section.
+   */
+  async reviewSection(actor: AuditActor, subjectText: string, kertasText: string, positionText: string, rawBody: unknown) {
+    const { subject, kertas } = await this.resolve(subjectText, kertasText)
+    const notFound = () => ApiError.of('NOT_FOUND', { message: MSG.blueprintNotFound })
+    const head = await this.repo.active(subject.id, kertas)
+    if (!head) throw notFound()
+    const position = /^[1-9]\d{0,3}$/.test(positionText) ? Number(positionText) : 0
+    if (!head.sections.some((s) => s.position === position)) throw notFound()
+    const locked409 = () => ApiError.of('CONFLICT', { message: BIJAK_STANDARDS_MESSAGES.alreadyVerified })
+    if (head.source === 'verified') throw locked409()
+    new ZodValidationPipe(z.strictObject({})).transform(rawBody ?? {})
+    const row = await this.prisma.transaction(async () => {
+      const current = await this.repo.lockActive(subject.id, kertas)
+      if (!current) throw notFound()
+      if (current.source === 'verified') throw locked409()
+      const section = current.sections.find((s) => s.position === position)
+      if (!section) throw notFound()
+      await this.repo.stampSectionReviewed(current.id, position, reviewedQuotaDoc(section.quota), this.clock.now())
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_BLUEPRINT_SECTION_REVIEWED, current.id, subject, kertas, {
+        version: current.version,
+        sectionPosition: position,
+      })
+      return (await this.repo.byId(current.id)) as BlueprintWithSections
+    })
+    return ok(await this.views.view(row, subject))
   }
 
   /** Retires every version of the pair and clears the serving flag: the only way to stop serving (3.5 rule 6). */
@@ -302,6 +335,7 @@ export class BlueprintsService {
     version: number,
     b: BlueprintBody,
     extra: { source: string; structureHash: string; referenceSheets: Prisma.InputJsonValue },
+    previous?: BlueprintWithSections,
   ): NewBlueprint {
     return {
       subjectId,
@@ -318,7 +352,9 @@ export class BlueprintsService {
       kbatMarks: b.kbatMarks ?? null,
       levelShare: b.levelShare ?? null,
       structureHash: extra.structureHash,
-      sections: b.sections.map((s) => ({
+      sections: b.sections.map((s, i) => {
+        const before = previous?.sections.find((p) => p.position === i + 1)
+        return {
         label: s.label,
         instruction: s.instruction ?? null,
         ruleType: s.rule.type,
@@ -329,11 +365,12 @@ export class BlueprintsService {
         pool: s.pool ?? null,
         allowedModes: s.allowedModes ?? [],
         profile: profileToDoc(s.profile),
-        quota: quotaToDoc(s.quota),
+        quota: quotaToDoc(s.quota, before ? unreviewedLines(before.quota) : undefined),
         kbatMarks: s.kbatMarks ?? null,
-        // The server sets it: any KBAT value saved through the admin API is reviewed (AC-39.9).
-        kbatReviewed: true,
-      })),
+        // A changed or added value is reviewed by the save; an unchanged one keeps its flag (AC-39.9).
+        kbatReviewed: !before || s.kbatMarks == null || before.kbatMarks !== s.kbatMarks ? true : before.kbatReviewed,
+        }
+      }),
     }
   }
 

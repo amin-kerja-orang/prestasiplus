@@ -134,22 +134,78 @@ describe('BJS-08 create and the standard fields', () => {
     expect(stored[0]?.kbat_reviewed).toBe(true)
   })
 
-  it('an admin save reviews values that were seeded unreviewed', async () => {
-    expect((await admin.post('/api/admin/blueprints', create(12))).status).toBe(201)
-    const row = await bpRow('MAT/S12')
+  /** A blueprint on MAT kertas k whose quota lines and KBAT value are all "Belum disemak" (as the layer-2 seed leaves them). */
+  async function seededUnreviewed(k: number) {
+    expect((await admin.post('/api/admin/blueprints', create(k))).status).toBe(201)
+    const row = await bpRow(`MAT/S${String(k)}`)
     await rows(
       `update blueprint_sections set kbat_reviewed = false,
               quota = jsonb_set(jsonb_set(quota, '{lines,0,reviewed}', 'false'), '{lines,1,reviewed}', 'false') where blueprint_id = $1`,
       [row?.id],
     )
-    const before = BijakBlueprintViewSchema.parse((await admin.get(url(12))).body.data)
+    const before = BijakBlueprintViewSchema.parse((await admin.get(url(k))).body.data)
     expect(before.sections[0]).toMatchObject({ kbatReviewed: false })
     expect(before.sections[0]?.quota?.lines.map((l) => l.reviewed)).toEqual([false, false])
-    const res = await admin.post(url(12, '/versions'), body({ code: 'MAT/S12B' }))
+    return row
+  }
+
+  it('a cosmetic save keeps the unreviewed flags false (AC-39.9)', async () => {
+    await seededUnreviewed(12)
+    const res = await admin.post(url(12, '/versions'), body({ code: 'MAT/S12B', notes: 'nota', sections: [fullSection({ label: 'Lain' })] }))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const after = BijakBlueprintViewSchema.parse(res.body.data)
-    expect(after.sections[0]).toMatchObject({ kbatReviewed: true })
-    expect(after.sections[0]?.quota?.lines.map((l) => l.reviewed)).toEqual([true, true])
+    expect(after.sections[0]).toMatchObject({ kbatReviewed: false })
+    expect(after.sections[0]?.quota?.lines.map((l) => l.reviewed)).toEqual([false, false])
+  })
+
+  it('changing a value sets it reviewed; unchanged values keep their flag', async () => {
+    await seededUnreviewed(18)
+    // line 0: 2 -> 1 and line 1 unchanged would break the sum, so move one question between the two units; kbat 1 -> 2
+    const quota = {
+      basis: 'questions',
+      lines: [
+        { unit: { kind: 'unit', nodeId: t4[0]?.nodeId }, value: 3 },
+        { unit: { kind: 'unit', nodeId: t5[0]?.nodeId }, value: 1 },
+      ],
+    }
+    const changed = await admin.post(url(18, '/versions'), body({ code: 'MAT/S18B', sections: [fullSection({ quota, kbatMarks: 2 })] }))
+    expect(changed.status, JSON.stringify(changed.body)).toBe(201)
+    expect(changed.body.data.sections[0]).toMatchObject({ kbatReviewed: true })
+    expect(changed.body.data.sections[0].quota.lines.map((l: { reviewed: boolean }) => l.reviewed)).toEqual([true, true])
+
+    await seededUnreviewed(19)
+    // only the KBAT value changes: the quota lines stay unreviewed
+    const kbatOnly = await admin.post(url(19, '/versions'), body({ code: 'MAT/S19B', sections: [fullSection({ kbatMarks: 2 })] }))
+    expect(kbatOnly.status, JSON.stringify(kbatOnly.body)).toBe(201)
+    expect(kbatOnly.body.data.sections[0]).toMatchObject({ kbatReviewed: true })
+    expect(kbatOnly.body.data.sections[0].quota.lines.map((l: { reviewed: boolean }) => l.reviewed)).toEqual([false, false])
+  })
+
+  it('POST sections/{position}/review stamps the section in place: no new version, no hash change, audited', async () => {
+    const row = await seededUnreviewed(20)
+    const before = await bpRow('MAT/S20')
+    const res = await admin.post(url(20, '/sections/1/review'), {})
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    const view = BijakBlueprintViewSchema.parse(res.body.data)
+    expect(view.version).toBe(1)
+    expect(view.sections[0]).toMatchObject({ kbatReviewed: true })
+    expect(view.sections[0]?.quota?.lines.map((l) => l.reviewed)).toEqual([true, true])
+    expect(await count(t.db, `select count(*) n from blueprints where code = 'MAT/S20'`)).toBe(1)
+    expect((await bpRow('MAT/S20'))?.structure_hash).toBe(before?.structure_hash)
+    const audit = (await auditRows(t.db, 'bijak.blueprint.section_reviewed')).find((r) => r.target_id === row?.id)
+    expect(audit).toMatchObject({ actor_user_id: admin.userId, target_type: 'bijak_blueprint' })
+    expect(audit?.detail).toMatchObject({ sectionPosition: 1, kertas: 20 })
+  })
+
+  it('review: 404 for an unknown section or blueprint, 422 for a body with keys, 409 on a Disahkan head', async () => {
+    expect((await admin.post('/api/admin/blueprints', create(10))).status).toBe(201)
+    expectError(await admin.post(url(10, '/sections/2/review'), {}), 'NOT_FOUND', 404)
+    expectError(await admin.post(url(10, '/sections/0/review'), {}), 'NOT_FOUND', 404)
+    expectError(await admin.post(url(10, '/sections/x/review'), {}), 'NOT_FOUND', 404)
+    expectError(await admin.post(url(999, '/sections/1/review'), {}), 'NOT_FOUND', 404)
+    expectError(await admin.post(url(10, '/sections/1/review'), { reviewed: true }), 'VALIDATION_ERROR')
+    await verified(30)
+    expectError(await admin.post(url(30, '/sections/1/review'), {}), 'CONFLICT', 409, STD.alreadyVerified)
   })
 
   it('refuses reviewed flags, the section reviewed flag and Disahkan on write (strict schemas, 422)', async () => {
@@ -446,8 +502,8 @@ describe('BJS-09 verification', () => {
     const unreviewed = check.completeness.filter((c) => c.code === 'UNREVIEWED')
     expect(unreviewed).toHaveLength(2)
     expect(unreviewed.some((c) => c.unit?.kind === 'unit')).toBe(true)
-    // the structural content is unchanged by a review, so the new version is a cosmetic one of a Spec: still Spec, now reviewed
-    expect((await admin.post(url(44, '/versions'), body({ code: 'MAT/S44B' }))).status).toBe(201)
+    // the review stamp (in place, not a new version) clears the block
+    expect((await admin.post(url(44, '/sections/1/review'), {})).status).toBe(200)
     expect((await admin.post(url(44, '/verify'), {})).status).toBe(200)
   })
 
@@ -547,6 +603,7 @@ describe('access: Admin Pusat only (AC-32.1, AC-39.3)', () => {
     { name: 'evidence delete', method: 'del', url: url(1, '/evidence/1') },
     { name: 'verification', method: 'get', url: url(1, '/verification') },
     { name: 'verify', method: 'post', url: url(1, '/verify'), body: {} },
+    { name: 'section review', method: 'post', url: url(1, '/sections/1/review'), body: {} },
     { name: 'dskp units', method: 'get', url: '/api/admin/bijak/dskp/units?subject=MAT' },
     { name: 'subjects', method: 'get', url: '/api/admin/bijak/subjects' },
   ]

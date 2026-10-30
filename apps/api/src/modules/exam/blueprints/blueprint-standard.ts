@@ -51,14 +51,49 @@ export function profileToDoc(profile: BijakDifficultyProfile | null | undefined)
   return profile ? (profile as unknown as Prisma.InputJsonValue) : null
 }
 
-/** Quota as written by the admin: every line is reviewed by that save, so `reviewed` is left out (absent = true). */
-export function quotaToDoc(quota: BijakTopicQuota | null | undefined): Prisma.InputJsonValue | null {
+const unitKeyOfRef = (u: { kind: 'unit'; nodeId: string } | { kind: 't1_t3' }): string => (u.kind === 't1_t3' ? 't1_t3' : `unit:${u.nodeId}`)
+
+/**
+ * Quota as written by the admin: a line the admin changed or added is reviewed by that save (`reviewed` left out,
+ * absent = true). A line unchanged from the previous version (same unit key and value) keeps its unreviewed
+ * state: `unreviewed` maps the unit key to the value that was "Belum disemak" (AC-39.9).
+ */
+export function quotaToDoc(
+  quota: BijakTopicQuota | null | undefined,
+  unreviewed: ReadonlyMap<string, number> = new Map(),
+): Prisma.InputJsonValue | null {
   if (!quota) return null
   return {
     basis: quota.basis,
-    lines: quota.lines.map((l) => ({ unit: l.unit, value: l.value, ...(l.tag ? { tag: l.tag } : {}) })),
+    lines: quota.lines.map((l) => ({
+      unit: l.unit,
+      value: l.value,
+      ...(unreviewed.get(unitKeyOfRef(l.unit)) === l.value ? { reviewed: false } : {}),
+      ...(l.tag ? { tag: l.tag } : {}),
+    })),
     ...(quota.levelShare ? { levelShare: quota.levelShare } : {}),
   } as unknown as Prisma.InputJsonValue
+}
+
+/** The stored quota document with every line reviewed (the review stamp of a section). */
+export function reviewedQuotaDoc(doc: unknown): Prisma.InputJsonValue | null {
+  if (doc === null || doc === undefined) return null
+  const raw = doc as { lines?: unknown[] }
+  return {
+    ...raw,
+    lines: (raw.lines ?? []).map((l) => {
+      const rest = { ...(l as Record<string, unknown>) }
+      delete rest.reviewed
+      return rest
+    }),
+  } as unknown as Prisma.InputJsonValue
+}
+
+/** Unit key to value of the stored quota lines that are still unreviewed. */
+export function unreviewedLines(doc: unknown): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const l of quotaOfDoc(doc)?.lines ?? []) if (!l.reviewed) out.set(unitKeyOfRef(l.unit), l.value)
+  return out
 }
 
 /** The persisted row as the exam-core blueprint (the shape `validateBlueprint` and the hash take). */
