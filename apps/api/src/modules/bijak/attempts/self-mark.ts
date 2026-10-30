@@ -38,10 +38,10 @@ export function clamp(n: number, lo: number, hi: number): number {
 }
 
 function statusFor(awarded: number, marks: number, blank: boolean): BijakAttemptPartResult['status'] {
-  if (blank) return 'kosong'
+  // A self-mark that gives marks is a marked part whatever the answer was (V2 derives the state from the mark, not from the answer).
   if (awarded >= marks && marks > 0) return 'betul'
   if (awarded > 0) return 'separa'
-  return 'salah'
+  return blank ? 'kosong' : 'salah'
 }
 
 /**
@@ -100,5 +100,6 @@ export function applySelfMarks(base: BijakAttemptResult, composition: readonly S
   }
   // assembleResult only reads and sets fields both shapes share (marks, awarded, counted, attempted, parts[].status).
   const assembled = assembleResult(composition, questions as unknown as QuestionResult[])
-  return { ...assembled, questions }
+  // Coins and points are what was CREDITED at submit (the wallet reward is never repeated), not a figure recomputed from the self-marked score.
+  return { ...assembled, questions, coins: base.coins, points: base.points }
 }

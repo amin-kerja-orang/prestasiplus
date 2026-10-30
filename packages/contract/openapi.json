@@ -11976,12 +11976,12 @@
           "coins": {
             "type": "integer",
             "minimum": 0,
-            "description": "Display value score * 2 of the mock. The mock does not credit the wallet (open question 2)."
+            "description": "Reward figure: the coins credited at submit (score * 2 of the graded attempt). Not recomputed by a later self-mark, because the wallet reward is credited once and never repeated."
           },
           "points": {
             "type": "integer",
             "minimum": 0,
-            "description": "Display value score * 10 of the mock. The mock does not credit the wallet (open question 2)."
+            "description": "Reward figure: the points credited at submit (score * 10 of the graded attempt). Not recomputed by a later self-mark."
           }
         },
         "required": [
@@ -12335,12 +12335,12 @@
               "coins": {
                 "type": "integer",
                 "minimum": 0,
-                "description": "Display value score * 2 of the mock. The mock does not credit the wallet (open question 2)."
+                "description": "Reward figure: the coins credited at submit (score * 2 of the graded attempt). Not recomputed by a later self-mark, because the wallet reward is credited once and never repeated."
               },
               "points": {
                 "type": "integer",
                 "minimum": 0,
-                "description": "Display value score * 10 of the mock. The mock does not credit the wallet (open question 2)."
+                "description": "Reward figure: the points credited at submit (score * 10 of the graded attempt). Not recomputed by a later self-mark."
               }
             },
             "required": [

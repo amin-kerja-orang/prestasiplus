@@ -544,10 +544,10 @@ export const BijakAttemptResultSchema = z
     sections: z.array(BijakAttemptSectionResultSchema),
     questions: z.array(BijakAttemptQuestionResultSchema),
     coins: NonNegInt.meta({
-      description: 'Display value score * 2 of the mock. The mock does not credit the wallet (open question 2).',
+      description: 'Reward figure: the coins credited at submit (score * 2 of the graded attempt). Not recomputed by a later self-mark, because the wallet reward is credited once and never repeated.',
     }),
     points: NonNegInt.meta({
-      description: 'Display value score * 10 of the mock. The mock does not credit the wallet (open question 2).',
+      description: 'Reward figure: the points credited at submit (score * 10 of the graded attempt). Not recomputed by a later self-mark.',
     }),
   })
   .meta({ id: 'BijakAttemptResult' })
