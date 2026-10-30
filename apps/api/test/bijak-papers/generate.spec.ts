@@ -8,6 +8,7 @@ import {
   type BijakServedSource,
 } from '../../src/modules/bijak/papers'
 import { POC_BANK, pocQuestionId } from '../../src/modules/bijak/papers/poc'
+import { NOT_SERVING, SERVING } from '../support/serve-blueprints'
 import { count, expectError, loginAs, bootPapersApp, serveSeededBlueprints, type Client, type PapersTestApp } from './helpers'
 
 const served = new Set<string>()
@@ -172,27 +173,27 @@ describe('POST /api/bijak/papers/generate (Jana Kertas, BE-15)', () => {
 
     it('a blueprint whose source is Draf, a retired or a draft version: no paper row', async () => {
       const before = await papers()
-      await t.db.query(`update blueprints set source = 'draft', serves_students = false where code = '1449/1'`)
+      await t.db.query(`update blueprints set source = 'draft', serves_students = false, verification_id = null where code = '1449/1'`)
       expectError(await generate('MAT', 1), 'NO_BLUEPRINT', 422)
       await t.db.query(`update blueprints set source = 'spec', status = 'retired' where code = '1449/1'`)
       expectError(await generate('MAT', 1), 'NO_BLUEPRINT', 422)
       await t.db.query(`update blueprints set status = 'draft' where code = '1449/1'`)
       expectError(await generate('MAT', 1), 'NO_BLUEPRINT', 422)
       expect(await papers()).toBe(before)
-      await t.db.query(`update blueprints set status = 'active', source = 'verified', serves_students = true where code = '1449/1'`)
+      await t.db.query(`update blueprints set status = 'active', ${SERVING} where code = '1449/1'`)
       expect((await generate('MAT', 1)).status).toBe(201)
     })
 
     // AC-R1-15.3 / D76 / O-6: a pupil generates from the serving (Disahkan) version only.
     it('a Spec head that serves nobody is refused for a pupil and for Admin Sekolah in Mod Pelajar', async () => {
       const before = await papers()
-      await t.db.query(`update blueprints set source = 'spec', serves_students = false where code = '1449/1'`)
+      await t.db.query(`update blueprints set ${NOT_SERVING} where code = '1449/1'`)
       expectError(await generate('MAT', 1), 'NO_BLUEPRINT', 422)
       const school = await loginAs(t, 'adminsekolah@demo.test')
       await school.enterMod()
       expectError(await school.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 }), 'NO_BLUEPRINT', 422)
       expect(await papers()).toBe(before)
-      await t.db.query(`update blueprints set source = 'verified', serves_students = true where code = '1449/1'`)
+      await t.db.query(`update blueprints set ${SERVING} where code = '1449/1'`)
     })
 
     it('a Spec head over a retired serving version: the pupil still generates from the serving version', async () => {
@@ -217,7 +218,7 @@ describe('POST /api/bijak/papers/generate (Jana Kertas, BE-15)', () => {
     })
 
     it('Admin Pusat in Mod Pelajar may generate from a Spec head (test data); Admin Sekolah may not', async () => {
-      await t.db.query(`update blueprints set source = 'spec', serves_students = false where code = '1449/1'`)
+      await t.db.query(`update blueprints set ${NOT_SERVING} where code = '1449/1'`)
       const admin = await loginAs(t, 'admin@demo.test')
       await admin.enterMod()
       const res = await admin.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
@@ -228,7 +229,7 @@ describe('POST /api/bijak/papers/generate (Jana Kertas, BE-15)', () => {
       await t.db.query(`update blueprints set source = 'draft' where code = '1449/1'`)
       const again = await admin.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
       expectError(again, 'NO_BLUEPRINT', 422)
-      await t.db.query(`update blueprints set source = 'verified', serves_students = true where code = '1449/1'`)
+      await t.db.query(`update blueprints set ${SERVING} where code = '1449/1'`)
     })
   })
 
@@ -326,6 +327,7 @@ describe('Jana Kertas through the question port (a BE-09 stand-in)', () => {
 describe('rate limit', () => {
   it('429 RATE_LIMITED on generate above the per-user ceiling', async () => {
     const t = await bootPapersApp({ env: { THROTTLE_BIJAK_GENERATE_PER_MINUTE: '3' } })
+    await serveSeededBlueprints(t.db)
     try {
       const student = await loginAs(t, 'pelajar@demo.test')
       for (let i = 0; i < 3; i++) expect((await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })).status).toBe(201)

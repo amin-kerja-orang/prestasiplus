@@ -96,8 +96,6 @@ export async function createBlueprintIfAbsent(prisma: PrismaClient, subjectId: b
       structureHash: pocStructureHash(bp),
       status: 'active',
       source: SOURCE_TO_DB[bp.source],
-      // BJS-02: a Disahkan PoC blueprint is the serving version for students (CHECK: serving implies verified).
-      servesStudents: bp.source === 'Disahkan',
       durationMin: bp.durationMin,
       instructions: bp.instructions,
       referenceSheets: bp.reference ?? [],
