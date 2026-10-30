@@ -14,7 +14,10 @@
 import { z } from 'zod'
 
 export type DskpNodeKind = 'grouping' | 'unit' | 'sk' | 'sp'
-export type DskpLevel = 'T4' | 'T5'
+/** Tingkatan 1 to 5 (R1-12); Darjah and any other level is ignored and listed. */
+export type DskpLevel = 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+const TINGKATAN = /^T[1-5]$/
+
 
 export interface DskpNodeDraft {
   /** Unique inside one extract: `<level>|<kind>|<code>`. */
@@ -45,6 +48,16 @@ export interface DskpExtract {
   tps: DskpTpDraft[]
   /** TP rows that cannot be stored: no tp number, or a second row for the same node and tp. */
   skipped: { missingTp: number; duplicate: number }
+  /** Every TP row that was not stored, with a plain reason (AC-R1-12.3). */
+  rejected: DskpRejected[]
+  /** Units whose level is not Tingkatan 1 to 5 (Darjah rows and the like); not loaded (AC-R1-12.2). */
+  ignored: { level: string; code: string; title: string }[]
+}
+
+export interface DskpRejected {
+  level: string | null
+  at: string
+  reason: string
 }
 
 const tpRow = z.looseObject({
@@ -64,7 +77,7 @@ const skRow = z.looseObject({
 })
 
 const unitRow = z.looseObject({
-  level: z.enum(['T4', 'T5']),
+  level: z.string().min(1),
   code: z.string().min(1),
   title: z.string().min(1),
   titlePrinted: z.string().nullish(),
@@ -104,6 +117,8 @@ export function parseDskpExtract(input: unknown): DskpExtract {
   const nodes: DskpNodeDraft[] = []
   const tps: DskpTpDraft[] = []
   const skipped = { missingTp: 0, duplicate: 0 }
+  const rejected: DskpRejected[] = []
+  const ignored: DskpExtract['ignored'] = []
   const taken = new Set<string>()
   const counters = new Map<string, number>()
   const nextOrder = (level: string, kind: string): number => {
@@ -126,16 +141,19 @@ export function parseDskpExtract(input: unknown): DskpExtract {
     nodes.push(node)
     return node
   }
-  const addTp = (nodeKey: string | null, scope: 'unit' | 'sk' | null, row: z.infer<typeof tpRow>, tpNo?: number) => {
+  const addTp = (nodeKey: string | null, scope: 'unit' | 'sk' | null, row: z.infer<typeof tpRow>, level: string | null, at: string, tpNo?: number) => {
     const raw = tpNo ?? row.tp
     const tp = typeof raw === 'number' ? raw : null
     if (tp === null || tp < 1 || tp > 6) {
       skipped.missingTp += 1
+      const why = raw === undefined || raw === null ? 'no tp number' : `tp "${String(raw)}" is not a single number from 1 to 6`
+      rejected.push({ level, at, reason: `TP row not stored: ${why}` })
       return
     }
     const key = `${nodeKey ?? ''}#${tp}`
     if (taken.has(key)) {
       skipped.duplicate += 1
+      rejected.push({ level, at, reason: `TP row not stored: tp ${String(tp)} appears twice for the same node` })
       return
     }
     taken.add(key)
@@ -143,18 +161,23 @@ export function parseDskpExtract(input: unknown): DskpExtract {
   }
 
   for (const unit of file.units) {
-    const edition = editionOf(unit.level)
+    if (!TINGKATAN.test(unit.level)) {
+      ignored.push({ level: unit.level, code: unit.code, title: unit.title })
+      continue
+    }
+    const level = unit.level as DskpLevel
+    const edition = editionOf(level)
     const groupTitle = unit.bidang ?? unit.theme ?? unit.tema ?? unit.learningArea ?? null
     let parentKey: string | null = null
     if (groupTitle) {
       const code = slugOf(groupTitle)
-      const existing = nodes.find((n) => n.key === `${unit.level}|grouping|${code}`)
-      parentKey = (existing ?? addNode({ parentKey: null, kind: 'grouping', level: unit.level, code, title: groupTitle, titlePrinted: null, edition, isElective: false })).key
+      const existing = nodes.find((n) => n.key === `${level}|grouping|${code}`)
+      parentKey = (existing ?? addNode({ parentKey: null, kind: 'grouping', level, code, title: groupTitle, titlePrinted: null, edition, isElective: false })).key
     }
     const unitNode = addNode({
       parentKey,
       kind: 'unit',
-      level: unit.level,
+      level,
       code: unit.code,
       title: unit.title,
       titlePrinted: unit.titlePrinted ?? null,
@@ -166,7 +189,7 @@ export function parseDskpExtract(input: unknown): DskpExtract {
       const skNode = addNode({
         parentKey: unitNode.key,
         kind: 'sk',
-        level: unit.level,
+        level,
         code: sk.sk,
         title: sk.skTitle,
         titlePrinted: null,
@@ -175,23 +198,23 @@ export function parseDskpExtract(input: unknown): DskpExtract {
       })
       skKeys.set(sk.sk, skNode.key)
       for (const sp of sk.sp) {
-        addNode({ parentKey: skNode.key, kind: 'sp', level: unit.level, code: sp.code, title: sp.text, titlePrinted: null, edition, isElective: false })
+        addNode({ parentKey: skNode.key, kind: 'sp', level, code: sp.code, title: sp.text, titlePrinted: null, edition, isElective: false })
       }
-      for (const row of sk.tahapPenguasaan ?? []) addTp(skNode.key, 'sk', row)
+      for (const row of sk.tahapPenguasaan ?? []) addTp(skNode.key, 'sk', row, level, `${level} SK ${sk.sk}`)
     }
     for (const row of unit.tahapPenguasaan ?? []) {
       const only = row.appliesToSK?.length === 1 ? skKeys.get(row.appliesToSK[0] as string) : undefined
-      if (only) addTp(only, 'sk', row)
-      else addTp(unitNode.key, 'unit', row)
+      if (only) addTp(only, 'sk', row, level, `${level} SK ${row.appliesToSK?.[0] ?? '?'}`)
+      else addTp(unitNode.key, 'unit', row, level, `${level} unit ${unit.code}`)
     }
   }
 
   const general = file.generalPerformanceLevels?.levels
-  if (general) for (const row of general) addTp(null, null, row)
+  if (general) for (const row of general) addTp(null, null, row, null, 'general performance levels')
   const texts = file.generalTP?.descriptors ?? file.generalTP?.interpretation
-  if (texts) texts.forEach((descriptor, i) => addTp(null, null, { descriptor }, i + 1))
+  if (texts) texts.forEach((descriptor, i) => addTp(null, null, { descriptor }, null, 'general TP descriptors', i + 1))
 
-  return { subject: file.subject, nodes, tps, skipped }
+  return { subject: file.subject, nodes, tps, skipped, rejected, ignored }
 }
 
 /** The extract's nodes by key, for lookups by code and parent traversal in memory. */

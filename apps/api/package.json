@@ -24,6 +24,8 @@
     "migrate:link-questions": "tsx src/migration/orchestrate.ts migrate:link-questions",
     "migrate:export-question-reports": "tsx src/migration/orchestrate.ts migrate:export-question-reports",
     "migrate:archive-minimise": "tsx src/migration/orchestrate.ts migrate:archive-minimise",
+    "dskp:load": "tsx src/modules/curriculum/dskp/cli.ts",
+    "curriculum:load-dskp": "tsx src/modules/curriculum/dskp/cli.ts",
     "admin:bootstrap": "tsx src/ops/admin-bootstrap/cli.ts",
     "staging:ddl": "tsx src/migration/ddl/generate.ts",
     "staging:load": "tsx src/migration/staging/cli.ts staging:load",

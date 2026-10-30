@@ -1,0 +1,1573 @@
+{
+  "subject": "Pendidikan Moral",
+  "subjectCode": null,
+  "levels": [
+    "T4",
+    "T5"
+  ],
+  "source": "Pendidikan Moral.pdf",
+  "edition": "Terbitan 2018, Bahagian Pembangunan Kurikulum KPM, September 2018 (KSSM Pendidikan Moral Tingkatan 4 dan 5)",
+  "structureNote": "Hierarchy: Bidang (theme; the whole KSSM Moral has 7 bidang, Bidang 1-4 are Tingkatan 1-3, this DSKP covers Bidang 5 Insan Bermoral, 6 Jati Diri Moral, 7 Moral dan Kenegaraan for BOTH T4 and T5 with different topics per form) > Standard Kandungan (x.y, a topic) > 6 Standard Pembelajaran (x.y.1-x.y.6). In this file one unit = one SK (topic) because each SK carries its own Standard Prestasi table of Tahap Penguasaan 1-6; the unit therefore has exactly one entry in standards. Every SK has the same 6-SP pattern (x.y.1-x.y.4 cognitive: define/list -> explain -> evaluate/predict -> analyse; x.y.5 express feeling (afektif); x.y.6 practise in daily life (perlakuan)). Minimum 64 hours over T4+T5 (min hours per year). Catatan column (Cadangan nilai / isu / aktiviti) deliberately not extracted. Printed typos kept as printed (e.g. \"Berbeza\" capitalised in SP 7.2.5 T4). Bidang headings use the printed numbering 5.0/6.0/7.0 in both forms, so the same SK code (e.g. 5.1) exists in T4 and T5 with different titles - always key by (level, code).",
+  "units": [
+    {
+      "level": "T4",
+      "code": "5.1",
+      "title": "Norma Masyarakat",
+      "bidang": "5.0 INSAN BERMORAL",
+      "bidangDescription": "Bidang insan bermoral membincangkan ciri insan bermoral berkeperibadian mulia yang mampu menjadi suri teladan yang baik, bersikap adil, prihatin dan mempraktikkan amalan bermoral yang diterima oleh masyarakat. Insan bermoral sentiasa menghormati agama dan kepercayaan serta menyayangi diri dan orang lain. Insan bermoral juga mampu membuat keputusan dengan menggunakan sumber dan maklumat secara autonomi berdasarkan norma masyarakat.",
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Norma Masyarakat",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Mentakrifkan maksud norma masyarakat."
+            },
+            {
+              "code": "5.1.2",
+              "text": "Memberikan contoh norma masyarakat."
+            },
+            {
+              "code": "5.1.3",
+              "text": "Menghuraikan kepentingan amalan norma masyarakat."
+            },
+            {
+              "code": "5.1.4",
+              "text": "Meramalkan kesan pengabaian norma masyarakat."
+            },
+            {
+              "code": "5.1.5",
+              "text": "Mengekspresikan perasaan apabila mematuhi norma masyarakat."
+            },
+            {
+              "code": "5.1.6",
+              "text": "Mengamalkan norma masyarakat dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan maksud norma masyarakat."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan contoh norma masyarakat."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan amalan norma masyarakat."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis kesan pengabaian norma masyarakat."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan norma masyarakat dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan norma masyarakat dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "5.2",
+      "title": "Individu Berkeperibadian Mulia",
+      "bidang": "5.0 INSAN BERMORAL",
+      "bidangDescription": "Bidang insan bermoral membincangkan ciri insan bermoral berkeperibadian mulia yang mampu menjadi suri teladan yang baik, bersikap adil, prihatin dan mempraktikkan amalan bermoral yang diterima oleh masyarakat. Insan bermoral sentiasa menghormati agama dan kepercayaan serta menyayangi diri dan orang lain. Insan bermoral juga mampu membuat keputusan dengan menggunakan sumber dan maklumat secara autonomi berdasarkan norma masyarakat.",
+      "standards": [
+        {
+          "sk": "5.2",
+          "skTitle": "Individu Berkeperibadian Mulia",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Menyenaraikan ciri individu yang berkeperibadian mulia."
+            },
+            {
+              "code": "5.2.2",
+              "text": "Menghuraikan dengan contoh cara mempraktikkan keperibadian mulia."
+            },
+            {
+              "code": "5.2.3",
+              "text": "Memerihalkan kepentingan mempunyai keperibadian mulia."
+            },
+            {
+              "code": "5.2.4",
+              "text": "Membanding beza keperibadian mulia dan bukan keperibadian mulia."
+            },
+            {
+              "code": "5.2.5",
+              "text": "Mengekspresikan perasaan apabila mengamalkan keperibadian mulia dalam kehidupan harian."
+            },
+            {
+              "code": "5.2.6",
+              "text": "Mengamalkan keperibadian mulia dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan ciri individu yang berkeperibadian mulia."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan cara mempraktikkan keperibadian mulia."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan mempunyai keperibadian mulia."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis keperibadian mulia dan bukan keperibadian mulia."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan keperibadian mulia dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan keperibadian mulia dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "5.3",
+      "title": "Prinsip Keadilan dan Keprihatinan dalam Membuat Keputusan",
+      "bidang": "5.0 INSAN BERMORAL",
+      "bidangDescription": "Bidang insan bermoral membincangkan ciri insan bermoral berkeperibadian mulia yang mampu menjadi suri teladan yang baik, bersikap adil, prihatin dan mempraktikkan amalan bermoral yang diterima oleh masyarakat. Insan bermoral sentiasa menghormati agama dan kepercayaan serta menyayangi diri dan orang lain. Insan bermoral juga mampu membuat keputusan dengan menggunakan sumber dan maklumat secara autonomi berdasarkan norma masyarakat.",
+      "standards": [
+        {
+          "sk": "5.3",
+          "skTitle": "Prinsip Keadilan dan Keprihatinan dalam Membuat Keputusan",
+          "sp": [
+            {
+              "code": "5.3.1",
+              "text": "Menyenaraikan contoh prinsip keadilan dan keprihatinan dalam membuat keputusan."
+            },
+            {
+              "code": "5.3.2",
+              "text": "Memerihalkan prinsip keadilan dan keprihatinan dalam membuat keputusan."
+            },
+            {
+              "code": "5.3.3",
+              "text": "Menghuraikan kepentingan membuat keputusan antara prinsip keadilan dan keprihatinan berdasarkan situasi."
+            },
+            {
+              "code": "5.3.4",
+              "text": "Menaakul keutamaan antara prinsip keadilan dan prinsip keprihatinan dalam membuat pertimbangan."
+            },
+            {
+              "code": "5.3.5",
+              "text": "Mengekspresikan perasaan apabila membuat keputusan berasaskan prinsip keadilan dan keprihatinan."
+            },
+            {
+              "code": "5.3.6",
+              "text": "Mengambil tindakan yang wajar berdasarkan prinsip keadilan dan keprihatinan dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan contoh prinsip keadilan dan keprihatinan dalam membuat keputusan."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan prinsip keadilan dan keprihatinan dalam membuat keputusan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan membuat keputusan antara prinsip keadilan dan keprihatinan."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis keutamaan antara prinsip keadilan dan prinsip keprihatinan dalam membuat pertimbangan berdasarkan situasi."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan tindakan yang wajar berdasarkan prinsip keadilan dan keprihatinan dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan tindakan yang wajar berdasarkan prinsip keadilan dan keprihatinan dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "5.4",
+      "title": "Penggunaan Teknologi Maklumat dan Komunikasi Secara Beretika",
+      "bidang": "5.0 INSAN BERMORAL",
+      "bidangDescription": "Bidang insan bermoral membincangkan ciri insan bermoral berkeperibadian mulia yang mampu menjadi suri teladan yang baik, bersikap adil, prihatin dan mempraktikkan amalan bermoral yang diterima oleh masyarakat. Insan bermoral sentiasa menghormati agama dan kepercayaan serta menyayangi diri dan orang lain. Insan bermoral juga mampu membuat keputusan dengan menggunakan sumber dan maklumat secara autonomi berdasarkan norma masyarakat.",
+      "standards": [
+        {
+          "sk": "5.4",
+          "skTitle": "Penggunaan Teknologi Maklumat dan Komunikasi Secara Beretika",
+          "sp": [
+            {
+              "code": "5.4.1",
+              "text": "Menyenaraikan etika penggunaan teknologi maklumat dan komunikasi."
+            },
+            {
+              "code": "5.4.2",
+              "text": "Menjelaskan kepentingan penggunaan teknologi maklumat dan komunikasi secara beretika."
+            },
+            {
+              "code": "5.4.3",
+              "text": "Menghuraikan dengan contoh cara penggunaan teknologi maklumat dan komunikasi secara beretika."
+            },
+            {
+              "code": "5.4.4",
+              "text": "Meramalkan kesan pengabaian penggunaan teknologi maklumat dan komunikasi secara beretika."
+            },
+            {
+              "code": "5.4.5",
+              "text": "Mengekspresikan perasaan apabila menggunakan teknologi maklumat dan komunikasi secara beretika."
+            },
+            {
+              "code": "5.4.6",
+              "text": "Menggunakan teknologi maklumat dan komunikasi secara beretika dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan etika penggunaan teknologi maklumat dan komunikasi."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan kepentingan penggunaan teknologi maklumat dan komunikasi secara beretika."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai cara penggunaan teknologi maklumat dan komunikasi secara beretika."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis kesan pengabaian penggunaan teknologi maklumat dan komunikasi secara beretika."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan menggunakan teknologi maklumat dan komunikasi secara beretika dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan menggunakan teknologi maklumat dan komunikasi secara beretika dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "6.1",
+      "title": "Integriti Individu",
+      "bidang": "6.0 JATI DIRI MORAL",
+      "bidangDescription": "Bidang Jati Diri Moral membincangkan keunikan dan keistimewaan aspek agama, bangsa, budaya dan bahasa yang menjadi teras dan lambang ketinggian peribadi individu dan jati diri bangsa. Bidang tersebut memfokuskan integriti diri dan keluarga, serta unsur perikemanusiaan yang menyumbang ke arah kesejahteraan diri dan masyarakat.",
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Integriti Individu",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Mentakrifkan maksud integriti individu."
+            },
+            {
+              "code": "6.1.2",
+              "text": "Memerihalkan kepentingan integriti individu dalam setiap perlakuan."
+            },
+            {
+              "code": "6.1.3",
+              "text": "Merumuskan implikasi perbuatan individu yang tidak berintegriti."
+            },
+            {
+              "code": "6.1.4",
+              "text": "Membahaskan cara individu melaksanakan tanggungjawab yang berintegriti seperti dituntut oleh agama atau kepercayaan."
+            },
+            {
+              "code": "6.1.5",
+              "text": "Mengekspresikan perasaan apabila mengamalkan integriti individu."
+            },
+            {
+              "code": "6.1.6",
+              "text": "Mengamalkan integriti individu dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan maksud integriti individu."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan kepentingan integriti individu dalam setiap perlakuan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai implikasi perbuatan yang tidak berintegriti individu."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis cara melaksanakan tanggungjawab dengan berintegriti individu seperti yang dituntut oleh agama atau kepercayaan."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan integriti individu dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan integriti individu dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "6.2",
+      "title": "Integriti Keluarga",
+      "bidang": "6.0 JATI DIRI MORAL",
+      "bidangDescription": "Bidang Jati Diri Moral membincangkan keunikan dan keistimewaan aspek agama, bangsa, budaya dan bahasa yang menjadi teras dan lambang ketinggian peribadi individu dan jati diri bangsa. Bidang tersebut memfokuskan integriti diri dan keluarga, serta unsur perikemanusiaan yang menyumbang ke arah kesejahteraan diri dan masyarakat.",
+      "standards": [
+        {
+          "sk": "6.2",
+          "skTitle": "Integriti Keluarga",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Menyenaraikan ciri integriti keluarga."
+            },
+            {
+              "code": "6.2.2",
+              "text": "Menjelaskan dengan contoh integriti keluarga."
+            },
+            {
+              "code": "6.2.3",
+              "text": "Mencerakinkan cara memupuk integriti keluarga."
+            },
+            {
+              "code": "6.2.4",
+              "text": "Meramalkan implikasi perbuatan yang tidak berintegriti terhadap keluarga."
+            },
+            {
+              "code": "6.2.5",
+              "text": "Mengekspresikan perasaan apabila mengamalkan integriti keluarga."
+            },
+            {
+              "code": "6.2.6",
+              "text": "Mengamalkan integriti keluarga demi keharmonian hidup."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan ciri integriti keluarga."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan contoh integriti keluarga."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai cara memupuk integriti keluarga."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis implikasi perbuatan yang tidak berintegriti terhadap keluarga."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan integriti keluarga dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan integriti keluarga dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "6.3",
+      "title": "Berperikemanusiaan untuk Kesejahteraan Masyarakat",
+      "bidang": "6.0 JATI DIRI MORAL",
+      "bidangDescription": "Bidang Jati Diri Moral membincangkan keunikan dan keistimewaan aspek agama, bangsa, budaya dan bahasa yang menjadi teras dan lambang ketinggian peribadi individu dan jati diri bangsa. Bidang tersebut memfokuskan integriti diri dan keluarga, serta unsur perikemanusiaan yang menyumbang ke arah kesejahteraan diri dan masyarakat.",
+      "standards": [
+        {
+          "sk": "6.3",
+          "skTitle": "Berperikemanusiaan untuk Kesejahteraan Masyarakat",
+          "sp": [
+            {
+              "code": "6.3.1",
+              "text": "Mentakrifkan maksud perikemanusiaan."
+            },
+            {
+              "code": "6.3.2",
+              "text": "Mengenal pasti perlakuan berperikemanusiaan untuk kesejahteraan masyarakat."
+            },
+            {
+              "code": "6.3.3",
+              "text": "Menghuraikan kepentingan berperikemanusiaan untuk kesejahteraan masyarakat."
+            },
+            {
+              "code": "6.3.4",
+              "text": "Meramalkan kesan pengabaian sikap berperikemanusiaan untuk kesejahteraan masyarakat."
+            },
+            {
+              "code": "6.3.5",
+              "text": "Mengekspresikan perasaan apabila mengamalkan sikap berperikemanusiaan untuk kesejahteraan masyarakat."
+            },
+            {
+              "code": "6.3.6",
+              "text": "Mengamalkan sikap berperikemanusiaan untuk kesejahteraan masyarakat dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan maksud perikemanusiaan."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan perlakuan berperikemanusiaan untuk kesejahteraan masyarakat."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan berperikemanusiaan untuk kesejahteraan masyarakat."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis kesan pengabaian sikap berperikemanusiaan untuk kesejahteraan masyarakat."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan sikap berperikemanusiaan untuk kesejahteraan masyarakat dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan sikap berperikemanusiaan untuk kesejahteraan masyarakat dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "7.1",
+      "title": "Hak dan Tanggungjawab Sebagai Warganegara Berlandaskan Perlembagaan Malaysia",
+      "bidang": "7.0 MORAL DAN KENEGARAAN",
+      "bidangDescription": "Bidang Moral dan Kenegaraan menghubungkaitkan konsep moral dengan kenegaraan dalam kehidupan bermasyarakat. Bidang tersebut membincangkan hak dan tanggungjawab sebagai warganegara yang mengamalkan perpaduan, menguruskan perbelanjaan secara beretika serta berbangga sebagai rakyat Malaysia dalam mengekalkan keunikan dan kedaulatan negara.",
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Hak dan Tanggungjawab Sebagai Warganegara Berlandaskan Perlembagaan Malaysia",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Menyenaraikan hak dan tanggungjawab sebagai warganegara berlandaskan Perlembagaan Malaysia."
+            },
+            {
+              "code": "7.1.2",
+              "text": "Menghuraikan kepentingan hak dan tanggungjawab sebagai warganegara."
+            },
+            {
+              "code": "7.1.3",
+              "text": "Mencerakinkan kesan pengabaian hak dan tanggungjawab sebagai warganegara."
+            },
+            {
+              "code": "7.1.4",
+              "text": "Merumuskan batasan hak dan tanggungjawab sebagai warganegara."
+            },
+            {
+              "code": "7.1.5",
+              "text": "Mengekspresikan perasaan apabila mempunyai hak dan tanggungjawab sebagai warganegara."
+            },
+            {
+              "code": "7.1.6",
+              "text": "Mengamalkan hak dan tanggungjawab sebagai warganegara dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan hak dan tanggungjawab sebagai warganegara berlandaskan Perlembagaan Malaysia."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan kepentingan hak dan tanggungjawab sebagai warganegara."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kesan mempraktikkan atau mengabaikan hak dan tanggungjawab sebagai warganegara."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis batasan hak dan tanggungjawab sebagai warganegara."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan yang melibatkan hak dan tanggungjawab sebagai warganegara."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan hak dan tanggungjawab sebagai warganegara dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "7.2",
+      "title": "Perpaduan dalam Masyarakat",
+      "bidang": "7.0 MORAL DAN KENEGARAAN",
+      "bidangDescription": "Bidang Moral dan Kenegaraan menghubungkaitkan konsep moral dengan kenegaraan dalam kehidupan bermasyarakat. Bidang tersebut membincangkan hak dan tanggungjawab sebagai warganegara yang mengamalkan perpaduan, menguruskan perbelanjaan secara beretika serta berbangga sebagai rakyat Malaysia dalam mengekalkan keunikan dan kedaulatan negara.",
+      "standards": [
+        {
+          "sk": "7.2",
+          "skTitle": "Perpaduan dalam Masyarakat",
+          "sp": [
+            {
+              "code": "7.2.1",
+              "text": "Memberikan contoh amalan perpaduan dalam masyarakat yang berbeza agama, bangsa, budaya dan bahasa."
+            },
+            {
+              "code": "7.2.2",
+              "text": "Mengenal pasti peranan agensi yang memupuk semangat perpaduan dalam masyarakat yang berbeza agama, bangsa, budaya dan bahasa."
+            },
+            {
+              "code": "7.2.3",
+              "text": "Menjelaskan kepentingan amalan perpaduan dalam masyarakat yang berbeza agama, bangsa, budaya dan bahasa."
+            },
+            {
+              "code": "7.2.4",
+              "text": "Menghuraikan cabaran dalam membentuk amalan perpaduan masyarakat yang berbeza agama, bangsa, budaya dan bahasa."
+            },
+            {
+              "code": "7.2.5",
+              "text": "Mengekspresikan perasaan apabila mengamalkan perpaduan dalam masyarakat yang Berbeza agama, bangsa, budaya dan bahasa."
+            },
+            {
+              "code": "7.2.6",
+              "text": "Mengamalkan hidup bersatu padu dalam masyarakat yang berbeza agama, bangsa, budaya dan bahasa dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan contoh amalan perpaduan dalam masyarakat yang berbeza agama, bangsa, budaya dan bahasa."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan peranan agensi yang memupuk semangat perpaduan dalam masyarakat yang berbeza agama, bangsa, budaya dan bahasa."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan amalan perpaduan dalam masyarakat yang berbeza agama, bangsa, budaya dan bahasa."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis cabaran dalam memupuk perpaduan masyarakat yang berbeza agama, bangsa, budaya dan bahasa."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan hidup bersatu padu dalam masyarakat yang berbeza agama, bangsa, budaya dan bahasa dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan hidup bersatu padu dalam masyarakat yang berbeza agama, bangsa, budaya dan bahasa dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "7.3",
+      "title": "Pengurusan Perbelanjaan Secara Beretika",
+      "bidang": "7.0 MORAL DAN KENEGARAAN",
+      "bidangDescription": "Bidang Moral dan Kenegaraan menghubungkaitkan konsep moral dengan kenegaraan dalam kehidupan bermasyarakat. Bidang tersebut membincangkan hak dan tanggungjawab sebagai warganegara yang mengamalkan perpaduan, menguruskan perbelanjaan secara beretika serta berbangga sebagai rakyat Malaysia dalam mengekalkan keunikan dan kedaulatan negara.",
+      "standards": [
+        {
+          "sk": "7.3",
+          "skTitle": "Pengurusan Perbelanjaan Secara Beretika",
+          "sp": [
+            {
+              "code": "7.3.1",
+              "text": "Memberi maksud perbelanjaan beretika."
+            },
+            {
+              "code": "7.3.2",
+              "text": "Menjelaskan cara menguruskan perbelanjaan secara beretika."
+            },
+            {
+              "code": "7.3.3",
+              "text": "Menghuraikan kepentingan pengurusan perbelanjaan secara beretika untuk kesejahteraan hidup."
+            },
+            {
+              "code": "7.3.4",
+              "text": "Meramalkan kesan perbelanjaan tidak beretika kepada diri, keluarga, masyarakat dan negara."
+            },
+            {
+              "code": "7.3.5",
+              "text": "Mengekspresikan perasaan apabila menguruskan perbelanjaan secara beretika."
+            },
+            {
+              "code": "7.3.6",
+              "text": "Mengamalkan pengurusan perbelanjaan secara beretika dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan maksud perbelanjaan beretika."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan cara menguruskan perbelanjaan secara beretika."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan pengurusan perbelanjaan secara beretika kepada kesejahteraan hidup."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis kesan perbelanjaan tidak beretika kepada diri, keluarga, masyarakat dan negara."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan menguruskan perbelanjaan diri secara beretika dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan perbelanjaan diri secara beretika dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "7.4",
+      "title": "Keunikan Rakyat Malaysia",
+      "bidang": "7.0 MORAL DAN KENEGARAAN",
+      "bidangDescription": "Bidang Moral dan Kenegaraan menghubungkaitkan konsep moral dengan kenegaraan dalam kehidupan bermasyarakat. Bidang tersebut membincangkan hak dan tanggungjawab sebagai warganegara yang mengamalkan perpaduan, menguruskan perbelanjaan secara beretika serta berbangga sebagai rakyat Malaysia dalam mengekalkan keunikan dan kedaulatan negara.",
+      "standards": [
+        {
+          "sk": "7.4",
+          "skTitle": "Keunikan Rakyat Malaysia",
+          "sp": [
+            {
+              "code": "7.4.1",
+              "text": "Menyenaraikan keunikan rakyat Malaysia dari segi agama, bangsa, budaya dan bahasa."
+            },
+            {
+              "code": "7.4.2",
+              "text": "Menjelaskan kepentingan keunikan rakyat Malaysia."
+            },
+            {
+              "code": "7.4.3",
+              "text": "Menghuraikan cabaran keunikan rakyat Malaysia."
+            },
+            {
+              "code": "7.4.4",
+              "text": "Merancang strategi untuk mengekalkan keunikan rakyat Malaysia."
+            },
+            {
+              "code": "7.4.5",
+              "text": "Mengekspresikan perasaan apabila dapat mengekalkan keunikan rakyat Malaysia."
+            },
+            {
+              "code": "7.4.6",
+              "text": "Mempraktikkan amalan mengekalkan keunikan rakyat Malaysia dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan keunikan rakyat Malaysia dari segi agama, bangsa, budaya dan bahasa."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan kepentingan menerima, menghormati, dan mengurus keunikan rakyat Malaysia."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai cabaran menerima, menghormati, dan mengurus keunikan rakyat Malaysia."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis strategi untuk mengekalkan keunikan rakyat Malaysia."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan mengekalkan keunikan rakyat Malaysia dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mempraktikkan amalan mengekalkan keunikan rakyat Malaysia dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "7.5",
+      "title": "Kedaulatan Negara Tanggungjawab Bersama",
+      "bidang": "7.0 MORAL DAN KENEGARAAN",
+      "bidangDescription": "Bidang Moral dan Kenegaraan menghubungkaitkan konsep moral dengan kenegaraan dalam kehidupan bermasyarakat. Bidang tersebut membincangkan hak dan tanggungjawab sebagai warganegara yang mengamalkan perpaduan, menguruskan perbelanjaan secara beretika serta berbangga sebagai rakyat Malaysia dalam mengekalkan keunikan dan kedaulatan negara.",
+      "standards": [
+        {
+          "sk": "7.5",
+          "skTitle": "Kedaulatan Negara Tanggungjawab Bersama",
+          "sp": [
+            {
+              "code": "7.5.1",
+              "text": "Menyenaraikan ciri negara berdaulat."
+            },
+            {
+              "code": "7.5.2",
+              "text": "Menghuraikan kepentingan mempertahankan kedaulatan negara."
+            },
+            {
+              "code": "7.5.3",
+              "text": "Meramalkan cabaran dalam mengekalkan kedaulatan negara."
+            },
+            {
+              "code": "7.5.4",
+              "text": "Menaakul kesan pengabaian tanggungjawab mempertahankan kedaulatan negara."
+            },
+            {
+              "code": "7.5.5",
+              "text": "Mengekspresikan perasaan apabila menjalankan tanggungjawab untuk mempertahankan kedaulatan negara."
+            },
+            {
+              "code": "7.5.6",
+              "text": "Melibatkan diri dalam aktiviti bagi mengekalkan kedaulatan negara."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan ciri negara berdaulat."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan kepentingan mempertahankan kedaulatan negara."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai cabaran dalam mengekalkan kedaulatan negara."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis kesan pengabaian tanggungjawab mempertahankan kedaulatan negara."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan menjalankan tanggungjawab untuk mempertahankan kedaulatan negara."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan melibatkan diri dalam aktiviti bagi mengekalkan kedaulatan negara dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "5.1",
+      "title": "Norma Masyarakat Global",
+      "bidang": "5.0 INSAN BERMORAL",
+      "bidangDescription": "Bidang ini membincangkan ciri insan bermoral daripada aspek norma masyarakat global dan mengupas tentang individu yang bersifat glokal. Selain itu, aspek kerohanian turut diberi penekanan dalam membentuk individu bermoral. Seterusnya, bidang ini membincangkan penggunaan sumber dan maklumat demi kesejahteraan sejagat.",
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Norma Masyarakat Global",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Memberi maksud norma masyarakat global."
+            },
+            {
+              "code": "5.1.2",
+              "text": "Menjelaskan contoh norma masyarakat global."
+            },
+            {
+              "code": "5.1.3",
+              "text": "Menghuraikan kepentingan amalan norma masyarakat global."
+            },
+            {
+              "code": "5.1.4",
+              "text": "Meramalkan kesan pengabaian norma masyarakat global."
+            },
+            {
+              "code": "5.1.5",
+              "text": "Mengekspresikan perasaan apabila mengamalkan norma masyarakat global."
+            },
+            {
+              "code": "5.1.6",
+              "text": "Mengamalkan sikap menghormati norma masyarakat global dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan maksud norma masyarakat global."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan contoh norma masyarakat global."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan amalan norma masyarakat global."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis kesan pengabaian norma masyarakat global."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan norma masyarakat global dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan sikap menghormati norma masyarakat global dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "5.2",
+      "title": "Individu Glokal",
+      "bidang": "5.0 INSAN BERMORAL",
+      "bidangDescription": "Bidang ini membincangkan ciri insan bermoral daripada aspek norma masyarakat global dan mengupas tentang individu yang bersifat glokal. Selain itu, aspek kerohanian turut diberi penekanan dalam membentuk individu bermoral. Seterusnya, bidang ini membincangkan penggunaan sumber dan maklumat demi kesejahteraan sejagat.",
+      "standards": [
+        {
+          "sk": "5.2",
+          "skTitle": "Individu Glokal",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Menjelaskan ciri individu glokal."
+            },
+            {
+              "code": "5.2.2",
+              "text": "Mengenal pasti sikap individu glokal."
+            },
+            {
+              "code": "5.2.3",
+              "text": "Menghuraikan kepentingan menjadi individu glokal."
+            },
+            {
+              "code": "5.2.4",
+              "text": "Meramalkan kesan sekiranya individu tidak bersikap glokal."
+            },
+            {
+              "code": "5.2.5",
+              "text": "Mengekspresikan perasaan apabila bertindak sebagai individu glokal."
+            },
+            {
+              "code": "5.2.6",
+              "text": "Mengamalkan sikap individu glokal dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan ciri individu glokal."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan dengan contoh sikap individu glokal."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan menjadi individu glokal."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis kesan individu tidak bersikap glokal."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan sikap individu glokal dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan sikap individu glokal dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "5.3",
+      "title": "Kerohanian Membentuk Individu Bermoral",
+      "bidang": "5.0 INSAN BERMORAL",
+      "bidangDescription": "Bidang ini membincangkan ciri insan bermoral daripada aspek norma masyarakat global dan mengupas tentang individu yang bersifat glokal. Selain itu, aspek kerohanian turut diberi penekanan dalam membentuk individu bermoral. Seterusnya, bidang ini membincangkan penggunaan sumber dan maklumat demi kesejahteraan sejagat.",
+      "standards": [
+        {
+          "sk": "5.3",
+          "skTitle": "Kerohanian Membentuk Individu Bermoral",
+          "sp": [
+            {
+              "code": "5.3.1",
+              "text": "Menyenaraikan ciri individu yang mempunyai nilai kerohanian."
+            },
+            {
+              "code": "5.3.2",
+              "text": "Menjelaskan cara meningkatkan nilai kerohanian."
+            },
+            {
+              "code": "5.3.3",
+              "text": "Menghuraikan kepentingan nilai kerohanian bagi membentuk individu bermoral."
+            },
+            {
+              "code": "5.3.4",
+              "text": "Meramalkan implikasi pengabaian nilai kerohanian dalam diri individu."
+            },
+            {
+              "code": "5.3.5",
+              "text": "Mengekspresikan perasaan apabila menghayati nilai kerohanian."
+            },
+            {
+              "code": "5.3.6",
+              "text": "Mengamalkan nilai kerohanian dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan ciri individu yang mempunyai nilai kerohanian."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan cara meningkatkan nilai kerohanian."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan nilai kerohanian bagi membentuk individu bermoral."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis implikasi pengabaian nilai kerohanian dalam diri individu."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan nilai kerohanian dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan nilai kerohanian dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "5.4",
+      "title": "Penggunaan Sumber dan Penyebaran Maklumat demi Kesejahteraan Sejagat",
+      "bidang": "5.0 INSAN BERMORAL",
+      "bidangDescription": "Bidang ini membincangkan ciri insan bermoral daripada aspek norma masyarakat global dan mengupas tentang individu yang bersifat glokal. Selain itu, aspek kerohanian turut diberi penekanan dalam membentuk individu bermoral. Seterusnya, bidang ini membincangkan penggunaan sumber dan maklumat demi kesejahteraan sejagat.",
+      "standards": [
+        {
+          "sk": "5.4",
+          "skTitle": "Penggunaan Sumber dan Penyebaran Maklumat demi Kesejahteraan Sejagat",
+          "sp": [
+            {
+              "code": "5.4.1",
+              "text": "Menyenaraikan contoh sumber dan maklumat yang sahih demi kesejahteraan sejagat."
+            },
+            {
+              "code": "5.4.2",
+              "text": "Mengenal pasti tatacara menggunakan sumber dan penyebaran maklumat demi kesejahteraan sejagat."
+            },
+            {
+              "code": "5.4.3",
+              "text": "Menghuraikan penggunaan sumber dan penyebaran maklumat yang menggugat kesejahteraan sejagat."
+            },
+            {
+              "code": "5.4.4",
+              "text": "Mencerakinkan implikasi penggunaan sumber dan penyebaran maklumat yang menjejaskan kesejahteraan sejagat."
+            },
+            {
+              "code": "5.4.5",
+              "text": "Mengekspresikan perasaan apabila menggunakan sumber dan menyebarkan maklumat dalam kehidupan harian demi kesejahteraan sejagat."
+            },
+            {
+              "code": "5.4.6",
+              "text": "Menggunakan sumber dan menyebarkan maklumat dalam kehidupan harian demi kesejahteraan sejagat."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan contoh sumber dan maklumat yang sahih demi mengekalkan kesejahteraan sejagat."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan tatacara menggunakan sumber dan menyebarkan maklumat demi kesejahteraan sejagat."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai penggunaan sumber dan penyebaran maklumat yang menggugat kesejahteraan sejagat."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis implikasi penggunaan sumber dan penyebaran maklumat yang menjejaskan kesejahteraan sejagat."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan penggunaan sumber dan penyebaran maklumat dalam kehidupan harian demi kesejahteraan sejagat."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menggunakan sumber dan menyebarkan maklumat yang sahih demi kesejahteraan sejagat dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "6.1",
+      "title": "Integriti Organisasi",
+      "bidang": "6.0 JATI DIRI MORAL",
+      "bidangDescription": "Bidang ini membincangkan integriti organisasi dan integriti nasional sebagai asas dalam pembentukan jati diri moral. Bidang ini dapat membentuk individu yang boleh memberikan sumbangan terhadap pembangunan negara. Selain itu, bidang ini turut memfokuskan unsur perikemanusiaan sebagai pemangkin yang menyumbang ke arah kesejahteraan global.",
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Integriti Organisasi",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Menjelaskan maksud integriti organisasi."
+            },
+            {
+              "code": "6.1.2",
+              "text": "Mengenal pasti cara melaksanakan integriti dalam organisasi."
+            },
+            {
+              "code": "6.1.3",
+              "text": "Menghuraikan kepentingan amalan integriti dalam organisasi."
+            },
+            {
+              "code": "6.1.4",
+              "text": "Meramalkan implikasi sekiranya amalan integriti dalam organisasi tidak dipraktikkan."
+            },
+            {
+              "code": "6.1.5",
+              "text": "Mengekspresikan perasaan apabila mengamalkan integriti dalam organisasi."
+            },
+            {
+              "code": "6.1.6",
+              "text": "Mengamalkan integriti organisasi dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan maksud integriti organisasi."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan cara melaksanakan integriti dalam organisasi."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan amalan integriti dalam organisasi."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis implikasi sekiranya amalan integriti dalam organisasi tidak dipraktikkan."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan integriti organisasi dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan integriti organisasi dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "6.2",
+      "title": "Integriti demi Pembangunan Negara",
+      "bidang": "6.0 JATI DIRI MORAL",
+      "bidangDescription": "Bidang ini membincangkan integriti organisasi dan integriti nasional sebagai asas dalam pembentukan jati diri moral. Bidang ini dapat membentuk individu yang boleh memberikan sumbangan terhadap pembangunan negara. Selain itu, bidang ini turut memfokuskan unsur perikemanusiaan sebagai pemangkin yang menyumbang ke arah kesejahteraan global.",
+      "standards": [
+        {
+          "sk": "6.2",
+          "skTitle": "Integriti demi Pembangunan Negara",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Menjelaskan contoh integriti demi pembangunan negara."
+            },
+            {
+              "code": "6.2.2",
+              "text": "Mengenal pasti cara melaksanakan tanggungjawab dengan berintegriti demi pembangunan negara."
+            },
+            {
+              "code": "6.2.3",
+              "text": "Memerihalkan kepentingan integriti demi pembangunan negara."
+            },
+            {
+              "code": "6.2.4",
+              "text": "Merumuskan implikasi perbuatan yang tidak berintegriti kepada pembangunan negara."
+            },
+            {
+              "code": "6.2.5",
+              "text": "Mengekspresikan perasaan apabila mengamalkan integriti demi pembangunan negara."
+            },
+            {
+              "code": "6.2.6",
+              "text": "Mengamalkan tanggungjawab dengan berintegriti dalam kehidupan harian demi pembangunan negara."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan contoh integriti demi pembangunan negara."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan cara melaksanakan tanggungjawab dengan berintegriti demi pembangunan negara."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan integriti demi pembangunan negara."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis implikasi perbuatan yang tidak berintegriti kepada pembangunan negara."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan tanggungjawab dengan berintegriti demi pembangunan negara dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan tanggungjawab dengan berintegriti demi pembangunan negara dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "6.3",
+      "title": "Berperikemanusiaan Ke Arah Kesejahteraan Global",
+      "bidang": "6.0 JATI DIRI MORAL",
+      "bidangDescription": "Bidang ini membincangkan integriti organisasi dan integriti nasional sebagai asas dalam pembentukan jati diri moral. Bidang ini dapat membentuk individu yang boleh memberikan sumbangan terhadap pembangunan negara. Selain itu, bidang ini turut memfokuskan unsur perikemanusiaan sebagai pemangkin yang menyumbang ke arah kesejahteraan global.",
+      "standards": [
+        {
+          "sk": "6.3",
+          "skTitle": "Berperikemanusiaan Ke Arah Kesejahteraan Global",
+          "sp": [
+            {
+              "code": "6.3.1",
+              "text": "Menyenaraikan ciri berperikemanusiaan demi kesejahteraan global."
+            },
+            {
+              "code": "6.3.2",
+              "text": "Menjelaskan dengan contoh perlakuan berperikemanusiaan demi kesejahteraan global."
+            },
+            {
+              "code": "6.3.3",
+              "text": "Merumuskan kebaikan berperikemanusiaan demi kesejahteraan global."
+            },
+            {
+              "code": "6.3.4",
+              "text": "Mencerakin kesan pengabaian sikap perikemanusiaan demi kesejahteraan global."
+            },
+            {
+              "code": "6.3.5",
+              "text": "Mengekspresikan perasaan apabila mengamalkan sikap perikemanusiaan demi kesejahteraan global."
+            },
+            {
+              "code": "6.3.6",
+              "text": "Mengamalkan sikap perikemanusiaan dalam kehidupan harian demi kesejahteraan global."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan ciri berperikemanusiaan demi kesejahteraan global."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan contoh perlakuan berperikemanusiaan demi kesejahteraan global."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kebaikan berperikemanusiaan demi kesejahteraan global."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis kesan pengabaian sikap perikemanusiaan demi kesejahteraan global."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan sikap perikemanusiaan demi kesejahteraan global dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan sikap perikemanusiaan demi kesejahteraan global dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "7.1",
+      "title": "Penglibatan Diri dalam Program Komuniti Bersama-sama Badan Kerajaan atau Badan Bukan Kerajaan",
+      "bidang": "7.0 MORAL DAN KENEGARAAN",
+      "bidangDescription": "Bidang ini menghubungkaitkan moral dan kenegaraan dalam konteks negara di persada dunia. Bidang ini juga merangkumi penglibatan diri dalam program komuniti dan pengurusan kewangan secara beretika. Selain itu, bidang ini memfokuskan kerjasama negara dalam hubungan antarabangsa demi meningkatkan pengiktirafan dunia terhadap negara.",
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Penglibatan Diri dalam Program Komuniti Bersama-sama Badan Kerajaan atau Badan Bukan Kerajaan",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Memberi contoh program komuniti yang boleh dilaksanakan bersama-sama badan kerajaan atau badan bukan kerajaan."
+            },
+            {
+              "code": "7.1.2",
+              "text": "Mengenal pasti cara melaksanakan program komuniti bersama-sama badan kerajaan atau badan bukan kerajaan."
+            },
+            {
+              "code": "7.1.3",
+              "text": "Menghuraikan kepentingan melaksanakan program komuniti bersama-sama badan kerajaan atau badan bukan kerajaan."
+            },
+            {
+              "code": "7.1.4",
+              "text": "Meramal implikasi kurang penglibatan dalam program komuniti bersama-sama badan kerajaan atau badan bukan kerajaan."
+            },
+            {
+              "code": "7.1.5",
+              "text": "Mengekspresikan perasaan apabila melibatkan diri dalam program komuniti bersama-sama badan kerajaan atau badan bukan kerajaan."
+            },
+            {
+              "code": "7.1.6",
+              "text": "Melibatkan diri dalam program komuniti bersama-sama badan kerajaan atau badan bukan kerajaan dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan contoh program komuniti yang boleh dilaksanakan bersama-sama badan kerajaan atau badan bukan kerajaan."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan cara melaksanakan program komuniti bersama-sama badan kerajaan atau badan bukan kerajaan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Memerihalkan kepentingan melaksanakan program komuniti bersama-sama badan kerajaan atau badan bukan kerajaan."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis implikasi sekiranya kurang penglibatan dalam program komuniti bersama-sama badan kerajaan atau badan bukan kerajaan."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan melibatkan diri dalam program komuniti bersama-sama badan kerajaan dan badan bukan kerajaan dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan melibatkan diri dalam program komuniti bersama-sama badan kerajaan atau badan bukan kerajaan dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "7.2",
+      "title": "Semangat Kerjasama Dalam Masyarakat Global",
+      "bidang": "7.0 MORAL DAN KENEGARAAN",
+      "bidangDescription": "Bidang ini menghubungkaitkan moral dan kenegaraan dalam konteks negara di persada dunia. Bidang ini juga merangkumi penglibatan diri dalam program komuniti dan pengurusan kewangan secara beretika. Selain itu, bidang ini memfokuskan kerjasama negara dalam hubungan antarabangsa demi meningkatkan pengiktirafan dunia terhadap negara.",
+      "standards": [
+        {
+          "sk": "7.2",
+          "skTitle": "Semangat Kerjasama Dalam Masyarakat Global",
+          "sp": [
+            {
+              "code": "7.2.1",
+              "text": "Memberi contoh kerjasama dalam masyarakat global."
+            },
+            {
+              "code": "7.2.2",
+              "text": "Menjelaskan kepentingan bekerjasama dalam masyarakat global."
+            },
+            {
+              "code": "7.2.3",
+              "text": "Menghuraikan cabaran bekerjasama dalam masyarakat global."
+            },
+            {
+              "code": "7.2.4",
+              "text": "Memerihalkan kesan pengabaian sikap kerjasama dalam masyarakat global."
+            },
+            {
+              "code": "7.2.5",
+              "text": "Mengekspresikan perasaan apabila bekerjasama dalam masyarakat global."
+            },
+            {
+              "code": "7.2.6",
+              "text": "Mengamalkan sikap kerjasama dalam masyarakat global."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan contoh kerjasama dalam masyarakat global."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan kepentingan bekerjasama dalam masyarakat global."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai cabaran bekerjasama dalam masyarakat global."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis kesan pengabaian sikap kerjasama dalam masyarakat global."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan bekerjasama dengan masyarakat global dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan kerjasama dengan masyarakat global dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "7.3",
+      "title": "Pengurusan Kewangan Secara Beretika",
+      "bidang": "7.0 MORAL DAN KENEGARAAN",
+      "bidangDescription": "Bidang ini menghubungkaitkan moral dan kenegaraan dalam konteks negara di persada dunia. Bidang ini juga merangkumi penglibatan diri dalam program komuniti dan pengurusan kewangan secara beretika. Selain itu, bidang ini memfokuskan kerjasama negara dalam hubungan antarabangsa demi meningkatkan pengiktirafan dunia terhadap negara.",
+      "standards": [
+        {
+          "sk": "7.3",
+          "skTitle": "Pengurusan Kewangan Secara Beretika",
+          "sp": [
+            {
+              "code": "7.3.1",
+              "text": "Menyenaraikan pelbagai sumber kewangan yang diperoleh secara beretika."
+            },
+            {
+              "code": "7.3.2",
+              "text": "Mengenal pasti cara menguruskan kewangan secara beretika."
+            },
+            {
+              "code": "7.3.3",
+              "text": "Mencerakinkan kepentingan pengurusan kewangan secara beretika."
+            },
+            {
+              "code": "7.3.4",
+              "text": "Meramalkan kesan pengurusan kewangan secara tidak beretika."
+            },
+            {
+              "code": "7.3.5",
+              "text": "Mengekspresikan perasaan apabila menguruskan kewangan secara beretika."
+            },
+            {
+              "code": "7.3.6",
+              "text": "Mempraktikkan amalan pengurusan kewangan secara beretika."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan pelbagai sumber kewangan yang diperoleh secara beretika."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan cara menguruskan kewangan secara beretika."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan pengurusan kewangan secara beretika."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis kesan pengurusan kewangan secara tidak beretika."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan amalan menguruskan kewangan secara beretika dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mempraktikkan amalan menguruskan kewangan secara beretika dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "7.4",
+      "title": "Meningkatkan Pengiktirafan Dunia Terhadap Negara",
+      "bidang": "7.0 MORAL DAN KENEGARAAN",
+      "bidangDescription": "Bidang ini menghubungkaitkan moral dan kenegaraan dalam konteks negara di persada dunia. Bidang ini juga merangkumi penglibatan diri dalam program komuniti dan pengurusan kewangan secara beretika. Selain itu, bidang ini memfokuskan kerjasama negara dalam hubungan antarabangsa demi meningkatkan pengiktirafan dunia terhadap negara.",
+      "standards": [
+        {
+          "sk": "7.4",
+          "skTitle": "Meningkatkan Pengiktirafan Dunia Terhadap Negara",
+          "sp": [
+            {
+              "code": "7.4.1",
+              "text": "Memerihalkan contoh kejayaan Malaysia yang dibanggakan di persada dunia."
+            },
+            {
+              "code": "7.4.2",
+              "text": "Menjelaskan cara mengharumkan nama negara di persada dunia."
+            },
+            {
+              "code": "7.4.3",
+              "text": "Menghuraikan kepentingan mengharumkan nama negara di persada dunia."
+            },
+            {
+              "code": "7.4.4",
+              "text": "Mencerakinkan cabaran dalam mengharumkan nama negara di persada dunia."
+            },
+            {
+              "code": "7.4.5",
+              "text": "Mengekspresikan perasaan apabila mengharumkan nama negara di persada dunia."
+            },
+            {
+              "code": "7.4.6",
+              "text": "Melibatkan diri dalam aktiviti yang boleh mengharumkan nama negara di persada dunia dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan contoh kejayaan Malaysia yang dibanggakan di persada dunia."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan cara mengharumkan nama negara di persada dunia."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan mengharumkan nama negara di persada dunia."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis cabaran dalam mengharumkan nama negara di persada dunia."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan melibatkan diri dalam aktiviti yang boleh mengharumkan nama negara di persada dunia dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan melibatkan diri dalam aktiviti yang boleh mengharumkan nama negara di persada dunia dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "7.5",
+      "title": "Malaysia Dalam Hubungan Antarabangsa",
+      "bidang": "7.0 MORAL DAN KENEGARAAN",
+      "bidangDescription": "Bidang ini menghubungkaitkan moral dan kenegaraan dalam konteks negara di persada dunia. Bidang ini juga merangkumi penglibatan diri dalam program komuniti dan pengurusan kewangan secara beretika. Selain itu, bidang ini memfokuskan kerjasama negara dalam hubungan antarabangsa demi meningkatkan pengiktirafan dunia terhadap negara.",
+      "standards": [
+        {
+          "sk": "7.5",
+          "skTitle": "Malaysia Dalam Hubungan Antarabangsa",
+          "sp": [
+            {
+              "code": "7.5.1",
+              "text": "Memberi maksud hubungan antarabangsa."
+            },
+            {
+              "code": "7.5.2",
+              "text": "Menjelaskan hubungan dua hala Malaysia dengan negara luar."
+            },
+            {
+              "code": "7.5.3",
+              "text": "Menghuraikan kepentingan mengekalkan hubungan Malaysia dengan negara luar."
+            },
+            {
+              "code": "7.5.4",
+              "text": "Mencerakinkan cabaran negara dalam mengekalkan hubungan antarabangsa."
+            },
+            {
+              "code": "7.5.5",
+              "text": "Mengekspresikan perasaan apabila melibatkan diri dalam usaha mengekalkan hubungan antarabangsa."
+            },
+            {
+              "code": "7.5.6",
+              "text": "Mengamalkan kerjasama untuk mengekalkan hubungan antarabangsa dalam kehidupan harian."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan maksud hubungan antarabangsa."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan hubungan dua hala Malaysia dengan negara luar."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menilai kepentingan mengekalkan hubungan antara Malaysia dengan negara luar."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis cabaran negara dalam mengekalkan hubungan Malaysia dengan negara luar."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menghayati dan mempamerkan usaha mengekalkan hubungan antarabangsa dalam kehidupan harian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghayati dan mengamalkan kerjasama untuk mengekalkan hubungan antarabangsa dalam kehidupan harian secara tekal serta boleh dicontohi."
+        }
+      ]
+    }
+  ]
+}
