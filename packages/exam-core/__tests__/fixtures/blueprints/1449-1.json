@@ -1,0 +1,37 @@
+{
+  "code": "1449/1",
+  "sections": [
+    {
+      "position": 1,
+      "quota": {
+        "basis": "questions",
+        "lines": [
+          { "subject": "MATH", "level": "T4", "unitCode": "1.0", "value": 1 },
+          { "subject": "MATH", "level": "T4", "unitCode": "2.0", "value": 2 },
+          { "subject": "MATH", "level": "T4", "unitCode": "3.0", "value": 2 },
+          { "subject": "MATH", "level": "T4", "unitCode": "4.0", "value": 2 },
+          { "subject": "MATH", "level": "T4", "unitCode": "5.0", "value": 1 },
+          { "subject": "MATH", "level": "T4", "unitCode": "6.0", "value": 1 },
+          { "subject": "MATH", "level": "T4", "unitCode": "7.0", "value": 2 },
+          { "subject": "MATH", "level": "T4", "unitCode": "8.0", "value": 1 },
+          { "subject": "MATH", "level": "T4", "unitCode": "10.0", "value": 1 },
+          { "subject": "MATH", "level": "T5", "unitCode": "1.0", "value": 1 },
+          { "subject": "MATH", "level": "T5", "unitCode": "2.0", "value": 2 },
+          { "subject": "MATH", "level": "T5", "unitCode": "3.0", "value": 2 },
+          { "subject": "MATH", "level": "T5", "unitCode": "4.0", "value": 1 },
+          { "subject": "MATH", "level": "T5", "unitCode": "5.0", "value": 2 },
+          { "subject": "MATH", "level": "T5", "unitCode": "6.0", "value": 2 },
+          { "bucket": "t1_t3", "value": 17 }
+        ],
+        "levelShare": { "t4": 13, "t5": 10 }
+      },
+      "marksBand": [
+        { "from": 1, "to": 10, "marksMin": 1, "marksMax": 1 },
+        { "from": 11, "to": 20, "marksMin": 1, "marksMax": 1 },
+        { "from": 21, "to": 30, "marksMin": 1, "marksMax": 1 },
+        { "from": 31, "to": 40, "marksMin": 1, "marksMax": 1 }
+      ],
+      "notes": "INCOMPLETE (kbatMarks omitted): Q13 of the SBP paper (Venn page) was not legible, so its cognitive level is unread; KBAT is 35 (questions read at level 3+) or 36, not fixed. Source: SBP only (Selangor read 15 of 40, cannot give unit totals) so every line is single-source except: T4 4.0 = 2 inferred (Q13 unit from a partly legible page); t1_t3 = 17 inferred (14 read as outside the DSKP extract + 3 ambiguous items Q20, Q25, Q28 placed in the bucket by rule: ambiguous = bucket). Absent units (no line, so excluded): T4 9.0, T5 7.0, T5 8.0. levelShare derived from lines (T1-T3 excluded). Unit and cognitive labels are analyst readings of scans, never printed on the paper."
+    }
+  ]
+}

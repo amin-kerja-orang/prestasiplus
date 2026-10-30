@@ -257,10 +257,10 @@ export type BijakTopicQuotaView = z.infer<typeof BijakTopicQuotaViewSchema>
 
 /* ----------------------------------------------------------------------- section additions */
 
-/** Answer modes a section accepts (AC-38.1(e)); empty = any mode. Same vocabulary as the question leaf modes. */
 /** [PROPOSED] copy. */
 export const ALLOWED_MODES_UNIQUE_MESSAGE = 'Mod jawapan tidak boleh berulang.'
 
+/** Answer modes a section accepts (AC-38.1(e)); empty = any mode. Same vocabulary as the question leaf modes. */
 export const BijakAllowedModesSchema = z
   .array(QuestionLeafModeSchema)
   .max(12)

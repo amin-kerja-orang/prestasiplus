@@ -29,3 +29,85 @@ export type {
   SectionSnapshot,
   Shortage,
 } from './types'
+
+/* ---------------------------------------------------------------- Bijak SPM exam standard (bijak-spm) */
+export {
+  ANSWER_MODES,
+  KBAT_LEVELS,
+  T1_T3_KEY,
+  canonicalStructure,
+  offeredMarks,
+  perQuestionMarks,
+  unitKeyOf,
+  unitRefOf,
+} from './standard-model'
+export type {
+  Profile,
+  ProfileKind,
+  KbatLevel,
+  Quota,
+  QuotaBasis,
+  QuotaLine,
+  SectionRule,
+  SlotGroup,
+  StandardBlueprint,
+  StandardSection,
+  UnitKey,
+  UnitRef,
+} from './standard-model'
+export {
+  INELIGIBLE_REASONS,
+  SECTION_REASONS,
+  describeQuestion,
+  eligibilityOf,
+  excludedReport,
+  quotaUnitKeys,
+} from './eligibility'
+export type {
+  DescribedQuestion,
+  Eligibility,
+  EligibilitySection,
+  ExcludedReport,
+  FormOrigin,
+  IneligibleReason,
+  LeafFact,
+  QuestionFacts,
+  SectionReason,
+  UnitFact,
+} from './eligibility'
+export { BLUEPRINT_PROBLEM_CODES, COMPLETENESS_CODES, validateBlueprint, validateForVerification } from './validate'
+export type {
+  BlueprintProblem,
+  BlueprintProblemCode,
+  BlueprintWarning,
+  CompletenessGap,
+  ValidateOptions,
+  ValidateResult,
+  VerificationGate,
+  VerificationGateOptions,
+} from './validate'
+export { checkEvidence } from './evidence'
+export type { EvidenceCheck, EvidenceItem, EvidenceKind, EvidenceLine, EvidenceStatus, EvidenceValues } from './evidence'
+export { SHORTAGE_KINDS, shortageLine, unitLabel } from './shortage'
+export type { ShortageKind, StandardShortage, UnitLabelRef } from './shortage'
+export { composeStandardPaper, previewStandard } from './compose'
+export type { AttemptKind, ComposeOptions, ComposeOutcome, StandardPreview } from './compose'
+export { precheckPool, precheckSection } from './precheck'
+export type { SectionPrecheck, Short } from './precheck'
+export { orderOk } from './arrange'
+export type { OrderUnit } from './arrange'
+export { buildSectionPool, makePoolContext } from './pool'
+export type { Item, PoolContext, PoolOptions, SectionPool } from './pool'
+export { DEFAULT_BUDGET, SOLVER_VERSION } from './solver'
+export type { Budget } from './solver'
+export { VIOLATION_CODES, buildStandardReport, measureSection, verifyComposition } from './verify'
+export type {
+  ComposedSection,
+  FactsInput,
+  SectionMeasure,
+  StandardReport,
+  VerifyOptions,
+  Violation,
+  ViolationCode,
+  ViolationTier,
+} from './verify'

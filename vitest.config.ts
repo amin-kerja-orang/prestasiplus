@@ -5,7 +5,7 @@ import { configDefaults, defineConfig, mergeConfig } from 'vitest/config'
 import viteConfig from './vite.config.ts'
 
 /** Performance tests (budgets in ms) run in their own project, alone, after every other test. */
-const PERF_TESTS = 'src/**/__tests__/**/*.perf.test.ts'
+const PERF_TESTS = '{src,packages}/**/__tests__/**/*.perf.test.ts'
 
 export default mergeConfig(
   viteConfig,
