@@ -30,7 +30,7 @@ afterEach(() => {
 async function readyServer(): Promise<{ api: MockKontrakServer; view: BijakBlueprintView; form: ContractForm }> {
   const api = new MockKontrakServer({ createPaper: async () => 'p' })
   const f = formFromView(await api.get('SN', 2))
-  const unit = (await api.listUnits('SN'))[0]!
+  const unit = { kind: 'unit' as const, ...(await api.listUnits('SN'))[0]! }
   for (const s of f.sections) {
     s.profileKind = 'bahagian'
     s.groups = [{ from: 1, to: s.questionCount, tpMin: 1, tpMax: 3, tpCounts: {}, marks: null }]

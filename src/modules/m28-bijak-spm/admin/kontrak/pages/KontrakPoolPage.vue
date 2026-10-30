@@ -16,6 +16,7 @@ import PoolFillTable from '../components/PoolFillTable.vue'
 import SourceBadge from '../components/SourceBadge.vue'
 import {
   REASON_LABEL,
+  reasonQuery,
   bankHref,
   kbatLines,
   rangeOf,
@@ -70,28 +71,28 @@ const reasons = computed(() => {
     key: r.reason,
     label: REASON_LABEL[r.reason] ?? r.reason,
     count: r.count,
-    href: bankHref(r.bankQuery),
+    href: bankHref(reasonQuery(r.reason, r.bankQuery, p.sections[0]?.bankQuery)),
   }))
   if (modeExcluded.value)
     list.push({
       key: 'mode',
       label: REASON_LABEL.mode!,
       count: modeExcluded.value,
-      href: bankHref(p.sections[0]?.bankQuery, { tiada: 'mode' }),
+      href: bankHref(p.sections[0]?.bankQuery),
     })
   return list.filter((r) => r.count > 0)
 })
 
 const shortCount = computed(() => (pool.value ? shortLineCount(pool.value) : 0))
 const stats = computed<StatItem[]>(() => [
-  { key: 'terbit', label: 'Soalan Terbit', value: '-', icon: 'books', sub: 'Belum disediakan oleh API' },
-  { key: 'layak', label: 'Soalan layak', value: '-', icon: 'check-circle', sub: 'Belum disediakan oleh API' },
+  { key: 'terbit', label: 'Soalan Terbit', value: pool.value?.publishedTotal ?? 0, icon: 'books' },
+  { key: 'layak', label: 'Soalan layak', value: pool.value?.eligibleTotal ?? 0, icon: 'check-circle' },
   {
     key: 'tidak',
     label: 'Soalan tidak layak',
     value: pool.value?.excluded.total ?? 0,
     icon: 'warning',
-    to: pool.value ? bankHref(pool.value.sections[0]?.bankQuery, { layak: 'tidak' }) : undefined,
+    to: pool.value ? bankHref(pool.value.sections[0]?.bankQuery) : undefined,
   },
   { key: 'kurang', label: 'Baris kurang', value: shortCount.value, icon: 'warning-circle', valueTone: shortCount.value ? 'error' : 'success' },
 ])

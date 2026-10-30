@@ -11,7 +11,7 @@ const server = (): MockKontrakServer => new MockKontrakServer({ createPaper: asy
 async function completeSn(s: MockKontrakServer): Promise<BijakBlueprintView> {
   const v = await s.get('SN', 2)
   const f = formFromView(v)
-  const unit = (await s.listUnits('SN'))[0]!
+  const unit = { kind: 'unit' as const, ...(await s.listUnits('SN'))[0]! }
   for (const sec of f.sections) {
     sec.profileKind = 'bahagian'
     sec.groups = [{ from: 1, to: sec.questionCount, tpMin: 1, tpMax: 3, tpCounts: {}, marks: null }]
@@ -141,6 +141,26 @@ describe('Kontrak mock: verification (AC-39.1, AC-39.2, AC-39.7)', () => {
   })
 })
 
+describe('Kontrak mock: final contract fields', () => {
+  it('serves DSKP units, carries reference and shows the serving version of a Spec head', async () => {
+    const s = server()
+    const units = await s.listUnits('MAT')
+    expect(units[0]).toMatchObject({ level: 'T4', elective: false })
+    expect((await s.get('SN', 2)).reference).toEqual([])
+    expect((await s.get('SN', 2)).dependentPaperCount).toBe(0)
+    await completeSn(s)
+    await s.addEvidence('SN', 2, evidence('sbp'))
+    await s.addEvidence('SN', 2, evidence('selangor_mpsm'))
+    const v = await s.verify('SN', 2, 'ok')
+    expect(v.servingVersion).toBe(v.version)
+    const f = formFromView(v)
+    f.durationMin = 90
+    const spec = await s.saveVersion('SN', 2, toInput(f))
+    expect(spec.servingVersion).toBe(v.version)
+    expect(spec.version).toBe(v.version + 1)
+  })
+})
+
 describe('Kontrak mock: pool preview and draft', () => {
   it('previews the pool and generates a draft only when the verdict allows it', async () => {
     const s = server()
@@ -148,6 +168,9 @@ describe('Kontrak mock: pool preview and draft', () => {
     const pool = await s.pool('SN', 2)
     expect(['boleh', 'tidak_boleh']).toContain(pool.verdict)
     expect(pool.sections).toHaveLength(2)
+    expect(pool.publishedTotal).toBe(pool.eligibleTotal + pool.excluded.total)
+    expect(pool.excluded.byReason.map((r) => r.reason)).toEqual(['no_unit', 'no_tp', 'no_marks', 'no_key', 'tag_review'])
+    expect(pool.excluded.byReason.find((r) => r.reason === 'no_tp')!.bankQuery.missing).toBe('tp')
     if (pool.verdict === 'boleh') {
       await expect(s.generateDraft('SN', 2)).resolves.toEqual({ paperId: 'paper-1' })
     } else {

@@ -16,6 +16,7 @@ import type {
   BijakEvidenceItem,
   BijakEvidenceLine,
   BijakPoolPreview,
+  BijakDskpUnit,
   BijakUnitRefView,
   BijakVerificationCheck,
   BijakVerificationRecord,
@@ -25,6 +26,7 @@ import type {
 
 import { BLUEPRINTS, SUBJECTS, subjectName } from '../../../data/registry'
 import { formFromView, structuralKey } from '../domain/form'
+import { REASON_BANK_QUERY } from '../domain/pool'
 import { validateForm } from '../domain/validate'
 import { KontrakError, type KontrakApi } from './api'
 
@@ -165,6 +167,8 @@ function viewOf(
     sections,
     version,
     servesStudents: source === 'Disahkan',
+    reference: [],
+    dependentPaperCount: 0,
     verification,
     evidenceCount,
     notes: input.notes ?? null,
@@ -272,7 +276,13 @@ export class MockKontrakServer implements KontrakApi {
   }
   private viewOfHead(r: Rec): BijakBlueprintView {
     const h = r.versions[r.versions.length - 1]!
-    return { ...h.view, servesStudents: this.servingVersion(r) === h.view.version, evidenceCount: h.evidenceIds.length }
+    const serving = this.servingVersion(r)
+    return {
+      ...h.view,
+      servesStudents: serving === h.view.version,
+      ...(serving !== null ? { servingVersion: serving } : {}),
+      evidenceCount: h.evidenceIds.length,
+    }
   }
 
   async list(): Promise<BijakBlueprintView[]> {
@@ -503,9 +513,8 @@ export class MockKontrakServer implements KontrakApi {
       { reason: 'no_tp' as const, count: 2 },
       { reason: 'no_marks' as const, count: 0 },
       { reason: 'no_key' as const, count: 0 },
-      // `tag_review` joins the contract enum with the next BJS-01 commit; cast until the rebase.
-      { reason: 'tag_review' as unknown as 'no_key', count: 1 },
-    ].map((r) => ({ ...r, bankQuery: { ...q, tiada: r.reason } }))
+      { reason: 'tag_review' as const, count: 1 },
+    ].map((r) => ({ ...r, bankQuery: { ...q, ...REASON_BANK_QUERY[r.reason] } }))
     return {
       blueprint: { version: v.version, source: v.source },
       verdict: firstShort ? 'tidak_boleh' : 'boleh',
@@ -518,6 +527,8 @@ export class MockKontrakServer implements KontrakApi {
             ...(shortQuota ? { unit: shortQuota.unit, basis: shortQuota.basis } : {}),
           }
         : null,
+      publishedTotal: 40,
+      eligibleTotal: 35,
       excluded: { total: 5, byReason },
       warnings: v.warnings,
       sections,
@@ -540,8 +551,12 @@ export class MockKontrakServer implements KontrakApi {
     return { paperId: await make(subject, kertas) }
   }
 
-  async listUnits(subject: string): Promise<BijakUnitRefView[]> {
-    return UNITS[subject] ?? []
+  async listUnits(subject: string): Promise<BijakDskpUnit[]> {
+    return (UNITS[subject] ?? []).flatMap((u) =>
+      u.kind === 'unit' && u.code && u.level
+        ? [{ nodeId: u.nodeId, code: u.code, level: u.level, title: u.title ?? '', elective: false }]
+        : [],
+    )
   }
 
   async subjectOptions(): Promise<{ code: string; name: string }[]> {

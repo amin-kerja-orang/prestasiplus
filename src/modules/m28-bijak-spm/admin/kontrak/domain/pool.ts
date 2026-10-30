@@ -39,6 +39,24 @@ export function shortageLine(s: BijakGenerateShortage): string {
   }
 }
 
+/** Bank filter per excluded reason (architecture 15.7); the server's `bankQuery` wins when present. */
+export const REASON_BANK_QUERY: Record<string, Record<string, string>> = {
+  no_unit: { dskpFilter: 'untagged' },
+  no_tp: { missing: 'tp' },
+  no_marks: { missing: 'marks' },
+  no_key: { missing: 'key' },
+  tag_review: { tagReview: 'true' },
+}
+
+export function reasonQuery(
+  reason: string,
+  server: Record<string, string> | undefined,
+  base: Record<string, string> | undefined,
+): Record<string, string> {
+  if (server && Object.keys(server).length) return server
+  return { ...(base ?? {}), status: 'published', ...(REASON_BANK_QUERY[reason] ?? {}) }
+}
+
 export function bankHref(query: Record<string, string> | undefined, extra: Record<string, string> = {}): string {
   const p = new URLSearchParams({ ...(query ?? {}), ...extra })
   const qs = p.toString()

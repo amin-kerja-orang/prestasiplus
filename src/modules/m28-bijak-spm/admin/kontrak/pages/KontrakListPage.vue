@@ -137,6 +137,12 @@ async function retire(r: Row): Promise<void> {
     flash.show({ type: 'error', message: e instanceof Error ? e.message : 'Kontrak tidak dapat dipadam.' })
   }
 }
+function blocked(r: Row): void {
+  flash.show({
+    type: 'error',
+    message: `Tidak boleh dipadam: ${r.dependentPaperCount} kertas Terbit bergantung pada kontrak ini.`,
+  })
+}
 function actionsOf(r: Row): RowAction[] {
   return [
     { label: 'Edit', icon: 'i-ph-pencil-simple', to: editTo(r), testid: `edit-${r.subject}-${r.kertas}` },
@@ -150,7 +156,7 @@ function actionsOf(r: Row): RowAction[] {
         body: `Ini akan memberi kesan kepada kertas draf dan Jana Kertas bagi ${r.subjectName} Kertas ${r.kertas}.`,
         confirmLabel: 'Padam',
       },
-      onSelect: () => void retire(r),
+      onSelect: () => (r.dependentPaperCount > 0 ? blocked(r) : void retire(r)),
       testid: `retire-${r.subject}-${r.kertas}`,
     },
   ]
@@ -264,7 +270,9 @@ function proceed(): void {
         <template #source-cell="{ row }">
           <div class="flex flex-col items-start gap-1">
             <SourceBadge :source="row.original.source" />
-            <span class="text-caption text-muted">Versi {{ row.original.version }}</span>
+            <span class="text-caption text-muted">
+              Versi {{ row.original.version }}<template v-if="row.original.servingVersion && row.original.servingVersion !== row.original.version"> - murid guna v{{ row.original.servingVersion }}</template>
+            </span>
             <UBadge
               v-if="row.original.needsReview"
               color="warning"

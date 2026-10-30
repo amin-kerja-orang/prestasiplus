@@ -14,7 +14,7 @@ import type {
   BijakEvidenceItem,
   BijakGenerateShortage,
   BijakPoolPreview,
-  BijakUnitRefView,
+  BijakDskpUnit,
   BijakVerificationCheck,
   BijakVerificationState,
 } from '@pp/contract'
@@ -131,17 +131,13 @@ export class HttpKontrakServer extends HttpBijakServer implements KontrakApi {
     return this.call('POST', '/api/admin/papers/generate', { subject, kertas })
   }
 
-  /** No contract route for the DSKP units of a subject yet (reported to the lead). */
-  listUnits(): Promise<BijakUnitRefView[]> {
-    return Promise.reject(new KontrakError('unavailable', 'Senarai unit DSKP belum tersedia.'))
+  listUnits(subject: string): Promise<BijakDskpUnit[]> {
+    return this.call('GET', `/api/admin/bijak/dskp/units?subject=${enc(subject)}`)
   }
 
-  /** Subjects come from the existing blueprints (no admin subject list in the Bijak contract). */
   async subjectOptions(): Promise<{ code: string; name: string }[]> {
-    const rows = await this.list()
-    const seen = new Map<string, string>()
-    for (const r of rows) if (!seen.has(r.subject)) seen.set(r.subject, r.subjectName)
-    return [...seen].map(([code, name]) => ({ code, name }))
+    const rows = await this.call<{ code: string; name: string }[]>('GET', '/api/admin/bijak/subjects')
+    return rows.map((r) => ({ code: r.code, name: r.name }))
   }
 }
 

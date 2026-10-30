@@ -4,7 +4,7 @@
  * Bahagian, Pengesahan; the live "Semakan Kontrak" panel; save as a new version (AC-39.4); the
  * Pengesahan tab verifies the contract (US-39). `?baharu=1` opens an empty Draf (K1 "Tambah Kontrak").
  */
-import type { BijakBlueprintVersionItem, BijakBlueprintView } from '@pp/contract'
+import type { BijakBlueprintVersionItem, BijakBlueprintView, BijakUnitRefView } from '@pp/contract'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
@@ -264,7 +264,8 @@ const poolTo = computed(() => ({
   params: { subjek: subject.value, kertas: String(kertas.value) },
 }))
 const subtitle = computed(() => `${subjectName.value} - Kertas ${kertas.value}${form.value.code ? ` - ${form.value.code}` : ''}`)
-const loadUnits = (s: string) => api.listUnits(s)
+const loadUnits = async (s: string): Promise<BijakUnitRefView[]> =>
+  (await api.listUnits(s)).map((u) => ({ kind: 'unit' as const, nodeId: u.nodeId, code: u.code, level: u.level, title: u.title }))
 function scrollToCheck(): void {
   document.getElementById('contract-check-anchor')?.scrollIntoView?.({ block: 'start' })
 }
@@ -380,6 +381,8 @@ const poolReason = 'Simpan dahulu'
             :is-new="isNew"
             :issues="issues"
             :retire-error="retireError"
+            :dependent-papers="view?.dependentPaperCount ?? 0"
+            :reference="view?.reference ?? []"
             @edit="(i) => router.replace(tabTo(`bahagian-${i + 1}`))"
             @retire="retire"
           />

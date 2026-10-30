@@ -15,7 +15,7 @@ import type {
   BijakEvidenceItem,
   BijakGenerateShortage,
   BijakPoolPreview,
-  BijakUnitRefView,
+  BijakDskpUnit,
   BijakVerificationCheck,
   BijakVerificationState,
 } from '@pp/contract'
@@ -73,12 +73,9 @@ export interface KontrakApi {
   verify(subject: string, kertas: number, note: string): Promise<BijakBlueprintView>
   pool(subject: string, kertas: number): Promise<BijakPoolPreview>
   generateDraft(subject: string, kertas: number): Promise<{ paperId: string }>
-  /**
-   * DSKP units of a subject for the unit picker. The contract has no such route yet (reported):
-   * the HTTP client rejects with `unavailable`, the mock serves seeded units.
-   */
-  listUnits(subject: string): Promise<BijakUnitRefView[]>
-  /** Subjects the admin can add a contract for (code and name). */
+  /** DSKP units of a subject for the unit picker (`GET /admin/bijak/dskp/units`). */
+  listUnits(subject: string): Promise<BijakDskpUnit[]>
+  /** Subjects the admin can add a contract for (`GET /admin/bijak/subjects`). */
   subjectOptions(): Promise<{ code: string; name: string }[]>
 }
 

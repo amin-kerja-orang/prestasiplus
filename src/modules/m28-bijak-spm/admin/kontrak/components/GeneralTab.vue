@@ -20,6 +20,8 @@ const props = defineProps<{
   isNew: boolean
   issues: readonly Issue[]
   retireError: string
+  dependentPapers: number
+  reference: { title: string; items: string[] }[]
 }>()
 const emit = defineEmits<{ edit: [index: number]; retire: [] }>()
 
@@ -70,6 +72,7 @@ async function remove(i: number): Promise<void> {
   if (ok) props.form.sections.splice(i, 1)
 }
 async function retire(): Promise<void> {
+  if (props.dependentPapers > 0) return
   const ok = await confirm({
     title: 'Padam kontrak ini?',
     message: `Ini akan memberi kesan kepada kertas draf dan Jana Kertas bagi ${props.subjectName} Kertas ${props.kertas}.`,
@@ -127,6 +130,18 @@ async function retire(): Promise<void> {
           </template>
         </DsFormField>
       </div>
+    </DsFormSection>
+
+    <DsFormSection v-if="reference.length" title="Panel Rujukan" icon="file-text">
+      <p class="text-caption text-muted">
+        Dibawa ke versi baharu tanpa perubahan. Ia tidak disunting di sini.
+      </p>
+      <ul class="flex flex-col gap-2" data-testid="reference-panels">
+        <li v-for="p in reference" :key="p.title" class="rounded-md bg-elevated p-3">
+          <p class="text-label text-highlighted">{{ p.title }}</p>
+          <p class="text-caption text-muted">{{ p.items.length }} item</p>
+        </li>
+      </ul>
     </DsFormSection>
 
     <DsFormSection title="Arahan Muka Depan" icon="list-numbers">
@@ -213,8 +228,11 @@ async function retire(): Promise<void> {
         <UIcon name="i-ph-warning-circle" class="mt-px size-4 shrink-0" aria-hidden="true" />
         <span>{{ retireError }}</span>
       </p>
+      <p v-if="dependentPapers > 0" id="retire-blocked" class="text-caption text-error" data-testid="retire-blocked">
+        Tidak boleh dipadam: {{ dependentPapers }} kertas Terbit bergantung pada kontrak ini.
+      </p>
       <div>
-        <UButton color="error" variant="soft" class="min-h-11" icon="i-ph-trash" label="Padam Kontrak" data-testid="retire" @click="retire" />
+        <UButton color="error" variant="soft" class="min-h-11" icon="i-ph-trash" label="Padam Kontrak" :aria-disabled="dependentPapers > 0 ? 'true' : undefined" :aria-describedby="dependentPapers > 0 ? 'retire-blocked' : undefined" data-testid="retire" @click="retire" />
       </div>
     </DsFormSection>
   </div>
