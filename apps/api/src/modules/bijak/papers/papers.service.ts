@@ -128,6 +128,10 @@ export class PapersService {
         code: b.code,
         durationMin: b.durationMin,
         sections: b.sections.map((s) => ({ label: s.label, take: s.questionCount })),
+        // BJS-01 (KIV, student self-generate is not in V2): only a serving (Disahkan) head can generate. Showing an
+        // older serving version while a Spec head is being edited is part of the KIV F5 flow and is not done here.
+        canGenerate: b.servesStudents,
+        ...(b.servesStudents ? {} : { unavailableReason: 'NO_BLUEPRINT' as const }),
       })
     }
     return out
