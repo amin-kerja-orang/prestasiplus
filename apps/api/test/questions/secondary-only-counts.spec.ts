@@ -7,7 +7,9 @@ import { CommandCenterRepository } from '../../src/modules/command-center/shared
 import { CurriculumRepository } from '../../src/modules/curriculum/curriculum.repository'
 import { CurriculumLearnerService } from '../../src/modules/curriculum/learner.service'
 import { DEFAULT_MAP_GRADE, MAP_GRADES } from '../../src/modules/curriculum/rules'
+import { BankFacts } from '../../src/modules/practice/reads/overview/bank-facts'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
+import { subjectView } from '../../src/modules/practice/reads/overview/overview.service'
 
 /**
  * Secondary-only (D72, OQ-06) for the read paths outside the question bank: learner topics and the learning map, the public and
@@ -161,5 +163,38 @@ describe('B-HTTP-05: Command Center counts leave out hidden schools and Darjah p
     ]
     const reads = new BoardReads({ client: { $queryRaw: () => Promise.resolve(rows) } } as never)
     expect(await reads.engagementBands(new Date('2026-10-19T01:00:00Z'))).toEqual({ champion: 2, consistent: 3, developing: 4, minimum: 5, disengaged: 6 })
+  })
+})
+
+describe('B-HTTP-08: the subject card equals the sum of the subject detail (one practice-draw rule)', () => {
+  // Cells of the grouped bank matrix: [subject, level, mcq, n]. Levels 7 and 8 are the offered T4 and T5; 9 is another Tingkatan.
+  const cell = (subjectId: string | null, levelId: string | null, mcq: boolean, n: number) => ({ subjectId, levelId, tp: 1, mcq, n })
+  const bank = new BankFacts([
+    cell('1', '7', true, 30), cell('1', '8', true, 20),
+    cell('1', '7', false, 4), // a structured question: counted in the bank, never drawn
+    cell('1', '9', true, 3), // a level that is not offered
+    cell('1', null, true, 2), // no level at all
+    cell('2', '7', true, 5),
+  ])
+  const subject = { id: 1n, code: 'MATEMATIK', name: 'Matematik', nameEn: 'Mathematics', icon: null, color: '#000', isCore: true, educationLevelIds: [7n, 8n, 9n] }
+
+  it('the card count is Q-PRACTICE over the offered levels, i.e. the sum of the per-level detail counts', () => {
+    const offered = ['7', '8']
+    const detailTotal = offered.reduce((n, l) => n + bank.practice('1', [l]), 0)
+    const card = subjectView(subject as never, bank, offered)
+    expect(detailTotal).toBe(50)
+    expect(card.bankCount).toBe(detailTotal)
+    expect(card.approvedCount).toBe(detailTotal)
+    // The old card figure counted every cell of the subject (59), which is what disagreed with the detail page.
+    expect(bank.count({ subjectId: '1' })).toBe(59)
+  })
+
+  it('the public count uses the same rule: mcq, learner-visible level, offered levels T4 and T5 only', () => {
+    expect(QUESTION_COUNT_SQL).toContain("v.type = 'mcq'")
+    expect(QUESTION_COUNT_SQL).toContain("ol.code IN ('T4', 'T5')")
+    expect(QUESTION_COUNT_SQL).toContain(PRIMARY)
+    // The card lists active subjects and offers the levels linked to the subject: the public count joins both, so it is the sum of the cards.
+    expect(QUESTION_COUNT_SQL).toContain('sj.is_active')
+    expect(QUESTION_COUNT_SQL).toContain('FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id')
   })
 })

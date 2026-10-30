@@ -53304,12 +53304,12 @@
           "approvedCount": {
             "type": "integer",
             "minimum": 0,
-            "description": "Eligible questions of the subject (Q-ELIGIBLE), \"{n} soalan\"."
+            "description": "Questions of the subject that the practice draw can serve (published, active, objective, at an offered level: Tingkatan 4 and 5); the same figure as the sum of the subject detail `total`. \"{n} soalan\"."
           },
           "bankCount": {
             "type": "integer",
             "minimum": 0,
-            "description": "Active questions of the subject (Q-ACTIVE), \"Statistik Subjek\"."
+            "description": "Same figure as `approvedCount` (practice-drawable questions), \"Statistik Subjek\"."
           }
         },
         "required": [
