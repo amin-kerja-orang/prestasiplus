@@ -3,10 +3,11 @@
  * (`BijakServer`, store.ts) and the HTTP client (http.ts). Pages only depend on this interface.
  * Type-only imports: this file must never pull the seed registry into the http bundle.
  */
+import type { BijakGenerateShortage } from '@pp/contract'
+
 import type {
   AttemptMode,
   AttemptPaperView,
-  GenerateOutcome,
   HistoryRow,
   InProgressInfo,
   PaperCover,
@@ -43,7 +44,20 @@ export interface ContractRow {
   code: string
   durationMin: number
   sections: { label: string; take: number }[]
+  /** BJS-01: whether the caller can generate from this row now (false: show the AC-03.6 reason). */
+  canGenerate: boolean
+  unavailableReason?: 'NO_BLUEPRINT'
 }
+
+/**
+ * What `generatePaper` resolves to (BJS-01): the mock `GenerateOutcome` plus the typed shortage
+ * lines and the 503 GENERATE_LIMIT outcome. A transport failure rejects instead.
+ */
+export type BijakGenerateOutcome =
+  | { ok: true; paperId: string }
+  | { ok: false; reason: 'no_blueprint' }
+  | { ok: false; reason: 'shortage'; shortages: BijakGenerateShortage[] }
+  | { ok: false; reason: 'limit'; limitSections: { section?: string }[] }
 
 export interface BijakApi {
   /** Sync: the HTTP client fills a reactive list on first call. */
@@ -53,7 +67,7 @@ export interface BijakApi {
   listPapers(userId: number): Promise<PaperSummary[]>
   getCover(userId: number, paperId: string): Promise<PaperCover>
   listContracts(): Promise<ContractRow[]>
-  generatePaper(userId: number, subject: SubjectCode, kertas: number): Promise<GenerateOutcome>
+  generatePaper(userId: number, subject: SubjectCode, kertas: number): Promise<BijakGenerateOutcome>
   findInProgress(userId: number, paperId: string): Promise<InProgressInfo | null>
   startAttempt(
     userId: number,

@@ -272,6 +272,8 @@ export class BijakServer implements BijakApi {
       code: string
       durationMin: number
       sections: { label: string; take: number }[]
+      canGenerate: boolean
+      unavailableReason?: 'NO_BLUEPRINT'
     }[]
   > {
     await this.tick()
@@ -283,6 +285,8 @@ export class BijakServer implements BijakApi {
       code: b.code,
       durationMin: b.durationMin,
       sections: b.sections.map((s) => ({ label: s.label, take: s.take })),
+      canGenerate: b.source !== 'Draf',
+      ...(b.source === 'Draf' ? { unavailableReason: 'NO_BLUEPRINT' as const } : {}),
     }))
   }
 

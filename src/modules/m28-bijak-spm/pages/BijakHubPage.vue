@@ -4,14 +4,16 @@
  * papers by subject and kertas with the caller's status; "Jana Kertas" builds a fresh paper from the
  * question pool under the Kontrak Blueprint, or shows which section is short.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { DsEmptyState, DsHeroCard, DsLoadError, DsPage } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
-import { shortageLine } from '../domain/blueprint'
-import type { PaperSummary, Shortage, SubjectCode } from '../domain/types'
+import type { BijakGenerateShortage } from '@pp/contract'
+
+import GenerateShortageAlert from '../components/GenerateShortageAlert.vue'
+import type { PaperSummary, SubjectCode } from '../domain/types'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
 import { bijakServer } from '../server/client'
 
@@ -85,7 +87,8 @@ function open(p: PaperSummary): void {
 const janaSubject = ref<SubjectCode>('MAT')
 const janaKertas = ref<'1' | '2'>('1')
 const generating = ref(false)
-const shortages = ref<Shortage[]>([])
+const shortages = ref<BijakGenerateShortage[]>([])
+/** S1-e: network/other failure or 503 GENERATE_LIMIT; both offer "Cuba Semula". */
 const generateError = ref('')
 
 const contract = computed(() =>
@@ -93,7 +96,16 @@ const contract = computed(() =>
     (c) => c.subject === janaSubject.value && String(c.kertas) === janaKertas.value,
   ),
 )
-const usable = computed(() => !!contract.value && contract.value.source !== 'Draf')
+/** BJS-01: the server decides (student: Disahkan only; Admin Pusat in Mod Pelajar: Spec too). */
+/** Fresh key per shortage result so the alert remounts and takes focus again on every retry. */
+const shortageKey = ref(0)
+watch([janaSubject, janaKertas], () => {
+  shortages.value = []
+  generateError.value = ''
+})
+const usable = computed(() => !!contract.value?.canGenerate)
+/** AC-39.6: only the Admin Pusat tester can reach a Spec contract; students never see a status. */
+const isSpec = computed(() => usable.value && contract.value?.source === 'Spec')
 const janaSubjectItems = computed(() => SUBJECTS.map((s) => ({ label: s.name, value: s.code })))
 const janaKertasItems = [
   { label: 'Kertas 1', value: '1' },
@@ -101,6 +113,7 @@ const janaKertasItems = [
 ]
 
 async function generate(): Promise<void> {
+  if (!usable.value || generating.value) return
   generating.value = true
   shortages.value = []
   generateError.value = ''
@@ -110,6 +123,9 @@ async function generate(): Promise<void> {
       await router.push({ name: 'm28.bijak.cover', params: { paperId: out.paperId } })
     } else if (out.reason === 'shortage') {
       shortages.value = out.shortages
+      shortageKey.value += 1
+    } else if (out.reason === 'limit') {
+      generateError.value = 'Kertas tidak dapat disusun sekarang. Cuba lagi.'
     } else {
       generateError.value = 'Belum ada kontrak untuk subjek dan kertas ini'
     }
@@ -233,7 +249,13 @@ async function generate(): Promise<void> {
     </section>
 
     <!-- Jana Kertas -->
-    <section v-else class="flex flex-col gap-4" aria-labelledby="h-jana" data-testid="tab-jana">
+    <section
+      v-else
+      class="flex flex-col gap-4"
+      aria-labelledby="h-jana"
+      :aria-busy="generating"
+      data-testid="tab-jana"
+    >
       <h2 id="h-jana" class="text-heading text-highlighted">Jana Kertas</h2>
       <p class="text-body text-toned">
         Pilih subjek dan kertas. Kertas baharu dibina daripada bank soalan mengikut struktur kertas
@@ -244,6 +266,7 @@ async function generate(): Promise<void> {
           <USelect
             v-model="janaSubject"
             :items="janaSubjectItems"
+            :disabled="generating"
             class="w-full"
             data-testid="jana-subject"
           />
@@ -252,13 +275,14 @@ async function generate(): Promise<void> {
           <USelect
             v-model="janaKertas"
             :items="janaKertasItems"
+            :disabled="generating"
             class="w-full"
             data-testid="jana-kertas"
           />
         </UFormField>
       </div>
 
-      <UCard v-if="contract" data-testid="contract">
+      <UCard v-if="usable && contract" data-testid="contract">
         <div class="flex flex-col gap-2">
           <p class="text-label text-highlighted">
             {{ contract.subjectName }} Kertas {{ contract.kertas }} · {{ contract.code }} ·
@@ -269,47 +293,56 @@ async function generate(): Promise<void> {
               {{ s.label }}: {{ s.take }} soalan
             </li>
           </ul>
+          <template v-if="isSpec">
+            <div>
+              <UBadge color="warning" variant="subtle" data-testid="spec-badge"
+                >Spec - ujian sahaja</UBadge
+              >
+            </div>
+            <p class="text-caption text-muted" data-testid="spec-note">
+              Data ujian: tidak dikira dalam analitik, kedudukan atau ganjaran.
+            </p>
+          </template>
         </div>
       </UCard>
-      <p v-if="!usable" class="text-body text-muted" data-testid="no-contract">
-        Belum ada kontrak untuk subjek dan kertas ini
-      </p>
+      <UAlert
+        v-if="contracts && !usable"
+        id="jana-reason"
+        color="info"
+        variant="soft"
+        icon="i-ph-info"
+        description="Belum ada kontrak untuk subjek dan kertas ini"
+        role="status"
+        class="max-w-prose"
+        data-testid="no-contract"
+      />
 
       <UButton
         size="lg"
         icon="i-ph-magic-wand"
-        :disabled="!usable"
         :loading="generating"
-        class="self-start"
+        :aria-disabled="!usable || undefined"
+        :aria-describedby="contracts && !usable ? 'jana-reason' : undefined"
+        class="min-h-11 w-full justify-center sm:w-auto sm:self-start"
         data-testid="generate"
         @click="generate"
-        >Jana Kertas</UButton
+        >{{ generating ? 'Menjana...' : 'Jana Kertas' }}</UButton
       >
+      <p v-if="generating" class="text-caption text-muted" role="status" data-testid="generating">
+        Menyusun kertas mengikut kontrak...
+      </p>
 
-      <UAlert
-        v-if="shortages.length"
-        color="warning"
-        variant="soft"
-        icon="i-ph-warning"
-        title="Kertas tidak dapat dijana kerana soalan tidak mencukupi."
-        role="alert"
-        data-testid="shortage"
-      >
-        <template #description>
-          <ul class="flex flex-col gap-1">
-            <li v-for="s in shortages" :key="s.section" data-testid="shortage-line">
-              {{ shortageLine(s) }}
-            </li>
-          </ul>
-        </template>
-      </UAlert>
-      <UAlert
-        v-if="generateError"
-        color="error"
-        variant="soft"
-        :title="generateError"
-        role="alert"
-      />
+      <GenerateShortageAlert v-if="shortages.length" :key="shortageKey" :shortages="shortages" />
+      <div v-if="generateError" class="flex max-w-prose flex-col gap-2" data-testid="generate-error">
+        <UAlert color="error" variant="soft" :title="generateError" role="alert" />
+        <UButton
+          color="neutral"
+          class="min-h-11 w-full justify-center sm:w-auto sm:self-start"
+          data-testid="generate-retry"
+          @click="generate"
+          >Cuba Semula</UButton
+        >
+      </div>
     </section>
   </DsPage>
 </template>
