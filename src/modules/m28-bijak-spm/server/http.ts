@@ -15,8 +15,10 @@ import type {
   BijakAttemptInProgress,
   BijakAttemptMeta,
   BijakAttemptPaperView,
+  BijakAttemptPastSittings,
   BijakAttemptResultView,
   BijakAttemptSaveResult,
+  BijakAttemptSelfMarkResult,
   BijakAttemptStartResult,
   BijakAttemptSubmitResult,
   BijakBlueprintContract,
@@ -30,6 +32,7 @@ import { reactive } from 'vue'
 
 import { api, ApiError, API_ERROR_CODES, type ApiClient, type HttpMethod } from '@/api'
 
+import type { PastSittings, SelfMarkOutcome } from '../domain/semakan'
 import type {
   AttemptMode,
   AttemptPaperView,
@@ -382,6 +385,55 @@ export class HttpBijakServer implements BijakApi {
   async history(): Promise<HistoryRow[]> {
     const rows = await this.send<BijakAttemptHistoryRow[]>('GET', '/api/bijak/history')
     return rows.map((r) => ({ ...r, startedAt: toMs(r.startedAt) }))
+  }
+
+  /* ------------------------------------------------------------------------- Semakan (R1) */
+
+  /**
+   * A 422 carries its BM refusal in `fields.partId` / `fields.band`; it is surfaced as the message of
+   * a `bad_request` so the stepper can show it verbatim. 409 NOT_SUBMITTED maps as everywhere.
+   */
+  async selfMark(
+    _userId: number,
+    attemptId: string,
+    body: { partId: string; mark: number; band?: string },
+  ): Promise<SelfMarkOutcome> {
+    try {
+      return await this.exec<BijakAttemptSelfMarkResult>(
+        'POST',
+        `/api/bijak/attempts/${encodeURIComponent(attemptId)}/self-mark`,
+        body,
+      )
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 422) {
+        const msg = e.fields?.partId ?? e.fields?.band ?? e.fields?.mark
+        if (msg) throw new BijakError('bad_request', msg)
+      }
+      throw toBijakError(e)
+    }
+  }
+
+  async retryAttempt(_userId: number, attemptId: string): Promise<{ attemptId: string }> {
+    const out = await this.send<BijakAttemptStartResult>(
+      'POST',
+      `/api/bijak/attempts/${encodeURIComponent(attemptId)}/retry`,
+    )
+    return { attemptId: out.attemptId }
+  }
+
+  async pastSittings(_userId: number, paperId: string): Promise<PastSittings> {
+    const out = await this.send<BijakAttemptPastSittings>(
+      'GET',
+      `/api/bijak/papers/${encodeURIComponent(paperId)}/attempts`,
+    )
+    return {
+      lastSubmittedAttemptId: out.lastSubmittedAttemptId,
+      sittings: out.sittings.map((s) => ({
+        ...s,
+        startedAt: toMs(s.startedAt),
+        submittedAt: toMs(s.submittedAt),
+      })),
+    }
   }
 }
 
