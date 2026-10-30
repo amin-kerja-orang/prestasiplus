@@ -33,7 +33,6 @@ import { api, ApiError, API_ERROR_CODES, type ApiClient, type HttpMethod } from 
 import type {
   AttemptMode,
   AttemptPaperView,
-  GenerateOutcome,
   HistoryRow,
   InProgressInfo,
   PaperCover,
@@ -48,7 +47,7 @@ import type {
   SubmitPayload,
 } from '../domain/types'
 import { BijakError } from './errors'
-import type { BijakApi, ContractRow, SaveResult, SubmitResult } from './types'
+import type { BijakApi, BijakGenerateOutcome, ContractRow, SaveResult, SubmitResult } from './types'
 
 export interface HttpBijakOptions {
   /** The API client to send through. Default: the app-wide `api` (transport installed by bootstrap). */
@@ -169,6 +168,11 @@ function shortagesOf(e: ApiError): BijakGenerateShortage[] {
   return body?.error?.details?.shortages ?? []
 }
 
+function limitSectionsOf(e: ApiError): { section?: string }[] {
+  const body = e.body as { error?: { details?: { limitSections?: { section?: string }[] } } } | null
+  return body?.error?.details?.limitSections ?? []
+}
+
 /* ------------------------------------------------------------------------------- the client */
 
 export class HttpBijakServer implements BijakApi {
@@ -278,7 +282,7 @@ export class HttpBijakServer implements BijakApi {
     _userId: number,
     subject: SubjectCode,
     kertas: number,
-  ): Promise<GenerateOutcome> {
+  ): Promise<BijakGenerateOutcome> {
     try {
       const out = await this.exec<BijakGenerateResult>('POST', '/api/bijak/papers/generate', {
         subject,
@@ -290,6 +294,9 @@ export class HttpBijakServer implements BijakApi {
         if (e.code === 'NO_BLUEPRINT') return { ok: false, reason: 'no_blueprint' }
         if (e.code === 'SHORTAGE')
           return { ok: false, reason: 'shortage', shortages: shortagesOf(e) }
+      }
+      if (e instanceof ApiError && e.status === 503 && e.code === 'GENERATE_LIMIT') {
+        return { ok: false, reason: 'limit', limitSections: limitSectionsOf(e) }
       }
       throw toBijakError(e)
     }
