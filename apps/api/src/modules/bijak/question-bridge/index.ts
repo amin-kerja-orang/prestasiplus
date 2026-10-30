@@ -1,4 +1,5 @@
 export { Be09BijakQuestionSource } from './be09-question-source'
+export { CompositeBijakPoolSource } from './pool-composite'
 export {
   CompositeBijakQuestionSource,
   CompositePaperQuestionSource,

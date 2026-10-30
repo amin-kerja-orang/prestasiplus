@@ -62,14 +62,14 @@ function pengesahanOf(v: BijakBlueprintView): string {
 
 const all = computed<Row[]>(() =>
   (data.value ?? []).map(
-    (v) =>
+    (v): Row =>
       ({
         ...v,
         title: `${v.subjectName} - Kertas ${v.kertas}`,
         tempohMarkah: `${v.durationMin} minit - ${v.totalMarks} markah`,
         bahagian: `${v.sections.length} (${v.sections.map((s) => s.label.replace(/^Bahagian\s+/i, '')).join(', ')})`,
         pengesahan: pengesahanOf(v),
-      }) as Row,
+      }),
   ),
 )
 const subjectItems = computed(() => {

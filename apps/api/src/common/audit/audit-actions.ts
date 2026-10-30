@@ -43,6 +43,11 @@ export const AUDIT_ACTIONS = {
   BIJAK_BLUEPRINT_CREATED: 'bijak.blueprint.created',
   BIJAK_BLUEPRINT_VERSION_CREATED: 'bijak.blueprint.version_created',
   BIJAK_BLUEPRINT_RETIRED: 'bijak.blueprint.retired',
+  // bijak-spm BJS-09 (evidence and verification of a blueprint).
+  BIJAK_BLUEPRINT_EVIDENCE_ADDED: 'bijak.blueprint.evidence_added',
+  BIJAK_BLUEPRINT_EVIDENCE_REMOVED: 'bijak.blueprint.evidence_removed',
+  BIJAK_BLUEPRINT_VERIFIED: 'bijak.blueprint.verified',
+  BIJAK_BLUEPRINT_SECTION_REVIEWED: 'bijak.blueprint.section_reviewed',
   // BE-23 gamification (M14 admin economy and operations).
   GAMIFICATION_AWARD_GRANTED: 'gamification.award.granted',
   GAMIFICATION_TIER_CREATED: 'gamification.tier.created',

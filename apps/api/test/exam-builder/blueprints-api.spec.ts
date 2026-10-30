@@ -69,16 +69,16 @@ describe('list', () => {
     expectError(await admin.get('/api/admin/blueprints?page=0'), 'VALIDATION_ERROR')
   })
 
-  it('hides Draf-source and retired blueprints', async () => {
+  it('lists Draf heads (architecture 6.3) and hides retired blueprints', async () => {
     expect((await admin.post('/api/admin/blueprints', create({ subject: 'SEJ', kertas: 2, source: 'Draf', code: 'DRAF/2' }))).status).toBe(201)
     const list = ListSchema.parse((await admin.get('/api/admin/blueprints')).body)
-    expect(list.data.some((b) => b.subject === 'SEJ' && b.kertas === 2)).toBe(false)
-    // a Draf blueprint is still readable by subject and kertas
+    expect(list.data.find((b) => b.subject === 'SEJ' && b.kertas === 2)?.source).toBe('Draf')
+    // a Draf blueprint is also readable by subject and kertas
     expect((await admin.get('/api/admin/blueprints/SEJ/2')).body.data.source).toBe('Draf')
     expect((await admin.post('/api/admin/blueprints/SN/1/retire')).status).toBe(200)
     const after = ListSchema.parse((await admin.get('/api/admin/blueprints')).body)
     expect(after.data.some((b) => b.subject === 'SN' && b.kertas === 1)).toBe(false)
-    expect(after.meta.totalItems).toBe(3)
+    expect(after.meta.totalItems).toBe(4)
   })
 })
 

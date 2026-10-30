@@ -21,6 +21,7 @@ import { schoolsSeed } from './core/schools'
 import { curriculumSeed } from './curriculum'
 import { examSeed } from './exam'
 import { examDemoBlueprintsSeed } from './exam-demo-blueprints'
+import { examLaunchBlueprintsSeed } from './exam-launch-blueprints'
 import { practiceSeed } from './practice'
 import { questionsSeed } from './questions'
 import { questionPoolSeed } from './questions/pool'
@@ -82,7 +83,7 @@ export interface SeedModule {
  * ALLOW_DEMO_SEED.
  * ORDER NOTE: `core-wallet-tiers` sits right after `core-school-packages`, BEFORE `wallet` and `gamification` (the modules that read tiers); `questions-pool` sits BEFORE `spm-subject-configs` and `spm` (the SPM seed reads the SPM pool; test/seed/question-pool.spec.ts); the marketplace seeds sit BEFORE `gamification`; `gamification` then `poc-profile` stay at the END (test/gamification/seed.spec.ts, test/seed/poc.spec.ts).
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, examLaunchBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */

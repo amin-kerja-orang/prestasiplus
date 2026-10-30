@@ -18,6 +18,7 @@
  *   8. content                articles, banners, videos, support
  *   9. exam                   blueprints, papers and placements
  *  10. exam-demo-blueprints   extra demo blueprints
+ *  10a. exam-launch-blueprints  the six SPM launch blueprints as Spec (bijak-spm BJS-12/13)
  *  11. poc-classes            classes and rosters over the population
  *  12. poc-bijak-sittings     submitted Bijak SPM sittings, results and aggregates
  *  13. battle                 battle arena demo rows (BE-44)
@@ -55,6 +56,7 @@ export const POC_PROFILE_ORDER = [
   'content',
   'exam',
   'exam-demo-blueprints',
+  'exam-launch-blueprints',
   'poc-classes',
   'poc-bijak-sittings',
   'battle',

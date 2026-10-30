@@ -375,7 +375,7 @@ const poolReason = 'Simpan dahulu'
         <div class="flex min-w-0 flex-col gap-6" :aria-busy="saving ? 'true' : undefined">
           <GeneralTab
             v-if="activeTab === 'umum'"
-            :form="form"
+            v-model:form="form"
             :subject-name="subjectName"
             :kertas="kertas"
             :is-new="isNew"

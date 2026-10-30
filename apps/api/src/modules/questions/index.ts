@@ -1,4 +1,5 @@
 export { QuestionsModule } from './questions.module'
+export { QuestionsBijakPoolSource } from './bijak-pool'
 export { ELIGIBLE_IDS_MAX, QuestionsRepository } from './questions.repository'
 export { QuestionsService } from './questions.service'
 export { PkskQuestionsService, PKSK_TO_V2, pkskStatusOf } from './pksk.service'

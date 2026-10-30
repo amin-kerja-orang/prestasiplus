@@ -23,7 +23,9 @@
  */
 import { Injectable } from '@nestjs/common'
 
+import { PocPoolSource } from './poc-pool-source'
 import { PocQuestionSource } from './poc-question-source'
+import type { BijakPoolSource } from './pool-source'
 
 export interface BijakQuestionInfo {
   /** Decimal-string question id. */
@@ -97,6 +99,8 @@ export class BijakPapersPorts {
   private questions: BijakQuestionSource = new PocQuestionSource()
   private progress: BijakProgressSource = new NoProgress()
   private served: BijakServedSource = new NothingServed()
+  private pools: BijakPoolSource = new PocPoolSource()
+  private poolsSet = false
   private questionsSet = false
   private progressSet = false
   private servedSet = false
@@ -109,6 +113,17 @@ export class BijakPapersPorts {
   }
   get servedSource(): BijakServedSource {
     return this.served
+  }
+  /** BJS-07: candidate facts of the standard pool. Default: the PoC fixture. */
+  get poolSource(): BijakPoolSource {
+    return this.pools
+  }
+
+  /** BJS-07: replace the PoC fixture by the question bank (see `question-bridge/pool-composite.ts`). */
+  providePoolSource(provider: BijakPoolSource): void {
+    if (this.poolsSet) throw new Error('BijakPapersPorts: the pool source is already set')
+    this.pools = provider
+    this.poolsSet = true
   }
 
   /** BE-09: replace the PoC fixture by the question bank. */

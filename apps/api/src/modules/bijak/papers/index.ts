@@ -11,5 +11,7 @@ export {
   type BijakServedSource,
   type PaperProgress,
 } from './ports'
+export { excludedBankQuery, poolTotals, sectionPoolCounts, type BijakPoolSource, type PoolTotals, type SectionPoolCounts } from './pool-source'
+export { PocPoolSource } from './poc-pool-source'
 export { bijakCodeOf, curriculumCodeOf } from './subject-codes'
 export { BijakPapersAttemptSource, type AttemptPaper, type AttemptSectionSnapshot, type BijakPaperSource, type PaperResolution } from './attempt-source'

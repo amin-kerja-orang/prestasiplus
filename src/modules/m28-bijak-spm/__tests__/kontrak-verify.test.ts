@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VerifyPanel from '../admin/kontrak/components/VerifyPanel.vue'
 import { formFromView, toInput, type ContractForm } from '../admin/kontrak/domain/form'
 import { KontrakError } from '../admin/kontrak/server/api'
-import { MockKontrakServer } from '../admin/kontrak/server/mock'
+import { MockKontrakServer } from '../admin/kontrak/server/memory'
 
 let wrapper: VueWrapper | null = null
 
@@ -28,7 +28,7 @@ afterEach(() => {
 })
 
 async function readyServer(): Promise<{ api: MockKontrakServer; view: BijakBlueprintView; form: ContractForm }> {
-  const api = new MockKontrakServer({ createPaper: async () => 'p' })
+  const api = new MockKontrakServer({ createPaper: () => Promise.resolve('p') })
   const f = formFromView(await api.get('SN', 2))
   const unit = { kind: 'unit' as const, ...(await api.listUnits('SN'))[0]! }
   for (const s of f.sections) {

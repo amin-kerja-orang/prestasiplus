@@ -14,7 +14,6 @@ import SourceBadge from './SourceBadge.vue'
 import SumMeter from './SumMeter.vue'
 
 const props = defineProps<{
-  form: ContractForm
   subjectName: string
   kertas: number
   isNew: boolean
@@ -23,13 +22,14 @@ const props = defineProps<{
   dependentPapers: number
   reference: { title: string; items: string[] }[]
 }>()
+const form = defineModel<ContractForm>('form', { required: true })
 const emit = defineEmits<{ edit: [index: number]; retire: [] }>()
 
 const MAX = 20
 const confirm = useConfirm()
 const errAt = (name: string): string | undefined =>
   props.issues.find((i) => i.level === 'error' && i.target === fieldId(null, name))?.message
-const budgetSum = computed(() => props.form.sections.reduce((n, s) => n + (s.markBudget ?? 0), 0))
+const budgetSum = computed(() => form.value.sections.reduce((n, s) => n + (s.markBudget ?? 0), 0))
 const statusItems = [
   { label: 'Draf', value: 'Draf' },
   { label: 'Spec', value: 'Spec' },
@@ -44,32 +44,32 @@ function statusOf(i: number): { text: string; color: 'success' | 'warning' | 'er
 }
 
 function summary(i: number): string {
-  const s = props.form.sections[i]!
+  const s = form.value.sections[i]!
   const rule = s.ruleType === 'all' ? 'Jawab semua' : `Jawab ${s.chooseN ?? '?'} daripada ${s.questionCount ?? '?'}`
-  return `${questionRange(props.form.sections, i)} - ${s.markBudget ?? 0} markah - ${rule}`
+  return `${questionRange(form.value.sections, i)} - ${s.markBudget ?? 0} markah - ${rule}`
 }
 
 const letter = (i: number): string => `Bahagian ${String.fromCharCode(65 + (i % 26))}`
 function add(): void {
-  if (props.form.sections.length >= MAX) return
-  props.form.sections.push(emptySection(letter(props.form.sections.length)))
+  if (form.value.sections.length >= MAX) return
+  form.value.sections.push(emptySection(letter(form.value.sections.length)))
 }
 function move(i: number, d: -1 | 1): void {
-  const list = props.form.sections
+  const list = form.value.sections
   const j = i + d
   if (j < 0 || j >= list.length) return
   const [item] = list.splice(i, 1)
   list.splice(j, 0, item!)
 }
 async function remove(i: number): Promise<void> {
-  const s = props.form.sections[i]!
-  if (props.form.sections.length <= 1) return
+  const s = form.value.sections[i]!
+  if (form.value.sections.length <= 1) return
   const ok = await confirm({
     message: `Padam ${s.label || `Bahagian ${i + 1}`}? Nombor soalan akan dikira semula.`,
     tone: 'error',
     confirmLabel: 'Padam',
   })
-  if (ok) props.form.sections.splice(i, 1)
+  if (ok) form.value.sections.splice(i, 1)
 }
 async function retire(): Promise<void> {
   if (props.dependentPapers > 0) return

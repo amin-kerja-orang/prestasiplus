@@ -20,6 +20,7 @@ import {
   BijakEvidenceInputSchema,
   BijakEvidenceItemSchema,
   BijakPoolPreviewSchema,
+  BijakSectionReviewInputSchema,
   BijakVerificationFailedErrorSchema,
   BijakVerificationStateSchema,
   BijakVerifyInputSchema,
@@ -253,6 +254,17 @@ describe('AC-39.9 reviewed flags ("Belum disemak")', () => {
     expect(BijakBlueprintAdminSectionInputSchema.safeParse(sectionInput({ kbatReviewed: true })).success).toBe(false)
     const quota = { basis: 'questions', lines: [{ unit: { kind: 't1_t3' }, value: 1, reviewed: true }] }
     expect(BijakBlueprintAdminSectionInputSchema.safeParse(sectionInput({ quota })).success).toBe(false)
+  })
+
+  it('has a strict empty review body and a documented review route', () => {
+    expect(BijakSectionReviewInputSchema.safeParse({}).success).toBe(true)
+    expect(BijakSectionReviewInputSchema.safeParse({ reviewed: true }).success).toBe(false)
+    const doc = buildOpenApiDocument() as unknown as {
+      paths: Record<string, Record<string, { tags?: string[]; responses: Record<string, unknown> }>>
+    }
+    const op = doc.paths['/admin/blueprints/{subject}/{kertas}/sections/{position}/review']!.post!
+    expect(op.tags).toEqual(['bijak-standards'])
+    expect(Object.keys(op.responses).sort()).toEqual(['200', '401', '403', '404', '409', '422', '429'])
   })
 
   it('has the UNREVIEWED completeness code, with a section position and optionally a unit', () => {
@@ -540,7 +552,7 @@ describe('openapi document', () => {
     components: { schemas: Record<string, unknown> }
   }
 
-  it('registers the ten BJS-01 operations under one tag, writes rate limited', () => {
+  it('registers the eleven BJS-01 operations under one tag, writes rate limited', () => {
     const mine: string[] = []
     for (const [path, ops] of Object.entries(doc.paths)) {
       for (const [method, op] of Object.entries(ops)) {
@@ -559,6 +571,7 @@ describe('openapi document', () => {
       'get /admin/blueprints/{subject}/{kertas}/verification',
       'get /admin/blueprints/{subject}/{kertas}/versions',
       'post /admin/blueprints/{subject}/{kertas}/evidence',
+      'post /admin/blueprints/{subject}/{kertas}/sections/{position}/review',
       'post /admin/blueprints/{subject}/{kertas}/verify',
       'post /admin/papers/generate',
     ].sort())

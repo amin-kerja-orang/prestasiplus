@@ -62138,6 +62138,11 @@
           }
         }
       },
+      "BijakSectionReviewInput": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
       "BijakDskpUnit": {
         "type": "object",
         "properties": {
@@ -105627,6 +105632,171 @@
                       "$ref": "#/components/schemas/ErrorBody"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}/sections/{position}/review": {
+      "post": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Blueprint: mark a section's seeded quota and KBAT values as reviewed (AC-39.9)",
+        "description": "Empty strict body {}. Sets reviewed on every quota line and kbatReviewed on the section of the HEAD row, in place, without changing any value and without a new version. Sahkan is refused (UNREVIEWED) while any line or KBAT value is \"Belum disemak\". 404 NOT_FOUND for an unknown blueprint or section position. 409 CONFLICT \"Kontrak Disahkan tidak boleh diubah di tempat. Cipta versi baharu dahulu.\" [PROPOSED] when the head is Disahkan (edit through a new version). Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based section position.",
+              "example": 1
+            },
+            "required": true,
+            "description": "1-based section position.",
+            "name": "position",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakSectionReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The head blueprint with the section marked reviewed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBlueprintView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (blueprint or section position).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kontrak Disahkan tidak boleh diubah di tempat. Cipta versi baharu dahulu.\" [PROPOSED] (the head is Disahkan).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (the body must be {}).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
