@@ -534,7 +534,7 @@ describe('BJS-09 verification', () => {
 
   it('409 when already Disahkan; the verification record is insert-only', async () => {
     await verified(46)
-    expectError(await admin.post(url(46, '/verify'), {}), 'CONFLICT', 409, STD.evidenceLocked)
+    expectError(await admin.post(url(46, '/verify'), {}), 'CONFLICT', 409, STD.alreadyVerified)
     expect(await count(t.db, `select count(*) n from blueprint_verifications where blueprint_id = $1`, [(await bpRow('MAT/S46'))?.id])).toBe(1)
     await expect(rows(`update blueprint_verifications set note = 'x' where blueprint_id = $1`, [(await bpRow('MAT/S46'))?.id])).rejects.toThrow()
   })

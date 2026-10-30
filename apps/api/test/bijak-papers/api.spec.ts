@@ -146,7 +146,19 @@ describe('Bijak papers API (BE-15)', () => {
       const res = await student.get('/api/bijak/contracts')
       expect(res.status).toBe(200)
       const data = envelopeOf(z.array(BijakBlueprintContractSchema)).parse(res.body).data
-      expect(data).toEqual(golden.contracts)
+      // The mock golden predates BJS-01 `canGenerate`; for a student it is true only for a serving (Disahkan) version.
+      expect(
+        data.map((c) => {
+          const rest: Record<string, unknown> = { ...c }
+          delete rest.canGenerate
+          delete rest.unavailableReason
+          return rest
+        }),
+      ).toEqual(golden.contracts)
+      for (const c of data) {
+        expect(c.canGenerate, c.code).toBe(c.source === 'Disahkan')
+        expect(c.unavailableReason, c.code).toBe(c.canGenerate ? undefined : 'NO_BLUEPRINT')
+      }
       expect(allKeys(res.body).has('pool')).toBe(false)
     })
 
