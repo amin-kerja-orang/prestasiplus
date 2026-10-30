@@ -150,8 +150,9 @@ const slotGroupRefine = (g: {
   g.tpMax >= g.tpMin &&
   (g.marksMin === undefined || g.marksMax === undefined || g.marksMax >= g.marksMin)
 
-const SLOT_GROUP_REFINE_MESSAGE =
-  'Kumpulan slot tidak sah: slot akhir, TP maksimum dan markah maksimum tidak boleh kurang daripada nilai minimum. [PROPOSED]'
+/** [PROPOSED] copy. Kept out of the string so the tag never reaches a runtime message. */
+export const SLOT_GROUP_REFINE_MESSAGE =
+  'Kumpulan slot tidak sah: slot akhir tidak boleh sebelum slot awal, dan nilai maksimum tidak boleh kurang daripada nilai minimum.'
 
 /** Slot group of a difficulty profile, input form (`units` are unit references; used by 'tema' only). */
 export const BijakSlotGroupSchema = z
@@ -162,7 +163,11 @@ export const BijakSlotGroupSchema = z
     }),
   })
   .refine(slotGroupRefine, SLOT_GROUP_REFINE_MESSAGE)
-  .meta({ id: 'BijakSlotGroup' })
+  .meta({
+    id: 'BijakSlotGroup',
+    description:
+      'Cross-field rules: from <= to, tpMin <= tpMax, and marksMin <= marksMax when both are set. A violation is refused with SLOT_GROUP_REFINE_MESSAGE.',
+  })
 export type BijakSlotGroup = z.infer<typeof BijakSlotGroupSchema>
 
 export const BijakSlotGroupViewSchema = z
@@ -234,6 +239,10 @@ export const BijakQuotaLineViewSchema = z
     tag: BijakQuotaTagSchema.optional(),
     unit: BijakUnitRefViewSchema,
     value: z.number().int().min(0),
+    reviewed: z.boolean().meta({
+      description:
+        'AC-39.9: false = "Belum disemak" (seeded, not yet confirmed by Admin Pusat). Read-only: the client cannot send it; the server sets true on an admin save, seeds set false. Sahkan is refused while any line is unreviewed (UNREVIEWED).',
+    }),
   })
   .meta({ id: 'BijakQuotaLineView' })
 
@@ -249,9 +258,13 @@ export type BijakTopicQuotaView = z.infer<typeof BijakTopicQuotaViewSchema>
 /* ----------------------------------------------------------------------- section additions */
 
 /** Answer modes a section accepts (AC-38.1(e)); empty = any mode. Same vocabulary as the question leaf modes. */
+/** [PROPOSED] copy. */
+export const ALLOWED_MODES_UNIQUE_MESSAGE = 'Mod jawapan tidak boleh berulang.'
+
 export const BijakAllowedModesSchema = z
   .array(QuestionLeafModeSchema)
   .max(12)
+  .refine((modes) => new Set(modes).size === modes.length, ALLOWED_MODES_UNIQUE_MESSAGE)
   .meta({
     id: 'BijakAllowedModes',
     description: 'Answer modes (leaf modes of M04) allowed in the section; empty = any mode. Enforced as pool eligibility.',
@@ -280,6 +293,10 @@ export const bijakSectionStandardViewShape = {
   profile: BijakDifficultyProfileViewSchema.nullable(),
   quota: BijakTopicQuotaViewSchema.nullable(),
   kbatMarks: z.number().int().min(0).nullable(),
+  kbatReviewed: z.boolean().meta({
+    description:
+      'AC-39.9: false = the section KBAT value is "Belum disemak". Read-only (server-set: true on an admin save, false from seeds).',
+  }),
   allowedModes: BijakAllowedModesSchema,
 }
 

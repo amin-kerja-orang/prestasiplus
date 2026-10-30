@@ -54,7 +54,7 @@ export type BijakEvidenceValues = z.infer<typeof BijakEvidenceValuesSchema>
 export const BijakEvidenceInputSchema = z
   .strictObject({
     kind: BijakEvidenceKindSchema,
-    body: z.string().trim().min(1).max(64).meta({
+    body: z.string().min(1).max(64).regex(/^[a-z0-9_]+$/).meta({
       description: "Exam board value of the exam schema (D8), e.g. sbp, selangor_mpsm; 'lpm' for the official body.",
       example: 'sbp',
     }),
@@ -121,6 +121,7 @@ export const BIJAK_COMPLETENESS_CODES = [
   'NO_SHARE',
   'NO_DURATION',
   'NO_EVIDENCE_BODIES',
+  'UNREVIEWED',
 ] as const
 
 export const BijakVerificationCheckSchema = z
@@ -131,6 +132,10 @@ export const BijakVerificationCheckSchema = z
       z.strictObject({
         code: z.enum(BIJAK_COMPLETENESS_CODES),
         sectionPosition: z.number().int().min(1).optional(),
+        unit: BijakUnitRefViewSchema.optional().meta({
+          description:
+            'UNREVIEWED only: the quota line still "Belum disemak" (AC-39.9). A section KBAT value that is unreviewed has no unit.',
+        }),
       }),
     ),
     lines: z.array(BijakEvidenceLineSchema),

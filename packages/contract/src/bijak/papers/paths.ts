@@ -145,7 +145,7 @@ export function registerBijakPapersPaths(registry: OpenAPIRegistry): void {
     path: '/bijak/papers/generate',
     tags: ['bijak-papers'],
     summary: 'Jana Kertas: generate a private paper from a Kontrak Blueprint',
-    description: `Mock method generatePaper(userId, subject, kertas). Composes from the blueprint: stimulus groups are taken whole, no question repeats inside one paper, questions the caller has not been served are preferred. Every call creates a new paper id; the paper is private to the caller. 422 NO_BLUEPRINT when a student (or Admin Sekolah in Mod Pelajar) has no serving Disahkan blueprint for the pair, or Admin Pusat in Mod Pelajar has no Spec or Disahkan head (no paper is created). 422 SHORTAGE with error.details.shortages when the pool cannot fill a section exactly: a shortage list instead of a short paper; each line keeps { section, need, have } and may add the typed fields kind, basis, unit, slot, tp, blocking, otherSection (BM text is built from kind by the client, never carried). 503 GENERATE_LIMIT [PROPOSED] "Kertas tidak dapat disusun sekarang. Cuba lagi." when the solver budget is reached (details.shortages[0] names the section). 500 SERVER_ERROR when the independent re-check finds a violation (logged, never served; the architecture text calls it INTERNAL, the generic code is SERVER_ERROR). ${ROLE_NOTE}`,
+    description: `Mock method generatePaper(userId, subject, kertas). Composes from the blueprint: stimulus groups are taken whole, no question repeats inside one paper, questions the caller has not been served are preferred. Every call creates a new paper id; the paper is private to the caller. 422 NO_BLUEPRINT when a student (or Admin Sekolah in Mod Pelajar) has no serving Disahkan blueprint for the pair, or Admin Pusat in Mod Pelajar has no Spec or Disahkan head (no paper is created). 422 SHORTAGE with error.details.shortages when the pool cannot fill a section exactly: a shortage list instead of a short paper; each line keeps { section, need, have } and may add the typed fields kind, basis, unit, slot, tp, blocking, otherSection (BM text is built from kind by the client, never carried). 503 GENERATE_LIMIT [PROPOSED] "Kertas tidak dapat disusun sekarang. Cuba lagi." when the solver budget is reached (details.limitSections lists the sections being solved). 500 SERVER_ERROR when the independent re-check finds a violation (logged, never served; the architecture text calls it INTERNAL, the generic code is SERVER_ERROR). ${ROLE_NOTE}`,
     request: {
       headers: [csrf],
       body: {
@@ -157,6 +157,7 @@ export function registerBijakPapersPaths(registry: OpenAPIRegistry): void {
       201: json(envelopeOf(BijakGenerateResultSchema), 'The generated paper id.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ROLE_OR_CSRF,
+      500: err('SERVER_ERROR: the independent re-check found a violation (logged, never served).'),
       503: json(
         BijakGenerateLimitErrorSchema,
         'GENERATE_LIMIT "Kertas tidak dapat disusun sekarang. Cuba lagi." [PROPOSED]: solver budget reached; no paper is created.',

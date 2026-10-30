@@ -148,6 +148,7 @@ const bpSection = (over: Record<string, unknown> = {}) => ({
   profile: null,
   quota: null,
   kbatMarks: null,
+  kbatReviewed: false,
   allowedModes: [],
   ...over,
 })

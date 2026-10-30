@@ -529,7 +529,7 @@ describe('openapi document', () => {
       '403',
     ])
     const generate = ops('/bijak/papers/generate', 'post')
-    expect(Object.keys(generate.responses).sort()).toEqual(['201', '401', '403', '422', '503'])
+    expect(Object.keys(generate.responses).sort()).toEqual(['201', '401', '403', '422', '500', '503'])
     expect(generate.parameters?.some((p) => p.name === 'X-CSRF-Token' && p.in === 'header')).toBe(
       true,
     )

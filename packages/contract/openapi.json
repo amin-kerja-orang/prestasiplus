@@ -10649,16 +10649,23 @@
               "details": {
                 "type": "object",
                 "properties": {
-                  "shortages": {
+                  "limitSections": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/BijakGenerateShortage"
+                      "type": "object",
+                      "properties": {
+                        "section": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "additionalProperties": false
                     },
-                    "minItems": 1
+                    "description": "Sections that were being solved when the budget ran out; section may be absent."
                   }
                 },
                 "required": [
-                  "shortages"
+                  "limitSections"
                 ],
                 "additionalProperties": false
               },
@@ -58209,6 +58216,10 @@
             ],
             "minimum": 0
           },
+          "kbatReviewed": {
+            "type": "boolean",
+            "description": "AC-39.9: false = the section KBAT value is \"Belum disemak\". Read-only (server-set: true on an admin save, false from seeds)."
+          },
           "allowedModes": {
             "$ref": "#/components/schemas/BijakAllowedModes"
           }
@@ -58225,6 +58236,7 @@
           "profile",
           "quota",
           "kbatMarks",
+          "kbatReviewed",
           "allowedModes"
         ],
         "additionalProperties": false
@@ -58441,11 +58453,16 @@
           "value": {
             "type": "integer",
             "minimum": 0
+          },
+          "reviewed": {
+            "type": "boolean",
+            "description": "AC-39.9: false = \"Belum disemak\" (seeded, not yet confirmed by Admin Pusat). Read-only: the client cannot send it; the server sets true on an admin save, seeds set false. Sahkan is refused while any line is unreviewed (UNREVIEWED)."
           }
         },
         "required": [
           "unit",
-          "value"
+          "value",
+          "reviewed"
         ],
         "additionalProperties": false
       },
@@ -59262,7 +59279,8 @@
           "tpMin",
           "tpMax"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Cross-field rules: from <= to, tpMin <= tpMax, and marksMin <= marksMax when both are set. A violation is refused with SLOT_GROUP_REFINE_MESSAGE."
       },
       "BijakUnitRef": {
         "oneOf": [
@@ -59785,6 +59803,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64,
+            "pattern": "^[a-z0-9_]+$",
             "description": "Exam board value of the exam schema (D8), e.g. sbp, selangor_mpsm; 'lpm' for the official body.",
             "example": "sbp"
           },
@@ -59995,12 +60014,67 @@
                     "NO_KBAT",
                     "NO_SHARE",
                     "NO_DURATION",
-                    "NO_EVIDENCE_BODIES"
+                    "NO_EVIDENCE_BODIES",
+                    "UNREVIEWED"
                   ]
                 },
                 "sectionPosition": {
                   "type": "integer",
                   "minimum": 1
+                },
+                "unit": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "unit"
+                          ]
+                        },
+                        "nodeId": {
+                          "$ref": "#/components/schemas/Id"
+                        },
+                        "code": {
+                          "type": "string",
+                          "minLength": 1,
+                          "example": "3.0"
+                        },
+                        "level": {
+                          "type": "string",
+                          "enum": [
+                            "T4",
+                            "T5"
+                          ]
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "nodeId"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "t1_t3"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "UNREVIEWED only: the quota line still \"Belum disemak\" (AC-39.9). A section KBAT value that is unreviewed has no unit."
                 }
               },
               "required": [
@@ -74956,7 +75030,7 @@
           "bijak-papers"
         ],
         "summary": "Jana Kertas: generate a private paper from a Kontrak Blueprint",
-        "description": "Mock method generatePaper(userId, subject, kertas). Composes from the blueprint: stimulus groups are taken whole, no question repeats inside one paper, questions the caller has not been served are preferred. Every call creates a new paper id; the paper is private to the caller. 422 NO_BLUEPRINT when a student (or Admin Sekolah in Mod Pelajar) has no serving Disahkan blueprint for the pair, or Admin Pusat in Mod Pelajar has no Spec or Disahkan head (no paper is created). 422 SHORTAGE with error.details.shortages when the pool cannot fill a section exactly: a shortage list instead of a short paper; each line keeps { section, need, have } and may add the typed fields kind, basis, unit, slot, tp, blocking, otherSection (BM text is built from kind by the client, never carried). 503 GENERATE_LIMIT [PROPOSED] \"Kertas tidak dapat disusun sekarang. Cuba lagi.\" when the solver budget is reached (details.shortages[0] names the section). 500 SERVER_ERROR when the independent re-check finds a violation (logged, never served; the architecture text calls it INTERNAL, the generic code is SERVER_ERROR). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "description": "Mock method generatePaper(userId, subject, kertas). Composes from the blueprint: stimulus groups are taken whole, no question repeats inside one paper, questions the caller has not been served are preferred. Every call creates a new paper id; the paper is private to the caller. 422 NO_BLUEPRINT when a student (or Admin Sekolah in Mod Pelajar) has no serving Disahkan blueprint for the pair, or Admin Pusat in Mod Pelajar has no Spec or Disahkan head (no paper is created). 422 SHORTAGE with error.details.shortages when the pool cannot fill a section exactly: a shortage list instead of a short paper; each line keeps { section, need, have } and may add the typed fields kind, basis, unit, slot, tp, blocking, otherSection (BM text is built from kind by the client, never carried). 503 GENERATE_LIMIT [PROPOSED] \"Kertas tidak dapat disusun sekarang. Cuba lagi.\" when the solver budget is reached (details.limitSections lists the sections being solved). 500 SERVER_ERROR when the independent re-check finds a violation (logged, never served; the architecture text calls it INTERNAL, the generic code is SERVER_ERROR). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
         "parameters": [
           {
             "schema": {
@@ -75035,6 +75109,16 @@
                       "$ref": "#/components/schemas/ErrorBody"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "SERVER_ERROR: the independent re-check found a violation (logged, never served).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -104000,6 +104084,16 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "SERVER_ERROR: the independent re-check found a violation (logged, never served).",
             "content": {
               "application/json": {
                 "schema": {

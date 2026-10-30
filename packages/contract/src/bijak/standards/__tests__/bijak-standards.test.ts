@@ -24,11 +24,18 @@ import {
 } from '../admin'
 import { BIJAK_STANDARDS_COMPONENT_SCHEMAS, BIJAK_STANDARDS_TAG } from '../paths'
 import {
+  ALLOWED_MODES_UNIQUE_MESSAGE,
+  BIJAK_STANDARDS_MESSAGES,
   BijakDifficultyProfileSchema,
+  BijakQuotaLineSchema,
+  BijakQuotaLineViewSchema,
   BijakSlotGroupSchema,
   BijakTopicQuotaSchema,
   BijakUnitRefSchema,
+  SLOT_GROUP_REFINE_MESSAGE,
 } from '../schema'
+import { BIJAK_PAPERS_MESSAGES } from '../../papers/schema'
+import { BijakBlueprintViewSectionSchema } from '../../builder/schema'
 
 const TS = '2026-10-29T09:30:00+08:00'
 
@@ -78,6 +85,41 @@ describe('slot group, profile, quota', () => {
     expect(BijakSlotGroupSchema.safeParse(group({ tpMax: 7 })).success).toBe(false)
     expect(BijakSlotGroupSchema.safeParse(group({ to: 0 })).success).toBe(false)
     expect(BijakSlotGroupSchema.safeParse(group({ extra: 1 })).success).toBe(false)
+  })
+
+  it('refuses from > to, and a marks band with only one end is accepted', () => {
+    const r = BijakSlotGroupSchema.safeParse(group({ from: 5, to: 3 }))
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0]!.message).toBe(SLOT_GROUP_REFINE_MESSAGE)
+    expect(BijakSlotGroupSchema.safeParse(group({ marksMin: 4 })).success).toBe(true)
+    expect(BijakSlotGroupSchema.safeParse(group({ marksMax: 4 })).success).toBe(true)
+    expect(BijakSlotGroupSchema.safeParse(group({ marksMin: 0 })).success).toBe(false)
+  })
+
+  it('keeps the BM copy free of the [PROPOSED] tag and as decided', () => {
+    expect(SLOT_GROUP_REFINE_MESSAGE).toBe(
+      'Kumpulan slot tidak sah: slot akhir tidak boleh sebelum slot awal, dan nilai maksimum tidak boleh kurang daripada nilai minimum.',
+    )
+    expect(ALLOWED_MODES_UNIQUE_MESSAGE).toBe('Mod jawapan tidak boleh berulang.')
+    for (const text of [
+      ...Object.values(BIJAK_STANDARDS_MESSAGES),
+      SLOT_GROUP_REFINE_MESSAGE,
+      ALLOWED_MODES_UNIQUE_MESSAGE,
+      BIJAK_PAPERS_MESSAGES.generateLimit,
+    ]) {
+      expect(text).not.toContain('[PROPOSED]')
+    }
+    expect(BIJAK_STANDARDS_MESSAGES.blueprintInvalid).toBe('Kontrak tidak boleh disimpan. Betulkan masalah yang disenaraikan.')
+    expect(BIJAK_STANDARDS_MESSAGES.verificationFailed).toBe('Kontrak belum boleh disahkan. Semak senarai kegagalan.')
+    expect(BIJAK_STANDARDS_MESSAGES.poolEmpty).toBe('Tiada soalan Terbit untuk tag ini')
+    expect(BIJAK_PAPERS_MESSAGES.generateLimit).toBe('Kertas tidak dapat disusun sekarang. Cuba lagi.')
+  })
+
+  it('refuses duplicate allowed modes', () => {
+    const r = BijakBlueprintAdminSectionInputSchema.safeParse(sectionInput({ allowedModes: ['numeric', 'numeric'] }))
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0]!.message).toBe(ALLOWED_MODES_UNIQUE_MESSAGE)
+    expect(BijakBlueprintAdminSectionInputSchema.safeParse(sectionInput({ allowedModes: [] })).success).toBe(true)
   })
 
   it('has three profile kinds and rejects an empty group list', () => {
@@ -134,6 +176,54 @@ describe('blueprint admin bodies (extended)', () => {
   })
 })
 
+describe('AC-39.9 reviewed flags ("Belum disemak")', () => {
+  const viewSection = (over: Record<string, unknown> = {}) => ({
+    label: 'Bahagian A',
+    markBudget: 40,
+    questionCount: 10,
+    compulsory: false,
+    instruction: 'Jawab semua soalan.',
+    rule: { type: 'all' },
+    pool: null,
+    position: 1,
+    profile: null,
+    quota: {
+      basis: 'marks',
+      lines: [{ unit: { kind: 't1_t3' }, value: 40, tag: 'inferred', reviewed: false }],
+    },
+    kbatMarks: 12,
+    kbatReviewed: false,
+    allowedModes: [],
+    ...over,
+  })
+
+  it('requires reviewed on a quota line view and kbatReviewed on a section view', () => {
+    expect(BijakBlueprintViewSectionSchema.safeParse(viewSection()).success).toBe(true)
+    const noFlag = viewSection({ kbatReviewed: undefined })
+    expect(BijakBlueprintViewSectionSchema.safeParse(noFlag).success).toBe(false)
+    expect(BijakQuotaLineViewSchema.safeParse({ unit: { kind: 't1_t3' }, value: 1 }).success).toBe(false)
+    expect(BijakQuotaLineViewSchema.safeParse({ unit: { kind: 't1_t3' }, value: 1, reviewed: true }).success).toBe(true)
+  })
+
+  it('rejects reviewed and kbatReviewed on write: the server sets them', () => {
+    expect(BijakQuotaLineSchema.safeParse({ unit: { kind: 't1_t3' }, value: 1, reviewed: true }).success).toBe(false)
+    expect(BijakBlueprintAdminSectionInputSchema.safeParse(sectionInput({ kbatReviewed: true })).success).toBe(false)
+    const quota = { basis: 'questions', lines: [{ unit: { kind: 't1_t3' }, value: 1, reviewed: true }] }
+    expect(BijakBlueprintAdminSectionInputSchema.safeParse(sectionInput({ quota })).success).toBe(false)
+  })
+
+  it('has the UNREVIEWED completeness code, with a section position and optionally a unit', () => {
+    const state = (completeness: unknown) =>
+      BijakVerificationStateSchema.safeParse({
+        record: null,
+        check: { passes: false, blueprintProblems: [], completeness, lines: [] },
+      }).success
+    expect(state([{ code: 'UNREVIEWED', sectionPosition: 2 }])).toBe(true)
+    expect(state([{ code: 'UNREVIEWED', sectionPosition: 2, unit: { kind: 'unit', nodeId: '101', code: '1.0' } }])).toBe(true)
+    expect(state([{ code: 'UNREVIEWED', sectionPosition: 2, unit: { kind: 'unit' } }])).toBe(false)
+  })
+})
+
 describe('evidence and verification', () => {
   const evidence = {
     kind: 'trial_paper',
@@ -153,6 +243,24 @@ describe('evidence and verification', () => {
     expect(BijakEvidenceInputSchema.safeParse({ ...evidence, kind: 'foto' }).success).toBe(false)
     expect(BijakEvidenceInputSchema.safeParse({ ...evidence, file: 'x.pdf' }).success).toBe(false)
     expect(BijakEvidenceInputSchema.safeParse({ ...evidence, values: { sections: [{ markBudget: 3 }] } }).success).toBe(false)
+  })
+
+  it('bounds year, body and paperCode', () => {
+    const ok = (over: Record<string, unknown>) => BijakEvidenceInputSchema.safeParse({ ...evidence, ...over }).success
+    expect(ok({ year: 1990 })).toBe(true)
+    expect(ok({ year: 2100 })).toBe(true)
+    expect(ok({ year: 1989 })).toBe(false)
+    expect(ok({ year: 2101 })).toBe(false)
+    expect(ok({ body: 'sbp' })).toBe(true)
+    expect(ok({ body: 'selangor_mpsm' })).toBe(true)
+    expect(ok({ body: 'SBP' })).toBe(false)
+    expect(ok({ body: '' })).toBe(false)
+    expect(ok({ body: '   ' })).toBe(false)
+    expect(ok({ body: ' sbp ' })).toBe(false)
+    expect(ok({ body: 'a'.repeat(64) })).toBe(true)
+    expect(ok({ body: 'a'.repeat(65) })).toBe(false)
+    expect(ok({ paperCode: '' })).toBe(false)
+    expect(ok({ paperCode: '   ' })).toBe(false)
   })
 
   it('parses an evidence item and the verify body', () => {
@@ -307,14 +415,13 @@ describe('student side: shortages, limit, canGenerate', () => {
         error: { code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.', details },
       }).success,
     ).toBe(true)
-    expect(
-      BijakGenerateLimitErrorSchema.safeParse({
-        error: { code: 'GENERATE_LIMIT', message: 'Kertas tidak dapat disusun sekarang. Cuba lagi.', details },
-      }).success,
-    ).toBe(true)
-    expect(
-      BijakGenerateLimitErrorSchema.safeParse({ error: { code: 'GENERATE_LIMIT', message: 'x', details } }).success,
-    ).toBe(false)
+    const limit = (d: unknown, message = 'Kertas tidak dapat disusun sekarang. Cuba lagi.') =>
+      BijakGenerateLimitErrorSchema.safeParse({ error: { code: 'GENERATE_LIMIT', message, details: d } }).success
+    expect(limit({ limitSections: [{ section: 'Bahagian A' }, {}] })).toBe(true)
+    expect(limit({ limitSections: [] })).toBe(true)
+    expect(limit(details)).toBe(false)
+    expect(limit({ limitSections: [{ section: 'A', need: 1 }] })).toBe(false)
+    expect(limit({ limitSections: [] }, 'x')).toBe(false)
   })
 
   it('requires canGenerate on a contract row', () => {

@@ -289,14 +289,20 @@ export type BijakGenerateShortageError = z.infer<typeof BijakGenerateShortageErr
 
 /**
  * 503 GENERATE_LIMIT [PROPOSED]: the solver node budget or time cap was reached. No paper is created
- * and no shortage is invented. `details.shortages[0]` names the section. No Retry-After is needed.
+ * and no shortage is invented. `details.limitSections` lists the sections being solved. No Retry-After is needed.
  */
 export const BijakGenerateLimitErrorSchema = z
   .object({
     error: z.object({
       code: z.literal('GENERATE_LIMIT'),
       message: z.literal(BIJAK_PAPERS_MESSAGES.generateLimit),
-      details: z.strictObject({ shortages: z.array(BijakGenerateShortageSchema).min(1) }),
+      details: z.strictObject({
+        limitSections: z
+          .array(z.strictObject({ section: z.string().min(1).optional() }))
+          .meta({
+            description: 'Sections that were being solved when the budget ran out; section may be absent.',
+          }),
+      }),
       requestId: z.string().optional(),
     }),
   })
