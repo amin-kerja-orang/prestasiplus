@@ -160,6 +160,8 @@ export interface QuestionView extends QuestionRecord {
   level: NamedRef | null
   /** Internal file id to public token for the images of this question (stem and options). */
   imageTokens?: Record<string, string>
+  /** Name of the curriculum chapter of the version (the admin "Bab" label), or null. */
+  chapterName?: string | null
 }
 
 /** Admin detail: DSKP chain (unit/sk/sp) and creator name resolved through the owners' repositories. */
