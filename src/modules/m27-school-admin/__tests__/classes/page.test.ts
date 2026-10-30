@@ -150,6 +150,16 @@ describe('table (FR-M27-112, 113, 115; AC-M27-31.2, 32.3)', () => {
     ])
   })
 
+  it('uses tight cell padding so all seven columns fit at 768px (B5)', async () => {
+    const w = await mountPage(list([row(1)]))
+    const cells = w.findAll('[data-testid="kl-table"] th, [data-testid="kl-table"] td')
+    expect(cells.length).toBeGreaterThan(0)
+    for (const c of cells) {
+      expect(c.classes()).toContain('px-3')
+      expect(c.classes()).not.toContain('px-4')
+    }
+  })
+
   it('shows the values, the class name as a link to M08 S5 and "Tiada Subjek" without a subject', async () => {
     const w = await mountPage(
       list([
