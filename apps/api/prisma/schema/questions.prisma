@@ -156,6 +156,7 @@ model QuestionVersion {
   topicId           BigInt? @map("topic_id")
   /// t1_t3, t4, t5 (check constraint).
   formOrigin        String  @default("t4") @map("form_origin")
+  cognitiveLevel    Int?    @map("cognitive_level") @db.SmallInt
   /// mengaplikasi, menganalisis, menilai, mencipta (check); NULL = Bukan KBAT (decision A9, design 14).
   kbat              String?
   /// true = "Perlu semakan tag": ineligible for Jana Kertas and blocked at Terbit (design 14.1 R-3).

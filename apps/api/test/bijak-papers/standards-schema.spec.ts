@@ -63,7 +63,7 @@ describe('bijak standards schema (migration 0092_bijak_standards)', () => {
     expect(await cols('question_parts')).toEqual(expect.arrayContaining(['difficulty_tp', 'kbat', 'unit_node_id', 'form_origin']))
     expect(await cols('question_parts')).not.toContain('cognitive_level')
     expect(await cols('question_versions')).toEqual(expect.arrayContaining(['kbat', 'tag_review', 'catalogue_version']))
-    expect(await cols('question_versions')).not.toContain('cognitive_level')
+    expect(await cols('question_versions')).toContain('cognitive_level') // kept for the replicated KBAT filters
     expect(await cols('papers')).toContain('standard_report')
     expect(await cols('blueprint_evidence')).toEqual(expect.arrayContaining(['blueprint_id', 'kind', 'body', 'values', 'origin', 'created_by_id']))
     expect(await cols('blueprint_verifications')).toEqual(expect.arrayContaining(['verified_by_id', 'check_result', 'evidence_snapshot']))
@@ -273,31 +273,18 @@ describe('migration 0092 upgrade on existing rows', { timeout: 120_000 }, () => 
     }
   })
 
-  it('copies cognitive_level 3..6 into kbat (1 and 2 become null), then drops the column', async () => {
+  it('backfills kbat from cognitive_level 3..6 (1 and 2 stay null) and keeps cognitive_level', async () => {
     const c = await preMigratedDb()
     try {
-      const ids: string[] = []
       for (const lvl of [1, 2, 3, 4, 5, 6, null]) {
         const q = (await c.query(`insert into questions (source_type) values ('manual') returning id::text`)).rows[0].id as string
         await c.query(`insert into question_versions (question_id, version_no, status, type, stem_ms, cognitive_level) values ($1, 1, 'draft', 'mcq', 's', $2)`, [q, lvl])
-        ids.push(q)
       }
       await c.query(sql0092)
-      const got = (await c.query(`select kbat from question_versions order by question_id`)).rows.map((r: { kbat: string | null }) => r.kbat)
-      expect(got).toEqual([null, null, 'mengaplikasi', 'menganalisis', 'menilai', 'mencipta', null])
-      const cols = (await c.query(`select column_name from information_schema.columns where table_name = 'question_versions'`)).rows.map((r: { column_name: string }) => r.column_name)
-      expect(cols).not.toContain('cognitive_level')
-    } finally {
-      await c.end()
-    }
-  })
-
-  it('aborts when a migrated (.cloud) question version still holds cognitive_level', async () => {
-    const c = await preMigratedDb()
-    try {
-      const q = (await c.query(`insert into questions (source_type, legacy_source, legacy_id) values ('manual', 'cloud', '1') returning id::text`)).rows[0].id as string
-      await c.query(`insert into question_versions (question_id, version_no, status, type, stem_ms, cognitive_level) values ($1, 1, 'draft', 'mcq', 's', 4)`, [q])
-      await expect(c.query(sql0092)).rejects.toThrow(/cognitive_level/)
+      const rows = (await c.query(`select cognitive_level, kbat from question_versions order by question_id`)).rows as { cognitive_level: number | null; kbat: string | null }[]
+      expect(rows.map((r) => r.kbat)).toEqual([null, null, 'mengaplikasi', 'menganalisis', 'menilai', 'mencipta', null])
+      expect(rows.map((r) => r.cognitive_level)).toEqual([1, 2, 3, 4, 5, 6, null])
+      await expect(c.query(`update question_versions set cognitive_level = 7`)).rejects.toThrow() // the CHECK is kept
     } finally {
       await c.end()
     }

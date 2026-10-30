@@ -21,15 +21,14 @@
 --   ALTER TABLE blueprints DROP COLUMN notes, sub_part_ramp, kbat_marks, level_share, serves_students,
 --     structure_hash, verification_id;                              -- the verified -> spec downgrade is not undone
 --   ALTER TABLE question_parts DROP COLUMN difficulty_tp, kbat, unit_node_id, form_origin;
---   ALTER TABLE question_versions DROP COLUMN kbat, tag_review, catalogue_version, ADD COLUMN cognitive_level SMALLINT
---     (+ ck_question_versions_cognitive_level 1..6); the copy back is lossy: only 3..6 were kept, and the numbers 1 and 2 are gone.
+--   ALTER TABLE question_versions DROP COLUMN kbat, DROP COLUMN tag_review, DROP COLUMN catalogue_version;  (cognitive_level is untouched)
 -- (the indexes and CHECKs go with their tables/columns except uq_blueprints_serving, ix_blueprints_verification_id,
 -- ck_blueprints_*: drop those first.)
 
 -- ============================================================================
 -- 1. question_parts: TP, KBAT, unit and form per LEAF part (3.1, 3.1a). NULL = inherit the
 --    question_versions value; 'bukan' on a part = explicitly not KBAT. No backfill: every existing row inherits.
---    question_versions: the KBAT enum (decision A9, design 14.2) replaces the 1..6 cognitive_level.
+--    question_versions: the KBAT enum (decision A9, design 14.2) is added next to the 1..6 cognitive_level, which stays.
 -- ============================================================================
 ALTER TABLE "question_parts"
   ADD COLUMN "difficulty_tp" SMALLINT,
@@ -42,27 +41,12 @@ ALTER TABLE "question_versions"
   ADD COLUMN "tag_review" BOOLEAN NOT NULL DEFAULT false,
   ADD COLUMN "catalogue_version" TEXT;
 
--- Guard: rows migrated from .cloud/.my never carry a cognitive_level (the ETL leaves it empty). Abort rather than
--- lose a value on such a row; dev/seed rows (no legacy pair) are converted below.
-DO $$
-DECLARE
-  n BIGINT;
-BEGIN
-  SELECT count(*) INTO n FROM "question_versions" v JOIN "questions" q ON q."id" = v."question_id"
-   WHERE v."cognitive_level" IS NOT NULL AND q."legacy_source" IS NOT NULL;
-  IF n > 0 THEN
-    RAISE EXCEPTION '0092_bijak_standards: % migrated question_versions row(s) hold cognitive_level; review before dropping the column', n;
-  END IF;
-END
-$$;
-
--- 3 Mengaplikasi, 4 Menganalisis, 5 Menilai, 6 Mencipta become kbat; 1 and 2 (Mengingat, Memahami) were never
--- KBAT and become NULL (= Bukan KBAT).
+-- One-time backfill: 3 Mengaplikasi, 4 Menganalisis, 5 Menilai, 6 Mencipta become kbat; 1 and 2 (Mengingat,
+-- Memahami) were never KBAT and stay NULL (= Bukan KBAT). cognitive_level itself is KEPT (and its CHECK): it backs the
+-- replicated M05 practice "KBAT 1-6" filter (BR-23) and the M04 bank kbatLevel filter (Q-12e), owned by other modules.
 UPDATE "question_versions" SET "kbat" = CASE "cognitive_level"
   WHEN 3 THEN 'mengaplikasi' WHEN 4 THEN 'menganalisis' WHEN 5 THEN 'menilai' WHEN 6 THEN 'mencipta' END
  WHERE "cognitive_level" >= 3;
-ALTER TABLE "question_versions" DROP CONSTRAINT "ck_question_versions_cognitive_level";
-ALTER TABLE "question_versions" DROP COLUMN "cognitive_level";
 
 -- ============================================================================
 -- 2. blueprints (3.2)
