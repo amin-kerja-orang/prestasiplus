@@ -5,6 +5,8 @@ import { envelopeOf, listEnvelopeOf } from '../../common/envelope'
 import { ErrorBodySchema } from '../../common/error'
 import { IdSchema } from '../../common/ids'
 import { registerRoute } from './rate-limit'
+import { BijakBlueprintInvalidErrorSchema } from '../standards/admin'
+import { BIJAK_STANDARDS_MESSAGES } from '../standards/schema'
 import {
   BIJAK_BUILDER_MESSAGES,
   BijakBlueprintAdminCreateSchema,
@@ -282,7 +284,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/blueprints',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
     summary: 'Blueprint: list blueprints (BlueprintView, latest active version)',
-    description: `One row per blueprint (subject and kertas), as the mock listBlueprints (BlueprintView); blueprints whose source is Draf are not listed (the mock filter). Retired blueprints are not listed either [PROPOSED]. Filters subject and kertas are [PROPOSED]. The mock returns a plain array; this route is paged (deviations log). ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `One row per blueprint (subject and kertas): the head version, as the mock listBlueprints (BlueprintView). BJS-01: Draf heads are now listed too (the editor needs them); the view carries version, servesStudents, verification, evidenceCount, warnings, needsReview and reviewPapers (O-2). Retired blueprints are not listed [PROPOSED]. Filters subject and kertas are [PROPOSED]. The mock returns a plain array; this route is paged (deviations log). ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { query: BijakBlueprintListQuerySchema },
     responses: {
       200: json(listEnvelopeOf(BijakBlueprintViewSchema), 'Blueprints (paged).'),
@@ -319,8 +321,9 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintExists}" [PROPOSED].`),
-      422: err(
-        'VALIDATION_ERROR with fields (subject, kertas, code, durationMin, sections, sections.N.*).',
+      422: json(
+        z.union([BijakBlueprintInvalidErrorSchema, ErrorBodySchema]),
+        `BLUEPRINT_INVALID "${BIJAK_STANDARDS_MESSAGES.blueprintInvalid}" [PROPOSED] with details.problems (every problem at once, AC-25.7), or VALIDATION_ERROR with fields (subject, kertas, code, durationMin, sections, sections.N.*). The body is strict: unknown keys are rejected. source accepts Draf or Spec only.`,
       ),
     },
   })
@@ -330,7 +333,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/blueprints/{subject}/{kertas}/versions',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
     summary: 'Blueprint admin: add a new version, the only way to edit (NO MOCK)',
-    description: `No mock exists; kept because the card requires it. Creates version n+1 from the full body; earlier versions stay as they were (a version used by a terbit paper is immutable). The version number is internal and not part of BlueprintView. A retired blueprint answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}" [PROPOSED]. Answers the view of the new latest version. ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `No mock exists; kept because the card requires it. Creates version n+1 from the full body; earlier versions stay as they were (a version used by a terbit paper is immutable). BJS-01: the version number is now part of the view. The server decides the source of the new row (client Draf or Spec only): Disahkan is kept only when the previous head is Disahkan and the structural hash is unchanged (cosmetic edit); a structural edit makes a Spec head while the last Disahkan version keeps serving students (AC-39.4, Q-B22). A retired blueprint answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}" [PROPOSED]. Answers the view of the new latest version. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: {
       params: BlueprintParams,
       headers: [csrf],
@@ -342,7 +345,10 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_WRITE,
       404: BLUEPRINT_NOT_FOUND,
       409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}" [PROPOSED].`),
-      422: err('VALIDATION_ERROR with fields (code, durationMin, sections, sections.N.*).'),
+      422: json(
+        z.union([BijakBlueprintInvalidErrorSchema, ErrorBodySchema]),
+        `BLUEPRINT_INVALID "${BIJAK_STANDARDS_MESSAGES.blueprintInvalid}" [PROPOSED] with details.problems (every problem at once), or VALIDATION_ERROR with fields (code, durationMin, sections, sections.N.*).`,
+      ),
     },
   })
 

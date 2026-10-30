@@ -13,6 +13,9 @@ import { useApi } from '@/composables/useApi'
 import { useFriend } from '@/composables/useFriend'
 import { useSession } from '@/composables/useSession'
 
+import type { BijakGenerateShortage } from '@pp/contract'
+
+import GenerateShortageAlert from '../components/GenerateShortageAlert.vue'
 import PartResultCard from '../components/PartResultCard.vue'
 import RichText from '../components/RichText.vue'
 import { needsAttention, sectionRuleLine } from '../domain/paper-model'
@@ -112,17 +115,41 @@ async function share(): Promise<void> {
   }
 }
 
+/** Retry on a Jana Kertas result (design 7.4): shortage / limit / no-contract show under the button. */
+const retrying = ref(false)
+const retryShortages = ref<BijakGenerateShortage[]>([])
+const retryShortageKey = ref(0)
+const retryMessage = ref('')
+
 async function retry(): Promise<void> {
   const a = data.value?.attempt
-  if (!a) return
+  if (!a || retrying.value) return
   let paperId = a.paperId
   if (a.paperKind === 'jana') {
-    const out = await server.generatePaper(user.value, a.subject, a.kertas)
-    if (!out.ok) {
-      await router.push({ name: 'm28.bijak', query: { tab: 'jana' } })
+    retrying.value = true
+    retryShortages.value = []
+    retryMessage.value = ''
+    try {
+      const out = await server.generatePaper(user.value, a.subject, a.kertas)
+      if (!out.ok) {
+        if (out.reason === 'shortage') {
+          retryShortages.value = out.shortages
+          retryShortageKey.value += 1
+        } else {
+          retryMessage.value =
+            out.reason === 'limit'
+              ? 'Kertas tidak dapat disusun sekarang. Cuba lagi.'
+              : 'Belum ada kontrak untuk subjek dan kertas ini'
+        }
+        return
+      }
+      paperId = out.paperId
+    } catch {
+      retryMessage.value = 'Kertas tidak dapat dijana sekarang. Cuba lagi.'
       return
+    } finally {
+      retrying.value = false
     }
-    paperId = out.paperId
   }
   await router.push({ name: 'm28.bijak.cover', params: { paperId } })
 }
@@ -178,6 +205,7 @@ const home = computed(() => landingPath.value || '/dashboard')
         <UButton
           color="neutral"
           icon="i-ph-arrow-counter-clockwise"
+          :loading="retrying"
           data-testid="retry"
           @click="retry"
           >Cuba lagi</UButton
@@ -190,6 +218,20 @@ const home = computed(() => landingPath.value || '/dashboard')
           >Sejarah Bijak SPM</UButton
         >
       </div>
+      <GenerateShortageAlert
+        v-if="retryShortages.length"
+        :key="retryShortageKey"
+        :shortages="retryShortages"
+        class="mx-auto"
+      />
+      <UAlert
+        v-if="retryMessage"
+        color="error"
+        variant="soft"
+        :title="retryMessage"
+        role="alert"
+        data-testid="retry-message"
+      />
 
       <UAlert
         v-if="data.attempt.status === 'auto_submitted'"

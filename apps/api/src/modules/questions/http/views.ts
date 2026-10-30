@@ -88,6 +88,9 @@ function flatBase(q: QuestionView) {
     usage: c.usage,
     parts: v.parts,
     tag: { unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp },
+    kbat: v.kbat,
+    tagReview: v.tagReview,
+    catalogueVersion: v.catalogueVersion,
   }
 }
 

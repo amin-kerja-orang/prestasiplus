@@ -1,5 +1,6 @@
 import { z } from '../../zod'
 import { IdSchema } from '../../common/ids'
+import { BijakUnitRefViewSchema } from '../standards/schema'
 
 /**
  * Bijak SPM (M28) papers, blueprints ("Kontrak") and "Jana Kertas" generation: the read side of
@@ -24,6 +25,8 @@ export const BIJAK_PAPERS_MESSAGES = {
   paperNotFound: 'Kertas tidak ditemui',
   noBlueprint: 'Belum ada kontrak untuk subjek dan kertas ini',
   shortage: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.',
+  /** [PROPOSED] 503 GENERATE_LIMIT (solver node budget or time cap reached). */
+  generateLimit: 'Kertas tidak dapat disusun sekarang. Cuba lagi.',
 } as const
 
 /** Subject dictionary entry (open dictionary, exam schema D9): MAT, SN, SEJ, ... */
@@ -179,6 +182,13 @@ export const BijakBlueprintContractSchema = z
     code: z.string().min(1).meta({ example: '1449/2' }),
     durationMin: z.number().int().min(1),
     sections: z.array(BijakBlueprintSectionSchema).min(1),
+    canGenerate: z.boolean().meta({
+      description:
+        'BJS-01: whether the caller can generate from this row now. Student and Admin Sekolah in Mod Pelajar: true only when a serving (Disahkan) version exists; the row shown is the serving version, or the head when none serves. Admin Pusat in Mod Pelajar: true when the head is Spec or Disahkan. When false the UI shows the AC-03.6 reason.',
+    }),
+    unavailableReason: z.enum(['NO_BLUEPRINT']).optional().meta({
+      description: 'Present only when canGenerate is false.',
+    }),
   })
   .meta({ id: 'BijakBlueprintContract' })
 export type BijakBlueprintContract = z.infer<typeof BijakBlueprintContractSchema>
@@ -202,18 +212,58 @@ export const BijakGenerateResultSchema = z
   .meta({ id: 'BijakGenerateResult' })
 export type BijakGenerateResult = z.infer<typeof BijakGenerateResultSchema>
 
-/** Shortage of one blueprint section: `need` questions wanted, only `have` reachable. */
+export const BIJAK_SHORTAGE_KINDS = [
+  'count',
+  'marks',
+  'tp',
+  'unit',
+  'kbat',
+  'level_share',
+  'combination',
+  'overlap',
+] as const
+export const BijakShortageKindSchema = z.enum(BIJAK_SHORTAGE_KINDS).meta({ id: 'BijakShortageKind' })
+export type BijakShortageKind = z.infer<typeof BijakShortageKindSchema>
+
+/**
+ * Shortage of one blueprint section: `need` wanted, only `have` reachable. The original
+ * `{ section, need, have }` stays valid; the typed fields are optional and carry data, not prose
+ * (the BM line is built by `shortageLine` in exam-core from `kind`).
+ */
 export const BijakGenerateShortageSchema = z
   .strictObject({
     section: z.string().min(1).meta({ example: 'Bahagian A' }),
     need: z.number().int().min(1),
     have: z.number().int().min(0),
+    kind: BijakShortageKindSchema.optional(),
+    basis: z.enum(['questions', 'marks']).optional().meta({ description: 'Unit of need/have for kind unit.' }),
+    unit: BijakUnitRefViewSchema.optional().meta({ description: 'The short unit (kind unit).' }),
+    slot: z
+      .strictObject({ from: z.number().int().min(1), to: z.number().int().min(1) })
+      .optional()
+      .meta({ description: 'Slot range of the short group (kind tp).' }),
+    tp: z
+      .strictObject({ min: z.number().int().min(1).max(6), max: z.number().int().min(1).max(6) })
+      .optional()
+      .meta({ description: 'TP band of the short group (kind tp).' }),
+    marksMin: z.number().int().min(0).optional().meta({
+      description: 'Kind marks on a slot group: minimum marks per question the group required (with `slot`).',
+    }),
+    marksMax: z.number().int().min(0).optional().meta({
+      description: 'Kind marks on a slot group: maximum marks per question the group required (with `slot`).',
+    }),
+    blocking: z.enum(['kbat', 'tp', 'marks', 'quota']).optional().meta({
+      description: 'Kind combination: the constraint family whose removal makes the section solvable.',
+    }),
+    otherSection: z.string().min(1).optional().meta({
+      description: 'Kind overlap: the section whose picks used up the needed questions.',
+    }),
   })
   .meta({ id: 'BijakGenerateShortage' })
 export type BijakGenerateShortage = z.infer<typeof BijakGenerateShortageSchema>
 
-/** Module error codes of `POST /bijak/papers/generate` (both are HTTP 422). */
-export const BIJAK_GENERATE_ERROR_CODES = ['NO_BLUEPRINT', 'SHORTAGE'] as const
+/** Module error codes of `POST /bijak/papers/generate`: NO_BLUEPRINT and SHORTAGE are HTTP 422, GENERATE_LIMIT is HTTP 503. */
+export const BIJAK_GENERATE_ERROR_CODES = ['NO_BLUEPRINT', 'SHORTAGE', 'GENERATE_LIMIT'] as const
 export const BijakGenerateErrorCodeSchema = z
   .enum(BIJAK_GENERATE_ERROR_CODES)
   .meta({ id: 'BijakGenerateErrorCode' })
@@ -242,3 +292,25 @@ export const BijakGenerateShortageErrorSchema = z
   })
   .meta({ id: 'BijakGenerateShortageError' })
 export type BijakGenerateShortageError = z.infer<typeof BijakGenerateShortageErrorSchema>
+
+/**
+ * 503 GENERATE_LIMIT [PROPOSED]: the solver node budget or time cap was reached. No paper is created
+ * and no shortage is invented. `details.limitSections` lists the sections being solved. No Retry-After is needed.
+ */
+export const BijakGenerateLimitErrorSchema = z
+  .object({
+    error: z.object({
+      code: z.literal('GENERATE_LIMIT'),
+      message: z.literal(BIJAK_PAPERS_MESSAGES.generateLimit),
+      details: z.strictObject({
+        limitSections: z
+          .array(z.strictObject({ section: z.string().min(1).optional() }))
+          .meta({
+            description: 'Sections that were being solved when the budget ran out; section may be absent.',
+          }),
+      }),
+      requestId: z.string().optional(),
+    }),
+  })
+  .meta({ id: 'BijakGenerateLimitError' })
+export type BijakGenerateLimitError = z.infer<typeof BijakGenerateLimitErrorSchema>

@@ -5,6 +5,7 @@ import { TimestampSchema } from '../common/time'
 import {
   QUESTION_STATUS_MESSAGE,
   QuestionCurriculumTagSchema,
+  QuestionKbatLevelSchema,
   QuestionPartSchema,
   QuestionPublicPartSchema,
   QuestionStatusSchema,
@@ -108,6 +109,10 @@ export const QuestionListQuerySchema = PageQuerySchema.extend({
   complianceFilter: z.string().optional().meta({ description: 'missing_source | verified_generated | a compliance status' }),
   sourceFilter: z.string().optional().meta({ description: 'textbook | dskp | trial | marking_scheme' }),
   search: z.string().optional(),
+  /** BJS-06 (15.7): only questions flagged "Perlu semakan tag". */
+  tagReview: z.enum(['true']).optional(),
+  /** BJS-06 (15.7): questions with at least one leaf part lacking this EFFECTIVE value (after inheritance). */
+  missing: z.enum(['unit', 'tp', 'marks', 'key']).optional(),
 }).meta({ id: 'QuestionListQuery' })
 
 export const QuestionSummarySchema = z
@@ -183,6 +188,10 @@ export const QuestionSchema = z
     /** v2 additions (BE-09 AC 1 to 3, 12): absent on rows that only have the flat shape. */
     parts: z.array(QuestionPartSchema).min(1).max(20).optional(),
     tag: QuestionCurriculumTagSchema.optional(),
+    /** BJS-06: question-level KBAT (null = Bukan KBAT), "Perlu semakan tag" flag and the catalogue the tag was made against. */
+    kbat: QuestionKbatLevelSchema.nullable().optional(),
+    tagReview: z.boolean().optional(),
+    catalogueVersion: z.string().nullable().optional(),
     stimulusGroup: QuestionStimulusGroupSchema.nullable().optional(),
   })
   .meta({ id: 'Question' })

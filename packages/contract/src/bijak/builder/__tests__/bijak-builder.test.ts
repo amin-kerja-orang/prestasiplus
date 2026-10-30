@@ -144,6 +144,12 @@ const bpSection = (over: Record<string, unknown> = {}) => ({
   instruction: '',
   rule: { type: 'all' },
   pool: 'mat-k2-a',
+  position: 1,
+  profile: null,
+  quota: null,
+  kbatMarks: null,
+  kbatReviewed: false,
+  allowedModes: [],
   ...over,
 })
 const bpView = (over: Record<string, unknown> = {}) => ({
@@ -155,6 +161,19 @@ const bpView = (over: Record<string, unknown> = {}) => ({
   durationMin: 150,
   instructions: ['Jawab semua soalan.'],
   totalMarks: 26,
+  version: 1,
+  servesStudents: true,
+  verification: null,
+  evidenceCount: 0,
+  notes: null,
+  subPartRamp: false,
+  kbatMarks: null,
+  levelShare: null,
+  warnings: [],
+  needsReview: false,
+  reviewPapers: [],
+  reference: [],
+  dependentPaperCount: 0,
   sections: [
     bpSection(),
     bpSection({
@@ -336,7 +355,10 @@ describe('editor read: BuilderQuestion, BuilderGroup, BlueprintView, PaperEditor
       expect(BijakBlueprintViewSchema.safeParse(bpView({ sections })).success, key).toBe(false)
     }
     expect(BijakBlueprintViewSchema.safeParse(bpView({ id: 'bp-1' })).success).toBe(false)
-    expect(BijakBlueprintViewSchema.safeParse(bpView({ version: 1 })).success).toBe(false)
+    expect(BijakBlueprintViewSchema.safeParse(bpView({ unknownKey: 1 })).success).toBe(false)
+    for (const key of ['version', 'servesStudents', 'verification', 'needsReview', 'reviewPapers']) {
+      expect(BijakBlueprintViewSchema.safeParse({ ...bpView(), [key]: undefined }).success, key).toBe(false)
+    }
     expect(
       BijakBlueprintViewSchema.safeParse(bpView({ sections: [bpSection({ take: 2 })] })).success,
     ).toBe(false)
@@ -759,7 +781,7 @@ describe('blueprint list and admin writes (writes have no mock)', () => {
     ).toBe(false)
     expect(
       BijakBlueprintAdminVersionInputSchema.safeParse(
-        bpInput({ sections: [bpSectionInput({ allowedModes: ['essay'] })] }),
+        bpInput({ sections: [bpSectionInput({ allowedModes: ['lain'] })] }),
       ).success,
     ).toBe(false)
     const noBudget = Object.fromEntries(

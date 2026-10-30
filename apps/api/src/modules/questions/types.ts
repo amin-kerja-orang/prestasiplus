@@ -112,6 +112,10 @@ export interface QuestionVersionRecord {
   topicId: string | null
   formOrigin: 't1_t3' | 't4' | 't5'
   cognitiveLevel: number | null
+  /** DSKP KBAT of the question (null = Bukan KBAT); leaf parts may override. */
+  kbat: 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta' | null
+  tagReview: boolean
+  catalogueVersion: string | null
   /** 1..6 (the flat wire clamps 6 to 5). */
   difficultyTp: number | null
   sourcePage: number | null
@@ -184,6 +188,8 @@ export interface AdminListFilter {
   difficultyLevel?: string
   status?: QuestionStatus
   dskpFilter?: string
+  tagReview?: boolean
+  missing?: 'unit' | 'tp' | 'marks' | 'key'
   complianceFilter?: string
   sourceFilter?: string
   search?: string

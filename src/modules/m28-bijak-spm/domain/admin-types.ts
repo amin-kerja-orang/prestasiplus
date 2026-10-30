@@ -228,7 +228,7 @@ export interface BlueprintView {
     instruction: string
     rule: SectionDef['rule']
     /** Pool the section draws from in Jana Kertas (the builder uses it to suggest questions). */
-    pool: string
+    pool: string | null
   }[]
 }
 
