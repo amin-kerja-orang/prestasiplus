@@ -12,6 +12,7 @@ import type { StudentSearchItem } from '../../api/users'
 import UserCreatePage from '../../pages/UserCreatePage.vue'
 import { expectListInFlow } from './in-flow'
 import { expectFinderWidthContract } from './parent-finder-width'
+import { expectOneColumnBelowMd } from './form-columns'
 
 const users = vi.hoisted(() => ({
   createAdminUser: vi.fn(),
@@ -601,5 +602,13 @@ describe('UserCreatePage (M02 S2) officers', () => {
     ])
     expect(spy).toHaveBeenCalledWith('JPN load error:', expect.anything())
     spy.mockRestore()
+  })
+})
+
+describe('UserCreatePage (M02 S2) one column below 768px (BUG-06, DV-M02-31)', () => {
+  it('keeps the two-column grid for md and up only', async () => {
+    const w = await render()
+    await type(w, 'user-role', 'student')
+    expectOneColumnBelowMd(w)
   })
 })

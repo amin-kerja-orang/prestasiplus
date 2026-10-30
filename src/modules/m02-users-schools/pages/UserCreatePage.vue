@@ -19,7 +19,7 @@ import type { Role } from '@/modules/m01-authentication'
 
 import { isHttpMode } from '@/api/mode'
 import { useFlash } from '@/composables'
-import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
+import { DsFormBar, DsFormField, DsNativeSelect, DsPage } from '@/ds'
 
 import { fetchJpnList, type Jpn, type SchoolSummary } from '../api/schools'
 import {
@@ -36,6 +36,7 @@ import ParentStudentLinker from '../components/ParentStudentLinker.vue'
 import SchoolAdminGenerator from '../components/SchoolAdminGenerator.vue'
 import StudentSchoolPicker from '../components/StudentSchoolPicker.vue'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
+import ResponsiveFormSection from '../components/ResponsiveFormSection.vue'
 import type { CredentialRow } from '../lib/credential-row'
 import { errorLines, USERS_LIST_PATH } from '../lib/user-list'
 import {
@@ -281,11 +282,10 @@ async function submit(): Promise<void> {
         </UAlert>
       </div>
 
-      <DsFormSection
+      <ResponsiveFormSection
         title="Peranan"
         description="Pilih peranan; borang akan menyesuaikan diri."
         icon="user-gear"
-        :columns="2"
       >
         <DsFormField native for="user-role" label="Peranan" required>
           <DsNativeSelect
@@ -299,17 +299,16 @@ async function submit(): Promise<void> {
             <option v-for="o in roleOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
           </DsNativeSelect>
         </DsFormField>
-      </DsFormSection>
+      </ResponsiveFormSection>
 
       <!-- school_admin (FR-M02-27…31) -->
-      <DsFormSection
+      <ResponsiveFormSection
         v-if="isSchoolAdmin"
         title="Admin Sekolah"
         description="Cari sekolah dan janakan akaun pentadbir."
         icon="buildings"
-        :columns="2"
       >
-        <div class="sm:col-span-2">
+        <div class="md:col-span-2">
           <SchoolAdminGenerator
             v-model:school="genSchool"
             v-model:generated="generated"
@@ -322,10 +321,10 @@ async function submit(): Promise<void> {
             @copy="copyText"
           />
         </div>
-      </DsFormSection>
+      </ResponsiveFormSection>
 
       <!-- standard roles and officers (FR-M02-22, FR-M02-32) -->
-      <DsFormSection
+      <ResponsiveFormSection
         v-if="isStandard || isOfficer"
         title="Maklumat Akaun"
         :description="
@@ -339,7 +338,6 @@ async function submit(): Promise<void> {
         "
         icon="identification-card"
         data-testid="user-fields"
-        :columns="2"
       >
         <DsFormField native for="user-name" label="Nama" required>
           <UInput
@@ -383,15 +381,15 @@ async function submit(): Promise<void> {
             />
           </DsFormField>
 
-          <div v-if="role === 'parent'" class="min-w-0 sm:col-span-2">
+          <div v-if="role === 'parent'" class="min-w-0 md:col-span-2">
             <ParentStudentLinker v-model="linked" variant="create" />
           </div>
 
           <template v-if="role === 'student'">
-            <div class="sm:col-span-2">
+            <div class="md:col-span-2">
               <GradeCards v-model="grade" />
             </div>
-            <div class="sm:col-span-2">
+            <div class="md:col-span-2">
               <DsFormField
                 native
                 for="user-ic"
@@ -416,7 +414,7 @@ async function submit(): Promise<void> {
             </div>
           </template>
 
-          <div v-if="role === 'student' || role === 'teacher'" class="sm:col-span-2">
+          <div v-if="role === 'student' || role === 'teacher'" class="md:col-span-2">
             <StudentSchoolPicker v-model="stdSchool" />
           </div>
         </template>
@@ -462,7 +460,7 @@ async function submit(): Promise<void> {
           />
         </DsFormField>
 
-        <div v-if="isStandard" class="sm:col-span-2">
+        <div v-if="isStandard" class="md:col-span-2">
           <UserFormSwitch
             v-model="form.isActive"
             name="is_active"
@@ -471,7 +469,7 @@ async function submit(): Promise<void> {
             testid="user-active"
           />
         </div>
-      </DsFormSection>
+      </ResponsiveFormSection>
 
       <!-- FR-M02-34: the footer appears once a role is chosen -->
       <DsFormBar

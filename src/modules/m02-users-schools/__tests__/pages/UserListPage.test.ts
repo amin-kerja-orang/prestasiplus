@@ -319,3 +319,18 @@ describe('UserListPage (M02 S1)', () => {
     })
   })
 })
+
+describe('UserListPage (M02 S1) delete dialogs below 768px (BUG-06, DV-M02-31)', () => {
+  it('the single and bulk dialogs lift the sm width cap below md', async () => {
+    const w = await render()
+    await pickRowMenuItem(w, '[data-user-id="2"]', 'Padam')
+    const single = document.querySelector('[role="dialog"]')
+    expect(single?.classList.contains('max-md:sm:max-w-none')).toBe(true)
+    ;(document.querySelector('[data-testid="users-delete-cancel"]') as HTMLElement).click()
+    await flushPromises()
+    await w.get('[data-testid="users-select-all"]').trigger('click')
+    await w.get('[data-testid="users-bulk-delete"]').trigger('click')
+    const bulk = document.querySelector('[role="dialog"]')
+    expect(bulk?.classList.contains('max-md:sm:max-w-none')).toBe(true)
+  })
+})

@@ -25,7 +25,6 @@ import {
   DsBackLink,
   DsFormBar,
   DsFormField,
-  DsFormSection,
   DsLoadError,
   DsNativeSelect,
   DsPage,
@@ -47,6 +46,7 @@ import GeneratedCredentials from '../components/GeneratedCredentials.vue'
 import GradeCards from '../components/GradeCards.vue'
 import ParentStudentLinker from '../components/ParentStudentLinker.vue'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
+import ResponsiveFormSection from '../components/ResponsiveFormSection.vue'
 import type { CredentialRow } from '../lib/credential-row'
 import { errorLines, initialsOf, USERS_LIST_PATH } from '../lib/user-list'
 import {
@@ -300,11 +300,10 @@ async function submit(): Promise<void> {
           </UAlert>
         </div>
 
-        <DsFormSection
+        <ResponsiveFormSection
           title="Maklumat Akaun"
           description="Nama, emel, telefon dan peranan."
           icon="identification-card"
-          :columns="2"
         >
           <DsFormField native for="user-name" label="Nama" required>
             <UInput
@@ -360,7 +359,7 @@ async function submit(): Promise<void> {
             </DsNativeSelect>
           </DsFormField>
 
-          <div class="sm:col-span-2">
+          <div class="md:col-span-2">
             <UserFormSwitch
               v-model="form.isActive"
               name="is_active"
@@ -373,17 +372,16 @@ async function submit(): Promise<void> {
               </template>
             </UserFormSwitch>
           </div>
-        </DsFormSection>
+        </ResponsiveFormSection>
 
         <!-- student: FR-M02-39, 40 -->
         <template v-if="showStudent">
-          <DsFormSection
+          <ResponsiveFormSection
             title="Maklumat Pelajar"
             description="Tahap pendidikan dan No. Kad Pengenalan."
             icon="graduation-cap"
-            :columns="2"
           >
-            <div class="sm:col-span-2"><GradeCards v-model="grade" /></div>
+            <div class="md:col-span-2"><GradeCards v-model="grade" /></div>
 
             <DsFormField
               native
@@ -406,15 +404,14 @@ async function submit(): Promise<void> {
                 data-testid="user-ic"
               />
             </DsFormField>
-          </DsFormSection>
+          </ResponsiveFormSection>
 
-          <DsFormSection
+          <ResponsiveFormSection
             v-if="!http"
             title="Pakej Langganan"
             description="Tukar pakej secara manual. Tarikh tamat dikira automatik mengikut jenis pakej."
             icon="crown"
             data-testid="user-package-block"
-            :columns="2"
           >
             <DsFormField native for="user-package" label="Pakej Soalan">
               <DsNativeSelect
@@ -446,30 +443,30 @@ async function submit(): Promise<void> {
                 </template>
               </UserFormSwitch>
             </div>
-          </DsFormSection>
+          </ResponsiveFormSection>
         </template>
 
         <!-- student, teacher: FR-M02-41 -->
-        <DsFormSection
+        <ResponsiveFormSection
           v-if="showSchool"
           title="Sekolah"
           description="Sekolah pengguna ini."
           icon="buildings"
-          :columns="2"
         >
-          <div class="sm:col-span-2"><AdminSchoolPicker v-model="school" /></div>
-        </DsFormSection>
+          <div class="md:col-span-2"><AdminSchoolPicker v-model="school" /></div>
+        </ResponsiveFormSection>
 
         <!-- parent: FR-M02-42 -->
-        <DsFormSection
+        <ResponsiveFormSection
           v-if="showParent"
           title="Anak yang Dipautkan"
           description="Pelajar yang dipautkan kepada ibu bapa ini."
           icon="users"
-          :columns="2"
         >
-          <div class="min-w-0 sm:col-span-2"><ParentStudentLinker v-model="linked" variant="edit" /></div>
-        </DsFormSection>
+          <div class="min-w-0 md:col-span-2">
+            <ParentStudentLinker v-model="linked" variant="edit" />
+          </div>
+        </ResponsiveFormSection>
 
         <!-- FR-M02-43: password reset -->
         <DsPanel padding="none">

@@ -11,6 +11,7 @@ import { useFlashStore } from '@/stores/flash'
 
 import type { AdminSchool } from '../../api/schools-admin'
 import SchoolFormPage from '../../pages/SchoolFormPage.vue'
+import { expectOneColumnBelowMd } from './form-columns'
 
 const api = vi.hoisted(() => ({
   createSchool: vi.fn(),
@@ -222,5 +223,18 @@ describe('SchoolFormPage edit (M02 S11)', () => {
     const w = await render({ mode: 'edit', id: 42 })
     expect(w.find('[data-testid=school-form-skeleton]').exists()).toBe(true)
     expect(w.find('[data-testid=school-form]').exists()).toBe(false)
+  })
+})
+
+describe('SchoolFormPage (M02 S10 / S11) one column below 768px (BUG-06, DV-M02-31)', () => {
+  it('create: keeps the two-column grid for md and up only', async () => {
+    const w = await render({ mode: 'create' })
+    expectOneColumnBelowMd(w)
+  })
+
+  it('edit: keeps the two-column grid for md and up only', async () => {
+    api.fetchAdminSchool.mockResolvedValue({ data: SCHOOL, status: 'ok' })
+    const w = await render({ mode: 'edit', id: 42 })
+    expectOneColumnBelowMd(w)
   })
 })

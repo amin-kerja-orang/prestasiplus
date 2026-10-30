@@ -11,6 +11,7 @@ import type { ExistingStudent, SchoolQuota } from '../../api/imports'
 import type { SchoolSummary } from '../../api/schools'
 import StudentImportPage from '../../pages/StudentImportPage.vue'
 import { expectListInFlow } from './in-flow'
+import { expectOneColumnBelowMd } from './form-columns'
 
 const imports = vi.hoisted(() => ({
   importStudents: vi.fn(),
@@ -326,5 +327,15 @@ describe('StudentImportPage (M02 S5) submit', () => {
     expect((t(w, 'import-paste').element as HTMLTextAreaElement).value).toBe(
       'X\nm-2@moe-dl.edu.my\nk',
     )
+  })
+})
+
+describe('StudentImportPage (M02 S5) one column below 768px (BUG-06, DV-M02-31)', () => {
+  it('keeps the two-column grid for md and up only, and stacks the school picker row below md', async () => {
+    const w = await render()
+    expectOneColumnBelowMd(w)
+    const row = t(w, 'admin-school-state').element.parentElement
+    expect(row?.classList.contains('md:flex-row')).toBe(true)
+    expect(row?.classList.contains('sm:flex-row')).toBe(false)
   })
 })

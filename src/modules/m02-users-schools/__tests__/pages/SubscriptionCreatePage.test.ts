@@ -9,6 +9,7 @@ import { ApiError } from '@/api'
 import type { SchoolPackage } from '../../api/subscriptions'
 import { searchSchools } from '../../api/schools'
 import SubscriptionCreatePage from '../../pages/SubscriptionCreatePage.vue'
+import { expectOneColumnBelowMd } from './form-columns'
 import { expectListInFlow } from './in-flow'
 
 const api = vi.hoisted(() => ({ fetchSchoolPackages: vi.fn(), createSubscription: vi.fn() }))
@@ -161,5 +162,12 @@ describe('SubscriptionCreatePage (M02 S13)', () => {
       expect.objectContaining({ packageTier: 'basic', studentQuota: 100, schoolId: null }),
     )
     expect(router.currentRoute.value.path).toBe('/admin/school-subscriptions/1001')
+  })
+})
+
+describe('SubscriptionCreatePage (M02 S13) one column below 768px (BUG-06, DV-M02-31)', () => {
+  it('keeps the two-column grid for md and up only', async () => {
+    const { w } = await render()
+    expectOneColumnBelowMd(w)
   })
 })
