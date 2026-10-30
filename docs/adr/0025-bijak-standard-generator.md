@@ -1,4 +1,4 @@
-# ADR-0022: Jana Kertas generator is a bounded exact search in `@pp/exam-core`
+# ADR-0025: Jana Kertas generator is a bounded exact search in `@pp/exam-core`
 
 - **Status:** Accepted (G2 of `bijak-spm`, approved by the user 2026-10-29)
 - **Date:** 2026-10-29

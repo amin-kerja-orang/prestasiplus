@@ -1,4 +1,4 @@
-# ADR-0023: Blueprint standard model: JSONB documents, per-leaf TP, serving flag
+# ADR-0026: Blueprint standard model: JSONB documents, per-leaf TP, serving flag
 
 - **Status:** Accepted (G2 of `bijak-spm`, approved by the user 2026-10-29)
 - **Date:** 2026-10-29
@@ -22,3 +22,6 @@ The blueprint must carry an exact topic quota, a difficulty profile with slot gr
 
 ## Revision 2026-10-29 (O-1)
 Unit attribution moves from the question to the **leaf part**: `question_parts.unit_node_id` and `form_origin` are nullable overrides of the question's primary unit (same inheritance as TP and cognitive level). Marks-basis quota lines count leaf marks per effective unit; questions-basis lines count a question once under its primary unit. Reason: the layer-2 data files showed multi-topic questions (Matematik 1449/2 Bahagian C, Sejarah 1249/2 Bahagian B) that one primary unit cannot represent. Cost: two nullable columns and a unit signature in the solver's question types (`v2-bijak-spm-standards.md` 3.1a, 5.3).
+
+## Revision 2026-10-30 (DSKP reconciliation)
+The 1..6 cognitive level is withdrawn. KBAT follows the approved `v2-dskp-integration` tag (A9): `kbat` is one of `mengaplikasi`, `menganalisis`, `menilai`, `mencipta` or null (Bukan KBAT), optional, never a gate, held per question with a nullable per-leaf-part override (`bukan` = explicitly not KBAT). `question_versions` gains `kbat`, `tag_review`, `catalogue_version` and loses `cognitive_level`; `question_parts` gains `kbat` instead of `cognitive_level`. Questions with `tag_review = true` are not eligible for the pool. Decision 2 above reads "TP and KBAT per leaf part". This ADR was renumbered from 0023 because the unmerged dskp branch uses 0022 to 0024.

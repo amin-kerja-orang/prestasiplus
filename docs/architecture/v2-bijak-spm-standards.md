@@ -4,7 +4,7 @@
 - **Track / gate:** Full, G2 (system design). G1 is done. UX/UI design of the admin screens runs in parallel in `docs/design/`.
 - **Date:** 2026-10-29 | **Owner:** solution-architect | **Status:** G2 approved by the user 2026-10-29 (section 13.1 records the decisions).
 - **Reads:** `v2-bijak-spm.md` (ACs cited as AC-xx.y), `docs/discovery/SPM-paper-patterns.md` (SPP), `v2-exam-schema.md` (D2, D8, D9, now aligned, Q-B24 closed), `v2-data-model.md` 3.8, `v2-backend-plan.md`, ADR-0021, and the code under `apps/api/prisma/schema/{exam,questions,curriculum}.prisma`, `packages/exam-core`, `packages/contract/src/bijak`, `apps/api/src/modules/{bijak,exam}`.
-- **New ADRs:** [0022](../adr/0022-bijak-standard-generator.md) (generator algorithm), [0023](../adr/0023-bijak-blueprint-standard-model.md) (blueprint standard model and serving rule).
+- **New ADRs:** [0025](../adr/0025-bijak-standard-generator.md) (generator algorithm), [0026](../adr/0026-bijak-blueprint-standard-model.md) (blueprint standard model and serving rule).
 - **Tags:** [PROPOSED] = new BM copy or a proposal not in the requirements. [Default] = tunable value.
 
 ## 1. What changes, in one page
@@ -13,7 +13,7 @@ Today `composeFromBlueprint` (exam-core) fills each section with a **count** of 
 
 | Area | Decision (summary) |
 |---|---|
-| TP and cognitive level | Stored **per leaf part** as nullable overrides on `question_parts`; the existing `question_versions.difficulty_tp` / `cognitive_level` become the **default inherited by parts**. Question TP and KBAT marks are computed (max, sum), never stored. KBAT = effective cognitive level >= 3. |
+| TP and KBAT | (revised 2026-10-30, DSKP reconciliation) TP, unit and KBAT are tagged per question as in the approved v2-dskp-integration CurriculumTag v2 (kbat = mengaplikasi, menganalisis, menilai, mencipta or null = Bukan KBAT, optional, no gate) and may be overridden per leaf part (nullable columns on question_parts). Question TP and KBAT marks are computed (max, sum), never stored. KBAT leaf = effective kbat is not null. The 1..6 cognitive_level is withdrawn. |
 | Blueprint content | Existing columns reused (`mark_budget`, `question_count`, rule, `allowed_modes`, `pool`). New JSONB documents on `blueprint_sections`: `profile`, `quota`, plus `kbat_marks`. `topic_weights` (never used) and `cognitive_mix` are superseded. Zod schemas in `@pp/contract` are the single definition. |
 | Verification | Two new tables: `blueprint_evidence`, `blueprint_verifications`. `blueprints.source` becomes `verified` only through a `verify` endpoint (Admin Pusat) that runs the AC-39.1 list and the AC-39.7 evidence comparison. |
 | Versioning / serving | Every edit is a new `blueprints` row (already the rule). New flag `serves_students` (at most one row per subject and kertas) decides what real students get; the last Disahkan keeps serving while a Spec version is the head (Q-B22). |
@@ -27,7 +27,7 @@ flowchart LR
   subgraph FE[Frontend]
     AdminUI[Admin: Kontrak Blueprint editor, Pengesahan, Pratonton kolam]
     StudentUI[Student: Bijak SPM / Jana Kertas]
-    BankUI[Bank Soalan forms: TP + tahap kognitif per bahagian]
+    BankUI[Bank Soalan forms: TP + unit, TP, KBAT per bahagian]
   end
   subgraph CT[@pp/contract]
     Std[bijak/standards schemas + paths]
@@ -44,7 +44,7 @@ flowchart LR
     BP[bijak/blueprints: admin service, versioning, serving, verification]
     PS[bijak/papers: generate, pool preview, draft]
     PoolSrc[BijakPoolSource port]
-    Q[questions module M04 (owner of leaf TP/cognitive)]
+    Q[questions module M04 (owner of leaf unit, TP and KBAT)]
   end
   DB[(PostgreSQL)]
   AdminUI --> Std
@@ -66,25 +66,31 @@ Boundaries (ADR-0014, D12): Bijak never reads question tables directly; it reads
 
 ## 3. Data model deltas
 
-### 3.1 TP and cognitive level per leaf part (Q-B19, Q-B24)
+### 3.1 TP and KBAT per leaf part (Q-B19, Q-B24; revised 2026-10-30, DSKP reconciliation)
 
-Where it lives today: `question_versions.difficulty_tp` and `question_versions.cognitive_level` (nullable smallints); `question_parts` has neither.
+**One encoding across intake, bank and Jana Kertas.** The approved `v2-dskp-integration` feature (G2 approved 2026-10-25, branch `origin/claude/determined-dijkstra-ju5q60`) defines the question tag `CurriculumTag` v2: `formOrigin`, `unitId`, `spIds`, `tp` (nullable until chosen), `kbat: 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta' | null` (null = empty or "Bukan KBAT"; independent of TP; **not** required by any gate), `catalogueVersion`, and a `review` marker (DB: `form_origin`, `unit_node_id`, `sp_node_ids[]`, `tp`, `kbat`, `catalogue_version`, `tag_review`). Jana Kertas adopts exactly this. The earlier 1..6 `cognitive_level` integer (Mengingat to Mencipta) is **withdrawn**: the DSKP defines only the four KBAT levels, and the user confirmed the level select on 2026-10-25.
+
+- **Question level (default).** `question_versions.kbat` (new, text, CHECK in the four levels, NULL = Bukan KBAT), `tag_review` (boolean, default false), `catalogue_version` (text null). `difficulty_tp`, `unit_node_id`, `form_origin` already exist. `question_versions.cognitive_level` is **dropped** (see 3.7 for the data step).
+- **Leaf part (override), `question_parts`:**
 
 ```prisma
 model QuestionPart {
   // ... existing columns ...
   /// Leaf only. 1..6. NULL = inherit question_versions.difficulty_tp.
-  difficultyTp   Int? @map("difficulty_tp")   @db.SmallInt
-  /// Leaf only. 1..6 (1 Mengingat, 2 Memahami, 3 Mengaplikasi, 4 Menganalisis, 5 Menilai, 6 Mencipta). NULL = inherit.
-  cognitiveLevel Int? @map("cognitive_level") @db.SmallInt
+  difficultyTp Int?    @map("difficulty_tp") @db.SmallInt
+  /// Leaf only. NULL = inherit question_versions.kbat. 'bukan' = explicitly Bukan KBAT (overrides a KBAT question default).
+  /// CHECK in ('mengaplikasi','menganalisis','menilai','mencipta','bukan').
+  kbat         String? @map("kbat")
+  // unitNodeId / formOrigin overrides: see 3.1a
 }
 ```
 
-- CHECK: values 1..6; both NULL on branch parts (`mode is null`).
-- **Effective leaf value** = `coalesce(part.value, version.value)`. **Question TP** = max over leaves of effective TP. **KBAT marks of a question** = sum of `marks` of leaves whose effective cognitive level >= 3. Both are computed in one place (`describeQuestion`, section 4.2) from the facts the pool source returns; no column stores them, so they cannot drift.
-- The version-level columns keep their meaning "question default" (D2 text now says so). Authoring UI: set once on the question, override per part only where a part differs.
-- No backfill: existing rows have NULL part values and inherit. The publish gate keeps requiring version-level `difficulty_tp` (existing); it must **also** require `cognitive_level` (D2 already says "R at Terbit", the service today does not), grandfathering already-published versions (they surface as "tiada tahap kognitif" in the preview). Task BJS-06.
-- Legacy `kbat_level` migration (`v2-data-migration.md`): "LOTS 1-2" to 1/2, "MOTS 3" to 3, "HOTS 4-6" to 4-6. Level 3 is now Mengaplikasi = **KBAT**, so migrated MOTS questions count as KBAT. The migrated numbers were TP-like, not Bloom levels: treat as a first guess to confirm at bank review (open point O-3).
+- CHECK: `difficulty_tp` 1..6; part overrides NULL on branch parts (`mode is null`).
+- **Effective leaf value** = part value if not NULL, else the question's. Effective leaf `kbat` is "KBAT" when the resolved level is one of the four levels (a part value `bukan`, or a NULL question default, means not KBAT). **Question TP** = max over leaves of effective TP. **KBAT marks of a question** = sum of `marks` of leaves that are KBAT. Computed in one place (`describeQuestion`, 4.2); nothing derived is stored. exam-core models the result as `kbat: boolean` per leaf.
+- Authoring: tag once on the question (the DSKP intake editor); override per part only where a part differs (BJS-17).
+- **No gate on KBAT.** `kbat` is optional (A9). The Terbit gate is the DSKP rule `tagIssues` (unit, SP, TP) owned by the `v2-dskp-integration` backend; Jana Kertas adds none. A question with `tag_review = true` ("Perlu semakan tag") is **not eligible** for the Jana Kertas pool (reason `tag_review`, 4.2) and is blocked at publish by that same rule, so the two cannot disagree.
+- Legacy: old `kbat` text values ("Mengaplikasi" etc.) keep as the enum (lower-cased, DSKP migration table 2.8); "LOTS/MOTS/HOTS n" carry no Bloom level and map to NULL.
+
 
 ### 3.1a Unit per leaf part (revised 2026-10-29, O-1)
 
@@ -97,7 +103,7 @@ model QuestionPart {
 }
 ```
 
-- Effective leaf unit = part value, else the question's (`coalesce`, in the same SQL as TP and cognitive level). The question's own `unit_node_id` stays the **primary unit** (the publish gate keeps requiring it); parts override only where they differ (Sejarah Q7: 12 marks Tajuk 12, 8 marks Tajuk 14).
+- Effective leaf unit = part value, else the question's (`coalesce`, in the same SQL as TP and KBAT). The question's own `unit_node_id` stays the **primary unit** (the publish gate keeps requiring it); parts override only where they differ (Sejarah Q7: 12 marks Tajuk 12, 8 marks Tajuk 14).
 - Quota accounting: marks-basis lines sum leaf marks per effective unit; questions-basis lines count a question once under its primary unit. A paper's `unitCounts` in `standardReport` and `verifyComposition` use the same two rules, so the generator, the preview and the oracle agree.
 - Migration: two nullable columns, no backfill (all inherit). Bank forms (BJS-F6) show the per-part unit only as an override. Task BJS-06 carries the question-module change; BJS-02 the migration.
 - Not affected: `describeQuestion` still reports one `tp` (max) and one `kbatMarks` per question.
@@ -172,7 +178,7 @@ JSON documents (validated by the zod schemas of section 6.1 on write and re-pars
 ```
 
 - `UnitRef.unit.nodeId` is a `curriculum_nodes.id` of kind `unit` (stable, pins the DSKP edition). The API response adds `code`, `level` (`T4`/`T5`) and `title` for display. `t1_t3` is the bucket "T1-T3, luar DSKP" (questions with `form_origin = t1_t3` and no unit).
-- Why JSONB and not child tables: the data is only ever read and written as part of one section, never queried across blueprints; referential integrity is checked by the validator on save; this matches `reference_sheets`. Decision recorded in ADR-0023.
+- Why JSONB and not child tables: the data is only ever read and written as part of one section, never queried across blueprints; referential integrity is checked by the validator on save; this matches `reference_sheets`. Decision recorded in ADR-0026.
 - (revised 2026-10-29, O-1) A quota line is credited by **leaf part**. Each leaf has an effective unit (the part's own unit, else the question's primary unit `question_versions.unit_node_id`) or the bucket `t1_t3`. **Marks-basis** lines add the marks of each leaf to its effective unit; **questions-basis** lines count a question once, for its primary unit. See 3.1a.
 
 ### 3.4 Evidence and verification (US-39, Q-B13)
@@ -273,7 +279,7 @@ model Paper {
 
 One migration `00NN_bijak_standards` (next free number above `0091`; check at implementation time), written by hand for the CHECK constraints and partial indexes, plus the Prisma schema edits:
 
-1. `question_parts`: add `difficulty_tp`, `cognitive_level` + CHECKs.
+1. `question_parts`: add `difficulty_tp`, `kbat` (text, CHECK incl. 'bukan'), `unit_node_id`, `form_origin` + CHECKs. `question_versions`: add `kbat`, `tag_review`, `catalogue_version`; **drop `cognitive_level`** after copying existing values 3 to 6 to `kbat` (3 mengaplikasi, 4 menganalisis, 5 menilai, 6 mencipta; 1, 2 and NULL to NULL) for dev and seed rows, asserting first that no production row has it. (revised 2026-10-30, DSKP reconciliation) Amends migration 0092 in place (it is unmerged).
 2. `blueprints`: add columns of 3.2; backfill `structure_hash` for existing rows by a script step (`BJS-02`). Any existing `source = verified` row is downgraded to `spec` first (the PoC and demo seeds are all Spec; a Disahkan row can only exist under the new verification rule, so the CHECK `source <> 'verified' or verification_id is not null` holds afterwards).
 3. `blueprint_sections`: add `profile`, `quota`, `kbat_marks`; **drop `topic_weights`** (grep shows no reader or writer outside generated code; assert zero non-null rows first).
 4. Create `blueprint_evidence`, `blueprint_verifications`, indexes, CHECKs.
@@ -296,9 +302,9 @@ New files (public API additions only; `composeFromBlueprint`, `poolUnits` and th
 | `evidence.ts` | `checkEvidence(bp, evidence)` (section 6.5). |
 | `shortage.ts` | Typed shortage lines and BM formatter (extends `shortageLine`). |
 
-### 4.1 Cognitive levels
+### 4.1 KBAT levels (revised 2026-10-30, DSKP reconciliation)
 
-`COGNITIVE_LEVELS = [{n:1,key:'mengingat'},{n:2,'memahami'},{n:3,'mengaplikasi'},{n:4,'menganalisis'},{n:5,'menilai'},{n:6,'mencipta'}]`; the BM display names are the keys capitalised. `isKbatLevel(n) => n >= 3`. The frontend imports the same constant (no second table).
+`KBAT_LEVELS = ['mengaplikasi', 'menganalisis', 'menilai', 'mencipta']` (type `KbatLevel`; the same constant as the v2-dskp-integration tag, shared with the bank filter options). Per leaf the facts carry `kbat: boolean` (effective level present and not 'bukan'); exam-core needs no level names for counting. The frontend imports the same constant (no second table).
 
 ### 4.2 Question facts and eligibility (US-38)
 
@@ -310,14 +316,14 @@ interface QuestionFacts {
   unit: { nodeId: string; level: 'T4' | 'T5'; code: string } | null
   formOrigin: 't1_t3' | 't4' | 't5'
   pools: string[]                                   // question_tags kind 'pool'
-  leaves: { marks: number | null; mode: string | null; tp: number | null; cognitiveLevel: number | null; hasKey: boolean }[]
-  // tp and cognitiveLevel are the EFFECTIVE values (coalesce part, version) computed in SQL
+  leaves: { marks: number | null; mode: string | null; tp: number | null; kbat: boolean; hasKey: boolean }[]
+  // tp, kbat and unit are the EFFECTIVE values (part override else question) computed in SQL
 }
 ```
 
-`describeQuestion` returns `{ marks, tp, kbatMarks, modes, bucket, unitMarks }` where `marks` = sum of leaf marks, `tp` = max leaf TP, `kbatMarks` = sum of marks of leaves with `isKbatLevel(cognitiveLevel)`, `bucket` = the **primary** `UnitKey` (`T4:3.0` style key from node id, or `t1_t3`; used by questions-basis lines), and (revised 2026-10-29, O-1) `unitMarks` = map `UnitKey -> marks` summed over leaves by each leaf's effective unit (used by marks-basis lines). Leaf `unit` in the facts is the effective value (part, else question). It returns a reason list when something is missing, in this fixed order (so counts add up): `no_unit` (a leaf with neither an effective unit nor `form_origin = t1_t3`), `no_tp`, `no_cognitive_level`, `no_marks` (a leaf without marks >= 1), `no_key`. `eligibilityOf(facts, section)` additionally returns `mode_not_allowed` (a leaf mode outside `allowed_modes`), `pool_mismatch` (section `pool` set and not among `pools`), `unit_not_in_quota` (quota present and the primary bucket, or in a marks-basis section any key of `unitMarks`, has no line with value > 0, AC-36.2/36.5). A stimulus group is an eligible **unit** only if every member is eligible for the section.
+`describeQuestion` returns `{ marks, tp, kbatMarks, modes, bucket, unitMarks }` where `marks` = sum of leaf marks, `tp` = max leaf TP, `kbatMarks` = sum of marks of leaves with `kbat = true`, `bucket` = the **primary** `UnitKey` (`T4:3.0` style key from node id, or `t1_t3`; used by questions-basis lines), and (revised 2026-10-29, O-1) `unitMarks` = map `UnitKey -> marks` summed over leaves by each leaf's effective unit (used by marks-basis lines). Leaf `unit` in the facts is the effective value (part, else question). It returns a reason list when something is missing, in this fixed order (so counts add up): `no_unit` (a leaf with neither an effective unit nor `form_origin = t1_t3`), `no_tp`, `no_marks` (a leaf without marks >= 1), `no_key`, `tag_review` (the question carries the Perlu semakan tag marker; (revised 2026-10-30, DSKP reconciliation)). KBAT is never a reason (optional, A9). `eligibilityOf(facts, section)` additionally returns `mode_not_allowed` (a leaf mode outside `allowed_modes`), `pool_mismatch` (section `pool` set and not among `pools`), `unit_not_in_quota` (quota present and the primary bucket, or in a marks-basis section any key of `unitMarks`, has no line with value > 0, AC-36.2/36.5). A stimulus group is an eligible **unit** only if every member is eligible for the section.
 
-The pool preview breakdown (AC-29.5/38.2) is a count by first reason, with the bank query link filters (`subject`, `status=published`, `missing=unit|tp|cognitive_level|marks`).
+The pool preview breakdown (AC-29.5/38.2) is a count by first reason, with the bank query link filters (see 15.7: `subjectId`, `status=published`, `tagReview`, `missing`).
 
 ### 4.3 Blueprint validation (AC-25.7, AC-35.x, AC-36.x, AC-37.5, US-39 gate part)
 
@@ -359,7 +365,7 @@ Per section s with M slots, find a set of **units** (single question or whole st
 
 Soft: prefer questions the student has not been served (AC-03.5), variety between papers (AC-03.4), mixed topic order (AC-36.6). Soft never overrides hard (AC-34.8).
 
-This is a multi-dimensional exact-count selection problem (subset-sum with several equality constraints). It is NP-hard in general, but the instance is small and structured: M <= 40 slots, <= 25 quota lines, <= 6 TP values, <= 6 slot groups, a few mark values. Chosen approach (ADR-0022): **exact bounded search over question "types", with polynomial necessary-condition pre-checks**, no external solver.
+This is a multi-dimensional exact-count selection problem (subset-sum with several equality constraints). It is NP-hard in general, but the instance is small and structured: M <= 40 slots, <= 25 quota lines, <= 6 TP values, <= 6 slot groups, a few mark values. Chosen approach (ADR-0025): **exact bounded search over question "types", with polynomial necessary-condition pre-checks**, no external solver.
 
 ### 5.2 Pipeline
 
@@ -488,10 +494,10 @@ BijakSlotGroup      = { from: int>=1, to: int>=from, tpMin: 1..6, tpMax: tpMin..
 BijakProfileKind    = 'ladder' | 'bahagian' | 'tema'
 BijakDifficultyProfile = { kind: BijakProfileKind, groups: BijakSlotGroup[] }          // 1..40 groups
 BijakQuotaBasis     = 'questions' | 'marks'
-BijakQuotaLine      = { unit: BijakUnitRef, value: int>=0, reviewed?: boolean /* view: REQUIRED; write: omitted, server-set (2026-10-30, BJS-01 review) */, tag?: 'observed' | 'inferred' | 'single_source' }   // tag: G3 note (b), informational
+BijakQuotaLine      = { unit: BijakUnitRef, value: int>=0, reviewed?: boolean /* view: REQUIRED; write: rejected (422), server-set (2026-10-30, BJS-01 review) */, tag?: 'observed' | 'inferred' | 'single_source' }   // tag: G3 note (b), informational
 // Question part (questions contract, BJS-06), revised 2026-10-29, O-1; all optional, null = inherit the question:
 BijakPartUnit       = { unitNodeId?: Id | null, formOrigin?: 't1_t3' | 't4' | 't5' | null }   // on each leaf part, read and write
-BijakPartStandardTags = { difficultyTp?: 1..6 | null, cognitiveLevel?: 1..6 | null }          // on each leaf part (3.1)
+BijakPartStandardTags = { difficultyTp?: 1..6 | null, kbat?: 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta' | 'bukan' | null }   // on each leaf part (3.1); the question carries kbat?: the four levels | null and tagReview: boolean
 BijakTopicQuota     = { basis: BijakQuotaBasis, lines: BijakQuotaLine[], levelShare?: { t4: int>=0, t5: int>=0 } }
 BijakEvidenceKind   = 'trial_paper' | 'skema' | 'lpm_format'
 BijakEvidenceValues = { durationMin?: int, totalMarks?: int,
@@ -507,7 +513,7 @@ Labels are never shown raw (AC-25.4/25.8): the UI maps `ladder` -> "Tangga mengi
 
 `BijakBlueprintAdminSectionInput` gains (all optional unless stated): `profile`, `quota`, `kbatMarks` (int or null), `allowedModes` (answer-mode enum array), `pool` becomes optional (was required). `BijakBlueprintAdminVersionInput` / `Create` gain: `totalMarks` (optional, must equal the sum), `notes`, `subPartRamp`, `kbatMarks`, `levelShare`; `source` narrows to `'Draf' | 'Spec'` (optional; server decides, section 3.5). `BijakBlueprintView` and its section gain the same fields plus: `version`, `servesStudents`, `verification` (summary or null), `evidenceCount`, `needsReview`, `reviewPapers` (6.3a), `warnings` (list of problem codes with `warning: true`).
 
-**Reviewed flags (AC-39.1(f), AC-39.9 "Belum disemak", (2026-10-30, BJS-01 review)).** `BijakQuotaLine` in the **view** gains required `reviewed: boolean`; the **section view** gains required `kbatReviewed: boolean`. On **write** both are optional and ignored: any quota line or `kbatMarks` value that Admin Pusat saves through the admin API is stored as `reviewed = true`; the server sets it and the client cannot send it. Storage: `reviewed` is a key of each quota line in the `quota` JSONB (absent = true) and `kbat_reviewed` is a boolean column on `blueprint_sections` (cheaper than a second JSONB). Seeded layer-2 values (BJS-12/13) are written `reviewed = false` / `kbat_reviewed = false`. New completeness code `UNREVIEWED` (with `sectionPosition`, optional `unit`) blocks `verify`; editing an unreviewed value in the editor and saving it marks it reviewed. A new version copies the flags of unchanged values; a changed value saved by the admin becomes reviewed.
+**Reviewed flags (AC-39.1(f), AC-39.9 "Belum disemak", (2026-10-30, BJS-01 review)).** `BijakQuotaLine` in the **view** gains required `reviewed: boolean`; the **section view** gains required `kbatReviewed: boolean`. On **write** both are **rejected** (strict schemas, 422 `VALIDATION_ERROR`; do not strip silently): the client builds write payloads explicitly, not by posting a view back. Any quota line or `kbatMarks` value that Admin Pusat saves through the admin API is stored as `reviewed = true`; the server sets it and the client cannot send it. Storage: `reviewed` is a key of each quota line in the `quota` JSONB (absent = true) and `kbat_reviewed` is a boolean column on `blueprint_sections` (cheaper than a second JSONB). Seeded layer-2 values (BJS-12/13) are written `reviewed = false` / `kbat_reviewed = false`. New completeness code `UNREVIEWED` (with `sectionPosition`, optional `unit`) blocks `verify`; editing an unreviewed value in the editor and saving it marks it reviewed. A new version copies the flags of unchanged values; a changed value saved by the admin becomes reviewed.
 
 ```ts
 BijakVerificationSummary = { verifiedAt: string(date-time), verifierName: string, verifierRole: 'admin',
@@ -580,10 +586,11 @@ BijakGenerateShortage = { section: string, need: int, have: int,
 ```ts
 BijakPoolPreview = {
   blueprint: { version: int, source: 'Draf'|'Spec'|'Disahkan' },
+  publishedTotal: int, eligibleTotal: int,             // (2026-10-30, F1-F4 gaps) KPI strip; publishedTotal = eligibleTotal + excluded.total
   verdict: 'boleh' | 'tidak_boleh' | 'tidak_pasti',        // "Boleh dijana" / "Tidak boleh dijana" / budget hit
   firstFailure: BijakGenerateShortage | null,
   warnings: BijakBlueprintProblem[],                   // KBAT_TP_BAND etc., same schema as on the view (2026-10-30, BJS-01 review)
-  excluded: { total: int, byReason: { reason: 'no_unit'|'no_tp'|'no_cognitive_level'|'no_marks'|'no_key', count: int, bankQuery: Record<string,string> }[] },
+  excluded: { total: int, byReason: { reason: 'no_unit'|'no_tp'|'tag_review'|'no_marks'|'no_key', count: int, bankQuery: Record<string,string> }[] },
   sections: [{
     position: int, label: string, slots: int, effectiveMarks: int, offeredMarks: int,
     eligible: int,                                      // questions eligible for this section (AC-29.1)
@@ -708,7 +715,7 @@ A new seed module `exam-launch-blueprints` (registered after `exam` and `exam-de
 
 (A section with one group covering all its slots is a "bahagian" group; Fizik's mixed kinds are expressed per section because AC-35.1 gives the kind per blueprint **section**.)
 
-**Layer 2: quota and KBAT.** Exact unit values per section and exact KBAT marks are derived from the per-question tables that SPP keeps outside the repo (AC-40.2); SPP 10.5 confirms that no skema states TP, cognitive level or topic. Decision O-7 (user): **Claude prepares the layer-2 data files**; a product-analyst writes them to `docs/reference/blueprints/<code>.json` with `<code>` the paper code with `/` replaced by `-` (`1449-1.json`, `1449-2.json`, `3472-1.json`, `3472-2.json`, `4531-2.json`, `1249-2.json`). They are the **BJS-13 input**, merged by the same seed module by `code`. Shape (all keys optional per section; absent = `null` in the database):
+**Layer 2: quota and KBAT.** Exact unit values per section and exact KBAT marks are derived from the per-question tables that SPP keeps outside the repo (AC-40.2); SPP 10.5 confirms that no skema states TP, KBAT level or topic. Decision O-7 (user): **Claude prepares the layer-2 data files**; a product-analyst writes them to `docs/reference/blueprints/<code>.json` with `<code>` the paper code with `/` replaced by `-` (`1449-1.json`, `1449-2.json`, `3472-1.json`, `3472-2.json`, `4531-2.json`, `1249-2.json`). They are the **BJS-13 input**, merged by the same seed module by `code`. Shape (all keys optional per section; absent = `null` in the database):
 
 ```ts
 { code: "3472/2",
@@ -739,7 +746,7 @@ The seed resolves `(subject, level, unitCode)` to `curriculum_nodes.id` and fail
 |---|---|
 | `papers.service.generate` | New flow of 7.1; `findActiveBlueprint` replaced by `findServing` / `findHead`; `PaperActor` gains `role`; stops using `composeFromBlueprint`. |
 | `rules.ts` | `toComposerBlueprint` replaced by `toStandardBlueprint`; `generationSeed` gains version; `SOURCE_TO_WIRE` unchanged. |
-| `ports.ts` | `BijakQuestionSource.pool()` replaced for the API by `BijakPoolSource.candidates(scope)`; `getMany` stays. The PoC adapter implements the new port with fixture tags (fixture-only mapping: cognitive level = TP). |
+| `ports.ts` | `BijakQuestionSource.pool()` replaced for the API by `BijakPoolSource.candidates(scope)`; `getMany` stays. The PoC adapter implements the new port with fixture tags (fixture-only mapping: kbat = null). |
 | `builder/paper-check.ts` | Calls `verifyComposition` for the structural tier only. Standard-tier mismatches never block or warn on a Kertas Pilihan (O-2); they feed the blueprint `needsReview` signal (6.3a). |
 | Existing tests | `apps/api/test/bijak-papers/generate.spec.ts` and builder tests that generate for a student from a `Spec` blueprint need a Disahkan serving fixture (BJS-15). |
 | M28 mock in `src/modules/m28-bijak-spm` | Untouched; keeps using `composeFromBlueprint` until cut over to HTTP. |
@@ -769,7 +776,7 @@ Roles: `backend-developer` (BE), `frontend-developer` (FE), `devops-engineer` (D
 | BJS-03 | BE | exam-core: standard model, `describeQuestion`, eligibility, `validateBlueprint`, `offeredMarks`, `checkEvidence`, `verifyComposition`, shortage formatter | BJS-01 | pure functions + unit tests |
 | BJS-04 | BE | exam-core: `precheck`, `solveSection`, concretise, arrange, probe, `composeStandardPaper` (5.x) | BJS-03 | solver |
 | BJS-05 | BE | exam-core: synthetic pool generator, property and perf tests (section 10) | BJS-04 | test suite |
-| BJS-06 | BE | Questions module: per-leaf TP and cognitive level (write, read DTO, contract, filters), publish gate requires `cognitive_level`, effective-value SQL helper | BJS-02 | M04 changes |
+| BJS-06 | BE | Questions module: per-leaf unit, form origin, TP and KBAT overrides (write, read DTO, contract, filters), effective-value SQL helper, `kbat`/`tag_review`/`catalogue_version` on the question. (revised 2026-10-30, DSKP reconciliation) **No publish gate on KBAT or cognitive level** (the Terbit gate is the DSKP tagIssues rule) | BJS-02 | M04 changes |
 | BJS-07 | BE | `BijakPoolSource` port: candidate query + exclusion counts + PoC adapter | BJS-02, BJS-03, BJS-06 | port + implementation |
 | BJS-08 | BE | Blueprint admin service: new fields, validation, versioning, serving flag, hash, audit | BJS-02, BJS-03 | endpoints of 6.3 (core) |
 | BJS-09 | BE | Evidence, verification check and verify endpoints; role checks | BJS-08 | endpoints of 6.3 (verification) |
@@ -780,12 +787,14 @@ Roles: `backend-developer` (BE), `frontend-developer` (FE), `devops-engineer` (D
 | BJS-14 | BE | API, migration and conformance tests (section 10) | BJS-10, BJS-11, BJS-12 | suites green |
 | BJS-15 | BE | Update PoC fixtures and existing generate/builder tests to the new rules | BJS-10 | green legacy suites |
 | BJS-16 | BE | Synthetic tagged demo bank (fictitious, no media) so Jana Kertas can be tried end to end | BJS-12 | demo seed |
+| BJS-17 | BE + FE | **Intake tag per leaf part** (revised 2026-10-30): the DSKP tag editor (intake review, manual entry, bank edit) gains optional per-part overrides of unit (or T1-T3 bucket), TP and KBAT for multi-topic questions and per-part TP/KBAT; the intake-to-question mapping (`apps/api/src/modules/intake` workflow, `questions` write path) writes the per-part fields. Owner modules: `intake` + `questions` (BE), the intake/bank pages of the Bank Soalan front end (FE) | BJS-01, BJS-02, BJS-06, **merge of `v2-dskp-integration`** (catalogue in M03, CurriculumTag v2, `tagIssues`, `TagLookup`) | per-part tagging end to end |
+| BJS-18 | BE | **AI extractor context** (revised 2026-10-30): the extraction prompt (module `ai-extraction`, provider-agnostic, ADR-0019) receives, per candidate unit, the DSKP TP descriptors (`curriculum_tp_descriptors`) and the four KBAT level definitions, and returns per leaf part `unit`, `tp`, `kbat` with `confidence`; stored as the intake item tag suggestion (per part); a human confirms per A6/A9 (TP and KBAT suggestions always, low-confidence unit/SP). No student data in prompts (QB NFR-04) | BJS-17 contract, `ai-extraction` module, DSKP merge | suggestions + audit |
 | BJS-F1 | FE | Kontrak Blueprint editor: profile, slot groups, quota table, KBAT, share, flags, inline `validateBlueprint` | BJS-01, design | screen |
 | BJS-F2 | FE | Pengesahan panel: evidence form, live check lines, verify, verifier/evidence at a glance (AC-39.5) | BJS-01, design | screen |
 | BJS-F3 | FE | Pratonton kolam (needed/available tables, verdict, excluded breakdown) and "Jana draf kertas" | BJS-01, design | screen |
 | BJS-F4 | FE | Blueprint list/hub: source, serving, version history, badges | BJS-01, design | screen |
 | BJS-F5 | FE | Student Jana Kertas start: `canGenerate`, AC-03.6 reason, typed shortage messages | BJS-01 | screen |
-| BJS-F6 | FE | Bank Soalan forms: TP and tahap kognitif per bahagian (override of the question default), filters, review checklist item for the sub-part ramp (B10) | BJS-01, BJS-06 | forms |
+| BJS-F6 | FE | Bank Soalan forms: unit, TP and KBAT per bahagian (see BJS-17) (override of the question default), filters, review checklist item for the sub-part ramp (B10) | BJS-01, BJS-06 | forms |
 | BJS-F7 | FE | Component and e2e tests at 375/768/1280 | F1 to F6 | suites |
 | BJS-D1 | DO | Run migration and seeds in CI and staging; seed order; backup before drop of `topic_weights` | BJS-02, BJS-12 | pipeline |
 | BJS-D2 | DO | CI job for the property suite (30 papers x 6 blueprints) and perf tag | BJS-05 | CI |
@@ -797,9 +806,9 @@ Suggested order: BJS-01 and BJS-02 in parallel -> BJS-03 -> BJS-04 and BJS-06 an
 
 | ID | Risk | Mitigation |
 |---|---|---|
-| R-B1 | Solver hits the budget on a hard but feasible instance, student sees a refusal | Pre-checks remove most infeasible cases; type-level search; reference attempt; `limit` is measured (BJS-D3); fall back to a solver library (HiGHS compiled to WASM) only if the pilot shows `limit` above 1% (ADR-0022) |
+| R-B1 | Solver hits the budget on a hard but feasible instance, student sees a refusal | Pre-checks remove most infeasible cases; type-level search; reference attempt; `limit` is measured (BJS-D3); fall back to a solver library (HiGHS compiled to WASM) only if the pilot shows `limit` above 1% (ADR-0025) |
 | R-B2 | Pool too thin per unit: exact quotas refuse most requests (R-7) | Preview shows the short unit, TP or KBAT line; tag-first intake; launch with six papers only |
-| R-B3 | Per-leaf TP and cognitive level are NULL for most legacy questions, so they inherit a version value that was a guess | Excluded counts with reasons; review of migrated values (O-3); AI suggestions confirmed at bank review |
+| R-B3 | Per-leaf TP and KBAT are NULL for most legacy questions, so they inherit the question tag, which may itself be untagged or flagged Perlu semakan | Excluded counts with reasons (including tag_review); AI suggestions confirmed at intake (BJS-18) |
 | R-B4 | Seeded layer 2 values are inferred from one or two bodies; "Spec" may be mistaken for a standard | Notes tag observed/inferred; Disahkan needs evidence from two bodies; students never see Spec |
 | R-B5 | PoC fixtures and demo flows relied on student generation from Spec | BJS-15, BJS-16; demo bank is synthetic and fictitious |
 | R-B6 | Node ids in quota lines pin a DSKP edition; a re-issued DSKP changes ids | Quota stores `nodeId`; a re-mapping script is part of the DSKP edition upgrade runbook (not in this scope) |
@@ -815,28 +824,74 @@ O-1, O-3, O-4, O-5, O-6, O-8, O-9 accepted as recommended below. O-6 is an expli
 |---|---|---|
 | O-1 | **Unit granularity (revised 2026-10-29, O-1).** First accepted as one primary unit per question; the layer-2 files showed it cannot represent Matematik 1449/2 Bahagian C and Sejarah 1249/2 Bahagian B (multi-topic questions, marks on sub-parts; Sejarah Q7 = 12 marks Tajuk 12 + 8 marks Tajuk 14). **Now:** unit attribution is per leaf part. A leaf has an optional unit (or the T1-T3 bucket) and inherits the question's primary unit. Marks-basis lines count leaf marks per unit; questions-basis lines use the primary unit (3.1a). | Done as decided (principle: the official paper is right, the recipe is wrong). |
 | O-2 | **Standard tier for curated Kertas Pilihan.** **DECIDED (user, replaces the advisory proposal):** a real or official Kertas Pilihan is **never** blocked, and gets no gap, because of quota, profile or KBAT mismatches ("an official paper cannot be wrong, so the blueprint is the problem"). Only the structural tier (rules, N, counts, groups) blocks, as AC-26.2 says today. Signal instead: the blueprint carries a computed `needsReview` flag (6.3a). | Done as decided. |
-| O-3 | **Cognitive level encoding** 1..6 = Mengingat, Memahami, Mengaplikasi, Menganalisis, Menilai, Mencipta, KBAT = 3 to 6. Legacy `MOTS 3` becomes KBAT; migrated numbers are TP-like. | Accept the encoding (matches the DSKP wording); keep migrated numbers but require bank review confirmation before they count for seeds. |
+| O-3 | **KBAT encoding** (revised 2026-10-30, DSKP reconciliation): the 1..6 cognitive level is replaced by the approved v2-dskp-integration enum (four levels or null = Bukan KBAT), per question with a leaf-part override. | Done (user principle: earlier approved decision + DSKP). |
 | O-4 | **Mixed-order rule (AC-36.6)** is best effort, scoped to sections with >= 4 units (chapter order) and >= 2 questions per level (T4/T5 block), never a reason to refuse. | Accept; the AC as written is unsatisfiable for tiny sections (2 questions) and conflicts with ladder bands. |
-| O-5 | **TP-band versus KBAT conflict (AC-37.5)** becomes a warning, not a save refusal, because TP and cognitive level are independent fields. | Accept the warning; keep only arithmetic KBAT checks as refusals. |
+| O-5 | **TP-band versus KBAT conflict (AC-37.5)** becomes a warning, not a save refusal, because TP and KBAT are independent fields. | Accept the warning; keep only arithmetic KBAT checks as refusals. |
 | O-6 | **Admin Sekolah in Mod Pelajar** follows the student rule (Disahkan only); only Admin Pusat may test Spec. | Accept (AC-03.1 and AC-39.6 name Admin Pusat only). |
 | O-7 | **Layer 2 seed data** (exact unit quotas, KBAT marks) cannot be produced from the repo: it needs the per-question tables kept outside the repo, and no skema states cognitive level. **DECIDED (user):** Claude prepares them; a product-analyst writes `docs/reference/blueprints/<code>.json` (shape in section 8) as the BJS-13 input. Layer 1 alone launches if they are late. | Done as decided. |
 | O-8 | **Optional marks band per slot group** (`marksMin`/`marksMax`) is added beyond the requirement text, to stop a 15-mark question landing in Matematik K2 Bahagian A. **ADOPTED**, values from the real papers (the section 8 seed table is the starting point; layer-2 files may refine `marksBand`). Optional; generalises AC-34.3 (min = max = exact marks). |
-| O-9 | **Solver choice**: custom bounded search in pure TypeScript, no external solver (ADR-0022). | Accept; reconsider after the pilot if `limit` rate is high. |
+| O-9 | **Solver choice**: custom bounded search in pure TypeScript, no external solver (ADR-0025). | Accept; reconsider after the pilot if `limit` rate is high. |
 
 ### 13.1a G3 notes from the layer-2 data files (2026-10-29; user decisions unchanged)
 
 - **(a) SEJ unit code format.** The Sejarah DSKP extract codes units as `Tajuk 11` (MATH, ADDMATH, PHY use `4.0`). The layer-2 `unitCode` and the seed lookup `(subject, level, unitCode)` must use the code **exactly as stored in `curriculum_nodes.code`**; BJS-13 resolves by exact match first, then, for kind `unit` in SEJ only, by trimming a leading `Tajuk ` and comparing the number. A miss still fails loudly. Add a seed test that every unit code of the six files resolves.
 - **(b) Tags and "incomplete".** Cheap field added: optional `tag: 'observed' | 'inferred' | 'single_source'` on each `BijakQuotaLine` (informational, shown in the editor; no gate uses it). "Incomplete" is not stored: it is derived (`kbat_marks` null or `quota` null on a section), shown as such in the editor and by the verification completeness lines (`NO_KBAT`, `NO_QUOTA`). Free-text `notes` stay for alternatives and reasons. The layer-2 file shape gains the same optional `tag` per line (the seed copies it; unknown values are ignored with a log).
-- **(c) KBAT will be weakly discriminating for Matematik and Matematik Tambahan.** With KBAT = cognitive level 3 to 6 (user's explicit choice, DSKP), most parts are Mengaplikasi or above, so the layer-2 values come out near 100% of marks (for example 130 of 130 in 3472/2). The definition stays. Consequence: until the bank tags cognitive level **per leaf part** with real discrimination (BJS-06, BJS-F6, bank review), a near-100% KBAT quota excludes almost no question and the KBAT line adds little. Do not tighten the quota to compensate. Re-check the layer-2 KBAT values after the bank is tagged; the preview's `kbat` table (AC-29.4) will show when the line is trivially met.
+- **(c) KBAT quota values vs a sparsely tagged bank** (revised 2026-10-30, DSKP reconciliation). KBAT is optional and defaults to Bukan KBAT in the bank, so a bank tagged conservatively may hold far less KBAT than the layer-2 values (derived from levels 3 to 6 read from the papers, for example 130 of 130 in 3472/2). The definition stays (DSKP). Consequence: the KBAT line may show large "Kurang" until intake tags KBAT per leaf part (BJS-17, BJS-18). Do not tighten or loosen the quota to compensate; layer-2 KBAT values are seeded unreviewed anyway (reviewed = false) and the preview shows the gap.
 
 ### 13.2 Inconsistencies and infeasible points found in the requirements
 
-1. **AC-37.5 versus Q-B18.** The last sentence says TP is independent of KBAT, yet the same AC refuses a contract with all slots in TP1-2 and KBAT > 0. Cognitive level and TP are separate stored fields; whether the combination is satisfiable depends on the pool, not on the contract. Resolved as a warning (O-5).
+1. **AC-37.5 versus Q-B18.** The last sentence says TP is independent of KBAT, yet the same AC refuses a contract with all slots in TP1-2 and KBAT > 0. KBAT and TP are separate stored fields; whether the combination is satisfiable depends on the pool, not on the contract. Resolved as a warning (O-5).
 2. **AC-36.6 interleaving.** "Not all T4 before all T5" cannot hold in at least 29 of 30 papers for a section with one T4 and one T5 question (the two orders are equally likely), and ladder sections fix order by TP band. Scoped as in O-4.
 3. **Unit granularity versus SPP section 6** (O-1, resolved 2026-10-29 by per-leaf-part units, 3.1a). Also SPP 6.4 lists Sejarah at SK level (10.4, 11.2 ...) while the unit of the schema is the Tajuk; seeds must aggregate to Tajuk, and 20 marks ("13.2 or 14.1") need an author decision.
 4. **AC-40.2 versus the evidence base.** It asks for quota and KBAT values "derived from the per-question tables", which are outside the repo, and SPP 10.5 states that no skema or file gives cognitive level, KBAT, TP or topic. Layer 2 cannot be finished by design alone (O-7).
 5. **AC-29.4 "needed / available" per line** are independent necessary counts; a table with no "Kurang" line can still be "Tidak boleh dijana" because of combinations. The verdict line and `firstFailure` (kind `combination`, `blocking`) cover this; the UI should show the verdict above the tables.
 6. **AC-26.2 versus the new standard.** It lists only structural gaps; whether standard-tier gaps block curated papers was undefined (O-2).
-7. **Q-B22 versus the existing "one active blueprint per subject and kertas" index.** The head and the serving version can differ, which the index cannot express; solved by `serves_students` (ADR-0023).
+7. **Q-B22 versus the existing "one active blueprint per subject and kertas" index.** The head and the serving version can differ, which the index cannot express; solved by `serves_students` (ADR-0026).
 8. **AC-39.2 "skema from at least two bodies" versus SPP 10.3.** Skema print neither "Jawab" rules nor durations, so those values can only be supported by trial papers; the check therefore compares per value across all items of a body (6.6) and requires both a paper and a skema item per body for the gate, not a skema for every value.
 9. **Legacy `MOTS 3`** is KBAT under D76 but was "medium order" before (3.1, O-3).
+
+## 14. DSKP reconciliation (2026-10-30)
+
+Reconciles this design with the approved `v2-dskp-integration` feature (branch `origin/claude/determined-dijkstra-ju5q60`, docs `requirements|architecture|design|qa/v2-dskp-integration.md`, ADR-0022 there). Principle applied: earlier approved decisions + DSKP + the real exam standard; the user is not asked again.
+
+### 14.1 Decisions
+
+| # | Decision |
+|---|---|
+| R-1 | **One KBAT encoding.** `kbat` = `mengaplikasi`, `menganalisis`, `menilai`, `mencipta` or null (A9), per question, with an optional leaf-part override (`bukan` = explicitly not KBAT). KBAT marks = marks of leaf parts whose effective `kbat` is a level. The 1..6 `cognitive_level` is withdrawn everywhere (question and part). |
+| R-2 | **No KBAT or cognitive-level gate.** AC-38.1(b) no longer requires a cognitive level; null counts as Bukan KBAT. Pool eligibility needs unit (or T1-T3 bucket), TP, marks, key, allowed mode, and `tag_review = false`. The Terbit gate is the DSKP `tagIssues` rule (unit, SP, TP) of the dskp feature; BJS-06 adds no gate. |
+| R-3 | **`tag_review` interacts with eligibility:** a question with `tag_review = true` ("Perlu semakan tag") is ineligible for the Jana Kertas pool (reason `tag_review`, counted in the preview breakdown with a bank link to "Perlu semakan tag") and cannot be published, so intake and Jana Kertas agree on what a trusted tag is. Clearing the flag is done by tagging in the bank (their `normaliseTag`/`tagIssues`). |
+| R-4 | **Per-leaf overrides (unit, form origin, TP, KBAT) stay optional overrides of the question tag.** They fit CurriculumTag v2: the question tag is complete and valid on its own (`sp_node_ids[]`, `catalogue_version`, `tag_review` stay question-level); a part override of the unit needs no SP of its own (the question SP list still covers the question), and `tagIssues` is unchanged for the question tag. The intake editor gains per-part controls (BJS-17); a question with no overrides looks and behaves as in the dskp design. |
+| R-5 | **Ownership.** M03 owns the catalogue and TP descriptors; M04 `questions` owns the tag columns (`kbat`, `tag_review`, `catalogue_version` are added by BJS-02 now so the migration is one; the dskp backend hand-over reuses them and adds `sp_node_ids[]` handling and `tagIssues`); `intake` writes tags through the questions write path. |
+| R-6 | **Layer-2 KBAT values** (analyst-read levels 3 to 6) are kept, seeded `kbat_reviewed = false`; they describe what the papers' examiners would call KBAT, and the bank's real KBAT tagging decides the pool (note (c) in 13.1a). |
+
+### 14.2 What changes per task
+
+| Task | Change |
+|---|---|
+| **BJS-02** (migration 0092, unmerged, amend in place) | `question_parts`: **remove** `cognitive_level`; **add** `kbat text null` with CHECK in ('mengaplikasi','menganalisis','menilai','mencipta','bukan'); keep `difficulty_tp`, `unit_node_id`, `form_origin`. `question_versions`: **add** `kbat text null` (CHECK in the four levels), `tag_review boolean not null default false`, `catalogue_version text null`; **drop** `cognitive_level` after copying 3 to 6 into `kbat` (3 mengaplikasi, 4 menganalisis, 5 menilai, 6 mencipta) for dev/seed rows; assert no production row holds it. Update the Prisma models and the migration test. |
+| **BJS-03** (exam-core) | KBAT predicate is `leaf.kbat: boolean` (effective level present), no level numbers; export `KBAT_LEVELS`/`KbatLevel`; remove `COGNITIVE_LEVELS`/`isKbatLevel`, `no_cognitive_level`; add eligibility reason `tag_review` (facts carry `tagReview: boolean`); `describeQuestion` unchanged otherwise. |
+| **BJS-06** (questions) | Now only: per-leaf `unitNodeId`, `formOrigin`, `difficultyTp`, `kbat` overrides (write, read DTO, filters, effective-value SQL), plus `kbat`/`tag_review`/`catalogue_version` on the question read model. **No publish gate for cognitive level or KBAT.** |
+| **BJS-01** (contract) | Replace `cognitiveLevel` with `kbat` everywhere. Part: `BijakPartStandardTags = { difficultyTp?: 1..6 or null, kbat?: KbatLevel or 'bukan' or null }` plus `BijakPartUnit = { unitNodeId?, formOrigin? }`. Question read model: `kbat: KbatLevel or null`, `tagReview: boolean`. Pool preview: reason `no_cognitive_level` replaced by `tag_review`; the `missing` bank filter values are unit, tp, marks, tag_review. Section `kbatMarks`, `kbatReviewed` and the verification codes are unchanged. |
+| **BJS-07** (pool source) | Candidate query reads `kbat`, `tag_review` and the part overrides; filters out `tag_review = true`. |
+| **BJS-F6** (bank forms) | Becomes a dependency of BJS-17: the question-level DSKP editor is the dskp feature; the per-part override controls are BJS-17. Remove "tahap kognitif" copy. |
+| **Requirements** (routed to the analyst) | AC-37.1: KBAT = effective `kbat` is a level (not "cognitive level in four named levels as a number"); AC-37.2 wording; **AC-38.1(b)** drop "cognitive level" (keep TP per leaf, inherited); add `tag_review = false` as an eligibility condition; **AC-38.2** reasons: remove "tiada tahap kognitif", add "perlu semakan tag"; Q-B18 and Q-B19 wording (per leaf part: TP, KBAT, unit, form origin; KBAT optional); D76 (2) and (5) reworded the same way; term table row "KBAT marks"; B11, B12; R-8 (cognitive level per leaf is no longer a precondition). `v2-exam-schema.md` D2/D8/D9 revised in this change to the enum. |
+| **ADRs** | 0025 (generator) unchanged except number; 0026 (model) updated (item 2). |
+
+### 14.3 Dependency on the dskp feature
+
+BJS-17 and BJS-18 need the `v2-dskp-integration` branch merged (frontend catalogue and tag editor are built there; its backend hand-over, section 4.5 of that doc, lands with BE-08 curriculum and BE-10 questions-workflow). BJS-01 to BJS-16 do not wait for it. The DSKP backend's `question` column list is reconciled by BJS-02 (single migration); nothing else of theirs is duplicated here.
+
+## 15. Contract gaps found by the admin screens (2026-10-30, F1-F4 gaps)
+
+Decisions on the seven gaps of BJS-F1 to F4 (commit 992fa5fa). New names are final for BJS-01.
+
+| # | Gap | Decision |
+|---|---|---|
+| 15.1 | **Unit picker (subject x level).** Checked: `GET /guru/dskp/{bidang,sk,sp}` is a Guru-only teacher picking list (not the `curriculum_nodes` tree); `admin/curriculum` serves chapters/topics; no route returns DSKP units. | **New route** `GET /admin/bijak/dskp/units?subject={bijakCode}&level=T4\|T5` (Admin Pusat only, unpaged list envelope). Item `BijakDskpUnit = { nodeId: Id, code: string, level: 'T4' \| 'T5', title: string, elective: boolean }`, sorted by `sortOrder`, from `curriculum_nodes` of kind `unit` for the subject and level (`is_elective` gives `elective`). It is the source of `BijakUnitRefView` (`code`, `level`, `title`). 404 for an unknown subject, empty list for a subject with no DSKP units (for example Geografi). |
+| 15.2 | **Subject list for "Tambah Kontrak".** `GET /admin/subjects` exists (curriculum admin, Admin Pusat) but returns curriculum codes (`MATH`), while every Bijak route and view speaks Bijak codes (`MAT`). | **New route** `GET /admin/bijak/subjects` (Admin Pusat only, unpaged) returning `BijakSubject[]` (`{ code, name }`, Bijak code via `bijakCodeOf`) of all active subjects, not only the hub's. No change to `/admin/subjects`. |
+| 15.3 | **Evidence edit.** | **No PATCH.** Evidence is small and a correction should leave an audit trail of add + remove; items of a verified version are immutable anyway. The UI "Ganti" does add first, then delete (never a gap). Accepted as the current behaviour. |
+| 15.4 | **`reference` panels write-only.** | Both: (a) `BijakBlueprintView` gains `reference: BijakPaperReferencePanel[]` (always present, empty array when none); (b) on `versions` the field is optional and **omitted means carry over the head's panels**, `[]` means clear. The editor sends them back unchanged. |
+| 15.5 | **Pool preview totals.** | `BijakPoolPreview` gains top-level `publishedTotal: int` (Terbit live questions of the subject, before any eligibility rule) and `eligibleTotal: int` (those passing the section-independent eligibility of 4.2: unit or T1-T3 bucket, TP, marks, key, `tag_review = false`). Invariant: `publishedTotal = eligibleTotal + excluded.total`. |
+| 15.6 | **List page: serving version and dependents.** | `BijakBlueprintView` gains `servingVersion?: number` (version of the row with `servesStudents`; absent when none; equals `version` when the head serves, so a Spec head over a Disahkan version shows the older number) and `dependentPaperCount: int` (published `pilihan` papers whose `blueprint_id` is any version of this subject x kertas; used by the retire/delete-blocked message, AC-25.5). Computed on read. |
+| 15.7 | **Bank filter for "Perlu semakan tag".** Checked: the `v2-dskp-integration` prototype names it `tagReview?: boolean` in `BankFilter`; the real `GET /admin/questions` (`QuestionListQuery`) has `subjectId`, `status`, `dskpFilter` (`tagged`/`untagged`) and no such filter. | Extend `QuestionListQuery` with `tagReview: boolean` (query `tagReview=true`) and `missing: 'unit' \| 'tp' \| 'marks' \| 'key'`. `bankQuery` of the preview/`excluded` links use: `no_unit` -> `{subjectId, status: 'published', dskpFilter: 'untagged'}`; `no_tp` -> `{..., missing: 'tp'}`; `no_marks` -> `{..., missing: 'marks'}`; `no_key` -> `{..., missing: 'key'}`; `tag_review` -> `{subjectId, status: 'published', tagReview: 'true'}`. The per-section `bankQuery` uses `subjectId`, `status: 'published'` and, when the section has a quota, a repeated `unitNodeId` is not supported (out of scope): the link opens the subject prefiltered only. |
