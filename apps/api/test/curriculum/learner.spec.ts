@@ -192,14 +192,20 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       for (const r of rows) expectError(await student.get(`/api/topics/${r.id}`), 'NOT_FOUND', 'Topik tidak dijumpai.')
     })
 
-    it('the practice code map covers all 8 subjects (BR-16)', async () => {
+    it('the practice code map covers all 8 subjects (BR-16); a subject with no Tingkatan 4 or 5 topic lists empty', async () => {
       const map: Record<string, string> = {
         MATEMATIK: 'MATH', BAHASA_MELAYU: 'BM', BAHASA_INGGERIS: 'BI', SAINS: 'SCI',
         PENDIDIKAN_ISLAM: 'PI', PENDIDIKAN_MORAL: 'PM', SEJARAH: 'SEJ', GEOGRAFI: 'GEO',
       }
+      // Secondary-only seed: Islam and Inggeris have no T4/T5 topic (0 each), so there is no detail page to read their code from.
+      const noTopics = new Set(['PENDIDIKAN_ISLAM', 'BAHASA_INGGERIS'])
       for (const [subject, code] of Object.entries(map)) {
-        const first = (await topics(`?subject=${subject}`))[0]!
-        const detail = parseData(await student.get(`/api/topics/${first.id}`), CurriculumTopicDetailLearnerSchema)
+        const list = await topics(`?subject=${subject}`)
+        if (noTopics.has(subject)) {
+          expect(list, subject).toEqual([])
+          continue
+        }
+        const detail = parseData(await student.get(`/api/topics/${list[0]!.id}`), CurriculumTopicDetailLearnerSchema)
         expect(detail.practiceCode, subject).toBe(code)
       }
     })
@@ -266,7 +272,8 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
     it('subject labels: pills, GEOGRAFI, an unknown code title-cased and kept as typed', async () => {
       expect((await map('?subject=PENDIDIKAN_ISLAM')).subjectLabel).toBe('Pend. Islam')
       const geo = await map('?subject=GEOGRAFI')
-      expect([geo.subjectLabel, geo.subject, geo.topics]).toEqual(['Geografi', 'GEOGRAFI', []])
+      // The default grade is TINGKATAN_4, which has one Geografi topic in the seed ("Geografi Tingkatan 4").
+      expect([geo.subjectLabel, geo.subject, geo.topics.map((x) => x.name)]).toEqual(['Geografi', 'GEOGRAFI', ['Geografi Tingkatan 4']])
       const zzz = await map('?subject=ZZZ')
       expect([zzz.subjectLabel, zzz.subject, zzz.topics]).toEqual(['Zzz', 'ZZZ', []])
       expect(zzz.stats).toEqual({ done: 0, total: 0, progress: 0 })
