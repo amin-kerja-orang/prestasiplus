@@ -52,6 +52,16 @@ describe('shortageLine formats (design 7.2)', () => {
       'Bahagian B: tidak dapat menyusun 60 markah daripada soalan yang tersedia',
     ],
     [
+      'marks slot band',
+      { section: 'Bahagian B', need: 2, have: 1, kind: 'marks', slot: { from: 3, to: 4 }, marksMin: 5, marksMax: 8 },
+      'Bahagian B soalan 3-4: perlu soalan 5-8 markah, hanya 1 tersedia',
+    ],
+    [
+      'marks slot exact',
+      { section: 'Bahagian B', need: 2, have: 0, kind: 'marks', slot: { from: 3, to: 4 }, marksMin: 5, marksMax: 5 },
+      'Bahagian B soalan 3-4: perlu soalan 5 markah, hanya 0 tersedia',
+    ],
+    [
       'tp none eligible (AC-35.8)',
       { section: 'Bahagian B', need: 2, have: 0, kind: 'tp', slot: { from: 3, to: 4 }, tp: { min: 5, max: 6 } },
       'Bahagian B soalan 3-4: tiada soalan layak pada TP 5-6',

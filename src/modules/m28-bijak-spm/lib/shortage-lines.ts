@@ -27,8 +27,13 @@ export function shortageLine(s: BijakGenerateShortage): string {
     case undefined:
     case 'count':
       return count
-    case 'marks':
+    case 'marks': {
+      if (s.slot && s.marksMin !== undefined && s.marksMax !== undefined) {
+        const range = s.marksMin === s.marksMax ? `${s.marksMin}` : `${s.marksMin}-${s.marksMax}`
+        return `${s.section} soalan ${s.slot.from}-${s.slot.to}: perlu soalan ${range} markah, hanya ${s.have} tersedia`
+      }
       return `${s.section}: tidak dapat menyusun ${s.need} markah daripada soalan yang tersedia`
+    }
     case 'tp': {
       const slot = s.slot ? ` soalan ${s.slot.from}-${s.slot.to}` : ''
       const band = s.tp ? `TP ${s.tp.min}-${s.tp.max}` : 'TP yang ditetapkan'
