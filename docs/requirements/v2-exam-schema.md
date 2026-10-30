@@ -151,8 +151,8 @@ Common fields (every question; "R" = required at Terbit, "O" = optional):
 | `group_id` | uuid | O | stimulus group membership (D6) |
 | `total_marks` | int | derived | sum of leaf marks; never stored independently (NFR-08) |
 | `curriculum` | {subject, level, unit, sk, sp[], tp, textbook_ref?} | R subject, level, unit, sp, tp at Terbit | D9 |
-| `cognitive_level` | int 1..6 | R at Terbit | TP-aligned, D8 |
-| `difficulty_tp` | int 1..6 | R at Terbit | initially equals cognitive level; recalibrated later |
+| `kbat` | enum or null | optional | `mengaplikasi`, `menganalisis`, `menilai`, `mencipta` or null (null = empty or Bukan KBAT), independent of TP, not required by any gate. Question default, inherited by leaf parts without their own value; the value that counts is the leaf part's. Replaces the 1..6 `cognitive_level` (revised 2026-10-30, DSKP reconciliation: v2-dskp-integration A9). 
+| `difficulty_tp` | int 1..6 | R at Terbit | the question's intended TP, the difficulty measure. **Question default, inherited by every leaf part without its own value; the TP of a question is the highest effective TP of its leaf parts and is computed, not stored (aligned 2026-10-29, D76).** Recalibrated later. |
 | `language` | `ms` / `en` / `ms+en` / `ar` / `jawi` | R | D8 |
 | `meta` | see D10 | | |
 | `status`, audit, provenance | | | v2-question-bank sections 4.1, 5 US-15/16 |
@@ -175,6 +175,8 @@ Leaf Part fields (R = required for that mode):
 | `table.grid` | table_fill | rows x cols, blank cells marked | gate: at least one blank cell (.cloud rule `table_no_blank`) |
 | `stimulus_ref` | any | stimulus id | part-level stimulus (DATA 81 parts; PAPER Sejarah (c) parts each carry their own source) |
 | `reveal` | all | `after_submit` / `never` | scheme reveal rule (kept from .cloud) |
+| `difficulty_tp` | leaf | int 1..6, optional | override of the question's `difficulty_tp`; null = inherit. Effective leaf TP = this value, else the question's. (added 2026-10-29, D76) |
+| `kbat` | leaf | enum, optional | override of the question's `kbat`; null = inherit; `bukan` = explicitly not KBAT. A leaf part is KBAT when its effective value is one of the four levels. (revised 2026-10-30, DSKP reconciliation: v2-dskp-integration A9) |
 
 Priority: P1 modes for the PoC and launch: `mcq`, `short_text`, `numeric`, `working`, `essay`, `match_letter`; **P2**: `drawing` (photo + checklist), `table_fill`. Reason: P1 modes cover every K1/P1 and the calculation and essay parts of K2; drawing and table parts exist in every sciences/maths Kertas 2 but v2.0 can mark them by checklist.
 
@@ -364,13 +366,13 @@ Notes on the table:
 - **Duration conflicts** to resolve (non-blocking, Q-S1): Matematik K1 (Johor printed 90, convention 75), BI (DB 90 for both papers), Matematik K2 (not visible). Proposal: each Paper stores its own printed duration; the Blueprint carries a default marked Low until LPM confirms.
 - **Not in launch scope but in the papers:** BM Kertas 3 and 4 and BI Paper 3/4 (listening, speaking) exist on the Drive and as `paper_documents` (BM 2 + 4, kertas 3/4). They need audio and oral marking. Deferred.
 - **Topic weighting (JSU)** is only approximated from one paper per subject (section 8.2). Blueprints store `topic_weights` per section as `{unit_code: target_count}` but mark them INFERRED until a JSU is shared (D40(e) offered KPM documents).
-- Blueprint v2 additions over .cloud: `mark_budget` and `question_count` are mandatory, `expected_modes` becomes `allowed_modes`, a new `topic_weights` and `cognitive_mix` (share of TP1-2 / TP3-4 / TP5-6) are optional, and **generation reads the blueprint** (D32).
+- Blueprint v2 additions over .cloud: `mark_budget` and `question_count` are mandatory, `expected_modes` becomes `allowed_modes`, a new `topic_weights` and `cognitive_mix` (share of TP1-2 / TP3-4 / TP5-6) are optional, and **generation reads the blueprint** (D32). *(2026-10-29, D75/D76: `topic_weights` and `cognitive_mix` are superseded by the exact topic quota, difficulty profile and KBAT quota of `docs/architecture/v2-bijak-spm-standards.md`.)*
 
 ### D8 Controlled vocabularies
 
 | Vocabulary | Values | Source |
 |---|---|---|
-| **Cognitive level** (`cognitive_level`) | integer 1 to 6, aligned to DSKP Tahap Penguasaan TP1 to TP6 (descriptors in each subject JSON, general and per unit/SK). Derived label: `LOTS` = 1-2, `MOTS` = 3, `HOTS` = 4-6 (the legacy structured bank uses exactly this: "LOTS 2", "MOTS 3", "HOTS 4/5/6" with counts in 2.1; "KBAT" = HOTS = TP4 and above) | DSKP + DATA |
+| **KBAT level** (`kbat`) | `mengaplikasi`, `menganalisis`, `menilai`, `mencipta` (the four thinking levels every DSKP extract defines as KBAT, `docs/reference/dskp/_notes-batch1.md`) or null = Bukan KBAT. Not the same scale as TP (Tahap Penguasaan 1-6, the difficulty scale). Legacy labels (LOTS, MOTS, HOTS n of the old structured bank) carry no level and import as null; legacy text that names a level keeps it. (revised 2026-10-30, DSKP reconciliation: v2-dskp-integration A9) | DSKP + DATA |
 | **Difficulty** (`difficulty_tp`) | integer 1 to 6 = intended TP of the question; band `Rendah` (1-2), `Sederhana` (3-4), `Tinggi` (5-6); later `difficulty_empirical` (share correct from student attempts, not in this schema's v2.0 scope) | user brief (TP mapping) |
 | **Language** (`language`) | `ms`, `en`, `ms+en` (stacked bilingual, both texts stored), `ar` (Arab), `jawi` | PAPER (Matematik, Fizik K1/K2 are `ms+en`; BM `ms`; BI `en`; Sejarah `ms`); NFR-09 |
 | **Paper type / exam type** | `sebenar` (SPM), `percubaan`, `modul`, `topikal` (the Drive has a folder of topical questions "SOALAN TOPIKAL"), `latihan` | DATA (`exam_types`: percubaan, sebenar, modul) + PAPER |
@@ -408,10 +410,10 @@ What a question carries (final rule, with evidence in section 8.2):
 | `unit_code` | required at Terbit | topic coverage and blueprint topic weights work at unit level; this is the level the real papers distribute evenly (Fizik K1 follows unit order; Sejarah K1 has 2 questions per Bab) |
 | `sk_code` | derived from `sp` | one SP belongs to one SK |
 | `sp_codes[]` | required at Terbit, 1 to 3 | an SP is the finest curriculum target; a question usually targets one, and a multi-part question may target several (one per leaf part is allowed) |
-| `tp` | required at Terbit | cognitive level; DSKP gives TP descriptors per unit, so it cannot be derived from the SP |
+| `tp` | required at Terbit | difficulty (Tahap Penguasaan); DSKP gives TP descriptors per unit, so it cannot be derived from the SP. **Held per leaf part, inheriting the question's value; the TP of a question is the highest TP among its leaf parts (aligned 2026-10-29, D76).** |
 | `textbook_ref` | optional `{bab, tingkatan, muka_surat}` | Sejarah's own marking scheme tags every answer this way ("B3T4 M56"); Bab does not equal SK (10 Bab per form against 12 / 11 SK) so it is a second, optional key with a lookup Bab -> SK maintained by Admin |
 | `form_origin` | `T1`..`T5` | SPM Matematik K1 mixes Tingkatan 1 to 5 content; DSKP extracts cover T4-5 only. A question outside the loaded DSKP carries `unit_code = null` and `form_origin = T1..T3` and may be tagged to a "T1-T3" holding unit (see open question Q-S2) |
-| `kbat` | derived | `tp >= 4` |
+| `kbat` | optional enum, per question with per-leaf-part override | one of the four levels or null; KBAT marks of a question = marks of its leaf parts whose effective value is a level. Not `tp >= 4` and not a number. (revised 2026-10-30, DSKP reconciliation: v2-dskp-integration A9) |
 
 Rules: free-text topic is removed (DATA: 68 of 5,704 use it); the AI suggests `unit`, `sp`, `tp` with confidence (v2-question-bank US-05); curriculum nodes are data, versioned by edition (DSKP "September 2018" and later reissues), so a corrected DSKP extract updates the tree without touching questions (they reference stable node codes).
 
@@ -501,7 +503,7 @@ Keep `v2-question-bank.md` 4.1 exactly: question Draf -> Semakan -> Lulus -> Ter
 | legacy `structured_questions` (stimulus, kbat_level, total_marks) + `structured_sub_questions` (number, body, marks, scheme) | question + group of parts | `kbat_level` text -> `cognitive_level` (LOTS 1-2, MOTS 3, HOTS 4-6 -> integer after "n"); scheme free text -> `points` needing re-marking (68.3% empty) |
 | legacy `pksk_questions` | question with a PKSK tag set | separate vocabulary (bahagian, domain) |
 
-Per D29(a) questions are not migrated automatically; this table is the contract if the user later decides to reload part of the archive through the intake pipeline.
+Per D29(a) questions are not migrated automatically; this table is the contract if the user later decides to reload part of the archive through the intake pipeline. **Update (2026-10-24, LEAD decision A):** the approved legacy MCQs (`diluluskan`, `mcq`) are loaded by `migrate:questions` as published, live, active single-part MCQs; difficulty 1-5 is stored as `difficulty_tp` unchanged, there is no unit or SP, and images are held inactive (deviations row 2026-10-24).
 
 ## 8. Cross-reference of the real papers with the DSKP extracts
 
