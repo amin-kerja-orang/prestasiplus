@@ -10324,6 +10324,17 @@
               "$ref": "#/components/schemas/BijakBlueprintSection"
             },
             "minItems": 1
+          },
+          "canGenerate": {
+            "type": "boolean",
+            "description": "BJS-01: whether the caller can generate from this row now. Student and Admin Sekolah in Mod Pelajar: true only when a serving (Disahkan) version exists; the row shown is the serving version, or the head when none serves. Admin Pusat in Mod Pelajar: true when the head is Spec or Disahkan. When false the UI shows the AC-03.6 reason."
+          },
+          "unavailableReason": {
+            "type": "string",
+            "enum": [
+              "NO_BLUEPRINT"
+            ],
+            "description": "Present only when canGenerate is false."
           }
         },
         "required": [
@@ -10333,7 +10344,8 @@
           "source",
           "code",
           "durationMin",
-          "sections"
+          "sections",
+          "canGenerate"
         ],
         "additionalProperties": false
       },
@@ -10385,6 +10397,136 @@
           "have": {
             "type": "integer",
             "minimum": 0
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BijakShortageKind"
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "questions",
+              "marks"
+            ],
+            "description": "Unit of need/have for kind unit."
+          },
+          "unit": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "unit"
+                    ]
+                  },
+                  "nodeId": {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "3.0"
+                  },
+                  "level": {
+                    "type": "string",
+                    "enum": [
+                      "T4",
+                      "T5"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "nodeId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "t1_t3"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "The short unit (kind unit)."
+          },
+          "slot": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "to": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ],
+            "additionalProperties": false,
+            "description": "Slot range of the short group (kind tp)."
+          },
+          "tp": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 6
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 6
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "additionalProperties": false,
+            "description": "TP band of the short group (kind tp)."
+          },
+          "marksMin": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Kind marks on a slot group: minimum marks per question the group required (with `slot`)."
+          },
+          "marksMax": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Kind marks on a slot group: maximum marks per question the group required (with `slot`)."
+          },
+          "blocking": {
+            "type": "string",
+            "enum": [
+              "kbat",
+              "tp",
+              "marks",
+              "quota"
+            ],
+            "description": "Kind combination: the constraint family whose removal makes the section solvable."
+          },
+          "otherSection": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Kind overlap: the section whose picks used up the needed questions."
           }
         },
         "required": [
@@ -10394,11 +10536,25 @@
         ],
         "additionalProperties": false
       },
+      "BijakShortageKind": {
+        "type": "string",
+        "enum": [
+          "count",
+          "marks",
+          "tp",
+          "unit",
+          "kbat",
+          "level_share",
+          "combination",
+          "overlap"
+        ]
+      },
       "BijakGenerateErrorCode": {
         "type": "string",
         "enum": [
           "NO_BLUEPRINT",
-          "SHORTAGE"
+          "SHORTAGE",
+          "GENERATE_LIMIT"
         ]
       },
       "BijakGenerateNoBlueprintError": {
@@ -10464,6 +10620,62 @@
                 },
                 "required": [
                   "shortages"
+                ],
+                "additionalProperties": false
+              },
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "details"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "BijakGenerateLimitError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "GENERATE_LIMIT"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Kertas tidak dapat disusun sekarang. Cuba lagi."
+                ]
+              },
+              "details": {
+                "type": "object",
+                "properties": {
+                  "limitSections": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "section": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "description": "Sections that were being solved when the budget ran out; section may be absent."
+                  }
+                },
+                "required": [
+                  "limitSections"
                 ],
                 "additionalProperties": false
               },
@@ -57796,6 +58008,139 @@
                   "$ref": "#/components/schemas/BijakBlueprintViewSection"
                 },
                 "minItems": 1
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Version number of the row shown."
+              },
+              "servesStudents": {
+                "type": "boolean",
+                "description": "True on the single version real students generate from (the last Disahkan one). While a Spec head is being verified, an older Disahkan version keeps serving (Q-B22)."
+              },
+              "verification": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "verifiedAt": {
+                    "$ref": "#/components/schemas/Timestamp"
+                  },
+                  "verifierName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "verifierRole": {
+                    "type": "string",
+                    "enum": [
+                      "admin"
+                    ]
+                  },
+                  "evidenceLabel": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Short label of the evidence, e.g. \"Kajian kertas percubaan 2025\" for study-seeded evidence."
+                  },
+                  "bodies": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "Exam bodies of the evidence, e.g. sbp, selangor_mpsm."
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "verifiedAt",
+                  "verifierName",
+                  "verifierRole",
+                  "evidenceLabel",
+                  "bodies"
+                ],
+                "additionalProperties": false,
+                "description": "Verifier, date and evidence in one glance; null when the version is not Disahkan."
+              },
+              "evidenceCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "subPartRamp": {
+                "type": "boolean"
+              },
+              "kbatMarks": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "description": "Paper-level KBAT marks."
+              },
+              "levelShare": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "t4": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "t5": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "t4",
+                  "t5"
+                ],
+                "additionalProperties": false,
+                "description": "Stated paper-level T4:T5 share."
+              },
+              "warnings": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakBlueprintWarning"
+                },
+                "description": "Non-blocking warnings (KBAT_TP_BAND). Empty when there are none."
+              },
+              "needsReview": {
+                "type": "boolean",
+                "description": "O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text \"Blueprint perlu disemak\" [PROPOSED]."
+              },
+              "reviewPapers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakReviewPaper"
+                },
+                "description": "The papers behind needsReview; empty when needsReview is false."
+              },
+              "reference": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakPaperReferencePanel"
+                },
+                "description": "Reference-sheet panels of this version (architecture 15.4); [] when none. The editor sends them back unchanged on a new version."
+              },
+              "servingVersion": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Architecture 15.6: version number of the row with servesStudents; absent when none serves. Equals `version` when the head serves; a Spec head over a Disahkan version shows the older number."
+              },
+              "dependentPaperCount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Architecture 15.6: published pilihan papers whose blueprint is any version of this subject and kertas; used by the retire / delete-blocked message (AC-25.5). Computed on read."
               }
             },
             "required": [
@@ -57807,7 +58152,20 @@
               "durationMin",
               "instructions",
               "totalMarks",
-              "sections"
+              "sections",
+              "version",
+              "servesStudents",
+              "verification",
+              "evidenceCount",
+              "notes",
+              "subPartRamp",
+              "kbatMarks",
+              "levelShare",
+              "warnings",
+              "needsReview",
+              "reviewPapers",
+              "reference",
+              "dependentPaperCount"
             ],
             "additionalProperties": false,
             "description": "The blueprint of the paper subject and kertas (any source, Draf included); null when there is none."
@@ -57862,9 +58220,37 @@
             "$ref": "#/components/schemas/BijakBuilderSectionRule"
           },
           "pool": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 1,
-            "description": "Pool the section draws from in Jana Kertas; the builder uses it to suggest questions."
+            "description": "Optional narrowing tag of the section (null = no tag filter; the six launch blueprints use null). The builder uses it to suggest questions."
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based position of the section; the key that problems and evidence refer to."
+          },
+          "profile": {
+            "$ref": "#/components/schemas/BijakDifficultyProfileView"
+          },
+          "quota": {
+            "$ref": "#/components/schemas/BijakTopicQuotaView"
+          },
+          "kbatMarks": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "kbatReviewed": {
+            "type": "boolean",
+            "description": "AC-39.9: false = the section KBAT value is \"Belum disemak\". Read-only (server-set: true on an admin save, false from seeds)."
+          },
+          "allowedModes": {
+            "$ref": "#/components/schemas/BijakAllowedModes"
           }
         },
         "required": [
@@ -57874,9 +58260,352 @@
           "compulsory",
           "instruction",
           "rule",
-          "pool"
+          "pool",
+          "position",
+          "profile",
+          "quota",
+          "kbatMarks",
+          "kbatReviewed",
+          "allowedModes"
         ],
         "additionalProperties": false
+      },
+      "BijakDifficultyProfileView": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/BijakProfileKind"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakSlotGroupView"
+            },
+            "minItems": 1,
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "kind",
+          "groups"
+        ],
+        "additionalProperties": false
+      },
+      "BijakProfileKind": {
+        "type": "string",
+        "enum": [
+          "ladder",
+          "bahagian",
+          "tema"
+        ],
+        "description": "ladder = \"Tangga mengikut nombor soalan\"; bahagian = \"Mengikut Bahagian\"; tema = \"Blok tema\" (hidden in the editor until built, design D-9)."
+      },
+      "BijakSlotGroupView": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "1-based first slot of the group inside the section."
+          },
+          "to": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "1-based last slot (inclusive). Groups tile 1..questionCount."
+          },
+          "tpMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Tahap Penguasaan, 1 to 6."
+          },
+          "tpMax": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Tahap Penguasaan, 1 to 6."
+          },
+          "tpCounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tp": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6,
+                  "description": "Tahap Penguasaan, 1 to 6."
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500
+                }
+              },
+              "required": [
+                "tp",
+                "count"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 6,
+            "description": "Optional EXACT number of questions per TP in this group; when set, the counts add up to the group size (TPs without a count inside the band count as 0), AC-35.2."
+          },
+          "marksMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "O-8, AC-34.9: minimum marks of a question in this group. marksMin = marksMax is exact per-slot marks (AC-34.3)."
+          },
+          "marksMax": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "O-8, AC-34.9: maximum marks of a question in this group."
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakUnitRefView"
+            }
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "tpMin",
+          "tpMax"
+        ],
+        "additionalProperties": false
+      },
+      "BijakUnitRefView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "unit"
+                ]
+              },
+              "nodeId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "example": "3.0"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "T4",
+                  "T5"
+                ]
+              },
+              "title": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "nodeId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "t1_t3"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Unit reference as read back: code, level (T4 or T5) and title are added for display."
+      },
+      "BijakTopicQuotaView": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/BijakQuotaBasis"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakQuotaLineView"
+            }
+          },
+          "levelShare": {
+            "$ref": "#/components/schemas/BijakLevelShare"
+          }
+        },
+        "required": [
+          "basis",
+          "lines"
+        ],
+        "additionalProperties": false
+      },
+      "BijakQuotaBasis": {
+        "type": "string",
+        "enum": [
+          "questions",
+          "marks"
+        ],
+        "description": "questions = \"Bilangan soalan\" (default for objective sections); marks = \"Markah\" (default for structured sections), AC-36.1."
+      },
+      "BijakQuotaLineView": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "$ref": "#/components/schemas/BijakQuotaTag"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/BijakUnitRefView"
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reviewed": {
+            "type": "boolean",
+            "description": "AC-39.9: false = \"Belum disemak\" (seeded, not yet confirmed by Admin Pusat). Read-only: the client cannot send it; the server sets true on an admin save, seeds set false. Sahkan is refused while any line is unreviewed (UNREVIEWED)."
+          }
+        },
+        "required": [
+          "unit",
+          "value",
+          "reviewed"
+        ],
+        "additionalProperties": false
+      },
+      "BijakQuotaTag": {
+        "type": "string",
+        "enum": [
+          "observed",
+          "inferred",
+          "single_source"
+        ],
+        "description": "Provenance of a seeded quota value, shown in the editor. Informational: no gate uses it (architecture 13.1a(b))."
+      },
+      "BijakLevelShare": {
+        "type": "object",
+        "properties": {
+          "t4": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "t5": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "t4",
+          "t5"
+        ],
+        "additionalProperties": false,
+        "description": "Stated T4:T5 share in the basis unit (the T1-T3 bucket is excluded from the denominator). Must equal the share implied by the unit values."
+      },
+      "BijakAllowedModes": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/QuestionLeafMode"
+        },
+        "maxItems": 12,
+        "description": "Answer modes (leaf modes of M04) allowed in the section; empty = any mode. Enforced as pool eligibility."
+      },
+      "BijakBlueprintWarning": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "KBAT_TP_BAND"
+            ]
+          },
+          "warning": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "sectionPosition": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "groupIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "0-based index of the slot group inside the profile."
+          },
+          "unit": {
+            "$ref": "#/components/schemas/BijakUnitRefView"
+          },
+          "expected": {
+            "type": "number"
+          },
+          "actual": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "code",
+          "warning"
+        ],
+        "additionalProperties": false,
+        "description": "KBAT_TP_BAND: KBAT marks above 0 while every TP band of the section has maximum 1-2 (AC-37.5, O-5). A warning, not a refusal."
+      },
+      "BijakReviewPaper": {
+        "type": "object",
+        "properties": {
+          "paperId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "gaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakReviewGap"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "paperId",
+          "title",
+          "gaps"
+        ],
+        "additionalProperties": false
+      },
+      "BijakReviewGap": {
+        "type": "string",
+        "enum": [
+          "marks",
+          "tp",
+          "quota",
+          "kbat",
+          "level_share"
+        ]
       },
       "BijakBuilderPaperCreate": {
         "type": "object",
@@ -58244,6 +58973,139 @@
               "$ref": "#/components/schemas/BijakBlueprintViewSection"
             },
             "minItems": 1
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Version number of the row shown."
+          },
+          "servesStudents": {
+            "type": "boolean",
+            "description": "True on the single version real students generate from (the last Disahkan one). While a Spec head is being verified, an older Disahkan version keeps serving (Q-B22)."
+          },
+          "verification": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "verifiedAt": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "verifierName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "verifierRole": {
+                "type": "string",
+                "enum": [
+                  "admin"
+                ]
+              },
+              "evidenceLabel": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Short label of the evidence, e.g. \"Kajian kertas percubaan 2025\" for study-seeded evidence."
+              },
+              "bodies": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Exam bodies of the evidence, e.g. sbp, selangor_mpsm."
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "verifiedAt",
+              "verifierName",
+              "verifierRole",
+              "evidenceLabel",
+              "bodies"
+            ],
+            "additionalProperties": false,
+            "description": "Verifier, date and evidence in one glance; null when the version is not Disahkan."
+          },
+          "evidenceCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subPartRamp": {
+            "type": "boolean"
+          },
+          "kbatMarks": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Paper-level KBAT marks."
+          },
+          "levelShare": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "t4": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "t5": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "t4",
+              "t5"
+            ],
+            "additionalProperties": false,
+            "description": "Stated paper-level T4:T5 share."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBlueprintWarning"
+            },
+            "description": "Non-blocking warnings (KBAT_TP_BAND). Empty when there are none."
+          },
+          "needsReview": {
+            "type": "boolean",
+            "description": "O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text \"Blueprint perlu disemak\" [PROPOSED]."
+          },
+          "reviewPapers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakReviewPaper"
+            },
+            "description": "The papers behind needsReview; empty when needsReview is false."
+          },
+          "reference": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakPaperReferencePanel"
+            },
+            "description": "Reference-sheet panels of this version (architecture 15.4); [] when none. The editor sends them back unchanged on a new version."
+          },
+          "servingVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Architecture 15.6: version number of the row with servesStudents; absent when none serves. Equals `version` when the head serves; a Spec head over a Disahkan version shows the older number."
+          },
+          "dependentPaperCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Architecture 15.6: published pilihan papers whose blueprint is any version of this subject and kertas; used by the retire / delete-blocked message (AC-25.5). Computed on read."
           }
         },
         "required": [
@@ -58255,7 +59117,20 @@
           "durationMin",
           "instructions",
           "totalMarks",
-          "sections"
+          "sections",
+          "version",
+          "servesStudents",
+          "verification",
+          "evidenceCount",
+          "notes",
+          "subPartRamp",
+          "kbatMarks",
+          "levelShare",
+          "warnings",
+          "needsReview",
+          "reviewPapers",
+          "reference",
+          "dependentPaperCount"
         ],
         "additionalProperties": false
       },
@@ -58295,15 +59170,228 @@
           "pool": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 64
+            "maxLength": 64,
+            "description": "Optional narrowing tag; absent = no tag filter (was required before the standard)."
+          },
+          "profile": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "kind": {
+                "$ref": "#/components/schemas/BijakProfileKind"
+              },
+              "groups": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakSlotGroup"
+                },
+                "minItems": 1,
+                "maxItems": 40
+              }
+            },
+            "required": [
+              "kind",
+              "groups"
+            ],
+            "additionalProperties": false,
+            "description": "Difficulty profile (US-35). Absent or null = none (allowed in Draf and Spec only)."
+          },
+          "quota": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "basis": {
+                "$ref": "#/components/schemas/BijakQuotaBasis"
+              },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakQuotaLine"
+                },
+                "minItems": 1,
+                "maxItems": 60
+              },
+              "levelShare": {
+                "$ref": "#/components/schemas/BijakLevelShare"
+              }
+            },
+            "required": [
+              "basis",
+              "lines"
+            ],
+            "additionalProperties": false,
+            "description": "Exact topic quota (US-36). Absent or null = none (any unit allowed)."
+          },
+          "kbatMarks": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Exact KBAT marks of the OFFERED questions of the section (US-37, parts whose KBAT level is mengaplikasi, menganalisis, menilai or mencipta). Absent or null = unconstrained; 0 is a value."
+          },
+          "allowedModes": {
+            "$ref": "#/components/schemas/BijakAllowedModes"
           }
         },
         "required": [
           "label",
           "markBudget",
           "questionCount",
-          "rule",
-          "pool"
+          "rule"
+        ],
+        "additionalProperties": false
+      },
+      "BijakSlotGroup": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "1-based first slot of the group inside the section."
+          },
+          "to": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "1-based last slot (inclusive). Groups tile 1..questionCount."
+          },
+          "tpMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Tahap Penguasaan, 1 to 6."
+          },
+          "tpMax": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Tahap Penguasaan, 1 to 6."
+          },
+          "tpCounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tp": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6,
+                  "description": "Tahap Penguasaan, 1 to 6."
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500
+                }
+              },
+              "required": [
+                "tp",
+                "count"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 6,
+            "description": "Optional EXACT number of questions per TP in this group; when set, the counts add up to the group size (TPs without a count inside the band count as 0), AC-35.2."
+          },
+          "marksMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "O-8, AC-34.9: minimum marks of a question in this group. marksMin = marksMax is exact per-slot marks (AC-34.3)."
+          },
+          "marksMax": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "O-8, AC-34.9: maximum marks of a question in this group."
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakUnitRef"
+            },
+            "maxItems": 60,
+            "description": "'tema' only: the unit set of the theme block."
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "tpMin",
+          "tpMax"
+        ],
+        "additionalProperties": false,
+        "description": "Cross-field rules: from <= to, tpMin <= tpMax, and marksMin <= marksMax when both are set. A violation is refused with SLOT_GROUP_REFINE_MESSAGE."
+      },
+      "BijakUnitRef": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "unit"
+                ]
+              },
+              "nodeId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "curriculum_nodes.id of a node of kind unit.",
+                "example": "1042"
+              }
+            },
+            "required": [
+              "kind",
+              "nodeId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "t1_t3"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "{ kind: unit, nodeId } = a DSKP unit (pins the DSKP edition); { kind: t1_t3 } = the bucket \"T1-T3, luar DSKP\" (questions with form_origin t1_t3 and no unit)."
+      },
+      "BijakQuotaLine": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "$ref": "#/components/schemas/BijakQuotaTag"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/BijakUnitRef"
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "EXACT value in the quota basis. 0 is allowed; a unit without a line is never picked for the section (AC-36.2)."
+          }
+        },
+        "required": [
+          "unit",
+          "value"
         ],
         "additionalProperties": false
       },
@@ -58311,13 +59399,56 @@
         "type": "object",
         "properties": {
           "source": {
-            "type": "string",
-            "enum": [
-              "Disahkan",
-              "Spec",
-              "Draf"
+            "$ref": "#/components/schemas/BijakBlueprintClientSource"
+          },
+          "totalMarks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Optional. Stored total = sum of section markBudget; when sent it must match (TOTAL_MISMATCH)."
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
             ],
-            "description": "Provenance tag of the blueprint. A blueprint with source Draf cannot generate a paper (NO_BLUEPRINT)."
+            "maxLength": 4000,
+            "description": "Cosmetic note (not part of the structural hash). Carries the observed/inferred tags of seeded values."
+          },
+          "subPartRamp": {
+            "type": "boolean",
+            "description": "\"sub-bahagian menaik\" (AC-25.1, AC-38.4): informs the bank review checklist only. Default false."
+          },
+          "kbatMarks": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Optional paper-level KBAT marks (AC-37.2); must equal the sum of the section values when both are set (KBAT_TOTAL)."
+          },
+          "levelShare": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "t4": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "t5": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "t4",
+              "t5"
+            ],
+            "additionalProperties": false,
+            "description": "Optional stated paper-level T4:T5 share in the quota basis (AC-36.3)."
           },
           "code": {
             "type": "string",
@@ -58345,7 +59476,7 @@
               "$ref": "#/components/schemas/BijakPaperReferencePanel"
             },
             "maxItems": 10,
-            "description": "Reference-sheet panels for papers made from this blueprint. Write-only here: `BlueprintView` does not carry it."
+            "description": "Reference-sheet panels for papers made from this blueprint. On POST .../versions: omitted = the server carries over the head panels; [] = clear (architecture 15.4). `BlueprintView.reference` reads them back."
           },
           "sections": {
             "type": "array",
@@ -58357,12 +59488,19 @@
           }
         },
         "required": [
-          "source",
           "code",
           "durationMin",
           "sections"
         ],
         "additionalProperties": false
+      },
+      "BijakBlueprintClientSource": {
+        "type": "string",
+        "enum": [
+          "Draf",
+          "Spec"
+        ],
+        "description": "Draf or Spec. Disahkan is refused by the request enum: only POST .../verify sets it (architecture 3.5). When omitted the server decides: Draf if asked for; Disahkan only when the previous head is Disahkan and the structural hash is unchanged (cosmetic edit); else Spec."
       },
       "BijakBlueprintAdminCreate": {
         "type": "object",
@@ -58380,13 +59518,56 @@
             "example": 2
           },
           "source": {
-            "type": "string",
-            "enum": [
-              "Disahkan",
-              "Spec",
-              "Draf"
+            "$ref": "#/components/schemas/BijakBlueprintClientSource"
+          },
+          "totalMarks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Optional. Stored total = sum of section markBudget; when sent it must match (TOTAL_MISMATCH)."
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
             ],
-            "description": "Provenance tag of the blueprint. A blueprint with source Draf cannot generate a paper (NO_BLUEPRINT)."
+            "maxLength": 4000,
+            "description": "Cosmetic note (not part of the structural hash). Carries the observed/inferred tags of seeded values."
+          },
+          "subPartRamp": {
+            "type": "boolean",
+            "description": "\"sub-bahagian menaik\" (AC-25.1, AC-38.4): informs the bank review checklist only. Default false."
+          },
+          "kbatMarks": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Optional paper-level KBAT marks (AC-37.2); must equal the sum of the section values when both are set (KBAT_TOTAL)."
+          },
+          "levelShare": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "t4": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "t5": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "t4",
+              "t5"
+            ],
+            "additionalProperties": false,
+            "description": "Optional stated paper-level T4:T5 share in the quota basis (AC-36.3)."
           },
           "code": {
             "type": "string",
@@ -58414,7 +59595,7 @@
               "$ref": "#/components/schemas/BijakPaperReferencePanel"
             },
             "maxItems": 10,
-            "description": "Reference-sheet panels for papers made from this blueprint. Write-only here: `BlueprintView` does not carry it."
+            "description": "Reference-sheet panels for papers made from this blueprint. On POST .../versions: omitted = the server carries over the head panels; [] = clear (architecture 15.4). `BlueprintView.reference` reads them back."
           },
           "sections": {
             "type": "array",
@@ -58428,7 +59609,6 @@
         "required": [
           "subject",
           "kertas",
-          "source",
           "code",
           "durationMin",
           "sections"
@@ -58457,6 +59637,1215 @@
             "minimum": 1
           }
         }
+      },
+      "BijakDifficultyProfile": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/BijakProfileKind"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakSlotGroup"
+            },
+            "minItems": 1,
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "kind",
+          "groups"
+        ],
+        "additionalProperties": false,
+        "description": "Exactly one kind per section (AC-35.1). Groups tile slots 1..questionCount with no gap or overlap (SLOT_GAP, SLOT_OVERLAP are reported by the validator, which lists every problem at once)."
+      },
+      "BijakTopicQuota": {
+        "type": "object",
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/BijakQuotaBasis"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakQuotaLine"
+            },
+            "minItems": 1,
+            "maxItems": 60
+          },
+          "levelShare": {
+            "$ref": "#/components/schemas/BijakLevelShare"
+          }
+        },
+        "required": [
+          "basis",
+          "lines"
+        ],
+        "additionalProperties": false,
+        "description": "One exact value per unit, counted by the primary unit of a question (O-1). Lines add up to the offered question count (basis questions) or the offered marks (basis marks); a duplicate unit is a QUOTA_SUM problem."
+      },
+      "BijakVerificationSummary": {
+        "type": "object",
+        "properties": {
+          "verifiedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "verifierName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verifierRole": {
+            "type": "string",
+            "enum": [
+              "admin"
+            ]
+          },
+          "evidenceLabel": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short label of the evidence, e.g. \"Kajian kertas percubaan 2025\" for study-seeded evidence."
+          },
+          "bodies": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Exam bodies of the evidence, e.g. sbp, selangor_mpsm."
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "verifiedAt",
+          "verifierName",
+          "verifierRole",
+          "evidenceLabel",
+          "bodies"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintProblemCode": {
+        "type": "string",
+        "enum": [
+          "TOTAL_MISMATCH",
+          "CHOOSE_N_RANGE",
+          "SLOT_OVERLAP",
+          "SLOT_GAP",
+          "PROFILE_SHAPE",
+          "TP_COUNTS",
+          "MARKS_BAND",
+          "QUOTA_SUM",
+          "QUOTA_UNIT",
+          "LEVEL_SHARE",
+          "KBAT_RANGE",
+          "KBAT_TOTAL",
+          "MODES"
+        ]
+      },
+      "BijakBlueprintProblem": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/BijakBlueprintProblemCode"
+          },
+          "sectionPosition": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "groupIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "0-based index of the slot group inside the profile."
+          },
+          "unit": {
+            "$ref": "#/components/schemas/BijakUnitRefView"
+          },
+          "expected": {
+            "type": "number"
+          },
+          "actual": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "BijakEvidenceKind": {
+        "type": "string",
+        "enum": [
+          "trial_paper",
+          "skema",
+          "lpm_format"
+        ],
+        "description": "trial_paper = a trial paper; skema = its skema jawapan; lpm_format = an official LPM format / JSU document (counts as two supporting bodies, AC-39.2)."
+      },
+      "BijakEvidenceValues": {
+        "type": "object",
+        "properties": {
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "totalMarks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Effective (counted) total."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "position": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based; matched to the blueprint by position, the label is informational."
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "markBudget": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000
+                },
+                "offeredMarks": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000
+                },
+                "rule": {
+                  "$ref": "#/components/schemas/BijakBuilderSectionRule"
+                },
+                "questionCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 500
+                }
+              },
+              "required": [
+                "position"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "BijakEvidenceInput": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/BijakEvidenceKind"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z0-9_]+$",
+            "description": "Exam board value of the exam schema (D8), e.g. sbp, selangor_mpsm; 'lpm' for the official body.",
+            "example": "sbp"
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1990,
+            "maximum": 2100
+          },
+          "paperCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "1449/2"
+          },
+          "setLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "sourceRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500,
+            "description": "Free-text pointer to where the paper is kept (folder / file label)."
+          },
+          "values": {
+            "$ref": "#/components/schemas/BijakEvidenceValues"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "kind",
+          "body",
+          "year",
+          "paperCode",
+          "values"
+        ],
+        "additionalProperties": false
+      },
+      "BijakEvidenceItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BijakEvidenceKind"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1
+          },
+          "year": {
+            "type": "integer"
+          },
+          "paperCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "setLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceRef": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "values": {
+            "$ref": "#/components/schemas/BijakEvidenceValues"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "study",
+              "admin"
+            ],
+            "description": "study = seeded from the study; admin = entered by Admin Pusat."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "body",
+          "year",
+          "paperCode",
+          "setLabel",
+          "sourceRef",
+          "values",
+          "origin",
+          "note",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakEvidenceLine": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "durationMin",
+              "totalMarks",
+              "markBudget",
+              "rule",
+              "questionCount"
+            ]
+          },
+          "sectionPosition": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expected": {
+            "description": "The blueprint value compared."
+          },
+          "statements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "evidenceId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "body": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/BijakEvidenceKind"
+                },
+                "value": {}
+              },
+              "required": [
+                "evidenceId",
+                "body",
+                "kind"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "supportingBodies": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "differs",
+              "not_covered",
+              "tidak_disahkan"
+            ],
+            "description": "differs = a contradicting statement; not_covered = no statement; tidak_disahkan = fewer than 2 supporting bodies [PROPOSED label]; ok otherwise (AC-39.7)."
+          }
+        },
+        "required": [
+          "field",
+          "statements",
+          "supportingBodies",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "BijakVerificationCheck": {
+        "type": "object",
+        "properties": {
+          "passes": {
+            "type": "boolean"
+          },
+          "blueprintProblems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBlueprintProblem"
+            }
+          },
+          "completeness": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "enum": [
+                    "NO_PROFILE",
+                    "NO_QUOTA",
+                    "NO_KBAT",
+                    "NO_SHARE",
+                    "NO_DURATION",
+                    "NO_EVIDENCE_BODIES",
+                    "UNREVIEWED"
+                  ]
+                },
+                "sectionPosition": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "unit": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "unit"
+                          ]
+                        },
+                        "nodeId": {
+                          "$ref": "#/components/schemas/Id"
+                        },
+                        "code": {
+                          "type": "string",
+                          "minLength": 1,
+                          "example": "3.0"
+                        },
+                        "level": {
+                          "type": "string",
+                          "enum": [
+                            "T4",
+                            "T5"
+                          ]
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "nodeId"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "t1_t3"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "UNREVIEWED only: the quota line still \"Belum disemak\" (AC-39.9). A section KBAT value that is unreviewed has no unit."
+                }
+              },
+              "required": [
+                "code"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakEvidenceLine"
+            }
+          }
+        },
+        "required": [
+          "passes",
+          "blueprintProblems",
+          "completeness",
+          "lines"
+        ],
+        "additionalProperties": false,
+        "description": "The live gate of AC-39.1 and AC-39.7 against the head. passes is true only when there is no problem, no completeness gap and every evidence line is ok. Every failure is listed at once."
+      },
+      "BijakVerificationRecord": {
+        "type": "object",
+        "properties": {
+          "verifiedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "verifierName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verifierRole": {
+            "type": "string",
+            "enum": [
+              "admin"
+            ]
+          },
+          "evidenceLabel": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short label of the evidence, e.g. \"Kajian kertas percubaan 2025\" for study-seeded evidence."
+          },
+          "bodies": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Exam bodies of the evidence, e.g. sbp, selangor_mpsm."
+          },
+          "note": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakEvidenceItem"
+            }
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakEvidenceLine"
+            }
+          }
+        },
+        "required": [
+          "verifiedAt",
+          "verifierName",
+          "verifierRole",
+          "evidenceLabel",
+          "bodies",
+          "evidence",
+          "lines"
+        ],
+        "additionalProperties": false,
+        "description": "The recorded verification: summary plus the frozen evidence snapshot and compared lines (insert-only)."
+      },
+      "BijakVerificationState": {
+        "type": "object",
+        "properties": {
+          "record": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BijakVerificationRecord"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "check": {
+            "$ref": "#/components/schemas/BijakVerificationCheck"
+          }
+        },
+        "required": [
+          "record",
+          "check"
+        ],
+        "additionalProperties": false
+      },
+      "BijakVerifyInput": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "additionalProperties": false
+      },
+      "BijakBlueprintVersionItem": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "active",
+              "retired"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "Disahkan",
+              "Spec",
+              "Draf"
+            ],
+            "description": "Provenance tag of the blueprint. A blueprint with source Draf cannot generate a paper (NO_BLUEPRINT)."
+          },
+          "servesStudents": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "structureHash": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verification": {
+            "$ref": "#/components/schemas/BijakVerificationSummary"
+          }
+        },
+        "required": [
+          "version",
+          "status",
+          "source",
+          "servesStudents",
+          "createdAt",
+          "structureHash"
+        ],
+        "additionalProperties": false
+      },
+      "BijakPoolPreviewSection": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "slots": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "effectiveMarks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offeredMarks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "eligible": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions eligible for this section (AC-29.1)."
+          },
+          "modeExcluded": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Eligible elsewhere but the answer mode is not allowed here."
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "needed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "available": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "short": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "needed",
+              "available",
+              "short"
+            ],
+            "additionalProperties": false
+          },
+          "marks": {
+            "type": "object",
+            "properties": {
+              "needed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "reachable": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "needed",
+              "reachable"
+            ],
+            "additionalProperties": false
+          },
+          "quota": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "needed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "available": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "short": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unit": {
+                  "$ref": "#/components/schemas/BijakUnitRefView"
+                },
+                "basis": {
+                  "$ref": "#/components/schemas/BijakQuotaBasis"
+                }
+              },
+              "required": [
+                "needed",
+                "available",
+                "short",
+                "unit",
+                "basis"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "tp": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "needed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "available": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "short": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "slot": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "to": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "required": [
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false
+                },
+                "tpMin": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6
+                },
+                "tpMax": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6
+                },
+                "tp": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6,
+                  "description": "Set for an exact per-TP count line."
+                }
+              },
+              "required": [
+                "needed",
+                "available",
+                "short",
+                "slot",
+                "tpMin",
+                "tpMax"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "kbat": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "needed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "available": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "short": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "needed",
+              "available",
+              "short"
+            ],
+            "additionalProperties": false
+          },
+          "bankQuery": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Filters for the \"Lihat soalan\" link into the Bank Soalan (subject, status=published, missing=...)."
+          }
+        },
+        "required": [
+          "position",
+          "label",
+          "slots",
+          "effectiveMarks",
+          "offeredMarks",
+          "eligible",
+          "modeExcluded",
+          "counts",
+          "marks",
+          "quota",
+          "tp",
+          "kbat",
+          "bankQuery"
+        ],
+        "additionalProperties": false
+      },
+      "BijakPoolPreview": {
+        "type": "object",
+        "properties": {
+          "blueprint": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "Disahkan",
+                  "Spec",
+                  "Draf"
+                ],
+                "description": "Provenance tag of the blueprint. A blueprint with source Draf cannot generate a paper (NO_BLUEPRINT)."
+              }
+            },
+            "required": [
+              "version",
+              "source"
+            ],
+            "additionalProperties": false
+          },
+          "publishedTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Architecture 15.5: Terbit live questions of the subject, before any eligibility rule. Invariant: publishedTotal = eligibleTotal + excluded.total."
+          },
+          "eligibleTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions passing the section-independent eligibility of 4.2 (unit or T1-T3 bucket, TP, marks, key, tag_review = false)."
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "boleh",
+              "tidak_boleh",
+              "tidak_pasti"
+            ],
+            "description": "\"Boleh dijana\" / \"Tidak boleh dijana\" / tidak_pasti when the reference attempt hit the budget (AC-29.5)."
+          },
+          "firstFailure": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BijakGenerateShortage"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "excluded": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Unique excluded questions; per-reason counts may overlap (design D-8)."
+              },
+              "byReason": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "no_unit",
+                        "no_tp",
+                        "no_marks",
+                        "no_key",
+                        "tag_review"
+                      ]
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "bankQuery": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Filters for the \"Lihat soalan\" link into the Bank Soalan (subject, status=published, missing=...)."
+                    }
+                  },
+                  "required": [
+                    "reason",
+                    "count",
+                    "bankQuery"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "total",
+              "byReason"
+            ],
+            "additionalProperties": false
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBlueprintWarning"
+            },
+            "description": "KBAT_TP_BAND is shown in the preview too (AC-37.5)."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakPoolPreviewSection"
+            }
+          }
+        },
+        "required": [
+          "blueprint",
+          "publishedTotal",
+          "eligibleTotal",
+          "verdict",
+          "firstFailure",
+          "excluded",
+          "warnings",
+          "sections"
+        ],
+        "additionalProperties": false,
+        "description": "Pratonton kolam. Counts equal rows (NFR-12): computed over the same candidate list the generator uses. short > 0 is rendered as \"Kurang {n}\" text, not by colour alone (NFR-16)."
+      },
+      "BijakPoolPreviewQuery": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "BijakDskpUnit": {
+        "type": "object",
+        "properties": {
+          "nodeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "curriculum_nodes.id of the unit.",
+            "example": "1042"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "example": "4.0"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "elective": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "nodeId",
+          "code",
+          "level",
+          "title",
+          "elective"
+        ],
+        "additionalProperties": false
+      },
+      "BijakDskpUnitsQuery": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Bijak subject code, e.g. MAT.",
+            "example": "MAT"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5"
+            ]
+          }
+        },
+        "required": [
+          "subject"
+        ]
+      },
+      "BijakDraftGenerateRequest": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "MAT"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 2
+          }
+        },
+        "required": [
+          "subject",
+          "kertas"
+        ],
+        "additionalProperties": false
+      },
+      "BijakDraftGenerateResult": {
+        "type": "object",
+        "properties": {
+          "paperId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "paperId"
+        ],
+        "additionalProperties": false,
+        "description": "A draft pilihan paper; never published automatically."
+      },
+      "BijakBlueprintInvalidError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "BLUEPRINT_INVALID"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Kontrak tidak boleh disimpan. Betulkan masalah yang disenaraikan."
+                ]
+              },
+              "details": {
+                "type": "object",
+                "properties": {
+                  "problems": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BijakBlueprintProblem"
+                    },
+                    "minItems": 1
+                  },
+                  "warnings": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BijakBlueprintWarning"
+                    }
+                  }
+                },
+                "required": [
+                  "problems"
+                ],
+                "additionalProperties": false
+              },
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "details"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "BijakVerificationFailedError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VERIFICATION_FAILED"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Kontrak belum boleh disahkan. Semak senarai kegagalan."
+                ]
+              },
+              "details": {
+                "type": "object",
+                "properties": {
+                  "check": {
+                    "$ref": "#/components/schemas/BijakVerificationCheck"
+                  }
+                },
+                "required": [
+                  "check"
+                ],
+                "additionalProperties": false
+              },
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "details"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
       },
       "IntakeLeafKind": {
         "type": "string",
@@ -72657,7 +75046,7 @@
           "bijak-papers"
         ],
         "summary": "Kontrak Blueprint list for Jana Kertas",
-        "description": "Mock method listContracts(). Every blueprint including those with source Draf (those cannot generate). Sections carry label and take only; the internal pool tag is not exposed. Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "description": "Mock method listContracts(). Every blueprint including those with source Draf (those cannot generate). Sections carry label and take only; the internal pool tag is not exposed. BJS-01: each row carries canGenerate (and unavailableReason NO_BLUEPRINT when false). A student, and Admin Sekolah in Mod Pelajar, sees the serving (Disahkan) version, or the head when none serves, and canGenerate is true only with a serving version. Admin Pusat in Mod Pelajar sees the head and canGenerate is true when its source is Spec or Disahkan. When false the UI shows \"Belum ada kontrak untuk subjek dan kertas ini\" (AC-03.6). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
         "responses": {
           "200": {
             "description": "Blueprint contracts.",
@@ -72761,7 +75150,7 @@
           "bijak-papers"
         ],
         "summary": "Jana Kertas: generate a private paper from a Kontrak Blueprint",
-        "description": "Mock method generatePaper(userId, subject, kertas). Composes from the blueprint: stimulus groups are taken whole, no question repeats inside one paper, questions the caller has not been served are preferred. Every call creates a new paper id; the paper is private to the caller. 422 NO_BLUEPRINT when there is no blueprint for the pair or its source is Draf (no paper is created). 422 SHORTAGE with error.details.shortages when the pool cannot fill a section: a shortage list instead of a short paper. Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "description": "Mock method generatePaper(userId, subject, kertas). Composes from the blueprint: stimulus groups are taken whole, no question repeats inside one paper, questions the caller has not been served are preferred. Every call creates a new paper id; the paper is private to the caller. 422 NO_BLUEPRINT when a student (or Admin Sekolah in Mod Pelajar) has no serving Disahkan blueprint for the pair, or Admin Pusat in Mod Pelajar has no Spec or Disahkan head (no paper is created). 422 SHORTAGE with error.details.shortages when the pool cannot fill a section exactly: a shortage list instead of a short paper; each line keeps { section, need, have } and may add the typed fields kind, basis, unit, slot, tp, blocking, otherSection (BM text is built from kind by the client, never carried). 503 GENERATE_LIMIT [PROPOSED] \"Kertas tidak dapat disusun sekarang. Cuba lagi.\" when the solver budget is reached (details.limitSections lists the sections being solved). 500 SERVER_ERROR when the independent re-check finds a violation (logged, never served; the architecture text calls it INTERNAL, the generic code is SERVER_ERROR). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
         "parameters": [
           {
             "schema": {
@@ -72840,6 +75229,26 @@
                       "$ref": "#/components/schemas/ErrorBody"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "SERVER_ERROR: the independent re-check found a violation (logged, never served).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "GENERATE_LIMIT \"Kertas tidak dapat disusun sekarang. Cuba lagi.\" [PROPOSED]: solver budget reached; no paper is created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BijakGenerateLimitError"
                 }
               }
             }
@@ -100265,7 +102674,7 @@
           "bijak-blueprint-admin"
         ],
         "summary": "Blueprint: list blueprints (BlueprintView, latest active version)",
-        "description": "One row per blueprint (subject and kertas), as the mock listBlueprints (BlueprintView); blueprints whose source is Draf are not listed (the mock filter). Retired blueprints are not listed either [PROPOSED]. Filters subject and kertas are [PROPOSED]. The mock returns a plain array; this route is paged (deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "One row per blueprint (subject and kertas): the head version, as the mock listBlueprints (BlueprintView). BJS-01: Draf heads are now listed too (the editor needs them); the view carries version, servesStudents, verification, evidenceCount, warnings, needsReview and reviewPapers (O-2). Retired blueprints are not listed [PROPOSED]. Filters subject and kertas are [PROPOSED]. The mock returns a plain array; this route is paged (deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -100451,11 +102860,18 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (subject, kertas, code, durationMin, sections, sections.N.*).",
+            "description": "BLUEPRINT_INVALID \"Kontrak tidak boleh disimpan. Betulkan masalah yang disenaraikan.\" [PROPOSED] with details.problems (every problem at once, AC-25.7), or VALIDATION_ERROR with fields (subject, kertas, code, durationMin, sections, sections.N.*). The body is strict: unknown keys are rejected. source accepts Draf or Spec only.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BijakBlueprintInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
                 }
               }
             }
@@ -100574,7 +102990,7 @@
           "bijak-blueprint-admin"
         ],
         "summary": "Blueprint admin: add a new version, the only way to edit (NO MOCK)",
-        "description": "No mock exists; kept because the card requires it. Creates version n+1 from the full body; earlier versions stay as they were (a version used by a terbit paper is immutable). The version number is internal and not part of BlueprintView. A retired blueprint answers 409 CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED]. Answers the view of the new latest version. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "No mock exists; kept because the card requires it. Creates version n+1 from the full body; earlier versions stay as they were (a version used by a terbit paper is immutable). BJS-01: the version number is now part of the view. The server decides the source of the new row (client Draf or Spec only): Disahkan is kept only when the previous head is Disahkan and the structural hash is unchanged (cosmetic edit); a structural edit makes a Spec head while the last Disahkan version keeps serving students (AC-39.4, Q-B22). A retired blueprint answers 409 CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED]. Answers the view of the new latest version. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -100690,11 +103106,18 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (code, durationMin, sections, sections.N.*).",
+            "description": "BLUEPRINT_INVALID \"Kontrak tidak boleh disimpan. Betulkan masalah yang disenaraikan.\" [PROPOSED] with details.problems (every problem at once), or VALIDATION_ERROR with fields (code, durationMin, sections, sections.N.*).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BijakBlueprintInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
                 }
               }
             }
@@ -100710,6 +103133,93 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Blueprint: version history, newest first",
+        "description": "Every version row with its status, source, whether it serves students, structure hash and verification summary. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versions, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakBlueprintVersionItem"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
             "content": {
               "application/json": {
                 "schema": {
@@ -100847,6 +103357,1028 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bijak/dskp/units": {
+      "get": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "DSKP unit picker for the quota editor (subject and level)",
+        "description": "Units (kind unit) of the subject's DSKP, sorted by sortOrder; elective marks the elective units. Source of the display fields of BijakUnitRefView. 404 NOT_FOUND for an unknown subject; an empty list for a subject with no DSKP units (for example Geografi). Query level is optional here (omitted = T4 and T5) [PROPOSED]. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Bijak subject code, e.g. MAT.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Bijak subject code, e.g. MAT.",
+            "name": "subject",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "T4",
+                "T5"
+              ]
+            },
+            "required": false,
+            "name": "level",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DSKP units (unpaged).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakDskpUnit"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (unknown subject).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (subject, level).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bijak/subjects": {
+      "get": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Bijak subject list for \"Tambah Kontrak\" (all active subjects, Bijak codes)",
+        "description": "Unpaged. Returns Bijak codes (for example MAT), not the curriculum codes of GET /admin/subjects, and covers all active subjects, not only those on the student hub. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "responses": {
+          "200": {
+            "description": "Subjects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakSubject"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}/evidence": {
+      "get": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Blueprint: evidence items of the head",
+        "description": "Trial papers, skema and LPM format documents recorded for the head version (AC-39.2). Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakEvidenceItem"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Blueprint: add an evidence item to the head",
+        "description": "Unknown keys are rejected. A new version copies the head evidence, so re-verification starts from the history. A Disahkan head answers 409 CONFLICT \"Kontrak Disahkan tidak boleh diubah di tempat. Cipta versi baharu dahulu.\" [PROPOSED]: edit through a new version first (AC-39.4). Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakEvidenceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new evidence item.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakEvidenceItem"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kontrak Disahkan tidak boleh diubah di tempat. Cipta versi baharu dahulu.\" [PROPOSED] (the head is Disahkan).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (kind, body, year, paperCode, values.*).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}/evidence/{evidenceId}": {
+      "delete": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Blueprint: remove an evidence item from the head",
+        "description": "409 when the head is Disahkan (same rule as add); 404 \"Bukti tidak ditemui\" [PROPOSED] for an unknown id. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "evidenceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderOk"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Bukti tidak ditemui\" [PROPOSED] (blueprint or evidence).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kontrak Disahkan tidak boleh diubah di tempat. Cipta versi baharu dahulu.\" [PROPOSED] (the head is Disahkan).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}/verification": {
+      "get": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Blueprint: recorded verification (if any) and the live check of the head",
+        "description": "record is null until the blueprint is Disahkan. check is recomputed on every call: completeness gaps, blueprint problems and the evidence comparison lines (ok, differs, not_covered, tidak_disahkan), AC-39.1 and AC-39.7. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record and live check.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakVerificationState"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}/verify": {
+      "post": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Blueprint: set Spec to Disahkan (the only way to write Disahkan)",
+        "description": "Body { note? }. Runs the AC-39.1 list and the AC-39.7 evidence comparison; on pass the head becomes Disahkan in one transaction, a verification row is recorded (insert-only), serves_students moves to it, and the action is audited. 422 VERIFICATION_FAILED lists every failure (details.check). 409 CONFLICT \"Kontrak ini sudah Disahkan.\" [PROPOSED] when already Disahkan. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakVerifyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The blueprint, now Disahkan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBlueprintView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kontrak ini sudah Disahkan.\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VERIFICATION_FAILED \"Kontrak belum boleh disahkan. Semak senarai kegagalan.\" [PROPOSED] with details.check (every failure), or VALIDATION_ERROR for an invalid body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BijakVerificationFailedError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}/pool": {
+      "get": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Blueprint: Pratonton kolam (needed / available per line, verdict, excluded breakdown)",
+        "description": "Query version (default: the head). Computed by the same code and the same candidate list as Jana Kertas, so counts equal rows. The verdict comes from the reference attempt: boleh guarantees a generation on the same pool succeeds. An empty pool is not an error (\"Tiada soalan Terbit untuk tag ini\"). Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "version",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pool preview.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakPoolPreview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (version).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/generate": {
+      "post": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Jana draf kertas: a draft Kertas Pilihan generated from the head blueprint (AC-29.2)",
+        "description": "Same generator as Jana Kertas. Creates a draft pilihan paper that is opened for editing and never published automatically. Admin Pusat may use a Spec or Disahkan head. 422 NO_BLUEPRINT, 422 SHORTAGE and 503 GENERATE_LIMIT have the same shapes as POST /bijak/papers/generate. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakDraftGenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The draft paper id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakDraftGenerateResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "NO_BLUEPRINT, SHORTAGE (error.details.shortages) or VALIDATION_ERROR (subject, kertas).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BijakGenerateNoBlueprintError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakGenerateShortageError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "SERVER_ERROR: the independent re-check found a violation (logged, never served).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "GENERATE_LIMIT [PROPOSED]: solver budget reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BijakGenerateLimitError"
                 }
               }
             }
