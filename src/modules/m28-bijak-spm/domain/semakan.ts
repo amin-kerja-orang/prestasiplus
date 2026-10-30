@@ -53,6 +53,8 @@ export interface PastSittings {
 
 export interface BandOption {
   name: string
+  /** Optional band title (V2 label); the wire does not carry it yet. */
+  label?: string
   from: number
   to: number
   descriptor: string
@@ -70,7 +72,8 @@ export function bandOptions(part: PartResult): BandOption[] {
   return bands.map((b) => {
     const from = clampMark(Math.min(b.range[0], b.range[1]), part.marks)
     const to = clampMark(Math.max(b.range[0], b.range[1]), part.marks)
-    return { name: b.name, from, to, descriptor: b.descriptor }
+    const label = (b as { label?: string }).label?.trim()
+    return { name: b.name, ...(label ? { label } : {}), from, to, descriptor: b.descriptor }
   })
 }
 

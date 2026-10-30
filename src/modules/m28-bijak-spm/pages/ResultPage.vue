@@ -5,8 +5,8 @@
  * ("awak" voice) -> rewards -> Kongsi / Kembali ke Home. Below it: marks per section, per question
  * and per marking point, with the scheme revealed (only reachable after Hantar).
  */
-import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
 import { DsEmptyState, DsFriendAvatar, DsSpeechBubble, DsWinScreen } from '@/ds'
 import { useApi } from '@/composables/useApi'
@@ -60,6 +60,27 @@ watch(attemptId, () => {
 })
 const result = computed(() => refreshed.value ?? data.value?.result)
 const review = (p: PartResult): ReviewPart => p
+
+/**
+ * Dirty-draft guard [PROPOSED: V2 has no such warning]: a stepper change that is not saved yet asks
+ * before the pupil leaves the page (in-app navigation and tab close / reload).
+ */
+const LEAVE_WARNING = 'Anda ada markah kendiri yang belum disimpan. Tinggalkan halaman ini?'
+const unsaved = ref(new Set<string>())
+function onDirty(partId: string, dirty: boolean): void {
+  const next = new Set(unsaved.value)
+  if (dirty) next.add(partId)
+  else next.delete(partId)
+  unsaved.value = next
+}
+function warnOnUnload(e: BeforeUnloadEvent): void {
+  if (!unsaved.value.size) return
+  e.preventDefault()
+  e.returnValue = ''
+}
+onMounted(() => window.addEventListener('beforeunload', warnOnUnload))
+onBeforeUnmount(() => window.removeEventListener('beforeunload', warnOnUnload))
+onBeforeRouteLeave(() => (unsaved.value.size ? window.confirm(LEAVE_WARNING) : true))
 
 async function saveSelfMark(body: { partId: string; mark: number; band?: string }): Promise<void> {
   const out = await server.selfMark(user.value, attemptId.value, body)
@@ -367,7 +388,7 @@ const home = computed(() => landingPath.value || '/dashboard')
                     :suggestion="review(p).suggestion!"
                     :max="p.marks"
                   />
-                  <SelfMarkControl :part="review(p)" :save="saveSelfMark" />
+                  <SelfMarkControl :part="review(p)" :save="saveSelfMark" @dirty="onDirty" />
                 </template>
               </PartResultCard>
             </div>
