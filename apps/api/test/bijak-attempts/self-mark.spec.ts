@@ -147,7 +147,17 @@ describe('R1-B12 self-mark', () => {
     expect(before.score).toBe(1) // the automatic suggestion, replaced (not added to) by the pupil's mark
     expect(again.score).toBe(2)
     expect(again.pendingReview).toBe(before.pendingReview - 1)
-    expect(again.coins).toBe(again.score * 2)
+    // reward figures are the credited ones from submit (score 1 then), not recomputed from the self-marked score
+    expect(again.coins).toBe(before.coins)
+    expect(again.points).toBe(before.points)
+    expect(again.coins).toBe(2)
+    expect(out.result.coins).toBe(2)
+    const row = (await t.db.query<{ coins: number; points: number }>(`select coins, points from attempt_results where attempt_id = $1`, [id]))[0]!
+    expect(row).toMatchObject({ coins: 2, points: 10 })
+    // a blank answer self-marked above 0 is a marked part (separa/betul), not "kosong"
+    const blank = await sit(me, PAPER.sainsK2, [])
+    const b = BijakAttemptSelfMarkResultSchema.parse((await selfMark(me, blank, { partId: SEL_B, mark: 2 })).body.data)
+    expect(b).toMatchObject({ awarded: 2, status: 'betul' })
     // the Bahagian total moved too
     const sec = again.sections.find((s) => s.counted.includes('sn2-sel-q2'))!
     expect(sec.awarded).toBe(2)
