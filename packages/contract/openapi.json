@@ -58114,6 +58114,23 @@
                   "$ref": "#/components/schemas/BijakReviewPaper"
                 },
                 "description": "The papers behind needsReview; empty when needsReview is false."
+              },
+              "reference": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakPaperReferencePanel"
+                },
+                "description": "Reference-sheet panels of this version (architecture 15.4); [] when none. The editor sends them back unchanged on a new version."
+              },
+              "servingVersion": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Architecture 15.6: version number of the row with servesStudents; absent when none serves. Equals `version` when the head serves; a Spec head over a Disahkan version shows the older number."
+              },
+              "dependentPaperCount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Architecture 15.6: published pilihan papers whose blueprint is any version of this subject and kertas; used by the retire / delete-blocked message (AC-25.5). Computed on read."
               }
             },
             "required": [
@@ -58136,7 +58153,9 @@
               "levelShare",
               "warnings",
               "needsReview",
-              "reviewPapers"
+              "reviewPapers",
+              "reference",
+              "dependentPaperCount"
             ],
             "additionalProperties": false,
             "description": "The blueprint of the paper subject and kertas (any source, Draf included); null when there is none."
@@ -59060,6 +59079,23 @@
               "$ref": "#/components/schemas/BijakReviewPaper"
             },
             "description": "The papers behind needsReview; empty when needsReview is false."
+          },
+          "reference": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakPaperReferencePanel"
+            },
+            "description": "Reference-sheet panels of this version (architecture 15.4); [] when none. The editor sends them back unchanged on a new version."
+          },
+          "servingVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Architecture 15.6: version number of the row with servesStudents; absent when none serves. Equals `version` when the head serves; a Spec head over a Disahkan version shows the older number."
+          },
+          "dependentPaperCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Architecture 15.6: published pilihan papers whose blueprint is any version of this subject and kertas; used by the retire / delete-blocked message (AC-25.5). Computed on read."
           }
         },
         "required": [
@@ -59082,7 +59118,9 @@
           "levelShare",
           "warnings",
           "needsReview",
-          "reviewPapers"
+          "reviewPapers",
+          "reference",
+          "dependentPaperCount"
         ],
         "additionalProperties": false
       },
@@ -59428,7 +59466,7 @@
               "$ref": "#/components/schemas/BijakPaperReferencePanel"
             },
             "maxItems": 10,
-            "description": "Reference-sheet panels for papers made from this blueprint. Write-only here: `BlueprintView` does not carry it."
+            "description": "Reference-sheet panels for papers made from this blueprint. On POST .../versions: omitted = the server carries over the head panels; [] = clear (architecture 15.4). `BlueprintView.reference` reads them back."
           },
           "sections": {
             "type": "array",
@@ -59547,7 +59585,7 @@
               "$ref": "#/components/schemas/BijakPaperReferencePanel"
             },
             "maxItems": 10,
-            "description": "Reference-sheet panels for papers made from this blueprint. Write-only here: `BlueprintView` does not carry it."
+            "description": "Reference-sheet panels for papers made from this blueprint. On POST .../versions: omitted = the server carries over the head panels; [] = clear (architecture 15.4). `BlueprintView.reference` reads them back."
           },
           "sections": {
             "type": "array",
@@ -60487,6 +60525,16 @@
             ],
             "additionalProperties": false
           },
+          "publishedTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Architecture 15.5: Terbit live questions of the subject, before any eligibility rule. Invariant: publishedTotal = eligibleTotal + excluded.total."
+          },
+          "eligibleTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions passing the section-independent eligibility of 4.2 (unit or T1-T3 bucket, TP, marks, key, tag_review = false)."
+          },
           "verdict": {
             "type": "string",
             "enum": [
@@ -60575,6 +60623,8 @@
         },
         "required": [
           "blueprint",
+          "publishedTotal",
+          "eligibleTotal",
           "verdict",
           "firstFailure",
           "excluded",
@@ -60592,6 +60642,66 @@
             "minimum": 1
           }
         }
+      },
+      "BijakDskpUnit": {
+        "type": "object",
+        "properties": {
+          "nodeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "curriculum_nodes.id of the unit.",
+            "example": "1042"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "example": "4.0"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "elective": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "nodeId",
+          "code",
+          "level",
+          "title",
+          "elective"
+        ],
+        "additionalProperties": false
+      },
+      "BijakDskpUnitsQuery": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Bijak subject code, e.g. MAT.",
+            "example": "MAT"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5"
+            ]
+          }
+        },
+        "required": [
+          "subject"
+        ]
       },
       "BijakDraftGenerateRequest": {
         "type": "object",
@@ -103233,6 +103343,157 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bijak/dskp/units": {
+      "get": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "DSKP unit picker for the quota editor (subject and level)",
+        "description": "Units (kind unit) of the subject's DSKP, sorted by sortOrder; elective marks the elective units. Source of the display fields of BijakUnitRefView. 404 NOT_FOUND for an unknown subject; an empty list for a subject with no DSKP units (for example Geografi). Query level is optional here (omitted = T4 and T5) [PROPOSED]. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Bijak subject code, e.g. MAT.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Bijak subject code, e.g. MAT.",
+            "name": "subject",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "T4",
+                "T5"
+              ]
+            },
+            "required": false,
+            "name": "level",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DSKP units (unpaged).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakDskpUnit"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (unknown subject).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (subject, level).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bijak/subjects": {
+      "get": {
+        "tags": [
+          "bijak-standards"
+        ],
+        "summary": "Bijak subject list for \"Tambah Kontrak\" (all active subjects, Bijak codes)",
+        "description": "Unpaged. Returns Bijak codes (for example MAT), not the curriculum codes of GET /admin/subjects, and covers all active subjects, not only those on the student hub. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "responses": {
+          "200": {
+            "description": "Subjects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakSubject"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
             "content": {
               "application/json": {
                 "schema": {

@@ -15,6 +15,8 @@ import {
 import {
   BijakBlueprintInvalidErrorSchema,
   BijakDraftGenerateRequestSchema,
+  BijakDskpUnitSchema,
+  BijakDskpUnitsQuerySchema,
   BijakEvidenceInputSchema,
   BijakEvidenceItemSchema,
   BijakPoolPreviewSchema,
@@ -35,7 +37,7 @@ import {
   SLOT_GROUP_REFINE_MESSAGE,
 } from '../schema'
 import { BIJAK_PAPERS_MESSAGES } from '../../papers/schema'
-import { BijakBlueprintViewSectionSchema } from '../../builder/schema'
+import { BijakBlueprintViewSchema, BijakBlueprintViewSectionSchema } from '../../builder/schema'
 
 const TS = '2026-10-29T09:30:00+08:00'
 
@@ -69,6 +71,47 @@ const versionInput = (over: Record<string, unknown> = {}) => ({
   levelShare: null,
   sections: [sectionInput()],
   ...over,
+})
+
+const viewFixture = () => ({
+  subject: 'MAT',
+  subjectName: 'Matematik',
+  kertas: 2,
+  source: 'Spec',
+  code: '1449/2',
+  durationMin: 150,
+  instructions: [],
+  totalMarks: 40,
+  sections: [
+    {
+      label: 'Bahagian A',
+      markBudget: 40,
+      questionCount: 10,
+      compulsory: false,
+      instruction: 'Jawab semua soalan.',
+      rule: { type: 'all' },
+      pool: null,
+      position: 1,
+      profile: null,
+      quota: null,
+      kbatMarks: null,
+      kbatReviewed: false,
+      allowedModes: [],
+    },
+  ],
+  version: 2,
+  servesStudents: false,
+  verification: null,
+  evidenceCount: 0,
+  notes: null,
+  subPartRamp: false,
+  kbatMarks: null,
+  levelShare: null,
+  warnings: [],
+  needsReview: false,
+  reviewPapers: [],
+  reference: [],
+  dependentPaperCount: 0,
 })
 
 describe('slot group, profile, quota', () => {
@@ -224,6 +267,42 @@ describe('AC-39.9 reviewed flags ("Belum disemak")', () => {
   })
 })
 
+describe('gap fields and routes (architecture 15)', () => {
+  it('parses a DSKP unit and its query', () => {
+    const unit = { nodeId: '101', code: '4.0', level: 'T4', title: 'Fungsi', elective: false }
+    expect(BijakDskpUnitSchema.safeParse(unit).success).toBe(true)
+    expect(BijakDskpUnitSchema.safeParse({ ...unit, level: 'T3' }).success).toBe(false)
+    expect(BijakDskpUnitSchema.safeParse({ ...unit, elective: undefined }).success).toBe(false)
+    expect(BijakDskpUnitSchema.safeParse({ ...unit, extra: 1 }).success).toBe(false)
+    expect(BijakDskpUnitsQuerySchema.safeParse({ subject: 'MAT', level: 'T5' }).success).toBe(true)
+    expect(BijakDskpUnitsQuerySchema.safeParse({ subject: 'MAT' }).success).toBe(true)
+    expect(BijakDskpUnitsQuerySchema.safeParse({ level: 'T4' }).success).toBe(false)
+    expect(BijakDskpUnitsQuerySchema.safeParse({ subject: 'MAT', level: 'T6' }).success).toBe(false)
+  })
+
+  it('requires reference and dependentPaperCount on the view, servingVersion optional', () => {
+    const view = viewFixture()
+    expect(BijakBlueprintViewSchema.safeParse(view).success).toBe(true)
+    expect(BijakBlueprintViewSchema.safeParse({ ...view, servingVersion: 1 }).success).toBe(true)
+    expect(BijakBlueprintViewSchema.safeParse({ ...view, servingVersion: 0 }).success).toBe(false)
+    expect(BijakBlueprintViewSchema.safeParse({ ...view, reference: undefined }).success).toBe(false)
+    expect(BijakBlueprintViewSchema.safeParse({ ...view, dependentPaperCount: undefined }).success).toBe(false)
+    expect(BijakBlueprintViewSchema.safeParse({ ...view, dependentPaperCount: -1 }).success).toBe(false)
+    expect(
+      BijakBlueprintViewSchema.safeParse({ ...view, reference: [{ title: 'Rumus', items: ['$a^2$'] }] }).success,
+    ).toBe(true)
+  })
+
+  it('keeps reference optional on versions: omitted carries over, [] clears', () => {
+    expect(BijakBlueprintAdminVersionInputSchema.safeParse(versionInput()).success).toBe(true)
+    expect(BijakBlueprintAdminVersionInputSchema.safeParse(versionInput({ reference: [] })).success).toBe(true)
+    expect(
+      BijakBlueprintAdminVersionInputSchema.safeParse(versionInput({ reference: [{ title: 'Rumus', items: [] }] })).success,
+    ).toBe(true)
+    expect(BijakBlueprintAdminVersionInputSchema.safeParse(versionInput({ reference: [{ items: [] }] })).success).toBe(false)
+  })
+})
+
 describe('evidence and verification', () => {
   const evidence = {
     kind: 'trial_paper',
@@ -345,6 +424,8 @@ describe('pool preview and draft generation', () => {
   const short = { needed: 5, available: 3, short: 2 }
   const preview = {
     blueprint: { version: 2, source: 'Spec' },
+    publishedTotal: 34,
+    eligibleTotal: 30,
     verdict: 'tidak_boleh',
     firstFailure: { section: 'Bahagian A', need: 5, have: 3, kind: 'unit', basis: 'questions', unit: { kind: 'unit', nodeId: '101', code: '1.0', level: 'T4', title: 'Fungsi' } },
     excluded: {
@@ -453,7 +534,7 @@ describe('openapi document', () => {
     components: { schemas: Record<string, unknown> }
   }
 
-  it('registers the eight BJS-01 operations under one tag, writes rate limited', () => {
+  it('registers the ten BJS-01 operations under one tag, writes rate limited', () => {
     const mine: string[] = []
     for (const [path, ops] of Object.entries(doc.paths)) {
       for (const [method, op] of Object.entries(ops)) {
@@ -465,6 +546,8 @@ describe('openapi document', () => {
     }
     expect(mine.sort()).toEqual([
       'delete /admin/blueprints/{subject}/{kertas}/evidence/{evidenceId}',
+      'get /admin/bijak/dskp/units',
+      'get /admin/bijak/subjects',
       'get /admin/blueprints/{subject}/{kertas}/evidence',
       'get /admin/blueprints/{subject}/{kertas}/pool',
       'get /admin/blueprints/{subject}/{kertas}/verification',

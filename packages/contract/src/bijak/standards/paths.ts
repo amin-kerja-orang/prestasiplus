@@ -10,11 +10,14 @@ import {
   BijakGenerateLimitErrorSchema,
   BijakGenerateNoBlueprintErrorSchema,
   BijakGenerateShortageErrorSchema,
+  BijakSubjectSchema,
 } from '../papers/schema'
 import {
   BijakBlueprintInvalidErrorSchema,
   BijakBlueprintVersionItemSchema,
   BijakDraftGenerateRequestSchema,
+  BijakDskpUnitSchema,
+  BijakDskpUnitsQuerySchema,
   BijakDraftGenerateResultSchema,
   BijakEvidenceInputSchema,
   BijakEvidenceItemSchema,
@@ -94,6 +97,8 @@ export const BIJAK_STANDARDS_COMPONENT_SCHEMAS: Record<string, z.ZodType> = {
   BijakPoolPreviewSection: BijakPoolPreviewSectionSchema,
   BijakPoolPreview: BijakPoolPreviewSchema,
   BijakPoolPreviewQuery: BijakPoolPreviewQuerySchema,
+  BijakDskpUnit: BijakDskpUnitSchema,
+  BijakDskpUnitsQuery: BijakDskpUnitsQuerySchema,
   BijakDraftGenerateRequest: BijakDraftGenerateRequestSchema,
   BijakDraftGenerateResult: BijakDraftGenerateResultSchema,
   BijakBlueprintInvalidError: BijakBlueprintInvalidErrorSchema,
@@ -142,6 +147,43 @@ const BLUEPRINT_NOT_FOUND = err('NOT_FOUND "Kontrak tidak ditemui" [PROPOSED].')
  * Every write is rate limited (D57) through `registerRoute`.
  */
 export function registerBijakStandardsPaths(registry: OpenAPIRegistry): void {
+  registerRoute(
+    registry,
+    {
+      method: 'get',
+      path: '/admin/bijak/dskp/units',
+      tags: [BIJAK_STANDARDS_TAG],
+      summary: 'DSKP unit picker for the quota editor (subject and level)',
+      description: `Units (kind unit) of the subject's DSKP, sorted by sortOrder; elective marks the elective units. Source of the display fields of BijakUnitRefView. 404 NOT_FOUND for an unknown subject; an empty list for a subject with no DSKP units (for example Geografi). Query level is optional here (omitted = T4 and T5) [PROPOSED]. ${SPEC} ${ROLE_NOTE}`,
+      request: { query: BijakDskpUnitsQuerySchema },
+      responses: {
+        200: json(envelopeOf(z.array(BijakDskpUnitSchema)), 'DSKP units (unpaged).'),
+        401: UNAUTHORIZED,
+        403: FORBIDDEN_READ,
+        404: err('NOT_FOUND (unknown subject).'),
+        422: err('VALIDATION_ERROR with fields (subject, level).'),
+      },
+    },
+    false,
+  )
+
+  registerRoute(
+    registry,
+    {
+      method: 'get',
+      path: '/admin/bijak/subjects',
+      tags: [BIJAK_STANDARDS_TAG],
+      summary: 'Bijak subject list for "Tambah Kontrak" (all active subjects, Bijak codes)',
+      description: `Unpaged. Returns Bijak codes (for example MAT), not the curriculum codes of GET /admin/subjects, and covers all active subjects, not only those on the student hub. ${SPEC} ${ROLE_NOTE}`,
+      responses: {
+        200: json(envelopeOf(z.array(BijakSubjectSchema)), 'Subjects.'),
+        401: UNAUTHORIZED,
+        403: FORBIDDEN_READ,
+      },
+    },
+    false,
+  )
+
   registerRoute(registry, {
     method: 'get',
     path: '/admin/blueprints/{subject}/{kertas}/versions',

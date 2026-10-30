@@ -172,6 +172,8 @@ const bpView = (over: Record<string, unknown> = {}) => ({
   warnings: [],
   needsReview: false,
   reviewPapers: [],
+  reference: [],
+  dependentPaperCount: 0,
   sections: [
     bpSection(),
     bpSection({

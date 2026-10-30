@@ -224,6 +224,14 @@ export const BijakPoolPreviewSectionSchema = z
 export const BijakPoolPreviewSchema = z
   .strictObject({
     blueprint: z.strictObject({ version: z.number().int().min(1), source: BijakBlueprintSourceSchema }),
+    publishedTotal: z.number().int().min(0).meta({
+      description:
+        'Architecture 15.5: Terbit live questions of the subject, before any eligibility rule. Invariant: publishedTotal = eligibleTotal + excluded.total.',
+    }),
+    eligibleTotal: z.number().int().min(0).meta({
+      description:
+        'Questions passing the section-independent eligibility of 4.2 (unit or T1-T3 bucket, TP, marks, key, tag_review = false).',
+    }),
     verdict: z.enum(['boleh', 'tidak_boleh', 'tidak_pasti']).meta({
       description: '"Boleh dijana" / "Tidak boleh dijana" / tidak_pasti when the reference attempt hit the budget (AC-29.5).',
     }),
@@ -251,6 +259,27 @@ export type BijakPoolPreview = z.infer<typeof BijakPoolPreviewSchema>
 export const BijakPoolPreviewQuerySchema = z
   .object({ version: z.coerce.number().int().min(1).optional() })
   .meta({ id: 'BijakPoolPreviewQuery' })
+
+/* ----------------------------------------------------------------------------- DSKP units */
+
+/** A DSKP unit for the quota editor's unit picker (architecture 15.1). */
+export const BijakDskpUnitSchema = z
+  .strictObject({
+    nodeId: IdSchema.meta({ description: 'curriculum_nodes.id of the unit.' }),
+    code: z.string().min(1).meta({ example: '4.0' }),
+    level: z.enum(['T4', 'T5']),
+    title: z.string(),
+    elective: z.boolean(),
+  })
+  .meta({ id: 'BijakDskpUnit' })
+export type BijakDskpUnit = z.infer<typeof BijakDskpUnitSchema>
+
+export const BijakDskpUnitsQuerySchema = z
+  .object({
+    subject: z.string().min(1).max(32).meta({ description: 'Bijak subject code, e.g. MAT.', example: 'MAT' }),
+    level: z.enum(['T4', 'T5']).optional(),
+  })
+  .meta({ id: 'BijakDskpUnitsQuery' })
 
 /* ----------------------------------------------------------------------------- draft paper */
 

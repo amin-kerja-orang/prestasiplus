@@ -368,6 +368,18 @@ export const BijakBlueprintViewSchema = z
     reviewPapers: z.array(BijakReviewPaperSchema).meta({
       description: 'The papers behind needsReview; empty when needsReview is false.',
     }),
+    reference: ReferencePanels.meta({
+      description:
+        'Reference-sheet panels of this version (architecture 15.4); [] when none. The editor sends them back unchanged on a new version.',
+    }),
+    servingVersion: z.number().int().min(1).optional().meta({
+      description:
+        'Architecture 15.6: version number of the row with servesStudents; absent when none serves. Equals `version` when the head serves; a Spec head over a Disahkan version shows the older number.',
+    }),
+    dependentPaperCount: z.number().int().min(0).meta({
+      description:
+        'Architecture 15.6: published pilihan papers whose blueprint is any version of this subject and kertas; used by the retire / delete-blocked message (AC-25.5). Computed on read.',
+    }),
   })
   .meta({ id: 'BijakBlueprintView' })
 export type BijakBlueprintView = z.infer<typeof BijakBlueprintViewSchema>
@@ -664,7 +676,7 @@ const blueprintVersionInputShape = {
   }),
   reference: ReferencePanels.max(10).optional().meta({
     description:
-      'Reference-sheet panels for papers made from this blueprint. Write-only here: `BlueprintView` does not carry it.',
+      'Reference-sheet panels for papers made from this blueprint. On POST .../versions: omitted = the server carries over the head panels; [] = clear (architecture 15.4). `BlueprintView.reference` reads them back.',
   }),
   sections: z.array(BijakBlueprintAdminSectionInputSchema).min(1).max(20),
 }
