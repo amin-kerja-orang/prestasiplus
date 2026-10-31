@@ -130,7 +130,7 @@ describe('BE-18 B: GET /set-soalan-saya and QuestionSetAssignments', () => {
     // a question whose live version is not published is skipped too
     await t.db.query(`update question_versions set status = 'draft' where question_id = $1 and version_no = 1`, [qs[0]])
     expect((await list(s1)).find((r) => r.id === set)?.questionCount).toBe(3)
-    await t.db.query(`update question_versions set status = 'published' where question_id = $1 and version_no = 1`, [qs[0]])
+    await t.db.query(`update question_versions set status = 'approved' where question_id = $1 and version_no = 1`, [qs[0]])
   })
 
   describe('QuestionSetAssignments.resolve', () => {

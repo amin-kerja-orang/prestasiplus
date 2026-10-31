@@ -148,7 +148,7 @@ export interface QInit {
   /** Difficulty TP 1..6; null leaves it unset. */
   tp?: number | null
   pool?: boolean
-  status?: 'published' | 'draft'
+  status?: 'approved' | 'draft'
   active?: boolean
   stem?: string
   /** Option letter of the key (mcq). */
@@ -163,7 +163,7 @@ let counter = 0
 export async function addQuestion(db: TestDatabase, q: QInit): Promise<string> {
   const n = ++counter
   const type = q.type ?? 'mcq'
-  const status = q.status ?? 'published'
+  const status = q.status ?? 'approved'
   const subject = (await db.query<{ id: string }>('select id::text from subjects where code = $1', [q.subject]))[0]?.id
   const level = (await db.query<{ id: string }>('select id::text from education_levels where code = $1', [q.level ?? 'T4']))[0]?.id
   if (!subject || !level) throw new Error('unknown subject or level')
@@ -174,14 +174,14 @@ export async function addQuestion(db: TestDatabase, q: QInit): Promise<string> {
   const qid = (
     await db.query<{ id: string }>(
       `insert into questions (source_type, latest_version_no, live_version_no, is_active) values ('manual', 1, $1, $2) returning id::text`,
-      [status === 'published' ? 1 : null, q.active ?? true],
+      [status === 'approved' ? 1 : null, q.active ?? true],
     )
   )[0]?.id as string
   const vid = (
     await db.query<{ id: string }>(
       `insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, chapter_id, difficulty_tp, form_origin, number_label, language, published_at)
        values ($1, 1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'ms', $11) returning id::text`,
-      [qid, status, type, q.stem ?? `Soalan ujian SPM ${String(n)}`, subject, level, chapter, q.tp === undefined ? 2 : q.tp, (q.level ?? 'T4') === 'T5' ? 't5' : 't4', `SPMT-${String(n)}`, status === 'published' ? '2026-10-01T00:00:00Z' : null],
+      [qid, status, type, q.stem ?? `Soalan ujian SPM ${String(n)}`, subject, level, chapter, q.tp === undefined ? 2 : q.tp, (q.level ?? 'T4') === 'T5' ? 't5' : 't4', `SPMT-${String(n)}`, status === 'approved' ? '2026-10-01T00:00:00Z' : null],
     )
   )[0]?.id as string
   if (type === 'mcq') {

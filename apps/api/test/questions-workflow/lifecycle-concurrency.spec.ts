@@ -33,9 +33,9 @@ describe('lifecycle concurrency and live version (BE-10 review M3, M4)', () => {
   })
 
   it('setStatus is called with the status that was read', async () => {
-    t.fake.seed({ id: '9102', status: 'published' })
+    t.fake.seed({ id: '9102', status: 'approved' })
     await svc.transition('9102', 'archived', actorOf(c.admin), { reason: 'x' })
     const call = t.fake.calls.filter((x) => x.method === 'setStatus' && x.args[0] === '9102').at(-1)
-    expect(call?.args[3]).toMatchObject({ expectedFrom: 'published' })
+    expect(call?.args[3]).toMatchObject({ expectedFrom: 'approved' })
   })
 })

@@ -25,27 +25,20 @@ describe('publishing marks reports fixed (BE-10 AC 11)', () => {
   const state = async (id: string) =>
     (await t.db.query<{ status: string; fixed_in_version_no: number | null }>('select status, fixed_in_version_no from question_reports where id = $1::bigint', [id]))[0]!
 
-  it('approved to published marks older open reports fixed with the fixing version', async () => {
-    t.fake.seed({ id: '8001', status: 'approved', latestVersionNo: 2, liveVersionNo: 1 })
+  it('review to approved (version 2) marks older open reports fixed with the fixing version', async () => {
+    t.fake.seed({ id: '8001', status: 'review', latestVersionNo: 2, liveVersionNo: 1 })
     const old = await file('8001', 1)
     const sameVersion = await file('8001', 2)
-    await svc.transition('8001', 'published', actorOf(c.admin))
+    await svc.transition('8001', 'approved', actorOf(c.admin))
     expect(await state(old)).toEqual({ status: 'fixed', fixed_in_version_no: 2 })
     expect((await state(sameVersion)).status).toBe('pending')
   })
 
-  it('Lulus & Terbit does the same', async () => {
-    t.fake.seed({ id: '8002', status: 'review', latestVersionNo: 2, liveVersionNo: 1 })
-    const r = await file('8002', 1)
-    await svc.transition('8002', 'published', actorOf(c.admin))
-    expect(await state(r)).toEqual({ status: 'fixed', fixed_in_version_no: 2 })
-  })
-
   it('a failed publish leaves the report open', async () => {
-    t.fake.seed({ id: '8003', status: 'approved', latestVersionNo: 2, liveVersionNo: 1 })
+    t.fake.seed({ id: '8003', status: 'review', latestVersionNo: 2, liveVersionNo: 1 })
     const r = await file('8003', 1)
     t.fake.failNextSetStatus = new Error('boom')
-    await expect(svc.transition('8003', 'published', actorOf(c.admin))).rejects.toThrow('boom')
+    await expect(svc.transition('8003', 'approved', actorOf(c.admin))).rejects.toThrow('boom')
     expect(await state(r)).toEqual({ status: 'pending', fixed_in_version_no: null })
   })
 })
