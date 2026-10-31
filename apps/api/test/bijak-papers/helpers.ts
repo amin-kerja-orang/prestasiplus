@@ -17,10 +17,10 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakPapersModule, BijakPapersPorts, type BijakProgressSource, type BijakQuestionSource, type BijakServedSource } from '../../src/modules/bijak/papers'
-import { PocPoolSource } from '../../src/modules/bijak/papers/poc-pool-source'
 import type { BijakPoolSource } from '../../src/modules/bijak/papers/pool-source'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { plugPocPapers } from '../support/poc/plug'
+import { PocPoolSource } from '../support/poc/pool-source'
 
 export const DEMO_PASSWORD = 'Demo1234'
 export const START = '2026-10-19T09:00:00+08:00'
@@ -82,7 +82,8 @@ export async function bootPapersApp(opts: BootOptions = {}): Promise<PapersTestA
   }
   await app.init()
   // R1-B07: the PoC fixture is a test double (the API serves the bank only); the seeded PoC papers keep working here.
-  plugPocPapers(app, { questions: !opts.questionSource })
+  // A pool source this harness registered itself (above) is used as it is: the plug must not add the PoC pool a second time.
+  plugPocPapers(app, { questions: !opts.questionSource, pool: !(opts.poolSource || opts.served) })
   return {
     app,
     db,

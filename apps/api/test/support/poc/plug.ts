@@ -24,10 +24,11 @@ export function plugPocAttempts(app: INestApplication): void {
   attempt.questions = new CompositeBijakQuestionSource(new PocBijakQuestionSource(), attempt.questions)
 }
 
-/** BE-15 papers: `getMany` and the legacy pool (`questions`, default on) and Jana's PoC pool facts. */
-export function plugPocPapers(app: INestApplication, opts: { questions?: boolean } = {}): void {
+/** BE-15 papers: `getMany` and the legacy pool (`questions`, default on) and Jana's PoC pool facts (`pool`, default on). */
+export function plugPocPapers(app: INestApplication, opts: { questions?: boolean; pool?: boolean } = {}): void {
   const papers = app.get(BijakPapersPorts) as unknown as { questions: PaperSource; pools: BijakPoolSource }
   if (opts.questions !== false) papers.questions = new CompositePaperQuestionSource(new PocQuestionSource(), papers.questions)
+  if (opts.pool === false) return
   const bankPool = papers.pools
   const pocPool = new PocPoolSource()
   papers.pools = {
