@@ -21,6 +21,7 @@ KBAT stays in step: a leaf saved with only a cognitive level gets `kbat` = that 
 - `GET /api/questions/:id/gate-check?gate=approve|submit` returns `{ ok, issues: [{ path, code, message, step }] }`, no state change. Admin Pusat, or the owning Guru for their own question (another Guru 404, Admin Sekolah and others 403).
 - `POST /api/questions/:id/status { to, reason? }` runs the lifecycle (table, role, reason, gates) and answers `{ question, servability }`; `servability` is the `ServabilityReport` of the approval, null for other targets. A refused gate is 422 `VALIDATION_ERROR` with `fields` keyed by path and `details.gate` (the existing shape of the other gate refusals); a pair outside the table is 409 with the BM message.
 - Flat questions: `cognitiveLevel` on the create and update body sets the level of the single leaf; a flat edit that does not send it keeps the stored one.
+- Create as `approved` (Admin Pusat, `POST /api/questions` and `POST /api/stimulus-groups/:id/questions`) runs the full approve gate, DSKP included, but not the submit gate: Bab is optional (D89) and the source declaration has no V2 equivalent before Lulus (team A lead decision, 2026-10-31).
 
 ## Verification
 
