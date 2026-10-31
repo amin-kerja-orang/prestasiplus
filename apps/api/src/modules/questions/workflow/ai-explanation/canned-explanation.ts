@@ -26,6 +26,7 @@ const TYPE_LABELS: Readonly<Record<string, string>> = {
   short_answer: 'Jawapan pendek',
   fill_blank: 'Isi tempat kosong',
   essay: 'Esei',
+  essay_choice: 'Esei pilihan',
 }
 
 /** The variant (0 to 2) a stored text was built from; -1 when it is not a canned text. */
