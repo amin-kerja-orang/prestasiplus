@@ -288,6 +288,23 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(fx.sections).toHaveLength(3)
     })
 
+    // G3 (closed by T34): the admin gives each question its section pool (Bahagian A/B/C of the Kontrak) over HTTP.
+    it('tags the section pools of the questions (PUT /api/admin/section-pools/:id)', async () => {
+      const plan: [string, string][] = [
+        ...fx.passageMembers.map((id): [string, string] => [id, 'MAT2-A']),
+        ...fx.imageMembers.map((id): [string, string] => [id, 'MAT2-A']),
+        [fx.soloA, 'MAT2-A'],
+        [fx.soloB, 'MAT2-B'],
+        [fx.soloC, 'MAT2-C'],
+        [fx.essay, 'MAT2-C'],
+      ]
+      for (const [id, pool] of plan) {
+        const res = await admin.put(`/api/admin/section-pools/${id}`, { pools: [pool] })
+        expect(res.status, JSON.stringify(res.body)).toBe(200)
+        expect(res.body.data.pools).toEqual([pool])
+      }
+    })
+
     it('the pool offers the approved questions of the paper subject and kertas', async () => {
       const e = await admin.get(`/api/admin/papers/${fx.paper}`)
       const offered = (e.body.data.questions as { id: string }[]).map((q) => q.id)
@@ -337,10 +354,8 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       const res = await admin.post(`/api/admin/papers/${fx.paper}/publish`)
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.data).toMatchObject({ ok: true, errors: [] })
-      // Structural tier only: the Spec blueprint still needs review, and the fixtures carry no section pool tag (MAT2-A/B/C), which
-      // the builder reports as non-blocking notes. R1 GAP G3: no admin HTTP route writes a pool tag, so the notes cannot be cleared.
-      expect(res.body.data.blueprintNeedsReview).toBe(true)
-      expect((res.body.data.notes as string[]).every((n) => n.includes('bukan dalam kolam bahagian ini'))).toBe(true)
+      // Structural tier. With the section pools tagged (previous step) there is no "bukan dalam kolam bahagian ini" note any more.
+      expect((res.body.data.notes ?? []).some((n: string) => n.includes('bukan dalam kolam bahagian ini'))).toBe(false)
       expect((await db.query<{ status: string }>(`select status from papers where id = $1`, [fx.paper]))[0]?.status).toBe('published')
       const pins = await db.query<{ v: number }>(`select pinned_version_no v from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [fx.paper])
       expect(pins).toHaveLength(6)

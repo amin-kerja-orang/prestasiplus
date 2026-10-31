@@ -162,6 +162,22 @@ export class BuilderRepository {
     })
   }
 
+  /** R1-T34: edits the label, instruction or compulsory flag of one section. */
+  async updateSection(id: bigint, data: Prisma.PaperSectionUncheckedUpdateInput): Promise<void> {
+    await this.prisma.client.paperSection.update({ where: { id }, data })
+  }
+
+  /** The given references (public token or decimal id) that name a stored question image. */
+  async existingImages(refs: readonly string[]): Promise<Set<string>> {
+    const unique = [...new Set(refs)]
+    const ids = unique.filter((r) => /^[1-9][0-9]{0,17}$/.test(r)).map((r) => BigInt(r))
+    const rows = await this.prisma.client.file.findMany({
+      where: { purpose: 'question_image', OR: [{ publicId: { in: unique } }, ...(ids.length > 0 ? [{ id: { in: ids } }] : [])] },
+      select: { id: true, publicId: true },
+    })
+    return new Set(rows.flatMap((r) => [r.publicId, r.id.toString()]))
+  }
+
   async pinPlacement(id: bigint, pinnedVersionNo: number, marksOverride: number): Promise<void> {
     await this.prisma.client.paperPlacement.update({ where: { id }, data: { pinnedVersionNo, marksOverride } })
   }

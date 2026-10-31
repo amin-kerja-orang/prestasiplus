@@ -18,6 +18,11 @@ import {
   BijakBuilderCsrfErrorSchema,
   BijakBuilderEditorSchema,
   BijakBuilderGroupSchema,
+  BijakBuilderGroupLabelSchema,
+  BijakBuilderPublishRequestSchema,
+  BijakSectionPoolOptionSchema,
+  BijakSectionPoolsRequestSchema,
+  BijakSectionPoolsSchema,
   BijakBuilderOkSchema,
   BijakBuilderPaperCreateResultSchema,
   BijakBuilderPaperCreateSchema,
@@ -98,6 +103,11 @@ export const BIJAK_BUILDER_COMPONENT_SCHEMAS: Record<string, z.ZodType> = {
   BijakBuilderSectionPoolQuery: BijakBuilderSectionPoolQuerySchema,
   BijakBuilderPoolUnit: BijakBuilderPoolUnitSchema,
   BijakBuilderPoolPreviewQuery: BijakBuilderPoolPreviewQuerySchema,
+  BijakBuilderGroupLabel: BijakBuilderGroupLabelSchema,
+  BijakBuilderPublishRequest: BijakBuilderPublishRequestSchema,
+  BijakBuilderSectionPoolOption: BijakSectionPoolOptionSchema,
+  BijakBuilderSectionPoolsRequest: BijakSectionPoolsRequestSchema,
+  BijakBuilderSectionPools: BijakSectionPoolsSchema,
 }
 
 /** Tags of the two route groups (tests count operations by tag). */
@@ -274,13 +284,14 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}/publish',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: publish (draf to terbit)',
-    description: `No request body. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: "Soalan berulang dalam kertas: {ids}" and "Kumpulan rangsangan {group} dipecahkan antara dua bahagian". Each section line follows, prefixed with the section label ("{label}: "): "Kurang N soalan (perlu X, ada Y)" or "Lebih N soalan (perlu X, ada Y)", "Markah M tidak sama dengan bajet B", "Kumpulan rangsangan G tidak berturutan", "Kumpulan rangsangan G tidak lengkap (N soalan tiada)" and "{N} soalan belum Terbit". Nothing changes on ok: false. On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. ${COPY_NOTE} ${ROLE_NOTE}`,
-    request: { params: PaperIdParams, headers: [csrf] },
+    description: `Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick "Terbitkan walaupun tidak memenuhi kontrak blueprint"): with override true and a reason of at least 5 characters the structural blueprint-conformance blockers ("Soalan {id} tidak layak: ...") are overridden and the paper is published; the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in \`overridden\`. Override without a reason: 422 "${BIJAK_BUILDER_MESSAGES.overrideReasonRequired}" on fields.reason. Blockers about the questions or the printed structure (not Terbit, duplicates, split or incomplete groups, counts, marks) are never overridable: the answer stays ok false. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: "Soalan berulang dalam kertas: {ids}" and "Kumpulan rangsangan {group} dipecahkan antara dua bahagian". Each section line follows, prefixed with the section label ("{label}: "): "Kurang N soalan (perlu X, ada Y)" or "Lebih N soalan (perlu X, ada Y)", "Markah M tidak sama dengan bajet B", "Kumpulan rangsangan G tidak berturutan", "Kumpulan rangsangan G tidak lengkap (N soalan tiada)" and "{N} soalan belum Terbit". Nothing changes on ok: false. On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. ${COPY_NOTE} ${ROLE_NOTE}`,
+    request: { params: PaperIdParams, headers: [csrf], body: { required: false as const, content: { 'application/json': { schema: BijakBuilderPublishRequestSchema } } } },
     responses: {
       200: json(envelopeOf(BijakBuilderPublishResultSchema), 'Publish result (ok true or false).'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,
+      422: err(`VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.overrideReasonRequired}" (override without a reason).`),
     },
   })
 
@@ -426,6 +437,57 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,
+    },
+  })
+
+  /* ------------------------------------------------- R1-T34: paper-review edits and section pools */
+
+  registerRoute(registry, {
+    method: 'put',
+    path: '/admin/papers/{id}/groups/{groupId}',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: Sunting petikan (title of a stimulus group on the paper)',
+    description: `V2 Panel "Sunting petikan". Body { label }. The group must be placed on the paper (otherwise 422 "${BIJAK_BUILDER_MESSAGES.groupNotOnPaper}"). The title belongs to the shared stimulus group of the question bank (D90), so the new title shows wherever the group is placed (deviation from V2, where a native paper owned its passage). Terbit paper: 422 paperLocked. ${ROLE_NOTE}`,
+    request: { params: z.object({ id: IdSchema, groupId: IdSchema }), headers: [csrf], body: body(BijakBuilderGroupLabelSchema) },
+    responses: {
+      200: json(envelopeOf(BijakBuilderEditorSchema), 'The editor data.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: PAPER_NOT_FOUND,
+      422: LOCKED,
+    },
+  })
+
+  const QuestionIdParams = z.object({ questionId: IdSchema.meta({ description: 'Question id.' }) })
+
+  registerRoute(registry, {
+    method: 'get',
+    path: '/admin/section-pools/{questionId}',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: the section pools of a question and the pools it can be given',
+    description: `A section pool (for example MAT2-A) decides which Bahagian of a blueprint a question is eligible for; without it the publish check reports "bukan dalam kolam bahagian ini" as a note. 404 "${BIJAK_BUILDER_MESSAGES.poolQuestionNotFound}" for an unknown, PKSK or hidden question. ${ROLE_NOTE}`,
+    request: { params: QuestionIdParams },
+    responses: {
+      200: json(envelopeOf(BijakSectionPoolsSchema), 'The pools on the question and the available pools.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_READ,
+      404: err(`NOT_FOUND "${BIJAK_BUILDER_MESSAGES.poolQuestionNotFound}".`),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'put',
+    path: '/admin/section-pools/{questionId}',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: set the section pools of a question (G3)',
+    description: `Body { pools }: the full list of blueprint pool codes of the question (empty clears them). Every code must be the pool of a section of an ACTIVE blueprint of the question subject, otherwise 422 "${BIJAK_BUILDER_MESSAGES.poolInvalid}" on fields.pools. Other tags on the question (the legacy \`spm\` tag, PKSK tags) are never changed. The change is audited (bijak.question.pool_updated: ids and codes only). The question may be in any lifecycle status. ${ROLE_NOTE}`,
+    request: { params: QuestionIdParams, headers: [csrf], body: body(BijakSectionPoolsRequestSchema) },
+    responses: {
+      200: json(envelopeOf(BijakSectionPoolsSchema), 'The pools now on the question.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: err(`NOT_FOUND "${BIJAK_BUILDER_MESSAGES.poolQuestionNotFound}".`),
+      422: err(`VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.poolInvalid}" on fields.pools.`),
     },
   })
 

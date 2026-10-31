@@ -26,7 +26,7 @@ import { StimuliService } from './stimuli.service'
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
   controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController],
   providers: [QuestionsRepository, QuestionsService, StimuliRepository, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, ServabilityService],
-  exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService],
+  exports: [QuestionsRepository, QuestionsService, StimuliService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService],
 })
 export class QuestionsModule implements OnModuleInit {
   constructor(

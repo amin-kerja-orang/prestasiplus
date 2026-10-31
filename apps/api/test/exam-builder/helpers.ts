@@ -116,6 +116,8 @@ export interface Client {
   post(url: string, body?: unknown): request.Test
   put(url: string, body?: unknown): request.Test
   del(url: string): request.Test
+  /** Multipart upload of one PNG-like file as field `file` (the Files API). */
+  upload(url: string, file: Buffer): request.Test
   /** The same request without the CSRF header. */
   noCsrf(method: Method, url: string, body?: unknown): request.Test
   /** Enters Mod Pelajar (admin, school admin) and keeps the new CSRF token. */
@@ -135,6 +137,7 @@ export async function loginAs(t: BuilderTestApp, identifier: string): Promise<Cl
     post: (url, body) => withBody(agent.post(url).set('X-CSRF-Token', client.csrf), body),
     put: (url, body) => withBody(agent.put(url).set('X-CSRF-Token', client.csrf), body),
     del: (url) => agent.delete(url).set('X-CSRF-Token', client.csrf),
+    upload: (url, file) => agent.post(url).set('X-CSRF-Token', client.csrf).attach('file', file, { filename: 'rujukan.png', contentType: 'image/png' }),
     noCsrf: (method, url, body) => withBody(agent[method](url), body),
     async enterMod() {
       const r = await agent.post('/api/session/mode').set('X-CSRF-Token', client.csrf).send({ mode: 'mod_pelajar' })

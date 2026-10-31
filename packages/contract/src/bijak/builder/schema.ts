@@ -71,6 +71,22 @@ export const BIJAK_BUILDER_MESSAGES = {
   blueprintExists: 'Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.',
   /** [PROPOSED] (blueprint admin has no prototype counterpart) */
   blueprintAlreadyRetired: 'Kontrak ini sudah dipersara.',
+  /** [PROPOSED] R1-T34: V2 Panel has the override tick "Terbitkan walaupun tidak memenuhi kontrak blueprint" (audited). */
+  overrideReasonRequired: 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint',
+  /** [PROPOSED] R1-T34 */
+  overrideNotAllowed: 'Kesilapan ini tidak boleh dikecualikan: soalan, markah atau susunan kertas perlu dibetulkan dahulu',
+  /** [PROPOSED] R1-T34 */
+  groupNotOnPaper: 'Kumpulan rangsangan ini tiada dalam kertas ini',
+  /** [PROPOSED] R1-T34 */
+  groupLabelRequired: 'Tajuk petikan diperlukan',
+  /** [PROPOSED] R1-T34 */
+  poolInvalid: 'Kolam bahagian tidak sah untuk subjek soalan ini',
+  /** [PROPOSED] R1-T34 */
+  poolQuestionNotFound: 'Soalan tidak ditemui',
+  /** [PROPOSED] R1-T34 */
+  referenceImageInvalid: 'Imej bahan rujukan tidak sah. Muat naik semula.',
+  /** [PROPOSED] R1-T34 */
+  sectionLabelRequired: 'Nama bahagian diperlukan',
 } as const
 
 /**
@@ -459,7 +475,10 @@ export type BijakBuilderPaperCreateResult = z.infer<typeof BijakBuilderPaperCrea
 export const BijakBuilderSectionPatchSchema = z
   .strictObject({
     id: IdSchema.meta({ description: 'Id of a section of this paper (fixed by the blueprint).' }),
-    questionIds: z.array(IdSchema).max(500),
+    questionIds: z.array(IdSchema).max(500).optional().meta({ description: 'The full ordered question list of the section; omitted: the placements are unchanged.' }),
+    label: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.sectionLabelRequired).max(60).optional().meta({ description: 'R1-T34 "Sunting bahagian": the printed name of the section.', example: 'Bahagian A' }),
+    instruction: z.string().trim().max(500).nullable().optional().meta({ description: 'R1-T34 "Sunting bahagian": authored instruction; null or "" clears it (the rule line is derived again).' }),
+    compulsory: z.boolean().optional().meta({ description: 'R1-T34: "Soalan ini mesti dijawab".' }),
   })
   .meta({ id: 'BijakBuilderSectionPatch' })
 export type BijakBuilderSectionPatch = z.infer<typeof BijakBuilderSectionPatchSchema>
@@ -485,6 +504,11 @@ export const BijakBuilderPaperPatchSchema = z
       .max(40)
       .optional()
       .meta({ description: 'Cover instruction lines (Arahan kulit kertas); replaces the whole list.' }),
+    reference: z
+      .array(BijakPaperReferencePanelSchema)
+      .max(10)
+      .optional()
+      .meta({ description: 'R1-T34 "Bahan rujukan (kulit kertas)": replaces the whole reference-sheet list (a panel may carry an uploaded image, `imageFileId`).' }),
     sections: z.array(BijakBuilderSectionPatchSchema).max(20).optional(),
   })
   .meta({ id: 'BijakBuilderPaperPatch' })
@@ -516,8 +540,29 @@ export const BijakBuilderPublishResultSchema = z
     blueprintNeedsReview: z.boolean().optional().meta({
       description: 'true when `notes` is not empty: the UI shows "Blueprint perlu semakan".',
     }),
+    overridden: z.array(z.string()).optional().meta({
+      description: 'R1-T34: the blueprint-conformance lines that were overridden (audited `bijak.paper.published_override`); absent without an override.',
+    }),
   })
   .meta({ id: 'BijakBuilderPublishResult' })
+
+/**
+ * R1-T34 optional body of `POST /admin/papers/{id}/publish` (V2 Panel tick "Terbitkan walaupun tidak memenuhi kontrak blueprint"). `override`
+ * lets the structural blueprint-conformance blockers pass; the reason is then required and goes to the audit row. Blockers about the
+ * questions themselves (not Terbit, duplicates, split groups, counts, marks) are never overridable.
+ */
+export const BijakBuilderPublishRequestSchema = z
+  .strictObject({
+    override: z.boolean().optional(),
+    reason: z.string().trim().max(500).optional().meta({ description: 'Required (at least 5 characters) when `override` is true.' }),
+  })
+  .superRefine((v, ctx) => {
+    if (v.override === true && (v.reason ?? '').length < 5) {
+      ctx.addIssue({ code: 'custom', path: ['reason'], message: BIJAK_BUILDER_MESSAGES.overrideReasonRequired })
+    }
+  })
+  .meta({ id: 'BijakBuilderPublishRequest' })
+export type BijakBuilderPublishRequest = z.infer<typeof BijakBuilderPublishRequestSchema>
 export type BijakBuilderPublishResult = z.infer<typeof BijakBuilderPublishResultSchema>
 
 /** `POST /admin/papers/preview` body (`previewQuestions(ids)`): the ids currently in the editor, saved or not. */
@@ -806,6 +851,14 @@ export const BijakBuilderReviewRowSchema = z
     section: z.string().min(1),
     ok: z.boolean(),
     reason: z.string().optional().meta({ description: 'BM reason when ok is false ("Tidak disajikan").' }),
+    reasons: z
+      .array(z.strictObject({ code: z.string(), message: z.string(), detail: z.string().optional() }))
+      .optional()
+      .meta({ description: 'R1-T34 (ServabilityService, "Dilihat murid di"): every reason the question is not served in Simulasi (kertas), cause and fix in BM. The "not on a published paper" reason is left out: this IS the paper.' }),
+    seenIn: z
+      .strictObject({ served: z.number().int().min(0), total: z.number().int().min(1) })
+      .optional()
+      .meta({ description: 'R1-T34: "Dilihat murid di {served} daripada {total}" activities (Databank, Latih Tubi SPM, Bab, Simulasi, Kuiz, Jana Kertas).' }),
   })
   .meta({ id: 'BijakBuilderReviewRow' })
 
@@ -896,3 +949,43 @@ export const BijakBuilderPoolPreviewQuerySchema = z
     kertas: z.coerce.number().int().min(1),
   })
   .meta({ id: 'BijakBuilderPoolPreviewQuery' })
+
+
+/* ---------------------------------------------------------------- R1-T34: paper-review edits, section pools */
+
+/** `PUT /admin/papers/{id}/groups/{groupId}` body: "Sunting petikan" (the title of the shared stimulus group). */
+export const BijakBuilderGroupLabelSchema = z
+  .strictObject({
+    label: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.groupLabelRequired).max(100).meta({ example: 'Petikan 1' }),
+  })
+  .meta({ id: 'BijakBuilderGroupLabel' })
+export type BijakBuilderGroupLabel = z.infer<typeof BijakBuilderGroupLabelSchema>
+
+/** A section pool of an active blueprint (`blueprint_sections.pool`), as the admin can choose it for a question. */
+export const BijakSectionPoolOptionSchema = z
+  .strictObject({
+    pool: z.string().min(1).max(40).meta({ example: 'MAT2-A' }),
+    kertas: Kertas,
+    sectionLabel: z.string().meta({ example: 'Bahagian A' }),
+    blueprintCode: z.string().meta({ example: '1449/2' }),
+  })
+  .meta({ id: 'BijakBuilderSectionPoolOption' })
+export type BijakSectionPoolOption = z.infer<typeof BijakSectionPoolOptionSchema>
+
+/** `PUT /admin/section-pools/{questionId}` body: the full list of section pools of the question (empty clears them). */
+export const BijakSectionPoolsRequestSchema = z
+  .strictObject({
+    pools: z.array(z.string().trim().min(1).max(40)).max(8).meta({ description: 'Pool codes of active blueprint sections of the question subject; duplicates are ignored.' }),
+  })
+  .meta({ id: 'BijakBuilderSectionPoolsRequest' })
+export type BijakSectionPoolsRequest = z.infer<typeof BijakSectionPoolsRequestSchema>
+
+export const BijakSectionPoolsSchema = z
+  .strictObject({
+    questionId: IdSchema,
+    subject: z.string().meta({ description: 'Bijak subject code of the question.', example: 'MAT' }),
+    pools: z.array(z.string()).meta({ description: 'The blueprint pool codes now on the question (other tags, such as the legacy `spm` tag, are not listed or changed).' }),
+    options: z.array(BijakSectionPoolOptionSchema).meta({ description: 'Every pool of an active blueprint of the question subject.' }),
+  })
+  .meta({ id: 'BijakBuilderSectionPools' })
+export type BijakSectionPools = z.infer<typeof BijakSectionPoolsSchema>

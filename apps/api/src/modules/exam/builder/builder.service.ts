@@ -4,7 +4,10 @@ import {
   BIJAK_BUILDER_MESSAGES as MESSAGES,
   BijakBuilderPaperCreateSchema,
   BijakBuilderPaperListQuerySchema,
+  BijakBuilderGroupLabelSchema,
+  servabilityReasonMs,
   BijakBuilderPaperPatchSchema,
+  BijakBuilderPublishRequestSchema,
   BijakBuilderPreviewRequestSchema,
   type BijakBlueprintView,
   BIJAK_BUILDER_PLACEMENT_LINES as PLACE,
@@ -31,6 +34,7 @@ import {
 import type { z } from 'zod'
 
 import { AUDIT_ACTIONS, AuditService } from '../../../common/audit'
+import type { Prisma } from '../../../db/generated/client'
 import { ApiError } from '../../../common/errors/api-error'
 import { listMeta } from '../../../common/http/respond'
 import { toMytTimestamp } from '../../../common/time/myt'
@@ -43,6 +47,7 @@ import { generateLimit, noBlueprint, shortage } from '../../bijak/papers/errors'
 import { BijakPapersPorts } from '../../bijak/papers/ports'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { mytYear, referencePanels, ruleOf, sectionInstruction } from '../../bijak/papers/rules'
+import { ServabilityService, StimuliService } from '../../questions'
 import { blueprintView } from '../blueprints/blueprint-view'
 import { toStandard } from '../blueprints/blueprint-standard'
 import type { AuditActor } from './actor'
@@ -109,6 +114,8 @@ export class BuilderService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(BijakBuilderPorts) private readonly ports: BijakBuilderPorts,
     @Inject(BijakPapersPorts) private readonly papersPorts: BijakPapersPorts,
+    @Inject(ServabilityService) private readonly servability: ServabilityService,
+    @Inject(StimuliService) private readonly stimuli: StimuliService,
   ) {}
 
   private get questions() {
@@ -307,6 +314,15 @@ export class BuilderService {
 
   // --- operations --------------------------------------------------------------------------------
 
+  /** R1-T34: every reference-panel image must be a stored question image (public token or decimal id). */
+  private async checkReferenceImages(refs: readonly string[]): Promise<void> {
+    if (refs.length === 0) return
+    const known = await this.repo.existingImages(refs)
+    if (refs.some((r) => !known.has(r))) {
+      throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.referenceImageInvalid, fields: { reference: MESSAGES.referenceImageInvalid } })
+    }
+  }
+
   async list(rawQuery: unknown): Promise<{ data: BijakBuilderPaperSummary[]; meta: ListMeta }> {
     const query = parseWith(BijakBuilderPaperListQuerySchema, rawQuery)
     const page = query.page ?? 1
@@ -404,19 +420,28 @@ export class BuilderService {
       // Resolve every section patch before anything is written (a refusal leaves the paper untouched).
       const sections = body.sections ?? []
       const wanted = new Set<string>()
-      for (const patch of sections) for (const qid of patch.questionIds) if (parseId(qid) !== null) wanted.add(qid)
+      for (const patch of sections) for (const qid of patch.questionIds ?? []) if (parseId(qid) !== null) wanted.add(qid)
       const st = await this.structure([...wanted])
       const plans: { sectionId: bigint; placements: { questionId: bigint; pinnedVersionNo: number }[] }[] = []
+      const edits: { sectionId: bigint; data: Prisma.PaperSectionUncheckedUpdateInput }[] = []
       const resulting = new Map<bigint, string[]>(paper.sections.map((s) => [s.id, s.placements.map((pl) => idToString(pl.questionId))]))
       for (const patch of sections) {
         const sectionId = parseId(patch.id)
         const section = sectionId === null ? undefined : paper.sections.find((s) => s.id === sectionId)
         if (!section) throw invalid(MESSAGES.invalidSection)
+        // R1-T34 "Sunting bahagian": the printed name, the authored instruction and "mesti dijawab"; the rule and the budget stay the Kontrak's.
+        const data: Prisma.PaperSectionUncheckedUpdateInput = {
+          ...(patch.label !== undefined ? { label: patch.label } : {}),
+          ...(patch.instruction !== undefined ? { instruction: patch.instruction === null || patch.instruction === '' ? null : patch.instruction } : {}),
+          ...(patch.compulsory !== undefined ? { compulsory: patch.compulsory } : {}),
+        }
+        if (Object.keys(data).length > 0) edits.push({ sectionId: section.id, data })
+        if (patch.questionIds === undefined) continue
         for (const qid of patch.questionIds) {
           const q = parseId(qid) === null ? undefined : st.info.get(qid)
           if (!q || q.subject !== bijakSubject) throw invalid(MESSAGES.invalidQuestion)
         }
-        const dups = patch.questionIds.filter((qid, i) => patch.questionIds.indexOf(qid) !== i)
+        const dups = patch.questionIds.filter((qid, i) => patch.questionIds!.indexOf(qid) !== i)
         if (dups.length) throw invalid(LINES.duplicateQuestion([...new Set(dups)]))
         // D90: a group is placed whole, contiguous and in published order; a lone member brings the group along.
         const ids = normalizeUnits(patch.questionIds, st.groupOf, st.membersOf)
@@ -427,6 +452,8 @@ export class BuilderService {
         resulting.set(section.id, ids)
         plans.push({ sectionId: section.id, placements: ids.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: st.info.get(id)!.versionNo })) })
       }
+      // R1-T34 "Bahan rujukan": every panel image must be a stored file (public token or id), never a free string.
+      if (body.reference !== undefined) await this.checkReferenceImages(body.reference.flatMap((p) => (p.imageFileId ? [p.imageFileId] : [])))
       const everywhere = [...resulting.values()].flat()
       // D90: a stimulus group lives in ONE section, so a group member twice on the paper is refused here. A plain
       // question repeated across sections stays accepted and is reported by the publish check (the mock's order).
@@ -438,11 +465,19 @@ export class BuilderService {
         ...(body.year !== undefined ? { year: body.year } : {}),
         ...(body.durationMin !== undefined ? { printedDurationMin: body.durationMin } : {}),
         ...(body.instructions !== undefined ? { instructions: body.instructions } : {}),
+        ...(body.reference !== undefined ? { referenceSheets: body.reference as unknown as Prisma.InputJsonValue } : {}),
         updatedAt: this.clock.now(),
       })
+      for (const edit of edits) await this.repo.updateSection(edit.sectionId, edit.data)
       for (const plan of plans) await this.repo.replacePlacements(plan.sectionId, plan.placements)
       const status = statusOf(paper.status)
-      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, { from: status, to: status, sections: plans.length })
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, {
+        from: status,
+        to: status,
+        sections: plans.length,
+        ...(edits.length > 0 ? { sectionEdits: edits.length } : {}),
+        ...(body.reference !== undefined ? { reference: body.reference.length } : {}),
+      })
       return paper.id
     })
     const fresh = await this.repo.findPilihan(paperId)
@@ -464,15 +499,20 @@ export class BuilderService {
     return { ok: true }
   }
 
-  async publish(actor: AuditActor, rawId: string): Promise<BijakBuilderPublishResult> {
+  async publish(actor: AuditActor, rawId: string, rawBody?: unknown): Promise<BijakBuilderPublishResult> {
     const id = parseId(rawId)
     return this.prisma.transaction(async () => {
       const paper = await this.lockedPaper(id)
+      // The body is optional (no body = the plain Terbit); a bad body is 422 only after the paper is known to exist.
+      const request = parseWith(BijakBuilderPublishRequestSchema, rawBody ?? {})
       const ev = await this.evaluate(paper)
       const structural = await this.structuralCheck(paper)
-      const errors = [...new Set([...publishErrors(ev.check), ...structural.blockers])]
+      const hard = publishErrors(ev.check)
+      const errors = [...new Set([...hard, ...structural.blockers])]
       const review = structural.notes.length > 0 ? { notes: structural.notes, blueprintNeedsReview: true } : {}
-      if (errors.length > 0) return { ok: false, errors, ...review }
+      // R1-T34 (V2 `studio.paper.published_override`): only the blueprint-conformance blockers can be overridden, with a reason, audited.
+      const override = request.override === true && hard.length === 0 && structural.blockers.length > 0
+      if (errors.length > 0 && !override) return { ok: false, errors, ...review }
       if (paper.status === 'published') return { ok: true, errors: [], ...review }
       // Pin every placed question (all members of a group) at the version in force and freeze its marks.
       for (const s of paper.sections)
@@ -492,7 +532,16 @@ export class BuilderService {
         from: 'draf',
         to: 'terbit',
         ...(structural.notes.length > 0 ? { blueprintNeedsReview: true, notes: structural.notes.length } : {}),
+        ...(override ? { override: true } : {}),
       })
+      if (override) {
+        await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_PUBLISHED_OVERRIDE, paper.id, {
+          reason: request.reason,
+          overridden: structural.blockers.slice(0, 50),
+          count: structural.blockers.length,
+        })
+        return { ok: true, errors: [], overridden: structural.blockers, ...review }
+      }
       return { ok: true, errors: [], ...review }
     })
   }
@@ -666,17 +715,34 @@ export class BuilderService {
     const ev = await this.evaluate(paper)
     const structural = await this.structuralCheck(paper)
     const blockers = [...new Set([...publishErrors(ev.check), ...structural.blockers])]
+    // R1-T34 (B09a, "Dilihat murid di"): the per-row verdict comes from ServabilityService (one batch); the paper is the authority for
+    // "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
+    const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
+    const reports = await this.servability.reports(placed)
     const rows = paper.sections.flatMap((s) =>
       s.placements.map((pl) => {
         const id = idToString(pl.questionId)
         const q = ev.info.get(id)
-        const reason = !q ? PLACE.notFound : isServableStatus(q.status) ? null : this.statusText(q.status)
+        const report = reports.get(id)
+        const sim = report?.activities.find((a) => a.activity === 'simulasi_paper')
+        const fromReport = (sim?.reasons ?? []).filter((r) => r.code !== 'not_on_published_paper')
+        const legacy = !q ? PLACE.notFound : isServableStatus(q.status) ? null : this.statusText(q.status)
+        // The builder places approved questions only (D54a): a status that is not servable is reported with the same cause and fix copy
+        // as "Dilihat murid di", even where a published paper would keep serving an archived version.
+        const reasons: { code: string; message: string; detail?: string }[] =
+          legacy !== null && fromReport.length === 0 && q
+            ? [{ code: q.status === 'archived' ? 'archived' : 'not_approved', message: servabilityReasonMs(q.status === 'archived' ? 'archived' : 'not_approved', 'simulasi_paper') }]
+            : fromReport
+        const reason = legacy ?? (reasons[0] ? reasons[0].message : null)
+        const ok = reason === null
         return {
           questionId: id,
           ...(q?.groupId ? { groupId: q.groupId } : {}),
           section: s.label,
-          ok: reason === null,
-          ...(reason ? { reason: `Tidak disajikan: ${reason}` } : {}),
+          ok,
+          ...(reason ? { reason: legacy ? `Tidak disajikan: ${legacy}` : `Tidak disajikan: ${reason}` } : {}),
+          ...(reasons.length > 0 ? { reasons: reasons.map((r) => ({ code: r.code, message: r.message, ...(r.detail ? { detail: r.detail } : {}) })) } : {}),
+          ...(report ? { seenIn: { served: report.servedCount, total: report.total } } : {}),
         }
       }),
     )
@@ -968,6 +1034,27 @@ export class BuilderService {
       await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_WITHDRAWN, paper.id, { from: 'terbit', to: 'draf' })
     })
     return { ok: true }
+  }
+
+  /** R1-T34 "Sunting petikan": the title of a stimulus group placed on a draft paper (the group is shared by the bank, D90). */
+  async setGroupLabel(actor: AuditActor, rawId: string, groupId: string, rawBody: unknown): Promise<BijakBuilderEditor> {
+    const pid = parseId(rawId)
+    const paperId = await this.prisma.transaction(async () => {
+      const paper = await this.lockedPaper(pid)
+      if (paper.status === 'published') throw invalid(MESSAGES.paperLocked)
+      const body = parseWith(BijakBuilderGroupLabelSchema, rawBody)
+      const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
+      const st = await this.structure(placed)
+      const onPaper = new Set(placed.flatMap((qid) => (st.groupOf(qid) ? [st.groupOf(qid)!] : [])))
+      if (!onPaper.has(groupId)) throw invalid(MESSAGES.groupNotOnPaper)
+      await this.stimuli.updateGroup(groupId, { label: body.label })
+      await this.repo.updatePaper(paper.id, { updatedAt: this.clock.now() })
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, { from: 'draf', to: 'draf', op: 'group_label', groupId })
+      return paper.id
+    })
+    const fresh = await this.repo.findPilihan(paperId)
+    if (!fresh) throw notFound()
+    return this.editorOf(fresh)
   }
 
   async preview(rawBody: unknown): Promise<BijakBuilderPreview> {
