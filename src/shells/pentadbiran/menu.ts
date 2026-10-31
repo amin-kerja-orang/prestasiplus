@@ -93,7 +93,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     icon: 'books',
     items: items([
       ['BS-01', 'Bank Soalan', '/admin/questions'],
-      ['BS-02', 'Import & Semakan', '/admin/questions/import'],
+      ['BS-02', 'Import & Semakan', '/admin/spm/soalan/ekstrak'], // V2 I1: the batch list (same screen as KS-14 Senarai Ekstrak)
       ['BS-03', 'Sumber Kertas'],
       ['BS-04', 'Kualiti Soalan', '/admin/questions/quality'],
       ['BS-05', 'Laporan Soalan', '/admin/question-reports'],

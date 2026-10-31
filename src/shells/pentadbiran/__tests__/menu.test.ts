@@ -65,7 +65,8 @@ describe('Pentadbiran menu data', () => {
   it('activates the longest matching item (drill pages stay on Langsung)', () => {
     expect(activeItem('/admin/command-center/school/3')?.id).toBe('PM-01')
     expect(activeItem('/admin/command-center/daily-activity')?.id).toBe('PM-02')
-    expect(activeItem('/admin/questions/import')?.id).toBe('BS-02')
+    // BS-02 now opens the batch list (V2 I1); the CSV import page falls back to the Bank Soalan entry.
+    expect(activeItem('/admin/questions/import')?.id).toBe('BS-01')
     expect(activeItem('/admin/spm/soalan/manual')?.id).toBe('KS-16')
     expect(activeItem('/admin/spm/soalan/mat1-pub-1/sunting')?.id).toBe('KS-02')
   })
