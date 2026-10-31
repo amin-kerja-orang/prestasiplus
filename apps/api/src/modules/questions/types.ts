@@ -72,14 +72,24 @@ export interface NamedRef {
   name: string
 }
 
+/** The seven stimulus kinds served from the store (`audio` is stored but never served as a stimulus). */
+export const STIMULUS_KINDS = ['passage', 'image', 'diagram', 'table', 'map', 'infographic', 'graph'] as const
+export type StimulusKind = (typeof STIMULUS_KINDS)[number]
+
 export interface StimulusRecord {
   id: string
-  kind: 'diagram' | 'passage' | 'table'
+  kind: StimulusKind
   label: string
   bodyMs: string | null
   bodyEn: string | null
   assetFileId: string | null
   alt: string | null
+  /** R1-T07: figure caption. */
+  caption?: string | null
+  /** R1-T07: source line of a passage or picture. */
+  sourceCitation?: string | null
+  /** R1-T07: table grid as stored (`{ head, rows }` for a `table`); unvalidated JSON, read defensively by the consumers. */
+  tableData?: unknown
 }
 
 export interface StimulusGroupRecord {
