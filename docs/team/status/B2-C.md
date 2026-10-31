@@ -98,10 +98,11 @@ Those commits were not reviewed. T14 and T15 tips are BASE-8 merges only, and th
   - The change is tags, comments and docs only, with no behaviour change. Every §7(j) string exists verbatim in code (attempts/schema.ts:42-49, m28 server/store.ts, ResultPage.vue:72, questions/schema.ts:59). Docs consistently say "approved, Q1". No real names. No security flag.
   - Nit (pre-existing): the mock `retryAttempt` (`m28/server/store.ts:788-795`) lacks the API's "Kertas ini sudah tidak tersedia untuk dicuba semula." path.
   - Info: the H-A13 strings approved in Q1 ("Kertas ini sedang dikemas kini…", admin Arkib line) are still [PROPOSED] on BOARD.md:96. That is the owning unit's job.
-  - **Ready for B1 merge** (merge tip dbf7d81e).
+  - Not yet "Ready for B1 merge": BASE-9..BASE-14 landed during this cycle (latest BASE-14 70971776); tip dbf7d81e lacks it (merge-tree clean). C4: merge BASE-14 and post the head; docs-only, so B2-C re-check is a tree diff.
 
 ### Merge readiness summary (cycle 1)
-- Ready for B1 merge: **T15** @ dbf7d81e.
+Note (post-review): BASE-9..BASE-14 (T07, T08, T28, H-A2, R1E2E-01, T32 @87a9a363) merged while this cycle ran. Latest BASE-14 = 70971776. No Team C tip contains it, so **no unit is "Ready for B1 merge" this cycle**. T14 tip 4b033de3 and T15 tip dbf7d81e both merge-tree clean on BASE-14. T07 now in base → T11 kuiz.mapper conflict moves to the lane's BASE-14 merge. T32 now in base at 87a9a363 → the T13 served-lock MAJOR must be re-checked on T13 tip 17ac8f28.
+- T15: Approve; merge BASE-14 → then ready.
 - T14: Approve with Minors and the tip has BASE-8. Fix the Minor, or the B1 lead accepts it, then it is ready.
 - T12: Approve with Minors. Needs T11 first, plus a posted head with BASE-8 (the tip has new commits).
 - T11: needs the security MEDIUM fixed, T07 merged first, and the new tip reviewed.
