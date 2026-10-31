@@ -117,7 +117,9 @@ Team C note (C3 Studio on T32 @ 87a9a363): admin-only, envelope {data,status}; `
 | H-A21 | A (A4 dev1, after T45 Part 1) | Servability overview cache: 400k bank overview = 22.5 s (T30); short-TTL cache + stale-while-revalidate, event invalidation where cheap, `computedAt`; target warm p95 < 500 ms. Migration only with lead approval (0105 next free) |
 | H-A22 | A (A3 docs agent, r1/ha22-parity-docs) | Deviation rows S-10 (attempt survives logout), S-45 (random Kuiz stored + rewarded, D85 U8); mark stale student.md B13/B15–B18 done; fix D-references |
 | H-A23 | A (A3 docs agent, r1/ha23-e2e-readiness) | R1 E2E readiness map: each acceptance-flow step → API routes + FE pages → unit/branch, merged or not, blockers; recommended merge order for B to unblock T23 fastest |
-| H-A26 | A (A3 docs agent, r1/ha26-team-a-state) | Team A state/handoff doc `docs/handoff/team-a-r1-state.md` (units, decisions D91–D97 + Q1–Q7, migrations 0100–0105, open requests, how to resume, hazards) |
+| H-A26 | A | **READY-FOR-REVIEW** `r1/ha26-team-a-state` @ 45d3b954 (docs) |
+| H-A27 | A (A3 docs agent, standing) | After each BASE-n / READY: refresh team-a-r1-state + coverage doc; report deltas |
+| (was H-A26) | A (A3 docs agent, r1/ha26-team-a-state) | Team A state/handoff doc `docs/handoff/team-a-r1-state.md` (units, decisions D91–D97 + Q1–Q7, migrations 0100–0105, open requests, how to resume, hazards) |
 | H-A4 | A | DONE in T05 @ 4fff21ab: `test/bijak-attempts/golden.spec.ts` 4 failures (sej-k2-2025-a): mock engine emits `selfMarkable: true` on `belum_dimarkah` parts; spec strips it only on the API side. Pre-existing on BASE-1 |
 | H-C3 | C | m04 admin list/detail: show "Esei pilihan" + topics list when `essayTopics` is present (API from H-A7). After T04 merges (m04 lock) |
 | H-A10 | A | DONE: audit at lead scratchpad; result = tasks T26–T36 below and D92 |
