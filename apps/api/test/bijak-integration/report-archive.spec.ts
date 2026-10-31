@@ -5,7 +5,7 @@
  * Reports have no Bijak source of their own (the DB check allows spm, latihan, revision, teacher_databank and structured_attempt),
  * so a Bijak or Kuiz report is filed with the default source `spm`.
  */
-import { SessionSchema } from '@pp/contract'
+import { QUESTION_REPORT_MESSAGES, SessionSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { prngStream } from '../../src/db/prng'
@@ -195,5 +195,67 @@ describe('Laporan Soalan: "Arkib" on a live question with a newer revision in Se
     expect(await drawn()).not.toContain(q2)
     const again = await adminPatch(`/api/question-reports/${report2}`, { status: 'fixed', archive: true })
     expect(again.status, JSON.stringify(again.body)).toBe(200)
+  })
+})
+
+describe('Laporan Soalan: "Arkib" is tied to the reported version (REQ-B-018)', () => {
+  let q3 = ''
+  let report3 = ''
+  const state = async () =>
+    (
+      await t.db.query<{ live: number | null; latest: number; status: string; report: string }>(
+        `select q.live_version_no live, q.latest_version_no latest, v.status, (select status from question_reports where id = $2) report
+           from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where q.id = $1`,
+        [q3, report3],
+      )
+    )[0]!
+
+  it('setup: a report on version 1 of a served question, then version 2 is published (live moves to 2)', async () => {
+    q3 = (await t.db.query<{ id: string }>(`select question_id::text id from question_versions where number_label = 'SEED-MCQ-SCI-T4' limit 1`))[0]!.id
+    const student = await loginAs(t, STUDENT)
+    const res = await student.post('/api/question-reports', { questionId: q3, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat' })
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const [r] = await t.db.query<{ id: string; question_version_no: number }>(`select id::text, question_version_no from question_reports where question_id = $1`, [q3])
+    expect(r!.question_version_no).toBe(1)
+    report3 = r!.id
+    const cols = (
+      await t.db.query<{ column_name: string }>(
+        `select column_name from information_schema.columns where table_name = 'question_versions' and column_name not in ('id', 'version_no', 'status') order by ordinal_position`,
+      )
+    ).map((c) => `"${c.column_name}"`)
+    // publishing version 2 supersedes version 1 (one approved version per question)
+    await t.db.query(`update question_versions set status = 'archived' where question_id = $1 and version_no = 1`, [q3])
+    await t.db.query(
+      `insert into question_versions (version_no, status, ${cols.join(', ')}) select 2, 'approved', ${cols.join(', ')} from question_versions where question_id = $1 and version_no = 1`,
+      [q3],
+    )
+    await t.db.query(`update questions set latest_version_no = 2, live_version_no = 2 where id = $1`, [q3])
+    expect(await state()).toMatchObject({ live: 2, latest: 2, status: 'approved', report: 'pending' })
+  })
+
+  it('an old report cannot archive the newer version: 409 with the BM text, the question and the report stay as they were', async () => {
+    const res = await adminPatch(`/api/question-reports/${report3}`, { status: 'fixed', archive: true })
+    expect(res.status, JSON.stringify(res.body)).toBe(409)
+    expect((res.body as { error: { code: string; message: string } }).error).toMatchObject({ code: 'CONFLICT', message: QUESTION_REPORT_MESSAGES.archiveStaleVersion })
+    expect(QUESTION_REPORT_MESSAGES.archiveStaleVersion).toBe('Soalan ini sudah mempunyai versi yang lebih baharu daripada yang dilaporkan. Arkib dibatalkan; semak versi terkini dahulu.')
+    expect(await state()).toMatchObject({ live: 2, latest: 2, status: 'approved', report: 'pending' })
+  })
+
+  it('a request that names another version than the reported one is also a 409; a bad value is 422; the correct one is not blocked by the check', async () => {
+    const wrong = await adminPatch(`/api/question-reports/${report3}`, { status: 'fixed', archive: true, expectedVersionNo: 2 })
+    expect(wrong.status, JSON.stringify(wrong.body)).toBe(409)
+    const bad = await adminPatch(`/api/question-reports/${report3}`, { status: 'fixed', archive: true, expectedVersionNo: 0 })
+    expect(bad.status, JSON.stringify(bad.body)).toBe(422)
+    expect((bad.body as { error: { fields: Record<string, string> } }).error.fields.expectedVersionNo).toBe(QUESTION_REPORT_MESSAGES.expectedVersionNo)
+    // naming the reported version (1) still meets the stale live version 2: 409, nothing archived
+    const stale = await adminPatch(`/api/question-reports/${report3}`, { status: 'fixed', archive: true, expectedVersionNo: 1 })
+    expect(stale.status, JSON.stringify(stale.body)).toBe(409)
+    expect(await state()).toMatchObject({ live: 2, status: 'approved', report: 'pending' })
+  })
+
+  it('a note-only resolution (no archive) of the same old report still works', async () => {
+    const res = await adminPatch(`/api/question-reports/${report3}`, { status: 'reviewed', adminNotes: 'Disemak' })
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect((await state()).status).toBe('approved')
   })
 })

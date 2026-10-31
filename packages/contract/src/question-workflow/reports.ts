@@ -24,9 +24,12 @@ export const QUESTION_REPORT_MESSAGES = {
   reference: 'Rujukan sesi atau bilik tidak sah.',
   comment: 'Komen tidak boleh melebihi 500 aksara.',
   status: 'Status tidak sah.',
+  expectedVersionNo: 'Versi soalan tidak sah.',
   adminNotes: 'Nota admin tidak boleh melebihi 1000 aksara.',
   created: 'Laporan berjaya dihantar.',
   updated: 'Laporan berjaya dikemaskini.',
+  /** 409 on "Arkib" from a report row: the question has moved past the reported version (REQ-B-018). */
+  archiveStaleVersion: 'Soalan ini sudah mempunyai versi yang lebih baharu daripada yang dilaporkan. Arkib dibatalkan; semak versi terkini dahulu.',
   /** Shown by the screen when the request itself fails (FR-M04-69). */
   failure: 'Ralat. Sila cuba lagi.',
 } as const
@@ -244,6 +247,12 @@ export const QuestionReportUpdateRequestSchema = z
     reactivate: FlagSchema.optional(),
     forceDeactivate: FlagSchema.optional(),
     archive: FlagSchema.optional(),
+    expectedVersionNo: z
+      .number(QUESTION_REPORT_MESSAGES.expectedVersionNo)
+      .int()
+      .min(1)
+      .optional()
+      .meta({ description: 'The reported question version the admin is looking at. With `archive`: it must be the version the report was filed against (else 409), and the archive is refused with 409 when the question has moved on to a newer version than the reported one (REQ-B-018).' }),
   })
   .meta({ id: 'QuestionReportUpdateRequest' })
 export type QuestionReportUpdateRequest = z.infer<typeof QuestionReportUpdateRequestSchema>

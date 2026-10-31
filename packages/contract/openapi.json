@@ -8696,6 +8696,11 @@
                 ]
               }
             ]
+          },
+          "expectedVersionNo": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The reported question version the admin is looking at. With `archive`: it must be the version the report was filed against (else 409), and the archive is refused with 409 when the question has moved on to a newer version than the reported one (REQ-B-018)."
           }
         },
         "required": [
@@ -78467,6 +78472,16 @@
           },
           "404": {
             "description": "NOT_FOUND \"Not Found.\" (unknown id, or a segment that does not match the route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Soalan ini sudah mempunyai versi yang lebih baharu daripada yang dilaporkan. Arkib dibatalkan; semak versi terkini dahulu.\" when `archive` is sent for a question that has a newer version than the reported one (the report is not changed).",
             "content": {
               "application/json": {
                 "schema": {

@@ -124,7 +124,7 @@ export class QuestionReportsService {
   }
 
   /** PATCH /question-reports/:id (admin). */
-  async update(actor: WorkflowActor, id: string, body: unknown, archive?: (questionId: string) => Promise<void>) {
+  async update(actor: WorkflowActor, id: string, body: unknown, archive?: (questionId: string, reportedVersionNo: number) => Promise<void>) {
     const row = await this.repo.get(id)
     if (!row) throw ApiError.of('NOT_FOUND')
     const v = validateUpdate(body)
@@ -141,7 +141,11 @@ export class QuestionReportsService {
       // R1-B17: "Arkib" on the report row is the real lifecycle archive (status event included), not a deactivation.
       if (v.archive) {
         if (!archive) throw new Error('reports: the archive action is not wired')
-        await archive(qid)
+        // REQ-B-018: the archive is tied to the version the report was filed against; a request that names another version is stale.
+        if (v.expectedVersionNo !== undefined && v.expectedVersionNo !== row.questionVersionNo) {
+          throw ApiError.of('CONFLICT', { message: M.archiveStaleVersion })
+        }
+        await archive(qid, row.questionVersionNo)
       }
       if (row.reporterId !== null && row.status !== v.status) await this.notify(next, await this.displayOf(next))
       return next

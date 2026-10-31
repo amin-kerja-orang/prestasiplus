@@ -50,8 +50,8 @@ export class QuestionWorkflowService {
   }
 
   /** Admin only: "Arkib" on a question report row; archives the live version even when a newer revision is in review. */
-  archiveReported(questionId: string, actor: WorkflowActor, reason: string): Promise<void> {
-    return this.lifecycle.archiveReported(questionId, actor, reason)
+  archiveReported(questionId: string, actor: WorkflowActor, reason: string, reportedVersionNo: number): Promise<void> {
+    return this.lifecycle.archiveReported(questionId, actor, reason, reportedVersionNo)
   }
 
   /** Admin only: marks the source paper taken down and archives all its questions atomically. */
