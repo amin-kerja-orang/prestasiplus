@@ -283,13 +283,13 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect(byId.status, JSON.stringify(byId.body)).toBe(422)
       expect(byId.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
 
-      // an image a pupil's colleague (any other user) uploaded and attached to nothing is not the admin's to publish on a paper
-      const other = await student.upload('/api/files?purpose=question_image', makePng())
-      if (other.status === 201) {
-        const foreign = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: [], imageFileId: other.body.data.id as string }] })
-        expect(foreign.status, JSON.stringify(foreign.body)).toBe(422)
-        expect(foreign.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
-      }
+      // an image another user (a teacher) uploaded and attached to nothing is not the admin's to publish on a paper
+      const teacher = await loginFull(t, ACCOUNTS.teacher)
+      const other = await teacher.upload('/api/files?purpose=question_image', makePng())
+      expect(other.status, JSON.stringify(other.body)).toBe(201)
+      const foreign = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: [], imageFileId: other.body.data.id as string }] })
+      expect(foreign.status, JSON.stringify(foreign.body)).toBe(422)
+      expect(foreign.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
       // the admin's own upload stays accepted and survives a later save of the same list by another editor path (already on the paper)
       const own = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: [], imageFileId: token }] })
       expect(own.status, JSON.stringify(own.body)).toBe(200)

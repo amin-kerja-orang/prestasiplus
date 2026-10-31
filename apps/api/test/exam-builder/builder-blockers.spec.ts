@@ -249,6 +249,8 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       const details = (res.body.data as { blockerDetails: Detail[] }).blockerDetails
       expect(details.find((b) => b.code === 'NO_KEY')).toMatchObject({ questionId: bad, overridable: false, section: 'Bahagian C' })
+      // the bank cannot read the keyless question, so it has no servability verdict: that is a HARD NOT_SERVABLE, never a silent pass
+      expect(details.find((b) => b.code === 'NOT_SERVABLE' && b.questionId === bad)).toMatchObject({ overridable: false, message: `Soalan ${bad} tidak dapat disemak untuk murid; cuba lagi.` })
       expect(res.body.data.canOverride).toBe(false)
       await refuseOverride(paper)
     })

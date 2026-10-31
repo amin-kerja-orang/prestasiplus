@@ -54,6 +54,7 @@ import { toStandard } from '../blueprints/blueprint-standard'
 import type { AuditActor } from './actor'
 import {
   attemptRefusalLine,
+  unreadableLine,
   BIJAK_BUILDER_PAGE_SIZE,
   contractNotVerifiedLine,
   DESCRIBE_CHUNK,
@@ -526,23 +527,26 @@ export class BuilderService {
   /**
    * The ServabilityService reports of some questions. The bank fails closed on a stored question it cannot read (a stored key that is
    * missing or invalid is a 500 with the part logged): that must not take the whole review or Terbit down (B3 T34-L2). On that failure the
-   * questions are read one by one and an unreadable one simply has no verdict here; its own named blocker (NO_KEY) comes from the pool facts.
+   * questions are read one by one; a question that still cannot be read is listed in `unreadable` and becomes a HARD NOT_SERVABLE blocker
+   * (it must never publish just because its verdict is missing). Its own named blocker (NO_KEY) comes from the pool facts.
    */
-  private async safeReports(ids: readonly string[]): Promise<ReadonlyMap<string, ServabilityReport>> {
-    if (ids.length === 0) return new Map()
+  private async safeReports(ids: readonly string[]): Promise<{ reports: ReadonlyMap<string, ServabilityReport>; unreadable: string[] }> {
+    if (ids.length === 0) return { reports: new Map(), unreadable: [] }
     try {
-      return await this.servability.reports(ids)
+      return { reports: await this.servability.reports(ids), unreadable: [] }
     } catch (e) {
       if (!(e instanceof ApiError) || e.getStatus() < 500) throw e
-      const out = new Map<string, ServabilityReport>()
+      const reports = new Map<string, ServabilityReport>()
+      const unreadable: string[] = []
       for (const id of ids) {
         try {
-          for (const [k, v] of await this.servability.reports([id])) out.set(k, v)
+          for (const [k, v] of await this.servability.reports([id])) reports.set(k, v)
         } catch (inner) {
           if (!(inner instanceof ApiError) || inner.getStatus() < 500) throw inner
+          unreadable.push(id)
         }
       }
-      return out
+      return { reports, unreadable }
     }
   }
 
@@ -552,7 +556,7 @@ export class BuilderService {
     // not hold the lock of the 5 s transaction). Inside, the placed set is compared with the locked paper and re-read only if it moved.
     const early = id === null ? null : await this.repo.findPilihan(id)
     const earlyIds = this.placedIdsOf(early)
-    const earlyReports = await this.safeReports(earlyIds)
+    const earlyReads = await this.safeReports(earlyIds)
     return this.prisma.transaction(async () => {
       const paper = await this.lockedPaper(id)
       // The body is optional (no body = the plain Terbit); a bad body is 422 only after the paper is known to exist.
@@ -560,10 +564,10 @@ export class BuilderService {
       const ev = await this.evaluate(paper)
       const structural = await this.structuralCheck(paper)
       const placedNow = this.placedIdsOf(paper)
-      const reports = placedNow.length === earlyIds.length && placedNow.every((x, i) => x === earlyIds[i]) ? earlyReports : await this.safeReports(placedNow)
+      const { reports, unreadable } = placedNow.length === earlyIds.length && placedNow.every((x, i) => x === earlyIds[i]) ? earlyReads : await this.safeReports(placedNow)
       // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
       // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
-      const blockers = this.collectBlockers(paper, ev, structural, reports)
+      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable)
       const errors = blockers.map((b) => b.message)
       const overridable = blockers.filter((b) => b.overridable).map((b) => b.message)
       const view = blockerView(blockers)
@@ -671,11 +675,13 @@ export class BuilderService {
     ev: Evaluation,
     structural: { blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[] },
     reports: ReadonlyMap<string, ServabilityReport>,
+    unreadable: readonly string[],
   ) {
     return toBlockers([
       ...ev.issues,
       ...structural.fixed,
       ...this.attemptBlockers(paper, ev, reports),
+      ...unreadable.map((id): BlockerDraft => ({ code: 'NOT_SERVABLE', message: unreadableLine(id), questionId: id })),
       ...(paper.status === 'published' ? [] : structural.contract),
       ...structural.blockers,
     ])
@@ -819,8 +825,8 @@ export class BuilderService {
     // R1-T34 (B09a, "Dilihat murid di"): the per-row verdict comes from ServabilityService (one batch); the paper is the authority for
     // "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
     const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
-    const reports = await this.safeReports(placed)
-    const blockerList = this.collectBlockers(paper, ev, structural, reports)
+    const { reports, unreadable } = await this.safeReports(placed)
+    const blockerList = this.collectBlockers(paper, ev, structural, reports, unreadable)
     const blockers = blockerList.map((b) => b.message)
     const rows = paper.sections.flatMap((s) =>
       s.placements.map((pl) => {
