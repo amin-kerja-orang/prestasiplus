@@ -68,6 +68,12 @@ const drawn = async (): Promise<string[]> =>
   t.app.get(PracticePorts).questions.sample({ subjectId, educationLevelIds: [levelId], spmPool: true }, 50, prngStream('report-archive'))
 const inJanaPool = async (): Promise<boolean> =>
   (await t.app.get(BijakPapersPorts).poolSource.candidates({ subjectId, subjectCode: 'MATH', kertas: 1 })).some((f) => f.id === qid)
+/** The ids a random Kuiz (`POST /bijak/kuiz/sessions`) of the question's subject serves to the pupil, 40 at most (the whole servable MATH set here). */
+const kuizDraws = async (): Promise<string[]> => {
+  const res = await (await loginAs(t, STUDENT)).post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 40 })
+  expect(res.status, JSON.stringify(res.body)).toBe(201)
+  return (res.body as { data: { items: { id: string }[] } }).data.items.map((i) => i.id)
+}
 const questionRow = async () =>
   (await t.db.query<{ is_active: boolean; status: string; live: number | null }>(
     `select q.is_active, v.status, q.live_version_no live from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where q.id = $1`,
@@ -78,6 +84,7 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
   it('1. the question is served before the report: Latih Tubi SPM draws it, the Jana Kertas pool holds it', async () => {
     expect(await drawn()).toContain(qid)
     expect(await inJanaPool()).toBe(true)
+    expect(await kuizDraws()).toContain(qid)
     expect(await questionRow()).toMatchObject({ is_active: true, status: 'approved' })
     // a pupil starts a sitting of the published paper that places it (its version is pinned on the placement)
     const student = await loginAs(t, STUDENT)
@@ -122,6 +129,15 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
   it('5. archived leaves every activity: not drawn by Latih Tubi SPM, not in a new Jana Kertas pool', async () => {
     expect(await drawn()).not.toContain(qid)
     expect(await inJanaPool()).toBe(false)
+  })
+
+  it('5b. archived is not drawn by a Kuiz (R1-18.4): not by the random Kuiz; the per-paper Kuiz of the Terbit paper keeps the frozen snapshot', async () => {
+    expect(await kuizDraws()).not.toContain(qid)
+    // The paper was published with the version pinned on its placement; the per-paper Kuiz reads that pin, so the Terbit paper keeps its
+    // snapshot after the archive (PIPE AC-04.4: "a published composite keeps its frozen snapshot"), while a NEW Jana pool and a NEW sitting exclude it (5, 8).
+    const page = await (await loginAs(t, STUDENT)).get(`/api/bijak/kuiz/papers/${paperId}`)
+    expect(page.status, JSON.stringify(page.body)).toBe(200)
+    expect((page.body as { data: { items: { id: string }[] } }).data.items.map((i) => i.id)).toContain(qid)
   })
 
   it('6. a second Arkib is a no-op (idempotent), not a 409', async () => {

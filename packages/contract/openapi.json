@@ -8020,6 +8020,23 @@
               "null"
             ],
             "pattern": "^([A-Za-z0-9._:-]{1,64})?$"
+          },
+          "attemptId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "R1-T42: uuid of the attempt the pupil reported from; see QuestionReportContext. 422 `attemptId` when unknown, not the reporter's, or the question is not in it."
+          },
+          "paperId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "R1-T42: optional; must be the paper of `attemptId`; sent without `attemptId` is 422 `attemptId`.",
+            "example": "1042"
           }
         },
         "required": [
@@ -8186,6 +8203,41 @@
               "null"
             ]
           },
+          "paper": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "attemptId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "attemptId"
+            ]
+          },
           "status": {
             "$ref": "#/components/schemas/QuestionReportStatus"
           },
@@ -8303,6 +8355,41 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "paper": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "attemptId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "attemptId"
             ]
           },
           "status": {
@@ -8612,6 +8699,49 @@
             ]
           },
           "forceDeactivate": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  0
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "1"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "0"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "true"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "false"
+                ]
+              }
+            ]
+          },
+          "archive": {
             "anyOf": [
               {
                 "type": "boolean"
