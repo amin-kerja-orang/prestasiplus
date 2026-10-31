@@ -21,3 +21,5 @@
 | BASE-17 | 8e8812ed | T06 `r1/t06-jana-standard` @ 4349bb00 (B1-as-reviewer Approve w/ Minors) | api tsc 0; contract:check 0; bijak-papers+secondary-only-bijak+builder-placements 132/132 | 2026-10-31 |
 | BASE-18 | 65d0d067 | T35 `r1/t35-report-archive` @ 4ea790b1 (B2 Approve, delta B1-as-reviewer; B3 Pass) | api tsc 0; contract:check 0; report-archive+questions-workflow+bijak-papers 362/362 | 2026-10-31 |
 | BASE-19 | 823d8dfb | T05 minors `r1/t05-minors` @ 99dd5fef (B1-as-reviewer Approve; test-only) | api tsc 0; servable-counts+assignments-adapter 15/15 | 2026-10-31 |
+| BASE-20 | 4004a071 | T14 `r1/t14-student-bugs` @ 1903b713 (B2 Approve) | api tsc 0; contract:check 0; vue-tsc 0; bijak-attempts 173/173; unit m05+m06+m28+exam-core 1255/1255 | 2026-10-31 |
+| BASE-21 | a6ff0c0d | T15 `r1/t15-bm-copy` @ 09eabe2e (B2 Approve; docs/comments) | api tsc 0; contract:check 0; unit m28 474/474 | 2026-10-31 |
