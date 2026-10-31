@@ -34,7 +34,7 @@
 | REQ-C-011 | DELIVERED in T47: filters tahun / negeri / kertas / jenis on GET /api/questions (Tahun = source_papers.year, Negeri = exam_board, Jenis = exam_type, Kertas = paper_code trailing digit; bad value 422 "Nilai penapis tidak sah.") | A2 · T47 | r1/t47-bank-parity @ 20cc7ba3 | DELIVERED |
 | REQ-C-012 | Accepted: POST /api/questions/:id/edit-as-draft → draft id, 409 if a draft exists | A2 | r1/c-requests-a2 | ACCEPTED |
 | REQ-C-013 | Accepted: admin archive without a free-text reason (V2) + review → archived transition | A2 | r1/c-requests-a2 | ACCEPTED |
-| REQ-C-014 | Product sign-off → QUESTIONS.md Q6 (asked to the user) | lead | — | IN-PROGRESS (user) |
-| REQ-C-015 | Product decision → QUESTIONS.md Q7 (asked to the user) | lead | — | IN-PROGRESS (user) |
+| REQ-C-014 | DECIDED (Q6, user): use the [PROPOSED] Studio copy where it fits the screen context; C flags any line that doesn't | lead | — | DELIVERED |
+| REQ-C-015 | DECIDED (Q7, user: follow V2): (a) Kuiz "✓ Semak" does NOT consume BR-07 trial checks (V2 `/simulasi/kuiz/semak` writes no practice_sessions and has no quota gate, §1.8); (b) per-paper Kuiz key + explanation stays allowed during an open scored sitting (V2 parity); B3 M1 = accepted risk by user decision. Archived questions still leave the per-paper Kuiz (REQ-A-003, AC-R1-18.4) | lead | — | DELIVERED |
 | REQ-C-016 | Accepted: scope doc AC-R1-18.4 line updated to the H-A13 / REQ-A-003 rule | A3 docs agent · H-A25 | r1/t37-r1-runbook / ha22 | ACCEPTED |
 | REQ-C-017 | Accepted: `pinned` per placement is in T48 (P5) | A3 · T48 | r1/t48-builder-parity | ACCEPTED |
