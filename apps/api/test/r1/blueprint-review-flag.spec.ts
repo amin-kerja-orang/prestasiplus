@@ -40,6 +40,23 @@ let app: INestApplication
 let db: TestDatabase
 let admin: { csrf: string; get(u: string): request.Test; post(u: string, b?: unknown): request.Test; put(u: string, b?: unknown): request.Test }
 
+/** The few fields of a blueprint view these specs read (the full shape is the contract's `BijakBlueprintView`). */
+interface BlueprintBody {
+  version: number
+  source: string
+  code: string
+  durationMin: number
+  kertas: number
+  subject: string
+  autoMarkable: boolean | null
+  kbatMarks: number | null
+  levelShare: unknown
+  needsReview: boolean
+  dependentPaperCount: number
+  reviewPapers: { paperId: string; title: string; gaps: string[] }[]
+  sections: { label: string; markBudget: number; questionCount: number; rule: unknown; pool?: string }[]
+}
+
 const one = async (sql: string, params: unknown[] = []): Promise<string> => String((await db.query<Record<string, string>>(sql, params))[0]?.id)
 
 const fx = { subject: '', level: '', units: [] as string[], sp: '', a: [] as string[], b: '', c: [] as string[] }
@@ -144,12 +161,12 @@ async function publishedPaper(title: string): Promise<{ id: string; publish: Rec
   return { id, publish: pub.body.data as Record<string, unknown> }
 }
 
-const blueprint = async () => (await admin.get('/api/admin/blueprints/MAT/2')).body.data as Record<string, any>
+const blueprint = async () => (await admin.get('/api/admin/blueprints/MAT/2')).body.data as BlueprintBody
 
 /** A new version of MAT kertas 2 that keeps the structure and sets the given standard fields on section A and the paper. */
 async function saveVersion(code: string, standard: { quota?: unknown; kbatMarks?: number; autoMarkable?: boolean } | null) {
   const head = await blueprint()
-  const sections = (head.sections as Record<string, any>[]).map((s, i) => ({
+  const sections = head.sections.map((s, i) => ({
     label: s.label,
     markBudget: s.markBudget,
     questionCount: s.questionCount,
@@ -160,7 +177,7 @@ async function saveVersion(code: string, standard: { quota?: unknown; kbatMarks?
   }))
   const res = await admin.post('/api/admin/blueprints/MAT/2/versions', { source: 'Spec', code, durationMin: head.durationMin, ...(standard?.autoMarkable !== undefined ? { autoMarkable: standard.autoMarkable } : {}), sections })
   expect(res.status, JSON.stringify(res.body)).toBe(201)
-  return res.body.data as Record<string, any>
+  return res.body.data as BlueprintBody
 }
 
 describe('PIPE AC-06.5: a null blueprint value never fails conformance', () => {
@@ -200,7 +217,7 @@ describe('PIPE AC-06.6: a curated paper that misses quota/KBAT is never blocked;
     expect(head.needsReview).toBe(true)
     expect(head.reviewPapers).toHaveLength(1)
     expect(head.reviewPapers[0]).toMatchObject({ title: 'Percubaan satu' })
-    expect(head.reviewPapers[0].gaps).toEqual(expect.arrayContaining(['quota', 'kbat']))
+    expect(head.reviewPapers[0]?.gaps).toEqual(expect.arrayContaining(['quota', 'kbat']))
     // the flag is informational: it changes neither the status nor the paper
     expect(head.source).toBe('Spec')
     expect(await one(`select count(*)::text id from papers where kind = 'pilihan' and status = 'published'`)).toBe(publishedBefore)
@@ -209,7 +226,7 @@ describe('PIPE AC-06.6: a curated paper that misses quota/KBAT is never blocked;
   it('the list shows the same flag', async () => {
     const list = await admin.get('/api/admin/blueprints')
     expect(list.status, JSON.stringify(list.body)).toBe(200)
-    const mat2 = (list.body.data as Record<string, any>[]).find((b) => b.subject === 'MAT' && b.kertas === 2)
+    const mat2 = (list.body.data as BlueprintBody[]).find((b) => b.subject === 'MAT' && b.kertas === 2)
     expect(mat2).toMatchObject({ needsReview: true })
   })
 
