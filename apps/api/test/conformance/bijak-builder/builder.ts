@@ -69,10 +69,10 @@ export const bijakBuilderScenarios: Scenario[] = [
       expectError(ctx, await admin.request('POST', '/admin/blueprints', { body: { subject: 'SEJ', kertas: 1 } }), 422, 'VALIDATION_ERROR')
 
       const version = await admin.request('POST', '/admin/blueprints/SEJ/1/versions', {
-        body: { ...blueprintBody('1249/1', 'Disahkan'), durationMin: 90 },
+        body: { ...blueprintBody('1249/1'), durationMin: 90 },
       })
       ctx.expectStatus(version, 201)
-      ctx.check(dataOf(version).source === 'Disahkan' && dataOf(version).durationMin === 90, 'the new version view must carry the new content')
+      ctx.check(dataOf(version).source === 'Spec' && dataOf(version).durationMin === 90, 'the new version view must carry the new content')
       const got = await admin.request('GET', '/admin/blueprints/SEJ/1')
       ctx.expectStatus(got, 200)
       ctx.check(dataOf(got).durationMin === 90, 'GET must show the latest version')
@@ -108,7 +108,9 @@ export const bijakBuilderScenarios: Scenario[] = [
       ctx.check(candidates.length >= 3, `expected kertas 2 candidates, got ${String(candidates.length)}`)
 
       // PUT: place candidates (3 in the first section), rename, change duration.
-      const picked = candidates.slice(0, 3).map((q) => String(q.id))
+      // D90: a stimulus group is placed as a unit, so the three picked are single questions (placing a group member would bring the whole group).
+      const picked = candidates.filter((q) => q.groupId === undefined || q.groupId === null).slice(0, 3).map((q) => String(q.id))
+      ctx.check(picked.length === 3, `expected 3 ungrouped kertas 2 candidates, got ${String(picked.length)}`)
       const firstSection = String(sectionsOf(editor)[0]?.id)
       const put = await admin.request('PUT', `/admin/papers/${id}`, {
         body: { title: '  Set uji pembina  ', durationMin: 120, sections: [{ id: firstSection, questionIds: picked }] },

@@ -285,6 +285,7 @@ describe('S4/Q2 level ids', () => {
     spm.fetchLatihTubiConfig.mockResolvedValue({ ...CONFIG, levelCounts: { '104': 25 } })
     const w = await render(LatihTubiConfigPage, '/spm/latih-tubi/MATH', '/spm/latih-tubi/:code')
     expect(w.get('[data-testid=config-levels]').findAll('button').map((b) => b.text())).toEqual([
+      'Semua Tahap49 soalan',
       'Tingkatan 525 soalan',
     ])
   })
@@ -317,7 +318,7 @@ describe('S4/Q2 level ids', () => {
     spm.fetchLatihTubiConfig.mockResolvedValue(CONFIG)
     const w = await render(LatihTubiConfigPage, '/spm/latih-tubi/MATH', '/spm/latih-tubi/:code')
     const levels = w.get('[data-testid=config-levels]').findAll('button')
-    expect(levels.map((b) => b.text())).toEqual(['Tingkatan 424 soalan', 'Tingkatan 525 soalan'])
+    expect(levels.map((b) => b.text())).toEqual(['Semua Tahap49 soalan', 'Tingkatan 424 soalan', 'Tingkatan 525 soalan'])
     await w.get('[data-testid=level-104]').trigger('click')
     await w.get('[data-testid=difficulty-5]').trigger('click')
     expect(w.get('[data-testid=difficulty-5] [data-testid=difficulty-count]').text()).toBe('1 soalan')

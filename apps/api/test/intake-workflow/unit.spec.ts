@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { compare, normalise, signatureOf } from '../../src/modules/intake/workflow/duplicates'
 import { batchLevelIssues, itemIssues, schemeTotal } from '../../src/modules/intake/workflow/gate'
-import { attachToStimulus, detachFromStimulus, groupsOf } from '../../src/modules/intake/workflow/grouping'
+import { attachToStimulus, detachFromStimulus, gatherByRef, groupsOf } from '../../src/modules/intake/workflow/grouping'
 import { ConvertError, toQuestionInput } from '../../src/modules/intake/workflow/to-question'
 import { bandReaches } from '../../src/modules/intake/workflow/workflow.config'
 
@@ -124,6 +124,12 @@ describe('grouping (D6)', () => {
     expect(r.items.map((i) => i.id)).toEqual(['a', 'c', 'b'])
     expect(r.moved).toBe(true)
     expect(attachToStimulus(list(['a', null], ['b', null]), ['a'], 's').moved).toBe(false)
+  })
+  it('extraction gathers each figure into one block at its first question and keeps the rest in place', () => {
+    const pairs: Array<[string, string | null]> = [['q1', 'f1'], ['q2', null], ['q3', 'f2'], ['q4', null], ['q5', 'f1'], ['q6', 'f2']]
+    const items = pairs.map(([id, stimulusRef]) => ({ id, stimulusRef }))
+    expect(gatherByRef(items).map((i) => i.id)).toEqual(['q1', 'q5', 'q2', 'q3', 'q6', 'q4'])
+    expect(gatherByRef<{ stimulusRef: string | null }>([])).toEqual([])
   })
   it('detach clears the link', () => {
     expect(detachFromStimulus(list(['a', 's']), ['a'])[0]?.stimulusId).toBeNull()

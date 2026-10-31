@@ -88,6 +88,18 @@ describe('a question held for a missing image is served again once its image is 
     expect(await state(id)).toMatchObject({ is_active: false, live: 2 })
   })
 
+  it('T45B-L1: a released hold is gone for good: an admin who switches the question off is not overridden by the next approval', async () => {
+    const id = await held([stemIssue])
+    await publishEdit(id, { questionImageFileId: await upload() })
+    expect(await state(id)).toMatchObject({ is_active: true, live: 2 })
+    // the issues were cleared on the version that held them
+    expect((await t.db.query<{ n: string }>(`select count(*) n from question_versions where question_id = $1 and import_issues is not null`, [id]))[0]!.n).toBe('0')
+    // an admin switches it off, then edits and approves it again: it stays off
+    await t.db.query(`update questions set is_active = false where id = $1`, [id])
+    await publishEdit(id, { questionText: 'Soalan yang disunting selepas dimatikan oleh admin?' })
+    expect(await state(id)).toMatchObject({ is_active: false, live: 3 })
+  })
+
   it('a question held for another reason as well (markup, personal data) stays inactive even with the image', async () => {
     const id = await held([stemIssue, { code: 'html_math', target: 'stem' }])
     await publishEdit(id, { questionImageFileId: await upload() })
