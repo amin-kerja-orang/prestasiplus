@@ -4,20 +4,24 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 
 > **No AI session runs any of this on a server.** Agents write and test the code and these notes; a human with the deploy rights runs every command below, after the lead's explicit confirmation (see [api-runbook.md](api-runbook.md)). Every SQL block in this page is a read-only `SELECT` (plus one `VACUUM ANALYZE`, section 2.2) and is safe to run on a live database. The only things that change data are the migrations (applied by `prisma migrate deploy`), the DSKP loader script, and the admin's own actions in the app (Kontrak, Sahkan), all named below. This page contains environment variable **names** only, never values.
 
-**What is in the base and what is not.** The page was written against `feature/v3-bijak-r1` at BASE-6 (`21ae62dd`) and refreshed (H-A25) against BASE-21 (`a6ff0c0d`): 0101 is in base since BASE-15; 0102 and 0103 are still on branches. Items marked "lands with" are not in base; they are on the named branch and must be merged, reviewed and released before the step applies. Verify the status in `docs/TRACKER.md` before you start.
+**Order and links.** This page is the order of work, the migration table, the SQL checks and the blueprint steps. Where it overlaps [r1-release-notes.md](r1-release-notes.md) (preconditions, the deploy run, smoke, rollback, DSKP commands, configuration), the release notes win and this page links to them instead of repeating them.
 
-| Item | In BASE-6? | Where it is |
+**What is in the base and what is not** (against `feature/v3-bijak-r1` at BASE-60, `a3e92b06`; check `docs/team/MERGE-LOG.md` on the board branch for newer merges).
+
+| Item | State | Where |
 |---|---|---|
-| Migrations 0092, 0093, 0100 | yes | `apps/api/prisma/migrations/` |
-| Rollback path and `VACUUM ANALYZE` for 0100 | no | `r1/t04-minors`, `docs/ops/r1-b01-question-lifecycle.md` (also summarised in section 2.2 here) |
-| Migration 0101 `essay_choice` (T25) | yes, BASE-15 | `apps/api/prisma/migrations/0101_essay_choice` (T25 `r1/t25-essay-choice-store` @ e14f4f91) |
-| Migration 0102 `leaf_cognitive_level` (T33) | no | `r1/t33-leaf-tags` @ 95cea5be (migration commit `76f53e6c`) |
-| Migration 0103 `question_report_context` (T42 part 1, A2) | no | `r1/t42-reports-intake-acs` @ d1210e96 (commit `bc5c36e7`) |
-| Migration 0104 `paper_section_admin_created` (T48, A3) | no | `r1/t48-builder-parity` @ 1b76778f |
-| `THROTTLE_SERVABILITY_READ_PER_MINUTE` (T30) | no | `r1/t30-servability-reads` (commit `30a798d0`) |
-| `E2E_SEED` and `docs/ops/e2e-seed.md` (T26) | no | `r1/t26-e2e-seed` (commit `dfa88cf0`) |
-| `docs/ops/r1-k1-blueprint-evidence.md` (T39) | no | `r1/t39-k1-evidence` |
-| Decision D95 (no seed on UAT) | no | PR amin-kerja-orang/prestasiplus#404, `docs/TRACKER.md` row D95 |
+| Migrations 0092, 0093, 0100, 0101 | in base (0101 since BASE-15) | `apps/api/prisma/migrations/` |
+| Migration 0102 `leaf_cognitive_level` (T33) | in base since BASE-27 | `apps/api/prisma/migrations/0102_leaf_cognitive_level` |
+| Migration 0103 `question_report_context` (T42 part 1) | in base since BASE-41 | `apps/api/prisma/migrations/0103_question_report_context` |
+| Migration 0104 `paper_section_admin_created` (T48) | **not in base** (CHANGES-REQUESTED, being fixed) | `r1/t48-builder-parity` |
+| Migration 0105 (H-A18) | not pushed | none yet |
+| `THROTTLE_SERVABILITY_READ_PER_MINUTE`, `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE` (T30) | in base since BASE-28 | `apps/api/src/common/config/env.schema.ts` |
+| `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE` | optional; default 6 when unset | In base since BASE-28 (T30). Per-user limit of the servability overview, which counts the whole bank and has its own bucket; above it a request answers 429. Integer, minimum 1. `apps/api/src/common/config/env.schema.ts`. Leave unset. |
+| `AI_PROVIDER` (extraction provider) | `mock` for this release | Decided at go-live; a real provider (`anthropic`, `openai`, `gemini`, `openai-compatible`) needs a lead decision (D85 U1) and `AI_MODEL`, `AI_API_KEY` in the server env file only. See [r1-release-notes.md](r1-release-notes.md) section 5. |
+| `E2E_SEED` and `docs/ops/e2e-seed.md` (T26) | in base since BASE-24 | `apps/api/prisma/seed/e2e.ts` |
+| Rollback of 0100 and the failed-migration steps | in base | [r1-release-notes.md](r1-release-notes.md) sections 6.2 and 6.3 |
+| `docs/ops/r1-k1-blueprint-evidence.md` (T39) | not in base | `r1/t39-k1-evidence` |
+| Decision D95 (no seed on UAT) | **not in base `docs/TRACKER.md`**: it is in PR amin-kerja-orang/prestasiplus#404 (unmerged) and on `r1/d91-decisions` | cite it as "D95, PR #404, not merged" until the PR lands |
 
 ## 0. Before you start
 
@@ -45,21 +49,21 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 
 ### 2.1 The list
 
-| Migration | In BASE-6? | What it does | Reversible? |
+| Migration | In base? | What it does | Reversible? |
 |---|---|---|---|
-| `0092_bijak_standards` | yes | Blueprint standard model: profile, quota, KBAT, evidence, verification tables, `blueprints.serves_students`, per-part TP / KBAT / unit / form columns, `papers.standard_report`. **Downgrades every blueprint with `source = 'verified'` to `'spec'`.** Drops `blueprint_sections.topic_weights`; a guard aborts the migration if any row holds a value. | Manually; the reverse SQL is in the file header. The verified-to-spec downgrade is not undone. |
-| `0093_part_options_image_file_index` | yes | One partial index `ix_part_options_image_file_id` for the pupil image read rule. Idempotent (`IF NOT EXISTS`). | `DROP INDEX "ix_part_options_image_file_id"` |
-| `0100_question_lifecycle_approved` | yes | "Approved = servable". Old `approved` becomes `review`; old `published` becomes `approved`; the status CHECK allows `draft, review, approved, archived`; the partial indexes on `status = 'published'` are rebuilt on `'approved'`. One transaction. | **No.** Restore the dump (section 2.2). |
+| `0092_bijak_standards` | yes (BASE-6) | Blueprint standard model: profile, quota, KBAT, evidence, verification tables, `blueprints.serves_students`, per-part TP / KBAT / unit / form columns, `papers.standard_report`. **Downgrades every blueprint with `source = 'verified'` to `'spec'`.** Drops `blueprint_sections.topic_weights`; a guard aborts the migration if any row holds a value. | Manually; the reverse SQL is in the file header. The verified-to-spec downgrade is not undone. |
+| `0093_part_options_image_file_index` | yes (BASE-6) | One partial index `ix_part_options_image_file_id` for the pupil image read rule. Idempotent (`IF NOT EXISTS`). | `DROP INDEX "ix_part_options_image_file_id"` |
+| `0100_question_lifecycle_approved` | yes (BASE-4) | "Approved = servable". Old `approved` becomes `review`; old `published` becomes `approved`; the status CHECK allows `draft, review, approved, archived`; the partial indexes on `status = 'published'` are rebuilt on `'approved'`. One transaction. | **No.** Restore the dump (section 2.2). |
 | `0101_essay_choice` (T25) | yes, BASE-15 | Adds `essay_choice` to the `question_parts.mode` CHECK, a nullable `question_parts.topics` jsonb and `ck_question_parts_topics` (2 to 6 topics, only on an `essay_choice` leaf). Additive; reads no status value. | Yes, after deleting `essay_choice` parts (reverse SQL in the file header). |
-| `0102_leaf_cognitive_level` (T33) | **no, lands with T33** (`r1/t33-leaf-tags` @ 95cea5be) | Adds nullable `question_parts.cognitive_level` with `ck_question_parts_cognitive_level` (mengingat, memahami, mengaplikasi, menganalisis, menilai, mencipta) and `ck_question_parts_cognitive_level_leaf_only` (a part without a mode has none). Additive; no backfill (NULL = not set). | Yes (reverse SQL in the file header: drop the two CHECKs, then the column). |
-| `0103_question_report_context` (T42 part 1) | **no, lands with T42** (`r1/t42-reports-intake-acs` @ d1210e96) | Adds nullable `question_reports.paper_id` (bigint) and `paper_label` (text, CHECK at most 200 characters), FK `fk_question_reports_paper_id` to `papers` (ON DELETE SET NULL), FK `fk_question_reports_attempt_id` to `exam_attempts` (**NOT VALID**: rows written before the migration are not checked, new and updated rows are) and index `ix_question_reports_paper_id`. Existing rows keep NULL. | Yes (reverse SQL in the file header: drop the index, the two FKs, the CHECK, then the two columns). |
-| `0104_paper_section_admin_created` (T48) | **no, lands with T48** (`r1/t48-builder-parity` @ 1b76778f) | Adds `paper_sections.admin_created boolean NOT NULL DEFAULT false`. The flag tells a Bahagian that comes from the Kontrak (false, every existing row) from one an admin added in Semak Kertas (true); only an admin-added Bahagian takes "Tambah soalan". Additive; a constant default, no rewrite concern at this table's size. | Yes (reverse SQL in the file header: `ALTER TABLE "paper_sections" DROP COLUMN "admin_created"`). |
+| `0102_leaf_cognitive_level` (T33) | yes (BASE-27) | Adds nullable `question_parts.cognitive_level` with `ck_question_parts_cognitive_level` (mengingat, memahami, mengaplikasi, menganalisis, menilai, mencipta) and `ck_question_parts_cognitive_level_leaf_only` (a part without a mode has none). Additive; no backfill (NULL = not set). | Yes (reverse SQL in the file header: drop the two CHECKs, then the column). |
+| `0103_question_report_context` (T42 part 1) | yes (BASE-41) | Adds nullable `question_reports.paper_id` (bigint) and `paper_label` (text, CHECK at most 200 characters), FK `fk_question_reports_paper_id` to `papers` (ON DELETE SET NULL), FK `fk_question_reports_attempt_id` to `exam_attempts` (**NOT VALID**: rows written before the migration are not checked, new and updated rows are) and index `ix_question_reports_paper_id`. Existing rows keep NULL. | Yes (reverse SQL in the file header: drop the index, the two FKs, the CHECK, then the two columns). |
+| `0104_paper_section_admin_created` (T48) | **no**: `r1/t48-builder-parity`, CHANGES-REQUESTED | Adds `paper_sections.admin_created boolean NOT NULL DEFAULT false`. The flag tells a Bahagian that comes from the Kontrak (false, every existing row) from one an admin added in Semak Kertas (true); only an admin-added Bahagian takes "Tambah soalan". Additive; a constant default, no rewrite concern at this table's size. | Yes (reverse SQL in the file header: `ALTER TABLE "paper_sections" DROP COLUMN "admin_created"`). |
 
 Notes:
 
 - 0101 and 0102 touch different columns of `question_parts` and do not depend on each other or on a status value; 0103 touches `question_reports` only and 0104 `paper_sections` only. They still apply in number order. If only some of T25, T33, T42 and T48 are in the release, apply only those.
 - **0103: do NOT run `VALIDATE CONSTRAINT fk_question_reports_attempt_id` in the release.** The constraint is created NOT VALID on purpose. `attempt_id` has existed since migration 0017 with no foreign key and nothing ever wrote it, so old rows may hold values that point nowhere; validating would scan and could fail the release. New and updated rows are checked without it. A later number must never be applied before an earlier pending one is accounted for.
-- The planned table in `docs/architecture/v2-admin-student-pipeline.md` section 2 names 0101 and 0102 differently (`dskp_leaf_tags_and_facts`, `stimulus_kinds_wide`). The migration folders on the T25 and T33 branches are the authority; read the `migration.sql` header of any folder before you apply it.
+- The planned table in `docs/architecture/v2-admin-student-pipeline.md` section 2 names 0101 and 0102 differently (`dskp_leaf_tags_and_facts`, `stimulus_kinds_wide`). The migration folders in the repository are the authority; read the `migration.sql` header of any folder before you apply it.
 - Deploy order for 0100: the migration and the API/FE build of the same release together. An old API against the new CHECK fails to write `published`; a new API against old data serves nothing.
 - Code that still names `'published'` for a **question** status breaks (nothing served, or a CHECK failure). Paper `published` (Terbit) is unchanged. Details: [r1-b01-question-lifecycle.md](r1-b01-question-lifecycle.md).
 - Consequence of 0092: after the upgrade **no blueprint serves students**. `POST /api/bijak/papers/generate` answers 422 `NO_BLUEPRINT` for a pupil until the blueprint is verified (section 5).
@@ -74,13 +78,12 @@ VACUUM ANALYZE question_versions;
 
 (Source: `docs/ops/r1-b01-question-lifecycle.md` on `r1/t04-minors`, "Verification" step 7. On a compose deployment [r1-release-notes.md](r1-release-notes.md) section 2.4 has the `psql` wrapper. The run time on the production-size table has not been measured.)
 
-**Rollback path (database).** 0100 cannot be reversed in place. Restore the pre-migration dump ([db-backup.md](db-backup.md)) and deploy the previous API/FE build together with the restore. Then tell Prisma that 0100 is not applied, so a later `migrate deploy` runs it again:
+**Rollback path (database).** The authoritative steps are [r1-release-notes.md](r1-release-notes.md) section 6.2 (rollback; migrations are forward-only) and 6.3 (a migration failed during the deploy). In short:
 
-```bash
-npx prisma migrate resolve --rolled-back 0100_question_lifecycle_approved
-```
-
-Do **not** run `migrate resolve` without the restore: the data would stay rewritten while Prisma believes the migration is pending. Rolling back the code after the first new approval is possible only together with a restore. For the other folders the same command form applies (`--rolled-back <folder>`), after their own reverse SQL (headers of the migration files) or the restore; the full sequence is in [r1-release-notes.md](r1-release-notes.md) section 6.
+- 0100 cannot be reversed in place. After a failed or unwanted release, restore the pre-deploy dump together with the previous API/FE build (release notes 6.2 "Full rollback", steps 1 to 6). **After a dump restore do not run `prisma migrate resolve`**: the restored `_prisma_migrations` has no row for the migration, so Prisma answers P3011, and the old schema is simply what the dump holds.
+- A **failed** migration (a `_prisma_migrations` row with `finished_at` NULL, found with the SELECT of release notes 6.3 step 2): if nothing changed (the "clean" checks of 6.3 step 3), `prisma migrate resolve --rolled-back <folder>` is the right command, and only for that case. If it left partial changes, restore the dump as above.
+- A **finished** migration that you undo by hand with the reverse SQL of its file header (0101, 0102, 0103, 0104 are additive and have one): `--rolled-back` does not apply (Prisma answers P3012 because the row is finished). Run the reverse SQL, then delete that migration's history row (a write; use the pattern of release notes 2.3, with the lead's confirmation): `DELETE FROM _prisma_migrations WHERE migration_name = '<folder>'`. Do this only on a database that will not be rolled back to an image that ships the folder (`/api/ready` answers 503 while a shipped name has no applied row).
+- Rolling back the code after the first new approval is possible only together with a restore.
 
 ## 3. Verification SQL (read-only SELECTs)
 
@@ -275,12 +278,16 @@ SELECT count(*) AS servable FROM questions q
   JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
  WHERE q.is_active;
 
--- the login count by subject (compare with the practice cards)
+-- the login count by subject (compare with the practice cards): the same filters as the login count above
 SELECT sj.code, count(*) AS n
   FROM questions q
   JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-  JOIN subjects sj ON sj.id = v.subject_id
+  JOIN subjects sj ON sj.id = v.subject_id AND sj.is_active
  WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq'
+   AND (v.education_level_id IS NULL OR NOT EXISTS (SELECT 1 FROM education_levels el WHERE el.id = v.education_level_id AND (el.stage = 'primary' OR NOT el.is_active)))
+   AND NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')
+   AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.code IN ('T4', 'T5'))
+   AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id)
  GROUP BY sj.code ORDER BY sj.code;
 ```
 
@@ -290,13 +297,15 @@ Note (D91): the practice **card** counts ungrouped questions only; the login cou
 
 UAT has 0 curriculum nodes until this runs, so DSKP tagging, blueprints and Jana Kertas cannot work there. The loader is a script, not a migration: insert-only, idempotent, one transaction per subject, Tingkatan 1-5 only. Full detail, flags and rollback: [dskp-loader.md](dskp-loader.md).
 
-Run from the migrate image or any container with the API source and `DATABASE_URL`, after a backup:
+Run it as in [r1-release-notes.md](r1-release-notes.md) sections 3.2 (dry run) and 3.3 (real run, after the lead's confirmation): from the release checkout on the VPS, with `PP_IMAGE_TAG` set to the release tag so that `$PC` uses `pretasiplus-api-migrate:$PP_IMAGE_TAG` (not the stale `:prod` image):
 
 ```
-npm run dskp:load -w @pp/api -- --dry-run          # always first; writes nothing
-npm run dskp:load -w @pp/api -- --create-missing-subjects     # the real run
-npm run dskp:load -w @pp/api -- --dry-run          # again: every insert column must now be 0
+$PC run --rm --no-deps migrate npm run dskp:load -w @pp/api -- --dry-run --create-missing-subjects     # always first; writes nothing
+$PC run --rm --no-deps migrate npm run dskp:load -w @pp/api -- --create-missing-subjects               # the real run
+$PC run --rm --no-deps migrate npm run dskp:load -w @pp/api -- --dry-run --create-missing-subjects     # again: every insert column must now be 0
 ```
+
+`$PC`, `PP_IMAGE_TAG` and the image check are defined at the top of the release notes. On a local stack without compose the same loader is `npm run dskp:load -w @pp/api -- ...`.
 
 Expected on an empty tree: 2,844 nodes and 1,394 TP descriptors over 13 subjects, 4 rejected TP rows (Landskap dan Nurseri), the dry run and the real run printing the same numbers. Exit code 0 is done; 1 means a subject failed (its transaction was rolled back; fix and re-run).
 
@@ -318,7 +327,7 @@ Rollback is by deleting what the load added, only before any question is tagged 
 
 ## 5. Blueprints on UAT: created and verified by an Admin Pusat (D95), no seed
 
-**Decision D95** (product owner via the user, 2026-10-31; PR amin-kerja-orang/prestasiplus#404, `docs/TRACKER.md` row D95; it supersedes the earlier "seed on UAT" answer and the "Option B" of [r1-release-notes.md](r1-release-notes.md) section 4.1): on UAT an Admin Pusat creates each blueprint by hand in Kontrak, through the real flow, and presses **Sahkan**. Demo seeds, the launch-blueprint seed (`examLaunchBlueprintsSeed`) and the E2E seed are **local / E2E only**. No AI session acts on any server.
+**Decision D95** (product owner via the user, 2026-10-31; PR amin-kerja-orang/prestasiplus#404, **not merged**, so the row is not yet in `docs/TRACKER.md` on `feature/v3-bijak-r1`; it is on branch `r1/d91-decisions`; it supersedes the earlier "seed on UAT" answer and the "Option B" of [r1-release-notes.md](r1-release-notes.md) section 4.1): on UAT an Admin Pusat creates each blueprint by hand in Kontrak, through the real flow, and presses **Sahkan**. Demo seeds, the launch-blueprint seed (`examLaunchBlueprintsSeed`) and the E2E seed are **local / E2E only**. No AI session acts on any server.
 
 After 0092 every blueprint is Spec and serves no pupil, so a pupil's Jana Kertas answers 422 `NO_BLUEPRINT` for a subject until its blueprint is verified. Announce Jana Kertas to pupils only for the subject and kertas pairs verified here.
 
@@ -430,13 +439,13 @@ Set on the API service before it starts (examples in `.env.api.example`; no secr
 | `BIJAK_POC_QUESTIONS` | `false` on UAT and production | `true` serves the reserved PoC id block (seeded PoC papers, Jana pool), for staging / dev / e2e only. `false` (the default) serves question-bank questions only. |
 | `OCR_ENGINE` | `none` (default) or `tesseract` | `none`: scanned pages end as `OCR_UNAVAILABLE`. `tesseract`: tesseract.js with local language data, never downloads; then `OCR_LANG_DIR` must be an absolute folder holding `msa.traineddata` and `eng.traineddata`. |
 | `OCR_LANG_DIR` | empty, or the folder above | Required only with `OCR_ENGINE=tesseract`. |
-| `THROTTLE_SERVABILITY_READ_PER_MINUTE` | optional; default 120 when unset | **Lands with T30** (`r1/t30-servability-reads`). Per-user rate limit of the admin servability reads ("Dilihat murid di", the hub, the lanes); a request above the limit answers 429. Integer, minimum 1. Cited from `apps/api/src/common/config/env.schema.ts`, `apps/api/src/modules/questions/http/servability.controller.ts` and `.env.api.example` on that branch. A normal admin session needs no change. |
+| `THROTTLE_SERVABILITY_READ_PER_MINUTE` | optional; default 120 when unset | In base since BASE-28 (T30). Per-user rate limit of the admin servability reads ("Dilihat murid di", the hub, the lanes); a request above the limit answers 429. Integer, minimum 1. Cited from `apps/api/src/common/config/env.schema.ts`, `apps/api/src/modules/questions/http/servability.controller.ts` and `.env.api.example` on that branch. A normal admin session needs no change. |
 | `ALLOW_DEMO_SEED` | unset / `false` | Never `true` on UAT or production. Demo seeds (the demo data, the PoC blueprints, the launch blueprints and the E2E seed are all demo modules) are skipped in production; `.env.api.example` states that only the dev/e2e compose file sets `true`. |
-| `E2E_SEED` | **must be unset (OFF) on every server, production above all** | **Lands with T26** (`r1/t26-e2e-seed`). Read only by the seed script `apps/api/prisma/seed/e2e.ts` (`E2E_FLAG`): the E2E seed runs only with `--profile=e2e` and `E2E_SEED=1` (or `true`). It creates a pupil, an Admin Pusat and verifies a blueprint by seed. Local / E2E only (section 7). |
+| `E2E_SEED` | **must be unset (OFF) on every server, production above all** | In base since BASE-24 (T26). Read only by the seed script `apps/api/prisma/seed/e2e.ts` (`E2E_FLAG`): the E2E seed runs only with `--profile=e2e` and `E2E_SEED=1` (or `true`). It creates a pupil, an Admin Pusat and verifies a blueprint by seed. Local / E2E only (section 7). |
 
 ## 7. Local / E2E seed (never on a server)
 
-For local stacks and the E2E suite only (lands with T26), behind two keys (`--profile=e2e` and `E2E_SEED=1`), default off. It creates a Tingkatan 4 pupil, an Admin Pusat and moves one launch blueprint to Disahkan through the same checks as Sahkan. It is not a UAT step: on UAT the same result is reached by hand (section 5). Command, accounts and the blueprint it picks: [e2e-seed.md](e2e-seed.md) (file lands with T26).
+For local stacks and the E2E suite only (in base since BASE-24), behind two keys (`--profile=e2e` and `E2E_SEED=1`), default off. It creates a Tingkatan 4 pupil, an Admin Pusat and moves one launch blueprint to Disahkan through the same checks as Sahkan. It is not a UAT step: on UAT the same result is reached by hand (section 5). Command, accounts and the blueprint it picks: [e2e-seed.md](e2e-seed.md) (file lands with T26).
 
 ```
 E2E_SEED=1 npm run be:db:seed -- --profile=e2e
@@ -453,8 +462,8 @@ E2E_SEED=1 npm run be:db:seed -- --profile=e2e
 | `seeded_launch_blueprints` or `seeded_study_evidence` is not 0 on UAT | A demo seed ran | Stop; report to the lead (D95 says no seed on UAT). |
 | DSKP load exit code 1 | One subject failed; its transaction rolled back | Read the report, fix, re-run (finished subjects report `same`). |
 | 0092 aborts on `topic_weights` | A row holds a value | Take the value out first (the guard prevents silent loss); see the migration header. |
-| Need to go back past 0100 | 0100 is not reversible | Section 2.2: restore the dump with the previous API/FE build, then `prisma migrate resolve --rolled-back 0100_question_lifecycle_approved`. |
-| 429 on the servability reads of the admin | `THROTTLE_SERVABILITY_READ_PER_MINUTE` too low for the load | Raise it (lands with T30); default is 120 per user per minute. |
+| Need to go back past 0100 | 0100 is not reversible | Restore the dump with the previous API/FE build ([r1-release-notes.md](r1-release-notes.md) section 6.2); do not run `migrate resolve` after a restore (P3011). |
+| 429 on the servability reads of the admin | `THROTTLE_SERVABILITY_READ_PER_MINUTE` too low for the load | Raise it; default is 120 per user per minute. |
 
 ## 9. Verification status of this page
 
@@ -483,4 +492,4 @@ E2E_SEED=1 npm run be:db:seed -- --profile=e2e
 - `VACUUM ANALYZE question_versions`: run time on the production-size table was not measured.
 - `THROTTLE_SERVABILITY_READ_PER_MINUTE` and `E2E_SEED` are read from branches `r1/t30-servability-reads` and `r1/t26-e2e-seed`, not from BASE-6.
 - Whether UAT already holds PoC blueprints, DSKP nodes or demo data is unknown; sections 3.1 and 5.4 record it.
-- The PR #404 text for D95 was read from the PR head (`origin/pr404`), not from `feature/v3-bijak-r1`.
+- D95 is cited from PR #404 (`origin/pr404`, `r1/d91-decisions`); it is not in `docs/TRACKER.md` on `feature/v3-bijak-r1` until that PR merges.
