@@ -30560,6 +30560,7 @@
           "essay",
           "drawing",
           "table_fill",
+          "essay_choice",
           "pksk_choice"
         ]
       },
@@ -32266,6 +32267,368 @@
               "mode",
               "key"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 10
+              },
+              "prompt": {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stimulusId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "reveal": {
+                "type": "string",
+                "enum": [
+                  "after_submit",
+                  "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "essay_choice"
+                ]
+              },
+              "key": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "rubric"
+                        ]
+                      },
+                      "marks": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "criteria": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "minItems": 1
+                      },
+                      "bands": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "range": {
+                              "type": "array",
+                              "prefixItems": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              ]
+                            },
+                            "descriptors": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "range"
+                          ]
+                        },
+                        "minItems": 1
+                      },
+                      "floorBand": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "range": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "range"
+                        ]
+                      },
+                      "notes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "marks",
+                      "criteria",
+                      "bands"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "points"
+                        ]
+                      },
+                      "marks": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "points": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/QuestionMarkPoint"
+                        },
+                        "minItems": 1
+                      },
+                      "groups": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "anyN": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "eachMarks": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "pointIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "minItems": 1
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "anyN",
+                            "pointIds"
+                          ]
+                        }
+                      },
+                      "paths": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "pointIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "minItems": 1
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "pointIds"
+                          ]
+                        }
+                      },
+                      "final": {
+                        "type": "object",
+                        "properties": {
+                          "display": {
+                            "type": "string"
+                          },
+                          "accept": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "minItems": 1
+                          },
+                          "tolerance": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "unit": {
+                            "type": "string"
+                          },
+                          "mustContain": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "display",
+                          "accept"
+                        ]
+                      },
+                      "deductions": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "spelling",
+                                "unit",
+                                "sf",
+                                "dp",
+                                "copy"
+                              ]
+                            },
+                            "amount": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "cap": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "amount"
+                          ]
+                        }
+                      },
+                      "modelText": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "marks",
+                      "points"
+                    ]
+                  }
+                ]
+              },
+              "topics": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/QuestionEssayTopic"
+                },
+                "minItems": 2,
+                "maxItems": 6
+              },
+              "wordRange": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "prompt",
+              "marks",
+              "mode",
+              "key",
+              "topics"
+            ]
           }
         ]
       },
@@ -32296,6 +32659,24 @@
         "required": [
           "label",
           "body"
+        ]
+      },
+      "QuestionEssayTopic": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "label"
         ]
       },
       "QuestionPart": {
@@ -33829,6 +34210,368 @@
               "marks",
               "mode",
               "key"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 10
+              },
+              "prompt": {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stimulusId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "reveal": {
+                "type": "string",
+                "enum": [
+                  "after_submit",
+                  "never"
+                ]
+              },
+              "kbat": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "mengaplikasi",
+                  "menganalisis",
+                  "menilai",
+                  "mencipta",
+                  "bukan",
+                  null
+                ]
+              },
+              "unitNodeId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "formOrigin": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "t1_t3",
+                  "t4",
+                  "t5",
+                  null
+                ]
+              },
+              "difficultyTp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "essay_choice"
+                ]
+              },
+              "key": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "rubric"
+                        ]
+                      },
+                      "marks": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "criteria": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "minItems": 1
+                      },
+                      "bands": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "range": {
+                              "type": "array",
+                              "prefixItems": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              ]
+                            },
+                            "descriptors": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "range"
+                          ]
+                        },
+                        "minItems": 1
+                      },
+                      "floorBand": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "range": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "range"
+                        ]
+                      },
+                      "notes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "marks",
+                      "criteria",
+                      "bands"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "points"
+                        ]
+                      },
+                      "marks": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "points": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/QuestionMarkPoint"
+                        },
+                        "minItems": 1
+                      },
+                      "groups": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "anyN": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "eachMarks": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "pointIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "minItems": 1
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "anyN",
+                            "pointIds"
+                          ]
+                        }
+                      },
+                      "paths": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "pointIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "minItems": 1
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "pointIds"
+                          ]
+                        }
+                      },
+                      "final": {
+                        "type": "object",
+                        "properties": {
+                          "display": {
+                            "type": "string"
+                          },
+                          "accept": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "minItems": 1
+                          },
+                          "tolerance": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "unit": {
+                            "type": "string"
+                          },
+                          "mustContain": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "display",
+                          "accept"
+                        ]
+                      },
+                      "deductions": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "spelling",
+                                "unit",
+                                "sf",
+                                "dp",
+                                "copy"
+                              ]
+                            },
+                            "amount": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "cap": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "amount"
+                          ]
+                        }
+                      },
+                      "modelText": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "marks",
+                      "points"
+                    ]
+                  }
+                ]
+              },
+              "topics": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/QuestionEssayTopic"
+                },
+                "minItems": 2,
+                "maxItems": 6
+              },
+              "wordRange": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "prompt",
+              "marks",
+              "mode",
+              "key",
+              "topics"
             ]
           },
           {
@@ -35386,6 +36129,368 @@
                         "prompt": {
                           "$ref": "#/components/schemas/QuestionRichText"
                         },
+                        "marks": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "stimulusId": {
+                          "$ref": "#/components/schemas/Id"
+                        },
+                        "reveal": {
+                          "type": "string",
+                          "enum": [
+                            "after_submit",
+                            "never"
+                          ]
+                        },
+                        "kbat": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "mengaplikasi",
+                            "menganalisis",
+                            "menilai",
+                            "mencipta",
+                            "bukan",
+                            null
+                          ]
+                        },
+                        "unitNodeId": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Id"
+                            },
+                            {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          ]
+                        },
+                        "formOrigin": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "t1_t3",
+                            "t4",
+                            "t5",
+                            null
+                          ]
+                        },
+                        "difficultyTp": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 6
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "essay_choice"
+                          ]
+                        },
+                        "key": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "rubric"
+                                  ]
+                                },
+                                "marks": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "criteria": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "minItems": 1
+                                },
+                                "bands": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "range": {
+                                        "type": "array",
+                                        "prefixItems": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          },
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          }
+                                        ]
+                                      },
+                                      "descriptors": {
+                                        "type": "object",
+                                        "additionalProperties": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "name",
+                                      "range"
+                                    ]
+                                  },
+                                  "minItems": 1
+                                },
+                                "floorBand": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "range": {
+                                      "type": "array",
+                                      "prefixItems": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "range"
+                                  ]
+                                },
+                                "notes": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "marks",
+                                "criteria",
+                                "bands"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "points"
+                                  ]
+                                },
+                                "marks": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "points": {
+                                  "type": "array",
+                                  "items": {
+                                    "$ref": "#/components/schemas/QuestionMarkPoint"
+                                  },
+                                  "minItems": 1
+                                },
+                                "groups": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "anyN": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      },
+                                      "eachMarks": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "pointIds": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "minItems": 1
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "anyN",
+                                      "pointIds"
+                                    ]
+                                  }
+                                },
+                                "paths": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "pointIds": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "minItems": 1
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "pointIds"
+                                    ]
+                                  }
+                                },
+                                "final": {
+                                  "type": "object",
+                                  "properties": {
+                                    "display": {
+                                      "type": "string"
+                                    },
+                                    "accept": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "minItems": 1
+                                    },
+                                    "tolerance": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "unit": {
+                                      "type": "string"
+                                    },
+                                    "mustContain": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "display",
+                                    "accept"
+                                  ]
+                                },
+                                "deductions": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "code": {
+                                        "type": "string",
+                                        "enum": [
+                                          "spelling",
+                                          "unit",
+                                          "sf",
+                                          "dp",
+                                          "copy"
+                                        ]
+                                      },
+                                      "amount": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "cap": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    },
+                                    "required": [
+                                      "code",
+                                      "amount"
+                                    ]
+                                  }
+                                },
+                                "modelText": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "marks",
+                                "points"
+                              ]
+                            }
+                          ]
+                        },
+                        "topics": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/QuestionEssayTopic"
+                          },
+                          "minItems": 2,
+                          "maxItems": 6
+                        },
+                        "wordRange": {
+                          "type": "object",
+                          "properties": {
+                            "min": {
+                              "type": "integer"
+                            },
+                            "max": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "min",
+                            "max"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "prompt",
+                        "marks",
+                        "mode",
+                        "key",
+                        "topics"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "maxLength": 10
+                        },
+                        "prompt": {
+                          "$ref": "#/components/schemas/QuestionRichText"
+                        },
                         "children": {
                           "type": "array",
                           "items": {
@@ -35805,6 +36910,68 @@
               "prompt": {
                 "$ref": "#/components/schemas/QuestionRichText"
               },
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stimulusId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "reveal": {
+                "type": "string",
+                "enum": [
+                  "after_submit",
+                  "never"
+                ]
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "essay_choice"
+                ]
+              },
+              "topics": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/QuestionEssayTopic"
+                },
+                "minItems": 2,
+                "maxItems": 6
+              },
+              "wordRange": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "prompt",
+              "marks",
+              "mode",
+              "topics"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 10
+              },
+              "prompt": {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
               "children": {
                 "type": "array",
                 "items": {
@@ -36185,6 +37352,68 @@
                         "prompt",
                         "marks",
                         "mode"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "maxLength": 10
+                        },
+                        "prompt": {
+                          "$ref": "#/components/schemas/QuestionRichText"
+                        },
+                        "marks": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "stimulusId": {
+                          "$ref": "#/components/schemas/Id"
+                        },
+                        "reveal": {
+                          "type": "string",
+                          "enum": [
+                            "after_submit",
+                            "never"
+                          ]
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "essay_choice"
+                          ]
+                        },
+                        "topics": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/QuestionEssayTopic"
+                          },
+                          "minItems": 2,
+                          "maxItems": 6
+                        },
+                        "wordRange": {
+                          "type": "object",
+                          "properties": {
+                            "min": {
+                              "type": "integer"
+                            },
+                            "max": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "min",
+                            "max"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "prompt",
+                        "marks",
+                        "mode",
+                        "topics"
                       ]
                     },
                     {
@@ -36578,6 +37807,68 @@
                                   "marks",
                                   "mode"
                                 ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "label": {
+                                    "type": "string",
+                                    "maxLength": 10
+                                  },
+                                  "prompt": {
+                                    "$ref": "#/components/schemas/QuestionRichText"
+                                  },
+                                  "marks": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "stimulusId": {
+                                    "$ref": "#/components/schemas/Id"
+                                  },
+                                  "reveal": {
+                                    "type": "string",
+                                    "enum": [
+                                      "after_submit",
+                                      "never"
+                                    ]
+                                  },
+                                  "mode": {
+                                    "type": "string",
+                                    "enum": [
+                                      "essay_choice"
+                                    ]
+                                  },
+                                  "topics": {
+                                    "type": "array",
+                                    "items": {
+                                      "$ref": "#/components/schemas/QuestionEssayTopic"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 6
+                                  },
+                                  "wordRange": {
+                                    "type": "object",
+                                    "properties": {
+                                      "min": {
+                                        "type": "integer"
+                                      },
+                                      "max": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "min",
+                                      "max"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "label",
+                                  "prompt",
+                                  "marks",
+                                  "mode",
+                                  "topics"
+                                ]
                               }
                             ]
                           },
@@ -36650,12 +37941,7 @@
             "$ref": "#/components/schemas/Id"
           },
           "kind": {
-            "type": "string",
-            "enum": [
-              "diagram",
-              "passage",
-              "table"
-            ]
+            "$ref": "#/components/schemas/QuestionStimulusKind"
           },
           "label": {
             "type": "string"
@@ -36691,6 +37977,21 @@
               "string",
               "null"
             ]
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceCitation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tableData": {
+            "$ref": "#/components/schemas/QuestionStimulusTable"
           }
         },
         "required": [
@@ -36700,6 +38001,45 @@
           "body",
           "imageId",
           "alt"
+        ]
+      },
+      "QuestionStimulusKind": {
+        "type": "string",
+        "enum": [
+          "passage",
+          "image",
+          "diagram",
+          "table",
+          "map",
+          "infographic",
+          "graph"
+        ]
+      },
+      "QuestionStimulusTable": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "head": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "head",
+          "rows"
         ]
       },
       "QuestionStimulusGroup": {
@@ -39248,6 +40588,537 @@
           "textDirection",
           "scriptType",
           "pointsValue"
+        ]
+      },
+      "StimulusCreateRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "passage",
+              "image",
+              "diagram",
+              "table",
+              "map",
+              "infographic",
+              "graph"
+            ],
+            "description": "V2 `Jenis rangsangan` (default passage in the Studio)."
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "V2 `Kapsyen (pilihan)`."
+          },
+          "body": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "ms": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "en": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            },
+            "required": [
+              "ms"
+            ]
+          },
+          "alt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          },
+          "sourceCitation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "tableData": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "minItems": 1,
+                "maxItems": 12
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "maxItems": 12
+                },
+                "minItems": 1,
+                "maxItems": 60
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ]
+          },
+          "imageFileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Public token (or id) of a file uploaded with `POST /files?purpose=question_image`."
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "StimulusUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "body": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "ms": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "en": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            },
+            "required": [
+              "ms"
+            ],
+            "description": "Replaces the whole text (ms and en): send both languages to keep both; null clears (only allowed when the kind does not need it)."
+          },
+          "alt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          },
+          "sourceCitation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "tableData": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "minItems": 1,
+                "maxItems": 12
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "maxItems": 12
+                },
+                "minItems": 1,
+                "maxItems": 60
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ]
+          },
+          "imageFileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Public token (or id) of a file uploaded with `POST /files?purpose=question_image`."
+          }
+        },
+        "additionalProperties": false
+      },
+      "Stimulus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/QuestionStimulusKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "body": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "alt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceCitation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tableData": {
+            "$ref": "#/components/schemas/QuestionStimulusTable"
+          },
+          "imageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "groupCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Groups that show this stimulus. A stimulus in use cannot be deleted."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "caption",
+          "body",
+          "alt",
+          "sourceCitation",
+          "tableData",
+          "imageId",
+          "groupCount"
+        ]
+      },
+      "StimulusDeleteResult": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          }
+        },
+        "required": [
+          "deleted"
+        ]
+      },
+      "StimulusGroupCreateRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "section",
+              "paper"
+            ]
+          },
+          "stimulusIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 3
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "maxItems": 40,
+            "default": [],
+            "description": "D93: 0 or more existing questions (a group with fewer than 2 is a draft group; every write answers with `warning` until it has 2)."
+          },
+          "optionBank": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "pattern": "^[A-H]$"
+                },
+                "body": {
+                  "$ref": "#/components/schemas/QuestionRichText"
+                }
+              },
+              "required": [
+                "label",
+                "body"
+              ]
+            },
+            "maxItems": 8
+          }
+        },
+        "required": [
+          "stimulusIds"
+        ],
+        "additionalProperties": false
+      },
+      "StimulusGroupUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "stimulusIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 3
+          }
+        },
+        "additionalProperties": false
+      },
+      "StimulusGroupMemberRequest": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "questionId"
+        ],
+        "additionalProperties": false
+      },
+      "StimulusGroupReorderRequest": {
+        "type": "object",
+        "properties": {
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "questionIds"
+        ],
+        "additionalProperties": false
+      },
+      "StimulusGroupMembersSetRequest": {
+        "type": "object",
+        "properties": {
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "questionIds"
+        ],
+        "additionalProperties": false
+      },
+      "StimulusGroupDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "section",
+              "paper"
+            ]
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionStimulus"
+            },
+            "minItems": 1,
+            "maxItems": 3
+          },
+          "optionBank": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "pattern": "^[A-H]$"
+                },
+                "body": {
+                  "$ref": "#/components/schemas/QuestionRichText"
+                }
+              },
+              "required": [
+                "label",
+                "body"
+              ]
+            }
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "warning": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BM warning while the group has fewer than 2 questions (a draft group, D93); null otherwise. The write went through."
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "scope",
+          "stimuli",
+          "questionIds"
+        ]
+      },
+      "StimulusGroupMemberRemoved": {
+        "type": "object",
+        "properties": {
+          "group": {
+            "$ref": "#/components/schemas/StimulusGroupDetail"
+          },
+          "warning": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BM warning when fewer than 2 members remain; the removal went through."
+          }
+        },
+        "required": [
+          "group",
+          "warning"
+        ]
+      },
+      "StimulusGroupDeleteResult": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          },
+          "releasedQuestionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        },
+        "required": [
+          "deleted",
+          "releasedQuestionIds"
         ]
       },
       "MissionType": {
@@ -61384,6 +63255,18 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/BijakAttemptStimulus"
             }
+          },
+          "groupStimuli": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/BijakAttemptStimulus"
+              },
+              "minItems": 1,
+              "maxItems": 3
+            },
+            "description": "D90 (R1-T07): every stimulus (1 to 3, in order) of each group, keyed by group id; `stimuli[groupId]` is the first. A group is shown once above all its member questions."
           },
           "optionBanks": {
             "type": "object",
@@ -99760,6 +101643,1302 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimuli": {
+      "post": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Create a stimulus (passage, image, diagram, table, map, infographic, graph)",
+        "description": "Pictures are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB); the file must have that purpose (422 `imageFileId` otherwise). Inline SVG / HTML is never written. `passage` needs `body`, `table` needs `tableData` or an image, the picture kinds need `imageFileId`. Flash: \"Rangsangan berjaya ditambah.\"",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Stimulus"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimuli/{id}": {
+      "get": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Read a stimulus",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stimulus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Stimulus"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Edit a stimulus (only the keys sent change; the kind never changes)",
+        "description": "The result must still satisfy the kind rules of the create body. A stimulus that is shown to pupils (by a group with a served member, or linked to a served question) is refused with 409: follow the lifecycle (edit the question as a draft, or archive it) first.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Stimulus"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Delete a stimulus that nothing uses",
+        "description": "A stimulus shown by a group, linked to a question version or used by a part is refused with 409 and the BM message.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusDeleteResult"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups": {
+      "post": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Create a group: 1 to 3 stimuli and 0 to 40 member questions (D93: a group with fewer than 2 is a draft group)",
+        "description": "D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has fewer than 2 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker \"Kumpulan perlu sekurang-kurangnya 2 soalan.\"). Members get positions 1..n in the order sent. Flash: \"Kumpulan rangsangan berjaya dicipta.\"",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusGroupCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/{id}": {
+      "get": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Read a group (stimuli in order, member question ids in published order)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The group.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Relabel a group and/or replace its ordered stimuli (1 to 3)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusGroupUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Dissolve a group",
+        "description": "The member questions stay, without the shared stimulus; the stimuli stay in the library.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dissolved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDeleteResult"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/{id}/members": {
+      "post": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Add a question to a group (appended at the end)",
+        "description": "A question already in another group is refused with 422 `questionId` (\"Soalan ini sudah berada dalam kumpulan rangsangan lain.\"). Moving a question between groups is remove, then add.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusGroupMemberRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The group after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Set the complete ordered member list of a group (atomic)",
+        "description": "Adds, removals and reordering in one call. A question that is already shown to pupils (live version approved, active) cannot be added, removed or have its relative order changed; new draft or review questions can still be appended to a group that has served members (409 `groupServed` / `memberServed` otherwise). A question of another group, a PKSK, archived or inactive question, a question of another subject, and more than 40 members are 422.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusGroupMembersSetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The group after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/{id}/members/{questionId}": {
+      "delete": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Remove a question from a group",
+        "description": "Positions of the others close up. When fewer than 2 members remain the removal still succeeds and `warning` carries a BM message (\"Kumpulan ini kini hanya mempunyai 1 soalan. ...\").",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "questionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The group after the change, with an optional warning.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupMemberRemoved"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/{id}/members/order": {
+      "put": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Reorder the members of a group",
+        "description": "`questionIds` must list every current member exactly once (422 `questionIds` otherwise).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusGroupReorderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The group after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/{id}/questions": {
+      "post": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Create a question directly inside a group",
+        "description": "Same body as `POST /questions` (a `stimulusGroupId` in the body must equal the path id). The question is appended at the end of the group. Flash: \"Soalan berjaya ditambah ke dalam kumpulan.\"",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Question"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
             "content": {
               "application/json": {
                 "schema": {

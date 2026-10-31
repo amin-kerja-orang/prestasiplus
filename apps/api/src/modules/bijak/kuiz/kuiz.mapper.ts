@@ -140,6 +140,17 @@ export function linkedStimulusIds(record: QuestionRecord): string[] {
   return [...out]
 }
 
+/** The kuiz wire knows passage, table and diagram; the four pictorial kinds of the store read as `diagram` (as before R1-T07). */
+const KUIZ_KIND: Record<StimulusGroupRecord['stimuli'][number]['kind'], KuizStimulus['kind']> = {
+  passage: 'passage',
+  table: 'table',
+  diagram: 'diagram',
+  image: 'diagram',
+  map: 'diagram',
+  infographic: 'diagram',
+  graph: 'diagram',
+}
+
 export interface ResolvedStimuli {
   /** Each stimulus with the internal file id of its picture (null when it has none); tokens are filled by `stimuliWithTokens`. */
   entries: Array<{ stimulus: KuizStimulus; file: string | null }>
