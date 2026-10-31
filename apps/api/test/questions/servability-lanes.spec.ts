@@ -233,6 +233,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       no_marks: 'Tiada markah pada bahagian soalan.',
       tag_review: 'Perlu semakan tag DSKP.',
       paper_empty: 'Disajikan tetapi tiada soalan',
+      stimulus_shared_ungrouped: 'Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).',
     })
     const v2 = Object.entries(SERVABILITY_REASON_SOURCE).filter(([, src]) => src === 'V2').map(([code]) => code)
     expect(v2.sort()).toEqual(['bridge_refused', 'no_key', 'no_scheme', 'paper_empty'])

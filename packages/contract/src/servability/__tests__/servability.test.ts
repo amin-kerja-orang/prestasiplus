@@ -27,6 +27,8 @@ describe('servability contract (R1-T29)', () => {
     expect(SERVABILITY_REASON_MS.archived).toBe('Diarkibkan — pulihkan ke draf dahulu.')
     expect(SERVABILITY_REASON_MS.image_missing).toBe('Imej belum dimuat naik — muat naik di borang sunting.')
     expect(SERVABILITY_REASON_MS.not_on_published_paper).toBe('Tiada dalam mana-mana kertas diterbitkan.')
+    // [PROPOSED] D90 cause and fix for a stimulus shared by several questions without a group.
+    expect(SERVABILITY_REASON_MS.stimulus_shared_ungrouped).toBe('Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).')
   })
 
   it('fills the activity into a sentence and wraps a bridge reason as "Tidak dihidangkan kerana ..."', () => {

@@ -11596,7 +11596,15 @@
               "alt"
             ],
             "additionalProperties": false,
-            "description": "The question's own picture (an image stimulus linked to its version, not shared with a group)."
+            "description": "Back-compat: the question's own picture, sent only when its own stimuli are exactly one picture. Prefer `stimuli`."
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            },
+            "minItems": 1,
+            "description": "The question's OWN stimuli (R1E2E-05b): linked to the question, not shared with a group; any of the seven kinds, in link order. Shown above the stem. A stimulus shared by several questions is a group (D90) and is never here."
           },
           "marks": {
             "type": "integer",
@@ -14957,7 +14965,8 @@
           "bridge_refused",
           "no_marks",
           "tag_review",
-          "paper_empty"
+          "paper_empty",
+          "stimulus_shared_ungrouped"
         ]
       },
       "ServabilityReason": {
@@ -39041,6 +39050,12 @@
                 ]
               }
             ]
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -39417,6 +39432,12 @@
               }
             ]
           },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "subject": {
             "allOf": [
               {
@@ -39727,6 +39748,13 @@
           "tag": {
             "$ref": "#/components/schemas/QuestionCurriculumTag"
           },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
+          },
           "stimulusGroupId": {
             "allOf": [
               {
@@ -39901,6 +39929,13 @@
           },
           "tag": {
             "$ref": "#/components/schemas/QuestionCurriculumTag"
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
           },
           "stimulusGroupId": {
             "allOf": [

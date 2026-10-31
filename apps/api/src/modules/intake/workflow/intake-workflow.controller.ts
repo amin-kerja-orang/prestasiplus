@@ -100,6 +100,13 @@ export class IntakeWorkflowController {
     return ok(await this.stimuli.update(authOf(req), id, body, infoOf(req)))
   }
 
+  @Post('stimuli/:id/link-references')
+  @HttpCode(200)
+  @RateLimit(REVIEW_LIMITS.write)
+  async linkReferences(@Req() req: Req, @Param('id') id: string) {
+    return ok(await this.stimuli.linkReferencing(authOf(req), id, infoOf(req)))
+  }
+
   @Delete('stimuli/:id')
   @RateLimit(REVIEW_LIMITS.write)
   async removeStimulus(@Req() req: Req, @Param('id') id: string) {
