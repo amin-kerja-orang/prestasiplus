@@ -435,6 +435,11 @@ describe('createPaper and PaperPatch (single PUT)', () => {
 
   it('accepts a PaperPatch {title?, year?, durationMin?, sections?: [{id, questionIds}]}', () => {
     expect(BijakBuilderPaperPatchSchema.safeParse({}).success).toBe(true)
+    // R1-T51 "Kod kertas (kulit)": trimmed, 1 to 30 characters
+    const code = BijakBuilderPaperPatchSchema.safeParse({ code: '  1449/2-B  ' })
+    expect(code.success && code.data.code).toBe('1449/2-B')
+    expect(BijakBuilderPaperPatchSchema.safeParse({ code: '   ' }).success).toBe(false)
+    expect(BijakBuilderPaperPatchSchema.safeParse({ code: 'X'.repeat(31) }).success).toBe(false)
     expect(
       BijakBuilderPaperPatchSchema.safeParse({
         title: 'Set B (semakan)',
@@ -454,7 +459,7 @@ describe('createPaper and PaperPatch (single PUT)', () => {
 
   it('rejects the removed header and placement fields, a bad section and an empty title', () => {
     for (const extra of [
-      { code: '1449/2' },
+      { code: '' }, // R1-T51: the paper code is a patch field (Kod kertas (kulit)), but not blank
       { instructions: [''] }, // instructions are a patch field since R1-B09a, but not blank lines
       { reference: [{ title: '', items: [] }] }, // R1-T34: reference panels are a patch field, but not an untitled panel
       { blueprint: null },

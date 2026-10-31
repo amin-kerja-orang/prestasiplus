@@ -25,6 +25,7 @@ import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
+import { ServabilityService } from '../../src/modules/questions'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
@@ -647,6 +648,49 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
 
     // R1 U2 / R2: serving group members together with their stimulus in Databank / Latih Tubi is R2 (D90 in the practice family).
     it.todo('R2: grouped members appear in Databank / Latih Tubi SPM WITH their stimulus (today they are refused: ungrouped filter)')
+  })
+
+  // R1-20.4 / AC-18.1 / AC-18.3 / AC-18.4 (T51): each applicable activity serves exactly what its rule says, and the admin reason for an exclusion
+  // comes from the SAME rule code (ServabilityService). The paper is Terbit here, so Simulasi (kertas) is served.
+  describe('5b. every activity: where each chain question is served, and why not', () => {
+    type Verdict = { served: boolean; reasons: { code: string; message: string }[] }
+    const activities = async (id: string): Promise<Record<string, Verdict>> => {
+      const report = (await app.get(ServabilityService).reports([id])).get(id)!
+      return Object.fromEntries(report.activities.map((a) => [a.activity, { served: a.served, reasons: a.reasons }]))
+    }
+
+    it('a solo approved MCQ is served in Databank, Latih Tubi SPM, Simulasi Kuiz and Simulasi (kertas)', async () => {
+      const v = await activities(fx.soloA)
+      for (const a of ['databank', 'latih_tubi_spm', 'simulasi_kuiz', 'simulasi_paper']) expect(v[a], a).toMatchObject({ served: true, reasons: [] })
+    })
+
+    it('a stimulus-group member is served in Simulasi only: Databank / Latih Tubi SPM refuse it with the reason has_stimulus (AC-18.3, D87 U2)', async () => {
+      const v = await activities(fx.passageMembers[0]!)
+      expect(v.simulasi_paper).toMatchObject({ served: true })
+      for (const a of ['databank', 'latih_tubi_spm']) {
+        expect(v[a]!.served, a).toBe(false)
+        expect(v[a]!.reasons.map((r) => r.code), a).toContain('has_stimulus')
+        expect(v[a]!.reasons[0]!.message.length, a).toBeGreaterThan(10)
+      }
+    })
+
+    it('the structured essay is served in Simulasi (kertas) only; every other activity says why in BM (AC-18.4)', async () => {
+      const v = await activities(fx.essay)
+      expect(v.simulasi_paper).toMatchObject({ served: true })
+      for (const a of ['databank', 'latih_tubi_spm', 'simulasi_kuiz']) {
+        expect(v[a]!.served, a).toBe(false)
+        expect(v[a]!.reasons.length, a).toBeGreaterThan(0)
+      }
+    })
+
+    it('the pupil\'s Simulasi Kuiz can draw every admin-approved solo MCQ (Databank and Kuiz show an approved MCQ, R1-20.4)', async () => {
+      const res = await pupil.post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 40 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const ids = (res.body.data.items as { id: string }[]).map((i) => i.id.split(':')[0]!)
+      for (const id of [fx.soloA, fx.soloB, fx.soloC]) expect(ids, id).toContain(id)
+      // no answer key leaks into the quiz item
+      expect(JSON.stringify(res.body)).not.toMatch(/"(correct|correctOptionId|scheme)"/)
+    })
   })
 
   // R1-20.2: the same with Jana Kertas under the Disahkan Kontrak (exact-or-refuse).

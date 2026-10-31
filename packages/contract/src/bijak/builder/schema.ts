@@ -64,6 +64,7 @@ export const BIJAK_BUILDER_MESSAGES = {
   titleRequired: 'Tajuk kertas diperlukan',
   /** [PROPOSED] REQ-C-008: the paper title is at most 200 characters (create, update). */
   titleTooLong: 'Tajuk kertas tidak boleh melebihi 200 aksara.',
+  codeRequired: 'Kod kertas diperlukan',
   invalidQuestion: 'Soalan tidak sah untuk kertas ini',
   invalidSection: 'Bahagian tidak sah',
   noBlueprint: 'Tiada blueprint untuk subjek dan kertas ini',
@@ -550,6 +551,13 @@ export const BijakBuilderPaperPatchSchema = z
       .meta({ example: 'Percubaan SPM Matematik Kertas 2 Set B' }),
     year: z.number().int().min(1900).max(2100).optional(),
     durationMin: z.number().int().min(1).max(600).optional(),
+    code: z
+      .string()
+      .trim()
+      .min(1, BIJAK_BUILDER_MESSAGES.codeRequired)
+      .max(30)
+      .optional()
+      .meta({ description: 'R1-T51 "Kod kertas (kulit)" (AC-R1-21.3): the printed paper code of this paper, for example 1449/2. It starts as the Kontrak code.', example: '1449/2' }),
     instructions: z
       .array(z.string().trim().min(1).max(500))
       .max(40)

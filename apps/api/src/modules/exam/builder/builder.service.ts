@@ -492,6 +492,7 @@ export class BuilderService {
       await this.repo.updatePaper(paper.id, {
         ...(body.title !== undefined ? { title: body.title } : {}),
         ...(body.year !== undefined ? { year: body.year } : {}),
+        ...(body.code !== undefined ? { paperCode: body.code } : {}),
         ...(body.durationMin !== undefined ? { printedDurationMin: body.durationMin } : {}),
         ...(body.instructions !== undefined ? { instructions: body.instructions } : {}),
         ...(body.reference !== undefined ? { referenceSheets: body.reference as unknown as Prisma.InputJsonValue } : {}),
