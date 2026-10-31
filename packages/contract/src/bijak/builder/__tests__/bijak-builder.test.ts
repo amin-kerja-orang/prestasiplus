@@ -301,6 +301,15 @@ describe('AdminPaper and AdminPaperSummary (mock shapes)', () => {
       status: 'terbit',
     })
     expect(BijakBuilderPaperListQuerySchema.safeParse({ status: 'ready' }).success).toBe(false)
+    // R12 filters; REQ-C-008 title bound
+    expect(BijakBuilderPaperListQuerySchema.parse({ subject: ' MAT ', search: '  kuarto ' })).toEqual({ subject: 'MAT', search: 'kuarto' })
+    expect(BijakBuilderPaperListQuerySchema.safeParse({ search: 'x'.repeat(101) }).success).toBe(false)
+    expect(BijakBuilderPaperListQuerySchema.safeParse({ subject: 'x'.repeat(33) }).success).toBe(false)
+    expect(BijakBuilderPaperCreateSchema.parse({ subject: 'MAT', kertas: 2, title: ` ${'T'.repeat(200)} ` }).title).toBe('T'.repeat(200))
+    const tooLong = BijakBuilderPaperCreateSchema.safeParse({ subject: 'MAT', kertas: 2, title: 'T'.repeat(201) })
+    expect(tooLong.error?.issues[0]?.message).toBe(BIJAK_BUILDER_MESSAGES.titleTooLong)
+    expect(BijakBuilderPaperPatchSchema.safeParse({ title: 'T'.repeat(201) }).error?.issues[0]?.message).toBe(BIJAK_BUILDER_MESSAGES.titleTooLong)
+    expect(BijakBuilderPaperPatchSchema.safeParse({ title: 'T'.repeat(200) }).success).toBe(true)
   })
 })
 

@@ -312,10 +312,13 @@ export class BuilderService {
     const page = query.page ?? 1
     const pageSize = query.pageSize ?? BIJAK_BUILDER_PAGE_SIZE
     const statuses = query.status === undefined ? undefined : query.status === 'terbit' ? ['published'] : ['draft', 'ready', 'withdrawn']
-    const [total, rows] = await Promise.all([
-      this.repo.countPilihan(statuses),
-      this.repo.listPilihan(statuses, (page - 1) * pageSize, pageSize),
-    ])
+    // R12: Subjek and Cari. A subject code that matches no subject has no papers, so the answer is an empty page.
+    const subject = query.subject ? await this.repo.subjectByCode(curriculumCodeOf(query.subject)) : undefined
+    const filter = { ...(subject ? { subjectId: subject.id } : {}), ...(query.search ? { search: query.search } : {}) }
+    const [total, rows] =
+      query.subject && !subject
+        ? [0, []]
+        : await Promise.all([this.repo.countPilihan(statuses, filter), this.repo.listPilihan(statuses, (page - 1) * pageSize, pageSize, filter)])
     const subjects = await this.repo.subjectsByIds(rows.map((r) => r.subjectId))
     const evaluations = await this.evaluateMany(rows)
     const data = await Promise.all(

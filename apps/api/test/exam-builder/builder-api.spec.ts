@@ -443,6 +443,24 @@ describe('paper builder API', () => {
       expect(row).toMatchObject({ kind: 'pilihan', status: 'draft', c: admin.userId, is_test: false, year: 2026 })
     })
 
+    // REQ-C-008: the paper title is trimmed and at most 200 characters on create and on update (PUT), with one BM message.
+    it('REQ-C-008: a title of 200 characters is accepted, 201 is 422 on create and on PUT with the same message; spaces do not count', async () => {
+      const t200 = 'T'.repeat(200)
+      expect((await editor(await newPaper({ title: t200 }))).paper.title).toBe(t200)
+      expect((await editor(await newPaper({ title: `  ${t200}  ` }))).paper.title).toBe(t200)
+      const tooLong = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: 'T'.repeat(201) })
+      expect(expectError(tooLong, 'VALIDATION_ERROR', 422).fields?.title).toBe(MSG.titleTooLong)
+      expect(MSG.titleTooLong).toBe('Tajuk kertas tidak boleh melebihi 200 aksara.')
+      expectError(await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: `${' '.repeat(5)}${'T'.repeat(201)}` }), 'VALIDATION_ERROR', 422)
+
+      const id = await newPaper()
+      expect((await admin.put(`/api/admin/papers/${id}`, { title: `  ${t200}  ` })).status).toBe(200)
+      expect((await editor(id)).paper.title).toBe(t200)
+      const long = await admin.put(`/api/admin/papers/${id}`, { title: 'U'.repeat(201) })
+      expect(expectError(long, 'VALIDATION_ERROR', 422).fields?.title).toBe(MSG.titleTooLong)
+      expect((await editor(id)).paper.title).toBe(t200) // nothing changed
+    })
+
     it('PUT: blank title, invalid section and invalid questions are 422 with the contract messages', async () => {
       const id = await newPaper()
       const e = await editor(id)
@@ -522,6 +540,53 @@ describe('paper builder API', () => {
       expect(p2.data.map((r) => r.id)).toEqual(all.data.slice(2, 4).map((r) => r.id))
       expectError(await admin.get('/api/admin/papers?status=lain'), 'VALIDATION_ERROR', 422)
       expectError(await admin.get('/api/admin/papers?page=0'), 'VALIDATION_ERROR', 422)
+    })
+
+    // R12 (docs/qa/r1-admin-parity-check.md): Subjek and Cari filters next to Status on the paper list.
+    it('R12: filters by subject and by a search of the title or the code, together with status and paging', async () => {
+      const mat = await newPaper({ title: 'Percubaan Kuarto Zulu' })
+      const sn = await admin.post('/api/admin/papers', { subject: 'SN', kertas: 1, title: 'Percubaan Kuarto Yankee' })
+      expect(sn.status, JSON.stringify(sn.body)).toBe(201)
+      const list = async (qs: string) => Summaries.parse((await admin.get(`/api/admin/papers?pageSize=100&${qs}`)).body)
+      const all = await list('')
+
+      // Subjek
+      const byMat = await list('subject=MAT')
+      expect(byMat.data.length).toBeGreaterThan(0)
+      expect(byMat.data.every((r) => r.subject === 'MAT')).toBe(true)
+      expect(byMat.meta.totalItems).toBe(all.data.filter((r) => r.subject === 'MAT').length)
+      expect((await list('subject=SN')).data.every((r) => r.subject === 'SN')).toBe(true)
+      expect(await list('subject=ZZZ')).toMatchObject({ data: [], meta: { totalItems: 0 } })
+      expect((await list('subject=')).meta.totalItems).toBe(all.meta.totalItems)
+
+      // Cari: title, case-insensitive, trimmed
+      expect((await list('search=kuarto zulu')).data.map((r) => r.id)).toEqual([mat])
+      expect((await list('search=%20%20KUARTO%20')).data.map((r) => r.title).sort()).toEqual(['Percubaan Kuarto Yankee', 'Percubaan Kuarto Zulu'])
+      expect((await list('search=%20%20')).meta.totalItems).toBe(all.meta.totalItems)
+      // Cari: the code (kod kertas)
+      const withCode = all.data.find((r) => r.code !== '')
+      expect(withCode).toBeDefined()
+      const byCode = await list(`search=${encodeURIComponent(withCode!.code.toLowerCase())}`)
+      expect(byCode.data.map((r) => r.id)).toContain(withCode!.id)
+      expect(byCode.data.every((r) => r.code.toLowerCase().includes(withCode!.code.toLowerCase()) || r.title.toLowerCase().includes(withCode!.code.toLowerCase()))).toBe(true)
+      // a % or _ is a character, not a wildcard
+      expect((await list('search=%25')).data).toEqual([])
+      expect((await list('search=_')).data).toEqual([])
+
+      // together
+      expect((await list('subject=SN&search=kuarto')).data.map((r) => r.title)).toEqual(['Percubaan Kuarto Yankee'])
+      expect((await list('subject=MAT&search=yankee')).data).toEqual([])
+      expect((await list('status=draf&subject=MAT&search=zulu')).data.map((r) => r.id)).toEqual([mat])
+      expect((await list('status=terbit&search=zulu')).data).toEqual([])
+      const paged = Summaries.parse((await admin.get('/api/admin/papers?search=kuarto&pageSize=1&page=2')).body)
+      expect(paged.meta).toMatchObject({ page: 2, pageSize: 1, totalItems: 2 })
+      expect(paged.data).toHaveLength(1)
+
+      // bad input is 422
+      expectError(await admin.get(`/api/admin/papers?search=${'x'.repeat(101)}`), 'VALIDATION_ERROR', 422)
+      expectError(await admin.get(`/api/admin/papers?subject=${'x'.repeat(33)}`), 'VALIDATION_ERROR', 422)
+      // a student cannot use the admin list
+      expect((await student.get('/api/admin/papers?search=kuarto')).status).toBe(403)
     })
   })
 })

@@ -6,6 +6,12 @@ import { PrismaService } from '../../../db/prisma.service'
 export type PaperTree = Paper & { sections: (PaperSection & { placements: PaperPlacement[] })[] }
 export type BlueprintWithSections = Blueprint & { sections: BlueprintSection[] }
 
+/** R12: optional list filters. `subjectId` narrows to one subject; `search` is a substring of the title or the paper code. */
+export interface PaperListFilter {
+  subjectId?: bigint
+  search?: string
+}
+
 export interface SubjectRef {
   id: bigint
   code: string
@@ -64,13 +70,13 @@ export class BuilderRepository {
     return this.prisma.client.paper.findFirst({ where: { id, kind: 'pilihan' }, include: TREE })
   }
 
-  countPilihan(statuses: readonly string[] | undefined): Promise<number> {
-    return this.prisma.client.paper.count({ where: this.listWhere(statuses) })
+  countPilihan(statuses: readonly string[] | undefined, filter?: PaperListFilter): Promise<number> {
+    return this.prisma.client.paper.count({ where: this.listWhere(statuses, filter) })
   }
 
-  listPilihan(statuses: readonly string[] | undefined, skip: number, take: number): Promise<PaperTree[]> {
+  listPilihan(statuses: readonly string[] | undefined, skip: number, take: number, filter?: PaperListFilter): Promise<PaperTree[]> {
     return this.prisma.client.paper.findMany({
-      where: this.listWhere(statuses),
+      where: this.listWhere(statuses, filter),
       include: TREE,
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       skip,
@@ -78,8 +84,15 @@ export class BuilderRepository {
     })
   }
 
-  private listWhere(statuses: readonly string[] | undefined): Prisma.PaperWhereInput {
-    return { kind: 'pilihan', ...(statuses ? { status: { in: [...statuses] } } : {}) }
+  private listWhere(statuses: readonly string[] | undefined, filter?: PaperListFilter): Prisma.PaperWhereInput {
+    // `contains` passes the text to LIKE unescaped, so a typed % or _ would match everything: escape them (backslash is the LIKE default).
+    const search = filter?.search?.replace(/[\\%_]/g, (c) => `\\${c}`)
+    return {
+      kind: 'pilihan',
+      ...(statuses ? { status: { in: [...statuses] } } : {}),
+      ...(filter?.subjectId !== undefined ? { subjectId: filter.subjectId } : {}),
+      ...(search ? { OR: [{ title: { contains: search, mode: 'insensitive' } }, { paperCode: { contains: search, mode: 'insensitive' } }] } : {}),
+    }
   }
 
   async subjectsByIds(ids: readonly bigint[]): Promise<Map<string, SubjectRef>> {
