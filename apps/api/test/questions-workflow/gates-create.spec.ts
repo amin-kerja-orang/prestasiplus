@@ -51,20 +51,20 @@ describe('create gate hook (BE-10 AC 1 "no bypass", LEAD note)', () => {
     expect(e.fields).toHaveProperty('chapterId')
   })
 
-  it('created as published runs submit, approve and publish, including the key marks check', async () => {
-    expect(() => svc.assertCreateAllowed(passing('published'), actorOf(c.admin))).not.toThrow()
-    const keys = await failure(() => svc.assertCreateAllowed(passing('published', { parts: [workingPart(3, 2)] }), actorOf(c.admin)))
+  it('created as approved runs submit and the merged approve gate, including the key marks check', async () => {
+    expect(() => svc.assertCreateAllowed(passing('approved'), actorOf(c.admin))).not.toThrow()
+    const keys = await failure(() => svc.assertCreateAllowed(passing('approved', { parts: [workingPart(3, 2)] }), actorOf(c.admin)))
     expect(keys.getStatus()).toBe(422)
-    expect(keys.details).toEqual({ gate: 'publish' })
+    expect(keys.details).toEqual({ gate: 'approve' }) // the former publish rules run in the merged approve gate
     expect(keys.fields?.['parts.a.key']).toBe('Jumlah markah tidak sepadan dengan skema.')
-    const submit = await failure(() => svc.assertCreateAllowed(passing('published', { hasSourceDeclaration: false }), actorOf(c.admin)))
+    const submit = await failure(() => svc.assertCreateAllowed(passing('approved', { hasSourceDeclaration: false }), actorOf(c.admin)))
     expect(submit.details).toEqual({ gate: 'submit' })
-    const approve = await failure(() => svc.assertCreateAllowed(passing('published', { marks: 9 }), actorOf(c.admin)))
+    const approve = await failure(() => svc.assertCreateAllowed(passing('approved', { marks: 9 }), actorOf(c.admin)))
     expect(approve.details).toEqual({ gate: 'approve' })
   })
 
   it('a Guru may create only draft or review; other roles 403; archived and unknown codes 422', async () => {
-    for (const status of ['approved', 'published'] as const) {
+    for (const status of ['approved'] as const) {
       expect((await failure(() => svc.assertCreateAllowed(passing(status), actorOf(c.teacher)))).getStatus()).toBe(403)
     }
     expect((await failure(() => svc.assertCreateAllowed(passing('draft'), actorOf(c.schoolAdmin)))).getStatus()).toBe(403)

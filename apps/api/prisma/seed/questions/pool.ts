@@ -147,7 +147,7 @@ export const questionPoolSeed: SeedModule = {
           const pick = (s: PoolSpec) => (tingkatan ? (tags[s.index % tags.length] as (typeof tags)[number]) : null)
           const versions = await tx.questionVersion.createManyAndReturn({
             data: todo.map((s, i) => ({
-              questionId: questionIds[i] as bigint, versionNo: 1, status: 'published', publishedAt: now,
+              questionId: questionIds[i] as bigint, versionNo: 1, status: 'approved', publishedAt: now,
               type: 'mcq', stemMs: s.text, numberLabel: s.ref, language: 'ms',
               subjectId, educationLevelId: levelId, unitNodeId: pick(s)?.unitNodeId ?? null,
               // Same mapping as `formOriginOf` in the questions module: T5 -> t5, T4 -> t4, everything else (Darjah) -> t1_t3.

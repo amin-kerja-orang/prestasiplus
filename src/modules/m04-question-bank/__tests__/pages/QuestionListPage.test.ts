@@ -318,10 +318,10 @@ describe('QuestionListPage (M04 S1)', () => {
     expect(first.get('[data-testid="question-edit"]').attributes('aria-label')).toBe('Edit')
   })
 
-  it("renders v2 wire statuses (published, review, archived) and an unknown one without crashing (issue 61)", async () => {
+  it("renders v2 wire statuses (approved, review, archived) and an unknown one without crashing (issue 61)", async () => {
     questions.fetchQuestions.mockResolvedValue(
       listResult([
-        row(1, { status: "published" as never }),
+        row(1, { status: "approved" }),
         row(2, { status: "review" as never }),
         row(3, { status: "archived" }),
         row(4, { status: "mystery" as never, complianceStatus: "weird" as never }),
@@ -329,6 +329,6 @@ describe('QuestionListPage (M04 S1)', () => {
     )
     const w = await render()
     const badges = w.findAll("[data-testid=\"question-status\"]").map((b) => b.text())
-    expect(badges).toEqual(["Diterbitkan", "Menunggu Semakan", "Arkib", "Tidak diketahui"])
+    expect(badges).toEqual(["Diluluskan", "Menunggu Semakan", "Arkib", "Tidak diketahui"])
   })
 })

@@ -28,7 +28,7 @@ export interface TransitionResult {
   from: QuestionWorkflowStatus
   to: QuestionWorkflowStatus
   versionNo: number
-  /** Every status event written (two for "Lulus & Terbit"). */
+  /** Every status event written (one per transition since ADR-0027). */
   events: { from: QuestionWorkflowStatus | null; to: QuestionWorkflowStatus }[]
 }
 export interface BulkSkipped {
@@ -96,14 +96,6 @@ export class LifecycleService {
       const from = info.status
       const reason = options.reason?.trim() ? options.reason.trim() : null
 
-      // "Lulus & Terbit": review -> approved -> published in one call, admin only, both gates.
-      if (from === 'review' && to === 'published') {
-        if (kind !== 'admin') throw ApiError.of('FORBIDDEN')
-        return this.apply(info, actor, [
-          { from: 'review', to: 'approved', gate: 'approve', reason: null },
-          { from: 'approved', to: 'published', gate: 'publish', reason: null },
-        ])
-      }
       const rule = questionWorkflowTransitionRule(from, to)
       if (!rule) throw ApiError.of('CONFLICT')
       if (!rule.actors.includes(kind)) throw ApiError.of('FORBIDDEN')
@@ -145,7 +137,6 @@ export class LifecycleService {
       draft: [],
       review: ['submit'],
       approved: ['submit', 'approve'],
-      published: ['submit', 'approve', 'publish'],
       archived: [],
     }
     runGates(gates[input.status], data)
@@ -179,14 +170,14 @@ export class LifecycleService {
           continue
         }
         // Working assumption (BE-10): a takedown is a system-level archive "through setStatus" (card AC 6).
-        // The table only allows draft/published -> archived, but review/approved questions of a withdrawn
+        // The table only allows draft/approved -> archived, but review questions of a withdrawn
         // source must go too, so the table is not consulted here; no gate runs and a status event
         // records each move with the takedown reason.
         const hint = { archiveReason: 'source_takedown' } as const
         let did = false
         // The live version survives a newer draft: archive it first (version = the live one).
         if (info.liveVersionNo !== null && info.liveVersionNo !== info.latestVersionNo) {
-          await this.applyOne(info, actor, { from: 'published', to: 'archived', gate: null, reason, versionNo: info.liveVersionNo, target: 'live' }, hint)
+          await this.applyOne(info, actor, { from: 'approved', to: 'archived', gate: null, reason, versionNo: info.liveVersionNo, target: 'live' }, hint)
           did = true
         }
         if (info.status !== 'archived') {
@@ -237,7 +228,7 @@ export class LifecycleService {
     if (!updated) throw ApiError.of('NOT_FOUND')
     await this.writeEvent(info.id, step.versionNo ?? info.latestVersionNo, step.from, step.to, actor, step.reason)
     // AC 11: reports filed against an older version become Diperbaiki, in this same transaction.
-    if (step.to === 'published') await this.reports.markFixedFor(info.id, info.latestVersionNo)
+    if (step.to === 'approved') await this.reports.markFixedFor(info.id, info.latestVersionNo)
   }
 
   private async writeEvent(

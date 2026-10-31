@@ -89,9 +89,10 @@ describe('stored result equals the mock engine output', () => {
         const res = await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: 'g', changes })
         expect(res.status, JSON.stringify(res.body)).toBe(200)
         const got = (await me.get(`/api/bijak/attempts/${id}/result`)).body.data.result
-        // R1-B12/B13 add `selfMarkable` and `suggestion` to written parts; the marking itself must be unchanged.
-        const stripped = JSON.parse(JSON.stringify(got, (k, v) => (k === 'selfMarkable' || k === 'suggestion' ? undefined : v)))
-        expect(stripped).toEqual(JSON.parse(JSON.stringify(expected)))
+        // R1-B12/B13 add `selfMarkable` and `suggestion` to written parts (V2 self-mark behaviour; the front-end mock engine now emits
+        // `selfMarkable` too). The marking itself must be unchanged, so both sides are compared without those two fields.
+        const drop = (_k: string, v: unknown): unknown => (_k === 'selfMarkable' || _k === 'suggestion' ? undefined : v)
+        expect(JSON.parse(JSON.stringify(got, drop))).toEqual(JSON.parse(JSON.stringify(expected, drop)))
         if (strategy === 'correct' && slug !== 'sej-k2-2025-a') expect(got.score).toBeGreaterThan(0)
       })
     }

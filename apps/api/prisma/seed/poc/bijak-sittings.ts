@@ -388,7 +388,7 @@ async function ensureDemoQuestions(ctx: SeedContext, subjectId: bigint): Promise
       })
       const version = await tx.questionVersion.create({
         data: {
-          questionId: question.id, versionNo: 1, status: 'published', publishedAt: now,
+          questionId: question.id, versionNo: 1, status: 'approved', publishedAt: now,
           type: 'mcq', stemMs: q.stem, numberLabel: q.ref, language: 'ms',
           subjectId, educationLevelId: levelId, unitNodeId: tag.unitNodeId, formOrigin: q.level === 'T5' ? 't5' : 't4',
           cognitiveLevel: draw.cognitive, difficultyTp: draw.tp, sourceKind: 'publisher', rightsStatus: 'own', createdAt: now, updatedAt: now,
@@ -412,7 +412,7 @@ async function ensureBankPaper(ctx: SeedContext, subjectId: bigint): Promise<Ban
   const rows = await prisma.$queryRaw<{ id: bigint; version_no: number; label: string }[]>`
     select q.id, q.live_version_no as version_no, v.number_label as label
       from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-     where v.number_label = any(${[...BANK_QUESTION_LABELS]}::text[]) and v.status = 'published'
+     where v.number_label = any(${[...BANK_QUESTION_LABELS]}::text[]) and v.status = 'approved'
      order by v.number_label`
   if (rows.length !== BANK_QUESTION_LABELS.length) throw new Error('Bijak sittings seed needs the published BE-09 seed questions; run the questions seed first.')
   const questions = rows.map((r) => ({ id: r.id, versionNo: r.version_no }))
@@ -515,7 +515,7 @@ export const bijakSittingsSeed: SeedModule = {
     // BE-19 / BE-20 item analysis has rows.
     const bank = await ensureBankPaper(ctx, subjectRow.id)
     const bankComposition: SectionSnapshot[] = [{ id: bank.sectionId.toString(), label: 'Objektif', rule: { type: 'all' }, questionIds: bank.questions.map((q) => q.id.toString()) }]
-    const bankSource = new Be09BijakQuestionSource(new QuestionsRepository(service), new CurriculumRepository(service))
+    const bankSource = new Be09BijakQuestionSource(new QuestionsRepository(service), new CurriculumRepository(service), { publicIdsOf: () => Promise.resolve(new Map<string, string>()) })
     const bankBundles = await bankSource.loadQuestions(bankComposition.flatMap((s) => s.questionIds))
     if (bankBundles.size !== bank.questions.length) throw new Error('Bijak sittings seed: the BE-09 bridge did not serve the bank questions.')
     await writeSittings(ctx, pupils, aggregates, { key: 'bank-mat-demo', paper: bank, subjectName: subjectRow.name, subject, composition: bankComposition, bundles: bankBundles, plans: BIJAK_BANK_SITTINGS, blank: 0, hardness: BANK_HARDNESS })

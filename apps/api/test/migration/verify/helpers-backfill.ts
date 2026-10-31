@@ -31,7 +31,7 @@ export interface QuestionOpts {
   stem?: string
   options?: string[]
   /** Status of the live version. Default `published`. */
-  status?: 'draft' | 'review' | 'approved' | 'published' | 'archived'
+  status?: 'draft' | 'review' | 'approved' | 'approved' | 'archived'
   isActive?: boolean
   /** `questions.live_version_no`. Default 1 (null for a never-published question). */
   liveVersionNo?: number | null
@@ -71,7 +71,7 @@ export async function bootBackfill(): Promise<BackfillHarness> {
       return (rows[0] as { id: string }).id
     },
     async addQuestion(o) {
-      const status = o.status ?? 'published'
+      const status = o.status ?? 'approved'
       const live = o.liveVersionNo === undefined ? 1 : o.liveVersionNo
       const qs = await q<{ id: string }>(
         `insert into questions (live_version_no, is_active) values ($1, $2) returning id::text as id`,
@@ -85,7 +85,7 @@ export async function bootBackfill(): Promise<BackfillHarness> {
           id,
           status,
           status === 'archived' ? 'withdrawn' : null,
-          status === 'published' ? '2026-10-01T00:00:00Z' : null,
+          status === 'approved' ? '2026-10-01T00:00:00Z' : null,
           o.stem ?? `Soalan contoh ${(seq += 1)}`,
           o.numberLabel ?? null,
           o.paperId ?? null,

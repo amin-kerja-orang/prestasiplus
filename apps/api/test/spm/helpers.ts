@@ -142,13 +142,13 @@ export async function loginModPelajar(t: SpmTestApp, role: keyof typeof ACCOUNTS
 export interface QInit {
   /** Subject code. */
   subject: string
-  /** Level code (T4, T5). */
+  /** Level code (T4, T5). Default T4, or a non-offered secondary level when `pool` is false (R1-B06). */
   level?: string
   type?: 'mcq' | 'structured'
   /** Difficulty TP 1..6; null leaves it unset. */
   tp?: number | null
   pool?: boolean
-  status?: 'published' | 'draft'
+  status?: 'approved' | 'draft'
   active?: boolean
   stem?: string
   /** Option letter of the key (mcq). */
@@ -163,9 +163,16 @@ let counter = 0
 export async function addQuestion(db: TestDatabase, q: QInit): Promise<string> {
   const n = ++counter
   const type = q.type ?? 'mcq'
-  const status = q.status ?? 'published'
+  const status = q.status ?? 'approved'
   const subject = (await db.query<{ id: string }>('select id::text from subjects where code = $1', [q.subject]))[0]?.id
-  const level = (await db.query<{ id: string }>('select id::text from education_levels where code = $1', [q.level ?? 'T4']))[0]?.id
+  // R1-B06: the SPM pool is defined by level (T4/T5), not by the `pool` tag. A multiple-choice question that must stay OUT of the
+  // pool (`pool: false`) therefore sits at an active secondary level that is not offered (T1 to T3), unless a level is asked for.
+  const outOfPool = type === 'mcq' && q.pool === false
+  const nonOffered = outOfPool
+    ? ((await db.query<{ code: string }>(`select code from education_levels where stage <> 'primary' and is_active and code not in ('T4','T5') order by sort_order, id limit 1`))[0]?.code ?? 'T4')
+    : 'T4'
+  const levelCode = q.level ?? nonOffered
+  const level = (await db.query<{ id: string }>('select id::text from education_levels where code = $1', [levelCode]))[0]?.id
   if (!subject || !level) throw new Error('unknown subject or level')
   const chapter =
     q.chapterNumber === undefined
@@ -174,14 +181,14 @@ export async function addQuestion(db: TestDatabase, q: QInit): Promise<string> {
   const qid = (
     await db.query<{ id: string }>(
       `insert into questions (source_type, latest_version_no, live_version_no, is_active) values ('manual', 1, $1, $2) returning id::text`,
-      [status === 'published' ? 1 : null, q.active ?? true],
+      [status === 'approved' ? 1 : null, q.active ?? true],
     )
   )[0]?.id as string
   const vid = (
     await db.query<{ id: string }>(
       `insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, chapter_id, difficulty_tp, form_origin, number_label, language, published_at)
        values ($1, 1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'ms', $11) returning id::text`,
-      [qid, status, type, q.stem ?? `Soalan ujian SPM ${String(n)}`, subject, level, chapter, q.tp === undefined ? 2 : q.tp, (q.level ?? 'T4') === 'T5' ? 't5' : 't4', `SPMT-${String(n)}`, status === 'published' ? '2026-10-01T00:00:00Z' : null],
+      [qid, status, type, q.stem ?? `Soalan ujian SPM ${String(n)}`, subject, level, chapter, q.tp === undefined ? 2 : q.tp, levelCode === 'T5' ? 't5' : 't4', `SPMT-${String(n)}`, status === 'approved' ? '2026-10-01T00:00:00Z' : null],
     )
   )[0]?.id as string
   if (type === 'mcq') {
