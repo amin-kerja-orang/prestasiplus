@@ -8,6 +8,7 @@ import { QuestionsService } from '../../src/modules/questions'
 import { ACCOUNTS, bootQuestionsApp, loginAs, type Client, type QuestionsTestApp } from '../questions/helpers'
 import { tagBody, tagOf, userIdOf, type Tag } from '../questions/fixtures'
 import { makePng } from './fixtures'
+import { teacherTwo } from './teacher-two'
 
 /**
  * REQ-B-008 (B3): who may read a `question_image` file. Admin reads all. A TEACHER reads the files they uploaded and the images of
@@ -33,7 +34,7 @@ describe('question images: teacher A / teacher B / admin / pupil matrix (real da
     tag = await tagOf(t.db, 'SEED-MCQ-MATH-T4')
     admin = await loginAs(t, 'admin')
     teacherA = await loginAs(t, 'teacher')
-    teacherB = await loginAs(t, 'teacher2')
+    teacherB = await teacherTwo(t) // acting as a teacher (loginAs starts this account as school_admin)
     pupil = await loginAs(t, 'student')
     adminId = await userIdOf(t.db, ACCOUNTS.admin)
     aId = await userIdOf(t.db, ACCOUNTS.teacher)
