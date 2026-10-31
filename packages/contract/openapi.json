@@ -60555,6 +60555,13 @@
               "subPartRamp": {
                 "type": "boolean"
               },
+              "autoMarkable": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "\"Boleh tanda auto\" (R1-21.4, PIPE AC-06.2): null = not stated. Always sent by the server; optional on the wire so older clients still parse."
+              },
               "kbatMarks": {
                 "type": [
                   "integer",
@@ -60594,7 +60601,7 @@
               },
               "needsReview": {
                 "type": "boolean",
-                "description": "O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text \"Blueprint perlu disemak\" [PROPOSED]."
+                "description": "O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text \"Blueprint perlu semakan\" (PIPE AC-06.6)."
               },
               "reviewPapers": {
                 "type": "array",
@@ -61541,6 +61548,13 @@
           "subPartRamp": {
             "type": "boolean"
           },
+          "autoMarkable": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "\"Boleh tanda auto\" (R1-21.4, PIPE AC-06.2): null = not stated. Always sent by the server; optional on the wire so older clients still parse."
+          },
           "kbatMarks": {
             "type": [
               "integer",
@@ -61580,7 +61594,7 @@
           },
           "needsReview": {
             "type": "boolean",
-            "description": "O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text \"Blueprint perlu disemak\" [PROPOSED]."
+            "description": "O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text \"Blueprint perlu semakan\" (PIPE AC-06.6)."
           },
           "reviewPapers": {
             "type": "array",
@@ -61918,6 +61932,13 @@
             "type": "boolean",
             "description": "\"sub-bahagian menaik\" (AC-25.1, AC-38.4): informs the bank review checklist only. Default false."
           },
+          "autoMarkable": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "\"Boleh tanda auto\" (R1-21.4, PIPE AC-06.2, AC-25.1): whether the paper can be marked automatically. Cosmetic: not part of the structural hash, so editing it never resets Disahkan. Absent or null = not stated (never a conformance failure, PIPE AC-06.5)."
+          },
           "kbatMarks": {
             "type": [
               "integer",
@@ -62036,6 +62057,13 @@
           "subPartRamp": {
             "type": "boolean",
             "description": "\"sub-bahagian menaik\" (AC-25.1, AC-38.4): informs the bank review checklist only. Default false."
+          },
+          "autoMarkable": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "\"Boleh tanda auto\" (R1-21.4, PIPE AC-06.2, AC-25.1): whether the paper can be marked automatically. Cosmetic: not part of the structural hash, so editing it never resets Disahkan. Absent or null = not stated (never a conformance failure, PIPE AC-06.5)."
           },
           "kbatMarks": {
             "type": [

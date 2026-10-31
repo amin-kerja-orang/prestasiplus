@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 
 import { AuditModule } from '../../../common/audit'
 import { ThrottleModule } from '../../../common/throttle'
+import { BijakPapersModule } from '../../bijak/papers'
 import { BlueprintVerificationService } from './blueprint-verification.service'
 import { BlueprintViewsService } from './blueprint-views.service'
 import { BlueprintsController } from './blueprints.controller'
@@ -15,7 +16,7 @@ import { BlueprintLookupsService } from './lookups.service'
  * new version, retire, version history, evidence, verification, and the editor pickers (DSKP units, subjects).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule],
+  imports: [AuditModule, ThrottleModule, BijakPapersModule],
   controllers: [BlueprintsController, BlueprintLookupsController],
   providers: [BlueprintsRepository, BlueprintViewsService, BlueprintsService, BlueprintVerificationService, BlueprintLookupsService],
   exports: [BlueprintsRepository],

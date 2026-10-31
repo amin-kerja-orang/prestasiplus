@@ -32,7 +32,7 @@ export const BIJAK_STANDARDS_MESSAGES = {
   /** AC-29.1: empty pool is not an error. */
   poolEmpty: 'Tiada soalan Terbit untuk tag ini',
   /** [PROPOSED] (architecture 6.3a) badge text of the O-2 signal. */
-  needsReview: 'Blueprint perlu disemak',
+  needsReview: 'Blueprint perlu semakan',
   /** [PROPOSED] (AC-39.5) label of study-seeded evidence until a human verification replaces it. */
   studyEvidenceLabel: 'Kajian kertas percubaan 2025',
 } as const
@@ -314,6 +314,10 @@ export const bijakBlueprintStandardInputShape = {
   }),
   subPartRamp: z.boolean().optional().meta({
     description: '"sub-bahagian menaik" (AC-25.1, AC-38.4): informs the bank review checklist only. Default false.',
+  }),
+  autoMarkable: z.boolean().nullish().meta({
+    description:
+      '"Boleh tanda auto" (R1-21.4, PIPE AC-06.2, AC-25.1): whether the paper can be marked automatically. Cosmetic: not part of the structural hash, so editing it never resets Disahkan. Absent or null = not stated (never a conformance failure, PIPE AC-06.5).',
   }),
   kbatMarks: z.number().int().min(0).max(1000).nullish().meta({
     description: 'Optional paper-level KBAT marks (AC-37.2); must equal the sum of the section values when both are set (KBAT_TOTAL).',

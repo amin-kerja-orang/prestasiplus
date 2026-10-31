@@ -82,6 +82,8 @@ const bpRow = async (code: string) =>
     )
   )[0]
 
+const bpRowAuto = async (code: string) => (await rows(`select auto_markable from blueprints where code = $1 order by version desc`, [code]))[0]
+
 /** Creates, adds LPM evidence and verifies a blueprint on MAT kertas `k`. Returns the verified view. */
 async function verified(k: number, over: Record<string, unknown> = {}) {
   expect((await admin.post('/api/admin/blueprints', create(k, over))).status).toBe(201)
@@ -95,6 +97,48 @@ describe('fixtures', () => {
   it('the DSKP of Matematik has T4 and T5 units', () => {
     expect(t4.length).toBeGreaterThan(0)
     expect(t5.length).toBeGreaterThan(0)
+  })
+})
+
+// R1-21.4 / PIPE AC-06.2 (T44): the Kontrak field "Boleh tanda auto" (blueprints.auto_markable, nullable).
+describe('T44 Boleh tanda auto (autoMarkable)', () => {
+  it('is stored and returned; absent means null (not stated); a non-boolean is 422', async () => {
+    const on = await admin.post('/api/admin/blueprints', create(60, { autoMarkable: true }))
+    expect(on.status, JSON.stringify(on.body)).toBe(201)
+    expect(BijakBlueprintViewSchema.parse(on.body.data).autoMarkable).toBe(true)
+    expect((await bpRowAuto('MAT/S60'))?.auto_markable).toBe(true)
+    const off = await admin.post('/api/admin/blueprints', create(61, { autoMarkable: false }))
+    expect(BijakBlueprintViewSchema.parse(off.body.data).autoMarkable).toBe(false)
+    expect((await bpRowAuto('MAT/S61'))?.auto_markable).toBe(false)
+    const none = await admin.post('/api/admin/blueprints', create(62))
+    expect(BijakBlueprintViewSchema.parse(none.body.data).autoMarkable).toBeNull()
+    expect((await bpRowAuto('MAT/S62'))?.auto_markable).toBeNull()
+    expectError(await admin.post('/api/admin/blueprints', create(63, { autoMarkable: 'ya' })), 'VALIDATION_ERROR')
+    // GET returns it too
+    expect((await admin.get(url(60))).body.data.autoMarkable).toBe(true)
+  })
+
+  it('a new version replaces it (omitted = null); null is accepted', async () => {
+    expect((await admin.post('/api/admin/blueprints', create(64, { autoMarkable: true }))).status).toBe(201)
+    const v2 = await admin.post(url(64, '/versions'), body({ code: 'MAT/S64B', autoMarkable: false }))
+    expect(v2.status, JSON.stringify(v2.body)).toBe(201)
+    expect(BijakBlueprintViewSchema.parse(v2.body.data)).toMatchObject({ version: 2, autoMarkable: false })
+    const v3 = await admin.post(url(64, '/versions'), body({ code: 'MAT/S64C', autoMarkable: null }))
+    expect(BijakBlueprintViewSchema.parse(v3.body.data)).toMatchObject({ version: 3, autoMarkable: null })
+    const v4 = await admin.post(url(64, '/versions'), body({ code: 'MAT/S64D' }))
+    expect(BijakBlueprintViewSchema.parse(v4.body.data)).toMatchObject({ version: 4, autoMarkable: null })
+  })
+
+  it('is cosmetic: changing it on a Disahkan blueprint keeps Disahkan and the same structure hash', async () => {
+    const v1 = await verified(65)
+    expect(v1.autoMarkable).toBeNull()
+    const before = await bpRow('MAT/S65')
+    const res = await admin.post(url(65, '/versions'), body({ code: 'MAT/S65', autoMarkable: true }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(BijakBlueprintViewSchema.parse(res.body.data)).toMatchObject({ version: 2, source: 'Disahkan', servesStudents: true, autoMarkable: true })
+    const all = await rows(`select version, source, structure_hash, auto_markable from blueprints where code = 'MAT/S65' order by version`)
+    expect(all[1]).toMatchObject({ version: 2, source: 'verified', auto_markable: true })
+    expect(all[1]?.structure_hash).toBe(before?.structure_hash)
   })
 })
 

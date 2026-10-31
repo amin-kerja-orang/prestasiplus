@@ -388,6 +388,9 @@ export const BijakBlueprintViewSchema = z
     evidenceCount: z.number().int().min(0),
     notes: z.string().nullable(),
     subPartRamp: z.boolean(),
+    autoMarkable: z.boolean().nullable().optional().meta({
+      description: '"Boleh tanda auto" (R1-21.4, PIPE AC-06.2): null = not stated. Always sent by the server; optional on the wire so older clients still parse.',
+    }),
     kbatMarks: z.number().int().min(0).nullable().meta({ description: 'Paper-level KBAT marks.' }),
     levelShare: z
       .strictObject({ t4: z.number().int().min(0), t5: z.number().int().min(0) })
@@ -398,7 +401,7 @@ export const BijakBlueprintViewSchema = z
     }),
     needsReview: z.boolean().meta({
       description:
-        'O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text "Blueprint perlu disemak" [PROPOSED].',
+        'O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text "Blueprint perlu semakan" (PIPE AC-06.6).',
     }),
     reviewPapers: z.array(BijakReviewPaperSchema).meta({
       description: 'The papers behind needsReview; empty when needsReview is false.',

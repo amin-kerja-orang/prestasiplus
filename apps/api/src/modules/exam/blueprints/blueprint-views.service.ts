@@ -9,12 +9,42 @@ import {
 
 import { toMytTimestamp } from '../../../common/time/myt'
 import type { BlueprintVerification } from '../../../db/generated/client'
+import { idToString } from '../../../db/ids'
 import { bijakCodeOf } from '../../bijak/papers'
+import { BijakPapersPorts } from '../../bijak/papers/ports'
 import { sourceToWire } from '../../bijak/papers/rules'
 import { profileOfDoc, quotaOfDoc, structureHashOf, toStandard, type UnitInfo } from './blueprint-standard'
 import { blueprintView, type BlueprintViewContext, type BlueprintWithSections } from './blueprint-view'
 import { BlueprintsRepository, pairKey, type SubjectRef } from './blueprints.repository'
-import { validateBlueprint, type UnitRef } from './exam-core.adapter'
+import { standardForPaper } from '../builder/standard'
+import { validateBlueprint, verifyComposition, type QuestionFacts, type UnitRef, type Violation } from './exam-core.adapter'
+
+/** How many published papers of a subject and kertas are checked against the head (architecture 6.3a). */
+const REVIEW_PAPER_LIMIT = 20
+
+type ReviewGap = BijakBlueprintView['reviewPapers'][number]['gaps'][number]
+
+/** Standard-tier violation to the gap the badge lists. Structural violations are not a "needs review" matter. */
+function gapOf(v: Violation): ReviewGap | null {
+  if (v.tier !== 'standard') return null
+  switch (v.code) {
+    case 'MARKS_BAND':
+      return 'marks'
+    case 'TP_BAND':
+    case 'TP_COUNT':
+    case 'TEMA_UNIT':
+      return 'tp'
+    case 'QUOTA':
+      return 'quota'
+    case 'KBAT':
+    case 'KBAT_TOTAL':
+      return 'kbat'
+    case 'LEVEL_SHARE':
+      return 'level_share'
+    default:
+      return null
+  }
+}
 
 /** Fallback when the verifier's user row is gone (the FK restricts deletes, so this is defensive only). */
 const UNKNOWN_VERIFIER = 'Admin Pusat'
@@ -47,7 +77,37 @@ export function enrichUnit(ref: UnitRef | undefined, units: ReadonlyMap<string, 
  */
 @Injectable()
 export class BlueprintViewsService {
-  constructor(@Inject(BlueprintsRepository) private readonly repo: BlueprintsRepository) {}
+  constructor(
+    @Inject(BlueprintsRepository) private readonly repo: BlueprintsRepository,
+    @Inject(BijakPapersPorts) private readonly papersPorts: BijakPapersPorts,
+  ) {}
+
+  /**
+   * "Blueprint perlu semakan" (PIPE AC-06.6, v2-bijak-spm AC-26.7, architecture 6.3a): computed, never stored. Only the head
+   * (active) version is checked, against the published Kertas Pilihan of its subject and kertas (newest 20). The STANDARD tier of
+   * `verifyComposition` (marks bands, TP, quota, KBAT, level share) lists the gaps; it never blocks anything. A null blueprint value
+   * (no profile, quota, KBAT or share) is "unconstrained" and never a gap (PIPE AC-06.5). A paper whose questions are not all live
+   * candidates cannot be measured and is skipped, as the publish check does.
+   */
+  private async reviewOf(row: BlueprintWithSections, subject: SubjectRef): Promise<BijakBlueprintView['reviewPapers']> {
+    const papers = await this.repo.publishedPilihan(row.subjectId, row.kertas, REVIEW_PAPER_LIMIT)
+    if (papers.length === 0) return []
+    const code = bijakCodeOf(subject.code)
+    const facts = new Map<string, QuestionFacts>(
+      (await this.papersPorts.poolSource.candidates({ subjectId: subject.id.toString(), subjectCode: subject.code, kertas: row.kertas })).map((f) => [f.id, f]),
+    )
+    const out: BijakBlueprintView['reviewPapers'] = []
+    for (const paper of papers) {
+      const std = standardForPaper(paper, row, code)
+      if (!std) continue
+      const composed = paper.sections.map((s, i) => ({ position: i + 1, questionIds: s.placements.map((pl) => idToString(pl.questionId)) }))
+      const placed = composed.flatMap((c) => c.questionIds)
+      if (placed.length === 0 || placed.some((id) => !facts.has(id))) continue
+      const gaps = [...new Set(verifyComposition(std, composed, facts).flatMap((v) => gapOf(v) ?? []))]
+      if (gaps.length > 0) out.push({ paperId: idToString(paper.id), title: paper.title, gaps })
+    }
+    return out
+  }
 
   /** Verification summaries by verification id (AC-39.5): who, when, which bodies. */
   async summaries(verificationIds: bigint[]): Promise<Map<bigint, BijakVerificationSummary>> {
@@ -67,7 +127,7 @@ export class BlueprintViewsService {
       this.repo.unitsByIds([...new Set(rows.flatMap((r) => unitIdsOf(r)))]),
     ])
     const unitMap = new Map(units.map((u) => [u.nodeId, u]))
-    return rows.map((row) => {
+    const built = rows.map((row) => {
       const subject = subjects.get(row.subjectId) as SubjectRef
       const servingVersion = serving.get(pairKey(row))
       const ctx: BlueprintViewContext = {
@@ -77,13 +137,19 @@ export class BlueprintViewsService {
         dependentPaperCount: dependents.get(pairKey(row)) ?? 0,
         // KBAT_TP_BAND only: problems (which need the unit map) are refused on save, never shown here.
         warnings: validateBlueprint(toStandard(row, bijakCodeOf(subject.code))).warnings,
-        // TODO(BJS-11): needsReview / reviewPapers from the standard tier of verifyComposition (6.3a).
         needsReview: false,
         reviewPapers: [],
         units: unitMap,
       }
-      return blueprintView(row, subject, ctx)
+      return { row, subject, ctx }
     })
+    // Only the head version is flagged, and only when published papers depend on the pair (no query otherwise).
+    for (const { row, subject, ctx } of built) {
+      if (row.status !== 'active' || ctx.dependentPaperCount === 0) continue
+      ctx.reviewPapers = await this.reviewOf(row, subject)
+      ctx.needsReview = ctx.reviewPapers.length > 0
+    }
+    return built.map(({ row, subject, ctx }) => blueprintView(row, subject, ctx))
   }
 
   async view(row: BlueprintWithSections, subject: SubjectRef): Promise<BijakBlueprintView> {
