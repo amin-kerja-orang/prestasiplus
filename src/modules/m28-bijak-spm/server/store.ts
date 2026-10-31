@@ -32,6 +32,7 @@ import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
 import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
+import type { PastSittings, ReviewPart, SelfMarkOutcome } from '../domain/semakan'
 import type { BankFilter, DecisionAction, PaperPatch, QueueFilter } from '../domain/admin-types'
 import type {
   Attempt,
@@ -46,6 +47,8 @@ import type {
   PaperDef,
   PaperKind,
   PaperSummary,
+  PartResult,
+  PartStatus,
   QuestionDef,
   QuestionResult,
   QuestionView,
@@ -380,18 +383,18 @@ export class BijakServer implements BijakApi {
     userId: number,
     paperId: string,
     mode: AttemptMode,
-    opts: { restart?: boolean } = {},
+    opts: { restart?: boolean; fresh?: boolean } = {},
   ): Promise<{ attemptId: string }> {
     await this.tick()
     const def = this.resolvePaper(paperId, userId)
     const open = Object.values(this.state.attempts).filter(
       (a) => a.userId === userId && a.paperId === paperId && a.status === 'in_progress',
     )
-    if (open.length && !opts.restart) {
+    if (open.length && !opts.restart && !opts.fresh) {
       const keep = open.sort((a, b) => b.startedAt - a.startedAt)[0]!
       return { attemptId: keep.id }
     }
-    for (const a of open) a.status = 'abandoned'
+    if (!opts.fresh) for (const a of open) a.status = 'abandoned'
     this.state.seq += 1
     const id = `pcb-${this.state.seq}-${userId}`
     const started = this.now()
@@ -688,7 +691,7 @@ export class BijakServer implements BijakApi {
         ctx: { previousFinals: finals },
       })
       finals[leaf.id] = numericValue(answer?.final ?? '')
-      return res
+      return this.withSelfMark(a, res)
     })
     const marks = parts.reduce((n, p) => n + p.marks, 0)
     return {
@@ -700,6 +703,123 @@ export class BijakServer implements BijakApi {
       counted: countedDefault,
       attempted: leaves.some((l) => !isBlank(a.answers[l.id]?.answer)),
       parts,
+    }
+  }
+
+  /**
+   * R1-B12 in the mock: a part that waits for a person is `selfMarkable`; once the pupil marks it
+   * (`selfMarks[partId]`), its mark replaces the provisional one. The keyword suggestion (R1-B13) is
+   * backend-only and is not simulated here.
+   */
+  private withSelfMark(a: Attempt, part: PartResult): ReviewPart {
+    if (part.status !== 'belum_dimarkah' && !this.selfMarksOf(a)[part.partId]) return part
+    const mine = this.selfMarksOf(a)[part.partId]
+    const base = { ...part, selfMarkable: true as const }
+    if (!mine) return base
+    const status: PartStatus =
+      mine.mark >= part.marks ? 'betul' : mine.mark <= 0 ? 'salah' : 'separa'
+    return {
+      ...base,
+      awarded: mine.mark,
+      status,
+      selfMarked: true as const,
+      ...(mine.band ? { band: mine.band } : {}),
+    }
+  }
+
+  private selfMarksOf(a: Attempt): Record<string, { mark: number; band?: string }> {
+    return ((a as Attempt & { selfMarks?: Record<string, { mark: number; band?: string }> })
+      .selfMarks ??= {})
+  }
+
+  private findGradedPart(a: Attempt, partId: string): ReviewPart | undefined {
+    for (const q of a.result?.questions ?? []) {
+      const p = q.parts.find((x) => x.partId === partId)
+      if (p) return p
+    }
+    return undefined
+  }
+
+  async selfMark(
+    userId: number,
+    attemptId: string,
+    body: { partId: string; mark: number; band?: string },
+  ): Promise<SelfMarkOutcome> {
+    await this.tick()
+    const a = this.attemptOf(userId, attemptId)
+    if (!a.result) throw new BijakError('not_submitted', 'Skema hanya didedahkan selepas Hantar')
+    const part = this.findGradedPart(a, body.partId)
+    if (!part) throw new BijakError('bad_request', 'Bahagian ini tiada dalam kertas ini.')
+    if (!part.selfMarkable) {
+      throw new BijakError(
+        'bad_request',
+        'Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.',
+      )
+    }
+    const bands = part.scheme.rubric?.bands
+    let lo = 0
+    let hi = part.marks
+    if (body.band !== undefined) {
+      const b = bands?.find((x) => x.name === body.band)
+      if (!bands) throw new BijakError('bad_request', 'Bahagian ini tidak menggunakan band.')
+      if (!b) throw new BijakError('bad_request', 'Band tidak sah untuk bahagian ini.')
+      lo = Math.min(b.range[0], part.marks)
+      hi = Math.min(b.range[1], part.marks)
+    }
+    const mark = Math.min(Math.max(Math.round(body.mark), lo), hi)
+    this.selfMarksOf(a)[body.partId] = { mark, ...(body.band ? { band: body.band } : {}) }
+    a.result = this.gradeAttempt(a)
+    this.persist()
+    const graded = this.findGradedPart(a, body.partId)!
+    return {
+      partId: body.partId,
+      awarded: mark,
+      max: part.marks,
+      ...(body.band ? { band: body.band } : {}),
+      status: graded.status,
+      attemptScore: a.result.score,
+      attemptMax: a.result.max,
+      provisional: a.result.provisional,
+      pendingReview: a.result.pendingReview,
+      result: a.result,
+    }
+  }
+
+  async retryAttempt(userId: number, attemptId: string): Promise<{ attemptId: string }> {
+    await this.tick()
+    const a = this.attemptOf(userId, attemptId)
+    if (a.status === 'in_progress') {
+      throw new BijakError('bad_request', 'Hantar percubaan ini dahulu sebelum mencuba semula.')
+    }
+    // A new sitting; other open sittings of the paper are left as they are (as the API does).
+    return this.startAttempt(userId, a.paperId, a.mode, { fresh: true })
+  }
+
+  async pastSittings(userId: number, paperId: string): Promise<PastSittings> {
+    await this.tick()
+    this.sweep()
+    const closed = Object.values(this.state.attempts)
+      .filter(
+        (x) =>
+          x.userId === userId &&
+          x.paperId === paperId &&
+          (x.status === 'submitted' || x.status === 'auto_submitted') &&
+          x.result,
+      )
+      .sort((x, y) => (y.submittedAt ?? 0) - (x.submittedAt ?? 0))
+      .slice(0, 20)
+    return {
+      lastSubmittedAttemptId: closed[0]?.id ?? null,
+      sittings: closed.map((x) => ({
+        attemptId: x.id,
+        mode: x.mode,
+        status: x.status as 'submitted' | 'auto_submitted',
+        startedAt: x.startedAt,
+        submittedAt: x.submittedAt ?? x.startedAt,
+        score: x.result!.score,
+        max: x.result!.max,
+        provisional: x.result!.provisional,
+      })),
     }
   }
 

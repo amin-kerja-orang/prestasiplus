@@ -249,7 +249,7 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(d.stats.approvedQuestions).toBe(5)
     expect(d.stats.activeSubjects).toBe(d.subjects.length)
     const card = (code: string) => d.subjects.find((s) => s.code === code)
-    expect(card('MATH')).toMatchObject({ approvedCount: 4, bankCount: 4, id: w.math })
+    expect(card('MATH')).toMatchObject({ approvedCount: 3, bankCount: 3, id: w.math }) // practice-drawable only: the structured question is not counted
     expect(card('BM')).toMatchObject({ approvedCount: 1, bankCount: 1 })
     expect(card('SEJ')).toMatchObject({ approvedCount: 0, bankCount: 0 })
     const pill = (code: string) => d.levelPills.find((p) => p.code === code)
@@ -337,10 +337,11 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
     await q({ subject: w.math, level: w.d1, tp: 3, type: 'structured' }) // not practice (non-MCQ)
     await q({ subject: w.math, level: w.t4, tp: 3 }) // not an offered level
     const d = SubjectConfig.parse((await pelajar.get('/api/practice/subjects/MATH')).body).data
-    expect(d.subject).toMatchObject({ code: 'MATH', approvedCount: 6, bankCount: 6 })
+    expect(d.subject).toMatchObject({ code: 'MATH', approvedCount: 4, bankCount: 4 })
     expect(d.levels.map((l) => l.code)).toEqual(['T4', 'T5'])
     expect(d.levels.map((l) => l.count)).toEqual([2, 2])
     expect(d.total).toBe(4)
+    expect(d.subject.bankCount).toBe(d.total) // the card equals the sum of the details
     expect(d.difficultyStats).toEqual({ '1': 1, '2': 1, '3': 0, '4': 0, '5': 2 })
     expect(d.difficultyByLevel[w.d1]).toEqual({ '1': 1, '2': 1, '3': 0, '4': 0, '5': 0 })
     expect(d.difficultyByLevel[w.d2]).toEqual({ '1': 0, '2': 0, '3': 0, '4': 0, '5': 2 })

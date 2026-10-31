@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { BijakPapersAttemptSource, type BijakQuestionSource } from '../../src/modules/bijak/papers'
-import { bootPapersApp, loginAs, type Client, type PapersTestApp } from './helpers'
+import { bootPapersApp, loginAs, serveSeededBlueprints, type Client, type PapersTestApp } from './helpers'
 
 /** The provider BE-16 plugs into `BijakAttemptPorts.providePaperSource` (eligibility of an attempt). */
 describe('BijakPapersAttemptSource (BE-15 -> BE-16)', () => {
@@ -14,6 +14,7 @@ describe('BijakPapersAttemptSource (BE-15 -> BE-16)', () => {
   beforeAll(async () => {
     missing = new Set()
     t = await bootPapersApp()
+    await serveSeededBlueprints(t.db)
     const real = t.ports.questionSource
     const filtered: BijakQuestionSource = {
       pool: (pool, scope) => real.pool(pool, scope),

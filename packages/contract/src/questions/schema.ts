@@ -55,6 +55,8 @@ export const QUESTION_MESSAGES = {
   guruAnswerLong: 'Jawapan betul tidak boleh melebihi 500 aksara.',
   status: QUESTION_STATUS_MESSAGE,
   guruChapter: 'Bab tidak sah.',
+  /** The chapter exists but is not of the question's subject and level ([PROPOSED] copy). */
+  chapterMismatch: 'Bab tidak sepadan dengan subjek dan tahap.',
   guruTopic: 'Topik tidak sah.',
   guruScript: 'Jenis tulisan tidak sah.',
 } as const
@@ -259,6 +261,8 @@ const baseInput = z.object({
   difficultyLevel: z.coerce.number({ error: QUESTION_MESSAGES.difficulty }).int(QUESTION_MESSAGES.difficulty).min(1, QUESTION_MESSAGES.difficulty).max(5, QUESTION_MESSAGES.difficulty),
   questionText: z.string({ error: QUESTION_MESSAGES.text }).trim().min(10, QUESTION_MESSAGES.text),
   dskpSpId: idOrBlank(QUESTION_MESSAGES.sp),
+  /** Bab (chapter) of the subject and level; null or '' clears it; omitted keeps it. Error key `curriculumChapterId`. */
+  curriculumChapterId: idOrBlank(QUESTION_MESSAGES.guruChapter),
   /** MCQ: four texts A to D. A bad item is reported once, under `options`. */
   options: optionList({ item: { type: 'string', minLength: 1 } }).optional(),
   correctAnswer: z.coerce.number({ error: QUESTION_MESSAGES.correctAnswer }).int(QUESTION_MESSAGES.correctAnswer).min(0, QUESTION_MESSAGES.correctAnswer).max(3, QUESTION_MESSAGES.correctAnswer).optional(),

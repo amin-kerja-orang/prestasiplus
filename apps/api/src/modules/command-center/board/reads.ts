@@ -7,6 +7,9 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { type Band, engagementBand } from '../guru/rules'
+import { guruWindows } from '../shared/windows'
+import { VISIBLE_SCHOOL_SQL, VISIBLE_USER_SQL } from '../shared/visibility'
 
 type Row = Record<string, unknown>
 const n = (v: unknown): number => Number(v ?? 0)
@@ -56,7 +59,7 @@ export interface TeacherDrillRow {
   lastAt: Date | null
 }
 
-const POPULATION = Prisma.sql`a.is_test = false AND u.is_active AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`
+const POPULATION = Prisma.sql`a.is_test = false AND u.is_active AND ${VISIBLE_USER_SQL} AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`
 
 function schoolCond(schoolId: string | undefined): Prisma.Sql {
   if (schoolId === undefined) return Prisma.empty
@@ -96,7 +99,7 @@ export class BoardReads {
                      count(*) FILTER (WHERE a.answered_at >= ${w.d30From}) AS d30
                 FROM practice_answers a WHERE a.is_test = false AND a.answered_at <= ${w.now} GROUP BY a.user_id) p
         JOIN users u ON u.id = p.user_id
-       WHERE u.is_active AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student') ${schoolCond(w.schoolId)}`)
+       WHERE u.is_active AND ${VISIBLE_USER_SQL} AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student') ${schoolCond(w.schoolId)}`)
     return {
       answers: n(r?.answers),
       correct: n(r?.correct),
@@ -108,13 +111,35 @@ export class BoardReads {
     }
   }
 
+  /**
+   * Platform engagement buckets: the teacher board rule (`engagementBand`, BR-M10-09) over the same rolling windows as the Guru
+   * path (`guruWindows`: the last 7 days = today minus 6, the last 30 days = today minus 29, MYT), per visible active student.
+   * Replaces the observed display constant, which counted pupils the product no longer shows.
+   */
+  async engagementBands(now: Date): Promise<Record<Band, number>> {
+    const win = guruWindows(now)
+    const rows = await this.q(Prisma.sql`
+      SELECT d.d7, d.d30, count(*)::int AS pupils
+        FROM (SELECT u.id,
+                     count(DISTINCT (a.answered_at AT TIME ZONE 'Asia/Kuala_Lumpur')::date) FILTER (WHERE a.answered_at >= ${win.week.from}) AS d7,
+                     count(DISTINCT (a.answered_at AT TIME ZONE 'Asia/Kuala_Lumpur')::date) AS d30
+                FROM users u
+                LEFT JOIN practice_answers a ON a.user_id = u.id AND a.is_test = false AND a.answered_at >= ${win.d30.from} AND a.answered_at <= ${now}
+               WHERE u.is_active AND ${VISIBLE_USER_SQL} AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
+               GROUP BY u.id) d
+       GROUP BY d.d7, d.d30`)
+    const out: Record<Band, number> = { champion: 0, consistent: 0, developing: 0, minimum: 0, disengaged: 0 }
+    for (const r of rows) out[engagementBand(n(r.d7), n(r.d30))] += n(r.pupils)
+    return out
+  }
+
   /** Platform top schools: answering students desc, answers desc, id asc (students without a school are skipped). */
   async topSchools(to: Date, limit: number): Promise<{ schoolId: string; schoolName: string; students: number; answers: number }[]> {
     const rows = await this.q(Prisma.sql`
       SELECT sc.id::text AS school_id, sc.name, count(*)::int AS students, sum(p.answers)::int AS answers
         FROM (SELECT a.user_id, count(*) AS answers FROM practice_answers a WHERE a.is_test = false AND a.answered_at <= ${to} GROUP BY a.user_id) p
         JOIN users u ON u.id = p.user_id JOIN schools sc ON sc.id = u.school_id
-       WHERE (sc.type IS NULL OR sc.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')) AND (u.grade IS NULL OR u.grade >= 7) AND u.is_active AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
+       WHERE ${VISIBLE_SCHOOL_SQL} AND ${VISIBLE_USER_SQL} AND u.is_active AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
        GROUP BY sc.id, sc.name ORDER BY students DESC, answers DESC, sc.id ASC LIMIT ${Math.max(0, Math.trunc(limit))}`)
     return rows.map((r) => ({ schoolId: String(r.school_id), schoolName: String(r.name), students: n(r.students), answers: n(r.answers) }))
   }
@@ -145,7 +170,7 @@ export class BoardReads {
       SELECT sc.id::text AS school_id, sc.name, count(DISTINCT a.user_id)::int AS pupils, count(*)::int AS answers,
              count(*) FILTER (WHERE a.is_correct)::int AS correct, max(a.answered_at) AS last_at
         FROM practice_answers a JOIN users u ON u.id = a.user_id JOIN schools sc ON sc.id = u.school_id
-       WHERE ${span(s)} AND (sc.type IS NULL OR sc.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')) AND (u.grade IS NULL OR u.grade >= 7) GROUP BY sc.id, sc.name`)
+       WHERE ${span(s)} AND ${VISIBLE_SCHOOL_SQL} AND ${VISIBLE_USER_SQL} GROUP BY sc.id, sc.name`)
     return rows.map((r) => ({
       schoolId: String(r.school_id),
       schoolName: String(r.name),

@@ -77,9 +77,10 @@ describe('PoC profile: every demo account of docs/AKAUN-DEMO.md', () => {
     }
   })
 
-  it('the admin sees non-empty aggregates over several schools', async () => {
+  it('the admin sees non-empty aggregates over the visible schools', async () => {
     const d = (await read('admin@demo.test', '/api/monitoring/overview')) as { kpi: { schools: number; students: number; answers: number } }
-    expect(d.kpi.schools).toBeGreaterThan(1)
+    // Secondary-only: the primary demo schools are hidden, so only one secondary school is visible.
+    expect(d.kpi.schools).toBeGreaterThanOrEqual(1)
     expect(d.kpi.students).toBeGreaterThan(0)
     expect(d.kpi.answers).toBeGreaterThan(0)
   })

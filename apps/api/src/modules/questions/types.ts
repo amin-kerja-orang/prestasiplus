@@ -145,7 +145,7 @@ export interface QuestionRecord {
   liveVersionNo: number | null
   groupId: string | null
   groupPosition: number | null
-  /** `question_tags` kind `pool` present (flat `spmPool`). */
+  /** Legacy `pool` tag present (kept for compatibility; no serving path reads it since R1-B06, see `QuestionFilter.spmPool`). */
   spmPool: boolean
   /** BE-42: the PKSK tags (`pksk_domain` code, `pksk_level`) when the question is a PKSK question, else null. */
   pksk?: { domainCode: string; level: 'T1' | 'T4' } | null
@@ -160,6 +160,8 @@ export interface QuestionView extends QuestionRecord {
   level: NamedRef | null
   /** Internal file id to public token for the images of this question (stem and options). */
   imageTokens?: Record<string, string>
+  /** Name of the curriculum chapter of the version (the admin "Bab" label), or null. */
+  chapterName?: string | null
 }
 
 /** Admin detail: DSKP chain (unit/sk/sp) and creator name resolved through the owners' repositories. */
@@ -227,7 +229,7 @@ export interface QuestionFilter {
   active?: boolean
   excludeIds?: readonly string[]
   type?: StoreQuestionType
-  /** `true`: only questions with a `pool` tag (flat `spmPool`); `false`: only questions without one. */
+  /** R1-B06: `true` = SPM-servable (shared `SPM_SERVABLE_SQL`: offered level T4/T5, linked active subject), NOT the legacy `pool` tag; `false` = the complement. */
   spmPool?: boolean
   /**
    * `true`: only questions outside any stimulus group (`questions.group_id IS NULL`), the practice, games and battle servable

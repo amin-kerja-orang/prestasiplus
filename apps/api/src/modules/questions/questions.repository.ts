@@ -5,7 +5,7 @@ import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { kbatOf, missingLeafSql } from './effective-leaf'
 import { isQuestionStatus } from './status'
@@ -86,7 +86,6 @@ export interface NewQuestion {
   createdById: bigint | null
   groupId: bigint | null
   groupPosition: number | null
-  spmPool: boolean
   /** BE-42: tags a PKSK question (the only way a `pksk_choice` part may be stored). */
   pksk?: { domainCode: string; level: 'T1' | 'T4' }
   /** Clock time: stamps created_at / updated_at (and published_at when created published). */
@@ -692,11 +691,10 @@ export class QuestionsRepository {
         liveVersionNo: input.version.status === 'published' ? 1 : null,
         createdAt: input.now,
         updatedAt: input.now,
-        ...(input.spmPool || input.pksk
+        ...(input.pksk
           ? {
               tags: {
                 create: [
-                  ...(input.spmPool ? [{ kind: 'pool', code: 'spm' }] : []),
                   ...(input.pksk ? [{ kind: 'pksk_domain', code: input.pksk.domainCode }, { kind: 'pksk_level', code: input.pksk.level }] : []),
                 ],
               },
@@ -1060,8 +1058,8 @@ export class QuestionsRepository {
       conds.push(tps.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.difficulty_tp IN (${Prisma.join(tps)})`)
     }
     if (filter.spmPool !== undefined) {
-      const pool = Prisma.sql`EXISTS (SELECT 1 FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pool')`
-      conds.push(filter.spmPool ? pool : Prisma.sql`NOT ${pool}`)
+      // R1-B06: the shared SPM-servable definition (offered level, linked active subject), no longer the `pool` tag.
+      conds.push(filter.spmPool ? SPM_SERVABLE_SQL : Prisma.sql`NOT ${SPM_SERVABLE_SQL}`)
     }
     if (filter.spId !== undefined) {
       const key = bi(filter.spId)
