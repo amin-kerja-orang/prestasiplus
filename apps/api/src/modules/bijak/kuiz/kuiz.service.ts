@@ -275,7 +275,8 @@ export class KuizService {
     const current = pages[wanted - 1]
     if (!current) throw invalidValue('page')
 
-    const prepared = await this.prepare(current.questions)
+    // A question whose required stimulus cannot be shown is skipped, as in random mode (V2 §1.8 is silent on this case).
+    const prepared = (await this.prepare(current.questions)).filter((p) => p.complete)
     const tokens = await this.tokensOf(prepared.flatMap((p) => p.fileIds))
     const subjects = await this.subjectNames(current.questions)
     // D90: members of one stimulus group are kept together at the place of the first member, in group order, and the group
@@ -305,7 +306,8 @@ export class KuizService {
       const ctx = this.context(p, tokens, subjects, 'own')
       const gid = p.record.groupId
       if (gid !== null && !groups.some((g) => g.id === gid)) groups.push({ id: gid, stimuli: stimuliWithTokens(p.resolved, tokens, 'group') })
-      for (const ref of leavesOf(p.record.id, p.record.version.parts)) items.push(toItem(p.record, ref, ctx))
+      // The question's own stimuli are shown once, on its first leaf; later parts follow it without repeating them.
+      leavesOf(p.record.id, p.record.version.parts).forEach((ref, i) => items.push(toItem(p.record, ref, i === 0 ? ctx : { ...ctx, stimuli: [] })))
     }
     return BijakKuizPaperPageSchema.parse({
       paper: head,
