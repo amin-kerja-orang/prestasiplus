@@ -23,13 +23,19 @@ Apply with `prisma migrate deploy`, in number order, together with the API/FE bu
 Notes:
 
 - No other team A branch carries a migration folder. T44 (Kontrak "Boleh tanda auto") uses `blueprints.auto_markable`, which already exists. The numbers 0104 to 0109 stay reserved (0105 for H-A18 if A2 files it, 0107 for the R2 pool-tag drop); 0120 to 0129 is team A's overflow range.
-- The runbook's section 2.1 names 0101 and 0102 for T25 and T33; keep the same order. 0103 is new there and should be added to its list and to its "migration history" SELECT.
+- The runbook's section 2.1 names 0101 and 0102 for T25 and T33; keep the same order. 0103 is now in it too (branch `r1/t37-r1-runbook` @ bd2c21e9: list row, before/after SELECTs in 3.1 and 3.5b, history SELECT, and the note not to run `VALIDATE CONSTRAINT` in the release).
 - Statistics: only 0100 needs `VACUUM ANALYZE question_versions;` (runtime on the production-size table not measured).
 - The NOT VALID foreign key on `attempt_id` stays NOT VALID. Do not run `VALIDATE CONSTRAINT` as part of the release; old rows have `attempt_id` values that nothing ever checked.
 
 ### 1.1 Verification SELECTs
 
-0100, 0101 and 0102 (before and after): use `r1-runbook.md` sections 3.1, 3.3, 3.4 and 3.5; those 51 statements were run on a local migrated Postgres 16 (recorded in that page's section 9). The 0103 statements below were **written from the migration file and not executed**.
+**Ran on local migrated DB (BASE-21 `a6ff0c0d` + 0102 @ `95cea5be` (T33) + 0103 @ `d1210e96` (T42), demo seed), 7/7 ok for the statements below, and 58/58 ok for the whole runbook** (`r1-runbook.md` section 9, branch `r1/t37-r1-runbook` @ bd2c21e9: 14 "before" statements on a staged database at 0091 and 0093, 44 "after" statements on the full database). Throwaway Postgres 16 container, removed afterwards. 0105 (A2, H-A18) is not on origin yet and is not in this run. Notable results:
+
+- `question_reports`: 0 rows before and after; `paper_id` bigint and `paper_label` text exist; `ck_question_reports_paper_label` and `fk_question_reports_paper_id` are validated, `fk_question_reports_attempt_id` has `convalidated = f` (NOT VALID, as designed); `ix_question_reports_paper_id` exists.
+- `cognitive_level` exists (text) with its two CHECKs; all 1277 parts are NULL right after the migration.
+- Demo data: `approved` 1268, no `published`, servable 1268, login count 493.
+- The reverse SQL in the 0102 and 0103 file headers was run in a rolled-back transaction: it drops all five objects cleanly.
+- Not covered by a run: the "later, after pupils report" SELECT returns 0 rows only because no report exists; it proves syntax, not the API write.
 
 ```sql
 -- before 0103: record the report table (nothing wrote attempt_id before)
@@ -153,6 +159,6 @@ Columns: **Visible** = what an admin or pupil sees change; **Check** = a read-on
 ## 5. Limits
 
 - Branch heads were read from origin at the time of writing; many moved during the day. Re-check a head before quoting it.
-- The 0103 SELECTs and the unit checks marked "probe" or written from the schema were not run. The runbook's SELECTs for 0092 to 0102 were run on a local database (its section 9).
+- The 0103 SELECTs were run (section 1.1). The unit checks marked "probe" or written from the schema were not run. The runbook's SELECTs for 0092 to 0102 were run on a local database (its section 9).
 - "Visible change" for unmerged units comes from the board rows, commit messages and the contract text on the branch; it was not exercised here.
 - Whether the T47 500-row stall and the H-A21 22.5 s to 500 ms figures hold on the production-size bank was not measured here.
