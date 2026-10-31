@@ -41176,6 +41176,105 @@
           "releasedQuestionIds"
         ]
       },
+      "StudioFigureLinks": {
+        "type": "object",
+        "properties": {
+          "stimulusId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "linkedItemIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        },
+        "required": [
+          "stimulusId",
+          "linkedItemIds"
+        ]
+      },
+      "StudioDskpSp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "skCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "title",
+          "skCode"
+        ]
+      },
+      "StudioDskpUnit": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudioDskpSp"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "title",
+          "sps"
+        ]
+      },
+      "StudioDskpQuery": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "educationLevelId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "subjectId",
+          "educationLevelId"
+        ]
+      },
+      "StudioDskp": {
+        "type": "object",
+        "properties": {
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudioDskpUnit"
+            }
+          }
+        },
+        "required": [
+          "units"
+        ]
+      },
       "MissionType": {
         "type": "string",
         "enum": [
@@ -102994,6 +103093,166 @@
           },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/studio/dskp": {
+      "get": {
+        "tags": [
+          "questions"
+        ],
+        "summary": "DSKP picker of the Studio: units with their SP for a subject and level",
+        "description": "Admin Pusat only, read only. Declared before `/questions/{id}` in the API so `studio` is never read as an id.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "educationLevelId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The units of the subject and level, each with its SP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StudioDskp"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: `subjectId` or `educationLevelId` missing or not an id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/stimuli/{id}/link-references": {
+      "post": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Link a figure to every open item of its batch that names it (D90)",
+        "description": "Items that already have a stimulus, and accepted, rejected or duplicate items, are left alone; the linked items are gathered next to the first one. Idempotent. Guru on own batches, Admin Pusat on all; an id outside the caller's scope is 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The items linked now (empty when there is nothing left to link).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StudioFigureLinks"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Guru or Admin Pusat only), or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown figure, or a batch outside the caller's scope.",
             "content": {
               "application/json": {
                 "schema": {

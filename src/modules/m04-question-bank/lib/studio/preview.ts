@@ -2,7 +2,7 @@
  * Pratonton (design S1.4, D90): the question as a pupil sees it, with the shared stimulus shown ONCE and every member of the
  * group under it. Maps the Studio group to the shared display library (`src/components/question-display`).
  */
-import type { StimulusData } from '../../../../components/question-display'
+import type { StimulusData } from '@/ds'
 import { imageSrc } from '../image-url'
 import type { LeafDraft, StudioDraft } from './draft'
 import type { GroupView } from './group-members'

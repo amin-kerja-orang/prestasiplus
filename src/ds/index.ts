@@ -135,3 +135,7 @@ export { formatCount, formatPercent, formatStat, EMPTY_VALUE } from './format'
 export { default as DsProgress } from './DsProgress.vue'
 export { default as DsListRow } from './DsListRow.vue'
 export { default as DsLink } from './DsLink.vue'
+
+// Shared question display (REQ-C-007): the pupil stimulus view, so admin pages (Studio Pratonton) get it from `@/ds`.
+export { StimulusFigure, StimulusGroup } from '../components/question-display'
+export type { StimulusData } from '../components/question-display'
