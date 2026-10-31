@@ -4,6 +4,7 @@ import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import {
   QUESTION_STATUS_MESSAGE,
+  QuestionCognitiveLevelSchema,
   QuestionCurriculumTagSchema,
   QuestionKbatLevelSchema,
   QuestionPartSchema,
@@ -283,6 +284,8 @@ const baseInput = z.object({
   kertas: QuestionKertasSchema.nullable().optional(),
   parts: z.array(QuestionPartSchema).min(1).optional(),
   tag: QuestionCurriculumTagSchema.optional(),
+  /** R1-B05: cognitive level of the single leaf of a flat question (a `parts` body carries it per leaf). */
+  cognitiveLevel: QuestionCognitiveLevelSchema.nullable().optional(),
   stimulusGroupId: IdSchema.nullable().optional(),
 })
 

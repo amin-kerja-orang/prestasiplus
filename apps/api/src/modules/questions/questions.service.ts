@@ -27,6 +27,7 @@ import {
   type FlatType,
 } from './projection'
 import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
+import { checkDskpGate, type DskpGateInput } from './dskp-gate'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
@@ -236,6 +237,7 @@ export class QuestionsService {
       ...(input.modelAnswer === undefined ? {} : { modelAnswer: input.modelAnswer }),
       ...(input.pointsValue === undefined ? {} : { pointsValue: input.pointsValue }),
       ...(input.optionImageFileIds === undefined ? {} : { optionImageIds: input.optionImageFileIds }),
+      ...(input.cognitiveLevel == null ? {} : { cognitiveLevel: input.cognitiveLevel }),
     }
     const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
     const status = input.status ?? 'draft'
@@ -331,6 +333,10 @@ export class QuestionsService {
       if (status === 'approved') {
         const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
         Object.assign(fields, checkKeysGate(v.parts))
+        Object.assign(
+          fields,
+          await this.dskpApprovalFields({ parts: v.parts, tp: v.difficultyTp, unitId: v.unitId, spIds: v.spIds, paperCode: v.paperCode ?? null, subjectId: v.subjectId, educationLevelId: v.educationLevelId }),
+        )
         if (Object.keys(fields).length > 0) throw fail(fields)
         // The version that served until now is superseded in the same transaction.
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
@@ -568,6 +574,15 @@ export class QuestionsService {
     return 'questionText'
   }
 
+  /**
+   * R1-B05 (ADR-0031): the DSKP part of the approve gate for a NEW approval. Binds only an SPM-bound question (a subject of the SPM
+   * catalogue at Tingkatan 4 or 5); legacy untouched questions are never re-checked because this runs only on the transition.
+   */
+  private async dskpApprovalFields(input: Omit<DskpGateInput, 'spmBound'> & { subjectId: string | null; educationLevelId: string | null }): Promise<Record<string, string>> {
+    const spmBound = await this.repo.isSpmBound(input.subjectId, input.educationLevelId)
+    return checkDskpGate({ parts: input.parts, tp: input.tp, unitId: input.unitId, spIds: input.spIds, paperCode: input.paperCode, spmBound })
+  }
+
   private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const { draft, newStemFileId } = await this.draftOf(n, status, null)
     if (provenance) {
@@ -584,6 +599,19 @@ export class QuestionsService {
       })
       // Same keys rule BE-10 offers: marks of a points key equal the leaf marks and the sum of its points.
       Object.assign(fields, checkKeysGate(n.parts))
+      // R1-B05: a NEW approval of an SPM-bound question also needs the cognitive level of every leaf and the kertas.
+      Object.assign(
+        fields,
+        await this.dskpApprovalFields({
+          parts: n.parts,
+          tp: draft.difficultyTp,
+          unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
+          spIds: draft.spNodeIds.map(idToString),
+          paperCode: draft.paperCode ?? null,
+          subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
+          educationLevelId: draft.educationLevelId === null ? null : idToString(draft.educationLevelId),
+        }),
+      )
       if (Object.keys(fields).length > 0) throw fail(fields)
     }
     const creator = parse(actor.userId)
@@ -824,6 +852,8 @@ export class QuestionsService {
         correctAnswerText: input.correctAnswerText === undefined ? flat.correctAnswerText : input.correctAnswerText,
         altAnswers: input.altAnswers ?? flat.altAnswers,
         modelAnswer: input.modelAnswer === undefined ? flat.modelAnswer : input.modelAnswer,
+        // R1-B05: the cognitive level of the single leaf survives a flat edit unless the body sends one (null clears it).
+        cognitiveLevel: input.cognitiveLevel === undefined ? ((single as { cognitiveLevel?: string | null } | undefined)?.cognitiveLevel ?? null) : input.cognitiveLevel,
       }
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
       parts = this.checkedParts(partsFromFlat(src), false)

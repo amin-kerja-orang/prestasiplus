@@ -729,6 +729,17 @@ export class QuestionsRepository {
     return out
   }
 
+  /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
+  async isSpmBound(subjectId: string | null, levelId: string | null): Promise<boolean> {
+    const subject = subjectId === null ? null : bi(subjectId)
+    const level = levelId === null ? null : bi(levelId)
+    if (subject === null || level === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one FROM spm_subject_configs c JOIN education_levels l ON l.id = ${level} AND l.code IN ('T4', 'T5')
+       WHERE c.subject_id = ${subject} LIMIT 1`
+    return rows.length > 0
+  }
+
   async groupExists(id: string): Promise<boolean> {
     const key = bi(id)
     return key !== null && (await this.db.stimulusGroup.count({ where: { id: key } })) > 0
@@ -1057,6 +1068,7 @@ export class QuestionsRepository {
           formOrigin: d.formOrigin,
           difficultyTp: d.difficultyTp,
           kbat: d.kbat,
+          cognitiveLevel: d.cognitiveLevel,
         },
       })
       if (d.options.length > 0) {
