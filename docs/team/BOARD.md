@@ -259,3 +259,13 @@ Merge order proposal for B: see REQ-A-007 (docs/qa/r1-e2e-readiness.md). Q5 deci
 | E05B-L1 own stimuli + T32-M1 | A4 | spec after REQ-B-012 |
 | T35-L2 report Arkib not version-bound | A1 (b) | = REQ-B-018 |
 | T35-L1 per-paper Kuiz archived | C2 | closes with T11 (B3) |
+
+## Cycle 12 (2026-10-31 22:20 UTC, BASE-60 a3e92b06) — team A READY re-posts on BASE-60
+
+| Unit | Branch @ head | Lane | Note |
+|---|---|---|---|
+| T26b (REQ-B-028) | r1/t26b-e2e-seed @ 5cfd6ea5 | A1 (b) | bank pool under e2e profile, X1 solved; unblocks B4 |
+| REQ-C-012 | r1/req-c012-a2 @ ba57ecc52 | A2 | edit-as-draft; questions + workflow 840/840; B3 |
+| T44 (+ H-A15) | r1/t44-blueprint-fields @ 77984abc | A3 | B2 MAJOR fixed (fixtures), reviewOf batching; 560 + 1 todo; unit 1666 |
+| T52 | r1/t52-examiner-grid @ c8490879 | A1 | BASE refresh in progress |
+In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ C1 REQ-A-008), REQ-B-031 (A1, D98), REQ-C-021 (A1, D98), REQ-B-029 (A2), REQ-B-033 (A4), H-A18 (A2, 0105).
