@@ -32,8 +32,8 @@
 | REQ-C-009 | IN-PROGRESS: batch list itemCount + reviewedCount (A2 slot 2 after r1/b-requests-a2; ETA ~17:15 UTC / 01:15 MYT) | A2 | r1/c-requests-a2 | IN-PROGRESS |
 | REQ-C-010 | IN-PROGRESS: question rows carry kertas + numberLabel (A2 slot 2, r1/c-requests-a2; ETA ~17:15 UTC / 01:15 MYT, C-010 first) | A2 | r1/c-requests-a2 | IN-PROGRESS |
 | REQ-C-011 | DELIVERED in T47: filters tahun / negeri / kertas / jenis on GET /api/questions (Tahun = source_papers.year, Negeri = exam_board, Jenis = exam_type, Kertas = paper_code trailing digit; bad value 422 "Nilai penapis tidak sah.") | A2 · T47 | r1/t47-bank-parity @ 20cc7ba3 | DELIVERED |
-| REQ-C-012 | IN-PROGRESS: POST /api/questions/:id/edit-as-draft → draft id, 409 if a draft exists (A2 slot 2, r1/c-requests-a2; ETA ~17:15 UTC / 01:15 MYT, C-010 first) | A2 | r1/c-requests-a2 | IN-PROGRESS |
-| REQ-C-013 | IN-PROGRESS: admin archive without a free-text reason (V2) + review → archived (A2 slot 2, r1/c-requests-a2; ETA ~17:15 UTC / 01:15 MYT, C-010 first) | A2 | r1/c-requests-a2 | IN-PROGRESS |
+| REQ-C-012 | IN-PROGRESS (moved to A1 to go faster): POST /api/questions/:id/edit-as-draft → exact copy of the live version as draft, 409 if a draft exists | A1 | r1/c-requests-a1 | IN-PROGRESS |
+| REQ-C-013 | IN-PROGRESS (moved to A1): admin archive without a free-text reason (V2) + review → archived | A1 | r1/c-requests-a1 | IN-PROGRESS |
 | REQ-C-014 | DECIDED (Q6, user): use the [PROPOSED] Studio copy where it fits the screen context; C flags any line that doesn't | lead | — | DELIVERED |
 | REQ-C-015 | DECIDED (Q7, user: follow V2): (a) Kuiz "✓ Semak" does NOT consume BR-07 trial checks (V2 `/simulasi/kuiz/semak` writes no practice_sessions and has no quota gate, §1.8); (b) per-paper Kuiz key + explanation stays allowed during an open scored sitting (V2 parity); B3 M1 = accepted risk by user decision. Archived questions still leave the per-paper Kuiz (REQ-A-003, AC-R1-18.4) | lead | — | DELIVERED |
 | REQ-C-016 | DELIVERED: AC-R1-18.4 now states the H-A13 refusal + started sittings keep their pinned version | A3 docs | r1/ha24-release-input @ cf49303a | DELIVERED |
