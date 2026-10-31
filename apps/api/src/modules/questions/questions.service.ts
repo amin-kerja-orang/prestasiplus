@@ -589,7 +589,6 @@ export class QuestionsService {
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
         groupPosition: groupId === null ? null : await this.repo.nextGroupPosition(groupId),
-        spmPool: false,
         now: this.clock.now(),
         version: draft,
         ...(provenance

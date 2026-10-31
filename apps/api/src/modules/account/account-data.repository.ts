@@ -3,16 +3,14 @@ import type { AccountFaith, AccountSettings } from '@pp/contract'
 
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { OFFERED_LEVEL_CODES } from '../practice/rules'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from '../questions/learner-visibility'
+import { SPM_SERVABLE_SQL } from '../questions/learner-visibility'
 
 /**
  * The public question count follows the practice draws (BR-11, D72): live-version, active, non-PKSK, objective (mcq) questions of a
  * learner-visible level that is one of the OFFERED_LEVEL_CODES (T4, T5), of an active subject linked to that level: exactly the sum of the subject cards.
- * The predicates have no parameters, so the text is static (the codes are constants).
+ * R1-B06: the level / subject / PKSK part is the shared SPM_SERVABLE_SQL (static text, the codes are constants).
  */
-const OFFERED_LEVEL_LIST = OFFERED_LEVEL_CODES.map((c) => `'${c.replaceAll("'", '')}'`).join(', ')
-export const QUESTION_COUNT_SQL = `SELECT count(*) AS c FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no WHERE q.is_active AND v.status = 'published' AND ${NOT_PKSK_SQL.sql} AND ${LEARNER_LEVEL_SQL.sql} AND v.type = 'mcq' AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.code IN (${OFFERED_LEVEL_LIST})) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id)`
+export const QUESTION_COUNT_SQL = `SELECT count(*) AS c FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no WHERE q.is_active AND v.status = 'published' AND v.type = 'mcq' AND ${SPM_SERVABLE_SQL.sql}`
 
 export interface ResetRow {
   id: string

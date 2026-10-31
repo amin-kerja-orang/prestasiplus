@@ -39,6 +39,8 @@ let chapterA: string
 let chapterB: string
 let fiveOption: string[]
 let fourOption: string[]
+/** R1-B06: SPM-servable level ids (T4, T5): the pool is defined by level, not by the legacy pool tag. */
+let offeredIds: Set<string>
 
 const spies = {
   getMany: vi.spyOn(QuestionsRepository.prototype, 'getMany'),
@@ -67,6 +69,7 @@ beforeAll(async () => {
   // Secondary-only: the fixture level is a real Tingkatan (the Darjah levels are hidden), which the seed already fills; switch those rows off so the bulk rows are the only eligible ones.
   await t.db.query(`update questions set is_active = false where id in (select question_id from question_versions where subject_id = $1 and education_level_id = $2)`, [w.tag.subjectId, dLevel])
   repo = t.get(QuestionsRepository)
+  offeredIds = new Set((await t.db.query<{ id: string }>(`select id::text id from education_levels where code in ('T4','T5')`)).map((r) => r.id))
   primary = await bulkMcqs(t.db, { count: SUBJECT_BIG + 300, subjectId: w.tag.subjectId, levelId: dLevel, chapterId, heldEvery: 20, draftEvery: 25, label: 'QL-P' })
   form4 = await bulkMcqs(t.db, { count: POOLED, subjectId: w.tag.subjectId, levelId: w.tag.levelId, poolEvery: 2, heldEvery: 50, label: 'QL-F' })
   otherLevel = (
@@ -169,7 +172,7 @@ describe('repository primitives (QLOAD)', () => {
     const tp2 = await repo.sampleIds({ subjectId: w.tag.subjectId, educationLevelId: dLevel, difficultyTp: 2 }, 40, 1)
     expect((await repo.getMany(tp2, 'live')).every((r) => r.version.difficultyTp === 2)).toBe(true)
     const pooled = await repo.sampleIds({ subjectId: w.tag.subjectId, educationLevelId: w.tag.levelId, spmPool: true }, 40, 1)
-    expect((await repo.getMany(pooled, 'live')).every((r) => r.spmPool)).toBe(true)
+    expect((await repo.getMany(pooled, 'live')).every((r) => offeredIds.has(r.version.educationLevelId ?? ''))).toBe(true)
     const excluded = new Set(draws[0])
     expect((await repo.sampleIds({ subjectId: w.tag.subjectId, educationLevelId: dLevel, excludeIds: [...excluded] }, 200, 0)).some((id) => excluded.has(id))).toBe(false)
   })
@@ -193,7 +196,7 @@ describe('repository primitives (QLOAD)', () => {
   it('groupCountsByLevelTp is one grouped statement whose cells add up to the pool', async () => {
     const cells = await repo.groupCountsByLevelTp({ subjectId: w.tag.subjectId, type: 'mcq', spmPool: true, ungrouped: true, status: 'published', active: true })
     const total = cells.reduce((a, c) => a + c.n, 0)
-    const expected = (await t.db.query<{ n: number }>(`select count(*)::int n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.is_active and v.status = 'published' and v.subject_id = $1 and exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pool') and not exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pksk_domain')`, [w.tag.subjectId]))[0]?.n
+    const expected = (await t.db.query<{ n: number }>(`select count(*)::int n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.is_active and v.status = 'published' and v.subject_id = $1 and exists (select 1 from education_levels ol where ol.id = v.education_level_id and ol.code in ('T4','T5') and ol.is_active) and exists (select 1 from subject_levels sl where sl.subject_id = v.subject_id and sl.education_level_id = v.education_level_id) and not exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pksk_domain')`, [w.tag.subjectId]))[0]?.n
     expect(total).toBe(expected)
     expect(total).toBeGreaterThan(2000)
     expect(cells.every((c) => c.levelId === w.tag.levelId || c.levelId !== dLevel)).toBe(true)
@@ -248,7 +251,7 @@ describe('SPM pool and tracking (S1, S2, S5)', () => {
   it('count and level/difficulty splits are SQL counts; nothing is hydrated', async () => {
     const pool = t.get(SpmPoolService)
     const total = await pool.count(w.tag.subjectId)
-    const expected = (await t.db.query<{ n: number }>(`select count(*)::int n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.is_active and v.status = 'published' and v.type = 'mcq' and v.subject_id = $1 and exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pool')`, [w.tag.subjectId]))[0]?.n
+    const expected = (await t.db.query<{ n: number }>(`select count(*)::int n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.is_active and v.status = 'published' and v.type = 'mcq' and v.subject_id = $1 and exists (select 1 from education_levels ol where ol.id = v.education_level_id and ol.code in ('T4','T5') and ol.is_active) and exists (select 1 from subject_levels sl where sl.subject_id = v.subject_id and sl.education_level_id = v.education_level_id)`, [w.tag.subjectId]))[0]?.n
     expect(total).toBe(expected)
     expect(total).toBeGreaterThan(2000)
     const t4 = await pool.count(w.tag.subjectId, { levelId: w.tag.levelId })
@@ -266,7 +269,7 @@ describe('SPM pool and tracking (S1, S2, S5)', () => {
     const drawn = await t.get(SpmPoolService).sample(w.tag.subjectId, 30, prngStream('spm-s'))
     expect(drawn).toHaveLength(30)
     expect(new Set(drawn.map((r) => r.id)).size).toBe(30)
-    expect(drawn.every((r) => r.spmPool && r.isActive && r.version.status === 'published')).toBe(true)
+    expect(drawn.every((r) => offeredIds.has(r.version.educationLevelId ?? '') && r.isActive && r.version.status === 'published')).toBe(true)
     expect(hydrated().total).toBeLessThanOrEqual(60)
     expect(spies.eligibleIds).not.toHaveBeenCalled()
   })
@@ -300,7 +303,7 @@ describe('battle (B1, B2)', () => {
     expect(size).toBeGreaterThan(2000)
     const ids = await deps.drawQuestions({ questionType: 'spm', subjectId: w.tag.subjectId, levelId: null }, 10, prngStream('b1'))
     expect(ids).toHaveLength(10)
-    expect((await repo.getMany(ids as string[], 'live')).every((r) => r.spmPool)).toBe(true)
+    expect((await repo.getMany(ids as string[], 'live')).every((r) => offeredIds.has(r.version.educationLevelId ?? ''))).toBe(true)
     expect(await deps.drawQuestions({ questionType: 'spm', subjectId: w.tag.subjectId, levelId: null }, 10, prngStream('b1'))).toEqual(ids)
     expect(await deps.drawQuestions({ questionType: 'spm', subjectId: w.tag.subjectId, levelId: null }, size + 1, prngStream('b1'))).toBeNull()
     expect(spies.eligibleIds).not.toHaveBeenCalled()
@@ -340,7 +343,7 @@ describe('missions and remedial (M1, M2)', () => {
     for (const id of inChapter) expect(primary).toContain(id)
     const spm = await pool.draw({ subjectId: w.tag.subjectId, spmPool: true }, 20, prngStream('m1'))
     expect(spm).toHaveLength(20)
-    expect((await repo.getMany(spm, 'live')).every((r) => r.spmPool)).toBe(true)
+    expect((await repo.getMany(spm, 'live')).every((r) => offeredIds.has(r.version.educationLevelId ?? ''))).toBe(true)
     // The ids past the old 5000-id POOL_CAP are reachable (the draw is not cut at the oldest ids).
     const ranks = (await Promise.all(Array.from({ length: 10 }, (_, i) => pool.draw({ subjectId: w.tag.subjectId, chapterId }, 30, prngStream(`m1-${String(i)}`))))).flat()
     expect(ranks.some((id) => primary.indexOf(id) >= 5000)).toBe(true)
