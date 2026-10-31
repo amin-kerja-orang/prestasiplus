@@ -74,6 +74,7 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 | T48a | D79 parity | Paper list subject + search filters (R12); title max 200 everywhere (REQ-C-008) | A3 dev-2 | — | r1/t48a-paper-list | IN-PROGRESS |
 | T43b | AC gaps | Builder publish specs AC-07.4/07.6/07.7/07.9 (split from T43) | A3 dev-2 | T34 follow-up | r1/t43b-publish-acs | IN-PROGRESS |
 | H-A24 | docs | R1 release-notes input table for B1 (migrations 0100–0103, env vars, deprecated BIJAK_POC_QUESTIONS, routes, behaviour, SELECTs) | A3 docs agent | — | r1/ha24-release-input | IN-PROGRESS |
+| T50 | AC partials | Close "partial" ACs in attempts / self-mark / rewards / Kuiz-random / Databank-Latih Tubi draw / curriculum / Prestasi | A1 | — | r1/t50-partial-acs | IN-PROGRESS |
 | T36 | R1-B07 | Remove PoC fixture and composite split; bank is the only source | **A2** | T04 (contains b08) | r1/t36-remove-poc @ 40d4851d | **READY-FOR-REVIEW** (BASE-6 merged): bank is the only question source for Bijak papers, attempts, Jana, kuiz, builder; `BIJAK_POC_QUESTIONS` deprecated no-op (warns when true); PoC export → prisma/seed/poc/export, doubles → test/support/poc; poc-flag specs rewritten + bank-sources.spec 5; bijak-papers 102, bijak-attempts 173, bijak-integration 60, bridge 110, exam-builder 295, seed 138 + 1 skip, school-admin 239, config 10, registry-boot 3 (all green); tsc 0; eslint 0. **Merge after T26, and B1 must first switch the e2e workflows off PoC papers**: `BIJAK_POC_QUESTIONS` true at compose.http.yaml:31, render.yaml:27, .github/workflows/e2e-http.yml:74, .github/workflows/frontend.yml:102 (+ deploy/vps/compose.prod.yaml:77/113 false). Seeded PoC papers become unplayable outside tests (403 not eligible; Jana 422 SHORTAGE). Release-note text in status/A2.md |
 | T37 | R1-D01/D02 | Consolidated ops runbook (migrations 0092→0093→0100→0101, env, verification queries) + D95 (admin creates + Sahkan on UAT, no seed) | **A3** (cycle 7) | T35 | r1/t37-r1-runbook | **READY-FOR-REVIEW** @ 971dfca0 (+ §4.2 → D95; before: 5540289f (+ release-notes §4.1 → D95; runbook SQL 51/51 ok on a local migrated + seeded postgres:16, recorded in §9) (was b0d0046f; BASE-6 merged; docs only: status table, 0092→0093→0100→0101→0102 with pre/post SELECTs, VACUUM ANALYZE + rollback, env names, D95 §5 Kontrak + Sahkan order, no-seed check, links T39). Follow-up on branch: release-notes §4.1 → D95; run all SELECTs on a local migrated DB |
 
@@ -217,6 +218,8 @@ Also noted: user decisions of 18:03 relayed by team B — B09b paper-review edit
 | H-A12 | r1/ha12-conformance @ e1fa7217 | A4 | shared setPocMarkBudgets; 406/406 |
 | H-A21 | r1/ha21-overview-cache @ 7399b63c | A4 | after T30 → t45-lanes |
 | T38 / T40 | r1/t38-selfmark-reward @ 662e602f / r1/t40-attempts-acs @ 90973d72 | A1 | |
+| T41 | r1/t41-curriculum-acs @ 067ff3cc | A1 | DSKP loader BM reasons (code fix), load changes no served count, Darjah text; dskp-acs 3/3 |
+| b-requests-a1 | r1/b-requests-a1 @ aa9f89dd | A1 | REQ-B-005/006/007/014a; B3 for 005/007 |
 | T42 p1 / t04-minors / H-A16 | d1210e96 / ec179b12 / b283a746 | A2 | |
 
 Merge order proposal for B: see REQ-A-007 (docs/qa/r1-e2e-readiness.md). Q5 decided (follow V2, rewards per attempt).
