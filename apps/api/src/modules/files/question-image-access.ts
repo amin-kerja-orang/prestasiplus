@@ -29,13 +29,9 @@ const PAPER_PINNED_STATUSES = ['approved', 'archived'] as const
 
 const inList = (values: readonly string[]): Prisma.Sql => Prisma.join(values.map((v) => Prisma.sql`${v}`))
 
-/**
- * SQL (one row when allowed) for: may `userId` read file `fileId` (internal bigint id) as a question image?
- * `publicToken` is the file's public token (for reference-sheet panels).
- */
-export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, publicToken: string): Prisma.Sql {
-  return Prisma.sql`
-    WITH st AS (SELECT id FROM stimuli WHERE asset_file_id = ${fileId}),
+/** `st` (stimuli whose asset is the file) and `cand` (question versions the file is on), shared by the pupil and the author rule. */
+const candidateVersionsCte = (fileId: bigint): Prisma.Sql => Prisma.sql`
+    st AS (SELECT id FROM stimuli WHERE asset_file_id = ${fileId}),
     cand AS (
       SELECT p.question_version_id AS vid
         FROM part_options o JOIN question_parts p ON p.id = o.part_id
@@ -50,7 +46,31 @@ export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, pub
         JOIN questions gq ON gq.group_id = g.group_id
         JOIN question_versions v ON v.question_id = gq.id
        WHERE g.stimulus_id IN (SELECT id FROM st)
-    ),
+    )`
+
+/**
+ * REQ-B-008: SQL (one row when allowed) for: is file `fileId` on a question (any version, a draft included) that `userId` AUTHORED
+ * (`questions.created_by_id`)? A teacher reads the images of their own questions, not those of another author. Admin is decided by
+ * the caller (unchanged); the uploader of the file is decided by the caller too (`owns`).
+ */
+export function authorMayReadQuestionImageSql(fileId: bigint, userId: bigint): Prisma.Sql {
+  return Prisma.sql`
+    WITH ${candidateVersionsCte(fileId)}
+    SELECT 1 AS one
+      FROM cand c
+      JOIN question_versions v ON v.id = c.vid
+      JOIN questions q ON q.id = v.question_id
+     WHERE q.created_by_id = ${userId}
+     LIMIT 1`
+}
+
+/**
+ * SQL (one row when allowed) for: may `userId` read file `fileId` (internal bigint id) as a question image?
+ * `publicToken` is the file's public token (for reference-sheet panels).
+ */
+export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, publicToken: string): Prisma.Sql {
+  return Prisma.sql`
+    WITH ${candidateVersionsCte(fileId)},
     sittable AS (
       SELECT pp.id, pp.reference_sheets
         FROM papers pp

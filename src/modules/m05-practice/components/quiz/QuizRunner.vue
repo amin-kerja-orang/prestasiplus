@@ -80,6 +80,8 @@ const props = withDefaults(
     correctedLine?: boolean
     /** The host list ("Senarai Subjek" / "Kembali") and the target after a start error. */
     backUrl: string
+    /** Target of the result link when it differs from `backUrl` (Latih Tubi: results go to the subject list). */
+    resultUrl?: string
     /** Target of 409 `CHAPTER_LOCKED` (default `backUrl`). */
     lockedUrl?: string
     /** `reload` (S7) and `restart` (Q1/Q2) both start a new session in place; `restart` needs `start`. */
@@ -98,6 +100,7 @@ const props = withDefaults(
     revisionChips: false,
     correctedLine: false,
     lockedUrl: undefined,
+    resultUrl: undefined,
     retry: 'restart',
     api: undefined,
     accentColor: '#3B82F6',
@@ -253,6 +256,12 @@ function leave(): void {
   void router.push(props.backUrl)
 }
 const nextLabel = computed(() => (isLast.value ? 'Lihat Keputusan' : 'Soalan Seterusnya'))
+/** The server text is the title again in Q1/Q2 ("Salah" / "Betul!"): show it only when it adds something. */
+const feedbackBody = computed(() => {
+  const f = result.value?.feedback
+  const title = result.value?.isCorrect ? labels.value.correctTitle : labels.value.wrongTitle
+  return f && f !== title ? f : undefined
+})
 const feedbackExplanation = computed(() =>
   result.value?.explanation ? `Penjelasan: ${result.value.explanation}` : undefined,
 )
@@ -435,7 +444,7 @@ const feedbackExplanation = computed(() =>
               }"
               :tone="result.isCorrect ? 'success' : 'error'"
               :title="result.isCorrect ? labels.correctTitle : labels.wrongTitle"
-              :body="result.feedback || undefined"
+              :body="feedbackBody"
               :ai-line="feedbackExplanation"
               :combo="result.isCorrect ? '+10' : undefined"
               :continue-label="nextLabel"
@@ -468,7 +477,7 @@ const feedbackExplanation = computed(() =>
           :gamification="gamification"
           :bonus-fly="bonusFly"
           :answers="answers"
-          :back-url="backUrl"
+          :back-url="resultUrl ?? backUrl"
           :hide-retry="hideRetry"
           @retry="onRetry"
           @report="openReport"

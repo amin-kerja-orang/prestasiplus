@@ -136,4 +136,53 @@ describe('one table reader: stimulus API = group read = question detail = builde
       }
     })
   }
+
+  describe('H-A16 MAJOR: replacing a table that intake stored as a pipe body', () => {
+    const PIPE = 'Tahun | Peristiwa\n--- | ---\n1957 | Merdeka'
+    const grid = { head: ['Tahun', 'Peristiwa'], rows: [['1963', 'Merdeka!']] }
+    const insert = async (body: string | null, data: unknown = null): Promise<string> =>
+      (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, body_ms, table_data) values ('table', 'Jadual intake', $1, $2::jsonb) returning id::text id`, [body, data === null ? null : JSON.stringify(data)]))[0]!.id
+
+    it('a grid sent without a body clears the old pipe body: the read shows only the new grid', async () => {
+      const id = await insert(PIPE)
+      const before = (await admin.get(`/api/stimuli/${id}`)).body.data
+      expect(before.body).toBeNull() // shown as the grid, not as text
+      expect(before.tableData).toEqual({ head: ['Tahun', 'Peristiwa'], rows: [['1957', 'Merdeka']] })
+      const put = await admin.put(`/api/stimuli/${id}`, { tableData: grid })
+      expect(put.status, JSON.stringify(put.body)).toBe(200)
+      expect(put.body.data.tableData).toEqual(grid)
+      expect(put.body.data.body).toBeNull()
+      const row = (await t.db.query<{ body_ms: string | null; body_en: string | null }>(`select body_ms, body_en from stimuli where id = $1::bigint`, [id]))[0]!
+      expect(row).toEqual({ body_ms: null, body_en: null }) // the pipe text is gone from the row, not just hidden
+      const read = (await admin.get(`/api/stimuli/${id}`)).body.data
+      expect(read.tableData).toEqual(grid)
+      expect(read.body).toBeNull()
+    })
+
+    it('a body sent with the grid is respected; a stimulus whose body is plain text keeps it', async () => {
+      const piped = await insert(PIPE)
+      const kept = await admin.put(`/api/stimuli/${piped}`, { tableData: grid, body: { ms: 'Keterangan jadual.' } })
+      expect(kept.status, JSON.stringify(kept.body)).toBe(200)
+      expect(kept.body.data.body).toEqual({ ms: 'Keterangan jadual.' })
+      expect(kept.body.data.tableData).toEqual(grid)
+      const plain = await insert('Jadual berikut', { head: ['a'], rows: [['1']] })
+      const res = await admin.put(`/api/stimuli/${plain}`, { tableData: grid })
+      expect(res.body.data.body).toEqual({ ms: 'Jadual berikut' })
+    })
+
+    it('the same stimulus in a group reads once everywhere after the replacement', async () => {
+      const id = await insert(PIPE)
+      const members: string[] = []
+      for (let i = 0; i < 2; i++) {
+        const q = await admin.post('/api/questions', mcqBody(refs, { questionText: `Soalan jadual intake ${String(i)}?` }))
+        members.push(q.body.data.id as string)
+      }
+      const g = await admin.post('/api/stimulus-groups', { stimulusIds: [id], questionIds: members })
+      expect(g.status, JSON.stringify(g.body)).toBe(201)
+      expect((await admin.put(`/api/stimuli/${id}`, { tableData: grid })).status).toBe(200)
+      const detail = (await admin.get(`/api/questions/${members[0]}`)).body.data.stimulusGroup.stimuli[0]
+      expect(detail.tableData).toEqual(grid)
+      expect(detail.body).toBeNull()
+    })
+  })
 })

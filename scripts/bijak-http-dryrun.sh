@@ -5,11 +5,14 @@
 #
 # What it does (one Postgres, one compose project `pp-s3-dryrun`):
 #   1. reuses the repo's BE-32 stack: compose.yaml + compose.http.yaml (frontend built with
-#      VITE_API_MODE=http, nginx same-origin /api, api, migrate + demo seed, BIJAK_POC_QUESTIONS=true, db);
+#      VITE_API_MODE=http, nginx same-origin /api, api, migrate + demo seed + e2e seed,
+#      BIJAK_POC_QUESTIONS=false, db);
 #   2. builds the API + migrate images from --api-ref (default origin/feature/v2-backend) and the
 #      frontend from THIS checkout. If the ref is already an ancestor of HEAD, one context is used;
 #      otherwise a detached worktree of the ref is the build context of api + migrate only;
-#   3. waits for /healthz and /api/health, then runs `npm run smoke:bijak` and the @bijak e2e (workers=1).
+#   3. waits for /healthz and /api/health, picks BIJAK_PAPER_ID (the bank demo paper, same query as
+#      .github/workflows/e2e-http.yml; aborts if it is not found), then runs `npm run smoke:bijak` and the
+#      @bijak e2e (workers=1).
 # Options:  --dry-run   print every command; execute only git fetch/rev-parse/merge-base and docker ps
 #           --api-ref   git ref of the API (default origin/feature/v2-backend)
 #           --keep      leave the stack, env files and API worktree up (you must tear down yourself)
@@ -17,7 +20,8 @@
 # Env (required to run, never stored in a file; the seed's documented demo accounts apply):
 #   BIJAK_STUDENT_USER/PASS  BIJAK_GURU_USER/PASS  BIJAK_ADMIN_SEKOLAH_USER/PASS
 # Env (optional): BIJAK_ADMIN_PUSAT_USER/PASS (objective c spec; skips itself when unset),
-#   DRYRUN_PORT (default 5196), BIJAK_SCHOOL_ID, BIJAK_PAPER_ID.
+#   DRYRUN_PORT (default 5196), BIJAK_SCHOOL_ID, BIJAK_PAPER_ID (when unset it is looked up in the stack's db:
+#   the published `pilihan` paper titled BANK_PAPER_TITLE below; the PoC papers are not playable).
 # Safety:   unique project name, unique image tags, never `docker system prune`, never touches other
 #           projects. Refuses at >= 3 running Postgres containers or a taken port. Creates .env.api and
 #           .env.db (git-ignored, random secrets) only if absent, and removes them again on teardown.
@@ -34,6 +38,8 @@ SCRATCH="${DRYRUN_SCRATCH:-C:/Users/hp/AppData/Local/Temp/claude/d--Dev-Projects
 IMG_FE="pretasiplus-frontend:s3dryrun"
 IMG_API="pretasiplus-api:s3dryrun"
 IMG_MIG="pretasiplus-api-migrate:s3dryrun"
+# The demo seed's bank paper (apps/api/prisma/seed/poc/bijak-sittings.ts BANK_PAPER_TITLE), as in e2e-http.yml.
+BANK_PAPER_TITLE="Latihan Demo Matematik Bank Soalan (Contoh)"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -201,6 +207,24 @@ if [ "$DRY" -eq 0 ]; then
   done
   [ "$ok" -eq 1 ] || { "${DC[@]}" logs --tail 60 api 2>&1 | tail -n 80; die "health did not turn green at $ORIGIN"; }
   echo "health ok: $(curl -fsS "$ORIGIN/api/health")"
+fi
+
+# ---------- paper id (same lookup as .github/workflows/e2e-http.yml) ----------
+say "pick BIJAK_PAPER_ID (bank demo paper)"
+if [ -n "${BIJAK_PAPER_ID:-}" ]; then
+  echo "BIJAK_PAPER_ID=${BIJAK_PAPER_ID} (from the environment, not looked up)"
+else
+  PAPER_SQL="select id from papers where kind = 'pilihan' and status = 'published' and title = '${BANK_PAPER_TITLE}' order by id limit 1;"
+  plan "${DC[*]} exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -tA' <<< \"$PAPER_SQL\""
+  if [ "$DRY" -eq 0 ]; then
+    # shellcheck disable=SC2016  # $POSTGRES_USER / $POSTGRES_DB expand inside the db container, not here
+    PAPER_ID="$("${DC[@]}" exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA' <<< "$PAPER_SQL")" \
+      || die "paper lookup failed (psql in the db service)"
+    PAPER_ID="$(printf '%s' "$PAPER_ID" | tr -d '[:space:]')"
+    [ -n "$PAPER_ID" ] || die "bank demo paper '${BANK_PAPER_TITLE}' not found (the demo seed did not create it)"
+    export BIJAK_PAPER_ID="$PAPER_ID"
+    echo "BIJAK_PAPER_ID=${BIJAK_PAPER_ID}"
+  fi
 fi
 
 # ---------- tests ----------
