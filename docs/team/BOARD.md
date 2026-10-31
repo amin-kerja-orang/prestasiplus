@@ -236,6 +236,7 @@ Also noted: user decisions of 18:03 relayed by team B — B09b paper-review edit
 | b-req-021 | r1/b-req-021 @ 07566831 | A4 | REQ-B-021 (a) topic label trim, (b) essay_choice choice-only = blank, (c) flat PUT guard (tiny edit in A2's questions.service); (d) closed by T31 |
 | REQ-B-008 | r1/b-req-008 @ 883ddf27 | A4 | teachers read own uploads + own-authored question images only; pupil served only; admin unchanged; uniform 404; matrix spec; B3 (tightening) |
 | servability-archived | r1/servability-archived @ f1fa3681 | A4 | simulasi_paper `archived`; dedicated `stimulus_shared_ungrouped` reason [PROPOSED] |
+| b-requests-a1b | r1/b-requests-a1b @ f79675fc | A1 (b) | REQ-B-018, REQ-B-020, REQ-C-018; BASE-27 |
 | T38 / T40 | r1/t38-selfmark-reward @ 662e602f / r1/t40-attempts-acs @ 90973d72 | A1 | |
 | T41 | r1/t41-curriculum-acs @ 067ff3cc | A1 | DSKP loader BM reasons (code fix), load changes no served count, Darjah text; dskp-acs 3/3 |
 | b-requests-a1 | r1/b-requests-a1 @ aa9f89dd | A1 | REQ-B-005/006/007/014a; B3 for 005/007 |
