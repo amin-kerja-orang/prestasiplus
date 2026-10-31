@@ -8653,6 +8653,49 @@
                 ]
               }
             ]
+          },
+          "archive": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  0
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "1"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "0"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "true"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "false"
+                ]
+              }
+            ]
           }
         },
         "required": [
