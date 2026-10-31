@@ -349,6 +349,20 @@ describe('S5 ChapterSubjectPage', () => {
     expect(t(w, 'chapter-empty').text()).toBe('Tiada bab tersedia untuk tahap ini.')
   })
 
+  it('V2 (REQ-A-005): a chapter with no question is the chip "Tiada soalan", and the unlock rule shows only while a chapter is locked', async () => {
+    api.fetchChapterSubject.mockResolvedValue({
+      ...MATH_D2,
+      chapters: [card({ id: 3, number: 1, name: 'Nombor hingga 1000', total: 0, remaining: 0 })],
+    })
+    const w = await render(ChapterSubjectPage, '/practice/chapter/MATH')
+    const empty = t(w, 'chapter-card-3')
+    expect(t(w, 'chapter-empty-3').text()).toBe('Tiada soalan')
+    expect(t(w, 'chapter-empty-3').attributes('title')).toBe('Belum ada soalan untuk Nombor hingga 1000')
+    expect(empty.findAll('a')).toHaveLength(0)
+    expect(w.text()).not.toContain('Progressive Unlock')
+    expect(w.find('[data-testid=chapter-unlock-rule]').exists()).toBe(false)
+  })
+
   it('raises the global 404 page for an unknown code', async () => {
     api.fetchChapterSubject.mockRejectedValue(
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),

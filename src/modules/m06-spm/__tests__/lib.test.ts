@@ -65,12 +65,14 @@ describe('latih tubi helpers (S4)', () => {
       count: 1,
       questionId: 570024,
     })
-    expect(parseLatihTubiQuery({ level: '9', difficulty: '1', count: 'x' })).toEqual({
+    expect(parseLatihTubiQuery({ level: '9', difficulty: '0', count: 'x' })).toEqual({
       count: null,
       levelId: null,
       difficulty: null,
       questionId: null,
     })
+    // the V2 scale starts at 1 (REQ-A-005, S-60)
+    expect(parseLatihTubiQuery({ difficulty: '1' }).difficulty).toBe(1)
   })
 })
 

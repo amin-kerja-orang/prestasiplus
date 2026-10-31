@@ -58,6 +58,9 @@ watch(
   { immediate: true },
 )
 
+// V2 has no progressive unlock (REQ-A-005, S-64): the rule is explained only while the server still locks a chapter.
+const anyLocked = computed(() => (data.value?.chapters ?? []).some((c) => c.state === 'locked'))
+
 const levelItems = computed(() =>
   (data.value?.levels ?? []).map((l) => ({
     label: `${l.name} — ${formatCount(l.count)} soalan`,
@@ -87,11 +90,11 @@ function onLevelChange(id: unknown): void {
         >
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div class="flex min-w-0 flex-col gap-1">
-            <p class="text-overline text-primary-t">Progressive Unlock</p>
+            <p v-if="anyLocked" class="text-overline text-primary-t">Progressive Unlock</p>
             <h1 class="text-title text-highlighted" data-testid="chapter-subject-name">
               {{ data.subject.name }}
             </h1>
-            <p class="max-w-prose text-body text-muted">
+            <p v-if="anyLocked" class="max-w-prose text-body text-muted" data-testid="chapter-unlock-rule">
               Lengkapkan semua soalan bab semasa dan capai 70% untuk buka bab seterusnya.
             </p>
           </div>

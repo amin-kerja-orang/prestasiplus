@@ -23,12 +23,14 @@ vi.mock('@/modules/m05-practice', async () => {
         backUrl: { type: String, default: '' },
         report: { type: Object, default: null },
         retry: { type: String, default: '' },
+        labels: { type: Object, default: undefined },
       },
       setup(props) {
         void props.api?.start(props.start)
         return () => h('div', { 'data-testid': 'runner' })
       },
     }),
+    LATIH_TUBI_LABELS: { resultTitle: 'Kuiz Selesai!', back: 'Senarai Subjek' },
     startSession: m05.startSession,
     checkAnswer: vi.fn(),
     submitSession: vi.fn(),
@@ -72,6 +74,7 @@ describe('Q1 DatabankQuizPage', () => {
     expect(runner.props('backUrl')).toBe('/spm/tahun-lepas')
     expect(runner.props('report')).toEqual({ source: 'spm' })
     expect(runner.props('retry')).toBe('restart')
+    expect(runner.props('labels')).toMatchObject({ resultTitle: 'Kuiz Selesai!', back: 'Senarai Subjek' })
   })
 })
 
@@ -88,7 +91,9 @@ describe('Q2 LatihTubiQuizPage', () => {
       levelId: 11,
       difficulty: 4,
     })
-    expect(propOf(w, 'backUrl')).toBe('/spm/latih-tubi/MATH')
+    // the result link "Senarai Subjek" goes to the subject list (V2); a refused start returns to the setup
+    expect(propOf(w, 'backUrl')).toBe('/spm/latih-tubi')
+    expect(propOf(w, 'labels')).toMatchObject({ back: 'Senarai Subjek' })
   })
 
   it('maps question_id to targetQuestionId', async () => {
@@ -117,7 +122,7 @@ describe('Q2 LatihTubiQuizPage', () => {
       '/spm/latih-tubi/MATH/quiz?count=40&level=11&difficulty=5',
     )
     expect(w.get('[data-testid=spm-no-questions]').text()).toContain(
-      'Tiada soalan untuk tetapan ini. Sila ubah tetapan kuiz.',
+      'Tiada soalan untuk pilihan ini.',
     )
     expect(w.get('[data-testid=spm-no-questions-back]').attributes('href')).toBe(
       '/spm/latih-tubi/MATH',

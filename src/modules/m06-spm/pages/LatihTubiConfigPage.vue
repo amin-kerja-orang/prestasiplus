@@ -112,6 +112,13 @@ const typeName = computed(() =>
   config.value?.targetType ? targetName(config.value.targetType) : '',
 )
 
+const levelSummary = computed(
+  () => levelChoices.value.find((l) => l.key === selectedLevel.value)?.label ?? 'Semua Tahap',
+)
+const difficultySummary = computed(
+  () => DIFFICULTY_OPTIONS.find((d) => d.key === selectedDifficulty.value)?.label ?? 'Semua',
+)
+
 /** A choice is a solid button when picked, a tonal one otherwise. */
 const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | 'error' = 'primary') =>
   ({ color: on ? color : 'neutral', variant: on ? 'solid' : 'soft' }) as const
@@ -121,7 +128,7 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="spm-config-page">
     <h1 v-if="!config" class="sr-only">Latih Tubi SPM</h1>
     <template v-if="config">
-      <DsBackLink to="/spm/latih-tubi" label="Kembali" data-testid="spm-back" />
+      <DsBackLink to="/spm/latih-tubi" label="Kembali ke Senarai Subjek" data-testid="spm-back" />
 
       <UCard data-testid="config-hero">
         <div class="flex items-center gap-4">
@@ -148,7 +155,7 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
 
           <!-- Tingkatan -->
           <div class="flex flex-col gap-3">
-            <h3 class="text-subheading text-highlighted">Tingkatan</h3>
+            <h3 class="text-subheading text-highlighted">Pilih Tahap Pendidikan</h3>
             <DsLoadError
               v-if="levelsBroken"
               :message="LOAD_ERROR"
@@ -156,7 +163,17 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
               retry-testid="config-levels-retry"
               @retry="retryLevels()"
             />
-            <div v-else-if="!levelsLoading" class="grid grid-cols-2 gap-2 md:gap-3" data-testid="config-levels">
+            <div v-else-if="!levelsLoading" class="grid grid-cols-2 gap-2 md:gap-3 lg:grid-cols-3" data-testid="config-levels">
+              <UButton
+                v-bind="pick(selectedLevel === null)"
+                class="h-auto min-h-14 flex-col justify-center gap-0 py-2"
+                :aria-pressed="selectedLevel === null"
+                data-testid="level-all"
+                @click="selectedLevel = null"
+              >
+                <span class="text-label">Semua Tahap</span>
+                <span class="text-caption" data-testid="level-all-count">{{ formatCount(config.total) }} soalan</span>
+              </UButton>
               <UButton
                 v-for="l in levelChoices"
                 :key="l.key"
@@ -176,8 +193,8 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
 
           <!-- Tahap Kesukaran -->
           <div class="flex flex-col gap-3">
-            <h3 class="text-subheading text-highlighted">Tahap Kesukaran</h3>
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3" data-testid="config-difficulties">
+            <h3 class="text-subheading text-highlighted">Pilih Tahap Kesukaran</h3>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:gap-3 lg:grid-cols-5" data-testid="config-difficulties">
               <UButton
                 v-for="d in DIFFICULTY_OPTIONS"
                 :key="d.key"
@@ -220,6 +237,21 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
               Pilih bilangan soalan ikut keperluan latihan anda.
             </p>
           </div>
+
+          <dl class="grid grid-cols-1 gap-2 sm:grid-cols-3" data-testid="config-summary">
+            <div class="min-w-0">
+              <dt class="text-caption text-muted">Tahap Pendidikan</dt>
+              <dd class="text-label break-words text-highlighted" data-testid="summary-level">{{ levelSummary }}</dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-caption text-muted">Kesukaran</dt>
+              <dd class="text-label break-words text-highlighted" data-testid="summary-difficulty">{{ difficultySummary }}</dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-caption text-muted">Bilangan Soalan</dt>
+              <dd class="text-label text-highlighted" data-testid="summary-count">{{ questionCount }}</dd>
+            </div>
+          </dl>
 
           <UButton
             :to="href"

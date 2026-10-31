@@ -5,6 +5,18 @@
 
 import type { QuizLabels } from './quiz-types'
 
+/**
+ * Result copy of Latih Tubi SPM, Databank Soalan SPM and Soalan by Chapter, from the V2 .cloud Latih Tubi view (REQ-A-005,
+ * S-53 / S-62): "Kuiz Selesai!", "Tahniah, anda telah lengkapkan {subject}.", "Cuba Lagi", "Senarai Subjek" (the chapter
+ * host overrides `back`). The other quiz hosts keep PRACTICE_LABELS.
+ */
+export const LATIH_TUBI_LABELS: Partial<QuizLabels> = {
+  resultTitle: 'Kuiz Selesai!',
+  completed: 'Tahniah, anda telah lengkapkan {subject}.',
+  retry: 'Cuba Lagi',
+  back: 'Senarai Subjek',
+}
+
 /** S7 `/practice/revision/{CODE}` (SOURCE-DERIVED from the captured page source). */
 export const REVISION_LABELS: QuizLabels = {
   loadingTitle: 'Memuat Soalan Ulang Kaji...',
