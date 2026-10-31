@@ -114,8 +114,8 @@ describe('StudioEditorPage (R1-F03b)', () => {
     expect(t(w, 'studio-question-tp').text()).toContain('TP soalan: 3')
     expect(Number(/(\d+) belum lengkap/.exec(w.find('[data-testid="studio-save-gaps"]').exists() ? t(w, 'studio-save-gaps').text() : '0 belum lengkap')?.[1])).toBeLessThan(before)
 
-    // Langkah 2 asks to save first: a group is made from a saved question
-    expect(has(w, 'studio-group-save-first')).toBe(true)
+    // Langkah 2 offers the group at once (D93: a draft group may have 0 members)
+    expect(has(w, 'studio-group-create')).toBe(true)
     await t(w, 'studio-form').trigger('submit')
     await flushPromises()
 
@@ -294,5 +294,20 @@ describe('StudioEditorPage (R1-F03b)', () => {
     const gaps = Number(/(\d+) belum lengkap/.exec(t(w, 'studio-save-gaps').text())?.[1])
     await t(w, 'studio-kertas').setValue('2')
     expect(Number(/(\d+) belum lengkap/.exec(t(w, 'studio-save-gaps').text())?.[1])).toBe(gaps - 1)
+  })
+
+  it('D93: a group made on the create page takes the question when it is saved (0 members first)', async () => {
+    studio.createStimulus.mockResolvedValue({ data: GROUP.stimuli[0], status: 'ok' })
+    studio.createGroup.mockResolvedValue({ data: { ...GROUP, questionIds: [], warning: 'Kumpulan ini kini kosong.' }, status: 'ok' })
+    studio.createQuestionInGroup.mockResolvedValue({ data: { id: '99', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/create')
+    await t(w, 'studio-group-new-body').setValue('Petikan tentang pasar tani.')
+    await t(w, 'studio-group-create').trigger('click')
+    await flushPromises()
+    expect(studio.createGroup).toHaveBeenCalledWith({ label: null, stimulusIds: ['70'], questionIds: [] })
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect(studio.createQuestionInGroup.mock.calls[0]?.[0]).toBe('9')
+    expect(studio.createStudioQuestion).not.toHaveBeenCalled()
   })
 })

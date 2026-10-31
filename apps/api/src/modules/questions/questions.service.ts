@@ -7,7 +7,6 @@ import {
 } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
-import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock } from '../../db/clock'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
@@ -16,7 +15,6 @@ import { FilesService } from '../files'
 import { UsersRepository } from '../users'
 import { bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
 import { gradeQuestion } from './grading'
-import { checkGroupChange } from './group-lock'
 import {
   difficultyOf,
   flatFromVersion,
@@ -29,6 +27,7 @@ import {
   type FlatType,
 } from './projection'
 import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
+import { GroupMembers } from './group-members'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
@@ -193,6 +192,7 @@ export class QuestionsService {
     @Inject(FilesService) private readonly files: FilesService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(GroupMembers) private readonly groupMembers: GroupMembers,
   ) {}
 
   // --- admin (Admin Pusat) ----------------------------------------------------------------------
@@ -597,12 +597,12 @@ export class QuestionsService {
     const id = await this.prisma.transaction(async () => {
       await this.attachStem(draft, newStemFileId)
       const groupId = n.stimulusGroupId ? n.stimulusGroupId : null
-      if (groupId !== null) await checkGroupChange(this.prisma.client as TxClient, null, groupId)
       const created = await this.repo.create({
         sourceType: provenance?.sourceType ?? 'manual',
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
-        groupPosition: groupId === null ? null : await this.repo.nextGroupPosition(groupId),
+        // D90 / R1-T32: the same member rules as the stimulus routes; locks the group so concurrent creates get distinct positions.
+        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId)),
         now: this.clock.now(),
         version: draft,
         ...(provenance
@@ -891,9 +891,9 @@ export class QuestionsService {
       } else {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
       }
-      if (input.stimulusGroupId !== undefined && (await checkGroupChange(this.prisma.client as TxClient, BigInt(record.id), input.stimulusGroupId))) {
-        const gid = input.stimulusGroupId
-        await this.repo.setGroup(record.id, gid, gid === null ? null : await this.repo.nextGroupPosition(gid))
+      if (input.stimulusGroupId !== undefined) {
+        // D90 / R1-T32: leaving or joining a group goes through the same rules as the stimulus routes (served lock, caps, PKSK, ...).
+        await this.groupMembers.move(record.id, fresh.groupId, input.stimulusGroupId)
       }
     }, TX)
     const after = await this.repo.get(record.id, 'latest')

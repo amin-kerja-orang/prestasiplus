@@ -178,7 +178,8 @@ async function save(): Promise<void> {
       await load()
       unlocked.value = !SERVING.includes(status.value)
     } else {
-      const into = typeof route.query.kumpulan === 'string' && /^\d+$/.test(route.query.kumpulan) ? route.query.kumpulan : null
+      // D93: a group made (or joined) on this page before the question exists takes the question when it is saved.
+      const into = draft.value.groupId
       const body = toRequestBody(draft.value)
       const res = into === null ? await createStudioQuestion(body) : await createQuestionInGroup(into, body)
       flash.success('Soalan draf disimpan. Terbitkan melalui semakan apabila sedia.')

@@ -16,8 +16,7 @@ import {
   dissolveGroup,
   fetchGroup,
   fetchStudioQuestion,
-  removeGroupMember,
-  reorderGroupMembers,
+  setGroupMembers,
   searchQuestions,
   setGroupStimuli,
   updateStimulus,
@@ -75,7 +74,6 @@ const savedMembers = computed(() => view.value?.members ?? [])
 const dirty = computed(() => planMembers(savedMembers.value, members.value) !== null)
 const issues = computed(() => memberIssues(members.value))
 const stimulusFull = computed(() => (view.value?.stimuli.length ?? 0) >= 3)
-const canCreate = computed(() => props.currentQuestionId !== null && picks.value.length >= 1)
 
 function adopt(next: GroupView | null): void {
   view.value = next
@@ -98,7 +96,7 @@ async function read(id: string): Promise<GroupView> {
       if (SERVING.includes(q.status)) served = true
     }
   }
-  return { id: g.id, stimuli: g.stimuli, members: list, locked: served }
+  return { id: g.id, stimuli: g.stimuli, members: list, locked: served, warning: g.warning ?? null }
 }
 
 let seq = 0
@@ -147,6 +145,7 @@ async function reload(): Promise<void> {
   notice.value = keep.notice
 }
 
+/** D93: a group may start with 0 or 1 questions; it warns until it has 2. This question joins it when it is saved. */
 async function create(): Promise<void> {
   const me = props.currentQuestionId
   const issue = stimulusIssue(fresh.value)
@@ -154,14 +153,11 @@ async function create(): Promise<void> {
     problems.value = [issue]
     return
   }
-  if (me === null || picks.value.length < 1) {
-    problems.value = ['Pilih sekurang-kurangnya satu soalan lain untuk dikongsi.']
-    return
-  }
   const g = await run(async () => {
     const s = await createStimulus(toCreateBody(fresh.value))
     const label = fresh.value.label.trim() === '' ? null : fresh.value.label.trim()
-    return createGroup({ label, stimulusIds: [s.data.id], questionIds: [me, ...picks.value.map((p) => p.id)] })
+    const questionIds = [...(me === null ? [] : [me]), ...picks.value.map((p) => p.id)]
+    return createGroup({ label, stimulusIds: [s.data.id], questionIds })
   })
   if (g) {
     fresh.value = blankStimulus()
@@ -171,10 +167,16 @@ async function create(): Promise<void> {
   }
 }
 
+/** Joins an existing group by id: a saved question is added to it now; a new one joins when it is saved. */
 function attach(): void {
   const id = attachId.value.trim()
   const me = props.currentQuestionId
-  if (id === '' || me === null) return
+  if (id === '') return
+  if (me === null) {
+    attachId.value = ''
+    groupId.value = id
+    return
+  }
   void run(() => addGroupMember(id, me)).then((g) => {
     if (g) {
       attachId.value = ''
@@ -222,19 +224,13 @@ async function addStimulus(): Promise<void> {
   }
 }
 
-/** Takes out, adds, then orders: the calls of the stimulus API; the first refusal stops and the list is read again. */
+/** One atomic call with the complete ordered list; a refusal (a served member, caps) leaves the group as it was. */
 async function saveMembers(): Promise<void> {
   const v = view.value
   const plan = v ? planMembers(v.members, members.value) : null
   if (!v || !plan) return
-  const done = await run(async () => {
-    for (const q of plan.remove) await removeGroupMember(v.id, q)
-    for (const q of plan.add) await addGroupMember(v.id, q)
-    const last = await reorderGroupMembers(v.id, plan.order)
-    return last
-  })
+  await run(() => setGroupMembers(v.id, plan.order))
   await reload()
-  if (done === null) return
 }
 
 async function dissolve(): Promise<void> {
@@ -307,12 +303,8 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
       <DsText variant="body" tone="muted" :data-testid="`${testid}-none`">
         Soalan ini tidak berkongsi rangsangan. Cipta satu rangsangan kongsi jika beberapa soalan merujuk Rajah, petikan atau jadual yang sama.
       </DsText>
-      <DsCallout v-if="currentQuestionId === null" tone="info" :data-testid="`${testid}-save-first`">
-        Simpan draf soalan ini dahulu. Kumpulan dicipta daripada soalan yang sudah disimpan, bersama sekurang-kurangnya satu soalan lain.
-      </DsCallout>
-      <template v-else>
         <StudioStimulusEditor v-model="fresh" :testid="`${testid}-new`" :disabled="disabled" />
-        <DsHeading :level="3">Soalan lain yang berkongsi rangsangan ini</DsHeading>
+        <DsHeading :level="3">Soalan lain yang berkongsi rangsangan ini (pilihan)</DsHeading>
         <DsStack as="ul" gap="xs" :data-testid="`${testid}-picks`">
           <DsSurface v-for="p in picks" :key="p.id" as="li" level="soft" padding="sm" shadow="none">
             <DsCluster gap="xs" :wrap="false">
@@ -333,7 +325,7 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
           </DsSurface>
         </DsStack>
         <DsCluster gap="sm" align="end">
-          <UButton type="button" color="primary" :loading="busy" :disabled="disabled || !canCreate" :data-testid="`${testid}-create`" @click="create">
+          <UButton type="button" color="primary" :loading="busy" :disabled="disabled" :data-testid="`${testid}-create`" @click="create">
             Cipta rangsangan kongsi
           </UButton>
           <DsFormField v-slot="{ id }" native label="Atau sertai kumpulan sedia ada (ID)" :for="`${testid}-attach-id`">
@@ -343,7 +335,6 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
             Sertai
           </UButton>
         </DsCluster>
-      </template>
     </template>
 
     <!-- The group -->
@@ -353,6 +344,7 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
       </DsCallout>
 
       <DsText variant="body" tone="muted" :data-testid="`${testid}-id`">Kumpulan #{{ view.id }}</DsText>
+      <DsText v-if="view.warning" variant="caption" tone="warning" :data-testid="`${testid}-warning`">{{ view.warning }}</DsText>
 
       <DsStack as="section" gap="md" aria-label="Rangsangan kumpulan">
         <DsStack v-for="(s, i) in view.stimuli" :key="s.id" gap="sm" :data-testid="`${testid}-stimulus-${s.id}`">

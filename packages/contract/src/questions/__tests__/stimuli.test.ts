@@ -53,13 +53,18 @@ describe('R1-T32 stimulus request schemas (D90)', () => {
     expect(StimulusCreateRequestSchema.safeParse({ kind: 'table', tableData: { head: ['h'], rows: Array.from({ length: STIMULUS_LIMITS.rows + 1 }, () => ['1']) } }).success).toBe(false)
   })
 
-  it('a group has 1 to 3 stimuli and at least 2 member questions, and no marks key', () => {
+  it('a group has 1 to 3 stimuli and 0 to 40 member questions (D93), and no marks key', () => {
     const base = { stimulusIds: ['1'], questionIds: ['10', '11'] }
     expect(StimulusGroupCreateRequestSchema.safeParse(base).success).toBe(true)
     expect(StimulusGroupCreateRequestSchema.safeParse({ ...base, stimulusIds: ['1', '2', '3'] }).success).toBe(true)
     expect(fieldsOf(StimulusGroupCreateRequestSchema.safeParse({ ...base, stimulusIds: [] })).stimulusIds).toBe(STIMULUS_MESSAGES.stimuliCount)
     expect(fieldsOf(StimulusGroupCreateRequestSchema.safeParse({ ...base, stimulusIds: ['1', '2', '3', '4'] })).stimulusIds).toBe(STIMULUS_MESSAGES.stimuliCount)
-    expect(fieldsOf(StimulusGroupCreateRequestSchema.safeParse({ ...base, questionIds: ['10'] })).questionIds).toBe(STIMULUS_MESSAGES.membersMin)
+    // D93: a draft group may have 0 or 1 members; only the 40-member cap is a 422.
+    expect(StimulusGroupCreateRequestSchema.safeParse({ ...base, questionIds: ['10'] }).success).toBe(true)
+    expect(StimulusGroupCreateRequestSchema.safeParse({ stimulusIds: ['1'], questionIds: [] }).success).toBe(true)
+    expect(StimulusGroupCreateRequestSchema.safeParse({ stimulusIds: ['1'] }).data?.questionIds).toEqual([])
+    expect(StimulusGroupCreateRequestSchema.safeParse({ ...base, questionIds: Array.from({ length: 40 }, (_, i) => String(i + 1)) }).success).toBe(true)
+    expect(fieldsOf(StimulusGroupCreateRequestSchema.safeParse({ ...base, questionIds: Array.from({ length: 41 }, (_, i) => String(i + 1)) })).questionIds).toBe(STIMULUS_MESSAGES.membersTooMany)
     expect(StimulusGroupCreateRequestSchema.safeParse({ ...base, marks: 4 }).success).toBe(false)
     expect(StimulusGroupUpdateRequestSchema.safeParse({}).success).toBe(false)
     expect(StimulusGroupReorderRequestSchema.safeParse({ questionIds: [] }).success).toBe(false)

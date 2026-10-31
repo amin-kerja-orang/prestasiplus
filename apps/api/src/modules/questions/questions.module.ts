@@ -11,6 +11,7 @@ import { AdminQuestionsController, GuruQuestionsController, StimuliController, S
 import { PkskQuestionsService } from './pksk.service'
 import { QuestionsRepository } from './questions.repository'
 import { QuestionsService } from './questions.service'
+import { GroupMembers } from './group-members'
 import { StimuliRepository } from './stimuli.repository'
 import { StimuliService } from './stimuli.service'
 import { StudioController, StudioDskpService } from './studio'
@@ -25,7 +26,7 @@ import { StudioController, StudioDskpService } from './studio'
 @Module({
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
   controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, StudioController],
-  providers: [QuestionsRepository, QuestionsService, StimuliRepository, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService],
+  providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService],
   exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource],
 })
 export class QuestionsModule implements OnModuleInit {

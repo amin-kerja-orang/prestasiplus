@@ -15,15 +15,14 @@ const api = vi.hoisted(() => ({
   setGroupStimuli: vi.fn(),
   dissolveGroup: vi.fn(),
   addGroupMember: vi.fn(),
-  removeGroupMember: vi.fn(),
-  reorderGroupMembers: vi.fn(),
+  setGroupMembers: vi.fn(),
   searchQuestions: vi.fn(),
   uploadStudioImage: vi.fn(),
 }))
 vi.mock('../../api/studio', () => api)
 
 const stimulus = { id: '70', kind: 'diagram', label: 'Rajah 1', caption: null, alt: 'Segi tiga', body: null, tableData: null, sourceCitation: null, imageId: 'abcdefghijklmnopqrstuv' }
-const detail = (ids = ['11', '12', '13']) => ({ id: '5', label: 'Rajah 1', scope: 'section', stimuli: [stimulus], questionIds: ids })
+const detail = (ids = ['11', '12', '13'], warning: string | null = null) => ({ id: '5', label: 'Rajah 1', scope: 'section', stimuli: [stimulus], questionIds: ids, warning })
 const question = (id: string, status = 'draft') => ({ id, status, questionText: `Berdasarkan Rajah 1, apakah S${id}?`, numberLabel: id })
 
 let wrapper: VueWrapper | null = null
@@ -59,42 +58,30 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     expect(t(w, 'save-members').attributes('disabled')).toBeDefined()
   })
 
-  it('reorders and removes locally, then saves with DELETE then PUT order (no add)', async () => {
-    api.removeGroupMember.mockResolvedValue({ data: { group: detail(['11', '13']), warning: null }, status: 'ok' })
-    api.reorderGroupMembers.mockResolvedValue({ data: detail(['13', '11']), status: 'Susunan soalan dalam kumpulan berjaya dikemaskini.' })
+  it('reorders, removes and adds locally, then saves ONE atomic ordered list (PUT members)', async () => {
+    api.searchQuestions.mockResolvedValue({ data: [{ id: '14', questionText: 'Berdasarkan Rajah 1, apakah S14?' }, { id: '11', questionText: 'sudah ada' }], meta: {} })
+    api.setGroupMembers.mockResolvedValue({ data: detail(['13', '11', '14']), status: 'Susunan soalan dalam kumpulan berjaya dikemaskini.' })
     const w = await render()
     await t(w, 'member-13-up').trigger('click')
     await t(w, 'member-11-down').trigger('click')
     expect(order(w)).toEqual(['13', '11', '12'])
     await t(w, 'member-12-remove').trigger('click')
-    expect(api.removeGroupMember).not.toHaveBeenCalled()
-    await t(w, 'save-members').trigger('click')
-    await flushPromises()
-    expect(api.removeGroupMember).toHaveBeenCalledWith('5', '12')
-    expect(api.addGroupMember).not.toHaveBeenCalled()
-    expect(api.reorderGroupMembers).toHaveBeenCalledWith('5', ['13', '11'])
-  })
-
-  it('adds a found question: POST member, then PUT order with it at the end', async () => {
-    api.searchQuestions.mockResolvedValue({ data: [{ id: '14', questionText: 'Berdasarkan Rajah 1, apakah S14?' }, { id: '11', questionText: 'sudah ada' }], meta: {} })
-    api.addGroupMember.mockResolvedValue({ data: detail(['11', '12', '13', '14']), status: 'ok' })
-    api.reorderGroupMembers.mockResolvedValue({ data: detail(['11', '12', '13', '14']), status: 'ok' })
-    const w = await render()
     await w.get('[data-testid="studio-group-search"]').setValue('Rajah')
     await flushPromises()
     expect(w.findAll('[data-testid^="studio-group-found-"][data-testid$="-add"]').map((b) => b.attributes('data-testid'))).toEqual(['studio-group-found-14-add'])
     await t(w, 'found-14-add').trigger('click')
+    expect(api.setGroupMembers).not.toHaveBeenCalled()
     await t(w, 'save-members').trigger('click')
     await flushPromises()
-    expect(api.addGroupMember).toHaveBeenCalledWith('5', '14')
-    expect(api.reorderGroupMembers).toHaveBeenCalledWith('5', ['11', '12', '13', '14'])
+    expect(api.setGroupMembers).toHaveBeenCalledTimes(1)
+    expect(api.setGroupMembers).toHaveBeenCalledWith('5', ['13', '11', '14'])
   })
 
   it('warns below two members and discards unsaved changes', async () => {
     const w = await render()
     await t(w, 'member-12-remove').trigger('click')
     await t(w, 'member-13-remove').trigger('click')
-    expect(t(w, 'issues').text()).toContain('sekurang-kurangnya 2 soalan')
+    expect(t(w, 'issues').text()).toBe('Kumpulan perlu sekurang-kurangnya 2 soalan.')
     await t(w, 'discard').trigger('click')
     expect(order(w)).toEqual(['11', '12', '13'])
     expect(has(w, 'issues')).toBe(false)
@@ -107,14 +94,38 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     for (const id of ['member-13-up', 'member-13-remove', 'dissolve', 'search', 'add-stimulus']) expect(t(w, id).attributes('disabled')).toBeDefined()
   })
 
-  it('shows the server refusal and reads the group again', async () => {
-    api.reorderGroupMembers.mockRejectedValue(new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'x', fields: { questionIds: 'Susunan mesti menyenaraikan semua soalan kumpulan tepat sekali.' } }))
+  it('shows the 409 messages of the served lock in BM and reads the group again', async () => {
+    const groupServed = 'Kumpulan ini mempunyai soalan yang sedang dipaparkan kepada murid. Soalan itu tidak boleh dikeluarkan atau disusun semula, dan kumpulan tidak boleh diubah rangsangannya atau dibubarkan. Sunting soalan sebagai draf atau arkibkannya dahulu.'
+    api.setGroupMembers.mockRejectedValue(new ApiError({ status: 409, code: 'CONFLICT', message: groupServed }))
     const w = await render()
     await t(w, 'member-13-up').trigger('click')
     await t(w, 'save-members').trigger('click')
     await flushPromises()
     expect(api.fetchGroup).toHaveBeenCalledTimes(2)
-    expect(t(w, 'problems').text()).toContain('tepat sekali')
+    expect(t(w, 'problems').text()).toBe(groupServed)
+  })
+
+  it('shows memberServed (adding a served question) and stimulusServed (editing its stimulus)', async () => {
+    const memberServed = 'Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.'
+    const stimulusServed = 'Rangsangan ini sedang dipaparkan kepada murid melalui soalan yang diterbitkan. Cipta rangsangan baharu dan gunakan pada draf soalan, atau arkibkan soalan itu dahulu.'
+    api.setGroupMembers.mockRejectedValueOnce(new ApiError({ status: 409, code: 'CONFLICT', message: memberServed }))
+    api.updateStimulus.mockRejectedValueOnce(new ApiError({ status: 409, code: 'CONFLICT', message: stimulusServed }))
+    const w = await render()
+    await t(w, 'member-13-up').trigger('click')
+    await t(w, 'save-members').trigger('click')
+    await flushPromises()
+    expect(t(w, 'problems').text()).toBe(memberServed)
+    await w.get('[data-testid="studio-group-s-70-caption"]').setValue('Sumber lain')
+    await t(w, 's-70-save').trigger('click')
+    await flushPromises()
+    expect(t(w, 'problems').text()).toBe(stimulusServed)
+  })
+
+  it('shows the draft-group warning of the server while the group has fewer than two questions (D93)', async () => {
+    api.fetchGroup.mockResolvedValue(detail(['11'], 'Kumpulan ini kini hanya mempunyai 1 soalan. Rangsangan bersama lazimnya untuk sekurang-kurangnya 2 soalan.'))
+    const w = await render()
+    expect(t(w, 'warning').text()).toContain('hanya mempunyai 1 soalan')
+    expect(t(w, 'issues').text()).toBe('Kumpulan perlu sekurang-kurangnya 2 soalan.')
   })
 
   it('edits a stimulus with only the changed keys (PUT /stimuli/:id)', async () => {
@@ -143,26 +154,25 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     expect(api.setGroupStimuli).toHaveBeenCalledWith('5', ['70', '71'])
   })
 
-  it('creates a group from a saved question: one stimulus, this question and the picked ones (at least two members)', async () => {
+  it('creates a draft group with this question only (D93): one stimulus, one member, no second question needed', async () => {
     api.createStimulus.mockResolvedValue({ data: stimulus, status: 'ok' })
-    api.createGroup.mockResolvedValue({ data: detail(['11', '12']), status: 'Kumpulan rangsangan berjaya dicipta.' })
-    api.searchQuestions.mockResolvedValue({ data: [{ id: '12', questionText: 'Berdasarkan Rajah 1, apakah S12?' }], meta: {} })
+    api.createGroup.mockResolvedValue({ data: detail(['11'], 'Kumpulan ini kini hanya mempunyai 1 soalan.'), status: 'Kumpulan rangsangan berjaya dicipta.' })
     const w = await render(null)
-    expect(t(w, 'create').attributes('disabled')).toBeDefined()
+    expect(t(w, 'create').attributes('disabled')).toBeUndefined()
     await w.get('[data-testid="studio-group-new-body"]').setValue('Petikan tentang pasar tani.')
-    await w.get('[data-testid="studio-group-search"]').setValue('Rajah')
-    await flushPromises()
-    await t(w, 'found-12-add').trigger('click')
     await t(w, 'create').trigger('click')
     await flushPromises()
-    expect(api.createStimulus).toHaveBeenCalledTimes(1)
-    expect(api.createGroup).toHaveBeenCalledWith({ label: null, stimulusIds: ['70'], questionIds: ['11', '12'] })
+    expect(api.createGroup).toHaveBeenCalledWith({ label: null, stimulusIds: ['70'], questionIds: ['11'] })
     expect(w.emitted('update:groupId')?.[0]).toEqual(['5'])
   })
 
-  it('asks to save the draft first when the question has no id yet', async () => {
+  it('on a question that is not saved yet the group starts empty and the question joins on save (0 members)', async () => {
+    api.createStimulus.mockResolvedValue({ data: stimulus, status: 'ok' })
+    api.createGroup.mockResolvedValue({ data: detail([], 'Kumpulan ini kini kosong.'), status: 'ok' })
     const w = await render(null, { currentQuestionId: null })
-    expect(has(w, 'save-first')).toBe(true)
-    expect(has(w, 'create')).toBe(false)
+    await w.get('[data-testid="studio-group-new-body"]').setValue('Petikan tentang pasar tani.')
+    await t(w, 'create').trigger('click')
+    await flushPromises()
+    expect(api.createGroup).toHaveBeenCalledWith({ label: null, stimulusIds: ['70'], questionIds: [] })
   })
 })

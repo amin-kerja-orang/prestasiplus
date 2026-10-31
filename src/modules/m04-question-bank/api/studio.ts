@@ -28,6 +28,8 @@ export interface GroupDetail {
   scope: 'section' | 'paper'
   stimuli: WireStimulus[]
   questionIds: string[]
+  /** D93: BM warning while the group has fewer than 2 questions; null otherwise. */
+  warning?: string | null | undefined
 }
 
 export function fetchStudioDskp(subjectId: string, educationLevelId: string, signal?: AbortSignal): Promise<StudioDskp> {
@@ -47,7 +49,7 @@ export const updateStimulus = (id: string, body: StimulusUpdateRequest): Promise
 export const fetchGroup = (id: string, signal?: AbortSignal): Promise<GroupDetail> =>
   api.get<GroupDetail>(`/api/stimulus-groups/${id}`, signal ? { signal } : {})
 
-export const createGroup = (body: { label?: string | null; stimulusIds: string[]; questionIds: string[] }): Promise<Flash<GroupDetail>> =>
+export const createGroup = (body: { label?: string | null; stimulusIds: string[]; questionIds?: string[] }): Promise<Flash<GroupDetail>> =>
   api.post<Flash<GroupDetail>>('/api/stimulus-groups', { body, raw: true })
 
 export const setGroupStimuli = (id: string, stimulusIds: string[]): Promise<Flash<GroupDetail>> =>
@@ -61,6 +63,10 @@ export const addGroupMember = (id: string, questionId: string): Promise<Flash<Gr
 
 export const removeGroupMember = (id: string, questionId: string): Promise<Flash<{ group: GroupDetail; warning: string | null }>> =>
   api.delete<Flash<{ group: GroupDetail; warning: string | null }>>(`/api/stimulus-groups/${id}/members/${questionId}`, { raw: true })
+
+/** The complete ordered member list in one atomic call (adds, removals and order); a served member keeps its place (409 otherwise). */
+export const setGroupMembers = (id: string, questionIds: string[]): Promise<Flash<GroupDetail>> =>
+  api.put<Flash<GroupDetail>>(`/api/stimulus-groups/${id}/members`, { body: { questionIds }, raw: true })
 
 export const reorderGroupMembers = (id: string, questionIds: string[]): Promise<Flash<GroupDetail>> =>
   api.put<Flash<GroupDetail>>(`/api/stimulus-groups/${id}/members/order`, { body: { questionIds }, raw: true })

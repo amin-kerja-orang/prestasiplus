@@ -17,6 +17,8 @@ export interface GroupView {
   members: GroupMember[]
   /** A member is being served: pupils see the group, so its structure is read-only. */
   locked: boolean
+  /** D93: the server's BM warning while the group has fewer than 2 questions. */
+  warning: string | null
 }
 
 export interface GroupMember {
@@ -28,7 +30,7 @@ export interface GroupMember {
 }
 
 export const GROUP_MEMBER_MESSAGES = {
-  needsTwo: 'Kumpulan rangsangan mesti ada sekurang-kurangnya 2 soalan.',
+  needsTwo: 'Kumpulan perlu sekurang-kurangnya 2 soalan.',
   duplicate: 'Soalan ini sudah ada dalam kumpulan.',
   full: 'Satu kumpulan boleh mempunyai paling banyak 40 soalan.',
 } as const

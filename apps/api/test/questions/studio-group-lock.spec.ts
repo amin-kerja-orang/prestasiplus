@@ -1,14 +1,14 @@
 import { STIMULUS_MESSAGES } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { GROUP_LOCKED_MESSAGE, QUESTION_SERVED_MESSAGE } from '../../src/modules/questions/group-lock'
 import { bootQuestionsApp, expectError, loginAs, questionIdOf, type Client, type QuestionsTestApp } from './helpers'
 import { StudioDskpSchema } from '@pp/contract'
 import { tagOf, type Tag } from './fixtures'
 
 /**
- * B2 review of T13: the question write path (`POST/PUT /api/questions` with `stimulusGroupId`, what the Studio sends) obeys the
- * group rules: a served group is closed, a served question is never regrouped, one group per question, no silent re-append.
+ * B2 review of T13 (probes re-run on T32's single lock path, REQ-C-003): `POST/PUT /api/questions` with `stimulusGroupId` obeys
+ * the same rules as the group routes. A served question is never moved in or out (409 `memberServed` / `groupServed`); a draft
+ * may join a group with served members but only at the end, and the served members keep their order; one group per question.
  */
 describe('stimulusGroupId on the question write path', () => {
   let t: QuestionsTestApp
@@ -50,14 +50,21 @@ describe('stimulusGroupId on the question write path', () => {
     return r.body.data.id as string
   }
 
-  it('probe 1: a draft cannot join a group that has a served member (create and update)', async () => {
+  it('probe 1: a draft joins a group with a served member only at the end; the served member keeps its place (create and update)', async () => {
+    const servedQ = await questionIdOf(t.db, 'SEED-GRP-PASAR-1')
     const served = await groupOf('SEED-GRP-PASAR-1')
-    const before = (await q('select count(*)::int n from questions where group_id = $1', [served]))[0]?.n
-    expectError(await admin.post('/api/questions', body(1, { stimulusGroupId: served })), 'CONFLICT', GROUP_LOCKED_MESSAGE)
-    const d = await draft(2)
-    expectError(await admin.put(`/api/questions/${d}`, body(2, { stimulusGroupId: served })), 'CONFLICT', GROUP_LOCKED_MESSAGE)
-    expect((await q('select count(*)::int n from questions where group_id = $1', [served]))[0]?.n).toBe(before)
-    expect((await q('select group_id from questions where id = $1', [d]))[0]?.group_id).toBeNull()
+    const before = (await q('select id::text id from questions where group_id = $1 order by group_position', [served])).map((r) => r.id)
+    const pasar = await tagOf(t.db, 'SEED-GRP-PASAR-1') // a group takes members of one subject only (T32)
+    const own = { subjectId: pasar.subjectId, educationLevelId: pasar.levelId, stimulusGroupId: served }
+    const viaCreate = await admin.post('/api/questions', body(1, own))
+    expect(viaCreate.status, JSON.stringify(viaCreate.body)).toBe(201)
+    const d = await draft(2, { subjectId: pasar.subjectId, educationLevelId: pasar.levelId })
+    expect((await admin.put(`/api/questions/${d}`, body(2, own))).status).toBe(200)
+    const after = (await q('select id::text id from questions where group_id = $1 order by group_position', [served])).map((r) => r.id)
+    expect(after.slice(0, before.length)).toEqual(before)
+    expect(after).toHaveLength(before.length + 2)
+    expect(after[0]).toBeDefined()
+    expect(before).toContain(servedQ)
   })
 
   it('probe 2: a served question is never regrouped, and a served member cannot be taken out through PUT', async () => {
@@ -65,13 +72,13 @@ describe('stimulusGroupId on the question write path', () => {
     const other = await draft(4)
     const g = await groupWith(free, other)
     const servedId = await questionIdOf(t.db, 'SEED-MCQ-MATH-T4')
-    expectError(await admin.put(`/api/questions/${servedId}`, body(5, { stimulusGroupId: g })), 'CONFLICT', QUESTION_SERVED_MESSAGE)
+    expectError(await admin.put(`/api/questions/${servedId}`, body(5, { stimulusGroupId: g })), 'CONFLICT', STIMULUS_MESSAGES.memberServed)
     expect((await q('select group_id from questions where id = $1', [servedId]))[0]?.group_id).toBeNull()
     const member = await questionIdOf(t.db, 'SEED-GRP-PASAR-1')
     const before = (await q('select group_id::text g, group_position p from questions where id = $1', [member]))[0]
     const own = (await admin.get(`/api/questions/${member}`)).body.data as Record<string, unknown>
     const same = { subjectId: own.subjectId, educationLevelId: own.educationLevelId, difficultyLevel: own.difficultyLevel, questionType: own.questionType, questionText: own.questionText, parts: own.parts, tag: own.tag }
-    expectError(await admin.put(`/api/questions/${member}`, { ...same, stimulusGroupId: null }), 'CONFLICT', QUESTION_SERVED_MESSAGE)
+    expectError(await admin.put(`/api/questions/${member}`, { ...same, stimulusGroupId: null }), 'CONFLICT', STIMULUS_MESSAGES.groupServed)
     expect((await q('select group_id::text g, group_position p from questions where id = $1', [member]))[0]).toEqual(before)
   })
 
