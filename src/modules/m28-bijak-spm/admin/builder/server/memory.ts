@@ -327,6 +327,8 @@ export class MockBuilderServer implements BuilderApi {
     if (!g || !ed.paper.sections.some((s) => s.questionIds.some((q) => g.questionIds.includes(q))))
       throw new BuilderError('invalid', 'Kumpulan rangsangan ini tiada dalam kertas ini')
     if (!label.trim()) throw new BuilderError('invalid', 'Tajuk petikan diperlukan')
+    // A group with `stimuli: []` has nothing to title (REQ-A-008): refuse instead of crashing.
+    if (!g.stimulus) throw new BuilderError('invalid', 'Kumpulan rangsangan ini tiada rangsangan untuk dinamakan')
     g.stimulus.label = label.trim()
     return a.savePaper(id, {})
   }

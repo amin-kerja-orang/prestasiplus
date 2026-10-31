@@ -17,6 +17,15 @@ export function hasStimulus(s: StimulusLike | null | undefined): boolean {
   return !!(s.label?.trim() || s.title?.trim() || s.text?.trim() || s.svg || s.table || s.image)
 }
 
+/** The first stimulus of a group: `stimulus`, else `stimuli[0]` (REQ-A-008: 0 to 3 stimuli). */
+export const firstStimulusOf = (g: { stimulus?: StimulusLike | null; stimuli?: StimulusLike[] | null }): StimulusLike | undefined =>
+  g.stimulus ?? g.stimuli?.[0] ?? undefined
+
+/** First label of a group's stimuli ('' for a group with none: `stimuli: []`, REQ-A-008 / T07). */
+export function groupLabelOf(g: { stimulus?: StimulusLike | null; stimuli?: StimulusLike[] | null }): string {
+  return firstStimulusOf(g)?.label ?? ''
+}
+
 /** The same check for a pool unit's stimulus (contract shape). */
 export const hasStimulusOf = (s: unknown): boolean => hasStimulus(s as StimulusLike | null | undefined)
 

@@ -9,7 +9,7 @@ import { reactive, watch } from 'vue'
 
 import type { PaperEditorData } from '../../../domain/admin-types'
 import { builderCopy as t } from '../domain/copy'
-import { hasStimulus } from '../domain/stimulus'
+import { firstStimulusOf, groupLabelOf, hasStimulus } from '../domain/stimulus'
 import type { SectionPatch } from '../server/api'
 
 const props = defineProps<{ editor: PaperEditorData; readonly?: boolean; busy?: boolean }>()
@@ -31,7 +31,7 @@ watch(
   (ed) => {
     for (const s of ed.paper.sections)
       sections[s.id] = { label: s.label, instruction: s.instruction ?? '', compulsory: !!s.compulsory }
-    for (const g of ed.groups) passages[g.id] = g.stimulus.label ?? ''
+    for (const g of ed.groups) passages[g.id] = groupLabelOf(g)
   },
   { immediate: true },
 )
@@ -40,7 +40,7 @@ watch(
 function placedGroups(): { id: string }[] {
   const placed = new Set(props.editor.paper.sections.flatMap((s) => s.questionIds))
   // A group without stimulus content (T07 placeholder) has no title to edit.
-  return props.editor.groups.filter((g) => g.questionIds.some((q) => placed.has(q)) && hasStimulus(g.stimulus))
+  return props.editor.groups.filter((g) => g.questionIds.some((q) => placed.has(q)) && hasStimulus(firstStimulusOf(g)))
 }
 const ruleText = (r: { type: 'all' } | { type: 'choose'; n: number }): string =>
   r.type === 'all' ? 'Jawab Semua' : `Pilih ${r.n}`
