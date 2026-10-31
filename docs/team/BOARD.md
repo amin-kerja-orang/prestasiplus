@@ -276,3 +276,10 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 1. **T34** — A3, all slots, ETA ~1 h (blocks C's T10 and B4).
 2. **T36** — A2 slot 2 (with REQ-B-029, REQ-B-019/A-009), ETA ~1 h (blocks B4). REQ-B-003 delivered by T26b @ 5cfd6ea5.
 3. **REQ-A-005 Lapor (Q8 / D98)** — backend guard REQ-B-031 by A1, ETA ~1.5 h; FE Lapor control = team C, unblocked by the decision.
+
+### Cycle 13b (22:50 UTC)
+- **H-A9** READY @ 1e80b005 (A3, r1/ha9-pipeline-chain, spec-only delta, BASE-60 merged): pipeline-chain 24 pass + 1 R2 todo; tsc 0; eslint 0. Needs B2.
+- **T31** N+1 fix pushed @ 085c4945 (A3, r1/t31-builder-wire, BASE-62 merged); waits for T34.
+- **T26c** NEW (A1, r1/t26c-e2e-k2): structured K2 pool plus a Terbit paper in the e2e seed only (local/E2E). Without it, removing PoC (T36) leaves no K2 paper for bijak-part-input and the REQ-B-003 e2e. No file overlap with T36. **B1: merge together with T36.**
+- **Conformance baseline 407/409 on BASE-62**: questions-api "admin lifecycle" and "publish gate" fixtures lack cognitiveLevel (T33 gate). Fix → A2 slot 1.
+- ETAs: T34 23:30–23:45 UTC (A3); T36 ~23:45 UTC (A2).
