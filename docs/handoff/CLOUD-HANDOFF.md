@@ -210,7 +210,7 @@ Pushed to `origin` (github.com/amin-kerja-orang/prestasiplus) on 2026-10-31 by t
 | Ref on GitHub | Commit | Notes |
 |---|---|---|
 | `feature/v3-bijak-r1` | branch head (the commit that adds this doc, on top of 09f48585) | **Start here.** R1 integrated work plus this handoff. Its base is the shared-tree checkpoint of 2026-10-30 23:11 (6f92e350). |
-| `handoff/shared-tree-2026-10-31` | f6b343f7 | A snapshot of the shared tree `local/v2-full` as running on the 5192 preview: all sessions' uncommitted work (de: polish, secondary-only; 8b: fix–fix4, fe-final; question-bank work). Parent f82d12f6. **Not yet merged into `feature/v3-bijak-r1`.** Merge it in (task (a-1) below) to pick up the later de/8b changes. |
+| `handoff/shared-tree-2026-10-31` | 8bb59c2a | A snapshot of the shared tree `local/v2-full` as running on the 5192 preview: all sessions' uncommitted work (de: polish, secondary-only; 8b: fix–fix4, fe-final; question-bank work). Parent f82d12f6. **Not yet merged into `feature/v3-bijak-r1`.** Merge it in (task (a-1) below) to pick up the later de/8b changes. |
 | `r1/b08-bridge` | ab04b498 | DONE, to merge (task (a)) |
 | `r1/b01-lifecycle` | cf2aa784 | WIP, to finish and merge (task (a)) |
 | `r1/f08-builder-ui` | 4cd1329f | WIP, to finish (task (c)) |
