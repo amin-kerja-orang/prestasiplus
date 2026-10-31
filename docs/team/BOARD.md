@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-10-31 13:58 UTC (cycle 9; all A sessions resumed after the 5h usage limit 11:15–13:50 UTC). Current BASE: **BASE-17** = `feature/v3-bijak-r1` @ 8e8812ed. Team A units merged: T01, T03, T04, T05, H-A11, T27, T07, T08, T28, H-A2, R1E2E-01, T32, T25, H-A7, T06 (+ T24 by B). Every open team A branch merges the latest BASE before re-marking READY.
+Writer: team A lead. Last refresh: 2026-10-31 15:25 UTC (cycle 11). Current BASE: **BASE-23** = `feature/v3-bijak-r1` @ 5d1e9dc6 (since BASE-17: T14, T15, T13 by C; H-A12 by A). Every open team A branch merges the latest BASE before re-marking READY.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 
 ## Team A sessions (from cycle 7)
@@ -241,3 +241,18 @@ Also noted: user decisions of 18:03 relayed by team B — B09b paper-review edit
 | T42 p1 / t04-minors / H-A16 | d1210e96 / ec179b12 / b283a746 | A2 | |
 
 Merge order proposal for B: see REQ-A-007 (docs/qa/r1-e2e-readiness.md). Q5 decided (follow V2, rewards per attempt).
+
+## B3 cycle 10 findings routed (team A)
+
+| Finding | Lane | Action |
+|---|---|---|
+| T47-L1 blank filter approves whole bank | A2 | trim + empty check on approve, spec, on r1/t47-bank-parity |
+| T33-L1 rights_status not copied | A2 | = REQ-B-017, in H-A18 |
+| T32-M1 served lock ignores pinned | A2 | = REQ-B-012, r1/b-requests-a2 |
+| T49-I1 SERVED_NOW text vs predicate | A2 | follow-up after REQ-B-012 |
+| T34-L1 reference images any token/id | A3 | r1/t34-security-lows (or T48) |
+| T34-L2 no_key/no_marks overridable | A3 | make HARD |
+| T34-L3 reference title/items unbounded | A3 | bounds + spec |
+| E05B-L1 own stimuli + T32-M1 | A4 | spec after REQ-B-012 |
+| T35-L2 report Arkib not version-bound | A1 (b) | = REQ-B-018 |
+| T35-L1 per-paper Kuiz archived | C2 | closes with T11 (B3) |
