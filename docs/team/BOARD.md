@@ -137,3 +137,17 @@ T04 scope widened by planning: raw-SQL `'published'` question-status spots in `p
 | T34 / H-A9 | not yet reviewed | A3 | merge BASE-6; + full-review builder findings (`builder.service` early return MAJOR, minors) |
 | T05 Minors | Approve (merged BASE-5) | A3 | r1/t05-minors |
 | H-A14 integration preview | — | A1 | **stopped** (B is merging; preview branch left untouched) |
+
+## Team B E2E + security findings routed to team A (cycle 7)
+
+| ID | Sev | Lane | Action |
+|---|---|---|---|
+| R1E2E-01 | Critical | A2 | intake `curriculum-facts.ts` subject lookup via `curriculumCodeOf` (MAT/SN refused) → r1/e2e01-intake-subject, right after T32 |
+| R1E2E-05 | Critical | A4 | stem/option image + own stimulus served after b08: prove on BASE-6 with DB spec, fix bridge if still red → r1/e2e05-stem-image |
+| R1E2E-06 | High | A3 | Terbit must refuse questions the attempt path refuses (publish check = attempt check, not overridable) → in T34 |
+| R1E2E-07 | Medium | A3 | Terbit on a Spec-blueprint paper: enforce AC-R1-16.2 (Disahkan) with BM blocker → in T34 |
+| R1E2E-08 | High | A2 | CLOSED by T04 (BASE-4): approved = servable |
+| R1E2E-09 | Low | A2 | Soalan by Chapter tile counts chaptered + drawable only (D91, V2 §2.3) → in r1/t04-minors |
+| B3 bulk-approve gap | Medium | A2 | bulk approve runs the full approve gate (+ DSKP) → in T33 |
+
+Answer to B1 Q-B1-2: T01 removed the old `0092_part_options_image_file_index` folder (A1 verified: only 0092_bijak_standards and 0093_part_options_image_file_index exist). Q-B1-1 (UAT blueprints) → QUESTIONS.md Q3.
