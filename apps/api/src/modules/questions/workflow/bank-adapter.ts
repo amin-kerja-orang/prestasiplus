@@ -137,7 +137,7 @@ export class QuestionBankAdapter implements QuestionBankPort {
       if (target === 'live') {
         if (liveNo === null) return this.infoOf(record) // nothing live: no-op
         const live = liveNo === record.latestVersionNo ? record : await this.repo.get(id, 'live')
-        const current = live?.version.status ?? 'published'
+        const current = live?.version.status ?? 'approved'
         if (options.expectedFrom !== undefined && current !== options.expectedFrom) throw transitionConflict(current, to)
         await this.repo.setVersionStatus(id, liveNo, to, { archiveReason: options.archiveReason ?? 'withdrawn' })
         await this.repo.setLiveVersion(id, null)

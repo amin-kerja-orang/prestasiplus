@@ -57,7 +57,7 @@ export async function insertShortMcqs(
           data: {
             questionId: question.id,
             versionNo: 1,
-            status: 'published',
+            status: 'approved',
             publishedAt: now,
             type: 'mcq',
             stemMs: text,

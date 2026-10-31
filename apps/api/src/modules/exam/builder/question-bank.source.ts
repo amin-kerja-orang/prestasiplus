@@ -7,7 +7,7 @@
  * PINNED version (the repository serves only the live and the latest version), the pool tags and paper
  * code used for the kertas, and stimulus groups with their stimuli. Nothing here writes.
  *
- * - candidates: one bounded SQL query (limit = editor cap + slack): live version published AND active (BE-09 Q-2),
+ * - candidates: one bounded SQL query (limit = editor cap + slack): live version approved AND active (BE-09 Q-2),
  *   subject = the paper subject, kertas by the `kertasOf` rule, in bank order (question id ascending).
  * - review: shows the live version, else the latest (the port takes ids only, no version).
  * - describe: the pinned version when the ref has one, else the live version, else the latest (a question
@@ -34,6 +34,7 @@ import {
   previewOfRows,
   reviewQuestion,
   statusOf,
+  emptyGroupStimulus,
   stimuliOf,
   type Curriculum,
   type PartRow,
@@ -71,13 +72,13 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     const subject = await this.builder.subjectByCode(curriculumCodeOf(scope.subject))
     if (!subject) return []
     const pool = poolPattern(scope.subject)
-    // One bounded query. Same eligibility as `QuestionsRepository.eligibleIds` (live version published AND
+    // One bounded query. Same eligibility as `QuestionsRepository.eligibleIds` (live version approved AND
     // active, not PKSK, not a Darjah or inactive level: R1-B21 secondary-only) and the same kertas rule as `kertasOf` (lowest pool digit, else the paper code digit).
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`
       SELECT q.id
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'published' AND v.subject_id = ${subject.id}
+       WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${subject.id}
          AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
          AND COALESCE(
                (SELECT min((substring(t.code from ${pool}))::int) FROM question_tags t
@@ -181,9 +182,11 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     // Secondary-only (R1-B21): Darjah (and PKSK) members leave the group; a group left with no member is absent.
     const members = await this.servableLatest(groups.flatMap((g) => g.questions.map((m) => m.id)))
     for (const g of groups) {
-      const [stimulus, ...rest] = stimuliOf(g.stimuli.map((s) => s.stimulus))
+      // D90: the group is always emitted, with or without a displayable stimulus, so every builder read treats its members as one unit.
+      const shown = stimuliOf(g.stimuli.map((s) => s.stimulus))
+      const [stimulus = emptyGroupStimulus(g.id), ...rest] = shown
       const questionIds = g.questions.filter((m) => members.has(m.id)).map((m) => m.id.toString())
-      if (stimulus && questionIds.length > 0) out.set(g.id.toString(), { id: g.id.toString(), stimulus, stimuli: [stimulus, ...rest], questionIds })
+      if (questionIds.length > 0) out.set(g.id.toString(), { id: g.id.toString(), stimulus, stimuli: shown.length > 0 ? [stimulus, ...rest] : [], questionIds })
     }
     return out
   }

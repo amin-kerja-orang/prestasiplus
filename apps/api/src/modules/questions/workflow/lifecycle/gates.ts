@@ -3,13 +3,13 @@
  * Each returns the `fields` map of failures (empty = the gate holds). One rule per named block, in the
  * order of `QUESTION_WORKFLOW_GATE_RULES`. A field the bank reports as satisfied passes.
  *
- * "No bypass": the same functions run for single transitions, bulk actions, "Lulus & Terbit",
- * imports and direct creation as review / published.
+ * "No bypass": the same functions run for single transitions, bulk actions,
+ * imports and direct creation as review / approved.
  */
 import type { QuestionGateData } from '../ports'
 import { checkKeysGate, checkTagGate, leavesOf } from './keys-gate'
 
-export type GateName = 'submit' | 'approve' | 'publish'
+export type GateName = 'submit' | 'approve'
 export type GateFields = Record<string, string>
 
 export const GATE_MESSAGES = {
@@ -28,8 +28,7 @@ export const GATE_MESSAGES = {
 
 export const GATE_SUMMARY: Record<GateName, string> = {
   submit: 'Soalan belum memenuhi syarat untuk dihantar semakan.',
-  approve: 'Soalan belum memenuhi syarat untuk diluluskan.',
-  publish: 'Soalan belum memenuhi syarat untuk diterbitkan.',
+  approve: 'Soalan belum memenuhi syarat untuk diterbitkan.',
 }
 
 /** Submit gate (draft to review). */
@@ -45,7 +44,7 @@ export function submitGate(d: QuestionGateData): GateFields {
   return f
 }
 
-/** Approve gate (review to approved). `reviewerIsAi` is true only when the AI service is the actor. */
+/** Approve gate part 1 (review to approved, run first by the merged `approve` gate). `reviewerIsAi` is true only when the AI service is the actor. */
 export function approveGate(d: QuestionGateData, reviewerIsAi = false): GateFields {
   const f: GateFields = {}
   if (reviewerIsAi || d.lastEditedByAi) f.reviewer = GATE_MESSAGES.reviewerAi // reviewer is not the AI service
@@ -58,7 +57,7 @@ export function approveGate(d: QuestionGateData, reviewerIsAi = false): GateFiel
   return f
 }
 
-/** Publish gate (approved to published): keys, difficulty, DSKP topic, rights, duplicates. */
+/** Approve gate part 2 (formerly the publish gate, merged by ADR-0027): keys, difficulty, DSKP topic, rights, duplicates. */
 export function publishGate(d: QuestionGateData): GateFields {
   const f: GateFields = {}
   Object.assign(f, checkKeysGate(d.parts)) // answer key / mark scheme (marks agree with the scheme)
@@ -70,6 +69,6 @@ export function publishGate(d: QuestionGateData): GateFields {
 
 export const GATES: Record<GateName, (d: QuestionGateData) => GateFields> = {
   submit: submitGate,
-  approve: (d) => approveGate(d),
-  publish: publishGate,
+  // ADR-0027: one merged gate, review to approved ("Terbitkan"): the former approve rules, then the former publish rules.
+  approve: (d) => ({ ...approveGate(d), ...publishGate(d) }),
 }

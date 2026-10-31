@@ -119,8 +119,8 @@ describe('QuestionsService (real database)', () => {
     })
 
     it('bulkAction counts each existing id once and skips unknown ids and refused transitions', async () => {
-      const a = (await svc.create(mcqInput(tag), admin)).id
-      const b = (await svc.create(mcqInput(tag), admin)).id
+      const a = (await svc.create(mcqInput(tag, { tag: tagBody(tag, 3) }), admin)).id
+      const b = (await svc.create(mcqInput(tag, { tag: tagBody(tag, 3) }), admin)).id
       expect(await svc.bulkAction('review', [a, b, a, '999999999', 'zz'], admin)).toEqual({ affected: 2, ids: [a, b], failed: [expect.objectContaining({ id: '999999999', code: 'NOT_FOUND' }), expect.objectContaining({ id: 'zz', code: 'NOT_FOUND' })] })
       // draft -> approved is outside the table: nothing changes.
       const c = (await svc.create(mcqInput(tag), admin)).id
@@ -134,10 +134,9 @@ describe('QuestionsService (real database)', () => {
       const untagged = (await svc.create(mcqInput(tag), admin)).id
       const tagged = (await svc.create(mcqInput(tag, { tag: tagBody(tag, 3) }), admin)).id
       await svc.bulkAction('review', [untagged, tagged], admin)
-      await svc.bulkAction('approved', [untagged, tagged], admin)
-      expect(await svc.bulkAction('published', [untagged, tagged], admin)).toEqual({ affected: 1, ids: [tagged], failed: [expect.objectContaining({ id: untagged, code: 'VALIDATION_ERROR' })] })
-      expect((await svc.getStatus(untagged)).status).toBe('approved')
-      expect((await svc.getStatus(tagged)).status).toBe('published')
+      expect(await svc.bulkAction('approved', [untagged, tagged], admin)).toEqual({ affected: 1, ids: [tagged], failed: [expect.objectContaining({ id: untagged, code: 'VALIDATION_ERROR' })] })
+      expect((await svc.getStatus(untagged)).status).toBe('review')
+      expect((await svc.getStatus(tagged)).status).toBe('approved')
     })
 
     it('bulk delete removes existing ids only', async () => {
@@ -154,9 +153,9 @@ describe('QuestionsService (real database)', () => {
       const ids = res.rows.map((r) => BigInt(r.id))
       expect(ids).toEqual([...ids].sort((x, y) => (x > y ? -1 : 1)))
       expect(res.total).toBeGreaterThanOrEqual(19)
-      expect(Object.keys(res.counts).sort()).toEqual(['approved', 'archived', 'draft', 'published', 'review'])
-      const published = await svc.list({ page: 1, pageSize: 100, status: 'published' })
-      expect(published.rows.every((r) => r.version.status === 'published')).toBe(true)
+      expect(Object.keys(res.counts).sort()).toEqual(['approved', 'archived', 'draft', 'review'])
+      const published = await svc.list({ page: 1, pageSize: 100, status: 'approved' })
+      expect(published.rows.every((r) => r.version.status === 'approved')).toBe(true)
       expect((await svc.list({ page: 1, pageSize: 20, subjectId: '999999999' })).total).toBe(0)
       expect((await svc.list({ page: 1, pageSize: 20, search: 'zzz-tiada-padanan-zzz' })).total).toBe(0)
     })

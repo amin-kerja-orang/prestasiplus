@@ -274,7 +274,7 @@ export function constantFields(record: QuestionRecord): {
   usage: { attempts: 0; correct: 0 }
 } {
   return {
-    complianceStatus: record.version.status === 'published' ? 'verified' : 'draft',
+    complianceStatus: record.version.status === 'approved' ? 'verified' : 'draft',
     aiVerified: false,
     qualityScore: null,
     needsDiagram: false,

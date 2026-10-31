@@ -1,6 +1,6 @@
 /**
- * Pure publish rules. `checkTagGate` is the D9 rule BE-09 enforces in `setStatus(..., 'published')`
- * and on `POST /questions` with `published`. `checkKeysGate` is the key-completeness rule offered to
+ * Pure publish rules. `checkTagGate` is the D9 rule BE-09 enforces in `setStatus(..., 'approved')`
+ * and on `POST /questions` with `approved`. `checkKeysGate` is the key-completeness rule offered to
  * BE-10 for its publish gate; BE-09 does not call it (no quality gates here, Q-6).
  */
 import type { QuestionPart } from '@pp/contract'

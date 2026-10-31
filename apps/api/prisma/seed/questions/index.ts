@@ -2,11 +2,11 @@
  * Question bank seed (BE-09, kind `demo`, runs after `curriculumSeed`).
  *
  * Seed facts (tests rely on them, see test/questions/seed.spec.ts):
- * - 19 questions, each with one version (version_no 1). 16 are `published` (live_version_no = 1, is_active
+ * - 19 questions, each with one version (version_no 1). 16 are `approved` (the servable status, ADR-0027) (live_version_no = 1, is_active
  *   true): 6 single MCQ (MATH, SCI, BM x T4, T5), 3 structured (3-level tree, ECF, "any N of M"), group
  *   SEED-GRP-PASAR (3 ordered members, one passage) and group SEED-GRP-AYAT (4 members, one passage,
  *   lettered option bank A to D, match_letter). Plus 1 `draft`, 1 `review`, 1 `archived` (reason `withdrawn`).
- * - Every published row carries the full curriculum tag (subject, level, unit, 1 SP, TP), so the
+ * - Every approved row carries the full curriculum tag (subject, level, unit, 1 SP, TP), so the
  *   publish gate holds. The draft and review rows only carry subject and level.
  * - Owners: `review` row belongs to the first teacher account; everything else to the first admin
  *   (both resolved by role from the identity seed). The teacher owns exactly one question.
@@ -156,7 +156,7 @@ export const questionsSeed: SeedModule = {
           const draw = drawn.get(q.ref) as { tp: number; cognitive: number }
           const pool = q.tagged ? await tagsFor(q) : []
           const tag = pool[n % Math.max(pool.length, 1)]
-          const published = q.status === 'published'
+          const published = q.status === 'approved'
           const question = await tx.question.create({
             data: {
               sourceType: 'manual', createdById: owners[q.owner], latestVersionNo: 1, liveVersionNo: published ? 1 : null,

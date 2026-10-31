@@ -30,7 +30,7 @@ describe('POST /guru/command-center/remedial/generate and /cancel (BR-M10-12)', 
   let pupil: Client
   let qa: string[]
   let qb: string[]
-  let ineligible: { draft: string; approved: string; deactivated: string; archived: string }
+  let ineligible: { draft: string; review: string; deactivated: string; archived: string }
 
   beforeAll(async () => {
     t = await bootMissionsApp()
@@ -46,14 +46,13 @@ describe('POST /guru/command-center/remedial/generate and /cancel (BR-M10-12)', 
     qa = []
     for (let i = 0; i < 6; i++) qa.push(await publishedMcq(t, w, { text: `Soalan A${String(i)}` }))
     qb = [await publishedMcq(t, w, { spId: spB, text: 'Soalan B0' }), await publishedMcq(t, w, { spId: spB, text: 'Soalan B1' })]
-    const approved = await draftMcq(t, w)
-    await svc.bulkAction('review', [approved], adminActor)
-    await svc.bulkAction('approved', [approved], adminActor)
+    const review = await draftMcq(t, w) // ADR-0027: `approved` is servable now, so the not-yet-servable one is in review
+    await svc.bulkAction('review', [review], adminActor)
     const deactivated = await publishedMcq(t, w)
     await svc.deactivate(deactivated)
     const archived = await publishedMcq(t, w)
     await svc.setStatus(archived, 'archived', w.admin)
-    ineligible = { draft: await draftMcq(t, w), approved, deactivated, archived }
+    ineligible = { draft: await draftMcq(t, w), review, deactivated, archived }
     await makeClass(t, w, w.teacherA, [w.student1, w.student2])
     await makeClass(t, w, w.teacherC, [w.studentOther], 'Kelas Lain')
     // Pupil 1, oldest first: A0 right, A1 wrong, A2 wrong, (deactivated) wrong, A3 wrong -> 1 of 5 in the SP of the A questions.
@@ -201,7 +200,7 @@ describe('POST /guru/command-center/remedial/generate and /cancel (BR-M10-12)', 
       for (const id of qb) expect(firstItems.map((i) => i[1]).indexOf(id)).toBeGreaterThanOrEqual(qa.length)
     })
 
-    it('only published, active questions are used: never a draft, an unpublished, a deactivated or an archived one', async () => {
+    it('only approved (servable), active questions are used: never a draft, a review, a deactivated or an archived one', async () => {
       const used = firstItems.map((i) => i[1])
       for (const id of Object.values(ineligible)) expect(used).not.toContain(id)
     })

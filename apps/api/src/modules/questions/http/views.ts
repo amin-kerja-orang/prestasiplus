@@ -23,13 +23,14 @@ import type { z } from 'zod'
 import { toMytTimestamp } from '../../../common/time/myt'
 import { isLeaf, type QuestionLeaf } from '../grading'
 import { constantFields, difficultyLabelOf, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
+import { stimulusTableOf } from '../stimulus-table'
 import type { QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
 
 export type QuestionRow = z.output<typeof QuestionRowSchema>
 export type QuestionWire = z.output<typeof QuestionSchema>
 export type QuestionDetailWire = z.output<typeof QuestionDetailSchema>
 
-/** BM label of a lifecycle code (Draf, Semakan, Lulus, Diterbitkan, Diarkib). */
+/** BM label of a lifecycle code (Draf, Semakan, Diterbitkan, Diarkib). */
 export const statusLabel = (status: QuestionStatus): string => QUESTION_WORKFLOW_STATUS_LABELS[status]
 
 /** Id of a row whose creator account was removed: the wire needs an id, so a fixed placeholder. */
@@ -108,7 +109,7 @@ export function stimulusGroupView(g: StimulusGroupRecord): z.output<typeof Quest
       alt: s.alt,
       ...(s.caption ? { caption: s.caption } : {}),
       ...(s.sourceCitation ? { sourceCitation: s.sourceCitation } : {}),
-      ...(QuestionStimulusTableSchema.safeParse(s.tableData).success ? { tableData: QuestionStimulusTableSchema.parse(s.tableData) } : {}),
+      ...(s.kind === 'table' && stimulusTableOf(s.tableData) ? { tableData: QuestionStimulusTableSchema.parse(stimulusTableOf(s.tableData)) } : {}),
     })),
     ...(g.optionBank.length === 0
       ? {}

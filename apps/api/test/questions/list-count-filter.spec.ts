@@ -26,7 +26,7 @@ const whereOf = (sql: string): string => sql.slice(sql.indexOf('WHERE')).replace
 describe('questions list/count filter consistency (no Darjah rows, same filter before pagination)', () => {
   it('listIds: page, total and per-status counts all hide primary-level questions', async () => {
     const { repo, queries } = fakeRepo()
-    await repo.listIds({ page: 1, pageSize: 20, status: 'published' })
+    await repo.listIds({ page: 1, pageSize: 20, status: 'approved' })
     expect(queries).toHaveLength(3)
     for (const q of queries) expect(q).toContain(PRIMARY)
     expect(whereOf(queries[0]!)).toBe(whereOf(queries[1]!))
@@ -34,8 +34,8 @@ describe('questions list/count filter consistency (no Darjah rows, same filter b
 
   it('count / groupCount / structured / totals / owner counts hide primary-level questions', async () => {
     const { repo, queries } = fakeRepo()
-    await repo.count({ status: 'published' })
-    await repo.groupCount('level', { status: 'published' })
+    await repo.count({ status: 'approved' })
+    await repo.groupCount('level', { status: 'approved' })
     await repo.structuredIds({ page: 1, pageSize: 20 })
     await repo.structuredStats()
     await repo.subjectTotals()
