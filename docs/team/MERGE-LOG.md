@@ -46,3 +46,4 @@
 | BASE-42 | 308d2f7a | T53 `r1/t53-partial-acs-a4` @ 0fcae409 (B2 Approve, B3 Pass; test-only); merged by exact SHA = branch tip | api tsc 0; api test/exam-builder 18 files 315/315 | 2026-11-01 02:40 |
 | BASE-43 | 153bcdf6 | H-A17 `r1/ha17-ac-coverage` @ 9738f8f5 (B2 Approve w/ Minors; docs only); merged by exact SHA = branch tip | docs-only diff | 2026-11-01 02:40 |
 | BASE-44 | 9fcf5b2f | H-A26 `r1/ha26-team-a-state` @ aee473af (B2 Approve w/ Minors; docs only); merged by exact SHA = branch tip | docs-only diff | 2026-11-01 02:40 |
+| BASE-45 | a5cc6355 | R1-21 hub `r1/hc-kandungan-hub` @ cdcb2171 (B2 Approve w/ Minors + B3 Pass; FE only); merged by exact SHA = branch tip | api tsc 0; contract:check 0; vue-tsc 0; eslint 0; unit registry-boot + m28 + shells 57 files 711/711 | 2026-11-01 03:05 |
