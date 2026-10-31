@@ -1,5 +1,6 @@
 import {
   QUESTION_REPORT_COMMENT_MAX,
+  QuestionReportContextSchema,
   QUESTION_REPORT_MCQ_REASONS,
   QUESTION_REPORT_MESSAGES as M,
   QUESTION_REPORT_NOTES_MAX,
@@ -20,6 +21,8 @@ export interface ValidCreate {
   source: string
   quizSessionRef: string | null
   roomCode: string | null
+  /** R1-T42: the attempt the pupil reported from (checked by the service) and the paper they claim; null = none given. */
+  context: { attemptId: string; paperId: string | null } | null
 }
 
 export interface ValidUpdate {
@@ -74,6 +77,14 @@ export function validateCreate(raw: unknown): ValidCreate {
     const v = b[key]
     if (v !== undefined && v !== null && v !== '' && (typeof v !== 'string' || !QUESTION_REPORT_REF_PATTERN.test(v))) fields[key] = M.reference
   }
+  // R1-T42: the report context, parsed by the strict schema (a paper without an attempt proves nothing, so it is refused).
+  let context: ValidCreate['context'] = null
+  const given = (v: unknown): boolean => v !== undefined && v !== null && v !== ''
+  if (given(b.attemptId) || given(b.paperId)) {
+    const parsed = QuestionReportContextSchema.safeParse({ attemptId: given(b.attemptId) ? b.attemptId : undefined, ...(given(b.paperId) ? { paperId: b.paperId } : {}) })
+    if (parsed.success) context = { attemptId: parsed.data.attemptId.toLowerCase(), paperId: parsed.data.paperId ?? null }
+    else for (const issue of parsed.error.issues) fields[String(issue.path[0] ?? 'attemptId')] ??= issue.path[0] === 'paperId' ? M.paper : M.attempt
+  }
   if (Object.keys(fields).length > 0 || questionId === null) throw ApiError.of('VALIDATION_ERROR', { fields })
 
   return {
@@ -84,6 +95,7 @@ export function validateCreate(raw: unknown): ValidCreate {
     source: source as string,
     quizSessionRef: typeof b.quizSessionId === 'string' && b.quizSessionId !== '' ? b.quizSessionId : null,
     roomCode: typeof b.roomCode === 'string' && b.roomCode !== '' ? b.roomCode : null,
+    context,
   }
 }
 
