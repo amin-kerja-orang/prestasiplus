@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   QUESTION_REPORT_DISPLAY_LABELS,
+  QUESTION_REPORT_DAILY_CAP,
   QUESTION_REPORT_FILTERS,
   QUESTION_REPORT_MESSAGES as M,
   type QuestionReportMineView,
@@ -16,7 +17,7 @@ import { PrismaService } from '../../../../db/prisma.service'
 import { NotificationsService } from '../../../notifications'
 import type { WorkflowActor } from '../actor'
 import { QuestionWorkflowPorts, type QuestionBankPort, type QuestionBrief, type QuestionStatusInfo } from '../ports'
-import { REPORT_NOTIFICATION_TYPE, STRUCTURED_DEACTIVATE_AT, reasonLabel, reportCategory } from './reports.constants'
+import { REPORT_NOTIFICATION_TYPE, mytDayStartOf, reasonLabel, reportCategory } from './reports.constants'
 import { ReportsRepository, type ReportRow } from './reports.repository'
 import { validateCreate, validateUpdate } from './reports.validation'
 
@@ -57,7 +58,10 @@ export class QuestionReportsService {
     return this.ports.questionBank
   }
 
-  /** POST /question-reports: the report and its deactivation commit together (BR-M04-11/12). */
+  /**
+   * POST /question-reports. A report never changes the question (REQ-B-031, D98): it goes to Laporan Soalan and an admin decides
+   * (Arkib / Tolak). A pupil (the active role `student`, Mod Pelajar included) reports only a question they answered.
+   */
   async create(actor: WorkflowActor, body: unknown): Promise<{ success: true; message: string }> {
     const first = validateCreate(body) // shape first: a bad body is 422 before the question is looked up
     const raw = body as { questionType?: unknown }
@@ -73,6 +77,8 @@ export class QuestionReportsService {
       }
       const v = validateCreate({ ...(body as object), questionType: stored })
       const context = await this.contextOf(v.context, actor, id)
+      await this.assertAnswered(actor, v.quizSessionRef, context !== null, v.questionId, stored)
+      await this.assertUnderDailyCap(actor)
       await this.repo.upsert({
         questionId: v.questionId,
         questionVersionNo: info.liveVersionNo,
@@ -87,10 +93,6 @@ export class QuestionReportsService {
         isTest: actor.isTest,
         now: this.clock.now(),
       })
-      // MCQ: inactive at the first report; structured: at the third open report (mock rule, OQ 1).
-      if (v.questionType === 'mcq' || (await this.repo.countOpenStructured(v.questionId)) >= STRUCTURED_DEACTIVATE_AT) {
-        await this.bank.deactivate(id)
-      }
       return { success: true as const, message: M.created }
     })
   }
@@ -109,6 +111,33 @@ export class QuestionReportsService {
       throw ApiError.of('VALIDATION_ERROR', { fields: { paperId: M.paper } })
     }
     return { attemptId: given.attemptId, paperId: a.paperId, paperLabel: a.label.slice(0, 200) }
+  }
+
+  /**
+   * REQ-B-031 (D98): a pupil can report only a question they answered. The proof is the attempt already checked by `contextOf`, or a
+   * practice session of theirs that served the question (`quizSessionId`, unknown and someone else's answer alike), or, for a
+   * structured question, a structured attempt of theirs. A Guru (Databank guru) is not asked for one; a given session id is still checked.
+   */
+  private async assertAnswered(actor: WorkflowActor, sessionRef: string | null, hasAttempt: boolean, questionId: bigint, type: 'mcq' | 'structured'): Promise<void> {
+    const me = idFromString(actor.userId)
+    let session = false
+    if (sessionRef !== null) {
+      const s = await this.repo.sessionFacts(sessionRef, questionId)
+      if (!s || s.userId !== me) throw ApiError.of('VALIDATION_ERROR', { fields: { quizSessionId: M.session } })
+      if (!s.holds) throw ApiError.of('VALIDATION_ERROR', { fields: { quizSessionId: M.sessionQuestion } })
+      session = true
+    }
+    if (actor.role !== 'student' || hasAttempt || session) return
+    if (type === 'structured' && (await this.repo.answeredStructured(me, questionId))) return
+    throw ApiError.of('VALIDATION_ERROR', { fields: { context: M.contextRequired } })
+  }
+
+  /** REQ-B-031: at most QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day (429, BM text). */
+  private async assertUnderDailyCap(actor: WorkflowActor): Promise<void> {
+    const since = mytDayStartOf(this.clock.now())
+    if ((await this.repo.countCreatedSince(idFromString(actor.userId), since)) >= QUESTION_REPORT_DAILY_CAP) {
+      throw ApiError.of('RATE_LIMITED', { message: M.dailyCap, retryAfter: Math.max(1, Math.ceil((since.getTime() + 86_400_000 - this.clock.now().getTime()) / 1000)) })
+    }
   }
 
   /** GET /question-reports (admin): not paged, newest first. */

@@ -27,6 +27,13 @@ export const QUESTION_REPORT_MESSAGES = {
   attempt: 'Rujukan percubaan tidak sah.',
   attemptQuestion: 'Soalan ini bukan sebahagian daripada percubaan itu.',
   paper: 'Kertas tidak sepadan dengan percubaan itu.',
+  /** REQ-B-031 (D98) [PROPOSED]: a pupil may report only a question they answered; no attempt, practice session or structured answer of theirs holds it. */
+  contextRequired: 'Anda hanya boleh melapor soalan yang telah anda jawab.',
+  /** REQ-B-031: `quizSessionId` is not the pupil's own practice session (unknown and someone else's answer alike). */
+  session: 'Rujukan sesi tidak sah.',
+  sessionQuestion: 'Soalan ini bukan sebahagian daripada sesi itu.',
+  /** REQ-B-031: 429 when a reporter files the 21st new report of the Malaysia day. */
+  dailyCap: 'Anda telah mencapai had 20 laporan sehari. Sila cuba lagi esok.',
   comment: 'Komen tidak boleh melebihi 500 aksara.',
   status: 'Status tidak sah.',
   expectedVersionNo: 'Versi soalan tidak sah.',
@@ -40,6 +47,8 @@ export const QUESTION_REPORT_MESSAGES = {
 } as const
 
 export const QUESTION_REPORT_COMMENT_MAX = 500
+/** REQ-B-031 (D98): new reports one reporter may file per Malaysia day (a refresh of an open report is not new). */
+export const QUESTION_REPORT_DAILY_CAP = 20
 export const QUESTION_REPORT_NOTES_MAX = 1000
 /** `quizSessionId` and `roomCode`: 1 to 64 of letters, digits, `.`, `_`, `:`, `-`; empty = not given. */
 export const QUESTION_REPORT_REF_PATTERN = /^[A-Za-z0-9._:-]{1,64}$/
@@ -131,6 +140,12 @@ export type QuestionReportContext = z.infer<typeof QuestionReportContextSchema>
  * missing or not an id answers `fields.questionId` = "Sila pilih soalan.". A question that does not
  * exist answers 404. There is no duplicate-open-report check (the mock has none): a second report
  * by the same user for the same question is accepted exactly like the first.
+ *
+ * REQ-B-031 (D98): a report never deactivates the question; Laporan Soalan is where the admin decides (Arkib / Tolak). A pupil (active role
+ * student, Mod Pelajar included) must have answered the question: 422 `fields.context` unless `attemptId` (own Bijak attempt that holds the
+ * question), `quizSessionId` (own practice session that served it) or, for a structured question, an own structured attempt proves it. A Guru is
+ * not asked. Roles: student and teacher only (403 otherwise). A re-POST of a report the admin already acted on changes nothing. At most
+ * QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day: 429.
  */
 export const QuestionReportCreateRequestSchema = z
   .object({

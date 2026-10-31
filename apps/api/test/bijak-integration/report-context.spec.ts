@@ -56,15 +56,25 @@ afterAll(async () => {
 })
 
 const report = (who: Client, extra: Record<string, unknown>, questionId = qid) => who.post('/api/question-reports', { questionId, reasons: ['wrong_answer'], ...extra })
-/** An MCQ report switches the question off (BR-M04-11); each case starts with it served again. */
+/** A practice session of `userId` that served `questionId` (the proof for a report made outside a paper attempt). */
+async function practiceSession(userId: string, questionId: string): Promise<string> {
+  const [row] = await t.db.query<{ id: string }>(`insert into practice_sessions (user_id, mode, question_count, status, started_at, completed_at) values ($1::bigint, 'random', 1, 'completed', now(), now()) returning id::text`, [userId])
+  await t.db.query(`insert into practice_session_questions (session_id, position, question_id, question_version_no) values ($1::uuid, 1, $2::bigint, 1)`, [row!.id, questionId])
+  return row!.id
+}
+/** Each case starts with the question served (a report never switches it off any more; an earlier case may have archived it). */
 const serve = () => t.db.query(`update questions set is_active = true where id = any($1::bigint[])`, [[qid, outsider]])
 const rows = () => t.db.query<{ attempt_id: string | null; paper_id: string | null; paper_label: string | null; reporter: string }>(`select attempt_id::text, paper_id::text, paper_label, reporter_id::text reporter from question_reports where question_id = $1 order by id`, [qid])
 const fieldsOf = (res: { body: unknown }) => (res.body as { error: { fields: Record<string, string> } }).error.fields
 
 describe('the report stores the paper and the attempt it came from (R1-18.1)', () => {
-  it('a report without a context stores no paper (outside an attempt)', async () => {
+  it('a report from a practice session (no attempt) stores no paper; one without any context is 422 (REQ-B-031)', async () => {
     await serve()
-    expect((await report(student, {})).status).toBe(201)
+    const refusal = await report(student, {})
+    expect(refusal.status).toBe(422)
+    expect(fieldsOf(refusal)).toEqual({ context: M.contextRequired })
+    expect(await rows()).toHaveLength(0)
+    expect((await report(student, { quizSessionId: await practiceSession(student.userId, qid) })).status).toBe(201)
     expect((await rows())[0]).toMatchObject({ attempt_id: null, paper_id: null, paper_label: null })
     await t.db.query('delete from question_reports')
   })
@@ -94,7 +104,7 @@ describe('the report stores the paper and the attempt it came from (R1-18.1)', (
   it('a report outside an attempt shows paper null in the queue', async () => {
     await t.db.query('delete from question_reports')
     await serve()
-    expect((await report(student, {})).status).toBe(201)
+    expect((await report(student, { quizSessionId: await practiceSession(student.userId, qid) })).status).toBe(201)
     const admin = await loginAs(t, ADMIN)
     expect(QuestionReportListResponseSchema.parse((await admin.get('/api/question-reports?status=all')).body).data[0]?.paper ?? null).toBeNull()
   })

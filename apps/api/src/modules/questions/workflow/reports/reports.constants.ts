@@ -43,8 +43,11 @@ export function reportCategory(reasons: readonly string[]): 'Jawapan Salah' | 'T
   return 'Lain-lain'
 }
 
-/** BR-M04-12: a structured question becomes inactive at its third open (pending or reviewed) report. */
-export const STRUCTURED_DEACTIVATE_AT = 3
+/** Start of the Malaysia (UTC+8) calendar day that contains `now`: the window of the daily report cap (REQ-B-031). */
+export function mytDayStartOf(now: Date): Date {
+  const offset = 8 * 3_600_000
+  return new Date(Math.floor((now.getTime() + offset) / 86_400_000) * 86_400_000 - offset)
+}
 
 /** Notification `type` of a report status change (AC 11). */
 export const REPORT_NOTIFICATION_TYPE = 'question_report'
