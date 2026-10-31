@@ -31,10 +31,10 @@
  * infographic | graph`; one that has a stored file becomes `image: { url: '/api/files/<token>' }` (the pupil read
  * rule of `files/question-image-access.ts` decides who may load it). A stimulus is shown ONCE per group above all
  * member questions: the bundle of EVERY member carries the same group (same stimulus ids), so a member served alone
- * (a quiz) still carries it. A stimulus is never a question and has no marks. An image stimulus linked to the
- * version but not to the group is the question's own `stemImage`. MCQ option images become `option.image`.
+ * (a quiz) still carries it. A stimulus is never a question and has no marks. A picture stimulus (image, diagram, map,
+ * infographic, graph) linked to the version but not to the group is the question's own `stemImage` (R1E2E-05). MCQ option images become `option.image`.
  * Also refused: `reveal: 'never'` (BE-16 always reveals the scheme after submit), a stimulus the bridge cannot
- * show (outside the group and not a stem image, unknown kind, empty, file not found), a group with more than
+ * show (outside the group and not a stem picture, unknown kind, empty, file not found), a group with more than
  * three stimuli, two sibling labels that strip to the same id. Every refusal carries a code and a BM reason
  * (`./refusals.ts`).
  */
@@ -392,9 +392,15 @@ function tableOf(data: unknown, body: string | null): StimulusDef['table'] {
   return undefined
 }
 
+/** A stimulus kind that is a stored picture: V2 Studio links any of these straight to a question as its own figure. */
+const PICTURE_KINDS: ReadonlySet<string> = new Set(['image', 'diagram', 'map', 'infographic', 'graph'])
+const isPictureKind = (kind: string): kind is StimulusKind => PICTURE_KINDS.has(kind)
+
 /**
- * The question's own picture: the image stimulus linked to the version that is not in its group. Another kind
- * outside the group is not shown (the mapper only has its id), and a second image would be dropped: both refuse.
+ * The question's own picture: the picture stimulus (image, diagram, map, infographic or graph with a stored file) linked to the
+ * version that is not in its group. A passage or table outside the group is not shown (the stem slot is one picture), and a second
+ * picture would be dropped: both refuse. R1E2E-05: only `image` was accepted, so a question whose own figure was a diagram, map,
+ * infographic or graph was refused (403 on start); every picture kind is accepted now.
  */
 function stemImageOf(
   qid: string,
@@ -406,7 +412,7 @@ function stemImageOf(
   for (const id of versionStimulusIds) {
     if (groupStimulusIds.has(id)) continue
     const info = media.outside.get(id)
-    if (!info || info.kind !== 'image' || info.assetFileId === null)
+    if (!info || !isPictureKind(info.kind) || info.assetFileId === null)
       throw new UnsupportedQuestionError(
         qid,
         '',
@@ -432,7 +438,7 @@ function stemImageOf(
       rawId: id,
       def: {
         id: stimulusWireId(id),
-        kind: 'image',
+        kind: info.kind,
         label: '',
         alt: 'Gambar untuk soalan ini',
         image: { url: fileUrlOf(token) },
