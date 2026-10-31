@@ -35,7 +35,7 @@ export class StructuredListingRepository {
       db.$queryRaw<{ id: bigint }[]>`
         SELECT q.id FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-        WHERE q.is_active AND v.status = 'published' AND v.type = 'structured'
+        WHERE q.is_active AND v.status = 'approved' AND v.type = 'structured'
           AND v.education_level_id = ANY(${levels}::bigint[])
           AND (${subjects}::bigint[] IS NULL OR v.subject_id = ANY(${subjects}::bigint[]))
           AND (${q.kbat}::int IS NULL OR LEAST(6, GREATEST(1, COALESCE(v.cognitive_level, 1))) = ${q.kbat}::int)
@@ -45,7 +45,7 @@ export class StructuredListingRepository {
       db.$queryRaw<{ n: number }[]>`
         SELECT count(*)::int AS n FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-        WHERE q.is_active AND v.status = 'published' AND v.type = 'structured'
+        WHERE q.is_active AND v.status = 'approved' AND v.type = 'structured'
           AND v.education_level_id = ANY(${levels}::bigint[])
           AND (${subjects}::bigint[] IS NULL OR v.subject_id = ANY(${subjects}::bigint[]))
           AND (${q.kbat}::int IS NULL OR LEAST(6, GREATEST(1, COALESCE(v.cognitive_level, 1))) = ${q.kbat}::int)`,

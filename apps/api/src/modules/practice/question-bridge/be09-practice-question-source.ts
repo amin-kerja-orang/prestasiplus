@@ -90,7 +90,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     const wanted = [...new Set(chapterIds)].filter(isIdString)
     if (wanted.length === 0) return new Map()
     // Cheap form: eligible plain MCQs (the loader writes single-part MCQs only). `exact` adds the per-row shape check.
-    return this.questions.groupCount('chapter', { chapterIds: wanted, type: 'mcq', ungrouped: true, ...(exact ? { mcqShape: PRACTICE_SHAPE } : {}), status: 'published', active: true })
+    return this.questions.groupCount('chapter', { chapterIds: wanted, type: 'mcq', ungrouped: true, ...(exact ? { mcqShape: PRACTICE_SHAPE } : {}), status: 'approved', active: true })
   }
 
   async chapterPage(chapterId: string, excludeIds: readonly string[], limit: number): Promise<string[]> {
@@ -192,4 +192,4 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
 }
 
 /** Q-2: the live version is published and the question is active. */
-const eligible = (r: QuestionRecord): boolean => r.isActive && r.version.status === 'published'
+const eligible = (r: QuestionRecord): boolean => r.isActive && r.version.status === 'approved'

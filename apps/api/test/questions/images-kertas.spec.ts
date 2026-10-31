@@ -139,7 +139,7 @@ describe('question images and kertas (real database)', () => {
     const liveFile = await uploadAs(admin)
     const draft = await admin.post('/api/questions').send({ ...base(), questionImageFileId: draftFile.id })
     expect(draft.status).toBe(201)
-    const live = await admin.post('/api/questions').send({ ...base(), questionImageFileId: liveFile.id, optionImageFileIds: [null, null, null, null], tag: tagBody(tag, 3), status: 'published' })
+    const live = await admin.post('/api/questions').send({ ...base(), questionImageFileId: liveFile.id, optionImageFileIds: [null, null, null, null], tag: tagBody(tag, 3), status: 'approved' })
     expect(live.status, JSON.stringify(live.body)).toBe(201)
     expect((await pupil.get(draftFile.url)).status).toBe(404)
     expect((await admin.get(draftFile.url)).status).toBe(200)
@@ -255,7 +255,7 @@ describe('question images and kertas (real database)', () => {
     const adminId = await userIdOf(t.db, ACCOUNTS.admin)
     const v1 = await uploadAs(admin)
     const v2 = await uploadAs(admin)
-    const created = await admin.post('/api/questions').send({ ...base(), questionImageFileId: v1.id, tag: tagBody(tag, 3), status: 'published' })
+    const created = await admin.post('/api/questions').send({ ...base(), questionImageFileId: v1.id, tag: tagBody(tag, 3), status: 'approved' })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     const qid = created.body.data.id as string
     expect((await pupil.get(v1.url)).status).toBe(200)
@@ -264,7 +264,7 @@ describe('question images and kertas (real database)', () => {
     expect((await admin.put(`/api/questions/${qid}`).send({ ...base(), questionImageFileId: v2.id })).status).toBe(200)
     expect((await pupil.get(v1.url)).status).toBe(200)
     expect((await pupil.get(v2.url)).status).toBe(404)
-    for (const status of ['review', 'approved', 'published'] as const) await svc.setStatus(qid, status, adminId)
+    for (const status of ['review', 'approved'] as const) await svc.setStatus(qid, status, adminId)
     expect((await pupil.get(v1.url)).status).toBe(404) // version 1 is archived now
     expect((await pupil.get(v2.url)).status).toBe(200)
     // A hidden (inactive) education level hides the question's images from a pupil.

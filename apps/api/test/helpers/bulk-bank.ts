@@ -41,7 +41,7 @@ export async function bulkMcqs(db: TestDatabase, s: BulkSpec): Promise<string[]>
      numbered AS (SELECT id, row_number() OVER (ORDER BY id) - 1 AS i FROM q),
      v AS (
        INSERT INTO question_versions (question_id, version_no, status, type, stem_ms, number_label, subject_id, education_level_id, chapter_id, difficulty_tp, published_at)
-       SELECT n.id, 1, CASE WHEN $8::int > 0 AND n.i % $8::int = $8::int - 1 THEN 'draft' ELSE 'published' END, 'mcq',
+       SELECT n.id, 1, CASE WHEN $8::int > 0 AND n.i % $8::int = $8::int - 1 THEN 'draft' ELSE 'approved' END, 'mcq',
               'Soalan pukal nombor ' || n.i || ' (' || $2::text || ')', $2::text || '-' || n.i, $3::bigint, $4::bigint, $5::bigint,
               ($6::int[])[1 + (n.i % cardinality($6::int[]))], now()
          FROM numbered n
@@ -70,7 +70,7 @@ export async function bulkMcqs(db: TestDatabase, s: BulkSpec): Promise<string[]>
   )
   const rows = await db.query<{ id: string }>(
     `SELECT q.id::text FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = 1
-      WHERE v.number_label LIKE $1 AND q.is_active AND v.status = 'published' ORDER BY q.id`,
+      WHERE v.number_label LIKE $1 AND q.is_active AND v.status = 'approved' ORDER BY q.id`,
     [`${s.label}-%`],
   )
   return rows.map((r) => r.id)

@@ -44,7 +44,7 @@ const sqlCount = async (extra: string): Promise<number> =>
   (
     await t.db.query<{ n: number }>(
       `select count(*)::int n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-        where q.is_active and v.status = 'published' and v.type = 'mcq' and v.subject_id = $1 ${extra}`,
+        where q.is_active and v.status = 'approved' and v.type = 'mcq' and v.subject_id = $1 ${extra}`,
       [w.tag.subjectId],
     )
   )[0]?.n as number

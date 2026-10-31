@@ -8,7 +8,7 @@ import type { QuestionPart } from '@pp/contract'
 
 export type SeedSubject = 'MATH' | 'SCI' | 'BM'
 export type SeedLevel = 'T4' | 'T5'
-export type SeedStatus = 'draft' | 'review' | 'published' | 'archived'
+export type SeedStatus = 'draft' | 'review' | 'approved' | 'archived'
 export type SeedQuestionType = 'mcq' | 'match' | 'short' | 'structured' | 'essay'
 
 export interface SeedQuestion {
@@ -97,39 +97,39 @@ const matchItem = (n: number, sentence: string, letter: 'A' | 'B' | 'C' | 'D'): 
 export const SEED_QUESTIONS: SeedQuestion[] = [
   // Six published objective questions: 3 subjects x 2 forms.
   {
-    ref: 'SEED-MCQ-MATH-T4', type: 'mcq', subject: 'MATH', level: 'T4', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-MCQ-MATH-T4', type: 'mcq', subject: 'MATH', level: 'T4', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Pilih ungkapan kuadratik dalam satu pemboleh ubah.',
     parts: [mcq('1', 'Antara berikut, yang manakah ungkapan kuadratik dalam satu pemboleh ubah?', ['3x + 2', 'x² + 5x − 6', '2/x + 1', 'x³ − x'], 'B')],
   },
   {
-    ref: 'SEED-MCQ-MATH-T5', type: 'mcq', subject: 'MATH', level: 'T5', status: 'published', owner: 'admin', tagged: true, pools: ['spm'],
+    ref: 'SEED-MCQ-MATH-T5', type: 'mcq', subject: 'MATH', level: 'T5', status: 'approved', owner: 'admin', tagged: true, pools: ['spm'],
     stem: 'Nilai sin 30 darjah.',
     parts: [mcq('1', 'Nilai bagi sin 30° ialah', ['1/2', '√3/2', '1', '0'], 'A')],
   },
   {
-    ref: 'SEED-MCQ-SCI-T4', type: 'mcq', subject: 'SCI', level: 'T4', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-MCQ-SCI-T4', type: 'mcq', subject: 'SCI', level: 'T4', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Peralatan perlindungan diri di makmal.',
     parts: [mcq('1', 'Alat manakah yang digunakan untuk melindungi mata di makmal?', ['Apron', 'Gogal keselamatan', 'Sarung tangan', 'Penutup hidung'], 'B')],
   },
   {
-    ref: 'SEED-MCQ-SCI-T5', type: 'mcq', subject: 'SCI', level: 'T5', status: 'published', owner: 'admin', tagged: true, pools: ['spm'],
+    ref: 'SEED-MCQ-SCI-T5', type: 'mcq', subject: 'SCI', level: 'T5', status: 'approved', owner: 'admin', tagged: true, pools: ['spm'],
     stem: 'Unit SI bagi daya.',
     parts: [mcq('1', 'Apakah unit SI bagi daya?', ['Joule', 'Watt', 'Newton', 'Pascal'], 'C')],
   },
   {
-    ref: 'SEED-MCQ-BM-T4', type: 'mcq', subject: 'BM', level: 'T4', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-MCQ-BM-T4', type: 'mcq', subject: 'BM', level: 'T4', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Maksud peribahasa.',
     parts: [mcq('1', "Apakah maksud peribahasa 'bagai aur dengan tebing'?", ['Saling bergantung', 'Bermusuhan', 'Berpecah', 'Berjauhan'], 'A')],
   },
   {
-    ref: 'SEED-MCQ-BM-T5', type: 'mcq', subject: 'BM', level: 'T5', status: 'published', owner: 'admin', tagged: true, pools: ['spm'],
+    ref: 'SEED-MCQ-BM-T5', type: 'mcq', subject: 'BM', level: 'T5', status: 'approved', owner: 'admin', tagged: true, pools: ['spm'],
     stem: 'Kata ganda penuh.',
     parts: [mcq('1', 'Pilih perkataan yang merupakan kata ganda penuh.', ['kupu-kupu', 'sayur-mayur', 'tali-temali', 'lintang-pukang'], 'A')],
   },
 
   // Structured question with a 3-level part tree: (a) -> (i) -> (A), (B).
   {
-    ref: 'SEED-STR-TREE', type: 'structured', subject: 'MATH', level: 'T4', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-STR-TREE', type: 'structured', subject: 'MATH', level: 'T4', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Diberi fungsi kuadratik f(x) = x² − 4x + 3.',
     parts: [
       {
@@ -175,7 +175,7 @@ export const SEED_QUESTIONS: SeedQuestion[] = [
   },
   // Structured question with error carried forward (ECF) and a tolerance.
   {
-    ref: 'SEED-STR-ECF', type: 'structured', subject: 'MATH', level: 'T5', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-STR-ECF', type: 'structured', subject: 'MATH', level: 'T5', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Sebuah segi tiga bersudut tegak mempunyai dua sisi tegak 3 cm dan 4 cm.',
     parts: [
       {
@@ -202,7 +202,7 @@ export const SEED_QUESTIONS: SeedQuestion[] = [
   },
   // Structured question with an "any N of M" group (essay mode, points key).
   {
-    ref: 'SEED-STR-ANYN', type: 'structured', subject: 'SCI', level: 'T4', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-STR-ANYN', type: 'structured', subject: 'SCI', level: 'T4', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Keselamatan di dalam makmal sains.',
     parts: [
       {
@@ -225,43 +225,43 @@ export const SEED_QUESTIONS: SeedQuestion[] = [
 
   // Stimulus group of 3 ordered members around one passage.
   {
-    ref: 'SEED-GRP-PASAR-1', type: 'mcq', subject: 'BM', level: 'T5', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-GRP-PASAR-1', type: 'mcq', subject: 'BM', level: 'T5', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Pasar tani: bilakah pasar dibuka?', group: { ref: 'SEED-GRP-PASAR', position: 1 }, stimuli: ['SEED-STIM-PASAR'],
     parts: [mcq('1', 'Bilakah pasar tani itu dibuka?', ['Setiap hari', 'Setiap hujung minggu', 'Setiap malam', 'Setiap bulan'], 'B')],
   },
   {
-    ref: 'SEED-GRP-PASAR-2', type: 'mcq', subject: 'BM', level: 'T5', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-GRP-PASAR-2', type: 'mcq', subject: 'BM', level: 'T5', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Pasar tani: barangan yang dijual.', group: { ref: 'SEED-GRP-PASAR', position: 2 }, stimuli: ['SEED-STIM-PASAR'],
     parts: [mcq('2', 'Apakah yang disusun oleh penjual di atas meja?', ['Pakaian', 'Sayur, buah dan kuih', 'Buku', 'Perabot'], 'B')],
   },
   {
-    ref: 'SEED-GRP-PASAR-3', type: 'mcq', subject: 'BM', level: 'T5', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-GRP-PASAR-3', type: 'mcq', subject: 'BM', level: 'T5', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Pasar tani: sebab pembeli datang awal.', group: { ref: 'SEED-GRP-PASAR', position: 3 }, stimuli: ['SEED-STIM-PASAR'],
     parts: [mcq('3', 'Mengapakah pembeli datang awal?', ['Untuk mendapatkan barangan yang segar', 'Untuk bertemu rakan', 'Kerana pasar ditutup lewat', 'Kerana hari hujan'], 'A')],
   },
   // Stimulus group with a lettered option bank (match_letter, 4 items).
   {
-    ref: 'SEED-GRP-AYAT-1', type: 'match', subject: 'BM', level: 'T4', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-GRP-AYAT-1', type: 'match', subject: 'BM', level: 'T4', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Jenis ayat 1.', group: { ref: 'SEED-GRP-AYAT', position: 1 }, stimuli: ['SEED-STIM-AYAT'],
     parts: [matchItem(1, 'Adik sedang membaca buku.', 'A')],
   },
   {
-    ref: 'SEED-GRP-AYAT-2', type: 'match', subject: 'BM', level: 'T4', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-GRP-AYAT-2', type: 'match', subject: 'BM', level: 'T4', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Jenis ayat 2.', group: { ref: 'SEED-GRP-AYAT', position: 2 }, stimuli: ['SEED-STIM-AYAT'],
     parts: [matchItem(2, 'Siapakah yang menyapu halaman?', 'B')],
   },
   {
-    ref: 'SEED-GRP-AYAT-3', type: 'match', subject: 'BM', level: 'T4', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-GRP-AYAT-3', type: 'match', subject: 'BM', level: 'T4', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Jenis ayat 3.', group: { ref: 'SEED-GRP-AYAT', position: 3 }, stimuli: ['SEED-STIM-AYAT'],
     parts: [matchItem(3, 'Tutup pintu itu sekarang.', 'C')],
   },
   {
-    ref: 'SEED-GRP-AYAT-4', type: 'match', subject: 'BM', level: 'T4', status: 'published', owner: 'admin', tagged: true,
+    ref: 'SEED-GRP-AYAT-4', type: 'match', subject: 'BM', level: 'T4', status: 'approved', owner: 'admin', tagged: true,
     stem: 'Jenis ayat 4.', group: { ref: 'SEED-GRP-AYAT', position: 4 }, stimuli: ['SEED-STIM-AYAT'],
     parts: [matchItem(4, 'Wah, cantiknya pemandangan ini!', 'D')],
   },
 
-  // One row per non-published status, for visibility and eligibility tests.
+  // One row per non-approved status, for visibility and eligibility tests.
   {
     ref: 'SEED-DRAFT-BM-T4', type: 'short', subject: 'BM', level: 'T4', status: 'draft', owner: 'admin', tagged: false,
     stem: 'Kata nama am.',

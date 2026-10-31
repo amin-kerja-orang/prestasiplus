@@ -50,7 +50,7 @@ function record(
     version: {
       id: 'v1',
       versionNo: 2,
-      status: 'published',
+      status: 'approved',
       archiveReason: null,
       publishedAt: now,
       type: 'structured',

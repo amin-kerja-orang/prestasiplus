@@ -276,7 +276,7 @@ describe('AC4 / AC5 Tracking A (M06-05, M06-06)', () => {
       const s = parseData(await student.get('/api/spm/tracking-a/ADDMATH'), SpmTrackingASubjectResultSchema) as SpmTrackingASubject
       expect(s.sets.find((x) => x.setNo === 2)).toMatchObject({ status: 'bank_besar', readyCount: 20, bankSource: 22 })
     } finally {
-      await t.db.query(`update question_versions set status = 'published' where question_id = $1`, [inBank])
+      await t.db.query(`update question_versions set status = 'approved' where question_id = $1`, [inBank])
     }
     const after = await t.db.query<{ n: string; u: string }>(`select count(*)::text n, max(updated_at)::text u from spm_tracking_sets`)
     expect(after).toEqual(before)
