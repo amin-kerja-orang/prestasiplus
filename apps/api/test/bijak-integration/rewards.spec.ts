@@ -7,7 +7,7 @@ import { PrismaService } from '../../src/db/prisma.service'
 import { BIJAK_REWARD_DESCRIPTION } from '../../src/modules/bijak/attempts/ports'
 import { PRACTICE_REWARD_DESCRIPTION, WalletBijakReward, WalletPracticeReward } from '../../src/modules/bijak/integration'
 import { practiceRewardSource, type PracticeSessionCompleted } from '../../src/modules/practice/ports'
-import { ADMIN, bootIntegrationApp, type IntegrationApp, loginAs, STUDENT } from './helpers'
+import { ADMIN, bootIntegrationApp, type IntegrationApp, loginAs, START, STUDENT } from './helpers'
 
 let t: IntegrationApp
 let studentId: string
@@ -192,17 +192,39 @@ describe('WalletBijakReward.award', () => {
     expect(await xpOf(studentId)).toBe(xpBefore + 20)
   })
 
-  it('touches the streak (kombo) of the day the attempt closed, once per day, even when the score earns nothing', async () => {
+  it('touches the streak (kombo) on the day the attempt closed: last day, total days and current move once per day, even for a zero score', async () => {
     const pupil = (await loginAs(t, 'pelajar2@demo.test')).userId
-    const closed = new Date('2026-10-20T01:00:00Z')
-    const before = await streak(pupil)
-    await bijak.award({ attemptId: randomUUID(), userId: pupil, isTest: false, coins: 0, points: 0, submittedAt: closed, score: 0, max: 10, provisional: false, description: BIJAK_REWARD_DESCRIPTION })
-    const first = await streak(pupil)
-    expect(first).toBeDefined()
-    expect(first!.current).toBeGreaterThanOrEqual(1)
-    await bijak.award({ attemptId: randomUUID(), userId: pupil, isTest: false, coins: 2, points: 10, submittedAt: closed, score: 1, max: 10, provisional: false, description: BIJAK_REWARD_DESCRIPTION })
-    expect((await streak(pupil))!.current).toBe(first!.current) // the same day does not count twice
-    void before
+    const state = async () =>
+      (
+        await t.db.query<{ current: number; last: string | null; total_days: number }>(
+          `select current, to_char(last_activity_date, 'YYYY-MM-DD') last, total_days from streaks where user_id = $1`,
+          [pupil],
+        )
+      )[0] ?? { current: 0, last: null, total_days: 0 }
+    const sit = (coins: number, closed: string) =>
+      bijak.award({ attemptId: randomUUID(), userId: pupil, isTest: false, coins, points: coins * 5, submittedAt: new Date(closed), score: coins / 2, max: 10, provisional: false, description: BIJAK_REWARD_DESCRIPTION })
+    // the login of 2026-10-20 already touched the streak: day 1
+    const day1 = await state()
+    expect(day1).toMatchObject({ last: '2026-10-20', total_days: 1 })
+    expect(day1.current).toBeGreaterThanOrEqual(1)
+    // the same day, a zero score then a scoring sitting: nothing moves (once per day)
+    await sit(0, '2026-10-20T00:20:00Z')
+    await sit(2, '2026-10-20T00:40:00Z')
+    expect(await state()).toEqual(day1)
+    // the next day: one more day, the streak continues (a zero score counts too)
+    t.clock.set('2026-10-21T09:00:00+08:00')
+    try {
+      await sit(0, '2026-10-21T00:20:00Z')
+      const day2 = await state()
+      expect(day2).toEqual({ current: day1.current + 1, last: '2026-10-21', total_days: 2 })
+      await sit(2, '2026-10-21T00:40:00Z')
+      expect(await state()).toEqual(day2)
+      // a late event on an earlier day never moves the streak backwards
+      await sit(2, '2026-10-19T02:00:00Z')
+      expect(await state()).toEqual(day2)
+    } finally {
+      t.clock.set(START)
+    }
   })
 
   it('AC-20.3: a Mod Pelajar attempt moves no XP and no streak either', async () => {

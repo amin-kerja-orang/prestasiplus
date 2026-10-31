@@ -30,6 +30,12 @@ export const wholeCount = (v: number): number => (Number.isFinite(v) && v > 0 ? 
  * - the XP (`points`, 10 per mark, 2 syiling and 10 XP per mark as V2 `PracticeRecorder`, `docs/discovery/BIJAK-SPM-cloud.md` 4.5) is added to the wallet only when that credit was NEW (`addXp` has no ledger key of its own),
  *   so a replay never pays the XP twice.
  *
+ * Evidence against AC-R1-10.1 (`docs/requirements/v3-bijak-spm-scope.md`): the V2 notes (`docs/discovery/BIJAK-SPM-cloud.md` 4.5) document the
+ * aggregate `practice_sessions` row and the rates (2 syiling and 10 XP per mark), but do NOT document the kombo (streak) step of V2
+ * `PracticeRecorder` line by line. The streak touch here is therefore parity with the V3 practice reward port (`WalletPracticeReward`: a
+ * completed session touches the streak) and with the M14 rule that kombo is the daily streak; confirm against the V2 code when it is available.
+ * AC-R1-10.2 (lead decision): Cuba Lagi is a new attempt and earns again, as V2 does (one award per ATTEMPT, key = attemptId).
+ *
  * AC-20.3 (`docs/requirements/v2-bijak-spm.md`): "Given Mod Pelajar, then no rewards are credited". An `isTest` attempt
  * therefore writes NO ledger row, moves no balance, no XP and no streak (#45 M2). The coins are floored (half marks give a
  * fraction) and a result of 0 or less credits nothing (the wallet refuses it), but the streak still counts a closed exam.
