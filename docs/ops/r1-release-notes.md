@@ -485,13 +485,10 @@ one blueprint. On UAT there are **0 blueprints** today, so a blueprint must firs
 
 ### 4.1 Get a blueprint (Spec) to verify
 
-- **Option A (by hand, no seed):** Pentadbiran -> `/admin/spm/kontrak` -> `Tambah Kontrak` -> fill the subject, kertas
-  and sections until the panel shows `Tiada ralat. Kontrak boleh disimpan.` -> save. It is saved as Draf/Spec.
-- **Option B (seed):** the six launch blueprints (1449/1, 1449/2, 3472/1, 3472/2, 4531/2, 1249/2, as Spec, with study
-  evidence) come from the seed module `exam-launch-blueprints`. It is a **demo-kind** module (verified: no
-  `kind: 'reference'`), so a `NODE_ENV=production` seed skips it, and `deploy.sh` refuses `ALLOW_DEMO_SEED=true`.
-  It also needs the DSKP unit nodes from section 3. Using it on UAT needs a LEAD decision (Q1). Do not use it in
-  production without that decision and a security review.
+**D95 (2026-10-31, PR amin-kerja-orang/prestasiplus#404, `docs/TRACKER.md` row D95) supersedes the text that stood here ("Option A by hand" and "Option B seed").** On UAT an Admin Pusat creates each blueprint by hand in Kontrak, through the real flow, and presses Sahkan. There is **no seed on UAT**: the demo seeds, the launch-blueprint seed (`exam-launch-blueprints`) and the E2E seed are local / E2E only. The question Q1 of section 8 is answered by D95.
+
+- Pentadbiran -> `/admin/spm/kontrak` -> `Tambah Kontrak` -> fill the subject, kertas and sections until the panel shows `Tiada ralat. Kontrak boleh disimpan.` -> save. It is saved as Draf/Spec.
+- Order and checks: 3472/2 first, then 1449/1, 1249/1, 4531/1 and Sains K1 once evidence from two or more bodies is ready. The steps, the read-only SELECTs for the blueprint state before and after Sahkan, and the "no seed ran" checks are in [r1-runbook.md](r1-runbook.md) section 5. The evidence per blueprint, with every check Sahkan runs and what is missing, is in [r1-k1-blueprint-evidence.md](r1-k1-blueprint-evidence.md) (T39; on branch `r1/t39-k1-evidence` until merged).
 
 ### 4.2 Verify (UI path, Admin Pusat)
 

@@ -407,11 +407,20 @@ E2E_SEED=1 npm run be:db:seed -- --profile=e2e
 | Need to go back past 0100 | 0100 is not reversible | Section 2.2: restore the dump with the previous API/FE build, then `prisma migrate resolve --rolled-back 0100_question_lifecycle_approved`. |
 | 429 on the servability reads of the admin | `THROTTLE_SERVABILITY_READ_PER_MINUTE` too low for the load | Raise it (lands with T30); default is 120 per user per minute. |
 
-## 9. Not verified in this page
+## 9. Verification status of this page
 
-- Nothing here was run on a server or a database. SQL was written from the schema (`apps/api/prisma/schema/exam.prisma`, `base.prisma`) and the migration files; it was not executed against a Postgres instance. Re-read each SELECT once against the live schema.
+**SQL: ran on a local migrated database, 51/51 statements ok.** Every statement in the SQL blocks of this page (50 SELECTs and the one `VACUUM ANALYZE`) was executed one by one with `psql` against a throwaway local Postgres 16 container (no server, no shared database). Statements that errored: none; no statement was changed by the run.
+
+- **Database A (staged), empty tables:** migrated with `prisma migrate deploy` to 0091 and the 0092 pre-flight SELECTs of 3.1 were run (3 statements); then migrated to 0093 and the remaining "before" SELECTs of 3.1 were run (9 statements). They returned zero rows or zero counts because the tables were empty; this proves the syntax and the column names, not the counts. The "before" SELECTs cannot run on a fully migrated database (for example `blueprint_sections.topic_weights` is gone after 0092).
+- **Database B (full):** BASE-6 migrations (0092, 0093, 0100) plus `0101_essay_choice` (from commit `d398a576`, branch `r1/t25-essay-choice-store`) and `0102_leaf_cognitive_level` (from commit `76f53e6c`, branch `r1/t33-leaf-tags`), copied into a scratch migrations folder and not committed; then the demo seed (`tsx prisma/seed/index.ts`, profile `poc`, 27 modules, exit 0). The remaining 39 statements (2.2, 3.2 to 3.6, 4, 5.4) ran here, all ok.
+- **Notable results on the seeded database:** `servable` equals the count of `approved` versions (1268) and the login count is 493 (the figure the D91 note in 3.6 and the T05 servable-counts spec pin for the demo seed); no `published` status remains; the status CHECK lists `draft, review, approved, archived`; `question_parts.topics` and `.cognitive_level` exist with their CHECKs; every `cognitive_level` is NULL right after the migration; the 4 DSKP checks of section 4 returned T4/T5 only, 0 orphans, 0 bad TP. The two "no seed ran" checks of 5.4 return **6** and **16** on this database, which proves they detect the launch-blueprint seed (on UAT, per D95, both must be 0).
+- **After-Sahkan SELECTs:** on the seeded database no blueprint is verified, so they return no rows. They were also run once inside a transaction that was rolled back, after inserting one verification row for `3472/2` and flipping it to verified and serving: they returned the expected row (`hash_matches` true, `check_passed` true, 0 duplicate serving pairs, the pair listed). This only exercises the SQL; it is not a real Sahkan.
+- Not run: the shell commands (`npm run dskp:load`, `prisma migrate resolve`, `be:db:seed`), the DSKP loader report numbers (2,844 nodes) and the API endpoints. The DSKP counts of this run came from the seed's curriculum module, not from the loader script.
+
+**Still not verified**
+
 - 0101 and 0102 are read from the T25 and T33 branches, not from BASE-6; their final content may change in review (the T33 branch head is a work-in-progress commit). `\d question_parts` after a deploy is the check.
 - `VACUUM ANALYZE question_versions`: run time on the production-size table was not measured.
 - `THROTTLE_SERVABILITY_READ_PER_MINUTE` and `E2E_SEED` are read from branches `r1/t30-servability-reads` and `r1/t26-e2e-seed`, not from BASE-6.
-- Whether UAT already holds PoC blueprints, DSKP nodes or demo data is unknown; section 3.1 and 5.4 record it.
+- Whether UAT already holds PoC blueprints, DSKP nodes or demo data is unknown; sections 3.1 and 5.4 record it.
 - The PR #404 text for D95 was read from the PR head (`origin/pr404`), not from `feature/v3-bijak-r1`.
