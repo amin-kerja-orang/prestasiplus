@@ -109,6 +109,7 @@ export function gradeLeaf(leaf: QuestionLeaf, answer: PartAnswerValue): GradeRes
       return answer.kind === 'cells' ? gradeCells(leaf.key, answer.cells, m) : verdict(false, m)
     case 'working':
     case 'essay':
+    case 'essay_choice':
     case 'drawing':
       return { kind: 'needs_review', maxMarks: m }
   }
