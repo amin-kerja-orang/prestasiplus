@@ -48,7 +48,7 @@ describe('AZ-14: bulk-action failed entries', () => {
     const id = await make()
     expect(await bulk('approved', [id])).toEqual({
       affected: 0,
-      failed: [{ id, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Diterbitkan tidak dibenarkan.', fields: {} }],
+      failed: [{ id, code: 'CONFLICT', message: "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan.", fields: {} }],
     })
   })
 

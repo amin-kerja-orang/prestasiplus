@@ -357,9 +357,11 @@ export class KuizService {
     const paper = await this.papers.findPaper(idFromString(paperId))
     if (!paper || paper.status !== 'published') throw kuizPaperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw kuizPaperNotFound()
-    // H-A13 / AC-R1-18.4: a paper that places a question the bank no longer serves (archived after Terbit) is refused, by the
-    // same predicate as a new sitting (`attempt-source.ts`: a live approved version; `is_active` is NOT checked, the placement
-    // is what the paper froze). Nothing is shown or marked from it.
+    // H-A13 / AC-R1-18.4: a paper that places a question the bank no longer serves (archived after Terbit) is refused. This is the
+    // first half of the new-sitting rule (`attempt-source.ts`: a live approved version; `is_active` is NOT checked, the placement is
+    // what the paper froze). It is NOT the whole rule: a new sitting also refuses a question the Bijak bridge cannot map (bridge
+    // refusals), which the kuiz does not check; the kuiz serves such a question or skips it on its own `complete` test. Nothing is
+    // shown or marked from a refused paper.
     const placed = [...new Set(paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId))))]
     if (placed.length === 0 || (await this.questions.getMany(placed, 'live')).filter((r) => r.version.status === 'approved').length < placed.length) throw kuizPaperUnavailable()
     return paper
