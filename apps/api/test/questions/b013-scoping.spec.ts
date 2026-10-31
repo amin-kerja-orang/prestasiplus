@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { PrismaService } from '../../src/db/prisma.service'
 import { BuilderRepository } from '../../src/modules/exam/builder/builder.repository'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder/question-bank.source'
+import { outsideStimuliOf } from '../../src/modules/bijak/question-bridge/outside-media'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
 import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
@@ -31,7 +32,7 @@ function sourceFiles(dir: string, out: string[] = []): string[] {
 
 describe('REQ-B-013a versionStimuli is a pinned read', () => {
   /** The only places allowed to call it: each passes versions it already holds (served or placed), never ids from a list or a draw. */
-  const ALLOWED = ['modules/bijak/question-bridge/be09-question-source.ts', 'modules/questions/questions.repository.ts']
+  const ALLOWED = ['modules/bijak/question-bridge/outside-media.ts', 'modules/questions/questions.repository.ts']
 
   it('has no caller outside the allowed list (a new pupil caller must scope its refs and be added here on purpose)', () => {
     const callers = sourceFiles(SRC)
@@ -40,12 +41,20 @@ describe('REQ-B-013a versionStimuli is a pinned read', () => {
     expect(callers.filter((c) => !ALLOWED.includes(c))).toEqual([])
   })
 
-  it('the bridge source, when it calls it, passes the live version it just read (getMany live), nothing else', () => {
-    const file = join(SRC, 'modules/bijak/question-bridge/be09-question-source.ts')
-    const text = readFileSync(file, 'utf8')
-    if (!/versionStimuli\(/.test(text)) return // the call arrives with R1E2E-05b
+  it('its one caller (the shared outside-media reader) passes the versions of the records it is given, nothing else', () => {
+    const text = readFileSync(join(SRC, 'modules/bijak/question-bridge/outside-media.ts'), 'utf8')
     expect(text).toMatch(/versionStimuli\(\s*records\.map\(\(r\) => \(\{ questionId: r\.id, versionNo: r\.version\.versionNo \}\)\)/)
-    expect(text).toMatch(/getMany\(ids, 'live'\)/)
+  })
+
+  it('the two users of that reader hand it records they just read at the live version (attempt source, servability facts)', () => {
+    const source = readFileSync(join(SRC, 'modules/bijak/question-bridge/be09-question-source.ts'), 'utf8')
+    expect(source).toMatch(/getMany\(ids, 'live'\)/)
+    expect(source).toMatch(/outsideStimuliOf\(this\.questions, records, groups\)/)
+    const servability = readFileSync(join(SRC, 'modules/questions/serving/servability.service.ts'), 'utf8')
+    expect(servability).toMatch(/getMany\(\[\.\.\.latest\.keys\(\)\], 'live'\)/)
+    // `bridged` = the live record of a question, else (until r1/servability-archived lands) the archived version a paper published.
+    expect(servability).toMatch(/const bridged = (records|\[\.\.\.latest\][\s\S]*?live\.get\(id\))/)
+    expect(servability).toMatch(/outsideStimuliOf\(this\.questions, bridged, groups\)/)
   })
 })
 
@@ -92,6 +101,25 @@ describe('REQ-B-013 b, c (real database)', () => {
     expect(got.get(`${id}:1`)?.map((s) => s.id)).toEqual([stim!.id])
     expect(got.get(`${id}:2`)).toEqual([]) // version 2 (a draft) carries none: no fallback to the live or the first version
     expect(got.get(`${id}:9`)).toEqual([]) // unknown version: empty, never another version
+  })
+
+  it('outsideStimuliOf reads the version of the record it is given: the live version and a pinned older one each get their own stimuli', async () => {
+    const id = await published()
+    const [a] = await q<{ id: string }>(`insert into stimuli (kind, label, body_ms) values ('passage', 'Satu', 'Isi satu') returning id::text id`)
+    const [b] = await q<{ id: string }>(`insert into stimuli (kind, label, body_ms) values ('passage', 'Dua', 'Isi dua') returning id::text id`)
+    await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2, 1 from question_versions where question_id = $1 and version_no = 1`, [id, a!.id])
+    await svc.update(id, { ...mcqInput(tag, { questionText: 'Versi dua dengan rangsangan lain untuk ujian skop.', tag: tagBody(tag, 3) }) } as never, admin)
+    await q(`delete from question_version_stimuli where question_version_id = (select id from question_versions where question_id = $1 and version_no = 2)`, [id])
+    await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2, 1 from question_versions where question_id = $1 and version_no = 2`, [id, b!.id])
+    // live = v1 (v2 is a draft): the reader returns v1's stimulus only.
+    const live = await repo.getMany([id], 'live')
+    expect(live[0]?.version.versionNo).toBe(1)
+    expect([...(await outsideStimuliOf(repo, live, new Map())).outside.keys()]).toEqual([a!.id])
+    // a pinned read of version 2 (a paper pins it): its own stimulus, not v1's.
+    const pinned = await repo.getVersions([{ questionId: id, versionNo: 2 }])
+    expect([...(await outsideStimuliOf(repo, pinned, new Map())).outside.keys()]).toEqual([b!.id])
+    // no record, no read
+    expect((await outsideStimuliOf(repo, [], new Map())).outside.size).toBe(0)
   })
 
   it('a deactivated subject offers no candidate to the paper builder and none to the Bijak pool; reactivated, it does again', async () => {
