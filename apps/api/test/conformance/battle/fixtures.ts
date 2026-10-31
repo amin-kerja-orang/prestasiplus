@@ -15,7 +15,8 @@ export const battleConformanceEnv: Record<string, string> = {
 }
 
 /** Id of the subject the scenarios battle on; set by `seedBattleConformance`. */
-export const battleFixture = { mathId: '' }
+/** `emptyId`: a subject with no question at all (SEJ), for the "no SPM pool" refusal. */
+export const battleFixture = { mathId: '', emptyId: '' }
 
 const QUESTIONS = 12
 const PUBLISHED_AT = new Date('2026-10-19T09:00:00+08:00')
@@ -24,6 +25,7 @@ export async function seedBattleConformance(prisma: PrismaClient): Promise<void>
   const math = await prisma.subject.findFirstOrThrow({ where: { code: 'MATH' } })
   const t4 = await prisma.educationLevel.findFirstOrThrow({ where: { code: 'T4' } })
   battleFixture.mathId = String(math.id)
+  battleFixture.emptyId = String((await prisma.subject.findFirstOrThrow({ where: { code: 'SEJ' } })).id)
   // Like every seeded published question these carry the full curriculum tag (unit, one SP, cognitive level, TP), so
   // the question-bank scenarios that clone the first published row keep working.
   const nodes = await prisma.curriculumNode.findMany({
