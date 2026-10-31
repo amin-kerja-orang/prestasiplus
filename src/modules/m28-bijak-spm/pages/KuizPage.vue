@@ -6,7 +6,7 @@
  * right option and the explanation. The quiz is stored as a practice session (U8), so Tamat finishes
  * it and shows the reward.
  */
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { DsEmptyState, DsLoadError, DsPage, DsProgress, DsRewardChip, DsStatTile } from '@/ds'
@@ -48,14 +48,6 @@ const progress = computed(() =>
 const score = computed(() => result.value?.score ?? localScore.value)
 const shownTotal = computed(() => result.value?.total ?? total.value)
 const time = computed(() => clock(seconds.value))
-const retryTo = computed(() => ({
-  path: '/simulasi/kuiz',
-  query: {
-    count: String(total.value || count.value),
-    ...(subject.value ? { subject: subject.value } : {}),
-  },
-}))
-
 function stopTimer(): void {
   if (timer) clearInterval(timer)
   timer = null
@@ -135,6 +127,11 @@ function next(): void {
   checkError.value = ''
 }
 
+// A new count/subject in the URL (hub link) starts a fresh quiz; "Cuba Lagi" calls start() with the chosen ones.
+watch(
+  () => [count.value, subject.value],
+  () => void start(),
+)
 void start()
 </script>
 
@@ -196,7 +193,7 @@ void start()
             <DsRewardChip art="bolt" :value="result.gamification.pointsEarned" label="Mata" />
           </div>
           <div class="flex w-full flex-col justify-center gap-2 sm:w-auto sm:flex-row">
-            <UButton :to="retryTo" class="min-h-11 justify-center" data-testid="kuiz-retry">{{
+            <UButton class="min-h-11 justify-center" data-testid="kuiz-retry" @click="start">{{
               kuizCopy.retry
             }}</UButton>
             <UButton to="/spm/bijak" color="neutral" class="min-h-11 justify-center">{{
@@ -230,7 +227,6 @@ void start()
         :chip="`❓ Soalan ${index + 1}`"
         :verdict="verdict"
         :busy="busy || phase === 'finishing'"
-        :semak-label="kuizCopy.semakJawapan"
         :error="checkError"
         @check="check"
       >

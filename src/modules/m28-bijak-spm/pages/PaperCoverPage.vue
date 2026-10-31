@@ -134,7 +134,7 @@ async function begin(restart: boolean): Promise<void> {
         variant="outline"
         class="min-h-11 self-start"
         data-testid="paper-kuiz-link"
-        >Kuiz kertas ini</UButton
+        >Kuiz</UButton
       >
 
       <section class="flex flex-col gap-2" aria-labelledby="h-arahan">

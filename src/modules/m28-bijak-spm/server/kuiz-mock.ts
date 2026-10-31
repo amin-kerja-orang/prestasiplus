@@ -16,8 +16,8 @@ import type {
 
 import { BANK, PAPERS, subjectName } from '../data/registry'
 import { leavesOf } from '../domain/paper-model'
-import type { QuestionDef } from '../domain/types'
-import { parseCount } from '../lib/kuiz'
+import type { QuestionDef, StimulusDef } from '../domain/types'
+import { parseCount } from '../lib/kuiz-count'
 import { BijakError } from './errors'
 
 const LETTERS = 'ABCDEFGH'
@@ -38,13 +38,24 @@ function shuffle<T>(list: T[]): T[] {
   return out
 }
 
+/** The kuiz wire knows passage, table and diagram; the pictorial kinds read as `diagram` (same table as the API kuiz mapper). */
+const KUIZ_KIND: Record<StimulusDef['kind'], BijakKuizItem['stimuli'][number]['kind']> = {
+  passage: 'passage',
+  table: 'table',
+  diagram: 'diagram',
+  image: 'diagram',
+  map: 'diagram',
+  infographic: 'diagram',
+  graph: 'diagram',
+}
+
 function stimuliOf(q: QuestionDef): BijakKuizItem['stimuli'] {
   const group = q.groupId ? BANK.groups.get(q.groupId) : undefined
   const st = group ? BANK.stimuli.get(group.stimulusId) : undefined
   if (!st) return []
   return [
     {
-      kind: st.kind,
+      kind: KUIZ_KIND[st.kind],
       label: st.label,
       body: st.text ?? st.caption ?? null,
       imageToken: null,

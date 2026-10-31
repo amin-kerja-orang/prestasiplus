@@ -163,6 +163,30 @@ describe('KuizPage (random)', () => {
     expect(document.body.textContent).toContain('Kertas penuh')
   })
 
+  it('"Cuba Lagi" starts a fresh quiz with the chosen count and subject', async () => {
+    server.startKuiz.mockResolvedValue(session)
+    server.checkKuiz.mockResolvedValue({ correct: true, correctOptionId: 'C', explanation: null })
+    server.finishKuiz.mockResolvedValue({
+      score: 0,
+      total: 2,
+      answered: 0,
+      gamification: { coinsEarned: 0, streakCount: 1, pointsEarned: 0, totalBalance: 0 },
+    })
+    await mountPage(KuizPage, '/simulasi/kuiz?count=10&subject=MATH')
+    expect(server.startKuiz).toHaveBeenLastCalledWith({ count: 10, subject: 'MATH' })
+    for (let i = 0; i < 2; i++) {
+      await pick('C')
+      await click('[data-testid=kuiz-semak]')
+      await click('[data-testid=kuiz-next]')
+    }
+    expect(q('[data-testid=kuiz-retry]')).not.toBeNull()
+    const calls = server.startKuiz.mock.calls.length
+    await click('[data-testid=kuiz-retry]')
+    expect(server.startKuiz).toHaveBeenCalledTimes(calls + 1)
+    expect(server.startKuiz).toHaveBeenLastCalledWith({ count: 10, subject: 'MATH' })
+    expect(q('[data-testid=kuiz-counter]')).not.toBeNull()
+  })
+
   it('shows "Belum ada soalan objektif" on NO_QUESTIONS', async () => {
     server.startKuiz.mockRejectedValue(new BijakError('no_questions', 'Belum ada soalan objektif'))
     await mountPage(KuizPage, '/simulasi/kuiz')

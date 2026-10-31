@@ -79,15 +79,19 @@ const blocks = computed<Block[]>(() => {
   return out
 })
 
+let loadSeq = 0
 async function load(): Promise<void> {
+  const seq = ++loadSeq
   phase.value = 'loading'
   try {
     const res = await server.getKuizPaperPage(paperId.value, page.value)
+    if (seq !== loadSeq) return // a newer page was requested meanwhile: drop this response
     data.value = res
     markableTotal.value = res.markableTotal
     phase.value = 'ready'
     window.scrollTo?.({ top: 0 })
   } catch (e) {
+    if (seq !== loadSeq) return
     phase.value = e instanceof BijakError && e.code === 'not_found' ? 'missing' : 'error'
   }
 }

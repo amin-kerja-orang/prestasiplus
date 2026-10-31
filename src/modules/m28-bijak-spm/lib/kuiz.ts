@@ -3,15 +3,13 @@ import type { BijakKuizItem } from '@pp/contract'
 
 import type { McqOptionData, StimulusData, StimulusKind } from './question-display'
 
-export const KUIZ_COUNTS = [5, 10, 20, 40] as const
-export const KUIZ_DEFAULT_COUNT = 20
+export { KUIZ_COUNTS, KUIZ_DEFAULT_COUNT, parseCount } from './kuiz-count'
 
 /** V2 labels (exam-sim/quiz.blade.php, quiz-paper.blade.php), verbatim. */
 export const kuizCopy = {
   title: 'Simulasi — Kuiz',
   time: 'Masa',
   semak: '✓ Semak',
-  semakJawapan: '✓ Semak Jawapan',
   correct: '🎉 Betul!',
   wrong: '😟 Salah',
   next: 'Soalan Seterusnya →',
@@ -22,6 +20,7 @@ export const kuizCopy = {
   retry: '↻ Cuba Lagi',
   fullPapers: 'Kertas penuh',
   empty: 'Belum ada soalan objektif',
+  /** Source: docs/discovery/BIJAK-SPM-cloud.md S5 row (V2 empty state text). */
   emptyHelp:
     'Kuiz ini mengambil soalan objektif daripada kertas yang telah diterbitkan dan mempunyai skema jawapan. Buat masa ini belum ada kertas yang memenuhi kedua-duanya.',
   back: '← Sebelum',
@@ -34,12 +33,6 @@ export const kuizCopy = {
   /** V2 text of an objective part whose scheme is missing. */
   noScheme: 'Skema jawapan belum tersedia untuk soalan ini.',
 } as const
-
-/** Count from `?count=`; anything else falls back to 20 (the server does the same). */
-export function parseCount(raw: unknown): number {
-  const n = Math.trunc(Number(Array.isArray(raw) ? raw[0] : raw)) // V2 casts with (int): 5.5 is 5
-  return (KUIZ_COUNTS as readonly number[]).includes(n) ? n : KUIZ_DEFAULT_COUNT
-}
 
 export function parseSubject(raw: unknown): string | undefined {
   const v = Array.isArray(raw) ? raw[0] : raw
