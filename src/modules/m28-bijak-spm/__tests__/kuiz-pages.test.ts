@@ -62,6 +62,7 @@ function mcq(id: string, extra: Partial<BijakKuizItem> = {}): BijakKuizItem {
   }
 }
 
+let lastRouter: ReturnType<typeof createRouter> | null = null
 async function mountPage(component: Component, url: string): Promise<VueWrapper> {
   const stub = { template: '<i/>' }
   const router = createRouter({
@@ -72,6 +73,7 @@ async function mountPage(component: Component, url: string): Promise<VueWrapper>
       { path: '/simulasi/:paperId/kuiz', component: stub },
     ],
   })
+  lastRouter = router
   await router.push(url)
   wrapper = mount(component, { global: { plugins: [router] }, attachTo: document.body })
   await flushPromises()
@@ -185,6 +187,22 @@ describe('KuizPage (random)', () => {
     expect(server.startKuiz).toHaveBeenCalledTimes(calls + 1)
     expect(server.startKuiz).toHaveBeenLastCalledWith({ count: 10, subject: 'MATH' })
     expect(q('[data-testid=kuiz-counter]')).not.toBeNull()
+  })
+
+  it('ignores a slow start that a newer start superseded (start sequence guard)', async () => {
+    let releaseSlow!: (v: unknown) => void
+    const fresh = { ...session, sessionId: '33333333-3333-4333-8333-333333333333', items: [mcq('fresh')] }
+    server.startKuiz
+      .mockImplementationOnce(() => new Promise((r) => (releaseSlow = r)))
+      .mockResolvedValue(fresh)
+    await mountPage(KuizPage, '/simulasi/kuiz?count=5')
+    await lastRouter!.push('/simulasi/kuiz?count=10') // the URL changes while the first start is pending
+    await flushPromises()
+    expect(server.startKuiz).toHaveBeenCalledTimes(2)
+    releaseSlow({ ...session, items: [mcq('slow')] })
+    await flushPromises()
+    expect(document.body.textContent).toContain('Soalan fresh?')
+    expect(document.body.textContent).not.toContain('Soalan slow?')
   })
 
   it('shows "Belum ada soalan objektif" on NO_QUESTIONS', async () => {

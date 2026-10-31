@@ -3,8 +3,8 @@
  * Simulasi — Kuiz (`/simulasi/kuiz`, R1-F12): a random quiz of 5/10/20/40 objective questions, one
  * per screen (V2 `exam-sim/quiz.blade.php`). Count and subject come from the URL only (`?count=`,
  * `?subject=`; D83 D-7: no picker). "✓ Semak" is marked on the server; the verdict shows the
- * right option and the explanation. The quiz is stored as a practice session (U8), so Tamat finishes
- * it and shows the reward.
+ * right option and the explanation. The quiz is stored as a practice session (U8); Tamat finishes it
+ * and shows Markah and Ketepatan (the reward is paid by the server and not shown: not in V2).
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -62,7 +62,9 @@ function message(e: unknown, fallback: string): string {
   return fallback
 }
 
+let startSeq = 0
 async function start(): Promise<void> {
+  const seq = ++startSeq
   phase.value = 'loading'
   stopTimer()
   index.value = 0
@@ -73,17 +75,21 @@ async function start(): Promise<void> {
   checkError.value = ''
   finishError.value = ''
   try {
-    session.value = await server.startKuiz({
+    const started = await server.startKuiz({
       count: count.value,
       ...(subject.value ? { subject: subject.value } : {}),
     })
-    if (!session.value.items.length) {
+    // A newer start (a changed URL, "Cuba Lagi") superseded this one while it was in flight: drop this answer.
+    if (seq !== startSeq) return
+    session.value = started
+    if (!started.items.length) {
       phase.value = 'empty'
       return
     }
     phase.value = 'quiz'
     timer = setInterval(() => (seconds.value += 1), 1000)
   } catch (e) {
+    if (seq !== startSeq) return
     phase.value = e instanceof BijakError && e.code === 'no_questions' ? 'empty' : 'error'
   }
 }
