@@ -247,6 +247,8 @@ export class QuestionReportsService {
           subjectName: brief?.subjectName ?? null,
           levelName: brief?.levelName ?? null,
           isActive: info.isActive,
+          status: info.status,
+          liveVersionNo: info.liveVersionNo,
           practiceUrl:
             type === 'structured' ? `/latihan-berstruktur/${qid}/jawab?scope=spm` : code ? `/spm/latih-tubi/${code}/quiz?question_id=${qid}&count=1` : null,
         }

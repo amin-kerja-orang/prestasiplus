@@ -259,3 +259,26 @@ describe('Laporan Soalan: "Arkib" is tied to the reported version (REQ-B-018)', 
     expect((await state()).status).toBe('approved')
   })
 })
+
+describe('Laporan Soalan: the admin list carries the lifecycle status of the question (REQ-C-018)', () => {
+  type Row = { id: string; question: { exists: boolean; status?: string; liveVersionNo?: number | null; isActive?: boolean } }
+  const rowOf = async (label: string): Promise<Row['question']> => {
+    const questionId = (await t.db.query<{ id: string }>(`select question_id::text id from question_versions where number_label = $1 limit 1`, [label]))[0]!.id
+    const admin = await loginAs(t, ADMIN)
+    const rows = (await admin.get('/api/question-reports?status=all')).body as { data: Row[] }
+    const reportIds = (await t.db.query<{ id: string }>(`select id::text from question_reports where question_id = $1`, [questionId])).map((r) => r.id)
+    return rows.data.find((r) => reportIds.includes(r.id))!.question
+  }
+
+  it('an archived question reads status archived with no live version, so the screen can hide "Arkib"', async () => {
+    expect(await rowOf('SEED-MCQ-MATH-T4')).toMatchObject({ exists: true, status: 'archived', liveVersionNo: null })
+  })
+
+  it('a published question reads status approved with its live version', async () => {
+    expect(await rowOf('SEED-MCQ-SCI-T4')).toMatchObject({ exists: true, status: 'approved', liveVersionNo: 2 })
+  })
+
+  it('a question whose live version was archived under a revision in Semakan reads status review with no live version', async () => {
+    expect(await rowOf('SEED-MCQ-MATH-T5')).toMatchObject({ exists: true, status: 'review', liveVersionNo: null })
+  })
+})

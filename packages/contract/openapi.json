@@ -8115,6 +8115,16 @@
           "isActive": {
             "type": "boolean"
           },
+          "status": {
+            "$ref": "#/components/schemas/QuestionWorkflowStatus"
+          },
+          "liveVersionNo": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
           "practiceUrl": {
             "type": [
               "string",

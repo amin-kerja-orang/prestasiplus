@@ -2,6 +2,7 @@ import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import { questionWorkflowListMetaOf, questionWorkflowMutationOf } from './common'
+import { QuestionWorkflowStatusSchema } from './lifecycle'
 
 /**
  * Student question reports (mock `m04-question-bank/mock/handlers/reports.ts`, SRS BR-M04-11 to 16,
@@ -158,6 +159,10 @@ export const QuestionReportQuestionViewSchema = QuestionReportQuestionRefSchema.
   levelName: z.string().nullable().optional(),
   complianceStatus: z.string().optional(),
   isActive: z.boolean().optional(),
+  /** REQ-C-018: lifecycle status of the question (its LATEST version: draft | review | approved | archived), so the row can hide "Arkib" on an archived question. */
+  status: QuestionWorkflowStatusSchema.optional(),
+  /** REQ-C-018: the version served to pupils; `null` when none is live (for example after "Arkib" with a newer revision in Semakan). */
+  liveVersionNo: z.number().int().min(1).nullable().optional(),
   /** "Buka Soalan Sama"; `null` when the subject has no code. */
   practiceUrl: z.string().nullable().optional(),
 }).meta({ id: 'QuestionReportQuestionView' })
