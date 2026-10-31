@@ -62402,6 +62402,18 @@
               "$ref": "#/components/schemas/BijakAttemptStimulus"
             }
           },
+          "groupStimuli": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/BijakAttemptStimulus"
+              },
+              "minItems": 1,
+              "maxItems": 3
+            },
+            "description": "D90 (R1-T07): every stimulus (1 to 3, in order) of each group, keyed by group id; `stimuli[groupId]` is the first. A group is shown once above all its member questions."
+          },
           "optionBanks": {
             "type": "object",
             "additionalProperties": {

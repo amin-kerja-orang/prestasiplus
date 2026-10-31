@@ -651,6 +651,13 @@ export const BijakBuilderPreviewSchema = z
   .strictObject({
     questions: z.array(BijakBuilderReviewQuestionSchema),
     stimuli: z.record(z.string(), BijakAttemptStimulusSchema),
+    groupStimuli: z
+      .record(z.string(), z.array(BijakAttemptStimulusSchema).min(1).max(3))
+      .optional()
+      .meta({
+        description:
+          'D90 (R1-T07): every stimulus (1 to 3, in order) of each group, keyed by group id; `stimuli[groupId]` is the first. A group is shown once above all its member questions.',
+      }),
     optionBanks: z.record(z.string(), z.array(BijakAttemptOptionSchema)),
   })
   .meta({ id: 'BijakBuilderPreview' })

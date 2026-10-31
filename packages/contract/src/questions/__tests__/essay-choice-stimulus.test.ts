@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  BijakBuilderPreviewSchema,
   QUESTION_LEAF_MODES,
   QUESTION_STIMULUS_KINDS,
   QuestionPartSchema,
@@ -91,5 +92,16 @@ describe('stimulus kinds, caption, source and table (R1-T07)', () => {
     expect(QuestionStimulusGroupSchema.safeParse(group(3)).success).toBe(true)
     expect(QuestionStimulusGroupSchema.safeParse(group(4)).success).toBe(false)
     expect(QuestionStimulusGroupSchema.safeParse(group(0)).success).toBe(false)
+  })
+})
+
+describe('builder preview carries every stimulus of a group (R1-T07, D90)', () => {
+  const st = (id: string, label: string) => ({ id, kind: 'passage', label, alt: label })
+  it('accepts groupStimuli of 1 to 3 per group next to the first-stimulus map, and stays valid without it', () => {
+    const base = { questions: [], stimuli: { g1: st('1', 'A') }, optionBanks: {} }
+    expect(BijakBuilderPreviewSchema.safeParse(base).success).toBe(true)
+    expect(BijakBuilderPreviewSchema.safeParse({ ...base, groupStimuli: { g1: [st('1', 'A'), st('2', 'B'), st('3', 'C')] } }).success).toBe(true)
+    expect(BijakBuilderPreviewSchema.safeParse({ ...base, groupStimuli: { g1: [] } }).success).toBe(false)
+    expect(BijakBuilderPreviewSchema.safeParse({ ...base, groupStimuli: { g1: [st('1', 'A'), st('2', 'B'), st('3', 'C'), st('4', 'D')] } }).success).toBe(false)
   })
 })
