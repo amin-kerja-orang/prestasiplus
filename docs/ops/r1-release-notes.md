@@ -494,7 +494,8 @@ one blueprint. On UAT there are **0 blueprints** today, so a blueprint must firs
 
 1. Pentadbiran -> `/admin/spm/kontrak` -> open the subject and kertas -> tab **Pengesahan**.
 2. Add evidence with `Tambah Bukti` until the meter `Badan berbeza dengan skema:` reaches its target (2 different
-   bodies), unless the seeded study evidence is already there.
+   bodies). On UAT there is no seed (D95), so the admin enters every evidence item here; the evidence per blueprint
+   is listed in [r1-k1-blueprint-evidence.md](r1-k1-blueprint-evidence.md).
 3. Press `Semak Bukti`; every line must pass. A failure shows `Kontrak belum boleh disahkan.` with the list.
 4. Fill `Nota pengesahan` (required), press `Sahkan`, confirm the dialog `Sahkan kontrak ini?` -> `Sahkan`.
 
