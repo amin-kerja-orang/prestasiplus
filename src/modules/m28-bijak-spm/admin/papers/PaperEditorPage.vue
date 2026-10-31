@@ -16,6 +16,13 @@ import type { BuilderGroup, BuilderQuestion } from '../../domain/admin-types'
 import { addUnit, checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
 import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
+import PaperMetaForm from '../builder/components/PaperMetaForm.vue'
+import ReviewBlock from '../builder/components/ReviewBlock.vue'
+import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
+import { builderCopy as bt } from '../builder/domain/copy'
+import { usePaperActions } from '../builder/lib/use-paper-actions'
+import { builderMessage, builderPath } from '../builder/server/api'
+import { builderServer } from '../builder/server/client'
 import QuestionPreview from './QuestionPreview.vue'
 import { ADMIN_ROUTES, KIND_LABEL, detailMessage } from './ui'
 
@@ -37,6 +44,16 @@ const manualLink = computed(() => ({
 }))
 const { data, error, reload } = useApi(() => server.getPaperEditor(id.value), id)
 
+/* Semak Kertas (R1-F09): server review, Salin set, Tarik balik, student view. V2 3.4. */
+const actions = usePaperActions({
+  api: builderServer(),
+  id,
+  title: () => data.value?.paper.title ?? title.value,
+  onChanged: reload,
+  copyTarget: (nid) => `/admin/spm/kertas/${encodeURIComponent(nid)}`,
+})
+const { review, viewOpen, view, viewError } = actions
+
 const title = ref('')
 const durationMin = ref(0)
 const ids = reactive<Record<string, string[]>>({})
@@ -48,6 +65,7 @@ watch(
   data,
   (d) => {
     if (!d) return
+    void actions.loadReview()
     title.value = d.paper.title
     durationMin.value = d.paper.durationMin
     for (const k of Object.keys(ids)) delete ids[k]
@@ -88,6 +106,12 @@ const allIssues = computed(() => [
   ...check.value.errors,
   ...check.value.sections.flatMap((s) => s.errors.map((e) => `${s.label}: ${e}`)),
 ])
+
+/** Terbitkan stays off while a local check fails, or (nothing unsaved) the server lists a blocker. */
+const publishBlockedCount = computed(() =>
+  allIssues.value.length ? allIssues.value.length : dirty.value ? 0 : actions.blockers.value.length,
+)
+const publishBlocked = computed(() => publishBlockedCount.value > 0)
 
 const stats = computed<StatItem[]>(() => [
   {
@@ -172,6 +196,7 @@ async function save(): Promise<boolean> {
   try {
     await server.savePaper(id.value, patch())
     dirty.value = false
+    void actions.loadReview()
     return true
   } catch (e) {
     flash.show({ type: 'error', message: detailMessage(e) })
@@ -184,6 +209,7 @@ async function onSave(): Promise<void> {
   if (await save()) flash.show({ type: 'success', message: 'Draf kertas disimpan.' })
 }
 async function publish(): Promise<void> {
+  if (publishBlocked.value) return
   if (!(await save())) return
   busy.value = true
   try {
@@ -207,6 +233,21 @@ async function unpublish(): Promise<void> {
     await server.unpublishPaper(id.value)
     flash.show({ type: 'success', message: 'Kertas ditarik balik ke Draf.' })
     await reload()
+  } finally {
+    busy.value = false
+  }
+}
+
+/* ---------------------------------------------------------------------------- metadata */
+async function saveMeta(patchData: Parameters<ReturnType<typeof builderServer>['updateHeader']>[1]): Promise<void> {
+  if (dirty.value && !(await save())) return
+  busy.value = true
+  try {
+    await builderServer().updateHeader(id.value, patchData)
+    flash.show({ type: 'success', message: bt.metaSaved(data.value?.paper.title ?? title.value) })
+    await reload()
+  } catch (e) {
+    flash.show({ type: 'error', message: builderMessage(e, bt.errRename) })
   } finally {
     busy.value = false
   }
@@ -308,6 +349,35 @@ const previewBlocks = computed(() => {
               data-testid="paper-preview"
               @click="openPreview"
             />
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-ph-student"
+              :label="bt.studentView + ' (disimpan)'"
+              class="min-h-11"
+              :disabled="dirty"
+              data-testid="paper-student-view"
+              @click="actions.openStudentView"
+            />
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-ph-copy"
+              :label="bt.copy"
+              class="min-h-11"
+              :loading="actions.busy.value"
+              data-testid="paper-copy"
+              @click="actions.copy"
+            />
+            <UButton
+              :to="builderPath(id)"
+              color="neutral"
+              variant="ghost"
+              icon="i-ph-hammer"
+              :label="bt.openBuilder"
+              class="min-h-11"
+              data-testid="paper-open-builder"
+            />
             <template v-if="!readonly">
               <UButton
                 color="neutral"
@@ -325,6 +395,7 @@ const previewBlocks = computed(() => {
                 label="Terbitkan"
                 class="min-h-11"
                 :loading="busy"
+                :disabled="publishBlocked"
                 data-testid="paper-publish"
                 @click="publish"
               />
@@ -343,7 +414,7 @@ const previewBlocks = computed(() => {
                 icon="i-ph-arrow-u-up-left"
                 label="Tarik balik"
                 class="min-h-11"
-                :loading="busy"
+                :loading="busy || actions.busy.value"
                 data-testid="paper-unpublish"
                 @click="unpublish"
               />
@@ -383,13 +454,40 @@ const previewBlocks = computed(() => {
           <li v-for="e in allIssues" :key="e">{{ e }}</li>
         </ul>
         <p
-          v-if="publishErrors.length"
+          v-if="publishBlocked && !readonly"
           class="mt-2 text-body font-semibold text-error"
-          role="alert"
+          role="status"
           data-testid="publish-errors"
         >
+          Kertas belum boleh diterbitkan: selesaikan {{ publishBlockedCount }} perkara di atas.
+        </p>
+        <p v-else-if="publishErrors.length" class="mt-2 text-body font-semibold text-error" role="alert">
           Kertas belum boleh diterbitkan: selesaikan {{ publishErrors.length }} perkara di atas.
         </p>
+      </DsPanel>
+
+      <DsPanel data-testid="paper-review" aria-live="polite">
+        <h3 class="mb-2 text-heading text-highlighted">{{ bt.review }}</h3>
+        <p v-if="readonly" class="mb-2 text-body text-muted" data-testid="paper-live-note">
+          {{ bt.live }} {{ bt.lockedNote }}
+        </p>
+        <ReviewBlock v-if="review" :review="review" />
+        <p v-else-if="actions.reviewError.value" class="text-body text-error" role="alert">
+          {{ bt.reviewError }}
+        </p>
+        <p v-if="dirty" class="mt-2 text-caption text-muted">{{ bt.reviewStale }}</p>
+        <UButton
+          :to="{ name: 'm28.admin.kontrak.edit', params: { subjek: data.paper.subject, kertas: String(data.paper.kertas) } }"
+          color="neutral"
+          variant="link"
+          class="mt-2 min-h-11"
+          :label="bt.editContract"
+          data-testid="paper-edit-contract"
+        />
+      </DsPanel>
+
+      <DsPanel data-testid="paper-meta">
+        <PaperMetaForm :paper="data.paper" :readonly="readonly" :busy="busy" @save="saveMeta" />
       </DsPanel>
 
       <DsPanel v-for="(s, si) in sections" :key="s.id" :data-testid="`section-${si}`">
@@ -552,6 +650,8 @@ const previewBlocks = computed(() => {
           </div>
         </template>
       </USlideover>
+
+      <StudentViewDrawer v-model:open="viewOpen" :view="view" :error="viewError" />
 
       <USlideover
         v-model:open="previewOpen"

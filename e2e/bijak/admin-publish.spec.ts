@@ -138,7 +138,8 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await loginAs('admin@demo.test')
     await openPaperBuilder(page, gotoApp)
     await createDraft(page)
-    await page.getByTestId('paper-publish').click()
+    // R1-F09: Terbitkan is disabled while the check fails, and the reason is shown as text.
+    await expect(page.getByTestId('paper-publish')).toBeDisabled()
     await expect(page.getByTestId('publish-errors')).toContainText(
       'Kertas belum boleh diterbitkan: selesaikan',
     )
