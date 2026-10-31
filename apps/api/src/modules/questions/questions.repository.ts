@@ -275,8 +275,8 @@ export class QuestionsRepository {
    * served version even after a later edit, BE-12 AC 11 / OD-28). Unknown ids or version numbers are
    * absent. Returned in ascending id, then version order.
    *
-   * Pinned grading only: never use it on a serving path (a draw, a list, a learner-facing read). It skips the
-   * active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply.
+   * Pinned reads (grading, and serving a pinned placement such as a kuiz paper page): never use it for a draw or a list. It skips
+   * the active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply; a Darjah question is still not found (R1-B21).
    */
   async getVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<QuestionRecord[]> {
     const wanted = new Map<string, { id: bigint; versionNo: number }>()
@@ -1094,6 +1094,7 @@ export class QuestionsRepository {
           blankCount: d.blankCount,
           wordMin: d.wordMin,
           wordMax: d.wordMax,
+          topics: d.topics ?? Prisma.DbNull,
           stimulusId: d.stimulusId,
           reveal: d.reveal,
           unitNodeId: d.unitNodeId,
@@ -1226,7 +1227,9 @@ export class QuestionsRepository {
       const q = byId.get(w.id)
       return q && w.versionNo <= q.latestVersionNo ? [{ q, versionNo: w.versionNo }] : []
     })
-    const out = await this.hydratePicks(picks)
+    // Secondary-only (R1-B21): a pinned read of a Darjah question is not found either (kuiz paper pages serve pinned versions).
+    const hidden = await this.primaryLevelIds()
+    const out = (await this.hydratePicks(picks)).filter((r) => r.version.educationLevelId === null || !hidden.has(r.version.educationLevelId))
     return out.sort((a, b) => (a.id === b.id ? a.version.versionNo - b.version.versionNo : BigInt(a.id) < BigInt(b.id) ? -1 : 1))
   }
 
