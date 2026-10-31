@@ -17,6 +17,7 @@ import {
   type CurriculumLabels,
   infoOf,
   mapBe09Question,
+  type OutsideStimulus,
   UnsupportedQuestionError,
 } from './be09-mapping'
 import type { BridgeRefusal } from './refusals'
@@ -37,8 +38,8 @@ import type { BridgeRefusal } from './refusals'
  * while that is the latest version; once a newer draft exists on top it is absent (known gap until
  * BE-09 offers a pinned read, #45 M7) and the attempts holding it fail closed.
  * Media (R1-B08): the bridge puts file TOKEN URLs (`/api/files/<token>`) on the exam-core stimuli and options; the
- * tokens come from `FilesService.publicIdsOf` and the stimuli linked to a version outside its group from the
- * BE-09 repository (`stimulusAssets`). Whether a pupil may load a file is the files read rule, not decided here.
+ * tokens come from `FilesService.publicIdsOf` and the stimuli linked to a version outside its group (the question's own
+ * stimuli, R1E2E-05b) from the BE-09 repository (`versionStimuli`, `stimulusUseCounts`). Whether a pupil may load a file is the files read rule, not decided here.
  * `is_active` is NOT checked: a question placed
  * on a published paper stays servable (the placement is what the paper froze). A question the mapper
  * refuses is absent too, and the refusal is logged with its id, part and reason (never its content).
@@ -157,7 +158,7 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
   }
 
   /**
-   * Every file the mapper needs a token for (group stimuli, option pictures, stem pictures) in two reads, and the
+   * Every file the mapper needs a token for (group stimuli, option pictures, own stimuli) in a few reads, and the
    * stimuli linked to a version but not to its group. A file with no token stays absent: the mapper refuses it.
    */
   private async mediaOf(
@@ -172,11 +173,30 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
       for (const id of r.version.stimulusIds) if (!ids.includes(id)) outsideIds.add(id)
       for (const f of optionImageIds(r.version.parts)) fileIds.add(f)
     }
-    const outside = new Map<string, { kind: string; assetFileId: string | null }>()
+    const outside = new Map<string, OutsideStimulus>()
     if (outsideIds.size > 0) {
-      for (const a of await this.questions.stimulusAssets([...outsideIds])) {
-        outside.set(a.id, { kind: a.kind, assetFileId: a.assetFileId })
-        if (a.assetFileId) fileIds.add(a.assetFileId)
+      // The question's own stimuli (linked straight to its version, not in its group): full content in link order, how many
+      // questions link each (D90: shared means group), and the files whose tokens the pupil's URLs need.
+      const [linked, uses] = await Promise.all([
+        this.questions.versionStimuli(records.map((r) => ({ questionId: r.id, versionNo: r.version.versionNo }))),
+        this.questions.stimulusUseCounts([...outsideIds]),
+      ])
+      for (const list of linked.values()) {
+        for (const st of list) {
+          if (!outsideIds.has(st.id) || outside.has(st.id)) continue
+          outside.set(st.id, {
+            kind: st.kind,
+            assetFileId: st.assetFileId,
+            label: st.label,
+            bodyMs: st.bodyMs,
+            alt: st.alt,
+            caption: st.caption ?? null,
+            tableData: st.tableData ?? null,
+            sourceCitation: st.sourceCitation ?? null,
+            sharedBy: uses.get(st.id) ?? 1,
+          })
+          if (st.assetFileId) fileIds.add(st.assetFileId)
+        }
       }
     }
     const tokens = fileIds.size === 0 ? new Map<string, string>() : await this.files.publicIdsOf([...fileIds])
