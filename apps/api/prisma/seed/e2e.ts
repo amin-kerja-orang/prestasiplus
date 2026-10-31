@@ -8,6 +8,7 @@
  * What it creates or ensures (all fictitious, idempotent):
  * - a Tingkatan 4 pupil (`murid.t4.e2e@example.test`, grade 10, school DEMO001);
  * - an Admin Pusat (`admin.pusat.e2e@example.test`, national scope);
+ * - the study evidence of that blueprint entered as admin evidence (H-A15: study rows do not count at Sahkan), labelled as an E2E fixture;
  * - one T4 launch blueprint (default Matematik Tambahan Kertas 2, code `3472/2`, override with `E2E_BLUEPRINT`). It is the one launch blueprint that can pass the checks as
  *   seeded: its layer-2 KBAT values are complete and its study evidence has two bodies with a trial paper and a skema each (D77); the others are INCOMPLETE
  *   in `docs/reference/blueprints/README.md` or have a single body, and the seed never invents evidence) moved from Spec to Disahkan with
@@ -65,6 +66,35 @@ async function ensureUser(
   return user.id
 }
 
+export const E2E_EVIDENCE_NOTE = 'E2E fixture: copied from the study evidence of the launch blueprint, entered as admin evidence for local end-to-end runs.'
+
+/**
+ * Replaces every study-origin evidence row of the blueprint by an admin-origin row with the same values and a fixture note (the admin's
+ * "delete the study row, enter the value by hand"). Idempotent: with no study row left it does nothing. Only called by the guarded e2e seed.
+ */
+async function replaceStudyEvidence(repo: BlueprintsRepository, blueprintId: bigint, adminId: bigint, at: Date): Promise<void> {
+  for (const row of await repo.evidenceOf(blueprintId)) {
+    if (row.origin !== 'study') continue
+    await repo.addEvidence(
+      {
+        blueprintId,
+        kind: row.kind,
+        body: row.body,
+        year: row.year,
+        paperCode: row.paperCode,
+        setLabel: row.setLabel,
+        sourceRef: row.sourceRef,
+        values: row.values as never,
+        origin: 'admin',
+        note: E2E_EVIDENCE_NOTE,
+        createdById: adminId,
+      },
+      at,
+    )
+    await repo.deleteEvidence(blueprintId, row.id)
+  }
+}
+
 /** Spec -> Disahkan through the repository the Sahkan action uses. Idempotent: an already Disahkan head is left as it is. */
 async function verifyBlueprint(prisma: PrismaClient, code: string, adminId: bigint, at: Date): Promise<void> {
   const row = await prisma.blueprint.findFirst({ where: { code, status: 'active' }, select: { id: true, subjectId: true, kertas: true } })
@@ -91,8 +121,11 @@ async function verifyBlueprint(prisma: PrismaClient, code: string, adminId: bigi
     unitLevels: unitLevelsOf(units),
     subjectHasBothLevels: units.some((u) => u.level === 'T4') && units.some((u) => u.level === 'T5'),
   })
+  // AC-39.2 (H-A15): evidence read from the study (`origin = 'study'`) does not count at Sahkan; only rows entered by an admin do. The seed
+  // takes the same path an admin takes: each study row is replaced by an admin-origin row with the same values, labelled as an E2E fixture.
+  await replaceStudyEvidence(repo, head.id, adminId, at)
   const evidenceRows = await repo.evidenceOf(head.id)
-  const items: EvidenceItem[] = evidenceRows.map((r) => ({ id: r.id.toString(), kind: r.kind as EvidenceItem['kind'], body: r.body, values: BijakEvidenceValuesSchema.parse(r.values) }))
+  const items: EvidenceItem[] = evidenceRows.filter((r) => r.origin === 'admin').map((r) => ({ id: r.id.toString(), kind: r.kind as EvidenceItem['kind'], body: r.body, values: BijakEvidenceValuesSchema.parse(r.values) }))
   const evidence = checkEvidence(bp, items)
   const passes = gate.problems.length === 0 && gate.completeness.length === 0 && evidence.completeness.length === 0 && evidence.passes
   if (!passes) {
