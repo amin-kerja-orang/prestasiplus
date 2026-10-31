@@ -5,7 +5,7 @@
  * other test files do not touch (3, 5, 6, 7, 9 and 10).
  */
 
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MockRuntime } from '@/mock/index'
 import { questions } from '@/modules/m04-question-bank/mock'
@@ -18,6 +18,7 @@ import type {
   RevisionOverview,
 } from '../../api/types'
 import { addAnswer, addSession, answerChapter } from '../../mock/hooks'
+import { useOfferedLevels } from '../../mock/repository/rules'
 import { GURU, MemoryStorage, PELAJAR2, bootAll, getAs } from './boot-all'
 
 const PARENT = 6
@@ -49,6 +50,15 @@ const pick = (n: number) =>
     .map((q) => q.id)
 
 describe('BR-16: the chapter unlock bar is a score of 70 %', () => {
+  // D72: practice offers T4 / T5, but every chapter question of the dataset is Darjah (stored, hidden): the
+  // unlock engine is exercised on that data with the Darjah levels offered.
+  beforeEach(() => {
+    useOfferedLevels([1, 2, 3, 4])
+  })
+  afterEach(() => {
+    useOfferedLevels()
+  })
+
   // BM D1 Bab 1 (chapter 35) has 320 questions: 224 correct is exactly 70.0 %, 223 is 69.7 %.
   it('exactly 70.0 % (224 of 320) opens the next chapter', async () => {
     expect(answerChapter(PELAJAR2, 35, { correctPct: 70 })).toEqual({ answered: 320, correct: 224 })

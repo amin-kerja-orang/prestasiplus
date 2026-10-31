@@ -24,6 +24,7 @@ import type {
   GradeLevel,
   HotCard,
 } from '../types'
+import { visibleGradeLevels } from '../types'
 import { authorRef, M09Error, nowIso, norm } from './common'
 
 export const READER_PAGE_SIZE = 18
@@ -177,8 +178,12 @@ export const articlesRepo = defineRepository({
   stores: { attachments: articleAttachmentsTable },
   queries: articleQueries,
   methods: ({ store, stores, transaction }) => {
+    /** Hidden Darjah-tagged articles are never read (D72): every list read adds this `gradeLevel` set. */
+    const shownGrade = () => ({ gradeLevel: [...visibleGradeLevels()] })
+
     const readerWhere = (category?: string) => ({
       isPublished: true,
+      ...shownGrade(),
       ...(category && category !== 'all' ? { category: category as ArticleCategory } : {}),
     })
 
@@ -252,7 +257,7 @@ export const articlesRepo = defineRepository({
       latest(limit: number = LATEST_LIMIT): ArticleCard[] {
         return store
           .query({
-            where: { isPublished: true },
+            where: { isPublished: true, ...shownGrade() },
             sort: READER_SORT,
             page: 1,
             pageSize: limit,
@@ -278,11 +283,11 @@ export const articlesRepo = defineRepository({
       /** BR-M09-05: 6 random cards from featured ∪ top-10 non-featured by views, in draw order. */
       hot(rng: Prng): HotCard[] {
         const featured = store.query({
-          where: { isPublished: true, isFeatured: true },
+          where: { isPublished: true, isFeatured: true, ...shownGrade() },
           sort: READER_SORT,
         }).rows
         const popular = store.query({
-          where: { isPublished: true, isFeatured: false },
+          where: { isPublished: true, isFeatured: false, ...shownGrade() },
           sort: [
             { field: 'views', dir: 'desc' },
             { field: 'id', dir: 'asc' },
@@ -311,7 +316,7 @@ export const articlesRepo = defineRepository({
        */
       detail(slug: string, options: { countView?: boolean } = {}): ArticleDetail | undefined {
         const found = store.query({ where: { slug } }).rows[0]
-        if (!found?.isPublished) return undefined
+        if (!found?.isPublished || !visibleGradeLevels().includes(found.gradeLevel)) return undefined
         const a = options.countView ? store.update(found.id, { views: found.views + 1 }) : found
         return {
           ...card(a),
@@ -328,6 +333,7 @@ export const articlesRepo = defineRepository({
         const term = norm(filter.search ?? '')
         const res = store.query({
           where: {
+            ...shownGrade(),
             ...(filter.category && filter.category !== 'all' ? { category: filter.category } : {}),
             ...(filter.published === '' || filter.published === undefined
               ? {}
@@ -346,7 +352,15 @@ export const articlesRepo = defineRepository({
       /** S3/S4: the full row and its attachments. */
       adminGet(id: number): (ArticleRow & { attachments: ArticleAttachmentRow[] }) | undefined {
         const row = store.get(id)
-        return row ? { ...row, attachments: attachmentsOf(id) } : undefined
+        return row && visibleGradeLevels().includes(row.gradeLevel)
+          ? { ...row, attachments: attachmentsOf(id) }
+          : undefined
+      },
+
+      /** The admin by-id reads and writes: a hidden Darjah article answers "not found" (D72). */
+      getVisible(id: number): ArticleRow | undefined {
+        const row = store.get(id)
+        return row && visibleGradeLevels().includes(row.gradeLevel) ? row : undefined
       },
 
       /** S2 create (admin): slug BR-M09-08; `publishedAt` set when created published. */
@@ -412,7 +426,7 @@ export const articlesRepo = defineRepository({
         pageSize = 10,
       ): { rows: AdminArticleItem[]; total: number } {
         const res = store.query({
-          where: { authorId: userId },
+          where: { authorId: userId, ...shownGrade() },
           sort: ADMIN_SORT,
           page,
           pageSize,
@@ -427,7 +441,7 @@ export const articlesRepo = defineRepository({
         pending: number
         views: number
       } {
-        const mine = store.query({ where: { authorId: userId } }).rows
+        const mine = store.query({ where: { authorId: userId, ...shownGrade() } }).rows
         const published = mine.filter((a) => a.isPublished).length
         return {
           total: mine.length,

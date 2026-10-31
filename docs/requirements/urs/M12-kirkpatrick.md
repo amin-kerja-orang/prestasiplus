@@ -105,15 +105,15 @@ Built from the element inventory (`docs/discovery/inventory/M12/`) and the Funct
 
 | FN | Function | EL | Roles | Source |
 |---|---|---|---|---|
-| FN-M12-1.1.1 | Admin-panel sidebar collapsible group (button `fa-microscope` cyan-500, label "Kirkpatrick" shown upper case "KIRKPATRICK", chevron, `toggle('kirkpatrick')`, open state in `localStorage["admin_sidebar"]` as the other groups, 00-global-ui §3.2) with 7 items, each with a `w-4` icon: "Overview" `fa-th-large` → `/admin/kirkpatrick`, "T1: Reaksi" `fa-smile` → `/reaction`, "T2: Pembelajaran" `fa-brain` → `/learning`, "T3: Tingkah Laku" `fa-running` → `/behavior`, "T4: Hasil" `fa-trophy` → `/results`, "Rantaian Impak" `fa-link` → `/chain`, "Intervensi" `fa-hand-holding-medical` → `/interventions` (all under `/admin/kirkpatrick`). On an `/admin/kirkpatrick*` route the matching item has the active style and the group is open. "Laporan" (`fa-chart-bar`) follows the group and is **not** part of it (M17) | SHA-014–021 | Admin | OBSERVED |
+| FN-M12-1.1.1 | Admin-panel sidebar collapsible group (button `fa-microscope` cyan-500, label "Kirkpatrick" shown upper case "KIRKPATRICK", chevron, `toggle('kirkpatrick')`, open state in `localStorage["admin_sidebar"]` as the other groups, 00-global-ui §3.2) with 7 items, each with a `w-4` icon: "Overview" `fa-th-large` → `/admin/kirkpatrick`, "Tahap 1: Reaksi" `fa-smile` → `/reaction`, "Tahap 2: Pembelajaran" `fa-brain` → `/learning`, "Tahap 3: Tingkah Laku" `fa-running` → `/behavior`, "Tahap 4: Hasil" `fa-trophy` → `/results`, "Rantaian Impak" `fa-link` → `/chain`, "Intervensi" `fa-hand-holding-medical` → `/interventions` (all under `/admin/kirkpatrick`). On an `/admin/kirkpatrick*` route the matching item has the active style and the group is open. "Laporan" (`fa-chart-bar`) follows the group and is **not** part of it (M17) | SHA-014–021 | Admin | OBSERVED |
 | FN-M12-1.1.2 | Admin-panel mobile "Lagi" drawer entry "Kirkpatrick" (`fa-microscope`) → `/admin/kirkpatrick` (in the drawer's analytics block, after "Monitoring") | SHA-145 | Admin | OBSERVED |
-| FN-M12-1.1.3 | User-portal drawer (below 1024 px), "Portal Guru" › "ANALITIK": button "Kirkpatrick" (`fa-microscope` cyan-500, chevron, Alpine `kirkGuruOpen`) opening 7 items: "Ringkasan" `fa-home` → `/guru/kirkpatrick`, "T1: Reaksi" `fa-smile`, "T2: Pembelajaran" **`fa-graduation-cap`** (the admin sidebar uses `fa-brain`; kept, D10), "T3: Tingkah Laku" `fa-running`, "T4: Hasil" `fa-trophy`, "Rantaian Impak" `fa-link`, "Intervensi" `fa-hand-holding-medical` (all under `/guru/kirkpatrick`). The group is in the DOM but hidden for the admin (as live); shown for a teacher (INFERRED). The desktop user sidebar has no Kirkpatrick entry (as live) | SHU-268–275 | Guru (INFERRED); Admin hidden (OBSERVED) | OBSERVED / INFERRED |
+| FN-M12-1.1.3 | User-portal drawer (below 1024 px), "Portal Guru" › "ANALITIK": button "Kirkpatrick" (`fa-microscope` cyan-500, chevron, Alpine `kirkGuruOpen`) opening 7 items: "Ringkasan" `fa-home` → `/guru/kirkpatrick`, "Tahap 1: Reaksi" `fa-smile`, "Tahap 2: Pembelajaran" **`fa-graduation-cap`** (the admin sidebar uses `fa-brain`; kept, D10), "Tahap 3: Tingkah Laku" `fa-running`, "Tahap 4: Hasil" `fa-trophy`, "Rantaian Impak" `fa-link`, "Intervensi" `fa-hand-holding-medical` (all under `/guru/kirkpatrick`). The group is in the DOM but hidden for the admin (as live); shown for a teacher (INFERRED). The desktop user sidebar has no Kirkpatrick entry (as live) | SHU-268–275 | Guru (INFERRED); Admin hidden (OBSERVED) | OBSERVED / INFERRED |
 | FN-M12-1.1.4 | On `/guru/kirkpatrick*` the admin-panel sidebar item of the current view (and the open group) is shown active, exactly as on the `/admin` twin (DV-M12-12; live shows no active item on the `/guru` prefix) | — | Admin | OBSERVED + DV-M12-12 |
 | FN-M12-1.1.5 | Admin-panel header title / subtitle per screen, live and correct: S1 "Kirkpatrick Evaluation" / "Analisis Keberkesanan Platform — Model Penilaian 4 Tahap"; S2 "Tahap 1: Reaksi" / "Kepuasan dan persepsi pengguna terhadap platform"; S3 "Tahap 2: Pembelajaran" / "Peningkatan pengetahuan, kemahiran, dan kefahaman pelajar"; S4 "Tahap 3: Tingkah Laku" / "Konsistensi penggunaan, engagement score, dan corak tingkah laku pelajar"; S5 "Tahap 4: Hasil" / "Impak terhadap keputusan peperiksaan dan prestasi akademik"; S7 "Intervensi Pelajar" / "Rekod tindakan intervensi berdasarkan amaran Kirkpatrick". Tab titles as §1 | SHA-118, 119, 197–204, 207, 208, 216, 217 | All | OBSERVED |
 | FN-M12-1.1.6 | S6 and S8 header: live shows the fallback "Dashboard" / "Selamat datang, Admin". Rebuild (DV-M12-03, shell rule DV-SH-03): title from the route, **no subtitle** — S6 "Rantaian Impak" (the live menu label of the route), S8 "Kirkpatrick — {nama}" (the live tab title of the page). Tab titles unchanged | SHA-213, 214 | Admin | OBSERVED + DV-M12-03 |
 | FN-M12-1.1.7 | S9 and S10 user-portal header: live shows "Dashboard" / "Selamat datang kembali" (S9) and "Dashboard" (S10). Rebuild (DV-M12-03): S9 "Kirkpatrick — Prestasi Saya", S10 "Maklum Balas" (each the page's own live tab title without the site suffix), no subtitle | SHU-136, 137 | All | OBSERVED + DV-M12-03 |
 | FN-M12-1.1.8 | Shell by screen: S1–S8 in the admin-panel shell (SHA: "Panel Pentadbir" sidebar, server-status chips) on **both** prefixes; S9, S10 in the user-portal shell (SHU: koin / mata / streak chips, the M16 `tournamentBanner()` block at the top of `<main>`, hidden when no tournament); 403/404 standalone. The shell a teacher gets on `/guru/kirkpatrick*` is UNVERIFIED; the prototype renders the admin-panel shell (provisional, as M11 FN-1.1.4) | — | All | OBSERVED (admin) / INFERRED (teacher) |
-| FN-M12-1.1.9 | In-page tab strip on S2, S3, S4, S5, S7 (`flex flex-wrap gap-1 mb-4 sm:mb-6`, plain links): "Overview" `fa-th-large` → `/admin/kirkpatrick`, "T1: Reaksi" `fa-smile`, "T2: Pembelajaran" `fa-brain`, "T3: Tingkah Laku" `fa-running`, "T4: Hasil" `fa-trophy`, "Intervensi" `fa-hand-holding-medical` (all `/admin/kirkpatrick…`, also on the `/guru` twins). Tabs `px-3 py-2 rounded-lg text-xs sm:text-sm`; current `bg-indigo-600 text-white shadow-md`; others `bg-white text-slate-600 border border-slate-200 hover:bg-slate-100`. No "Rantaian Impak" tab; S1 and S6 have no strip (as live). Links always go to unfiltered URLs (filters do not carry across) | S2-001–006; S3-001–006; S4-001–006; S5-001–006; S7-001–006 | All | OBSERVED |
+| FN-M12-1.1.9 | In-page tab strip on S2, S3, S4, S5, S7 (`flex flex-wrap gap-1 mb-4 sm:mb-6`, plain links): "Overview" `fa-th-large` → `/admin/kirkpatrick`, "Tahap 1: Reaksi" `fa-smile`, "Tahap 2: Pembelajaran" `fa-brain`, "Tahap 3: Tingkah Laku" `fa-running`, "Tahap 4: Hasil" `fa-trophy`, "Intervensi" `fa-hand-holding-medical` (all `/admin/kirkpatrick…`, also on the `/guru` twins). Tabs `px-3 py-2 rounded-lg text-xs sm:text-sm`; current `bg-indigo-600 text-white shadow-md`; others `bg-white text-slate-600 border border-slate-200 hover:bg-slate-100`. No "Rantaian Impak" tab; S1 and S6 have no strip (as live). Links always go to unfiltered URLs (filters do not carry across) | S2-001–006; S3-001–006; S4-001–006; S5-001–006; S7-001–006 | All | OBSERVED |
 | FN-M12-1.1.10 | Responsive rules of every screen at 375 / 768 / 1280 (URS §5, SRS §10): shells switch at 1024 px; no page-level horizontal scroll (DV-M12-07); wide tables scroll inside their card; cards and tiles follow the observed grids | — | All | OBSERVED + DV-M12-07 |
 
 **FT-M12-1.2 — Access, routes and error pages**
@@ -153,7 +153,7 @@ Built from the element inventory (`docs/discovery/inventory/M12/`) and the Funct
 | FN | Function | EL | Roles | Source |
 |---|---|---|---|---|
 | FN-M12-2.3.1 | Card "Kirkpatrick Evaluation Flow" (`fa-project-diagram`) with the hint "Klik mana-mana tahap untuk lihat detail" | S1-011, 012 | Admin | OBSERVED |
-| FN-M12-2.3.2 | From `sm` (≥ 640 px): 4 circles T1 → T4 on a gradient line (purple → green → blue → amber); each a link with label, sub-label and pill: "T1: Reaksi" / "Kepuasan pengguna" / "{k}/5"; "T2: Pembelajaran" / "Peningkatan kemahiran" / "{a}% ketepatan"; "T3: Tingkah Laku" / "Konsistensi penggunaan" / "{aktif} pelajar aktif" (DV-M12-08); "T4: Hasil" / "Keputusan peperiksaan" / "GPS {gps}" (DV-M12-09) → reaction / learning / behavior / results | S1-013–020, 076–081, 105–108 | Admin | OBSERVED + DV-M12-08/09 |
+| FN-M12-2.3.2 | From `sm` (≥ 640 px): 4 circles T1 → T4 on a gradient line (purple → green → blue → amber); each a link with label, sub-label and pill: "Tahap 1: Reaksi" / "Kepuasan pengguna" / "{k}/5"; "Tahap 2: Pembelajaran" / "Peningkatan kemahiran" / "{a}% ketepatan"; "Tahap 3: Tingkah Laku" / "Konsistensi penggunaan" / "{aktif} pelajar aktif" (DV-M12-08); "Tahap 4: Hasil" / "Keputusan peperiksaan" / "GPS {gps}" (DV-M12-09) → reaction / learning / behavior / results | S1-013–020, 076–081, 105–108 | Admin | OBSERVED + DV-M12-08/09 |
 | FN-M12-2.3.3 | Below `sm`: the same 4 entries as a vertical list of links with `fa-chevron-right` | S1-021–024, 082–084, 109, 110 | Admin | OBSERVED |
 
 **FT-M12-2.4 — Perbandingan Sebelum & Selepas**
@@ -327,16 +327,16 @@ Values in the ACs come from the seed (SRS §6; admin figures = the live snapshot
 ### Acceptance criteria
 
 **US-M12-01 — Menu, tabs and titles**
-- **AC-M12-01.1** Given the admin at 1280 on `/admin/kirkpatrick/results`, when the page loads, then the sidebar group "KIRKPATRICK" (`fa-microscope`) is open with the 7 items "Overview", "T1: Reaksi", "T2: Pembelajaran", "T3: Tingkah Laku", "T4: Hasil", "Rantaian Impak", "Intervensi" (icons as FN-1.1.1) linking to the `/admin/kirkpatrick…` routes, "T4: Hasil" is active, and "Laporan" follows the group outside it.
+- **AC-M12-01.1** Given the admin at 1280 on `/admin/kirkpatrick/results`, when the page loads, then the sidebar group "KIRKPATRICK" (`fa-microscope`) is open with the 7 items "Overview", "Tahap 1: Reaksi", "Tahap 2: Pembelajaran", "Tahap 3: Tingkah Laku", "Tahap 4: Hasil", "Rantaian Impak", "Intervensi" (icons as FN-1.1.1) linking to the `/admin/kirkpatrick…` routes, "Tahap 4: Hasil" is active, and "Laporan" follows the group outside it.
 - **AC-M12-01.2** Given the admin at 375, when I open "Lagi", then "Kirkpatrick" (`fa-microscope`) → `/admin/kirkpatrick` is listed.
-- **AC-M12-01.3** Given S2, S3, S4, S5, S7, when each loads, then the tab strip shows "Overview", "T1: Reaksi", "T2: Pembelajaran", "T3: Tingkah Laku", "T4: Hasil", "Intervensi" (no "Rantaian Impak") with the current tab `bg-indigo-600 text-white`; S1 and S6 show no strip.
+- **AC-M12-01.3** Given S2, S3, S4, S5, S7, when each loads, then the tab strip shows "Overview", "Tahap 1: Reaksi", "Tahap 2: Pembelajaran", "Tahap 3: Tingkah Laku", "Tahap 4: Hasil", "Intervensi" (no "Rantaian Impak") with the current tab `bg-indigo-600 text-white`; S1 and S6 show no strip.
 - **AC-M12-01.4** Given S1, S2, S3, S4, S5, S7, when each loads, then the header title/subtitle and tab title are exactly those of §1.
 - **AC-M12-01.5** Given S6 and S8 (Student A), when each loads, then the header reads "Rantaian Impak" and "Kirkpatrick — Pelajar Demo 004664" with no subtitle, and the tab titles are "Kirkpatrick Impact Chain" and "Kirkpatrick — Pelajar Demo 004664" (DV-M12-03).
 - **AC-M12-01.6** Given S9 and S10, when each loads, then the user-portal header reads "Kirkpatrick — Prestasi Saya" and "Maklum Balas" with no subtitle (DV-M12-03), and the tab titles are "Kirkpatrick — Prestasi Saya" and "Maklum Balas — PrestasiPlus".
 - **AC-M12-01.7** Given the admin, when S1–S8 load on either prefix, then the admin-panel shell ("Panel Pentadbir") renders; when S9/S10 load, then the user-portal shell renders.
 
 **US-M12-02 — Active item on the `/guru` twins**
-- **AC-M12-02.1** Given the admin at 1280 on `/guru/kirkpatrick/behavior`, when the page loads, then the admin sidebar group is open and "T3: Tingkah Laku" is active, as on `/admin/kirkpatrick/behavior` (DV-M12-12).
+- **AC-M12-02.1** Given the admin at 1280 on `/guru/kirkpatrick/behavior`, when the page loads, then the admin sidebar group is open and "Tahap 3: Tingkah Laku" is active, as on `/admin/kirkpatrick/behavior` (DV-M12-12).
 - **AC-M12-02.2** Given `/guru/kirkpatrick`, when it loads, then "Overview" is active.
 
 **US-M12-03 — Access and errors**
@@ -348,7 +348,7 @@ Values in the ACs come from the seed (SRS §6; admin figures = the live snapshot
 - **AC-M12-03.6** Given the admin, when I open `/admin/kirkpatrick?school_id=99999999` (provisional), then the page shows the zero state of AC-M12-05.4.
 
 **US-M12-04 — Teacher twin (provisional)**
-- **AC-M12-04.1** Given the teacher at 375 (provisional), when I open the user-portal drawer, then "Portal Guru" › "ANALITIK" has "Kirkpatrick" (`fa-microscope`) opening "Ringkasan" → `/guru/kirkpatrick`, "T1: Reaksi", "T2: Pembelajaran" (`fa-graduation-cap`), "T3: Tingkah Laku", "T4: Hasil", "Rantaian Impak", "Intervensi" under `/guru/kirkpatrick`; for the admin the same group exists but is hidden.
+- **AC-M12-04.1** Given the teacher at 375 (provisional), when I open the user-portal drawer, then "Portal Guru" › "ANALITIK" has "Kirkpatrick" (`fa-microscope`) opening "Ringkasan" → `/guru/kirkpatrick`, "Tahap 1: Reaksi", "Tahap 2: Pembelajaran" (`fa-graduation-cap`), "Tahap 3: Tingkah Laku", "Tahap 4: Hasil", "Rantaian Impak", "Intervensi" under `/guru/kirkpatrick`; for the admin the same group exists but is hidden.
 - **AC-M12-04.2** Given the admin, when I open each `/guru/kirkpatrick…` view, then its content equals the `/admin` twin and every in-page link, form action, "Reset", "← Kembali", the export link and the intervention form action start with `/admin/kirkpatrick`.
 - **AC-M12-04.3** Given the teacher (provisional), when I open `/guru/kirkpatrick`, then the overview renders with the platform figures of AC-M12-06.1; when I click a tab (target `/admin/kirkpatrick/…`), then the M17/M01 non-admin rule applies (redirect to the M01 landing page, INFERRED).
 
@@ -366,7 +366,7 @@ Values in the ACs come from the seed (SRS §6; admin figures = the live snapshot
 - **AC-M12-06.4** Given `/admin/kirkpatrick?school_id=9167` (a school without SPM history), then the T4 card shows "Belum Ada Data" and "Import keputusan peperiksaan" with no GPS value and no "rekod headcount" caption, and the flow pill reads "GPS -" (circles at 768/1280, list at 375).
 
 **US-M12-07 — Evaluation flow**
-- **AC-M12-07.1** Given 768 or 1280, then the flow shows 4 linked circles "T1: Reaksi" "Kepuasan pengguna" "4.6/5", "T2: Pembelajaran" "Peningkatan kemahiran" "82.8% ketepatan", "T3: Tingkah Laku" "Konsistensi penggunaan" "946 pelajar aktif", "T4: Hasil" "Keputusan peperiksaan" "GPS 4.30", and the hint "Klik mana-mana tahap untuk lihat detail".
+- **AC-M12-07.1** Given 768 or 1280, then the flow shows 4 linked circles "Tahap 1: Reaksi" "Kepuasan pengguna" "4.6/5", "Tahap 2: Pembelajaran" "Peningkatan kemahiran" "82.8% ketepatan", "Tahap 3: Tingkah Laku" "Konsistensi penggunaan" "946 pelajar aktif", "Tahap 4: Hasil" "Keputusan peperiksaan" "GPS 4.30", and the hint "Klik mana-mana tahap untuk lihat detail".
 - **AC-M12-07.2** Given 375, then the same 4 entries show as a vertical list with a chevron and link to the same pages.
 - **AC-M12-07.3** Given `?school_id=8080` at 1280, then the pills read "75.6% ketepatan", "53 pelajar aktif", "GPS 4.00".
 
@@ -585,18 +585,18 @@ Functions referenced by the matrix: 79 (77 by inventory rows + FN-M12-2.2.5 and 
 | EL-M12-S1-010 | link | visible-default | Tahap 1: Reaksi 4.6/5 Kepuasan purata · 336 respon Lihat detail, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-2.2.4 |
 | EL-M12-S1-011 | card | visible-default | Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail | FN-M12-2.3.1 |
 | EL-M12-S1-012 | heading | visible-default | Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail | FN-M12-2.3.1 |
-| EL-M12-S1-013 | link | visible-default · desktop-only | T1: Reaksi Kepuasan pengguna 4.6/5, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-2.3.2 |
+| EL-M12-S1-013 | link | visible-default · desktop-only | Tahap 1: Reaksi Kepuasan pengguna 4.6/5, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-2.3.2 |
 | EL-M12-S1-014 | badge | visible-default · desktop-only | 4.6/5 | FN-M12-2.3.2 |
-| EL-M12-S1-015 | link | visible-default · desktop-only | T2: Pembelajaran Peningkatan kemahiran 82.8% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.2 |
+| EL-M12-S1-015 | link | visible-default · desktop-only | Tahap 2: Pembelajaran Peningkatan kemahiran 82.8% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.2 |
 | EL-M12-S1-016 | badge | visible-default · desktop-only | 82.8% ketepatan | FN-M12-2.3.2 |
-| EL-M12-S1-017 | link | visible-default · desktop-only | T3: Tingkah Laku Konsistensi penggunaan 951 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.2 |
+| EL-M12-S1-017 | link | visible-default · desktop-only | Tahap 3: Tingkah Laku Konsistensi penggunaan 951 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.2 |
 | EL-M12-S1-018 | badge | visible-default · desktop-only | 951 pelajar aktif | FN-M12-2.3.2 |
-| EL-M12-S1-019 | link | visible-default · desktop-only | T4: Hasil Keputusan peperiksaan GPS 4.30, → /admin/kirkpatrick/results, fa-trophy | FN-M12-2.3.2 |
+| EL-M12-S1-019 | link | visible-default · desktop-only | Tahap 4: Hasil Keputusan peperiksaan GPS 4.30, → /admin/kirkpatrick/results, fa-trophy | FN-M12-2.3.2 |
 | EL-M12-S1-020 | badge | visible-default · desktop-only | GPS 4.30 | FN-M12-2.3.2 |
-| EL-M12-S1-021 | link | conditional · mobile-only | T1: Reaksi Kepuasan pengguna 4.6/5, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-2.3.3 |
-| EL-M12-S1-022 | link | conditional · mobile-only | T2: Pembelajaran Peningkatan kemahiran 82.8% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.3 |
-| EL-M12-S1-023 | link | conditional · mobile-only | T3: Tingkah Laku Konsistensi penggunaan 951 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.3 |
-| EL-M12-S1-024 | link | conditional · mobile-only | T4: Hasil Keputusan peperiksaan GPS 4.30, → /admin/kirkpatrick/results, fa-trophy | FN-M12-2.3.3 |
+| EL-M12-S1-021 | link | conditional · mobile-only | Tahap 1: Reaksi Kepuasan pengguna 4.6/5, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-2.3.3 |
+| EL-M12-S1-022 | link | conditional · mobile-only | Tahap 2: Pembelajaran Peningkatan kemahiran 82.8% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.3 |
+| EL-M12-S1-023 | link | conditional · mobile-only | Tahap 3: Tingkah Laku Konsistensi penggunaan 951 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.3 |
+| EL-M12-S1-024 | link | conditional · mobile-only | Tahap 4: Hasil Keputusan peperiksaan GPS 4.30, → /admin/kirkpatrick/results, fa-trophy | FN-M12-2.3.3 |
 | EL-M12-S1-025 | card | visible-default | Perbandingan Sebelum & Selepas | FN-M12-2.4.1 |
 | EL-M12-S1-026 | heading | visible-default | Perbandingan Sebelum & Selepas | FN-M12-2.4.1 |
 | EL-M12-S1-027 | text | visible-default | Januari 2026 vs September 2026 | FN-M12-2.4.1 |
@@ -648,15 +648,15 @@ Functions referenced by the matrix: 79 (77 by inventory rows + FN-M12-2.2.5 and 
 | EL-M12-S1-073 | link | conditional | Tahap 4: Hasil 4 GPS Sekolah · 4378 rekod headcount Lihat detail, → /admin/kirkpatrick/results, fa-trophy | FN-M12-2.2.1 |
 | EL-M12-S1-074 | link | conditional | Tahap 3: Tingkah Laku 53/184 Pelajar aktif · 1002 sesi · 75.6% ketepatan Lihat detail, → /admin/kirkpatrick… | FN-M12-2.2.2 |
 | EL-M12-S1-075 | link | conditional | Tahap 2: Pembelajaran 75.6% Ketepatan · 15,007 soalan dijawab Lihat detail, → /admin/kirkpatrick/learning, … | FN-M12-2.2.3 |
-| EL-M12-S1-076 | link | conditional | T2: Pembelajaran Peningkatan kemahiran 75.6% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.2 |
+| EL-M12-S1-076 | link | conditional | Tahap 2: Pembelajaran Peningkatan kemahiran 75.6% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.2 |
 | EL-M12-S1-077 | badge | conditional | 75.6% ketepatan | FN-M12-2.3.2 |
-| EL-M12-S1-078 | link | conditional | T3: Tingkah Laku Konsistensi penggunaan 53 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.2 |
+| EL-M12-S1-078 | link | conditional | Tahap 3: Tingkah Laku Konsistensi penggunaan 53 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.2 |
 | EL-M12-S1-079 | badge | conditional | 53 pelajar aktif | FN-M12-2.3.2 |
-| EL-M12-S1-080 | link | conditional | T4: Hasil Keputusan peperiksaan GPS 4, → /admin/kirkpatrick/results, fa-trophy | FN-M12-2.3.2 |
+| EL-M12-S1-080 | link | conditional | Tahap 4: Hasil Keputusan peperiksaan GPS 4, → /admin/kirkpatrick/results, fa-trophy | FN-M12-2.3.2 |
 | EL-M12-S1-081 | badge | conditional | GPS 4 | FN-M12-2.3.2 |
-| EL-M12-S1-082 | link | hidden-only | T2: Pembelajaran Peningkatan kemahiran 75.6% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.3 |
-| EL-M12-S1-083 | link | hidden-only | T3: Tingkah Laku Konsistensi penggunaan 53 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.3 |
-| EL-M12-S1-084 | link | hidden-only | T4: Hasil Keputusan peperiksaan GPS 4, → /admin/kirkpatrick/results, fa-trophy | FN-M12-2.3.3 |
+| EL-M12-S1-082 | link | hidden-only | Tahap 2: Pembelajaran Peningkatan kemahiran 75.6% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.3 |
+| EL-M12-S1-083 | link | hidden-only | Tahap 3: Tingkah Laku Konsistensi penggunaan 53 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.3 |
+| EL-M12-S1-084 | link | hidden-only | Tahap 4: Hasil Keputusan peperiksaan GPS 4, → /admin/kirkpatrick/results, fa-trophy | FN-M12-2.3.3 |
 | EL-M12-S1-085 | text | conditional | April 2026 vs September 2026 | FN-M12-2.4.1 |
 | EL-M12-S1-086 | text | conditional | 01 Apr 2026 - 30 Apr 2026 | FN-M12-2.4.2 |
 | EL-M12-S1-087 | text | conditional | 71.6% | FN-M12-2.4.2 |
@@ -677,12 +677,12 @@ Functions referenced by the matrix: 79 (77 by inventory rows + FN-M12-2.2.5 and 
 | EL-M12-S1-102 | link | conditional | 131 Tidak Terlibat 71.2%, → /admin/kirkpatrick/behavior, fa-times-circle | FN-M12-2.6.1 |
 | EL-M12-S1-103 | link | conditional | Tahap 3: Tingkah Laku 0/0 Pelajar aktif · 0 sesi · 0% ketepatan Lihat detail, → /admin/kirkpatrick/behavior… | FN-M12-2.2.2 |
 | EL-M12-S1-104 | link | conditional | Tahap 2: Pembelajaran 0% Ketepatan · 0 soalan dijawab Lihat detail, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.2.3 |
-| EL-M12-S1-105 | link | conditional | T2: Pembelajaran Peningkatan kemahiran 0% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.2 |
+| EL-M12-S1-105 | link | conditional | Tahap 2: Pembelajaran Peningkatan kemahiran 0% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.2 |
 | EL-M12-S1-106 | badge | conditional | 0% ketepatan | FN-M12-2.3.2 |
-| EL-M12-S1-107 | link | conditional | T3: Tingkah Laku Konsistensi penggunaan 0 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.2 |
+| EL-M12-S1-107 | link | conditional | Tahap 3: Tingkah Laku Konsistensi penggunaan 0 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.2 |
 | EL-M12-S1-108 | badge | conditional | 0 pelajar aktif | FN-M12-2.3.2 |
-| EL-M12-S1-109 | link | hidden-only | T2: Pembelajaran Peningkatan kemahiran 0% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.3 |
-| EL-M12-S1-110 | link | hidden-only | T3: Tingkah Laku Konsistensi penggunaan 0 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.3 |
+| EL-M12-S1-109 | link | hidden-only | Tahap 2: Pembelajaran Peningkatan kemahiran 0% ketepatan, → /admin/kirkpatrick/learning, fa-brain | FN-M12-2.3.3 |
+| EL-M12-S1-110 | link | hidden-only | Tahap 3: Tingkah Laku Konsistensi penggunaan 0 pelajar aktif, → /admin/kirkpatrick/behavior, fa-running | FN-M12-2.3.3 |
 | EL-M12-S1-111 | empty-state | conditional | Tiada Data vs Tiada Data | FN-M12-2.4.1 |
 | EL-M12-S1-112 | text | conditional | - | FN-M12-2.4.2 |
 | EL-M12-S1-113 | text | conditional | 0% | FN-M12-2.4.2 |
@@ -704,10 +704,10 @@ Functions referenced by the matrix: 79 (77 by inventory rows + FN-M12-2.2.5 and 
 | Element | Kind | Status | Content / attributes | Covered by |
 |---|---|---|---|---|
 | EL-M12-S2-001 | link | visible-default | Overview, → /admin/kirkpatrick, fa-th-large | FN-M12-1.1.9 |
-| EL-M12-S2-002 | link | visible-default | T1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.9 |
-| EL-M12-S2-003 | link | visible-default | T2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.9 |
-| EL-M12-S2-004 | link | visible-default | T3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.9 |
-| EL-M12-S2-005 | link | visible-default | T4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.9 |
+| EL-M12-S2-002 | link | visible-default | Tahap 1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.9 |
+| EL-M12-S2-003 | link | visible-default | Tahap 2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.9 |
+| EL-M12-S2-004 | link | visible-default | Tahap 3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.9 |
+| EL-M12-S2-005 | link | visible-default | Tahap 4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.9 |
 | EL-M12-S2-006 | link | visible-default | Intervensi, → /admin/kirkpatrick/interventions, fa-hand-holding-medical | FN-M12-1.1.9 |
 | EL-M12-S2-007 | card | visible-default | 8.4/10 | FN-M12-3.1.1 |
 | EL-M12-S2-008 | text | visible-default | NPS Pelajar | FN-M12-3.1.1 |
@@ -727,10 +727,10 @@ Functions referenced by the matrix: 79 (77 by inventory rows + FN-M12-2.2.5 and 
 | Element | Kind | Status | Content / attributes | Covered by |
 |---|---|---|---|---|
 | EL-M12-S3-001 | link | visible-default | Overview, → /admin/kirkpatrick, fa-th-large | FN-M12-1.1.9 |
-| EL-M12-S3-002 | link | visible-default | T1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.9 |
-| EL-M12-S3-003 | link | visible-default | T2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.9 |
-| EL-M12-S3-004 | link | visible-default | T3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.9 |
-| EL-M12-S3-005 | link | visible-default | T4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.9 |
+| EL-M12-S3-002 | link | visible-default | Tahap 1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.9 |
+| EL-M12-S3-003 | link | visible-default | Tahap 2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.9 |
+| EL-M12-S3-004 | link | visible-default | Tahap 3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.9 |
+| EL-M12-S3-005 | link | visible-default | Tahap 4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.9 |
 | EL-M12-S3-006 | link | visible-default | Intervensi, → /admin/kirkpatrick/interventions, fa-hand-holding-medical | FN-M12-1.1.9 |
 | EL-M12-S3-007 | card | visible-default | 306,133 | FN-M12-4.1.1 |
 | EL-M12-S3-008 | text | visible-default | Soalan Dijawab | FN-M12-4.1.1 |
@@ -819,10 +819,10 @@ Functions referenced by the matrix: 79 (77 by inventory rows + FN-M12-2.2.5 and 
 | Element | Kind | Status | Content / attributes | Covered by |
 |---|---|---|---|---|
 | EL-M12-S4-001 | link | visible-default | Overview, → /admin/kirkpatrick, fa-th-large | FN-M12-1.1.9 |
-| EL-M12-S4-002 | link | visible-default | T1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.9 |
-| EL-M12-S4-003 | link | visible-default | T2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.9 |
-| EL-M12-S4-004 | link | visible-default | T3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.9 |
-| EL-M12-S4-005 | link | visible-default | T4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.9 |
+| EL-M12-S4-002 | link | visible-default | Tahap 1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.9 |
+| EL-M12-S4-003 | link | visible-default | Tahap 2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.9 |
+| EL-M12-S4-004 | link | visible-default | Tahap 3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.9 |
+| EL-M12-S4-005 | link | visible-default | Tahap 4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.9 |
 | EL-M12-S4-006 | link | visible-default | Intervensi, → /admin/kirkpatrick/interventions, fa-hand-holding-medical | FN-M12-1.1.9 |
 | EL-M12-S4-007 | form | visible-default | GET /admin/kirkpatrick/behavior | FN-M12-5.1.1 |
 | EL-M12-S4-008 | label | visible-default | Sekolah | FN-M12-5.1.1 |
@@ -917,10 +917,10 @@ Functions referenced by the matrix: 79 (77 by inventory rows + FN-M12-2.2.5 and 
 | Element | Kind | Status | Content / attributes | Covered by |
 |---|---|---|---|---|
 | EL-M12-S5-001 | link | visible-default | Overview, → /admin/kirkpatrick, fa-th-large | FN-M12-1.1.9 |
-| EL-M12-S5-002 | link | visible-default | T1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.9 |
-| EL-M12-S5-003 | link | visible-default | T2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.9 |
-| EL-M12-S5-004 | link | visible-default | T3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.9 |
-| EL-M12-S5-005 | link | visible-default | T4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.9 |
+| EL-M12-S5-002 | link | visible-default | Tahap 1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.9 |
+| EL-M12-S5-003 | link | visible-default | Tahap 2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.9 |
+| EL-M12-S5-004 | link | visible-default | Tahap 3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.9 |
+| EL-M12-S5-005 | link | visible-default | Tahap 4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.9 |
 | EL-M12-S5-006 | link | visible-default | Intervensi, → /admin/kirkpatrick/interventions, fa-hand-holding-medical | FN-M12-1.1.9 |
 | EL-M12-S5-007 | card | visible-default | 4.30 | FN-M12-6.1.1 |
 | EL-M12-S5-008 | text | visible-default | GPS Headcount | FN-M12-6.1.1 |
@@ -1178,10 +1178,10 @@ Functions referenced by the matrix: 79 (77 by inventory rows + FN-M12-2.2.5 and 
 | Element | Kind | Status | Content / attributes | Covered by |
 |---|---|---|---|---|
 | EL-M12-S7-001 | link | visible-default | Overview, → /admin/kirkpatrick, fa-th-large | FN-M12-1.1.9 |
-| EL-M12-S7-002 | link | visible-default | T1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.9 |
-| EL-M12-S7-003 | link | visible-default | T2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.9 |
-| EL-M12-S7-004 | link | visible-default | T3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.9 |
-| EL-M12-S7-005 | link | visible-default | T4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.9 |
+| EL-M12-S7-002 | link | visible-default | Tahap 1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.9 |
+| EL-M12-S7-003 | link | visible-default | Tahap 2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.9 |
+| EL-M12-S7-004 | link | visible-default | Tahap 3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.9 |
+| EL-M12-S7-005 | link | visible-default | Tahap 4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.9 |
 | EL-M12-S7-006 | link | visible-default | Intervensi, → /admin/kirkpatrick/interventions, fa-hand-holding-medical | FN-M12-1.1.9 |
 | EL-M12-S7-007 | card | visible-default | 0 | FN-M12-8.1.1 |
 | EL-M12-S7-008 | text | visible-default | Jumlah Intervensi | FN-M12-8.1.1 |
@@ -1397,10 +1397,10 @@ The shells are specified by the global shell doc (`docs/design/shells.md`, 00-gl
 | EL-M12-SHA-013 | link | visible-default · desktop-only | Monitoring, → /admin/monitoring, fa-binoculars | Excluded — global shell / M23 (or the module the link targets) |
 | EL-M12-SHA-014 | toggle | visible-default · desktop-only | Kirkpatrick, fa-microscope | FN-M12-1.1.1 |
 | EL-M12-SHA-015 | link | hidden-only | Overview, → /admin/kirkpatrick, fa-th-large | FN-M12-1.1.1 |
-| EL-M12-SHA-016 | link | hidden-only | T1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.1 |
-| EL-M12-SHA-017 | link | hidden-only | T2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.1 |
-| EL-M12-SHA-018 | link | hidden-only | T3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.1 |
-| EL-M12-SHA-019 | link | hidden-only | T4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.1 |
+| EL-M12-SHA-016 | link | hidden-only | Tahap 1: Reaksi, → /admin/kirkpatrick/reaction, fa-smile | FN-M12-1.1.1 |
+| EL-M12-SHA-017 | link | hidden-only | Tahap 2: Pembelajaran, → /admin/kirkpatrick/learning, fa-brain | FN-M12-1.1.1 |
+| EL-M12-SHA-018 | link | hidden-only | Tahap 3: Tingkah Laku, → /admin/kirkpatrick/behavior, fa-running | FN-M12-1.1.1 |
+| EL-M12-SHA-019 | link | hidden-only | Tahap 4: Hasil, → /admin/kirkpatrick/results, fa-trophy | FN-M12-1.1.1 |
 | EL-M12-SHA-020 | link | hidden-only | Rantaian Impak, → /admin/kirkpatrick/chain, fa-link | FN-M12-1.1.1 |
 | EL-M12-SHA-021 | link | hidden-only | Intervensi, → /admin/kirkpatrick/interventions, fa-hand-holding-medical | FN-M12-1.1.1 |
 | EL-M12-SHA-022 | link | visible-default · desktop-only | Laporan, → /admin/laporan, fa-chart-bar | Excluded — global shell / M23 (or the module the link targets) |
@@ -1875,10 +1875,10 @@ The shells are specified by the global shell doc (`docs/design/shells.md`, 00-gl
 | EL-M12-SHU-267 | link | hidden-only | Monitoring, → /guru/monitoring, fa-binoculars | Excluded — global shell / M23 (or the module the link targets) |
 | EL-M12-SHU-268 | toggle | hidden-only | Kirkpatrick, fa-microscope | FN-M12-1.1.3 |
 | EL-M12-SHU-269 | link | hidden-only | Ringkasan, → /guru/kirkpatrick, fa-home | FN-M12-1.1.3 |
-| EL-M12-SHU-270 | link | hidden-only | T1: Reaksi, → /guru/kirkpatrick/reaction, fa-smile | FN-M12-1.1.3 |
-| EL-M12-SHU-271 | link | hidden-only | T2: Pembelajaran, → /guru/kirkpatrick/learning, fa-graduation-cap | FN-M12-1.1.3 |
-| EL-M12-SHU-272 | link | hidden-only | T3: Tingkah Laku, → /guru/kirkpatrick/behavior, fa-running | FN-M12-1.1.3 |
-| EL-M12-SHU-273 | link | hidden-only | T4: Hasil, → /guru/kirkpatrick/results, fa-trophy | FN-M12-1.1.3 |
+| EL-M12-SHU-270 | link | hidden-only | Tahap 1: Reaksi, → /guru/kirkpatrick/reaction, fa-smile | FN-M12-1.1.3 |
+| EL-M12-SHU-271 | link | hidden-only | Tahap 2: Pembelajaran, → /guru/kirkpatrick/learning, fa-graduation-cap | FN-M12-1.1.3 |
+| EL-M12-SHU-272 | link | hidden-only | Tahap 3: Tingkah Laku, → /guru/kirkpatrick/behavior, fa-running | FN-M12-1.1.3 |
+| EL-M12-SHU-273 | link | hidden-only | Tahap 4: Hasil, → /guru/kirkpatrick/results, fa-trophy | FN-M12-1.1.3 |
 | EL-M12-SHU-274 | link | hidden-only | Rantaian Impak, → /guru/kirkpatrick/chain, fa-link | FN-M12-1.1.3 |
 | EL-M12-SHU-275 | link | hidden-only | Intervensi, → /guru/kirkpatrick/interventions, fa-hand-holding-medical | FN-M12-1.1.3 |
 | EL-M12-SHU-276 | link | hidden-only | Analisis Item, → /guru/analisis-item, fa-chart-pie | Excluded — global shell / M23 (or the module the link targets) |
@@ -2039,11 +2039,12 @@ These are the **only** intended differences from the live site. Anything not lis
 | DV-M12-31 | v1.7 (build); `docs/discovery/img/M12/chain-desktop.png` | Unreadable text (D9) | S6 "Kesimpulan Model Kirkpatrick": the heading renders **dark** on the indigo → purple gradient card (the paragraph below is white); the heading is hard to read. | The heading renders **white**; the card, the gradient and the paragraph unchanged. | Approved (D9) |
 | DV-M12-32 | SWEEP-23OCT D4 | Dead link (D9) | S1, S4 and S6 links to `/admin/monitoring`, `/admin/monitoring/sekolah/{id}` and (S6 predictions) `/admin/monitoring/sekolah/{id}/pelajar/{id}` open the SPA 404 for the admin because the M17 mount of the monitoring component was empty. | No change to the link builders (`kirkpatrick-paths.ts`): the targets are correct; M17 now registers `/admin/monitoring*` (DV-M17-46), so every generated link resolves. S8 `/admin/kirkpatrick/pelajar/{id}` was already registered. | Approved (user rule D9) |
 | DV-M12-33 | G5-M12 BUG-02 | Visual bug (overlap, D9) | S1 "Taburan Engagement Pelajar" and S4 "Taburan Tahap Engagement": five band tiles side by side at every width; at 320 and 375 the labels ("Champion", "Konsisten", "Berkembang", "Minimum") overlap their neighbours (measured: 3 overlapping label pairs at both widths). | Below `sm` (640 px) the tiles are 2 columns and the last tile (Tidak Terlibat) spans both; from `sm` they stay 5 across exactly as live (768 and 1280 unchanged, no overlap measured). Texts, order, colours and links unchanged. Alternatives: (a) 3 columns below `sm` — rejected: "Berkembang" (84 px) does not fit a third of the panel at 320; (b) a smaller label size — rejected: unreadable and still tight at 320. | Approved (user rule D9) |
-| DV-M12-34 | G5-M12 BUG-04 | Visual bug (overlap, D9) | S1 "Kirkpatrick Evaluation Flow" list below `sm`: at 320 the right-hand pill ("73.3% ketepatan") overlaps the label "T2: Pembelajaran" and its sub-line. | The row wraps: when the label column (at least 10 rem) and the pill with its caret do not fit on one line, the pill and caret move to a second line, right-aligned. Texts unchanged; at 375 and wider the layout is as before where it fitted. | Approved (user rule D9) |
+| DV-M12-34 | G5-M12 BUG-04 | Visual bug (overlap, D9) | S1 "Kirkpatrick Evaluation Flow" list below `sm`: at 320 the right-hand pill ("73.3% ketepatan") overlaps the label "Tahap 2: Pembelajaran" and its sub-line. | The row wraps: when the label column (at least 10 rem) and the pill with its caret do not fit on one line, the pill and caret move to a second line, right-aligned. Texts unchanged; at 375 and wider the layout is as before where it fitted. | Approved (user rule D9) |
 | DV-M12-35 | G5-M12 BUG-05 | Visual bug (truncated text, D9) | S3 "Prestasi Mengikut Subjek" below `sm`: the subject name sits in a 6 rem column with an ellipsis ("Bahasa Melayu" is cut at 320 and 375). | The name wraps at word boundaries ("Bahasa / Melayu") in the same column; no ellipsis at any width. Bar, %, badge and count unchanged. | Approved (user rule D9) |
 | DV-M12-36 | G5-M12 BUG-08 | Wrong label (D9) | When there is no data (`subjectGps.year` 0, no trend years) S5 would print "GPS Mengikut Subjek (0)" and "Trend GPS (–)"; the year / range is not observed on live for that state. | The headings drop the bracket part: "GPS Mengikut Subjek" and "Trend GPS". With data they read "GPS Mengikut Subjek (2026)" and "Trend GPS (2022–2026)" as before (AC-M12-21.1, 21.2). The empty-state heading is not defined in the SRS; no new copy is added. | Approved (user rule D9) |
 | DV-M12-37 | G5-M12 BUG-09 | Visual bug (clipped text, D9) | `{prefix}/export-pdf` (print view of S6): the four level cards sit 4 across (from `lg`) inside the 768 px sheet, so at a 1280 viewport the card text is clipped ("Pembelajara"). | On the print page the cards are stacked in one column at every width, without the arrows between them; the S6 screen keeps 4 across from `lg` with arrows. Texts and values unchanged. Alternative: 2 columns from `sm` — rejected: it needs new layout classes that raise the design-system debt baseline (`config/ds-debt.baseline.json`, ChainCards), which this fix must not do. | Approved (user rule D9) |
 | DV-M12-38 | G5-M12 BUG-11 | Contradictory state (D9, INFERRED alias) | On the school-administrator alias `/admin-sekolah/kirkpatrick?school_id=2&state=Johor` the API forces the own school, but "Penapis aktif" still lists "Sekolah: 2" and "Negeri: Johor" taken from the URL. | On the alias the `school_id` and `state` query values are ignored: no chips, the selects stay at "Semua Sekolah" / "Semua Negeri" and no scope is sent (the data is the own school's, as before). `/admin` and `/guru` mounts are unchanged. | Approved (user rule D9) |
+| DV-M12-39 | User decision 2026-10-31 | Label clash (user decision) | Level labels "T1" to "T4" (tabs, Ringkasan flow and cards, Rantaian Impak badges, shell menu rows) | "Tahap 1" to "Tahap 4" everywhere in the UI (T1-T4 clashes with Tingkatan 1-5; users confused them). Tabs read "Tahap 1: Reaksi", "Tahap 2: Pembelajaran", "Tahap 3: Tingkah Laku", "Tahap 4: Hasil". Wording only: routes, order and sections unchanged | Wording only |
 
 **Discovery notes corrected by evidence (not deviations; reported to the discovery owner):** (5) the S4 alerts are three lists in fixed order, not one entry per school, and 9 schools appear twice (AUD-M12-01); (6) the 5 served-but-unanswered students and school 940's question-less session explain 951 vs 946 (AUD-M12-02); (7) the heat-map total is 218,070 at the top-up capture and the platform grid has no zero cell (AUD-M12-10); (1) the S4 band captions overlap only at 20 (and "<5" / "0" at 0), not at 5 (DV-M12-10); (2) the green alert count is 12 in the raw capture (`main .space-y-2 > div.bg-green-50`), not 13 as the narrative says (TU-M12-03); (3) the heat-map cell values are **not** in the S4 raw inventory (the narrative says they are); only 944, 6253 and the sum 218,000 are recorded (TU-M12-01); (4) the "GPS = Σ(points × candidates) ÷ candidates" formula of discovery §5.4 does not reproduce 4.30 (DV-M12-22).
 

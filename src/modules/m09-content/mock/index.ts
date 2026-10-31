@@ -61,6 +61,7 @@ export const { articles, banners, notes, videos, audioKbat, perutusan, support }
 
 export { M09Error, type M09ErrorCode } from './repository'
 export type * from './types'
+export { showPrimaryContent } from './types'
 export type {
   AdminArticleFilter,
   AdminArticleInput,

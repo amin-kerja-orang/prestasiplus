@@ -283,11 +283,11 @@ const tableRows = computed<TableRow[]>(() =>
 
 const columns: TableColumn<TableRow>[] = [
   { accessorKey: 'text', header: 'Soalan', ...cellClass('') },
-  { accessorKey: 'bahagian', header: 'Bahagian', ...cellClass('w-28') },
-  { accessorKey: 'domainName', header: 'Domain', ...cellClass('w-48 xl:w-56') },
-  { accessorKey: 'targetLevel', header: 'Level', ...cellClass('w-24') },
-  { id: 'status', header: 'Status', ...cellClass('w-44') },
-  { id: 'actions', header: 'Tindakan', ...cellClass('w-48') },
+  { accessorKey: 'bahagian', header: 'Bahagian', ...cellClass('w-24') },
+  { accessorKey: 'domainName', header: 'Domain', ...cellClass('w-40 xl:w-48') },
+  { accessorKey: 'targetLevel', header: 'Level', ...cellClass('w-20') },
+  { id: 'status', header: 'Status', ...cellClass('w-36') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-24') },
 ]
 const cardFields: CardField[] = [
   { key: 'bahagian', label: 'Bahagian' },
@@ -327,7 +327,7 @@ const cardFields: CardField[] = [
           aria-label="Cari"
           placeholder="Cari soalan..."
           icon="i-ph-magnifying-glass"
-          class="w-full md:min-w-64 md:grow"
+          class="w-full md:min-w-0 md:flex-[2]"
           data-testid="filter-search"
         />
       </template>
@@ -337,7 +337,7 @@ const cardFields: CardField[] = [
         aria-label="Bahagian"
         placeholder="Semua Bahagian"
         :items="BAHAGIAN_FILTER_OPTIONS"
-        class="md:w-48"
+        class="md:min-w-0 md:flex-[1.5]"
         data-testid="filter-bahagian"
         @change="submitFilter"
       />
@@ -347,7 +347,7 @@ const cardFields: CardField[] = [
         aria-label="Level"
         placeholder="Semua Level"
         :items="LEVEL_FILTER_OPTIONS"
-        class="md:w-44"
+        class="md:min-w-0 md:flex-1"
         data-testid="filter-level"
         @change="submitFilter"
       />
@@ -357,7 +357,7 @@ const cardFields: CardField[] = [
         aria-label="Status"
         placeholder="Semua Status"
         :items="STATUS_OPTIONS"
-        class="md:w-44"
+        class="md:min-w-0 md:flex-1"
         data-testid="filter-status"
         @change="submitFilter"
       />

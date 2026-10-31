@@ -14,7 +14,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsFormSection, DsPage, DsPageHeader } from '@/ds'
+import { DsBackLink, DsFormSection, DsPage } from '@/ds'
 
 import {
   createLevel,
@@ -125,23 +125,12 @@ async function submit(): Promise<void> {
 }
 </script>
 <template>
-  <DsPage data-testid="level-form-page">
-    <DsPageHeader
-      :title="editing ? 'Edit Tahap Pendidikan' : 'Tambah Tahap Pendidikan'"
-      :subtitle="editing ? 'Kemaskini maklumat tahap.' : 'Daftarkan tahap pendidikan baharu.'"
-    >
-      <template #actions>
-        <UButton
-          :to="LEVELS_LIST_PATH"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          data-testid="level-back"
-        >
-          Kembali ke Senarai
-        </UButton>
-      </template>
-    </DsPageHeader>
+  <DsPage
+    :title="editing ? 'Edit Tahap Pendidikan' : 'Tambah Tahap Pendidikan'"
+    :subtitle="editing ? 'Kemaskini maklumat tahap.' : 'Daftarkan tahap pendidikan baharu.'"
+    data-testid="level-form-page"
+  >
+    <DsBackLink :to="LEVELS_LIST_PATH" label="Kembali ke Senarai" data-testid="level-back" />
 
     <DsLoadError
       v-if="failed"

@@ -56,11 +56,12 @@ import {
   type UserPatch,
   type UserRole,
   type UserRow,
+  type UserVisibility,
 } from '@/modules/m01-authentication/mock'
 
 import { computeExpiry } from '../repository/billing'
 import { complimentaryRepo } from '../repository/complimentary'
-import { schoolsRepo } from '../repository/schools'
+import { arePrimaryHidden, schoolsRepo } from '../repository/schools'
 import { parentInvitesRepo } from './parent-invites-store'
 import { parentLinksRepo } from './parent-links-store'
 import { schoolAdminPackagesRepo } from './school-admin-packages-store'
@@ -126,9 +127,41 @@ function isLiveRole(value: unknown): value is LiveRole {
 
 // --- #1 --------------------------------------------------------------------------------------------
 
+/**
+ * Secondary-only (D72, 2026-10-29), like the HTTP backend: the people of a primary-TYPE school
+ * (never by name prefix) and Darjah pupils (grade 1-6) are hidden from the admin list, the role
+ * cards and the school filter. The rows stay stored.
+ */
+function secondaryVisibility(): UserVisibility {
+  const hiddenSchools = new Set(users.schoolsWithUsers().filter((id) => schoolsRepo.isHidden(id)))
+  return {
+    key: [...hiddenSchools].sort((a, b) => a - b).join(','),
+    visible: (r) => !(r.schoolId !== null && hiddenSchools.has(r.schoolId)) && !isDarjahGrade(r.grade),
+  }
+}
+
+/** Any user with a Darjah grade (1-6) is hidden, whatever the role; a null grade stays visible. */
+const isDarjahGrade = (grade: number | null): boolean => grade !== null && grade <= 6
+
+/**
+ * The one predicate behind the lists and the by-id reads and writes (the backend's `visibleWhere` /
+ * `findVisible`): a hidden user answers "not found" everywhere.
+ */
+function isHiddenUser(row: UserRow): boolean {
+  if (!arePrimaryHidden()) return false
+  return (row.schoolId !== null && schoolsRepo.isHidden(row.schoolId)) || isDarjahGrade(row.grade)
+}
+
+/** `users.get` that treats a hidden user as absent. */
+function findVisible(id: number): UserRow | undefined {
+  const row = users.get(id)
+  return row && !isHiddenUser(row) ? row : undefined
+}
+
 function listUsers(req: MockRequest): MockResponse {
   const page = pageParams(req.query, { pageSize: USERS_PAGE_SIZE })
-  const roleCounts = users.roleCounts()
+  const visibility = arePrimaryHidden() ? secondaryVisibility() : undefined
+  const roleCounts = users.roleCounts(visibility)
   const empty = () => paged({ rows: [], total: 0 }, page, { roleCounts })
 
   const role = queryString(req.query, 'role')?.trim() ?? ''
@@ -140,6 +173,7 @@ function listUsers(req: MockRequest): MockResponse {
   if (schoolText !== '' && schoolId === undefined) return empty()
 
   const result = users.adminList({
+    ...(visibility ? { visibility } : {}),
     ...(role === '' ? {} : { role: role as UserRole }),
     ...(schoolId === undefined ? {} : { schoolId }),
     ...(active === '1' ? { isActive: true } : active === '0' ? { isActive: false } : {}),
@@ -154,7 +188,7 @@ function listUsers(req: MockRequest): MockResponse {
 
 function userFilters(): MockResponse {
   const found = users.schoolsWithUsers().flatMap((id) => {
-    const s = schoolsRepo.get(id)
+    const s = schoolsRepo.isHidden(id) ? undefined : schoolsRepo.get(id)
     return s ? [{ id: s.id, name: s.name }] : []
   })
   // BR-03 "sorted by name (A→Z, as stored)": a case-insensitive collation, then the id.
@@ -169,7 +203,7 @@ function userFilters(): MockResponse {
 // --- #3 --------------------------------------------------------------------------------------------
 
 function getUser(req: MockRequest): MockResponse {
-  const row = users.get(idOf(req))
+  const row = findVisible(idOf(req))
   return row ? ok(toDetail(row)) : notFound()
 }
 
@@ -346,7 +380,7 @@ function createUser(req: MockRequest, ctx: MockContext): MockResponse {
 
 function updateUser(req: MockRequest, ctx: MockContext): MockResponse {
   const id = idOf(req)
-  const before = users.get(id)
+  const before = findVisible(id)
   if (!before) return notFound()
   const body = bodyOf(req)
   const invalid = validate(
@@ -450,7 +484,7 @@ function removeUser(id: number): void {
 
 function deleteUser(req: MockRequest, ctx: MockContext): MockResponse {
   const id = idOf(req)
-  if (!users.get(id)) return notFound()
+  if (!findVisible(id)) return notFound()
   if (id === adminId(req)) return validationError({ id: MSG_OWN_DELETE })
   return ctx.transaction(() => {
     removeUser(id)
@@ -475,7 +509,7 @@ function bulkDeleteUsers(req: MockRequest, ctx: MockContext): MockResponse {
     let deleted = 0
     for (const id of ids) {
       // An id that no longer exists is skipped (a stale selection), like a scoped `whereIn`.
-      if (!users.get(id)) continue
+      if (!findVisible(id)) continue
       removeUser(id)
       deleted++
     }
@@ -486,7 +520,7 @@ function bulkDeleteUsers(req: MockRequest, ctx: MockContext): MockResponse {
 // --- #8 --------------------------------------------------------------------------------------------
 
 function toggleActive(req: MockRequest, ctx: MockContext): MockResponse {
-  const row = users.get(idOf(req))
+  const row = findVisible(idOf(req))
   if (!row) return notFound()
   // BR-04: the own row keeps its toggle, so self-deactivation is possible (result INFERRED).
   const saved = users.update(row.id, { isActive: !row.isActive }, ctx.clock.now())
@@ -496,7 +530,7 @@ function toggleActive(req: MockRequest, ctx: MockContext): MockResponse {
 // --- #9 --------------------------------------------------------------------------------------------
 
 function impersonate(req: MockRequest, ctx: MockContext): MockResponse {
-  const target = users.get(idOf(req))
+  const target = findVisible(idOf(req))
   if (!target) return notFound()
   if (target.id === adminId(req)) return validationError({ id: MSG_OWN_IMPERSONATE })
   if (!isSessionUser(target)) return validationError({ id: MSG_NO_SESSION_ROLE })

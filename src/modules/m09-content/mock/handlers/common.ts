@@ -42,7 +42,8 @@ export function subjectRef(id: number | null): { id: number; name: string } | nu
 /** `{id, name}` of an M03 education level, or `null`. */
 export function levelRef(id: number): { id: number; name: string } | null {
   const l = curriculum.level(id)
-  return l ? { id: l.id, name: l.name } : null
+  // Secondary-only (D72): a hidden Darjah level has no reference (its audio sets are not listed).
+  return l && !curriculum.isLevelHidden(id) ? { id: l.id, name: l.name } : null
 }
 
 /** Flash texts of the mutating endpoints (PROPOSED COPY, SRS M09 §8.2). */

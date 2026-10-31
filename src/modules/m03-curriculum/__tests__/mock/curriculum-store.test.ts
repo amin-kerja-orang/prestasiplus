@@ -429,13 +429,8 @@ describe('writes, runtime ids and ownership (D12)', () => {
       url: '/api/education-levels',
       headers: { authorization: 'Bearer tok-student', accept: 'application/json' },
     })
+    // Secondary-only (D72): the Darjah levels are never offered.
     expect((levels.body as { data: { code: string }[] }).data.map((l) => l.code)).toEqual([
-      'D1',
-      'D2',
-      'D3',
-      'D4',
-      'D5',
-      'D6',
       'T1',
       'T2',
       'T3',
@@ -503,7 +498,7 @@ describe('lookup endpoints (#28, #29)', () => {
       icon: 'book-open',
       color: '#3B82F6',
       isCore: true,
-      educationLevelIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      educationLevelIds: [7, 8, 9, 10, 11],
     })
   })
 })

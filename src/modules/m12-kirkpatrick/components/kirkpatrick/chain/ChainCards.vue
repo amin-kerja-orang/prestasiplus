@@ -39,7 +39,7 @@ const steps = computed<Step[]>(() => {
   return [
     {
       key: 't1',
-      tag: 'T1',
+      tag: 'Tahap 1',
       title: 'Reaksi',
       sub: 'Kepuasan pengguna terhadap Prestasi Plus',
       color: 'success',
@@ -53,7 +53,7 @@ const steps = computed<Step[]>(() => {
     },
     {
       key: 't2',
-      tag: 'T2',
+      tag: 'Tahap 2',
       title: 'Pembelajaran',
       sub: 'Perkembangan akademik melalui Head Count',
       color: 'success',
@@ -67,7 +67,7 @@ const steps = computed<Step[]>(() => {
     },
     {
       key: 't3',
-      tag: 'T3',
+      tag: 'Tahap 3',
       title: 'Tingkah Laku',
       sub: 'Konsistensi penggunaan platform (Mastery Learning)',
       color: 'warning',
@@ -83,7 +83,7 @@ const steps = computed<Step[]>(() => {
     },
     {
       key: 't4',
-      tag: 'T4',
+      tag: 'Tahap 4',
       title: 'Hasil / Impak',
       sub: 'Korelasi penggunaan dengan pencapaian',
       color: 'warning',

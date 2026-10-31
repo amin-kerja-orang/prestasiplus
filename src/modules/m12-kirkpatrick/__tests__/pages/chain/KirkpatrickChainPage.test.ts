@@ -99,7 +99,7 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
   it('T1 shows NPS Purata, Kepuasan and Responden as success', async () => {
     const w = await open()
     const card = t(w, 'chain-t1')
-    expect(flat(card)).toContain('T1 Reaksi Kepuasan pengguna terhadap Prestasi Plus')
+    expect(flat(card)).toContain('Tahap 1 Reaksi Kepuasan pengguna terhadap Prestasi Plus')
     expect(card.findAll('[data-testid="chain-value"]').map((e) => e.text())).toEqual([
       '8.3/10',
       '4.6/5',

@@ -15,6 +15,7 @@ import { computed, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
 import {
+  DsBadge,
   DsDataTable,
   DsLoadError,
   DsPage,
@@ -117,28 +118,28 @@ const kpis = computed<StatItem[]>(() =>
           label: 'Jumlah Soalan',
           value: formatNumber(data.value.total),
           icon: 'stack',
-    accent: 'action',
+          accent: 'action',
         },
         {
           key: 'average',
           label: 'Purata Skor',
           value: formatNumber(data.value.average, { decimals: 1 }),
           icon: 'gauge',
-    accent: 'friend',
+          accent: 'friend',
         },
         {
           key: 'excellent',
           label: 'Cemerlang (76-100)',
           value: formatNumber(data.value.excellentCount),
           icon: 'seal-check',
-    accent: 'win',
+          accent: 'win',
         },
         {
           key: 'action',
           label: 'Perlu Tindakan Aktif (≤ 50)',
           value: formatNumber(data.value.activeActionCount),
           icon: 'warning',
-    accent: 'trial',
+          accent: 'trial',
         },
       ]
     : [],
@@ -146,9 +147,9 @@ const kpis = computed<StatItem[]>(() =>
 
 const subjectColumns: TableColumn<SubjectRow>[] = [
   { accessorKey: 'name', header: 'Subjek' },
-  { accessorKey: 'count', header: 'Soalan' },
-  { accessorKey: 'averageText', header: 'Purata' },
-  { accessorKey: 'excellent', header: 'Cemerlang' },
+  { accessorKey: 'count', header: 'Soalan', meta: { width: 'xs' } },
+  { accessorKey: 'averageText', header: 'Purata', meta: { width: 'xs' } },
+  { accessorKey: 'excellent', header: 'Cemerlang', meta: { width: 'xs' } },
 ]
 const subjectCardFields: CardField[] = [
   { key: 'count', label: 'Soalan' },
@@ -173,6 +174,19 @@ const actionCardFields: CardField[] = [
 
 <template>
   <DsPage data-testid="quality-page">
+    <template #actions>
+      <UButton
+        type="button"
+        :loading="running"
+        :disabled="running || !data"
+        :icon="running ? undefined : 'i-ph-clipboard-text'"
+        class="min-h-11"
+        data-testid="quality-audit"
+        @click="runAudit"
+      >
+        {{ running ? 'Sedang audit...' : 'Jalankan Audit Semula' }}
+      </UButton>
+    </template>
     <DsLoadError
       v-if="error"
       :message="LOAD_ERROR"
@@ -193,28 +207,30 @@ const actionCardFields: CardField[] = [
       <DsStatRow :items="kpis" :cols="4" prefix="kpi" data-testid="quality-kpis" />
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-3" data-testid="quality-buckets">
-        <DsPanel data-testid="bucket-baik">
+        <DsPanel stretch data-testid="bucket-baik">
           <p class="text-overline text-muted">Skor 51-75</p>
           <p class="tabular my-1 text-display text-highlighted" data-testid="bucket-baik-value">
             {{ formatNumber(data.buckets.baik) }}
           </p>
           <p class="text-caption text-muted">Perlu semakan ringan atau pengayaan metadata.</p>
         </DsPanel>
-        <DsPanel data-testid="bucket-lemah">
+        <DsPanel stretch data-testid="bucket-lemah">
           <p class="text-overline text-muted">Skor ≤ 50</p>
           <p class="tabular my-1 text-display text-error" data-testid="bucket-lemah-value">
             {{ formatNumber(data.buckets.lemahKritikal) }}
           </p>
           <p class="text-caption text-muted">Bucket ini patut jadi fokus tindakan segera.</p>
         </DsPanel>
-        <DsPanel data-testid="bucket-legacy">
+        <DsPanel stretch data-testid="bucket-legacy">
           <p class="text-overline text-muted">Legacy Generic</p>
           <p class="tabular my-1 text-display text-highlighted" data-testid="bucket-legacy-value">
             {{ formatNumber(data.buckets.legacyGeneric) }}
           </p>
           <p class="text-caption break-words text-muted">
-            Row legacy seperti `tracking_a_feed_20260308`, `spm_tracking_auto_seed_v1`, dan
-            `source_type=ai_generated` diasingkan daripada senarai tindakan aktif.
+            Row legacy seperti <code class="text-label">tracking_a_feed_20260308</code>,
+            <code class="text-label">spm_tracking_auto_seed_v1</code>, dan
+            <code class="text-label">source_type=ai_generated</code> diasingkan daripada senarai
+            tindakan aktif.
           </p>
         </DsPanel>
       </div>
@@ -233,10 +249,20 @@ const actionCardFields: CardField[] = [
         </ul>
       </DsPanel>
 
-      <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-        <div class="min-w-0" data-testid="quality-subjects">
-          <h3 class="mb-3 text-subheading text-highlighted">Mengikut Subjek</h3>
+      <div class="grid grid-cols-1 items-start gap-4 md:gap-6 lg:grid-cols-2">
+        <DsPanel
+          title="Mengikut Subjek"
+          icon="books"
+          accent="friend"
+          class="min-w-0"
+          data-testid="quality-subjects"
+        >
+          <template #actions>
+            <DsBadge tone="neutral" class="tabular" :label="`${formatNumber(subjectRows.length)} subjek`" />
+          </template>
           <DsDataTable
+            variant="bare"
+            layout="fixed"
             :data="subjectRows"
             :columns="subjectColumns"
             caption="Kualiti mengikut subjek"
@@ -253,10 +279,16 @@ const actionCardFields: CardField[] = [
               />
             </template>
           </DsDataTable>
-        </div>
+        </DsPanel>
 
-        <DsPanel title="Mengikut Tingkatan" data-testid="quality-levels">
-          <div class="flex flex-col gap-4">
+        <DsPanel
+          title="Mengikut Tingkatan"
+          icon="graduation-cap"
+          accent="trial"
+          class="min-w-0"
+          data-testid="quality-levels"
+        >
+          <div class="flex flex-col gap-4 p-4 pt-0 sm:p-5 sm:pt-0">
             <div v-for="l in data.byLevel" :key="l.levelId" class="flex flex-col gap-1" data-testid="level-row">
               <div class="flex items-baseline justify-between gap-3 text-body">
                 <span class="text-highlighted">{{ l.name }}</span>
@@ -271,19 +303,24 @@ const actionCardFields: CardField[] = [
         </DsPanel>
       </div>
 
-      <div class="flex flex-col gap-3" data-testid="quality-actions">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <h3 class="text-subheading text-highlighted">Soalan Untuk Semakan Aktif</h3>
-            <p class="mt-1 text-caption text-muted">
-              Memaparkan hanya soalan skor ≤ 50 selepas menolak sumber generic legacy.
-            </p>
-          </div>
-          <span class="tabular shrink-0 text-body whitespace-nowrap text-muted" data-testid="action-count"
-            >{{ formatNumber(data.actionList.length) }} soalan</span
-          >
-        </div>
+      <DsPanel
+        title="Soalan Untuk Semakan Aktif"
+        description="Memaparkan hanya soalan skor ≤ 50 selepas menolak sumber generic legacy."
+        icon="warning"
+        accent="heat"
+        data-testid="quality-actions"
+      >
+        <template #actions>
+          <DsBadge
+            tone="neutral"
+            class="tabular"
+            data-testid="action-count"
+            :label="`${formatNumber(data.actionList.length)} soalan`"
+          />
+        </template>
+
         <DsDataTable
+          variant="bare"
           :data="actionRows"
           :columns="actionColumns"
           caption="Soalan untuk semakan aktif"
@@ -323,21 +360,7 @@ const actionCardFields: CardField[] = [
             />
           </template>
         </DsDataTable>
-      </div>
-
-      <div class="flex justify-end">
-        <UButton
-          type="button"
-          :loading="running"
-          :disabled="running"
-          :icon="running ? undefined : 'i-ph-clipboard-text'"
-          class="min-h-11"
-          data-testid="quality-audit"
-          @click="runAudit"
-        >
-          {{ running ? 'Sedang audit...' : 'Jalankan Audit Semula' }}
-        </UButton>
-      </div>
+      </DsPanel>
     </template>
   </DsPage>
 </template>

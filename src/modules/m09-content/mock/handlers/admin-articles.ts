@@ -187,7 +187,7 @@ export const adminArticleRoutes: RouteDef[] = [
     [adminOnly],
     (req) => {
       const id = Number(req.params.id)
-      const current = articlesRepo.get(id)
+      const current = articlesRepo.getVisible(id)
       if (!current) return notFound(NOT_FOUND.article)
       const parsed = parse(req.body, current)
       if ('fields' in parsed) return validationError(parsed.fields)
@@ -208,7 +208,7 @@ export const adminArticleRoutes: RouteDef[] = [
     [adminOnly],
     (req) => {
       const id = Number(req.params.id)
-      if (!articlesRepo.get(id)) return notFound(NOT_FOUND.article)
+      if (!articlesRepo.getVisible(id)) return notFound(NOT_FOUND.article)
       articlesRepo.remove(id)
       return ok({ deleted: 1 }, { status: ADMIN_FLASH.article.deleted })
     },

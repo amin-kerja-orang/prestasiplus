@@ -28,7 +28,7 @@ describe('crumb groups equal sidebar groups', () => {
   })
 
   it('every Kirkpatrick page keeps its own item and the pupil page sits in the Kirkpatrick section', () => {
-    expect(activeItem('/admin/kirkpatrick/reaction')?.label).toBe('T1: Reaksi')
+    expect(activeItem('/admin/kirkpatrick/reaction')?.label).toBe('Tahap 1: Reaksi')
     expect(activeItem('/admin/kirkpatrick/chain')?.label).toBe('Rantaian Impak')
     expect(activeItem('/admin/kirkpatrick/pelajar/4')?.sub).toBe('Kirkpatrick')
   })

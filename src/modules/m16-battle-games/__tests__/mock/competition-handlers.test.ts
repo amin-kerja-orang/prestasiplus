@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/api'
 
+import { users } from '@/modules/m01-authentication/mock'
 import {
   fetchActiveTournaments,
   fetchLeague,
@@ -25,7 +26,8 @@ import { bootM16, MemoryStorage, setUser, type Answer, type Booted } from './hel
 const ADMIN = 1
 const T4_STUDENT = 2 // school 900003 (SMK Demo)
 const D5_STUDENT = 3 // no school
-const D1_STUDENT = 4 // school 900004
+// A pupil of school 8880, which is in no seeded league (account 4 shares SMK DEMO with account 2 since D72).
+const D1_STUDENT = 3201
 const ANCHOR_8106 = 4301 // logged-in anchor of school 8106
 
 let booted: Booted
@@ -630,14 +632,14 @@ describe('#46-#49 leagues', () => {
     }>('/api/leagues/3', D1_STUDENT)
     expect(l).toMatchObject({
       status: 'upcoming',
-      creatorName: 'Pelajar Maju Demo',
+      creatorName: users.get(D1_STUDENT)?.name,
       classLevels: ['T4', 'T5'],
       typeLabel: 'Liga',
       scopeLabel: 'Daerah',
       canJoin: false,
     })
     expect(l.inviteCode).toMatch(/^[A-Z0-9]{8}$/)
-    expect(l.schools.map((s) => s.id)).toEqual([900004])
+    expect(l.schools.map((s) => s.id)).toEqual([8880])
     expect(
       (
         await data<{ mine: { id: number }[]; open: { id: number }[] }>('/api/leagues', D1_STUDENT)
@@ -695,7 +697,8 @@ describe('#46-#49 leagues', () => {
     const code = (
       await data<{ inviteCode: string }>(`/api/leagues/${String(created.body.data.id)}`, D1_STUDENT)
     ).inviteCode
-    expect((await post('/api/leagues/join', ADMIN, { invite_code: code })).status).toBe(200)
+    // A pupil of school 8102 joins (the central admin has no school since D72).
+    expect((await post('/api/leagues/join', 5901, { invite_code: code })).status).toBe(200)
     const full = await post<ErrorBody>('/api/leagues/join', T4_STUDENT, { invite_code: code })
     expect(full.status).toBe(422)
     expect(full.body.error.message).toBe('Liga ini sudah penuh.')
