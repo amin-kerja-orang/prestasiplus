@@ -283,3 +283,5 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - **T26c** NEW (A1, r1/t26c-e2e-k2): structured K2 pool plus a Terbit paper in the e2e seed only (local/E2E). Without it, removing PoC (T36) leaves no K2 paper for bijak-part-input and the REQ-B-003 e2e. No file overlap with T36. **B1: merge together with T36.**
 - **Conformance baseline 407/409 on BASE-62**: questions-api "admin lifecycle" and "publish gate" fixtures lack cognitiveLevel (T33 gate). Fix → A2 slot 1.
 - ETAs: T34 23:30–23:45 UTC (A3); T36 ~23:45 UTC (A2).
+- **BASE vue-tsc fix READY** r1/fix-base-vuetsc @ 1a2a5ca6 (A4): 1-line test fix; tsconfig.node + contract tsconfig 1→0 errors; contract questions 95/95. **B1: merge first.**
+- Merge order: T26b → T26c → T36 (no fixme left in base). Conformance fix = REQ-B-023 on r1/t33-conformance-fix (A2 slot 1).
