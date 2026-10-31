@@ -96,6 +96,9 @@ import { ApiError } from '@/api'
 import { HttpBijakServer, toBijakError, type HttpBijakOptions } from './http'
 import type { BijakServer } from './store'
 
+/** Mirrors the contract's INTAKE_BULK_MAX_IDS (the web bundle imports contract types only). */
+const BULK_MAX_IDS = 100
+
 /** The admin methods of the mock server (the contract the admin pages read). */
 export type BijakAdminMethods = Omit<
   Pick<
@@ -116,6 +119,8 @@ export type BijakAdminMethods = Omit<
   | 'linkStimulusReferences'
   | 'dskpUnits'
   | 'submitForReview'
+  | 'decideIntakeItem'
+  | 'acceptUnreviewed'
   | 'listReviewQueue'
   | 'getReviewItem'
   | 'reviewDecision'
@@ -683,6 +688,47 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     const batch = await this.getIntakeBatch(id)
     const at = Date.now()
     return { ok: true, batch: { ...batch, status: 'semakan', submittedAt: at, updatedAt: at } }
+  }
+
+  /** "Terima (A)" / "Tolak (R)" of one item of the batch (`POST /api/intake/items/:id/accept|reject`). */
+  async decideIntakeItem(
+    id: string,
+    questionId: string,
+    d: { action: 'terbit' | 'tolak'; reason?: string },
+  ): Promise<{ ok: boolean; errors: string[]; batch: IntakeBatch }> {
+    const res = await this.reviewDecision(questionId, { action: d.action, ...(d.reason ? { reason: d.reason } : {}) })
+    return { ok: res.ok, errors: res.errors, batch: await this.getIntakeBatch(id) }
+  }
+
+  /**
+   * "Terima semua yang belum disemak": `POST /api/intake/items/bulk` with `accept` over the items still open.
+   * The server takes only the items at or above its confidence threshold and lists the rest.
+   */
+  async acceptUnreviewed(
+    id: string,
+  ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[]; batch: IntakeBatch }> {
+    const batch = await this.getIntakeBatch(id)
+    const ids = batch.questions.map((q) => q.id)
+    if (ids.length === 0) return { done: 0, skipped: [], batch }
+    // The bulk endpoint takes at most BULK_MAX_IDS ids per call: send the whole batch in chunks.
+    let done = 0
+    const skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[] = []
+    for (let at = 0; at < ids.length; at += BULK_MAX_IDS) {
+      const res = await this.send<{ done: number; results: { id: string; outcome: string; reason: string | null }[] }>(
+        'POST',
+        '/api/intake/items/bulk',
+        { action: 'accept', ids: ids.slice(at, at + BULK_MAX_IDS) },
+      )
+      done += res.done
+      for (const r of res.results) {
+        if (r.outcome !== 'skipped') continue
+        // NOT_FOUND / WRONG_STATE: the item is gone or already decided; the refreshed batch shows that,
+        // so it is not reported as a confidence or gate skip.
+        if (r.reason === 'GATE_FAILED') skipped.push({ id: r.id, reason: 'GATE_FAILED' })
+        else if (r.reason === 'BELOW_THRESHOLD') skipped.push({ id: r.id, reason: 'BELOW_THRESHOLD' })
+      }
+    }
+    return { done, skipped, batch: await this.getIntakeBatch(id) }
   }
 
   /* ----------------------------------------------------- review queue (BE-38 items) */
