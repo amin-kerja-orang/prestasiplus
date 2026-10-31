@@ -372,7 +372,7 @@ describe('AC 9: mock parity on the 14 routes', () => {
       expect(res.status).toBe(200)
       expect(bodyData(res)).toEqual({
         affected: 0,
-        failed: [{ id: a, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Diterbitkan tidak dibenarkan.', fields: {} }],
+        failed: [{ id: a, code: 'CONFLICT', message: "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan.", fields: {} }],
       })
     })
 

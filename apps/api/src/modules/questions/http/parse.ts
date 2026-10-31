@@ -7,6 +7,7 @@
 import {
   QUESTION_MESSAGES,
   QuestionBulkRequestSchema,
+  QuestionFilterBulkRequestSchema,
   QuestionListQuerySchema,
   QuestionStructuredListQuerySchema,
   type ListMeta,
@@ -107,7 +108,7 @@ function pageOf(text: string | undefined, max: number, fallback: number, key: st
 /** `GET /questions`. Unknown filter values match nothing; a bad `status` is a 422 on `status`. */
 export function parseAdminList(raw: unknown): AdminListFilter {
   const fields = newFields()
-  const q = cleanQuery(raw, ['page', 'pageSize', 'subjectId', 'educationLevelId', 'difficultyLevel', 'status', 'dskpFilter', 'complianceFilter', 'sourceFilter', 'search', 'tagReview', 'missing'], fields)
+  const q = cleanQuery(raw, ['page', 'pageSize', 'subjectId', 'educationLevelId', 'difficultyLevel', 'status', 'dskpFilter', 'complianceFilter', 'sourceFilter', 'search', 'tagReview', 'missing', 'tahun', 'negeri', 'kertas', 'jenis'], fields)
   const page = pageOf(q.page, MAX_PAGE, 1, 'page', fields)
   const pageSize = pageOf(q.pageSize, 100, ADMIN_PAGE_SIZE, 'pageSize', fields)
   for (const key of ['subjectId', 'educationLevelId', 'difficultyLevel', 'dskpFilter', 'complianceFilter', 'sourceFilter'] as const) {
@@ -136,6 +137,17 @@ export function parseAdminList(raw: unknown): AdminListFilter {
     ...(d.search === undefined ? {} : { search: d.search }),
     ...(d.tagReview === undefined ? {} : { tagReview: true }),
     ...(d.missing === undefined ? {} : { missing: d.missing }),
+    ...filterV2Fields(d),
+  }
+}
+
+/** The four V2 Studio filters of a parsed list query or bulk filter (only the ones that are set). */
+function filterV2Fields(d: { tahun?: string | undefined; negeri?: string | undefined; kertas?: '1' | '2' | '3' | undefined; jenis?: AdminListFilter['jenis'] | undefined }): Partial<AdminListFilter> {
+  return {
+    ...(d.tahun === undefined ? {} : { tahun: d.tahun }),
+    ...(d.negeri === undefined ? {} : { negeri: d.negeri }),
+    ...(d.kertas === undefined ? {} : { kertas: d.kertas }),
+    ...(d.jenis === undefined ? {} : { jenis: d.jenis }),
   }
 }
 
@@ -187,6 +199,44 @@ export function parseBulk(raw: unknown): z.output<typeof QuestionBulkRequestSche
   }
   if (res.data.ids.length > BULK_MAX_IDS) throw invalid({ ids: BULK_TOO_MANY_MESSAGE })
   return res.data
+}
+
+/**
+ * `POST /questions/bulk-action/filter` (AC-03.3). Strict body and strict filter; the same value rules as the list (`QuestionFilterSchema`).
+ * Returns the action, the filter as an `AdminListFilter` (without paging), `expectedCount` and `dryRun`.
+ */
+export function parseFilterBulk(raw: unknown): {
+  action: 'approved' | 'archived'
+  filter: Omit<AdminListFilter, 'page' | 'pageSize'>
+  expectedCount: number | undefined
+  dryRun: boolean
+  filterEmpty: boolean
+} {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw invalid({ _: BODY_MESSAGE })
+  const res = QuestionFilterBulkRequestSchema.safeParse(raw)
+  if (!res.success) throw invalid(fieldsOf(res.error))
+  const d = res.data.filter
+  // The module bounds of the list (BE-NFR-25) apply to the body filter too.
+  const fields = newFields()
+  for (const key of ['subjectId', 'educationLevelId', 'difficultyLevel', 'dskpFilter', 'complianceFilter', 'sourceFilter'] as const) {
+    if ((d[key]?.length ?? 0) > FILTER_MAX) fields[`filter.${key}`] = FILTER_MESSAGE
+  }
+  if ((d.search?.length ?? 0) > SEARCH_MAX) fields['filter.search'] = SEARCH_MESSAGE
+  if (Object.keys(fields).length > 0) throw invalid(fields)
+  const filter: Omit<AdminListFilter, 'page' | 'pageSize'> = {
+    ...(d.subjectId === undefined ? {} : { subjectId: d.subjectId }),
+    ...(d.educationLevelId === undefined ? {} : { educationLevelId: d.educationLevelId }),
+    ...(d.difficultyLevel === undefined ? {} : { difficultyLevel: d.difficultyLevel }),
+    ...(d.status === undefined ? {} : { status: d.status as QuestionStatus }),
+    ...(d.dskpFilter === undefined ? {} : { dskpFilter: d.dskpFilter }),
+    ...(d.complianceFilter === undefined ? {} : { complianceFilter: d.complianceFilter }),
+    ...(d.sourceFilter === undefined ? {} : { sourceFilter: d.sourceFilter }),
+    ...(d.search === undefined || d.search.trim() === '' ? {} : { search: d.search.trim() }),
+    ...(d.tagReview === undefined ? {} : { tagReview: true }),
+    ...(d.missing === undefined ? {} : { missing: d.missing }),
+    ...filterV2Fields(d),
+  }
+  return { action: res.data.action, filter, expectedCount: res.data.expectedCount, dryRun: res.data.dryRun === true, filterEmpty: Object.keys(filter).length === 0 }
 }
 
 /** `{ data, status }` of an admin write (mock E3). */
