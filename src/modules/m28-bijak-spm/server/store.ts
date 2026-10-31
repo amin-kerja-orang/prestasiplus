@@ -189,6 +189,23 @@ export class BijakServer implements BijakApi {
     return leavesOf(q.parts ?? []).reduce((n, l) => n + l.marks, 0)
   }
 
+  /**
+   * AC-20.3: the cover shows "Untuk Kegunaan Pemeriksa" when any placed question has a part that is not
+   * marked automatically (a mark scheme with points or a rubric). Mirrors the API (`examinerGrid`).
+   */
+  private hasExaminerGrid(sections: Pick<SectionSnapshot, 'questionIds'>[]): boolean {
+    const manual = (id: string): boolean => {
+      const k = BANK.schemes.get(id)?.kind
+      return k === 'points' || k === 'rubric'
+    }
+    return sections.some((s) =>
+      s.questionIds.some((qid) => {
+        const q = BANK.questions.get(qid)
+        return !!q && leavesOf(q.parts ?? []).some((l) => manual(l.id))
+      }),
+    )
+  }
+
   private paperMarks(sections: Pick<SectionSnapshot, 'rule' | 'questionIds'>[]): number {
     return sections.reduce(
       (n, s) =>
@@ -248,6 +265,7 @@ export class BijakServer implements BijakApi {
       ...this.summary(def, userId),
       instructions: def.instructions,
       reference: def.reference ?? [],
+      examinerGrid: this.hasExaminerGrid(def.sections),
       sections: def.sections.map((s) => ({
         label: s.label,
         marks: effectiveMarks(

@@ -24,6 +24,12 @@ const user = useBijakUser()
 const server = bijakServer()
 const paperId = computed(() => String(route.params.paperId))
 
+/** AC-20.3 grid: one row per Bahagian; "Markah diperoleh" stays blank for the examiner. */
+const gridColumns = [
+  { accessorKey: 'label', header: 'Bahagian' },
+  { accessorKey: 'marks', header: 'Markah penuh' },
+  { id: 'awarded', header: 'Markah diperoleh' },
+]
 const { data: cover, error } = useApi(() => server.getCover(user.value, paperId.value), paperId)
 const { data: open, reload: reloadOpen } = useApi(
   () => server.findInProgress(user.value, paperId.value),
@@ -139,6 +145,21 @@ async function begin(restart: boolean): Promise<void> {
             {{ s.instruction }}<template v-if="s.compulsory"> (wajib)</template>
           </li>
         </ul>
+      </section>
+
+      <!-- AC-20.3 (REQ-A-012): only when the server says a placed question is marked by an examiner. -->
+      <section
+        v-if="cover.examinerGrid === true"
+        class="flex flex-col gap-2"
+        aria-labelledby="h-pemeriksa"
+        data-testid="examiner-grid"
+      >
+        <h2 id="h-pemeriksa" class="text-heading text-highlighted">Untuk Kegunaan Pemeriksa</h2>
+        <UTable
+          :data="cover.sections"
+          :columns="gridColumns"
+          data-testid="examiner-grid-table"
+        />
       </section>
 
       <section
