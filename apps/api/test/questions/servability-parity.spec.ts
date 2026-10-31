@@ -129,7 +129,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     if (other[0]) await q(`update question_versions set education_level_id = $2 where question_id = $1`, [made.otherLevel, other[0].id])
 
     // On a published paper (Simulasi), and one that is only a draft paper.
-    for (const [key, status] of [['onPaper', 'published'], ['onDraftPaper', 'draft']] as const) {
+    for (const [key, status] of [['onPaper', 'published'], ['onDraftPaper', 'draft'], ['archivedOnPaper', 'published']] as const) {
       const id = await publish(key, `Soalan pada kertas ${status} untuk kesamaan kebolehhidangan.`)
       const [paper] = await q(
         `insert into papers (kind, title, subject_id, kertas, printed_duration_min, status, published_at) values ('pilihan', $1, $2, 2, 90, $3, ${status === 'published' ? 'now()' : 'null'}) returning id::text id`,
@@ -138,6 +138,10 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
       const [section] = await q(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'A', 1, 1) returning id::text id`, [paper!.id])
       await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [section!.id, id])
     }
+
+    // H-A13: archived after the paper was published. The paper still lists it, but a new sitting cannot start (no live approved version).
+    await q(`update question_versions set status = 'archived' where question_id = $1`, [made.archivedOnPaper])
+    await q(`update questions set live_version_no = null where id = $1`, [made.archivedOnPaper])
 
     allIds = (await q(`select id::text id from questions order by id`)).map((r) => r.id)
     reports = await servability.reports(allIds)
@@ -232,19 +236,24 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(reasonsOf('structured', 'simulasi_kuiz')).toEqual(['shape_unsupported'])
   })
 
-  it('simulasi_paper: the Bijak bridge serves the question AND it sits on a published paper', async () => {
-    // The bridge serves the live version whatever `is_active`, and the last published version of an archived one (B08).
-    const bridged = new Set((await bijak.loadQuestions(allIds)).keys())
-    expect(bridged.has(made.withdrawn!)).toBe(true)
-    expect(bridged.has(made.archivedLive!)).toBe(true)
+  it('simulasi_paper: a NEW sitting can be started (live approved, bridge accepts) AND the question sits on a published paper', async () => {
+    // `getMany` is the paper eligibility read of BE-15 (`published = true`): the live approved version only, whatever `is_active`.
+    // An archived question is not in it, so the paper cannot be started (H-A13); `loadQuestions` (running sittings) still reads it.
+    const startable = new Set((await bijak.getMany(allIds)).keys())
+    expect(startable.has(made.withdrawn!)).toBe(true)
+    expect(startable.has(made.archivedLive!)).toBe(false)
+    expect(startable.has(made.archivedOnPaper!)).toBe(false)
+    expect((await bijak.loadQuestions(allIds)).has(made.archivedOnPaper!)).toBe(true)
     const onPaper = new Set((await q(`select distinct pl.question_id::text id from paper_placements pl join paper_sections ps on ps.id = pl.paper_section_id join papers p on p.id = ps.paper_id where p.status = 'published' and p.kind <> 'jana'`)).map((r) => r.id))
-    const expected = [...bridged].filter((id) => onPaper.has(id))
+    const expected = [...startable].filter((id) => onPaper.has(id))
     expect(sorted(servedBy('simulasi_paper'))).toEqual(sorted(expected))
     expect(servedBy('simulasi_paper').has(made.onPaper!)).toBe(true)
     expect(reasonsOf('onDraftPaper', 'simulasi_paper')).toEqual(['not_on_published_paper'])
     expect(reasonsOf('plain', 'simulasi_paper')).toEqual(['not_on_published_paper'])
-    // Every question the bridge serves but that is on no published paper is reported with exactly that reason.
-    for (const id of bridged) if (!onPaper.has(id)) expect(reports.get(id)!.activities.find((a) => a.activity === 'simulasi_paper')!.reasons.map((r) => r.code)).toEqual(['not_on_published_paper'])
+    expect(reasonsOf('archivedOnPaper', 'simulasi_paper')).toEqual(['archived'])
+    expect(reasonsOf('archivedLive', 'simulasi_paper')).toEqual(['archived'])
+    // Every startable question that is on no published paper is reported with exactly that reason.
+    for (const id of startable) if (!onPaper.has(id)) expect(reports.get(id)!.activities.find((a) => a.activity === 'simulasi_paper')!.reasons.map((r) => r.code)).toEqual(['not_on_published_paper'])
   })
 
   it('jana_kertas: pool facts eligible by exam-core and served by the bridge', async () => {

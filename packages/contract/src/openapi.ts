@@ -35,7 +35,7 @@ import { BIJAK_KUIZ_COMPONENT_SCHEMAS, registerBijakKuizPaths } from './bijak/ku
 import { BIJAK_ATTEMPTS_COMPONENT_SCHEMAS, registerBijakAttemptsPaths } from './bijak/attempts/paths'
 import { SPM_COMPONENT_SCHEMAS, registerSpmPaths } from './spm/paths'
 import { HEATMAP_COMPONENT_SCHEMAS, registerHeatmapPaths } from './heatmap/paths'
-import { SERVABILITY_COMPONENT_SCHEMAS } from './servability/paths'
+import { SERVABILITY_COMPONENT_SCHEMAS, registerServabilityPaths } from './servability/paths'
 import { COMMAND_CENTER_COMPONENT_SCHEMAS, registerCommandCenterPaths } from './admin/command-center/paths'
 import { CURRICULUM_COMPONENT_SCHEMAS, registerCurriculumPaths } from './curriculum/paths'
 import { BATTLE_COMPONENT_SCHEMAS, registerBattlePaths } from './battle/paths'
@@ -157,6 +157,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerBijakKuizPaths(registry) // R1-B16
   registerSpmPaths(registry) // BE-41
   registerHeatmapPaths(registry) // BE-48 (M25)
+  registerServabilityPaths(registry) // R1-T30
   registerCommandCenterPaths(registry) // BE-22
   registerCurriculumPaths(registry) // BE-08
   registerPracticePaths(registry) // BE-12

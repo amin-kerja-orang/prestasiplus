@@ -6,7 +6,8 @@ import { CurriculumModule, CurriculumPorts } from '../curriculum'
 import { FilesModule } from '../files'
 import { UsersModule } from '../users'
 import { QuestionsBijakPoolSource } from './bijak-pool'
-import { ServabilityService } from './serving'
+import { ServabilityReadsService, ServabilityService } from './serving'
+import { ServabilityController } from './http/servability.controller'
 import { QuestionCountsAdapter } from './curriculum-bridge'
 import { AdminQuestionsController, GuruQuestionsController, StimuliController, StructuredQuestionsController } from './http'
 import { PkskQuestionsService } from './pksk.service'
@@ -24,8 +25,8 @@ import { StimuliService } from './stimuli.service'
  */
 @Module({
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
-  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController],
-  providers: [QuestionsRepository, QuestionsService, StimuliRepository, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, ServabilityService],
+  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, ServabilityController],
+  providers: [QuestionsRepository, QuestionsService, StimuliRepository, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, ServabilityService, ServabilityReadsService],
   exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService],
 })
 export class QuestionsModule implements OnModuleInit {
