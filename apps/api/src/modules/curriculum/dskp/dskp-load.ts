@@ -20,7 +20,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import type { PrismaClient } from '../../../db/client'
-import { parseDskpExtract, type DskpExtract, type DskpRejected } from './dskp-loader'
+import { DSKP_REASONS_MS, parseDskpExtract, type DskpExtract, type DskpRejected } from './dskp-loader'
 
 export const DSKP_DATA_DIR = new URL('./data/', import.meta.url)
 /** Rows per `createMany` (the pg driver allows 65,535 bind parameters per statement). */
@@ -415,7 +415,7 @@ export function formatDskpReport(r: LoadReport): string {
   const ignored = r.subjects.flatMap((s) => s.ignored.map((i) => ({ subject: s.code, ...i })))
   out.push('')
   out.push(`Ignored (not Tingkatan 1-5): ${ignored.length}`)
-  for (const i of ignored) out.push(`  ${i.subject} ${i.file}: level "${i.level}" unit ${i.unit} ${i.title}`)
+  for (const i of ignored) out.push(`  ${i.subject} ${i.file}: level "${i.level}" unit ${i.unit} ${i.title} (${DSKP_REASONS_MS.darjahIgnored})`)
   const rejected = r.subjects.flatMap((s) => s.rejected.map((x) => ({ code: s.code, ...x })))
   out.push(`Rejected rows (skipped, counted): ${rejected.length}`)
   for (const x of rejected) out.push(`  ${x.code} ${x.at}: ${x.reason}`)
