@@ -225,7 +225,9 @@ export class ServabilityReadsService {
       let attentionCount = 0
       if (published.has(p.id) && ids.length === 0) counts.set('paper_empty', { code: 'paper_empty', message: SERVABILITY_REASON_MS.paper_empty, count: 1 })
       for (const id of published.has(p.id) ? ids : []) {
-        const reasons = results.get(id)?.reasons ?? []
+        // A placed id the bank does not return (a PoC placeholder, PKSK, Darjah) cannot be served: say so (REQ-B-033), never "no reason".
+        const result = results.get(id)
+        const reasons = result ? result.reasons : [{ code: 'question_missing' as const, message: SERVABILITY_REASON_MS.question_missing }]
         if (reasons.length > 0) attentionCount++
         for (const r of reasons) {
           const c = counts.get(r.code)
