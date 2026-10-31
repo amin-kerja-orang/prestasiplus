@@ -22,7 +22,7 @@ function flashOf(res: { body: unknown }): unknown {
 
 /** Subject, level and curriculum tag of a seeded published question, to clone into a taggable body. */
 async function seededTag(ctx: ScenarioContext, admin: HttpClient): Promise<{ subjectId: string; educationLevelId: string; tag: Json }> {
-  const list = await admin.request('GET', '/questions?status=published&pageSize=5')
+  const list = await admin.request('GET', '/questions?status=approved&pageSize=5')
   ctx.expectStatus(list, 200)
   const id = String(listOf(list)[0]?.id)
   const detail = await admin.request('GET', `/questions/${id}`)
@@ -82,7 +82,8 @@ export const questionsScenarios: Scenario[] = [
       const base = await seededTag(ctx, admin)
       const tag = nextTag('q')
       const created = await admin.request('POST', '/questions', {
-        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId }),
+        // Tagged, because approving a question runs the publish gate (unit, SP, TP) since R1-B01.
+        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag }),
       })
       ctx.expectStatus(created, 201)
       ctx.check(flashOf(created) === FLASH.added, `create flash was ${String(flashOf(created))}`)
