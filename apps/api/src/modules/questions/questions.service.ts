@@ -26,10 +26,12 @@ import {
   type FlatSource,
   type FlatType,
 } from './projection'
-import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
+import { MAX_SP_NODES } from './publish-gate'
+import { GATES } from './workflow/lifecycle/gates'
+import type { QuestionGateData } from './workflow/ports'
 import { GroupMembers } from './group-members'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
-import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
+import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
 import type {
   AdminListFilter,
@@ -153,6 +155,8 @@ interface Normalized {
   chapterId?: string | null | undefined
   topicId?: string | null | undefined
   stimulusGroupId?: string | null | undefined
+  /** V2 `Nombor soalan`: a text sets it, null clears it, undefined keeps what is stored. */
+  numberLabel?: string | null | undefined
   /** Stem image file id: a string sets/replaces it, null removes it, undefined keeps what is stored. */
   stemImage?: string | null | undefined
   /** Kertas: a digit sets it, null clears it, undefined keeps what is stored. */
@@ -232,6 +236,7 @@ export class QuestionsService {
       ...(input.modelAnswer === undefined ? {} : { modelAnswer: input.modelAnswer }),
       ...(input.pointsValue === undefined ? {} : { pointsValue: input.pointsValue }),
       ...(input.optionImageFileIds === undefined ? {} : { optionImageIds: input.optionImageFileIds }),
+      ...(input.cognitiveLevel == null ? {} : { cognitiveLevel: input.cognitiveLevel }),
     }
     const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
     const status = input.status ?? 'draft'
@@ -248,6 +253,7 @@ export class QuestionsService {
         dskpSpId: input.dskpSpId,
         chapterId: input.curriculumChapterId,
         stimulusGroupId: input.stimulusGroupId,
+        numberLabel: input.numberLabel,
         stemImage: input.questionImageFileId,
         kertas: input.kertas,
         paperCode: provenance?.paperCode,
@@ -325,8 +331,20 @@ export class QuestionsService {
         })
       }
       if (status === 'approved') {
-        const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
-        Object.assign(fields, checkKeysGate(v.parts))
+        // "No bypass" (ADR-0027, B3): the one merged approve gate, the same function the lifecycle routes run (tag, keys, rights, duplicates,
+        // marks, media, reviewer, DSKP). `lastEditedByAi` is false here: this path is only ever driven by a person.
+        const fields = await this.approveFields({
+          id,
+          parts: v.parts,
+          subjectId: v.subjectId,
+          educationLevelId: v.educationLevelId,
+          chapterId: v.chapterId,
+          unitId: v.unitId,
+          spIds: v.spIds,
+          tp: v.difficultyTp,
+          paperCode: v.paperCode ?? null,
+          rightsStatus: (await this.repo.rightsStatusOf(id, v.versionNo)) ?? 'own',
+        })
         if (Object.keys(fields).length > 0) throw fail(fields)
         // The version that served until now is superseded in the same transaction.
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
@@ -548,10 +566,12 @@ export class QuestionsService {
    * internal ids, so tokens are swapped here, before the tree is built; an unknown token stays as sent and fails the
    * image check with the same 422 as any other bad image.
    */
-  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined }>(input: T): Promise<T> {
+  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined; parts?: QuestionPart[] | undefined }>(input: T): Promise<T> {
     const out: T = { ...input }
     if (typeof out.questionImageFileId === 'string') out.questionImageFileId = await this.files.internalIdOf(out.questionImageFileId)
     if (out.optionImageFileIds) out.optionImageFileIds = await Promise.all(out.optionImageFileIds.map((id) => (typeof id === 'string' ? this.files.internalIdOf(id) : id)))
+    // Studio (T13): option pictures of a part tree are named by the same public token, in and out.
+    if (out.parts) out.parts = await mapOptionImageIds(out.parts, (id) => this.files.internalIdOf(id))
     return out
   }
 
@@ -563,6 +583,46 @@ export class QuestionsService {
     return 'questionText'
   }
 
+  /**
+   * The approve gate (`GATES.approve`, ADR-0027) over the facts this module holds. The facts BE-09 does not store (open duplicate flag,
+   * unconfirmed low-confidence fields, media check, question-level marks) take the same satisfied defaults as the workflow's bank adapter,
+   * so the lifecycle route, the bulk action and the create path can never disagree. A version with no rights declaration counts as `own`
+   * (the documented default); an explicit `unclear` is refused. R1-B05: the DSKP rules bind only an SPM-bound question, on a NEW approval.
+   */
+  private async approveFields(input: {
+    id: string
+    parts: QuestionGateData['parts']
+    subjectId: string | null
+    educationLevelId: string | null
+    chapterId: string | null
+    unitId: string | null
+    spIds: string[]
+    tp: number | null
+    paperCode: string | null
+    rightsStatus: string
+  }): Promise<Record<string, string>> {
+    return GATES.approve({
+      id: input.id,
+      parts: input.parts,
+      marks: null,
+      subjectId: input.subjectId,
+      educationLevelId: input.educationLevelId,
+      chapterId: input.chapterId,
+      unitId: input.unitId,
+      spIds: input.spIds,
+      tp: input.tp,
+      rightsStatus: input.rightsStatus,
+      hasSourceDeclaration: true,
+      unconfirmedLowConfidenceFields: [],
+      hasOpenDuplicateFlag: false,
+      mediaResolved: true,
+      missingRequiredFields: [],
+      lastEditedByAi: false,
+      paperCode: input.paperCode,
+      spmBound: await this.repo.isSpmBound(input.subjectId, input.educationLevelId),
+    })
+  }
+
   private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const { draft, newStemFileId } = await this.draftOf(n, status, null)
     if (provenance) {
@@ -570,15 +630,19 @@ export class QuestionsService {
       draft.sourcePage = provenance.sourcePage
     }
     if (status === 'approved') {
-      const fields = checkTagGate({
+      // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition.
+      const fields = await this.approveFields({
+        id: '0',
+        parts: n.parts,
         subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
         educationLevelId: draft.educationLevelId === null ? null : idToString(draft.educationLevelId),
+        chapterId: null,
         unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
         spIds: draft.spNodeIds.map(idToString),
         tp: draft.difficultyTp,
+        paperCode: draft.paperCode ?? null,
+        rightsStatus: 'own',
       })
-      // Same keys rule BE-10 offers: marks of a points key equal the leaf marks and the sum of its points.
-      Object.assign(fields, checkKeysGate(n.parts))
       if (Object.keys(fields).length > 0) throw fail(fields)
     }
     const creator = parse(actor.userId)
@@ -741,7 +805,7 @@ export class QuestionsService {
       type: versionTypeOf(n.parts),
       stemMs: n.stem,
       stemEn: v?.stemEn ?? null,
-      numberLabel: v?.numberLabel ?? null,
+      numberLabel: n.numberLabel !== undefined ? (n.numberLabel === '' ? null : n.numberLabel) : (v?.numberLabel ?? null),
       language: n.language,
       explanationMs: n.explanation,
       explanationEn: v?.explanationEn ?? null,
@@ -821,6 +885,8 @@ export class QuestionsService {
         correctAnswerText: input.correctAnswerText === undefined ? flat.correctAnswerText : input.correctAnswerText,
         altAnswers: input.altAnswers ?? flat.altAnswers,
         modelAnswer: input.modelAnswer === undefined ? flat.modelAnswer : input.modelAnswer,
+        // R1-B05: the cognitive level of the single leaf survives a flat edit unless the body sends one (null clears it).
+        cognitiveLevel: input.cognitiveLevel === undefined ? ((single as { cognitiveLevel?: string | null } | undefined)?.cognitiveLevel ?? null) : input.cognitiveLevel,
       }
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
       parts = this.checkedParts(partsFromFlat(src), false)
@@ -853,6 +919,7 @@ export class QuestionsService {
       flatSp: !input.tag && dskpSpId !== undefined,
     }
     if (input.stimulusGroupId !== undefined) normalized.stimulusGroupId = input.stimulusGroupId
+    if (input.numberLabel !== undefined) normalized.numberLabel = input.numberLabel
     if (input.curriculumChapterId !== undefined) normalized.chapterId = input.curriculumChapterId
     const stemImage = input.removeQuestionImage === true ? null : input.questionImageFileId
     if (stemImage !== undefined) normalized.stemImage = stemImage
@@ -906,6 +973,7 @@ export class QuestionsService {
     for (const r of records) {
       if (r.version.stemImageId) fileIds.add(r.version.stemImageId)
       for (const id of flatFromVersion(r.version).optionImageIds) if (id) fileIds.add(id)
+      for (const id of referencedIds(r.version.parts).imageIds) fileIds.add(id)
     }
     const chapterIds = [...new Set(records.map((r) => r.version.chapterId).filter((c): c is string => !!c).map((c) => BigInt(c)))]
     const chapterNames = new Map(

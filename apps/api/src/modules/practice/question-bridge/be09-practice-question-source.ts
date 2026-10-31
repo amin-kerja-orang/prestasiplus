@@ -7,14 +7,12 @@ import type { QuestionFilter, QuestionRecord } from '../../questions/types'
 import { UsersRepository } from '../../users'
 import type { PracticeQuestion, PracticeQuestionSource, PracticeSelection } from '../ports'
 import { versionKey } from '../ports'
-import { servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practice-mapping'
+import { PRACTICE_SHAPE, servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practice-mapping'
 
 /** Most ids hydrated in one `getMany` call (one hydrate round trip); `hydratePicks` binds 2 parameters per id. */
 const HYDRATE_MAX = 500
 /** `sample` asks the bank for `n * OVER_FETCH` ids, and widens by the same factor while the draw comes up short. */
 export const OVER_FETCH = 4
-/** The SQL shape of what `servableMcq` accepts (one text MCQ leaf, no stimulus, key names an option): counts and draws agree with serving. */
-const PRACTICE_SHAPE = { minOptions: 1, maxOptions: 8 } as const
 /** Windows one `sample` reads at most (each is a LIMIT-ed SQL draw, the last of `n * 4^MAX_ROUNDS` ids). */
 const MAX_ROUNDS = 4
 /** Refusals logged once per question version; the memory is bounded (cleared when full). */
