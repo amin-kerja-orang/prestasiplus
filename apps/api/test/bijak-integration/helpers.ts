@@ -7,7 +7,7 @@ import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
 import { expect } from 'vitest'
 
-import { runSeeds, type SeedModule } from '../../prisma/seed'
+import { runSeeds, seedModules, type SeedModule } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { examSeed } from '../../prisma/seed/exam'
@@ -39,9 +39,11 @@ export interface IntegrationApp {
  * No port is plugged by the test. The BE-09 question seed runs too, so every flow runs on the merged stack
  * (PoC papers on the reserved ids AND bank questions in `question_versions`).
  */
-export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraModules?: Type<unknown>[]; extraSeeds?: SeedModule[] } = {}): Promise<IntegrationApp> {
+export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraModules?: Type<unknown>[]; extraSeeds?: SeedModule[]; e2eProfile?: boolean } = {}): Promise<IntegrationApp> {
   const db = await createTestDatabase()
-  await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed, ...(opts.extraSeeds ?? [])], { prisma: db.prisma })
+  // `e2eProfile`: the whole `e2e` seed profile with E2E_SEED=1, exactly what the e2e stack is seeded with (REQ-B-003).
+  if (opts.e2eProfile) await runSeeds(seedModules, { prisma: db.prisma, profile: 'e2e', env: { ...process.env, E2E_SEED: '1' } })
+  else await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed, ...(opts.extraSeeds ?? [])], { prisma: db.prisma })
   const env: Record<string, string | undefined> = {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',
