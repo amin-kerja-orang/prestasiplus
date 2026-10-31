@@ -87,13 +87,7 @@ function practiceShapeReasons(record: QuestionRecord, activity: ServabilityActiv
 export function bridgeRefusal(f: ServabilityFacts, record: QuestionRecord | null = f.live): UnsupportedQuestionError | null {
   const live = record
   if (live === null) return null
-  const inGroup = new Set(f.group?.stimuli.map((s) => s.id) ?? [])
-  const outside = new Map<string, { kind: string; assetFileId: string | null }>()
-  for (const id of live.version.stimulusIds) {
-    const asset = f.linkedAssets.get(id)
-    if (!inGroup.has(id) && asset) outside.set(id, asset)
-  }
-  const media: BridgeMedia = { tokens: f.fileTokens, outside }
+  const media: BridgeMedia = { tokens: f.fileTokens, outside: f.outside }
   try {
     mapBe09Question(live, f.group, { subjectCode: '', unitLabel: '', unitCode: null }, media)
     return null

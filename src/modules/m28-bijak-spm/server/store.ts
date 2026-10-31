@@ -6,12 +6,15 @@
  * Reveal rules (US-15): an answer key or mark scheme leaves this class only inside a graded
  * result, i.e. after submit (exam) or after "Semak" on that one question (latihan).
  */
+import type { StudioDskp } from '@pp/contract'
+
 import { blankQuestion } from '../admin/intake/domain/blank'
 import { batchToSeeds } from '../admin/intake/domain/convert'
 import { attachToStimulus, groupsOf } from '../admin/intake/domain/grouping'
 import { referencingQuestionIds } from '../admin/intake/domain/figure-links'
 import { paperMarks } from '../admin/intake/domain/marks'
 import { validateBatch } from '../admin/intake/domain/validation'
+import { mockStudioDskp } from '../admin/intake/lib/dskp'
 import { demoBatch } from '../admin/intake/lib/seed'
 import type {
   ExtractedPaper,
@@ -106,6 +109,9 @@ export interface ServerOptions {
   latencyMs?: number
   storageKey?: string
 }
+
+/** [PROPOSED] H-A13: the API's BM refusal of a new sitting of a paper that places an archived question. */
+export const PAPER_UNAVAILABLE = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
 
 export class BijakServer implements BijakApi {
   private readonly storage: KeyValueStore
@@ -394,6 +400,10 @@ export class BijakServer implements BijakApi {
     if (open.length && !opts.restart && !opts.fresh) {
       const keep = open.sort((a, b) => b.startedAt - a.startedAt)[0]!
       return { attemptId: keep.id }
+    }
+    // H-C5 / H-A13: a paper that places a question the bank no longer serves cannot start a new sitting (API: 403 + this BM line).
+    if (def.sections.every((s) => s.questionIds.length === 0) || def.sections.some((s) => s.questionIds.some((id) => !BANK.questions.has(id)))) {
+      throw new BijakError('forbidden', PAPER_UNAVAILABLE)
     }
     if (!opts.fresh) for (const a of open) a.status = 'abandoned'
     this.state.seq += 1
@@ -1067,6 +1077,12 @@ export class BijakServer implements BijakApi {
     store[batch.id] = batch
     this.persist()
     return jsonClone(batch)
+  }
+
+  /** Mock of `GET /api/questions/studio/dskp` (REQ-B-001): the stand-in units in the server's shape. */
+  async dskpUnits(subject: SubjectCode, form: 'T4' | 'T5'): Promise<StudioDskp> {
+    await this.tick()
+    return mockStudioDskp(subject, form)
   }
 
   /** D90: links the figure to every question without a stimulus that names it, and keeps the group contiguous. */

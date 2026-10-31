@@ -41,6 +41,10 @@ export const STIMULUS_MESSAGES = {
   builderBlocker: 'Kumpulan perlu sekurang-kurangnya 2 soalan.',
   membersTooMany: 'Satu kumpulan boleh mempunyai paling banyak 40 soalan.',
   memberMixed: 'Soalan dalam satu kumpulan mesti sama subjek.',
+  /** Members of one group share the kertas when it is set (a question with no kertas is compatible with any). */
+  memberKertas: 'Soalan dalam satu kumpulan mesti sama kertas.',
+  /** `stimulusGroupId` names a group that does not exist (422 on the field). */
+  groupInvalid: 'Kumpulan stimulus tidak sah.',
   /** List queries (R1-T49). */
   page: 'Halaman tidak sah.',
   pageSize: 'Saiz halaman mesti antara 1 dan 100.',

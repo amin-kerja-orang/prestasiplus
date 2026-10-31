@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { describeQuestion } from '@pp/exam-core'
 import {
   SERVABILITY_ACTIVITIES,
   SERVABILITY_ACTIVITY_LABELS,
+  SERVABILITY_PAPER_STATUSES,
   type ServabilityActivity,
   type ServabilityBatchResult,
   type ServabilityDatabankRow,
@@ -13,17 +13,17 @@ import {
 
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
-import { QuestionsBijakPoolSource } from '../bijak-pool'
-import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, SERVABLE_STATUS } from '../learner-visibility'
+import { SERVABLE_STATUS } from '../learner-visibility'
 import { QuestionsRepository } from '../questions.repository'
 import { Prisma } from '../../../db/generated/client'
-import { filterOf } from './filters'
+import { DATABANK_LANE_FROM, databankLaneConds, databankServedPredicate, filterOf, janaEligibleScope } from './filters'
 import { evaluate } from './rules'
 import { ServabilityService } from './servability.service'
 
 const TITLE_MAX = 90
 const CHUNK = 200
-const PAPER_STATUSES = ['draft', 'published'] as const
+const PAPER_STATUSES: readonly string[] = SERVABILITY_PAPER_STATUSES
+const paperStatusOf = (status: string): ServabilityPaperRow['status'] => SERVABILITY_PAPER_STATUSES.find((s) => s === status) ?? 'draft'
 
 const like = (s: string): string => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
 const chunks = <T>(list: readonly T[], size = CHUNK): T[][] => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, (i + 1) * size))
@@ -50,7 +50,6 @@ export class ServabilityReadsService {
     @Inject(ServabilityService) private readonly servability: ServabilityService,
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(QuestionsBijakPoolSource) private readonly pool: QuestionsBijakPoolSource,
   ) {}
 
   private get db() {
@@ -72,10 +71,9 @@ export class ServabilityReadsService {
   async overview(): Promise<ServabilityOverview> {
     const live = { status: SERVABLE_STATUS, active: true } as const
     const bank = await this.questions.count(live)
-    const [databankSubjects, spmSubjects] = await Promise.all([this.subjectsListed(true), this.subjectsListed(false)])
-    const sumOver = (by: Map<string, number>, only?: ReadonlySet<string>) => [...by].reduce((n, [k, v]) => n + (only === undefined || only.has(k) ? v : 0), 0)
+    const [spmSubjects, drawn, databankTotal] = await Promise.all([this.subjectsListed(), this.spmDraw(), this.databankLaneTotal()])
+    const sumOver = (by: ReadonlyMap<string, number>, only?: ReadonlySet<string>) => [...by].reduce((n, [k, v]) => n + (only === undefined || only.has(k) ? v : 0), 0)
 
-    const spm = await this.questions.groupCount('subject', { ...filterOf('latih_tubi_spm'), ...live })
     const bab = await this.questions.groupCount('chapter', { ...filterOf('bab'), ...live })
     const kuiz = await this.questions.count({ ...filterOf('simulasi_kuiz'), ...live })
     const onPapers = await this.questionsOnPublishedPapers()
@@ -87,8 +85,8 @@ export class ServabilityReadsService {
     const jana = await this.janaEligible()
 
     const rows: [ServabilityActivity, number, number, 'sql' | 'evaluated' | 'pool'][] = [
-      ['databank', sumOver(spm, databankSubjects), bank, 'sql'],
-      ['latih_tubi_spm', sumOver(spm, spmSubjects), bank, 'sql'],
+      ['databank', drawn.databankServed, databankTotal, 'sql'],
+      ['latih_tubi_spm', sumOver(drawn.bySubject, spmSubjects), bank, 'sql'],
       ['bab', sumOver(bab), bank, 'sql'],
       ['simulasi_paper', paperServed, onPapers.length, 'evaluated'],
       ['simulasi_kuiz', kuiz, bank, 'sql'],
@@ -103,16 +101,37 @@ export class ServabilityReadsService {
     }
   }
 
+  /**
+   * The SPM draw (Latih Tubi SPM and Databank read the same one, `filterOf`), grouped by its live subject, and how many of those
+   * are served in the Databank (`databankServedPredicate`: a row of the Databank lane on a Databank subject). One statement: the
+   * draw's shape check is the costly part and runs once. The Databank card is `served` of the lane's total, so its `attention`
+   * is the number of lane rows with a reason.
+   */
+  private async spmDraw(): Promise<{ bySubject: Map<string, number>; databankServed: number }> {
+    const live = this.questions.scopeSql({ ...filterOf('latih_tubi_spm'), status: SERVABLE_STATUS, active: true }, false)
+    const rows = await this.db.$queryRaw<{ subject_id: bigint | null; n: number; in_lane: number }[]>`
+      SELECT v.subject_id AS subject_id, count(*)::int AS n, (count(*) FILTER (WHERE ${databankServedPredicate()}))::int AS in_lane
+        ${live.from} WHERE ${live.where} GROUP BY 1`
+    return {
+      bySubject: new Map(rows.flatMap((r) => (r.subject_id === null ? [] : [[idToString(r.subject_id), r.n] as const]))),
+      databankServed: rows.reduce((n, r) => n + r.in_lane, 0),
+    }
+  }
+
+  /** Rows of the Databank lane (`databankLaneConds`: the lane and the card use ONE scope). */
+  private async databankLaneTotal(): Promise<number> {
+    const rows = await this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${DATABANK_LANE_FROM} WHERE ${Prisma.join(databankLaneConds(), ' AND ')}`
+    return rows[0]?.n ?? 0
+  }
+
   /** Lane "Databank Soalan": questions of the Databank subjects (newest first), each with its Databank reasons. */
   async databankLane(q: ServabilityLaneQuery): Promise<Paged<ServabilityDatabankRow>> {
-    const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'mcq'`, Prisma.sql`c.databank_order IS NOT NULL`, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL]
+    const conds = databankLaneConds()
     if (q.subjectId !== undefined) conds.push(isIdString(q.subjectId) ? Prisma.sql`v.subject_id = ${idFromString(q.subjectId)}` : Prisma.sql`FALSE`)
     if (q.status !== undefined) conds.push(Prisma.sql`v.status = ${q.status}`)
     if (q.search) conds.push(Prisma.sql`v.stem_ms ILIKE ${like(q.search)}`)
     const where = Prisma.join(conds, ' AND ')
-    const from = Prisma.sql`FROM questions q
-      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      JOIN spm_subject_configs c ON c.subject_id = v.subject_id`
+    const from = DATABANK_LANE_FROM
     const offset = (q.page - 1) * q.pageSize
     const [rows, totals] = await Promise.all([
       this.db.$queryRaw<{ id: bigint; stem: string | null; status: string; subject_id: bigint; subject_name: string | null }[]>`
@@ -141,7 +160,7 @@ export class ServabilityReadsService {
 
   /** Lane "Bijak SPM": curated papers (newest first) with the placed questions the bridge cannot serve, by reason. */
   async paperLane(q: ServabilityLaneQuery): Promise<Paged<ServabilityPaperRow>> {
-    const statusOk = q.status === undefined || (PAPER_STATUSES as readonly string[]).includes(q.status)
+    const statusOk = q.status === undefined || PAPER_STATUSES.includes(q.status)
     const conds: Prisma.Sql[] = [Prisma.sql`p.kind = 'pilihan'`, statusOk ? Prisma.sql`TRUE` : Prisma.sql`FALSE`]
     if (q.status !== undefined && statusOk) conds.push(Prisma.sql`p.status = ${q.status}`)
     if (q.subjectId !== undefined) conds.push(isIdString(q.subjectId) ? Prisma.sql`p.subject_id = ${idFromString(q.subjectId)}` : Prisma.sql`FALSE`)
@@ -183,7 +202,7 @@ export class ServabilityReadsService {
           paperId: idToString(p.id),
           title: p.title,
           subject: { id: idToString(p.subject_id), name: p.subject_name ?? '' },
-          status: p.status === 'published' ? 'published' : 'draft',
+          status: paperStatusOf(p.status),
           questionCount: ids.length,
           attentionCount,
           attention: [...counts.values()],
@@ -197,10 +216,9 @@ export class ServabilityReadsService {
 
   // --- helpers -------------------------------------------------------------------------------------
 
-  /** Subject ids on the Databank list (`databankOnly`) or on the Latih Tubi list (any SPM configuration row). */
-  private async subjectsListed(databankOnly: boolean): Promise<Set<string>> {
-    const rows = await this.db.$queryRaw<{ subject_id: bigint }[]>`
-      SELECT subject_id FROM spm_subject_configs WHERE ${databankOnly ? Prisma.sql`databank_order IS NOT NULL` : Prisma.sql`TRUE`}`
+  /** Subject ids on the Latih Tubi list (any SPM configuration row). */
+  private async subjectsListed(): Promise<Set<string>> {
+    const rows = await this.db.$queryRaw<{ subject_id: bigint }[]>`SELECT subject_id FROM spm_subject_configs`
     return new Set(rows.map((r) => idToString(r.subject_id)))
   }
 
@@ -212,13 +230,14 @@ export class ServabilityReadsService {
     return rows.map((r) => idToString(r.question_id))
   }
 
-  /** Jana pool: questions the base eligibility (unit, TP, marks, key, tag review) accepts, over every subject with a live question. */
+  /**
+   * Jana pool: the questions the base eligibility (unit, TP, marks, key, tag review) accepts, counted in ONE SQL statement
+   * (`janaEligibleScope`, the twin of `describeQuestion` over the pool facts, proven equal id by id by `servability-jana-count.spec.ts`). It replaces
+   * loading every approved question of every subject (1.2 s on 5,000, minutes on the real bank).
+   */
   private async janaEligible(): Promise<number> {
-    const subjects = await this.db.$queryRaw<{ id: bigint }[]>`
-      SELECT DISTINCT v.subject_id AS id FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = ${SERVABLE_STATUS} AND v.subject_id IS NOT NULL`
-    let n = 0
-    for (const s of subjects) for (const facts of await this.pool.candidatesOf(idToString(s.id))) if (describeQuestion(facts).reasons.length === 0) n++
-    return n
+    const { from, where } = janaEligibleScope()
+    const rows = await this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`
+    return rows[0]?.n ?? 0
   }
 }

@@ -20,6 +20,18 @@ export const SERVABILITY_READ_LIMIT = {
 } as const satisfies RateLimitSpec
 
 /**
+ * The overview counts the whole bank (several aggregate statements over every question), so it has its OWN small bucket: a polling
+ * hub or a script cannot drain the 120/min of the cheap reads above, and cannot hammer the database. Env
+ * `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE`, else 6 (the hub loads it once per visit).
+ */
+export const SERVABILITY_OVERVIEW_LIMIT = {
+  bucket: 'servability-overview',
+  env: 'THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE',
+  default: 6,
+  per: 'user',
+} as const satisfies RateLimitSpec
+
+/**
  * R1-B11 "Dilihat murid di": where a question is served to pupils and why not, for the Studio status bar, the question list, the
  * SPM hub cards and the two lanes. Admin Pusat only (the `admin` role), read-only; the batch is a POST because it carries ids and
  * so needs the CSRF header. Not under `/questions/...`, so `questions/:id` of the admin controller never swallows these paths.
@@ -53,7 +65,7 @@ export class ServabilityController {
   }
 
   @Get('overview')
-  @RateLimit(SERVABILITY_READ_LIMIT)
+  @RateLimit(SERVABILITY_OVERVIEW_LIMIT)
   async overview() {
     return ok(await this.reads.overview())
   }

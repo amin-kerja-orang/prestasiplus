@@ -12,7 +12,7 @@ import type { StudioDraft } from '../../lib/studio/draft'
 import type { GroupView } from '../../lib/studio/group-members'
 import { previewItems, toStimulusData } from '../../lib/studio/preview'
 
-const props = defineProps<{ group: GroupView | null; draft: StudioDraft; questionId: string | null }>()
+const props = defineProps<{ group: GroupView | null; draft: StudioDraft; questionId: string | null; unsupported?: string[] }>()
 const open = defineModel<boolean>('open', { required: true })
 const sheet = defineModel<boolean>('sheet', { default: false })
 
@@ -22,6 +22,9 @@ const stimuli = computed(() => (props.group?.stimuli ?? []).map(toStimulusData))
 
 <template>
   <DsDialog v-model:open="open" title="Pratonton" size="lg" data-testid="studio-preview">
+    <DsText v-if="(unsupported ?? []).length > 0" variant="body" tone="muted" data-testid="studio-preview-partial">
+      Pratonton ini tidak lengkap: ada bahagian yang belum disokong Studio dan tidak dipaparkan.
+    </DsText>
     <StimulusGroup v-if="stimuli[0]" v-model:open="sheet" :stimulus="stimuli[0]">
       <DsStack gap="md">
         <StimulusFigure v-for="s in stimuli.slice(1)" :key="s.id" :stimulus="s" />

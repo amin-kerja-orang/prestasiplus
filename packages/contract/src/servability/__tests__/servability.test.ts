@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildOpenApiDocument } from '../../openapi'
-import { SERVABILITY_BATCH_MAX, ServabilityBatchRequestSchema, ServabilityLaneQuerySchema, ServabilityOverviewSchema } from '../reads'
+import { SERVABILITY_BATCH_MAX, SERVABILITY_LANE_WINDOW, ServabilityBatchRequestSchema, ServabilityLaneQuerySchema, ServabilityOverviewSchema } from '../reads'
 import {
   SERVABILITY_ACTIVITIES,
   SERVABILITY_ACTIVITY_LABELS,
@@ -67,6 +67,14 @@ describe('servability reads contract (R1-T30)', () => {
     expect(ServabilityLaneQuerySchema.safeParse({ pageSize: '101' }).success).toBe(false)
     expect(ServabilityLaneQuerySchema.safeParse({ page: '0' }).success).toBe(false)
     expect(ServabilityLaneQuerySchema.safeParse({ search: 'x'.repeat(101) }).success).toBe(false)
+  })
+
+  it('lane query: a page deeper than the window (page x pageSize) is refused with a BM message on `page`', () => {
+    expect(ServabilityLaneQuerySchema.safeParse({ page: String(SERVABILITY_LANE_WINDOW / 100), pageSize: '100' }).success).toBe(true)
+    const deep = ServabilityLaneQuerySchema.safeParse({ page: String(SERVABILITY_LANE_WINDOW / 100 + 1), pageSize: '100' })
+    expect(deep.success).toBe(false)
+    expect(deep.error?.issues[0]).toMatchObject({ path: ['page'], message: 'Halaman terlalu jauh. Gunakan Tapis atau Cari untuk mengecilkan senarai.' })
+    expect(ServabilityLaneQuerySchema.safeParse({ page: '100000' }).success).toBe(false)
   })
 
   it('overview has one entry per activity', () => {

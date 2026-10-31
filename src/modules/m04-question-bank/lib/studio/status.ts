@@ -34,6 +34,9 @@ export const STATUS_TEXT: Readonly<Record<StudioStatus, string>> = {
   archived: 'Tidak dipapar kepada pelajar.',
 }
 
+/** V2 text of a draft whose earlier version is still published (version n+1 made with "Edit sebagai draf"). */
+export const DRAFT_OF_LIVE_TEXT = 'Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.'
+
 export const APPROVED_NOTE = 'Soalan ini telah diterbitkan. Gunakan "Edit sebagai draf" untuk menyuntingnya.'
 
 export const FLASH = {
