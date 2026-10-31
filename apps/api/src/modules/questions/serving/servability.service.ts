@@ -52,11 +52,9 @@ export class ServabilityService {
     if (latest.size === 0) return new Map()
     const live = new Map((await this.questions.getMany([...latest.keys()], 'live')).map((r) => [r.id, r]))
     const records = [...live.values()]
-    // The version the Bijak bridge serves: the live one, else the last published version of an archived question (B08).
-    const bridged = [...latest].flatMap(([id, l]) => {
-      const record = live.get(id) ?? (l.version.status === 'archived' && l.version.publishedAt !== null ? l : null)
-      return record === null ? [] : [record]
-    })
+    // The bridge reads the live version for a NEW sitting (H-A13): a question without one is reported `archived` or `not_approved`,
+    // and its running sittings are readability, not servability, so no other version needs its stimuli or group here.
+    const bridged = records
     // Level and subject belong to the version pupils are served (live), so the draws and these facts read the same row. Only a
     // question with no live version falls back to its latest one (its status reason decides, the level and subject never serve it).
     const effective = [...latest].map(([id, l]) => live.get(id) ?? l)
@@ -72,9 +70,8 @@ export class ServabilityService {
     const own = await outsideStimuliOf(this.questions, bridged, groups)
     const tokens = await this.tokensOf(bridged, groups, linkedAssets, own.fileIds)
 
-    const bridgedById = new Map(bridged.map((r) => [r.id, r]))
     const bridgeGroupOf = (id: string): StimulusGroupRecord | null => {
-      const gid = bridgedById.get(id)?.groupId
+      const gid = live.get(id)?.groupId
       return gid ? (groups.get(gid) ?? null) : null
     }
     const out = new Map<string, ServabilityFacts>()
