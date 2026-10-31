@@ -12,24 +12,58 @@ export interface Subject {
 }
 
 /** A shared stimulus (Rajah / petikan / jadual) pinned while its group's questions are answered. */
+export const STIMULUS_KINDS = [
+  'passage',
+  'image',
+  'diagram',
+  'table',
+  'map',
+  'infographic',
+  'graph',
+] as const
+export type StimulusKind = (typeof STIMULUS_KINDS)[number]
+
+/**
+ * A picture the server stored (V2 production: image, diagram, map, infographic and graph stimuli, option
+ * images). `url` is the file token URL (`/api/files/<token>`) the browser loads under the pupil read rule;
+ * exam-core never reads a file (pure types and marking).
+ */
+export interface ImageRef {
+  url: string
+  width?: number
+  height?: number
+}
+
+/**
+ * A stimulus (Rajah / petikan / jadual / gambar). D90: a stimulus is shown ONCE per group with every
+ * member question under it; it is never a question, never an item, and never carries marks.
+ */
 export interface StimulusDef {
   id: string
-  kind: 'diagram' | 'passage' | 'table'
+  kind: StimulusKind
   /** Short label used in headings and chips, e.g. "Rajah 2". */
   label: string
+  /** Bold title of a passage or picture. */
+  title?: string
   caption?: string
   /** Accessible description of the diagram. */
   alt: string
   /** Inline SVG markup (bundled, trusted, uses currentColor / theme variables only). */
   svg?: string
   text?: string
+  /** Source line of a passage. */
+  source?: string
   table?: { head: string[]; rows: string[][] }
+  /** The stored picture (image, diagram, map, infographic, graph). Additive: absent on text and SVG stimuli. */
+  image?: ImageRef
 }
 
 export interface McqOption {
   id: string
   /** May contain `$latex$` spans. */
   text: string
+  /** A picture on the option (V2 production MCQ with image options). Additive. */
+  image?: ImageRef & { alt?: string }
 }
 
 /**
@@ -37,7 +71,20 @@ export interface McqOption {
  * `table_fill` is a typed stub (no widget yet); `drawing` is a photo plus a teacher checklist.
  */
 export type LeafKind =
-  'working' | 'numeric' | 'short_text' | 'match_letter' | 'essay' | 'drawing' | 'table_fill'
+  | 'working'
+  | 'numeric'
+  | 'short_text'
+  | 'match_letter'
+  | 'essay'
+  | 'essay_choice'
+  | 'drawing'
+  | 'table_fill'
+
+/** One topic of an `essay_choice` part ("Pilih satu tajuk"). */
+export interface EssayTopicDef {
+  id: string
+  label: string
+}
 
 export interface PartDef {
   id: string
@@ -46,7 +93,13 @@ export interface PartDef {
   prompt: string
   /** Marks of a leaf part; 0 on a part that only holds children. */
   marks: number
-  answer?: { kind: LeafKind; unit?: string; wordRange?: { min: number; max: number } }
+  answer?: {
+    kind: LeafKind
+    unit?: string
+    wordRange?: { min: number; max: number }
+    /** `essay_choice`: the topics the pupil picks one of. */
+    topics?: EssayTopicDef[]
+  }
   children?: PartDef[]
 }
 
@@ -57,6 +110,8 @@ export interface QuestionDef {
   /** Stimulus group this question belongs to. */
   groupId?: string
   stem: string
+  /** The question's own picture (an image stimulus linked to its version, not shared with a group). */
+  stemImage?: StimulusDef
   /** MCQ: the question itself is the leaf (its id is the answer key). */
   mcq?: { options: McqOption[] }
   /** Structured: nested parts. */
@@ -79,6 +134,8 @@ export interface CurriculumTag {
 export interface GroupDef {
   id: string
   stimulusId: string
+  /** Every stimulus of the group in order (2 or 3 for a multi-stimulus group); `stimulusId` is the first. */
+  stimulusIds?: string[]
   /** Shared lettered bank for `match_letter` items (exam schema D6). */
   optionBank?: McqOption[]
   /** Question ids in the published order. */
@@ -412,6 +469,7 @@ export interface QuestionView {
   optionBank?: McqOption[]
   groupId?: string
   stem: string
+  stemImage?: StimulusDef
   marks: number
   mcq?: { options: McqOption[] }
   parts?: PartView[]
@@ -419,7 +477,10 @@ export interface QuestionView {
 
 export interface GroupView {
   id: string
+  /** The first stimulus of the group (kept for older clients). */
   stimulus: StimulusDef
+  /** Every stimulus of the group in order (1 to 3), shown once above all member questions. Absent: use `[stimulus]`. */
+  stimuli?: StimulusDef[]
   /** Question numbers covered, e.g. 6 to 9. */
   from: number
   to: number
