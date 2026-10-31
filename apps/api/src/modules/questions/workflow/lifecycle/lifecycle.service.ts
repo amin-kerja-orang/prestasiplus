@@ -8,6 +8,8 @@ import {
 
 import { ApiError } from '../../../../common/errors/api-error'
 import { PrismaService } from '../../../../db/prisma.service'
+import { APPROVAL_UNSERVABLE_MESSAGE, approvalRefusalFields, unservableEverywhere } from '../../serving/approval-check'
+import { ServabilityService } from '../../serving/servability.service'
 import { assertCanActOn, isAdminPusat, isGuru, transitionActorOf, type WorkflowActor } from '../actor'
 import { QuestionReportsService } from '../reports'
 import { QuestionWorkflowPorts, type QuestionBankPort, type QuestionGateData, type QuestionStatusInfo } from '../ports'
@@ -75,6 +77,7 @@ export class LifecycleService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(QuestionWorkflowPorts) private readonly ports: QuestionWorkflowPorts,
     @Inject(QuestionReportsService) private readonly reports: QuestionReportsService,
+    @Inject(ServabilityService) private readonly servability: ServabilityService,
   ) {}
 
   private get bank(): QuestionBankPort {
@@ -226,9 +229,26 @@ export class LifecycleService {
       ...extra,
     })
     if (!updated) throw ApiError.of('NOT_FOUND')
+    if (step.to === 'approved') await this.assertServableSomewhere(info.id)
     await this.writeEvent(info.id, step.versionNo ?? info.latestVersionNo, step.from, step.to, actor, step.reason)
     // AC 11: reports filed against an older version become Diperbaiki, in this same transaction.
     if (step.to === 'approved') await this.reports.markFixedFor(info.id, info.latestVersionNo)
+  }
+
+  /**
+   * AC-05.3 (R1-T45): read inside the transaction, after the version is live, so it sees what pupils would be served. A question no
+   * activity can serve is refused and the whole transition rolls back (status, live version and events stay as they were). A question
+   * the bank cannot report on (no report) is not judged here.
+   */
+  private async assertServableSomewhere(questionId: string): Promise<void> {
+    const report = await this.servability.report(questionId)
+    if (report && unservableEverywhere(report)) {
+      throw ApiError.of('VALIDATION_ERROR', {
+        message: APPROVAL_UNSERVABLE_MESSAGE,
+        fields: approvalRefusalFields(report),
+        details: { gate: 'approve', servability: true },
+      })
+    }
   }
 
   private async writeEvent(
