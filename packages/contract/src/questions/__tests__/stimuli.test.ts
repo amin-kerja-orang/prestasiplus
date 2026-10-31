@@ -5,6 +5,8 @@ import {
   STIMULUS_MESSAGES,
   StimulusCreateRequestSchema,
   StimulusGroupCreateRequestSchema,
+  StimulusGroupListQuerySchema,
+  StimulusListQuerySchema,
   StimulusGroupReorderRequestSchema,
   StimulusGroupUpdateRequestSchema,
   StimulusUpdateRequestSchema,
@@ -73,5 +75,24 @@ describe('R1-T32 stimulus request schemas (D90)', () => {
   it('the removal warning is BM and counts the remaining members', () => {
     expect(STIMULUS_MESSAGES.smallGroup(1)).toBe('Kumpulan ini kini hanya mempunyai 1 soalan. Rangsangan bersama lazimnya untuk sekurang-kurangnya 2 soalan.')
     expect(STIMULUS_MESSAGES.smallGroup(0)).toContain('kosong')
+  })
+})
+
+describe('R1-T49 list queries', () => {
+  it('defaults to page 1 of 20 and bounds the page, the page size and the search text', () => {
+    expect(StimulusGroupListQuerySchema.parse({})).toMatchObject({ page: 1, pageSize: 20 })
+    expect(StimulusListQuerySchema.parse({ pageSize: '100', page: '3', q: 'x' })).toMatchObject({ page: 3, pageSize: 100, q: 'x' })
+    expect(fieldsOf(StimulusListQuerySchema.safeParse({ pageSize: '101' })).pageSize).toBe(STIMULUS_MESSAGES.pageSize)
+    expect(fieldsOf(StimulusListQuerySchema.safeParse({ pageSize: '0' })).pageSize).toBe(STIMULUS_MESSAGES.pageSize)
+    expect(fieldsOf(StimulusListQuerySchema.safeParse({ page: '100001' })).page).toBe(STIMULUS_MESSAGES.page)
+    expect(fieldsOf(StimulusListQuerySchema.safeParse({ q: 'x'.repeat(101) })).q).toBe(STIMULUS_MESSAGES.search)
+    expect(fieldsOf(StimulusGroupListQuerySchema.safeParse({ status: 'baru' })).status).toBe(STIMULUS_MESSAGES.filter)
+  })
+
+  it('is strict: an unknown key is refused, and only the stimulus list takes a kind', () => {
+    expect(StimulusGroupListQuerySchema.safeParse({ evil: '1' }).success).toBe(false)
+    expect(StimulusGroupListQuerySchema.safeParse({ kind: 'table' }).success).toBe(false)
+    expect(StimulusListQuerySchema.safeParse({ kind: 'table' }).success).toBe(true)
+    expect(StimulusListQuerySchema.safeParse({ kind: 'audio' }).success).toBe(false)
   })
 })
