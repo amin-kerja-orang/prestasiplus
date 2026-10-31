@@ -128,8 +128,8 @@ describe('stimulus display read model (R1-T07)', () => {
     expect(info?.stimulus).toEqual(info?.stimuli?.[0])
     const grid = info?.stimuli?.[1]
     expect(grid).toMatchObject({ kind: 'table', caption: 'Jadual jualan', table })
-    // The pictorial kinds read as `diagram` on the wire until the attempt contract accepts all seven.
-    expect(info?.stimuli?.[2]?.kind).toBe('diagram')
+    // R1-T31: the seven store kinds pass through to the wire (an image stays `image`).
+    expect(info?.stimuli?.[2]?.kind).toBe('image')
 
     const described = await source.describe(g.members.map((id) => ({ id })))
     for (const id of g.members) expect(described.get(id)).toMatchObject({ groupId: g.groupId, stimulusLabel: 'Petikan B' })
@@ -147,9 +147,8 @@ describe('stimulus display read model (R1-T07)', () => {
     const info = groups.get(g.groupId)
     expect(info?.questionIds).toEqual(g.members)
     expect(info?.stimuli).toEqual([])
-    // The wire still needs a stimulus object: an empty one (no text, no picture).
-    expect(info?.stimulus).toMatchObject({ kind: 'passage', label: '', alt: '' })
-    expect(info?.stimulus?.text).toBeUndefined()
+    // No displayable stimulus: the group carries none (the wire field is optional), it is still emitted.
+    expect(info?.stimulus).toBeUndefined()
     const described = await source.describe(g.members.map((id) => ({ id })))
     for (const id of g.members) expect(described.get(id)?.groupId).toBe(g.groupId)
   })
