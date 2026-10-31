@@ -62,3 +62,5 @@
 
 **Merge order for B1 (no skipped test may remain in base):** T26b (r1/t26b-e2e-seed, REQ-B-028) → **T26c** (r1/t26c-e2e-k2, A1: structured K2 pool + Terbit paper in the e2e seed only; replaces T26b's `test.fixme` with a real test) → T36 (r1/t36-remove-poc, A2). T36 lists any K2-dependent spec as "depends on T26c".
 **BASE vue-tsc fix:** r1/fix-base-vuetsc @ 1a2a5ca6 (A4, off BASE-62). Test-only, one line in `essay-choice-stimulus.test.ts:123` (narrows the union with `'mode' in`). The red was `vue-tsc -p tsconfig.node.json` and `-p packages/contract/tsconfig.json` (1 error each); both are 0 after the fix. `vitest run packages/contract/src/questions` 95/95; eslint 0. **Merge first.**
+
+**T34 READY @ 5bb590d0 (for C1/T10):** the builder blocker catalogue is now 18 codes. Only `BLUEPRINT_NOT_VERIFIED` and `INELIGIBLE` (no unit/TP/tag review) are overridable (`canOverride`). NO_KEY, NO_MARKS, MODE_NOT_ALLOWED, GROUP_BROKEN and NOT_SERVABLE are hard. Re-check your union against `packages/contract` at that head. NOT_SERVABLE copy is "Soalan {id} tidak dapat disemak untuk murid; cuba lagi." [PROPOSED; Q6 rule: keep if it fits context].

@@ -292,3 +292,11 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - **T36 READY** r1/t36-remove-poc @ 64ebb379c (A2; BASE-62 merged; REQ-B-029 + B-019 + A-009). New idempotent seed step `exam-retire-poc` WITHDRAWS published all-PoC papers and never deletes; spec 3/3. render.yaml:27 removed; demo script nogo → read-only count of playable bank papers; ops note docs/ops/r1-b07-remove-poc.md. tsc 0; eslint 0. Results: seed 149 + 1 skip; bijak-papers 109/109; bijak-integration 102 + 1 todo; bridge 114/114; exam-builder 310/310; registry-boot 3/3. bijak-attempts 56 fail is identical to clean BASE-62 (→ r1/fix-attempt-image-url); conformance 407/409 is identical to BASE-62 (→ REQ-B-023). Security: none. **Depends on T26c** for bijak-part-input (structured K2) and admin-publish-http (approved bank K1 for 1449/1). B1: docs/ops/r1-release-notes.md:524 still says render.yaml sets true. Needs B2.
 - **T42b READY** r1/t42b-intake-acs @ 5318a971a (A2; BASE-60): orphan Minor fixed (a refused accept removes its group, stimulus and figure); intake-workflow 125/125, intake-files 161/161, files 244/244, free-text-tag 6/6; tsc 0; eslint 0. **Security YES → B2 + B3.**
 - REQ-B-010(a) lead decision: keep the existing "chapter kept only while it belongs" rule (silent drop when curriculumChapterId is not sent). Not broken under D9, so no new refusal.
+- **T34 READY** r1/t34-builder-review @ 5bb590d0 (A3; BASE-63 merged). All B2 MAJOR 1/2 + B3 L1/L2/L3 + Minors fixed:
+  - hard blockers: NO_KEY, NO_MARKS, MODE_NOT_ALLOWED, GROUP_BROKEN, NOT_SERVABLE (fails closed; was a 500)
+  - overridable: only BLUEPRINT_NOT_VERIFIED + INELIGIBLE
+  - existingImages: own or same-sheet files only (D9 row)
+  - panel limits added
+  - Evidence: api tsc 0; tsconfig.node 0; contract tsc 0; vue-tsc 0; eslint 0; contract 1452/1452; DB 655 pass + 1 todo; conformance 407/409 = BASE baseline.
+  - **Needs B2 + B3 re-check.** Unblocks C's T10, A3's T48/T31 and T43b.
+  - **Team C:** the blocker catalogue is now 18 codes, 2 overridable. C1/T10 should re-check its union.
