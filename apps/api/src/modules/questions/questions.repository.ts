@@ -729,6 +729,26 @@ export class QuestionsRepository {
     return out
   }
 
+  /**
+   * How many distinct active questions link each stimulus straight to a version (`question_version_stimuli`; the versions of one
+   * question count once). 1 = the stimulus is that question's own; more than 1 = shared (D90: that must be a stimulus group).
+   * Unknown ids are absent.
+   */
+  async stimulusUseCounts(ids: readonly string[]): Promise<Map<string, number>> {
+    const keys = [...new Set(ids.map(bi).filter((k): k is bigint => k !== null))]
+    const out = new Map<string, number>()
+    if (keys.length === 0) return out
+    const rows = await this.db.$queryRaw<{ id: bigint; n: number }[]>`
+      SELECT l.stimulus_id AS id, count(DISTINCT v.question_id)::int AS n
+        FROM question_version_stimuli l
+        JOIN question_versions v ON v.id = l.question_version_id
+        JOIN questions q ON q.id = v.question_id AND q.is_active
+       WHERE l.stimulus_id = ANY(${keys}::bigint[])
+       GROUP BY l.stimulus_id`
+    for (const r of rows) out.set(idToString(r.id), r.n)
+    return out
+  }
+
   async groupExists(id: string): Promise<boolean> {
     const key = bi(id)
     return key !== null && (await this.db.stimulusGroup.count({ where: { id: key } })) > 0
