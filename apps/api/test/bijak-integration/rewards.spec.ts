@@ -203,24 +203,32 @@ describe('WalletBijakReward.award', () => {
       )[0] ?? { current: 0, last: null, total_days: 0 }
     const sit = (coins: number, closed: string) =>
       bijak.award({ attemptId: randomUUID(), userId: pupil, isTest: false, coins, points: coins * 5, submittedAt: new Date(closed), score: coins / 2, max: 10, provisional: false, description: BIJAK_REWARD_DESCRIPTION })
-    // the login of 2026-10-20 already touched the streak: day 1
+    // all dates are relative to the injected clock, not to today's date
+    const DAY = 24 * 3600_000
+    const start = t.clock.now()
+    const myt = (d: Date): string => new Date(d.getTime() + 8 * 3600_000).toISOString().slice(0, 10)
+    const at = (offsetMs: number): string => new Date(start.getTime() + offsetMs).toISOString()
+    // the login of the clock's day already touched the streak: day 1
     const day1 = await state()
-    expect(day1).toMatchObject({ last: '2026-10-20', total_days: 1 })
+    expect(day1).toMatchObject({ last: myt(start), total_days: 1 })
     expect(day1.current).toBeGreaterThanOrEqual(1)
     // the same day, a zero score then a scoring sitting: nothing moves (once per day)
-    await sit(0, '2026-10-20T00:20:00Z')
-    await sit(2, '2026-10-20T00:40:00Z')
+    await sit(0, at(-20 * 60_000))
+    await sit(2, at(-10 * 60_000))
     expect(await state()).toEqual(day1)
     // the next day: one more day, the streak continues (a zero score counts too)
-    t.clock.set('2026-10-21T09:00:00+08:00')
+    t.clock.set(at(DAY))
     try {
-      await sit(0, '2026-10-21T00:20:00Z')
+      await sit(0, at(DAY - 20 * 60_000))
       const day2 = await state()
-      expect(day2).toEqual({ current: day1.current + 1, last: '2026-10-21', total_days: 2 })
-      await sit(2, '2026-10-21T00:40:00Z')
+      expect(day2).toEqual({ current: day1.current + 1, last: myt(new Date(start.getTime() + DAY)), total_days: 2 })
+      await sit(2, at(DAY - 10 * 60_000))
       expect(await state()).toEqual(day2)
       // a late event on an earlier day never moves the streak backwards
-      await sit(2, '2026-10-19T02:00:00Z')
+      await sit(2, at(-DAY))
+      expect(await state()).toEqual(day2)
+      // a close time AFTER the server clock (skew, corrupt value) is clamped to now: no RangeError, nothing moves on the same day
+      await expect(sit(2, at(DAY + 2 * DAY))).resolves.toBeUndefined()
       expect(await state()).toEqual(day2)
     } finally {
       t.clock.set(START)

@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
+import { CLOCK, type Clock } from '../../../db/clock'
 import type { TxClient } from '../../../db/client'
 import { PrismaService } from '../../../db/prisma.service'
 import { GamificationService } from '../../gamification'
@@ -46,6 +47,7 @@ export class WalletBijakReward implements BijakRewardPort {
     @Inject(WalletService) private readonly wallet: WalletService,
     @Inject(StreakService) private readonly streaks: StreakService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async award(input: BijakRewardInput): Promise<void> {
@@ -53,7 +55,10 @@ export class WalletBijakReward implements BijakRewardPort {
     const amount = wholeCount(input.coins)
     const xp = wholeCount(input.points)
     await this.prisma.transaction(async (tx) => {
-      await this.streaks.touch(input.userId, { ...(input.submittedAt ? { at: input.submittedAt } : {}), tx })
+      // The day the attempt closed. Never later than the server clock (a swept attempt carries the time it was closed, but a skewed
+      // or corrupt value must not make the streak refuse with "at is in the future"): then the day of now counts.
+      const closed = input.submittedAt instanceof Date && !Number.isNaN(input.submittedAt.getTime()) && input.submittedAt.getTime() <= this.clock.now().getTime() ? input.submittedAt : undefined
+      await this.streaks.touch(input.userId, { ...(closed ? { at: closed } : {}), tx })
       if (!(amount >= 1)) return // a zero score earns nothing; the wallet refuses a non-positive credit
       const credited = await this.wallet.credit(
         {
