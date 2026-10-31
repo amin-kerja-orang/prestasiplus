@@ -17,9 +17,9 @@ import {
   type CurriculumLabels,
   infoOf,
   mapBe09Question,
-  type OutsideStimulus,
   UnsupportedQuestionError,
 } from './be09-mapping'
+import { outsideStimuliOf } from './outside-media'
 import type { BridgeRefusal } from './refusals'
 
 /**
@@ -165,40 +165,12 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
     records: readonly QuestionRecord[],
     groups: ReadonlyMap<string, StimulusGroupRecord | null>,
   ): Promise<BridgeMedia> {
-    const outsideIds = new Set<string>()
     const fileIds = new Set<string>()
     for (const g of groups.values()) for (const st of g?.stimuli ?? []) if (st.assetFileId) fileIds.add(st.assetFileId)
-    for (const r of records) {
-      const ids = (r.groupId ? (groups.get(r.groupId)?.stimuli ?? []) : []).map((x) => x.id)
-      for (const id of r.version.stimulusIds) if (!ids.includes(id)) outsideIds.add(id)
-      for (const f of optionImageIds(r.version.parts)) fileIds.add(f)
-    }
-    const outside = new Map<string, OutsideStimulus>()
-    if (outsideIds.size > 0) {
-      // The question's own stimuli (linked straight to its version, not in its group): full content in link order, how many
-      // questions link each (D90: shared means group), and the files whose tokens the pupil's URLs need.
-      const [linked, uses] = await Promise.all([
-        this.questions.versionStimuli(records.map((r) => ({ questionId: r.id, versionNo: r.version.versionNo }))),
-        this.questions.stimulusUseCounts([...outsideIds]),
-      ])
-      for (const list of linked.values()) {
-        for (const st of list) {
-          if (!outsideIds.has(st.id) || outside.has(st.id)) continue
-          outside.set(st.id, {
-            kind: st.kind,
-            assetFileId: st.assetFileId,
-            label: st.label,
-            bodyMs: st.bodyMs,
-            alt: st.alt,
-            caption: st.caption ?? null,
-            tableData: st.tableData ?? null,
-            sourceCitation: st.sourceCitation ?? null,
-            sharedBy: uses.get(st.id) ?? 1,
-          })
-          if (st.assetFileId) fileIds.add(st.assetFileId)
-        }
-      }
-    }
+    for (const r of records) for (const f of optionImageIds(r.version.parts)) fileIds.add(f)
+    // The question's own stimuli: the one reader shared with the admin servability read (`outside-media.ts`).
+    const { outside, fileIds: ownFiles } = await outsideStimuliOf(this.questions, records, groups)
+    for (const f of ownFiles) fileIds.add(f)
     const tokens = fileIds.size === 0 ? new Map<string, string>() : await this.files.publicIdsOf([...fileIds])
     return { tokens, outside }
   }
