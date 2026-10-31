@@ -3,7 +3,7 @@ import type { KandunganApi } from './api'
 import { HttpKandunganServer } from './http'
 
 const createMock =
-  import.meta.env.VITE_API_MODE === 'http' ? null : (await import('./mock')).createMockKandungan
+  import.meta.env.VITE_API_MODE === 'http' ? null : (await import('./local-kandungan')).createMockKandungan
 
 let instance: KandunganApi | null = null
 

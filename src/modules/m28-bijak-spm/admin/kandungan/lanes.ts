@@ -1,7 +1,8 @@
 /**
  * The six lane cards of the V2 hub "Kandungan SPM", in V2 order, with the V2 names and descriptions verbatim
- * (docs/discovery/cloud-student-mechanism.md line 324; AC-R1-21.1). `inR1` lanes have a screen here; the others are R2
- * (D86: "lain2 features KIV") or flag OFF (D80 item 2, Kertas Subjektif) and show with NO link to a missing screen.
+ * (docs/discovery/cloud-student-mechanism.md line 324; AC-R1-21.1). `inR1` lanes have a screen here. The others are R2
+ * (D86: "lain2 features KIV") or flag OFF (D80 item 2, Kertas Subjektif): AC-R1-21.1 says their cards are hidden until
+ * their screen exists, so `HUB_CARDS` leaves them out (UX-20). They stay in `LANE_CARDS` so the V2 order is on record.
  */
 import type { ServabilityActivity } from '@pp/contract'
 
@@ -28,15 +29,15 @@ export const LANE_CARDS: readonly LaneCard[] = [
   { key: 'latih-tubi', name: 'Latih Tubi', desc: 'Latihan ikut topik dan bab.', activity: 'latih_tubi_spm', inR1: false },
 ]
 
+/** The cards the hub shows in R1: only lanes that have a screen (no link to a missing screen, AC-R1-21.1). */
+export const HUB_CARDS: readonly LaneCard[] = LANE_CARDS.filter((c) => c.inR1)
+
 /** V2 strings of the hub (DISC 3.10 P1/A1). */
 export const hubCopy = {
   title: 'Kandungan SPM',
   intro: 'Setiap kad ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
   allGood: 'Semua elok',
   open: 'Buka senarai',
-  flagOff: 'Flag OFF',
-  /** [PROPOSED] UX-20: the card of a lane whose screen is not in R1 has no button. */
-  notYet: 'Belum tersedia',
   /** [PROPOSED] UX-21: the word after the count; D94 reasons are the servability copy, not the V2 phrases (H2). */
   attention: 'perlu perhatian',
 } as const

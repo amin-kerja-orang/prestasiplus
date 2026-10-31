@@ -57,8 +57,8 @@ export function createMockKandungan(): KandunganApi {
       }
     },
 
-    async subjects(): Promise<LaneSubject[]> {
-      return admin.subjects().map((s) => ({ id: s.code, name: s.name }))
+    subjects(): Promise<LaneSubject[]> {
+      return Promise.resolve(admin.subjects().map((s) => ({ id: s.code, name: s.name })))
     },
 
     async databankLane(q: LaneQuery): Promise<LanePage<ServabilityDatabankRow>> {

@@ -33,8 +33,9 @@ let wrapper: VueWrapper | null = null
 const q = (sel: string): HTMLElement | null => document.body.querySelector(sel)
 const text = (sel: string): string => q(sel)?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
 
-const media = (wide: boolean): void =>
+const media = (wide: boolean): void => {
   vi.stubGlobal('matchMedia', (query: string) => ({ matches: wide, media: query, addEventListener() {}, removeEventListener() {} }))
+}
 
 beforeEach(() => {
   media(true)
@@ -67,30 +68,22 @@ async function mountAt(component: object, path: string): Promise<void> {
 }
 
 describe('Kandungan SPM hub (AC-R1-21.1)', () => {
-  it('shows the six lane cards in the V2 order with the V2 descriptions', async () => {
+  it('shows the R1 lane cards in the V2 order with the V2 descriptions; lanes without a screen are hidden (AC-R1-21.1)', async () => {
     await mountAt(KandunganHubPage, '/admin/spm')
     const names = [...document.body.querySelectorAll('[data-testid^="kandungan-card-"] h2')].map((h) => h.textContent)
-    expect(names).toEqual(['Databank Soalan', 'Tracking A', 'Subjektif', 'Bijak SPM', 'Kertas Subjektif', 'Latih Tubi'])
+    expect(names).toEqual(['Databank Soalan', 'Bijak SPM'])
     expect(text('[data-testid=kandungan-card-databank]')).toContain('Bank soalan objektif SPM mengikut subjek.')
-    expect(text('[data-testid=kandungan-card-tracking-a]')).toContain('Set objektif penuh dan lane bahasa.')
-    expect(text('[data-testid=kandungan-card-subjektif]')).toContain('Soalan berstruktur dan esei.')
     expect(text('[data-testid=kandungan-card-simulasi]')).toContain('Kertas SPM penuh dalam format sebenar.')
-    expect(text('[data-testid=kandungan-card-kertas]')).toContain('Kertas 2, 3 & 4 percubaan negeri.')
-    expect(text('[data-testid=kandungan-card-latih-tubi]')).toContain('Latihan ikut topik dan bab.')
+    for (const k of ['tracking-a', 'subjektif', 'kertas', 'latih-tubi']) expect(q(`[data-testid=kandungan-card-${k}]`), k).toBeNull()
     expect(text('[data-testid=kandungan-intro]')).toContain('Setiap kad ialah satu laluan')
   })
 
-  it('shows the attention count or "Semua elok", and "Buka senarai" only for lanes that have a screen', async () => {
+  it('shows the attention count or "Semua elok", and "Buka senarai" on each card', async () => {
     await mountAt(KandunganHubPage, '/admin/spm')
     expect(text('[data-testid=kandungan-attention-databank]')).toContain('3')
     expect(text('[data-testid=kandungan-attention-simulasi]')).toBe('Semua elok')
     expect(text('[data-testid=kandungan-open-databank]')).toBe('Buka senarai')
-    expect(q('[data-testid=kandungan-open-simulasi]')).not.toBeNull()
-    for (const k of ['tracking-a', 'subjektif', 'kertas', 'latih-tubi']) {
-      expect(q(`[data-testid=kandungan-open-${k}]`), k).toBeNull()
-      expect(q(`[data-testid=kandungan-notyet-${k}]`), k).not.toBeNull()
-    }
-    expect(text('[data-testid=kandungan-card-kertas]')).toContain('Flag OFF')
+    expect(text('[data-testid=kandungan-open-simulasi]')).toBe('Buka senarai')
   })
 
   it('shows a retryable error when the overview fails', async () => {
@@ -114,7 +107,8 @@ describe('lane Databank Soalan (AC-R1-21.2)', () => {
   it('has the V2 filters, buttons and columns, and lists the reasons in Perhatian', async () => {
     await mountAt(LaneDatabankPage, '/admin/spm/databank')
     const body = document.body.textContent ?? ''
-    for (const s of ['Semua Subjek', 'Semua Status', 'Tapis', 'Set Semula', 'Senarai', 'Tajuk', 'Perhatian', 'Tindakan']) expect(body, s).toContain(s)
+    // "Set Semula" appears once a filter is active (DsFilterBar showReset auto); it is asserted in the apply test below.
+    for (const s of ['Semua Subjek', 'Semua Status', 'Tapis', 'Senarai', 'Tajuk', 'Perhatian', 'Tindakan']) expect(body, s).toContain(s)
     expect(q('[data-testid=lane-search]')).not.toBeNull()
     expect(text('[data-testid=lane-databank]')).toContain('Belum diluluskan — tekan Terbitkan untuk memaparkannya.')
     expect(q('[data-testid=lane-edit-2]')).not.toBeNull()

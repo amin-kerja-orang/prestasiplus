@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
  * Kandungan SPM hub (`/admin/spm`, V2 `admin.spm.hub` / Panel `/spm`, AC-R1-21.1): one card per lane in the V2 order with
- * its V2 description, the attention count and "Buka senarai". A lane without a screen in R1 shows its card with no button
- * (no link to a missing screen). Counts come from `GET /api/admin/servability/overview`.
+ * its V2 description, the attention count and "Buka senarai". Lanes without a screen in R1 (Tracking A, Subjektif, Kertas
+ * Subjektif, Latih Tubi) are hidden, as AC-R1-21.1 says (UX-20). Counts come from `GET /api/admin/servability/overview`.
  */
 import { computed } from 'vue'
 
@@ -11,7 +11,7 @@ import { DsLoadError, DsPage } from '@/ds'
 
 import { KANDUNGAN_ROUTES } from '../api'
 import { kandunganServer } from '../client'
-import { hubCopy, LANE_CARDS, type LaneCard } from '../lanes'
+import { HUB_CARDS, hubCopy, type LaneCard } from '../lanes'
 
 const server = kandunganServer()
 const { data, error, loading, reload } = useApi(() => server.overview())
@@ -35,12 +35,11 @@ const routeOf = (c: LaneCard): string => (c.key === 'databank' ? KANDUNGAN_ROUTE
       <USkeleton v-for="n in 6" :key="n" class="h-40 w-full" />
     </div>
     <ul v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="kandungan-cards">
-      <li v-for="c in LANE_CARDS" :key="c.key" class="min-w-0">
+      <li v-for="c in HUB_CARDS" :key="c.key" class="min-w-0">
         <UCard class="h-full" :data-testid="`kandungan-card-${c.key}`">
           <div class="flex h-full flex-col gap-3">
             <div class="flex flex-wrap items-center gap-2">
               <h2 class="text-heading text-highlighted">{{ c.name }}</h2>
-              <UBadge v-if="c.flagOff" color="neutral" variant="subtle">{{ hubCopy.flagOff }}</UBadge>
             </div>
             <p class="text-body text-toned">{{ c.desc }}</p>
             <div class="flex-1">
@@ -58,7 +57,6 @@ const routeOf = (c: LaneCard): string => (c.key === 'databank' ? KANDUNGAN_ROUTE
               </template>
             </div>
             <UButton
-              v-if="c.inR1"
               :to="{ name: routeOf(c) }"
               color="neutral"
               variant="outline"
@@ -66,7 +64,6 @@ const routeOf = (c: LaneCard): string => (c.key === 'databank' ? KANDUNGAN_ROUTE
               :data-testid="`kandungan-open-${c.key}`"
               >{{ hubCopy.open }}</UButton
             >
-            <p v-else class="text-caption text-muted" :data-testid="`kandungan-notyet-${c.key}`">{{ hubCopy.notYet }}</p>
           </div>
         </UCard>
       </li>
