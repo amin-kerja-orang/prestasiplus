@@ -47,3 +47,4 @@
 | BASE-43 | 153bcdf6 | H-A17 `r1/ha17-ac-coverage` @ 9738f8f5 (B2 Approve w/ Minors; docs only); merged by exact SHA = branch tip | docs-only diff | 2026-11-01 02:40 |
 | BASE-44 | 9fcf5b2f | H-A26 `r1/ha26-team-a-state` @ aee473af (B2 Approve w/ Minors; docs only); merged by exact SHA = branch tip | docs-only diff | 2026-11-01 02:40 |
 | BASE-45 | a5cc6355 | R1-21 hub `r1/hc-kandungan-hub` @ cdcb2171 (B2 Approve w/ Minors + B3 Pass; FE only); merged by exact SHA = branch tip | api tsc 0; contract:check 0; vue-tsc 0; eslint 0; unit registry-boot + m28 + shells 57 files 711/711 | 2026-11-01 03:05 |
+| BASE-46 | 1ee2b001 | REQ-B-030 `r1/reqb030-group-page` @ aecd63a0 (B2 Approve w/ Minors; FE layout only; C3 browser evidence 375/768/1280); merged by exact SHA = branch tip | api tsc 0; contract:check 0; vue-tsc 0; eslint 0; unit m04 + registry-boot 43 files 539/539 | 2026-11-01 03:30 |
