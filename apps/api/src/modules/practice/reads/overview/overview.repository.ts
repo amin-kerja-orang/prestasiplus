@@ -82,7 +82,7 @@ export class OverviewRepository {
         FROM revision_queue r
         JOIN questions q ON q.id = r.question_id
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE r.user_id = ${idFromString(userId)}::bigint AND q.is_active AND v.status = 'published'`
+       WHERE r.user_id = ${idFromString(userId)}::bigint AND q.is_active AND v.status = 'approved'`
     return Number(rows[0]?.n ?? 0)
   }
 
@@ -97,13 +97,15 @@ export class OverviewRepository {
    * Q-DIFFICULTY by subject, level and TP). `QuestionsRepository.count` / `groupCount` answer one dimension per
    * statement; the dashboard needs several, and one statement keeps it fast. v2 has no "approved but not
    * published" served state, so Q-ACTIVE and Q-ELIGIBLE are the same set here (deviation).
+   * Ungrouped only (`q.group_id IS NULL`, D91): a stimulus-group member is never drawn by practice (the hub / draw rule), so the
+   * card, the details and the drawable pool agree. The login count (`QUESTION_COUNT_SQL`) keeps counting group members.
    */
   async bankMatrix(): Promise<BankCell[]> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; level_id: bigint | null; tp: number | null; mcq: boolean; n: number }[]>`
       SELECT v.subject_id, v.education_level_id AS level_id, v.difficulty_tp AS tp, (v.type = 'mcq') AS mcq, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'published' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
+       WHERE q.is_active AND v.status = 'approved' AND q.group_id IS NULL AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
        GROUP BY 1, 2, 3, 4`
     return rows.map((r) => ({
       subjectId: r.subject_id === null ? null : idToString(r.subject_id),
@@ -124,7 +126,7 @@ export class OverviewRepository {
       SELECT q.id
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'published' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
+       WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
        ORDER BY q.id DESC
        LIMIT ${limit}`
     return rows.map((r) => idToString(r.id))
@@ -141,7 +143,7 @@ export class OverviewRepository {
       SELECT v.chapter_id, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE v.chapter_id = ANY(${big(chapterIds)}::bigint[]) AND q.is_active AND v.status = 'published' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
+       WHERE v.chapter_id = ANY(${big(chapterIds)}::bigint[]) AND q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
        GROUP BY v.chapter_id`
     for (const r of rows) out.set(idToString(r.chapter_id), r.n)
     return out

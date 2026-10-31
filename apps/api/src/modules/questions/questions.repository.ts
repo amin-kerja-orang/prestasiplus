@@ -176,7 +176,7 @@ function shapeArraySql(candidates: Prisma.Sql, shape: QuestionFilter['mcqShape']
     GROUP BY sp.question_version_id HAVING ${Prisma.join(having, ' AND ')})`
 }
 
-const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, published: 0, archived: 0 })
+const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, archived: 0 })
 
 /** `bigint` of a decimal id, or null when the text is not a canonical id (such an id never exists). */
 function bi(text: string): bigint | null {
@@ -370,7 +370,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ ok: boolean }[]>`
       SELECT true AS ok FROM questions q
       JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-      WHERE q.id = ${key} AND q.is_active AND v.status = 'published' AND ${NOT_PKSK}`
+      WHERE q.id = ${key} AND q.is_active AND v.status = 'approved' AND ${NOT_PKSK}`
     return rows.length > 0
   }
 
@@ -380,7 +380,7 @@ export class QuestionsRepository {
    * a test fixture). A draw uses `sampleIds` / `sample`, a membership check `eligibleAmong`, a full walk `eligibleIdsPage`.
    */
   async eligibleIds(filter: QuestionFilter = {}): Promise<string[]> {
-    const { from, where } = this.scope({ ...filter, status: 'published', active: true }, true)
+    const { from, where } = this.scope({ ...filter, status: 'approved', active: true }, true)
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${ELIGIBLE_IDS_MAX + 1}`
     if (rows.length > ELIGIBLE_IDS_MAX) {
       throw new Error(`eligibleIds matched more than ${String(ELIGIBLE_IDS_MAX)} questions: use sampleIds, eligibleAmong or eligibleIdsPage`)
@@ -393,7 +393,7 @@ export class QuestionsRepository {
     const size = Math.max(1, Math.min(Math.floor(limit), ELIGIBLE_IDS_MAX))
     const { mcqShape, singleMcqLeaf, ...plain } = filter
     const page = async (cursor: string | undefined, rows: number): Promise<string[]> => {
-      const { from, where } = this.scope({ ...plain, status: 'published', active: true, ...(cursor === undefined ? {} : { idAfter: cursor }) }, true)
+      const { from, where } = this.scope({ ...plain, status: 'approved', active: true, ...(cursor === undefined ? {} : { idAfter: cursor }) }, true)
       const r = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${rows}`
       return r.map((x) => idToString(x.id))
     }
@@ -423,7 +423,7 @@ export class QuestionsRepository {
     const wanted = [...new Set(ids)]
     const out: string[] = []
     for (let i = 0; i < wanted.length; i += AMONG_CHUNK) {
-      const { from, where } = this.scope({ ...filter, status: 'published', active: true, idIn: wanted.slice(i, i + AMONG_CHUNK) }, true)
+      const { from, where } = this.scope({ ...filter, status: 'approved', active: true, idIn: wanted.slice(i, i + AMONG_CHUNK) }, true)
       const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC`
       out.push(...rows.map((r) => idToString(r.id)))
     }
@@ -442,7 +442,7 @@ export class QuestionsRepository {
     if (!Number.isSafeInteger(n) || n <= 0) return []
     const limit = Math.min(n, SAMPLE_MAX)
     const { mcqShape, singleMcqLeaf, ...plain } = filter
-    const { from, where } = this.scope({ ...plain, status: 'published', active: true }, true)
+    const { from, where } = this.scope({ ...plain, status: 'approved', active: true }, true)
     const key = Math.trunc(seed)
     if (!mcqShape && !singleMcqLeaf) {
       const rows = await this.db.$queryRaw<{ id: bigint }[]>`
@@ -575,13 +575,13 @@ export class QuestionsRepository {
       const c = f.complianceFilter
       conds.push(
         c === 'verified'
-          ? Prisma.sql`q.live_version_no = v.version_no AND v.status = 'published'`
+          ? Prisma.sql`q.live_version_no = v.version_no AND v.status = 'approved'`
           : c === 'draft'
-            ? Prisma.sql`v.status <> 'published'`
+            ? Prisma.sql`v.status <> 'approved'`
             : c === 'missing_source'
               ? Prisma.sql`v.source_file_id IS NULL`
               : c === 'verified_generated'
-                ? Prisma.sql`q.source_type = 'ai_variant' AND v.status = 'published'`
+                ? Prisma.sql`q.source_type = 'ai_variant' AND v.status = 'approved'`
                 : Prisma.sql`FALSE`,
       )
     }
@@ -752,7 +752,7 @@ export class QuestionsRepository {
         groupId: input.groupId,
         groupPosition: input.groupPosition,
         latestVersionNo: 1,
-        liveVersionNo: input.version.status === 'published' ? 1 : null,
+        liveVersionNo: input.version.status === 'approved' ? 1 : null,
         createdAt: input.now,
         updatedAt: input.now,
         ...(input.pksk
@@ -766,7 +766,7 @@ export class QuestionsRepository {
           : {}),
       },
     })
-    await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'published' ? input.now : null, input.provenance)
+    await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'approved' ? input.now : null, input.provenance)
     return idToString(q.id)
   }
 
@@ -907,7 +907,7 @@ export class QuestionsRepository {
   async pkskStats(): Promise<{ total: number; published: number; archived: number; t1: number; t4: number }> {
     const rows = await this.db.$queryRaw<{ total: number; published: number; archived: number; t1: number; t4: number }[]>`
       SELECT count(*)::int AS total,
-             count(*) FILTER (WHERE v.status = 'published')::int AS published,
+             count(*) FILTER (WHERE v.status = 'approved')::int AS published,
              count(*) FILTER (WHERE v.status = 'archived')::int AS archived,
              count(*) FILTER (WHERE EXISTS (SELECT 1 FROM question_tags l WHERE l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = 'T1'))::int AS t1,
              count(*) FILTER (WHERE EXISTS (SELECT 1 FROM question_tags l WHERE l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = 'T4'))::int AS t4
@@ -921,7 +921,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ code: string; n: number }[]>`
       SELECT d.code AS code, count(*)::int AS n
       FROM questions q
-      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'published'
+      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
       JOIN question_tags d ON d.question_id = q.id AND d.kind = 'pksk_domain'
       JOIN question_tags l ON l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = ${level}
       WHERE q.is_active GROUP BY 1`
@@ -934,7 +934,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`
       SELECT q.id
       FROM questions q
-      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'published'
+      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
       JOIN question_tags d ON d.question_id = q.id AND d.kind = 'pksk_domain' AND d.code IN (${Prisma.join(domainCodes)})
       JOIN question_tags l ON l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = ${level}
       WHERE q.is_active ORDER BY q.id ASC`
@@ -1077,12 +1077,12 @@ export class QuestionsRepository {
   }
 
   /**
-   * FROM + WHERE fragments for a filter. `status: 'published'` reads the live version; otherwise the latest. Primary-level
+   * FROM + WHERE fragments for a filter. `status: 'approved'` reads the live version; otherwise the latest. Primary-level
    * (Darjah) questions are always excluded. `learnerVisible` (every eligibility/draw read) also drops questions of any other
    * INACTIVE education level.
    */
   private scope(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
-    const live = filter.status === 'published'
+    const live = filter.status === 'approved'
     const from = live
       ? Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`
       : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`

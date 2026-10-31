@@ -8,6 +8,7 @@ import {
   type Curriculum,
   type StimulusSource,
 } from '../../src/modules/exam/builder/question-bank.mapping'
+import { stimulusTableOf } from '../../src/modules/questions/stimulus-table'
 
 const source = (over: Partial<StimulusSource> & { id: bigint; kind: string }): StimulusSource => ({
   label: null,
@@ -38,6 +39,17 @@ describe('builder stimulus mapping (R1-T07)', () => {
     })
     // A malformed grid is dropped, never passed through.
     expect(stimulusOf(source({ id: 3n, kind: 'table', tableData: { head: 'x', rows: [] } }))?.table).toBeUndefined()
+  })
+
+  it('reads the table grid through the shared helper: every stored shape gives the same grid as the Studio and Bijak readers', () => {
+    const grid = { head: ['A', 'B'], rows: [['1', '2']] }
+    for (const data of [grid, { headers: ['A', 'B'], rows: [['1', '2']] }, { columns: ['A', 'B'], rows: [['1', '2']] }, [['A', 'B'], ['1', '2']]]) {
+      expect(stimulusOf(source({ id: 4n, kind: 'table', tableData: data }))?.table).toEqual(stimulusTableOf(data))
+      expect(stimulusTableOf(data)).toEqual(grid)
+    }
+    // A number cell is shown as text; a pipe table in the body is read only when the caller passes the body.
+    expect(stimulusTableOf({ head: ['A'], rows: [[7]] })).toEqual({ head: ['A'], rows: [['7']] })
+    expect(stimulusTableOf(null, 'A | B\n--- | ---\n1 | 2')).toEqual(grid)
   })
 
   it('stimuliOf keeps every displayable stimulus of a group in order (1 to 3) and skips audio', () => {

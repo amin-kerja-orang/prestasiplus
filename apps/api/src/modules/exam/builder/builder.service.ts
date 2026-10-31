@@ -853,7 +853,7 @@ export class BuilderService {
       sections: preview.sections.map(({ minSlack: _m, failures: _f, marks, ...s }) => {
         void _m
         void _f
-        return { ...s, marks: { needed: marks.needed, reachable: marks.reachable }, bankQuery: { subjectId: subject.id.toString(), status: 'published' } }
+        return { ...s, marks: { needed: marks.needed, reachable: marks.reachable }, bankQuery: { subjectId: subject.id.toString(), status: 'approved' } }
       }),
     }
   }

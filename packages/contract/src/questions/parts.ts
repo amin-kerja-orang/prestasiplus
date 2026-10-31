@@ -8,8 +8,8 @@ import { IdSchema } from '../common/ids'
  * unions). Keys live only in the admin/editor schemas: the student-facing projection below omits them.
  */
 
-/** D12 / D54(a): the only lifecycle codes on the wire. BM labels (UI only): Draf, Semakan, Lulus, Diterbitkan, Diarkib. */
-export const QUESTION_STATUSES = ['draft', 'review', 'approved', 'published', 'archived'] as const
+/** D12 / D54(a) as amended by ADR-0027: the only lifecycle codes on the wire; `approved` is the only servable one. BM labels (UI only): Draf, Semakan, Diterbitkan, Diarkib. */
+export const QUESTION_STATUSES = ['draft', 'review', 'approved', 'archived'] as const
 export const QUESTION_STATUS_MESSAGE = 'Status tidak sah.'
 export const QuestionStatusSchema = z.enum(QUESTION_STATUSES, QUESTION_STATUS_MESSAGE).meta({ id: 'QuestionStatus' })
 export type QuestionStatus = z.infer<typeof QuestionStatusSchema>

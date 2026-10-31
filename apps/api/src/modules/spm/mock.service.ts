@@ -112,7 +112,7 @@ export class SpmMockService {
       const records = new Map((await this.questions.getMany(fresh, 'live')).map((r) => [r.id, r]))
       for (const id of fresh) {
         const record = records.get(id)
-        const item = record && record.isActive && record.version.status === 'published' ? structuredItemOf(record.version.stemMs, record.version.parts) : null
+        const item = record && record.isActive && record.version.status === 'approved' ? structuredItemOf(record.version.stemMs, record.version.parts) : null
         if (record && item && picked.length < P2_ITEMS) picked.push({ record, item })
       }
       if (ids.length < limit) break

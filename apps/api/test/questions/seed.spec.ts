@@ -33,15 +33,15 @@ describe('question bank seed', () => {
   it('loads the documented rows per status', async () => {
     expect(await count(db, `select count(*) n from questions`)).toBe(SEED_QUESTIONS.length)
     const byStatus = await db.query<{ status: string; n: string }>(`select status, count(*) n from question_versions group by 1 order by 1`)
-    expect(Object.fromEntries(byStatus.map((r) => [r.status, Number(r.n)]))).toEqual({ archived: 1, draft: 1, published: 16, review: 1 })
-    expect(await count(db, `select count(*) n from question_versions where status = 'published' and type = 'mcq' and subject_id is not null and number_label like 'SEED-MCQ-%'`)).toBe(6)
+    expect(Object.fromEntries(byStatus.map((r) => [r.status, Number(r.n)]))).toEqual({ approved: 16, archived: 1, draft: 1, review: 1 })
+    expect(await count(db, `select count(*) n from question_versions where status = 'approved' and type = 'mcq' and subject_id is not null and number_label like 'SEED-MCQ-%'`)).toBe(6)
     expect(await count(db, `select count(*) n from question_versions where type = 'structured'`)).toBe(3)
   })
 
   it('every published row passes the publish gate: subject, level, unit, 1 to 3 SP, TP; live version set', async () => {
     const bad = await db.query(
       `select v.id from question_versions v join questions q on q.id = v.question_id
-        where v.status = 'published' and (
+        where v.status = 'approved' and (
           v.subject_id is null or v.education_level_id is null or v.unit_node_id is null or v.difficulty_tp is null
           or q.live_version_no is distinct from v.version_no or v.published_at is null
           or (select count(*) from question_version_sp_nodes s where s.question_version_id = v.id) not between 1 and 3)`,
@@ -62,7 +62,7 @@ describe('question bank seed', () => {
   it('covers 3 subjects x 2 forms with published MCQ', async () => {
     const rows = await db.query<{ code: string; level: string }>(
       `select s.code, l.code as level from question_versions v join subjects s on s.id = v.subject_id join education_levels l on l.id = v.education_level_id
-        where v.number_label like 'SEED-MCQ-%' and v.status = 'published' order by 1, 2`,
+        where v.number_label like 'SEED-MCQ-%' and v.status = 'approved' order by 1, 2`,
     )
     expect(rows.map((r) => `${r.code}-${r.level}`)).toEqual(['BM-T4', 'BM-T5', 'MATH-T4', 'MATH-T5', 'SCI-T4', 'SCI-T5'])
   })

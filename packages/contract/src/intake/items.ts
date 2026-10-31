@@ -20,7 +20,7 @@ import {
  * is a prototype `IntakeQuestion` plus the fields below, flattened (no nesting), so the editor binds to
  * the same field names it uses today. Everything the prototype does not define is `[PROPOSED]`.
  *
- * D54(a): the five QUESTION lifecycle codes (`draft`, `review`, `approved`, `published`, `archived`)
+ * D54(a): the four QUESTION lifecycle codes (`draft`, `review`, `approved`, `archived`; ADR-0027)
  * appear only in `question.status`, the read-through status of the question an accepted item created.
  * The item REVIEW states below are a separate set; no mock question status (`pending_review`,
  * `rejected` as a question status, `approved` meaning live) exists on this wire.
