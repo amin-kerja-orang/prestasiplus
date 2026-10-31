@@ -41,8 +41,8 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
 
-/** Until T04 (approved = servable, migration 0100) lands a question must also be published to be served. Final pass: drop 'published'. */
-const SERVE_STEPS = ['review', 'approved', 'published'] as const
+/** Approved is servable (T04, migration 0100): review -> approved is the whole path. */
+const SERVE_STEPS = ['review', 'approved'] as const
 
 const START = '2026-10-19T09:00:00+08:00'
 const PASSWORD = 'Demo1234'
@@ -350,11 +350,8 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
   })
 
   describe('3b. the image group (D90) on a paper', () => {
-    // R1 GAP G2 (b08-bridge, `r1/b08-bridge` ab04b498, is not merged): the placement route accepts the image group and Terbit works,
-    // but the Bijak bridge refuses an IMAGE stimulus ("an image stimulus cannot be shown yet", question-bridge/be09-mapping.ts:~228;
-    // the attempt contract has only diagram|passage|table, no file URL), so the pupil cannot sit a paper that holds the image group:
-    // POST /bijak/attempts answers 403 "This action is unauthorized." for a Terbit paper (no BM reason), and the admin publish check
-    // does not warn about it either.
+    // G2 (image stimulus in a Bijak attempt) was an R1 gap on the base (the bridge refused an image stimulus and the pupil got 403 on start);
+    // it is closed by b08 (merged with T04). Kept as a plain test so it cannot regress.
     let imagePaper = ''
     it('the builder places the image group as one unit and Terbit works (structural tier)', async () => {
       const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
@@ -371,14 +368,18 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(pub.body.data.ok).toBe(true)
     })
 
-    it.fails('G2: the pupil starts the image-group paper and is served the image stimulus once with both members', async () => {
+    it('the pupil starts the image-group paper and is served the image stimulus ONCE with both members, with a readable URL', async () => {
       const start = await pupil.post('/api/bijak/attempts', { paperId: imagePaper, mode: 'exam' })
       expect(start.status, JSON.stringify(start.body)).toBe(201)
       const view = await pupil.get(`/api/bijak/attempts/${start.body.data.attemptId as string}`)
       expect(view.status).toBe(200)
       expect(view.body.data.groups).toHaveLength(1)
       expect(view.body.data.groups[0].questionIds).toEqual(fx.imageMembers)
-      expect(JSON.stringify(view.body.data.groups[0].stimulus)).toContain(fx.imageToken)
+      const stimulus = view.body.data.groups[0].stimulus as { kind: string; label: string; image?: { url: string } }
+      expect(stimulus).toMatchObject({ kind: 'diagram', label: 'Rajah 1', image: { url: fx.imageUrl } })
+      // the pupil reads the image through the URL the attempt view gave
+      expect((await pupil.get(stimulus.image!.url)).status).toBe(200)
+      expect((await request(app.getHttpServer()).get(stimulus.image!.url)).status).toBe(401)
     })
   })
 
@@ -406,10 +407,6 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(view.groups[0]!.stimulus).toMatchObject({ kind: 'passage', label: 'Petikan 1' })
       expect(JSON.stringify(res.body)).not.toMatch(/"(correct|scheme|key|modelText)"/)
     })
-
-    // R1 GAP G2 (continued): the image URL of a group stimulus is not part of the attempt view contract at all (kinds
-    // diagram|passage|table, no file URL), so the pupil cannot be served an image stimulus. The FILE itself is readable (next test).
-    it.todo('G2: the attempt view serves the group image stimulus as a URL (contract has no image kind; r1/b08-bridge not merged)')
 
     it('the group image file is readable by the pupil once its member question is live (R1-B20), and by no anonymous caller', async () => {
       expect((await pupil.get(fx.imageUrl)).status).toBe(200)
