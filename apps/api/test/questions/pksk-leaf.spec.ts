@@ -50,7 +50,7 @@ describe('grading', () => {
 
 describe('the general question routes refuse a PKSK leaf (422)', () => {
   it('create with a pksk_choice part and no pksk tag', async () => {
-    const service = new QuestionsService({} as never, {} as never, {} as never, {} as never, {} as never, { now: () => new Date() } as never)
+    const service = new QuestionsService({} as never, {} as never, {} as never, {} as never, {} as never, { now: () => new Date() } as never, {} as never)
     const input = { questionType: 'mcq', questionText: 'Soalan', subjectId: '1', educationLevelId: '1', parts: [pksk(3, ['A'])] } as never
     await expect(service.create(input, { userId: '1', role: 'admin' })).rejects.toMatchObject({ status: 422, code: 'VALIDATION_ERROR' })
     void CLOCK

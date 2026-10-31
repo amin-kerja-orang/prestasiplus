@@ -137,7 +137,7 @@ export function gradeQuestion(
     const answer = answers.find((a) => (a.path ?? (leaves.length === 1 ? path : undefined)) === path)
     const result: GradeResult = answer
       ? gradeLeaf(leaf, answer.value)
-      : leaf.mode === 'working' || leaf.mode === 'essay' || leaf.mode === 'drawing'
+      : leaf.mode === 'working' || leaf.mode === 'essay' || leaf.mode === 'essay_choice' || leaf.mode === 'drawing'
         ? { kind: 'needs_review', maxMarks: leaf.marks }
         : verdict(false, leaf.marks)
     return { path, result }
