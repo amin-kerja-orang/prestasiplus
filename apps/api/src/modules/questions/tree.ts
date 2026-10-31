@@ -4,10 +4,11 @@
  * this file only converts. A key that does not parse as the contract leaf for its mode fails
  * closed (`StoredKeyError`, mapped to a 500 by the service with the part id logged).
  */
-import { QuestionLeafPartSchema, type QuestionPart } from '@pp/contract'
+import { QuestionLeafPartSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
 
 import type { AnswerKey, PartOption, QuestionPart as PartRow } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
+import { kbatOfCognitive } from './effective-leaf'
 import { isLeaf, type QuestionLeaf } from './grading'
 
 export class StoredKeyError extends Error {
@@ -64,6 +65,7 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   if (row.formOrigin !== null) candidate.formOrigin = row.formOrigin
   if (row.difficultyTp !== null) candidate.difficultyTp = row.difficultyTp
   if (row.kbat !== null) candidate.kbat = row.kbat
+  if (row.cognitiveLevel !== null) candidate.cognitiveLevel = row.cognitiveLevel
   if (row.mode === 'mcq' || row.mode === 'pksk_choice') {
     candidate.options = options.map((o) => ({
       label: o.label,
@@ -105,6 +107,8 @@ export interface PartDraft {
   formOrigin: 't1_t3' | 't4' | 't5' | null
   difficultyTp: number | null
   kbat: 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta' | 'bukan' | null
+  /** Leaf only (migration 0102). */
+  cognitiveLevel: QuestionCognitiveLevel | null
   options: OptionDraft[]
   key: { kind: string; content: unknown } | null
   children: PartDraft[]
@@ -134,6 +138,7 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
         formOrigin: null,
         difficultyTp: null,
         kbat: null,
+        cognitiveLevel: null,
         options: [],
         key: null,
         children: draftsFromParts(part.children as QuestionPart[], depth + 1),
@@ -151,7 +156,9 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
       unitNodeId: part.unitNodeId == null ? null : idFromString(part.unitNodeId),
       formOrigin: part.formOrigin ?? null,
       difficultyTp: part.difficultyTp ?? null,
-      kbat: part.kbat ?? null,
+      // The four upper cognitive levels are KBAT: an explicit `kbat` wins, else it follows the level (D76).
+      kbat: part.kbat ?? kbatOfCognitive(part.cognitiveLevel),
+      cognitiveLevel: part.cognitiveLevel ?? null,
       options:
         part.mode === 'mcq' || part.mode === 'pksk_choice'
           ? part.options.map((o, j) => ({

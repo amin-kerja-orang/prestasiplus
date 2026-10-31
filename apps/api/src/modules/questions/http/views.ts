@@ -23,6 +23,7 @@ import type { z } from 'zod'
 import { toMytTimestamp } from '../../../common/time/myt'
 import { isLeaf, type QuestionLeaf } from '../grading'
 import { constantFields, difficultyLabelOf, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
+import { dskpCompleteness } from '../dskp-gate'
 import type { QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
 
 export type QuestionRow = z.output<typeof QuestionRowSchema>
@@ -136,6 +137,10 @@ export function stimulusGroupView(g: StimulusGroupRecord, tokens: Record<string,
 
 // --- admin ---------------------------------------------------------------------------------------
 
+/** R1-B05: DSKP completeness of the question as the admin sees it (the latest version): unit, SP and a TP and cognitive level on every leaf. */
+const dskpOf = (q: QuestionView) =>
+  dskpCompleteness({ parts: q.version.parts, tp: q.version.difficultyTp, unitId: q.version.unitId, spIds: q.version.spIds })
+
 export function rowView(q: QuestionView): QuestionRow {
   const f = flatOf(q)
   const c = constantFields(q)
@@ -150,6 +155,7 @@ export function rowView(q: QuestionView): QuestionRow {
     complianceStatus: c.complianceStatus,
     aiVerified: c.aiVerified,
     dskpTagged: q.version.spIds.length > 0,
+    dskpComplete: dskpOf(q).complete,
     sourceType: wireSourceType(q.sourceType),
     sourceFile: q.version.sourceFile,
   })
@@ -169,6 +175,7 @@ export function detailView(d: QuestionDetailView): QuestionDetailWire {
     subject: d.subject,
     level: d.level,
     dskp: d.dskp,
+    dskpStatus: dskpOf(d),
     createdBy: { id: d.createdById ?? NO_CREATOR, name: d.createdByName },
   })
 }
