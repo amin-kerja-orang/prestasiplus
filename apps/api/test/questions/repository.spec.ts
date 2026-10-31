@@ -28,7 +28,7 @@ describe('QuestionsRepository contract', () => {
   it('get returns the live version tree with decimal-string ids, null for unknown or malformed ids', async () => {
     const q = await repo.get(mathT4)
     expect(q?.id).toBe(mathT4)
-    expect(q?.version.status).toBe('published')
+    expect(q?.version.status).toBe('approved')
     expect(q?.version.versionNo).toBe(q?.liveVersionNo)
     expect(q?.version.parts[0]).toMatchObject({ mode: 'mcq' })
     expect(typeof q?.version.subjectId).toBe('string')
@@ -52,22 +52,22 @@ describe('QuestionsRepository contract', () => {
   })
 
   it('count and groupCount use the live version for status published', async () => {
-    expect(await repo.count({ status: 'published' })).toBe(16)
-    expect(await repo.count({ status: 'published', type: 'mcq' })).toBeGreaterThanOrEqual(6)
-    const bySubject = await repo.groupCount('subject', { status: 'published' })
+    expect(await repo.count({ status: 'approved' })).toBe(16)
+    expect(await repo.count({ status: 'approved', type: 'mcq' })).toBeGreaterThanOrEqual(6)
+    const bySubject = await repo.groupCount('subject', { status: 'approved' })
     expect([...bySubject.values()].reduce((a, b) => a + b, 0)).toBe(16)
-    const byLevel = await repo.groupCount('level', { status: 'published', active: true })
+    const byLevel = await repo.groupCount('level', { status: 'approved', active: true })
     expect([...byLevel.values()].reduce((a, b) => a + b, 0)).toBe(16)
     for (const key of [...bySubject.keys(), ...byLevel.keys()]) expect(key).toMatch(/^[1-9]\d*$/)
-    expect((await repo.groupCount('status', {})).get('published')).toBe(16)
+    expect((await repo.groupCount('status', {})).get('approved')).toBe(16)
   })
 
   it('count narrows by subject, level, excluded ids', async () => {
     const tag = (await t.db.query<{ s: string; l: string }>(`select subject_id::text s, education_level_id::text l from question_versions where number_label = 'SEED-MCQ-MATH-T4'`))[0]!
-    const inSubject = await repo.count({ subjectId: tag.s, status: 'published' })
+    const inSubject = await repo.count({ subjectId: tag.s, status: 'approved' })
     expect(inSubject).toBeGreaterThanOrEqual(2)
-    expect(await repo.count({ subjectId: tag.s, educationLevelId: tag.l, status: 'published', excludeIds: [mathT4] })).toBe(
-      (await repo.count({ subjectId: tag.s, educationLevelId: tag.l, status: 'published' })) - 1,
+    expect(await repo.count({ subjectId: tag.s, educationLevelId: tag.l, status: 'approved', excludeIds: [mathT4] })).toBe(
+      (await repo.count({ subjectId: tag.s, educationLevelId: tag.l, status: 'approved' })) - 1,
     )
     expect(await repo.count({ subjectId: '999999999' })).toBe(0)
   })
@@ -107,7 +107,7 @@ describe('QuestionsRepository contract', () => {
     expect(await repo.deactivate(mathT4)).toBe(true)
     expect(await repo.eligibleForPractice(mathT4)).toBe(false)
     expect(await repo.eligibleIds()).not.toContain(mathT4)
-    expect(await repo.count({ status: 'published', active: true })).toBe(15)
+    expect(await repo.count({ status: 'approved', active: true })).toBe(15)
     expect(await repo.sample({}, 500, mulberry32(3))).not.toContain(mathT4)
     expect((await repo.get(mathT4))?.isActive).toBe(false)
     expect((await apiError(() => svc.getPublicForLearner(mathT4))).getStatus()).toBe(404)

@@ -136,7 +136,7 @@ function infoOf(q: PocQuestion): BuilderQuestionInfo {
   return {
     id: wireId(q.id),
     versionNo: 1,
-    status: 'published',
+    status: 'approved',
     subject: q.curriculum.subject,
     kertas: kertasOf(q.id),
     groupId: q.groupId ?? null,

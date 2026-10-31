@@ -86,7 +86,7 @@ export const CurriculumEducationLevelSchema = z
   .meta({ id: 'CurriculumEducationLevel' })
 
 export const CurriculumEducationLevelListItemSchema = CurriculumEducationLevelSchema.extend({
-  questionCount: z.int().min(0).meta({ description: 'Active (published) questions of the level (M04).' }),
+  questionCount: z.int().min(0).meta({ description: 'Active (approved) questions of the level (M04).' }),
   subjectCount: z.int().min(0).meta({ description: 'Subjects linked to the level.' }),
 }).meta({ id: 'CurriculumEducationLevelListItem' })
 
@@ -136,7 +136,7 @@ export const CurriculumSubjectSchema = z
   .meta({ id: 'CurriculumSubject' })
 
 export const CurriculumSubjectListItemSchema = CurriculumSubjectSchema.extend({
-  questionCount: z.int().min(0).meta({ description: 'Active (published) questions of the subject (M04).' }),
+  questionCount: z.int().min(0).meta({ description: 'Active (approved) questions of the subject (M04).' }),
   levels: z.array(CurriculumRefSchema),
 }).meta({ id: 'CurriculumSubjectListItem' })
 

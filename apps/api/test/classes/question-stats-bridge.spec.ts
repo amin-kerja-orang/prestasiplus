@@ -86,7 +86,7 @@ describe('teacher question stats bridge (SW12-02)', () => {
     const res = await a.get('/guru/contributions')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const body = TeacherContributionsSchema.parse(res.body)
-    // total 7 = published 3 (MATH-T4, MATH-T5, STR-TREE) + approved 1 + review 1 + draft 1 + archived 1.
+    // total 7 = approved 4 (the 3 served ones: MATH-T4, MATH-T5, STR-TREE, plus SCI-T4) + review 1 + draft 1 + archived 1.
     expect(body.stats).toEqual({ total: 7, approved: 4, pending: 1, used: 2 })
     expect(body.breakdown).toEqual([
       { label: expect.stringMatching(/mat/i), count: 3 },
@@ -117,10 +117,10 @@ describe('teacher question stats bridge (SW12-02)', () => {
     const counts = await svc.contributionCountsFor(teacherA)
     expect(list.meta.totalItems).toBe(7)
     expect(counts.total).toBe(7)
-    expect(counts.byStatus).toMatchObject({ draft: 1, review: 1, approved: 1, published: 3, archived: 1 })
+    expect(counts.byStatus).toMatchObject({ draft: 1, review: 1, approved: 4, archived: 1 })
     const stats = await t.app.get(ClassesPorts).questions.statsOf(teacherA)
     expect(stats.total).toBe(counts.total)
-    expect(stats.approved).toBe(counts.byStatus.approved + counts.byStatus.published)
+    expect(stats.approved).toBe(counts.byStatus.approved)
     expect(stats.pending).toBe(counts.byStatus.review)
   })
 

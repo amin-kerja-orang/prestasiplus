@@ -25,6 +25,8 @@ const STATUS: Record<
 const status = computed(() => STATUS[props.result.status])
 const optionText = (id: string | undefined): string =>
   props.options?.find((o) => o.id === id)?.text ?? ''
+const optionImage = (id: string | undefined): McqOption['image'] =>
+  props.options?.find((o) => o.id === id)?.image
 const letter = (id: string | undefined): string => {
   const i = props.options?.findIndex((o) => o.id === id) ?? -1
   return i >= 0 ? String.fromCharCode(65 + i) : ''
@@ -60,6 +62,14 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
         </strong>
         <em v-else>tiada</em>
       </p>
+      <img
+        v-if="optionImage(result.answer.choice)"
+        :src="optionImage(result.answer.choice)?.url"
+        :alt="optionImage(result.answer.choice)?.alt ?? optionText(result.answer.choice)"
+        loading="lazy"
+        class="my-1 max-h-32 rounded-lg bg-default object-contain"
+        data-testid="chosen-option-image"
+      />
       <p>
         Jawapan betul:
         <strong>
@@ -67,6 +77,14 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
           <RichText :text="optionText(result.scheme.correctOption)" />
         </strong>
       </p>
+      <img
+        v-if="optionImage(result.scheme.correctOption)"
+        :src="optionImage(result.scheme.correctOption)?.url"
+        :alt="optionImage(result.scheme.correctOption)?.alt ?? optionText(result.scheme.correctOption)"
+        loading="lazy"
+        class="my-1 max-h-32 rounded-lg bg-default object-contain"
+        data-testid="correct-option-image"
+      />
     </div>
 
     <div v-else class="flex flex-col gap-1 text-body text-default">
