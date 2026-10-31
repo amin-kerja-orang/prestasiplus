@@ -203,7 +203,7 @@ Also noted: user decisions of 18:03 relayed by team B — B09b paper-review edit
 | T33 | r1/t33-leaf-tags @ 95cea5be | A2 | PRIORITY (blocks T34); questions 759/759, workflow 264/264, intake 108/108; B2 + B3 |
 | T36 | r1/t36-remove-poc @ 5bc34543 | A2 | after REQ-A-001 / REQ-B-003 |
 | T42b | r1/t42b-intake-acs @ bca92f3d | A2 | AC-R1-14.3 fix: accepted figure gets its own question_image (pupils could not see it); files → B3 |
-| T47 | r1/t47-bank-parity @ 04cdb0ef | A2 | Studio filters + filter bulk (expectedCount, cap 500) + V2 illegal-move text; bulk input → B3 |
+| T47 | r1/t47-bank-parity @ 20cc7ba3 (04cdb0ef + docs) | A2 | Studio filters + filter bulk (expectedCount, cap 500) + V2 illegal-move text; bulk input → B3 |
 | T34 follow-up | r1/t34-builder-review @ 7bc3419e | A3 | `blockerDetails` + `canOverride` (REQ-C-002); merge after T33 in base |
 | T44 | r1/t44-blueprint-fields @ 2d9c100d | A3 | contains H-A15 @ 7e5d637e |
 | T48a | r1/t48a-paper-list @ e5041595 | A3 | paper list subject + search; title ≤ 200 |
