@@ -1,5 +1,5 @@
 -- 0104_paper_section_admin_created (R1-T48, builder parity with the V2 Panel "Semak Kertas Simulasi": "Tambah bahagian" / "Tambah soalan").
--- Number 0104 is in team A's range 0104-0109.
+-- Number 0104 is in team A's range 0100-0109.
 --
 --   paper_sections.admin_created  boolean NOT NULL DEFAULT false
 --

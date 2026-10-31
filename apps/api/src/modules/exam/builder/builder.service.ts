@@ -492,17 +492,13 @@ export class BuilderService {
       const st = await this.structure([...wanted])
       const plans: { sectionId: bigint; placements: { questionId: bigint; pinnedVersionNo: number }[] }[] = []
       const edits: { sectionId: bigint; data: Prisma.PaperSectionUncheckedUpdateInput }[] = []
+      const rulePatches: { section: PaperTree['sections'][number]; rule: NonNullable<(typeof sections)[number]['rule']>; patch: (typeof sections)[number] }[] = []
       const resulting = new Map<bigint, string[]>(paper.sections.map((s) => [s.id, s.placements.map((pl) => idToString(pl.questionId))]))
       for (const patch of sections) {
         const sectionId = parseId(patch.id)
         const section = sectionId === null ? undefined : paper.sections.find((s) => s.id === sectionId)
         if (!section) throw invalid(MESSAGES.invalidSection)
         // R1-T34 "Sunting bahagian": the printed name, the authored instruction and "mesti dijawab"; the rule and the budget stay the Kontrak's.
-        // R1-T48: the answering rule and the number to answer (V2 let the admin set them per paper); the Kontrak is checked at Terbit.
-        if (patch.rule?.type === 'choose') {
-          const max = section.adminCreated ? 100 : section.questionCount
-          if (patch.rule.n > max) throw ApiError.of('VALIDATION_ERROR', { message: EDIT.ruleCount(max), fields: { rule: EDIT.ruleCount(max) } })
-        }
         const data: Prisma.PaperSectionUncheckedUpdateInput = {
           ...(patch.rule === undefined ? {} : { ruleType: patch.rule.type, ruleN: patch.rule.type === 'choose' ? patch.rule.n : null }),
           ...(patch.label !== undefined ? { label: patch.label } : {}),
@@ -510,6 +506,7 @@ export class BuilderService {
           ...(patch.compulsory !== undefined ? { compulsory: patch.compulsory } : {}),
         }
         if (Object.keys(data).length > 0) edits.push({ sectionId: section.id, data })
+        if (patch.rule !== undefined) rulePatches.push({ section, rule: patch.rule, patch })
         if (patch.questionIds === undefined) continue
         for (const qid of patch.questionIds) {
           const q = parseId(qid) === null ? undefined : st.info.get(qid)
@@ -528,6 +525,13 @@ export class BuilderService {
       }
       // R1-T34 "Bahan rujukan": every panel image must be a stored file (public token or id), never a free string.
       if (body.reference !== undefined) await this.checkReferenceImages(body.reference.flatMap((p) => (p.imageFileId ? [p.imageFileId] : [])))
+      // R1-T48: the number to answer (V2 "Bilangan soalan dipilih") must be at most the questions in the Bahagian: the printed count of a Kontrak
+      // Bahagian, the questions placed in an admin-added one (AC-26.1(i)). The Kontrak itself is checked at Terbit.
+      for (const { section, rule } of rulePatches) {
+        if (rule.type !== 'choose') continue
+        const max = section.adminCreated ? new Set(resulting.get(section.id) ?? []).size : section.questionCount
+        if (rule.n > max) throw ApiError.of('VALIDATION_ERROR', { message: EDIT.ruleCount(max), fields: { rule: EDIT.ruleCount(max) } })
+      }
       const everywhere = [...resulting.values()].flat()
       // D90: a stimulus group lives in ONE section, so a group member twice on the paper is refused here. A plain
       // question repeated across sections stays accepted and is reported by the publish check (the mock's order).
@@ -538,7 +542,7 @@ export class BuilderService {
         ...(body.title !== undefined ? { title: body.title } : {}),
         ...(body.year !== undefined ? { year: body.year } : {}),
         ...(body.durationMin !== undefined ? { printedDurationMin: body.durationMin } : {}),
-        ...(body.code !== undefined ? { paperCode: body.code } : {}),
+        ...(body.code !== undefined ? { paperCode: body.code === '' ? bijakSubject : body.code } : {}),
         ...(body.instructions !== undefined ? { instructions: body.instructions } : {}),
         ...(body.reference !== undefined ? { referenceSheets: body.reference as unknown as Prisma.InputJsonValue } : {}),
         updatedAt: this.clock.now(),
@@ -695,6 +699,22 @@ export class BuilderService {
   }
 
   /**
+   * R1-T48 (AC-26.1(i), V2 "must be <= question count"): Pilih N with fewer than N questions in the Bahagian is never valid, so it is a HARD
+   * blocker (the pupil cover would say "Jawab 5 daripada 1 soalan."). The count is the printed one (a Kontrak Bahagian) or the placed one (admin-added).
+   * `checkPaper` is left untouched: it must equal the prototype's.
+   */
+  private ruleBlockers(paper: PaperTree, ev: Evaluation): BlockerDraft[] {
+    const out: BlockerDraft[] = []
+    for (const s of paper.sections) {
+      const rule = ruleOf(s.ruleType, s.ruleN)
+      if (rule.type !== 'choose') continue
+      const count = sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0).questionCount
+      if (rule.n > count) out.push({ code: 'RULE_N_EXCEEDS_QUESTIONS', message: LINES.sectionLine(s.label, LINES.ruleExceeds(rule.n, count)), section: s.label })
+    }
+    return out
+  }
+
+  /**
    * R1-T48: the paper against the Kontrak it conforms to, beyond the question checks. A Bahagian the admin added is not in the Kontrak, and
    * a Bahagian whose answering rule the admin changed differs from the Kontrak's. Both are blueprint conformance (overridable, like the
    * V2 "Terbitkan walaupun tidak memenuhi kontrak blueprint"); the printed counts and marks are checked by `checkPaper` (hard).
@@ -731,6 +751,7 @@ export class BuilderService {
   ) {
     return toBlockers([
       ...ev.issues,
+      ...this.ruleBlockers(paper, ev),
       ...structural.fixed,
       ...this.attemptBlockers(paper, ev, reports),
       ...(paper.status === 'published' ? [] : structural.contract),
@@ -1281,8 +1302,8 @@ export class BuilderService {
 
   /**
    * "Tambah soalan" (V2 `Nombor soalan`, `Jenis jawapan`, `Markah`): a blank Draf question in the one question bank, placed at the end of an
-   * admin-added Bahagian. T33 (the DSKP tag gate on create) is not in this base: the question is created without a tag, like any Draf, and the
-   * tag is set in the question editor; a later gate on create must give this call a tag or a Draf exemption.
+   * admin-added Bahagian. The T33 DSKP gate runs on APPROVAL, not on create: the Draf has no tag or cognitive level, so it cannot be approved (and
+   * Terbit waits, "1 soalan belum Terbit") until the unit, SP, TP and a cognitive level per leaf are set in the question editor.
    */
   async createQuestion(actor: AuditActor, rawId: string, rawSection: string, rawBody: unknown): Promise<BijakBuilderPlacementResult> {
     const paperId = parseId(rawId)
@@ -1343,6 +1364,8 @@ export class BuilderService {
       const section = paper.sections.find((x) => x.placements.some((pl) => idToString(pl.questionId) === rawQuestionId))
       if (!section) throw invalid(PLACE.notPlaced(rawQuestionId))
       const placement = section.placements.find((pl) => idToString(pl.questionId) === rawQuestionId)!
+      // V2 "Soalan asal kertas tidak boleh dipadam.": only an extra question of an admin-added Bahagian can be deleted.
+      if (!section.adminCreated) throw invalid(MESSAGES.originalNotDeletable)
       if (!placement.numberLabel) throw invalid(EDIT.notAdded(rawQuestionId))
       const pins = this.pinsOf(section)
       const rest = section.placements.filter((pl) => pl !== placement).map((pl) => idToString(pl.questionId))

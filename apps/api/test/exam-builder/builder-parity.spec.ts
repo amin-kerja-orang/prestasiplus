@@ -33,6 +33,7 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       options: ['4', '5', '6', '7'],
       correctAnswer: 1,
       kertas: '2',
+      cognitiveLevel: 'mengaplikasi', // T33 approve gate: a cognitive level on every leaf of an SPM-bound question
       tag,
       ...over,
     })
@@ -43,6 +44,7 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data.failed, `${action}: ${JSON.stringify(res.body.data)}`).toEqual([])
     }
   }
   const approved = async (over: Record<string, unknown> = {}): Promise<string> => {
@@ -104,7 +106,7 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
   }
 
   describe('cover code ("Kod kertas (kulit)")', () => {
-    it('is patchable on a draft, trimmed, audited; blank or over 40 characters is 422; a Terbit paper is read-only', async () => {
+    it('is patchable on a draft, trimmed, audited; blank = the subject code (V2); over 32 characters is 422; a Terbit paper is read-only', async () => {
       const { paper } = await fullPaper()
       const res = await admin.put(`/api/admin/papers/${paper}`, { code: '  1449/9  ' })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
@@ -112,11 +114,15 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       expect((await dbPaper(paper)).paper_code).toBe('1449/9')
       const audit = (await auditRows(t.db, 'bijak.paper.updated')).filter((r) => r.target_id === paper)
       expect(audit.some((r) => (r.detail as { code?: string }).code === '1449/9')).toBe(true)
+      // V2: a blank code falls back to the subject code on the cover (stored, so the paper still lists for pupils)
       const blank = await admin.put(`/api/admin/papers/${paper}`, { code: '   ' })
-      expect(blank.status).toBe(422)
-      expect(blank.body.error.fields.code).toBe(MSG.codeRequired)
-      expect((await admin.put(`/api/admin/papers/${paper}`, { code: 'X'.repeat(41) })).status).toBe(422)
-      expect((await admin.put(`/api/admin/papers/${paper}`, { code: 'X'.repeat(40) })).status).toBe(200)
+      expect(blank.status, JSON.stringify(blank.body)).toBe(200)
+      expect(blank.body.data.paper.code).toBe('MAT')
+      expect((await dbPaper(paper)).paper_code).toBe('MAT')
+      const long = await admin.put(`/api/admin/papers/${paper}`, { code: 'X'.repeat(33) })
+      expect(long.status).toBe(422)
+      expect(long.body.error.fields.code).toBe(MSG.codeTooLong)
+      expect((await admin.put(`/api/admin/papers/${paper}`, { code: 'X'.repeat(32) })).status).toBe(200)
       expect((await student.put(`/api/admin/papers/${paper}`, { code: 'Z' })).status).toBe(403)
       expect((await admin.post(`/api/admin/papers/${paper}/publish`)).body.data.ok).toBe(true)
       const locked = await admin.put(`/api/admin/papers/${paper}`, { code: '1449/1' })
@@ -155,6 +161,31 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       const done = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'Peraturan set ini dipinda oleh admin' })
       expect(done.body.data).toMatchObject({ ok: true, errors: [], overridden: [review.blockers[0]] })
       expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(1)
+    })
+
+    it('an admin-added Bahagian: Pilih N is capped to the questions placed in it, and a Pilih N that exceeds them is a hard blocker the override cannot lift (AC-26.1(i))', async () => {
+      const { paper, d } = await withBahagianD()
+      const bank = await approved()
+      expect((await place(paper, d, bank)).status).toBe(201)
+      // B2 probe: Bahagian D with 1 question and {choose, 5} is refused on the patch
+      const over = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: d, rule: { type: 'choose', n: 5 } }] })
+      expect(over.status, JSON.stringify(over.body)).toBe(422)
+      expect(over.body.error.fields.rule).toBe('Bilangan soalan dipilih mesti antara 1 dan 1')
+      expect(paperOf(await editorOf(paper)).sections.find((x: Record<string, unknown>) => x.id === d)).toMatchObject({ rule: { type: 'all' } })
+      // the same call that adds the questions may set the rule
+      const ok = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: d, questionIds: [bank], rule: { type: 'choose', n: 1 } }] })
+      expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+      // removing the question later leaves Pilih 1 over 0 questions: a hard blocker, not overridable
+      expect((await admin.del(`/api/admin/papers/${paper}/placements/${bank}`)).status).toBe(200)
+      const review = await reviewOf(paper)
+      expect(review.blockerDetails).toContainEqual({ code: 'RULE_N_EXCEEDS_QUESTIONS', message: 'Bahagian D: peraturan menjawab Pilih 1 melebihi bilangan soalan (0)', overridable: false, section: 'Bahagian D' })
+      expect(review.canOverride).toBe(false)
+      const forced = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(forced.body.data).toMatchObject({ ok: false, canOverride: false })
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+      // with the question back, Pilih 1 of 1 is only the overridable Kontrak deviation
+      expect((await place(paper, d, bank)).status).toBe(201)
+      expect((await reviewOf(paper)).blockerDetails.map((b) => b.code).sort()).toEqual(['SECTION_NOT_IN_CONTRACT'])
     })
 
     it('Pilih N must be between 1 and the printed question count (fields.rule); a bad rule shape is 422', async () => {
@@ -298,7 +329,8 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       const refused = await admin.del(`/api/admin/papers/${paper}/questions/${bank}`)
       expect(refused.status).toBe(422)
       expect(refused.body.error.message).toBe(`Soalan ${bank} bukan soalan tambahan kertas ini`)
-      expect((await admin.del(`/api/admin/papers/${paper}/questions/${ids[0]}`)).body.error.message).toBe(`Soalan ${ids[0]} bukan soalan tambahan kertas ini`)
+      // a question of a Kontrak Bahagian is an original question: V2 text
+      expect((await admin.del(`/api/admin/papers/${paper}/questions/${ids[0]}`)).body.error.message).toBe('Soalan asal kertas tidak boleh dipadam.')
       expect((await admin.del(`/api/admin/papers/${paper}/questions/987654321`)).body.error.message).toBe('Soalan 987654321 tiada dalam kertas ini')
       const res = await admin.del(`/api/admin/papers/${paper}/questions/${id}`)
       expect(res.status, JSON.stringify(res.body)).toBe(200)
@@ -331,7 +363,7 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       const made = await withBahagianD()
       const id = (await addQuestion(made.paper, made.d, { number: '1', mode: 'mcq', marks: 1 })).body.data.added[0] as string
       // approve it (tag + review + approved) so that the override can publish the paper
-      const edit = await admin.put(`/api/questions/${id}`, { subjectId: subject, educationLevelId: level, difficultyLevel: 3, questionText: 'Berapakah hasil tambah 2 dan 3?', tag })
+      const edit = await admin.put(`/api/questions/${id}`, { subjectId: subject, educationLevelId: level, difficultyLevel: 3, questionText: 'Berapakah hasil tambah 2 dan 3?', kertas: '2', cognitiveLevel: 'mengaplikasi', tag })
       expect(edit.status, JSON.stringify(edit.body)).toBe(200)
       await approve([id])
       const done = await admin.post(`/api/admin/papers/${made.paper}/publish`, { override: true, reason: 'Bahagian tambahan diluluskan' })

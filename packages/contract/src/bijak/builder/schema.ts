@@ -89,8 +89,10 @@ export const BIJAK_BUILDER_MESSAGES = {
   referenceImageInvalid: 'Imej bahan rujukan tidak sah. Muat naik semula.',
   /** [PROPOSED] R1-T34 */
   sectionLabelRequired: 'Nama bahagian diperlukan',
-  /** [PROPOSED] R1-T48 "Kod kertas (kulit)" */
-  codeRequired: 'Kod kertas diperlukan',
+  /** [PROPOSED] R1-T48 "Kod kertas (kulit)": V2 caps it at 32 characters. */
+  codeTooLong: 'Kod kertas terlalu panjang (paling banyak 32 aksara)',
+  /** V2 Panel "Padam soalan": only an extra question can be deleted. */
+  originalNotDeletable: 'Soalan asal kertas tidak boleh dipadam.',
   /** V2 Panel "Tambah soalan" (cloud-student-mechanism section 3.4): only an admin-added Bahagian takes a new question. */
   adminSectionOnly: 'Soalan hanya boleh ditambah ke bahagian yang dicipta oleh admin.',
   /** [PROPOSED] R1-T48 */
@@ -150,6 +152,8 @@ export const BIJAK_BUILDER_CHECK_LINES = {
   ineligible: (questionId: string, reason: string) => `Soalan ${questionId} tidak layak: ${reason}`,
   /** R1-T48: the answering rule of a Bahagian differs from the Kontrak's (blueprint conformance, overridable). `rule` is "Jawab Semua" or "Pilih N". */
   ruleNotInContract: (paperRule: string, contractRule: string) => `peraturan menjawab ${paperRule} tidak sama dengan Kontrak (${contractRule})`,
+  /** R1-T48 (AC-26.1(i), V2 "must be <= question count"): Pilih N with fewer questions than N in the Bahagian; never overridable. */
+  ruleExceeds: (n: number, count: number) => `peraturan menjawab Pilih ${String(n)} melebihi bilangan soalan (${String(count)})`,
   /** R1-T48: a Bahagian an admin added; the Kontrak has none (blueprint conformance, overridable). */
   sectionNotInContract: 'bahagian ini tiada dalam Kontrak',
 } as const
@@ -213,6 +217,8 @@ export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
   GROUP_BROKEN: true,
   /** R1-T48: a Bahagian's answering rule differs from the Kontrak's. */
   RULE_NOT_IN_CONTRACT: true,
+  /** R1-T48 (AC-26.1(i)): Pilih N with fewer than N questions in the Bahagian. */
+  RULE_N_EXCEEDS_QUESTIONS: false,
   /** R1-T48: an admin-added Bahagian (not in the Kontrak). */
   SECTION_NOT_IN_CONTRACT: true,
 } as const
@@ -586,8 +592,8 @@ export const BijakBuilderPaperPatchSchema = z
       .meta({ example: 'Percubaan SPM Matematik Kertas 2 Set B' }),
     year: z.number().int().min(1900).max(2100).optional(),
     durationMin: z.number().int().min(1).max(600).optional(),
-    code: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.codeRequired).max(40).optional().meta({
-      description: 'R1-T48 "Kod kertas (kulit)": the printed paper code, editable while the paper is a draf.',
+    code: z.string().trim().max(32, BIJAK_BUILDER_MESSAGES.codeTooLong).optional().meta({
+      description: 'R1-T48 "Kod kertas (kulit)": the printed paper code (V2: at most 32 characters), editable while the paper is a draf. Blank = the subject code (V2: the cover falls back to it).',
       example: '1449/2',
     }),
     instructions: z
@@ -624,7 +630,7 @@ export const BijakBuilderBlockerSchema = z
   .strictObject({
     code: z.enum(BIJAK_BUILDER_BLOCKER_CODES).meta({
       description:
-        'Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan), INELIGIBLE (question fails the Kontrak: no unit, TP, marks, key, tag review, mode), GROUP_BROKEN, RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak), SECTION_NOT_IN_CONTRACT (admin-added Bahagian).',
+        'Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan), INELIGIBLE (question fails the Kontrak: no unit, TP, marks, key, tag review, mode), GROUP_BROKEN, RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak), SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian).',
     }),
     message: z.string().meta({ description: 'The BM line, identical to the string in `blockers` / `errors`.' }),
     overridable: z.boolean().meta({ description: 'true when the audited override can lift this blocker.' }),

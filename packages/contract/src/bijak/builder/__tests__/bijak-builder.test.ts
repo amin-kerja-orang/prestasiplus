@@ -454,7 +454,7 @@ describe('createPaper and PaperPatch (single PUT)', () => {
 
   it('rejects the removed header and placement fields, a bad section and an empty title', () => {
     for (const extra of [
-      { code: '' }, // R1-T48: the cover code is a patch field, but not blank
+      { code: 'X'.repeat(33) }, // R1-T48: the cover code is a patch field, at most 32 characters
       { instructions: [''] }, // instructions are a patch field since R1-B09a, but not blank lines
       { reference: [{ title: '', items: [] }] }, // R1-T34: reference panels are a patch field, but not an untitled panel
       { blueprint: null },
@@ -514,7 +514,7 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'MADE_UP', message: 'x', overridable: false }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'NOT_SERVABLE', message: 'x' }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
-    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(17)
+    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(18)
     expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'GROUP_BROKEN', 'INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
   })
 
@@ -1127,8 +1127,9 @@ describe('openapi document', () => {
 describe('R1-T48 builder parity (cover code, rule, sections, added questions, pinned, stimulus edit)', () => {
   it('PaperPatch carries the cover code (trimmed, 1 to 40) and a section patch carries the answering rule', () => {
     expect(BijakBuilderPaperPatchSchema.parse({ code: '  1449/9 ' }).code).toBe('1449/9')
-    expect(BijakBuilderPaperPatchSchema.safeParse({ code: '  ' }).success).toBe(false)
-    expect(BijakBuilderPaperPatchSchema.safeParse({ code: 'X'.repeat(41) }).success).toBe(false)
+    expect(BijakBuilderPaperPatchSchema.parse({ code: '   ' }).code).toBe('') // blank = the subject code (V2)
+    expect(BijakBuilderPaperPatchSchema.safeParse({ code: 'X'.repeat(32) }).success).toBe(true)
+    expect(BijakBuilderPaperPatchSchema.safeParse({ code: 'X'.repeat(33) }).success).toBe(false)
     expect(BijakBuilderSectionPatchSchema.parse({ id: '1', rule: { type: 'choose', n: 2 } }).rule).toEqual({ type: 'choose', n: 2 })
     expect(BijakBuilderSectionPatchSchema.safeParse({ id: '1', rule: { type: 'choose', n: 0 } }).success).toBe(false)
     expect(BijakBuilderSectionPatchSchema.safeParse({ id: '1', rule: { type: 'none' } }).success).toBe(false)
