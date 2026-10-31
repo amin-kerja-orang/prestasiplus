@@ -383,18 +383,18 @@ export class BijakServer implements BijakApi {
     userId: number,
     paperId: string,
     mode: AttemptMode,
-    opts: { restart?: boolean } = {},
+    opts: { restart?: boolean; fresh?: boolean } = {},
   ): Promise<{ attemptId: string }> {
     await this.tick()
     const def = this.resolvePaper(paperId, userId)
     const open = Object.values(this.state.attempts).filter(
       (a) => a.userId === userId && a.paperId === paperId && a.status === 'in_progress',
     )
-    if (open.length && !opts.restart) {
+    if (open.length && !opts.restart && !opts.fresh) {
       const keep = open.sort((a, b) => b.startedAt - a.startedAt)[0]!
       return { attemptId: keep.id }
     }
-    for (const a of open) a.status = 'abandoned'
+    if (!opts.fresh) for (const a of open) a.status = 'abandoned'
     this.state.seq += 1
     const id = `pcb-${this.state.seq}-${userId}`
     const started = this.now()
@@ -791,7 +791,8 @@ export class BijakServer implements BijakApi {
     if (a.status === 'in_progress') {
       throw new BijakError('bad_request', 'Hantar percubaan ini dahulu sebelum mencuba semula.')
     }
-    return this.startAttempt(userId, a.paperId, a.mode, { restart: true })
+    // A new sitting; other open sittings of the paper are left as they are (as the API does).
+    return this.startAttempt(userId, a.paperId, a.mode, { fresh: true })
   }
 
   async pastSittings(userId: number, paperId: string): Promise<PastSittings> {

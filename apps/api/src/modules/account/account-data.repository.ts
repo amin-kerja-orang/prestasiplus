@@ -3,6 +3,14 @@ import type { AccountFaith, AccountSettings } from '@pp/contract'
 
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import { SPM_SERVABLE_SQL } from '../questions/learner-visibility'
+
+/**
+ * The public question count follows the practice draws (BR-11, D72): live-version, active, non-PKSK, objective (mcq) questions of a
+ * learner-visible level that is one of the OFFERED_LEVEL_CODES (T4, T5), of an active subject linked to that level: exactly the sum of the subject cards.
+ * R1-B06: the level / subject / PKSK part is the shared SPM_SERVABLE_SQL (static text, the codes are constants).
+ */
+export const QUESTION_COUNT_SQL = `SELECT count(*) AS c FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no WHERE q.is_active AND v.status = 'published' AND v.type = 'mcq' AND ${SPM_SERVABLE_SQL.sql}`
 
 export interface ResetRow {
   id: string
@@ -171,7 +179,7 @@ export class AccountDataRepository {
       return Number(rows[0]?.c ?? 0)
     }
     return {
-      questionCount: await count('questions', 'SELECT count(*) AS c FROM questions WHERE live_version_no IS NOT NULL'),
+      questionCount: await count('questions', QUESTION_COUNT_SQL),
       subjectCount: await count('subjects', 'SELECT count(*) AS c FROM subjects WHERE is_active'),
       levelCount: await count('education_levels', 'SELECT count(*) AS c FROM education_levels WHERE is_active'),
     }

@@ -23,8 +23,7 @@ import { diffForHumans } from './diff-for-humans'
 import { BoardReads } from './reads'
 import { ServerStatusService } from './server-status.service'
 
-/** DC-M17-05 (platform "Engagement" buckets) and DC-M17-03 (platform "Pembetulan"): observed display constants (D11 exception), platform view only. */
-const DC_M17_05 = Object.freeze({ champion: 29, consistent: 11, developing: 43, minimum: 3, disengaged: 2229 })
+/** DC-M17-03 (platform "Pembetulan"): observed display constant (D11 exception), platform view only. The platform "Engagement" buckets are computed (secondary-only: the old constant counted hidden pupils). */
 const DC_M17_03 = Object.freeze({ total: 899, avgImprovement: 0, improvedCount: 0 })
 
 const ROLE_ORDER = ['student', 'teacher', 'parent', 'admin', 'school_admin'] as const
@@ -98,7 +97,7 @@ export class BoardService {
     const sid = await this.studentIds(schoolId)
     const monthDay = new Date(`${dateKey(now)}T00:00:00Z`)
 
-    const [schoolRef, tallies, totalStudents, totalSchools, topSchools, topStudents, feed, trend, mood, t1, gps] = await Promise.all([
+    const [schoolRef, tallies, totalStudents, totalSchools, topSchools, topStudents, feed, trend, mood, t1, gps, platformEngagement] = await Promise.all([
       schoolId === undefined ? Promise.resolve(null) : this.repo.schoolRef(schoolId),
       this.reads.liveTallies({ now, schoolId, todayFrom: w.today.from, weekFrom: w.week.from, lastWeekFrom: w.lastWeek.from, d30From: w.last30d.from }),
       this.repo.studentCount({ schoolId }),
@@ -110,6 +109,7 @@ export class BoardService {
       this.mood.counts(sid),
       this.feedback.t1(sid),
       this.headcount.schoolGps(schoolId ?? null),
+      school ? Promise.resolve(null) : this.reads.engagementBands(now),
     ])
 
     const accuracy = accuracyOf(tallies.correct, tallies.answers)
@@ -138,7 +138,7 @@ export class BoardService {
       topStudents: topStudents.map((u) => ({ studentId: u.userId, name: u.name, schoolName: u.schoolName, answersCount: u.answers, accuracy: accuracyOf(u.correct, u.answers) })),
       gpsOverall: gps,
       kirk: { t1: { value: t1.value, scale: 5, count: t1.count }, t2Accuracy: accuracy, t3Active: tallies.active30d, t4Gps: gps },
-      engagement: school ? { champion: 0, consistent: 0, developing: 0, minimum: 0, disengaged: 0 } : { ...DC_M17_05 },
+      engagement: school ? { champion: 0, consistent: 0, developing: 0, minimum: 0, disengaged: 0 } : (platformEngagement ?? { champion: 0, consistent: 0, developing: 0, minimum: 0, disengaged: 0 }),
       dailyTrend,
       mood,
       recentFeed: feed.map((f) => ({

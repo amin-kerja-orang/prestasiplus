@@ -6,7 +6,7 @@
  * stays "Belum disahkan" until the pupil saves; a saved self-mark shows as confirmed. The server
  * clamps the mark again, so this only guides.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import {
   bandMidpoint,
@@ -61,12 +61,16 @@ function pickBand(name: string | undefined): void {
   if (b) draft.value = bandMidpoint(b)
 }
 
-const savedBand = computed(() => props.part.band)
 const dirty = computed(
   () =>
     draft.value !== props.part.awarded ||
-    (bands.value.length > 0 && !!band.value && band.value !== savedBand.value),
+    (bands.value.length > 0 && !!band.value && band.value !== initialBand()),
 )
+/** Tells the page about an unsaved change so it can warn before leaving (and clears it on unmount). */
+const emit = defineEmits<{ dirty: [partId: string, dirty: boolean] }>()
+watch(dirty, (d) => emit('dirty', props.part.partId, d))
+onBeforeUnmount(() => emit('dirty', props.part.partId, false))
+
 const confirmed = computed(() => !!props.part.selfMarked && !dirty.value)
 
 const badge = computed(() => {
@@ -80,7 +84,7 @@ const badge = computed(() => {
 const bandItems = computed(() =>
   bands.value.map((b) => ({
     value: b.name,
-    label: `Band ${b.name} (${b.from}-${b.to})`,
+    label: `Band ${b.name}${b.label ? ` · ${b.label}` : ''} (${b.from}-${b.to})`,
     description: b.descriptor,
   })),
 )

@@ -97,41 +97,44 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
   })
 
   describe('GET /topics (AC7, BR-13)', () => {
-    it('lists all 125 topics unpaged in sequence order with the card shape', async () => {
+    // Secondary-only (D72): the learner catalogue holds only the 29 Tingkatan 4 and 5 topics of the seed (19 + 10); the 96 Darjah and
+    // Tingkatan 1 topics stay in the table but are never served.
+    it('lists the 29 Tingkatan 4 and 5 topics unpaged in sequence order with the card shape, and no Darjah topic', async () => {
       const res = await student.get('/api/topics')
       const items = parseList(res, CurriculumTopicCardSchema)
-      expect(items).toHaveLength(125)
-      expect(res.body.meta).toMatchObject({ totalItems: 125, page: 1, pageSize: 125, totalPages: 1 })
+      expect(items).toHaveLength(29)
+      expect(res.body.meta).toMatchObject({ totalItems: 29, page: 1, pageSize: 29, totalPages: 1 })
+      expect(items.every((c) => c.gradeLevel === 'TINGKATAN_4' || c.gradeLevel === 'TINGKATAN_5')).toBe(true)
       expect(items[0]).toEqual({
         id: items[0]!.id,
-        gradeLevel: 'DARJAH_1',
-        subject: 'MATEMATIK',
-        subjectLabel: 'MATEMATIK',
-        name: 'Nombor',
-        description: 'Belajar nombor 1 hingga 100',
-        subtopicCount: 3,
-        subtopicsPreview: ['Tambah 1-10', 'Tolak 1-10', 'Kiraan 1-100'],
+        gradeLevel: 'TINGKATAN_4',
+        subject: 'BAHASA_MELAYU',
+        subjectLabel: 'BAHASA MELAYU',
+        name: 'Kemahiran Bahasa Tingkatan 4',
+        description: null,
+        subtopicCount: 2,
+        subtopicsPreview: ['Penulisan karangan lanjutan', 'Tatabahasa lanjutan'],
       })
       // Ordered by sequence, then id (ids are decimal strings; compare as bigint).
-      const rows = await t.db.query<{ id: string }>('select id::text from legacy_topics order by sequence, id')
+      const rows = await t.db.query<{ id: string }>(`select id::text from legacy_topics where grade_level in ('TINGKATAN_4', 'TINGKATAN_5') order by sequence, id`)
       expect(items.map((c) => c.id)).toEqual(rows.map((r) => r.id))
     })
 
     it('filters by gradeLevel and subject, AND, case-insensitive', async () => {
-      expect(await topics('?gradeLevel=DARJAH_1')).toHaveLength(17)
-      expect(await topics('?gradeLevel=darjah_1')).toHaveLength(17)
-      expect(await topics('?gradeLevel=DARJAH_1&subject=SAINS')).toHaveLength(4)
-      expect(await topics('?gradeLevel=darjah_1&subject=sains')).toHaveLength(4)
+      expect(await topics('?gradeLevel=TINGKATAN_4')).toHaveLength(19)
+      expect(await topics('?gradeLevel=tingkatan_4')).toHaveLength(19)
+      expect(await topics('?gradeLevel=TINGKATAN_4&subject=SAINS')).toHaveLength(12)
+      expect(await topics('?gradeLevel=tingkatan_4&subject=sains')).toHaveLength(12)
       const counts: [string, number][] = [
-        ['MATEMATIK', 34], ['SAINS', 35], ['BAHASA_MELAYU', 15], ['PENDIDIKAN_MORAL', 12],
-        ['SEJARAH', 11], ['PENDIDIKAN_ISLAM', 7], ['BAHASA_INGGERIS', 6], ['GEOGRAFI', 5],
+        ['MATEMATIK', 3], ['SAINS', 21], ['BAHASA_MELAYU', 2], ['PENDIDIKAN_MORAL', 1],
+        ['SEJARAH', 1], ['PENDIDIKAN_ISLAM', 0], ['BAHASA_INGGERIS', 0], ['GEOGRAFI', 1],
       ]
       for (const [subject, n] of counts) expect(await topics(`?subject=${subject}`), subject).toHaveLength(n)
-      expect(await topics('?subject=geografi')).toHaveLength(5)
+      expect(await topics('?subject=geografi')).toHaveLength(1)
     })
 
-    it('Tingkatan filters, empty grades and unknown codes return an empty list, not an error', async () => {
-      for (const [gradeLevel, n] of [['TINGKATAN_1', 34], ['TINGKATAN_2', 0], ['TINGKATAN_3', 0], ['TINGKATAN_4', 19], ['TINGKATAN_5', 10], ['DARJAH_2', 11], ['DARJAH_6', 8]] as const) {
+    it('Darjah, Tingkatan 1 to 3, empty grades and unknown codes return an empty list, not an error', async () => {
+      for (const [gradeLevel, n] of [['TINGKATAN_1', 0], ['TINGKATAN_2', 0], ['TINGKATAN_3', 0], ['TINGKATAN_4', 19], ['TINGKATAN_5', 10], ['DARJAH_1', 0], ['DARJAH_2', 0], ['DARJAH_6', 0]] as const) {
         expect(await topics(`?gradeLevel=${gradeLevel}`), gradeLevel).toHaveLength(n)
       }
       const res = await student.get('/api/topics?subject=ZZZ')
@@ -145,7 +148,7 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect(bm.every((c) => c.subjectLabel === 'BAHASA MELAYU')).toBe(true)
       const all = await topics()
       expect(all.every((c) => c.subtopicCount >= 1 && c.subtopicCount <= 6 && c.subtopicsPreview.length <= 3)).toBe(true)
-      expect(all.reduce((n, c) => n + c.subtopicCount, 0)).toBe(335)
+      expect(all.reduce((n, c) => n + c.subtopicCount, 0)).toBe(84)
       expect(all.some((c) => c.subtopicCount === 6 && c.subtopicsPreview.length === 3)).toBe(true)
     })
 
@@ -162,39 +165,52 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
     }
 
     it('returns the topic with subtopics, the practice code and zero progress without history', async () => {
-      const card = await find('DARJAH_1', 'SAINS', 'Haiwan')
+      const card = await find('TINGKATAN_4', 'SAINS', 'Alat pemadam api')
       const detail = parseData(await student.get(`/api/topics/${card.id}`), CurriculumTopicDetailLearnerSchema)
       expect(detail).toMatchObject({
         id: card.id,
-        gradeLevel: 'DARJAH_1',
+        gradeLevel: 'TINGKATAN_4',
         subject: 'SAINS',
         subjectLabel: 'SAINS',
         practiceCode: 'SCI',
-        name: 'Haiwan',
-        description: 'Mengenal jenis-jenis haiwan',
-        icon: '🐾',
-        sequence: 3,
+        name: 'Alat pemadam api',
+        description: null,
+        icon: null,
+        sequence: 56,
         progress: { questionsAnswered: 0, progress: 0 },
       })
       expect(detail.subtopics.map((s) => [s.name, s.description, s.progress])).toEqual([
-        ['Haiwan Peliharaan', 'Mengenal haiwan peliharaan seperti kucing, anjing', 0],
-        ['Haiwan Liar', 'Mengenal haiwan liar seperti harimau, gajah', 0],
+        ['Peralatan perlindungan diri', null, 0],
+        ['Pelupusan bahan buangan', null, 0],
+        ['Alat pemadam api', null, 0],
       ])
     })
 
-    it('the practice code map covers all 8 subjects (BR-16)', async () => {
+    it('a topic that is not Tingkatan 4 or 5 (a Darjah or Tingkatan 1 row in the table) is 404 "Topik tidak dijumpai."', async () => {
+      const rows = await t.db.query<{ id: string }>(`select id::text from legacy_topics where grade_level not in ('TINGKATAN_4', 'TINGKATAN_5') order by id limit 3`)
+      expect(rows.length).toBeGreaterThan(0)
+      for (const r of rows) expectError(await student.get(`/api/topics/${r.id}`), 'NOT_FOUND', 'Topik tidak dijumpai.')
+    })
+
+    it('the practice code map covers all 8 subjects (BR-16); a subject with no Tingkatan 4 or 5 topic lists empty', async () => {
       const map: Record<string, string> = {
         MATEMATIK: 'MATH', BAHASA_MELAYU: 'BM', BAHASA_INGGERIS: 'BI', SAINS: 'SCI',
         PENDIDIKAN_ISLAM: 'PI', PENDIDIKAN_MORAL: 'PM', SEJARAH: 'SEJ', GEOGRAFI: 'GEO',
       }
+      // Secondary-only seed: Islam and Inggeris have no T4/T5 topic (0 each), so there is no detail page to read their code from.
+      const noTopics = new Set(['PENDIDIKAN_ISLAM', 'BAHASA_INGGERIS'])
       for (const [subject, code] of Object.entries(map)) {
-        const first = (await topics(`?subject=${subject}`))[0]!
-        const detail = parseData(await student.get(`/api/topics/${first.id}`), CurriculumTopicDetailLearnerSchema)
+        const list = await topics(`?subject=${subject}`)
+        if (noTopics.has(subject)) {
+          expect(list, subject).toEqual([])
+          continue
+        }
+        const detail = parseData(await student.get(`/api/topics/${list[0]!.id}`), CurriculumTopicDetailLearnerSchema)
         expect(detail.practiceCode, subject).toBe(code)
       }
     })
 
-    it('keeps a null description and a Tingkatan topic with 6 subtopics', async () => {
+    it('keeps a null description and a topic with 6 subtopics', async () => {
       const six = (await topics()).find((c) => c.subtopicCount === 6)!
       const detail = parseData(await student.get(`/api/topics/${six.id}`), CurriculumTopicDetailLearnerSchema)
       expect(detail.subtopics).toHaveLength(6)
@@ -211,14 +227,14 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
   describe('GET /learning-map (AC8, BR-14, BR-15)', () => {
     const map = async (query = '') => parseData(await student.get(`/api/learning-map${query}`), CurriculumLearningMapSchema)
 
-    it('defaults to MATEMATIK and DARJAH_4; with the default provider the first two topics are open and the rest locked', async () => {
+    it('defaults to MATEMATIK and TINGKATAN_4; with the default provider the first two topics are open and the rest locked', async () => {
       const d = await map()
       expect(d.subject).toBe('MATEMATIK')
       expect(d.subjectLabel).toBe('Matematik')
-      expect(d.grade).toBe('DARJAH_4')
-      expect(d.gradeOptions).toEqual(['DARJAH_1', 'DARJAH_2', 'DARJAH_3', 'DARJAH_4'])
-      expect(d.topics.map((x) => x.name)).toEqual(['Nombor Hingga 100 000', 'Perpuluhan', 'Geometri'])
-      expect(d.topics.map((x) => x.icon)).toEqual(['🔢', '🔣', null])
+      expect(d.grade).toBe('TINGKATAN_4')
+      expect(d.gradeOptions).toEqual(['TINGKATAN_4', 'TINGKATAN_5'])
+      expect(d.topics.map((x) => x.name)).toEqual(['Fungsi dan Persamaan Kuadratik', 'Sistem Persamaan', 'Indeks, Surd dan Logaritma'])
+      expect(d.topics.map((x) => x.icon)).toEqual([null, null, null])
       expect(d.topics.map((x) => x.state)).toEqual(['unlocked', 'unlocked', 'locked'])
       expect(d.topics.map((x) => x.practiceUrl)).toEqual([`/practice?topic_id=${d.topics[0]!.id}`, `/practice?topic_id=${d.topics[1]!.id}`, null])
       expect(d.stats).toEqual({ done: 0, total: 3, progress: 0 })
@@ -238,17 +254,26 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       ])
     })
 
-    it('accepts only DARJAH_1 to DARJAH_4; anything else is served as DARJAH_4 (BR-15)', async () => {
-      for (const grade of ['DARJAH_5', 'DARJAH_6', 'TINGKATAN_1', 'darjah_2', 'xyz', '']) {
-        expect((await map(`?grade=${grade}`)).grade, grade).toBe('DARJAH_4')
+    it('accepts only TINGKATAN_4 and TINGKATAN_5; anything else (a Darjah included) is served as TINGKATAN_4 (BR-15, D72)', async () => {
+      for (const grade of ['DARJAH_1', 'DARJAH_4', 'DARJAH_6', 'TINGKATAN_1', 'tingkatan_5', 'xyz', '']) {
+        expect((await map(`?grade=${grade}`)).grade, grade).toBe('TINGKATAN_4')
       }
-      for (const grade of ['DARJAH_1', 'DARJAH_2', 'DARJAH_3', 'DARJAH_4']) expect((await map(`?grade=${grade}`)).grade).toBe(grade)
+      for (const grade of ['TINGKATAN_4', 'TINGKATAN_5']) expect((await map(`?grade=${grade}`)).grade).toBe(grade)
+    })
+
+    it('a grade with no topics for the subject is an empty, well-formed map (never Darjah content)', async () => {
+      const d = await map('?subject=MATEMATIK&grade=TINGKATAN_5')
+      expect(d.grade).toBe('TINGKATAN_5')
+      expect(d.topics).toEqual([])
+      expect(d.stats).toEqual({ done: 0, total: 0, progress: 0 })
+      expect(d.gradeOptions).toEqual(['TINGKATAN_4', 'TINGKATAN_5'])
     })
 
     it('subject labels: pills, GEOGRAFI, an unknown code title-cased and kept as typed', async () => {
       expect((await map('?subject=PENDIDIKAN_ISLAM')).subjectLabel).toBe('Pend. Islam')
       const geo = await map('?subject=GEOGRAFI')
-      expect([geo.subjectLabel, geo.subject, geo.topics]).toEqual(['Geografi', 'GEOGRAFI', []])
+      // The default grade is TINGKATAN_4, which has one Geografi topic in the seed ("Geografi Tingkatan 4").
+      expect([geo.subjectLabel, geo.subject, geo.topics.map((x) => x.name)]).toEqual(['Geografi', 'GEOGRAFI', ['Geografi Tingkatan 4']])
       const zzz = await map('?subject=ZZZ')
       expect([zzz.subjectLabel, zzz.subject, zzz.topics]).toEqual(['Zzz', 'ZZZ', []])
       expect(zzz.stats).toEqual({ done: 0, total: 0, progress: 0 })
@@ -257,11 +282,12 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect((await map('?subject=')).subject).toBe('MATEMATIK')
     })
 
-    it('serves other combinations (Darjah 1 Sains has 4 topics, the first named Haiwan is the third)', async () => {
-      const d = await map('?subject=SAINS&grade=DARJAH_1')
-      expect(d.stats.total).toBe(4)
-      expect(d.topics.map((x) => x.state)).toEqual(['unlocked', 'unlocked', 'locked', 'locked'])
-      expect(d.topics.map((x) => x.name)).toContain('Haiwan')
+    it('serves other combinations (Tingkatan 5 Sains has 9 topics, the first open ones in sequence order)', async () => {
+      const d = await map('?subject=SAINS&grade=TINGKATAN_5')
+      expect(d.stats.total).toBe(9)
+      expect(d.topics.map((x) => x.state)).toEqual(['unlocked', 'unlocked', ...Array<'locked'>(7).fill('locked')])
+      expect(d.topics.map((x) => x.name)[0]).toBe('Dunia mikroorganisma')
+      expect(d.topics.map((x) => x.name)).toContain('Satelit')
     })
   })
 
@@ -281,7 +307,7 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
         },
       })
       client = await loginAs(stubbed, 'pelajarmaju@demo.test')
-      const d1 = (await topics('?gradeLevel=DARJAH_1&subject=MATEMATIK')).map((c) => c.id)
+      const d1 = (await topics('?gradeLevel=TINGKATAN_4&subject=MATEMATIK')).map((c) => c.id)
       progress.set(d1[0]!, { progress: 95, sessions: 3, questionsAnswered: 23 })
       progress.set(d1[1]!, { progress: 15, sessions: 2, questionsAnswered: 7 })
       progress.set(d1[2]!, { progress: 20, sessions: 2, questionsAnswered: 7 })
@@ -291,24 +317,23 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
     })
 
     it('derives the island states and stats from the provider (mastered, started, unlocked, locked)', async () => {
-      const res = await client.get('/api/learning-map?subject=MATEMATIK&grade=DARJAH_1')
+      const res = await client.get('/api/learning-map?subject=MATEMATIK&grade=TINGKATAN_4')
       const d = parseData(res, CurriculumLearningMapSchema)
-      expect(d.topics.map((x) => x.name)).toEqual(['Nombor', 'Nombor Bulat Hingga 100', 'Bentuk', 'Operasi Tambah dan Tolak', 'Bentuk dan Ruang'])
-      expect(d.topics.map((x) => x.state)).toEqual(['mastered', 'started', 'started', 'unlocked', 'locked'])
-      expect(d.topics.map((x) => x.progress)).toEqual([95, 15, 20, 0, 0])
+      expect(d.topics.map((x) => x.name)).toEqual(['Fungsi dan Persamaan Kuadratik', 'Sistem Persamaan', 'Indeks, Surd dan Logaritma'])
+      expect(d.topics.map((x) => x.state)).toEqual(['mastered', 'started', 'started'])
+      expect(d.topics.map((x) => x.progress)).toEqual([95, 15, 20])
       expect(d.topics[0]).toMatchObject({ sessions: 3, questionsAnswered: 23 })
-      expect(d.topics[4]!.practiceUrl).toBeNull()
-      expect(d.topics[3]!.practiceUrl).toBe(`/practice?topic_id=${d.topics[3]!.id}`)
-      // done = mastered; progress = round(avg(95, 15, 20, 0, 0)) = 26.
-      expect(d.stats).toEqual({ done: 1, total: 5, progress: 26 })
+      expect(d.topics[2]!.practiceUrl).toBe(`/practice?topic_id=${d.topics[2]!.id}`)
+      // done = mastered; progress = round(avg(95, 15, 20)) = 43. (Tingkatan 4 Matematik has 3 topics in the seed, so no locked island here.)
+      expect(d.stats).toEqual({ done: 1, total: 3, progress: 43 })
     })
 
     it('the topic detail shows the progress on every subtopic bar, and the provider is asked for the current user', async () => {
-      const first = (await topics('?gradeLevel=DARJAH_1&subject=MATEMATIK'))[0]!
+      const first = (await topics('?gradeLevel=TINGKATAN_4&subject=MATEMATIK'))[0]!
       asked.length = 0
       const d = parseData(await client.get(`/api/topics/${first.id}`), CurriculumTopicDetailLearnerSchema)
       expect(d.progress).toEqual({ questionsAnswered: 23, progress: 95 })
-      expect(d.subtopics.map((s) => s.progress)).toEqual([95, 95, 95])
+      expect(d.subtopics.map((s) => s.progress)).toEqual([95, 95])
       expect(asked).toEqual([client.userId])
     })
   })

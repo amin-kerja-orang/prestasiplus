@@ -12471,6 +12471,392 @@
           "file"
         ]
       },
+      "BijakKuizStartRequest": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "Curriculum subject code, for example MATH. Absent = every subject."
+          },
+          "count": {
+            "type": "integer",
+            "description": "5, 10, 20 or 40. Default 20."
+          }
+        },
+        "additionalProperties": false
+      },
+      "BijakKuizOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-H]$",
+            "description": "Stable option id (the stored letter). Send it back on check."
+          },
+          "label": {
+            "type": "string",
+            "pattern": "^[A-H]$",
+            "description": "Letter shown to the pupil (follows the shuffled order)."
+          },
+          "text": {
+            "type": "string"
+          },
+          "imageToken": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Public file token of an option picture, else null. Read it from /api/files/{token}."
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "text",
+          "imageToken"
+        ],
+        "additionalProperties": false
+      },
+      "BijakKuizStimulus": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "diagram",
+              "passage",
+              "table"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageToken": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "alt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "body",
+          "imageToken",
+          "alt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakKuizItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Question id, or \"{questionId}:{part path}\" for a part of a structured question (per-paper quiz)."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "mcq",
+              "open"
+            ],
+            "description": "open = a non-objective part: shown with an unsaved textarea, cannot be checked."
+          },
+          "stem": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lead": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Prompts of the parent parts, outermost first."
+          },
+          "path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Part label path, for example \"a.i\"; null for a single-part question."
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "markable": {
+            "type": "boolean"
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakKuizStimulus"
+            }
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakKuizOption"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "stem",
+          "lead",
+          "path",
+          "prompt",
+          "marks",
+          "markable",
+          "subjectName",
+          "stimuli",
+          "options"
+        ],
+        "additionalProperties": false
+      },
+      "BijakKuizSession": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakKuizItem"
+            }
+          }
+        },
+        "required": [
+          "sessionId",
+          "count",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "BijakKuizCheckRequest": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "optionId": {
+            "type": "string",
+            "pattern": "^[A-H]$"
+          }
+        },
+        "required": [
+          "itemId",
+          "optionId"
+        ],
+        "additionalProperties": false
+      },
+      "BijakKuizCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "correctOptionId": {
+            "type": "string",
+            "pattern": "^[A-H]$"
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "correct",
+          "correctOptionId",
+          "explanation"
+        ],
+        "additionalProperties": false
+      },
+      "BijakKuizFinishRequest": {
+        "type": "object",
+        "properties": {
+          "timeSpent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 86400
+          }
+        },
+        "additionalProperties": false
+      },
+      "BijakKuizResult": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gamification": {
+            "type": "object",
+            "properties": {
+              "coinsEarned": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "streakCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pointsEarned": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalBalance": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "coinsEarned",
+              "streakCount",
+              "pointsEarned",
+              "totalBalance"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "score",
+          "total",
+          "answered",
+          "gamification"
+        ],
+        "additionalProperties": false
+      },
+      "BijakKuizPaperPage": {
+        "type": "object",
+        "properties": {
+          "paper": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "subjectName": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "subjectName",
+              "code"
+            ],
+            "additionalProperties": false
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "section": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "label": {
+                "type": "string"
+              },
+              "instruction": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "instruction"
+            ],
+            "additionalProperties": false,
+            "description": "The Bahagian of this page; null when the paper has no question to show."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakKuizItem"
+            }
+          },
+          "markableTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Objective parts of the whole paper (V2 \"Skor: n / markableTotal\")."
+          }
+        },
+        "required": [
+          "paper",
+          "page",
+          "pageCount",
+          "section",
+          "items",
+          "markableTotal"
+        ],
+        "additionalProperties": false
+      },
       "SpmErrorCode": {
         "type": "string",
         "enum": [
@@ -53310,12 +53696,12 @@
           "approvedCount": {
             "type": "integer",
             "minimum": 0,
-            "description": "Eligible questions of the subject (Q-ELIGIBLE), \"{n} soalan\"."
+            "description": "Questions of the subject that the practice draw can serve (published, active, objective, at an offered level: Tingkatan 4 and 5); the same figure as the sum of the subject detail `total`. \"{n} soalan\"."
           },
           "bankCount": {
             "type": "integer",
             "minimum": 0,
-            "description": "Active questions of the subject (Q-ACTIVE), \"Statistik Subjek\"."
+            "description": "Same figure as `approvedCount` (practice-drawable questions), \"Statistik Subjek\"."
           }
         },
         "required": [
@@ -78868,6 +79254,499 @@
           },
           "403": {
             "description": "FORBIDDEN (the active role may not use Bijak SPM). Allowed: student, and admin or school_admin inside Mod Pelajar (working assumption of BE-15).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/kuiz/sessions": {
+      "post": {
+        "tags": [
+          "bijak-kuiz"
+        ],
+        "summary": "Simulasi Kuiz (random): start a quiz of 5, 10, 20 or 40 objective questions",
+        "description": "V2 ExamQuizController::index. Draws published, active, learner-visible questions that are a single objective (MCQ) part with a correct option, optionally of one subject; options are shuffled; fewer than count may be served when the bank is short (V2 limit). The quiz is stored as a practice session (mode latih_tubi, decision U8) so wrong answers feed Soalan Aku Salah. 422 NO_QUESTIONS \"Belum ada soalan objektif\" when nothing matches. Student role (admin and school_admin only inside Mod Pelajar, where what is written is test data). No answer key ever reaches the client before the check; every response is no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakKuizStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The session and its items (no key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakKuizSession"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use Bijak SPM, or CSRF_INVALID on a write). Student role; admin and school_admin only inside Mod Pelajar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "NO_QUESTIONS, or VALIDATION_ERROR with fields (subject, count).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/kuiz/sessions/{id}/check": {
+      "post": {
+        "tags": [
+          "bijak-kuiz"
+        ],
+        "summary": "Simulasi Kuiz (random): mark one answer on the server (\"Semak\")",
+        "description": "V2 ExamQuizController::check. The first check of an item is stored; a repeat returns the stored verdict and never changes it. 422 \"Jawapan tidak sah.\" when the item is not in the session or the option is not one of its options. Student role (admin and school_admin only inside Mod Pelajar, where what is written is test data). No answer key ever reaches the client before the check; every response is no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Quiz session id (a practice session)."
+            },
+            "required": true,
+            "description": "Quiz session id (a practice session).",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakKuizCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The verdict, the right option and the explanation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakKuizCheckResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use Bijak SPM, or CSRF_INVALID on a write). Student role; admin and school_admin only inside Mod Pelajar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kuiz tidak ditemui\" (unknown, malformed or another user session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_SUBMITTED \"Kuiz ini sudah selesai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" on itemId or optionId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/kuiz/sessions/{id}/finish": {
+      "post": {
+        "tags": [
+          "bijak-kuiz"
+        ],
+        "summary": "Simulasi Kuiz (random): finish and store the result",
+        "description": "Completes the practice session: answers are stored, the revision queue and mastery move, and the reward port credits the session (ledger source follows the stored mode latih_tubi: quiz_spm). Unchecked items are not counted as answered. Student role (admin and school_admin only inside Mod Pelajar, where what is written is test data). No answer key ever reaches the client before the check; every response is no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Quiz session id (a practice session)."
+            },
+            "required": true,
+            "description": "Quiz session id (a practice session).",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakKuizFinishRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Score and reward.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakKuizResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use Bijak SPM, or CSRF_INVALID on a write). Student role; admin and school_admin only inside Mod Pelajar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kuiz tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_SUBMITTED \"Kuiz ini sudah selesai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/kuiz/papers/{id}": {
+      "get": {
+        "tags": [
+          "bijak-kuiz"
+        ],
+        "summary": "Simulasi Kuiz (per paper): one Bahagian of a published paper",
+        "description": "V2 ExamQuizController::paper + PaperViewBuilder. Pages follow the paper sections in order; a section without a question is not a page. A page carries every objective part of the section (with stimulus) and the non-objective parts as kind open (an unsaved textarea in the client). NOT stored (decision U8). Option order is shuffled on each read. Student role (admin and school_admin only inside Mod Pelajar, where what is written is test data). No answer key ever reaches the client before the check; every response is no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Paper id."
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One Bahagian.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakKuizPaperPage"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use Bijak SPM, or CSRF_INVALID on a write). Student role; admin and school_admin only inside Mod Pelajar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\" (unknown, unpublished, or another user generated paper).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR on page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/kuiz/papers/{id}/check": {
+      "post": {
+        "tags": [
+          "bijak-kuiz"
+        ],
+        "summary": "Simulasi Kuiz (per paper): mark one answer on the server (\"Semak\")",
+        "description": "V2 ExamQuizController::check. Nothing is stored (decision U8). The option must belong to the part it claims. Student role (admin and school_admin only inside Mod Pelajar, where what is written is test data). No answer key ever reaches the client before the check; every response is no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Paper id."
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakKuizCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The verdict and the right option.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakKuizCheckResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use Bijak SPM, or CSRF_INVALID on a write). Student role; admin and school_admin only inside Mod Pelajar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" (unknown part, non-objective part, or option not of the part).",
             "content": {
               "application/json": {
                 "schema": {

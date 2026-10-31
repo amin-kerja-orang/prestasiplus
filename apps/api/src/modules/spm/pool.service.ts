@@ -15,15 +15,15 @@ export interface PoolCell {
   n: number
 }
 
-/** The SQL scope of the SPM pool of a subject: live-published, active, `pool` tag, one multiple-choice leaf outside any group (the same shape `inPool` / `mcqItemOf` accept, so counts and draws agree). */
+/** The SQL scope of the SPM pool of a subject: live-published, active, SPM-servable (offered level, no tag), one multiple-choice leaf outside any group (the same shape `inPool` / `mcqItemOf` accept, so counts and draws agree). */
 const poolFilter = (subjectId: string): QuestionFilter => ({ subjectId, type: 'mcq', spmPool: true, ungrouped: true, singleMcqLeaf: true })
 
 /** First window of a draw is `n * DRAW_OVER`; it widens x4 (same seed, so the same prefix) while records are refused. */
 const DRAW_OVER = 2
 const DRAW_ROUNDS = 3
 
-/** True for a question the pool serves: live-published, active, flagged `spmPool`, one multiple-choice leaf. */
-const inPool = (r: QuestionRecord): boolean => r.spmPool && r.isActive && r.version.status === 'published' && mcqItemOf(r.version.stemMs, r.version.parts) !== null
+/** True for a question the pool serves: live-published, active, one multiple-choice leaf (the SQL scope already enforced the SPM-servable level rule). */
+const inPool = (r: QuestionRecord): boolean => r.isActive && r.version.status === 'published' && mcqItemOf(r.version.stemMs, r.version.parts) !== null
 
 /**
  * The SPM pool (BR-M06-02), computed through the BE-09 doorway only. Counts are ONE grouped SQL statement per subject
