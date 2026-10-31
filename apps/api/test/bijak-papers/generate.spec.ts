@@ -1,15 +1,13 @@
 import { BijakPaperCoverSchema, envelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import {
-  type BijakPool,
-  type BijakQuestionInfo,
-  type BijakQuestionSource,
-  type BijakServedSource,
-} from '../../src/modules/bijak/papers'
+import type { QuestionFacts } from '@pp/exam-core'
+
+import type { BijakQuestionInfo, BijakQuestionSource, BijakServedSource } from '../../src/modules/bijak/papers'
+import type { BijakPoolSource } from '../../src/modules/bijak/papers/pool-source'
 import { POC_BANK, pocQuestionId } from '../../prisma/seed/poc/export'
 import { NOT_SERVING, SERVING } from '../support/serve-blueprints'
-import { count, expectError, loginAs, bootPapersApp, serveSeededBlueprints, type Client, type PapersTestApp } from './helpers'
+import { count, expectError, loginAs, bootPapersApp, serveSeededBlueprints, setPocMarkBudgets, type Client, type PapersTestApp } from './helpers'
 
 const served = new Set<string>()
 const fakeServed: BijakServedSource = { servedQuestionIds: async () => served }
@@ -37,6 +35,7 @@ describe('POST /api/bijak/papers/generate (Jana Kertas, BE-15)', () => {
 
   beforeAll(async () => {
     t = await bootPapersApp({ served: fakeServed })
+    await setPocMarkBudgets(t.db)
     await serveSeededBlueprints(t.db)
     student = await loginAs(t, 'pelajar@demo.test')
   })
@@ -62,13 +61,14 @@ describe('POST /api/bijak/papers/generate (Jana Kertas, BE-15)', () => {
       durationMin: 150,
       year: 2026,
     })
+    // D75: the marks of every section equal the blueprint budget exactly (9 / 6 / 6 for the seeded 1449/2).
     expect(cover.sections.map((s) => [s.label, s.questionCount, s.marks, s.instruction])).toEqual([
-      ['Bahagian A', 3, expect.any(Number), 'Jawab semua soalan.'],
-      ['Bahagian B', 1, expect.any(Number), 'Jawab semua soalan.'],
-      ['Bahagian C', 2, expect.any(Number), 'Jawab 1 daripada 2 soalan.'],
+      ['Bahagian A', 3, 9, 'Jawab semua soalan.'],
+      ['Bahagian B', 1, 6, 'Jawab semua soalan.'],
+      ['Bahagian C', 2, 6, 'Jawab 1 daripada 2 soalan.'],
     ])
     expect(cover.sections[2]).toMatchObject({ chooseN: 1 })
-    expect(cover.marks).toBe(cover.sections.reduce((n, s) => n + s.marks, 0))
+    expect(cover.marks).toBe(21)
     expect(cover.instructions).toHaveLength(3)
     expect(cover.reference).toHaveLength(1)
     const row = (await t.db.query<{ kind: string; status: string; generated_for_user_id: string; is_test: boolean; blueprint_id: string | null }>(
@@ -77,6 +77,10 @@ describe('POST /api/bijak/papers/generate (Jana Kertas, BE-15)', () => {
     ))[0]
     expect(row).toMatchObject({ kind: 'jana', status: 'published', generated_for_user_id: student.userId, is_test: false })
     expect(row?.blueprint_id).not.toBeNull()
+    // AC-34.7: the standard report of the composition is stored with the paper (blueprint version, achieved marks).
+    const stored = (await t.db.query<{ standard_report: { blueprintVersion?: number } | null }>(`select standard_report from papers where id = $1`, [paperId]))[0]?.standard_report
+    expect(stored).not.toBeNull()
+    expect(stored).toHaveProperty('sections')
   })
 
   it('a generated paper is not in the Kertas Pilihan list', async () => {
@@ -237,7 +241,7 @@ describe('POST /api/bijak/papers/generate (Jana Kertas, BE-15)', () => {
     const before = await count(t.db, `select count(*) n from papers where kind = 'jana'`)
     const res = await generate('SN', 1)
     const error = expectError(res, 'SHORTAGE', 422, 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.')
-    expect(error.details).toEqual({ shortages: [{ section: 'Bahagian A', need: 40, have: 0 }] })
+    expect(error.details).toEqual({ shortages: [{ section: 'Bahagian A', kind: 'count', need: 40, have: 0 }] })
     expect(await count(t.db, `select count(*) n from papers where kind = 'jana'`)).toBe(before)
   })
 
@@ -261,29 +265,59 @@ describe('POST /api/bijak/papers/generate (Jana Kertas, BE-15)', () => {
   })
 })
 
-describe('Jana Kertas through the question port (a BE-09 stand-in)', () => {
+describe('Jana Kertas through the pool source (standard facts, D75)', () => {
   let t: PapersTestApp
   let student: Client
 
-  const info = new Map<string, BijakQuestionInfo>()
-  const entries: BijakPool['entries'] = []
-  for (let i = 1; i <= 12; i++) {
-    const id = String(7000 + i)
-    info.set(id, { id, marks: (i % 3) + 1, groupId: null, versionNo: 3 })
-    entries.push({ questionId: id })
+  const leaf = (marks: number, over: Partial<QuestionFacts['leaves'][number]> = {}): QuestionFacts['leaves'][number] => ({
+    marks,
+    mode: 'mcq',
+    tp: 2,
+    kbat: false,
+    hasKey: true,
+    ...over,
+  })
+  const fact = (id: string, over: Partial<QuestionFacts> = {}): QuestionFacts => ({
+    id,
+    groupId: null,
+    groupPosition: null,
+    versionNo: 3,
+    tagReview: false,
+    unit: { nodeId: '10', level: 'T4', code: '1' },
+    formOrigin: 't4',
+    pools: ['MAT1-A'],
+    leaves: [leaf(1)],
+    ...over,
+  })
+  // 12 one-mark singles and a group of two sharing a stimulus: MAT Kertas 1 (10 x 1 mark) is exactly satisfiable.
+  const bank: QuestionFacts[] = [
+    ...Array.from({ length: 12 }, (_, i) => fact(String(7001 + i))),
+    fact('7101', { groupId: 'g1', groupPosition: 1, groupSize: 2 }),
+    fact('7102', { groupId: 'g1', groupPosition: 2, groupSize: 2 }),
+  ]
+  // A candidate list the test swaps per case; only MAT Kertas 1 has facts, any other pair is a shortage.
+  let candidates: QuestionFacts[] = bank
+  const refused = new Set<string>()
+  const source: BijakPoolSource = {
+    candidates: async (scope) => (scope.subjectCode === 'MATH' ? candidates : []),
+    seen: async () => new Set(),
   }
-  for (const id of ['7101', '7102']) {
-    info.set(id, { id, marks: 2, groupId: 'g1', versionNo: 1 })
-    entries.push({ questionId: id, groupId: 'g1' })
-  }
-  let vanished = false
-  const source: BijakQuestionSource = {
-    getMany: async (ids) => new Map(ids.flatMap((id) => (!vanished && info.has(id) ? [[id, info.get(id) as BijakQuestionInfo] as const] : []))),
-    pool: async (pool) => (pool === 'MAT1-A' ? { entries, groups: new Map([['g1', ['7101', '7102']]]) } : { entries: [], groups: new Map() }),
+
+  // Reads of a generated paper (the cover) take marks from the question port, not from the pool facts.
+  const questions: BijakQuestionSource = {
+    getMany: async (ids) =>
+      new Map(
+        ids.flatMap((id) => {
+          const f = bank.find((x) => x.id === id)
+          // `refused` stands for the BE-09 bridge refusing a candidate (option image, group without one stimulus, missing file ...).
+          return f && !refused.has(id) ? [[id, { id, marks: 1, groupId: f.groupId, versionNo: f.versionNo } satisfies BijakQuestionInfo] as const] : []
+        }),
+      ),
+    pool: async () => ({ entries: [], groups: new Map() }),
   }
 
   beforeAll(async () => {
-    t = await bootPapersApp({ questionSource: source })
+    t = await bootPapersApp({ poolSource: source, questionSource: questions })
     await serveSeededBlueprints(t.db)
     student = await loginAs(t, 'pelajar@demo.test')
   })
@@ -291,36 +325,91 @@ describe('Jana Kertas through the question port (a BE-09 stand-in)', () => {
     await t.close()
   })
 
-  it('draws from the provided pool, pins the version and derives marks from the provided marks', async () => {
-    const res = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
-    expect(res.status, JSON.stringify(res.body)).toBe(201)
-    const id = paperIdOf(res)
-    const rows = await placed(t, id)
-    expect(rows).toHaveLength(10)
-    expect(rows.every((r) => info.has(r.question_id))).toBe(true)
-    const budget = (await t.db.query<{ mark_budget: number }>(`select mark_budget from paper_sections where paper_id = $1`, [id]))[0]?.mark_budget
-    expect(budget).toBe(rows.reduce((n, r) => n + (info.get(r.question_id)?.marks ?? 0), 0))
-    const versions = await t.db.query<{ pinned_version_no: number; question_id: string }>(
-      `select pl.pinned_version_no, pl.question_id::text from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`,
-      [id],
-    )
-    expect(versions.every((v) => v.pinned_version_no === (info.get(v.question_id)?.versionNo ?? -1))).toBe(true)
-    const cover = envelopeOf(BijakPaperCoverSchema).parse((await student.get(`/api/bijak/papers/${id}`)).body).data
-    expect(cover.marks).toBe(budget)
-    // The fake pool is empty for every other pool: MAT Kertas 2 is a shortage.
+  const generate = () => student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
+
+  it('composes from the provided facts, pins the fact version and derives marks from the facts', async () => {
+    candidates = bank
+    for (let i = 0; i < 6; i++) {
+      t.clock.advance(1000)
+      const res = await generate()
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const id = paperIdOf(res)
+      const rows = await placed(t, id)
+      expect(rows).toHaveLength(10)
+      const known = new Set(bank.map((f) => f.id))
+      expect(rows.every((r) => known.has(r.question_id))).toBe(true)
+      // D90: a group is placed whole and consecutively, or not at all.
+      const ids = rows.map((r) => r.question_id)
+      const at = ['7101', '7102'].map((m) => ids.indexOf(m))
+      if (at.some((x) => x !== -1)) {
+        expect(at.every((x) => x !== -1), 'group split').toBe(true)
+        expect(at[1]).toBe((at[0] as number) + 1)
+      }
+      const budget = (await t.db.query<{ mark_budget: number }>(`select mark_budget from paper_sections where paper_id = $1`, [id]))[0]?.mark_budget
+      expect(budget).toBe(10)
+      const versions = await t.db.query<{ pinned_version_no: number }>(
+        `select pl.pinned_version_no from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`,
+        [id],
+      )
+      expect(versions.every((v) => v.pinned_version_no === 3)).toBe(true)
+      const cover = envelopeOf(BijakPaperCoverSchema).parse((await student.get(`/api/bijak/papers/${id}`)).body).data
+      expect(cover.marks).toBe(10)
+    }
+    // The fake has no facts for any other pair: MAT Kertas 2 is a shortage.
     expectError(await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 2 }), 'SHORTAGE', 422)
   })
 
-  it('a pooled question that vanished before the info read fails the request and writes no paper row', async () => {
+  it('exact or refuse: ineligible facts are never used, and a pool one short refuses without a paper row', async () => {
     const count = async (): Promise<number> => Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)
     const before = await count()
-    vanished = true
-    try {
-      expect((await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })).status).toBe(500)
-    } finally {
-      vanished = false
-    }
+    // 9 usable singles + 3 that are not eligible (no key, tags awaiting review, no marks): fewer than the 10 slots.
+    candidates = [
+      ...bank.slice(0, 9),
+      fact('7010', { leaves: [leaf(1, { hasKey: false })] }),
+      fact('7011', { tagReview: true }),
+      fact('7012', { leaves: [leaf(0)] }),
+    ]
+    const error = expectError(await generate(), 'SHORTAGE', 422)
+    expect(error.details).toMatchObject({ shortages: [{ section: 'Objektif', need: 10 }] })
     expect(await count()).toBe(before)
+    candidates = bank
+  })
+
+  it('a candidate the bridge refuses is never placed: the paper is composed from the others', async () => {
+    candidates = bank
+    refused.clear()
+    for (const id of ['7001', '7002']) refused.add(id)
+    try {
+      for (let i = 0; i < 8; i++) {
+        t.clock.advance(1000)
+        const ids = (await placed(t, paperIdOf(await generate()))).map((r) => r.question_id)
+        expect(ids).toHaveLength(10)
+        expect(ids.filter((id) => refused.has(id))).toEqual([])
+      }
+    } finally {
+      refused.clear()
+    }
+  })
+
+  it('a pool left short by the bridge refuses (SHORTAGE) and writes no paper row: a refused group member drops its group', async () => {
+    candidates = bank
+    const before = Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)
+    // 12 singles - 3 refused = 9, and the group (7101 refused) is incomplete, so 10 questions cannot be made.
+    for (const id of ['7001', '7002', '7003', '7101']) refused.add(id)
+    try {
+      expectError(await generate(), 'SHORTAGE', 422)
+      expect(Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)).toBe(before)
+    } finally {
+      refused.clear()
+    }
+  })
+
+  it('a section whose marks no selection can reach refuses instead of making a paper with other marks', async () => {
+    const before = Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)
+    candidates = bank.map((f) => ({ ...f, leaves: [leaf(2)] })) // 10 questions of 2 marks cannot make the 10-mark budget
+    expectError(await generate(), 'SHORTAGE', 422)
+    expect(Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)).toBe(before)
+    candidates = bank
   })
 })
 

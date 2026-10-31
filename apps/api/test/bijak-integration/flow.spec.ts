@@ -78,12 +78,16 @@ const result = async (c: Client, attemptId: string) => {
 const aggRows = (attemptId: string) => t.db.query('select * from practice_attempt_aggregates where attempt_id = $1', [attemptId])
 const ledgerRows = (attemptId: string) => t.db.query('select * from coin_ledger where source = $1 and source_id = $2', [SOURCE, attemptId])
 const balance = async (userId: string) => Number((await t.db.query('select current_syiling from wallets where user_id = $1', [userId]))[0]?.current_syiling ?? 0)
+const xpOf = async (userId: string) => Number((await t.db.query('select xp from wallets where user_id = $1', [userId]))[0]?.xp ?? 0)
 
 describe('exam flow (student)', () => {
   let attemptId = ''
   let paper = { id: '', subject: '' }
   let startedAt = 0
   let before = 0
+  let xpBefore = 0
+  let streakDays = 0
+  let points = 0
   let score = 0
   let max = 0
   let coins = 0
@@ -91,6 +95,7 @@ describe('exam flow (student)', () => {
   it('1. lists papers, starts an exam, autosaves a correct MCQ, submits, and the result scores above zero', async () => {
     paper = await paperId(student, '1449/1', 1)
     before = await balance(student.userId)
+    xpBefore = await xpOf(student.userId)
     const s = await start(student, paper.id, 'exam')
     attemptId = s.attemptId
     startedAt = t.clock.now().getTime()
@@ -111,6 +116,7 @@ describe('exam flow (student)', () => {
     score = r.result.score
     max = r.result.max
     coins = r.result.coins
+    points = r.result.points
     expect(coins).toBeGreaterThan(0)
   })
 
@@ -142,6 +148,14 @@ describe('exam flow (student)', () => {
     expect(await balance(student.userId)).toBe(before + coins)
   })
 
+  it('3b. adds the XP of the result once (10 per mark) and touches the streak (kombo)', async () => {
+    expect(points).toBe(Math.floor(score * 10))
+    expect(await xpOf(student.userId)).toBe(xpBefore + points)
+    const streak = (await t.db.query<{ current: number }>('select current from streaks where user_id = $1', [student.userId]))[0]
+    expect(streak?.current).toBeGreaterThanOrEqual(1)
+    streakDays = streak!.current
+  })
+
   it('4. replaying the submit (same key, then another key) is a replay: one ledger row, same balance, one aggregate row', async () => {
     const balanceBefore = await balance(student.userId)
     for (const key of ['integ-key-1', 'integ-key-replay']) {
@@ -152,6 +166,8 @@ describe('exam flow (student)', () => {
     expect(await ledgerRows(attemptId)).toHaveLength(1)
     expect(await balance(student.userId)).toBe(balanceBefore)
     expect(await aggRows(attemptId)).toHaveLength(1)
+    expect(await xpOf(student.userId)).toBe(xpBefore + points)
+    expect((await t.db.query<{ current: number }>('select current from streaks where user_id = $1', [student.userId]))[0]?.current).toBe(streakDays)
     const r = await result(student, attemptId)
     expect(r.result.score).toBe(score)
   })
@@ -161,6 +177,7 @@ describe('latihan (practice mode)', () => {
   it('5. writes an aggregate row but no ledger credit', async () => {
     const paper = await paperId(student, '1449/1', 1)
     const before = await balance(student.userId)
+    const xp0 = await xpOf(student.userId)
     const s = await start(student, paper.id, 'latihan')
     expect(s.view.attempt.mode).toBe('latihan')
     await answerOne(student, s.attemptId, s.view.questions.map((q) => q.id))
@@ -175,6 +192,7 @@ describe('latihan (practice mode)', () => {
     expect(Number(rows[0]!.units_awarded)).toBe(r.result.score)
     expect(await t.db.query('select 1 from coin_ledger where source_id = $1', [s.attemptId])).toHaveLength(0)
     expect(await balance(student.userId)).toBe(before)
+    expect(await xpOf(student.userId)).toBe(xp0)
   })
 })
 
@@ -182,6 +200,7 @@ describe('Mod Pelajar (admin in student mode)', () => {
   it('6. flags the attempt and aggregate is_test, credits NO reward (AC-20.3) and keeps them out of the shared aggregate reads', async () => {
     const paper = await paperId(admin, '1449/1', 1)
     const adminBefore = await balance(admin.userId)
+    const adminXpBefore = await xpOf(admin.userId)
     const s = await start(admin, paper.id, 'exam')
     await answerOne(admin, s.attemptId, s.view.questions.map((q) => q.id))
     const res = await submit(admin, s.attemptId, 'integ-admin')
@@ -197,6 +216,7 @@ describe('Mod Pelajar (admin in student mode)', () => {
     // AC-20.3: Mod Pelajar earns no rewards: no ledger row of any source, no balance change
     expect(await t.db.query('select 1 from coin_ledger where source_id = $1', [s.attemptId])).toHaveLength(0)
     expect(await balance(admin.userId)).toBe(adminBefore)
+    expect(await xpOf(admin.userId)).toBe(adminXpBefore)
 
     expect(await aggregate.forStudents({ userIds: [admin.userId] })).toEqual([])
     expect(await aggregate.subjectSummary({ userIds: [admin.userId] })).toEqual([])

@@ -6,6 +6,8 @@
  * - A flat question is ONE leaf. mcq -> `mcq` (options A.., key `option`); true_false -> `short_text`
  *   accepted exactly `["Benar"]` or `["Salah"]`; short_answer / fill_blank -> `short_text` (fill_blank
  *   has `blankCount >= 1`); essay -> `essay` with a `points` key built from `modelAnswer`.
+ * - An `essay_choice` leaf (esei pilihan) is never written from the flat shape. Reading back it is `essay` (flat type) with the
+ *   same `modelAnswer` rule and its topics in `essayTopics` (R1-H-A7); every other flat question has `essayTopics` null.
  * - Reading back: `short_text` with accepted exactly one of Benar / Salah and no blank is
  *   `true_false`; `blankCount >= 1` is `fill_blank`; other `short_text` is `short_answer`; any other
  *   mode or a tree reads as `essay` with null options.
@@ -178,6 +180,8 @@ export interface FlatFields {
   correctAnswerText: string | null
   altAnswers: string[]
   modelAnswer: string | null
+  /** R1-H-A7: the topics of an `essay_choice` leaf, else null. */
+  essayTopics: { id: string; label: string }[] | null
   explanation: string | null
   language: 'bm' | 'en'
   scriptType: 'rumi' | 'arab' | 'jawi' | 'mixed'
@@ -219,6 +223,7 @@ export function flatFromVersion(v: QuestionVersionRecord): FlatFields {
     correctAnswerText: null,
     altAnswers: [],
     modelAnswer: null,
+    essayTopics: null,
     explanation: v.explanationMs,
     language: flatLanguageOf(v.language),
     scriptType: scriptOf(v.language),
@@ -244,10 +249,11 @@ export function flatFromVersion(v: QuestionVersionRecord): FlatFields {
       out.correctAnswerText = first
       out.altAnswers = values.slice(1)
     }
-  } else if (leaf.mode === 'essay') {
+  } else if (leaf.mode === 'essay' || leaf.mode === 'essay_choice') {
     out.questionType = 'essay'
     const key = leaf.key
     out.modelAnswer = key.kind === 'points' ? (key.modelText ?? key.points[0]?.text?.ms ?? null) : null
+    if (leaf.mode === 'essay_choice') out.essayTopics = leaf.topics.map((t) => ({ id: t.id, label: t.label }))
   }
   return out
 }
