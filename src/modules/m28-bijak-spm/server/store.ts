@@ -106,6 +106,9 @@ export interface ServerOptions {
   storageKey?: string
 }
 
+/** [PROPOSED] H-A13: the API's BM refusal of a new sitting of a paper that places an archived question. */
+export const PAPER_UNAVAILABLE = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
+
 export class BijakServer implements BijakApi {
   private readonly storage: KeyValueStore
   private readonly now: () => number
@@ -393,6 +396,10 @@ export class BijakServer implements BijakApi {
     if (open.length && !opts.restart && !opts.fresh) {
       const keep = open.sort((a, b) => b.startedAt - a.startedAt)[0]!
       return { attemptId: keep.id }
+    }
+    // H-C5 / H-A13: a paper that places a question the bank no longer serves cannot start a new sitting (API: 403 + this BM line).
+    if (def.sections.some((s) => s.questionIds.some((id) => !BANK.questions.has(id)))) {
+      throw new BijakError('forbidden', PAPER_UNAVAILABLE)
     }
     if (!opts.fresh) for (const a of open) a.status = 'abandoned'
     this.state.seq += 1
