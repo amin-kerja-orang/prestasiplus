@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-10-31 11:05 UTC (cycle 8). Current BASE: **BASE-8** = `feature/v3-bijak-r1` @ baad88b7 (T01, T03, T04, T05, T24, H-A11, T27 merged). Every open team A branch merges the latest BASE before re-marking READY.
+Writer: team A lead. Last refresh: 2026-10-31 13:58 UTC (cycle 9; all A sessions resumed after the 5h usage limit 11:15–13:50 UTC). Current BASE: **BASE-17** = `feature/v3-bijak-r1` @ 8e8812ed. Team A units merged: T01, T03, T04, T05, H-A11, T27, T07, T08, T28, H-A2, R1E2E-01, T32, T25, H-A7, T06 (+ T24 by B). Every open team A branch merges the latest BASE before re-marking READY.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 
 ## Team A sessions (from cycle 7)
