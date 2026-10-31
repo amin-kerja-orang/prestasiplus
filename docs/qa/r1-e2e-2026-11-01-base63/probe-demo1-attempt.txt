@@ -1,0 +1,4 @@
+attempt shell true refusal false
+pictures seen over the questions 0 data-URL pictures 0
+POST /api/bijak/attempts 201 dataURL:false
+GET /api/bijak/attempts/ad84994b-3a7e-4f9a-8753-0f9871a10674 200 dataURL:false

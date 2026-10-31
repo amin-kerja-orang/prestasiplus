@@ -279,6 +279,12 @@ async function completeIntakeQuestions(page: Page, tag: string): Promise<void> {
       await sp.fill(await firstSpCode(page, await unit.inputValue()))
       await sp.press('Tab')
     }
+    // BASE-61 (REQ-B-027 intake part): "Aras pemikiran" in the intake editor (question level, and per part if any).
+    const cog = ed.getByTestId('q-cognitive')
+    if ((await cog.count()) > 0 && !(await cog.inputValue())) await cog.selectOption('memahami')
+    const partCogs = ed.getByTestId('part-cognitive')
+    for (let k = 0; k < (await partCogs.count()); k++)
+      if (!(await partCogs.nth(k).inputValue())) await partCogs.nth(k).selectOption('memahami')
     const tp = ed.getByRole('spinbutton', { name: /TP/ })
     if ((await tp.count()) > 0 && !(Number(await tp.inputValue()) >= 1)) await tp.fill('3')
     const confirms = ed.locator('[data-testid^=confirm-]')
@@ -1273,6 +1279,24 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     // needs one per leaf (T33). The Studio editor has it: this is an admin UI path, recorded as a workaround.
     await login(page, ADMIN)
     const qs = await runQuestions(page, `${st.tag} pdf`)
+    // Not needed when the intake editor already gave every part an Aras pemikiran (R1E2E-12 intake side fixed).
+    let missing = 0
+    for (const q of qs) {
+      const d = (
+        (await (await page.request.get(`/api/questions/${q.id}`)).json()) as {
+          data?: { parts?: { cognitiveLevel?: string | null }[] }
+        }
+      ).data
+      if ((d?.parts ?? []).some((pt) => !pt.cognitiveLevel)) missing++
+    }
+    observe(
+      info,
+      `intake questions without Aras pemikiran after Terima: ${missing} of ${qs.length}`,
+    )
+    test.skip(
+      qs.length > 0 && missing === 0,
+      'Not needed: the intake editor set Aras pemikiran on every intake question (R1E2E-12 intake side)',
+    )
     let saved = 0
     for (const q of qs) {
       await page.goto(`/admin/studio/questions/${q.id}/sunting`)
@@ -1526,7 +1550,18 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
   test('S5e Latih Tubi SPM in the UI (REQ-A-005): setup, Mula Kuiz, answer, result, back to the list', async ({
     page,
   }, info) => {
-    await login(page, PUPIL_T4)
+    // Matematik offers one "Bilangan Soalan" only (40, "Target SPM"); 3 x 40 exceeds one pupil's free trial (50 soalan).
+    // So each viewport uses its own Tingkatan 4 demo pupil (poc seed, fictitious; the e2e seed has one T4 pupil only).
+    const ltPupil =
+      (
+        {
+          mobile: 'murid4@demo.test',
+          tablet: 'murid5@demo.test',
+          desktop: 'murid6@demo.test',
+        } as Record<string, string>
+      )[info.project.name] ?? PUPIL_T4
+    observe(info, `pupil: ${ltPupil}`)
+    await login(page, ltPupil)
     await page.goto('/spm/latih-tubi')
     await expect(page.getByTestId('spm-latih-tubi-page')).toBeVisible()
     await page.getByTestId('latih-tubi-card-MATH').click()
