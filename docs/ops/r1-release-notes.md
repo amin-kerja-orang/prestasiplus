@@ -10,7 +10,7 @@ Placeholders used below (never write the real values into this file, the repo is
 |---|---|
 | `<RELEASE_SHA>` | the 40-character commit the LEAD tags for R1 (section 1.2) |
 | `<RELEASE_TAG>` | the git tag on `<RELEASE_SHA>`; `deploy.sh` tags the images with `git rev-parse --short=12 HEAD` |
-| `<IMAGE_TAG>` | the image tag of the release: `git rev-parse --short=12 HEAD` on the release checkout (what `deploy.sh` uses when no `--tag` is given). It is written to `$PP_STATE_DIR/deploying.tag` before step 5/9 and to `$PP_STATE_DIR/current.tag` at step 9/9. **These images exist only after `deploy.sh` step 3/9** (build or pull) |
+| `<IMAGE_TAG>` | the image tag of the release: `git rev-parse --short=12 HEAD` on the release checkout (what `deploy.sh` uses when no `--tag` is given). It is written to `$PP_STATE_DIR/deploying.tag` before step 5/9 (a failed deploy that never switched the api deletes that file again) and to `$PP_STATE_DIR/current.tag` at step 9/9. **These images exist only after `deploy.sh` step 3/9** (build or pull) |
 | `<PREV_TAG>` | the image tag running before the deploy (`$PP_STATE_DIR/current.tag`) |
 | `<target>` | the environment being deployed: UAT first, production only after UAT passed |
 | `$PC` | the production compose command with `PP_IMAGE_TAG` set (shell setup below; run from the checkout, as `ppdeploy`) |
@@ -46,7 +46,11 @@ Every SQL statement in this file is a SELECT of counts or schema/migration names
 every `sql` block with `$PSQL` (read-only session); a write fails there by design.
 Never paste row contents (names, e-mails, IC numbers) into a ticket, chat or this file.
 
-Status words: **verified** = checked against the repo at `14e4336c` (or `cf2aa784` for B01) while writing this file;
+Status words: **verified** = checked against the repo at `14e4336c` (or `cf2aa784` for B01) while writing this file,
+and re-checked on BASE-3 `285387a3`: between the two, none of the files this runbook relies on changed (`deploy/`,
+the compose files, `docker/`, `apps/api/prisma/migrations`, `apps/api/src/common/health`, the DSKP loader, the Bijak
+papers module, `src/app/features.ts`, `render.yaml`; only one PoC seed file differs), and no new `process.env` key
+was added;
 **unverified** = not run, not measured, or depends on a state this author could not see. A summary of the unverified
 items is in section 8.
 
@@ -67,19 +71,23 @@ Related runbooks: [production-vps.md](production-vps.md) (sections 7 deploy, 8 r
 | Blueprint verification | After 0092 nothing serves pupils. Jana Kertas answers 422 `NO_BLUEPRINT` until an Admin Pusat verifies one blueprint per subject and kertas (Kontrak, tab Pengesahan, `Sahkan`). |
 | Config | No new environment variable (B01 notes; verified for 0092/0093/0100). `BIJAK_POC_QUESTIONS` must stay `false`. |
 
-### 0.1 Pending units (not merged when this file was written)
+### 0.1 Units merged so far and units still pending
 
-Checked against `origin` on 2026-10-31: none of the branches below is merged into `feature/v3-bijak-r1` (head
-`14e4336c`; `git branch -r --merged origin/feature/v3-bijak-r1` lists no `r1/` branch). Do not tag `<RELEASE_TAG>`
-until each one is merged, reviewed and green, or the LEAD has dropped it from R1 in writing. No counts or timings are
-given for them here: none was measured.
+Checked against `origin` on 2026-10-31. `feature/v3-bijak-r1` is at **BASE-3 `285387a3`**: BASE-2 `5e856b5d` merged
+T01, BASE-3 merged T03. `git branch -r --merged origin/feature/v3-bijak-r1` lists `r1/t01-base-merge` and
+`r1/b08-bridge` as the only merged `r1/` branches. Migration folders on `285387a3` after 0090:
+`0091_practice_answers_question_id_index`, `0092_bijak_standards`, `0093_part_options_image_file_index` (checked with
+`ls`; no old-name `0092_part_options_image_file_index`). Do not tag `<RELEASE_TAG>` until every pending unit is merged,
+reviewed and green, or the LEAD has dropped it from R1 in writing. No counts or timings are given for them here: none
+was measured.
 
-| Unit | Branch at writing (head) | Operator impact | Status |
+| Unit | Branch (head) | Operator impact | Status |
 |---|---|---|---|
-| T01 base merge | `r1/t01-base-merge` (`09d32822`) | Carries the migration folders `0092_bijak_standards` and `0093_part_options_image_file_index` (same names as already on `feature/v3-bijak-r1`; it does **not** carry the old `0092_part_options_image_file_index`, checked with `git ls-tree`). Re-run the folder check of 1.2 after the merge. | not merged |
-| T06 Jana Kertas standard | `r1/t06-jana-standard` (`502280f5`, on top of T01) | Release note: Jana Kertas now composes "exact or refuse". PoC blueprints whose sections have a NULL `mark_budget` now **refuse** with a marks shortage (422 `SHORTAGE`, code verified in `apps/api/src/modules/bijak/papers/errors.ts` on that branch) instead of producing a paper. Expected behaviour, not a deploy failure; affects only environments that still hold PoC blueprints (UAT has 0 blueprints). Which seeded blueprints have NULL budgets is taken from the T06 note, not re-checked here. | not merged |
-| 0100 `0100_question_lifecycle_approved` (T04) | `r1/b01-lifecycle` (`cf2aa784`, WIP) | Section 2.4; must ship together with the B01 API and FE code (1.1). | not merged |
-| 0101 `0101_essay_choice` (T25) | `r1/t25-essay-choice-store` (`d398a576`) | Section 2.5 row. Additive (one nullable column, one widened CHECK, one new CHECK). | not merged |
+| T01 base merge | `r1/t01-base-merge` (`09d32822`) | Carries the migration folders `0092_bijak_standards` and `0093_part_options_image_file_index` (confirmed on `285387a3`). Nothing else for an operator (no migration or env key beyond those). | **merged** (BASE-2 `5e856b5d`) |
+| T03 Bijak question bridge | `r1/b08-bridge` (`7050f2d7`) | No migration, no config key. The bridge refuses bank questions whose shape Bijak cannot show (for example `file_missing`: a stimulus or option image file is missing; full list in `apps/api/src/modules/bijak/question-bridge/refusals.ts`); a refused question is **not served** to pupils and the admin panel shows "Tidak dihidangkan kerana ...". A lower served count for such questions is expected, not a deploy fault. | **merged** (BASE-3 `285387a3`) |
+| T06 Jana Kertas standard | `r1/t06-jana-standard` (`502280f5`) | Release note: Jana Kertas now composes "exact or refuse". PoC blueprints whose sections have a NULL `mark_budget` now **refuse** with a marks shortage (422 `SHORTAGE`, code verified in `apps/api/src/modules/bijak/papers/errors.ts` on that branch) instead of producing a paper. Expected behaviour, not a deploy failure; affects only environments that still hold PoC blueprints (UAT has 0 blueprints). Which seeded blueprints have NULL budgets is taken from the T06 note, not re-checked here. | not merged; review: Changes requested |
+| T04 lifecycle, migration `0100_question_lifecycle_approved` | `r1/b01-lifecycle` (`2f16c1fe`) | Section 2.4; must ship together with the B01 API and FE code (1.1). Two ops items for the window: the pre-flight count of pinned placements (2.1, `placements_pinned_to_approved`) and `VACUUM ANALYZE question_versions` after 0100 (2.4). | not merged; READY-FOR-REVIEW, review: Changes requested |
+| T25 essay choice, migration `0101_essay_choice` | `r1/t25-essay-choice-store` (`be039a1b`) | Section 2.5 row. Additive (one nullable column, one widened CHECK, one new CHECK). | not merged |
 
 ---
 
@@ -90,9 +98,11 @@ Do not start the window until every box is ticked. Record each answer in the dep
 ### 1.1 Release gates
 
 - [ ] G3 to G5 passed for the release commit (lint, type-check, tests with real output; code-reviewer Approve; QA Ready).
-- [ ] `r1/b01-lifecycle` is finished, reviewed and merged into `feature/v3-bijak-r1`. At handoff it is **WIP** (`cf2aa784`):
-      tsc, eslint, the FE m04 tests and the last spec batch were not run, and 4 code spots still name `'published'` as a
-      question status. **0100 must ship in the same release as the B01 API and FE code** (an old API on the new CHECK
+- [ ] `r1/b01-lifecycle` is finished, reviewed and merged into `feature/v3-bijak-r1`. At handoff it was **WIP** (`cf2aa784`):
+      tsc, eslint, the FE m04 tests and the last spec batch were not run, and 4 code spots still named `'published'` as
+      a question status. Now (T04) at `2f16c1fe`, READY-FOR-REVIEW with review "Changes requested"; its 0100 SQL is
+      unchanged since `cf2aa784` (`git diff` shows no change under `apps/api/prisma/migrations`), so section 2.4 still
+      applies. **0100 must ship in the same release as the B01 API and FE code** (an old API on the new CHECK
       fails to write `published`; a new API on old data serves nothing).
 - [ ] The DB-backed specs listed as never run in the handoff (B06 `SPM_SERVABLE_SQL`, the bijak integration specs, B08
       bridge if merged) have been run green on the release commit.
@@ -219,14 +229,25 @@ SELECT count(*) AS live_not_published FROM questions q
   JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
  WHERE v.status <> 'published';
 
+-- 0100 (T04): placements on published papers pinned to an 'approved' version. 0100 turns those versions into
+-- 'review', so these published papers then point at versions that are no longer approved. UAT at handoff: 0 papers.
+SELECT count(*) AS placements_pinned_to_approved
+  FROM paper_placements pp
+  JOIN paper_sections ps ON ps.id = pp.paper_section_id
+  JOIN papers p ON p.id = ps.paper_id AND p.status = 'published'
+  JOIN question_versions v ON v.question_id = pp.question_id AND v.version_no = pp.pinned_version_no
+ WHERE v.status = 'approved';
+-- record the number. Not 0: those papers' pinned versions become 'review'; the LEAD and the backend developer (T04)
+-- decide before migrating (what the published paper then shows is not stated in this file).
+
 -- served today (compare with 2.4 check 6 afterwards)
 SELECT count(*) AS served_before FROM questions q
   JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'published'
  WHERE q.is_active;
 ```
 
-**Stop** if `live_not_published` is not 0 or `sections_with_topic_weights` is not 0: report to the backend developer
-before migrating.
+**Stop** if `live_not_published` or `sections_with_topic_weights` is not 0: report to the backend developer before
+migrating. `placements_pinned_to_approved` not 0 also holds the window until the LEAD has decided (comment above).
 
 ### 2.2 `0092_bijak_standards` (verified by reading the SQL)
 
@@ -313,6 +334,15 @@ The migration raises `NOTICE` lines `0100 pre-flight: question_versions total=..
 **Unverified (timing):** on UAT the remap rewrites every one of ~406k published versions and rebuilds five indexes in a
 single transaction. Not measured. Time it on the scratch copy (1.4) and size the window from that; check free disk
 for the WAL and the new indexes first (`df -h` on the Docker data volume).
+
+Right after the deploy (T04 ops item): the remap rewrote every row of `question_versions`, so refresh the planner
+statistics and clear the dead row versions. This is maintenance, not a data change, but it is not a read-only SELECT
+(it cannot run in `$PSQL`) and it adds I/O load: run it with the LEAD's go, once, inside the window:
+
+```
+$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "VACUUM (ANALYZE) question_versions"'
+# expect: VACUUM. Duration on ~406k rows not measured (time it on the scratch copy of 1.4).
+```
 
 After (with the new API running):
 
@@ -574,11 +604,22 @@ Partial undo without a restore (only before anyone used the feature):
 ### 6.3 A migration failed in deploy step 5/9
 
 `deploy.sh` printed `DEPLOY FAILED at: ...` during step 5. Images of the release exist (step 3 finished), the old
-API and frontend still run, and `$PP_STATE_DIR/deploying.tag` names the release (`current.tag` is still `<PREV_TAG>`).
-Every step here needs the LEAD's confirmation; steps 4 and 6 are writes.
+API and frontend still run, and `current.tag` is still `<PREV_TAG>`. `deploying.tag` is **gone**: when the api never
+switched to the new release (a failed migrate is exactly that case), `fail_deploy` in `deploy.sh` deletes it and prints
+`... the new release <tag> never replaced it. Nothing to roll back; deploying.tag removed.` (verified in `deploy.sh`).
+Do not read the tag from the state directory here. Every step needs the LEAD's confirmation; steps 4 and 6 are writes.
 
-1. Set the release tag for `$PC` (the failed release, not the running one):
-   `export PP_IMAGE_TAG="$(cat /var/lib/pretasiplus-deploy/deploying.tag)"`.
+1. Set the release tag for `$PC` (the failed release, not the running one), from one of these, and check they agree:
+   - the deploy output: `---- 3/9 images (PP_BUILD_MODE=...) tagged <tag> ----` (also `current release: ...; new
+     release: <tag>` at step 1), or the alert text `DEPLOY FAILED for release <tag> (exit ...)`;
+   - on the release checkout, if `deploy.sh` ran without `--tag`: `git rev-parse --short=12 HEAD`.
+
+   ```
+   export PP_IMAGE_TAG="<tag from the deploy output>"
+   [ "$PP_IMAGE_TAG" = "$(git rev-parse --short=12 HEAD)" ] && echo tag-matches-checkout
+   docker image inspect --format '{{.Id}}' "pretasiplus-api-migrate:$PP_IMAGE_TAG" >/dev/null && echo image-present
+   # an empty or wrong PP_IMAGE_TAG makes compose use the stale :prod image: stop if either check prints nothing
+   ```
 2. Find the failed row (names and timestamps only):
 
    ```sql
@@ -645,8 +686,9 @@ Unverified (nothing here was run against any server):
 6. Old API behaviour on the post-0092 schema (`topic_weights`) (6.2).
 7. How to stop a verified pair serving without a restore (6.2).
 8. How the UAT frontend build id is recorded (1.3).
-9. The pending units of section 0.1 (T01, T06, 0100/T04, 0101/T25): not merged; their effects are described from
-   their branches and notes, not from a release build.
+9. Section 0.1: T01 and T03 are merged (BASE-3 `285387a3`), but no release build of BASE-3 was run here. T06
+   (`502280f5`), T04 / 0100 (`2f16c1fe`) and T25 / 0101 (`be039a1b`) are not merged; their effects are described from
+   their branches and notes. The T04 pre-flight count (2.1) and the `VACUUM (ANALYZE)` (2.4) were not run or timed.
 
 Open questions for the team:
 
