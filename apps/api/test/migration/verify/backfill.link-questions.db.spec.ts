@@ -81,13 +81,13 @@ describe('linkQuestions: the four AC4 cases', () => {
 })
 
 describe('linkQuestions: candidate questions', () => {
-  it('only active questions whose live version is published are candidates', async () => {
+  it('only active questions whose live version is approved are candidates', async () => {
     const k = key()
     const paper = await h.addPaper(k)
     await h.addQuestion({ paperId: paper, numberLabel: '1', status: 'draft', liveVersionNo: null })
     await h.addQuestion({ paperId: paper, numberLabel: '2', status: 'archived', liveVersionNo: 1 })
-    await h.addQuestion({ paperId: paper, numberLabel: '3', status: 'published', isActive: false })
-    await h.addQuestion({ paperId: paper, numberLabel: '4', status: 'published', liveVersionNo: 2 }) // live version is not this one
+    await h.addQuestion({ paperId: paper, numberLabel: '3', status: 'approved', isActive: false })
+    await h.addQuestion({ paperId: paper, numberLabel: '4', status: 'approved', liveVersionNo: 2 }) // live version is not this one
     const ok = await h.addQuestion({ paperId: paper, numberLabel: '5' })
     const ids = await Promise.all(['1', '2', '3', '4', '5'].map((l) => h.addAnswer({ naturalKey: k, numberLabel: l })))
     await run('apply')

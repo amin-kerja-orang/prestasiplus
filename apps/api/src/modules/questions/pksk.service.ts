@@ -17,7 +17,7 @@ import type { QuestionRecord } from './types'
  * valid answer key does (the leaf schema). The M04 lists, counts, sources and generic writes never see it.
  *
  * PKSK status (wire `pending | approved | rejected`) maps to the v2 lifecycle: `pending` is `review`, `approved` is
- * `published` (the only status that serves learners, live version set), `rejected` is `archived` (kept, not live).
+ * `approved` (the only status that serves learners, live version set; ADR-0027), `rejected` is `archived` (kept, not live).
  * Any status may follow any other (BR-M07-02), so these methods write the status directly instead of walking the
  * workflow table. Content is edited in place (no version history for PKSK).
  */
@@ -76,16 +76,16 @@ const LABELS = ['A', 'B', 'C', 'D', 'E', 'F'] as const
 const TX = { timeout: 20_000, maxWait: 10_000 } as const
 
 /** PKSK status to the v2 status codes stored (`pending` also reads back from draft and approved). */
-export const PKSK_TO_V2: Readonly<Record<PkskStatus, QuestionStatus>> = { pending: 'review', approved: 'published', rejected: 'archived' }
+export const PKSK_TO_V2: Readonly<Record<PkskStatus, QuestionStatus>> = { pending: 'review', approved: 'approved', rejected: 'archived' }
 
 export function pkskStatusOf(v2: QuestionStatus): PkskStatus {
-  return v2 === 'published' ? 'approved' : v2 === 'archived' ? 'rejected' : 'pending'
+  return v2 === 'approved' ? 'approved' : v2 === 'archived' ? 'rejected' : 'pending'
 }
 
 /** The v2 statuses a PKSK status filter matches. */
 const V2_OF_PKSK: Readonly<Record<PkskStatus, readonly QuestionStatus[]>> = {
-  pending: ['draft', 'review', 'approved'],
-  approved: ['published'],
+  pending: ['draft', 'review'],
+  approved: ['approved'],
   rejected: ['archived'],
 }
 
@@ -105,7 +105,7 @@ export class PkskQuestionsService {
 
   // --- learner reads --------------------------------------------------------------------------------
 
-  /** Served (published, active) questions per domain code at one level. */
+  /** Served (approved, active) questions per domain code at one level. */
   countApproved(level: PkskLevelCode): Promise<Record<string, number>> {
     return this.repo.pkskServedCounts(level)
   }
@@ -129,7 +129,7 @@ export class PkskQuestionsService {
     const out: PkskAnswerKeyRecord[] = []
     for (const r of records) {
       const leaf = leafOf(r)
-      if (!leaf || !r.pksk || r.pksk.level !== level || !r.isActive || r.version.status !== 'published') continue
+      if (!leaf || !r.pksk || r.pksk.level !== level || !r.isActive || r.version.status !== 'approved') continue
       out.push({
         id: r.id,
         domainCode: r.pksk.domainCode,
@@ -228,12 +228,12 @@ export class PkskQuestionsService {
 
   // --- internals ------------------------------------------------------------------------------------
 
-  /** Status columns and the live pointer (only a published PKSK question is live). */
+  /** Status columns and the live pointer (only an approved PKSK question is live). */
   private async applyStatus(current: QuestionRecord, status: PkskStatus, now: Date): Promise<void> {
     const v2 = PKSK_TO_V2[status]
     const versionNo = current.latestVersionNo
-    if (v2 === 'published') {
-      await this.repo.setVersionStatus(current.id, versionNo, 'published', { publishedAt: current.version.publishedAt ?? now })
+    if (v2 === 'approved') {
+      await this.repo.setVersionStatus(current.id, versionNo, 'approved', { publishedAt: current.version.publishedAt ?? now })
       await this.repo.setLiveVersion(current.id, versionNo)
     } else {
       await this.repo.setVersionStatus(current.id, versionNo, v2, v2 === 'archived' ? { archiveReason: 'withdrawn' } : {})

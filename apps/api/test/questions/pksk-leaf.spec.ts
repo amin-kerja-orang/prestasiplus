@@ -82,7 +82,7 @@ function fakeRepo() {
       const parts = (input.version.parts as { options: { label: string; bodyMs: string }[]; key: { content: { correct: string[] } } }[])[0]
       store.set(id, {
         status: input.version.status,
-        live: input.version.status === 'published' ? 1 : null,
+        live: input.version.status === 'approved' ? 1 : null,
         pksk: input.pksk,
         version: {
           stemMs: input.version.stemMs,
@@ -158,7 +158,7 @@ describe('PkskQuestionsService (BE-09 adapter over the one bank)', () => {
     expect(created.options.map((o) => o.isCorrect)).toEqual([false, true, true])
     const sent = calls.find((c) => c.name === 'create')?.args[0] as { pksk: unknown; version: Record<string, unknown> }
     expect(sent.pksk).toEqual({ domainCode: 'PKSK_MATH', level: 'T1' })
-    expect(sent.version).toMatchObject({ status: 'published', type: 'mcq', subjectId: null, educationLevelId: null, unitNodeId: null, difficultyTp: 3, spNodeIds: [] })
+    expect(sent.version).toMatchObject({ status: 'approved', type: 'mcq', subjectId: null, educationLevelId: null, unitNodeId: null, difficultyTp: 3, spNodeIds: [] })
     expect((sent.version.parts as { mode: string; key: { kind: string } }[])[0]).toMatchObject({ mode: 'pksk_choice', key: { kind: 'options' } })
   })
 

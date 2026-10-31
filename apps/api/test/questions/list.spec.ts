@@ -34,7 +34,6 @@ describe('admin list, summary and detail on the seeded bank (AC 7)', () => {
     const byStatus = await t.db.query<{ status: string; n: string }>(`select status, count(*) n from question_versions group by 1`)
     const expected = Object.fromEntries(byStatus.map((r) => [r.status, Number(r.n)]))
     expect(out.meta.counts).toMatchObject(expected)
-    expect(out.meta.counts?.approved ?? 0).toBe(0)
   })
 
   it('paginates: pageSize 5, page 2 holds rows 6 to 10', async () => {
@@ -74,7 +73,7 @@ describe('admin list, summary and detail on the seeded bank (AC 7)', () => {
   it('summary: total and one tile per active subject, approved = published', async () => {
     const out = parseData(await admin.get('/api/questions/summary'), QuestionSummarySchema)
     expect(out.total).toBe(total)
-    const published = await countOf(t.db, `select count(*) n from question_versions where status = 'published'`)
+    const published = await countOf(t.db, `select count(*) n from question_versions where status = 'approved'`)
     expect(out.subjects.reduce((s, x) => s + x.approved, 0)).toBe(published)
     expect(out.subjects.reduce((s, x) => s + x.total, 0)).toBeLessThanOrEqual(total)
     const math = out.subjects.find((s) => s.id === refs.mathId)
@@ -84,7 +83,7 @@ describe('admin list, summary and detail on the seeded bank (AC 7)', () => {
   it('detail of a seeded published question carries the DSKP chain and the creator', async () => {
     const [row] = await t.db.query<{ question_id: string }>(`select question_id::text from question_versions where number_label = 'SEED-MCQ-MATH-T4'`)
     const detail = parseData(await admin.get(`/api/questions/${row?.question_id}`), QuestionDetailSchema)
-    expect(detail.status).toBe('published')
+    expect(detail.status).toBe('approved')
     expect(detail.dskp).not.toBeNull()
     expect(detail.createdBy.id).toBe(admin.userId)
     expect(detail.subject?.name).toBeTruthy()

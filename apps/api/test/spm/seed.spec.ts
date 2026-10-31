@@ -84,7 +84,7 @@ describe('SPM seed', () => {
     const bad = await db.query<{ n: string }>(
       `select count(*)::text n from spm_tracking_set_questions sq
          join questions q on q.id = sq.question_id join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-        where not (q.is_active and v.status = 'published' and v.type = 'mcq')`,
+        where not (q.is_active and v.status = 'approved' and v.type = 'mcq')`,
     )
     expect(bad[0]?.n).toBe('0')
     const unordered = await db.query<{ n: string }>(

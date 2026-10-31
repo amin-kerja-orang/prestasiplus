@@ -93,7 +93,7 @@ describe('HttpBijakAdminServer', () => {
       'GET /api/admin/papers/p1': ok({
         paper: { ...WIRE_PAPER, publishedAt: T0 },
         blueprint: null,
-        questions: [{ id: 'q1', subject: 'MAT', status: 'published' }],
+        questions: [{ id: 'q1', subject: 'MAT', status: 'approved' }],
         groups: [],
       }),
     })
@@ -199,7 +199,7 @@ describe('HttpBijakAdminServer', () => {
 
   it('mappers', () => {
     expect(questionStatusFromWire('review')).toBe('semakan')
-    expect(questionStatusFromWire('approved')).toBe('semakan')
+    expect(questionStatusFromWire('approved')).toBe('terbit')
     expect(questionStatusFromWire('draft')).toBe('draf')
     expect(questionStatusFromWire('archived')).toBe('ditolak')
     expect(blueprintFromWire({ subject: 'MAT', kertas: 1 } as never).kertas).toBe(1)
