@@ -1,8 +1,8 @@
 /**
  * @api Bijak attempt ownership against the REAL API (BE-32 AC3, slug `e2e-bijak`).
  *
- * WRITES ONE ROW: pupil A (`pelajar@demo.test`) starts a `latihan` (untimed) attempt on the first
- * published paper. The spec leaves it UNSENT (in progress): a later start by A on the same paper
+ * WRITES ONE ROW: pupil A (`pelajar@demo.test`) starts a `latihan` (untimed) attempt on
+ * `BIJAK_PAPER_ID` when set, else the first published paper. The spec leaves it UNSENT (in progress): a later start by A on the same paper
  * returns this same attempt, so reruns do not pile up rows (POST /api/bijak/attempts without
  * `restart` returns the open attempt, 200 instead of 201). Pupil B (`murid4@demo.test`, a second
  * pupil of school DEMO001) only reads.
@@ -38,7 +38,9 @@ test.describe('bijak attempt ownership @api', () => {
     expect(papersRes.status(), 'GET /api/bijak/papers').toBe(200)
     const papers = ((await papersRes.json()) as { data: PaperRow[] }).data
     test.skip(papers.length === 0, 'no published Bijak paper on this stack')
-    const paperId = papers[0]!.id
+    // BIJAK_PAPER_ID (CI: the bank demo paper) like the other Bijak http specs; the first paper is a PoC
+    // paper on a seeded stack, which is not playable without PoC questions (R1-B07 / T36).
+    const paperId = process.env.BIJAK_PAPER_ID || papers[0]!.id
 
     const start = await page.request.post('/api/bijak/attempts', {
       data: { paperId, mode: 'latihan' },

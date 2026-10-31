@@ -10,6 +10,8 @@ import { FilesModule } from '../../files'
 import { AuditModule } from '../../../common/audit'
 import { ThrottleModule } from '../../../common/throttle'
 import { LifecycleService } from './lifecycle'
+// Not from the './lifecycle' barrel: the barrel is imported by QuestionWorkflowService, and the controller imports that service (import cycle).
+import { LifecycleController } from './lifecycle/lifecycle.controller'
 import { CurriculumModule } from '../../curriculum'
 import { GuruQuestionImportController, QuestionImportsController, QuestionImportsService } from './imports'
 import { NotificationsModule } from '../../notifications'
@@ -61,6 +63,7 @@ import { QuestionWorkflowService } from './question-workflow.service'
     QuestionReportsController,
     QuestionImportsController,
     GuruQuestionImportController,
+    LifecycleController,
   ],
   providers: [
     QuestionWorkflowPorts,
