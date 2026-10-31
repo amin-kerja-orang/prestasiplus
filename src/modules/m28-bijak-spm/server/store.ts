@@ -986,6 +986,7 @@ export class BijakServer implements BijakApi {
         (n, q) => n + q.lowFields.filter((f) => !q.confirmed.includes(f)).length,
         0,
       ),
+      reviewedCount: b.questions.filter((q) => q.lowFields.every((f) => q.confirmed.includes(f))).length,
       marks: paperMarks(b.questions),
       updatedAt: b.updatedAt,
     }
@@ -1129,6 +1130,69 @@ export class BijakServer implements BijakApi {
     this.ops.enqueueSeeds(batchToSeeds(b))
     this.persist()
     return { ok: true, batch: jsonClone(b) }
+  }
+
+  /**
+   * V2 "Terima (A)" / "Tolak (R)" on the batch page (R1 intake parity I6): one question of a Draf batch is
+   * decided where it is edited. The mock runs the same unit through the review queue (a one-question
+   * batch, so a stimulus group is not decided as a whole here) and removes it from the batch.
+   */
+  async decideIntakeItem(
+    id: string,
+    questionId: string,
+    d: { action: 'terbit' | 'tolak'; reason?: string },
+  ): Promise<{ ok: boolean; errors: string[]; batch: IntakeBatch }> {
+    await this.tick()
+    const b = this.intakeBatch(id)
+    if (b.status !== 'draf') throw new BijakError('bad_request', 'Kumpulan sudah dihantar untuk semakan')
+    const q = b.questions.find((x) => x.id === questionId)
+    if (!q) throw new BijakError('not_found', 'Soalan tidak ditemui')
+    const one: IntakeBatch = {
+      ...jsonClone(b),
+      id: `${b.id}-${q.id}`,
+      questions: [jsonClone(q)],
+      stimuli: b.stimuli.filter((x) => x.id === q.stimulusId).map(jsonClone),
+    }
+    if (d.action === 'terbit') {
+      // The question's own rules plus its figure's alt text (the batch-level rules belong to "Hantar").
+      const issues = validateBatch(one).filter((i) => i.questionId || i.message.startsWith('Teks alternatif'))
+      if (issues.length > 0) return { ok: false, errors: issues.map((i) => `${i.where}: ${i.message}`), batch: jsonClone(b) }
+    }
+    // A figure shared by several questions is one bank group (D90): the group id is keyed by the batch and
+    // the stimulus, not by this question, so the next member joins it.
+    const [seed] = batchToSeeds(one, { groupBase: b.id })
+    if (!seed) return { ok: false, errors: ['Soalan tidak boleh diproses'], batch: jsonClone(b) }
+    this.ops.enqueueSeeds([seed])
+    const res = await this.ops.reviewDecision(seed.key, { action: d.action, ...(d.reason ? { reason: d.reason } : {}) })
+    if (!res.ok) return { ok: false, errors: res.errors, batch: jsonClone(b) }
+    b.questions = b.questions.filter((x) => x.id !== questionId)
+    b.stimuli = b.stimuli.filter((x) => b.questions.some((m) => m.stimulusId === x.id))
+    b.updatedAt = this.now()
+    this.persist()
+    return { ok: true, errors: [], batch: jsonClone(b) }
+  }
+
+  /**
+   * V2 "Terima semua yang belum disemak" (parity I7). Like the server bulk accept, only a question
+   * with no unconfirmed low-confidence field and a passing quality gate is accepted; the rest are
+   * skipped and listed with a reason.
+   */
+  async acceptUnreviewed(
+    id: string,
+  ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[]; batch: IntakeBatch }> {
+    const b0 = this.intakeBatch(id)
+    let done = 0
+    const skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[] = []
+    for (const q of jsonClone(b0.questions)) {
+      if (q.lowFields.some((f) => !q.confirmed.includes(f))) {
+        skipped.push({ id: q.id, reason: 'BELOW_THRESHOLD' })
+        continue
+      }
+      const r = await this.decideIntakeItem(id, q.id, { action: 'terbit' })
+      if (r.ok) done += 1
+      else skipped.push({ id: q.id, reason: 'GATE_FAILED' })
+    }
+    return { done, skipped, batch: jsonClone(this.intakeBatch(id)) }
   }
 
   /* ------------------------------------------------- question bank admin (v2-question-bank) */
