@@ -1070,6 +1070,10 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 | UX-9 | Kontrak: tabs per Bahagian and the evidence/Sahkan tab instead of one inline table and a free `Sumber` select | D75-D78 (approved K2 design) |
 | UX-10 | Simulasi subheading corrected | FD-3 |
 | UX-11 | "Dilihat murid di" and `Tidak dihidangkan kerana …` on existing surfaces | FD-5 |
+| UX-30 | Batch list ("Senarai Ekstrak") uses the V2 "Kelompok Item" columns Fail Sumber, Subjek, Bilangan Soalan, Disemak, Status and the link "Semak"; the V3-only columns Kertas, Kumpulan, Perlu disahkan, Markah and Dikemas kini are dropped (the paper kertas shows beside the subject) | R1 intake parity I3; D9 replicate. "Disemak" has no V2 definition in the discovery notes: V3 counts the questions with no unconfirmed low-confidence field. In http mode the batch list API returns no item counts, so Bilangan Soalan and Disemak show 0 and "-" until REQ-C-009 lands |
+| UX-31 | "Terima (A)", "Tolak (R)", "Simpan Sunting (E)" and the counter "Item i / n" sit on each open question of the batch page, with the shortcuts A, R and E (not while typing in a field), instead of only in Baris Gilir Semakan | R1 intake parity I6. V2 shows one item at a time with a pager; V3 lists the whole batch, so the actions belong to the open question and the shortcuts act on the one last opened. Accept makes a Draf question and removes the item from the batch; nothing is published (D54a) |
+| UX-32 | "Tolak (R)" asks for a reason before it rejects | Not documented in V2. The V3 reject route requires a reason (`INTAKE_MESSAGES.rejectReasonRequired`), so the page asks inline ("Sebab menolak") rather than failing after the click |
+| UX-33 | "Terima semua yang belum disemak" accepts only the items the server accepts in bulk (confidence band at or above the server threshold, quality gate passed) and tells how many were skipped | R1 intake parity I7; card BE-38 `POST /api/intake/items/bulk`. V2 accepts every unreviewed item; V3 keeps the same gate as a single accept (AC-07.4, no bypass) |
 
 ---
 
