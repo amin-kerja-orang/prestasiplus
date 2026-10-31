@@ -194,6 +194,19 @@ describe('S2 DatabankPage', () => {
   })
 })
 
+describe('S2 DatabankPage empty subject (T14 B-08)', () => {
+  it('a 0-question subject has no "Mula" and no start links, only "Tiada soalan"', async () => {
+    api.fetchDatabank.mockResolvedValue([
+      { code: 'BIO', name: 'Biologi', nameEn: 'Biology', icon: 'fa-dna', color: '#10B981', databankCount: 0 },
+    ])
+    const w = await render(DatabankPage, '/spm/tahun-lepas')
+    const card = t(w, 'databank-card-BIO')
+    expect(card.find('[data-testid=databank-mula]').exists()).toBe(false)
+    expect(card.get('[data-testid=databank-empty]').text()).toBe('Tiada soalan')
+    expect(card.findAll('a')).toHaveLength(0)
+  })
+})
+
 describe('S3 LatihTubiListPage', () => {
   const card = (over: Record<string, unknown>) => ({
     code: 'BM',
