@@ -68,7 +68,10 @@ async function load(): Promise<void> {
     batch.value = await server.getIntakeBatch(props.batchId)
     loadState.value = 'ready'
     const first = batch.value.questions[0]
-    if (first) open.value = new Set([first.id])
+    if (first) {
+      open.value = new Set([first.id])
+      current.value = first.id
+    }
   } catch (e) {
     loadState.value = isUnavailable(e)
       ? 'unavailable'
@@ -241,7 +244,10 @@ function removeQuestion(id: string): void {
 function toggle(id: string): void {
   const s = new Set(open.value)
   if (s.has(id)) s.delete(id)
-  else s.add(id)
+  else {
+    s.add(id)
+    current.value = id
+  }
   open.value = s
 }
 
@@ -308,6 +314,114 @@ function goTo(i: IntakeIssue): void {
     50,
   )
 }
+
+/* ------------------------------------------------------------------------------ V2 item actions (I6, I7) */
+// V2 "Studio — Semak Import": "Terima (A)", "Tolak (R)", "Simpan Sunting (E)" on the item, and
+// "Terima semua yang belum disemak" on the page. Accept makes a Draf question; nothing is published.
+const current = ref<string | null>(null)
+const deciding = ref(false)
+const decisionErrors = ref<string[]>([])
+const decisionNote = ref('')
+const rejectingId = ref<string | null>(null)
+const rejectReason = ref('')
+const canDecide = computed(() => !readonly.value && !batch.value?.itemsUnavailable && !!server.decideIntakeItem)
+const currentIndex = computed(() => (batch.value?.questions ?? []).findIndex((q) => q.id === current.value))
+
+async function afterDecision(next: IntakeBatch): Promise<void> {
+  loaded = false // this replacement is not an edit: the autosave watcher skips it
+  batch.value = next
+  open.value = new Set(next.questions[0] ? [next.questions[0].id] : [])
+  current.value = next.questions[0]?.id ?? null
+}
+
+async function accept(id: string): Promise<void> {
+  const b = batch.value
+  if (!b || deciding.value) return
+  deciding.value = true
+  decisionErrors.value = []
+  decisionNote.value = ''
+  try {
+    clearTimeout(timer)
+    await save()
+    const r = await server.decideIntakeItem(b.id, id, { action: 'terbit' })
+    if (r.ok) {
+      decisionNote.value = 'Soalan diterima sebagai draf.'
+      await afterDecision(r.batch)
+    } else decisionErrors.value = r.errors
+  } finally {
+    deciding.value = false
+  }
+}
+
+function askReject(id: string): void {
+  rejectingId.value = id
+  rejectReason.value = ''
+  decisionErrors.value = []
+}
+async function confirmReject(): Promise<void> {
+  const b = batch.value
+  const id = rejectingId.value
+  if (!b || !id || deciding.value) return
+  if (!rejectReason.value.trim()) {
+    decisionErrors.value = ['Sebab diperlukan untuk Tolak.']
+    return
+  }
+  deciding.value = true
+  decisionNote.value = ''
+  try {
+    clearTimeout(timer)
+    await save()
+    const r = await server.decideIntakeItem(b.id, id, { action: 'tolak', reason: rejectReason.value.trim() })
+    if (r.ok) {
+      decisionErrors.value = []
+      decisionNote.value = 'Soalan ditolak.'
+      rejectingId.value = null
+      await afterDecision(r.batch)
+    } else decisionErrors.value = r.errors
+  } finally {
+    deciding.value = false
+  }
+}
+
+async function acceptAll(): Promise<void> {
+  const b = batch.value
+  if (!b || deciding.value) return
+  deciding.value = true
+  decisionErrors.value = []
+  decisionNote.value = ''
+  try {
+    clearTimeout(timer)
+    await save()
+    const r = await server.acceptUnreviewed(b.id)
+    decisionNote.value =
+      r.skipped.length > 0
+        ? `${r.done} soalan diterima sebagai draf. ${r.skipped.length} dilangkau: keyakinan rendah atau semakan kualiti belum lulus.`
+        : `${r.done} soalan diterima sebagai draf.`
+    await afterDecision(r.batch)
+  } finally {
+    deciding.value = false
+  }
+}
+
+/** V2 shortcuts A, R and E act on the question being worked on; never while typing in a field. */
+function onKey(e: KeyboardEvent): void {
+  if (e.ctrlKey || e.metaKey || e.altKey || !canDecide.value || !current.value) return
+  const t = e.target as HTMLElement | null
+  if (t && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
+  const k = e.key.toLowerCase()
+  if (k === 'a') {
+    e.preventDefault()
+    void accept(current.value)
+  } else if (k === 'r') {
+    e.preventDefault()
+    askReject(current.value)
+  } else if (k === 'e') {
+    e.preventDefault()
+    void save()
+  }
+}
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 async function submit(): Promise<void> {
   const b = batch.value
@@ -395,6 +509,18 @@ async function submit(): Promise<void> {
                 @click="save"
               >
                 Simpan draf
+              </UButton>
+              <UButton
+                v-if="canDecide && batch.questions.length > 0"
+                variant="outline"
+                color="success"
+                icon="i-ph-checks"
+                class="min-h-11"
+                :loading="deciding"
+                data-testid="accept-all"
+                @click="acceptAll"
+              >
+                Terima semua yang belum disemak
               </UButton>
               <UButton
                 icon="i-ph-paper-plane-tilt"
@@ -487,6 +613,31 @@ async function submit(): Promise<void> {
               </li>
             </ul>
           </template>
+          <UAlert
+            v-if="decisionNote"
+            class="mt-3"
+            color="success"
+            variant="subtle"
+            icon="i-ph-check-circle"
+            :title="decisionNote"
+            role="status"
+            data-testid="decision-note"
+          />
+          <UAlert
+            v-if="decisionErrors.length > 0"
+            class="mt-3"
+            color="error"
+            variant="subtle"
+            icon="i-ph-warning-circle"
+            title="Tindakan tidak dapat dilakukan"
+            data-testid="decision-errors"
+          >
+            <template #description>
+              <ul class="flex flex-col gap-1">
+                <li v-for="m in decisionErrors" :key="m">{{ m }}</li>
+              </ul>
+            </template>
+          </UAlert>
           <UAlert
             v-if="batch.unmatched.length > 0"
             class="mt-3"
@@ -830,6 +981,76 @@ async function submit(): Promise<void> {
                       :model-value="q"
                       @update:model-value="updateQuestion(q.id, $event)"
                     />
+                    <div v-if="canDecide" class="flex flex-col gap-3" data-testid="item-actions">
+                      <p class="text-caption text-muted" data-testid="item-counter">
+                        Item {{ batch.questions.findIndex((x) => x.id === q.id) + 1 }} / {{ batch.questions.length }}
+                      </p>
+                      <div class="flex flex-wrap gap-2">
+                        <UButton
+                          color="success"
+                          icon="i-ph-check"
+                          class="min-h-11"
+                          :loading="deciding"
+                          data-testid="item-accept"
+                          @click="accept(q.id)"
+                        >
+                          Terima (A)
+                        </UButton>
+                        <UButton
+                          color="error"
+                          variant="outline"
+                          icon="i-ph-x"
+                          class="min-h-11"
+                          :disabled="deciding"
+                          data-testid="item-reject"
+                          @click="askReject(q.id)"
+                        >
+                          Tolak (R)
+                        </UButton>
+                        <UButton
+                          color="neutral"
+                          variant="outline"
+                          icon="i-ph-floppy-disk"
+                          class="min-h-11"
+                          :disabled="deciding"
+                          data-testid="item-save"
+                          @click="save"
+                        >
+                          Simpan Sunting (E)
+                        </UButton>
+                      </div>
+                      <div v-if="rejectingId === q.id" class="flex flex-col gap-2" data-testid="reject-box">
+                        <label class="flex flex-col gap-1 text-sm">
+                          <span class="font-medium">Sebab menolak</span>
+                          <input
+                            v-model="rejectReason"
+                            type="text"
+                            maxlength="500"
+                            class="min-h-11 rounded-lg border border-default bg-default px-3"
+                            data-testid="reject-reason"
+                          />
+                        </label>
+                        <div class="flex flex-wrap gap-2">
+                          <UButton
+                            color="error"
+                            class="min-h-11"
+                            :loading="deciding"
+                            data-testid="reject-confirm"
+                            @click="confirmReject"
+                          >
+                            Tolak soalan
+                          </UButton>
+                          <UButton
+                            color="neutral"
+                            variant="ghost"
+                            class="min-h-11"
+                            @click="rejectingId = null"
+                          >
+                            Batal
+                          </UButton>
+                        </div>
+                      </div>
+                    </div>
                     <div class="flex justify-end">
                       <UButton
                         color="error"

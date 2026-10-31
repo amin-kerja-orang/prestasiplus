@@ -114,6 +114,8 @@ export type BijakAdminMethods = Omit<
   | 'createManualBatch'
   | 'saveExtracted'
   | 'submitForReview'
+  | 'decideIntakeItem'
+  | 'acceptUnreviewed'
   | 'listReviewQueue'
   | 'getReviewItem'
   | 'reviewDecision'
@@ -657,6 +659,37 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     const batch = await this.getIntakeBatch(id)
     const at = Date.now()
     return { ok: true, batch: { ...batch, status: 'semakan', submittedAt: at, updatedAt: at } }
+  }
+
+  /** "Terima (A)" / "Tolak (R)" of one item of the batch (`POST /api/intake/items/:id/accept|reject`). */
+  async decideIntakeItem(
+    id: string,
+    questionId: string,
+    d: { action: 'terbit' | 'tolak'; reason?: string },
+  ): Promise<{ ok: boolean; errors: string[]; batch: IntakeBatch }> {
+    const res = await this.reviewDecision(questionId, { action: d.action, ...(d.reason ? { reason: d.reason } : {}) })
+    return { ok: res.ok, errors: res.errors, batch: await this.getIntakeBatch(id) }
+  }
+
+  /**
+   * "Terima semua yang belum disemak": `POST /api/intake/items/bulk` with `accept` over the items still open.
+   * The server takes only the items at or above its confidence threshold and lists the rest.
+   */
+  async acceptUnreviewed(
+    id: string,
+  ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[]; batch: IntakeBatch }> {
+    const batch = await this.getIntakeBatch(id)
+    const ids = batch.questions.map((q) => q.id).slice(0, 100)
+    if (ids.length === 0) return { done: 0, skipped: [], batch }
+    const res = await this.send<{ done: number; results: { id: string; outcome: string; reason: string | null }[] }>(
+      'POST',
+      '/api/intake/items/bulk',
+      { action: 'accept', ids },
+    )
+    const skipped = res.results
+      .filter((r) => r.outcome === 'skipped')
+      .map((r) => ({ id: r.id, reason: (r.reason === 'GATE_FAILED' ? 'GATE_FAILED' : 'BELOW_THRESHOLD') as 'BELOW_THRESHOLD' | 'GATE_FAILED' }))
+    return { done: res.done, skipped, batch: await this.getIntakeBatch(id) }
   }
 
   /* ----------------------------------------------------- review queue (BE-38 items) */

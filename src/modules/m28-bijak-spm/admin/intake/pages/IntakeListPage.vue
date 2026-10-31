@@ -59,15 +59,13 @@ function removeChip(key: string): void {
   apply()
 }
 
+// V2 "Import & Semakan" > "Kelompok Item": Fail Sumber, Subjek, Bilangan Soalan, Disemak, Status, Semak.
 const COLUMNS: TableColumn<Row>[] = [
-  { id: 'title', header: 'Kertas' },
-  { id: 'fileName', header: 'Fail / sumber' },
-  { id: 'questionCount', header: 'Soalan' },
-  { id: 'groupCount', header: 'Kumpulan' },
-  { id: 'lowCount', header: 'Perlu disahkan' },
-  { id: 'marks', header: 'Markah' },
+  { id: 'fileName', header: 'Fail Sumber' },
+  { id: 'subjectName', header: 'Subjek' },
+  { id: 'questionCount', header: 'Bilangan Soalan' },
+  { id: 'reviewed', header: 'Disemak' },
   { id: 'status', header: 'Status' },
-  { id: 'updatedAt', header: 'Dikemas kini' },
   { id: 'open', header: '' },
 ]
 </script>
@@ -145,24 +143,31 @@ const COLUMNS: TableColumn<Row>[] = [
       data-testid="intake-table"
       @retry="reload"
     >
-      <template #title-cell="{ row }">
+      <template #fileName-cell="{ row }">
         <RouterLink
           :to="intakeReviewPath(row.original.id)"
           class="font-medium text-primary hover:underline"
         >
-          {{ row.original.title }}
+          <UBadge
+            v-if="row.original.sourceKind === 'manual'"
+            variant="subtle"
+            color="primary"
+            data-testid="source-manual"
+          >
+            Manual
+          </UBadge>
+          <template v-else>{{ row.original.fileName }}</template>
         </RouterLink>
       </template>
-      <template #fileName-cell="{ row }">
-        <UBadge
-          v-if="row.original.sourceKind === 'manual'"
-          variant="subtle"
-          color="primary"
-          data-testid="source-manual"
-        >
-          Manual
-        </UBadge>
-        <span v-else>{{ row.original.fileName }}</span>
+      <template #subjectName-cell="{ row }">
+        {{ row.original.subjectName }}
+        <span class="text-muted">· Kertas {{ row.original.kertas }}</span>
+      </template>
+      <template #questionCount-cell="{ row }">
+        <span class="tabular" data-testid="batch-count">{{ row.original.questionCount }}</span>
+      </template>
+      <template #reviewed-cell="{ row }">
+        <span class="tabular" data-testid="batch-reviewed">{{ row.original.reviewedCount ?? '-' }}</span>
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge
@@ -170,12 +175,6 @@ const COLUMNS: TableColumn<Row>[] = [
           :label="row.original.status === 'draf' ? 'Draf' : 'Semakan'"
         />
       </template>
-      <template #lowCount-cell="{ row }">
-        <span :class="row.original.lowCount > 0 ? 'text-warning' : 'text-muted'">
-          {{ row.original.lowCount }}
-        </span>
-      </template>
-      <template #updatedAt-cell="{ row }">{{ formatDateTime(row.original.updatedAt) }}</template>
       <template #open-cell="{ row }">
         <UButton
           :to="intakeReviewPath(row.original.id)"
@@ -184,7 +183,7 @@ const COLUMNS: TableColumn<Row>[] = [
           color="neutral"
           :aria-label="`Buka ${row.original.title}`"
         >
-          {{ row.original.status === 'draf' ? 'Semak' : 'Lihat' }}
+          Semak
         </UButton>
       </template>
     </DsDataTable>

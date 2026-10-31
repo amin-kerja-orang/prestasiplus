@@ -178,6 +178,30 @@ describe('HttpBijakAdminServer', () => {
     expect(await server.listBlueprints()).toHaveLength(1)
   })
 
+  it('Terima (A) and Terima semua use the accept and bulk routes (I6, I7)', async () => {
+    const { server, requests } = setup({
+      'POST /api/intake/items/i1/accept': ok({}),
+      'POST /api/intake/items/bulk': ok({
+        action: 'accept',
+        threshold: 'high',
+        results: [
+          { id: 'i1', outcome: 'done', reason: null, item: null },
+          { id: 'i2', outcome: 'skipped', reason: 'BELOW_THRESHOLD', item: null },
+        ],
+        done: 1,
+        skipped: 1,
+      }),
+    })
+    const batch = { id: 'b1', questions: [{ id: 'i1' }, { id: 'i2' }], stimuli: [] } as never
+    vi.spyOn(server, 'getIntakeBatch').mockResolvedValue(batch)
+    const one = await server.decideIntakeItem('b1', 'i1', { action: 'terbit' })
+    expect(one.ok).toBe(true)
+    const all = await server.acceptUnreviewed('b1')
+    expect(all).toMatchObject({ done: 1, skipped: [{ id: 'i2', reason: 'BELOW_THRESHOLD' }] })
+    const bulk = requests.find((r) => r.url === '/api/intake/items/bulk')
+    expect(bulk?.body).toEqual({ action: 'accept', ids: ['i1', 'i2'] })
+  })
+
   it('rejects (never throws) methods without a backend route', async () => {
     const { server } = setup()
     const calls = [
