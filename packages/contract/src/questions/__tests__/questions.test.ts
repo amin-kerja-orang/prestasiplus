@@ -69,7 +69,7 @@ const question = {
   aiExplanation: null,
   language: 'bm',
   pointsValue: 1,
-  status: 'published',
+  status: 'approved',
   isActive: true,
   complianceStatus: 'verified',
   aiVerified: false,
@@ -93,8 +93,8 @@ const question = {
 }
 
 describe('lifecycle codes (D54a)', () => {
-  it('accepts exactly the five v2 codes and refuses the mock values', () => {
-    expect(QUESTION_STATUSES).toEqual(['draft', 'review', 'approved', 'published', 'archived'])
+  it('accepts exactly the four v2 codes and refuses the mock values', () => {
+    expect(QUESTION_STATUSES).toEqual(['draft', 'review', 'approved', 'archived']) // ADR-0027: four codes, `published` is gone
     for (const s of QUESTION_STATUSES) expect(QuestionStatusSchema.safeParse(s).success).toBe(true)
     for (const s of ['pending_review', 'rejected', 'pending', 'Draf'])
       expect(QuestionStatusSchema.safeParse(s).success).toBe(false)
@@ -103,7 +103,7 @@ describe('lifecycle codes (D54a)', () => {
     expect(QuestionListQuerySchema.safeParse({ status: 'pending_review' }).success).toBe(false)
     expect(QuestionListQuerySchema.parse({ status: 'review' })).toMatchObject({ status: 'review', page: 1, pageSize: 20 })
     expect(QuestionBulkRequestSchema.safeParse({ action: 'approve', ids: ['1'] }).success).toBe(false)
-    expect(QuestionBulkRequestSchema.safeParse({ action: 'published', ids: ['1'] }).success).toBe(true)
+    expect(QuestionBulkRequestSchema.safeParse({ action: 'approved', ids: ['1'] }).success).toBe(true)
     expect(QuestionBulkRequestSchema.safeParse({ action: 'delete', ids: [] }).success).toBe(false)
   })
 })
@@ -161,7 +161,7 @@ describe('create and update requests (mock validation copy)', () => {
   })
   it('lets create carry a v2 lifecycle status and rejects a mock one', () => {
     const b = { ...base, questionType: 'true_false' }
-    expect(QuestionCreateRequestSchema.safeParse({ ...b, status: 'published' }).success).toBe(true)
+    expect(QuestionCreateRequestSchema.safeParse({ ...b, status: 'approved' }).success).toBe(true)
     expect(QuestionCreateRequestSchema.safeParse({ ...b, status: 'rejected' }).success).toBe(false)
     expect(QuestionUpdateRequestSchema.safeParse(base).success).toBe(true)
     expect(QuestionUpdateRequestSchema.safeParse({ difficultyLevel: 2 }).success).toBe(false)
@@ -246,7 +246,7 @@ describe('student-facing projection', () => {
 describe('structured and Guru shapes', () => {
   it('parses a structured detail and refuses a mock status', () => {
     const d = {
-      id: '5', subjectId: '4', educationLevelId: '11', subject: null, level: null, kbatLevel: 3, status: 'published', isActive: true,
+      id: '5', subjectId: '4', educationLevelId: '11', subject: null, level: null, kbatLevel: 3, status: 'approved', isActive: true,
       needsDiagram: false, estimatedMinutes: 10, isTrial: false, topic: null, questionNumber: null, stimulus: 'Petikan fiksyen.',
       stimulusImage: null, totalMarks: 4, visibility: 'public', complianceStatus: 'verified', sourceFile: null, sourcePage: null,
       sourceSet: null, curriculumChapterId: null, curriculumTopicId: null, dskpSpId: null, scriptType: 'rumi', textDirection: 'ltr',
@@ -347,6 +347,6 @@ describe('bulk-action three-way copy', () => {
     expect(msg({ action: 'archived', ids: [''] }).ids).toBe(m.bulkBadIds)
   })
   it('accepts a valid request', () => {
-    expect(QuestionBulkRequestSchema.safeParse({ action: 'published', ids: ['1', '2'] }).success).toBe(true)
+    expect(QuestionBulkRequestSchema.safeParse({ action: 'approved', ids: ['1', '2'] }).success).toBe(true)
   })
 })
