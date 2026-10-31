@@ -133,7 +133,10 @@ T04 scope widened by planning: raw-SQL `'published'` question-status spots in `p
 | T26 / T35 / T28 | Approve with Minors | A1 | e2e pool for 3472/2 (201), production refusal; BM 409 on archive; streak asserts. AC-R1-10.2: Cuba Lagi re-earns per attempt (= V2), lead confirms |
 | T32 | CHANGES-REQUESTED (stimulusGroupId bypass on /api/questions; served lock; concurrency; 40 cap) | A2 (priority, unblocks C3) | + **D93**: Studio creates a draft group (0–1 members) first, warning until 2, builder blocker "Kumpulan perlu sekurang-kurangnya 2 soalan." |
 | T04 Minors | Approve (merged BASE-4) | A2 | **READY-FOR-REVIEW** r1/t04-minors @ ad5867dc (BASE-6): chapterQuestionCounts `group_id IS NULL`; R1E2E-09 Bab tile = sum of chaptered+ungrouped+approved (V2 §2.3; D9 row for V2 `!= 'menunggu'` draft leak); m28 kontrak `'approved'`; ops doc VACUUM ANALYZE + `migrate resolve --rolled-back`; api tsc 0, vue-tsc 0, eslint 0; card-ungrouped + overview + secondary-only-counts 44/44 (new Bab spec fails without fix); m28 kontrak 42/42 |
-| T07 | CHANGES-REQUESTED (openapi; D90 stimulus-less groups dropped; table helper) | A4 (priority) | then T08 → T25 → H-A7 forward with BASE-6 |
+| T07 | CHANGES-REQUESTED → **READY-FOR-REVIEW** @ b0421c6b (BASE-6) | A4 | openapi check 0; shared `stimulus-table.ts` in views/mapping/bridge; stimulus-less groups always emitted (placeholder until A3 makes `BijakBuilderGroupSchema.stimulus` optional, then A4 flips ports.ts); stimulus-display + qb-stimuli 12/12; exam-builder + bridge 435/435; contract 1417/1417; tsc 0; eslint 0 |
+| T08 | READY-FOR-REVIEW @ 7a3f754c (T07 + BASE-6) | A4 | secondary-guard 7/7; builder + bridge + pool-source 448/448; pupil-pool guard → B3 |
+| T25 | READY-FOR-REVIEW @ e14f4f91 (T08 merged; migration 0101) | A4 | essay-choice 25/25; 442/442; lint:migration pass; input + migration → B3 |
+| H-A7 | READY-FOR-REVIEW @ d7424ace (T25 merged) | A4 | 11/11; contract 1417/1417 |
 | T29 | CHANGES-REQUESTED (live ?? latest) | A4 | + parity fixtures |
 | T30 | CHANGES-REQUESTED (overview scale; attention = lane rows) | A4 | |
 | T34 / H-A9 | not yet reviewed | A3 | merge BASE-6; + full-review builder findings (`builder.service` early return MAJOR, minors) |
@@ -145,7 +148,7 @@ T04 scope widened by planning: raw-SQL `'published'` question-status spots in `p
 | ID | Sev | Lane | Action |
 |---|---|---|---|
 | R1E2E-01 | Critical | A2 | **READY-FOR-REVIEW** r1/e2e01-intake-subject @ dbf524de (BASE-6): `curriculumCodeOf` in curriculum-facts (TagResolver.subject + taxonomy), duplicate-detector bank(), extraction ensureSourcePaper (same bug: MAT batch had subject_id NULL); subject-code.spec 13/13 (9 fail without fix); intake-workflow 101/101; api tsc 0; eslint 0. **Lead re-run: BASE-6 ancestor ✓; test/intake-workflow 15 files 101/101.** Input → B3 |
-| R1E2E-05 | Critical | A4 | stem/option image + own stimulus served after b08: prove on BASE-6 with DB spec, fix bridge if still red → r1/e2e05-stem-image |
+| R1E2E-05 | Critical | A4 | **READY-FOR-REVIEW** r1/e2e05-stem-image @ 00cec26f: stem image already served on BASE-6 (b08 fixed it; 201, pupil reads PNG, anon 401); FIX for own picture of kind diagram/map/graph/infographic (was 403); stem-image.spec 6/6; bridge + attempts + image-access 323/323. Files → B3. Follow-up R1E2E-05b (A4): serve a question's own passage/table and 2+ own stimuli inline, V2 §1.5 |
 | R1E2E-06 | High | A3 | Terbit must refuse questions the attempt path refuses (publish check = attempt check, not overridable) → in T34 |
 | R1E2E-07 | Medium | A3 | Terbit on a Spec-blueprint paper: enforce AC-R1-16.2 (Disahkan) with BM blocker → in T34 |
 | R1E2E-08 | High | A2 | CLOSED by T04 (BASE-4): approved = servable |
