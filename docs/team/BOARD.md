@@ -76,6 +76,7 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 | H-A24 | docs | R1 release-notes input table for B1 | A3 docs agent | — | r1/ha24-release-input | **READY-FOR-REVIEW** @ 12cabae7 (`docs/ops/r1-release-input-team-a.md`; deploy-config items → REQ-A-009) |
 | H-A25 | docs | Run 0102/0103/0105 verification SELECTs on a local migrated DB; add them to the runbook | A3 docs agent | H-A24 | r1/t37-r1-runbook | IN-PROGRESS |
 | T50 | AC partials | Close "partial" ACs in attempts / self-mark / rewards / Kuiz-random / Databank-Latih Tubi draw / curriculum / Prestasi | A1 | — | r1/t50-partial-acs | IN-PROGRESS |
+| T51 | AC partials | Close "partial" ACs in builder / Semak Kertas / Terbit / Kontrak / Jana admin / chain (incl. Jana short-pool variant) | A3 dev-1 | T43 | r1/t51-partial-acs-a3 | IN-PROGRESS |
 | T36 | R1-B07 | Remove PoC fixture and composite split; bank is the only source | **A2** | T04 (contains b08) | r1/t36-remove-poc @ 40d4851d | **READY-FOR-REVIEW** (BASE-6 merged): bank is the only question source for Bijak papers, attempts, Jana, kuiz, builder; `BIJAK_POC_QUESTIONS` deprecated no-op (warns when true); PoC export → prisma/seed/poc/export, doubles → test/support/poc; poc-flag specs rewritten + bank-sources.spec 5; bijak-papers 102, bijak-attempts 173, bijak-integration 60, bridge 110, exam-builder 295, seed 138 + 1 skip, school-admin 239, config 10, registry-boot 3 (all green); tsc 0; eslint 0. **Merge after T26, and B1 must first switch the e2e workflows off PoC papers**: `BIJAK_POC_QUESTIONS` true at compose.http.yaml:31, render.yaml:27, .github/workflows/e2e-http.yml:74, .github/workflows/frontend.yml:102 (+ deploy/vps/compose.prod.yaml:77/113 false). Seeded PoC papers become unplayable outside tests (403 not eligible; Jana 422 SHORTAGE). Release-note text in status/A2.md |
 | T37 | R1-D01/D02 | Consolidated ops runbook (migrations 0092→0093→0100→0101, env, verification queries) + D95 (admin creates + Sahkan on UAT, no seed) | **A3** (cycle 7) | T35 | r1/t37-r1-runbook | **READY-FOR-REVIEW** @ 971dfca0 (+ §4.2 → D95; before: 5540289f (+ release-notes §4.1 → D95; runbook SQL 51/51 ok on a local migrated + seeded postgres:16, recorded in §9) (was b0d0046f; BASE-6 merged; docs only: status table, 0092→0093→0100→0101→0102 with pre/post SELECTs, VACUUM ANALYZE + rollback, env names, D95 §5 Kontrak + Sahkan order, no-seed check, links T39). Follow-up on branch: release-notes §4.1 → D95; run all SELECTs on a local migrated DB |
 
@@ -131,7 +132,7 @@ B: review, security, E2E and release for each R2 unit.
 
 ## Migration ranges (update)
 
-Team A 0100–0109, overflow **0120–0129**; team C 0110–0119. In code today: 0092, 0093, 0100 (T04), 0101 (T25), 0102 (T33). Reserved: 0103 (T42, A2), 0105 (H-A18, A2). 0104 free (T44 needed no migration). Planned numbers are in `docs/architecture/v2-admin-student-pipeline.md` §2 (renumbered on T25).
+Team A 0100–0109, overflow **0120–0129**; team C 0110–0119. In code today: 0092, 0093, 0100 (T04), 0101 (T25), 0102 (T33). Reserved: 0103 (T42, A2), 0104 (T48 `paper_sections.admin_created`, A3), 0105 (H-A18, A2). Next free: 0106. Planned numbers are in `docs/architecture/v2-admin-student-pipeline.md` §2 (renumbered on T25).
 
 ## Decisions this cycle
 
@@ -223,6 +224,9 @@ Also noted: user decisions of 18:03 relayed by team B — B09b paper-review edit
 | T26 / T35 / H-A13 (minors) | r1/t26-e2e-seed @ d474227d / r1/t35-report-archive @ 4ea790b1 / r1/ha13-archived-paper @ 3979e212 | A1 (b) | B2 minors fixed; BASE-21 |
 | T26b | r1/t26b-e2e-seed @ 7f62ede2 | A1 (b) | REQ-B-003: H-A15-safe e2e evidence; builder Sepadan proven; no honest structured K2 → fixme |
 | b-requests-a4 | r1/b-requests-a4 @ 42396048 | A4 | REQ-B-013, REQ-B-014 b/c (inline SVG dropped) |
+| T43 | r1/t43-chain-publish @ 8e04493f | A3 | spec-only; chain: Kontrak created + Disahkan over API, plain Terbit, T5 pupil, Jana T4/T5 distinct, negatives; merge after T31 |
+| T48 | r1/t48-builder-parity @ 1b76778f | A3 | READY pending re-run; migration 0104; cover code, per-paper rule (overridable RULE_NOT_IN_CONTRACT), Tambah bahagian / Tambah soalan (V2 texts) / Padam soalan, `pinned`, R3 caption/body; B3 |
+| H-A25 | r1/t37-r1-runbook @ bd2c21e9 + r1/ha24-release-input @ cf49303a | A3 docs | 0102/0103 SELECTs 58/58 on local pg16; REQ-C-016 scope doc fixed |
 | T38 / T40 | r1/t38-selfmark-reward @ 662e602f / r1/t40-attempts-acs @ 90973d72 | A1 | |
 | T41 | r1/t41-curriculum-acs @ 067ff3cc | A1 | DSKP loader BM reasons (code fix), load changes no served count, Darjah text; dskp-acs 3/3 |
 | b-requests-a1 | r1/b-requests-a1 @ aa9f89dd | A1 | REQ-B-005/006/007/014a; B3 for 005/007 |
