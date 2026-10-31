@@ -23,6 +23,7 @@ const PAYLOAD_KEYS = {
   mode: true,
   unit: true,
   wordRange: true,
+  cognitiveLevel: true,
   parts: true,
   scheme: true,
   tag: true,

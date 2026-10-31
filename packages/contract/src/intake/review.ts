@@ -2,6 +2,7 @@ import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import { AI_MESSAGES } from '../ai/schema'
+import { QuestionCognitiveLevelSchema } from '../questions/parts'
 import {
   IntakeConfidenceBandSchema,
   IntakeItemRowSchema,
@@ -149,6 +150,7 @@ export const IntakeItemPatchSchema = z
     mode: IntakeLeafKindSchema.optional(),
     unit: z.string().max(32).nullable().optional(),
     wordRange: IntakeWordRangeSchema.nullable().optional(),
+    cognitiveLevel: QuestionCognitiveLevelSchema.nullable().optional(),
     parts: z.array(IntakePartSchema).max(INTAKE_MAX_PARTS).optional(),
     scheme: IntakeSchemeSchema.nullable().optional(),
     tag: IntakeCurriculumTagSchema.optional(),
