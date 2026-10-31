@@ -119,7 +119,14 @@ function hydrate(seed: ReviewSeed): void {
     if (force || !BANK.schemes.has(id)) BANK.schemes.set(id, sc)
   if (seed.group) {
     BANK.stimuli.set(seed.group.stimulus.id, seed.group.stimulus)
-    BANK.groups.set(seed.group.def.id, seed.group.def)
+    // A later member of an already published figure joins its group (D90) instead of replacing it.
+    const had = BANK.groups.get(seed.group.def.id)
+    BANK.groups.set(
+      seed.group.def.id,
+      had && seed.batchId
+        ? { ...seed.group.def, questionIds: [...new Set([...had.questionIds, ...seed.group.def.questionIds])] }
+        : seed.group.def,
+    )
   }
 }
 

@@ -9,7 +9,7 @@ import { ApiError } from '@/api'
 
 import type { StartSessionResponse } from '../../api/types'
 import QuizRunner from '../../components/quiz/QuizRunner.vue'
-import { REVISION_LABELS } from '../../components/quiz/quiz-labels'
+import { LATIH_TUBI_LABELS, REVISION_LABELS } from '../../components/quiz/quiz-labels'
 import type { QuizApi } from '../../components/quiz/quiz-types'
 
 const native = vi.hoisted(() => ({ alertNative: vi.fn() }))
@@ -248,6 +248,16 @@ describe('QuizRunner question', () => {
     expect(t(w, 'btn-next').text()).toContain('Soalan Seterusnya')
   })
 
+  it('T14 B-09: a server feedback that repeats the title is not shown twice', async () => {
+    api.check.mockResolvedValue({ isCorrect: false, correctOptionId: 1, feedback: 'Salah', explanation: null })
+    const w = await render()
+    await t(w, 'option-A').trigger('click')
+    await t(w, 'btn-check').trigger('click')
+    await flushPromises()
+    expect(t(w, 'feedback-title').text()).toBe('Salah')
+    expect(w.find('[data-testid=feedback-text]').exists()).toBe(false)
+  })
+
   it('shows the S7 feedback titles with the S7 labels', async () => {
     api.check.mockResolvedValue({
       isCorrect: true,
@@ -338,6 +348,20 @@ describe('QuizRunner results', () => {
       await flushPromises()
     }
   }
+
+  it('Latih Tubi / Databank results follow the V2 view (REQ-A-005, S-53 / S-62)', async () => {
+    api.submit.mockResolvedValue({
+      results: { score: 2, total: 2, gamification: { coinsEarned: 4, streakCount: 1, pointsEarned: 20, totalBalance: 10 } },
+    })
+    const w = await render({ labels: LATIH_TUBI_LABELS })
+    await finish(w)
+    expect(t(w, 'result-title').text()).toBe('Kuiz Selesai!')
+    expect(w.text()).toContain('Tahniah, anda telah lengkapkan Bahasa Melayu.')
+    expect(t(w, 'result-retry').text()).toContain('Cuba Lagi')
+    expect(t(w, 'result-back').text()).toContain('Senarai Subjek')
+    expect(w.text()).toContain('Markah')
+    expect(w.text()).toContain('Ketepatan')
+  })
 
   it('labels the last button "Lihat Keputusan" and submits once, showing the Q1 results', async () => {
     api.submit.mockResolvedValue({
