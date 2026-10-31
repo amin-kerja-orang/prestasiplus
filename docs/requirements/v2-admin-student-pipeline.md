@@ -389,6 +389,7 @@ As a Murid, I want to sit a published paper in the real-paper format.
 | FD-8 | Student-generated paper entry retained (not in .cloud) | v2-bijak-spm scope, D78 |
 | FD-9 | Paper quiz view ungraded textarea for non-MCQ parts: replicate; D9 candidate for the designer | Input that is not saved looks broken |
 | FD-10 | Kertas Subjektif is an editable document created by upload -> OCR -> sunting -> terbit (D81), not CLI-imported page images; publish gate "no content" instead of "0 pages" | .cloud is CLI-only and image-only (unreadable on a phone) |
+| FD-11 | "Soalan by Chapter" subject tile counts chaptered + ungrouped + approved questions only (the sum of the per-chapter counts), not the whole subject | D9, D91, D80 (approved = servable): V2 section 2.3 of `docs/discovery/cloud-student-mechanism.md` counts `chapter_id NOT NULL AND status != 'menunggu'`, which includes drafts and other non-approved questions (a broken leak, `docs/handoff/CLOUD-HANDOFF.md` section 3), and the live tile also showed the whole-subject count (56) against the 2 chaptered questions (R1E2E-09) |
 
 ## 9. Placeholder register: status
 
@@ -481,7 +482,7 @@ Note on Penguasaan (not asked): the discovery doc describes no behaviour, so AC-
 - [x] Q-01 answered by the user (D81: upload -> OCR -> sunting -> terbit); no open questions remain.
 - [ ] G2 decisions for user approval: OCR engine and cost, quota routing (AC-14.23).
 - [ ] DEC-1 recorded in TRACKER (drops the publish hop of D54a for questions).
-- [ ] Fidelity deviations FD-1..FD-10 carried into the architect's deviation table.
+- [ ] Fidelity deviations FD-1..FD-11 carried into the architect's deviation table.
 - Then G2: solution-architect and ui-ux-designer in parallel.
 
 ## 12. Counts (final)
