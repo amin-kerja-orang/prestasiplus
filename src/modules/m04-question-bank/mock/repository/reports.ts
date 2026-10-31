@@ -152,8 +152,11 @@ export const reportsRepo = defineRepository({
           // "Arkib" (R1-B17), applied last: an MCQ goes to status archived; a structured question has no
           // lifecycle status in the mock, so it is taken out of practice instead.
           if (patch.archive === true) {
-            if (current.questionType === 'mcq') questionsRepo.bulkAction('archive', [current.questionId], now)
-            else setQuestionActive('structured', current.questionId, false, now)
+            // An archived question also leaves practice, so a later "fixed" reads "Dikeluarkan" (T35 displayOf).
+            if (current.questionType === 'mcq') {
+              questionsRepo.bulkAction('archive', [current.questionId], now)
+              setQuestionActive('mcq', current.questionId, false, now)
+            } else setQuestionActive('structured', current.questionId, false, now)
           }
           return row
         })

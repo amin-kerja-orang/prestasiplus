@@ -107,9 +107,18 @@ function questionView(r: QuestionReport, full: boolean): ReportQuestionView {
     levelName: names.level(q.educationLevelId)?.name ?? null,
     complianceStatus: q.complianceStatus,
     isActive: q.isActive,
+    status: q.status,
     practiceUrl: code ? `/spm/latih-tubi/${code}/quiz?question_id=${String(q.id)}&count=1` : null,
   }
 }
+
+/** H-A13 mock: published papers that place a question (none by default; a test sets them). */
+const PLACING: Record<number, { id: string; title: string }[]> = {}
+export function setPlacingPapers(questionId: number, papers: { id: string; title: string }[]): void {
+  PLACING[questionId] = papers
+}
+const ARCHIVED_ON_PAPERS =
+  'Soalan ini ada dalam kertas yang telah diterbitkan. Murid tidak boleh memulakan percubaan baharu pada kertas itu sehingga soalan diganti.'
 
 function activeOf(r: QuestionReport): boolean {
   if (r.questionType === 'structured') return structuredRepo.get(r.questionId)?.isActive ?? false
@@ -255,8 +264,15 @@ function update(req: MockRequest, ctx: MockContext): MockResponse {
     ctx.clock.now(),
   )
   if (!row) return notFound()
+  const papers = booleanFlag(b.archive) ? (PLACING[row.questionId] ?? []) : []
   return ok(
-    { id: row.id, status: row.status, adminNotes: row.adminNotes, updatedAt: row.updatedAt },
+    {
+      id: row.id,
+      status: row.status,
+      adminNotes: row.adminNotes,
+      updatedAt: row.updatedAt,
+      ...(papers.length > 0 ? { papers, warning: ARCHIVED_ON_PAPERS } : {}),
+    },
     { status: REPORT_UPDATED_TEXT },
   )
 }

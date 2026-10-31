@@ -248,6 +248,7 @@ describe('QuestionReportsPage (M04 S7)', () => {
     const w = await renderAdmin()
     const btn = w.get('[data-testid=report-card-10] [data-testid=report-archive]')
     expect(btn.text()).toBe('Arkib')
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
     await btn.trigger('click')
     await flushPromises()
     expect(api.updateQuestionReport).toHaveBeenLastCalledWith(10, {
@@ -255,6 +256,35 @@ describe('QuestionReportsPage (M04 S7)', () => {
       adminNotes: 'Diarkibkan oleh admin',
       archive: true,
     })
+  })
+
+  it('Arkib asks "Arkibkan soalan ini?" first and does nothing when declined (V2 Panel)', async () => {
+    api.updateQuestionReport.mockResolvedValue({ data: {}, status: 'ok' })
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const w = await renderAdmin()
+    await w.get('[data-testid=report-archive]').trigger('click')
+    await flushPromises()
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(api.updateQuestionReport).not.toHaveBeenCalled()
+  })
+
+  it('an archive on a published paper flashes the warning and the paper titles (H-A13)', async () => {
+    api.updateQuestionReport.mockResolvedValue({
+      data: {
+        warning: 'Soalan ini ada dalam kertas yang telah diterbitkan.',
+        papers: [{ id: '1', title: 'Percubaan A' }, { id: '2', title: 'Percubaan B' }],
+      },
+      status: 'Laporan berjaya dikemaskini.',
+    })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const w = await renderAdmin()
+    await w.get('[data-testid=report-archive]').trigger('click')
+    await flushPromises()
+    expect(useFlashStore().current?.message).toEqual([
+      'Laporan berjaya dikemaskini.',
+      'Soalan ini ada dalam kertas yang telah diterbitkan.',
+      'Kertas: Percubaan A; Percubaan B',
+    ])
   })
 
   it('a failed action flashes the error and keeps the list', async () => {

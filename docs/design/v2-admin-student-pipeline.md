@@ -1066,6 +1066,9 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 | UX-5 | `Naik`/`Turun`/`Tambah` alternatives to drag | D9: unusable on touch; D-9 |
 | UX-6 | Paper-quiz non-MCQ textarea gets a helper line | FD-9; D-9 |
 | UX-7 | `Halaman` column becomes `Kandungan`; page tabs become `Kertas`/`Skema` document tabs | FD-10 |
+| UX-41 | "Arkib" on a report card asks "Arkibkan soalan ini?" (buttons Batal / Arkib) before it archives, and is hidden once the question is archived | H-C4. V2 Panel confirms the archive with the same title ("Sembunyikan" there). The report view carries no lifecycle status yet, so the card also reads an earlier Arkib from the admin note until the server sends `question.status` (request to team A) |
+| UX-42 | After "Arkib" on a question that sits on published Kertas Pilihan the flash adds the server warning and "Kertas: {titles}" | H-C4, H-A13: students cannot start a new sitting on those papers until the question is replaced. The flash has only success and error variants, so it stays a success flash with extra lines |
+| UX-43 | Mock only: "Arkib" archives an MCQ and takes it out of practice (so a later "Tandakan Selesai" reads "Dikeluarkan", as the server does); a structured question has no lifecycle status in the m04 mock, so "Arkib" only makes it inactive. The note sent with "Arkib" ("Diarkibkan oleh admin") is [PROPOSED] copy | H-C4 review |
 | UX-8 | Chip + sheet instead of sticky header for the shared stimulus below 1024px | AC-11.8; D-3 |
 | UX-9 | Kontrak: tabs per Bahagian and the evidence/Sahkan tab instead of one inline table and a free `Sumber` select | D75-D78 (approved K2 design) |
 | UX-10 | Simulasi subheading corrected | FD-3 |

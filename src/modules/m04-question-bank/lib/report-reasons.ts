@@ -153,7 +153,7 @@ export type ReportFilter = (typeof REPORT_FILTERS)[number]
 /** The notes S7 sends for "Tolak & Aktifkan Semula" and "Nyahaktif Segera" (FN-M04-3.2.14 / 3.2.15). */
 export const DISMISS_NOTE = 'Soalan dan jawapan disemak — tiada masalah'
 export const DEACTIVATE_NOTE = 'Dinyahaktifkan segera oleh admin'
-/** The note S7 sends for "Arkib" (R1-B17); the server stores the lifecycle reason itself. */
+/** [PROPOSED] The note S7 sends for "Arkib" (R1-B17); the server stores the lifecycle reason itself. */
 export const ARCHIVE_NOTE = 'Diarkibkan oleh admin'
 
 export const REPORT_COMMENT_MAX = 500
