@@ -102,26 +102,15 @@ export function plainExcerpt(text: string | null, max: number): string {
   return plain.length <= max ? plain : `${plain.slice(0, max).trimEnd()}\u2026`
 }
 
-
-/**
- * Shown to pupils NOW, as the served lock has it today: the question is active and its live version is approved. Alias `q` is `questions`.
- * (REQ-B-012 widens the lock to versions pinned by published papers; the list `status` and the member `servable` flag must follow it:
- * replace this one constant with that predicate.)
- */
-const SERVED_NOW = Prisma.sql`(q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved'))`
-
-/** The same rule for one version `v` of question `q`. */
-const VERSION_SERVED_NOW = Prisma.sql`(q.live_version_no = v.version_no AND q.is_active AND v.status = 'approved')`
-
 /** `EXISTS` over the three ways a stimulus reaches pupils (a group with a shown member, a shown version link, a shown part link). */
 const stimulusServedSql = (stimulusId: Prisma.Sql): Prisma.Sql => Prisma.sql`EXISTS (
-  SELECT 1 FROM stimulus_group_stimuli gs JOIN questions q ON q.group_id = gs.group_id WHERE gs.stimulus_id = ${stimulusId} AND ${SERVED_NOW}
+  SELECT 1 FROM stimulus_group_stimuli gs JOIN questions q ON q.group_id = gs.group_id WHERE gs.stimulus_id = ${stimulusId} AND ${QUESTION_SERVED}
   UNION ALL
   SELECT 1 FROM question_version_stimuli vs JOIN question_versions v ON v.id = vs.question_version_id JOIN questions q ON q.id = v.question_id
-   WHERE vs.stimulus_id = ${stimulusId} AND ${VERSION_SERVED_NOW}
+   WHERE vs.stimulus_id = ${stimulusId} AND ${VERSION_SERVED}
   UNION ALL
   SELECT 1 FROM question_parts p JOIN question_versions v ON v.id = p.question_version_id JOIN questions q ON q.id = v.question_id
-   WHERE p.stimulus_id = ${stimulusId} AND ${VERSION_SERVED_NOW}
+   WHERE p.stimulus_id = ${stimulusId} AND ${VERSION_SERVED}
 )`
 
 const bi = (text: string): bigint | null => (/^[1-9]\d{0,18}$/.test(text) ? BigInt(text) : null)
@@ -236,7 +225,7 @@ export class StimuliRepository {
                                                       WHERE q.group_id = g.id AND lv.subject_id = ${subject}::bigint))
          AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
                                                     WHERE q.group_id = g.id AND lv.education_level_id = ${level}::bigint))
-         AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${SERVED_NOW})) = (${f.status ?? null}::text = 'served'))
+         AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED})) = (${f.status ?? null}::text = 'served'))
          AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
               OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
                           WHERE gs.group_id = g.id AND (s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')))
@@ -256,7 +245,7 @@ export class StimuliRepository {
                                                       WHERE q.group_id = g.id AND lv.subject_id = ${subject}::bigint))
          AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
                                                     WHERE q.group_id = g.id AND lv.education_level_id = ${level}::bigint))
-         AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${SERVED_NOW})) = (${f.status ?? null}::text = 'served'))
+         AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED})) = (${f.status ?? null}::text = 'served'))
          AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
               OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
                           WHERE gs.group_id = g.id AND (s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')))`
@@ -299,7 +288,7 @@ export class StimuliRepository {
     const out = new Map<string, MemberBrief[]>(groupIds.map((g) => [g, []]))
     if (keys.length === 0) return out
     const rows = await this.db.$queryRaw<{ group_id: bigint; id: bigint; number_label: string | null; stem_ms: string | null; status: string; served: boolean }[]>`
-      SELECT q.group_id, q.id, lv.number_label, lv.stem_ms, lv.status, ${SERVED_NOW} AS served
+      SELECT q.group_id, q.id, lv.number_label, lv.stem_ms, lv.status, ${QUESTION_SERVED} AS served
         FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
        WHERE q.group_id IN (${Prisma.join(keys)})
        ORDER BY q.group_id, q.group_position, q.id`
@@ -320,7 +309,7 @@ export class StimuliRepository {
   async servedGroupIds(groupIds: readonly string[]): Promise<Set<string>> {
     const keys = groupIds.map(bi).filter((k): k is bigint => k !== null)
     if (keys.length === 0) return new Set()
-    const rows = await this.db.$queryRaw<{ group_id: bigint }[]>`SELECT DISTINCT q.group_id FROM questions q WHERE q.group_id IN (${Prisma.join(keys)}) AND ${SERVED_NOW}`
+    const rows = await this.db.$queryRaw<{ group_id: bigint }[]>`SELECT DISTINCT q.group_id FROM questions q WHERE q.group_id IN (${Prisma.join(keys)}) AND ${QUESTION_SERVED}`
     return new Set(rows.map((r) => idToString(r.group_id)))
   }
 

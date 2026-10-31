@@ -142,6 +142,31 @@ describe('stimulus group and stimulus lists (admin, real database)', () => {
       expect(row.warning).not.toBeNull() // one member
     })
 
+    it('REQ-B-025a: a group whose only pinned member was archived or deactivated still lists as served while a published paper pins it', async () => {
+      const pin = async (questionId: string, status = 'published'): Promise<void> => {
+        const p = (await t.db.query<{ id: string }>(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, status) values ('pilihan', 'Kertas terbit', $1, 1, 60, $2) returning id::text id`, [refs.mathId, status]))[0]!.id
+        const sec = (await t.db.query<{ id: string }>(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'Bahagian A', 1, 0) returning id::text id`, [p]))[0]!.id
+        await t.db.query(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [sec, questionId])
+      }
+      const s = await group([await stimulus()], [])
+      const made = await admin.post(`/api/stimulus-groups/${s.id}/questions`, mcqBody(refs, { status: 'approved', tag }))
+      const qid = made.body.data.id as string
+      await pin(qid)
+      // archived (the live version goes) and deactivated: only the published pin serves it now
+      expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [qid] })).status).toBe(200)
+      await t.db.query(`update questions set is_active = false where id = $1`, [qid])
+      const row = (await groups('status=served&pageSize=100')).data.find((r) => r.id === s.id)
+      expect(row, 'listed as served').toBeDefined()
+      expect(row!.members[0]).toMatchObject({ id: qid, status: 'archived', servable: true })
+      expect((await groups('status=draft&pageSize=100')).data.map((r) => r.id)).not.toContain(s.id)
+      // a draft paper pins nothing for pupils: another archived member of a group is draft
+      const d = await group([await stimulus()], [])
+      const made2 = await admin.post(`/api/stimulus-groups/${d.id}/questions`, mcqBody(refs, { status: 'approved', tag }))
+      await pin(made2.body.data.id as string, 'draft')
+      await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [made2.body.data.id as string] })
+      expect((await groups('status=draft&pageSize=100')).data.map((r) => r.id)).toContain(d.id)
+    })
+
     it('filters by subject and by level of the members', async () => {
       const math = await group([await stimulus()], [await question(), await question()])
       const sci = await group([await stimulus()], [await question({ subjectId: refs.sciId }), await question({ subjectId: refs.sciId })])
