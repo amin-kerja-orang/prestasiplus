@@ -1182,7 +1182,9 @@ export class QuestionsRepository {
       const q = byId.get(w.id)
       return q && w.versionNo <= q.latestVersionNo ? [{ q, versionNo: w.versionNo }] : []
     })
-    const out = await this.hydratePicks(picks)
+    // Secondary-only (R1-B21): a pinned read of a Darjah question is not found either (kuiz paper pages serve pinned versions).
+    const hidden = await this.primaryLevelIds()
+    const out = (await this.hydratePicks(picks)).filter((r) => r.version.educationLevelId === null || !hidden.has(r.version.educationLevelId))
     return out.sort((a, b) => (a.id === b.id ? a.version.versionNo - b.version.versionNo : BigInt(a.id) < BigInt(b.id) ? -1 : 1))
   }
 
