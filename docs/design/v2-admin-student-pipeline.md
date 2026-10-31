@@ -1066,6 +1066,7 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 | UX-5 | `Naik`/`Turun`/`Tambah` alternatives to drag | D9: unusable on touch; D-9 |
 | UX-6 | Paper-quiz non-MCQ textarea gets a helper line | FD-9; D-9 |
 | UX-7 | `Halaman` column becomes `Kandungan`; page tabs become `Kertas`/`Skema` document tabs | FD-10 |
+| UX-40 | An esei pilihan question shows an "Esei pilihan" badge with its topics in the m04 list (a "Jenis" card field below `md`) and a "Esei pilihan" panel on the detail page; on the edit form its model answer and points are read-only with the note "Soalan esei pilihan: jawapan model dan nilai mata disunting melalui editor Studio / berstruktur, bukan di borang ini." | H-C3, [PROPOSED] copy. V2 has no esei pilihan; the API reads it as `essay` but keeps its answer in the part tree, so editing those two fields here would be silently dropped |
 | UX-8 | Chip + sheet instead of sticky header for the shared stimulus below 1024px | AC-11.8; D-3 |
 | UX-9 | Kontrak: tabs per Bahagian and the evidence/Sahkan tab instead of one inline table and a free `Sumber` select | D75-D78 (approved K2 design) |
 | UX-10 | Simulasi subheading corrected | FD-3 |

@@ -285,6 +285,7 @@ interface TableRow extends Record<string, unknown> {
   levelName: string
   statusText: string
   difficultyText: string
+  typeText: string
   raw: QuestionRow
 }
 
@@ -391,6 +392,7 @@ const tableRows = computed<TableRow[]>(() =>
     levelName: r.level?.name ?? '-',
     statusText: statusLabel(r.status, true),
     difficultyText: `${String(r.difficultyLevel)} / 5`,
+    typeText: r.essayTopics?.length ? `Esei pilihan (${String(r.essayTopics.length)} tajuk)` : '-',
     raw: r,
   })),
 )
@@ -416,6 +418,7 @@ const cardFields: CardField[] = [
   { key: 'levelName', label: 'Tahap' },
   { key: 'statusText', label: 'Status' },
   { key: 'difficultyText', label: 'Kesukaran' },
+  { key: 'typeText', label: 'Jenis' },
 ]
 </script>
 
