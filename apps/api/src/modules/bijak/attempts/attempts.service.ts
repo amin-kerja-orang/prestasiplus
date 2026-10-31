@@ -444,7 +444,12 @@ export class BijakAttemptsService {
     let photos: Map<string, Map<string, PhotoRow>> | undefined
     const dirty = new Map<string, AnswerRow>()
     for (const c of changes) {
-      if (!index.parts.has(c.partId) || locked.has(c.partId)) continue
+      const leaf = index.parts.get(c.partId)
+      if (!leaf || locked.has(c.partId)) continue
+      // REQ-B-014: the topic of an essay_choice part is one of that part's topics, whatever the revision (nothing is stored on a refusal).
+      if (leaf.topicIds && c.answer.choice !== undefined && !leaf.topicIds.includes(c.answer.choice)) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.choice`]: MSG.essayTopicUnknown } })
+      }
       const cur = answers.get(c.partId)
       if (cur && cur.rev >= c.rev) continue
       let answer = c.answer

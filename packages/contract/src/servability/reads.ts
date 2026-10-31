@@ -42,7 +42,10 @@ export const ServabilityOverviewActivitySchema = z
     activity: ServabilityActivitySchema,
     label: z.string(),
     served: z.number().int().min(0),
-    total: z.number().int().min(0).meta({ description: 'The questions the activity could show: the approved, active bank; for Simulasi (kertas) the questions placed on published papers.' }),
+    total: z.number().int().min(0).meta({
+      description:
+        'The questions the activity could show: the approved, active bank; for Simulasi (kertas) the questions placed on published papers; for the Databank the rows of the Databank lane (MCQs of Databank subjects, any status), so `attention` equals the lane rows with a reason.',
+    }),
     attention: z.number().int().min(0).meta({ description: 'total - served.' }),
     basis: z.enum(SERVABILITY_COUNT_BASES),
   })
@@ -56,14 +59,21 @@ export const ServabilityOverviewSchema = z
   .meta({ id: 'ServabilityOverview' })
 export type ServabilityOverview = z.infer<typeof ServabilityOverviewSchema>
 
+/** Rows a lane list can page through (`page` x `pageSize`): a deeper page is refused so OFFSET never scans the whole bank. */
+export const SERVABILITY_LANE_WINDOW = 10_000
+
 /** Query of both lane lists (S5.2): `Subjek`, `Status`, `Cari`, then the page. Unknown values match nothing. */
 export const ServabilityLaneQuerySchema = z
   .object({
     subjectId: IdSchema.optional(),
     status: z.string().trim().max(20).optional(),
     search: z.string().trim().max(100).optional(),
-    page: z.coerce.number().int().min(1).max(100_000).default(1),
+    page: z.coerce.number().int().min(1).max(SERVABILITY_LANE_WINDOW).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  })
+  .refine((q) => q.page * q.pageSize <= SERVABILITY_LANE_WINDOW, {
+    message: 'Halaman terlalu jauh. Gunakan Tapis atau Cari untuk mengecilkan senarai.',
+    path: ['page'],
   })
   .meta({ id: 'ServabilityLaneQuery' })
 export type ServabilityLaneQuery = z.infer<typeof ServabilityLaneQuerySchema>
@@ -86,6 +96,9 @@ export const ServabilityAttentionCountSchema = z
   .strictObject({ code: ServabilityReasonCodeSchema, message: z.string(), count: z.number().int().min(1) })
   .meta({ id: 'ServabilityAttentionCount' })
 
+/** The statuses of a paper (`ck_papers_status`), as the lane shows and filters them. */
+export const SERVABILITY_PAPER_STATUSES = ['draft', 'ready', 'published', 'withdrawn'] as const
+
 /**
  * Lane "Bijak SPM": one paper per row. `attention` counts the placed questions the Bijak bridge cannot serve, by reason; "not on a
  * published paper" is not counted (the paper `status` says it).
@@ -95,7 +108,7 @@ export const ServabilityPaperRowSchema = z
     paperId: IdSchema,
     title: z.string(),
     subject: ServabilityLaneSubjectSchema.nullable(),
-    status: z.enum(['draft', 'published']),
+    status: z.enum(SERVABILITY_PAPER_STATUSES),
     questionCount: z.number().int().min(0),
     attentionCount: z.number().int().min(0).meta({ description: 'Placed questions with at least one reason.' }),
     attention: z.array(ServabilityAttentionCountSchema),

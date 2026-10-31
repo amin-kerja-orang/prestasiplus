@@ -56,6 +56,7 @@ function facts(over: Partial<ServabilityFacts> = {}): ServabilityFacts {
     subject: { id: '3', isActive: true, linkedToLevel: true, spmListed: true, databankListed: true },
     group: null,
     linkedAssets: new Map(),
+    outside: new Map(),
     fileTokens: new Map(),
     onPublishedPaper: false,
     janaFacts: null,
