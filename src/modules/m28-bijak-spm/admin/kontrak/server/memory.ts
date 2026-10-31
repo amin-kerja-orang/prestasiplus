@@ -518,7 +518,7 @@ export class MockKontrakServer implements KontrakApi {
     await tick()
     const h = this.head(subject, kertas)
     const v = h.view
-    const q = { subject, kertas: String(kertas), status: 'published' }
+    const q = { subject, kertas: String(kertas), status: 'approved' }
     const sections: BijakPoolPreview['sections'] = v.sections.map((s) => {
       const base = `${subject}${kertas}${s.label}`
       const sh = (needed: number, available: number) => ({ needed, available, short: Math.max(0, needed - available) })

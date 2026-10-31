@@ -77,13 +77,28 @@ SELECT count(*) FROM questions q
  WHERE q.is_active;
 ```
 
+7. refresh planner statistics after the bulk status rewrite and the index rebuild (not inside the migration transaction):
+
+```sql
+VACUUM ANALYZE question_versions;
+```
+
+Run it once right after the migration finishes (the table was rewritten by the two UPDATEs and five indexes were recreated, so the planner has stale statistics and bloat until this runs). Safe on a live database: it takes no exclusive lock.
+
 Then in the admin UI: a question in `review` shows the button "Terbitkan"; pressing it makes the question appear in practice at once (no second hop).
 
 ## Deploy notes
 
 - Deploy order: migration 0100 and the API/FE build of this change in the same release (a few seconds of mixed state is possible: an old API against the new CHECK would fail to write `published`; a new API against the old data would serve nothing). Use the maintenance window.
+- Rollback path (database): the migration cannot be reversed in place. Restore the pre-migration dump (`docs/ops/db-backup.md`), then tell Prisma that 0100 is not applied so a later `migrate deploy` re-runs it:
+
+```bash
+npx prisma migrate resolve --rolled-back 0100_question_lifecycle_approved
+```
+
+  Deploy the previous API/FE build together with the restore. Do not run `migrate resolve` without the restore: the data would stay rewritten while Prisma believes the migration is pending.
 - Rolling back the code after the first new approval is possible only together with a database restore (the migration is not reversible).
 - Code that is outside this change and still names `'published'` for a question status will break (no rows served, or a CHECK violation on write). The remaining spots were changed in the follow-up (T04): practice (`be09-practice-question-source`, `structured.service`, `overview`, `writes/listing`, `analytics` repositories), account (`QUESTION_COUNT_SQL`), Bijak (`be09-question-source`, `pool-source` `excludedBankQuery`, `kuiz.service`), the paper builder (`bankQuery`, `SERVABLE_QUESTION_STATUSES` now `['approved']`) and the m28 admin wire mapping (`approved` is Terbit, `review` is Semakan). Paper `published` (Terbit) is untouched.
-- D91: the practice card (`OverviewRepository.bankMatrix`) counts ungrouped questions only (`q.group_id IS NULL`), the hub / draw rule. On the demo seed the BM card is 50 (it was 53 with the 3 SEED-GRP-PASAR group MCQs); the login count (`QUESTION_COUNT_SQL`) still counts group members (493).
+- D91: the practice card (`OverviewRepository.bankMatrix`) counts ungrouped questions only (`q.group_id IS NULL`), the hub / draw rule; the Bab card (`OverviewRepository.chapterQuestionCounts`) applies the same `group_id IS NULL` rule so it equals the chapter draw, and the "Soalan by Chapter" subject tile (`OverviewService.chapterSubjects`, V2 section 2.3) is the sum of these per-chapter counts, not the subject total. On the demo seed the BM card is 50 (it was 53 with the 3 SEED-GRP-PASAR group MCQs); the login count (`QUESTION_COUNT_SQL`) still counts group members (493).
 - The old `published` bulk action name is still accepted as an input alias of `approved` for one release (`parseBulk`), and answers never contain it.
 - New environment variables: none.

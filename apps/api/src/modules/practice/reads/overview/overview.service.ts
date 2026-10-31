@@ -263,12 +263,12 @@ export class OverviewService {
   // --- S4 / S5 --------------------------------------------------------------------------------------
 
   async chapterSubjects(): Promise<{ code: string; name: string; icon: string | null; color: string; chapterCount: number; questionCount: number }[]> {
-    const [subjects, bank] = await Promise.all([this.curriculum.subjects({ active: true }), this.bankFacts()])
+    const subjects = await this.curriculum.subjects({ active: true })
     const out = []
     const levels = await this.curriculum.levels()
     const perSubject = subjects.map((s) => ({ s, offered: this.offeredOf(s, levels) }))
     // One chapter read per pair, then ONE question count over every chapter id.
-    const { byPair } = await this.practiceChaptersOf(perSubject.flatMap(({ s, offered }) => offered.map((l) => ({ subject: s, levelId: l.id }))))
+    const { byPair, counts } = await this.practiceChaptersOf(perSubject.flatMap(({ s, offered }) => offered.map((l) => ({ subject: s, levelId: l.id }))))
     for (const { s, offered } of perSubject) {
       const chapterCount = offered.reduce((n, l) => n + (byPair.get(`${s.id}:${l.id}`)?.length ?? 0), 0)
       // BR-15: subjects with at least one chapter at an offered level.
@@ -279,8 +279,9 @@ export class OverviewService {
         icon: s.icon,
         color: s.color,
         chapterCount,
-        // FR-M05-58: Q-PRACTICE(subject).
-        questionCount: bank.practice(idToString(s.id), offered.map((l) => idToString(l.id))),
+        // FR-M05-58, D91, V2 section 2.3 (R1E2E-09): the tile counts what the chapter draw can serve (chaptered, ungrouped, approved),
+        // the sum of the per-chapter counts, not Q-PRACTICE(subject).
+        questionCount: offered.reduce((n, l) => n + (byPair.get(`${s.id}:${l.id}`) ?? []).reduce((m, c) => m + (counts.get(idToString(c.id)) ?? 0), 0), 0),
       })
     }
     return out

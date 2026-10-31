@@ -134,6 +134,7 @@ export class OverviewRepository {
 
   /**
    * Q-CHAPTER (BR-15): eligible objective questions (live version published, `is_active`, type mcq) per chapter.
+   * Ungrouped only (`q.group_id IS NULL`, D91), as `bankMatrix`: a stimulus-group member is never drawn, so the Bab card equals the drawable pool.
    * `QuestionsRepository` has no chapter filter yet, so this is one grouped statement on the bank tables.
    */
   async chapterQuestionCounts(chapterIds: readonly string[]): Promise<Map<string, number>> {
@@ -143,7 +144,7 @@ export class OverviewRepository {
       SELECT v.chapter_id, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE v.chapter_id = ANY(${big(chapterIds)}::bigint[]) AND q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
+       WHERE v.chapter_id = ANY(${big(chapterIds)}::bigint[]) AND q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND q.group_id IS NULL AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
        GROUP BY v.chapter_id`
     for (const r of rows) out.set(idToString(r.chapter_id), r.n)
     return out

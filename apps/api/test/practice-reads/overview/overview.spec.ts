@@ -376,11 +376,11 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     await q({ subject: w.math, level: w.d1, chapter: w.c1 })
     await q({ subject: w.math, level: w.d1, chapter: w.c1 })
     await q({ subject: w.math, level: w.d1, chapter: w.c2 })
-    await q({ subject: w.math, level: w.d1 }) // no chapter: counts as a practice question only
+    await q({ subject: w.math, level: w.d1 }) // no chapter: counts as a practice question only, never in the Bab tile (D91, R1E2E-09)
     await q({ subject: w.bm, level: w.d1, chapter: w.bmC1, status: 'draft' }) // not served: BM has no chapter practice
     const body = PracticeReadChapterSubjectListResponseSchema.parse((await pelajar.get('/api/practice/chapter-subjects')).body)
     expect(body.data.map((s) => s.code)).toEqual(['MATH'])
-    expect(body.data[0]).toMatchObject({ chapterCount: 2, questionCount: 4 })
+    expect(body.data[0]).toMatchObject({ chapterCount: 2, questionCount: 3 })
     expect(body.meta).toMatchObject({ page: 1, pageSize: 1, totalItems: 1, totalPages: 1 })
     expect((await guru.get('/api/practice/chapter-subjects')).status).toBe(200)
   })
