@@ -54,30 +54,33 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
+| REQ-B-031 report guard, no auto-deactivation, capped (D98) | `r1/reqb031-report-guard` @ 8e913fb5 | A1 | none (D98); unblocks the Lapor FE | READY |
+| T26c e2e seed: structured K2 pool + Terbit paper (REQ-B-003) | `r1/t26c-e2e-k2` @ df8a52a5 | A1 | T26b; merge order T26b -> T26c -> T36 | READY |
+| REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 2e6d06df | A2 | T49 (base) | READY |
 | REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ 572490e9 | A4 | servability lanes (T30, in base) | READY |
 | T26b e2e seed follow-up | `r1/t26b-e2e-seed` @ 5cfd6ea5 | A1 | T26 (base); X1 seed decision | B3 Pass; X1 lead decision |
 | H-A21 overview cache | `r1/ha21-overview-cache` @ a255028e | A4 | T30 | same chain |
 | T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ 8eba44c0 | A4 | T29 | CHANGES-REQUESTED (A4) |
 | T45 part 2 (lanes, V2 hub) | `r1/t45-lanes` @ ced5ea31 | A4 | T30; R1-21.3/21.6 wait for T48 | same chain |
 | servability-archived | `r1/servability-archived` @ 8de1b394 | A4 | T29, H-A13 | B2 Approve w/ Minors, B3 Pass; A4 merges the base into the chain tip and posts one tip |
-| B-request fixes (REQ-B-013/014) | `r1/b-requests-a4` @ 42396048 | A4 | base | B3 Pass; B2 pending |
-| T36 remove PoC | `r1/t36-remove-poc` @ 5bc34543 | A2 | REQ-A-001 (b1-e2e-off-poc, team B) merged first | CHANGES-REQUESTED (REQ-B-029: PoC seeds published) (A2 + lead) |
+| B-request fixes (REQ-B-013/014) | `r1/b-requests-a4` @ de34ec27 | A4 | base | B3 Pass; B2 pending |
+| T36 remove PoC | `r1/t36-remove-poc` @ 64ebb379 | A2 | REQ-A-001 (b1-e2e-off-poc, team B) merged first | READY @ 64ebb379 (A2: exam-retire-poc seed step, render.yaml:27 removed); B2 verdict pending; merge order T26b -> T26c -> T36 |
 | T42b figure crop | `r1/t42b-intake-acs` @ 5318a971 | A2 | base | Approve w/ Minors; head moved after the verdict (delta unreviewed) |
 | T45b question detail papers | `r1/t45b-question-detail-acs` @ cfe98740 | A2 | T42 | CHANGES-REQUESTED (A2) |
 | H-A16 table reader | `r1/ha16-table-reader` @ 085dec38 | A2 | T32, T07 | CHANGES-REQUESTED (A2) |
 | H-A8 stale specs | `r1/ha8-stale-specs` @ 56b1b6cc | A2 | base | READY (test-only) |
-| T04 minors (R1E2E-09) | `r1/t04-minors` @ ec179b12 | A2 | T04 | CHANGES-REQUESTED (docs) (A2) |
+| T04 minors (R1E2E-09) | `r1/t04-minors` @ 40061140 | A2 | T04 | CHANGES-REQUESTED (docs) (A2) |
 | T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ ff1e8a1b | A1 | T28 | CHANGES-REQUESTED (A1) |
 | T40 attempts ACs | `r1/t40-attempts-acs` @ 1ef1341b | A1 | T38 | follows T38 |
 | T50 partial ACs | `r1/t50-partial-acs` @ 50dd05ab | A1 | none | READY (not in the B queue table) |
-| H-A13 archived paper | `r1/ha13-archived-paper` @ 61b8851d | A1 | T35 (base) | B2 Approve w/ Minors; needs base merge + contract:emit (A1) |
-| T34 builder review (+ structured blockers) | `r1/t34-builder-review` @ 7bc3419e | A3 | T29; B2 order T29 -> T33 -> T34 | CHANGES-REQUESTED by B2 (A3 fixing: override vs structural blockers, T33 cognitiveLevel fixtures) |
-| T31 builder wire | `r1/t31-builder-wire` @ 085c4945 | A3 | T34; waits for C1 REQ-A-008 | CHANGES-REQUESTED (needs fixed T34 + REQ-A-008) |
+| H-A13 archived paper | `r1/ha13-archived-paper` @ 61b8851d | A1 | T35 (base) | B2 Approve w/ Minors, B3 Pass; needs base merge (A1) |
+| T34 builder review (+ structured blockers) | `r1/t34-builder-review` @ 5bb590d0 | A3 | T29; B2 order T29 -> T33 -> T34 | fix pushed (a46a375e: unreadable question is a hard NOT_SERVABLE, fixtures) and BASE-63 merged; awaiting B2 re-review (A3) |
+| T31 builder wire | `r1/t31-builder-wire` @ 49419468 | A3 | T34; waits for C1 REQ-A-008 | CHANGES-REQUESTED (needs fixed T34 + REQ-A-008) |
 | T43 chain + publish ACs | `r1/t43-chain-publish` @ 89d30dab | A3 dev-1 | T31 (contains T34) | CHANGES-REQUESTED (follows T34) |
-| T44 Kontrak fields (contains H-A15) | `r1/t44-blueprint-fields` @ 77984abc | A3 dev-2 | none | CHANGES-REQUESTED (A3; T33 fixtures, REQ-B-028 pool) |
+| T44 Kontrak fields (contains H-A15) | `r1/t44-blueprint-fields` @ 072d8f4b | A3 dev-2 | none | CHANGES-REQUESTED earlier (T33 fixtures, REQ-B-028 pool); head is a BASE-63 merge, no new verdict seen (A3) |
 | H-A15 blueprint evidence | `r1/ha15-blueprint-evidence` @ 7e5d637e | A3 dev-2 | none (hazard X1) | B3 Pass; X1 seed decision |
-| T48 builder parity (0104) | `r1/t48-builder-parity` @ 2cbe7d28 | A3 | T34; re-verify running | CHANGES-REQUESTED; A3 pushed the B2-findings fix (2cbe7d28), awaiting re-review (migration 0104) |
-| H-A9 pipeline chain (older) | `r1/ha9-pipeline-chain` @ 1e80b005 | A3 | superseded by T43 | superseded by T43 |
+| T48 builder parity (0104) | `r1/t48-builder-parity` @ 54f5e0bc | A3 | T34; re-verify running | B2-findings fix (2cbe7d28) and BASE-63 merge; awaiting B2 re-review (migration 0104) |
+| H-A9 pipeline chain (older) | `r1/ha9-pipeline-chain` @ d3257e69 | A3 | superseded by T43 | superseded by T43 |
 | T43b publish ACs | `r1/t43b-publish-acs` @ 92866aa8 | A3 dev-2 | T43 | pushed; not yet in the B queue |
 | T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 359fe16e | A3 dev-1 | T43 | pushed; not yet in the B queue |
 | T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ 31812d8c | A1 | none | Approve w/ Minors; eslint error to fix (A1) |
@@ -99,7 +102,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ ef24addc | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ 42069112 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ 312480cb | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
@@ -134,7 +137,7 @@ Earlier decisions still in force for R1: D72 (secondary only), D75/D76 (standard
 | 0101 | `0101_essay_choice` | T25 | merged BASE-15 |
 | 0102 | `0102_leaf_cognitive_level` | T33 (`r1/t33-leaf-tags` @ 95cea5be) | merged BASE-27 |
 | 0103 | `0103_question_report_context` | T42 (`r1/t42-reports-intake-acs` @ d1210e96) | merged BASE-41; attempt FK stays NOT VALID |
-| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 2cbe7d28) | CHANGES-REQUESTED; A3 pushed the B2-findings fix (2cbe7d28), awaiting re-review (migration 0104) |
+| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 54f5e0bc) | B2-findings fix (2cbe7d28) and BASE-63 merge; awaiting B2 re-review (migration 0104) |
 | 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ 3a2ac810 | pushed, READY after review |
 
 Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. 0106 to 0109 free. SQL for 0092 to 0104 is in `docs/ops/r1-runbook.md`.
@@ -169,8 +172,8 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 | Hazard | What to do |
 |---|---|
 | **X1: T26 seed vs H-A15.** After H-A15 real Sahkan refuses 3472/2 (`NO_EVIDENCE_BODIES`) while the e2e seed sets it Disahkan. T26 is in base; T26b and H-A15 / T44 wait for the seed decision. | Lead decision open: the seed carries labelled admin-origin evidence, or the bypass is documented. |
-| **T36 vs deploy config (REQ-A-009, REQ-B-029).** `render.yaml:27` still sets `BIJAK_POC_QUESTIONS` true and `deploy/demo/redeploy-demo-migration-aware.sh:676-678` refuses unless it is true; B2 requested changes because PoC seeds are still published. | Team B changes the deploy config when T36 merges; `r1/b1-e2e-off-poc` is in base (BASE-25). After T36 PoC papers are not playable (403 / 422 SHORTAGE). |
-| **A3 chain is CHANGES-REQUESTED.** T34, T31, T48 (0104), T44 and T43 are being fixed (override must not lift structural blockers, T33 `cognitiveLevel` in fixtures, Pilih N cap). T10 and the Kontrak FE wait for T34 / T44; T31 also waits for REQ-A-008. | Order: T34 -> T31 -> T48 / T43; T44 with the X1 decision. Each merges the new BASE first (`questions.module.ts` union). |
+| **T36 vs deploy config (REQ-A-009, REQ-B-029).** T36 @ 64ebb379 removes `render.yaml:27` and turns the demo-script check into a read-only count of playable bank papers, and adds the idempotent seed step `exam-retire-poc` (withdraws published all-PoC papers, never deletes). Its ops note lists what depends on T26c (`e2e/api/bijak-part-input.spec.ts`). | Merge order T26b -> T26c -> T36 (B1; expect a `test/bijak-integration/helpers.ts` conflict between T26b and T36). B2 verdict on T36 pending. After T36 PoC papers are not playable (403 / 422 SHORTAGE). |
+| **A3 chain: fixes pushed, re-review pending.** T34 (5bb590d0), T48 (54f5e0bc, migration 0104) and T44 (072d8f4b) have new heads after the B2 findings (hard NOT_SERVABLE, Pilih N cap, T33 `cognitiveLevel` fixtures) and BASE-63 merged; T31 and T43 follow T34. T10 and the Kontrak FE wait for T34 / T44; T31 also waits for REQ-A-008. | Order: T34 -> T31 -> T48 / T43; T44 with the X1 decision. Each merges the new BASE first (`questions.module.ts` union). |
 | **0103 attempt FK.** `fk_question_reports_attempt_id` is NOT VALID on purpose. | Never run `VALIDATE CONSTRAINT` in the release. |
 | **Held: Lapor from Bijak Semakan (REQ-B-031, REP-M1 HIGH).** The FE branch is held by B until team A answers. | A1 + lead. |
 | **Branch heads move.** Several READY heads changed after their last B verdict. | A head that moved after review is not merged until B reviews the delta. |
