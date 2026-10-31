@@ -26,6 +26,12 @@ Reading:
 - The largest API gaps are the single-question status route and servability reads (both only on t33 / t30, not in base), the `Boleh tanda auto` contract field, filter-based bulk approve/archive, the Studio list filters Tahun / Negeri / Kertas / Jenis, and the paper cover code and section rule edits on a draft paper.
 - Step-count differences are small (Kontrak create, Edit sebagai draf, intake accept, override reason); none adds a screen that V2 does not have, except the Baris Gilir Semakan hop for accept/reject (I6).
 
+### Decisions applied (H-A22, 2026-10-31)
+
+- Label rows: the V2 wording wins (D79). Team C changes a `label differs` string to the V2 text quoted in its row, except where the row cites approved copy: D94 (1) approved the proposed BM copy, and D92 (3) keeps the duplicate-Kontrak sentence "Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu." (rows K3 and the reason-copy rows). No class changed, so the counts above stay as they are.
+- D-references checked: D90 (shared stimulus), D92 (3), D94 (1), D96 and D76 are cited as defined in `docs/TRACKER.md`. This document does not cite D93; D93 has two parts (the 2-member group rule, and Cuba Lagi earning per attempt), and only the first concerns admin screens.
+- Student-side rows are in `docs/qa/r1-student-parity-check.md`.
+
 ## 2. Team A: API gaps (backend)
 
 Rows where the API is missing or its wording differs. "Base" = BASE-8; a branch name means the route exists only there.
