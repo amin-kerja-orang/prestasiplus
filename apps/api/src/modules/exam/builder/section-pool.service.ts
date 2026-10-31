@@ -41,12 +41,12 @@ export class SectionPoolService {
     return this.prisma.client
   }
 
-  /** Subject (id, Bijak code) of the question's latest version, or null when the bank does not serve it (unknown, PKSK, Darjah). */
+  /** Subject (id, Bijak code) of the question's LIVE (approved) version, else its latest one, or null when the bank does not serve it (unknown, PKSK, Darjah). */
   private async subjectOf(questionId: bigint): Promise<{ subjectId: bigint; subject: string } | null> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint; code: string }[]>(Prisma.sql`
       SELECT v.subject_id, s.code
         FROM questions q
-        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = COALESCE(q.live_version_no, q.latest_version_no)
         JOIN subjects s ON s.id = v.subject_id
        WHERE q.id = ${questionId} AND ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}`)
     const row = rows[0]
