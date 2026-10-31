@@ -166,7 +166,7 @@ export async function publishedMcq(t: ClassesTestApp, w: World, over: { spId?: s
     } as never,
     { userId: w.admin, role: 'admin' },
   )
-  for (const status of ['review', 'approved', 'published'] as const) await svc.bulkAction(status, [q.id], { userId: w.admin, role: 'admin' })
+  for (const status of ['review', 'approved'] as const) await svc.bulkAction(status, [q.id], { userId: w.admin, role: 'admin' })
   return q.id
 }
 
@@ -310,7 +310,7 @@ export async function republish(t: ClassesTestApp, w: World, id: string, text: s
     { subjectId: w.tag.subjectId, educationLevelId: w.tag.levelId, difficultyLevel: 3, questionText: text, questionType: 'mcq', options: ['Satu', 'Dua', 'Tiga', 'Empat'], correctAnswer: 1, tag: { unitId: w.tag.unitId, spIds: [w.tag.spId], tp: 3 } } as never,
     actor,
   )
-  for (const status of ['review', 'approved', 'published'] as const) await svc.bulkAction(status, [id], actor)
+  for (const status of ['review', 'approved'] as const) await svc.bulkAction(status, [id], actor)
 }
 
 /** Ids of the questions practice may serve now for the world's subject and level (published live version, active, mcq). */
@@ -318,7 +318,7 @@ export async function eligibleMcqIds(t: ClassesTestApp, w: World): Promise<strin
   return (
     await t.db.query<{ id: string }>(
       `select q.id::text id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-        where q.is_active and v.status = 'published' and v.type = 'mcq' and v.subject_id = $1 and v.education_level_id = $2 order by q.id`,
+        where q.is_active and v.status = 'approved' and v.type = 'mcq' and v.subject_id = $1 and v.education_level_id = $2 order by q.id`,
       [w.tag.subjectId, w.tag.levelId],
     )
   ).map((r) => r.id)

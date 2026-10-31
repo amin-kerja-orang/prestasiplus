@@ -23,14 +23,14 @@ import { mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
 export const MOCK_STATUS_TO_V2: Record<string, string | undefined> = {
   draft: 'draft',
   pending_review: 'review',
-  approved: 'published',
+  approved: 'approved',
   archived: 'archived',
   rejected: undefined,
 }
 
 /** Mock bulk verbs -> v2 bulk actions (D54a). `reject` has no v2 action. */
 export const MOCK_BULK_TO_V2: Record<string, string | undefined> = {
-  approve: 'published',
+  approve: 'approved',
   pending_review: 'review',
   archive: 'archived',
   delete: 'delete',
@@ -66,7 +66,7 @@ const bodyData = (res: Response) => (res.body as { data: Record<string, any>; st
 
 describe('AC 9: mock status mapping table', () => {
   it('maps the mock values to the v2 wire values', () => {
-    expect(MOCK_STATUS_TO_V2).toEqual({ draft: 'draft', pending_review: 'review', approved: 'published', archived: 'archived', rejected: undefined })
+    expect(MOCK_STATUS_TO_V2).toEqual({ draft: 'draft', pending_review: 'review', approved: 'approved', archived: 'archived', rejected: undefined })
   })
 
   it('every mapped value is a v2 status, and the unmapped mock values are not', () => {
@@ -282,7 +282,7 @@ describe('AC 9: mock parity on the 14 routes', () => {
       const data = bodyData(res)
       expect(data.total).toBe((await list()).body.meta.totalItems)
       expect(Array.isArray(data.subjects)).toBe(true)
-      const published = Number((await t.db.query<{ n: string }>(`select count(*)::text n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where v.status = 'published'`))[0]?.n)
+      const published = Number((await t.db.query<{ n: string }>(`select count(*)::text n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where v.status = 'approved'`))[0]?.n)
       const sum = (data.subjects as { approved: number }[]).reduce((a, s) => a + s.approved, 0)
       expect(sum).toBeLessThanOrEqual(published)
     })
@@ -372,7 +372,7 @@ describe('AC 9: mock parity on the 14 routes', () => {
       expect(res.status).toBe(200)
       expect(bodyData(res)).toEqual({
         affected: 0,
-        failed: [{ id: a, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Lulus tidak dibenarkan.', fields: {} }],
+        failed: [{ id: a, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Diterbitkan tidak dibenarkan.', fields: {} }],
       })
     })
 
@@ -380,7 +380,7 @@ describe('AC 9: mock parity on the 14 routes', () => {
       const bare = (await create()).id as string
       await bulk({ action: 'review', ids: [bare] })
       await bulk({ action: 'approved', ids: [bare] })
-      expect(bodyData(await bulk({ action: 'published', ids: [bare] }))).toEqual({ affected: 0, failed: [expect.objectContaining({ id: bare, code: 'VALIDATION_ERROR' })] })
+      expect(bodyData(await bulk({ action: 'approved', ids: [bare] }))).toEqual({ affected: 0, failed: [expect.objectContaining({ id: bare, code: 'VALIDATION_ERROR' })] })
     })
 
     it('delete removes the rows; unknown ids are not counted and duplicates count once', async () => {

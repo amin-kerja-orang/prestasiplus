@@ -1,5 +1,5 @@
 import { Prisma } from '../../db/generated/client'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from '../questions/learner-visibility'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, SERVABLE_STATUS } from '../questions/learner-visibility'
 
 /**
  * Pupil read rule for `question_image` files (R1-B20, pipeline R11). One SQL statement, driven from the FILE (so it uses
@@ -12,8 +12,7 @@ import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from '../questions/learner-visibility
  *   - the asset of a stimulus of the shared group of the question (`questions.group_id` -> `stimulus_group_stimuli`).
  *
  * A pupil may read it only while one of these holds (everything else is a uniform 404, decided by the caller):
- *   A. LIVE: the version is the live version of an active question whose status is servable (`approved`, or the legacy
- *      `published` until ADR-0027 B01 migrates it), and the question passes the learner filters (not PKSK, level visible).
+ *   A. LIVE: the version is the live version of an active question whose status is servable (`approved` only, ADR-0027), and the question passes the learner filters (not PKSK, level visible).
  *   B. PAPER: the version is the version PINNED by a placement of a `published` paper the pupil can sit
  *      (a per-pupil `jana` paper only for the pupil it was generated for). The pinned version must have left draft/review.
  *      The paper is the authority here, so an archived (superseded) pinned version, a later-withdrawn question or a hidden
@@ -22,11 +21,11 @@ import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from '../questions/learner-visibility
  *      (the public token or the internal decimal id).
  */
 
-/** Statuses of a question version a pupil can be served from (ADR-0027): the new `approved` and the legacy `published`. */
-export const SERVABLE_VERSION_STATUSES = ['approved', 'published'] as const
+/** Statuses of a question version a pupil can be served from (ADR-0027): `approved` only; `published` no longer exists for questions. */
+export const SERVABLE_VERSION_STATUSES = [SERVABLE_STATUS] as const
 
 /** A pinned paper version must be past the authoring stages. `archived` stays readable: a published paper pins it. */
-const PAPER_PINNED_STATUSES = ['approved', 'published', 'archived'] as const
+const PAPER_PINNED_STATUSES = ['approved', 'archived'] as const
 
 const inList = (values: readonly string[]): Prisma.Sql => Prisma.join(values.map((v) => Prisma.sql`${v}`))
 
