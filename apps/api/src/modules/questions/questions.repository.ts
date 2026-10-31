@@ -275,8 +275,8 @@ export class QuestionsRepository {
    * served version even after a later edit, BE-12 AC 11 / OD-28). Unknown ids or version numbers are
    * absent. Returned in ascending id, then version order.
    *
-   * Pinned grading only: never use it on a serving path (a draw, a list, a learner-facing read). It skips the
-   * active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply.
+   * Pinned reads (grading, and serving a pinned placement such as a kuiz paper page): never use it for a draw or a list. It skips
+   * the active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply; a Darjah question is still not found (R1-B21).
    */
   async getVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<QuestionRecord[]> {
     const wanted = new Map<string, { id: bigint; versionNo: number }>()
