@@ -3,7 +3,7 @@
  * non-group stimulus) must START in a Terbit paper (200, never 403 "Percubaan tidak dapat dimulakan.") and the pupil must
  * be able to read each image URL the served paper carries. Real database, real `BijakIntegrationModule` wiring, real files.
  */
-import { SessionSchema, BijakAttemptPaperViewSchema } from '@pp/contract'
+import { BijakAttemptPaperViewSchema, BijakAttemptResultViewSchema, SessionSchema } from '@pp/contract'
 import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -179,34 +179,119 @@ describe('R1E2E-05 a bank question with a picture starts in a Terbit paper', () 
     await expectReadable(opt.url)
   })
 
-  it('4. a question whose own non-group stimulus is a diagram, map, graph or infographic picture starts and the pupil reads it', async () => {
+  it('4. a question whose own stimulus is a diagram, map, graph or infographic picture starts and the pupil reads it', async () => {
     for (const kind of ['diagram', 'map', 'graph', 'infographic']) {
       const { qid, vid } = await approvedMcq()
       const img = await upload()
       await linkStimulus(vid, await newStimulus(kind, { img, label: 'Rajah 1' }))
       const q = (await view(await publishedPaper(qid))).questions.find((x) => x.id === qid)!
-      expect(q.stemImage?.kind, kind).toBe(kind)
+      expect(q.stimuli?.map((x) => x.kind), kind).toEqual([kind])
+      expect(q.stimuli?.[0]?.image?.url, kind).toBe(img.url)
       expect(q.stemImage?.image?.url, kind).toBe(img.url)
       await expectReadable(img.url)
     }
   })
+})
 
-  it('5. a text passage or table linked straight to a version (no group) is still refused with a BM reason, never half-served', async () => {
-    // The stem slot of the served question is ONE picture; a passage/table belongs to a group (D90). Refused, with a reason the
-    // builder shows, rather than started with the text missing.
+/** R1E2E-05b: V2 serves a question's OWN stimuli inline (cloud-student-mechanism 1.5): any kind, 1..N, in link order. */
+describe('R1E2E-05b a question serves its own stimuli', () => {
+  const grid = { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10'], ['Feb', '12']] }
+
+  async function ownTable(vid: string): Promise<string> {
+    const sid = await newStimulus('table', { label: 'Jadual 1' })
+    await t.db.query(`update stimuli set table_data = $2::jsonb, caption = 'Jualan bulanan' where id = $1`, [sid, JSON.stringify(grid)])
+    await linkStimulus(vid, sid, 1)
+    return sid
+  }
+  async function submitAndRead(attemptId: string) {
+    const sub = await pupil.post(`/api/bijak/attempts/${attemptId}/submit`, { idempotencyKey: `own-${attemptId}`, changes: [] })
+    expect(sub.status, JSON.stringify(sub.body)).toBe(200)
+    const r = await pupil.get(`/api/bijak/attempts/${attemptId}/result`)
+    expect(r.status, JSON.stringify(r.body)).toBe(200)
+    return BijakAttemptResultViewSchema.parse(r.body.data)
+  }
+  async function startOk(paperId: string): Promise<string> {
+    const res = await start(paperId)
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    return (res.body as { data: { attemptId: string } }).data.attemptId
+  }
+
+  it('5. an own text passage (with source line and caption): starts and is on the view and in Semakan', async () => {
     const { qid, vid } = await approvedMcq()
-    await linkStimulus(vid, await newStimulus('passage', { body: 'Petikan ringkas untuk soalan ini.', label: 'Petikan' }))
-    const res = await start(await publishedPaper(qid))
-    expect(res.status, JSON.stringify(res.body)).toBe(403)
-    const refusal = (await t.app.get(Be09BijakQuestionSource).refusalsOf([qid])).get(qid)
-    expect(refusal?.code).toBe('stimulus_outside_group')
+    const sid = await newStimulus('passage', { body: 'Petikan ringkas untuk soalan ini.', label: 'Petikan' })
+    await t.db.query(`update stimuli set source_citation = 'Sumber: buku teks', caption = 'Rajah petikan' where id = $1`, [sid])
+    await linkStimulus(vid, sid)
+    const attemptId = await startOk(await publishedPaper(qid))
+    const v = BijakAttemptPaperViewSchema.parse((await pupil.get(`/api/bijak/attempts/${attemptId}`)).body.data)
+    const q = v.questions.find((x) => x.id === qid)!
+    expect(q.stimuli).toHaveLength(1)
+    expect(q.stimuli?.[0]).toMatchObject({ kind: 'passage', label: 'Petikan', text: 'Petikan ringkas untuk soalan ini.', source: 'Sumber: buku teks', caption: 'Rajah petikan' })
+    expect(q.stemImage).toBeUndefined()
+    expect(v.groups).toEqual([])
+    const res = await submitAndRead(attemptId)
+    expect(res.paper.questions.find((x) => x.id === qid)?.stimuli?.[0]?.text).toBe('Petikan ringkas untuk soalan ini.')
   })
 
-  it('6. two own pictures on one question are refused (a second would be dropped)', async () => {
+  it('6. an own table: the grid from the stored table data, with its caption', async () => {
     const { qid, vid } = await approvedMcq()
-    await linkStimulus(vid, await newStimulus('image', { img: await upload() }), 1)
-    await linkStimulus(vid, await newStimulus('diagram', { img: await upload() }), 2)
+    await ownTable(vid)
+    const attemptId = await startOk(await publishedPaper(qid))
+    const v = BijakAttemptPaperViewSchema.parse((await pupil.get(`/api/bijak/attempts/${attemptId}`)).body.data)
+    expect(v.questions.find((x) => x.id === qid)?.stimuli?.[0]).toMatchObject({ kind: 'table', label: 'Jadual 1', caption: 'Jualan bulanan', table: grid })
+    const res = await submitAndRead(attemptId)
+    expect(res.paper.questions.find((x) => x.id === qid)?.stimuli?.[0]?.table).toEqual(grid)
+  })
+
+  it('7. two own pictures: both served in link order, both readable by the pupil, in Semakan too', async () => {
+    const { qid, vid } = await approvedMcq()
+    const a = await upload()
+    const b = await upload()
+    await linkStimulus(vid, await newStimulus('image', { img: a, label: 'Gambar A' }), 1)
+    await linkStimulus(vid, await newStimulus('diagram', { img: b, label: 'Rajah B' }), 2)
+    const attemptId = await startOk(await publishedPaper(qid))
+    const v = BijakAttemptPaperViewSchema.parse((await pupil.get(`/api/bijak/attempts/${attemptId}`)).body.data)
+    const q = v.questions.find((x) => x.id === qid)!
+    expect(q.stimuli?.map((x) => [x.kind, x.label, x.image?.url])).toEqual([['image', 'Gambar A', a.url], ['diagram', 'Rajah B', b.url]])
+    expect(q.stemImage).toBeUndefined() // two own stimuli: no single-picture slot
+    await expectReadable(a.url)
+    await expectReadable(b.url)
+    const res = await submitAndRead(attemptId)
+    expect(res.paper.questions.find((x) => x.id === qid)?.stimuli?.map((x) => x.image?.url)).toEqual([a.url, b.url])
+  })
+
+  it('8. mixed: a picture and a passage, in link order (passage first), picture readable', async () => {
+    const { qid, vid } = await approvedMcq()
+    const img = await upload()
+    await linkStimulus(vid, await newStimulus('passage', { body: 'Baca petikan ini.', label: 'Petikan' }), 1)
+    await linkStimulus(vid, await newStimulus('infographic', { img, label: 'Infografik' }), 2)
+    const attemptId = await startOk(await publishedPaper(qid))
+    const v = BijakAttemptPaperViewSchema.parse((await pupil.get(`/api/bijak/attempts/${attemptId}`)).body.data)
+    const q = v.questions.find((x) => x.id === qid)!
+    expect(q.stimuli?.map((x) => x.kind)).toEqual(['passage', 'infographic'])
+    expect(q.stimuli?.find((x) => x.kind === 'infographic')?.image?.url).toBe(img.url)
+    await expectReadable(img.url)
+    const res = await submitAndRead(attemptId)
+    expect(res.paper.questions.find((x) => x.id === qid)?.stimuli?.map((x) => x.kind)).toEqual(['passage', 'infographic'])
+  })
+
+  it('9. a stimulus shared by two questions but not set up as a group is still refused with a BM reason (D90)', async () => {
+    const a = await approvedMcq()
+    const b = await approvedMcq()
+    const sid = await newStimulus('passage', { body: 'Petikan dikongsi.', label: 'Petikan kongsi' })
+    await linkStimulus(a.vid, sid)
+    await linkStimulus(b.vid, sid)
+    for (const qid of [a.qid, b.qid]) {
+      expect((await start(await publishedPaper(qid))).status).toBe(403)
+      const refusal = (await t.app.get(Be09BijakQuestionSource).refusalsOf([qid])).get(qid)
+      expect(refusal?.code).toBe('stimulus_shared_ungrouped')
+      expect(refusal?.reasonMs).toContain('kumpulan rangsangan')
+    }
+  })
+
+  it('10. an audio-only own stimulus is not displayable: refused, never dropped', async () => {
+    const { qid, vid } = await approvedMcq()
+    await linkStimulus(vid, await newStimulus('audio', { label: 'Bunyi' }))
     expect((await start(await publishedPaper(qid))).status).toBe(403)
-    expect((await t.app.get(Be09BijakQuestionSource).refusalsOf([qid])).get(qid)?.code).toBe('stem_images_many')
+    expect((await t.app.get(Be09BijakQuestionSource).refusalsOf([qid])).get(qid)?.code).toBe('stimulus_outside_group')
   })
 })
