@@ -248,6 +248,10 @@ describe('S3 LatihTubiListPage', () => {
     api.fetchLatihTubiList.mockResolvedValue(LIST)
     const w = await render(LatihTubiListPage, '/spm/latih-tubi')
     expect(t(w, 'spm-heading').text()).toBe('Latih Tubi SPM')
+    expect(t(w, 'spm-sub').text()).toBe('Pilih subjek untuk mula berlatih')
+    expect(t(w, 'latih-tubi-chapter-banner').attributes('href')).toBe('/practice/chapter')
+    expect(t(w, 'latih-tubi-chapter-banner').text()).toContain('Soalan by Chapter')
+    expect(t(w, 'latih-tubi-chapter-banner').text()).toContain('Mula →')
     expect(w.findAll('[data-testid=section-heading]').map((h) => h.text())).toEqual([
       'Subjek Teras (2)',
       'Subjek Elektif (1)',
@@ -306,11 +310,19 @@ describe('S4 LatihTubiConfigPage', () => {
     )
     expect(t(w, 'level-10').get('[data-testid=level-count]').text()).toBe('976 soalan')
     expect(w.findAll('[data-testid=difficulty-count]').map((d) => d.text())).toEqual([
+      '3 soalan',
       '514 soalan',
       '577 soalan',
       '85 soalan',
       '0 soalan',
     ])
+    // V2 setup (REQ-A-005, S-60): headings, "Semua Tahap", the five-step scale and the summary
+    expect(w.findAll('h3').map((h) => h.text())).toEqual(['Pilih Tahap Pendidikan', 'Pilih Tahap Kesukaran', 'Bilangan Soalan'])
+    expect(t(w, 'level-all').text()).toContain('Semua Tahap')
+    expect(t(w, 'level-all').attributes('aria-pressed')).toBe('true')
+    expect(['difficulty-1','difficulty-2','difficulty-3','difficulty-4','difficulty-5'].map((id) => t(w, id).find('.text-label').text())).toEqual(['Sangat Mudah', 'Mudah', 'Sederhana', 'Sukar', 'Sangat Sukar'])
+    expect(t(w, 'spm-back').text()).toContain('Kembali ke Senarai Subjek')
+    expect([t(w, 'summary-level').text(), t(w, 'summary-difficulty').text(), t(w, 'summary-count').text()]).toEqual(['Semua Tahap', 'Semua', '40'])
     expect(w.findAll('[data-testid^=count-]').map((c) => c.text())).toEqual(['40 (Target SPM)'])
     expect(t(w, 'config-helper').text()).toBe(
       'Set penuh target spm untuk Matematik disasar pada 40 soalan.',
@@ -327,15 +339,21 @@ describe('S4 LatihTubiConfigPage', () => {
       '/spm/latih-tubi/MATH/quiz?count=40&level=11&difficulty=4',
     )
     expect(w.findAll('[data-testid=difficulty-count]').map((d) => d.text())).toEqual([
+      '0 soalan',
       '205 soalan',
       '167 soalan',
       '27 soalan',
       '0 soalan',
     ])
+    expect(t(w, 'summary-level').text()).toBe('Tingkatan 5')
+    expect(t(w, 'summary-difficulty').text()).toBe('Sukar')
+    await t(w, 'level-all').trigger('click')
+    expect(t(w, 'config-start').attributes('href')).toBe('/spm/latih-tubi/MATH/quiz?count=40&difficulty=4')
+    await t(w, 'level-11').trigger('click')
     await t(w, 'level-11').trigger('click')
     await t(w, 'difficulty-4').trigger('click')
     expect(t(w, 'config-start').attributes('href')).toBe('/spm/latih-tubi/MATH/quiz?count=40')
-    expect(w.findAll('[data-testid=difficulty-count]')[0]?.text()).toBe('514 soalan')
+    expect(w.findAll('[data-testid=difficulty-count]')[1]?.text()).toBe('514 soalan')
   })
 
   it('offers 5-60 for a subject without a target (default 10)', async () => {
