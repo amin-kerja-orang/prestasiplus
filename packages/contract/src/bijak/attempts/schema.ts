@@ -353,7 +353,11 @@ export type BijakAttemptPartView = {
  */
 export const BijakAttemptImageSchema = z
   .strictObject({
-    url: z.string().min(1).max(300).meta({ example: '/api/files/Zk3x9QmT1bVnR0aYc7LpDw' }),
+    url: z
+      .string()
+      .max(300)
+      .regex(/^\/api\/files\/[A-Za-z0-9_-]+$/, 'A picture is always a file token URL')
+      .meta({ example: '/api/files/Zk3x9QmT1bVnR0aYc7LpDw' }),
     width: z.number().int().min(1).optional(),
     height: z.number().int().min(1).optional(),
   })
@@ -408,7 +412,10 @@ export const BIJAK_ATTEMPT_STIMULUS_KINDS = [
   'graph',
 ] as const
 
-/** A shared stimulus (Rajah, petikan or jadual) pinned while its group is answered (`StimulusDef`). */
+/**
+ * A shared stimulus (Rajah, petikan or jadual) pinned while its group is answered (`StimulusDef`). There is NO inline SVG field
+ * (REQ-B-014c): the pupil wire carries a picture only as a file token URL, never markup the browser would render with `v-html`.
+ */
 export const BijakAttemptStimulusSchema = z
   .strictObject({
     id: IdSchema,
@@ -417,7 +424,6 @@ export const BijakAttemptStimulusSchema = z
     title: z.string().optional().meta({ description: 'Bold title of a passage or picture.' }),
     caption: z.string().optional(),
     alt: z.string().meta({ description: 'Accessible description of the diagram.' }),
-    svg: z.string().optional().meta({ description: 'Inline SVG markup (trusted, bundled).' }),
     text: z.string().optional(),
     source: z.string().optional().meta({ description: 'Source line of a passage.' }),
     table: z.strictObject({ head: z.array(z.string()), rows: z.array(z.array(z.string())) }).optional(),

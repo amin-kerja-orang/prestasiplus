@@ -247,7 +247,6 @@ export function stimulusView(s: StimulusDef): BijakAttemptStimulus {
     ...(s.title !== undefined ? { title: s.title } : {}),
     ...(s.caption !== undefined ? { caption: s.caption } : {}),
     alt: s.alt,
-    ...(s.svg !== undefined ? { svg: s.svg } : {}),
     ...(s.text !== undefined ? { text: s.text } : {}),
     ...(s.source !== undefined ? { source: s.source } : {}),
     ...(s.table ? { table: { head: [...s.table.head], rows: s.table.rows.map((r) => [...r]) } } : {}),

@@ -11427,8 +11427,8 @@
             "properties": {
               "url": {
                 "type": "string",
-                "minLength": 1,
                 "maxLength": 300,
+                "pattern": "^\\/api\\/files\\/[A-Za-z0-9_-]+$",
                 "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
               },
               "width": {
@@ -11528,10 +11528,6 @@
                 "type": "string",
                 "description": "Accessible description of the diagram."
               },
-              "svg": {
-                "type": "string",
-                "description": "Inline SVG markup (trusted, bundled)."
-              },
               "text": {
                 "type": "string"
               },
@@ -11569,8 +11565,8 @@
                 "properties": {
                   "url": {
                     "type": "string",
-                    "minLength": 1,
                     "maxLength": 300,
+                    "pattern": "^\\/api\\/files\\/[A-Za-z0-9_-]+$",
                     "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
                   },
                   "width": {
@@ -11669,10 +11665,6 @@
             "type": "string",
             "description": "Accessible description of the diagram."
           },
-          "svg": {
-            "type": "string",
-            "description": "Inline SVG markup (trusted, bundled)."
-          },
           "text": {
             "type": "string"
           },
@@ -11710,8 +11702,8 @@
             "properties": {
               "url": {
                 "type": "string",
-                "minLength": 1,
                 "maxLength": 300,
+                "pattern": "^\\/api\\/files\\/[A-Za-z0-9_-]+$",
                 "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
               },
               "width": {
@@ -11777,10 +11769,6 @@
                 "type": "string",
                 "description": "Accessible description of the diagram."
               },
-              "svg": {
-                "type": "string",
-                "description": "Inline SVG markup (trusted, bundled)."
-              },
               "text": {
                 "type": "string"
               },
@@ -11818,8 +11806,8 @@
                 "properties": {
                   "url": {
                     "type": "string",
-                    "minLength": 1,
                     "maxLength": 300,
+                    "pattern": "^\\/api\\/files\\/[A-Za-z0-9_-]+$",
                     "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
                   },
                   "width": {
@@ -64303,10 +64291,6 @@
                 "type": "string",
                 "description": "Accessible description of the diagram."
               },
-              "svg": {
-                "type": "string",
-                "description": "Inline SVG markup (trusted, bundled)."
-              },
               "text": {
                 "type": "string"
               },
@@ -64344,8 +64328,8 @@
                 "properties": {
                   "url": {
                     "type": "string",
-                    "minLength": 1,
                     "maxLength": 300,
+                    "pattern": "^\\/api\\/files\\/[A-Za-z0-9_-]+$",
                     "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
                   },
                   "width": {

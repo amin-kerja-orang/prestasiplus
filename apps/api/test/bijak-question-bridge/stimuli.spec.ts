@@ -3,7 +3,7 @@
  * Every stimulus kind, option images, stem pictures, groups of 1 to 3 stimuli with several member questions,
  * `essay_choice`, and the BM reason of every refusal. Pure: no database.
  */
-import { BijakAttemptGroupSchema, BijakAttemptQuestionSchema, QuestionPartSchema } from '@pp/contract'
+import { BijakAttemptGroupSchema, BijakAttemptQuestionSchema, BijakAttemptStimulusSchema, QuestionPartSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import { buildServedPaper } from '../../src/modules/bijak/attempts/marking'
@@ -451,5 +451,35 @@ describe('every refusal carries a code and a BM reason', () => {
       expect(ms, code).toMatch(/^[a-z]/)
       expect(ms, code).not.toMatch(/\.$/)
     }
+  })
+})
+
+/* ------------------------------------------------------------------------------ REQ-B-014 b, c: the pupil wire */
+
+describe('every picture on the pupil wire is a file token URL, and the wire has no inline SVG (REQ-B-014 b, c)', () => {
+  it('group image, option images and the stem picture all match /api/files/<token>; nothing named svg is emitted', () => {
+    const g = group([stim({ id: '71', kind: 'image', bodyMs: null, assetFileId: '88' })])
+    const m = media(
+      { '88': 'tG', '55': 'tO', '90': 'tS' },
+      new Map([['300', { kind: 'image', assetFileId: '90' }]]),
+    )
+    const bundle = map([mcq({}, [{ imageId: '55' }])], { groupId: '9', stimulusIds: ['71', '300'] }, g, m)
+    const served = buildServedPaper([{ id: 's', label: 'A', rule: { type: 'all' }, questionIds: ['501'] }], new Map([['501', bundle]]))
+    const json = JSON.stringify(served)
+    const urls = [...json.matchAll(/"url":"([^"]*)"/g)].map((x) => x[1] as string)
+    expect(urls.length).toBeGreaterThanOrEqual(3)
+    for (const url of urls) expect(url).toMatch(/^\/api\/files\/[A-Za-z0-9_-]+$/)
+    expect(json).not.toContain('"svg"')
+    BijakAttemptQuestionSchema.parse(served.questions[0])
+  })
+
+  it('a stimulus def that still carries markup (a PoC fixture) is served without it', () => {
+    const served = buildServedPaper(
+      [{ id: 's', label: 'A', rule: { type: 'all' }, questionIds: ['501'] }],
+      new Map([['501', map([mcq()], { groupId: '9', stimulusIds: ['70'] }, group([stim()]), media())]]),
+    )
+    const withSvg = { ...served.groups[0]?.stimulus, svg: '<svg onload="alert(1)"></svg>' }
+    expect(BijakAttemptStimulusSchema.safeParse(withSvg).success).toBe(false) // strict: no svg key on the wire
+    expect(JSON.stringify(served)).not.toContain('onload')
   })
 })

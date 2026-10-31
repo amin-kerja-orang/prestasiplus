@@ -649,7 +649,7 @@ describe('publish, delete and preview results', () => {
     const full = stimulus({
       kind: 'table',
       caption: 'Jadual 1',
-      svg: '<svg viewBox="0 0 10 10"></svg>',
+      image: { url: '/api/files/Zk3x9QmT1bVnR0aYc7LpDw' },
       text: 'Petikan ringkas',
       table: { head: ['x', 'y'], rows: [['1', '2']] },
     })
