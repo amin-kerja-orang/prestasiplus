@@ -1,5 +1,5 @@
 /** The demo intake batch shown on a fresh install: parsed from the fictional sample paper. */
-import { triangleSvg } from '../../../data/diagrams'
+import { triangleSvg, svgImage } from '../../../data/diagrams'
 import { parsePaper } from '../ai/mock-extractor'
 import type { IntakeBatch } from '../types'
 import { SAMPLE_PAGES } from './sample-paper'
@@ -13,7 +13,7 @@ export function demoBatch(now: number, userId = 1): IntakeBatch {
       ? {
           ...s,
           alt: 'Segi tiga bersudut tegak ABC, AB = 6 cm, BC = 8 cm.',
-          svg: triangleSvg(6, 8, 'Segi tiga bersudut tegak ABC, AB = 6 cm, BC = 8 cm.'),
+          image: svgImage(triangleSvg(6, 8, 'Segi tiga bersudut tegak ABC, AB = 6 cm, BC = 8 cm.')),
         }
       : s,
   )

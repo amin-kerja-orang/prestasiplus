@@ -21,9 +21,11 @@ import type { EducationLevelLookup, SubjectLookup } from '../api/lookups'
 import type { QuestionDetail, QuestionInputBody } from '../api/questions'
 import { backspaceAtCaret, insertAtCaret, type KeyboardMode } from '../lib/arabic-keyboard'
 import { DIFFICULTY_LABELS } from '../lib/question-list'
+import { COGNITIVE_OPTIONS } from '../lib/studio/dskp-tags'
 import {
   buildBody,
   emptyValues,
+  hasManyParts,
   KERTAS_OPTIONS,
   OPTION_LETTERS,
   QUESTION_TYPE_OPTIONS,
@@ -49,10 +51,21 @@ const props = defineProps<{
 const emit = defineEmits<{ submit: [body: QuestionInputBody] }>()
 
 const edit = computed(() => props.mode === 'edit')
+/**
+ * An esei pilihan question reads as `essay` but its model answer and points live in the part tree, which the
+ * form does not send ([PROPOSED] BM note): those two fields are read-only here.
+ */
+const essayChoice = computed(() => (props.initial?.essayTopics?.length ?? 0) > 0)
+const ESSAY_CHOICE_NOTE =
+  'Soalan esei pilihan: jawapan model dan nilai mata tidak boleh disunting di borang ini.'
 const values = reactive<QuestionFormValues>(
   props.initial ? valuesFromQuestion(props.initial) : emptyValues(),
 )
 const spId = ref(props.initial?.dskp ? String(props.initial.dskp.sp.id) : '')
+/** The level when the form opened (edit): sent back only if changed, so a save never wipes it. */
+const originalCognitive = values.cognitiveLevel
+/** One level per question only for a single-leaf question; essay pilihan and multi-part questions are edited in the Studio. */
+const showCognitive = computed(() => !essayChoice.value && !hasManyParts(props.initial))
 
 const isMcq = computed(() => values.questionType === 'mcq')
 const isShortOrFill = computed(
@@ -81,7 +94,8 @@ function submit(): void {
     void scrollToError()
     return
   }
-  const body = buildBody(values, spId.value, props.mode)
+  const body = buildBody(values, spId.value, props.mode, edit.value && showCognitive.value ? originalCognitive : null)
+  if (!showCognitive.value) delete body.cognitiveLevel
   if (edit.value && props.initial) body.savedOptionImages = props.initial.optionImages
   emit('submit', body)
 }
@@ -513,6 +527,14 @@ const correctItems = (i: number, letter: string) => [
           icon="file-text"
           data-testid="essay-card"
         >
+          <UAlert
+            v-if="essayChoice"
+            color="info"
+            variant="subtle"
+            icon="i-ph-info"
+            :description="ESSAY_CHOICE_NOTE"
+            data-testid="essay-choice-note"
+          />
           <DsFormField
             v-slot="{ id }"
             native
@@ -524,6 +546,7 @@ const correctItems = (i: number, letter: string) => [
               v-model="values.modelAnswer"
               name="model_answer"
               :rows="6"
+              :disabled="essayChoice"
               placeholder="Tulis jawapan contoh di sini..."
               class="w-full"
               data-testid="q-model"
@@ -550,7 +573,28 @@ const correctItems = (i: number, letter: string) => [
               data-testid="q-explanation"
             />
           </DsFormField>
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <!-- T33: every part needs an "Aras pemikiran" to be approved; a form question has one part, so one field. -->
+            <DsFormField
+              v-if="showCognitive"
+              v-slot="{ id, describedby, invalid }"
+              native
+              for="q-cognitive"
+              label="Aras pemikiran"
+              :error="err('cognitiveLevel')"
+            >
+              <DsNativeSelect
+                :id="id"
+                v-model="values.cognitiveLevel"
+                name="cognitiveLevel"
+                :invalid="invalid"
+                :aria-describedby="describedby"
+                data-testid="q-cognitive"
+              >
+                <option value="">—</option>
+                <option v-for="c in COGNITIVE_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
+              </DsNativeSelect>
+            </DsFormField>
             <DsFormField
               v-slot="{ id, describedby, invalid }"
               native
@@ -605,6 +649,7 @@ const correctItems = (i: number, letter: string) => [
                 type="number"
                 name="points_value"
                 min="1"
+                :disabled="essayChoice"
                 :color="invalid ? 'error' : undefined"
                 class="w-full"
                 data-testid="q-points"

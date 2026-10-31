@@ -10,6 +10,7 @@ import { buildServedPaper } from '../../src/modules/bijak/attempts/marking'
 import type { BijakQuestionBundle } from '../../src/modules/bijak/attempts/ports'
 import {
   type BridgeMedia,
+  type OutsideStimulus,
   type CurriculumLabels,
   infoOf,
   mapBe09Question,
@@ -262,13 +263,14 @@ describe('option images and the stem picture', () => {
   })
 
   it('an image stimulus linked to the version but not to a group is the question stemImage', () => {
-    const m = media({ '90': 'tS' }, new Map([['300', { kind: 'image', assetFileId: '90' }]]))
+    const m = media({ '90': 'tS' }, new Map<string, OutsideStimulus>([['300', { kind: 'image', assetFileId: '90' }]]))
     const b = map([mcq()], { stimulusIds: ['300'] }, null, m)
     expect(b.question.stemImage).toMatchObject({
       id: 'qb-s300',
       kind: 'image',
       image: { url: '/api/files/tS' },
     })
+    expect(b.question.stimuli).toEqual([b.question.stemImage])
     expect(b.group).toBeUndefined()
   })
 
@@ -279,19 +281,63 @@ describe('option images and the stem picture', () => {
     expect(b.group?.stimuli).toHaveLength(1)
   })
 
-  it('two stem pictures, or an outside stimulus that is not a picture, are refused', () => {
-    const two = new Map([
-      ['300', { kind: 'image', assetFileId: '90' }],
-      ['301', { kind: 'image', assetFileId: '91' }],
-    ])
-    const m2 = media({ '90': 'a', '91': 'b' }, two)
-    expect(refusal(() => map([mcq()], { stimulusIds: ['300', '301'] }, null, m2)).code).toBe(
-      'stem_images_many',
+  it('R1E2E-05b: own stimuli of any kind are served in link order, each with its caption, source, table and picture', () => {
+    const grid = { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10']] }
+    const m = media(
+      { '90': 'tA', '91': 'tB' },
+      new Map<string, OutsideStimulus>([
+        ['301', { kind: 'passage', assetFileId: null, label: 'Petikan', bodyMs: 'Isi petikan', caption: 'Cap', sourceCitation: 'Sumber A' }],
+        ['302', { kind: 'table', assetFileId: null, label: 'Jadual 1', tableData: grid }],
+        ['303', { kind: 'map', assetFileId: '90', label: 'Peta 1', alt: 'Peta Malaysia' }],
+        ['304', { kind: 'graph', assetFileId: '91' }],
+      ]),
     )
-    const m3 = media({}, new Map([['302', { kind: 'passage', assetFileId: null }]]))
-    expect(refusal(() => map([mcq()], { stimulusIds: ['302'] }, null, m3)).code).toBe(
-      'stimulus_outside_group',
+    const b = map([mcq()], { stimulusIds: ['303', '301', '302', '304'] }, null, m)
+    const own = b.question.stimuli ?? []
+    expect(own.map((x) => x.id)).toEqual(['qb-s303', 'qb-s301', 'qb-s302', 'qb-s304'])
+    expect(own[0]).toMatchObject({ kind: 'map', label: 'Peta 1', alt: 'Peta Malaysia', image: { url: '/api/files/tA' } })
+    expect(own[1]).toMatchObject({ kind: 'passage', text: 'Isi petikan', caption: 'Cap', source: 'Sumber A' })
+    expect(own[2]).toMatchObject({ kind: 'table', table: grid })
+    expect(own[3]).toMatchObject({ kind: 'graph', alt: 'Gambar untuk soalan ini', image: { url: '/api/files/tB' } })
+    // Several own stimuli: no single-picture slot.
+    expect(b.question).not.toHaveProperty('stemImage')
+    expect(b.group).toBeUndefined()
+  })
+
+  it('the served question carries its own stimuli (and no group) on the wire', () => {
+    const m = media({ '90': 'tA' }, new Map<string, OutsideStimulus>([
+      ['301', { kind: 'passage', assetFileId: null, label: 'Petikan', bodyMs: 'Isi petikan' }],
+      ['303', { kind: 'diagram', assetFileId: '90', label: 'Rajah 1' }],
+    ]))
+    const bundle = map([mcq()], { stimulusIds: ['301', '303'] }, null, m)
+    const served = buildServedPaper(
+      [{ id: 's', label: 'A', rule: { type: 'all' }, questionIds: ['501'] }],
+      new Map([['501', bundle]]),
     )
+    const q = BijakAttemptQuestionSchema.parse(served.questions[0])
+    expect(q.stimuli?.map((x) => [x.kind, x.label])).toEqual([['passage', 'Petikan'], ['diagram', 'Rajah 1']])
+    expect(q.stimuli?.[1]?.image?.url).toBe('/api/files/tA')
+    expect(served.groups).toEqual([])
+  })
+
+  it('a table written as a pipe table in the body of an own stimulus is read by the shared helper', () => {
+    const m = media({}, new Map<string, OutsideStimulus>([['310', { kind: 'table', assetFileId: null, bodyMs: 'A | B\n--- | ---\n1 | 2' }]]))
+    const own = map([mcq()], { stimulusIds: ['310'] }, null, m).question.stimuli ?? []
+    expect(own[0]?.table).toEqual({ head: ['A', 'B'], rows: [['1', '2']] })
+  })
+
+  it('an own stimulus that is shared by several questions but is not a group is refused (D90)', () => {
+    const m = media({}, new Map<string, OutsideStimulus>([['320', { kind: 'passage', assetFileId: null, bodyMs: 'Petikan', sharedBy: 2 }]]))
+    const e = refusal(() => map([mcq()], { stimulusIds: ['320'] }, null, m))
+    expect(e.code).toBe('stimulus_shared_ungrouped')
+  })
+
+  it('an unknown or audio outside stimulus, and an own stimulus with nothing to show, are refused', () => {
+    expect(refusal(() => map([mcq()], { stimulusIds: ['999'] }, null, media())).code).toBe('stimulus_outside_group')
+    const empty = media({}, new Map<string, OutsideStimulus>([['330', { kind: 'passage', assetFileId: null }]]))
+    expect(refusal(() => map([mcq()], { stimulusIds: ['330'] }, null, empty)).code).toBe('stimulus_empty')
+    const gone = media({}, new Map<string, OutsideStimulus>([['331', { kind: 'image', assetFileId: '77' }]]))
+    expect(refusal(() => map([mcq()], { stimulusIds: ['331'] }, null, gone)).code).toBe('file_missing')
   })
 })
 
