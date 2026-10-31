@@ -123,6 +123,16 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
     })
 
     it('school battle: the bot is from another school (widened past the grade when nobody else fits)', async () => {
+      // Secondary-only (D72): the seeded pupils of the other schools are Darjah, which a bot is never picked from. The secondary
+      // pupil of a second school is test-local fixture data, so the seed stays as it is (H-A6).
+      const [owner] = await rows<{ school_id: string }>(`select school_id::text from users where id = $1`, [a.id])
+      const [other] = await rows<{ id: string }>(`select id::text from schools where id <> $1 order by id limit 1`, [owner?.school_id])
+      const [fixture] = await rows<{ id: string }>(
+        `insert into users (name, email, school_id, grade, is_active) values ('Murid Ujian Sekolah Lain', 'murid.sekolah-lain.t05@example.test', $1, 10, true) returning id::text`,
+        [other?.id],
+      )
+      await rows(`insert into user_roles (user_id, role) values ($1, 'student')`, [fixture?.id])
+      t.get(BattleDeps).invalidateCache()
       const uuid = await matchBot(a, await startQueue(a, s.math, {}, '/battle/school-battle'))
       const [bot] = await rows<{ school_id: string | null; mode: string }>(
         `select p.school_id::text, b.mode from battle_participants p join battles b on b.id = p.battle_id where p.battle_id = $1 and p.side = 'B'`,
@@ -130,8 +140,8 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       )
       expect(bot?.mode).toBe('school_battle')
       expect(bot?.school_id).not.toBeNull()
-      const [owner] = await rows<{ school_id: string }>(`select school_id::text from users where id = $1`, [a.id])
       expect(bot?.school_id).not.toBe(owner?.school_id)
+      expect(bot?.school_id).toBe(other?.id)
     })
 
     it('an unknown, foreign or malformed queue id answers {status: not_found} with HTTP 200', async () => {
