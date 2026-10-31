@@ -27,6 +27,7 @@ import type {
   SubjectCode,
   SubmitPayload,
 } from '../domain/types'
+import type { PastSittings, SelfMarkOutcome } from '../domain/semakan'
 
 export interface SaveResult {
   savedAt: number
@@ -108,4 +109,14 @@ export interface BijakApi extends BijakKuizApi {
   ): Promise<QuestionResult>
   getResult(userId: number, attemptId: string): Promise<ResultView>
   history(userId: number): Promise<HistoryRow[]>
+  /** R1-B12: the pupil's own mark (and band) for one part of a closed attempt. */
+  selfMark(
+    userId: number,
+    attemptId: string,
+    body: { partId: string; mark: number; band?: string },
+  ): Promise<SelfMarkOutcome>
+  /** R1-B15 "Cuba Lagi": a fresh attempt on the paper of a closed attempt. */
+  retryAttempt(userId: number, attemptId: string): Promise<{ attemptId: string }>
+  /** R1-B15 "Lihat semakan lepas": the caller's closed sittings of a paper, newest first. */
+  pastSittings(userId: number, paperId: string): Promise<PastSittings>
 }

@@ -93,6 +93,42 @@ export const BIJAK_BUILDER_CHECK_LINES = {
     `Kumpulan rangsangan ${group} tidak lengkap (${missing} soalan tiada)`,
   notPublished: (count: number) => `${count} soalan belum Terbit`,
   sectionLine: (label: string, line: string) => `${label}: ${line}`,
+  /** D90: members of a stimulus group run in the group's published order. */
+  groupOutOfOrder: (group: string) => `Kumpulan rangsangan ${group} tidak mengikut susunan asal`,
+  /** Structural tier of exam-core `verifyComposition` (INELIGIBLE): the reason is one of `BIJAK_BUILDER_INELIGIBLE_TEXT`. */
+  ineligible: (questionId: string, reason: string) => `Soalan ${questionId} tidak layak: ${reason}`,
+} as const
+
+/**
+ * BM texts of the placement operations (R1-B09a). A question can only be placed while it is servable
+ * (Terbit/approved); a stimulus group is ONE unit (D90): it is placed, removed and moved whole.
+ */
+export const BIJAK_BUILDER_PLACEMENT_LINES = {
+  notServable: (id: string, reason: string) => `Soalan ${id} tidak boleh diletakkan dalam kertas: ${reason}.`,
+  groupNotServable: (group: string, id: string, reason: string) =>
+    `Kumpulan rangsangan ${group} tidak boleh diletakkan: soalan ${id} ${reason}.`,
+  alreadyPlaced: (id: string) => `Soalan ${id} sudah ada dalam kertas ini`,
+  notPlaced: (id: string) => `Soalan ${id} tiada dalam kertas ini`,
+  orderMismatch: 'Susunan mesti menyenaraikan setiap soalan atau kumpulan dalam bahagian tepat sekali',
+  statusDraft: 'masih draf',
+  statusReview: 'masih dalam semakan',
+  statusArchived: 'telah diarkibkan',
+  notFound: 'tidak ditemui',
+  otherSubject: 'bukan subjek kertas ini',
+  /** Suffix of a copied paper title ("Salin set", V2 `clonePaperToDraft`). */
+  copySuffix: ' (Salinan)',
+} as const
+
+/** Texts of the structural `INELIGIBLE` reasons of exam-core, for the publish blockers. */
+export const BIJAK_BUILDER_INELIGIBLE_TEXT = {
+  no_unit: 'tiada unit DSKP',
+  no_tp: 'tiada TP',
+  no_marks: 'tiada markah',
+  no_key: 'tiada kunci jawapan',
+  tag_review: 'tag perlu disemak',
+  mode_not_allowed: 'jenis jawapan tidak dibenarkan dalam bahagian ini',
+  pool_mismatch: 'bukan dalam kolam bahagian ini',
+  unit_not_in_quota: 'unit tiada dalam kuota',
 } as const
 
 /** CSRF failure of every mutation (copy of `AUTH_ERROR_MESSAGES.CSRF_INVALID`). */
@@ -445,6 +481,11 @@ export const BijakBuilderPaperPatchSchema = z
       .meta({ example: 'Percubaan SPM Matematik Kertas 2 Set B' }),
     year: z.number().int().min(1900).max(2100).optional(),
     durationMin: z.number().int().min(1).max(600).optional(),
+    instructions: z
+      .array(z.string().trim().min(1).max(500))
+      .max(40)
+      .optional()
+      .meta({ description: 'Cover instruction lines (Arahan kulit kertas); replaces the whole list.' }),
     sections: z.array(BijakBuilderSectionPatchSchema).max(20).optional(),
   })
   .meta({ id: 'BijakBuilderPaperPatch' })
@@ -470,6 +511,12 @@ export const BijakBuilderPublishResultSchema = z
   .strictObject({
     ok: z.boolean(),
     errors: z.array(z.string()).meta({ description: 'Empty when ok is true.' }),
+    notes: z.array(z.string()).optional().meta({
+      description: 'Non-blocking notes of the standard tier (quota, profile, KBAT): a curated paper is never blocked by them (D78 O-2).',
+    }),
+    blueprintNeedsReview: z.boolean().optional().meta({
+      description: 'true when `notes` is not empty: the UI shows "Blueprint perlu semakan".',
+    }),
   })
   .meta({ id: 'BijakBuilderPublishResult' })
 export type BijakBuilderPublishResult = z.infer<typeof BijakBuilderPublishResultSchema>
@@ -707,3 +754,139 @@ export const BijakBlueprintListQuerySchema = z
   })
   .meta({ id: 'BijakBlueprintListQuery' })
 export type BijakBlueprintListQuery = z.infer<typeof BijakBlueprintListQuerySchema>
+
+/* ------------------------------------------------------------- R1-B09a: placements, review, pool */
+
+/**
+ * D90: a stimulus shared by several questions is ONE group. These operations place, remove and move
+ * the whole group as one unit; a single member is never placed alone. Removing any member removes
+ * the whole group (decision B09a, documented in the route descriptions).
+ */
+
+/** `POST /admin/papers/{id}/placements` body. */
+export const BijakBuilderPlacementAddSchema = z
+  .strictObject({
+    sectionId: IdSchema.meta({ description: 'Id of a section of this paper.' }),
+    questionId: IdSchema.meta({ description: 'A servable question; when it belongs to a stimulus group the whole group is placed.' }),
+  })
+  .meta({ id: 'BijakBuilderPlacementAdd' })
+export type BijakBuilderPlacementAdd = z.infer<typeof BijakBuilderPlacementAddSchema>
+
+/** `PUT /admin/papers/{id}/sections/{sid}/order` body: one id per unit (any member id for a group). */
+export const BijakBuilderSectionOrderSchema = z
+  .strictObject({
+    order: z.array(IdSchema).min(1).max(500).meta({
+      description: 'The units of the section in the wanted order: one question id per single question, any member id per stimulus group. Every unit exactly once.',
+    }),
+  })
+  .meta({ id: 'BijakBuilderSectionOrder' })
+export type BijakBuilderSectionOrder = z.infer<typeof BijakBuilderSectionOrderSchema>
+
+/** Result of add / remove / order: the editor data plus the question ids that were added or removed. */
+export const BijakBuilderPlacementResultSchema = z
+  .strictObject({
+    editor: BijakBuilderEditorSchema,
+    added: z.array(IdSchema).optional(),
+    removed: z.array(IdSchema).optional(),
+  })
+  .meta({ id: 'BijakBuilderPlacementResult' })
+export type BijakBuilderPlacementResult = z.infer<typeof BijakBuilderPlacementResultSchema>
+
+/** One placed question in the review (per-row servability). */
+export const BijakBuilderReviewRowSchema = z
+  .strictObject({
+    questionId: IdSchema,
+    groupId: IdSchema.optional(),
+    section: z.string().min(1),
+    ok: z.boolean(),
+    reason: z.string().optional().meta({ description: 'BM reason when ok is false ("Tidak disajikan").' }),
+  })
+  .meta({ id: 'BijakBuilderReviewRow' })
+
+/** `GET /admin/papers/{id}/review`. */
+export const BijakBuilderReviewSchema = z
+  .strictObject({
+    paperId: IdSchema,
+    status: BijakBuilderPaperStatusSchema,
+    ok: z.boolean().meta({ description: 'No blocker: Terbit would succeed.' }),
+    blockers: z.array(z.string()).meta({ description: 'Same lines as the publish refusal (BM).' }),
+    notes: z.array(z.string()).meta({ description: 'Standard-tier notes; never block a curated paper (D78 O-2).' }),
+    blueprintNeedsReview: z.boolean().meta({ description: '"Blueprint perlu semakan".' }),
+    visibleToStudents: z.boolean(),
+    totalMarks: z.number().int().min(0),
+    totalBudget: z.number().int().min(0),
+    rows: z.array(BijakBuilderReviewRowSchema),
+  })
+  .meta({ id: 'BijakBuilderReview' })
+export type BijakBuilderReview = z.infer<typeof BijakBuilderReviewSchema>
+
+/** `GET /admin/papers/{id}/student-view`: what a pupil sees (no keys, no schemes). */
+export const BijakBuilderStudentQuestionSchema = z
+  .strictObject({ id: IdSchema, number: z.number().int().min(1), preview: z.string(), marks: z.number().int().min(0) })
+  .meta({ id: 'BijakBuilderStudentQuestion' })
+export const BijakBuilderStudentUnitSchema = z
+  .strictObject({
+    groupId: IdSchema.optional(),
+    stimulus: BijakAttemptStimulusSchema.optional().meta({ description: 'Shown ONCE for the group (D90).' }),
+    questions: z.array(BijakBuilderStudentQuestionSchema).min(1),
+  })
+  .meta({ id: 'BijakBuilderStudentUnit' })
+export const BijakBuilderStudentViewSchema = z
+  .strictObject({
+    title: z.string(),
+    subject: z.string(),
+    subjectName: z.string(),
+    kertas: Kertas,
+    year: z.number().int(),
+    code: z.string(),
+    durationMin: z.number().int(),
+    instructions: z.array(z.string()),
+    reference: z.array(BijakPaperReferencePanelSchema),
+    questionCount: z.number().int().min(0),
+    marks: z.number().int().min(0),
+    sections: z.array(
+      z.strictObject({
+        label: z.string(),
+        instruction: z.string(),
+        compulsory: z.boolean(),
+        marks: z.number().int().min(0),
+        units: z.array(BijakBuilderStudentUnitSchema),
+      }),
+    ),
+  })
+  .meta({ id: 'BijakBuilderStudentView' })
+export type BijakBuilderStudentView = z.infer<typeof BijakBuilderStudentViewSchema>
+
+/** Query of `GET /admin/papers/{id}/sections/{sid}/pool`. */
+export const BijakBuilderSectionPoolQuerySchema = z
+  .object({
+    q: z.string().trim().max(100).optional(),
+    level: z.enum(['t4', 't5', 't1_t3']).optional(),
+    unit: z.string().max(40).optional().meta({ description: 'DSKP unit node id.' }),
+    page: z.coerce.number().int().min(1).optional(),
+    pageSize: z.coerce.number().int().min(1).max(100).optional(),
+  })
+  .meta({ id: 'BijakBuilderSectionPoolQuery' })
+
+/** One candidate unit of the section pool: a single question or a whole stimulus group. */
+export const BijakBuilderPoolUnitSchema = z
+  .strictObject({
+    groupId: IdSchema.optional(),
+    stimulus: BijakAttemptStimulusSchema.optional(),
+    questionIds: z.array(IdSchema).min(1),
+    questions: z.array(BijakBuilderQuestionSchema),
+    marks: z.number().int().min(0).meta({ description: 'Sum of the members.' }),
+    eligible: z.boolean(),
+    reasons: z.array(z.string()),
+    placed: z.boolean(),
+  })
+  .meta({ id: 'BijakBuilderPoolUnit' })
+export type BijakBuilderPoolUnit = z.infer<typeof BijakBuilderPoolUnitSchema>
+
+/** Query of `GET /admin/papers/pool-preview` ("Pratonton kolam"). */
+export const BijakBuilderPoolPreviewQuerySchema = z
+  .object({
+    subject: z.string().trim().min(1).max(32),
+    kertas: z.coerce.number().int().min(1),
+  })
+  .meta({ id: 'BijakBuilderPoolPreviewQuery' })

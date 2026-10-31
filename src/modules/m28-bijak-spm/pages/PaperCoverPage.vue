@@ -10,6 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { DsEmptyState, DsHeroCard } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
+import PastSittingsLink from '../components/PastSittingsLink.vue'
 import RichText from '../components/RichText.vue'
 import { formatClock } from '../domain/paper-model'
 import type { AttemptMode } from '../domain/types'
@@ -97,6 +98,7 @@ async function begin(restart: boolean): Promise<void> {
         data-testid="cover-hero"
         @cta="begin(false)"
       />
+      <PastSittingsLink :paper-id="paperId" class="self-start" />
 
       <UAlert
         v-if="needsChoice && open"

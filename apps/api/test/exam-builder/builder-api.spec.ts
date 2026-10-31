@@ -117,7 +117,21 @@ describe('paper builder API', () => {
       expect(row).toMatchObject({ questionCount: 1, marks: 1, budget: 6, ok: false })
     })
 
-    const cases: { rule: string; lists: Lists; lines: string[] }[] = [
+    /**
+     * D90: the API never stores a split group (PUT/placements normalize it). A broken group can only exist as
+     * legacy data, so the group cases write the rows with SQL and the publish check must still flag them.
+     */
+    async function fillRaw(id: string, lists: Lists) {
+      const e = await editor(id)
+      const all = [lists.A, lists.B, lists.C]
+      for (const [i, s] of e.paper.sections.entries()) {
+        await q('delete from paper_placements where paper_section_id = $1', [s.id])
+        for (const [pos, qid] of (all[i] ?? []).entries()) {
+          await q('insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, $3)', [s.id, qid, pos + 1])
+        }
+      }
+    }
+    const cases: { rule: string; lists: Lists; lines: string[]; raw?: boolean }[] = [
       {
         rule: 'too few questions',
         lists: { A: ['700001', '700002'], B, C },
@@ -141,6 +155,7 @@ describe('paper builder API', () => {
       {
         rule: 'stimulus group split between sections',
         lists: { A: ['700001', '700002', '700021'], B: ['700022'], C },
+        raw: true,
         lines: [
           LINES.groupSplit('800001'),
           LINES.sectionLine('Bahagian A', LINES.groupIncomplete('800001', 1)),
@@ -150,12 +165,20 @@ describe('paper builder API', () => {
       {
         rule: 'group not consecutive',
         lists: { A: ['700021', '700001', '700022'], B, C },
+        raw: true,
         lines: [LINES.sectionLine('Bahagian A', LINES.groupNotConsecutive('800001'))],
       },
       {
         rule: 'group incomplete',
         lists: { A: ['700001', '700002', '700021'], B, C },
+        raw: true,
         lines: [LINES.sectionLine('Bahagian A', LINES.groupIncomplete('800001', 1))],
+      },
+      {
+        rule: 'group out of order (D90)',
+        lists: { A: ['700001', '700022', '700021'], B, C },
+        raw: true,
+        lines: [LINES.sectionLine('Bahagian A', LINES.groupOutOfOrder('800001'))],
       },
       {
         rule: 'question not Terbit',
@@ -168,9 +191,10 @@ describe('paper builder API', () => {
         lines: [LINES.duplicateQuestion(['700001'])],
       },
     ]
-    it.each(cases)('publish refuses a paper that breaks: $rule', async ({ lists, lines }) => {
+    it.each(cases)('publish refuses a paper that breaks: $rule', async ({ lists, lines, raw }) => {
       const id = await newPaper()
-      await fill(id, lists) // saving is accepted, publish reports
+      if (raw) await fillRaw(id, lists)
+      else await fill(id, lists) // saving is accepted, publish reports
       const before = await count(t.db, `select count(*) n from audit_events where action = 'bijak.paper.published'`)
       const res = await admin.post(`/api/admin/papers/${id}/publish`)
       expect(res.status).toBe(200)
@@ -259,16 +283,20 @@ describe('paper builder API', () => {
   })
 
   describe('AC3 groups and duplicates', () => {
-    it('a PUT that splits a group is accepted; publish returns the group lines and refuses', async () => {
+    it('D90: a PUT with one member of a group places the whole group; a group split between sections is refused', async () => {
       const id = await newPaper()
-      const res = await fill(id, { A: ['700001', '700002', '700021'], B: ['700022'], C })
-      expect(res.paper.sections[1]!.questionIds).toEqual(['700022'])
+      const e = await editor(id)
+      const [sa, sb, sc] = e.paper.sections
+      const res = await admin.put(`/api/admin/papers/${id}`, { sections: [{ id: sa!.id, questionIds: ['700001', '700022'] }] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const got = Editor.parse(res.body).data
+      expect(got.paper.sections[0]!.questionIds).toEqual(['700001', '700021', '700022'])
       // the group appears once in the editor data with its stimulus
-      expect(res.groups).toHaveLength(1)
-      expect(res.groups[0]).toMatchObject({ id: '800001', questionIds: ['700021', '700022'] })
-      const pub = await publish(id)
-      expect(pub.ok).toBe(false)
-      expect(pub.errors[0]).toBe(LINES.groupSplit('800001'))
+      expect(got.groups).toHaveLength(1)
+      expect(got.groups[0]).toMatchObject({ id: '800001', questionIds: ['700021', '700022'] })
+      // putting the same group in a second section is a duplicate
+      const split = await admin.put(`/api/admin/papers/${id}`, { sections: [{ id: sb!.id, questionIds: ['700021'] }, { id: sc!.id, questionIds: [] }] })
+      expectError(split, 'VALIDATION_ERROR', 422, LINES.duplicateQuestion(['700021', '700022']))
     })
 
     it('a duplicate inside one section is refused with 422 and the duplicate line; nothing is saved', async () => {

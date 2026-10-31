@@ -314,8 +314,7 @@ export class AttemptsRepository {
         maxScore: applied.max,
         provisional: applied.provisional,
         pendingReview: applied.pendingReview,
-        coins: applied.coins,
-        points: applied.points,
+        // coins and points stay as credited at submit
         graded: { ...(r.graded as object), selfMarks } as unknown as object,
       },
     })

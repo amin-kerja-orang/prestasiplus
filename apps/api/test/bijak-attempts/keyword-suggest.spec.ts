@@ -90,8 +90,10 @@ describe('applySelfMarks (V2 recomputeScore with best-N)', () => {
     // q1 is not counted any more, so its waiting part no longer holds the total back
     expect(r.provisional).toBe(false)
     expect(r.pendingReview).toBe(0)
-    expect(r.coins).toBe(14)
-    expect(r.points).toBe(70)
+    // reward figures stay what was credited at submit (score 0), not 14 / 70
+    expect(r.coins).toBe(base.coins)
+    expect(r.points).toBe(base.points)
+    expect(r.coins).toBe(0)
   })
 
   it('is pure and repeatable: base untouched, same marks give the same totals', () => {
@@ -121,6 +123,14 @@ describe('applySelfMarks (V2 recomputeScore with best-N)', () => {
     expect(r.questions[1]!.attempted).toBe(true)
     expect(r.sections[0]).toMatchObject({ counted: ['q2'], awarded: 6 })
     expect(onlyQ1.questions[1]!.attempted).toBe(false) // base untouched
+  })
+
+  it('a self-mark above 0 on a BLANK answer is "betul"/"separa", never "kosong" (the score counts it)', () => {
+    const blankBase = gradeAttempt(composition, bundles, new Map())
+    const full = applySelfMarks(blankBase, composition, { 'q1-a': { mark: 10 } })
+    expect(full.questions[0]!.parts[0]).toMatchObject({ awarded: 10, status: 'betul', selfMarked: true })
+    expect(full.score).toBe(10)
+    expect(applySelfMarks(blankBase, composition, { 'q1-a': { mark: 4 } }).questions[0]!.parts[0]!.status).toBe('separa')
   })
 
   it('no marks returns the base result as it is', () => {

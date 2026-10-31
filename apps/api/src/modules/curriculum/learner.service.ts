@@ -102,7 +102,7 @@ export class CurriculumLearnerService {
     }
   }
 
-  /** FR-84 / BR-15: an empty subject is the default, an unknown code is kept as typed; the grade is DARJAH_1..4 or DARJAH_4. */
+  /** FR-84 / BR-15: an empty subject is the default, an unknown code is kept as typed; the grade is TINGKATAN_4 or TINGKATAN_5, anything else (Darjah included) is TINGKATAN_4 (secondary-only, D72). */
   async learningMap(query: { subject?: string | undefined; grade?: string | undefined }, userId: string): Promise<CurriculumLearningMap> {
     const subject = query.subject || DEFAULT_MAP_SUBJECT
     const grade = (MAP_GRADES as readonly (string | undefined)[]).includes(query.grade) ? (query.grade as string) : DEFAULT_MAP_GRADE

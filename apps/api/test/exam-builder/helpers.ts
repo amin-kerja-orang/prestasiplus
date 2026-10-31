@@ -73,6 +73,7 @@ export async function bootBuilderApp(opts: BootOptions = {}): Promise<BuilderTes
     THROTTLE_BIJAK_PAPERS_READ_PER_MINUTE: '100000',
     THROTTLE_BIJAK_BUILDER_READ_PER_MINUTE: '100000',
     THROTTLE_BIJAK_BUILDER_WRITE_PER_MINUTE: '100000',
+    THROTTLE_BIJAK_BUILDER_GENERATE_PER_MINUTE: '100000',
     ...opts.env,
   })
   const clock = new FixedClock(START)

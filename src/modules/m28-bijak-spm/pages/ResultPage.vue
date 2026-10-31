@@ -5,8 +5,8 @@
  * ("awak" voice) -> rewards -> Kongsi / Kembali ke Home. Below it: marks per section, per question
  * and per marking point, with the scheme revealed (only reachable after Hantar).
  */
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
 import { DsEmptyState, DsFriendAvatar, DsSpeechBubble, DsWinScreen } from '@/ds'
 import { useApi } from '@/composables/useApi'
@@ -16,10 +16,21 @@ import { useSession } from '@/composables/useSession'
 import type { BijakGenerateShortage } from '@pp/contract'
 
 import GenerateShortageAlert from '../components/GenerateShortageAlert.vue'
+import KeywordSuggestion from '../components/KeywordSuggestion.vue'
 import PartResultCard from '../components/PartResultCard.vue'
+import PastSittingsLink from '../components/PastSittingsLink.vue'
 import RichText from '../components/RichText.vue'
+import SelfMarkControl from '../components/SelfMarkControl.vue'
 import { needsAttention, sectionRuleLine } from '../domain/paper-model'
-import type { QuestionResult, QuestionView } from '../domain/types'
+import type { ReviewPart } from '../domain/semakan'
+import type {
+  AttemptResult,
+  PartResult,
+  QuestionResult,
+  QuestionView,
+  SubjectCode,
+} from '../domain/types'
+import { rewardItems } from '../lib/rewards'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
 import { bijakServer } from '../server/client'
 
@@ -42,7 +53,39 @@ const filterItems = [
 
 const { friend, friendName } = useFriend()
 const name = computed(() => (me.value?.name ?? 'Murid').split(' ')[0] ?? 'Murid')
-const result = computed(() => data.value?.result)
+/** The result recomputed by the last self-mark; replaces the loaded one (totals, Bahagian, parts). */
+const refreshed = ref<AttemptResult | null>(null)
+watch(attemptId, () => {
+  refreshed.value = null
+})
+const result = computed(() => refreshed.value ?? data.value?.result)
+const review = (p: PartResult): ReviewPart => p
+
+/**
+ * Dirty-draft guard [PROPOSED: V2 has no such warning]: a stepper change that is not saved yet asks
+ * before the pupil leaves the page (in-app navigation and tab close / reload).
+ */
+const LEAVE_WARNING = 'Anda ada markah kendiri yang belum disimpan. Tinggalkan halaman ini?'
+const unsaved = ref(new Set<string>())
+function onDirty(partId: string, dirty: boolean): void {
+  const next = new Set(unsaved.value)
+  if (dirty) next.add(partId)
+  else next.delete(partId)
+  unsaved.value = next
+}
+function warnOnUnload(e: BeforeUnloadEvent): void {
+  if (!unsaved.value.size) return
+  e.preventDefault()
+  e.returnValue = ''
+}
+onMounted(() => window.addEventListener('beforeunload', warnOnUnload))
+onBeforeUnmount(() => window.removeEventListener('beforeunload', warnOnUnload))
+onBeforeRouteLeave(() => (unsaved.value.size ? window.confirm(LEAVE_WARNING) : true))
+
+async function saveSelfMark(body: { partId: string; mark: number; band?: string }): Promise<void> {
+  const out = await server.selfMark(user.value, attemptId.value, body)
+  refreshed.value = out.result
+}
 const percent = computed(() => result.value?.percent ?? 0)
 const art = computed(() =>
   percent.value >= 90 ? 'party' : percent.value >= 60 ? 'trophy' : 'books',
@@ -67,10 +110,8 @@ const friendLine = computed(() =>
       : `Bagus sebab awak cuba, ${name.value}. Jom semak jawapan yang salah, awak pasti boleh!`
     : '',
 )
-const rewards = computed(() => [
-  { id: 'mata', value: `+${result.value?.points ?? 0}`, unit: 'Mata', art: 'bolt' as const },
-  { id: 'koin', value: `+${result.value?.coins ?? 0}`, unit: 'Koin', art: 'coin' as const },
-])
+/** The credited reward: always the loaded result, never the one recomputed after a self-mark. */
+const rewards = computed(() => rewardItems(data.value?.result))
 
 const questionMap = computed(
   () => new Map<string, QuestionView>((data.value?.paper.questions ?? []).map((q) => [q.id, q])),
@@ -121,39 +162,59 @@ const retryShortages = ref<BijakGenerateShortage[]>([])
 const retryShortageKey = ref(0)
 const retryMessage = ref('')
 
-async function retry(): Promise<void> {
-  const a = data.value?.attempt
-  if (!a || retrying.value) return
-  let paperId = a.paperId
-  if (a.paperKind === 'jana') {
-    retrying.value = true
-    retryShortages.value = []
-    retryMessage.value = ''
-    try {
-      const out = await server.generatePaper(user.value, a.subject, a.kertas)
-      if (!out.ok) {
-        if (out.reason === 'shortage') {
-          retryShortages.value = out.shortages
-          retryShortageKey.value += 1
-        } else {
-          retryMessage.value =
-            out.reason === 'limit'
-              ? 'Kertas tidak dapat disusun sekarang. Cuba lagi.'
-              : 'Belum ada kontrak untuk subjek dan kertas ini'
-        }
-        return
+/** Cuba Lagi on a Kertas Pilihan (R1-B15): a fresh attempt on the same paper; the 409 text is shown as it is. */
+async function retrySamePaper(attemptIdToRetry: string): Promise<void> {
+  retrying.value = true
+  retryMessage.value = ''
+  try {
+    const out = await server.retryAttempt(user.value, attemptIdToRetry)
+    await router.push({ name: 'm28.bijak.attempt', params: { attemptId: out.attemptId } })
+  } catch (e) {
+    retryMessage.value =
+      e instanceof Error && e.message
+        ? e.message
+        : 'Percubaan baharu tidak dapat dimulakan. Cuba lagi.'
+  } finally {
+    retrying.value = false
+  }
+}
+
+/** Cuba Lagi on a Jana Kertas: a newly generated paper (design 7.4). */
+async function retryGenerated(subject: SubjectCode, kertas: number): Promise<void> {
+  retrying.value = true
+  retryShortages.value = []
+  retryMessage.value = ''
+  let paperId: string
+  try {
+    const out = await server.generatePaper(user.value, subject, kertas)
+    if (!out.ok) {
+      if (out.reason === 'shortage') {
+        retryShortages.value = out.shortages
+        retryShortageKey.value += 1
+      } else {
+        retryMessage.value =
+          out.reason === 'limit'
+            ? 'Kertas tidak dapat disusun sekarang. Cuba lagi.'
+            : 'Belum ada kontrak untuk subjek dan kertas ini'
       }
-      paperId = out.paperId
-    } catch {
-      retryMessage.value = 'Kertas tidak dapat dijana sekarang. Cuba lagi.'
       return
-    } finally {
-      retrying.value = false
     }
+    paperId = out.paperId
+  } catch {
+    retryMessage.value = 'Kertas tidak dapat dijana sekarang. Cuba lagi.'
+    return
+  } finally {
+    retrying.value = false
   }
   await router.push({ name: 'm28.bijak.cover', params: { paperId } })
 }
 
+async function retry(): Promise<void> {
+  const a = data.value?.attempt
+  if (!a || retrying.value) return
+  if (a.paperKind === 'jana') await retryGenerated(a.subject, a.kertas)
+  else await retrySamePaper(a.id)
+}
 const home = computed(() => landingPath.value || '/dashboard')
 </script>
 
@@ -205,11 +266,13 @@ const home = computed(() => landingPath.value || '/dashboard')
         <UButton
           color="neutral"
           icon="i-ph-arrow-counter-clockwise"
+          class="min-h-11"
           :loading="retrying"
           data-testid="retry"
           @click="retry"
-          >Cuba lagi</UButton
+          >Cuba Lagi</UButton
         >
+        <PastSittingsLink :paper-id="data.attempt.paperId" :exclude="attemptId" />
         <UButton
           color="neutral"
           variant="ghost"
@@ -318,7 +381,16 @@ const home = computed(() => landingPath.value || '/dashboard')
                 :key="p.partId"
                 :result="p"
                 :options="questionMap.get(q.questionId)?.mcq?.options"
-              />
+              >
+                <template v-if="review(p).selfMarkable" #semakan>
+                  <KeywordSuggestion
+                    v-if="review(p).suggestion"
+                    :suggestion="review(p).suggestion!"
+                    :max="p.marks"
+                  />
+                  <SelfMarkControl :part="review(p)" :save="saveSelfMark" @dirty="onDirty" />
+                </template>
+              </PartResultCard>
             </div>
           </details>
         </UCard>

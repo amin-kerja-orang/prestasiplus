@@ -6,8 +6,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import ResultPage from '../pages/ResultPage.vue'
+import { BijakError } from '../server/errors'
 
-const server = vi.hoisted(() => ({ getResult: vi.fn(), generatePaper: vi.fn() }))
+const server = vi.hoisted(() => ({
+  getResult: vi.fn(),
+  generatePaper: vi.fn(),
+  retryAttempt: vi.fn(),
+  pastSittings: vi.fn(),
+}))
 vi.mock('../server/client', () => ({ bijakServer: () => server }))
 vi.mock('../lib/use-bijak', async () => {
   const { ref } = await import('vue')
@@ -54,6 +60,7 @@ async function render(kind: 'jana' | 'pilihan'): Promise<void> {
       { path: '/spm/bijak', name: 'm28.bijak', component: stub },
       { path: '/spm/bijak/sejarah', component: stub },
       { path: '/spm/bijak/kertas/:paperId', name: 'm28.bijak.cover', component: stub },
+      { path: '/spm/bijak/percubaan/:attemptId', name: 'm28.bijak.attempt', component: stub },
     ],
   })
   await router.push('/r/a1')
@@ -65,6 +72,8 @@ beforeEach(() => {
   setActivePinia(createPinia())
   server.getResult.mockReset()
   server.generatePaper.mockReset()
+  server.retryAttempt.mockReset()
+  server.pastSittings.mockResolvedValue({ lastSubmittedAttemptId: null, sittings: [] })
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -117,11 +126,27 @@ describe('ResultPage retry (Jana Kertas)', () => {
     expect(router.currentRoute.value.params.paperId).toBe('jana-9')
   })
 
-  it('Kertas Pilihan: reopens the same paper without generating', async () => {
+  it('Kertas Pilihan: Cuba Lagi starts a new attempt on the same paper without generating', async () => {
+    server.retryAttempt.mockResolvedValue({ attemptId: 'a2' })
     await render('pilihan')
     q('[data-testid="retry"]')!.click()
     await flushPromises()
     expect(server.generatePaper).not.toHaveBeenCalled()
-    expect(router.currentRoute.value.params.paperId).toBe('p1')
+    expect(server.retryAttempt).toHaveBeenCalledWith(7, 'a1')
+    expect(router.currentRoute.value.name).toBe('m28.bijak.attempt')
+    expect(router.currentRoute.value.params.attemptId).toBe('a2')
+  })
+
+  it('Kertas Pilihan: a 409 shows its plain BM message and stays on the result', async () => {
+    server.retryAttempt.mockRejectedValue(
+      new BijakError('bad_request', 'Hantar percubaan ini dahulu sebelum mencuba semula.'),
+    )
+    await render('pilihan')
+    q('[data-testid="retry"]')!.click()
+    await flushPromises()
+    expect(q('[data-testid="retry-message"]')?.textContent).toContain(
+      'Hantar percubaan ini dahulu sebelum mencuba semula.',
+    )
+    expect(router.currentRoute.value.path).toBe('/r/a1')
   })
 })

@@ -47,6 +47,8 @@ export interface QuestionFormValues {
   pointsValue: string
   /** '' = none, else '1' | '2' | '3' (Kertas, v2). */
   kertas: '' | '1' | '2' | '3'
+  /** Bab: '' = none, else the chapter id. */
+  curriculumChapterId: string
 }
 
 export function emptyValues(): QuestionFormValues {
@@ -70,6 +72,7 @@ export function emptyValues(): QuestionFormValues {
     language: 'bm',
     pointsValue: '1',
     kertas: '',
+    curriculumChapterId: '',
   }
 }
 
@@ -95,6 +98,7 @@ export function valuesFromQuestion(q: QuestionDetail): QuestionFormValues {
     language: q.language,
     pointsValue: String(q.pointsValue),
     kertas: q.kertas ?? '',
+    curriculumChapterId: idText(q.curriculumChapterId),
   }
 }
 
@@ -114,6 +118,8 @@ export function buildBody(
     difficultyLevel: v.difficulty,
     questionText: v.questionText,
     dskpSpId,
+    // Create sends a chapter only when one is chosen; edit always sends it ('' clears).
+    ...(mode === 'edit' || v.curriculumChapterId !== '' ? { curriculumChapterId: v.curriculumChapterId } : {}),
     questionImage: v.questionImage,
     explanation: v.explanation,
     language: v.language,
@@ -161,6 +167,7 @@ export const FIELD_KEYS = [
   'pointsValue',
   'language',
   'dskpSpId',
+  'curriculumChapterId',
   'kertas',
 ] as const
 

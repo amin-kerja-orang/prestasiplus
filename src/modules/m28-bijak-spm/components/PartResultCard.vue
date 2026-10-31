@@ -160,5 +160,8 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
         </p>
       </div>
     </div>
+
+    <!-- Semakan (R1): keyword suggestion and Markah kendiri, supplied by the result page. -->
+    <slot name="semakan" />
   </section>
 </template>

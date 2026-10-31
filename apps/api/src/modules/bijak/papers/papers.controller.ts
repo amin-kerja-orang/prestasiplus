@@ -53,6 +53,7 @@ export class PapersController {
   @RateLimit(BIJAK_PAPERS_LIMITS.generate)
   async generate(@Req() req: Req, @Body(new ZodValidationPipe(BijakGenerateRequestSchema)) body: BijakGenerateRequest) {
     const scope = ScopeContext.fromRequest(req)
-    return { data: await this.papers.generate({ userId: scope.userId, isTest: scope.isTest }, body) }
+    const canUseSpec = scope.isTest && scope.auth.roles.some((g) => g.role === 'admin')
+    return { data: await this.papers.generate({ userId: scope.userId, isTest: scope.isTest, canUseSpec }, body) }
   }
 }

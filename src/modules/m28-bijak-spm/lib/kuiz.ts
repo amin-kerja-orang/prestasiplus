@@ -37,7 +37,7 @@ export const kuizCopy = {
 
 /** Count from `?count=`; anything else falls back to 20 (the server does the same). */
 export function parseCount(raw: unknown): number {
-  const n = Number(Array.isArray(raw) ? raw[0] : raw)
+  const n = Math.trunc(Number(Array.isArray(raw) ? raw[0] : raw)) // V2 casts with (int): 5.5 is 5
   return (KUIZ_COUNTS as readonly number[]).includes(n) ? n : KUIZ_DEFAULT_COUNT
 }
 

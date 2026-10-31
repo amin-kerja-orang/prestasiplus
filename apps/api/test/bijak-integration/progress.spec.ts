@@ -7,12 +7,14 @@ import { BijakPaperSummarySchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, STUDENT } from './helpers'
+import { serveSeededBlueprints } from '../support/serve-blueprints'
 
 let t: IntegrationApp
 let student: Client
 
 beforeAll(async () => {
   t = await bootIntegrationApp()
+  await serveSeededBlueprints(t.db)
   student = await loginAs(t, STUDENT)
 })
 afterAll(async () => {
