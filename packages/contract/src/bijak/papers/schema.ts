@@ -132,6 +132,9 @@ export const BijakPaperReferencePanelSchema = z
   .strictObject({
     title: z.string().min(1).meta({ example: 'Rumus (ringkas)' }),
     items: z.array(z.string()),
+    imageFileId: z.string().min(1).max(128).optional().meta({
+      description: 'Stored image of the panel (public file token or decimal file id); the pupil read rule of files/question-image-access serves it.',
+    }),
   })
   .meta({ id: 'BijakPaperReferencePanel' })
 export type BijakPaperReferencePanel = z.infer<typeof BijakPaperReferencePanelSchema>

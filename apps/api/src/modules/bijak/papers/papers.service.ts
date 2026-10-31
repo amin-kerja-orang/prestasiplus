@@ -118,10 +118,15 @@ export class PapersService {
   async listContracts(): Promise<BijakBlueprintContract[]> {
     const blueprints = await this.repo.listActiveBlueprints()
     const subjects = await this.repo.subjectsByIds(blueprints.map((b) => b.subjectId))
+    // N1: `canGenerate` is exactly "findServingBlueprint finds a row" (the same predicate generate uses), so an
+    // older Disahkan version still serving while a Spec head is edited stays generable, and the list never
+    // offers a pair that generate would answer NO_BLUEPRINT.
+    const serving = new Set((await this.repo.listServingBlueprints()).map((r) => `${r.subjectId.toString()}:${String(r.kertas)}`))
     const out: BijakBlueprintContract[] = []
     for (const b of blueprints) {
       const subject = subjects.get(b.subjectId.toString())
       if (!subject || b.sections.length === 0) continue
+      const canGenerate = serving.has(`${b.subjectId.toString()}:${String(b.kertas)}`)
       out.push({
         subject: bijakCodeOf(subject.code),
         subjectName: subject.name,
@@ -130,10 +135,8 @@ export class PapersService {
         code: b.code,
         durationMin: b.durationMin,
         sections: b.sections.map((s) => ({ label: s.label, take: s.questionCount })),
-        // BJS-01 (KIV, student self-generate is not in V2): only a serving (Disahkan) head can generate. Showing an
-        // older serving version while a Spec head is being edited is part of the KIV F5 flow and is not done here.
-        canGenerate: b.servesStudents,
-        ...(b.servesStudents ? {} : { unavailableReason: 'NO_BLUEPRINT' as const }),
+        canGenerate,
+        ...(canGenerate ? {} : { unavailableReason: 'NO_BLUEPRINT' as const }),
       })
     }
     return out

@@ -70,6 +70,46 @@ export function moveUnit(
   return next.flatMap((x) => x.ids)
 }
 
+/**
+ * D90: makes a list of ids a valid section list. Every stimulus group is expanded to ALL its members,
+ * contiguous and in the group's published order, at the position of its first member; repeats are
+ * dropped (the first occurrence wins).
+ */
+export function normalizeUnits(ids: readonly string[], groupOf: GroupOf, membersOf: MembersOf): string[] {
+  const out: string[] = []
+  const done = new Set<string>()
+  for (const id of ids) {
+    if (done.has(id)) continue
+    const g = groupOf(id)
+    const add = g ? [...new Set([...membersOf(g), ...(membersOf(g).includes(id) ? [] : [id])])] : [id]
+    for (const m of add) {
+      if (done.has(m)) continue
+      done.add(m)
+      out.push(m)
+    }
+  }
+  return out
+}
+
+/**
+ * D90: moves whole units. `order` names each unit once (any member id for a group). Returns null when
+ * it is not a permutation of the units of `ids`.
+ */
+export function reorderUnits(ids: readonly string[], order: readonly string[], groupOf: GroupOf): string[] | null {
+  const units = unitsOf(ids, groupOf)
+  const unitOfId = new Map<string, number>()
+  units.forEach((u, i) => u.ids.forEach((id) => unitOfId.set(id, i)))
+  const used = new Set<number>()
+  const out: string[] = []
+  for (const id of order) {
+    const i = unitOfId.get(id)
+    if (i === undefined || used.has(i)) return null
+    used.add(i)
+    out.push(...units[i]!.ids)
+  }
+  return used.size === units.length ? out : null
+}
+
 export interface SectionCheck {
   label: string
   count: number
@@ -146,8 +186,12 @@ export function checkPaper(input: CheckInput): PaperCheck {
       if (!u.groupId) continue
       if (groupsSeen.has(u.groupId)) secErrors.push(LINES.groupNotConsecutive(u.groupId))
       groupsSeen.add(u.groupId)
-      const missing = membersOf(u.groupId).filter((m) => !ids.includes(m))
+      const all = membersOf(u.groupId)
+      const missing = all.filter((m) => !ids.includes(m))
       if (missing.length) secErrors.push(LINES.groupIncomplete(u.groupId, missing.length))
+      // D90: the members run in the group's published order.
+      const expected = all.filter((m) => u.ids.includes(m))
+      if (!missing.length && expected.some((m, i) => u.ids[i] !== m)) secErrors.push(LINES.groupOutOfOrder(u.groupId))
     }
     const notLive = ids.filter((id) => !isLive(id))
     if (notLive.length) secErrors.push(LINES.notPublished(notLive.length))
