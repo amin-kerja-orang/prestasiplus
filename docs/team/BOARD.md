@@ -300,3 +300,11 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - Evidence: api tsc 0; tsconfig.node 0; contract tsc 0; vue-tsc 0; eslint 0; contract 1452/1452; DB 655 pass + 1 todo; conformance 407/409 = BASE baseline.
   - **Needs B2 + B3 re-check.** Unblocks C's T10, A3's T48/T31 and T43b.
   - **Team C:** the blocker catalogue is now 18 codes, 2 overridable. C1/T10 should re-check its union.
+- **T26c READY** r1/t26c-e2e-k2 @ df8a52a5b (A1; BASE-63 + T26b merged):
+  - E2E-only structured K2 fixture: 15 approved multi-part Matematik Tambahan items, labelled `E2E-K2-*` / "E2E fixture". Each passes the real `GATES.approve`.
+  - One Terbit paper on Disahkan 3472/2 (A 7 / B 4 / C 4), built through BuilderRepository. The re-publish route returns ok.
+  - Profile e2e + E2E_SEED only; not in seedModules, so UAT and prod never run it.
+  - T26b fixme → real tests in bijak-part-input.spec and e2e-profile-builder.spec.
+  - Evidence: tsc 0; eslint 0; seed/e2e + e2e-profile-builder 14/14; seed guards + exam-builder + papers seed 355/355; registry-boot 3/3. Playwright not run (full stack needed; covered by the API integration spec).
+  - Security: none (seed and tests only). Needs B2.
+  - **B1 merge order: T26b → T26c → T36.** Expect a `test/bijak-integration/helpers.ts` conflict between T26b and T36 (both edit it; T26c does not). Re-run e2e-profile-builder after T36.

@@ -64,3 +64,5 @@
 **BASE vue-tsc fix:** r1/fix-base-vuetsc @ 1a2a5ca6 (A4, off BASE-62). Test-only, one line in `essay-choice-stimulus.test.ts:123` (narrows the union with `'mode' in`). The red was `vue-tsc -p tsconfig.node.json` and `-p packages/contract/tsconfig.json` (1 error each); both are 0 after the fix. `vitest run packages/contract/src/questions` 95/95; eslint 0. **Merge first.**
 
 **T34 READY @ 5bb590d0 (for C1/T10):** the builder blocker catalogue is now 18 codes. Only `BLUEPRINT_NOT_VERIFIED` and `INELIGIBLE` (no unit/TP/tag review) are overridable (`canOverride`). NO_KEY, NO_MARKS, MODE_NOT_ALLOWED, GROUP_BROKEN and NOT_SERVABLE are hard. Re-check your union against `packages/contract` at that head. NOT_SERVABLE copy is "Soalan {id} tidak dapat disemak untuk murid; cuba lagi." [PROPOSED; Q6 rule: keep if it fits context].
+
+**T26c READY @ df8a52a5b** (closes the REQ-B-003 structured-K2 gap): E2E-only fixture paper "E2E fixture: Percubaan Matematik Tambahan Kertas 2" (Terbit, 3472/2). `e2e/api/bijak-part-input.spec.ts` now prefers the "E2E fixture:" paper. No fixme left.
