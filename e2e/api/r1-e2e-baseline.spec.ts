@@ -5,7 +5,7 @@
  * Journey, one named test per step, at 375 / 768 / 1280 (no horizontal page scroll):
  *   0  pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter)
  *   1  Admin Pusat enters questions: form + image (Bank Soalan), CSV (Import & Semakan),
- *      PDF (Muat Naik Kertas), one D90 group (one shared stimulus, >= 2 member questions)
+ *      PDF (Muat Naik Kertas), one D90 group in Studio (one shared stimulus, 2 member questions, T13)
  *   2  approves them (approved = servable, D80/D85); S2c = API-assisted review -> approved when
  *      the UI path is broken (recorded as such, never as a UI pass)
  *   5a-c (R1 target, right after approval) Databank, Latih Tubi SPM and Soalan by Chapter (Bab)
@@ -14,12 +14,14 @@
  *      so the rest of the pipeline can be observed on the lifecycle BASE-1 has
  *   3  builds a paper (Set Builder target; BASE-1 Pembina Kertas), review, Terbit
  *   4  pupil (T4, T5) sits it in Bijak SPM, self-marks, sees the result, Cuba Lagi
+ *   6  pupil T4 Jana Kertas on blueprint 3472/2 (T26 e2e seed: Disahkan + serves_students)
  *   B  re-tests of B-01, B-02, B-04, B-05 (docs/qa/r1-student-smoke-2026-10-31.md)
  *
  * BASELINE: many steps are expected to fail on BASE-1 (Set Builder UI, Studio groups and the
  * lifecycle are not merged). Each step asserts the target behaviour and fails with the observed
  * reason; a step whose input an earlier step did not produce is skipped as "Blocked: ...".
- * Nothing is faked. Fictitious demo accounts only (seed, public password of the local stack).
+ * Nothing is faked. Fictitious accounts only: the T26 e2e seed (Admin Pusat, T4 pupil) and the poc demo T5 pupil
+ * (public demo password of the local stack). Since BASE-25 the API runs with BIJAK_POC_QUESTIONS=false (bank papers only).
  * Report: docs/qa/r1-e2e-baseline-2026-10-31.md.
  *
  * WRITES REAL DATA (questions, intake batches, a paper, attempts) into the target database.
@@ -37,8 +39,11 @@ const RUN = process.env.R1_E2E_RUN || 'r-local'
 const SHOTS = process.env.R1_E2E_SHOTS || 'docs/qa/r1-e2e-baseline-2026-10-31'
 const STATE_DIR = 'test-results-r1-e2e/state'
 
-const ADMIN = process.env.BIJAK_ADMIN_PUSAT_USER || 'admin@demo.test'
-const PUPIL_T4 = process.env.BIJAK_STUDENT_USER || 'pelajar@demo.test' // grade 10 = Tingkatan 4
+// T26 e2e seed accounts (docs/ops/e2e-seed.md, `--profile=e2e`): Admin Pusat and a Tingkatan 4 pupil. The T5 pupil has no
+// e2e-seed equivalent, so the poc demo account stays. One password for all: the demo convention (core/demo-password.ts,
+// docs/AKAUN-DEMO-LOCAL.md), `E2E_DEMO_PASSWORD` or the fixture default; never a new secret.
+const ADMIN = process.env.BIJAK_ADMIN_PUSAT_USER || 'admin.pusat.e2e@example.test'
+const PUPIL_T4 = process.env.BIJAK_STUDENT_USER || 'murid.t4.e2e@example.test' // grade 10 = Tingkatan 4
 const PUPIL_T5 = process.env.BIJAK_STUDENT_T5_USER || 'pelajarmaju@demo.test' // grade 11 = Tingkatan 5
 const PASS = process.env.E2E_DEMO_PASSWORD || API_PASSWORD
 
@@ -61,6 +66,10 @@ interface RunState {
   csvQuestions?: string[]
   pdfBatch?: { id: string; submitted: boolean; groups: number; questions: number }
   manualBatch?: { id: string; submitted: boolean; groups: number; questions: number }
+  /** S1d (T13 Studio): one D90 group (shared stimulus) and its member question ids, all DSKP-complete. */
+  studioGroup?: { id: string; questionIds: string[]; texts: string[] }
+  /** S1f (T13 Studio): one standalone DSKP-complete MCQ with a stem picture. */
+  studioSingle?: { id: string; text: string }
   approvedM04?: number
   approvedViaApi?: number
   approvedIntake?: number
@@ -69,6 +78,10 @@ interface RunState {
   paper?: { id: string; title: string; published: boolean; hasAdminQuestion: boolean }
   controlPaper?: { id: string; title: string; published: boolean; hasAdminQuestion: boolean }
   attempt?: { id: string; submitted: boolean }
+  /** S3e (API-assisted): a published Matematik Kertas 2 paper of structured questions; S4b sits it in the UI. */
+  writtenPaper?: { id: string; title: string; published: boolean; hasAdminQuestion: boolean }
+  /** S4b: the submitted sitting of the written paper (B-05 falls back to it when B-02 cannot start). */
+  writtenAttempt?: string
 }
 
 const statePath = (info: TestInfo) => join(STATE_DIR, `${RUN}-${info.project.name}.json`)
@@ -738,66 +751,157 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     saveState(info, { pdfBatch: { id, submitted: true, groups, questions } })
   })
 
-  test('S1d admin D90 group: one shared stimulus with 2 member questions (Studio / Tulis Soalan Manual)', async ({
+  /**
+   * Studio "Cipta soalan" (T13, `/admin/studio/questions/create`): one DSKP-complete Matematik T4 Kertas 1 MCQ (key A) with
+   * Bab, unit + first SP, and TP + Aras pemikiran on its leaf (T33). `stimulus` prepares a new shared passage ("Sediakan
+   * rangsangan kongsi", created with the question, D93); `joinGroup` joins an existing group by id ("Sertai"). Returns the
+   * new question id and its group id as the edit page shows them.
+   */
+  async function studioMcq(
+    page: Page,
+    info: TestInfo,
+    opts: { stem: string; number: string; stimulus?: string; joinGroup?: string; image?: boolean },
+  ): Promise<{ id: string; groupId: string }> {
+    await page.goto('/admin/studio/questions/create')
+    await expect(
+      page.getByTestId('studio-unavailable'),
+      'Studio talks to the real API',
+    ).toHaveCount(0)
+    await expect(page.getByTestId('studio-form')).toBeVisible()
+    await expectNoHScroll(page)
+    await page.getByTestId('studio-subject').selectOption({ label: 'Matematik' })
+    await page.getByTestId('studio-level').selectOption({ label: 'Tingkatan 4' })
+    await page.getByTestId('studio-kertas').selectOption('1')
+    await page.getByTestId('studio-number').fill(opts.number)
+    await page.getByTestId('studio-stem').fill(opts.stem)
+    if (opts.image) {
+      await page
+        .getByTestId('studio-stem-image')
+        .locator('input[type=file]')
+        .setInputFiles({ name: 'rajah.png', mimeType: 'image/png', buffer: PNG })
+      await expect(
+        page.getByTestId('studio-stem-image-preview'),
+        'stem picture uploaded (files module)',
+      ).toBeAttached({ timeout: 20_000 })
+    }
+    // Langkah 2: the shared stimulus.
+    if (opts.stimulus) {
+      await page.getByTestId('studio-group-new-kind').selectOption('passage')
+      await page.getByTestId('studio-group-new-label').fill('Petikan 1')
+      await page.getByTestId('studio-group-new-body').fill(opts.stimulus)
+      await page.getByTestId('studio-group-create').click()
+      await expect(
+        page.getByTestId('studio-group-deferred'),
+        'stimulus waits for the save',
+      ).toBeVisible()
+    }
+    if (opts.joinGroup) {
+      await page.getByTestId('studio-group-attach-id').fill(opts.joinGroup)
+      await page.getByTestId('studio-group-attach').click()
+      await expect(page.getByTestId('studio-group-id'), 'joined the group').toContainText(
+        `#${opts.joinGroup}`,
+      )
+    }
+    // Langkah 3: leaf (a), MCQ, key A, TP 3, Aras pemikiran Memahami.
+    const leaf = 'studio-leaf-0'
+    await page.getByTestId(`${leaf}-prompt`).fill('Pilih jawapan yang betul.')
+    const texts = ['Mengurangkan sisa', 'Menambah sisa', 'Membakar sampah', 'Membuang ke sungai']
+    for (const [i, l] of ['A', 'B', 'C', 'D'].entries())
+      await page.getByTestId(`${leaf}-text-${l}`).fill(texts[i] ?? l)
+    await page.getByTestId(`${leaf}-correct`).selectOption('A')
+    await page.getByTestId(`${leaf}-tp`).selectOption('3')
+    await page.getByTestId(`${leaf}-cognitive`).selectOption('memahami')
+    // Langkah 4: Bab (first), unit (first) and its first SP.
+    const chapter = page.getByTestId('q-chapter')
+    const bab = chapter.locator('option:not([value=""])').first()
+    await expect(bab, 'Bab options for Matematik T4').toBeAttached({ timeout: 10_000 })
+    await chapter.selectOption((await bab.getAttribute('value')) ?? '')
+    const unit = page.getByTestId('studio-unit')
+    const firstUnit = unit.locator('option:not([value=""])').first()
+    await expect(firstUnit, 'DSKP units for Matematik T4 (Studio DSKP list)').toBeAttached({
+      timeout: 10_000,
+    })
+    await unit.selectOption((await firstUnit.getAttribute('value')) ?? '')
+    await page.getByTestId('studio-sp').getByRole('checkbox').first().click()
+    observe(
+      info,
+      `Q${opts.number}: Bab "${(await bab.innerText()).trim()}", unit "${(await firstUnit.innerText()).trim().slice(0, 50)}", ${await page.getByTestId('studio-sp').getByRole('checkbox').count()} SP offered; save bar: ${(await page.getByTestId('studio-save-bar').innerText()).replace(/\s+/g, ' ').slice(0, 120)}`,
+    )
+    await expectNoHScroll(page)
+    const saved = page.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' &&
+        /\/api\/(questions|stimulus-groups\/[^/]+\/questions)$/.test(new URL(r.url()).pathname),
+      { timeout: 30_000 },
+    )
+    await page.getByTestId('studio-save-bar').getByRole('button', { name: 'Simpan draf' }).click()
+    const res = await saved
+    observe(
+      info,
+      `Q${opts.number} save -> POST ${new URL(res.url()).pathname} HTTP ${res.status()}${res.ok() ? '' : ` ${(await res.text().catch(() => '')).slice(0, 240)}`}`,
+    )
+    await expect(page, 'saved question opens in Sunting').toHaveURL(
+      /\/admin\/studio\/questions\/\d+\/sunting$/,
+      {
+        timeout: 20_000,
+      },
+    )
+    const id = /questions\/(\d+)\/sunting/.exec(page.url())?.[1] ?? ''
+    const groupText = await page
+      .getByTestId('studio-group-id')
+      .innerText({ timeout: 15_000 })
+      .catch(() => '')
+    const groupId = /#(\d+)/.exec(groupText)?.[1] ?? ''
+    await expectNoHScroll(page)
+    return { id, groupId }
+  }
+
+  test('S1d admin D90 group in Studio: one shared stimulus with 2 member questions', async ({
     page,
   }, info) => {
     const st = readState(info)
     await login(page, ADMIN)
-    // R1-13 / R1-21 P5: the Studio is the V2 place for groups. Record whether it exists.
+    // The Studio list (F03a, T13b) and its menu entry are not merged: the editor is reached by URL.
     await page.goto('/admin/studio')
-    const studio = (await page.getByTestId('app-placeholder').count()) === 0
+    const list = (await page.getByTestId('app-placeholder').count()) === 0
     observe(
       info,
-      studio
-        ? '/admin/studio exists'
-        : '/admin/studio renders "Halaman Tidak Dijumpai" (Studio F03a/b not merged)',
+      list
+        ? '/admin/studio list exists'
+        : '/admin/studio list renders "Halaman Tidak Dijumpai" (T13b not merged); editor reached by URL',
     )
-    // Today's group path: Tulis Soalan Manual -> review page (stimulus panel, group membership).
-    await page.goto('/admin/command-center')
-    await adminMenu(page, 'Tulis Soalan Manual')
-    await expect(page.getByTestId('intake-manual-page')).toBeVisible()
+    const q1 = `${st.tag} studio-1: Apakah kesan utama kitar semula?`
+    const q2 = `${st.tag} studio-2: Mengapakah sisa perlu diasingkan?`
+    const a = await studioMcq(page, info, {
+      stem: q1,
+      number: '1',
+      stimulus: `Petikan bersama ${st.tag}: Kitar semula mengurangkan sisa di tapak pelupusan.`,
+    })
+    expect(a.groupId, 'Q1 saved inside a new shared-stimulus group').not.toBe('')
+    const b = await studioMcq(page, info, { stem: q2, number: '2', joinGroup: a.groupId })
+    expect(b.groupId, 'Q2 joined the same group').toBe(a.groupId)
+    saveState(info, { studioGroup: { id: a.groupId, questionIds: [a.id, b.id], texts: [q1, q2] } })
+    // The group page: one stimulus, both members, no "fewer than 2" warning (D93).
+    await page.goto(`/admin/studio/groups/${a.groupId}`)
+    await expect(page.getByTestId('studio-group-page')).toBeVisible()
+    const members = page.getByTestId('studio-group-members').locator(':scope > li')
+    await expect(members, 'two member questions under the one stimulus').toHaveCount(2)
+    await expect(page.getByTestId('studio-group-warning')).toHaveCount(0)
+    observe(
+      info,
+      `group #${a.groupId}: questions ${a.id}, ${b.id}; stimuli ${await page.locator('[data-testid^=studio-group-stimulus-]').count()}; members: ${(await members.allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').slice(0, 60)).join(' | ')}`,
+    )
     await expectNoHScroll(page)
-    await fillIntakeMeta(page)
-    await page.getByTestId('manual-start').click()
-    await expect(page).toHaveURL(/\/admin\/spm\/soalan\/ekstrak\/[^/]+$/, { timeout: 30_000 })
-    const id = page.url().split('/').pop() ?? ''
-    await expect(page.getByTestId('intake-review-page')).toBeVisible()
-    await expect(
-      page.getByTestId('step-unavailable'),
-      'manual editor available in http mode',
-    ).toHaveCount(0)
-    // Two questions, one passage, both attached.
-    while ((await page.getByTestId('question-card').count()) < 2)
-      await page.getByTestId('add-question').click()
-    await page.getByRole('button', { name: /Tambah petikan/ }).click()
-    const stim = page.getByTestId('stimulus-card').first()
-    await stim
-      .getByLabel(/Kapsyen/)
-      .fill(`Petikan ${st.tag}`)
-      .catch(() => undefined)
-    await stim
-      .getByTestId('stimulus-alt')
-      .fill('Petikan pendek tentang kitar semula')
-      .catch(() => undefined)
-    await stim
-      .locator('textarea')
-      .last()
-      .fill(`Petikan bersama ${st.tag}: Kitar semula mengurangkan sisa.`)
-      .catch(() => undefined)
-    await stim.getByRole('checkbox', { name: 'Soalan 1' }).check()
-    await stim.getByRole('checkbox', { name: 'Soalan 2' }).check()
-    await expect(
-      page.getByTestId('group-header'),
-      'one group header for the shared stimulus',
-    ).toHaveCount(1)
-    await completeIntakeQuestions(page, st.tag)
-    observe(info, `manual batch ${id}; gate: ${(await gateIssues(page)) || 'no issues'}`)
-    saveState(info, { manualBatch: { id, submitted: false, groups: 1, questions: 2 } })
-    await expectNoHScroll(page)
-    const submit = page.getByTestId('submit-review')
-    await expect(submit, 'Hantar untuk semakan enabled (no blocking issues)').toBeEnabled()
-    await submitBatch(page, info)
-    saveState(info, { manualBatch: { id, submitted: true, groups: 1, questions: 2 } })
+  })
+
+  test('S1f admin Studio standalone MCQ with a stem picture (no group)', async ({ page }, info) => {
+    const st = readState(info)
+    await login(page, ADMIN)
+    const text = `${st.tag} studio-3: Berapakah hasil tambah 12 dan 30?`
+    const q = await studioMcq(page, info, { stem: text, number: '3', image: true })
+    expect(q.id, 'saved').not.toBe('')
+    expect(q.groupId, 'a standalone question has no group').toBe('')
+    saveState(info, { studioSingle: { id: q.id, text } })
   })
 
   /** Bank Soalan: select every row of the run and apply one bulk action; returns the API result. */
@@ -841,12 +945,21 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     return out
   }
 
-  test('S2a admin approves the Bank Soalan questions (Luluskan)', async ({ page }, info) => {
+  test('S2a admin approves the Bank Soalan questions (Hantar untuk Semakan, bulk Terbitkan)', async ({
+    page,
+  }, info) => {
     const st = readState(info)
-    test.skip(!st.formQuestion && !st.csvQuestions, 'Blocked: S1a/S1b created no question')
+    test.skip(
+      !st.formQuestion && !st.csvQuestions && !st.studioGroup && !st.studioSingle,
+      'Blocked: S1a/S1b/S1d/S1f created no question',
+    )
     await login(page, ADMIN)
     const n =
-      (st.formQuestion ? 1 : 0) + (st.controlQuestion ? 1 : 0) + (st.csvQuestions?.length ?? 0)
+      (st.formQuestion ? 1 : 0) +
+      (st.controlQuestion ? 1 : 0) +
+      (st.csvQuestions?.length ?? 0) +
+      (st.studioGroup?.questionIds.length ?? 0) +
+      (st.studioSingle ? 1 : 0)
     // V3 lifecycle: Draf -> "Hantar untuk Semakan" (question detail) -> "Luluskan" (bulk bar).
     const ids = (await runQuestions(page, st.tag)).map((q) => q.id)
     observe(info, `${ids.length} run question(s) found`)
@@ -880,14 +993,16 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
         )
     }
     observe(info, `Hantar untuk Semakan succeeded on ${sent} of ${ids.length} question(s)`)
-    const res = await bulkOnRun(page, st.tag, 'Luluskan', info)
+    // ADR-0027: in http mode the approve bulk action is labelled "Terbitkan" (wire action `approved`); "Luluskan" is the
+    // mock-mode label only (lib/question-list.ts HTTP_HIDDEN_BULK_ACTIONS).
+    const res = await bulkOnRun(page, st.tag, 'Terbitkan', info)
     saveState(info, {
       approvedM04: res.affected,
       ...(res.affected ? { servableAt: Date.now() } : {}),
     })
     await expectNoHScroll(page)
     expect(sent, '"Hantar untuk Semakan" succeeded on every question').toBe(ids.length)
-    expect(res.failed, 'no question refused by Luluskan').toEqual([])
+    expect(res.failed, 'no question refused by bulk Terbitkan (approve)').toEqual([])
     expect(res.affected, 'every run question approved (Diluluskan)').toBe(n)
   })
 
@@ -895,7 +1010,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     page,
   }, info) => {
     const st = readState(info)
-    test.skip(!st.formQuestion && !st.csvQuestions, 'Blocked: S1a/S1b created no question')
+    test.skip(
+      !st.formQuestion && !st.csvQuestions && !st.studioGroup && !st.studioSingle,
+      'Blocked: S1a/S1b/S1d/S1f created no question',
+    )
     test.skip(!!st.approvedM04, 'Not needed: S2a approved the questions through the UI')
     // NOT a UI pass: the same POST /api/questions/bulk-action the screens use, with string ids
     // (the detail page sends numeric ids and gets 422, bug R1E2E-03). Only "approved" is applied,
@@ -910,8 +1028,13 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
         headers: { 'x-csrf-token': csrf },
         data: { action, ids },
       })
-      const body = (await res.json().catch(() => ({}))) as { data?: { affected?: number } }
-      out.push(`${action}: HTTP ${res.status()} affected ${body.data?.affected ?? '?'}`)
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: { affected?: number; failed?: { id?: string | number; message: string }[] }
+      }
+      const refused = [...new Set((body.data?.failed ?? []).map((f) => f.message))]
+      out.push(
+        `${action}: HTTP ${res.status()} affected ${body.data?.affected ?? '?'}${refused.length ? ` refused: ${refused.join(' / ')}` : ''}`,
+      )
       if (action === 'approved') approved = body.data?.affected ?? 0
     }
     observe(info, `API-assisted on ${ids.length} id(s): ${out.join('; ')}`)
@@ -924,8 +1047,13 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await expectNoHScroll(page)
     saveState(info, { approvedViaApi: approved, servableAt: Date.now() })
     // Since T04 (BASE-4) the approve gate refuses a question without a DSKP unit + SP (AC-R1-14.4 /
-    // PIPE AC-03.2), so the untagged CSV rows stay in review; the DSKP-tagged form MCQs approve.
-    const tagged = (st.formQuestion ? 1 : 0) + (st.controlQuestion ? 1 : 0)
+    // PIPE AC-03.2), so the untagged CSV rows stay in review; the DSKP-tagged form MCQs and the
+    // Studio group members (unit, SP, TP and Aras pemikiran per leaf, T33) are expected to approve.
+    const tagged =
+      (st.formQuestion ? 1 : 0) +
+      (st.controlQuestion ? 1 : 0) +
+      (st.studioGroup?.questionIds.length ?? 0) +
+      (st.studioSingle ? 1 : 0)
     expect(approved, 'every DSKP-tagged run question approved through the API').toBe(tagged)
   })
 
@@ -1058,7 +1186,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
   }, info) => {
     const st = readState(info)
     test.skip(st.baseline?.databankMath === undefined, 'Blocked: S0 baseline missing')
-    test.skip(!st.publishedM04, 'Not applicable since BASE-4: S5a-S5c cover the served (approved) questions')
+    test.skip(
+      !st.publishedM04,
+      'Not applicable since BASE-4: S5a-S5c cover the served (approved) questions',
+    )
     await waitOutBankCache(page, st.publishedAt)
     await login(page, PUPIL_T4)
     const databank = await cardCount(
@@ -1141,6 +1272,8 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     for (let i = 0; i < offered; i++) await picks.first().click()
     // Fill the rest of the blueprint from the bank so the paper can be published.
     await search.fill('')
+    await page.waitForTimeout(1000)
+    observe(info, `bank candidates left in the picker (empty search): ${await picks.count()}`)
     const issues = page.getByTestId('budget-issues')
     for (let guard = 0; guard < 45; guard++) {
       if ((await issues.count()) === 0) break
@@ -1166,7 +1299,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     )
     observe(
       info,
-      `D90 group units in the paper: ${await page.locator('[data-testid^=unit-group-]').count()} (bank groups; no admin group exists because S1c/S1d are refused)`,
+      `D90 group units in the paper: ${await page.locator('[data-testid^=unit-group-]').count()}, of which the run's own: ${await page.locator('[data-testid^=unit-group-]').filter({ hasText: tag }).count()}`,
     )
     if (offered > 0) {
       const saved = page.waitForResponse((r) => isApi(r, 'PUT', /\/api\/admin\/papers\/[^/]+$/), {
@@ -1292,7 +1425,53 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       offered,
       "the admin's published questions are offered in the paper picker",
     ).toBeGreaterThanOrEqual(1)
+    if (st.studioGroup) await expectGroupMovesAsUnit(page, info, st.studioGroup.texts)
   })
+
+  /**
+   * S1d's D90 group in Pembina Kertas: placed as ONE unit holding both members ("2 soalan bergerak bersama"); "Naik" / "Turun"
+   * moves the whole unit one place and both members stay together; the paper is saved again.
+   */
+  async function expectGroupMovesAsUnit(
+    page: Page,
+    info: TestInfo,
+    texts: string[],
+  ): Promise<void> {
+    const units = page.locator('[data-testid=section-0] [data-testid^="unit-"]')
+    const group = page
+      .locator('[data-testid^=unit-group-]')
+      .filter({ hasText: texts[0]!.slice(0, 40) })
+    const placed = await group.count()
+    observe(info, `run's Studio group placed as unit(s): ${placed}`)
+    expect(placed, 'the Studio group is placed as one unit').toBe(1)
+    for (const t of texts)
+      await expect(group, `member "${t.slice(-40)}" inside the group unit`).toContainText(
+        t.slice(0, 40),
+      )
+    await expect(group).toContainText(`${texts.length} soalan`)
+    const testids = async () =>
+      units.evaluateAll((els) => els.map((e) => e.getAttribute('data-testid') ?? ''))
+    const gid = (await group.getAttribute('data-testid')) ?? ''
+    const before = (await testids()).indexOf(gid)
+    const dir = before > 0 ? 'Naik' : 'Turun'
+    await group.getByRole('button', { name: dir, exact: true }).click()
+    const after = (await testids()).indexOf(gid)
+    observe(
+      info,
+      `group unit ${gid} at position ${before + 1} -> "${dir}" -> ${after + 1} of ${await units.count()}`,
+    )
+    expect(after, `"${dir}" moves the group unit by one place`).toBe(
+      before + (dir === 'Naik' ? -1 : 1),
+    )
+    for (const t of texts)
+      await expect(group, 'members still together after the move').toContainText(t.slice(0, 40))
+    const saved = page.waitForResponse((r) => isApi(r, 'PUT', /\/api\/admin\/papers\/[^/]+$/), {
+      timeout: 20_000,
+    })
+    await page.getByTestId('paper-save').click()
+    expect((await saved).status(), 'Simpan draf after the move').toBeLessThan(300)
+    await expectNoHScroll(page)
+  }
 
   test('S3c Terbit: the paper publishes (review shows no blockers)', async ({ page }, info) => {
     const st = readState(info)
@@ -1304,7 +1483,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     expect(ok, 'published paper offers Tarik balik').toBe(true)
   })
 
-  test('S4a pupil T4 sits the admin paper (form MCQ with image) in Bijak SPM and submits', async ({
+  test('S4a pupil T4 sits the admin paper (admin MCQs with a stem picture) in Bijak SPM and submits', async ({
     page,
   }, info) => {
     const st = readState(info)
@@ -1344,30 +1523,201 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     if (!st.attempt?.submitted) saveState(info, { attempt: { id, submitted: true } })
   })
 
-  test('S4b pupil self-marks a written part (Simpan markah)', async ({ page }, info) => {
+  /**
+   * API-ASSISTED (REQ-B-003, team A answer): the bank has no honest structured Kertas 2 pool (3 structured questions; every
+   * K2 blueprint needs >= 5), and Pembina Kertas cannot publish a paper short of its blueprint on BASE-27. So this step makes,
+   * over the same admin API the screens use (as the H-A9 chain spec does), the questions a Matematik Kertas 2 paper needs:
+   * one structured question per slot with one written ("working") part, marks = the section budget per answered question, the
+   * DSKP tags of the S1f Studio question (unit, SP, TP 3) and Aras pemikiran per leaf (T33); review -> approved; then a
+   * 1449/2 paper is created, every section filled with placements and Terbit. NOT a UI pass for any of these steps: it only
+   * gives S4b a published admin paper with a written part, so the pupil-side self-mark can be exercised in the UI.
+   */
+  test('S3e API-assisted: structured Kertas 2 paper (1449/2) for the self-mark check', async ({
+    page,
+  }, info) => {
     const st = readState(info)
-    test.skip(!st.attempt?.submitted, 'Blocked: no submitted attempt of an admin paper (S4a, S4a2)')
-    await login(page, PUPIL_T4)
-    await page.goto(`/spm/bijak/percubaan/${st.attempt!.id}/keputusan`)
-    await expect(page.getByTestId('win-screen')).toBeVisible()
-    test.skip(
-      (await page.getByTestId('provisional').count()) === 0,
-      'Blocked: the admin paper has no written (self-markable) part: it holds only MCQs, because the written/D90 intake path (S1c, S1d) is refused on BASE-1. Self-mark itself is covered by B-02.',
+    const src = st.studioSingle?.id ?? st.studioGroup?.questionIds[0]
+    test.skip(!src, 'Blocked: no DSKP-complete Studio question to copy the tags from (S1d/S1f)')
+    await login(page, ADMIN)
+    const csrf = await csrfOf(page)
+    const post = (path: string, data: unknown) =>
+      page.request.post(path, { headers: { 'x-csrf-token': csrf }, data })
+    const getData = async <T>(path: string): Promise<T> => {
+      const r = await page.request.get(path)
+      expect(r.status(), `GET ${path}`).toBe(200)
+      return ((await r.json()) as { data: T }).data
+    }
+    const q = await getData<{
+      subjectId: string
+      educationLevelId: string
+      tag: { unitId: string; spIds: string[]; tp: number }
+    }>(`/api/questions/${src}`)
+    const title = `${st.tag} kertas 2 berstruktur`
+    const created = await post('/api/admin/papers', { subject: 'MAT', kertas: 2, title })
+    expect(created.status(), `POST /api/admin/papers ${await created.text()}`).toBe(201)
+    const paperId = String(((await created.json()) as { data: { id: string } }).data.id)
+    type Sec = {
+      id: string
+      label: string
+      markBudget: number
+      questionCount: number
+      rule: { type: string; n?: number }
+    }
+    const sections = (await getData<{ paper: { sections: Sec[] } }>(`/api/admin/papers/${paperId}`))
+      .paper.sections
+    const made: string[] = []
+    const plan: { section: string; ids: string[] }[] = []
+    for (const s of sections) {
+      const answered = s.rule.type === 'choose' ? (s.rule.n ?? 1) : s.questionCount
+      const base = Math.floor(s.markBudget / answered)
+      const ids: string[] = []
+      for (let i = 0; i < s.questionCount; i++) {
+        // choose-N: every question carries the full per-answer mark; "all": the budget split, remainder on the first.
+        const marks =
+          s.rule.type === 'choose' ? base : base + (i === 0 ? s.markBudget - base * answered : 0)
+        const res = await post('/api/questions', {
+          subjectId: q.subjectId,
+          educationLevelId: q.educationLevelId,
+          difficultyLevel: 3,
+          questionType: 'essay',
+          questionText: `${st.tag} k2 ${s.label} ${i + 1}: Selesaikan persamaan kuadratik dan tunjukkan langkah kerja.`,
+          kertas: '2',
+          tag: { unitId: q.tag.unitId, spIds: q.tag.spIds, tp: 3 },
+          parts: [
+            {
+              label: 'a',
+              mode: 'working',
+              prompt: { ms: 'Tunjukkan langkah kerja anda.' },
+              marks,
+              cognitiveLevel: 'mengaplikasi',
+              difficultyTp: 3,
+              key: {
+                kind: 'points',
+                marks,
+                points: Array.from({ length: marks }, (_, k) => ({
+                  id: `p${k + 1}`,
+                  code: k === marks - 1 ? 'N' : 'M',
+                  label: `Langkah ${k + 1}`,
+                  marks: 1,
+                  text: { ms: `langkah ${k + 1}` },
+                })),
+              },
+            },
+          ],
+        })
+        expect(res.status(), `POST /api/questions ${(await res.text()).slice(0, 300)}`).toBe(201)
+        const id = String(((await res.json()) as { data: { id: string } }).data.id)
+        ids.push(id)
+        made.push(id)
+      }
+      plan.push({ section: s.id, ids })
+    }
+    for (const action of ['review', 'approved']) {
+      const res = await post('/api/questions/bulk-action', { action, ids: made })
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: { affected?: number; failed?: { message: string }[] }
+      }
+      observe(
+        info,
+        `${action}: HTTP ${res.status()} affected ${body.data?.affected ?? '?'} of ${made.length}${body.data?.failed?.length ? ` refused: ${[...new Set(body.data.failed.map((f) => f.message))].join(' / ')}` : ''}`,
+      )
+      expect(body.data?.affected, `${action} on every structured question`).toBe(made.length)
+    }
+    for (const p of plan)
+      for (const id of p.ids) {
+        const res = await post(`/api/admin/papers/${paperId}/placements`, {
+          sectionId: p.section,
+          questionId: id,
+        })
+        expect(res.status(), `placement ${id}: ${(await res.text()).slice(0, 200)}`).toBe(201)
+      }
+    const pub = await post(`/api/admin/papers/${paperId}/publish`, {})
+    const pubBody = await pub.text()
+    observe(
+      info,
+      `API-assisted: ${made.length} structured questions (${sections.map((s) => `${s.label} ${s.questionCount}q/${s.markBudget}m`).join(', ')}); paper ${paperId}; publish -> HTTP ${pub.status()} ${pubBody.slice(0, 300)}`,
     )
+    const ok = pub.status() === 200 && /"ok":true/.test(pubBody)
+    saveState(info, {
+      writtenPaper: { id: paperId, title, published: ok, hasAdminQuestion: true },
+    })
+    expect(ok, 'the structured Kertas 2 paper is Terbit').toBe(true)
+    await page.goto(`/admin/spm/kertas/${paperId}`)
+    await expect(page.getByTestId('paper-editor-page')).toBeVisible()
+    await expectNoHScroll(page)
+  })
+
+  test('S4b pupil self-marks a written part of an admin paper (Simpan markah)', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(
+      !st.writtenPaper?.published,
+      'Blocked: no published admin paper with a written part (S3e API-assisted K2 paper not published; the MCQ papers of S3b/S3d have no written part)',
+    )
+    // The sitting, the answers, Hantar and the self-mark are all UI; only the paper came from the API (S3e).
+    await login(page, PUPIL_T4)
+    await page.goto('/spm/bijak')
+    await expect(page.getByTestId('bijak-hub')).toBeVisible()
+    const card = page.locator('[data-testid^=paper-]', { hasText: st.writtenPaper!.title }).first()
+    await expect(card, 'the structured admin paper on the hub').toBeVisible()
+    await expectNoHScroll(page)
+    await card.locator('[data-testid^=open-]').click()
+    await expect(page.getByTestId('bijak-cover')).toBeVisible()
+    await page.locator('[data-ds=hero-cta]').click()
+    await expect(page.getByTestId('attempt-shell'), 'the sitting starts').toBeVisible()
+    await expect(page.getByTestId('attempt-loading')).toHaveCount(0)
+    await expect(page.getByTestId('next').or(page.getByTestId('submit')).first()).toBeVisible()
+    await expectNoHScroll(page)
+    let written = 0
+    for (let guard = 0; guard < 40; guard++) {
+      // A "working" part: "Jalan kerja" steps and "Jawapan akhir" (MathField inputs).
+      const steps = page.locator('[data-testid=math-input]:visible')
+      if ((await steps.count()) > 0) {
+        await steps.first().fill('(x - 2)(x - 3) = 0')
+        await steps.last().fill('x = 2 atau x = 3')
+        written++
+      }
+      if (!(await page.getByTestId('next').isVisible())) break
+      await page.getByTestId('next').click()
+    }
+    observe(info, `written answers entered: ${written}`)
+    await page.getByTestId('submit').click()
+    await page.getByTestId('confirm-submit').click()
+    await expect(page.getByTestId('win-screen')).toBeVisible()
+    const headline = async () =>
+      (await page.getByTestId('win-screen').innerText())
+        .split('\n')
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(' / ')
+    observe(info, `result before self-mark: ${await headline()}`)
+    saveState(info, { writtenAttempt: /percubaan\/([^/?#]+)/.exec(page.url())?.[1] ?? '' })
     await selfMarkOne(page, info)
+    await page.reload()
+    await expect(page.getByTestId('win-screen')).toBeVisible()
+    observe(info, `result after self-mark + reload: ${await headline()}`)
     await expectNoHScroll(page)
   })
 
   test('S4c pupil sees the result (score / max, per Bahagian)', async ({ page }, info) => {
     const st = readState(info)
-    test.skip(!st.attempt?.submitted, 'Blocked: no submitted attempt of an admin paper (S4a, S4a2)')
+    // S4a/S4a2 MCQ sittings first; else the UI sitting of the API-assisted structured paper (S3e/S4b), labelled as such.
+    const att = st.attempt?.submitted ? st.attempt.id : st.writtenAttempt
+    test.skip(!att, 'Blocked: no submitted attempt of an admin paper (S4a, S4a2, S4b)')
+    observe(
+      info,
+      st.attempt?.submitted
+        ? `sitting of the admin MCQ paper (S4a/S4a2)`
+        : 'sitting of the API-assisted structured K2 paper (S3e), sat in the UI (S4b)',
+    )
     await login(page, PUPIL_T4)
-    await page.goto(`/spm/bijak/percubaan/${st.attempt!.id}/keputusan`)
+    await page.goto(`/spm/bijak/percubaan/${att!}/keputusan`)
     await expect(page.getByTestId('win-screen')).toBeVisible()
     await expect(page.getByTestId('section-score').first()).toBeVisible()
     observe(
       info,
-      `attempt ${st.attempt!.id}; headline: ${(await page.getByTestId('win-screen').innerText()).split('\n').filter(Boolean).slice(0, 2).join(' / ')}; sections: ${(await page.getByTestId('section-score').allInnerTexts()).join(', ')}; questions listed: ${await page.locator('[data-testid^=result-q-]').count()}`,
+      `attempt ${att!}; headline: ${(await page.getByTestId('win-screen').innerText()).split('\n').filter(Boolean).slice(0, 2).join(' / ')}; sections: ${(await page.getByTestId('section-score').allInnerTexts()).join(', ')}; questions listed: ${await page.locator('[data-testid^=result-q-]').count()}`,
     )
     await expectNoHScroll(page)
   })
@@ -1376,28 +1726,91 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     page,
   }, info) => {
     const st = readState(info)
-    test.skip(!st.attempt?.submitted, 'Blocked: no submitted attempt of an admin paper (S4a, S4a2)')
+    // S4a/S4a2 MCQ sittings first; else the UI sitting of the API-assisted structured paper (S3e/S4b), labelled as such.
+    const att = st.attempt?.submitted ? st.attempt.id : st.writtenAttempt
+    test.skip(!att, 'Blocked: no submitted attempt of an admin paper (S4a, S4a2, S4b)')
+    observe(
+      info,
+      st.attempt?.submitted
+        ? `sitting of the admin MCQ paper (S4a/S4a2)`
+        : 'sitting of the API-assisted structured K2 paper (S3e), sat in the UI (S4b)',
+    )
     await login(page, PUPIL_T4)
-    await page.goto(`/spm/bijak/percubaan/${st.attempt!.id}/keputusan`)
+    await page.goto(`/spm/bijak/percubaan/${att!}/keputusan`)
     await expect(page.getByTestId('retry'), 'Cuba Lagi on the result').toBeVisible()
     await page.getByTestId('retry').click()
     await expect(page).toHaveURL(/\/spm\/bijak\/percubaan\/[^/]+$/)
-    expect(page.url(), 'a different attempt id').not.toContain(st.attempt!.id)
+    expect(page.url(), 'a different attempt id').not.toContain(att!)
     await expect(page.getByTestId('attempt-shell')).toBeVisible()
-    observe(info, `old ${st.attempt!.id} -> new ${new URL(page.url()).pathname}`)
+    observe(info, `old ${att!} -> new ${new URL(page.url()).pathname}`)
     await expectNoHScroll(page)
   })
 
   test('S4e pupil T5 sees the admin paper on the Bijak SPM hub', async ({ page }, info) => {
     const st = readState(info)
-    const paper = st.paper?.published ? st.paper : st.controlPaper
-    test.skip(!paper?.published, 'Blocked: no admin-built paper was published (S3c, S3d)')
+    const paper = st.paper?.published
+      ? st.paper
+      : st.controlPaper?.published
+        ? st.controlPaper
+        : st.writtenPaper
+    test.skip(!paper?.published, 'Blocked: no admin-built paper was published (S3c, S3d, S3e)')
+    observe(
+      info,
+      paper === st.writtenPaper
+        ? 'paper: the API-assisted structured K2 paper (S3e)'
+        : 'paper: built in Pembina Kertas',
+    )
     await login(page, PUPIL_T5)
     await page.goto('/spm/bijak')
     await expect(page.getByTestId('bijak-hub')).toBeVisible()
     await expect(
       page.locator('[data-testid^=paper-]', { hasText: paper!.title }).first(),
     ).toBeVisible()
+    await expectNoHScroll(page)
+  })
+
+  test('S6 pupil T4 Jana Kertas: Matematik Tambahan Kertas 2 (blueprint 3472/2, T26 seed)', async ({
+    page,
+  }, info) => {
+    // T26 moves 3472/2 to Disahkan with serves_students. The pupil generates a paper from the bank; 201 (cover opens) or
+    // 422 SHORTAGE (the shortage alert lists what is missing) are both the documented outcomes (docs/ops/e2e-seed.md).
+    await login(page, PUPIL_T4)
+    await page.goto('/spm/bijak?tab=jana')
+    await expect(page.getByTestId('tab-jana')).toBeVisible()
+    await expectNoHScroll(page)
+    await page.getByTestId('jana-subject').click()
+    await page.getByRole('option', { name: 'Matematik Tambahan', exact: true }).click()
+    await page.getByTestId('jana-kertas').click()
+    await page.getByRole('option', { name: 'Kertas 2', exact: true }).click()
+    const contract = page.getByTestId('contract')
+    await expect(contract, 'the 3472/2 contract is offered to the pupil').toBeVisible()
+    observe(info, `contract: ${(await contract.innerText()).replace(/\s+/g, ' ').slice(0, 200)}`)
+    await expect(page.getByTestId('no-contract')).toHaveCount(0)
+    const posted = page.waitForResponse(
+      (r) => isApi(r, 'POST', /\/api\/bijak\/papers\/generate$/),
+      {
+        timeout: 60_000,
+      },
+    )
+    await page.getByTestId('generate').click()
+    const res = await posted
+    const body = await res.text().catch(() => '')
+    observe(info, `POST /api/bijak/papers/generate -> HTTP ${res.status()} ${body.slice(0, 400)}`)
+    if (res.status() === 422 && /"SHORTAGE"/.test(body)) {
+      const alert = page.getByTestId('shortage')
+      await expect(alert, 'the shortage is explained to the pupil').toBeVisible()
+      observe(info, `shown: ${(await alert.innerText()).replace(/\s+/g, ' ').slice(0, 300)}`)
+    } else {
+      expect(res.status(), 'Jana Kertas created a paper').toBe(201)
+      await expect(
+        page.getByTestId('bijak-cover'),
+        'the generated paper opens on its cover',
+      ).toBeVisible()
+      observe(
+        info,
+        `cover: ${(await page.getByTestId('bijak-cover').innerText()).split('\n').filter(Boolean).slice(0, 3).join(' / ')}`,
+      )
+    }
     await expectNoHScroll(page)
   })
 
@@ -1479,7 +1892,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     } catch {
       /* no B-02 attempt */
     }
-    test.skip(!attemptId, 'Blocked: B-02 produced no submitted attempt')
+    // B-02 sits a PoC paper; with BIJAK_POC_QUESTIONS=false that sitting cannot start, so fall back to the S4b sitting.
+    if (!attemptId) attemptId = readState(info).writtenAttempt ?? ''
+    observe(info, `attempt used: ${attemptId || 'none'}`)
+    test.skip(!attemptId, 'Blocked: neither B-02 nor S4b produced a submitted attempt')
     await login(page, PUPIL_T4)
     await page.goto(`/spm/bijak/percubaan/${attemptId}/keputusan`)
     await expect(page.getByTestId('win-screen')).toBeVisible()

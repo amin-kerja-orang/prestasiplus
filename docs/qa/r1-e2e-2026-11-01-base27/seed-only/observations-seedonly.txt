@@ -1,0 +1,16 @@
+[mobile] PASS S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter)
+    observed: Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+[mobile] PASS B-01 Soalan by Chapter shows subjects or an empty-state message
+    observed: GET chapter-subjects: {"data":[],"meta":{"page":1,"pageSize":1,"totalItems":0,"totalPages":1,"from":null,"to":null}}
+    observed: subject tiles 0, empty-state texts 1
+[tablet] PASS S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter)
+    observed: Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+[tablet] PASS B-01 Soalan by Chapter shows subjects or an empty-state message
+    observed: GET chapter-subjects: {"data":[],"meta":{"page":1,"pageSize":1,"totalItems":0,"totalPages":1,"from":null,"to":null}}
+    observed: subject tiles 0, empty-state texts 1
+[desktop] PASS S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter)
+    observed: Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+[desktop] PASS B-01 Soalan by Chapter shows subjects or an empty-state message
+    observed: GET chapter-subjects: {"data":[],"meta":{"page":1,"pageSize":1,"totalItems":0,"totalPages":1,"from":null,"to":null}}
+    observed: subject tiles 0, empty-state texts 1
+{"mobile":{"passed":2},"tablet":{"passed":2},"desktop":{"passed":2}}
