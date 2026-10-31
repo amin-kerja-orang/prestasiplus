@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildOpenApiDocument } from '../../openapi'
+import { SERVABILITY_BATCH_MAX, ServabilityBatchRequestSchema, ServabilityLaneQuerySchema, ServabilityOverviewSchema } from '../reads'
 import {
   SERVABILITY_ACTIVITIES,
   SERVABILITY_ACTIVITY_LABELS,
@@ -47,6 +48,37 @@ describe('servability contract (R1-T29)', () => {
     const doc = buildOpenApiDocument() as { components: { schemas: Record<string, unknown> } }
     for (const id of ['ServabilityReport', 'ServabilityActivityResult', 'ServabilityReason', 'ServabilityReasonCode', 'ServabilityActivity']) {
       expect(doc.components.schemas[id], id).toBeDefined()
+    }
+  })
+})
+
+describe('servability reads contract (R1-T30)', () => {
+  it('caps the batch at 100 ids with BM messages, rejects extra keys', () => {
+    expect(ServabilityBatchRequestSchema.safeParse({ ids: ['1'] }).success).toBe(true)
+    const tooMany = ServabilityBatchRequestSchema.safeParse({ ids: Array.from({ length: SERVABILITY_BATCH_MAX + 1 }, (_, i) => String(i + 1)) })
+    expect(tooMany.success).toBe(false)
+    expect(JSON.stringify(tooMany.error?.issues)).toContain('Paling banyak 100 soalan sekali gus.')
+    expect(ServabilityBatchRequestSchema.safeParse({ ids: [] }).success).toBe(false)
+    expect(ServabilityBatchRequestSchema.safeParse({ ids: ['1'], x: 1 }).success).toBe(false)
+  })
+
+  it('lane query: page 1 and size 25 by default, bounded page size and search', () => {
+    expect(ServabilityLaneQuerySchema.parse({})).toMatchObject({ page: 1, pageSize: 25 })
+    expect(ServabilityLaneQuerySchema.safeParse({ pageSize: '101' }).success).toBe(false)
+    expect(ServabilityLaneQuerySchema.safeParse({ page: '0' }).success).toBe(false)
+    expect(ServabilityLaneQuerySchema.safeParse({ search: 'x'.repeat(101) }).success).toBe(false)
+  })
+
+  it('overview has one entry per activity', () => {
+    const activities = SERVABILITY_ACTIVITIES.map((activity) => ({ activity, label: SERVABILITY_ACTIVITY_LABELS[activity], served: 1, total: 2, attention: 1, basis: 'sql' as const }))
+    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities }).success).toBe(true)
+    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities: activities.slice(1) }).success).toBe(false)
+  })
+
+  it('registers the five routes under /admin/servability', () => {
+    const doc = buildOpenApiDocument() as { paths: Record<string, unknown> }
+    for (const p of ['/admin/servability/questions/{id}', '/admin/servability/questions/batch', '/admin/servability/overview', '/admin/servability/lanes/databank', '/admin/servability/lanes/bijak-spm']) {
+      expect(doc.paths[p] ?? doc.paths[`/api${p}`], p).toBeDefined()
     }
   })
 })
