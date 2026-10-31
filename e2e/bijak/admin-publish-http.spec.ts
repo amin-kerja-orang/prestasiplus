@@ -211,7 +211,8 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     await page.goto('/admin/spm/kertas')
     const id = await createDraft(page, title)
     try {
-      await page.getByTestId('paper-publish').click()
+      // R1-F09: Terbitkan is disabled while the check fails; the reason is shown as text.
+      await expect(page.getByTestId('paper-publish')).toBeDisabled()
       await expect(page.getByTestId('publish-errors')).toContainText(
         'Kertas belum boleh diterbitkan: selesaikan',
       )

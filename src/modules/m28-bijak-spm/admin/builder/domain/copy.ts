@@ -109,6 +109,8 @@ export const builderCopy = {
   blueprintNeedsReview: 'Blueprint perlu semakan', // contract copy
   reviewOk: 'Tiada masalah menghalang penerbitan.', // [PROPOSED]
   publishPanel: 'Penerbitan', // V2
+  publishSaveFirst: 'Terbitkan dinyahaktifkan: simpan draf dahulu supaya semakan dapat dijalankan.', // [PROPOSED]
+  publishCheckFailed: 'Terbitkan dinyahaktifkan: semakan kertas tidak dapat dijalankan. Muat semula dan cuba lagi.', // [PROPOSED]
   publishDisabledWhy: (n: number): string => `Terbitkan dinyahaktifkan: ${n} masalah perlu dibetulkan.`, // [PROPOSED]
   notPublishable: (n: number): string => `Kertas ini belum boleh diterbitkan — ${n} masalah perlu dibetulkan.`, // V2
   publishedFlash: (t: string): string => `Kertas '${t}' telah DITERBITKAN — kini boleh diakses pelajar di Simulasi.`, // V2

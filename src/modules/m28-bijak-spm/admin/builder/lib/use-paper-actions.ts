@@ -10,6 +10,7 @@ import { useRouter } from 'vue-router'
 import { useFlash } from '@/composables/useFlash'
 
 import { builderCopy as t } from '../domain/copy'
+import { publishGate } from '../domain/publish-gate'
 import { builderMessage, builderPath, type BuilderApi } from '../server/api'
 
 export interface PaperActionsOptions {
@@ -50,10 +51,11 @@ export function usePaperActions(o: PaperActionsOptions) {
 
   const blockers = computed(() => review.value?.blockers ?? [])
   /** Terbitkan is off while the server still lists a blocker; the reason is shown next to it. */
-  const publishBlocked = computed(() => blockers.value.length > 0)
-  const publishReason = computed(() =>
-    publishBlocked.value ? t.publishDisabledWhy(blockers.value.length) : '',
+  const gate = computed(() =>
+    publishGate({ localIssues: 0, dirty: false, reviewFailed: reviewError.value, blockers: blockers.value.length }),
   )
+  const publishBlocked = computed(() => gate.value.blocked)
+  const publishReason = computed(() => gate.value.reason)
 
   async function publish(): Promise<boolean> {
     if (busy.value || publishBlocked.value) return false

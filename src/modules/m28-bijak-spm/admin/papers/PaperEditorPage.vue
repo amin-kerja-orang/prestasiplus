@@ -20,6 +20,7 @@ import PaperMetaForm from '../builder/components/PaperMetaForm.vue'
 import ReviewBlock from '../builder/components/ReviewBlock.vue'
 import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
 import { builderCopy as bt } from '../builder/domain/copy'
+import { publishGate } from '../builder/domain/publish-gate'
 import { usePaperActions } from '../builder/lib/use-paper-actions'
 import { builderMessage, builderPath } from '../builder/server/api'
 import { builderServer } from '../builder/server/client'
@@ -108,10 +109,16 @@ const allIssues = computed(() => [
 ])
 
 /** Terbitkan stays off while a local check fails, or (nothing unsaved) the server lists a blocker. */
-const publishBlockedCount = computed(() =>
-  allIssues.value.length ? allIssues.value.length : dirty.value ? 0 : actions.blockers.value.length,
+const gate = computed(() =>
+  publishGate({
+    localIssues: allIssues.value.length,
+    dirty: dirty.value,
+    reviewFailed: actions.reviewError.value,
+    blockers: actions.blockers.value.length,
+  }),
 )
-const publishBlocked = computed(() => publishBlockedCount.value > 0)
+const publishBlockedCount = computed(() => gate.value.count)
+const publishBlocked = computed(() => gate.value.blocked)
 
 const stats = computed<StatItem[]>(() => [
   {
@@ -459,7 +466,10 @@ const previewBlocks = computed(() => {
           role="status"
           data-testid="publish-errors"
         >
-          Kertas belum boleh diterbitkan: selesaikan {{ publishBlockedCount }} perkara di atas.
+          <template v-if="publishBlockedCount">
+            Kertas belum boleh diterbitkan: selesaikan {{ publishBlockedCount }} perkara di atas.
+          </template>
+          <template v-else>{{ gate.reason }}</template>
         </p>
         <p v-else-if="publishErrors.length" class="mt-2 text-body font-semibold text-error" role="alert">
           Kertas belum boleh diterbitkan: selesaikan {{ publishErrors.length }} perkara di atas.
