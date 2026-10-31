@@ -44,6 +44,7 @@ interface BlueprintBody {
   totalMarks?: number | undefined
   notes?: string | null | undefined
   subPartRamp?: boolean | undefined
+  autoMarkable?: boolean | null | undefined
   kbatMarks?: number | null | undefined
   levelShare?: { t4: number; t5: number } | null | undefined
   instructions?: string[] | undefined
@@ -349,6 +350,7 @@ export class BlueprintsService {
       totalMarks: b.sections.reduce((n, s) => n + s.markBudget, 0),
       notes: b.notes ?? null,
       subPartRamp: b.subPartRamp ?? false,
+      autoMarkable: b.autoMarkable ?? null,
       kbatMarks: b.kbatMarks ?? null,
       levelShare: b.levelShare ?? null,
       structureHash: extra.structureHash,

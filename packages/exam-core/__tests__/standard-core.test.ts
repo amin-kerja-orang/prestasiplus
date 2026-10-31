@@ -384,6 +384,54 @@ describe('checkEvidence', () => {
     expect(marks.statements).toHaveLength(4)
   })
 
+  // H-A15 (iii), AC-39.7 / AC-39.8 / SPP 10.3: a skema prints the marks of every offered question, so on a choose-N section its
+  // Markah is the OFFERED marks (here 15 / 1 x 2 = 30); the trial paper states the effective budget (15). Each has its own figure.
+  describe('Markah of a skema on a choose-N section (H-A15 iii)', () => {
+    const marksAt = (r: ReturnType<typeof checkEvidence>, position: number) => r.lines.find((l) => l.field === 'markBudget' && l.sectionPosition === position)!
+    const twoBodies = (skemaMarks: EvidenceItem['values']) => [
+      item('1', 'trial_paper', 'sbp', full()),
+      item('2', 'skema', 'sbp', skemaMarks),
+      item('3', 'trial_paper', 'selangor_mpsm', full()),
+      item('4', 'skema', 'selangor_mpsm', skemaMarks),
+    ]
+
+    it('a choose section: the skema offered marks (30) agree with the budget 15, the line is ok and the check passes', () => {
+      expect(offeredMarks(bp.sections[1]!)).toBe(30)
+      const r = checkEvidence(bp, twoBodies({ totalMarks: 55, sections: [{ position: 1, markBudget: 40 }, { position: 2, markBudget: 30 }] }))
+      expect(marksAt(r, 2)).toMatchObject({ status: 'ok', expected: 15, supportingBodies: 2 })
+      expect(marksAt(r, 2).statements.map((s) => s.value)).toEqual([15, 30, 15, 30])
+      expect(r.passes).toBe(true)
+    })
+
+    it('a choose section: a skema that states the effective budget (15) still agrees; any other figure differs', () => {
+      expect(marksAt(checkEvidence(bp, twoBodies(skema)), 2).status).toBe('ok')
+      const wrong = checkEvidence(bp, twoBodies({ totalMarks: 55, sections: [{ position: 1, markBudget: 40 }, { position: 2, markBudget: 25 }] }))
+      expect(marksAt(wrong, 2).status).toBe('differs')
+      expect(wrong.passes).toBe(false)
+    })
+
+    it('only a skema reads Markah as offered: a trial paper stating 30 for the choose section differs', () => {
+      const paper30 = full({ sections: [{ position: 1, markBudget: 40, rule: { type: 'all' }, questionCount: 10 }, { position: 2, markBudget: 30, rule: { type: 'choose', n: 1 }, questionCount: 2 }] })
+      const r = checkEvidence(bp, [item('1', 'trial_paper', 'sbp', paper30), item('2', 'trial_paper', 'selangor_mpsm', full())])
+      expect(marksAt(r, 2).status).toBe('differs')
+    })
+
+    it('a non-choose section: offered marks equal the budget, so any other skema figure differs', () => {
+      expect(offeredMarks(bp.sections[0]!)).toBe(40)
+      const r = checkEvidence(bp, twoBodies({ totalMarks: 55, sections: [{ position: 1, markBudget: 45 }, { position: 2, markBudget: 30 }] }))
+      expect(marksAt(r, 1)).toMatchObject({ status: 'differs', expected: 40 })
+      expect(marksAt(r, 2).status).toBe('ok')
+      expect(marksAt(checkEvidence(bp, twoBodies(skema)), 1).status).toBe('ok')
+    })
+
+    it('a choose section whose budget is not divisible by N has no separate offered figure (offered = budget)', () => {
+      const odd = blueprint([section({ markBudget: 10, questionCount: 3, rule: { type: 'choose', n: 3 } })])
+      expect(offeredMarks(odd.sections[0]!)).toBe(10)
+      const r = checkEvidence(odd, [item('1', 'skema', 'sbp', { sections: [{ position: 1, markBudget: 10 }] }), item('2', 'skema', 'selangor_mpsm', { sections: [{ position: 1, markBudget: 10 }] })])
+      expect(marksAt(r, 1).status).toBe('ok')
+    })
+  })
+
   it('an lpm_format item counts as two supporting bodies and lifts the two-body rule', () => {
     const r = checkEvidence(bp, [item('1', 'lpm_format', 'lpm', full())])
     expect(r.lines.every((l) => l.status === 'ok')).toBe(true)

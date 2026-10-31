@@ -10,7 +10,7 @@ import {
 
 import { ruleOf } from '../../bijak/papers/rules'
 import { toStandard } from '../blueprints/blueprint-standard'
-import type { BlueprintWithSections, PaperTree } from './builder.repository'
+import type { BlueprintWithSections } from './builder.repository'
 import type { StandardBlueprint, StandardShortage, Violation } from './exam-core.adapter'
 
 /**
@@ -18,7 +18,11 @@ import type { StandardBlueprint, StandardShortage, Violation } from './exam-core
  * from the paper's own sections, the standard content (pool tag, modes, profile, quota, KBAT) from the
  * blueprint version the paper conforms to, matched by position. Null when the paper has no blueprint.
  */
-export function standardForPaper(paper: PaperTree, blueprint: BlueprintWithSections | null, subjectCode: string): StandardBlueprint | null {
+export interface PaperSections {
+  sections: { label: string; ruleType: string; ruleN: number | null; questionCount: number; markBudget: number; compulsory: boolean }[]
+}
+
+export function standardForPaper(paper: PaperSections, blueprint: BlueprintWithSections | null, subjectCode: string): StandardBlueprint | null {
   if (!blueprint) return null
   const base = toStandard(blueprint, subjectCode)
   return {

@@ -82,6 +82,8 @@ const bpRow = async (code: string) =>
     )
   )[0]
 
+const bpRowAuto = async (code: string) => (await rows(`select auto_markable from blueprints where code = $1 order by version desc`, [code]))[0]
+
 /** Creates, adds LPM evidence and verifies a blueprint on MAT kertas `k`. Returns the verified view. */
 async function verified(k: number, over: Record<string, unknown> = {}) {
   expect((await admin.post('/api/admin/blueprints', create(k, over))).status).toBe(201)
@@ -95,6 +97,48 @@ describe('fixtures', () => {
   it('the DSKP of Matematik has T4 and T5 units', () => {
     expect(t4.length).toBeGreaterThan(0)
     expect(t5.length).toBeGreaterThan(0)
+  })
+})
+
+// R1-21.4 / PIPE AC-06.2 (T44): the Kontrak field "Boleh tanda auto" (blueprints.auto_markable, nullable).
+describe('T44 Boleh tanda auto (autoMarkable)', () => {
+  it('is stored and returned; absent means null (not stated); a non-boolean is 422', async () => {
+    const on = await admin.post('/api/admin/blueprints', create(60, { autoMarkable: true }))
+    expect(on.status, JSON.stringify(on.body)).toBe(201)
+    expect(BijakBlueprintViewSchema.parse(on.body.data).autoMarkable).toBe(true)
+    expect((await bpRowAuto('MAT/S60'))?.auto_markable).toBe(true)
+    const off = await admin.post('/api/admin/blueprints', create(61, { autoMarkable: false }))
+    expect(BijakBlueprintViewSchema.parse(off.body.data).autoMarkable).toBe(false)
+    expect((await bpRowAuto('MAT/S61'))?.auto_markable).toBe(false)
+    const none = await admin.post('/api/admin/blueprints', create(62))
+    expect(BijakBlueprintViewSchema.parse(none.body.data).autoMarkable).toBeNull()
+    expect((await bpRowAuto('MAT/S62'))?.auto_markable).toBeNull()
+    expectError(await admin.post('/api/admin/blueprints', create(63, { autoMarkable: 'ya' })), 'VALIDATION_ERROR')
+    // GET returns it too
+    expect((await admin.get(url(60))).body.data.autoMarkable).toBe(true)
+  })
+
+  it('a new version replaces it (omitted = null); null is accepted', async () => {
+    expect((await admin.post('/api/admin/blueprints', create(64, { autoMarkable: true }))).status).toBe(201)
+    const v2 = await admin.post(url(64, '/versions'), body({ code: 'MAT/S64B', autoMarkable: false }))
+    expect(v2.status, JSON.stringify(v2.body)).toBe(201)
+    expect(BijakBlueprintViewSchema.parse(v2.body.data)).toMatchObject({ version: 2, autoMarkable: false })
+    const v3 = await admin.post(url(64, '/versions'), body({ code: 'MAT/S64C', autoMarkable: null }))
+    expect(BijakBlueprintViewSchema.parse(v3.body.data)).toMatchObject({ version: 3, autoMarkable: null })
+    const v4 = await admin.post(url(64, '/versions'), body({ code: 'MAT/S64D' }))
+    expect(BijakBlueprintViewSchema.parse(v4.body.data)).toMatchObject({ version: 4, autoMarkable: null })
+  })
+
+  it('is cosmetic: changing it on a Disahkan blueprint keeps Disahkan and the same structure hash', async () => {
+    const v1 = await verified(65)
+    expect(v1.autoMarkable).toBeNull()
+    const before = await bpRow('MAT/S65')
+    const res = await admin.post(url(65, '/versions'), body({ code: 'MAT/S65', autoMarkable: true }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(BijakBlueprintViewSchema.parse(res.body.data)).toMatchObject({ version: 2, source: 'Disahkan', servesStudents: true, autoMarkable: true })
+    const all = await rows(`select version, source, structure_hash, auto_markable from blueprints where code = 'MAT/S65' order by version`)
+    expect(all[1]).toMatchObject({ version: 2, source: 'verified', auto_markable: true })
+    expect(all[1]?.structure_hash).toBe(before?.structure_hash)
   })
 })
 
@@ -336,7 +380,7 @@ describe('BJS-08 versions, serving and the cosmetic rule', () => {
     await verified(25)
     expect((await admin.post(url(25, '/versions'), body({ code: 'MAT/S25B', sections: [fullSection({ kbatMarks: 2 })] }))).status).toBe(201)
     // evidence was copied; the structural change did not touch the values the evidence states
-    const res = await admin.post(url(25, '/verify'), {})
+    const res = await admin.post(url(25, '/verify'), { note: 'Disemak.' })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(BijakBlueprintViewSchema.parse(res.body.data)).toMatchObject({ version: 2, source: 'Disahkan', servesStudents: true, servingVersion: 2 })
     expect(await count(t.db, `select count(*) n from blueprints where code like 'MAT/S25%' and serves_students`)).toBe(1)
@@ -500,7 +544,7 @@ describe('BJS-09 verification', () => {
     await admin.post(url(44, '/evidence'), lpmEvidence())
     const row = await bpRow('MAT/S44')
     await rows(`update blueprint_sections set kbat_reviewed = false, quota = jsonb_set(quota, '{lines,0,reviewed}', 'false') where blueprint_id = $1`, [row?.id])
-    const res = await admin.post(url(44, '/verify'), {})
+    const res = await admin.post(url(44, '/verify'), { note: 'Disemak.' })
     expect(res.status).toBe(422)
     const check = BijakVerificationFailedErrorSchema.parse(res.body).error.details.check
     const unreviewed = check.completeness.filter((c) => c.code === 'UNREVIEWED')
@@ -508,7 +552,7 @@ describe('BJS-09 verification', () => {
     expect(unreviewed.some((c) => c.unit?.kind === 'unit')).toBe(true)
     // the review stamp (in place, not a new version) clears the block
     expect((await admin.post(url(44, '/sections/1/review'), {})).status).toBe(200)
-    expect((await admin.post(url(44, '/verify'), {})).status).toBe(200)
+    expect((await admin.post(url(44, '/verify'), { note: 'Disemak.' })).status).toBe(200)
   })
 
   it('verifies: Disahkan, verification row, serving flag, hash, audit, and GET shows the record', async () => {
@@ -534,22 +578,130 @@ describe('BJS-09 verification', () => {
 
   it('409 when already Disahkan; the verification record is insert-only', async () => {
     await verified(46)
-    expectError(await admin.post(url(46, '/verify'), {}), 'CONFLICT', 409, STD.alreadyVerified)
+    expectError(await admin.post(url(46, '/verify'), { note: 'Disemak.' }), 'CONFLICT', 409, STD.alreadyVerified)
     expect(await count(t.db, `select count(*) n from blueprint_verifications where blueprint_id = $1`, [(await bpRow('MAT/S46'))?.id])).toBe(1)
     await expect(rows(`update blueprint_verifications set note = 'x' where blueprint_id = $1`, [(await bpRow('MAT/S46'))?.id])).rejects.toThrow()
+  })
+
+  // H-A15 (ii): the design makes "Nota pengesahan" required ("wajib"); the server refuses too, so a client cannot skip it (AC-39.2).
+  it('Sahkan needs a non-blank note: none, empty or whitespace is 422 on fields.note; nothing is written; a note verifies', async () => {
+    expect((await admin.post('/api/admin/blueprints', create(54))).status).toBe(201)
+    expect((await admin.post(url(54, '/evidence'), lpmEvidence())).status).toBe(201)
+    for (const bad of [{}, { note: '' }, { note: '   ' }, { note: '\n\t ' }, { note: null }]) {
+      const res = await admin.post(url(54, '/verify'), bad)
+      expectError(res, 'VALIDATION_ERROR', 422)
+      expect(res.body.error.fields, JSON.stringify(bad)).toEqual({ note: STD.noteRequired })
+    }
+    expect(STD.noteRequired).toBe('Isi nota pengesahan dahulu.')
+    expect(await bpRow('MAT/S54')).toMatchObject({ source: 'spec', verification_id: null, serves_students: false })
+    expect(await count(t.db, `select count(*) n from blueprint_verifications where blueprint_id = $1`, [(await bpRow('MAT/S54'))?.id])).toBe(0)
+    const ok = await admin.post(url(54, '/verify'), { note: '  Disemak mengikut skema.  ' })
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+    const v = await rows(`select note from blueprint_verifications where blueprint_id = $1`, [(await bpRow('MAT/S54'))?.id])
+    expect(v[0]?.note).toBe('Disemak mengikut skema.')
   })
 
   it('422 for an invalid verify body, 404 for an unknown blueprint', async () => {
     expect((await admin.post('/api/admin/blueprints', create(47))).status).toBe(201)
     expectError(await admin.post(url(47, '/verify'), { note: 5 }), 'VALIDATION_ERROR')
-    expectError(await admin.post(url(47, '/verify'), { extra: true }), 'VALIDATION_ERROR')
+    expectError(await admin.post(url(47, '/verify'), { note: 'Disemak.', extra: true }), 'VALIDATION_ERROR')
     expectError(await admin.post(url(999, '/verify'), {}), 'NOT_FOUND', 404)
+  })
+
+  // H-A15 (i), AC-39.2 (G2, design D-5): seeded study rows do not count until the verifier replaces them. The body counter of the
+  // Kontrak screen already ignored them; now the server check and Sahkan do too.
+  describe('study-origin evidence does not count (H-A15 i, AC-39.2)', () => {
+    /** A complete, agreeing evidence set for fullSection(): two bodies, each with a paper and a skema, as seeded study rows. */
+    const studyRow = (kind: string, bodyId: string, values: Record<string, unknown>) =>
+      rows(
+        `insert into blueprint_evidence (blueprint_id, kind, body, year, paper_code, values, origin) values ($1, $2, $3, 2025, '1449/1', $4::jsonb, 'study')`,
+        [studyBlueprintId, kind, bodyId, JSON.stringify(values)],
+      )
+    const full = { durationMin: 60, totalMarks: 4, sections: [{ position: 1, markBudget: 4, rule: { type: 'all' }, questionCount: 4 }] }
+    const skemaOnly = { totalMarks: 4, sections: [{ position: 1, markBudget: 4 }] }
+    let studyBlueprintId = ''
+    const stateOf = async (k: number) => envelopeOf(BijakVerificationStateSchema).parse((await admin.get(url(k, '/verification'))).body).data
+
+    it('study rows that would satisfy the check alone make no body count: NO_EVIDENCE_BODIES, lines not_covered, Sahkan refused', async () => {
+      expect((await admin.post('/api/admin/blueprints', create(49))).status).toBe(201)
+      studyBlueprintId = String((await bpRow('MAT/S49'))?.id)
+      for (const [kind, bodyId, values] of [['trial_paper', 'sbp', full], ['skema', 'sbp', skemaOnly], ['trial_paper', 'selangor_mpsm', full], ['skema', 'selangor_mpsm', skemaOnly], ['lpm_format', 'lpm', full]] as const) await studyRow(kind, bodyId, values)
+      // the rows are listed (with their origin) ...
+      const listed = envelopeOf(z.array(BijakEvidenceItemSchema)).parse((await admin.get(url(49, '/evidence'))).body).data
+      expect(listed).toHaveLength(5)
+      expect(listed.every((e) => e.origin === 'study')).toBe(true)
+      // ... but none of them counts: not two bodies, not even the LPM document
+      const state = await stateOf(49)
+      expect(state.check.passes).toBe(false)
+      expect(state.check.completeness.map((c) => c.code)).toContain('NO_EVIDENCE_BODIES')
+      expect(state.check.lines.every((l) => l.status === 'not_covered' && l.statements.length === 0)).toBe(true)
+      const res = await admin.post(url(49, '/verify'), { note: 'Disemak.' })
+      expect(res.status).toBe(422)
+      expect(BijakVerificationFailedErrorSchema.parse(res.body).error.details.check.completeness.map((c) => c.code)).toContain('NO_EVIDENCE_BODIES')
+      expect(await bpRow('MAT/S49')).toMatchObject({ source: 'spec', verification_id: null, serves_students: false })
+    })
+
+    it('a study row does not contradict either: one that states another duration is ignored, the admin evidence decides', async () => {
+      expect((await admin.post('/api/admin/blueprints', create(50))).status).toBe(201)
+      studyBlueprintId = String((await bpRow('MAT/S50'))?.id)
+      await studyRow('trial_paper', 'sbp', { ...full, durationMin: 120 })
+      expect((await admin.post(url(50, '/evidence'), lpmEvidence())).status).toBe(201)
+      const state = await stateOf(50)
+      expect(state.check.lines.find((l) => l.field === 'durationMin')).toMatchObject({ status: 'ok', supportingBodies: 2 })
+      expect(state.check).toMatchObject({ passes: true, completeness: [] })
+      const res = await admin.post(url(50, '/verify'), { note: 'Disemak.' })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+    })
+
+    it('the same rows entered by the admin (origin admin) do count', async () => {
+      expect((await admin.post('/api/admin/blueprints', create(51))).status).toBe(201)
+      for (const [kind, bodyId, values] of [['trial_paper', 'sbp', full], ['skema', 'sbp', skemaOnly], ['trial_paper', 'selangor_mpsm', full], ['skema', 'selangor_mpsm', skemaOnly]] as const) {
+        expect((await admin.post(url(51, '/evidence'), lpmEvidence({ kind, body: bodyId, values }))).status).toBe(201)
+      }
+      const state = await stateOf(51)
+      expect(state.check).toMatchObject({ passes: true, completeness: [] })
+      expect(state.check.lines.every((l) => l.status === 'ok')).toBe(true)
+    })
+  })
+
+  // H-A15 (iii), AC-39.7 / AC-39.8 / SPP 10.3: a skema's Markah on a choose-N section is the offered marks.
+  describe('Markah of a skema on a choose-N section (H-A15 iii)', () => {
+    const choose = (kertas: number) => create(kertas, {
+      sections: [
+        fullSection(),
+        fullSection({ label: 'Bahagian B', markBudget: 6, questionCount: 4, rule: { type: 'choose', n: 2 }, profile: { kind: 'bahagian', groups: [{ from: 1, to: 4, tpMin: 1, tpMax: 4 }] }, quota: { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: t4[0]?.nodeId }, value: 2 }, { unit: { kind: 'unit', nodeId: t5[0]?.nodeId }, value: 2 }] }, kbatMarks: 1 }),
+      ],
+    })
+    const paper = { durationMin: 60, totalMarks: 10, sections: [{ position: 1, markBudget: 4, rule: { type: 'all' }, questionCount: 4 }, { position: 2, markBudget: 6, rule: { type: 'choose', n: 2 }, questionCount: 4 }] }
+    const skemaValues = (b: number) => ({ totalMarks: 10, sections: [{ position: 1, markBudget: 4 }, { position: 2, markBudget: b }] })
+    const addSet = async (k: number, skemaB: number) => {
+      for (const [kind, bodyId, values] of [['trial_paper', 'sbp', paper], ['skema', 'sbp', skemaValues(skemaB)], ['trial_paper', 'selangor_mpsm', paper], ['skema', 'selangor_mpsm', skemaValues(skemaB)]] as const) {
+        expect((await admin.post(url(k, '/evidence'), lpmEvidence({ kind, body: bodyId, values }))).status).toBe(201)
+      }
+    }
+    const line = async (k: number, position: number) => (await (async () => envelopeOf(BijakVerificationStateSchema).parse((await admin.get(url(k, '/verification'))).body).data)()).check.lines.find((l) => l.field === 'markBudget' && l.sectionPosition === position)
+
+    it('the skema offered marks (6 / 2 x 4 = 12) agree with the budget 6: ok, and Sahkan succeeds', async () => {
+      expect((await admin.post('/api/admin/blueprints', choose(52))).status).toBe(201)
+      await addSet(52, 12)
+      expect(await line(52, 2)).toMatchObject({ status: 'ok', expected: 6, supportingBodies: 2 })
+      expect(await line(52, 1)).toMatchObject({ status: 'ok', expected: 4 })
+      expect((await admin.post(url(52, '/verify'), { note: 'Disemak.' })).status).toBe(200)
+    })
+
+    it('another skema figure for the choose section differs; for the non-choose section only the budget agrees', async () => {
+      expect((await admin.post('/api/admin/blueprints', choose(53))).status).toBe(201)
+      await addSet(53, 10)
+      expect(await line(53, 2)).toMatchObject({ status: 'differs', expected: 6 })
+      expect(await line(53, 1)).toMatchObject({ status: 'ok' })
+      expect((await admin.post(url(53, '/verify'), { note: 'Disemak.' })).status).toBe(422)
+    })
   })
 
   it('two concurrent verifies: one wins (200), the other gets 409', async () => {
     expect((await admin.post('/api/admin/blueprints', create(48))).status).toBe(201)
     await admin.post(url(48, '/evidence'), lpmEvidence())
-    const [a, b] = await Promise.all([admin.post(url(48, '/verify'), {}), admin.post(url(48, '/verify'), {})])
+    const [a, b] = await Promise.all([admin.post(url(48, '/verify'), { note: 'Disemak.' }), admin.post(url(48, '/verify'), { note: 'Disemak.' })])
     expect([a.status, b.status].sort()).toEqual([200, 409])
     expect(await count(t.db, `select count(*) n from blueprint_verifications where blueprint_id = $1`, [(await bpRow('MAT/S48'))?.id])).toBe(1)
   })
@@ -606,7 +758,7 @@ describe('access: Admin Pusat only (AC-32.1, AC-39.3)', () => {
     { name: 'evidence add', method: 'post', url: url(1, '/evidence'), body: lpmEvidence() },
     { name: 'evidence delete', method: 'del', url: url(1, '/evidence/1') },
     { name: 'verification', method: 'get', url: url(1, '/verification') },
-    { name: 'verify', method: 'post', url: url(1, '/verify'), body: {} },
+    { name: 'verify', method: 'post', url: url(1, '/verify'), body: { note: 'Disemak.' } },
     { name: 'section review', method: 'post', url: url(1, '/sections/1/review'), body: {} },
     { name: 'dskp units', method: 'get', url: '/api/admin/bijak/dskp/units?subject=MAT' },
     { name: 'subjects', method: 'get', url: '/api/admin/bijak/subjects' },

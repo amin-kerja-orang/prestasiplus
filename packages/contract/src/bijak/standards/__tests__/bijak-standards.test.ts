@@ -366,8 +366,14 @@ describe('evidence and verification', () => {
         createdAt: TS,
       }).success,
     ).toBe(true)
-    expect(BijakVerifyInputSchema.safeParse({}).success).toBe(true)
     expect(BijakVerifyInputSchema.safeParse({ note: 'ok' }).success).toBe(true)
+    // H-A15 (ii): the note is required and not blank, with the Kontrak screen's text on `note`
+    for (const bad of [{}, { note: '' }, { note: '   ' }, { note: 5 }]) {
+      const r = BijakVerifyInputSchema.safeParse(bad)
+      expect(r.success, JSON.stringify(bad)).toBe(false)
+      expect(r.error?.issues[0]?.message).toBe(BIJAK_STANDARDS_MESSAGES.noteRequired)
+      expect(r.error?.issues[0]?.path).toEqual(['note'])
+    }
     expect(BijakVerifyInputSchema.safeParse({ source: 'Disahkan' }).success).toBe(false)
   })
 
