@@ -548,6 +548,7 @@ const dskpItems = computed(() => [
         </div>
         <PublishOverride
           :blockers="actions.blockers.value"
+          :available="actions.overrideAvailable.value"
           :busy="actions.busy.value"
           @override="(reason) => actions.publish({ override: true, reason })"
         />

@@ -10,8 +10,12 @@ import { useRouter } from 'vue-router'
 import { useFlash } from '@/composables/useFlash'
 
 import { builderCopy as t } from '../domain/copy'
+import { normalizeBlockers, overrideOffered, type BlockerInfo } from '../domain/blockers'
 import { publishGate } from '../domain/publish-gate'
 import { builderMessage, builderPath, type BuilderApi, type PublishOptions } from '../server/api'
+
+/** The review with plain blocker lines for display and the flags for the override offer. */
+export type BuilderReviewView = BijakBuilderReview & { blockerInfo: BlockerInfo[]; canOverride?: boolean }
 
 export interface PaperActionsOptions {
   api: BuilderApi
@@ -28,7 +32,7 @@ export function usePaperActions(o: PaperActionsOptions) {
   const flash = useFlash()
   const router = useRouter()
 
-  const review = ref<BijakBuilderReview | null>(null)
+  const review = ref<BuilderReviewView | null>(null)
   const reviewError = ref(false)
   const busy = ref(false)
   const view = ref<BijakBuilderStudentView | null>(null)
@@ -40,8 +44,9 @@ export function usePaperActions(o: PaperActionsOptions) {
     const mine = ++seq
     try {
       const r = await o.api.review(o.id.value)
+      const infos = normalizeBlockers(r.blockers)
       if (mine === seq) {
-        review.value = r
+        review.value = { ...r, blockers: infos.map((b) => b.message), blockerInfo: infos }
         reviewError.value = false
       }
     } catch {
@@ -54,6 +59,7 @@ export function usePaperActions(o: PaperActionsOptions) {
   const gate = computed(() =>
     publishGate({ localIssues: 0, dirty: false, reviewFailed: reviewError.value, blockers: blockers.value.length }),
   )
+  const overrideAvailable = computed(() => overrideOffered(review.value?.blockerInfo ?? [], review.value?.canOverride))
   const publishBlocked = computed(() => gate.value.blocked)
   const publishReason = computed(() => gate.value.reason)
 
@@ -124,6 +130,7 @@ export function usePaperActions(o: PaperActionsOptions) {
     reviewError,
     loadReview,
     blockers,
+    overrideAvailable,
     publishBlocked,
     publishReason,
     busy,

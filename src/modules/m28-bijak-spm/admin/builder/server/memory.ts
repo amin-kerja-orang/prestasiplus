@@ -6,7 +6,6 @@
  */
 import type {
   BijakBuilderPoolUnit,
-  BijakBuilderReview,
   BijakBuilderStudentView,
   BijakDskpUnit,
   BijakPoolPreview,
@@ -21,6 +20,7 @@ import {
   type BuilderSubject,
   type HeaderPatch,
   type PlacementResult,
+  type RawReview,
   type PublishOptions,
   type PublishResult,
   type SectionPatch,
@@ -187,7 +187,7 @@ export class MockBuilderServer implements BuilderApi {
     }
   }
 
-  async review(id: string): Promise<BijakBuilderReview> {
+  async review(id: string): Promise<RawReview> {
     const ed = await this.getEditor(id)
     const h = this.helpers(ed)
     const check = checkPaper({

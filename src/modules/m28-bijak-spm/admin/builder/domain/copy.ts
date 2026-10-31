@@ -147,6 +147,11 @@ export const builderCopy = {
   overrideTick: 'Terbitkan walaupun tidak memenuhi kontrak blueprint', // V2
   overrideReason: 'Sebab (sekurang-kurangnya 5 aksara)', // [PROPOSED]
   overriddenFlash: (n: number): string => `Diterbitkan dengan ${n} pengecualian kontrak (direkodkan).`, // [PROPOSED]
+  addQuestion: 'Tambah soalan', // V2
+  deleteQuestion: 'Padam soalan', // V2
+  deleteConfirm: 'Soalan tambahan ini, termasuk bahagian, pilihan jawapan dan skemanya, akan dibuang dari kertas. Tindakan ini tidak boleh dibatalkan.', // V2
+  questionAdded: 'Soalan ditambah ke kertas.', // [PROPOSED]
+  questionDeleted: 'Soalan dipadam dari kertas.', // [PROPOSED]
   semak: 'Semak Kertas', // V2
   openBuilder: 'Buka di Set Builder', // [PROPOSED]
   contractNone: 'Tiada kontrak untuk subjek/kertas ini.', // V2

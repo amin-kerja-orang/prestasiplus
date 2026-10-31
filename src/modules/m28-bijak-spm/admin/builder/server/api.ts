@@ -15,6 +15,7 @@ import type {
   BijakPoolPreview,
 } from '@pp/contract'
 
+import type { RawBlocker } from '../domain/blockers'
 import type { AdminPaperSummary, PaperEditorData } from '../../../domain/admin-types'
 
 export type BuilderErrorKind =
@@ -92,6 +93,12 @@ export interface PublishOptions {
   reason?: string
 }
 
+/** Review answer in either blocker shape (see `domain/blockers.ts`); `canOverride` comes with the A3 shape. */
+export type RawReview = Omit<BijakBuilderReview, 'blockers'> & {
+  blockers: (string | RawBlocker)[]
+  canOverride?: boolean
+}
+
 export interface BuilderApi {
   listSets(): Promise<AdminPaperSummary[]>
   /** Subjects and the kertas that have a blueprint (Mula kosong / Jana set choices). */
@@ -109,7 +116,7 @@ export interface BuilderApi {
   removePlacement(id: string, questionId: string): Promise<PlacementResult>
   reorder(id: string, sectionId: string, order: string[]): Promise<PaperEditorData>
   pool(id: string, sectionId: string, query?: SectionPoolQuery): Promise<SectionPool>
-  review(id: string): Promise<BijakBuilderReview>
+  review(id: string): Promise<RawReview>
   studentView(id: string): Promise<BijakBuilderStudentView>
   publish(id: string, options?: PublishOptions): Promise<PublishResult>
   /** Sunting bahagian. */

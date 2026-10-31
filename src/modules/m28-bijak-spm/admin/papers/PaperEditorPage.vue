@@ -16,6 +16,7 @@ import type { BuilderGroup, BuilderQuestion } from '../../domain/admin-types'
 import { addUnit, checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
 import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
+import PaperQuestionOps from '../builder/components/PaperQuestionOps.vue'
 import PaperEditBlocks from '../builder/components/PaperEditBlocks.vue'
 import PublishOverride from '../builder/components/PublishOverride.vue'
 import PaperMetaForm from '../builder/components/PaperMetaForm.vue'
@@ -263,7 +264,7 @@ async function saveMeta(patchData: Parameters<ReturnType<typeof builderServer>['
 }
 
 /** Sunting bahagian / petikan: unsaved placements go first (the reload resets them), then one call. */
-async function editThen(run: () => Promise<unknown>, okMessage: string): Promise<void> {
+async function editThen(run: () => Promise<unknown>, okMessage: string, fallback: string = bt.errRename): Promise<void> {
   if (dirty.value && !(await save())) return
   busy.value = true
   try {
@@ -271,13 +272,18 @@ async function editThen(run: () => Promise<unknown>, okMessage: string): Promise
     flash.show({ type: 'success', message: okMessage })
     await reload()
   } catch (e) {
-    flash.show({ type: 'error', message: builderMessage(e, bt.errRename) })
+    flash.show({ type: 'error', message: builderMessage(e, fallback) })
   } finally {
     busy.value = false
   }
 }
 const saveSection = (sid: string, p: Parameters<ReturnType<typeof builderServer>['updateSection']>[2]): Promise<void> =>
   editThen(() => builderServer().updateSection(id.value, sid, p), bt.sectionSaved(p.label ?? ''))
+const loadOpsPool = (sid: string, q: string) => builderServer().pool(id.value, sid, { q, pageSize: 20 })
+const addQuestion = (sid: string, qid: string): Promise<void> =>
+  editThen(() => builderServer().addPlacement(id.value, sid, qid), bt.questionAdded, bt.errAdd)
+const deleteQuestion = (qid: string): Promise<void> =>
+  editThen(() => builderServer().removePlacement(id.value, qid), bt.questionDeleted, bt.errRemove)
 const savePassage = (gid: string, label: string): Promise<void> =>
   editThen(() => builderServer().updateGroupLabel(id.value, gid, label), bt.passageSaved(label))
 
@@ -528,6 +534,17 @@ const previewBlocks = computed(() => {
         />
       </DsPanel>
 
+      <DsPanel data-testid="paper-question-ops">
+        <PaperQuestionOps
+          :editor="data"
+          :readonly="readonly"
+          :busy="busy"
+          :load-pool="loadOpsPool"
+          @add="addQuestion"
+          @remove="deleteQuestion"
+        />
+      </DsPanel>
+
       <DsPanel data-testid="paper-edit-blocks">
         <PaperEditBlocks
           :editor="data"
@@ -540,6 +557,7 @@ const previewBlocks = computed(() => {
           v-if="!readonly"
           class="mt-4"
           :blockers="actions.blockers.value"
+          :available="actions.overrideAvailable.value"
           :busy="actions.busy.value"
           @override="(reason) => actions.publish({ override: true, reason })"
         />

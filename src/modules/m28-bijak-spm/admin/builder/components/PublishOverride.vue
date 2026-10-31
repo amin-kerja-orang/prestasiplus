@@ -1,18 +1,24 @@
 <script setup lang="ts">
 /**
- * V2 tick "Terbitkan walaupun tidak memenuhi kontrak blueprint" (design S4.2/S4.4). Offered only when
+ * V2 tick "Terbitkan walaupun tidak memenuhi kontrak blueprint" (design S4.2/S4.4). Offered when `available` (server flags overridable / canOverride); for the old string shape only when
  * every blocker is a structural blueprint line ("Soalan {id} tidak layak: ..."), the only kind the
  * server lets through (R1-T34); the reason (5+ characters) is audited server-side.
  */
 import { computed, ref } from 'vue'
 
+import { isBlueprintLine } from '../domain/blockers'
 import { builderCopy as t } from '../domain/copy'
 
-const props = defineProps<{ blockers: readonly string[]; busy?: boolean }>()
+const props = withDefaults(defineProps<{ blockers: readonly string[]; available?: boolean | undefined; busy?: boolean }>(), {
+  available: undefined,
+  busy: false,
+})
 const emit = defineEmits<{ override: [reason: string] }>()
 
 /** Only structural blueprint lines are overridable. */
-const offered = computed(() => props.blockers.length > 0 && props.blockers.every((b) => /tidak layak/i.test(b)))
+const offered = computed(() =>
+  props.blockers.length > 0 && (props.available ?? props.blockers.every((b) => isBlueprintLine(b))),
+)
 const ticked = ref(false)
 const reason = ref('')
 const ok = computed(() => ticked.value && reason.value.trim().length >= 5)

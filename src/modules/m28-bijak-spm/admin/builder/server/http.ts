@@ -9,7 +9,6 @@ import type {
   BijakBuilderPaperSummary,
   BijakBuilderPlacementResult,
   BijakBuilderPoolUnit,
-  BijakBuilderReview,
   BijakBuilderStudentView,
   BijakDskpUnit,
   BijakGenerateShortage,
@@ -27,6 +26,7 @@ import {
   type BuilderSubject,
   type HeaderPatch,
   type PlacementResult,
+  type RawReview,
   type PublishOptions,
   type PublishResult,
   type SectionPatch,
@@ -176,7 +176,7 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
     }
   }
 
-  review(id: string): Promise<BijakBuilderReview> {
+  review(id: string): Promise<RawReview> {
     return this.call('GET', `/api/admin/papers/${enc(id)}/review`)
   }
 
