@@ -113,6 +113,7 @@ export type BijakAdminMethods = Omit<
   | 'getIntakeBatch'
   | 'createManualBatch'
   | 'saveExtracted'
+  | 'linkStimulusReferences'
   | 'submitForReview'
   | 'listReviewQueue'
   | 'getReviewItem'
@@ -526,6 +527,11 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
 
   /** Saves are serialised: an autosave and the "Simpan draf" button must not interleave. */
   private saveChain: Promise<unknown> = Promise.resolve()
+
+  /** `POST /api/intake/stimuli/:id/link-references`: the open items that name the figure join its group. */
+  async linkStimulusReferences(_batchId: string, stimulusId: string): Promise<{ linkedItemIds: string[] }> {
+    return this.send<{ linkedItemIds: string[] }>('POST', `/api/intake/stimuli/${enc(stimulusId)}/link-references`)
+  }
 
   saveExtracted(id: string, payload: SaveExtractedPayload): Promise<IntakeBatch> {
     const run = this.saveChain.then(() => this.persistExtracted(id, payload))

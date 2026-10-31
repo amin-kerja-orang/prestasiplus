@@ -248,6 +248,16 @@ describe('QuizRunner question', () => {
     expect(t(w, 'btn-next').text()).toContain('Soalan Seterusnya')
   })
 
+  it('T14 B-09: a server feedback that repeats the title is not shown twice', async () => {
+    api.check.mockResolvedValue({ isCorrect: false, correctOptionId: 1, feedback: 'Salah', explanation: null })
+    const w = await render()
+    await t(w, 'option-A').trigger('click')
+    await t(w, 'btn-check').trigger('click')
+    await flushPromises()
+    expect(t(w, 'feedback-title').text()).toBe('Salah')
+    expect(w.find('[data-testid=feedback-text]').exists()).toBe(false)
+  })
+
   it('shows the S7 feedback titles with the S7 labels', async () => {
     api.check.mockResolvedValue({
       isCorrect: true,
