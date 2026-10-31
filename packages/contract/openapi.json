@@ -38813,6 +38813,24 @@
               "null"
             ]
           },
+          "kertas": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "1",
+              "2",
+              "3",
+              null
+            ]
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "essayTopics": {
             "type": "array",
             "items": {
@@ -38832,7 +38850,9 @@
           "aiVerified",
           "dskpTagged",
           "sourceType",
-          "sourceFile"
+          "sourceFile",
+          "kertas",
+          "numberLabel"
         ]
       },
       "QuestionComplianceStatus": {

@@ -112,6 +112,9 @@ export const QuestionRowSchema = z
     dskpComplete: z.boolean().optional(),
     sourceType: QuestionSourceTypeSchema.nullable(),
     sourceFile: z.string().nullable(),
+    /** REQ-C-010: V2 Studio columns "Kertas" and "No.": the kertas ('1' to '3', the trailing digit of the paper code) and the printed number label. */
+    kertas: z.enum(['1', '2', '3']).nullable(),
+    numberLabel: z.string().nullable(),
     /** R1-H-A7: present only on an `essay_choice` (esei pilihan) question: its 2 to 6 topics. `questionType` stays `essay`. */
     essayTopics: z.array(QuestionEssayTopicSchema).optional(),
   })
