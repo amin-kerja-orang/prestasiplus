@@ -18,7 +18,7 @@ import { ScopeFilter } from '../../common/scope/scope-filter'
 import { idFromString, idToString } from '../../db/ids'
 import type { File as FileRow } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
-import { pupilMayReadQuestionImageSql, teacherMayReadOwnQuestionImageSql } from './question-image-access'
+import { pupilMayReadQuestionImageSql } from './question-image-access'
 import { EXTENSION_OF, inspectUpload, type DetectedMime } from './content-inspect'
 import { FILE_STORAGE, type FileStorage } from './file-storage'
 import { FilesConfig } from './files.config'
@@ -117,8 +117,6 @@ interface ReadContext {
   ownerSchool(): Promise<{ schoolId: bigint; school: { state: string | null; district: string | null } } | null>
   /** See question-image-access.ts: live approved/published question, or a pinned version in a sittable published paper. */
   servedWithPublishedQuestion(): Promise<boolean>
-  /** See question-image-access.ts: the file is on a version of a question the caller created (REQ-B-008). */
-  authoredByCaller(): Promise<boolean>
 }
 
 type ReadRule = (c: ReadContext) => boolean | Promise<boolean>
@@ -147,11 +145,9 @@ async function ownerOrScopedStaff(c: ReadContext): Promise<boolean> {
 const READ_RULES: Readonly<Record<string, ReadRule>> = {
   // Working photos of a pupil: the owner only.
   bijak_photo: (c) => c.owns,
-  // Authoring material. Admin reads all. A teacher reads the files they uploaded and the images of questions they created
-  // (REQ-B-008: not another author's draft, not a Jana-only image). Everyone else (a pupil too) reads it only while it is served:
-  // the live version of a published question, or a version pinned by a paper they can sit. A refused read is 404 (no oracle).
-  question_image: async (c) =>
-    isRole(c, 'admin') || (isRole(c, 'teacher') && (c.owns || (await c.authoredByCaller()))) || c.servedWithPublishedQuestion(),
+  // Authoring material: staff. Any other signed-in user (a pupil) reads it only while it belongs to the live version of a
+  // published question; a draft's image stays staff-only. A refused read is 404 like every other purpose (no oracle).
+  question_image: (c) => isRole(c, 'admin', 'teacher') || c.servedWithPublishedQuestion(),
   // Interim (F2): public, reachable only through the opaque token, until BE-24 gates it on publish state.
   cms_image: () => true,
   // BE-24: section audio of Audio KBAT sets. Admin only, fail closed: students never read it through /files, they
@@ -390,17 +386,7 @@ export class FilesService {
       )
       return hit.length > 0
     }
-    const authoredByCaller = async () => {
-      if (!auth) return false
-      let userId: bigint
-      try {
-        userId = idFromString(auth.userId)
-      } catch {
-        return false
-      }
-      return (await this.prisma.client.$queryRaw<{ one: number }[]>(teacherMayReadOwnQuestionImageSql(row.id, userId))).length > 0
-    }
-    return rule({ row, auth, owns, ownerSchool, servedWithPublishedQuestion, authoredByCaller })
+    return rule({ row, auth, owns, ownerSchool, servedWithPublishedQuestion })
   }
 
   private summary(row: FileRow): StoredFile {
