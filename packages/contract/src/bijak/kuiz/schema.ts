@@ -34,14 +34,18 @@ export const BijakKuizStartRequestSchema = z
   .strictObject({
     subject: z.string().trim().min(1).max(20).optional().meta({ description: 'Curriculum subject code, for example MATH. Absent = every subject.' }),
     count: z
-      .number()
-      .int()
-      .refine((n) => (BIJAK_KUIZ_COUNTS as readonly number[]).includes(n), BIJAK_KUIZ_MESSAGES.invalidValue)
+      .unknown()
       .optional()
-      .meta({ description: '5, 10, 20 or 40. Default 20.' }),
+      .meta({ description: '5, 10, 20 or 40. Anything else, or absent, falls back to 20 (V2 ExamQuizController). Never a 422.' }),
   })
   .meta({ id: 'BijakKuizStartRequest' })
 export type BijakKuizStartRequest = z.infer<typeof BijakKuizStartRequestSchema>
+
+/** V2 `(int) $request->query('count', 20)` then `in_array(COUNTS) ? $count : 20`. */
+export function normaliseKuizCount(raw: unknown): number {
+  const n = typeof raw === 'number' ? Math.trunc(raw) : typeof raw === 'string' ? Number.parseInt(raw, 10) : Number.NaN
+  return (BIJAK_KUIZ_COUNTS as readonly number[]).includes(n) ? n : BIJAK_KUIZ_DEFAULT_COUNT
+}
 
 export const BijakKuizOptionSchema = z
   .strictObject({
@@ -65,6 +69,7 @@ export const BijakKuizStimulusSchema = z
 export const BijakKuizItemSchema = z
   .strictObject({
     id: z.string().min(1).max(80).meta({ description: 'Question id, or "{questionId}:{part path}" for a part of a structured question (per-paper quiz).' }),
+    groupId: z.string().nullable().meta({ description: 'Shared stimulus group (D90). Random quiz: the group stimulus is in `stimuli` above the item. Per-paper quiz: it is in the page `groups[]`, once for all members.' }),
     kind: z.enum(['mcq', 'open']).meta({ description: 'open = a non-objective part: shown with an unsaved textarea, cannot be checked.' }),
     stem: z.string().nullable(),
     lead: z.array(z.string()).meta({ description: 'Prompts of the parent parts, outermost first.' }),
@@ -138,7 +143,10 @@ export const BijakKuizPaperPageSchema = z
       .strictObject({ id: IdSchema, label: z.string(), instruction: z.string().nullable() })
       .nullable()
       .meta({ description: 'The Bahagian of this page; null when the paper has no question to show.' }),
-    items: z.array(BijakKuizItemSchema),
+    items: z.array(BijakKuizItemSchema).meta({ description: 'In display order. The members of a stimulus group are contiguous, in group order.' }),
+    groups: z
+      .array(z.strictObject({ id: z.string(), stimuli: z.array(BijakKuizStimulusSchema) }))
+      .meta({ description: 'D90: each stimulus group of this page once. Render its stimuli above its member items (items whose groupId matches); the stimulus is never an item.' }),
     markableTotal: z.number().int().min(0).meta({ description: 'Objective parts of the whole paper (V2 "Skor: n / markableTotal").' }),
   })
   .meta({ id: 'BijakKuizPaperPage' })

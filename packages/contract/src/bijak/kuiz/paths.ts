@@ -56,7 +56,7 @@ export function registerBijakKuizPaths(registry: OpenAPIRegistry): void {
       201: json(envelopeOf(BijakKuizSessionSchema), 'The session and its items (no key).'),
       401: UNAUTHORIZED,
       403: FORBIDDEN,
-      422: err('NO_QUESTIONS, or VALIDATION_ERROR with fields (subject, count).'),
+      422: err('NO_QUESTIONS, or VALIDATION_ERROR with fields (subject, or an unknown key). An invalid or missing count is not an error: it falls back to 20 (V2).'),
     },
   })
 
