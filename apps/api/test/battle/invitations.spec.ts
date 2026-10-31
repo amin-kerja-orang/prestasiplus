@@ -20,7 +20,7 @@ describe('search and invitations (M16-07 to M16-11)', () => {
     await addMcqs(t, s.math, s.t4, 12)
     await addMcqs(t, s.math, s.t5, 12)
     await addMcqs(t, s.sci, s.t4, 3)
-    await addMcqs(t, s.bm, s.t4, 10, { spm: true })
+    await addMcqs(t, s.bm, s.t4, 10)
     ;[a, b, c] = [await client(t, STUDENT_G10), await client(t, STUDENT_G10_B), await client(t, STUDENT_G11)]
   }, 180_000)
   afterAll(async () => t.close())
@@ -125,7 +125,7 @@ describe('search and invitations (M16-07 to M16-11)', () => {
         [{ question_type: 'spm', subject_id: phy }, 'Subjek tidak sah.'],
         [{ subject_id: s.sci }, 'Soalan tidak mencukupi.'],
         [{ question_type: 'pksk', subject_id: undefined, pksk_domain_id: '1', pksk_target_level: 'T1' }, 'Domain PKSK tidak sah.'],
-        [{ question_type: 'spm', subject_id: s.math }, 'Soalan tidak mencukupi.'],
+        [{ question_type: 'spm', subject_id: s.sci }, 'Soalan tidak mencukupi.'], // R1-B06: math has T4 questions, so it has an SPM pool; science (3) is too small
       ]
       for (const [over, error] of cases) {
         const res = await a.post('/battle/invite', body(over))

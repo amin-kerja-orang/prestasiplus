@@ -453,32 +453,44 @@ export class QuestionsRepository {
     if (key === null) return null
     const q = await this.db.question.findUnique({ where: { id: key }, select: { groupId: true } })
     if (!q?.groupId) return null
-    const group = await this.db.stimulusGroup.findUnique({
-      where: { id: q.groupId },
+    return (await this.groupsByIds([idToString(q.groupId)]))[0] ?? null
+  }
+
+  /** Stimulus groups by id, in one statement per relation whatever the number of ids (unknown ids are absent). */
+  async groupsByIds(groupIds: readonly string[]): Promise<StimulusGroupRecord[]> {
+    const keys = [...new Set(groupIds)].flatMap((id) => {
+      const k = bi(id)
+      return k === null ? [] : [k]
+    })
+    if (keys.length === 0) return []
+    const groups = await this.db.stimulusGroup.findMany({
+      where: { id: { in: keys } },
+      orderBy: { id: 'asc' },
       include: {
         stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } },
         options: { orderBy: { position: 'asc' } },
         questions: { orderBy: { groupPosition: 'asc' }, select: { id: true } },
       },
     })
-    if (!group) return null
-    const stimuli: StimulusRecord[] = group.stimuli
-      .filter((s) => s.stimulus.kind !== 'audio')
-      .map((s) => ({
-        id: idToString(s.stimulus.id),
-        kind: s.stimulus.kind === 'passage' ? 'passage' : s.stimulus.kind === 'table' ? 'table' : 'diagram',
-        label: s.stimulus.label ?? '',
-        bodyMs: s.stimulus.bodyMs,
-        bodyEn: s.stimulus.bodyEn,
-        assetFileId: s.stimulus.assetFileId === null ? null : idToString(s.stimulus.assetFileId),
-        alt: s.stimulus.altText,
-      }))
-    return {
-      id: idToString(group.id),
-      stimuli,
-      optionBank: group.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
-      questionIds: group.questions.map((m) => idToString(m.id)),
-    }
+    return groups.map((group) => {
+      const stimuli: StimulusRecord[] = group.stimuli
+        .filter((s) => s.stimulus.kind !== 'audio')
+        .map((s) => ({
+          id: idToString(s.stimulus.id),
+          kind: s.stimulus.kind === 'passage' ? 'passage' : s.stimulus.kind === 'table' ? 'table' : 'diagram',
+          label: s.stimulus.label ?? '',
+          bodyMs: s.stimulus.bodyMs,
+          bodyEn: s.stimulus.bodyEn,
+          assetFileId: s.stimulus.assetFileId === null ? null : idToString(s.stimulus.assetFileId),
+          alt: s.stimulus.altText,
+        }))
+      return {
+        id: idToString(group.id),
+        stimuli,
+        optionBank: group.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
+        questionIds: group.questions.map((m) => idToString(m.id)),
+      }
+    })
   }
 
   async listOwn(filter: GuruListFilter): Promise<Page<QuestionRecord>> {
