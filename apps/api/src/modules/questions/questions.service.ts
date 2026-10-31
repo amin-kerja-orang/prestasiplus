@@ -29,7 +29,7 @@ import {
 import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
 import { GroupMembers } from './group-members'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
-import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
+import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
 import type {
   AdminListFilter,
@@ -153,6 +153,8 @@ interface Normalized {
   chapterId?: string | null | undefined
   topicId?: string | null | undefined
   stimulusGroupId?: string | null | undefined
+  /** V2 `Nombor soalan`: a text sets it, null clears it, undefined keeps what is stored. */
+  numberLabel?: string | null | undefined
   /** Stem image file id: a string sets/replaces it, null removes it, undefined keeps what is stored. */
   stemImage?: string | null | undefined
   /** Kertas: a digit sets it, null clears it, undefined keeps what is stored. */
@@ -254,6 +256,7 @@ export class QuestionsService {
         dskpSpId: input.dskpSpId,
         chapterId: input.curriculumChapterId,
         stimulusGroupId: input.stimulusGroupId,
+        numberLabel: input.numberLabel,
         stemImage: input.questionImageFileId,
         kertas: input.kertas,
         paperCode: provenance?.paperCode,
@@ -554,10 +557,12 @@ export class QuestionsService {
    * internal ids, so tokens are swapped here, before the tree is built; an unknown token stays as sent and fails the
    * image check with the same 422 as any other bad image.
    */
-  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined }>(input: T): Promise<T> {
+  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined; parts?: QuestionPart[] | undefined }>(input: T): Promise<T> {
     const out: T = { ...input }
     if (typeof out.questionImageFileId === 'string') out.questionImageFileId = await this.files.internalIdOf(out.questionImageFileId)
     if (out.optionImageFileIds) out.optionImageFileIds = await Promise.all(out.optionImageFileIds.map((id) => (typeof id === 'string' ? this.files.internalIdOf(id) : id)))
+    // Studio (T13): option pictures of a part tree are named by the same public token, in and out.
+    if (out.parts) out.parts = await mapOptionImageIds(out.parts, (id) => this.files.internalIdOf(id))
     return out
   }
 
@@ -747,7 +752,7 @@ export class QuestionsService {
       type: versionTypeOf(n.parts),
       stemMs: n.stem,
       stemEn: v?.stemEn ?? null,
-      numberLabel: v?.numberLabel ?? null,
+      numberLabel: n.numberLabel !== undefined ? (n.numberLabel === '' ? null : n.numberLabel) : (v?.numberLabel ?? null),
       language: n.language,
       explanationMs: n.explanation,
       explanationEn: v?.explanationEn ?? null,
@@ -868,6 +873,7 @@ export class QuestionsService {
       flatSp: !input.tag && dskpSpId !== undefined,
     }
     if (input.stimulusGroupId !== undefined) normalized.stimulusGroupId = input.stimulusGroupId
+    if (input.numberLabel !== undefined) normalized.numberLabel = input.numberLabel
     if (input.curriculumChapterId !== undefined) normalized.chapterId = input.curriculumChapterId
     const stemImage = input.removeQuestionImage === true ? null : input.questionImageFileId
     if (stemImage !== undefined) normalized.stemImage = stemImage
@@ -921,6 +927,7 @@ export class QuestionsService {
     for (const r of records) {
       if (r.version.stemImageId) fileIds.add(r.version.stemImageId)
       for (const id of flatFromVersion(r.version).optionImageIds) if (id) fileIds.add(id)
+      for (const id of referencedIds(r.version.parts).imageIds) fileIds.add(id)
     }
     const chapterIds = [...new Set(records.map((r) => r.version.chapterId).filter((c): c is string => !!c).map((c) => BigInt(c)))]
     const chapterNames = new Map(
