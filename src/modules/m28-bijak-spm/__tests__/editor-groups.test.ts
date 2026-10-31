@@ -3,8 +3,11 @@
 import type { BijakBuilderEditor } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
+import { mount } from '@vue/test-utils'
+
+import QuestionPreview from '../admin/papers/QuestionPreview.vue'
 import { editorGroupLabel, editorStimuliOf } from '../lib/stimulus-data'
-import { editorFromWire } from '../server/http-admin'
+import { editorFromWire, previewFromWire } from '../server/http-admin'
 
 const st = (id: string, label: string, extra: object = {}) => ({ id, kind: 'diagram', label, alt: label, ...extra })
 
@@ -41,5 +44,31 @@ describe('editorFromWire groups', () => {
     expect(editorGroupLabel({})).toBe('')
     expect(editorGroupLabel({ stimulus: st('s', ' ') as never })).toBe('')
     expect(editorGroupLabel({ stimuli: [st('a', 'Rajah 1'), st('b', 'Petikan A')] as never })).toBe('Rajah 1 dan Petikan A')
+  })
+})
+
+describe('Paparan murid: stimuli of a group (D90)', () => {
+  const q = { id: 'q1', stem: 'Soalan', marks: 1 } as never
+  const three = [st('s1', 'Rajah 1', { text: 'a' }), st('s2', 'Petikan A', { kind: 'passage', text: 'bb' }), st('s3', 'Jadual 1', { kind: 'table', table: { head: ['h'], rows: [['r']] } })]
+  it('shows no stimulus panel for 0 stimuli and three, once, for 3', () => {
+    const none = mount(QuestionPreview, { props: { questions: [q], stimuli: [] } })
+    expect(none.find('[data-testid="preview-stimulus"]').exists()).toBe(false)
+    const w = mount(QuestionPreview, { props: { questions: [q, q], stimuli: three as never } })
+    expect(w.findAll('[data-testid="preview-stimulus"]')).toHaveLength(1)
+    expect(w.findAll('[data-testid="stimulus"]')).toHaveLength(3)
+    // never more than 3
+    const four = mount(QuestionPreview, { props: { questions: [q], stimuli: [...three, st('s4', 'Rajah 4')] as never } })
+    expect(four.findAll('[data-testid="stimulus"]')).toHaveLength(3)
+  })
+  it('the lone `stimulus` still works for an older caller', () => {
+    const w = mount(QuestionPreview, { props: { questions: [q], stimulus: three[0] as never } })
+    expect(w.findAll('[data-testid="stimulus"]')).toHaveLength(1)
+  })
+  it('previewFromWire maps groupStimuli, and builds it from `stimuli` for an older server', () => {
+    const base = { questions: [], optionBanks: {} }
+    const full = previewFromWire({ ...base, stimuli: { g: three[0] }, groupStimuli: { g: three } } as never)
+    expect(full.groupStimuli.g).toHaveLength(3)
+    const old = previewFromWire({ ...base, stimuli: { g: three[0] } } as never)
+    expect(old.groupStimuli.g).toHaveLength(1)
   })
 })

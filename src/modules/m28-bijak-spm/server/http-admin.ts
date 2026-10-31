@@ -196,6 +196,7 @@ export function editorFromWire(e: BijakBuilderEditor): PaperEditorData {
 export function previewFromWire(p: BijakBuilderPreview): {
   questions: ReviewQuestion[]
   stimuli: Record<string, StimulusDef>
+  groupStimuli: Record<string, StimulusDef[]>
   optionBanks: Record<string, { id: string; text: string }[]>
 } {
   return {
@@ -204,6 +205,8 @@ export function previewFromWire(p: BijakBuilderPreview): {
       curriculum: { ...q.curriculum, subject: q.curriculum.subject },
     })),
     stimuli: p.stimuli,
+    // D90: up to 3 stimuli per group; an older server sends only the first in `stimuli`.
+    groupStimuli: p.groupStimuli ?? Object.fromEntries(Object.entries(p.stimuli).map(([gid, st]) => [gid, [st]])),
     optionBanks: p.optionBanks,
   }
 }

@@ -243,7 +243,7 @@ const previewBlocks = computed(() => {
       return {
         start,
         questions: u.ids.map((q) => byId.get(q)!).filter(Boolean),
-        stimulus: u.groupId ? p.stimuli[u.groupId] : undefined,
+        stimuli: u.groupId ? (p.groupStimuli[u.groupId] ?? (p.stimuli[u.groupId] ? [p.stimuli[u.groupId]!] : [])) : [],
         optionBank: u.groupId ? p.optionBanks[u.groupId] : undefined,
       }
     }),
@@ -574,7 +574,7 @@ const previewBlocks = computed(() => {
               <template v-for="u in b.units" :key="u.start">
                 <QuestionPreview
                   :questions="u.questions"
-                  :stimulus="u.stimulus"
+                  :stimuli="u.stimuli"
                   :option-bank="u.optionBank"
                   :start="u.start"
                   hide-scheme
