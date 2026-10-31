@@ -212,7 +212,10 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
     })
 
     it('another teacher sees only the own classes; the admin has an empty population and the class filter is ignored', async () => {
+      // DEMO002 is a primary school (SK): its pupils are hidden (secondary-only, D72), so the pupil of teacher C is shown only once the school is secondary
+      await t.db.query(`update schools set type = 'SMK' where code = 'DEMO002'`)
       const c = report(await teacherC.get(`/teacher/report?classroomId=${classMain}`))
+      await t.db.query(`update schools set type = 'SK' where code = 'DEMO002'`)
       expect(c.classroomId).toBeNull()
       expect(c.population.total).toBe(1)
       await expectOnlyClassesOf(w.ids.teacherC, c.options.classes.map((x) => x.id), classOfC)

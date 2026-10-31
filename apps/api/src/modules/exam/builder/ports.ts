@@ -58,8 +58,13 @@ export interface BuilderQuestionInfo {
 
 export interface BuilderGroupInfo {
   id: string
-  /** The group stimulus; a group without one is absent from `groups(...)`. */
+  /** The first group stimulus. A group with nothing to display still appears in `groups(...)` (D90), carrying an empty stimulus and `stimuli: []`. */
   stimulus: BijakAttemptStimulus
+  /**
+   * D90 (R1-T07): every displayable stimulus of the group in order, 0 to 3, the first being `stimulus` when there is one. The group is ONE unit: the stimuli
+   * are shown once above all member questions and carry no marks. Absent = `[stimulus]` (PoC fixture).
+   */
+  stimuli?: BijakAttemptStimulus[]
   /** Member question ids in published order. */
   questionIds: string[]
 }
@@ -73,6 +78,8 @@ export interface BuilderCandidateScope {
 export interface BuilderPreview {
   questions: BijakBuilderReviewQuestion[]
   stimuli: Record<string, BijakAttemptStimulus>
+  /** R1-T07: all stimuli (1 to 3) per group, in order; `stimuli[groupId]` is the first. Absent = one per group. */
+  groupStimuli?: Record<string, BijakAttemptStimulus[]>
   optionBanks: Record<string, BijakAttemptOption[]>
 }
 
