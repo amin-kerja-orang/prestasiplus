@@ -46,6 +46,8 @@ export const QUESTION_MESSAGES = {
   points: 'Nilai mata mesti sekurang-kurangnya 1.',
   language: 'Bahasa tidak sah.',
   sp: 'SP DSKP tidak sah.',
+  /** Bab (D89), same copy as the contract `QUESTION_MESSAGES.guruChapter`. */
+  guruChapter: 'Bab tidak sah.',
 } as const
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
