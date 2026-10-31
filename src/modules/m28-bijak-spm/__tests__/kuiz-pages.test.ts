@@ -426,6 +426,22 @@ describe('PaperQuizPage', () => {
     expect(q('[data-testid=paper-quiz-retry-load]')).toBeNull()
   })
 
+  it('any other 403 stays an error, not the unavailable state', async () => {
+    server.getKuizPaperPage.mockRejectedValue(new BijakError('forbidden', 'Akses ditolak'))
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    expect(q('[data-testid=paper-quiz-unavailable]')).toBeNull()
+    expect(document.body.textContent).toContain('Kertas tidak dapat dimuatkan.')
+  })
+
+  it('a 403 "paper is being updated" on a check switches the screen to the unavailable state', async () => {
+    server.getKuizPaperPage.mockResolvedValue(page1)
+    server.checkKuizPaper.mockRejectedValue(new BijakError('forbidden', 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'))
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    await pick('C')
+    await click('[data-testid=kuiz-semak]')
+    expect(text('[data-testid=paper-quiz-unavailable]')).toContain('sedang dikemas kini')
+  })
+
   it('shows the verdict error of a failed check without losing the pick', async () => {
     server.getKuizPaperPage.mockResolvedValue(page1)
     server.checkKuizPaper.mockRejectedValue(new BijakError('bad_request', 'Jawapan tidak sah.'))
