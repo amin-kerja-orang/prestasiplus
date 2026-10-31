@@ -329,10 +329,11 @@ export class BuilderService {
 
   // --- operations --------------------------------------------------------------------------------
 
-  /** R1-T34: every reference-panel image must be a stored question image (public token or decimal id). */
-  private async checkReferenceImages(refs: readonly string[]): Promise<void> {
+  /** R1-T34: every reference-panel image must be a stored question image named by its public token, uploaded by the editing admin or already on this paper. */
+  private async checkReferenceImages(actor: AuditActor, paper: PaperTree, refs: readonly string[]): Promise<void> {
     if (refs.length === 0) return
-    const known = await this.repo.existingImages(refs)
+    const onPaper = referencePanels(paper.referenceSheets).flatMap((p) => (p.imageFileId ? [p.imageFileId] : []))
+    const known = await this.repo.existingImages(refs, BigInt(actor.userId), onPaper)
     if (refs.some((r) => !known.has(r))) {
       throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.referenceImageInvalid, fields: { reference: MESSAGES.referenceImageInvalid } })
     }
@@ -471,7 +472,7 @@ export class BuilderService {
         plans.push({ sectionId: section.id, placements: ids.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: st.info.get(id)!.versionNo })) })
       }
       // R1-T34 "Bahan rujukan": every panel image must be a stored file (public token or id), never a free string.
-      if (body.reference !== undefined) await this.checkReferenceImages(body.reference.flatMap((p) => (p.imageFileId ? [p.imageFileId] : [])))
+      if (body.reference !== undefined) await this.checkReferenceImages(actor, paper, body.reference.flatMap((p) => (p.imageFileId ? [p.imageFileId] : [])))
       const everywhere = [...resulting.values()].flat()
       // D90: a stimulus group lives in ONE section, so a group member twice on the paper is refused here. A plain
       // question repeated across sections stays accepted and is reported by the publish check (the mock's order).
@@ -517,15 +518,49 @@ export class BuilderService {
     return { ok: true }
   }
 
+  /** Ids of the questions placed on a paper (unique, in paper order). */
+  private placedIdsOf(paper: PaperTree | null): string[] {
+    return paper ? [...new Set(paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId))))] : []
+  }
+
+  /**
+   * The ServabilityService reports of some questions. The bank fails closed on a stored question it cannot read (a stored key that is
+   * missing or invalid is a 500 with the part logged): that must not take the whole review or Terbit down (B3 T34-L2). On that failure the
+   * questions are read one by one and an unreadable one simply has no verdict here; its own named blocker (NO_KEY) comes from the pool facts.
+   */
+  private async safeReports(ids: readonly string[]): Promise<ReadonlyMap<string, ServabilityReport>> {
+    if (ids.length === 0) return new Map()
+    try {
+      return await this.servability.reports(ids)
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.getStatus() < 500) throw e
+      const out = new Map<string, ServabilityReport>()
+      for (const id of ids) {
+        try {
+          for (const [k, v] of await this.servability.reports([id])) out.set(k, v)
+        } catch (inner) {
+          if (!(inner instanceof ApiError) || inner.getStatus() < 500) throw inner
+        }
+      }
+      return out
+    }
+  }
+
   async publish(actor: AuditActor, rawId: string, rawBody?: unknown): Promise<BijakBuilderPublishResult> {
     const id = parseId(rawId)
+    // The servability batch reads the whole bank for the placed questions: it is done BEFORE the transaction takes the paper lock (a slow read must
+    // not hold the lock of the 5 s transaction). Inside, the placed set is compared with the locked paper and re-read only if it moved.
+    const early = id === null ? null : await this.repo.findPilihan(id)
+    const earlyIds = this.placedIdsOf(early)
+    const earlyReports = await this.safeReports(earlyIds)
     return this.prisma.transaction(async () => {
       const paper = await this.lockedPaper(id)
       // The body is optional (no body = the plain Terbit); a bad body is 422 only after the paper is known to exist.
       const request = parseWith(BijakBuilderPublishRequestSchema, rawBody ?? {})
       const ev = await this.evaluate(paper)
       const structural = await this.structuralCheck(paper)
-      const reports = await this.servability.reports(paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId))))
+      const placedNow = this.placedIdsOf(paper)
+      const reports = placedNow.length === earlyIds.length && placedNow.every((x, i) => x === earlyIds[i]) ? earlyReports : await this.safeReports(placedNow)
       // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
       // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
       const blockers = this.collectBlockers(paper, ev, structural, reports)
@@ -784,7 +819,7 @@ export class BuilderService {
     // R1-T34 (B09a, "Dilihat murid di"): the per-row verdict comes from ServabilityService (one batch); the paper is the authority for
     // "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
     const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
-    const reports = await this.servability.reports(placed)
+    const reports = await this.safeReports(placed)
     const blockerList = this.collectBlockers(paper, ev, structural, reports)
     const blockers = blockerList.map((b) => b.message)
     const rows = paper.sections.flatMap((s) =>
