@@ -44,7 +44,7 @@ describe('secondary-only guard on the Bijak and builder readers (R1-B21)', () =>
   async function published(text: string, opts: { darjah?: boolean; groupId?: string } = {}): Promise<string> {
     const q = await svc.create(mcqInput(tag, { questionText: text, ...(opts.groupId ? { stimulusGroupId: opts.groupId } : {}) }), admin)
     await t.db.query(
-      `update question_versions set status = 'published', published_at = now(), paper_code = '1449/2' where question_id = $1`,
+      `update question_versions set status = 'approved', published_at = now(), paper_code = '1449/2' where question_id = $1`,
       [q.id],
     )
     await t.db.query(`update questions set live_version_no = 1 where id = $1`, [q.id])
@@ -66,7 +66,7 @@ describe('secondary-only guard on the Bijak and builder readers (R1-B21)', () =>
          join education_levels el on el.id = v.education_level_id where q.id = $1`,
       [darjah],
     )
-    expect(row).toEqual({ stage: 'primary', status: 'published', is_active: true })
+    expect(row).toEqual({ stage: 'primary', status: 'approved', is_active: true })
   })
 
   it('builder candidates list the secondary question and not the Darjah one', async () => {
