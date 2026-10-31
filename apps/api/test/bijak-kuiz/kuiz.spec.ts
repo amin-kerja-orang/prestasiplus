@@ -380,22 +380,59 @@ describe('per-paper quiz (V2 ExamQuizController::paper): paged by Bahagian, mark
     expect((await student.get(`/api/bijak/kuiz/papers/${mine}`)).status).toBe(200)
   })
 
-  it('19b. AC-R1-18.4: a paper placing a question archived after Terbit is refused 403 with the BM line, page and check alike', async () => {
-    const paper = await createPaper('Kertas diarkib', [{ label: 'A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-MATH-T5')] }])
-    expect((await student.get(`/api/bijak/kuiz/papers/${paper}`)).status).toBe(200)
-    await t.db.query(`update question_versions set status = 'archived' where question_id = $1::bigint and version_no = (select live_version_no from questions where id = $1::bigint)`, [id('SEED-MCQ-MATH-T4')])
+  describe('19b. AC-R1-18.4: a paper that places a question the bank no longer serves is refused 403 with the BM line', () => {
     const msg = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
-    try {
+    const refused = async (paper: string, q: string): Promise<void> => {
       const page = await student.get(`/api/bijak/kuiz/papers/${paper}`)
       expect(page.status).toBe(403)
       expect(page.body.error.message).toBe(msg)
-      const chk = await student.post(`/api/bijak/kuiz/papers/${paper}/check`, { itemId: id('SEED-MCQ-MATH-T5'), optionId: 'A' })
+      const chk = await student.post(`/api/bijak/kuiz/papers/${paper}/check`, { itemId: q, optionId: 'A' })
       expect(chk.status).toBe(403)
       expect(chk.body.error.message).toBe(msg)
-    } finally {
-      await t.db.query(`update question_versions set status = 'approved' where question_id = $1::bigint and version_no = (select live_version_no from questions where id = $1::bigint)`, [id('SEED-MCQ-MATH-T4')])
     }
-    expect((await student.get(`/api/bijak/kuiz/papers/${paper}`)).status).toBe(200)
+
+    it('archived through the real lifecycle (bulk-action archive), then served again once approved', async () => {
+      const paper = await createPaper('Kertas diarkib', [{ label: 'A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-MATH-T5')] }])
+      expect((await student.get(`/api/bijak/kuiz/papers/${paper}`)).status).toBe(200)
+      const live = (await t.db.query<{ live_version_no: number }>(`select live_version_no from questions where id = $1::bigint`, [id('SEED-MCQ-MATH-T4')]))[0]!.live_version_no
+      const admin = await loginAs(t, ADMIN)
+      const res = await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [id('SEED-MCQ-MATH-T4')] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      try {
+        await refused(paper, id('SEED-MCQ-MATH-T5'))
+      } finally {
+        // put the seed back as it was (the lifecycle may also unlink the live version)
+        await t.db.query(`update questions set live_version_no = $2 where id = $1::bigint`, [id('SEED-MCQ-MATH-T4'), live])
+        await t.db.query(`update question_versions set status = 'approved', archive_reason = null where question_id = $1::bigint and version_no = $2`, [id('SEED-MCQ-MATH-T4'), live])
+      }
+      expect((await student.get(`/api/bijak/kuiz/papers/${paper}`)).status).toBe(200)
+    })
+
+    it('a placed question with no live version is refused', async () => {
+      const paper = await createPaper('Kertas tanpa versi', [{ label: 'A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-MATH-T5')] }])
+      const before = (await t.db.query<{ live_version_no: number }>(`select live_version_no from questions where id = $1::bigint`, [id('SEED-MCQ-MATH-T4')]))[0]!.live_version_no
+      await t.db.query(`update questions set live_version_no = null where id = $1::bigint`, [id('SEED-MCQ-MATH-T4')])
+      try {
+        await refused(paper, id('SEED-MCQ-MATH-T5'))
+      } finally {
+        await t.db.query(`update questions set live_version_no = $2 where id = $1::bigint`, [id('SEED-MCQ-MATH-T4'), before])
+      }
+    })
+
+    it('a paper with no placed question is refused', async () => {
+      const paper = await createPaper('Kertas kosong', [{ label: 'A', questionIds: [] }])
+      await refused(paper, id('SEED-MCQ-MATH-T5'))
+    })
+
+    it('an inactive question stays served: the placement is what the paper froze (same rule as a new sitting)', async () => {
+      const paper = await createPaper('Kertas tidak aktif', [{ label: 'A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-MATH-T5')] }])
+      await t.db.query(`update questions set is_active = false where id = $1::bigint`, [id('SEED-MCQ-MATH-T4')])
+      try {
+        expect((await student.get(`/api/bijak/kuiz/papers/${paper}`)).status).toBe(200)
+      } finally {
+        await t.db.query(`update questions set is_active = true where id = $1::bigint`, [id('SEED-MCQ-MATH-T4')])
+      }
+    })
   })
 })
 

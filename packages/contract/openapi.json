@@ -8653,6 +8653,49 @@
                 ]
               }
             ]
+          },
+          "archive": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  0
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "1"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "0"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "true"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "false"
+                ]
+              }
+            ]
           }
         },
         "required": [
@@ -38151,6 +38194,12 @@
               "string",
               "null"
             ]
+          },
+          "essayTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionEssayTopic"
+            }
           }
         },
         "required": [
@@ -38417,6 +38466,12 @@
               "string",
               "null"
             ]
+          },
+          "essayTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionEssayTopic"
+            }
           },
           "qualityScore": {
             "type": [
@@ -38789,6 +38844,12 @@
               "string",
               "null"
             ]
+          },
+          "essayTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionEssayTopic"
+            }
           },
           "qualityScore": {
             "type": [
@@ -81879,7 +81940,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (the active role may not use Bijak SPM, or CSRF_INVALID on a write). Student role; admin and school_admin only inside Mod Pelajar.",
+            "description": "FORBIDDEN \"Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.\" (the paper places a question the bank no longer serves, for example one archived after Terbit, or has no placed question); a bare 403 for the wrong role.",
             "content": {
               "application/json": {
                 "schema": {
@@ -81982,7 +82043,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (the active role may not use Bijak SPM, or CSRF_INVALID on a write). Student role; admin and school_admin only inside Mod Pelajar.",
+            "description": "FORBIDDEN \"Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.\" (as the page read); a bare 403 for the wrong role.",
             "content": {
               "application/json": {
                 "schema": {
