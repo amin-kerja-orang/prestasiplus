@@ -38,6 +38,7 @@ import { CurriculumFactsService } from './curriculum-facts'
 import { runToWire, type CallerInfo } from './extraction.service'
 import { batchLevelIssues, itemIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
+import { stimulusTableOf } from '../../questions/stimulus-table'
 import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
 import { ItemViews } from './item-views'
 import { toQuestionInput, ConvertError } from './to-question'
@@ -54,6 +55,13 @@ const conflict = (message: string): ApiError => ApiError.of('CONFLICT', { messag
 const invalid = (field: string, message: string): ApiError => ApiError.of('VALIDATION_ERROR', { fields: { [field]: message } })
 const gateError = (issues: IntakeIssue[]): ApiError =>
   ApiError.of('VALIDATION_ERROR', { message: INTAKE_MESSAGES.gateFailed, details: { issues } })
+
+/** What one `bankGroupFor` call created, so a refused accept can remove it again. */
+interface MadeBankGroup {
+  fileToken?: string
+  stimulusId?: string
+  groupId?: string
+}
 
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
 
@@ -278,6 +286,7 @@ export class IntakeReviewService {
       if (body.mode !== undefined) set('mode', body.mode)
       if (body.unit !== undefined) set('unit', body.unit ?? undefined)
       if (body.wordRange !== undefined) set('wordRange', body.wordRange ?? undefined)
+      if (body.cognitiveLevel !== undefined) set('cognitiveLevel', body.cognitiveLevel ?? undefined)
       if (body.parts !== undefined) set('parts', body.parts)
       if (body.scheme !== undefined) set('scheme', body.scheme ?? undefined)
       if (body.page !== undefined) set('page', body.page)
@@ -501,10 +510,11 @@ export class IntakeReviewService {
 
     const ownerId = row.batch.ownerUserId === null ? auth.userId : idToString(row.batch.ownerUserId)
     const actor = { userId: ownerId, role: auth.active.role === 'admin' ? ('admin' as const) : ('teacher' as const) }
-    const groupId = row.stimulus ? await this.bankGroupFor(row, ownerId, auth.mode !== null) : null
-
+    const made: MadeBankGroup = {}
+    let groupId: string | null = null
     let created
     try {
+      groupId = row.stimulus ? await this.bankGroupFor(row, ownerId, auth.mode !== null, made) : null
       // The kertas comes from the source paper (the paper builder reads it from the trailing digit of the paper code).
       const paper = row.batch.sourcePaperId === null ? null : await tx.sourcePaper.findUnique({ where: { id: row.batch.sourcePaperId }, select: { paperCode: true, kertas: true } })
       const kertas = kertasOfSourcePaper(paper)
@@ -523,6 +533,9 @@ export class IntakeReviewService {
         paperCode: paper?.paperCode && /\/[0-9]\s*$/.test(paper.paperCode) ? paper.paperCode : null,
       })
     } catch (err) {
+      // The bank stimulus, group and figure copy are written outside this transaction: a refused accept must not leave them behind
+      // (one orphan object per retry otherwise).
+      await this.discardMade(made)
       if (err instanceof ConvertError) throw gateError([{ itemId: idToString(row.id), where: err.where, message: err.message }])
       if (err instanceof ApiError && err.code === 'VALIDATION_ERROR' && err.fields) {
         throw gateError(Object.values(err.fields).map((message) => ({ itemId: idToString(row.id), where: `Soalan ${q.label}`, message })))
@@ -561,7 +574,7 @@ export class IntakeReviewService {
    * `question_image` copy, so the figure follows the question-image read rule (admin and teacher, and a pupil only while the
    * question is served) and survives the intake batch (R1-14.3).
    */
-  private async bankGroupFor(row: ItemRow, ownerId: string, isTest: boolean): Promise<string> {
+  private async bankGroupFor(row: ItemRow, ownerId: string, isTest: boolean, made: MadeBankGroup): Promise<string> {
     const sibling = await this.prisma.client.intakeItem.findFirst({
       where: { stimulusId: row.stimulusId, reviewState: 'accepted', questionId: { not: null } },
       orderBy: { id: 'asc' },
@@ -580,11 +593,12 @@ export class IntakeReviewService {
     if (crop?.cropFileId) {
       const cropped = await this.files.readStored(idToString(crop.cropFileId))
       if (!cropped) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
-      assetFileId = idFromString((await this.files.storeManaged({ ownerUserId: ownerId, purpose: 'question_image', bytes: cropped.bytes, isTest })).id)
+      const stored = await this.files.storeManaged({ ownerUserId: ownerId, purpose: 'question_image', bytes: cropped.bytes, isTest })
+      made.fileToken = stored.publicId
+      assetFileId = idFromString(stored.id)
     }
-    const table = s.tableData as { head?: string[]; rows?: string[][] } | null
-    const body =
-      s.body ?? (table && Array.isArray(table.head) ? [table.head.join(' | '), ...(table.rows ?? []).map((r) => r.join(' | '))].join('\n') : null)
+    const table = stimulusTableOf(s.tableData)
+    const body = s.body ?? (table ? [table.head.join(' | '), ...table.rows.map((r) => r.join(' | '))].join('\n') : null)
     const stimulusId = await this.questions.createStimulus({
       kind: s.kind as 'passage' | 'diagram' | 'table',
       label: s.label || null,
@@ -593,7 +607,22 @@ export class IntakeReviewService {
       altText: s.altText || null,
       assetFileId,
     })
-    return this.questions.createStimulusGroup({ label: s.label || null, scope: 'section', stimulusIds: [stimulusId], optionBank: [] })
+    made.stimulusId = stimulusId
+    const groupId = await this.questions.createStimulusGroup({ label: s.label || null, scope: 'section', stimulusIds: [stimulusId], optionBank: [] })
+    made.groupId = groupId
+    return groupId
+  }
+
+  /** Removes what `bankGroupFor` made in this call (group, stimulus, figure copy), newest first. Never throws: the original error is the answer. */
+  private async discardMade(made: MadeBankGroup): Promise<void> {
+    try {
+      if (made.groupId !== undefined) await this.prisma.client.stimulusGroup.delete({ where: { id: idFromString(made.groupId) } })
+      if (made.stimulusId !== undefined) await this.prisma.client.stimulus.delete({ where: { id: idFromString(made.stimulusId) } })
+    } catch {
+      // a row that is already gone, or one that is in use, stays; the file below is only removed when its stimulus is gone
+      return
+    }
+    if (made.fileToken !== undefined) await this.files.discard(made.fileToken, 'question_image')
   }
 
   // ---- bulk ----------------------------------------------------------------------------------------

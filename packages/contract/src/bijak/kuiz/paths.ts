@@ -56,7 +56,7 @@ export function registerBijakKuizPaths(registry: OpenAPIRegistry): void {
       201: json(envelopeOf(BijakKuizSessionSchema), 'The session and its items (no key).'),
       401: UNAUTHORIZED,
       403: FORBIDDEN,
-      422: err('NO_QUESTIONS, or VALIDATION_ERROR with fields (subject, count).'),
+      422: err('NO_QUESTIONS, or VALIDATION_ERROR with fields (subject, or an unknown key). An invalid or missing count is not an error: it falls back to 20 (V2).'),
     },
   })
 
@@ -103,7 +103,7 @@ export function registerBijakKuizPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(BijakKuizPaperPageSchema), 'One Bahagian.'),
       401: UNAUTHORIZED,
-      403: FORBIDDEN,
+      403: err('FORBIDDEN "Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini." (the paper places a question the bank no longer serves, for example one archived after Terbit, or has no placed question); a bare 403 for the wrong role.'),
       404: err('NOT_FOUND "Kertas tidak ditemui" (unknown, unpublished, or another user generated paper).'),
       422: err('VALIDATION_ERROR on page.'),
     },
@@ -119,7 +119,7 @@ export function registerBijakKuizPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(BijakKuizCheckResultSchema), 'The verdict and the right option.'),
       401: UNAUTHORIZED,
-      403: FORBIDDEN,
+      403: err('FORBIDDEN "Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini." (as the page read); a bare 403 for the wrong role.'),
       404: err('NOT_FOUND "Kertas tidak ditemui".'),
       422: err('VALIDATION_ERROR "Jawapan tidak sah." (unknown part, non-objective part, or option not of the part).'),
     },

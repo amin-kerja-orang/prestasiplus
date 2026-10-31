@@ -1,4 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+
+import { ApiError } from '../../src/common/errors/api-error'
+import { QuestionsService } from '../../src/modules/questions'
 
 import { binary } from '../intake-files/helpers'
 import { bootWorkflowApp, draft, extractAndRun, itemsOf, loginAs, paper, post, readyBatch, type LoggedIn, type WorkflowTestApp } from './helpers'
@@ -115,5 +118,37 @@ describe('a cropped figure becomes a question_image on the accepted stimulus (AC
     const res = await student.agent.get(`/api/files/${imageToken}`).buffer().parse(binary)
     expect(res.status).toBe(200)
     expect(res.headers['content-type']).toBe('image/png')
+  })
+})
+
+describe('a refused accept leaves no figure copy, stimulus or group behind (T42b minor)', () => {
+  const counts = async () => ({
+    images: Number((await t.db.query<{ n: string }>(`select count(*)::text n from files where purpose = 'question_image'`))[0]!.n),
+    stimuli: Number((await t.db.query<{ n: string }>(`select count(*)::text n from stimuli`))[0]!.n),
+    groups: Number((await t.db.query<{ n: string }>(`select count(*)::text n from stimulus_groups`))[0]!.n),
+  })
+
+  it('a 422 after the bank stimulus was made rolls its file, stimulus and group back; a retry then makes exactly one', async () => {
+    t.ai.paper = () =>
+      paper([draft(t.codes, '1', { stimulusId: 'stim-9' })], {
+        stimuli: [{ id: 'stim-9', kind: 'diagram', label: 'Rajah 9', alt: 'Rajah segi empat', page: 1, region: REGION }],
+      })
+    const { batchId } = await readyBatch(t, teacher)
+    await extractAndRun(t, teacher, batchId)
+    const [item] = await itemsOf(teacher, batchId)
+    const before = await counts()
+
+    const svc = t.app.get(QuestionsService)
+    const spy = vi.spyOn(svc, 'createFromIntake').mockRejectedValue(ApiError.of('VALIDATION_ERROR', { fields: { stem: 'Teks soalan tidak sah.' } }))
+    for (let i = 0; i < 3; i++) {
+      const res = await post(teacher, `/intake/items/${item!.id}/accept`)
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(await counts(), `retry ${String(i + 1)}`).toEqual(before) // no orphan per retry
+    }
+    spy.mockRestore()
+
+    const ok = await post(teacher, `/intake/items/${item!.id}/accept`)
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+    expect(await counts()).toEqual({ images: before.images + 1, stimuli: before.stimuli + 1, groups: before.groups + 1 })
   })
 })
