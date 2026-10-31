@@ -5,7 +5,7 @@
  * route, so "Edit" opens this drawer prefilled and the page replaces the old item with the new one.
  */
 import type { BijakEvidenceInput, BijakEvidenceItem } from '@pp/contract'
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import { DsFormField } from '@/ds'
 
@@ -46,6 +46,8 @@ const form = reactive<{
   rows: [],
 })
 const errors = ref<Record<string, string>>({})
+/** A skema prints marks and question counts but no answering rule and no duration (SPP 10.3). */
+const isSkema = computed(() => form.kind === 'skema')
 
 const KINDS = (Object.keys(KIND_LABEL) as (keyof typeof KIND_LABEL)[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))
 const RULES = [
@@ -90,7 +92,7 @@ function submit(): void {
     paperCode: form.paperCode.trim(),
     note: form.note.trim() ? form.note.trim() : null,
     values: {
-      ...(form.durationMin !== null ? { durationMin: form.durationMin } : {}),
+      ...(form.durationMin !== null && !isSkema.value ? { durationMin: form.durationMin } : {}),
       ...(form.totalMarks !== null ? { totalMarks: form.totalMarks } : {}),
       ...(form.rows.length
         ? {
@@ -98,7 +100,13 @@ function submit(): void {
               position: i + 1,
               ...(r.label.trim() ? { label: r.label.trim() } : {}),
               ...(r.markBudget !== null ? { markBudget: r.markBudget } : {}),
-              ...(r.ruleType === 'all' ? { rule: { type: 'all' as const } } : r.n !== null ? { rule: { type: 'choose' as const, n: r.n } } : {}),
+              ...(isSkema.value
+                ? {}
+                : r.ruleType === 'all'
+                  ? { rule: { type: 'all' as const } }
+                  : r.n !== null
+                    ? { rule: { type: 'choose' as const, n: r.n } }
+                    : {}),
               ...(r.questionCount !== null ? { questionCount: r.questionCount } : {}),
             })),
           }
@@ -144,7 +152,7 @@ function addRow(): void {
             <UInput :id="f.id" v-model="form.paperCode" class="w-full" :ui="{ base: 'min-h-11' }" :aria-invalid="f.invalid" />
           </template>
         </DsFormField>
-        <DsFormField native for="ev-duration" label="Tempoh dibaca (minit)">
+        <DsFormField v-if="!isSkema" native for="ev-duration" label="Tempoh dibaca (minit)">
           <template #default="f"><NumField :id="f.id" v-model="form.durationMin" :min="1" /></template>
         </DsFormField>
         <DsFormField native for="ev-total" label="Jumlah markah dibaca">
@@ -154,6 +162,9 @@ function addRow(): void {
 
       <section class="flex flex-col gap-3" aria-labelledby="ev-sections">
         <h3 id="ev-sections" class="text-label text-default">Nilai setiap Bahagian</h3>
+        <p v-if="isSkema" class="text-caption text-muted" data-testid="skema-no-rule">
+          Skema tidak mencetak peraturan menjawab atau tempoh, jadi kedua-duanya tidak diisi.
+        </p>
         <p v-if="!form.rows.length" class="text-caption text-muted">Tiada Bahagian. Tambah jika dibaca daripada kertas.</p>
         <div v-for="(r, i) in form.rows" :key="i" class="grid grid-cols-2 gap-3 rounded-md bg-elevated p-3">
           <DsFormField native :for="`ev-s${i}-label`" label="Label">
@@ -165,7 +176,7 @@ function addRow(): void {
           <DsFormField native :for="`ev-s${i}-q`" label="Bilangan soalan">
             <template #default="f"><NumField :id="f.id" v-model="r.questionCount" /></template>
           </DsFormField>
-          <fieldset class="min-w-0">
+          <fieldset v-if="!isSkema" class="min-w-0">
             <legend class="mb-1 text-label text-default">Peraturan</legend>
             <URadioGroup v-model="r.ruleType" :items="RULES" size="sm" :ui="{ item: 'min-h-11' }" />
             <NumField v-if="r.ruleType === 'choose'" v-model="r.n" :min="1" aria-label="Jawab (N)" placeholder="N" />
