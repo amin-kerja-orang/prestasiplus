@@ -28,4 +28,16 @@ describe('kuiz stimulus mapping (H-C8)', () => {
     expect(resolveStimuli(record(['a']), null, new Map([['a', own({ sharedBy: 2 })]])).complete).toBe(false)
     expect(resolveStimuli(record(['a']), null, new Map([['a', own({ bodyMs: null })]])).complete).toBe(false)
   })
+  it('a whitespace-only body is empty; an unlabelled own picture gets the default alt', () => {
+    expect(toKuizStimulus({ kind: 'passage', label: 'L', bodyMs: '   ', alt: null, assetFileId: null })).toBeNull()
+    expect(toKuizStimulus({ kind: 'image', label: '', bodyMs: null, alt: null, assetFileId: '3' })?.alt).toBe('Gambar untuk soalan ini')
+    expect(toKuizStimulus({ kind: 'image', label: 'Rajah 1', bodyMs: null, alt: null, assetFileId: '3' })?.alt).toBeNull()
+  })
+  it('a labelled own stimulus that reuses the group picture is kept; an unlabelled duplicate is dropped', () => {
+    const group = { id: 'g', stimuli: [{ id: 's1', kind: 'image', label: 'Rajah 1', bodyMs: null, bodyEn: null, assetFileId: '7', alt: null }], optionBank: [], questionIds: [] }
+    const labelled = resolveStimuli({ id: '1', groupId: 'g', version: { stimulusIds: ['s1', 'a'], parts: [] } } as unknown as QuestionRecord, group as never, new Map([['a', own({ kind: 'image', label: 'Rajah 2', bodyMs: null, assetFileId: '7' })]]))
+    expect(labelled.entries.map((e) => e.stimulus.label)).toEqual(['Rajah 1', 'Rajah 2'])
+    const bare = resolveStimuli({ id: '1', groupId: 'g', version: { stimulusIds: ['s1', 'a'], parts: [] } } as unknown as QuestionRecord, group as never, new Map([['a', own({ kind: 'image', label: '', bodyMs: null, assetFileId: '7' })]]))
+    expect(bare.entries).toHaveLength(1)
+  })
 })

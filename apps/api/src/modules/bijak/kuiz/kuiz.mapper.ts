@@ -176,14 +176,16 @@ export function toKuizStimulus(s: StimulusLike): KuizStimulus | null {
   if (!KUIZ_KINDS.has(s.kind)) return null
   const table = s.kind === 'table' ? (stimulusTableOf(s.tableData, s.bodyMs) ?? null) : null
   // A table parsed from the body replaces the body text; any other body stays the text.
-  const body = table && !s.tableData ? null : s.bodyMs
+  const text = s.bodyMs?.trim() ? s.bodyMs : null
+  const body = table && !s.tableData ? null : text
   if (!body && !table && !s.assetFileId) return null
   return {
     kind: s.kind as KuizStimulus['kind'],
     label: s.label,
     body,
     imageToken: null,
-    alt: s.alt,
+    // An unlabelled own picture still gets a text alternative (same line as the bridge, R1E2E-05b).
+    alt: s.alt ?? (!s.label && s.assetFileId && !body && !table ? 'Gambar untuk soalan ini' : null),
     caption: s.caption ?? null,
     source: s.sourceCitation ?? null,
     table,
@@ -234,7 +236,8 @@ export function resolveStimuli(
       continue
     }
     if (a.assetFileId) {
-      if (files.has(a.assetFileId)) continue
+      // The same picture twice is shown once, but only when the duplicate has no label of its own (the stem picture of a group).
+      if (files.has(a.assetFileId) && !w.label) continue
       files.add(a.assetFileId)
     }
     entries.push({ stimulus: w, file: a.assetFileId })

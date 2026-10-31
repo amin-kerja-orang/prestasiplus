@@ -55,7 +55,8 @@ export function percent(score: number, total: number): number {
 
 /** Wire stimulus to the shared display shape: any of the seven kinds, with caption, source and table grid (R1-T07). */
 export function toStimulus(s: BijakKuizItem['stimuli'][number], id: string): StimulusData {
-  const kind: StimulusKind = s.kind
+  // A table with no grid and no picture keeps its text: it is shown as a passage (the figure would draw nothing).
+  const kind: StimulusKind = s.kind === 'table' && !s.table && !s.imageToken ? 'passage' : s.kind
   return {
     id,
     kind,
@@ -63,7 +64,7 @@ export function toStimulus(s: BijakKuizItem['stimuli'][number], id: string): Sti
     ...(s.body ? { text: s.body } : {}),
     ...(s.caption ? { caption: s.caption } : {}),
     ...(s.source ? { source: s.source } : {}),
-    ...(s.table ? { table: { head: s.table.head, rows: s.table.rows, ...(s.caption ? { caption: s.caption } : {}) } } : {}),
+    ...(s.table ? { table: { head: s.table.head, rows: s.table.rows } } : {}),
     ...(s.imageToken ? { src: fileUrl(s.imageToken) } : {}),
     ...(s.alt ? { alt: s.alt } : {}),
   }

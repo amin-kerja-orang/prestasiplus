@@ -44,5 +44,17 @@ test.describe('Simulasi Kuiz responsive', () => {
     await expect(page.getByTestId('stimulus-group').first()).toBeVisible()
     expect(await page.getByTestId('stimulus-group').count()).toBeGreaterThanOrEqual(1)
     await fits(page, 'paper-quiz-group')
+
+    // H-C8: a paper whose stimulus is a wide table (Sejarah K2) still fits the viewport
+    await gotoApp('/simulasi/sej-k2-2025-a/kuiz')
+    await expect(page.getByTestId('paper-quiz-header')).toBeVisible({ timeout: 20_000 })
+    // below 1024px each shared stimulus opens from its chip (bottom sheet); from lg it is the pinned pane. Open every chip
+    // so any table of the page is on screen when the width is measured.
+    for (const chip of await page.getByTestId('stimulus-chip').all()) {
+      await chip.click()
+      await page.keyboard.press('Escape')
+    }
+    console.log(`KUIZ-TABLES ${await page.locator('table').count()}`)
+    await fits(page, 'paper-quiz-table')
   })
 })
