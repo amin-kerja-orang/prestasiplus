@@ -195,7 +195,7 @@ As a Murid, I want to report a wrong question, and as an Admin Pusat I want to f
 - AC-R1-18.1 Given Semakan or an attempt, then the pupil can report a question part with a reason and optional note; the report stores the question and paper.
 - AC-R1-18.2 Given own reports, then `/laporan-soalan` lists them with status baru / disemak / diperbaiki / ditolak; a pupil sees only their own.
 - AC-R1-18.3 Given the admin queue, then each row shows question, paper and status; the admin sets status and a note.
-- AC-R1-18.4 Given a report, then the admin can open the question and archive it (verify that the existing row action does this; add if absent); archiving removes it from Databank and Kuiz at once and warns that Terbit papers keep their frozen snapshot (PIPE AC-04.4).
+- AC-R1-18.4 Given a report, then the admin can open the question and archive it (verify that the existing row action does this; add if absent); archiving removes it from Databank and Kuiz at once. A Terbit paper that holds the archived question can no longer be started: a new sitting, or a per-paper Kuiz, is refused with "Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini."; a sitting already started keeps its pinned version; the Arkib answer warns the admin which Terbit papers are affected (PIPE AC-04.4). (Updated 2026-10-31 from "Terbit papers keep their frozen snapshot" to the implemented rule: H-A13 `r1/ha13-archived-paper` for sittings, REQ-A-003 `r1/b16-kuiz` for the per-paper Kuiz; REQ-C-016.)
 - AC-R1-18.5 Given a status change, then the pupil sees the new status on their next view.
 
 ### R1-19 Secondary-only guard (D86)
