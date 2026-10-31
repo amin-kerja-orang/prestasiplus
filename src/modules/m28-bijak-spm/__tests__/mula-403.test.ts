@@ -79,6 +79,20 @@ describe('H-C5: "Mula" on a paper that cannot start (403)', () => {
   })
 })
 
+describe('H-C5: "Mula Semula" refused (403) while a sitting is open', () => {
+  it('shows the BM message, not nothing', async () => {
+    server.findInProgress.mockResolvedValue({ attemptId: 'a1', mode: 'exam', title: 'Set 1', elapsedSeconds: 60, fresh: false })
+    server.startAttempt.mockRejectedValue(new BijakError('forbidden', MSG))
+    await mountCover()
+    ;(document.body.querySelector('[data-testid=restart]') as HTMLElement).click()
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid=confirm-restart]') as HTMLElement).click()
+    await flushPromises()
+    expect(document.body.querySelector('[data-testid=start-failure]')?.textContent).toContain(MSG)
+    expect(document.body.querySelector('[data-testid=resume-choice]')).not.toBeNull()
+  })
+})
+
 describe('mock server mirrors the API refusal', () => {
   it('throws forbidden with the BM line when a placed question is no longer served', async () => {
     const paper = PAPERS[0]!
@@ -91,6 +105,19 @@ describe('mock server mirrors the API refusal', () => {
       expect(PAPER_UNAVAILABLE).toBe(MSG)
     } finally {
       BANK.questions.set(qid, saved)
+    }
+  })
+
+  it('refuses a paper with no placed question', async () => {
+    const paper = PAPERS[0]!
+    const sections = paper.sections
+    const ids = sections.map((s) => s.questionIds)
+    sections.forEach((s) => (s.questionIds = []))
+    try {
+      const s = new BijakServer({ storage: new MemoryStorage(), now: () => 1_800_000_000_000 })
+      await expect(s.startAttempt(7, paper.id, 'exam')).rejects.toMatchObject({ code: 'forbidden', message: MSG })
+    } finally {
+      sections.forEach((s, i) => (s.questionIds = ids[i]!))
     }
   })
 })

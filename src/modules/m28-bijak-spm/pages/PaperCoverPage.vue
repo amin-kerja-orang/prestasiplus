@@ -178,8 +178,10 @@ async function begin(restart: boolean): Promise<void> {
           legend="Mod menjawab"
           data-testid="mode-choice"
         />
-        <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" />
       </section>
+
+      <!-- Outside both branches: a refusal of "Mula" or "Mula Semula" (403, paper being updated) is always visible. -->
+      <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" data-testid="start-failure" />
     </template>
 
     <UModal

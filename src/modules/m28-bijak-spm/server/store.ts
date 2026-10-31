@@ -399,7 +399,7 @@ export class BijakServer implements BijakApi {
       return { attemptId: keep.id }
     }
     // H-C5 / H-A13: a paper that places a question the bank no longer serves cannot start a new sitting (API: 403 + this BM line).
-    if (def.sections.some((s) => s.questionIds.some((id) => !BANK.questions.has(id)))) {
+    if (def.sections.every((s) => s.questionIds.length === 0) || def.sections.some((s) => s.questionIds.some((id) => !BANK.questions.has(id)))) {
       throw new BijakError('forbidden', PAPER_UNAVAILABLE)
     }
     if (!opts.fresh) for (const a of open) a.status = 'abandoned'
