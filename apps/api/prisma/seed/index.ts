@@ -22,13 +22,14 @@ import { curriculumSeed } from './curriculum'
 import { examSeed } from './exam'
 import { examDemoBlueprintsSeed } from './exam-demo-blueprints'
 import { examLaunchBlueprintsSeed } from './exam-launch-blueprints'
+import { e2eSeed } from './e2e'
 import { practiceSeed } from './practice'
 import { questionsSeed } from './questions'
 import { questionPoolSeed } from './questions/pool'
 import { bijakSittingsSeed } from './poc/bijak-sittings'
 import { classesSeed } from './poc/classes'
 import { marketplaceSeed } from './marketplace'
-import { assertSeedAllowed } from './guard'
+import { assertSeedAllowed, countsAsProduction } from './guard'
 import { walletSeed } from './wallet'
 import { contentSeed } from './content'
 import { gamificationSeed } from './gamification'
@@ -41,12 +42,14 @@ import { spmSubjectConfigsSeed } from './spm-subject-configs'
 import { pocProfileSeed } from './poc'
 import { pkskSeed } from './pksk'
 
-export { assertSeedAllowed }
+export { assertSeedAllowed, countsAsProduction }
 
 export const DEFAULT_PROFILE = 'poc'
 
 export interface SeedContext {
   profile: string
+  /** The environment of this run (`RunSeedsOptions.env`, default `process.env`): the same one the demo guard reads. */
+  readonly env: Record<string, string | undefined>
   /** Fixed at the ADR-0006 anchor; never the real time. */
   clock: Clock
   /** Independent seeded stream per name; call once per generator. */
@@ -83,7 +86,7 @@ export interface SeedModule {
  * ALLOW_DEMO_SEED.
  * ORDER NOTE: `core-wallet-tiers` sits right after `core-school-packages`, BEFORE `wallet` and `gamification` (the modules that read tiers); `questions-pool` sits BEFORE `spm-subject-configs` and `spm` (the SPM seed reads the SPM pool; test/seed/question-pool.spec.ts); the marketplace seeds sit BEFORE `gamification`; `gamification` then `poc-profile` stay at the END (test/gamification/seed.spec.ts, test/seed/poc.spec.ts).
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, examLaunchBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, examLaunchBlueprintsSeed, e2eSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
@@ -114,6 +117,7 @@ export async function runSeeds(
   const { prisma, seedBase = DEFAULT_SEED_BASE } = options
   const ctx: SeedContext = {
     profile,
+    env,
     clock: new FixedClock(SEED_NOW),
     prng: (name) => prngStream(name, seedBase),
     get prisma(): PrismaClient {
@@ -171,19 +175,6 @@ export function applyForceDemo(argv: readonly string[], env: Record<string, stri
   }
   env.ALLOW_DEMO_SEED = 'true'
   return true
-}
-
-/**
- * True when the demo guard counts `env` as production, i.e. `assertSeedAllowed` would refuse it with no
- * ALLOW_DEMO_SEED key. Uses the guard itself, so it follows the guard's own definition of production.
- */
-export function countsAsProduction(env: Record<string, string | undefined> = process.env): boolean {
-  try {
-    assertSeedAllowed({ ...env, ALLOW_DEMO_SEED: undefined })
-    return false
-  } catch {
-    return true
-  }
 }
 
 /**

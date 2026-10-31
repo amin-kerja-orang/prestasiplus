@@ -27,6 +27,9 @@ export const difficultyOfTp = (tp: number | null): number | null => (tp === null
 /** The TPs a mock difficulty (1 to 5) selects: 5 also takes TP 6, the inverse of `difficultyOfTp`. */
 export const tpsOfDifficulty = (difficulty: number): number[] => (difficulty >= 5 ? [5, 6] : [difficulty])
 
+/** The SQL shape of what `servableMcq` accepts (one text MCQ leaf, no stimulus, key names an option): counts and draws agree with serving. */
+export const PRACTICE_SHAPE = { minOptions: 1, maxOptions: 8 } as const
+
 export type Refusal = { ok: false; reason: string }
 
 /** The single MCQ leaf of a servable version, or why it is refused. */
