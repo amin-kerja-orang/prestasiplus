@@ -5,7 +5,7 @@
  * `validateBlueprint` and `validateForVerification` list every problem at once, `checkEvidence` is the
  * AC-39.7 comparison, `canonicalStructure` is the string the structural hash is taken of (3.5).
  */
-export { canonicalStructure, checkEvidence, validateBlueprint, validateForVerification } from '@pp/exam-core'
+export { canonicalStructure, checkEvidence, validateBlueprint, validateForVerification, verifyComposition } from '@pp/exam-core'
 export type {
   BlueprintProblem,
   BlueprintWarning,
@@ -13,9 +13,11 @@ export type {
   EvidenceItem,
   EvidenceLine,
   Profile,
+  QuestionFacts,
   Quota,
   StandardBlueprint,
   StandardSection,
   UnitRef,
   ValidateOptions,
+  Violation,
 } from '@pp/exam-core'

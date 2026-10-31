@@ -36,3 +36,5 @@ export {
   placePanel,
 } from './lib/arabic-keyboard'
 export type { CaretEdit, KeyboardMode, PanelPlacement } from './lib/arabic-keyboard'
+/** The six cognitive levels of the Studio ("Aras pemikiran"), reused by the m28 intake editor. */
+export { COGNITIVE_OPTIONS } from './lib/studio/dskp-tags'

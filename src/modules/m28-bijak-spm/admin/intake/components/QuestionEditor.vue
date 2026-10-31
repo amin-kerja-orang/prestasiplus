@@ -4,13 +4,15 @@
  * D1/D2), options + key or parts, the mark scheme, and the DSKP tag. Fields the extractor was unsure
  * of carry a "Sahkan" box that a person must tick (confidence gate).
  */
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { DsText } from '@/ds'
+import { COGNITIVE_OPTIONS } from '@/modules/m04-question-bank'
 
 import type { LeafKind } from '../../../domain/types'
 import RichText from '../../../components/RichText.vue'
-import { unitByCode, unitsFor, tagWithUnit } from '../lib/dskp'
+import { bijakAdminServer } from '../../../server/client'
+import { tagWithUnit, unitsFromStudio, type DskpUnit } from '../lib/dskp'
 import { fieldName } from '../domain/validation'
 import type { IntakePart, IntakeQType, IntakeQuestion } from '../types'
 import SchemeEditor from './SchemeEditor.vue'
@@ -19,6 +21,8 @@ const props = defineProps<{
   modelValue: IntakeQuestion
   /** Bank questions have no printed number: hide the field. */
   hideNumber?: boolean
+  /** Intake review: a per-leaf "Aras pemikiran" the T33 approve gate needs (R1-B05). */
+  showCognitive?: boolean
 }>()
 const emit = defineEmits<{ 'update:modelValue': [IntakeQuestion] }>()
 
@@ -87,6 +91,27 @@ function setKey(id: string): void {
   set({ scheme: { kind: 'option', marks: q.value.marks || 1, correct: id, reason: q.value.scheme?.kind === 'option' ? q.value.scheme.reason : '' } })
 }
 
+/* cognitive level (REQ intake-cognitive): '' clears it */
+type Cognitive = NonNullable<IntakeQuestion['cognitiveLevel']>
+const asCognitive = (v: string): Cognitive | undefined => COGNITIVE_OPTIONS.find((c) => c.value === v)?.value
+function setCognitive(v: string): void {
+  const { cognitiveLevel: _c, ...rest } = q.value
+  void _c
+  const level = asCognitive(v)
+  emit('update:modelValue', level ? { ...rest, cognitiveLevel: level } : rest)
+}
+function setPartCognitive(i: number, v: string): void {
+  const level = asCognitive(v)
+  set({
+    parts: q.value.parts.map((p, k) => {
+      if (k !== i) return p
+      const { cognitiveLevel: _c, ...rest } = p
+      void _c
+      return level ? { ...rest, cognitiveLevel: level } : rest
+    }),
+  })
+}
+
 /* parts */
 function setPart(i: number, patch: Partial<IntakePart>): void {
   set({ parts: q.value.parts.map((p, k) => (k === i ? { ...p, ...patch } : p)) })
@@ -99,9 +124,33 @@ function removePart(i: number): void {
 }
 
 /* tag */
-const units = computed(() => unitsFor(q.value.tag.subject))
-function setUnit(code: string): void {
-  const u = unitByCode(code)
+/** The curriculum units of the subject (T4 and T5), read from the server (REQ-B-001), never a built-in list. */
+const units = ref<DskpUnit[]>([])
+const unitsFailed = ref(false)
+let unitsSeq = 0
+async function loadUnits(subject: IntakeQuestion['tag']['subject']): Promise<void> {
+  const token = ++unitsSeq
+  unitsFailed.value = false
+  try {
+    const server = bijakAdminServer()
+    const [t4, t5] = await Promise.all([server.dskpUnits(subject, 'T4'), server.dskpUnits(subject, 'T5')])
+    if (token === unitsSeq) units.value = [...unitsFromStudio(subject, 'T4', t4), ...unitsFromStudio(subject, 'T5', t5)]
+  } catch {
+    if (token === unitsSeq) {
+      units.value = []
+      unitsFailed.value = true
+    }
+  }
+}
+watch(() => q.value.tag.subject, (subject) => void loadUnits(subject), { immediate: true })
+onBeforeUnmount(() => {
+  unitsSeq += 1
+})
+/** Unit codes repeat across forms, so an option is the form plus the code. */
+const unitKey = (u: { form: string; code: string }): string => `${u.form}:${u.code}`
+const selectedUnit = computed(() => (q.value.tag.unit ? `${q.value.tag.level}:${q.value.tag.unit}` : ''))
+function setUnit(key: string): void {
+  const u = units.value.find((x) => unitKey(x) === key)
   set({ tag: tagWithUnit(q.value.tag, u) })
 }
 function setForm(origin: 'T1-T3' | 'T4' | 'T5'): void {
@@ -181,6 +230,19 @@ function insertMath(field: 'stem'): void {
       </label>
       <p v-else class="self-end pb-3 text-sm text-muted">Markah soalan: {{ q.marks }} (jumlah bahagian)</p>
     </div>
+
+    <label v-if="showCognitive && q.parts.length === 0" class="flex flex-col gap-1 text-sm">
+      <span class="font-medium">Aras pemikiran</span>
+      <select
+        :value="q.cognitiveLevel ?? ''"
+        class="min-h-11 rounded-lg border border-default bg-default px-2"
+        data-testid="q-cognitive"
+        @change="setCognitive(($event.target as HTMLSelectElement).value)"
+      >
+        <option value="">Pilih aras pemikiran</option>
+        <option v-for="c in COGNITIVE_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
+      </select>
+    </label>
 
     <!-- stem -->
     <div class="flex flex-col gap-2">
@@ -297,6 +359,19 @@ function insertMath(field: 'stem'): void {
             @click="removePart(i)"
           />
         </div>
+        <label v-if="showCognitive" class="mt-3 flex flex-col gap-1 text-sm sm:max-w-xs">
+          <span class="text-muted">Aras pemikiran</span>
+          <select
+            :value="p.cognitiveLevel ?? ''"
+            class="min-h-11 rounded-lg border border-default bg-default px-2"
+            :aria-label="`Aras pemikiran ${p.label}`"
+            data-testid="part-cognitive"
+            @change="setPartCognitive(i, ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="">Pilih aras pemikiran</option>
+            <option v-for="c in COGNITIVE_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
+          </select>
+        </label>
         <DsText v-if="p.lead?.length" variant="caption" tone="muted" data-testid="part-lead">
           Di bawah: <RichText :text="p.lead.map((l) => `${l.label} ${l.prompt}`).join(' ')" />
         </DsText>
@@ -359,7 +434,7 @@ function insertMath(field: 'stem'): void {
         <label class="flex flex-col gap-1 text-sm lg:col-span-2">
           <span class="text-muted">Unit</span>
           <select
-            :value="q.tag.unit ?? ''"
+            :value="selectedUnit"
             :disabled="q.tag.formOrigin === 'T1-T3'"
             class="min-h-11 rounded-lg border border-default bg-default px-3"
             data-testid="q-unit"
@@ -367,13 +442,14 @@ function insertMath(field: 'stem'): void {
           >
             <option value="">Pilih unit</option>
             <!-- http mode: the unit extracted from the curriculum list of the server -->
-            <option v-if="q.tag.unit && !units.some((u) => u.code === q.tag.unit)" :value="q.tag.unit">
+            <option v-if="q.tag.unit && !units.some((u) => unitKey(u) === selectedUnit)" :value="selectedUnit">
               {{ q.tag.unitLabel || q.tag.unit }}
             </option>
-            <option v-for="u in units" :key="u.code" :value="u.code">
-              {{ u.form }} - {{ u.label }}
+            <option v-for="u in units" :key="unitKey(u)" :value="unitKey(u)">
+              {{ u.form }} - {{ u.code }} {{ u.label }}
             </option>
           </select>
+          <span v-if="unitsFailed" class="text-error" role="alert" data-testid="q-unit-error">Senarai unit tidak dapat dimuatkan.</span>
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="text-muted">TP (1-6)</span>

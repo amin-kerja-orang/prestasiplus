@@ -99,7 +99,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['BS-05', 'Laporan Soalan', '/admin/question-reports'],
       ['BS-06', 'Soalan PKSK', '/admin/pksk/questions'],
       ['BS-07', 'Audio KBAT', '/admin/audio-kbat'],
-      // Studio list (V2 `Question Studio`, v3-bijak-spm-scope R1-21 P5): the screen is built on the Studio branch (C3).
+      // Studio list (V2 `Question Studio`, v3-bijak-spm-scope R1-21 P5): the screen is in base (T13b).
       ['BS-08', 'Bank Soalan (Studio)', '/admin/studio'],
     ]),
   },
