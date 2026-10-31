@@ -105,3 +105,21 @@ describe('builder preview carries every stimulus of a group (R1-T07, D90)', () =
     expect(BijakBuilderPreviewSchema.safeParse({ ...base, groupStimuli: { g1: [st('1', 'A'), st('2', 'B'), st('3', 'C'), st('4', 'D')] } }).success).toBe(false)
   })
 })
+
+describe('essay_choice topic labels (REQ-B-021a)', () => {
+  const leaf = (labels: string[]) => ({
+    label: '',
+    prompt: rt('Pilih satu tajuk.'),
+    mode: 'essay_choice',
+    marks: 30,
+    key: rubric,
+    topics: labels.map((label, i) => ({ id: `t${String(i)}`, label })),
+  })
+
+  it('a blank or whitespace-only label is refused, a padded one is trimmed', () => {
+    for (const bad of ['', ' ', '   ', '\t\n']) expect(QuestionPartSchema.safeParse(leaf(['Tajuk satu', bad])).success, JSON.stringify(bad)).toBe(false)
+    const ok = QuestionPartSchema.safeParse(leaf(['  Tajuk satu  ', 'Tajuk dua']))
+    expect(ok.success).toBe(true)
+    if (ok.success && ok.data.mode === 'essay_choice') expect(ok.data.topics[0]?.label).toBe('Tajuk satu')
+  })
+})

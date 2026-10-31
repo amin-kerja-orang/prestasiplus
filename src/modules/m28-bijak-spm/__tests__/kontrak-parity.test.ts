@@ -81,7 +81,8 @@ describe('V2 labels in the Kontrak screens (mounted on the mock)', () => {
     const rows = await s.list()
     const row = rows.find((v) => v.dependentPaperCount === 0)!
     expect(row).toBeTruthy()
-    s.retire = vi.fn().mockResolvedValue(undefined)
+    const retire = vi.fn().mockResolvedValue(undefined)
+    s.retire = retire
     setKontrakServerForTests(s)
     const r = await router('/admin/spm/kontrak')
     const w = mount(KontrakListPage, { attachTo: document.body, global: { plugins: [r] } })
@@ -97,7 +98,7 @@ describe('V2 labels in the Kontrak screens (mounted on the mock)', () => {
     expect(confirm.confirmLabel).toBe('Padam')
     void padam!.onSelect?.()
     await flushPromises()
-    expect(s.retire).toHaveBeenCalledWith(row.subject, row.kertas)
+    expect(retire).toHaveBeenCalledWith(row.subject, row.kertas)
     expect(useFlashStore().current?.message).toBe('Kontrak dipadam.')
     w.unmount()
   })

@@ -8020,6 +8020,23 @@
               "null"
             ],
             "pattern": "^([A-Za-z0-9._:-]{1,64})?$"
+          },
+          "attemptId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "R1-T42: uuid of the attempt the pupil reported from; see QuestionReportContext. 422 `attemptId` when unknown, not the reporter's, or the question is not in it."
+          },
+          "paperId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "R1-T42: optional; must be the paper of `attemptId`; sent without `attemptId` is 422 `attemptId`.",
+            "example": "1042"
           }
         },
         "required": [
@@ -8115,6 +8132,16 @@
           "isActive": {
             "type": "boolean"
           },
+          "status": {
+            "$ref": "#/components/schemas/QuestionWorkflowStatus"
+          },
+          "liveVersionNo": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
           "practiceUrl": {
             "type": [
               "string",
@@ -8184,6 +8211,41 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "paper": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "attemptId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "attemptId"
             ]
           },
           "status": {
@@ -8303,6 +8365,41 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "paper": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "attemptId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "attemptId"
             ]
           },
           "status": {
@@ -8696,6 +8793,11 @@
                 ]
               }
             ]
+          },
+          "expectedVersionNo": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The reported question version the admin is looking at. With `archive`: it must be the version the report was filed against (else 409), and the archive is refused with 409 when the question has moved on to a newer version than the reported one (REQ-B-018)."
           }
         },
         "required": [
@@ -40088,6 +40190,206 @@
           "ids"
         ]
       },
+      "QuestionFilter": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "educationLevelId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "difficultyLevel": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuestionStatus"
+          },
+          "dskpFilter": {
+            "type": "string",
+            "description": "tagged | untagged"
+          },
+          "complianceFilter": {
+            "type": "string",
+            "description": "missing_source | verified_generated | a compliance status"
+          },
+          "sourceFilter": {
+            "type": "string",
+            "description": "textbook | dskp | trial | marking_scheme"
+          },
+          "search": {
+            "type": "string"
+          },
+          "tagReview": {
+            "type": "string",
+            "enum": [
+              "true"
+            ]
+          },
+          "missing": {
+            "type": "string",
+            "enum": [
+              "unit",
+              "tp",
+              "marks",
+              "key"
+            ]
+          },
+          "tahun": {
+            "type": "string",
+            "pattern": "^\\d{4}$"
+          },
+          "negeri": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "kertas": {
+            "type": "string",
+            "enum": [
+              "1",
+              "2",
+              "3"
+            ]
+          },
+          "jenis": {
+            "type": "string",
+            "enum": [
+              "sebenar",
+              "percubaan",
+              "modul",
+              "topikal",
+              "latihan"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "QuestionFilterBulkRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "archived"
+            ]
+          },
+          "filter": {
+            "$ref": "#/components/schemas/QuestionFilter"
+          },
+          "expectedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dryRun": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "action",
+          "filter"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionFilterBulkResult": {
+        "type": "object",
+        "properties": {
+          "matched": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows of the filter (the total the list shows); compared with `expectedCount`."
+          },
+          "eligible": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Matched rows whose status allows the action (approved: Semakan; archived: Draf, Semakan, Diterbitkan)."
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "matched - eligible: rows already in, or not allowed to move to, the target status. Left untouched, not failures."
+          },
+          "cap": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Rows one run applies at most."
+          },
+          "processed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows tried in this run: min(eligible, cap); 0 on a dry run."
+          },
+          "affected": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionBulkFailure"
+            },
+            "description": "Rows tried and refused (the full approve gate: VALIDATION_ERROR with the gate `fields`), same shape as bulk-action."
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "eligible - processed: rows a further run would still try."
+          },
+          "capped": {
+            "type": "boolean",
+            "description": "true when `remaining` > 0 because of the cap."
+          },
+          "dryRun": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "matched",
+          "eligible",
+          "skipped",
+          "cap",
+          "processed",
+          "affected",
+          "failed",
+          "remaining",
+          "capped",
+          "dryRun"
+        ]
+      },
+      "QuestionBulkFailure": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "NOT_FOUND",
+              "CONFLICT",
+              "VALIDATION_ERROR"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "The BM text for this id. NOT_FOUND: \"Soalan tidak dijumpai.\" [PROPOSED]; CONFLICT: the transition text; VALIDATION_ERROR: the distinct `fields` values in field order, joined by one space (render `fields` for a per-field view)."
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "The exact gate field messages (VALIDATION_ERROR); `{}` otherwise."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "message",
+          "fields"
+        ]
+      },
       "QuestionStructuredRow": {
         "type": "object",
         "properties": {
@@ -41685,6 +41987,13 @@
               "$ref": "#/components/schemas/Id"
             }
           },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StimulusGroupMember"
+            },
+            "description": "The members in published order (same order as `questionIds`), one short form each."
+          },
           "warning": {
             "type": [
               "string",
@@ -41698,7 +42007,185 @@
           "label",
           "scope",
           "stimuli",
-          "questionIds"
+          "questionIds",
+          "members"
+        ]
+      },
+      "StimulusGroupMember": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Printed number label of the latest version, or null."
+          },
+          "stem": {
+            "type": "string",
+            "description": "Plain text of the stem (markup stripped, whitespace collapsed), cut to 120 characters with an ellipsis."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "review",
+              "approved",
+              "archived"
+            ],
+            "description": "Status of the latest version."
+          },
+          "servable": {
+            "type": "boolean",
+            "description": "Shown to pupils now: active with an approved live version, or pinned by a published paper."
+          }
+        },
+        "required": [
+          "id",
+          "numberLabel",
+          "stem",
+          "status",
+          "servable"
+        ]
+      },
+      "StimulusListRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/QuestionStimulusKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "excerpt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Plain text of the body, cut to 120 characters; null for a picture or a table with no text."
+          },
+          "imageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "groupCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "served"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "caption",
+          "excerpt",
+          "imageId",
+          "groupCount",
+          "status"
+        ]
+      },
+      "StimulusGroupListRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "section",
+              "paper"
+            ]
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/QuestionStimulusKind"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "label",
+                "imageId"
+              ]
+            }
+          },
+          "memberCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StimulusGroupMember"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "served"
+            ]
+          },
+          "warning": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "scope",
+          "stimuli",
+          "memberCount",
+          "members",
+          "status",
+          "warning"
         ]
       },
       "StimulusGroupMemberRemoved": {
@@ -63770,7 +64257,7 @@
           "title": {
             "type": "string",
             "maxLength": 200,
-            "description": "Trimmed; omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" (the mock ignores a blank title on create)."
+            "description": "Trimmed, at most 200 characters (422 `fields.title` \"Tajuk kertas tidak boleh melebihi 200 aksara.\"); omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" (the mock ignores a blank title on create)."
           }
         },
         "required": [
@@ -64063,6 +64550,17 @@
           },
           "status": {
             "$ref": "#/components/schemas/BijakBuilderPaperStatus"
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "R12 \"Subjek\": Bijak subject code (MAT, SN, SEJ ...). Blank = all subjects; a code that matches no subject gives an empty list.",
+            "example": "MAT"
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "R12 \"Cari\": case-insensitive substring of the paper title or code (kod kertas). Blank = no filter."
           }
         }
       },
@@ -71880,39 +72378,6 @@
           "affected"
         ]
       },
-      "QuestionBulkFailure": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "code": {
-            "type": "string",
-            "enum": [
-              "NOT_FOUND",
-              "CONFLICT",
-              "VALIDATION_ERROR"
-            ]
-          },
-          "message": {
-            "type": "string",
-            "description": "The BM text for this id. NOT_FOUND: \"Soalan tidak dijumpai.\" [PROPOSED]; CONFLICT: the transition text; VALIDATION_ERROR: the distinct `fields` values in field order, joined by one space (render `fields` for a per-field view)."
-          },
-          "fields": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "The exact gate field messages (VALIDATION_ERROR); `{}` otherwise."
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "message",
-          "fields"
-        ]
-      },
       "QuestionDeleteResult": {
         "type": "object",
         "properties": {
@@ -79267,6 +79732,16 @@
           },
           "404": {
             "description": "NOT_FOUND \"Not Found.\" (unknown id, or a segment that does not match the route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Soalan ini sudah mempunyai versi yang lebih baharu daripada yang dilaporkan. Arkib dibatalkan; semak versi terkini dahulu.\" when `archive` is sent for a question that has a newer version than the reported one (the report is not changed).",
             "content": {
               "application/json": {
                 "schema": {
@@ -101746,6 +102221,53 @@
             "required": false,
             "name": "missing",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}$"
+            },
+            "required": false,
+            "name": "tahun",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false,
+            "name": "negeri",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "2",
+                "3"
+              ]
+            },
+            "required": false,
+            "name": "kertas",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sebenar",
+                "percubaan",
+                "modul",
+                "topikal",
+                "latihan"
+              ]
+            },
+            "required": false,
+            "name": "jenis",
+            "in": "query"
           }
         ],
         "responses": {
@@ -102004,6 +102526,102 @@
           },
           "403": {
             "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/bulk-action/filter": {
+      "post": {
+        "tags": [
+          "questions"
+        ],
+        "summary": "Approve or archive the questions of the current filter",
+        "description": "V2 \"Luluskan Hasil Tapisan\" (`approved`, needs at least one filter) and \"Arkib Semua\" (`archived`, an empty filter is the whole bank). The filter is the one of GET /questions (strict, no paging). The client sends `expectedCount`, the total it showed: if the count differs now the answer is 409 CONFLICT (details expected/actual) and nothing is applied. `dryRun: true` counts only. Rows whose status cannot move to the target (approved: only Semakan can; archived: Draf, Semakan, Diterbitkan) are `skipped`, not failures. Every row runs the same gate and the same transition rule as `bulk-action`: a refused row is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`). One run applies at most `cap` rows (500); `remaining`/`capped` say whether to run again. Admin Pusat only, CSRF, write rate limit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionFilterBulkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Counts and per-row refusals, with the flash text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionFilterBulkResult"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the count of the filter is not `expectedCount` any more (details: expected, actual); nothing was applied.",
             "content": {
               "application/json": {
                 "schema": {
@@ -103008,6 +103626,381 @@
             }
           }
         }
+      },
+      "get": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "List stimuli (paged)",
+        "description": "Admin Pusat only, no-store. Filters: `subjectId` / `educationLevelId` (of the questions that use the stimulus through a group or a version link), `status` (`served` or `draft`, see the query), `kind`, `q` (label / body, case-insensitive). `pageSize` 1 to 100 (101 is 422). Newest first.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Subject of the members (the latest version).",
+              "example": "1042"
+            },
+            "required": false,
+            "description": "Subject of the members (the latest version).",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Any member of this level.",
+              "example": "1042"
+            },
+            "required": false,
+            "description": "Any member of this level.",
+            "name": "educationLevelId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "served"
+              ],
+              "description": "`served` = a member (group) or a linked question version (stimulus) is shown to pupils now; `draft` = none is. Empty groups are `draft`."
+            },
+            "required": false,
+            "description": "`served` = a member (group) or a linked question version (stimulus) is shown to pupils now; `draft` = none is. Empty groups are `draft`.",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Case-insensitive text in the label or body (a group: its own label or any of its stimuli). `%` and `_` are literal."
+            },
+            "required": false,
+            "description": "Case-insensitive text in the label or body (a group: its own label or any of its stimuli). `%` and `_` are literal.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/QuestionStimulusKind"
+            },
+            "required": false,
+            "name": "kind",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StimulusListRow"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups": {
+      "get": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "List stimulus groups with their members (paged)",
+        "description": "Admin Pusat only, no-store. Filters: `subjectId`, `educationLevelId` (any member), `status` (`served` = a member is shown to pupils, else `draft`), `q` (the group label or any of its stimuli). Each row carries the short form of its members, read with one query per page. `pageSize` 1 to 100 (101 is 422).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Subject of the members (the latest version).",
+              "example": "1042"
+            },
+            "required": false,
+            "description": "Subject of the members (the latest version).",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Any member of this level.",
+              "example": "1042"
+            },
+            "required": false,
+            "description": "Any member of this level.",
+            "name": "educationLevelId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "served"
+              ],
+              "description": "`served` = a member (group) or a linked question version (stimulus) is shown to pupils now; `draft` = none is. Empty groups are `draft`."
+            },
+            "required": false,
+            "description": "`served` = a member (group) or a linked question version (stimulus) is shown to pupils now; `draft` = none is. Empty groups are `draft`.",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Case-insensitive text in the label or body (a group: its own label or any of its stimuli). `%` and `_` are literal."
+            },
+            "required": false,
+            "description": "Case-insensitive text in the label or body (a group: its own label or any of its stimuli). `%` and `_` are literal.",
+            "name": "q",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StimulusGroupListRow"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Create a group: 1 to 3 stimuli and 0 to 40 member questions (D93: a group with fewer than 2 is a draft group)",
+        "description": "D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has fewer than 2 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker \"Kumpulan perlu sekurang-kurangnya 2 soalan.\"). Members get positions 1..n in the order sent. Flash: \"Kumpulan rangsangan berjaya dicipta.\"",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusGroupCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/stimuli/{id}": {
@@ -103277,93 +104270,6 @@
           },
           "409": {
             "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/stimulus-groups": {
-      "post": {
-        "tags": [
-          "questions",
-          "stimuli"
-        ],
-        "summary": "Create a group: 1 to 3 stimuli and 0 to 40 member questions (D93: a group with fewer than 2 is a draft group)",
-        "description": "D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has fewer than 2 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker \"Kumpulan perlu sekurang-kurangnya 2 soalan.\"). Members get positions 1..n in the order sent. Flash: \"Kumpulan rangsangan berjaya dicipta.\"",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Value of Session.csrf; required on mutating requests."
-            },
-            "required": true,
-            "description": "Value of Session.csrf; required on mutating requests.",
-            "name": "X-CSRF-Token",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StimulusGroupCreateRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/StimulusGroupDetail"
-                    },
-                    "status": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "data",
-                    "status"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED: no valid session.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110325,7 +111231,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: list papers (draf and terbit)",
-        "description": "Newest update first. Optional filter: status. Each row (AdminPaperSummary) carries subjectName, code, budget and ok. The mock listAdminPapers returns a plain array; this route is paged (deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Newest update first. Optional filters: status, subject (Bijak code) and search (title or code, substring, case-insensitive). Each row (AdminPaperSummary) carries subjectName, code, budget and ok. The mock listAdminPapers returns a plain array; this route is paged (deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -110353,6 +111259,29 @@
             "required": false,
             "description": "draf = being assembled (editable, can be deleted); terbit = published, visible in Kertas Pilihan and locked. Unpublish (tarik balik) sets the status back to draf; there is no ready or withdrawn state. Mapping to BE-15 `papers.status` (draft, ready, published, withdrawn) is internal: draf = draft or withdrawn, terbit = published; ready is not exposed.",
             "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 32,
+              "description": "R12 \"Subjek\": Bijak subject code (MAT, SN, SEJ ...). Blank = all subjects; a code that matches no subject gives an empty list.",
+              "example": "MAT"
+            },
+            "required": false,
+            "description": "R12 \"Subjek\": Bijak subject code (MAT, SN, SEJ ...). Blank = all subjects; a code that matches no subject gives an empty list.",
+            "name": "subject",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "R12 \"Cari\": case-insensitive substring of the paper title or code (kod kertas). Blank = no filter."
+            },
+            "required": false,
+            "description": "R12 \"Cari\": case-insensitive substring of the paper title or code (kod kertas). Blank = no filter.",
+            "name": "search",
             "in": "query"
           }
         ],
@@ -110403,7 +111332,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (page, pageSize, status).",
+            "description": "VALIDATION_ERROR with fields (page, pageSize, status, subject, search).",
             "content": {
               "application/json": {
                 "schema": {
