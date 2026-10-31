@@ -7,14 +7,12 @@ import type { QuestionFilter, QuestionRecord } from '../../questions/types'
 import { UsersRepository } from '../../users'
 import type { PracticeQuestion, PracticeQuestionSource, PracticeSelection } from '../ports'
 import { versionKey } from '../ports'
-import { servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practice-mapping'
+import { PRACTICE_SHAPE, servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practice-mapping'
 
 /** Most ids hydrated in one `getMany` call (one hydrate round trip); `hydratePicks` binds 2 parameters per id. */
 const HYDRATE_MAX = 500
 /** `sample` asks the bank for `n * OVER_FETCH` ids, and widens by the same factor while the draw comes up short. */
 export const OVER_FETCH = 4
-/** The SQL shape of what `servableMcq` accepts (one text MCQ leaf, no stimulus, key names an option): counts and draws agree with serving. */
-const PRACTICE_SHAPE = { minOptions: 1, maxOptions: 8 } as const
 /** Windows one `sample` reads at most (each is a LIMIT-ed SQL draw, the last of `n * 4^MAX_ROUNDS` ids). */
 const MAX_ROUNDS = 4
 /** Refusals logged once per question version; the memory is bounded (cleared when full). */
@@ -117,6 +115,11 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     if (wanted.length === 0) return new Map()
     const records = (await this.questions.getMany(wanted, 'live')).filter(eligible)
     return this.mapAll(records, (r) => r.id)
+  }
+
+  async spmServable(ids: readonly string[]): Promise<ReadonlySet<string>> {
+    const wanted = [...new Set(ids)].filter(isIdString)
+    return wanted.length === 0 ? new Set() : new Set(await this.questions.eligibleAmong(wanted, { spmPool: true }))
   }
 
   /** Pinned grading read only: never a serving path (it skips the active, published and PKSK scope). */

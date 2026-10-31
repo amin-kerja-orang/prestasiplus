@@ -22,6 +22,11 @@ export interface EffectiveLeaf {
 
 export type KbatLevel = 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta'
 const KBAT_LEVELS: readonly string[] = ['mengaplikasi', 'menganalisis', 'menilai', 'mencipta']
+/** The KBAT value that goes with a cognitive level (R1-B05, D76): the four upper levels are KBAT, mengingat and memahami are not. */
+export function kbatOfCognitive(level: string | null | undefined): KbatLevel | 'bukan' | null {
+  if (level == null) return null
+  return level === 'mengaplikasi' || level === 'menganalisis' || level === 'menilai' || level === 'mencipta' ? level : 'bukan'
+}
 export const kbatOf = (v: string | null): KbatLevel | null => (v !== null && KBAT_LEVELS.includes(v) ? (v as KbatLevel) : null)
 
 /**

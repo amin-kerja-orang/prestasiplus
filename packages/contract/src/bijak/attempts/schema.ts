@@ -49,6 +49,8 @@ export const BIJAK_ATTEMPTS_MESSAGES = {
   retryNotClosed: 'Hantar percubaan ini dahulu sebelum mencuba semula.',
   /** H-A13 (D94 approved copy): a new sitting of a published paper that places an archived (withdrawn) question; a sitting already open is not affected. */
   paperUnavailable: 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.',
+  /** REQ-B-014 [PROPOSED]: the topic picked for an `essay_choice` part is not one of that part's topics (422 VALIDATION_ERROR). */
+  essayTopicUnknown: 'Tajuk yang dipilih tiada pada bahagian ini.',
 } as const
 
 /** Constants of the mock server and `photo-store.ts`, kept so the backend and the docs share them. */
@@ -389,8 +391,18 @@ export const BijakAttemptQuestionSchema = z
     get stemImage() {
       return BijakAttemptStimulusSchema.optional().meta({
         description:
-          "The question's own picture (an image stimulus linked to its version, not shared with a group).",
+          "Back-compat: the question's own picture, sent only when its own stimuli are exactly one picture. Prefer `stimuli`.",
       })
+    },
+    get stimuli() {
+      return z
+        .array(BijakAttemptStimulusSchema)
+        .min(1)
+        .optional()
+        .meta({
+          description:
+            "The question's OWN stimuli (R1E2E-05b): linked to the question, not shared with a group; any of the seven kinds, in link order. Shown above the stem. A stimulus shared by several questions is a group (D90) and is never here.",
+        })
     },
     marks: NonNegInt,
     mcq: z.strictObject({ options: z.array(BijakAttemptOptionSchema).min(2) }).optional(),
