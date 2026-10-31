@@ -107,6 +107,7 @@ Team C note (C3 Studio on T32 @ 87a9a363): admin-only, envelope {data,status}; `
 | H-C8 | C (C2) | Kuiz parity with R1E2E-05b: `kuiz.mapper.ts` resolveStimuli serves only a non-group picture (hardcoded 'diagram', passage/table → complete=false), KUIZ_KIND collapses 4 kinds; `kuiz.service.ts` prepare needs `versionStimuli` + `stimulusUseCounts` + caption/table/source on BijakKuizStimulusSchema |
 | H-A19 | A | **READY-FOR-REVIEW** `r1/ha19-admin-parity` @ c7315b0e (docs): 66 rows; API parity 41 / label 3 / missing 12 / unconfirmed 3; FE parity 8 / label 22 / steps 7 / missing 17 / unconfirmed 6 → T47, T48, T45 wording; FE list → REQ-A-004 |
 | H-A20 | A (A3 docs agent, r1/ha20-student-parity) | Student-side parity check (v2-parity/student.md R1 rows vs V3 API + FE) |
+| H-A21 | A (A4 dev1, after T45 Part 1) | Servability overview cache: 400k bank overview = 22.5 s (T30); short-TTL cache + stale-while-revalidate, event invalidation where cheap, `computedAt`; target warm p95 < 500 ms. Migration only with lead approval (0105 next free) |
 | H-A4 | A | DONE in T05 @ 4fff21ab: `test/bijak-attempts/golden.spec.ts` 4 failures (sej-k2-2025-a): mock engine emits `selfMarkable: true` on `belum_dimarkah` parts; spec strips it only on the API side. Pre-existing on BASE-1 |
 | H-C3 | C | m04 admin list/detail: show "Esei pilihan" + topics list when `essayTopics` is present (API from H-A7). After T04 merges (m04 lock) |
 | H-A10 | A | DONE: audit at lead scratchpad; result = tasks T26–T36 below and D92 |
