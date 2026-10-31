@@ -1,12 +1,11 @@
 /**
- * @api Bijak SPM structured answers against the REAL API (AZ-17, #78 78-09). A published paper made of QUESTION BANK questions
- * (`BIJAK_PAPER_ID`: CI picks the bank demo paper; the seeded PoC papers are withdrawn and not playable, R1-B07 / T36) is opened and
- * started; its leaf parts render through `PartInput.vue`. Every leaf kind the
+ * @api Bijak SPM structured answers against the REAL API (AZ-17, #78 78-09). A Kertas 2 paper of the
+ * PoC seed is opened and started; its leaf parts render through `PartInput.vue`. Every leaf kind the
  * server sends is a `BijakAttemptLeafKind` (the PKSK leaf `pksk_choice` is never served to Bijak), so
  * no part may show the "not yet available" notice unless the paper really has a `table_fill` leaf.
  *
  * Starting the attempt writes one in-progress attempt for the seed pupil (the other Bijak specs take
- * "Mula Semula" when they find it). Env: E2E_DEMO_PASSWORD (or BIJAK_STUDENT_PASS), BIJAK_PAPER_ID (a bank paper; the spec skips without it).
+ * "Mula Semula" when they find it). Env: E2E_DEMO_PASSWORD (or BIJAK_STUDENT_PASS).
  */
 
 import { expect, loginViaUi, test } from '../fixtures/api'
@@ -15,9 +14,7 @@ import { account, expectNoHScroll } from './helpers'
 test.describe('Bijak structured parts @api', () => {
   test.setTimeout(90_000)
 
-  test('a bank paper attempt renders every served leaf kind with its own control @api', async ({ page }) => {
-    const paperId = process.env.BIJAK_PAPER_ID
-    test.skip(!paperId, 'BIJAK_PAPER_ID (a published bank paper) is not set: the seeded PoC papers are not playable (R1-B07)')
+  test('a Kertas 2 attempt renders every served leaf kind with its own control @api', async ({ page }) => {
     const { user, pass } = account('student')
     await loginViaUi(page, user, pass)
 
@@ -26,10 +23,11 @@ test.describe('Bijak structured parts @api', () => {
       { timeout: 30_000 },
     )
     await page.goto('/spm/bijak')
-    const papers = ((await (await papersRes).json()) as { data: { id: string }[] }).data
-    expect(papers.map((p) => p.id), 'the bank paper is listed on the hub').toContain(paperId)
+    const papers = ((await (await papersRes).json()) as { data: { id: string; kertas: number }[] }).data
+    const k2 = papers.find((p) => p.kertas === 2)
+    expect(k2, 'a Kertas 2 paper in the seed').toBeDefined()
     await expect(page.getByTestId('bijak-hub')).toBeVisible({ timeout: 20_000 })
-    await page.getByTestId(`open-${paperId}`).click()
+    await page.getByTestId(`open-${k2!.id}`).click()
     await expect(page.getByTestId('bijak-cover')).toBeVisible({ timeout: 20_000 })
     await expectNoHScroll(page)
 

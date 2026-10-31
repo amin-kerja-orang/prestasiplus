@@ -43,5 +43,5 @@ Bijak papers, attempts, Jana Kertas, the kuiz and the paper builder now read the
 
 ## Not done here
 
-- `e2e/bijak/admin-publish-http.spec.ts` (create + publish a K1 paper) now depends on enough approved bank Matematik K1 questions for the "Objektif" blueprint on the stack; it was not run. Flag for B1 (release): confirm the e2e seed provides them, or the spec will refuse the publish.
-- There is no bank Kertas 2 paper in the seed, so `e2e/api/bijak-part-input.spec.ts` now uses `BIJAK_PAPER_ID` (the bank demo paper, K1) and skips without it.
+- `e2e/api/bijak-part-input.spec.ts` needs a playable structured Kertas 2 paper; the only seeded K2 papers are PoC papers (withdrawn now, 403 on start). Left as it is: it depends on T26c (a structured K2 pool and a Terbit paper in the e2e seed, A1, `r1/t26c-e2e-k2`); B1 merges T26c with T36.
+- `e2e/bijak/admin-publish-http.spec.ts` (create + publish a K1 paper) needs enough approved bank Matematik K1 questions for the "Objektif" blueprint (1449/1: 40) on the stack; T26b (REQ-B-028) makes the e2e profile's builder pool reach Sepadan from the bank. Not run here.
