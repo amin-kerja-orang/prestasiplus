@@ -123,6 +123,8 @@ export interface ImportedQuestionInput {
   sourceSet: string | null
   /** `marks` column of the row (mock `pointsValue`, default 1); optional so older callers compile. */
   marks?: number
+  /** Optional `kertas` column (1 to 3); stored so the paper builder can find the question. */
+  kertas?: '1' | '2' | '3'
 }
 
 /** Display facts about a question for lists (reports, master notes). */

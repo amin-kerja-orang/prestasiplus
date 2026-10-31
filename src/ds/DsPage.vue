@@ -8,7 +8,8 @@
  *
  * Archetype defaults (width / header):
  * - `list`      wide     / actions beside the title, filter bar and table follow
- * - `form`      prose    / narrow column, title and back link above the form
+ * - `form`      prose    / narrow column for the learner, full content width for staff (the left edge
+ *                          matches every other page); title and back link above the form
  * - `report`    full     / title, then filters and figures across the full width
  * - `dashboard` wide     / title, then the KPI row and the 8/4 split
  * - `detail`    default  / back link, title and meta, then sections (the legacy default)
@@ -59,7 +60,8 @@ const LAYOUT_WIDTH: Record<DsPageLayout, DsPageWidth> = {
   learner: 'default',
 }
 const WIDTH: Record<DsPageWidth, string> = {
-  prose: 'max-w-3xl',
+  // Staff forms fill the content area like every other page (admin page templates D1); the learner keeps the narrow column.
+  prose: 'max-w-3xl staff:max-w-none',
   default: 'max-w-6xl staff:max-w-none',
   wide: 'max-w-7xl staff:max-w-none',
   full: 'max-w-none',

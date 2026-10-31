@@ -68,14 +68,13 @@ describe('LevelFormPage create (M03 S10)', () => {
     const w = await render('create')
     expect(t(w, 'level-back').text()).toBe('Kembali ke Senarai')
     expect(t(w, 'level-back').attributes('href')).toBe('/admin/education-levels')
-    expect(t(w, 'level-name').attributes('placeholder')).toBe('cth: Tahun 1')
-    expect(t(w, 'level-name-en').attributes('placeholder')).toBe('e.g: Year 1')
-    expect(t(w, 'level-code').attributes('placeholder')).toBe('cth: Y1')
+    expect(t(w, 'level-name').attributes('placeholder')).toBe('cth: Tingkatan 1')
+    expect(t(w, 'level-name-en').attributes('placeholder')).toBe('e.g: Form 1')
+    expect(t(w, 'level-code').attributes('placeholder')).toBe('cth: T1')
     expect(t(w, 'level-code').attributes('maxlength')).toBe('10')
     expect(t(w, 'level-curriculum').attributes('placeholder')).toBe('cth: KSSR, KSSM')
     expect(w.findAll('[data-testid=level-stage] option').map((o) => o.text())).toEqual([
       '-- Pilih Peringkat --',
-      'Rendah (Primary)',
       'Menengah Rendah (Lower Secondary)',
       'Menengah Atas (Upper Secondary)',
     ])
@@ -88,19 +87,19 @@ describe('LevelFormPage create (M03 S10)', () => {
   it('posts the body, queues the flash and returns to the list', async () => {
     api.createLevel.mockResolvedValue({ data: LEVEL, status: 'Tahap Pendidikan berjaya ditambah.' })
     const w = await render('create')
-    await t(w, 'level-name').setValue('Tahun Demo')
-    await t(w, 'level-name-en').setValue('Demo Year')
+    await t(w, 'level-name').setValue('Tingkatan Demo')
+    await t(w, 'level-name-en').setValue('Demo Form')
     await t(w, 'level-code').setValue('yd')
-    await t(w, 'level-stage').setValue('primary')
-    await t(w, 'level-curriculum').setValue('KSSR')
+    await t(w, 'level-stage').setValue('lower_secondary')
+    await t(w, 'level-curriculum').setValue('KSSM')
     await t(w, 'level-form').trigger('submit')
     await flushPromises()
     expect(api.createLevel).toHaveBeenCalledWith({
-      name: 'Tahun Demo',
-      nameEn: 'Demo Year',
+      name: 'Tingkatan Demo',
+      nameEn: 'Demo Form',
       code: 'yd',
-      stage: 'primary',
-      curriculum: 'KSSR',
+      stage: 'lower_secondary',
+      curriculum: 'KSSM',
       order: 0,
     })
     expect(router.currentRoute.value.path).toBe('/admin/education-levels')
@@ -127,8 +126,8 @@ describe('LevelFormPage create (M03 S10)', () => {
     await t(w, 'level-name').setValue('A')
     await t(w, 'level-name-en').setValue('A')
     await t(w, 'level-code').setValue('D1')
-    await t(w, 'level-stage').setValue('primary')
-    await t(w, 'level-curriculum').setValue('KSSR')
+    await t(w, 'level-stage').setValue('lower_secondary')
+    await t(w, 'level-curriculum').setValue('KSSM')
     await t(w, 'level-form').trigger('submit')
     await flushPromises()
     expect(t(w, 'level-form-alert').text()).toContain('The code has already been taken.')

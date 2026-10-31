@@ -23,7 +23,7 @@ export function reportLines(c: KirkpatrickChain): string[] {
   const high = c.correlation.bands[c.correlation.bands.length - 1]
   const diff = high && low ? Math.round((high.acc - low.acc) * 10) / 10 : 0
   const conclusionAlesa =
-    `Kesimpulan ALESA: Pelajar yang menjawab ${high?.label ?? ''} mencapai ketepatan ${String(high?.acc)}%, ` +
+    `Kesimpulan: Pelajar yang menjawab ${high?.label ?? ''} mencapai ketepatan ${String(high?.acc)}%, ` +
     `berbanding ${String(low?.acc)}% bagi pelajar dengan kurang 20 soalan ` +
     `(perbezaan ${diff >= 0 ? '+' : ''}${fmt1(diff)}%). Korelasi Pearson antara penggunaan dan ketepatan: ` +
     `r = ${String(c.t4.r)} (${c.t4.strength}).`

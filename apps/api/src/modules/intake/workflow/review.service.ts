@@ -68,6 +68,16 @@ interface Transition {
  * human reaches these methods; the extraction worker and the AI port have no way to call them (AC-2): they write items
  * through `IntakeExtractionService`, which can only produce `generated` or `needs_review`.
  */
+/**
+ * Kertas ('1' to '3') of a source paper: the trailing digit of its paper code (`1449/2`), else the digit of its printed
+ * label (`K2`, `P1`). Null when neither says (the question then carries no kertas and is not a paper-builder candidate).
+ */
+export function kertasOfSourcePaper(paper: { paperCode: string | null; kertas: string | null } | null): '1' | '2' | '3' | null {
+  if (!paper) return null
+  const m = (paper.paperCode ? /\/([0-9])\s*$/.exec(paper.paperCode) : null) ?? (paper.kertas ? /^[A-Za-z]*\s*([0-9])\s*$/.exec(paper.kertas) : null)
+  return m && (m[1] === '1' || m[1] === '2' || m[1] === '3') ? m[1] : null
+}
+
 @Injectable()
 export class IntakeReviewService {
   constructor(
@@ -492,7 +502,10 @@ export class IntakeReviewService {
 
     let created
     try {
-      const input = toQuestionInput(q, resolved.ids, groupId)
+      // The kertas comes from the source paper (the paper builder reads it from the trailing digit of the paper code).
+      const paper = row.batch.sourcePaperId === null ? null : await tx.sourcePaper.findUnique({ where: { id: row.batch.sourcePaperId }, select: { paperCode: true, kertas: true } })
+      const kertas = kertasOfSourcePaper(paper)
+      const input = { ...toQuestionInput(q, resolved.ids, groupId), ...(kertas === null ? {} : { kertas }) }
       const file = row.intakeFileId === null ? null : await tx.intakeFile.findUnique({ where: { id: row.intakeFileId }, select: { fileId: true } })
       created = await this.questions.createFromIntake(input, actor, {
         sourceType: row.sourceType === 'manual' ? 'manual' : 'pdf',
@@ -504,6 +517,7 @@ export class IntakeReviewService {
         sourceFileId: file === null || file === undefined ? null : idToString(file.fileId),
         aiRunId: row.aiRunId === null ? null : idToString(row.aiRunId),
         aiModel: row.run?.model ?? null,
+        paperCode: paper?.paperCode && /\/[0-9]\s*$/.test(paper.paperCode) ? paper.paperCode : null,
       })
     } catch (err) {
       if (err instanceof ConvertError) throw gateError([{ itemId: idToString(row.id), where: err.where, message: err.message }])

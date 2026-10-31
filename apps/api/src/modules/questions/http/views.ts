@@ -21,7 +21,7 @@ import type { z } from 'zod'
 
 import { toMytTimestamp } from '../../../common/time/myt'
 import { isLeaf, type QuestionLeaf } from '../grading'
-import { constantFields, difficultyLabelOf, flatFromVersion, wireSourceType } from '../projection'
+import { constantFields, difficultyLabelOf, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
 import type { QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
 
 export type QuestionRow = z.output<typeof QuestionRowSchema>
@@ -36,6 +36,10 @@ const NO_CREATOR = '0'
 
 const flatOf = (q: QuestionView) => flatFromVersion(q.version)
 
+/** Public token of an image file (what `POST /files` returned); the internal id when no token is known. */
+const imageOf = (q: QuestionView, id: string | null | undefined): string | null => (id ? (q.imageTokens?.[id] ?? id) : null)
+const imagesOf = (q: QuestionView, f: ReturnType<typeof flatOf>): (string | null)[] => (f.options === null ? [] : f.optionImageIds.map((id) => imageOf(q, id)))
+
 /** The flat objective shape both the admin and the Guru views build on. */
 function flatBase(q: QuestionView) {
   const v = q.version
@@ -48,16 +52,17 @@ function flatBase(q: QuestionView) {
     difficultyLevel: f.difficultyLevel,
     questionType: f.questionType,
     questionText: f.questionText,
-    // Images are existing `question_image` files referenced by id (Q-10): no upload on these routes.
-    questionImage: null,
+    // The stem image is the version's first image stimulus (file id); option images are ids on the options.
+    questionImage: imageOf(q, q.version.stemImageId),
     options: f.options,
-    optionImages: f.options === null ? [] : f.optionImageIds,
+    optionImages: imagesOf(q, f),
     correctAnswer: f.correctAnswer,
     tfAnswer: f.tfAnswer,
     correctAnswerText: f.correctAnswerText,
     altAnswers: f.altAnswers,
     modelAnswer: f.modelAnswer,
     explanation: f.explanation,
+    kertas: kertasOfPaperCode(q.version.paperCode),
     aiExplanation: c.aiExplanation,
     language: f.language,
     pointsValue: f.pointsValue,
@@ -176,8 +181,8 @@ export function guruDetailView(q: QuestionView): z.output<typeof QuestionGuruDet
   const c = constantFields(q)
   return QuestionGuruDetailSchema.parse({
     ...guruSummaryView(q),
-    questionImage: null,
-    optionImages: f.options === null ? [] : f.optionImageIds,
+    questionImage: imageOf(q, q.version.stemImageId),
+    optionImages: imagesOf(q, f),
     tfAnswer: f.tfAnswer,
     correctAnswerText: f.correctAnswerText,
     altAnswers: f.altAnswers,

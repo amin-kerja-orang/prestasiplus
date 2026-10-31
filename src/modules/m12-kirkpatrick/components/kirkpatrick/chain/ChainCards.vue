@@ -8,6 +8,8 @@
  */
 import { computed } from 'vue'
 
+import { DsIconChip, type DsAccent } from '@/ds'
+
 import type { Chain } from '../../../api/types'
 import { count, gps, mean, pct, plain, type KirkColor } from '../common/kirkpatrick-format'
 
@@ -27,6 +29,8 @@ interface Step {
   title: string
   sub: string
   color: KirkColor
+  icon: string
+  accent: DsAccent
   rows: { label: string; value: string }[]
 }
 
@@ -35,10 +39,12 @@ const steps = computed<Step[]>(() => {
   return [
     {
       key: 't1',
-      tag: 'T1',
+      tag: 'Tahap 1',
       title: 'Reaksi',
       sub: 'Kepuasan pengguna terhadap Prestasi Plus',
       color: 'success',
+      icon: 'smiley',
+      accent: 'win',
       rows: [
         { label: 'NPS Purata', value: `${mean(c.t1.nps)}/10` },
         { label: 'Kepuasan', value: `${mean(c.t1.satisfaction)}/5` },
@@ -47,10 +53,12 @@ const steps = computed<Step[]>(() => {
     },
     {
       key: 't2',
-      tag: 'T2',
+      tag: 'Tahap 2',
       title: 'Pembelajaran',
       sub: 'Perkembangan akademik melalui Head Count',
       color: 'success',
+      icon: 'brain',
+      accent: 'trial',
       rows: [
         { label: 'Ketepatan', value: pct(c.t2.accuracy) },
         { label: 'Soalan Dijawab', value: count(c.t2.answers) },
@@ -59,10 +67,12 @@ const steps = computed<Step[]>(() => {
     },
     {
       key: 't3',
-      tag: 'T3',
+      tag: 'Tahap 3',
       title: 'Tingkah Laku',
       sub: 'Konsistensi penggunaan platform (Mastery Learning)',
       color: 'warning',
+      icon: 'footprints',
+      accent: 'heat',
       rows: [
         {
           label: 'Pelajar Aktif',
@@ -73,10 +83,12 @@ const steps = computed<Step[]>(() => {
     },
     {
       key: 't4',
-      tag: 'T4',
+      tag: 'Tahap 4',
       title: 'Hasil / Impak',
       sub: 'Korelasi penggunaan dengan pencapaian',
       color: 'warning',
+      icon: 'trophy',
+      accent: 'friend',
       rows: [
         { label: 'GPS', value: c.t4.gps === null ? '-' : gps(c.t4.gps) },
         { label: 'Korelasi (r)', value: String(c.t4.r) },
@@ -96,19 +108,20 @@ const steps = computed<Step[]>(() => {
     <template v-for="(s, i) in steps" :key="s.key">
       <UCard class="min-w-0 flex-1" :data-testid="`chain-${s.key}`" :data-tone="s.color">
         <template #header>
-          <div class="flex items-start gap-3">
-            <UBadge :color="s.color" variant="soft" :label="s.tag" />
-            <div class="flex min-w-0 flex-col gap-1">
-              <h2 class="text-label text-highlighted">{{ s.title }}</h2>
-              <p class="text-body text-muted">{{ s.sub }}</p>
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-3">
+              <DsIconChip :icon="s.icon" :accent="s.accent" size="md" />
+              <UBadge :color="s.color" variant="soft" :label="s.tag" />
             </div>
+            <h2 class="text-label text-highlighted">{{ s.title }}</h2>
+            <p class="text-body text-muted lg:min-h-16">{{ s.sub }}</p>
           </div>
         </template>
-        <dl class="flex flex-col gap-2">
+        <dl class="flex flex-col">
           <div
             v-for="r in s.rows"
             :key="r.label"
-            class="flex items-baseline justify-between gap-3 text-label"
+            class="flex items-baseline justify-between gap-3 py-2 text-label"
           >
             <dt class="text-muted">{{ r.label }}</dt>
             <dd class="tabular text-right text-highlighted" data-testid="chain-value">

@@ -154,14 +154,13 @@ describe('school subscriptions (AC 1, AC 6)', () => {
   })
 
   describe('reads', () => {
-    it('lists the 4 packages with money as a decimal string', async () => {
+    it('lists the 3 active packages (D1_D6 is hidden) with money as a decimal string', async () => {
       const res = await admin.get('/admin/school-packages')
       expect(res.status).toBe(200)
       const rows = (res.body.data as unknown[]).map((r) => SchoolPackageSchema.parse(r))
       expect(rows.map((p) => [p.code, p.name, p.maxRenewals, p.priceAnnual])).toEqual([
         ['T4', 'Pakej SPM Tingkatan 4', 1, '30.00'],
         ['T5', 'Pakej SPM Tingkatan 5', 0, '30.00'],
-        ['D1_D6', 'Pakej Rendah (Darjah 1-6)', 5, '30.00'],
         ['T1_T3', 'Pakej Menengah Rendah (Tingkatan 1-3)', 2, '30.00'],
       ])
       expect(res.headers['cache-control']).toBe('no-store')

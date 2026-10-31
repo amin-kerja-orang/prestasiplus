@@ -37,7 +37,7 @@ const OWN_P1 = 900003
 
 const FORBIDDEN_COPY =
   'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.'
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const TILE_LABELS = ['Jumlah Pelajar', 'On Track', 'Perlu Perhatian', 'Berisiko Tinggi']
 const COLUMNS = [
   '#',

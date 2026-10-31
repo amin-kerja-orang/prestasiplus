@@ -1,0 +1,4 @@
+{
+  "$comment": "R8 (pp/ds-no-local-kit): domain widgets that may wrap DsPanel / DsSurface / UCard around a slot or list. Each entry needs file, owner (module) and reason. Data mappers around DsStatRow with no template markup are always allowed. Starts empty.",
+  "widgets": []
+}

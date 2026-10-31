@@ -35,42 +35,21 @@ export interface ClassLevelOption {
   label: string
 }
 
-/** FR-M02-61 group "Sekolah Rendah". */
-export const PRIMARY_CLASS_LEVELS: readonly ClassLevelOption[] = (
-  ['D1', 'D2', 'D3', 'D4', 'D5', 'D6'] as const
-).map((value) => ({ value, label: `Darjah ${value.slice(1)}` }))
-
 /** FR-M02-61 group "Sekolah Menengah". */
 export const SECONDARY_CLASS_LEVELS: readonly ClassLevelOption[] = (
   ['T1', 'T2', 'T3', 'T4', 'T5'] as const
 ).map((value) => ({ value, label: `Tingkatan ${value.slice(1)}` }))
 
-/** DV-M02-09: SK, SJK(C) and SJK(T) are primary schools (live tests `type === 'SK'` only). */
-export function isPrimarySchoolType(type: string): boolean {
-  return type === 'SK' || type === 'SJK(C)' || type === 'SJK(T)'
+export type ClassGroup = 'secondary'
+
+/** FR-M02-61: v2 is secondary only, so only the "Sekolah Menengah" group (T1–T5) is ever offered. */
+export function visibleClassGroups(): ClassGroup[] {
+  return ['secondary']
 }
 
-export type ClassGroup = 'primary' | 'secondary'
-
-/** FR-M02-61: with no school both groups show, then only the one that fits the school type. */
-export function visibleClassGroups(schoolType: string | null): ClassGroup[] {
-  if (schoolType === null) return ['primary', 'secondary']
-  return [isPrimarySchoolType(schoolType) ? 'primary' : 'secondary']
-}
-
-export function classLevelInGroups(
-  level: ImportClassLevel | '',
-  groups: readonly ClassGroup[],
-): boolean {
-  if (level === '') return true
-  return groups.includes(level.startsWith('D') ? 'primary' : 'secondary')
-}
-
-/** FR-M02-60 class filter: D1–D6 for a primary school, T1–T5 otherwise. */
-export function existingClassFilter(schoolType: string): readonly ClassLevelOption[] {
-  return (isPrimarySchoolType(schoolType) ? PRIMARY_CLASS_LEVELS : SECONDARY_CLASS_LEVELS).map(
-    (o) => ({ value: o.value, label: o.value }),
-  )
+/** FR-M02-60 class filter: T1–T5. */
+export function existingClassFilter(): readonly ClassLevelOption[] {
+  return SECONDARY_CLASS_LEVELS.map((o) => ({ value: o.value, label: o.value }))
 }
 
 /** FR-M02-59: progress bar width = min(100, round(used × 100 / quota))%. */

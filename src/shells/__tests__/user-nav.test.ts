@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { lookupFaName } from '@/components/icon'
 import type { Role } from '@/stores/session-types'
@@ -91,6 +91,16 @@ const STUDENT_ONLY_IDS = new Set(
     .map((i) => i.id),
 )
 
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases of each module.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+
 describe('USER_NAV data', () => {
   it('has unique ids', () => {
     const ids = [
@@ -135,9 +145,11 @@ describe('USER_NAV data', () => {
       '/admin/hadiah': 'Admin Tebusan',
     }
     const mismatched = liveMenuLinks.filter((l) => {
+      // User decision 2026-10-31 (DV-M12-39): "Tahap N" replaces the live "TN" level labels.
+      const liveText = l.text.replace(/^T([1-4]): /, 'Tahap $1: ')
       const href = REPLACED_LIVE_HREFS[l.href] ?? l.href
       const candidates = byHref.get(href) ?? []
-      const ok = candidates.some((c) => l.text === c.label || l.text.startsWith(`${c.label} `))
+      const ok = candidates.some((c) => liveText === c.label || liveText.startsWith(`${c.label} `))
       return (
         !ok && DRAWER_LABELS[href] !== l.text && !(l.href === '/settings' && l.text === 'Tetapan')
       )
@@ -308,18 +320,33 @@ describe('navFor (role filter: hidden, not disabled)', () => {
     const kirk = navFor('teacher', 'sidebar', USER_NAV, FULL).find((e) => e.id === 't-kirkpatrick')
     expect(kirk?.kind === 'group' && kirk.children.map((c) => c.label)).toEqual([
       'Ringkasan',
-      'T1: Reaksi',
-      'T2: Pembelajaran',
-      'T3: Tingkah Laku',
-      'T4: Hasil',
+      'Tahap 1: Reaksi',
+      'Tahap 2: Pembelajaran',
+      'Tahap 3: Tingkah Laku',
+      'Tahap 4: Hasil',
       'Rantaian Impak',
       'Intervensi',
     ])
   })
 
+  it('school_admin: Command Center opens in the same tab (LIVE badge kept), Aktiviti Harian sits under it (DV-M17-54)', () => {
+    const list = items(navFor('school_admin', 'sidebar', USER_NAV, FULL))
+    const cc = list.find((i) => i.id === 'sa-command-center')
+    expect(cc).toMatchObject({ to: '/admin-sekolah/command-center', badge: { text: 'LIVE' } })
+    expect(cc?.target).toBeUndefined()
+    const daily = list.find((i) => i.id === 'sa-aktiviti-harian')
+    expect(daily).toMatchObject({ label: 'Aktiviti Harian', to: '/admin-sekolah/command-center/daily-activity' })
+    expect(daily?.target).toBeUndefined()
+    expect(list.indexOf(daily!)).toBe(list.indexOf(cc!) + 1)
+    for (const role of ['teacher', 'student', 'admin'] as const) {
+      expect(items(navFor(role, 'sidebar', USER_NAV, FULL)).some((i) => i.id === 'sa-aktiviti-harian')).toBe(false)
+    }
+  })
+
   it('school_admin: the full live admin-sekolah sidebar, in order (roles-matrix/admin sekolah)', () => {
     expect(labels(navFor('school_admin', 'sidebar', USER_NAV, FULL))).toEqual([
       'Command Center',
+      'Aktiviti Harian',
       'Pusat AI',
       '🤖 Cikgu Alesa AI',
       'Cikgu Alesa Chat',

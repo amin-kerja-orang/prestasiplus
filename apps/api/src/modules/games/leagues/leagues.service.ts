@@ -19,7 +19,7 @@ import { publicBaseUrl } from '../../../common/config/public-base-url'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, isIdString } from '../../../db/ids'
 import { CurriculumRepository } from '../../curriculum'
-import { SchoolsRepository } from '../../schools'
+import { isPrimarySchoolType, SchoolsRepository } from '../../schools'
 import { fieldError, leagueAlreadyIn, leagueEnded, leagueFull, leagueInviteInvalid, leagueNeedsSchool, leagueNotFound } from '../errors'
 import { GameUsers } from '../core/game-users'
 import { NamePrivacy } from '../core/name-privacy.service'
@@ -98,12 +98,16 @@ export class LeaguesService {
     const l = await this.repo.league(id, caller.isTest)
     if (!l) throw leagueNotFound()
     const viewerSchool = await this.schoolIdOf(caller.userId)
-    const schoolIds = await this.repo.schoolIds(l.id, caller.isTest)
+    const allSchoolIds = await this.repo.schoolIds(l.id, caller.isTest)
     const levels = await this.repo.classLevels(l.id)
-    const stored = await this.repo.standings(l.id)
-    const standingSchools = stored.map((s) => s.schoolId)
-    const rows = await this.schools.getMany([...new Set([...schoolIds, ...standingSchools])])
+    const storedAll = await this.repo.standings(l.id)
+    const standingSchools = storedAll.map((s) => s.schoolId)
+    const rows = await this.schools.getMany([...new Set([...allSchoolIds, ...standingSchools])])
     const byId = new Map(rows.map((s) => [s.id, s]))
+    // Secondary-only (2026-10-29): primary schools are left out of the member list and the standings.
+    const visible = (sid: string): boolean => !isPrimarySchoolType(byId.get(sid)?.type)
+    const schoolIds = allSchoolIds.filter(visible)
+    const stored = storedAll.filter((s) => visible(s.schoolId))
     const standings: Partial<Record<GamesLeagueClassLevel, GamesLeagueStandingRow[]>> = {}
     for (const level of levels as GamesLeagueClassLevel[]) {
       const lvl = stored.filter((s) => s.level === level)
@@ -199,9 +203,10 @@ export class LeaguesService {
   /** M16-50: the stored weekly snapshot. `week`: a valid YYYY-MM-DD gives its Monday, anything else the current week. */
   async sekolahBersaing(week: unknown): Promise<GamesSekolahBersaing> {
     const weekStart = weekStartOf(week, this.clock.now())
-    const rows = await this.repo.sekolahBersaing(weekStart)
-    const schools = await this.schools.getMany([...new Set(rows.map((r) => r.schoolId))])
+    const allRows = await this.repo.sekolahBersaing(weekStart)
+    const schools = await this.schools.getMany([...new Set(allRows.map((r) => r.schoolId))])
     const byId = new Map(schools.map((s) => [s.id, s]))
+    const rows = allRows.filter((r) => !isPrimarySchoolType(byId.get(r.schoolId)?.type)) // secondary-only (2026-10-29)
     return {
       weekStart,
       count: rows.length,

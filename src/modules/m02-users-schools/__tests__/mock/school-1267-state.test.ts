@@ -65,8 +65,8 @@ describe('school 1267 and the state list', () => {
   })
 
   it('school totals are unchanged (Johor 1,189, Perak 1,102; 1,666 / 2,492 pins are build-checked at boot)', () => {
-    const q = schools.list({ state: 'Johor' })
-    expect(q.total).toBe(1_189)
-    expect(schools.list({ state: 'Perak' }).total).toBe(1_102)
+    // The observed whole-register figures (named queries); `list` hides the primary-type schools (D72).
+    expect(schools.count('S-STATE', 'Johor')).toBe(1_189)
+    expect(schools.count('S-STATE', 'Perak')).toBe(1_102)
   })
 })

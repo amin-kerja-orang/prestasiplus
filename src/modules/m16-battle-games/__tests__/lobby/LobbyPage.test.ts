@@ -17,8 +17,8 @@ const joinRoom = vi.hoisted(() => vi.fn())
 vi.mock('../../api/games', () => ({ fetchGameLobby, createRoom, joinRoom }))
 
 const lobby = (over: Partial<GameLobby> = {}): GameLobby => ({
-  autoGrade: 'DARJAH_4',
-  autoGradeName: 'Darjah 4',
+  autoGrade: 'TINGKATAN_4',
+  autoGradeName: 'Tingkatan 4',
   leaders: [
     { rank: 1, userId: 5, name: 'Pelajar Satu', value: 5 },
     { rank: 2, userId: 6, name: 'Pelajar Dua', value: 4 },
@@ -110,12 +110,12 @@ describe('S8-S12 lobby template (FR-M16-62..65)', () => {
     await mountPage()
     expect(usel(wrapper!, 'create-subject').texts()).toEqual(['Matematik', 'Bahasa Melayu', 'Bahasa Inggeris', 'Sains', 'Sejarah'])
     const auto = get('grade-auto').text()
-    expect(auto).toContain('Darjah 4')
+    expect(auto).toContain('Tingkatan 4')
     expect(auto).toContain('(auto)')
     await get('grade-switch').trigger('click')
     expect(wrapper!.find('[data-testid="grade-select"]').exists()).toBe(true)
     expect(wrapper!.find('[data-testid="grade-back"]').exists()).toBe(false) // one-way, as live
-    expect(usel(wrapper!, 'create-mode').texts()).toEqual(['Tahap sama sahaja', 'Semua Darjah / Semua Tingkatan'])
+    expect(usel(wrapper!, 'create-mode').texts()).toEqual(['Tahap sama sahaja', 'Semua Tingkatan'])
     expect(wrapper!.find('[data-testid="create-max-players"]').exists()).toBe(false)
   })
 
@@ -126,7 +126,7 @@ describe('S8-S12 lobby template (FR-M16-62..65)', () => {
     await flushPromises()
     expect(createRoom).toHaveBeenCalledWith('perang-fakta', {
       subject: 'MATEMATIK',
-      grade_level: 'DARJAH_4',
+      grade_level: 'TINGKATAN_4',
       match_mode: 'same_grade',
     })
     expect(router.currentRoute.value.fullPath).toBe('/perang-fakta/Q1W2E3')

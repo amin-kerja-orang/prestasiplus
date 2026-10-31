@@ -124,7 +124,6 @@ async function deleteViaMenu(index: number): Promise<void> {
 describe('SubjectListPage (M03 S6)', () => {
   it('shows the heading, the count and the add button', async () => {
     const w = await render()
-    expect(w.get('h2').text()).toBe('Senarai Subjek')
     expect(w.get('[data-testid=subjects-count]').text()).toBe('Jumlah: 2 subjek')
     const add = w.get('[data-testid=subjects-add]')
     expect(add.text()).toBe('Tambah')

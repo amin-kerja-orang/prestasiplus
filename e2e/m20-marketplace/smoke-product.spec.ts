@@ -35,7 +35,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp(`/marketplace/${SLUG_1}`)
-    await expectTabTitle(page, 'Beg Sekolah Anti-Air Premium - Marketplace PRESTASIPLUS')
+    await expectTabTitle(page, 'Beg Sekolah Anti-Air Premium - Marketplace | PRESTASIPLUS')
     await expectHeader(page, 'Marketplace', 'Peralatan Sekolah')
     await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali ke Marketplace')
     await expect(page.getByTestId('marketplace-back')).toHaveAttribute('href', '/marketplace')
@@ -135,7 +135,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await gotoApp(`/marketplace/${SLUG_5}`)
     await expectTabTitle(
       page,
-      'E-Book: 1001 Soalan Sains Tingkatan 3 (PDF) - Marketplace PRESTASIPLUS',
+      'E-Book: 1001 Soalan Sains Tingkatan 3 (PDF) - Marketplace | PRESTASIPLUS',
     )
     await expectHeader(page, 'Marketplace', 'Buku & Rujukan')
     await expect(page.getByTestId('product-price')).toHaveText('RM 19.90')

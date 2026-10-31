@@ -1,3 +1,4 @@
+import { treatDemoAsSecondary } from '../support/secondary'
 import {
   CreatedUserSchema,
   DeletedResultSchema,
@@ -19,6 +20,7 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
 
   beforeAll(async () => {
     t = await bootUsersApp({ env: { THROTTLE_ADMIN_WRITE_PER_MINUTE: '100000', THROTTLE_ADMIN_READ_PER_MINUTE: '100000' } })
+    await treatDemoAsSecondary(t.db)
     api = apiOf(await login(t, ADMIN))
     school1 = await schoolIdOf(t.db, 'DEMO001')
     school2 = await schoolIdOf(t.db, 'DEMO002')
@@ -61,18 +63,18 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
         name: 'Murid Ujian',
         email: 'murid.ujian@ujian.test',
         schoolId: school1,
-        grade: 5,
+        grade: 9,
         icNumber: '990101-01-5555',
       })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const data = CreatedUserSchema.parse(res.body.data)
       expect(data.icMasked).toBe('xxxxxx-xx-xx55')
-      expect(data.grade).toBe(5)
+      expect(data.grade).toBe(9)
       expect(JSON.stringify(res.body)).not.toContain('990101')
     })
 
     it('ignores the IC and the grade of a role that does not use them', async () => {
-      const res = await api.post('/admin/users', teacherBody(school1, { grade: 5, icNumber: '990101015555' }))
+      const res = await api.post('/admin/users', teacherBody(school1, { grade: 9, icNumber: '990101015555' }))
       const data = CreatedUserSchema.parse(res.body.data)
       expect(data.grade).toBeNull()
       expect(data.icMasked).toBeNull()
@@ -156,9 +158,9 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
     })
 
     it('limits the IC to 14 characters, requires a real IC shape and checks that the school exists', async () => {
-      const long = fieldsOf(await post({ roles: ['student'], name: 'A', email: 'a3@ujian.test', grade: 5, icNumber: '1'.repeat(15) }))
+      const long = fieldsOf(await post({ roles: ['student'], name: 'A', email: 'a3@ujian.test', grade: 9, icNumber: '1'.repeat(15) }))
       expect(long.icNumber).toBe('The ic number field must not be greater than 14 characters.')
-      const shape = await post({ roles: ['student'], name: 'A', email: 'a4@ujian.test', grade: 5, icNumber: 'abc123' })
+      const shape = await post({ roles: ['student'], name: 'A', email: 'a4@ujian.test', grade: 9, icNumber: 'abc123' })
       expect(fieldsOf(shape).icNumber).toBe('The ic number field format is invalid.')
       expect(JSON.stringify(shape.body)).not.toContain('abc123')
       expect(fieldsOf(await post(teacherBody('7777777'))).schoolId).toBe('The selected school id is invalid.')
@@ -319,7 +321,7 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
         name: 'Murid Kemaskini',
         email: 'kemaskini@ujian.test',
         schoolId: school1,
-        grade: 4,
+        grade: 9,
         icNumber: '010203040506',
       })
       id = CreatedUserSchema.parse(res.body.data).id
@@ -334,7 +336,7 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
       expect(d.name).toBe('Murid Baharu')
       expect(d.phone).toBe('0111111111')
       expect(d.email).toBe('kemaskini@ujian.test') // absent key keeps the value
-      expect(d.grade).toBe(4)
+      expect(d.grade).toBe(9)
       expect(d.icMasked).toBe('xxxxxx-xx-xx06')
       expect(d.updatedAt > d.createdAt).toBe(true)
       expect(d).not.toHaveProperty('generatedPassword')
@@ -346,7 +348,7 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
       expect(d.phone).toBeNull()
       expect(d.icMasked).toBeNull()
       expect(d.schoolId).toBeNull()
-      expect(d.grade).toBe(4)
+      expect(d.grade).toBe(9)
       await api.put(`/admin/users/${id}`, { roles: ['student'], name: 'Murid Baharu', schoolId: school1 })
     })
 
@@ -423,9 +425,9 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
 
       it('an out-of-range grade is still refused; a valid grade is stored', async () => {
         expect(fieldsOf(await api.put(`/admin/users/${pid}`, { roles: ['student'], name: 'X', grade: 12 })).grade).toBeTruthy()
-        const ok = await api.put(`/admin/users/${pid}`, { roles: ['student'], name: 'Murid Tanpa Gred B', grade: 3 })
+        const ok = await api.put(`/admin/users/${pid}`, { roles: ['student'], name: 'Murid Tanpa Gred B', grade: 8 })
         expect(ok.status, JSON.stringify(ok.body)).toBe(200)
-        expect(UpdatedUserSchema.parse(ok.body.data).grade).toBe(3)
+        expect(UpdatedUserSchema.parse(ok.body.data).grade).toBe(8)
       })
 
       it('adding the student role without a grade is still refused, with or without resetPassword', async () => {

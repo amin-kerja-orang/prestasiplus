@@ -377,7 +377,7 @@ test.describe('L07 QA S1 Dashboard Guru', MODULE, () => {
   }) => {
     await loginAs(GURU)
     await gotoApp('/guru')
-    await expectTabTitle(page, 'Dashboard Guru - PRESTASIPLUS')
+    await expectTabTitle(page, 'Dashboard Guru | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Guru')
     const sub = page.getByTestId('shell-user-subtitle')
     await expect(sub).toContainText('Selamat datang, ')

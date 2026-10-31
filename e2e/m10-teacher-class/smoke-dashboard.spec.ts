@@ -45,7 +45,7 @@ test.describe('M10 S1 Dashboard Guru', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/guru')
     await expect(page.getByTestId('guru-dashboard')).toBeVisible({ timeout: 15_000 })
-    await expectTabTitle(page, 'Dashboard Guru - PRESTASIPLUS')
+    await expectTabTitle(page, 'Dashboard Guru | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Guru')
     await expect(page.getByTestId('shell-user-subtitle')).toContainText('Selamat datang, ')
     await expect(page.getByTestId('shell-user-subtitle')).toContainText('👩‍🏫')

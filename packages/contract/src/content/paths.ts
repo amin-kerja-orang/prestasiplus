@@ -63,6 +63,7 @@ import {
   AdminNoteUpdateRequestSchema,
   NoteFormTypeSchema,
   NoteGradeSchema,
+  NoteWriteGradeSchema,
   NoteStoredTypeSchema,
   NoteSubjectSchema,
 } from './notes'
@@ -158,6 +159,7 @@ export const CONTENT_COMPONENT_SCHEMAS = byId([
   NoteFormTypeSchema,
   NoteStoredTypeSchema,
   NoteGradeSchema,
+  NoteWriteGradeSchema,
   AdminNoteItemSchema,
   AdminNoteDetailSchema,
   AdminNoteListQuerySchema,

@@ -150,6 +150,16 @@ afterEach(() => {
   wrapper = null
 })
 
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases of each module.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+
 describe('S11 MockExamPage', () => {
   it('links the Duta card to /bilik-duta/{slug} only when that route exists (D9 dead link)', async () => {
     // Catch-all registered as the global 404 (the real app): the M24 page is unbuilt, so no link.

@@ -65,26 +65,20 @@ test.describe('M03 S12 Topik', MODULE, () => {
   }) => {
     await loginAs(PELAJAR)
     await openTopics(page, gotoApp)
-    await expectTabTitle(page, 'Topik - PRESTASIPLUS')
+    await expectTabTitle(page, 'Topik | PRESTASIPLUS')
     expect(await header(page)).toEqual({
       title: 'Topik Pembelajaran',
       subtitle: 'Terokai semua topik pembelajaran',
     })
     const grades = page.getByTestId('grade-chip')
-    expect(await texts(grades)).toEqual([
-      'Semua Darjah',
-      'Darjah 1',
-      'Darjah 2',
-      'Darjah 3',
-      'Darjah 4',
-      'Darjah 5',
-      'Darjah 6',
-    ])
+    expect(await texts(grades)).toEqual(['Semua Tingkatan', 'Tingkatan 4', 'Tingkatan 5'])
     expect(await hrefs(grades)).toEqual([
-      '/topics',
-      ...[1, 2, 3, 4, 5, 6].map((n) => `/topics?grade_level=DARJAH_${String(n)}`),
+      '/topics?grade_level=SEMUA',
+      '/topics?grade_level=TINGKATAN_4',
+      '/topics?grade_level=TINGKATAN_5',
     ])
-    expect(await actives(grades)).toEqual([true, false, false, false, false, false, false])
+    // D54: a bare URL opens the student's form (Tingkatan 4 by default).
+    expect(await actives(grades)).toEqual([false, true, false])
     const subjects = page.getByTestId('subject-chip')
     expect(await texts(subjects)).toEqual([
       'Semua Subjek',
@@ -203,7 +197,7 @@ test.describe('M03 S13 Topic detail', MODULE, () => {
     await expect(page.getByTestId('topic-card').first()).toBeVisible()
     await page.locator('[data-testid=topic-card][data-topic-id="7"]').click()
     await expect(page.getByTestId('topic-hero')).toBeVisible()
-    await expectTabTitle(page, 'Nombor Bulat Hingga 100 - PRESTASIPLUS')
+    await expectTabTitle(page, 'Nombor Bulat Hingga 100 | PRESTASIPLUS')
     expect(await header(page)).toEqual({ title: 'Nombor Bulat Hingga 100', subtitle: 'MATEMATIK' })
     const back = page.getByTestId('topic-back')
     await expect(back).toHaveText('Kembali ke Senarai Topik')
@@ -310,7 +304,7 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
   test('E2E-M03-41 hero, tiles by width, static bar', async ({ page, loginAs, gotoApp }) => {
     await loginAs(ADMIN)
     await openMap(page, gotoApp)
-    await expectTabTitle(page, 'Peta Belajar — PRESTASIPLUS')
+    await expectTabTitle(page, 'Peta Belajar | PRESTASIPLUS')
     expect(await header(page)).toEqual({ title: 'Peta Belajar', subtitle: '' })
     await expect(page.getByTestId('map-hero')).toContainText('🗺️ Peta Belajar')
     await expect(page.getByTestId('map-subtitle')).toHaveText(

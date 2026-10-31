@@ -21,8 +21,8 @@ import {
   provisional,
 } from '../support'
 
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const header = (page: Page) => ({
   title: page.getByTestId('shell-user-title'),
@@ -58,7 +58,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/headcount')
     await expect(page.getByTestId('headcount-list')).toBeVisible()
-    await expectTabTitle(page, 'Headcount - PRESTASIPLUS')
+    await expectTabTitle(page, 'Headcount | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Headcount')
     await expect(header(page).subtitle).toHaveText('Selamat datang kembali')
     await expect(page.getByTestId('headcount-hero').getByRole('heading')).toHaveText('Headcount')
@@ -103,17 +103,17 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(modal).toBeVisible()
     await expect(modal.getByRole('heading', { name: 'Auto-Setup Headcount' })).toBeVisible()
     await expect(modal).toContainText('Pilih tingkatan untuk auto-cipta headcount')
-    await expect(modal.getByText('Darjah', { exact: true })).toBeVisible()
+    await expect(modal.getByText('Darjah', { exact: true })).toHaveCount(0)
     await expect(modal.getByText('Tingkatan', { exact: true })).toBeVisible()
-    await expect(modal.locator('input[type=checkbox]')).toHaveCount(11)
+    await expect(modal.locator('input[type=checkbox]')).toHaveCount(5)
     const submit = page.getByTestId('auto-setup-submit')
     await expect(submit).toBeDisabled()
     await expect(submit).toHaveClass(/bg-slate-300/)
     await expect(submit).toHaveText('Auto-Setup')
 
-    await page.getByTestId('level-D5').click()
+    await page.getByTestId('level-T5').click()
     await page.getByTestId('level-T2').click()
-    await expect(page.getByTestId('level-D5')).toHaveClass(/bg-amber-50/)
+    await expect(page.getByTestId('level-T5')).toHaveClass(/bg-blue-50/)
     await expect(page.getByTestId('level-T2')).toHaveClass(/bg-blue-50/)
     await expect(submit).toBeEnabled()
     await expect(submit).toHaveClass(/bg-emerald-600/)
@@ -165,7 +165,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/headcount/dashboard')
     await expect(page.getByTestId('headcount-dashboard-page')).toBeVisible()
     await expect(page.getByTestId('stat-configs')).toHaveText('6')
-    await expectTabTitle(page, 'Dashboard Headcount - PRESTASIPLUS')
+    await expectTabTitle(page, 'Dashboard Headcount | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Dashboard Headcount')
     await expect(page.getByText('Ringkasan prestasi semua kelas anda')).toBeVisible()
     await expect(page.getByTestId('hero-list')).toHaveAttribute('href', '/headcount')
@@ -197,7 +197,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/headcount/create')
     await expect(page.getByTestId('create-form')).toBeVisible()
-    await expectTabTitle(page, 'Buat Headcount Baru - PRESTASIPLUS')
+    await expectTabTitle(page, 'Buat Headcount Baru | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Buat Headcount Baru')
     await expect(page.locator('[data-testid=headcount-create-page] h1')).toHaveText(
       'Buat Headcount Baru',
@@ -284,7 +284,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/headcount/student/3001')
     await expect(page.getByTestId('headcount-student-page')).toBeVisible()
-    await expectTabTitle(page, 'Headcount Murid Demo 01 - PRESTASIPLUS')
+    await expectTabTitle(page, 'Headcount Murid Demo 01 | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Headcount — Prestasi Individu')
     await expect(page.getByTestId('student-name')).toHaveText('Murid Demo 01')
     await expect(page.getByTestId('student-subtitle')).toContainText(
@@ -359,7 +359,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
   test('S22 config 501: cards and the per-OTR distribution', async ({ page, gotoApp }) => {
     await gotoApp('/headcount/501/summary')
     await expect(page.getByTestId('headcount-summary-page')).toBeVisible()
-    await expectTabTitle(page, 'Ringkasan Kelas - PRESTASIPLUS')
+    await expectTabTitle(page, 'Ringkasan Kelas | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Ringkasan Kelas')
     await expect(page.getByTestId('summary-subtitle')).toContainText(
       'Kimia · 5 MARIKH - Kimia · Tingkatan 5 · 2026',
@@ -380,7 +380,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/headcount/501')
     await expect(page.getByTestId('headcount-table-page')).toBeVisible()
-    await expectTabTitle(page, 'Headcount Kimia - PRESTASIPLUS')
+    await expectTabTitle(page, 'Headcount Kimia | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Headcount Kimia')
     await expect(header(page).subtitle).toHaveText('Selamat datang kembali')
     await expect(page.locator('[data-testid=headcount-table-page] h1')).toHaveText('Kimia')
@@ -531,7 +531,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
       await page.getByTestId('key-in-2').click()
       await expect(page.getByTestId('headcount-shell-page')).toBeVisible()
       expect(new URL(page.url()).pathname).toBe('/headcount/501/results/2')
-      await expectTabTitle(page, 'Key-in AR - PRESTASIPLUS')
+      await expectTabTitle(page, 'Key-in AR | PRESTASIPLUS')
       await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/headcount/501')
       await expectNoHorizontalScroll(page)
 
@@ -673,7 +673,7 @@ test.describe('M08 T6 admin', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/headcount/213')
     await expect(page.getByTestId('headcount-table-page')).toBeVisible()
-    await expectTabTitle(page, 'Headcount Sejarah - PRESTASIPLUS')
+    await expectTabTitle(page, 'Headcount Sejarah | PRESTASIPLUS')
     await expect(page.getByTestId('table-subtitle')).toContainText(
       '4 Simulasi · Tingkatan 4 · 2026 · Guru: Guru Demo KL-01',
     )
@@ -732,7 +732,7 @@ test.describe('M08 T6 Admin Sekolah (account 8)', { tag: [moduleTag(8)] }, () =>
       await gotoApp('/headcount')
       await expect(page.getByTestId('headcount-empty')).toContainText('Belum ada headcount.')
       await expect(page.getByTestId('headcount-create-now')).toBeVisible()
-      await expectTabTitle(page, 'Headcount - PRESTASIPLUS')
+      await expectTabTitle(page, 'Headcount | PRESTASIPLUS')
       await expectNoHorizontalScroll(page)
       await gotoApp('/headcount/dashboard')
       await expect(page.getByTestId('dashboard-empty')).toBeVisible()

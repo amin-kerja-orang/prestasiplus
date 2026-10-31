@@ -53,11 +53,12 @@ describe('S3 admin', () => {
   it('renders header, tabs on "Hari Ini" and ignores a ?period= query', async () => {
     const w = await mountDaily(false, '/?period=week')
     expect(get(w, 'cc-s3-subtitle').text()).toBe('Aktiviti Platform')
-    expect(get(w, 'cc-s3-back').text()).toBe('◀ Command Center')
-    expect(get(w, 'cc-s3-back').attributes('href')).toBe('/admin/command-center')
+    // no LIVE badge, MYT clock or back button (owner request 2026-10-29)
+    expect(w.find('[data-testid="cc-s3-back"]').exists()).toBe(false)
     // S8 is not built: the link is hidden rather than dead (DV-M17-45).
     expect(w.find('[data-testid="cc-s3-report"]').exists()).toBe(false)
-    expect(get(w, 'cc-clock').text()).toBe('15:40:00')
+    expect(w.find('[data-testid="cc-clock"]').exists()).toBe(false)
+    expect(w.find('[data-testid="cc-live-badge"]').exists()).toBe(false)
     expect(texts(w, 'cc-tab')).toEqual(['Hari Ini', 'Minggu Ini', 'Bulan Ini'])
     expect(tab(w, 'today').attributes('data-active')).toBe('true')
     expect(api.fetchCcDailyActivity).toHaveBeenCalledWith('today', expect.anything())
@@ -67,20 +68,20 @@ describe('S3 admin', () => {
   it('renders the six pulse cards', async () => {
     const w = await mountDaily(false)
     expect(texts(w, 'cc-pulse-label')).toEqual([
-      'Sekolah Aktif',
-      'Login Hari Ini',
-      'Pelajar Aktif',
       'Soalan Dijawab',
+      'Pelajar Aktif',
+      'Sekolah Aktif',
       'Sesi Latihan',
+      'Login Hari Ini',
       'Engagement',
     ])
-    expect(texts(w, 'cc-pulse-value')).toEqual(['1', '2', '1', '60', '3/3', '0'])
+    expect(texts(w, 'cc-pulse-value')).toEqual(['60', '1', '1', '3/3', '2', '0'])
     expect(texts(w, 'cc-pulse-sub')).toEqual([
-      'daripada 9',
-      'student: 1 · admin: 1',
-      'daripada 3,152',
       'Ketepatan: 95%',
+      'daripada 3,152',
+      'daripada 9',
       'Purata: 1m 0s',
+      'Murid: 1 · Admin Pusat: 1',
       'Mood:0 Badge:0 Misi:0',
     ])
     w.unmount()
@@ -90,10 +91,10 @@ describe('S3 admin', () => {
     const w = await mountDaily(false)
     const rows = w.findAll('[data-testid="cc-school-row"]')
     expect(texts(w, 'cc-school-name')).toEqual(['1. SMK CONTOH SATU', '2. SMK CONTOH EMPAT'])
-    expect(rows[0]?.text()).toContain('GURU')
-    expect(rows[1]?.text()).toContain('LOGIN')
-    expect(texts(w, 'cc-school-accuracy')).toEqual(['95.0%', '-%'])
-    expect(w.findAll('[data-testid="cc-school-accuracy"]')[0]?.classes()).toContain('text-success')
+    expect(rows[0]?.text()).toContain('guru')
+    expect(rows[1]?.text()).toContain('login')
+    expect(texts(w, 'cc-school-accuracy')).toEqual(['95.0%', '-'])
+    expect(w.findAll('[data-testid="cc-school-accuracy"]')[0]?.attributes('data-tone')).toBe('success')
     w.unmount()
   })
 
@@ -102,14 +103,16 @@ describe('S3 admin', () => {
     expect(w.find('[data-testid="cc-subjects-chart"]').exists()).toBe(true)
     expect(w.find('[data-testid="cc-heat-chart"]').exists()).toBe(true)
     expect(texts(w, 'cc-daily-feed-row')[0]).toContain('Pelajar Contoh Satu')
-    expect(texts(w, 'cc-login-role')).toEqual(['admin', 'student', 'student', 'teacher'])
+    expect(texts(w, 'cc-login-role')).toEqual(['Admin Pusat', 'Murid', 'Murid', 'Guru'])
     expect(texts(w, 'cc-login-package')).toEqual(['ADMIN', 'SEKOLAH', 'FREE', 'SEKOLAH'])
     expect(texts(w, 'cc-login-school')).toEqual([
       'SMK CONTOH EMPAT',
       'Pelajar Luar',
       'SMK CONTOH EMPAT',
     ])
-    const links = w.findAll('[data-testid="cc-login-name"]').map((e) => e.attributes('href'))
+    const links = w
+      .findAll('[data-testid="cc-login-row"]')
+      .map((e) => (e.find('a').exists() ? e.get('a').attributes('href') : undefined))
     expect(links).toEqual([
       undefined,
       '/admin/command-center/student/2017',
@@ -118,7 +121,7 @@ describe('S3 admin', () => {
     ])
     expect(texts(w, 'cc-daily-top-answers')).toEqual(['60 jwb'])
     expect(w.get('[data-testid="cc-panel-daily-mood"]').text()).toContain('Tiada data')
-    expect(w.get('[data-testid="cc-panel-badges"]').text()).toContain('Tiada badge baru')
+    expect(w.get('[data-testid="cc-panel-badges"]').text()).toContain('Tiada data')
     w.unmount()
   })
 
@@ -132,13 +135,13 @@ describe('S3 admin', () => {
     await tab(w, 'week').trigger('click')
     await flushPromises()
     expect(api.fetchCcDailyActivity).toHaveBeenLastCalledWith('week', expect.anything())
-    expect(texts(w, 'cc-pulse-label')[1]).toBe('Login Minggu Ini')
+    expect(texts(w, 'cc-pulse-label')[4]).toBe('Login Minggu Ini')
     expect(w.find('[data-testid="cc-panel-heatmap"]').exists()).toBe(false)
     expect(w.find('[data-testid="cc-drill"]').exists()).toBe(false)
 
     await tab(w, 'month').trigger('click')
     await flushPromises()
-    expect(texts(w, 'cc-pulse-label')[1]).toBe('Login Bulan Ini')
+    expect(texts(w, 'cc-pulse-label')[4]).toBe('Login Bulan Ini')
     await tab(w, 'today').trigger('click')
     await flushPromises()
     expect(w.find('[data-testid="cc-panel-heatmap"]').exists()).toBe(true)
@@ -213,15 +216,15 @@ describe('S3 admin', () => {
       }),
     )
     const w = await mountDaily(false)
-    expect(get(w, 'cc-schools-empty').text()).toBe('Tiada aktiviti')
+    expect(get(w, 'cc-schools-empty').text()).toBe('Tiada data')
     expect(texts(w, 'cc-empty')).toEqual([
-      '-',
-      'Tiada data',
-      'Tiada aktiviti',
-      'Tiada login',
       'Tiada data',
       'Tiada data',
-      'Tiada badge baru',
+      'Tiada data',
+      'Tiada data',
+      'Tiada data',
+      'Tiada data',
+      'Tiada data',
     ])
     w.unmount()
   })
@@ -251,12 +254,12 @@ describe('S3 Admin Sekolah alias', () => {
     api.fetchCcDailyActivity.mockResolvedValue(schoolDaily())
     const w = await mountDaily(true)
     expect(get(w, 'cc-s3-subtitle').text()).toBe('Aktiviti Sekolah')
-    expect(get(w, 'cc-s3-back').attributes('href')).toBe('/admin-sekolah/command-center')
+    expect(w.find('[data-testid="cc-s3-back"]').exists()).toBe(false)
     expect(w.find('[data-testid="cc-s3-report"]').exists()).toBe(false)
     expect(w.find('[data-testid="cc-panel-schools"]').exists()).toBe(false)
-    expect(texts(w, 'cc-pulse-sub')[0]).toBe('daripada 1')
+    expect(texts(w, 'cc-pulse-sub')[2]).toBe('daripada 1')
     expect(w.text()).not.toContain('AKTIVITI PLATFORM')
-    expect(w.findAll('[data-testid="cc-daily-top-name"]').map((e) => e.attributes('href'))).toEqual(
+    expect(w.findAll('[data-testid="cc-daily-top-row"] a').map((e) => e.attributes('href'))).toEqual(
       ['/admin-sekolah/command-center/student/2022'],
     )
     w.unmount()

@@ -318,13 +318,13 @@ describe('#11 template (FR-M04-57, E2E-M04-32)', () => {
     const text = await r.body.text()
     const lines = text.split('\r\n').filter((l) => l !== '')
     expect(lines[0]).toBe(
-      'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation',
+      'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation,kertas',
     )
     expect(lines).toHaveLength(3)
     expect(lines[1]).toBe(
-      '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,4,1,1,"Kuala Lumpur ialah ibu negara."',
+      '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,7,1,1,"Kuala Lumpur ialah ibu negara.",',
     )
-    expect(lines[2]).toBe('"2 + 3 = ?",4,5,6,7,B,3,1,1,1,')
+    expect(lines[2]).toBe('"2 + 3 = ?",4,5,6,7,B,3,10,1,1,,')
   })
 
   it('the template imports cleanly', async () => {

@@ -190,7 +190,7 @@ describe('S7 ProductDetailPage', () => {
       title: 'Marketplace',
       subtitle: 'Peralatan Sekolah',
     })
-    expect(document.title).toBe('Beg Sekolah Anti-Air Premium - Marketplace PRESTASIPLUS')
+    expect(document.title).toBe('Beg Sekolah Anti-Air Premium - Marketplace | PRESTASIPLUS')
     expect(w.get('[data-testid="product-views"]').text()).toBe('31 tontonan')
     expect(w.get('[data-testid="marketplace-back"]').attributes('href')).toBe('/marketplace')
     expect(w.get('[data-testid="seller-link"]').attributes('href')).toBe('/marketplace/penjual/1')
@@ -227,7 +227,7 @@ describe('S8 PenjualShopPage', () => {
       title: 'Kedai Penjual',
       subtitle: 'JomBelajar Official',
     })
-    expect(document.title).toBe('JomBelajar Official - Marketplace PRESTASIPLUS')
+    expect(document.title).toBe('JomBelajar Official - Marketplace | PRESTASIPLUS')
     expect(w.get('[data-testid="shop-name"]').text()).toBe('JomBelajar Official')
     expect(w.findAll('[data-testid="product-card"]')).toHaveLength(2)
     expect(w.find('[data-testid="product-card-shipping"]').exists()).toBe(false)

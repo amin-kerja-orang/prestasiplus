@@ -48,7 +48,7 @@ describe('question quality routes (BE-10 AC 7)', () => {
   beforeAll(async () => {
     t = await bootWorkflowApp()
     c = await loginAll(t)
-    levelId = (await t.db.query<{ id: string }>('select id::text from education_levels order by id limit 1'))[0]!.id
+    levelId = (await t.db.query<{ id: string }>("select id::text from education_levels where stage <> 'primary' order by id limit 1"))[0]!.id
     subjectIds = (await t.db.query<{ id: string }>('select id::text from subjects order by id limit 2')).map((r) => r.id)
     const base = { subjectId: subjectIds[0]!, educationLevelId: levelId }
     const seed = (id: string, quality: Record<string, unknown>) =>

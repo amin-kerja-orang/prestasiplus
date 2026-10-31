@@ -8,7 +8,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPage } from '@/ds'
+import { DsGrid, DsPage, DsStack } from '@/ds'
 
 import type { CcPeriod } from '../api/command-center-board'
 import { boardPaths, S3_TABS } from '../components/command-center-board/board-copy'
@@ -65,31 +65,38 @@ function pick(next: CcPeriod): void {
 
         <PulseCards :data="data" :period="period" />
 
-        <div
-          class="grid min-w-0 gap-4 md:grid-cols-2"
-          :class="alias ? 'xl:grid-cols-2' : 'xl:grid-cols-3'"
-          data-testid="cc-row-1"
-        >
-          <DailySchoolsPanel
-            v-if="!alias"
-            :data="data"
-            :status="status"
-            :drill="drill.state.value"
-            :base-path="paths.basePath"
-            @toggle="drill.toggle"
-          />
-          <div class="flex min-w-0 flex-col gap-4">
-            <DailySubjectsPanel :data="data" :status="status" />
-            <DailyHeatmapPanel v-if="period === 'today'" :data="data" :status="status" />
-          </div>
-          <DailyFeedPanel :data="data" :status="status" :base-path="paths.basePath" />
-        </div>
+        <!-- Row 1: where the activity is. The school list shares its column with the top pupils. -->
+        <DsGrid min-item="md" gap="md" data-testid="cc-row-1">
+          <DsStack gap="md">
+            <DailySchoolsPanel
+              v-if="!alias"
+              :data="data"
+              :status="status"
+              :drill="drill.state.value"
+              :base-path="paths.basePath"
+              :stretch="false"
+              @toggle="drill.toggle"
+            />
+            <DailyTopPanel
+              :data="data"
+              :status="status"
+              :base-path="paths.basePath"
+              :stretch="false"
+            />
+          </DsStack>
+          <DailySubjectsPanel :data="data" :status="status" :stretch="false" />
+          <DailyHeatmapPanel v-if="period === 'today'" :data="data" :status="status" />
+        </DsGrid>
 
-        <div class="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="cc-row-2">
+        <!-- Row 2: who is active (feed, logins) and how they feel (mood, badges). -->
+        <DsGrid min-item="md" gap="md" data-testid="cc-row-2">
+          <DailyFeedPanel :data="data" :status="status" :base-path="paths.basePath" />
           <DailyLoginsPanel :data="data" :status="status" :base-path="paths.basePath" />
-          <DailyTopPanel :data="data" :status="status" :base-path="paths.basePath" />
-          <DailyMoodBadgePanels :data="data" :status="status" />
-        </div>
+          <DsStack gap="md">
+            <DailyMoodBadgePanels :data="data" :status="status" only="mood" />
+            <DailyMoodBadgePanels :data="data" :status="status" only="badge" />
+          </DsStack>
+        </DsGrid>
       </div>
     </DsPage>
   </CcBoardFrame>

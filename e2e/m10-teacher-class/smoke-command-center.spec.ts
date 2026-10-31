@@ -8,6 +8,7 @@
 
 import type { Locator, Page } from '@playwright/test'
 
+import { ALESA_ON } from '../support/alesa'
 import { expect, test } from '../fixtures/test'
 import {
   acceptNextDialog,
@@ -25,7 +26,7 @@ const GURU = 'guru@demo.test'
 const ADMIN = 'admin@demo.test'
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(10)] }
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const CC = '/guru/command-center'
 const API = '/api/guru/command-center'
 
@@ -76,7 +77,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     mock,
   }) => {
     await openBoard(page, gotoApp)
-    await expect(page).toHaveTitle(/^Command Center — Guru: \S/)
+    await expect(page).toHaveTitle(/^Command Center — Guru: \S.* [|] PRESTASIPLUS$/)
     await expect(tid(page, 'shell-user-sidebar')).toHaveCount(0)
     await expect(tid(page, 'shell-admin-sidebar')).toHaveCount(0)
 
@@ -126,7 +127,8 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     ])
     await expect(tid(page, 'cc-activity-today')).toHaveText('0 soalan')
     await expect(tid(page, 'cc-footer')).toHaveText(
-      'Powered by ALESA AI · PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat',
+      (ALESA_ON ? 'Powered by ALESA AI · ' : '') +
+        'PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat',
     )
 
     // after 10 s a second live-data request
@@ -345,7 +347,7 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
     gotoApp,
   }) => {
     await openBoard(page, gotoApp)
-    await expect(page).toHaveTitle('Command Center — Guru: Guru Demo')
+    await expect(page).toHaveTitle('Command Center — Guru: Guru Demo | PRESTASIPLUS')
     const values = tid(page, 'cc-kpi-value')
     await expect(values.nth(0)).toHaveText('8')
     await expect(values.nth(1)).toHaveText('83')
@@ -560,9 +562,10 @@ test.describe('M17 mount under /guru/command-center (E2E-M17-70) and refusals', 
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(GURU)
       await gotoApp(`${CC}/classroom/2001`)
-      await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
-      await expect(tid(page, 'cc-crumb-current')).toContainText('Kimia')
-      await expect(tid(page, 'cc-breadcrumb').getByRole('link').first()).toHaveAttribute('href', CC)
+      // S6 on the DS detail template (DV-M17-57): the shell prints the title and crumbs; back link "Kembali"
+      await expect(tid(page, 'cc-title')).toHaveCount(0)
+      await expect(tid(page, 'cc-info')).toContainText('Kimia')
+      await expect(page.locator('[data-ds="back-link"]')).toHaveAttribute('href', /^\/guru\/command-center/)
       await expect(tid(page, 'shell-user-sidebar')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
 
@@ -579,8 +582,8 @@ test.describe('M17 mount under /guru/command-center (E2E-M17-70) and refusals', 
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(ADMIN)
       await gotoApp(`${CC}/classroom/370`)
-      await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
-      await expect(tid(page, 'cc-crumb-current')).toHaveText(/\S/)
+      await expect(tid(page, 'cc-title')).toHaveCount(0)
+      await expect(tid(page, 'cc-info')).toHaveText(/\S/)
       await expect(page.locator('[data-page=not-found]')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
     },

@@ -37,6 +37,18 @@ const labels = (role: Role, surface: 'sidebar' | 'drawer' = 'sidebar'): string[]
   ]
 }
 
+// ALESA AI (D73) and Mohon Keluarga Angkat (D74) are hidden unless their flags are on: this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases of each module.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+  vi.stubEnv('VITE_KELUARGA_ANGKAT', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+  vi.stubEnv('VITE_KELUARGA_ANGKAT', 'on')
+})
+
 describe('navFor with the prototype scope on', () => {
   it('shows no item outside the role scope, on either surface', () => {
     for (const role of PROTOTYPE) {
@@ -96,8 +108,8 @@ describe('navFor with the prototype scope on', () => {
       'Soalan by Chapter',
       'Monitoring',
       'Kirkpatrick',
-      'T1: Reaksi',
-      'T4: Hasil',
+      'Tahap 1: Reaksi',
+      'Tahap 4: Hasil',
       'Rantaian Impak',
       'Intervensi',
       'Pelajar Saya',

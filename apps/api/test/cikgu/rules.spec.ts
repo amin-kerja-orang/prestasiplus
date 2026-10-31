@@ -99,7 +99,8 @@ describe('RPH request (BR-M13-10)', () => {
 
   it('takes the longest subject, word levels and "hari ini"', () => {
     expect(parseRphRequest('jana rph Matematik Tambahan Tingkatan 5 Fungsi hari ini', SUBJECTS)).toMatchObject({ subject: 'Matematik Tambahan', level: 'T5', tajuk: 'Fungsi', tomorrow: false })
-    expect(parseRphRequest('rph Kimia Darjah 6', SUBJECTS)).toMatchObject({ level: 'D6' })
+    // Secondary-only (2026-10-29): a Darjah level is not recognised, so the request is a follow-up.
+    expect(parseRphRequest('rph Kimia Darjah 6', SUBJECTS)).toBeNull()
   })
 
   it('defaults the tajuk and refuses a missing subject or level', () => {

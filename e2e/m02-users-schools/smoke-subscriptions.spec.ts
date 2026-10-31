@@ -37,7 +37,7 @@ test.describe('M02 S12 subscription list', { tag: [TAG.smoke, moduleTag(2)] }, (
     await loginAs(ADMIN)
     await gotoApp('/admin/school-subscriptions')
     await expect(rows(page).first()).toBeVisible()
-    await expectTabTitle(page, 'Langganan Sekolah - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Langganan Sekolah | PRESTASIPLUS')
 
     await expect(page.getByTestId('subs-stat-active')).toHaveText(/9\s*Aktif/)
     await expect(page.getByTestId('subs-stat-grace')).toHaveText(/0\s*Tempoh Ihsan/)
@@ -137,7 +137,7 @@ test.describe('M02 S13 new subscription', { tag: [TAG.smoke, moduleTag(2)] }, ()
     await loginAs(ADMIN)
     await gotoApp('/admin/school-subscriptions/create')
     await expect(page.getByTestId('sub-form')).toBeVisible()
-    await expectTabTitle(page, 'Langganan Baru - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Langganan Baru | PRESTASIPLUS')
     await expect(page.getByTestId('sub-tier-basic')).toBeChecked()
     await expect(page.getByTestId('sub-package')).toHaveCount(4)
     for (const radio of await page.getByTestId('sub-package').all()) {
@@ -273,7 +273,7 @@ test.describe('M02 S14 subscription detail', { tag: [TAG.smoke, moduleTag(2)] },
     await expect(page.getByTestId('sub-code')).toContainText('· Pakej SPM Tingkatan 5')
     await expect(page.getByTestId('sub-toggle-upgrade')).toBeVisible()
     const title = await page.title()
-    expect(title).toMatch(/^Langganan .+ - Admin PRESTASIPLUS$/)
+    expect(title).toMatch(/^Langganan .+ [|] PRESTASIPLUS$/)
 
     await expect(page.getByTestId('sub-student-row')).toHaveCount(50)
     await expect(page.getByTestId('sub-range')).toHaveText('perbarisan · Memaparkan 1-50 dari 150')
@@ -598,7 +598,7 @@ test.describe('M02 S16 assign SPM packages', { tag: [TAG.smoke, moduleTag(2)] },
     await loginAs(ADMIN)
     await gotoApp('/admin/users/5601/packages')
     await expect(page.getByTestId('packages-school')).toBeVisible()
-    await expect(page).toHaveTitle(/^Assign Pakej SPM - .+/)
+    await expect(page).toHaveTitle(/^Assign Pakej SPM - .+ [|] PRESTASIPLUS$/)
     await expect(page.getByTestId('packages-school')).toContainText('Admin Sekolah')
 
     const t4 = page.getByTestId('package-card-t4')

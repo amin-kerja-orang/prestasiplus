@@ -117,7 +117,7 @@ watch(classLevel, () => {
             data-testid="existing-class"
           >
             <option value="">Semua Kelas</option>
-            <option v-for="o in existingClassFilter(schoolType)" :key="o.value" :value="o.value">
+            <option v-for="o in existingClassFilter()" :key="o.value" :value="o.value">
               {{ o.label }}
             </option>
           </DsNativeSelect>

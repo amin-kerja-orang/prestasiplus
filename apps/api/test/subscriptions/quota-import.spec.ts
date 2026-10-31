@@ -1,3 +1,4 @@
+import { treatDemoAsSecondary } from '../support/secondary'
 import { ErrorBodySchema, QuotaSchema, STUDENT_IMPORT_MESSAGES, StudentImportResultSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -78,6 +79,7 @@ describe('school quota and student import (AC 2)', () => {
 
   beforeAll(async () => {
     t = await bootSubApp()
+    await treatDemoAsSecondary(t.db)
     who = await login(t, ADMIN)
     admin = apiOf(who)
     s1 = await schoolIdOf(t.db, 'DEMO001') // 5 students (one inactive, one suspended)
@@ -184,6 +186,16 @@ describe('school quota and student import (AC 2)', () => {
     it('rejects unknown keys (strict body)', async () => {
       expect(fieldsOf(await imp({ role: 'admin' })).role).toBe('The role field is not allowed.')
     })
+
+  it('secondary-only: a Darjah class level (D1 to D6) is refused on fields.classLevel and nobody is created', async () => {
+    const before = (await t.db.query<{ n: number }>(`select count(*)::int n from users`))[0]?.n
+    for (const classLevel of ['D1', 'D6']) {
+      const res = await imp({ classLevel })
+      expect(res.status, classLevel).toBe(422)
+      expect(res.body.error.fields).toEqual({ classLevel: 'The selected class level is invalid.' })
+    }
+    expect((await t.db.query<{ n: number }>(`select count(*)::int n from users`))[0]?.n).toBe(before)
+  })
 
     it('413 PAYLOAD_TOO_LARGE for more than 1000 rows', async () => {
       const rows = Array.from({ length: 1001 }, (_v, i) => `N${String(i)},m${String(i)}@moe-dl.edu.my,p`).join('\n')
@@ -292,12 +304,12 @@ describe('school quota and student import (AC 2)', () => {
         .post('/api/admin/students/import')
         .set('X-CSRF-Token', who.csrf)
         .field('schoolId', school)
-        .field('classLevel', 'D3')
+        .field('classLevel', 'T3')
         .field('importMode', 'csv')
         .attach('csvFile', Buffer.from('Nama,Emel,Kata Laluan\nAmin,amin@moe-dl.edu.my,kata123\n'), 'murid.csv')
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.data).toMatchObject({ created: 1, skipped: 0, failed: 0 })
-      expect((await t.db.query<{ grade: number }>(`select grade from users where school_id = $1`, [school]))[0]?.grade).toBe(3)
+      expect((await t.db.query<{ grade: number }>(`select grade from users where school_id = $1`, [school]))[0]?.grade).toBe(9)
     })
 
     it('two parallel imports cannot overshoot the quota: one wins, the other is refused (lock)', async () => {

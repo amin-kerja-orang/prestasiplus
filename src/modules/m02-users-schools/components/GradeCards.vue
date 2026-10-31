@@ -1,16 +1,14 @@
 <script setup lang="ts">
 /**
- * "Tahap Pendidikan" radio cards (FR-M02-23, FR-M02-39): "Sekolah Rendah" Darjah 1-6 (grade 1-6) and
- * "Sekolah Menengah" Ting. 1-5 (grade 7-11). Two card-variant `URadioGroup`s that behave as one choice:
- * none checked until the admin picks (S2); the checked card carries the primary tone. Each card is a
- * radio (arrow keys work), at least 44 px high.
+ * "Tahap Pendidikan" radio cards (FR-M02-23, FR-M02-39): "Sekolah Menengah" Ting. 1-5 (grade 7-11) only; the
+ * Darjah group is hidden in v2 (secondary only). A card-variant `URadioGroup`: none checked until the admin
+ * picks (S2); the checked card carries the primary tone. Each card is a radio (arrow keys work), at least 44 px high.
  */
-import { PRIMARY_GRADES, SECONDARY_GRADES, type GradeOption } from '../lib/user-form-options'
+import { SECONDARY_GRADES, type GradeOption } from '../lib/user-form-options'
 
 const model = defineModel<number | null>({ required: true })
 
 const groups: { title: string; grades: readonly GradeOption[] }[] = [
-  { title: 'Sekolah Rendah', grades: PRIMARY_GRADES },
   { title: 'Sekolah Menengah', grades: SECONDARY_GRADES },
 ]
 

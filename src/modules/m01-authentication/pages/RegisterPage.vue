@@ -26,7 +26,6 @@ import { REGISTER_TILES } from '../components/auth/welcome-tiles'
 import { SCHOOL_MIN_QUERY, useSchoolSearch } from '../composables/useSchoolSearch'
 import { errorLines } from '../lib/error-lines'
 import {
-  DARJAH_GRADES,
   REGISTER_STATE_OPTIONS,
   ROLE_CARDS,
   TINGKATAN_GRADES,
@@ -227,26 +226,6 @@ async function submit(): Promise<void> {
             <UIcon name="i-ph-graduation-cap-duotone" class="size-4 text-primary-t" />
             Pilih Tahap Anda
           </p>
-          <div class="flex flex-col gap-2">
-            <p class="flex items-center gap-2 text-overline text-muted">
-              <UIcon name="i-ph-student-duotone" class="size-4" />
-              Sekolah Rendah
-            </p>
-            <div class="grid grid-cols-3 gap-2">
-              <DsPanel
-                v-for="n in DARJAH_GRADES"
-                :key="n"
-                :tone="grade === n ? 'tint' : 'inset'"
-                class="flex min-h-11 flex-col items-center justify-center text-center"
-                :data-selected="grade === n"
-                :data-testid="`grade-${String(n)}`"
-                @click="grade = n"
-              >
-                <span class="text-caption text-muted">Darjah</span>
-                <span class="text-subheading text-highlighted">{{ n }}</span>
-              </DsPanel>
-            </div>
-          </div>
           <div class="flex flex-col gap-2">
             <p class="flex items-center gap-2 text-overline text-muted">
               <UIcon name="i-ph-buildings-duotone" class="size-4" />

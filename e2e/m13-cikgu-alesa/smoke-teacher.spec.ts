@@ -29,7 +29,10 @@ const expect = baseExpect.configure({ timeout: 10_000 * TIMEOUT_FACTOR })
 const ADMIN = 'admin@demo.test'
 const GURU = 'guru@demo.test'
 const MODULE = { tag: [moduleTag(13)] }
-const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+
+// Cikgu Alesa is hidden unless the app is built with VITE_ALESA_AI=on (D73): every route 404s.
+test.skip(process.env.VITE_ALESA_AI !== 'on', 'ALESA AI surfaces are hidden (D73)')
+const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const ESSAY_TEXT = 'Karangan contoh ini hanya untuk ujian dan ditulis dengan neutral. Ia bukan karangan sebenar sesiapa.'
 
 test.use({ mockInit: { latency: 0 } })
@@ -267,10 +270,10 @@ test.describe('M13 S2 / S3 / V1 RPH', MODULE, () => {
       'cth: Matematik, Sains, Bahasa Melayu',
     )
     await expect(page.locator('#subject_name')).toHaveAttribute('list', 'subject-list')
-    await expect(page.locator('#level option')).toHaveCount(12)
+    await expect(page.locator('#level option')).toHaveCount(6)
     await expect(page.locator('#level option').nth(0)).toHaveText('— Pilih —')
-    await expect(page.locator('#level option').nth(1)).toHaveText('Darjah 1')
-    await expect(page.locator('#level option').nth(11)).toHaveText('Tingkatan 5')
+    await expect(page.locator('#level option').nth(1)).toHaveText('Tingkatan 1')
+    await expect(page.locator('#level option').nth(5)).toHaveText('Tingkatan 5')
     await expect(page.locator('#subject-list option')).toHaveCount(31)
     const names = await page.locator('#subject-list option').evaluateAll((els) =>
       els.map((e) => (e as HTMLOptionElement).value),

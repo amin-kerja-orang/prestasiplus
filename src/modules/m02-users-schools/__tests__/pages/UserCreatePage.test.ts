@@ -160,27 +160,22 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
     expect(w.find('form').attributes('novalidate')).toBeUndefined()
   })
 
-  it('student: 11 grade cards (none checked), IC with its hint, school picker', async () => {
+  it('student: 5 grade cards (none checked), IC with its hint, school picker', async () => {
     const w = await render()
     await type(w, 'user-role', 'student')
     const cards = w.findAll('[data-testid=grade-cards] button[role=radio]')
-    expect(cards).toHaveLength(11)
+    expect(cards).toHaveLength(5)
     expect(cards.some((c) => c.attributes('aria-checked') === 'true')).toBe(false)
     const labels = w.findAll('[data-testid=grade-cards] [data-slot="label"]').map((l) => l.text())
     expect(labels).toEqual([
-      'Darjah 1',
-      'Darjah 2',
-      'Darjah 3',
-      'Darjah 4',
-      'Darjah 5',
-      'Darjah 6',
       'Ting. 1',
       'Ting. 2',
       'Ting. 3',
       'Ting. 4',
       'Ting. 5',
     ])
-    expect(w.text()).toContain('Sekolah Rendah')
+    expect(w.text()).not.toContain('Sekolah Rendah')
+    expect(w.text()).not.toContain('Darjah')
     expect(w.text()).toContain('Sekolah Menengah')
     expect(w.find('[data-testid=grade-cards] button[role=radio][value="7"]').exists()).toBe(true)
     expect(t(w, 'user-ic').attributes('maxlength')).toBe('14')
@@ -247,7 +242,7 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
     await type(w, 'user-name', 'Nama Kekal')
     await type(w, 'user-email', 'kekal@contoh.test')
     await type(w, 'user-password', 'rahsia123')
-    await w.get('[data-testid=grade-cards] button[role=radio][value="3"]').trigger('click')
+    await w.get('[data-testid=grade-cards] button[role=radio][value="9"]').trigger('click')
     await type(w, 'user-ic', '0312')
     await search(w, 'std-school-search', 'contoh')
     await w.findAll('[data-testid=std-school-result]')[0]?.trigger('click')
@@ -260,7 +255,7 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
 
     await type(w, 'user-role', 'student')
     expect(
-      w.get('[data-testid=grade-cards] button[role=radio][value="3"]').attributes('aria-checked'),
+      w.get('[data-testid=grade-cards] button[role=radio][value="9"]').attributes('aria-checked'),
     ).toBe('true')
     expect((t(w, 'user-ic').element as HTMLInputElement).value).toBe('0312')
   })

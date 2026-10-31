@@ -229,8 +229,9 @@ describe('S1 DashboardPage (v2 Murid Home)', () => {
     expect(t(w, 'dash-stat-points').text()).toContain('8')
     expect(t(w, 'dash-stat-streak').text()).toContain('Hari Berturut')
     expect(t(w, 'dash-stat-accuracy').text()).toContain('0%')
-    expect(t(w, 'dash-platform-total').text()).toContain('130152')
-    expect(t(w, 'dash-platform-approved').text()).toContain('129752')
+    // DS stat tiles format numbers with a thousands separator (src/ds/format.ts).
+    expect(t(w, 'dash-platform-total').text()).toContain('130,152')
+    expect(t(w, 'dash-platform-approved').text()).toContain('129,752')
   })
 
   it('renders the three reward tiles and the "Sambung latihan" hero', async () => {
@@ -285,7 +286,11 @@ describe('S1 DashboardPage (v2 Murid Home)', () => {
     expect(t(w, 'dash-subject-BM').text()).toContain('11688 soalan')
     expect(t(w, 'dash-subject-BM').text()).toContain('Subjek Teras')
     expect(t(w, 'dash-subject-GEO').text()).not.toContain('Subjek Teras')
-    expect(w.findAll('[data-testid=dash-level-pill]')).toHaveLength(3)
+    // D72 / BR-11: only the offered levels (T4, T5) are linked; the fixture's D1 and T1 pills are not shown.
+    const pills = w.findAll('[data-testid=dash-level-pill]')
+    expect(pills).toHaveLength(1)
+    expect(pills[0]?.text()).toContain('Tingkatan 4')
+    expect(w.find('[data-testid=dash-level-group-lower_secondary]').exists()).toBe(false)
     expect(t(w, 'dash-recent').text()).toContain('Soalan terkini satu')
     expect(w.findAll('[data-testid=dash-difficulty-row]')).toHaveLength(5)
     expect(t(w, 'dash-difficulty-total').text()).toBe('130152')

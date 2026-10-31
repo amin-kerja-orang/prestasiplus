@@ -2,15 +2,28 @@
  * M21-T2 S6 route (SRS M21 v1.2 FR-M21-05, 07, 09; DV-M21-06): signed-in access, header and tab title.
  */
 
-import { describe, expect, it } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
-import { buildRoutes } from '@/app/router'
+// The S6 route is hidden unless VITE_KELUARGA_ANGKAT=on (D74): this file covers the "on" state;
+// `src/app/__tests__/features.test.ts` covers the "off" state.
+type RoutesMod = typeof import('../../routes')
+let routes: RoutesMod['default']
+let mohon: (typeof import('../../routes/mohon'))['default']
+let router: Router
 
-import routes from '../../routes'
-import mohon from '../../routes/mohon'
+beforeAll(async () => {
+  vi.stubEnv('VITE_KELUARGA_ANGKAT', 'on')
+  vi.resetModules()
+  const { buildRoutes } = await import('@/app/router')
+  routes = (await import('../../routes')).default
+  mohon = (await import('../../routes/mohon')).default
+  router = createRouter({ history: createMemoryHistory(), routes: buildRoutes() })
+}, 120_000) // a fresh import of the whole router is slow under parallel load
 
-const router = createRouter({ history: createMemoryHistory(), routes: buildRoutes() })
+afterAll(() => {
+  vi.unstubAllEnvs()
+})
 
 describe('M21 S6 route', () => {
   it('is spread into the module routes', () => {

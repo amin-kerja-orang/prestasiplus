@@ -36,6 +36,8 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
   let t: GamesTestApp
   beforeAll(async () => {
     t = await bootGamesApp({ seeds: [gamesSeed], env: { PUBLIC_BASE_URL: 'https://app.example.test/' } })
+    // The league fixtures use the demo schools as members; they are treated as secondary here (SK Demo * are primary by type).
+    await t.db.query(`update schools set type = 'SMK' where code in ('DEMO002', 'DEMO003', 'DEMO004')`)
   }, 180_000)
   afterAll(async () => {
     await t.close()
@@ -130,11 +132,11 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
   describe('create (M16-47)', () => {
     it('201 {id}: upcoming, 8-character code, creator school joins, optional fields stored', async () => {
       const s = await loginAs(t, ACCOUNTS.teacher)
-      const res = await s.post('/api/leagues', { ...VALID, class_levels: ['T5', 'D1', 'T5'], max_schools: 5 })
+      const res = await s.post('/api/leagues', { ...VALID, class_levels: ['T5', 'T1', 'T5'], max_schools: 5 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const { id } = parseData(res, GamesLeagueIdResultSchema)
       const d = parseData(await s.get(`/api/leagues/${id}`), GamesLeagueDetailSchema)
-      expect(d).toMatchObject({ name: 'Liga Contoh', status: 'upcoming', typeLabel: 'Liga', scopeLabel: 'Kebangsaan', subjectName: null, classLevels: ['D1', 'T5'], canJoin: false })
+      expect(d).toMatchObject({ name: 'Liga Contoh', status: 'upcoming', typeLabel: 'Liga', scopeLabel: 'Kebangsaan', subjectName: null, classLevels: ['T1', 'T5'], canJoin: false })
       expect(d.inviteCode).toMatch(INVITE)
       expect(d.schools).toHaveLength(1)
       expect(d.creatorName).not.toBe('')
@@ -204,6 +206,7 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
         expect422(await s.post('/api/leagues', { ...VALID, max_schools: bad }), 'max_schools', M.leagueMaxSchools)
       }
       for (const ok of [2, 500]) expect((await s.post('/api/leagues', { ...VALID, max_schools: ok })).status).toBe(201)
+      expect422(await s.post('/api/leagues', { ...VALID, class_levels: ['D1', 'T4'] }), 'class_levels', M.leagueClassLevels) // secondary-only
       expect422(await s.post('/api/leagues', { ...VALID, class_levels: ['T9'] }), 'class_levels', M.leagueClassLevels)
       expect422(await s.post('/api/leagues', { ...VALID, class_levels: 'T4' }), 'class_levels', M.leagueClassLevels)
     })
@@ -382,6 +385,19 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
         await limited.close()
       }
     })
+  })
+  it('secondary-only: a primary school (type SK) is left out of the members and the standings', async () => {
+    await t.db.query(`update schools set type = 'SK' where code = 'DEMO002'`)
+    try {
+      const s = await loginSchool('demo003')
+      const list = parseData(await s.get('/api/leagues'), GamesLeagueListSchema)
+      const id = list.open[0]?.id ?? list.mine[0]?.id
+      const d = parseData(await s.get(`/api/leagues/${id}`), GamesLeagueDetailSchema)
+      expect(d.schools.map((x) => x.name)).not.toContain('SK Demo Dua')
+      for (const rows of Object.values(d.standings)) expect((rows ?? []).map((r) => r.name)).not.toContain('SK Demo Dua')
+    } finally {
+      await t.db.query(`update schools set type = 'SMK' where code = 'DEMO002'`)
+    }
   })
 })
 

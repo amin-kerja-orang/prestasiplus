@@ -6,6 +6,7 @@
 
 import type { Page } from '@playwright/test'
 
+import { ALESA_ON } from '../support/alesa'
 import { expect, test } from './fixtures'
 import { open } from './mock-exam-nav'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional } from '../support'
@@ -48,7 +49,11 @@ test.describe('M06 S11-S13 shell and layout', { tag: [moduleTag(6)] }, () => {
     for (const [path, title, tab] of [
       ['/spm-mock', 'SPM Mock Exam', 'SPM Mock Exam'],
       ['/spm-mock/16/result', 'Result Mock SPM — Bahasa Melayu', 'Result Mock SPM — Bahasa Melayu'],
-      ['/pusat-ai/spm', 'SPM Walkthrough — Cikgu Alesa', 'SPM Walkthrough — Cikgu Alesa'],
+      ...(ALESA_ON
+        ? ([
+            ['/pusat-ai/spm', 'SPM Walkthrough — Cikgu Alesa', 'SPM Walkthrough — Cikgu Alesa'],
+          ] as const)
+        : []),
     ] as const) {
       await open(page, path)
       await expectTabTitle(page, tab)
@@ -75,16 +80,16 @@ test.describe('M06 S11-S13 shell and layout', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await open(page, '/spm-mock/99999/result')
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     await expect(page.getByRole('link', { name: 'Mula Latihan' })).toHaveAttribute(
       'href',
       '/practice',
     )
     // 16 belongs to the admin: foreign for the student.
     await open(page, '/spm-mock/16/result')
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     await open(page, '/spm-mock/99999')
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
   })
 
   test('E2E-M06-06 (mock) an in-progress mock result goes to Q4 and a submitted Q4 goes to S12', async ({

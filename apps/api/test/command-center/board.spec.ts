@@ -1,3 +1,4 @@
+import { treatDemoAsSecondary } from '../support/secondary'
 import {
   CommandCenterDailyActivityResponseSchema,
   CommandCenterLiveDataResponseSchema,
@@ -33,6 +34,7 @@ let loginUser: { id: string }
 
 beforeAll(async () => {
   t = await bootCommandCenterApp()
+  await treatDemoAsSecondary(t.db)
   w = await buildWorld(t)
   // Two users who logged in today (07:00 and 08:30) and one yesterday; an inactive pupil with answers must never count.
   loginUser = await createUser(t.db, { role: 'student', schoolId: w.school1, name: 'Murid Log', lastLoginAt: '2026-10-19T07:00:00.000+08:00' })
@@ -75,7 +77,7 @@ describe('GET /admin/command-center/live-data', () => {
     expect(d.kirk.t2Accuracy).toBe(d.accuracy)
     expect(d.kirk.t3Active).toBe(5)
     const students = await t.db.query<{ c: number }>(
-      `select count(*)::int c from users u where u.is_active and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`,
+      `select count(*)::int c from users u where u.is_active and (u.grade is null or u.grade >= 7) and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`,
     )
     expect(d.totalStudents).toBe(students[0]?.c)
   })
@@ -106,7 +108,18 @@ describe('GET /admin/command-center/live-data', () => {
 
   it('platform display constants, empty degraded ports and the recent feed', async () => {
     const d = await live(admin)
-    expect(d.engagement).toEqual({ champion: 29, consistent: 11, developing: 43, minimum: 3, disengaged: 2229 })
+    // Secondary-only: the buckets are computed over the visible students (no longer the observed constant 29/11/43/3/2229), with the
+    // rolling 7-day window (13 Oct 00:00 to now) and 30-day window of the Guru path. At the fixed clock (Mon 19 Oct 09:00):
+    // Murid 1 to 3 answered today and yesterday (2 days), Murid Lepas on 13 Oct (the first day of the window) and Murid Sekolah Dua
+    // today (1 day each) = 5 developing; nobody has 3 or more days, and nobody answered only before the week.
+    // Every other active student (Murid Ujian has only is_test answers, Murid Log, Murid Semalam, the seeded demo pupils) is disengaged.
+    const e = d.engagement
+    expect(e.champion).toBe(0)
+    expect(e.consistent).toBe(0)
+    expect(e.developing).toBe(5)
+    expect(e.minimum).toBe(0)
+    expect(e.disengaged).toBe(d.totalStudents - 5)
+    expect(e.champion + e.consistent + e.developing + e.minimum + e.disengaged).toBe(d.totalStudents)
     expect(d.correction).toEqual({ total: 899, avgImprovement: 0, improvedCount: 0, topImprovers: [] })
     expect(d.dailyTrend).toEqual([])
     expect(d.mood).toEqual({ happy: 0, okay: 0, sad: 0, stressed: 0 })

@@ -56,7 +56,7 @@ export interface SubjectConfig {
   subject: PracticeSubject
   /** Q-PRACTICE(subject): "Semua Tahap". */
   total: number
-  /** The offered levels (Darjah 1–4 linked to the subject), in level order, with Q-PRACTICE counts. */
+  /** The offered levels (the Tingkatan levels linked to the subject), in level order, with Q-PRACTICE counts. */
   levels: { id: number; code: string; name: string; count: number }[]
   /** Difficulty 1–5 over the offered levels. */
   difficultyStats: DifficultyCounts

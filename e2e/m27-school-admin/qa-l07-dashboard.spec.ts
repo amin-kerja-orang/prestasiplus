@@ -391,11 +391,11 @@ test.describe('presentation (QA extras)', MODULE, () => {
   test('tab title and header after navigating away and back', async ({ page, gotoApp }) => {
     await signIn(page, AZLAN)
     await open(page, gotoApp)
-    await expectTabTitle(page, 'Dashboard Sekolah - PRESTASIPLUS')
+    await expectTabTitle(page, 'Dashboard Sekolah | PRESTASIPLUS')
     await page.getByTestId('sd-panel-levels').click()
     await page.goBack()
     await expect(page.getByTestId('sd-page')).toBeVisible({ timeout: 60_000 })
-    await expectTabTitle(page, 'Dashboard Sekolah - PRESTASIPLUS')
+    await expectTabTitle(page, 'Dashboard Sekolah | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText('SMK Demo Seri Putra')
   })
 

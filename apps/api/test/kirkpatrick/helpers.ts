@@ -216,7 +216,7 @@ export async function buildWorld(t: KirkpatrickTestApp): Promise<World> {
   await addSession(t, { userId: ids.p1, subjectId: subjects[0], at: '2026-10-18T10:00:00+08:00', answered: 20, correct: 20, isTest: true })
   await addSession(t, { userId: ids.p1, subjectId: subjects[0], at: '2026-10-18T11:00:00+08:00', answered: 4, correct: 4, status: 'in_progress' })
 
-  const level = (await q<{ id: string }>(`select id::text from education_levels order by id limit 1`))[0] as { id: string }
+  const level = (await q<{ id: string }>(`select id::text from education_levels where stage <> 'primary' order by id limit 1`))[0] as { id: string }
   const cls = await q<{ id: string }>(
     `insert into classrooms (name, teacher_id, school_id, education_level_id, academic_year) values ('Kelas Kirkpatrick', $1, $2, $3, 2026) returning id::text`,
     [ids.teacherA, schoolA, level.id],

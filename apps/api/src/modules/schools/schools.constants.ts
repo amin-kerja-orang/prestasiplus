@@ -28,3 +28,13 @@ export const SCHOOL_AUDIT = {
 /** Join code alphabet: upper-case letters and digits without 0/O/1/I/L. */
 export const JOIN_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 export const JOIN_CODE_LENGTH = 8
+
+/**
+ * Primary-school types (secondary-only, 2026-10-29). Schools of these types stay in the database (the ETL keeps
+ * migrating them) but are hidden from the public school search and the registration pickers. A school with no
+ * type is not hidden (its stage is unknown).
+ */
+export const PRIMARY_SCHOOL_TYPES: readonly string[] = ['SK', 'SJK(C)', 'SJK(T)']
+
+/** True for a school of a primary type (hidden; a school with no type is not primary). */
+export const isPrimarySchoolType = (type: string | null | undefined): boolean => type !== null && type !== undefined && PRIMARY_SCHOOL_TYPES.includes(type)

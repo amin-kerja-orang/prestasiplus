@@ -1,14 +1,16 @@
 <script setup lang="ts">
 /**
  * Main + aside (v2-ds-hardening 3.6): a 12-column split that stacks below `stackBelow`. Slots:
- * default (main) and `aside`.
+ * default (main) and `aside`. Ratios are main-aside column shares: `8-4` (form + help), `5-7` / `7-5`
+ * (review editors), `1-1`, `2-1`, `3-1`, `1-2`. `scrollAside` keeps a sticky aside inside the
+ * viewport and scrolls it internally when it is taller.
  */
 import { computed } from 'vue'
 
 import { gapAll } from './layout'
 import type { DsSpace } from './types'
 
-type Ratio = '1-1' | '2-1' | '3-1' | '1-2' | '8-4'
+type Ratio = '1-1' | '2-1' | '3-1' | '1-2' | '8-4' | '5-7' | '7-5'
 type StackBelow = 'md' | 'lg' | 'xl'
 
 const props = withDefaults(
@@ -18,9 +20,11 @@ const props = withDefaults(
     gap?: DsSpace
     asideFirstWhenStacked?: boolean
     stickyAside?: boolean
+    /** Internal scroll of a sticky aside taller than the viewport (from the stacking breakpoint up). */
+    scrollAside?: boolean
     align?: 'start' | 'stretch'
   }>(),
-  { ratio: '8-4', stackBelow: 'xl', gap: 'lg', asideFirstWhenStacked: false, stickyAside: false, align: 'start' },
+  { ratio: '8-4', stackBelow: 'xl', gap: 'lg', asideFirstWhenStacked: false, stickyAside: false, scrollAside: false, align: 'start' },
 )
 
 const GRID: Record<StackBelow, string> = {
@@ -29,14 +33,19 @@ const GRID: Record<StackBelow, string> = {
   xl: 'grid-cols-1 xl:grid-cols-12',
 }
 const MAIN: Record<StackBelow, Record<Ratio, string>> = {
-  md: { '1-1': 'md:col-span-6', '2-1': 'md:col-span-8', '3-1': 'md:col-span-9', '1-2': 'md:col-span-4', '8-4': 'md:col-span-8' },
-  lg: { '1-1': 'lg:col-span-6', '2-1': 'lg:col-span-8', '3-1': 'lg:col-span-9', '1-2': 'lg:col-span-4', '8-4': 'lg:col-span-8' },
-  xl: { '1-1': 'xl:col-span-6', '2-1': 'xl:col-span-8', '3-1': 'xl:col-span-9', '1-2': 'xl:col-span-4', '8-4': 'xl:col-span-8' },
+  md: { '1-1': 'md:col-span-6', '2-1': 'md:col-span-8', '3-1': 'md:col-span-9', '1-2': 'md:col-span-4', '8-4': 'md:col-span-8', '5-7': 'md:col-span-5', '7-5': 'md:col-span-7' },
+  lg: { '1-1': 'lg:col-span-6', '2-1': 'lg:col-span-8', '3-1': 'lg:col-span-9', '1-2': 'lg:col-span-4', '8-4': 'lg:col-span-8', '5-7': 'lg:col-span-5', '7-5': 'lg:col-span-7' },
+  xl: { '1-1': 'xl:col-span-6', '2-1': 'xl:col-span-8', '3-1': 'xl:col-span-9', '1-2': 'xl:col-span-4', '8-4': 'xl:col-span-8', '5-7': 'xl:col-span-5', '7-5': 'xl:col-span-7' },
 }
 const ASIDE: Record<StackBelow, Record<Ratio, string>> = {
-  md: { '1-1': 'md:col-span-6', '2-1': 'md:col-span-4', '3-1': 'md:col-span-3', '1-2': 'md:col-span-8', '8-4': 'md:col-span-4' },
-  lg: { '1-1': 'lg:col-span-6', '2-1': 'lg:col-span-4', '3-1': 'lg:col-span-3', '1-2': 'lg:col-span-8', '8-4': 'lg:col-span-4' },
-  xl: { '1-1': 'xl:col-span-6', '2-1': 'xl:col-span-4', '3-1': 'xl:col-span-3', '1-2': 'xl:col-span-8', '8-4': 'xl:col-span-4' },
+  md: { '1-1': 'md:col-span-6', '2-1': 'md:col-span-4', '3-1': 'md:col-span-3', '1-2': 'md:col-span-8', '8-4': 'md:col-span-4', '5-7': 'md:col-span-7', '7-5': 'md:col-span-5' },
+  lg: { '1-1': 'lg:col-span-6', '2-1': 'lg:col-span-4', '3-1': 'lg:col-span-3', '1-2': 'lg:col-span-8', '8-4': 'lg:col-span-4', '5-7': 'lg:col-span-7', '7-5': 'lg:col-span-5' },
+  xl: { '1-1': 'xl:col-span-6', '2-1': 'xl:col-span-4', '3-1': 'xl:col-span-3', '1-2': 'xl:col-span-8', '8-4': 'xl:col-span-4', '5-7': 'xl:col-span-7', '7-5': 'xl:col-span-5' },
+}
+const SCROLL: Record<StackBelow, string> = {
+  md: 'md:sticky md:top-0 md:max-h-dvh md:self-start md:overflow-y-auto',
+  lg: 'lg:sticky lg:top-0 lg:max-h-dvh lg:self-start lg:overflow-y-auto',
+  xl: 'xl:sticky xl:top-0 xl:max-h-dvh xl:self-start xl:overflow-y-auto',
 }
 const ORDER: Record<StackBelow, string> = {
   md: 'order-first md:order-none',
@@ -60,7 +69,7 @@ const asideClass = computed(() => [
   'min-w-0',
   ASIDE[props.stackBelow][props.ratio],
   props.asideFirstWhenStacked ? ORDER[props.stackBelow] : '',
-  props.stickyAside ? STICKY[props.stackBelow] : '',
+  props.scrollAside ? SCROLL[props.stackBelow] : props.stickyAside ? STICKY[props.stackBelow] : '',
 ])
 </script>
 

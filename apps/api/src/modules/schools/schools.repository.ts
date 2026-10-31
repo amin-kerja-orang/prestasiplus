@@ -3,6 +3,9 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma, type School } from '../../db/generated/client'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import { isPrimarySchoolType, PRIMARY_SCHOOL_TYPES } from './schools.constants'
+
+const NON_PRIMARY: Prisma.SchoolWhereInput = { OR: [{ type: null }, { type: { notIn: [...PRIMARY_SCHOOL_TYPES] } }] }
 
 /** A school as the rest of the API sees it: decimal-string ids, no `legacy_*` columns. */
 export interface SchoolRow {
@@ -165,6 +168,13 @@ export class SchoolsRepository {
     return row ? toRow(row) : null
   }
 
+  /** Like `exists`, but a school of a primary type counts as unknown (secondary-only, 2026-10-29): for registration and profile pickers. */
+  async existsSecondary(id: string): Promise<boolean> {
+    if (!isIdString(id)) return false
+    const row = await this.prisma.client.school.findUnique({ where: { id: idFromString(id) }, select: { id: true, type: true } })
+    return row !== null && !isPrimarySchoolType(row.type)
+  }
+
   async exists(id: string): Promise<boolean> {
     if (!isIdString(id)) return false
     const row = await this.prisma.client.school.findUnique({ where: { id: idFromString(id) }, select: { id: true } })
@@ -179,24 +189,24 @@ export class SchoolsRepository {
     return rows.map(toRow)
   }
 
-  /** Every school (active and inactive) as `{id, name}`, name A to Z. */
+  /** Every non-primary school (active and inactive) as `{id, name}`, name A to Z (secondary-only, 2026-10-29). */
   async options(): Promise<SchoolOptionRow[]> {
     const rows = await this.prisma.client.$queryRaw<{ id: bigint; name: string }[]>`
-      SELECT id, name FROM schools ${ORDER}`
+      SELECT id, name FROM schools WHERE (type IS NULL OR type NOT IN (${Prisma.join([...PRIMARY_SCHOOL_TYPES])})) ${ORDER}`
     return rows.map((r) => ({ id: idToString(r.id), name: r.name }))
   }
 
-  /** Active schools for the public picker, name A to Z. */
+  /** Active, non-primary schools for the public picker, name A to Z (secondary-only, 2026-10-29). */
   async search(input: SchoolSearchInput): Promise<SchoolSummaryRow[]> {
     if (input.id !== undefined) {
       if (!isIdString(input.id)) return []
       const row = await this.prisma.client.school.findFirst({
-        where: { id: idFromString(input.id), isActive: true },
+        where: { id: idFromString(input.id), isActive: true, OR: [{ type: null }, { type: { notIn: [...PRIMARY_SCHOOL_TYPES] } }] },
         select: SELECT,
       })
       return row ? [toSummary(toRow(row))] : []
     }
-    const conds = [Prisma.sql`is_active`]
+    const conds = [Prisma.sql`is_active`, Prisma.sql`(type IS NULL OR type NOT IN (${Prisma.join([...PRIMARY_SCHOOL_TYPES])}))`]
     if (input.state) conds.push(Prisma.sql`state = ${input.state}`)
     if (input.q) conds.push(textCond(input.q))
     const ids = await this.prisma.client.$queryRaw<{ id: bigint }[]>`
@@ -206,7 +216,7 @@ export class SchoolsRepository {
 
   /** A page of the admin list with the number of rows matching the filters. */
   async list(filter: SchoolListFilter): Promise<{ rows: SchoolRow[]; total: number }> {
-    const conds: Prisma.Sql[] = []
+    const conds: Prisma.Sql[] = [Prisma.sql`(type IS NULL OR type NOT IN (${Prisma.join([...PRIMARY_SCHOOL_TYPES])}))`] // secondary-only (2026-10-29)
     if (filter.state) conds.push(Prisma.sql`state = ${filter.state}`)
     if (filter.type) conds.push(Prisma.sql`type = ${filter.type}`)
     if (filter.search) conds.push(textCond(filter.search))
@@ -234,8 +244,8 @@ export class SchoolsRepository {
   /** Stat cards: all schools, ignoring every filter. */
   async counts(): Promise<{ total: number; active: number; inactive: number }> {
     const [total, active] = await Promise.all([
-      this.prisma.client.school.count(),
-      this.prisma.client.school.count({ where: { isActive: true } }),
+      this.prisma.client.school.count({ where: NON_PRIMARY }),
+      this.prisma.client.school.count({ where: { isActive: true, ...NON_PRIMARY } }),
     ])
     return { total, active, inactive: total - active }
   }
@@ -243,7 +253,7 @@ export class SchoolsRepository {
   /** The distinct types present, in code-unit order like the mock (`['MRSM', 'SBP', 'SJK(C)', ...]`). */
   async types(): Promise<string[]> {
     const rows = await this.prisma.client.school.findMany({
-      where: { type: { not: null } },
+      where: { type: { not: null, notIn: [...PRIMARY_SCHOOL_TYPES] } },
       select: { type: true },
       distinct: ['type'],
     })

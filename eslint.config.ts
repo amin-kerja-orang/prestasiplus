@@ -3,6 +3,7 @@ import skipFormatting from 'eslint-config-prettier/flat'
 import type { Linter } from 'eslint'
 import pluginVue from 'eslint-plugin-vue'
 
+import { adminRuleBlocks, readAdminStrict } from './eslint/admin-strict.mjs'
 import { globsOf, readDsStrict } from './eslint/ds-strict.mjs'
 import ppPlugin from './eslint/pp-plugin.mjs'
 
@@ -179,6 +180,13 @@ function boundaryRules(
  */
 const DS = readDsStrict()
 const DS_IGNORES = [...DS.exempt, '**/__tests__/**', '**/*.test.ts']
+
+/**
+ * Portal Pentadbiran strict rules R1-R14 (docs/design/v2-ds-hardening.md): files on an `enforce` glob
+ * are errors here (editor + `npm run lint`); the rest is held by the ratchet (`npm run lint:admin`).
+ */
+const ADMIN = readAdminStrict()
+const ADMIN_ENFORCE = ADMIN.enforce.map((e) => e.glob)
 
 const DS_IMPORT_PATTERNS = [
   ...uiBoundaryPatterns,
@@ -358,6 +366,11 @@ export default defineConfigWithVueTs(
       'no-restricted-imports': ['error', { patterns: DS_IMPORT_PATTERNS }],
     },
   },
+
+  // Strict Portal Pentadbiran rules on the enforced batches (empty until batch 1 lands).
+  ...(ADMIN_ENFORCE.length
+    ? (adminRuleBlocks(ADMIN_ENFORCE, [...ADMIN.exempt]) as Linter.Config[])
+    : []),
 
   // Boundary rule: @pp/exam-core is pure TypeScript shared by the server and the UI (BE-14, ADR-0021).
   {

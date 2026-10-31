@@ -845,3 +845,72 @@ The total is similar, the distribution is the point: about 40 % of the effort go
 | D-H10 | `T-H0` waits for the type/spacing scale agent to land; T-V and T-S/CM-0 start immediately | Yes |
 | D-H11 | Prop vocabulary: `tone` = semantic, `accent` = categorical, `variant` = structural; renames in R3 with one-release aliases | Yes |
 | D-H12 | `DsPage layout="list|form|report|dashboard|detail|learner"` becomes the page root contract (lever 4) | Yes |
+
+---
+
+## 11. Strict lint for Portal Pentadbiran (2026-10-29)
+
+Decision (product owner): pages of the Portal Pentadbiran compose design-system components only. Utility classes (layout, spacing, type, colour) are allowed only inside `src/ds`. Spec: `docs/design/v2-admin-page-templates.md` section 4. This section documents what was built (batch 0b).
+
+### 11.1 Scope
+
+`config/ds-strict.json` (new keys, ignored by the older tools):
+
+| Key | Meaning |
+|---|---|
+| `adminScope` | every portal file the rules check: m02, m04, m12, m17 pages and components; the portal pages and components of m03, m07, m09, m11, m22; **`m28-bijak-spm/admin/**`**; **`src/shells/pentadbiran/**`** |
+| `adminExempt` | `src/ds/**`, `src/theme/**`, `src/dev/**`, `**/__tests__/**`, `*.test.ts`, `*.d.ts` |
+| `enforce` | per-batch globs with zero tolerance (see 11.3). **Empty today**; batch 1 appends `src/modules/m28-bijak-spm/admin/**` |
+| `adminAreas` | grouping of files by migration batch for the report |
+
+Test T1 (`eslint/__tests__/ds-strict-scope.test.mjs`) walks the module route fragments (`scripts/lib/admin-routes.mjs`: every `/admin/**` and `/guru/monitoring/**` route and the `/admin` mounts of m11/m12/m17), follows imports to the Vue/TS files they reach, and checks the menu paths of `src/shells/pentadbiran/menu.ts` and `src/shells/nav/admin-nav.ts`. It fails when any of those files is outside `adminScope`. A new portal page in an unlisted folder therefore fails the build until its folder is added.
+
+### 11.2 Rules (all `error`, plugin `pp`, files in `eslint/rules/`)
+
+| # | Rule | Fails |
+|---|---|---|
+| R1 | `ds-no-class-attr` | any `class` / `:class` on any element (report keeps the `classifyFamily` code) |
+| R2 | `ds-no-class-literal-in-script` | class-like string literals in `<script>` and `.ts` |
+| R3 | `ds-no-ui-prop` | `ui=` / `:ui=` on any tag |
+| R4 | `ds-no-style` | `style`, `:style`, `<style>` (scoped or not) |
+| R5 | `ds-no-raw-html` | native `div span p h1-h6 label ul ol li section article header footer nav aside main a button input select textarea form table thead tbody tr th td dialog img svg hr strong em small pre` |
+| R6 | `ds-no-ui-duplicate` | `UCard UBadge UTable UPagination UTabs USlideover UModal UDrawer UAlert UProgress UBreadcrumb UEmpty UForm*` (twin map `UI_TWINS` in `eslint/ds-admin-data.mjs`) |
+| R7 | `ds-ui-allowlist` | Nuxt UI tags not in `config/ds-ui-allowlist.json`; props on a `Ds*` tag that the component does not declare (read from `src/ds/<Tag>.vue` with `@vue/compiler-sfc` at lint time, so it follows the DS as it changes; a Ds tag with no file yet is skipped; `data-*`, `aria-*`, `id`, `key`, `ref`, `role`, events pass) |
+| R8 | `ds-no-local-kit` | a non-page component whose root is `DsPanel`/`DsSurface`/`UCard` and only holds a slot or a `v-for` list; exempt: `config/ds-domain-widgets.json` |
+| R9 | `ds-icon-names` with `{ baseNamesOnly: true }` | existing non-Phosphor check plus full `i-ph-*` / `ph:` names in icon props |
+| R10 | `ds-imports` | `@/components/**`, `@/shells/**` (outside the shell), `native/`, icon/chart/font packages, remote URLs, module-local copies of Ds kits by file name |
+| R11 | `ds-copy-glossary` | banned wording (`BANNED_COPY` in `ds-admin-data.mjs`), "Tiada data." outside `DsEmptyState size="sm"`, add-button labels (a `UButton` with icon `plus` must start `Tambah `, `Daftar `, `Muat Naik `, `Import `; `Daftar ` only with Pengguna, Sekolah, Pelajar Komplimen, Langganan); exceptions: `config/copy-exceptions.json` |
+| R12 | `ds-page-template` | on `*Page.vue`: root is `DsPage` with `layout`, no `title`; one `DsFilterBar`/`DsPillNav`/`DsStatRow`/flush `DsDataTable` (list layout); `DsStatRow` items literal of 2-5; `DsDataTable` has `cardTitle` + `cardFields`; no `DsPanel` in `DsPanel`; no `DsBackLink`, no `backLabel`. A `DsPrintSheet` root is exempt |
+| R13 | `ds-no-deprecated-ds-props` | `DsPanel flush/tone`, `DsStatRow roomy/compact`, `valueClass`, `compactCells`, `DsLoadError inline`, `DsFormSection tone="danger"`, `DsFilterBar tone` (table `DEPRECATED_PROPS`) |
+| R14 | `ds-no-adhoc-format` | `toLocaleString`, `Intl.NumberFormat`, `.toFixed(`, `${x}%`, `x + '%'`, `{{ x }}%`, thousands regexes |
+
+Deviations from the spec text: the full-`i-ph-*` icon check of R13 is reported by R9 only (no double count); R12 can only check an `items` literal (a computed `items` passes); the R11 add-button rule is the `plus`-icon heuristic above; `DsPager`, `DsBadge`, `DsCallout`, `DsDrawer`, `DsProgress`, `formatCount` are referenced by name only.
+
+### 11.3 Ratchet and enforce
+
+- Baseline `config/ds-admin-lint.baseline.json`: violations per file and rule, generated, may only shrink.
+- `npm run lint:admin` (also run by `npm run lint:ds`): exits 1 when a file on an `enforce` glob has any finding, or any other scope file exceeds its baseline count for a rule, or a file not in the baseline has any finding. Existing debt does not fail.
+- Batch workflow: migrate the batch, run `npm run lint:admin:baseline` (drops the cleaned counts), append the batch glob to `enforce` in `config/ds-strict.json`. From then on the glob is an `error` also in the editor and in `npm run lint` (`eslint.config.ts` adds the R1-R14 blocks for the `enforce` globs). Test T2 (`eslint/__tests__/ds-admin-ratchet.test.mjs`) re-runs the check and refuses removal of an `enforce` glob recorded in `config/ds-strict.baseline.json` (`enforce` key: append the same glob there in the same commit).
+- After batch 7: delete the baseline file and move `adminScope` to `src/**`.
+
+### 11.4 Commands
+
+| Command | Does |
+|---|---|
+| `npm run lint:admin` | ratchet check (about 80 s) |
+| `npm run lint:admin:report` | violations per batch area and per rule |
+| `npm run lint:admin:baseline` | rewrite the baseline (refuses to raise; `-- --force` for the first run) |
+| `npm run lint:ds` | existing strict ESLint (now through the Node API: works on Windows) + Stylelint + `lint:admin` |
+| `npm run test -- eslint` | rule tests (`ds-admin-rules`), T1 and T2 |
+
+### 11.5 Counts at creation (6366 violations, 261 files, 221 with debt)
+
+| Batch area | Files | Violations |
+|---|---|---|
+| 1 m28 Bijak SPM admin | 32 | 789 |
+| 2 list pages and rest | 26 | 852 |
+| 3 Kirkpatrick (m12) | 55 | 655 |
+| 4 boards (m17, m11) | 65 | 1447 |
+| 5 forms, imports, selectors | 70 | 1819 |
+| 6 detail and print | 8 | 698 |
+| 7 shell | 5 | 106 |

@@ -19,11 +19,11 @@ export const disabledState =
   'data-[disabled]:opacity-(--ds-disabled-opacity) data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none'
 
 /** Floating panel (menus, selects, popovers): raised layer, no line, one step below modals. */
-const panel = 'z-50 rounded-lg bg-default p-1 shadow-modal ring-0'
+const panel = 'z-50 rounded-lg bg-default p-1.5 shadow-modal ring-0'
 
 /** Menu / listbox row shared by dropdown, select, input menu and command palette. */
 const item = [
-  'min-h-11 gap-2.5 rounded-sm px-3 py-2 text-label transition-colors duration-fast md:min-h-10',
+  'min-h-11 gap-2.5 rounded-sm px-3 py-2 text-label transition-colors duration-fast before:inset-0 before:rounded-sm md:min-h-10',
   'data-highlighted:before:bg-elevated data-[state=open]:before:bg-elevated',
   'data-[state=checked]:text-primary-t',
   disabledState,
@@ -32,7 +32,8 @@ const item = [
 
 const menuSlots = {
   content: panel,
-  viewport: 'divide-y-0 scroll-py-1',
+  // `pe-1` keeps the check mark clear of the (thin) scrollbar; see the viewport rule in tokens.css.
+  viewport: 'divide-y-0 scroll-py-1.5 pe-1',
   group: 'p-0',
   empty: 'px-3 py-6 text-body text-muted',
   label: 'px-3 py-2 text-overline text-muted',
@@ -61,7 +62,9 @@ export const componentDefaults = {
     slots: {
       label: 'text-label font-semibold text-highlighted',
       description: 'text-caption text-muted',
-      hint: 'text-caption text-muted',
+      // Hint sits under the label (never beside it), so a label never wraps at normal widths.
+      labelWrapper: 'flex-wrap gap-x-3',
+      hint: 'basis-full text-caption text-muted',
       help: 'mt-1.5 text-caption text-muted',
       error: 'mt-1.5 text-caption font-medium text-error',
       container: 'mt-1.5',
@@ -208,6 +211,8 @@ export const componentDefaults = {
     },
     defaultVariants: { variant: 'naked' },
     variants: {
+      // `size="sm"`: the in-panel empty state, a short block instead of a tall blank card.
+      size: { sm: { root: 'gap-2 p-3 sm:p-4 lg:p-4', avatar: 'mb-0' } },
       variant: {
         outline: { root: 'bg-default shadow-raised ring-0' },
         soft: { root: 'bg-elevated' },

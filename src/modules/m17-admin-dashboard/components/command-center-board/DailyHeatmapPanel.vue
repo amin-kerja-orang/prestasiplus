@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsChart } from '@/ds'
+import { DsChart, DsEmptyState } from '@/ds'
 
 import type { CcDailyActivity } from '../../api/command-center-board'
 import { S3_COPY } from './board-copy'
@@ -30,9 +30,7 @@ const series = computed(() => [{ label: 'Soalan', data: counts.value }])
     testid="cc-panel-heatmap"
     :state="status"
   >
-    <p v-if="!any" class="text-center text-body text-muted" data-testid="cc-empty">
-      {{ S3_COPY.noData }}
-    </p>
+    <DsEmptyState v-if="!any" size="sm" :title="S3_COPY.noData" data-testid="cc-empty" />
     <div v-else data-testid="cc-heat-chart">
       <DsChart
         title="Soalan mengikut jam"

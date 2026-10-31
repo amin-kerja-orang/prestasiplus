@@ -45,9 +45,10 @@ export const MAP_SUBJECTS: readonly LearningMapSubject[] = Object.freeze([
   { code: 'SEJARAH', label: 'Sejarah', emoji: '🏛️', color: '#EF4444' },
 ])
 
-export const MAP_GRADES = Object.freeze(['DARJAH_1', 'DARJAH_2', 'DARJAH_3', 'DARJAH_4'] as const)
+/** D54 (supersedes DV-M03-02): secondary school only; no Darjah on S12/S14. */
+export const MAP_GRADES = Object.freeze(['TINGKATAN_4', 'TINGKATAN_5'] as const)
 export const DEFAULT_MAP_SUBJECT = 'MATEMATIK'
-export const DEFAULT_MAP_GRADE = 'DARJAH_4'
+export const DEFAULT_MAP_GRADE = 'TINGKATAN_4'
 
 /** BR-14: `mastered` from this progress % (INFERRED threshold). */
 export const MASTERED_FROM = 80
@@ -98,6 +99,10 @@ async function ensureAnswerLog(): Promise<void> {
 // Handlers
 // ---------------------------------------------------------------------------------------------
 
+/** The scope grade that `code` names (case-insensitive), as a list: `[]` when out of scope. */
+const inScope = (code: string): readonly (typeof MAP_GRADES)[number][] =>
+  MAP_GRADES.filter((g) => g === code.toUpperCase())
+
 const asCard = (t: LegacyTopicRow): TopicCard => {
   const subtopics = curriculumRepo.legacySubtopics(t.id)
   return {
@@ -114,11 +119,12 @@ const asCard = (t: LegacyTopicRow): TopicCard => {
 
 export const studentCurriculumRoutes: RouteDef[] = [
   route('GET', '/api/topics', [requireAuth()], (req) => {
-    const items = curriculumRepo
-      .legacyTopics({
-        gradeLevel: queryString(req.query, 'gradeLevel') ?? null,
-        subject: queryString(req.query, 'subject') ?? null,
-      })
+    // D54: no grade (or an empty one) = Tingkatan 4 + 5; a grade outside the scope matches nothing.
+    const gradeLevel = queryString(req.query, 'gradeLevel') || null
+    const subject = queryString(req.query, 'subject') ?? null
+    const grades = gradeLevel === null ? MAP_GRADES : inScope(gradeLevel)
+    const items = grades
+      .flatMap((g) => curriculumRepo.legacyTopics({ gradeLevel: g, subject }))
       .map(asCard)
     return unpaged(items)
   }),

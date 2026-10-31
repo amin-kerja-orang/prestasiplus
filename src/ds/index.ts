@@ -76,13 +76,33 @@ export { default as DsFormSection } from './DsFormSection.vue'
 export { default as DsFormBar } from './DsFormBar.vue'
 export { default as DsStickyActions } from './DsStickyActions.vue'
 export { default as DsNativeSelect, type NativeSelectItem } from './DsNativeSelect.vue'
+export { default as DsSelect } from './DsNativeSelect.vue'
+export { default as DsSwitchField } from './DsSwitchField.vue'
 export { default as DsFileField } from './DsFileField.vue'
 export { default as DsRtlScope } from './DsRtlScope.vue'
 export { default as DsPageHeader } from './DsPageHeader.vue'
 export { default as DsBackLink } from './DsBackLink.vue'
 export { default as DsBreadcrumb, type CrumbItem } from './DsBreadcrumb.vue'
 export { default as DsPillNav, type PillItem } from './DsPillNav.vue'
-export { provideShellTitle, useShellPrintsTitle } from './shellTitle'
+export {
+  provideShellSubtitle,
+  provideShellTitle,
+  shellEntityTitle,
+  shellPageSubtitle,
+  useShellEntityTitle,
+  useShellPrintsSubtitle,
+  useShellPrintsTitle,
+  useShellSubtitle,
+} from './shellTitle'
+export { default as DsAdminShell } from './DsAdminShell.vue'
+export type {
+  DsShellAccountIcon,
+  DsShellAccountItem,
+  DsShellNavGroup,
+  DsShellNavLink,
+  DsShellNavSub,
+  DsShellSearchGroup,
+} from './adminShell'
 export { default as DsText } from './DsText.vue'
 export { default as DsHeading } from './DsHeading.vue'
 export { default as DsStack } from './DsStack.vue'
@@ -107,3 +127,11 @@ export type {
   DsPageLayout,
   DsPageWidth,
 } from './types'
+export { default as DsBadge } from './DsBadge.vue'
+export { default as DsCallout } from './DsCallout.vue'
+export { default as DsDefinitionList, type DefinitionItem } from './DsDefinitionList.vue'
+export { default as DsDrawer } from './DsDrawer.vue'
+export { formatCount, formatPercent, formatStat, EMPTY_VALUE } from './format'
+export { default as DsProgress } from './DsProgress.vue'
+export { default as DsListRow } from './DsListRow.vue'
+export { default as DsLink } from './DsLink.vue'

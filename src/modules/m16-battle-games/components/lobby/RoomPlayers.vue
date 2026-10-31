@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * The players of a room (PROVISIONAL, SRS M16 v1.6 §8.2): name, grade ("Darjah n" / "Tingkatan n"), "Hos",
+ * The players of a room (PROVISIONAL, SRS M16 v1.6 §8.2): name, grade ("Tingkatan n"), "Hos",
  * the Kuiz Relay team and, while the game runs, the per-game metric (board tile, HP, steps, points).
  */
 import type { RoomView } from '../../api'

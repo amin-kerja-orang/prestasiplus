@@ -5,6 +5,7 @@ import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { isQuestionStatus } from './status'
 import { partsFromRows, type PartDraft, StoredKeyError } from './tree'
@@ -46,9 +47,21 @@ export interface VersionDraft {
   difficultyTp: number | null
   sourcePage: number | null
   setLabel: string | null
+  /**
+   * Source paper code; the paper builder reads the kertas from its trailing digit (`1449/2`, `MATH/2`).
+   * `undefined` leaves the stored value untouched on a rewrite and stores null on a new version.
+   */
+  paperCode?: string | null
   spNodeIds: bigint[]
   stimulusIds: bigint[]
   parts: PartDraft[]
+}
+
+/** Kind and file of a stimulus (the stem image of a flat question is the first `image` stimulus with a file). */
+export interface StimulusAsset {
+  id: string
+  kind: string
+  assetFileId: string | null
 }
 
 /**
@@ -115,7 +128,7 @@ export interface IdPage {
 }
 
 type VersionRow = PrismaTypes.QuestionVersionGetPayload<{
-  include: { parts: { include: { options: true; key: true } }; spNodes: true; stimuli: true }
+  include: { parts: { include: { options: true; key: true } }; spNodes: true; stimuli: { include: { stimulus: true } } }
 }>
 
 /**
@@ -123,7 +136,7 @@ type VersionRow = PrismaTypes.QuestionVersionGetPayload<{
  * only the `pksk*` methods and `scope: 'only'` reads do.
  */
 const PKSK_TAG = 'pksk_domain'
-const NOT_PKSK = Prisma.sql`NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
+const NOT_PKSK = NOT_PKSK_SQL
 const IS_PKSK = Prisma.sql`EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
 
 /** Most ids `eligibleIds` returns (it throws beyond it) and the cap of one keyset page. */
@@ -284,7 +297,7 @@ export class QuestionsRepository {
       SELECT q.id, v.stem_ms, v.stem_en, v.explanation_ms, v.explanation_en, q.source_type, v.subject_id, v.education_level_id, v.set_label,
              EXISTS (SELECT 1 FROM question_version_sp_nodes s WHERE s.question_version_id = v.id) AS has_sp
         FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-       WHERE ${NOT_PKSK} ${key === null ? Prisma.empty : Prisma.sql`AND q.id > ${key}`}
+       WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} ${key === null ? Prisma.empty : Prisma.sql`AND q.id > ${key}`}
        ORDER BY q.id ASC LIMIT ${size}`
     return rows.map((r) => ({
       id: idToString(r.id),
@@ -326,7 +339,7 @@ export class QuestionsRepository {
    * a test fixture). A draw uses `sampleIds` / `sample`, a membership check `eligibleAmong`, a full walk `eligibleIdsPage`.
    */
   async eligibleIds(filter: QuestionFilter = {}): Promise<string[]> {
-    const { from, where } = this.scope({ ...filter, status: 'published', active: true })
+    const { from, where } = this.scope({ ...filter, status: 'published', active: true }, true)
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${ELIGIBLE_IDS_MAX + 1}`
     if (rows.length > ELIGIBLE_IDS_MAX) {
       throw new Error(`eligibleIds matched more than ${String(ELIGIBLE_IDS_MAX)} questions: use sampleIds, eligibleAmong or eligibleIdsPage`)
@@ -339,7 +352,7 @@ export class QuestionsRepository {
     const size = Math.max(1, Math.min(Math.floor(limit), ELIGIBLE_IDS_MAX))
     const { mcqShape, singleMcqLeaf, ...plain } = filter
     const page = async (cursor: string | undefined, rows: number): Promise<string[]> => {
-      const { from, where } = this.scope({ ...plain, status: 'published', active: true, ...(cursor === undefined ? {} : { idAfter: cursor }) })
+      const { from, where } = this.scope({ ...plain, status: 'published', active: true, ...(cursor === undefined ? {} : { idAfter: cursor }) }, true)
       const r = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${rows}`
       return r.map((x) => idToString(x.id))
     }
@@ -369,7 +382,7 @@ export class QuestionsRepository {
     const wanted = [...new Set(ids)]
     const out: string[] = []
     for (let i = 0; i < wanted.length; i += AMONG_CHUNK) {
-      const { from, where } = this.scope({ ...filter, status: 'published', active: true, idIn: wanted.slice(i, i + AMONG_CHUNK) })
+      const { from, where } = this.scope({ ...filter, status: 'published', active: true, idIn: wanted.slice(i, i + AMONG_CHUNK) }, true)
       const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC`
       out.push(...rows.map((r) => idToString(r.id)))
     }
@@ -388,7 +401,7 @@ export class QuestionsRepository {
     if (!Number.isSafeInteger(n) || n <= 0) return []
     const limit = Math.min(n, SAMPLE_MAX)
     const { mcqShape, singleMcqLeaf, ...plain } = filter
-    const { from, where } = this.scope({ ...plain, status: 'published', active: true })
+    const { from, where } = this.scope({ ...plain, status: 'published', active: true }, true)
     const key = Math.trunc(seed)
     if (!mcqShape && !singleMcqLeaf) {
       const rows = await this.db.$queryRaw<{ id: bigint }[]>`
@@ -468,11 +481,15 @@ export class QuestionsRepository {
   async listOwn(filter: GuruListFilter): Promise<Page<QuestionRecord>> {
     const owner = bi(filter.ownerId)
     if (owner === null) return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
-    const where = { createdById: owner, tags: { none: { kind: PKSK_TAG } } }
-    const [total, ids] = await Promise.all([
-      this.db.question.count({ where }),
-      this.db.question.findMany({ where, orderBy: { id: 'asc' }, skip: (filter.page - 1) * filter.pageSize, take: filter.pageSize, select: { id: true } }),
+    // One raw filter for rows and total (no primary-level question, before pagination): the page and `total` always agree.
+    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
+    const where = Prisma.sql`q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}`
+    const offset = (filter.page - 1) * filter.pageSize
+    const [totals, ids] = await Promise.all([
+      this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${filter.pageSize} OFFSET ${offset}`,
     ])
+    const total = totals[0]?.n ?? 0
     const records = await this.hydrate(ids.map((r) => r.id), 'latest')
     return { rows: records, page: filter.page, pageSize: filter.pageSize, total }
   }
@@ -500,7 +517,7 @@ export class QuestionsRepository {
   }
 
   private adminConds(f: AdminListFilter): Prisma.Sql[] {
-    const conds: Prisma.Sql[] = [NOT_PKSK]
+    const conds: Prisma.Sql[] = [NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
     const id = (text: string | undefined, column: Prisma.Sql): void => {
       if (text === undefined) return
       const key = bi(text)
@@ -545,7 +562,7 @@ export class QuestionsRepository {
 
   /** Structured questions (type `structured`) over the latest version, id ascending. */
   async structuredIds(filter: StructuredListFilter): Promise<{ ids: string[]; total: number }> {
-    const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`, NOT_PKSK]
+    const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
     for (const [text, column] of [
       [filter.subjectId, Prisma.sql`v.subject_id`],
       [filter.educationLevelId, Prisma.sql`v.education_level_id`],
@@ -580,7 +597,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
       SELECT v.subject_id, count(*)::int AS total, count(q.live_version_no)::int AS published
       FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      WHERE v.type = 'structured' AND ${NOT_PKSK} GROUP BY 1`
+      WHERE v.type = 'structured' AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
     const bySubject = new Map<string, number>()
     let total = 0
     let published = 0
@@ -596,7 +613,7 @@ export class QuestionsRepository {
   async subjectTotals(): Promise<{ total: number; bySubject: Map<string, { total: number; published: number }> }> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
       SELECT v.subject_id, count(*)::int AS total, count(q.live_version_no)::int AS published
-      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} GROUP BY 1`
+      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
     const bySubject = new Map<string, { total: number; published: number }>()
     let total = 0
     for (const r of rows) {
@@ -614,7 +631,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ status: string; n: number }[]>`
       SELECT v.status AS status, count(*)::int AS n
       FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} GROUP BY 1`
+      WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
     for (const r of rows) if (isQuestionStatus(r.status)) counts[r.status] = r.n
     return counts
   }
@@ -633,6 +650,14 @@ export class QuestionsRepository {
     if (keys.some((k) => k === null)) return false
     const unique = [...new Set(keys as bigint[])]
     return (await this.db.stimulus.count({ where: { id: { in: unique } } })) === unique.length
+  }
+
+  /** Kind and file of the given stimuli (unknown ids are absent). */
+  async stimulusAssets(ids: readonly string[]): Promise<StimulusAsset[]> {
+    const keys = ids.map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return []
+    const rows = await this.db.stimulus.findMany({ where: { id: { in: keys } }, select: { id: true, kind: true, assetFileId: true } })
+    return rows.map((r) => ({ id: idToString(r.id), kind: r.kind, assetFileId: r.assetFileId === null ? null : idToString(r.assetFileId) }))
   }
 
   async groupExists(id: string): Promise<boolean> {
@@ -891,6 +916,7 @@ export class QuestionsRepository {
       difficultyTp: c.difficultyTp,
       sourcePage: c.sourcePage,
       setLabel: c.setLabel,
+      ...(c.paperCode === undefined ? {} : { paperCode: c.paperCode }),
     }
   }
 
@@ -975,14 +1001,20 @@ export class QuestionsRepository {
     }
   }
 
-  /** FROM + WHERE fragments for a filter. `status: 'published'` reads the live version; otherwise the latest. */
-  private scope(filter: QuestionFilter): { from: Prisma.Sql; where: Prisma.Sql } {
+  /**
+   * FROM + WHERE fragments for a filter. `status: 'published'` reads the live version; otherwise the latest. Primary-level
+   * (Darjah) questions are always excluded. `learnerVisible` (every eligibility/draw read) also drops questions of any other
+   * INACTIVE education level.
+   */
+  private scope(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
     const live = filter.status === 'published'
     const from = live
       ? Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`
       : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const conds: Prisma.Sql[] = [NOT_PKSK]
     if (filter.status) conds.push(Prisma.sql`v.status = ${filter.status}`)
+    conds.push(NOT_PRIMARY_LEVEL_SQL)
+    if (learnerVisible) conds.push(LEARNER_LEVEL_SQL)
     if (filter.active !== undefined) conds.push(filter.active ? Prisma.sql`q.is_active` : Prisma.sql`NOT q.is_active`)
     const eq = (text: string | undefined, column: Prisma.Sql): void => {
       if (text === undefined) return
@@ -1041,6 +1073,12 @@ export class QuestionsRepository {
   }
 
   /** Reads questions and the selected version of each; a bad stored key fails closed (500, id logged). */
+  /** Ids (decimal strings) of the education levels of stage `primary`: hidden everywhere (secondary-only). */
+  private async primaryLevelIds(): Promise<Set<string>> {
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT id FROM education_levels WHERE stage = 'primary'`
+    return new Set(rows.map((r) => idToString(r.id)))
+  }
+
   private async hydrate(ids: readonly bigint[], view: ViewMode, scope: 'exclude' | 'only' = 'exclude'): Promise<QuestionRecord[]> {
     const questions = await this.db.question.findMany({
       where: { id: { in: [...ids] }, tags: scope === 'only' ? { some: { kind: PKSK_TAG } } : { none: { kind: PKSK_TAG } } },
@@ -1050,7 +1088,9 @@ export class QuestionsRepository {
       const versionNo = view === 'live' ? q.liveVersionNo : q.latestVersionNo
       return versionNo === null ? [] : [{ q, versionNo }]
     })
-    return this.hydratePicks(picks)
+    // Secondary-only (2026-10-29): a question of a primary level (D1-D6) is not found, for every caller.
+    const hidden = await this.primaryLevelIds()
+    return (await this.hydratePicks(picks)).filter((r) => r.version.educationLevelId === null || !hidden.has(r.version.educationLevelId))
   }
 
   /**
@@ -1080,7 +1120,7 @@ export class QuestionsRepository {
       include: {
         parts: { include: { options: true, key: true }, orderBy: [{ depth: 'asc' }, { position: 'asc' }] },
         spNodes: { orderBy: { id: 'asc' } },
-        stimuli: { orderBy: { position: 'asc' } },
+        stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } },
       },
     })
     const byKey = new Map(versions.map((v) => [`${v.questionId}:${v.versionNo}`, v]))
@@ -1146,6 +1186,11 @@ export class QuestionsRepository {
       sourceFile: null,
       spIds: v.spNodes.map((s) => idToString(s.nodeId)),
       stimulusIds: v.stimuli.map((s) => idToString(s.stimulusId)),
+      stemImageId: (() => {
+        const img = v.stimuli.find((s) => s.stimulus.kind === 'image' && s.stimulus.assetFileId !== null)
+        return img?.stimulus.assetFileId == null ? null : idToString(img.stimulus.assetFileId)
+      })(),
+      paperCode: v.paperCode,
       parts: partsFromRows(
         parts,
         parts.flatMap((p) => p.options),

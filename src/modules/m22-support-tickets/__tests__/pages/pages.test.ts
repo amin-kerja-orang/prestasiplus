@@ -278,7 +278,7 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     expect(w.get('h1').text()).toBe('Tiket Sokongan')
     expect(w.text()).toContain('Permohonan bantuan daripada pengguna.')
     const chips = w.findAll('[data-testid="tq-chips"] a')
-    expect(chips.map((c) => c.text())).toEqual(['Semua (3)', 'dibuka (2)', 'selesai (1)'])
+    expect(chips.map((c) => c.text())).toEqual(['Semua (3)', 'Dibuka (2)', 'Selesai (1)'])
     expect(chips.map((c) => c.attributes('href'))).toEqual([
       '/admin/tiket',
       '/admin/tiket?status=dibuka',
@@ -301,7 +301,7 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
       '2026-09-25 09:30:00',
       'Pelajar Maju Demo',
       'Soalan kuiz tidak dipaparkan',
-      'dibuka',
+      'Dibuka',
       '—',
     ])
     const second = w

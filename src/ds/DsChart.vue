@@ -105,6 +105,10 @@ const view = computed<'loading' | 'error' | 'empty' | 'ready'>(() =>
 )
 const HEIGHT = { sm: 'h-55', md: 'h-70', lg: 'h-80' } as const
 const plotHeight = computed(() => (props.height ? HEIGHT[props.height] : 'h-55 md:h-70 lg:h-80'))
+/** Horizontal bars with no fixed height size themselves to the category count (36px a row + axis room), so a few bars never float in a tall empty plot. */
+const rowsHeight = computed(() =>
+  props.horizontal && !props.height ? Math.min(520, Math.max(120, props.labels.length * 36 + 24)) : undefined,
+)
 
 const personality = usePersonality()
 const root = useTemplateRef<HTMLElement>('root')
@@ -124,6 +128,8 @@ const CAT_FALLBACK = [
 const LEARNER_VARS = ['--ds-c1', '--ds-c4', '--ds-c2', '--ds-c3']
 const colours = ref<string[]>([])
 const dimmed = ref('')
+const muted = ref('')
+const fontFamily = ref('')
 const swatch = computed(() =>
   personality.value === 'learner'
     ? ['bg-primary', 'bg-friend', 'bg-highlight', 'bg-heat']
@@ -154,6 +160,8 @@ function readTokens(): void {
         )
   colours.value = pool
   dimmed.value = get('--ui-text-dimmed')
+  muted.value = get('--ui-text-muted') || dimmed.value
+  fontFamily.value = cs.fontFamily
 }
 
 function seriesColour(i: number): string {
@@ -171,15 +179,16 @@ const valueLabels: Plugin = {
     if (props.type === 'doughnut') return
     const { ctx } = chart
     ctx.save()
-    ctx.fillStyle = dimmed.value
-    ctx.font = '600 12px sans-serif'
+    ctx.fillStyle = muted.value || dimmed.value
+    ctx.font = `600 12px ${fontFamily.value || 'sans-serif'}`
     ctx.textAlign = 'center'
     chart.data.datasets.forEach((ds, di) => {
       const meta = chart.getDatasetMeta(di)
       meta.data.forEach((el, i) => {
         if (props.type === 'line' && i !== meta.data.length - 1) return
         const v = ds.data[i]
-        if (typeof v !== 'number') return
+        // Empty buckets (0 / NaN) print nothing: a row of "0" on the axis is noise, not data.
+        if (typeof v !== 'number' || !Number.isFinite(v) || v === 0) return
         const text = `${v}${props.unit}`
         const p = el.getProps(['x', 'y'], true)
         if (props.horizontal) {
@@ -196,7 +205,12 @@ const valueLabels: Plugin = {
 }
 
 function build(): ChartConfiguration {
-  const tick = { color: dimmed.value, font: { size: 12 } }
+  const tick = { color: muted.value || dimmed.value, font: { size: 12, family: fontFamily.value || undefined } }
+  const bars = props.type === 'bar'
+  // Bars never become slabs: capped thickness, gaps between categories (thinner when horizontal).
+  const barShape = bars
+    ? { maxBarThickness: props.horizontal ? 24 : 48, barPercentage: 0.7, categoryPercentage: 0.8 }
+    : {}
   const doughnut = props.type === 'doughnut'
   const datasets = props.series.map((s, i) => ({
     label: s.label,
@@ -207,6 +221,7 @@ function build(): ChartConfiguration {
     borderRadius: props.type === 'bar' ? 4 : 0,
     tension: 0.3,
     pointRadius: props.type === 'line' ? 3 : 0,
+    ...barShape,
   }))
   return {
     type: props.type,
@@ -214,13 +229,20 @@ function build(): ChartConfiguration {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      // Reduced motion: draw the final state at once (no growing bars).
+      animation: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? false : undefined,
       indexAxis: props.horizontal ? 'y' : 'x',
-      layout: { padding: { top: 18, right: props.horizontal ? 32 : 8 } },
+      layout: { padding: { top: props.horizontal ? 4 : 18, right: props.horizontal ? 44 : 8 } },
       plugins: { legend: { display: false } },
       scales: doughnut
         ? {}
         : {
-            x: { grid: { display: false }, border: { display: false }, ticks: tick },
+            x: {
+              grid: { display: false },
+              border: { display: false },
+              // Thin crowded labels (24 hours, long names) instead of stacking or tilting them.
+              ticks: { ...tick, autoSkip: true, autoSkipPadding: 12, maxRotation: 0 },
+            },
             y: {
               grid: { display: false },
               border: { display: false },
@@ -306,7 +328,12 @@ watch(view, async (v) => {
       @retry="emit('retry')"
     />
     <DsEmptyState v-else-if="view === 'empty'" size="sm" :title="emptyLabel" icon="chart-line-up" />
-    <div v-show="view === 'ready'" class="relative w-full" :class="plotHeight">
+    <div
+      v-show="view === 'ready'"
+      class="relative w-full"
+      :class="rowsHeight ? '' : plotHeight"
+      :style="rowsHeight ? { height: `${rowsHeight}px` } : undefined"
+    >
       <canvas ref="canvas" role="img" :aria-label="title" />
     </div>
     <ul

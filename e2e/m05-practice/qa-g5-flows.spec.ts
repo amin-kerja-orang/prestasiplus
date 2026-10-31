@@ -21,7 +21,7 @@ import {
   provisional,
 } from '../support'
 
-const NOT_FOUND = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
 test.describe.configure({ timeout: 180_000 })

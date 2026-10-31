@@ -78,7 +78,7 @@ test.describe('M09 S9 banner list', MODULE, () => {
   }) => {
     await gotoApp('/admin/banners')
     await expect(page.getByTestId('banner-row').first()).toBeVisible()
-    await expectTabTitle(page, 'Pengurusan Banner - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Pengurusan Banner | PRESTASIPLUS')
     await expectHeader(page, 'Pengurusan Banner', 'Urus banner promosi dan pengumuman')
     await expect(page.getByText('Senarai Banner')).toBeVisible()
     await expect(page.getByTestId('banners-count')).toHaveText('Jumlah: 5 banner')
@@ -187,7 +187,7 @@ test.describe('M09 S10 create banner', MODULE, () => {
   }) => {
     await gotoApp('/admin/banners/create')
     await expect(page.getByTestId('banner-form')).toBeVisible()
-    await expectTabTitle(page, 'Tambah Banner - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Tambah Banner | PRESTASIPLUS')
     await expectHeader(page, 'Tambah Banner Baru', 'Cipta banner promosi atau pengumuman')
     await expect(page.getByTestId('banner-back')).toHaveText('Kembali ke Senarai')
     await expect(page.getByTestId('banner-back')).toHaveAttribute('href', '/admin/banners')
@@ -318,7 +318,7 @@ test.describe('M09 S11 edit banner', MODULE, () => {
   }) => {
     await gotoApp('/admin/banners/1/edit')
     await expect(page.getByTestId('banner-form')).toBeVisible()
-    await expectTabTitle(page, 'Edit Banner - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Edit Banner | PRESTASIPLUS')
     await expectHeader(page, 'Edit Banner', 'Kemaskini maklumat banner')
     await expect(page.getByTestId('banner-title')).toHaveValue('Selamat Datang ke PRESTASIPLUS')
     await expect(page.getByTestId('banner-order')).toHaveValue('1')
@@ -738,7 +738,7 @@ test.describe('M09 S14 screenshot upload', MODULE, () => {
   }) => {
     await gotoApp('/admin/tools/screenshots')
     await expect(page.getByTestId('screenshots-page')).toBeVisible()
-    await expectTabTitle(page, 'Upload Screenshot - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Upload Screenshot | PRESTASIPLUS')
     await expectHeader(page, 'Upload Screenshot', 'Tool admin untuk upload & urus gambar (private)')
     await expect(page.getByText('Upload Gambar')).toBeVisible()
     await expect(

@@ -25,7 +25,7 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/spm/history')
-    await expectTabTitle(page, 'Sejarah Kuiz SPM - PRESTASIPLUS')
+    await expectTabTitle(page, 'Sejarah Kuiz SPM | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Sejarah Kuiz SPM')
     if (isDesktopShell(page)) {
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')

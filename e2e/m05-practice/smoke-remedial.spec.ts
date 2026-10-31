@@ -24,7 +24,7 @@ import {
 
 const PELAJAR = 'pelajar@demo.test'
 const ADMIN = 'admin@demo.test'
-const NOT_FOUND = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
+const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 

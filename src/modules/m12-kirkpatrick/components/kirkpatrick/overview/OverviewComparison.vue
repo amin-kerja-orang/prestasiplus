@@ -33,6 +33,17 @@ const metrics = (p: ComparisonPanel | null): Metric[] => [
 /** "+56" for a gain, "-11" for a loss, "0" otherwise (no separator, as live). */
 const signed = (n: number) => (n > 0 ? `+${plain(n)}` : plain(n))
 
+/** The API sentence "Jumlah jawapan meningkat 465500%." is unreadable when the base is tiny: print the absolute change instead. */
+const summary = computed(() =>
+  props.comparison.sentences
+    .map((s) => {
+      const m = /^Jumlah jawapan meningkat ([0-9.]+)%.$/.exec(s)
+      const n = props.comparison.delta?.answers ?? 0
+      return m && Number(m[1]) >= 1000 && n > 0 ? `Jumlah jawapan bertambah ${count(n)}.` : s
+    })
+    .join(' '),
+)
+
 const deltas = computed(() => {
   const d = props.comparison.delta
   return [
@@ -64,69 +75,65 @@ const deltas = computed(() => {
       <p class="text-body text-muted" data-testid="kirk-comparison-subtitle">
         {{ comparison.subtitle }}
       </p>
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-before">
-          <div class="mb-2 flex flex-wrap items-center justify-between gap-1">
-            <p class="text-label text-highlighted">SEBELUM</p>
-            <p class="text-body text-muted" data-testid="kirk-panel-range">
-              {{ range(comparison.before) }}
+      <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-before">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-1 pb-2">
+          <p class="text-label text-highlighted">SEBELUM</p>
+          <p class="text-body text-muted" data-testid="kirk-panel-range">
+            {{ range(comparison.before) }}
+          </p>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-center md:grid-cols-4">
+          <div v-for="m in metrics(comparison.before)" :key="m.key" class="min-w-0">
+            <p class="tabular text-heading text-highlighted" data-testid="kirk-panel-value">
+              {{ m.value }}
             </p>
+            <p class="text-body text-muted">{{ m.label }}</p>
           </div>
-          <div class="grid grid-cols-2 gap-3 text-center">
-            <div v-for="m in metrics(comparison.before)" :key="m.key" class="min-w-0">
-              <p class="tabular text-heading text-highlighted" data-testid="kirk-panel-value">
-                {{ m.value }}
-              </p>
-              <p class="text-body text-muted">{{ m.label }}</p>
-            </div>
-          </div>
-        </UCard>
-        <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-after">
-          <div class="mb-2 flex flex-wrap items-center justify-between gap-1">
-            <p class="text-label text-primary-t">SELEPAS</p>
-            <p class="text-body text-muted" data-testid="kirk-panel-range">
-              {{ range(comparison.after) }}
+        </div>
+      </UCard>
+      <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-after">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-1 pb-2">
+          <p class="text-label text-primary-t">SELEPAS</p>
+          <p class="text-body text-muted" data-testid="kirk-panel-range">
+            {{ range(comparison.after) }}
+          </p>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-center md:grid-cols-4">
+          <div v-for="m in metrics(comparison.after)" :key="m.key" class="min-w-0">
+            <p class="tabular text-heading text-primary-t" data-testid="kirk-panel-value">
+              {{ m.value }}
             </p>
+            <p class="text-body text-muted">{{ m.label }}</p>
           </div>
-          <div class="grid grid-cols-2 gap-3 text-center">
-            <div v-for="m in metrics(comparison.after)" :key="m.key" class="min-w-0">
-              <p class="tabular text-heading text-primary-t" data-testid="kirk-panel-value">
-                {{ m.value }}
-              </p>
-              <p class="text-body text-muted">{{ m.label }}</p>
-            </div>
-          </div>
-        </UCard>
-      </div>
-
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="kirk-deltas">
-        <UCard
-          v-for="d in deltas"
-          :key="d.key"
-          variant="soft"
-          class="min-w-0"
-          :data-testid="`kirk-delta-${d.key}`"
-          :data-tone="d.n >= 0 ? 'up' : 'down'"
-        >
-          <div class="flex flex-col items-center gap-1 text-center">
+        </div>
+      </UCard>
+      <UCard variant="soft" class="min-w-0">
+        <div class="grid grid-cols-2 gap-3 text-center md:grid-cols-4" data-testid="kirk-deltas">
+          <div
+            v-for="d in deltas"
+            :key="d.key"
+            class="flex min-w-0 flex-col items-center gap-1"
+            :data-testid="`kirk-delta-${d.key}`"
+            :data-tone="d.n >= 0 ? 'up' : 'down'"
+          >
             <UIcon
               :name="d.n >= 0 ? 'i-ph-arrow-up' : 'i-ph-arrow-down'"
               :class="['size-5', d.n >= 0 ? 'text-success' : 'text-error']"
             />
             <p
-              :class="['tabular text-label', d.n >= 0 ? 'text-success' : 'text-error']"
+              :class="['tabular text-subheading', d.n >= 0 ? 'text-success' : 'text-error']"
               data-testid="kirk-delta-value"
             >
               {{ d.text }}
             </p>
             <p class="text-body text-muted">{{ d.label }}</p>
           </div>
-        </UCard>
-      </div>
+        </div>
+      </UCard>
 
       <UAlert color="primary" variant="soft" icon="i-ph-chart-line" data-testid="kirk-summary">
         <template #description>
-          <strong>Ringkasan:</strong> {{ comparison.sentences.join(' ') }}
+          <strong>Ringkasan:</strong> {{ summary }}
         </template>
       </UAlert>
     </div>

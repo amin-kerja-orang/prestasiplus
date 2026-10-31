@@ -205,14 +205,14 @@ describe('page-raised outcome sets the tab title', () => {
     logIn(STUDENT)
     const router = testRouter()
     await router.push('/dashboard')
-    expect(document.title).toBe('Dashboard - PRESTASIPLUS')
+    expect(document.title).toBe('Dashboard | PRESTASIPLUS')
 
     setRouteOutcome(404)
     expect(document.title).toBe(NOT_FOUND_TITLE)
 
     await router.push('/tetapan')
     expect(useRouteOutcome().value).toBeNull()
-    expect(document.title).toBe('Tetapan Peribadi')
+    expect(document.title).toBe('Tetapan Peribadi | PRESTASIPLUS')
   })
 
   it('setTitle does not overwrite an active 404/403 title', () => {
@@ -226,7 +226,7 @@ describe('page-raised outcome sets the tab title', () => {
 
   it('a 404 set after setTitle replaces the page title', () => {
     usePageMeta().setTitle('Lihat Soalan')
-    expect(document.title).toBe('Lihat Soalan')
+    expect(document.title).toBe('Lihat Soalan | PRESTASIPLUS')
     setRouteOutcome(404)
     expect(document.title).toBe(NOT_FOUND_TITLE)
   })
@@ -242,7 +242,7 @@ describe('page-raised outcome sets the tab title', () => {
     await router.push('/timeline/5')
     expect(document.title).toBe(NOT_FOUND_TITLE)
     await router.push('/dashboard')
-    expect(document.title).toBe('Dashboard - PRESTASIPLUS')
+    expect(document.title).toBe('Dashboard | PRESTASIPLUS')
   })
 })
 
@@ -293,13 +293,13 @@ describe('core routes', () => {
 })
 
 describe('after each navigation (overview §5.4 step 5)', () => {
-  it('sets the exact tab title from meta.title (string or function), no suffix', async () => {
+  it('sets the exact tab title from meta.title (string or function), formatted as {name} | PRESTASIPLUS', async () => {
     logIn(STUDENT)
     const router = testRouter()
     await router.push('/dashboard')
-    expect(document.title).toBe('Dashboard - PRESTASIPLUS')
+    expect(document.title).toBe('Dashboard | PRESTASIPLUS')
     await router.push('/topics?s=Sains')
-    expect(document.title).toBe('Topik Sains')
+    expect(document.title).toBe('Topik Sains | PRESTASIPLUS')
   })
 
   it('resets the page meta before the new page', async () => {
@@ -457,16 +457,16 @@ describe('meta.guestTitle (F-20)', () => {
   it('replaces meta.title synchronously in afterEach when the public layout is resolved', async () => {
     const router = guestRouter()
     await router.push('/g?p=1')
-    expect(document.title).toBe('Tetamu 1')
+    expect(document.title).toBe('Tetamu 1 | PRESTASIPLUS')
   })
 
   it('is ignored when the resolved shell is not public (logged in, or another layout)', async () => {
     const router = guestRouter()
     await router.push('/u')
-    expect(document.title).toBe('Tajuk U')
+    expect(document.title).toBe('Tajuk U | PRESTASIPLUS')
     logIn(STUDENT)
     await router.push('/g')
-    expect(document.title).toBe('Tajuk Log Masuk')
+    expect(document.title).toBe('Tajuk Log Masuk | PRESTASIPLUS')
   })
 })
 

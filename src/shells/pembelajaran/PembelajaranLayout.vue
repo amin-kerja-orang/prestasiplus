@@ -15,6 +15,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { isAlesaAiOn } from '@/app/features'
 import { shellHomePath } from '@/app/prototype-scope'
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
@@ -55,6 +56,7 @@ import {
 import { FRIEND_OPTIONS, useFriend } from '@/composables/useFriend'
 import { LG_QUERY, useMediaQuery } from '@/shells/admin/useMinWidth'
 import ModPelajarBanner from '@/shells/shared/ModPelajarBanner.vue'
+import { useShellTabTitle } from '@/shells/shared/useShellTabTitle'
 import { useSessionStore } from '@/stores/session'
 import { useExclusiveSheets } from './useExclusiveSheets'
 import { useShellUser } from './useShellUser'
@@ -73,6 +75,7 @@ const personality = computed<Personality>(() => (learner.value ? 'learner' : 'st
 const theme = useThemeMode(personality)
 // One rule for every role: the navbar prints the page title (h1); DsPageHeader leaves its own out.
 provideShellTitle()
+
 
 const { friend, pickerOpen, promptOpen, dismissPrompt, choose, openPicker } = useFriend()
 // The first-run prompt belongs to the dashboard only: leaving it closes the prompt for good.
@@ -95,7 +98,7 @@ const canOpen = computed(() => routeRoleCheck(router, role.value))
 const sidebar = computed(() => sidebarEntries(role.value, canOpen.value))
 const drawer = computed(() => drawerEntries(role.value, canOpen.value))
 const links = computed(() => accountLinks(role.value))
-const showAlesa = computed(() => allows('/cikgu'))
+const showAlesa = computed(() => isAlesaAiOn() && allows('/cikgu'))
 const isLegacy = computed(() => route.meta.v2 !== true)
 
 const navOpts = computed(() => ({ learner: learner.value, currentPath: route.path }))
@@ -124,6 +127,7 @@ const sectionTabs = computed(() =>
   groupTabs(sidebar.value, current.value?.id).map((t) => ({ key: t.id, label: t.label, to: t.to })),
 )
 const title = computed(() => route.meta.header?.title ?? current.value?.label ?? '')
+useShellTabTitle(title)
 const crumb = computed(() => {
   const c = current.value ? sectionOf(sidebar.value, current.value.id) : ''
   return c && c !== title.value ? c : ''
@@ -291,13 +295,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
               class="flex min-w-0 items-center gap-2"
               aria-label="Laman utama"
             >
-              <DsBrandLogo v-if="!collapsed" />
-              <span
-                v-else
-                class="grid size-9 place-items-center rounded-md bg-gradient-primary font-display text-label font-extrabold text-primary-on"
-                aria-hidden="true"
-                >P+</span
-              >
+              <DsBrandLogo :variant="collapsed ? 'icon' : 'full'" />
             </RouterLink>
           </template>
 

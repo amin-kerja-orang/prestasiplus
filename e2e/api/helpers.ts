@@ -43,7 +43,7 @@ export function account(role: ApiRole): Account {
   }
 }
 
-export const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+export const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 
 /** Where each role lands (scope home, src/app/prototype-scope.ts `scopeHomePath` + server landing). */
 export const HOME: Record<'student' | 'guru' | 'adminSekolah' | 'adminPusat', string> = {

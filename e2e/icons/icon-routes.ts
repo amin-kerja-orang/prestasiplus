@@ -16,12 +16,14 @@ export const ICON_ROUTES = {
   student: [
     ...ACCOUNT,
     ...['/dashboard', '/headcount', '/prestasi', '/analitik', '/analisa-item', '/video', '/kelas-saya'],
-    ...['/practice/chapter', '/remedial', '/spm', '/buku-nota/heatmap', '/mohon-keluarga-angkat', '/practice'],
+    ...['/practice/chapter', '/remedial', '/spm', '/buku-nota/heatmap', '/practice'],
     ...['/latihan-berstruktur', '/ranking', '/pksk', '/artikel', '/permainan', '/cabutan', '/tournament'],
     ...['/topics', '/peta-belajar', '/set-soalan-saya', '/audio-kbat', '/gamification'],
     ...['/gamification/convert', '/gamification/challenges', '/gamification/rewards', '/marketplace'],
     ...['/gamification/leaderboard', '/gamification/achievements', '/gamification/mystery-box'],
-    ...['/gamification/referral', '/cikgu', '/cikgu/hadiah', '/timeline', '/jemput-ibu-bapa'],
+    ...['/gamification/referral', '/cikgu/hadiah', '/timeline', '/jemput-ibu-bapa'],
+    ...(process.env.VITE_ALESA_AI === 'on' ? ['/cikgu'] : []),
+    ...(process.env.VITE_KELUARGA_ANGKAT === 'on' ? ['/mohon-keluarga-angkat'] : []),
   ],
   teacher: [
     ...ACCOUNT,

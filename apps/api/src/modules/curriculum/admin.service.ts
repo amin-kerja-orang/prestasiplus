@@ -121,7 +121,7 @@ export class CurriculumAdminService {
 
   async listLevels() {
     const [rows, questionCounts, subjectCounts] = await Promise.all([
-      this.repo.levels(),
+      this.repo.levels({ includeInactive: true }),
       this.counts.activeByLevel(),
       this.repo.levelSubjectCounts(),
     ])
@@ -220,7 +220,7 @@ export class CurriculumAdminService {
   async listSubjects() {
     const [rows, levels, questionCounts] = await Promise.all([
       this.repo.subjects(),
-      this.repo.levels(),
+      this.repo.levels({ includeInactive: true }),
       this.counts.activeBySubject(),
     ])
     const levelName = new Map(levels.map((l) => [l.id, l.name]))
@@ -258,7 +258,7 @@ export class CurriculumAdminService {
         ok: async (value) => {
           const ids = (value as string[]).map(asId)
           if (ids.some((id) => id === null)) return false
-          const known = new Set((await this.repo.levels()).map((l) => l.id))
+          const known = new Set((await this.repo.levels({ includeInactive: true })).map((l) => l.id))
           return ids.every((id) => known.has(id as bigint))
         },
       },

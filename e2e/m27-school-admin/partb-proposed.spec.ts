@@ -30,7 +30,7 @@ const SCHOOL_P1 = 'SMK Demo Seri Putra'
 
 const FORBIDDEN_COPY =
   'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.'
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const LEGEND = ['Mahir (75%+)', 'Sederhana (50-74%)', 'Lemah (<50%)', 'Belum Cuba']
 const SP_EMPTY = 'Tiada Standard Pembelajaran untuk subjek dan tingkatan ini.'
 
@@ -165,7 +165,7 @@ for (const key of Object.keys(SCREENS) as ScreenKey[]) {
       await open(page, gotoApp, s.path, s.ready)
       await expect(page.getByTestId('shell-user-title')).toHaveText(s.title)
       await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
-      await expectTabTitle(page, `${s.title} - PRESTASIPLUS`)
+      await expectTabTitle(page, `${s.title} | PRESTASIPLUS`)
       const prefix = { s2: 'dh', s5: 'lb', s8: 'kl' }[key]
       const back =
         prefix === 'kl'

@@ -70,7 +70,7 @@ test.describe('S21 as the admin', MODULE, () => {
 
   test('SRS §12 #57 stats, tiers, chips, first card, pager', async ({ page, gotoApp }) => {
     await gotoApp('/guru/soalan')
-    await expectTabTitle(page, 'Sumbang Soalan - PRESTASIPLUS')
+    await expectTabTitle(page, 'Sumbang Soalan | PRESTASIPLUS')
     await expectHeader(
       page,
       'Sumbang Soalan',
@@ -344,7 +344,7 @@ test.describe('S21 as the teacher', MODULE, () => {
     gotoApp,
   }) => {
     await gotoApp('/guru/soalan/cipta')
-    await expectTabTitle(page, 'Tambah Soalan - PRESTASIPLUS')
+    await expectTabTitle(page, 'Tambah Soalan | PRESTASIPLUS')
     await expectHeader(page, 'Tambah Soalan Baru', 'Sumbangkan soalan untuk pelajar Malaysia')
     await expect(page.getByTestId('back-link')).toHaveText('Kembali ke Senarai Soalan')
     expect(await page.getByTestId('q-difficulty').locator('option').allTextContents()).toEqual([
@@ -512,11 +512,11 @@ test.describe('S21 as the teacher', MODULE, () => {
 
   test('SRS §12 #65 a question that is not own is the 404 page', async ({ page, gotoApp }) => {
     await gotoApp('/guru/soalan/522425')
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     await gotoApp('/guru/soalan/522425/edit')
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     await gotoApp('/guru/soalan/99999999')
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
   })
 
   test('S23 and S24 of the own anchor question', async ({ page, gotoApp }) => {

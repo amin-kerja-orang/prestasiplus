@@ -8,7 +8,7 @@ import type { TransportResponse } from '@/api/transport'
 import { CLOCK_ANCHOR_ISO, createClock, type Clock } from '@/lib/time'
 import { setUser } from '@/mock/core-data/set-user'
 import { bootMock, type MockRuntime } from '@/mock/index'
-import m01 from '@/modules/m01-authentication/mock'
+import m01, { users } from '@/modules/m01-authentication/mock'
 import m02 from '@/modules/m02-users-schools/mock'
 import m03 from '@/modules/m03-curriculum/mock'
 import m04 from '@/modules/m04-question-bank/mock'
@@ -55,6 +55,18 @@ export class MemoryStorage {
   removeItem(key: string) {
     this.items.delete(key)
   }
+}
+
+/**
+ * An active Tingkatan 3 pupil that has logged in (the generated rows of school 8106), for the "below
+ * Tingkatan 4" cases. Accounts 3 and 4 are Tingkatan 4 / 5 since D72. Needs a booted runtime.
+ */
+export function belowT4Student(): number {
+  const row = users
+    .adminList({ role: 'student', schoolId: 8106, pageSize: 500 })
+    .rows.find((r) => r.grade === 9 && r.isActive)
+  if (!row) throw new Error('no Tingkatan 3 pupil in the users dataset')
+  return row.id
 }
 
 export { setUser }

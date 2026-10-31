@@ -151,3 +151,9 @@ Verified by grep on 2026-10-18. Live-exception candidates are marked **L?**: con
 | C10 | Status vocabulary: Approved / Aktif / ACTIVE / Tidak aktif / Inactive / Pending / Menunggu / Draft mixed (191 hits in 87 files) | `m28 .../AttemptPage.vue` (7), `m02 .../UserListPage.vue` (7), `m09 .../AudioKbatListPage.vue:5` ("approved"), `m04 .../QuestionListPage.vue` | Apply section 4 by module task |
 | C11 | English in BM UI: "(optional)", "Post", "Table", "approved" | `m10 .../SumbangSoalanEditPage.vue:178`, `m08 .../TimelinePage.vue:55,72`, `m09 .../AudioKbatListPage.vue:5` | L? (live words); otherwise "(pilihan)", "Hantaran", "Jadual", "diluluskan" |
 | C12 | Active filters link: "Set semula" (lower-case s) | `m07 .../admin/AdminActiveFilters.vue:32`, `m09 .../admin-kit/AdminActiveFilters.vue:32` | Canonical Set Semula |
+
+## Tab title (user decision 2026-10-29)
+
+Every browser tab title is exactly `{Page Name} | PRESTASIPLUS`: one space either side of `|`, brand in uppercase, nothing else. `{Page Name}` is the name the user sees on the page: the shell header title (menu label or page header title) in the two v2 shells, the entity or page name for detail pages, the page heading for auth, public and error pages (for example `Log Masuk | PRESTASIPLUS`, `Halaman Tidak Dijumpai | PRESTASIPLUS`, `Akses Ditolak | PRESTASIPLUS`). The brand alone is never a title.
+
+This supersedes the per-SRS exact tab titles for v2. It is implemented once in `src/composables/tabTitle.ts` (`formatTabTitle`, which also strips legacy `- PRESTASIPLUS` / `| PRESTASIPLUS` / `— Kirkpatrick` affixes); the router guard, the in-place outcome, `usePageMeta().setTitle` and the shells' `useShellTabTitle` all go through it.

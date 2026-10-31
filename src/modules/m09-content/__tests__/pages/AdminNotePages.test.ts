@@ -30,7 +30,7 @@ function item(id: number, extra: Partial<AdminNoteItem> = {}): AdminNoteItem {
     title: `Nota ${String(id)}`,
     subject: 'matematik',
     noteType: 'FORMULA',
-    grade: 'DARJAH_2',
+    grade: 'TINGKATAN_4',
     isPublished: true,
     views: 0,
     downloads: 0,
@@ -119,7 +119,7 @@ beforeEach(() => {
         title: 'B'.repeat(50),
         subject: 'bahasa_melayu',
         noteType: 'TIPS_TRICKS',
-        grade: 'DARJAH_3',
+        grade: 'TINGKATAN_5',
         isPublished: false,
         views: 3,
         downloads: 2,
@@ -154,7 +154,7 @@ describe('AdminNoteListPage (M09 S5)', () => {
     const rows = w.findAll('tbody tr')
     expect(rows[0]!.find('[data-testid=note-subject]').text()).toBe('MATEMATIK')
     expect(rows[0]!.find('[data-testid=note-type]').text()).toBe('FORMULA')
-    expect(rows[0]!.find('[data-testid=note-grade]').text()).toBe('DARJAH 2')
+    expect(rows[0]!.find('[data-testid=note-grade]').text()).toBe('TINGKATAN 4')
     expect(rows[0]!.find('[data-testid=status-pill]').text()).toBe('Diterbitkan')
     expect(rows[0]!.find('[data-testid=note-author]').text()).toBe('Oleh: Admin Demo')
     expect(rows[1]!.find('[data-testid=note-title]').text()).toBe(`${'B'.repeat(40)}...`)
@@ -278,7 +278,7 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
       'LENGKAP',
       'TIPS_TRICKS',
     ])
-    expect(el<HTMLSelectElement>(w, 'note-grade').options).toHaveLength(7)
+    expect(el<HTMLSelectElement>(w, 'note-grade').options).toHaveLength(3)
     expect(t(w, 'form-submit').text()).toBe('Simpan Nota')
     expect(t(w, 'form-cancel').attributes('href')).toBe('/admin/notes')
     const form = el<HTMLFormElement>(w, 'admin-note-form')
@@ -297,7 +297,7 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
     await t(w, 'note-content').setValue('<p>Isi</p>')
     await t(w, 'note-subject').setValue('sains')
     await t(w, 'note-type').setValue('RINGKASAN')
-    await t(w, 'note-grade').setValue('DARJAH_3')
+    await t(w, 'note-grade').setValue('TINGKATAN_5')
     await t(w, 'note-published').trigger('click')
     await t(w, 'admin-note-form').trigger('submit')
     await flushPromises()
@@ -307,7 +307,7 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
       content: '<p>Isi</p>',
       subject: 'sains',
       noteType: 'RINGKASAN',
-      grade: 'DARJAH_3',
+      grade: 'TINGKATAN_5',
       isPublished: true,
     })
     expect(router.currentRoute.value.path).toBe('/admin/notes')
@@ -338,7 +338,7 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
     expect(el<HTMLTextAreaElement>(w, 'note-summary').value).toBe('Carta sifir.')
     expect(el<HTMLSelectElement>(w, 'note-subject').value).toBe('matematik')
     expect(el<HTMLSelectElement>(w, 'note-type').value).toBe('FORMULA')
-    expect(el<HTMLSelectElement>(w, 'note-grade').value).toBe('DARJAH_2')
+    expect(el<HTMLSelectElement>(w, 'note-grade').value).toBe('TINGKATAN_4')
     expect(el<HTMLSelectElement>(w, 'note-subject').options).toHaveLength(5)
     expect(el<HTMLFormElement>(w, 'admin-note-form').checkValidity()).toBe(true)
     expect(t(w, 'form-submit').text()).toBe('Kemaskini Nota')
@@ -351,7 +351,7 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
     await flushPromises()
     expect(api.updateAdminNote).toHaveBeenCalledWith(
       1,
-      expect.objectContaining({ grade: 'DARJAH_2' }),
+      expect.objectContaining({ grade: 'TINGKATAN_4' }),
     )
     expect(router.currentRoute.value.path).toBe('/admin/notes')
     wrapper?.unmount()
@@ -387,7 +387,7 @@ describe('AdminNotePreviewPage (M09 S8)', () => {
     expect(t(w, 'status-pill').text()).toBe('Diterbitkan')
     expect(t(w, 'preview-summary').text()).toBe('Carta sifir.')
     expect(t(w, 'preview-subject').text()).toBe('MATEMATIK')
-    expect(t(w, 'preview-grade').text()).toBe('DARJAH 2')
+    expect(t(w, 'preview-grade').text()).toBe('TINGKATAN 4')
     expect(t(w, 'preview-type').text()).toBe('FORMULA')
     const body = t(w, 'preview-body')
     expect(body.text().startsWith('<h2>Sifir 1 hingga 12</h2>')).toBe(true)

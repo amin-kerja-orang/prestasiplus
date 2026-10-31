@@ -230,7 +230,7 @@ describe('reports', () => {
 
 describe('imports', () => {
   it('keeps the mock template header, required columns and sample file', () => {
-    expect(QUESTION_IMPORT_HEADER.join(',')).toBe('question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation')
+    expect(QUESTION_IMPORT_HEADER.join(',')).toBe('question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation,kertas')
     expect([...QUESTION_IMPORT_REQUIRED_COLUMNS]).toEqual(['question_text', 'option_a', 'option_b', 'correct_answer'])
     const lines = QUESTION_IMPORT_TEMPLATE_CSV.split('\r\n')
     expect(lines).toHaveLength(4)

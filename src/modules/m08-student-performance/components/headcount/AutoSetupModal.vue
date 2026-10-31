@@ -10,7 +10,7 @@ import { DsDialog } from '@/ds'
 
 import { autoSetupHeadcounts } from '../../api/headcount'
 import { headcountActionError } from '../../lib/headcount/error-text'
-import { DARJAH_LEVELS, TINGKATAN_LEVELS } from '../../lib/headcount/format'
+import { TINGKATAN_LEVELS } from '../../lib/headcount/format'
 
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ done: [] }>()
@@ -49,7 +49,6 @@ async function submit() {
 }
 
 const groups = [
-  { title: 'Darjah', levels: DARJAH_LEVELS },
   { title: 'Tingkatan', levels: TINGKATAN_LEVELS },
 ] as const
 </script>

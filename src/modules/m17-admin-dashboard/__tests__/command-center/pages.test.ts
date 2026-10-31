@@ -289,6 +289,16 @@ afterEach(() => {
   setRouteOutcome(null)
 })
 
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases below.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+
 describe('S4 school', () => {
   it('renders the header, breadcrumb, cards, teacher list and sets the tab title', async () => {
     const w = await render(CommandCenterSchoolPage, { schoolId: 8080 })
@@ -313,7 +323,7 @@ describe('S4 school', () => {
         .slice(0, 6),
     ).toEqual(['1', 'Cikgu Contoh', 'KIMIA', '2', '44', '5'])
     expect(trOf(rows[1]).findAll('td')[2]?.text()).toBe('-')
-    expect(document.title).toBe('SMK Contoh - Command Center')
+    expect(document.title).toBe('SMK Contoh - Command Center | PRESTASIPLUS')
   })
 
   it('opens S5 on a row click under the given prefix (M10 / school-admin mounts)', async () => {
@@ -379,7 +389,7 @@ describe('S5 teacher', () => {
       .findAll('td')
       .map((c) => c.text())
     expect(cells).toEqual(['1', '5 PERNIAGAAN', 'T5', '30', '3', '1,234', '77.8%'])
-    expect(document.title).toBe('Cikgu Contoh - Command Center')
+    expect(document.title).toBe('Cikgu Contoh - Command Center | PRESTASIPLUS')
     await w.get('[data-testid=cc-class-row]').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/admin/command-center/classroom/370')
@@ -454,6 +464,13 @@ describe('S6 class', () => {
 })
 
 describe('S7 student', () => {
+  it('hides "ALESA AI Insight" while the ALESA flag is off (D73)', async () => {
+    vi.stubEnv('VITE_ALESA_AI', '')
+    const w = await render(CommandCenterStudentPage, { userId: 2022 })
+    expect(w.find('[data-testid=cc-insight]').exists()).toBe(false)
+    expect(w.text()).not.toContain('ALESA AI Insight')
+  })
+
   it('renders the five cards, subject, weeks, empty mood, headcount and the insight', async () => {
     const w = await render(CommandCenterStudentPage, { userId: 2022 })
     expect(w.get('[data-testid=cc-back]').text()).toBe('Kembali ke Kelas')
@@ -504,7 +521,7 @@ describe('S7 student', () => {
     )
     expect(w.get('[data-testid=cc-insight]').text()).toContain('Analisis ALESA')
     expect(w.get('[data-testid=cc-insight]').text()).toContain('Sumber: Rule-based Analysis')
-    expect(document.title).toBe('Murid Satu - Command Center')
+    expect(document.title).toBe('Murid Satu - Command Center | PRESTASIPLUS')
   })
 
   it('opens the all-sessions modal from the first card and closes by x and by backdrop', async () => {

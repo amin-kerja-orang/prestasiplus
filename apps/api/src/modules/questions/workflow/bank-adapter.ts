@@ -195,6 +195,7 @@ export class QuestionBankAdapter implements QuestionBankPort {
       correctAnswer: Math.max(0, correctAnswer),
       explanation: input.explanation,
       pointsValue: input.marks ?? 1,
+      ...(input.kertas === undefined ? {} : { kertas: input.kertas }),
       status: input.status,
     } as unknown as QuestionCreateInput
     const view = await this.service.create(body, { userId: input.createdById, role: 'teacher' })
@@ -217,7 +218,7 @@ export class QuestionBankAdapter implements QuestionBankPort {
   }
 
   private async names(): Promise<{ subjects: Map<string, string>; levels: Map<string, string> }> {
-    const [subjects, levels] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels()])
+    const [subjects, levels] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels({ includeInactive: true })])
     return {
       subjects: new Map(subjects.map((s) => [s.id.toString(), s.name])),
       levels: new Map(levels.map((l) => [l.id.toString(), l.name])),

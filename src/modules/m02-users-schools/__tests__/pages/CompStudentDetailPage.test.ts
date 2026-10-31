@@ -102,7 +102,7 @@ describe('CompStudentDetailPage (M02 S8) content', () => {
       title: 'PELAJAR DEMO SATU BIN DEMO',
       subtitle: 'Detail pelajar komplimen',
     })
-    expect(document.title).toBe('Pelajar Komplimen - PELAJAR DEMO SATU BIN DEMO')
+    expect(document.title).toBe('Pelajar Komplimen - PELAJAR DEMO SATU BIN DEMO | PRESTASIPLUS')
     expect(w.findAll('dt').map((d) => d.text())).toEqual([
       'Username',
       'No. KP',

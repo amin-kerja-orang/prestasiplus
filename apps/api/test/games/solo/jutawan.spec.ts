@@ -82,7 +82,7 @@ describe('Jutawan Ilmu (M16-36 to M16-39)', () => {
       expect(math?.count).toBeGreaterThanOrEqual(20)
       const bi = page.subjects?.find((s) => s.name !== mathName && s.count >= 5)
       expect(bi?.emoji).toBeTruthy()
-      expect(parseData(await student.get('/api/games/jutawan?darjah=3'), GamesJutawanPageSchema).heading).toBe('DARJAH 3')
+      expect(parseData(await student.get('/api/games/jutawan?darjah=7'), GamesJutawanPageSchema).heading).toBe('TINGKATAN 1')
     })
 
     it('an invalid darjah is 422 "Tahap tidak sah." on fields.darjah', async () => {

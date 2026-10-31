@@ -121,7 +121,7 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/gamification/mystery-box')
-    await expectTabTitle(page, 'Kotak Misteri — PRESTASIPLUS')
+    await expectTabTitle(page, 'Kotak Misteri | PRESTASIPLUS')
     await expectHeader(page, 'Kotak Misteri')
     await expect(page.getByTestId('box-title')).toHaveText('📦 Kotak Misteri')
     await expect(
@@ -264,7 +264,7 @@ test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/cabutan')
-    await expectTabTitle(page, 'Cabutan Bertuah - PRESTASIPLUS')
+    await expectTabTitle(page, 'Cabutan Bertuah | PRESTASIPLUS')
     await expectHeader(page, 'Cabutan Bertuah')
     await expect(page.getByTestId('cabutan-title')).toHaveText('🎟️ Cabutan Bertuah')
     await expect(
@@ -403,7 +403,7 @@ test.describe('M15 student pages: access and 404', MODULE, () => {
       '/cabutan/sejarah',
     ]) {
       await gotoApp(path)
-      await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+      await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
       await expect(page.getByRole('link', { name: 'Mula Latihan' })).toHaveAttribute(
         'href',
         '/practice',

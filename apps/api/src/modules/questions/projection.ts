@@ -61,6 +61,37 @@ export function difficultyOf(v: unknown): number {
   return typeof v === 'number' ? v : Number(v)
 }
 
+/**
+ * Kertas ('1' to '3') of a paper code: the trailing digit after the last slash (`1449/2`, `MATH/2`). This is the same
+ * rule the paper builder applies (`kertasOf` / `candidates`); null when the code has none or the digit is not 1 to 3.
+ */
+export function kertasOfPaperCode(paperCode: string | null | undefined): '1' | '2' | '3' | null {
+  const m = paperCode ? /\/([0-9])\s*$/.exec(paperCode) : null
+  return m && (m[1] === '1' || m[1] === '2' || m[1] === '3') ? m[1] : null
+}
+
+/**
+ * The paper code that carries `kertas` for a question: the stored code with its trailing digit replaced when it already
+ * ends in `/<digit>`, else `<subjectCode>/<kertas>` (the subject's own curriculum code: no mapping to bijak subject codes
+ * is needed because the builder only reads the trailing digit).
+ *
+ * `null` clears the kertas by removing ONLY a valid trailing `/1` to `/3`; any other code (`1449/4`, `SPM2023`) is kept, so an
+ * unrelated edit that sends no kertas never erases a real paper code. Without a subject code and without a trailing digit to
+ * replace, no code is invented: the stored value is returned unchanged (the form requires a subject, so the `subjectId` 422
+ * comes first and this case does not occur on the API).
+ */
+export function paperCodeWithKertas(stored: string | null | undefined, kertas: '1' | '2' | '3' | null, subjectCode: string | null): string | null {
+  const keep = stored ?? null
+  if (kertas === null) {
+    const m = stored ? /^(.*)\/[1-3]\s*$/.exec(stored) : null
+    if (!m) return keep
+    return m[1] === '' ? null : (m[1] as string)
+  }
+  const m = stored ? /^(.*\/)[0-9]\s*$/.exec(stored) : null
+  if (m) return `${m[1]}${kertas}`
+  return subjectCode ? `${subjectCode}/${kertas}` : keep
+}
+
 export const difficultyLabelOf = (level: number): string => (level <= 2 ? 'Mudah' : level === 3 ? 'Sederhana' : 'Sukar')
 
 const altList = (v: string | readonly string[] | undefined): string[] =>

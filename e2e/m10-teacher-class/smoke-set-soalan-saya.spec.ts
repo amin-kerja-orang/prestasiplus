@@ -42,7 +42,7 @@ test.describe('M10 S34 Set Soalan Guru (student)', MODULE, () => {
     await loginAs('admin@demo.test')
     await gotoApp('/set-soalan-saya')
     await expect(page.getByTestId('set-soalan-page')).toBeVisible({ timeout: 15_000 })
-    await expectTabTitle(page, 'Set Soalan Guru - PRESTASIPLUS')
+    await expectTabTitle(page, 'Set Soalan Guru | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title')).toHaveText('Set Soalan Guru')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
       'Set soalan yang disediakan oleh guru anda',

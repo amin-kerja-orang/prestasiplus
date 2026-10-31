@@ -34,7 +34,7 @@ export const SEED_ARTICLES = [
     excerpt: 'Ringkasan berita contoh untuk paparan senarai.',
     content: '<p>Berita contoh untuk tujuan demonstrasi sahaja.</p>',
     category: 'BERITA',
-    gradeLevel: 'DARJAH_6',
+    gradeLevel: 'SEMUA',
     isPublished: true,
     isFeatured: false,
     views: 40,

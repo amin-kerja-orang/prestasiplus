@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsCluster, DsIconChip, DsPanel } from '@/ds'
+import { DsCluster, DsIconChip, DsPanel, type DsAccent } from '@/ds'
 
 import type { Overview } from '../../../api/types'
 import { gps, KirkpatrickLink, mean, pct, plain, type KirkpatrickPaths } from '../common'
@@ -20,6 +20,7 @@ interface Step {
   pill: string
   to: string | null
   icon: string
+  accent: DsAccent
 }
 
 const to = (path: string) => (props.detail ? path : null)
@@ -27,35 +28,39 @@ const to = (path: string) => (props.detail ? path : null)
 const steps = computed<Step[]>(() => [
   {
     key: 't1',
-    label: 'T1: Reaksi',
+    label: 'Tahap 1: Reaksi',
     sub: 'Kepuasan pengguna',
     pill: `${mean(props.data.t1.satisfaction)}/5`,
     to: to(props.paths.reaction),
     icon: 'i-ph-smiley',
+    accent: 'win',
   },
   {
     key: 't2',
-    label: 'T2: Pembelajaran',
+    label: 'Tahap 2: Pembelajaran',
     sub: 'Peningkatan kemahiran',
     pill: `${pct(props.data.t2.accuracy)} ketepatan`,
     to: to(props.paths.learning),
     icon: 'i-ph-brain',
+    accent: 'trial',
   },
   {
     key: 't3',
-    label: 'T3: Tingkah Laku',
+    label: 'Tahap 3: Tingkah Laku',
     sub: 'Konsistensi penggunaan',
     pill: `${plain(props.data.t3.active)} pelajar aktif`,
     to: to(props.paths.behavior),
     icon: 'i-ph-footprints',
+    accent: 'heat',
   },
   {
     key: 't4',
-    label: 'T4: Hasil',
+    label: 'Tahap 4: Hasil',
     sub: 'Keputusan peperiksaan',
     pill: `GPS ${props.data.t4.gps === null ? '-' : gps(props.data.t4.gps)}`,
     to: to(props.paths.results),
     icon: 'i-ph-trophy',
+    accent: 'friend',
   },
 ])
 </script>
@@ -68,15 +73,15 @@ const steps = computed<Step[]>(() => [
     data-testid="kirk-flow"
   >
     <div class="hidden sm:block" data-testid="kirk-flow-circles">
-      <div class="grid grid-cols-4 gap-2">
+      <div class="grid grid-cols-4 gap-3">
         <KirkpatrickLink
           v-for="s in steps"
           :key="s.key"
           :to="s.to"
-          class="flex min-w-0 flex-col items-center gap-1 text-center"
+          class="flex h-full min-w-0 flex-col items-center gap-2 px-3 py-4 text-center"
           :data-testid="`kirk-flow-${s.key}`"
         >
-          <DsIconChip :icon="s.icon" size="lg" />
+          <DsIconChip :icon="s.icon" :accent="s.accent" size="lg" />
           <span class="text-label text-highlighted">{{ s.label }}</span>
           <span class="text-body text-muted">{{ s.sub }}</span>
           <UBadge color="primary" variant="soft" :label="s.pill" data-testid="kirk-flow-pill" />
@@ -93,7 +98,7 @@ const steps = computed<Step[]>(() => [
         >
           <!-- Wraps: below 320 the pill and caret drop to a second line instead of overlapping the label (DV-M12-34). -->
           <DsCluster gap="sm" row-gap="2xs" align="center">
-            <DsIconChip :icon="s.icon" size="sm" />
+            <DsIconChip :icon="s.icon" :accent="s.accent" size="sm" />
             <span class="min-w-40 flex-1">
               <span class="block text-label text-highlighted">{{ s.label }}</span>
               <span class="block text-body text-muted">{{ s.sub }}</span>

@@ -1,26 +1,14 @@
 <script setup lang="ts">
 /**
- * S8 "Tahap" radio cards (FR-M01-40). One group only: Darjah 1-6 (grade null or 1-6) or Ting. 1-5
- * (grade 7-11, INFERRED, OQ-5). A card-variant `URadioGroup` (indicator hidden): the checked card
- * carries the primary tone. Shown for every role, as live. Darjah is 6 columns from sm, 3
- * columns below it so the 44px targets fit at 320px (D9 deviation candidate).
+ * S8 "Tahap" radio cards (FR-M01-40). Secondary only (v2): Ting. 1-5 (grade 7-11). A card-variant
+ * `URadioGroup` (indicator hidden): the checked card carries the primary tone. Shown for every role.
  */
-import { computed } from 'vue'
+import { TINGKATAN_GRADES } from '../../lib/lookups'
 
-import { DARJAH_GRADES, TINGKATAN_GRADES } from '../../lib/lookups'
-
-const props = defineProps<{
-  modelValue: number | null
-  /** The group of the saved grade (7-11 = secondary); it does not switch while the user edits. */
-  secondary: boolean
-}>()
+defineProps<{ modelValue: number | null }>()
 const emit = defineEmits<{ 'update:modelValue': [grade: number] }>()
 
-const items = computed(() =>
-  props.secondary
-    ? TINGKATAN_GRADES.map((n) => ({ value: n + 6, label: `Ting. ${String(n)}` }))
-    : DARJAH_GRADES.map((n) => ({ value: n, label: `Darjah ${String(n)}` })),
-)
+const items = TINGKATAN_GRADES.map((n) => ({ value: n + 6, label: `Ting. ${String(n)}` }))
 
 function onChange(value: unknown): void {
   if (typeof value === 'number') emit('update:modelValue', value)
@@ -34,12 +22,8 @@ function onChange(value: unknown): void {
       Tahap
     </p>
     <p class="flex items-center gap-2 text-overline text-muted" data-testid="grade-group">
-      <UIcon
-        :name="secondary ? 'i-ph-buildings' : 'i-ph-student'"
-        class="size-4"
-        aria-hidden="true"
-      />
-      {{ secondary ? 'Sekolah Menengah' : 'Sekolah Rendah' }}
+      <UIcon name="i-ph-buildings" class="size-4" aria-hidden="true" />
+      Sekolah Menengah
     </p>
     <URadioGroup
       :model-value="modelValue ?? undefined"
@@ -49,7 +33,7 @@ function onChange(value: unknown): void {
       indicator="hidden"
       orientation="horizontal"
       :ui="{
-        fieldset: secondary ? 'grid grid-cols-5 gap-2' : 'grid grid-cols-3 gap-2 sm:grid-cols-6',
+        fieldset: 'grid grid-cols-5 gap-2',
         item: 'min-h-11 items-center justify-center p-2 text-center',
         wrapper: 'w-full text-center',
         legend: 'sr-only',

@@ -1,0 +1,12 @@
+{
+  "$comment": "R11 (pp/ds-copy-glossary): live-copy exceptions. Each entry needs file (repo path), text (the banned word as written), module, ref (SRS / live reference) and reason. Starts empty.",
+  "exceptions": [
+    {
+      "file": "src/modules/m17-admin-dashboard/components/command-center-board/board-copy.ts",
+      "text": "Tiada data",
+      "module": "M17",
+      "ref": "SRS M17 FN-M17-3.3.1-3.3.6 and FN-M17-4.4.x (live copy of the empty board panels)",
+      "reason": "Live empty-panel copy kept verbatim; shown inside DsEmptyState size=sm through a title prop, so the literal sits in the copy table."
+    }
+  ]
+}

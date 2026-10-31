@@ -10,7 +10,7 @@ import { questionPoolSeed, poolSpecs } from '../../prisma/seed/questions/pool'
 import { POOL_PER_LEVEL } from '../../prisma/seed/questions/pool-content'
 import { PRIMARY_LEVELS, PRIMARY_PER_LEVEL, PRIMARY_SUBJECTS, primaryBank } from '../../prisma/seed/questions/pool-content-primary'
 import { featureModules } from '../../src/modules'
-import { MEMORY_CARDS, SOLO_INFO, SUSUN_MAX_ANSWER } from '../../src/modules/games/solo/play/solo.rules'
+import { SOLO_INFO, SUSUN_MAX_ANSWER } from '../../src/modules/games/solo/play/solo.rules'
 import { COUNT_OPTIONS, OFFERED_LEVEL_CODES } from '../../src/modules/practice/rules'
 import { GAMES_THROTTLES_LIFTED } from '../games/helpers'
 import { bootSchoolAdminApp, DEMO_PASSWORD, type SchoolAdminTestApp } from '../school-admin/helpers'
@@ -31,8 +31,9 @@ const keyText = (p: Part): string => p.options.find((o) => o.label === p.key.cor
 const primarySpecs = () => poolSpecs().filter((s) => !s.tingkatan)
 
 describe('PoC question pool at Darjah 1 to 4 (pure)', () => {
-  it('covers exactly the levels practice random offers, for pool subjects the curriculum links to every one of them', () => {
-    expect([...PRIMARY_LEVELS]).toEqual([...OFFERED_LEVEL_CODES])
+  it('is not offered by practice random any more, for pool subjects the curriculum links to every one of them', () => {
+    // Secondary-only (2026-10-29): practice random offers T4/T5, so the Darjah pool is not offered.
+    for (const l of PRIMARY_LEVELS) expect(OFFERED_LEVEL_CODES).not.toContain(l)
     for (const s of PRIMARY_SUBJECTS) for (const l of PRIMARY_LEVELS) expect(SUBJECT_LEVELS, `${s} ${l}`).toContainEqual([s, l])
   })
 
@@ -225,56 +226,44 @@ describe('PoC question pool at Darjah 1 to 4 (database and API)', () => {
     }
   }
 
-  for (const grade of [1, 4]) {
-    describe(`a Darjah ${String(grade)} pupil`, () => {
-      let p: Awaited<ReturnType<typeof pupil>>
-      beforeAll(async () => {
-        p = await pupil(grade)
-      })
-
-      it(`starts practice random with ${PRACTICE_MAX} questions in every pool subject, over D1 to D4 and at each level (201)`, async () => {
-        for (const subjectCode of PRIMARY_SUBJECTS) {
-          const any = await p.post('/api/practice/sessions', { mode: 'random', subjectCode, count: PRACTICE_MAX })
-          expect(any.status, `${subjectCode}: ${JSON.stringify(any.body)}`).toBe(201)
-          expect(any.body.data.questions).toHaveLength(PRACTICE_MAX)
-          for (const level of PRIMARY_LEVELS) {
-            const res = await p.post('/api/practice/sessions', { mode: 'random', subjectCode, count: PRACTICE_MAX, levelId: levelId.get(level) })
-            expect(res.status, `${subjectCode} ${level}: ${JSON.stringify(res.body)}`).toBe(201)
-            expect(res.body.data.questions).toHaveLength(PRACTICE_MAX)
-          }
-        }
-      })
-
-      it('lists the games and the Jutawan subjects at the pupil level, and starts a Jutawan run', async () => {
-        expect((await p.get('/api/games/hub')).status).toBe(200)
-        const page = await p.get(`/api/games/jutawan?darjah=${String(grade)}`)
-        expect(page.status).toBe(200)
-        const tiles = page.body.data.subjects as { id: string; count: number }[]
-        expect(tiles.length).toBeGreaterThanOrEqual(PRIMARY_SUBJECTS.length)
-        for (const tile of tiles) expect(tile.count).toBeGreaterThanOrEqual(PRIMARY_PER_LEVEL)
-        const run = await p.post('/api/games/jutawan/start', { subject: tiles[0]?.id, darjah: grade })
-        expect(run.status, JSON.stringify(run.body)).toBe(200)
-      })
-
-      it('starts each solo game with a full set of items drawn at the pupil level (Kad Memori: over D1 to D4)', async () => {
-        const offered = PRIMARY_LEVELS.map((l) => levelId.get(l))
-        for (const game of ['betul-salah', 'cabaran-kilat', 'tembak-jawapan', 'susun-jawapan', 'kad-memori'] as const) {
-          const res = await p.get(`/api/games/solo/${game}`)
-          expect(res.status, `${game}: ${JSON.stringify(res.body)}`).toBe(200)
-          const d = res.body.data as { sessionId: string; statements?: unknown[]; questions?: unknown[]; puzzles?: unknown[]; cards?: unknown[] }
-          const n = (d.statements ?? d.questions ?? d.puzzles ?? d.cards ?? []).length
-          expect(n, game).toBe(game === 'kad-memori' ? MEMORY_CARDS : SOLO_INFO[game].items)
-          const levels = await t.db.query<{ level: string }>(
-            `select distinct v.education_level_id::text as level from game_session_items i
-               join questions q on q.id = i.question_id
-               join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-              where i.session_id = $1::uuid`,
-            [d.sessionId],
-          )
-          const allowed = game === 'kad-memori' ? offered : [levelId.get(`D${String(grade)}`)]
-          for (const l of levels) expect(allowed, game).toContain(l.level)
-        }
-      })
+  // Secondary-only (2026-10-29): the Darjah levels are inactive, so the Darjah pool is seeded but never offered or drawn.
+  describe('the Darjah pool is hidden (secondary-only)', () => {
+    it('keeps D1 to D6 as inactive education levels and T1 to T5 active', async () => {
+      const rows = await t.db.query<{ code: string; is_active: boolean }>(`select code, is_active from education_levels order by sort_order`)
+      expect(rows.filter((r) => r.is_active).map((r) => r.code)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
+      expect(rows.filter((r) => !r.is_active).map((r) => r.code)).toEqual(['D1', 'D2', 'D3', 'D4', 'D5', 'D6'])
     })
-  }
+
+    it('a Tingkatan 4 pupil practises, and plays solo and Jutawan, on Tingkatan questions only', async () => {
+      const p = await pupil(10)
+      const levelsOf = async (ids: string[]) =>
+        (
+          await t.db.query<{ code: string }>(
+            `select distinct l.code from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+               join education_levels l on l.id = v.education_level_id where q.id = any($1::bigint[])`,
+            [ids],
+          )
+        ).map((r) => r.code)
+      for (const subjectCode of PRIMARY_SUBJECTS) {
+        const res = await p.post('/api/practice/sessions', { mode: 'random', subjectCode, count: PRACTICE_MAX })
+        expect(res.status, `${subjectCode}: ${JSON.stringify(res.body)}`).toBe(201)
+        const ids = (res.body.data.questions as { id: string }[]).map((x) => x.id)
+        for (const code of await levelsOf(ids)) expect(OFFERED_LEVEL_CODES, subjectCode).toContain(code)
+      }
+      // A Darjah level is refused on the practice start and on Jutawan.
+      const d1 = await p.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: PRACTICE_MAX, levelId: levelId.get('D1') })
+      expect(d1.status).toBe(422)
+      expect((await p.get('/api/games/jutawan?darjah=1')).status).toBe(422)
+      // Kad Memori draws over Tingkatan 1 to 5 only.
+      const res = await p.get('/api/games/solo/kad-memori')
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const used = await t.db.query<{ code: string }>(
+        `select distinct l.code from game_session_items i join questions q on q.id = i.question_id
+           join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+           join education_levels l on l.id = v.education_level_id where i.session_id = $1::uuid`,
+        [res.body.data.sessionId],
+      )
+      for (const r of used) expect(r.code).toMatch(/^T[1-5]$/)
+    })
+  })
 })

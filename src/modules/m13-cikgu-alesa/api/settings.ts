@@ -52,6 +52,9 @@ export const LEVELS: readonly { code: LevelCode; label: string }[] = [
   { code: 'T5', label: 'Tingkatan 5' },
 ]
 
+/** The levels the RPH form offers (v2: secondary only, Tingkatan 1-5). */
+export const RPH_LEVELS = LEVELS.filter((l) => l.code.startsWith('T'))
+
 export const LEVEL_CODES: readonly LevelCode[] = LEVELS.map((l) => l.code)
 
 export function levelLabelOf(code: string): string {

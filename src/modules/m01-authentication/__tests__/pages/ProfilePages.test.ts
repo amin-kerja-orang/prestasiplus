@@ -163,10 +163,11 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     expect(checkedGrade(w)[0]?.attributes('value')).toBe('10')
   })
 
-  it('shows Darjah 1-6 for a null grade and for grade 1-6', async () => {
+  it('shows Ting. 1-5 only (no Darjah) for a null grade', async () => {
     const w = await render(ProfileEditPage, { ...USER, role: 'admin', grade: null })
-    expect(w.get('[data-testid=grade-picker]').text()).toContain('Sekolah Rendah')
-    expect(w.findAll('[data-testid=grade-picker] [role=radio]')).toHaveLength(6)
+    expect(w.get('[data-testid=grade-picker]').text()).not.toContain('Darjah')
+    expect(w.get('[data-testid=grade-picker]').text()).not.toContain('Sekolah Rendah')
+    expect(w.findAll('[data-testid=grade-picker] [role=radio]')).toHaveLength(5)
     expect(checkedGrade(w)).toHaveLength(0)
   })
 

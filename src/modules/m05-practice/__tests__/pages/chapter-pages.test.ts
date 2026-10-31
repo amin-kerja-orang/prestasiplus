@@ -2,6 +2,7 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
+import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
@@ -128,7 +129,9 @@ async function render(component: unknown, url: string): Promise<VueWrapper> {
     ],
   })
   await router.push(url)
-  wrapper = mount(component as never, { global: { plugins: [router], stubs: { teleport: true } } })
+  wrapper = mount(component as never, {
+    global: { plugins: [router, createPinia()], stubs: { teleport: true } },
+  })
   await flushPromises()
   return wrapper
 }
@@ -250,6 +253,15 @@ describe('S4 ChapterIndexPage', () => {
     expect(math.find('[data-testid=chapter-subject-icon]').find('svg, span').exists()).toBe(true)
   })
 
+  it('shows an empty state, not a blank page, when no subject is offered (D72)', async () => {
+    api.fetchChapterSubjects.mockResolvedValue({ data: [], meta: {} })
+    const w = await render(ChapterIndexPage, '/practice/chapter')
+    expect(t(w, 'chapter-subjects-empty').text()).toContain(
+      'Tiada subjek bab tersedia untuk tahap ini.',
+    )
+    expect(w.find('[data-testid=chapter-subject-grid]').exists()).toBe(false)
+  })
+
   it('shows an error box with a retry when the list fails', async () => {
     api.fetchChapterSubjects.mockRejectedValueOnce(
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' }),
@@ -294,11 +306,13 @@ describe('S5 ChapterSubjectPage', () => {
       ['15 soalan', '/practice/chapter/MATH/1/quiz?count=15'],
       ['20 soalan', '/practice/chapter/MATH/1/quiz?count=20'],
     ])
-    expect(Number(t(w, 'chapter-bar-1').get('[role=progressbar]').attributes('aria-valuenow'))).toBeCloseTo(3.879, 2)
+    expect(
+      Number(t(w, 'chapter-bar-1').get('[role=progressbar]').attributes('aria-valuenow')),
+    ).toBeCloseTo(3.879, 2)
 
     const locked = t(w, 'chapter-card-2')
     expect(locked.attributes('data-state')).toBe('locked')
-        expect(locked.find('svg').exists()).toBe(true)
+    expect(locked.find('svg').exists()).toBe(true)
     expect(t(w, 'chapter-locked-2').text()).toBe('Kunci bab sebelumnya')
     expect(locked.findAll('a')).toHaveLength(0)
     // Locked chapters still show their stats (D-7).

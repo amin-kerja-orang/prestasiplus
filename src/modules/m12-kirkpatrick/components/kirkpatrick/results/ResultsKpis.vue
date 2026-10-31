@@ -16,7 +16,7 @@ const props = defineProps<{ kpi: Results['kpi'] }>()
 const gpsCaption = computed(() =>
   props.kpi.gpsYear === null
     ? `${plain(props.kpi.recordsLabel)} rekod`
-    : `${plain(props.kpi.recordsLabel)} rekod · ${plain(props.kpi.gpsYear)}`,
+    : `${plain(props.kpi.recordsLabel)} rekod · ${props.kpi.gpsYear}`,
 )
 const passCaption = computed(() =>
   props.kpi.pass === null

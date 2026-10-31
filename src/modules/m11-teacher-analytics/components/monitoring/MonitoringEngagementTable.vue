@@ -8,7 +8,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { DsDataTable } from '@/ds'
+import { DsBadge, DsDataTable, DsPanel, DsProgress } from '@/ds'
 
 import type { SchoolEngagementRow, TahapKey, TeacherEngagementRow } from '../../api/types'
 import { count, pct, TAHAP, type UiColor } from './monitoring-format'
@@ -25,6 +25,11 @@ const pageSize = ref(20)
 const PAGE_SIZES = [10, 20, 50]
 
 const tahapStyle = (t: TahapKey) => TAHAP[t]
+/** DsProgress has no neutral tone; the empty bar is not drawn, so the fallback is never seen. */
+const barTone = (t: TahapKey) => {
+  const c = TAHAP[t].color
+  return c === 'success' || c === 'warning' || c === 'error' ? c : 'primary'
+}
 const isStudent = computed(() => props.kind === 'student')
 const sectionId = computed(() => (isStudent.value ? 'section-pelajar' : 'section-guru'))
 const title = computed(() =>
@@ -58,159 +63,132 @@ const LEGEND: readonly [UiColor, string][] = [
 
 <template>
   <section :id="sectionId" class="flex flex-col gap-6" :data-testid="`mon-table-${kind}`">
-    <div class="flex flex-wrap items-end justify-between gap-3">
-      <div class="flex min-w-0 flex-col gap-1">
-        <h2 class="flex items-center gap-2 text-heading text-highlighted">
-          <UIcon
-            :name="isStudent ? 'i-ph-chart-bar' : 'i-ph-chalkboard-teacher'"
-            class="size-6 text-primary-t"
-          />{{ title }}
-        </h2>
-        <p class="text-body text-muted">
-          Mengikut sekolah — disusun mengikut % penglibatan tertinggi
-        </p>
-      </div>
-      <UBadge
-        color="neutral"
-        variant="subtle"
-        size="lg"
-        class="tabular"
-        data-testid="mon-table-count"
-        :label="`${count(rows.length)} sekolah`"
-      />
-    </div>
-
-    <DsDataTable
-      v-model:page-size="pageSize"
-      variant="bare"
-      :page-size-options="PAGE_SIZES"
-      :data="data"
-      :columns="columns"
-      :caption="title"
-      empty-title="Tiada data"
+    <DsPanel
+      :title="title"
+      description="Mengikut sekolah — disusun mengikut % penglibatan tertinggi"
+      :icon="isStudent ? 'chart-bar' : 'chalkboard-teacher'"
+      accent="action"
     >
-      <template #no-cell="{ row }">
-        <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
-      </template>
-      <template #name-cell="{ row }">
-        <div
-          class="flex min-w-48 flex-col gap-1"
-          data-testid="mon-table-row"
-          :data-school-id="row.original.schoolId"
-        >
-          <RouterLink
-            :to="paths.school(row.original.schoolId)"
-            class="line-clamp-2 text-label text-primary-t"
-            data-testid="mon-school-link"
-            >{{ row.original.name }}</RouterLink
-          >
-          <span class="text-body text-muted"
-            >{{ row.original.code ?? '-' }} · {{ row.original.state }}</span
-          >
-        </div>
-      </template>
-      <template #registered-cell="{ row }">
-        <span class="tabular">{{ count(row.original.registered) }}</span>
-      </template>
-      <template #active-cell="{ row }">
-        <span class="tabular">{{ count(active(row.original)) }}</span>
-      </template>
-      <template #pct-cell="{ row }">
-        <span :class="['tabular text-label', tahapStyle(row.original.tahap).text]">{{
-          pct(row.original.pct)
-        }}</span>
-      </template>
-      <template #tahap-cell="{ row }">
-        <UBadge
-          :color="tahapStyle(row.original.tahap).color"
-          variant="subtle"
-          size="lg"
-          class="whitespace-nowrap"
-          :label="row.original.tahap"
+      <template #actions>
+        <DsBadge
+          tone="neutral"
+          class="tabular"
+          data-testid="mon-table-count"
+          :label="`${count(rows.length)} sekolah`"
         />
       </template>
-      <template #bar-cell="{ row }">
-        <span v-if="tahapStyle(row.original.tahap).bar === 'empty'" class="text-body text-muted"
-          >0%</span
-        >
-        <UProgress
-          v-else
-          class="min-w-32"
-          :model-value="Math.max(row.original.pct, 3)"
-          :color="tahapStyle(row.original.tahap).color"
-          size="md"
-        />
-      </template>
-      <template #card="{ row }">
-        <div class="flex flex-col gap-3">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex min-w-0 flex-col gap-1">
-              <RouterLink
-                :to="paths.school((row as Row).schoolId)"
-                class="line-clamp-2 text-label text-primary-t"
-                data-testid="mon-school-link"
-                >{{ (row as Row).name }}</RouterLink
-              >
-              <span class="text-body text-muted"
-                >{{ (row as Row).code ?? '-' }} · {{ (row as Row).state }}</span
-              >
+      <DsDataTable
+        v-model:page-size="pageSize"
+        variant="bare"
+        :page-size-options="PAGE_SIZES"
+        :data="data"
+        :columns="columns"
+        :caption="title"
+        empty-title="Tiada data"
+      >
+        <template #no-cell="{ row }">
+          <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
+        </template>
+        <template #name-cell="{ row }">
+          <div
+            class="flex max-w-72 min-w-40 flex-col gap-1 whitespace-normal"
+            data-testid="mon-table-row"
+            :data-school-id="row.original.schoolId"
+          >
+            <RouterLink
+              :to="paths.school(row.original.schoolId)"
+              class="line-clamp-2 text-label text-primary-t"
+              data-testid="mon-school-link"
+              >{{ row.original.name }}</RouterLink
+            >
+            <span class="text-body text-muted"
+              >{{ row.original.code ?? '-' }} · {{ row.original.state }}</span
+            >
+          </div>
+        </template>
+        <template #registered-cell="{ row }">
+          <span class="tabular">{{ count(row.original.registered) }}</span>
+        </template>
+        <template #active-cell="{ row }">
+          <span class="tabular">{{ count(active(row.original)) }}</span>
+        </template>
+        <template #pct-cell="{ row }">
+          <span :class="['tabular text-label', tahapStyle(row.original.tahap).text]">{{
+            pct(row.original.pct)
+          }}</span>
+        </template>
+        <template #tahap-cell="{ row }">
+          <DsBadge :tone="tahapStyle(row.original.tahap).color" :label="row.original.tahap" />
+        </template>
+        <template #bar-cell="{ row }">
+          <span v-if="tahapStyle(row.original.tahap).bar === 'empty'" class="text-body text-muted"
+            >0%</span
+          >
+          <DsProgress
+            v-else
+            :value="Math.max(row.original.pct, 3)"
+            :tone="barTone(row.original.tahap)"
+            :show-value="false"
+            :aria-label="pct(row.original.pct)"
+          />
+        </template>
+        <template #card="{ row }">
+          <div class="flex flex-col gap-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 flex-col gap-1">
+                <RouterLink
+                  :to="paths.school((row as Row).schoolId)"
+                  class="line-clamp-2 text-label text-primary-t"
+                  data-testid="mon-school-link"
+                  >{{ (row as Row).name }}</RouterLink
+                >
+                <span class="text-body text-muted"
+                  >{{ (row as Row).code ?? '-' }} · {{ (row as Row).state }}</span
+                >
+              </div>
+              <DsBadge :tone="tahapStyle((row as Row).tahap).color" :label="(row as Row).tahap" />
             </div>
-            <UBadge
-              :color="tahapStyle((row as Row).tahap).color"
-              variant="subtle"
-              size="lg"
-              class="whitespace-nowrap"
-              :label="(row as Row).tahap"
+            <dl class="grid grid-cols-3 gap-3 text-body">
+              <div>
+                <dt class="text-muted">Daftar</dt>
+                <dd class="tabular text-label">{{ count((row as Row).registered) }}</dd>
+              </div>
+              <div>
+                <dt class="text-muted">{{ activeLabel }}</dt>
+                <dd class="tabular text-label">{{ count(active(row as Row)) }}</dd>
+              </div>
+              <div>
+                <dt class="text-muted">%</dt>
+                <dd :class="['tabular text-label', tahapStyle((row as Row).tahap).text]">
+                  {{ pct((row as Row).pct) }}
+                </dd>
+              </div>
+            </dl>
+            <DsProgress
+              v-if="tahapStyle((row as Row).tahap).bar !== 'empty'"
+              :value="Math.max((row as Row).pct, 3)"
+              :tone="barTone((row as Row).tahap)"
+              :show-value="false"
+              :aria-label="pct((row as Row).pct)"
             />
           </div>
-          <dl class="grid grid-cols-3 gap-3 text-body">
-            <div>
-              <dt class="text-muted">Daftar</dt>
-              <dd class="tabular text-label">{{ count((row as Row).registered) }}</dd>
-            </div>
-            <div>
-              <dt class="text-muted">{{ activeLabel }}</dt>
-              <dd class="tabular text-label">{{ count(active(row as Row)) }}</dd>
-            </div>
-            <div>
-              <dt class="text-muted">%</dt>
-              <dd :class="['tabular text-label', tahapStyle((row as Row).tahap).text]">
-                {{ pct((row as Row).pct) }}
-              </dd>
-            </div>
-          </dl>
-          <UProgress
-            v-if="tahapStyle((row as Row).tahap).bar !== 'empty'"
-            :model-value="Math.max((row as Row).pct, 3)"
-            :color="tahapStyle((row as Row).tahap).color"
-            size="md"
-          />
-        </div>
-      </template>
-    </DsDataTable>
+        </template>
+      </DsDataTable>
+    </DsPanel>
 
-    <UCard data-testid="mon-legend"
+    <DsPanel data-testid="mon-legend"
       ><details>
         <summary class="cursor-pointer text-label text-highlighted">Legenda</summary>
         <p class="mt-4 flex flex-wrap items-center gap-2 text-body text-muted">
-          <UBadge
+          <DsBadge
             v-for="[color, label] in LEGEND"
             :key="label"
-            :color="color"
-            variant="subtle"
-            size="lg"
-            icon="i-ph-circle-fill"
+            :tone="color"
+           
             :label="label"
           />
-          <UBadge
-            v-if="!isStudent"
-            color="neutral"
-            variant="subtle"
-            size="lg"
-            icon="i-ph-circle"
-            label="Tiada Guru (0 daftar)"
-          />
+          <DsBadge v-if="!isStudent" tone="neutral" label="Tiada Guru (0 daftar)" />
         </p></details
-    ></UCard>
+    ></DsPanel>
   </section>
 </template>

@@ -42,6 +42,8 @@ export const CACHE_TTL_MS = 60_000
  * always 0..3 (`ARENA_OPTIONS`, `projection.ts` `correctAnswer`). A 5 to 8 option question never enters a battle draw or count.
  */
 const BATTLE_POOL = { type: 'mcq', ungrouped: true, mcqShape: { minOptions: 2, maxOptions: 4 } } as const satisfies QuestionFilter
+/** Secondary-only (2026-10-29): grades 1..6 (Darjah) are hidden from opponent search and the bot pick; no grade stays visible. */
+const isSecondaryGrade = (grade: number | null): boolean => grade === null || grade >= 7
 /** Rows read by the name search before the active / not-suspended filter (the caller sees at most `limit`). */
 const SEARCH_OVER_READ = 40
 const ARENA_OPTIONS = 4
@@ -175,7 +177,7 @@ export class BattleDeps {
     )
     const kept = rows.filter(
       (u) =>
-        this.isActiveStudent(u) &&
+        this.isActiveStudent(u) && isSecondaryGrade(u.grade) &&
         (filter.grade === undefined || u.grade === filter.grade) &&
         (filter.notSchoolId === undefined || (u.schoolId !== null && u.schoolId !== filter.notSchoolId)) &&
         !(filter.excludeIds?.has(u.id) ?? false),
@@ -192,7 +194,7 @@ export class BattleDeps {
     const everyone = { auth: { active: { scope: { level: 'national' } } } as unknown as AuthContext, userId: excludeId, role: 'admin', schoolId: null, isAdmin: true, requestId: null, ip: null } satisfies Caller
     const found = await this.users.searchStudentsByName(everyone, q, limit + SEARCH_OVER_READ)
     const full = await this.users.getMany(found.filter((r) => r.id !== excludeId).map((r) => r.id))
-    const kept = full.filter((u) => this.isActiveStudent(u))
+    const kept = full.filter((u) => this.isActiveStudent(u) && isSecondaryGrade(u.grade)) // secondary-only (2026-10-29)
     kept.sort((a, b) => a.name.localeCompare(b.name, 'ms') || (BigInt(a.id) < BigInt(b.id) ? -1 : 1))
     return this.toStudents(kept.slice(0, limit))
   }

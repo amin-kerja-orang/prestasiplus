@@ -12,7 +12,10 @@ import type {
   Topic,
 } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
-import { byOrderThenId, chapterOrder, compareIds, topicOrder } from './rules'
+import { byOrderThenId, chapterOrder, compareIds, MAP_GRADES, topicOrder } from './rules'
+
+/** The learner catalogue (topics, learning map) is Tingkatan 4 and 5 only (secondary-only, D72); a topic of any other grade is never read. */
+const LEARNER_TOPIC_GRADES: string[] = [...MAP_GRADES]
 
 export type { Chapter, CurriculumNode, CurriculumTpDescriptor, EducationLevel, LegacySubtopic, LegacyTopic, Subject, Subtopic, Topic }
 
@@ -92,10 +95,16 @@ export class CurriculumRepository {
 
   // --- levels -----------------------------------------------------------------------------------
 
-  /** Levels in BR-08 order; `{ active: true }` is the `/education-levels` set (BR-11). */
-  async levels(filter: { active?: boolean } = {}): Promise<EducationLevel[]> {
+  /**
+   * Levels in BR-08 order. Secondary-only (2026-10-29): primary levels (stage `primary`, D1-D6) are never returned.
+   * The default is the ACTIVE set (BR-11, the `/education-levels` set); the admin Kurikulum screens and name lookups
+   * of existing questions pass `{ includeInactive: true }` (every non-primary level, so a Tingkatan can be re-activated);
+   * `{ active: false }` returns only the inactive non-primary ones.
+   */
+  async levels(filter: { active?: boolean; includeInactive?: boolean } = {}): Promise<EducationLevel[]> {
+    const active = filter.active ?? (filter.includeInactive ? undefined : true)
     const rows = await this.db.educationLevel.findMany({
-      where: filter.active === undefined ? {} : { isActive: filter.active },
+      where: { stage: { not: 'primary' }, ...(active === undefined ? {} : { isActive: active }) },
     })
     return rows.sort(byOrderThenId)
   }
@@ -106,7 +115,7 @@ export class CurriculumRepository {
 
   /** BR-17: the level whose `grade` is `grade` (1 to 11), if any. */
   async levelForGrade(grade: number): Promise<EducationLevel | null> {
-    const rows = await this.db.educationLevel.findMany({ where: { grade } })
+    const rows = await this.db.educationLevel.findMany({ where: { grade, isActive: true, stage: { not: 'primary' } } })
     return rows.sort(byOrderThenId)[0] ?? null
   }
 
@@ -167,6 +176,7 @@ export class CurriculumRepository {
   /** Level ids per subject, in level order (BR-08), for every subject. */
   private async levelIdsBySubject(): Promise<Map<bigint, bigint[]>> {
     const links = await this.db.subjectLevel.findMany({
+      where: { educationLevel: { stage: { not: 'primary' } } }, // primary levels are hidden from every read
       select: { subjectId: true, educationLevelId: true, educationLevel: { select: { sortOrder: true } } },
     })
     const sorted = links.sort(
@@ -184,7 +194,7 @@ export class CurriculumRepository {
 
   private async levelIdsOf(subjectId: bigint): Promise<bigint[]> {
     const links = await this.db.subjectLevel.findMany({
-      where: { subjectId },
+      where: { subjectId, educationLevel: { stage: { not: 'primary' } } },
       select: { educationLevelId: true, educationLevel: { select: { sortOrder: true } } },
     })
     return links
@@ -223,7 +233,8 @@ export class CurriculumRepository {
 
   /** Replaces the level links of a subject (the ticked set, FR-55). */
   private async setLinks(subjectId: bigint, levelIds: readonly bigint[]): Promise<void> {
-    await this.db.subjectLevel.deleteMany({ where: { subjectId } })
+    // Only the links to non-primary levels are replaced: the hidden Darjah links (secondary-only, 2026-10-29) are kept.
+    await this.db.subjectLevel.deleteMany({ where: { subjectId, educationLevel: { stage: { not: 'primary' } } } })
     const unique = [...new Set(levelIds)]
     if (unique.length > 0) {
       await this.db.subjectLevel.createMany({
@@ -488,7 +499,8 @@ export class CurriculumRepository {
   async legacyTopics(filter: { gradeLevel?: string | null; subject?: string | null } = {}): Promise<LegacyTopic[]> {
     const rows = await this.db.legacyTopic.findMany({
       where: {
-        ...(filter.gradeLevel ? { gradeLevel: filter.gradeLevel.toUpperCase() } : {}),
+        // An allow-list, not a prefix test: no grade asked still means T4/T5 only; a grade outside it matches nothing.
+        AND: [{ gradeLevel: { in: LEARNER_TOPIC_GRADES } }, ...(filter.gradeLevel ? [{ gradeLevel: filter.gradeLevel.toUpperCase() }] : [])],
         ...(filter.subject ? { subject: filter.subject.toUpperCase() } : {}),
       },
     })
@@ -496,7 +508,7 @@ export class CurriculumRepository {
   }
 
   legacyTopic(id: bigint): Promise<LegacyTopic | null> {
-    return this.db.legacyTopic.findUnique({ where: { id } })
+    return this.db.legacyTopic.findFirst({ where: { id, gradeLevel: { in: LEARNER_TOPIC_GRADES } } })
   }
 
   /** Subtopics per learner topic id, ordered by `sortOrder` then id. */

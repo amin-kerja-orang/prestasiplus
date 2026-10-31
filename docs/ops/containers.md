@@ -42,6 +42,7 @@ Set them in `.env` or on the command line. All `VITE_*` values are baked into th
 | `VITE_API_MODE` | `mock` | `mock` = in-browser mock API (prototype). `http` = real backend. |
 | `VITE_TEST_HOOKS` | `false` | Must stay `false` for any shipped image. |
 | `VITE_PROTOTYPE_SCOPE` | `on` | Prototype scope switch. |
+| `VITE_ALESA_AI` | `off` | Shows every ALESA / Cikgu Alesa AI surface (panels, menus, `/cikgu/*`, SPM Walkthrough) when `on`. Hidden by default (D73). |
 | `VITE_MOCK_LATENCY_MS` | `400` | Simulated mock latency. |
 | `VITE_API_BASE_URL` | empty | API origin for `http` mode. Empty = same origin (`/api`). |
 

@@ -558,7 +558,9 @@ export class GamificationRepository {
       SELECT vw.user_id AS "userId", u.name, u.school_id AS "schoolId", t.tier_name AS "tierKey", t.label_ms AS "tierLabel", t.icon AS "tierIcon", t.color AS "tierColor",
              vw.level::int AS level, vw.shown_total AS total
         FROM vw JOIN users u ON u.id = vw.user_id LEFT JOIN tiers t ON t.id = vw.tier_id
+        LEFT JOIN schools hs ON hs.id = u.school_id
        WHERE EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = vw.user_id AND ur.role = 'student')
+         AND (u.grade IS NULL OR u.grade >= 7) AND (hs.type IS NULL OR hs.type NOT IN ('SK', 'SJK(C)', 'SJK(T)'))
        ORDER BY vw.shown_total DESC, vw.created_at ASC, vw.id ASC
        LIMIT ${limit}`
     return rows.map((r) => ({

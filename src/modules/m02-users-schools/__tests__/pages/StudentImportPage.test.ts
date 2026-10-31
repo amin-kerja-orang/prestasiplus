@@ -31,7 +31,6 @@ const SMK: SchoolSummary = {
   city: null,
 }
 const SK: SchoolSummary = { ...SMK, id: 940, name: 'SEKOLAH KEBANGSAAN CONTOH', type: 'SK' }
-const SJKC: SchoolSummary = { ...SMK, id: 555, name: 'SJK CINA CONTOH', type: 'SJK(C)' }
 
 const AVAILABLE: SchoolQuota = { hasSubscription: true, quota: 1000, used: 2, remaining: 998 }
 const FULL: SchoolQuota = { hasSubscription: true, quota: 415, used: 423, remaining: 0 }
@@ -91,16 +90,17 @@ afterEach(() => {
 })
 
 describe('StudentImportPage (M02 S5) content', () => {
-  it('shows the hero, both class groups, the paste placeholder and help, the notes and "Kembali" to /admin', async () => {
+  it('shows the hero, the Tingkatan class group only, the paste placeholder and help, the notes and "Kembali" to /admin', async () => {
     const w = await render()
     expect(w.text()).toContain('Import Pelajar via ID Delima')
     expect(w.text()).toContain(
-      'Import pelajar dari Darjah 1 hingga Tingkatan 5 menggunakan ID Delima KPM.',
+      'Import pelajar dari Tingkatan 1 hingga Tingkatan 5 menggunakan ID Delima KPM.',
     )
     expect(w.text()).toContain('Borang Import Pelajar')
-    expect(w.text()).toContain('Sekolah Rendah')
+    expect(w.text()).not.toContain('Sekolah Rendah')
+    expect(w.text()).not.toContain('Darjah')
     expect(w.text()).toContain('Sekolah Menengah')
-    expect(w.findAll('[data-testid=student-classes] button[role=radio]')).toHaveLength(11)
+    expect(w.findAll('[data-testid=student-classes] button[role=radio]')).toHaveLength(5)
     expect(t(w, 'import-paste').attributes('placeholder')).toContain(
       'Paste data dari DELIMa (3-4 baris per pelajar):',
     )
@@ -241,42 +241,35 @@ describe('StudentImportPage (M02 S5) existing students', () => {
     expect(w.find('[data-testid=existing-cap]').exists()).toBe(false)
   })
 
-  it('a primary school filters D1–D6', async () => {
+  it('the existing-students class filter is T1–T5 even for a primary-type school', async () => {
     const w = await render()
     await pickSchool(w, SK)
     await t(w, 'existing-toggle').trigger('click')
     await flushPromises()
     expect(w.findAll('[data-testid=existing-class] option').map((o) => o.text())).toEqual([
       'Semua Kelas',
-      'D1',
-      'D2',
-      'D3',
-      'D4',
-      'D5',
-      'D6',
+      'T1',
+      'T2',
+      'T3',
+      'T4',
+      'T5',
     ])
   })
 })
 
 describe('StudentImportPage (M02 S5) class cards', () => {
-  it('SK and SJK show Darjah only, SMK Tingkatan only; a hidden checked card is unchecked', async () => {
+  it('offers Tingkatan only for every school type; a Tingkatan pick survives a school change', async () => {
     const w = await render()
+    expect(w.findAll('[data-testid=student-classes] button[role=radio]')).toHaveLength(5)
     await w.get('button[role=radio][value=T3]').trigger('click')
     await pickSchool(w, SK)
-    expect(w.find('[data-testid=class-group-secondary]').exists()).toBe(false)
-    expect(w.findAll('[data-testid=student-classes] button[role=radio]')).toHaveLength(6)
-    await w.get('button[role=radio][value=D2]').trigger('click')
-    await t(w, 'admin-school-clear').trigger('click')
-    expect(w.findAll('[data-testid=student-classes] button[role=radio]')).toHaveLength(11)
-    expect(w.get('button[role=radio][value=D2]').attributes('aria-checked')).toBe('true')
-    await pickSchool(w, SMK)
     expect(w.find('[data-testid=class-group-primary]').exists()).toBe(false)
     expect(w.findAll('[data-testid=student-classes] button[role=radio]')).toHaveLength(5)
-    expect(w.text()).toContain('Tingkatan 5')
+    expect(w.get('button[role=radio][value=T3]').attributes('aria-checked')).toBe('true')
     await t(w, 'admin-school-clear').trigger('click')
-    await pickSchool(w, SJKC)
-    expect(w.find('[data-testid=class-group-secondary]').exists()).toBe(false)
-    expect(w.text()).toContain('Darjah 6')
+    await pickSchool(w, SMK)
+    expect(w.text()).toContain('Tingkatan 5')
+    expect(w.text()).not.toContain('Darjah')
   })
 })
 

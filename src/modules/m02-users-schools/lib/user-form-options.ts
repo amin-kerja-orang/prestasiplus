@@ -55,12 +55,6 @@ export interface GradeOption {
   label: string
 }
 
-/** FR-M02-23: Darjah 1-6 = grade 1-6. */
-export const PRIMARY_GRADES: readonly GradeOption[] = [1, 2, 3, 4, 5, 6].map((n) => ({
-  value: n,
-  label: `Darjah ${String(n)}`,
-}))
-
 /** FR-M02-23: Ting. 1-5 = grade 7-11. */
 export const SECONDARY_GRADES: readonly GradeOption[] = [7, 8, 9, 10, 11].map((n) => ({
   value: n,

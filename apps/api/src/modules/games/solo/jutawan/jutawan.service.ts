@@ -53,6 +53,7 @@ function parseDarjah(raw: unknown): number | undefined {
   if (raw === undefined || raw === '') return undefined
   const r = GamesJutawanQuerySchema.safeParse({ darjah: raw })
   if (!r.success) throw levelInvalid()
+  if (r.data.darjah !== undefined && r.data.darjah < 7) throw levelInvalid() // secondary-only (2026-10-29)
   return r.data.darjah
 }
 
@@ -115,7 +116,7 @@ export class JutawanService {
   async start(caller: GamesCaller, body: unknown): Promise<Record<string, unknown>> {
     const b = objectOf(body)
     const darjah = b['darjah']
-    if (!isInt(darjah) || darjah < 1 || darjah > 11) throw levelInvalid('darjah')
+    if (!isInt(darjah) || darjah < 7 || darjah > 11) throw levelInvalid('darjah')
     const subjectRaw = b['subject']
     if (typeof subjectRaw !== 'string' || !isIdString(subjectRaw)) throw jutawanSubjectInvalid()
     const subject = await this.curriculum.subject(idFromString(subjectRaw))

@@ -141,7 +141,7 @@ describe('S12 HeadcountListPage', () => {
     const submit = body('auto-setup-submit') as HTMLButtonElement
     expect(
       document.body.querySelectorAll('[data-testid=auto-setup-modal] [role=checkbox]'),
-    ).toHaveLength(11)
+    ).toHaveLength(5)
     expect(submit.disabled).toBe(true)
     expect(submit.textContent?.trim()).toBe('Auto-Setup')
 
@@ -149,16 +149,16 @@ describe('S12 HeadcountListPage', () => {
       ;(body(id) as HTMLElement).click()
       await flushPromises()
     }
-    await tick('level-D5')
     await tick('level-T2')
+    await tick('level-T5')
     expect(submit.disabled).toBe(false)
     expect(submit.textContent?.replace(/\s+/g, ' ').trim()).toBe('Auto-Setup (2)')
-    expect(box(body('level-D5'))?.getAttribute('aria-checked')).toBe('true')
+    expect(box(body('level-T5'))?.getAttribute('aria-checked')).toBe('true')
     expect(box(body('level-T2'))?.getAttribute('aria-checked')).toBe('true')
 
     submit.click()
     await flushPromises()
-    expect(api.autoSetupHeadcounts.mock.calls[0]?.[0]).toEqual({ levels: [5, 'T2'] })
+    expect(api.autoSetupHeadcounts.mock.calls[0]?.[0]).toEqual({ levels: ['T2', 'T5'] })
     expect(body('auto-setup-modal')).toBeNull()
     expect(api.fetchHeadcounts).toHaveBeenCalledTimes(2)
   })
@@ -168,7 +168,7 @@ describe('S12 HeadcountListPage', () => {
     const w = await render(HeadcountListPage, '/headcount')
     await t(w, 'hero-auto-setup').trigger('click')
     await flushPromises()
-    ;(body('level-D5') as HTMLElement).click()
+    ;(body('level-T5') as HTMLElement).click()
     await flushPromises()
     const alertText = () => body('auto-setup-modal')?.textContent ?? ''
     const submitWith = async (error: ApiError) => {

@@ -83,7 +83,7 @@ describe('DsFormField', () => {
 })
 
 describe('DsNativeSelect', () => {
-  it('is a 44px radius-sm select with a blank Pilih option', async () => {
+  it('renders a themed listbox over a hidden native select with a blank Pilih option', async () => {
     const w = mount(DsNativeSelect, {
       props: {
         modelValue: '',
@@ -96,7 +96,9 @@ describe('DsNativeSelect', () => {
       },
     })
     const sel = w.get('select')
-    expect(sel.classes()).toEqual(expect.arrayContaining(['min-h-11', 'rounded-chip']))
+    // The visible control is a themed listbox trigger; the native select stays as the form control.
+    expect(w.get('[role=combobox]').classes()).toContain('w-full')
+    expect(sel.classes()).toContain('sr-only')
     expect(sel.attributes('required')).toBeDefined()
     const opts = w.findAll('option')
     expect(opts.map((o) => o.text())).toEqual(['Pilih', 'Satu', 'Dua'])

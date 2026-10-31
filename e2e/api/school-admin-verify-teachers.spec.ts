@@ -186,7 +186,7 @@ test.describe('school admin verifies self-registered teachers @api', () => {
     await expect(page.getByTestId('pt-heading')).toHaveText('Guru Menunggu Pengesahan')
     await expect(page.getByTestId('pt-heading')).toHaveJSProperty('tagName', 'H1')
     await expect(page.locator('h1')).toHaveCount(1)
-    await expect(page).toHaveTitle('Guru Menunggu Pengesahan - PRESTASIPLUS')
+    await expect(page).toHaveTitle('Guru Menunggu Pengesahan | PRESTASIPLUS')
     await expect(page.getByTestId('pt-back')).toHaveText('Senarai Guru')
     await expect(page.getByTestId('pt-count-card')).toContainText(String(remaining))
     await expect(page.getByTestId('pt-count-card')).toContainText('Menunggu Pengesahan')

@@ -17,7 +17,7 @@ import m02 from '@/modules/m02-users-schools/mock'
 import m03 from '@/modules/m03-curriculum/mock'
 import m14 from '@/modules/m14-gamification/mock'
 
-import m09, { articles, audioKbat, banners, notes, support } from '../../mock'
+import m09, { articles, audioKbat, banners, notes, showPrimaryContent, support } from '../../mock'
 
 class MemoryStorage {
   private readonly items = new Map<string, string>()
@@ -66,6 +66,9 @@ type Json = any
 let runtime: MockRuntime
 
 beforeAll(async () => {
+  // These tests assert the observed live fixtures (72 articles, 10 notes); the hiding of Darjah content
+  // (D72) is covered by secondary-only.test.ts.
+  showPrimaryContent()
   vi.stubGlobal('localStorage', new MemoryStorage())
   runtime = await bootMock({
     mode: 'test',

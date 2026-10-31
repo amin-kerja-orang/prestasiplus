@@ -14,7 +14,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsFormSection, DsPage, DsPageHeader } from '@/ds'
+import { DsBackLink, DsFormSection, DsPage } from '@/ds'
 
 import {
   createLevel,
@@ -125,23 +125,12 @@ async function submit(): Promise<void> {
 }
 </script>
 <template>
-  <DsPage data-testid="level-form-page">
-    <DsPageHeader
-      :title="editing ? 'Edit Tahap Pendidikan' : 'Tambah Tahap Pendidikan'"
-      :subtitle="editing ? 'Kemaskini maklumat tahap.' : 'Daftarkan tahap pendidikan baharu.'"
-    >
-      <template #actions>
-        <UButton
-          :to="LEVELS_LIST_PATH"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          data-testid="level-back"
-        >
-          Kembali ke Senarai
-        </UButton>
-      </template>
-    </DsPageHeader>
+  <DsPage
+    :title="editing ? 'Edit Tahap Pendidikan' : 'Tambah Tahap Pendidikan'"
+    :subtitle="editing ? 'Kemaskini maklumat tahap.' : 'Daftarkan tahap pendidikan baharu.'"
+    data-testid="level-form-page"
+  >
+    <DsBackLink :to="LEVELS_LIST_PATH" label="Kembali ke Senarai" data-testid="level-back" />
 
     <DsLoadError
       v-if="failed"
@@ -189,7 +178,7 @@ async function submit(): Promise<void> {
             type="text"
             name="name"
             required
-            placeholder="cth: Tahun 1"
+            placeholder="cth: Tingkatan 1"
             class="w-full"
             data-testid="level-name"
           />
@@ -202,7 +191,7 @@ async function submit(): Promise<void> {
             type="text"
             name="nameEn"
             required
-            placeholder="e.g: Year 1"
+            placeholder="e.g: Form 1"
             class="w-full"
             data-testid="level-name-en"
           />
@@ -223,7 +212,7 @@ async function submit(): Promise<void> {
             name="code"
             required
             maxlength="10"
-            placeholder="cth: Y1"
+            placeholder="cth: T1"
             class="w-full"
             data-testid="level-code"
           />

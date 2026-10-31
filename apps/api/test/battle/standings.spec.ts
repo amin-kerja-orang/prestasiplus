@@ -17,6 +17,9 @@ describe('battle standings (M16-18, M16-19)', () => {
 
   beforeAll(async () => {
     t = await bootStandings(NOW)
+    // The fixtures fight with the SK Demo Dua/Tiga/Empat pupils; they are treated as secondary here (primary ones are hidden, see the last test).
+    await t.db.query(`update schools set type = 'SMK' where code in ('DEMO002', 'DEMO003', 'DEMO004')`)
+    await t.db.query(`update users set grade = least(grade + 6, 11) where grade <= 6 and school_id in (select id from schools where code in ('DEMO002', 'DEMO003', 'DEMO004'))`)
     me = await t.login(S.ADMIN) // full names and ids (the masking is covered in privacy.spec.ts)
   })
   afterAll(async () => {
@@ -329,5 +332,18 @@ describe('battle standings (M16-18, M16-19)', () => {
       expect((await schools('?period=monthly')).rows.map((r) => r.name).sort()).toEqual(['SK Demo Dua', 'SMK Demo Satu'])
       expect(await schoolIdOf(t.db, 'DEMO001')).toBeTruthy()
     })
+
+  it('secondary-only: a primary school (type SK) and Darjah pupils are left out of the school and pupil standings', async () => {
+    await addBattle(t.db, { a: S.D2(1), b: S.D2(2), scoreA: 7000, scoreB: 3000, at: '2026-10-20T10:00:00+08:00' })
+    expect((await schools()).rows).toHaveLength(1)
+    await t.db.query(`update schools set type = 'SK' where code = 'DEMO002'`)
+    await t.db.query(`update users set grade = 3 where school_id = (select id from schools where code = 'DEMO002')`)
+    try {
+      expect((await schools()).rows).toHaveLength(0)
+      expect(await students()).toHaveLength(0)
+    } finally {
+      await t.db.query(`update schools set type = 'SMK' where code = 'DEMO002'`)
+    }
   })
+})
 })

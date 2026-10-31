@@ -4,12 +4,12 @@
  * activity in the period; a row click toggles its drill (Guru Aktif, Pelajar, Login, "Lihat penuh →"). Admin
  * only: the page does not render it for the school admin (FR-M17-116).
  */
-import { formatCount, formatNumber } from '@/lib/number'
+import { DsBadge, DsEmptyState, EMPTY_VALUE, formatCount, formatPercent } from '@/ds'
 
 import type { CcDailyActivity, CcSchoolActivity } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
 import { shortSchool } from '../command-center/cc-format'
-import { S3_COPY } from './board-copy'
+import { roleLabel, S3_COPY } from './board-copy'
 import type { DrillState, LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
 
@@ -25,31 +25,22 @@ const paths = ccPaths(props.basePath)
 
 const hasAnswers = (s: CcSchoolActivity) => s.totalAnswers > 0
 const accuracy = (s: CcSchoolActivity) =>
-  s.accuracy === null ? '-%' : `${formatNumber(s.accuracy, { decimals: 1 })}%`
+  s.accuracy === null ? EMPTY_VALUE : formatPercent(s.accuracy)
 const toneOf = (value: number | null) =>
-  value !== null && value >= 70
-    ? 'text-success'
-    : value !== null && value >= 50
-      ? 'text-warning'
-      : 'text-error'
-const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
+  value === null ? 'neutral' : value >= 70 ? 'success' : value >= 50 ? 'warning' : 'error'
+const toneClass = (value: number) =>
+  value >= 70 ? 'text-success' : value >= 50 ? 'text-warning' : 'text-error'
+const pct1 = formatPercent
 </script>
 
 <template>
-  <DailyPanel
-    title="Sekolah"
-    icon="i-ph-buildings"
-    testid="cc-panel-schools"
-    :state="status"
-    class="md:col-span-2 xl:col-span-1"
-  >
-    <p
+  <DailyPanel title="Sekolah" icon="i-ph-buildings" testid="cc-panel-schools" :state="status">
+    <DsEmptyState
       v-if="!data || !data.schools || data.schools.length === 0"
-      class="py-4 text-center text-body text-muted"
+      size="sm"
+      :title="S3_COPY.noSchools"
       data-testid="cc-schools-empty"
-    >
-      {{ S3_COPY.noSchools }}
-    </p>
+    />
     <ul v-else class="flex flex-col gap-2">
       <li v-for="(s, i) in data.schools" :key="s.schoolId" data-testid="cc-school-item">
         <UButton
@@ -59,41 +50,40 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
           :trailing-icon="
             drill && drill.schoolId === s.schoolId ? 'i-ph-caret-up' : 'i-ph-caret-down'
           "
-          class="h-auto min-h-11 flex-wrap justify-between gap-x-4 gap-y-1 py-2 text-start"
+          class="h-auto min-h-14 flex-nowrap justify-between gap-3 py-2 text-start"
           :aria-expanded="drill !== null && drill.schoolId === s.schoolId"
           :data-school-id="s.schoolId"
           data-testid="cc-school-row"
           @click="$emit('toggle', s.schoolId)"
         >
-          <span
-            class="min-w-0 basis-full text-label break-words text-highlighted"
-            data-testid="cc-school-name"
-            :title="s.schoolName"
-            >{{ i + 1 }}. {{ shortSchool(s.schoolName) }}</span
-          >
-          <span class="tabular flex flex-wrap items-center gap-x-4 gap-y-1 text-center">
-            <span data-testid="cc-school-teachers">
-              <b class="block text-label text-highlighted">{{
-                hasAnswers(s) ? formatCount(s.activeTeachers) : formatCount(s.loginCount)
-              }}</b>
-              <span class="block text-caption text-muted">{{
-                hasAnswers(s) ? 'GURU' : 'LOGIN'
-              }}</span>
-            </span>
-            <span data-testid="cc-school-pupils">
-              <b class="block text-label text-highlighted">{{ formatCount(s.activeStudents) }}</b>
-              <span class="block text-caption text-muted">PELAJAR</span>
-            </span>
-            <span data-testid="cc-school-answers">
-              <b class="block text-label text-highlighted">{{ formatCount(s.totalAnswers) }}</b>
-              <span class="block text-caption text-muted">SOALAN</span>
-            </span>
+          <span class="flex min-w-0 flex-1 flex-col text-start">
             <span
-              :class="['w-16 text-label', toneOf(s.accuracy)]"
-              data-testid="cc-school-accuracy"
-              >{{ accuracy(s) }}</span
+              class="min-w-0 text-label break-words text-highlighted"
+              data-testid="cc-school-name"
+              :title="s.schoolName"
+              >{{ i + 1 }}. {{ shortSchool(s.schoolName) }}</span
+            >
+            <span class="tabular min-w-0 text-caption text-muted"
+              ><span data-testid="cc-school-teachers">{{
+                hasAnswers(s)
+                  ? `${formatCount(s.activeTeachers)} guru`
+                  : `${formatCount(s.loginCount)} login`
+              }}</span>
+              ·
+              <span data-testid="cc-school-pupils"
+                >{{ formatCount(s.activeStudents) }} pelajar</span
+              >
+              ·
+              <span data-testid="cc-school-answers"
+                >{{ formatCount(s.totalAnswers) }} soalan</span
+              ></span
             >
           </span>
+          <DsBadge
+            :tone="toneOf(s.accuracy)"
+            :label="accuracy(s)"
+            data-testid="cc-school-accuracy"
+          />
         </UButton>
 
         <div
@@ -143,7 +133,7 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
                       :label="t.name"
                     />
                     <span class="tabular text-highlighted">{{ t.students }} pelajar</span>
-                    <span :class="['tabular', toneOf(t.accuracy)]">{{ pct1(t.accuracy) }}</span>
+                    <span :class="['tabular', toneClass(t.accuracy)]">{{ pct1(t.accuracy) }}</span>
                     <span class="basis-full text-caption text-muted">{{ t.lastActiveHuman }}</span>
                   </li>
                 </ul>
@@ -169,7 +159,7 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
                     <span class="tabular text-highlighted"
                       >{{ formatCount(p.answers) }} soalan</span
                     >
-                    <span :class="['tabular', toneOf(p.accuracy)]">{{ pct1(p.accuracy) }}</span>
+                    <span :class="['tabular', toneClass(p.accuracy)]">{{ pct1(p.accuracy) }}</span>
                     <span class="basis-full text-caption text-muted">{{ p.lastActiveHuman }}</span>
                   </li>
                 </ul>
@@ -188,7 +178,7 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
                     <span class="min-w-0 flex-1 text-label break-words text-highlighted">{{
                       l.name
                     }}</span>
-                    <UBadge color="primary" variant="soft" size="sm">{{ l.role }}</UBadge>
+                    <DsBadge tone="primary" size="sm" :label="roleLabel(l.role)" />
                     <span class="text-caption text-muted">{{ l.timeAgo }}</span>
                   </li>
                 </ul>

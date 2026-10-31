@@ -56,7 +56,7 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
             data-testid="kirk-subject-status"
           />
           <span
-            class="shrink-0 text-right text-body text-muted sm:w-20"
+            class="shrink-0 whitespace-nowrap text-right text-body text-muted sm:w-24"
             data-testid="kirk-subject-count"
             >{{ plain(s.answers) }} soalan</span
           >

@@ -13,7 +13,8 @@ import { computed, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsCharacterCard, DsIconChip, DsLoadError, DsPage } from '@/ds'
+import { DsCharacterCard, DsEmptyState, DsIconChip, DsLoadError, DsPage } from '@/ds'
+import { LOWER_FORM_COPY, useIsLowerForm } from '@/lib/lower-form'
 import { formatCount } from '@/lib/number'
 
 import { fetchPracticeSubjects } from '../api/practice'
@@ -25,6 +26,7 @@ const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 const route = useRoute()
 const router = useRouter()
 
+const lowerForm = useIsLowerForm()
 const { data, error, reload } = useApi((signal) => fetchPracticeSubjects({ signal }))
 const subjects = computed(() => data.value?.data ?? [])
 
@@ -49,7 +51,15 @@ watch(
     data-testid="practice-list-page"
   >
 
-    <template v-if="data">
+    <DsEmptyState
+      v-if="lowerForm"
+      icon="books"
+      :title="LOWER_FORM_COPY.title"
+      :description="LOWER_FORM_COPY.description"
+      data-testid="lower-form-empty"
+    />
+
+    <template v-else-if="data">
       <RouterLink to="/practice/chapter" class="block" data-testid="chapter-banner">
         <DsCharacterCard
           accent="action"

@@ -47,8 +47,7 @@ export const ROLE_CARDS = [
 
 export type RegisterRole = (typeof ROLE_CARDS)[number]['value']
 
-/** Darjah 1-6 (value n) and Ting. 1-5 (value n + 6), FR-M01-20. */
-export const DARJAH_GRADES = [1, 2, 3, 4, 5, 6] as const
+/** Ting. 1-5 (value n + 6), FR-M01-20. Darjah is hidden in v2 (secondary only). */
 export const TINGKATAN_GRADES = [1, 2, 3, 4, 5] as const
 
 /** Profile select (S8): the select adds "Semua Negeri" first, then the 16 states with full names. */

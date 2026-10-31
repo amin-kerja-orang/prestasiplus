@@ -142,7 +142,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: admin,
     summary: 'Create a question',
     description:
-      'JSON, or multipart when images are sent (`questionImage`, `optionImages[i]`: JPG/PNG/WebP up to 2MB; their errors use the keys `questionImage` and `optionImages.<i>`). Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: "Soalan berjaya ditambah."',
+      'JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 3) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: "Soalan berjaya ditambah."',
     request: { headers: [csrf], body: body(QuestionCreateRequestSchema) },
     responses: {
       201: json(mutationEnvelopeOf(QuestionSchema), 'Created.'),
@@ -225,7 +225,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     path: '/guru/questions',
     tags: guru,
     summary: 'Submit a question (saved as `review`, owner = caller)',
-    description: 'JSON or multipart (images). No flash. Counts toward the teacher contribution tiers (BE-17/BE-23 side effect).',
+    description: 'JSON only (images as `questionImageFileId` / `optionImageFileIds`). No flash. Counts toward the teacher contribution tiers (BE-17/BE-23 side effect).',
     request: { headers: [csrf], body: body(QuestionGuruCreateRequestSchema) },
     responses: {
       201: json(envelopeOf(QuestionGuruDetailSchema), 'Created.'),

@@ -17,7 +17,7 @@ import { acceptNextDialog, expectNoHorizontalScroll, isDesktopShell, viewportWid
 const TAG = { tag: ['@m27', '@qa-l56'] }
 const P1 = 'azlan@demo.test' // school 900003, no pupil / teacher / class
 const P2 = 'adminsekolah@demo.test' // school 900001
-const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 
 test.use({ mockInit: { latency: 0 } })
 
@@ -675,7 +675,7 @@ test.describe('QA S8 Kelas Sekolah', TAG, () => {
   }) => {
     await loginAs(P2)
     await openS8(page, gotoApp)
-    await expect(page).toHaveTitle('Kelas Sekolah - PRESTASIPLUS')
+    await expect(page).toHaveTitle('Kelas Sekolah | PRESTASIPLUS')
     await expect(page.getByTestId('kl-crumb-back')).toHaveText('Dashboard Sekolah')
     await expect(page.getByTestId('kl-crumb-back')).toHaveAttribute('href', '/admin-sekolah')
     await expect(page.getByTestId('kl-tile-label')).toHaveText('Kelas Aktif')

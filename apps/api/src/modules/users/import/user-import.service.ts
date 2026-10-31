@@ -53,7 +53,7 @@ export class UserImportService {
     const fields: Record<string, string> = {}
     let schoolId = body.schoolId?.trim() ? body.schoolId.trim() : null
     if (caller.isAdmin) {
-      if (schoolId !== null && !(await this.schools.exists(schoolId))) fields.schoolId = FIELD_MESSAGES.schoolInvalid
+      if (schoolId !== null && !(await this.schools.existsSecondary(schoolId))) fields.schoolId = FIELD_MESSAGES.schoolInvalid
     } else {
       // A school_admin imports into its own school only (another school is rejected, never followed).
       if (schoolId !== null && schoolId !== caller.schoolId) fields.schoolId = FIELD_MESSAGES.schoolInvalid

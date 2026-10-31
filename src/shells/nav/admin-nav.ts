@@ -24,6 +24,7 @@ import type { Role } from '@/stores/session-types'
 
 import {
   navFor,
+  withoutAlesa,
   type NavEntry,
   type NavGroup,
   type NavItem,
@@ -221,10 +222,10 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     'text-cyan-500',
     [
       kirk('kirk-overview', 'Overview', '', 'fa-th-large', true),
-      kirk('kirk-reaction', 'T1: Reaksi', '/reaction', 'fa-smile'),
-      kirk('kirk-learning', 'T2: Pembelajaran', '/learning', 'fa-brain'),
-      kirk('kirk-behavior', 'T3: Tingkah Laku', '/behavior', 'fa-running'),
-      kirk('kirk-results', 'T4: Hasil', '/results', 'fa-trophy'),
+      kirk('kirk-reaction', 'Tahap 1: Reaksi', '/reaction', 'fa-smile'),
+      kirk('kirk-learning', 'Tahap 2: Pembelajaran', '/learning', 'fa-brain'),
+      kirk('kirk-behavior', 'Tahap 3: Tingkah Laku', '/behavior', 'fa-running'),
+      kirk('kirk-results', 'Tahap 4: Hasil', '/results', 'fa-trophy'),
       kirk('kirk-chain', 'Rantaian Impak', '/chain', 'fa-link'),
       kirk('kirk-interventions', 'Intervensi', '/interventions', 'fa-hand-holding-medical'),
     ],
@@ -614,7 +615,7 @@ function adoptUserEntry(entry: NavEntry): AdminNavEntry {
 
 /** The sidebar entries of a role, in order (§2.8 `adminMenuFor`). */
 export function adminMenuFor(role: Role | null): readonly AdminNavEntry[] {
-  if (role === 'admin') return ADMIN_NAV
+  if (role === 'admin') return withoutAlesa(ADMIN_NAV)
   if (role === null) return []
   return navFor(role, 'sidebar').map(adoptUserEntry)
 }
@@ -795,7 +796,7 @@ function placeRow(source: AdminNavItem | AdminNavGroup, at: LagiPlacement): Plac
 
 function adminLagi(): LagiMenu {
   const placed: PlacedRow[] = []
-  for (const entry of ADMIN_NAV) {
+  for (const entry of withoutAlesa(ADMIN_NAV)) {
     if (isItem(entry) && entry.lagi) placed.push(placeRow(entry, entry.lagi))
     if (isGroup(entry)) {
       if (entry.lagi) placed.push(placeRow(entry, entry.lagi))

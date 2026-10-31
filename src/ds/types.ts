@@ -30,7 +30,8 @@ export type DsPageLayout = 'list' | 'form' | 'report' | 'dashboard' | 'detail' |
 export type DsPageWidth = 'prose' | 'default' | 'wide' | 'full'
 
 /** Colour of a figure; replaces the `valueClass` escape hatch (R2). */
-export type DsValueTone = 'highlighted' | 'primary' | 'success' | 'warning' | 'error' | 'info' | 'muted'
+export type DsValueTone =
+  | 'highlighted' | 'primary' | 'success' | 'warning' | 'error' | 'info' | 'muted' | 'dimmed'
 
 /** Table density (R4): `compact` replaces the old `compactCells` boolean. */
 export type DsTableDensity = 'cozy' | 'tight' | 'compact'

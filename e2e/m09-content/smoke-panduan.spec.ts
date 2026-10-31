@@ -17,7 +17,7 @@ import {
 } from '../support'
 
 const MODULE = { tag: [moduleTag(9)] }
-const TITLE = 'Panduan Pengguna — PRESTASIPLUS'
+const TITLE = 'Panduan Pengguna | PRESTASIPLUS'
 
 test.use({ mockInit: { latency: 0 } })
 

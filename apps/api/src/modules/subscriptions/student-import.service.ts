@@ -74,7 +74,7 @@ export class StudentImportService {
 
     const { body, fields } = this.shape(raw, multipart)
     // State checks run on the raw values too, so every failing field is reported together (as the mock).
-    if (fields.schoolId === undefined && typeof src.schoolId === 'string' && !(await this.schools.exists(src.schoolId))) {
+    if (fields.schoolId === undefined && typeof src.schoolId === 'string' && !(await this.schools.existsSecondary(src.schoolId))) {
       fields.schoolId = V.invalid('school id')
     }
     const mode: StudentImportMode | undefined = src.importMode === 'csv' || src.importMode === 'paste' ? src.importMode : undefined
@@ -87,6 +87,8 @@ export class StudentImportService {
 
     const schoolId = body.schoolId
     const grade = gradeOfClassLevel(body.classLevel)
+    // Secondary-only (2026-10-29): a new import cannot target Darjah 1 to 6 (D1..D6 stay in the contract enum).
+    if (grade !== null && grade < 7) throw invalid({ classLevel: V.invalid('class level') })
 
     // BR-15 (cheap, unlocked): refuse before spending hashing time.
     const before = await this.quota.figures(schoolId)

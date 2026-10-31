@@ -40,7 +40,7 @@ async function startPlaying(): Promise<void> {
 describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
   it('shows the picker without ?darjah', async () => {
     wrapper = await mountAt(SoloTembakJawapanPage, '/permainan/tembak-jawapan')
-    expect(wrapper.text()).toContain('Pilih darjah / tingkatan kamu:')
+    expect(wrapper.text()).toContain('Pilih tingkatan kamu:')
     expect(fetchSoloGame).not.toHaveBeenCalled()
   })
 

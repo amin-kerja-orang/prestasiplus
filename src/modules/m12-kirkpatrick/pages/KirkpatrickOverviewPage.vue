@@ -28,6 +28,8 @@ import OverviewBands from '../components/kirkpatrick/overview/OverviewBands.vue'
 import OverviewComparison from '../components/kirkpatrick/overview/OverviewComparison.vue'
 import OverviewFlow from '../components/kirkpatrick/overview/OverviewFlow.vue'
 import OverviewInfo from '../components/kirkpatrick/overview/OverviewInfo.vue'
+import OverviewInfoToggle from '../components/kirkpatrick/overview/OverviewInfoToggle.vue'
+import { useInfoOpen } from '../components/kirkpatrick/overview/use-info-open'
 import OverviewKpis from '../components/kirkpatrick/overview/OverviewKpis.vue'
 import OverviewLevelCards from '../components/kirkpatrick/overview/OverviewLevelCards.vue'
 
@@ -39,6 +41,8 @@ const props = withDefaults(
 const route = useRoute()
 const router = useRouter()
 const paths = computed(() => kirkpatrickPaths(props.basePath))
+const info = useInfoOpen()
+const INFO_ID = 'kirk-info-panel'
 
 const schoolId = computed(() => (props.scopeForced ? '' : queryString(route.query.school_id)))
 const state = computed(() => (props.scopeForced ? '' : queryString(route.query.state)))
@@ -107,7 +111,11 @@ async function apply(value: { schoolId: string; state: string }) {
           <option v-for="s in options?.states ?? []" :key="s" :value="s">{{ s }}</option>
         </DsNativeSelect>
       </DsFormField>
+      <template #actions>
+        <OverviewInfoToggle :open="info.open.value" :controls="INFO_ID" @toggle="info.toggle" />
+      </template>
     </DsFilterBar>
+    <OverviewInfo :open="info.open.value" :id="INFO_ID" />
 
     <DsLoadError v-if="error" testid="kirk-error" @retry="reload" />
     <p
@@ -120,12 +128,11 @@ async function apply(value: { schoolId: string; state: string }) {
     </p>
 
     <template v-if="data">
+      <OverviewKpis :kpi="data.kpi" :paths="paths" :detail="detailLinks" />
       <OverviewLevelCards :data="data" :paths="paths" :detail="detailLinks" />
       <OverviewFlow :data="data" :paths="paths" :detail="detailLinks" />
       <OverviewComparison :comparison="data.comparison" />
-      <OverviewKpis :kpi="data.kpi" :paths="paths" :detail="detailLinks" />
       <OverviewBands :bands="data.bands" :behavior-path="detailLinks ? paths.behavior : null" />
-      <OverviewInfo />
     </template>
   </DsPage>
 </template>

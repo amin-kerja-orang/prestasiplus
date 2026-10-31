@@ -4,6 +4,8 @@
  * view's copy is the SERVER-defined one (FR-M17-106, 116).
  */
 
+import type { DsAccent } from '@/ds'
+
 import type { CcMood } from '../../api/command-center-board-types'
 
 export const S2_COPY = {
@@ -18,10 +20,12 @@ export const S2_COPY = {
   schoolSub: 'Pemantauan langsung sekolah anda',
   footer:
     'Powered by ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
+  /** Footer while the ALESA AI surfaces are hidden (D73). */
+  footerPlain: 'PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
   loading: 'Memuatkan...',
   insightLoading: 'Memuatkan wawasan...',
   noData: 'Tiada data',
-  noFeed: 'Tiada aktiviti terkini',
+  noFeed: 'Tiada data',
   placeholder: '--',
 } as const
 
@@ -29,10 +33,10 @@ export const S3_COPY = {
   back: '◀ Command Center',
   report: 'Laporan Eksekutif',
   noData: 'Tiada data',
-  noActivity: 'Tiada aktiviti',
-  noSchools: 'Tiada aktiviti',
-  noLogins: 'Tiada login',
-  noBadges: 'Tiada badge baru',
+  noActivity: 'Tiada data',
+  noSchools: 'Tiada data',
+  noLogins: 'Tiada data',
+  noBadges: 'Tiada data',
   noDrill: 'Tiada data terperinci',
   loadFailed: 'Gagal memuatkan',
   drillFailed: 'Gagal',
@@ -40,6 +44,18 @@ export const S3_COPY = {
   seeAll: 'Lihat penuh →',
   empty: '-',
 } as const
+
+/** BM label of a role code (the board never prints the raw code). */
+export const ROLE_LABELS: Readonly<Record<string, string>> = {
+  student: 'Murid',
+  teacher: 'Guru',
+  parent: 'Ibu Bapa',
+  admin: 'Admin Pusat',
+  school_admin: 'Admin Sekolah',
+  ppd_officer: 'Pegawai PPD',
+  sponsor: 'Penaja',
+}
+export const roleLabel = (role: string): string => ROLE_LABELS[role] ?? role
 
 export const S3_TABS = [
   { period: 'today', label: 'Hari Ini', icon: 'i-ph-calendar-blank' },
@@ -55,11 +71,11 @@ export const S2_REQUEST_TIMEOUT_MS = 15_000
 /** The counter animation (FR-M17-21). */
 export const COUNT_UP_MS = 800
 
-export const MOODS: readonly { key: CcMood; icon: string; label: string }[] = [
-  { key: 'happy', icon: 'i-ph-smiley', label: 'Gembira' },
-  { key: 'okay', icon: 'i-ph-smiley-meh', label: 'OK' },
-  { key: 'sad', icon: 'i-ph-smiley-sad', label: 'Sedih' },
-  { key: 'stressed', icon: 'i-ph-smiley-nervous', label: 'Tekanan' },
+export const MOODS: readonly { key: CcMood; icon: string; label: string; accent: DsAccent }[] = [
+  { key: 'happy', icon: 'i-ph-smiley', label: 'Gembira', accent: 'win' },
+  { key: 'okay', icon: 'i-ph-smiley-meh', label: 'OK', accent: 'action' },
+  { key: 'sad', icon: 'i-ph-smiley-sad', label: 'Sedih', accent: 'friend' },
+  { key: 'stressed', icon: 'i-ph-smiley-nervous', label: 'Tekanan', accent: 'heat' },
 ]
 
 export interface BoardPaths {

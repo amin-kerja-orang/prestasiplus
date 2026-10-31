@@ -142,7 +142,7 @@ export class AnalyticsRepository {
     if (ids !== null && ids.length === 0) return []
     return this.db.$queryRaw<SchoolFact[]>`
       SELECT s.id::text AS id, s.name, s.code, coalesce(s.state, '') AS state FROM schools s
-      WHERE true ${this.clause(ids, Prisma.sql`s.id`)}`
+      WHERE (s.type IS NULL OR s.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')) ${this.clause(ids, Prisma.sql`s.id`)}`
   }
 
   async school(id: string): Promise<SchoolFact | null> {
@@ -155,7 +155,7 @@ export class AnalyticsRepository {
     if (ids !== null && ids.length === 0) return []
     const rows = await this.db.$queryRaw<{ id: string }[]>`
       SELECT s.id::text AS id FROM schools s
-      WHERE EXISTS (SELECT 1 FROM users u WHERE u.school_id = s.id) ${this.clause(ids, Prisma.sql`s.id`)}`
+      WHERE (s.type IS NULL OR s.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')) AND EXISTS (SELECT 1 FROM users u WHERE u.school_id = s.id) ${this.clause(ids, Prisma.sql`s.id`)}`
     return rows.map((r) => r.id)
   }
 

@@ -9,7 +9,6 @@ import {
   generatedAdminName,
   isOfficerRole,
   isStandardRole,
-  PRIMARY_GRADES,
   ROLE_OPTIONS,
   roleOptionsFor,
   schoolMeta,
@@ -20,15 +19,7 @@ import {
 } from '../../lib/user-form-options'
 
 describe('user-form-options', () => {
-  it('maps grades 1-6 to Darjah and 7-11 to Ting. 1-5', () => {
-    expect(PRIMARY_GRADES.map((g) => `${String(g.value)}=${g.label}`)).toEqual([
-      '1=Darjah 1',
-      '2=Darjah 2',
-      '3=Darjah 3',
-      '4=Darjah 4',
-      '5=Darjah 5',
-      '6=Darjah 6',
-    ])
+  it('maps grades 7-11 to Ting. 1-5 (no Darjah in v2)', () => {
     expect(SECONDARY_GRADES.map((g) => `${String(g.value)}=${g.label}`)).toEqual([
       '7=Ting. 1',
       '8=Ting. 2',

@@ -96,7 +96,7 @@ test.describe('M03 S6 subject list', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openSubjects(page, gotoApp)
-    await expectTabTitle(page, 'Pengurusan Subjek - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Pengurusan Subjek | PRESTASIPLUS')
     await expect(page.getByRole('heading', { name: 'Senarai Subjek' })).toBeVisible()
     await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 31 subjek')
     const add = page.getByTestId('subjects-add')
@@ -285,7 +285,7 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
     await page.getByTestId('subjects-add').click()
     await expect(page).toHaveURL('/admin/subjects/create')
     await expect(page.getByTestId('subject-form')).toBeVisible()
-    await expectTabTitle(page, 'Tambah Subjek - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Tambah Subjek | PRESTASIPLUS')
 
     await expect(page.getByTestId('subject-back')).toHaveText('Kembali ke Senarai')
     await expect(page.getByLabel('Nama Subjek (Bahasa Melayu)')).toHaveAttribute(
@@ -412,7 +412,7 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
       await openSubjects(page, gotoApp)
       await subjectRow(page, 3).getByTestId('subject-edit').click()
       await expect(page).toHaveURL('/admin/subjects/3/edit')
-      await expectTabTitle(page, 'Edit Subjek - Admin PRESTASIPLUS')
+      await expectTabTitle(page, 'Edit Subjek | PRESTASIPLUS')
       await expect(page.getByTestId('subject-name')).toHaveValue('Matematik')
       await expect(page.getByTestId('subject-name-en')).toHaveValue('Mathematics')
       await expect(page.getByTestId('subject-code')).toHaveValue('MATH')
@@ -465,7 +465,7 @@ test.describe('M03 S9 level list', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openLevels(page, gotoApp)
-    await expectTabTitle(page, 'Pengurusan Tahap Pendidikan - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Pengurusan Tahap Pendidikan | PRESTASIPLUS')
     await expect(page.getByRole('heading', { name: 'Senarai Tahap Pendidikan' })).toBeVisible()
     await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 11 tahap')
     const add = page.getByTestId('levels-add')
@@ -603,19 +603,18 @@ test.describe('M03 S10 / S11 level form', MODULE, () => {
     await page.getByTestId('levels-add').click()
     await expect(page).toHaveURL('/admin/education-levels/create')
     await expect(page.getByTestId('level-form')).toBeVisible()
-    await expectTabTitle(page, 'Tambah Tahap Pendidikan - Admin PRESTASIPLUS')
+    await expectTabTitle(page, 'Tambah Tahap Pendidikan | PRESTASIPLUS')
 
     await expect(page.getByTestId('level-back')).toHaveText('Kembali ke Senarai')
-    await expect(page.getByTestId('level-name')).toHaveAttribute('placeholder', 'cth: Tahun 1')
-    await expect(page.getByTestId('level-name-en')).toHaveAttribute('placeholder', 'e.g: Year 1')
+    await expect(page.getByTestId('level-name')).toHaveAttribute('placeholder', 'cth: Tingkatan 1')
+    await expect(page.getByTestId('level-name-en')).toHaveAttribute('placeholder', 'e.g: Form 1')
     const code = page.getByTestId('level-code')
-    await expect(code).toHaveAttribute('placeholder', 'cth: Y1')
+    await expect(code).toHaveAttribute('placeholder', 'cth: T1')
     await expect(code).toHaveAttribute('maxlength', '10')
     expect(await code.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
     await expect(page.getByText('Kod akan ditukar ke huruf besar automatik')).toBeVisible()
     await expect(page.locator('[data-testid=level-stage] option')).toHaveText([
       '-- Pilih Peringkat --',
-      'Rendah (Primary)',
       'Menengah Rendah (Lower Secondary)',
       'Menengah Atas (Upper Secondary)',
     ])
@@ -677,7 +676,7 @@ test.describe('M03 S10 / S11 level form', MODULE, () => {
       await openLevels(page, gotoApp)
       await levelRow(page, 10).getByTestId('level-edit').click()
       await expect(page).toHaveURL('/admin/education-levels/10/edit')
-      await expectTabTitle(page, 'Edit Tahap Pendidikan - Admin PRESTASIPLUS')
+      await expectTabTitle(page, 'Edit Tahap Pendidikan | PRESTASIPLUS')
       await expect(page.getByTestId('level-name')).toHaveValue('Tingkatan 4')
       await expect(page.getByTestId('level-name-en')).toHaveValue('Form 4')
       await expect(page.getByTestId('level-code')).toHaveValue('T4')

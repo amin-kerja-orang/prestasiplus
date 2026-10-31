@@ -7,6 +7,8 @@
  */
 import { ref } from 'vue'
 
+import { DsPanel } from '@/ds'
+
 const KEY = 'hideMonitoringGuide'
 
 function readHidden(): boolean {
@@ -47,23 +49,25 @@ function scrollTo(event: MouseEvent, id: string) {
 
 <template>
   <div data-testid="mon-guide-area">
-    <UCard v-if="!hidden" data-testid="mon-guide">
+    <DsPanel
+      v-if="!hidden"
+      title="Panduan Monitoring Penglibatan"
+      icon="book-open"
+      accent="action"
+      data-testid="mon-guide"
+    >
+      <template #actions>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          size="md"
+          icon="i-ph-x"
+          aria-label="Tutup panduan"
+          data-testid="mon-guide-close"
+          @click="hide"
+        />
+      </template>
       <div class="flex flex-col gap-6">
-        <div class="flex items-start justify-between gap-2">
-          <h2 class="flex items-center gap-2 text-heading text-highlighted">
-            <UIcon name="i-ph-book-open" class="size-6 text-primary-t" />Panduan Monitoring
-            Penglibatan
-          </h2>
-          <UButton
-            color="neutral"
-            variant="ghost"
-            size="md"
-            icon="i-ph-x"
-            aria-label="Tutup panduan"
-            data-testid="mon-guide-close"
-            @click="hide"
-          />
-        </div>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div
             class="flex flex-col gap-2 bg-soft p-4 text-body text-muted"
@@ -180,7 +184,7 @@ function scrollTo(event: MouseEvent, id: string) {
           >
         </p>
       </div>
-    </UCard>
+    </DsPanel>
     <UButton
       v-else
       type="button"

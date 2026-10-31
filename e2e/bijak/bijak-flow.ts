@@ -50,7 +50,7 @@ export const expectNoHorizontalScrollAuto = (page: Page): Promise<void> =>
   HTTP_MODE ? expectNoHorizontalScrollHttp(page) : expectNoHorizontalScroll(page)
 
 export const PAPER_ID = 'mat-k1-2025-a'
-export const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+export const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 
 /** Hub -> cover -> Mula (exam mode). Resolves once the attempt shell is visible. */
 export async function startPaper(page: Page, paperId = PAPER_ID): Promise<void> {

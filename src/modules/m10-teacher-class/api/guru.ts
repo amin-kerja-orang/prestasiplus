@@ -7,7 +7,15 @@
  * to the created record or to `{error}` and never throw for a refusal.
  */
 
-import { api, wireId, wireIdOpt, type BlobResult, type ListResult } from '@/api'
+import {
+  api,
+  isHttpMode,
+  uploadQuestionImage,
+  wireId,
+  wireIdOpt,
+  type BlobResult,
+  type ListResult,
+} from '@/api'
 
 import type {
   BidangOption,
@@ -255,11 +263,13 @@ function appendFields(form: FormData, body: object): void {
 }
 
 /**
- * #53 `POST /api/guru/questions`: the new question (`pending_review`, active). With any image the
- * request is multipart (`questionImage`, `optionImages[i]`), otherwise JSON. The second argument
+ * #53 `POST /api/guru/questions`: the new question (`pending_review`, active). Mock mode: with any
+ * image the request is multipart (`questionImage`, `optionImages[i]`), otherwise JSON. http mode: every
+ * chosen image is uploaded first (`POST /api/files`; a failure is a 422 on `questionImage` /
+ * `optionImages.<i>`) and the JSON carries `questionImageFileId` / `optionImageFileIds`. The second argument
  * is a `QuestionImages`, or a single Blob (the question image, the earlier signature).
  */
-export function createContributedQuestion(
+export async function createContributedQuestion(
   body: CreateQuestionRequest,
   images?: Blob | QuestionImages | null,
 ): Promise<ContributedQuestionDetail> {
@@ -278,6 +288,25 @@ export function createContributedQuestion(
       ? { curriculumTopicId: wireIdOpt(body.curriculumTopicId) }
       : {}),
     ...(body.dskpSpId !== undefined ? { dskpSpId: wireIdOpt(body.dskpSpId) } : {}),
+  }
+  if (isHttpMode()) {
+    const ids: { questionImageFileId?: string; optionImageFileIds?: (string | null)[] } = {}
+    if (files.questionImage) {
+      ids.questionImageFileId = await uploadQuestionImage(files.questionImage, 'questionImage')
+    }
+    const last = optionFiles[optionFiles.length - 1]?.[0]
+    if (last !== undefined) {
+      const picked = files.optionImages ?? []
+      const list: (string | null)[] = []
+      for (let i = 0; i <= last; i += 1) {
+        const f = picked[i]
+        list.push(f ? await uploadQuestionImage(f, `optionImages.${String(i)}`) : null)
+      }
+      ids.optionImageFileIds = list
+    }
+    return api.post<ContributedQuestionDetail>('/api/guru/questions', {
+      body: { ...wired, ...ids },
+    })
   }
   if (!files.questionImage && optionFiles.length === 0) {
     return api.post<ContributedQuestionDetail>('/api/guru/questions', { body: wired })
@@ -301,16 +330,21 @@ export function fetchContributedQuestion(
 }
 
 /**
- * #55 `PUT /api/guru/questions/:id` (404 when not own, 422). With an `image` the request is one
- * multipart PUT (the options as `options[i][id]` / `options[i][optionText]`), otherwise JSON.
+ * #55 `PUT /api/guru/questions/:id` (404 when not own, 422). Mock mode: with an `image` the request is
+ * one multipart PUT (the options as `options[i][id]` / `options[i][optionText]`), otherwise JSON. http
+ * mode: the image is uploaded first and the JSON carries `questionImageFileId`.
  */
-export function updateContributedQuestion(
+export async function updateContributedQuestion(
   id: number,
   body: UpdateQuestionRequest,
   image?: Blob | null,
 ): Promise<ContributedQuestionDetail> {
   const url = `/api/guru/questions/${String(id)}`
   if (!image) return api.put<ContributedQuestionDetail>(url, { body })
+  if (isHttpMode()) {
+    const questionImageFileId = await uploadQuestionImage(image, 'questionImage')
+    return api.put<ContributedQuestionDetail>(url, { body: { ...body, questionImageFileId } })
+  }
   const form = new FormData()
   appendFields(form, body)
   form.append('questionImage', image)

@@ -99,7 +99,7 @@ describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {
     )
   })
 
-  it('has the tab strip with "T3: Tingkah Laku" active', async () => {
+  it('has the tab strip with "Tahap 3: Tingkah Laku" active', async () => {
     const { wrapper: w } = await open()
     expect(t(w, 'kirk-tab-behavior').attributes('data-active')).toBe('true')
     expect(t(w, 'kirk-tab-results').attributes('data-active')).toBe('false')
@@ -120,7 +120,7 @@ describe('S4 KPIs (AC-M12-14.1, 14.2)', () => {
     expect(tiles(w).map((x) => x.value)).toEqual([
       '4,158',
       '946',
-      '20991',
+      '20,991',
       '306,133',
       '82.8%',
       '53.1%',
@@ -147,7 +147,7 @@ describe('S4 KPIs (AC-M12-14.1, 14.2)', () => {
     expect(tiles(w).map((x) => x.value)).toEqual([
       '184',
       '53',
-      '1002',
+      '1,002',
       '15,007',
       '75.6%',
       '100%',
@@ -176,7 +176,7 @@ describe('S4 band tiles (AC-M12-15.1)', () => {
       '259 Konsisten 20-50 soalan 6.2%',
       '169 Berkembang 5-20 soalan 4.1%',
       '5 Minimum <5 soalan 0.1%',
-      '3212 Tidak Terlibat 0 soalan 77.2%',
+      '3,212 Tidak Terlibat 0 soalan 77.2%',
     ])
   })
 
@@ -223,7 +223,7 @@ describe('S4 school table (AC-M12-16.1)', () => {
     expect(r8080.get('[data-testid="cell-students"]').text()).toBe('184')
     expect(r8080.get('[data-testid="cell-active"]').text()).toBe('53')
     expect(r8080.get('[data-testid="cell-answers"]').text()).toBe('15,007')
-    expect(r8080.get('[data-testid="cell-sessions"]').text()).toBe('1002')
+    expect(r8080.get('[data-testid="cell-sessions"]').text()).toBe('1,002')
     expect(r8080.get('[data-testid="cell-per-active"]').text()).toBe('283.2')
     expect(r8080.get('[data-testid="cell-score"]').text()).toBe('62.4')
     expect(r8080.get('[data-testid="cell-tahap"]').text()).toBe('Konsisten')

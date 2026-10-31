@@ -37,7 +37,7 @@ async function spell(letters: string): Promise<void> {
 describe('S16 Susun Jawapan (FR-M16-82..85)', () => {
   it('shows the picker without ?darjah', async () => {
     wrapper = await mountAt(SoloSusunJawapanPage, '/permainan/susun-jawapan')
-    expect(wrapper.text()).toContain('Pilih darjah / tingkatan kamu:')
+    expect(wrapper.text()).toContain('Pilih tingkatan kamu:')
     expect(fetchSoloGame).not.toHaveBeenCalled()
   })
 

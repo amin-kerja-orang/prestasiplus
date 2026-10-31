@@ -37,10 +37,10 @@ export const LATIH_TUBI_TARGETS: Readonly<Record<string, number>> = {
   PSI: 40,
   ADDMATH: 20,
 }
-/** BR-11: the practice levels offered to random sessions are Darjah 1 to 4 (by level code). */
-export const OFFERED_LEVEL_CODES: readonly string[] = ['D1', 'D2', 'D3', 'D4']
 /** The SPM levels (T4, T5) a Latih Tubi session may name (by level code). */
 export const SPM_LEVEL_CODES: readonly string[] = ['T4', 'T5']
+/** BR-11 (secondary-only, 2026-10-29): the practice levels offered to random sessions are Tingkatan 4 and 5 (by level code). */
+export const OFFERED_LEVEL_CODES: readonly string[] = SPM_LEVEL_CODES
 
 /** BR-30: `timeSpent` cap per question. */
 export const MAX_SECONDS_PER_QUESTION = 180

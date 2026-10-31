@@ -11,6 +11,7 @@ import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
+import { isAlesaAiOn } from '@/app/features'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, usePageMeta } from '@/composables'
 import { DsArt3D, DsPage, DsPanel, DsLoadError } from '@/ds'
@@ -127,7 +128,7 @@ class="text-display" :class="
               </UCard>
             </li>
           </ul>
-          <p class="text-body text-muted" data-testid="result-tip">
+          <p v-if="isAlesaAiOn()" class="text-body text-muted" data-testid="result-tip">
             💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu. Boleh start dengan
             <ULink to="/pusat-nota-ringkas" class="text-primary-t">jana nota ringkas</ULink>
             untuk topik tersebut.

@@ -24,6 +24,7 @@ import { DIFFICULTY_LABELS } from '../lib/question-list'
 import {
   buildBody,
   emptyValues,
+  KERTAS_OPTIONS,
   OPTION_LETTERS,
   QUESTION_TYPE_OPTIONS,
   valuesFromQuestion,
@@ -79,7 +80,9 @@ function submit(): void {
     void scrollToError()
     return
   }
-  emit('submit', buildBody(values, spId.value, props.mode))
+  const body = buildBody(values, spId.value, props.mode)
+  if (edit.value && props.initial) body.savedOptionImages = props.initial.optionImages
+  emit('submit', body)
 }
 
 watch(
@@ -538,7 +541,28 @@ const correctItems = (i: number, letter: string) => [
               data-testid="q-explanation"
             />
           </DsFormField>
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <DsFormField
+              v-slot="{ id, describedby, invalid }"
+              native
+              for="q-kertas"
+              label="Kertas"
+              :error="err('kertas')"
+            >
+              <DsNativeSelect
+                :id="id"
+                v-model="values.kertas"
+                name="kertas"
+                :invalid="invalid"
+                :aria-describedby="describedby"
+                data-testid="q-kertas"
+              >
+                <option value="">—</option>
+                <option v-for="k in KERTAS_OPTIONS" :key="k.value" :value="k.value">
+                  {{ k.label }}
+                </option>
+              </DsNativeSelect>
+            </DsFormField>
             <DsFormField
               v-slot="{ id, describedby, invalid }"
               native

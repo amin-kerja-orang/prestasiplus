@@ -527,6 +527,33 @@ Layers: **L1** Nuxt UI as-is (themed centrally) · **L2** `Ds*` pattern composed
 | Combo chip `hot` glow | no coloured-shadow token | V2-T48 |
 | axe-core accessibility pass on `/__ds` | `axe-core` is not a dependency yet | V2-T21 (cut-over E2E) |
 
+#### 12.5 Admin page-template components (batch 0a, `v2-admin-page-templates` section 3)
+
+Gallery: `/__ds`, block "DsBadge ... DsDrawer" (`src/dev/ds/DsGalleryAdmin.vue`). Tests: `src/ds/__tests__/admin-templates.test.ts`. Every addition is backward compatible.
+
+**New**
+
+| Component | Props / slots | Notes |
+|---|---|---|
+| `DsBadge` (G1) | `label`, `tone: neutral\|primary\|success\|warning\|error\|info`, `accent: DsAccent` (tinted pill + coloured dot; wins over `tone`), `icon`, `size: sm\|md`, `emphasis: soft\|strong`; default slot | `UBadge` inside. `DsStatusBadge` stays the status-enum badge. |
+| `DsDefinitionList` (G3) | `items: {key,label,value?,to?,mono?}[]`, `columns: 1\|2`, `emptyValue` ("-"); slot `#value-{key}` | `dl/dt/dd`. 1 col: label beside value from `sm`; 2 cols from `md`, label above. Numbers formatted, `to` = link. |
+| `DsCallout` (G4) | `tone: info\|success\|warning\|error`, `title`, `description`, `icon`, `dismissible`, `collapsible`, `defaultOpen`, `storageKey`; slots default, `#actions`; emits `dismiss`; exposes `focus()` | `UAlert` inside. `error` = `role="alert"`. Collapsible title is a `UButton` with `aria-expanded` / `aria-controls`. `storageKey` stores `dismissed\|open\|collapsed` in `localStorage` `pp:callout:<key>`. |
+| `DsDrawer` (G10) | `v-model:open`, `title`, `description`, `side: right\|left`, `size: sm\|md\|lg`, `dismissible`, `loading`; slots default, `#footer` | `USlideover` from `sm`, bottom `UDrawer` below (same split as `DsDialog`). |
+| `format.ts` | `formatCount`, `formatPercent`, `formatStat`, `EMPTY_VALUE` | The one shared number formatter (rule R14). |
+
+**Changed**
+
+| Component | Change |
+|---|---|
+| `DsStatTile` | `#sub` slot; number via `formatStat` (1271 -> "1,271", null -> "-", strings as given); `valueTone="dimmed"`; label wraps to 2 lines instead of truncating. |
+| `DsStatRow` | Track by count, no orphan row: 2 -> 2 cols; 3 -> first tile full below `md`, 3 across at `md`; 4 -> 2x2, 4 across at `xl`; 5 -> first full + 2x2, `md` 3+2 on a 6-col track, `xl` 5 across. Explicit `cols` and more than 5 tiles keep the old steps (odd count: first tile full below `md`). `#sub="{ item }"` slot forwarded to the tiles. `StatItem.value` may be null. |
+| `DsPage` | Staff `form` layout is full content width (learner keeps the 768px column). |
+| `DsPageHeader` | Staff `form` actions stay on the right (stacked under the title only for the learner); below `sm` the actions stack full width in source order (primary last); `#breadcrumb` is deprecated (dev warning). |
+| `DsDataTable` | `pager: 'auto'\|'none'`. |
+| `DsPanel` | `moreTo`, `moreLabel` ("Lihat Semua"): header link, `aria-label` "Lihat Semua {title}"; description through `DsText`. |
+| `DsPillNav` | Item `count` (formatted pill after the label); the active item is scrolled into view inside an overflowing strip. |
+| `DsSplit` | Ratios `5-7`, `7-5` added; `scrollAside` (sticky aside with internal scroll, `top-0`, `max-h-dvh`). |
+
 ---
 
 ## 13. Guard rules ("components + tokens only")
@@ -586,3 +613,23 @@ Open, non-blocking (each has a default applied above):
 | O2 | Learner copy (picker traits, quiz, win, Home) follows the prototype verbatim; no new learner copy is proposed | Closed |
 | O3 | Exact Fluent 3D files beyond the prototype set (fire, coin, high-voltage, graduation cap, rocket, trophy, books) | Same set, pick extras at DS-T1 under the same licence |
 | O4 | Learner palette chooser (Neon, Tropika) in the prototype is review-only | Ship Elektrik only |
+
+---
+
+## 17. Primitive quality pass (`ds-primitives-quality`)
+
+Root-cause fixes in the DS and theme layer so every page improves at once. Props, `v-model` and events are unchanged.
+
+| Primitive | Change | Page guidance |
+|---|---|---|
+| `DsNativeSelect` (alias `DsSelect`) | Visible control is a themed Nuxt UI `USelect` (`USelectMenu` with `searchable`): same height, radius, fill and font as `UInput`; caret with its own `pe-11` gutter; list is radius lg, shadow, rows 44px (40px from md), hover / selected tint and a check mark. A visually hidden native `<select>` stays in the DOM as the form control: it holds the options (`items` or raw `<option>` / `<optgroup>` slot), carries `id`, `name`, `required`, `data-*` and listeners, takes `v-model` / `setValue` / `selectOption`, and fires `change` when the list is used. `native` renders only a plain select with `pe-10` caret (print views). A blank "Pilih ..." row is a trigger placeholder (muted, not in the list); other blank rows ("Semua ...") are normal selectable rows. | Keep using it; no page change. |
+| `DsFilterBar` | One row from `md` (fields max `md` wide, selects `w-56`, "Cari" at the end of the same row, "Set Semula" as a link button); stacks below `md`. A lone select no longer takes the full row. | Do not add `w-*` classes to the bar. |
+| `DsCallout` collapsible | Collapsed by default (icon + title + chevron, 40px row); `defaultOpen` opens it; open body is `text-body`, `max-w-prose`. | Pass `default-open` only for a guide that must show first. |
+| `DsSwitchField` (new) | `USwitch` + label + caption. The theme centres label / caption on the 44px control box (checkbox too). | Use instead of a bare `USwitch` plus hand-made label, e.g. "Muat semula automatik". |
+| Pager (`pagination` theme) | Equal squares (44px, 40px from md), ghost neutral with hover, current page = flat primary tint (no gradient, no shadow), icons share text weight and colour. `DsDataTable` pager: summary and page-size select left, pager right; stacks below `sm`. | Use `UPagination` with no variant props. |
+| `DsFormField` hint | The hint sits under the label, never beside it, so labels do not wrap. | none |
+| `DsPanel` header | Title and "Lihat Semua" stay on one row from `sm`, also with a description. | none |
+| `empty` theme | `DsEmptyState size="sm"` is a short in-panel block (`p-3 sm:p-4`). | Use `size="sm"` inside panels. |
+| `DsListRow`, `DsProgress` | Reviewed: consistent with the DS tokens, no change. | none |
+
+Gallery: `/__ds` forms section shows the select states, `DsSwitchField` and single-select / search filter bars; admin section shows both callout states.

@@ -39,7 +39,7 @@ describe('AC 5: the IC is stored only as a keyed HMAC and a mask', () => {
 
   it('accepts the IC (plain or dashed), returns the mask only, and the same IC gives the same keyed hash', async () => {
     const make = async (email: string, ic: string) => {
-      const res = await admin.post('/admin/users', { roles: ['student'], name: 'Murid IC', email, schoolId: s1, grade: 6, icNumber: ic })
+      const res = await admin.post('/admin/users', { roles: ['student'], name: 'Murid IC', email, schoolId: s1, grade: 9, icNumber: ic })
       bodies.push(JSON.stringify(res.body))
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       expect(CreatedUserSchema.parse(res.body.data).icMasked).toBe('xxxxxx-xx-xx55')
@@ -61,11 +61,11 @@ describe('AC 5: the IC is stored only as a keyed HMAC and a mask', () => {
     const id = (await t.db.query<{ id: string }>(`select id::text from users where email = 'ic1@ujian.test'`))[0]?.id
     bodies.push(JSON.stringify((await admin.put(`/admin/users/${id}`, { roles: ['student'], name: 'Murid IC', icNumber: '010203-04-0607' })).body))
     // A malformed IC that contains digits of a real one must not be echoed.
-    const bad = await admin.post('/admin/users', { roles: ['student'], name: 'X', email: 'ic3@ujian.test', schoolId: s1, grade: 6, icNumber: '990101-01-55' })
+    const bad = await admin.post('/admin/users', { roles: ['student'], name: 'X', email: 'ic3@ujian.test', schoolId: s1, grade: 9, icNumber: '990101-01-55' })
     expect(bad.status).toBe(422)
     bodies.push(JSON.stringify(bad.body))
     const sa = apiOf(await login(t, SCHOOL_ADMIN))
-    const res = await sa.post('/admin/users', { roles: ['student'], name: 'Murid SA', email: 'ic4@ujian.test', grade: 6, icNumber: IC })
+    const res = await sa.post('/admin/users', { roles: ['student'], name: 'Murid SA', email: 'ic4@ujian.test', grade: 9, icNumber: IC })
     bodies.push(JSON.stringify(res.body))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
   })

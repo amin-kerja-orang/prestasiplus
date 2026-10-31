@@ -7,6 +7,7 @@
 
 import type { Page } from '@playwright/test'
 
+import { ALESA_ON, ALESA_SKIP_REASON } from '../support/alesa'
 import { expect, test } from './fixtures'
 import { open } from './mock-exam-nav'
 import {
@@ -27,6 +28,8 @@ const BUSY = 'AI sedang fikir... (mungkin 15-30s)'
 test.use({ mockInit: { latency: 0 } })
 
 test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
+  test.skip(!ALESA_ON, ALESA_SKIP_REASON)
+
   test('E2E-M06-35 texts, 15 subjects, required, year maxlength 8, image label, Duta block', async ({
     page,
     loginAs,

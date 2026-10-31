@@ -14,7 +14,7 @@ describe('public pickers (AC 1, AC 11)', () => {
   beforeAll(async () => {
     // A high ceiling: the throttle has its own spec.
     t = await bootSchoolsApp({ env: { THROTTLE_PUBLIC_PER_MINUTE: '10000' } })
-    await insertFillerSchools(t.db, 150)
+    await insertFillerSchools(t.db, 150, 'SMK')
   })
   afterAll(async () => {
     await t.close()
@@ -47,10 +47,11 @@ describe('public pickers (AC 1, AC 11)', () => {
     })
 
     it('q matches name or code (case-insensitive) and state is an exact filter; blank values are ignored', async () => {
-      expect(Schools.parse((await search('?q=demo%20tiga')).body).data.map((s) => s.code)).toEqual(['DEMO003'])
+      // Secondary-only (2026-10-29): primary schools (SK, SJK) are hidden from the public search.
+      expect(Schools.parse((await search('?q=demo%20tiga')).body).data).toEqual([])
       expect(Schools.parse((await search('?q=cth149')).body).data.map((s) => s.code)).toEqual(['CTH149'])
-      expect(Schools.parse((await search('?state=Johor&limit=100')).body).data.map((s) => s.code)).toEqual(['DEMO004', 'DEMO003'])
-      expect(Schools.parse((await search('?state=Johor&q=Empat')).body).data.map((s) => s.code)).toEqual(['DEMO004'])
+      expect(Schools.parse((await search('?state=Johor&limit=100')).body).data).toEqual([])
+      expect(Schools.parse((await search('?state=Selangor&q=Satu')).body).data.map((s) => s.code)).toEqual(['DEMO001'])
       expect(Schools.parse((await search('?q=&state=%20')).body).data).toHaveLength(20)
       expect(Schools.parse((await search('?q=zzz-none')).body).data).toEqual([])
       // LIKE wildcards are literal
@@ -64,11 +65,12 @@ describe('public pickers (AC 1, AC 11)', () => {
     })
 
     it('id returns that one active school and ignores the other filters; unknown, inactive or malformed ids give []', async () => {
-      const id = await schoolIdOf(t.db, 'DEMO002')
+      const id = await schoolIdOf(t.db, 'DEMO001')
       const one = Schools.parse((await search(`?id=${id}&q=nothing&state=Johor`)).body)
-      expect(one.data.map((s) => s.code)).toEqual(['DEMO002'])
+      expect(one.data.map((s) => s.code)).toEqual(['DEMO001'])
       const inactive = await schoolIdOf(t.db, 'CTH010')
       expect(Schools.parse((await search(`?id=${inactive}`)).body).data).toEqual([])
+      expect(Schools.parse((await search(`?id=${await schoolIdOf(t.db, 'DEMO002')}`)).body).data).toEqual([]) // a primary school is hidden by id too
       expect(Schools.parse((await search('?id=99999999')).body).data).toEqual([])
       expect(Schools.parse((await search('?id=abc')).body).data).toEqual([])
     })

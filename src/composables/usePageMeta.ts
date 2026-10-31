@@ -12,6 +12,7 @@
 import { readonly, reactive } from 'vue'
 
 import { useRouteOutcome } from '@/app/router/outcome'
+import { formatTabTitle } from '@/composables/tabTitle'
 
 export interface PageHeader {
   title: string
@@ -28,12 +29,12 @@ interface PageMetaState {
 const state = reactive<PageMetaState>({ title: null, header: null })
 const readonlyState = readonly(state)
 
-/** Sets the exact tab title (no suffix is added; each SRS gives the full string). */
+/** Sets the dynamic page name; the tab title is `{name} | PRESTASIPLUS` (`formatTabTitle`). */
 function setTitle(title: string): void {
   state.title = title
   // An in-place 404/403 keeps its own tab title.
   if (typeof document !== 'undefined' && useRouteOutcome().value === null) {
-    document.title = title
+    document.title = formatTabTitle(title)
   }
 }
 

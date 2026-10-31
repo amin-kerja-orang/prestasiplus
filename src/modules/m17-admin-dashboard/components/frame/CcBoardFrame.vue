@@ -6,8 +6,8 @@
  * Inside the staff shell (the Guru mount) the pages do not use it.
  */
 import { getActivePinia } from 'pinia'
-import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, inject } from 'vue'
+import { RouterLink, routeLocationKey } from 'vue-router'
 
 import { adminShellFor } from '@/app/router/layouts'
 import { useSession } from '@/composables/useSession'
@@ -19,8 +19,11 @@ const theme = useThemeMode('staff')
 // bar, theme switch and page column, so the frame only renders its content there.
 // The portal frames them in every build (scope on or off). A component test mounted without Pinia has
 // no session, so the frame stays standalone there.
+// Admin Sekolah sees S2 and S3 inside the staff shell (route layout `user`, DV-M17-54): same rule.
+const route = inject(routeLocationKey, null)
 const inPortal =
-  getActivePinia() !== undefined && adminShellFor(useSession().role.value) === 'pentadbiran'
+  (getActivePinia() !== undefined && adminShellFor(useSession().role.value) === 'pentadbiran') ||
+  route?.meta.layout === 'user'
 const label = computed(() =>
   theme.scheme.value === 'dark' ? 'Tukar ke tema cerah' : 'Tukar ke tema gelap',
 )
@@ -36,11 +39,7 @@ const label = computed(() =>
         class="sticky top-0 z-20 flex min-h-16 items-center gap-2 bg-default px-4 shadow-bar sm:px-6"
         data-testid="cc-brand-bar"
       >
-        <RouterLink
-          to="/"
-          class="inline-flex min-h-11 items-center"
-          ><DsBrandLogo
-        /></RouterLink>
+        <RouterLink to="/" class="inline-flex min-h-11 items-center"><DsBrandLogo /></RouterLink>
         <UButton
           class="ms-auto"
           color="neutral"

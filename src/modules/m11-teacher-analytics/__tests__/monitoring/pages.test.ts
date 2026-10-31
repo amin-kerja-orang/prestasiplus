@@ -695,7 +695,7 @@ describe('S3 Detail Sekolah', () => {
     await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/99999', { schoolId: 99999 })
     expect(tid('mon-school-header')?.exists()).toBe(false)
     expect(tid('mon-crumbs')?.exists()).toBe(false)
-    expect(document.title).toContain('404')
+    expect(document.title).toContain('Halaman Tidak Dijumpai')
     wrapper?.unmount()
     api.fetchSchoolDetail.mockRejectedValue(
       new ApiError({ status: 403, code: 'FORBIDDEN', message: 'x' }),
@@ -704,7 +704,7 @@ describe('S3 Detail Sekolah', () => {
       schoolId: 940,
       basePath: '/admin-sekolah/monitoring',
     })
-    expect(document.title).toContain('403')
+    expect(document.title).toContain('Akses Ditolak')
   })
 })
 
@@ -865,7 +865,7 @@ describe('S4 Detail Pelajar', () => {
     )
     await open()
     expect(tid('mon-student-header')?.exists()).toBe(false)
-    expect(document.title).toContain('404')
+    expect(document.title).toContain('Halaman Tidak Dijumpai')
   })
 })
 

@@ -32,6 +32,7 @@
  * resolve to the 404 page (overview §5.5, build-plan §S.5).
  */
 
+import { isAlesaAiOn, isKeluargaAngkatOn } from '@/app/features'
 import { isPathAllowed, isPrototypeScopeOn } from '@/app/prototype-scope'
 import type { Role } from '@/stores/session-types'
 
@@ -105,7 +106,7 @@ export interface NavItem extends EntryBase {
    * - `ai`: an item of the Pusat AI partial: `.nav-item` + `text-sm font-semibold` label and a
    *   base-size icon on **both** surfaces (live includes the same partial in both menus);
    * - `drawer-style`: live sidebar item rendered with the drawer classes (Audio KBAT, OBSERVED);
-   * - `command`: the dark "Command Center" card with the LIVE pill (`target="_blank"`);
+   * - `command`: the dark "Command Center" card with the LIVE pill (opens in the same tab for the school admin; the teacher entry keeps `target="_blank"`);
    * - `admin-link`: "Ke Admin Panel" (indigo tint classes).
    */
   variant?: 'main' | 'ai' | 'drawer-style' | 'command' | 'admin-link'
@@ -232,7 +233,8 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'laporan-mingguan', label: 'Laporan Mingguan', to: '/laporan-mingguan', fa: 'fa-file-lines', color: C_INDIGO, roles: SA_ },
 
   // ── School admin: first entry (admin-sekolah screenshot). Href INFERRED. ──
-  { kind: 'item', id: 'sa-command-center', label: 'Command Center', to: '/admin-sekolah/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: SCH },
+  { kind: 'item', id: 'sa-command-center', label: 'Command Center', to: '/admin-sekolah/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', activeExcept: ['/admin-sekolah/command-center/daily-activity'], badge: { text: 'LIVE', cls: B_LIVE }, roles: SCH },
+  { kind: 'item', id: 'sa-aktiviti-harian', label: 'Aktiviti Harian', to: '/admin-sekolah/command-center/daily-activity', fa: 'fa-chart-line', color: 'text-emerald-600', roles: SCH },
 
   // ── Teacher, part 1 (guru screenshots: Command Center, HARIAN, PENGAJARAN, PENILAIAN,
   //    ANALITIK; the Pusat AI block follows). Hrefs/icons as the admin drawer capture's teacher
@@ -270,10 +272,10 @@ export const USER_NAV: readonly NavEntry[] = [
     roles: T,
     children: [
       { kind: 'item', id: 't-kirk-ringkasan', label: 'Ringkasan', to: '/guru/kirkpatrick', fa: 'fa-home', color: '' },
-      { kind: 'item', id: 't-kirk-reaksi', label: 'T1: Reaksi', to: '/guru/kirkpatrick/reaction', fa: 'fa-smile', color: '' },
-      { kind: 'item', id: 't-kirk-pembelajaran', label: 'T2: Pembelajaran', to: '/guru/kirkpatrick/learning', fa: 'fa-graduation-cap', color: '' },
-      { kind: 'item', id: 't-kirk-tingkah-laku', label: 'T3: Tingkah Laku', to: '/guru/kirkpatrick/behavior', fa: 'fa-running', color: '' },
-      { kind: 'item', id: 't-kirk-hasil', label: 'T4: Hasil', to: '/guru/kirkpatrick/results', fa: 'fa-trophy', color: '' },
+      { kind: 'item', id: 't-kirk-reaksi', label: 'Tahap 1: Reaksi', to: '/guru/kirkpatrick/reaction', fa: 'fa-smile', color: '' },
+      { kind: 'item', id: 't-kirk-pembelajaran', label: 'Tahap 2: Pembelajaran', to: '/guru/kirkpatrick/learning', fa: 'fa-graduation-cap', color: '' },
+      { kind: 'item', id: 't-kirk-tingkah-laku', label: 'Tahap 3: Tingkah Laku', to: '/guru/kirkpatrick/behavior', fa: 'fa-running', color: '' },
+      { kind: 'item', id: 't-kirk-hasil', label: 'Tahap 4: Hasil', to: '/guru/kirkpatrick/results', fa: 'fa-trophy', color: '' },
       { kind: 'item', id: 't-kirk-rantaian', label: 'Rantaian Impak', to: '/guru/kirkpatrick/chain', fa: 'fa-link', color: '' },
       { kind: 'item', id: 't-kirk-intervensi', label: 'Intervensi', to: '/guru/kirkpatrick/interventions', fa: 'fa-hand-holding-medical', color: '' },
     ],
@@ -517,10 +519,10 @@ export const USER_NAV: readonly NavEntry[] = [
     roles: A,
     children: [
       { kind: 'item', id: 'kirk-ringkasan', label: 'Ringkasan', to: '/guru/kirkpatrick', fa: 'fa-home', color: '' },
-      { kind: 'item', id: 'kirk-reaksi', label: 'T1: Reaksi', to: '/guru/kirkpatrick/reaction', fa: 'fa-smile', color: '' },
-      { kind: 'item', id: 'kirk-pembelajaran', label: 'T2: Pembelajaran', to: '/guru/kirkpatrick/learning', fa: 'fa-graduation-cap', color: '' },
-      { kind: 'item', id: 'kirk-tingkah-laku', label: 'T3: Tingkah Laku', to: '/guru/kirkpatrick/behavior', fa: 'fa-running', color: '' },
-      { kind: 'item', id: 'kirk-hasil', label: 'T4: Hasil', to: '/guru/kirkpatrick/results', fa: 'fa-trophy', color: '' },
+      { kind: 'item', id: 'kirk-reaksi', label: 'Tahap 1: Reaksi', to: '/guru/kirkpatrick/reaction', fa: 'fa-smile', color: '' },
+      { kind: 'item', id: 'kirk-pembelajaran', label: 'Tahap 2: Pembelajaran', to: '/guru/kirkpatrick/learning', fa: 'fa-graduation-cap', color: '' },
+      { kind: 'item', id: 'kirk-tingkah-laku', label: 'Tahap 3: Tingkah Laku', to: '/guru/kirkpatrick/behavior', fa: 'fa-running', color: '' },
+      { kind: 'item', id: 'kirk-hasil', label: 'Tahap 4: Hasil', to: '/guru/kirkpatrick/results', fa: 'fa-trophy', color: '' },
       { kind: 'item', id: 'kirk-rantaian', label: 'Rantaian Impak', to: '/guru/kirkpatrick/chain', fa: 'fa-link', color: '' },
       { kind: 'item', id: 'kirk-intervensi', label: 'Intervensi', to: '/guru/kirkpatrick/interventions', fa: 'fa-hand-holding-medical', color: '' },
     ],
@@ -697,6 +699,41 @@ function visibleTo(entry: EntryBase, role: Role | null, surface: NavSurface): bo
 }
 
 /**
+ * Menu entries that show ALESA / Cikgu Alesa AI (the M13 screens and the SPM Walkthrough): removed
+ * unless `VITE_ALESA_AI=on` (D73). Their sections / sub-headings go too, so no empty heading is left.
+ */
+export const ALESA_NAV_IDS: ReadonlySet<string> = new Set([
+  'sub-cikgu-alesa-ai',
+  'cikgu-alesa-chat',
+  'rph-cikgu-alesa',
+  'semak-karangan',
+  'pbd-cikgu-alesa',
+  'cikgu-alesa',
+  'sec-cikgu-alesa-tools',
+  'rph-rancangan-harian',
+  'pbd-auto-tag',
+  'mark-karangan',
+  'spm-walkthrough',
+])
+
+/** Drops the ALESA entries (also inside groups) when the flag is off; same array when it is on. */
+export function withoutAlesa<T extends { id: string; kind: string }>(entries: readonly T[]): readonly T[] {
+  if (isAlesaAiOn()) return entries
+  return entries.filter((e) => !ALESA_NAV_IDS.has(e.id))
+}
+
+/** Menu entries of Mohon Keluarga Angkat: removed unless `VITE_KELUARGA_ANGKAT=on` (D74). */
+export const KELUARGA_ANGKAT_NAV_IDS: ReadonlySet<string> = new Set(['mohon-keluarga-angkat'])
+
+/** Drops the Mohon Keluarga Angkat entry when the flag is off; same array when it is on. */
+export function withoutKeluargaAngkat<T extends { id: string; kind: string }>(
+  entries: readonly T[],
+): readonly T[] {
+  if (isKeluargaAngkatOn()) return entries
+  return entries.filter((e) => !KELUARGA_ANGKAT_NAV_IDS.has(e.id))
+}
+
+/**
  * Pusat AI shortcuts that only repeat a matrix item under another label ("Cikgu Alesa Chat" is the
  * same screen as the matrix item "Cikgu Alesa"): not shown in scope mode.
  */
@@ -774,7 +811,7 @@ export function navFor(
     entry.kind !== 'item' ||
     (!isOutOfScope(entry.to) && !(role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)))
   const visible = scopeEntries(
-    entries
+    withoutKeluargaAngkat(withoutAlesa(entries))
       .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))
       .map((entry) =>
         entry.kind === 'group' ? { ...entry, children: entry.children.filter(inScope) } : entry,

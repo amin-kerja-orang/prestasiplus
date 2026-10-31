@@ -9,6 +9,8 @@
 
 import { readonly, shallowRef } from 'vue'
 
+import { formatTabTitle } from '@/composables/tabTitle'
+
 import { SCOPE_PAGE_TITLE } from '../prototype-scope'
 
 /** `'scope'`: the route exists but is outside the prototype scope (D43, `prototype-scope.ts`). */
@@ -32,5 +34,5 @@ export function useRouteOutcome() {
 }
 
 /** Exact tab titles of the standalone error pages (build-plan F-21; M01 FR-M01-50, M08). */
-export const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
-export const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
+export const NOT_FOUND_TITLE = formatTabTitle('Halaman Tidak Dijumpai')
+export const FORBIDDEN_TITLE = formatTabTitle('Akses Ditolak')

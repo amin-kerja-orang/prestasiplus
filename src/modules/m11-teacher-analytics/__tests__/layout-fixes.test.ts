@@ -121,22 +121,16 @@ afterEach(() => {
 })
 
 describe('S2 section tabs show the full label (bug 1)', () => {
-  it('the list scrolls sideways, triggers do not shrink, labels do not truncate', async () => {
+  it('the five section pills keep their full labels and wrap inside the strip', async () => {
     const w = await mountPage(MonitoringPage, '/guru/monitoring', undefined, {
       basePath: '/guru/monitoring',
     })
     const tabs = w.get('[data-testid="mon-tabs"]')
-    expect(hasAll(tabs.get('[role="tablist"]'), 'overflow-x-auto')).toBe(true)
-    const triggers = tabs.findAll('[role="tab"]')
-    expect(triggers).toHaveLength(5)
-    for (const trigger of triggers) expect(hasAll(trigger, 'shrink-0')).toBe(true)
-    const labels = tabs.findAll('[role="tab"] [data-slot="label"]')
-    expect(labels).toHaveLength(5)
-    expect(labels.map((l) => l.text())).toContain('Sekolah Cemerlang / Perhatian Segera')
-    for (const label of labels) {
-      expect(hasAll(label, 'whitespace-nowrap', 'text-ellipsis')).toBe(true)
-      expect(label.classes()).not.toContain('truncate')
-    }
+    const pills = tabs.findAll('button')
+    expect(pills).toHaveLength(5)
+    expect(pills.map((p) => p.text())).toContain('Sekolah Cemerlang / Perhatian Segera')
+    expect(hasAll(tabs.get('div'), 'flex-wrap')).toBe(true)
+    for (const pill of pills) expect(hasAll(pill, 'shrink-0', 'whitespace-nowrap')).toBe(true)
   })
 })
 

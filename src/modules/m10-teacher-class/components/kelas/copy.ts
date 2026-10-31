@@ -35,13 +35,8 @@ export const KELAS_COPY = {
   createFailed: 'Gagal mencipta kelas. Sila cuba lagi.',
 } as const
 
+/** BR-M10-03 (v2: secondary only): the five Tingkatan tiles, for every school type; no Tahun tiles. */
 export const LEVEL_TILES = [
-  { slug: 'tahun-1', label: 'Tahun 1' },
-  { slug: 'tahun-2', label: 'Tahun 2' },
-  { slug: 'tahun-3', label: 'Tahun 3' },
-  { slug: 'tahun-4', label: 'Tahun 4' },
-  { slug: 'tahun-5', label: 'Tahun 5' },
-  { slug: 'tahun-6', label: 'Tahun 6' },
   { slug: 'tingkatan-1', label: 'Ting. 1' },
   { slug: 'tingkatan-2', label: 'Ting. 2' },
   { slug: 'tingkatan-3', label: 'Ting. 3' },
@@ -50,16 +45,6 @@ export const LEVEL_TILES = [
 ] as const
 
 export type LevelTile = (typeof LEVEL_TILES)[number]
-
-/** A primary-school type: `SK`, `SJK(C)` and `SJK(T)` (DV-M10-38). */
-const PRIMARY_TYPE = /^(SK|SJK)(\b|$)/
-
-/** BR-M10-03: no school → 11 tiles; type `SK` / `SJK(C)` / `SJK(T)` → Tahun only; any other type → Ting. only. */
-export function tilesForSchoolType(type: string | null): readonly LevelTile[] {
-  if (type === null) return LEVEL_TILES
-  const prefix = PRIMARY_TYPE.test(type) ? 'tahun-' : 'tingkatan-'
-  return LEVEL_TILES.filter((t) => t.slug.startsWith(prefix))
-}
 
 /** "{daerah}, {negeri}" (FN-M10-3.2.2). */
 export function schoolPlace(s: { district: string | null; state: string }): string {

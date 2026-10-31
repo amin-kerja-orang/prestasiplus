@@ -51,6 +51,8 @@ const props = withDefaults(
     filtered?: boolean
     /** Total rows when paging on the server; defaults to `data.length` (client paging). */
     total?: number
+    /** `none` = no pager (a mini table inside a panel that shows its first rows only). */
+    pager?: 'auto' | 'none'
     /** Rows-per-page choices; shows a "{n} / halaman" select beside the pager summary. */
     pageSizeOptions?: number[]
     /** Card title key (< md). */
@@ -80,6 +82,7 @@ const props = withDefaults(
     emptyDescription: undefined,
     filtered: false,
     total: undefined,
+    pager: 'auto',
     pageSizeOptions: () => [],
     cardTitle: undefined,
     cardFields: () => [],
@@ -133,11 +136,23 @@ watch([() => props.data, pageSize], () => {
 const META_CLASS = 'class'
 const stickyFirst = { th: 'sticky left-0 bg-default', td: 'sticky left-0 bg-inherit' }
 const SELECT_COL = { id: 'select', meta: { [META_CLASS]: { th: 'w-12', td: 'w-12' } } }
+/**
+ * Column width tokens (`layout="fixed"`): a column sets `meta: { width: 'sm' }` and the table
+ * gives it a fixed width; columns without one share the rest. Pages never write width classes.
+ */
+const WIDTHS = { xs: 'w-24', sm: 'w-32', md: 'w-44', lg: 'w-56', xl: 'w-72' } as const
+type ColumnWidth = keyof typeof WIDTHS
 const cols = computed<TableColumn<T>[]>(() => {
   const first = props.stickyFirstColumn ?? kind.value === 'card'
-  const body = props.columns.map((c, i) =>
-    i === 0 && first ? { ...c, meta: { ...c.meta, [META_CLASS]: stickyFirst } } : c,
-  )
+  const body = props.columns.map((c, i) => {
+    const w = (c.meta as { width?: ColumnWidth } | undefined)?.width
+    const sticky = i === 0 && first
+    if (!sticky && !w) return c
+    const width = w ? WIDTHS[w] : ''
+    const th = [sticky ? stickyFirst.th : '', width].filter(Boolean).join(' ')
+    const td = [sticky ? stickyFirst.td : '', width].filter(Boolean).join(' ')
+    return { ...c, meta: { ...c.meta, [META_CLASS]: { th, td } } }
+  })
   return props.selectable ? [SELECT_COL, ...body] : body
 })
 
@@ -169,6 +184,7 @@ const pageSizeItems = computed(() =>
   props.pageSizeOptions.map((n) => ({ label: fillCopy(dsCopy.pageSize, { n }), value: n })),
 )
 const showPager = computed(() => {
+  if (props.pager === 'none') return false
   if (props.pageSizeOptions.length === 0) return count.value > pageSize.value
   return bare.value ? count.value > Math.min(...props.pageSizeOptions) : count.value > 0
 })
@@ -335,7 +351,7 @@ function cell(row: T, key: string): string {
       </div>
       <div
         v-if="showPager"
-        class="flex flex-wrap items-center justify-between gap-3"
+        class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
         :class="flush ? 'bg-default p-4' : bare ? '' : 'mt-3'"
         data-ds="data-table-pager"
       >
@@ -352,6 +368,7 @@ function cell(row: T, key: string): string {
           />
         </div>
         <UPagination
+          class="max-w-full self-center sm:self-auto"
           v-if="showPagination"
           v-model:page="page"
           :total="count"

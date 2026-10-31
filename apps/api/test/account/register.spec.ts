@@ -39,7 +39,7 @@ describe('POST /api/auth/register (mock cases, AC1 and AC6)', () => {
     expect(row?.ic_hash).toMatch(/^[0-9a-f]{64}$/)
     expect(row?.ic_hash).not.toContain('100101140077')
     expect(row?.password_hash).toMatch(/^\$argon2id\$/)
-    expect(row?.grade).toBe(3)
+    expect(row?.grade).toBe(9)
     expect(row?.must_reset_password).toBe(false)
     const roles = await t.db.query<{ role: string }>(`select role from user_roles where user_id = $1::bigint`, [row?.id])
     expect(roles.map((r) => r.role)).toEqual(['student'])
@@ -86,7 +86,7 @@ describe('POST /api/auth/register (mock cases, AC1 and AC6)', () => {
 
   it('returns the Laravel copy of SRS section 5, one message per field, with the summary message', async () => {
     const r = await t.http().post('/api/auth/register').send(
-      body({ name: '', email: 'pelajar@demo.test', grade: 3, password: '123', passwordConfirmation: '456' }),
+      body({ name: '', email: 'pelajar@demo.test', grade: 9, password: '123', passwordConfirmation: '456' }),
     )
     expect(fieldsOf(r)).toEqual({
       name: 'The name field is required.',

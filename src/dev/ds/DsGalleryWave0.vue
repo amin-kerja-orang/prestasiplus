@@ -132,6 +132,27 @@ const coinUrl = coinPng
             ]"
           />
         </UCard>
+        <UCard>
+          <DsChart title="Satu kategori" :labels="['Matematik']" :series="[{ label: 'Soalan', data: [120] }]" data-testid="chart-one" />
+        </UCard>
+        <UCard>
+          <DsChart
+            title="Jam aktif (nilai kosong tidak dicetak)"
+            :labels="Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))"
+            :series="[{ label: 'Jawapan', data: [0, 0, 0, 0, 0, 0, 2, 9, 14, 6, 0, 0, 0, 0, 3, 8, 12, 15, 7, 0, 0, 0, 0, 0] }]"
+            data-testid="chart-hours"
+          />
+        </UCard>
+        <UCard>
+          <DsChart
+            title="Penglibatan (bar mendatar)"
+            horizontal
+            unit="%"
+            :labels="['Cemerlang', 'Sederhana', 'Rendah', 'Kritikal', 'Tiada Langsung']"
+            :series="[{ label: 'Sekolah', data: [42, 12, 5, 2, 1] }]"
+            data-testid="chart-horizontal"
+          />
+        </UCard>
       </div>
     </section>
 

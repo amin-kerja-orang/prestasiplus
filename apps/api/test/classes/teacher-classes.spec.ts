@@ -140,10 +140,10 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
     it('description is optional: absent, null and blank give null', async () => {
       const x = await createClass(t, a, { name: 'Tanpa Huraian' })
       expect(x.schoolId).toBe(school1)
-      const y = await a.post('/guru/classes', { name: 'Kosong', subjectId: subject.id, educationLevel: 'tahun-3', schoolId: '', description: '   ' })
+      const y = await a.post('/guru/classes', { name: 'Kosong', subjectId: subject.id, educationLevel: 'tingkatan-2', schoolId: '', description: '   ' })
       expect(y.status).toBe(201)
-      expect(y.body.data).toMatchObject({ schoolId: school1, description: null, levelLabel: 'Tahun 3', educationLevel: 'tahun-3' })
-      const z = await a.post('/guru/classes', { name: 'Null', subjectId: subject.id, educationLevel: 'tahun-6', schoolId: null, description: null })
+      expect(y.body.data).toMatchObject({ schoolId: school1, description: null, levelLabel: 'Ting. 2', educationLevel: 'tingkatan-2' })
+      const z = await a.post('/guru/classes', { name: 'Null', subjectId: subject.id, educationLevel: 'tingkatan-5', schoolId: null, description: null })
       expect(z.status).toBe(201)
     })
 
@@ -204,6 +204,12 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
       }
     })
 
+    it('secondary-only: a Darjah class level (tahun-n) is refused with the level message and nothing is created', async () => {
+      const res = await a.post('/guru/classes', { name: 'Kelas Darjah', subjectId: subject.id, educationLevel: 'tahun-3' })
+      expect(res.status).toBe(422)
+      expect(fieldsOf(res)).toEqual({ educationLevel: CLASS_MESSAGES.level })
+    })
+
     it('reports every failing field together with the mock messages', async () => {
       const res = await a.post('/guru/classes', {})
       expect(fieldsOf(res)).toEqual({
@@ -256,7 +262,7 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
       expect(other.meta).toMatchObject({ page: 1, pageSize: 1, totalItems: 0, totalPages: 1, from: null, to: null })
       // a school class (no teacher) of the same school is not in the list
       await t.db.query(
-        `insert into classrooms (kind, name, school_id, education_level_id, academic_year) select 'school_class', 'Kelas Sekolah', $1, id, 2026 from education_levels limit 1`,
+        `insert into classrooms (kind, name, school_id, education_level_id, academic_year) select 'school_class', 'Kelas Sekolah', $1, id, 2026 from education_levels where stage <> 'primary' order by id limit 1`,
         [school1],
       )
       expect(ClassList.parse((await a.get('/guru/classes')).body).data.every((x) => x.kind === 'classroom')).toBe(true)
@@ -290,7 +296,7 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
       const k = await createClass(t, a, { name: 'Milik A', schoolId: school1 })
       const sc = (
         await t.db.query<{ id: string }>(
-          `insert into classrooms (kind, name, school_id, education_level_id, academic_year, join_code) select 'school_class', 'KS', $1, id, 2026, 'SCHCLS' from education_levels limit 1 returning id::text`,
+          `insert into classrooms (kind, name, school_id, education_level_id, academic_year, join_code) select 'school_class', 'KS', $1, id, 2026, 'SCHCLS' from education_levels where stage <> 'primary' order by id limit 1 returning id::text`,
           [school1],
         )
       )[0]?.id as string

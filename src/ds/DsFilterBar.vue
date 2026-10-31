@@ -84,7 +84,7 @@ function reset(): void {
 
 <template>
   <form
-    class="flex flex-wrap items-end gap-3 learner:gap-2"
+    class="flex flex-wrap items-end gap-x-3 gap-y-3 learner:gap-2"
     :class="panel ? 'rounded-card bg-default p-3 shadow-card sm:p-4' : ''"
     role="search"
     data-ds="filter-bar"
@@ -112,13 +112,13 @@ function reset(): void {
           </div>
         </template>
       </UPopover>
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex shrink-0 items-center gap-2">
         <UButton type="submit" class="min-h-11" :label="applyLabel" :loading="loading" />
         <UButton
           v-if="resetVisible"
           type="button"
           color="neutral"
-          variant="ghost"
+          variant="link"
           class="min-h-11"
           :label="resetLabel"
           @click="reset"
@@ -169,7 +169,7 @@ function reset(): void {
     </template>
     <DsActiveFilters
       v-if="chips && chips.length"
-      class="w-full basis-full"
+      class="w-full basis-full max-w-none!"
       :chips="chips"
       :reset-label="resetLabel"
       @remove="(k: string) => emit('remove-chip', k)"

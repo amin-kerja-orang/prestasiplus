@@ -1,11 +1,14 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { whenKeluargaAngkat } from '@/app/features'
+
 /**
  * M21 route fragment: S6 Mohon Keluarga Angkat (`/mohon-keluarga-angkat`, M21-T2). User shell, every
  * signed-in role (FR-M21-07, FR-M21-09); a guest goes to `/login`. Header title "Mohon Keluarga Angkat"
  * instead of the live "Dashboard" (DV-M21-06, FR-M21-05); the tab title is the live one.
+ * Hidden (no route -> 404) unless `VITE_KELUARGA_ANGKAT=on` (TRACKER D74).
  */
-const routes: RouteRecordRaw[] = [
+const routes: RouteRecordRaw[] = whenKeluargaAngkat<RouteRecordRaw>([
   {
     path: '/mohon-keluarga-angkat',
     name: 'm21.mohon-keluarga-angkat',
@@ -20,6 +23,6 @@ const routes: RouteRecordRaw[] = [
       v2: true,
     },
   },
-]
+])
 
 export default routes

@@ -30,7 +30,7 @@ describe('curriculum write hardening', () => {
     admin = await loginAs(t, 'admin@demo.test')
     repo = t.app.get(CurriculumRepository)
     bm = await idOf(t.db, 'subjects', 'BM')
-    d1 = await idOf(t.db, 'education_levels', 'D1')
+    d1 = await idOf(t.db, 'education_levels', 'T1')
     const chapter = await admin.post(`${api}/chapters`, { subjectId: bm, educationLevelId: d1, name: 'Bab Kukuh', chapterNumber: 90 })
     chapterId = chapter.body.data.id
     const topic = await admin.post(`${api}/topics`, { chapterId, name: 'Topik Kukuh', topicNumber: '1' })
@@ -360,7 +360,7 @@ describe('curriculum write hardening', () => {
 
   describe('repository `{ active }` filter on chapters', () => {
     it('chapters(), chapter(), chaptersByIds() and tree() can be limited to active chapters', async () => {
-      const id = BigInt(await chapterIdOf(t.db, 'BM', 'D1', 90))
+      const id = BigInt(await chapterIdOf(t.db, 'BM', 'T1', 90))
       await admin.put(`${api}/chapters/${id}`, { subjectId: bm, educationLevelId: d1, name: 'Bab Kukuh', chapterNumber: 90, isActive: false })
       const [subject, level] = [BigInt(bm), BigInt(d1)]
       expect((await repo.chapters(subject, level)).map((c) => c.id)).toContain(id)

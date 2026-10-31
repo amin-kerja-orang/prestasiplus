@@ -23,7 +23,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm')
-    await expectTabTitle(page, 'Mod SPM - PRESTASIPLUS')
+    await expectTabTitle(page, 'Mod SPM | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Mod SPM')
     if (isDesktopShell(page)) {
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')

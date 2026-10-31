@@ -227,7 +227,7 @@ describe('filters (FR-M27-114; AC-M27-32.1)', () => {
       'Tingkatan 4',
       'Tingkatan 5',
     ])
-    expect(w.findAll('label').map((l) => l.text())).toContain('Tingkatan / Darjah')
+    expect(w.findAll('label').map((l) => l.text())).toContain('Tingkatan')
     expect(w.get('[data-testid="kl-search"]').attributes('placeholder')).toBe('Cari kelas...')
   })
 

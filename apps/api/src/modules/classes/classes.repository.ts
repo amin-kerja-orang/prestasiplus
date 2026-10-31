@@ -207,11 +207,16 @@ export class ClassesRepository {
     )
   }
 
+  /** Ids of the primary-stage education levels: their classes are hidden (secondary-only, 2026-10-29). */
+  private async primaryLevelIds(): Promise<bigint[]> {
+    return (await this.db.educationLevel.findMany({ where: { stage: 'primary' }, select: { id: true } })).map((l) => l.id)
+  }
+
   /** The classes a teacher owns (active and inactive), newest first. */
   async forTeacher(teacherId: string): Promise<ClassRecord[]> {
     const key = idOf(teacherId)
     if (key === null) return []
-    const rows = await this.db.classroom.findMany({ where: { teacherId: key }, orderBy: NEWEST_FIRST })
+    const rows = await this.db.classroom.findMany({ where: { teacherId: key, educationLevelId: { notIn: await this.primaryLevelIds() } }, orderBy: NEWEST_FIRST })
     return rows.map(toClass)
   }
 
@@ -219,7 +224,7 @@ export class ClassesRepository {
   async schoolClasses(schoolId: string): Promise<ClassRecord[]> {
     const key = idOf(schoolId)
     if (key === null) return []
-    const rows = await this.db.classroom.findMany({ where: { schoolId: key }, orderBy: NEWEST_FIRST })
+    const rows = await this.db.classroom.findMany({ where: { schoolId: key, educationLevelId: { notIn: await this.primaryLevelIds() } }, orderBy: NEWEST_FIRST })
     return rows.map(toClass)
   }
 

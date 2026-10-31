@@ -130,10 +130,12 @@ export class ProfileService {
       if (
         fields.schoolId === undefined &&
         typeof schoolId === 'string' &&
-        !(await this.schools.exists(schoolId))
+        !(await this.schools.existsSecondary(schoolId))
       ) {
         fields.schoolId = ACCOUNT_AUTH_MESSAGES.schoolInvalid
       }
+      // Secondary-only (2026-10-29): a Darjah grade cannot be newly chosen (an unchanged stored grade is kept).
+      if (fields.grade === undefined && typeof body.grade === 'number' && body.grade < 7 && body.grade !== user.grade) fields.grade = ACCOUNT_AUTH_MESSAGES.gradeInvalid
       if (Object.keys(fields).length > 0 || !parsed.success) {
         const ordered: Record<string, string> = {}
         for (const key of ['name', 'phone', 'bio', 'grade', 'schoolId', ...Object.keys(fields)]) {

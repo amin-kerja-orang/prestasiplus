@@ -71,6 +71,8 @@ export function parseLeagueInput(body: unknown): LeagueInput {
     throw leagueValidation(fields)
   }
   const v = parsed.data
+  // Secondary-only (2026-10-29): a Darjah class level is refused on new leagues; the contract enum still lists D1..D6.
+  if ((v.class_levels ?? []).some((l) => l.startsWith('D'))) throw leagueValidation({ class_levels: M.leagueClassLevels })
   const levels = new Set(v.class_levels ?? [])
   const subjectId = v.subject_id === undefined || v.subject_id === null ? null : v.subject_id
   return {

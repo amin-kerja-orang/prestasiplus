@@ -16,6 +16,7 @@ import { dsCopy } from './copy'
 import { warnDeprecated } from './deprecate'
 import DsArt3D from './DsArt3D.vue'
 import DsIcon from './DsIcon.vue'
+import { formatStat } from './format'
 import DsIconChip from './DsIconChip.vue'
 import { usePersonality } from './personality'
 import { staffRiseAllowed } from './rise'
@@ -30,7 +31,8 @@ export interface StatDelta {
 
 const props = withDefaults(
   defineProps<{
-    value: string | number
+    /** A number is formatted ("1,271"); a string is shown as given; empty prints "-". */
+    value: string | number | null
     /** Label under the number (BM, from the caller). */
     unit: string
     /** Small supporting line under the label (caption). */
@@ -109,6 +111,8 @@ const size = computed<DsTileDensity>(
 )
 const isCompact = computed(() => size.value === 'compact')
 const isRoomy = computed(() => size.value === 'roomy')
+/** The number as printed: one shared formatter ("1,271", "-" when empty). */
+const shown = computed(() => formatStat(props.value))
 const numberClass = computed(() => resolveValueClass(props.valueTone, props.valueClass))
 const interactive = computed(() => Boolean(props.to) || props.clickable)
 /** Ring and pressed / disabled looks shared by the link, button and static forms. */
@@ -164,10 +168,10 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
           class="tabular truncate font-display text-heading learner:font-extrabold staff:text-kpi"
           :class="numberClass"
           :data-testid="valueTestid ?? part('value')"
-          >{{ value }}</span
+          >{{ shown }}</span
         >
         <span
-          class="truncate text-caption font-semibold text-muted staff:text-body staff:font-medium"
+          class="line-clamp-2 text-caption font-semibold text-muted staff:text-body staff:font-medium"
           :data-testid="part('label')"
           >{{ unit }}</span
         >
@@ -185,10 +189,12 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     :is="to ? RouterLink : clickable ? 'button' : 'div'"
     v-else
     v-bind="to ? { to } : clickable ? { type: 'button', disabled: disabled || undefined } : {}"
-    class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift staff:flex-row staff:items-center staff:gap-4 staff:p-4 md:staff:p-5"
+    class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift staff:gap-4 staff:p-4 md:staff:p-5"
     :class="[
       clickable ? 'cursor-pointer text-start' : '',
       isRoomy ? 'gap-3 p-6' : 'gap-2 px-2.5 pt-3.5 pb-3',
+      // Roomy staff tiles stack the chip above the number on a phone (a half-width tile cannot fit both).
+      isRoomy ? 'md:staff:flex-row md:staff:items-center' : 'staff:flex-row staff:items-center',
       riseOff ? 'staff:animate-none' : 'staff:animate-ds-rise-quick',
       stateClass,
     ]"
@@ -210,10 +216,10 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
       <DsIconChip v-else-if="icon" :icon="icon" :accent="accent" :tone="tone" :size="chipSize" />
       <div class="flex min-w-0 flex-col items-start gap-2 staff:gap-0.5">
         <span
-          class="tabular max-w-full font-display font-extrabold wrap-anywhere staff:text-kpi"
+          class="tabular max-w-full font-display font-extrabold whitespace-nowrap staff:text-kpi"
           :class="[numberClass, isRoomy ? 'text-title' : 'text-heading']"
           :data-testid="valueTestid ?? part('value')"
-          >{{ value }}</span
+          >{{ shown }}</span
         >
         <span
           class="text-muted staff:text-body staff:font-medium"
@@ -222,11 +228,11 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
           >{{ unit }}</span
         >
         <span
-          v-if="sub"
+          v-if="sub || $slots.sub"
           class="text-caption text-muted"
           data-ds="stat-tile-sub"
           :data-testid="subTestid ?? part('sub')"
-          >{{ sub }}</span
+          ><slot name="sub">{{ sub }}</slot></span
         >
         <span
           v-if="delta"

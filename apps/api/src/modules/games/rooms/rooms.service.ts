@@ -21,6 +21,7 @@ import { prngStream } from '../../../db/prng'
 import {
   fieldError,
   gameNotFound,
+  roomGradeLevelInvalid,
   roomNotFound,
   startAlreadyStarted,
   startHostOnly,
@@ -195,6 +196,7 @@ export class RoomsService {
       throw first ? fieldError(first.field, first.message) : ApiError.of('VALIDATION_ERROR')
     }
     const v = r.data
+    if (v.grade_level.startsWith('DARJAH')) throw roomGradeLevelInvalid() // secondary-only (2026-10-29)
     const custom = v.match_mode === 'custom'
     return {
       subject: v.subject,

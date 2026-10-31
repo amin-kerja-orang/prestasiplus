@@ -97,10 +97,20 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases of each module.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+
 describe('S2 board (FR-M10-14..18)', () => {
   it('sets the tab title from the teacher name and ticks the MYT clock', async () => {
     await mountPage()
-    expect(document.title).toBe('Command Center — Guru: Guru Demo')
+    expect(document.title).toBe('Command Center — Guru: Guru Demo | PRESTASIPLUS')
     expect(text('cc-clock')).toBe('15:40:00')
     await vi.advanceTimersByTimeAsync(3000)
     expect(text('cc-clock')).toBe('15:40:03')
@@ -829,5 +839,15 @@ describe('"🏆 Badges" (FR-M10-25) @provisional UNVERIFIED COPY', () => {
     await all('cc-badge-chip')[1]!.trigger('click')
     await flushPromises()
     expect(text('cc-holders-empty')).toBe('Belum ada pelajar yang memiliki lencana ini.')
+  })
+})
+
+describe('VITE_ALESA_AI off (D73)', () => {
+  it('drops the ALESA AI insight panel and the credit in the footer', async () => {
+    vi.stubEnv('VITE_ALESA_AI', 'off')
+    await mountPage()
+    expect(all('cc-panel-insight')).toHaveLength(0)
+    expect(text('cc-footer')).toBe('PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat')
+    expect(document.body.textContent).not.toContain('ALESA')
   })
 })

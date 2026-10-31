@@ -971,7 +971,7 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
 // ---------------------------------------------------------------------------------------------
 describe('#57–#58 CSV template and import (S21; BR-M10-24, DV-M10-08)', () => {
   const header =
-    'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation'
+    'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation,kertas'
 
   /** A multipart post of `text` as `name`. */
   const upload = (text: string, name = 'soalan.csv') => {

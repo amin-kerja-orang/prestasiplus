@@ -90,8 +90,9 @@ function boardRoutes(alias: boolean): RouteRecordRaw[] {
   const prefix = alias ? '/admin-sekolah/command-center' : '/admin/command-center'
   const name = alias ? 'm17.ccsa' : 'm17.cc'
   const meta = {
-    layout: 'bare' as const,
-    v2: !alias,
+    // Admin Pusat: `bare` (the Portal Pentadbiran frames it by path); Admin Sekolah: the staff shell (DV-M17-54)
+    layout: alias ? ('user' as const) : ('bare' as const),
+    v2: true,
     access: 'auth' as const,
     roles: [alias ? 'school_admin' : 'admin'] as readonly Role[],
     ...(alias ? { onForbidden: '403' as const } : {}),
@@ -132,6 +133,7 @@ const routes: RouteRecordRaw[] = [
     namePrefix: 'm17.ccsa',
     roles: ['school_admin'],
     onForbidden: '403',
+    shell: true,
   }),
 ]
 

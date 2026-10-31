@@ -217,12 +217,13 @@ describe('notes', () => {
   })
 
   it('create accepts only the four form types; update is partial', () => {
-    const base = { title: 'Rumus Luas', content: '<p>Nota</p>', subject: 'sains', noteType: 'FORMULA', grade: 'DARJAH_5' }
+    const base = { title: 'Rumus Luas', content: '<p>Nota</p>', subject: 'sains', noteType: 'FORMULA', grade: 'TINGKATAN_5' }
     expect(ok(AdminNoteCreateRequestSchema, base)).toBe(true)
     expect(ok(AdminNoteCreateRequestSchema, { ...base, summary: null, isPublished: true })).toBe(true)
     for (const bad of [
       { ...base, noteType: 'MIND_MAP' },
       { ...base, grade: 'DARJAH_7' },
+      { ...base, grade: 'DARJAH_5' }, // AC-10.1: write inputs reject D-level codes (secondary-only, D72)
       { ...base, subject: 'geografi' },
       { ...base, summary: 's'.repeat(1001) },
       { title: 'x' },

@@ -100,7 +100,8 @@ export class ClassesService {
       else fields.subjectId = CLASS_MESSAGES.subject
 
       const grade = gradeOfSlug(body.educationLevel)
-      const level = grade === null ? null : await this.curriculum.levelForGrade(grade)
+      // Secondary-only (2026-10-29): a new class cannot be created in Tahun 1 to 6 (the slugs stay in the contract enum).
+      const level = grade === null || grade < 7 ? null : await this.curriculum.levelForGrade(grade)
       if (level) levelId = idToString(level.id)
       else fields.educationLevel = CLASS_MESSAGES.level
 

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Role } from '@/stores/session-types'
 
@@ -78,6 +78,16 @@ const ROLES: readonly Role[] = [
 
 // ---------------------------------------------------------------------------------------------
 
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases of each module.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+
 describe('ADMIN_NAV data (shells.md §2.7)', () => {
   it('has unique ids and unique group keys', () => {
     const ids = [
@@ -151,7 +161,8 @@ describe('ADMIN_NAV data (shells.md §2.7)', () => {
       // D9 deviation (SWEEP-23OCT): the live "Laporan Eksekutif" item is a dead link here (S8 not built).
       .filter((e) => e.icon !== 'fa-sign-out-alt' && pathOf(e) !== '/admin/laporan-eksekutif')
       .map((e) => ({
-        text: clean(e.text).replace(/ LIVE$/, ''),
+        // User decision 2026-10-31 (DV-M12-39): the Kirkpatrick levels read "Tahap N", not the live "TN".
+        text: clean(e.text).replace(/ LIVE$/, '').replace(/^T([1-4]): /, 'Tahap $1: '),
         href: pathOf(e),
         icon: e.icon ?? '',
       }))
@@ -238,10 +249,10 @@ describe('adminMenuFor / chromeFor: the menu per role', () => {
     expect(group?.key).toBe('kirkpatrick')
     expect(group?.children.map((c) => c.label)).toEqual([
       'Ringkasan',
-      'T1: Reaksi',
-      'T2: Pembelajaran',
-      'T3: Tingkah Laku',
-      'T4: Hasil',
+      'Tahap 1: Reaksi',
+      'Tahap 2: Pembelajaran',
+      'Tahap 3: Tingkah Laku',
+      'Tahap 4: Hasil',
       'Rantaian Impak',
       'Intervensi',
     ])
@@ -301,7 +312,7 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(activeLabel('/guru/monitoring')).toBe('Monitoring')
     expect(activeLabel('/guru/monitoring/sekolah/5/pelajar/9')).toBe('Monitoring')
     expect(activeLabel('/guru/kirkpatrick')).toBe('Overview')
-    expect(activeLabel('/guru/kirkpatrick/reaction')).toBe('T1: Reaksi')
+    expect(activeLabel('/guru/kirkpatrick/reaction')).toBe('Tahap 1: Reaksi')
     expect(activeLabel('/admin/kirkpatrick/interventions')).toBe('Intervensi')
   })
 
@@ -343,7 +354,7 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(label('/guru/monitoring')).toBe('Monitoring')
     expect(label('/guru/monitoring/sekolah/3')).toBe('Monitoring')
     expect(label('/guru/kirkpatrick')).toBe('Ringkasan')
-    expect(label('/guru/kirkpatrick/results')).toBe('T4: Hasil')
+    expect(label('/guru/kirkpatrick/results')).toBe('Tahap 4: Hasil')
     expect(label('/guru/kirkpatrick/pelajar/8')).toBeNull()
     expect(label('/guru/laporan')).toBe('Laporan')
     expect(label('/laporan-mingguan')).toBe('Laporan Mingguan')
@@ -509,7 +520,7 @@ describe('"Lagi" popover (shells.md §2.4, §2.7)', () => {
       'Kelas Saya',
       'Monitoring',
       'Ringkasan',
-      'T1: Reaksi',
+      'Tahap 1: Reaksi',
     ]) {
       expect(labels).not.toContain(excluded)
     }
@@ -546,7 +557,9 @@ describe('exact routes of the adopted user-shell menus', () => {
   // is neither marked exact nor listed here as an intended prefix parent. (The longest match
   // already gives the child its own page; a parent stays active on the pages that have no item
   // of their own, which is the wanted behaviour only for the listed ones.)
-  const PREFIX_PARENTS = new Set(['/cikgu']) // M13 FN-1.1.4: /cikgu/* keeps "Cikgu Alesa Chat"
+  // M13 FN-1.1.4: /cikgu/* keeps "Cikgu Alesa Chat"; the school admin "Command Center" stays active on its drill-down pages (S4-S7),
+  // "Aktiviti Harian" is excluded by `activeExcept` (DV-M17-54)
+  const PREFIX_PARENTS = new Set(['/cikgu', '/admin-sekolah/command-center'])
 
   it.each(ROLES.filter((r) => r !== 'admin' && r !== 'student'))(
     '%s: every parent-path item is exact',

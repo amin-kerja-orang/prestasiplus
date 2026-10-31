@@ -171,7 +171,7 @@ describe('AdminArticleFormPage edit (M09 S3)', () => {
     const category = el<HTMLSelectElement>(w, 'article-category')
     expect(category.value).toBe('TIPS_BELAJAR')
     expect(category.options).toHaveLength(7)
-    expect(el<HTMLSelectElement>(w, 'article-grade').value).toBe('DARJAH_4')
+    expect(el<HTMLSelectElement>(w, 'article-grade').value).toBe('SEMUA')
     expect(t(w, 'article-published').attributes('aria-checked')).toBe('true')
     expect(t(w, 'article-featured').attributes('aria-checked')).toBe('true')
     expect(el<HTMLFormElement>(w, 'admin-article-form').checkValidity()).toBe(true)

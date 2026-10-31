@@ -23,6 +23,8 @@ export const S2_COPY = {
   live: 'LIVE',
   tz: 'MYT',
   footer: 'Powered by ALESA AI · PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat',
+  /** Footer while the ALESA AI surfaces are hidden (D73). */
+  footerPlain: 'PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat',
   noData: 'Tiada data',
   noActivity: 'Tiada aktiviti terkini',
   noWeek: 'Tiada data minggu ini',

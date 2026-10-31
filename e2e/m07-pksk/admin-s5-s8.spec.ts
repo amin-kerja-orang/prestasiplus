@@ -388,7 +388,7 @@ test.describe('M07 S6 create', MODULE, () => {
     await page.getByTestId('q-bahagian').selectOption('C')
     await expect(domainOptions).toHaveCount(2)
     await expect(page.getByTestId('q-level').locator('option')).toHaveText([
-      'Tingkatan 1 (Darjah 6)',
+      'Tingkatan 1',
       'Tingkatan 4 (Tingkatan 3)',
     ])
     await expect(page.getByTestId('q-level')).toHaveValue('T1')
@@ -676,7 +676,7 @@ test.describe('M07 S7 edit', MODULE, () => {
   test('E2E-M07-09a unknown id shows the 404 page', async ({ page, gotoApp }) => {
     await gotoApp(edit(99999999))
     await expect(page.locator('[data-page=not-found]')).toBeVisible()
-    await expectTabTitle(page, '404 - Halaman Tidak Dijumpai | PRESTASIPLUS')
+    await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     await gotoApp(`${LIST}/178460`)
     await expect(page.locator('[data-page=not-found]')).toBeVisible()
   })

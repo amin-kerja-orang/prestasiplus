@@ -24,10 +24,10 @@ describe('DsSplit', () => {
   })
   it('ratio only takes the declared literals', () => {
     expectTypeOf<InstanceType<typeof DsSplit>['$props']['ratio']>().toEqualTypeOf<
-      '1-1' | '2-1' | '3-1' | '1-2' | '8-4' | undefined
+      '1-1' | '2-1' | '3-1' | '1-2' | '8-4' | '5-7' | '7-5' | undefined
     >()
-    // @ts-expect-error 5-7 is not a ratio
-    const bad: InstanceType<typeof DsSplit>['$props']['ratio'] = '5-7'
-    expect(bad).toBe('5-7')
+    // @ts-expect-error 9-3 is not a ratio
+    const bad: InstanceType<typeof DsSplit>['$props']['ratio'] = '9-3'
+    expect(bad).toBe('9-3')
   })
 })

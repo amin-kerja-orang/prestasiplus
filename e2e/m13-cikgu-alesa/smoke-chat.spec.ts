@@ -32,6 +32,9 @@ const GURU_ID = 5
 const SEND = '/api/cikgu/send'
 const MODULE = { tag: [moduleTag(13)] }
 
+// Cikgu Alesa is hidden unless the app is built with VITE_ALESA_AI=on (D73): every route 404s.
+test.skip(process.env.VITE_ALESA_AI !== 'on', 'ALESA AI surfaces are hidden (D73)')
+
 const GREETING =
   'Cikgu Alesa: Hai! Saya Cikgu Alesa. Apa nak belajar hari ni? Cuba tanya pasal subjek tertentu, atau minta latihan soalan.'
 const FALLBACK = 'Cikgu Alesa: Cikgu Alesa tak boleh respon. Cuba lagi.'

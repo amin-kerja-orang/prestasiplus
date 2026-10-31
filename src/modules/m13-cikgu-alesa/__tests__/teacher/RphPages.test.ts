@@ -131,7 +131,6 @@ describe('S3 RPH form', () => {
     expect(wrapper.get('#level').attributes('required')).toBeDefined()
     expect(wrapper.findAll('#level option').map((o) => o.text())).toEqual([
       '— Pilih —',
-      ...[1, 2, 3, 4, 5, 6].map((n) => `Darjah ${String(n)}`),
       ...[1, 2, 3, 4, 5].map((n) => `Tingkatan ${String(n)}`),
     ])
     expect(wrapper.get('#tajuk').attributes('maxlength')).toBe('200')

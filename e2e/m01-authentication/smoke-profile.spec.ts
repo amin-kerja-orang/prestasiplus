@@ -54,7 +54,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     }) => {
       await loginAs(who)
       await gotoApp('/profile')
-      await expectTabTitle(page, 'Profil Saya - PRESTASIPLUS')
+      await expectTabTitle(page, 'Profil Saya | PRESTASIPLUS')
       await expect(page.getByTestId('shell-user-title')).toHaveText('Profil Saya')
       await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
         'Statistik & Pencapaian Anda',
@@ -104,7 +104,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await expectTouchTarget(link)
     await link.click()
     await expect(page).toHaveURL('/profile/edit')
-    await expectTabTitle(page, 'Kemaskini Profil - PRESTASIPLUS')
+    await expectTabTitle(page, 'Kemaskini Profil | PRESTASIPLUS')
   })
 
   test('E2E-M01-28 S8 details: header, prefill, disabled email, static counter, actions row', async ({
@@ -114,7 +114,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
   }) => {
     await loginAs(STUDENT)
     await gotoApp('/profile/edit')
-    await expectTabTitle(page, 'Kemaskini Profil - PRESTASIPLUS')
+    await expectTabTitle(page, 'Kemaskini Profil | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title')).toHaveText('Kemaskini Profil')
     await expect(page.getByRole('heading', { name: 'Maklumat Peribadi' })).toBeVisible()
     await expect(page.getByTestId('profile-name-input')).toHaveValue('Pelajar Demo')

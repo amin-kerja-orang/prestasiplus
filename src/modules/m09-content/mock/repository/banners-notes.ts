@@ -18,6 +18,7 @@ import type {
   NoteSubject,
   NoteType,
 } from '../types'
+import { isGradeShown } from '../types'
 import { M09Error, nowIso, norm, todayKey } from './common'
 
 export const BANNER_SORT = [
@@ -238,6 +239,12 @@ export const notesRepo = defineRepository({
       return store.get(id)
     },
 
+    /** The admin by-id reads and writes: a hidden Darjah note answers "not found" (D72). */
+    getVisible(id: number): NoteRow | undefined {
+      const row = store.get(id)
+      return row && isGradeShown(row.grade) ? row : undefined
+    },
+
     /** S5 list and its "Jumlah" (`total`). */
     adminList(filter: NoteFilter = {}): { rows: NoteRow[]; total: number } {
       const term = norm(filter.search ?? '')
@@ -249,7 +256,9 @@ export const notesRepo = defineRepository({
             : {}),
           ...(type ? { noteType: type } : {}),
         },
-        ...(term === '' ? {} : { match: (n: NoteRow) => n.title.toLowerCase().includes(term) }),
+        // Secondary-only (D72): notes tagged `DARJAH_n` stay stored but are hidden from the list and its total.
+        match: (n: NoteRow) =>
+          isGradeShown(n.grade) && (term === '' || n.title.toLowerCase().includes(term)),
         sort: NOTE_SORT,
         page: filter.page ?? 1,
         pageSize: filter.pageSize ?? 20,

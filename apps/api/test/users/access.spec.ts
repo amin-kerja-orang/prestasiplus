@@ -1,3 +1,4 @@
+import { treatDemoAsSecondary } from '../support/secondary'
 import { CreatedUserSchema, StudentSearchItemSchema, TeacherOptionSchema, ExistingStudentSchema, UserListMetaSchema, UpdatedUserSchema, LAST_ADMIN_MESSAGE, IMPORT_ROLE_FORBIDDEN_MESSAGE } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -29,6 +30,7 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
 
   beforeAll(async () => {
     t = await bootUsersApp({ env: { THROTTLE_ADMIN_WRITE_PER_MINUTE: '100000', THROTTLE_ADMIN_READ_PER_MINUTE: '100000' } })
+    await treatDemoAsSecondary(t.db)
     admin = apiOf(await login(t, ADMIN))
     sa = apiOf(await login(t, SCHOOL_ADMIN))
     s1 = await schoolIdOf(t.db, 'DEMO001')
@@ -228,7 +230,7 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
 
     it('GET /admin/schools/:id/students: A to Z, search and class level filters, scope', async () => {
       await admin.post('/admin/users', { roles: ['student'], name: 'Zainal Murid', email: 'zainal@ujian.test', schoolId: s1, grade: 7 })
-      await admin.post('/admin/users', { roles: ['student'], name: 'Adam Murid', email: 'adam@ujian.test', schoolId: s1, grade: 3 })
+      await admin.post('/admin/users', { roles: ['student'], name: 'Adam Murid', email: 'adam@ujian.test', schoolId: s1, grade: 9 })
       const all = await admin.get(`/admin/schools/${s1}/students`)
       expect(all.status).toBe(200)
       const rows = all.body.data.map((x: unknown) => ExistingStudentSchema.parse(x))
@@ -236,7 +238,7 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
       expect([...names].sort((a: string, b: string) => a.localeCompare(b, 'ms'))).toEqual(names)
       expect(names).toContain('Adam Murid')
       expect(rows.find((r: { name: string }) => r.name === 'Zainal Murid')?.classLevel).toBe('T1')
-      expect(rows.find((r: { name: string }) => r.name === 'Adam Murid')?.classLevel).toBe('D3')
+      expect(rows.find((r: { name: string }) => r.name === 'Adam Murid')?.classLevel).toBe('T3')
       const byLevel = await admin.get(`/admin/schools/${s1}/students?classLevel=T1`)
       expect(byLevel.body.data.map((r: { name: string }) => r.name)).toEqual(['Zainal Murid'])
       const bySearch = await admin.get(`/admin/schools/${s1}/students?search=ADAM@`)
@@ -248,10 +250,17 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
       expectError(await admin.get('/admin/schools/abc/students'), 'NOT_FOUND')
     })
 
+    it('secondary-only: a Darjah pupil is out of the admin list and detail (404)', async () => {
+      const [pupil] = await t.db.query<{ id: string }>(`insert into users (name, email, school_id, grade) values ('Murid Darjah Tersembunyi', 'darjah.tersembunyi@ujian.test', $1, 3) returning id::text`, [s1])
+      await t.db.query(`insert into user_roles (user_id, role) values ($1, 'student')`, [pupil!.id])
+      expect((await admin.get('/admin/users?search=Tersembunyi')).body.data).toEqual([])
+      expectError(await admin.get(`/admin/users/${pupil!.id}`), 'NOT_FOUND')
+    })
+
     it('GET /admin/schools/:id/students caps the answer at 200 rows', async () => {
       await t.db.query(
         `with u as (insert into users (name, email, school_id, grade)
-           select 'Murid Banyak ' || lpad(g::text, 3, '0'), 'banyak' || g || '@ujian.test', $1, 2 from generate_series(1, 210) g returning id)
+           select 'Murid Banyak ' || lpad(g::text, 3, '0'), 'banyak' || g || '@ujian.test', $1, 8 from generate_series(1, 210) g returning id)
          insert into user_roles (user_id, role) select id, 'student' from u`,
         [s1],
       )

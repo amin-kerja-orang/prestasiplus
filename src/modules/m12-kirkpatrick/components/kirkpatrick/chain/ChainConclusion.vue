@@ -1,10 +1,16 @@
 <script setup lang="ts">
 /** The static conclusion of S6 (FN-M12-7.4.1; FR-M12-69). */
+import { DsPanel } from '@/ds'
 </script>
 
 <template>
-  <UCard variant="soft" class="min-w-0" data-testid="chain-conclusion">
-    <h2 class="mb-2 text-subheading text-highlighted">Kesimpulan Model Kirkpatrick</h2>
+  <DsPanel
+    title="Kesimpulan Model Kirkpatrick"
+    icon="seal-check"
+    accent="win"
+    class="min-w-0"
+    data-testid="chain-conclusion"
+  >
     <p class="text-body text-default">
       Berdasarkan analisis empat tahap Model Kirkpatrick, Prestasi Plus menunjukkan keberkesanan
       sebagai platform pembelajaran digital. <strong>Tahap 1 (Reaksi)</strong> menunjukkan maklum
@@ -15,5 +21,5 @@
       penggunaan aktif dengan ketepatan jawapan membuktikan impak positif terhadap pencapaian.
       Empat-empat tahap Kirkpatrick dipenuhi dalam Prestasi Plus.
     </p>
-  </UCard>
+  </DsPanel>
 </template>

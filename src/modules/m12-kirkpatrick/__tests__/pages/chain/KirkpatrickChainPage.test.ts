@@ -64,6 +64,16 @@ afterEach(() => {
   wrapper = undefined
 })
 
+// ALESA AI surfaces are hidden unless VITE_ALESA_AI=on (D73): this file covers the "on" state;
+// the "off" state is in src/app/__tests__/features.test.ts and the OFF cases below.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+// Re-applied per test: files that call `vi.unstubAllEnvs()` in their own afterEach drop it.
+beforeEach(() => {
+  vi.stubEnv('VITE_ALESA_AI', 'on')
+})
+
 describe('S6 header (AC-M12-25.1, 27.1)', () => {
   it('shows the title, subtitle, export button and back link, and no tab strip', async () => {
     const w = await open()
@@ -89,7 +99,7 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
   it('T1 shows NPS Purata, Kepuasan and Responden as success', async () => {
     const w = await open()
     const card = t(w, 'chain-t1')
-    expect(flat(card)).toContain('T1 Reaksi Kepuasan pengguna terhadap Prestasi Plus')
+    expect(flat(card)).toContain('Tahap 1 Reaksi Kepuasan pengguna terhadap Prestasi Plus')
     expect(card.findAll('[data-testid="chain-value"]').map((e) => e.text())).toEqual([
       '8.3/10',
       '4.6/5',
@@ -115,7 +125,7 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
     const card = t(w, 'chain-t3')
     expect(flat(card)).toContain('Konsistensi penggunaan platform (Mastery Learning)')
     expect(card.findAll('[data-testid="chain-value"]').map((e) => squash(e.text()))).toEqual([
-      '946/4158 (22.8%)',
+      '946/4,158 (22.8%)',
       '20,991',
     ])
     expect(card.text()).toContain('Taburan Konsistensi:')
@@ -124,7 +134,7 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
       'Consistent 259',
       'Developing 169',
       'Minimal 5',
-      'Disengaged 3212',
+      'Disengaged 3,212',
     ])
     expect(card.attributes('data-tone')).toBe('warning')
   })
@@ -246,5 +256,14 @@ describe('S6 print page level cards (BUG-09)', () => {
     const w = await open()
     expect(t(w, 'chain-cards').classes()).toContain('lg:flex-row')
     expect(w.findAll('[data-testid="chain-arrow"]')).toHaveLength(3)
+  })
+})
+
+describe('S6 conclusion with the ALESA AI flag off (D73)', () => {
+  it('hides the "Kesimpulan ALESA" box; the table stays', async () => {
+    vi.stubEnv('VITE_ALESA_AI', '')
+    const w = await open()
+    expect(w.find('[data-testid="corr-conclusion"]').exists()).toBe(false)
+    expect(w.text()).not.toContain('Kesimpulan ALESA')
   })
 })

@@ -34,6 +34,10 @@ const filled = [
  */
 const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staff:text-body'
 
+/** One pager control: equal square, centred glyph, medium weight, text colour for icons too. */
+const pagerButton =
+  'size-11 min-h-11 min-w-11 justify-center rounded-sm p-0 font-medium text-default shadow-none md:size-10 md:min-h-10 md:min-w-10 hover:bg-elevated hover:text-highlighted'
+
 const fieldConfig = {
   slots: { leadingIcon: 'text-muted', trailingIcon: 'text-muted' },
   defaultVariants: { variant: 'soft' },
@@ -49,7 +53,22 @@ const fieldConfig = {
 }
 
 /** Closed field plus its popup list (item states, checked, empty, group labels). */
-const menuField = { ...fieldConfig, slots: { ...fieldConfig.slots, ...selectSlots } }
+const menuField = {
+  ...fieldConfig,
+  slots: {
+    ...fieldConfig.slots,
+    ...selectSlots,
+    // Caret gets its own gutter (never against the edge); the value truncates before reaching it.
+    base: 'cursor-pointer data-[state=open]:bg-accented',
+    trailing: 'pe-3.5',
+    value: 'truncate text-start',
+  },
+  compoundVariants: [
+    ...fieldConfig.compoundVariants,
+    { trailing: true, class: { base: 'pe-11' } },
+    { leading: true, class: { base: 'ps-11' } },
+  ],
+}
 
 /**
  * Nuxt UI's internal icons, remapped from Lucide to Phosphor (design system section 10.1: Lucide is
@@ -210,13 +229,21 @@ export const uiConfig = {
   pinInput: { defaultVariants: { variant: 'soft' }, variants: { variant: { soft: filled } } },
 
   // Pager wraps instead of overflowing on narrow screens (S-08 / S-09).
+  // Calm pager: every control is the same square (44px touch, 40px from md), ghost neutral with a
+  // clear hover; the current page is a flat primary tint (no gradient, no shadow). Icons share the
+  // label's weight and colour. The active page is styled through Reka's `data-selected`.
   pagination: {
     slots: {
       root: 'max-w-full',
-      list: 'flex-wrap justify-center gap-1.5',
-      item: 'min-w-11 tabular-nums',
-      ellipsis: 'text-muted',
+      list: 'flex-wrap justify-center gap-1',
+      item: `${pagerButton} tabular-nums data-[selected=true]:bg-primary-soft data-[selected=true]:text-primary-t data-[selected=true]:hover:bg-primary-soft data-[selected=true]:shadow-none`,
+      first: pagerButton,
+      prev: pagerButton,
+      next: pagerButton,
+      last: pagerButton,
+      ellipsis: `${pagerButton} text-muted`,
     },
+    defaultVariants: { variant: 'ghost', color: 'neutral', activeVariant: 'ghost', activeColor: 'neutral' },
   },
 
   // Raised surface with a soft shadow, no divider lines.
@@ -273,6 +300,7 @@ export const uiConfig = {
   checkbox: {
     slots: {
       container: 'min-h-11 min-w-11 justify-center',
+      wrapper: 'ms-1 flex min-h-11 min-w-0 flex-col justify-center has-data-[slot=description]:justify-start has-data-[slot=description]:pt-3',
       // Borders are transparent (layers, not lines): an unchecked box needs its own fill to show.
       base: "relative overflow-visible rounded-xs bg-accented transition-colors duration-fast after:absolute after:-inset-2.5 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
       label: 'text-label',
@@ -284,6 +312,8 @@ export const uiConfig = {
   switch: {
     slots: {
       container: 'min-h-11 min-w-11 justify-center',
+      // Label (+ caption) centred on the 44px control box: box and text share one axis.
+      wrapper: 'ms-1 flex min-h-11 min-w-0 flex-col justify-center has-data-[slot=description]:justify-start has-data-[slot=description]:pt-3',
       base: "relative transition-colors duration-fast after:absolute after:-inset-2 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
       thumb: 'shadow-ds-xs',
       label: 'text-label',

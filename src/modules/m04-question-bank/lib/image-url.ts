@@ -20,5 +20,7 @@ export const isMockBlob = (value: string): boolean => value.startsWith('blob:moc
 
 /** The `src` to render for a stored image value: the placeholder for `blob:mock/...`, else the value. */
 export function imageSrc(value: string): string {
-  return isMockBlob(value) ? IMAGE_PLACEHOLDER : value
+  if (isMockBlob(value)) return IMAGE_PLACEHOLDER
+  // A v2 public file token (22 URL-safe characters) is served by `/api/files/<token>`.
+  return /^[A-Za-z0-9_-]{22}$/.test(value) ? `/api/files/${value}` : value
 }

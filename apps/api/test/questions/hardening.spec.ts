@@ -119,7 +119,7 @@ describe('BE-09 hardening (real database)', () => {
     expect(await t.app.get(FilesService).metaOf('abc')).toBeNull()
   })
 
-  it('an attached image must be the actor own file unless the actor is an admin; unowned files are allowed', async () => {
+  it('an attached image must be the actor own file unless the actor is an admin; unowned files are refused for a non-admin', async () => {
     const mine = await fileFor(teacher.userId)
     const theirs = await fileFor(teacher2.userId)
     const orphan = await fileFor(null)
@@ -127,7 +127,9 @@ describe('BE-09 hardening (real database)', () => {
     const make = (actor: typeof teacher | typeof admin, imageId: string) =>
       svc.create(mcqInput(tag, { questionType: 'essay', parts: withImage(imageId) }), actor)
     expect((await make(teacher, mine)).version.status).toBe('draft')
-    expect((await make(teacher, orphan)).version.status).toBe('draft')
+    // An unowned file is foreign for a non-admin (fail closed, 2026-10-29); an admin may use it.
+    expect((await apiError(() => make(teacher, orphan))).getStatus()).toBe(422)
+    expect((await make(admin, orphan)).version.status).toBe('draft')
     const err = await apiError(() => make(teacher, theirs))
     expect(err.getStatus()).toBe(422)
     // Same key and message as a missing file or a wrong purpose: no existence oracle.

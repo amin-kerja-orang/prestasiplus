@@ -181,7 +181,7 @@ export async function addFlag(db: TestDatabase, userId: string, level: 'review' 
 }
 
 export async function addClass(db: TestDatabase, input: { name: string; teacherId: string; schoolId: string; subjectId?: string | null; members: string[] }): Promise<string> {
-  const level = (await db.query<{ id: string }>(`select id::text from education_levels order by id limit 1`))[0] as { id: string }
+  const level = (await db.query<{ id: string }>(`select id::text from education_levels where stage <> 'primary' order by id limit 1`))[0] as { id: string }
   const rows = await db.query<{ id: string }>(
     `insert into classrooms (name, teacher_id, school_id, subject_id, education_level_id, academic_year) values ($1, $2, $3, $4, $5, 2026) returning id::text`,
     [input.name, input.teacherId, input.schoolId, input.subjectId ?? null, level.id],

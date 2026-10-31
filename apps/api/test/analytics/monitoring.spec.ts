@@ -1,3 +1,4 @@
+import { treatDemoAsSecondary } from '../support/secondary'
 import {
   AnalyticsItemAnalysisSchema,
   AnalyticsMonitoringExportSchema,
@@ -59,6 +60,7 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
 
   beforeAll(async () => {
     t = await bootAnalyticsApp()
+    await treatDemoAsSecondary(t.db, false)
     w = await buildWorld(t)
     // buildWorld: p1 8/6 (2026-09-10, subject 0) + 10/5 (2026-10-05, subject 1) + a test and an in-progress session;
     // maju 50/40 (2026-10-10); pupil B 5/5 (2026-10-12). Flags: p1 review, maju excluded. States for the state filter.

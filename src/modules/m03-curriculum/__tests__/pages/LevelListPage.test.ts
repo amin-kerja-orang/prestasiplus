@@ -124,7 +124,6 @@ async function deleteViaMenu(index: number): Promise<void> {
 describe('LevelListPage (M03 S9)', () => {
   it('shows the heading, the count and the pink add button', async () => {
     const w = await render()
-    expect(w.get('h2').text()).toBe('Senarai Tahap Pendidikan')
     expect(w.get('[data-testid=levels-count]').text()).toBe('Jumlah: 3 tahap')
     const add = w.get('[data-testid=levels-add]')
     expect(add.text()).toBe('Tambah Tahap')

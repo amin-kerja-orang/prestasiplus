@@ -229,7 +229,7 @@ export const REGISTER_STUDENT = {
   email: 'murid.baharu@ujian.test',
   phone: '0191234567',
   role: 'student',
-  grade: 3,
+  grade: 9,
   icNumber: '100101140077',
   password: 'rahsia1',
   passwordConfirmation: 'rahsia1',
