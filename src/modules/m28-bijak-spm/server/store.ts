@@ -8,7 +8,8 @@
  */
 import { blankQuestion } from '../admin/intake/domain/blank'
 import { batchToSeeds } from '../admin/intake/domain/convert'
-import { groupsOf } from '../admin/intake/domain/grouping'
+import { attachToStimulus, groupsOf } from '../admin/intake/domain/grouping'
+import { referencingQuestionIds } from '../admin/intake/domain/figure-links'
 import { paperMarks } from '../admin/intake/domain/marks'
 import { validateBatch } from '../admin/intake/domain/validation'
 import { demoBatch } from '../admin/intake/lib/seed'
@@ -1073,6 +1074,22 @@ export class BijakServer implements BijakApi {
     store[batch.id] = batch
     this.persist()
     return jsonClone(batch)
+  }
+
+  /** D90: links the figure to every question without a stimulus that names it, and keeps the group contiguous. */
+  async linkStimulusReferences(id: string, stimulusId: string): Promise<{ linkedItemIds: string[] }> {
+    await this.tick()
+    const b = this.intakeBatch(id)
+    if (b.status !== 'draf') throw new BijakError('bad_request', 'Kumpulan sudah dihantar untuk semakan')
+    const stimulus = b.stimuli.find((x) => x.id === stimulusId)
+    if (!stimulus) throw new BijakError('not_found', 'Rajah tidak dijumpai')
+    const linkedItemIds = referencingQuestionIds(b.questions, stimulus)
+    if (linkedItemIds.length > 0) {
+      b.questions = attachToStimulus(b.questions, linkedItemIds, stimulusId).questions
+      b.updatedAt = this.now()
+      this.persist()
+    }
+    return { linkedItemIds }
   }
 
   /** Replace the edited content of a Draf batch. A batch under review is read-only. */
