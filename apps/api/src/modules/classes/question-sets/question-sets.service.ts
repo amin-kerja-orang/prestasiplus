@@ -35,7 +35,7 @@ export class QuestionSetsService {
     const stored = await this.repo.itemIds(buildable.map((s) => s.id))
     const all = [...new Set([...stored.values()].flat())]
     const live = all.length === 0 ? [] : await this.questions.getMany(all, 'live')
-    const eligible = new Set(live.filter((q) => q.isActive && q.version.status === 'published').map((q) => q.id))
+    const eligible = new Set(live.filter((q) => q.isActive && q.version.status === 'approved').map((q) => q.id))
     const out = new Map<string, string[]>()
     for (const s of sets) out.set(s.id, (stored.get(s.id) ?? []).filter((id) => eligible.has(id)))
     return out

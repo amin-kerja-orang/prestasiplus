@@ -7811,10 +7811,9 @@
           "draft",
           "review",
           "approved",
-          "published",
           "archived"
         ],
-        "description": "Question lifecycle code (D54a): draft = Draf, review = Semakan, approved = Lulus, published = Diterbitkan, archived = Diarkib."
+        "description": "Question lifecycle code (D54a, ADR-0027): draft = Draf, review = Semakan, approved = Diterbitkan (the only status served to pupils), archived = Diarkib."
       },
       "QuestionWorkflowActor": {
         "type": "string",
@@ -7828,10 +7827,9 @@
         "type": "string",
         "enum": [
           "submit",
-          "approve",
-          "publish"
+          "approve"
         ],
-        "description": "Gate that must pass for a transition: submit (draft to review), approve (review to approved), publish (approved to published)."
+        "description": "Gate that must pass for a transition: submit (draft to review), approve (review to approved: the merged approve and publish gate of ADR-0027)."
       },
       "QuestionWorkflowTransitionRule": {
         "type": "object",
@@ -11279,6 +11277,7 @@
           "short_text",
           "match_letter",
           "essay",
+          "essay_choice",
           "drawing",
           "table_fill"
         ],
@@ -11328,6 +11327,26 @@
                   "max"
                 ],
                 "additionalProperties": false
+              },
+              "topics": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "essay_choice: the topics the pupil picks one of."
               }
             },
             "required": [
@@ -11359,6 +11378,33 @@
           },
           "text": {
             "type": "string"
+          },
+          "image": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300,
+                "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "alt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false,
+            "description": "A picture on the option (V2 production image options)."
           }
         },
         "required": [
@@ -11405,6 +11451,109 @@
           },
           "stem": {
             "type": "string"
+          },
+          "stemImage": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "passage",
+                  "image",
+                  "diagram",
+                  "table",
+                  "map",
+                  "infographic",
+                  "graph"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "example": "Rajah 2"
+              },
+              "title": {
+                "type": "string",
+                "description": "Bold title of a passage or picture."
+              },
+              "caption": {
+                "type": "string"
+              },
+              "alt": {
+                "type": "string",
+                "description": "Accessible description of the diagram."
+              },
+              "svg": {
+                "type": "string",
+                "description": "Inline SVG markup (trusted, bundled)."
+              },
+              "text": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "Source line of a passage."
+              },
+              "table": {
+                "type": "object",
+                "properties": {
+                  "head": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "head",
+                  "rows"
+                ],
+                "additionalProperties": false
+              },
+              "image": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false,
+                "description": "The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL."
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "label",
+              "alt"
+            ],
+            "additionalProperties": false,
+            "description": "The question's own picture (an image stimulus linked to its version, not shared with a group)."
           },
           "marks": {
             "type": "integer",
@@ -11453,14 +11602,22 @@
           "kind": {
             "type": "string",
             "enum": [
-              "diagram",
               "passage",
-              "table"
+              "image",
+              "diagram",
+              "table",
+              "map",
+              "infographic",
+              "graph"
             ]
           },
           "label": {
             "type": "string",
             "example": "Rajah 2"
+          },
+          "title": {
+            "type": "string",
+            "description": "Bold title of a passage or picture."
           },
           "caption": {
             "type": "string"
@@ -11475,6 +11632,10 @@
           },
           "text": {
             "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source line of a passage."
           },
           "table": {
             "type": "object",
@@ -11500,6 +11661,30 @@
               "rows"
             ],
             "additionalProperties": false
+          },
+          "image": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300,
+                "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false,
+            "description": "The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL."
           }
         },
         "required": [
@@ -11517,7 +11702,116 @@
             "$ref": "#/components/schemas/Id"
           },
           "stimulus": {
-            "$ref": "#/components/schemas/BijakAttemptStimulus"
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "passage",
+                  "image",
+                  "diagram",
+                  "table",
+                  "map",
+                  "infographic",
+                  "graph"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "example": "Rajah 2"
+              },
+              "title": {
+                "type": "string",
+                "description": "Bold title of a passage or picture."
+              },
+              "caption": {
+                "type": "string"
+              },
+              "alt": {
+                "type": "string",
+                "description": "Accessible description of the diagram."
+              },
+              "svg": {
+                "type": "string",
+                "description": "Inline SVG markup (trusted, bundled)."
+              },
+              "text": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "Source line of a passage."
+              },
+              "table": {
+                "type": "object",
+                "properties": {
+                  "head": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "head",
+                  "rows"
+                ],
+                "additionalProperties": false
+              },
+              "image": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false,
+                "description": "The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL."
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "label",
+              "alt"
+            ],
+            "additionalProperties": false,
+            "description": "The first stimulus of the group."
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            },
+            "minItems": 1,
+            "maxItems": 3,
+            "description": "Every stimulus of the group in order (1 to 3). A stimulus is shown once above all member questions; it is never a question and carries no marks (D90)."
           },
           "from": {
             "type": "integer",
@@ -30171,7 +30465,6 @@
           "draft",
           "review",
           "approved",
-          "published",
           "archived"
         ]
       },
@@ -37461,6 +37754,13 @@
             ],
             "maxLength": 64
           },
+          "curriculumChapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
           "options": {
             "type": "array",
             "minItems": 4,
@@ -37629,6 +37929,13 @@
             ],
             "maxLength": 64
           },
+          "curriculumChapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
           "options": {
             "type": "array",
             "minItems": 4,
@@ -37770,7 +38077,6 @@
               "draft",
               "review",
               "approved",
-              "published",
               "archived",
               "delete"
             ]
@@ -50051,7 +50357,7 @@
           "questionCount": {
             "type": "integer",
             "minimum": 0,
-            "description": "Active (published) questions of the level (M04)."
+            "description": "Active (approved) questions of the level (M04)."
           },
           "subjectCount": {
             "type": "integer",
@@ -50277,7 +50583,7 @@
           "questionCount": {
             "type": "integer",
             "minimum": 0,
-            "description": "Active (published) questions of the subject (M04)."
+            "description": "Active (approved) questions of the subject (M04)."
           },
           "levels": {
             "type": "array",
@@ -59711,10 +60017,9 @@
           "draft",
           "review",
           "approved",
-          "published",
           "archived"
         ],
-        "description": "Question lifecycle code (D54a): draft, review, approved, published, archived. Prototype mapping: semakan = review, terbit = published, draf = draft (the prototype also reports draf for a question that is not in the bank); ditolak (rejected) has no D54 code and maps to draft, a contract choice [PROPOSED]. The builder offers only published questions as candidates (`getPaperEditor`: terbit, same subject and kertas); a paper can reference questions of any status, and publish refuses any that is not published (\"{N} soalan belum Terbit\")."
+        "description": "Question lifecycle code (D54a, ADR-0027): draft, review, approved, archived. Prototype mapping: semakan = review, terbit = approved, draf = draft (the prototype also reports draf for a question that is not in the bank); ditolak (rejected) has no D54 code and maps to draft, a contract choice [PROPOSED]. The builder offers only approved questions as candidates (`getPaperEditor`: terbit, same subject and kertas); a paper can reference questions of any status, and publish refuses any that is not approved (\"{N} soalan belum Terbit\")."
       },
       "BijakBuilderQuestionKind": {
         "type": "string",
@@ -62030,14 +62335,22 @@
               "kind": {
                 "type": "string",
                 "enum": [
-                  "diagram",
                   "passage",
-                  "table"
+                  "image",
+                  "diagram",
+                  "table",
+                  "map",
+                  "infographic",
+                  "graph"
                 ]
               },
               "label": {
                 "type": "string",
                 "example": "Rajah 2"
+              },
+              "title": {
+                "type": "string",
+                "description": "Bold title of a passage or picture."
               },
               "caption": {
                 "type": "string"
@@ -62052,6 +62365,10 @@
               },
               "text": {
                 "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "Source line of a passage."
               },
               "table": {
                 "type": "object",
@@ -62077,6 +62394,30 @@
                   "rows"
                 ],
                 "additionalProperties": false
+              },
+              "image": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false,
+                "description": "The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL."
               }
             },
             "required": [
@@ -98286,7 +98627,7 @@
           "questions"
         ],
         "summary": "Create a question",
-        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 3) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
+        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 3) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: approved` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
         "parameters": [
           {
             "schema": {

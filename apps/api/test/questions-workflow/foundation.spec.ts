@@ -45,7 +45,7 @@ describe('question workflow foundation', () => {
 
   it('the fake bank follows the port contract for publish and withdraw', async () => {
     t.fake.seed({ id: '501', status: 'approved' })
-    expect((await t.fake.setStatus('501', 'published', '1'))?.liveVersionNo).toBe(1)
+    expect((await t.fake.setStatus('501', 'approved', '1'))?.liveVersionNo).toBe(1)
     expect((await t.fake.setStatus('501', 'archived', '1'))?.liveVersionNo).toBeNull()
     expect(await t.fake.getStatus('999')).toBeNull()
   })

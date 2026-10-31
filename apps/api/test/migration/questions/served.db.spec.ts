@@ -81,12 +81,13 @@ afterAll(async () => {
 describe('loaded questions through the question bank', () => {
   it('are read back as complete published single-part MCQs (the reader fails closed on a bad leaf, so this is the proof)', async () => {
     const records = await repo.getMany(Object.values(loaded), 'live')
-    expect(records).toHaveLength(6)
+    // Secondary-only (D72): the Darjah question (4) is loaded but the bank never returns it, so 5 of the 6 come back.
+    expect(records).toHaveLength(5)
     const first = records.find((r) => r.id === loaded['1'])
     expect(first).toBeDefined()
     expect(first?.liveVersionNo).toBe(1)
     expect(first?.isActive).toBe(true)
-    expect(first?.version).toMatchObject({ status: 'published', type: 'mcq', stemMs: 'Soalan T4 satu?', explanationMs: 'Penjelasan satu.', difficultyTp: 2, educationLevelId: v2.t4, subjectId: v2.subject, formOrigin: 't4' })
+    expect(first?.version).toMatchObject({ status: 'approved', type: 'mcq', stemMs: 'Soalan T4 satu?', explanationMs: 'Penjelasan satu.', difficultyTp: 2, educationLevelId: v2.t4, subjectId: v2.subject, formOrigin: 't4' })
     const m = servableMcq(first as never)
     expect(m.ok).toBe(true)
     if (m.ok) {
@@ -94,8 +95,8 @@ describe('loaded questions through the question bank', () => {
       expect(m.leaf.key).toEqual({ kind: 'option', correct: 'B' })
     }
     expect(first?.spmPool).toBe(true)
-    expect(records.find((r) => r.id === loaded['4'])?.spmPool).toBe(false) // Darjah: not in the SPM pool
-    expect(records.find((r) => r.id === loaded['4'])?.version.chapterId).toBe(v2.chapter)
+    expect(records.find((r) => r.id === loaded['4'])).toBeUndefined() // Darjah: hidden everywhere (secondary-only)
+    expect(records.find((r) => r.id === loaded['2'])?.version.chapterId).toBe(v2.chapter)
   })
 
   it('a held image question is live but not active', async () => {
@@ -112,10 +113,10 @@ describe('served by a practice draw', () => {
     const q = live.get(loaded['1'] as string)
     expect(q).toMatchObject({ questionText: 'Soalan T4 satu?', correctLabel: 'B', explanation: 'Penjelasan satu.', difficulty: 2, hasDskp: true })
     expect(q?.options.map((o) => o.text)).toEqual(['Satu', 'Dua', 'Tiga', 'Empat'])
-    expect(await practice.sample({ subjectId: v2.subject, educationLevelIds: [v2.d1], difficulty: 1 }, 5, mulberry32(1))).toEqual([loaded['4']])
+    expect(await practice.sample({ subjectId: v2.subject, educationLevelIds: [v2.d1], difficulty: 1 }, 5, mulberry32(1))).toEqual([]) // Darjah is not served (secondary-only)
     expect(await practice.sample({ subjectId: v2.subject, educationLevelIds: [v2.t4], difficulty: 4 }, 5, mulberry32(1))).toEqual([loaded['2']])
     // Chapter practice: every ACTIVE loaded question of the chapter (the held image one is not offered).
-    expect((await practice.chapterQuestionIds(v2.chapter)).sort()).toEqual(['1', '2', '3', '4', '6'].map((k) => loaded[k] as string).sort())
+    expect((await practice.chapterQuestionIds(v2.chapter)).sort()).toEqual(['1', '2', '3', '6'].map((k) => loaded[k] as string).sort())
   })
 
   it('Latih Tubi (SPM pool) draws only the Tingkatan 4 and 5 questions', async () => {

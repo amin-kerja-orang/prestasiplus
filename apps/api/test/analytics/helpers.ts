@@ -119,7 +119,7 @@ export async function addQuestion(db: TestDatabase, input: QuestionInput): Promi
   const questionId = (question[0] as { id: string }).id
   const version = await db.query<{ id: string }>(
     `insert into question_versions (question_id, version_no, status, published_at, type, stem_ms, explanation_ms, subject_id, chapter_id, topic_id, exam_type, year, difficulty_tp)
-     values ($1, 1, 'published', now(), 'mcq', $2, $3, $4, $5, $6, $7, $8, $9) returning id::text`,
+     values ($1, 1, 'approved', now(), 'mcq', $2, $3, $4, $5, $6, $7, $8, $9) returning id::text`,
     [questionId, input.stem, input.explanation ?? null, input.subjectId, input.chapterId ?? null, input.topicId ?? null, input.examType ?? null, input.year ?? null, input.difficulty ?? null],
   )
   const versionId = (version[0] as { id: string }).id
