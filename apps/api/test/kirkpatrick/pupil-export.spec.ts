@@ -88,8 +88,15 @@ describe('pupil views S8 and S9, and the PDF export (AC 2, 3, 5)', () => {
       errorIs(await teacherA.get(`/kirkpatrick/students/${w.ids.pb}`), 403, 'FORBIDDEN', 'This action is unauthorized.')
       expect((await teacherB.get(`/kirkpatrick/students/${w.ids.maju}`)).status).toBe(200)
       errorIs(await teacherB.get(`/kirkpatrick/students/${w.ids.p1}`), 403, 'FORBIDDEN')
-      expect((await teacherC.get(`/kirkpatrick/students/${w.ids.pb}`)).status).toBe(200)
-      errorIs(await teacherC.get(`/kirkpatrick/students/${w.ids.p1}`), 403, 'FORBIDDEN')
+      // DEMO002 is a primary school (SK): its pupils are hidden (secondary-only, D72) until the school is made secondary
+      errorIs(await teacherC.get(`/kirkpatrick/students/${w.ids.pb}`), 403, 'FORBIDDEN', 'This action is unauthorized.')
+      await t.db.query(`update schools set type = 'SMK' where code = 'DEMO002'`)
+      try {
+        expect((await teacherC.get(`/kirkpatrick/students/${w.ids.pb}`)).status).toBe(200)
+        errorIs(await teacherC.get(`/kirkpatrick/students/${w.ids.p1}`), 403, 'FORBIDDEN')
+      } finally {
+        await t.db.query(`update schools set type = 'SK' where code = 'DEMO002'`)
+      }
 
       expect((await adminA.get(`/kirkpatrick/students/${w.ids.maju}`)).status).toBe(200)
       errorIs(await adminA.get(`/kirkpatrick/students/${w.ids.pb}`), 403, 'FORBIDDEN', 'This action is unauthorized.')

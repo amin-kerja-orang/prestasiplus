@@ -38119,6 +38119,12 @@
               "string",
               "null"
             ]
+          },
+          "essayTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionEssayTopic"
+            }
           }
         },
         "required": [
@@ -38385,6 +38391,12 @@
               "string",
               "null"
             ]
+          },
+          "essayTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionEssayTopic"
+            }
           },
           "qualityScore": {
             "type": [
@@ -38757,6 +38769,12 @@
               "string",
               "null"
             ]
+          },
+          "essayTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionEssayTopic"
+            }
           },
           "qualityScore": {
             "type": [

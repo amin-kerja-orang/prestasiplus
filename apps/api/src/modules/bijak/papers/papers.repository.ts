@@ -43,6 +43,8 @@ export interface NewJanaPaper {
   userId: bigint
   isTest: boolean
   publishedAt: Date
+  /** The standard report of the composition (AC-34.7): blueprint version, per-section achieved marks, seed and solver. */
+  standardReport?: Prisma.InputJsonValue
   sections: NewSection[]
 }
 
@@ -156,6 +158,7 @@ export class PapersRepository {
           generatedForUserId: input.userId,
           isTest: input.isTest,
           publishedAt: input.publishedAt,
+          ...(input.standardReport === undefined ? {} : { standardReport: input.standardReport }),
           createdById: input.userId,
         },
         select: { id: true },
