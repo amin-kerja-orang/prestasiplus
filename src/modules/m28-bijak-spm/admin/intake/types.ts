@@ -202,6 +202,8 @@ export interface IntakeSummary {
   questionCount: number
   groupCount: number
   lowCount: number
+  /** Questions with no unconfirmed low-confidence field (V2 "Disemak"); absent when the source gives no item counts. */
+  reviewedCount?: number
   marks: number
   updatedAt: number
 }
