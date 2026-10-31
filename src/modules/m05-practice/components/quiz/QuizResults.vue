@@ -48,7 +48,11 @@ const strong = computed(() => props.percent >= 60)
 const expanded = ref(false)
 
 const subtitle = computed(() =>
-  props.subjectName ? `${props.subjectName} · ${message.value}` : message.value,
+  props.subjectName
+    ? props.labels.completed
+      ? props.labels.completed.replace('{subject}', props.subjectName)
+      : `${props.subjectName} · ${message.value}`
+    : message.value,
 )
 
 const friendLine = computed(() => {
@@ -125,17 +129,23 @@ onMounted(() => win.value?.focus())
         <h2 class="text-subheading text-highlighted" data-testid="result-subject">
           {{ subjectName || labels.resultTitle }}
         </h2>
-        <div class="flex flex-wrap items-baseline gap-3">
-          <span class="tabular text-title text-highlighted" data-testid="result-score"
-            >{{ score }}/{{ total }}</span
-          >
-          <span
-            class="tabular text-heading"
-            :class="band === 'high' ? 'text-success' : band === 'mid' ? 'text-warning' : 'text-error'"
-            :data-band="band"
-            data-testid="result-percent"
-            >{{ percent }}%</span
-          >
+        <div class="flex flex-wrap items-end gap-x-6 gap-y-2">
+          <div class="flex flex-col">
+            <span class="text-caption text-muted">Markah</span>
+            <span class="tabular text-title text-highlighted" data-testid="result-score"
+              >{{ score }}/{{ total }}</span
+            >
+          </div>
+          <div class="flex flex-col">
+            <span class="text-caption text-muted">Ketepatan</span>
+            <span
+              class="tabular text-heading"
+              :class="band === 'high' ? 'text-success' : band === 'mid' ? 'text-warning' : 'text-error'"
+              :data-band="band"
+              data-testid="result-percent"
+              >{{ percent }}%</span
+            >
+          </div>
         </div>
         <UProgress
           :model-value="percent"

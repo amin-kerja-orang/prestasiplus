@@ -47,6 +47,8 @@ export const BIJAK_ATTEMPTS_MESSAGES = {
   retryPaperGone: 'Kertas ini sudah tidak tersedia untuk dicuba semula.',
   /** R1-B15: "Cuba Lagi" from an attempt that is not closed yet. */
   retryNotClosed: 'Hantar percubaan ini dahulu sebelum mencuba semula.',
+  /** H-A13 (D94 approved copy): a new sitting of a published paper that places an archived (withdrawn) question; a sitting already open is not affected. */
+  paperUnavailable: 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.',
   /** REQ-B-014 [PROPOSED]: the topic picked for an `essay_choice` part is not one of that part's topics (422 VALIDATION_ERROR). */
   essayTopicUnknown: 'Tajuk yang dipilih tiada pada bahagian ini.',
 } as const

@@ -91,10 +91,13 @@ import {
   statesOfStatus,
   type QueueContext,
 } from './review-wire'
-import type { IntakeItemRow, IntakeItemStateCounts } from '@pp/contract'
+import type { IntakeItemRow, IntakeItemStateCounts, StudioDskp } from '@pp/contract'
 import { ApiError } from '@/api'
 import { HttpBijakServer, toBijakError, type HttpBijakOptions } from './http'
 import type { BijakServer } from './store'
+
+/** Mirrors the contract's INTAKE_BULK_MAX_IDS (the web bundle imports contract types only). */
+const BULK_MAX_IDS = 100
 
 /** The admin methods of the mock server (the contract the admin pages read). */
 export type BijakAdminMethods = Omit<
@@ -114,7 +117,10 @@ export type BijakAdminMethods = Omit<
   | 'createManualBatch'
   | 'saveExtracted'
   | 'linkStimulusReferences'
+  | 'dskpUnits'
   | 'submitForReview'
+  | 'decideIntakeItem'
+  | 'acceptUnreviewed'
   | 'listReviewQueue'
   | 'getReviewItem'
   | 'reviewDecision'
@@ -294,6 +300,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
   private readonly snapshots = new Map<string, Snapshot>()
   private readonly batchInfo = new Map<string, WireBatchDetail>()
   private subjectsReady: Promise<readonly Subject[]> | null = null
+  private levelIds: Promise<Map<string, string>> | null = null
 
   constructor(options: HttpBijakOptions = {}) {
     super(options)
@@ -533,6 +540,24 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     return this.send<{ linkedItemIds: string[] }>('POST', `/api/intake/stimuli/${enc(stimulusId)}/link-references`)
   }
 
+  /**
+   * REQ-B-001: the real curriculum units of a subject and form for the tag picker (`GET /api/questions/studio/dskp`).
+   * The Bijak code is matched to the curriculum subject by name (as the bank does) and the form to the level by its code.
+   */
+  async dskpUnits(subject: SubjectCode, form: 'T4' | 'T5'): Promise<StudioDskp> {
+    const hit = (await this.bankSubjects()).find((s) => s.code === subject)
+    this.levelIds ??= this.send<{ id: string | number; code: string }[]>('GET', '/api/education-levels').then(
+      (rows) => new Map((Array.isArray(rows) ? rows : []).map((l) => [l.code, String(l.id)])),
+      (e) => {
+        this.levelIds = null
+        throw e
+      },
+    )
+    const levelId = (await this.levelIds).get(form)
+    if (!hit || !levelId) return { units: [] }
+    return this.send<StudioDskp>('GET', `/api/questions/studio/dskp?${new URLSearchParams({ subjectId: hit.id, educationLevelId: levelId })}`)
+  }
+
   saveExtracted(id: string, payload: SaveExtractedPayload): Promise<IntakeBatch> {
     const run = this.saveChain.then(() => this.persistExtracted(id, payload))
     this.saveChain = run.catch(() => {})
@@ -663,6 +688,47 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     const batch = await this.getIntakeBatch(id)
     const at = Date.now()
     return { ok: true, batch: { ...batch, status: 'semakan', submittedAt: at, updatedAt: at } }
+  }
+
+  /** "Terima (A)" / "Tolak (R)" of one item of the batch (`POST /api/intake/items/:id/accept|reject`). */
+  async decideIntakeItem(
+    id: string,
+    questionId: string,
+    d: { action: 'terbit' | 'tolak'; reason?: string },
+  ): Promise<{ ok: boolean; errors: string[]; batch: IntakeBatch }> {
+    const res = await this.reviewDecision(questionId, { action: d.action, ...(d.reason ? { reason: d.reason } : {}) })
+    return { ok: res.ok, errors: res.errors, batch: await this.getIntakeBatch(id) }
+  }
+
+  /**
+   * "Terima semua yang belum disemak": `POST /api/intake/items/bulk` with `accept` over the items still open.
+   * The server takes only the items at or above its confidence threshold and lists the rest.
+   */
+  async acceptUnreviewed(
+    id: string,
+  ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[]; batch: IntakeBatch }> {
+    const batch = await this.getIntakeBatch(id)
+    const ids = batch.questions.map((q) => q.id)
+    if (ids.length === 0) return { done: 0, skipped: [], batch }
+    // The bulk endpoint takes at most BULK_MAX_IDS ids per call: send the whole batch in chunks.
+    let done = 0
+    const skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[] = []
+    for (let at = 0; at < ids.length; at += BULK_MAX_IDS) {
+      const res = await this.send<{ done: number; results: { id: string; outcome: string; reason: string | null }[] }>(
+        'POST',
+        '/api/intake/items/bulk',
+        { action: 'accept', ids: ids.slice(at, at + BULK_MAX_IDS) },
+      )
+      done += res.done
+      for (const r of res.results) {
+        if (r.outcome !== 'skipped') continue
+        // NOT_FOUND / WRONG_STATE: the item is gone or already decided; the refreshed batch shows that,
+        // so it is not reported as a confidence or gate skip.
+        if (r.reason === 'GATE_FAILED') skipped.push({ id: r.id, reason: 'GATE_FAILED' })
+        else if (r.reason === 'BELOW_THRESHOLD') skipped.push({ id: r.id, reason: 'BELOW_THRESHOLD' })
+      }
+    }
+    return { done, skipped, batch: await this.getIntakeBatch(id) }
   }
 
   /* ----------------------------------------------------- review queue (BE-38 items) */

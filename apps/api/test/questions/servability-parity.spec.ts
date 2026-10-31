@@ -141,10 +141,6 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
       await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [section!.id, id])
     }
 
-    // H-A13: archived after the paper was published. The paper still lists it, but a new sitting cannot start (no live approved version).
-    await q(`update question_versions set status = 'archived' where question_id = $1`, [made.archivedOnPaper])
-    await q(`update questions set live_version_no = null where id = $1`, [made.archivedOnPaper])
-
     // --- R1E2E-05b own stimuli: the bridge serves a question's OWN stimuli (7 kinds, link order); servability must say the same -----
     const stim = async (kind: string, extra: { body?: string; table?: unknown; file?: boolean; label?: string } = {}): Promise<string> =>
       (
@@ -185,6 +181,10 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     await link('sharedGone', lonely)
     await link('sharedWithdrawn', lonely)
     await q(`update questions set is_active = false where id = $1`, [made.sharedWithdrawn])
+
+    // H-A13: archived after the paper was published. The paper still lists it, but a new sitting cannot start (no live approved version).
+    await q(`update question_versions set status = 'archived' where question_id = $1`, [made.archivedOnPaper])
+    await q(`update questions set live_version_no = null where id = $1`, [made.archivedOnPaper])
 
     // --- level / subject / link fixtures (T29 B2 fix: facts are read for the LIVE version, `live ?? latest`) -----------------
     const level = async (code: string, active: boolean): Promise<string> =>
@@ -394,7 +394,9 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(servedBy('simulasi_paper').has(made.onPaper!)).toBe(true)
     expect(reasonsOf('onDraftPaper', 'simulasi_paper')).toEqual(['not_on_published_paper'])
     expect(reasonsOf('plain', 'simulasi_paper')).toEqual(['not_on_published_paper'])
+    // Lead decision (H-A13): archived after the paper was published is `archived` (a new sitting cannot start), never `not_on_published_paper`.
     expect(reasonsOf('archivedOnPaper', 'simulasi_paper')).toEqual(['archived'])
+    expect(reports.get(made.archivedOnPaper!)!.activities.find((a) => a.activity === 'simulasi_paper')!.reasons[0]!.message).toBe('Diarkibkan — pulihkan ke draf dahulu.')
     expect(reasonsOf('archivedLive', 'simulasi_paper')).toEqual(['archived'])
     // Every startable question that is on no published paper is reported with exactly that reason.
     for (const id of startable) if (!onPaper.has(id)) expect(reports.get(id)!.activities.find((a) => a.activity === 'simulasi_paper')!.reasons.map((r) => r.code)).toEqual(['not_on_published_paper'])
@@ -422,15 +424,20 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     for (const [key, code] of Object.entries(expected)) {
       expect(bridged.has(made[key]!), `${key} not bridged`).toBe(false)
       expect(refusals.get(made[key]!)?.code, `${key} bridge reason`).toBe(code)
-      const reason = verdict(key).reasons.find((r) => r.code === 'bridge_refused' || r.code === 'image_missing')
+      const reason = verdict(key).reasons.find((r) => r.code === 'bridge_refused' || r.code === 'image_missing' || r.code === 'stimulus_shared_ungrouped')
       expect(reason, `${key} servability reason`).toBeDefined()
       expect(reason!.detail, `${key} detail`).toBe(refusals.get(made[key]!)!.reasonCode)
     }
     expect(refusals.get(made.sharedA!)?.reasonMs).toContain('dikongsi')
+    // D90: the admin sees the dedicated cause (and fix) for a stimulus shared without a group, not the generic wrapper.
+    for (const key of ['sharedA', 'sharedB']) {
+      expect(verdict(key).reasons.map((r) => r.code), key).toEqual(['stimulus_shared_ungrouped', 'not_on_published_paper']) // not placed on a paper in this fixture
+      expect(verdict(key).reasons[0]!.message).toBe('Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).')
+    }
     // Every question: servability's Simulasi (kertas) refusal reason set equals the bridge's refusal (the full-bank equality).
     for (const [id, report] of reports) {
       const paper = report.activities.find((a) => a.activity === 'simulasi_paper')!
-      const bridgeCodes = paper.reasons.filter((r) => r.code === 'bridge_refused' || r.code === 'image_missing')
+      const bridgeCodes = paper.reasons.filter((r) => r.code === 'bridge_refused' || r.code === 'image_missing' || r.code === 'stimulus_shared_ungrouped')
       if (bridged.has(id)) expect(bridgeCodes, `bridged ${id}`).toEqual([])
       else if (refusals.has(id)) expect(bridgeCodes.map((r) => r.detail), `refused ${id}`).toEqual([refusals.get(id)!.reasonCode])
     }

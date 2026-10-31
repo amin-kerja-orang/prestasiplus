@@ -19,6 +19,12 @@ const questions = vi.hoisted(() => ({
 }))
 vi.mock('../../api/questions', () => questions)
 
+const mode = vi.hoisted(() => ({ http: false }))
+vi.mock('@/api', async (orig) => ({
+  ...(await orig<typeof import('@/api')>()),
+  isHttpMode: () => mode.http,
+}))
+
 /** `useConfirm` falls back to `window.confirm` when no host is mounted. */
 const dialogs = { confirmNative: vi.fn((message: string) => message !== '') }
 
@@ -215,6 +221,27 @@ describe('QuestionDetailPage (M04 S3)', () => {
       'Adakah anda pasti mahu mengubah status soalan ini?',
     )
     expect(questions.bulkQuestionAction).toHaveBeenCalledWith('approve', [564159])
+  })
+
+  it('http mode (REQ-B-002): a draft goes to review first, Terbitkan appears only after that', async () => {
+    mode.http = true
+    try {
+      questions.fetchQuestion.mockResolvedValue(detail({ status: 'draft' }))
+      questions.bulkQuestionAction.mockResolvedValue({ data: { affected: 1 }, status: 'ok' })
+      let w = await render()
+      expect(t(w, 'status-pending-review').text()).toBe('Hantar untuk Semakan')
+      expect(w.find('[data-testid="status-approve"]').exists()).toBe(false)
+      await t(w, 'status-pending-review').trigger('click')
+      await flushPromises()
+      expect(questions.bulkQuestionAction).toHaveBeenCalledWith('pending_review', [564159])
+      w.unmount()
+      questions.fetchQuestion.mockResolvedValue(detail({ status: 'review' }))
+      w = await render()
+      expect(w.find('[data-testid="status-pending-review"]').exists()).toBe(false)
+      expect(t(w, 'status-approve').text()).toBe('Terbitkan')
+    } finally {
+      mode.http = false
+    }
   })
 
   it('renders a PKSK row with "-" subject and level and every correct option marked', async () => {
