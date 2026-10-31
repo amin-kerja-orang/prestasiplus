@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-10-31 12:00 MYT. Current BASE: **BASE-1** = `feature/v3-bijak-r1` @ 14e4336c.
+Writer: team A lead. Last refresh: 2026-10-31 (cycle 1, new team A session). Current BASE: **BASE-1** = `feature/v3-bijak-r1` @ 14e4336c.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 
 ## Critical path
@@ -12,12 +12,12 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 
 | ID | Handoff | Task | Lane | Depends on | Branch | Status | Evidence / verdict |
 |---|---|---|---|---|---|---|---|
-| T01 | (a-1)+(a0) | Merge `origin/handoff/shared-tree-2026-10-31`, resolve conflicts, fix the 5 vue-tsc errors; registry-boot, api tsc, vue-tsc, m04/m28/bijak specs | A1 | — | r1/t01-base-merge | BLOCKED (npm registry) | merge pushed 39688f1e; unverified |
-| T03 | (a) | Verify `r1/b08-bridge`: vue-tsc m28, bijak-question-bridge, be09-paper spec, DB test of image read rule; merge BASE-2 into it | A2 | T01 merged | r1/b08-bridge | QUEUED | |
+| T01 | (a-1)+(a0) | Merge `origin/handoff/shared-tree-2026-10-31`, resolve conflicts, fix the 5 vue-tsc errors; registry-boot, api tsc, vue-tsc, m04/m28/bijak specs | A1 | — | r1/t01-base-merge | IN-PROGRESS (verification; npm now installs) | merge pushed 39688f1e; verification running |
+| T03 | (a) | Verify `r1/b08-bridge`: vue-tsc m28, bijak-question-bridge, be09-paper spec, DB test of image read rule; merge BASE-2 into it | A2 | T01 merged | r1/b08-bridge | IN-PROGRESS (verify on BASE-1; re-run after BASE-2) | |
 | T04 | (a) | Finish `r1/b01-lifecycle`: 4 `'published'` spots, drop `published` from isServableStatus, migration 0100 on a seeded DB, tsc/eslint/m04 tests/specs | A2 | T03 merged | r1/b01-lifecycle | QUEUED | |
-| T05 | (b) | Run never-run DB specs (B06 list, be09-paper, challenges-savepoint), fix; before/after counts (login 493; BM 53, MATH 54, SCI 50; one draw); re-run after T04 | A3 | T01 merged (first pass), T04 (final) | r1/t05-db-specs | QUEUED | |
+| T05 | (b) | Run never-run DB specs (B06 list, be09-paper, challenges-savepoint), fix; before/after counts (login 493; BM 53, MATH 54, SCI 50; one draw); re-run after T04 | A3 | T01 merged (first pass), T04 (final) | r1/t05-db-specs | IN-PROGRESS (first pass on T01 head) | |
 | T06 | (g) | Student Jana Kertas → `composeStandardPaper` (D75); update generate.spec + golden-mock.json | A1 | T01 merged | r1/t06-jana-standard | QUEUED | |
-| T07 | (f) | Question-model gaps: `groupOf` 7 stimulus kinds + caption/tableData/sourceCitation; `essay_choice` in parts contract; question-bank.source multi-stimulus groups; stimulus-body read for kuiz/bridges | A4 | T01 merged | r1/t07-model-gaps | QUEUED | |
+| T07 | (f) | Question-model gaps: `groupOf` 7 stimulus kinds + caption/tableData/sourceCitation; `essay_choice` in parts contract; question-bank.source multi-stimulus groups; stimulus-body read for kuiz/bridges | A4 | T01 merged | r1/t07-model-gaps | IN-PROGRESS (on T01 head) | |
 | T08 | (h) | R1-B21 secondary-only guard on Bijak + builder paths incl. `exam/builder/question-bank.source.ts` ~79 | A4 | T07 merged (same file) | r1/t08-secondary-guard | QUEUED | |
 | T10 | (c) | Set Builder + Semak Kertas UI: SetBuilderPage `/admin/studio/sets/:paper/builder`, routes, PaperEditorPage extension (header, ReviewBlock, Terbitkan disabled w/ reason, Tarik balik, Salin set, student view), menu KS-17, tests; V2 Panel labels (Jana set + Terbitkan = 2 clicks) | C1 | T01 merged | r1/f08-builder-ui | QUEUED | |
 | T11 | (d) BE | Verify `r1/b16-kuiz` top WIP; count fallback 20 (V2); D90: random mode serves member with its group stimulus; per-paper shows stimulus once per group | C2 | T01 merged; T07 for stimulus-body read | r1/b16-kuiz | QUEUED | |
