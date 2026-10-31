@@ -1070,6 +1070,7 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 | UX-9 | Kontrak: tabs per Bahagian and the evidence/Sahkan tab instead of one inline table and a free `Sumber` select | D75-D78 (approved K2 design) |
 | UX-10 | Simulasi subheading corrected | FD-3 |
 | UX-11 | "Dilihat murid di" and `Tidak dihidangkan kerana …` on existing surfaces | FD-5 |
+| UX-12 | `Terbitkan` is disabled with the reason shown as text ("{n} masalah perlu dibetulkan") while the live review lists a blocker; V2 enables it and refuses after the click. Semak Kertas also adds `Paparan murid (disimpan)` (server student view) beside the unsaved-edit preview | D9: a refusal after a click is not discoverable by keyboard or touch; R1-F09 |
 
 ---
 

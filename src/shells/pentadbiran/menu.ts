@@ -1,6 +1,6 @@
 /**
  * Menu of the Portal Pentadbiran (D30; `docs/requirements/v2-portals.md` section 6): 9 groups and
- * 104 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
+ * 105 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
  * next round; `PENTADBIRAN_MENU` (rendered) holds built screens only and drops empty groups.
  * Unbuilt items are listed in `docs/requirements/v2-pentadbiran-backlog.md`.
  */
@@ -119,6 +119,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['KS-07', 'Kertas Subjektif'],
       ['KS-08', 'Kontrak Blueprint', '/admin/spm/kontrak'],
       ['KS-09', 'Pembina Kertas', '/admin/spm/kertas'],
+      ['KS-17', 'Set Builder', '/admin/studio/sets'],
       ['KS-10', 'Tanda Karangan'],
       ['KS-11', 'Ramalan SPM'],
       ['KS-12', 'Set Soalan'],

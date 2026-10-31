@@ -20,6 +20,7 @@ export const ITEM_ICON: Readonly<Record<string, string>> = {
   'KS-15': 'i-ph-seal-check',
   'KS-02': 'i-ph-database',
   'KS-09': 'i-ph-stack',
+  'KS-17': 'i-ph-hammer',
   'KK-01': 'i-ph-tree-structure',
   'KK-02': 'i-ph-notebook',
   'KK-04': 'i-ph-stairs',

@@ -10,6 +10,7 @@ import { DsDataTable, DsLoadError, DsPage, DsStatRow, DsStatusBadge, type StatIt
 
 import type { AdminPaperSummary } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
+import { BUILDER_PATH } from '../builder/server/api'
 import { bijakAdminServer } from '../../server/client'
 import { ADMIN_ROUTES, detailMessage } from './ui'
 
@@ -72,6 +73,15 @@ async function remove(row: Row): Promise<void> {
       </p>
     </template>
     <template #actions>
+      <UButton
+        :to="BUILDER_PATH"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-hammer"
+        label="Set Builder"
+        class="min-h-11"
+        data-testid="paper-set-builder"
+      />
       <UButton
         icon="i-ph-plus"
         label="Kertas Baharu"
