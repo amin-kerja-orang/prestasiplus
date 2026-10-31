@@ -34,7 +34,7 @@ function record(id: string, servable: boolean): QuestionRecord {
     version: {
       id,
       versionNo: 1,
-      status: 'published',
+      status: 'approved',
       archiveReason: null,
       publishedAt: now,
       type: (servable ? 'mcq' : 'subjective') as never,

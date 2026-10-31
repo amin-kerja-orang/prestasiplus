@@ -100,7 +100,7 @@ describe('pure grading (no database)', () => {
   it('the mock status values map to the v2 codes (AC 11 table)', () => {
     expect(mockStatusToV2('draft')).toBe('draft')
     expect(mockStatusToV2('pending_review')).toBe('review')
-    expect(mockStatusToV2('approved')).toBe('published')
+    expect(mockStatusToV2('approved')).toBe('approved')
     expect(mockStatusToV2('archived')).toBe('archived')
     expect(mockStatusToV2('rejected')).toBeUndefined()
     expect(mockStatusToV2('constructor')).toBeUndefined()

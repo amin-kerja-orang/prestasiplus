@@ -20,7 +20,7 @@
  *    is a best-effort second chance, used only when the natural key found no candidate at all.
  *
  * Candidate questions (documented default): `questions.is_active` AND the live version
- * (`question_versions.version_no = questions.live_version_no`) has `status = 'published'`. Drafts, review,
+ * (`question_versions.version_no = questions.live_version_no`) has `status = 'approved'`. Drafts, review,
  * approved-but-unpublished, archived (superseded, withdrawn, source_takedown) and deactivated questions are NOT
  * candidates: a historical answer must never be attached to a question learners cannot see.
  *
@@ -121,7 +121,7 @@ const HASH_PAGE = 1_000
 const CANDIDATE_FROM = `
   FROM questions q
   JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-  WHERE q.is_active AND v.status = 'published'`
+  WHERE q.is_active AND v.status = 'approved'`
 
 const NEXT_ANSWERS_SQL = `
 SELECT id::text AS id,
@@ -145,7 +145,7 @@ SELECT pa.id::text AS id, q.id::text AS question_id
 FROM practice_answers pa
 JOIN etl_id_map m ON m.legacy_source = $2 AND m.entity = 'questions' AND m.legacy_id = NULLIF(btrim(pa.legacy_question_ref), '')
 JOIN questions q ON q.id = m.new_id::bigint AND q.is_active
-JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'published'
+JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
 WHERE pa.id = ANY($1::bigint[])`
 
 /** Up to two distinct candidate question ids per answer by natural key + number label (two is enough to call it ambiguous). */
@@ -159,7 +159,7 @@ FROM a
 JOIN source_papers sp ON NULLIF(lower(btrim(sp.natural_key)), '') = a.nk
 JOIN question_versions v ON v.source_paper_id = sp.id AND NULLIF(lower(btrim(v.number_label)), '') = a.nl
 JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no
-WHERE a.nk IS NOT NULL AND a.nl IS NOT NULL AND q.is_active AND v.status = 'published'
+WHERE a.nk IS NOT NULL AND a.nl IS NOT NULL AND q.is_active AND v.status = 'approved'
 GROUP BY a.id`
 
 const HASH_PAGE_SQL = `

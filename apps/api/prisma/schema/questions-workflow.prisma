@@ -71,7 +71,7 @@ model QuestionStatusEvent {
   /// No FK (BE-09 owns `questions`).
   questionId    BigInt   @map("question_id")
   versionNo     Int      @map("version_no")
-  /// draft, review, approved, published, archived; null for creation (check constraint).
+  /// draft, review, approved, archived, or legacy published (history rows keep it); null for creation (check constraint).
   fromStatus    String?  @map("from_status")
   toStatus      String   @map("to_status")
   /// FK users(id) ON DELETE SET NULL; null when the system acts (for example a takedown or "superseded").

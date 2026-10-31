@@ -34,8 +34,10 @@ interface Ctx {
   s1: Client
   svc: QuestionsService
   source: Be09PracticeQuestionSource
-  /** The primary level (D1..D4) offered to random sessions of the world's subject. */
+  /** A secondary level (Tingkatan 5, not the world's T4) offered to random sessions of the world's subject (the Darjah levels are hidden, secondary-only D72). */
   dLevel: string
+  /** A secondary level that is NOT SPM-servable (not T4/T5): a question there is outside every SPM activity. */
+  nonSpmLevel: string
   chapterId: string
 }
 
@@ -59,7 +61,7 @@ async function mcq(over: { level?: string; tag?: Tag; text?: string; tp?: number
     { userId: w.admin, role: 'admin' },
   )
   if (over.publish !== false)
-    for (const status of ['review', 'approved', 'published'] as const) await svc.bulkAction(status, [q.id], { userId: w.admin, role: 'admin' })
+    for (const status of ['review', 'approved'] as const) await svc.bulkAction(status, [q.id], { userId: w.admin, role: 'admin' })
   // Test fixture only: move the version to another level (the tag stays the seeded T4 one).
   if (over.level) await c.t.db.query(`update question_versions set education_level_id = $2 where question_id = $1`, [q.id, over.level])
   return q.id
@@ -78,11 +80,22 @@ beforeAll(async () => {
   const dLevel = (
     await t.db.query<{ id: string }>(
       `select l.id::text id from education_levels l join subject_levels sl on sl.education_level_id = l.id
-        where sl.subject_id = $1 and l.code in ('D1','D2','D3','D4') order by l.sort_order, l.id limit 1`,
+        where sl.subject_id = $1 and l.code in ('T4','T5') and l.id <> $2::bigint and l.is_active
+          and exists (select 1 from chapters c where c.subject_id = sl.subject_id and c.education_level_id = l.id and c.is_active) order by l.sort_order, l.id limit 1`,
+      [w.tag.subjectId, w.tag.levelId],
+    )
+  )[0]?.id
+  if (!dLevel) throw new Error('the world subject has no second SPM-servable secondary level')
+  const nonSpmLevel = (
+    await t.db.query<{ id: string }>(
+      `select l.id::text id from education_levels l join subject_levels sl on sl.education_level_id = l.id
+        where sl.subject_id = $1 and l.stage <> 'primary' and l.is_active and l.code not in ('T4','T5') order by l.sort_order, l.id limit 1`,
       [w.tag.subjectId],
     )
   )[0]?.id
-  if (!dLevel) throw new Error('the world subject has no primary level')
+  if (!nonSpmLevel) throw new Error('the world subject has no secondary level outside T4/T5')
+  // The seed already fills that level: switch those rows off so the questions made here are the only eligible ones.
+  await t.db.query(`update questions set is_active = false where id in (select question_id from question_versions where subject_id = $1 and education_level_id = $2)`, [w.tag.subjectId, dLevel])
   const chapterId = (
     await t.db.query<{ id: string }>(`select id::text id from chapters where subject_id = $1 and education_level_id = $2 and is_active order by id limit 1`, [w.tag.subjectId, dLevel])
   )[0]?.id
@@ -94,6 +107,7 @@ beforeAll(async () => {
     svc: t.get(QuestionsService),
     source: t.get(Be09PracticeQuestionSource),
     dLevel,
+    nonSpmLevel,
     chapterId,
   }
 }, 180_000)
@@ -173,14 +187,14 @@ describe('random sessions start with published questions only', () => {
 })
 
 describe('filters, pinned versions and the contributor', () => {
-  it('spmPool: past_year draws only pool questions, and the start is 201', async () => {
+  it('spmPool: past_year draws only SPM-servable questions, and the start is 201', async () => {
     const pooled: string[] = []
     for (let i = 0; i < 5; i++) {
       const id = await mcq({ text: `Soalan SPM ${String(i)}` })
-      await pool(id)
       pooled.push(id)
     }
-    const plain = await mcq({ text: 'Soalan bukan SPM' })
+    // Not SPM-servable: the level is outside the offered T4/T5 (the SPM pool is defined by level, not by a tag; R1-B06).
+    const plain = await mcq({ level: c.nonSpmLevel, text: 'Soalan bukan SPM' })
     const ids = await c.source.sample({ subjectId: c.w.tag.subjectId, spmPool: true }, 1000, prngStream('p'))
     expect(ids).not.toContain(plain)
     for (const id of pooled) expect(ids).toContain(id)
@@ -223,7 +237,7 @@ describe('filters, pinned versions and the contributor', () => {
       { subjectId: c.w.tag.subjectId, educationLevelId: c.w.tag.levelId, difficultyLevel: 3, questionText: 'Teks baharu versi dua', questionType: 'mcq', options: ['Satu', 'Dua', 'Tiga', 'Empat'], correctAnswer: 2, tag: { unitId: c.w.tag.unitId, spIds: [c.w.tag.spId], tp: 3 } } as never,
       actor,
     )
-    for (const status of ['review', 'approved', 'published'] as const) await svc.bulkAction(status, [id], actor)
+    for (const status of ['review', 'approved'] as const) await svc.bulkAction(status, [id], actor)
     const pinned = await c.source.versions([{ questionId: id, versionNo: 1 }, { questionId: id, versionNo: 2 }, { questionId: id, versionNo: 99 }])
     expect(pinned.get(`${id}@1`)).toMatchObject({ versionNo: 1, questionText: 'Teks asal versi satu', correctLabel: 'B' })
     expect(pinned.get(`${id}@2`)).toMatchObject({ versionNo: 2, questionText: 'Teks baharu versi dua', correctLabel: 'C' })

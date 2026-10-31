@@ -85,9 +85,9 @@ describe('question bank schema (migration 0011_question_bank)', () => {
 
   it('(question, version_no) is unique and at most one version is published', async () => {
     const q = await newQuestion()
-    await newVersion(q, 1, 'published')
+    await newVersion(q, 1, 'approved')
     await rejects(`insert into question_versions (question_id, version_no, type, stem_ms) values ($1, 1, 'mcq', 'x')`, [q])
-    await rejects(`insert into question_versions (question_id, version_no, status, type, stem_ms) values ($1, 2, 'published', 'mcq', 'x')`, [q])
+    await rejects(`insert into question_versions (question_id, version_no, status, type, stem_ms) values ($1, 2, 'approved', 'mcq', 'x')`, [q])
     await newVersion(q, 2, 'draft')
     await newVersion(q, 3, 'archived')
   })

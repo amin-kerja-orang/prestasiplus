@@ -14,7 +14,7 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
   let nextId = 7000
   const seed = (extra: Parameters<WorkflowTestApp['fake']['seed']>[0] extends infer S ? Partial<S> : never = {}) => {
     const id = String(++nextId)
-    t.fake.seed({ id, status: 'published', ...extra })
+    t.fake.seed({ id, status: 'approved', ...extra })
     return id
   }
   const notifications = (userId: string) =>
