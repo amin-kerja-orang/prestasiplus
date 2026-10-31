@@ -15062,7 +15062,7 @@
           "total": {
             "type": "integer",
             "minimum": 0,
-            "description": "The questions the activity could show: the approved, active bank; for Simulasi (kertas) the questions placed on published papers."
+            "description": "The questions the activity could show: the approved, active bank; for Simulasi (kertas) the questions placed on published papers; for the Databank the rows of the Databank lane (MCQs of Databank subjects, any status), so `attention` equals the lane rows with a reason."
           },
           "attention": {
             "type": "integer",
@@ -15126,7 +15126,7 @@
           "page": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 100000,
+            "maximum": 10000,
             "default": 1
           },
           "pageSize": {
@@ -15243,7 +15243,9 @@
             "type": "string",
             "enum": [
               "draft",
-              "published"
+              "ready",
+              "published",
+              "withdrawn"
             ]
           },
           "questionCount": {
@@ -81529,7 +81531,7 @@
         "summary": "Served and not-served counts per activity (hub cards)",
         "responses": {
           "200": {
-            "description": "One entry per activity, with how the count was obtained.",
+            "description": "One entry per activity, with how the count was obtained. Costly (counts the whole bank): its own small rate limit `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE` (default 6), 429 above.",
             "content": {
               "application/json": {
                 "schema": {
@@ -81558,6 +81560,16 @@
           },
           "403": {
             "description": "FORBIDDEN (not Admin Pusat), or CSRF_INVALID on the batch POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: more than the overview limit per minute for this user.",
             "content": {
               "application/json": {
                 "schema": {
@@ -81607,7 +81619,7 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 100000,
+              "maximum": 10000,
               "default": 1
             },
             "required": false,
@@ -81723,7 +81735,7 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 100000,
+              "maximum": 10000,
               "default": 1
             },
             "required": false,
@@ -81744,7 +81756,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A page of papers, newest first. `status` is draft or published.",
+            "description": "A page of papers, newest first. `status` is draft, ready, published or withdrawn.",
             "content": {
               "application/json": {
                 "schema": {

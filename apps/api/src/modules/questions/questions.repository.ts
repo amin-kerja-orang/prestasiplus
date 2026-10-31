@@ -1029,6 +1029,14 @@ export class QuestionsRepository {
    * (Darjah) questions are always excluded. `learnerVisible` (every eligibility/draw read) also drops questions of any other
    * INACTIVE education level.
    */
+  /**
+   * The SQL a reader applies for `filter` (aliases `q`, `v`), for an admin count that must embed a reader's exact scope inside a
+   * larger statement (the servability hub counts). Same fragments as `count`, `sampleIds` and `eligibleAmong`.
+   */
+  scopeSql(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
+    return this.scope(filter, learnerVisible)
+  }
+
   private scope(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
     const live = filter.status === 'approved'
     const from = live
