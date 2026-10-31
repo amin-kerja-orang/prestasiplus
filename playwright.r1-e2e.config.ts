@@ -13,8 +13,11 @@ import base from './playwright.http.config'
  *   file (`test-results-r1-e2e/state/`), so a failing step does not lose the ids of earlier steps.
  * - `R1_E2E_RUN` tags every record this run creates (question text, paper title). Set once here so
  *   the workers inherit the same value.
- * - `PW_CHROMIUM_PATH` points at a pre-installed Chromium when the bundled one is absent (cloud
- *   container: the Playwright build expects a newer Chromium than the one installed).
+ * - `PW_CHROMIUM_PATH` (optional) points at another Chromium binary; unset, Playwright's own
+ *   Chromium is used (the 2026-10-31 baseline ran on Chromium 153.0.8010.12).
+ * - `R1_E2E_SHOTS` overrides the screenshot folder (default docs/qa/r1-e2e-baseline-2026-10-31).
+ *   A skipped (Blocked) step writes no screenshot.
+ * - Counts read by S5 come from a 60 s per-process memo in the API (bankTtlMs): S5 waits it out.
  * - WRITES REAL DATA into the target database. Run it only against a local or disposable stack.
  */
 process.env.R1_E2E_RUN ??= `r${Date.now().toString(36)}`

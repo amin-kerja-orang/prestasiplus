@@ -1,0 +1,285 @@
+## mobile S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter) => passed
+    observed : Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+## mobile S1a admin creates a T4 MCQ with an image and a Bab via the form (Bank  => passed
+    observed : Bab chosen: Bab 1: Fungsi dan Persamaan Kuadratik
+    observed : DSKP chosen: PERKAITAN DAN ALGEBRA > 1.1 - Fungsi dan Persamaan Kuadratik > 1.1.1 - Mengenal pasti dan menerangkan c
+    observed : created question id 1272; response status field: draft
+## mobile S1e control: admin creates the same MCQ WITHOUT an image (isolates the => passed
+    observed : Bab chosen: Bab 1: Fungsi dan Persamaan Kuadratik
+    observed : DSKP chosen: PERKAITAN DAN ALGEBRA > 1.1 - Fungsi dan Persamaan Kuadratik > 1.1.1 - Mengenal pasti dan menerangkan c
+    observed : created question id 1273; response status field: draft
+## mobile S1b admin imports a CSV of 2 MCQs (Import & Semakan) => passed
+    observed : POST import -> 201 {"data":{"id":"1","fileName":"soalan.csv","importedCount":2,"failedCount":0,"failures":[],"defaults":{"subjectId":"3","educationLevelId":"10","difficultyLevel":2},"createdBy":"6","createdAt":"2026-10-
+## mobile S1c admin PDF intake with a passage shared by 2 questions (Muat Naik K => failed
+    observed : batch 1: 2 question card(s), 1 group header(s)
+    observed : gate after completing: no issues
+    observed : server gate refused: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum.
+    ERROR: Error: batch sent for review; server gate: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum. | expect(locator).toBeVisible() failed
+## mobile S1d admin D90 group: one shared stimulus with 2 member questions (Stud => failed
+    observed : /admin/studio renders "Halaman Tidak Dijumpai" (Studio F03a/b not merged)
+    observed : manual batch 2; gate: no issues
+    observed : server gate refused: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum.
+    ERROR: Error: batch sent for review; server gate: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum. | expect(locator).toBeVisible() failed
+## mobile S2a admin approves the Bank Soalan questions (Luluskan) => failed
+    observed : 4 run question(s) found
+    observed : /admin/questions/1275 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1275]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"4d9d02ff-4d57-417d-a527-a6
+    observed : /admin/questions/1274 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1274]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"dfda0a82-3084-4a1e-9173-f5
+    observed : /admin/questions/1273 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1273]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"094a43f9-03dc-4341-9c5d-62
+    observed : /admin/questions/1272 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1272]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"f0510115-b6e6-488e-b007-10
+    observed : Hantar untuk Semakan succeeded on 0 of 4 question(s)
+    observed : Luluskan on 4 row(s) -> HTTP 200, affected 0, refused: Perubahan status daripada Draf kepada Lulus tidak dibenarkan.
+    observed : statuses now (API): #1275 draft, #1274 draft, #1273 draft, #1272 draft
+    ERROR: Error: "Hantar untuk Semakan" succeeded on every question | expect(received).toBe(expected) // Object.is equality
+## mobile S2c API-assisted lifecycle (UI path blocked): review -> approved, so t => passed
+    observed : API-assisted on 4 id(s): review: HTTP 200 affected 4; approved: HTTP 200 affected 4
+    observed : statuses now (API): #1275 approved, #1274 approved, #1273 approved, #1272 approved
+## mobile S2b admin approves the intake questions in Baris Gilir Semakan => skipped
+    skip : Blocked: S1c/S1d sent no batch for review
+## mobile S5a Databank Soalan SPM receives the admin's approved MCQs (count rise => failed
+    observed : path: approved via API (S2c); Databank MATH 54 -> 54; approved MCQs this run: 4 (form, DSKP-tagged: 2; CSV, untagged: 2)
+    ERROR: Error: Databank Matematik count rose after approval | expect(received).toBeGreaterThan(expected)
+## mobile S5b Latih Tubi SPM receives the admin's approved MCQs (count rises) => failed
+    observed : path: approved via API (S2c); Latih Tubi SPM MATH 54 -> 54; approved MCQs this run: 4 (form, DSKP-tagged: 2; CSV, untagged: 2)
+    ERROR: Error: Latih Tubi SPM Matematik count rose after approval | expect(received).toBeGreaterThan(expected)
+## mobile S5c Soalan by Chapter lists the admin question's Bab => failed
+    observed : approved: Bab "Fungsi dan Persamaan Kuadratik" total 0 -> 0
+    observed : Matematik tile on Soalan by Chapter: absent
+    ERROR: Error: Bab "Fungsi dan Persamaan Kuadratik" total rose after the admin question became approved | expect(received).toBeGreaterThan(expected)
+## mobile S2d BASE-1 interim: admin publishes the approved questions (bulk Terbi => passed
+    observed : Terbitkan on 4 row(s) -> HTTP 200, affected 2, refused: Sila pilih unit DSKP. Sila pilih sekurang-kurangnya satu SP DSKP.
+    observed : statuses now (API): #1275 approved, #1274 approved, #1273 published, #1272 published
+## mobile S5d BASE-1 interim: Databank, Latih Tubi SPM and Bab serve the publish => passed
+    observed : after S2d (2 published): Databank MATH 54 -> 56; Latih Tubi SPM MATH 54 -> 56
+    observed : published: Bab "Fungsi dan Persamaan Kuadratik" total 0 -> 2
+    observed : Matematik tile on Soalan by Chapter: Matematik 1 bab tersedia 56 soalan chapter
+## mobile S3a Set Builder: build a paper from the approved questions (group move => failed
+    ERROR: Error: route /admin/studio/sets renders "Halaman Tidak Dijumpai" (no page registered) | expect(locator).toHaveCount(expected) failed
+## mobile S3b Pembina Kertas (BASE-1 builder): the admin MCQs are offered and pl => passed
+    observed : picker candidates for "R1E2E final2 mobile": 2
+    observed : budget check after placing: Sepadan dengan blueprint
+    observed : D90 group units in the paper: 2 (bank groups; no admin group exists because S1c/S1d are refused)
+## mobile S3c Terbit: the paper publishes (review shows no blockers) => passed
+    observed : publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 9000000015 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000016 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000017 tidak layak: unit tiada dalam kuo
+## mobile S4a pupil T4 sits the admin paper (form MCQ with image) in Bijak SPM a => failed
+    observed : Mula -> POST /api/bijak/attempts HTTP 403 {"error":{"code":"FORBIDDEN","message":"This action is unauthorized.","requestId":"bf70be93-36ea-42a5-978f-b16cae79408e"}}
+    observed : cover shows: "Percubaan tidak dapat dimulakan. Cuba lagi."
+    ERROR: Error: the sitting starts (attempt shell) | expect(locator).toBeVisible() failed
+## mobile S3d control paper: only the image-free admin MCQ (S1e), built and publ => passed
+    observed : picker candidates for "R1E2E final2 mobile kawalan": 1
+    observed : budget check after placing: Sepadan dengan blueprint
+    observed : D90 group units in the paper: 2 (bank groups; no admin group exists because S1c/S1d are refused)
+    observed : publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 9000000015 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000016 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000017 tidak layak: unit tiada dalam kuo
+## mobile S4a2 pupil T4 sits the control paper (image-free admin MCQ) and submit => passed
+    observed : Mula -> POST /api/bijak/attempts HTTP 201 
+    observed : answered 40 MCQ(s); admin question seen in the sitting: true
+    observed : result headline: Teruskan, Murid! / Awak dapat 10/40 markah. / 10
+## mobile S4b pupil self-marks a written part (Simpan markah) => skipped
+    skip : Blocked: the admin paper has no written (self-markable) part: it holds only MCQs, because the written/D90 intake path (S1c, S1d) is refused on BASE-1. Self-mark itself is covered by B-02.
+## mobile S4c pupil sees the result (score / max, per Bahagian) => passed
+    observed : attempt 6f360604-56db-40a9-9f65-479c10a5d2ad; headline: Teruskan, Murid! / Awak dapat 10/40 markah.; sections: 10 / 40; questions listed: 40
+## mobile S4d pupil presses Cuba Lagi: a new blank attempt of the same paper => passed
+    observed : old 6f360604-56db-40a9-9f65-479c10a5d2ad -> new /spm/bijak/percubaan/cfabfa16-6e37-472b-bc89-f9e736ad1d75
+## mobile S4e pupil T5 sees the admin paper on the Bijak SPM hub => passed
+## mobile B-01 Soalan by Chapter shows subjects or an empty-state message => passed
+    observed : GET chapter-subjects: {"data":[{"code":"MATH","name":"Matematik","icon":"calculator","color":"#EF4444","chapterCount":1,"questionCount":56}],"meta":{"page":1,"pageSize":1,"totalItems
+    observed : subject tiles 1, empty-state texts 0
+## mobile B-02 Bijak text answers can be self-marked (stepper with Simpan markah => passed
+    observed : result headline before self-mark: Teruskan, Murid! / Awak dapat 0/13 markah (sementara). / 0
+    observed : self-mark controls on the page: 8
+    observed : self-mark save -> POST /api/bijak/attempts/60a5ff6d-e4ec-4237-a28c-208b7ea9ce37/self-mark 200
+    observed : result headline after self-mark + reload: Teruskan, Murid! / Awak dapat 1/13 markah. / 1
+## mobile B-04 Simulasi Kuiz is reachable at /simulasi/kuiz => failed
+    ERROR: Error: route /simulasi/kuiz redirected to /dashboard | expect(received).toBe(expected) // Object.is equality
+## mobile B-05 Bijak "Cuba lagi" on the result starts a fresh sitting => passed
+    observed : "Lihat semakan lepas" links on the result: 0
+    observed : old attempt 60a5ff6d-e4ec-4237-a28c-208b7ea9ce37; after Cuba lagi: /spm/bijak/percubaan/2582524d-9b35-4e43-ba32-a54448f777d4 (POST 201)
+## tablet S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter) => passed
+    observed : Databank MATH 56, Latih Tubi SPM MATH 56, chapter subjects 1, Matematik Bab totals {"Fungsi dan Persamaan Kuadratik":2}
+## tablet S1a admin creates a T4 MCQ with an image and a Bab via the form (Bank  => passed
+    observed : Bab chosen: Bab 1: Fungsi dan Persamaan Kuadratik
+    observed : DSKP chosen: PERKAITAN DAN ALGEBRA > 1.1 - Fungsi dan Persamaan Kuadratik > 1.1.1 - Mengenal pasti dan menerangkan c
+    observed : created question id 1276; response status field: draft
+## tablet S1e control: admin creates the same MCQ WITHOUT an image (isolates the => passed
+    observed : Bab chosen: Bab 1: Fungsi dan Persamaan Kuadratik
+    observed : DSKP chosen: PERKAITAN DAN ALGEBRA > 1.1 - Fungsi dan Persamaan Kuadratik > 1.1.1 - Mengenal pasti dan menerangkan c
+    observed : created question id 1277; response status field: draft
+## tablet S1b admin imports a CSV of 2 MCQs (Import & Semakan) => passed
+    observed : POST import -> 201 {"data":{"id":"2","fileName":"soalan.csv","importedCount":2,"failedCount":0,"failures":[],"defaults":{"subjectId":"3","educationLevelId":"10","difficultyLevel":2},"createdBy":"6","createdAt":"2026-10-
+## tablet S1c admin PDF intake with a passage shared by 2 questions (Muat Naik K => failed
+    observed : batch 3: 2 question card(s), 1 group header(s)
+    observed : gate after completing: no issues
+    observed : server gate refused: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum.
+    ERROR: Error: batch sent for review; server gate: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum. | expect(locator).toBeVisible() failed
+## tablet S1d admin D90 group: one shared stimulus with 2 member questions (Stud => failed
+    observed : /admin/studio renders "Halaman Tidak Dijumpai" (Studio F03a/b not merged)
+    observed : manual batch 4; gate: no issues
+    observed : server gate refused: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum.
+    ERROR: Error: batch sent for review; server gate: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum. | expect(locator).toBeVisible() failed
+## tablet S2a admin approves the Bank Soalan questions (Luluskan) => failed
+    observed : 4 run question(s) found
+    observed : /admin/questions/1279 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1279]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"cfe04c54-24ea-4dde-9e83-9f
+    observed : /admin/questions/1278 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1278]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"adaf9c1b-43fc-4613-87a9-14
+    observed : /admin/questions/1277 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1277]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"bf981630-a790-40bb-977e-5d
+    observed : /admin/questions/1276 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1276]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"10c9da4f-a991-4481-a6da-45
+    observed : Hantar untuk Semakan succeeded on 0 of 4 question(s)
+    observed : Luluskan on 4 row(s) -> HTTP 200, affected 0, refused: Perubahan status daripada Draf kepada Lulus tidak dibenarkan.
+    observed : statuses now (API): #1279 draft, #1278 draft, #1277 draft, #1276 draft
+    ERROR: Error: "Hantar untuk Semakan" succeeded on every question | expect(received).toBe(expected) // Object.is equality
+## tablet S2c API-assisted lifecycle (UI path blocked): review -> approved, so t => passed
+    observed : API-assisted on 4 id(s): review: HTTP 200 affected 4; approved: HTTP 200 affected 4
+    observed : statuses now (API): #1279 approved, #1278 approved, #1277 approved, #1276 approved
+## tablet S2b admin approves the intake questions in Baris Gilir Semakan => skipped
+    skip : Blocked: S1c/S1d sent no batch for review
+## tablet S5a Databank Soalan SPM receives the admin's approved MCQs (count rise => failed
+    observed : path: approved via API (S2c); Databank MATH 56 -> 56; approved MCQs this run: 4 (form, DSKP-tagged: 2; CSV, untagged: 2)
+    ERROR: Error: Databank Matematik count rose after approval | expect(received).toBeGreaterThan(expected)
+## tablet S5b Latih Tubi SPM receives the admin's approved MCQs (count rises) => failed
+    observed : path: approved via API (S2c); Latih Tubi SPM MATH 56 -> 56; approved MCQs this run: 4 (form, DSKP-tagged: 2; CSV, untagged: 2)
+    ERROR: Error: Latih Tubi SPM Matematik count rose after approval | expect(received).toBeGreaterThan(expected)
+## tablet S5c Soalan by Chapter lists the admin question's Bab => failed
+    observed : approved: Bab "Fungsi dan Persamaan Kuadratik" total 2 -> 2
+    observed : Matematik tile on Soalan by Chapter: absent
+    ERROR: Error: Bab "Fungsi dan Persamaan Kuadratik" total rose after the admin question became approved | expect(received).toBeGreaterThan(expected)
+## tablet S2d BASE-1 interim: admin publishes the approved questions (bulk Terbi => passed
+    observed : Terbitkan on 4 row(s) -> HTTP 200, affected 2, refused: Sila pilih unit DSKP. Sila pilih sekurang-kurangnya satu SP DSKP.
+    observed : statuses now (API): #1279 approved, #1278 approved, #1277 published, #1276 published
+## tablet S5d BASE-1 interim: Databank, Latih Tubi SPM and Bab serve the publish => passed
+    observed : after S2d (2 published): Databank MATH 56 -> 58; Latih Tubi SPM MATH 56 -> 58
+    observed : published: Bab "Fungsi dan Persamaan Kuadratik" total 2 -> 4
+    observed : Matematik tile on Soalan by Chapter: Matematik 1 bab tersedia 58 soalan chapter
+## tablet S3a Set Builder: build a paper from the approved questions (group move => failed
+    ERROR: Error: route /admin/studio/sets renders "Halaman Tidak Dijumpai" (no page registered) | expect(locator).toHaveCount(expected) failed
+## tablet S3b Pembina Kertas (BASE-1 builder): the admin MCQs are offered and pl => passed
+    observed : picker candidates for "R1E2E final2 tablet": 2
+    observed : budget check after placing: Sepadan dengan blueprint
+    observed : D90 group units in the paper: 2 (bank groups; no admin group exists because S1c/S1d are refused)
+## tablet S3c Terbit: the paper publishes (review shows no blockers) => passed
+    observed : publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 9000000015 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000016 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000017 tidak layak: unit tiada dalam kuo
+## tablet S4a pupil T4 sits the admin paper (form MCQ with image) in Bijak SPM a => failed
+    observed : Mula -> POST /api/bijak/attempts HTTP 403 {"error":{"code":"FORBIDDEN","message":"This action is unauthorized.","requestId":"992dc09d-3b86-430d-be1f-63b3d6d01bbc"}}
+    observed : cover shows: "Percubaan tidak dapat dimulakan. Cuba lagi."
+    ERROR: Error: the sitting starts (attempt shell) | expect(locator).toBeVisible() failed
+## tablet S3d control paper: only the image-free admin MCQ (S1e), built and publ => passed
+    observed : picker candidates for "R1E2E final2 tablet kawalan": 1
+    observed : budget check after placing: Sepadan dengan blueprint
+    observed : D90 group units in the paper: 2 (bank groups; no admin group exists because S1c/S1d are refused)
+    observed : publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 9000000015 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000016 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000017 tidak layak: unit tiada dalam kuo
+## tablet S4a2 pupil T4 sits the control paper (image-free admin MCQ) and submit => passed
+    observed : Mula -> POST /api/bijak/attempts HTTP 201 
+    observed : answered 40 MCQ(s); admin question seen in the sitting: true
+    observed : result headline: Teruskan, Murid! / Awak dapat 10/40 markah. / 10
+## tablet S4b pupil self-marks a written part (Simpan markah) => skipped
+    skip : Blocked: the admin paper has no written (self-markable) part: it holds only MCQs, because the written/D90 intake path (S1c, S1d) is refused on BASE-1. Self-mark itself is covered by B-02.
+## tablet S4c pupil sees the result (score / max, per Bahagian) => passed
+    observed : attempt f4816f50-0098-49b3-b5a0-fff292643e2f; headline: Teruskan, Murid! / Awak dapat 10/40 markah.; sections: 10 / 40; questions listed: 40
+## tablet S4d pupil presses Cuba Lagi: a new blank attempt of the same paper => passed
+    observed : old f4816f50-0098-49b3-b5a0-fff292643e2f -> new /spm/bijak/percubaan/c376309e-a791-4586-bf4b-cfb2070a4cd8
+## tablet S4e pupil T5 sees the admin paper on the Bijak SPM hub => passed
+## tablet B-01 Soalan by Chapter shows subjects or an empty-state message => passed
+    observed : GET chapter-subjects: {"data":[{"code":"MATH","name":"Matematik","icon":"calculator","color":"#EF4444","chapterCount":1,"questionCount":58}],"meta":{"page":1,"pageSize":1,"totalItems
+    observed : subject tiles 1, empty-state texts 0
+## tablet B-02 Bijak text answers can be self-marked (stepper with Simpan markah => passed
+    observed : result headline before self-mark: Teruskan, Murid! / Awak dapat 0/13 markah (sementara). / 0
+    observed : self-mark controls on the page: 8
+    observed : self-mark save -> POST /api/bijak/attempts/ec136a1b-ca67-44ca-8862-5c96d00963ad/self-mark 200
+    observed : result headline after self-mark + reload: Teruskan, Murid! / Awak dapat 1/13 markah. / 1
+## tablet B-04 Simulasi Kuiz is reachable at /simulasi/kuiz => failed
+    ERROR: Error: route /simulasi/kuiz redirected to /dashboard | expect(received).toBe(expected) // Object.is equality
+## tablet B-05 Bijak "Cuba lagi" on the result starts a fresh sitting => passed
+    observed : "Lihat semakan lepas" links on the result: 1
+    observed : old attempt ec136a1b-ca67-44ca-8862-5c96d00963ad; after Cuba lagi: /spm/bijak/percubaan/104b6968-b5e4-4cb8-9578-901920bbc730 (POST 201)
+## desktop S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter) => passed
+    observed : Databank MATH 58, Latih Tubi SPM MATH 58, chapter subjects 1, Matematik Bab totals {"Fungsi dan Persamaan Kuadratik":4}
+## desktop S1a admin creates a T4 MCQ with an image and a Bab via the form (Bank  => passed
+    observed : Bab chosen: Bab 1: Fungsi dan Persamaan Kuadratik
+    observed : DSKP chosen: PERKAITAN DAN ALGEBRA > 1.1 - Fungsi dan Persamaan Kuadratik > 1.1.1 - Mengenal pasti dan menerangkan c
+    observed : created question id 1280; response status field: draft
+## desktop S1e control: admin creates the same MCQ WITHOUT an image (isolates the => passed
+    observed : Bab chosen: Bab 1: Fungsi dan Persamaan Kuadratik
+    observed : DSKP chosen: PERKAITAN DAN ALGEBRA > 1.1 - Fungsi dan Persamaan Kuadratik > 1.1.1 - Mengenal pasti dan menerangkan c
+    observed : created question id 1281; response status field: draft
+## desktop S1b admin imports a CSV of 2 MCQs (Import & Semakan) => passed
+    observed : POST import -> 201 {"data":{"id":"3","fileName":"soalan.csv","importedCount":2,"failedCount":0,"failures":[],"defaults":{"subjectId":"3","educationLevelId":"10","difficultyLevel":2},"createdBy":"6","createdAt":"2026-10-
+## desktop S1c admin PDF intake with a passage shared by 2 questions (Muat Naik K => failed
+    observed : batch 5: 2 question card(s), 1 group header(s)
+    observed : gate after completing: no issues
+    observed : server gate refused: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum.
+    ERROR: Error: batch sent for review; server gate: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum. | expect(locator).toBeVisible() failed
+## desktop S1d admin D90 group: one shared stimulus with 2 member questions (Stud => failed
+    observed : /admin/studio renders "Halaman Tidak Dijumpai" (Studio F03a/b not merged)
+    observed : manual batch 6; gate: no issues
+    observed : server gate refused: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum.
+    ERROR: Error: batch sent for review; server gate: Soalan 1: Subjek dan tingkatan perlu ditetapkan.; Soalan 1: Unit DSKP tiada dalam senarai kurikulum.; Soalan 2: Subjek dan tingkatan perlu ditetapkan.; Soalan 2: Unit DSKP tiada dalam senarai kurikulum. | expect(locator).toBeVisible() failed
+## desktop S2a admin approves the Bank Soalan questions (Luluskan) => failed
+    observed : 4 run question(s) found
+    observed : /admin/questions/1283 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1283]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"a0f87e20-4ee2-4c7e-aaf7-4c
+    observed : /admin/questions/1282 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1282]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"0ddbbaf6-65b2-4cd3-ae4d-ed
+    observed : /admin/questions/1281 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1281]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"0275228c-0edd-4e19-a39a-43
+    observed : /admin/questions/1280 Hantar untuk Semakan -> POST /api/questions/bulk-action body {"action":"review","ids":[1280]} -> HTTP 422 {"error":{"code":"VALIDATION_ERROR","message":"The given data was invalid.","fields":{"ids":"Senarai soalan tidak sah."},"requestId":"a94c7ce9-da49-4758-b4dc-e3
+    observed : Hantar untuk Semakan succeeded on 0 of 4 question(s)
+    observed : Luluskan on 4 row(s) -> HTTP 200, affected 0, refused: Perubahan status daripada Draf kepada Lulus tidak dibenarkan.
+    observed : statuses now (API): #1283 draft, #1282 draft, #1281 draft, #1280 draft
+    ERROR: Error: "Hantar untuk Semakan" succeeded on every question | expect(received).toBe(expected) // Object.is equality
+## desktop S2c API-assisted lifecycle (UI path blocked): review -> approved, so t => passed
+    observed : API-assisted on 4 id(s): review: HTTP 200 affected 4; approved: HTTP 200 affected 4
+    observed : statuses now (API): #1283 approved, #1282 approved, #1281 approved, #1280 approved
+## desktop S2b admin approves the intake questions in Baris Gilir Semakan => skipped
+    skip : Blocked: S1c/S1d sent no batch for review
+## desktop S5a Databank Soalan SPM receives the admin's approved MCQs (count rise => failed
+    observed : path: approved via API (S2c); Databank MATH 58 -> 58; approved MCQs this run: 4 (form, DSKP-tagged: 2; CSV, untagged: 2)
+    ERROR: Error: Databank Matematik count rose after approval | expect(received).toBeGreaterThan(expected)
+## desktop S5b Latih Tubi SPM receives the admin's approved MCQs (count rises) => failed
+    observed : path: approved via API (S2c); Latih Tubi SPM MATH 58 -> 58; approved MCQs this run: 4 (form, DSKP-tagged: 2; CSV, untagged: 2)
+    ERROR: Error: Latih Tubi SPM Matematik count rose after approval | expect(received).toBeGreaterThan(expected)
+## desktop S5c Soalan by Chapter lists the admin question's Bab => failed
+    observed : approved: Bab "Fungsi dan Persamaan Kuadratik" total 4 -> 4
+    observed : Matematik tile on Soalan by Chapter: Matematik 1 bab tersedia 58 soalan chapter
+    ERROR: Error: Bab "Fungsi dan Persamaan Kuadratik" total rose after the admin question became approved | expect(received).toBeGreaterThan(expected)
+## desktop S2d BASE-1 interim: admin publishes the approved questions (bulk Terbi => passed
+    observed : Terbitkan on 4 row(s) -> HTTP 200, affected 2, refused: Sila pilih unit DSKP. Sila pilih sekurang-kurangnya satu SP DSKP.
+    observed : statuses now (API): #1283 approved, #1282 approved, #1281 published, #1280 published
+## desktop S5d BASE-1 interim: Databank, Latih Tubi SPM and Bab serve the publish => passed
+    observed : after S2d (2 published): Databank MATH 58 -> 60; Latih Tubi SPM MATH 58 -> 60
+    observed : published: Bab "Fungsi dan Persamaan Kuadratik" total 4 -> 6
+    observed : Matematik tile on Soalan by Chapter: Matematik 1 bab tersedia 60 soalan chapter
+## desktop S3a Set Builder: build a paper from the approved questions (group move => failed
+    ERROR: Error: route /admin/studio/sets renders "Halaman Tidak Dijumpai" (no page registered) | expect(locator).toHaveCount(expected) failed
+## desktop S3b Pembina Kertas (BASE-1 builder): the admin MCQs are offered and pl => passed
+    observed : picker candidates for "R1E2E final2 desktop": 2
+    observed : budget check after placing: Sepadan dengan blueprint
+    observed : D90 group units in the paper: 2 (bank groups; no admin group exists because S1c/S1d are refused)
+## desktop S3c Terbit: the paper publishes (review shows no blockers) => passed
+    observed : publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 9000000015 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000016 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000017 tidak layak: unit tiada dalam kuo
+## desktop S4a pupil T4 sits the admin paper (form MCQ with image) in Bijak SPM a => failed
+    observed : Mula -> POST /api/bijak/attempts HTTP 403 {"error":{"code":"FORBIDDEN","message":"This action is unauthorized.","requestId":"58b1e3c0-f498-4038-9ed2-4f0fd6b42afd"}}
+    observed : cover shows: "Percubaan tidak dapat dimulakan. Cuba lagi."
+    ERROR: Error: the sitting starts (attempt shell) | expect(locator).toBeVisible() failed
+## desktop S3d control paper: only the image-free admin MCQ (S1e), built and publ => passed
+    observed : picker candidates for "R1E2E final2 desktop kawalan": 1
+    observed : budget check after placing: Sepadan dengan blueprint
+    observed : D90 group units in the paper: 2 (bank groups; no admin group exists because S1c/S1d are refused)
+    observed : publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 9000000015 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000016 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 9000000017 tidak layak: unit tiada dalam kuo
+## desktop S4a2 pupil T4 sits the control paper (image-free admin MCQ) and submit => passed
+    observed : Mula -> POST /api/bijak/attempts HTTP 201 
+    observed : answered 40 MCQ(s); admin question seen in the sitting: true
+    observed : result headline: Teruskan, Murid! / Awak dapat 10/40 markah. / 10
+## desktop S4b pupil self-marks a written part (Simpan markah) => skipped
+    skip : Blocked: the admin paper has no written (self-markable) part: it holds only MCQs, because the written/D90 intake path (S1c, S1d) is refused on BASE-1. Self-mark itself is covered by B-02.
+## desktop S4c pupil sees the result (score / max, per Bahagian) => passed
+    observed : attempt df5fbd7a-32f3-4d2f-9d96-5db5cf93a5c1; headline: Teruskan, Murid! / Awak dapat 10/40 markah.; sections: 10 / 40; questions listed: 40
+## desktop S4d pupil presses Cuba Lagi: a new blank attempt of the same paper => passed
+    observed : old df5fbd7a-32f3-4d2f-9d96-5db5cf93a5c1 -> new /spm/bijak/percubaan/0ac36b11-b81c-4641-9454-f3fe21de4c8e
+## desktop S4e pupil T5 sees the admin paper on the Bijak SPM hub => passed
+## desktop B-01 Soalan by Chapter shows subjects or an empty-state message => passed
+    observed : GET chapter-subjects: {"data":[{"code":"MATH","name":"Matematik","icon":"calculator","color":"#EF4444","chapterCount":1,"questionCount":60}],"meta":{"page":1,"pageSize":1,"totalItems
+    observed : subject tiles 1, empty-state texts 0
+## desktop B-02 Bijak text answers can be self-marked (stepper with Simpan markah => passed
+    observed : result headline before self-mark: Teruskan, Murid! / Awak dapat 0/13 markah (sementara). / 0
+    observed : self-mark controls on the page: 8
+    observed : self-mark save -> POST /api/bijak/attempts/a47d5ad4-f651-4531-b811-e14b964a7e7a/self-mark 200
+    observed : result headline after self-mark + reload: Teruskan, Murid! / Awak dapat 1/13 markah. / 1
+## desktop B-04 Simulasi Kuiz is reachable at /simulasi/kuiz => failed
+    ERROR: Error: route /simulasi/kuiz redirected to /dashboard | expect(received).toBe(expected) // Object.is equality
+## desktop B-05 Bijak "Cuba lagi" on the result starts a fresh sitting => passed
+    observed : "Lihat semakan lepas" links on the result: 1
+    observed : old attempt a47d5ad4-f651-4531-b811-e14b964a7e7a; after Cuba lagi: /spm/bijak/percubaan/c5285b86-78a0-4ff6-a9ff-94d1ae22ef63 (POST 201)

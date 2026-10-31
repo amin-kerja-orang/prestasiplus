@@ -1,0 +1,18 @@
+## mobile S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter) => passed
+    observed : Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+## mobile B-01 Soalan by Chapter shows subjects or an empty-state message => failed
+    observed : GET chapter-subjects: {"data":[],"meta":{"page":1,"pageSize":1,"totalItems":0,"totalPages":1,"from":null,"to":null}}
+    observed : subject tiles 0, empty-state texts 0
+    ERROR: Error: subjects listed, or an empty-state message shown | expect(received).toBe(expected) // Object.is equality
+## tablet S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter) => passed
+    observed : Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+## tablet B-01 Soalan by Chapter shows subjects or an empty-state message => failed
+    observed : GET chapter-subjects: {"data":[],"meta":{"page":1,"pageSize":1,"totalItems":0,"totalPages":1,"from":null,"to":null}}
+    observed : subject tiles 0, empty-state texts 0
+    ERROR: Error: subjects listed, or an empty-state message shown | expect(received).toBe(expected) // Object.is equality
+## desktop S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter) => passed
+    observed : Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+## desktop B-01 Soalan by Chapter shows subjects or an empty-state message => failed
+    observed : GET chapter-subjects: {"data":[],"meta":{"page":1,"pageSize":1,"totalItems":0,"totalPages":1,"from":null,"to":null}}
+    observed : subject tiles 0, empty-state texts 0
+    ERROR: Error: subjects listed, or an empty-state message shown | expect(received).toBe(expected) // Object.is equality

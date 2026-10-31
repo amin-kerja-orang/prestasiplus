@@ -6,16 +6,21 @@
  *   0  pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter)
  *   1  Admin Pusat enters questions: form + image (Bank Soalan), CSV (Import & Semakan),
  *      PDF (Muat Naik Kertas), one D90 group (one shared stimulus, >= 2 member questions)
- *   2  approves them (approved = servable, D80/D85)
- *   3  builds a paper (Set Builder; a group moves as a unit), review, Terbit
+ *   2  approves them (approved = servable, D80/D85); S2c = API-assisted review -> approved when
+ *      the UI path is broken (recorded as such, never as a UI pass)
+ *   5a-c (R1 target, right after approval) Databank, Latih Tubi SPM and Soalan by Chapter (Bab)
+ *      receive the admin's APPROVED question
+ *   2d/5d BASE-1 interim: bulk Terbitkan (published is what BASE-1 serves), then the same counts,
+ *      so the rest of the pipeline can be observed on the lifecycle BASE-1 has
+ *   3  builds a paper (Set Builder target; BASE-1 Pembina Kertas), review, Terbit
  *   4  pupil (T4, T5) sits it in Bijak SPM, self-marks, sees the result, Cuba Lagi
- *   5  Databank, Latih Tubi SPM and Soalan by Chapter (Bab) receive the admin's approved question
  *   B  re-tests of B-01, B-02, B-04, B-05 (docs/qa/r1-student-smoke-2026-10-31.md)
  *
  * BASELINE: many steps are expected to fail on BASE-1 (Set Builder UI, Studio groups and the
  * lifecycle are not merged). Each step asserts the target behaviour and fails with the observed
  * reason; a step whose input an earlier step did not produce is skipped as "Blocked: ...".
  * Nothing is faked. Fictitious demo accounts only (seed, public password of the local stack).
+ * Report: docs/qa/r1-e2e-baseline-2026-10-31.md.
  *
  * WRITES REAL DATA (questions, intake batches, a paper, attempts) into the target database.
  */
@@ -41,15 +46,28 @@ const PASS = process.env.E2E_DEMO_PASSWORD || API_PASSWORD
 
 interface RunState {
   tag: string
-  baseline?: { databankMath?: number; latihTubiMath?: number; chapterSubjects?: number }
+  baseline?: {
+    databankMath?: number
+    latihTubiMath?: number
+    chapterSubjects?: number
+    babTotals?: Record<string, number>
+  }
+  /** When the run's questions last became servable (approved, S2a/S2c) or published (S2d). */
+  servableAt?: number
+  publishedAt?: number
   formQuestion?: { text: string; id?: string; chapter?: string }
+  /** S1e: the same MCQ without an image, to tell the image path apart from the rest. */
+  controlQuestion?: { text: string; id?: string }
   csvQuestions?: string[]
   pdfBatch?: { id: string; submitted: boolean; groups: number; questions: number }
   manualBatch?: { id: string; submitted: boolean; groups: number; questions: number }
   approvedM04?: number
   approvedViaApi?: number
   approvedIntake?: number
+  /** BASE-1 interim (S2d): run questions moved approved -> published with bulk Terbitkan. */
+  publishedM04?: number
   paper?: { id: string; title: string; published: boolean; hasAdminQuestion: boolean }
+  controlPaper?: { id: string; title: string; published: boolean; hasAdminQuestion: boolean }
   attempt?: { id: string; submitted: boolean }
 }
 
@@ -139,7 +157,7 @@ function pdfOf(lines: string[]): Buffer {
 
 /**
  * pdfjs-dist 6 (PDF intake) calls `Map/WeakMap.prototype.getOrInsertComputed`, which current Chrome
- * and Edge ship but the pre-installed Chromium 141 of the cloud container lacks (bug R1E2E-01). This
+ * and Edge ship but older Chromium builds lack (Chromium 153 of this run has it natively). This
  * shim adds the standard method in the page and in the pdf.js worker ONLY when the browser lacks it,
  * so the rest of the intake flow can be observed; the step records that the shim was needed.
  */
@@ -168,8 +186,7 @@ async function shimPdfjs(page: Page, info: TestInfo): Promise<void> {
         !(globalThis as { __r1e2eShim?: boolean }).__r1e2eShim,
     )
     .catch(() => true)
-  if (!native)
-    observe(info, 'browser lacks Map.prototype.getOrInsertComputed: shim applied (bug R1E2E-01)')
+  if (!native) observe(info, 'browser lacks Map.prototype.getOrInsertComputed: shim applied')
 }
 
 /** Pentadbiran: opens a menu item by its label (drawer below 1024 px). */
@@ -292,6 +309,53 @@ async function cardCount(
 }
 
 /**
+ * Bank Soalan rows of the run: table rows at desktop/tablet, cards below the table breakpoint
+ * (DsDataTable renders `[data-ds=data-table-cards] > li` there, without the status and view cells).
+ */
+const listRows = (page: Page, text: string) =>
+  page
+    .getByTestId('questions-table')
+    .locator('tbody tr, [data-ds=data-table-cards] > li')
+    .filter({ hasText: text })
+
+/** The run's questions as the admin API lists them (id + status), for ids and evidence. */
+async function runQuestions(page: Page, tag: string): Promise<{ id: string; status: string }[]> {
+  const res = await page.request.get(`/api/questions?search=${encodeURIComponent(tag)}&pageSize=50`)
+  expect(res.status(), 'GET /api/questions (admin list)').toBe(200)
+  const body = (await res.json()) as { data?: { id: string | number; status: string }[] }
+  return (body.data ?? []).map((q) => ({ id: String(q.id), status: q.status }))
+}
+
+/**
+ * The practice bank facts behind Databank / Latih Tubi / Soalan by Chapter counts are memoised per
+ * API process for 60 s (`DEFAULT_OVERVIEW_OPTIONS.bankTtlMs`, a documented staleness). Waits until
+ * that window has passed since the status change, so a count read afterwards is current.
+ */
+const BANK_TTL_MS = 60_000
+async function waitOutBankCache(page: Page, changedAt: number | undefined): Promise<void> {
+  if (!changedAt) return
+  const left = changedAt + BANK_TTL_MS + 3_000 - Date.now()
+  if (left > 0) await page.waitForTimeout(left)
+}
+
+/** Soalan by Chapter, Matematik: question total per Bab name (GET /api/practice/chapter-subjects/MATH). */
+async function babTotals(page: Page): Promise<Record<string, number>> {
+  const res = await page.request.get('/api/practice/chapter-subjects/MATH')
+  if (!res.ok()) return {}
+  const body = (await res.json()) as {
+    data?: { levels?: { id: string }[]; chapters?: { name: string; total: number }[] }
+  }
+  const out: Record<string, number> = {}
+  for (const lvl of body.data?.levels ?? []) {
+    const r = await page.request.get(`/api/practice/chapter-subjects/MATH?levelId=${lvl.id}`)
+    if (!r.ok()) continue
+    const b = (await r.json()) as { data?: { chapters?: { name: string; total: number }[] } }
+    for (const c of b.data?.chapters ?? []) out[c.name] = (out[c.name] ?? 0) + c.total
+  }
+  return out
+}
+
+/**
  * Result page "Semakan soalan": opens each question until a self-mark control shows, raises the
  * mark by one and presses "Simpan markah". Asserts the control exists and the save succeeds.
  */
@@ -344,10 +408,45 @@ async function selfMarkOne(page: Page, info: TestInfo): Promise<void> {
   await expect(control.getByTestId('selfmark-error')).toHaveCount(0)
 }
 
+/**
+ * Soalan by Chapter serves the S1a question's Bab: its total rose against S0 (API) and the pupil
+ * can open Matematik and see the Bab (UI).
+ */
+async function expectBabServes(
+  page: Page,
+  info: TestInfo,
+  st: RunState,
+  stage: 'approved' | 'published',
+): Promise<void> {
+  const name = st.formQuestion!.chapter!.replace(/^Bab \d+:\s*/, '')
+  const before = st.baseline?.babTotals?.[name] ?? 0
+  const after = (await babTotals(page))[name] ?? 0
+  observe(info, `${stage}: Bab "${name}" total ${before} -> ${after}`)
+  await page.goto('/practice/chapter')
+  await expect(page.getByTestId('chapter-index-page')).toBeVisible()
+  const tile = page.getByTestId('chapter-subject-MATH')
+  const listed = await tile.isVisible().catch(() => false)
+  observe(
+    info,
+    `Matematik tile on Soalan by Chapter: ${listed ? (await tile.innerText()).replace(/\s+/g, ' ') : 'absent'}`,
+  )
+  await expectNoHScroll(page)
+  expect(
+    after,
+    `Bab "${name}" total rose after the admin question became ${stage}`,
+  ).toBeGreaterThan(before)
+  await expect(tile, 'Matematik listed in Soalan by Chapter').toBeVisible()
+  await tile.click()
+  await expect(page.getByText(name).first(), `Bab "${name}" listed`).toBeVisible()
+  await expectNoHScroll(page)
+}
+
 // ---------------------------------------------------------------- the journey
 
 test.describe('R1 E2E baseline @api @r1e2e', () => {
   test.afterEach(async ({ page }, info) => {
+    // A skipped (Blocked) step never opened a page: no screenshot, the skip reason is the evidence.
+    if (info.status === 'skipped' || page.url() === 'about:blank') return
     const step = info.title.split(' ')[0] ?? 'step'
     const file = join(SHOTS, `${info.project.name}-${step}.jpg`)
     mkdirSync(dirname(file), { recursive: true })
@@ -380,19 +479,27 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       .locator(':scope > *')
       .count()
     await expectNoHScroll(page)
-    saveState(info, { baseline: { databankMath, latihTubiMath, chapterSubjects } })
+    const bab = await babTotals(page)
+    saveState(info, {
+      baseline: { databankMath, latihTubiMath, chapterSubjects, babTotals: bab },
+    })
     observe(
       info,
-      `Databank MATH ${databankMath}, Latih Tubi SPM MATH ${latihTubiMath}, chapter subjects ${chapterSubjects}`,
+      `Databank MATH ${databankMath}, Latih Tubi SPM MATH ${latihTubiMath}, chapter subjects ${chapterSubjects}, Matematik Bab totals ${JSON.stringify(bab)}`,
     )
     expect(Number.isNaN(databankMath), 'Databank Matematik count is readable').toBe(false)
   })
 
-  test('S1a admin creates a T4 MCQ with an image and a Bab via the form (Bank Soalan)', async ({
-    page,
-  }, info) => {
-    const st = readState(info)
-    const text = `${st.tag} borang: Berapakah hasil tambah 12 dan 30?`
+  /**
+   * Bank Soalan > Tambah Soalan: a T4 Matematik MCQ (key B = 42) with the first Bab and the first
+   * DSKP Bidang > SK > SP offered, Kertas 1, optionally a stem image. Returns the new id and Bab.
+   */
+  async function createFormMcq(
+    page: Page,
+    info: TestInfo,
+    text: string,
+    withImage: boolean,
+  ): Promise<{ id?: string; chapter?: string }> {
     await login(page, ADMIN)
     await adminMenu(page, 'Bank Soalan')
     await expect(page).toHaveURL(/\/admin\/questions$/)
@@ -434,13 +541,15 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     // The reka radio buttons are sr-only under their labels: click the label text.
     await page.locator('#q-difficulty').getByText('Mudah', { exact: true }).click()
     await page.getByTestId('q-text').fill(text)
-    await page
-      .getByTestId('q-image-input')
-      .setInputFiles({ name: 'rajah.png', mimeType: 'image/png', buffer: PNG })
-    await expect(
-      page.getByTestId('q-image-preview').first(),
-      'stem image preview after upload',
-    ).toBeAttached()
+    if (withImage) {
+      await page
+        .getByTestId('q-image-input')
+        .setInputFiles({ name: 'rajah.png', mimeType: 'image/png', buffer: PNG })
+      await expect(
+        page.getByTestId('q-image-preview').first(),
+        'stem image preview after upload',
+      ).toBeAttached()
+    }
     const answers = ['40', '42', '44', '32']
     for (let i = 0; i < 4; i++) await page.getByTestId(`q-option-${i}`).fill(answers[i] ?? '')
     // Correct answer = B (42).
@@ -467,15 +576,34 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     ).toBeLessThan(300)
     await expect(page).toHaveURL(/\/admin\/questions$/)
     const id = body.data?.id !== undefined ? String(body.data.id) : undefined
-    saveState(info, { formQuestion: { text, id, chapter: chapterLabel } })
     observe(
       info,
       `created question id ${id ?? '?'}; response status field: ${String(body.data?.status ?? '-')}`,
     )
-    await page.getByTestId('questions-search').fill(st.tag)
-    await page.getByRole('button', { name: 'Cari', exact: true }).click()
-    await expect(page.getByTestId('questions-table')).toContainText('borang')
+    // The list filter as a URL (live GET form): works at every width (the "Cari" button sits in
+    // the "Penapis" drawer below lg).
+    await page.goto(`/admin/questions?search=${encodeURIComponent(text.slice(0, 40))}`)
+    await expect(listRows(page, text.slice(0, 40)).first(), 'new question listed').toBeVisible()
     await expectNoHScroll(page)
+    return { id, chapter: chapterLabel }
+  }
+
+  test('S1a admin creates a T4 MCQ with an image and a Bab via the form (Bank Soalan)', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    const text = `${st.tag} borang: Berapakah hasil tambah 12 dan 30?`
+    const { id, chapter } = await createFormMcq(page, info, text, true)
+    saveState(info, { formQuestion: { text, id, chapter } })
+  })
+
+  test('S1e control: admin creates the same MCQ WITHOUT an image (isolates the image path)', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    const text = `${st.tag} kawalan: Berapakah hasil tambah 12 dan 30?`
+    const { id } = await createFormMcq(page, info, text, false)
+    saveState(info, { controlQuestion: { text, id } })
   })
 
   test('S1b admin imports a CSV of 2 MCQs (Import & Semakan)', async ({ page }, info) => {
@@ -676,9 +804,8 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     info: TestInfo,
   ): Promise<{ affected: number; failed: string[] }> {
     await page.goto(`/admin/questions?search=${encodeURIComponent(tag)}`)
-    const table = page.getByTestId('questions-table')
-    await expect(table).toBeVisible()
-    const rows = table.locator('tbody tr', { hasText: tag })
+    await expect(page.getByTestId('questions-table')).toBeVisible()
+    const rows = listRows(page, tag)
     await expect(rows.first(), 'run questions listed').toBeVisible()
     const count = await rows.count()
     for (let i = 0; i < count; i++)
@@ -703,11 +830,9 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       info,
       `${label} on ${count} row(s) -> HTTP ${res.status()}, affected ${out.affected}${out.failed.length ? `, refused: ${[...new Set(out.failed)].join(' / ')}` : ''}`,
     )
-    await page.goto(`/admin/questions?search=${encodeURIComponent(tag)}`)
-    await expect(rows.first()).toBeVisible()
     observe(
       info,
-      `statuses now: ${(await rows.getByTestId('question-status').allInnerTexts()).join(', ')}`,
+      `statuses now (API): ${(await runQuestions(page, tag)).map((q) => `#${q.id} ${q.status}`).join(', ')}`,
     )
     return out
   }
@@ -716,24 +841,14 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     const st = readState(info)
     test.skip(!st.formQuestion && !st.csvQuestions, 'Blocked: S1a/S1b created no question')
     await login(page, ADMIN)
-    const n = 1 + (st.csvQuestions?.length ?? 0)
+    const n =
+      (st.formQuestion ? 1 : 0) + (st.controlQuestion ? 1 : 0) + (st.csvQuestions?.length ?? 0)
     // V3 lifecycle: Draf -> "Hantar untuk Semakan" (question detail) -> "Luluskan" (bulk bar).
-    await page.goto(`/admin/questions?search=${encodeURIComponent(st.tag)}`)
-    const rows = page.getByTestId('questions-table').locator('tbody tr', { hasText: st.tag })
-    await expect(rows.first(), 'run questions listed').toBeVisible()
-    const hrefs: string[] = []
-    for (let i = 0; i < (await rows.count()); i++) {
-      const href = await rows
-        .nth(i)
-        .getByTestId('question-view')
-        .getAttribute('href')
-        .catch(() => null)
-      if (href) hrefs.push(href)
-    }
-    observe(info, `${hrefs.length} run question(s) found`)
+    const ids = (await runQuestions(page, st.tag)).map((q) => q.id)
+    observe(info, `${ids.length} run question(s) found`)
     let sent = 0
-    for (const href of hrefs) {
-      await page.goto(href)
+    for (const id of ids) {
+      await page.goto(`/admin/questions/${id}`)
       const btn = page.getByTestId('status-pending-review')
       if (
         !(await btn.waitFor({ state: 'visible', timeout: 10_000 }).then(
@@ -742,6 +857,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
         ))
       )
         continue
+      await expectNoHScroll(page)
       const r = page
         .waitForResponse(
           (x) => x.request().method() !== 'GET' && /\/api\/.*questions/.test(x.url()),
@@ -749,13 +865,24 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
         )
         .catch(() => null)
       await btn.click()
-      if ((await r)?.ok()) sent++
+      // "Pengesahan: Adakah anda pasti mahu mengubah status soalan ini?" -> Ya
+      await page.getByRole('button', { name: 'Ya', exact: true }).click()
+      const res = await r
+      if (res?.ok()) sent++
+      else if (res)
+        observe(
+          info,
+          `${new URL(page.url()).pathname} Hantar untuk Semakan -> ${res.request().method()} ${new URL(res.url()).pathname} body ${res.request().postData() ?? ''} -> HTTP ${res.status()} ${(await res.text().catch(() => '')).slice(0, 160)}`,
+        )
     }
-    observe(info, `Hantar untuk Semakan succeeded on ${sent} question(s)`)
-    await expectNoHScroll(page)
+    observe(info, `Hantar untuk Semakan succeeded on ${sent} of ${ids.length} question(s)`)
     const res = await bulkOnRun(page, st.tag, 'Luluskan', info)
-    saveState(info, { approvedM04: res.affected })
+    saveState(info, {
+      approvedM04: res.affected,
+      ...(res.affected ? { servableAt: Date.now() } : {}),
+    })
     await expectNoHScroll(page)
+    expect(sent, '"Hantar untuk Semakan" succeeded on every question').toBe(ids.length)
     expect(res.failed, 'no question refused by Luluskan').toEqual([])
     expect(res.affected, 'every run question approved (Diluluskan)').toBe(n)
   })
@@ -767,18 +894,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     test.skip(!st.formQuestion && !st.csvQuestions, 'Blocked: S1a/S1b created no question')
     test.skip(!!st.approvedM04, 'Not needed: S2a approved the questions through the UI')
     // NOT a UI pass: the same POST /api/questions/bulk-action the screens use, with string ids
-    // (the detail page sends numeric ids and gets 422, bug R1E2E-05). Only "approved" is applied,
+    // (the detail page sends numeric ids and gets 422, bug R1E2E-03). Only "approved" is applied,
     // the R1 target state (D80/D85); whether approved is servable is what S5 then shows.
     await login(page, ADMIN)
-    await page.goto(`/admin/questions?search=${encodeURIComponent(st.tag)}`)
-    const rows = page.getByTestId('questions-table').locator('tbody tr', { hasText: st.tag })
-    await expect(rows.first(), 'run questions listed').toBeVisible()
-    const ids: string[] = []
-    for (let i = 0; i < (await rows.count()); i++) {
-      const href = await rows.nth(i).getByTestId('question-view').getAttribute('href')
-      const id = /\/(\d+)$/.exec(href ?? '')?.[1]
-      if (id) ids.push(id)
-    }
+    const ids = (await runQuestions(page, st.tag)).map((q) => q.id)
     const csrf = await csrfOf(page)
     const out: string[] = []
     let approved = 0
@@ -792,12 +911,14 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       if (action === 'approved') approved = body.data?.affected ?? 0
     }
     observe(info, `API-assisted on ${ids.length} id(s): ${out.join('; ')}`)
-    await page.reload()
     observe(
       info,
-      `statuses now: ${(await rows.getByTestId('question-status').allInnerTexts()).join(', ')}`,
+      `statuses now (API): ${(await runQuestions(page, st.tag)).map((q) => `#${q.id} ${q.status}`).join(', ')}`,
     )
-    saveState(info, { approvedViaApi: approved })
+    await page.goto(`/admin/questions?search=${encodeURIComponent(st.tag)}`)
+    await expect(listRows(page, st.tag).first()).toBeVisible()
+    await expectNoHScroll(page)
+    saveState(info, { approvedViaApi: approved, servableAt: Date.now() })
     expect(approved, 'every run question approved through the API').toBe(ids.length)
   })
 
@@ -811,13 +932,18 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await adminMenu(page, 'Baris Gilir Semakan')
     await expect(page.getByTestId('review-queue-page')).toBeVisible()
     await expectNoHScroll(page)
-    const rows = page.getByTestId('queue-table').locator('tbody tr')
+    const rows = page
+      .getByTestId('queue-table')
+      .locator('tbody tr, [data-ds=data-table-cards] > li')
     const before = await rows.count()
     observe(info, `queue rows: ${before}`)
     expect(before, 'the submitted batches are queued').toBeGreaterThanOrEqual(1)
     let approved = 0
     for (let guard = 0; guard < 10; guard++) {
-      const row = page.getByTestId('queue-table').locator('tbody tr', { hasText: 'E2E' }).first()
+      const row = page
+        .getByTestId('queue-table')
+        .locator('tbody tr, [data-ds=data-table-cards] > li', { hasText: 'E2E' })
+        .first()
       if ((await row.count()) === 0) break
       await row.getByRole('link').first().click()
       const approve = page.getByRole('button', { name: /Lulus/ }).first()
@@ -840,21 +966,140 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     ).toContainText('E2E')
   })
 
+  test("S5a Databank Soalan SPM receives the admin's approved MCQs (count rises)", async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(st.baseline?.databankMath === undefined, 'Blocked: S0 baseline missing')
+    const served = st.approvedM04 || st.approvedViaApi || 0
+    test.skip(!served, 'Blocked: no Bank Soalan question reached Diluluskan (S2a UI, S2c API)')
+    await waitOutBankCache(page, st.servableAt)
+    await login(page, PUPIL_T4)
+    const now = await cardCount(page, '/spm/tahun-lepas', 'databank-card-MATH', 'databank-count')
+    observe(
+      info,
+      `path: ${st.approvedM04 ? 'approved via UI (S2a)' : 'approved via API (S2c)'}; Databank MATH ${st.baseline!.databankMath} -> ${now}; approved MCQs this run: ${served} (form, DSKP-tagged: ${(st.formQuestion ? 1 : 0) + (st.controlQuestion ? 1 : 0)}; CSV, untagged: ${st.csvQuestions?.length ?? 0})`,
+    )
+    await expectNoHScroll(page)
+    // R1 target (AC-R1-11.2): approving the tagged MCQ raises the count; untagged CSV rows may not count.
+    expect(now, 'Databank Matematik count rose after approval').toBeGreaterThan(
+      st.baseline!.databankMath ?? 0,
+    )
+  })
+
+  test("S5b Latih Tubi SPM receives the admin's approved MCQs (count rises)", async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(st.baseline?.latihTubiMath === undefined, 'Blocked: S0 baseline missing')
+    const served = st.approvedM04 || st.approvedViaApi || 0
+    test.skip(!served, 'Blocked: no Bank Soalan question reached Diluluskan (S2a UI, S2c API)')
+    await waitOutBankCache(page, st.servableAt)
+    await login(page, PUPIL_T4)
+    const now = await cardCount(page, '/spm/latih-tubi', 'latih-tubi-card-MATH', 'latih-tubi-count')
+    observe(
+      info,
+      `path: ${st.approvedM04 ? 'approved via UI (S2a)' : 'approved via API (S2c)'}; Latih Tubi SPM MATH ${st.baseline!.latihTubiMath} -> ${now}; approved MCQs this run: ${served} (form, DSKP-tagged: ${(st.formQuestion ? 1 : 0) + (st.controlQuestion ? 1 : 0)}; CSV, untagged: ${st.csvQuestions?.length ?? 0})`,
+    )
+    await expectNoHScroll(page)
+    expect(now, 'Latih Tubi SPM Matematik count rose after approval').toBeGreaterThan(
+      st.baseline!.latihTubiMath ?? 0,
+    )
+  })
+
+  test("S5c Soalan by Chapter lists the admin question's Bab", async ({ page }, info) => {
+    const st = readState(info)
+    test.skip(!st.formQuestion?.chapter, 'Blocked: S1a could not choose a Bab (empty Bab list)')
+    test.skip(
+      !(st.approvedM04 || st.approvedViaApi),
+      'Blocked: no Bank Soalan question reached Diluluskan (S2a UI, S2c API)',
+    )
+    await waitOutBankCache(page, st.servableAt)
+    await login(page, PUPIL_T4)
+    await expectBabServes(page, info, st, 'approved')
+  })
+
+  test('S2d BASE-1 interim: admin publishes the approved questions (bulk Terbitkan)', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(
+      !(st.approvedM04 || st.approvedViaApi),
+      'Blocked: no Bank Soalan question reached Diluluskan (S2a UI, S2c API)',
+    )
+    // NOT the R1 target: D80 makes "approved" servable with no Terbitkan hop (T04, b01-lifecycle,
+    // not merged on BASE-1). BASE-1 still serves only "published", so this UI step lets the pupil
+    // side and the paper builder be observed with the lifecycle BASE-1 actually has.
+    await login(page, ADMIN)
+    const res = await bulkOnRun(page, st.tag, 'Terbitkan', info)
+    saveState(info, { publishedM04: res.affected, publishedAt: Date.now() })
+    await expectNoHScroll(page)
+    // The CSV rows carry no DSKP tag; the publish gate refuses them ("Sila pilih unit DSKP"), which
+    // matches AC-R1-14.4 / PIPE AC-03.2 (no approval without a tag). The form question has a tag.
+    expect(
+      res.affected,
+      'the DSKP-tagged form question is published (Diterbitkan)',
+    ).toBeGreaterThanOrEqual(1)
+  })
+
+  test('S5d BASE-1 interim: Databank, Latih Tubi SPM and Bab serve the published admin MCQs', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(st.baseline?.databankMath === undefined, 'Blocked: S0 baseline missing')
+    test.skip(!st.publishedM04, 'Blocked: S2d published no question')
+    await waitOutBankCache(page, st.publishedAt)
+    await login(page, PUPIL_T4)
+    const databank = await cardCount(
+      page,
+      '/spm/tahun-lepas',
+      'databank-card-MATH',
+      'databank-count',
+    )
+    await expectNoHScroll(page)
+    const latih = await cardCount(
+      page,
+      '/spm/latih-tubi',
+      'latih-tubi-card-MATH',
+      'latih-tubi-count',
+    )
+    await expectNoHScroll(page)
+    observe(
+      info,
+      `after S2d (${st.publishedM04} published): Databank MATH ${st.baseline!.databankMath} -> ${databank}; Latih Tubi SPM MATH ${st.baseline!.latihTubiMath} -> ${latih}`,
+    )
+    expect
+      .soft(databank, 'Databank Matematik count rose by the published admin MCQs')
+      .toBe((st.baseline!.databankMath ?? 0) + (st.publishedM04 ?? 0))
+    expect
+      .soft(latih, 'Latih Tubi SPM Matematik count rose by the published admin MCQs')
+      .toBe((st.baseline!.latihTubiMath ?? 0) + (st.publishedM04 ?? 0))
+    if (st.formQuestion?.chapter) await expectBabServes(page, info, st, 'published')
+  })
+
   test('S3a Set Builder: build a paper from the approved questions (group moves as a unit)', async ({
     page,
   }, info) => {
     await login(page, ADMIN)
-    // R1-16 / R1-21 P6: Set Builder at /admin/studio/sets(/:paper/builder).
+    // R1-16 / R1-21 P6: Set Builder at /admin/studio/sets(/:paper/builder), V2 flow 4
+    // (cloud-student-mechanism §3.4). Owned by T10 (r1/f08-builder-ui), not merged on BASE-1.
     await expectRouteExists(page, '/admin/studio/sets')
     await expectNoHScroll(page)
     observe(info, 'Set Builder route exists')
   })
 
-  test('S3b paper review: admin question placed (Pembina Kertas), group as one unit', async ({
-    page,
-  }, info) => {
-    const st = readState(info)
-    const title = `${st.tag} kertas`
+  /**
+   * Pembina Kertas (the BASE-1 builder at /admin/spm/kertas): a new Matematik Kertas 1 paper; adds
+   * every picker candidate matching `term` (the admin's questions), fills the rest of the blueprint
+   * from the bank and saves. Returns the paper id and how many admin candidates were offered.
+   */
+  async function buildPaper(
+    page: Page,
+    info: TestInfo,
+    title: string,
+    term: string,
+    tag: string,
+  ): Promise<{ id: string; offered: number }> {
     await login(page, ADMIN)
     await adminMenu(page, 'Pembina Kertas')
     await expect(page).toHaveURL(/\/admin\/spm\/kertas$/)
@@ -867,109 +1112,246 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       .first()
       .getAttribute('value')
     await page.getByTestId('new-subject').selectOption(subject ?? '')
-    await page.getByTestId('new-kertas').selectOption({ label: 'Kertas 2' })
+    // The admin questions are Kertas 1 MCQs (form "Kertas 1", CSV kertas 1).
+    await page.getByTestId('new-kertas').selectOption({ label: 'Kertas 1' })
     await page.getByTestId('new-title').fill(title)
     await page.getByRole('button', { name: 'Cipta Kertas' }).click()
     await expect(page.getByTestId('paper-editor-page')).toBeVisible()
     const id = new URL(page.url()).pathname.split('/').pop() ?? ''
-    saveState(info, { paper: { id, title, published: false, hasAdminQuestion: false } })
     await expectNoHScroll(page)
-    // Find the run's approved questions in the picker of section 0.
-    const add = page.getByTestId('add-0')
-    if (await add.isVisible()) await add.click()
-    const search = page.getByTestId('picker-search')
+    await page.getByTestId('add-0').click()
+    const search = page.getByRole('textbox', { name: 'Cari soalan' })
     await expect(search, 'question picker').toBeVisible()
-    await search
-      .locator('input')
-      .first()
-      .fill(st.tag)
-      .catch(() => search.fill(st.tag))
+    await search.fill(term)
     const picks = page.locator('[data-testid^=pick-add-]')
-    await page.waitForTimeout(1500)
-    const found = await picks.count()
-    observe(info, `picker candidates for the run tag: ${found}`)
+    await page.waitForTimeout(1000)
+    const offered = await picks.count()
+    observe(info, `picker candidates for "${term}": ${offered}`)
+    for (let i = 0; i < offered; i++) await picks.first().click()
+    // Fill the rest of the blueprint from the bank so the paper can be published.
+    await search.fill('')
+    const issues = page.getByTestId('budget-issues')
+    for (let guard = 0; guard < 45; guard++) {
+      if ((await issues.count()) === 0) break
+      if (!/Kurang/.test(await issues.innerText())) break
+      if ((await picks.count()) === 0) break
+      await picks.first().click()
+    }
+    await page.keyboard.press('Escape')
+    // A stimulus group moves as one unit, so the last add can overshoot: drop single bank questions
+    // (never the admin's) until the count fits.
+    for (let guard = 0; guard < 5; guard++) {
+      if ((await issues.count()) === 0 || !/Lebih \d+ soalan/.test(await issues.innerText())) break
+      const single = page
+        .locator('[data-testid^="unit-"]:not([data-testid^="unit-group-"])')
+        .filter({ hasNotText: tag })
+        .last()
+      const unitId = ((await single.getAttribute('data-testid')) ?? '').replace(/^unit-/, '')
+      await page.getByTestId(`remove-${unitId}`).click()
+    }
+    observe(
+      info,
+      `budget check after placing: ${(await page.getByTestId('budget-check').innerText()).replace(/\s+/g, ' ').slice(0, 300)}`,
+    )
+    observe(
+      info,
+      `D90 group units in the paper: ${await page.locator('[data-testid^=unit-group-]').count()} (bank groups; no admin group exists because S1c/S1d are refused)`,
+    )
+    if (offered > 0) {
+      const saved = page.waitForResponse((r) => isApi(r, 'PUT', /\/api\/admin\/papers\/[^/]+$/), {
+        timeout: 20_000,
+      })
+      await page.getByTestId('paper-save').click()
+      expect((await saved).status(), 'Simpan draf (PUT paper)').toBeLessThan(300)
+      await expect(page.getByText(tag).first(), 'admin question placed in the paper').toBeVisible()
+    }
+    await expectNoHScroll(page)
+    return { id, offered }
+  }
+
+  /** Terbitkan on the paper editor; records the server verdict. Returns true when published. */
+  async function publishPaper(page: Page, info: TestInfo, id: string): Promise<boolean> {
+    await page.goto(`/admin/spm/kertas/${id}`)
+    await expect(page.getByTestId('paper-editor-page')).toBeVisible()
+    const publish = page.getByTestId('paper-publish')
+    await expect(publish, 'Terbitkan shown on a draft paper').toBeEnabled()
+    const posted = page
+      .waitForResponse(
+        (r) =>
+          r.request().method() !== 'GET' && /\/api\/admin\/papers\/[^/]+\/publish/.test(r.url()),
+        { timeout: 20_000 },
+      )
+      .catch(() => null)
+    await publish.click()
+    const res = await posted
+    observe(
+      info,
+      `publish -> ${res ? `HTTP ${res.status()} ${(await res.text().catch(() => '')).slice(0, 240)}` : 'no request seen'}`,
+    )
+    await expect(
+      page.getByTestId('paper-unpublish').or(page.getByTestId('publish-errors')).first(),
+    ).toBeVisible({ timeout: 20_000 })
+    await expectNoHScroll(page)
+    return page.getByTestId('paper-unpublish').isVisible()
+  }
+
+  /** The pupil opens the paper from the Bijak SPM hub, presses Mula, answers every MCQ, Hantar. */
+  async function sitPaper(page: Page, info: TestInfo, title: string, tag: string): Promise<string> {
+    await login(page, PUPIL_T4)
+    await page.goto('/spm/bijak')
+    await expect(page.getByTestId('bijak-hub')).toBeVisible()
+    const card = page.locator('[data-testid^=paper-]', { hasText: title }).first()
+    await expect(card, 'admin paper on the hub').toBeVisible()
+    await expectNoHScroll(page)
+    await card.locator('[data-testid^=open-]').click()
+    await expect(page.getByTestId('bijak-cover')).toBeVisible()
+    await expectNoHScroll(page)
+    const started = page
+      .waitForResponse((r) => isApi(r, 'POST', /\/api\/bijak\/attempts$/), { timeout: 20_000 })
+      .catch(() => null)
+    await page.locator('[data-ds=hero-cta]').click()
+    const start = await started
+    observe(
+      info,
+      `Mula -> POST /api/bijak/attempts ${start ? `HTTP ${start.status()} ${start.status() >= 400 ? (await start.text().catch(() => '')).slice(0, 160) : ''}` : 'no request seen'}`,
+    )
+    const failure = page.getByText(/tidak dapat dimulakan/i).first()
+    await expect(page.getByTestId('attempt-shell').or(failure).first()).toBeVisible()
+    if (await failure.isVisible()) {
+      await failure.scrollIntoViewIfNeeded()
+      observe(info, `cover shows: "${(await failure.innerText()).trim()}"`)
+    }
+    await expect(
+      page.getByTestId('attempt-shell'),
+      'the sitting starts (attempt shell)',
+    ).toBeVisible()
+    await expect(page.getByTestId('attempt-loading')).toHaveCount(0)
+    await expect(page.getByTestId('next').or(page.getByTestId('submit')).first()).toBeVisible()
+    const id = /percubaan\/([^/?#]+)/.exec(page.url())?.[1] ?? ''
+    await expectNoHScroll(page)
+    // Answer every MCQ: "42" where offered (the admin key), else the first option.
+    const options = page.locator(
+      '[data-testid^=option-]:visible, [data-testid^=mcq-option-]:not([data-testid=mcq-option-image]):visible',
+    )
+    let answered = 0
+    let sawAdmin = false
+    for (let guard = 0; guard < 60; guard++) {
+      if (
+        await page
+          .getByText(tag)
+          .first()
+          .isVisible()
+          .catch(() => false)
+      )
+        sawAdmin = true
+      if ((await options.count()) > 0) {
+        const right = options.filter({ hasText: /^\s*B?\s*42\s*$/ })
+        await ((await right.count()) > 0 ? right.first() : options.first()).click()
+        answered++
+      }
+      if (!(await page.getByTestId('next').isVisible())) break
+      await page.getByTestId('next').click()
+    }
+    observe(info, `answered ${answered} MCQ(s); admin question seen in the sitting: ${sawAdmin}`)
+    await expect(page.getByTestId('submit')).toBeVisible()
+    await page.getByTestId('submit').click()
+    await page.getByTestId('confirm-submit').click()
+    await expect(page.getByTestId('win-screen')).toBeVisible()
+    observe(
+      info,
+      `result headline: ${(await page.getByTestId('win-screen').innerText()).split('\n').filter(Boolean).slice(0, 3).join(' / ')}`,
+    )
+    await expectNoHScroll(page)
+    expect(sawAdmin, "the admin's question is part of the sitting").toBe(true)
+    return id
+  }
+
+  test('S3b Pembina Kertas (BASE-1 builder): the admin MCQs are offered and placed in a Kertas 1 paper', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(!st.publishedM04, 'Blocked: no admin question is servable on BASE-1 (S2d)')
+    const title = `${st.tag} kertas`
+    const { id, offered } = await buildPaper(page, info, title, st.tag, st.tag)
+    saveState(info, { paper: { id, title, published: false, hasAdminQuestion: offered > 0 } })
     expect(
-      found,
-      "the admin's approved questions are offered in the paper picker",
+      offered,
+      "the admin's published questions are offered in the paper picker",
     ).toBeGreaterThanOrEqual(1)
-    await picks.first().click()
-    const groupUnit = page.locator('[data-testid^=unit-group-]')
-    observe(info, `group units in the paper: ${await groupUnit.count()}`)
-    saveState(info, { paper: { id, title, published: false, hasAdminQuestion: true } })
-    await expect(groupUnit.first(), 'a D90 group placed as one unit').toBeVisible()
   })
 
   test('S3c Terbit: the paper publishes (review shows no blockers)', async ({ page }, info) => {
     const st = readState(info)
     test.skip(!st.paper?.id, 'Blocked: S3b created no paper')
+    test.skip(!st.paper?.hasAdminQuestion, "Blocked: S3b placed none of the admin's questions")
     await login(page, ADMIN)
-    await page.goto(`/admin/spm/kertas/${st.paper!.id}`)
-    await expect(page.getByTestId('paper-editor-page')).toBeVisible()
-    const check = await page.getByTestId('budget-check').innerText()
-    observe(info, `budget check: ${check.replace(/\s+/g, ' ').slice(0, 240)}`)
-    test.skip(
-      !st.paper?.hasAdminQuestion,
-      "Blocked: S3b placed none of the admin's questions in the paper",
-    )
-    const publish = page.getByTestId('paper-publish')
-    await expect(publish, 'Terbitkan enabled').toBeEnabled()
-    await publish.click()
-    await page
-      .getByRole('button', { name: /^(Ya|Terbitkan|Terbit)/ })
-      .last()
-      .click()
-      .catch(() => undefined)
-    await expect(
-      page.getByTestId('paper-unpublish'),
-      'published paper offers Tarik balik',
-    ).toBeVisible({ timeout: 20_000 })
-    saveState(info, { paper: { ...st.paper!, published: true } })
-    await expectNoHScroll(page)
+    const ok = await publishPaper(page, info, st.paper!.id)
+    saveState(info, { paper: { ...st.paper!, published: ok } })
+    expect(ok, 'published paper offers Tarik balik').toBe(true)
   })
 
-  test('S4a pupil T4 sits the admin paper in Bijak SPM and submits (Hantar)', async ({
+  test('S4a pupil T4 sits the admin paper (form MCQ with image) in Bijak SPM and submits', async ({
     page,
   }, info) => {
     const st = readState(info)
-    test.skip(!st.paper?.published, 'Blocked: no admin-built paper was published (S3)')
-    await login(page, PUPIL_T4)
-    await page.goto('/spm/bijak')
-    await expect(page.getByTestId('bijak-hub')).toBeVisible()
-    const card = page.locator('[data-testid^=paper-]', { hasText: st.paper!.title }).first()
-    await expect(card, 'admin paper on the hub').toBeVisible()
-    await card.locator('[data-testid^=open-]').click()
-    await expect(page.getByTestId('bijak-cover')).toBeVisible()
-    await page.locator('[data-ds=hero-cta]').click()
-    await expect(page.getByTestId('attempt-shell')).toBeVisible()
-    await expect(page.getByTestId('attempt-loading')).toHaveCount(0)
-    await expect(page.getByTestId('next').or(page.getByTestId('submit')).first()).toBeVisible()
-    const id = /percubaan\/([^/?#]+)/.exec(page.url())?.[1] ?? ''
-    await expectNoHScroll(page)
-    while (await page.getByTestId('next').isVisible()) await page.getByTestId('next').click()
-    await expect(page.getByTestId('submit')).toBeVisible()
-    await page.getByTestId('submit').click()
-    await page.getByTestId('confirm-submit').click()
-    await expect(page.getByTestId('win-screen')).toBeVisible()
+    test.skip(!st.paper?.published, 'Blocked: no admin-built paper was published (S3c)')
+    const id = await sitPaper(page, info, st.paper!.title, st.tag)
     saveState(info, { attempt: { id, submitted: true } })
-    await expectNoHScroll(page)
+  })
+
+  test('S3d control paper: only the image-free admin MCQ (S1e), built and published', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(!st.controlQuestion, 'Blocked: S1e created no control question')
+    test.skip(!st.publishedM04, 'Blocked: no admin question is servable on BASE-1 (S2d)')
+    const title = `${st.tag} kawalan kertas`
+    const term = `${st.tag} kawalan`
+    const { id, offered } = await buildPaper(page, info, title, term, term)
+    saveState(info, {
+      controlPaper: { id, title, published: false, hasAdminQuestion: offered > 0 },
+    })
+    expect(offered, 'the control question is offered in the picker').toBeGreaterThanOrEqual(1)
+    const ok = await publishPaper(page, info, id)
+    saveState(info, { controlPaper: { id, title, published: ok, hasAdminQuestion: true } })
+    expect(ok, 'control paper published').toBe(true)
+  })
+
+  test('S4a2 pupil T4 sits the control paper (image-free admin MCQ) and submits', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(!st.controlPaper?.published, 'Blocked: the control paper was not published (S3d)')
+    const id = await sitPaper(page, info, st.controlPaper!.title, `${st.tag} kawalan`)
+    // S4b-S4d use the sitting that worked: the control one when S4a could not start.
+    if (!st.attempt?.submitted) saveState(info, { attempt: { id, submitted: true } })
   })
 
   test('S4b pupil self-marks a written part (Simpan markah)', async ({ page }, info) => {
     const st = readState(info)
-    test.skip(!st.attempt?.submitted, 'Blocked: no submitted attempt of the admin paper (S4a)')
+    test.skip(!st.attempt?.submitted, 'Blocked: no submitted attempt of an admin paper (S4a, S4a2)')
     await login(page, PUPIL_T4)
     await page.goto(`/spm/bijak/percubaan/${st.attempt!.id}/keputusan`)
+    await expect(page.getByTestId('win-screen')).toBeVisible()
+    test.skip(
+      (await page.getByTestId('provisional').count()) === 0,
+      'Blocked: the admin paper has no written (self-markable) part: it holds only MCQs, because the written/D90 intake path (S1c, S1d) is refused on BASE-1. Self-mark itself is covered by B-02.',
+    )
     await selfMarkOne(page, info)
     await expectNoHScroll(page)
   })
 
   test('S4c pupil sees the result (score / max, per Bahagian)', async ({ page }, info) => {
     const st = readState(info)
-    test.skip(!st.attempt?.submitted, 'Blocked: no submitted attempt of the admin paper (S4a)')
+    test.skip(!st.attempt?.submitted, 'Blocked: no submitted attempt of an admin paper (S4a, S4a2)')
     await login(page, PUPIL_T4)
     await page.goto(`/spm/bijak/percubaan/${st.attempt!.id}/keputusan`)
     await expect(page.getByTestId('win-screen')).toBeVisible()
     await expect(page.getByTestId('section-score').first()).toBeVisible()
+    observe(
+      info,
+      `attempt ${st.attempt!.id}; headline: ${(await page.getByTestId('win-screen').innerText()).split('\n').filter(Boolean).slice(0, 2).join(' / ')}; sections: ${(await page.getByTestId('section-score').allInnerTexts()).join(', ')}; questions listed: ${await page.locator('[data-testid^=result-q-]').count()}`,
+    )
     await expectNoHScroll(page)
   })
 
@@ -977,88 +1359,28 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     page,
   }, info) => {
     const st = readState(info)
-    test.skip(!st.attempt?.submitted, 'Blocked: no submitted attempt of the admin paper (S4a)')
+    test.skip(!st.attempt?.submitted, 'Blocked: no submitted attempt of an admin paper (S4a, S4a2)')
     await login(page, PUPIL_T4)
     await page.goto(`/spm/bijak/percubaan/${st.attempt!.id}/keputusan`)
-    await page
-      .getByRole('button', { name: /Cuba lagi/i })
-      .first()
-      .click()
+    await expect(page.getByTestId('retry'), 'Cuba Lagi on the result').toBeVisible()
+    await page.getByTestId('retry').click()
     await expect(page).toHaveURL(/\/spm\/bijak\/percubaan\/[^/]+$/)
-    expect(page.url()).not.toContain(st.attempt!.id)
+    expect(page.url(), 'a different attempt id').not.toContain(st.attempt!.id)
     await expect(page.getByTestId('attempt-shell')).toBeVisible()
+    observe(info, `old ${st.attempt!.id} -> new ${new URL(page.url()).pathname}`)
+    await expectNoHScroll(page)
   })
 
   test('S4e pupil T5 sees the admin paper on the Bijak SPM hub', async ({ page }, info) => {
     const st = readState(info)
-    test.skip(!st.paper?.published, 'Blocked: no admin-built paper was published (S3)')
+    const paper = st.paper?.published ? st.paper : st.controlPaper
+    test.skip(!paper?.published, 'Blocked: no admin-built paper was published (S3c, S3d)')
     await login(page, PUPIL_T5)
     await page.goto('/spm/bijak')
+    await expect(page.getByTestId('bijak-hub')).toBeVisible()
     await expect(
-      page.locator('[data-testid^=paper-]', { hasText: st.paper!.title }).first(),
+      page.locator('[data-testid^=paper-]', { hasText: paper!.title }).first(),
     ).toBeVisible()
-    await expectNoHScroll(page)
-  })
-
-  test("S5a Databank Soalan SPM receives the admin's approved MCQs (count rises)", async ({
-    page,
-  }, info) => {
-    const st = readState(info)
-    test.skip(st.baseline?.databankMath === undefined, 'Blocked: S0 baseline missing')
-    const served = st.approvedM04 || st.approvedViaApi || 0
-    test.skip(!served, 'Blocked: no Bank Soalan question reached Diluluskan (S2a UI, S2c API)')
-    await login(page, PUPIL_T4)
-    const now = await cardCount(page, '/spm/tahun-lepas', 'databank-card-MATH', 'databank-count')
-    observe(
-      info,
-      `path: ${st.approvedM04 ? 'approved via UI (S2a)' : 'approved via API (S2c)'}; Databank MATH ${st.baseline!.databankMath} -> ${now}; MCQs this run: ${served}`,
-    )
-    await expectNoHScroll(page)
-    expect(now, 'Databank Matematik count rose by the admin MCQs').toBe(
-      (st.baseline!.databankMath ?? 0) + served,
-    )
-  })
-
-  test("S5b Latih Tubi SPM receives the admin's approved MCQs (count rises)", async ({
-    page,
-  }, info) => {
-    const st = readState(info)
-    test.skip(st.baseline?.latihTubiMath === undefined, 'Blocked: S0 baseline missing')
-    const served = st.approvedM04 || st.approvedViaApi || 0
-    test.skip(!served, 'Blocked: no Bank Soalan question reached Diluluskan (S2a UI, S2c API)')
-    await login(page, PUPIL_T4)
-    const now = await cardCount(page, '/spm/latih-tubi', 'latih-tubi-card-MATH', 'latih-tubi-count')
-    observe(
-      info,
-      `path: ${st.approvedM04 ? 'approved via UI (S2a)' : 'approved via API (S2c)'}; Latih Tubi SPM MATH ${st.baseline!.latihTubiMath} -> ${now}; MCQs this run: ${served}`,
-    )
-    await expectNoHScroll(page)
-    expect(now, 'Latih Tubi SPM Matematik count rose by the admin MCQs').toBe(
-      (st.baseline!.latihTubiMath ?? 0) + served,
-    )
-  })
-
-  test("S5c Soalan by Chapter lists the admin question's Bab", async ({ page }, info) => {
-    const st = readState(info)
-    test.skip(!st.formQuestion?.chapter, 'Blocked: S1a could not choose a Bab (empty Bab list)')
-    test.skip(
-      !(st.approvedM04 || st.approvedViaApi),
-      'Blocked: no Bank Soalan question reached Diluluskan (S2a UI, S2c API)',
-    )
-    await login(page, PUPIL_T4)
-    observe(
-      info,
-      `path: ${st.approvedM04 ? 'approved via UI (S2a)' : 'approved via API (S2c)'}; Bab ${st.formQuestion!.chapter}`,
-    )
-    await page.goto('/practice/chapter')
-    const grid = page.getByTestId('chapter-subject-grid')
-    await expect(
-      grid.getByText('Matematik').first(),
-      'Matematik listed in Soalan by Chapter',
-    ).toBeVisible()
-    await grid.getByText('Matematik').first().click()
-    const name = st.formQuestion!.chapter!.replace(/^Bab \d+:\s*/, '')
-    await expect(page.getByText(name).first(), `Bab "${name}" listed`).toBeVisible()
     await expectNoHScroll(page)
   })
 
@@ -1108,13 +1430,19 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await page.getByTestId('confirm-submit').click()
     await expect(page.getByTestId('win-screen')).toBeVisible()
     const attemptId = /percubaan\/([^/?#]+)/.exec(page.url())?.[1] ?? ''
-    saveState(info, { attempt: readState(info).attempt ?? { id: attemptId, submitted: true } })
+    mkdirSync(STATE_DIR, { recursive: true })
     writeFileSync(join(STATE_DIR, `${RUN}-${info.project.name}-b02.txt`), attemptId)
-    observe(
-      info,
-      `result headline: ${(await page.getByTestId('win-screen').innerText()).split('\n').slice(0, 3).join(' / ')}`,
-    )
+    const headline = async () =>
+      (await page.getByTestId('win-screen').innerText())
+        .split('\n')
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(' / ')
+    observe(info, `result headline before self-mark: ${await headline()}`)
     await selfMarkOne(page, info)
+    await page.reload()
+    await expect(page.getByTestId('win-screen')).toBeVisible()
+    observe(info, `result headline after self-mark + reload: ${await headline()}`)
     await expectNoHScroll(page)
   })
 
@@ -1138,11 +1466,13 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await login(page, PUPIL_T4)
     await page.goto(`/spm/bijak/percubaan/${attemptId}/keputusan`)
     await expect(page.getByTestId('win-screen')).toBeVisible()
-    const retry = page
-      .getByRole('button', { name: /Cuba lagi/i })
-      .or(page.getByRole('link', { name: /Cuba lagi/i }))
-      .first()
-    await expect(retry, '"Cuba lagi" on the result').toBeVisible()
+    const retry = page.getByTestId('retry')
+    await expect(retry, '"Cuba Lagi" on the result').toBeVisible()
+    // V2 (cloud-student-mechanism §1.7): "Lihat semakan lepas" links to the last review.
+    observe(
+      info,
+      `"Lihat semakan lepas" links on the result: ${await page.getByText(/Lihat semakan lepas/i).count()}`,
+    )
     const started = page
       .waitForResponse(
         (r) => isApi(r, 'POST', /\/api\/bijak\/attempts(\/[^/]+\/retry)?$|cuba-lagi|retry/),
