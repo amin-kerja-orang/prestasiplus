@@ -830,6 +830,7 @@ Master indexes: `docs/requirements/URS.md` and `docs/requirements/SRS.md` link e
 
 | Date | Change |
 |---|---|
+| 2026-10-31 | **BASE-25 (team B, T20): merged REQ-A-001 `r1/b1-e2e-off-poc` @ b209b4ff (--no-ff).** e2e workflows + compose.http off PoC papers (T26 e2e seed; bank demo paper as BIJAK_PAPER_ID; DATABASE_URL host guard). Gate before T36. Review: independent code-reviewer Approve. Re-run: actionlint 0, shellcheck -S warning 0, YAML parse 0, compose config -q 0, eslint 0. Known red after switch: REQ-B-003. |
 | 2026-10-31 | **BASE-24 (team B, T20): merged T26 `r1/t26-e2e-seed` @ d474227d (--no-ff).** Local/E2E seed behind a guard (profile e2e + E2E_SEED=1; prod guard). G4: B2 Approve + B3 Pass on 510f085b; tip = reviewed head + BASE merges only (trial trees identical). X1 (T26 x H-A15) stays with H-A15/T26b. Re-run: api tsc 0, registry-boot 3/3, seed/e2e + wallet/seed 18/18 (final tree, see BASE-27). |
 | 2026-10-31 | **BASE-23 (team B, T20): merged H-A12 `r1/ha12-conformance` @ e1fa7217 (--no-ff).** Conformance suite (local in-process app only) green after D72/B01/B06 rule changes: stale fixtures updated, uses T06's setPocMarkBudgets helper. G4: B2 Approve (delta = helper import, checked by B1). Re-run on merge result: api tsc 0, contract:check 0, conformance ⎯⎯⎯⎯⎯⎯⎯ Failed2 ⎯⎯⎯⎯⎯⎯⎯
 2 failed | 404 passed (406). |
