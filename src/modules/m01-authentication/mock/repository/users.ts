@@ -261,7 +261,19 @@ export interface RoleCounts {
 }
 
 /** S1 / #1 filters. */
+/**
+ * Secondary-only (D72): a row filter for the admin reads. `key` identifies the predicate for the
+ * dataset's slow-path cache (it must change whenever the predicate's behaviour changes).
+ */
+export interface UserVisibility {
+  key: string
+  visible: (row: { role: UserRole; schoolId: number | null; grade: number | null }) => boolean
+}
+const VISIBILITY_FIELDS = ['role', 'schoolId', 'grade'] as const
+
 export interface AdminUserFilter {
+  /** Hide rows the predicate refuses (primary-school people, Darjah pupils); the rows stay stored. */
+  visibility?: UserVisibility
   role?: UserRole | ''
   schoolId?: number
   isActive?: boolean
@@ -395,9 +407,17 @@ export const usersRepo = defineRepository({
         if (filter.schoolId !== undefined) where.schoolId = filter.schoolId
         if (filter.isActive !== undefined) where.isActive = filter.isActive
         const term = filter.search?.trim() ?? ''
+        const vis = filter.visibility
         return store.query({
           where,
           ...(term === '' ? {} : { search: { term, fields: ['name', 'email'] } }),
+          ...(vis
+            ? {
+                match: (r: Pick<UserRow, 'role' | 'schoolId' | 'grade'>) => vis.visible(r),
+                matchFields: VISIBILITY_FIELDS,
+                cacheKey: `m01-users-visibility:${vis.key}`,
+              }
+            : {}),
           sort: [
             { field: 'createdAt', dir: 'desc' },
             { field: 'id', dir: 'desc' },
@@ -408,8 +428,14 @@ export const usersRepo = defineRepository({
       },
 
       /** S1 role cards (named query U-ROLE per role; `unmapped` has no card). */
-      roleCounts(): RoleCounts {
-        const n = (role: UserRole) => store.count({ role })
+      roleCounts(vis?: UserVisibility): RoleCounts {
+        const n = (role: UserRole) =>
+          vis
+            ? store.count({ role }, (r) => vis.visible(r), {
+                matchFields: VISIBILITY_FIELDS,
+                cacheKey: `m01-users-visibility-count:${vis.key}`,
+              })
+            : store.count({ role })
         return {
           student: n('student'),
           teacher: n('teacher'),

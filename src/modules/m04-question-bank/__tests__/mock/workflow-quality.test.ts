@@ -15,6 +15,7 @@ import { RepositoryError } from '@/mock/repository'
 import type { QualityAuditResponse, QualitySummary } from '../../api/quality'
 import { questions, reports, structured } from '../../mock'
 import { AUDIT_DONE_TEXT } from '../../mock/handlers/quality'
+import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 import {
   ADMIN,
   ADMIN_SEKOLAH,
@@ -33,6 +34,8 @@ let call: Call
 let dirty = false
 
 beforeAll(async () => {
+  // The documented counts include the Darjah questions; the hiding (D72) is in secondary-only.test.ts.
+  showPrimaryLevels()
   runtime = await bootM04()
   call = callAs(runtime)
 }, 180_000)
@@ -132,10 +135,12 @@ describe('#12 S6 summary: the observed anchor counts (SRS §6.11 Quality, §4.1)
     ).toEqual([2, 3, 4])
   })
 
-  it('"Mengikut Tingkatan": the 11 levels in order with count and mean', () => {
-    expect(s.byLevel.map((l) => l.levelId)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
-    expect(s.byLevel[0]).toMatchObject({ name: 'Darjah 1' })
-    expect(s.byLevel.reduce((n, l) => n + l.count, 0)).toBe(s.scoredCount)
+  it('"Mengikut Tingkatan": only Tingkatan 1 to 5 in order with count and mean (D72: no Darjah)', () => {
+    expect(s.byLevel.map((l) => l.levelId)).toEqual([7, 8, 9, 10, 11])
+    expect(s.byLevel[0]).toMatchObject({ name: 'Tingkatan 1' })
+    expect(s.byLevel.some((l) => /darjah/i.test(l.name))).toBe(false)
+    // The hidden Darjah questions stay scored but are not listed here.
+    expect(s.byLevel.reduce((n, l) => n + l.count, 0)).toBeLessThan(s.scoredCount)
     for (const l of s.byLevel) {
       if (l.count === 0) expect(l.average).toBe(0)
       else expect(l.average).toBeGreaterThan(0)

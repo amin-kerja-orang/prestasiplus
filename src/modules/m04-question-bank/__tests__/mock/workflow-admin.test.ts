@@ -18,6 +18,7 @@ import type {
   SubmissionMutation,
 } from '../../api/submissions'
 import { masterNotes, questions, structured, submissions } from '../../mock'
+import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 import {
   DIAGRAM_DISMISSED_TEXT,
   DIAGRAM_FILE_REQUIRED,
@@ -62,6 +63,9 @@ let call: Call
 let dirty = false
 
 beforeAll(async () => {
+  // These tests assert the observed whole-bank figures; the hiding of Darjah questions (D72) is covered by
+  // secondary-only.test.ts.
+  showPrimaryLevels()
   runtime = await bootM04()
   call = callAs(runtime)
 }, 180_000)
@@ -72,6 +76,7 @@ afterEach(async () => {
 }, 180_000)
 
 afterAll(async () => {
+  showPrimaryLevels(false)
   await runtime.reset()
 })
 

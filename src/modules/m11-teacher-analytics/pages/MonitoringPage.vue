@@ -151,18 +151,6 @@ async function goto(sectionId: string) {
 
 <template>
   <DsPage data-testid="monitoring-page" :subtitle="SUBTITLE">
-    <template #actions>
-      <MonitoringTools
-        part="status"
-        :query="query"
-        :paths="paths"
-        :form-id="FORM_ID"
-        :refresh-display="refresh.display.value"
-        :refresh-running="refresh.running.value"
-        @toggle="refresh.toggle"
-      />
-    </template>
-
     <!-- Live copy: "Tapis" and "Reset" (FR-M11-31, 32). -->
     <DsFilterBar
       :id="FORM_ID"
@@ -199,26 +187,26 @@ async function goto(sectionId: string) {
       </DsFormField>
       <template v-if="wide" #actions>
         <MonitoringTools
-          part="actions"
-          class="ml-6"
+          class="-mt-12 ml-6"
           :query="query"
           :paths="paths"
           :form-id="FORM_ID"
           :refresh-display="refresh.display.value"
           :refresh-running="refresh.running.value"
           @export="doExport"
+          @toggle="refresh.toggle"
         />
       </template>
     </DsFilterBar>
     <MonitoringTools
       v-if="!wide"
-      part="actions"
       :query="query"
       :paths="paths"
       :form-id="FORM_ID"
       :refresh-display="refresh.display.value"
       :refresh-running="refresh.running.value"
       @export="doExport"
+      @toggle="refresh.toggle"
     />
 
     <DsLoadError v-if="error" testid="mon-error" @retry="reload" />

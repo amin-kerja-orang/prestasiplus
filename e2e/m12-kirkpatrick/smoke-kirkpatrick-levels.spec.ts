@@ -1394,7 +1394,7 @@ test.describe('M12 S4-S8: the /guru twins', MODULE, () => {
     await expect(page.getByTestId('pel-back')).toHaveAttribute('href', '/guru/kirkpatrick/behavior')
   })
 
-  test('E2E-M12-08 /guru/kirkpatrick/behavior marks "T3: Tingkah Laku" active in the sidebar @m12', async ({
+  test('E2E-M12-08 /guru/kirkpatrick/behavior marks "Tahap 3: Tingkah Laku" active in the sidebar @m12', async ({
     page,
     gotoApp,
     loginAs,
@@ -1404,7 +1404,7 @@ test.describe('M12 S4-S8: the /guru twins', MODULE, () => {
     await gotoApp('/guru/kirkpatrick/behavior')
     await expect(page.getByTestId('beh-school-row').first()).toBeVisible()
     await expect(page.getByTestId('shell-admin-nav').locator('.active')).toHaveText(
-      'T3: Tingkah Laku',
+      'Tahap 3: Tingkah Laku',
     )
   })
 

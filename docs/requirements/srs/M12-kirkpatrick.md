@@ -82,7 +82,7 @@ Query names are kept as on live (`school_id`, `state`) so bookmarked links work 
 |---|---|---|---|
 | FR-M12-01 | The admin-panel sidebar SHALL hold the collapsible group "Kirkpatrick" (`fa-microscope` cyan-500, upper case by CSS, chevron, state in `localStorage["admin_sidebar"]`) with the 7 items of FN-1.1.1 in that order, with their icons and `/admin/kirkpatrick…` targets; on an `/admin/kirkpatrick*` route the group is open and the route's item active. "Laporan" follows the group, outside it. | 1.1.1 | 01.1 |
 | FR-M12-02 | The admin-panel "Lagi" drawer (below `lg`) SHALL list "Kirkpatrick" (`fa-microscope`) → `/admin/kirkpatrick`. | 1.1.2 | 01.2 |
-| FR-M12-03 | The user-portal drawer (below `lg`) SHALL hold, under "Portal Guru" › "ANALITIK", the button "Kirkpatrick" (`fa-microscope`, chevron) toggling the 7 items of FN-1.1.3 with `/guru/kirkpatrick…` targets and "T2: Pembelajaran" using `fa-graduation-cap`; the group renders for a teacher (INFERRED) and is present but not displayed for the admin; the desktop user sidebar has no Kirkpatrick entry. | 1.1.3 | 04.1 |
+| FR-M12-03 | The user-portal drawer (below `lg`) SHALL hold, under "Portal Guru" › "ANALITIK", the button "Kirkpatrick" (`fa-microscope`, chevron) toggling the 7 items of FN-1.1.3 with `/guru/kirkpatrick…` targets and "Tahap 2: Pembelajaran" using `fa-graduation-cap`; the group renders for a teacher (INFERRED) and is present but not displayed for the admin; the desktop user sidebar has no Kirkpatrick entry. | 1.1.3 | 04.1 |
 | FR-M12-04 | On `/guru/kirkpatrick*` the admin-panel sidebar SHALL open the group and mark the item of the current view active, as on the `/admin` twin (DV-M12-12). | 1.1.4 | 02.1, 02.2 |
 | FR-M12-05 | The shell header SHALL show, and the document title SHALL be, for S1–S5 and S7, the exact title/subtitle and tab title of URS §1. | 1.1.5 | 01.4 |
 | FR-M12-06 | The header SHALL show "Rantaian Impak" on S6 and "Kirkpatrick — {nama}" on S8, with no subtitle (DV-M12-03, DV-SH-03); tab titles unchanged. | 1.1.6 | 01.5 |
@@ -553,14 +553,14 @@ Every scenario runs on the three Playwright projects **mobile** (375×812), **ta
 
 | ID | Scenario | AC | FR |
 |---|---|---|---|
-| E2E-M12-01 | Admin on `/admin/kirkpatrick/results`: at 1280 the sidebar group "KIRKPATRICK" is open with the 7 items, icons and targets, "T4: Hasil" active, "Laporan" after the group; at 375/768 the same items in the sidebar drawer. | 01.1 | 01 |
+| E2E-M12-01 | Admin on `/admin/kirkpatrick/results`: at 1280 the sidebar group "KIRKPATRICK" is open with the 7 items, icons and targets, "Tahap 4: Hasil" active, "Laporan" after the group; at 375/768 the same items in the sidebar drawer. | 01.1 | 01 |
 | E2E-M12-02 | Admin at 375 and 768 opens "Lagi": "Kirkpatrick" → `/admin/kirkpatrick`; at 1280 the sidebar entry of E2E-01 is used instead. | 01.2 | 02 |
 | E2E-M12-03 | Tab strip on S2, S3, S4, S5, S7 (6 tabs, current highlighted, no "Rantaian Impak"); none on S1 and S6; tabs link to unfiltered URLs from `?school_id=8080`. | 01.3 | 09 |
 | E2E-M12-04 | Header title/subtitle and `document.title` of S1, S2, S3, S4, S5, S7 exactly as URS §1. | 01.4 | 05 |
 | E2E-M12-05 | S6 header "Rantaian Impak", S8 (4664) "Kirkpatrick — Pelajar Demo 004664", no subtitle; tab titles unchanged. | 01.5 | 06 |
 | E2E-M12-06 | S9 header "Kirkpatrick — Prestasi Saya", S10 "Maklum Balas", no subtitle; tab titles. | 01.6 | 07 |
 | E2E-M12-07 | S1–S8 on both prefixes render the admin-panel shell; S9, S10 the user-portal shell. | 01.7 | 08 |
-| E2E-M12-08 | `/guru/kirkpatrick/behavior` → "T3: Tingkah Laku" active; `/guru/kirkpatrick` → "Overview" active (at 1280 sidebar; at 375/768 in the drawer). | 02.1, 02.2 | 04 |
+| E2E-M12-08 | `/guru/kirkpatrick/behavior` → "Tahap 3: Tingkah Laku" active; `/guru/kirkpatrick` → "Overview" active (at 1280 sidebar; at 375/768 in the drawer). | 02.1, 02.2 | 04 |
 | E2E-M12-09 | Guest opens `/admin/kirkpatrick`, `/guru/kirkpatrick/chain`, `/kirkpatrick`, `/maklum-balas` → `/login`. | 03.1 | 11 |
 | E2E-M12-10 | Admin opens the probed paths of AC-03.2 → M01 404 page. | 03.2 | 14 |
 | E2E-M12-11 | Admin opens `/admin/kirkpatrick/interventions/1` and `/create` → 404 page, no "405" text. | 03.3 | 16 |

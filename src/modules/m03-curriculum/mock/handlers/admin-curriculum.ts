@@ -85,7 +85,7 @@ const subjectExists = () =>
   )
 const levelExists = () =>
   rule('exists', (v) =>
-    asInt(v) !== undefined && curriculumRepo.level(asInt(v) as number)
+    asInt(v) !== undefined && curriculumRepo.level(asInt(v) as number) && !curriculumRepo.isLevelHidden(asInt(v) as number)
       ? null
       : 'The selected :attribute is invalid.',
   )
@@ -180,7 +180,7 @@ export const adminCurriculumRoutes: RouteDef[] = [
     }
     const subject = curriculumRepo.subject(s.value as number)
     if (!subject) return notFound(SUBJECT_NOT_FOUND)
-    const level = curriculumRepo.level(l.value as number)
+    const level = curriculumRepo.isLevelHidden(l.value as number) ? undefined : curriculumRepo.level(l.value as number)
     if (!level) return notFound(LEVEL_NOT_FOUND)
     const { stats, chapters } = curriculumRepo.tree(subject.id, level.id)
     return ok({

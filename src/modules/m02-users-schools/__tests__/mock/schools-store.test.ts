@@ -16,13 +16,16 @@ import { users } from '@/modules/m01-authentication/mock'
 import plugin, { computeExpiry, FIXTURE_SCHOOL_IDS, schools, type School } from '../../mock'
 import { PPD_LIST } from '../../mock/data/geo'
 import { SCHOOL_ANCHOR_ROWS } from '../../mock/datasets/schools-anchors'
-import { schoolQueries } from '../../mock/repository/schools'
+import { schoolQueries, showPrimarySchools } from '../../mock/repository/schools'
 
 const NOW = '2026-09-25T15:40:00+08:00'
 
 let runtime: MockRuntime
 
 beforeAll(async () => {
+  // These tests assert the observed live register; the hiding of primary-type schools (D72) is covered
+  // by secondary-only.test.ts.
+  showPrimarySchools()
   runtime = await bootMock({
     mode: 'test',
     clock: createClock({ at: NOW }),
@@ -326,12 +329,12 @@ describe('public endpoints (#38, #40, #41) and /api/me', () => {
     expect(
       (me4.body as { data: { school: { id: number; name: string } } }).data.school,
     ).toMatchObject({
-      id: 900_004,
-      name: 'SK Demo Bestari',
+      id: 900_001,
+      name: 'SMK DEMO',
     })
     const admin = issueSession(users.get(1) as never, false, at)
     const me1 = await get('/api/me', admin.token)
-    expect((me1.body as { data: { school: { name: string } } }).data.school.name).toBe('SK Demo')
+    expect((me1.body as { data: { school: unknown } }).data.school).toBeNull() // D72: the central admin has no school
     const noSchool = issueSession(users.get(3) as never, false, at)
     const me3 = await get('/api/me', noSchool.token)
     expect((me3.body as { data: { school: unknown } }).data.school).toBeNull()

@@ -41,13 +41,13 @@ import {
 
 import type { AdminSchool } from '../../api/schools-admin'
 import { STATE_NAMES } from '../data/geo'
-import { schoolsRepo, type SchoolInput } from '../repository/schools'
+import { activeSchoolTypes, schoolsRepo, type SchoolInput } from '../repository/schools'
 import type { School, SchoolType } from '../repository/types'
 
 export const SCHOOLS_PAGE_SIZE = 30
 
-/** BR-21. */
-export const SCHOOL_TYPES: readonly SchoolType[] = ['SK', 'SMK', 'SJK(C)', 'SJK(T)', 'MRSM', 'SBP']
+/** BR-21, secondary types only (D72: SK / SJK(C) / SJK(T) are hidden, never offered or accepted). */
+export const schoolTypes = (): readonly SchoolType[] => activeSchoolTypes()
 
 /** UNVERIFIED COPY (§8): placeholders until the live copy is observed. */
 export const SCHOOL_SAVED = 'Sekolah berjaya disimpan.'
@@ -113,7 +113,7 @@ function schoolRules(ignoreId: number | null) {
         return hit !== undefined && hit.id !== ignoreId
       }),
     ],
-    type: [required(), oneOf(SCHOOL_TYPES)],
+    type: [required(), oneOf(schoolTypes())],
     state: [required(), oneOf(STATE_NAMES)],
     district: [isString(), max(255)],
     city: [isString(), max(255)],
@@ -173,7 +173,8 @@ export const schoolAdminRoutes: RouteDef[] = [
     '/api/admin/schools/:id',
     [adminOnly],
     (req) => {
-      const school = schoolsRepo.get(idOf(req))
+      const id = idOf(req)
+      const school = schoolsRepo.isHidden(id) ? undefined : schoolsRepo.get(id)
       return school ? ok(toAdminSchool(school)) : notFound()
     },
     { params: { id: int() } },
@@ -193,7 +194,7 @@ export const schoolAdminRoutes: RouteDef[] = [
     [adminOnly],
     (req, ctx) => {
       const id = idOf(req)
-      const current = schoolsRepo.get(id)
+      const current = schoolsRepo.isHidden(id) ? undefined : schoolsRepo.get(id)
       if (!current) return notFound()
       const body = trimmed(req.body)
       const fields = validationErrors(body, schoolRules(id))
@@ -210,7 +211,7 @@ export const schoolAdminRoutes: RouteDef[] = [
     [adminOnly],
     (req, ctx) => {
       const id = idOf(req)
-      if (!schoolsRepo.get(id)) return notFound()
+      if (schoolsRepo.isHidden(id) || !schoolsRepo.get(id)) return notFound()
       const school = schoolsRepo.toggleActive(id, ctx.clock.now())
       return ok({ isActive: school.isActive }, { status: SCHOOL_TOGGLED })
     },

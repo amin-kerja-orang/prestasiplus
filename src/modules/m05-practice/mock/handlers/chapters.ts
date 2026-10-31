@@ -17,6 +17,7 @@ import {
   offeredLevelIds,
   practiceChapters,
   practiceSubjects,
+  practiceLevelCount,
   round,
   userIdOf,
 } from './common'
@@ -35,8 +36,8 @@ export const chapterRoutes: RouteDef[] = [
         icon: s.icon,
         color: s.color,
         chapterCount,
-        // FR-M05-58: Q-PRACTICE(subject) (M04 §4.1).
-        questionCount: questions.count('Q-PRACTICE', s.id),
+        // FR-M05-58: the practice-drawable questions of the offered levels (D72).
+        questionCount: levels.reduce((a, l) => a + practiceLevelCount(s.id, l), 0),
       })
     }
     return unpaged(items)

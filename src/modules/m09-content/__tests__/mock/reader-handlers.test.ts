@@ -37,7 +37,7 @@ import type {
   VideoFormContext,
   VideoListMeta,
 } from '../../api/types'
-import m09, { audioKbat, perutusan, videos } from '../../mock'
+import m09, { audioKbat, perutusan, showPrimaryContent, videos } from '../../mock'
 
 class MemoryStorage {
   private readonly items = new Map<string, string>()
@@ -55,7 +55,9 @@ class MemoryStorage {
 // Canonical accounts (M01 §6.8).
 const ADMIN = 1
 const PELAJAR = 2
-const MAJU = 4
+const MAJU = 4 // SMK DEMO, Tingkatan 5 (D72: same school as PELAJAR)
+// A Tingkatan 5 pupil of another school (8080), for the school-scope checks.
+const OTHER_SCHOOL_PUPIL = 2008
 const GURU = 5
 const ADMIN_SEKOLAH = 8
 
@@ -84,6 +86,9 @@ let runtime: MockRuntime
 let clock: Clock
 
 beforeAll(async () => {
+  // These tests assert the observed live fixtures (72 articles); the hiding of Darjah content (D72) is
+  // covered by secondary-only.test.ts.
+  showPrimaryContent()
   vi.stubGlobal('localStorage', new MemoryStorage())
   clock = createClock({ at: CLOCK_ANCHOR_ISO })
   runtime = await bootMock({
@@ -745,7 +750,9 @@ describe('#33 GET /api/perutusan (S22)', () => {
     expect(ids((await get<ListBody<PerutusanCard>>('/api/perutusan', PELAJAR)).body.data)).toEqual([
       2,
     ])
-    expect((await get<ListBody<PerutusanCard>>('/api/perutusan', MAJU)).body.data).toEqual([])
+    expect(
+      (await get<ListBody<PerutusanCard>>('/api/perutusan', OTHER_SCHOOL_PUPIL)).body.data,
+    ).toEqual([])
     expect(
       ids((await get<ListBody<PerutusanCard>>('/api/perutusan', ADMIN_SEKOLAH)).body.data),
     ).toEqual([2])
@@ -864,9 +871,9 @@ describe('#37 POST /api/perutusan (S24) and #34 GET /api/perutusan/mine (S25)', 
     const list = await get<ListBody<PerutusanCard>>('/api/perutusan', ADMIN)
     expect(ids(list.body.data)).toEqual([4, 2, r.body.data.id, 3])
     // National scope: every logged-in user sees it (BR-M09-23).
-    expect(ids((await get<ListBody<PerutusanCard>>('/api/perutusan', MAJU)).body.data)).toEqual([
-      r.body.data.id,
-    ])
+    expect(
+      ids((await get<ListBody<PerutusanCard>>('/api/perutusan', OTHER_SCHOOL_PUPIL)).body.data),
+    ).toEqual([r.body.data.id])
   })
 
   it('stores a draft for the author only and lists it on S25 with its status label', async () => {
@@ -974,7 +981,7 @@ describe('#37 POST /api/perutusan (S24) and #34 GET /api/perutusan/mine (S25)', 
     expect(r.status).toBe(201)
     const id = r.body.data.id
     expect((await get(`/api/perutusan/${String(id)}`, PELAJAR)).status).toBe(200)
-    expect((await get(`/api/perutusan/${String(id)}`, MAJU)).status).toBe(404)
+    expect((await get(`/api/perutusan/${String(id)}`, OTHER_SCHOOL_PUPIL)).status).toBe(404)
     expect(r.body.data.author.roleLabel).toBe('Pengetua')
   })
 })
