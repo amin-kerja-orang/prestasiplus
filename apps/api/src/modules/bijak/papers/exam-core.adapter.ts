@@ -6,9 +6,10 @@
  * repo-root `src/`, so the API Docker image (which copies only `packages` and `apps/api`) can build it
  * (#45 C4). Nothing else in `bijak/papers` imports the domain.
  *
- * Functions used: `composeFromBlueprint` (Jana Kertas composition), `poolUnits` (stimulus groups kept
- * whole), `effectiveMarks` (choose-N marks of a section, so a paper total is derived, never stored)
- * and `shortageLine` (BM shortage line). Pinned by `test/bijak-papers/exam-core-adapter.spec.ts`.
+ * Functions used: `composeStandardPaper` (Jana Kertas, D75: exact or refuse, stimulus groups kept whole), `effectiveMarks`
+ * (choose-N marks of a section, so a paper total is derived, never stored), `describeQuestion` (marks of a question from
+ * its leaf facts) and `shortageLine` (BM shortage line). `composeFromBlueprint` / `poolUnits` (the legacy composition) are
+ * kept exported and pinned by `test/bijak-papers/exam-core-adapter.spec.ts`; the generator no longer uses them.
  */
 import type { SectionSnapshot } from '@pp/exam-core/types'
 
@@ -34,7 +35,7 @@ export type {
 export type SectionRule = SectionSnapshot['rule']
 
 // BJS-07: the standard-eligibility domain (architecture 4.2), imported by package root.
-export { describeQuestion, eligibilityOf, excludedReport } from '@pp/exam-core'
+export { composeStandardPaper, describeQuestion, eligibilityOf, excludedReport } from '@pp/exam-core'
 export type {
   DescribedQuestion,
   EligibilitySection,
