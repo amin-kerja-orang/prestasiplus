@@ -49,3 +49,16 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 A: Tracking A sets (BE), Mock K1/K2 (BE), practice-family bridge upgrades (images and groups in Latih Tubi/Bab/Remedial).
 C: Tracking A editor UI, Mock K1/K2 UI (B-03), Subjektif SPM / Latihan Berstruktur, Heatmap.
 B: review, security, E2E and release for each R2 unit.
+
+## File locks from planning (2026-10-31 12:20)
+
+Until the named task is MERGED, nobody else edits these files:
+
+| Files | Locked by | Note for other lanes |
+|---|---|---|
+| `packages/contract/src/questions/parts.ts`, `packages/contract/openapi.json` | A4 (T07: 7 stimulus kinds, `essay_choice`) | C3 Studio consumes these after T07 merges; raise needs in status/C3.md |
+| m04 `api/questions.ts`, `lib/question-list.ts`, `QuestionDetailPage.vue`, `packages/contract/src/intake/items.ts` | A2 (T04 b01 lifecycle) | C3 starts with new Studio components/pages; edits these only after T04 merges |
+| `apps/api/src/modules/questions/questions.repository.ts`, `exam/builder/{builder.service,builder.constants,question-bank.source,question-bank.mapping}.ts` | A2 (T04), then A4 (T07 → T08) | Sequenced inside team A |
+| `bijak/integration/integration.module.ts` | A2 (T03) | C2 (kuiz) must merge BASE after T03 before touching it |
+
+T04 scope widened by planning: raw-SQL `'published'` question-status spots in `practice/reads/{overview,writes/listing,analytics}`, `account/account-data.repository.ts`, `bijak/kuiz/kuiz.service.ts:99`, `exam/builder/*` (paper `published`/Terbit stays).
