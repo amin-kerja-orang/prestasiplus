@@ -110,6 +110,7 @@ export function toItem(record: QuestionRecord, ref: LeafRef, ctx: ItemContext): 
     : []
   return {
     id: ref.id,
+    groupId: record.groupId,
     kind: leaf.mode === 'mcq' ? 'mcq' : 'open',
     stem: record.version.stemMs,
     lead: ref.lead,
@@ -144,6 +145,8 @@ export interface ResolvedStimuli {
   entries: Array<{ stimulus: KuizStimulus; file: string | null }>
   /** False when a linked stimulus has neither a group home nor a picture: its text cannot be shown, so the question cannot be answered. */
   complete: boolean
+  /** The first `groupCount` entries belong to the question's stimulus group (D90); the rest are linked to the question itself. */
+  groupCount: number
 }
 
 /**
@@ -176,10 +179,14 @@ export function resolveStimuli(
       complete = false
     }
   }
-  return { entries, complete }
+  return { entries, complete, groupCount: group?.stimuli.length ?? 0 }
 }
 
-/** The stimuli with their picture tokens filled. */
-export function stimuliWithTokens(resolved: ResolvedStimuli, tokens: ReadonlyMap<string, string>): KuizStimulus[] {
-  return resolved.entries.map((e) => ({ ...e.stimulus, imageToken: e.file ? (tokens.get(e.file) ?? null) : null }))
+/**
+ * The stimuli with their picture tokens filled. `part`: `all` (random quiz: the group stimulus shown above the item),
+ * `own` (per-paper quiz item: only what is linked to the question, the group is rendered once by the page) or `group`.
+ */
+export function stimuliWithTokens(resolved: ResolvedStimuli, tokens: ReadonlyMap<string, string>, part: 'all' | 'own' | 'group' = 'all'): KuizStimulus[] {
+  const list = part === 'all' ? resolved.entries : part === 'group' ? resolved.entries.slice(0, resolved.groupCount) : resolved.entries.slice(resolved.groupCount)
+  return list.map((e) => ({ ...e.stimulus, imageToken: e.file ? (tokens.get(e.file) ?? null) : null }))
 }

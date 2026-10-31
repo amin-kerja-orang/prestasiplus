@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto'
 
 import { Inject, Injectable } from '@nestjs/common'
 import {
-  BIJAK_KUIZ_DEFAULT_COUNT,
+  normaliseKuizCount,
   BijakKuizCheckResultSchema,
   BijakKuizPaperPageSchema,
   BijakKuizResultSchema,
@@ -47,7 +47,6 @@ import {
   stimuliWithTokens,
   toItem,
 } from './kuiz.mapper'
-
 export interface KuizCaller {
   userId: string
   /** True under Mod Pelajar: every row written is stamped `is_test`. */
@@ -81,7 +80,7 @@ export class KuizService {
   // --- random quiz -------------------------------------------------------------------------------
 
   async start(caller: KuizCaller, req: BijakKuizStartRequest): Promise<BijakKuizSession> {
-    const count = req.count ?? BIJAK_KUIZ_DEFAULT_COUNT
+    const count = normaliseKuizCount(req.count)
     let subjectId: string | null = null
     if (req.subject !== undefined) {
       const subject = await this.curriculum.subjectByCode(req.subject)
@@ -271,7 +270,7 @@ export class KuizService {
     const wanted = page ?? 1
     if (pages.length === 0) {
       if (wanted !== 1) throw invalidValue('page')
-      return BijakKuizPaperPageSchema.parse({ paper: head, page: 1, pageCount: 0, section: null, items: [], markableTotal })
+      return BijakKuizPaperPageSchema.parse({ paper: head, page: 1, pageCount: 0, section: null, items: [], groups: [], markableTotal })
     }
     const current = pages[wanted - 1]
     if (!current) throw invalidValue('page')
@@ -279,10 +278,33 @@ export class KuizService {
     const prepared = await this.prepare(current.questions)
     const tokens = await this.tokensOf(prepared.flatMap((p) => p.fileIds))
     const subjects = await this.subjectNames(current.questions)
-    const items: BijakKuizItem[] = []
-    for (const p of current.questions.map((q) => prepared.find((x) => x.record.id === q.id))) {
+    // D90: members of one stimulus group are kept together at the place of the first member, in group order, and the group
+    // stimulus is rendered once in `groups`, never repeated on each member.
+    const byId = new Map(prepared.map((p) => [p.record.id, p]))
+    const ordered: typeof prepared = []
+    const groupsSeen = new Set<string>()
+    for (const q of current.questions) {
+      const p = byId.get(q.id)
       if (!p) continue
-      const ctx = this.context(p, tokens, subjects)
+      const gid = p.record.groupId
+      if (gid === null) {
+        ordered.push(p)
+      } else if (!groupsSeen.has(gid)) {
+        groupsSeen.add(gid)
+        ordered.push(
+          ...current.questions
+            .filter((m) => m.groupId === gid)
+            .sort((a, b) => (a.groupPosition ?? 0) - (b.groupPosition ?? 0))
+            .flatMap((m) => byId.get(m.id) ?? []),
+        )
+      }
+    }
+    const groups: Array<{ id: string; stimuli: ReturnType<typeof stimuliWithTokens> }> = []
+    const items: BijakKuizItem[] = []
+    for (const p of ordered) {
+      const ctx = this.context(p, tokens, subjects, 'own')
+      const gid = p.record.groupId
+      if (gid !== null && !groups.some((g) => g.id === gid)) groups.push({ id: gid, stimuli: stimuliWithTokens(p.resolved, tokens, 'group') })
       for (const ref of leavesOf(p.record.id, p.record.version.parts)) items.push(toItem(p.record, ref, ctx))
     }
     return BijakKuizPaperPageSchema.parse({
@@ -291,6 +313,7 @@ export class KuizService {
       pageCount: pages.length,
       section: { id: idToString(current.section.id), label: current.section.label, instruction: current.section.instruction ?? null },
       items,
+      groups,
       markableTotal,
     })
   }
@@ -346,10 +369,11 @@ export class KuizService {
     p: { record: QuestionRecord; resolved: ReturnType<typeof resolveStimuli> },
     tokens: ReadonlyMap<string, string>,
     subjects: ReadonlyMap<string, string>,
+    part: 'all' | 'own' = 'all',
   ): ItemContext {
     const subjectId = p.record.version.subjectId
     return {
-      stimuli: stimuliWithTokens(p.resolved, tokens),
+      stimuli: stimuliWithTokens(p.resolved, tokens, part),
       subjectName: subjectId ? (subjects.get(subjectId) ?? null) : null,
       tokens,
       pick: (n) => randomInt(0, n),
