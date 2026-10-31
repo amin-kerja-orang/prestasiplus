@@ -80,7 +80,7 @@ describe('QuestionQualityPage (M04 S6)', () => {
     expect(t(w, 'bucket-baik-value').text()).toBe('749')
     expect(t(w, 'bucket-lemah-value').text()).toBe('2')
     expect(t(w, 'bucket-legacy-value').text()).toBe('373')
-    expect(t(w, 'bucket-legacy').text()).toContain('`source_type=ai_generated`')
+    expect(t(w, 'bucket-legacy').text()).toContain('source_type=ai_generated')
   })
 
   it('draws the distribution as one labelled progress row per segment', async () => {

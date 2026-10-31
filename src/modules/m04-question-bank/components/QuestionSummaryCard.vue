@@ -251,7 +251,7 @@ const pct = (s: Row): string => (s.total > 0 ? `${String(Math.round(s.rate * 100
               color="neutral"
               variant="soft"
               size="sm"
-              :label="GROUP_LABEL[row.original.group]"
+              :label="GROUP_LABEL[row.original.group as keyof typeof GROUP_LABEL]"
               :data-testid="`questions-group-${row.original.group}`"
             />
           </template>

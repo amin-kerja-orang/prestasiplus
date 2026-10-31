@@ -265,7 +265,7 @@ const COLUMNS: TableColumn<SubRow>[] = [
       :data="tableRows"
       :columns="COLUMNS"
       variant="flush"
-      density="compact"
+      density="tight"
       caption="Senarai langganan sekolah"
       :page-size="Math.max(tableRows.length, 1)"
       data-testid="subs-table"
@@ -298,7 +298,7 @@ const COLUMNS: TableColumn<SubRow>[] = [
       <template #quota-cell="{ row }">
         <div class="flex items-center gap-2">
           <UProgress
-            class="w-24"
+            class="w-12"
             :model-value="percent(row.original.used, row.original.studentQuota)"
             :color="barColor(percent(row.original.used, row.original.studentQuota))"
             :aria-label="`Kuota digunakan ${String(percent(row.original.used, row.original.studentQuota))}%`"

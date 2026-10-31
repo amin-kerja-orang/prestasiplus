@@ -151,10 +151,10 @@ describe('S1 Dashboard Sekolah (admin: the platform)', () => {
 })
 
 describe('S1 for the school admin (own school, INFERRED)', () => {
-  it('counts the school SMK DEMO: 2 kelas · 9 murid · 1 guru', async () => {
+  it('counts the school SMK DEMO: 2 kelas · 10 murid · 1 guru', async () => {
     const s1 = await get<SchoolPerformance>(8, '/api/performance/school')
     expect(s1.scope).toBe('school')
-    expect(s1.header).toEqual({ classCount: 2, studentCount: 9 })
+    expect(s1.header).toEqual({ classCount: 2, studentCount: 10 })
     expect(s1.stats.teachers).toBe(1)
     expect(s1.teachers.map((t) => [t.userId, t.classCount, t.studentCount])).toEqual([[5, 2, 8]])
   })
@@ -397,7 +397,8 @@ describe('S6 Prestasi 360', () => {
 describe('S7 Analitik Pembelajaran', () => {
   it('admin: BM 79 answers 40.5 % (3/6/17/0), Sejarah 40 answers 35.0 % (8/2/13/0)', async () => {
     const a = await get<Analytics>(ADMIN, '/api/analytics/me')
-    expect(a.userLevelId).toBe(4)
+    // D72: the central admin has no school and no grade (it was Darjah 4), so it has no DSKP map.
+    expect(a.userLevelId).toBeNull()
     expect(a.subjects.map((s) => s.code)).toEqual(['BM', 'SEJ'])
     const [bm, sej] = a.subjects
     expect(bm).toMatchObject({
@@ -415,9 +416,10 @@ describe('S7 Analitik Pembelajaran', () => {
     })
     // DV-13: the ring denominator is the map tile count (BM 3 tiles, mahir 3 is not greater) unless mahir
     // exceeds it: SEJ has 2 tiles and mahir 8, so mahir + sederhana + lemah + belum = 23 ("/ 23 SP").
-    expect(bm?.ringTotal).toBe(3)
+    // Without a level there are no map tiles, so the ring total is the answered SP count (mahir exceeds 0 tiles).
+    expect(bm?.ringTotal).toBe(26)
     expect(sej?.ringTotal).toBe(23)
-    expect(bm?.map.caption).toBe('KSSR Bahasa Melayu Darjah 4')
+    expect(bm?.map).toEqual({ caption: '', tiles: [] })
   })
 
   it('the observed weak cards: SP, code, answers and the available-question counts', async () => {
@@ -479,9 +481,12 @@ describe('admin SP records resolve against M10', () => {
 })
 
 describe('S9 Analisa Item Sekolah', () => {
-  it("the admin's own school SK Demo (900002) has no pupil: 0 / 0 (OBSERVED)", async () => {
-    const s9 = await get<SchoolItemAnalysis>(ADMIN, '/api/item-analysis/school')
-    expect(s9.school.id).toBe(900002)
+  it('the central admin has no school of its own (D72): own school is 404; a school without a pupil answers 0 / 0', async () => {
+    const own = await getAs(runtime, ADMIN, '/api/item-analysis/school')
+    expect(own.status).toBe(404)
+    // The school admin of SMK Demo Seri Putra (900003, no pupil): the own-school variant with nothing to count.
+    const s9 = await get<SchoolItemAnalysis>(3102, '/api/item-analysis/school')
+    expect(s9.school.id).toBe(900003)
     expect(s9).toMatchObject({ students: 0, answers: 0, accuracy: 0, variant: 'own' })
     expect(s9.questions).toEqual([])
   })
@@ -657,14 +662,14 @@ describe('S16 – S18 timeline and public profile', () => {
     expect((await get<Timeline>(ADMIN, '/api/timeline')).posts).toEqual([])
   })
 
-  it('admin public profile: Admin Demo, SK Demo, Darjah 6, 256 syiling, Kombo 1 / 5, no practice', async () => {
+  it('admin public profile: Admin Demo, no school or level (D72), 256 syiling, Kombo 1 / 5, no practice', async () => {
     const p = await get<PublicProfile>(null, '/api/public/students/1')
     expect(p).toMatchObject({
       id: 1,
       name: 'Admin Demo',
       firstName: 'Admin',
-      schoolName: 'SK Demo',
-      levelName: 'Darjah 6',
+      schoolName: null,
+      levelName: 'Darjah 6', // OBSERVED profile level (M08 activity anchor), kept as stored
       joinedAt: '2025-10-25T20:00:00+08:00',
       syiling: 256,
       streak: { current: 1, best: 5 },

@@ -15,7 +15,16 @@ import { mulberry32 } from '@/mock/determinism'
 import type { MockRuntime } from '@/mock/index'
 import { RepositoryError } from '@/mock/repository'
 
-import plugin, { articles, audioKbat, banners, notes, perutusan, support, videos } from '../../mock'
+import plugin, {
+  articles,
+  audioKbat,
+  banners,
+  notes,
+  perutusan,
+  showPrimaryContent,
+  support,
+  videos,
+} from '../../mock'
 import { excerptOf } from '../../mock/repository'
 import { SEED_ARTICLES } from '../../mock/data/articles'
 import { slugify } from '../../mock/data/labels'
@@ -32,10 +41,13 @@ let clock: Clock
 
 const ADMIN: Viewer = { id: 1, role: 'admin', schoolId: 900002 }
 const STUDENT: Viewer = { id: 2, role: 'student', schoolId: 900001 }
-const PELAJAR_MAJU: Viewer = { id: 4, role: 'student', schoolId: 900004 }
+const PELAJAR_MAJU: Viewer = { id: 2008, role: 'student', schoolId: 8080 } // another school (D72: account 4 is now at 900001)
 const GURU: Viewer = { id: 5, role: 'teacher', schoolId: 900001 }
 
 beforeAll(async () => {
+  // These tests assert the observed live fixtures; the hiding of Darjah content (D72) is covered by
+  // secondary-only.test.ts.
+  showPrimaryContent()
   ;({ runtime, clock } = await bootM09())
 }, 120_000)
 
@@ -615,7 +627,7 @@ describe('notes, perutusan, support', () => {
     expect(admin[2]?.topReaction).toEqual({ type: 'love', emoji: '❤️', count: 5 })
     expect(admin[0]?.author).toMatchObject({ initials: 'AD', roleLabel: 'Pengetua' })
     expect(admin.every((p) => p.commentCount === 0)).toBe(true)
-    // Scope (BR-M09-23): pelajarmaju (900004) sees no school post; pelajar (900001) sees #2 only.
+    // Scope (BR-M09-23): a pupil of another school sees no school post; pelajar (900001) sees #2 only.
     expect(perutusan.list(PELAJAR_MAJU)).toEqual([])
     expect(perutusan.list(STUDENT).map((p) => p.id)).toEqual([2])
     expect(perutusan.publicDetail(4)?.id).toBe(4)

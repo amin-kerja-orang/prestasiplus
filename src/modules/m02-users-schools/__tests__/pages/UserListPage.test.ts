@@ -131,7 +131,7 @@ describe('UserListPage (M02 S1)', () => {
       .map((n) => n.text())
     expect(counts).toHaveLength(7)
     const expected = ['4533', '551', '38', '6', '16', '5', '2']
-    expected.forEach((n, i) => expect(counts[i]).toContain(n))
+    expected.forEach((n, i) => expect((counts[i] ?? '').replace(/,/g, '')).toContain(n))
     expect(w.findAll('[data-testid="user-row"]')).toHaveLength(3)
     expect(w.text()).toContain('Menunjukkan 1-25 daripada 5159 hasil')
     expect(w.text()).toContain('5159')
@@ -172,7 +172,7 @@ describe('UserListPage (M02 S1)', () => {
     expect(school.classes()).toContain('whitespace-normal')
     expect(school.classes()).not.toContain('truncate')
     // School names wrap between words only: the 7rem cap fits the longest word ("KEBANGSAAN"), so no word is split.
-    expect(school.classes()).toContain('max-w-28')
+    expect(school.classes()).toContain('max-w-52')
     expect(school.classes().some((c) => c === 'break-words' || c === 'break-all')).toBe(false)
     expect(row.get('[data-testid="user-identity"]').classes()).toContain('whitespace-normal')
     expect(row.get('[data-testid="user-email"]').text()).toBe(

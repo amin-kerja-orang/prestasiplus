@@ -86,7 +86,7 @@ describe('POST /api/auth/login (#1)', () => {
     [2, 'pelajar@demo.test', 'student', '/dashboard', 'SMK DEMO'],
     [5, 'guru@demo.test', 'teacher', '/dashboard', 'SMK DEMO'],
     [8, 'adminsekolah@demo.test', 'school_admin', '/dashboard', 'SMK DEMO'],
-    [1, 'admin@demo.test', 'admin', '/admin', 'SK Demo'],
+    [1, 'admin@demo.test', 'admin', '/admin', null],
     [9, 'ppd@demo.test', 'ppd_officer', '/ppd/dashboard', null],
     [10, 'jpn@demo.test', 'jpn_officer', '/jpn/dashboard', null],
   ])('account %i logs in and lands per BR-07', async (id, email, role, landing, school) => {

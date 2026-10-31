@@ -52,8 +52,18 @@ export const LATIH_TUBI_TARGETS: Readonly<Record<number, number>> = {
   27: 40,
   8: 20,
 }
-/** BR-11: offered practice levels are Darjah 1–4. */
-export const OFFERED_LEVEL_IDS = [1, 2, 3, 4] as const
+/** BR-11 (secondary-only, D72): offered practice levels are Tingkatan 4 and 5 (level ids 10, 11). */
+export const OFFERED_LEVEL_IDS: readonly number[] = [10, 11]
+let offeredOverride: readonly number[] | null = null
+/**
+ * The offered practice levels right now. Tests of the Darjah-only chapter data (the only chapter
+ * questions in the dataset) set `useOfferedLevels([1, 2, 3, 4])` and reset with `useOfferedLevels()`;
+ * nothing in the app does.
+ */
+export const offeredPracticeLevelIds = (): readonly number[] => offeredOverride ?? OFFERED_LEVEL_IDS
+export const useOfferedLevels = (ids?: readonly number[]): void => {
+  offeredOverride = ids ?? null
+}
 /** The SPM levels (T4, T5). */
 export const SPM_LEVEL_IDS = [10, 11] as const
 

@@ -161,7 +161,8 @@ describe('ADMIN_NAV data (shells.md §2.7)', () => {
       // D9 deviation (SWEEP-23OCT): the live "Laporan Eksekutif" item is a dead link here (S8 not built).
       .filter((e) => e.icon !== 'fa-sign-out-alt' && pathOf(e) !== '/admin/laporan-eksekutif')
       .map((e) => ({
-        text: clean(e.text).replace(/ LIVE$/, ''),
+        // User decision 2026-10-31 (DV-M12-39): the Kirkpatrick levels read "Tahap N", not the live "TN".
+        text: clean(e.text).replace(/ LIVE$/, '').replace(/^T([1-4]): /, 'Tahap $1: '),
         href: pathOf(e),
         icon: e.icon ?? '',
       }))
@@ -248,10 +249,10 @@ describe('adminMenuFor / chromeFor: the menu per role', () => {
     expect(group?.key).toBe('kirkpatrick')
     expect(group?.children.map((c) => c.label)).toEqual([
       'Ringkasan',
-      'T1: Reaksi',
-      'T2: Pembelajaran',
-      'T3: Tingkah Laku',
-      'T4: Hasil',
+      'Tahap 1: Reaksi',
+      'Tahap 2: Pembelajaran',
+      'Tahap 3: Tingkah Laku',
+      'Tahap 4: Hasil',
       'Rantaian Impak',
       'Intervensi',
     ])
@@ -311,7 +312,7 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(activeLabel('/guru/monitoring')).toBe('Monitoring')
     expect(activeLabel('/guru/monitoring/sekolah/5/pelajar/9')).toBe('Monitoring')
     expect(activeLabel('/guru/kirkpatrick')).toBe('Overview')
-    expect(activeLabel('/guru/kirkpatrick/reaction')).toBe('T1: Reaksi')
+    expect(activeLabel('/guru/kirkpatrick/reaction')).toBe('Tahap 1: Reaksi')
     expect(activeLabel('/admin/kirkpatrick/interventions')).toBe('Intervensi')
   })
 
@@ -353,7 +354,7 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(label('/guru/monitoring')).toBe('Monitoring')
     expect(label('/guru/monitoring/sekolah/3')).toBe('Monitoring')
     expect(label('/guru/kirkpatrick')).toBe('Ringkasan')
-    expect(label('/guru/kirkpatrick/results')).toBe('T4: Hasil')
+    expect(label('/guru/kirkpatrick/results')).toBe('Tahap 4: Hasil')
     expect(label('/guru/kirkpatrick/pelajar/8')).toBeNull()
     expect(label('/guru/laporan')).toBe('Laporan')
     expect(label('/laporan-mingguan')).toBe('Laporan Mingguan')
@@ -519,7 +520,7 @@ describe('"Lagi" popover (shells.md §2.4, §2.7)', () => {
       'Kelas Saya',
       'Monitoring',
       'Ringkasan',
-      'T1: Reaksi',
+      'Tahap 1: Reaksi',
     ]) {
       expect(labels).not.toContain(excluded)
     }

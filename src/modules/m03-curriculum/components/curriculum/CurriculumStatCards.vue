@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S1 summary tiles (FR-M03-05): "Subjek", "Tahap", "Jumlah Bab" and "Topik / Subtopik" as compact
- * KPI tiles (`DsStatRow`) with coloured icon chips. Long names are truncated by the tile.
+ * KPI tiles (`DsStatRow`) with coloured icon chips. Two columns so the subject and level names fit.
  */
 import { computed } from 'vue'
 
@@ -42,7 +42,7 @@ const items = computed<StatItem[]>(() => [
     prefix="stat"
     :items="items"
     density="compact"
-    :cols="4"
+    :cols="2"
     aria-label="Ringkasan kurikulum"
     data-testid="curriculum-stats"
   />

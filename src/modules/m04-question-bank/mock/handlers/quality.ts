@@ -19,6 +19,7 @@ import type { QualityActionRow, QualitySummary } from '../../api/quality'
 import { qualityAuditRepo } from '../repository/audit-state'
 import { distributionBucket } from '../repository/quality-rules'
 import { questionsRepo } from '../repository/questions'
+import { levelScope } from '../repository/visible-levels'
 import { adminOnly, nameLookup } from './workflow-common'
 
 export const AUDIT_DONE_TEXT = 'Audit kualiti selesai.'
@@ -30,11 +31,14 @@ function buildSummary(): QualitySummary {
   const stats = questionsRepo.qualityStats()
   const scored = stats.count
 
-  const excellentCount = questionsRepo.countWhere({ qualityBucket: 'cemerlang' })
-  const baik = questionsRepo.countWhere({ qualityBucket: 'baik' })
+  // Secondary-only (D72): every figure below skips the hidden Darjah questions.
+  const scope = { educationLevelId: levelScope() }
+  const excellentCount = questionsRepo.countWhere({ qualityBucket: 'cemerlang', ...scope })
+  const baik = questionsRepo.countWhere({ qualityBucket: 'baik', ...scope })
   const legacyGeneric = questionsRepo.countWhere({
     qualityBucket: ['cemerlang', 'baik', 'le50'],
     legacyGeneric: true,
+    ...scope,
   })
   const low = questionsRepo.scoredWithLowScore()
   const action = low.filter((q) => !q.legacyGeneric)
@@ -47,7 +51,11 @@ function buildSummary(): QualitySummary {
     .flatMap((s) => {
       const e = stats.bySubject.get(s.id)
       if (!e || e.count === 0) return []
-      const excellent = questionsRepo.countWhere({ subjectId: s.id, qualityBucket: 'cemerlang' })
+      const excellent = questionsRepo.countWhere({
+        subjectId: s.id,
+        qualityBucket: 'cemerlang',
+        ...scope,
+      })
       return [
         {
           subjectId: s.id,
@@ -65,7 +73,7 @@ function buildSummary(): QualitySummary {
       return rest
     })
 
-  const byLevel = curriculum.levels().map((l) => {
+  const byLevel = curriculum.visibleLevels().map((l) => {
     const e = stats.byLevel.get(l.id)
     return {
       levelId: l.id,
@@ -85,7 +93,7 @@ function buildSummary(): QualitySummary {
   }))
 
   return {
-    total: questionsRepo.count('Q-ALL'),
+    total: questionsRepo.visibleCount('Q-ALL'),
     average: scored === 0 ? 0 : round1(stats.sum / scored),
     scoredCount: scored,
     excellentCount,

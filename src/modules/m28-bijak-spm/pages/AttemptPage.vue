@@ -22,7 +22,8 @@ import { useMedia } from '@/ds/useMedia'
 import AttemptShell from '../components/AttemptShell.vue'
 import NavigatorPanel, { type NavState } from '../components/NavigatorPanel.vue'
 import QuestionBlock from '../components/QuestionBlock.vue'
-import StimulusView from '../components/StimulusView.vue'
+import StimulusChip from '../components/StimulusChip.vue'
+import StimulusStack from '../components/StimulusStack.vue'
 import {
   chooseCounterLine,
   chooseFullHint,
@@ -34,6 +35,7 @@ import {
   type ChooseState,
 } from '../domain/choose-n'
 import { formatClock, isAnswered, sectionRuleLine } from '../domain/paper-model'
+import { groupLabel, stimuliOf } from '../lib/stimulus-data'
 import type { AttemptPaperView, PartAnswer, QuestionResult } from '../domain/types'
 import { createAutosave, clearLocal, type Autosave, type SaveStatus } from '../lib/autosave'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
@@ -82,6 +84,24 @@ const current = computed(() => questions.value[index.value])
 const section = computed(() => view.value?.sections.find((s) => s.id === current.value?.sectionId))
 const group = computed(() =>
   view.value?.groups.find((g) => g.questionIds.includes(current.value?.id ?? '')),
+)
+/** The stimuli of the current question's group: one panel for the whole group, never one per question (D90). */
+const groupStimuli = computed(() => (group.value ? stimuliOf(group.value) : []))
+const groupText = computed(() => (group.value ? groupLabel(groupStimuli.value) : undefined))
+/** Stimulus ids whose picture failed to load (AC-07.4): Seterusnya / Semak wait for "Cuba lagi" to succeed. */
+const failedStimuli = ref<string[]>([])
+const stimulusBlocked = computed(() => failedStimuli.value.length > 0)
+function onStimError(id: string): void {
+  if (!failedStimuli.value.includes(id)) failedStimuli.value = [...failedStimuli.value, id]
+}
+function onStimLoaded(id: string): void {
+  failedStimuli.value = failedStimuli.value.filter((x) => x !== id)
+}
+watch(
+  () => group.value?.id,
+  () => {
+    failedStimuli.value = []
+  },
 )
 const isLast = computed(() => index.value >= questions.value.length - 1)
 const currentCheck = computed(() => (current.value ? checks.value[current.value.id] : undefined))
@@ -462,20 +482,10 @@ const feedback = computed(() => {
     </template>
 
     <template v-if="group" #stimulus>
-      <StimulusView :stimulus="group.stimulus" />
+      <StimulusStack :stimuli="groupStimuli" @error="onStimError" @loaded="onStimLoaded" />
     </template>
     <template v-if="group" #chip>
-      <UButton
-        type="button"
-        color="neutral"
-        variant="soft"
-        class="min-h-11 w-full justify-start gap-3"
-        data-testid="stimulus-chip"
-        @click="stimOpen = true"
-      >
-        <span class="w-12 shrink-0"><StimulusView :stimulus="group.stimulus" thumb /></span>
-        <span class="text-label">Lihat {{ group.stimulus.label }}</span>
-      </UButton>
+      <StimulusChip :stimuli="groupStimuli" @open="stimOpen = true" />
     </template>
 
     <template #main>
@@ -536,7 +546,8 @@ const feedback = computed(() => {
           :question="current"
           :answers="answers"
           :attempt-id="attemptId"
-          :stimulus-label="group?.stimulus.label"
+          :stimulus-label="groupText"
+          :stimulus-blocked="stimulusBlocked"
           :flagged="flags.includes(current.id)"
           :check="currentCheck"
           :disabled="submitting"
@@ -623,6 +634,7 @@ const feedback = computed(() => {
             variant="soft"
             :size="phone ? 'sm' : undefined"
             class="min-h-11 text-nowrap"
+            :disabled="stimulusBlocked"
             data-testid="check-button"
             @click="check"
             >Semak</UButton
@@ -634,6 +646,7 @@ const feedback = computed(() => {
             :size="phone ? 'sm' : undefined"
             class="ms-auto min-h-11 text-nowrap"
             trailing-icon="i-ph-arrow-right"
+            :disabled="stimulusBlocked"
             data-testid="next"
             @click="goTo(index + 1)"
             >Seterusnya</UButton
@@ -666,11 +679,16 @@ const feedback = computed(() => {
 
   <UDrawer
     v-model:open="stimOpen"
-    :title="group?.stimulus.label ?? 'Rajah'"
+    :title="groupText ?? 'Rajah'"
     description="Rajah kekal boleh dibuka semasa menjawab."
   >
     <template #body>
-      <StimulusView v-if="group" :stimulus="group.stimulus" />
+      <StimulusStack
+        v-if="group"
+        :stimuli="groupStimuli"
+        @error="onStimError"
+        @loaded="onStimLoaded"
+      />
     </template>
   </UDrawer>
 

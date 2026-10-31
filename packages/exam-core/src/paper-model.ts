@@ -1,12 +1,17 @@
 /** Shared helpers over the paper structure (used by the server and by the pages). */
-import type { LeafKind, PartAnswer, QuestionResult, SectionSnapshot } from './types'
+import type { EssayTopicDef, LeafKind, PartAnswer, QuestionResult, SectionSnapshot } from './types'
 
 interface PartLike {
   id: string
   label: string
   prompt: string
   marks: number
-  answer?: { kind: LeafKind; unit?: string; wordRange?: { min: number; max: number } }
+  answer?: {
+    kind: LeafKind
+    unit?: string
+    wordRange?: { min: number; max: number }
+    topics?: EssayTopicDef[]
+  }
   children?: PartLike[]
 }
 
@@ -19,6 +24,7 @@ export interface Leaf {
   kind: LeafKind
   unit?: string
   wordRange?: { min: number; max: number }
+  topics?: EssayTopicDef[]
   depth: number
 }
 
@@ -47,6 +53,7 @@ export function leavesOf(parts: readonly PartLike[], prefix = '', depth = 0): Le
         kind: p.answer?.kind ?? 'short_text',
         unit: p.answer?.unit,
         wordRange: p.answer?.wordRange,
+        topics: p.answer?.topics,
         depth,
       })
   }
