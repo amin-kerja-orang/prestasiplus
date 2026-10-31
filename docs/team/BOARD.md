@@ -63,7 +63,7 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 | T39 | D95 | Evidence list for 4 go-live K1 blueprints (1449/1, 1249/1, 4531/1, Sains K1) + 3472/2 worked example: Kontrak fields, evidence in repo, missing bodies, Sahkan checks → `docs/ops/r1-k1-blueprint-evidence.md` | A3 | — | r1/t39-k1-evidence | **READY-FOR-REVIEW** @ 1a26f7a6 (docs only: `docs/ops/r1-k1-blueprint-evidence.md`). Sahkan today: 3472/2 yes on repo data (caveat: duration 150 has 1 real body → needs a cover page / 3rd body / LPM format doc); 1449/1 no (KBAT 35 vs 36, needs a legible SBP Q13 scan + a 2nd skema or LPM format); 1249/1 no (1 body); 4531/1 no (paper + skema of a 2nd body); Sains K1 no (nothing paper-derived; code 1511/1 unconfirmed) |
 | T40 | AC gaps (H-A17) | Attempts AC specs: R1-02.1 pick cap, R1-03.1 five modes end to end, R1-05.2 resume, R1-06.2 band rounding, R1-06.5 unmarked part pending, R1-10.2 Cuba Lagi rewards, R1-10.4 Databank → Prestasi (`past_year` kept, D9 naming row) | A1 | T38 | r1/t40-attempts-acs | QUEUED |
 | T41 | AC gaps | Curriculum/DSKP loader specs: R1-12.3 rejected-row reason, R1-12.5 load changes no served count, R1-19.3 Darjah refusal text | A1 (b) | H-A13 | r1/t41-curriculum-acs | QUEUED |
-| T42 | AC gaps | Laporan Soalan R1-18.1–18.4 (paper/attempt on question_reports, **migration 0103**; labels per V2; Kuiz exclusion on archive); intake R1-14.3 figure crop → question_image; AC-03.4 free-text tag | A2 | H-A16, T36 | r1/t42-reports-intake-acs | QUEUED |
+| T42 | AC gaps | Laporan Soalan R1-18.1–18.4 (paper/attempt on question_reports, **migration 0103**; labels per V2; Kuiz exclusion on archive); intake R1-14.3 figure crop → question_image; AC-03.4 free-text tag | A2 | H-A16, T36 | r1/t42-reports-intake-acs (part 1, migration 0103, on T35) + r1/t42b-intake-acs (parts 2–3, off BASE-6) | IN-PROGRESS |
 | T43 | AC gaps | Chain upgrade (T5 pupil, blueprint created + Disahkan via API, T33 gate, pupil Jana Kertas: R1-20.1/20.2, AC-18.1/18.2) + builder publish specs AC-07.4/07.6/07.7/07.9 | A3 dev-1 | T34, T31 | r1/t43-chain-publish-acs | QUEUED |
 | T44 | AC gaps | Blueprint: R1-21.4 / AC-06.2 "Boleh tanda auto" (auto_markable) in Kontrak write schema; AC-06.5/06.6 null tolerance + "Blueprint perlu semakan" flag | A3 dev-2 | H-A15 note gate | r1/t44-blueprint-acs | QUEUED |
 | T45 | AC gaps | Servability AC-04.3/04.4/04.5/05.3/16.3 + admin lanes R1-21.1/21.2/21.3/21.6 | A4 | R1E2E-05b, T30 | r1/t45-servability-acs | QUEUED |
@@ -95,7 +95,7 @@ Team C note (C3 Studio on T32 @ 87a9a363): admin-only, envelope {data,status}; `
 | H-A14 | A (A1 IN-PROGRESS, r1/a-integration-preview) | Integration preview: all READY team A branches merged in order onto feature/v3-bijak-r1 (preview only, never merged by A), full targeted test run, conflict + failure notes for B1 |
 | H-C5 | C | m28 Bijak "Mula": show the API BM message on 403 (paper unavailable) — API from H-A13 |
 | H-A15 | A | **READY-FOR-REVIEW** `r1/ha15-blueprint-evidence` @ a3a50427 (+ server-side note required, in progress): (i) checkEvidence gates on origin='admin' rows only (AC-39.2); (iii) skema Markah agrees with budget OR choose-section offered marks (SPP 10.3, AC-39.7/39.8) in exam-core; 4 D9 rows; blueprint/exam specs 164/164; exam-core + contract 1620/1620; tsc 0; eslint 0. B3: origin filter |
-| H-A16 | A (low, A2 after T33/T36) | One table reader: `stimuli.repository` has its own `tableOf` and Studio `stimulusGroupView` uses strict {head,rows}; move the shared reader out of `bijak/` into `questions/` and use it everywhere (body:null when the table comes from the body) |
+| H-A16 | A | **READY-FOR-REVIEW** `r1/ha16-table-reader` @ 8e04a9fa (on T32 87a9a363 + T07 b0421c6b; merge after both): one reader `questions/stimulus-table.ts` (+ `stimulusTableParts` → body:null when the table comes from the body); stimuli.repository duplicate removed; parity spec on A3's 10 shapes (Studio 10/10, builder 8 + 2 todo, bridge 19 + 1 todo — todos flip after T31 / R1E2E-05b one-liners); 85 pass + 3 todo; bridge stimuli 35/35; tsc 0; eslint 0 |
 | H-A17 | A | **READY-FOR-REVIEW** `r1/ha17-ac-coverage` @ 53164687 (docs): 176 entries → proven 88, partial 50, no backend proof 7, FE-only 31; 56 gaps → T40–T46 |
 | H-A18 | A (low, standby) | BE-09 does not store duplicate-flag, media and AI-editor facts, so those approve-gate rules are always satisfied on every path (pre-existing, from T33) |
 | H-C6 | C | Kontrak evidence drawer: omit `rule` (and duration) on skema rows (SPP 10.3: a skema prints no rules) so choose sections don't show `differs`; keep "Isi nota pengesahan dahulu." (server now also refuses, H-A15) |
@@ -115,7 +115,7 @@ B: review, security, E2E and release for each R2 unit.
 
 ## Migration ranges (update)
 
-Team A 0100–0109, overflow **0120–0129**; team C 0110–0119. In code today: 0092, 0093, 0100 (T04), 0101 (T25). Planned numbers are in `docs/architecture/v2-admin-student-pipeline.md` §2 (renumbered on T25).
+Team A 0100–0109, overflow **0120–0129**; team C 0110–0119. In code today: 0092, 0093, 0100 (T04), 0101 (T25), 0102 (T33). Reserved: 0103 (T42, A2), 0104 (T44 if needed, A3). Planned numbers are in `docs/architecture/v2-admin-student-pipeline.md` §2 (renumbered on T25).
 
 ## Decisions this cycle
 
