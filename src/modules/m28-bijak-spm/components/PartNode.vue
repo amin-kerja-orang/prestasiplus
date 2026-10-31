@@ -1,12 +1,15 @@
 <script setup lang="ts">
 /** One node of a structured question: label + prompt, then either the answer controls (leaf) or its children. */
+import { computed } from 'vue'
+
+import { isStemRow } from '../domain/paper-model'
 import type { McqOption, PartAnswer, PartView } from '../domain/types'
 import PartInput from './PartInput.vue'
 import RichText from './RichText.vue'
 
 defineOptions({ name: 'PartNode' })
 
-defineProps<{
+const props = defineProps<{
   part: PartView
   answers: Record<string, PartAnswer>
   attemptId: string
@@ -14,6 +17,7 @@ defineProps<{
   depth?: number
   optionBank?: McqOption[]
 }>()
+const stem = computed(() => isStemRow(props.part))
 const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
 </script>
 
@@ -26,7 +30,7 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
     <p class="flex flex-wrap items-baseline gap-x-2 text-body text-highlighted">
       <span v-if="part.label" class="font-bold">{{ part.label }}</span>
       <RichText :text="part.prompt" />
-      <span v-if="!part.children?.length" class="tabular text-caption text-muted"
+      <span v-if="!part.children?.length && !stem" class="tabular text-caption text-muted"
         >[{{ part.marks }} markah]</span
       >
     </p>
@@ -44,7 +48,7 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
       />
     </template>
     <PartInput
-      v-else
+      v-else-if="!stem"
       :leaf="{
         id: part.id,
         label: part.label,
