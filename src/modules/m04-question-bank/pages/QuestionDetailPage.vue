@@ -335,6 +335,12 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
               </dd>
             </div>
             <div>
+              <dt class="text-overline text-muted">Bab</dt>
+              <dd class="mt-1 flex items-center gap-2 break-words text-highlighted" data-testid="info-chapter">
+                <UIcon name="i-ph-bookmarks-simple" class="size-4 shrink-0 text-muted" />{{ question.chapterLabel ?? '-' }}
+              </dd>
+            </div>
+            <div>
               <dt class="text-overline text-muted">DSKP</dt>
               <dd v-if="question.dskp" class="mt-1 flex flex-col gap-1 text-body text-default" data-testid="info-dskp">
                 <p class="flex items-start gap-2 break-words">

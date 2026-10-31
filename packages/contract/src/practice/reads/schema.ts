@@ -106,8 +106,8 @@ export const PracticeReadSubjectSchema = z
     icon: z.string().nullable().meta({ description: 'Lucide name, Font Awesome class, emoji or null (M03 BR-05).' }),
     color: z.string(),
     isCore: z.boolean(),
-    approvedCount: count().meta({ description: 'Eligible questions of the subject (Q-ELIGIBLE), "{n} soalan".' }),
-    bankCount: count().meta({ description: 'Active questions of the subject (Q-ACTIVE), "Statistik Subjek".' }),
+    approvedCount: count().meta({ description: 'Questions of the subject that the practice draw can serve (published, active, objective, at an offered level: Tingkatan 4 and 5); the same figure as the sum of the subject detail `total`. "{n} soalan".' }),
+    bankCount: count().meta({ description: 'Same figure as `approvedCount` (practice-drawable questions), "Statistik Subjek".' }),
   })
   .meta({ id: 'PracticeReadSubject' })
 export type PracticeReadSubject = z.infer<typeof PracticeReadSubjectSchema>

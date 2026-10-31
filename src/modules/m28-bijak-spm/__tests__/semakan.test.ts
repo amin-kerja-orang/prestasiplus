@@ -12,6 +12,7 @@ import SelfMarkControl from '../components/SelfMarkControl.vue'
 import { bandMidpoint, bandOptions, clampMark, type ReviewPart } from '../domain/semakan'
 import ResultPage from '../pages/ResultPage.vue'
 import { BijakError } from '../server/errors'
+import { BijakServer, MemoryStorage } from '../server/store'
 
 const server = vi.hoisted(() => ({
   getResult: vi.fn(),
@@ -142,7 +143,10 @@ describe('SelfMarkControl: stepper', () => {
     const save = vi
       .fn()
       .mockRejectedValue(
-        new BijakError('bad_request', 'Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.'),
+        new BijakError(
+          'bad_request',
+          'Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.',
+        ),
       )
     mountControl(part({ awarded: 1 }), save)
     ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
@@ -191,6 +195,20 @@ describe('SelfMarkControl: band picker', () => {
     expect(save).toHaveBeenCalledWith({ partId: 'p1', mark: 2, band: '2' })
   })
 
+  it('shows the band label after a middle dot when the band has one', () => {
+    const p = part({
+      scheme: {
+        marks: 4,
+        rubric: {
+          criteria: ['Isi'],
+          bands: [{ name: '2', range: [2, 3], descriptor: 'Sederhana', label: 'Memuaskan' }],
+        } as never,
+      },
+    })
+    wrapper = mount(SelfMarkControl, { props: { part: p, save: vi.fn() }, attachTo: document.body })
+    expect(text('[data-testid="selfmark-bands"]')).toContain('Band 2 · Memuaskan (2-3)')
+  })
+
   it('pre-selects the saved band of a self-marked part', () => {
     wrapper = mount(SelfMarkControl, {
       props: {
@@ -206,13 +224,19 @@ describe('SelfMarkControl: band picker', () => {
       attachTo: document.body,
     })
     const radios = [...document.body.querySelectorAll<HTMLElement>('[role="radio"]')]
-    const checked = radios.map((r) => r.getAttribute('aria-checked') === 'true' || r.getAttribute('data-state') === 'checked')
+    const checked = radios.map(
+      (r) =>
+        r.getAttribute('aria-checked') === 'true' || r.getAttribute('data-state') === 'checked',
+    )
     expect(checked).toEqual([false, true, false])
     expect(text('[data-testid="selfmark-state"]')).toBe('Markah kendiri disimpan')
   })
 
   it('a plain points part has no band picker', () => {
-    wrapper = mount(SelfMarkControl, { props: { part: part(), save: vi.fn() }, attachTo: document.body })
+    wrapper = mount(SelfMarkControl, {
+      props: { part: part(), save: vi.fn() },
+      attachTo: document.body,
+    })
     expect(q('[data-testid="selfmark-bands"]')).toBeNull()
   })
 })
@@ -247,10 +271,16 @@ describe('PastSittingsLink', () => {
   async function render(props: { paperId: string; exclude?: string }) {
     const router = createRouter({
       history: createMemoryHistory(),
-      routes: [{ path: '/r/:attemptId', name: 'm28.bijak.result', component: { template: '<i/>' } }],
+      routes: [
+        { path: '/r/:attemptId', name: 'm28.bijak.result', component: { template: '<i/>' } },
+      ],
     })
     await router.push('/r/x')
-    wrapper = mount(PastSittingsLink, { props, global: { plugins: [router] }, attachTo: document.body })
+    wrapper = mount(PastSittingsLink, {
+      props,
+      global: { plugins: [router] },
+      attachTo: document.body,
+    })
     await flushPromises()
   }
   const sitting = (attemptId: string) => ({
@@ -296,7 +326,10 @@ describe('PastSittingsLink', () => {
   })
 
   it('is hidden when the only sitting is the one on screen', async () => {
-    server.pastSittings.mockResolvedValue({ lastSubmittedAttemptId: 'a9', sittings: [sitting('a9')] })
+    server.pastSittings.mockResolvedValue({
+      lastSubmittedAttemptId: 'a9',
+      sittings: [sitting('a9')],
+    })
     await render({ paperId: 'p1', exclude: 'a9' })
     expect(q('[data-testid="past-sittings"]')).toBeNull()
   })
@@ -312,7 +345,9 @@ describe('ResultPage Semakan', () => {
       coins: 8,
       provisional: part1.status === 'belum_dimarkah',
       pendingReview: part1.status === 'belum_dimarkah' ? 1 : 0,
-      sections: [{ sectionId: 's1', label: 'Bahagian A', marks: 4, awarded: score, counted: ['q1'] }],
+      sections: [
+        { sectionId: 's1', label: 'Bahagian A', marks: 4, awarded: score, counted: ['q1'] },
+      ],
       questions: [
         {
           questionId: 'q1',
@@ -354,7 +389,10 @@ describe('ResultPage Semakan', () => {
       ],
     })
     await router.push('/r/a1')
-    wrapper = mount({ template: '<RouterView />' }, { global: { plugins: [router] }, attachTo: document.body })
+    wrapper = mount(
+      { template: '<RouterView />' },
+      { global: { plugins: [router] }, attachTo: document.body },
+    )
     await flushPromises()
   }
 
@@ -417,9 +455,107 @@ describe('ResultPage Semakan', () => {
     server.getResult.mockResolvedValue(view(resultOf(part({ status: 'betul', awarded: 4 }), 4)))
     server.pastSittings.mockResolvedValue({
       lastSubmittedAttemptId: 'a0',
-      sittings: [{ attemptId: 'a0', mode: 'exam', status: 'submitted', startedAt: 1, submittedAt: 2, score: 1, max: 4, provisional: false }],
+      sittings: [
+        {
+          attemptId: 'a0',
+          mode: 'exam',
+          status: 'submitted',
+          startedAt: 1,
+          submittedAt: 2,
+          score: 1,
+          max: 4,
+          provisional: false,
+        },
+      ],
     })
     await render()
     expect(q('[data-testid="past-sittings"]')?.getAttribute('href')).toBe('/r/a0')
+  })
+})
+
+describe('ResultPage leave guard and mock retry', () => {
+  it('warns before leaving with an unsaved stepper change, and not after saving', async () => {
+    const confirm = vi.spyOn(window, 'confirm')
+    const unsaved = part({ awarded: 1 })
+    server.getResult.mockResolvedValue({
+      attempt: {
+        id: 'a1',
+        paperId: 'p1',
+        paperKind: 'pilihan',
+        subject: 'SN',
+        kertas: 2,
+        title: 'K',
+        status: 'submitted',
+      },
+      paper: { questions: [{ id: 'q1', number: 1, topic: 'T', stem: 'S' }], sections: [] },
+      result: {
+        score: 1,
+        max: 4,
+        percent: 25,
+        points: 0,
+        coins: 0,
+        provisional: true,
+        pendingReview: 1,
+        sections: [],
+        questions: [
+          {
+            questionId: 'q1',
+            number: 1,
+            sectionId: 's1',
+            marks: 4,
+            awarded: 1,
+            counted: true,
+            attempted: true,
+            parts: [unsaved],
+          },
+        ],
+      },
+    })
+    const stub = { template: '<i/>' }
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/r/:attemptId', name: 'm28.bijak.result', component: ResultPage },
+        { path: '/spm/bijak', name: 'm28.bijak', component: stub },
+        { path: '/spm/bijak/sejarah', component: stub },
+        { path: '/away', component: stub },
+      ],
+    })
+    await router.push('/r/a1')
+    wrapper = mount(
+      { template: '<RouterView />' },
+      { global: { plugins: [router] }, attachTo: document.body },
+    )
+    await flushPromises()
+
+    await router.push('/away') // nothing changed: no prompt
+    expect(confirm).not.toHaveBeenCalled()
+    await router.push('/r/a1')
+    await flushPromises()
+    ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
+    await flushPromises()
+
+    confirm.mockReturnValueOnce(false)
+    await router.push('/away')
+    expect(confirm).toHaveBeenCalledWith(
+      'Anda ada markah kendiri yang belum disimpan. Tinggalkan halaman ini?',
+    )
+    expect(router.currentRoute.value.path).toBe('/r/a1')
+
+    confirm.mockReturnValueOnce(true)
+    await router.push('/away')
+    expect(router.currentRoute.value.path).toBe('/away')
+    confirm.mockRestore()
+  })
+
+  it('mock retry makes a new sitting and leaves other open sittings untouched', async () => {
+    const server2 = new BijakServer({ storage: new MemoryStorage(), now: () => 1_800_000_000_000 })
+    const first = await server2.startAttempt(7, 'mat-k1-2025-a', 'exam')
+    await server2.submit(7, first.attemptId, { changes: [], idempotencyKey: 'k1' })
+    const open = await server2.startAttempt(7, 'mat-k1-2025-a', 'exam')
+    const out = await server2.retryAttempt(7, first.attemptId)
+    expect(out.attemptId).not.toBe(open.attemptId)
+    expect((await server2.getAttemptView(7, open.attemptId)).attempt.status).toBe('in_progress')
+    expect((await server2.getAttemptView(7, out.attemptId)).attempt.status).toBe('in_progress')
   })
 })

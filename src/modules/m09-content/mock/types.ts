@@ -25,6 +25,29 @@ export const GRADE_LEVELS = [
 ] as const
 export type GradeLevel = (typeof GRADE_LEVELS)[number]
 
+/**
+ * Secondary-only (D72, 2026-10-29): articles tagged `DARJAH_n` stay in the store (hidden, never deleted)
+ * but are skipped by every list and detail read (OQ-04: hide). Only these levels are shown.
+ */
+const SECONDARY_GRADE_LEVELS: readonly GradeLevel[] = GRADE_LEVELS.filter(
+  (g) => !g.startsWith('DARJAH_'),
+)
+
+/**
+ * The switch behind the hiding (default ON). Tests of the observed live fixtures (72 articles, 10
+ * notes) turn it off with `showPrimaryContent()`; nothing in the app does.
+ */
+const primaryContent = { hidden: true }
+export const showPrimaryContent = (on = true): void => {
+  primaryContent.hidden = !on
+}
+/** Grade levels the reads may show right now. */
+export const visibleGradeLevels = (): readonly GradeLevel[] =>
+  primaryContent.hidden ? SECONDARY_GRADE_LEVELS : GRADE_LEVELS
+/** True when a stored grade (`SEMUA`, `DARJAH_n`, `TINGKATAN_n`) may be shown. */
+export const isGradeShown = (grade: string): boolean =>
+  !primaryContent.hidden || !grade.startsWith('DARJAH_')
+
 /** DATA-M09-01. */
 export interface ArticleRow {
   id: number

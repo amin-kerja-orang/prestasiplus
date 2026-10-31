@@ -103,6 +103,11 @@ export class BuilderRepository {
     })
   }
 
+  /** A blueprint row (any status) by id: the version a paper conforms to. */
+  blueprintById(id: bigint): Promise<BlueprintWithSections | null> {
+    return this.prisma.client.blueprint.findUnique({ where: { id }, include: { sections: { orderBy: { position: 'asc' } } } })
+  }
+
   async createPaper(input: NewPaper): Promise<bigint> {
     const row = await this.prisma.client.paper.create({
       data: {

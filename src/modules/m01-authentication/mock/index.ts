@@ -132,6 +132,7 @@ export {
   type AdminUserFilter,
   type FixtureSecret,
   type RoleCounts,
+  type UserVisibility,
   type TrialStatus,
   type UserInput,
   type UserPatch,

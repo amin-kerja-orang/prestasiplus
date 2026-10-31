@@ -28,7 +28,7 @@ const to = (path: string) => (props.detail ? path : null)
 const steps = computed<Step[]>(() => [
   {
     key: 't1',
-    label: 'T1: Reaksi',
+    label: 'Tahap 1: Reaksi',
     sub: 'Kepuasan pengguna',
     pill: `${mean(props.data.t1.satisfaction)}/5`,
     to: to(props.paths.reaction),
@@ -37,7 +37,7 @@ const steps = computed<Step[]>(() => [
   },
   {
     key: 't2',
-    label: 'T2: Pembelajaran',
+    label: 'Tahap 2: Pembelajaran',
     sub: 'Peningkatan kemahiran',
     pill: `${pct(props.data.t2.accuracy)} ketepatan`,
     to: to(props.paths.learning),
@@ -46,7 +46,7 @@ const steps = computed<Step[]>(() => [
   },
   {
     key: 't3',
-    label: 'T3: Tingkah Laku',
+    label: 'Tahap 3: Tingkah Laku',
     sub: 'Konsistensi penggunaan',
     pill: `${plain(props.data.t3.active)} pelajar aktif`,
     to: to(props.paths.behavior),
@@ -55,7 +55,7 @@ const steps = computed<Step[]>(() => [
   },
   {
     key: 't4',
-    label: 'T4: Hasil',
+    label: 'Tahap 4: Hasil',
     sub: 'Keputusan peperiksaan',
     pill: `GPS ${props.data.t4.gps === null ? '-' : gps(props.data.t4.gps)}`,
     to: to(props.paths.results),

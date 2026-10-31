@@ -36,7 +36,10 @@ const STUB = { template: '<div />' }
 async function render(component: object, path: string, url: string, props = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path, component }, { path: '/:rest(.*)', component: STUB }],
+    routes: [
+      { path, component },
+      { path: '/:rest(.*)', component: STUB },
+    ],
   })
   await router.push(url)
   wrapper = mount(component, { props, global: { plugins: [router], components: formStubs } })
@@ -107,10 +110,16 @@ afterEach(() => {
 describe('TopicsPage (S12)', () => {
   it('renders Tingkatan chips, cards and the +n lagi line; chips keep the other filter', async () => {
     api.fetchTopics.mockResolvedValue({
-      data: [card(1, { subtopicCount: 5, subtopicsPreview: ['A', 'B', 'C'] }), card(2, { description: null })],
+      data: [
+        card(1, { subtopicCount: 5, subtopicsPreview: ['A', 'B', 'C'] }),
+        card(2, { description: null }),
+      ],
     })
     const w = await render(TopicsPage, '/topics', '/topics?subject=SAINS&grade_level=TINGKATAN_5')
-    expect(api.fetchTopics.mock.calls[0]?.[0]).toMatchObject({ gradeLevel: 'TINGKATAN_5', subject: 'SAINS' })
+    expect(api.fetchTopics.mock.calls[0]?.[0]).toMatchObject({
+      gradeLevel: 'TINGKATAN_5',
+      subject: 'SAINS',
+    })
     const grades = w.findAll('[data-testid=grade-chip]')
     expect(grades.map((c) => c.text())).toEqual(['Semua Tingkatan', 'Tingkatan 4', 'Tingkatan 5'])
     expect(w.text()).not.toContain('Darjah')
@@ -123,7 +132,9 @@ describe('TopicsPage (S12)', () => {
     expect(subjects[0]?.attributes('data-active')).toBe('false')
     expect(subjects[4]?.attributes('data-active')).toBe('true')
     expect(subjects[2]?.text()).toBe('BAHASA MELAYU')
-    expect(subjects[2]?.attributes('href')).toBe('/topics?grade_level=TINGKATAN_5&subject=BAHASA_MELAYU')
+    expect(subjects[2]?.attributes('href')).toBe(
+      '/topics?grade_level=TINGKATAN_5&subject=BAHASA_MELAYU',
+    )
     const cards = w.findAll('[data-testid=topic-card]')
     expect(cards[0]?.attributes('href')).toBe('/topics/1')
     expect(cards[0]?.text()).toContain('5 Subtopik')
@@ -135,14 +146,19 @@ describe('TopicsPage (S12)', () => {
   it('opens on Tingkatan 4 without a grade in the URL (guest or form other than 4/5)', async () => {
     api.fetchTopics.mockResolvedValue({ data: [] })
     const w = await render(TopicsPage, '/topics', '/topics')
-    expect(api.fetchTopics.mock.calls[0]?.[0]).toMatchObject({ gradeLevel: 'TINGKATAN_4', subject: null })
+    expect(api.fetchTopics.mock.calls[0]?.[0]).toMatchObject({
+      gradeLevel: 'TINGKATAN_4',
+      subject: null,
+    })
     expect(w.findAll('[data-testid=grade-chip]').map((c) => c.attributes('data-active'))).toEqual([
       'false',
       'true',
       'false',
     ])
     expect(w.findAll('[data-testid=subject-chip]')[0]?.attributes('data-active')).toBe('true')
-    expect(w.get('[data-testid=topics-empty]').text()).toContain('Tiada topik tersedia buat masa ini.')
+    expect(w.get('[data-testid=topics-empty]').text()).toContain(
+      'Tiada topik tersedia buat masa ini.',
+    )
   })
 
   it('opens on the student form: Tingkatan 5 for grade 11, Tingkatan 4 for grade 10 or a Darjah grade', async () => {
@@ -156,7 +172,9 @@ describe('TopicsPage (S12)', () => {
       api.fetchTopics.mockClear()
       loginStudent(grade)
       await render(TopicsPage, '/topics', '/topics')
-      expect(api.fetchTopics.mock.calls[0]?.[0], String(grade)).toMatchObject({ gradeLevel: expected })
+      expect(api.fetchTopics.mock.calls[0]?.[0], String(grade)).toMatchObject({
+        gradeLevel: expected,
+      })
       wrapper?.unmount()
       wrapper = null
     }
@@ -233,8 +251,12 @@ describe('TopicDetailPage (S13)', () => {
       'Level 2',
       'Level 3',
     ])
-    expect(cards[0]?.get('[data-testid=subtopic-bar] [role=progressbar]').attributes('aria-valuenow')).toBe('15')
-    expect(cards[0]?.get('[data-testid=subtopic-practice]').attributes('href')).toBe('/practice/MATH')
+    expect(
+      cards[0]?.get('[data-testid=subtopic-bar] [role=progressbar]').attributes('aria-valuenow'),
+    ).toBe('15')
+    expect(cards[0]?.get('[data-testid=subtopic-practice]').attributes('href')).toBe(
+      '/practice/MATH',
+    )
     expect(cards[0]?.find('[data-testid=subtopic-description]').exists()).toBe(false)
   })
 
@@ -255,7 +277,12 @@ describe('TopicDetailPage (S13)', () => {
 describe('LearningMapPage (S14)', () => {
   it('renders hero, selectors and islands by state', async () => {
     api.fetchLearningMap.mockResolvedValue(
-      map([island(1, 'mastered'), island(7, 'started'), island(8, 'unlocked'), island(9, 'locked')]),
+      map([
+        island(1, 'mastered'),
+        island(7, 'started'),
+        island(8, 'unlocked'),
+        island(9, 'locked'),
+      ]),
     )
     const w = await render(LearningMapPage, '/peta-belajar', '/peta-belajar')
     expect(w.get('[data-testid=map-subtitle]').text()).toBe(
@@ -275,9 +302,17 @@ describe('LearningMapPage (S14)', () => {
     expect(chips[1]?.attributes('href')).toBe('/peta-belajar?subject=MATEMATIK&grade=TINGKATAN_5')
     expect(w.get('[data-testid=map-grade-chips]').attributes('aria-label')).toBe('Tingkatan')
     expect(w.text()).not.toContain('Darjah')
-    expect(api.fetchLearningMap.mock.calls[0]?.[0]).toMatchObject({ subject: null, grade: 'TINGKATAN_4' })
+    expect(api.fetchLearningMap.mock.calls[0]?.[0]).toMatchObject({
+      subject: null,
+      grade: 'TINGKATAN_4',
+    })
     const nodes = w.findAll('[data-testid=map-node]')
-    expect(nodes.map((n) => n.attributes('data-state'))).toEqual(['mastered', 'started', 'unlocked', 'locked'])
+    expect(nodes.map((n) => n.attributes('data-state'))).toEqual([
+      'mastered',
+      'started',
+      'unlocked',
+      'locked',
+    ])
     const labels = w.findAll('[data-testid=island-label]').map((l) => l.text())
     expect(labels).toEqual(['⭐ DIKUASAI', '📘 SEDANG BELAJAR', '🎯 BUKA', '🔒 TERKUNCI'])
     const islands = w.findAll('[data-testid=island]')
@@ -292,13 +327,24 @@ describe('LearningMapPage (S14)', () => {
     api.fetchLearningMap.mockResolvedValue(
       map([], { subject: 'ZZZ', subjectLabel: 'Zzz', stats: { done: 0, total: 0, progress: 0 } }),
     )
-    const w = await render(LearningMapPage, '/peta-belajar', '/peta-belajar?subject=ZZZ&grade=TINGKATAN_5')
-    expect(api.fetchLearningMap.mock.calls[0]?.[0]).toMatchObject({ subject: 'ZZZ', grade: 'TINGKATAN_5' })
+    const w = await render(
+      LearningMapPage,
+      '/peta-belajar',
+      '/peta-belajar?subject=ZZZ&grade=TINGKATAN_5',
+    )
+    expect(api.fetchLearningMap.mock.calls[0]?.[0]).toMatchObject({
+      subject: 'ZZZ',
+      grade: 'TINGKATAN_5',
+    })
     expect(w.get('[data-testid=map-empty]').text()).toContain('Tiada Topik Dijumpai')
     expect(w.get('[data-testid=map-empty]').text()).toContain('tingkatan yang lain')
     expect(w.get('[data-testid=map-done]').text()).toBe('0/0')
     expect(w.get('[data-testid=map-subtitle]').text()).toContain('Terokai perjalanan Zzz —')
-    expect(w.findAll('[data-testid=map-subject-pill]').every((p) => p.attributes('data-active') === 'false')).toBe(true)
+    expect(
+      w
+        .findAll('[data-testid=map-subject-pill]')
+        .every((p) => p.attributes('data-active') === 'false'),
+    ).toBe(true)
     expect(w.find('[data-testid=map-container]').exists()).toBe(false)
   })
 
@@ -312,16 +358,59 @@ describe('LearningMapPage (S14)', () => {
       api.fetchLearningMap.mockClear()
       loginStudent(grade)
       await render(LearningMapPage, '/peta-belajar', '/peta-belajar')
-      expect(api.fetchLearningMap.mock.calls[0]?.[0], String(grade)).toMatchObject({ grade: expected })
+      expect(api.fetchLearningMap.mock.calls[0]?.[0], String(grade)).toMatchObject({
+        grade: expected,
+      })
       wrapper?.unmount()
       wrapper = null
     }
+  })
+
+  it('opens on the pupil own level (a T5 pupil on Tingkatan 5, no recognised form on Tingkatan 4) with that tab marked', async () => {
+    for (const [grade, expected, active] of [
+      [11, 'TINGKATAN_5', ['false', 'true']],
+      [10, 'TINGKATAN_4', ['true', 'false']],
+      [null, 'TINGKATAN_4', ['true', 'false']],
+    ] as const) {
+      api.fetchLearningMap.mockResolvedValue(map([island(1, 'unlocked')], { grade: expected }))
+      loginStudent(grade)
+      const w = await render(LearningMapPage, '/peta-belajar', '/peta-belajar')
+      expect(api.fetchLearningMap.mock.calls.at(-1)?.[0], String(grade)).toMatchObject({
+        grade: expected,
+      })
+      const chips = w.findAll('[data-testid=map-grade-chip]')
+      expect(
+        chips.map((c) => c.attributes('data-active')),
+        String(grade),
+      ).toEqual(active)
+      wrapper?.unmount()
+      wrapper = null
+    }
+  })
+
+  it('a Tingkatan 1 pupil gets the lower-form notice, never the empty topic card (D54)', async () => {
+    api.fetchLearningMap.mockClear()
+    loginStudent(7)
+    const w = await render(LearningMapPage, '/peta-belajar', '/peta-belajar')
+    expect(w.find('[data-testid=lower-form-empty]').exists()).toBe(true)
+    expect(w.find('[data-testid=map-empty]').exists()).toBe(false)
+  })
+
+  it('never leaves the tabs unselected: an unrecognised served grade falls back to the requested tab', async () => {
+    api.fetchLearningMap.mockResolvedValue(map([], { grade: 'T5' }))
+    loginStudent(11)
+    const w = await render(LearningMapPage, '/peta-belajar', '/peta-belajar')
+    const chips = w.findAll('[data-testid=map-grade-chip]')
+    expect(chips.map((c) => c.attributes('data-active'))).toEqual(['false', 'true'])
   })
 
   it('an old Darjah link asks for the student form, never a Darjah', async () => {
     api.fetchLearningMap.mockResolvedValue(map([island(1, 'unlocked')]))
     loginStudent(11)
     await render(LearningMapPage, '/peta-belajar', '/peta-belajar?subject=SAINS&grade=DARJAH_2')
-    expect(api.fetchLearningMap.mock.calls[0]?.[0]).toMatchObject({ subject: 'SAINS', grade: 'TINGKATAN_5' })
+    expect(api.fetchLearningMap.mock.calls[0]?.[0]).toMatchObject({
+      subject: 'SAINS',
+      grade: 'TINGKATAN_5',
+    })
   })
 })

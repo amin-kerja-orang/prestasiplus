@@ -38,7 +38,7 @@ export interface PracticeQuestion {
   difficulty: number | null
   /** Store type, for example `mcq`. Only `mcq` questions are served by this path. */
   questionType: string
-  /** In the SPM pool (past_year, latih_tubi). */
+  /** Legacy `pool` tag (compat only; R1-B06: no serving path reads it). */
   spmPool: boolean
   questionText: string
   textDirection: 'ltr' | 'rtl'
@@ -60,7 +60,7 @@ export interface PracticeSelection {
   /** Any of these levels; absent = every level. */
   educationLevelIds?: readonly string[]
   difficulty?: number
-  /** True = only SPM-pool questions (past_year, latih_tubi). */
+  /** True = only SPM-servable questions (shared SPM_SERVABLE_SQL: offered level, not the pool tag). */
   spmPool?: boolean
 }
 

@@ -28,6 +28,7 @@ import { UsersRepository } from '../../users'
 import { SCHOOL_DRILL_ROW_LIMIT } from '../command-center.constants'
 
 import { dateKey } from './windows'
+import { VISIBLE_USER_SQL } from './visibility'
 
 const TZ = 'Asia/Kuala_Lumpur'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -198,6 +199,7 @@ export class CommandCenterRepository {
   private answerWhere(f: AnswerFilter): Prisma.Sql {
     const c: Prisma.Sql[] = [
       Prisma.sql`a.is_test = false`,
+      VISIBLE_USER_SQL,
       f.exclusiveTo ? Prisma.sql`a.answered_at < ${f.to}` : Prisma.sql`a.answered_at <= ${f.to}`,
       Prisma.sql`EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`,
     ]
@@ -404,6 +406,7 @@ export class CommandCenterRepository {
       Prisma.sql`ps.completed_at >= ${f.from}`,
       Prisma.sql`ps.completed_at <= ${f.to}`,
       Prisma.sql`u.is_active`,
+      VISIBLE_USER_SQL,
       Prisma.sql`EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`,
     ]
     if (f.schoolId !== undefined) {
@@ -439,7 +442,7 @@ export class CommandCenterRepository {
 
   /** Active student users; of one school, or the platform when `schoolId` is omitted. */
   async studentCount(opts: { schoolId?: string; includeInactive?: boolean } = {}): Promise<number> {
-    const c: Prisma.Sql[] = [Prisma.sql`EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`]
+    const c: Prisma.Sql[] = [Prisma.sql`EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`, VISIBLE_USER_SQL]
     if (!opts.includeInactive) c.push(Prisma.sql`u.is_active`)
     if (opts.schoolId !== undefined) {
       const sid = bigintOrNull(opts.schoolId)
@@ -456,7 +459,7 @@ export class CommandCenterRepository {
     const active = opts.includeInactive ? Prisma.empty : Prisma.sql`AND u.is_active`
     const rows = await this.q(Prisma.sql`
       SELECT u.id::text AS id, u.name, u.is_active FROM users u
-       WHERE u.school_id = ${sid} AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student') ${active}
+       WHERE u.school_id = ${sid} AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student') AND ${VISIBLE_USER_SQL} ${active}
        ORDER BY u.name ASC, u.id ASC`)
     return rows.map((r) => ({ id: String(r.id), name: String(r.name), isActive: Boolean(r.is_active) }))
   }
@@ -493,7 +496,7 @@ export class CommandCenterRepository {
   async schoolsWithStudents(): Promise<number> {
     const [r] = await this.q(Prisma.sql`
       SELECT count(DISTINCT u.school_id)::int AS c FROM users u
-       WHERE u.school_id IS NOT NULL AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`)
+       WHERE u.school_id IS NOT NULL AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student') AND ${VISIBLE_USER_SQL}`)
     return n(r?.c)
   }
 

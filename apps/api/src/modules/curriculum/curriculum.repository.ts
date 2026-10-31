@@ -12,7 +12,10 @@ import type {
   Topic,
 } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
-import { byOrderThenId, chapterOrder, compareIds, topicOrder } from './rules'
+import { byOrderThenId, chapterOrder, compareIds, MAP_GRADES, topicOrder } from './rules'
+
+/** The learner catalogue (topics, learning map) is Tingkatan 4 and 5 only (secondary-only, D72); a topic of any other grade is never read. */
+const LEARNER_TOPIC_GRADES: string[] = [...MAP_GRADES]
 
 export type { Chapter, CurriculumNode, CurriculumTpDescriptor, EducationLevel, LegacySubtopic, LegacyTopic, Subject, Subtopic, Topic }
 
@@ -496,7 +499,8 @@ export class CurriculumRepository {
   async legacyTopics(filter: { gradeLevel?: string | null; subject?: string | null } = {}): Promise<LegacyTopic[]> {
     const rows = await this.db.legacyTopic.findMany({
       where: {
-        ...(filter.gradeLevel ? { gradeLevel: filter.gradeLevel.toUpperCase() } : {}),
+        // An allow-list, not a prefix test: no grade asked still means T4/T5 only; a grade outside it matches nothing.
+        AND: [{ gradeLevel: { in: LEARNER_TOPIC_GRADES } }, ...(filter.gradeLevel ? [{ gradeLevel: filter.gradeLevel.toUpperCase() }] : [])],
         ...(filter.subject ? { subject: filter.subject.toUpperCase() } : {}),
       },
     })
@@ -504,7 +508,7 @@ export class CurriculumRepository {
   }
 
   legacyTopic(id: bigint): Promise<LegacyTopic | null> {
-    return this.db.legacyTopic.findUnique({ where: { id } })
+    return this.db.legacyTopic.findFirst({ where: { id, gradeLevel: { in: LEARNER_TOPIC_GRADES } } })
   }
 
   /** Subtopics per learner topic id, ordered by `sortOrder` then id. */

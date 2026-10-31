@@ -220,6 +220,8 @@ export interface QuestionInputBody {
   questionType?: QuestionType
   questionText: string
   dskpSpId?: number | string | null
+  /** Bab (chapter) id; '' or null clears it on edit, absent keeps it. */
+  curriculumChapterId?: number | string | null
   questionImage?: File | Blob | null
   /** MCQ: 4 texts A–D. */
   options?: readonly string[]
@@ -260,6 +262,7 @@ export function toQuestionFormData(input: QuestionInputBody): FormData {
   put('questionType', input.questionType)
   put('questionText', input.questionText)
   put('dskpSpId', input.dskpSpId)
+  put('curriculumChapterId', input.curriculumChapterId)
   if (input.questionImage) form.append('questionImage', input.questionImage)
   input.options?.forEach((text, i) => {
     form.append(`options[${String(i)}]`, text)
@@ -347,6 +350,10 @@ export function toQuestionJson(
   if (mode === 'create') body.questionType = type
   if (input.dskpSpId !== undefined) {
     body.dskpSpId = input.dskpSpId === null || input.dskpSpId === '' ? null : String(input.dskpSpId)
+  }
+  if (input.curriculumChapterId !== undefined) {
+    body.curriculumChapterId =
+      input.curriculumChapterId === null || input.curriculumChapterId === '' ? null : String(input.curriculumChapterId)
   }
   if (input.language !== undefined) body.language = input.language
   if (input.pointsValue !== undefined && input.pointsValue !== null && input.pointsValue !== '') {

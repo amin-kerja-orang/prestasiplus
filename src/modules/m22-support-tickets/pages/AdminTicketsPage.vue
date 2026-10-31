@@ -52,12 +52,16 @@ const COLUMNS: TableColumn<TicketRow>[] = [
   { id: 'status', header: 'Status' },
   { id: 'replied', header: 'Dibalas' },
 ]
+/** The status word is stored in lower case ("dibuka"); it is shown with a capital. */
+function statusWord(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1)
+}
 /** Status chips (links with the counts); the filter lives in the URL. */
 const chipItems = computed<PillItem<string>[]>(() => [
   { key: '', label: `Semua (${formatNumber(total.value)})`, to: '/admin/tiket', testid: 'all' },
   ...counts.value.map((c) => ({
     key: c.status,
-    label: `${c.status} (${formatNumber(c.count)})`,
+    label: `${statusWord(c.status)} (${formatNumber(c.count)})`,
     to: `/admin/tiket?status=${encodeURIComponent(c.status)}`,
   })),
 ])
@@ -108,7 +112,7 @@ const chipItems = computed<PillItem<string>[]>(() => [
           <span class="text-highlighted">{{ row.original.userName ?? '—' }}</span>
         </template>
         <template #status-cell="{ row }">
-          <UBadge color="neutral" variant="subtle" :label="row.original.status" />
+          <UBadge color="neutral" variant="subtle" :label="statusWord(row.original.status)" />
         </template>
         <template #replied-cell="{ row }">{{ row.original.replied ? 'Ya' : '—' }}</template>
         <template #card="{ row }">
@@ -116,7 +120,7 @@ const chipItems = computed<PillItem<string>[]>(() => [
           <p class="text-label text-muted">
             {{ row.userName ?? '—' }} · {{ formatDateTimeRaw(row.createdAt as string) }}
           </p>
-          <UBadge class="w-fit" color="neutral" variant="subtle" :label="row.status as string" />
+          <UBadge class="w-fit" color="neutral" variant="subtle" :label="statusWord(row.status as string)" />
         </template>
       </DsDataTable>
     </template>

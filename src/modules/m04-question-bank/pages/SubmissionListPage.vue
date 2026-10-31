@@ -267,8 +267,8 @@ async function resetFilter(): Promise<void> {
       <template #statusLabel-cell="{ row }">
         <div class="min-w-28">
           <DsStatusBadge
-            :status="SUBMISSION_STATUS_DS[row.original.raw.status]"
-            :label="SUBMISSION_STATUS_LABEL[row.original.raw.status]"
+            :status="SUBMISSION_STATUS_DS[row.original.raw.status as keyof typeof SUBMISSION_STATUS_DS]"
+            :label="SUBMISSION_STATUS_LABEL[row.original.raw.status as keyof typeof SUBMISSION_STATUS_LABEL]"
             data-testid="submission-status"
           />
           <div

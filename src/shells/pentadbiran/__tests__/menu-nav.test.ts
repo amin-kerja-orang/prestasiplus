@@ -24,7 +24,7 @@ describe('Pentadbiran navigation groups', () => {
     const rows = linksOf(groups.find((g) => g.key === 'pemantauan'))
     expect(rows.filter((r) => r.label === 'Kirkpatrick')).toHaveLength(1)
     expect(rows.find((r) => r.label === 'Kirkpatrick')?.to).toBe('/admin/kirkpatrick')
-    expect(rows.some((r) => r.label === 'T1: Reaksi')).toBe(false)
+    expect(rows.some((r) => r.label === 'Tahap 1: Reaksi')).toBe(false)
   })
 
   it('marks the active screen, and the folded row when any of its pages is active', () => {

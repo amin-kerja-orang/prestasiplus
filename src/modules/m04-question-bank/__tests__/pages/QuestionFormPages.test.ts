@@ -24,6 +24,7 @@ const lookups = vi.hoisted(() => ({
   fetchDskpBidang: vi.fn(),
   fetchDskpSk: vi.fn(),
   fetchDskpSp: vi.fn(),
+  fetchChapters: vi.fn(),
 }))
 vi.mock('../../api/questions', () => questions)
 vi.mock('../../api/lookups', () => lookups)
@@ -32,6 +33,11 @@ vi.mock('@/app/router', () => ({ setRouteOutcome: vi.fn() }))
 const BIDANG = [
   { id: 515, code: 'T5-SUB4-TEXTBOOK', name: 'Sains T5 - Sokongan' },
   { id: 516, code: null, name: 'Tanpa kod' },
+]
+const CHAPTERS = [
+  { id: 71, name: 'Bumi dan Angkasa', chapterNumber: 1 },
+  { id: 72, name: 'Tenaga', chapterNumber: 2 },
+  { id: 73, name: 'Tanpa nombor', chapterNumber: null },
 ]
 const SK = [{ id: 2667, code: 'T5S4.B1', description: 'Menguasai konsep' }]
 const SP = [
@@ -135,6 +141,7 @@ beforeEach(() => {
   lookups.fetchDskpBidang.mockResolvedValue(BIDANG)
   lookups.fetchDskpSk.mockResolvedValue(SK)
   lookups.fetchDskpSp.mockResolvedValue(SP)
+  lookups.fetchChapters.mockResolvedValue(CHAPTERS)
   questions.fetchQuestion.mockResolvedValue(detail())
 })
 
@@ -207,6 +214,87 @@ describe('QuestionCreatePage (M04 S2)', () => {
     await t(w, 'dskp-sp').setValue('6192')
     expect(t(w, 'dskp-tagged').text()).toBe('DSKP tagged')
     expect(w.find('[data-testid=dskp-remove]').exists()).toBe(false)
+  })
+
+  it('Bab is optional: disabled until Subjek and Tahap are set, then loads their chapters with a "—" choice', async () => {
+    const w = await render('create')
+    expect(t(w, 'q-chapter').attributes('disabled')).toBeDefined()
+    expect(lookups.fetchChapters).not.toHaveBeenCalled()
+    await t(w, 'q-subject').setValue('4')
+    await t(w, 'q-level').setValue('11')
+    await flushPromises()
+    expect(lookups.fetchChapters).toHaveBeenLastCalledWith({ subjectId: '4', educationLevelId: '11' })
+    expect(t(w, 'q-chapter').attributes('disabled')).toBeUndefined()
+    expect(w.findAll('[data-testid=q-chapter] option').map((o) => o.text())).toEqual([
+      '—',
+      'Bab 1: Bumi dan Angkasa',
+      'Bab 2: Tenaga',
+      'Tanpa nombor',
+    ])
+    expect(value(w, 'q-chapter')).toBe('')
+  })
+
+  it('choosing a Bab posts curriculumChapterId; changing Tahap clears the choice', async () => {
+    questions.createQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    lookups.fetchEducationLevels.mockResolvedValue({
+      data: [
+        { id: 11, name: 'Tingkatan 5' },
+        { id: 10, name: 'Tingkatan 4' },
+      ],
+    })
+    const w = await render('create')
+    await t(w, 'q-subject').setValue('4')
+    await t(w, 'q-level').setValue('11')
+    await flushPromises()
+    await t(w, 'q-chapter').setValue('72')
+    expect(value(w, 'q-chapter')).toBe('72')
+    await t(w, 'q-level').setValue('10')
+    await flushPromises()
+    expect(value(w, 'q-chapter')).toBe('')
+    expect(lookups.fetchChapters).toHaveBeenLastCalledWith({ subjectId: '4', educationLevelId: '10' })
+    await t(w, 'q-chapter').setValue('71')
+    await radio(w, 'q-difficulty', '3').trigger('click')
+    await t(w, 'q-text').setValue('Apakah ibu negara Malaysia?')
+    for (const [i, text] of ['A', 'B', 'C', 'D'].entries())
+      await t(w, `q-option-${i}`).setValue(text)
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(questions.createQuestion.mock.calls[0]?.[0]).toMatchObject({ curriculumChapterId: '71' })
+  })
+
+  it('without a Bab the create body has no curriculumChapterId', async () => {
+    questions.createQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    const w = await render('create')
+    await t(w, 'q-subject').setValue('4')
+    await t(w, 'q-level').setValue('11')
+    await radio(w, 'q-difficulty', '3').trigger('click')
+    await t(w, 'q-text').setValue('Apakah ibu negara Malaysia?')
+    for (const [i, text] of ['A', 'B', 'C', 'D'].entries())
+      await t(w, `q-option-${i}`).setValue(text)
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(questions.createQuestion.mock.calls[0]?.[0]).not.toHaveProperty('curriculumChapterId')
+  })
+
+  it('shows the server message of a mismatched Bab under the field', async () => {
+    questions.createQuestion.mockRejectedValue(
+      new ApiError({
+        status: 422,
+        code: 'VALIDATION_ERROR',
+        message: 'x',
+        fields: { curriculumChapterId: 'Bab tidak sepadan dengan subjek dan tahap.' },
+      }),
+    )
+    const w = await render('create')
+    await t(w, 'q-subject').setValue('4')
+    await t(w, 'q-level').setValue('11')
+    await radio(w, 'q-difficulty', '3').trigger('click')
+    await t(w, 'q-text').setValue('Apakah ibu negara Malaysia?')
+    for (const [i, text] of ['A', 'B', 'C', 'D'].entries())
+      await t(w, `q-option-${i}`).setValue(text)
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(w.text()).toContain('Bab tidak sepadan dengan subjek dan tahap.')
   })
 
   it('clearing Subjek only empties Bidang; SK, SP and the tag stay (AUD-M04-02)', async () => {
@@ -379,6 +467,40 @@ describe('QuestionEditPage (M04 S4)', () => {
     expect(body).not.toHaveProperty('questionType')
     expect(router.currentRoute.value.path).toBe('/admin/questions/564159')
     expect(useFlashStore().pending?.message).toBe('Soalan berjaya dikemaskini.')
+  })
+
+  it('pre-fills the saved Bab, keeps it on save, and "—" posts an empty id to clear it', async () => {
+    questions.updateQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    questions.fetchQuestion.mockResolvedValue(
+      detail({ curriculumChapterId: 72, chapterLabel: 'Tenaga' }),
+    )
+    const w = await render('edit')
+    expect(lookups.fetchChapters).toHaveBeenCalledWith({ subjectId: '4', educationLevelId: '11' })
+    expect(value(w, 'q-chapter')).toBe('72')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect((questions.updateQuestion.mock.calls[0]?.[1] as Record<string, unknown>).curriculumChapterId).toBe('72')
+    await t(w, 'q-chapter').setValue('')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect((questions.updateQuestion.mock.calls[1]?.[1] as Record<string, unknown>).curriculumChapterId).toBe('')
+  })
+
+  it('keeps a saved Bab that is not in the list (for example inactive) under its saved label', async () => {
+    questions.fetchQuestion.mockResolvedValue(
+      detail({ curriculumChapterId: 99, chapterLabel: 'Bab lama' }),
+    )
+    const w = await render('edit')
+    expect(value(w, 'q-chapter')).toBe('99')
+    expect(w.findAll('[data-testid=q-chapter] option').map((o) => o.text())).toContain('Bab lama')
+  })
+
+  it('a failed chapter lookup shows the load error and leaves the saved Bab alone', async () => {
+    lookups.fetchChapters.mockRejectedValue(new Error('x'))
+    questions.fetchQuestion.mockResolvedValue(detail({ curriculumChapterId: 72, chapterLabel: 'Tenaga' }))
+    const w = await render('edit')
+    expect(w.text()).toContain('Maaf, berlaku ralat. Sila cuba semula.')
+    expect(value(w, 'q-chapter')).toBe('72')
   })
 
   it('saving untouched keeps the saved SP (DV-M04-15)', async () => {

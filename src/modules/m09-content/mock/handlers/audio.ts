@@ -91,7 +91,8 @@ export const audioRoutes: RouteDef[] = [
       ...(educationLevelId !== undefined ? { educationLevelId } : {}),
       ...(subjectId !== undefined ? { subjectId } : {}),
     })
-    return unpaged(sets.map(listItem))
+    // Secondary-only (D72): sets of a hidden primary level are not listed (the rows stay stored).
+    return unpaged(sets.filter((s) => levelRef(s.educationLevelId) !== null).map(listItem))
   }),
 
   route(

@@ -11,6 +11,7 @@ import type { MockRuntime } from '@/mock/index'
 import type { Question, QuestionDetail, QuestionMutation, QuestionRow } from '../../api/questions'
 import { AI_FAIL_KEY, AI_LATENCY_KEY } from '../../mock/handlers/ai-explanation'
 import { questions } from '../../mock'
+import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 import { ADMIN, bootM04, callAs, form, type ErrorBody, type ListBody } from './helpers-questions'
 
 let runtime: MockRuntime
@@ -22,6 +23,8 @@ let approved0 = 0
 let archived0 = 0
 
 beforeAll(async () => {
+  // The documented counts include the Darjah questions; the hiding (D72) is in secondary-only.test.ts.
+  showPrimaryLevels()
   runtime = await bootM04()
   call = callAs(runtime)
 }, 180_000)

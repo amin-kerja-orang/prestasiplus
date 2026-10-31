@@ -19,6 +19,7 @@ import { curriculum } from '@/modules/m03-curriculum/mock'
 import type { DskpStore } from './dskp-source'
 import { storeUpload, uploadedFile } from './workflow-common'
 import type { QuestionInput } from '../repository/questions'
+import { visibleLevelIds } from '../repository/visible-levels'
 import type { Language, Question, QuestionType } from '../repository/types'
 
 export const QUESTION_TYPES: readonly QuestionType[] = [
@@ -45,6 +46,8 @@ export const QUESTION_MESSAGES = {
   points: 'Nilai mata mesti sekurang-kurangnya 1.',
   language: 'Bahasa tidak sah.',
   sp: 'SP DSKP tidak sah.',
+  /** Bab (D89), same copy as the contract `QUESTION_MESSAGES.guruChapter`. */
+  guruChapter: 'Bab tidak sah.',
 } as const
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -130,7 +133,12 @@ export function parseQuestionBody(
   if (subjectId === undefined || !curriculum.subject(subjectId))
     fields.subjectId = QUESTION_MESSAGES.subject
   const educationLevelId = intOf(b.educationLevelId)
-  if (educationLevelId === undefined || !curriculum.level(educationLevelId))
+  // D72: a hidden primary level (Darjah) is not a valid level on write, like an unknown one.
+  if (
+    educationLevelId === undefined ||
+    !curriculum.level(educationLevelId) ||
+    !visibleLevelIds().includes(educationLevelId)
+  )
     fields.educationLevelId = QUESTION_MESSAGES.level
   const difficultyLevel = intOf(b.difficultyLevel)
   if (difficultyLevel === undefined || difficultyLevel < 1 || difficultyLevel > 5)
@@ -220,6 +228,17 @@ export function parseQuestionBody(
       else values.dskpSpId = sp
     }
   } else if (!current) values.dskpSpId = null
+
+  // Bab: blank or null clears it, a number sets it, absent keeps it (the mock does not read M03's chapters).
+  if ('curriculumChapterId' in b) {
+    const raw = b.curriculumChapterId
+    if (raw === null || raw === undefined || raw === '') values.curriculumChapterId = null
+    else {
+      const chapter = intOf(raw)
+      if (chapter === undefined || chapter < 1) fields.curriculumChapterId = QUESTION_MESSAGES.guruChapter
+      else values.curriculumChapterId = chapter
+    }
+  }
 
   if (Object.keys(fields).length > 0) return { ok: false, fields }
 

@@ -10,8 +10,11 @@ import m02 from '@/modules/m02-users-schools/mock'
 import m03 from '@/modules/m03-curriculum/mock'
 
 import m04, { questions } from '../../mock'
+import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 
 beforeAll(async () => {
+  // The documented counts include the Darjah questions; the hiding (D72) is in secondary-only.test.ts.
+  showPrimaryLevels()
   await bootMock({
     mode: 'test',
     core: defineMockCore({}),

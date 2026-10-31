@@ -283,7 +283,7 @@ const {
         {{ row.original.subjectName
         }}<template v-if="row.original.kertas"> · K{{ row.original.kertas }}</template>
       </template>
-      <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind] }}</template>
+      <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind as keyof typeof KIND_LABEL] }}</template>
       <template #usedIn-cell="{ row }">{{ row.original.usedIn }} kertas</template>
       <template #status-cell="{ row }">
         <DsStatusBadge :status="STATUS_BADGE[row.original.status]" />

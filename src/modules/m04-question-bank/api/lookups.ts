@@ -47,6 +47,13 @@ export interface SkOption {
 }
 export type SpOption = SkOption
 
+/** A chapter (Bab) of a subject and level, for the "Bab" select (from the M03 curriculum tree). */
+export interface ChapterOption {
+  id: number
+  name: string
+  chapterNumber: number | null
+}
+
 type Signal = { signal?: AbortSignal }
 const withSignal = (o: Signal) => (o.signal ? { signal: o.signal } : {})
 
@@ -65,6 +72,23 @@ export function fetchEducationLevels(
   options: Signal = {},
 ): Promise<ListResult<EducationLevelLookup>> {
   return api.list<EducationLevelLookup>('/api/education-levels', withSignal(options))
+}
+
+/**
+ * Active chapters of a subject and level in curriculum order: the `chapters` of M03 #13
+ * `GET /api/admin/curriculum?subjectId=&educationLevelId=` (admin session). Secondary levels only
+ * have chapters; a primary pair gives an empty list.
+ */
+export async function fetchChapters(
+  params: { subjectId: number | string; educationLevelId: number | string },
+  options: Signal = {},
+): Promise<ChapterOption[]> {
+  const tree = await api.get<{
+    chapters: { id: number; name: string | null; chapterNumber: number | null; isActive: boolean }[]
+  }>('/api/admin/curriculum', { query: params, ...withSignal(options) })
+  return tree.chapters
+    .filter((c) => c.isActive && c.name !== null)
+    .map((c) => ({ id: c.id, name: c.name as string, chapterNumber: c.chapterNumber }))
 }
 
 /** #28 `GET /api/guru/dskp/bidang?subjectId=&educationLevelId=` (a bare array). */

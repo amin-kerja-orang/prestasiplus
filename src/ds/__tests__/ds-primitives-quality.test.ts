@@ -106,3 +106,30 @@ describe('DsFilterBar one row', () => {
     expect(w.findAll('button').map((b) => b.text())).toEqual(['Cari', 'Set Semula'])
   })
 })
+
+describe('Pentadbiran header subtitle', () => {
+  it('lifts a plain subtitle into the shell and prints it once, hidden, in the page', async () => {
+    const { defineComponent, h } = await import('vue')
+    const { DsPageHeader, provideShellSubtitle, provideShellTitle, shellPageSubtitle } = await import('@/ds')
+    const Host = defineComponent({
+      setup() {
+        provideShellTitle()
+        provideShellSubtitle()
+        return () => h(DsPageHeader, { title: 'Monitoring', subtitle: 'Pantau penglibatan', subtitleTestid: 'sub' })
+      },
+    })
+    const w = mount(Host)
+    expect(shellPageSubtitle.value).toBe('Pantau penglibatan')
+    expect(w.find('[data-ds=page-header]').exists()).toBe(false)
+    expect(w.get('[data-testid=sub]').attributes('hidden')).toBeDefined()
+    w.unmount()
+    expect(shellPageSubtitle.value).toBeNull()
+  })
+  it('without the shell flag (Pembelajaran) the subtitle stays a visible row', () => {
+    return import('@/ds').then(({ DsPageHeader, shellPageSubtitle }) => {
+      const w = mount(DsPageHeader, { props: { title: 'X', subtitle: 'Isi', subtitleTestid: 'sub' } })
+      expect(w.get('[data-testid=sub]').attributes('hidden')).toBeUndefined()
+      expect(shellPageSubtitle.value).toBeNull()
+    })
+  })
+})

@@ -175,7 +175,6 @@ export class PkskQuestionsService {
           createdById: idFromString(actorUserId),
           groupId: null,
           groupPosition: null,
-          spmPool: false,
           pksk: { domainCode: input.domainCode, level: input.targetLevel },
           now,
           version: draft,

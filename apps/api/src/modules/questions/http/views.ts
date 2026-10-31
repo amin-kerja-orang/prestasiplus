@@ -80,7 +80,7 @@ function flatBase(q: QuestionView) {
     dskpSpId: v.spIds[0] ?? null,
     curriculumChapterId: v.chapterId,
     curriculumTopicId: v.topicId,
-    chapterLabel: c.chapterLabel,
+    chapterLabel: q.chapterName ?? c.chapterLabel,
     scriptType: f.scriptType,
     textDirection: f.textDirection,
     createdAt: toMytTimestamp(q.createdAt),

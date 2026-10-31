@@ -8,7 +8,20 @@ import type { RateLimitSpec } from '../../../common/throttle'
 export const BIJAK_BUILDER_LIMITS = {
   read: { bucket: 'bijak.builder.read', env: 'THROTTLE_BIJAK_BUILDER_READ_PER_MINUTE', default: 240, per: 'user' },
   write: { bucket: 'bijak.builder.write', env: 'THROTTLE_BIJAK_BUILDER_WRITE_PER_MINUTE', default: 60, per: 'user' },
+  /** Jana set runs the solver and writes about forty rows: kept low. */
+  generate: { bucket: 'bijak.builder.generate', env: 'THROTTLE_BIJAK_BUILDER_GENERATE_PER_MINUTE', default: 10, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
+
+/**
+ * Question statuses a paper may place and serve (D54a). ONE constant and ONE helper: the question
+ * lifecycle is moving from `published` to `approved` (R1-B01); both are accepted until that lands,
+ * then drop `published` here.
+ */
+export const SERVABLE_QUESTION_STATUSES: readonly string[] = ['published', 'approved']
+export const isServableStatus = (status: string): boolean => SERVABLE_QUESTION_STATUSES.includes(status)
+
+/** Candidates per page of the section pool. */
+export const POOL_PAGE_SIZE = 30
 
 /** Default page size of `GET /admin/papers` and `GET /admin/blueprints` (contract max 100). */
 export const BIJAK_BUILDER_PAGE_SIZE = 20
