@@ -25,7 +25,7 @@ const NOW = toEpochMs(CLOCK_ANCHOR_ISO)
 const SCHOOL_ADMIN = 8 // smkDemo
 const PUPIL = 2 // smkDemo
 const TEACHER = 5 // smkDemo
-const OTHER_SCHOOL_PUPIL = 4 // skDemoBestari
+const OTHER_SCHOOL_PUPIL = 2008 // school 8080, not smkDemo (account 4 now shares smkDemo, D72)
 const ADMIN = 1
 const PARENT = 6
 

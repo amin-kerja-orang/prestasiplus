@@ -12,12 +12,19 @@ import { questions } from '@/modules/m04-question-bank/mock'
 
 import { battles } from '../../mock'
 import { m16Hooks } from '../../mock/hooks'
-import { bootM16, MemoryStorage, setUser, type Answer, type Booted } from './helpers'
+import {
+  belowT4Student,
+  bootM16,
+  MemoryStorage,
+  setUser,
+  type Answer,
+  type Booted,
+} from './helpers'
 
 const ADMIN = 1
 const T4_STUDENT = 2 // grade 10, SPM unlocked
-const D5_STUDENT = 3 // grade 5, no school
-const D1_STUDENT = 4 // grade 1, school 900004
+const D5_STUDENT = 3 // grade 10 (D72: was Darjah 5), no school
+const D1_STUDENT = 4 // grade 11 (D72: was Darjah 1), school 900001
 const MATEMATIK = 3
 
 let booted: Booted
@@ -108,9 +115,9 @@ describe('access', () => {
 
 describe('#15 lobby', () => {
   it('serves 31 subjects and 15 PKSK domains; the SPM list only from Tingkatan 4', async () => {
-    const d5 = await get<{ data: Record<string, unknown> }>('/api/battle/lobby', D5_STUDENT)
+    const d5 = await get<{ data: Record<string, unknown> }>('/api/battle/lobby', belowT4Student())
     expect(d5.status).toBe(200)
-    expect(d5.body.data).toMatchObject({ grade: 5, gradeLabel: 'Darjah 5', spmUnlocked: false })
+    expect(d5.body.data).toMatchObject({ grade: 9, gradeLabel: 'Tingkatan 3', spmUnlocked: false })
     expect((d5.body.data.subjects as { id: number; core: boolean }[]).length).toBe(31)
     expect(
       (d5.body.data.subjects as { id: number; core: boolean }[])
@@ -147,7 +154,7 @@ describe('#2 / #3 start (BR-M16-03)', () => {
     const r = await post('/api/battle/quick-match', D5_STUDENT, {
       question_type: 'biasa',
       open_to_all: false,
-      subject_id: 8,
+      subject_id: 17, // Sains Komputer: no objective question at Tingkatan 4 / 5
     })
     expect([r.status, r.body]).toEqual([422, {}])
   })
@@ -162,7 +169,7 @@ describe('#2 / #3 start (BR-M16-03)', () => {
       open_to_all: false,
       subject_id: lobby.body.data.spmSubjects[0]?.id,
     }
-    const denied = await post('/api/battle/quick-match', D5_STUDENT, spm)
+    const denied = await post('/api/battle/quick-match', belowT4Student(), spm)
     expect([denied.status, denied.body]).toEqual([403, {}])
     expect(
       (await post<{ queue_id: number }>('/api/battle/quick-match', T4_STUDENT, spm)).status,

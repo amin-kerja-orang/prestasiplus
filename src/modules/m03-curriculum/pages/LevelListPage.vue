@@ -3,7 +3,7 @@
  * S9 `/admin/education-levels` "Pengurusan Tahap Pendidikan - Admin PRESTASIPLUS" (M03-T2;
  * FR-M03-57..62, FR-98).
  *
- * - Heading "Senarai Tahap Pendidikan", "Jumlah: {n} tahap" and the pink "Tambah Tahap" button.
+ * - Header subtitle "Jumlah: {n} tahap" and the pink "Tambah Tahap" button.
  * - Table with fixed cell sizes (`text-xs`, `px-4 py-3`) at every width: stage badge, "Soalan" and
  *   "Subjek" counts, the "Aktif?" switch (same failure handling as S6) and edit / delete actions.
  * - The table fits its card from 1280 and scrolls inside the card below (FR-46).
@@ -16,7 +16,6 @@ import {
   type CardField,
   DsDataTable,
   DsPage,
-  DsPageHeader,
   DsStatRow,
   type StatItem,
 } from '@/ds'
@@ -148,7 +147,21 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="levels-page">
+  <DsPage
+    :subtitle="`Jumlah: ${rows.length} tahap`"
+    subtitle-testid="levels-count"
+    data-testid="levels-page"
+  >
+    <template #actions>
+      <UButton
+        :to="{ name: LEVEL_ROUTES.create }"
+        icon="i-ph-plus"
+        data-testid="levels-add"
+      >
+        Tambah Tahap
+      </UButton>
+    </template>
+
     <DsLoadError
       v-if="error"
       :message="COPY.loadFailed"
@@ -157,22 +170,6 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
     />
 
     <template v-else-if="data">
-      <DsPageHeader>
-        <template #subtitle>
-          <div>
-            <h2 class="text-subheading text-highlighted">Senarai Tahap Pendidikan</h2>
-            <p class="text-body text-muted" data-testid="levels-count">
-              Jumlah: {{ rows.length }} tahap
-            </p>
-          </div>
-        </template>
-        <template #actions>
-          <UButton :to="{ name: LEVEL_ROUTES.create }" icon="i-ph-plus" data-testid="levels-add">
-            Tambah Tahap
-          </UButton>
-        </template>
-      </DsPageHeader>
-
       <DsStatRow :items="kpiItems" density="compact" :cols="4" aria-label="Ringkasan tahap" />
 
       <DsDataTable

@@ -544,7 +544,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
         />
       </template>
       <template #school-cell="{ row }">
-        <span class="block max-w-28 whitespace-normal" data-testid="user-school">{{
+        <span class="block max-w-52 whitespace-normal" data-testid="user-school">{{
           row.original.school?.name || '-'
         }}</span>
       </template>
@@ -603,27 +603,29 @@ const COLUMNS: TableColumn<UserRow>[] = [
               :src="asUser(row).avatarUrl"
               :initials="initialsOf(asUser(row).name)"
             />
-            <div class="flex flex-wrap items-center gap-2">
-              <UBadge color="neutral" variant="subtle" :label="roleLabel(asUser(row).role)" />
-              <DsStatusBadge :status="asUser(row).isActive ? 'active' : 'inactive'" />
-            </div>
-            <div
-              class="flex items-center gap-1"
-              data-testid="user-row"
-              :data-user-id="asUser(row).id"
-            >
-              <UButton
-                :to="`/admin/users/${String(asUser(row).id)}/edit`"
-                color="neutral"
-                variant="soft"
-                icon="i-ph-pencil-simple"
-                aria-label="Edit"
-                title="Edit"
-              />
-              <DsRowActions
-                :actions="menuActions(asUser(row))"
-                :label="`Tindakan lain untuk ${asUser(row).name}`"
-              />
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <UBadge color="neutral" variant="subtle" :label="roleLabel(asUser(row).role)" />
+                <DsStatusBadge :status="asUser(row).isActive ? 'active' : 'inactive'" />
+              </div>
+              <div
+                class="flex items-center gap-1"
+                data-testid="user-row"
+                :data-user-id="asUser(row).id"
+              >
+                <UButton
+                  :to="`/admin/users/${String(asUser(row).id)}/edit`"
+                  color="neutral"
+                  variant="soft"
+                  icon="i-ph-pencil-simple"
+                  aria-label="Edit"
+                  title="Edit"
+                />
+                <DsRowActions
+                  :actions="menuActions(asUser(row))"
+                  :label="`Tindakan lain untuk ${asUser(row).name}`"
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -37,6 +37,7 @@ import {
 } from '../datasets/questions'
 import { facetKey, m05AnchorDifficulty } from '../datasets/questions-spec'
 import { compact, questionQueries } from './queries'
+import { levelScope, visibleLevelIds } from './visible-levels'
 import { workflowMethods } from './questions-workflow'
 import {
   adminWhere,
@@ -463,7 +464,10 @@ export const questionsRepo = defineRepository({
         isActive: true,
         questionType: 'mcq',
         spmPool: true,
-        educationLevelId: f.educationLevelIds ? [...f.educationLevelIds] : [10, 11],
+        // D72: the pool is Tingkatan 4 / 5; a requested hidden Darjah level matches nothing.
+        educationLevelId: f.educationLevelIds
+          ? f.educationLevelIds.filter((l) => visibleLevelIds().includes(l))
+          : [10, 11],
         subjectId: f.subjectId,
         difficultyLevel: f.difficultyLevel,
       })
@@ -526,6 +530,33 @@ export const questionsRepo = defineRepository({
       /** Ad-hoc filter count (X-11). PKSK rows are excluded unless the filter names `pkskDomainId`. */
       countWhere: (filter: Where<Question> = {}): number =>
         store.count('pkskDomainId' in filter ? filter : { ...filter, pkskDomainId: null }),
+      /**
+       * Secondary-only (D72): Q-ALL / Q-APPROVED without the hidden Darjah questions (the admin "Jumlah",
+       * tiles and quality total). The named queries themselves keep the observed whole-bank figures.
+       */
+      visibleCount: (name: 'Q-ALL' | 'Q-APPROVED', subjectId?: number): number =>
+        store.count(
+          compact<Where<Question>>({
+            ...(name === 'Q-ALL'
+              ? { pkskDomainId: null }
+              : { pkskDomainId: null, status: 'approved' as const }),
+            subjectId,
+            educationLevelId: levelScope(),
+          }),
+        ),
+      /**
+       * Secondary-only (D72): Q-ACTIVE grouped by subject or level without the hidden Darjah questions
+       * (M03 admin subject / level `questionCount`). The named query keeps the observed whole-bank figures.
+       */
+      visibleActiveGroupCount: (by: 'subjectId' | 'educationLevelId'): Map<number, number> => {
+        const groups = store.groupCount(by, {
+          pkskDomainId: null,
+          isActive: true,
+          educationLevelId: levelScope(),
+        } as Where<Question>)
+        // A question with no subject / level has no admin row to count against.
+        return new Map([...groups].flatMap(([k, n]) => (k === null ? [] : [[k, n] as const])))
+      },
       /** Q-SPM-POOL (BR-M04-32). */
       spmPool: (filter: SpmPoolFilter = {}): SpmPoolView => {
         const where = poolWhere(filter)
@@ -544,7 +575,8 @@ export const questionsRepo = defineRepository({
             status: 'approved',
             isActive: true,
             dskpSpId,
-            educationLevelId: opts.levelId,
+            // D72: a hidden Darjah level counts nothing.
+            educationLevelId: levelScope(opts.levelId),
           }),
         ),
       /** Grades an MCQ answer ("A"–"D" or 0–3). `null` for unknown or non-MCQ rows. */
@@ -564,7 +596,8 @@ export const questionsRepo = defineRepository({
       adminList: (filter: AdminListFilter & { page?: number; pageSize?: number } = {}) => {
         const term = filter.search?.trim() ?? ''
         return store.query({
-          where: adminWhere(filter),
+          // Secondary-only (D72): the questions of a hidden Darjah level are never listed or counted.
+          where: { ...adminWhere(filter), educationLevelId: levelScope(filter.educationLevelId) },
           sort: NEWEST_FIRST,
           page: filter.page ?? 1,
           pageSize: filter.pageSize ?? 20,
@@ -579,6 +612,7 @@ export const questionsRepo = defineRepository({
           where: compact({
             pkskDomainId: null,
             needsDiagram: true,
+            educationLevelId: levelScope(),
             subjectId: filter.subjectId,
             createdBy: filter.creatorIds ? [...filter.creatorIds] : undefined,
           }),
@@ -591,7 +625,11 @@ export const questionsRepo = defineRepository({
         userId: number,
         filter: { status?: QuestionStatus; subjectId?: number; page?: number } = {},
       ) => {
-        const base = { pkskDomainId: null, createdBy: userId } as Where<Question>
+        const base = {
+          pkskDomainId: null,
+          createdBy: userId,
+          educationLevelId: levelScope(),
+        } as Where<Question>
         const where = compact({
           ...base,
           status: filter.status,
@@ -632,6 +670,7 @@ export const questionsRepo = defineRepository({
           isActive: true,
           teacherDatabank: true,
           subjectId,
+          educationLevelId: levelScope(),
         } as Where<Question>
         const family = filter.sourceFamily ? SOURCE_FAMILIES[filter.sourceFamily] : undefined
         const where = compact({
@@ -671,7 +710,11 @@ export const questionsRepo = defineRepository({
           m.set(k, e)
         }
         store.count(
-          { pkskDomainId: null, qualityBucket: ['cemerlang', 'baik', 'le50'] },
+          {
+            pkskDomainId: null,
+            qualityBucket: ['cemerlang', 'baik', 'le50'],
+            educationLevelId: levelScope(),
+          },
           (r) => {
             const v = r.qualityScore ?? 0
             count += 1

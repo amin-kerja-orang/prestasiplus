@@ -135,10 +135,10 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       await expect(tabs).toHaveText(
         [
           'Overview',
-          'T1: Reaksi',
-          'T2: Pembelajaran',
-          'T3: Tingkah Laku',
-          'T4: Hasil',
+          'Tahap 1: Reaksi',
+          'Tahap 2: Pembelajaran',
+          'Tahap 3: Tingkah Laku',
+          'Tahap 4: Hasil',
           'Intervensi',
         ],
         TEXT,
@@ -774,7 +774,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     if (isDesktopShell(page)) {
       // FR-M12-04 / DV-M12-12: the item of the current view is active in the sidebar on the twin too.
       await expect(page.getByTestId('shell-admin-sidebar').locator('a.active')).toContainText(
-        'T1: Reaksi',
+        'Tahap 1: Reaksi',
       )
     }
   })

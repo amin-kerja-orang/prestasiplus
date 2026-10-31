@@ -138,10 +138,10 @@ function summary(): MockResponse {
       name: s.name,
       icon: tileIcon(s.id),
       group: s.isCore ? ('teras' as const) : ('elektif' as const),
-      total: questions.count('Q-ALL', s.id),
-      approved: questions.count('Q-APPROVED', s.id),
+      total: questions.visibleCount('Q-ALL', s.id),
+      approved: questions.visibleCount('Q-APPROVED', s.id),
     }))
-  const data: QuestionSummary = { total: questions.count('Q-ALL'), subjects }
+  const data: QuestionSummary = { total: questions.visibleCount('Q-ALL'), subjects }
   return ok(data)
 }
 

@@ -58,7 +58,8 @@ function averageDifficulties(): Map<number, number> {
 function dashboard(userId: number, now: number): Dashboard {
   const user = users.get(userId)
   const subjects = practiceSubjects()
-  const levels = curriculum.levels({ active: true })
+  // Secondary-only (D72): the hidden Darjah levels are neither counted nor listed.
+  const levels = curriculum.visibleLevels({ active: true })
 
   // BR-25: week = Monday–Sunday (local); accuracy = correct ÷ answered this week, an integer.
   const from = weekStartOf(now)

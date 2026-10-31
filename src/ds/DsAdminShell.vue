@@ -47,6 +47,8 @@ const props = defineProps<{
   title: string
   /** Detail-page entity, the last crumb. */
   entity?: string | null
+  /** Page description, one muted line under the title (v1 pattern). */
+  subtitle?: string | null
   brandTo: string
   brandLabel: string
   accountName: string
@@ -259,6 +261,7 @@ const accountMenu = computed(() =>
                 </div>
               </template>
               <template #title>
+                <div class="flex min-w-0 flex-col justify-center">
                 <div class="flex min-w-0 items-baseline gap-2">
                   <nav v-if="crumbs.length > 0" aria-label="Jejak" class="hidden xl:block">
                     <ol class="flex items-baseline gap-2 text-body text-muted">
@@ -276,6 +279,15 @@ const accountMenu = computed(() =>
                     data-testid="pentadbiran-entity"
                     ><span aria-hidden="true">/</span> {{ entity }}</span
                   >
+                </div>
+                <p
+                  v-if="subtitle"
+                  class="truncate text-caption text-muted"
+                  :title="subtitle"
+                  data-testid="pentadbiran-subtitle"
+                >
+                  {{ subtitle }}
+                </p>
                 </div>
               </template>
               <template #right>

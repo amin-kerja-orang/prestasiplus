@@ -3,6 +3,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { createClock } from '@/lib/time'
 import { defineMockCore } from '@/mock/define'
 import { bootMock, type MockRuntime } from '@/mock/index'
+import { questions } from '@/modules/m04-question-bank/mock'
 
 import {
   curriculum,
@@ -121,10 +122,20 @@ describe('subjects #1-#6', () => {
     expect(res.body.data).toHaveLength(31)
     expect(res.body.meta).toMatchObject({ totalItems: 31, page: 1, totalPages: 1 })
     const math = res.body.data.find((s: { id: number }) => s.id === 3)
-    expect(math.questionCount).toBe(13872)
-    expect(math.levels).toHaveLength(11)
-    expect(math.levels[0]).toEqual({ id: 1, name: 'Darjah 1' })
-    expect(math.educationLevelIds).toHaveLength(11)
+    // D72: the hidden Darjah questions are not counted (13,872 over all levels), only Tingkatan 1-5.
+    expect(math.questionCount).toBe(
+      questions.countWhere({
+        isActive: true,
+        subjectId: 3,
+        educationLevelId: [7, 8, 9, 10, 11, null],
+      }), // a question with no level stays visible
+    )
+    expect(math.questionCount).toBeLessThan(13872)
+    expect(math.questionCount).toBeGreaterThan(0)
+    // Secondary-only (D72): the six hidden Darjah links are never listed (rows stay stored).
+    expect(math.levels).toHaveLength(5)
+    expect(math.levels[0]).toEqual({ id: 7, name: 'Tingkatan 1' })
+    expect(math.educationLevelIds).toHaveLength(5)
     const empty = res.body.data.find((s: { id: number }) => s.id === 31)
     expect(empty.levels).toEqual([])
     expect(typeof empty.questionCount).toBe('number')
@@ -150,7 +161,7 @@ describe('subjects #1-#6', () => {
       color: '#0f766e',
       isCore: true,
       order: 40,
-      educationLevelIds: [1, 2, 2],
+      educationLevelIds: [7, 8, 8],
     })
     expect(res.status).toBe(201)
     expect(res.body.status).toBe('Subjek berjaya ditambah.')
@@ -160,7 +171,7 @@ describe('subjects #1-#6', () => {
       isActive: true,
       isCore: true,
       icon: 'fas fa-book',
-      educationLevelIds: [1, 2],
+      educationLevelIds: [7, 8],
     })
     const id = res.body.data.id as number
     expect(id).toBeGreaterThan(31)
@@ -194,7 +205,7 @@ describe('subjects #1-#6', () => {
       isCore: before.isCore,
       order: before.order,
       icon: before.icon,
-      educationLevelIds: before.educationLevelIds,
+      educationLevelIds: curriculum.visibleLevelIds(before.educationLevelIds),
     })
     expect(curriculumSubjectLevels.count('LINK-SUBJECT', 3)).toBe(11)
     const cleared = await call('PUT', '/api/admin/subjects/3', 'admin', {
@@ -265,7 +276,7 @@ describe('subjects #1-#6', () => {
       color: '#123456',
       isCore: false,
       order: 3,
-      educationLevelIds: [1],
+      educationLevelIds: [7],
     })
     expect(res.status).toBe(200)
     expect(res.body.status).toBe('Subjek berjaya dikemaskini.')
@@ -274,10 +285,11 @@ describe('subjects #1-#6', () => {
       name: 'Matematik X',
       code: 'MATH',
       isCore: false,
-      educationLevelIds: [1],
+      educationLevelIds: [7],
       isActive: before.body.data.isActive,
     })
-    expect(curriculumSubjectLevels.count('LINK-SUBJECT', 3)).toBe(1)
+    // 1 visible link + the 6 hidden Darjah links, which an update keeps (hide, never delete).
+    expect(curriculumSubjectLevels.count('LINK-SUBJECT', 3)).toBe(7)
     const clash = await call('PUT', '/api/admin/subjects/3', 'admin', {
       name: 'a',
       nameEn: 'b',
@@ -331,11 +343,14 @@ describe('education levels #7-#12', () => {
   it('#7 lists 11 levels with questionCount and subjectCount (anchors)', async () => {
     const res = await call('GET', '/api/admin/education-levels')
     expect(res.status).toBe(200)
-    expect(res.body.data).toHaveLength(11)
-    const [d1] = res.body.data
-    expect(d1).toMatchObject({ id: 1, code: 'D1', stage: 'primary', questionCount: 11396 })
+    // Secondary-only (D72): Darjah 1 to 6 are hidden (no row, no control), never deleted.
+    expect(res.body.data).toHaveLength(5)
+    const [t1] = res.body.data
+    expect(t1).toMatchObject({ id: 7, code: 'T1', stage: 'lower_secondary' })
     const counts = res.body.data.map((l: { subjectCount: number }) => l.subjectCount)
-    expect(counts).toEqual([16, 16, 16, 17, 17, 17, 15, 15, 15, 25, 25])
+    expect(counts).toEqual([15, 15, 15, 25, 25])
+    expect(res.body.data.some((l: { code: string }) => l.code.startsWith('D'))).toBe(false)
+    expect(curriculum.level(1)?.code).toBe('D1')
   })
 
   it('#8 returns one level; unknown id 404 with the flash copy', async () => {
@@ -354,16 +369,35 @@ describe('education levels #7-#12', () => {
       name: 'Tahap Ujian',
       nameEn: 'Test Level',
       code: 'tu1',
-      stage: 'primary',
-      curriculum: 'KSSR',
+      stage: 'upper_secondary',
+      curriculum: 'KSSM',
       order: 12,
     })
     expect(res.status).toBe(201)
     expect(res.body.status).toBe('Tahap Pendidikan berjaya ditambah.')
     expect(res.body.data).toMatchObject({ code: 'TU1', isActive: true, grade: null, order: 12 })
     const list = await call('GET', '/api/admin/education-levels')
-    expect(list.body.data).toHaveLength(12)
-    expect(list.body.data[11]).toMatchObject({ code: 'TU1', questionCount: 0, subjectCount: 0 })
+    expect(list.body.data).toHaveLength(6)
+    expect(list.body.data[5]).toMatchObject({ code: 'TU1', questionCount: 0, subjectCount: 0 })
+  })
+
+  it('GET /api/subjects?educationLevelId=<Darjah> answers an empty list (D72), not every subject', async () => {
+    const res = await call('GET', '/api/subjects', 'student', undefined, { educationLevelId: '1' })
+    expect(res.status).toBe(200)
+    expect(res.body.data).toEqual([])
+  })
+
+  it('#9 refuses the hidden primary stage (D72): 422, nothing created', async () => {
+    const res = await call('POST', '/api/admin/education-levels', 'admin', {
+      name: 'Darjah X',
+      nameEn: 'Year X',
+      code: 'dx',
+      stage: 'primary',
+      curriculum: 'KSSR',
+    })
+    expect(res.status).toBe(422)
+    expect(res.body.error.fields.stage).toBe('The selected stage is invalid.')
+    expect((await call('GET', '/api/admin/education-levels')).body.data).toHaveLength(5)
   })
 
   it('#9/#10 validate (required, stage enum, code length/duplicate, order)', async () => {
@@ -398,27 +432,29 @@ describe('education levels #7-#12', () => {
   })
 
   it('#10 updates (own code allowed) and 404s unknown', async () => {
-    const res = await call('PUT', '/api/admin/education-levels/1', 'admin', {
-      name: 'Tahun 1',
-      nameEn: 'Year 1',
-      code: 'd1',
-      stage: 'primary',
-      curriculum: 'KSSR',
-      order: 1,
+    const res = await call('PUT', '/api/admin/education-levels/7', 'admin', {
+      name: 'Tahun 7',
+      nameEn: 'Year 7',
+      code: 't1',
+      stage: 'lower_secondary',
+      curriculum: 'KSSM',
+      order: 7,
     })
     expect(res.status).toBe(200)
     expect(res.body.status).toBe('Tahap Pendidikan berjaya dikemaskini.')
-    expect(res.body.data).toMatchObject({ id: 1, name: 'Tahun 1', code: 'D1', grade: 1 })
+    expect(res.body.data).toMatchObject({ id: 7, name: 'Tahun 7', code: 'T1', grade: 7 })
+    // A hidden Darjah level answers 404 like an unknown one.
+    expect((await call('PUT', '/api/admin/education-levels/1', 'admin', {})).status).toBe(404)
     expect((await call('PUT', '/api/admin/education-levels/9999', 'admin', {})).status).toBe(404)
   })
 
   it('#10 a code clash with another level is 422', async () => {
-    const res = await call('PUT', '/api/admin/education-levels/1', 'admin', {
+    const res = await call('PUT', '/api/admin/education-levels/7', 'admin', {
       name: 'x',
       nameEn: 'y',
-      code: 'd2',
-      stage: 'primary',
-      curriculum: 'KSSR',
+      code: 't2',
+      stage: 'lower_secondary',
+      curriculum: 'KSSM',
     })
     expect(res.status).toBe(422)
     expect(res.body.error.fields.code).toBe('The code has already been taken.')
@@ -429,8 +465,8 @@ describe('education levels #7-#12', () => {
       isActive: false,
     })
     expect(res.body.data).toEqual({ id: 11, isActive: false })
-    expect((await call('GET', '/api/education-levels', 'student')).body.data).toHaveLength(10)
-    expect((await call('GET', '/api/admin/education-levels')).body.data).toHaveLength(11)
+    expect((await call('GET', '/api/education-levels', 'student')).body.data).toHaveLength(4)
+    expect((await call('GET', '/api/admin/education-levels')).body.data).toHaveLength(5)
     expect((await call('PATCH', '/api/admin/education-levels/11/active', 'admin', {})).status).toBe(
       422,
     )
@@ -441,14 +477,16 @@ describe('education levels #7-#12', () => {
   })
 
   it('#12 deletes with the cascade (links and chapters); 404 afterwards', async () => {
-    const d1Chapters = curriculum.count('CH-LEVEL', 1)
-    expect(d1Chapters).toBe(41)
+    const t1Chapters = curriculum.count('CH-LEVEL', 7)
+    expect(t1Chapters).toBeGreaterThan(0)
     const total = curriculum.count('CH-ALL')
-    const res = await call('DELETE', '/api/admin/education-levels/1')
-    expect(res.body).toEqual({ data: { deleted: 1 }, status: 'Tahap Pendidikan berjaya dipadam.' })
-    expect(curriculum.count('CH-ALL')).toBe(total - 41)
-    expect(curriculumSubjectLevels.count('LINK-LEVEL', 1)).toBe(0)
+    // A hidden Darjah level cannot be deleted from the screens.
     expect((await call('DELETE', '/api/admin/education-levels/1')).status).toBe(404)
+    const res = await call('DELETE', '/api/admin/education-levels/7')
+    expect(res.body).toEqual({ data: { deleted: 1 }, status: 'Tahap Pendidikan berjaya dipadam.' })
+    expect(curriculum.count('CH-ALL')).toBe(total - t1Chapters)
+    expect(curriculumSubjectLevels.count('LINK-LEVEL', 7)).toBe(0)
+    expect((await call('DELETE', '/api/admin/education-levels/7')).status).toBe(404)
     expectNoOrphans()
   })
 })
@@ -475,18 +513,18 @@ describe('curriculum tree #13-#24', () => {
     ])
   })
 
-  it('#13 BM Darjah 1 stats (7 subtopics) and an empty pair', async () => {
+  it('#13 a hidden Darjah pair is 404 (D72); a secondary pair reads as before', async () => {
     const bm = await call('GET', '/api/admin/curriculum', 'admin', undefined, {
       subjectId: '1',
       educationLevelId: '1',
     })
-    expect(bm.body.data.stats.subtopics).toBe(7)
+    expect(bm.status).toBe(404)
     const empty = await call('GET', '/api/admin/curriculum', 'admin', undefined, {
       subjectId: '3',
-      educationLevelId: '1',
+      educationLevelId: '7',
     })
     expect(empty.status).toBe(200)
-    expect(empty.body.data.stats.chapters).toBe(curriculum.count('CH-PAIR', 3, 1))
+    expect(empty.body.data.stats.chapters).toBe(curriculum.count('CH-PAIR', 3, 7))
     const tambahan = await call('GET', '/api/admin/curriculum', 'admin', undefined, {
       subjectId: '2',
       educationLevelId: '9',
@@ -565,7 +603,7 @@ describe('curriculum tree #13-#24', () => {
   it('#15 allows an unlinked pair (BR-04) and a null chapter number', async () => {
     const res = await call('POST', '/api/admin/curriculum/chapters', 'admin', {
       subjectId: 31,
-      educationLevelId: 1,
+      educationLevelId: 7,
       name: 'Tanpa nombor',
     })
     expect(res.status).toBe(201)
