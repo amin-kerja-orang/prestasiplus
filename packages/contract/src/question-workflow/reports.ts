@@ -233,7 +233,9 @@ export const QuestionReportMineResponseSchema = z
 /**
  * PATCH body. `adminNotes`: absent keeps, `null` or blank clears (stored as null), more than 1000
  * characters is 422. `reactivate` sets the question active (applied first); `forceDeactivate` sets
- * it inactive. Which reports deactivate a question is BE-10 Open question 1.
+ * it inactive. Which reports deactivate a question is BE-10 Open question 1. `archive` (R1-B17, the "Arkib" action of
+ * the report row) archives the question through the real lifecycle (status archived, one status event), applied last: an
+ * archived question leaves every activity, unlike a deactivation, which only switches `is_active`.
  */
 export const QuestionReportUpdateRequestSchema = z
   .object({
@@ -241,6 +243,7 @@ export const QuestionReportUpdateRequestSchema = z
     adminNotes: z.string(QUESTION_REPORT_MESSAGES.adminNotes).max(QUESTION_REPORT_NOTES_MAX, QUESTION_REPORT_MESSAGES.adminNotes).nullable().optional(),
     reactivate: FlagSchema.optional(),
     forceDeactivate: FlagSchema.optional(),
+    archive: FlagSchema.optional(),
   })
   .meta({ id: 'QuestionReportUpdateRequest' })
 export type QuestionReportUpdateRequest = z.infer<typeof QuestionReportUpdateRequestSchema>
