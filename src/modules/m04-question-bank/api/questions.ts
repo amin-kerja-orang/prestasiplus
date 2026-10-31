@@ -494,7 +494,8 @@ export async function bulkQuestionAction(
   const result = await api.post<QuestionMutation<{ affected: number }>>(
     '/api/questions/bulk-action',
     {
-      body: { action: http ? wire(BULK_ACTION_TO_WIRE, action) : action, ids },
+      // http: the contract takes ids as strings (`QuestionBulkRequestSchema`); numbers answer 422 "Senarai soalan tidak sah."
+      body: { action: http ? wire(BULK_ACTION_TO_WIRE, action) : action, ids: http ? ids.map(String) : ids },
       raw: true,
     },
   )
