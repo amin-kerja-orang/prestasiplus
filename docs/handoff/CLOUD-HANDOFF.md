@@ -215,7 +215,13 @@ Pushed to `origin` (github.com/amin-kerja-orang/prestasiplus) on 2026-10-31 by t
 | `r1/b01-lifecycle` | cf2aa784 | WIP, to finish and merge (task (a)) |
 | `r1/f08-builder-ui` | 4cd1329f | WIP, to finish (task (c)) |
 
-`r1/f12-kuiz` had no commits of its own (task (d) starts fresh from `feature/v3-bijak-r1`).
+| `r1/f12-kuiz` | db83978c | WIP, **UNVERIFIED**: Simulasi Kuiz student pages (KuizPage, PaperQuizPage, KuizItem, lib/kuiz.ts, routes, hub link, clients, tests). The agent was stopped mid-task and nothing has run. Verify before merging (task (d)). |
+| `r1/b16-kuiz` | 09263c09 | The base dd135b1a is already merged. The top commit is WIP and **UNVERIFIED**: the invalid count falls back to 20 (V2), plus the D90 group stimulus in the kuiz. Verify, then merge (task (d)). |
+
+### Notes from the preview owner (prestasiplus-de / -39)
+- 5192 has **not** been rebuilt since fe-final. If you run the local stack: `npm run stack:up`, then the m01/02/03/04/05/08/09/16/27 unit sweep, then 8b's HTTP re-test (B-HTTP-04, B-HTTP-07, the chapter empty state).
+- Standing user rules: improve layout/DS only; never add, remove or rename menus, pages, tabs or sections (unless asked); reply in BM; V1 = .my, V2 = .cloud, V3 = this build.
+- Verified at handoff: the shared tree is byte-identical (apart from CRLF) to `handoff/shared-tree-2026-10-31`, including all 126 untracked files.
 
 ### (a-1) Merge the latest shared-tree snapshot
 Run `git merge --no-ff origin/handoff/shared-tree-2026-10-31` into `feature/v3-bijak-r1`. Expect conflicts where both sides changed the same files. Typical cases:
