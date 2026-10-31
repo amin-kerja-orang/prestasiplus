@@ -14,6 +14,7 @@ import { QuestionsService } from './questions.service'
 import { GroupMembers } from './group-members'
 import { StimuliRepository } from './stimuli.repository'
 import { StimuliService } from './stimuli.service'
+import { StudioController, StudioDskpService } from './studio'
 
 /**
  * Question bank (M04, BE-09). Exports `QuestionsRepository` and `QuestionsService` for the other cards
@@ -24,8 +25,8 @@ import { StimuliService } from './stimuli.service'
  */
 @Module({
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
-  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController],
-  providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource],
+  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, StudioController],
+  providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService],
   exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource],
 })
 export class QuestionsModule implements OnModuleInit {
