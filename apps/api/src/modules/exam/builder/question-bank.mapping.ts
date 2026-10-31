@@ -114,9 +114,9 @@ export interface StimulusSource {
 export const MAX_GROUP_STIMULI = 3
 
 /**
- * The kinds the builder wire (`BijakAttemptStimulus.kind`) accepts today: passage, table, diagram. The store has seven
- * (passage, image, diagram, table, map, infographic, graph); the four pictorial ones read as `diagram` here until the wire
- * accepts all seven (R1-B08 widens `BijakAttemptStimulus`). Change this ONE table then.
+ * Store kind -> builder wire kind. The wire (`BijakAttemptStimulus.kind`) already accepts all seven kinds (R1-B08), but this
+ * table still reads the four pictorial ones (image, map, infographic, graph) as `diagram`; R1-T31 (lane A3) replaces it with a
+ * pass-through of the seven. Audio and any other kind is not displayable. Change this ONE table then.
  */
 const WIRE_KIND: Record<string, BijakAttemptStimulus['kind']> = {
   passage: 'passage',
