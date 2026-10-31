@@ -14964,7 +14964,8 @@
           "has_option_image",
           "bridge_refused",
           "no_marks",
-          "tag_review"
+          "tag_review",
+          "stimulus_shared_ungrouped"
         ]
       },
       "ServabilityReason": {
