@@ -275,6 +275,7 @@ export class IntakeReviewService {
       if (body.mode !== undefined) set('mode', body.mode)
       if (body.unit !== undefined) set('unit', body.unit ?? undefined)
       if (body.wordRange !== undefined) set('wordRange', body.wordRange ?? undefined)
+      if (body.cognitiveLevel !== undefined) set('cognitiveLevel', body.cognitiveLevel ?? undefined)
       if (body.parts !== undefined) set('parts', body.parts)
       if (body.scheme !== undefined) set('scheme', body.scheme ?? undefined)
       if (body.page !== undefined) set('page', body.page)

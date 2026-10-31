@@ -149,14 +149,23 @@ const AcceptedNumericKey = z.object({
  */
 export const QUESTION_KBAT_LEVELS = ['mengaplikasi', 'menganalisis', 'menilai', 'mencipta'] as const
 export const QuestionKbatLevelSchema = z.enum(QUESTION_KBAT_LEVELS).meta({ id: 'QuestionKbatLevel' })
+/**
+ * R1-B05 (ADR-0031, D76, D83 D-4): the cognitive level of a leaf (Taksonomi Bloom). The four upper levels are KBAT. Mandatory per leaf at
+ * the new approval of an SPM-bound question (Tingkatan 4/5 of an SPM subject); drafts and legacy questions may leave it unset.
+ */
+export const QUESTION_COGNITIVE_LEVELS = ['mengingat', 'memahami', 'mengaplikasi', 'menganalisis', 'menilai', 'mencipta'] as const
+export const QuestionCognitiveLevelSchema = z.enum(QUESTION_COGNITIVE_LEVELS).meta({ id: 'QuestionCognitiveLevel' })
+export type QuestionCognitiveLevel = z.infer<typeof QuestionCognitiveLevelSchema>
 const leafCurriculum = {
+  /** Cognitive level of the leaf; absent or null = not set. Sending only this also settles `kbat` (the four upper levels are KBAT). */
+  cognitiveLevel: QuestionCognitiveLevelSchema.nullable().optional(),
   /** The four KBAT levels, or 'bukan' (explicitly not KBAT: overrides a KBAT question). Absent or null = inherit. */
   kbat: z.enum([...QUESTION_KBAT_LEVELS, 'bukan']).nullable().optional(),
   unitNodeId: IdSchema.nullable().optional(),
   formOrigin: z.enum(['t1_t3', 't4', 't5']).nullable().optional(),
   difficultyTp: z.number().int().min(1).max(6).nullable().optional(),
 }
-const leafCurriculumKeys = { kbat: true, unitNodeId: true, formOrigin: true, difficultyTp: true } as const
+const leafCurriculumKeys = { kbat: true, unitNodeId: true, formOrigin: true, difficultyTp: true, cognitiveLevel: true } as const
 
 /** One answer key per mode (D3). A key of the wrong kind for the mode is rejected at the field `key`. */
 const leafBase = {

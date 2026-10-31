@@ -1,5 +1,6 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
+import { QuestionCognitiveLevelSchema } from '../questions/parts'
 
 /**
  * BE-38 (contract only): the question content shapes of the SPM intake (D52, OD-20).
@@ -273,6 +274,7 @@ export const IntakePartSchema = z
     scheme: IntakeSchemeSchema.optional(),
     unit: z.string().max(32).optional().meta({ description: 'Unit shown after a numeric answer.' }),
     wordRange: IntakeWordRangeSchema.optional(),
+    cognitiveLevel: QuestionCognitiveLevelSchema.optional().meta({ description: 'R1-B05: cognitive level of this part, set by the reviewer; carried to the bank leaf on accept. Mandatory for an SPM-bound approval.' }),
     lead: z
       .array(z.strictObject({ id: LocalId, label: z.string().max(16), prompt: z.string().max(INTAKE_MAX_PROMPT_CHARS) }))
       .max(3)
@@ -299,6 +301,7 @@ export const IntakeQuestionSchema = z
     mode: IntakeLeafKindSchema.meta({ description: 'Leaf mode of a question without parts.' }),
     unit: z.string().max(32).optional().meta({ description: 'Unit of a question without parts.' }),
     wordRange: IntakeWordRangeSchema.optional(),
+    cognitiveLevel: QuestionCognitiveLevelSchema.optional().meta({ description: 'R1-B05: cognitive level of a question without parts (an MCQ or a single-leaf question); a structured question carries it per part.' }),
     parts: z.array(IntakePartSchema).max(INTAKE_MAX_PARTS),
     scheme: IntakeSchemeSchema.optional().meta({ description: 'Answer key of a question without parts (MCQ key, short answer, essay points).' }),
     tag: IntakeCurriculumTagSchema,
