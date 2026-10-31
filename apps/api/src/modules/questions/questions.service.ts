@@ -629,7 +629,8 @@ export class QuestionsService {
     const subject = subjectKey === null ? null : await this.curriculum.subject(subjectKey)
     const level = levelKey === null ? null : await this.curriculum.level(levelKey)
     if (!subject) fields.subjectId = QUESTION_MESSAGES.subject
-    if (!level) fields.educationLevelId = QUESTION_MESSAGES.level
+    // Secondary-only (D72): a Darjah (primary-stage) level cannot be written; same refusal as an unknown level.
+    if (!level || level.stage === 'primary') fields.educationLevelId = QUESTION_MESSAGES.level
     if (!Number.isInteger(n.tp) || n.tp < 1 || n.tp > 6) fields.difficultyLevel = QUESTION_MESSAGES.difficulty
 
     // Curriculum tag: unit (kind unit), 1 to 3 SP nodes (kind sp), all of this subject and level.
