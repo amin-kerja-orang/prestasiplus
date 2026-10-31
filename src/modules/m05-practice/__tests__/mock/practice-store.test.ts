@@ -19,6 +19,7 @@ import { WINDOW_FROM, PIN_NOW } from '../../mock/datasets/calendar'
 import { sessionsDataset } from '../../mock/datasets/sessions'
 import { BEFORE_M1, M11_AKTIF, M11_WEEKLY } from '../../mock/datasets/m11-cells'
 import { practicePrimeOrNull } from '../../mock/datasets/prime'
+import { useOfferedLevels } from '../../mock/repository/rules'
 import { setPracticeSeamsForTests, type GamificationInput } from '../../mock/repository/seams'
 import { bootPractice, request } from './helpers'
 
@@ -585,6 +586,14 @@ describe('M14 read contract', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('write path (BR-31)', () => {
+  // D72: the chapter data is Darjah-only, so the Darjah levels are offered alongside T4 / T5 here.
+  beforeEach(() => {
+    useOfferedLevels([1, 2, 3, 4, 10, 11])
+  })
+  afterEach(() => {
+    useOfferedLevels()
+  })
+
   const calls: GamificationInput[] = []
   beforeEach(async () => {
     await runtime.reset()
@@ -641,7 +650,7 @@ describe('write path (BR-31)', () => {
   }
 
   const MODES: readonly [string, number, Record<string, unknown>][] = [
-    ['random', 3, { mode: 'random', subjectCode: 'MATH', levelId: 1, count: 5 }],
+    ['random', 3, { mode: 'random', subjectCode: 'MATH', levelId: 10, count: 5 }],
     ['chapter', 4, { mode: 'chapter', chapterId: 1, count: 5 }],
     ['revision', 4, { mode: 'revision', subjectCode: 'MATH', count: 20 }],
     ['past_year', 3, { mode: 'past_year', subjectCode: 'SEJ', count: 5 }],

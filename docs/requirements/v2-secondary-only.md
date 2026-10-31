@@ -74,7 +74,7 @@ Viewport rule for all UI criteria: verified at 375, 768 and 1280 px, for every r
 | AC-07.3 | Given Admin Pusat, When opening the Kurikulum / education-levels screens, Then no Darjah level appears and no control exists to view or re-activate it. |
 | AC-08.1 | Given the ETL run (`apps/api/src/migration`), When executed on a `.cloud` sample, Then it still loads SK/SJK schools and Darjah pupils/classes (ETL unit tests unchanged and green) and those rows are not visible in v2. |
 | AC-09.1 | Given the demo seed, When loaded, Then `SK Demo Dua` / `SK Demo Tiga` and the AZ-02 PoC pool D1-D4 questions stay in the seed as hidden rows (excluded by type/stage and level filters, not removed), they never appear in any UI or API list, the package `D1_D6` and DARJAH_6 article are not visible, and no demo user has a D-level or practice session at a D-level in any visible list. |
-| AC-09.2 | Given `pelajarmaju`, When logged in, Then the account is Tingkatan 4 at SMK Demo Satu (as D54-SEC said); `pelajar` is likewise secondary. |
+| AC-09.2 | Given `pelajarmaju`, When logged in, Then the account is a secondary pupil at SMK Demo Satu — Tingkatan 5 (grade 11, class "5 Amanah", as seeded; D54-SEC's "Tingkatan 4" is superseded because the seed already places it in secondary, QA B-HTTP-06, 2026-10-30); `pelajar` is Tingkatan 4. |
 | AC-10.1 | Given the contract package, When validating requests, Then write inputs reject D-level codes (cikgu, games leagues, class levels, student import levels); read responses never emit them. |
 | AC-10.2 | Given the full local test run on `local/v2-full` (lint, type-check, unit, API integration, e2e at 375/768/1280, registry-boot), Then all pass with real output. |
 

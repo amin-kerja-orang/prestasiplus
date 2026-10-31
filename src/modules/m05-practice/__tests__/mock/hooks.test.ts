@@ -4,7 +4,7 @@
  * these tests write, so they own their runtime and use accounts the read tests do not.
  */
 
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setUser } from '@/mock/core-data/set-user'
 import type { MockRuntime } from '@/mock/index'
@@ -21,6 +21,7 @@ import type {
 } from '../../api/types'
 import { practice, type AnswerRow, type SessionRow } from '../../mock'
 import { fixtures } from '../../mock/hooks'
+import { useOfferedLevels } from '../../mock/repository/rules'
 import {
   ADMIN_SEKOLAH,
   GURU,
@@ -272,6 +273,15 @@ describe('setSpmProgress(userId, subjectId, {answered, correct})  (BR-27)', () =
 })
 
 describe('answerChapter(userId, chapterId, {correctPct})  (BR-16 unlock)', () => {
+  // D72: practice offers T4 / T5, but every chapter question of the dataset is Darjah (stored, hidden): the
+  // unlock engine is exercised on that data with the Darjah levels offered.
+  beforeEach(() => {
+    useOfferedLevels([1, 2, 3, 4])
+  })
+  afterEach(() => {
+    useOfferedLevels()
+  })
+
   it('100 % of MATH D1 Bab 1 completes it at 100 % and opens Bab 2 (#8); a start of Bab 2 then succeeds', async () => {
     const r = await call('answerChapter', ADMIN_SEKOLAH, 1, { correctPct: 100 })
     expect(r).toEqual({ answered: 464, correct: 464 })

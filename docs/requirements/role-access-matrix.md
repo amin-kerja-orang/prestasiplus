@@ -29,7 +29,7 @@ A menu item is **allowed** when it carries a red tick in that role's screenshots
 | 8 | Pembelajaran / Harian | Kelas Saya | ✓ | ✓ | — |
 | 9 | Pembelajaran / Harian | Soalan by Chapter | ✓ | ✓ | — |
 | 10 | Analitik | Monitoring | — | ✓ | ✓ |
-| 11 | Analitik | Kirkpatrick (incl. Ringkasan, T1: Reaksi, T2: Pembelajaran, T3: Tingkah Laku, T4: Hasil, Rantaian Impak, Intervensi) | — | ✓ | ✓ |
+| 11 | Analitik | Kirkpatrick (incl. Ringkasan, Tahap 1: Reaksi, Tahap 2: Pembelajaran, Tahap 3: Tingkah Laku, Tahap 4: Hasil, Rantaian Impak, Intervensi) | — | ✓ | ✓ |
 | 12 | (top) | Remedial | ✓ | — | — |
 | 13 | SPM | SPM | ✓ | — | — |
 | 14 | Pusat AI | Heatmap Topik Lemah | ✓ | — | — |

@@ -59,8 +59,9 @@ async function send(list: File[]): Promise<void> {
 <template>
   <DsPage data-testid="screenshots-page">
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <div class="flex min-w-0 flex-col gap-6 lg:col-span-1">
+      <div class="flex min-w-0 flex-col lg:col-span-1">
         <DsFormSection
+          class="h-full"
           title="Upload Gambar"
           description="Format: JPG, PNG, GIF, WebP, BMP. Maks 10MB setiap fail."
           icon="upload-simple"
@@ -84,8 +85,8 @@ async function send(list: File[]): Promise<void> {
         </DsFormSection>
       </div>
 
-      <div class="flex min-w-0 flex-col gap-6 lg:col-span-2">
-        <DsFormSection title="Fail Sedia Ada" icon="i-ph-folder-open" accent="win">
+      <div class="flex min-w-0 flex-col lg:col-span-2">
+        <DsFormSection class="h-full" title="Fail Sedia Ada" icon="i-ph-folder-open" accent="win">
           <DsLoadError
             v-if="error"
             :message="COPY.loadFailed"

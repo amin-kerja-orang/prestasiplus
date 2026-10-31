@@ -19,10 +19,10 @@ const props = defineProps<{ basePath: string; current: KirkpatrickTab }>()
 const paths = computed(() => kirkpatrickPaths(props.basePath))
 const TABS: { key: KirkpatrickTab; label: string; icon: string }[] = [
   { key: 'overview', label: 'Overview', icon: 'i-ph-squares-four' },
-  { key: 'reaction', label: 'T1: Reaksi', icon: 'i-ph-smiley' },
-  { key: 'learning', label: 'T2: Pembelajaran', icon: 'i-ph-brain' },
-  { key: 'behavior', label: 'T3: Tingkah Laku', icon: 'i-ph-footprints' },
-  { key: 'results', label: 'T4: Hasil', icon: 'i-ph-trophy' },
+  { key: 'reaction', label: 'Tahap 1: Reaksi', icon: 'i-ph-smiley' },
+  { key: 'learning', label: 'Tahap 2: Pembelajaran', icon: 'i-ph-brain' },
+  { key: 'behavior', label: 'Tahap 3: Tingkah Laku', icon: 'i-ph-footprints' },
+  { key: 'results', label: 'Tahap 4: Hasil', icon: 'i-ph-trophy' },
   { key: 'interventions', label: 'Intervensi', icon: 'i-ph-hand-heart' },
 ]
 const items = computed<PillItem<KirkpatrickTab>[]>(() =>

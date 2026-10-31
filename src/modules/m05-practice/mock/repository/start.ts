@@ -19,7 +19,7 @@ import {
   LATIH_TUBI_TARGETS,
   MESSAGES,
   MISSION_COINS_PER_CORRECT,
-  OFFERED_LEVEL_IDS,
+  offeredPracticeLevelIds,
   PAST_YEAR_COUNTS,
   PracticeError,
   REVISION_LENGTH,
@@ -174,9 +174,7 @@ export function planStart(
   switch (req.mode) {
     case 'random': {
       const s = subjectOf(req.subjectCode)
-      const offered = s.educationLevelIds.filter((l) =>
-        (OFFERED_LEVEL_IDS as readonly number[]).includes(l),
-      )
+      const offered = s.educationLevelIds.filter((l) => offeredPracticeLevelIds().includes(l))
       const levelId = optionalInt(req.levelId, 'levelId', (l) => offered.includes(l))
       const difficulty = optionalInt(req.difficulty, 'difficulty', (d) => d >= 1 && d <= 5)
       const count = countIn(req.count, COUNT_OPTIONS)
@@ -202,6 +200,8 @@ export function planStart(
       if (!isInt(req.chapterId)) throw notFound()
       const ch = curriculum.chapter(req.chapterId)
       if (!ch || !ch.isActive || ch.educationLevelId === null) throw notFound()
+      // D72: a chapter of a level that is not offered (Darjah) is not found, like an unknown chapter.
+      if (!offeredPracticeLevelIds().includes(ch.educationLevelId)) throw notFound()
       const count = countIn(req.count, COUNT_OPTIONS)
       if (questions.count('Q-CHAPTER', ch.id) === 0) throw notEnough()
       if (!chapterOpen(userId, ch.id)) {

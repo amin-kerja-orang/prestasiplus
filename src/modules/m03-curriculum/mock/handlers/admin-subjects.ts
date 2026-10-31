@@ -57,8 +57,13 @@ export interface SubjectListItem extends Subject {
   levels: { id: number; name: string }[]
 }
 
+/** Secondary-only (D72): a subject as the screens see it, without its hidden Darjah level links. */
+function shown(s: Subject): Subject {
+  return { ...s, educationLevelIds: curriculumRepo.visibleLevelIds(s.educationLevelIds) }
+}
+
 function levelRefs(ids: readonly number[]): { id: number; name: string }[] {
-  return ids.flatMap((id) => {
+  return curriculumRepo.visibleLevelIds(ids).flatMap((id) => {
     const level = curriculumRepo.level(id)
     return level ? [{ id, name: level.name }] : []
   })
@@ -98,7 +103,12 @@ function subjectRules(ignoreId: number | null) {
       ),
       rule('exists', (v) =>
         Array.isArray(v) &&
-        v.some((x) => asInt(x) === undefined || !curriculumRepo.level(asInt(x) as number))
+        v.some(
+          (x) =>
+            asInt(x) === undefined ||
+            !curriculumRepo.level(asInt(x) as number) ||
+            curriculumRepo.isLevelHidden(asInt(x) as number),
+        )
           ? 'The selected :attribute is invalid.'
           : null,
       ),
@@ -131,9 +141,9 @@ function toInput(body: Record<string, unknown>, current?: Subject): SubjectInput
 
 export const adminSubjectRoutes: RouteDef[] = [
   route('GET', '/api/admin/subjects', [adminOnly], () => {
-    const counts = questions.groupCount('Q-ACTIVE', 'subjectId')
+    const counts = questions.visibleActiveGroupCount('subjectId')
     const items: SubjectListItem[] = curriculumRepo.subjects().map((s) => ({
-      ...s,
+      ...shown(s),
       questionCount: counts.get(s.id) ?? 0,
       levels: levelRefs(s.educationLevelIds),
     }))
@@ -146,7 +156,7 @@ export const adminSubjectRoutes: RouteDef[] = [
     [adminOnly],
     (req) => {
       const subject = curriculumRepo.subject(idParam(req))
-      return subject ? ok(subject) : notFound(SUBJECT_NOT_FOUND)
+      return subject ? ok(shown(subject)) : notFound(SUBJECT_NOT_FOUND)
     },
     { params: { id: int() } },
   ),
@@ -156,7 +166,7 @@ export const adminSubjectRoutes: RouteDef[] = [
     const fields = validationErrors(body, subjectRules(null))
     if (fields) return validationError(fields)
     const subject = curriculumRepo.createSubject(toInput(body), ctx.clock.now())
-    return created(subject, { status: FLASH.subject.created })
+    return created(shown(subject), { status: FLASH.subject.created })
   }),
 
   route(
@@ -171,7 +181,9 @@ export const adminSubjectRoutes: RouteDef[] = [
       const fields = validationErrors(body, subjectRules(id))
       if (fields) return validationError(fields)
       const subject = curriculumRepo.updateSubject(id, toInput(body, current), ctx.clock.now())
-      return subject ? ok(subject, { status: FLASH.subject.updated }) : notFound(SUBJECT_NOT_FOUND)
+      return subject
+        ? ok(shown(subject), { status: FLASH.subject.updated })
+        : notFound(SUBJECT_NOT_FOUND)
     },
     { params: { id: int() } },
   ),

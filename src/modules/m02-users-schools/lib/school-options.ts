@@ -26,14 +26,7 @@ export const SCHOOL_STATE_OPTIONS: readonly string[] = [
 ]
 
 /** S10/S11 "Jenis" options (BR-21), in the live order. */
-export const SCHOOL_TYPE_OPTIONS: readonly SchoolType[] = [
-  'SK',
-  'SMK',
-  'SJK(C)',
-  'SJK(T)',
-  'MRSM',
-  'SBP',
-]
+export const SCHOOL_TYPE_OPTIONS: readonly SchoolType[] = ['SMK', 'MRSM', 'SBP']
 
 /** Route names of the three screens (used by links and tests). */
 export const SCHOOL_ROUTES = {

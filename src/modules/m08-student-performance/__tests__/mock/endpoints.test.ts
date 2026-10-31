@@ -123,8 +123,8 @@ describe('S9 / S10 / S11 access', () => {
     )
     expect(own.school.id).toBe(900001)
     expect(own.variant).toBe('own')
-    // SMK DEMO: canonical 2 and 3001–3008 (9 pupils), computed from the log (no observed summary).
-    expect(own.students).toBe(9)
+    // SMK DEMO: canonical 2 and 4 and 3001–3008 (10 pupils, D72), computed from the log (no observed summary).
+    expect(own.students).toBe(10)
     expect(own.answers).toBeGreaterThan(80)
     expect(own.subjects.length).toBeGreaterThan(0)
     expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/900001')).status).toBe(200)
@@ -320,7 +320,7 @@ describe('S1 / S3 follow writes of other modules (no stale memo)', () => {
     expect(
       await dataAs<SchoolPerformance>(runtime, ADMIN_SEKOLAH, '/api/performance/school'),
     ).toEqual(before)
-    setUserSchool(4, 900001)
+    setUserSchool(2008, 900001) // a Tingkatan 5 pupil of school 8080 (account 4 is already at SMK DEMO, D72)
     const after = await dataAs<SchoolPerformance>(runtime, ADMIN_SEKOLAH, '/api/performance/school')
     expect(after.stats.students).toBe(before.stats.students + 1)
     expect(after.header.studentCount).toBe(before.header.studentCount + 1)

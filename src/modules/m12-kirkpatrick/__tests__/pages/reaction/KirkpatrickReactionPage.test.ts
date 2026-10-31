@@ -54,10 +54,10 @@ describe('S2 T1 Reaksi (AC-M12-10.1, 10.2, 01.3)', () => {
     const tabs = t(w, 'kirk-tabs').findAll('a')
     expect(tabs.map((a) => squash(a.text()))).toEqual([
       'Overview',
-      'T1: Reaksi',
-      'T2: Pembelajaran',
-      'T3: Tingkah Laku',
-      'T4: Hasil',
+      'Tahap 1: Reaksi',
+      'Tahap 2: Pembelajaran',
+      'Tahap 3: Tingkah Laku',
+      'Tahap 4: Hasil',
       'Intervensi',
     ])
     expect(tabs.map((a) => a.attributes('href'))).toEqual([

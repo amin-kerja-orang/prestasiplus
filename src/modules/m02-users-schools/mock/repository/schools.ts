@@ -50,6 +50,35 @@ export const ppdTable = defineTable<Ppd>({
   indexes: ['jpnId'],
 })
 
+/**
+ * Secondary-only (D72, 2026-10-29): schools of a primary TYPE (never by name prefix, assumption A2) are
+ * hidden from every read below, like the HTTP backend's `PRIMARY_SCHOOL_TYPES`. The rows stay in the
+ * dataset (hide, never delete); the named queries keep the observed whole-register figures.
+ */
+export const PRIMARY_SCHOOL_TYPES: readonly SchoolType[] = ['SK', 'SJK(C)', 'SJK(T)']
+export const SECONDARY_SCHOOL_TYPES: readonly SchoolType[] = ['SMK', 'MRSM', 'SBP']
+/**
+ * The switch behind the hiding (default ON). Tests of the observed live register (7,779 SK, search ranking) turn it
+ * off with `showPrimarySchools()`; nothing in the app does.
+ */
+const primarySchools = { hidden: true }
+export const showPrimarySchools = (on = true): void => {
+  primarySchools.hidden = !on
+}
+/** The school types the reads may show right now. */
+export const activeSchoolTypes = (): readonly SchoolType[] =>
+  primarySchools.hidden
+    ? SECONDARY_SCHOOL_TYPES
+    : [...SECONDARY_SCHOOL_TYPES, ...PRIMARY_SCHOOL_TYPES]
+/** True while the primary schools and Darjah pupils are hidden (the default). */
+export const arePrimaryHidden = (): boolean => primarySchools.hidden
+/** True for a school of a primary type (hidden). */
+export const isPrimarySchoolType = (type: string | null | undefined): boolean =>
+  primarySchools.hidden &&
+  type !== null &&
+  type !== undefined &&
+  (PRIMARY_SCHOOL_TYPES as readonly string[]).includes(type)
+
 /** `GET /api/schools/search` default limit (OBSERVED, M02 FR-102 / M01 #20). */
 export const SCHOOL_SEARCH_DEFAULT_LIMIT = 20
 
@@ -205,9 +234,9 @@ export const schoolsRepo = defineRepository({
         if (input.id !== undefined) {
           // The dataset only: fixture schools are outside the search (v1.21).
           const s = isFixtureSchoolId(input.id) ? undefined : store.get(input.id)
-          return s && s.isActive ? [toSummary(s)] : []
+          return s && s.isActive && !isPrimarySchoolType(s.type) ? [toSummary(s)] : []
         }
-        const where: Where<School> = { isActive: true }
+        const where: Where<School> = { isActive: true, type: [...activeSchoolTypes()] }
         if (!blank(input.state)) where.state = (input.state as string).trim()
         const q = input.q?.trim() ?? ''
         const { rows } = store.query({
@@ -227,7 +256,10 @@ export const schoolsRepo = defineRepository({
       options(): SchoolOption[] {
         if (!optionsCache || optionsCache.version !== store.version) {
           const list = store
-            .query({ sort: [{ field: 'name', dir: 'asc' }, 'id'] })
+            .query({
+              where: { type: [...activeSchoolTypes()] },
+              sort: [{ field: 'name', dir: 'asc' }, 'id'],
+            })
             .rows.map((s) => Object.freeze({ id: s.id, name: s.name }))
           optionsCache = { version: store.version, list: Object.freeze(list) }
         }
@@ -239,9 +271,13 @@ export const schoolsRepo = defineRepository({
        * ties by id), 30 per page.
        */
       list(filter: SchoolListFilter = {}): { rows: School[]; total: number } {
-        const where: Where<School> = {}
+        const where: Where<School> = { type: [...activeSchoolTypes()] }
         if (!blank(filter.state)) where.state = (filter.state as string).trim()
-        if (!blank(filter.type)) where.type = (filter.type as string).trim() as SchoolType
+        if (!blank(filter.type)) {
+          const type = (filter.type as string).trim() as SchoolType
+          // A hidden (primary) type filters to nothing; the list never offers it.
+          where.type = activeSchoolTypes().includes(type) ? type : []
+        }
         if (filter.isActive !== undefined) where.isActive = filter.isActive
         const term = filter.search?.trim() ?? ''
         return store.query({
@@ -255,7 +291,13 @@ export const schoolsRepo = defineRepository({
 
       /** S9 `meta.types` (FR-M02-77): the distinct school types present in the data, A→Z. */
       types(): string[] {
-        return [...store.groupCount('type').keys()].sort()
+        return [...store.groupCount('type').keys()].filter((t) => !isPrimarySchoolType(t)).sort()
+      },
+
+      /** True when school `id` is of a primary type (hidden: the admin screens answer "not found"). */
+      isHidden(id: number): boolean {
+        const s = isFixtureSchoolId(id) ? stores.fixtures.get(id) : store.get(id)
+        return s !== undefined && isPrimarySchoolType(s.type)
       },
 
       /**
@@ -286,10 +328,11 @@ export const schoolsRepo = defineRepository({
 
       /** S9 stat cards: total, active, inactive (named queries S-ALL / S-ACTIVE / S-INACTIVE). */
       counts(): { total: number; active: number; inactive: number } {
+        const type = [...activeSchoolTypes()]
         return {
-          total: store.count(),
-          active: store.count({ isActive: true }),
-          inactive: store.count({ isActive: false }),
+          total: store.count({ type }),
+          active: store.count({ type, isActive: true }),
+          inactive: store.count({ type, isActive: false }),
         }
       },
 

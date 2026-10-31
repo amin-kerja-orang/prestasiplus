@@ -10,6 +10,7 @@ import type { MockRuntime } from '@/mock/index'
 
 import type { AdminSchool, SchoolListMeta, SchoolOption } from '../../api/schools-admin'
 import { schools } from '../../mock'
+import { showPrimarySchools } from '../../mock/repository/schools'
 import {
   ADMIN,
   ADMIN_SEKOLAH,
@@ -27,6 +28,9 @@ let call: ReturnType<typeof callAs>
 let dirty = false
 
 beforeAll(async () => {
+  // These tests assert the observed live register (SK, SJK included); the hiding of primary-type
+  // schools (D72) is covered by secondary-only.test.ts.
+  showPrimarySchools()
   runtime = await bootM02()
   call = callAs(runtime)
 }, 120_000)
