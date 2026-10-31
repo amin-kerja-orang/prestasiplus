@@ -9,19 +9,15 @@ import type {
 } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
+import type { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
-import {
-  composeFromBlueprint,
-  effectiveMarks,
-  type GroupDef,
-  type PoolEntry,
-  type PoolUnit,
-  poolUnits,
-} from './exam-core.adapter'
-import { noBlueprint, paperNotFound, shortage } from './errors'
+import { toStandard } from '../../exam/blueprints/blueprint-standard'
+import { shortageToWire } from '../../exam/builder/standard'
+import { composeStandardPaper, describeQuestion, effectiveMarks } from './exam-core.adapter'
+import { generateLimit, noBlueprint, paperNotFound, shortage } from './errors'
 import { BijakPapersPorts, type BijakQuestionInfo } from './ports'
 import { PapersRepository, type PaperWithTree, type SubjectRef } from './papers.repository'
-import { generationSeed, mytYear, referencePanels, ruleOf, sectionInstruction, sourceToWire, toComposerBlueprint } from './rules'
+import { generationSeed, mytYear, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
 import { bijakCodeOf, curriculumCodeOf } from './subject-codes'
 
 type Info = ReadonlyMap<string, BijakQuestionInfo>
@@ -61,6 +57,9 @@ export interface SittablePaper {
     questionIds: string[]
   }[]
 }
+
+/** Most times a refused question is dropped and the paper composed again before the request answers 503 GENERATE_LIMIT. */
+const MAX_BRIDGE_ROUNDS = 8
 
 /**
  * Bijak SPM papers (M28, BE-15): Kertas Pilihan list and cover, the Kontrak list, the subject hub
@@ -190,42 +189,47 @@ export class PapersService {
     // A missing pair, an unverified one and a Draf blueprint are the same answer; no paper row is created (AC 3).
     if (!subject || !row) throw noBlueprint()
 
-    const blueprint = toComposerBlueprint(bijakCodeOf(subject.code), body.kertas, row)
-    const source = this.ports.questionSource
-    const entries: PoolEntry[] = []
-    const groups = new Map<string, GroupDef>()
-    const groupOfQuestion = new Map<string, string>()
-    const unitsByPool = new Map<string, PoolUnit[]>()
-    for (const pool of new Set(blueprint.sections.map((s) => s.pool))) {
-      // A section without a pool tag draws from nothing (a clean SHORTAGE); the source is not asked for ''.
-      const loaded = pool
-        ? await source.pool(pool, { subjectId: subject.id.toString(), subjectCode: subject.code, kertas: body.kertas })
-        : { entries: [], groups: new Map<string, readonly string[]>() }
-      const poolEntries = loaded.entries.map((e): PoolEntry => ({ questionId: e.questionId, pool }))
-      for (const e of loaded.entries) if (e.groupId) groupOfQuestion.set(e.questionId, e.groupId)
-      for (const [id, questionIds] of loaded.groups) groups.set(id, { id, stimulusId: id, questionIds: [...questionIds] })
-      entries.push(...poolEntries)
-      unitsByPool.set(pool, poolUnits(pool, poolEntries, groups, (qid) => groupOfQuestion.get(qid)))
-    }
-
+    // D75 / D78: the paper follows the exam standard exactly or is refused. The candidates are the question facts of
+    // the subject (the bank, not a tag-filtered pool); a stimulus group is selected and placed as one unit (D90).
+    const std = toStandard(row, bijakCodeOf(subject.code))
+    const poolSource = this.ports.poolSource
+    const scope = { subjectId: subject.id.toString(), subjectCode: subject.code, kertas: body.kertas }
     const userId = idFromString(actor.userId)
-    const [seen, previous] = await Promise.all([
-      this.ports.servedSource.servedQuestionIds(actor.userId),
+    const [pool, seen, previous] = await Promise.all([
+      poolSource.candidates(scope),
+      poolSource.seen(actor.userId),
       this.repo.countJanaPapers(userId),
     ])
     const now = this.clock.now()
-    const outcome = composeFromBlueprint(blueprint, unitsByPool, {
-      seed: generationSeed(now, actor.userId, row.code, previous),
-      seen,
-    })
-    if (!outcome.ok) throw shortage(outcome.shortages)
+    const seed = generationSeed(now, actor.userId, row.code, previous)
+    // The pool facts say what the exam standard needs; the BE-09 bridge says what a pupil can actually be served (it refuses an
+    // option image, a group without exactly one stimulus, an unreadable reveal, a missing file). A paper the pupil cannot start
+    // is never numbered, so every composed question is checked through the bridge BEFORE the write; a refused one leaves the
+    // candidates (a group missing a member becomes incomplete and is not used) and the paper is composed again: exact or refuse.
+    let candidates = pool
+    let outcome = composeStandardPaper(std, candidates, { seed, seen })
+    for (let round = 0; outcome.ok && round < MAX_BRIDGE_ROUNDS; round++) {
+      const composedIds = outcome.sections.flatMap((c) => c.questionIds)
+      const servable = await this.ports.questionSource.getMany(composedIds)
+      const refused = new Set(composedIds.filter((id) => !servable.has(id)))
+      if (refused.size === 0) break
+      candidates = candidates.filter((f) => !refused.has(f.id))
+      outcome = composeStandardPaper(std, candidates, { seed, seen })
+      if (round === MAX_BRIDGE_ROUNDS - 1 && outcome.ok) throw generateLimit()
+    }
+    if (!outcome.ok) {
+      if (outcome.reason === 'shortage') throw shortage(outcome.shortages.map(shortageToWire))
+      if (outcome.reason === 'limit') throw generateLimit()
+      throw new Error('bijak generate: the independent re-check found a violation')
+    }
 
-    const composed = outcome.sections.flatMap((s) => s.questionIds)
-    const info = await source.getMany(composed)
-    // A pooled question that vanished between the pool read and this read (unpublished meanwhile):
-    // fail before any write rather than store a section with wrong marks or version.
-    if (composed.some((qid) => !info.has(qid))) throw new Error('bijak generate: a composed question is no longer in the question source')
-    const marksOf = (qid: string): number => info.get(qid)?.marks ?? 0
+    // Marks and the pinned version come from the same facts the composer used, so a composed question is always known.
+    const factsById = new Map(candidates.map((f) => [f.id, f]))
+    const marksOf = (qid: string): number => {
+      const facts = factsById.get(qid)
+      return facts ? describeQuestion(facts).marks : 0
+    }
+    const blueprintSections = [...row.sections].sort((a, b) => a.position - b.position)
     const paperId = await this.repo.createJanaPaper({
       title: `Kertas Jana ${subject.name} Kertas ${String(body.kertas)} (#${String(previous + 1)})`,
       subjectId: subject.id,
@@ -239,16 +243,22 @@ export class PapersService {
       userId,
       isTest: actor.isTest,
       publishedAt: now,
-      sections: outcome.sections.map((s, i) => ({
-        label: s.label,
-        instruction: s.instruction ?? null,
-        ruleType: s.rule.type,
-        ruleN: s.rule.type === 'choose' ? s.rule.n : null,
-        questionCount: s.questionIds.length,
-        markBudget: effectiveMarks(s.rule, s.questionIds.map(marksOf)),
-        compulsory: row.sections[i]?.compulsory ?? false,
-        placements: s.questionIds.map((qid) => ({ questionId: BigInt(qid), pinnedVersionNo: info.get(qid)?.versionNo ?? 1 })),
-      })),
+      standardReport: outcome.report as unknown as Prisma.InputJsonValue,
+      sections: outcome.sections.map((composed) => {
+        const bs = blueprintSections.find((x) => x.position === composed.position)
+        if (!bs) throw new Error('bijak generate: a composed section has no blueprint section')
+        const rule = ruleOf(bs.ruleType, bs.ruleN)
+        return {
+          label: bs.label,
+          instruction: bs.instruction ?? null,
+          ruleType: rule.type,
+          ruleN: rule.type === 'choose' ? rule.n : null,
+          questionCount: composed.questionIds.length,
+          markBudget: effectiveMarks(rule, composed.questionIds.map(marksOf)),
+          compulsory: bs.compulsory,
+          placements: composed.questionIds.map((qid) => ({ questionId: BigInt(qid), pinnedVersionNo: factsById.get(qid)?.versionNo ?? 1 })),
+        }
+      }),
     })
     return { paperId: idToString(paperId) }
   }

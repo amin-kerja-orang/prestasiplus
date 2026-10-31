@@ -38249,6 +38249,12 @@
               "string",
               "null"
             ]
+          },
+          "essayTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionEssayTopic"
+            }
           }
         },
         "required": [
@@ -38515,6 +38521,12 @@
               "string",
               "null"
             ]
+          },
+          "essayTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionEssayTopic"
+            }
           },
           "qualityScore": {
             "type": [
@@ -38887,6 +38899,12 @@
               "string",
               "null"
             ]
+          },
+          "essayTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionEssayTopic"
+            }
           },
           "qualityScore": {
             "type": [
@@ -40837,7 +40855,8 @@
             },
             "required": [
               "ms"
-            ]
+            ],
+            "description": "Replaces the whole text (ms and en): send both languages to keep both; null clears (only allowed when the kind does not need it)."
           },
           "alt": {
             "type": [
@@ -41014,8 +41033,9 @@
             "items": {
               "$ref": "#/components/schemas/Id"
             },
-            "minItems": 2,
-            "maxItems": 40
+            "maxItems": 40,
+            "default": [],
+            "description": "D93: 0 or more existing questions (a group with fewer than 2 is a draft group; every write answers with `warning` until it has 2)."
           },
           "optionBank": {
             "type": "array",
@@ -41039,8 +41059,7 @@
           }
         },
         "required": [
-          "stimulusIds",
-          "questionIds"
+          "stimulusIds"
         ],
         "additionalProperties": false
       },
@@ -41086,6 +41105,22 @@
               "$ref": "#/components/schemas/Id"
             },
             "minItems": 1,
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "questionIds"
+        ],
+        "additionalProperties": false
+      },
+      "StimulusGroupMembersSetRequest": {
+        "type": "object",
+        "properties": {
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
             "maxItems": 40
           }
         },
@@ -41145,6 +41180,13 @@
             "items": {
               "$ref": "#/components/schemas/Id"
             }
+          },
+          "warning": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BM warning while the group has fewer than 2 questions (a draft group, D93); null otherwise. The write went through."
           }
         },
         "required": [
@@ -102155,7 +102197,7 @@
           "stimuli"
         ],
         "summary": "Edit a stimulus (only the keys sent change; the kind never changes)",
-        "description": "The result must still satisfy the kind rules of the create body. Editing a stimulus that groups already show changes what every member question shows; the question versions are not re-issued (D90).",
+        "description": "The result must still satisfy the kind rules of the create body. A stimulus that is shown to pupils (by a group with a served member, or linked to a served question) is refused with 409: follow the lifecycle (edit the question as a draft, or archive it) first.",
         "parameters": [
           {
             "schema": {
@@ -102233,6 +102275,16 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102336,7 +102388,7 @@
             }
           },
           "409": {
-            "description": "CONFLICT: the stimulus is still used by a group or a question.",
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102354,8 +102406,8 @@
           "questions",
           "stimuli"
         ],
-        "summary": "Create a group: 1 to 3 stimuli and at least 2 member questions",
-        "description": "D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group is refused (422 `questionIds`). Members get positions 1..n in the order sent. Flash: \"Kumpulan rangsangan berjaya dicipta.\"",
+        "summary": "Create a group: 1 to 3 stimuli and 0 to 40 member questions (D93: a group with fewer than 2 is a draft group)",
+        "description": "D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has fewer than 2 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker \"Kumpulan perlu sekurang-kurangnya 2 soalan.\"). Members get positions 1..n in the order sent. Flash: \"Kumpulan rangsangan berjaya dicipta.\"",
         "parameters": [
           {
             "schema": {
@@ -102595,6 +102647,16 @@
               }
             }
           },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
             "content": {
@@ -102681,6 +102743,16 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102777,6 +102849,130 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Set the complete ordered member list of a group (atomic)",
+        "description": "Adds, removals and reordering in one call. A question that is already shown to pupils (live version approved, active) cannot be added, removed or have its relative order changed; new draft or review questions can still be appended to a group that has served members (409 `groupServed` / `memberServed` otherwise). A question of another group, a PKSK, archived or inactive question, a question of another subject, and more than 40 members are 422.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusGroupMembersSetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The group after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102889,6 +103085,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -102978,6 +103184,16 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103084,6 +103300,16 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
             "content": {
               "application/json": {
                 "schema": {
