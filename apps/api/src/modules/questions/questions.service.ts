@@ -105,12 +105,6 @@ function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIss
 /** 422 text of a `pksk_choice` leaf sent to the general question routes (no `pksk` tag). */
 export const PKSK_LEAF_REFUSED = 'Jenis soalan PKSK hanya boleh disimpan sebagai soalan PKSK.'
 
-/**
- * 422 text of an `essay_choice` leaf (R1-T07): the contract carries the mode, but the store has no column for its topics and
- * the mode CHECK refuses it until the DSKP migration (0101, v2-admin-student-pipeline section 2) lands.
- */
-export const ESSAY_CHOICE_NOT_STORED = 'Jenis soalan esei pilihan belum boleh disimpan.'
-
 const MAX_TOP_PARTS = 20
 const MAX_TOTAL_PARTS = 200
 const MAX_IMAGES = 50
@@ -541,7 +535,6 @@ export class QuestionsService {
     if (res.success) {
       // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
       if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
-      if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'essay_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: ESSAY_CHOICE_NOT_STORED })
       return res.data
     }
     const issue = res.error.issues[0]
