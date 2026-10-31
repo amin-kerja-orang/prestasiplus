@@ -145,9 +145,11 @@ describe('USER_NAV data', () => {
       '/admin/hadiah': 'Admin Tebusan',
     }
     const mismatched = liveMenuLinks.filter((l) => {
+      // User decision 2026-10-31 (DV-M12-39): "Tahap N" replaces the live "TN" level labels.
+      const liveText = l.text.replace(/^T([1-4]): /, 'Tahap $1: ')
       const href = REPLACED_LIVE_HREFS[l.href] ?? l.href
       const candidates = byHref.get(href) ?? []
-      const ok = candidates.some((c) => l.text === c.label || l.text.startsWith(`${c.label} `))
+      const ok = candidates.some((c) => liveText === c.label || liveText.startsWith(`${c.label} `))
       return (
         !ok && DRAWER_LABELS[href] !== l.text && !(l.href === '/settings' && l.text === 'Tetapan')
       )
@@ -318,10 +320,10 @@ describe('navFor (role filter: hidden, not disabled)', () => {
     const kirk = navFor('teacher', 'sidebar', USER_NAV, FULL).find((e) => e.id === 't-kirkpatrick')
     expect(kirk?.kind === 'group' && kirk.children.map((c) => c.label)).toEqual([
       'Ringkasan',
-      'T1: Reaksi',
-      'T2: Pembelajaran',
-      'T3: Tingkah Laku',
-      'T4: Hasil',
+      'Tahap 1: Reaksi',
+      'Tahap 2: Pembelajaran',
+      'Tahap 3: Tingkah Laku',
+      'Tahap 4: Hasil',
       'Rantaian Impak',
       'Intervensi',
     ])

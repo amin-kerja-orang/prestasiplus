@@ -157,10 +157,10 @@ describe('users dataset: build check (M02 §6.15, v1.23)', () => {
   })
 
   it('places the students of §6.15 C (4,533) and the M18 pupils per school', () => {
-    // 900001 = canonical 2 + 3001–3008; 900002 holds no pupil; 900004 = account 4.
-    expect(count({ role: 'student', schoolId: 900_001 })).toBe(9)
+    // 900001 = canonical 2 and 4 + 3001–3008 (D72 re-homed 4); 900002 and 900004 hold no pupil.
+    expect(count({ role: 'student', schoolId: 900_001 })).toBe(10)
     expect(count({ role: 'student', schoolId: 900_002 })).toBe(0)
-    expect(count({ role: 'student', schoolId: 900_004 })).toBe(1)
+    expect(count({ role: 'student', schoolId: 900_004 })).toBe(0)
     expect(count({ schoolId: 987 })).toBe(2)
     for (const [school, n] of Object.entries(M18_PUPILS_PER_SCHOOL)) {
       expect(count({ role: 'student', schoolId: Number(school) }), `M18 ${school}`).toBe(n)
@@ -189,14 +189,12 @@ describe('users dataset: build check (M02 §6.15, v1.23)', () => {
     expect(admin8078.map((r) => r.lastLoginAt)).toEqual(['2026-09-25T13:03:00+08:00'])
   })
 
-  it('has 61 schools with users (57 real, the live S11 pupil schools; DV-M02-13)', () => {
+  it('has 60 schools with users (57 real, the live S11 pupil schools; DV-M02-13)', () => {
     const all = users.schoolsWithUsers()
-    expect(all).toHaveLength(61)
+    expect(all).toHaveLength(60)
     expect(users.schoolsWithUsers({ excludeFixtures: true })).toHaveLength(57)
     expect(all).toEqual(
-      expect.arrayContaining([
-        900_001, 900_002, 900_003, 900_004, 5441, 8088, 1, 5183, 853, 854, 1267,
-      ]),
+      expect.arrayContaining([900_001, 900_002, 900_003, 5441, 8088, 1, 5183, 853, 854, 1267]),
     )
     for (const id of [8100, 977, 1275]) expect(all).not.toContain(id)
   })
@@ -353,7 +351,7 @@ describe('users dataset: v1.25 swap of 4202 and v1.26 pupil 4627', () => {
 })
 
 describe('users dataset: anchors at their placements', () => {
-  it('has the canonical accounts 1–11 as in the TRACKER (4 at 900004, 11 at 9167)', () => {
+  it('has the canonical accounts 1–11 as in the TRACKER (4 at 900001, 11 at 9167)', () => {
     for (const a of CANONICAL_ACCOUNTS) {
       expect(u(a.id)).toMatchObject({
         email: a.email,
@@ -366,8 +364,9 @@ describe('users dataset: anchors at their placements', () => {
         createdAt: a.createdAt,
       })
     }
-    expect(u(4).schoolId).toBe(900_004)
-    expect(u(1).schoolId).toBe(900_002)
+    expect(u(4)).toMatchObject({ schoolId: 900_001, grade: 11 })
+    expect(u(1)).toMatchObject({ schoolId: null, grade: null })
+    expect(u(3).grade).toBe(10)
     expect(u(11)).toMatchObject({ schoolId: 9167, grade: 7, isActive: false, lastLoginAt: null })
     expect(u(1).trialQuestionsUsed).toBe(50)
     // Pelajar trial (account 2): M05 §6.12 "Baki 18 / 50 soalan" = 32 used.

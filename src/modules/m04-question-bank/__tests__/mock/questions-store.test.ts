@@ -41,6 +41,7 @@ import {
 import { questionSpec } from '../../mock/datasets/questions-spec'
 import { structuredDataset, structuredSpec } from '../../mock/datasets/structured'
 import { questionQueries, structuredQueries } from '../../mock/repository/queries'
+import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 import { SEED_REPORTS } from '../../mock/seeds/reports'
 
 const NOW = '2026-09-25T15:40:00+08:00'
@@ -73,6 +74,8 @@ const cell = (t: Readonly<Record<number, readonly (number | null)[]>>, s: number
   t[s]?.[l - 1] ?? 0
 
 beforeAll(async () => {
+  // The documented counts include the Darjah questions; the hiding (D72) is in secondary-only.test.ts.
+  showPrimaryLevels()
   runtime = await boot()
 }, 60_000)
 

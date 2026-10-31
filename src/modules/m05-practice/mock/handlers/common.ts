@@ -11,7 +11,7 @@ import { questions } from '@/modules/m04-question-bank/mock'
 import type { PracticeSubject } from '../../api/types'
 import { DAY_MS, startOfMytDay } from '../datasets/calendar'
 import { chapterStats, type ChapterStats } from '../repository/reads'
-import { OFFERED_LEVEL_IDS, UNLOCK_SCORE } from '../repository/rules'
+import { offeredPracticeLevelIds, UNLOCK_SCORE } from '../repository/rules'
 
 export type SubjectRecord = NonNullable<ReturnType<typeof curriculum.subject>>
 
@@ -63,8 +63,21 @@ export function practiceSubjects(): SubjectRecord[] {
   return curriculum.subjects({ active: true })
 }
 
-/** BR-05: the two counts every subject card carries. */
+/**
+ * The practice-drawable questions of a subject at one offered level (eligible MCQ, level not null): the
+ * count behind the level option, the subject detail total and, summed, the subject card (D72, like the
+ * backend). It does not use the M04 named query Q-PRACTICE, whose build check still names Darjah levels.
+ */
+export function practiceLevelCount(subjectId: number, levelId: number): number {
+  return questions.countWhere(questions.practiceWhere({ subjectId, educationLevelIds: [levelId] }))
+}
+
+/**
+ * BR-05: the two counts every subject card carries. Both are the practice-drawable count (D72, as on the
+ * backend: approvedCount = bankCount), so the card equals the sum of the subject detail's level counts.
+ */
 export function subjectView(s: SubjectRecord): PracticeSubject {
+  const drawable = offeredLevelIds(s).reduce((a, l) => a + practiceLevelCount(s.id, l), 0)
   return {
     id: s.id,
     code: s.code,
@@ -73,14 +86,14 @@ export function subjectView(s: SubjectRecord): PracticeSubject {
     icon: s.icon,
     color: s.color,
     isCore: s.isCore,
-    approvedCount: questions.count('Q-ELIGIBLE', s.id),
-    bankCount: questions.count('Q-ACTIVE', s.id),
+    approvedCount: drawable,
+    bankCount: drawable,
   }
 }
 
-/** BR-11: the subject's M03 level links with level id 1–4 (Darjah 1–4), in level order. */
+/** BR-11: the subject's M03 level links with level id 10–11 (Tingkatan 4–5, D72), in level order. */
 export function offeredLevelIds(s: SubjectRecord): number[] {
-  return s.educationLevelIds.filter((l) => (OFFERED_LEVEL_IDS as readonly number[]).includes(l))
+  return s.educationLevelIds.filter((l) => offeredPracticeLevelIds().includes(l))
 }
 
 /** Active subject by code (case-insensitive), or `undefined` (unknown or inactive). */

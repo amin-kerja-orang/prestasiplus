@@ -13,8 +13,10 @@ import { usePageMeta } from '@/composables/usePageMeta'
 import {
   DsAdminShell,
   DsPillNav,
+  provideShellSubtitle,
   provideShellTitle,
   shellEntityTitle,
+  shellPageSubtitle,
   type DsShellAccountItem,
 } from '@/ds'
 import { useShellUser } from '@/shells/pembelajaran/useShellUser'
@@ -28,6 +30,8 @@ import { buildNavGroups, buildSearchGroups, sectionTabs } from './menu-nav'
 const route = useRoute()
 // The navbar prints the page title (h1), so DsPageHeader leaves its own out.
 provideShellTitle()
+// ...and the page description goes under it (DsPageHeader hands its `subtitle` up).
+provideShellSubtitle()
 
 const { name } = useShellUser()
 const flashApi = useFlash()
@@ -112,6 +116,7 @@ const accountItems = computed<DsShellAccountItem[][]>(() => [
     :crumbs="crumbs"
     :title="title"
     :entity="entity"
+    :subtitle="shellPageSubtitle"
     brand-to="/admin"
     brand-label="Pentadbiran"
     :account-name="name"

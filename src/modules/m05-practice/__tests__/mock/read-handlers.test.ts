@@ -6,7 +6,7 @@
  * nothing is re-contributed here. Read-only: the hook tests live in `hooks.test.ts`.
  */
 
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setUser } from '@/mock/core-data/set-user'
 import type { MockRuntime } from '@/mock/index'
@@ -25,6 +25,9 @@ import type {
   RevisionSubject,
   SubjectConfig,
 } from '../../api/types'
+import { curriculum } from '@/modules/m03-curriculum/mock'
+import { questions } from '@/modules/m04-question-bank/mock'
+
 import { greetingPeriod } from '../../mock/handlers/dashboard'
 import { masteryLevel } from '../../mock/handlers/learner'
 import {
@@ -41,6 +44,7 @@ import {
   getAs,
 } from './boot-all'
 import { request } from './helpers'
+import { useOfferedLevels } from '../../mock/repository/rules'
 
 type HistoryBody = ListBody<HistoryItem, { totals: HistoryTotals }>
 
@@ -54,6 +58,21 @@ beforeAll(async () => {
 afterAll(() => {
   vi.unstubAllGlobals()
 })
+
+// D72: practice offers Tingkatan 4 / 5 only. The chapter questions of the dataset are all Darjah (stored,
+// hidden), so the chapter and unlock tests below run the engine on them with the Darjah levels offered.
+const DARJAH_1_4 = [1, 2, 3, 4] as const
+afterEach(() => {
+  useOfferedLevels()
+})
+
+/** The practice-drawable questions of a subject over the offered levels, counted straight from the store. */
+const drawable = (subjectId: number, levelIds: readonly number[] = [10, 11]): number =>
+  levelIds.reduce(
+    (n, l) =>
+      n + questions.countWhere(questions.practiceWhere({ subjectId, educationLevelIds: [l] })),
+    0,
+  )
 
 const data = async <T>(userId: number, url: string): Promise<T> => {
   const r = await getAs<{ data: T }>(runtime, userId, url)
@@ -206,7 +225,7 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(d.stats).toEqual({
       totalQuestions: 130_152,
       activeSubjects: 31,
-      activeLevels: 11,
+      activeLevels: 5,
       approvedQuestions: 129_752,
     })
     expect(d.difficultyChart).toEqual([
@@ -217,31 +236,55 @@ describe('#1 GET /api/dashboard (S1)', () => {
       { level: 5, count: 0 },
     ])
     expect(d.difficultyChart.reduce((a, r) => a + r.count, 0)).toBe(d.stats.totalQuestions)
-    expect(d.levelPills).toHaveLength(11)
-    expect(d.levelPills.reduce((a, l) => a + l.count, 0)).toBe(129_380)
+    // Secondary-only (D72): the five Tingkatan only; the Darjah questions are no longer in the pills.
+    expect(d.levelPills.map((l) => l.code)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
+    const pillTotal = d.levelPills.reduce((a, l) => a + l.count, 0)
+    // The exact visible total: the active objective questions of the five Tingkatan, counted straight from
+    // the store (not through the pill formula).
+    const secondaryIds = curriculum.levels().flatMap((l) => (l.stage === 'primary' ? [] : [l.id]))
+    expect(pillTotal).toBe(questions.countWhere({ isActive: true, educationLevelId: secondaryIds }))
   })
 
-  it('subject cards: 31 in BR-01 order; Q-ELIGIBLE / Q-ACTIVE counts (Pendidikan Moral 15,014 vs 15,414)', async () => {
+  it('subject cards: 31 in BR-01 order; approvedCount = bankCount = the practice-drawable T4/T5 count (D72)', async () => {
     const d = await dash(PELAJAR)
     expect(d.subjects).toHaveLength(31)
     expect(d.subjects.slice(0, 3).map((s) => s.code)).toEqual(['BM', 'BI', 'MATH'])
     const math = d.subjects.find((s) => s.code === 'MATH')
-    expect(math).toMatchObject({ approvedCount: 13_872, bankCount: 13_872, isCore: true })
+    expect(math).toMatchObject({ approvedCount: 2_601, bankCount: 2_601, isCore: true })
     const pm = d.subjects.find((s) => s.code === 'PM')
-    expect(pm).toMatchObject({ approvedCount: 15_014, bankCount: 15_414 })
-    expect(d.subjects.reduce((a, s) => a + s.approvedCount, 0)).toBe(128_989)
-    expect(d.subjects.reduce((a, s) => a + s.bankCount, 0)).toBe(129_389)
+    expect(pm).toMatchObject({ approvedCount: 5_090, bankCount: 5_090 })
+    for (const s of d.subjects) {
+      expect(s.approvedCount, s.code).toBe(drawable(s.id))
+      expect(s.bankCount, s.code).toBe(s.approvedCount)
+    }
+  })
+
+  it('a subject card equals the sum of the per-level counts of its detail (D72)', async () => {
+    const cards = (await dash(PELAJAR)).subjects
+    for (const code of ['BM', 'MATH', 'PM', 'PHY']) {
+      const card = cards.find((s) => s.code === code)
+      const detail = await data<SubjectConfig>(PELAJAR, `/api/practice/subjects/${code}`)
+      expect(card?.bankCount, code).toBe(detail.total)
+      expect(card?.approvedCount, code).toBe(detail.levels.reduce((n, l) => n + l.count, 0))
+      expect(
+        detail.levels.every((l) => l.id === 10 || l.id === 11),
+        code,
+      ).toBe(true)
+    }
   })
 
   it('"Statistik Subjek": by bankCount descending (ties by id), stars from the mean difficulty, usedCount 0', async () => {
     const d = await dash(PELAJAR)
     const counts = d.subjectStats.map((s) => s.bankCount)
     expect([...counts].sort((a, b) => b - a)).toEqual(counts)
-    expect(d.subjectStats[0]).toMatchObject({ name: 'Pendidikan Moral', bankCount: 15_414 })
+    expect(d.subjectStats[0]).toMatchObject({ name: 'Pendidikan Moral', bankCount: 5_090 })
     for (const s of d.subjectStats) {
       expect(s.usedCount).toBe(0)
-      // 0 filled stars when the subject has no question (BR-29); else a mean of difficulty 1–4.
-      if (s.bankCount === 0) expect(s.avgDifficulty).toBe(0)
+      // BR-29 (as the backend): the mean runs over the subject's whole bank, so a subject with no
+      // practice-drawable question can still have stars; 0 only when it has no active question at all.
+      const id = d.subjects.find((x) => x.name === s.name)?.id ?? -1
+      if (questions.countWhere({ isActive: true, subjectId: id }) === 0)
+        expect(s.avgDifficulty).toBe(0)
       else {
         expect(s.avgDifficulty).toBeGreaterThanOrEqual(1)
         expect(s.avgDifficulty).toBeLessThanOrEqual(4)
@@ -275,10 +318,49 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
     expect(r.status).toBe(200)
     expect(r.body.data).toHaveLength(31)
     expect(r.body.meta).toMatchObject({ page: 1, totalPages: 1, totalItems: 31 })
-    expect(r.body.data[2]).toMatchObject({ code: 'MATH', approvedCount: 13_872 })
+    expect(r.body.data[2]).toMatchObject({ code: 'MATH', approvedCount: 2_601 })
   })
 
-  it('#3 BM: D1–D4 counts 958 / 2,540 / 805 / 530 = 4,833 and the difficulty splits (BR-12)', async () => {
+  it('a chapter session of a Darjah chapter is rejected (404), as an unknown chapter (D72)', async () => {
+    const r = await request(runtime, 'POST', '/api/practice/sessions', setUser(MAJU).token, {
+      mode: 'chapter',
+      chapterId: 35,
+      count: 5,
+    })
+    expect(r.status).toBe(404)
+  })
+
+  it('#3 BM offers Tingkatan 4 / 5 only: 256 + 385 = 641 (D72, BR-11)', async () => {
+    const c = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/BM')
+    expect(c.levels.map((l) => [l.id, l.code, l.count])).toEqual([
+      [10, 'T4', 256],
+      [11, 'T5', 385],
+    ])
+    expect(c.total).toBe(641)
+    expect(Object.values(c.difficultyStats).reduce((a, b) => a + b, 0)).toBe(641)
+  })
+
+  it('a random session at a Darjah level is rejected (422 on levelId), at Tingkatan 4 it starts (D72, BR-11)', async () => {
+    const token = setUser(MAJU).token
+    const d1 = await request(runtime, 'POST', '/api/practice/sessions', token, {
+      mode: 'random',
+      subjectCode: 'MATH',
+      levelId: 1,
+      count: 5,
+    })
+    expect(d1.status).toBe(422)
+    expect(JSON.stringify(d1.body)).toContain('levelId')
+    const t4 = await request(runtime, 'POST', '/api/practice/sessions', token, {
+      mode: 'random',
+      subjectCode: 'MATH',
+      levelId: 10,
+      count: 5,
+    })
+    expect(t4.status).toBe(201)
+  })
+
+  it('#3 BM: D1–D4 counts 958 / 2,540 / 805 / 530 = 4,833 and the difficulty splits (BR-12), Darjah offered', async () => {
+    useOfferedLevels(DARJAH_1_4)
     const c = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/BM')
     expect(c.total).toBe(4_833)
     expect(c.levels.map((l) => [l.id, l.code, l.count])).toEqual([
@@ -297,13 +379,26 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
     expect(c.trial).toEqual({ active: true, used: 32, limit: 50, remaining: 18 })
   })
 
-  it('#3 MATH total 6,538 with D1 2,734; the code is case-insensitive', async () => {
+  it('#3 MATH total 6,538 with D1 2,734; the code is case-insensitive, Darjah offered', async () => {
+    useOfferedLevels(DARJAH_1_4)
     const c = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/math')
     expect(c.total).toBe(6_538)
     expect(c.levels[0]).toMatchObject({ id: 1, count: 2_734 })
   })
 
-  it('#3 SK offers "D4" with 0 questions (BR-11); a subject linked only to Tingkatan offers none', async () => {
+  it('#3 SK offers T4 and T5 with 0 questions (BR-11, D72); PHY offers its T4 / T5 links', async () => {
+    const sk = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/SK')
+    expect(sk.levels.map((l) => [l.id, l.count])).toEqual([
+      [10, 0],
+      [11, 0],
+    ])
+    expect(sk.total).toBe(0)
+    const phy = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/PHY')
+    expect(phy.levels.map((l) => l.id)).toEqual([10, 11])
+  })
+
+  it('#3 SK offers "D4" with 0 questions (BR-11), a subject linked only to Tingkatan offers none, Darjah offered', async () => {
+    useOfferedLevels(DARJAH_1_4)
     const sk = await data<SubjectConfig>(PELAJAR, '/api/practice/subjects/SK')
     expect(sk.levels).toEqual([{ id: 4, code: 'D4', name: 'Darjah 4', count: 0 }])
     expect(sk.total).toBe(0)
@@ -329,6 +424,27 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
+  beforeEach(() => {
+    useOfferedLevels(DARJAH_1_4)
+  })
+
+  it('D72 default: no chapter question exists at Tingkatan 4 / 5, so S4 lists no subject and S5 falls back to T4', async () => {
+    useOfferedLevels()
+    const list = await getAs<ListBody<ChapterSubject>>(
+      runtime,
+      GURU,
+      '/api/practice/chapter-subjects',
+    )
+    expect(list.status).toBe(200)
+    expect(list.body.data).toEqual([])
+    const math = await data<ChapterSubjectDetail>(
+      MAJU,
+      '/api/practice/chapter-subjects/MATH?levelId=1',
+    )
+    expect(math.levels.map((l) => l.id)).toEqual([10, 11])
+    expect(math.levelId).toBe(10)
+  })
+
   it('#7 lists the subjects with chapters, with chapter and question counts (MATH 6,538)', async () => {
     const r = await getAs<ListBody<ChapterSubject>>(runtime, GURU, '/api/practice/chapter-subjects')
     expect(r.status).toBe(200)

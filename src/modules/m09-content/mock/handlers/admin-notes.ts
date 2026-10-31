@@ -20,7 +20,7 @@ import {
 
 import { notesRepo } from '../repository'
 import { authorRef } from '../repository/common'
-import type { NoteRow, NoteSubject, NoteType } from '../types'
+import { isGradeShown, type NoteRow, type NoteSubject, type NoteType } from '../types'
 import {
   ADMIN_FLASH,
   adminOnly,
@@ -52,12 +52,18 @@ export const NOTE_FORM_TYPES: readonly NoteType[] = [
   'TIPS_TRICKS',
 ]
 
-export const NOTE_GRADES: readonly string[] = [1, 2, 3, 4, 5, 6].map((n) => `DARJAH_${String(n)}`)
+/** Writable grades: Tingkatan 4 and 5 only (secondary-only, D72; the contract's `NOTE_WRITE_GRADES`). */
+export const NOTE_GRADES: readonly string[] = ['TINGKATAN_4', 'TINGKATAN_5']
+const PRIMARY_NOTE_GRADES: readonly string[] = [1, 2, 3, 4, 5, 6].map((n) => `DARJAH_${String(n)}`)
+/** The grades a write accepts now (the Darjah ones only while the primary content is switched on). */
+const writableGrades = (): readonly string[] =>
+  isGradeShown('DARJAH_1') ? [...NOTE_GRADES, ...PRIMARY_NOTE_GRADES] : NOTE_GRADES
 
 type NoteInput = Parameters<typeof notesRepo.create>[1]
 
-/** `grade` `DARJAH_2` as "Darjah 2" (the screens upper-case it by CSS). */
-const gradeLabel = (grade: string): string => grade.replace(/^DARJAH_(\d+)$/, 'Darjah $1')
+/** `grade` `TINGKATAN_4` as "Tingkatan 4" (the screens upper-case it by CSS). */
+const gradeLabel = (grade: string): string =>
+  grade.replace(/^DARJAH_(\d+)$/, 'Darjah $1').replace(/^TINGKATAN_(\d+)$/, 'Tingkatan $1')
 
 /** `NoteItem` (S5 row) and `NoteDetail` (S7/S8: adds `content`). */
 function itemOf(n: NoteRow) {
@@ -131,7 +137,7 @@ function parse(
     false,
   )
   const noteType = choice<NoteType>('noteType', NOTE_FORM_TYPES, current?.noteType, true)
-  const grade = choice<string>('grade', NOTE_GRADES, current?.grade, true)
+  const grade = choice<string>('grade', writableGrades(), current?.grade, true)
 
   let isPublished = current?.isPublished ?? false
   if (has(body, 'isPublished')) {
@@ -172,7 +178,7 @@ export const adminNoteRoutes: RouteDef[] = [
     '/api/admin/notes/:id',
     [adminOnly],
     (req) => {
-      const row = notesRepo.get(Number(req.params.id))
+      const row = notesRepo.getVisible(Number(req.params.id))
       return row ? ok(detailOf(row)) : notFound(NOT_FOUND.note)
     },
     { params: { id: int() } },
@@ -191,7 +197,7 @@ export const adminNoteRoutes: RouteDef[] = [
     [adminOnly],
     (req) => {
       const id = Number(req.params.id)
-      const current = notesRepo.get(id)
+      const current = notesRepo.getVisible(id)
       if (!current) return notFound(NOT_FOUND.note)
       const parsed = parse(req.body, current)
       if ('fields' in parsed) return validationError(parsed.fields)
@@ -206,7 +212,7 @@ export const adminNoteRoutes: RouteDef[] = [
     [adminOnly],
     (req) => {
       const id = Number(req.params.id)
-      if (!notesRepo.get(id)) return notFound(NOT_FOUND.note)
+      if (!notesRepo.getVisible(id)) return notFound(NOT_FOUND.note)
       notesRepo.remove(id)
       return ok({ deleted: 1 }, { status: ADMIN_FLASH.note.deleted })
     },

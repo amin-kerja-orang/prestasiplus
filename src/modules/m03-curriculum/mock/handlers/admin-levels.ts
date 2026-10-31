@@ -11,7 +11,7 @@
  * | 11 | `PATCH /api/admin/education-levels/:id/active` | 200 `{data: {id, isActive}}`; 404 |
  * | 12 | `DELETE /api/admin/education-levels/:id` | 200 `{data: {deleted: 1}, status}` (BR-10 cascade); 404 |
  *
- * `questionCount` = M04 Q-ACTIVE(level) through the M04 public entry (D12, FR-98);
+ * `questionCount` = M04 Q-ACTIVE(level) (hidden Darjah questions excluded, D72) through the M04 public entry (D12, FR-98);
  * `subjectCount` = the M03 named query LINK-LEVEL(level).
  */
 
@@ -54,6 +54,9 @@ import {
 
 export const STAGES: readonly Stage[] = ['primary', 'lower_secondary', 'upper_secondary']
 
+/** Secondary-only (D72): a level cannot be written with the hidden `primary` stage (422). */
+const WRITABLE_STAGES: readonly Stage[] = STAGES.filter((s) => s !== 'primary')
+
 export interface LevelListItem extends EducationLevelRow {
   /** M04 Q-ACTIVE(level). */
   questionCount: number
@@ -74,7 +77,7 @@ function levelRules(ignoreId: number | null) {
         return curriculumRepo.levels().some((l) => l.code === code && l.id !== ignoreId)
       }),
     ],
-    stage: [required(), oneOf(STAGES)],
+    stage: [required(), oneOf(WRITABLE_STAGES)],
     curriculum: [required(), isString(), max(255)],
     order: [isInteger(), atLeast(0)],
   }
@@ -93,8 +96,8 @@ function toInput(body: Record<string, unknown>): LevelInput {
 
 export const adminLevelRoutes: RouteDef[] = [
   route('GET', '/api/admin/education-levels', [adminOnly], () => {
-    const counts = questions.groupCount('Q-ACTIVE', 'educationLevelId')
-    const items: LevelListItem[] = curriculumRepo.levels().map((l) => ({
+    const counts = questions.visibleActiveGroupCount('educationLevelId')
+    const items: LevelListItem[] = curriculumRepo.visibleLevels().map((l) => ({
       ...l,
       questionCount: counts.get(l.id) ?? 0,
       subjectCount: curriculumSubjectLevelsRepo.count('LINK-LEVEL', l.id),
@@ -107,7 +110,8 @@ export const adminLevelRoutes: RouteDef[] = [
     '/api/admin/education-levels/:id',
     [adminOnly],
     (req) => {
-      const level = curriculumRepo.level(idParam(req))
+      const id = idParam(req)
+      const level = curriculumRepo.isLevelHidden(id) ? undefined : curriculumRepo.level(id)
       return level ? ok(level) : notFound(LEVEL_NOT_FOUND)
     },
     { params: { id: int() } },
@@ -128,7 +132,8 @@ export const adminLevelRoutes: RouteDef[] = [
     [adminOnly],
     (req, ctx) => {
       const id = idParam(req)
-      if (!curriculumRepo.level(id)) return notFound(LEVEL_NOT_FOUND)
+      if (!curriculumRepo.level(id) || curriculumRepo.isLevelHidden(id))
+        return notFound(LEVEL_NOT_FOUND)
       const body = normalise(req.body)
       const fields = validationErrors(body, levelRules(id))
       if (fields) return validationError(fields)
@@ -144,7 +149,8 @@ export const adminLevelRoutes: RouteDef[] = [
     [adminOnly],
     (req, ctx) => {
       const id = idParam(req)
-      if (!curriculumRepo.level(id)) return notFound(LEVEL_NOT_FOUND)
+      if (!curriculumRepo.level(id) || curriculumRepo.isLevelHidden(id))
+        return notFound(LEVEL_NOT_FOUND)
       const body = normalise(req.body)
       const fields = validationErrors(body, { isActive: [required(), isBoolean()] })
       if (fields) return validationError(fields)
@@ -160,7 +166,10 @@ export const adminLevelRoutes: RouteDef[] = [
     '/api/admin/education-levels/:id',
     [adminOnly],
     (req) => {
-      if (!curriculumRepo.deleteLevel(idParam(req))) return notFound(LEVEL_NOT_FOUND)
+      const id = idParam(req)
+      if (curriculumRepo.isLevelHidden(id) || !curriculumRepo.deleteLevel(id)) {
+        return notFound(LEVEL_NOT_FOUND)
+      }
       return ok({ deleted: 1 }, { status: FLASH.level.deleted })
     },
     { params: { id: int() } },

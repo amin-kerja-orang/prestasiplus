@@ -23,7 +23,7 @@ const SCHOOL: AdminSchool = {
   id: 42,
   name: 'SK TAMAN CONTOH',
   code: 'ABC1042',
-  type: 'SK',
+  type: 'SMK',
   state: 'Selangor',
   district: 'PPD CONTOH',
   city: 'BANDAR CONTOH',
@@ -54,7 +54,7 @@ async function render(props: { mode: 'create' | 'edit'; id?: number }): Promise<
 async function fillRequired(w: VueWrapper): Promise<void> {
   await w.get('[data-testid=school-name]').setValue('  SK TAMAN BARU ')
   await w.get('[data-testid=school-code]').setValue('JBA1234')
-  await w.get('[data-testid=school-type]').setValue('SJK(C)')
+  await w.get('[data-testid=school-type]').setValue('MRSM')
   await w.get('[data-testid=school-state]').setValue('Johor')
 }
 
@@ -89,10 +89,7 @@ describe('SchoolFormPage create (M02 S10)', () => {
     expect(w.get('[data-testid=school-district]').attributes('required')).toBeUndefined()
     expect(w.findAll('[data-testid=school-type] option').map((o) => o.text())).toEqual([
       'Pilih jenis',
-      'SK',
       'SMK',
-      'SJK(C)',
-      'SJK(T)',
       'MRSM',
       'SBP',
     ])
@@ -115,7 +112,7 @@ describe('SchoolFormPage create (M02 S10)', () => {
     expect(api.createSchool).toHaveBeenCalledWith({
       name: '  SK TAMAN BARU ',
       code: 'JBA1234',
-      type: 'SJK(C)',
+      type: 'MRSM',
       state: 'Johor',
       district: '',
       city: '',
@@ -161,7 +158,7 @@ describe('SchoolFormPage edit (M02 S11)', () => {
       'SK TAMAN CONTOH',
     )
     expect((w.get('[data-testid=school-code]').element as HTMLInputElement).value).toBe('ABC1042')
-    expect((w.get('[data-testid=school-type]').element as HTMLSelectElement).value).toBe('SK')
+    expect((w.get('[data-testid=school-type]').element as HTMLSelectElement).value).toBe('SMK')
     expect((w.get('[data-testid=school-state]').element as HTMLSelectElement).value).toBe(
       'Selangor',
     )
@@ -183,7 +180,7 @@ describe('SchoolFormPage edit (M02 S11)', () => {
     expect(api.updateSchool).toHaveBeenCalledWith(42, {
       name: 'SK TAMAN CONTOH',
       code: 'ABC1042',
-      type: 'SK',
+      type: 'SMK',
       state: 'Selangor',
       district: 'PPD LAIN',
       city: 'BANDAR CONTOH',

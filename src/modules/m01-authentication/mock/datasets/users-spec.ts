@@ -15,7 +15,7 @@
  * | M11 register | 4,158 T4/T5 students in 33 schools, 1,666 logged in / 2,492 never; 522 teachers in 13 schools, 277 logged in | M11 §6.7 |
  * | M17 logins (outside fixture schools) | active students 1,708; active teachers 269; all teachers 289 (teacher 5 excluded) | M17 XR-06, v1.20 |
  * | per-school pupils (DV-M02-15: all students, active or not) | BR-24 `used`: 8277 150, 8880 59, 8102 776, 8082 549, 10220 2, 8106 562, 8078 423, 8080 185, 8090 386, 8087 312, 8107 675, 8228 13 | M19 discovery; v1.21 |
- * | schools with users | 61 (57 real, each holding a student, + 4 fixtures) | DV-M02-13, v1.22 |
+ * | schools with users | 60 (57 real, each holding a student, + 3 fixtures; 900004 holds none since D72) | DV-M02-13, v1.22, D72 |
  *
  * Student total (v1.23): 4,158 register + 10 fixture-school + 7 named (3, 11 at 9167, 3105–3109)
  * + 137 `attendanceMirror` + 75 T4 pool + 39 re-homed pool pupils (36 at M18's schools + 3 at
@@ -82,7 +82,7 @@ export const REGISTER_LOGGED_IN = 1_666
 export const REGISTER_NEVER = 2_492
 export const REGISTER_TEACHERS = 522
 export const REGISTER_TEACHERS_LOGGED_IN = 277
-export const SCHOOLS_WITH_USERS = 61
+export const SCHOOLS_WITH_USERS = 60
 export const SCHOOLS_WITH_USERS_REAL = 57
 export const ATTENDANCE_MIRROR = { total: 137, grade10: 14, grade11: 123 } as const
 /** v1.19: 78 − 3 re-homed to filter schools. */
@@ -410,14 +410,13 @@ function addStudents(b: Blocks): void {
     b.add({ role: 'student', schoolId: school, grade: 11, isActive: false }, in5)
   }
 
-  // Fixture-school students (outside every pin): 9 at 900001 + canonical 4 at 900004, logged in.
+  // Fixture-school students (outside every pin): 9 at 900001 + canonical 4 (also at 900001), logged in.
   b.add({ role: 'student', schoolId: 900_001, grade: 10, hasLoggedIn: true }, 1)
-  b.add({ role: 'student', schoolId: 900_001, grade: 11, hasLoggedIn: true }, 8)
-  b.add({ role: 'student', schoolId: 900_004, grade: 1, hasLoggedIn: true }, 1)
+  b.add({ role: 'student', schoolId: 900_001, grade: 11, hasLoggedIn: true }, 9)
 
-  // Named students: canonical 3 (no school, grade 5, logged in); canonical 11 (9167, grade 7,
+  // Named students: canonical 3 (no school, grade 10, logged in); canonical 11 (9167, grade 7,
   // inactive, v1.23); M09 3105–3109 (no school, grade 6).
-  b.add({ role: 'student', grade: 5, hasLoggedIn: true }, 1)
+  b.add({ role: 'student', grade: 10, hasLoggedIn: true }, 1)
   b.add({ role: 'student', schoolId: 9167, grade: 7, isActive: false }, 1)
   b.add({ role: 'student', grade: 6 }, 5)
 
@@ -624,8 +623,8 @@ function addOtherRoles(b: Blocks): void {
   // jpn_officer 2: canonical 10 (logged in), 5711.
   b.add({ role: 'jpn_officer', hasLoggedIn: true }, 1)
   b.add({ role: 'jpn_officer' }, 1)
-  // admin 2: canonical 1 (900002, grade 4 as live, logged in), 5801.
-  b.add({ role: 'admin', schoolId: 900_002, grade: 4, hasLoggedIn: true }, 1)
+  // admin 2: canonical 1 (no school, no grade, logged in), 5801.
+  b.add({ role: 'admin', hasLoggedIn: true }, 1)
   b.add({ role: 'admin' }, 1)
   // unmapped 6 (D9): generated, 2 inactive.
   b.add({ role: 'unmapped' }, USERS_BY_ROLE.unmapped - INACTIVE_OTHER.unmapped)

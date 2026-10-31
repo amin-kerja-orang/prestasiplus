@@ -2,7 +2,7 @@
 /**
  * S6 `/admin/subjects` "Pengurusan Subjek - Admin PRESTASIPLUS" (M03-T2; FR-M03-39..46, FR-98).
  *
- * - Heading "Senarai Subjek", "Jumlah: {n} subjek" and "Tambah"; every subject in one table (no
+ * - Header subtitle "Jumlah: {n} subjek" and "Tambah"; every subject in one table (no
  *   paging, search or filter; order from the API, BR-08).
  * - Icon tile (BR-05), level line under the name, colour swatch (hex hidden below `sm`), Teras /
  *   Elektif, "Soalan" (number only below `sm`).
@@ -19,7 +19,6 @@ import {
   type CardField,
   DsDataTable,
   DsPage,
-  DsPageHeader,
   DsStatRow,
   type StatItem,
 } from '@/ds'
@@ -141,7 +140,21 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="subjects-page">
+  <DsPage
+    :subtitle="`Jumlah: ${rows.length} subjek`"
+    subtitle-testid="subjects-count"
+    data-testid="subjects-page"
+  >
+    <template #actions>
+      <UButton
+        :to="{ name: SUBJECT_ROUTES.create }"
+        icon="i-ph-plus"
+        data-testid="subjects-add"
+      >
+        Tambah
+      </UButton>
+    </template>
+
     <DsLoadError
       v-if="error"
       :message="COPY.loadFailed"
@@ -150,26 +163,6 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
     />
 
     <template v-else-if="data">
-      <DsPageHeader>
-        <template #subtitle>
-          <div>
-            <h2 class="text-subheading text-highlighted">Senarai Subjek</h2>
-            <p class="text-body text-muted" data-testid="subjects-count">
-              Jumlah: {{ rows.length }} subjek
-            </p>
-          </div>
-        </template>
-        <template #actions>
-          <UButton
-            :to="{ name: SUBJECT_ROUTES.create }"
-            icon="i-ph-plus"
-            data-testid="subjects-add"
-          >
-            Tambah
-          </UButton>
-        </template>
-      </DsPageHeader>
-
       <DsStatRow :items="kpiItems" density="compact" :cols="4" aria-label="Ringkasan subjek" />
 
       <DsDataTable
@@ -186,7 +179,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
           <SubjectIconTile :icon="row.original.icon" :color="row.original.color" />
         </template>
         <template #name-cell="{ row }">
-          <div class="max-w-40 min-w-32 whitespace-normal" data-testid="subject-name-cell">
+          <div class="max-w-36 min-w-32 whitespace-normal" data-testid="subject-name-cell">
             <div class="text-label text-highlighted">{{ row.original.name }}</div>
             <div
               v-if="row.original.levels.length > 0"
@@ -218,7 +211,6 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
             v-if="row.original.isCore"
             color="success"
             variant="subtle"
-            icon="i-ph-star"
             label="Teras"
             data-testid="subject-core"
           />
