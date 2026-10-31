@@ -270,3 +270,9 @@ Merge order proposal for B: see REQ-A-007 (docs/qa/r1-e2e-readiness.md). Q5 deci
 | T52 | r1/t52-examiner-grid @ c8490879 | A1 | BASE refresh in progress |
 | A3 docs (B2 fixes, BASE-60) | runbook r1/t37-r1-runbook @ dbf25cf2 · H-A24 @ bc2a0fc5 · H-A23 @ ef24addc · H-A22 @ 4fb2a41b · H-A17 @ b74f8e5f · H-A26 @ 7c7663de | A3 docs | rollback MAJOR fixed (no migrate resolve after dump restore, P3011/P3012), merge order defers to MERGE-LOG + C-POLICY-2, coverage 117 proven |
 In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ C1 REQ-A-008), REQ-B-031 (A1, D98), REQ-C-021 (A1, D98), REQ-B-029 (A2), REQ-B-033 (A4), H-A18 (A2, 0105).
+
+## Priorities (team B via user, 2026-11-01 06:45 MYT)
+
+1. **T34** — A3, all slots, ETA ~1 h (blocks C's T10 and B4).
+2. **T36** — A2 slot 2 (with REQ-B-029, REQ-B-019/A-009), ETA ~1 h (blocks B4). REQ-B-003 delivered by T26b @ 5cfd6ea5.
+3. **REQ-A-005 Lapor (Q8 / D98)** — backend guard REQ-B-031 by A1, ETA ~1.5 h; FE Lapor control = team C, unblocked by the decision.
