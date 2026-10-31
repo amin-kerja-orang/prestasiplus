@@ -3,6 +3,17 @@
 Writer: team A lead. Last refresh: 2026-10-31 (cycle 6). Current BASE: **BASE-6** = `feature/v3-bijak-r1` @ 21ae62dd (T01, T03, T04, T05, T24 merged). Every open team A branch merges BASE-6 before re-marking READY.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 
+## Team A sessions (from cycle 7)
+
+Each team A lane is its own Claude session (main Opus 5.5, subagents Sonnet high, sized per queue). The lead runs in session A1 and is the only writer of this board and status/A1–A4.md; lanes report to the lead.
+
+| Lane | Session | Owns |
+|---|---|---|
+| A1 | A1 (lead + lane) | T06, H-A2, T26/T35/T28 minors, T38; board, questions, decisions |
+| A2 | A2 | T32 (priority, unblocks C3), t04-minors, T33, H-A11 |
+| A3 | A3 | T34 (+ builder findings + D93 blocker), H-A9, T31, t05-minors; holds builder.service |
+| A4 | A4 | T07 → T08 → T25 → H-A7, T29, T30, T36, H-A12 |
+
 ## Critical path
 
 `T01 (base merge + vue-tsc)` → B1 merges = **BASE-2** → `T03 b08` → `T04 b01 lifecycle` → `T05 DB specs re-run` → `T23 E2E` → R1 sign-off.
