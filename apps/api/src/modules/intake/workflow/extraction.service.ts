@@ -22,6 +22,7 @@ import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { scrubContactDetails } from '../../ai-extraction'
+import { curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { type ClaimedJob, JobError, JobsService } from '../../jobs'
 import { AI_EXTRACTOR, IntakeExtractionInput, IntakeFiguresService, type AiExtractor } from '../files'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
@@ -236,7 +237,7 @@ export class IntakeExtractionService implements OnModuleInit {
   private async ensureSourcePaper(tx: TxClient, batchId: bigint, current: bigint | null, fileHash: string | null): Promise<void> {
     if (current !== null) return
     const b = await tx.intakeBatch.findUniqueOrThrow({ where: { id: batchId }, select: { subject: true, kertas: true, year: true, paperType: true, rightsStatus: true } })
-    const subject = await tx.subject.findUnique({ where: { code: b.subject.toUpperCase() }, select: { id: true } })
+    const subject = await tx.subject.findUnique({ where: { code: curriculumCodeOf(b.subject.toUpperCase()) }, select: { id: true } })
     // Only an official paper has a natural key (it is the same paper whoever uploads it); everything else is its own row.
     const naturalKey = b.paperType === 'exam' ? `${b.subject.toLowerCase()}|${b.year}||k${b.kertas}|sebenar` : null
     const examType = b.paperType === 'exam' ? 'sebenar' : b.paperType === 'trial' ? 'percubaan' : b.paperType === 'exercise_book' ? 'latihan' : null
