@@ -336,7 +336,7 @@ describe('BJS-08 versions, serving and the cosmetic rule', () => {
     await verified(25)
     expect((await admin.post(url(25, '/versions'), body({ code: 'MAT/S25B', sections: [fullSection({ kbatMarks: 2 })] }))).status).toBe(201)
     // evidence was copied; the structural change did not touch the values the evidence states
-    const res = await admin.post(url(25, '/verify'), {})
+    const res = await admin.post(url(25, '/verify'), { note: 'Disemak.' })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(BijakBlueprintViewSchema.parse(res.body.data)).toMatchObject({ version: 2, source: 'Disahkan', servesStudents: true, servingVersion: 2 })
     expect(await count(t.db, `select count(*) n from blueprints where code like 'MAT/S25%' and serves_students`)).toBe(1)
@@ -500,7 +500,7 @@ describe('BJS-09 verification', () => {
     await admin.post(url(44, '/evidence'), lpmEvidence())
     const row = await bpRow('MAT/S44')
     await rows(`update blueprint_sections set kbat_reviewed = false, quota = jsonb_set(quota, '{lines,0,reviewed}', 'false') where blueprint_id = $1`, [row?.id])
-    const res = await admin.post(url(44, '/verify'), {})
+    const res = await admin.post(url(44, '/verify'), { note: 'Disemak.' })
     expect(res.status).toBe(422)
     const check = BijakVerificationFailedErrorSchema.parse(res.body).error.details.check
     const unreviewed = check.completeness.filter((c) => c.code === 'UNREVIEWED')
@@ -508,7 +508,7 @@ describe('BJS-09 verification', () => {
     expect(unreviewed.some((c) => c.unit?.kind === 'unit')).toBe(true)
     // the review stamp (in place, not a new version) clears the block
     expect((await admin.post(url(44, '/sections/1/review'), {})).status).toBe(200)
-    expect((await admin.post(url(44, '/verify'), {})).status).toBe(200)
+    expect((await admin.post(url(44, '/verify'), { note: 'Disemak.' })).status).toBe(200)
   })
 
   it('verifies: Disahkan, verification row, serving flag, hash, audit, and GET shows the record', async () => {
@@ -534,15 +534,33 @@ describe('BJS-09 verification', () => {
 
   it('409 when already Disahkan; the verification record is insert-only', async () => {
     await verified(46)
-    expectError(await admin.post(url(46, '/verify'), {}), 'CONFLICT', 409, STD.alreadyVerified)
+    expectError(await admin.post(url(46, '/verify'), { note: 'Disemak.' }), 'CONFLICT', 409, STD.alreadyVerified)
     expect(await count(t.db, `select count(*) n from blueprint_verifications where blueprint_id = $1`, [(await bpRow('MAT/S46'))?.id])).toBe(1)
     await expect(rows(`update blueprint_verifications set note = 'x' where blueprint_id = $1`, [(await bpRow('MAT/S46'))?.id])).rejects.toThrow()
+  })
+
+  // H-A15 (ii): the design makes "Nota pengesahan" required ("wajib"); the server refuses too, so a client cannot skip it (AC-39.2).
+  it('Sahkan needs a non-blank note: none, empty or whitespace is 422 on fields.note; nothing is written; a note verifies', async () => {
+    expect((await admin.post('/api/admin/blueprints', create(54))).status).toBe(201)
+    expect((await admin.post(url(54, '/evidence'), lpmEvidence())).status).toBe(201)
+    for (const bad of [{}, { note: '' }, { note: '   ' }, { note: '\n\t ' }, { note: null }]) {
+      const res = await admin.post(url(54, '/verify'), bad)
+      expectError(res, 'VALIDATION_ERROR', 422)
+      expect(res.body.error.fields, JSON.stringify(bad)).toEqual({ note: STD.noteRequired })
+    }
+    expect(STD.noteRequired).toBe('Isi nota pengesahan dahulu.')
+    expect(await bpRow('MAT/S54')).toMatchObject({ source: 'spec', verification_id: null, serves_students: false })
+    expect(await count(t.db, `select count(*) n from blueprint_verifications where blueprint_id = $1`, [(await bpRow('MAT/S54'))?.id])).toBe(0)
+    const ok = await admin.post(url(54, '/verify'), { note: '  Disemak mengikut skema.  ' })
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+    const v = await rows(`select note from blueprint_verifications where blueprint_id = $1`, [(await bpRow('MAT/S54'))?.id])
+    expect(v[0]?.note).toBe('Disemak mengikut skema.')
   })
 
   it('422 for an invalid verify body, 404 for an unknown blueprint', async () => {
     expect((await admin.post('/api/admin/blueprints', create(47))).status).toBe(201)
     expectError(await admin.post(url(47, '/verify'), { note: 5 }), 'VALIDATION_ERROR')
-    expectError(await admin.post(url(47, '/verify'), { extra: true }), 'VALIDATION_ERROR')
+    expectError(await admin.post(url(47, '/verify'), { note: 'Disemak.', extra: true }), 'VALIDATION_ERROR')
     expectError(await admin.post(url(999, '/verify'), {}), 'NOT_FOUND', 404)
   })
 
@@ -632,14 +650,14 @@ describe('BJS-09 verification', () => {
       await addSet(53, 10)
       expect(await line(53, 2)).toMatchObject({ status: 'differs', expected: 6 })
       expect(await line(53, 1)).toMatchObject({ status: 'ok' })
-      expect((await admin.post(url(53, '/verify'), {})).status).toBe(422)
+      expect((await admin.post(url(53, '/verify'), { note: 'Disemak.' })).status).toBe(422)
     })
   })
 
   it('two concurrent verifies: one wins (200), the other gets 409', async () => {
     expect((await admin.post('/api/admin/blueprints', create(48))).status).toBe(201)
     await admin.post(url(48, '/evidence'), lpmEvidence())
-    const [a, b] = await Promise.all([admin.post(url(48, '/verify'), {}), admin.post(url(48, '/verify'), {})])
+    const [a, b] = await Promise.all([admin.post(url(48, '/verify'), { note: 'Disemak.' }), admin.post(url(48, '/verify'), { note: 'Disemak.' })])
     expect([a.status, b.status].sort()).toEqual([200, 409])
     expect(await count(t.db, `select count(*) n from blueprint_verifications where blueprint_id = $1`, [(await bpRow('MAT/S48'))?.id])).toBe(1)
   })
@@ -696,7 +714,7 @@ describe('access: Admin Pusat only (AC-32.1, AC-39.3)', () => {
     { name: 'evidence add', method: 'post', url: url(1, '/evidence'), body: lpmEvidence() },
     { name: 'evidence delete', method: 'del', url: url(1, '/evidence/1') },
     { name: 'verification', method: 'get', url: url(1, '/verification') },
-    { name: 'verify', method: 'post', url: url(1, '/verify'), body: {} },
+    { name: 'verify', method: 'post', url: url(1, '/verify'), body: { note: 'Disemak.' } },
     { name: 'section review', method: 'post', url: url(1, '/sections/1/review'), body: {} },
     { name: 'dskp units', method: 'get', url: '/api/admin/bijak/dskp/units?subject=MAT' },
     { name: 'subjects', method: 'get', url: '/api/admin/bijak/subjects' },

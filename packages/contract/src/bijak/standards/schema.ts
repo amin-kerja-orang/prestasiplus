@@ -25,6 +25,8 @@ export const BIJAK_STANDARDS_MESSAGES = {
   alreadyVerified: 'Kontrak ini sudah Disahkan.',
   /** [PROPOSED] 409 on evidence write when the head is Disahkan (AC-39.4: edit through a new version). */
   evidenceLocked: 'Kontrak Disahkan tidak boleh diubah di tempat. Cipta versi baharu dahulu.',
+  /** 422 `fields.note` on verify without a note: the exact text of the Kontrak screen (design 6.x "Nota pengesahan [textarea, wajib]"). */
+  noteRequired: 'Isi nota pengesahan dahulu.',
   /** [PROPOSED] 404 on evidence delete. */
   evidenceNotFound: 'Bukti tidak ditemui',
   /** AC-29.1: empty pool is not an error. */

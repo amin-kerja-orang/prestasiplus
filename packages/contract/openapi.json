@@ -63237,9 +63237,14 @@
         "properties": {
           "note": {
             "type": "string",
-            "maxLength": 2000
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Nota pengesahan (AC-39.2): required, not blank; \"Isi nota pengesahan dahulu.\" as `fields.note` otherwise."
           }
         },
+        "required": [
+          "note"
+        ],
         "additionalProperties": false
       },
       "BijakBlueprintVersionItem": {
@@ -108724,7 +108729,7 @@
           "bijak-standards"
         ],
         "summary": "Blueprint: set Spec to Disahkan (the only way to write Disahkan)",
-        "description": "Body { note? }. Runs the AC-39.1 list and the AC-39.7 evidence comparison; on pass the head becomes Disahkan in one transaction, a verification row is recorded (insert-only), serves_students moves to it, and the action is audited. 422 VERIFICATION_FAILED lists every failure (details.check). 409 CONFLICT \"Kontrak ini sudah Disahkan.\" [PROPOSED] when already Disahkan. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "description": "Body { note } (required, not blank: 422 VALIDATION_ERROR fields.note \"Isi nota pengesahan dahulu.\"). Runs the AC-39.1 list and the AC-39.7 evidence comparison; on pass the head becomes Disahkan in one transaction, a verification row is recorded (insert-only), serves_students moves to it, and the action is audited. 422 VERIFICATION_FAILED lists every failure (details.check). 409 CONFLICT \"Kontrak ini sudah Disahkan.\" [PROPOSED] when already Disahkan. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
         "parameters": [
           {
             "schema": {

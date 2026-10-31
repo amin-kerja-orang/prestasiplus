@@ -202,7 +202,7 @@ export class BlueprintVerificationService {
       const verification = await this.repo.insertVerification({
         blueprintId: locked.id,
         verifiedById: idFromString(actor.userId),
-        note: body.note || null,
+        note: body.note,
         structureHash: hash,
         checkResult: jsonOf(check),
         evidenceSnapshot: jsonOf(snapshot),

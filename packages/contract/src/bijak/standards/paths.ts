@@ -276,7 +276,7 @@ export function registerBijakStandardsPaths(registry: OpenAPIRegistry): void {
     path: '/admin/blueprints/{subject}/{kertas}/verify',
     tags: [BIJAK_STANDARDS_TAG],
     summary: 'Blueprint: set Spec to Disahkan (the only way to write Disahkan)',
-    description: `Body { note? }. Runs the AC-39.1 list and the AC-39.7 evidence comparison; on pass the head becomes Disahkan in one transaction, a verification row is recorded (insert-only), serves_students moves to it, and the action is audited. 422 VERIFICATION_FAILED lists every failure (details.check). 409 CONFLICT "${BIJAK_STANDARDS_MESSAGES.alreadyVerified}" [PROPOSED] when already Disahkan. ${SPEC} ${ROLE_NOTE}`,
+    description: `Body { note } (required, not blank: 422 VALIDATION_ERROR fields.note "${BIJAK_STANDARDS_MESSAGES.noteRequired}"). Runs the AC-39.1 list and the AC-39.7 evidence comparison; on pass the head becomes Disahkan in one transaction, a verification row is recorded (insert-only), serves_students moves to it, and the action is audited. 422 VERIFICATION_FAILED lists every failure (details.check). 409 CONFLICT "${BIJAK_STANDARDS_MESSAGES.alreadyVerified}" [PROPOSED] when already Disahkan. ${SPEC} ${ROLE_NOTE}`,
     request: { params: BlueprintParams, headers: [csrf], body: body(BijakVerifyInputSchema) },
     responses: {
       200: json(envelopeOf(BijakBlueprintViewSchema), 'The blueprint, now Disahkan.'),
