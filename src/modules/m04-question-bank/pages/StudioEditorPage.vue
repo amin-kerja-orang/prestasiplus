@@ -295,7 +295,7 @@ async function save(): Promise<void> {
       <!-- Langkah 2 -->
       <DsStack id="studio-section-rangsangan" as="section">
         <DsFormSection title="Langkah 2 Rangsangan (stimulus)" description="Satu rangsangan dikongsi oleh semua soalan yang merujuknya. Ia dipaparkan sekali." icon="book-open-text">
-          <StudioGroupEditor v-model:group-id="draft.groupId" v-model:pending="pendingGroup" :current-question-id="props.id ?? null" :disabled="readOnly" @changed="groupView = $event" />
+          <StudioGroupEditor v-model:group-id="draft.groupId" v-model:pending="pendingGroup" :current-question-id="props.id ?? null" :subject-id="draft.subjectId || null" :disabled="readOnly" @changed="groupView = $event" />
         </DsFormSection>
       </DsStack>
 

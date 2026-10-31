@@ -28,6 +28,15 @@ export interface Flash<T> {
   status: string
 }
 
+/** `StimulusGroupMember` of T49. */
+export interface GroupMemberSummary {
+  id: string
+  numberLabel: string | null
+  stem: string
+  status: 'draft' | 'review' | 'approved' | 'archived'
+  servable: boolean
+}
+
 /** `StimulusGroupDetail` of T32. */
 export interface GroupDetail {
   id: string
@@ -35,12 +44,43 @@ export interface GroupDetail {
   scope: 'section' | 'paper'
   stimuli: WireStimulus[]
   questionIds: string[]
+  /** T49: the members in published order, one short form each (no per-question reads). */
+  members: GroupMemberSummary[]
   /** D93: BM warning while the group has fewer than 2 questions; null otherwise. */
   warning?: string | null | undefined
 }
 
 export function fetchStudioDskp(subjectId: string, educationLevelId: string, signal?: AbortSignal): Promise<StudioDskp> {
   return api.get<StudioDskp>('/api/questions/studio/dskp', { query: { subjectId, educationLevelId }, ...(signal ? { signal } : {}) })
+}
+
+/** One row of `GET /api/stimulus-groups` (T49). */
+export interface GroupListRow {
+  id: string
+  label: string | null
+  scope: 'section' | 'paper'
+  stimuli: { id: string; kind: string; label: string; imageId: string | null }[]
+  memberCount: number
+  members: GroupMemberSummary[]
+  status: 'draft' | 'served'
+  warning: string | null
+}
+
+export interface GroupListQuery {
+  q?: string | null
+  subjectId?: string | null
+  status?: 'draft' | 'served' | null
+  page?: number
+  pageSize?: number
+  signal?: AbortSignal
+}
+
+/** Browses the existing groups (T49, Admin Pusat): newest first, one page, members in short form. */
+export function listGroups(query: GroupListQuery = {}): Promise<ListResult<GroupListRow>> {
+  return api.list<GroupListRow>('/api/stimulus-groups', {
+    query: { q: query.q ?? null, subjectId: query.subjectId ?? null, status: query.status ?? null, page: query.page ?? null, pageSize: query.pageSize ?? null },
+    ...(query.signal ? { signal: query.signal } : {}),
+  })
 }
 
 /* ---- stimuli (T32) ------------------------------------------------------------------------------------ */
@@ -135,6 +175,11 @@ export interface StudioListQuery {
   subjectId?: string | null
   status?: string | null
   search?: string | null
+  /** Filters on the source paper (T47): year, state or examining body, paper 1 to 3, exam type. */
+  tahun?: string | null
+  negeri?: string | null
+  kertas?: string | null
+  jenis?: string | null
   page?: number
   pageSize?: number
   signal?: AbortSignal
@@ -142,7 +187,7 @@ export interface StudioListQuery {
 
 export function fetchStudioList(q: StudioListQuery): Promise<ListResult<StudioRow, StudioListExtra>> {
   return api.list<StudioRow, StudioListExtra>('/api/questions', {
-    query: { subjectId: q.subjectId ?? null, status: q.status ?? null, search: q.search ?? null, page: q.page ?? null, pageSize: q.pageSize ?? null },
+    query: { subjectId: q.subjectId ?? null, status: q.status ?? null, search: q.search ?? null, tahun: q.tahun ?? null, negeri: q.negeri ?? null, kertas: q.kertas ?? null, jenis: q.jenis ?? null, page: q.page ?? null, pageSize: q.pageSize ?? null },
     ...(q.signal ? { signal: q.signal } : {}),
   })
 }
