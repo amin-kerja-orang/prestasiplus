@@ -538,6 +538,8 @@ export interface PaperSummary {
 export interface PaperCover extends PaperSummary {
   instructions: string[]
   reference: NonNullable<PaperDef['reference']>
+  /** AC-20.3: true when the cover shows "Untuk Kegunaan Pemeriksa" (a placed question is not auto-marked). */
+  examinerGrid?: boolean
   sections: {
     label: string
     marks: number
