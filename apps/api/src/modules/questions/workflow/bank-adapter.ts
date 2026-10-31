@@ -308,12 +308,12 @@ export class QuestionBankAdapter implements QuestionBankPort {
       answerText = first.key.values.join(' / ')
     } else if (first?.mode === 'numeric') {
       answerText = first.key.values.map((x) => String(x.v)).join(' / ')
-    } else if (first?.mode === 'essay' && first.key.kind === 'points' && first.key.modelText) {
+    } else if ((first?.mode === 'essay' || first?.mode === 'essay_choice') && first.key.kind === 'points' && first.key.modelText) {
       answerText = first.key.modelText
     }
     return {
       id: r.id,
-      type: explanationType(v.type),
+      type: first?.mode === 'essay_choice' ? 'essay_choice' : explanationType(v.type),
       stemText: v.stemMs ?? v.stemEn ?? '',
       options,
       answerText,
