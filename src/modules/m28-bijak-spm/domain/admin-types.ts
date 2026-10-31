@@ -263,7 +263,13 @@ export interface BuilderQuestion {
 
 export interface BuilderGroup {
   id: string
-  stimulus: StimulusDef
+  /**
+   * The first stimulus. Absent when the group has nothing displayable (audio only, or empty): the group
+   * is still a unit (D90), shown with a label and its member questions, never filtered out (REQ-A-008).
+   */
+  stimulus?: StimulusDef
+  /** Every stimulus of the group in order (0 to 3). */
+  stimuli?: StimulusDef[]
   questionIds: string[]
 }
 

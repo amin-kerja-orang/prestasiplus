@@ -42,6 +42,17 @@ export function toOptionData(o: McqOption, index: number): McqOptionData {
 export const stimuliOf = (g: Pick<GroupView, 'stimulus' | 'stimuli'>): StimulusDef[] =>
   g.stimuli && g.stimuli.length > 0 ? g.stimuli : [g.stimulus]
 
+/** Stimuli of an editor group (0 to 3): `stimuli`, else the lone `stimulus`, else none. */
+export const editorStimuliOf = (g: { stimulus?: StimulusDef; stimuli?: StimulusDef[] }): StimulusDef[] =>
+  g.stimuli && g.stimuli.length > 0 ? g.stimuli : g.stimulus ? [g.stimulus] : []
+
+/** Label of an editor group: the stimulus labels joined, '' when it has none (the unit is still shown). */
+export const editorGroupLabel = (g: { stimulus?: StimulusDef; stimuli?: StimulusDef[] }): string =>
+  editorStimuliOf(g)
+    .map((s) => s.label)
+    .filter((l) => l.trim() !== '')
+    .join(' dan ')
+
 /** "Rajah 1" or "Rajah 1 dan Petikan A" (chip text and sheet title of a multi-stimulus group). */
 export function groupLabel(stimuli: readonly StimulusDef[]): string {
   const labels = stimuli.map((s) => s.label).filter((l) => l !== '')

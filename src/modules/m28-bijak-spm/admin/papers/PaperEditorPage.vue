@@ -14,6 +14,7 @@ import { DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type
 import RichText from '../../components/RichText.vue'
 import type { BuilderGroup, BuilderQuestion } from '../../domain/admin-types'
 import { addUnit, checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
+import { editorGroupLabel } from '../../lib/stimulus-data'
 import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
 import QuestionPreview from './QuestionPreview.vue'
@@ -124,7 +125,11 @@ function move(sectionId: string, index: number, delta: -1 | 1): void {
 function unitsFor(sectionId: string) {
   return unitsOf(ids[sectionId] ?? [], groupOf)
 }
-const stimulusOf = (gid: string) => gMap.value.get(gid)?.stimulus
+/** Label of a group's stimuli; '' for a stimulus-less group, which stays a unit (D90, REQ-A-008). */
+const groupLabelOf = (gid: string): string => {
+  const g = gMap.value.get(gid)
+  return g ? editorGroupLabel(g) : ''
+}
 const unitMarks = (unitIds: string[]): number =>
   unitIds.reduce((n, q) => n + (qMap.value.get(q)?.marks ?? 0), 0)
 
@@ -433,7 +438,7 @@ const previewBlocks = computed(() => {
                   class="flex flex-wrap items-center gap-2 text-caption font-semibold text-info"
                 >
                   <UIcon name="i-ph-image" class="size-4" />
-                  Kumpulan rangsangan {{ stimulusOf(u.groupId)?.label }} · {{ u.ids.length }} soalan
+                  Kumpulan rangsangan{{ groupLabelOf(u.groupId) ? ` ${groupLabelOf(u.groupId)}` : '' }} · {{ u.ids.length }} soalan
                   bergerak bersama
                 </p>
                 <div v-for="qid in u.ids" :key="qid" class="flex flex-col gap-1">
@@ -534,7 +539,7 @@ const previewBlocks = computed(() => {
                   <span class="line-clamp-2 text-body"><RichText :text="c.label" /></span>
                   <span class="text-caption text-muted">
                     <template v-if="c.groupId"
-                      >Kumpulan {{ stimulusOf(c.groupId)?.label }} · {{ c.ids.length }} soalan ·
+                      >Kumpulan{{ groupLabelOf(c.groupId) ? ` ${groupLabelOf(c.groupId)}` : '' }} · {{ c.ids.length }} soalan ·
                     </template>
                     {{ unitMarks(c.ids) }} markah
                   </span>
