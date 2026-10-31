@@ -3,7 +3,9 @@
  * class reports: `memberCounts` / `memberIds` / `memberIdsOf` (pupils of Darjah 1-6 and of primary-type schools are left out,
  * the helper is `VISIBLE_USER_SQL`), `all()` (no Darjah class) and the teacher question stats (`NOT_PRIMARY_LEVEL_SQL`).
  */
+import { TeacherDashboardSchema, TeacherStudentSchema, envelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { z } from 'zod'
 
 import { questionsSeed } from '../../prisma/seed/questions'
 import { ClassesPorts, ClassesRepository } from '../../src/modules/classes'
@@ -64,6 +66,33 @@ describe('class report readers leave out the hidden Darjah population (D72)', ()
     expect(rows[0]?.n).toBe(3)
   })
 
+  it('the dashboard counts the same pupils as the class cards; the roster, the school tab and the teacher pupil set leave the Darjah pupil out', async () => {
+    const dash = envelopeOf(TeacherDashboardSchema).parse((await a.get('/guru/dashboard')).body).data
+    const cards = dash.classes.reduce((n, c) => n + c.studentCount, 0)
+    expect(cards).toBe(1)
+    expect(dash.stats.students).toBe(cards)
+    expect(dash.checklist.hasStudents).toBe(true)
+    expect(await repo.teacherStudentIds(teacherA)).toEqual([s1])
+
+    const Body = z.object({ data: z.array(TeacherStudentSchema) })
+    const mine = Body.parse((await a.get('/guru/students?tab=mine')).body).data
+    expect(mine.map((x) => x.id)).toEqual([s1])
+    expect(mine[0]?.classes.map((c) => c.id)).toEqual([k1.id])
+    const school = Body.parse((await a.get('/guru/students?tab=school')).body).data.map((x) => x.id)
+    expect(school).toContain(s1)
+    expect(school).not.toContain(sMaju)
+    expect(school).not.toContain(s2)
+    const found = (await repo.schoolStudentLines((await schoolOfCode(t, 'DEMO001')) as string, '', 500)).rows.map((x) => x.id)
+    expect(found).not.toContain(sMaju)
+    // the name filter still works on the raw readers (LIKE wildcards stay literal)
+    expect(await repo.studentLines([s1, sMaju], '%')).toEqual([])
+    expect((await repo.studentLines([s1, sMaju], '')).map((x) => x.id)).toEqual([s1])
+    const hiddenName = (await t.db.query<{ name: string }>(`select name from users where id = $1`, [sMaju]))[0]?.name as string
+    expect(await repo.studentLines([s1, sMaju], hiddenName.slice(0, 3).toUpperCase())).toEqual(
+      (await repo.studentLines([s1], hiddenName.slice(0, 3).toUpperCase())),
+    )
+  })
+
   it('all() leaves out a Darjah class and forTeacher / schoolClasses already do', async () => {
     const primary = (await t.db.query<{ id: string }>(`select id::text from education_levels where stage = 'primary' order by id limit 1`))[0]?.id as string
     await t.db.query(
@@ -75,6 +104,10 @@ describe('class report readers leave out the hidden Darjah population (D72)', ()
     expect(names).toContain('Kelas Tingkatan')
     expect(names).not.toContain('Kelas Darjah')
     expect((await repo.forTeacher(teacherA)).map((c) => c.name)).not.toContain('Kelas Darjah')
+    // the report labels leave it out too, while the secondary class is still labelled
+    const darjahId = (await t.db.query<{ id: string }>(`select id::text from classrooms where name = 'Kelas Darjah'`))[0]?.id as string
+    const labels = await repo.labels([k1.id, darjahId])
+    expect([...labels.keys()]).toEqual([k1.id])
   })
 
   it('teacher question stats do not count a question of a Darjah level (total, subject breakdown and used)', async () => {

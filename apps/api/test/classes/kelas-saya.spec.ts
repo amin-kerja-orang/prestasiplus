@@ -1,6 +1,7 @@
 import { CLASS_MESSAGES, ClassJoinResponseSchema, ClassJoinedClassSchema, listEnvelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { PRIMARY_SCHOOL_TYPES } from '../../src/modules/schools/schools.constants'
 import {
   ADMIN,
   SCHOOL_ADMIN,
@@ -166,8 +167,9 @@ describe('Kelas Saya: GET /api/kelas-saya and POST /api/kelas-saya/join (AC 1)',
     // (the seeded other-school pupil is a Darjah 4 pupil, hidden from counts by D72, so the control count leaves out grade 1-6)
     const [count] = await t.db.query<{ n: number }>(
       `select count(*)::int n from enrolments e join users u on u.id = e.student_id
-        where e.classroom_id = $1 and e.status = 'active' and not e.is_test and (u.grade is null or u.grade >= 7)`,
-      [k.id],
+        where e.classroom_id = $1 and e.status = 'active' and not e.is_test and u.is_active and (u.grade is null or u.grade >= 7)
+          and (u.school_id is null or not exists (select 1 from schools vs where vs.id = u.school_id and vs.type = any($2::text[])))`,
+      [k.id, [...PRIMARY_SCHOOL_TYPES]],
     )
     const mine = (await teacher.get('/guru/classes')).body.data.find((x: { id: string }) => x.id === k.id)
     expect(mine.studentCount).toBe(count?.n)

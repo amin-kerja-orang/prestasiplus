@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto'
 
 import { Inject, Injectable } from '@nestjs/common'
 
-import type { Prisma } from '../../db/generated/client'
+import { Prisma } from '../../db/generated/client'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { JOIN_CODE_ALPHABET, JOIN_CODE_ATTEMPTS, JOIN_CODE_LENGTH } from './classes.constants'
@@ -185,10 +185,10 @@ export class ClassesRepository {
     return this.get(id)
   }
 
-  /** Classes by id with `levelSlug`, `teacherName` and `studentCount` (BE-19 report labels); unknown ids are absent from the map. */
+  /** Classes by id with `levelSlug`, `teacherName` and `studentCount` (BE-19 report labels); unknown ids are absent from the map, and so is a Darjah (primary-level) class (secondary-only, D72). */
   async labels(ids: readonly string[]): Promise<Map<string, ClassLabel>> {
     const keys = idsOf(ids)
-    const rows = keys.length === 0 ? [] : await this.db.classroom.findMany({ where: { id: { in: keys } } })
+    const rows = keys.length === 0 ? [] : await this.db.classroom.findMany({ where: { id: { in: keys }, educationLevelId: { notIn: await this.primaryLevelIds() } } })
     const records = rows.map(toClass)
     const [levels, teachers, counts] = await Promise.all([
       this.levelGrades([...new Set(records.map((r) => r.educationLevelId))]),
@@ -388,21 +388,25 @@ export class ClassesRepository {
     return (await this.db.enrolment.count({ where: { classroomId: c, studentId: s, status: 'active', isTest } })) > 0
   }
 
-  /** BR-M10-04: distinct ACTIVE-account students actively enrolled in any ACTIVE class the teacher owns, id ascending (SW7-06). */
+  /**
+   * BR-M10-04: distinct ACTIVE-account students actively enrolled in any ACTIVE class the teacher owns, id ascending (SW7-06).
+   * Secondary-only (D72): a hidden Darjah pupil (`VISIBLE_USER_SQL`) is left out, so every reader of the teacher's pupil set
+   * (dashboard, roster, remedial, reports) agrees with the class cards (`memberCounts`).
+   */
   async teacherStudentIds(teacherId: string): Promise<string[]> {
     const key = idOf(teacherId)
     if (key === null) return []
     const rows = await this.db.$queryRaw<{ student_id: bigint }[]>`
       SELECT DISTINCT e.student_id
         FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id JOIN users u ON u.id = e.student_id
-       WHERE e.status = 'active' AND e.is_test = false AND c.teacher_id = ${key} AND c.is_active AND u.is_active
+       WHERE e.status = 'active' AND e.is_test = false AND c.teacher_id = ${key} AND c.is_active AND u.is_active AND ${VISIBLE_USER_SQL}
        ORDER BY e.student_id`
     return rows.map((r) => idToString(r.student_id))
   }
 
   /**
    * The teacher's active classes per ACTIVE-account student (the "Pelajar Saya" chips), in class creation order (newest
-   * first; SW7-06: a deactivated pupil is left out). One query; the id travels with the name because class names are not
+   * first; SW7-06: a deactivated pupil is left out; D72: so is a hidden Darjah pupil). One query; the id travels with the name because class names are not
    * unique (SW5-03).
    */
   async classesByStudent(teacherId: string): Promise<Map<string, { id: string; name: string }[]>> {
@@ -412,7 +416,7 @@ export class ClassesRepository {
     const rows = await this.db.$queryRaw<{ student_id: bigint; class_id: bigint; name: string; created_at: Date }[]>`
       SELECT e.student_id, c.id AS class_id, c.name, c.created_at
         FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id JOIN users u ON u.id = e.student_id
-       WHERE e.status = 'active' AND e.is_test = false AND c.teacher_id = ${key} AND c.is_active AND u.is_active`
+       WHERE e.status = 'active' AND e.is_test = false AND c.teacher_id = ${key} AND c.is_active AND u.is_active AND ${VISIBLE_USER_SQL}`
     rows.sort((a, b) => b.created_at.getTime() - a.created_at.getTime() || Number(a.class_id - b.class_id))
     for (const r of rows) {
       const id = idToString(r.student_id)
@@ -571,34 +575,40 @@ export class ClassesRepository {
     return row ? { id: idToString(row.id), name: row.name, schoolId: row.schoolId === null ? null : idToString(row.schoolId) } : null
   }
 
-  /** Students by id with their grade (pupils of "Pelajar Saya" / mine), name A to Z then id. */
+  /** Students by id with their grade (pupils of "Pelajar Saya" / mine), name A to Z then id. Secondary-only (D72): a hidden Darjah pupil is left out. */
   async studentLines(ids: readonly string[], term: string): Promise<StudentLine[]> {
     const keys = idsOf(ids)
     if (keys.length === 0) return []
-    const rows = await this.db.user.findMany({
-      where: { id: { in: keys }, roles: { some: { role: 'student' } }, ...nameFilter(term) },
-      select: { id: true, name: true, grade: true },
-      orderBy: [{ name: 'asc' }, { id: 'asc' }],
-    })
+    const rows = await this.db.$queryRaw<{ id: bigint; name: string; grade: number | null }[]>`
+      SELECT u.id, u.name, u.grade
+        FROM users u
+       WHERE u.id = ANY(${keys}::bigint[]) AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
+         AND ${VISIBLE_USER_SQL} ${nameFilter(term)}
+       ORDER BY u.name ASC, u.id ASC`
     return rows.map((r) => ({ id: idToString(r.id), name: r.name, grade: r.grade }))
   }
 
-  /** Active students of one school matching the name filter, name A to Z then id: the page (capped) and the total before the cap. */
+  /**
+   * Active students of one school matching the name filter, name A to Z then id: the page (capped) and the total before the cap.
+   * Secondary-only (D72): a hidden Darjah pupil is neither listed nor counted.
+   */
   async schoolStudentLines(schoolId: string, term: string, limit: number): Promise<{ rows: StudentLine[]; total: number }> {
     const key = idOf(schoolId)
     if (key === null) return { rows: [], total: 0 }
-    const where: Prisma.UserWhereInput = { schoolId: key, isActive: true, roles: { some: { role: 'student' } }, ...nameFilter(term) }
-    const [rows, total] = await Promise.all([
-      this.db.user.findMany({ where, select: { id: true, name: true, grade: true }, orderBy: [{ name: 'asc' }, { id: 'asc' }], take: limit }),
-      this.db.user.count({ where }),
+    const where = Prisma.sql`u.school_id = ${key} AND u.is_active AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
+         AND ${VISIBLE_USER_SQL} ${nameFilter(term)}`
+    const [rows, totals] = await Promise.all([
+      this.db.$queryRaw<{ id: bigint; name: string; grade: number | null }[]>`
+        SELECT u.id, u.name, u.grade FROM users u WHERE ${where} ORDER BY u.name ASC, u.id ASC LIMIT ${limit}`,
+      this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM users u WHERE ${where}`,
     ])
-    return { rows: rows.map((r) => ({ id: idToString(r.id), name: r.name, grade: r.grade })), total }
+    return { rows: rows.map((r) => ({ id: idToString(r.id), name: r.name, grade: r.grade })), total: totals[0]?.n ?? 0 }
   }
 }
 
-/** Case-insensitive "name contains" with LIKE wildcards neutralised; an empty term matches everything. */
-function nameFilter(term: string): Prisma.UserWhereInput {
+/** Case-insensitive "name contains" with LIKE wildcards neutralised (backslash escape); an empty term matches everything. */
+function nameFilter(term: string): Prisma.Sql {
   const t = term.trim()
-  if (t === '') return {}
-  return { name: { contains: t.replace(/[\\%_]/g, (c) => `\\${c}`), mode: 'insensitive' } }
+  if (t === '') return Prisma.empty
+  return Prisma.sql`AND u.name ILIKE ${`%${t.replace(/[\\%_]/g, (c) => `\\${c}`)}%`}`
 }
