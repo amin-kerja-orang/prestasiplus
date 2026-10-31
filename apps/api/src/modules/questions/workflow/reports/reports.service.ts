@@ -72,6 +72,7 @@ export class QuestionReportsService {
         throw ApiError.of('VALIDATION_ERROR', { fields: { questionType: M.type } })
       }
       const v = validateCreate({ ...(body as object), questionType: stored })
+      const context = await this.contextOf(v.context, actor, id)
       await this.repo.upsert({
         questionId: v.questionId,
         questionVersionNo: info.liveVersionNo,
@@ -82,6 +83,7 @@ export class QuestionReportsService {
         source: v.source,
         quizSessionRef: v.quizSessionRef,
         roomCode: v.roomCode,
+        context,
         isTest: actor.isTest,
         now: this.clock.now(),
       })
@@ -91,6 +93,22 @@ export class QuestionReportsService {
       }
       return { success: true as const, message: M.created }
     })
+  }
+
+  /**
+   * R1-T42: the attempt a report is filed from is trusted only after it is read back: it must be the reporter's own and hold the question
+   * (an unknown id and someone else's attempt answer alike, so the id is not an oracle). The paper is taken from the attempt; a
+   * `paperId` sent by the client is only compared with it.
+   */
+  private async contextOf(given: { attemptId: string; paperId: string | null } | null, actor: WorkflowActor, questionId: string) {
+    if (given === null) return null
+    const a = await this.repo.attemptFacts(given.attemptId)
+    if (!a || a.userId !== idFromString(actor.userId)) throw ApiError.of('VALIDATION_ERROR', { fields: { attemptId: M.attempt } })
+    if (!a.questionIds.has(questionId)) throw ApiError.of('VALIDATION_ERROR', { fields: { attemptId: M.attemptQuestion } })
+    if (given.paperId !== null && (a.paperId === null || idToString(a.paperId) !== given.paperId)) {
+      throw ApiError.of('VALIDATION_ERROR', { fields: { paperId: M.paper } })
+    }
+    return { attemptId: given.attemptId, paperId: a.paperId, paperLabel: a.label.slice(0, 200) }
   }
 
   /** GET /question-reports (admin): not paged, newest first. */
@@ -213,6 +231,7 @@ export class QuestionReportsService {
       quizSessionId: r.quizSessionRef,
       roomCode: r.roomCode,
       sourceSet: r.sourceSet,
+      paper: r.paperLabel === null && r.paperId === null ? null : { id: r.paperId === null ? null : idToString(r.paperId), label: r.paperLabel ?? '', attemptId: r.attemptId },
       status: r.status as Status,
       displayStatus: display,
       adminNotes: r.adminNotes,
