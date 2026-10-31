@@ -193,7 +193,7 @@ As an Admin Pusat, I want to see where a question is visible to pupils.
 ### R1-18 Laporan Soalan for Bijak questions
 As a Murid, I want to report a wrong question, and as an Admin Pusat I want to fix or hide it.
 - AC-R1-18.1 Given Semakan or an attempt, then the pupil can report a question part with a reason and optional note; the report stores the question and paper.
-- AC-R1-18.2 Given own reports, then `/laporan-soalan` lists them with status baru / disemak / diperbaiki / ditolak; a pupil sees only their own.
+- AC-R1-18.2 Given own reports, then `/laporan-soalan` lists them with status Menunggu / Disemak / Diperbaiki / Ditolak; a pupil sees only their own. (Corrected 2026-10-31: this AC said "baru"; the A2 T42 finding shows the M04 URS/SRS label for the first state is "Menunggu", which V3 already uses. V3 also shows "Dikeluarkan", the state set by Arkib.)
 - AC-R1-18.3 Given the admin queue, then each row shows question, paper and status; the admin sets status and a note.
 - AC-R1-18.4 Given a report, then the admin can open the question and archive it (verify that the existing row action does this; add if absent); archiving removes it from Databank and Kuiz at once and warns that Terbit papers keep their frozen snapshot (PIPE AC-04.4).
 - AC-R1-18.5 Given a status change, then the pupil sees the new status on their next view.
