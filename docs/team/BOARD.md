@@ -38,11 +38,12 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 | ID | Team | Task |
 |---|---|---|
 | H-A1 | A | Spec coverage for `SPM_SERVABLE_SQL` readers (Databank, Latih Tubi SPM, Mock K1, Battle SPM, Misi): one approved-T4 fixture proves all five serve it |
-| H-A2 | A (A1 IN-PROGRESS, r1/ha2-reports-darjah) | `reports/classes` raw SQL Darjah counts (8b open item) — audit and fix under D72 |
-| H-A3 | A (A1 next, r1/ha3-learner-labels) | 3 known apps/api `learner.spec` label failures (BR-16 code map, subject labels) |
+| H-A2 | A | **READY-FOR-REVIEW** `r1/ha2-reports-darjah` @ 4eec8b78 (off T01): class member counts/ids (`VISIBLE_USER_SQL`), `ClassesRepository.all()` drops Darjah classes, teacher question stats `NOT_PRIMARY_LEVEL_SQL`; new spec classes/primary-hidden 4/4 (3 fail without fix); kelas-saya + question-stats-index adjusted; 21/21; api tsc 0; eslint 0 |
+| H-A3 | A | CLOSED: `test/curriculum/learner.spec.ts` 28/28 on T01 head (fixed earlier by 8b fix3 c2b782e7); no change |
 | H-A5 | A | `test/seed/poc.spec.ts` 1 failure: docs/plan/seed-profile.md says spm_tracking_set_questions 493 / total 21891, seed produces 483 / 21881. Pre-existing on BASE-1 |
 | H-A6 | A | `test/battle/queue.spec.ts` "school battle: bot from another school": no secondary pupil in another school in the demo seed (D72 seed gap) |
 | H-A7 | A (A4 next, r1/ha7-essay-choice-flat-view) | `essay_choice` in flat admin/Guru views (`questions/projection.ts`, `bank-adapter.ts`): shows as structured today |
+| H-A8 | A (A1 IN-PROGRESS, r1/ha8-stale-specs) | Pre-existing on T01: curriculum/admin-delete-conflict "level link only"; classes/teacher-classrooms-lookup (suite); battle/school-page (2), battle/seed (3) |
 | H-A4 | A | `test/bijak-attempts/golden.spec.ts` 4 failures (sej-k2-2025-a): mock engine emits `selfMarkable: true` on `belum_dimarkah` parts; spec strips it only on the API side. Pre-existing on BASE-1 |
 | H-B1 | B | Unit sweep m01/02/03/04/05/08/09/16/27 + registry-boot on the latest BASE; file failures to the owning team's status file |
 | H-B2 | B | `lint:admin` ratchet for the 7 m02/m03/m09 findings (report only; the fix goes to C) |
