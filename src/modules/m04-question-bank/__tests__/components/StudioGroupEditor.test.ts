@@ -87,11 +87,11 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     expect(has(w, 'issues')).toBe(false)
   })
 
-  it('is read-only while a member is being served', async () => {
+  it('has no client lock: an approved member does not disable the controls (the server 409 decides)', async () => {
     api.fetchStudioQuestion.mockImplementation((id: string) => Promise.resolve(question(id, id === '12' ? 'approved' : 'draft')))
     const w = await render()
-    expect(t(w, 'locked').text()).toContain('sedang diterbitkan')
-    for (const id of ['member-13-up', 'member-13-remove', 'dissolve', 'search', 'add-stimulus']) expect(t(w, id).attributes('disabled')).toBeDefined()
+    expect(has(w, 'locked')).toBe(false)
+    for (const id of ['member-13-up', 'member-13-remove', 'dissolve', 'search', 'add-stimulus']) expect(t(w, id).attributes('disabled')).toBeUndefined()
   })
 
   it('shows the 409 messages of the served lock in BM and reads the group again', async () => {
@@ -166,13 +166,18 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     expect(w.emitted('update:groupId')?.[0]).toEqual(['5'])
   })
 
-  it('on a question that is not saved yet the group starts empty and the question joins on save (0 members)', async () => {
-    api.createStimulus.mockResolvedValue({ data: stimulus, status: 'ok' })
-    api.createGroup.mockResolvedValue({ data: detail([], 'Kumpulan ini kini kosong.'), status: 'ok' })
+  it('on a question that is not saved yet nothing is created: the stimulus waits for the save (D93, no orphan group)', async () => {
     const w = await render(null, { currentQuestionId: null })
     await w.get('[data-testid="studio-group-new-body"]').setValue('Petikan tentang pasar tani.')
     await t(w, 'create').trigger('click')
     await flushPromises()
-    expect(api.createGroup).toHaveBeenCalledWith({ label: null, stimulusIds: ['70'], questionIds: [] })
+    expect(api.createStimulus).not.toHaveBeenCalled()
+    expect(api.createGroup).not.toHaveBeenCalled()
+    expect(t(w, 'deferred').text()).toContain('apabila soalan disimpan')
+    const pending = w.emitted('update:pending')?.at(-1)?.[0] as { form: { body: string }; memberIds: string[] } | null
+    expect(pending?.form.body).toBe('Petikan tentang pasar tani.')
+    await t(w, 'undefer').trigger('click')
+    await flushPromises()
+    expect(w.emitted('update:pending')?.at(-1)?.[0]).toBeNull()
   })
 })

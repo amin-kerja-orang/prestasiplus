@@ -15,8 +15,6 @@ export interface GroupView {
   id: string
   stimuli: WireStimulus[]
   members: GroupMember[]
-  /** A member is being served: pupils see the group, so its structure is read-only. */
-  locked: boolean
   /** D93: the server's BM warning while the group has fewer than 2 questions. */
   warning: string | null
 }

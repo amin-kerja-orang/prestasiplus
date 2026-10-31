@@ -134,8 +134,16 @@ export class IntakeStimuliService {
         }
         if (linked.length > 0) {
           await tx.$queryRaw`SELECT id FROM intake_batches WHERE id = ${found.batchId} FOR UPDATE`
-          await tx.intakeItem.updateMany({ where: { id: { in: linked } }, data: { stimulusId: found.id } })
-          await this.gather(tx, found.batchId, found.id, linked)
+          // The items were read before the lock: under the lock only those still open and unlinked are taken (an item accepted, rejected
+          // or linked meanwhile is left alone), and only those are gathered.
+          const stillOpen = { stimulusId: null, reviewState: { in: ['generated', 'needs_review'] } }
+          const taken = await tx.intakeItem.findMany({ where: { id: { in: linked }, ...stillOpen }, select: { id: true } })
+          const takenIds = taken.map((i) => i.id)
+          linked.splice(0, linked.length, ...takenIds)
+          if (takenIds.length > 0) {
+            await tx.intakeItem.updateMany({ where: { id: { in: takenIds }, ...stillOpen }, data: { stimulusId: found.id } })
+            await this.gather(tx, found.batchId, found.id, takenIds)
+          }
         }
       }
       await this.audit.record({
