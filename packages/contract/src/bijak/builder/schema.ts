@@ -588,11 +588,11 @@ export const BijakBuilderPublishResultSchema = z
     overridden: z.array(z.string()).optional().meta({
       description: 'R1-T34: the blueprint-conformance lines that were overridden (audited `bijak.paper.published_override`); absent without an override.',
     }),
-    blockerDetails: z.array(BijakBuilderBlockerSchema).meta({
-      description: 'R1-T34 follow-up: the same blockers as `errors`, structured (same order, same lines, same rule as the review). Empty when ok is true.',
+    blockerDetails: z.array(BijakBuilderBlockerSchema).optional().meta({
+      description: 'R1-T34 follow-up: on a refusal (ok false) the same blockers as `errors`, structured (same order, same lines, same rule as the review). Absent when ok is true.',
     }),
-    canOverride: z.boolean().meta({
-      description: 'No hard blocker and at least one overridable one: the UI may offer "Terbitkan walaupun tidak memenuhi kontrak blueprint". false when ok is true.',
+    canOverride: z.boolean().optional().meta({
+      description: 'On a refusal: no hard blocker and at least one overridable one, so the UI may offer "Terbitkan walaupun tidak memenuhi kontrak blueprint". Absent when ok is true.',
     }),
   })
   .meta({ id: 'BijakBuilderPublishResult' })

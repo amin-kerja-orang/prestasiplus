@@ -104,12 +104,12 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     return review
   }
 
-  it('a paper without blockers: empty list, canOverride false, and Terbit says the same', async () => {
+  it('a paper without blockers: empty list, canOverride false; Terbit answers a plain ok result', async () => {
     const { paper } = await fullPaper()
     const review = await reviewOf(paper)
     expect(review).toMatchObject({ ok: true, blockers: [], blockerDetails: [], canOverride: false })
     const pub = await publishOf(paper)
-    expect(pub).toMatchObject({ ok: true, errors: [], blockerDetails: [], canOverride: false })
+    expect(pub).toMatchObject({ ok: true, errors: [] })
     expect(BijakBuilderPublishResultSchema.safeParse(pub).success).toBe(true)
   })
 
@@ -120,7 +120,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     expect(review.canOverride).toBe(true)
     expect(review.blockerDetails).toEqual([{ code: 'INELIGIBLE', message: expect.stringContaining(`Soalan ${ids[0]} tidak layak`), overridable: true, section: 'Bahagian A', questionId: ids[0] }])
     const ok = await publishOf(paper, { override: true, reason: 'Soalan lama menunggu tag DSKP' })
-    expect(ok).toMatchObject({ ok: true, errors: [], blockerDetails: [], canOverride: false })
+    expect(ok).toMatchObject({ ok: true, errors: [] })
     expect(ok.overridden).toHaveLength(1)
   })
 
@@ -129,7 +129,10 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     expect((await place(paper, sections[0]!, await approved())).status).toBe(201)
     const review = await expectAgree(paper)
     expect(review.canOverride).toBe(false)
-    expect(review.blockerDetails).toEqual([{ code: 'COUNT_TOO_MANY', message: expect.stringContaining('Lebih 1 soalan'), overridable: false, section: 'Bahagian A' }])
+    expect(review.blockerDetails).toEqual([
+      { code: 'COUNT_TOO_MANY', message: 'Bahagian A: Lebih 1 soalan (perlu 3, ada 4)', overridable: false, section: 'Bahagian A' },
+      { code: 'MARKS_MISMATCH', message: 'Bahagian A: Markah 4 tidak sama dengan bajet 3', overridable: false, section: 'Bahagian A' },
+    ])
     const forced = await publishOf(paper, { override: true, reason: 'sebab yang sah' })
     expect(forced).toMatchObject({ ok: false, canOverride: false })
     expect(forced.overridden).toBeUndefined()
@@ -201,6 +204,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
       expect(mixed.canOverride).toBe(false)
       expect(mixed.blockerDetails.map((b) => [b.code, b.overridable])).toEqual([
         ['COUNT_TOO_MANY', false],
+        ['MARKS_MISMATCH', false],
         ['BLUEPRINT_NOT_VERIFIED', true],
       ])
       const forced = await publishOf(paper, { override: true, reason: 'sebab yang sah' })
@@ -210,11 +214,11 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
       expect((await admin.del(`/api/admin/papers/${paper}/placements/${extra}`)).status).toBe(200)
       expect((await reviewOf(paper)).canOverride).toBe(true)
       const done = await publishOf(paper, { override: true, reason: 'Kontrak sedang menunggu pengesahan' })
-      expect(done).toMatchObject({ ok: true, errors: [], blockerDetails: [], canOverride: false })
+      expect(done).toMatchObject({ ok: true, errors: [] })
       expect(done.overridden).toHaveLength(1)
       expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(1)
       // a repeated Terbit of the (overridden) paper stays ok
-      expect(await publishOf(paper)).toMatchObject({ ok: true, blockerDetails: [], canOverride: false })
+      expect(await publishOf(paper)).toMatchObject({ ok: true, errors: [] })
     })
   })
 

@@ -470,11 +470,9 @@ describe('createPaper and PaperPatch (single PUT)', () => {
 
 describe('publish, delete and preview results', () => {
   it('parses publishPaper as { ok, errors } with errors empty on success', () => {
-    expect(BijakBuilderPublishResultSchema.parse({ ok: true, errors: [], blockerDetails: [], canOverride: false })).toEqual({
+    expect(BijakBuilderPublishResultSchema.parse({ ok: true, errors: [] })).toEqual({
       ok: true,
       errors: [],
-      blockerDetails: [],
-      canOverride: false,
     })
     const L = BIJAK_BUILDER_CHECK_LINES
     // the order publishPaper uses: paper-wide lines, then each section line prefixed with its label
@@ -510,7 +508,7 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderPublishResultSchema.safeParse({ ok: false }).success).toBe(false)
     expect(BijakBuilderPublishResultSchema.safeParse({ ok: 'yes', errors: [] }).success).toBe(false)
     expect(
-      BijakBuilderPublishResultSchema.safeParse({ ok: true, errors: [], blockerDetails: [], canOverride: false, paper: {} }).success,
+      BijakBuilderPublishResultSchema.safeParse({ ok: true, errors: [], paper: {} }).success,
     ).toBe(false)
   })
 

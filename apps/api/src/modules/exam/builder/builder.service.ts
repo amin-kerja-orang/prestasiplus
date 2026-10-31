@@ -533,7 +533,7 @@ export class BuilderService {
       // R1-T34 (V2 `studio.paper.published_override`): only the blueprint-conformance blockers (incl. a contract that is not Disahkan) can be overridden, with a reason, audited.
       const override = request.override === true && view.canOverride
       if (errors.length > 0 && !override) return { ok: false, errors, ...view, ...review }
-      if (paper.status === 'published') return { ok: true, errors: [], blockerDetails: [], canOverride: false, ...review }
+      if (paper.status === 'published') return { ok: true, errors: [], ...review }
       // Pin every placed question (all members of a group) at the version in force and freeze its marks.
       for (const s of paper.sections)
         for (const pl of s.placements) {
@@ -560,9 +560,9 @@ export class BuilderService {
           overridden: overridable.slice(0, 50),
           count: overridable.length,
         })
-        return { ok: true, errors: [], blockerDetails: [], canOverride: false, overridden: overridable, ...review }
+        return { ok: true, errors: [], overridden: overridable, ...review }
       }
-      return { ok: true, errors: [], blockerDetails: [], canOverride: false, ...review }
+      return { ok: true, errors: [], ...review }
     })
   }
 
