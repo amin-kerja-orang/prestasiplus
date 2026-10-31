@@ -6,7 +6,6 @@ import { type Prng, prngStream } from '../../db/prng'
 import { CurriculumRepository, type SubjectWithLevels } from '../curriculum'
 import { SubscriptionService } from '../subscriptions'
 import {
-  chapterLocked,
   invalidField,
   missionDone,
   noAttemptsLeft,
@@ -28,7 +27,6 @@ import {
   PAST_YEAR_COUNTS,
   REVISION_LENGTH,
   SPM_LEVEL_CODES,
-  UNLOCK_SCORE,
 } from './rules'
 
 /** What a start resolves to, before the session row exists. */
@@ -192,16 +190,6 @@ export class PracticeStartPlanner {
     return Object.assign(plan, { subjectId, levelId, difficulty, served })
   }
 
-  /**
-   * BR-15: the chapters of a subject and level that have at least one eligible chapter question, in chapter order, each with
-   * its question count. One grouped count for all chapters: no question ids are loaded or hydrated.
-   */
-  private async practiceChapters(subjectId: bigint, levelId: bigint) {
-    const chapters = await this.curriculum.chapters(subjectId, levelId, { active: true })
-    const counts = await this.ports.questions.chapterCounts(chapters.map((c) => idToString(c.id)))
-    return chapters.map((chapter) => ({ chapter, count: counts.get(idToString(chapter.id)) ?? 0 })).filter((c) => c.count > 0)
-  }
-
   private async chapter(plan: StartPlan, userId: string, req: StartSessionRequest, isTest: boolean): Promise<StartPlan> {
     const chapterId = idFromString(validId(req.chapterId))
     const ch = await this.curriculum.chapter(chapterId, { active: true })
@@ -211,31 +199,7 @@ export class PracticeStartPlanner {
     // The exact (servable-shape) count of this one chapter: a chapter whose questions cannot be served is empty.
     if (((await this.ports.questions.chapterCounts([chapterKey], true)).get(chapterKey) ?? 0) === 0) throw notEnoughQuestions()
 
-    // BR-16: chapter 1 is open; chapter k needs chapter k - 1 complete with a score of at least 70.
-    const list = await this.practiceChapters(ch.subjectId, ch.educationLevelId)
-    const i = list.findIndex((c) => c.chapter.id === ch.id)
-    if (i > 0) {
-      // The chapter before this one that can actually be served: its exact count is what "complete" is measured against, and a
-      // chapter whose questions are all unservable is skipped, so one non-servable question never locks the rest for good.
-      let prev: { chapter: (typeof list)[number]['chapter']; count: number } | null = null
-      for (let j = i - 1; j >= 0 && prev === null; j--) {
-        const candidate = list[j]
-        if (!candidate) continue
-        const key = idToString(candidate.chapter.id)
-        const exact = (await this.ports.questions.chapterCounts([key], true)).get(key) ?? 0
-        if (exact > 0) prev = { chapter: candidate.chapter, count: exact }
-      }
-      if (prev) {
-        const progress = await this.repo.chapterProgress(userId, idToString(prev.chapter.id), isTest)
-        const answered = progress.size
-        const correct = [...progress.values()].filter((p) => p.correct).length
-        const complete = answered >= prev.count && prev.count > 0
-        const score = answered === 0 ? 0 : (correct / answered) * 100
-        if (!(complete && score >= UNLOCK_SCORE)) throw chapterLocked()
-      }
-    } else if (i < 0) {
-      throw chapterLocked()
-    }
+    // REQ-C-021 (D98, V2): no progressive lock. Every active chapter with a servable question can be started (BR-16 is dropped).
 
     // BR-17: unanswered questions first (ascending id), then the answered ones by oldest last answer. Only `count`
     // ids are read: the unanswered ones in SQL, the answered ones from the user's own (bounded) history.

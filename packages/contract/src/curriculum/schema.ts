@@ -332,6 +332,7 @@ export const CurriculumLegacySubjectCodeSchema = z
   ])
   .meta({ id: 'CurriculumLegacySubjectCode' })
 
+/** `locked` stays in the enum for old clients; the API never returns it (REQ-C-021, D98: no island is locked). */
 export const CurriculumTopicStateSchema = z
   .enum(['mastered', 'started', 'unlocked', 'locked'])
   .meta({ id: 'CurriculumTopicState' })
@@ -399,7 +400,7 @@ export const CurriculumLearningMapSchema = z
         progress: z.int().min(0).max(100),
         sessions: z.int().min(0),
         questionsAnswered: z.int().min(0),
-        practiceUrl: z.string().nullable().meta({ description: 'null when the topic is locked.' }),
+        practiceUrl: z.string().nullable().meta({ description: 'Always set: no topic is locked (REQ-C-021, D98). null stays allowed for old clients.' }),
       }),
     ),
   })

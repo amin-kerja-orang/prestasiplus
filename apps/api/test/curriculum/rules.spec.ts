@@ -109,14 +109,14 @@ describe('grade and practice codes (BR-13, BR-16, BR-17)', () => {
 })
 
 describe('Peta Belajar rules (BR-14, BR-15)', () => {
-  it('BR-14: mastered from 80, started on any history, unlocked after started or mastered, else locked', () => {
-    expect(islandStates([p(80, 1, 20), p(79, 1, 5), p(0, 0, 0), p(0, 0, 0)])).toEqual(['mastered', 'started', 'unlocked', 'locked'])
-    expect(islandStates([p(0, 0, 0), p(0, 0, 0), p(0, 0, 0), p(10, 0, 3)])).toEqual(['unlocked', 'unlocked', 'locked', 'started'])
+  it('BR-14 (REQ-C-021, D98): mastered from 80, started on any history, every other island unlocked; none is locked', () => {
+    expect(islandStates([p(80, 1, 20), p(79, 1, 5), p(0, 0, 0), p(0, 0, 0)])).toEqual(['mastered', 'started', 'unlocked', 'unlocked'])
+    expect(islandStates([p(0, 0, 0), p(0, 0, 0), p(0, 0, 0), p(10, 0, 3)])).toEqual(['unlocked', 'unlocked', 'unlocked', 'started'])
     expect(islandStates([])).toEqual([])
   })
 
-  it('with no progress the first two topics are open and the rest locked (default provider state)', () => {
-    expect(islandStates([NO_PROGRESS, NO_PROGRESS, NO_PROGRESS, NO_PROGRESS])).toEqual(['unlocked', 'unlocked', 'locked', 'locked'])
+  it('with no progress every topic is open (default provider state)', () => {
+    expect(islandStates([NO_PROGRESS, NO_PROGRESS, NO_PROGRESS, NO_PROGRESS])).toEqual(['unlocked', 'unlocked', 'unlocked', 'unlocked'])
   })
 
   it('BR-15: pill labels, Geografi and unknown codes title-cased', () => {

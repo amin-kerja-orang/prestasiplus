@@ -125,7 +125,7 @@ export class CurriculumLearnerService {
         progress: p.progress,
         sessions: p.sessions,
         questionsAnswered: p.questionsAnswered,
-        practiceUrl: state === 'locked' ? null : `/practice?topic_id=${idToString(t.id)}`,
+        practiceUrl: `/practice?topic_id=${idToString(t.id)}`, // REQ-C-021: no island is locked
       }
     })
     const done = states.filter((s) => s === 'mastered').length

@@ -259,22 +259,17 @@ describe('clientUuid replay (AC5)', () => {
   })
 })
 
-describe('chapter mode: BR-15 chapters, BR-16 lock, BR-17 order', () => {
-  it('chapter 1 is open; chapter 2 is 409 CHAPTER_LOCKED "Bab ini masih dikunci." until chapter 1 is complete with 70 percent', async () => {
+describe('chapter mode: BR-15 chapters, BR-17 order (no BR-16 lock)', () => {
+  it('REQ-C-021 (D98, V2): there is no chapter lock; chapter 2 starts at once, before and after chapter 1 is played, for every user', async () => {
     expect((await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })).status).toBe(201)
-    const locked = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c2, count: 5 })
-    expect(locked.status).toBe(409)
-    expect(locked.body.error).toMatchObject({ code: 'CHAPTER_LOCKED', message: 'Bab ini masih dikunci.' })
-    // 6 questions in chapter 1; answering all 6 with 4 right is 66.7 percent: still locked.
+    const direct = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c2, count: 5 })
+    expect(direct.status, JSON.stringify(direct.body)).toBe(201)
+    // 6 questions in chapter 1; answering all 6 with 4 right is 66.7 percent: chapter 2 is open all the same.
     await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 20 }, 4)
-    expect((await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c2, count: 5 })).status).toBe(409)
-    // The latest answer per question counts: all 6 right on the second round is 100 percent.
-    t.clock.advance(60_000)
-    await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 20 }, 6)
-    const open = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c2, count: 5 })
-    expect(open.status).toBe(201)
-    // Another user is still locked out.
-    expect((await post(maju, { mode: 'chapter', chapterId: w.chapter.c2, count: 5 })).status).toBe(409)
+    expect((await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c2, count: 5 })).status).toBe(201)
+    // Another user, who has played nothing, is not locked out either.
+    expect((await post(maju, { mode: 'chapter', chapterId: w.chapter.c2, count: 5 })).status).toBe(201)
+    expect(JSON.stringify(direct.body)).not.toContain('CHAPTER_LOCKED')
   })
 
   it('an unknown or inactive chapter is 404; a chapter without questions is 422 NOT_ENOUGH_QUESTIONS', async () => {

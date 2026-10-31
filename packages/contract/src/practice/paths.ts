@@ -83,7 +83,7 @@ export function registerPracticePaths(registry: OpenAPIRegistry): void {
       403: err(csrfInvalid),
       404: err('NOT_FOUND "Rekod tidak dijumpai." (unknown subject, chapter, mission, remedial test, question set or ramalan set).'),
       409: err(
-        'CHAPTER_LOCKED "Bab ini masih dikunci."; ALREADY_COMPLETED "Misi ini sudah diselesaikan." (mission) or "Ujian ini sudah selesai." (remedial); NO_ATTEMPTS_LEFT "Tiada percubaan lagi untuk set ini.".',
+        'ALREADY_COMPLETED "Misi ini sudah diselesaikan." (mission) or "Ujian ini sudah selesai." (remedial); NO_ATTEMPTS_LEFT "Tiada percubaan lagi untuk set ini.".',
       ),
       422: err(
         'VALIDATION_ERROR "Nilai tidak sah." with fields (mode, levelId, difficulty, count, targetQuestionId); NOT_ENOUGH_QUESTIONS "Soalan tidak mencukupi."; SET_NOT_READY "Soalan tidak mencukupi."; NO_WRONG_QUESTIONS "Maaf, terdapat masalah memuatkan kuiz ulang kaji.".',
