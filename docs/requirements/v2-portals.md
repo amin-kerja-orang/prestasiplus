@@ -146,7 +146,7 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 ### 6.4 Kertas & SPM (13) — Pusat only [D30]
 | ID | Item | Function(s) merged | Pusat | PPD·JPN | Sekolah | Evidence |
 |---|---|---|---|---|---|---|
-| KS-01 | Gambaran SPM | hub of lanes (landing page of the group) | F | — | — | B `:691`; P `/spm` `:196` |
+| KS-01 | SPM | hub of lanes `Kandungan SPM` (landing page of the group), `/admin/spm`; renamed from "Gambaran SPM" (V2 A21, R1-21 P1) | F | — | — | B `:691`; P `/spm` `:196` |
 | KS-02 | Databank Soalan | lane `databank` + quick edit/preview | F | — | — | B `:692`, `:716-721`; F SpmDatabank; [.my] `/spm/tahun-lepas` |
 | KS-03 | Latih Tubi | lane `latih-tubi` (admin view) | F | — | — | B `:692`; `SpmLane`; [.my] `/spm/latih-tubi` |
 | KS-04 | Tracking A | lane + set editor (fill/swap/save) | F | — | — | B `:704-714`; P `:201-208`; F Ramalan; [.my] `/spm/ramalan` |
