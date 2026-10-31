@@ -17,6 +17,7 @@
 import { curriculum } from '@/modules/m03-curriculum/mock'
 
 import type { DskpStore } from './dskp-source'
+import { isCognitive } from '../../lib/studio/dskp-tags'
 import { storeUpload, uploadedFile } from './workflow-common'
 import type { QuestionInput } from '../repository/questions'
 import { visibleLevelIds } from '../repository/visible-levels'
@@ -46,6 +47,8 @@ export const QUESTION_MESSAGES = {
   points: 'Nilai mata mesti sekurang-kurangnya 1.',
   language: 'Bahasa tidak sah.',
   sp: 'SP DSKP tidak sah.',
+  /** The contract `QuestionCognitiveLevelSchema` refusal. */
+  cognitive: 'Aras pemikiran tidak sah.',
   /** Bab (D89), same copy as the contract `QUESTION_MESSAGES.guruChapter`. */
   guruChapter: 'Bab tidak sah.',
 } as const
@@ -228,6 +231,14 @@ export function parseQuestionBody(
       else values.dskpSpId = sp
     }
   } else if (!current) values.dskpSpId = null
+
+  // Aras pemikiran (R1-B05 / T33): one of the six levels sets it, blank or null clears it, absent keeps it.
+  if ('cognitiveLevel' in b) {
+    const raw = b.cognitiveLevel
+    if (raw === null || raw === undefined || raw === '') values.cognitiveLevel = null
+    else if (isCognitive(raw)) values.cognitiveLevel = raw
+    else fields.cognitiveLevel = QUESTION_MESSAGES.cognitive
+  }
 
   // Bab: blank or null clears it, a number sets it, absent keeps it (the mock does not read M03's chapters).
   if ('curriculumChapterId' in b) {
