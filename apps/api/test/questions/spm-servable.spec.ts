@@ -78,12 +78,12 @@ describe('the shared SPM-servable definition', () => {
   })
 
   it('QuestionsRepository.count (Battle SPM size) uses the same rule', async () => {
-    const n = await repo.count({ type: 'mcq', subjectId: w.tag.subjectId, spmPool: true, status: 'published', active: true })
+    const n = await repo.count({ type: 'mcq', subjectId: w.tag.subjectId, spmPool: true, status: 'approved', active: true })
     expect(n).toBe(adminLike.length + qloadLike.length)
   })
 
   it('the overview card counts and the login count equal the draw counts', async () => {
-    const drawable = (await repo.count({ type: 'mcq', spmPool: true, status: 'published', active: true })) // all subjects
+    const drawable = (await repo.count({ type: 'mcq', spmPool: true, status: 'approved', active: true })) // all subjects
     const matrix = await t.get(OverviewRepository).bankMatrix()
     const levels = (await t.db.query<{ id: string }>(`select id::text id from education_levels where code = any($1)`, [[...OFFERED_LEVEL_CODES]])).map((r) => r.id)
     const subjects = (await t.db.query<{ id: string }>(`select id::text id from subjects where is_active`)).map((r) => r.id)

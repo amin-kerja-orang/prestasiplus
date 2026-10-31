@@ -14,6 +14,12 @@ const MIGRATION = fileURLToPath(new URL('../../prisma/migrations/0100_question_l
 describe('migration 0100 question lifecycle (approved = servable)', () => {
   let db: TestDatabase
   const ids: Record<string, string> = {}
+  const countsOf = async (): Promise<Record<string, number>> =>
+    Object.fromEntries((await db.query<{ status: string; n: number }>(`select status, count(*)::int n from question_versions group by status`)).map((r) => [r.status, r.n]))
+  const servedOf = async (statuses: string[]): Promise<number> =>
+    (await db.query<{ n: number }>(`select count(*)::int n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.is_active and v.status = any($1::text[])`, [statuses]))[0]!.n
+  let before: Record<string, number> = {}
+  let servedBefore = 0
 
   beforeAll(async () => {
     db = await createTestDatabase()
@@ -39,6 +45,11 @@ describe('migration 0100 question lifecycle (approved = servable)', () => {
     await make('both', 'published')
     await db.query(`update questions set latest_version_no = 2 where id = $1::bigint`, [ids.both])
     await db.query(`insert into question_versions (question_id, version_no, status, type, stem_ms) values ($1::bigint, 2, 'approved', 'mcq', 'y')`, [ids.both])
+    // A bulk of extra rows so the counts are not 1/1/1/1/1: 4 more published, 2 more approved, 1 more review, 3 more drafts.
+    for (const [status, n] of [['published', 4], ['approved', 2], ['review', 1], ['draft', 3]] as const)
+      for (let i = 0; i < n; i += 1) await make(`${status}-extra-${i}`, status)
+    before = await countsOf()
+    servedBefore = await servedOf(['published'])
   })
   afterAll(async () => {
     await db.drop()
@@ -72,5 +83,16 @@ describe('migration 0100 question lifecycle (approved = servable)', () => {
       expect(r.indexdef).not.toContain("'published'")
     }
     expect(rows.map((r) => r.indexname)).toContain('uq_question_versions_one_approved')
+  })
+
+  it('status counts: approved = old published, review = old review + old approved, and the served count is unchanged', async () => {
+    // Before: draft 4, review 2, approved 4 (1 + 1 'both' v2 + 2), published 6 (1 + 'both' v1 + 4), archived 1.
+    expect(before).toEqual({ draft: 4, review: 2, approved: 4, published: 6, archived: 1 })
+    const after = await countsOf()
+    expect(after).toEqual({ draft: before.draft, review: before.review! + before.approved!, approved: before.published, archived: before.archived })
+    expect(after.published).toBeUndefined()
+    // Served (live pointer on an active question): the old published rows are exactly the new approved rows.
+    expect(await servedOf(['approved'])).toBe(servedBefore)
+    expect(await servedOf(['review', 'draft', 'archived'])).toBe(0)
   })
 })

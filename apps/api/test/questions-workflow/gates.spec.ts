@@ -6,7 +6,8 @@ import { bootWorkflowApp, loginAll, type Client, type WorkflowTestApp } from './
 import { actorOf, failure, workingPart } from './lifecycle-support'
 
 type Gate = 'submit' | 'approve' | 'publish'
-const START_STATUS = { submit: 'draft', approve: 'review', publish: 'approved' } as const
+// ADR-0027: `publish` rules are part 2 of the one merged approve gate (review to approved, "Terbitkan"); a failure reports gate `approve`.
+const START_STATUS = { submit: 'draft', approve: 'review', publish: 'review' } as const
 const TARGET = { submit: 'review', approve: 'approved', publish: 'approved' } as const
 
 /** One failing question per gate rule: [gate, rule, gate-data override, field expected in `fields`]. */
@@ -51,7 +52,7 @@ describe('lifecycle gates (BE-10 AC 1, 12)', () => {
     const e = await failure(svc.transition(id, TARGET[gate], actorOf(c.admin)))
     expect(e.getStatus()).toBe(422)
     expect(e.code).toBe('VALIDATION_ERROR')
-    expect(e.details).toEqual({ gate })
+    expect(e.details).toEqual({ gate: gate === 'publish' ? 'approve' : gate })
     expect(e.fields).toHaveProperty([field])
     expect((await t.fake.getStatus(id))?.status).toBe(START_STATUS[gate])
     expect(await t.db.query('select 1 from question_status_events where question_id = $1', [id])).toHaveLength(0)

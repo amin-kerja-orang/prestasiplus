@@ -46,7 +46,7 @@ describe.skipIf(!ENABLED)('AC5: dashboard read on 20 students and a generated an
     await t.db.query(
       `with q as (insert into questions (source_type, live_version_no, is_active) select 'manual', 1, true from generate_series(1, $1::int) returning id)
        insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, chapter_id, difficulty_tp, published_at)
-       select id, 1, 'published', 'mcq', 'Soalan prestasi ' || id, (array[$2::bigint, $3::bigint, $4::bigint])[1 + (id % 3)], $5::bigint,
+       select id, 1, 'approved', 'mcq', 'Soalan prestasi ' || id, (array[$2::bigint, $3::bigint, $4::bigint])[1 + (id % 3)], $5::bigint,
               case when id % 7 = 0 then $6::bigint else null end, 1 + (id % 6), now() from q`,
       [QUESTIONS, math, bm, sej, d1, chapter],
     )
@@ -100,7 +100,7 @@ describe.skipIf(!ENABLED)('AC5: dashboard read on 20 students and a generated an
     const bank = await t.db.query<Record<string, string>>(
       `explain (analyze, buffers) select v.subject_id, v.education_level_id as level_id, v.difficulty_tp as tp, (v.type = 'mcq') as mcq, count(*)::int as n
          from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-        where q.is_active and v.status = 'published' group by 1, 2, 3, 4`,
+        where q.is_active and v.status = 'approved' group by 1, 2, 3, 4`,
     )
     report.push('--- EXPLAIN (ANALYZE, BUFFERS): bank matrix ---', ...bank.map((r) => r['QUERY PLAN'] as string))
     console.log(report.join('\n'))

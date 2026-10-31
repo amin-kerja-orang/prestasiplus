@@ -177,7 +177,7 @@ describe('QuestionsBijakPoolSource (BJS-07)', () => {
     const by = new Map(totals.excluded.byReason.map((r) => [r.reason, r]))
     expect([...by.keys()]).toEqual(['no_unit', 'no_tp', 'no_marks', 'no_key', 'tag_review'])
     for (const r of ['no_unit', 'no_tp', 'no_marks', 'no_key', 'tag_review'] as const) expect(by.get(r)?.count).toBeGreaterThanOrEqual(1)
-    expect(by.get('tag_review')?.bankQuery).toEqual({ subjectId: refs.mathId, status: 'published', tagReview: 'true' })
+    expect(by.get('tag_review')?.bankQuery).toEqual({ subjectId: refs.mathId, status: 'approved', tagReview: 'true' })
     expect(by.get('no_key')?.bankQuery).toMatchObject({ missing: 'key' })
     // modeExcluded: base-eligible questions of the pool whose mode is not allowed in the section.
     const counts = sectionPoolCounts(list, { allowedModes: ['mcq'], pool: 'MAT2-A' })

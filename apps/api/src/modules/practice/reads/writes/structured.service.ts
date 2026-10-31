@@ -118,7 +118,7 @@ export class StructuredService {
 
   private async getVisible(id: string, levels: Map<string, string>): Promise<QuestionRecord | null> {
     const r = await this.questions.get(id, 'live')
-    if (!r || !r.isActive || r.version.status !== 'published' || r.version.type !== 'structured') return null
+    if (!r || !r.isActive || r.version.status !== 'approved' || r.version.type !== 'structured') return null
     return r.version.educationLevelId !== null && levels.has(r.version.educationLevelId) ? r : null
   }
 
