@@ -168,7 +168,7 @@ T04 scope widened by planning: raw-SQL `'published'` question-status spots in `p
 | R1E2E-09 | Low | A2 | READY in r1/t04-minors @ ad5867dc |
 | B3 bulk-approve gap | Medium | A2 | bulk approve runs the full approve gate (+ DSKP) → in T33 |
 
-AC decisions (lead, from H-A17): R1-16.2 Terbit needs Disahkan, overridable only by the audited override (PIPE AC-07.5), handled in T34; R1-13.2 / AC-11.12 / AC-12.1 Databank + Latih Tubi images/groups deferred to R2 (D87 U2, D92); R1-10.4 keep `past_year` code (naming D9 row); R1-06.3 skip if no whole-marked Bahagian in R1 papers (OQ-2); R1-19.2 → QUESTIONS Q4.
+AC decisions (lead, from H-A17): R1-16.2 Terbit needs Disahkan, overridable only by the audited override (PIPE AC-07.5), handled in T34; R1-13.2 / AC-11.12 / AC-12.1 Databank + Latih Tubi images/groups deferred to R2 (D87 U2, D92); R1-10.4 keep `past_year` code (naming D9 row); R1-06.3 skip if no whole-marked Bahagian in R1 papers (OQ-2); R1-19.2 → Q4 answered: Darjah stays hidden from admin lists too (D96, supersedes AC-R1-19.2 / AC-02.7 / R1-21.5 "visible"); current code already does this.
 
 Answer to B1 Q-B1-2: T01 removed the old `0092_part_options_image_file_index` folder (A1 verified: only 0092_bijak_standards and 0093_part_options_image_file_index exist). Q-B1-1 (UAT blueprints) → answered (Q3, D95 final): **no seed on UAT**; Admin Pusat creates and Sahkan blueprints in Kontrak (real flow): 3472/2 first, then 1449/1, 1249/1, 4531/1, Sains K1 when 2+ body evidence is ready. A3 writes the evidence list (T39), A1 the runbook step (T37).
 
