@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@pp/contract": ["../../packages/contract/src/index.ts"],
+      "@pp/contract/openapi.json": ["../../packages/contract/openapi.json"],
+      "@pp/contract-tests": ["../../packages/contract-tests/src/index.ts"],
+      "@pp/exam-core": ["../../packages/exam-core/src/index.ts"],
+      "@pp/exam-core/*": ["../../packages/exam-core/src/*.ts"]
+    }
+  }
+}

@@ -173,6 +173,8 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
     errors.push(line)
     paperCodes.push(code)
   }
+  // PIPE AC-07.4: the first check of V2 Terbit, a paper without a single question. The section gaps are still listed after it.
+  if (sections.every((s) => s.questionIds.length === 0)) addPaper('NO_QUESTIONS', LINES.noQuestions)
   const seen = new Set<string>()
   const dup = new Set<string>()
   for (const s of sections) for (const id of s.questionIds) (seen.has(id) ? dup : seen).add(id)
@@ -213,6 +215,8 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
     const marks = effectiveMarks(spec.rule, ids.map(marksOf))
     if (ids.length < spec.questionCount) addSec('COUNT_TOO_FEW', LINES.tooFew(spec.questionCount, ids.length))
     else if (ids.length > spec.questionCount) addSec('COUNT_TOO_MANY', LINES.tooMany(spec.questionCount, ids.length))
+    // PIPE AC-07.4: no zero-mark Bahagian with questions (a hard check; the audited override only lifts the Kontrak lines).
+    if (ids.length > 0 && marks === 0) addSec('ZERO_MARK_SECTION', LINES.zeroMarkSection)
     if (marks !== spec.markBudget) addSec('MARKS_MISMATCH', LINES.marksMismatch(marks, spec.markBudget))
     if (spec.rule.type === 'choose') {
       const marksList = ids.map(marksOf)
@@ -247,6 +251,8 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
   })
   const totalMarks = out.reduce((n, s) => n + s.marks, 0)
   const totalBudget = specs.reduce((n, s) => n + s.markBudget, 0)
+  // PIPE AC-07.4: total marks at least 1 (an empty paper is already NO_QUESTIONS).
+  if (totalMarks < 1 && sections.some((s) => s.questionIds.length > 0)) addPaper('TOTAL_MARKS_BELOW_ONE', LINES.totalMarksBelowOne)
   const check: PaperCheck = {
     sections: out,
     errors,
