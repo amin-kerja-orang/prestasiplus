@@ -486,7 +486,7 @@ async function submit(): Promise<void> {
             <button
               type="button"
               class="mt-4 flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 text-left"
-              :class="issues.length > 0 ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'"
+              :class="issues.length > 0 || serverIssues.length > 0 ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'"
               :aria-expanded="showIssues"
               data-testid="issues-toggle"
               @click="showIssues = !showIssues"
@@ -495,7 +495,9 @@ async function submit(): Promise<void> {
                 {{
                   issues.length > 0
                     ? `${issues.length} perkara perlu dibaiki sebelum dihantar`
-                    : 'Semua semakan kualiti lulus. Sedia dihantar.'
+                    : serverIssues.length > 0
+                      ? `Pelayan menolak ${serverIssues.length} perkara. Baiki sebelum dihantar semula.`
+                      : 'Semua semakan kualiti lulus. Sedia dihantar.'
                 }}
               </span>
               <span class="i-ph-caret-down" aria-hidden="true" />
@@ -720,7 +722,7 @@ async function submit(): Promise<void> {
                       @click="dropStimulus(s.id)"
                     />
                   </div>
-                  <StimulusView v-if="s.svg || s.text" :stimulus="s" />
+                  <StimulusView v-if="s.image || s.text" :stimulus="s" />
                   <img
                     v-else-if="previewImage(s)"
                     :src="previewImage(s)!.dataUrl"
@@ -825,7 +827,7 @@ async function submit(): Promise<void> {
                       · {{ groupLabel(groupFor(q)!) }} berkongsi rajah ini
                     </span>
                   </p>
-                  <StimulusView v-if="stimulusOf(q)!.svg || stimulusOf(q)!.text" :stimulus="stimulusOf(q)!" />
+                  <StimulusView v-if="stimulusOf(q)!.image || stimulusOf(q)!.text" :stimulus="stimulusOf(q)!" />
                   <p v-else class="text-sm text-muted">{{ stimulusOf(q)!.alt || 'Tiada pratonton' }}</p>
                 </div>
                 <article

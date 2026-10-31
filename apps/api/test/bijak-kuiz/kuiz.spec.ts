@@ -14,7 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, START, STUDENT, TEACHER, ADMIN } from '../bijak-integration/helpers'
 
 // The rate-limit case is last; every other case stays under this many starts.
-process.env.THROTTLE_BIJAK_KUIZ_START_PER_MINUTE = '30'
+process.env.THROTTLE_BIJAK_KUIZ_START_PER_MINUTE = '60'
 
 let t: IntegrationApp
 let student: Client
@@ -151,14 +151,24 @@ describe('random quiz: selection rules (V2 ExamQuizController::index)', () => {
   })
 
   it('6. validates the body at the boundary (count in 5/10/20/40, strict keys) and defaults to 20', async () => {
-    for (const body of [{ count: 7 }, { count: '5' }, { count: 5.5 }, { subject: '' }, { subject: 'MATH', extra: 1 }, { count: 100 }]) {
+    for (const body of [{ subject: '' }, { subject: 'MATH', extra: 1 }, { subject: 5 }]) {
       const res = await start(student, body)
       expect(res.status, JSON.stringify(body)).toBe(422)
     }
-    const def = await start(student, {})
-    expect(def.status).toBe(201)
-    expect(sessionOf(def).items.length).toBeLessThanOrEqual(20)
-  })
+    // V2: an invalid or missing count silently becomes 20 (never a 422); '10' is cast to 10.
+    const twenty = sessionOf(await start(student, { count: 20 })).items.length
+    const five = sessionOf(await start(student, { count: 5 })).items.length
+    expect(five).toBe(5)
+    expect(twenty).toBeGreaterThan(5) // the seed bank holds more than five servable questions, fewer than 20
+    for (const count of [undefined, 7, 100, null, 'abc', { a: 1 }]) {
+      const res = await start(student, count === undefined ? {} : { count })
+      expect(res.status, JSON.stringify(count)).toBe(201)
+      expect(sessionOf(res).items.length, JSON.stringify(count)).toBe(twenty)
+    }
+    // V2 casts with (int): '5' and 5.5 both become 5, a valid count
+    expect(sessionOf(await start(student, { subject: 'BM', count: '5' })).items).toHaveLength(5)
+    expect(sessionOf(await start(student, { subject: 'BM', count: 5.5 })).items).toHaveLength(5)
+  }, 120_000)
 })
 
 describe('random quiz: marking and the practice-session write (U8)', () => {
@@ -314,7 +324,10 @@ describe('per-paper quiz (V2 ExamQuizController::paper): paged by Bahagian, mark
     expect(ecf.length).toBeGreaterThan(0)
     expect(ecf.every((i) => i.kind === 'open' && i.markable === false && i.options.length === 0)).toBe(true)
     expect(ecf.map((i) => i.path)).toEqual(['a', 'b'])
-    expect(b.items.find((i) => i.id === id('SEED-GRP-PASAR-1'))!.stimuli[0]).toMatchObject({ kind: 'passage' })
+    // D90: the group passage is on the page once, not on the member
+    expect(b.items.find((i) => i.id === id('SEED-GRP-PASAR-1'))!.stimuli).toEqual([])
+    expect(b.groups).toHaveLength(1)
+    expect(b.groups[0]!.stimuli[0]).toMatchObject({ kind: 'passage' })
 
     expect((await student.get(`/api/bijak/kuiz/papers/${paperId}?page=3`)).status).toBe(422)
     expect((await student.get(`/api/bijak/kuiz/papers/${paperId}?page=0`)).status).toBe(422)
@@ -366,6 +379,151 @@ describe('per-paper quiz (V2 ExamQuizController::paper): paged by Bahagian, mark
     }
     expect((await student.get(`/api/bijak/kuiz/papers/${mine}`)).status).toBe(200)
   })
+
+  describe('19b. AC-R1-18.4: a paper that places a question the bank no longer serves is refused 403 with the BM line', () => {
+    const msg = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
+    const refused = async (paper: string, q: string): Promise<void> => {
+      const page = await student.get(`/api/bijak/kuiz/papers/${paper}`)
+      expect(page.status).toBe(403)
+      expect(page.body.error.message).toBe(msg)
+      const chk = await student.post(`/api/bijak/kuiz/papers/${paper}/check`, { itemId: q, optionId: 'A' })
+      expect(chk.status).toBe(403)
+      expect(chk.body.error.message).toBe(msg)
+    }
+
+    it('archived through the real lifecycle (bulk-action archive), then served again once approved', async () => {
+      const paper = await createPaper('Kertas diarkib', [{ label: 'A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-MATH-T5')] }])
+      expect((await student.get(`/api/bijak/kuiz/papers/${paper}`)).status).toBe(200)
+      const live = (await t.db.query<{ live_version_no: number }>(`select live_version_no from questions where id = $1::bigint`, [id('SEED-MCQ-MATH-T4')]))[0]!.live_version_no
+      const admin = await loginAs(t, ADMIN)
+      const res = await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [id('SEED-MCQ-MATH-T4')] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      try {
+        await refused(paper, id('SEED-MCQ-MATH-T5'))
+      } finally {
+        // put the seed back as it was (the lifecycle may also unlink the live version)
+        await t.db.query(`update questions set live_version_no = $2 where id = $1::bigint`, [id('SEED-MCQ-MATH-T4'), live])
+        await t.db.query(`update question_versions set status = 'approved', archive_reason = null where question_id = $1::bigint and version_no = $2`, [id('SEED-MCQ-MATH-T4'), live])
+      }
+      expect((await student.get(`/api/bijak/kuiz/papers/${paper}`)).status).toBe(200)
+    })
+
+    it('a placed question with no live version is refused', async () => {
+      const paper = await createPaper('Kertas tanpa versi', [{ label: 'A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-MATH-T5')] }])
+      const before = (await t.db.query<{ live_version_no: number }>(`select live_version_no from questions where id = $1::bigint`, [id('SEED-MCQ-MATH-T4')]))[0]!.live_version_no
+      await t.db.query(`update questions set live_version_no = null where id = $1::bigint`, [id('SEED-MCQ-MATH-T4')])
+      try {
+        await refused(paper, id('SEED-MCQ-MATH-T5'))
+      } finally {
+        await t.db.query(`update questions set live_version_no = $2 where id = $1::bigint`, [id('SEED-MCQ-MATH-T4'), before])
+      }
+    })
+
+    it('a paper with no placed question is refused', async () => {
+      const paper = await createPaper('Kertas kosong', [{ label: 'A', questionIds: [] }])
+      await refused(paper, id('SEED-MCQ-MATH-T5'))
+    })
+
+    it('an inactive question stays served: the placement is what the paper froze (same rule as a new sitting)', async () => {
+      const paper = await createPaper('Kertas tidak aktif', [{ label: 'A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-MATH-T5')] }])
+      await t.db.query(`update questions set is_active = false where id = $1::bigint`, [id('SEED-MCQ-MATH-T4')])
+      try {
+        expect((await student.get(`/api/bijak/kuiz/papers/${paper}`)).status).toBe(200)
+      } finally {
+        await t.db.query(`update questions set is_active = true where id = $1::bigint`, [id('SEED-MCQ-MATH-T4')])
+      }
+    })
+  })
+})
+
+describe('shared stimulus group (D90): one picture, two questions', () => {
+  let picToken = ''
+  let groupId = ''
+
+  it('22. random quiz: each member is served with the group picture above it; the stimulus is never an item', async () => {
+    const file = (
+      await t.db.query<{ id: string; public_id: string }>(
+        `insert into files (public_id, purpose, mime, size_bytes, sha256, storage_key) values ('grpPicAaaaaaaaaaaaaaaa', 'question_image', 'image/png', 10, $1, 'kuiz/grp.png') returning id::text, public_id`,
+        ['9'.repeat(64)],
+      )
+    )[0]!
+    picToken = file.public_id
+    const stim = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, asset_file_id) values ('image', 'Rajah kumpulan', $1::bigint) returning id::text`, [file.id]))[0]!
+    groupId = (await t.db.query<{ id: string }>(`insert into stimulus_groups (scope) values ('section') returning id::text`))[0]!.id
+    await t.db.query(`insert into stimulus_group_stimuli (group_id, stimulus_id, position) values ($1::bigint, $2::bigint, 1)`, [groupId, stim.id])
+    // group order is T5 (1) then T4 (2): the reverse of their ids
+    await t.db.query(`update questions set group_id = $1::bigint, group_position = 1 where id = $2::bigint`, [groupId, id('SEED-MCQ-MATH-T5')])
+    await t.db.query(`update questions set group_id = $1::bigint, group_position = 2 where id = $2::bigint`, [groupId, id('SEED-MCQ-MATH-T4')])
+
+    const s = sessionOf(await start(student, { subject: 'MATH', count: 5 }))
+    expect(s.items.map((i) => i.id).sort()).toEqual([id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-MATH-T5')].sort())
+    for (const item of s.items) {
+      expect(item.groupId).toBe(groupId)
+      expect(item.stimuli).toEqual([{ kind: 'diagram', label: 'Rajah kumpulan', body: null, imageToken: picToken, alt: null }])
+    }
+    expect(s.items.some((i) => i.id === stim.id && i.kind !== 'mcq')).toBe(false)
+  })
+
+  it('23. per-paper quiz: the picture is rendered once, members follow it contiguously in group order', async () => {
+    const paper = await createPaper('Kertas kumpulan', [{ label: 'Bahagian A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-BM-T4'), id('SEED-MCQ-MATH-T5')] }])
+    const page = BijakKuizPaperPageSchema.parse((await student.get(`/api/bijak/kuiz/papers/${paper}`)).body.data)
+    expect(page.groups).toEqual([{ id: groupId, stimuli: [{ kind: 'diagram', label: 'Rajah kumpulan', body: null, imageToken: picToken, alt: null }] }])
+    // the group sits at the place of its first placed member (T4), members in group order (T5, T4), then the plain question
+    expect(page.items.map((i) => i.id)).toEqual([id('SEED-MCQ-MATH-T5'), id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-BM-T4')])
+    expect(page.items.map((i) => i.groupId)).toEqual([groupId, groupId, null])
+    expect(page.items.every((i) => i.stimuli.length === 0)).toBe(true)
+    expect(JSON.stringify(page).split(picToken).length - 1).toBe(1)
+  })
+})
+
+describe('kuiz marker (paywall bypass guard)', () => {
+  it('26. an in-progress practice session that is not a kuiz is 404 on kuiz check and finish', async () => {
+    const q = id('SEED-MCQ-MATH-T5')
+    const row = (
+      await t.db.query<{ id: string }>(
+        `insert into practice_sessions (user_id, mode, question_count, status, started_at) values ($1::bigint, 'latih_tubi', 1, 'in_progress', now()) returning id::text`,
+        [student.userId],
+      )
+    )[0]!
+    await t.db.query(`insert into practice_session_questions (session_id, position, question_id, question_version_no) values ($1::uuid, 0, $2::bigint, 1)`, [row.id, q])
+    const key = await keyOf(q)
+    const chk = await student.post(`/api/bijak/kuiz/sessions/${row.id}/check`, { itemId: q, optionId: key })
+    expect(chk.status).toBe(404)
+    expect(JSON.stringify(chk.body)).not.toContain('correctOptionId')
+    expect((await student.post(`/api/bijak/kuiz/sessions/${row.id}/finish`, {})).status).toBe(404)
+    expect((await t.db.query<{ status: string }>(`select status from practice_sessions where id = $1::uuid`, [row.id]))[0]!.status).toBe('in_progress')
+    expect(Number((await t.db.query(`select count(*) as n from practice_checks where session_id = $1::uuid`, [row.id]))[0]!.n)).toBe(0)
+    // a real kuiz session of the same pupil still works
+    const s = sessionOf(await start(student, { subject: 'MATH', count: 5 }))
+    const it = s.items[0]!
+    expect((await student.post(`/api/bijak/kuiz/sessions/${s.sessionId}/check`, { itemId: it.id, optionId: await keyOf(it.id) })).status).toBe(200)
+  })
+})
+
+describe('per-paper quiz skips a question without its stimulus (UX-22)', () => {
+  it('27. the pager, the score total and the check count only the shown questions', async () => {
+    const st = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, body_ms) values ('passage', 'Petikan', null) returning id::text`))[0]!
+    await t.db.query(
+      `insert into question_version_stimuli (question_version_id, stimulus_id, position) select v.id, $2::bigint, 1 from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1::bigint`,
+      [id('SEED-MCQ-MATH-T4'), st.id],
+    )
+    try {
+      const paper = await createPaper('Kertas tanpa rangsangan', [
+        { label: 'Bahagian A', questionIds: [id('SEED-MCQ-MATH-T4')] },
+        { label: 'Bahagian B', questionIds: [id('SEED-MCQ-MATH-T5')] },
+      ])
+      const page = BijakKuizPaperPageSchema.parse((await student.get(`/api/bijak/kuiz/papers/${paper}`)).body.data)
+      expect(page.pageCount).toBe(1)
+      expect(page.section?.label).toBe('Bahagian B')
+      expect(page.markableTotal).toBe(1)
+      expect(page.items.map((i) => i.id)).toEqual([id('SEED-MCQ-MATH-T5')])
+      const skipped = await student.post(`/api/bijak/kuiz/papers/${paper}/check`, { itemId: id('SEED-MCQ-MATH-T4'), optionId: 'A' })
+      expect(skipped.status).toBe(422)
+      expect((await student.post(`/api/bijak/kuiz/papers/${paper}/check`, { itemId: id('SEED-MCQ-MATH-T5'), optionId: await keyOf(id('SEED-MCQ-MATH-T5')) })).status).toBe(200)
+    } finally {
+      await t.db.query(`delete from question_version_stimuli where stimulus_id = $1::bigint`, [st.id])
+    }
+  })
 })
 
 describe('auth and role', () => {
@@ -386,9 +544,9 @@ describe('rate limit (D57a)', () => {
   it('21. starts answer 429 RATE_LIMITED with Retry-After once the minute is used up', async () => {
     const who = await loginAs(t, 'pelajarmaju@demo.test')
     let last = await start(who, { subject: 'BM', count: 5 })
-    for (let i = 0; i < 40 && last.status !== 429; i++) last = await start(who, { subject: 'BM', count: 5 })
+    for (let i = 0; i < 70 && last.status !== 429; i++) last = await start(who, { subject: 'BM', count: 5 })
     expect(last.status).toBe(429)
     expect(last.body.error.code).toBe('RATE_LIMITED')
     expect(Number(last.headers['retry-after'])).toBeGreaterThan(0)
-  })
+  }, 180_000)
 })
