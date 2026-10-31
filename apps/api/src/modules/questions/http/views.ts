@@ -76,6 +76,7 @@ function flatBase(q: QuestionView) {
     correctAnswerText: f.correctAnswerText,
     altAnswers: f.altAnswers,
     modelAnswer: f.modelAnswer,
+    ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
     explanation: f.explanation,
     kertas: kertasOfPaperCode(q.version.paperCode),
     aiExplanation: c.aiExplanation,
@@ -153,6 +154,7 @@ export function rowView(q: QuestionView): QuestionRow {
     dskpTagged: q.version.spIds.length > 0,
     sourceType: wireSourceType(q.sourceType),
     sourceFile: q.version.sourceFile,
+    ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
   })
 }
 
