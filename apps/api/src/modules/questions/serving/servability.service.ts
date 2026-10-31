@@ -51,10 +51,13 @@ export class ServabilityService {
     if (latest.size === 0) return new Map()
     const live = new Map((await this.questions.getMany([...latest.keys()], 'live')).map((r) => [r.id, r]))
     const records = [...live.values()]
+    // Level and subject belong to the version pupils are served (live), so the draws and these facts read the same row. Only a
+    // question with no live version falls back to its latest one (its status reason decides, the level and subject never serve it).
+    const effective = [...latest].map(([id, l]) => live.get(id) ?? l)
 
     const [levels, subjects, groups, linkedAssets, onPaper, jana] = await Promise.all([
-      this.levelsOf([...latest.values()].flatMap((r) => (r.version.educationLevelId ? [r.version.educationLevelId] : []))),
-      this.subjectsOf([...latest.values()]),
+      this.levelsOf(effective.flatMap((r) => (r.version.educationLevelId ? [r.version.educationLevelId] : []))),
+      this.subjectsOf(effective),
       this.groupsOf(records),
       this.assetsOf(records),
       this.onPublishedPaper([...live.keys()]),
@@ -119,13 +122,8 @@ export class ServabilityService {
   }
 
   private async groupsOf(records: readonly QuestionRecord[]): Promise<Map<string, StimulusGroupRecord>> {
-    const out = new Map<string, StimulusGroupRecord>()
-    for (const r of records) {
-      if (r.groupId === null || out.has(r.groupId)) continue
-      const group = await this.questions.groupOf(r.id)
-      if (group) out.set(r.groupId, group)
-    }
-    return out
+    const ids = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
+    return new Map((await this.questions.groupsByIds(ids)).map((g) => [g.id, g]))
   }
 
   private async assetsOf(records: readonly QuestionRecord[]): Promise<Map<string, { kind: string; assetFileId: string | null }>> {

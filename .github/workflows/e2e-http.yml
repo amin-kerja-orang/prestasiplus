@@ -71,11 +71,12 @@ jobs:
             -e "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://pp:${db_pw}@db:5432/prestasiplus|" \
             -e "s|^SESSION_SECRET=.*|SESSION_SECRET=$(openssl rand -hex 32)|" \
             -e "s|^IC_HASH_KEY=.*|IC_HASH_KEY=$(openssl rand -hex 32)|" \
-            -e "s|^BIJAK_POC_QUESTIONS=.*|BIJAK_POC_QUESTIONS=true|" \
             .env.api
           grep -q '^POSTGRES_USER=pp' .env.db && grep -q '^POSTGRES_DB=prestasiplus' .env.db
 
-      - name: Stack up (compose.yaml + compose.http.yaml, migrate + demo seed, waits for health)
+      # The migrate job (compose.http.yaml) runs the demo seed (poc profile) and then the T26 local/E2E seed
+      # (`--profile=e2e`, E2E_SEED=1). BIJAK_POC_QUESTIONS stays false (the PoC papers are not served, R1-B07 / T36).
+      - name: Stack up (compose.yaml + compose.http.yaml, migrate + demo seed + e2e seed, waits for health)
         run: npm run stack:up
 
       - name: Wait for the frontend health endpoint
@@ -85,6 +86,24 @@ jobs:
             sleep 5
           done
           echo "stack did not become healthy"; docker compose -f compose.yaml -f compose.http.yaml ps; exit 1
+
+      # The PoC papers are listed first (lowest ids) but are not playable without PoC questions, so the Bijak
+      # attempt specs open the demo paper on bank questions (seed poc/bijak-sittings.ts BANK_PAPER_TITLE).
+      - name: Pick the bank demo paper for the Bijak attempt specs (BIJAK_PAPER_ID)
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="$(docker compose -f compose.yaml -f compose.http.yaml exec -T db \
+            sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA' <<'SQL'
+          select id from papers
+           where kind = 'pilihan' and status = 'published' and title = 'Latihan Demo Matematik Bank Soalan (Contoh)'
+           order by id limit 1;
+          SQL
+          )"
+          id="$(echo "${id}" | tr -d '[:space:]')"
+          if [ -z "${id}" ]; then echo "::error::bank demo paper not found (the demo seed did not create it)"; exit 1; fi
+          echo "BIJAK_PAPER_ID=${id}" >> "$GITHUB_ENV"
+          echo "BIJAK_PAPER_ID=${id}"
 
       - run: npx playwright install --with-deps chromium
 
