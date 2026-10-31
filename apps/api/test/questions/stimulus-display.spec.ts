@@ -140,9 +140,18 @@ describe('stimulus display read model (R1-T07)', () => {
     expect(review.stimuli[g.groupId]).toEqual(review.groupStimuli?.[g.groupId]?.[0])
   })
 
-  it('a group whose only stimulus is audio is absent from the builder groups', async () => {
+  it('a group whose only stimulus is audio is STILL a group (D90): emitted with no stimuli and its members as one unit', async () => {
     const g = await groupOfQuestions([await stimulus('audio', 'Hanya audio')])
-    expect((await source.groups([g.groupId])).size).toBe(0)
+    const groups = await source.groups([g.groupId])
+    expect([...groups.keys()]).toEqual([g.groupId])
+    const info = groups.get(g.groupId)
+    expect(info?.questionIds).toEqual(g.members)
+    expect(info?.stimuli).toEqual([])
+    // The wire still needs a stimulus object: an empty one (no text, no picture).
+    expect(info?.stimulus).toMatchObject({ kind: 'passage', label: '', alt: '' })
+    expect(info?.stimulus?.text).toBeUndefined()
+    const described = await source.describe(g.members.map((id) => ({ id })))
+    for (const id of g.members) expect(described.get(id)?.groupId).toBe(g.groupId)
   })
 
   it('an essay_choice leaf is valid in the contract but refused with 422 on the write path until it can be stored', async () => {

@@ -33,6 +33,7 @@ import {
   previewOfRows,
   reviewQuestion,
   statusOf,
+  emptyGroupStimulus,
   stimuliOf,
   type Curriculum,
   type PartRow,
@@ -175,8 +176,10 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
       },
     })
     for (const g of groups) {
-      const [stimulus, ...rest] = stimuliOf(g.stimuli.map((s) => s.stimulus))
-      if (stimulus) out.set(g.id.toString(), { id: g.id.toString(), stimulus, stimuli: [stimulus, ...rest], questionIds: g.questions.map((m) => m.id.toString()) })
+      // D90: the group is always emitted, with or without a displayable stimulus, so every builder read treats its members as one unit.
+      const shown = stimuliOf(g.stimuli.map((s) => s.stimulus))
+      const [stimulus = emptyGroupStimulus(g.id), ...rest] = shown
+      out.set(g.id.toString(), { id: g.id.toString(), stimulus, stimuli: shown.length > 0 ? [stimulus, ...rest] : [], questionIds: g.questions.map((m) => m.id.toString()) })
     }
     return out
   }
