@@ -315,3 +315,11 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - T38, T40 and T50 will go green once this merges.
   - **Process note for B2/C:** a change to the m28 mock registry must also run `apps/api/test/bijak-attempts`.
 - REQ-B-026 moved from A1a to A1b, to run in parallel.
+- **A2 slot 1 READY ×6** (all with BASE-62 merged; tsc 0; eslint 0):
+  1. REQ-B-023 r1/t33-conformance-fix @ 94106d298 — **conformance 409/409**. Needs B2.
+  2. H-A18 + REQ-B-017 + REQ-B-037 r1/ha18-gate-facts @ 3a2ac810f — **migration 0105**; 15 provenance columns carried to every new version; workflow 283/283, questions 570/570. Needs **B2 + B3**. **B1: merge H-A18 before T45b** and keep H-A18's `approveFields(record, version)` on conflict.
+     - Lead decision: `hasSourceDeclaration` keeps counting created_by_id. An admin- or Guru-authored manual draft declares its author as its source; tightening it would block every manual draft at Semakan, which is not V2 behaviour.
+  3. T45b r1/t45b-question-detail-acs @ cfe98740f — T45B-L1 fixed; contract 1451/1451. Needs B2.
+  4. H-A16 r1/ha16-table-reader @ 085dec382 — pipe-body MAJOR fixed; 652 pass + 3 todo. Needs B2.
+  5. REQ-B-025(a)(b) + REQ-C-019 r1/t49-served-now @ 2e6d06dfd — new GET /api/questions/filter-options (Admin Pusat). Needs **B2 + B3** (new input).
+  6. R008-L1 r1/r008-l1 @ 4cd62e5bb — a non-admin may only reference stimuli it already carries ("Stimulus tidak sah."). Needs **B2 + B3**.
