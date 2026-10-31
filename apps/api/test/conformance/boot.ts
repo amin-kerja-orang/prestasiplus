@@ -27,6 +27,7 @@ import { featureModules } from '../../src/modules'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder'
 import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
 import { battleConformanceEnv, seedBattleConformance } from './battle/fixtures'
+import { serveSeededBlueprints } from '../support/serve-blueprints'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 /** Fixed "now" (Malaysia time) of the injected clock, as the other integration suites use. */
@@ -125,6 +126,13 @@ export interface BootOptions {
 export async function bootConformanceApp(opts: BootOptions = {}): Promise<ConformanceApp> {
   const db = await createTestDatabase()
   await runSeeds(CONFORMANCE_SEEDS, { prisma: db.prisma })
+  // The seeded second demo school (DEMO002) is primary (type SK, a Darjah 4 roster pupil). Secondary-only (D72) hides every primary
+  // school and Darjah pupil from the lists and reads, so the scenarios that need "another school" would find none. The conformance
+  // run makes it a secondary school with one Tingkatan 2 pupil (no teacher, no T4/T5 pupil, as the scenarios expect).
+  await db.prisma.school.update({ where: { code: 'DEMO002' }, data: { type: 'SMK', name: 'SMK Demo Dua' } })
+  await db.prisma.user.updateMany({ where: { username: 'murid01', school: { code: 'DEMO002' } }, data: { grade: 8, classLabel: '2 Cekap' } })
+  // A pupil generates from a serving (Disahkan) blueprint only (D76, migration 0092); the seeded ones are Spec. The suite verifies them as an admin would.
+  await serveSeededBlueprints(db)
   await seedBattleConformance(db.prisma) // BE-44: published MCQs so a battle queue can draw its 10 questions
   const dir = await mkdtemp(join(tmpdir(), 'pp-conformance-'))
 
