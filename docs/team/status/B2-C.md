@@ -108,3 +108,76 @@ Note (post-review): BASE-9..BASE-14 (T07, T08, T28, H-A2, R1E2E-01, T32 @87a9a36
 - T11: needs the security MEDIUM fixed, T07 merged first, and the new tip reviewed.
 - T10: Changes requested (dirty override); needs T34 first.
 - T13: Changes requested (Studio on unlocked T32 routes); needs T32 with the served lock first.
+
+## Cycle 2 — 2026-10-31 (started 20:32 MYT, base BASE-14 70971776)
+
+Scope: the three new READY heads with no verdict. T11, T12, T14 and T15 are unchanged since cycle 1, so their verdicts stand. Each head was trial-merged into BASE-14; all three were clean. **None of the three heads contains BASE-14.** Method as in cycle 1; DB specs ran on a local Postgres 16.
+
+- **T10 r1/f08-builder-ui @ e1546909 (C1, round 3): Changes requested**
+  - Trial merge on BASE-14: clean (54183461). The head lacks BASE-14.
+  - Checks: api tsc 0; vue-tsc 0; eslint 0 (33 files). `vitest --project unit src/modules/m28-bijak-spm/__tests__ src/shells registry-boot`: 56 files, 710/710.
+  - MAJOR (cycle 1, **still open**) `PaperEditorPage.vue:556-562`: the override is still offered while `dirty`. `publish({override})` does not save first, so the old saved version is published and the unsaved edits are lost.
+  - MAJOR (new) `admin/builder/components/PaperQuestionOps.vue:50-52`, `copy.ts:150-152`: "Tambah soalan / Padam soalan" now place and un-place a bank question (the placements routes). V2 creates and deletes an *extra* question with Nombor soalan / Jenis jawapan / Markah (cloud-student-mechanism §3.4 l.392; design S4.4). This change of meaning is not in any deviation table. The V2 confirm text, shown verbatim, tells the admin the question and its skema are deleted for good, but the action only removes a placement. Fix: add a deviation row (UX-1x) with a [PROPOSED] confirm that matches the action, or get a lead/user decision.
+  - MAJOR (merge gate, **still open**): "Sunting bahagian / petikan" (`http.ts` updateSection/updateGroupLabel) still needs T34. BASE-14 has no groups route and a strict section patch. Merge T10 only after T34, or flag the blocks off. Tambah/Padam routes already exist on BASE-14.
+  - Minor `PaperEditorPage.vue:538,658`: two add/remove models run side by side. The local picker only applies on Simpan draf; PaperQuestionOps writes at once and lists the saved data, not the local `ids`. Padam on a unit already removed locally returns 422. Fix: render from `ids`, or keep one add path.
+  - Minor `PaperQuestionOps.vue:33-42,105`: search has no debounce or sequence guard, and shows only the first 20 with no "Muat lagi".
+  - Minor `domain/blockers.ts:32-36`: on t34 tip e363fe51, blockers are still strings, so the text fallback runs. The overridable "Kontrak Simulasi … belum Disahkan" line does not match /tidak layak/, so the main override case is not offered. This closes with REQ-C-002.
+  - Minor (BASE-14 interaction) `SetBuilderPage.vue:381-388,466-477`, `PaperEditBlocks.vue`: T07's empty-group placeholder `{kind:'passage',label:''}` renders an empty stimulus box, a badge with a blank label, and a blank "Sunting petikan" row. Fix: skip these when the stimulus has no label, text or image.
+  - Cycle-1 Minors **still open**:
+    - "di atas" contradiction (`PaperEditorPage.vue:497`)
+    - per-unit Naik/Turun race (`SetBuilderPage.vue:165-203`)
+    - mock ignores `override` (`memory.ts:268-273`)
+    - V2 copy flashes on Semak (`:233,:244`); `published_ok`/`blockedCount` unused; "kontrak blueprint" vs "kontrak Simulasi"
+    - Kod kertas read-only deviation not recorded (`PaperMetaForm.vue:92-94`; stale comment at :5)
+    - errRename still the fallback for metadata/passage, **partly fixed** (Tambah/Padam now use errAdd/errRemove)
+    - nits (title empty/200 check, REQ-C-008 answerable from the contract, test name, unused keys, v2-portals §6.4 count)
+  - Passed:
+    - D90: Tambah adds and Padam removes the whole group (contract `paths.ts:312,328`).
+    - Payloads match e363fe51 and BASE-14.
+    - Edits are saved before Tambah/Padam; the buttons are hidden on a published paper.
+    - The blockers.ts order canOverride → flags → text is unit-tested.
+
+- **H-C6 r1/hc6-skema-evidence @ c554cbae (C1): Approve with Minors**
+  - Trial merge on BASE-14: clean (4f50df3b). The head lacks BASE-14.
+  - Checks: api tsc 0; vue-tsc 0; eslint 0 (2 files). `vitest --project unit` kontrak-evidence-skema + m28 `__tests__` + registry-boot: 34 files, 477/477.
+  - Code `EvidenceDrawer.vue`: for a skema, Tempoh and Peraturan are hidden, and neither `durationMin` nor `rule` is sent; a trial paper is unchanged (SPP 10.3, AC-39.8). Correct and minimal.
+  - Minor: the new BM line "Skema tidak mencetak peraturan menjawab atau tempoh, jadi kedua-duanya tidak diisi." is not in V2 and not tagged [PROPOSED] or recorded as a deviation.
+  - Minor: editing an existing skema item that carries a rule or duration silently drops them on save. This is probably intended; note it in the test or the deviation row.
+  - Info: the server side (H-A15, `r1/ha15-blueprint-evidence`) is not merged. The FE works on its own.
+  - No security flag (no new endpoint; fields only removed).
+
+- **T13 r1/t13-studio-groups @ 17ac8f28 (C3, round 3): Approve with Minors**; **security: Pass on the C3 delta (1 Low)**, with a residual Medium in T32 base code routed to A2
+  - Trial merge on BASE-14 (T32 87a9a363 now in base): clean (5f523cfd). The head lacks BASE-14.
+  - Checks: api tsc 0; vue-tsc 0; eslint 0 (51 files); `contract:check` ok.
+    - DB (local PG): studio-group-lock, studio-part-images, stimulus-api, stimulus-display, stimulus-group-rules, figure-links(+unit), stimulus-links: 8 files, 61/61.
+    - FE `--project unit` (10 changed test files + registry-boot): 11 files, 64/64.
+  - Conflict resolution against T32: no T32 behaviour lost. `git diff 70971776 HEAD -- apps/api/src/modules/questions/` is additive: StudioController/StudioDskpService, `numberLabel`, `mapOptionImageIds`, part-image `referencedIds`; `joinNew` (:605) and `move` (:896) are kept.
+  - Minor `src/stores/session.ts:326-334`, `http-session.ts:136`: a 401 → `clear()` → `dropLocalDrafts()` wipes the Studio draft in the exact case recovery is for. Drafts are already keyed per user. Fix: drop drafts only in `logout()` and on a user switch.
+  - Minor `StudioGroupEditor.vue:53,72,96,342-343`: the client lock is stricter than the server (it blocks appending a draft, which T32 allows) and reads the latest status (misses a served question with a pending draft). It still shows the removed `GROUP_LOCKED_MESSAGE` text. The server 409 is now authoritative, so this is UX only. Fix: drop or narrow the lock; use `STIMULUS_MESSAGES.groupServed`.
+  - Minor (D93) `StudioGroupEditor.vue:150-168`, `StudioEditorPage.vue:178-183`: on the create page, "Cipta rangsangan kongsi" creates the stimulus and an empty group at once. An abandoned page leaves orphans that nothing can list yet. Fix: create them in the save step, or dissolve them on leave; at least note it in UX-13.
+  - Minor `StudioEditorPage.vue:223`: the badge shows the raw status enum. Use the BM labels.
+  - Minor / SEC LOW (C3, **still open**) `intake/workflow/stimuli.service.ts:125-137` linkReferencing: items are read before the batch lock, and `updateMany` filters on id only. Fix: add `stimulusId: null, reviewState in ('generated','needs_review')` to the where.
+  - Minor (impact unverified, **still open**) `extraction.service.ts:413-418`: extraction-time links skip the contiguity gather.
+  - SEC LOW (A2/C3) lock order: `questions.service.ts:894-896` locks the question then the group (`move`), while the stimulus routes lock the group then the questions. A concurrent pair can deadlock → 500. Fix: lock the groups first, or map deadlock to 409.
+  - **SEC MEDIUM, T32 residual, owner A2 (base code, not C3's delta)** `stimuli.repository.ts:223,248-282`: "served" = active + live approved only. An archived question still pinned in a Terbit paper is not counted, and the 409 texts (`contract questions/stimuli.ts:45-47`) tell the admin to archive first. Archive the member, then `PUT /stimuli/:id`, `PUT/DELETE` the group or remove the member: pupils on the published paper see the changed or missing figure for a pinned, graded version (image rule B `PAPER_PINNED_STATUSES`). Fix: add a pinned-in-published-paper EXISTS to `servingMemberIds`/`stimulusServed`, and reword the messages.
+  - Cycle-1 re-check:
+    - Studio on T32 routes without a served lock: **fixed**. 409 on updateStimulus :83, updateGroup :153, deleteGroup :163, and add/remove/order/set via `GroupMembers.set`.
+    - Client lock: **open** (Minor, no longer unsafe).
+    - FOR UPDATE: **fixed** (`GroupMembers.lock` in set/joinNew/move, `lockQuestions` in id order).
+    - Intake accept 409: **fixed** by design (`joinNew` appends).
+    - Non-atomic saveMembers: **fixed** (one `PUT /stimulus-groups/:id/members`).
+    - Inline cap message: **fixed** (`M.membersTooMany`).
+    - Raw badge: **open**. Orphan stimulus: **open** (widened by D93). linkReferencing race: **open**. Extraction contiguity: **open**.
+    - Draft wipe: logout **fixed**, 401 over-clears.
+    - Security T13-SEC-M1: **fixed** for live-served members. SEC-L1: **fixed**. T32-L1: **fixed** for stimuli (question path decimal id remains Low, admin only). T32-L2: **fixed**.
+  - B2 probe 1 (a draft joins a served group) is now intended D93/T32 behaviour: the draft is appended and served members keep their order. The spec was re-pointed accordingly.
+
+### Merge readiness summary (cycle 2)
+- **No Team C unit is "Ready for B1 merge"**: no head contains BASE-14 (70971776).
+- **T15:** Approve. Merge BASE-14 → ready.
+- **H-C6:** Approve with Minors. Tag the new copy, then merge BASE-14.
+- **T13:** Approve with Minors; security Pass on the C3 delta. Merge BASE-14. Lead to decide whether the Minors (401 draft wipe, orphan D93 groups) block. The T32 residual Medium is for A2.
+- **T14:** Approve with Minors. Merge BASE-14.
+- **T12:** Approve with Minors. Needs T11.
+- **T11:** security MEDIUM (kuiz check accepts any own session) still open; the T07 conflict now has to be resolved in the lane's BASE-14 merge.
+- **T10:** Changes requested: dirty override; Tambah/Padam meaning not recorded as a deviation; merge after T34.
