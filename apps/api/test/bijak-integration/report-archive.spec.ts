@@ -68,6 +68,12 @@ const drawn = async (): Promise<string[]> =>
   t.app.get(PracticePorts).questions.sample({ subjectId, educationLevelIds: [levelId], spmPool: true }, 50, prngStream('report-archive'))
 const inJanaPool = async (): Promise<boolean> =>
   (await t.app.get(BijakPapersPorts).poolSource.candidates({ subjectId, subjectCode: 'MATH', kertas: 1 })).some((f) => f.id === qid)
+/** The ids a random Kuiz (`POST /bijak/kuiz/sessions`) of the question's subject serves to the pupil, 40 at most (the whole servable MATH set here). */
+const kuizDraws = async (): Promise<string[]> => {
+  const res = await (await loginAs(t, STUDENT)).post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 40 })
+  expect(res.status, JSON.stringify(res.body)).toBe(201)
+  return (res.body as { data: { items: { id: string }[] } }).data.items.map((i) => i.id)
+}
 const questionRow = async () =>
   (await t.db.query<{ is_active: boolean; status: string; live: number | null }>(
     `select q.is_active, v.status, q.live_version_no live from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where q.id = $1`,
@@ -78,6 +84,7 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
   it('1. the question is served before the report: Latih Tubi SPM draws it, the Jana Kertas pool holds it', async () => {
     expect(await drawn()).toContain(qid)
     expect(await inJanaPool()).toBe(true)
+    expect(await kuizDraws()).toContain(qid)
     expect(await questionRow()).toMatchObject({ is_active: true, status: 'approved' })
     // a pupil starts a sitting of the published paper that places it (its version is pinned on the placement)
     const student = await loginAs(t, STUDENT)
@@ -123,6 +130,18 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     expect(await drawn()).not.toContain(qid)
     expect(await inJanaPool()).toBe(false)
   })
+
+  it('5b. archived is not drawn by the random Kuiz (R1-18.4)', async () => {
+    expect(await kuizDraws()).not.toContain(qid)
+  })
+
+  // R1-18.4 (lead decision, option b): "Arkib" also hides the question from the per-paper Kuiz of a Terbit paper, like a NEW sitting (8);
+  // a sitting already started keeps its pinned version (7). Today `GET /bijak/kuiz/papers/:id` still reads the pinned version of an archived
+  // question, so the body is kept here as the assertion to enable once C2's live check lands:
+  //   const page = await (await loginAs(t, STUDENT)).get(`/api/bijak/kuiz/papers/${paperId}`)
+  //   expect(page.status).toBe(200)
+  //   expect(page.body.data.items.map((i) => i.id)).not.toContain(qid)   // and POST .../check on it is refused
+  it.todo('5c. archived is not shown by the per-paper Kuiz of the Terbit paper (paperPage and paperCheck) - pending REQ-A-003 (C2 kuiz.service paperPage/paperCheck live check)')
 
   it('6. a second Arkib is a no-op (idempotent), not a 409', async () => {
     const res = await adminPatch(`/api/question-reports/${reportId}`, { status: 'fixed', archive: true })

@@ -22,6 +22,10 @@ export const QUESTION_REPORT_MESSAGES = {
   type: 'Jenis soalan tidak sah.',
   question: 'Sila pilih soalan.',
   reference: 'Rujukan sesi atau bilik tidak sah.',
+  /** R1-T42: the attempt is unknown, not the reporter's, or the id is malformed (one answer: no existence oracle). */
+  attempt: 'Rujukan percubaan tidak sah.',
+  attemptQuestion: 'Soalan ini bukan sebahagian daripada percubaan itu.',
+  paper: 'Kertas tidak sepadan dengan percubaan itu.',
   comment: 'Komen tidak boleh melebihi 500 aksara.',
   status: 'Status tidak sah.',
   adminNotes: 'Nota admin tidak boleh melebihi 1000 aksara.',
@@ -105,6 +109,19 @@ const RefField = z
   .optional()
 
 /**
+ * R1-T42 (R1-18.1): where the pupil filed the report. The attempt (`exam_attempts` uuid, a Bijak sitting or its Semakan) is the proof:
+ * the server checks it is the reporter's and holds the question, and takes the paper from it. `paperId` is optional and, when sent, must be
+ * the paper of that attempt. A strict object: nothing else is read; a malformed value is a 422 on `attemptId` / `paperId`.
+ */
+export const QuestionReportContextSchema = z
+  .strictObject({
+    attemptId: z.uuid(QUESTION_REPORT_MESSAGES.attempt),
+    paperId: IdSchema.optional().meta({ description: 'Optional; must equal the paper of the attempt (422 `paperId` otherwise). The stored paper always comes from the attempt.' }),
+  })
+  .meta({ id: 'QuestionReportContext' })
+export type QuestionReportContext = z.infer<typeof QuestionReportContextSchema>
+
+/**
  * POST body (JSON). `reasons` must be non-empty and every reason must belong to the set of the
  * question type. 422 `fields` use the messages in `QUESTION_REPORT_MESSAGES`; `questionId` that is
  * missing or not an id answers `fields.questionId` = "Sila pilih soalan.". A question that does not
@@ -122,6 +139,8 @@ export const QuestionReportCreateRequestSchema = z
     source: QuestionReportSourceSchema.optional(),
     quizSessionId: RefField,
     roomCode: RefField,
+    attemptId: z.string().nullable().optional().meta({ description: 'R1-T42: uuid of the attempt the pupil reported from; see QuestionReportContext. 422 `attemptId` when unknown, not the reporter\'s, or the question is not in it.' }),
+    paperId: IdSchema.nullable().optional().meta({ description: 'R1-T42: optional; must be the paper of `attemptId`; sent without `attemptId` is 422 `attemptId`.' }),
   })
   .superRefine((v, ctx) => {
     const allowed: readonly string[] =
@@ -173,6 +192,8 @@ const reportRow = {
   quizSessionId: z.string().nullable(),
   roomCode: z.string().nullable(),
   sourceSet: z.string().nullable(),
+  /** R1-T42: the paper the report was filed from; `null` when it was filed outside an attempt. `id` is null once the paper is deleted (the label stays). */
+  paper: z.object({ id: IdSchema.nullable(), label: z.string(), attemptId: z.string().nullable() }).nullable().optional(),
   status: QuestionReportStatusSchema,
   displayStatus: QuestionReportDisplayStatusSchema,
   adminNotes: z.string().nullable(),

@@ -36,6 +36,7 @@ import {
   QuestionImportRunSchema,
   QuestionQualityAuditedSchema,
   QuestionQualitySummarySchema,
+  QuestionReportContextSchema,
   QuestionReportCreateRequestSchema,
   QuestionReportCreatedSchema,
   QuestionReportListResponseSchema,
@@ -120,6 +121,16 @@ describe('lifecycle (D54a codes, v2-question-bank 4.1)', () => {
 
 describe('reports', () => {
   const create = { questionId: '41', reasons: ['wrong_answer'] }
+
+  it('the report context is a strict uuid attempt with an optional paper id (R1-T42)', () => {
+    const attemptId = '3f6c1f2a-8f3e-4c53-9a53-2d3f2f6f1a11'
+    expect(ok(QuestionReportContextSchema, { attemptId })).toBe(true)
+    expect(ok(QuestionReportContextSchema, { attemptId, paperId: '12' })).toBe(true)
+    expect(ok(QuestionReportContextSchema, { attemptId: 'abc' })).toBe(false)
+    expect(ok(QuestionReportContextSchema, { attemptId, paper: 'palsu' })).toBe(false) // strict: no other key
+    expect(ok(QuestionReportContextSchema, { paperId: '12' })).toBe(false)
+    expect(ok(QuestionReportCreateRequestSchema, { ...create, attemptId, paperId: '12' })).toBe(true)
+  })
 
   it('accepts a minimal and a full create body', () => {
     expect(ok(QuestionReportCreateRequestSchema, create)).toBe(true)
