@@ -146,7 +146,18 @@ export class QuestionReportsService {
       if (row.reporterId !== null && row.status !== v.status) await this.notify(next, await this.displayOf(next))
       return next
     })
-    return { data: { id: idToString(updated.id), status: updated.status as Status, adminNotes: updated.adminNotes, updatedAt: toMytTimestamp(updated.updatedAt) }, status: M.updated }
+    // H-A13: after "Arkib", the published papers that place the question cannot start a new sitting; tell the admin which.
+    const papers = v.archive ? (await this.repo.publishedPapersPlacing(row.questionId)).map((p) => ({ id: idToString(p.id), title: p.title })) : []
+    return {
+      data: {
+        id: idToString(updated.id),
+        status: updated.status as Status,
+        adminNotes: updated.adminNotes,
+        updatedAt: toMytTimestamp(updated.updatedAt),
+        ...(papers.length > 0 ? { papers, warning: M.archivedOnPapers } : {}),
+      },
+      status: M.updated,
+    }
   }
 
   /**
