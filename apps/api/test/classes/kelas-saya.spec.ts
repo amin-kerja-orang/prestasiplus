@@ -163,7 +163,12 @@ describe('Kelas Saya: GET /api/kelas-saya and POST /api/kelas-saya/join (AC 1)',
     expect(row?.is_test).toBe(true)
     expect(JoinedList.parse((await who.agent.get('/api/kelas-saya')).body).data.map((x) => x.id)).toEqual([k.id])
     // the owner's counters and roster ignore it
-    const [count] = await t.db.query<{ n: number }>(`select count(*)::int n from enrolments where classroom_id = $1 and status = 'active' and not is_test`, [k.id])
+    // (the seeded other-school pupil is a Darjah 4 pupil, hidden from counts by D72, so the control count leaves out grade 1-6)
+    const [count] = await t.db.query<{ n: number }>(
+      `select count(*)::int n from enrolments e join users u on u.id = e.student_id
+        where e.classroom_id = $1 and e.status = 'active' and not e.is_test and (u.grade is null or u.grade >= 7)`,
+      [k.id],
+    )
     const mine = (await teacher.get('/guru/classes')).body.data.find((x: { id: string }) => x.id === k.id)
     expect(mine.studentCount).toBe(count?.n)
     const left = await who.agent.delete('/api/session/mode').set('X-CSRF-Token', csrf)
