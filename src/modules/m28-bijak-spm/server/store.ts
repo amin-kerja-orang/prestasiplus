@@ -6,12 +6,15 @@
  * Reveal rules (US-15): an answer key or mark scheme leaves this class only inside a graded
  * result, i.e. after submit (exam) or after "Semak" on that one question (latihan).
  */
+import type { StudioDskp } from '@pp/contract'
+
 import { blankQuestion } from '../admin/intake/domain/blank'
 import { batchToSeeds } from '../admin/intake/domain/convert'
 import { attachToStimulus, groupsOf } from '../admin/intake/domain/grouping'
 import { referencingQuestionIds } from '../admin/intake/domain/figure-links'
 import { paperMarks } from '../admin/intake/domain/marks'
 import { validateBatch } from '../admin/intake/domain/validation'
+import { mockStudioDskp } from '../admin/intake/lib/dskp'
 import { demoBatch } from '../admin/intake/lib/seed'
 import type {
   ExtractedPaper,
@@ -1067,6 +1070,12 @@ export class BijakServer implements BijakApi {
     store[batch.id] = batch
     this.persist()
     return jsonClone(batch)
+  }
+
+  /** Mock of `GET /api/questions/studio/dskp` (REQ-B-001): the stand-in units in the server's shape. */
+  async dskpUnits(subject: SubjectCode, form: 'T4' | 'T5'): Promise<StudioDskp> {
+    await this.tick()
+    return mockStudioDskp(subject, form)
   }
 
   /** D90: links the figure to every question without a stimulus that names it, and keeps the group contiguous. */

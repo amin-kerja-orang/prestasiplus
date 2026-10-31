@@ -91,7 +91,7 @@ import {
   statesOfStatus,
   type QueueContext,
 } from './review-wire'
-import type { IntakeItemRow, IntakeItemStateCounts } from '@pp/contract'
+import type { IntakeItemRow, IntakeItemStateCounts, StudioDskp } from '@pp/contract'
 import { ApiError } from '@/api'
 import { HttpBijakServer, toBijakError, type HttpBijakOptions } from './http'
 import type { BijakServer } from './store'
@@ -114,6 +114,7 @@ export type BijakAdminMethods = Omit<
   | 'createManualBatch'
   | 'saveExtracted'
   | 'linkStimulusReferences'
+  | 'dskpUnits'
   | 'submitForReview'
   | 'listReviewQueue'
   | 'getReviewItem'
@@ -294,6 +295,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
   private readonly snapshots = new Map<string, Snapshot>()
   private readonly batchInfo = new Map<string, WireBatchDetail>()
   private subjectsReady: Promise<readonly Subject[]> | null = null
+  private levelIds: Promise<Map<string, string>> | null = null
 
   constructor(options: HttpBijakOptions = {}) {
     super(options)
@@ -531,6 +533,24 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
   /** `POST /api/intake/stimuli/:id/link-references`: the open items that name the figure join its group. */
   async linkStimulusReferences(_batchId: string, stimulusId: string): Promise<{ linkedItemIds: string[] }> {
     return this.send<{ linkedItemIds: string[] }>('POST', `/api/intake/stimuli/${enc(stimulusId)}/link-references`)
+  }
+
+  /**
+   * REQ-B-001: the real curriculum units of a subject and form for the tag picker (`GET /api/questions/studio/dskp`).
+   * The Bijak code is matched to the curriculum subject by name (as the bank does) and the form to the level by its code.
+   */
+  async dskpUnits(subject: SubjectCode, form: 'T4' | 'T5'): Promise<StudioDskp> {
+    const hit = (await this.bankSubjects()).find((s) => s.code === subject)
+    this.levelIds ??= this.send<{ id: string | number; code: string }[]>('GET', '/api/education-levels').then(
+      (rows) => new Map((Array.isArray(rows) ? rows : []).map((l) => [l.code, String(l.id)])),
+      (e) => {
+        this.levelIds = null
+        throw e
+      },
+    )
+    const levelId = (await this.levelIds).get(form)
+    if (!hit || !levelId) return { units: [] }
+    return this.send<StudioDskp>('GET', `/api/questions/studio/dskp?${new URLSearchParams({ subjectId: hit.id, educationLevelId: levelId })}`)
   }
 
   saveExtracted(id: string, payload: SaveExtractedPayload): Promise<IntakeBatch> {
