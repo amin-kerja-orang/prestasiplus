@@ -733,27 +733,8 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await expectNoHScroll(page)
   })
 
-  test('S1c admin PDF intake with a passage shared by 2 questions (Muat Naik Kertas)', async ({
-    page,
-  }, info) => {
-    const st = readState(info)
-    const pdf = pdfOf([
-      `Kertas contoh ${st.tag}`,
-      'Petikan 1: Harga sebatang pensel RM1, sebuah buku RM6 dan sebiji pemadam 50 sen.',
-      'Gunakan Petikan 1 untuk menjawab soalan 1 dan 2.',
-      `1. Berapakah harga sebatang pensel? ${st.tag} pdf`,
-      'A. RM1',
-      'B. RM2',
-      'C. RM3',
-      'D. RM4',
-      `2. Barangan manakah yang paling murah? ${st.tag} pdf`,
-      'A. Pemadam',
-      'B. Pensel',
-      'C. Buku',
-      'D. Beg',
-      'Jawapan: 1-A 2-A',
-    ])
-    await login(page, ADMIN)
+  /** Muat Naik Kertas: uploads `pdf`, waits for the server to read it, runs "Ekstrak soalan"; returns the batch id. */
+  async function uploadAndExtract(page: Page, info: TestInfo, pdf: Buffer): Promise<string> {
     await shimPdfjs(page, info)
     await adminMenu(page, 'Muat Naik Kertas')
     await expect(page.getByTestId('intake-upload-page')).toBeVisible()
@@ -806,6 +787,48 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
         { message: 'extraction produced question cards', timeout: 90_000, intervals: [3_000] },
       )
       .toBe('questions')
+    return id
+  }
+
+  test('S1c admin PDF intake with a passage shared by 2 questions (Muat Naik Kertas)', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    const pdf = pdfOf([
+      `Kertas contoh ${st.tag}`,
+      'Petikan 1: Harga sebatang pensel RM1, sebuah buku RM6 dan sebiji pemadam 50 sen.',
+      'Gunakan Petikan 1 untuk menjawab soalan 1 dan 2.',
+      `1. Berapakah harga sebatang pensel? ${st.tag} pdf`,
+      'A. RM1',
+      'B. RM2',
+      'C. RM3',
+      'D. RM4',
+      `2. Barangan manakah yang paling murah? ${st.tag} pdf`,
+      'A. Pemadam',
+      'B. Pensel',
+      'C. Buku',
+      'D. Beg',
+      'Jawapan: 1-A 2-A',
+    ])
+    await login(page, ADMIN)
+    const id = await uploadAndExtract(page, info, pdf)
+    // BASE-54: the cards can appear before the extraction links them to the shared passage; the group header then
+    // shows only after a reload. Wait for it (reloading) and record how many reloads were needed.
+    let reloads = 0
+    await expect
+      .poll(
+        async () => {
+          if ((await page.getByTestId('group-header').count()) > 0) return 'grouped'
+          reloads++
+          await page.reload()
+          await page.getByTestId('question-card').first().waitFor({ timeout: 15_000 })
+          return 'waiting'
+        },
+        { message: 'Petikan 1 group header shown', timeout: 45_000, intervals: [3_000] },
+      )
+      .toBe('grouped')
+      .catch(() => undefined)
+    observe(info, `group header after extraction: ${reloads} reload(s) needed`)
     const questions = await page.getByTestId('question-card').count()
     const groups = await page.getByTestId('group-header').count()
     observe(info, `batch ${id}: ${questions} question card(s), ${groups} group header(s)`)
@@ -928,6 +951,71 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     return { id, groupId }
   }
 
+  test('S1h R1E2E-17 / R1E2E-03 probe: an unknown SP code in the intake editor; is it refused, and is the refusal shown?', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    // One MCQ only; the stem carries "probe" (not "pdf"), so S2b never accepts it.
+    const pdf = pdfOf([
+      `Kertas probe ${st.tag}`,
+      `1. Berapakah 2 tambah 2? ${st.tag} probe`,
+      'A. 4',
+      'B. 5',
+      'C. 6',
+      'D. 7',
+      'Jawapan: 1-A',
+    ])
+    await login(page, ADMIN)
+    await uploadAndExtract(page, info, pdf)
+    await completeIntakeQuestions(page, st.tag)
+    // Replace the real SP with a code that is not in the unit ("1.1"; the unit's codes are 1.1.1, 1.1.2, ...).
+    const cards = page.getByTestId('question-card')
+    for (let i = 0; i < (await cards.count()); i++) {
+      const sp = cards.nth(i).getByTestId('q-sp')
+      await sp.fill('1.1')
+      await sp.press('Tab')
+    }
+    await expectNoHScroll(page)
+    const review = page
+      .waitForResponse((r) => isApi(r, 'GET', /\/api\/intake\/batches\/[^/]+\/review$/), {
+        timeout: 30_000,
+      })
+      .catch(() => null)
+    await page.getByTestId('submit-review').click()
+    const res = await review
+    const body = res
+      ? ((await res.json().catch(() => ({}))) as {
+          data?: { issues?: { where: string; message: string }[] }
+        })
+      : {}
+    const issues = (body.data?.issues ?? []).map((i) => `${i.where}: ${i.message}`)
+    await page.waitForTimeout(1000)
+    const banner = (
+      await page
+        .getByTestId('issues-toggle')
+        .innerText()
+        .catch(() => '(none)')
+    )
+      .replace(/\s+/g, ' ')
+      .trim()
+    const submitted = await page
+      .getByTestId('submitted-note')
+      .isVisible()
+      .catch(() => false)
+    observe(
+      info,
+      `server gate on SP "1.1": ${issues.join('; ') || 'no issue (accepted)'}; banner "${banner}"; "Dihantar untuk semakan" shown: ${submitted}`,
+    )
+    await expectNoHScroll(page)
+    // R1E2E-17 target: the unknown SP is refused. R1E2E-03 target: then the page shows the refusal, not the ready text.
+    expect(
+      issues.length,
+      'R1E2E-17: an SP not in the unit is refused by the server gate',
+    ).toBeGreaterThan(0)
+    expect(banner, 'R1E2E-03: the page shows the server refusal').toMatch(/Pelayan menolak/)
+    expect(banner, 'R1E2E-03: no "ready" banner after a refusal').not.toMatch(/Sedia dihantar/)
+  })
+
   test('S1d admin D90 group in Studio: one shared stimulus with 2 member questions', async ({
     page,
   }, info) => {
@@ -1030,7 +1118,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       page
         .getByTestId('queue-table')
         .locator('tbody tr, [data-ds=data-table-cards] > li')
-        .filter({ hasText: st.tag })
+        .filter({ hasText: `${st.tag} pdf` })
     await expect(runRows().first(), "the run's intake items are queued").toBeVisible()
     observe(info, `queue rows of this run: ${await runRows().count()}`)
     // http mode: the review decision is "Terima (Draf)" (WIRE): the item becomes a draft question in the bank, whose
@@ -1046,10 +1134,11 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       if ((await runRows().count()) === 0) break
       const row = runRows().first()
       observe(info, `item: ${(await row.innerText()).replace(/\s+/g, ' ').slice(0, 140)}`)
-      // Table rows carry a "Semak" link; the card list below the table breakpoint opens on a tap (row-click).
+      // Table rows carry a "Semak" link; below the table breakpoint the card's title is a button that opens the item
+      // (BASE-54: a tap on the card body no longer opens it).
       const link = row.locator('[data-testid^=queue-open-]')
       if ((await link.count()) > 0) await link.first().click()
-      else await row.click()
+      else await row.locator('button').first().click()
       await expect(page.getByTestId('review-item-page')).toBeVisible()
       await expectNoHScroll(page)
       const gate = page.getByTestId('review-gate')
@@ -2203,6 +2292,74 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await login(page, PUPIL_T4)
     await expectRouteExists(page, '/simulasi/kuiz')
     await expectNoHScroll(page)
+  })
+
+  test('B-04b Simulasi Kuiz backend (T11): API check as the T4 pupil, NOT a UI pass', async ({
+    page,
+  }, info) => {
+    // T11 (BASE-49) is in base, T12 (the screens) is not. This only tells whether the backend is ready for T12.
+    await login(page, PUPIL_T4)
+    const csrf = await csrfOf(page)
+    const post = (path: string, data: unknown) =>
+      page.request.post(path, { headers: { 'x-csrf-token': csrf }, data })
+    const start = await post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 5 })
+    const sBody = await start.text()
+    const session = (
+      JSON.parse(sBody || '{}') as {
+        data?: {
+          sessionId: string
+          count: number
+          items: { id: string; kind: string; options: unknown[]; stimuli: unknown[] }[]
+        }
+      }
+    ).data
+    observe(
+      info,
+      `API: POST /api/bijak/kuiz/sessions {MATH, 5} -> HTTP ${start.status()}; count ${session?.count ?? '-'}, items ${session?.items.length ?? '-'} (${[...new Set((session?.items ?? []).map((i) => i.kind))].join('/')}), key exposed before check: ${/"correct/.test(sBody)}`,
+    )
+    expect(start.status(), 'Kuiz session starts').toBe(201)
+    expect(session?.items.length ?? 0, 'the session has questions').toBeGreaterThan(0)
+    const first = session!.items.find((i) => i.kind === 'mcq')
+    if (first) {
+      const chk = await post(`/api/bijak/kuiz/sessions/${session!.sessionId}/check`, {
+        itemId: first.id,
+        optionId: 'A',
+      })
+      observe(
+        info,
+        `API: check item ${first.id} with A -> HTTP ${chk.status()} ${(await chk.text()).slice(0, 160)}`,
+      )
+      expect(chk.status(), 'check answers 200').toBe(200)
+    }
+    const fin = await post(`/api/bijak/kuiz/sessions/${session!.sessionId}/finish`, {
+      timeSpent: 30,
+    })
+    observe(info, `API: finish -> HTTP ${fin.status()} ${(await fin.text()).slice(0, 200)}`)
+    expect(fin.status(), 'finish answers 200').toBe(200)
+    // Per-paper quiz on the bank paper of the hub (DEMO/1).
+    const papers =
+      (
+        (await (await page.request.get('/api/bijak/papers')).json()) as {
+          data?: { id: string; code: string }[]
+        }
+      ).data ?? []
+    const demo = papers.find((p) => p.code === 'DEMO/1')
+    if (demo) {
+      const pr = await page.request.get(`/api/bijak/kuiz/papers/${demo.id}`)
+      observe(
+        info,
+        `API: GET /api/bijak/kuiz/papers/${demo.id} (DEMO/1) -> HTTP ${pr.status()} ${(await pr.text()).slice(0, 160)}`,
+      )
+    }
+    // UI today: no Kuiz entry on the paper cover (modes offered) and /simulasi/kuiz is checked by B-04.
+    if (demo) {
+      await page.goto(`/spm/bijak/kertas/${demo.id}`)
+      const modes = await page
+        .getByTestId('mode-choice')
+        .innerText()
+        .catch(() => '(no mode choice)')
+      observe(info, `UI: cover of DEMO/1, "Pilih mod": ${modes.replace(/\s+/g, ' ').slice(0, 160)}`)
+    }
   })
 
   test('B-05 Bijak "Cuba lagi" on the result starts a fresh sitting', async ({ page }, info) => {
