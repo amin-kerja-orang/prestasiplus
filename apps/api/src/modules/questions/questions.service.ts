@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
+  QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
   QuestionPartSchema,
@@ -18,6 +19,7 @@ import { gradeQuestion } from './grading'
 import {
   difficultyOf,
   flatFromVersion,
+  kertasOfPaperCode,
   keyIndexOf,
   languageToStore,
   partsFromFlat,
@@ -63,6 +65,28 @@ import type {
 
 /** A transaction that writes a whole version tree: raised above the Prisma default of 5 s. */
 const TX = { timeout: 20_000, maxWait: 10_000 } as const
+
+/**
+ * Rows one filter-based bulk run applies at most. Each row is its own transaction with the full approve gate (tag, keys, rights, duplicates,
+ * marks, media, DSKP: several reads and writes, tens of ms), so 500 rows stay well inside one HTTP request and one 20 s transaction budget each,
+ * while still covering a normal Studio filter in one or two runs. A larger filter reports `remaining`/`capped` and is run again.
+ */
+export const FILTER_ACTION_CAP = 500
+
+/** Result of `bulkByFilter` (contract `QuestionFilterBulkResult`). */
+export interface FilterBulkOutcome {
+  matched: number
+  eligible: number
+  skipped: number
+  cap: number
+  processed: number
+  affected: number
+  ids: string[]
+  failed: BulkFailure[]
+  remaining: number
+  capped: boolean
+  dryRun: boolean
+}
 
 const parse = (text: string): bigint | null => {
   try {
@@ -177,6 +201,12 @@ interface Normalized {
  * Errors: 404 `NOT_FOUND` for an unknown id and for a row the caller may not see; 422
  * `VALIDATION_ERROR` with `fields`; 409 `CONFLICT` for a status pair outside the contract table.
  */
+/** [PROPOSED] (no V2 phrase): a flat edit of an `essay_choice` question may not change what lives on its part (REQ-B-021c). */
+const ESSAY_CHOICE_FLAT_MESSAGES = {
+  modelAnswer: 'Jawapan model esei pilihan tidak boleh disunting di sini. Ubah kunci rubrik pada bahagian soalan.',
+  pointsValue: 'Markah esei pilihan tidak boleh disunting di sini. Ubah markah pada bahagian soalan.',
+} as const
+
 @Injectable()
 export class QuestionsService {
   private readonly logger = new Logger(QuestionsService.name)
@@ -313,6 +343,37 @@ export class QuestionsService {
       }
     }
     return { affected, ids: done, failed }
+  }
+
+  /**
+   * AC-03.3 (V2 "Luluskan Hasil Tapisan", "Arkib Semua"): the action on the rows of a FILTER. `expectedCount` is the total the client
+   * showed; a different count now is a 409 and nothing is applied. Rows whose status cannot move to the target are `skipped`; the others,
+   * up to `cap`, go through `bulkAction` (the same transition rule and the same approve gate as an id list). Not atomic across rows, like
+   * `bulkAction`: a row refused by the gate stays as it was and is reported in `failed`.
+   */
+  async bulkByFilter(
+    input: { action: 'approved' | 'archived'; filter: Omit<AdminListFilter, 'page' | 'pageSize'>; expectedCount?: number | undefined; dryRun?: boolean | undefined },
+    actor: QuestionActor,
+    cap: number = FILTER_ACTION_CAP,
+  ): Promise<FilterBulkOutcome> {
+    const dryRun = input.dryRun === true
+    // Defence in depth (T47-L1): after parse normalisation an approve with no real filter is the whole bank. Never approve that.
+    if (input.action === 'approved' && Object.keys(input.filter).length === 0) throw fail({ filter: QUESTION_MESSAGES.filterNeeded })
+    const from = QUESTION_WORKFLOW_STATUSES.filter((s) => isQuestionWorkflowTransitionAllowed(s, input.action, 'admin'))
+    const targets = await this.repo.filterTargets(input.filter, from, dryRun ? 0 : cap)
+    if (!dryRun && input.expectedCount !== targets.matched) {
+      throw ApiError.of('CONFLICT', {
+        message: QUESTION_MESSAGES.filterCountChanged(input.expectedCount ?? 0, targets.matched),
+        details: { expected: input.expectedCount ?? 0, actual: targets.matched },
+      })
+    }
+    const base = { matched: targets.matched, eligible: targets.eligible, skipped: targets.matched - targets.eligible, cap, dryRun }
+    if (dryRun || targets.ids.length === 0) {
+      return { ...base, processed: 0, affected: 0, ids: [], failed: [], remaining: targets.eligible, capped: false }
+    }
+    const done = await this.bulkAction(input.action, targets.ids, actor)
+    const remaining = targets.eligible - targets.ids.length
+    return { ...base, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0 }
   }
 
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------
@@ -654,7 +715,7 @@ export class QuestionsService {
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
         // D90 / R1-T32: the same member rules as the stimulus routes; locks the group so concurrent creates get distinct positions.
-        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId)),
+        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId), kertasOfPaperCode(draft.paperCode ?? null)),
         now: this.clock.now(),
         version: draft,
         ...(provenance
@@ -731,12 +792,13 @@ export class QuestionsService {
       const key = parse(n.chapterId)
       const chapter = key === null ? null : await this.curriculum.chapter(key)
       if (!chapter) fields.curriculumChapterId = QUESTION_MESSAGES.guruChapter
-      else if (subject && level && (chapter.subjectId !== subject.id || chapter.educationLevelId !== level.id)) fields.curriculumChapterId = QUESTION_MESSAGES.chapterMismatch
+      // REQ-B-010: each of subject and level that is known is checked on its own (a chapter of another subject is refused even with no level).
+      else if ((subject && chapter.subjectId !== subject.id) || (level && chapter.educationLevelId !== level.id)) fields.curriculumChapterId = QUESTION_MESSAGES.chapterMismatch
       else chapterKey = chapter.id
-    } else if (n.chapterId === undefined && previous?.version.chapterId && subject && level) {
-      // The chapter is kept, but only while it still belongs to the subject and level being saved.
+    } else if (n.chapterId === undefined && previous?.version.chapterId && (subject || level)) {
+      // The chapter is kept while it still belongs to the subject and the level being saved (the one that is known, when the other is empty).
       const kept = await this.curriculum.chapter(BigInt(previous.version.chapterId))
-      if (kept && kept.subjectId === subject.id && kept.educationLevelId === level.id) chapterKey = kept.id
+      if (kept && (!subject || kept.subjectId === subject.id) && (!level || kept.educationLevelId === level.id)) chapterKey = kept.id
     }
     if (n.topicId) {
       const key = parse(n.topicId)
@@ -891,6 +953,15 @@ export class QuestionsService {
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
       parts = this.checkedParts(partsFromFlat(src), false)
     } else {
+      // REQ-B-021c: an essay_choice question has no flat model answer or points field (its key and marks live on the part). A
+      // flat edit that CHANGES either is refused; echoing the stored value (what the edit form reads back) is not a change.
+      if (single !== undefined && isLeaf(single) && single.mode === 'essay_choice') {
+        const blank = (x: string | null | undefined): string => (x ?? '').trim()
+        const refused: Record<string, string> = {}
+        if (input.modelAnswer !== undefined && blank(input.modelAnswer) !== blank(flat.modelAnswer)) refused.modelAnswer = ESSAY_CHOICE_FLAT_MESSAGES.modelAnswer
+        if (input.pointsValue !== undefined && input.pointsValue !== flat.pointsValue) refused.pointsValue = ESSAY_CHOICE_FLAT_MESSAGES.pointsValue
+        if (Object.keys(refused).length > 0) throw fail(refused)
+      }
       parts = v.parts
     }
 
@@ -944,6 +1015,12 @@ export class QuestionsService {
         await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
       } else {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
+      }
+      // R1-T49: a grouped question that changes subject or kertas must still fit the other members (the only member may change freely).
+      if (fresh.groupId !== null && input.stimulusGroupId === undefined) {
+        const after = { subject: draft.subjectId === null ? null : idToString(draft.subjectId), kertas: kertasOfPaperCode(draft.paperCode ?? null) }
+        const before = { subject: fresh.version.subjectId, kertas: kertasOfPaperCode(fresh.version.paperCode) }
+        if (after.subject !== before.subject || after.kertas !== before.kertas) await this.groupMembers.assertTraitChange(fresh.groupId, record.id, after.subject, after.kertas)
       }
       if (input.stimulusGroupId !== undefined) {
         // D90 / R1-T32: leaving or joining a group goes through the same rules as the stimulus routes (served lock, caps, PKSK, ...).

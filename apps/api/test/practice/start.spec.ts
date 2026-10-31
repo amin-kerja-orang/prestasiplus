@@ -396,6 +396,17 @@ describe('SPM modes: past_year, latih_tubi, ramalan', () => {
     expect(await post422({ subjectCode: 'SEJ', count: 1, targetQuestionId: target })).toEqual({ targetQuestionId: 'Nilai tidak sah.' })
   })
 
+  it('"Buka Soalan Sama" (REQ-B-010): the target must pass the SPM servable rule of a draw, not only the level code', async () => {
+    // An eligible question of the subject at an offered level that the SPM activities do not serve (outside the SPM pool).
+    const outside = t.bank.add({ subjectId: w.subject.sej, levelId: w.level.t4, spmPool: false })
+    const res = await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 1, targetQuestionId: outside })
+    expect(res.status).toBe(422)
+    expect(res.body.error.fields).toEqual({ targetQuestionId: 'Nilai tidak sah.' })
+    // the same rule serves a draw: the question is never in an SPM sample either
+    const pool = await t.bank.sample({ subjectId: w.subject.sej, spmPool: true }, 1000, { int: () => 0 } as never)
+    expect(pool).not.toContain(outside)
+  })
+
   it('ramalan: an unknown set is 404, an empty one 422 SET_NOT_READY, a ready one is served', async () => {
     expectError(await post(pelajar, { mode: 'ramalan', subjectCode: 'MATH', year: 2026, setNo: 1 }), 'NOT_FOUND', 'Rekod tidak dijumpai.')
     expectError(await post(pelajar, { mode: 'ramalan', subjectCode: 'MATH', setNo: 1 }), 'NOT_FOUND', 'Rekod tidak dijumpai.')

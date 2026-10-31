@@ -147,6 +147,26 @@ describe('QuestionDetailPage (M04 S3)', () => {
     expect(options[1]).toBe('https://contoh.test/b.png')
   })
 
+  it('shows "Esei pilihan" and the topics when essayTopics is present (H-C3)', async () => {
+    questions.fetchQuestion.mockResolvedValue(
+      detail({
+        questionType: 'essay',
+        essayTopics: [{ id: 't1', label: 'Peranan belia' }, { id: 't2', label: 'Kepentingan membaca' }],
+      }),
+    )
+    const w = await render()
+    expect(t(w, 'essay-choice').text()).toContain('Esei pilihan')
+    expect(w.findAll('[data-testid="essay-topic"]').map((n) => n.text())).toEqual([
+      '1. Peranan belia',
+      '2. Kepentingan membaca',
+    ])
+  })
+
+  it('has no "Esei pilihan" block for a plain question', async () => {
+    const w = await render()
+    expect(w.find('[data-testid="essay-choice"]').exists()).toBe(false)
+  })
+
   it('omits the "Penjelasan" card when there is no explanation', async () => {
     questions.fetchQuestion.mockResolvedValue(detail({ explanation: null }))
     const w = await render()

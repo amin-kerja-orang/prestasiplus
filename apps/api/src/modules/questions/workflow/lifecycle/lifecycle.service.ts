@@ -1,5 +1,6 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import {
+  QUESTION_REPORT_MESSAGES,
   QUESTION_WORKFLOW_STATUSES,
   type QuestionGateIssue,
   questionWorkflowTransitionRule,
@@ -125,22 +126,34 @@ export class LifecycleService {
   }
 
   /**
-   * "Arkib" on a question report row (R1-B17, Admin Pusat). A question without a newer revision goes through the normal
-   * `transition` (an already archived one is left as it is). When a newer revision exists (live version is not the latest, for example
-   * a revision in Semakan), the table has no review to archived move, so the LIVE version is archived and serving ends, the same
-   * move a source takedown makes first; the revision itself is left as it is, so it can still be approved after the fix.
+   * "Arkib" on a question report row (R1-B17, Admin Pusat), tied to the version the report was filed against (REQ-B-018): an old report
+   * never archives a newer version.
+   * - Something is served (a live version): it must be the reported one, else 409 `archiveStaleVersion`. When a newer revision sits on top
+   *   (for example in Semakan) the table has no review to archived move, so the LIVE version is archived and serving ends, the same move a
+   *   source takedown makes first; the revision is left as it is, so it can still be approved after the fix. Otherwise the normal `transition`.
+   * - Nothing is served: the latest is the reported version, so the normal `transition` applies (an archived one is left as it is, a
+   *   revision in Semakan is a no-op); a newer latest is a no-op when the reported version is already archived (a second Arkib), else 409.
    */
-  async archiveReported(questionId: string, actor: WorkflowActor, reason: string): Promise<void> {
+  async archiveReported(questionId: string, actor: WorkflowActor, reason: string, reportedVersionNo: number): Promise<void> {
     this.roleKind(actor)
+    const stale = () => ApiError.of('CONFLICT', { message: QUESTION_REPORT_MESSAGES.archiveStaleVersion })
     await this.prisma.transaction(async () => {
       const info = await this.bank.getStatus(questionId)
       if (!info) return
-      if (info.liveVersionNo !== null && info.liveVersionNo !== info.latestVersionNo) {
-        await this.applyOne(info, actor, { from: 'approved', to: 'archived', gate: null, reason, versionNo: info.liveVersionNo, target: 'live' })
-        return
-      }
-      // Nothing is served and the latest is a revision in Semakan (a second Arkib after the live version was archived): nothing to withdraw.
-      if (info.liveVersionNo === null && info.status === 'review') return
+      if (info.liveVersionNo !== null) {
+        if (info.liveVersionNo !== reportedVersionNo) throw stale()
+        if (info.liveVersionNo !== info.latestVersionNo) {
+          await this.applyOne(info, actor, { from: 'approved', to: 'archived', gate: null, reason, versionNo: info.liveVersionNo, target: 'live' })
+          return
+        }
+      } else if (info.latestVersionNo > reportedVersionNo) {
+        const reported = await this.prisma.client.questionVersion.findFirst({
+          where: { questionId: BigInt(questionId), versionNo: reportedVersionNo },
+          select: { status: true },
+        })
+        if (reported?.status === 'archived') return
+        throw stale()
+      } else if (info.status === 'review') return
       if (info.status !== 'archived') await this.transition(questionId, 'archived', actor, { reason })
     })
   }

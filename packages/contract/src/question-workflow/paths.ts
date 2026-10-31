@@ -86,6 +86,7 @@ import {
   QuestionReportQuestionViewSchema,
   QuestionReportSourceSchema,
   QuestionReportStatusSchema,
+  QUESTION_REPORT_MESSAGES,
   QuestionReportUpdateRequestSchema,
   QuestionReportUpdateResultSchema,
   QuestionReportUpdatedSchema,
@@ -271,6 +272,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
       404: NOT_FOUND,
+      409: err(`CONFLICT "${QUESTION_REPORT_MESSAGES.archiveStaleVersion}" when \`archive\` is sent for a question that has a newer version than the reported one (the report is not changed).`),
       422: err('VALIDATION_ERROR with fields.status "Status tidak sah." or fields.adminNotes "Nota admin tidak boleh melebihi 1000 aksara.".'),
     },
   })

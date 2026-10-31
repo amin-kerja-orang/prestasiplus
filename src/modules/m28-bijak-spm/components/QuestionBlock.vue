@@ -15,7 +15,7 @@ import { toOptionData } from '../lib/stimulus-data'
 import PartNode from './PartNode.vue'
 import PartResultCard from './PartResultCard.vue'
 import RichText from './RichText.vue'
-import StimulusView from './StimulusView.vue'
+import StimulusStack from './StimulusStack.vue'
 
 const props = defineProps<{
   question: QuestionView
@@ -44,6 +44,8 @@ const locked = computed(() => !!props.check || props.disabled)
 const chosenOption = computed(() => props.answers[props.question.id]?.choice)
 const correctOption = computed(() => props.check?.parts[0]?.scheme.correctOption)
 const partResults = computed(() => props.check?.parts ?? [])
+/** The question's own stimuli above the stem (V2 section 1.5); `stemImage` only when `stimuli` is absent, so a picture shows once. */
+const ownStimuli = computed(() => props.question.stimuli ?? (props.question.stemImage ? [props.question.stemImage] : []))
 const leaves = computed(() => leavesOf(props.question.parts ?? []))
 /** An option with a picture switches the choices to the shared `McqOptions` (picture boxes, load-failure state). */
 const optionPictures = computed(() => (props.question.mcq?.options ?? []).some((o) => !!o.image))
@@ -116,15 +118,12 @@ function pick(id: string): void {
       </DsText>
     </DsStack>
 
+    <!-- The question's OWN stimuli (R1E2E-05b), above the stem as in V2 section 1.5. -->
+    <StimulusStack v-if="ownStimuli.length" :stimuli="ownStimuli" data-testid="own-stimuli" />
+
     <p v-if="question.stem" class="text-body text-default" data-testid="question-stem">
       <RichText :text="question.stem" />
     </p>
-
-    <StimulusView
-      v-if="question.stemImage"
-      :stimulus="question.stemImage"
-      data-testid="stem-image"
-    />
 
     <p
       v-if="stimulusBlocked"

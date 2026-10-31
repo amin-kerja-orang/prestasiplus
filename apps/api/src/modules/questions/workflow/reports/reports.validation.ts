@@ -29,6 +29,8 @@ export interface ValidUpdate {
   forceDeactivate: boolean
   /** R1-B17: archive the question through the lifecycle. */
   archive: boolean
+  /** REQ-B-018: the reported version the admin is looking at (optional). */
+  expectedVersionNo: number | undefined
 }
 
 const asRecord = (raw: unknown): Record<string, unknown> =>
@@ -96,6 +98,11 @@ export function validateUpdate(raw: unknown): ValidUpdate {
     if (typeof b.adminNotes !== 'string' || b.adminNotes.length > QUESTION_REPORT_NOTES_MAX) fields.adminNotes = M.adminNotes
     else adminNotes = b.adminNotes.trim() === '' ? null : b.adminNotes
   } else if (b.adminNotes === null) adminNotes = null
+  let expectedVersionNo: number | undefined
+  if (b.expectedVersionNo !== undefined && b.expectedVersionNo !== null) {
+    if (typeof b.expectedVersionNo !== 'number' || !Number.isInteger(b.expectedVersionNo) || b.expectedVersionNo < 1) fields.expectedVersionNo = M.expectedVersionNo
+    else expectedVersionNo = b.expectedVersionNo
+  }
   if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
-  return { status: status as ValidUpdate['status'], adminNotes, reactivate: flag(b.reactivate), forceDeactivate: flag(b.forceDeactivate), archive: flag(b.archive) }
+  return { status: status as ValidUpdate['status'], adminNotes, reactivate: flag(b.reactivate), forceDeactivate: flag(b.forceDeactivate), archive: flag(b.archive), expectedVersionNo }
 }

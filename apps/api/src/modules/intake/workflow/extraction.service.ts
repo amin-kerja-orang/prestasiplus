@@ -22,7 +22,7 @@ import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { scrubContactDetails } from '../../ai-extraction'
-import { curriculumCodeOf } from '../../bijak/papers/subject-codes'
+import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { type ClaimedJob, JobError, JobsService } from '../../jobs'
 import { AI_EXTRACTOR, IntakeExtractionInput, IntakeFiguresService, type AiExtractor } from '../files'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
@@ -238,9 +238,22 @@ export class IntakeExtractionService implements OnModuleInit {
   private async ensureSourcePaper(tx: TxClient, batchId: bigint, current: bigint | null, fileHash: string | null): Promise<void> {
     if (current !== null) return
     const b = await tx.intakeBatch.findUniqueOrThrow({ where: { id: batchId }, select: { subject: true, kertas: true, year: true, paperType: true, rightsStatus: true } })
-    const subject = await tx.subject.findUnique({ where: { code: curriculumCodeOf(b.subject.toUpperCase()) }, select: { id: true } })
+    // ONE canonical subject code (the curriculum one) for the lookup and the natural key: an MAT batch and a MATH batch of the same paper
+    // are the same paper (REQ-B-015).
+    const code = curriculumCodeOf(b.subject.toUpperCase())
+    const subject = await tx.subject.findUnique({ where: { code }, select: { id: true } })
     // Only an official paper has a natural key (it is the same paper whoever uploads it); everything else is its own row.
-    const naturalKey = b.paperType === 'exam' ? `${b.subject.toLowerCase()}|${b.year}||k${b.kertas}|sebenar` : null
+    const keyOf = (c: string): string | null => (b.paperType === 'exam' ? `${c.toLowerCase()}|${b.year}||k${b.kertas}|sebenar` : null)
+    const naturalKey = keyOf(code)
+    // Rows written before the key was canonical carry the Bijak code ("mat|..."): they still count as the same paper.
+    const legacyKey = keyOf(bijakCodeOf(code))
+    if (naturalKey !== null && legacyKey !== null) {
+      const known = await tx.sourcePaper.findFirst({ where: { naturalKey: { in: [naturalKey, legacyKey] } }, orderBy: { id: 'asc' }, select: { id: true } })
+      if (known) {
+        await tx.intakeBatch.update({ where: { id: batchId }, data: { sourcePaperId: known.id } })
+        return
+      }
+    }
     const examType = b.paperType === 'exam' ? 'sebenar' : b.paperType === 'trial' ? 'percubaan' : b.paperType === 'exercise_book' ? 'latihan' : null
     const inserted = await tx.$queryRaw<{ id: bigint }[]>`
       INSERT INTO source_papers (natural_key, file_hash, subject_id, kertas, year, exam_type, rights_status)

@@ -188,7 +188,7 @@ const McqLeaf = keyed('mcq', OptionKey).extend({ options: z.array(QuestionOption
 const PkskChoiceLeaf = keyed('pksk_choice', OptionsKey).extend({ options: z.array(QuestionOptionSchema).max(6) })
 /** R1-T07: one topic of an `essay_choice` leaf (V2 `config.topics`). `id` is the stable key of the topic inside the leaf. */
 export const QuestionEssayTopicSchema = z
-  .object({ id: z.string().min(1).max(40), label: z.string().min(1) })
+  .object({ id: z.string().min(1).max(40), label: z.string().trim().min(1) })
   .meta({ id: 'QuestionEssayTopic' })
 const EssayChoiceLeaf = keyed('essay_choice', z.discriminatedUnion('kind', [RubricKey, PointsKey])).extend({
   topics: z.array(QuestionEssayTopicSchema).min(2, 'Sila masukkan 2 hingga 6 tajuk.').max(6, 'Sila masukkan 2 hingga 6 tajuk.'),
