@@ -587,6 +587,14 @@ const cardFields: CardField[] = [
             <p class="line-clamp-2 break-words text-highlighted" data-testid="question-text">
               {{ row.original.excerptText }}
             </p>
+            <div v-if="row.original.raw.essayTopics?.length" data-testid="question-essay-choice">
+              <UBadge color="info" variant="subtle" size="sm" icon="i-ph-list-numbers" label="Esei pilihan" />
+              <ul class="mt-1 flex flex-col gap-1 text-caption break-words text-muted">
+                <li v-for="(t, i) in row.original.raw.essayTopics" :key="t.id" data-testid="question-essay-topic">
+                  {{ i + 1 }}. {{ t.label }}
+                </li>
+              </ul>
+            </div>
             <div class="flex flex-wrap items-center gap-x-2 gap-y-2">
               <UBadge
                 v-if="row.original.raw.dskpTagged"

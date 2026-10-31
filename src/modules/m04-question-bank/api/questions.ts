@@ -83,6 +83,8 @@ export interface QuestionRow {
   dskpTagged: boolean
   sourceType: SourceType | null
   sourceFile: string | null
+  /** R1-H-A7: only on an `essay_choice` (esei pilihan) question: its topics. */
+  essayTopics?: EssayTopic[]
 }
 
 export interface QuestionListQuery {
@@ -126,8 +128,16 @@ export interface PkskOption {
 }
 
 /** DATA-M04-01 as the API returns it (the internal count facets stay in the store). */
+/** A topic of an esei pilihan question. */
+export interface EssayTopic {
+  id: string
+  label: string
+}
+
 export interface Question {
   id: number
+  /** R1-H-A7: only on an `essay_choice` (esei pilihan) question: its topics. */
+  essayTopics?: EssayTopic[]
   subjectId: number | null
   educationLevelId: number | null
   difficultyLevel: number
