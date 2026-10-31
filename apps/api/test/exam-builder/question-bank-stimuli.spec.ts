@@ -1,4 +1,8 @@
+import { QuestionPartSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
+
+import { mapBe09Question, tableOf, type CurriculumLabels } from '../../src/modules/bijak/question-bridge/be09-mapping'
+import type { QuestionRecord, StimulusGroupRecord, StimulusRecord } from '../../src/modules/questions/types'
 
 import {
   MAX_GROUP_STIMULI,
@@ -101,4 +105,81 @@ describe('builder review of an essay_choice leaf (R1-T07)', () => {
     expect(q.parts?.[0]?.answer).toEqual({ kind: 'essay', wordRange: { min: 150, max: 200 } })
     expect(q.scheme['']?.lines[0]?.text).toContain('Cemerlang')
   })
+})
+
+/**
+ * R1-T31 (T07 review): the builder reads a table stimulus with the bridge's own `tableOf` (one helper), so the admin preview and
+ * the pupil attempt show the same grid and text for the same stored stimulus. Each case goes through the REAL bridge mapper
+ * (`mapBe09Question`, the pupil path) and the builder's `stimulusOf`, and the two must agree on table, text, picture and the rest.
+ */
+describe('builder table stimulus = the bridge table stimulus (one tableOf)', () => {
+  const LABELS: CurriculumLabels = { subjectCode: 'MAT', unitLabel: 'Bab 1', unitCode: '1' }
+  const part = QuestionPartSchema.parse({
+    label: '',
+    marks: 1,
+    mode: 'mcq',
+    key: { kind: 'option', correct: 'A' },
+    prompt: { ms: 'Pilih satu.' },
+    options: [
+      { label: 'A', body: { ms: 'Satu' } },
+      { label: 'B', body: { ms: 'Dua' } },
+      { label: 'C', body: { ms: 'Tiga' } },
+    ],
+  })
+  const now = new Date('2026-01-01T00:00:00Z')
+  const question = {
+    id: '501',
+    isActive: true,
+    sourceType: 'manual',
+    createdById: null,
+    latestVersionNo: 1,
+    liveVersionNo: 1,
+    groupId: '9',
+    groupPosition: 1,
+    spmPool: true,
+    createdAt: now,
+    updatedAt: now,
+    version: {
+      id: 'v1', versionNo: 1, status: 'approved', archiveReason: null, publishedAt: now, type: 'mcq', stemMs: 'Stem', stemEn: null,
+      numberLabel: null, language: 'ms', explanationMs: 'Kerana.', explanationEn: null, subjectId: null, educationLevelId: null, unitId: null,
+      chapterId: null, topicId: null, formOrigin: 't4', cognitiveLevel: null, difficultyTp: 3, sourcePage: null, setLabel: null,
+      sourceFile: null, spIds: [], stimulusIds: ['70'], parts: [part], createdAt: now, updatedAt: now,
+    },
+  } as unknown as QuestionRecord
+
+  const grid = { head: ['Tahun', 'Peristiwa'], rows: [['1957', 'Merdeka']] }
+  const cases: [string, { bodyMs: string | null; tableData: unknown; assetFileId?: string | null }][] = [
+    ['{ head, rows }', { bodyMs: null, tableData: grid }],
+    ['{ headers, rows }', { bodyMs: null, tableData: { headers: grid.head, rows: grid.rows } }],
+    ['{ columns, rows }', { bodyMs: null, tableData: { columns: grid.head, rows: grid.rows } }],
+    ['rows of rows (first row is the head)', { bodyMs: null, tableData: [grid.head, ...grid.rows] }],
+    ['numbers in cells', { bodyMs: null, tableData: { head: ['N'], rows: [[1], [2.5]] } }],
+    ['a pipe table in the body', { bodyMs: 'Tahun | Peristiwa\n--- | ---\n1957 | Merdeka', tableData: null }],
+    ['a malformed grid beside a pipe body (the body wins)', { bodyMs: 'Tahun | Peristiwa\n1957 | Merdeka', tableData: { head: 'x', rows: [] } }],
+    ['a malformed grid and a plain body (text, no table)', { bodyMs: 'Jadual berikut', tableData: { head: 'x', rows: [] } }],
+    ['a plain body and no grid (text, no table)', { bodyMs: 'Jadual berikut', tableData: null }],
+    ['an image-only table (picture, no table)', { bodyMs: null, tableData: null, assetFileId: '5' }],
+  ]
+
+  for (const [name, c] of cases) {
+    it(name, () => {
+      const stored = { id: '70', kind: 'table', label: 'Jadual 1', bodyMs: c.bodyMs, bodyEn: null, assetFileId: c.assetFileId ?? null, alt: null, caption: 'Jualan', tableData: c.tableData, sourceCitation: 'Sumber: JPN' }
+      const group = { id: '9', stimuli: [stored as unknown as StimulusRecord], optionBank: [], questionIds: ['501'] } as StimulusGroupRecord
+      const bridge = mapBe09Question(question, group, LABELS, { tokens: new Map([['5', 'tok5']]), outside: new Map() }).group?.stimulus
+      const builder = stimulusOf(
+        { id: 70n, kind: 'table', label: 'Jadual 1', bodyMs: c.bodyMs, caption: 'Jualan', altText: null, tableData: c.tableData, sourceCitation: 'Sumber: JPN', assetFileId: c.assetFileId ? BigInt(c.assetFileId) : null },
+        new Map([['5', 'tok5']]),
+      )
+      expect(bridge).toBeDefined()
+      expect(builder).toBeDefined()
+      // the same table by the same helper, and the same shape for everything else (the wire id prefix is the only difference)
+      expect(builder?.table).toEqual(tableOf(c.tableData, c.bodyMs))
+      expect(builder?.table).toEqual(bridge?.table)
+      const { id: bridgeId, ...bridgeRest } = bridge!
+      const { id: builderId, ...builderRest } = builder!
+      expect(builderRest).toEqual(bridgeRest)
+      expect(bridgeId).toBe('qb-s70')
+      expect(builderId).toBe('70')
+    })
+  }
 })
