@@ -27,7 +27,24 @@ import { featureModules } from '../../src/modules'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder'
 import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
 import { battleConformanceEnv, seedBattleConformance } from './battle/fixtures'
+import { serveSeededBlueprints } from '../support/serve-blueprints'
 import { createTestDatabase, type TestDatabase } from '../support/db'
+
+/**
+ * The PoC export gives its blueprint sections no mark budget (null = the question count). The standard generator of R1-T06 (D75,
+ * exact or refuse) needs the budgets of the seeded papers (mat-k2 9/6/6, sn-k2 9/4); the current generator ignores them, so this is
+ * harmless today. T06 adds the same helper to `support/serve-blueprints.ts`; when it merges this local copy can import that one.
+ */
+async function setPocMarkBudgets(db: { query: (sql: string) => Promise<unknown> }): Promise<void> {
+  const set = (code: string, label: string, budget: number): Promise<unknown> =>
+    db.query(`update blueprint_sections set mark_budget = ${String(budget)}
+        where label = '${label}' and blueprint_id = (select id from blueprints where code = '${code}' and status = 'active')`)
+  await set('1449/2', 'Bahagian A', 9)
+  await set('1449/2', 'Bahagian B', 6)
+  await set('1449/2', 'Bahagian C', 6)
+  await set('4541/2', 'Bahagian A', 9)
+  await set('4541/2', 'Bahagian B', 4)
+}
 
 /** Fixed "now" (Malaysia time) of the injected clock, as the other integration suites use. */
 export const CONFORMANCE_START = '2026-10-19T09:00:00+08:00'
@@ -125,6 +142,14 @@ export interface BootOptions {
 export async function bootConformanceApp(opts: BootOptions = {}): Promise<ConformanceApp> {
   const db = await createTestDatabase()
   await runSeeds(CONFORMANCE_SEEDS, { prisma: db.prisma })
+  // The seeded second demo school (DEMO002) is primary (type SK, a Darjah 4 roster pupil). Secondary-only (D72) hides every primary
+  // school and Darjah pupil from the lists and reads, so the scenarios that need "another school" would find none. The conformance
+  // run makes it a secondary school with one Tingkatan 2 pupil (no teacher, no T4/T5 pupil, as the scenarios expect).
+  await db.prisma.school.update({ where: { code: 'DEMO002' }, data: { type: 'SMK', name: 'SMK Demo Dua' } })
+  await db.prisma.user.updateMany({ where: { username: 'murid01', school: { code: 'DEMO002' } }, data: { grade: 8, classLabel: '2 Cekap' } })
+  // A pupil generates from a serving (Disahkan) blueprint only (D76, migration 0092); the seeded ones are Spec. The suite verifies them as an admin would.
+  await serveSeededBlueprints(db)
+  await setPocMarkBudgets(db)
   await seedBattleConformance(db.prisma) // BE-44: published MCQs so a battle queue can draw its 10 questions
   const dir = await mkdtemp(join(tmpdir(), 'pp-conformance-'))
 
