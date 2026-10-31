@@ -665,6 +665,57 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect((await pupil5.get(`/api/bijak/papers/${made[0]}`)).status).toBe(404)
     })
 
+    // R1-20.2 (exact-or-refuse): a Disahkan Kontrak whose pool cannot fill a section gives 422 SHORTAGE with the shortage list in BM, never a
+    // short paper and no paper row; the admin sees the same shortfall in "Pratonton kolam".
+    it('a short pool is refused with SHORTAGE and the shortfall (no paper is made); the admin preview names it', async () => {
+      const need = 5
+      const create = await admin.post('/api/admin/blueprints', {
+        subject: 'MAT',
+        kertas: 4,
+        source: 'Spec',
+        code: 'MAT/E2E-S',
+        durationMin: 30,
+        instructions: ['Jawab semua soalan.'],
+        sections: [
+          {
+            label: 'Bahagian A',
+            pool: 'MAT4-A',
+            markBudget: need,
+            questionCount: need,
+            rule: { type: 'all' },
+            profile: { kind: 'bahagian', groups: [{ from: 1, to: need, tpMin: 1, tpMax: 6 }] },
+            quota: { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: fx.unit }, value: need }] },
+            kbatMarks: 0,
+          },
+        ],
+      })
+      expect(create.status, JSON.stringify(create.body)).toBe(201)
+      const ev = await admin.post('/api/admin/blueprints/MAT/4/evidence', {
+        kind: 'lpm_format',
+        body: 'lpm',
+        year: 2025,
+        paperCode: '1449/4',
+        values: { durationMin: 30, totalMarks: need, sections: [{ position: 1, markBudget: need, rule: { type: 'all' }, questionCount: need }] },
+      })
+      expect(ev.status, JSON.stringify(ev.body)).toBe(201)
+      const ok = await admin.post('/api/admin/blueprints/MAT/4/verify', { note: 'Struktur disemak dengan dokumen format LPM.' })
+      expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+
+      const before = Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)
+      for (const who of [pupil, pupil5]) {
+        const res = await who.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 4 })
+        expect(res.status, JSON.stringify(res.body)).toBe(422)
+        expect(res.body.error).toMatchObject({ code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.' })
+        expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'count', need, have: 0 })])
+      }
+      expect(Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)).toBe(before)
+
+      const preview = await admin.get('/api/admin/papers/pool-preview?subject=MAT&kertas=4')
+      expect(preview.status, JSON.stringify(preview.body)).toBe(200)
+      expect(preview.body.data.verdict).not.toBe('boleh')
+      expect(preview.body.data.firstFailure).toMatchObject({ section: 'Bahagian A', need })
+    })
+
     it('only a Disahkan Kontrak is offered: a Spec Kontrak (the seeded MAT kertas 1) is refused with NO_BLUEPRINT', async () => {
       const res = await pupil.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
       expect(res.status, JSON.stringify(res.body)).toBe(422)
