@@ -72,7 +72,8 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
     }))
   }
   if (row.mode === 'short_text' && row.blankCount !== null) candidate.blankCount = row.blankCount
-  if (row.mode === 'essay' && row.wordMin !== null && row.wordMax !== null) candidate.wordRange = { min: row.wordMin, max: row.wordMax }
+  if ((row.mode === 'essay' || row.mode === 'essay_choice') && row.wordMin !== null && row.wordMax !== null) candidate.wordRange = { min: row.wordMin, max: row.wordMax }
+  if (row.mode === 'essay_choice') candidate.topics = row.topics
   const parsed = QuestionLeafPartSchema.safeParse(candidate)
   if (!parsed.success) throw new StoredKeyError(idToString(row.id))
   return parsed.data as QuestionLeaf
@@ -99,6 +100,8 @@ export interface PartDraft {
   blankCount: number | null
   wordMin: number | null
   wordMax: number | null
+  /** essay_choice only: the topics `[{ id, label }]`. */
+  topics: { id: string; label: string }[] | null
   stimulusId: bigint | null
   reveal: 'after_submit' | 'never'
   unitNodeId: bigint | null
@@ -128,6 +131,7 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
         blankCount: null,
         wordMin: null,
         wordMax: null,
+        topics: null,
         stimulusId: null,
         reveal: 'after_submit' as const,
         unitNodeId: null,
@@ -144,8 +148,9 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
       marks: part.marks,
       mode: part.mode,
       blankCount: part.mode === 'short_text' ? (part.blankCount ?? null) : null,
-      wordMin: part.mode === 'essay' ? (part.wordRange?.min ?? null) : null,
-      wordMax: part.mode === 'essay' ? (part.wordRange?.max ?? null) : null,
+      wordMin: part.mode === 'essay' || part.mode === 'essay_choice' ? (part.wordRange?.min ?? null) : null,
+      wordMax: part.mode === 'essay' || part.mode === 'essay_choice' ? (part.wordRange?.max ?? null) : null,
+      topics: part.mode === 'essay_choice' ? part.topics.map((t) => ({ id: t.id, label: t.label })) : null,
       stimulusId: part.stimulusId === undefined ? null : idFromString(part.stimulusId),
       reveal: part.reveal ?? 'after_submit',
       unitNodeId: part.unitNodeId == null ? null : idFromString(part.unitNodeId),
@@ -188,6 +193,24 @@ export function referencedIds(parts: readonly QuestionPart[]): { imageIds: strin
   return { imageIds, stimulusIds, unitIds }
 }
 
+/**
+ * A copy of the tree with every MCQ option picture id passed through `map` (a public token to the internal id on the way in,
+ * the other way on the way out). Everything else is kept as it is.
+ */
+export async function mapOptionImageIds(parts: readonly QuestionPart[], map: (id: string) => string | Promise<string>): Promise<QuestionPart[]> {
+  const out: QuestionPart[] = []
+  for (const part of parts) {
+    if (!isLeaf(part)) {
+      out.push({ ...part, children: await mapOptionImageIds(part.children as QuestionPart[], map) } as QuestionPart)
+    } else if (part.mode === 'mcq' || part.mode === 'pksk_choice') {
+      const options = []
+      for (const o of part.options) options.push(o.imageId == null ? o : { ...o, imageId: await map(o.imageId) })
+      out.push({ ...part, options } as QuestionPart)
+    } else out.push(part)
+  }
+  return out
+}
+
 /** Total marks of the leaves (flat `pointsValue`, structured `totalMarks`). */
 export function totalMarks(parts: readonly QuestionPart[]): number {
   return parts.reduce((s, p) => s + (isLeaf(p) ? p.marks : totalMarks(p.children as QuestionPart[])), 0)
@@ -209,6 +232,7 @@ export function versionTypeOf(parts: readonly QuestionPart[]): 'mcq' | 'match' |
     case 'working':
       return 'working'
     case 'essay':
+    case 'essay_choice':
       return 'essay'
     case 'drawing':
       return 'drawing'

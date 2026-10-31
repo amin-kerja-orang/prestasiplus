@@ -5,6 +5,7 @@ import { TimestampSchema } from '../common/time'
 import {
   QUESTION_STATUS_MESSAGE,
   QuestionCurriculumTagSchema,
+  QuestionEssayTopicSchema,
   QuestionKbatLevelSchema,
   QuestionPartSchema,
   QuestionPublicPartSchema,
@@ -55,7 +56,7 @@ export const QUESTION_MESSAGES = {
   guruAnswerLong: 'Jawapan betul tidak boleh melebihi 500 aksara.',
   status: QUESTION_STATUS_MESSAGE,
   guruChapter: 'Bab tidak sah.',
-  /** The chapter exists but is not of the question's subject and level ([PROPOSED] copy). */
+  /** The chapter exists but is not of the question's subject and level (copy approved, Q1). */
   chapterMismatch: 'Bab tidak sepadan dengan subjek dan tahap.',
   guruTopic: 'Topik tidak sah.',
   guruScript: 'Jenis tulisan tidak sah.',
@@ -98,6 +99,8 @@ export const QuestionRowSchema = z
     dskpTagged: z.boolean(),
     sourceType: QuestionSourceTypeSchema.nullable(),
     sourceFile: z.string().nullable(),
+    /** R1-H-A7: present only on an `essay_choice` (esei pilihan) question: its 2 to 6 topics. `questionType` stays `essay`. */
+    essayTopics: z.array(QuestionEssayTopicSchema).optional(),
   })
   .meta({ id: 'QuestionRow' })
 
@@ -174,6 +177,8 @@ export const QuestionSchema = z
     sourceFile: z.string().nullable(),
     sourcePage: z.number().int().nullable(),
     sourceSet: z.string().nullable(),
+    /** R1-H-A7: present only on an `essay_choice` (esei pilihan) question: its 2 to 6 topics. `questionType` stays `essay`. */
+    essayTopics: z.array(QuestionEssayTopicSchema).optional(),
     qualityScore: z.number().int().min(0).max(100).nullable(),
     needsDiagram: z.boolean(),
     spmPool: z.boolean(),
@@ -195,6 +200,7 @@ export const QuestionSchema = z
     tagReview: z.boolean().optional(),
     catalogueVersion: z.string().nullable().optional(),
     stimulusGroup: QuestionStimulusGroupSchema.nullable().optional(),
+    numberLabel: z.string().nullable().optional(),
   })
   .meta({ id: 'Question' })
 
@@ -283,6 +289,8 @@ const baseInput = z.object({
   kertas: QuestionKertasSchema.nullable().optional(),
   parts: z.array(QuestionPartSchema).min(1).optional(),
   tag: QuestionCurriculumTagSchema.optional(),
+  /** V2 `Nombor soalan` (Studio Langkah 1); null clears it, omitted keeps it. */
+  numberLabel: z.string().trim().max(32).nullable().optional(),
   stimulusGroupId: IdSchema.nullable().optional(),
 })
 

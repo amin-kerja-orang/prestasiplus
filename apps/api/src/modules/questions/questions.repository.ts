@@ -21,12 +21,14 @@ import type {
   QuestionVersionRecord,
   SampleFilter,
   StimulusGroupRecord,
+  StimulusKind,
   StimulusRecord,
   StoreQuestionType,
   StoreSourceType,
   StructuredListFilter,
   ViewMode,
 } from './types'
+import { STIMULUS_KINDS } from './types'
 
 /** Columns of `question_versions` a writer may set (ids are bigint, the service already parsed them). */
 export interface VersionDraft {
@@ -192,6 +194,42 @@ function pkskOf(tags: readonly { kind: string; code: string }[]): { domainCode: 
   return domain && (level?.code === 'T1' || level?.code === 'T4') ? { domainCode: domain.code, level: level.code } : null
 }
 
+/** A stored stimulus row as the store keeps it (the columns the display needs). */
+interface StimulusRow {
+  id: bigint
+  kind: string
+  label: string | null
+  bodyMs: string | null
+  bodyEn: string | null
+  caption: string | null
+  altText: string | null
+  sourceCitation: string | null
+  tableData: unknown
+  assetFileId: bigint | null
+}
+
+const isStimulusKind = (kind: string): kind is StimulusKind => (STIMULUS_KINDS as readonly string[]).includes(kind)
+
+/**
+ * A stored stimulus as a record. All seven kinds pass through with caption, source and table grid (R1-T07); `audio` (and any
+ * kind outside the seven) is not a displayable stimulus and yields null.
+ */
+function stimulusRecordOf(row: StimulusRow): StimulusRecord | null {
+  if (!isStimulusKind(row.kind)) return null
+  return {
+    id: idToString(row.id),
+    kind: row.kind,
+    label: row.label ?? '',
+    bodyMs: row.bodyMs,
+    bodyEn: row.bodyEn,
+    assetFileId: row.assetFileId === null ? null : idToString(row.assetFileId),
+    alt: row.altText,
+    caption: row.caption,
+    sourceCitation: row.sourceCitation,
+    tableData: row.tableData ?? null,
+  }
+}
+
 const likePattern = (s: string): string => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
 
 /**
@@ -237,8 +275,8 @@ export class QuestionsRepository {
    * served version even after a later edit, BE-12 AC 11 / OD-28). Unknown ids or version numbers are
    * absent. Returned in ascending id, then version order.
    *
-   * Pinned grading only: never use it on a serving path (a draw, a list, a learner-facing read). It skips the
-   * active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply.
+   * Pinned reads (grading, and serving a pinned placement such as a kuiz paper page): never use it for a draw or a list. It skips
+   * the active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply; a Darjah question is still not found (R1-B21).
    */
   async getVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<QuestionRecord[]> {
     const wanted = new Map<string, { id: bigint; versionNo: number }>()
@@ -462,17 +500,10 @@ export class QuestionsRepository {
       },
     })
     if (!group) return null
-    const stimuli: StimulusRecord[] = group.stimuli
-      .filter((s) => s.stimulus.kind !== 'audio')
-      .map((s) => ({
-        id: idToString(s.stimulus.id),
-        kind: s.stimulus.kind === 'passage' ? 'passage' : s.stimulus.kind === 'table' ? 'table' : 'diagram',
-        label: s.stimulus.label ?? '',
-        bodyMs: s.stimulus.bodyMs,
-        bodyEn: s.stimulus.bodyEn,
-        assetFileId: s.stimulus.assetFileId === null ? null : idToString(s.stimulus.assetFileId),
-        alt: s.stimulus.altText,
-      }))
+    const stimuli: StimulusRecord[] = group.stimuli.flatMap((s) => {
+      const record = stimulusRecordOf(s.stimulus)
+      return record ? [record] : []
+    })
     return {
       id: idToString(group.id),
       stimuli,
@@ -663,6 +694,39 @@ export class QuestionsRepository {
     if (keys.length === 0) return []
     const rows = await this.db.stimulus.findMany({ where: { id: { in: keys } }, select: { id: true, kind: true, assetFileId: true } })
     return rows.map((r) => ({ id: idToString(r.id), kind: r.kind, assetFileId: r.assetFileId === null ? null : idToString(r.assetFileId) }))
+  }
+
+  /**
+   * Stimulus bodies linked DIRECTLY to a question version (`question_version_stimuli`), in link order, audio left out. Keyed
+   * `<questionId>:<versionNo>` (one entry per requested ref, an empty array when the version has none or does not exist).
+   * For kuiz and the bridges: a stimulus linked to a version may be outside its group (a stem picture, a leaf stimulus).
+   */
+  async versionStimuli(refs: readonly { questionId: string; versionNo: number }[]): Promise<Map<string, StimulusRecord[]>> {
+    const out = new Map<string, StimulusRecord[]>()
+    const wanted = refs.flatMap((r) => {
+      const key = bi(r.questionId)
+      return key === null || !Number.isSafeInteger(r.versionNo) ? [] : [{ questionId: key, versionNo: r.versionNo }]
+    })
+    for (const r of wanted) out.set(`${idToString(r.questionId)}:${r.versionNo}`, [])
+    if (wanted.length === 0) return out
+    const versions = await this.db.questionVersion.findMany({
+      where: { OR: wanted.map((r) => ({ questionId: r.questionId, versionNo: r.versionNo })) },
+      select: {
+        questionId: true,
+        versionNo: true,
+        stimuli: { orderBy: { position: 'asc' }, select: { stimulus: true } },
+      },
+    })
+    for (const v of versions) {
+      out.set(
+        `${idToString(v.questionId)}:${v.versionNo}`,
+        v.stimuli.flatMap((l) => {
+          const record = stimulusRecordOf(l.stimulus)
+          return record ? [record] : []
+        }),
+      )
+    }
+    return out
   }
 
   async groupExists(id: string): Promise<boolean> {
@@ -987,6 +1051,7 @@ export class QuestionsRepository {
           blankCount: d.blankCount,
           wordMin: d.wordMin,
           wordMax: d.wordMax,
+          topics: d.topics ?? Prisma.DbNull,
           stimulusId: d.stimulusId,
           reveal: d.reveal,
           unitNodeId: d.unitNodeId,
@@ -1118,7 +1183,9 @@ export class QuestionsRepository {
       const q = byId.get(w.id)
       return q && w.versionNo <= q.latestVersionNo ? [{ q, versionNo: w.versionNo }] : []
     })
-    const out = await this.hydratePicks(picks)
+    // Secondary-only (R1-B21): a pinned read of a Darjah question is not found either (kuiz paper pages serve pinned versions).
+    const hidden = await this.primaryLevelIds()
+    const out = (await this.hydratePicks(picks)).filter((r) => r.version.educationLevelId === null || !hidden.has(r.version.educationLevelId))
     return out.sort((a, b) => (a.id === b.id ? a.version.versionNo - b.version.versionNo : BigInt(a.id) < BigInt(b.id) ? -1 : 1))
   }
 
