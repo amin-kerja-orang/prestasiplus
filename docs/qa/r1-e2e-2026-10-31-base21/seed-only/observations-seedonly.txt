@@ -1,0 +1,21 @@
+[mobile] S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter) => passed
+   observed: Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+   screenshot: docs/qa/r1-e2e-2026-10-31-base21/seed-only/mobile-S0.jpg
+[mobile] B-01 Soalan by Chapter shows subjects or an empty-state message => passed
+   observed: GET chapter-subjects: {"data":[],"meta":{"page":1,"pageSize":1,"totalItems":0,"totalPages":1,"from":null,"to":null}}
+   observed: subject tiles 0, empty-state texts 1
+   screenshot: docs/qa/r1-e2e-2026-10-31-base21/seed-only/mobile-B-01.jpg
+[tablet] S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter) => passed
+   observed: Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+   screenshot: docs/qa/r1-e2e-2026-10-31-base21/seed-only/tablet-S0.jpg
+[tablet] B-01 Soalan by Chapter shows subjects or an empty-state message => passed
+   observed: GET chapter-subjects: {"data":[],"meta":{"page":1,"pageSize":1,"totalItems":0,"totalPages":1,"from":null,"to":null}}
+   observed: subject tiles 0, empty-state texts 1
+   screenshot: docs/qa/r1-e2e-2026-10-31-base21/seed-only/tablet-B-01.jpg
+[desktop] S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter) => passed
+   observed: Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+   screenshot: docs/qa/r1-e2e-2026-10-31-base21/seed-only/desktop-S0.jpg
+[desktop] B-01 Soalan by Chapter shows subjects or an empty-state message => passed
+   observed: GET chapter-subjects: {"data":[],"meta":{"page":1,"pageSize":1,"totalItems":0,"totalPages":1,"from":null,"to":null}}
+   observed: subject tiles 0, empty-state texts 1
+   screenshot: docs/qa/r1-e2e-2026-10-31-base21/seed-only/desktop-B-01.jpg

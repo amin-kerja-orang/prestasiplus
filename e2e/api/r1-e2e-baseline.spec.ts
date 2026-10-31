@@ -518,6 +518,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       .catch(() => undefined)
     if ((await chapter.evaluate((e) => e.tagName)) === 'SELECT') {
       const opts = chapter.locator('option:not([value=""])')
+      // The Bab options load after the select is enabled (seen empty once at 1280 on BASE-21).
+      await expect(opts.first())
+        .toBeAttached({ timeout: 10_000 })
+        .catch(() => undefined)
       if ((await opts.count()) > 0) {
         chapterLabel = (await opts.first().innerText()).trim()
         await chapter.selectOption({ label: chapterLabel })
@@ -919,7 +923,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await expect(listRows(page, st.tag).first()).toBeVisible()
     await expectNoHScroll(page)
     saveState(info, { approvedViaApi: approved, servableAt: Date.now() })
-    expect(approved, 'every run question approved through the API').toBe(ids.length)
+    // Since T04 (BASE-4) the approve gate refuses a question without a DSKP unit + SP (AC-R1-14.4 /
+    // PIPE AC-03.2), so the untagged CSV rows stay in review; the DSKP-tagged form MCQs approve.
+    const tagged = (st.formQuestion ? 1 : 0) + (st.controlQuestion ? 1 : 0)
+    expect(approved, 'every DSKP-tagged run question approved through the API').toBe(tagged)
   })
 
   test('S2b admin approves the intake questions in Baris Gilir Semakan', async ({ page }, info) => {
@@ -1027,6 +1034,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       !(st.approvedM04 || st.approvedViaApi),
       'Blocked: no Bank Soalan question reached Diluluskan (S2a UI, S2c API)',
     )
+    test.skip(
+      true,
+      'Not applicable since BASE-4 (T04, ADR-0027): approved = "Diterbitkan" is the served status, no Terbitkan hop',
+    )
     // NOT the R1 target: D80 makes "approved" servable with no Terbitkan hop (T04, b01-lifecycle,
     // not merged on BASE-1). BASE-1 still serves only "published", so this UI step lets the pupil
     // side and the paper builder be observed with the lifecycle BASE-1 actually has.
@@ -1047,7 +1058,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
   }, info) => {
     const st = readState(info)
     test.skip(st.baseline?.databankMath === undefined, 'Blocked: S0 baseline missing')
-    test.skip(!st.publishedM04, 'Blocked: S2d published no question')
+    test.skip(!st.publishedM04, 'Not applicable since BASE-4: S5a-S5c cover the served (approved) questions')
     await waitOutBankCache(page, st.publishedAt)
     await login(page, PUPIL_T4)
     const databank = await cardCount(
@@ -1270,7 +1281,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     page,
   }, info) => {
     const st = readState(info)
-    test.skip(!st.publishedM04, 'Blocked: no admin question is servable on BASE-1 (S2d)')
+    test.skip(
+      !(st.publishedM04 || st.approvedM04 || st.approvedViaApi),
+      'Blocked: no admin question is servable (approved S2a/S2c, or published S2d on BASE-1)',
+    )
     const title = `${st.tag} kertas`
     const { id, offered } = await buildPaper(page, info, title, st.tag, st.tag)
     saveState(info, { paper: { id, title, published: false, hasAdminQuestion: offered > 0 } })
@@ -1304,7 +1318,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
   }, info) => {
     const st = readState(info)
     test.skip(!st.controlQuestion, 'Blocked: S1e created no control question')
-    test.skip(!st.publishedM04, 'Blocked: no admin question is servable on BASE-1 (S2d)')
+    test.skip(
+      !(st.publishedM04 || st.approvedM04 || st.approvedViaApi),
+      'Blocked: no admin question is servable (approved S2a/S2c, or published S2d on BASE-1)',
+    )
     const title = `${st.tag} kawalan kertas`
     const term = `${st.tag} kawalan`
     const { id, offered } = await buildPaper(page, info, title, term, term)
