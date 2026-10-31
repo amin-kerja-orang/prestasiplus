@@ -42,10 +42,12 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 | H-A3 | A | CLOSED: `test/curriculum/learner.spec.ts` 28/28 on T01 head (fixed earlier by 8b fix3 c2b782e7); no change |
 | H-A5 | A | DONE in T05 @ 4fff21ab (doc was stale): `test/seed/poc.spec.ts` 1 failure: docs/plan/seed-profile.md says spm_tracking_set_questions 493 / total 21891, seed produces 483 / 21881. Pre-existing on BASE-1 |
 | H-A6 | A | DONE in T05 @ 5c96c7e9 (test-local secondary pupil at a 2nd school; queue 27/27; arena 15/15, forfeit 9/9, queue-guards 31/31 unchanged): `test/battle/queue.spec.ts` "school battle: bot from another school": no secondary pupil in another school in the demo seed (D72 seed gap) |
-| H-A7 | A (A4 next, r1/ha7-essay-choice-flat-view) | `essay_choice` in flat admin/Guru views (`questions/projection.ts`, `bank-adapter.ts`): shows as structured today |
+| H-A7 | A | **READY-FOR-REVIEW** `r1/ha7-essay-choice-flat-view` @ 66b3adb8 (stacked on T25; merge after T25): flat projection + `essayTopics` on QuestionRow/Question (contract, additive), bank-adapter explanation; new spec 4/4; api tsc 0; vue-tsc 0; eslint 0; openapi --check ok. FE label/topics in m04 → H-C3 after T04 |
 | H-A8 | A (A1 IN-PROGRESS, r1/ha8-stale-specs) | Pre-existing on T01: curriculum/admin-delete-conflict "level link only"; classes/teacher-classrooms-lookup (suite); battle/school-page (2), battle/seed (3) |
 | H-A9 | A (A3 IN-PROGRESS, r1/ha9-pipeline-chain) | API-level chain spec of the R1 acceptance flow: admin creates (incl. D90 image group) → approves → builder places group → review → Terbit → pupil sits, image readable, self-marks, result, Cuba Lagi; Databank/Latih Tubi SPM receive. Spec-only; gaps reported |
 | H-A4 | A | DONE in T05 @ 4fff21ab: `test/bijak-attempts/golden.spec.ts` 4 failures (sej-k2-2025-a): mock engine emits `selfMarkable: true` on `belum_dimarkah` parts; spec strips it only on the API side. Pre-existing on BASE-1 |
+| H-C3 | C | m04 admin list/detail: show "Esei pilihan" + topics list when `essayTopics` is present (API from H-A7). After T04 merges (m04 lock) |
+| H-A10 | A (A4 IN-PROGRESS) | R1 backend gap audit of §13.3 BE/DO rows vs code + review branches; proposes the next team A queue |
 | H-B1 | B | Unit sweep m01/02/03/04/05/08/09/16/27 + registry-boot on the latest BASE; file failures to the owning team's status file |
 | H-B2 | B | `lint:admin` ratchet for the 7 m02/m03/m09 findings (report only; the fix goes to C) |
 | H-C1 | C | ChapterIndexPage / Soalan by Chapter empty state (B-01 FE side) per V2 |
@@ -56,6 +58,10 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 A: Tracking A sets (BE), Mock K1/K2 (BE), practice-family bridge upgrades (images and groups in Latih Tubi/Bab/Remedial).
 C: Tracking A editor UI, Mock K1/K2 UI (B-03), Subjektif SPM / Latihan Berstruktur, Heatmap.
 B: review, security, E2E and release for each R2 unit.
+
+## Migration ranges (update)
+
+Team A 0100–0109, overflow **0120–0129**; team C 0110–0119. In code today: 0092, 0093, 0100 (T04), 0101 (T25). Planned numbers are in `docs/architecture/v2-admin-student-pipeline.md` §2 (renumbered on T25).
 
 ## Decisions this cycle
 
