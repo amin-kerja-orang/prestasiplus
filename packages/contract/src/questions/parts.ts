@@ -28,6 +28,8 @@ export const QUESTION_LEAF_MODES = [
   'essay',
   'drawing',
   'table_fill',
+  /** R1-T07 (V2 `essay_choice`, 31 approved parts): the pupil picks one of 2 to 6 topics, then writes an essay marked like `essay`. */
+  'essay_choice',
   /** BE-42 (M07 PKSK): 0 or 2 to 6 options, any number of correct labels. Valid only on a question tagged `pksk_domain`. */
   'pksk_choice',
 ] as const
@@ -147,14 +149,23 @@ const AcceptedNumericKey = z.object({
  */
 export const QUESTION_KBAT_LEVELS = ['mengaplikasi', 'menganalisis', 'menilai', 'mencipta'] as const
 export const QuestionKbatLevelSchema = z.enum(QUESTION_KBAT_LEVELS).meta({ id: 'QuestionKbatLevel' })
+/**
+ * R1-B05 (ADR-0031, D76, D83 D-4): the cognitive level of a leaf (Taksonomi Bloom). The four upper levels are KBAT. Mandatory per leaf at
+ * the new approval of an SPM-bound question (Tingkatan 4/5 of an SPM subject); drafts and legacy questions may leave it unset.
+ */
+export const QUESTION_COGNITIVE_LEVELS = ['mengingat', 'memahami', 'mengaplikasi', 'menganalisis', 'menilai', 'mencipta'] as const
+export const QuestionCognitiveLevelSchema = z.enum(QUESTION_COGNITIVE_LEVELS).meta({ id: 'QuestionCognitiveLevel' })
+export type QuestionCognitiveLevel = z.infer<typeof QuestionCognitiveLevelSchema>
 const leafCurriculum = {
+  /** Cognitive level of the leaf; absent or null = not set. Sending only this also settles `kbat` (the four upper levels are KBAT). */
+  cognitiveLevel: QuestionCognitiveLevelSchema.nullable().optional(),
   /** The four KBAT levels, or 'bukan' (explicitly not KBAT: overrides a KBAT question). Absent or null = inherit. */
   kbat: z.enum([...QUESTION_KBAT_LEVELS, 'bukan']).nullable().optional(),
   unitNodeId: IdSchema.nullable().optional(),
   formOrigin: z.enum(['t1_t3', 't4', 't5']).nullable().optional(),
   difficultyTp: z.number().int().min(1).max(6).nullable().optional(),
 }
-const leafCurriculumKeys = { kbat: true, unitNodeId: true, formOrigin: true, difficultyTp: true } as const
+const leafCurriculumKeys = { kbat: true, unitNodeId: true, formOrigin: true, difficultyTp: true, cognitiveLevel: true } as const
 
 /** One answer key per mode (D3). A key of the wrong kind for the mode is rejected at the field `key`. */
 const leafBase = {
@@ -175,6 +186,14 @@ const McqLeaf = keyed('mcq', OptionKey).extend({ options: z.array(QuestionOption
  * tagged `pksk_domain`: the question service rejects it with 422 otherwise.
  */
 const PkskChoiceLeaf = keyed('pksk_choice', OptionsKey).extend({ options: z.array(QuestionOptionSchema).max(6) })
+/** R1-T07: one topic of an `essay_choice` leaf (V2 `config.topics`). `id` is the stable key of the topic inside the leaf. */
+export const QuestionEssayTopicSchema = z
+  .object({ id: z.string().min(1).max(40), label: z.string().min(1) })
+  .meta({ id: 'QuestionEssayTopic' })
+const EssayChoiceLeaf = keyed('essay_choice', z.discriminatedUnion('kind', [RubricKey, PointsKey])).extend({
+  topics: z.array(QuestionEssayTopicSchema).min(2, 'Sila masukkan 2 hingga 6 tajuk.').max(6, 'Sila masukkan 2 hingga 6 tajuk.'),
+  wordRange: z.object({ min: z.number().int(), max: z.number().int() }).optional(),
+})
 const LeafBranches = [
   McqLeaf,
   PkskChoiceLeaf,
@@ -187,6 +206,7 @@ const LeafBranches = [
   }),
   keyed('drawing', PointsKey),
   keyed('table_fill', CellsKey),
+  EssayChoiceLeaf,
 ] as const
 
 export const QuestionLeafPartSchema = z
@@ -195,6 +215,9 @@ export const QuestionLeafPartSchema = z
     const p = ctx.value
     if (p.mode === 'mcq' && !p.options.some((o) => o.label === p.key.correct)) {
       ctx.issues.push({ code: 'custom', input: p, path: ['key', 'correct'], message: 'Jawapan betul mesti salah satu pilihan.' })
+    }
+    if (p.mode === 'essay_choice' && new Set(p.topics.map((t) => t.id)).size !== p.topics.length) {
+      ctx.issues.push({ code: 'custom', input: p, path: ['topics'], message: 'Setiap tajuk mesti mempunyai id yang berbeza.' })
     }
     if (p.mode === 'pksk_choice') {
       const labels = new Set(p.options.map((o) => o.label))
@@ -227,15 +250,31 @@ export const QuestionCurriculumTagSchema = z
   })
   .meta({ id: 'QuestionCurriculumTag' })
 
-/** D6: a stimulus (diagram, passage, table) and a group that keeps ordered questions together. */
+/** R1-T07: the seven V2 production stimulus kinds (audio exists in the store but is never served as a stimulus). */
+export const QUESTION_STIMULUS_KINDS = ['passage', 'image', 'diagram', 'table', 'map', 'infographic', 'graph'] as const
+export const QuestionStimulusKindSchema = z.enum(QUESTION_STIMULUS_KINDS).meta({ id: 'QuestionStimulusKind' })
+export type QuestionStimulusKind = z.infer<typeof QuestionStimulusKindSchema>
+
+/** Table grid of a `table` stimulus (`stimuli.table_data`): header cells and body rows. */
+export const QuestionStimulusTableSchema = z
+  .object({ head: z.array(z.string()), rows: z.array(z.array(z.string())) })
+  .meta({ id: 'QuestionStimulusTable' })
+
+/**
+ * D6: a stimulus and a group that keeps ordered questions together. D90: a shared stimulus is ONE group shown once with all
+ * its member questions; it carries no marks and is never a question. `caption`, `sourceCitation` and `tableData` are additive.
+ */
 export const QuestionStimulusSchema = z
   .object({
     id: IdSchema,
-    kind: z.enum(['diagram', 'passage', 'table']),
+    kind: QuestionStimulusKindSchema,
     label: z.string(),
     body: QuestionRichTextSchema.nullable(),
     imageId: IdSchema.nullable(),
     alt: z.string().nullable(),
+    caption: z.string().nullable().optional(),
+    sourceCitation: z.string().nullable().optional(),
+    tableData: QuestionStimulusTableSchema.nullable().optional(),
   })
   .meta({ id: 'QuestionStimulus' })
 

@@ -6,6 +6,7 @@ import {
   LifecycleService,
   type BulkResult,
   type CreateGateInput,
+  type GateName,
   type TakedownResult,
   type TransitionOptions,
   type TransitionResult,
@@ -31,6 +32,11 @@ export class QuestionWorkflowService {
   /** Table, role, reason and gate checks, then bank status change + status event(s) in one transaction. */
   transition(questionId: string, to: string, actor: WorkflowActor, options: TransitionOptions = {}): Promise<TransitionResult> {
     return this.lifecycle.transition(questionId, to, actor, options)
+  }
+
+  /** The approve / submit gate as a read: the issues of the next transition, no state change. */
+  gateCheck(questionId: string, gate: GateName, actor: WorkflowActor) {
+    return this.lifecycle.gateCheck(questionId, gate, actor)
   }
 
   /** Same rules per id; failing ids are skipped and reported. */

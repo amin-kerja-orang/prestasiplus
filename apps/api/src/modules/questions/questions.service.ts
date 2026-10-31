@@ -26,7 +26,10 @@ import {
   type FlatSource,
   type FlatType,
 } from './projection'
-import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
+import { MAX_SP_NODES } from './publish-gate'
+import { GATES } from './workflow/lifecycle/gates'
+import type { QuestionGateData } from './workflow/ports'
+import { GroupMembers } from './group-members'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
@@ -104,6 +107,12 @@ function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIss
 
 /** 422 text of a `pksk_choice` leaf sent to the general question routes (no `pksk` tag). */
 export const PKSK_LEAF_REFUSED = 'Jenis soalan PKSK hanya boleh disimpan sebagai soalan PKSK.'
+
+/**
+ * 422 text of an `essay_choice` leaf (R1-T07): the contract carries the mode, but the store has no column for its topics and
+ * the mode CHECK refuses it until the DSKP migration (0101, v2-admin-student-pipeline section 2) lands.
+ */
+export const ESSAY_CHOICE_NOT_STORED = 'Jenis soalan esei pilihan belum boleh disimpan.'
 
 const MAX_TOP_PARTS = 20
 const MAX_TOTAL_PARTS = 200
@@ -183,6 +192,7 @@ export class QuestionsService {
     @Inject(FilesService) private readonly files: FilesService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(GroupMembers) private readonly groupMembers: GroupMembers,
   ) {}
 
   // --- admin (Admin Pusat) ----------------------------------------------------------------------
@@ -230,6 +240,7 @@ export class QuestionsService {
       ...(input.modelAnswer === undefined ? {} : { modelAnswer: input.modelAnswer }),
       ...(input.pointsValue === undefined ? {} : { pointsValue: input.pointsValue }),
       ...(input.optionImageFileIds === undefined ? {} : { optionImageIds: input.optionImageFileIds }),
+      ...(input.cognitiveLevel == null ? {} : { cognitiveLevel: input.cognitiveLevel }),
     }
     const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
     const status = input.status ?? 'draft'
@@ -323,8 +334,20 @@ export class QuestionsService {
         })
       }
       if (status === 'approved') {
-        const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
-        Object.assign(fields, checkKeysGate(v.parts))
+        // "No bypass" (ADR-0027, B3): the one merged approve gate, the same function the lifecycle routes run (tag, keys, rights, duplicates,
+        // marks, media, reviewer, DSKP). `lastEditedByAi` is false here: this path is only ever driven by a person.
+        const fields = await this.approveFields({
+          id,
+          parts: v.parts,
+          subjectId: v.subjectId,
+          educationLevelId: v.educationLevelId,
+          chapterId: v.chapterId,
+          unitId: v.unitId,
+          spIds: v.spIds,
+          tp: v.difficultyTp,
+          paperCode: v.paperCode ?? null,
+          rightsStatus: (await this.repo.rightsStatusOf(id, v.versionNo)) ?? 'own',
+        })
         if (Object.keys(fields).length > 0) throw fail(fields)
         // The version that served until now is superseded in the same transaction.
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
@@ -533,6 +556,7 @@ export class QuestionsService {
     if (res.success) {
       // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
       if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
+      if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'essay_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: ESSAY_CHOICE_NOT_STORED })
       return res.data
     }
     const issue = res.error.issues[0]
@@ -561,6 +585,46 @@ export class QuestionsService {
     return 'questionText'
   }
 
+  /**
+   * The approve gate (`GATES.approve`, ADR-0027) over the facts this module holds. The facts BE-09 does not store (open duplicate flag,
+   * unconfirmed low-confidence fields, media check, question-level marks) take the same satisfied defaults as the workflow's bank adapter,
+   * so the lifecycle route, the bulk action and the create path can never disagree. A version with no rights declaration counts as `own`
+   * (the documented default); an explicit `unclear` is refused. R1-B05: the DSKP rules bind only an SPM-bound question, on a NEW approval.
+   */
+  private async approveFields(input: {
+    id: string
+    parts: QuestionGateData['parts']
+    subjectId: string | null
+    educationLevelId: string | null
+    chapterId: string | null
+    unitId: string | null
+    spIds: string[]
+    tp: number | null
+    paperCode: string | null
+    rightsStatus: string
+  }): Promise<Record<string, string>> {
+    return GATES.approve({
+      id: input.id,
+      parts: input.parts,
+      marks: null,
+      subjectId: input.subjectId,
+      educationLevelId: input.educationLevelId,
+      chapterId: input.chapterId,
+      unitId: input.unitId,
+      spIds: input.spIds,
+      tp: input.tp,
+      rightsStatus: input.rightsStatus,
+      hasSourceDeclaration: true,
+      unconfirmedLowConfidenceFields: [],
+      hasOpenDuplicateFlag: false,
+      mediaResolved: true,
+      missingRequiredFields: [],
+      lastEditedByAi: false,
+      paperCode: input.paperCode,
+      spmBound: await this.repo.isSpmBound(input.subjectId, input.educationLevelId),
+    })
+  }
+
   private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const { draft, newStemFileId } = await this.draftOf(n, status, null)
     if (provenance) {
@@ -568,15 +632,19 @@ export class QuestionsService {
       draft.sourcePage = provenance.sourcePage
     }
     if (status === 'approved') {
-      const fields = checkTagGate({
+      // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition.
+      const fields = await this.approveFields({
+        id: '0',
+        parts: n.parts,
         subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
         educationLevelId: draft.educationLevelId === null ? null : idToString(draft.educationLevelId),
+        chapterId: null,
         unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
         spIds: draft.spNodeIds.map(idToString),
         tp: draft.difficultyTp,
+        paperCode: draft.paperCode ?? null,
+        rightsStatus: 'own',
       })
-      // Same keys rule BE-10 offers: marks of a points key equal the leaf marks and the sum of its points.
-      Object.assign(fields, checkKeysGate(n.parts))
       if (Object.keys(fields).length > 0) throw fail(fields)
     }
     const creator = parse(actor.userId)
@@ -587,7 +655,8 @@ export class QuestionsService {
         sourceType: provenance?.sourceType ?? 'manual',
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
-        groupPosition: groupId === null ? null : await this.repo.nextGroupPosition(groupId),
+        // D90 / R1-T32: the same member rules as the stimulus routes; locks the group so concurrent creates get distinct positions.
+        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId)),
         now: this.clock.now(),
         version: draft,
         ...(provenance
@@ -818,6 +887,8 @@ export class QuestionsService {
         correctAnswerText: input.correctAnswerText === undefined ? flat.correctAnswerText : input.correctAnswerText,
         altAnswers: input.altAnswers ?? flat.altAnswers,
         modelAnswer: input.modelAnswer === undefined ? flat.modelAnswer : input.modelAnswer,
+        // R1-B05: the cognitive level of the single leaf survives a flat edit unless the body sends one (null clears it).
+        cognitiveLevel: input.cognitiveLevel === undefined ? ((single as { cognitiveLevel?: string | null } | undefined)?.cognitiveLevel ?? null) : input.cognitiveLevel,
       }
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
       parts = this.checkedParts(partsFromFlat(src), false)
@@ -876,8 +947,8 @@ export class QuestionsService {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
       }
       if (input.stimulusGroupId !== undefined) {
-        const gid = input.stimulusGroupId
-        await this.repo.setGroup(record.id, gid, gid === null ? null : await this.repo.nextGroupPosition(gid))
+        // D90 / R1-T32: leaving or joining a group goes through the same rules as the stimulus routes (served lock, caps, PKSK, ...).
+        await this.groupMembers.move(record.id, fresh.groupId, input.stimulusGroupId)
       }
     }, TX)
     const after = await this.repo.get(record.id, 'latest')
@@ -926,11 +997,16 @@ export class QuestionsService {
   private async detail(record: QuestionRecord): Promise<QuestionDetailView> {
     const view = await this.viewOf(record)
     const creator = record.createdById ? await this.users.get(record.createdById) : null
+    const stimulusGroup = record.groupId ? await this.repo.groupOf(record.id) : null
+    // The pictures of the group's stimuli are named by public token too (one form for the Studio, R1-T32).
+    const assetIds = (stimulusGroup?.stimuli ?? []).flatMap((s) => (s.assetFileId === null ? [] : [s.assetFileId]))
+    const assetTokens = assetIds.length === 0 ? new Map<string, string>() : await this.files.publicIdsOf(assetIds)
     return {
       ...view,
+      imageTokens: { ...view.imageTokens, ...Object.fromEntries(assetTokens) },
       dskp: await this.dskpOf(record.version.spIds[0]),
       createdByName: creator?.name ?? null,
-      stimulusGroup: record.groupId ? await this.repo.groupOf(record.id) : null,
+      stimulusGroup,
     }
   }
 

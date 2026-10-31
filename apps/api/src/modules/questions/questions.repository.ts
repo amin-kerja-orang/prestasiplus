@@ -21,12 +21,14 @@ import type {
   QuestionVersionRecord,
   SampleFilter,
   StimulusGroupRecord,
+  StimulusKind,
   StimulusRecord,
   StoreQuestionType,
   StoreSourceType,
   StructuredListFilter,
   ViewMode,
 } from './types'
+import { STIMULUS_KINDS } from './types'
 
 /** Columns of `question_versions` a writer may set (ids are bigint, the service already parsed them). */
 export interface VersionDraft {
@@ -190,6 +192,42 @@ function pkskOf(tags: readonly { kind: string; code: string }[]): { domainCode: 
   const domain = tags.find((t) => t.kind === 'pksk_domain')
   const level = tags.find((t) => t.kind === 'pksk_level')
   return domain && (level?.code === 'T1' || level?.code === 'T4') ? { domainCode: domain.code, level: level.code } : null
+}
+
+/** A stored stimulus row as the store keeps it (the columns the display needs). */
+interface StimulusRow {
+  id: bigint
+  kind: string
+  label: string | null
+  bodyMs: string | null
+  bodyEn: string | null
+  caption: string | null
+  altText: string | null
+  sourceCitation: string | null
+  tableData: unknown
+  assetFileId: bigint | null
+}
+
+const isStimulusKind = (kind: string): kind is StimulusKind => (STIMULUS_KINDS as readonly string[]).includes(kind)
+
+/**
+ * A stored stimulus as a record. All seven kinds pass through with caption, source and table grid (R1-T07); `audio` (and any
+ * kind outside the seven) is not a displayable stimulus and yields null.
+ */
+function stimulusRecordOf(row: StimulusRow): StimulusRecord | null {
+  if (!isStimulusKind(row.kind)) return null
+  return {
+    id: idToString(row.id),
+    kind: row.kind,
+    label: row.label ?? '',
+    bodyMs: row.bodyMs,
+    bodyEn: row.bodyEn,
+    assetFileId: row.assetFileId === null ? null : idToString(row.assetFileId),
+    alt: row.altText,
+    caption: row.caption,
+    sourceCitation: row.sourceCitation,
+    tableData: row.tableData ?? null,
+  }
 }
 
 const likePattern = (s: string): string => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
@@ -462,17 +500,10 @@ export class QuestionsRepository {
       },
     })
     if (!group) return null
-    const stimuli: StimulusRecord[] = group.stimuli
-      .filter((s) => s.stimulus.kind !== 'audio')
-      .map((s) => ({
-        id: idToString(s.stimulus.id),
-        kind: s.stimulus.kind === 'passage' ? 'passage' : s.stimulus.kind === 'table' ? 'table' : 'diagram',
-        label: s.stimulus.label ?? '',
-        bodyMs: s.stimulus.bodyMs,
-        bodyEn: s.stimulus.bodyEn,
-        assetFileId: s.stimulus.assetFileId === null ? null : idToString(s.stimulus.assetFileId),
-        alt: s.stimulus.altText,
-      }))
+    const stimuli: StimulusRecord[] = group.stimuli.flatMap((s) => {
+      const record = stimulusRecordOf(s.stimulus)
+      return record ? [record] : []
+    })
     return {
       id: idToString(group.id),
       stimuli,
@@ -663,6 +694,58 @@ export class QuestionsRepository {
     if (keys.length === 0) return []
     const rows = await this.db.stimulus.findMany({ where: { id: { in: keys } }, select: { id: true, kind: true, assetFileId: true } })
     return rows.map((r) => ({ id: idToString(r.id), kind: r.kind, assetFileId: r.assetFileId === null ? null : idToString(r.assetFileId) }))
+  }
+
+  /**
+   * Stimulus bodies linked DIRECTLY to a question version (`question_version_stimuli`), in link order, audio left out. Keyed
+   * `<questionId>:<versionNo>` (one entry per requested ref, an empty array when the version has none or does not exist).
+   * For kuiz and the bridges: a stimulus linked to a version may be outside its group (a stem picture, a leaf stimulus).
+   */
+  async versionStimuli(refs: readonly { questionId: string; versionNo: number }[]): Promise<Map<string, StimulusRecord[]>> {
+    const out = new Map<string, StimulusRecord[]>()
+    const wanted = refs.flatMap((r) => {
+      const key = bi(r.questionId)
+      return key === null || !Number.isSafeInteger(r.versionNo) ? [] : [{ questionId: key, versionNo: r.versionNo }]
+    })
+    for (const r of wanted) out.set(`${idToString(r.questionId)}:${r.versionNo}`, [])
+    if (wanted.length === 0) return out
+    const versions = await this.db.questionVersion.findMany({
+      where: { OR: wanted.map((r) => ({ questionId: r.questionId, versionNo: r.versionNo })) },
+      select: {
+        questionId: true,
+        versionNo: true,
+        stimuli: { orderBy: { position: 'asc' }, select: { stimulus: true } },
+      },
+    })
+    for (const v of versions) {
+      out.set(
+        `${idToString(v.questionId)}:${v.versionNo}`,
+        v.stimuli.flatMap((l) => {
+          const record = stimulusRecordOf(l.stimulus)
+          return record ? [record] : []
+        }),
+      )
+    }
+    return out
+  }
+
+  /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
+  /** `rights_status` of one version: null when no declaration was made (or the version is unknown). */
+  async rightsStatusOf(questionId: string, versionNo: number): Promise<string | null> {
+    const key = bi(questionId)
+    if (key === null) return null
+    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { rightsStatus: true } })
+    return row?.rightsStatus ?? null
+  }
+
+  async isSpmBound(subjectId: string | null, levelId: string | null): Promise<boolean> {
+    const subject = subjectId === null ? null : bi(subjectId)
+    const level = levelId === null ? null : bi(levelId)
+    if (subject === null || level === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one FROM spm_subject_configs c JOIN education_levels l ON l.id = ${level} AND l.code IN ('T4', 'T5')
+       WHERE c.subject_id = ${subject} LIMIT 1`
+    return rows.length > 0
   }
 
   async groupExists(id: string): Promise<boolean> {
@@ -993,6 +1076,7 @@ export class QuestionsRepository {
           formOrigin: d.formOrigin,
           difficultyTp: d.difficultyTp,
           kbat: d.kbat,
+          cognitiveLevel: d.cognitiveLevel,
         },
       })
       if (d.options.length > 0) {
