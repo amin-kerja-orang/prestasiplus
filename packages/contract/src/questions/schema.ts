@@ -199,6 +199,19 @@ export const QuestionSchema = z
   .meta({ id: 'Question' })
 
 const DskpRef = z.object({ id: IdSchema, code: z.string(), description: z.string() })
+/** R1-T45b (PIPE AC-04.4): one place where the question sits on a curated paper. */
+export const QUESTION_PLACEMENT_STATUSES = ['draft', 'ready', 'published', 'withdrawn'] as const
+export const QuestionPlacementSchema = z
+  .object({
+    paperId: IdSchema,
+    title: z.string(),
+    status: z.enum(QUESTION_PLACEMENT_STATUSES),
+    section: z.string().meta({ description: 'Label of the section (Bahagian) that places the question.' }),
+    versionNo: z.number().int().min(1).meta({ description: 'The question version printed on the paper (pinned); a published paper keeps it when the question is archived or edited.' }),
+  })
+  .meta({ id: 'QuestionPlacement' })
+export type QuestionPlacement = z.infer<typeof QuestionPlacementSchema>
+
 export const QuestionDetailSchema = QuestionSchema.omit({ createdBy: true })
   .extend({
     subject: Ref,
@@ -210,6 +223,13 @@ export const QuestionDetailSchema = QuestionSchema.omit({ createdBy: true })
         sp: DskpRef,
       })
       .nullable(),
+    /**
+     * R1-T45b (PIPE AC-04.4), Admin Pusat detail only: the curated papers (Pilihan) that place this question, any status (draft, ready,
+     * published, withdrawn) and any pinned version, published first. Read before editing or archiving: a published paper keeps its frozen snapshot.
+     */
+    placements: z.array(QuestionPlacementSchema).optional(),
+    /** Generated (Jana) papers that place the question; they are counted, not listed. */
+    generatedPaperCount: z.number().int().min(0).optional(),
     createdBy: z.object({ id: IdSchema, name: z.string().nullable() }),
   })
   .meta({ id: 'QuestionDetail' })

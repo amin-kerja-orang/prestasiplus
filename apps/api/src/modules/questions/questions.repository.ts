@@ -17,6 +17,7 @@ import type {
   Page,
   QuestionFilter,
   QuestionRecord,
+  QuestionPlacementRecord,
   QuestionStatus,
   QuestionVersionRecord,
   SampleFilter,
@@ -727,6 +728,39 @@ export class QuestionsRepository {
       )
     }
     return out
+  }
+
+  /**
+   * R1-T45b (PIPE AC-04.4): the curated papers (kind `pilihan`) that place the question, every status (draft, ready, published, withdrawn) and
+   * every pinned version, published first then newest, at most 100 rows; plus how many generated (`jana`) papers place it (counted, not listed).
+   */
+  async placementsOf(questionId: string): Promise<{ placements: QuestionPlacementRecord[]; generatedPaperCount: number }> {
+    const key = bi(questionId)
+    if (key === null) return { placements: [], generatedPaperCount: 0 }
+    const rows = await this.db.$queryRaw<{ paper_id: bigint; title: string; status: string; section: string; pinned: number }[]>`
+      SELECT p.id AS paper_id, p.title, p.status, s.label AS section, pl.pinned_version_no AS pinned
+        FROM paper_placements pl
+        JOIN paper_sections s ON s.id = pl.paper_section_id
+        JOIN papers p ON p.id = s.paper_id
+       WHERE pl.question_id = ${key} AND p.kind = 'pilihan'
+       ORDER BY (p.status = 'published') DESC, p.id DESC, s.position ASC
+       LIMIT 100`
+    const generated = await this.db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(DISTINCT p.id) AS n
+        FROM paper_placements pl JOIN paper_sections s ON s.id = pl.paper_section_id JOIN papers p ON p.id = s.paper_id
+       WHERE pl.question_id = ${key} AND p.kind = 'jana'`
+    return {
+      placements: rows.map((r) => ({ paperId: idToString(r.paper_id), title: r.title, status: r.status as QuestionPlacementRecord['status'], section: r.section, versionNo: r.pinned })),
+      generatedPaperCount: Number(generated[0]?.n ?? 0),
+    }
+  }
+
+  /** The loader's `import_issues` of one version (`[]` when none): why a legacy question was loaded but held inactive. */
+  async importIssuesOf(questionId: string, versionNo: number): Promise<{ code: string; target?: string; label?: string }[]> {
+    const key = bi(questionId)
+    if (key === null) return []
+    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { importIssues: true } })
+    return Array.isArray(row?.importIssues) ? (row.importIssues as { code: string; target?: string; label?: string }[]) : []
   }
 
   async groupExists(id: string): Promise<boolean> {

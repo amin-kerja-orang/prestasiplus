@@ -39001,6 +39001,16 @@
               "sp"
             ]
           },
+          "placements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionPlacement"
+            }
+          },
+          "generatedPaperCount": {
+            "type": "integer",
+            "minimum": 0
+          },
           "createdBy": {
             "type": "object",
             "properties": {
@@ -39063,6 +39073,42 @@
           "level",
           "dskp",
           "createdBy"
+        ]
+      },
+      "QuestionPlacement": {
+        "type": "object",
+        "properties": {
+          "paperId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "ready",
+              "published",
+              "withdrawn"
+            ]
+          },
+          "section": {
+            "type": "string",
+            "description": "Label of the section (Bahagian) that places the question."
+          },
+          "versionNo": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The question version printed on the paper (pinned); a published paper keeps it when the question is archived or edited."
+          }
+        },
+        "required": [
+          "paperId",
+          "title",
+          "status",
+          "section",
+          "versionNo"
         ]
       },
       "QuestionCreateRequest": {

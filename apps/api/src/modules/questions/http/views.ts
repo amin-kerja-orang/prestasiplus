@@ -155,6 +155,7 @@ export function detailView(d: QuestionDetailView): QuestionDetailWire {
     subject: d.subject,
     level: d.level,
     dskp: d.dskp,
+    ...(d.placements === undefined ? {} : { placements: d.placements, generatedPaperCount: d.generatedPaperCount ?? 0 }),
     createdBy: { id: d.createdById ?? NO_CREATOR, name: d.createdByName },
   })
 }
