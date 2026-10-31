@@ -34,6 +34,9 @@ import {
   BijakBuilderPreviewRequestSchema,
   BijakBuilderPreviewSchema,
   BijakBuilderPublishResultSchema,
+  BijakBuilderBlockerSchema,
+  BIJAK_BUILDER_BLOCKER_CODES,
+  BIJAK_BUILDER_BLOCKER_OVERRIDABLE,
   BijakBuilderQuestionSchema,
   BijakBuilderSchemeLineSchema,
 } from '../schema'
@@ -486,12 +489,24 @@ describe('publish, delete and preview results', () => {
       L.sectionLine('Bahagian B', L.marksMismatch(18, 20)),
       L.sectionLine('Bahagian B', L.notPublished(2)),
     ]
-    const bad = BijakBuilderPublishResultSchema.parse({ ok: false, errors: lines })
+    const bad = BijakBuilderPublishResultSchema.parse({ ok: false, errors: lines, blockerDetails: [], canOverride: false })
     expect(bad.ok).toBe(false)
     expect(
-      envelopeOf(BijakBuilderPublishResultSchema).safeParse({ data: { ok: false, errors: lines } })
+      envelopeOf(BijakBuilderPublishResultSchema).safeParse({ data: { ok: false, errors: lines, blockerDetails: [], canOverride: false } })
         .success,
     ).toBe(true)
+  })
+
+  it('carries the structured blockers: stable codes, the overridable flag of the contract map, and canOverride (R1-T34 follow-up)', () => {
+    const blocker = { code: 'BLUEPRINT_NOT_VERIFIED', message: 'Kontrak Simulasi 1449/2 (versi 1) belum Disahkan (status: Spec); Terbit memerlukan kontrak Disahkan.', overridable: true }
+    expect(BijakBuilderPublishResultSchema.safeParse({ ok: false, errors: [blocker.message], blockerDetails: [blocker], canOverride: true }).success).toBe(true)
+    const parsed = BijakBuilderBlockerSchema.parse({ code: 'NOT_SERVABLE', message: 'x', overridable: false, section: 'Bahagian A', questionId: '12' })
+    expect(parsed.questionId).toBe('12')
+    expect(BijakBuilderBlockerSchema.safeParse({ code: 'MADE_UP', message: 'x', overridable: false }).success).toBe(false)
+    expect(BijakBuilderBlockerSchema.safeParse({ code: 'NOT_SERVABLE', message: 'x' }).success).toBe(false)
+    expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
+    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(15)
+    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'GROUP_BROKEN', 'INELIGIBLE'])
   })
 
   it('requires the errors key and rejects the old union shapes', () => {

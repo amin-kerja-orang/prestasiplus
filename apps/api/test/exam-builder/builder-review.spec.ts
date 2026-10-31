@@ -272,7 +272,7 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     it('Sunting petikan: renames the group title; the group must be on the paper', async () => {
       const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan lama', body: { ms: 'Petikan ujian untuk kertas.' } })
       expect(stim.status, JSON.stringify(stim.body)).toBe(201)
-      // T32: an approved (served) question cannot join a group, so the members are grouped as drafts and approved afterwards.
+      // BASE-14: an approved question is not grouped; the members are drafts that are approved once grouped.
       const members = [await mk(), await mk()]
       const group = await admin.post('/api/stimulus-groups', { label: 'Petikan lama', stimulusIds: [stim.body.data.id], questionIds: members })
       expect(group.status, JSON.stringify(group.body)).toBe(201)
@@ -516,8 +516,8 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     it('is kept as a group in the section pool but not placeable; placed, it blocks Terbit and the override cannot lift it', async () => {
       const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan satu', body: { ms: 'Petikan ujian dengan satu soalan.' } })
       expect(stim.status, JSON.stringify(stim.body)).toBe(201)
-      // The bank refuses a one-member group (T32) and an approved question cannot join a group, so a legacy one is made on purpose:
-      // two draft members are grouped and approved, then the second member leaves the group by SQL.
+      // The bank refuses a one-member group (T32) and an approved question in a group (BASE-14), so a legacy one is made on purpose:
+      // the members are grouped as drafts, approved, and the second member leaves the group by SQL.
       const lone = await mk()
       const other = await mk()
       const group = await admin.post('/api/stimulus-groups', { label: 'Petikan satu', stimulusIds: [stim.body.data.id], questionIds: [lone, other] })
