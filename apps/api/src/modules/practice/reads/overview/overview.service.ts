@@ -45,9 +45,13 @@ export const DEFAULT_OVERVIEW_OPTIONS: OverviewOptions = { bankTtlMs: 60_000 }
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND', { message: PRACTICE_READS_MESSAGES.notFound })
 
-const subjectView = (s: SubjectWithLevels, bank: BankFacts): PracticeReadSubject => {
+/**
+ * The subject card figure. It is Q-PRACTICE over the OFFERED levels (BR-11: T4, T5), the very number the subject detail sums
+ * (`subjectConfig.total`) and the practice draw serves, so a card never disagrees with its detail page (B-HTTP-08).
+ */
+export const subjectView = (s: SubjectWithLevels, bank: BankFacts, offeredIds: readonly string[]): PracticeReadSubject => {
   const id = idToString(s.id)
-  const n = bank.count({ subjectId: id })
+  const n = bank.practice(id, offeredIds)
   return { id, code: s.code, name: s.name, nameEn: s.nameEn, icon: s.icon, color: s.color, isCore: s.isCore, approvedCount: n, bankCount: n }
 }
 
@@ -142,7 +146,7 @@ export class OverviewService {
       this.latestArticles(),
       this.recentQuestions(),
     ])
-    const views = subjects.map((s) => subjectView(s, bank))
+    const views = subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels).map((l) => idToString(l.id))))
     const subjectStats = views
       .map((v) => ({
         id: v.id,
@@ -232,8 +236,8 @@ export class OverviewService {
   // --- S2 / S3 --------------------------------------------------------------------------------------
 
   async subjects(): Promise<PracticeReadSubject[]> {
-    const [subjects, bank] = await Promise.all([this.curriculum.subjects({ active: true }), this.bankFacts()])
-    return subjects.map((s) => subjectView(s, bank))
+    const [subjects, levels, bank] = await Promise.all([this.curriculum.subjects({ active: true }), this.curriculum.levels(), this.bankFacts()])
+    return subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels).map((l) => idToString(l.id))))
   }
 
   async subjectConfig(who: Reader, code: string): Promise<PracticeReadSubjectConfig> {
@@ -245,7 +249,7 @@ export class OverviewService {
     const difficultyByLevel: PracticeReadSubjectConfig['difficultyByLevel'] = {}
     for (const l of levels) difficultyByLevel[l.id] = bank.practiceByDifficulty(subjectId, [l.id])
     return {
-      subject: subjectView(subject, bank),
+      subject: subjectView(subject, bank, offeredIds),
       total: levels.reduce((n, l) => n + l.count, 0),
       levels,
       difficultyStats: bank.practiceByDifficulty(subjectId, offeredIds),

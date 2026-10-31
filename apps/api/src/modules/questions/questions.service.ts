@@ -246,6 +246,7 @@ export class QuestionsService {
         explanation: input.explanation?.trim() || null,
         tag: input.tag,
         dskpSpId: input.dskpSpId,
+        chapterId: input.curriculumChapterId,
         stimulusGroupId: input.stimulusGroupId,
         stemImage: input.questionImageFileId,
         kertas: input.kertas,
@@ -589,7 +590,6 @@ export class QuestionsService {
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
         groupPosition: groupId === null ? null : await this.repo.nextGroupPosition(groupId),
-        spmPool: false,
         now: this.clock.now(),
         version: draft,
         ...(provenance
@@ -664,8 +664,13 @@ export class QuestionsService {
     if (n.chapterId) {
       const key = parse(n.chapterId)
       const chapter = key === null ? null : await this.curriculum.chapter(key)
-      if (!chapter || (subject && chapter.subjectId !== subject.id)) fields.curriculumChapterId = QUESTION_MESSAGES.guruChapter
+      if (!chapter) fields.curriculumChapterId = QUESTION_MESSAGES.guruChapter
+      else if (subject && level && (chapter.subjectId !== subject.id || chapter.educationLevelId !== level.id)) fields.curriculumChapterId = QUESTION_MESSAGES.chapterMismatch
       else chapterKey = chapter.id
+    } else if (n.chapterId === undefined && previous?.version.chapterId && subject && level) {
+      // The chapter is kept, but only while it still belongs to the subject and level being saved.
+      const kept = await this.curriculum.chapter(BigInt(previous.version.chapterId))
+      if (kept && kept.subjectId === subject.id && kept.educationLevelId === level.id) chapterKey = kept.id
     }
     if (n.topicId) {
       const key = parse(n.topicId)
@@ -741,7 +746,7 @@ export class QuestionsService {
       subjectId: subject?.id ?? null,
       educationLevelId: level?.id ?? null,
       unitNodeId: unitKey,
-      chapterId: n.chapterId === undefined ? (v?.chapterId ? BigInt(v.chapterId) : null) : chapterKey,
+      chapterId: chapterKey,
       topicId: n.topicId === undefined ? (v?.topicId ? BigInt(v.topicId) : null) : topicKey,
       formOrigin: v?.formOrigin ?? this.formOriginOf(level?.code),
       cognitiveLevel: v?.cognitiveLevel ?? null,
@@ -846,6 +851,7 @@ export class QuestionsService {
       flatSp: !input.tag && dskpSpId !== undefined,
     }
     if (input.stimulusGroupId !== undefined) normalized.stimulusGroupId = input.stimulusGroupId
+    if (input.curriculumChapterId !== undefined) normalized.chapterId = input.curriculumChapterId
     const stemImage = input.removeQuestionImage === true ? null : input.questionImageFileId
     if (stemImage !== undefined) normalized.stemImage = stemImage
     if (input.kertas !== undefined) normalized.kertas = input.kertas
@@ -899,12 +905,17 @@ export class QuestionsService {
       if (r.version.stemImageId) fileIds.add(r.version.stemImageId)
       for (const id of flatFromVersion(r.version).optionImageIds) if (id) fileIds.add(id)
     }
+    const chapterIds = [...new Set(records.map((r) => r.version.chapterId).filter((c): c is string => !!c).map((c) => BigInt(c)))]
+    const chapterNames = new Map(
+      (chapterIds.length === 0 ? [] : await this.curriculum.chaptersByIds(chapterIds)).map((c) => [idToString(c.id), c.name]),
+    )
     const tokens = fileIds.size === 0 ? new Map<string, string>() : await this.files.publicIdsOf([...fileIds])
     return records.map((r) => ({
       ...r,
       subject: (r.version.subjectId && refs.subjects.get(r.version.subjectId)) || null,
       level: (r.version.educationLevelId && refs.levels.get(r.version.educationLevelId)) || null,
       imageTokens: Object.fromEntries(tokens),
+      chapterName: (r.version.chapterId && chapterNames.get(r.version.chapterId)) || null,
     }))
   }
 

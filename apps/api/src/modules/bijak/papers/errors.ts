@@ -9,6 +9,10 @@ export const paperNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message:
 export const noBlueprint = (): ApiError =>
   new ApiError({ code: 'NO_BLUEPRINT', status: 422, message: BIJAK_PAPERS_MESSAGES.noBlueprint })
 
+/** 503 GENERATE_LIMIT: the solver budget was reached (no paper is created). */
+export const generateLimit = (): ApiError =>
+  new ApiError({ code: 'GENERATE_LIMIT', status: 503, message: BIJAK_PAPERS_MESSAGES.generateLimit })
+
 /** 422 SHORTAGE with the shortage list. */
 export const shortage = (shortages: BijakGenerateShortage[]): ApiError =>
   new ApiError({ code: 'SHORTAGE', status: 422, message: BIJAK_PAPERS_MESSAGES.shortage, details: { shortages } })

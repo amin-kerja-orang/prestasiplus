@@ -13,6 +13,7 @@ import { WalletModule } from '../../wallet'
 import { BijakAttemptsModule } from '../attempts'
 import { BijakAttemptPorts } from '../attempts/ports'
 import { BijakAttemptProgress } from '../attempts/progress-source'
+import { BijakKuizModule } from '../kuiz'
 import { BijakPapersModule } from '../papers'
 import { BijakPapersAttemptSource } from '../papers/attempt-source'
 import { BijakPapersPorts } from '../papers/ports'
@@ -51,7 +52,7 @@ import { PocBijakQuestionSource } from './poc-question-source'
  *   eligible", `getMany` omits them) and Jana's pool is empty (422 SHORTAGE); BE-09 questions work either way.
  */
 @Module({
-  imports: [BijakPapersModule, BijakAttemptsModule, PracticeModule, WalletModule, QuestionsModule, CurriculumModule, PerformanceModule, GamificationModule, FilesModule],
+  imports: [BijakPapersModule, BijakAttemptsModule, BijakKuizModule, PracticeModule, WalletModule, QuestionsModule, CurriculumModule, PerformanceModule, GamificationModule, FilesModule],
   providers: [WalletBijakReward, WalletPracticeReward, PracticeFactsAdapter, Be09BijakQuestionSource, PrismaBijakAggregate],
 })
 export class BijakIntegrationModule implements OnModuleInit {

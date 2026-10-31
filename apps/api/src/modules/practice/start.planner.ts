@@ -300,7 +300,7 @@ export class PracticeStartPlanner {
       if (req.count !== 1) throw invalidField('count')
       if (!isIdString(req.targetQuestionId)) throw invalidField('targetQuestionId')
       const q = (await this.ports.questions.live([req.targetQuestionId])).get(req.targetQuestionId)
-      if (!q?.spmPool || q.subjectId !== subjectId) throw invalidField('targetQuestionId')
+      if (!q || !OFFERED_LEVEL_CODES.includes(codes.get(q.educationLevelId ?? '') ?? '') || q.subjectId !== subjectId) throw invalidField('targetQuestionId')
       return Object.assign(plan, { subjectId, targetQuestionId: q.id, served: [q] })
     }
 

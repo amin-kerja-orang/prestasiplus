@@ -5,7 +5,7 @@ import { envelopeOf, listEnvelopeOf } from '../../common/envelope'
 import { ErrorBodySchema } from '../../common/error'
 import { IdSchema } from '../../common/ids'
 import { registerRoute } from './rate-limit'
-import { BijakBlueprintInvalidErrorSchema } from '../standards/admin'
+import { BijakBlueprintInvalidErrorSchema, BijakPoolPreviewSchema } from '../standards/admin'
 import { BIJAK_STANDARDS_MESSAGES } from '../standards/schema'
 import {
   BIJAK_BUILDER_MESSAGES,
@@ -27,6 +27,17 @@ import {
   BijakBuilderPaperSectionSchema,
   BijakBuilderPaperStatusSchema,
   BijakBuilderPaperSummarySchema,
+  BijakBuilderPlacementAddSchema,
+  BijakBuilderPlacementResultSchema,
+  BijakBuilderPoolPreviewQuerySchema,
+  BijakBuilderPoolUnitSchema,
+  BijakBuilderReviewRowSchema,
+  BijakBuilderReviewSchema,
+  BijakBuilderSectionOrderSchema,
+  BijakBuilderSectionPoolQuerySchema,
+  BijakBuilderStudentQuestionSchema,
+  BijakBuilderStudentUnitSchema,
+  BijakBuilderStudentViewSchema,
   BijakBuilderPreviewRequestSchema,
   BijakBuilderPreviewSchema,
   BijakBuilderPublishResultSchema,
@@ -76,6 +87,17 @@ export const BIJAK_BUILDER_COMPONENT_SCHEMAS: Record<string, z.ZodType> = {
   BijakBlueprintAdminVersionInput: BijakBlueprintAdminVersionInputSchema,
   BijakBlueprintAdminCreate: BijakBlueprintAdminCreateSchema,
   BijakBlueprintListQuery: BijakBlueprintListQuerySchema,
+  BijakBuilderPlacementAdd: BijakBuilderPlacementAddSchema,
+  BijakBuilderSectionOrder: BijakBuilderSectionOrderSchema,
+  BijakBuilderPlacementResult: BijakBuilderPlacementResultSchema,
+  BijakBuilderReviewRow: BijakBuilderReviewRowSchema,
+  BijakBuilderReview: BijakBuilderReviewSchema,
+  BijakBuilderStudentQuestion: BijakBuilderStudentQuestionSchema,
+  BijakBuilderStudentUnit: BijakBuilderStudentUnitSchema,
+  BijakBuilderStudentView: BijakBuilderStudentViewSchema,
+  BijakBuilderSectionPoolQuery: BijakBuilderSectionPoolQuerySchema,
+  BijakBuilderPoolUnit: BijakBuilderPoolUnitSchema,
+  BijakBuilderPoolPreviewQuery: BijakBuilderPoolPreviewQuerySchema,
 }
 
 /** Tags of the two route groups (tests count operations by tag). */
@@ -218,7 +240,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: edit a paper (single PUT, PaperPatch)',
-    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question id that does not exist, or whose curriculum subject differs from the paper subject, "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (an existence and subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question id that does not exist, or whose curriculum subject differs from the paper subject, "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with "Soalan berulang dalam kertas: {ids}". Status is not checked here (publish reports "{N} soalan belum Terbit"); POST /placements is the servable-checked way to add. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderPaperPatchSchema) },
     responses: {
       200: json(envelopeOf(BijakBuilderEditorSchema), 'The editor data after the edit.'),
@@ -271,6 +293,136 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     request: { params: PaperIdParams, headers: [csrf] },
     responses: {
       200: json(envelopeOf(BijakBuilderOkSchema), 'Done; the paper is now draf.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: PAPER_NOT_FOUND,
+    },
+  })
+
+  /* ------------------------------------------------- R1-B09a: placements, review, copy, pool */
+
+  const SectionParams = z.object({ id: IdSchema, sid: IdSchema.meta({ description: 'Section id.' }) })
+  const LOCKED = err(`VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}", or a placement refusal (BM reason).`)
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/admin/papers/{id}/placements',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: place a question (or its whole stimulus group) in a section',
+    description: `Body { sectionId, questionId }. The question must be servable (Terbit/approved) and of the paper subject; otherwise 422 with a BM reason. D90: a question of a stimulus group places the WHOLE group, all members contiguous in the group's published order, under one stimulus; the answer lists every added id. The version in force is recorded on the placement. A question already on the paper: 422 "Soalan {id} sudah ada dalam kertas ini". Terbit paper: 422 paperLocked. ${ROLE_NOTE}`,
+    request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderPlacementAddSchema) },
+    responses: {
+      201: json(envelopeOf(BijakBuilderPlacementResultSchema), 'The editor data and the added ids.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: PAPER_NOT_FOUND,
+      422: LOCKED,
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'delete',
+    path: '/admin/papers/{id}/placements/{questionId}',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: remove a placed question; a stimulus group is removed whole',
+    description: `D90 decision: removing any member of a stimulus group removes the whole group (the answer lists every removed id). A question that is not on the paper: 422 "Soalan {id} tiada dalam kertas ini". ${ROLE_NOTE}`,
+    request: { params: z.object({ id: IdSchema, questionId: IdSchema }), headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(BijakBuilderPlacementResultSchema), 'The editor data and the removed ids.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: PAPER_NOT_FOUND,
+      422: LOCKED,
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'put',
+    path: '/admin/papers/{id}/sections/{sid}/order',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: reorder the units of a section (a stimulus group moves as one unit)',
+    description: `Body { order }: one id per unit (any member id for a group), every unit exactly once, else 422 "${'Susunan mesti menyenaraikan setiap soalan atau kumpulan dalam bahagian tepat sekali'}". Members of a group always stay contiguous and in the group's order. ${ROLE_NOTE}`,
+    request: { params: SectionParams, headers: [csrf], body: body(BijakBuilderSectionOrderSchema) },
+    responses: {
+      200: json(envelopeOf(BijakBuilderPlacementResultSchema), 'The editor data after the move.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: PAPER_NOT_FOUND,
+      422: LOCKED,
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'get',
+    path: '/admin/papers/{id}/sections/{sid}/pool',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: candidate pool of a section (units, groups whole)',
+    description: `Candidates by subject, kertas, level and DSKP unit from the standard pool (bijak-pool facts). A stimulus group is ONE unit with the stimulus once and marks = sum of members. Each unit says eligible (with BM reasons) and placed. ${ROLE_NOTE}`,
+    request: { params: SectionParams, query: BijakBuilderSectionPoolQuerySchema },
+    responses: {
+      200: json(listEnvelopeOf(BijakBuilderPoolUnitSchema), 'Units (paged).'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_READ,
+      404: PAPER_NOT_FOUND,
+      422: err('VALIDATION_ERROR with fields (q, level, unit, page, pageSize) or invalid section.'),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'get',
+    path: '/admin/papers/pool-preview',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: Pratonton kolam for a subject and kertas (shortage report)',
+    description: `Same code and candidate list as Jana set (composeStandardPaper): verdict, per-section needed/available and the first shortage. Uses the head blueprint (Spec or Disahkan). 404 when there is none. ${ROLE_NOTE}`,
+    request: { query: BijakBuilderPoolPreviewQuerySchema },
+    responses: {
+      200: json(envelopeOf(BijakPoolPreviewSchema), 'The pool preview.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_READ,
+      404: BLUEPRINT_NOT_FOUND,
+      422: err('VALIDATION_ERROR with fields (subject, kertas).'),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'get',
+    path: '/admin/papers/{id}/review',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: review (blockers, per-row servability, visibility)',
+    description: `Blockers are the publish refusal lines (checkPaper plus the structural tier of verifyComposition). Standard-tier findings (quota, profile, KBAT) are notes and set blueprintNeedsReview; they never block a curated paper (D78 O-2). ${ROLE_NOTE}`,
+    request: { params: PaperIdParams },
+    responses: {
+      200: json(envelopeOf(BijakBuilderReviewSchema), 'The review.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_READ,
+      404: PAPER_NOT_FOUND,
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'get',
+    path: '/admin/papers/{id}/student-view',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: preview as the pupil sees it',
+    description: `Cover plus numbered questions per section; a stimulus group shows its stimulus once with all its questions. No key, no scheme. ${ROLE_NOTE}`,
+    request: { params: PaperIdParams },
+    responses: {
+      200: json(envelopeOf(BijakBuilderStudentViewSchema), 'The student view.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_READ,
+      404: PAPER_NOT_FOUND,
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/admin/papers/{id}/copy',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: Salin set (copy to a new draf)',
+    description: `V2 "Salin set": a new draf with the same header, sections and placements (current versions, nothing pinned), title "{title} (Salinan)". Allowed from draf or terbit. ${ROLE_NOTE}`,
+    request: { params: PaperIdParams, headers: [csrf] },
+    responses: {
+      201: json(envelopeOf(BijakBuilderPaperCreateResultSchema), 'The new paper id.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,
