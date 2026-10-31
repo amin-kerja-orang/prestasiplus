@@ -326,6 +326,12 @@ describe('editor read: BuilderQuestion, BuilderGroup, BlueprintView, PaperEditor
     )
   })
 
+  it('a group with nothing displayable is still a group: no stimulus, stimuli [], members (D90)', () => {
+    expect(BijakBuilderGroupSchema.safeParse({ id: 'g-1', stimuli: [], questionIds: ['q-201', 'q-202'] }).success).toBe(true)
+    expect(BijakBuilderGroupSchema.safeParse({ id: 'g-1', questionIds: ['q-201'] }).success).toBe(true)
+    expect(BijakBuilderGroupSchema.safeParse({ id: 'g-1', stimuli: [stimulus(), stimulus(), stimulus(), stimulus()], questionIds: [] }).success).toBe(false)
+  })
+
   it('parses BuilderGroup {id, stimulus, questionIds} and rejects the old label form', () => {
     const group = { id: 'g-1', stimulus: stimulus(), questionIds: ['q-201', 'q-202'] }
     expect(BijakBuilderGroupSchema.safeParse(group).success).toBe(true)

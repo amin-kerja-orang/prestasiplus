@@ -62384,16 +62384,115 @@
             "$ref": "#/components/schemas/Id"
           },
           "stimulus": {
-            "$ref": "#/components/schemas/BijakAttemptStimulus"
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "passage",
+                  "image",
+                  "diagram",
+                  "table",
+                  "map",
+                  "infographic",
+                  "graph"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "example": "Rajah 2"
+              },
+              "title": {
+                "type": "string",
+                "description": "Bold title of a passage or picture."
+              },
+              "caption": {
+                "type": "string"
+              },
+              "alt": {
+                "type": "string",
+                "description": "Accessible description of the diagram."
+              },
+              "svg": {
+                "type": "string",
+                "description": "Inline SVG markup (trusted, bundled)."
+              },
+              "text": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "Source line of a passage."
+              },
+              "table": {
+                "type": "object",
+                "properties": {
+                  "head": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "head",
+                  "rows"
+                ],
+                "additionalProperties": false
+              },
+              "image": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false,
+                "description": "The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL."
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "label",
+              "alt"
+            ],
+            "additionalProperties": false,
+            "description": "The first stimulus of the group. Absent when the group has nothing displayable (audio only, or empty): the group is still emitted (D90) with `stimuli: []`."
           },
           "stimuli": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BijakAttemptStimulus"
             },
-            "minItems": 1,
             "maxItems": 3,
-            "description": "Every stimulus of the group in order (1 to 3), shown once per group (D90). `stimulus` is the first of them."
+            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable."
           },
           "questionIds": {
             "type": "array",
@@ -62405,7 +62504,6 @@
         },
         "required": [
           "id",
-          "stimulus",
           "questionIds"
         ],
         "additionalProperties": false
@@ -64508,9 +64606,8 @@
             "items": {
               "$ref": "#/components/schemas/BijakAttemptStimulus"
             },
-            "minItems": 1,
             "maxItems": 3,
-            "description": "Every stimulus of the group in order (1 to 3), shown once per group (D90). `stimulus` is the first of them."
+            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable."
           },
           "questions": {
             "type": "array",
@@ -64669,9 +64766,8 @@
             "items": {
               "$ref": "#/components/schemas/BijakAttemptStimulus"
             },
-            "minItems": 1,
             "maxItems": 3,
-            "description": "Every stimulus of the group in order (1 to 3), shown once per group (D90). `stimulus` is the first of them."
+            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable."
           },
           "questionIds": {
             "type": "array",

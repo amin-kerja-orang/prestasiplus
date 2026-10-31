@@ -540,4 +540,63 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect(pub.body.data.overridden).toBeUndefined()
     })
   })
+
+  describe('D90: a group with no displayable stimulus is still a group', () => {
+    /** A two-member group whose only stimulus is unlinked by SQL (a legacy group with nothing to display). */
+    async function stimulusLessGroup(): Promise<{ groupId: string; members: string[] }> {
+      const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan hilang', body: { ms: 'Petikan yang akan dibuang.' } })
+      expect(stim.status, JSON.stringify(stim.body)).toBe(201)
+      const members = [await approved(), await approved()]
+      const group = await admin.post('/api/stimulus-groups', { label: 'Petikan hilang', stimulusIds: [stim.body.data.id], questionIds: members })
+      expect(group.status, JSON.stringify(group.body)).toBe(201)
+      const groupId = group.body.data.id as string
+      await q(`delete from stimulus_group_stimuli where group_id = $1`, [groupId])
+      return { groupId, members }
+    }
+
+    it('is emitted as a group (groupId, members, stimuli []), placed and moved as ONE unit', async () => {
+      const { groupId, members } = await stimulusLessGroup()
+      const solo = await approved()
+      const paper = await newPaper()
+      const [a] = await sectionsOf(paper)
+      const added = await place(paper, a!, members[1]!)
+      expect(added.status, JSON.stringify(added.body)).toBe(201)
+      // a lone member brings the whole group, in published order
+      expect(added.body.data.added).toEqual(members)
+      expect((await place(paper, a!, solo)).status).toBe(201)
+      const editor = (await admin.get(`/api/admin/papers/${paper}`)).body.data
+      const group = (editor.groups as { id: string; stimulus?: unknown; stimuli?: unknown[]; questionIds: string[] }[]).find((g) => g.id === groupId)!
+      expect(group).toBeDefined()
+      expect(group.questionIds).toEqual(members)
+      expect(group.stimuli).toEqual([])
+      expect(group.stimulus).toBeUndefined()
+      // the group moves as a unit: ordering by one member moves both
+      const order = await admin.put(`/api/admin/papers/${paper}/sections/${a}/order`, { order: [solo, members[0]!] })
+      expect(order.status, JSON.stringify(order.body)).toBe(200)
+      expect((await admin.get(`/api/admin/papers/${paper}`)).body.data.paper.sections[0].questionIds).toEqual([solo, ...members])
+      // the student view shows it as one unit with no stimulus
+      const view = (await admin.get(`/api/admin/papers/${paper}/student-view`)).body.data
+      const unit = (view.sections[0].units as { groupId?: string; stimulus?: unknown; stimuli?: unknown[]; questions: { id: string }[] }[]).find((u) => u.groupId === groupId)!
+      expect(unit.questions.map((x) => x.id)).toEqual(members)
+      expect(unit.stimulus).toBeUndefined()
+      // removing one member removes the whole group
+      const removed = await admin.del(`/api/admin/papers/${paper}/placements/${members[0]}`)
+      expect(removed.body.data.removed).toEqual(members)
+    })
+
+    it('stays outside D93: a one-member group without a stimulus is not blocked by the group minimum', async () => {
+      const { groupId, members } = await stimulusLessGroup()
+      await q(`update questions set group_id = null, group_position = null where id = $1`, [members[1]])
+      const paper = await newPaper()
+      const [a] = await sectionsOf(paper)
+      expect((await place(paper, a!, members[0]!)).status).toBe(201)
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockers).not.toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+      const pool = (await admin.get(`/api/admin/papers/${paper}/sections/${a}/pool?pageSize=100`)).body.data as { groupId?: string; stimulus?: unknown; questionIds: string[]; reasons: string[] }[]
+      const unit = pool.find((u) => u.questionIds.includes(members[0]!))!
+      expect(unit.groupId).toBe(groupId)
+      expect(unit.stimulus).toBeUndefined()
+      expect(unit.reasons).not.toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+    })
+  })
 })
