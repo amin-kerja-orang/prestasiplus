@@ -99,7 +99,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 9f915e1d | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ 81389f25 | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
 | H-A24 release input | `r1/ha24-release-input` @ 646a034d | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
-| H-A26 this sheet | `r1/ha26-team-a-state` @ aee473af | `docs/handoff/team-a-r1-state.md` |
+| H-A26 this sheet | `r1/ha26-team-a-state` @ e7e32bf4 | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
 
@@ -133,7 +133,7 @@ Earlier decisions still in force for R1: D72 (secondary only), D75/D76 (standard
 | 0101 | `0101_essay_choice` | T25 | merged BASE-15 |
 | 0102 | `0102_leaf_cognitive_level` | T33 (`r1/t33-leaf-tags` @ 95cea5be) | merged BASE-27 |
 | 0103 | `0103_question_report_context` | T42 (`r1/t42-reports-intake-acs` @ d1210e96) | merged BASE-41; attempt FK stays NOT VALID |
-| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ bdc70de4) | READY |
+| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ bdc70de4) | CHANGES-REQUESTED (A3 fixing; migration 0104) |
 | 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) | not pushed; plan and number to the lead first |
 
 Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. 0106 to 0109 free. SQL for 0092 to 0104 is in `docs/ops/r1-runbook.md`.
