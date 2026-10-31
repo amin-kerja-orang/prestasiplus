@@ -649,6 +649,12 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     )
     await page.getByTestId('q-explanation').fill('12 + 30 = 42.')
     await page.getByTestId('q-kertas').selectOption({ label: 'Kertas 1' })
+    // REQ-B-027 (BASE-56): the form has an "Aras pemikiran" select (R1E2E-12 form side).
+    const cognitive = page.getByTestId('q-cognitive')
+    if ((await cognitive.count()) > 0) {
+      await cognitive.selectOption('memahami')
+      observe(info, 'Aras pemikiran field present: Memahami chosen')
+    } else observe(info, 'Aras pemikiran field absent on the form')
     await expectNoHScroll(page)
 
     const created = page.waitForResponse((r) => isApi(r, 'POST', /\/api\/(admin\/)?questions$/), {
@@ -1054,6 +1060,63 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await expectNoHScroll(page)
   })
 
+  test('S1i Studio list (T13b): /admin/studio lists the S1d group questions and opens them', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(!st.studioGroup, 'Blocked: S1d created no group')
+    await login(page, ADMIN)
+    // Menu: is there an entry to the Studio list?
+    if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
+    const nav = page.locator('[data-testid=pentadbiran-nav]:visible')
+    const menuLinks = await nav.locator('a[href="/admin/studio"]').count()
+    observe(
+      info,
+      `menu links to /admin/studio: ${menuLinks} (Bank Soalan group: ${(
+        await nav.getByRole('link').allInnerTexts()
+      )
+        .filter((t) => /Bank Soalan|Import|Kualiti|Laporan|PKSK|Audio|Studio|Sumber/.test(t))
+        .map((t) => t.trim())
+        .join(', ')})`,
+    )
+    if (!isDesktopShell(page)) await page.keyboard.press('Escape')
+    await page.goto(
+      `/admin/studio?search=${encodeURIComponent(st.studioGroup!.texts[0]!.slice(0, 40))}`,
+    )
+    await expect(page.getByTestId('studio-list-page'), 'Studio list page').toBeVisible()
+    await expect(page.getByTestId('app-placeholder')).toHaveCount(0)
+    const rows = page
+      .getByTestId('studio-table')
+      .locator('tbody tr, [data-ds=data-table-cards] > li')
+    await expect(
+      rows.filter({ hasText: 'studio-1' }).first(),
+      'the S1d question is listed',
+    ).toBeVisible()
+    observe(
+      info,
+      `list rows for the search: ${await rows.count()}; first: ${(await rows.first().innerText()).replace(/\s+/g, ' ').slice(0, 140)}`,
+    )
+    await expectNoHScroll(page)
+    // Open it from the list ("Edit"), then its group from the editor.
+    const row = rows.filter({ hasText: 'studio-1' }).first()
+    const edit = row.getByTestId('studio-row-edit')
+    if ((await edit.count()) > 0 && (await edit.first().isVisible())) await edit.first().click()
+    else {
+      await row.getByTestId('studio-row-more').first().click()
+      await page.getByRole('menuitem', { name: 'Edit', exact: true }).click()
+    }
+    await expect(page, 'Edit opens the Studio editor').toHaveURL(
+      /\/admin\/studio\/questions\/\d+\/sunting$/,
+    )
+    await expect(page.getByTestId('studio-group-id'), 'the editor shows the group').toContainText(
+      `#${st.studioGroup!.id}`,
+    )
+    await expectNoHScroll(page)
+    await page.goto(`/admin/studio/groups/${st.studioGroup!.id}`)
+    await expect(page.getByTestId('studio-group-members').locator(':scope > li')).toHaveCount(2)
+    await expectNoHScroll(page)
+  })
+
   test('S1f admin Studio standalone MCQ with a stem picture (no group)', async ({ page }, info) => {
     const st = readState(info)
     await login(page, ADMIN)
@@ -1182,7 +1245,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     expect(qs.length, 'the PDF questions are in the bank').toBeGreaterThanOrEqual(2)
   })
 
-  test('S2g R1E2E-12 workaround in the UI: set Aras pemikiran on the intake questions in Studio "Sunting"', async ({
+  test('S2g R1E2E-12 workaround in the UI: set Aras pemikiran on the intake questions (Studio "Sunting", else the Bank Soalan edit form)', async ({
     page,
   }, info) => {
     const st = readState(info)
@@ -1203,6 +1266,30 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
           info,
           `#${q.id}: Studio cannot edit it: ${(await unsupported.innerText()).replace(/\s+/g, ' ').slice(0, 200)}`,
         )
+        // BASE-56 (REQ-B-027) put "Aras pemikiran" on the Bank Soalan form: try its edit page instead.
+        await page.goto(`/admin/questions/${q.id}/edit`)
+        const cog = page.getByTestId('q-cognitive')
+        if (
+          !(await cog.waitFor({ state: 'visible', timeout: 15_000 }).then(
+            () => true,
+            () => false,
+          ))
+        ) {
+          observe(info, `#${q.id}: no Aras pemikiran on the Bank Soalan edit form either`)
+          continue
+        }
+        await expectNoHScroll(page)
+        await cog.selectOption('memahami')
+        const put = page.waitForResponse((r) => isApi(r, 'PUT', /\/api\/questions\/\d+$/), {
+          timeout: 20_000,
+        })
+        await page.getByRole('button', { name: 'Kemaskini Soalan' }).click()
+        const r = await put
+        observe(
+          info,
+          `#${q.id}: Bank Soalan edit form save -> PUT HTTP ${r.status()}${r.ok() ? '' : ` ${(await r.text()).slice(0, 200)}`}`,
+        )
+        if (r.ok()) saved++
         continue
       }
       await expectNoHScroll(page)
@@ -2259,8 +2346,16 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     }
     const refused = page.getByTestId('start-failure')
     await expect(page.getByTestId('attempt-shell').or(refused).first()).toBeVisible()
-    if (await refused.isVisible())
-      observe(info, `Mula refused; cover shows: "${(await refused.innerText()).trim()}"`)
+    if (await refused.isVisible()) {
+      const inView = await refused.evaluate((el) => {
+        const r = el.getBoundingClientRect()
+        return r.top >= 0 && r.bottom <= window.innerHeight
+      })
+      observe(
+        info,
+        `Mula refused; cover shows: "${(await refused.innerText()).trim()}"; visible without scrolling: ${inView}`,
+      )
+    }
     await expect(page.getByTestId('attempt-shell')).toBeVisible()
     await expect(page.getByTestId('attempt-loading')).toHaveCount(0)
     await expect(page.getByTestId('next').or(page.getByTestId('submit')).first()).toBeVisible()
@@ -2288,10 +2383,130 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await expectNoHScroll(page)
   })
 
-  test('B-04 Simulasi Kuiz is reachable at /simulasi/kuiz', async ({ page }) => {
+  test('B-04 Simulasi Kuiz in the UI: hub entry, answer, Semak, Tamat, result', async ({
+    page,
+  }, info) => {
     await login(page, PUPIL_T4)
-    await expectRouteExists(page, '/simulasi/kuiz')
+    await page.goto('/spm/bijak')
+    await expect(page.getByTestId('bijak-hub')).toBeVisible()
+    const entry = page.getByTestId('kuiz-link')
+    await expect(entry, '"Simulasi — Kuiz" on the Bijak SPM hub').toBeVisible()
+    await entry.click()
+    await expect(page, 'the quiz opens at /simulasi/kuiz').toHaveURL(/\/simulasi\/kuiz(\?|$)/)
+    await expect(page.getByTestId('kuiz-page')).toBeVisible()
+    await expect(page.getByTestId('kuiz-loading')).toHaveCount(0, { timeout: 20_000 })
+    await expect(page.getByTestId('kuiz-empty'), 'the quiz has questions').toHaveCount(0)
+    observe(
+      info,
+      `header: ${(await page.getByTestId('kuiz-header').innerText()).replace(/\s+/g, ' ').slice(0, 120)}`,
+    )
     await expectNoHScroll(page)
+    let answered = 0
+    for (let guard = 0; guard < 45; guard++) {
+      if (
+        await page
+          .getByTestId('kuiz-done')
+          .isVisible()
+          .catch(() => false)
+      )
+        break
+      const option = page
+        .locator('[data-testid^=mcq-option-]:not([data-testid=mcq-option-image]):visible')
+        .first()
+      await option.click()
+      await page.getByTestId('kuiz-semak').click()
+      const verdict = page.getByTestId('kuiz-verdict')
+      await expect(verdict, 'the verdict after "Semak"').toBeVisible()
+      if (answered === 0) {
+        observe(
+          info,
+          `first verdict: ${(await verdict.innerText()).replace(/\s+/g, ' ').slice(0, 160)}`,
+        )
+        await expectNoHScroll(page)
+      }
+      answered++
+      const before = await page.getByTestId('kuiz-counter').innerText()
+      await page.getByTestId('kuiz-next').click()
+      // Wait for the next question (or the result) before picking an option again.
+      await expect
+        .poll(
+          async () =>
+            (await page
+              .getByTestId('kuiz-done')
+              .isVisible()
+              .catch(() => false)) ||
+            (await page
+              .getByTestId('kuiz-counter')
+              .innerText()
+              .catch(() => before)) !== before,
+          { timeout: 15_000 },
+        )
+        .toBe(true)
+    }
+    await expect(page.getByTestId('kuiz-done'), 'the result after the last question').toBeVisible({
+      timeout: 20_000,
+    })
+    observe(
+      info,
+      `answered ${answered}; result: Markah ${(await page.getByTestId('kuiz-score').innerText()).replace(/\s+/g, ' ')}, Ketepatan ${(await page.getByTestId('kuiz-accuracy').innerText()).replace(/\s+/g, ' ')}`,
+    )
+    await expectNoHScroll(page)
+    expect(answered, 'every question answered and checked').toBeGreaterThan(0)
+  })
+
+  test('B-04c per-paper Kuiz from the paper cover (DEMO/1): answer, Semak, pages', async ({
+    page,
+  }, info) => {
+    await login(page, PUPIL_T4)
+    const papers =
+      (
+        (await (await page.request.get('/api/bijak/papers')).json()) as {
+          data?: { id: string; code: string }[]
+        }
+      ).data ?? []
+    const demo = papers.find((p) => p.code === 'DEMO/1')
+    test.skip(!demo, 'Blocked: the DEMO/1 bank paper is not on the hub')
+    await page.goto(`/spm/bijak/kertas/${demo!.id}`)
+    await expect(page.getByTestId('bijak-cover')).toBeVisible()
+    await page.getByTestId('paper-kuiz-link').click()
+    await expect(page, 'per-paper quiz route').toHaveURL(new RegExp(`/simulasi/${demo!.id}/kuiz`))
+    await expect(page.getByTestId('paper-quiz-page')).toBeVisible()
+    await expect(page.getByTestId('paper-quiz-header')).toBeVisible({ timeout: 20_000 })
+    await expectNoHScroll(page)
+    let checked = 0
+    for (let pageNo = 0; pageNo < 10; pageNo++) {
+      const semak = page.locator('[data-testid=kuiz-semak]:visible')
+      for (let guard = 0; guard < 20 && (await semak.count()) > 0; guard++) {
+        const cardId = await page
+          .locator('[data-testid^=kuiz-item-]')
+          .filter({ has: page.locator('[data-testid=kuiz-semak]:visible') })
+          .first()
+          .getAttribute('data-testid')
+        // Pin the card by its id: once checked, it no longer matches the "has Semak" filter.
+        const card = page.getByTestId(cardId ?? '')
+        await card
+          .locator('[data-testid^=mcq-option-]:not([data-testid=mcq-option-image]):visible')
+          .first()
+          .click()
+        await card.getByTestId('kuiz-semak').click()
+        await expect(card.getByTestId('kuiz-verdict')).toBeVisible()
+        checked++
+      }
+      const next = page.getByTestId('paper-quiz-next')
+      if (!(await next.isVisible().catch(() => false)) || !(await next.isEnabled())) break
+      await next.click()
+    }
+    observe(
+      info,
+      `checked ${checked} item(s); ${(
+        await page
+          .getByTestId('paper-quiz-score')
+          .innerText()
+          .catch(() => '')
+      ).replace(/\s+/g, ' ')}`,
+    )
+    await expectNoHScroll(page)
+    expect(checked, 'the per-paper quiz checks its MCQs').toBeGreaterThan(0)
   })
 
   test('B-04b Simulasi Kuiz backend (T11): API check as the T4 pupil, NOT a UI pass', async ({
