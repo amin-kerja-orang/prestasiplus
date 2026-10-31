@@ -39,8 +39,7 @@ const NO_STATS = (): TeacherQuestionStats => ({ total: 0, structured: 0, approve
  * one the teacher sees in that list (and `QuestionsService.contributionCountsFor` counts):
  *  - `total`    every owned question, whatever its status (draft and archived included);
  *  - `structured` of `total`, the questions whose latest version is `structured`; the rest are objective (M27 splits them);
- *  - `approved` "Diluluskan": status `approved` or `published` (mock `approved` maps to v2 `published`, and the
- *               v2 `approved` step is a reviewer approval too);
+ *  - `approved` "Diluluskan": status `approved` (ADR-0027: the one servable status; the mock `approved` maps to it);
  *  - `pending`  "Menunggu": status `review` (submitted, awaiting the reviewer; mock `pending_review`);
  *  - `used`     "Digunakan": owned questions with at least one real (not `is_test`) learner attempt in the M05
  *               answer log (`practice_answers`) or the structured attempts (`structured_attempts`), BR-M10-21;
@@ -75,7 +74,7 @@ export class TeacherQuestionStatsProvider implements TeacherQuestionsProvider {
     for (const r of rows) {
       out.total += r.n
       if (r.structured) out.structured = (out.structured ?? 0) + r.n
-      if (r.status === 'approved' || r.status === 'published') out.approved += r.n
+      if (r.status === 'approved') out.approved += r.n
       else if (r.status === 'review') out.pending += r.n
       if (r.subject !== null) bySubject.set(r.subject, (bySubject.get(r.subject) ?? 0) + r.n)
     }

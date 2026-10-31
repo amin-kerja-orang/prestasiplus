@@ -63,13 +63,12 @@ function messageAt(schema: { safeParse: (v: unknown) => { success: boolean; erro
 }
 
 describe('lifecycle (D54a codes, v2-question-bank 4.1)', () => {
-  it('has exactly the five D54 codes and the BM labels', () => {
-    expect([...QUESTION_WORKFLOW_STATUSES]).toEqual(['draft', 'review', 'approved', 'published', 'archived'])
+  it('has exactly the four D54 codes (ADR-0027) and the BM labels', () => {
+    expect([...QUESTION_WORKFLOW_STATUSES]).toEqual(['draft', 'review', 'approved', 'archived'])
     expect(QUESTION_WORKFLOW_STATUS_LABELS).toEqual({
       draft: 'Draf',
       review: 'Semakan',
-      approved: 'Lulus',
-      published: 'Diterbitkan',
+      approved: 'Diterbitkan',
       archived: 'Diarkib',
     })
   })
@@ -78,10 +77,10 @@ describe('lifecycle (D54a codes, v2-question-bank 4.1)', () => {
     for (const v of ['pending_review', 'rejected', 'pending', 'Draf', '']) expect(ok(QuestionWorkflowStatusSchema, v)).toBe(false)
   })
 
-  it('allows exactly the eight pairs of the table, walked over all 5x5 pairs per actor', () => {
-    const allowed = new Set(['draft>review', 'draft>archived', 'review>approved', 'review>draft', 'approved>published', 'approved>draft', 'published>archived', 'archived>draft'])
-    expect(QUESTION_WORKFLOW_TRANSITIONS).toHaveLength(8)
-    const adminOnly = new Set(['review>approved', 'review>draft', 'approved>published', 'approved>draft', 'published>archived', 'archived>draft'])
+  it('allows exactly the six pairs of the table, walked over all 4x4 pairs per actor', () => {
+    const allowed = new Set(['draft>review', 'draft>archived', 'review>approved', 'review>draft', 'approved>archived', 'archived>draft'])
+    expect(QUESTION_WORKFLOW_TRANSITIONS).toHaveLength(6)
+    const adminOnly = new Set(['review>approved', 'review>draft', 'approved>archived', 'archived>draft'])
     let seen = 0
     for (const actor of ['admin', 'owner_teacher'] as QuestionWorkflowActor[]) {
       for (const from of QUESTION_WORKFLOW_STATUSES) {
@@ -93,22 +92,22 @@ describe('lifecycle (D54a codes, v2-question-bank 4.1)', () => {
         }
       }
     }
-    expect(seen).toBe(50)
+    expect(seen).toBe(32)
   })
 
-  it('no status moves to itself, and published never goes back to draft as a pair', () => {
+  it('no status moves to itself, and approved never goes back to draft as a pair (an edit makes version n+1)', () => {
     for (const s of QUESTION_WORKFLOW_STATUSES) expect(questionWorkflowTransitionRule(s, s)).toBeUndefined()
-    expect(questionWorkflowTransitionRule('published', 'draft')).toBeUndefined()
-    expect(QUESTION_WORKFLOW_NEW_VERSION).toMatchObject({ from: 'published', creates: 'draft', supersededLabel: 'Diarkib (digantikan)' })
+    expect(questionWorkflowTransitionRule('approved', 'draft')).toBeUndefined()
+    expect(QUESTION_WORKFLOW_NEW_VERSION).toMatchObject({ from: 'approved', creates: 'draft', supersededLabel: 'Diarkib (digantikan)' })
   })
 
   it('names the gates and the mandatory reasons', () => {
     const gate = (a: QuestionWorkflowStatus, b: QuestionWorkflowStatus) => questionWorkflowTransitionRule(a, b)?.gate
     expect(gate('draft', 'review')).toBe('submit')
     expect(gate('review', 'approved')).toBe('approve')
-    expect(gate('approved', 'published')).toBe('publish')
+    expect(gate('approved', 'archived')).toBeNull()
     const reasonPairs = QUESTION_WORKFLOW_TRANSITIONS.filter((t) => t.reasonRequired).map((t) => `${t.from}>${t.to}`)
-    expect(reasonPairs.sort()).toEqual(['approved>draft', 'published>archived', 'review>draft'])
+    expect(reasonPairs.sort()).toEqual(['approved>archived', 'review>draft'])
   })
 
   it('parses a status event row', () => {
@@ -475,7 +474,7 @@ describe('openapi registration', () => {
   })
 
   it('exposes the lifecycle enum with exactly the D54 codes', () => {
-    expect((doc.components.schemas.QuestionWorkflowStatus as { enum: string[] }).enum).toEqual(['draft', 'review', 'approved', 'published', 'archived'])
+    expect((doc.components.schemas.QuestionWorkflowStatus as { enum: string[] }).enum).toEqual(['draft', 'review', 'approved', 'archived'])
   })
 
   it('requires X-CSRF-Token and describes CSRF_INVALID on every mutation, and none on reads', () => {

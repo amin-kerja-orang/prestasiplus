@@ -144,8 +144,11 @@ export async function subjectsOf(t: BattleTestApp): Promise<Subjects> {
 
 let counter = 0
 
-/** Adds `n` published, active single-answer MCQs (right option B, label index 1) of a subject and level. */
-export async function addMcqs(t: BattleTestApp, subjectId: string, levelId: string, n: number, opts: { spm?: boolean } = {}): Promise<string[]> {
+/**
+ * Adds `n` published, active single-answer MCQs (right option B, label index 1) of a subject and level. R1-B06: a question is in
+ * the SPM pool by what it is (an offered level T4/T5 of a linked subject), not by a tag, so there is no `spm` option.
+ */
+export async function addMcqs(t: BattleTestApp, subjectId: string, levelId: string, n: number): Promise<string[]> {
   const ids: string[] = []
   for (let i = 0; i < n; i++) {
     counter += 1
@@ -155,14 +158,13 @@ export async function addMcqs(t: BattleTestApp, subjectId: string, levelId: stri
         latestVersionNo: 1,
         liveVersionNo: 1,
         isActive: true,
-        ...(opts.spm ? { tags: { create: [{ kind: 'pool', code: 'spm' }] } } : {}),
       },
     })
     const v = await t.db.prisma.questionVersion.create({
       data: {
         questionId: q.id,
         versionNo: 1,
-        status: 'published',
+        status: 'approved',
         publishedAt: new Date(START),
         type: 'mcq',
         stemMs: `Soalan battle ujian ${counter}`,

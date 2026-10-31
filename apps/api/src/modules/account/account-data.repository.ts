@@ -10,7 +10,7 @@ import { SPM_SERVABLE_SQL } from '../questions/learner-visibility'
  * learner-visible level that is one of the OFFERED_LEVEL_CODES (T4, T5), of an active subject linked to that level: exactly the sum of the subject cards.
  * R1-B06: the level / subject / PKSK part is the shared SPM_SERVABLE_SQL (static text, the codes are constants).
  */
-export const QUESTION_COUNT_SQL = `SELECT count(*) AS c FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no WHERE q.is_active AND v.status = 'published' AND v.type = 'mcq' AND ${SPM_SERVABLE_SQL.sql}`
+export const QUESTION_COUNT_SQL = `SELECT count(*) AS c FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${SPM_SERVABLE_SQL.sql}`
 
 export interface ResetRow {
   id: string

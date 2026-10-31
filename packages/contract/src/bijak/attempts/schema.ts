@@ -297,6 +297,7 @@ export const BIJAK_ATTEMPT_LEAF_KINDS = [
   'short_text',
   'match_letter',
   'essay',
+  'essay_choice',
   'drawing',
   'table_fill',
 ] as const
@@ -319,6 +320,10 @@ export const BijakAttemptPartViewSchema = z
         kind: BijakAttemptLeafKindSchema,
         unit: z.string().optional(),
         wordRange: z.strictObject({ min: NonNegInt, max: NonNegInt }).optional(),
+        topics: z
+          .array(z.strictObject({ id: IdSchema, label: z.string() }))
+          .optional()
+          .meta({ description: 'essay_choice: the topics the pupil picks one of.' }),
       })
       .optional()
       .meta({ description: 'Answer mode of a leaf; absent on a part that only holds children.' }),
@@ -332,13 +337,37 @@ export type BijakAttemptPartView = {
   label: string
   prompt: string
   marks: number
-  answer?: { kind: BijakAttemptLeafKind; unit?: string; wordRange?: { min: number; max: number } }
+  answer?: {
+    kind: BijakAttemptLeafKind
+    unit?: string
+    wordRange?: { min: number; max: number }
+    topics?: { id: string; label: string }[]
+  }
   children?: BijakAttemptPartView[]
 }
 
 /** An option of an MCQ question or of a shared lettered bank (`McqOption`); may contain `$latex$` spans. */
+/**
+ * A stored picture: `url` is the file token URL (`/api/files/<token>`) the browser loads under the pupil read
+ * rule (R1-B20); never an internal file id.
+ */
+export const BijakAttemptImageSchema = z
+  .strictObject({
+    url: z.string().min(1).max(300).meta({ example: '/api/files/Zk3x9QmT1bVnR0aYc7LpDw' }),
+    width: z.number().int().min(1).optional(),
+    height: z.number().int().min(1).optional(),
+  })
+  .meta({ id: 'BijakAttemptImage' })
+export type BijakAttemptImage = z.infer<typeof BijakAttemptImageSchema>
+
 export const BijakAttemptOptionSchema = z
-  .strictObject({ id: IdSchema, text: z.string() })
+  .strictObject({
+    id: IdSchema,
+    text: z.string(),
+    image: BijakAttemptImageSchema.extend({ alt: z.string().optional() })
+      .optional()
+      .meta({ description: 'A picture on the option (V2 production image options).' }),
+  })
   .meta({ id: 'BijakAttemptOption' })
 export type BijakAttemptOption = z.infer<typeof BijakAttemptOptionSchema>
 
@@ -355,6 +384,12 @@ export const BijakAttemptQuestionSchema = z
     }),
     groupId: IdSchema.optional(),
     stem: z.string(),
+    get stemImage() {
+      return BijakAttemptStimulusSchema.optional().meta({
+        description:
+          "The question's own picture (an image stimulus linked to its version, not shared with a group).",
+      })
+    },
     marks: NonNegInt,
     mcq: z.strictObject({ options: z.array(BijakAttemptOptionSchema).min(2) }).optional(),
     parts: z.array(BijakAttemptPartViewSchema).optional(),
@@ -362,17 +397,34 @@ export const BijakAttemptQuestionSchema = z
   .meta({ id: 'BijakAttemptQuestion' })
 export type BijakAttemptQuestion = z.infer<typeof BijakAttemptQuestionSchema>
 
+/** The seven V2 production stimulus kinds (R1-04). */
+export const BIJAK_ATTEMPT_STIMULUS_KINDS = [
+  'passage',
+  'image',
+  'diagram',
+  'table',
+  'map',
+  'infographic',
+  'graph',
+] as const
+
 /** A shared stimulus (Rajah, petikan or jadual) pinned while its group is answered (`StimulusDef`). */
 export const BijakAttemptStimulusSchema = z
   .strictObject({
     id: IdSchema,
-    kind: z.enum(['diagram', 'passage', 'table']),
+    kind: z.enum(BIJAK_ATTEMPT_STIMULUS_KINDS),
     label: z.string().meta({ example: 'Rajah 2' }),
+    title: z.string().optional().meta({ description: 'Bold title of a passage or picture.' }),
     caption: z.string().optional(),
     alt: z.string().meta({ description: 'Accessible description of the diagram.' }),
     svg: z.string().optional().meta({ description: 'Inline SVG markup (trusted, bundled).' }),
     text: z.string().optional(),
+    source: z.string().optional().meta({ description: 'Source line of a passage.' }),
     table: z.strictObject({ head: z.array(z.string()), rows: z.array(z.array(z.string())) }).optional(),
+    image: BijakAttemptImageSchema.optional().meta({
+      description:
+        'The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL.',
+    }),
   })
   .meta({ id: 'BijakAttemptStimulus' })
 export type BijakAttemptStimulus = z.infer<typeof BijakAttemptStimulusSchema>
@@ -381,7 +433,16 @@ export type BijakAttemptStimulus = z.infer<typeof BijakAttemptStimulusSchema>
 export const BijakAttemptGroupSchema = z
   .strictObject({
     id: IdSchema,
-    stimulus: BijakAttemptStimulusSchema,
+    stimulus: BijakAttemptStimulusSchema.meta({ description: 'The first stimulus of the group.' }),
+    stimuli: z
+      .array(BijakAttemptStimulusSchema)
+      .min(1)
+      .max(3)
+      .optional()
+      .meta({
+        description:
+          'Every stimulus of the group in order (1 to 3). A stimulus is shown once above all member questions; it is never a question and carries no marks (D90).',
+      }),
     from: z.number().int().min(1).meta({ description: 'First question number covered.' }),
     to: z.number().int().min(1).meta({ description: 'Last question number covered.' }),
     questionIds: z.array(IdSchema),

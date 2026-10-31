@@ -103,7 +103,7 @@ export class PracticeAnalyticsRepository {
          AND EXISTS (
            SELECT 1 FROM questions q
              JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-            WHERE q.id = rq.question_id AND q.is_active AND v.status = 'published')
+            WHERE q.id = rq.question_id AND q.is_active AND v.status = 'approved')
        GROUP BY rq.subject_id`
     return new Map(rows.map((r) => [idToString(r.subject_id), num(r.n)]))
   }
