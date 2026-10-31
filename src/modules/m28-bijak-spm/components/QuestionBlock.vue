@@ -98,7 +98,7 @@ function pick(id: string): void {
         @click="emit('toggle-flag')"
         >{{ flagged ? 'Ditanda' : 'Tanda soalan' }}</UButton
       >
-      <ReportQuestionButton :question-id="question.id" :attempt-id="attemptId" />
+      <ReportQuestionButton :question-id="question.id" :attempt-id="attemptId" :variant="question.mcq ? 'mcq' : 'structured'" />
     </header>
 
     <DsStack v-if="choose" gap="2xs">

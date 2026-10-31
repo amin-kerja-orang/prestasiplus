@@ -36,6 +36,17 @@ describe('"Lapor Soalan" on a Bijak question (AC-R1-18.1, S-69)', () => {
     expect(document.body.textContent).toContain('Terima Kasih!')
   })
 
+  it('a structured question uses the structured reasons and source', async () => {
+    wrapper = mount(ReportQuestionButton, { props: { questionId: '43', attemptId: ATTEMPT, variant: 'structured' }, attachTo: document.body })
+    await wrapper.get('[data-testid=lapor-soalan]').trigger('click')
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid^="report-reason-"] input') as HTMLInputElement).click()
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid=report-form]') as HTMLFormElement).dispatchEvent(new Event('submit', { cancelable: true }))
+    await flushPromises()
+    expect(create.mock.calls[0]![0]).toMatchObject({ questionId: 43, questionType: 'structured', source: 'structured_attempt', attemptId: ATTEMPT })
+  })
+
   it('shows nothing for a question id that is not a database id (mock seed ids)', () => {
     wrapper = mount(ReportQuestionButton, { props: { questionId: 'mat1-q1', attemptId: ATTEMPT } })
     expect(wrapper.find('[data-testid=lapor-soalan]').exists()).toBe(false)

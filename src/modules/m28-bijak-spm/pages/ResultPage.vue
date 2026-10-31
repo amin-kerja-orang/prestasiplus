@@ -414,7 +414,11 @@ const home = computed(() => landingPath.value || '/dashboard')
               <span class="tabular" data-testid="q-score">{{ q.awarded }} / {{ q.marks }}</span>
             </summary>
             <div class="mt-3 flex flex-col gap-3">
-              <div><ReportQuestionButton :question-id="q.questionId" :attempt-id="attemptId" /></div>
+              <div><ReportQuestionButton
+                  :question-id="q.questionId"
+                  :attempt-id="attemptId"
+                  :variant="questionMap.get(q.questionId)?.mcq ? 'mcq' : 'structured'"
+                /></div>
               <StimulusStack
                 v-if="ownStimuliOf(q.questionId).length"
                 :stimuli="ownStimuliOf(q.questionId)"

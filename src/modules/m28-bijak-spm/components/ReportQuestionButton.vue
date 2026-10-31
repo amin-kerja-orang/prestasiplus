@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
  * "Lapor Soalan" on a Bijak question (attempt and Semakan, AC-R1-18.1 / S-69). The shared M04 report modal does the form;
- * this only passes the attempt, so the report stores the paper (T42). Bijak questions are BE-09 questions: variant `mcq`.
+ * this only passes the attempt, so the report stores the paper (T42). `variant` follows the question: `mcq` for an objective one, `structured` for a written / multi-part one (its own reason set and source).
  */
 import { computed, ref } from 'vue'
 
 import { ReportQuestionModal } from '@/modules/m04-question-bank'
 
-const props = defineProps<{ questionId: string; attemptId: string }>()
+const props = withDefaults(defineProps<{ questionId: string; attemptId: string; variant?: 'mcq' | 'structured' }>(), { variant: 'mcq' })
 const open = ref(false)
 /** The report API takes the numeric question id; a seed id that is not a number cannot be reported. */
 const numericId = computed(() => {
@@ -28,6 +28,6 @@ const numericId = computed(() => {
       @click="open = true"
       >Lapor Soalan</UButton
     >
-    <ReportQuestionModal v-model:open="open" :question-id="numericId" variant="mcq" :attempt-id="attemptId" source="spm" />
+    <ReportQuestionModal v-model:open="open" :question-id="numericId" :variant="variant" :attempt-id="attemptId" :source="variant === 'mcq' ? 'spm' : 'structured_attempt'" />
   </template>
 </template>
