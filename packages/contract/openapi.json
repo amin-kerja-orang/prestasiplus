@@ -7811,10 +7811,9 @@
           "draft",
           "review",
           "approved",
-          "published",
           "archived"
         ],
-        "description": "Question lifecycle code (D54a): draft = Draf, review = Semakan, approved = Lulus, published = Diterbitkan, archived = Diarkib."
+        "description": "Question lifecycle code (D54a, ADR-0027): draft = Draf, review = Semakan, approved = Diterbitkan (the only status served to pupils), archived = Diarkib."
       },
       "QuestionWorkflowActor": {
         "type": "string",
@@ -7828,10 +7827,9 @@
         "type": "string",
         "enum": [
           "submit",
-          "approve",
-          "publish"
+          "approve"
         ],
-        "description": "Gate that must pass for a transition: submit (draft to review), approve (review to approved), publish (approved to published)."
+        "description": "Gate that must pass for a transition: submit (draft to review), approve (review to approved: the merged approve and publish gate of ADR-0027)."
       },
       "QuestionWorkflowTransitionRule": {
         "type": "object",
@@ -29779,7 +29777,6 @@
           "draft",
           "review",
           "approved",
-          "published",
           "archived"
         ]
       },
@@ -37378,7 +37375,6 @@
               "draft",
               "review",
               "approved",
-              "published",
               "archived",
               "delete"
             ]
@@ -49659,7 +49655,7 @@
           "questionCount": {
             "type": "integer",
             "minimum": 0,
-            "description": "Active (published) questions of the level (M04)."
+            "description": "Active (approved) questions of the level (M04)."
           },
           "subjectCount": {
             "type": "integer",
@@ -49885,7 +49881,7 @@
           "questionCount": {
             "type": "integer",
             "minimum": 0,
-            "description": "Active (published) questions of the subject (M04)."
+            "description": "Active (approved) questions of the subject (M04)."
           },
           "levels": {
             "type": "array",
@@ -59319,10 +59315,9 @@
           "draft",
           "review",
           "approved",
-          "published",
           "archived"
         ],
-        "description": "Question lifecycle code (D54a): draft, review, approved, published, archived. Prototype mapping: semakan = review, terbit = published, draf = draft (the prototype also reports draf for a question that is not in the bank); ditolak (rejected) has no D54 code and maps to draft, a contract choice [PROPOSED]. The builder offers only published questions as candidates (`getPaperEditor`: terbit, same subject and kertas); a paper can reference questions of any status, and publish refuses any that is not published (\"{N} soalan belum Terbit\")."
+        "description": "Question lifecycle code (D54a, ADR-0027): draft, review, approved, archived. Prototype mapping: semakan = review, terbit = approved, draf = draft (the prototype also reports draf for a question that is not in the bank); ditolak (rejected) has no D54 code and maps to draft, a contract choice [PROPOSED]. The builder offers only approved questions as candidates (`getPaperEditor`: terbit, same subject and kertas); a paper can reference questions of any status, and publish refuses any that is not approved (\"{N} soalan belum Terbit\")."
       },
       "BijakBuilderQuestionKind": {
         "type": "string",
@@ -96913,7 +96908,7 @@
           "questions"
         ],
         "summary": "Create a question",
-        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 3) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
+        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 3) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: approved` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
         "parameters": [
           {
             "schema": {

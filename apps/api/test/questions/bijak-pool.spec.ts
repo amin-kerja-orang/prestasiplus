@@ -41,7 +41,7 @@ describe('QuestionsBijakPoolSource (BJS-07)', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const id = mutationEnvelopeOf(QuestionSchema).parse(res.body).data.id
     if (publish) {
-      await t.db.query(`update question_versions set status = 'published', published_at = now() where question_id = $1`, [id])
+      await t.db.query(`update question_versions set status = 'approved', published_at = now() where question_id = $1`, [id])
       await t.db.query(`update questions set live_version_no = 1 where id = $1`, [id])
     }
     return id
@@ -196,7 +196,7 @@ describe('QuestionsBijakPoolSource (BJS-07)', () => {
     // Clone the model version and its parts onto the new questions.
     await t.db.query(
       `insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, unit_node_id, difficulty_tp, form_origin, language, published_at)
-       select q.id, 1, 'published', v.type, v.stem_ms, v.subject_id, v.education_level_id, v.unit_node_id, v.difficulty_tp, v.form_origin, v.language, now()
+       select q.id, 1, 'approved', v.type, v.stem_ms, v.subject_id, v.education_level_id, v.unit_node_id, v.difficulty_tp, v.form_origin, v.language, now()
          from questions q, question_versions v
         where v.question_id = $1 and q.id > $1 and q.live_version_no = 1 and not exists (select 1 from question_versions x where x.question_id = q.id)`,
       [model],

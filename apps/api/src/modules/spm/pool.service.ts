@@ -23,7 +23,7 @@ const DRAW_OVER = 2
 const DRAW_ROUNDS = 3
 
 /** True for a question the pool serves: live-published, active, flagged `spmPool`, one multiple-choice leaf. */
-const inPool = (r: QuestionRecord): boolean => r.spmPool && r.isActive && r.version.status === 'published' && mcqItemOf(r.version.stemMs, r.version.parts) !== null
+const inPool = (r: QuestionRecord): boolean => r.spmPool && r.isActive && r.version.status === 'approved' && mcqItemOf(r.version.stemMs, r.version.parts) !== null
 
 /**
  * The SPM pool (BR-M06-02), computed through the BE-09 doorway only. Counts are ONE grouped SQL statement per subject
@@ -57,7 +57,7 @@ export class SpmPoolService {
     const running = this.inflight.get(subjectId)
     if (running) return running
     const load = (async () => {
-      const rows = await this.questions.groupCountsByLevelTp({ ...poolFilter(subjectId), status: 'published', active: true })
+      const rows = await this.questions.groupCountsByLevelTp({ ...poolFilter(subjectId), status: 'approved', active: true })
       const merged = new Map<string, PoolCell>()
       for (const r of rows) {
         const difficulty = difficultyOf(r.tp)

@@ -28,7 +28,7 @@ export type QuestionRow = z.output<typeof QuestionRowSchema>
 export type QuestionWire = z.output<typeof QuestionSchema>
 export type QuestionDetailWire = z.output<typeof QuestionDetailSchema>
 
-/** BM label of a lifecycle code (Draf, Semakan, Lulus, Diterbitkan, Diarkib). */
+/** BM label of a lifecycle code (Draf, Semakan, Diterbitkan, Diarkib). */
 export const statusLabel = (status: QuestionStatus): string => QUESTION_WORKFLOW_STATUS_LABELS[status]
 
 /** Id of a row whose creator account was removed: the wire needs an id, so a fixed placeholder. */

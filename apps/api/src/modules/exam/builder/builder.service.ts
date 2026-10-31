@@ -155,7 +155,7 @@ export class BuilderService {
         marksOf: (id) => marks.get(id) ?? 0,
         groupOf: (id) => info.get(id)?.groupId ?? undefined,
         membersOf: (g) => groups.get(g)?.questionIds ?? placed.filter((id) => info.get(id)?.groupId === g),
-        isLive: (id) => info.get(id)?.status === 'published',
+        isLive: (id) => info.get(id)?.status === 'approved',
       })
       return { info, groups, check }
     })

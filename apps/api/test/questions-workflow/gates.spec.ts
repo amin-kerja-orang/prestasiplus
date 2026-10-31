@@ -7,7 +7,7 @@ import { actorOf, failure, workingPart } from './lifecycle-support'
 
 type Gate = 'submit' | 'approve' | 'publish'
 const START_STATUS = { submit: 'draft', approve: 'review', publish: 'approved' } as const
-const TARGET = { submit: 'review', approve: 'approved', publish: 'published' } as const
+const TARGET = { submit: 'review', approve: 'approved', publish: 'approved' } as const
 
 /** One failing question per gate rule: [gate, rule, gate-data override, field expected in `fields`]. */
 const RULES: [Gate, string, Partial<QuestionGateData>, string][] = [

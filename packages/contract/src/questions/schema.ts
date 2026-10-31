@@ -125,7 +125,7 @@ export const QuestionSummarySchema = z
         icon: z.string().nullable(),
         group: z.enum(['teras', 'elektif']),
         total: z.number().int().min(0),
-        /** Questions with status `published` (the mock's "approved" meant live). */
+        /** Questions whose live version is `approved` (ADR-0027: approved = served). */
         approved: z.number().int().min(0),
       }),
     ),
@@ -284,7 +284,7 @@ const baseInput = z.object({
 
 /**
  * POST body (JSON only; images are ids of files already uploaded with purpose `question_image`: `questionImageFileId`, `optionImageFileIds[i]`). `status`
- * defaults to `draft`; `published` is refused with 422 unless subject, level, unit, SP and TP are set.
+ * defaults to `draft`; `approved` is refused with 422 unless subject, level, unit, SP and TP are set.
  */
 export const QuestionCreateRequestSchema = baseInput
   .extend({ questionType: QuestionTypeSchema, status: QuestionStatusSchema.optional() })
@@ -304,7 +304,7 @@ export const QuestionCreateRequestSchema = baseInput
 export const QuestionUpdateRequestSchema = baseInput.meta({ id: 'QuestionUpdateRequest' })
 
 /** D54a: an action is the target lifecycle code, or `delete`. The mock verbs approve/reject/pending_review are gone. */
-export const QUESTION_BULK_ACTIONS = ['draft', 'review', 'approved', 'published', 'archived', 'delete'] as const
+export const QUESTION_BULK_ACTIONS = ['draft', 'review', 'approved', 'archived', 'delete'] as const
 export const QuestionBulkRequestSchema = z
   .object({
     action: z.enum(QUESTION_BULK_ACTIONS, {

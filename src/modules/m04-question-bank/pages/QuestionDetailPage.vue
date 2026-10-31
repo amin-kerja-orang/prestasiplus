@@ -114,10 +114,10 @@ async function remove(): Promise<void> {
   }
 }
 
-/** http mode only: an approved question can be published (mock "Luluskan" already meant live). */
-const canPublish = computed(() => isHttpMode() && question.value?.status === 'approved')
+/** The approve button reads "Terbitkan" in http mode (ADR-0027: review to approved is the one publishing step), "Luluskan" in the mock. */
+const approveLabel = computed(() => (isHttpMode() ? 'Terbitkan' : 'Luluskan'))
 
-async function changeStatus(action: 'pending_review' | 'approve' | 'publish'): Promise<void> {
+async function changeStatus(action: 'pending_review' | 'approve'): Promise<void> {
   if (busy.value || !(await confirm({ message: STATUS_CONFIRM }))) return
   busy.value = true
   try {
@@ -415,8 +415,7 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
         <div
           v-if="question.status === 'draft' ||
             question.status === 'pending_review' ||
-            question.status === 'review' ||
-            canPublish"
+            question.status === 'review'"
           class="flex flex-wrap gap-2"
           data-testid="quick-actions"
         >
@@ -433,18 +432,6 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
             Hantar untuk Semakan
           </UButton>
           <UButton
-            v-if="canPublish"
-            type="button"
-            color="success"
-            :disabled="busy"
-            class="min-h-11"
-            data-testid="status-publish"
-            @click="changeStatus('publish')"
-          >
-            Terbitkan
-          </UButton>
-          <UButton
-            v-if="!canPublish"
             type="button"
             color="success"
             :disabled="busy"
@@ -452,7 +439,7 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
             data-testid="status-approve"
             @click="changeStatus('approve')"
           >
-            Luluskan
+            {{ approveLabel }}
           </UButton>
         </div>
       </div>

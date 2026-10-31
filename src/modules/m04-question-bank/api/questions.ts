@@ -21,7 +21,6 @@ export type QuestionStatus =
   | 'archived'
   /** v2 wire lifecycle codes (BE-09 / D54a), received in http mode only. */
   | 'review'
-  | 'published'
   /** PKSK rows only (M07 BR-M07-02). */
   | 'pending'
 export type QuestionType = 'mcq' | 'true_false' | 'short_answer' | 'fill_blank' | 'essay'
@@ -34,19 +33,19 @@ export type BulkAction = 'approve' | 'reject' | 'archive' | 'delete' | 'pending_
 
 /**
  * http mode only (BE-09 `QuestionStatus`, BE-09 bulk actions): the mock vocabulary of the filter and
- * the workflow actions mapped to the v2 wire codes (filter: approved stays `approved`, `published` is its own option). A value not listed has no 1:1 wire equivalent (`rejected`, `reject`).
+ * the workflow actions mapped to the v2 wire codes (ADR-0027: `approved` is the one servable status; there is no `published` code any more). A value not listed has no 1:1 wire equivalent (`rejected`, `reject`).
  */
 export const STATUS_FILTER_TO_WIRE: Readonly<Record<string, string>> = {
   draft: 'draft',
   pending_review: 'review',
   approved: 'approved',
-  published: 'published',
   archived: 'archived',
 }
 export const BULK_ACTION_TO_WIRE: Readonly<Record<string, string>> = {
   pending_review: 'review',
   approve: 'approved',
-  publish: 'published',
+  /** "Terbitkan" (http mode) is the approve step: review to approved (ADR-0027). */
+  publish: 'approved',
   archive: 'archived',
   delete: 'delete',
 }
@@ -56,7 +55,7 @@ export const NO_WIRE_STATUS_FILTERS: readonly string[] = ['rejected']
 const BULK_TARGET_STATUS: Readonly<Record<string, string>> = {
   pending_review: 'review',
   approve: 'approved',
-  publish: 'published',
+  publish: 'approved',
   archive: 'archived',
 }
 export const NO_WIRE_BULK_ACTIONS: readonly string[] = ['reject']

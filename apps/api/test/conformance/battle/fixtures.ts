@@ -42,7 +42,7 @@ export async function seedBattleConformance(prisma: PrismaClient): Promise<void>
       data: {
         questionId: q.id,
         versionNo: 1,
-        status: 'published',
+        status: 'approved',
         publishedAt: PUBLISHED_AT,
         type: 'mcq',
         stemMs: text,
