@@ -83,7 +83,11 @@ export class PapersService {
       this.infoFor(papers),
       this.ports.progressSource.progressFor(userId, papers.map((p) => idToString(p.id))),
     ])
-    return papers.map((p) => this.summary(p, subjects, info, progress))
+    // H-A13: a published paper that places a question the bank no longer serves (archived) cannot start a new sitting
+    // (the attempt source answers 403 with a BM line), so it is not offered, like a paper without a code or a section.
+    // A pupil who has a sitting open on it keeps the card (the sitting continues from its pinned version).
+    const listed = papers.filter((p) => progress.get(idToString(p.id))?.attemptId !== undefined || p.sections.every((s) => s.placements.every((pl) => info.has(idToString(pl.questionId)))))
+    return listed.map((p) => this.summary(p, subjects, info, progress))
   }
 
   async getCover(userId: string, paperId: string): Promise<BijakPaperCover> {

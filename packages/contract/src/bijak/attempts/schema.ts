@@ -47,6 +47,8 @@ export const BIJAK_ATTEMPTS_MESSAGES = {
   retryPaperGone: 'Kertas ini sudah tidak tersedia untuk dicuba semula.',
   /** R1-B15: "Cuba Lagi" from an attempt that is not closed yet. */
   retryNotClosed: 'Hantar percubaan ini dahulu sebelum mencuba semula.',
+  /** [PROPOSED] H-A13: a new sitting of a published paper that places an archived (withdrawn) question; a sitting already open is not affected. */
+  paperUnavailable: 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.',
 } as const
 
 /** Constants of the mock server and `photo-store.ts`, kept so the backend and the docs share them. */

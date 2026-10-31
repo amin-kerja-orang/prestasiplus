@@ -28,6 +28,12 @@ export interface ReportPatch {
   now: Date
 }
 
+/** A published Kertas Pilihan that places a question (H-A13). */
+export interface PlacingPaper {
+  id: bigint
+  title: string
+}
+
 /** The only doorway to `question_reports` (uses the ambient transaction through `prisma.client`). */
 @Injectable()
 export class ReportsRepository {
@@ -115,5 +121,14 @@ export class ReportsRepository {
     if (ids.length === 0) return new Map()
     const rows = await this.prisma.client.subject.findMany({ where: { id: { in: [...ids] } }, select: { id: true, code: true } })
     return new Map(rows.map((r) => [r.id.toString(), r.code]))
+  }
+
+  /** The published curated papers (Kertas Pilihan) that place this question, oldest first (read-only; the papers tables are M28's). */
+  async publishedPapersPlacing(questionId: bigint): Promise<PlacingPaper[]> {
+    return this.prisma.client.paper.findMany({
+      where: { kind: 'pilihan', status: 'published', sections: { some: { placements: { some: { questionId } } } } },
+      select: { id: true, title: true },
+      orderBy: { id: 'asc' },
+    })
   }
 }

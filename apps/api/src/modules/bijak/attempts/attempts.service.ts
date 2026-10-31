@@ -213,7 +213,14 @@ export class BijakAttemptsService {
     if (!isIdString(body.paperId)) throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
     const resolved = await this.ports.paperSource.resolveForAttempt({ userId, paperId: body.paperId, isTest })
     if (!resolved.ok) {
-      if (resolved.reason === 'not_eligible') throw ApiError.of('FORBIDDEN')
+      if (resolved.reason === 'not_eligible') {
+        // H-A13: a sitting already open keeps its pinned version, so "Mula" resumes it even though a new sitting is refused.
+        if (!body.restart && !opts.fresh) {
+          const open = (await this.repo.openFor(userId, body.paperId))[0]
+          if (open) return { attemptId: open.id, created: false }
+        }
+        throw ApiError.of('FORBIDDEN', { message: MSG.paperUnavailable })
+      }
       throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
     }
     const paper = resolved.paper

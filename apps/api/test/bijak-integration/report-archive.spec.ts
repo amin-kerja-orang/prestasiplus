@@ -5,7 +5,7 @@
  * Reports have no Bijak source of their own (the DB check allows spm, latihan, revision, teacher_databank and structured_attempt),
  * so a Bijak or Kuiz report is filed with the default source `spm`.
  */
-import { SessionSchema } from '@pp/contract'
+import { BIJAK_ATTEMPTS_MESSAGES, QUESTION_REPORT_MESSAGES, SessionSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { prngStream } from '../../src/db/prng'
@@ -15,6 +15,7 @@ import { PracticeQuestionsBridgeModule } from '../../src/modules/practice/questi
 import { QuestionWorkflowModule } from '../../src/modules/questions/workflow'
 import { ADMIN, bootIntegrationApp, DEMO_PASSWORD, type IntegrationApp, loginAs, START, STUDENT } from './helpers'
 
+const OTHER_PUPIL = 'pelajar2@demo.test'
 let t: IntegrationApp
 let qid = ''
 let subjectId = ''
@@ -22,7 +23,7 @@ let levelId = ''
 let paperId = ''
 let reportId = ''
 let attemptId = ''
-let adminPatch: (url: string, body: unknown) => Promise<{ status: number; body: { data?: { status?: string }; error?: unknown } }>
+let adminPatch: (url: string, body: unknown) => Promise<{ status: number; body: { data?: { status?: string; papers?: { id: string; title: string }[]; warning?: string }; error?: unknown } }>
 
 beforeAll(async () => {
   t = await bootIntegrationApp({ pocQuestions: false, extraModules: [QuestionWorkflowModule, PracticeQuestionsBridgeModule] })
@@ -84,6 +85,9 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     const started = await student.post('/api/bijak/attempts', { paperId, mode: 'exam' })
     expect(started.status, JSON.stringify(started.body)).toBeLessThan(300)
     attemptId = (started.body as { data: { attemptId: string } }).data.attemptId
+    // another pupil, with no sitting, sees the paper in Kertas Pilihan
+    const other = await loginAs(t, OTHER_PUPIL)
+    expect(((await other.get('/api/bijak/papers')).body as { data: { id: string }[] }).data.map((p) => p.id)).toContain(paperId)
   })
 
   it('2. a student files a report against the bank question id: pending, on the live version', async () => {
@@ -107,6 +111,9 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     const res = await adminPatch(`/api/question-reports/${reportId}`, { status: 'fixed', adminNotes: 'Diarkibkan', archive: true })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.body.data?.status).toBe('fixed')
+    // H-A13: the admin is told which published papers place the question
+    expect(res.body.data?.papers).toEqual([{ id: paperId, title: 'Kertas dengan soalan dilaporkan' }])
+    expect(res.body.data?.warning).toBe(QUESTION_REPORT_MESSAGES.archivedOnPapers)
     // the real lifecycle archive, not a deactivation
     expect(await questionRow()).toMatchObject({ is_active: true, status: 'archived' })
     const events = await t.db.query<{ from_status: string; to_status: string; reason: string | null }>(
@@ -141,9 +148,23 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     expect((cover.body as { data: { questionCount: number } }).data.questionCount).toBe(1)
   })
 
-  it('8. a NEW sitting of that paper is refused (BE-15 eligibility: every placed question must be live), the archive is what withdraws it', async () => {
+  it('8. a NEW sitting of that paper is refused with a BM line (BE-15 eligibility: every placed question must be live); a sitting already open is resumed', async () => {
+    const other = await loginAs(t, OTHER_PUPIL)
+    const refused = await other.post('/api/bijak/attempts', { paperId, mode: 'exam' })
+    expect(refused.status).toBe(403)
+    expect((refused.body as { error: { code: string; message: string } }).error).toMatchObject({ code: 'FORBIDDEN', message: BIJAK_ATTEMPTS_MESSAGES.paperUnavailable })
+    // the pupil whose sitting is open resumes it (the same attempt, nothing new is created)
     const student = await loginAs(t, STUDENT)
-    const res = await student.post('/api/bijak/attempts', { paperId, mode: 'exam' })
-    expect(res.status).toBe(403)
+    const resumed = await student.post('/api/bijak/attempts', { paperId, mode: 'exam' })
+    expect(resumed.status, JSON.stringify(resumed.body)).toBe(200)
+    expect((resumed.body as { data: { attemptId: string; created?: boolean } }).data.attemptId).toBe(attemptId)
+  })
+
+  it('9. Kertas Pilihan hides the paper for a pupil with no open sitting and keeps the card for the pupil who has one', async () => {
+    const other = await loginAs(t, OTHER_PUPIL)
+    expect(((await other.get('/api/bijak/papers')).body as { data: { id: string }[] }).data.map((p) => p.id)).not.toContain(paperId)
+    const student = await loginAs(t, STUDENT)
+    const mine = ((await student.get('/api/bijak/papers')).body as { data: { id: string; status: string }[] }).data.find((p) => p.id === paperId)
+    expect(mine).toMatchObject({ id: paperId, status: 'sedang' })
   })
 })
