@@ -6,7 +6,7 @@ How to read the state column:
 
 - **BASE-n** = merged into `feature/v3-bijak-r1` (MERGE-LOG on `origin/team/r1-board`).
 - **READY** = a team A branch at the head shown, not in base. Where B2 has asked for changes the cell says so (**CHANGES-REQUESTED**). The merge order is the lead's and B1's call (C-POLICY-2 on the board branch and MERGE-LOG); "depends on" below is only what the code needs.
-- Command SQL for 0092 to 0104 is in `docs/ops/r1-runbook.md` (branch `r1/t37-r1-runbook` @ dbf25cf2, READY; sections 2 and 3). This page adds the per-unit view and the units that came after the runbook was first written.
+- Command SQL for 0092 to 0105 is in `docs/ops/r1-runbook.md` (branch `r1/t37-r1-runbook` @ 80101199, READY; sections 2 and 3). This page adds the per-unit view and the units that came after the runbook was first written.
 - Names only, no secret values.
 
 ## 1. Migrations 0100 to 0105
@@ -20,24 +20,27 @@ Apply with `prisma migrate deploy`, in number order, together with the API/FE bu
 | 0102 | `0102_leaf_cognitive_level` | T33 `r1/t33-leaf-tags` @ 95cea5be | **BASE-27** | Adds nullable `question_parts.cognitive_level` with `ck_question_parts_cognitive_level` (mengingat, memahami, mengaplikasi, menganalisis, menilai, mencipta) and `ck_question_parts_cognitive_level_leaf_only` (a part without a mode has none). No backfill. | Yes | Header SQL: drop the two constraints, then the column; then delete the `0102_leaf_cognitive_level` row from `_prisma_migrations` (release notes 6.3; not `--rolled-back`, P3012) | T29 and T32 (T32 is in base) |
 | 0103 | `0103_question_report_context` | T42 part 1 `r1/t42-reports-intake-acs` @ d1210e96 (A2) | **BASE-41** | Adds nullable `question_reports.paper_id` (bigint) and `paper_label` (text, CHECK at most 200 chars), FK `fk_question_reports_paper_id` to `papers` (ON DELETE SET NULL), FK `fk_question_reports_attempt_id` to `exam_attempts` (**NOT VALID**: old rows are not checked, new and updated rows are), index `ix_question_reports_paper_id`. Existing rows keep NULL. | Yes | Header SQL: drop the index, the two FKs, the CHECK, then the two columns; then delete the `0103_question_report_context` row from `_prisma_migrations` (release notes 6.3; not `--rolled-back`, P3012) | T35 (in base) for the Arkib flow; no data dependency |
 | 0104 | `0104_paper_section_admin_created` | T48 `r1/t48-builder-parity` @ 2cbe7d28 (A3; contains T34 and its follow-up; head moved from 1b76778f) | **not in base; B2 CHANGES-REQUESTED, A3 pushed a fix, awaiting re-review** (0104 is not merged and may still change) | Adds `paper_sections.admin_created boolean NOT NULL DEFAULT false`: false for every Bahagian that comes from the Kontrak (all existing rows), true for one an admin adds in Semak Kertas ("Tambah bahagian"); only such a Bahagian takes "Tambah soalan". Constant default, additive. | Yes | Header SQL: `ALTER TABLE "paper_sections" DROP COLUMN "admin_created"`; then delete the `0104_paper_section_admin_created` row from `_prisma_migrations` (release notes 6.3; not `--rolled-back`, P3012) | T34 (builder routes); T48 does not contain T33 or T42, so 0102 and 0103 are independent of it |
-| 0105 | `0105_gate_facts` | H-A18 `r1/ha18-gate-facts` @ 3a2ac810 (A2) | **not in base; pushed, not yet reviewed (unconfirmed)** | Adds `question_versions.last_editor` (text, `person` default, CHECK `person`/`ai`) and `declared_marks` (smallint, nullable, CHECK >= 0). Backfill in one DO block: `last_editor = 'ai'` only for `ai_variant` questions whose draft/review version has no status event made by a person; `declared_marks` from `intake_items.payload->>'marks'` when it is a whole number 0..999 (the migration prints both counts as a NOTICE). The approve gate then reads real facts (a version last written by the AI is refused; declared marks must equal the leaf sum). Already-approved questions are not re-checked. | Yes | Header SQL: drop the two CHECKs, then the two columns; then delete the `0105_gate_facts` row from `_prisma_migrations` (release notes 6.3; not `--rolled-back`, P3012) | T33 (gate); no data dependency |
+| 0105 | `0105_gate_facts` | H-A18 `r1/ha18-gate-facts` @ 3a2ac810 (A2) | **not in base; pushed, review not seen (unconfirmed)**; SQL and backfill **run** (below) | Adds `question_versions.last_editor` (text, `person` default, CHECK `person`/`ai`) and `declared_marks` (smallint, nullable, CHECK >= 0). Backfill in one DO block: `last_editor = 'ai'` only for `ai_variant` questions whose draft/review version has no status event made by a person; `declared_marks` from `intake_items.payload->>'marks'` when it is a whole number 0..999 (the migration prints both counts as a NOTICE). The approve gate then reads real facts (a version last written by the AI is refused; declared marks must equal the leaf sum). Already-approved questions are not re-checked. | Yes | Header SQL: drop the two CHECKs, then the two columns; then delete the `0105_gate_facts` row from `_prisma_migrations` (release notes 6.3; not `--rolled-back`, P3012) | T33 (gate); no data dependency |
 
 Notes:
 
-- No other team A branch carries a migration folder (checked again against the `r1/*` heads at BASE-62: `r1/t48-builder-parity` carries 0104 and `r1/ha18-gate-facts` carries 0105; the 0105 row above is read from the file header and was not run (unconfirmed)). T44 (Kontrak "Boleh tanda auto") uses `blueprints.auto_markable`, which already exists. Migration numbers: 0105 = A2 H-A18 (`r1/ha18-gate-facts`, pushed); 0106 to 0109 free (the R2 pool-tag drop was planned as 0107 but is deferred); 0120 to 0129 is team A's overflow range.
-- The runbook's section 2.1 names 0101 and 0102 for T25 and T33; keep the same order. 0103 is now in it too (branch `r1/t37-r1-runbook` @ dbf25cf2: list row, before/after SELECTs in 3.1 and 3.5b, history SELECT, and the note not to run `VALIDATE CONSTRAINT` in the release).
+- No other team A branch carries a migration folder (checked again against the `r1/*` heads at BASE-62: `r1/t48-builder-parity` carries 0104 and `r1/ha18-gate-facts` carries 0105; the 0105 migration and its SQL were run on a local database, section 1.1). T44 (Kontrak "Boleh tanda auto") uses `blueprints.auto_markable`, which already exists. Migration numbers: 0105 = A2 H-A18 (`r1/ha18-gate-facts`, pushed); 0106 to 0109 free (the R2 pool-tag drop was planned as 0107 but is deferred); 0120 to 0129 is team A's overflow range.
+- The runbook's section 2.1 names 0101 and 0102 for T25 and T33; keep the same order. 0103 is now in it too (branch `r1/t37-r1-runbook` @ 80101199: list row, before/after SELECTs in 3.1 and 3.5b, history SELECT, and the note not to run `VALIDATE CONSTRAINT` in the release).
 - Statistics: only 0100 needs `VACUUM ANALYZE question_versions;` (runtime on the production-size table not measured).
 - The NOT VALID foreign key on `attempt_id` stays NOT VALID. Do not run `VALIDATE CONSTRAINT` as part of the release; old rows have `attempt_id` values that nothing ever checked.
 
 ### 1.1 Verification SELECTs
 
-**Ran on local migrated DB (BASE-21 `a6ff0c0d` + 0102 @ `95cea5be` (T33) + 0103 @ `d1210e96` (T42) + 0104 @ `1b76778f` (T48), demo seed), 12/12 ok for the statements below (the "before" ones were run on the migrated database, so they prove syntax only; the runbook ran them on staged databases), and 63/63 ok for the whole runbook** (`r1-runbook.md` section 9, branch `r1/t37-r1-runbook` @ dbf25cf2: 16 "before" statements on staged databases at 0091 and 0093, 47 "after" statements on the full database). Throwaway Postgres 16 containers, removed afterwards. 0105 (A2, H-A18) was not on origin when this was run and is not covered. Notable results:
+**Ran on local migrated DB (BASE-62 `17797f48` + 0104 @ `2cbe7d28` (T48) + 0105 @ `3a2ac810` (H-A18), demo seed), 20/20 ok for the statements below, and 74/74 ok for the whole runbook** (`r1-runbook.md` section 9, branch `r1/t37-r1-runbook` @ 80101199: 20 "before" statements on staged databases at 0091 and 0093, 53 "after" statements on the full database, and the 0105 reverse SQL in a rolled-back transaction). The "before" statements below were run here on the migrated database, so for those they prove syntax only; the runbook ran them on staged databases, and the 0105 predictions were also run with real rows (second bullet from the end). Throwaway Postgres 16 container, removed afterwards. 0104 and 0105 are read from the T48 and H-A18 branches, not from base. Notable results:
 
 - `question_reports`: 0 rows before and after; `paper_id` bigint and `paper_label` text exist; `ck_question_reports_paper_label` and `fk_question_reports_paper_id` are validated, `fk_question_reports_attempt_id` has `convalidated = f` (NOT VALID, as designed); `ix_question_reports_paper_id` exists.
 - 0104: `paper_sections.admin_created` is boolean, NOT NULL, default false; all 9 seeded sections are false and none is admin-added. Re-applying the 0104 statement over those 9 existing rows in a rolled-back transaction gave one row, `false`, count 9; the header reverse SQL then dropped the column cleanly.
 - `cognitive_level` exists (text) with its two CHECKs; all 1277 parts are NULL right after the migration.
 - Demo data: `approved` 1268, no `published`, servable 1268, login count 493.
-- The reverse SQL in the 0102, 0103 and 0104 file headers was run in a rolled-back transaction: it drops all five objects cleanly.
+- 0105 (**run**): `question_versions.last_editor` (text, NOT NULL, default `person`) and `declared_marks` (smallint, nullable) exist, both CHECKs validated; on the seeded data every version is `person`, `declared_marks` is NULL everywhere and no approved or archived row is `ai` (the demo seed has no `ai_variant` question and no intake item, so both predictions were 0).
+- 0105 backfill with real rows (on a copy with synthetic rows: a draft `ai_variant` with no human event, a review `ai_variant` with a human event, an approved `ai_variant`, intake items with marks 4, `"5"` and 1000): predictions 1 and 1, file NOTICE `0105 backfill: last_editor=ai on 1 versions, declared_marks set on 1 versions`, after the migration `ai` 1, `person` 1270, `declared_marks` 1, `approved_or_archived_ai` 0.
+- 0105 rollback as a procedure (on a copy): header reverse SQL, then `DELETE FROM _prisma_migrations WHERE migration_name = '0105_gate_facts'`; `prisma migrate status` then showed 0105 as not yet applied and `prisma migrate deploy` applied it again. `--rolled-back` was not used (finished migration, P3012). Under `prisma migrate deploy` the NOTICE was not seen in the output tail that was kept (unconfirmed whether Prisma prints it), so the counts are the check.
+- The reverse SQL in the 0102, 0103 and 0104 file headers was run in a rolled-back transaction in the earlier pass: it drops the objects cleanly (the 0104 file changed only a comment since).
 - Not covered by a run: the "later, after pupils report" SELECT returns 0 rows only because no report exists; it proves syntax, not the API write.
 
 ```sql
@@ -66,9 +69,29 @@ SELECT column_name, data_type, is_nullable, column_default FROM information_sche
 SELECT admin_created, count(*) FROM paper_sections GROUP BY admin_created ORDER BY admin_created;                          -- one row, false, = sections
 SELECT count(*) AS admin_added FROM paper_sections WHERE admin_created;                                                    -- 0
 
--- history, all five
+-- before 0105: neither column exists; two predictions for the backfill NOTICE
+SELECT column_name FROM information_schema.columns WHERE table_name = 'question_versions' AND column_name IN ('last_editor', 'declared_marks');   -- 0 rows
+SELECT count(*) AS will_be_ai FROM question_versions v
+ WHERE v.status IN ('draft', 'review')
+   AND EXISTS (SELECT 1 FROM questions q WHERE q.id = v.question_id AND q.source_type = 'ai_variant')
+   AND NOT EXISTS (SELECT 1 FROM question_status_events e
+                    WHERE e.question_id = v.question_id AND e.version_no = v.version_no
+                      AND e.from_status IS NOT NULL AND e.actor_user_id IS NOT NULL);                                          -- record
+SELECT count(*) AS will_have_declared_marks FROM question_versions v JOIN intake_items i ON v.intake_item_id = i.id
+ WHERE jsonb_typeof(i.payload->'marks') = 'number' AND (i.payload->>'marks') ~ '^[0-9]{1,3}$';                                -- record
+
+-- after 0105: both columns, both CHECKs validated, counts equal the predictions, no approved/archived row is 'ai'
+SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns
+ WHERE table_name = 'question_versions' AND column_name IN ('last_editor', 'declared_marks') ORDER BY column_name;                -- 2 rows
+SELECT conname, convalidated FROM pg_constraint
+ WHERE conrelid = 'question_versions'::regclass AND conname IN ('ck_question_versions_last_editor', 'ck_question_versions_declared_marks') ORDER BY conname;   -- 2 rows, validated
+SELECT last_editor, count(*) FROM question_versions GROUP BY last_editor ORDER BY last_editor;                                  -- 'ai' = will_be_ai
+SELECT count(*) AS with_declared_marks FROM question_versions WHERE declared_marks IS NOT NULL;                                 -- = will_have_declared_marks
+SELECT count(*) AS approved_or_archived_ai FROM question_versions WHERE status IN ('approved', 'archived') AND last_editor = 'ai';   -- 0
+
+-- history, all six
 SELECT migration_name, finished_at FROM _prisma_migrations
- WHERE migration_name IN ('0100_question_lifecycle_approved', '0101_essay_choice', '0102_leaf_cognitive_level', '0103_question_report_context', '0104_paper_section_admin_created')
+ WHERE migration_name IN ('0100_question_lifecycle_approved', '0101_essay_choice', '0102_leaf_cognitive_level', '0103_question_report_context', '0104_paper_section_admin_created', '0105_gate_facts')
  ORDER BY started_at;
 ```
 
@@ -151,7 +174,7 @@ State is from the board (BOARD.md and B2's status) at BASE-60. READY units whose
 | Unit | Branch @ head | State | Depends on | New routes / contract | Visible change | Check |
 |---|---|---|---|---|---|---|
 | H-A21 overview cache | `r1/ha21-overview-cache` @ a255028e | READY (chain after T45 part 1; A4 posts one tip) | T30 | `computedAt` on the overview | Overview is cached 5 minutes, stale-while-revalidate, single flight, invalidated on question events and a papers fingerprint. No env var | warm p95 target under 500 ms (unit's claim, not re-measured here) |
-| H-A18 gate facts | `r1/ha18-gate-facts` @ 3a2ac810 | pushed, not yet reviewed (unconfirmed) | T33 | 0105; none else read from the diff | The approve/submit gate uses real facts for duplicate flag, media, source declaration, AI-last-editor and declared marks instead of always-satisfied defaults, so some approvals that passed before now get refused (new approvals only; approved questions are not re-checked) | the 0105 NOTICE counts (`last_editor=ai`, `declared_marks`) at migrate time; `SELECT last_editor, count(*) FROM question_versions GROUP BY 1;` (written from the schema, not run) |
+| H-A18 gate facts | `r1/ha18-gate-facts` @ 3a2ac810 | pushed, review not seen (unconfirmed) | T33 | 0105; none else read from the diff | The approve/submit gate uses real facts for duplicate flag, media, source declaration, AI-last-editor and declared marks instead of always-satisfied defaults, so some approvals that passed before now get refused (new approvals only; approved questions are not re-checked) | the 0105 NOTICE counts (`last_editor=ai`, `declared_marks`) at migrate time; `SELECT last_editor, count(*) FROM question_versions GROUP BY 1;` (run, section 1.1) |
 | t45-lanes | `r1/t45-lanes` @ ced5ea31 | READY (same chain) | T30 | same lane routes, V2 hub order and wording | Kandungan SPM hub cards in V2 order; Bijak SPM card counts paper rows | none |
 | T45 part 1 | `r1/t45-servability-acs` @ 8eba44c0 | **CHANGES-REQUESTED** (A4) | T29 | none | Terbitkan on a question that no activity can serve is refused: "Soalan ini tidak boleh dipaparkan di mana-mana aktiviti murid, jadi belum boleh diterbitkan." [PROPOSED]; paper-level reason line | probe: approve an image question without its image |
 | T34 builder review | `r1/t34-builder-review` @ 7bc3419e | **CHANGES-REQUESTED** by B2 (A3 fixing) | T29 (and T33 per B2's order) | `PUT /api/admin/papers/:id/groups/:groupId` (title only), `GET/PUT /api/admin/section-pools/:questionId`, `POST/DELETE /api/admin/papers/:id/placements` (extra question; blocker "Lebih 1 soalan"), `PUT {reference}` with image check, publish body `{ override?, reason? }`, `blockerDetails` + `canOverride` | **Terbit gates:** R1E2E-06 Terbit refuses what the attempt path refuses (not overridable); R1E2E-07 / AC-R1-16.2 Terbit needs a Disahkan blueprint, overridable only with a reason of 5 or more characters and an audit row; D93: "Kumpulan perlu sekurang-kurangnya 2 soalan." blocks Terbit (not overridable); structured blockers with an overridable flag; a Terbit paper is read-only ("Kertas Terbit tidak boleh disunting. Tarik balik dahulu.") | `SELECT created_at, target_id FROM audit_events WHERE action = 'bijak.paper.published_override' ORDER BY created_at DESC LIMIT 20;` |
@@ -167,7 +190,7 @@ State is from the board (BOARD.md and B2's status) at BASE-60. READY units whose
 
 ### 3.3 No deploy effect (test or docs only)
 
-`r1/t39-k1-evidence` @ 1a26f7a6 and `r1/t37-r1-runbook` @ dbf25cf2 (docs), `r1/ha9-pipeline-chain` @ 1024616c, `r1/ha12-conformance` @ e1fa7217, `r1/ha16-table-reader` @ b283a746 (shared table reader; no behaviour change), `r1/ha8-stale-specs` @ 56b1b6cc, `r1/t40-attempts-acs`, `r1/t41-curriculum-acs` @ 067ff3cc (specs; BASE-40). Reading only: T41 is not a deploy item.
+`r1/t39-k1-evidence` @ 1a26f7a6 and `r1/t37-r1-runbook` @ 80101199 (docs), `r1/ha9-pipeline-chain` @ 1024616c, `r1/ha12-conformance` @ e1fa7217, `r1/ha16-table-reader` @ b283a746 (shared table reader; no behaviour change), `r1/ha8-stale-specs` @ 56b1b6cc, `r1/t40-attempts-acs`, `r1/t41-curriculum-acs` @ 067ff3cc (specs; BASE-40). Reading only: T41 is not a deploy item.
 
 ## 4. Short text for the release notes
 
