@@ -36,7 +36,7 @@ describe('BE-09 hardening (real database)', () => {
   const edit = (text: string) => ({ ...ES, difficultyLevel: 3, questionText: text })
 
   async function published(): Promise<string> {
-    const q = await svc.create(mcqInput(tag, { status: 'published', tag: tagBody(tag, 3) }), admin)
+    const q = await svc.create(mcqInput(tag, { status: 'approved', tag: tagBody(tag, 3) }), admin)
     return q.id
   }
 
@@ -57,16 +57,16 @@ describe('BE-09 hardening (real database)', () => {
     ])
   })
 
-  it('an admin edit of an approved version resets it to draft; a Guru edit of their approved row goes back to review', async () => {
-    const a = (await svc.create(mcqInput(tag), admin)).id
+  it('an admin edit of an approved question writes version 2 as a draft while v1 keeps serving; a Guru edit of their review row stays in review', async () => {
+    const a = (await svc.create(mcqInput(tag, { tag: tagBody(tag, 3) }), admin)).id
     await svc.setStatus(a, 'review', admin.userId)
     await svc.setStatus(a, 'approved', admin.userId)
     const out = await svc.update(a, edit('Teks admin selepas kelulusan diubah.'), admin)
     expect(out.version.status).toBe('draft')
-    expect(out.latestVersionNo).toBe(1)
+    expect(out.latestVersionNo).toBe(2)
+    expect(out.liveVersionNo).toBe(1)
 
     const g = await svc.createGuru({ ...mcqInput(tag), difficultyLevel: 3, options: ['a', 'b', 'c', 'd'], correctAnswer: 0 } as never, teacher.userId)
-    await svc.setStatus(g.id, 'approved', admin.userId)
     const back = await svc.updateOwn(g.id, { questionText: 'Teks guru selepas kelulusan diubah.' } as never, teacher.userId)
     expect(back.version.status).toBe('review')
   })
@@ -148,7 +148,7 @@ describe('BE-09 hardening (real database)', () => {
     ])
     expect(results.map((r) => r.status)).toEqual(['fulfilled', 'fulfilled'])
     const rows = await t.db.query<{ version_no: number; status: string }>(`select version_no, status from question_versions where question_id = $1 order by version_no`, [id])
-    expect(rows).toEqual([{ version_no: 1, status: 'published' }, { version_no: 2, status: 'draft' }])
+    expect(rows).toEqual([{ version_no: 1, status: 'approved' }, { version_no: 2, status: 'draft' }])
   })
 
   it('gradeAnswer is 404 for a deactivated question, like getPublicForLearner', async () => {
@@ -169,16 +169,16 @@ describe('BE-09 hardening (real database)', () => {
       key: { kind: 'points', marks: 3, points: [{ id: 'p', code: 'K', label: 'k', marks: 3 }] },
     }] as unknown as QuestionPart[]
     const before = (await t.db.query<{ n: string }>(`select count(*) n from questions`))[0]?.n
-    const err = await apiError(() => svc.create(mcqInput(tag, { questionType: 'essay', status: 'published', tag: tagBody(tag), parts: bad }), admin))
+    const err = await apiError(() => svc.create(mcqInput(tag, { questionType: 'essay', status: 'approved', tag: tagBody(tag), parts: bad }), admin))
     expect(err.getStatus()).toBe(422)
     expect(Object.keys(err.fields ?? {})).toEqual(['parts.1.key'])
     expect((await t.db.query<{ n: string }>(`select count(*) n from questions`))[0]?.n).toBe(before)
     // The same tree is fine as a draft; fixed, it publishes.
     expect((await svc.create(mcqInput(tag, { questionType: 'essay', parts: bad }), admin)).version.status).toBe('draft')
-    expect((await svc.create(mcqInput(tag, { questionType: 'essay', status: 'published', tag: tagBody(tag), parts: good }), admin)).version.status).toBe('published')
+    expect((await svc.create(mcqInput(tag, { questionType: 'essay', status: 'approved', tag: tagBody(tag), parts: good }), admin)).version.status).toBe('approved')
     // An invalid key (wrong kind for the mode) never reaches the gate: 422 from the schema.
     const wrong = [{ label: '1', prompt: rich('x'), mode: 'mcq', marks: 1, options: [], key: { kind: 'accepted', values: ['x'] } }] as unknown as QuestionPart[]
-    expect((await apiError(() => svc.create(mcqInput(tag, { questionType: 'essay', status: 'published', tag: tagBody(tag), parts: wrong }), admin))).getStatus()).toBe(422)
+    expect((await apiError(() => svc.create(mcqInput(tag, { questionType: 'essay', status: 'approved', tag: tagBody(tag), parts: wrong }), admin))).getStatus()).toBe(422)
   })
 
   const badTree = [{
@@ -189,28 +189,27 @@ describe('BE-09 hardening (real database)', () => {
     label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
     key: { kind: 'points', marks: 3, points: [{ id: 'p', code: 'K', label: 'k', marks: 3 }] },
   }] as unknown as QuestionPart[]
-  async function approvedWith(parts: QuestionPart[]): Promise<string> {
+  async function reviewWith(parts: QuestionPart[]): Promise<string> {
     const id = (await svc.create(mcqInput(tag, { questionType: 'essay', tag: tagBody(tag), parts }), admin)).id
     await svc.setStatus(id, 'review', admin.userId)
-    await svc.setStatus(id, 'approved', admin.userId)
     return id
   }
 
   it('setStatus approved to published runs the keys gate: mismatched point marks are 422 and nothing changes', async () => {
-    const id = await approvedWith(badTree)
-    const err = await apiError(() => svc.setStatus(id, 'published', admin.userId))
+    const id = await reviewWith(badTree)
+    const err = await apiError(() => svc.setStatus(id, 'approved', admin.userId))
     expect(err.getStatus()).toBe(422)
     expect(Object.keys(err.fields ?? {})).toEqual(['parts.1.key'])
-    expect(await svc.getStatus(id)).toMatchObject({ status: 'approved', liveVersionNo: null })
-    expect((await svc.setStatus(await approvedWith(goodTree), 'published', admin.userId)).version.status).toBe('published')
+    expect(await svc.getStatus(id)).toMatchObject({ status: 'review', liveVersionNo: null })
+    expect((await svc.setStatus(await reviewWith(goodTree), 'approved', admin.userId)).version.status).toBe('approved')
   })
 
   it('bulk publish skips the invalid-key row and counts only the valid one', async () => {
-    const bad = await approvedWith(badTree)
-    const good = await approvedWith(goodTree)
-    expect(await svc.bulkAction('published', [bad, good], admin)).toEqual({ affected: 1, ids: [good], failed: [expect.objectContaining({ id: bad, code: 'VALIDATION_ERROR' })] })
-    expect((await svc.getStatus(bad)).status).toBe('approved')
-    expect((await svc.getStatus(good)).status).toBe('published')
+    const bad = await reviewWith(badTree)
+    const good = await reviewWith(goodTree)
+    expect(await svc.bulkAction('approved', [bad, good], admin)).toEqual({ affected: 1, ids: [good], failed: [expect.objectContaining({ id: bad, code: 'VALIDATION_ERROR' })] })
+    expect((await svc.getStatus(bad)).status).toBe('review')
+    expect((await svc.getStatus(good)).status).toBe('approved')
   })
 
   it('every seeded published question passes the keys gate', async () => {

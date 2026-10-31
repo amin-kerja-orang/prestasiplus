@@ -61,7 +61,7 @@ async function mcq(over: { level?: string; tag?: Tag; text?: string; tp?: number
     { userId: w.admin, role: 'admin' },
   )
   if (over.publish !== false)
-    for (const status of ['review', 'approved', 'published'] as const) await svc.bulkAction(status, [q.id], { userId: w.admin, role: 'admin' })
+    for (const status of ['review', 'approved'] as const) await svc.bulkAction(status, [q.id], { userId: w.admin, role: 'admin' })
   // Test fixture only: move the version to another level (the tag stays the seeded T4 one).
   if (over.level) await c.t.db.query(`update question_versions set education_level_id = $2 where question_id = $1`, [q.id, over.level])
   return q.id
@@ -237,7 +237,7 @@ describe('filters, pinned versions and the contributor', () => {
       { subjectId: c.w.tag.subjectId, educationLevelId: c.w.tag.levelId, difficultyLevel: 3, questionText: 'Teks baharu versi dua', questionType: 'mcq', options: ['Satu', 'Dua', 'Tiga', 'Empat'], correctAnswer: 2, tag: { unitId: c.w.tag.unitId, spIds: [c.w.tag.spId], tp: 3 } } as never,
       actor,
     )
-    for (const status of ['review', 'approved', 'published'] as const) await svc.bulkAction(status, [id], actor)
+    for (const status of ['review', 'approved'] as const) await svc.bulkAction(status, [id], actor)
     const pinned = await c.source.versions([{ questionId: id, versionNo: 1 }, { questionId: id, versionNo: 2 }, { questionId: id, versionNo: 99 }])
     expect(pinned.get(`${id}@1`)).toMatchObject({ versionNo: 1, questionText: 'Teks asal versi satu', correctLabel: 'B' })
     expect(pinned.get(`${id}@2`)).toMatchObject({ versionNo: 2, questionText: 'Teks baharu versi dua', correctLabel: 'C' })

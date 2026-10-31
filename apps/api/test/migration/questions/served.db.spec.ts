@@ -87,7 +87,7 @@ describe('loaded questions through the question bank', () => {
     expect(first).toBeDefined()
     expect(first?.liveVersionNo).toBe(1)
     expect(first?.isActive).toBe(true)
-    expect(first?.version).toMatchObject({ status: 'published', type: 'mcq', stemMs: 'Soalan T4 satu?', explanationMs: 'Penjelasan satu.', difficultyTp: 2, educationLevelId: v2.t4, subjectId: v2.subject, formOrigin: 't4' })
+    expect(first?.version).toMatchObject({ status: 'approved', type: 'mcq', stemMs: 'Soalan T4 satu?', explanationMs: 'Penjelasan satu.', difficultyTp: 2, educationLevelId: v2.t4, subjectId: v2.subject, formOrigin: 't4' })
     const m = servableMcq(first as never)
     expect(m.ok).toBe(true)
     if (m.ok) {

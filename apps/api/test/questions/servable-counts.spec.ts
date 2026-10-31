@@ -26,10 +26,9 @@ import { bootSpmApp, type SpmTestApp } from '../spm/helpers'
  * relations that must hold (every surface reads one definition) and that an admin-made T4 MCQ reaches Databank, Latih Tubi SPM and
  * Mock K1. The numbers go to the console and to `$T05_COUNTS_OUT` (a JSON file) when that variable is set.
  *
- * T04 (approved = servable lifecycle, migration 0100) is not in this tree yet: the fixture question is moved
- * review -> approved -> published (`SERVE_STEPS`). After T04 the last step is dropped (final pass).
+ * Final pass (T04, approved = servable lifecycle, migration 0100): the fixture question is moved review -> approved only (`SERVE_STEPS`).
  */
-const SERVE_STEPS = ['review', 'approved', 'published'] as const
+const SERVE_STEPS = ['review', 'approved'] as const
 const SUBJECTS = ['BM', 'MATH', 'SCI'] as const
 
 let t: SpmTestApp
@@ -64,7 +63,7 @@ afterAll(async () => {
 describe('counts on the full demo seed: login = cards = details = drawable', () => {
   it('reports the login count, the per-subject cards, the details and a full draw for BM, MATH and SCI', async () => {
     const loginCount = await login()
-    const drawableAll = await repo.count({ type: 'mcq', spmPool: true, status: 'published', active: true })
+    const drawableAll = await repo.count({ type: 'mcq', spmPool: true, status: 'approved', active: true })
     // Practice overview cards (Q-PRACTICE over the offered levels), the same figure the Latih Tubi chapter cards sum.
     const bank = new BankFacts(await new OverviewRepository(t.app.get(PrismaService, { strict: false })).bankMatrix())
     const cards: Record<string, unknown> = {}
@@ -86,13 +85,14 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
       expect(details, `${code} details`).toBe(poolCount)
       expect(drawnIds.length, `${code} drawable`).toBe(poolCount)
       expect(new Set(drawnIds).size).toBe(drawnIds.length)
-      // Everything drawn is servable: live, active, published, an offered level.
-      expect(drawn.every((r) => r.isActive && r.version.status === 'published' && offeredIds.includes(r.version.educationLevelId ?? ''))).toBe(true)
+      // Everything drawn is servable: live, active, approved, an offered level.
+      expect(drawn.every((r) => r.isActive && r.version.status === 'approved' && offeredIds.includes(r.version.educationLevelId ?? ''))).toBe(true)
       // The practice-overview card and the login SQL count every servable MCQ of the subject (they do not apply the
       // hub's "ungrouped, single MCQ leaf" shape), so they are an upper bound of the drawable size.
-      // FINAL PASS (D91, after T04): `bankMatrix` gets `group_id IS NULL`, so the practice card equals the drawable size per surface
-      // (BM 50, not 53). The login "N+ Soalan" stays 493: it counts every servable question of any activity, grouped members included.
-      expect(practiceCard, `${code} practice card >= drawable`).toBeGreaterThanOrEqual(poolCount)
+      // D91 (T04): `bankMatrix` has `group_id IS NULL`, so the practice card equals the drawable size per surface (BM 50, not 53).
+      expect(practiceCard, `${code} practice card = drawable`).toBe(poolCount)
+      // The login SQL counts every servable question of any activity (stimulus-group members included), so it is an upper bound.
+      expect(servableInDb, `${code} login SQL >= drawable`).toBeGreaterThanOrEqual(poolCount)
       cards[code] = { ...(cards[code] as object), gapPracticeCardVsDrawable: practiceCard - poolCount }
       expect(servableInDb, `${code} login SQL >= drawable`).toBeGreaterThanOrEqual(poolCount)
     }
@@ -111,6 +111,8 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
     report.subjects = cards
     console.log(`T05 COUNTS ${JSON.stringify(report)}`)
     expect(loginCount, 'login count = drawable count over all subjects').toBe(drawableAll)
+    expect(loginCount, 'login "N+ Soalan" (D91: every servable question of any activity)').toBe(493)
+    expect(cards.BM, 'BM practice card = 50 after D91').toMatchObject({ practiceCard: 50 })
   })
 })
 
@@ -170,15 +172,8 @@ describe('an admin-created approved T4 MCQ appears in Databank, Latih Tubi SPM a
     const k1 = (await pool.sample(id, after.databank, prngStream('t05-k1'))).map((r) => r.id)
     expect(k1).toContain(created.id)
     // Battle SPM size reads the same rule.
-    expect(await repo.count({ type: 'mcq', subjectId: id, spmPool: true, status: 'published', active: true })).toBeGreaterThanOrEqual(after.databank)
+    expect(await repo.count({ type: 'mcq', subjectId: id, spmPool: true, status: 'approved', active: true })).toBeGreaterThanOrEqual(after.databank)
   })
-})
-
-// Final-pass expectations (D91: counts are per surface; lane A2 adds `group_id IS NULL` to `bankMatrix` inside T04). Not asserted yet.
-describe('final pass (after T04 and D91)', () => {
-  it.todo('BM practice card = Databank = Latih Tubi = details = drawable = 50 (practiceCard === poolCount for every subject)')
-  it.todo('login "N+ Soalan" stays 493: every servable question of any activity, stimulus-group members included')
-  it.todo('the admin-created T4 MCQ is served after review -> approved only (drop the published step of SERVE_STEPS)')
 })
 
 describe('one admin-created approved T4 MCQ is served by all five SPM_SERVABLE_SQL readers', () => {
@@ -241,6 +236,6 @@ describe('one admin-created approved T4 MCQ is served by all five SPM_SERVABLE_S
     expect(res.status === 'ok' && res.questionIds).toEqual([made.id])
     readers['Misi (assignments adapter fallback)'] = true
     // The repository count that backs them all.
-    expect(await repo.count({ type: 'mcq', subjectId: subject, spmPool: true, status: 'published', active: true })).toBe(1)
+    expect(await repo.count({ type: 'mcq', subjectId: subject, spmPool: true, status: 'approved', active: true })).toBe(1)
   })
 })

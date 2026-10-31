@@ -48,13 +48,13 @@ describe('AZ-14: bulk-action failed entries', () => {
     const id = await make()
     expect(await bulk('approved', [id])).toEqual({
       affected: 0,
-      failed: [{ id, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Lulus tidak dibenarkan.', fields: {} }],
+      failed: [{ id, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Diterbitkan tidak dibenarkan.', fields: {} }],
     })
   })
 
-  it('publishing an untagged approved question is VALIDATION_ERROR with the gate fields and the joined message', async () => {
-    const id = await make({ status: 'approved' })
-    const out = await bulk('published', [id])
+  it('approving (Terbitkan) an untagged review question is VALIDATION_ERROR with the gate fields and the joined message', async () => {
+    const id = await make({ status: 'review' })
+    const out = await bulk('approved', [id])
     expect(out.affected).toBe(0)
     expect(out.failed).toHaveLength(1)
     const entry = out.failed[0] as { id: string; code: string; message: string; fields: Record<string, string> }
@@ -71,8 +71,8 @@ describe('AZ-14: bulk-action failed entries', () => {
       label: '1', prompt: { ms: 'Kira' }, mode: 'working', marks: 3,
       key: { kind: 'points', marks: 2, points: [{ id: 'p', code: 'K', label: 'k', marks: 2 }] },
     }
-    const id = await make({ questionType: 'essay', status: 'approved', tag, parts: [part], options: undefined, correctAnswer: undefined })
-    const out = await bulk('published', [id])
+    const id = await make({ questionType: 'essay', status: 'review', tag, parts: [part], options: undefined, correctAnswer: undefined })
+    const out = await bulk('approved', [id])
     expect(out.failed).toEqual([
       { id, code: 'VALIDATION_ERROR', message: KEYS_MESSAGE, fields: { 'parts.1.key': KEYS_MESSAGE } },
     ])

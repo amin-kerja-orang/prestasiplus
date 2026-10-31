@@ -19,7 +19,7 @@ export class QuestionPool {
     const out = new Map<string, QuestionRecord>()
     for (let i = 0; i < ids.length; i += CHUNK) {
       for (const r of await this.questions.getMany(ids.slice(i, i + CHUNK), 'live')) {
-        if (r.isActive && r.version.status === 'published' && r.version.type === 'mcq') out.set(r.id, r)
+        if (r.isActive && r.version.status === 'approved' && r.version.type === 'mcq') out.set(r.id, r)
       }
     }
     return out

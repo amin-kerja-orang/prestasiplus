@@ -31,7 +31,7 @@ describe('BE-12 assignment source (missions, remedial) and the BE-17 missions pr
     // active subject), not PKSK. No `pool` tag is needed: the admin-made questions above are in it.
     const ofSubject = await t.db.query<{ id: string }>(
       `select q.id::text id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-        where q.is_active and v.status = 'published' and v.type = 'mcq' and v.subject_id = $1
+        where q.is_active and v.status = 'approved' and v.type = 'mcq' and v.subject_id = $1
           and exists (select 1 from education_levels ol where ol.id = v.education_level_id and ol.code in ('T4','T5') and ol.is_active)
           and exists (select 1 from subjects sj where sj.id = v.subject_id and sj.is_active)
           and exists (select 1 from subject_levels sl where sl.subject_id = v.subject_id and sl.education_level_id = v.education_level_id)

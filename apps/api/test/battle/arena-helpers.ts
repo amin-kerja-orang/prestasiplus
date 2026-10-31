@@ -164,7 +164,7 @@ export async function addMcqs(t: BattleTestApp, subjectId: string, levelId: stri
       data: {
         questionId: q.id,
         versionNo: 1,
-        status: 'published',
+        status: 'approved',
         publishedAt: new Date(START),
         type: 'mcq',
         stemMs: `Soalan battle ujian ${counter}`,

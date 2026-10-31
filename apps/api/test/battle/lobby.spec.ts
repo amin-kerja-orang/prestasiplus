@@ -28,7 +28,7 @@ describe('lobby (M16-15)', () => {
     const withPool = await rows<{ id: string; name: string }>(
       `select sub.id::text, sub.name from subjects sub
         join question_versions v on v.subject_id = sub.id
-        join questions q on q.id = v.question_id and q.live_version_no = v.version_no and q.is_active and v.status = 'published' and v.type = 'mcq'
+        join questions q on q.id = v.question_id and q.live_version_no = v.version_no and q.is_active and v.status = 'approved' and v.type = 'mcq'
         join education_levels ol on ol.id = v.education_level_id and ol.code in ('T4','T5') and ol.is_active
         join subject_levels sl on sl.subject_id = v.subject_id and sl.education_level_id = v.education_level_id
        where sub.is_active
