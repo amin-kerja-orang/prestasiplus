@@ -93,7 +93,7 @@ describe('BE-33 AC4: bulk-action status events', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.body.data).toEqual({
       affected: 1,
-      failed: [{ id: refused, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Diterbitkan tidak dibenarkan.', fields: {} }],
+      failed: [{ id: refused, code: 'CONFLICT', message: "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan.", fields: {} }],
     })
 
     expect(await statusOf(refused)).toBe('draft')

@@ -355,6 +355,24 @@ export class QuestionsRepository {
   }
 
   /** `listIds` without the totals and status counts: one page (newest first) of the admin filter, by keyset (`idBelow`). */
+  /**
+   * Targets of a filter-based bulk action over the LATEST version: the rows of the filter (`matched`, the total the list shows), the
+   * ones whose status can move to the target (`eligible`) and the first `cap` of those, id ascending (stable between runs).
+   * `fromStatuses` are the statuses that may move to the target.
+   */
+  async filterTargets(filter: Omit<AdminListFilter, 'page' | 'pageSize'>, fromStatuses: readonly QuestionStatus[], cap: number): Promise<{ matched: number; eligible: number; ids: string[] }> {
+    const conds = this.adminConds({ ...filter, page: 1, pageSize: 1 })
+    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
+    const all = Prisma.join(conds, ' AND ')
+    const elig = Prisma.join([...conds, Prisma.sql`v.status IN (${Prisma.join(fromStatuses.map((x) => Prisma.sql`${x}`))})`], ' AND ')
+    const [counts, rows] = await Promise.all([
+      this.db.$queryRaw<{ matched: number; eligible: number }[]>`
+        SELECT count(*)::int AS matched, (count(*) FILTER (WHERE v.status IN (${Prisma.join(fromStatuses.map((x) => Prisma.sql`${x}`))})))::int AS eligible ${from} WHERE ${all}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${elig} ORDER BY q.id ASC LIMIT ${Math.max(0, cap)}`,
+    ])
+    return { matched: counts[0]?.matched ?? 0, eligible: counts[0]?.eligible ?? 0, ids: rows.map((r) => idToString(r.id)) }
+  }
+
   async listIdsKeyset(filter: Omit<AdminListFilter, 'page' | 'pageSize'>, idBelow: string | undefined, limit: number): Promise<string[]> {
     const conds = this.adminConds({ ...filter, page: 1, pageSize: limit })
     const below = idBelow === undefined ? undefined : bi(idBelow)
@@ -601,6 +619,12 @@ export class QuestionsRepository {
       // The v2 store has no textbook / dskp / trial / marking_scheme source: only ai_generated exists on the wire.
       conds.push(f.sourceFilter === 'ai_generated' ? Prisma.sql`q.source_type = 'ai_variant'` : Prisma.sql`FALSE`)
     }
+    // V2 Studio filters (D79). Tahun, Negeri and Jenis read the source paper of the version; Kertas is the trailing digit of the
+    // version's paper code (how the paper builder reads it). A question without the value never matches.
+    if (f.tahun !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.year = ${Number(f.tahun)})`)
+    if (f.negeri !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(sp.exam_board) = lower(${f.negeri}))`)
+    if (f.jenis !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.exam_type = ${f.jenis})`)
+    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '([0-9])\s*$') = ${f.kertas}`)
     if (f.search !== undefined && f.search.trim() !== '') {
       const like = likePattern(f.search.trim())
       conds.push(Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`)
