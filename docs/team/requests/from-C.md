@@ -2,3 +2,11 @@
 
 | ID | To | Raised (MYT) | Unit / task | What is needed | Why / blocks | Status |
 |---|---|---|---|---|---|---|
+| REQ-C-001 | A (A3) | 2026-10-31 19:40 | T10 / T34 B09b | Routes for "Tambah soalan" / "Padam soalan" (admin extra question) on Semak Kertas; looked at r1/t34-builder-review @ 4d771b47 | C1 cannot build the two blocks (user decision: in R1) | DONE (answered in chat 19:05: POST/DELETE `/api/admin/papers/:id/placements[/:questionId]` @ e363fe51) |
+| REQ-C-002 | A (A3) | 2026-10-31 19:40 | T10 / T34 | Per-blocker `overridable` flag in review payload + 422 publish (`blockers[{code,message,overridable,section?,questionId?}]`, `canOverride`) | C1 override UI guesses eligibility from text "tidak layak" | OPEN (A3 in progress; C1 swaps the guess for `overridable` when pushed) |
+| REQ-C-003 | A (A2) | 2026-10-31 19:05 | T13 / T32 | Served-group lock on ALL T32 member writes + stimulus edit (r1/t32-stimulus-api @ fc380203) | B2 MAJOR on T13 (draft joins served group) | DONE (answered: 409 groupServed/memberServed/stimulusServed @ 87a9a363) |
+| REQ-C-004 | A (A2) | 2026-10-31 19:50 | T13 / T32 @ 87a9a363 | List endpoints for stimulus groups and stimuli (paged, filter by subject/level/status) so Studio can browse groups | Studio can only open a group by id | OPEN |
+| REQ-C-005 | A (A2) | 2026-10-31 19:50 | T13 / T32 @ 87a9a363 | Group read returns a members summary: `[{id, numberLabel, stem (short), status, servable}]` | Studio editor reads each member question one by one (6 at a time) | OPEN |
+| REQ-C-006 | A (A4) | 2026-10-31 19:50 | T13 | Register in OpenAPI: `GET /questions/studio/dskp` and `POST /intake/stimuli/{id}/link-references` (response `StudioFigureLinks`, contract `packages/contract/src/questions/studio.ts` on r1/t13-studio-groups @ a4b41ec1) | `contract:check` / openapi test; T13 routes undocumented | OPEN |
+| REQ-C-007 | A (DS owner) | 2026-10-31 19:50 | T13 | Re-export `StimulusGroup` and `StimulusFigure` (src/components/question-display) from `@/ds` | Admin lint `pp/ds-imports` bans `@/components/*`; Studio Pratonton imports by relative path | OPEN |
+| REQ-C-008 | A (A3) | 2026-10-31 19:50 | T10 | Contract max length for the paper title (`PaperMetaForm` Tajuk uses 200, an assumption) | Avoid a client limit that disagrees with the server | OPEN |
