@@ -56,6 +56,8 @@ export interface KuizCaller {
 
 /** Stored mode of a random quiz: decision U8 "disimpan sebagai sesi latih tubi". */
 const KUIZ_MODE = 'latih_tubi' as const
+/** Written to `practice_sessions.legacy_paper`: only a session started here is a kuiz session (a Latih Tubi session shares the mode). */
+const KUIZ_ORIGIN = 'bijak_kuiz'
 
 /**
  * Simulasi Kuiz (R1-B16). The random quiz is a practice session written through `PracticeRepository` (U8), so Soalan Aku
@@ -111,6 +113,7 @@ export class KuizService {
       userId: caller.userId,
       clientUuid: null,
       mode: KUIZ_MODE,
+      origin: KUIZ_ORIGIN,
       subjectId,
       educationLevelId: null,
       difficulty: null,
@@ -137,7 +140,8 @@ export class KuizService {
     const now = this.clock.now()
     return this.prisma.transaction(async () => {
       const session = await this.practice.lockSession(sessionId, caller.userId, 'update')
-      if (!session) throw quizNotFound()
+      // Any other session of the pupil (a Latih Tubi one) is not a kuiz: 404, so check cannot read keys outside the BR-07 trial counter.
+      if (!session || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
       if (session.status !== 'in_progress') throw alreadyFinished()
       const questionId = questionIdOfItem(req.itemId)
       const served = (await this.practice.sessionQuestions(session.id)).find((s) => s.questionId === questionId)
@@ -180,7 +184,7 @@ export class KuizService {
       { sessionId, userId: caller.userId, now, timeSpent: timeSpent ?? 0, isTest: caller.isTest },
       {
         guard: (session) => {
-          if (session.mode !== KUIZ_MODE) throw quizNotFound()
+          if (session.mode !== KUIZ_MODE || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
           return Promise.resolve()
         },
         regrade: (_session, served, checks) => this.regrade(served, checks),
@@ -249,7 +253,11 @@ export class KuizService {
       [...s.placements].sort((a, b) => a.position - b.position).map((p) => ({ questionId: idToString(p.questionId), versionNo: p.pinnedVersionNo })),
     )
     const records = await this.questions.getVersions(pins)
-    const byKey = new Map(records.map((r) => [`${r.id}@${String(r.version.versionNo)}`, r]))
+    // A question whose required stimulus cannot be shown is skipped everywhere (page, score total, check), as in random mode
+    // (V2 §1.8 is silent on this case; deviation row UX-22). The pager and `markableTotal` count only what is shown.
+    const allPrepared = await this.prepare(records)
+    const preparedById = new Map(allPrepared.filter((p) => p.complete).map((p) => [`${p.record.id}@${String(p.record.version.versionNo)}`, p]))
+    const byKey = new Map([...preparedById].map(([k, p]) => [k, p.record]))
     // A section without a question to show is not a page (V2 PaperViewBuilder).
     const pages = sections
       .map((s) => ({
@@ -276,8 +284,7 @@ export class KuizService {
     const current = pages[wanted - 1]
     if (!current) throw invalidValue('page')
 
-    // A question whose required stimulus cannot be shown is skipped, as in random mode (V2 §1.8 is silent on this case).
-    const prepared = (await this.prepare(current.questions)).filter((p) => p.complete)
+    const prepared = current.questions.flatMap((q) => preparedById.get(`${q.id}@${String(q.version.versionNo)}`) ?? [])
     const tokens = await this.tokensOf(prepared.flatMap((p) => p.fileIds))
     const subjects = await this.subjectNames(current.questions)
     // D90: members of one stimulus group are kept together at the place of the first member, in group order, and the group
@@ -332,6 +339,8 @@ export class KuizService {
     const ref = record ? leafOf(record, req.itemId) : null
     const leaf = ref ? markableLeaf(ref) : null
     if (!record || !leaf) throw invalidAnswer('itemId')
+    // A question the page skips (its stimulus cannot be shown) is not marked either.
+    if (!(await this.prepare([record]))[0]?.complete) throw invalidAnswer('itemId')
     // V2: the option must belong to the part it claims.
     if (!leaf.options.some((o) => o.label === req.optionId)) throw invalidAnswer('optionId')
     return BijakKuizCheckResultSchema.parse({

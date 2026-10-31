@@ -761,6 +761,7 @@ export class BijakAttemptsService {
               isTest: a.isTest,
               coins: e.result.coins,
               points: e.result.points,
+              submittedAt: a.submittedAt,
               score: e.result.score,
               max: e.result.max,
               provisional: e.result.provisional,
