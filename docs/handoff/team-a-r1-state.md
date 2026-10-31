@@ -29,7 +29,7 @@ Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 | T05 minors | `r1/t05-minors` @ 99dd5fef | BASE-19 | A3 |
 | H-A12 | `r1/ha12-conformance` @ e1fa7217 | BASE-23 | A4 |
 
-Team C/B units also in base: T13 (BASE-22), T14 (BASE-20), T15 (BASE-21), T24 (BASE-6).
+Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13 (BASE-22).
 
 ### 1.2 READY, not merged (team B merges)
 
@@ -43,7 +43,7 @@ Team C/B units also in base: T13 (BASE-22), T14 (BASE-20), T15 (BASE-21), T24 (B
 | T45 part 2 (lanes, V2 hub) | `r1/t45-lanes` @ 3de39c85 | A4 | T30; R1-21.3/21.6 wait for T48 |
 | R1E2E-05 / 05b own stimuli | `r1/e2e05b-own-stimuli` @ 57e7feee | A4 | T07 (in base); contains e2e05-stem-image |
 | servability-own-stimuli | `r1/servability-own-stimuli` @ 11a4db3c | A4 | T29, 05b |
-| servability-archived | `r1/servability-archived` @ 046cc3be | A4 | T29, H-A13 |
+| servability-archived | `r1/servability-archived` @ f1fa3681 | A4 | T29, H-A13 |
 | B-request fixes (REQ-B-013/014) | `r1/b-requests-a4` @ 42396048 | A4 | base |
 | T33 leaf tags + approve gate (0102) | `r1/t33-leaf-tags` @ 95cea5be | A2 | T29, T32 (base) |
 | T36 remove PoC | `r1/t36-remove-poc` @ 5bc34543 | A2 | REQ-A-001 (b1-e2e-off-poc, team B) merged first |
@@ -65,7 +65,7 @@ Team C/B units also in base: T13 (BASE-22), T14 (BASE-20), T15 (BASE-21), T24 (B
 | T34 builder review (+ structured blockers) | `r1/t34-builder-review` @ 7bc3419e | A3 | T29; B2 order T29 -> T33 -> T34 |
 | T31 builder wire | `r1/t31-builder-wire` @ b3501db9 | A3 | T34; waits for C1 REQ-A-008 |
 | T43 chain + publish ACs | `r1/t43-chain-publish` @ 89d30dab | A3 dev-1 | T31 (contains T34) |
-| T44 Kontrak fields (contains H-A15 7e5d637e) | `r1/t44-blueprint-fields` @ 2d9c100d | A3 dev-2 | none |
+| T44 Kontrak fields (contains H-A15) | `r1/t44-blueprint-fields` @ 2d9c100d | A3 dev-2 | none |
 | H-A15 blueprint evidence | `r1/ha15-blueprint-evidence` @ 7e5d637e | A3 dev-2 | none (hazard X1) |
 | T48a paper list filters, title <= 200 | `r1/t48a-paper-list` @ e5041595 | A3 dev-2 | none |
 | T48 builder parity (0104) | `r1/t48-builder-parity` @ 1b76778f | A3 | T34; re-verify running |
@@ -86,13 +86,13 @@ Team C/B units also in base: T13 (BASE-22), T14 (BASE-20), T15 (BASE-21), T24 (B
 |---|---|---|
 | T37 runbook | `r1/t37-r1-runbook` @ ca2e0f93 | `docs/ops/r1-runbook.md` (migrations 0092 to 0104, SELECTs run 63/63) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ bef6f413 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (proven 113 of 176) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ bef6f413 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 9f915e1d | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ 81389f25 | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
 | H-A24 release input | `r1/ha24-release-input` @ 646a034d | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
-| H-A25 / H-A26 | this unit and the SQL re-run | runbook 63/63 recorded in the runbook and H-A24 |
+| H-A26 this sheet | `r1/ha26-team-a-state` @ 45d3b954 | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
 
