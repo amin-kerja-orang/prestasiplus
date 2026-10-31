@@ -13,7 +13,7 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 | Migrations 0092, 0093, 0100, 0101 | in base (0101 since BASE-15) | `apps/api/prisma/migrations/` |
 | Migration 0102 `leaf_cognitive_level` (T33) | in base since BASE-27 | `apps/api/prisma/migrations/0102_leaf_cognitive_level` |
 | Migration 0103 `question_report_context` (T42 part 1) | in base since BASE-41 | `apps/api/prisma/migrations/0103_question_report_context` |
-| Migration 0104 `paper_section_admin_created` (T48) | **not in base** (B2 CHANGES-REQUESTED; A3 pushed a fix at `2cbe7d28`, awaiting re-review) | `r1/t48-builder-parity` |
+| Migration 0104 `paper_section_admin_created` (T48) | **not in base** (B2 CHANGES-REQUESTED; A3 pushed a fix at `2cbe7d28`; head is now `54f5e0bc` = that fix plus a BASE-63 merge, awaiting re-review) | `r1/t48-builder-parity` |
 | Migration 0105 `gate_facts` (H-A18) | **not in base** (pushed at `3a2ac810`, review not seen; its content may still change) | `r1/ha18-gate-facts` |
 | `THROTTLE_SERVABILITY_READ_PER_MINUTE`, `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE` (T30) | in base since BASE-28 | `apps/api/src/common/config/env.schema.ts` |
 | `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE` | optional; default 6 when unset | In base since BASE-28 (T30). Per-user limit of the servability overview, which counts the whole bank and has its own bucket; above it a request answers 429. Integer, minimum 1. `apps/api/src/common/config/env.schema.ts`. Leave unset. |
