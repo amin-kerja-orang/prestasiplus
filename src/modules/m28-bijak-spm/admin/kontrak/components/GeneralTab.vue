@@ -35,6 +35,19 @@ const statusItems = [
   { label: 'Spec', value: 'Spec' },
 ]
 
+/** "Boleh tanda auto": null = not stated (never a conformance failure, PIPE AC-06.5). */
+const autoItems = [
+  { label: 'Tidak dinyatakan', value: 'null' },
+  { label: 'Ya', value: 'true' },
+  { label: 'Tidak', value: 'false' },
+]
+const autoMarkable = computed({
+  get: () => String(form.value.autoMarkable),
+  set: (v: string) => {
+    form.value.autoMarkable = v === 'true' ? true : v === 'false' ? false : null
+  },
+})
+
 function statusOf(i: number): { text: string; color: 'success' | 'warning' | 'error'; icon: string } {
   const st = sectionStatus(props.issues, i)
   const all = Object.values(st)
@@ -166,6 +179,14 @@ async function retire(): Promise<void> {
           data-testid="sub-part-ramp"
         />
       </div>
+      <DsFormField
+        native
+        :for="fieldId(null, 'auto-markable')"
+        label="Boleh tanda auto"
+        hint="Sama ada kertas boleh ditanda secara automatik. Tidak menjejaskan status Disahkan."
+      >
+        <template #default="f"><DsNativeSelect :id="f.id" v-model="autoMarkable" :items="autoItems" data-testid="auto-markable" /></template>
+      </DsFormField>
       <DsFormField
         native
         :for="fieldId(null, 'nisbah-t4')"

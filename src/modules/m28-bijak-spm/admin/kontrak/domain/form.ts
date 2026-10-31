@@ -68,6 +68,8 @@ export interface ContractForm {
   /** One cover instruction per line. */
   instructions: string
   subPartRamp: boolean
+  /** "Boleh tanda auto" (V2 auto_markable); null = not stated. Cosmetic: never resets Disahkan. */
+  autoMarkable: boolean | null
   kbatMarks: number | null
   levelShare: { t4: number | null; t5: number | null }
   sections: FormSection[]
@@ -112,6 +114,7 @@ export function emptyForm(): ContractForm {
     notes: '',
     instructions: '',
     subPartRamp: false,
+    autoMarkable: null,
     kbatMarks: null,
     levelShare: { t4: null, t5: null },
     sections: [emptySection('Bahagian A')],
@@ -127,6 +130,7 @@ export function formFromView(v: BijakBlueprintView): ContractForm {
     notes: v.notes ?? '',
     instructions: v.instructions.join('\n'),
     subPartRamp: v.subPartRamp,
+    autoMarkable: v.autoMarkable ?? null,
     kbatMarks: v.kbatMarks,
     levelShare: { t4: v.levelShare?.t4 ?? null, t5: v.levelShare?.t5 ?? null },
     sections: [...v.sections]
@@ -193,6 +197,7 @@ export function toInput(f: ContractForm): BijakBlueprintAdminVersionInput {
     instructions: lines,
     notes: f.notes.trim() ? f.notes.trim() : null,
     subPartRamp: f.subPartRamp,
+    autoMarkable: f.autoMarkable,
     kbatMarks: f.kbatMarks,
     levelShare:
       f.levelShare.t4 !== null && f.levelShare.t5 !== null

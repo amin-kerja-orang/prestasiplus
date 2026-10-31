@@ -29,6 +29,7 @@ import SourceBadge from '../components/SourceBadge.vue'
 import SharedBanner from '../components/SharedBanner.vue'
 import { KONTRAK_ROUTES } from '../server/api'
 import { kontrakServer } from '../server/client'
+import { REVIEW_BADGE } from '../domain/review'
 import { bodyName } from '../domain/verify'
 
 type Row = BijakBlueprintView & {
@@ -283,8 +284,12 @@ function proceed(): void {
               color="warning"
               variant="subtle"
               icon="i-ph-warning-circle"
-              label="Blueprint perlu disemak"
+              data-testid="needs-review"
+              :label="REVIEW_BADGE"
             />
+            <span v-if="row.original.needsReview && row.original.reviewPapers.length > 0" class="text-caption text-muted" data-testid="review-count">
+              {{ row.original.reviewPapers.length }} kertas terjejas
+            </span>
           </div>
         </template>
         <template #pengesahan-cell="{ row }"><span class="text-body break-words">{{ row.original.pengesahan }}</span></template>
@@ -318,6 +323,17 @@ function proceed(): void {
             <div class="flex flex-wrap items-center gap-2">
               <SourceBadge :source="(row as Row).source" />
               <UBadge color="neutral" variant="subtle" :label="`Versi ${String(row.version)}`" />
+              <UBadge
+                v-if="(row as Row).needsReview"
+                color="warning"
+                variant="subtle"
+                icon="i-ph-warning-circle"
+                :label="REVIEW_BADGE"
+                data-testid="needs-review"
+              />
+              <span v-if="(row as Row).needsReview && (row as Row).reviewPapers.length > 0" class="text-caption text-muted" data-testid="review-count">
+                {{ (row as Row).reviewPapers.length }} kertas terjejas
+              </span>
             </div>
           </div>
         </template>

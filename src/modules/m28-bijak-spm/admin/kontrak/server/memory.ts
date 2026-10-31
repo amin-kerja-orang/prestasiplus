@@ -176,6 +176,7 @@ function viewOf(
     evidenceCount,
     notes: input.notes ?? null,
     subPartRamp: input.subPartRamp ?? false,
+    autoMarkable: input.autoMarkable ?? null,
     kbatMarks: input.kbatMarks ?? null,
     levelShare: input.levelShare ?? null,
     warnings: [],

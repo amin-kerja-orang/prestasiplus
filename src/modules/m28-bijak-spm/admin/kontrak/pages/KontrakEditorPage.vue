@@ -34,6 +34,7 @@ import {
   toInput,
   type ContractForm,
 } from '../domain/form'
+import { gapText, REVIEW_BADGE } from '../domain/review'
 import { errorsOf, incompleteOf, issueFromProblem, validateForm, type Issue } from '../domain/validate'
 import { KONTRAK_ROUTES, KontrakError } from '../server/api'
 import { kontrakServer } from '../server/client'
@@ -314,7 +315,7 @@ const poolReason = 'Simpan dahulu'
         variant="subtle"
         :label="`Murid guna v${serving.version} (Disahkan)`"
       />
-      <UBadge v-if="view?.needsReview" color="warning" variant="subtle" icon="i-ph-warning-circle" label="Blueprint perlu disemak" data-testid="needs-review" />
+      <UBadge v-if="view?.needsReview" color="warning" variant="subtle" icon="i-ph-warning-circle" data-testid="needs-review" :label="REVIEW_BADGE" />
     </template>
     <template v-if="status === 'ready' && !isNew" #actions>
       <div class="flex flex-wrap items-center gap-2">
@@ -365,6 +366,22 @@ const poolReason = 'Simpan dahulu'
       <div v-else>
         <UButton color="neutral" variant="link" class="min-h-11 px-0" icon="i-ph-info" label="Kontrak ini dikongsi" :aria-expanded="false" @click="toggleShared" />
       </div>
+
+      <UAlert
+        v-if="view?.needsReview && view.reviewPapers.length > 0"
+        color="warning"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        :title="REVIEW_BADGE"
+        data-testid="review-papers"
+      >
+        <template #description>
+          <p>Kertas Pilihan terbit ini tidak sepadan dengan tahap piawaian blueprint. Ini hanya makluman; tiada apa yang disekat.</p>
+          <ul class="mt-1 flex list-disc flex-col gap-1 ps-5">
+            <li v-for="p in view.reviewPapers" :key="p.paperId" class="break-words">{{ p.title }}: {{ gapText(p.gaps) }}</li>
+          </ul>
+        </template>
+      </UAlert>
 
       <UAlert v-if="versionBanner" :color="versionBanner.color" variant="subtle" icon="i-ph-info" :description="versionBanner.text" data-testid="version-banner" />
 
