@@ -121,6 +121,7 @@ export function toQuestion(q: Question): ApiQuestion {
     dskpSpId: q.dskpSpId,
     curriculumChapterId: q.curriculumChapterId,
     curriculumTopicId: q.curriculumTopicId,
+    cognitiveLevel: q.cognitiveLevel ?? null,
     chapterLabel: q.chapterLabel,
     scriptType: q.scriptType,
     textDirection: q.textDirection,

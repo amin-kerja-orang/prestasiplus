@@ -6,6 +6,7 @@
 import { isApiError } from '@/api'
 
 import type { QuestionDetail, QuestionInputBody, QuestionType } from '../api/questions'
+import { type CognitiveValue, isCognitive } from './studio/dskp-tags'
 import { GENERIC_ERROR } from './ui-errors'
 
 export const QUESTION_TYPE_OPTIONS: readonly { value: QuestionType; label: string }[] = [
@@ -47,6 +48,8 @@ export interface QuestionFormValues {
   pointsValue: string
   /** '' = none, else '1' | '2' | '3' (Kertas, v2). */
   kertas: '' | '1' | '2' | '3'
+  /** "Aras pemikiran" of the question's single part: '' = none, else one of the six levels (T33). */
+  cognitiveLevel: '' | CognitiveValue
   /** Bab: '' = none, else the chapter id. */
   curriculumChapterId: string
 }
@@ -72,6 +75,7 @@ export function emptyValues(): QuestionFormValues {
     language: 'bm',
     pointsValue: '1',
     kertas: '',
+    cognitiveLevel: '',
     curriculumChapterId: '',
   }
 }
@@ -98,6 +102,7 @@ export function valuesFromQuestion(q: QuestionDetail): QuestionFormValues {
     language: q.language,
     pointsValue: String(q.pointsValue),
     kertas: q.kertas ?? '',
+    cognitiveLevel: isCognitive(q.cognitiveLevel) ? q.cognitiveLevel : '',
     curriculumChapterId: idText(q.curriculumChapterId),
   }
 }
@@ -128,9 +133,11 @@ export function buildBody(
   if (mode === 'create') {
     body.questionType = v.questionType
     if (v.kertas !== '') body.kertas = v.kertas
+    if (v.cognitiveLevel !== '') body.cognitiveLevel = v.cognitiveLevel
   } else {
     // Edit: always sent; '' clears it (http mode sends null; the mock ignores the key).
     body.kertas = v.kertas
+    body.cognitiveLevel = v.cognitiveLevel
     if (v.removeQuestionImage) body.removeQuestionImage = true
   }
 
@@ -169,6 +176,7 @@ export const FIELD_KEYS = [
   'dskpSpId',
   'curriculumChapterId',
   'kertas',
+  'cognitiveLevel',
 ] as const
 
 const isKnownKey = (key: string): boolean =>

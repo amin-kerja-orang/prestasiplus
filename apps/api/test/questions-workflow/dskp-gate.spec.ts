@@ -100,6 +100,16 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
       expect(out.servability?.questionId).toBe(id)
     })
 
+    it('REQ-B-027: a question the Tambah Soalan form creates (cognitiveLevel and kertas in the create body) passes the gate and is approved', async () => {
+      const id = await draft({ cognitiveLevel: 'mengaplikasi', kertas: '1' })
+      expect(await leafOf(id)).toEqual({ cognitive_level: 'mengaplikasi', kbat: 'mengaplikasi' })
+      expect((await issues(c.admin, id)).ok).toBe(true)
+      expect((await status(c.admin, id, 'review')).status).toBe(200)
+      const res = await status(c.admin, id, 'approved')
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(envelopeOf(QuestionStatusResultSchema).parse(res.body).data.question.status).toBe('approved')
+    })
+
     it('a lower level (mengingat, memahami) is not KBAT', async () => {
       const id = await draft({ cognitiveLevel: 'memahami' })
       expect(await leafOf(id)).toEqual({ cognitive_level: 'memahami', kbat: 'bukan' })

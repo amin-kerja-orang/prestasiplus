@@ -131,6 +131,27 @@ describe('#3 POST /api/questions', () => {
     expect(res.body.data.language).toBe('bm')
   })
 
+  it('stores "Aras pemikiran" (REQ-B-027): one of the six levels, cleared by an empty value, refused otherwise', async () => {
+    const body = {
+      subjectId: 3,
+      educationLevelId: 11,
+      difficultyLevel: 1,
+      questionType: 'mcq',
+      questionText: 'Pilih jawapan yang betul bagi soalan ini.',
+      options: ['a', 'b', 'c', 'd'],
+      correctAnswer: 0,
+    }
+    const made = await call<QuestionMutation<Question>>('POST', '/api/questions', ADMIN, { ...body, cognitiveLevel: 'menganalisis' })
+    expect(made.status).toBe(201)
+    expect((made.body.data as unknown as { cognitiveLevel: string | null }).cognitiveLevel).toBe('menganalisis')
+    const id = made.body.data.id
+    const cleared = await call<QuestionMutation<Question>>('PUT', `/api/questions/${String(id)}`, ADMIN, { ...body, cognitiveLevel: '' })
+    expect((cleared.body.data as unknown as { cognitiveLevel: string | null }).cognitiveLevel).toBeNull()
+    const bad = await call<ErrorBody>('POST', '/api/questions', ADMIN, { ...body, cognitiveLevel: 'hebat' })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.fields).toHaveProperty('cognitiveLevel')
+  })
+
   it('stores only the fields of the chosen type (BR-M04-08)', async () => {
     const base = {
       subjectId: 1,

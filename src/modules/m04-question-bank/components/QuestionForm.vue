@@ -21,6 +21,7 @@ import type { EducationLevelLookup, SubjectLookup } from '../api/lookups'
 import type { QuestionDetail, QuestionInputBody } from '../api/questions'
 import { backspaceAtCaret, insertAtCaret, type KeyboardMode } from '../lib/arabic-keyboard'
 import { DIFFICULTY_LABELS } from '../lib/question-list'
+import { COGNITIVE_OPTIONS } from '../lib/studio/dskp-tags'
 import {
   buildBody,
   emptyValues,
@@ -567,6 +568,26 @@ const correctItems = (i: number, letter: string) => [
             />
           </DsFormField>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <!-- T33: every part needs an "Aras pemikiran" to be approved; a form question has one part, so one field. -->
+            <DsFormField
+              v-slot="{ id, describedby, invalid }"
+              native
+              for="q-cognitive"
+              label="Aras pemikiran"
+              :error="err('cognitiveLevel')"
+            >
+              <DsNativeSelect
+                :id="id"
+                v-model="values.cognitiveLevel"
+                name="cognitiveLevel"
+                :invalid="invalid"
+                :aria-describedby="describedby"
+                data-testid="q-cognitive"
+              >
+                <option value="">—</option>
+                <option v-for="c in COGNITIVE_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
+              </DsNativeSelect>
+            </DsFormField>
             <DsFormField
               v-slot="{ id, describedby, invalid }"
               native

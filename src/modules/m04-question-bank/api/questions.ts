@@ -155,6 +155,8 @@ export interface Question {
   explanation: string | null
   /** v2 admin response: the paper kertas, or null. */
   kertas?: '1' | '2' | '3' | null
+  /** R1-B05 / T33: "Aras pemikiran" of the single leaf, or null. */
+  cognitiveLevel?: string | null
   aiExplanation: AiExplanation | null
   language: QuestionLanguage
   pointsValue: number
@@ -250,6 +252,8 @@ export interface QuestionInputBody {
   pointsValue?: number | string | null
   /** Kertas '1' | '2' | '3'; '' or null = none (clears on edit). Omitted keeps. http mode only. */
   kertas?: string | null
+  /** "Aras pemikiran" (T33 six levels); '' or null = none (clears on edit). Omitted keeps. */
+  cognitiveLevel?: string | null
   /** Edit, http mode: the saved option image tokens, kept when a later option gets a new image. */
   savedOptionImages?: readonly (string | null)[]
   /** Edit only: remove the saved question image / option image `i`. */
@@ -273,6 +277,7 @@ export function toQuestionFormData(input: QuestionInputBody): FormData {
   put('questionText', input.questionText)
   put('dskpSpId', input.dskpSpId)
   put('curriculumChapterId', input.curriculumChapterId)
+  put('cognitiveLevel', input.cognitiveLevel)
   if (input.questionImage) form.append('questionImage', input.questionImage)
   input.options?.forEach((text, i) => {
     form.append(`options[${String(i)}]`, text)
@@ -371,6 +376,7 @@ export function toQuestionJson(
   }
   if (input.explanation !== undefined) body.explanation = blankToNull(input.explanation)
   if (input.kertas !== undefined) body.kertas = input.kertas === '' ? null : input.kertas
+  if (input.cognitiveLevel !== undefined) body.cognitiveLevel = input.cognitiveLevel === '' ? null : input.cognitiveLevel
   if (input.removeQuestionImage) body.removeQuestionImage = true
   if (images.questionImageFileId !== undefined) body.questionImageFileId = images.questionImageFileId
   if (images.optionImageFileIds !== undefined) body.optionImageFileIds = images.optionImageFileIds

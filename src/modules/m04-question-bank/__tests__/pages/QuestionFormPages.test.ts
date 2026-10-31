@@ -276,6 +276,35 @@ describe('QuestionCreatePage (M04 S2)', () => {
     expect(questions.createQuestion.mock.calls[0]?.[0]).not.toHaveProperty('curriculumChapterId')
   })
 
+  it('"Aras pemikiran" lists the six levels and a chosen one is posted as cognitiveLevel (REQ-B-027)', async () => {
+    questions.createQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    const w = await render('create')
+    const labels = w.get('[data-testid=q-cognitive]').findAll('option').map((o) => o.text())
+    expect(labels).toEqual(['—', 'Mengingat', 'Memahami', 'Mengaplikasi', 'Menganalisis', 'Menilai', 'Mencipta'])
+    await t(w, 'q-subject').setValue('4')
+    await t(w, 'q-level').setValue('11')
+    await radio(w, 'q-difficulty', '3').trigger('click')
+    await t(w, 'q-text').setValue('Apakah ibu negara Malaysia?')
+    for (const [i, text] of ['A', 'B', 'C', 'D'].entries()) await t(w, `q-option-${i}`).setValue(text)
+    await t(w, 'q-cognitive').setValue('mengaplikasi')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(questions.createQuestion.mock.calls[0]?.[0]).toMatchObject({ cognitiveLevel: 'mengaplikasi' })
+  })
+
+  it('without an Aras pemikiran the create body has no cognitiveLevel', async () => {
+    questions.createQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    const w = await render('create')
+    await t(w, 'q-subject').setValue('4')
+    await t(w, 'q-level').setValue('11')
+    await radio(w, 'q-difficulty', '3').trigger('click')
+    await t(w, 'q-text').setValue('Apakah ibu negara Malaysia?')
+    for (const [i, text] of ['A', 'B', 'C', 'D'].entries()) await t(w, `q-option-${i}`).setValue(text)
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(questions.createQuestion.mock.calls[0]?.[0]).not.toHaveProperty('cognitiveLevel')
+  })
+
   it('shows the server message of a mismatched Bab under the field', async () => {
     questions.createQuestion.mockRejectedValue(
       new ApiError({
@@ -483,6 +512,20 @@ describe('QuestionEditPage (M04 S4)', () => {
     expect(body).not.toHaveProperty('questionType')
     expect(router.currentRoute.value.path).toBe('/admin/questions/564159')
     expect(useFlashStore().pending?.message).toBe('Soalan berjaya dikemaskini.')
+  })
+
+  it('pre-fills the saved Aras pemikiran and "—" posts an empty value to clear it', async () => {
+    questions.updateQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    questions.fetchQuestion.mockResolvedValue(detail({ cognitiveLevel: 'menilai' }))
+    const w = await render('edit')
+    expect(value(w, 'q-cognitive')).toBe('menilai')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect((questions.updateQuestion.mock.calls[0]?.[1] as Record<string, unknown>).cognitiveLevel).toBe('menilai')
+    await t(w, 'q-cognitive').setValue('')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect((questions.updateQuestion.mock.calls[1]?.[1] as Record<string, unknown>).cognitiveLevel).toBe('')
   })
 
   it('pre-fills the saved Bab, keeps it on save, and "—" posts an empty id to clear it', async () => {
