@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../db/generated/client'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import { stimulusTableOf, stimulusTableParts, type StimulusTable } from './stimulus-table'
 import type { StimulusKind } from './types'
 
 /** The five columns a stimulus write may set. `null` clears. */
@@ -21,6 +22,10 @@ export interface StimulusData {
 export interface StimulusRow extends StimulusData {
   id: bigint
   groupCount: number
+  /** The table the stimulus shows (stored grid, else a pipe table read from the body), by the one shared reader. */
+  shownTable: StimulusTable | null
+  /** The table was read from the body text: the body is not shown as text as well. */
+  bodyIsTable: boolean
 }
 
 export interface GroupRow {
@@ -46,12 +51,6 @@ export interface QuestionFacts {
   levelId: string | null
 }
 const bi = (text: string): bigint | null => (/^[1-9]\d{0,18}$/.test(text) ? BigInt(text) : null)
-
-const tableOf = (value: unknown): { head: string[]; rows: string[][] } | null => {
-  if (typeof value !== 'object' || value === null) return null
-  const v = value as { head?: unknown; rows?: unknown }
-  return Array.isArray(v.head) && Array.isArray(v.rows) ? { head: v.head as string[], rows: v.rows as string[][] } : null
-}
 
 /**
  * Writes and reads of the stimulus library and the stimulus groups (R1-T32). The question reads stay in `QuestionsRepository`
@@ -339,6 +338,7 @@ export class StimuliRepository {
     r: { id: bigint; kind: string; label: string | null; caption: string | null; bodyMs: string | null; bodyEn: string | null; altText: string | null; sourceCitation: string | null; tableData: unknown; assetFileId: bigint | null },
     groupCount: number,
   ): StimulusRow {
+    const parts = stimulusTableParts(r.kind, r.tableData, r.bodyMs)
     return {
       id: r.id,
       kind: r.kind as StimulusKind,
@@ -348,7 +348,9 @@ export class StimuliRepository {
       bodyEn: r.bodyEn,
       altText: r.altText,
       sourceCitation: r.sourceCitation,
-      tableData: tableOf(r.tableData),
+      tableData: stimulusTableOf(r.tableData) ?? null,
+      shownTable: parts.table ?? null,
+      bodyIsTable: parts.bodyIsTable,
       assetFileId: r.assetFileId,
       groupCount,
     }

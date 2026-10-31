@@ -23,7 +23,7 @@ import type { z } from 'zod'
 import { toMytTimestamp } from '../../../common/time/myt'
 import { isLeaf, type QuestionLeaf } from '../grading'
 import { constantFields, difficultyLabelOf, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
-import { stimulusTableOf } from '../stimulus-table'
+import { stimulusTableParts } from '../stimulus-table'
 import type { QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
 
 export type QuestionRow = z.output<typeof QuestionRowSchema>
@@ -96,6 +96,8 @@ function flatBase(q: QuestionView) {
   }
 }
 
+const table = (s: { kind: string; tableData?: unknown; bodyMs: string | null }) => stimulusTableParts(s.kind, s.tableData, s.bodyMs)
+
 /**
  * `tokens` maps an internal file id to its public token (the wire names a file by the token `POST /files` returned, the same
  * form the stimulus routes answer with). An id with no token stays as stored.
@@ -107,12 +109,13 @@ export function stimulusGroupView(g: StimulusGroupRecord, tokens: Record<string,
       id: s.id,
       kind: s.kind,
       label: s.label,
-      body: s.bodyMs === null && s.bodyEn === null ? null : { ms: s.bodyMs ?? s.bodyEn ?? '', ...(s.bodyEn === null || s.bodyMs === null ? {} : { en: s.bodyEn }) },
+      // A table read from the body is shown as the grid only (one reader: stimulus-table.ts).
+      body: table(s).bodyIsTable || (s.bodyMs === null && s.bodyEn === null) ? null : { ms: s.bodyMs ?? s.bodyEn ?? '', ...(s.bodyEn === null || s.bodyMs === null ? {} : { en: s.bodyEn }) },
       imageId: s.assetFileId === null ? null : (tokens[s.assetFileId] ?? s.assetFileId),
       alt: s.alt,
       ...(s.caption ? { caption: s.caption } : {}),
       ...(s.sourceCitation ? { sourceCitation: s.sourceCitation } : {}),
-      ...(s.kind === 'table' && stimulusTableOf(s.tableData) ? { tableData: QuestionStimulusTableSchema.parse(stimulusTableOf(s.tableData)) } : {}),
+      ...(table(s).table ? { tableData: QuestionStimulusTableSchema.parse(table(s).table) } : {}),
     })),
     ...(g.optionBank.length === 0
       ? {}

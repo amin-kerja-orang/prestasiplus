@@ -15,6 +15,7 @@ import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { FilesService } from '../files'
 import { GroupMembers } from './group-members'
+import { stimulusTableParts } from './stimulus-table'
 import { type GroupRow, type StimulusData, type StimulusRow, StimuliRepository } from './stimuli.repository'
 import { QuestionsService } from './questions.service'
 import { STIMULUS_KINDS } from './types'
@@ -101,7 +102,7 @@ export class StimuliService {
       }
       // The merged state must still satisfy the rules of the kind (same rules as the create body).
       if (data.kind === 'passage' && !data.bodyMs) fields.body ??= STIMULUS_MESSAGES.bodyRequired
-      if (data.kind === 'table' && data.tableData === null && data.assetFileId === null) fields.tableData ??= STIMULUS_MESSAGES.tableRequired
+      if (data.kind === 'table' && data.tableData === null && data.assetFileId === null && !stimulusTableParts('table', null, data.bodyMs).table) fields.tableData ??= STIMULUS_MESSAGES.tableRequired
       if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(data.kind) && data.assetFileId === null) fields.imageFileId ??= STIMULUS_MESSAGES.imageRequired
       if (Object.keys(fields).length > 0) throw fail(fields)
       await this.repo.updateStimulus(id, data)
@@ -271,10 +272,11 @@ export class StimuliService {
       kind: row.kind,
       label: row.label ?? '',
       caption: row.caption,
-      body: row.bodyMs === null && row.bodyEn === null ? null : { ms: row.bodyMs ?? row.bodyEn ?? '', ...(row.bodyMs !== null && row.bodyEn !== null ? { en: row.bodyEn } : {}) },
+      // A table read from the body is shown as the grid only (never the grid and its source text).
+      body: row.bodyIsTable || (row.bodyMs === null && row.bodyEn === null) ? null : { ms: row.bodyMs ?? row.bodyEn ?? '', ...(row.bodyMs !== null && row.bodyEn !== null ? { en: row.bodyEn } : {}) },
       alt: row.altText,
       sourceCitation: row.sourceCitation,
-      tableData: row.tableData,
+      tableData: row.shownTable,
       imageId: row.assetFileId === null ? null : (tokens.get(idToString(row.assetFileId)) ?? null),
       groupCount: row.groupCount,
     }

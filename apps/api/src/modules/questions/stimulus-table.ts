@@ -46,3 +46,16 @@ export function stimulusTableOf(data: unknown, body: string | null = null): Stim
   }
   return undefined
 }
+
+/**
+ * What a stimulus of a given kind shows as a table, and whether that table was read from the body text. Only a `table` stimulus has
+ * one. A table read from the body REPLACES the body text everywhere it is shown (`bodyIsTable`), so the grid is not shown twice;
+ * a stored grid never hides the body. The Studio read model, the question detail, the paper builder and the Bijak bridge all use this.
+ */
+export function stimulusTableParts(kind: string, data: unknown, body: string | null): { table: StimulusTable | undefined; bodyIsTable: boolean } {
+  if (kind !== 'table') return { table: undefined, bodyIsTable: false }
+  const stored = stimulusTableOf(data)
+  if (stored) return { table: stored, bodyIsTable: false }
+  const derived = stimulusTableOf(null, body)
+  return { table: derived, bodyIsTable: derived !== undefined }
+}
