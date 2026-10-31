@@ -27,6 +27,7 @@ import {
   type FlatType,
 } from './projection'
 import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
+import { GroupMembers } from './group-members'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
@@ -189,6 +190,7 @@ export class QuestionsService {
     @Inject(FilesService) private readonly files: FilesService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(GroupMembers) private readonly groupMembers: GroupMembers,
   ) {}
 
   // --- admin (Admin Pusat) ----------------------------------------------------------------------
@@ -594,7 +596,8 @@ export class QuestionsService {
         sourceType: provenance?.sourceType ?? 'manual',
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
-        groupPosition: groupId === null ? null : await this.repo.nextGroupPosition(groupId),
+        // D90 / R1-T32: the same member rules as the stimulus routes; locks the group so concurrent creates get distinct positions.
+        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId)),
         now: this.clock.now(),
         version: draft,
         ...(provenance
@@ -883,8 +886,8 @@ export class QuestionsService {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
       }
       if (input.stimulusGroupId !== undefined) {
-        const gid = input.stimulusGroupId
-        await this.repo.setGroup(record.id, gid, gid === null ? null : await this.repo.nextGroupPosition(gid))
+        // D90 / R1-T32: leaving or joining a group goes through the same rules as the stimulus routes (served lock, caps, PKSK, ...).
+        await this.groupMembers.move(record.id, fresh.groupId, input.stimulusGroupId)
       }
     }, TX)
     const after = await this.repo.get(record.id, 'latest')
@@ -933,11 +936,16 @@ export class QuestionsService {
   private async detail(record: QuestionRecord): Promise<QuestionDetailView> {
     const view = await this.viewOf(record)
     const creator = record.createdById ? await this.users.get(record.createdById) : null
+    const stimulusGroup = record.groupId ? await this.repo.groupOf(record.id) : null
+    // The pictures of the group's stimuli are named by public token too (one form for the Studio, R1-T32).
+    const assetIds = (stimulusGroup?.stimuli ?? []).flatMap((s) => (s.assetFileId === null ? [] : [s.assetFileId]))
+    const assetTokens = assetIds.length === 0 ? new Map<string, string>() : await this.files.publicIdsOf(assetIds)
     return {
       ...view,
+      imageTokens: { ...view.imageTokens, ...Object.fromEntries(assetTokens) },
       dskp: await this.dskpOf(record.version.spIds[0]),
       createdByName: creator?.name ?? null,
-      stimulusGroup: record.groupId ? await this.repo.groupOf(record.id) : null,
+      stimulusGroup,
     }
   }
 

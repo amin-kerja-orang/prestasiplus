@@ -3,6 +3,7 @@ import { Prisma } from '../../../db/generated/client'
 
 import { PrismaService } from '../../../db/prisma.service'
 import { idFromString } from '../../../db/ids'
+import { NOT_PRIMARY_LEVEL_SQL } from '../../questions/learner-visibility'
 import type { TeacherQuestionStats, TeacherQuestionsProvider } from '../ports'
 
 /** A question carrying a `pksk_domain` tag belongs to PKSK (M07), never to the teacher bank (same scope as `GET /guru/questions`). */
@@ -18,12 +19,13 @@ export function usedCountQuery(owner: bigint): Prisma.Sql {
   return Prisma.sql`
     SELECT count(*)::int AS n
       FROM questions q
+      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
       CROSS JOIN LATERAL (
         SELECT 1 WHERE EXISTS (SELECT 1 FROM practice_answers a WHERE a.question_id = q.id AND a.question_id IS NOT NULL AND NOT a.is_test)
         UNION ALL
         SELECT 1 WHERE EXISTS (SELECT 1 FROM structured_attempts t WHERE t.question_id = q.id AND NOT t.is_test)
         LIMIT 1) hit
-     WHERE q.created_by_id = ${owner} AND ${NOT_PKSK}`
+     WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}`
 }
 
 const NO_STATS = (): TeacherQuestionStats => ({ total: 0, structured: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
@@ -33,7 +35,7 @@ const NO_STATS = (): TeacherQuestionStats => ({ total: 0, structured: 0, approve
  * "Soalan" cards and the M27 activity report, computed from the tables on every call (no stored aggregate).
  *
  * Scope: every question the teacher owns (`questions.created_by_id`), objective and structured alike (BR-M10-06),
- * PKSK excluded, the same rows as `GET /api/guru/questions`. The status is the one of the LATEST version, the
+ * PKSK and primary-level (Darjah, D72 `NOT_PRIMARY_LEVEL_SQL`) excluded, the same rows as `GET /api/guru/questions`. The status is the one of the LATEST version, the
  * one the teacher sees in that list (and `QuestionsService.contributionCountsFor` counts):
  *  - `total`    every owned question, whatever its status (draft and archived included);
  *  - `structured` of `total`, the questions whose latest version is `structured`; the rest are objective (M27 splits them);
@@ -65,7 +67,7 @@ export class TeacherQuestionStatsProvider implements TeacherQuestionsProvider {
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
         LEFT JOIN subjects s ON s.id = v.subject_id
-       WHERE q.created_by_id = ${owner} AND ${NOT_PKSK}
+       WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}
        GROUP BY 1, 2, 3`
     const out = NO_STATS()
     const bySubject = new Map<string, number>()
