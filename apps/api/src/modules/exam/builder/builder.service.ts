@@ -282,7 +282,7 @@ export class BuilderService {
       questions: ordered.map((q) => this.questionWire(q)),
       groups: groupIds.flatMap((id) => {
         const g = groupMap.get(id)
-        return g ? [{ id: g.id, stimulus: g.stimulus, questionIds: g.questionIds }] : []
+        return g ? [{ id: g.id, stimulus: g.stimulus, stimuli: g.stimuli ?? [g.stimulus], questionIds: g.questionIds }] : []
       }),
     }
   }
@@ -777,7 +777,7 @@ export class BuilderService {
       const ids = s.placements.map((pl) => idToString(pl.questionId))
       const marksOf = (id: string) => s.placements.find((pl) => idToString(pl.questionId) === id)?.marksOverride ?? ev.info.get(id)?.marks ?? 0
       const units = unitsOf(ids, groupOf).map((u) => ({
-        ...(u.groupId ? { groupId: u.groupId, stimulus: ev.groups.get(u.groupId)!.stimulus } : {}),
+        ...(u.groupId ? { groupId: u.groupId, stimulus: ev.groups.get(u.groupId)!.stimulus, stimuli: ev.groups.get(u.groupId)!.stimuli ?? [ev.groups.get(u.groupId)!.stimulus] } : {}),
         questions: u.ids.map((id) => ({ id, number: ++number, preview: ev.info.get(id)?.preview ?? '', marks: marksOf(id) })),
       }))
       const marks = this.sectionMarksOf(s, ev.info)
@@ -876,7 +876,7 @@ export class BuilderService {
       const reasons = eligibilityOfUnit(u)
       return {
         ...(u.groupId ? { groupId: u.groupId } : {}),
-        ...(group ? { stimulus: group.stimulus } : {}),
+        ...(group ? { stimulus: group.stimulus, stimuli: group.stimuli ?? [group.stimulus] } : {}),
         questionIds: u.ids,
         questions,
         marks: questions.reduce((n, q) => n + q.marks, 0),

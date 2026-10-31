@@ -334,6 +334,19 @@ export const BijakBuilderQuestionSchema = z
 export type BijakBuilderQuestion = z.infer<typeof BijakBuilderQuestionSchema>
 
 /**
+ * D90 (R1-T31): every stimulus of a group in order, 1 to 3. The group is ONE unit: its stimuli are shown once above all the member
+ * questions and carry no marks. Seven kinds (passage, image, diagram, table, map, infographic, graph) with caption, table grid and
+ * source line; a picture carries `image.url`, the public file token URL (`/api/files/<token>`), for the admin preview. Always sent by the
+ * server; the first one is also sent as `stimulus` for older clients.
+ */
+const GroupStimuli = z
+  .array(BijakAttemptStimulusSchema)
+  .min(1)
+  .max(3)
+  .optional()
+  .meta({ description: 'Every stimulus of the group in order (1 to 3), shown once per group (D90). `stimulus` is the first of them.' })
+
+/**
  * Stimulus group of the picker (`BuilderGroup` = { id, stimulus: StimulusDef, questionIds }); its
  * questions must stay together in one section (D6). `stimulus` reuses the BE-16 stimulus shape, which
  * carries every field of the prototype `StimulusDef` (types.ts lines 15-27).
@@ -342,6 +355,7 @@ export const BijakBuilderGroupSchema = z
   .strictObject({
     id: IdSchema,
     stimulus: BijakAttemptStimulusSchema,
+    stimuli: GroupStimuli,
     questionIds: z.array(IdSchema).meta({ description: 'Question ids in published order.' }),
   })
   .meta({ id: 'BijakBuilderGroup' })
@@ -886,7 +900,8 @@ export const BijakBuilderStudentQuestionSchema = z
 export const BijakBuilderStudentUnitSchema = z
   .strictObject({
     groupId: IdSchema.optional(),
-    stimulus: BijakAttemptStimulusSchema.optional().meta({ description: 'Shown ONCE for the group (D90).' }),
+    stimulus: BijakAttemptStimulusSchema.optional().meta({ description: 'Shown ONCE for the group (D90): the first stimulus.' }),
+    stimuli: GroupStimuli,
     questions: z.array(BijakBuilderStudentQuestionSchema).min(1),
   })
   .meta({ id: 'BijakBuilderStudentUnit' })
@@ -932,6 +947,7 @@ export const BijakBuilderPoolUnitSchema = z
   .strictObject({
     groupId: IdSchema.optional(),
     stimulus: BijakAttemptStimulusSchema.optional(),
+    stimuli: GroupStimuli,
     questionIds: z.array(IdSchema).min(1),
     questions: z.array(BijakBuilderQuestionSchema),
     marks: z.number().int().min(0).meta({ description: 'Sum of the members.' }),

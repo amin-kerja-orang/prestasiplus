@@ -20,10 +20,10 @@ const source = (over: Partial<StimulusSource> & { id: bigint; kind: string }): S
 
 /** Unit (no DB): the builder carries a whole stimulus group (D90), not only its first stimulus. */
 describe('builder stimulus mapping (R1-T07)', () => {
-  it('maps the seven kinds; the pictorial ones read as diagram on the current wire; audio is dropped', () => {
+  it('maps the seven kinds as they are (no collapse to diagram, R1-T31); audio is dropped', () => {
     const kinds = ['passage', 'image', 'diagram', 'table', 'map', 'infographic', 'graph']
     const wire = kinds.map((kind, i) => stimulusOf(source({ id: BigInt(i + 1), kind, label: `S${String(i)}` }))?.kind)
-    expect(wire).toEqual(['passage', 'diagram', 'diagram', 'table', 'diagram', 'diagram', 'diagram'])
+    expect(wire).toEqual(kinds)
     expect(stimulusOf(source({ id: 9n, kind: 'audio' }))).toBeUndefined()
     expect(stimulusOf(source({ id: 9n, kind: 'video' }))).toBeUndefined()
   })
@@ -38,6 +38,24 @@ describe('builder stimulus mapping (R1-T07)', () => {
     })
     // A malformed grid is dropped, never passed through.
     expect(stimulusOf(source({ id: 3n, kind: 'table', tableData: { head: 'x', rows: [] } }))?.table).toBeUndefined()
+  })
+
+  it('a picture carries its public file token URL, the source line and the caption; a missing file leaves the picture out', () => {
+    const tokens = new Map([['77', 'Zk3x9QmT1bVnR0aYc7LpDw']])
+    for (const kind of ['image', 'diagram', 'map', 'infographic', 'graph']) {
+      expect(stimulusOf(source({ id: 5n, kind, label: 'Rajah 1', caption: 'Cap', altText: 'Huraian', sourceCitation: 'Sumber: JPN', assetFileId: 77n }), tokens)).toEqual({
+        id: '5', kind, label: 'Rajah 1', caption: 'Cap', alt: 'Huraian', source: 'Sumber: JPN', image: { url: '/api/files/Zk3x9QmT1bVnR0aYc7LpDw' },
+      })
+    }
+    // the internal file id never leaves; an unknown id gives no picture
+    expect(stimulusOf(source({ id: 6n, kind: 'image', label: 'R', assetFileId: 78n }), tokens)).toEqual({ id: '6', kind: 'image', label: 'R', alt: 'R' })
+    expect(JSON.stringify(stimulusOf(source({ id: 5n, kind: 'image', assetFileId: 77n }), tokens))).not.toContain('77"')
+  })
+
+  it('a table keeps the caption and the grid; a pipe table in the body becomes the grid and not the text', () => {
+    const t = stimulusOf(source({ id: 7n, kind: 'table', label: 'Jadual 1', caption: 'Jualan', bodyMs: 'Bulan | Jumlah\n--- | ---\nJan | 10' }))
+    expect(t).toMatchObject({ kind: 'table', caption: 'Jualan', table: { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10']] } })
+    expect(t?.text).toBeUndefined()
   })
 
   it('stimuliOf keeps every displayable stimulus of a group in order (1 to 3) and skips audio', () => {

@@ -357,7 +357,7 @@ function stimulusDefOf(qid: string, s: WideStimulus, media: BridgeMedia): Stimul
  * array of rows whose first row is the head), else a pipe table written in the body (`a | b` per line, an optional
  * `---` rule). Anything else is not a table (the body stays plain text, or the stimulus is a picture).
  */
-function tableOf(data: unknown, body: string | null): StimulusDef['table'] {
+export function tableOf(data: unknown, body: string | null): StimulusDef['table'] {
   const cell = (c: unknown): string =>
     typeof c === 'string' ? c : typeof c === 'number' ? String(c) : ''
   const rowsOf = (x: unknown): string[][] | undefined =>

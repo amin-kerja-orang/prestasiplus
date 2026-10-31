@@ -62386,6 +62386,15 @@
           "stimulus": {
             "$ref": "#/components/schemas/BijakAttemptStimulus"
           },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            },
+            "minItems": 1,
+            "maxItems": 3,
+            "description": "Every stimulus of the group in order (1 to 3), shown once per group (D90). `stimulus` is the first of them."
+          },
           "questionIds": {
             "type": "array",
             "items": {
@@ -64492,7 +64501,16 @@
               "alt"
             ],
             "additionalProperties": false,
-            "description": "Shown ONCE for the group (D90)."
+            "description": "Shown ONCE for the group (D90): the first stimulus."
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            },
+            "minItems": 1,
+            "maxItems": 3,
+            "description": "Every stimulus of the group in order (1 to 3), shown once per group (D90). `stimulus` is the first of them."
           },
           "questions": {
             "type": "array",
@@ -64645,6 +64663,15 @@
           },
           "stimulus": {
             "$ref": "#/components/schemas/BijakAttemptStimulus"
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            },
+            "minItems": 1,
+            "maxItems": 3,
+            "description": "Every stimulus of the group in order (1 to 3), shown once per group (D90). `stimulus` is the first of them."
           },
           "questionIds": {
             "type": "array",

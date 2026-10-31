@@ -2,6 +2,7 @@ import { BIJAK_BUILDER_MESSAGES as MSG } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { makePng } from '../files/fixtures'
+import { makePng } from '../files/fixtures'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
 import { ACCOUNTS, auditRows, expectError } from './helpers'
 
@@ -325,6 +326,105 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect((await admin.put(`/api/admin/papers/${copy.body.data.id as string}`, { title: 'Salinan disunting' })).status).toBe(200)
       expect((await admin.post(`/api/admin/papers/${paper}/withdraw`)).status).toBe(200)
       expect((await admin.put(`/api/admin/papers/${paper}`, { title: 'Disunting semula' })).status).toBe(200)
+    })
+  })
+
+  describe('R1-T31: the builder wire carries the whole stimulus group (D90)', () => {
+    interface Wire {
+      id: string
+      kind: string
+      label: string
+      caption?: string
+      source?: string
+      text?: string
+      table?: { head: string[]; rows: string[][] }
+      image?: { url: string }
+    }
+    const stim = async (body: Record<string, unknown>): Promise<string> => {
+      const res = await admin.post('/api/stimuli', body)
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      return res.body.data.id as string
+    }
+    const picture = async (): Promise<string> => {
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      expect(up.status, JSON.stringify(up.body)).toBe(201)
+      return up.body.data.id as string
+    }
+    async function group(label: string, stimulusIds: string[]): Promise<{ id: string; members: string[] }> {
+      const members = [await mk({ questionText: `Merujuk ${label}, berapakah nilai soalan satu?` }), await mk({ questionText: `Merujuk ${label}, berapakah nilai soalan dua?` })]
+      const res = await admin.post('/api/stimulus-groups', { label, stimulusIds, questionIds: members })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      await approve(members)
+      for (const id of members) expect((await setPool(id, ['MAT2-A'])).status).toBe(200)
+      return { id: res.body.data.id as string, members }
+    }
+
+    it('editor groups, pool units, student view and the preview send stimuli[] (1 to 3, once per group) with kind, caption, source, table and a file token URL', async () => {
+      const token = await picture()
+      const image = await stim({ kind: 'image', label: 'Rajah 1', caption: 'Segi empat tepat', alt: 'Rajah segi empat tepat', sourceCitation: 'Sumber: buku teks', imageFileId: token })
+      const table = await stim({ kind: 'table', label: 'Jadual 1', caption: 'Jualan', tableData: { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10'], ['Feb', '12']] } })
+      const passage = await stim({ kind: 'passage', label: 'Petikan 1', body: { ms: 'Sebuah kebun berbentuk segi empat tepat.' } })
+      const g = await group('Rajah 1', [image, table, passage])
+
+      const paper = await newPaper()
+      const [a] = await sectionsOf(paper)
+      expect((await place(paper, a!, g.members[1]!)).status).toBe(201)
+
+      const check = (list: Wire[]) => {
+        expect(list.map((x) => x.kind)).toEqual(['image', 'table', 'passage'])
+        expect(list[0]).toMatchObject({ label: 'Rajah 1', caption: 'Segi empat tepat', source: 'Sumber: buku teks', image: { url: `/api/files/${token}` } })
+        expect(list[1]).toMatchObject({ kind: 'table', caption: 'Jualan', table: { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10'], ['Feb', '12']] } })
+        expect(list[1]!.text).toBeUndefined()
+        expect(list[2]).toMatchObject({ text: 'Sebuah kebun berbentuk segi empat tepat.' })
+        expect(JSON.stringify(list)).not.toMatch(/asset|fileId/i)
+      }
+
+      // editor (paper view): groups
+      const editor = (await admin.get(`/api/admin/papers/${paper}`)).body.data
+      const grp = (editor.groups as { id: string; stimulus: Wire; stimuli?: Wire[]; questionIds: string[] }[]).find((x) => x.id === g.id)!
+      expect(grp.questionIds).toEqual(g.members)
+      check(grp.stimuli!)
+      expect(grp.stimulus).toEqual(grp.stimuli![0])
+
+      // student view: the stimuli once per group, both members under it
+      const view = (await admin.get(`/api/admin/papers/${paper}/student-view`)).body.data
+      const units = view.sections[0].units as { groupId?: string; stimulus?: Wire; stimuli?: Wire[]; questions: { id: string }[] }[]
+      const unit = units.find((u) => u.groupId === g.id)!
+      check(unit.stimuli!)
+      expect(unit.stimulus).toEqual(unit.stimuli![0])
+      expect(unit.questions.map((x) => x.id)).toEqual(g.members)
+      expect(units.filter((u) => u.groupId === g.id)).toHaveLength(1)
+
+      // the picture is readable by the admin through the token URL (and by no anonymous caller)
+      expect((await admin.get(unit.stimuli![0]!.image!.url)).status).toBe(200)
+
+      // section pool (another paper, nothing placed yet): the group is ONE unit with its stimuli
+      const fresh = await newPaper()
+      const [fa] = await sectionsOf(fresh)
+      const pool = await admin.get(`/api/admin/papers/${fresh}/sections/${fa!}/pool?pageSize=100`)
+      expect(pool.status, JSON.stringify(pool.body)).toBe(200)
+      const poolUnit = (pool.body.data as { groupId?: string; stimuli?: Wire[]; questionIds: string[] }[]).find((u) => u.groupId === g.id)!
+      expect(poolUnit.questionIds).toEqual(g.members)
+      check(poolUnit.stimuli!)
+
+      // admin preview (review content): all stimuli of the group, keyed by group id
+      const preview = await admin.post('/api/admin/papers/preview', { ids: g.members })
+      expect(preview.status, JSON.stringify(preview.body)).toBe(200)
+      check(preview.body.data.groupStimuli[g.id])
+      expect(preview.body.data.stimuli[g.id]).toEqual(preview.body.data.groupStimuli[g.id][0])
+    })
+
+    it('carries all seven kinds unchanged: image, diagram, map, infographic, graph with their pictures, table and passage', async () => {
+      const kinds: [string, Record<string, unknown>][] = []
+      for (const kind of ['diagram', 'map', 'graph']) kinds.push([kind, { kind, label: `Gambar ${kind}`, alt: `Huraian ${kind}`, imageFileId: await picture() }])
+      const ids = await Promise.all(kinds.map(([, body]) => stim(body)))
+      const g = await group('Kumpulan gambar', ids)
+      const infographic = await group('Infografik', [await stim({ kind: 'infographic', label: 'Infografik 1', alt: 'Huraian infografik', imageFileId: await picture() })])
+      const preview = await admin.post('/api/admin/papers/preview', { ids: [...g.members, ...infographic.members] })
+      const list = preview.body.data.groupStimuli[g.id] as Wire[]
+      expect(list.map((x) => x.kind)).toEqual(['diagram', 'map', 'graph'])
+      expect(list.every((x) => x.image?.url.startsWith('/api/files/'))).toBe(true)
+      expect(preview.body.data.groupStimuli[infographic.id][0]).toMatchObject({ kind: 'infographic', label: 'Infografik 1' })
     })
   })
 })
