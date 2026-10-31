@@ -100,6 +100,26 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
       expect(out.servability?.questionId).toBe(id)
     })
 
+    it('REQ-B-027: a question the Tambah Soalan form creates (cognitiveLevel and kertas in the create body) passes the gate and is approved', async () => {
+      const id = await draft({ cognitiveLevel: 'mengaplikasi', kertas: '1' })
+      expect(await leafOf(id)).toEqual({ cognitive_level: 'mengaplikasi', kbat: 'mengaplikasi' })
+      expect((await issues(c.admin, id)).ok).toBe(true)
+      expect((await status(c.admin, id, 'review')).status).toBe(200)
+      const res = await status(c.admin, id, 'approved')
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(envelopeOf(QuestionStatusResultSchema).parse(res.body).data.question.status).toBe('approved')
+    })
+
+    it('REQ-B-027: an edit that omits cognitiveLevel keeps the level; only an explicit null clears it', async () => {
+      const id = await draft({ cognitiveLevel: 'menilai', kertas: '1' })
+      const kept = await c.admin.put(`/api/questions/${id}`, body({ kertas: '1' }))
+      expect(kept.status, JSON.stringify(kept.body)).toBe(200)
+      expect((await leafOf(id)).cognitive_level).toBe('menilai')
+      const cleared = await c.admin.put(`/api/questions/${id}`, body({ kertas: '1', cognitiveLevel: null }))
+      expect(cleared.status).toBe(200)
+      expect((await leafOf(id)).cognitive_level).toBeNull()
+    })
+
     it('a lower level (mengingat, memahami) is not KBAT', async () => {
       const id = await draft({ cognitiveLevel: 'memahami' })
       expect(await leafOf(id)).toEqual({ cognitive_level: 'memahami', kbat: 'bukan' })
@@ -208,7 +228,7 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
     it('status: a pair outside the table is 409 with the BM message, an unknown status or a missing reason is 422, a missing id is 404', async () => {
       const id = await draft()
       const conflict = await status(c.admin, id, 'approved') // draft -> approved is not in the table
-      expectError(conflict, 'CONFLICT', 'Perubahan status daripada Draf kepada Diterbitkan tidak dibenarkan.')
+      expectError(conflict, 'CONFLICT', "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan.")
       expect((await status(c.admin, id, 'published')).status).toBe(422)
       expect((await c.admin.post(`/api/questions/${id}/status`, {})).status).toBe(422)
       await status(c.admin, id, 'review')
