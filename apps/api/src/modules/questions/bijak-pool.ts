@@ -103,7 +103,9 @@ export class QuestionsBijakPoolSource {
       groupIds.length === 0
         ? Promise.resolve<{ group_id: bigint; n: number }[]>([])
         : db.$queryRaw<{ group_id: bigint; n: number }[]>`
-            SELECT group_id, count(*)::int AS n FROM questions WHERE group_id = ANY(${groupIds}::bigint[]) GROUP BY group_id`,
+            SELECT q.group_id, count(*)::int AS n
+              FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+             WHERE q.group_id = ANY(${groupIds}::bigint[]) AND v.status <> 'archived' GROUP BY q.group_id`,
     ])
 
     // A unit is a DSKP unit of Tingkatan 4 or 5; anything else (a missing node, another level) counts as no unit.
