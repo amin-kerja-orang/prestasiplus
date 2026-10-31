@@ -122,12 +122,15 @@ Migration numbers 0100-0106 are proposed (existing top is 0092; D68 ranges: LEAD
 | # | Migration | Content |
 |---|---|---|
 | 0100 | `question_lifecycle_approved` | ADR-0027 data steps; CHECK status in (`draft`,`review`,`approved`,`archived`) |
-| 0101 | `dskp_leaf_tags_and_facts` | `question_parts.tp`, `.cognitive_level`, `.topics`; CHECK mode adds `essay_choice`; table `question_version_facts`; backfill facts for all existing versions by a SQL function (same logic as `computeFacts`; a post-migration script compares both on a sample) |
+| 0101 | `essay_choice` (built, R1-T25) | `question_parts.topics` jsonb (`[{ id, label }]`, 2..6, free-string ids per V2 `config.topics`, CHECK `ck_question_parts_topics`); CHECK mode adds `essay_choice`; word range reuses `word_min`/`word_max`; independent of the lifecycle statuses of 0100 |
+| 0102 | `dskp_leaf_tags_and_facts` | `question_parts.tp`, `.cognitive_level` (NOT `.topics` and NOT the `essay_choice` mode CHECK: both already added by 0101 `essay_choice`); table `question_version_facts`; backfill facts for all existing versions by a SQL function (same logic as `computeFacts`; a post-migration script compares both on a sample) |
 | 0102 | `stimulus_kinds_wide` | no DDL if the CHECK already allows the 8 kinds (`stimuli.kind` check lists passage, image, diagram, table, graph, map, infographic, audio); migration only asserts it; contract widens |
 | 0103 | `tracking_a_authoring` | ADR-0032 columns and unique index |
 | 0104 | `kertas_subjektif` | ADR-0033 tables, `paper_sections.kertas_paper_id`, file purposes |
 | 0105 | `feature_flags` | ADR-0035 |
 | 0106 | `drop_pool_tag` | delete `question_tags` kind `pool`; narrow CHECK |
+
+> Renumbering note (R1-T25): `essay_choice` took 0101 because it was built first, so the DSKP leaf-tag and facts migration moves to **0102** and must not add `topics` or the `essay_choice` mode again. The later sections that still say "migration 0101" for the facts table (BE-A3, R1-B03) and "0102" for `stimulus_kinds_wide` / R1-B06 are to be renumbered by the Delivery Lead when the team-A range (0100-0109) is re-allocated.
 
 ### 2.1 Prisma (excerpts; field names follow repo `@map` style)
 ```prisma
