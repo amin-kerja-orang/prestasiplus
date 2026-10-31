@@ -21,7 +21,7 @@ describe('bank-sources adapters (unit)', () => {
     const src = new BankPaperQuestionSource({ getMany: (ids) => (asked.push(ids), Promise.resolve(found as never)) })
     expect(await src.getMany(['7', '8'])).toBe(found)
     expect(asked).toEqual([['7', '8']])
-    const pool = await src.pool('MAT2-B', { subjectId: '1', kertas: 2 } as never)
+    const pool = await src.pool()
     expect(pool.entries).toEqual([])
     expect(pool.groups.size).toBe(0)
   })

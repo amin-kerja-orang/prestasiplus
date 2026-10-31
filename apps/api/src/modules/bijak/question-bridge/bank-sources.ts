@@ -25,7 +25,7 @@ export class BankPaperQuestionSource implements PaperQuestionSource {
     return this.bank.getMany(questionIds) as Promise<ReadonlyMap<string, BijakQuestionInfo>>
   }
 
-  pool(_pool: string, _scope: BijakPoolScope): Promise<BijakPool> {
+  pool(): Promise<BijakPool> {
     return Promise.resolve({ entries: [], groups: new Map() })
   }
 }
