@@ -175,8 +175,13 @@ export const audioKbatRepo = defineRepository({
       },
 
       /** S12 stat cards: Set, Approved, Draft/Pending, Soalan = 30 × sets (BR-M09-15). */
-      stats(): { sets: number; approved: number; draftOrPending: number; questions: number } {
-        const all = store.query().rows
+      stats(keep: (set: AudioKbatSetRow) => boolean = () => true): {
+        sets: number
+        approved: number
+        draftOrPending: number
+        questions: number
+      } {
+        const all = store.query().rows.filter(keep)
         return {
           sets: all.length,
           approved: all.filter((s) => s.status === 'approved').length,

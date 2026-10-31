@@ -28,6 +28,8 @@ import OverviewBands from '../components/kirkpatrick/overview/OverviewBands.vue'
 import OverviewComparison from '../components/kirkpatrick/overview/OverviewComparison.vue'
 import OverviewFlow from '../components/kirkpatrick/overview/OverviewFlow.vue'
 import OverviewInfo from '../components/kirkpatrick/overview/OverviewInfo.vue'
+import OverviewInfoToggle from '../components/kirkpatrick/overview/OverviewInfoToggle.vue'
+import { useInfoOpen } from '../components/kirkpatrick/overview/use-info-open'
 import OverviewKpis from '../components/kirkpatrick/overview/OverviewKpis.vue'
 import OverviewLevelCards from '../components/kirkpatrick/overview/OverviewLevelCards.vue'
 
@@ -39,6 +41,8 @@ const props = withDefaults(
 const route = useRoute()
 const router = useRouter()
 const paths = computed(() => kirkpatrickPaths(props.basePath))
+const info = useInfoOpen()
+const INFO_ID = 'kirk-info-panel'
 
 const schoolId = computed(() => (props.scopeForced ? '' : queryString(route.query.school_id)))
 const state = computed(() => (props.scopeForced ? '' : queryString(route.query.state)))
@@ -72,7 +76,6 @@ async function apply(value: { schoolId: string; state: string }) {
     data-testid="kirk-overview-page"
     subtitle="Analisis Keberkesanan Platform — Model Penilaian 4 Tahap"
   >
-    <OverviewInfo />
     <!-- Live copy: "Tapis" and "Reset" (FR-M12-19, 41). -->
     <DsFilterBar
       :chips="filters.chips.value"
@@ -108,7 +111,11 @@ async function apply(value: { schoolId: string; state: string }) {
           <option v-for="s in options?.states ?? []" :key="s" :value="s">{{ s }}</option>
         </DsNativeSelect>
       </DsFormField>
+      <template #actions>
+        <OverviewInfoToggle :open="info.open.value" :controls="INFO_ID" @toggle="info.toggle" />
+      </template>
     </DsFilterBar>
+    <OverviewInfo :open="info.open.value" :id="INFO_ID" />
 
     <DsLoadError v-if="error" testid="kirk-error" @retry="reload" />
     <p

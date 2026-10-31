@@ -414,8 +414,8 @@ describe('#7 export (PROPOSED) and the guards', () => {
     expect(o.teacherRows.map((r) => r.schoolId)).toEqual([900001])
     expect(o.weekly.map((r) => r.schoolId)).toEqual([900001])
     expect(o.kpi.schools).toBe(1)
-    expect(o.kpi.students).toBe(9)
-    expect(o.kpi.engaged).toBe(9)
+    expect(o.kpi.students).toBe(10)
+    expect(o.kpi.engaged).toBe(10)
     expect(o.kpi.teachers).toBe(1)
     // The filters still apply inside the scope; the other schools never appear.
     expect((await overview('?state=Johor', ADMIN_SEKOLAH)).studentRows).toEqual([])

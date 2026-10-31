@@ -3,12 +3,16 @@
 import { computed } from 'vue'
 
 import type { DashboardLevelPill } from '../../api/types'
-import { LEVEL_GROUPS } from '../dashboard/dashboard-lib'
+import { LEVEL_GROUPS, OFFERED_LEVEL_CODES } from '../dashboard/dashboard-lib'
 
 const props = defineProps<{ pills: DashboardLevelPill[] }>()
 
+// Only the offered levels (T4, T5) are linked; a group with no offered level is not shown.
 const groups = computed(() =>
-  LEVEL_GROUPS.map((g) => ({ ...g, pills: props.pills.filter((p) => p.stage === g.stage) })),
+  LEVEL_GROUPS.map((g) => ({
+    ...g,
+    pills: props.pills.filter((p) => p.stage === g.stage && OFFERED_LEVEL_CODES.includes(p.code)),
+  })).filter((g) => g.pills.length > 0),
 )
 </script>
 

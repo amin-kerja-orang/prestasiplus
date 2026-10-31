@@ -49,3 +49,36 @@ export function useShellEntityTitle(name: MaybeRefOrGetter<string | null | undef
     entityTitle.value = null
   })
 }
+
+/**
+ * Page description in the shell header (Pentadbiran, as on v1: title with the description under it).
+ * The layout calls `provideShellSubtitle()` and prints `shellPageSubtitle` under the title;
+ * `DsPageHeader` then hands its `subtitle` text up (`useShellSubtitle`) and stops printing it in
+ * the content. A `#subtitle` slot (rich content) stays in the page. Pembelajaran never calls
+ * `provideShellSubtitle`, so learner pages keep their own description row.
+ */
+const shellSubtitleKey: InjectionKey<boolean> = Symbol('ds-shell-subtitle')
+const pageSubtitle = ref<string | null>(null)
+
+/** Read side for the shell layout. */
+export const shellPageSubtitle: Readonly<Ref<string | null>> = readonly(pageSubtitle)
+
+export function provideShellSubtitle(value = true): void {
+  provide(shellSubtitleKey, value)
+}
+
+/** True when the layout prints the page description in its header. */
+export function useShellPrintsSubtitle(): boolean {
+  return inject(shellSubtitleKey, false)
+}
+
+/** Hands the description to the shell header; cleared when the page unmounts. */
+export function useShellSubtitle(text: MaybeRefOrGetter<string | null | undefined>): void {
+  watchEffect(() => {
+    const value = toValue(text)?.trim()
+    pageSubtitle.value = value ? value : null
+  })
+  onScopeDispose(() => {
+    pageSubtitle.value = null
+  })
+}

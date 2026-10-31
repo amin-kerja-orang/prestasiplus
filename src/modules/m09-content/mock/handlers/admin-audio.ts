@@ -267,8 +267,11 @@ export const adminAudioRoutes: RouteDef[] = [
       search: queryString(req.query, 'search') ?? '',
     })
     // The stat cards count every set, never the filtered ones (FR-M09-63).
-    const { sets: setCount, approved, draftOrPending, questions } = audioKbatRepo.stats()
-    return paginate(sets.map(listItem), page, {
+    // Secondary-only (D72): sets of a hidden primary level are neither listed nor counted (rows stay stored).
+    const isShown = (s: AudioKbatSetRow) => levelRef(s.educationLevelId) !== null
+    const { sets: setCount, approved, draftOrPending, questions } = audioKbatRepo.stats(isShown)
+    const shown = sets.filter(isShown)
+    return paginate(shown.map(listItem), page, {
       stats: { sets: setCount, approved, draftPending: draftOrPending, questions },
     })
   }),
@@ -305,7 +308,11 @@ export const adminAudioRoutes: RouteDef[] = [
     const levelRaw = clean(pick(body, 'educationLevelId', 'education_level_id'))
     const educationLevelId = asInt(levelRaw)
     if (levelRaw === null || levelRaw === undefined) fields.educationLevelId = FIELD_REQUIRED
-    else if (educationLevelId === undefined || !curriculum.level(educationLevelId)) {
+    else if (
+      educationLevelId === undefined ||
+      !curriculum.level(educationLevelId) ||
+      curriculum.isLevelHidden(educationLevelId)
+    ) {
       fields.educationLevelId = FIELD_INVALID
     }
     const subjectRaw = clean(pick(body, 'subjectId', 'subject_id'))

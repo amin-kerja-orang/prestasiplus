@@ -20,6 +20,7 @@ import {
   UNTAGGED_TOTAL,
 } from '../../mock/data/tables'
 import { questions } from '../../mock'
+import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 import {
   ADMIN,
   ADMIN_SEKOLAH,
@@ -36,6 +37,8 @@ let runtime: MockRuntime
 let call: ReturnType<typeof callAs>
 
 beforeAll(async () => {
+  // The documented counts include the Darjah questions; the hiding (D72) is in secondary-only.test.ts.
+  showPrimaryLevels()
   runtime = await bootRegistry()
   call = callAs(runtime)
 }, 180_000)

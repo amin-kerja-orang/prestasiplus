@@ -85,10 +85,14 @@ export { default as DsBackLink } from './DsBackLink.vue'
 export { default as DsBreadcrumb, type CrumbItem } from './DsBreadcrumb.vue'
 export { default as DsPillNav, type PillItem } from './DsPillNav.vue'
 export {
+  provideShellSubtitle,
   provideShellTitle,
   shellEntityTitle,
+  shellPageSubtitle,
   useShellEntityTitle,
+  useShellPrintsSubtitle,
   useShellPrintsTitle,
+  useShellSubtitle,
 } from './shellTitle'
 export { default as DsAdminShell } from './DsAdminShell.vue'
 export type {

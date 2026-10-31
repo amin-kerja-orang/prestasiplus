@@ -12,6 +12,8 @@ export const lookupRoutes: RouteDef[] = [
   route('GET', '/api/subjects', [requireAuth()], (req) => {
     // A non-numeric or unknown level is ignored (no filter), SRS #28.
     const levelParam = queryInt(req.query, 'educationLevelId')
+    // A hidden Darjah level (D72) answers an empty list, never "all subjects".
+    if (levelParam !== undefined && curriculumRepo.isLevelHidden(levelParam)) return unpaged([])
     const educationLevelId =
       levelParam !== undefined && curriculumRepo.level(levelParam) ? levelParam : undefined
     const items: SubjectLookup[] = curriculumRepo
@@ -24,12 +26,12 @@ export const lookupRoutes: RouteDef[] = [
         icon: s.icon,
         color: s.color,
         isCore: s.isCore,
-        educationLevelIds: s.educationLevelIds,
+        educationLevelIds: curriculumRepo.visibleLevelIds(s.educationLevelIds),
       }))
     return unpaged(items)
   }),
   route('GET', '/api/education-levels', [requireAuth()], () => {
-    const items: EducationLevelLookup[] = curriculumRepo.levels({ active: true }).map((l) => ({
+    const items: EducationLevelLookup[] = curriculumRepo.visibleLevels({ active: true }).map((l) => ({
       id: l.id,
       code: l.code,
       name: l.name,

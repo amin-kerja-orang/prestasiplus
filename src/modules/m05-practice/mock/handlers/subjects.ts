@@ -14,6 +14,7 @@ import { fixtures } from '../hooks/fixtures'
 import {
   activeSubjectByCode,
   offeredLevelIds,
+  practiceLevelCount,
   practiceSubjects,
   subjectView,
   userIdOf,
@@ -45,7 +46,7 @@ function subjectConfig(s: SubjectRecord, userId: number, now: number): SubjectCo
   const levels = offered.flatMap((id) => {
     const level = curriculum.level(id)
     return level
-      ? [{ id, code: level.code, name: level.name, count: questions.count('Q-PRACTICE', s.id, id) }]
+      ? [{ id, code: level.code, name: level.name, count: practiceLevelCount(s.id, id) }]
       : []
   })
   const difficultyByLevel: Record<string, DifficultyCounts> = {}

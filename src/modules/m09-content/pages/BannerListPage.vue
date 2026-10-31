@@ -119,13 +119,13 @@ const tableRows = computed<TableRow[]>(() =>
 
 const columns: TableColumn<TableRow>[] = [
   { accessorKey: 'title', header: 'Tajuk', ...cellClass('') },
-  { accessorKey: 'bannerType', header: 'Jenis', ...cellClass('w-36') },
+  { accessorKey: 'bannerType', header: 'Jenis', ...cellClass('w-32') },
   { accessorKey: 'targetAudience', header: 'Sasaran', ...cellClass('w-24') },
-  { accessorKey: 'displayOrder', header: 'Susunan', ...cellClass('w-24') },
+  { accessorKey: 'displayOrder', header: 'Susunan', ...cellClass('w-20') },
   { accessorKey: 'start', header: 'Mula', ...cellClass('w-28') },
   { accessorKey: 'end', header: 'Tamat', ...cellClass('w-28') },
   { id: 'active', header: 'Aktif?', ...cellClass('w-32') },
-  { id: 'actions', header: 'Tindakan', ...cellClass('w-28 text-end') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-24 text-end') },
 ]
 const cardFields: CardField[] = [
   { key: 'bannerType', label: 'Jenis' },
@@ -137,8 +137,11 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage subtitle-testid="banners-count" data-testid="banners-page">
-    <template #subtitle>Jumlah: {{ rows.length }} banner</template>
+  <DsPage
+    :subtitle="`Jumlah: ${rows.length} banner`"
+    subtitle-testid="banners-count"
+    data-testid="banners-page"
+  >
     <template #actions>
       <UButton
         :to="{ name: MEDIA_ROUTES.bannerCreate }"
@@ -180,7 +183,7 @@ const cardFields: CardField[] = [
         >
           <DsThumb :src="row.original.raw.imageUrl || undefined" :alt="row.original.title" />
           <div class="flex min-w-0 flex-col gap-1">
-            <p class="line-clamp-1 text-label text-highlighted" :title="row.original.title" data-testid="banner-title">
+            <p class="line-clamp-2 text-label text-highlighted" :title="row.original.title" data-testid="banner-title">
               {{ row.original.title }}
             </p>
             <p

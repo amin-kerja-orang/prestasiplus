@@ -240,7 +240,7 @@ const cardFields: CardField[] = [
               placeholder="Cari tajuk/sumber..."
               icon="i-ph-magnifying-glass"
               size="md"
-              class="w-full md:min-w-64 md:grow"
+              class="w-full md:min-w-0 md:flex-[2]"
               data-testid="filter-search"
             />
           </template>
@@ -248,7 +248,7 @@ const cardFields: CardField[] = [
             v-model="filter.education_level_id"
             name="education_level_id"
             aria-label="Tahap"
-            class="md:w-44"
+            class="md:min-w-0 md:flex-1"
             data-testid="filter-level"
           >
             <option value="">Semua Tahap</option>
@@ -260,7 +260,7 @@ const cardFields: CardField[] = [
             v-model="filter.subject_id"
             name="subject_id"
             aria-label="Subjek"
-            class="md:w-48"
+            class="md:min-w-0 md:flex-1"
             data-testid="filter-subject"
           >
             <option value="">Semua Subjek</option>
@@ -272,7 +272,7 @@ const cardFields: CardField[] = [
             v-model="filter.status"
             name="status"
             aria-label="Status"
-            class="md:w-44"
+            class="md:min-w-0 md:flex-1"
             data-testid="filter-status"
           >
             <option value="">Semua Status</option>

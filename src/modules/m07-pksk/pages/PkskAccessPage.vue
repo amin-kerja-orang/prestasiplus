@@ -238,12 +238,12 @@ const tableRows = computed<TableRow[]>(() =>
 
 const columns: TableColumn<TableRow>[] = [
   { accessorKey: 'userName', header: 'Pengguna', ...cellClass('') },
-  { accessorKey: 'packageName', header: 'Pakej', ...cellClass('w-44') },
-  { accessorKey: 'granter', header: 'Diberi Oleh', ...cellClass('w-36') },
-  { accessorKey: 'granted', header: 'Tarikh', ...cellClass('w-32') },
-  { accessorKey: 'expires', header: 'Tamat', ...cellClass('w-32') },
-  { id: 'status', header: 'Status', ...cellClass('w-40') },
-  { id: 'actions', header: 'Tindakan', ...cellClass('w-32') },
+  { accessorKey: 'packageName', header: 'Pakej', ...cellClass('w-48') },
+  { accessorKey: 'granter', header: 'Diberi Oleh', ...cellClass('w-28') },
+  { accessorKey: 'granted', header: 'Tarikh', ...cellClass('w-28') },
+  { accessorKey: 'expires', header: 'Tamat', ...cellClass('w-28') },
+  { id: 'status', header: 'Status', ...cellClass('w-28') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-24') },
 ]
 const cardFields: CardField[] = [
   { key: 'packageName', label: 'Pakej' },
@@ -254,8 +254,7 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage data-testid="pksk-access-page">
-    <template #subtitle>Urus akses premium PKSK pengguna</template>
+  <DsPage subtitle="Urus akses premium PKSK pengguna" data-testid="pksk-access-page">
     <template #actions>
       <UButton
         type="button"
@@ -401,7 +400,7 @@ const cardFields: CardField[] = [
     >
       <template #userName-cell="{ row }">
         <div
-          class="flex min-w-40 flex-col gap-1"
+          class="flex min-w-0 flex-col gap-1"
           data-testid="access-row"
           :data-access-id="row.original.id"
         >
