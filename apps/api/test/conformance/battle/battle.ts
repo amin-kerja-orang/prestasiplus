@@ -264,8 +264,9 @@ export const battleScenarios: Scenario[] = [
         const pksk = await student.request('POST', path, { body: { question_type: 'pksk', pksk_domain_id: '1', pksk_target_level: 'T1' } })
         ctx.expectStatus(pksk, 422)
       }
-      const noPool = await student.request('POST', '/battle/quick-match', { body: START({ question_type: 'spm' }) })
-      ctx.expectStatus(noPool, 422) // no SPM-tagged question exists in the conformance seed
+      // The SPM pool is level-based (R1-B06): MATH at Tingkatan 4 is stocked by the fixture, so the empty pool is a subject without questions.
+      const noPool = await student.request('POST', '/battle/quick-match', { body: START({ question_type: 'spm', subject_id: battleFixture.emptyId }) })
+      ctx.expectStatus(noPool, 422)
 
       const unknownQueue = await student.request('GET', '/battle/poll-match/999999999')
       ctx.check(unknownQueue.status === 200 && body(unknownQueue).status === 'not_found', 'an unknown queue answers 200 {status:"not_found"}')
