@@ -76,7 +76,6 @@ async function apply(value: { schoolId: string; state: string }) {
     data-testid="kirk-overview-page"
     subtitle="Analisis Keberkesanan Platform — Model Penilaian 4 Tahap"
   >
-    <OverviewInfo />
     <!-- Live copy: "Tapis" and "Reset" (FR-M12-19, 41). -->
     <DsFilterBar
       :chips="filters.chips.value"
