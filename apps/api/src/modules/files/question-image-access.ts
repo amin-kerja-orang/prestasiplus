@@ -33,9 +33,9 @@ const inList = (values: readonly string[]): Prisma.Sql => Prisma.join(values.map
  * SQL (one row when allowed) for: may `userId` read file `fileId` (internal bigint id) as a question image?
  * `publicToken` is the file's public token (for reference-sheet panels).
  */
-export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, publicToken: string): Prisma.Sql {
-  return Prisma.sql`
-    WITH st AS (SELECT id FROM stimuli WHERE asset_file_id = ${fileId}),
+/** CTEs `st` (stimuli carrying the file) and `cand` (versions the file is on), shared by the pupil and the teacher rule. */
+const fileOnVersionsSql = (fileId: bigint): Prisma.Sql => Prisma.sql`
+    st AS (SELECT id FROM stimuli WHERE asset_file_id = ${fileId}),
     cand AS (
       SELECT p.question_version_id AS vid
         FROM part_options o JOIN question_parts p ON p.id = o.part_id
@@ -50,7 +50,27 @@ export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, pub
         JOIN questions gq ON gq.group_id = g.group_id
         JOIN question_versions v ON v.question_id = gq.id
        WHERE g.stimulus_id IN (SELECT id FROM st)
-    ),
+    )`
+
+/**
+ * Teacher rule (REQ-B-008): a teacher reads the images of the questions THEY created (any version, any status, so their own
+ * drafts work), on top of the files they uploaded and of what pupils are served. One row when the file is on a version of a
+ * question whose `created_by_id` is the caller. Another author's draft and a Jana-only image (a per-pupil paper) give none.
+ */
+export function teacherMayReadOwnQuestionImageSql(fileId: bigint, userId: bigint): Prisma.Sql {
+  return Prisma.sql`
+    WITH ${fileOnVersionsSql(fileId)}
+    SELECT 1 AS one
+      FROM cand c
+      JOIN question_versions v ON v.id = c.vid
+      JOIN questions q ON q.id = v.question_id
+     WHERE q.created_by_id = ${userId}
+     LIMIT 1`
+}
+
+export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, publicToken: string): Prisma.Sql {
+  return Prisma.sql`
+    WITH ${fileOnVersionsSql(fileId)},
     sittable AS (
       SELECT pp.id, pp.reference_sheets
         FROM papers pp
