@@ -30,6 +30,7 @@ import { PERFORMANCE_COMPONENT_SCHEMAS, registerPerformancePaths } from './repor
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
 import { BIJAK_PAPERS_COMPONENT_SCHEMAS, registerBijakPapersPaths } from './bijak/papers/paths'
+import { BIJAK_KUIZ_COMPONENT_SCHEMAS, registerBijakKuizPaths } from './bijak/kuiz/paths'
 import { BIJAK_ATTEMPTS_COMPONENT_SCHEMAS, registerBijakAttemptsPaths } from './bijak/attempts/paths'
 import { SPM_COMPONENT_SCHEMAS, registerSpmPaths } from './spm/paths'
 import { HEATMAP_COMPONENT_SCHEMAS, registerHeatmapPaths } from './heatmap/paths'
@@ -86,6 +87,7 @@ export const COMPONENT_SCHEMAS = {
   ...QUESTION_WORKFLOW_COMPONENT_SCHEMAS, // BE-10
   ...BIJAK_PAPERS_COMPONENT_SCHEMAS, // BE-15
   ...BIJAK_ATTEMPTS_COMPONENT_SCHEMAS, // BE-16
+  ...BIJAK_KUIZ_COMPONENT_SCHEMAS, // R1-B16
   ...SPM_COMPONENT_SCHEMAS, // BE-41
   ...HEATMAP_COMPONENT_SCHEMAS, // BE-48 (M25)
   ...COMMAND_CENTER_COMPONENT_SCHEMAS, // BE-22
@@ -148,6 +150,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerQuestionWorkflowPaths(registry) // BE-10
   registerBijakPapersPaths(registry) // BE-15
   registerBijakAttemptsPaths(registry) // BE-16
+  registerBijakKuizPaths(registry) // R1-B16
   registerSpmPaths(registry) // BE-41
   registerHeatmapPaths(registry) // BE-48 (M25)
   registerCommandCenterPaths(registry) // BE-22
