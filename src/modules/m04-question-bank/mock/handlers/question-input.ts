@@ -221,6 +221,17 @@ export function parseQuestionBody(
     }
   } else if (!current) values.dskpSpId = null
 
+  // Bab: blank or null clears it, a number sets it, absent keeps it (the mock does not read M03's chapters).
+  if ('curriculumChapterId' in b) {
+    const raw = b.curriculumChapterId
+    if (raw === null || raw === undefined || raw === '') values.curriculumChapterId = null
+    else {
+      const chapter = intOf(raw)
+      if (chapter === undefined || chapter < 1) fields.curriculumChapterId = QUESTION_MESSAGES.guruChapter
+      else values.curriculumChapterId = chapter
+    }
+  }
+
   if (Object.keys(fields).length > 0) return { ok: false, fields }
 
   const input: QuestionInput = {

@@ -32,6 +32,7 @@ import {
   type QuestionFormValues,
 } from '../lib/question-form'
 import ArabicKeyboardPanel from './ArabicKeyboardPanel.vue'
+import ChapterSelect from './ChapterSelect.vue'
 import DskpTagging from './DskpTagging.vue'
 import QuestionImagePicker from './QuestionImagePicker.vue'
 
@@ -211,6 +212,14 @@ const correctItems = (i: number, letter: string) => [
               </DsNativeSelect>
             </DsFormField>
           </div>
+
+          <ChapterSelect
+            v-model="values.curriculumChapterId"
+            :subject-id="values.subjectId"
+            :level-id="values.educationLevelId"
+            :saved-label="initial?.chapterLabel ?? null"
+            :error="err('curriculumChapterId')"
+          />
 
           <div class="min-w-0">
             <DskpTagging
