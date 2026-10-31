@@ -4,7 +4,8 @@ import type { ServabilityReport } from '@pp/contract'
 
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
-import { optionImageIds } from '../../bijak/kuiz/kuiz.mapper'
+import { optionImageIds, type OwnStimulus } from '../../bijak/kuiz/kuiz.mapper'
+import { ownStimuliOf } from '../../bijak/kuiz/own-stimuli'
 import { outsideStimuliOf } from '../../bijak/question-bridge/outside-media'
 import { QuestionsBijakPoolSource } from '../bijak-pool'
 import { QuestionsRepository } from '../questions.repository'
@@ -139,13 +140,8 @@ export class ServabilityService {
     return new Map((await this.questions.groupsByIds(ids)).map((g) => [g.id, g]))
   }
 
-  private async assetsOf(records: readonly QuestionRecord[]): Promise<Map<string, { kind: string; assetFileId: string | null }>> {
-    const linked = new Set<string>()
-    for (const r of records) {
-      for (const id of r.version.stimulusIds) linked.add(id)
-      for (const part of walkLeaves(r.version.parts)) if (part.stimulusId) linked.add(part.stimulusId)
-    }
-    return new Map((await this.questions.stimulusAssets([...linked])).map((a) => [a.id, { kind: a.kind, assetFileId: a.assetFileId }]))
+  private assetsOf(records: readonly QuestionRecord[]): Promise<Map<string, OwnStimulus>> {
+    return ownStimuliOf(this.questions, records)
   }
 
   private async tokensOf(
@@ -185,9 +181,4 @@ export class ServabilityService {
     }
     return out
   }
-}
-
-type Leaf = Extract<QuestionRecord['version']['parts'][number], { mode: string }>
-function walkLeaves(parts: QuestionRecord['version']['parts']): Leaf[] {
-  return parts.flatMap((p) => ('mode' in p ? [p as Leaf] : walkLeaves(p.children as QuestionRecord['version']['parts'])))
 }

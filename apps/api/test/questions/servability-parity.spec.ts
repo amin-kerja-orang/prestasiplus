@@ -5,6 +5,7 @@ import { SERVABILITY_ACTIVITIES, type ServabilityActivity, type ServabilityRepor
 import { mulberry32 } from '../../src/db/prng'
 import { Be09BijakQuestionSource } from '../../src/modules/bijak/question-bridge/be09-question-source'
 import { markableLeaf, leavesOf, resolveStimuli } from '../../src/modules/bijak/kuiz/kuiz.mapper'
+import { ownStimuliOf } from '../../src/modules/bijak/kuiz/own-stimuli'
 import { CurriculumRepository } from '../../src/modules/curriculum'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
 import type { UsersRepository } from '../../src/modules/users'
@@ -369,7 +370,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     const kept = new Set<string>()
     for (const record of await repo.getMany([...drawn], 'live')) {
       const group = record.groupId ? await repo.groupOf(record.id) : null
-      const assets = new Map((await repo.stimulusAssets(record.version.stimulusIds)).map((a) => [a.id, a]))
+      const assets = await ownStimuliOf(repo, [record])
       const leaf = leavesOf(record.id, record.version.parts)[0]
       if (record.isActive && leaf && markableLeaf(leaf) !== null && resolveStimuli(record, group, assets).complete) kept.add(record.id)
     }
