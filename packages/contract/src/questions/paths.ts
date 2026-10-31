@@ -129,7 +129,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: admin,
     summary: 'Apply one lifecycle action to many questions',
     description:
-      'Unknown ids are skipped silently; duplicates count once. Flash: "<n> soalan berjaya dikemaskini." Transition rules and "only Admin Pusat publishes" belong to BE-10; forbidden transitions and their error are BE-10 to define.',
+      'Unknown ids are skipped silently; duplicates count once. Flash: "<n> soalan berjaya dikemaskini." Transition rules and "only Admin Pusat publishes" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, rights not "belum jelas", duplicates, DSKP-complete for an SPM-bound question) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).',
     request: { headers: [csrf], body: body(QuestionBulkRequestSchema) },
     responses: {
       200: json(mutationEnvelopeOf(QuestionBulkResultSchema), 'Rows affected, with the flash text.'),
