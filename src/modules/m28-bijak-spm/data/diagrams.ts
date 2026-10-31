@@ -147,8 +147,11 @@ export function circuitSvg(alt: string): string {
  */
 export function svgImage(svg: string): ImageRef {
   const box = /viewBox="0 0 (\d+) (\d+)"/.exec(svg)
+  // A white backdrop keeps the slate strokes readable in dark mode (an image has no theme).
+  const white = box ? `<rect width="${box[1]}" height="${box[2]}" fill="#ffffff" stroke="none"/>` : ''
+  const lit = svg.replace(/(<svg[^>]*>)/, `$1${white}`)
   return {
-    url: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.replaceAll('currentColor', '#334155'))}`,
+    url: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(lit.replaceAll('currentColor', '#334155'))}`,
     ...(box ? { width: Number(box[1]), height: Number(box[2]) } : {}),
   }
 }
