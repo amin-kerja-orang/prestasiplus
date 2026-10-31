@@ -96,6 +96,14 @@ export class PapersRepository {
     })
   }
 
+  /** Every row students generate from (`serves_students`, Disahkan); the key set of `canGenerate` (N1). */
+  listServingBlueprints(): Promise<Pick<Blueprint, 'subjectId' | 'kertas'>[]> {
+    return this.prisma.client.blueprint.findMany({
+      where: { servesStudents: true, source: 'verified' },
+      select: { subjectId: true, kertas: true },
+    })
+  }
+
   async subjectsByIds(ids: readonly bigint[]): Promise<Map<string, SubjectRef>> {
     if (ids.length === 0) return new Map()
     const rows = await this.prisma.client.subject.findMany({

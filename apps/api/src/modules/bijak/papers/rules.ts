@@ -25,17 +25,22 @@ export function sectionInstruction(authored: string | null, rule: SectionRule, q
   return rule.type === 'all' ? 'Jawab semua soalan.' : `Jawab ${String(rule.n)} daripada ${String(questionCount)} soalan.`
 }
 
-export type ReferencePanel = { title: string; items: string[] }
+export type ReferencePanel = { title: string; items: string[]; imageFileId?: string }
 
-/** Reference-sheet panels as stored (a jsonb document); anything that is not a valid panel is dropped. */
+/**
+ * Reference-sheet panels as stored (a jsonb document); anything that is not a valid panel is dropped.
+ * `imageFileId` (a stored image: public token or decimal file id) is carried through, so a reference-sheet
+ * image is stored and served (pupil read rule C of `files/question-image-access`).
+ */
 export function referencePanels(value: unknown): ReferencePanel[] {
   if (!Array.isArray(value)) return []
   const out: ReferencePanel[] = []
   for (const p of value) {
     if (typeof p !== 'object' || p === null) continue
-    const { title, items } = p as { title?: unknown; items?: unknown }
+    const { title, items, imageFileId } = p as { title?: unknown; items?: unknown; imageFileId?: unknown }
     if (typeof title === 'string' && title && Array.isArray(items) && items.every((i) => typeof i === 'string')) {
-      out.push({ title, items: items as string[] })
+      const image = typeof imageFileId === 'string' && imageFileId.length > 0 && imageFileId.length <= 128 ? imageFileId : undefined
+      out.push({ title, items: items as string[], ...(image ? { imageFileId: image } : {}) })
     }
   }
   return out

@@ -31,6 +31,20 @@ export class BuilderController {
     return ok(await this.builder.create(actor, body))
   }
 
+  /** "Pratonton kolam"; declared before `:id` (R1-B09a). */
+  @Get('pool-preview')
+  @RateLimit(BIJAK_BUILDER_LIMITS.read)
+  async poolPreview(@Query() query: unknown) {
+    return ok(await this.builder.poolPreview(query))
+  }
+
+  /** Jana set (draft paper by `composeStandardPaper`, exact or refuse). */
+  @Post('generate')
+  @RateLimit(BIJAK_BUILDER_LIMITS.generate)
+  async generate(@Actor() actor: AuditActor, @Body() body: unknown) {
+    return ok(await this.builder.generateDraft(actor, body))
+  }
+
   @Post('preview')
   @HttpCode(200)
   @RateLimit(BIJAK_BUILDER_LIMITS.write)
@@ -62,6 +76,48 @@ export class BuilderController {
   @RateLimit(BIJAK_BUILDER_LIMITS.write)
   async publish(@Actor() actor: AuditActor, @Param('id') id: string) {
     return ok(await this.builder.publish(actor, id))
+  }
+
+  @Get(':id/review')
+  @RateLimit(BIJAK_BUILDER_LIMITS.read)
+  async review(@Param('id') id: string) {
+    return ok(await this.builder.review(id))
+  }
+
+  @Get(':id/student-view')
+  @RateLimit(BIJAK_BUILDER_LIMITS.read)
+  async studentView(@Param('id') id: string) {
+    return ok(await this.builder.studentView(id))
+  }
+
+  @Get(':id/sections/:sid/pool')
+  @RateLimit(BIJAK_BUILDER_LIMITS.read)
+  sectionPool(@Param('id') id: string, @Param('sid') sid: string, @Query() query: unknown) {
+    return this.builder.sectionPool(id, sid, query)
+  }
+
+  @Post(':id/placements')
+  @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  async addPlacement(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return ok(await this.builder.addPlacement(actor, id, body))
+  }
+
+  @Delete(':id/placements/:questionId')
+  @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  async removePlacement(@Actor() actor: AuditActor, @Param('id') id: string, @Param('questionId') questionId: string) {
+    return ok(await this.builder.removePlacement(actor, id, questionId))
+  }
+
+  @Put(':id/sections/:sid/order')
+  @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  async reorder(@Actor() actor: AuditActor, @Param('id') id: string, @Param('sid') sid: string, @Body() body: unknown) {
+    return ok(await this.builder.reorderSection(actor, id, sid, body))
+  }
+
+  @Post(':id/copy')
+  @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  async copy(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.builder.copy(actor, id))
   }
 
   @Post(':id/withdraw')

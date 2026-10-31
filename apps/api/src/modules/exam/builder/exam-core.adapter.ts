@@ -10,3 +10,28 @@
  */
 export { effectiveMarks, leavesOf } from '@pp/exam-core/paper-model'
 export type { SchemeDef } from '@pp/exam-core/types'
+
+/**
+ * R1-B09a: the standard domain for the admin generate (`composeStandardPaper`), "Pratonton kolam"
+ * (`previewStandard`), the publish check (`verifyComposition`, tier 'structural' for curated papers),
+ * the frozen report and the shortage line.
+ */
+export {
+  buildStandardReport,
+  composeStandardPaper,
+  describeQuestion,
+  eligibilityOf,
+  previewStandard,
+  shortageLine,
+  SOLVER_VERSION,
+  verifyComposition,
+} from '@pp/exam-core'
+export type {
+  ComposeOutcome,
+  ComposedSection,
+  QuestionFacts,
+  StandardBlueprint,
+  StandardSection,
+  StandardShortage,
+  Violation,
+} from '@pp/exam-core'

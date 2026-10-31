@@ -437,7 +437,7 @@ describe('createPaper and PaperPatch (single PUT)', () => {
   it('rejects the removed header and placement fields, a bad section and an empty title', () => {
     for (const extra of [
       { code: '1449/2' },
-      { instructions: [] },
+      { instructions: [''] }, // instructions are a patch field since R1-B09a, but not blank lines
       { reference: [] },
       { blueprint: null },
       { subject: 'MAT' },
@@ -816,7 +816,7 @@ describe('openapi document', () => {
     (o) => o.op.tags?.includes(BIJAK_BUILDER_TAG) || o.op.tags?.includes(BIJAK_BLUEPRINT_ADMIN_TAG),
   )
 
-  it('has 13 operations, 8 paper and 5 blueprint, under /admin only', () => {
+  it('has 21 operations, 16 paper and 5 blueprint, under /admin only', () => {
     const keys = mine.map((o) => `${o.method} ${o.path}`).sort()
     expect(keys).toEqual(
       [
@@ -828,6 +828,14 @@ describe('openapi document', () => {
         'post /admin/papers/preview',
         'post /admin/papers/{id}/publish',
         'post /admin/papers/{id}/withdraw',
+        'get /admin/papers/pool-preview',
+        'get /admin/papers/{id}/review',
+        'get /admin/papers/{id}/student-view',
+        'get /admin/papers/{id}/sections/{sid}/pool',
+        'post /admin/papers/{id}/placements',
+        'delete /admin/papers/{id}/placements/{questionId}',
+        'put /admin/papers/{id}/sections/{sid}/order',
+        'post /admin/papers/{id}/copy',
         'get /admin/blueprints',
         'post /admin/blueprints',
         'get /admin/blueprints/{subject}/{kertas}',
@@ -835,13 +843,13 @@ describe('openapi document', () => {
         'post /admin/blueprints/{subject}/{kertas}/retire',
       ].sort(),
     )
-    expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BUILDER_TAG))).toHaveLength(8)
+    expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BUILDER_TAG))).toHaveLength(16)
     expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BLUEPRINT_ADMIN_TAG))).toHaveLength(5)
     expect(mine.every((o) => o.path.startsWith('/admin/'))).toBe(true)
   })
 
-  it('has no separate sections, placements or conformance route', () => {
-    for (const gone of ['/sections', '/placements', '/conformance']) {
+  it('has no conformance route (the lines are the publish errors and the review blockers)', () => {
+    for (const gone of ['/conformance']) {
       expect(
         mine.some((o) => o.path.endsWith(gone)),
         gone,
@@ -884,7 +892,7 @@ describe('openapi document', () => {
       content: Record<string, { schema: { $ref: string } }>
     }
     const writes = mine.filter((o) => o.method !== 'get')
-    expect(writes).toHaveLength(9)
+    expect(writes).toHaveLength(13)
     for (const { path, method, op } of writes) {
       const r = op.responses['429'] as R429 | undefined
       expect(r, `${method} ${path}`).toBeDefined()
@@ -1019,6 +1027,7 @@ describe('openapi document', () => {
     const noBody = [
       '/admin/papers/{id}/publish',
       '/admin/papers/{id}/withdraw',
+      '/admin/papers/{id}/copy',
       '/admin/blueprints/{subject}/{kertas}/retire',
     ]
     for (const path of noBody) expect(doc.paths[path]?.post?.requestBody, path).toBeUndefined()
