@@ -7,7 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
-import { E2E_ADMIN_EMAIL, E2E_PUPIL_EMAIL, e2eSeed, e2eSeedEnabled } from '../../prisma/seed/e2e'
+import { E2E_ADMIN_EMAIL, E2E_EVIDENCE_NOTE, E2E_PUPIL_EMAIL, e2eSeed, e2eSeedEnabled } from '../../prisma/seed/e2e'
 import { examSeed } from '../../prisma/seed/exam'
 import { examDemoBlueprintsSeed } from '../../prisma/seed/exam-demo-blueprints'
 import { examLaunchBlueprintsSeed } from '../../prisma/seed/exam-launch-blueprints'
@@ -122,6 +122,22 @@ describe('e2e seed with the guard on', () => {
     expect(v?.by).toBe(admin?.id)
     // the other launch blueprints stay Spec
     expect(await db.query(`select 1 from blueprints where provenance = 'paper' and code <> $1 and source = 'verified'`, [CODE])).toHaveLength(0)
+  })
+
+  it('H-A15: Sahkan counts only admin-origin evidence, so the seed replaces the study rows by admin rows labelled as an E2E fixture (and keeps their values)', async () => {
+    const rows = await db.query<{ origin: string; note: string | null; body: string; created_by_id: string | null }>(
+      `select e.origin, e.note, e.body, e.created_by_id::text from blueprint_evidence e join blueprints b on b.id = e.blueprint_id where b.code = $1 and b.status = 'active'`,
+      [CODE],
+    )
+    expect(rows.length).toBeGreaterThanOrEqual(4)
+    expect(rows.every((r) => r.origin === 'admin' && r.note === E2E_EVIDENCE_NOTE && r.created_by_id !== null)).toBe(true)
+    expect(new Set(rows.map((r) => r.body)).size).toBeGreaterThanOrEqual(2)
+    const v = (await db.query<{ note: string; snapshot: { origin: string }[] }>(
+      `select v.note, v.evidence_snapshot snapshot from blueprint_verifications v join blueprints b on b.id = v.blueprint_id where b.code = $1`,
+      [CODE],
+    ))[0]
+    expect(v?.note?.trim().length).toBeGreaterThan(0)
+    expect(v?.snapshot.every((e) => e.origin === 'admin')).toBe(true)
   })
 
   it('is idempotent: a second run keeps one verification row and the same accounts', async () => {
