@@ -163,6 +163,26 @@ describe('QuestionListPage (M04 S1)', () => {
     expect(questions.fetchQuestions.mock.calls[0]?.[0]).toMatchObject({ subjectId: '8' })
   })
 
+  it('shows "Esei pilihan" and the topics only for an essay_choice row (H-C3)', async () => {
+    questions.fetchQuestions.mockResolvedValue(
+      listResult(
+        [
+          row(1, { essayTopics: [{ id: 't1', label: 'Peranan belia' }, { id: 't2', label: 'Kepentingan membaca' }] }),
+          row(2),
+        ],
+        2,
+      ),
+    )
+    const w = await render()
+    const rows = w.findAll('tbody tr')
+    expect(rows[0]?.get('[data-testid="question-essay-choice"]').text()).toContain('Esei pilihan')
+    expect(rows[0]?.findAll('[data-testid="question-essay-topic"]').map((n) => n.text())).toEqual([
+      '1. Peranan belia',
+      '2. Kepentingan membaca',
+    ])
+    expect(rows[1]?.find('[data-testid="question-essay-choice"]').exists()).toBe(false)
+  })
+
   it('renders the rows in API order with badges, source and status', async () => {
     const w = await render()
     const rows = w.findAll('tbody tr')
