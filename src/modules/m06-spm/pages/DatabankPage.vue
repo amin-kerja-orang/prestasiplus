@@ -6,8 +6,6 @@
  * 18 subject cards (1 / `md` 2 / `lg` 3 columns), not links. "Pilih set:" 5 / 10 / 20 are links to Q1;
  * the "Mula" is plain text as live (D-5, replicated). Every query parameter is ignored.
  */
-import { computed } from 'vue'
-
 import { useApi } from '@/composables'
 import { DsBackLink, DsIconChip, DsPage, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
@@ -20,8 +18,6 @@ import { LOAD_ERROR } from '../lib/copy'
 const COUNTS = [5, 10, 20] as const
 
 const { data, error, reload } = useApi((signal) => fetchDatabank({ signal }))
-/** V2 lists only subjects with a databank count above 0 (cloud-student-mechanism section 2.8). */
-const subjects = computed(() => (data.value ?? []).filter((s) => s.databankCount > 0))
 </script>
 
 <template>
@@ -42,7 +38,7 @@ const subjects = computed(() => (data.value ?? []).filter((s) => s.databankCount
       class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3"
       data-testid="databank-grid"
     >
-      <li v-for="(s, i) in subjects" :key="s.code" class="min-w-0" :data-testid="`databank-card-${s.code}`">
+      <li v-for="(s, i) in data" :key="s.code" class="min-w-0" :data-testid="`databank-card-${s.code}`">
         <UCard class="h-full" :ui="{ body: 'flex h-full flex-col gap-3 p-4' }">
           <div class="flex items-center gap-3">
             <DsIconChip
@@ -67,14 +63,24 @@ const subjects = computed(() => (data.value ?? []).filter((s) => s.databankCount
             <UButton
               v-for="n in COUNTS"
               :key="n"
-              :to="`/spm/tahun-lepas/${encodeURIComponent(s.code)}/quiz?count=${String(n)}`"
+              :to="s.databankCount > 0 ? `/spm/tahun-lepas/${encodeURIComponent(s.code)}/quiz?count=${String(n)}` : undefined"
+              :disabled="s.databankCount === 0"
               color="neutral"
               variant="soft"
               class="tabular min-h-11 min-w-11 justify-center"
               :data-testid="`databank-set-${s.code}-${String(n)}`"
               >{{ n }}</UButton
             >
-            <span class="ms-auto text-label text-primary-t" data-testid="databank-mula">Mula</span>
+            <UBadge
+              v-if="s.databankCount === 0"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-lock-bold"
+              class="ms-auto"
+              data-testid="databank-empty"
+              >Tiada soalan</UBadge
+            >
+            <span v-else class="ms-auto text-label text-primary-t" data-testid="databank-mula">Mula</span>
           </div>
         </UCard>
       </li>

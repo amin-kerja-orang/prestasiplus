@@ -195,14 +195,15 @@ describe('S2 DatabankPage', () => {
 })
 
 describe('S2 DatabankPage empty subject (T14 B-08)', () => {
-  it('a 0-question subject is not listed (V2 section 2.8)', async () => {
+  it('a 0-question subject has no "Mula" and no start links, only "Tiada soalan"', async () => {
     api.fetchDatabank.mockResolvedValue([
       { code: 'BIO', name: 'Biologi', nameEn: 'Biology', icon: 'fa-dna', color: '#10B981', databankCount: 0 },
-      { code: 'BM', name: 'Bahasa Melayu', nameEn: 'Malay Language', icon: 'fa-book-open', color: '#3B82F6', databankCount: 5 },
     ])
     const w = await render(DatabankPage, '/spm/tahun-lepas')
-    expect(w.find('[data-testid=databank-card-BIO]').exists()).toBe(false)
-    expect(w.findAll('[data-testid^=databank-card-]')).toHaveLength(1)
+    const card = t(w, 'databank-card-BIO')
+    expect(card.find('[data-testid=databank-mula]').exists()).toBe(false)
+    expect(card.get('[data-testid=databank-empty]').text()).toBe('Tiada soalan')
+    expect(card.findAll('a')).toHaveLength(0)
   })
 })
 
@@ -235,7 +236,7 @@ describe('S3 LatihTubiListPage', () => {
         code: 'BA',
         name: 'Bahasa Arab',
         nameEn: 'Arabic Language',
-        total: 12,
+        total: 0,
         targetType: 'latihan',
         targetSize: 40,
         locked: true,
@@ -259,26 +260,8 @@ describe('S3 LatihTubiListPage', () => {
     const ba = t(w, 'latih-tubi-card-BA')
     expect(ba.attributes('href')).toBe('javascript:void(0)')
     expect(ba.classes()).toContain('pointer-events-none')
-    expect(ba.get('[data-testid=latih-tubi-locked]').text()).toBe('Locked: 12/40')
-    expect(ba.get('[data-testid=latih-tubi-count]').text()).toBe('12 soalan')
-  })
-})
-
-describe('S3 LatihTubiListPage empty subject (T14 B-08)', () => {
-  it('hides a subject with 0 questions, as V2 does', async () => {
-    const c = (code: string, total: number) => ({
-      code, name: code, nameEn: code, icon: 'fa-book-open', color: '#000', total,
-      targetType: 'latihan', targetSize: 40, locked: total < 40,
-    })
-    api.fetchLatihTubiList.mockResolvedValue({ teras: [c('BIO', 0)], elektif: [c('BA', 0), c('EKON', 5)] })
-    const w = await render(LatihTubiListPage, '/spm/latih-tubi')
-    expect(w.find('[data-testid=latih-tubi-card-BIO]').exists()).toBe(false)
-    expect(w.find('[data-testid=latih-tubi-card-BA]').exists()).toBe(false)
-    expect(t(w, 'latih-tubi-card-EKON').get('[data-testid=latih-tubi-locked]').text()).toBe('Locked: 5/40')
-    expect(w.findAll('[data-testid=section-heading]').map((h) => h.text())).toEqual([
-      'Subjek Teras (0)',
-      'Subjek Elektif (1)',
-    ])
+    expect(ba.get('[data-testid=latih-tubi-locked]').text()).toBe('Locked: 0/40')
+    expect(ba.get('[data-testid=latih-tubi-count]').text()).toBe('0 soalan')
   })
 })
 

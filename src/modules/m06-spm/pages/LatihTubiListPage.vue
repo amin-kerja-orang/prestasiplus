@@ -26,23 +26,20 @@ const targetText = (c: LatihTubiCard): string | null =>
     ? `Target ${targetName(c.targetType)}: ${String(c.targetSize)}`
     : null
 
-/** V2 lists only subjects with a question count above 0 (cloud-student-mechanism section 2.1); a non-zero locked subject stays. */
-const listed = (c: LatihTubiCard): boolean => c.total > 0
-
 const groups = (d: { teras: LatihTubiCard[]; elektif: LatihTubiCard[] }) => [
   {
     id: 'teras',
     title: 'Subjek Teras',
     icon: 'i-ph-crown-duotone',
     accent: 'win' as DsAccent,
-    cards: d.teras.filter(listed),
+    cards: d.teras,
   },
   {
     id: 'elektif',
     title: 'Subjek Elektif',
     icon: 'i-ph-puzzle-piece-duotone',
     accent: 'friend' as DsAccent,
-    cards: d.elektif.filter(listed),
+    cards: d.elektif,
   },
 ]
 </script>
