@@ -227,7 +227,7 @@ Also noted: user decisions of 18:03 relayed by team B — B09b paper-review edit
 | b-requests-a4 | r1/b-requests-a4 @ 42396048 | A4 | REQ-B-013, REQ-B-014 b/c (inline SVG dropped) |
 | T43 | r1/t43-chain-publish @ 8e04493f | A3 | spec-only; chain: Kontrak created + Disahkan over API, plain Terbit, T5 pupil, Jana T4/T5 distinct, negatives; merge after T31 |
 | T48 | r1/t48-builder-parity @ 1b76778f | A3 | READY pending re-run; migration 0104; cover code, per-paper rule (overridable RULE_NOT_IN_CONTRACT), Tambah bahagian / Tambah soalan (V2 texts) / Padam soalan, `pinned`, R3 caption/body; B3 |
-| H-A25 | r1/t37-r1-runbook @ bd2c21e9 + r1/ha24-release-input @ cf49303a | A3 docs | 0102/0103 SELECTs 58/58 on local pg16; REQ-C-016 scope doc fixed |
+| H-A25 | r1/t37-r1-runbook @ ca2e0f93 + r1/ha24-release-input @ 9fd0d724 | A3 docs | 0102/0103/0104 SELECTs 63/63 on local pg16; REQ-C-016 scope doc fixed; 0105 when pushed |
 | T38 / T40 | r1/t38-selfmark-reward @ 662e602f / r1/t40-attempts-acs @ 90973d72 | A1 | |
 | T41 | r1/t41-curriculum-acs @ 067ff3cc | A1 | DSKP loader BM reasons (code fix), load changes no served count, Darjah text; dskp-acs 3/3 |
 | b-requests-a1 | r1/b-requests-a1 @ aa9f89dd | A1 | REQ-B-005/006/007/014a; B3 for 005/007 |
