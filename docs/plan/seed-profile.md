@@ -120,7 +120,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | sekolah_bersaing_weeks | 16 |
 | spin_stats | 8 |
 | spm_subject_configs | 19 |
-| spm_tracking_set_questions | 483 |
+| spm_tracking_set_questions | 493 |
 | spm_tracking_sets | 10 |
 | stimuli | 2 |
 | stimulus_group_options | 4 |
@@ -142,7 +142,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 98 of 198. Total rows: 21881.
+Tables with rows: 98 of 198. Total rows: 21891.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.
