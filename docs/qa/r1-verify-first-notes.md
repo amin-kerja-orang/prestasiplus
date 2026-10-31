@@ -73,7 +73,7 @@ Source: `apps/api/src/modules/bijak/attempts/attempts.service.ts:emit` (runs aft
 | XP | `points = score * 10` is computed but **not credited** at BASE-6. | `wallet.addXp(points)`, added only when the syiling credit was new, so a replay never pays XP twice. | Rate equals V2's 10 per mark. |
 | Kombo (streak) | **Not touched** at BASE-6. | `streaks.touch` on the day the attempt closed, idempotent per day; a zero score still counts a closed exam. | Rule is **unconfirmed** against V2 (see 2.1). The T28 code comment says the same. |
 | Mod Pelajar (`isTest`) | No ledger row, no balance, no XP, no streak (AC-20.3). | same | |
-| Later self-mark | Updates the aggregate row and the score columns; **no reward is added or changed** (spec: "without a second reward"). | same | **Difference from V2:** V2 adds a positive delta of syiling and XP on a later self-mark. A V3 pupil who raises a mark after the submit gains Prestasi but no extra syiling or XP. Decision needed (D9). |
+| Later self-mark | Updates the aggregate row and the score columns; **no reward is added or changed** (spec: "without a second reward"). | same | **Difference from V2, now decided (D94, user, 2026-10-31; `docs/TRACKER.md` on `origin/r1/d91-decisions`):** V2 adds a positive delta on a later self-mark. D94 says V3 follows V2 with a cap: when a self-mark raises the score the pupil earns 2 Syiling + 10 XP per mark gained, positive delta only, once per part, never above the part's full marks; a lower mark claws nothing back. This supersedes the "frozen at submit" rule for rewards only. **Not built yet: lane A1 builds it as T38.** Until T38 lands, a V3 pupil who raises a mark after the submit gains Prestasi but no extra syiling or XP. |
 | Cuba Lagi | A new attempt, a new reward key (`attemptId`). | T28 comment: "Cuba Lagi is a new attempt and earns again, as V2 does" (lead decision recorded there). | No double award for the same attempt. |
 
 ### 2.3 Kuiz and Databank sessions (AC-R1-10.4)
@@ -91,7 +91,7 @@ Source: `apps/api/src/modules/bijak/attempts/attempts.service.ts:emit` (runs aft
 
 ### 2.5 Result recorded for the item
 
-- V3 writes the same **kinds** of records as V2 except: the Prestasi feed is `practice_attempt_aggregates` (not a `practice_sessions` row), a later self-mark pays nothing extra (V2 pays a positive delta), and XP and kombo exist only after T28.
+- V3 writes the same **kinds** of records as V2 except: the Prestasi feed is `practice_attempt_aggregates` (not a `practice_sessions` row), a later self-mark pays nothing extra today (V2 pays a positive delta; D94 decides V3 follows it with a cap, built as T38), and XP and kombo exist only after T28.
 - Amounts: syiling 2 per mark and XP 10 per mark match the V2 figures in the repo's discovery document. No other amount is assumed.
-- **Unconfirmed** (needs the V2 code): the kombo step of `PracticeRecorder`; the V2 rate for latih tubi / Databank sessions; whether a later self-mark delta applies to syiling and XP exactly as described.
-- Decisions this note hands to the lead: (a) keep V3's "no reward on a later self-mark" or add the V2 positive delta; (b) merge T28 before sign-off so XP and kombo exist.
+- **Unconfirmed** (needs the V2 code): the kombo step of `PracticeRecorder`; the V2 rate for latih tubi / Databank sessions; the exact V2 cap rule of the self-mark delta (D94 states the V3 rule: once per part, never above the part's full marks).
+- Decided since this note was first written: the later-self-mark reward follows V2 with a cap (D94), built by lane A1 as T38; Cuba Lagi earns per attempt (D93, T28 comment). Still open: merge T28 before sign-off so XP and kombo exist at all.
