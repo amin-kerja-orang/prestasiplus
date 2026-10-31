@@ -861,7 +861,15 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
   async function studioMcq(
     page: Page,
     info: TestInfo,
-    opts: { stem: string; number: string; stimulus?: string; joinGroup?: string; image?: boolean },
+    opts: {
+      stem: string
+      number: string
+      stimulus?: string
+      stimulusLabel?: string
+      joinGroup?: string
+      joinLabel?: string
+      image?: boolean
+    },
   ): Promise<{ id: string; groupId: string }> {
     await page.goto('/admin/studio/questions/create')
     await expect(
@@ -888,7 +896,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     // Langkah 2: the shared stimulus.
     if (opts.stimulus) {
       await page.getByTestId('studio-group-new-kind').selectOption('passage')
-      await page.getByTestId('studio-group-new-label').fill('Petikan 1')
+      await page.getByTestId('studio-group-new-label').fill(opts.stimulusLabel ?? 'Petikan 1')
       await page.getByTestId('studio-group-new-body').fill(opts.stimulus)
       await page.getByTestId('studio-group-create').click()
       await expect(
@@ -897,8 +905,13 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       ).toBeVisible()
     }
     if (opts.joinGroup) {
-      await page.getByTestId('studio-group-attach-id').fill(opts.joinGroup)
-      await page.getByTestId('studio-group-attach').click()
+      // BASE-59 (T13c): no join-by-id field any more; search the groups by label and press "Sertai" on ours.
+      if (opts.joinLabel) await page.getByTestId('studio-group-group-search').fill(opts.joinLabel)
+      const join = page.getByTestId(`studio-group-group-${opts.joinGroup}-join`)
+      await expect(join, 'our group is offered in the group search').toBeVisible({
+        timeout: 15_000,
+      })
+      await join.click()
       await expect(page.getByTestId('studio-group-id'), 'joined the group').toContainText(
         `#${opts.joinGroup}`,
       )
@@ -1042,9 +1055,15 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       stem: q1,
       number: '1',
       stimulus: `Petikan bersama ${st.tag}: Kitar semula mengurangkan sisa di tapak pelupusan.`,
+      stimulusLabel: `Petikan ${st.tag}`,
     })
     expect(a.groupId, 'Q1 saved inside a new shared-stimulus group').not.toBe('')
-    const b = await studioMcq(page, info, { stem: q2, number: '2', joinGroup: a.groupId })
+    const b = await studioMcq(page, info, {
+      stem: q2,
+      number: '2',
+      joinGroup: a.groupId,
+      joinLabel: `Petikan ${st.tag}`,
+    })
     expect(b.groupId, 'Q2 joined the same group').toBe(a.groupId)
     saveState(info, { studioGroup: { id: a.groupId, questionIds: [a.id, b.id], texts: [q1, q2] } })
     // The group page: one stimulus, both members, no "fewer than 2" warning (D93).
@@ -1502,6 +1521,84 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     expect(now, 'Latih Tubi SPM Matematik count rose after approval').toBeGreaterThan(
       st.baseline!.latihTubiMath ?? 0,
     )
+  })
+
+  test('S5e Latih Tubi SPM in the UI (REQ-A-005): setup, Mula Kuiz, answer, result, back to the list', async ({
+    page,
+  }, info) => {
+    await login(page, PUPIL_T4)
+    await page.goto('/spm/latih-tubi')
+    await expect(page.getByTestId('spm-latih-tubi-page')).toBeVisible()
+    await page.getByTestId('latih-tubi-card-MATH').click()
+    await expect(page.getByTestId('spm-config-page'), 'the setup page').toBeVisible()
+    await expect(page.getByTestId('config-start')).toBeVisible({ timeout: 15_000 })
+    // The smallest "Bilangan Soalan" offered (keeps the run short and inside the pupil's free-trial allowance,
+    // "Percubaan Percuma: 50 soalan", which 3 viewports x 40 questions exhaust).
+    await page
+      .locator('[data-testid^=count-]')
+      .first()
+      .waitFor({ state: 'visible', timeout: 15_000 })
+      .catch(() => undefined)
+    const countIds = await page
+      .locator('[data-testid^=count-]')
+      .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid') ?? ''))
+    const smallest = countIds
+      .map((id) => Number(id.replace('count-', '')))
+      .filter((n) => n > 0)
+      .sort((x, y) => x - y)[0]
+    if (smallest) await page.getByTestId(`count-${smallest}`).click()
+    observe(
+      info,
+      `setup: ${(await page.getByTestId('config-title').innerText()).trim()}; ${(await page.getByTestId('config-summary').innerText()).replace(/\s+/g, ' ')}`,
+    )
+    await expectNoHScroll(page)
+    await page.getByTestId('config-start').click()
+    await expect(page, 'the quiz route').toHaveURL(/\/spm\/latih-tubi\/[^/]+\/quiz/)
+    await expect(page.getByTestId('quiz-runner')).toBeVisible()
+    await expect(page.getByTestId('quiz-loading')).toHaveCount(0, { timeout: 20_000 })
+    await expectNoHScroll(page)
+    let answered = 0
+    for (let guard = 0; guard < 45; guard++) {
+      if (
+        await page
+          .getByTestId('quiz-results')
+          .isVisible()
+          .catch(() => false)
+      )
+        break
+      const q = page.getByTestId('question-text')
+      const before = await q.innerText().catch(() => '')
+      await page.locator('[data-testid^=option-]:visible').first().click()
+      await page.getByTestId('btn-check').click()
+      await page.getByTestId('btn-next').click()
+      answered++
+      await expect
+        .poll(
+          async () =>
+            (await page
+              .getByTestId('quiz-results')
+              .isVisible()
+              .catch(() => false)) || (await q.innerText().catch(() => before)) !== before,
+          { timeout: 15_000 },
+        )
+        .toBe(true)
+    }
+    await expect(page.getByTestId('quiz-results'), 'the result').toBeVisible({ timeout: 20_000 })
+    observe(
+      info,
+      `answered ${answered}; result ${(await page.getByTestId('result-score').innerText()).replace(/\s+/g, ' ')} (${(
+        await page
+          .getByTestId('result-percent')
+          .innerText()
+          .catch(() => '')
+      ).trim()})`,
+    )
+    await expectNoHScroll(page)
+    await page.getByTestId('result-back').click()
+    await expect(page, 'the result returns to the Latih Tubi SPM list').toHaveURL(
+      /\/spm\/latih-tubi$/,
+    )
+    await expect(page.getByTestId('spm-latih-tubi-page')).toBeVisible()
   })
 
   test("S5c Soalan by Chapter lists the admin question's Bab", async ({ page }, info) => {
