@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { AccountFaith, AccountSettings } from '@pp/contract'
 
 import { idFromString, idToString } from '../../db/ids'
+import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { SPM_SERVABLE_SQL } from '../questions/learner-visibility'
 
@@ -10,7 +11,9 @@ import { SPM_SERVABLE_SQL } from '../questions/learner-visibility'
  * learner-visible level that is one of the OFFERED_LEVEL_CODES (T4, T5), of an active subject linked to that level: exactly the sum of the subject cards.
  * R1-B06: the level / subject / PKSK part is the shared SPM_SERVABLE_SQL (static text, the codes are constants).
  */
-export const QUESTION_COUNT_SQL = `SELECT count(*) AS c FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${SPM_SERVABLE_SQL.sql}`
+export const QUESTION_COUNT = Prisma.sql`SELECT count(*) AS c FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${SPM_SERVABLE_SQL}`
+/** The same statement as plain text (static, no parameters) for the specs that append a filter to it. */
+export const QUESTION_COUNT_SQL = QUESTION_COUNT.sql
 
 export interface ResetRow {
   id: string
@@ -172,16 +175,16 @@ export class AccountDataRepository {
            OR (table_name = 'subjects' AND column_name = 'is_active')
            OR (table_name = 'education_levels' AND column_name = 'is_active'))`
     const present = new Set(have.map((r) => r.table_name))
-    const count = async (table: string, sql: string): Promise<number> => {
+    const count = async (table: string, statement: Prisma.Sql): Promise<number> => {
       if (!present.has(table)) return 0
-      // Fixed statements, no input: $queryRawUnsafe only because the table may not exist at build time.
-      const rows = await this.prisma.client.$queryRawUnsafe<{ c: bigint }[]>(sql)
+      // Tagged statements (Prisma.sql), never a concatenated string; the table check above is the build-time guard.
+      const rows = await this.prisma.client.$queryRaw<{ c: bigint }[]>(statement)
       return Number(rows[0]?.c ?? 0)
     }
     return {
-      questionCount: await count('questions', QUESTION_COUNT_SQL),
-      subjectCount: await count('subjects', 'SELECT count(*) AS c FROM subjects WHERE is_active'),
-      levelCount: await count('education_levels', 'SELECT count(*) AS c FROM education_levels WHERE is_active'),
+      questionCount: await count('questions', QUESTION_COUNT),
+      subjectCount: await count('subjects', Prisma.sql`SELECT count(*) AS c FROM subjects WHERE is_active`),
+      levelCount: await count('education_levels', Prisma.sql`SELECT count(*) AS c FROM education_levels WHERE is_active`),
     }
   }
 }
