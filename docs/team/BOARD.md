@@ -285,3 +285,5 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - ETAs: T34 23:30–23:45 UTC (A3); T36 ~23:45 UTC (A2).
 - **BASE vue-tsc fix READY** r1/fix-base-vuetsc @ 1a2a5ca6 (A4): 1-line test fix; tsconfig.node + contract tsconfig 1→0 errors; contract questions 95/95. **B1: merge first.**
 - Merge order: T26b → T26c → T36 (no fixme left in base). Conformance fix = REQ-B-023 on r1/t33-conformance-fix (A2 slot 1).
+- **Stale-branch round on BASE-60 (A1b)**: H-A13 @ 61b8851d (B2 + B3 Approve; only change is the BASE merge), T38 @ ff1e8a1b, T40 @ 1ef1341b, T50 @ 50dd05ab, T52 @ 31812d8c; tsc 0 on all five; openapi has no drift.
+- **BASE REGRESSION**: `test/bijak-attempts` has 46 failures on BASE-60 (attempts, attempts-hardening, self-mark). ZodError: stimulus `image.url` > 300 at contract bijak/attempts/schema.ts:358. Suspect 23a4955a4 (r1e2e-05b). It passed 293/293 at BASE-21. The T38/T40/T50 self-mark/ac-r1/reveal-data failures have the same cause. **Fix → A1, r1/fix-attempt-image-url (bisect in progress).**
