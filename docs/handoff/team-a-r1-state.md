@@ -1,6 +1,6 @@
 # Team A R1 state: resume sheet
 
-Date: 2026-10-31. Written off `feature/v3-bijak-r1` @ a3e92b06c (BASE-60). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
+Date: 2026-10-31. Written off `feature/v3-bijak-r1` @ 17797f487 (BASE-62). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
 
 Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 
@@ -48,7 +48,7 @@ Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 | R1E2E-05 / 05b own stimuli | `r1/e2e05b-own-stimuli` @ 9895d004 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 | servability-own-stimuli | `r1/servability-own-stimuli` @ eea90859 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 
-Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13 (BASE-22), REQ-A-001 (BASE-25), H-C3 (BASE-29), H-C7 (BASE-30), H-C5 (BASE-37), R1-21 hub (BASE-45), REQ-B-030 (BASE-46), REQ-B-001/016 (BASE-47), REQ-B-002 (BASE-48), T11 (BASE-49), REQ-A-010 (BASE-50), H-C6 (BASE-51), REQ-B-011 (BASE-52), T13 follow-up (BASE-53), intake parity (BASE-54), T13b (BASE-55), REQ-B-027 (form part) (BASE-56), H-C5 follow-up (BASE-57), T12 (BASE-58), T13c (BASE-59).
+Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13 (BASE-22), REQ-A-001 (BASE-25), H-C3 (BASE-29), H-C7 (BASE-30), H-C5 (BASE-37), R1-21 hub (BASE-45), REQ-B-030 (BASE-46), REQ-B-001/016 (BASE-47), REQ-B-002 (BASE-48), T11 (BASE-49), REQ-A-010 (BASE-50), H-C6 (BASE-51), REQ-B-011 (BASE-52), T13 follow-up (BASE-53), intake parity (BASE-54), T13b (BASE-55), REQ-B-027 (form part) (BASE-56), H-C5 follow-up (BASE-57), T12 (BASE-58), T13c (BASE-59), intake cognitive (BASE-61), H-C3 follow-up (BASE-62).
 
 ### 1.2 READY, not merged (team B merges)
 
@@ -66,16 +66,16 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | H-A16 table reader | `r1/ha16-table-reader` @ b283a746 | A2 | T32, T07 | CHANGES-REQUESTED (A2) |
 | H-A8 stale specs | `r1/ha8-stale-specs` @ 56b1b6cc | A2 | base | READY (test-only) |
 | T04 minors (R1E2E-09) | `r1/t04-minors` @ ec179b12 | A2 | T04 | CHANGES-REQUESTED (docs) (A2) |
-| T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ 662e602f | A1 | T28 | CHANGES-REQUESTED (A1) |
-| T40 attempts ACs | `r1/t40-attempts-acs` @ 90973d72 | A1 | T38 | follows T38 |
+| T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ ff1e8a1b | A1 | T28 | CHANGES-REQUESTED (A1) |
+| T40 attempts ACs | `r1/t40-attempts-acs` @ 1ef1341b | A1 | T38 | follows T38 |
 | T50 partial ACs | `r1/t50-partial-acs` @ 7254a8a2 | A1 | none | READY (not in the B queue table) |
-| H-A13 archived paper | `r1/ha13-archived-paper` @ 3979e212 | A1 | T35 (base) | B2 Approve w/ Minors; needs base merge + contract:emit (A1) |
+| H-A13 archived paper | `r1/ha13-archived-paper` @ 61b8851d | A1 | T35 (base) | B2 Approve w/ Minors; needs base merge + contract:emit (A1) |
 | T34 builder review (+ structured blockers) | `r1/t34-builder-review` @ 7bc3419e | A3 | T29; B2 order T29 -> T33 -> T34 | CHANGES-REQUESTED by B2 (A3 fixing: override vs structural blockers, T33 cognitiveLevel fixtures) |
 | T31 builder wire | `r1/t31-builder-wire` @ b3501db9 | A3 | T34; waits for C1 REQ-A-008 | CHANGES-REQUESTED (needs fixed T34 + REQ-A-008) |
 | T43 chain + publish ACs | `r1/t43-chain-publish` @ 89d30dab | A3 dev-1 | T31 (contains T34) | CHANGES-REQUESTED (follows T34) |
 | T44 Kontrak fields (contains H-A15) | `r1/t44-blueprint-fields` @ 77984abc | A3 dev-2 | none | CHANGES-REQUESTED (A3; T33 fixtures, REQ-B-028 pool) |
 | H-A15 blueprint evidence | `r1/ha15-blueprint-evidence` @ 7e5d637e | A3 dev-2 | none (hazard X1) | B3 Pass; X1 seed decision |
-| T48 builder parity (0104) | `r1/t48-builder-parity` @ bdc70de4 | A3 | T34; re-verify running | CHANGES-REQUESTED (A3 fixing; migration 0104) |
+| T48 builder parity (0104) | `r1/t48-builder-parity` @ 2cbe7d28 | A3 | T34; re-verify running | CHANGES-REQUESTED; A3 pushed the B2-findings fix (2cbe7d28), awaiting re-review (migration 0104) |
 | H-A9 pipeline chain (older) | `r1/ha9-pipeline-chain` @ 1024616c | A3 | superseded by T43 | superseded by T43 |
 | T43b publish ACs | `r1/t43b-publish-acs` @ 92866aa8 | A3 dev-2 | T43 | pushed; not yet in the B queue |
 | T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 359fe16e | A3 dev-1 | T43 | pushed; not yet in the B queue |
@@ -85,7 +85,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch | Lane | Depends on |
 |---|---|---|---|
-| H-A18 gate facts (0105) | `r1/ha18-gate-facts` (not on origin) | A2 | T33 |
+| H-A18 gate facts (0105) | `r1/ha18-gate-facts` @ 3a2ac810 (pushed: move to 1.2 after review) | A2 | T33 |
 
 ### 1.4 Docs units (A3 docs agent), all READY
 
@@ -133,8 +133,8 @@ Earlier decisions still in force for R1: D72 (secondary only), D75/D76 (standard
 | 0101 | `0101_essay_choice` | T25 | merged BASE-15 |
 | 0102 | `0102_leaf_cognitive_level` | T33 (`r1/t33-leaf-tags` @ 95cea5be) | merged BASE-27 |
 | 0103 | `0103_question_report_context` | T42 (`r1/t42-reports-intake-acs` @ d1210e96) | merged BASE-41; attempt FK stays NOT VALID |
-| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ bdc70de4) | CHANGES-REQUESTED (A3 fixing; migration 0104) |
-| 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) | not pushed; plan and number to the lead first |
+| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 2cbe7d28) | CHANGES-REQUESTED; A3 pushed the B2-findings fix (2cbe7d28), awaiting re-review (migration 0104) |
+| 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ 3a2ac810 | pushed, READY after review |
 
 Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. 0106 to 0109 free. SQL for 0092 to 0104 is in `docs/ops/r1-runbook.md`.
 
@@ -149,7 +149,7 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 | Open to B | REQ-A-007, REQ-A-009, REQ-A-011 |
 | Open to C | REQ-A-004 |
 | Delivered by B or C to A's request | REQ-A-001, REQ-A-002, REQ-A-003, REQ-A-005, REQ-A-006, REQ-A-008, REQ-A-010, REQ-A-012 |
-| Closed (done, declined, withdrawn) | REQ-B-001, REQ-B-002, REQ-B-005, REQ-B-006, REQ-B-008, REQ-B-009, REQ-B-010, REQ-B-011, REQ-B-012, REQ-B-015, REQ-B-016, REQ-B-018, REQ-B-020, REQ-B-021, REQ-B-024, REQ-B-030, REQ-C-001, REQ-C-002, REQ-C-003, REQ-C-004, REQ-C-005, REQ-C-006, REQ-C-007, REQ-C-008, REQ-C-011, REQ-C-014, REQ-C-015 |
+| Closed (done, declined, withdrawn) | REQ-B-001, REQ-B-002, REQ-B-005, REQ-B-006, REQ-B-008, REQ-B-009, REQ-B-010, REQ-B-011, REQ-B-012, REQ-B-015, REQ-B-016, REQ-B-018, REQ-B-020, REQ-B-021, REQ-B-024, REQ-B-027, REQ-B-030, REQ-C-001, REQ-C-002, REQ-C-003, REQ-C-004, REQ-C-005, REQ-C-006, REQ-C-007, REQ-C-008, REQ-C-011, REQ-C-014, REQ-C-015 |
 | Raised between B and C, not A | REQ-B-001, REQ-B-002, REQ-B-009, REQ-B-011, REQ-B-016, REQ-B-024, REQ-B-027, REQ-B-030, REQ-B-036, REQ-B-038, REQ-B-039, REQ-C-023 |
 
 ## 5. How to resume
