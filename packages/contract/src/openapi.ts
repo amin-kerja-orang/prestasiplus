@@ -34,6 +34,7 @@ import { BIJAK_KUIZ_COMPONENT_SCHEMAS, registerBijakKuizPaths } from './bijak/ku
 import { BIJAK_ATTEMPTS_COMPONENT_SCHEMAS, registerBijakAttemptsPaths } from './bijak/attempts/paths'
 import { SPM_COMPONENT_SCHEMAS, registerSpmPaths } from './spm/paths'
 import { HEATMAP_COMPONENT_SCHEMAS, registerHeatmapPaths } from './heatmap/paths'
+import { SERVABILITY_COMPONENT_SCHEMAS } from './servability/paths'
 import { COMMAND_CENTER_COMPONENT_SCHEMAS, registerCommandCenterPaths } from './admin/command-center/paths'
 import { CURRICULUM_COMPONENT_SCHEMAS, registerCurriculumPaths } from './curriculum/paths'
 import { BATTLE_COMPONENT_SCHEMAS, registerBattlePaths } from './battle/paths'
@@ -90,6 +91,7 @@ export const COMPONENT_SCHEMAS = {
   ...BIJAK_KUIZ_COMPONENT_SCHEMAS, // R1-B16
   ...SPM_COMPONENT_SCHEMAS, // BE-41
   ...HEATMAP_COMPONENT_SCHEMAS, // BE-48 (M25)
+  ...SERVABILITY_COMPONENT_SCHEMAS, // R1-T29
   ...COMMAND_CENTER_COMPONENT_SCHEMAS, // BE-22
   ...CLASSES_COMPONENT_SCHEMAS, // BE-17
   ...BATTLE_COMPONENT_SCHEMAS, // BE-44 (M16)

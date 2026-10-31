@@ -11279,6 +11279,7 @@
           "short_text",
           "match_letter",
           "essay",
+          "essay_choice",
           "drawing",
           "table_fill"
         ],
@@ -11328,6 +11329,26 @@
                   "max"
                 ],
                 "additionalProperties": false
+              },
+              "topics": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "essay_choice: the topics the pupil picks one of."
               }
             },
             "required": [
@@ -11359,6 +11380,33 @@
           },
           "text": {
             "type": "string"
+          },
+          "image": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300,
+                "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "alt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false,
+            "description": "A picture on the option (V2 production image options)."
           }
         },
         "required": [
@@ -11405,6 +11453,109 @@
           },
           "stem": {
             "type": "string"
+          },
+          "stemImage": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "passage",
+                  "image",
+                  "diagram",
+                  "table",
+                  "map",
+                  "infographic",
+                  "graph"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "example": "Rajah 2"
+              },
+              "title": {
+                "type": "string",
+                "description": "Bold title of a passage or picture."
+              },
+              "caption": {
+                "type": "string"
+              },
+              "alt": {
+                "type": "string",
+                "description": "Accessible description of the diagram."
+              },
+              "svg": {
+                "type": "string",
+                "description": "Inline SVG markup (trusted, bundled)."
+              },
+              "text": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "Source line of a passage."
+              },
+              "table": {
+                "type": "object",
+                "properties": {
+                  "head": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "head",
+                  "rows"
+                ],
+                "additionalProperties": false
+              },
+              "image": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false,
+                "description": "The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL."
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "label",
+              "alt"
+            ],
+            "additionalProperties": false,
+            "description": "The question's own picture (an image stimulus linked to its version, not shared with a group)."
           },
           "marks": {
             "type": "integer",
@@ -11453,14 +11604,22 @@
           "kind": {
             "type": "string",
             "enum": [
-              "diagram",
               "passage",
-              "table"
+              "image",
+              "diagram",
+              "table",
+              "map",
+              "infographic",
+              "graph"
             ]
           },
           "label": {
             "type": "string",
             "example": "Rajah 2"
+          },
+          "title": {
+            "type": "string",
+            "description": "Bold title of a passage or picture."
           },
           "caption": {
             "type": "string"
@@ -11475,6 +11634,10 @@
           },
           "text": {
             "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source line of a passage."
           },
           "table": {
             "type": "object",
@@ -11500,6 +11663,30 @@
               "rows"
             ],
             "additionalProperties": false
+          },
+          "image": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300,
+                "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false,
+            "description": "The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL."
           }
         },
         "required": [
@@ -11517,7 +11704,116 @@
             "$ref": "#/components/schemas/Id"
           },
           "stimulus": {
-            "$ref": "#/components/schemas/BijakAttemptStimulus"
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "passage",
+                  "image",
+                  "diagram",
+                  "table",
+                  "map",
+                  "infographic",
+                  "graph"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "example": "Rajah 2"
+              },
+              "title": {
+                "type": "string",
+                "description": "Bold title of a passage or picture."
+              },
+              "caption": {
+                "type": "string"
+              },
+              "alt": {
+                "type": "string",
+                "description": "Accessible description of the diagram."
+              },
+              "svg": {
+                "type": "string",
+                "description": "Inline SVG markup (trusted, bundled)."
+              },
+              "text": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "Source line of a passage."
+              },
+              "table": {
+                "type": "object",
+                "properties": {
+                  "head": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "head",
+                  "rows"
+                ],
+                "additionalProperties": false
+              },
+              "image": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false,
+                "description": "The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL."
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "label",
+              "alt"
+            ],
+            "additionalProperties": false,
+            "description": "The first stimulus of the group."
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            },
+            "minItems": 1,
+            "maxItems": 3,
+            "description": "Every stimulus of the group in order (1 to 3). A stimulus is shown once above all member questions; it is never a question and carries no marks (D90)."
           },
           "from": {
             "type": "integer",
@@ -14578,6 +14874,136 @@
         },
         "required": [
           "data"
+        ],
+        "additionalProperties": false
+      },
+      "ServabilityActivity": {
+        "type": "string",
+        "enum": [
+          "databank",
+          "latih_tubi_spm",
+          "bab",
+          "simulasi_paper",
+          "simulasi_kuiz",
+          "jana_kertas"
+        ]
+      },
+      "ServabilityReasonCode": {
+        "type": "string",
+        "enum": [
+          "not_approved",
+          "archived",
+          "dskp_incomplete",
+          "untagged_legacy",
+          "image_games",
+          "image_missing",
+          "level_inactive",
+          "no_key",
+          "no_scheme",
+          "paper_not_published",
+          "not_on_published_paper",
+          "not_in_tracking_set",
+          "shape_unsupported",
+          "withdrawn",
+          "pksk",
+          "level_primary",
+          "level_not_offered",
+          "subject_unavailable",
+          "subject_not_listed",
+          "no_chapter",
+          "has_stimulus",
+          "has_option_image",
+          "bridge_refused",
+          "no_marks",
+          "tag_review"
+        ]
+      },
+      "ServabilityReason": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ServabilityReasonCode"
+          },
+          "message": {
+            "type": "string",
+            "description": "BM sentence for the admin (cause and fix).",
+            "example": "Belum diluluskan — tekan Terbitkan untuk memaparkannya."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Machine detail for support: the Bijak bridge reason code (`shape_unsupported:<code>`) or the practice shape reason."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "ServabilityActivityResult": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "$ref": "#/components/schemas/ServabilityActivity"
+          },
+          "label": {
+            "type": "string",
+            "example": "Latih Tubi SPM"
+          },
+          "served": {
+            "type": "boolean"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServabilityReason"
+            },
+            "description": "Empty when served. In the order the rules are checked; the first is the main cause."
+          }
+        },
+        "required": [
+          "activity",
+          "label",
+          "served",
+          "reasons"
+        ],
+        "additionalProperties": false
+      },
+      "ServabilityReport": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "versionNo": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "The live version evaluated; null while no version is live."
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServabilityActivityResult"
+            }
+          },
+          "servedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "questionId",
+          "versionNo",
+          "activities",
+          "servedCount",
+          "total"
         ],
         "additionalProperties": false
       },
@@ -37461,6 +37887,13 @@
             ],
             "maxLength": 64
           },
+          "curriculumChapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
           "options": {
             "type": "array",
             "minItems": 4,
@@ -37623,6 +38056,13 @@
             "minLength": 10
           },
           "dskpSpId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "curriculumChapterId": {
             "type": [
               "string",
               "null"
@@ -62030,14 +62470,22 @@
               "kind": {
                 "type": "string",
                 "enum": [
-                  "diagram",
                   "passage",
-                  "table"
+                  "image",
+                  "diagram",
+                  "table",
+                  "map",
+                  "infographic",
+                  "graph"
                 ]
               },
               "label": {
                 "type": "string",
                 "example": "Rajah 2"
+              },
+              "title": {
+                "type": "string",
+                "description": "Bold title of a passage or picture."
               },
               "caption": {
                 "type": "string"
@@ -62052,6 +62500,10 @@
               },
               "text": {
                 "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "Source line of a passage."
               },
               "table": {
                 "type": "object",
@@ -62077,6 +62529,30 @@
                   "rows"
                 ],
                 "additionalProperties": false
+              },
+              "image": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false,
+                "description": "The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL."
               }
             },
             "required": [
