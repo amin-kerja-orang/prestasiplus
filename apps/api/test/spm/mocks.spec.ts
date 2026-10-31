@@ -39,7 +39,7 @@ beforeAll(async () => {
   await t.db.query('delete from questions')
   await t.db.query('delete from spm_tracking_sets')
   // MATH: 45 pool questions over three chapters (topics), 8 structured; SEJ: only 3 pool questions; the rest: none.
-  for (const ch of [1, 2, 3]) await addPool(t.db, 'MATH', 15, { level: 'D1', chapterNumber: ch })
+  for (const ch of [1, 2, 3]) await addPool(t.db, 'MATH', 15, { level: 'T4', chapterNumber: ch })
   for (let i = 0; i < 8; i++) await addQuestion(t.db, { subject: 'MATH', type: 'structured', pool: false })
   await addQuestion(t.db, { subject: 'MATH', type: 'structured', pool: false, status: 'draft' })
   await addPool(t.db, 'SEJ', 3)
@@ -186,7 +186,7 @@ describe('AC9 Paper 1: 30 pool items', () => {
     expect(r.weakTopics.reduce((n, x) => n + x.wrongCount, 0)).toBe(18)
     const sorted = [...r.weakTopics].sort((a, b) => b.wrongCount - a.wrongCount || a.topic.localeCompare(b.topic, 'ms'))
     expect(r.weakTopics).toEqual(sorted)
-    const chapterNames = (await t.db.query<{ name: string }>(`select c.name from chapters c join subjects s on s.id = c.subject_id join education_levels l on l.id = c.education_level_id where s.code = 'MATH' and l.code = 'D1' and c.chapter_number in (1,2,3)`)).map((x) => x.name)
+    const chapterNames = (await t.db.query<{ name: string }>(`select c.name from chapters c join subjects s on s.id = c.subject_id join education_levels l on l.id = c.education_level_id where s.code = 'MATH' and l.code = 'T4' and c.chapter_number in (1,2,3)`)).map((x) => x.name)
     expect(r.weakTopics.every((x) => chapterNames.includes(x.topic))).toBe(true)
 
     // The result route returns the same body; the list carries the figures.

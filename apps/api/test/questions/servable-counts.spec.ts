@@ -14,7 +14,10 @@ import { QuestionsRepository, QuestionsService } from '../../src/modules/questio
 import { UsersRepository } from '../../src/modules/users'
 import { SpmHubService } from '../../src/modules/spm/hub.service'
 import { SpmPoolService } from '../../src/modules/spm/pool.service'
+import { BattleDeps } from '../../src/modules/battle/battle.deps'
+import { PracticeAssignmentsAdapter } from '../../src/modules/classes/missions/practice-assignments.adapter'
 import { createTestDatabase } from '../support/db'
+import { START, bootMissionsApp, insertMission, loadWorld, type MissionsTestApp } from '../missions/helpers'
 import { bootSpmApp, type SpmTestApp } from '../spm/helpers'
 
 /**
@@ -87,6 +90,8 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
       expect(drawn.every((r) => r.isActive && r.version.status === 'published' && offeredIds.includes(r.version.educationLevelId ?? ''))).toBe(true)
       // The practice-overview card and the login SQL count every servable MCQ of the subject (they do not apply the
       // hub's "ungrouped, single MCQ leaf" shape), so they are an upper bound of the drawable size.
+      // FINAL PASS (D91, after T04): `bankMatrix` gets `group_id IS NULL`, so the practice card equals the drawable size per surface
+      // (BM 50, not 53). The login "N+ Soalan" stays 493: it counts every servable question of any activity, grouped members included.
       expect(practiceCard, `${code} practice card >= drawable`).toBeGreaterThanOrEqual(poolCount)
       cards[code] = { ...(cards[code] as object), gapPracticeCardVsDrawable: practiceCard - poolCount }
       expect(servableInDb, `${code} login SQL >= drawable`).toBeGreaterThanOrEqual(poolCount)
@@ -166,5 +171,76 @@ describe('an admin-created approved T4 MCQ appears in Databank, Latih Tubi SPM a
     expect(k1).toContain(created.id)
     // Battle SPM size reads the same rule.
     expect(await repo.count({ type: 'mcq', subjectId: id, spmPool: true, status: 'published', active: true })).toBeGreaterThanOrEqual(after.databank)
+  })
+})
+
+// Final-pass expectations (D91: counts are per surface; lane A2 adds `group_id IS NULL` to `bankMatrix` inside T04). Not asserted yet.
+describe('final pass (after T04 and D91)', () => {
+  it.todo('BM practice card = Databank = Latih Tubi = details = drawable = 50 (practiceCard === poolCount for every subject)')
+  it.todo('login "N+ Soalan" stays 493: every servable question of any activity, stimulus-group members included')
+  it.todo('the admin-created T4 MCQ is served after review -> approved only (drop the published step of SERVE_STEPS)')
+})
+
+describe('one admin-created approved T4 MCQ is served by all five SPM_SERVABLE_SQL readers', () => {
+  let m: MissionsTestApp
+  const readers: Record<string, boolean> = {}
+
+  beforeAll(async () => {
+    m = await bootMissionsApp({ full: true })
+  }, 300_000)
+
+  afterAll(async () => {
+    report.fiveReaders = readers
+    await m?.close()
+  })
+
+  it('Databank, Latih Tubi SPM, Mock K1, Battle SPM and Misi all count and draw it, with no pool tag', async () => {
+    const w = await loadWorld(m)
+    const subject = w.tag.subjectId
+    const t4 = w.tag.levelId
+    // An otherwise empty SPM bank for the subject, so the fixture is the only candidate of every reader.
+    await m.db.query(`update questions set is_active = false where id in (select question_id from question_versions where subject_id = $1)`, [subject])
+    const svc = m.get(QuestionsService)
+    const actor = { userId: w.admin, role: 'admin' } as const
+    const made = await svc.create(
+      {
+        subjectId: subject,
+        educationLevelId: t4,
+        difficultyLevel: 3,
+        questionText: 'Soalan T05 lima pembaca: yang manakah betul?',
+        questionType: 'mcq',
+        options: ['Satu', 'Dua', 'Tiga', 'Empat'],
+        correctAnswer: 1,
+        explanation: 'Penjelasan ujian T05.',
+        tag: { unitId: w.tag.unitId, spIds: [w.tag.spId], tp: 3 },
+      } as never,
+      actor,
+    )
+    for (const status of SERVE_STEPS) await svc.bulkAction(status, [made.id], actor)
+    expect(Number((await m.db.query<{ c: string }>(`select count(*) c from question_tags where question_id = $1`, [made.id]))[0]?.c)).toBe(0)
+
+    // 1) Databank and 2) Latih Tubi SPM: the practice source draw with the SPM-servable filter.
+    const repo = m.get(QuestionsRepository)
+    const source = m.get(Be09PracticeQuestionSource)
+    expect(await source.sample({ subjectId: subject, spmPool: true }, 50, prngStream('t05-db'))).toEqual([made.id])
+    readers['Databank + Latih Tubi SPM (practice source)'] = true
+    // 3) Mock K1: SpmPoolService count and draw.
+    const pool = m.get(SpmPoolService)
+    expect(await pool.count(subject)).toBe(1)
+    expect((await pool.sample(subject, 1, prngStream('t05-k1'))).map((r) => r.id)).toEqual([made.id])
+    readers['Mock K1 (SpmPoolService)'] = true
+    // 4) Battle SPM: the lobby size and a draw.
+    const battle = m.get(BattleDeps)
+    battle.invalidateCache()
+    expect(await battle.spmPoolCount(subject)).toBe(1)
+    expect(await battle.drawQuestions({ questionType: 'spm', subjectId: subject, levelId: null }, 1, prngStream('t05-battle'))).toEqual([made.id])
+    readers['Battle SPM (BattleDeps)'] = true
+    // 5) Misi: a Latih Tubi mission with no chapter falls back to the SPM-servable pool.
+    const mission = await insertMission(m, w, { teacherId: w.teacherA, recipients: [w.student1], questionCount: 5 })
+    const res = await m.get(PracticeAssignmentsAdapter).resolve('mission', { userId: w.student1, id: mission, at: new Date(START) })
+    expect(res.status === 'ok' && res.questionIds).toEqual([made.id])
+    readers['Misi (assignments adapter fallback)'] = true
+    // The repository count that backs them all.
+    expect(await repo.count({ type: 'mcq', subjectId: subject, spmPool: true, status: 'published', active: true })).toBe(1)
   })
 })
