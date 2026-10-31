@@ -268,4 +268,5 @@ Merge order proposal for B: see REQ-A-007 (docs/qa/r1-e2e-readiness.md). Q5 deci
 | REQ-C-012 | r1/req-c012-a2 @ ba57ecc52 | A2 | edit-as-draft; questions + workflow 840/840; B3 |
 | T44 (+ H-A15) | r1/t44-blueprint-fields @ 77984abc | A3 | B2 MAJOR fixed (fixtures), reviewOf batching; 560 + 1 todo; unit 1666 |
 | T52 | r1/t52-examiner-grid @ c8490879 | A1 | BASE refresh in progress |
+| A3 docs (B2 fixes, BASE-60) | runbook r1/t37-r1-runbook @ dbf25cf2 · H-A24 @ bc2a0fc5 · H-A23 @ ef24addc · H-A22 @ 4fb2a41b · H-A17 @ b74f8e5f · H-A26 @ 7c7663de | A3 docs | rollback MAJOR fixed (no migrate resolve after dump restore, P3011/P3012), merge order defers to MERGE-LOG + C-POLICY-2, coverage 117 proven |
 In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ C1 REQ-A-008), REQ-B-031 (A1, D98), REQ-C-021 (A1, D98), REQ-B-029 (A2), REQ-B-033 (A4), H-A18 (A2, 0105).
