@@ -36,6 +36,7 @@ import { CurriculumFactsService } from './curriculum-facts'
 import { runToWire, type CallerInfo } from './extraction.service'
 import { batchLevelIssues, itemIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
+import { stimulusTableOf } from '../../questions/stimulus-table'
 import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
 import { ItemViews } from './item-views'
 import { toQuestionInput, ConvertError } from './to-question'
@@ -572,9 +573,8 @@ export class IntakeReviewService {
       s.figureId === null
         ? null
         : await this.prisma.client.intakeFigure.findUnique({ where: { id: s.figureId }, select: { cropFileId: true } })
-    const table = s.tableData as { head?: string[]; rows?: string[][] } | null
-    const body =
-      s.body ?? (table && Array.isArray(table.head) ? [table.head.join(' | '), ...(table.rows ?? []).map((r) => r.join(' | '))].join('\n') : null)
+    const table = stimulusTableOf(s.tableData)
+    const body = s.body ?? (table ? [table.head.join(' | '), ...table.rows.map((r) => r.join(' | '))].join('\n') : null)
     const stimulusId = await this.questions.createStimulus({
       kind: s.kind as 'passage' | 'diagram' | 'table',
       label: s.label || null,

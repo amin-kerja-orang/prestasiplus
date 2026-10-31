@@ -56,7 +56,7 @@ export const QUESTION_MESSAGES = {
   guruAnswerLong: 'Jawapan betul tidak boleh melebihi 500 aksara.',
   status: QUESTION_STATUS_MESSAGE,
   guruChapter: 'Bab tidak sah.',
-  /** The chapter exists but is not of the question's subject and level ([PROPOSED] copy). */
+  /** The chapter exists but is not of the question's subject and level (copy approved, Q1). */
   chapterMismatch: 'Bab tidak sepadan dengan subjek dan tahap.',
   guruTopic: 'Topik tidak sah.',
   guruScript: 'Jenis tulisan tidak sah.',
@@ -200,6 +200,7 @@ export const QuestionSchema = z
     tagReview: z.boolean().optional(),
     catalogueVersion: z.string().nullable().optional(),
     stimulusGroup: QuestionStimulusGroupSchema.nullable().optional(),
+    numberLabel: z.string().nullable().optional(),
   })
   .meta({ id: 'Question' })
 
@@ -288,6 +289,8 @@ const baseInput = z.object({
   kertas: QuestionKertasSchema.nullable().optional(),
   parts: z.array(QuestionPartSchema).min(1).optional(),
   tag: QuestionCurriculumTagSchema.optional(),
+  /** V2 `Nombor soalan` (Studio Langkah 1); null clears it, omitted keeps it. */
+  numberLabel: z.string().trim().max(32).nullable().optional(),
   stimulusGroupId: IdSchema.nullable().optional(),
 })
 

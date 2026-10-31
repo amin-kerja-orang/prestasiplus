@@ -400,7 +400,7 @@ Apply it to the Bijak and builder paths, including `exam/builder/question-bank.s
   6. Databank, Latih Tubi SPM and Bab receive the admin question.
 - Re-test QA bugs B-01, B-02, B-04 and B-05 from `docs/qa/r1-student-smoke-2026-10-31.md`.
 
-### (j) [PROPOSED] BM copy awaiting user confirmation
+### (j) BM copy (approved by the user, Q1, 2026-10-31; use as written)
 
 | Context | Text |
 |---|---|

@@ -21,11 +21,11 @@ describe('servability overview cache (H-A21)', () => {
   let actor: Awaited<ReturnType<typeof adminActor>>
   let n = 0
 
-  const read = async (): Promise<ServabilityOverview & { computedAt: string }> => {
+  const read = async (): Promise<ServabilityOverview> => {
     const res = await admin.get('/api/admin/servability/overview')
     const data = parseData(res, ServabilityOverviewSchema)
     expect(data.computedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?\+08:00$/)
-    return data as ServabilityOverview & { computedAt: string }
+    return data as ServabilityOverview
   }
   const until = async (cond: () => boolean): Promise<void> => {
     for (let i = 0; i < 400 && !cond(); i++) await new Promise((r) => setTimeout(r, 25))

@@ -11596,7 +11596,15 @@
               "alt"
             ],
             "additionalProperties": false,
-            "description": "The question's own picture (an image stimulus linked to its version, not shared with a group)."
+            "description": "Back-compat: the question's own picture, sent only when its own stimuli are exactly one picture. Prefer `stimuli`."
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            },
+            "minItems": 1,
+            "description": "The question's OWN stimuli (R1E2E-05b): linked to the question, not shared with a group; any of the seven kinds, in link order. Shown above the stem. A stimulus shared by several questions is a group (D90) and is never here."
           },
           "marks": {
             "type": "integer",
@@ -14956,7 +14964,9 @@
           "has_option_image",
           "bridge_refused",
           "no_marks",
-          "tag_review"
+          "tag_review",
+          "paper_empty",
+          "stimulus_shared_ungrouped"
         ]
       },
       "ServabilityReason": {
@@ -15149,15 +15159,69 @@
             "type": "string",
             "format": "date-time",
             "pattern": "\\+08:00$",
-            "description": "When these counts were computed (H-A21). Always sent by the server: the overview is cached for 5 minutes and refreshed in the background after a question event or when the cache is older; show this time next to the counts. Optional in the schema only so the compute itself (`ServabilityReadsService.overview`) can return the bare counts.",
+            "description": "When these counts were computed (H-A21). Always sent: the overview is cached for 5 minutes and refreshed in the background after a question event or when the cache is older; show this time next to the counts.",
             "example": "2026-10-16T09:30:00+08:00"
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServabilityHubCard"
+            },
+            "description": "The hub cards in V2 order (R1: Databank Soalan, then Bijak SPM)."
           }
         },
         "required": [
           "bank",
-          "activities"
+          "activities",
+          "computedAt",
+          "cards"
         ],
         "additionalProperties": false
+      },
+      "ServabilityHubCard": {
+        "type": "object",
+        "properties": {
+          "lane": {
+            "$ref": "#/components/schemas/ServabilityHubLane"
+          },
+          "title": {
+            "type": "string",
+            "example": "Databank Soalan"
+          },
+          "description": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows of the lane (Databank: MCQs of Databank subjects, any status; Bijak SPM: pilihan papers, any status)."
+          },
+          "attention": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Lane rows that carry at least one reason (`attention.length > 0`)."
+          },
+          "attentionLabel": {
+            "type": "string",
+            "description": "V2 label printed after the count: \"{attention} {attentionLabel}\", or \"Semua elok\" when 0."
+          }
+        },
+        "required": [
+          "lane",
+          "title",
+          "description",
+          "total",
+          "attention",
+          "attentionLabel"
+        ],
+        "additionalProperties": false
+      },
+      "ServabilityHubLane": {
+        "type": "string",
+        "enum": [
+          "databank",
+          "bijak-spm"
+        ]
       },
       "ServabilityLaneQuery": {
         "type": "object",
@@ -38994,6 +39058,12 @@
                 ]
               }
             ]
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -39370,6 +39440,12 @@
               }
             ]
           },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "subject": {
             "allOf": [
               {
@@ -39680,6 +39756,13 @@
           "tag": {
             "$ref": "#/components/schemas/QuestionCurriculumTag"
           },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
+          },
           "stimulusGroupId": {
             "allOf": [
               {
@@ -39854,6 +39937,13 @@
           },
           "tag": {
             "$ref": "#/components/schemas/QuestionCurriculumTag"
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
           },
           "stimulusGroupId": {
             "allOf": [

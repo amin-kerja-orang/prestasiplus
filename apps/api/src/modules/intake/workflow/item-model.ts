@@ -11,6 +11,7 @@ import {
 } from '@pp/contract'
 
 import { z } from 'zod'
+import { stimulusTableOf } from '../../questions/stimulus-table'
 import { idToString } from '../../../db/ids'
 import { Prisma } from '../../../db/generated/client'
 
@@ -92,9 +93,7 @@ export function questionOf(row: ItemRow): IntakeQuestion {
 }
 
 export function stimulusOf(row: StimulusRow): IntakeStimulus {
-  const table = z
-    .strictObject({ head: z.array(z.string()), rows: z.array(z.array(z.string())) })
-    .safeParse(row.tableData)
+  const table = stimulusTableOf(row.tableData)
   const region = regionOf({ region: row.region })
   return {
     id: idToString(row.id),
@@ -103,7 +102,7 @@ export function stimulusOf(row: StimulusRow): IntakeStimulus {
     ...(row.caption === null ? {} : { caption: row.caption }),
     alt: row.altText,
     ...(row.body === null ? {} : { text: row.body }),
-    ...(table.success ? { table: table.data } : {}),
+    ...(table ? { table } : {}),
     ...(row.pageNo === null ? {} : { page: row.pageNo }),
     figureId: row.figureId === null ? null : idToString(row.figureId),
     region,

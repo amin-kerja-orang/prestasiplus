@@ -5,6 +5,7 @@ import type { ServabilityReport } from '@pp/contract'
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { optionImageIds } from '../../bijak/kuiz/kuiz.mapper'
+import { outsideStimuliOf } from '../../bijak/question-bridge/outside-media'
 import { QuestionsBijakPoolSource } from '../bijak-pool'
 import { QuestionsRepository } from '../questions.repository'
 import type { QuestionRecord, StimulusGroupRecord } from '../types'
@@ -51,6 +52,9 @@ export class ServabilityService {
     if (latest.size === 0) return new Map()
     const live = new Map((await this.questions.getMany([...latest.keys()], 'live')).map((r) => [r.id, r]))
     const records = [...live.values()]
+    // The bridge reads the live version for a NEW sitting (H-A13): a question without one is reported `archived` or `not_approved`,
+    // and its running sittings are readability, not servability, so no other version needs its stimuli or group here.
+    const bridged = records
     // Level and subject belong to the version pupils are served (live), so the draws and these facts read the same row. Only a
     // question with no live version falls back to its latest one (its status reason decides, the level and subject never serve it).
     const effective = [...latest].map(([id, l]) => live.get(id) ?? l)
@@ -58,13 +62,18 @@ export class ServabilityService {
     const [levels, subjects, groups, linkedAssets, onPaper, jana] = await Promise.all([
       this.levelsOf(effective.flatMap((r) => (r.version.educationLevelId ? [r.version.educationLevelId] : []))),
       this.subjectsOf(effective),
-      this.groupsOf(records),
+      this.groupsOf(bridged),
       this.assetsOf(records),
       this.onPublishedPaper([...live.keys()]),
       this.janaFactsOf(records),
     ])
-    const tokens = await this.tokensOf(records, groups, linkedAssets)
+    const own = await outsideStimuliOf(this.questions, bridged, groups)
+    const tokens = await this.tokensOf(bridged, groups, linkedAssets, own.fileIds)
 
+    const bridgeGroupOf = (id: string): StimulusGroupRecord | null => {
+      const gid = live.get(id)?.groupId
+      return gid ? (groups.get(gid) ?? null) : null
+    }
     const out = new Map<string, ServabilityFacts>()
     for (const [id, l] of latest) {
       const v = (live.get(id) ?? l).version
@@ -73,8 +82,9 @@ export class ServabilityService {
         latest: l,
         level: v.educationLevelId ? (levels.get(v.educationLevelId) ?? null) : null,
         subject: subjects.get(`${v.subjectId ?? ''}:${v.educationLevelId ?? ''}`) ?? null,
-        group: live.get(id)?.groupId ? (groups.get(live.get(id)!.groupId!) ?? null) : null,
+        group: bridgeGroupOf(id),
         linkedAssets,
+        outside: own.outside,
         fileTokens: tokens,
         onPublishedPaper: onPaper.has(id),
         janaFacts: jana.get(id) ?? null,
@@ -139,8 +149,9 @@ export class ServabilityService {
     records: readonly QuestionRecord[],
     groups: ReadonlyMap<string, StimulusGroupRecord>,
     assets: ReadonlyMap<string, { assetFileId: string | null }>,
+    ownFiles: ReadonlySet<string>,
   ): Promise<Map<string, string>> {
-    const files = new Set<string>()
+    const files = new Set<string>(ownFiles)
     for (const g of groups.values()) for (const s of g.stimuli) if (s.assetFileId) files.add(s.assetFileId)
     for (const a of assets.values()) if (a.assetFileId) files.add(a.assetFileId)
     for (const r of records) for (const id of optionImageIds(r)) files.add(id)

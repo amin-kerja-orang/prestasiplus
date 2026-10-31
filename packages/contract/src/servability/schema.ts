@@ -56,6 +56,8 @@ export const SERVABILITY_REASON_CODES = [
   'bridge_refused',
   'no_marks',
   'tag_review',
+  'paper_empty',
+  'stimulus_shared_ungrouped',
 ] as const
 export const ServabilityReasonCodeSchema = z.enum(SERVABILITY_REASON_CODES).meta({ id: 'ServabilityReasonCode' })
 export type ServabilityReasonCode = z.infer<typeof ServabilityReasonCodeSchema>
@@ -90,6 +92,49 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
   bridge_refused: 'Tidak dapat dihidangkan di {aktiviti}.',
   no_marks: 'Tiada markah pada bahagian soalan.',
   tag_review: 'Perlu semakan tag DSKP.',
+  paper_empty: 'Disajikan tetapi tiada soalan',
+  // [PROPOSED] (V2 has no phrase; D90: a stimulus shared by several questions must be a group).
+  stimulus_shared_ungrouped: 'Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).',
+}
+
+/**
+ * Where each sentence of the table above comes from (D79: V2 wording wherever V2 has its own phrase for the same case).
+ *  - `V2`: V2's own text, verbatim (the hub/lane labels of the Panel, the paper-lane attention line, the .cloud exclusion
+ *    line), see docs/discovery/cloud-student-mechanism.md section 3 and BIJAK-SPM-cloud.md 3.10. Case and the closing full stop
+ *    follow the table (V2 prints the hub labels in lower case without a stop; `paper_empty` is V2's paper-lane line as printed).
+ *  - `PROPOSED`: V2 has no phrase for the case (or only one that needs a part label this read cannot supply, e.g. V2's
+ *    "Bahagian ({l}) tiada markah ..." for `no_marks`); the sentence is V3's and awaits sign-off (D94 approved those listed in
+ *    CLOUD-HANDOFF 7j and the servability reasons "as written").
+ * `bridge_refused` is V2's .cloud line "Tidak dihidangkan kerana {sebab}." (see `notServedLine`) when a bridge reason is present.
+ */
+export const SERVABILITY_REASON_SOURCE: Readonly<Record<ServabilityReasonCode, 'V2' | 'PROPOSED'>> = {
+  not_approved: 'PROPOSED',
+  archived: 'PROPOSED',
+  dskp_incomplete: 'PROPOSED',
+  untagged_legacy: 'PROPOSED',
+  image_games: 'PROPOSED',
+  image_missing: 'PROPOSED',
+  level_inactive: 'PROPOSED',
+  no_key: 'V2',
+  no_scheme: 'V2',
+  paper_not_published: 'PROPOSED',
+  not_on_published_paper: 'PROPOSED',
+  not_in_tracking_set: 'PROPOSED',
+  shape_unsupported: 'PROPOSED',
+  withdrawn: 'PROPOSED',
+  pksk: 'PROPOSED',
+  level_primary: 'PROPOSED',
+  level_not_offered: 'PROPOSED',
+  subject_unavailable: 'PROPOSED',
+  subject_not_listed: 'PROPOSED',
+  no_chapter: 'PROPOSED',
+  has_stimulus: 'PROPOSED',
+  has_option_image: 'PROPOSED',
+  bridge_refused: 'V2',
+  no_marks: 'PROPOSED',
+  tag_review: 'PROPOSED',
+  paper_empty: 'V2',
+  stimulus_shared_ungrouped: 'PROPOSED',
 }
 
 /** "Tidak dihidangkan kerana {sebab}." (design 9.3, the .cloud exclusion line). `phrase` continues "kerana ...". */

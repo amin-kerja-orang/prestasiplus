@@ -52,16 +52,62 @@ export const ServabilityOverviewActivitySchema = z
   })
   .meta({ id: 'ServabilityOverviewActivity' })
 
+/**
+ * The hub "Kandungan SPM" (Panel `/spm`, R1-21.1 / P1): one card per lane the screen exists for. V2 prints six lanes in this order;
+ * R1 builds two (Databank Soalan, Bijak SPM), so the other four (Tracking A, Subjektif, Kertas Subjektif, Latih Tubi) are not
+ * returned until their screens exist (no link to a missing screen). Titles, descriptions and attention labels are V2's own text
+ * (docs/discovery/cloud-student-mechanism.md 3.0; BIJAK-SPM-cloud.md 3.10 for the Bijak SPM label). V2 prints the six labels in
+ * the lane order, which gives `tidak boleh ditanda` to Databank Soalan (the McqGate lane) and `tiada kunci jawapan` to Bijak SPM.
+ */
+export const SERVABILITY_HUB_LANES = ['databank', 'bijak-spm'] as const
+export const ServabilityHubLaneSchema = z.enum(SERVABILITY_HUB_LANES).meta({ id: 'ServabilityHubLane' })
+export type ServabilityHubLane = z.infer<typeof ServabilityHubLaneSchema>
+
+export const SERVABILITY_HUB_CARDS: Readonly<Record<ServabilityHubLane, { title: string; description: string; attentionLabel: string }>> = {
+  databank: { title: 'Databank Soalan', description: 'Bank soalan objektif SPM mengikut subjek.', attentionLabel: 'tidak boleh ditanda' },
+  'bijak-spm': { title: 'Bijak SPM', description: 'Kertas SPM penuh dalam format sebenar.', attentionLabel: 'tiada kunci jawapan' },
+}
+
+/** Hub texts around the cards (V2 `hub.tsx`): intro line, the all-clear badge and the card button. */
+export const SERVABILITY_HUB_COPY = {
+  title: 'Kandungan SPM',
+  intro: 'Setiap kad ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
+  allGood: 'Semua elok',
+  open: 'Buka senarai',
+} as const
+
+/** Sentence of a lane page that is asked for a page past the window. [PROPOSED]: V2 has no such limit (it pages the whole lane). */
+export const SERVABILITY_LANE_WINDOW_MS = 'Halaman terlalu jauh. Gunakan Tapis atau Cari untuk mengecilkan senarai.'
+
+/**
+ * One hub card. `total` and `attention` are measured on the rows of the lane the card opens (one scope, `GET .../lanes/{lane}`
+ * unfiltered): `total` is the number of rows, `attention` the number of rows with a reason (AC "attention count equals lane rows").
+ */
+export const ServabilityHubCardSchema = z
+  .strictObject({
+    lane: ServabilityHubLaneSchema,
+    title: z.string().meta({ example: 'Databank Soalan' }),
+    description: z.string(),
+    total: z.number().int().min(0).meta({ description: 'Rows of the lane (Databank: MCQs of Databank subjects, any status; Bijak SPM: pilihan papers, any status).' }),
+    attention: z.number().int().min(0).meta({ description: 'Lane rows that carry at least one reason (`attention.length > 0`).' }),
+    attentionLabel: z.string().meta({ description: 'V2 label printed after the count: "{attention} {attentionLabel}", or "Semua elok" when 0.' }),
+  })
+  .meta({ id: 'ServabilityHubCard' })
+export type ServabilityHubCard = z.infer<typeof ServabilityHubCardSchema>
+
 export const ServabilityOverviewSchema = z
   .strictObject({
     bank: z.number().int().min(0).meta({ description: 'Approved, active, secondary-level, non-PKSK questions.' }),
     activities: z.array(ServabilityOverviewActivitySchema).length(SERVABILITY_ACTIVITIES.length),
-    computedAt: TimestampSchema.optional().meta({
-      description: 'When these counts were computed (H-A21). Always sent by the server: the overview is cached for 5 minutes and refreshed in the background after a question event or when the cache is older; show this time next to the counts. Optional in the schema only so the compute itself (`ServabilityReadsService.overview`) can return the bare counts.',
+    computedAt: TimestampSchema.meta({
+      description: 'When these counts were computed (H-A21). Always sent: the overview is cached for 5 minutes and refreshed in the background after a question event or when the cache is older; show this time next to the counts.',
     }),
+    cards: z.array(ServabilityHubCardSchema).meta({ description: 'The hub cards in V2 order (R1: Databank Soalan, then Bijak SPM).' }),
   })
   .meta({ id: 'ServabilityOverview' })
 export type ServabilityOverview = z.infer<typeof ServabilityOverviewSchema>
+/** The counts alone, as `ServabilityReadsService.overview()` computes them; the cache adds `computedAt` (the time they were computed). */
+export type ServabilityOverviewCounts = Omit<ServabilityOverview, 'computedAt'>
 
 /** Rows a lane list can page through (`page` x `pageSize`): a deeper page is refused so OFFSET never scans the whole bank. */
 export const SERVABILITY_LANE_WINDOW = 10_000
@@ -76,7 +122,7 @@ export const ServabilityLaneQuerySchema = z
     pageSize: z.coerce.number().int().min(1).max(100).default(25),
   })
   .refine((q) => q.page * q.pageSize <= SERVABILITY_LANE_WINDOW, {
-    message: 'Halaman terlalu jauh. Gunakan Tapis atau Cari untuk mengecilkan senarai.',
+    message: SERVABILITY_LANE_WINDOW_MS,
     path: ['page'],
   })
   .meta({ id: 'ServabilityLaneQuery' })
