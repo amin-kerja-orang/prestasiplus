@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-10-31 (cycle 3). Current BASE: **BASE-1** = `feature/v3-bijak-r1` @ 14e4336c.
+Writer: team A lead. Last refresh: 2026-10-31 (cycle 6). Current BASE: **BASE-1** = `feature/v3-bijak-r1` @ 14e4336c.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 
 ## Critical path
@@ -14,7 +14,7 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 |---|---|---|---|---|---|---|---|
 | T01 | (a-1)+(a0) | Merge `origin/handoff/shared-tree-2026-10-31`, resolve conflicts, fix the 5 vue-tsc errors; registry-boot, api tsc, vue-tsc, m04/m28/bijak specs | A1 | — | r1/t01-base-merge | **READY-FOR-REVIEW** @ 09d32822 | api tsc 0; vue-tsc 0; registry-boot 3/3; m04+m28 928/928; m11+registry-boot 261 pass / 0 fail (lead re-run); m03/m05/m12/ds pass; bijak specs 470/474 (golden.spec 4 pre-existing → H-A4); eslint 0 errors. No auth/files/input change in fixes. Evidence: status/A1.md |
 | T03 | (a) | Verify `r1/b08-bridge`: vue-tsc m28, bijak-question-bridge, be09-paper spec, DB test of image read rule; merge BASE-2 into it | A2 | T01 merged | r1/b08-bridge | **READY-FOR-REVIEW** @ 7050f2d7 (needs security review: image URLs on served items, FilesModule) | BASE-1 merged; api tsc 0; vue-tsc = base (38 = base; 0 on trial merge with T01); m28 unit 472/472; bridge + be09-paper + question-image-access specs 144/144; eslint 0 errors; trial merge with T01 09d32822: no conflicts, tsc 0, vue-tsc 0, 144/144, 472/472. Pre-existing: golden.spec 4 (H-A4), seed/poc.spec 1 (H-A5). Merge right after T01 |
-| T04 | (a) | Finish `r1/b01-lifecycle`: 4 `'published'` spots, drop `published` from isServableStatus, migration 0100 on a seeded DB, tsc/eslint/m04 tests/specs | A2 | T03 merged | r1/b01-lifecycle | IN-PROGRESS (on t01 + b08 local merge) | |
+| T04 | (a) | Finish `r1/b01-lifecycle`: 4 `'published'` spots, drop `published` from isServableStatus, migration 0100 on a seeded DB, tsc/eslint/m04 tests/specs | A2 | T03 merged | r1/b01-lifecycle | **READY-FOR-REVIEW** @ 2f16c1fe (contains T01 09d32822 + b08 7050f2d7; merge after T03; needs security review: image access approved-only, lifecycle gates) | migration 0100 spec 4/4 (draft 4→4, review 2→6, approved 4→6, published 6→0, archived 1→1; served count unchanged); `'published'` question-status spots changed in practice bridge/structured/overview(4)/listing(2)/analytics, account, bijak bridge/pool-source/kuiz, builder bankQuery; `SERVABLE_QUESTION_STATUSES=['approved']`; paper Terbit untouched; m28 admin wire approved→Terbit. D91: bankMatrix `group_id IS NULL`, card-ungrouped.spec 2/2 (BM 50, login 493). api tsc 0; vue-tsc 0; FE m04+m28 951 pass / 43 fail (questions-store.perf timing budget, pre-existing); bijak/files/builder specs 1003 pass / 4 fail (golden, fixed in T05); eslint: 2 pre-existing errors in untouched files |
 | T05 | (b) | Run never-run DB specs (B06 list, be09-paper, challenges-savepoint), fix; before/after counts (login 493; BM 53, MATH 54, SCI 50; one draw); re-run after T04 | A3 | T01 merged (first pass), T04 (final) | r1/t05-db-specs | **READY-FOR-REVIEW (first pass)** @ 5c96c7e9; final pass after T04 | ddacd4e0: 8 never-run specs now green (draw-bounded 33/33, served.db 6/6, assignments-adapter 12/12, source 14/14, spm-servable 6/6, lobby 5/5, challenges-savepoint 3/3, invitations 21/21, new servable-counts 2/2), test-only fixes; api tsc 0; eslint 0. Counts: login 493; practice cards BM 53 / MATH 54 / SCI 50; drawable BM 50 (3 group MCQs) → D91; admin approved T4 MCQ +1 in Databank, Latih Tubi SPM, Mock K1, login. 4fff21ab adds: spm/hub 19/19, spm/mocks 21/21, shape-perf 6/6, golden 18/18 (H-A4), seed/poc 25/25 (H-A5: seed-profile.md was stale, 493/21891), servable-counts 3 pass + 3 todo (five readers incl. Battle SPM + Misi = H-A1). Test + doc only, no src/seed change |
 | T06 | (g) | Student Jana Kertas → `composeStandardPaper` (D75); update generate.spec + golden-mock.json | A1 | T01 merged | r1/t06-jana-standard | **READY-FOR-REVIEW** @ 502280f5 (off T01 09d32822) | `POST /bijak/papers/generate` → `composeStandardPaper` (exact-or-refuse: 422 SHORTAGE, 503 GENERATE_LIMIT, no row on refusal; Disahkan-only, Admin Pusat Mod Pelajar may use Spec); stores `standard_report` (AC-34.7). api tsc 0; generate.spec 19/19 (D90 groups whole + consecutive, version pinning); bijak+builder specs 878 pass / 5 fail (golden 4 = H-A4, poc 1 = H-A5, pre-existing); eslint 0. Note: PoC blueprints with null mark_budget now refuse (release note for T24). No auth/files/input change |
 | T07 | (f) | Question-model gaps: `groupOf` 7 stimulus kinds + caption/tableData/sourceCitation; `essay_choice` in parts contract; question-bank.source multi-stimulus groups; stimulus-body read for kuiz/bridges | A4 | T01 merged; **T03 (b08) merged first** | r1/t07-model-gaps | **READY-FOR-REVIEW** @ 809c2749 (contains b08 7050f2d7 + t01 09d32822; merge after T03) | b08 merged in, be09-mapping essay_choice cast fixed; m12 KirkpatrickOverviewPage restored to T01 version (b08 merge reintroduced the stale OverviewInfo line). api tsc 0; stimulus-display + exam-builder + bijak-question-bridge + question-image-access + bijak-kuiz + questions/groups: 24 files, 476 pass; contract 71/71; openapi --check ok; eslint 0. Touches input (contract) |
@@ -33,6 +33,27 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 | T23 | (i) | E2E: Playwright flow admin uploads (form/CSV/PDF, image, D90 group) → approves → builds paper → Terbit → pupil sits, self-marks, result, Cuba Lagi; Databank/Latih Tubi SPM/Bab receive the question; 375/768/1280; re-test B-01, B-02, B-04, B-05 | B4 | baseline now; final after T04, T05, T10–T13 | r1/t23-e2e | QUEUED | |
 | T24 | (l) | Release runbook for the human deploy: migration order 0092 → 0093 → 0100 (+ any 0101–0119), DSKP load, Disahkan blueprint, config; `docs/ops/r1-release-notes.md` | B1 (idle time) | after T04 | r1/t24-release-notes | QUEUED | |
 
+
+## Team A queue from the R1 backend gap audit (H-A10, 2026-10-31)
+
+| ID | §13.3 | Task | Lane | Depends on | Branch | Status |
+|---|---|---|---|---|---|---|
+| T26 | R1-B19 | Local/E2E seed behind a guard: T4 pupil, Admin Pusat, one T4 blueprint Disahkan + serves_students (D77 evidence). **Unblocks T23 (B4)** | A1 | — | r1/t26-e2e-seed | IN-PROGRESS (after H-A8 last item) |
+| T27 | R1-B21 residual | Refuse Darjah level on question and blueprint create (BM message) | A1 | T26 | r1/t27-darjah-create | QUEUED |
+| T28 | R1-B14 | Reward parity on Bijak submit (XP, Syiling, kombo, Prestasi), idempotent | A1 | T27 | r1/t28-reward-parity | QUEUED |
+| T29 | R1-B03 lite | Servability service + contract (evaluate per activity over existing predicates, BM reasons, parity spec), no facts table (D92) | A4 | — | r1/t29-servability | IN-PROGRESS |
+| T30 | R1-B11 | Admin servability reads ("Dilihat murid di"): single, batch, overview, lanes | A4 | T29 | r1/t30-servability-reads | QUEUED |
+| T31 | R1-B08/B09a wire | Builder wire: `stimuli[]`, 7 kinds, picture URL (kuiz wire → C2 under T11) | A4 | T04, T30 | r1/t31-builder-wire | QUEUED |
+| T32 | R1-F03 backend | Stimulus + stimulus-group HTTP API for Studio (create/edit stimulus 7 kinds + image, group 1–3 stimuli + ≥2 members, add/remove/reorder, create in group; intake links one figure to every referencing question). **Unblocks T13 (C3)** | A2 | T04 (+T07 merged locally) | r1/t32-stimulus-api | IN-PROGRESS |
+| T33 | R1-B05 | Per-leaf `tp`/`cognitive_level` (migration 0102), merged approve gate, gate-check route, status with servability | A2 | T32, T29 | r1/t33-leaf-tags | QUEUED |
+| T34 | R1-B09a/B09b | Builder per-row servability + audited override; paper-review edits (metadata, Bahagian, petikan title, reference assets, add/delete extra question) | A3 | T05 final, T29 | r1/t34-builder-review | QUEUED |
+| T35 | R1-B17 | Laporan Soalan: lifecycle archive from the report row; spec with a Bijak question id | A2 | T32 | r1/t35-report-archive | QUEUED |
+| T36 | R1-B07 | Remove PoC fixture and composite split; bank is the only source | A2 | T03, T04 merged | r1/t36-remove-poc | QUEUED |
+| T37 | R1-D01/D02 | Consolidated ops runbook (migrations 0092→0093→0100→0101, env, verification queries) + parity spec in CI | A3 | T29, T04 | r1/t37-runbook | QUEUED |
+
+R2 (deferred by D92): practice-family bridge with images/groups (Databank, Latih Tubi, Bab), dropping `spmPool`/pool tags (0107).
+Team C note: C2 (T11) also widens the kuiz wire to the 7 stimulus kinds after T07 merges (T07 added a `KUIZ_KIND` collapse table in `kuiz.mapper.ts`). C3 (T13) builds Studio on the T32 API.
+
 ## Standby queue (a lane with no unblocked task takes the next one for its own team; never another team's)
 
 | ID | Team | Task |
@@ -47,7 +68,7 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 | H-A9 | A (A3 IN-PROGRESS, r1/ha9-pipeline-chain) | API-level chain spec of the R1 acceptance flow: admin creates (incl. D90 image group) → approves → builder places group → review → Terbit → pupil sits, image readable, self-marks, result, Cuba Lagi; Databank/Latih Tubi SPM receive. Spec-only; gaps reported |
 | H-A4 | A | DONE in T05 @ 4fff21ab: `test/bijak-attempts/golden.spec.ts` 4 failures (sej-k2-2025-a): mock engine emits `selfMarkable: true` on `belum_dimarkah` parts; spec strips it only on the API side. Pre-existing on BASE-1 |
 | H-C3 | C | m04 admin list/detail: show "Esei pilihan" + topics list when `essayTopics` is present (API from H-A7). After T04 merges (m04 lock) |
-| H-A10 | A (A4 IN-PROGRESS) | R1 backend gap audit of §13.3 BE/DO rows vs code + review branches; proposes the next team A queue |
+| H-A10 | A | DONE: audit at lead scratchpad; result = tasks T26–T36 below and D92 |
 | H-B1 | B | Unit sweep m01/02/03/04/05/08/09/16/27 + registry-boot on the latest BASE; file failures to the owning team's status file |
 | H-B2 | B | `lint:admin` ratchet for the 7 m02/m03/m09 findings (report only; the fix goes to C) |
 | H-C1 | C | ChapterIndexPage / Soalan by Chapter empty state (B-01 FE side) per V2 |
@@ -65,6 +86,7 @@ Team A 0100–0109, overflow **0120–0129**; team C 0110–0119. In code today:
 
 ## Decisions this cycle
 
+- **D92** (same PR #404): R1 backend scope calls: Databank/Latih Tubi/Bab text-only in R1 (D87 U2); B03 lite first; keep B10 duplicate copy; pool-tag drop → R2; team A overflow migrations 0120–0129.
 - **D91** (PR [amin-kerja-orang/prestasiplus#404](https://github.com/amin-kerja-orang/prestasiplus/pull/404), merge after T01): counts per surface, card = details = drawable; login counts all servable incl. group members. Code change in T04 (`bankMatrix` + `group_id IS NULL`); expected BM practice card 50, login 493.
 
 ## File locks from planning (2026-10-31 12:20)
