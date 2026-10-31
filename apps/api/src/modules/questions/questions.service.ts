@@ -668,12 +668,13 @@ export class QuestionsService {
       const key = parse(n.chapterId)
       const chapter = key === null ? null : await this.curriculum.chapter(key)
       if (!chapter) fields.curriculumChapterId = QUESTION_MESSAGES.guruChapter
-      else if (subject && level && (chapter.subjectId !== subject.id || chapter.educationLevelId !== level.id)) fields.curriculumChapterId = QUESTION_MESSAGES.chapterMismatch
+      // REQ-B-010: each of subject and level that is known is checked on its own (a chapter of another subject is refused even with no level).
+      else if ((subject && chapter.subjectId !== subject.id) || (level && chapter.educationLevelId !== level.id)) fields.curriculumChapterId = QUESTION_MESSAGES.chapterMismatch
       else chapterKey = chapter.id
-    } else if (n.chapterId === undefined && previous?.version.chapterId && subject && level) {
-      // The chapter is kept, but only while it still belongs to the subject and level being saved.
+    } else if (n.chapterId === undefined && previous?.version.chapterId && (subject || level)) {
+      // The chapter is kept while it still belongs to the subject and the level being saved (the one that is known, when the other is empty).
       const kept = await this.curriculum.chapter(BigInt(previous.version.chapterId))
-      if (kept && kept.subjectId === subject.id && kept.educationLevelId === level.id) chapterKey = kept.id
+      if (kept && (!subject || kept.subjectId === subject.id) && (!level || kept.educationLevelId === level.id)) chapterKey = kept.id
     }
     if (n.topicId) {
       const key = parse(n.topicId)

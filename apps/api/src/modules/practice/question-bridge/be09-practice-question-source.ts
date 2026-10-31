@@ -119,6 +119,11 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     return this.mapAll(records, (r) => r.id)
   }
 
+  async spmServable(ids: readonly string[]): Promise<ReadonlySet<string>> {
+    const wanted = [...new Set(ids)].filter(isIdString)
+    return wanted.length === 0 ? new Set() : new Set(await this.questions.eligibleAmong(wanted, { spmPool: true }))
+  }
+
   /** Pinned grading read only: never a serving path (it skips the active, published and PKSK scope). */
   async versions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, PracticeQuestion>> {
     const wanted = refs.filter((r) => isIdString(r.questionId) && Number.isSafeInteger(r.versionNo) && r.versionNo >= 1)

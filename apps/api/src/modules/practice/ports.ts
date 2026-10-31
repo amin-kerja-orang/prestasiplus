@@ -81,6 +81,12 @@ export interface PracticeQuestionSource {
    */
   live(ids: readonly string[]): Promise<ReadonlyMap<string, PracticeQuestion>>
   /**
+   * The ids among `ids` that the SPM activities (Databank, Latih Tubi SPM, Mock K1) may serve NOW: the same rule as a draw with
+   * `spmPool: true` (`SPM_SERVABLE_SQL`: offered level, active subject and subject-level, not PKSK, approved and active). A single
+   * targeted question ("Buka Soalan Sama") must pass it too, not only the level code check.
+   */
+  spmServable(ids: readonly string[]): Promise<ReadonlySet<string>>
+  /**
    * The exact versions a session served (OD-28): key `${questionId}@${versionNo}`. Used for check and submit,
    * so a later edit (version n+1) never changes the grading (AC 11). Eligibility is NOT re-checked here.
    */
@@ -100,6 +106,9 @@ export class NoPracticeQuestions implements PracticeQuestionSource {
   }
   async live(): Promise<ReadonlyMap<string, PracticeQuestion>> {
     return new Map()
+  }
+  async spmServable(): Promise<ReadonlySet<string>> {
+    return new Set()
   }
   async versions(): Promise<ReadonlyMap<string, PracticeQuestion>> {
     return new Map()
