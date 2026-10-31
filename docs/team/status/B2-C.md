@@ -182,8 +182,176 @@ Scope: the three new READY heads with no verdict. T11, T12, T14 and T15 are unch
 - **T11:** security MEDIUM (kuiz check accepts any own session) still open; the T07 conflict now has to be resolved in the lane's BASE-14 merge.
 - **T10:** Changes requested: dirty override; Tambah/Padam meaning not recorded as a deviation; merge after T34.
 
-## Cycle 3 — 2026-10-31 (20:52 MYT, base BASE-14 70971776)
+## Cycle 3 — 2026-10-31 (20:52–21:25 MYT, base BASE-14 70971776)
 
-No new work. Every READY-FOR-REVIEW head in status/C1–C4.md already has a verdict in cycle 1 or cycle 2: T10 e1546909, H-C6 c554cbae, T11 48fa74e8, T12 07f57221, T13 17ac8f28, T14 6f2f682a, T15 17f62b94. The cycle 1 and 2 verdicts and the "Ready for B1 merge" summary still stand. No Team C head contains BASE-14.
-- Not reviewed (no READY claim or evidence yet): `r1/f08-builder-ui` moved to 467116b3 (20:44, V2 admin parity, R1-F09 scope). The other branch tips (T11 dafc435f, T12 9e7cb8fb, T14 4b033de3, T15 dbf7d81e) are the BASE-8 tips already noted in cycle 1. None of them contains BASE-14.
-- Next cycle: the lanes merge BASE-14 and post READY heads. T14 and T15 then need only a tree diff against the reviewed trial merge.
+Scope: the heads posted by C2 and C4 at 20:55 MYT (cb66671). A first note (5abb327) said there was no new work. It was written before that commit was pulled and is replaced by this section. T10, H-C6 and T13 have not changed, so their cycle 2 verdicts stand.
+
+Method: each head was trial-merged into BASE-14 in a scratch worktree, one at a time.
+- Code review: 3 code-reviewer subagents plus 1 security-engineer subagent (opus, high effort, each in its own worktree, reading only).
+- Checks were run by this session on each trial merge. DB specs used a local Postgres 16 via TEST_DATABASE_URL.
+- **No head contains BASE-14**, so **no unit is "Ready for B1 merge"**.
+
+- **T11 r1/b16-kuiz @ dafc435f (C2): Approve with Minors** (code); **security: Changes requested** (MEDIUM still open)
+  - Trial merge on BASE-14: **CONFLICT** in `apps/api/src/modules/bijak/kuiz/kuiz.mapper.ts` (`resolveStimuli`, with T07). Fix: take BASE-14's `kind: KUIZ_KIND[s.kind]` and drop `TODO(T07)` with the raw `kind: s.kind`. If T11's side is kept, tsc fails and the 4 picture kinds return 500. **H-C8 @ 7ac922a7 already contains this resolution**, so land T11 and T12 through H-C8 (or resolve in the same way).
+  - Checks: the T11 code was run inside the H-C8 trial (below): api tsc 0; `test/bijak-kuiz` 3 files 31/31; contract:check ok.
+  - The delta (403 `paperUnavailable` on per-paper page and check) is good:
+    - 404 checks run first (bad id, Draf paper, another pupil's Jana paper), then the 403 (`kuiz.service.ts:345-355`). No existence oracle.
+    - The message is fixed; no question id leaks.
+    - The text is identical to H-A13 `BIJAK_ATTEMPTS_MESSAGES.paperUnavailable` and to the mock.
+  - SECURITY MEDIUM (from cycle 1, **still open**) `kuiz.service.ts:139-140` (`check`), `:182-183` (`finish`):
+    - `lockSession` filters by (id, userId) only, and `check` never calls `incrementTrialUsed`.
+    - The `finish` guard `mode !== KUIZ_MODE` cannot tell a kuiz session from M06 Latih Tubi, because `KUIZ_MODE = 'latih_tubi'` (`:58`, `contract/practice/schema.ts:21`).
+    - Exploit: start a practice session (`latih_tubi`, `targetQuestionId`), then call the kuiz check repeatedly. This returns the key and explanation with no BR-07 count, and submit then credits rewards.
+    - Fix (C2 + A, M05 store owner): add a distinct kuiz origin or mode, and reject other sessions in `check` and `finish` with `quizNotFound`. Product decides whether the kuiz itself consumes trial checks (REQ to A/QUESTIONS).
+  - Minor `kuiz.service.ts:353`: the rule requires `isActive && approved`, but H-A13 (`papers/attempt-source.ts:90-91`) checks only approved ("is_active is NOT checked"). A deactivated but unarchived question therefore gives "Mula" OK while the per-paper Kuiz is refused. Fix: use one predicate (`resolveForAttempt`: `not_eligible`→403).
+  - Minor `docs/requirements/v3-bijak-spm-scope.md:198` (AC-R1-18.4) still says "Terbit papers keep their frozen snapshot". Product-analyst: update the AC to match REQ-A-003/Q1.
+  - Minor `apps/api/test/bijak-kuiz/kuiz.spec.ts:383` (19b) covers only the archived-status case. Add cases for a missing question, an inactive question, no placements, and an archive through the real lifecycle (which clears `live_version_no`).
+  - Minor `packages/contract/src/bijak/kuiz/paths.ts:106,122`: the 403 is still documented as role/CSRF only. Add the `paperUnavailable` 403, then re-emit openapi.
+  - Low (security) `kuiz.service.ts:353`: every page and check runs `getMany(placed,'live')` (up to 300/min per user). Use a status-only count or a short cache.
+  - Low (product) `paperCheck` returns key and explanation for any placed MCQ, even while the pupil has an open scored sitting on the same paper (V2 parity `/simulasi/{paper}/kuiz`). Product to decide.
+  - Earlier findings:
+    - (b) pages/markableTotal computed before the `complete` filter, and paperCheck marks skipped items: **still open**.
+    - (c) servable re-check: **partly fixed** (isActive mismatch above).
+    - (d) `singleMcqLeaf`-only draw: **still open**.
+    - (e) B3 M1 (key via paperCheck): **still pending product**, not in QUESTIONS.md, so the lead should raise it.
+    - Contract `[PROPOSED]` tag on the Q1-approved line: drop it (owning unit).
+
+- **T12 r1/f12-kuiz @ 9e7cb8fb (C2): Approve with Minors**
+  - Trial merge on BASE-14: **CONFLICT** in the same `kuiz.mapper.ts` hunk (through b16). Resolve as for T11, or land via H-C8.
+  - Checks (H-C8 trial, which contains T12):
+    - vue-tsc 0; eslint 0.
+    - `vitest --project unit src/modules/m28-bijak-spm src/app/__tests__ registry-boot`: 49 files, 642/642.
+  - Minor `PaperQuizPage.vue:164`: "Kertas belum tersedia" is new copy (not in V2 §1.8, BIJAK-SPM-cloud §3.6 or Q1). Tag it [PROPOSED] and list it for the user, or reuse an existing title.
+  - Minor `PaperQuizPage.vue:97-101`: every 403 becomes "Kertas belum tersedia", including role and CSRF ("Akses ditolak"). Switch only on the `paperUnavailable` text.
+  - Minor `server/kuiz-mock.ts:186-187`: the mock skips a missing placed question and serves the paper. It should throw forbidden `PAPER_UNAVAILABLE`, as H-C5 does in `store.ts`.
+  - Nit `PaperQuizPage.vue:118`: a 403 on check leaves the page interactive. Consider `phase='unavailable'`.
+  - Earlier Minors, all **still open**:
+    - The "Soalan n" chip counts leaves.
+    - "Kertas penuh" should be "← Kertas penuh" (`lib/kuiz.ts:21`).
+    - Syiling/Mata chips (`KuizPage.vue:192-193`).
+    - `Number()` vs `parseInt` (`lib/kuiz-count.ts:7`).
+    - Stale "Semak Jawapan" comments.
+    - No `loadSeq` test.
+    - The mock returns 200 for an out-of-range page.
+
+- **H-C5 r1/hc5-mula-403 @ fc54afc8 (C2): Changes requested**; **security: Pass**
+  - Trial merge on BASE-14: clean (3d7b1da3).
+  - Checks:
+    - vue-tsc 0; eslint 0 (3 files).
+    - `vitest --project unit src/modules/m28-bijak-spm registry-boot`: 34 files, 478/478.
+  - MAJOR `src/modules/m28-bijak-spm/pages/PaperCoverPage.vue:172,181`: the `failure` UAlert sits inside `<section v-if="!needsChoice">`, so the 403 is invisible on the "Mula Semula" path.
+    - Scenario: open non-fresh sitting → question archived → "Mula Semula" → `begin(true)` → the API (H-A13 `attempts.service.ts:216-223`) and the mock (`store.ts:396-403`) return 403 → the sitting stays open and the pupil sees nothing.
+    - After H-A13 this is the main way to reach the cover, because the card is hidden without an open sitting.
+    - Fix: render the alert outside that section (or under `resume-choice` too), and add a test for a rejected restart.
+  - Minor `__tests__/mula-403.test.ts` covers only the no-open-sitting case.
+  - Nit `:63-66`: the `&& e.message` fallback never fires over HTTP (`toBijakError` always fills "Akses ditolak").
+  - Nit `store.ts:400`: the mock does not refuse a paper with zero placements; the API does (`attempt-source.ts:89`).
+  - Security: the message is UAlert `:title` text, not v-html. The error shape matches H-A13 (FORBIDDEN + BM line).
+
+- **H-C8 r1/hc8-kuiz-stimuli @ 7ac922a7 (C2): Changes requested**; **security: Pass** (XSS, file tokens, stimulus leakage; it inherits the T11 MEDIUM unchanged)
+  - Trial merge on BASE-14: clean (6fb8048a). It resolves the T11/T12 `kuiz.mapper.ts` conflict. The H-C8 delta is the merge 7ac922a7 itself (`--remerge-diff`, 10 files).
+  - Checks on the trial:
+    - api tsc 0; contract:check ok; vue-tsc 0; eslint 0 (134 changed files vs base).
+    - api `TEST_DATABASE_URL=… npx vitest run test/bijak-kuiz`: 3 files, 31/31.
+    - `vitest --project unit src/modules/m28-bijak-spm src/app/__tests__ registry-boot`: 49 files, 642/642.
+  - MAJOR `src/modules/m28-bijak-spm/lib/kuiz.ts:58` with `src/components/question-display/StimulusFigure.vue:194`: a table stimulus whose body is not a parseable grid comes with `table: null` and a body.
+    - The FE passes `kind:'table'` through, and StimulusFigure has no branch for it, so only the "label · Jadual" figcaption shows and the text is lost.
+    - The paper path (`StimulusView.vue`) shows the text, so this breaks kuiz = paper parity (e.g. a Word-imported table with merged cells).
+    - Fix: map `table && !s.table` → `passage` in `toStimulus` (or let StimulusFigure show `text` without a grid), and add a test.
+  - Minor `lib/kuiz.ts:66`: the caption is copied into `table.caption`, so it shows twice (`<caption>` and figcaption). V2 §1.5 shows it once, and `kuiz-server.test.ts:165` asserts the duplicate. Drop the spread and fix the test.
+  - Minor `apps/api/src/modules/bijak/kuiz/kuiz.mapper.ts:236-238`: an own stimulus that reuses the group's (or an earlier) picture file is silently dropped even when its label or caption differs. This contradicts "Never silently dropped", and the bridge `ownStimuliOf` keeps it. Remove the file-dedup for labelled own stimuli.
+  - Minor (parity, carried from T11/R1E2E-05b) — the kuiz serves some questions that the real paper refuses:
+    - a leaf-only part stimulus (`kuiz.service.ts:373-374` vs bridge `stimulus_outside_group`);
+    - groups with 0 or more than 3 stimuli;
+    - `imageToken: null` (`file_missing`).
+    Track this as a follow-up.
+  - Minor `kuiz.service.ts:266-269`: `markableTotal` still counts skipped incomplete parts. H-C8 skips more questions, so "Skor: x / y" can show a total the pupil cannot reach.
+  - Minor (test gap): `e2e/bijak/kuiz-responsive.spec.ts` mock data has no wide table. Add one and assert `fits()` at 375. The classes (`max-w-full overflow-x-auto`) look right.
+  - Nit `kuiz.mapper.ts:180`: whitespace-only body counts as content. Use `body?.trim()`.
+  - Nit: an unlabelled own picture gets `alt: null` (the bridge sends "Gambar untuk soalan ini").
+  - Passed:
+    - `toKuizStimulus` matches T07 `stimulusDefOf` and `stimulusTableOf`.
+    - Shared-ungrouped, unknown, audio and empty stimuli → incomplete.
+    - Captionless pictures are still served.
+    - Link order is `position asc`.
+    - D90: group stimulus once, members together, own stimuli on the first leaf only.
+    - approved/isActive filters are unchanged.
+    - The contract change is additive. Its own openapi hunk is kuiz-only.
+    - No new copy and no real names.
+    - Security: all fields render via `{{ }}`. StimulusFigure's only v-html (`svg`) is never set from the wire. Only `files.public_id` tokens are sent, and they are scoped by `pupilMayReadQuestionImageSql`.
+  - Low (security): there is no size cap on table rows/cols or body in the kuiz response. The content is author-controlled, so this is hardening only.
+
+- **T14 r1/t14-student-bugs @ 4b033de3 (C4): Approve with Minors** (cycle 1 verdict stands)
+  - The tree equals the cycle 1 reviewed trial merge on BASE-8 (103afab9).
+  - Merge-tree on BASE-14: clean. The head lacks BASE-14.
+  - The `StructuredAnswerPage.vue:74` `isStem` Minor and the doc Nit are still open.
+
+- **T15 r1/t15-bm-copy @ dbf7d81e (C4): Approve** (cycle 1 verdict stands)
+  - The tree equals the cycle 1 reviewed trial merge (3c7e67c6).
+  - Merge-tree on BASE-14: clean. The head lacks BASE-14.
+
+- **H-C7 r1/hc7-own-stimuli @ 26ec4608 (C4, stacked on R1E2E-05b fcf08660): Approve with Minors**
+  - Trial merge on BASE-14: clean (c3abd60f). The C4-only commit is 26ec4608.
+  - Checks:
+    - vue-tsc 0; eslint 0 (14 files).
+    - `vitest --project unit src/modules/m28-bijak-spm registry-boot`: 33 files, 478/478.
+  - Passed:
+    - D90: the bridge `ownStimuliOf` excludes group stimulus ids and refuses shared-ungrouped ones, so a group stimulus never reaches `question.stimuli`.
+    - `stimuli` has minItems 1 and is sent only when non-empty, so `??` never meets `[]`.
+    - `stemImage` equals `stimuli[0]` when present, so it is never shown twice.
+    - Stimuli render above the stem (cloud-student-mechanism §1.5), and ResultPage has the same logic.
+    - No new v-html.
+  - Minor `src/modules/m28-bijak-spm/pages/ResultPage.vue:125-128,413-416` has no test. Add tests for own stimuli above the stem, the `stemImage` fallback, and "not twice".
+  - Nit `ResultPage.vue:414-415`: `ownStimuliOf` is called twice per row. Use a computed Map.
+  - Nit `QuestionBlock.vue:121`: `data-testid="stem-image"` now also wraps passages and tables. Add a comment or an `own-stimuli` id.
+  - Merge after R1E2E-05b.
+
+- **H-C3 r1/hc3-essay-choice-view @ 6ee50cd5 (C4, stacked on H-A7 d7424ace): Changes requested**
+  - Trial merge on BASE-14: clean (b5f21584). The C4-only commit is 6ee50cd5.
+  - Checks:
+    - vue-tsc 0; eslint 0 (6 src files).
+    - `vitest --project unit src/modules/m04-question-bank registry-boot`: 35 files, 480/480.
+    - The `QuestionQualityPage.vue:291` `sm:p-5` lint error is on base (8bb59c2a) and is not touched here.
+  - MAJOR (the B2 Minor on H-A7, unaddressed and now user-facing) `apps/api/src/modules/questions/questions.service.ts:800`: `flatShaped` excludes essay_choice, so a PUT drops `modelAnswer` and `pointsValue`. essay_choice reads as `questionType:'essay'`, so `QuestionForm.vue:511-524,600-604` shows those fields as editable and pre-filled. An admin edits and saves, sees the success flash, and the change is lost. Fix (either):
+    - make those fields read-only when `question.essayTopics?.length`, with a [PROPOSED] BM note;
+    - or have A return a BM 422.
+  - Minor `QuestionListPage.vue:591`, `QuestionDetailPage.vue:290`: "Esei pilihan" is new copy (in no discovery, parity or design doc). Tag it [PROPOSED] in the copy or deviation table.
+  - Minor `QuestionListPage.vue:590`: the badge sits in `#excerptText-cell`, which DsDataTable card mode (narrow screens) does not render. Add a card field, or record the gap (consistent with the DSKP badges).
+  - Nit `src/modules/m04-question-bank/api/questions.ts:130-131`: `EssayTopic` was inserted under the `Question` JSDoc. Move it above.
+  - Nit `mock/repository/questions.ts:556`: an out-of-scope cast removal (the same as H-C4; merges cleanly, vue-tsc 0).
+  - Merge after T25 and H-A7.
+
+- **H-C4 r1/hc4-report-arkib @ c92c711b (C4, stacked on T35 2dd3c598): Changes requested**
+  - Trial merge on BASE-14: clean (a8920d4d). It is also clean against the current T35 tip 4ea790b1, whose newer commits do not change the request shape. The C4-only commit is c92c711b.
+  - Checks:
+    - vue-tsc 0; eslint 0 (8 src files).
+    - `vitest --project unit src/modules/m04-question-bank registry-boot`: 35 files, 479/479.
+  - Passed:
+    - The payload matches `QuestionReportUpdateRequestSchema` (`archive` is a FlagSchema, applied via `archiveReported`).
+    - Errors go through the existing flash.
+    - The button is 44px.
+  - MAJOR `src/modules/m04-question-bank/components/ReportCard.vue:77-87` + `api/reports.ts` `ReportUpdated`: the H-A13 (d51a4abf) response `data.warning`/`data.papers[]` is ignored.
+    - The warning is the Q1-approved line: "Soalan ini ada dalam kertas yang telah diterbitkan. Murid tidak boleh memulakan percubaan baharu pada kertas itu sehingga soalan diganti."
+    - An admin who archives a question placed on a Terbit paper is never told that pupils are now blocked.
+    - Fix: add `warning?`/`papers?` to the type, show a warning flash with the paper titles, and have the mock return them. If another FE unit owns this, the lead can downgrade it to a tracked item.
+  - Minor `ReportCard.vue:93,295-308`: Arkib fires without a confirm. The .cloud Panel equivalent has "Arkibkan soalan ini?" (cloud-student-mechanism.md:349). Add a confirm with that copy and record it as a deviation.
+  - Minor `lib/report-reasons.ts:157`: `ARCHIVE_NOTE = 'Diarkibkan oleh admin'` is new copy. Tag it [PROPOSED].
+  - Minor `mock/handlers/reports.ts:114-122`: the mock reads only `isActive`. T35 `displayOf` also treats fixed + archived as "Dikeluarkan", so in the mock an archived-then-Selesai report shows "Selesai".
+  - Minor `mock/repository/reports.ts:152-157`: a structured question is archived by setting it inactive. Note this in the m04 mock deviation notes.
+  - Nit `ReportCard.vue:296`: Arkib still shows for an already-archived question (a harmless no-op).
+  - Merge after T35. H-C4 sits on the older T35 2dd3c598, so take the T35 tip first.
+
+### Merge readiness summary (cycle 3)
+- **No Team C unit is "Ready for B1 merge"**: no head contains BASE-14 (70971776).
+- Approve, needs only BASE-14:
+  - **T15**: Approve.
+  - **T14**: Approve with Minors.
+- **T12**: Approve with Minors. Land it with T11 via H-C8 (the conflict is resolved there).
+- **T11**: Approve with Minors on the code, but the **security MEDIUM** (kuiz check accepts any own session; `KUIZ_MODE='latih_tubi'`) is still open, and the merge into BASE-14 conflicts in kuiz.mapper.ts.
+- Changes requested:
+  - **H-C8**: blank non-grid table (MAJOR). Merge after T07 (in base), R1E2E-05b, T11 and T12.
+  - **H-C5**: 403 invisible on Mula Semula (MAJOR).
+  - **H-C3**: essay_choice edit silently loses model answer and points (MAJOR). Merge after T25 and H-A7.
+  - **H-C4**: H-A13 archive warning not shown (MAJOR). Merge after T35.
+- **H-C7**: Approve with Minors. Merge after R1E2E-05b.
+- Unchanged since cycle 2: T10 Changes requested; H-C6 Approve with Minors; T13 Approve with Minors (security Pass on the delta).
