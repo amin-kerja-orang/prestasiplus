@@ -72,6 +72,8 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 | T47 | D79 parity (H-A19) | Question bank: list filters Tahun/Negeri/Kertas/Jenis; filter-based bulk "Luluskan Hasil Tapisan" / "Arkib Semua" (full gate per row, failed[], cap, confirm count); V2 illegal-move message "Peralihan '…' -> '…' tidak dibenarkan." | A2 | T45b | r1/t47-bank-parity | QUEUED |
 | T48 | D79 parity (H-A19) | Builder (+ P5 `pinned` per placement, R3 body/caption edit, REQ-C-008 title max 200): patchable "Kod kertas (kulit)"; per-paper section rule/select-count; review "Tambah bahagian" + "Tambah soalan" (new question in paper via T33 gate) + "Padam soalan"; paper list subject + search filters | A3 | T34 follow-up | r1/t48-builder-parity | QUEUED |
 | T48a | D79 parity | Paper list subject + search filters (R12); title max 200 everywhere (REQ-C-008) | A3 dev-2 | — | r1/t48a-paper-list | IN-PROGRESS |
+| T43b | AC gaps | Builder publish specs AC-07.4/07.6/07.7/07.9 (split from T43) | A3 dev-2 | T34 follow-up | r1/t43b-publish-acs | IN-PROGRESS |
+| H-A24 | docs | R1 release-notes input table for B1 (migrations 0100–0103, env vars, deprecated BIJAK_POC_QUESTIONS, routes, behaviour, SELECTs) | A3 docs agent | — | r1/ha24-release-input | IN-PROGRESS |
 | T36 | R1-B07 | Remove PoC fixture and composite split; bank is the only source | **A2** | T04 (contains b08) | r1/t36-remove-poc @ 40d4851d | **READY-FOR-REVIEW** (BASE-6 merged): bank is the only question source for Bijak papers, attempts, Jana, kuiz, builder; `BIJAK_POC_QUESTIONS` deprecated no-op (warns when true); PoC export → prisma/seed/poc/export, doubles → test/support/poc; poc-flag specs rewritten + bank-sources.spec 5; bijak-papers 102, bijak-attempts 173, bijak-integration 60, bridge 110, exam-builder 295, seed 138 + 1 skip, school-admin 239, config 10, registry-boot 3 (all green); tsc 0; eslint 0. **Merge after T26, and B1 must first switch the e2e workflows off PoC papers**: `BIJAK_POC_QUESTIONS` true at compose.http.yaml:31, render.yaml:27, .github/workflows/e2e-http.yml:74, .github/workflows/frontend.yml:102 (+ deploy/vps/compose.prod.yaml:77/113 false). Seeded PoC papers become unplayable outside tests (403 not eligible; Jana 422 SHORTAGE). Release-note text in status/A2.md |
 | T37 | R1-D01/D02 | Consolidated ops runbook (migrations 0092→0093→0100→0101, env, verification queries) + D95 (admin creates + Sahkan on UAT, no seed) | **A3** (cycle 7) | T35 | r1/t37-r1-runbook | **READY-FOR-REVIEW** @ 971dfca0 (+ §4.2 → D95; before: 5540289f (+ release-notes §4.1 → D95; runbook SQL 51/51 ok on a local migrated + seeded postgres:16, recorded in §9) (was b0d0046f; BASE-6 merged; docs only: status table, 0092→0093→0100→0101→0102 with pre/post SELECTs, VACUUM ANALYZE + rollback, env names, D95 §5 Kontrak + Sahkan order, no-seed check, links T39). Follow-up on branch: release-notes §4.1 → D95; run all SELECTs on a local migrated DB |
 
@@ -193,3 +195,28 @@ Answer to B1 Q-B1-2: T01 removed the old `0092_part_options_image_file_index` fo
 5. T33 will add `cognitiveLevel` per leaf (contract) and the approve gate for SPM T4/T5 (cognitive level per leaf + Kertas). A2 will post the exact fields in its READY note.
 
 Also noted: user decisions of 18:03 relayed by team B — B09b paper-review edits are in R1 (team A endpoints in T34, C1 UI); the "Tiada soalan" tile stays (deliberate difference from V2).
+
+## Cycle 10 READY units (team A, 2026-10-31 14:50 UTC, all on BASE-19 823d8dfb unless noted)
+
+| Unit | Branch @ head | Lane | Note |
+|---|---|---|---|
+| T33 | r1/t33-leaf-tags @ 95cea5be | A2 | PRIORITY (blocks T34); questions 759/759, workflow 264/264, intake 108/108; B2 + B3 |
+| T36 | r1/t36-remove-poc @ 5bc34543 | A2 | after REQ-A-001 / REQ-B-003 |
+| T42b | r1/t42b-intake-acs @ bca92f3d | A2 | AC-R1-14.3 fix: accepted figure gets its own question_image (pupils could not see it); files → B3 |
+| T47 | r1/t47-bank-parity @ 04cdb0ef | A2 | Studio filters + filter bulk (expectedCount, cap 500) + V2 illegal-move text; bulk input → B3 |
+| T34 follow-up | r1/t34-builder-review @ 7bc3419e | A3 | `blockerDetails` + `canOverride` (REQ-C-002); merge after T33 in base |
+| T44 | r1/t44-blueprint-fields @ 2d9c100d | A3 | contains H-A15 @ 7e5d637e |
+| T48a | r1/t48a-paper-list @ e5041595 | A3 | paper list subject + search; title ≤ 200 |
+| T31 | r1/t31-builder-wire @ b3501db9 | A3 | BLOCKED on C1 type change (REQ-A-008); merge with/after it |
+| T29 | r1/t29-servability @ c53e655d | A4 | B2 MAJOR fixed (live ?? latest) |
+| T30 | r1/t30-servability-reads @ 09d53c56 | A4 | B2 MAJORs fixed (Jana SQL count; card = lane rows) |
+| t45-lanes | r1/t45-lanes @ 3de39c85 | A4 | R1-21.1/21.2 + V2 wording; R1-21.3/21.6 wait for T48 |
+| T45 Part 1 | r1/t45-servability-acs @ 8eba44c0 | A4 | AC-04.3, 04.5, 05.3 (Terbitkan refused when unservable everywhere) |
+| R1E2E-05b | r1/e2e05b-own-stimuli @ 57e7feee | A4 | use instead of 00cec26f; B3 |
+| servability-own-stimuli | r1/servability-own-stimuli @ 11a4db3c | A4 | after T29 + 05b |
+| H-A12 | r1/ha12-conformance @ e1fa7217 | A4 | shared setPocMarkBudgets; 406/406 |
+| H-A21 | r1/ha21-overview-cache @ 7399b63c | A4 | after T30 → t45-lanes |
+| T38 / T40 | r1/t38-selfmark-reward @ 662e602f / r1/t40-attempts-acs @ 90973d72 | A1 | |
+| T42 p1 / t04-minors / H-A16 | d1210e96 / ec179b12 / b283a746 | A2 | |
+
+Merge order proposal for B: see REQ-A-007 (docs/qa/r1-e2e-readiness.md). Q5 decided (follow V2, rewards per attempt).
