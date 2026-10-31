@@ -181,3 +181,9 @@ Scope: the three new READY heads with no verdict. T11, T12, T14 and T15 are unch
 - **T12:** Approve with Minors. Needs T11.
 - **T11:** security MEDIUM (kuiz check accepts any own session) still open; the T07 conflict now has to be resolved in the lane's BASE-14 merge.
 - **T10:** Changes requested: dirty override; Tambah/Padam meaning not recorded as a deviation; merge after T34.
+
+## Cycle 3 — 2026-10-31 (20:52 MYT, base BASE-14 70971776)
+
+No new work. Every READY-FOR-REVIEW head in status/C1–C4.md already has a verdict in cycle 1 or cycle 2: T10 e1546909, H-C6 c554cbae, T11 48fa74e8, T12 07f57221, T13 17ac8f28, T14 6f2f682a, T15 17f62b94. The cycle 1 and 2 verdicts and the "Ready for B1 merge" summary still stand. No Team C head contains BASE-14.
+- Not reviewed (no READY claim or evidence yet): `r1/f08-builder-ui` moved to 467116b3 (20:44, V2 admin parity, R1-F09 scope). The other branch tips (T11 dafc435f, T12 9e7cb8fb, T14 4b033de3, T15 dbf7d81e) are the BASE-8 tips already noted in cycle 1. None of them contains BASE-14.
+- Next cycle: the lanes merge BASE-14 and post READY heads. T14 and T15 then need only a tree diff against the reviewed trial merge.
