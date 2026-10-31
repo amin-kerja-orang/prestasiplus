@@ -88,7 +88,7 @@ export interface BuilderQuestionSource {
   describe(refs: readonly BuilderQuestionRef[]): Promise<ReadonlyMap<string, BuilderQuestionInfo>>
   /** Picker candidates: ids of the PUBLISHED questions of the subject and kertas, in bank order. */
   candidates(scope: BuilderCandidateScope): Promise<string[]>
-  /** Group id -> group (stimulus and members in published order); unknown or stimulus-less groups are absent. */
+  /** Group id -> group (stimulus and members in published order); an unknown group is absent; a group with no displayable stimulus is present without `stimulus` (D90). */
   groups(groupIds: readonly string[]): Promise<ReadonlyMap<string, BuilderGroupInfo>>
   /** Admin review content (`previewQuestions`): carries the answer key and mark scheme. Unknown ids are left out. */
   review(ids: readonly string[]): Promise<BuilderPreview>

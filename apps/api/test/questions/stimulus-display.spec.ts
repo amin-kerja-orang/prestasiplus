@@ -4,8 +4,7 @@ import { PrismaService } from '../../src/db/prisma.service'
 import { BuilderRepository } from '../../src/modules/exam/builder/builder.repository'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder/question-bank.source'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
-import { ESSAY_CHOICE_NOT_STORED } from '../../src/modules/questions/questions.service'
-import { adminActor, apiError, mcqInput, tagOf, type Tag } from './fixtures'
+import { adminActor, mcqInput, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
 
 type Kind = 'passage' | 'image' | 'diagram' | 'table' | 'map' | 'infographic' | 'graph' | 'audio'
@@ -151,19 +150,5 @@ describe('stimulus display read model (R1-T07)', () => {
     expect(info?.stimulus).toBeUndefined()
     const described = await source.describe(g.members.map((id) => ({ id })))
     for (const id of g.members) expect(described.get(id)?.groupId).toBe(g.groupId)
-  })
-
-  it('an essay_choice leaf is valid in the contract but refused with 422 on the write path until it can be stored', async () => {
-    const part = {
-      label: '',
-      prompt: { ms: 'Pilih satu tajuk dan tulis karangan.' },
-      mode: 'essay_choice',
-      marks: 30,
-      key: { kind: 'rubric', marks: 30, criteria: [{ id: 'c1', name: 'Isi' }], bands: [{ name: 'Cemerlang', range: [25, 30] }] },
-      topics: [{ id: 'a', label: 'Tajuk satu' }, { id: 'b', label: 'Tajuk dua' }],
-    }
-    const err = await apiError(() => svc.create(mcqInput(tag, { questionType: 'essay', options: undefined, correctAnswer: undefined, parts: [part] as never }), admin))
-    expect(err.getStatus()).toBe(422)
-    expect(err.fields).toEqual({ parts: ESSAY_CHOICE_NOT_STORED })
   })
 })

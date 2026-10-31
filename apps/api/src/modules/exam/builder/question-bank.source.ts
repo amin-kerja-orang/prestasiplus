@@ -21,6 +21,7 @@ import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { QuestionsRepository } from '../../questions'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from '../../questions/learner-visibility'
 import { CANDIDATE_SLACK, MAX_EDITOR_CANDIDATES } from './builder.constants'
 import { BuilderRepository } from './builder.repository'
 import {
@@ -71,12 +72,13 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     if (!subject) return []
     const pool = poolPattern(scope.subject)
     // One bounded query. Same eligibility as `QuestionsRepository.eligibleIds` (live version approved AND
-    // active) and the same kertas rule as `kertasOf` (lowest pool digit, else the paper code digit).
+    // active, not PKSK, not a Darjah or inactive level: R1-B21 secondary-only) and the same kertas rule as `kertasOf` (lowest pool digit, else the paper code digit).
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`
       SELECT q.id
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
        WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${subject.id}
+         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
          AND COALESCE(
                (SELECT min((substring(t.code from ${pool}))::int) FROM question_tags t
                  WHERE t.question_id = q.id AND t.kind = 'pool' AND t.code ~ ${pool}),
@@ -109,7 +111,9 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         },
       },
     })
-    const picks = questions.map((q) => ({ q, versionNo: wanted.get(q.id) ?? q.liveVersionNo ?? q.latestVersionNo }))
+    // Secondary-only (R1-B21): a Darjah or PKSK question is not described, so it can never be placed on a paper.
+    const allowed = await this.servableVersions(questions.map((q) => ({ id: q.id, versionNo: wanted.get(q.id) ?? q.liveVersionNo ?? q.latestVersionNo })))
+    const picks = questions.filter((q) => allowed.has(q.id)).map((q) => ({ q, versionNo: wanted.get(q.id) ?? q.liveVersionNo ?? q.latestVersionNo }))
     const statusNos = questions.flatMap((q) => [q.liveVersionNo, q.latestVersionNo].flatMap((n) => (n === null ? [] : [{ questionId: q.id, versionNo: n }])))
     const versions = await this.db.questionVersion.findMany({
       where: { OR: [...picks.map(({ q, versionNo }) => ({ questionId: q.id, versionNo })), ...statusNos] },
@@ -174,15 +178,42 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         questions: { orderBy: { groupPosition: 'asc' }, select: { id: true } },
       },
     })
+    // Secondary-only (R1-B21): Darjah (and PKSK) members leave the group; a group left with no member is absent.
+    const members = await this.servableLatest(groups.flatMap((g) => g.questions.map((m) => m.id)))
     for (const g of groups) {
       // D90: the group is always emitted, with or without a displayable stimulus, so every builder read treats its members as one unit.
       // A group with nothing to display (audio only, or empty) has no `stimulus` and `stimuli: []`.
       const tokens = await this.tokensOf(g.stimuli.map((s) => s.stimulus))
       const shown = stimuliOf(g.stimuli.map((s) => s.stimulus), tokens)
       const [stimulus, ...rest] = shown
-      out.set(g.id.toString(), { id: g.id.toString(), ...(stimulus ? { stimulus } : {}), stimuli: stimulus ? [stimulus, ...rest] : [], questionIds: g.questions.map((m) => m.id.toString()) })
+      const questionIds = g.questions.filter((m) => members.has(m.id)).map((m) => m.id.toString())
+      if (questionIds.length > 0) out.set(g.id.toString(), { id: g.id.toString(), ...(stimulus ? { stimulus } : {}), stimuli: stimulus ? [stimulus, ...rest] : [], questionIds })
     }
     return out
+  }
+
+  /**
+   * R1-B21 (D72/D86): of the given (question, version) pairs, the question ids whose version is secondary-level and not PKSK
+   * (the shared `NOT_PRIMARY_LEVEL_SQL` and `NOT_PKSK_SQL`).
+   */
+  private async servableVersions(pairs: readonly { id: bigint; versionNo: number }[]): Promise<Set<bigint>> {
+    if (pairs.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT q.id FROM questions q
+        JOIN unnest(${pairs.map((p) => p.id)}::bigint[], ${pairs.map((p) => p.versionNo)}::int[]) AS pin(qid, vno) ON pin.qid = q.id
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = pin.vno
+       WHERE ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}`
+    return new Set(rows.map((r) => r.id))
+  }
+
+  /** `servableVersions` for the latest version of each question. */
+  private async servableLatest(ids: readonly bigint[]): Promise<Set<bigint>> {
+    if (ids.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT q.id FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+       WHERE q.id = ANY(${[...new Set(ids)]}::bigint[]) AND ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}`
+    return new Set(rows.map((r) => r.id))
   }
 
   async review(ids: readonly string[]): Promise<BuilderPreview> {

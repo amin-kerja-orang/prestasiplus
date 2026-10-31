@@ -5,6 +5,7 @@ import {
   StimulusCreateRequestSchema,
   StimulusGroupCreateRequestSchema,
   StimulusGroupMemberRequestSchema,
+  StimulusGroupMembersSetRequestSchema,
   StimulusGroupReorderRequestSchema,
   StimulusGroupUpdateRequestSchema,
   StimulusUpdateRequestSchema,
@@ -129,6 +130,16 @@ export class StimuliController {
     const res = await this.stimuli.removeMember(id, questionId)
     await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_MEMBERS_CHANGED, 'stimulus_group', id, { ...res.audit, questionId })
     return flash(res.result, STIMULUS_MESSAGES.memberRemoved)
+  }
+
+  @Put('stimulus-groups/:id/members')
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async setMembers(@Actor() actor: HttpActor, @Param('id') id: string, @Body() body: unknown) {
+    await this.stimuli.getGroup(id)
+    const input = parseBody(StimulusGroupMembersSetRequestSchema, body)
+    const res = await this.stimuli.setMembers(id, input.questionIds)
+    await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_MEMBERS_CHANGED, 'stimulus_group', id, { ...res.audit, set: true })
+    return flash(res.result, STIMULUS_MESSAGES.membersReordered)
   }
 
   @Put('stimulus-groups/:id/members/order')

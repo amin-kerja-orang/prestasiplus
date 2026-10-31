@@ -33,6 +33,18 @@ export interface GroupRow {
 }
 
 const PKSK_TAG = 'pksk_domain'
+
+/** What the member rules need to know about a question. */
+export interface QuestionFacts {
+  groupId: string | null
+  pksk: boolean
+  active: boolean
+  archived: boolean
+  /** Shown to pupils now: active, live version approved. */
+  served: boolean
+  subjectId: string | null
+  levelId: string | null
+}
 const bi = (text: string): bigint | null => (/^[1-9]\d{0,18}$/.test(text) ? BigInt(text) : null)
 
 const tableOf = (value: unknown): { head: string[]; rows: string[][] } | null => {
@@ -69,7 +81,8 @@ export class StimuliRepository {
   }
 
   async updateStimulus(id: string, data: StimulusData): Promise<void> {
-    await this.db.stimulus.update({ where: { id: BigInt(id) }, data: this.columns(data) })
+    // A migrated `content_hash` describes the old text: an edit makes it stale, so it is cleared (the API never writes one) (T32-L2).
+    await this.db.stimulus.update({ where: { id: BigInt(id) }, data: { ...this.columns(data), contentHash: null } })
   }
 
   /** Locks the stimulus row so a delete and a link cannot cross. Returns false when it does not exist. */
@@ -175,18 +188,108 @@ export class StimuliRepository {
 
   // --- members ------------------------------------------------------------------------------------
 
-  /**
-   * Locks the question rows (ascending, so two writers cannot deadlock) and returns what the member rules need: whether the
-   * question exists, its current group and whether it is a PKSK question. Unknown ids are absent.
-   */
-  async lockQuestions(ids: readonly string[]): Promise<Map<string, { groupId: string | null; pksk: boolean }>> {
+  /** What the member rules read about one question (D90, R1-T32). */
+  async lockQuestions(ids: readonly string[]): Promise<Map<string, QuestionFacts>> {
     const keys = [...new Set(ids.map(bi).filter((k): k is bigint => k !== null))].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-    const out = new Map<string, { groupId: string | null; pksk: boolean }>()
+    const out = new Map<string, QuestionFacts>()
     if (keys.length === 0) return out
+    // Ascending row locks, so two writers cannot deadlock.
     await this.db.$queryRaw`SELECT id FROM questions WHERE id IN (${Prisma.join(keys)}) ORDER BY id FOR UPDATE`
-    const rows = await this.db.question.findMany({ where: { id: { in: keys } }, select: { id: true, groupId: true, tags: { where: { kind: PKSK_TAG }, select: { id: true } } } })
-    for (const r of rows) out.set(idToString(r.id), { groupId: r.groupId === null ? null : idToString(r.groupId), pksk: r.tags.length > 0 })
+    const rows = await this.db.$queryRaw<
+      {
+        id: bigint
+        group_id: bigint | null
+        is_active: boolean
+        latest_status: string
+        live_status: string | null
+        subject_id: bigint | null
+        level_id: bigint | null
+        pksk: boolean
+      }[]
+    >`
+      SELECT q.id, q.group_id, q.is_active, lv.status AS latest_status, lvv.status AS live_status,
+             lv.subject_id, lv.education_level_id AS level_id,
+             EXISTS (SELECT 1 FROM question_tags t WHERE t.question_id = q.id AND t.kind = ${PKSK_TAG}) AS pksk
+        FROM questions q
+        JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+        LEFT JOIN question_versions lvv ON lvv.question_id = q.id AND lvv.version_no = q.live_version_no
+       WHERE q.id IN (${Prisma.join(keys)})`
+    for (const r of rows) {
+      out.set(idToString(r.id), {
+        groupId: r.group_id === null ? null : idToString(r.group_id),
+        pksk: r.pksk,
+        active: r.is_active,
+        archived: r.latest_status === 'archived',
+        served: r.is_active && r.live_status === 'approved',
+        subjectId: r.subject_id === null ? null : idToString(r.subject_id),
+        levelId: r.level_id === null ? null : idToString(r.level_id),
+      })
+    }
     return out
+  }
+
+  /** Members of the group in order. */
+  async memberIds(groupId: string): Promise<string[]> {
+    const key = bi(groupId)
+    if (key === null) return []
+    const rows = await this.db.question.findMany({ where: { groupId: key }, orderBy: [{ groupPosition: 'asc' }, { id: 'asc' }], select: { id: true } })
+    return rows.map((r) => idToString(r.id))
+  }
+
+  /** The highest `group_position` in the group (0 when empty). */
+  async maxPosition(groupId: string): Promise<number> {
+    const key = bi(groupId)
+    if (key === null) return 0
+    const agg = await this.db.question.aggregate({ where: { groupId: key }, _max: { groupPosition: true } })
+    return agg._max.groupPosition ?? 0
+  }
+
+  /** Members shown to pupils now: an active question whose live version is approved. */
+  async servingMemberIds(groupId: string): Promise<string[]> {
+    const key = bi(groupId)
+    if (key === null) return []
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT q.id FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE q.group_id = ${key} AND q.is_active AND v.status = 'approved'`
+    return rows.map((r) => idToString(r.id))
+  }
+
+  /**
+   * Is the stimulus shown to pupils now: by a group with a serving member, or linked to the live approved version of an active
+   * question (version link or part link).
+   */
+  async stimulusServed(stimulusId: string): Promise<boolean> {
+    const key = bi(stimulusId)
+    if (key === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one FROM stimulus_group_stimuli gs
+        JOIN questions q ON q.group_id = gs.group_id
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE gs.stimulus_id = ${key} AND q.is_active AND v.status = 'approved'
+      UNION ALL
+      SELECT 1 FROM question_version_stimuli vs
+        JOIN question_versions v ON v.id = vs.question_version_id
+        JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no
+       WHERE vs.stimulus_id = ${key} AND q.is_active AND v.status = 'approved'
+      UNION ALL
+      SELECT 1 FROM question_parts p
+        JOIN question_versions v ON v.id = p.question_version_id
+        JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no
+       WHERE p.stimulus_id = ${key} AND q.is_active AND v.status = 'approved'
+      LIMIT 1`
+    return rows.length > 0
+  }
+
+  /** Subject and level of the latest versions of the members: one entry per distinct pair. */
+  async memberSubjectLevels(groupId: string): Promise<{ subjectId: string | null; levelId: string | null }[]> {
+    const key = bi(groupId)
+    if (key === null) return []
+    const rows = await this.db.$queryRaw<{ subject_id: bigint | null; level_id: bigint | null }[]>`
+      SELECT DISTINCT lv.subject_id, lv.education_level_id AS level_id
+        FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE q.group_id = ${key}`
+    return rows.map((r) => ({ subjectId: r.subject_id === null ? null : idToString(r.subject_id), levelId: r.level_id === null ? null : idToString(r.level_id) }))
   }
 
   /** Puts the questions in the group at positions `from`, `from + 1`, ... in the order given. */

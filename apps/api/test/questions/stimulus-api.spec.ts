@@ -210,7 +210,7 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
   })
 
   describe('groups (D90)', () => {
-    it('creates a group of 1 to 3 stimuli and at least 2 questions; members get positions 1..n in the order sent; no marks, never a question', async () => {
+    it('creates a group of 1 to 3 stimuli and 0 to 40 questions (D93); members get positions 1..n in the order sent; no marks, never a question', async () => {
       const a = await stimulus({ label: 'Petikan A' })
       const b = await stimulus({ kind: 'table', body: undefined, tableData: { head: ['x'], rows: [['1']] }, label: 'Jadual B' })
       const [q1, q2, q3] = [await question(), await question(), await question()] as [string, string, string]
@@ -235,6 +235,22 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       }
     })
 
+    it('the Studio sees one image-id form: the group read, the stimulus read and the question detail all name the picture by its public token', async () => {
+      const png = await upload()
+      const pic = await stimulus({ kind: 'diagram', imageFileId: png, body: undefined, alt: 'Rajah' })
+      expect(pic.imageId).toBe(png)
+      const [q1, q2] = [await question(), await question()] as [string, string]
+      const g = await group([pic.id], [q1, q2])
+      expect(g.stimuli[0]!.imageId).toBe(png)
+      expect((await admin.get(`/api/stimuli/${pic.id}`)).body.data.imageId).toBe(png)
+      for (const q of [q1, q2]) {
+        const detail = await admin.get(`/api/questions/${q}`)
+        expect(detail.body.data.stimulusGroup.stimuli[0].imageId).toBe(png)
+      }
+      // and the token downloads for the admin
+      expect((await admin.get(`/api/files/${png}`)).status).toBe(200)
+    })
+
     it('refuses bad stimulus and member lists with a BM message on the right field', async () => {
       const [s1, s2, s3, s4] = [await stimulus(), await stimulus(), await stimulus(), await stimulus()] as [{ id: string }, { id: string }, { id: string }, { id: string }]
       const [q1, q2, q3] = [await question(), await question(), await question()] as [string, string, string]
@@ -244,7 +260,7 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
         [{ stimulusIds: [s1.id, s2.id, s3.id, s4.id], questionIds: [q1, q2] }, 'stimulusIds', STIMULUS_MESSAGES.stimuliCount],
         [{ stimulusIds: [s1.id, s1.id], questionIds: [q1, q2] }, 'stimulusIds', STIMULUS_MESSAGES.stimuliInvalid],
         [{ stimulusIds: ['987654321'], questionIds: [q1, q2] }, 'stimulusIds', STIMULUS_MESSAGES.stimuliInvalid],
-        [{ stimulusIds: [s1.id], questionIds: [q1] }, 'questionIds', STIMULUS_MESSAGES.membersMin],
+        [{ stimulusIds: [s1.id], questionIds: Array.from({ length: 41 }, (_, i) => String(900000 + i)) }, 'questionIds', STIMULUS_MESSAGES.membersTooMany],
         [{ stimulusIds: [s1.id], questionIds: [q1, q1] }, 'questionIds', STIMULUS_MESSAGES.membersInvalid],
         [{ stimulusIds: [s1.id], questionIds: [q1, '987654321'] }, 'questionIds', STIMULUS_MESSAGES.membersInvalid],
         [{ stimulusIds: [s1.id], questionIds: [q1, q3] }, 'questionIds', STIMULUS_MESSAGES.memberTaken],
@@ -373,12 +389,13 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       expect((await admin.post('/api/stimulus-groups/987654321/questions', mcqBody(refs))).status).toBe(404)
     })
 
-    it('works on a seeded question too (a bank question joins a group and keeps its live version)', async () => {
+    it('a seeded question that is shown to pupils cannot be put into a group (409 memberServed); its live version is untouched', async () => {
       const seeded = await questionIdOf(t.db, 'SEED-MCQ-MATH-T4')
       const live = (await t.db.query<{ v: number | null }>(`select live_version_no v from questions where id = $1`, [seeded]))[0]!.v
-      const g = await group([(await stimulus()).id], [seeded, await question()])
-      expect(g.questionIds[0]).toBe(seeded)
-      expect((await t.db.query<{ v: number | null }>(`select live_version_no v from questions where id = $1`, [seeded]))[0]!.v).toBe(live)
+      const res = await admin.post('/api/stimulus-groups', { stimulusIds: [(await stimulus()).id], questionIds: [seeded, await question()] })
+      expect(res.status, JSON.stringify(res.body)).toBe(409)
+      expect(res.body.error.message).toBe(STIMULUS_MESSAGES.memberServed)
+      expect((await t.db.query<{ v: number | null; g: string | null }>(`select live_version_no v, group_id::text g from questions where id = $1`, [seeded]))[0]).toEqual({ v: live, g: null })
     })
   })
 
