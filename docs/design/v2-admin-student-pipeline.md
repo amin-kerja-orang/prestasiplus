@@ -285,11 +285,11 @@ Soalan belum boleh diterbitkan — sila betulkan isu di bawah.
   • Bahagian (a) tiada skema jawapan.                                  (.cloud verbatim)
   • Soalan tiada sub-bahagian — tiada apa untuk dijawab.               (.cloud verbatim)
   • Bahagian (b) belum ada aras pemikiran.                             (AC-03.2 verbatim)
-  • Bahagian (b) belum ada TP.                                         [PROPOSED]
-  • Soalan belum dipautkan kepada topik DSKP.                          [PROPOSED]
-  • Soalan SPM belum ada kertas.                                       [PROPOSED]
+  • Bahagian (b) belum ada TP.                                         (approved, Q1)
+  • Soalan belum dipautkan kepada topik DSKP.                          (approved, Q1)
+  • Soalan SPM belum ada kertas.                                       (approved, Q1)
 ```
-Every missing item is named (AC-03.2). The list is plain text like .cloud; each line ends with the step name in muted text ("— Langkah 3") [PROPOSED] so the admin knows where to go.
+Every missing item is named (AC-03.2). The list is plain text like .cloud; each line ends with the step name in muted text ("— Langkah 3") (approved, Q1) so the admin knows where to go.
 
 2. **Approved, but unservable in some activities** (AC-05.3) - the normal success flash plus `DsCallout tone="info"` titled [PROPOSED] "Tidak dihidangkan di {n} aktiviti" listing "{aktiviti} — tidak dihidangkan kerana {sebab}." Same list is behind `Lihat` in the status bar.
 
@@ -761,7 +761,7 @@ Dilihat murid di
 
 At 375 each row is a stacked block (family on top, state + reason below), reason text wraps; the whole list is under a disclosure by default. Counting rule for "{x} daripada 7" = number of rows `Boleh dilihat`. Not-applicable rows (e.g. a structured question for MCQ-only families) are counted as `Tidak boleh dilihat` with the "bukan {bentuk}" reason, so the sentence is always honest.
 
-#### 9.3 Reason sentences [PROPOSED] (plain BM; cause and fix, AC-04.2)
+#### 9.3 Reason sentences (approved, Q1, 2026-10-31; plain BM; cause and fix, AC-04.2)
 
 | Cause | Sentence |
 |---|---|
@@ -1066,18 +1066,26 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 | UX-5 | `Naik`/`Turun`/`Tambah` alternatives to drag | D9: unusable on touch; D-9 |
 | UX-6 | Paper-quiz non-MCQ textarea gets a helper line | FD-9; D-9 |
 | UX-7 | `Halaman` column becomes `Kandungan`; page tabs become `Kertas`/`Skema` document tabs | FD-10 |
+| UX-40 | An esei pilihan question shows an "Esei pilihan" badge with its topics in the m04 list (a "Jenis" card field below `md`) and a "Esei pilihan" panel on the detail page; on the edit form its model answer and points are read-only with the note "Soalan esei pilihan: jawapan model dan nilai mata disunting melalui editor Studio / berstruktur, bukan di borang ini." | H-C3, [PROPOSED] copy. V2 has no esei pilihan; the API reads it as `essay` but keeps its answer in the part tree, so editing those two fields here would be silently dropped |
 | UX-8 | Chip + sheet instead of sticky header for the shared stimulus below 1024px | AC-11.8; D-3 |
 | UX-9 | Kontrak: tabs per Bahagian and the evidence/Sahkan tab instead of one inline table and a free `Sumber` select | D75-D78 (approved K2 design) |
 | UX-10 | Simulasi subheading corrected | FD-3 |
 | UX-11 | "Dilihat murid di" and `Tidak dihidangkan kerana …` on existing surfaces | FD-5 |
 | UX-49 | Kontrak evidence drawer: a skema row has no Peraturan or Tempoh fields and neither is sent (a skema prints no rules, SPP 10.3); the note "Skema tidak mencetak peraturan menjawab atau tempoh, jadi kedua-duanya tidak diisi." is [PROPOSED]. Editing an existing skema item drops a stored rule or duration on save | H-C6; AC-39.8 |
+| UX-20 | The hub "Kandungan SPM" shows only the lanes that have a screen in R1 (Databank Soalan, Bijak SPM). Tracking A, Subjektif, Kertas Subjektif (flag OFF) and Latih Tubi are hidden, so there is no card and no link to a missing screen. V2 shows all six | AC-R1-21.1; D86 (other lanes KIV), D80 item 2 |
+| UX-21 | The attention count on a hub card uses the servability copy ("{n} perlu perhatian", D94) and the lane rows use the API's reason sentences, not the V2 phrases ("tidak boleh ditanda", "tiada kunci jawapan" ...). "Semua elok" and "Buka senarai" are V2 | D94 (H2) |
+| UX-23 | The lane rows offer `Sunting` only. `Pratonton` (Databank) and `Salin` (Bijak SPM) wait for a standalone preview screen and the paper copy client, which are not in this base. Row `Sunting` opens the Bank edit / Semak Kertas screen | AC-R1-21.2 (partly deferred) |
+| UX-13 | Langkah 2 holds a **group** editor on the stimulus API (T32, D93): one stimulus (1 to 3) plus member questions added, removed and reordered with `Naik` / `Turun` / `Keluarkan` and saved in one atomic call; a group may start with 0 or 1 questions (a draft group, warning "Kumpulan perlu sekurang-kurangnya 2 soalan." until 2) and a question made on the create page joins it when saved (`?kumpulan=` does the same); on the create page "Sediakan rangsangan kongsi" only prepares the stimulus: it and its group are created in the save step, so a page left unsaved leaves no orphan group (a failed question save keeps the made group, which a retry joins); the client no longer locks the editor on a served member, the server 409 text (`groupServed`, `memberServed`, `stimulusServed`) is the only lock; a group with a served member refuses with the server's BM 409 text (`groupServed`, `memberServed`, `stimulusServed`) (T13, `StudioGroupEditor`) | D90, D93 (V1 and V2 split a shared figure into standalone questions); touch alternative to drag per D-9 |
+| UX-14 | Langkah 1 has `Kertas`, `Nombor soalan` and the stem but **no `Bahagian` select**; the section of a paper is chosen where the question is placed (Set Builder, T10), not on the question | In V3 a question is a bank row; paper sections are placements (`paper_sections`), so a Bahagian on the question would be a second, contradicting source |
+| UX-15 | Studio editor routes are `/admin/studio/questions/create` and `/admin/studio/questions/:id/sunting` (arch 13.8a), not `/admin/studio/cipta` and `/admin/studio/:id/sunting` of S1.2/S1.3; its back link goes to `/admin/questions` until the Studio list (R1-F03a) exists | Source-of-truth order (architecture over design); no dead link |
+| UX-16 | The editor offers three answer modes (`Aneka pilihan`, `Jawapan pendek`, `Nombor`); other modes are read-only with a named reason instead of being dropped on save | Unit 1 of F03b; no silent data loss |
 
 ---
 
 ## 17. [PROPOSED] items needing user sign-off (summary)
 
 1. All of section 1 (D-1..D-11), in particular **D-1** (use .cloud labels, `Baharu`/`Tapis`), **D-3** (chip not sticky header), **D-4** (Aras pemikiran required), **D-9** (touch alternatives).
-2. New copy lines marked [PROPOSED]: gate lines "Bahagian (b) belum ada TP.", "Soalan belum dipautkan kepada topik DSKP.", "Soalan SPM belum ada kertas."; "Menunggu keputusan penerbitan."; "Tidak dihidangkan kerana {sebab}." and the 12 reason sentences (9.3); Kertas Subjektif messages (S6.3); Pratonton kolam lines; helper lines "Latihan sendiri — jawapan ini tidak disimpan atau dimarkah." and "Pilih satu tajuk dahulu.".
+2. New copy lines marked [PROPOSED] (the gate lines and the 12 reason sentences of 9.3 are approved by Q1, 2026-10-31; the rest still await sign-off): gate lines "Bahagian (b) belum ada TP.", "Soalan belum dipautkan kepada topik DSKP.", "Soalan SPM belum ada kertas."; "Menunggu keputusan penerbitan."; "Tidak dihidangkan kerana {sebab}." and the 12 reason sentences (9.3); Kertas Subjektif messages (S6.3); Pratonton kolam lines; helper lines "Latihan sendiri — jawapan ini tidak disimpan atau dimarkah." and "Pilih satu tajuk dahulu.".
 3. New controls inside existing screens: `Import PDF` + modal; `Kertas` on Jana set; `TP` / `Aras pemikiran` selects; "Dilihat murid di" disclosure and caption; "Pratonton rangsangan" strip; `Naik`/`Turun`; "Gunakan fail contoh" in mock mode; "Simulasi — Kuiz" link.
 4. The `servable()` rule function in M04 and the store ownership of papers/blueprints/Tracking A/Kertas Subjektif in the m28 store (13, owner note).
 5. Items deliberately not built: `Sumber Kertas`, Penguasaan, PKSK answering, Audio KBAT student flow, essay review queue (conditional / unverified in DISC).

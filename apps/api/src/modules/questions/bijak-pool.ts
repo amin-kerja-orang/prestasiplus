@@ -16,6 +16,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { FormOrigin, LeafFact, QuestionFacts, UnitFact } from '@pp/exam-core'
 
 import { idFromString, idToString, isIdString } from '../../db/ids'
+import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { loadEffectiveLeaves, type EffectiveLeaf } from './effective-leaf'
 import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from './learner-visibility'
@@ -58,16 +59,21 @@ function chunked<T>(items: readonly T[], size: number): T[][] {
 export class QuestionsBijakPoolSource {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  /** Facts of every published, active question of a curriculum subject (decimal-string id), in question id order. */
-  async candidatesOf(subjectId: string): Promise<QuestionFacts[]> {
+  /**
+   * Facts of every published, active question of a curriculum subject (decimal-string id), in question id order. `only` (R1-T30)
+   * narrows the read to those question ids, so a per-question read costs the same in a subject of 5 or 50,000 questions.
+   */
+  async candidatesOf(subjectId: string, only?: readonly string[]): Promise<QuestionFacts[]> {
     if (!isIdString(subjectId)) return []
+    const wanted = only === undefined ? null : only.filter(isIdString).map((id) => idFromString(id))
+    if (wanted !== null && wanted.length === 0) return []
     const db = this.prisma.client
     const rows = await db.$queryRaw<QuestionRow[]>`
       SELECT q.id AS question_id, q.group_id, q.group_position,
              v.id AS version_id, v.version_no, v.tag_review, v.unit_node_id, v.form_origin,
              (SELECT array_agg(t.code ORDER BY t.code) FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pool') AS pools
         FROM questions q
-        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND (${wanted === null ? Prisma.sql`TRUE` : Prisma.sql`q.id = ANY(${wanted}::bigint[])`})
        WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${idFromString(subjectId)}
          AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
        ORDER BY q.id`
@@ -103,7 +109,9 @@ export class QuestionsBijakPoolSource {
       groupIds.length === 0
         ? Promise.resolve<{ group_id: bigint; n: number }[]>([])
         : db.$queryRaw<{ group_id: bigint; n: number }[]>`
-            SELECT group_id, count(*)::int AS n FROM questions WHERE group_id = ANY(${groupIds}::bigint[]) GROUP BY group_id`,
+            SELECT q.group_id, count(*)::int AS n
+              FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+             WHERE q.group_id = ANY(${groupIds}::bigint[]) AND v.status <> 'archived' GROUP BY q.group_id`,
     ])
 
     // A unit is a DSKP unit of Tingkatan 4 or 5; anything else (a missing node, another level) counts as no unit.

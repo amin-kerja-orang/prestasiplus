@@ -14,5 +14,5 @@ Date: 2026-10-30
 5. No seed data in production (AC-09.6). Language lane (BM/BI) remains served by Latihan Berstruktur as today.
 
 ## Consequences
-- Migration 0103 backfills `subject_id/year` of existing seed rows and fails if the unique index would be violated (dev data only).
+- Migration 0104 backfills `subject_id/year` of existing seed rows and fails if the unique index would be violated (dev data only).
 - Student endpoints (`/api/spm/tracking-a`) change from "seed sets" to "sets with count >= target"; a direct read of a locked set answers 404.
