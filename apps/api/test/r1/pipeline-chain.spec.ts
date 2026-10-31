@@ -382,6 +382,37 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(pub.body.data.ok).toBe(true)
     })
 
+    // R1-T31: the builder wire carries `stimuli[]` (1 to 3, D90) with the public file URL of a picture, so the admin preview shows it.
+    it('the admin student view (pupil preview) of the published image paper shows the image stimulus once, with a readable /api/files/<token> URL', async () => {
+      const res = await admin.get(`/api/admin/papers/${imagePaper}/student-view`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const units = res.body.data.sections[0].units as { groupId?: string; stimulus?: { kind: string }; stimuli?: { kind: string; label: string; image?: { url: string } }[]; questions: { id: string }[] }[]
+      const grouped = units.filter((u) => u.groupId !== undefined)
+      expect(grouped).toHaveLength(1)
+      const unit = grouped[0]!
+      expect(unit.groupId).toBe(fx.imageGroup)
+      expect(unit.questions.map((q) => q.id)).toEqual(fx.imageMembers)
+      expect(unit.stimuli).toHaveLength(1)
+      expect(unit.stimuli![0]).toMatchObject({ kind: 'image', label: 'Rajah 1', caption: 'Segi empat tepat', image: { url: `/api/files/${fx.imageToken}` } })
+      expect(unit.stimulus).toEqual(unit.stimuli![0]) // `stimulus` is the first of `stimuli`
+      const url = unit.stimuli![0]!.image!.url
+      expect(url).toMatch(/^\/api\/files\/[^/]+$/)
+      expect(url).toBe(fx.imageUrl)
+      expect((await admin.get(url)).status).toBe(200)
+      expect((await request(app.getHttpServer()).get(url)).status).toBe(401)
+    })
+
+    it('the admin editor data and the picker carry the same image stimulus on the group (stimuli[])', async () => {
+      const e = await admin.get(`/api/admin/papers/${imagePaper}`)
+      expect(e.status, JSON.stringify(e.body)).toBe(200)
+      const group = (e.body.data.groups as { id: string; stimulus: { kind: string }; stimuli?: { kind: string; image?: { url: string } }[]; questionIds: string[] }[]).find((g) => g.id === fx.imageGroup)
+      expect(group, JSON.stringify(e.body.data.groups)).toBeDefined()
+      expect(group!.questionIds).toEqual(fx.imageMembers)
+      expect(group!.stimuli).toHaveLength(1)
+      expect(group!.stimuli![0]).toMatchObject({ kind: 'image', image: { url: fx.imageUrl } })
+      expect(group!.stimulus).toMatchObject({ kind: 'image' })
+    })
+
     it('the pupil starts the image-group paper and is served the image stimulus ONCE with both members, with a readable URL', async () => {
       const start = await pupil.post('/api/bijak/attempts', { paperId: imagePaper, mode: 'exam' })
       expect(start.status, JSON.stringify(start.body)).toBe(201)

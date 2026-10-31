@@ -2,7 +2,6 @@ import { BIJAK_BUILDER_MESSAGES as MSG } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { makePng } from '../files/fixtures'
-import { makePng } from '../files/fixtures'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
 import { ACCOUNTS, auditRows, expectError } from './helpers'
 
