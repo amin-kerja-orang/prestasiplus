@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * K1: Senarai Kontrak Blueprint (`/admin/spm/kontrak`, design 3). One contract per subject and
- * kertas; Jana Kertas reads it. "Tambah Kontrak" opens an empty Draf in the editor.
+ * kertas; Jana Kertas reads it. "Baharu" (dialog "Kontrak Baharu") opens an empty Draf in the editor.
  */
 import type { BijakBlueprintView } from '@pp/contract'
 import type { TableColumn } from '@nuxt/ui'
@@ -166,7 +166,7 @@ function actionsOf(r: Row): RowAction[] {
   ]
 }
 
-/* ------------------------------------------------------------------ Tambah Kontrak */
+/* ------------------------------------------------------------------ Baharu (Kontrak Baharu dialog) */
 const addOpen = ref(false)
 const subjects = ref<{ code: string; name: string }[]>([])
 const add = reactive({ subject: '', kertas: '' })

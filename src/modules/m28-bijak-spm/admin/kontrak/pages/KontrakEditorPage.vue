@@ -2,7 +2,7 @@
 /**
  * K2: Penyunting Kontrak (`/admin/spm/kontrak/:subjek/:kertas`, design 4). Tabs Umum, one per
  * Bahagian, Pengesahan; the live "Semakan Kontrak" panel; save as a new version (AC-39.4); the
- * Pengesahan tab verifies the contract (US-39). `?baharu=1` opens an empty Draf (K1 "Tambah Kontrak").
+ * Pengesahan tab verifies the contract (US-39). `?baharu=1` opens an empty Draf (K1 "Baharu").
  */
 import type { BijakBlueprintVersionItem, BijakBlueprintView, BijakUnitRefView } from '@pp/contract'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'

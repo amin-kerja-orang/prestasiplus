@@ -258,13 +258,15 @@ export function toInput(f: ContractForm): BijakBlueprintAdminVersionInput {
 
 /**
  * Structural fingerprint of a write body (AC-39.4): cosmetic fields (note, cover and section
- * instructions, section label) are left out. Equal fingerprints = a cosmetic edit.
+ * instructions, section label, and the "Boleh tanda auto" flag, which the server's canonical structure
+ * does not hold) are left out. Equal fingerprints = a cosmetic edit.
  */
 export function structuralKey(input: BijakBlueprintAdminVersionInput): string {
-  const { notes: _n, instructions: _i, source: _s, sections, ...rest } = input
+  const { notes: _n, instructions: _i, source: _s, autoMarkable: _a, sections, ...rest } = input
   void _n
   void _i
   void _s
+  void _a
   return JSON.stringify({
     ...rest,
     sections: sections.map(({ label: _l, instruction: _in, ...sec }) => {
