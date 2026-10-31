@@ -3,7 +3,7 @@
  * question bank (M04 owns the tables; Bijak reads them only through this class).
  *
  * One candidate = one active question whose LIVE version is `approved` and tagged with the subject, not PKSK, and not of a
- * Darjah or inactive level (R1-B21, secondary-only D72/D86: the shared `LEARNER_LEVEL_SQL`).
+ * Darjah or inactive level (R1-B21, secondary-only D72/D86: the shared `LEARNER_LEVEL_SQL`) and of an active subject (REQ-B-013).
  * `tag_review` questions are returned too: they are counted as excluded by exam-core (`eligibilityOf`), never silently dropped,
  * so `publishedTotal = eligibleTotal + excluded.total`. The effective per-leaf values come from
  * `effective-leaf.ts` (BJS-06), the only place the coalesce rule lives; this class adds what exam-core
@@ -18,7 +18,7 @@ import type { FormOrigin, LeafFact, QuestionFacts, UnitFact } from '@pp/exam-cor
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { loadEffectiveLeaves, type EffectiveLeaf } from './effective-leaf'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from './learner-visibility'
+import { ACTIVE_SUBJECT_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from './learner-visibility'
 
 const CHUNK = 5000
 
@@ -69,7 +69,7 @@ export class QuestionsBijakPoolSource {
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
        WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${idFromString(subjectId)}
-         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
+         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${ACTIVE_SUBJECT_SQL}
        ORDER BY q.id`
     if (rows.length === 0) return []
 

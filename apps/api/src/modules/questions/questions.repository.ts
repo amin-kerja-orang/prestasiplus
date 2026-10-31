@@ -700,6 +700,11 @@ export class QuestionsRepository {
    * Stimulus bodies linked DIRECTLY to a question version (`question_version_stimuli`), in link order, audio left out. Keyed
    * `<questionId>:<versionNo>` (one entry per requested ref, an empty array when the version has none or does not exist).
    * For kuiz and the bridges: a stimulus linked to a version may be outside its group (a stem picture, a leaf stimulus).
+   *
+   * PINNED READS ONLY (REQ-B-013a): like `getVersions`, it does not look at status, `is_active`, PKSK or level, because the caller already
+   * holds the version it is serving (a placement's pinned version, or the version `getMany(..., 'live')` returned). The ref carries the
+   * version number; there is no "live" or "latest" fallback here. A caller must therefore pass versions it has already scoped; never
+   * ids taken from a list or a draw. `test/questions/b013-scoping.spec.ts` lists the allowed callers and fails on a new one.
    */
   async versionStimuli(refs: readonly { questionId: string; versionNo: number }[]): Promise<Map<string, StimulusRecord[]>> {
     const out = new Map<string, StimulusRecord[]>()
