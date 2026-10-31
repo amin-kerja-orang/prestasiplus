@@ -62,7 +62,7 @@ describe('question image read rule for pupils (real database)', () => {
   }
   /** A published question; returns its id and the id of its live version. */
   async function liveQuestion(): Promise<{ qid: string; vid: string }> {
-    const res = await admin.post('/api/questions').send({ ...base(), tag: tagBody(tag, 3), status: 'published' })
+    const res = await admin.post('/api/questions').send({ ...base(), tag: tagBody(tag, 3), status: 'approved' })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const qid = res.body.data.id as string
     return { qid, vid: (await one(`select id::text from question_versions where question_id = $1 and version_no = 1`, [qid])).id! }
@@ -112,16 +112,14 @@ describe('question image read rule for pupils (real database)', () => {
     }
   })
 
-  it('accepts the future `approved` status as servable as well as the current `published`', async () => {
+  it('`approved` is the one servable question status (ADR-0027): review is not', async () => {
     const { vid } = await liveQuestion()
     const img = await upload()
     await onOption(vid, img)
     expect(await status(pupil, img)).toBe(200)
-    await t.db.query(`update question_versions set status = 'approved' where id = $1`, [vid])
-    expect(await status(pupil, img)).toBe(200)
     await t.db.query(`update question_versions set status = 'review' where id = $1`, [vid])
     expect(await status(pupil, img)).toBe(404)
-    await t.db.query(`update question_versions set status = 'published' where id = $1`, [vid])
+    await t.db.query(`update question_versions set status = 'approved' where id = $1`, [vid])
   })
 
   it('denies a draft, an archived question, an inactive question, an unattached file and an image of another question in a paper', async () => {
@@ -159,7 +157,7 @@ describe('question image read rule for pupils (real database)', () => {
          join question_versions v on v.id = p.question_version_id where v.question_id = $1 and v.version_no = 2)`,
       [qid],
     )
-    for (const s of ['review', 'approved', 'published'] as const) await svc.setStatus(qid, s, adminId)
+    for (const s of ['review', 'approved'] as const) await svc.setStatus(qid, s, adminId)
     expect(await status(pupil, img)).toBe(404)
     expect(await status(pupil, v2)).toBe(200)
 

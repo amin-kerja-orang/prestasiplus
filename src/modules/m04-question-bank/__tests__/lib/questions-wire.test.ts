@@ -35,11 +35,11 @@ describe('request building by transport mode', () => {
     await fetchQuestions({ status: 'approved' })
     expect(reqOf(h.list, 1).query?.status).toBe('approved')
     await fetchQuestions({ status: 'published' })
-    expect(reqOf(h.list, 2).query?.status).toBe('published')
+    expect(reqOf(h.list, 2).query?.status).toBe('published') // unknown values pass through untouched
     await bulkQuestionAction('approve', [7])
     expect(reqOf(h.post, 0).body).toEqual({ action: 'approved', ids: [7] })
     await bulkQuestionAction('publish', [7])
-    expect(reqOf(h.post, 1).body).toEqual({ action: 'published', ids: [7] })
+    expect(reqOf(h.post, 1).body).toEqual({ action: 'approved', ids: [7] }) // Terbitkan = approve (ADR-0027)
     await bulkQuestionAction('archive', [7])
     expect(reqOf(h.post, 2).body?.action).toBe('archived')
   })
@@ -48,7 +48,7 @@ describe('request building by transport mode', () => {
     h.http = true
     h.post.mockResolvedValue({ data: { affected: 1 }, status: '1 soalan berjaya dikemaskini.' })
     h.get.mockImplementation((path: string) =>
-      Promise.resolve({ status: path.endsWith('11') ? 'published' : 'approved' }),
+      Promise.resolve({ status: path.endsWith('11') ? 'approved' : 'review' }),
     )
     const r = await bulkQuestionAction('publish', [11, 12, 13, 12])
     expect(r.notUpdated).toEqual([12, 13])

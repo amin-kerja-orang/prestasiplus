@@ -105,7 +105,7 @@ describe('PoC question pool seed (database)', () => {
          join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
          join subjects s on s.id = v.subject_id
          join education_levels l on l.id = v.education_level_id
-        where q.is_active and v.status = 'published' and v.type = 'mcq'
+        where q.is_active and v.status = 'approved' and v.type = 'mcq'
         group by s.code, l.code`,
     ) as Promise<{ subject: string; level: string; n: number }[]>
 
@@ -125,7 +125,7 @@ describe('PoC question pool seed (database)', () => {
               count(*) filter (where v.unit_node_id is not null and v.difficulty_tp between 1 and 4 and v.cognitive_level is not null)::int as tagged,
               count(*) filter (where exists (select 1 from question_version_sp_nodes sp where sp.question_version_id = v.id))::int as with_sp,
               count(*) filter (where exists (select 1 from question_tags t where t.question_id = q.id and t.kind = 'pool' and t.code = 'spm'))::int as spm,
-              count(*) filter (where q.live_version_no = 1 and v.status = 'published' and q.is_active)::int as live
+              count(*) filter (where q.live_version_no = 1 and v.status = 'approved' and q.is_active)::int as live
          from question_versions v
          join questions q on q.id = v.question_id
          join subjects s on s.id = v.subject_id
@@ -145,7 +145,7 @@ describe('PoC question pool seed (database)', () => {
          from questions q
          join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
          join subjects s on s.id = v.subject_id
-        where q.is_active and v.status = 'published' and v.type = 'mcq'
+        where q.is_active and v.status = 'approved' and v.type = 'mcq'
           and exists (select 1 from question_tags t where t.question_id = q.id and t.kind = 'pool' and t.code = 'spm')
         group by s.code`,
     )) as { subject: string; n: number }[]

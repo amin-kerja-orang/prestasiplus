@@ -165,7 +165,7 @@ describe('admin question CRUD (AC 1, AC 2)', () => {
       const a = (await created()).data
       const res = await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [a.id] })
       expect(mutationEnvelopeOf(QuestionBulkResultSchema).parse(res.body).data.affected).toBe(1)
-      const again = await admin.post('/api/questions/bulk-action', { action: 'published', ids: [a.id] })
+      const again = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [a.id] })
       expect(mutationEnvelopeOf(QuestionBulkResultSchema).parse(again.body).data.affected).toBe(0)
     })
 
