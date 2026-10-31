@@ -1070,6 +1070,7 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 | UX-9 | Kontrak: tabs per Bahagian and the evidence/Sahkan tab instead of one inline table and a free `Sumber` select | D75-D78 (approved K2 design) |
 | UX-10 | Simulasi subheading corrected | FD-3 |
 | UX-11 | "Dilihat murid di" and `Tidak dihidangkan kerana …` on existing surfaces | FD-5 |
+| UX-49 | Kontrak evidence drawer: a skema row has no Peraturan or Tempoh fields and neither is sent (a skema prints no rules, SPP 10.3); the note "Skema tidak mencetak peraturan menjawab atau tempoh, jadi kedua-duanya tidak diisi." is [PROPOSED]. Editing an existing skema item drops a stored rule or duration on save | H-C6; AC-39.8 |
 
 ---
 

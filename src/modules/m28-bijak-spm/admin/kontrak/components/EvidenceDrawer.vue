@@ -47,6 +47,7 @@ const form = reactive<{
 })
 const errors = ref<Record<string, string>>({})
 /** A skema prints marks and question counts but no answering rule and no duration (SPP 10.3). */
+/** The skema note below is a [PROPOSED] BM line with no V2 counterpart (deviation UX-49). */
 const isSkema = computed(() => form.kind === 'skema')
 
 const KINDS = (Object.keys(KIND_LABEL) as (keyof typeof KIND_LABEL)[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))

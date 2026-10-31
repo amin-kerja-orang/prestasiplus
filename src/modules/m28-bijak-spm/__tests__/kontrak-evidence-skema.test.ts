@@ -30,6 +30,8 @@ function fill(w: Awaited<ReturnType<typeof open>>): void {
   st.form.rows = [{ label: 'Bahagian A', markBudget: 40, ruleType: 'choose', n: 2, questionCount: 3 }]
 }
 
+// Note: editing an existing skema item that carries a rule or duration drops them on save (they are
+// not offered for a skema and are not sent), which is intended: a skema prints neither (SPP 10.3).
 describe('EvidenceDrawer: skema omits rule and duration', () => {
   it('skema: no rule or duration field, and neither is sent', async () => {
     const w = await open('skema')
