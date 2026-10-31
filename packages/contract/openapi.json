@@ -8719,6 +8719,28 @@
           },
           "updatedAt": {
             "$ref": "#/components/schemas/Timestamp"
+          },
+          "papers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "warning": {
+            "type": "string"
           }
         },
         "required": [
@@ -81378,7 +81400,7 @@
           "bijak-attempts"
         ],
         "summary": "Cuba Lagi: a new blank sitting of the same paper",
-        "description": "R1-B15 (V2 retry). From a CLOSED attempt of the caller: starts a new in_progress attempt on the same paper in the same mode (deadline from the paper duration for exam, a fresh frozen composition). Other open sittings of the caller on that paper are left untouched (V2 retry does not abandon them; the newest open one is the one \"in-progress\" resumes). Always 201 with the new attempt id; the old attempt, its result and its history row stay unchanged. An attempt that is not closed: 409 CONFLICT \"Hantar percubaan ini dahulu sebelum mencuba semula.\". A paper that is no longer offered (withdrawn, unpublished): 409 CONFLICT \"Kertas ini sudah tidak tersedia untuk dicuba semula.\". A paper the caller may not sit: 403. Student role, attempt owner only.",
+        "description": "R1-B15 (V2 retry). From a CLOSED attempt of the caller: starts a new in_progress attempt on the same paper in the same mode (deadline from the paper duration for exam, a fresh frozen composition). Other open sittings of the caller on that paper are left untouched (V2 retry does not abandon them; the newest open one is the one \"in-progress\" resumes). Always 201 with the new attempt id; the old attempt, its result and its history row stay unchanged. An attempt that is not closed: 409 CONFLICT \"Hantar percubaan ini dahulu sebelum mencuba semula.\". A paper that is no longer offered (withdrawn, unpublished, or one that places an archived question): 409 CONFLICT \"Kertas ini sudah tidak tersedia untuk dicuba semula.\". Student role, attempt owner only.",
         "parameters": [
           {
             "schema": {

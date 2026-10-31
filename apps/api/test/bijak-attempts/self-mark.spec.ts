@@ -361,10 +361,10 @@ describe('R1-B15 Cuba Lagi', () => {
     expect((await result(me, old)).attempt.status).toBe('submitted')
   })
 
-  it('a paper the pupil may not sit any more is 403', async () => {
+  it('a paper the pupil may not sit any more (not eligible, e.g. it places an archived question) is the documented 409 retryPaperGone', async () => {
     const old = await sains()
     vi.spyOn(t.papers, 'resolveForAttempt').mockResolvedValue({ ok: false, reason: 'not_eligible' })
-    expectError(await me.post(`/api/bijak/attempts/${old}/retry`), 'FORBIDDEN')
+    expectError(await me.post(`/api/bijak/attempts/${old}/retry`), 'CONFLICT', 'Kertas ini sudah tidak tersedia untuk dicuba semula.')
   })
 
   it('owner only: 403 for another pupil, 404 for an unknown attempt, no CSRF refused', async () => {
