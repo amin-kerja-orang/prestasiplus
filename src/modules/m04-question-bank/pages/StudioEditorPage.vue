@@ -4,7 +4,8 @@
  * `Sub-bahagian`, `Tag` (V2 cloud-student-mechanism section 3.1 step 2), a save bar `{n} markah` `· {n} belum lengkap`
  * `Simpan draf`, and these additions of V3: the shared stimulus is a GROUP of questions (D90), every leaf carries TP and
  * Aras pemikiran, the unit and SP come from the DSKP tree, the Bab is a select (D89), and pictures go through the files
- * module. A draft saves with gaps; the gate is at approval. Status buttons (Hantar untuk semakan, Terbitkan, Arkib) are F03a.
+ * module. A draft saves with gaps; the gate is at approval. The status bar (Hantar untuk semakan, Terbitkan, Arkib, Edit sebagai
+ * draf, Dilihat murid di) is `StudioStatusBar` (R1-F03a).
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -12,7 +13,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { useFlash } from '@/composables'
 import { useSessionStore } from '@/stores'
-import { DsBadge, DsCallout, DsCluster, DsFormBar, DsFormField, DsFormSection, DsGrid, DsLoadError, DsNativeSelect, DsPage, DsPillNav, DsStack, DsText } from '@/ds'
+import { DsCallout, DsCluster, DsFormBar, DsFormField, DsFormSection, DsGrid, DsLoadError, DsNativeSelect, DsPage, DsPillNav, DsStack, DsText } from '@/ds'
 
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import {
@@ -30,6 +31,7 @@ import StudioGroupEditor from '../components/studio/StudioGroupEditor.vue'
 import StudioImageField from '../components/studio/StudioImageField.vue'
 import StudioLeafEditor from '../components/studio/StudioLeafEditor.vue'
 import StudioPreview from '../components/studio/StudioPreview.vue'
+import StudioStatusBar from '../components/studio/StudioStatusBar.vue'
 import type { GroupView } from '../lib/studio/group-members'
 import {
   blankDraft,
@@ -70,8 +72,6 @@ const loading = ref(true)
 const saving = ref(false)
 const problems = ref<string[]>([])
 const fieldProblems = ref<Record<string, string>>({})
-/** An approved or published question is read-only until "Edit sebagai draf" (V2 S1.3). */
-const unlocked = ref(true)
 
 const groupView = ref<GroupView | null>(null)
 const previewOpen = ref(false)
@@ -112,7 +112,11 @@ watch(
 onBeforeUnmount(() => clearTimeout(keepTimer))
 
 const SERVING = ['approved', 'published']
+/** An approved or published question is read-only until "Edit sebagai draf" (V2 S1.3); that button writes the draft version. */
+const unlocked = computed(() => !SERVING.includes(status.value))
 const readOnly = computed(() => !unlocked.value || unsupported.value.length > 0)
+/** The form differs from what is stored: a status move would act on the stored version. */
+const dirty = computed(() => saved.value !== null && !sameDraft(draft.value, saved.value))
 const levelName = computed(() => levels.value.find((l) => l.id === draft.value.educationLevelId)?.name ?? '')
 const gaps = computed(() => draftGaps(draft.value, levelName.value))
 const tabs = [
@@ -145,7 +149,6 @@ async function load(): Promise<void> {
       draft.value = h.draft
       unsupported.value = h.unsupported
       status.value = q.status
-      unlocked.value = !SERVING.includes(q.status)
     }
   } catch {
     loadFailed.value = true
@@ -176,7 +179,6 @@ async function save(): Promise<void> {
       flash.success(res.status)
       if (store !== null) clearSnapshot(store, storeKey.value)
       await load()
-      unlocked.value = !SERVING.includes(status.value)
     } else {
       // D93: a group made (or joined) on this page before the question exists takes the question when it is saved.
       const into = draft.value.groupId
@@ -198,7 +200,7 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <DsPage layout="form" back-to="/admin/questions" data-testid="studio-editor-page">
+  <DsPage layout="form" back-to="/admin/studio" data-testid="studio-editor-page">
     <DsCallout v-if="!studioAvailable()" tone="info" data-testid="studio-unavailable">{{ STUDIO_UNAVAILABLE }}</DsCallout>
     <DsLoadError v-else-if="loadFailed" :message="LOAD_ERROR" testid="studio-load-error" retry-testid="studio-load-retry" @retry="load" />
     <DsText v-else-if="loading" variant="body" tone="muted" data-testid="studio-loading">Memuatkan…</DsText>
@@ -218,18 +220,14 @@ async function save(): Promise<void> {
         <DsText v-for="p in problems" :key="p" variant="body">{{ p }}</DsText>
       </DsCallout>
 
-      <DsCluster v-if="edit" gap="sm" data-testid="studio-status">
-        <DsText variant="label">Status</DsText>
-        <DsBadge :label="status" :tone="status === 'draft' ? 'neutral' : 'info'" />
-        <DsText v-if="SERVING.includes(status)" variant="body" tone="muted">Soalan ini boleh dijawab oleh pelajar.</DsText>
-        <DsText v-else-if="status === 'draft'" variant="body" tone="muted">Belum dipapar kepada pelajar.</DsText>
-        <UButton v-if="SERVING.includes(status) && !unlocked" type="button" color="primary" variant="soft" data-testid="studio-edit-as-draft" @click="unlocked = true">
-          Edit sebagai draf
-        </UButton>
-      </DsCluster>
-      <DsCallout v-if="SERVING.includes(status) && !unlocked" tone="info" data-testid="studio-approved-note">
-        Soalan ini telah diterbitkan. Gunakan "Edit sebagai draf" untuk menyuntingnya.
-      </DsCallout>
+      <StudioStatusBar
+        v-if="edit && props.id !== undefined"
+        :question-id="props.id"
+        :status="status"
+        :dirty="dirty"
+        :unsupported="unsupported.length > 0"
+        @changed="load"
+      />
       <DsCallout v-if="unsupported.length > 0" tone="warning" title="Soalan ini belum boleh disunting di Studio" data-testid="studio-unsupported">
         <DsText v-for="u in unsupported" :key="u" variant="body">{{ u }}</DsText>
       </DsCallout>
@@ -317,7 +315,7 @@ async function save(): Promise<void> {
         </DsFormSection>
       </DsStack>
 
-      <DsFormBar submit-label="Simpan draf" :saving="saving" :disabled="readOnly" cancel-to="/admin/questions" data-testid="studio-save-bar">
+      <DsFormBar submit-label="Simpan draf" :saving="saving" :disabled="readOnly" cancel-to="/admin/studio" data-testid="studio-save-bar">
         <template #status>
           <DsText as="span" variant="caption" data-testid="studio-save-marks">{{ totalMarks(draft) }} markah</DsText>
           <DsText v-if="gaps.length > 0" as="span" variant="caption" data-testid="studio-save-gaps"> · {{ gaps.length }} belum lengkap</DsText>

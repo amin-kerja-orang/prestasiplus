@@ -15,7 +15,7 @@ const groupId = ref<string | null>(props.id)
 </script>
 
 <template>
-  <DsPage layout="form" back-to="/admin/questions" data-testid="studio-group-page">
+  <DsPage layout="form" back-to="/admin/studio" data-testid="studio-group-page">
     <DsCallout v-if="!studioAvailable()" tone="info" data-testid="studio-unavailable">{{ STUDIO_UNAVAILABLE }}</DsCallout>
     <StudioGroupEditor v-else v-model:group-id="groupId" />
   </DsPage>

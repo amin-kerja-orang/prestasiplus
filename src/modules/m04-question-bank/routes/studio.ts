@@ -3,12 +3,17 @@ import type { RouteRecordRaw } from 'vue-router'
 /**
  * M04 route fragment: Studio write side (R1-F03b, T13). Admin Pusat only, admin shell. Paths follow
  * docs/architecture/v2-admin-student-pipeline.md 13.8a (`/admin/studio/questions/create`, `.../:id/sunting`); the group page is
- * new. The Studio list `/admin/studio` (F03a) and the menu entry (shells/pentadbiran/menu.ts, owned by another lane) are not part
- * of this fragment. Static segments come before the `:id` routes.
+ * new. The Studio list `/admin/studio` (F03a, unit 2b) is here too; the menu entry (shells/pentadbiran/menu.ts) is owned by another lane. Static segments come before the `:id` routes.
  */
 const adminMeta = { layout: 'admin', v2: true, access: 'auth', roles: ['admin'], module: 'M04' } as const
 
 const routes: RouteRecordRaw[] = [
+  {
+    path: '/admin/studio',
+    name: 'm04.studio.list',
+    component: () => import('../pages/StudioListPage.vue'),
+    meta: { ...adminMeta, title: 'Studio', header: { title: 'Studio', subtitle: 'Bank soalan kanonikal - cipta, semak, terbit' } },
+  },
   {
     path: '/admin/studio/questions/create',
     name: 'm04.studio.create',
