@@ -130,7 +130,7 @@ Migration numbers 0100-0109 are team A's range (in code: 0092, 0093, 0100 lifecy
 | 0106 | `feature_flags` | ADR-0035 |
 | 0107 | `drop_pool_tag` | delete `question_tags` kind `pool`; narrow CHECK |
 
-> Renumbering note (R1-T25): `essay_choice` took 0101 because it was built first, so the DSKP leaf-tag and facts migration moves to **0102** and must not add `topics` or the `essay_choice` mode again. The later sections that still say "migration 0101" for the facts table (BE-A3, R1-B03) and "0102" for `stimulus_kinds_wide` / R1-B06 are to be renumbered by the Delivery Lead when the team-A range (0100-0109) is re-allocated.
+> Numbering (R1-T25, resolved): 0100 lifecycle and 0101 `essay_choice` exist in code. Planned, in the order this document implies: 0102 `dskp_leaf_tags_and_facts` (must not add `topics` or the `essay_choice` mode again), 0103 `stimulus_kinds_wide`, 0104 `tracking_a_authoring`, 0105 `kertas_subjektif`, 0106 `feature_flags`, 0107 `drop_pool_tag`. Optional, each only when its task proves a column is needed: 0108 R1-B12 (self-mark), 0109 R1-B20 (file purposes). R1-B16 (practice mode CHECK) and R1-B10 (`needs_review`) would be 0120 and 0121 in the team A overflow range (0120-0129; team C owns 0110-0119), allocated by the LEAD at merge.
 
 ### 2.1 Prisma (excerpts; field names follow repo `@map` style)
 ```prisma
@@ -644,7 +644,7 @@ Size: S under 1 day, M 1-3 days, L 3-5 days (one Sonnet agent, tests included). 
 | R1-B04 | DSKP T4-T5 loader as a packaged idempotent script (T1-T3 per R1-U1) | M | L0 | 1 | Yes (seed data, script) |
 | R1-F01 | Pentadbiran menu and routes for the Panel screens, verbatim labels [FE-N1] | S | L0 | 1 | No |
 | R1-B03 | Facts table, `ServabilityService`, rules for databank, latih_tubi_spm, simulasi_paper, simulasi_kuiz, jana_kertas, bab; migration 0102 [BE-A3] | L | B01, B02 | 2 | Yes (migration) |
-| R1-B10 | Blueprint Disahkan gate verified end to end (conformance at publish and Jana, delete, duplicate error, `needs_review`) | S | B02 | 2 | Only if `needs_review` missing (migration 0111) |
+| R1-B10 | Blueprint Disahkan gate verified end to end (conformance at publish and Jana, delete, duplicate error, `needs_review`) | S | B02 | 2 | Only if `needs_review` missing (migration 0121, team A overflow range) |
 | R1-B12 | Self-mark endpoints (per part, per Bahagian) and result shape [new] | M | B02 | 2 | Maybe (migration 0108) |
 | R1-B13 | Keyword-suggested marks for `mark_scheme_points` [new, B13] | M | B02 | 2 | No |
 | R1-B15 | Cuba Lagi and "Lihat semakan lepas" reads [new, B16] | S | B02 | 2 | No |
@@ -658,7 +658,7 @@ Size: S under 1 day, M 1-3 days, L 3-5 days (one Sonnet agent, tests included). 
 | R1-B09a | Papers builder API: blank, generate, pool-preview, placements, review (blockers, visibility, conformance), publish with pinning and override audit, withdraw, copy [BE-C1] | L | B03, B05, B10 | 3 | No |
 | R1-B11 | Admin servability reads: single, batch, overview and lanes (Databank, Bijak SPM) with attention counts [BE-B8] | M | B03 | 3 | No |
 | R1-B14 | Rewards and records on submit (XP, Syiling, kombo, Prestasi, practice record), idempotent [new, B18] | M | B12 | 3 | No |
-| R1-B16 | Simulasi Kuiz: random (5/10/20/40, optional subject) and per paper; check; session mode `simulasi_kuiz` [BE-C3 part] | M | B03, B08 | 3 | Maybe (practice mode CHECK, migration 0110 (outside team A's range, LEAD allocates), M05 owner) |
+| R1-B16 | Simulasi Kuiz: random (5/10/20/40, optional subject) and per paper; check; session mode `simulasi_kuiz` [BE-C3 part] | M | B03, B08 | 3 | Maybe (practice mode CHECK, migration 0120, team A overflow range, M05 owner) |
 | R1-B17 | Laporan Soalan accepts Bijak/bank questions; admin archive from the report row | S | B03 | 3 | No |
 | R1-F03a | Studio list S1.1, status bar S1.3 with `VisibilityList`, Pratonton, Arkib dialog, gate issue list [FE-A2 part] | M | F02, B05 | 3 | No |
 | R1-F04 | Stimulus and image upload components (kind select, caption, `Imej`, option images) | M | F02, B20 | 3 | No |
@@ -685,7 +685,7 @@ Size: S under 1 day, M 1-3 days, L 3-5 days (one Sonnet agent, tests included). 
 | R1-Q02 | Regression: servability matrix, published-to-approved check on a QLOAD copy, AC execution table | M | B01, B03, B06 | 6 | No |
 | R1-G4 | `code-reviewer` and `security-engineer` (file read rule, self-mark authorization and clamp, publish, bulk caps) | M | all | 6 | No |
 
-Counts: 21 BE, 15 FE (F17 deferred), 2 DO, 2 QA, 1 lead, 1 review gate. Migration numbers: 0100 (B01), 0101 (`essay_choice`, built), 0102 (B03), 0107 (B06); 0103-0106 are tracking, kertas, flags and `stimulus_kinds_wide`; optional 0108 (B12), 0109 (B20), and 0110 (B16) and 0111 (B10) outside team A's range. LEAD confirms final numbers at merge (D68).
+Counts: 21 BE, 15 FE (F17 deferred), 2 DO, 2 QA, 1 lead, 1 review gate. Migration numbers: 0100 (B01), 0101 (`essay_choice`, built), 0102 (B03), 0107 (B06); 0103-0106 are tracking, kertas, flags and `stimulus_kinds_wide`; optional 0108 (B12), 0109 (B20), and 0120 (B16) and 0121 (B10) in the team A overflow range (0120-0129; team C owns 0110-0119). LEAD confirms final numbers at merge (D68).
 
 ### 13.4 Task detail (goal | files | covers | tests)
 Tests use the repo's existing test, lint and type-check scripts (never pnpm). Every task adds unit tests for its rules and an API or component test; FE tasks add 375/768/1280 layout checks.
@@ -790,7 +790,7 @@ Critical path: R1-L0 -> B01 -> B03 -> B05 -> F03a -> F03b -> B09a -> F08 -> F09 
 
 ### 13.7 Notes for DevOps (documentation only; no server action by the architect or agents)
 All deliverables are code in the repo, pushed to GitHub; DevOps decides when to run them.
-1. **Migrations in order:** 0100 lifecycle (pre-flight: record counts of `published`/`approved`/`review` live versions; ADR-0027: `approved` but not live becomes `review`; after the first new approval `published` cannot be reconstructed), 0101 `essay_choice` (independent), 0102 facts table and backfill (about 400k versions; verification: facts rows = version rows), 0107 drop `pool` tags (only after the code that stops reading `spmPool` is live; verification `SELECT count(*) FROM question_tags WHERE kind='pool'` = 0), then whichever of 0108-0111 the tasks create. Forward only. UAT is at 0091 and the repo top is 0092, so 0092 also applies.
+1. **Migrations in order:** 0100 lifecycle (pre-flight: record counts of `published`/`approved`/`review` live versions; ADR-0027: `approved` but not live becomes `review`; after the first new approval `published` cannot be reconstructed), 0101 `essay_choice` (independent), 0102 facts table and backfill (about 400k versions; verification: facts rows = version rows), 0107 drop `pool` tags (only after the code that stops reading `spmPool` is live; verification `SELECT count(*) FROM question_tags WHERE kind='pool'` = 0), then whichever of 0108, 0109, 0120 and 0121 the tasks create. Forward only. UAT is at 0091 and the repo top is 0092, so 0092 also applies.
 2. **DSKP load (per environment, repeatable):** script `curriculum:load-dskp` (R1-B04): `--dry-run` first, then real; idempotent insert-only; prints counts per subject and level. It is not a migration because the data is large, editable by admins afterwards, and must not be re-applied by `migrate`. Verification: `curriculum_nodes` > 0 for Tingkatan 4 and 5. UAT has 0 nodes today.
 3. **Seeds:** the dev seed stays dev-only; no demo seed on UAT/production. B19 seeds are for local/E2E.
 4. **Env:** `BIJAK_POC_QUESTIONS` stays false (key removed from templates by B07); QLOAD content stays and is not re-imported. UAT has `AI_PROVIDER=mock` and `OCR_ENGINE=none`, so PDF intake yields no real extraction; for the PDF step to be real, set `OCR_ENGINE=tesseract` (U1), ship `OCR_LANG_DIR` traineddata and configure an extraction provider; until then admins use Studio and Tulis Soalan Manual. Level scope: UAT has all levels active; the secondary-only level setting (Darjah inactive, D72) is local work not yet deployed and must ship with R1.
@@ -803,7 +803,7 @@ All deliverables are code in the repo, pushed to GitHub; DevOps decides when to 
 |---|---|---|
 | X1 | The shared tree has 500+ uncommitted files from several sessions; B01 touches about 35 files and B06 more | R1-L0 first: owners commit or stash, one integration base. B01 and B06 run in worktrees from that base and merge only when `registry-boot.test.ts` and owner tests pass. |
 | X2 | Parallel agents edit the same files | Each task is a small additive change with its own tests; files per task are listed in 13.4; new code goes in new files where possible (`keyword-suggest.ts`, adapters, new pages); edits to a file owned by another task go through that owner. |
-| X3 | Shared migration, seed and contract changes collide | One baton per wave, one owner task per shared surface. Order: B02 (contract) -> B01 (0100) -> B04 (seed data) -> B03 (0102); wave 3: B06 (0107) -> B07; optional migrations 0108-0111 strictly by number, each only when its task proves a column is needed; B19 last. Contract changes land only through B02 plus at most one addendum per wave. |
+| X3 | Shared migration, seed and contract changes collide | One baton per wave, one owner task per shared surface. Order: B02 (contract) -> B01 (0100) -> B04 (seed data) -> B03 (0102); wave 3: B06 (0107) -> B07; optional migrations 0108, 0109, 0120 and 0121 strictly by number, each only when its task proves a column is needed; B19 last. Contract changes land only through B02 plus at most one addendum per wave. |
 | X4 | FE built against an unmerged API | FE waits for B02 types; no mock fixtures (D84). |
 | X5 | Lifecycle rename hides content | grep gate plus parity test. |
 | X6 | Backfill on 400k versions slow or drifting | Batches, compare job, load test. |
