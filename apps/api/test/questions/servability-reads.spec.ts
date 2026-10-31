@@ -1,5 +1,6 @@
 import {
   ServabilityBatchResultSchema,
+  type ServabilityDatabankRow,
   ServabilityDatabankRowSchema,
   ServabilityOverviewSchema,
   ServabilityPaperRowSchema,
@@ -49,6 +50,8 @@ describe('admin servability reads (R1-T30)', () => {
   }
 
   beforeAll(async () => {
+    // The spec calls the overview many times (the shared clock never lets the 6/min window reset); the limit has its own spec.
+    process.env.THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE = '1000'
     t = await bootQuestionsApp()
     svc = t.app.get(QuestionsService)
     servability = t.app.get(ServabilityService)
@@ -81,8 +84,17 @@ describe('admin servability reads (R1-T30)', () => {
     await q(`update questions set live_version_no = 1 where id = $1`, [tableFill.id])
     made.tableFill = tableFill.id
 
+    // Live is not latest: v1 stays live (served) while a draft v2 is the row the lane shows.
+    await approve('liveWithDraft', 'Soalan hidup dengan draf baharu untuk bacaan kebolehhidangan.')
+    await svc.update(made.liveWithDraft!, mcqInput(tag, { questionText: 'Draf kedua soalan hidup untuk bacaan kebolehhidangan.' }), await adminActor(t.db))
+
     made.publishedPaper = await paper('Kertas terbit ujian bacaan', 'published', [made.plain!, made.tableFill!])
     made.draftPaper = await paper('Kertas draf ujian bacaan', 'draft', [made.plain!, made.second!])
+    // A paper made ready and one withdrawn after publication keep their own status in the lane (not shown as a draft).
+    made.readyPaper = await paper('Kertas sedia ujian bacaan', 'draft', [made.plain!])
+    await q(`update papers set status = 'ready' where id = $1`, [made.readyPaper])
+    made.withdrawnPaper = await paper('Kertas ditarik ujian bacaan', 'published', [made.second!])
+    await q(`update papers set status = 'withdrawn' where id = $1`, [made.withdrawnPaper])
     // H-A13: a question archived after its paper was published. The paper lists it, but a new sitting cannot start.
     await approve('toArchive', 'Soalan yang akan diarkibkan untuk bacaan kebolehhidangan.')
     made.archivedPaper = await paper('Kertas dengan soalan diarkib', 'published', [made.toArchive!])
@@ -145,6 +157,17 @@ describe('admin servability reads (R1-T30)', () => {
     expectError(await admin.post('/api/admin/servability/questions/batch', []), 'VALIDATION_ERROR')
   })
 
+  /** Every row of the Databank lane (no filter), page by page. */
+  async function allDatabankRows() {
+    const rows: ServabilityDatabankRow[] = []
+    for (let page = 1; ; page++) {
+      const res = await admin.get(`/api/admin/servability/lanes/databank?pageSize=100&page=${String(page)}`)
+      const part = parseList(res, ServabilityDatabankRowSchema)
+      rows.push(...part)
+      if (rows.length >= res.body.meta.totalItems || part.length === 0) return { rows, total: res.body.meta.totalItems as number }
+    }
+  }
+
   it('overview: the SQL counts equal the evaluator over the whole bank, per activity', async () => {
     const overview = parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema)
     const allIds = (await q(`select id::text id from questions`)).map((r) => r.id)
@@ -152,7 +175,7 @@ describe('admin servability reads (R1-T30)', () => {
     const served = (a: string) => [...reports.values()].filter((r) => r.activities.find((x) => x.activity === a)?.served).length
     const by = new Map(overview.activities.map((a) => [a.activity, a]))
     expect(overview.activities.map((a) => a.activity)).toEqual([...SERVABILITY_ACTIVITIES])
-    for (const activity of ['databank', 'latih_tubi_spm', 'bab', 'simulasi_kuiz', 'simulasi_paper'] as const) {
+    for (const activity of ['latih_tubi_spm', 'bab', 'simulasi_kuiz', 'simulasi_paper'] as const) {
       expect(by.get(activity)?.served, activity).toBe(served(activity))
     }
     expect(by.get('simulasi_paper')).toMatchObject({ basis: 'evaluated', total: 3 })
@@ -160,6 +183,32 @@ describe('admin servability reads (R1-T30)', () => {
     expect(by.get('jana_kertas')?.basis).toBe('pool')
     for (const a of overview.activities) expect(a.attention).toBe(Math.max(0, a.total - a.served))
     expect(overview.bank).toBe([...reports.values()].filter((r) => r.versionNo !== null).length - (await q(`select 1 from questions where is_active = false`)).length)
+    // Jana (SQL count) = the questions whose Jana reasons, if any, are only the bridge's: pool eligibility holds (`basis: pool`).
+    const bridgeOnly = new Set(['bridge_refused', 'image_missing'])
+    const poolEligible = [...reports.values()].filter(
+      (r) => r.versionNo !== null && (r.activities.find((x) => x.activity === 'jana_kertas')?.reasons ?? []).every((x) => bridgeOnly.has(x.code)),
+    ).length
+    expect(by.get('jana_kertas')?.served).toBe(poolEligible)
+    expect(by.get('jana_kertas')?.served).toBeLessThanOrEqual(overview.bank)
+  })
+
+  it('R1-B11: the Databank card and the Databank lane use ONE scope: total = lane rows, attention = lane rows with a reason', async () => {
+    const overview = parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema)
+    const card = overview.activities.find((a) => a.activity === 'databank')!
+    const lane = await allDatabankRows()
+    const withReason = lane.rows.filter((r) => r.attention.length > 0)
+    expect(lane.total).toBe(lane.rows.length)
+    expect(card.total).toBe(lane.total)
+    expect(card.attention).toBe(withReason.length)
+    expect(card.served).toBe(lane.rows.length - withReason.length)
+    // The fixture exercises both sides, including a question whose LIVE v1 is served while its latest version is a draft.
+    expect(withReason.length).toBeGreaterThan(0)
+    expect(card.served).toBeGreaterThan(0)
+    const byId = new Map(lane.rows.map((r) => [r.questionId, r]))
+    expect(byId.get(made.liveWithDraft!)).toMatchObject({ status: 'draft', attention: [] })
+    expect(byId.get(made.draft!)?.attention.map((r) => r.code)).toEqual(['not_approved'])
+    // The card differs from "the whole approved bank" (the drafts are rows, an approved bank has none): not the old scope.
+    expect(card.total).not.toBe(overview.bank)
   })
 
   it('databank lane: Databank-subject questions with their reasons; filters and paging', async () => {
@@ -196,6 +245,15 @@ describe('admin servability reads (R1-T30)', () => {
     }
   })
 
+  it('lane pages are bounded: a page past the window is refused with a BM message, the last allowed page works', async () => {
+    for (const lane of ['databank', 'bijak-spm']) {
+      const res = expectError(await admin.get(`/api/admin/servability/lanes/${lane}?pageSize=100&page=101`), 'VALIDATION_ERROR')
+      expect(res.fields?.page).toBe('Halaman terlalu jauh. Gunakan Tapis atau Cari untuk mengecilkan senarai.')
+      expectError(await admin.get(`/api/admin/servability/lanes/${lane}?page=100000`), 'VALIDATION_ERROR')
+      expect((await admin.get(`/api/admin/servability/lanes/${lane}?pageSize=100&page=100`)).status).toBe(200)
+    }
+  })
+
   it('Bijak SPM lane: papers with the count of placed questions the bridge cannot serve, by reason', async () => {
     const rows = parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?pageSize=100'), ServabilityPaperRowSchema)
     const published = rows.find((r) => r.paperId === made.publishedPaper)!
@@ -211,6 +269,12 @@ describe('admin servability reads (R1-T30)', () => {
     expect(parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?status=draft'), ServabilityPaperRowSchema).map((r) => r.paperId)).toContain(made.draftPaper)
     expect(parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?status=draft'), ServabilityPaperRowSchema).map((r) => r.paperId)).not.toContain(made.publishedPaper)
     expect(parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?status=archived'), ServabilityPaperRowSchema)).toEqual([])
+    // ready and withdrawn are shown as themselves (not as a draft) and can be filtered.
+    expect(rows.find((r) => r.paperId === made.readyPaper)?.status).toBe('ready')
+    expect(rows.find((r) => r.paperId === made.withdrawnPaper)?.status).toBe('withdrawn')
+    expect(parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?status=ready'), ServabilityPaperRowSchema).map((r) => r.paperId)).toEqual([made.readyPaper])
+    expect(parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?status=withdrawn'), ServabilityPaperRowSchema).map((r) => r.paperId)).toEqual([made.withdrawnPaper])
+    expect(parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?status=draft'), ServabilityPaperRowSchema).map((r) => r.paperId)).not.toContain(made.readyPaper)
     expect(parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?search=terbit%20ujian'), ServabilityPaperRowSchema).map((r) => r.paperId)).toEqual([made.publishedPaper])
   })
 

@@ -66,7 +66,7 @@ const result = computed(() => refreshed.value ?? data.value?.result)
 const review = (p: PartResult): ReviewPart => p
 
 /**
- * Dirty-draft guard [PROPOSED: V2 has no such warning]: a stepper change that is not saved yet asks
+ * Dirty-draft guard (copy approved, Q1; V2 has no such warning): a stepper change that is not saved yet asks
  * before the pupil leaves the page (in-app navigation and tab close / reload).
  */
 const LEAVE_WARNING = 'Anda ada markah kendiri yang belum disimpan. Tinggalkan halaman ini?'

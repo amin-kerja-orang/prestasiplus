@@ -26,6 +26,7 @@ import { CLASSES_COMPONENT_SCHEMAS, registerClassesPaths } from './classes/paths
 import { SCHOOL_ADMIN_COMPONENT_SCHEMAS, registerSchoolAdminPaths } from './school-admin/paths'
 import { SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, registerSchoolAdminPendingTeacherPaths } from './school-admin/pending-teachers'
 import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions/paths'
+import { QUESTION_GATE_COMPONENT_SCHEMAS, registerQuestionGatePaths } from './questions/gate'
 import { STIMULI_COMPONENT_SCHEMAS, registerStimuliPaths } from './questions/stimuli'
 import { PERFORMANCE_COMPONENT_SCHEMAS, registerPerformancePaths } from './reports/performance/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
@@ -107,6 +108,7 @@ export const COMPONENT_SCHEMAS = {
   ...SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, // BE-21 AC13 (pending teachers)
   ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
   ...STIMULI_COMPONENT_SCHEMAS, // R1-T32
+  ...QUESTION_GATE_COMPONENT_SCHEMAS, // R1-B05
   ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
   ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
   ...PERFORMANCE_COMPONENT_SCHEMAS, // BE-19
@@ -175,6 +177,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerSchoolAdminPendingTeacherPaths(registry) // BE-21 AC13 (pending teachers)
   registerQuestionsPaths(registry) // BE-09
   registerStimuliPaths(registry) // R1-T32
+  registerQuestionGatePaths(registry) // R1-B05
   registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
   registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
   registerPerformancePaths(registry) // BE-19

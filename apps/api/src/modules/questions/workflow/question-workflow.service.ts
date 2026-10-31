@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import type { QuestionWorkflowStatus } from '@pp/contract'
 
 import type { WorkflowActor } from './actor'
@@ -6,6 +6,7 @@ import {
   LifecycleService,
   type BulkResult,
   type CreateGateInput,
+  type GateName,
   type TakedownResult,
   type TransitionOptions,
   type TransitionResult,
@@ -20,7 +21,8 @@ import { QuestionWorkflowPorts, type QuestionBankPort } from './ports'
 export class QuestionWorkflowService {
   constructor(
     @Inject(QuestionWorkflowPorts) private readonly ports: QuestionWorkflowPorts,
-    @Inject(LifecycleService) private readonly lifecycle: LifecycleService,
+    // forwardRef: the reports controller imports this file and the lifecycle imports the reports module (an import cycle).
+    @Inject(forwardRef(() => LifecycleService)) private readonly lifecycle: LifecycleService,
   ) {}
 
   /** The wired question bank (an empty one until BE-09 provides it). */
@@ -31,6 +33,11 @@ export class QuestionWorkflowService {
   /** Table, role, reason and gate checks, then bank status change + status event(s) in one transaction. */
   transition(questionId: string, to: string, actor: WorkflowActor, options: TransitionOptions = {}): Promise<TransitionResult> {
     return this.lifecycle.transition(questionId, to, actor, options)
+  }
+
+  /** The approve / submit gate as a read: the issues of the next transition, no state change. */
+  gateCheck(questionId: string, gate: GateName, actor: WorkflowActor) {
+    return this.lifecycle.gateCheck(questionId, gate, actor)
   }
 
   /** Same rules per id; failing ids are skipped and reported. */
@@ -46,6 +53,11 @@ export class QuestionWorkflowService {
   /** Writes the creation status event (from null). Call inside the create transaction. */
   recordCreation(questionId: string, status: QuestionWorkflowStatus, actor: WorkflowActor, versionNo: number): Promise<void> {
     return this.lifecycle.recordCreation(questionId, status, actor, versionNo)
+  }
+
+  /** Admin only: "Arkib" on a question report row; archives the live version even when a newer revision is in review. */
+  archiveReported(questionId: string, actor: WorkflowActor, reason: string): Promise<void> {
+    return this.lifecycle.archiveReported(questionId, actor, reason)
   }
 
   /** Admin only: marks the source paper taken down and archives all its questions atomically. */

@@ -50,7 +50,7 @@ const invalid = err('VALIDATION_ERROR: `fields` keyed by input name (BM messages
 
 /**
  * R1-B11 "Dilihat murid di": the admin reads. Admin Pusat only. All are read-only; the batch is a POST only because it carries a
- * body of ids, so it needs the CSRF header like every POST. Per-user rate limit `THROTTLE_SERVABILITY_READ_PER_MINUTE` (default 120).
+ * body of ids, so it needs the CSRF header like every POST. Per-user rate limit `THROTTLE_SERVABILITY_READ_PER_MINUTE` (default 120); the overview has its own, smaller bucket (`THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE`, default 6).
  */
 export function registerServabilityPaths(registry: OpenAPIRegistry): void {
   const tags = ['servability']
@@ -80,7 +80,12 @@ export function registerServabilityPaths(registry: OpenAPIRegistry): void {
     path: '/admin/servability/overview',
     tags,
     summary: 'Served and not-served counts per activity (hub cards)',
-    responses: { 200: json(envelopeOf(ServabilityOverviewSchema), 'One entry per activity, with how the count was obtained.'), 401: unauthorized, 403: forbidden },
+    responses: {
+      200: json(envelopeOf(ServabilityOverviewSchema), 'One entry per activity, with how the count was obtained. Costly (counts the whole bank): its own small rate limit `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE` (default 6), 429 above.'),
+      401: unauthorized,
+      403: forbidden,
+      429: err('RATE_LIMITED: more than the overview limit per minute for this user.'),
+    },
   })
   registry.registerPath({
     method: 'get',
@@ -96,6 +101,6 @@ export function registerServabilityPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Lane "Bijak SPM": papers with the count of placed questions the bridge cannot serve',
     request: { query: ServabilityLaneQuerySchema },
-    responses: { 200: json(listEnvelopeOf(ServabilityPaperRowSchema), 'A page of papers, newest first. `status` is draft or published.'), 401: unauthorized, 403: forbidden, 422: invalid },
+    responses: { 200: json(listEnvelopeOf(ServabilityPaperRowSchema), 'A page of papers, newest first. `status` is draft, ready, published or withdrawn.'), 401: unauthorized, 403: forbidden, 422: invalid },
   })
 }

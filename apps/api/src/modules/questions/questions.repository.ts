@@ -491,25 +491,37 @@ export class QuestionsRepository {
     if (key === null) return null
     const q = await this.db.question.findUnique({ where: { id: key }, select: { groupId: true } })
     if (!q?.groupId) return null
-    const group = await this.db.stimulusGroup.findUnique({
-      where: { id: q.groupId },
+    return (await this.groupsByIds([idToString(q.groupId)]))[0] ?? null
+  }
+
+  /** Stimulus groups by id, in one statement per relation whatever the number of ids (unknown ids are absent). */
+  async groupsByIds(groupIds: readonly string[]): Promise<StimulusGroupRecord[]> {
+    const keys = [...new Set(groupIds)].flatMap((id) => {
+      const k = bi(id)
+      return k === null ? [] : [k]
+    })
+    if (keys.length === 0) return []
+    const groups = await this.db.stimulusGroup.findMany({
+      where: { id: { in: keys } },
+      orderBy: { id: 'asc' },
       include: {
         stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } },
         options: { orderBy: { position: 'asc' } },
         questions: { orderBy: { groupPosition: 'asc' }, select: { id: true } },
       },
     })
-    if (!group) return null
-    const stimuli: StimulusRecord[] = group.stimuli.flatMap((s) => {
-      const record = stimulusRecordOf(s.stimulus)
-      return record ? [record] : []
+    return groups.map((group) => {
+      const stimuli: StimulusRecord[] = group.stimuli.flatMap((s) => {
+        const record = stimulusRecordOf(s.stimulus)
+        return record ? [record] : []
+      })
+      return {
+        id: idToString(group.id),
+        stimuli,
+        optionBank: group.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
+        questionIds: group.questions.map((m) => idToString(m.id)),
+      }
     })
-    return {
-      id: idToString(group.id),
-      stimuli,
-      optionBank: group.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
-      questionIds: group.questions.map((m) => idToString(m.id)),
-    }
   }
 
   async listOwn(filter: GuruListFilter): Promise<Page<QuestionRecord>> {
@@ -727,6 +739,45 @@ export class QuestionsRepository {
       )
     }
     return out
+  }
+
+  /**
+   * How many distinct active questions link each stimulus straight to a version (`question_version_stimuli`; the versions of one
+   * question count once). 1 = the stimulus is that question's own; more than 1 = shared (D90: that must be a stimulus group).
+   * Unknown ids are absent.
+   */
+  async stimulusUseCounts(ids: readonly string[]): Promise<Map<string, number>> {
+    const keys = [...new Set(ids.map(bi).filter((k): k is bigint => k !== null))]
+    const out = new Map<string, number>()
+    if (keys.length === 0) return out
+    const rows = await this.db.$queryRaw<{ id: bigint; n: number }[]>`
+      SELECT l.stimulus_id AS id, count(DISTINCT v.question_id)::int AS n
+        FROM question_version_stimuli l
+        JOIN question_versions v ON v.id = l.question_version_id
+        JOIN questions q ON q.id = v.question_id AND q.is_active
+       WHERE l.stimulus_id = ANY(${keys}::bigint[])
+       GROUP BY l.stimulus_id`
+    for (const r of rows) out.set(idToString(r.id), r.n)
+    return out
+  }
+
+  /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
+  /** `rights_status` of one version: null when no declaration was made (or the version is unknown). */
+  async rightsStatusOf(questionId: string, versionNo: number): Promise<string | null> {
+    const key = bi(questionId)
+    if (key === null) return null
+    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { rightsStatus: true } })
+    return row?.rightsStatus ?? null
+  }
+
+  async isSpmBound(subjectId: string | null, levelId: string | null): Promise<boolean> {
+    const subject = subjectId === null ? null : bi(subjectId)
+    const level = levelId === null ? null : bi(levelId)
+    if (subject === null || level === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one FROM spm_subject_configs c JOIN education_levels l ON l.id = ${level} AND l.code IN ('T4', 'T5')
+       WHERE c.subject_id = ${subject} LIMIT 1`
+    return rows.length > 0
   }
 
   async groupExists(id: string): Promise<boolean> {
@@ -1051,12 +1102,14 @@ export class QuestionsRepository {
           blankCount: d.blankCount,
           wordMin: d.wordMin,
           wordMax: d.wordMax,
+          topics: d.topics ?? Prisma.DbNull,
           stimulusId: d.stimulusId,
           reveal: d.reveal,
           unitNodeId: d.unitNodeId,
           formOrigin: d.formOrigin,
           difficultyTp: d.difficultyTp,
           kbat: d.kbat,
+          cognitiveLevel: d.cognitiveLevel,
         },
       })
       if (d.options.length > 0) {
@@ -1081,6 +1134,14 @@ export class QuestionsRepository {
    * (Darjah) questions are always excluded. `learnerVisible` (every eligibility/draw read) also drops questions of any other
    * INACTIVE education level.
    */
+  /**
+   * The SQL a reader applies for `filter` (aliases `q`, `v`), for an admin count that must embed a reader's exact scope inside a
+   * larger statement (the servability hub counts). Same fragments as `count`, `sampleIds` and `eligibleAmong`.
+   */
+  scopeSql(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
+    return this.scope(filter, learnerVisible)
+  }
+
   private scope(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
     const live = filter.status === 'approved'
     const from = live

@@ -387,8 +387,18 @@ export const BijakAttemptQuestionSchema = z
     get stemImage() {
       return BijakAttemptStimulusSchema.optional().meta({
         description:
-          "The question's own picture (an image stimulus linked to its version, not shared with a group).",
+          "Back-compat: the question's own picture, sent only when its own stimuli are exactly one picture. Prefer `stimuli`.",
       })
+    },
+    get stimuli() {
+      return z
+        .array(BijakAttemptStimulusSchema)
+        .min(1)
+        .optional()
+        .meta({
+          description:
+            "The question's OWN stimuli (R1E2E-05b): linked to the question, not shared with a group; any of the seven kinds, in link order. Shown above the stem. A stimulus shared by several questions is a group (D90) and is never here.",
+        })
     },
     marks: NonNegInt,
     mcq: z.strictObject({ options: z.array(BijakAttemptOptionSchema).min(2) }).optional(),

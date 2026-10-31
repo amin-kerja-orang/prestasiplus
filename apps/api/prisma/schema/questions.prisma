@@ -247,7 +247,7 @@ model QuestionPart {
   promptMs          String   @map("prompt_ms")
   promptEn          String?  @map("prompt_en")
   marks             Int?     @db.SmallInt
-  /// mcq, match_letter, short_text, numeric, working, essay, drawing, table_fill (check constraint).
+  /// mcq, match_letter, short_text, numeric, working, essay, drawing, table_fill, pksk_choice, essay_choice (check constraint).
   mode              String?
   unit              String?
   decimals          Int?     @db.SmallInt
@@ -255,6 +255,8 @@ model QuestionPart {
   blankCount        Int?     @map("blank_count") @db.SmallInt
   wordMin           Int?     @map("word_min")
   wordMax           Int?     @map("word_max")
+  /// essay_choice only: [{ id, label }] (2..6, check constraint ck_question_parts_topics); NULL on every other part.
+  topics            Json?    @db.JsonB
   /// graph, diagram, sketch (check constraint).
   drawingKind       String?  @map("drawing_kind")
   tableGrid         Json?    @map("table_grid") @db.JsonB
@@ -270,6 +272,8 @@ model QuestionPart {
   unitNodeId        BigInt?  @map("unit_node_id")
   /// Leaf only. t1_t3, t4, t5 (check). NULL = inherit question_versions.form_origin.
   formOrigin        String?  @map("form_origin")
+  /// Leaf only (migration 0102, ADR-0031). mengingat, memahami, mengaplikasi, menganalisis, menilai, mencipta (check). NULL = not set.
+  cognitiveLevel    String?  @map("cognitive_level")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 

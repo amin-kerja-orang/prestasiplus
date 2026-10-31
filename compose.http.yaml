@@ -3,8 +3,11 @@
 #   docker compose -f compose.yaml -f compose.http.yaml down               (npm run stack:down)
 # What it changes compared with compose.yaml:
 #   frontend  built with VITE_API_MODE=http (same-origin /api through nginx), image tag :http
-#   migrate   after `prisma migrate deploy` also runs the demo seed (poc profile) with ALLOW_DEMO_SEED=true
-#   api       COOKIE_SECURE=false (plain http on localhost), a higher login throttle for e2e runs, BIJAK_POC_QUESTIONS=true
+#   migrate   after `prisma migrate deploy` also runs the demo seed (poc profile) with ALLOW_DEMO_SEED=true, then the
+#             guarded local/E2E seed (T26, docs/ops/e2e-seed.md: `--profile=e2e` + E2E_SEED=1, NODE_ENV=development
+#             for that one command because the e2e seed refuses any run that counts as production)
+#   api       COOKIE_SECURE=false (plain http on localhost), a higher login throttle for e2e runs, BIJAK_POC_QUESTIONS=false
+#             (the PoC question papers are not served; e2e runs against the question bank, R1-B07 / T36)
 # Secrets are not set here: .env.api and .env.db (git-ignored, copied from the .example files) hold them.
 services:
   frontend:
@@ -17,7 +20,26 @@ services:
     image: pretasiplus-frontend:http
 
   migrate:
-    command: ['sh', '-c', 'npm run be:db:migrate && npm run be:db:seed']
+    # 1 migrate, 2 demo seed (poc profile: the demo accounts the @api specs log in with),
+    # 3 local/E2E seed (T26: T4 pupil, Admin Pusat, blueprint 3472/2 Disahkan + serves_students). The e2e seed
+    # needs NODE_ENV=development (it refuses production even with ALLOW_DEMO_SEED), set for that command only.
+    # Host guard first, before step 1: migrate, demo seed and e2e seed all run only if the DATABASE_URL host is the
+    # compose-local `db` service (or localhost / 127.0.0.1); otherwise the job exits 1 and touches nothing. Host =
+    # text after the scheme up to the first `/`, `?` or `#`, minus userinfo (last `@`) and port. A `host=` or
+    # `hostaddr=` query parameter refuses (the pg driver would connect there). A URL whose host is not exactly db,
+    # localhost or 127.0.0.1 is refused (IPv6 [::1] included). `$$` is compose's literal `$`.
+    command:
+      - sh
+      - -c
+      - |
+        h="$${DATABASE_URL#*://}"; h="$${h%%[/?#]*}"; h="$${h##*@}"; h="$${h%%:*}"
+        case "$$DATABASE_URL" in *[?\&]host=*|*[?\&]hostaddr=*) h= ;; esac
+        case "$$h" in
+          db|localhost|127.0.0.1) ;;
+          *) echo "REFUSED: migrate and seeds run only against the compose-local db (DATABASE_URL host must be db, localhost or 127.0.0.1)" >&2; exit 1 ;;
+        esac
+        npm run be:db:migrate && npm run be:db:seed || exit 1
+        NODE_ENV=development E2E_SEED=1 npm run be:db:seed -- --profile=e2e
     environment:
       # Demo accounts with a published password: dev and e2e only. The production base job never sets this.
       ALLOW_DEMO_SEED: 'true'
@@ -27,5 +49,6 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       # The e2e run logs in many times from one address (3 viewports); the default is 5 per minute.
       THROTTLE_LOGIN_PER_MINUTE: ${E2E_THROTTLE_LOGIN_PER_MINUTE:-200}
-      # The demo seed (migrate job above) places the Bijak PoC questions; serve them here (staging/dev/e2e only).
-      BIJAK_POC_QUESTIONS: 'true'
+      # PoC question papers off (R1-B07 / T36 makes the flag a deprecated no-op): Bijak serves the question bank only.
+      # Explicit false so a stale .env.api with true behaves the same before and after T36.
+      BIJAK_POC_QUESTIONS: 'false'

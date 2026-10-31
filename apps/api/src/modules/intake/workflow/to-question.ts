@@ -75,8 +75,9 @@ function pointsKey(scheme: Extract<IntakeScheme, { kind: 'points' }>, marks: num
 }
 
 /** One answer leaf of the bank from an intake leaf (mode, scheme, unit, word range). */
-function leaf(label: string, prompt: string, marks: number, mode: IntakePart['mode'], scheme: IntakeScheme | undefined, o: { wordRange?: IntakePart['wordRange']; where: string }): Leaf {
-  const base = { label, prompt: rich(prompt), marks }
+function leaf(label: string, prompt: string, marks: number, mode: IntakePart['mode'], scheme: IntakeScheme | undefined, o: { wordRange?: IntakePart['wordRange']; cognitiveLevel?: IntakePart['cognitiveLevel']; where: string }): Leaf {
+  // R1-B05: the reviewer's cognitive level goes onto the bank leaf (the four upper levels are KBAT, settled when the leaf is stored).
+  const base = { label, prompt: rich(prompt), marks, ...(o.cognitiveLevel ? { cognitiveLevel: o.cognitiveLevel } : {}) }
   const { where } = o
   if (!scheme) throw new ConvertError(CONVERT_MESSAGES.schemeEmpty, where)
   switch (mode) {
@@ -163,6 +164,7 @@ function mcqLeaf(q: IntakeQuestion, where: string): Leaf {
     prompt: rich(q.stem.trim()),
     marks: q.marks,
     mode: 'mcq',
+    ...(q.cognitiveLevel ? { cognitiveLevel: q.cognitiveLevel } : {}),
     options: q.options.map((o, i) => ({ label: LETTERS.charAt(i), body: rich(o.text.trim()) })),
     key: { kind: 'option', correct: LETTERS.charAt(at) },
   }
@@ -191,7 +193,7 @@ function partTree(q: IntakeQuestion): QuestionPart[] {
     }
     const prefix = (p.lead ?? []).map((l) => l.label).join('')
     const label = prefix && p.label.startsWith(prefix) ? p.label.slice(prefix.length) : p.label
-    siblings.push(leaf(label, p.prompt.trim(), p.marks, p.mode, p.scheme, { wordRange: p.wordRange, where: `Soalan ${q.label}${p.label}` }))
+    siblings.push(leaf(label, p.prompt.trim(), p.marks, p.mode, p.scheme, { wordRange: p.wordRange, cognitiveLevel: p.cognitiveLevel, where: `Soalan ${q.label}${p.label}` }))
   }
   return roots as QuestionPart[]
 }
@@ -207,7 +209,7 @@ export function toQuestionInput(q: IntakeQuestion, ids: TagIds, stimulusGroupId:
   let parts: QuestionPart[]
   if (q.type === 'mcq') parts = [mcqLeaf(q, where)]
   else if (q.parts.length > 0) parts = partTree(q)
-  else parts = [leaf('1', q.stem.trim(), q.marks, q.mode, q.scheme, { wordRange: q.wordRange, where })]
+  else parts = [leaf('1', q.stem.trim(), q.marks, q.mode, q.scheme, { wordRange: q.wordRange, cognitiveLevel: q.cognitiveLevel, where })]
   return {
     questionType: FLAT_TYPE[q.type],
     subjectId: ids.subjectId,
