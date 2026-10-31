@@ -6,11 +6,12 @@ export const MAX_SP = 3
 export const TP_VALUES = [1, 2, 3, 4, 5, 6] as const
 
 /**
- * "Aras pemikiran" of a leaf part. The wire stores `kbat`: the four KBAT levels, or `bukan` (Mengingat / Memahami are not
- * told apart until the six-level column of ADR-0031 exists). Kept equal to `STUDIO_COGNITIVE_LEVELS` of the contract by a test.
+ * "Aras pemikiran" of a leaf: the six levels of Taksonomi Bloom (ADR-0031, T33 `cognitiveLevel`). The four upper levels are
+ * KBAT. The Studio also sends `kbat` (the four levels, else `bukan`) so a server without the six-level column still keeps it.
  */
 export const COGNITIVE_OPTIONS = [
-  { value: 'bukan', label: 'Bukan KBAT (Mengingat / Memahami)', kbat: false },
+  { value: 'mengingat', label: 'Mengingat', kbat: false },
+  { value: 'memahami', label: 'Memahami', kbat: false },
   { value: 'mengaplikasi', label: 'Mengaplikasi', kbat: true },
   { value: 'menganalisis', label: 'Menganalisis', kbat: true },
   { value: 'menilai', label: 'Menilai', kbat: true },
@@ -21,7 +22,7 @@ export type CognitiveValue = (typeof COGNITIVE_OPTIONS)[number]['value']
 
 export const isCognitive = (v: unknown): v is CognitiveValue => COGNITIVE_OPTIONS.some((c) => c.value === v)
 /** True for the four KBAT levels (Mengaplikasi, Menganalisis, Menilai, Mencipta). */
-export const isKbat = (v: CognitiveValue | null): boolean => v !== null && v !== 'bukan'
+export const isKbat = (v: CognitiveValue | null): boolean => v !== null && COGNITIVE_OPTIONS.some((c) => c.value === v && c.kbat)
 
 export interface LeafTag {
   label: string

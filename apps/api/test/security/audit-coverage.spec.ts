@@ -222,7 +222,7 @@ describe('BE-33 AC4: audit coverage, one test per audited action', () => {
 
     const requestId = rid('publish')
     const actor = { userId: adminId, role: 'admin' as const, requestId, ip: '10.30.0.9', isTest: false }
-    for (const to of ['review', 'approved', 'published'] as const) await workflow.transition(view.id, to, actor)
+    for (const to of ['review', 'approved'] as const) await workflow.transition(view.id, to, actor)
 
     const events = await t.db.query<{ from_status: string | null; to_status: string; actor_user_id: string; actor_role: string; request_id: string; reason: string | null }>(
       'select from_status, to_status, actor_user_id::text, actor_role, request_id, reason from question_status_events where question_id = $1::bigint order by id',
@@ -231,7 +231,6 @@ describe('BE-33 AC4: audit coverage, one test per audited action', () => {
     expect(events.map((e) => [e.from_status, e.to_status])).toEqual([
       ['draft', 'review'],
       ['review', 'approved'],
-      ['approved', 'published'],
     ])
     for (const e of events) {
       expect(e.actor_user_id).toBe(adminId)
@@ -245,7 +244,7 @@ describe('BE-33 AC4: audit coverage, one test per audited action', () => {
     const second = await questions.create(body, { userId: adminId, role: 'admin' })
     await t.db.query('update question_versions set chapter_id = $1::bigint where question_id = $2::bigint', [chapter!.id, second.id])
     const ids: string[] = []
-    for (const action of ['review', 'approved', 'published']) {
+    for (const action of ['review', 'approved']) {
       const id = rid(`bulk-${action}`)
       ids.push(id)
       const res = await call(admin, 'post', '/questions/bulk-action', { action, ids: [second.id] }).set('X-Request-Id', id)

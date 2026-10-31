@@ -175,7 +175,7 @@ export const bijakBuilderScenarios: Scenario[] = [
       const editor = await editorOf(ctx, admin, id)
       const budget = Number(arr((editor.blueprint as Json).sections)[0]?.markBudget)
       const need = Number(arr((editor.blueprint as Json).sections)[0]?.questionCount)
-      const questions = arr(editor.questions).filter((q) => q.kertas === 1 && q.kind === 'objektif' && q.status === 'published')
+      const questions = arr(editor.questions).filter((q) => q.kertas === 1 && q.kind === 'objektif' && q.status === 'approved')
       const groups = arr(editor.groups)
 
       // Whole stimulus groups first (kept consecutive), then single questions, until the section is full.

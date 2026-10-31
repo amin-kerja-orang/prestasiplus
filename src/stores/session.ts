@@ -179,6 +179,18 @@ export function withPrototypeIds(next: UserMe, current: UserMe): UserMe {
   }
 }
 
+/** Unsaved form drafts kept in the browser (`pp:draft:*`, for example the Studio) belong to the user: sign-out removes them. */
+export const LOCAL_DRAFT_PREFIX = 'pp:draft:'
+function dropLocalDrafts(): void {
+  const store = storage()
+  if (!store) return
+  try {
+    for (const key of Object.keys(store).filter((k) => k.startsWith(LOCAL_DRAFT_PREFIX))) store.removeItem(key)
+  } catch {
+    // Storage blocked: nothing to remove.
+  }
+}
+
 export function readStoredSession(): ClientSession | null {
   return parseClientSession(storage()?.getItem(PP_AUTH_STORAGE_KEY) ?? null)
 }
@@ -313,6 +325,7 @@ export const useSessionStore = defineStore('session', () => {
   /** Clears the session (store and `pp.auth`). */
   function clear(): void {
     commit(null)
+    dropLocalDrafts()
   }
 
   /** 401 policy (FR-M01-14): clear the session, then run the registered redirect. */

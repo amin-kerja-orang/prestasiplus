@@ -1,18 +1,18 @@
-import { STUDIO_COGNITIVE_LEVELS, STUDIO_STIMULUS_KINDS, STUDIO_STIMULUS_KIND_LABELS } from '@pp/contract'
+import { QUESTION_STIMULUS_KINDS } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import { COGNITIVE_OPTIONS, dskpGaps, isDskpComplete, isKbat, MAX_SP, questionTp, toggleSp } from '../../../lib/studio/dskp-tags'
 import { STIMULUS_KINDS } from '../../../lib/studio/stimulus'
 
 describe('DSKP tags per leaf (ADR-0031)', () => {
-  it('the local option lists equal the contract lists', () => {
-    expect(COGNITIVE_OPTIONS.map((c) => [c.value, c.label, c.kbat])).toEqual(STUDIO_COGNITIVE_LEVELS.map((c) => [c.value, c.label, c.kbat]))
-    expect(STIMULUS_KINDS.map((k) => k.value)).toEqual([...STUDIO_STIMULUS_KINDS])
-    expect(STIMULUS_KINDS.map((k) => k.label)).toEqual(STUDIO_STIMULUS_KINDS.map((k) => STUDIO_STIMULUS_KIND_LABELS[k]))
+  it('the local option lists equal the contract lists (T33 six levels, T07 seven kinds)', () => {
+    // QUESTION_COGNITIVE_LEVELS of r1/t33-leaf-tags (not merged yet): kept as a literal until it is.
+    expect(COGNITIVE_OPTIONS.map((c) => c.value)).toEqual(['mengingat', 'memahami', 'mengaplikasi', 'menganalisis', 'menilai', 'mencipta'])
+    expect(STIMULUS_KINDS.map((k) => k.value)).toEqual([...QUESTION_STIMULUS_KINDS])
   })
 
   it('names every gap: unit, SP, and the TP and the level of each leaf', () => {
-    const gaps = dskpGaps({ unitId: null, spIds: [], leaves: [{ label: 'a', tp: null, cognitive: null }, { label: 'b', tp: 3, cognitive: 'bukan' }] })
+    const gaps = dskpGaps({ unitId: null, spIds: [], leaves: [{ label: 'a', tp: null, cognitive: null }, { label: 'b', tp: 3, cognitive: 'memahami' }] })
     expect(gaps).toEqual([
       'Soalan belum dipautkan kepada topik DSKP.',
       'Sila pilih sekurang-kurangnya satu SP DSKP.',
@@ -29,7 +29,8 @@ describe('DSKP tags per leaf (ADR-0031)', () => {
 
   it('only the four upper levels are KBAT', () => {
     expect(isKbat(null)).toBe(false)
-    expect(isKbat('bukan')).toBe(false)
+    expect(isKbat('mengingat')).toBe(false)
+    expect(isKbat('memahami')).toBe(false)
     for (const v of ['mengaplikasi', 'menganalisis', 'menilai', 'mencipta'] as const) expect(isKbat(v)).toBe(true)
   })
 

@@ -7,6 +7,7 @@ import {
 } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
+import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock } from '../../db/clock'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
@@ -15,6 +16,7 @@ import { FilesService } from '../files'
 import { UsersRepository } from '../users'
 import { bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
 import { gradeQuestion } from './grading'
+import { checkGroupChange } from './group-lock'
 import {
   difficultyOf,
   flatFromVersion,
@@ -105,6 +107,12 @@ function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIss
 /** 422 text of a `pksk_choice` leaf sent to the general question routes (no `pksk` tag). */
 export const PKSK_LEAF_REFUSED = 'Jenis soalan PKSK hanya boleh disimpan sebagai soalan PKSK.'
 
+/**
+ * 422 text of an `essay_choice` leaf (R1-T07): the contract carries the mode, but the store has no column for its topics and
+ * the mode CHECK refuses it until the DSKP migration (0101, v2-admin-student-pipeline section 2) lands.
+ */
+export const ESSAY_CHOICE_NOT_STORED = 'Jenis soalan esei pilihan belum boleh disimpan.'
+
 const MAX_TOP_PARTS = 20
 const MAX_TOTAL_PARTS = 200
 const MAX_IMAGES = 50
@@ -132,11 +140,9 @@ function treeDepth(parts: unknown, depth = 1): number {
   return max
 }
 
-/** The status an edit leaves behind: it never keeps an approval or a live status (Q-5). */
-function statusAfterEdit(current: QuestionStatus, role: QuestionActor['role']): QuestionStatus {
-  if (current === 'published') return 'draft'
-  if (current === 'approved') return role === 'teacher' ? 'review' : 'draft'
-  return current
+/** The status an edit leaves behind: it never keeps an approval (the live `approved` version keeps serving; the edit is version n+1 as a draft, Q-5, ADR-0027). */
+function statusAfterEdit(current: QuestionStatus): QuestionStatus {
+  return current === 'approved' ? 'draft' : current
 }
 
 /** What create, update and the Guru routes all reduce to before touching the database. */
@@ -154,6 +160,8 @@ interface Normalized {
   chapterId?: string | null | undefined
   topicId?: string | null | undefined
   stimulusGroupId?: string | null | undefined
+  /** V2 `Nombor soalan`: a text sets it, null clears it, undefined keeps what is stored. */
+  numberLabel?: string | null | undefined
   /** Stem image file id: a string sets/replaces it, null removes it, undefined keeps what is stored. */
   stemImage?: string | null | undefined
   /** Kertas: a digit sets it, null clears it, undefined keeps what is stored. */
@@ -248,6 +256,7 @@ export class QuestionsService {
         dskpSpId: input.dskpSpId,
         chapterId: input.curriculumChapterId,
         stimulusGroupId: input.stimulusGroupId,
+        numberLabel: input.numberLabel,
         stemImage: input.questionImageFileId,
         kertas: input.kertas,
         paperCode: provenance?.paperCode,
@@ -324,7 +333,7 @@ export class QuestionsService {
           data: { questionId: BigInt(id), versionNo: v.versionNo, fromStatus: v.status, toStatus: status, actorUserId: BigInt(options.event.actorUserId), actorRole: options.event.actorRole, reason: options.reason ?? null, requestId: options.event.requestId },
         })
       }
-      if (status === 'published') {
+      if (status === 'approved') {
         const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
         Object.assign(fields, checkKeysGate(v.parts))
         if (Object.keys(fields).length > 0) throw fail(fields)
@@ -332,10 +341,10 @@ export class QuestionsService {
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
           await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'superseded' })
         }
-        await this.repo.setVersionStatus(id, v.versionNo, 'published', { publishedAt: this.clock.now() })
+        await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
-      } else if (v.status === 'published') {
-        // Taking the live version down (published -> archived) ends its serving at once.
+      } else if (v.status === 'approved') {
+        // Taking the live version down (approved -> archived) ends its serving at once.
         await this.repo.setVersionStatus(id, v.versionNo, status, { archiveReason: 'withdrawn' })
         await this.repo.setLiveVersion(id, null)
       } else {
@@ -488,13 +497,13 @@ export class QuestionsService {
 
   async getPublicForLearner(id: string): Promise<PublicQuestion> {
     const record = await this.repo.get(id, 'live')
-    if (!record || !record.isActive || record.version.status !== 'published') throw questionNotFound()
+    if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
     return toPublic(record)
   }
 
   async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
     const record = await this.repo.get(id, 'live')
-    if (!record || !record.isActive || record.version.status !== 'published') throw questionNotFound()
+    if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
     return gradeQuestion(record.id, record.version.parts, answers)
   }
 
@@ -535,6 +544,7 @@ export class QuestionsService {
     if (res.success) {
       // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
       if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
+      if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'essay_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: ESSAY_CHOICE_NOT_STORED })
       return res.data
     }
     const issue = res.error.issues[0]
@@ -571,7 +581,7 @@ export class QuestionsService {
       draft.numberLabel = provenance.numberLabel
       draft.sourcePage = provenance.sourcePage
     }
-    if (status === 'published') {
+    if (status === 'approved') {
       const fields = checkTagGate({
         subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
         educationLevelId: draft.educationLevelId === null ? null : idToString(draft.educationLevelId),
@@ -587,6 +597,7 @@ export class QuestionsService {
     const id = await this.prisma.transaction(async () => {
       await this.attachStem(draft, newStemFileId)
       const groupId = n.stimulusGroupId ? n.stimulusGroupId : null
+      if (groupId !== null) await checkGroupChange(this.prisma.client as TxClient, null, groupId)
       const created = await this.repo.create({
         sourceType: provenance?.sourceType ?? 'manual',
         createdById: creator,
@@ -741,7 +752,7 @@ export class QuestionsService {
       type: versionTypeOf(n.parts),
       stemMs: n.stem,
       stemEn: v?.stemEn ?? null,
-      numberLabel: v?.numberLabel ?? null,
+      numberLabel: n.numberLabel !== undefined ? (n.numberLabel === '' ? null : n.numberLabel) : (v?.numberLabel ?? null),
       language: n.language,
       explanationMs: n.explanation,
       explanationEn: v?.explanationEn ?? null,
@@ -794,7 +805,7 @@ export class QuestionsService {
     return 'questionImage'
   }
 
-  /** PUT: merge the body over the stored latest version and write it (new version when published). */
+  /** PUT: merge the body over the stored latest version and write it (new version when approved). */
   private async applyUpdate(record: QuestionRecord, rawInput: QuestionUpdateInput, actor: QuestionActor, opts: { keepSubject?: boolean } = {}): Promise<QuestionRecord> {
     const input = await this.withImageKeys(rawInput)
     const v = record.version
@@ -853,12 +864,13 @@ export class QuestionsService {
       flatSp: !input.tag && dskpSpId !== undefined,
     }
     if (input.stimulusGroupId !== undefined) normalized.stimulusGroupId = input.stimulusGroupId
+    if (input.numberLabel !== undefined) normalized.numberLabel = input.numberLabel
     if (input.curriculumChapterId !== undefined) normalized.chapterId = input.curriculumChapterId
     const stemImage = input.removeQuestionImage === true ? null : input.questionImageFileId
     if (stemImage !== undefined) normalized.stemImage = stemImage
     if (input.kertas !== undefined) normalized.kertas = input.kertas
 
-    let { draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(v.status, actor.role), record)
+    let { draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(v.status), record)
     const now = this.clock.now()
     await this.prisma.transaction(async () => {
       // Two concurrent edits serialise here; the second one sees the first one's version.
@@ -868,17 +880,17 @@ export class QuestionsService {
       // The image set, stimuli and paper code were derived from the record read before the lock. If another edit landed in
       // between, derive them again from the version read under the lock.
       if (fresh.version.versionNo !== v.versionNo || fresh.version.updatedAt.getTime() !== v.updatedAt.getTime()) {
-        ;({ draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(fresh.version.status, actor.role), fresh))
+        ;({ draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(fresh.version.status), fresh))
       }
       await this.attachStem(draft, newStemFileId)
-      const next = { ...draft, status: statusAfterEdit(fresh.version.status, actor.role) }
-      if (fresh.version.status === 'published') {
+      const next = { ...draft, status: statusAfterEdit(fresh.version.status) }
+      if (fresh.version.status === 'approved') {
         // Q-5: the live version keeps serving; the edit is version n+1 as a draft.
         await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
       } else {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
       }
-      if (input.stimulusGroupId !== undefined) {
+      if (input.stimulusGroupId !== undefined && (await checkGroupChange(this.prisma.client as TxClient, BigInt(record.id), input.stimulusGroupId))) {
         const gid = input.stimulusGroupId
         await this.repo.setGroup(record.id, gid, gid === null ? null : await this.repo.nextGroupPosition(gid))
       }
@@ -930,11 +942,16 @@ export class QuestionsService {
   private async detail(record: QuestionRecord): Promise<QuestionDetailView> {
     const view = await this.viewOf(record)
     const creator = record.createdById ? await this.users.get(record.createdById) : null
+    const stimulusGroup = record.groupId ? await this.repo.groupOf(record.id) : null
+    // The pictures of the group's stimuli are named by public token too (one form for the Studio, R1-T32).
+    const assetIds = (stimulusGroup?.stimuli ?? []).flatMap((s) => (s.assetFileId === null ? [] : [s.assetFileId]))
+    const assetTokens = assetIds.length === 0 ? new Map<string, string>() : await this.files.publicIdsOf(assetIds)
     return {
       ...view,
+      imageTokens: { ...view.imageTokens, ...Object.fromEntries(assetTokens) },
       dskp: await this.dskpOf(record.version.spIds[0]),
       createdByName: creator?.name ?? null,
-      stimulusGroup: record.groupId ? await this.repo.groupOf(record.id) : null,
+      stimulusGroup,
     }
   }
 

@@ -8,7 +8,7 @@ import { DsFormField, DsGrid, DsNativeSelect, DsStack } from '@/ds'
 import { STIMULUS_KINDS, type StimulusForm } from '../../lib/studio/stimulus'
 import StudioImageField from './StudioImageField.vue'
 
-defineProps<{ testid: string; disabled?: boolean; error?: string | undefined }>()
+defineProps<{ testid: string; disabled?: boolean; kindLocked?: boolean; error?: string | undefined }>()
 const form = defineModel<StimulusForm>({ required: true })
 </script>
 
@@ -16,7 +16,7 @@ const form = defineModel<StimulusForm>({ required: true })
   <DsStack gap="md" :data-testid="testid">
     <DsGrid :cols="{ base: 1, sm: 2 }" gap="md">
       <DsFormField v-slot="{ id }" native label="Jenis rangsangan" :for="`${testid}-kind`">
-        <DsNativeSelect :id="id" v-model="form.kind" :disabled="disabled" :data-testid="`${testid}-kind`">
+        <DsNativeSelect :id="id" v-model="form.kind" :disabled="disabled || kindLocked" :data-testid="`${testid}-kind`">
           <option v-for="k in STIMULUS_KINDS" :key="k.value" :value="k.value">{{ k.label }}</option>
         </DsNativeSelect>
       </DsFormField>
@@ -29,6 +29,9 @@ const form = defineModel<StimulusForm>({ required: true })
     </DsFormField>
     <DsFormField v-slot="{ id }" native label="Teks rangsangan" :for="`${testid}-body`" :error="error">
       <UTextarea :id="id" v-model="form.body" :disabled="disabled" :rows="5" :data-testid="`${testid}-body`" />
+    </DsFormField>
+    <DsFormField v-if="form.kind === 'table'" v-slot="{ id }" native label="Jadual" :for="`${testid}-table`" hint="Satu baris pada setiap baris, sel dipisahkan dengan |. Baris pertama ialah kepala.">
+      <UTextarea :id="id" v-model="form.tableText" :disabled="disabled" :rows="5" :data-testid="`${testid}-table`" />
     </DsFormField>
     <DsFormField label="Gambar (pilihan)">
       <StudioImageField v-model="form.imageToken" :testid="`${testid}-image`" :disabled="disabled" />

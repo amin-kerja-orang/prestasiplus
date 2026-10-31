@@ -7,11 +7,13 @@ import { FilesModule } from '../files'
 import { UsersModule } from '../users'
 import { QuestionsBijakPoolSource } from './bijak-pool'
 import { QuestionCountsAdapter } from './curriculum-bridge'
-import { AdminQuestionsController, GuruQuestionsController, StructuredQuestionsController } from './http'
+import { AdminQuestionsController, GuruQuestionsController, StimuliController, StructuredQuestionsController } from './http'
 import { PkskQuestionsService } from './pksk.service'
 import { QuestionsRepository } from './questions.repository'
 import { QuestionsService } from './questions.service'
-import { StudioController, StudioDskpService, StudioGroupsService } from './studio'
+import { StimuliRepository } from './stimuli.repository'
+import { StimuliService } from './stimuli.service'
+import { StudioController, StudioDskpService } from './studio'
 
 /**
  * Question bank (M04, BE-09). Exports `QuestionsRepository` and `QuestionsService` for the other cards
@@ -22,9 +24,9 @@ import { StudioController, StudioDskpService, StudioGroupsService } from './stud
  */
 @Module({
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
-  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StudioController],
-  providers: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioGroupsService, StudioDskpService],
-  exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource, StudioGroupsService],
+  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, StudioController],
+  providers: [QuestionsRepository, QuestionsService, StimuliRepository, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService],
+  exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource],
 })
 export class QuestionsModule implements OnModuleInit {
   constructor(

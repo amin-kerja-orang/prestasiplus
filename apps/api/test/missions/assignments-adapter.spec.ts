@@ -33,7 +33,7 @@ describe('BE-12 assignment source (missions, remedial) and the BE-17 missions pr
     const tagged = new Set((await t.db.query<{ id: string }>(`select question_id::text id from question_tags where kind = 'pool'`)).map((r) => r.id))
     const ofSubject = await t.db.query<{ id: string }>(
       `select q.id::text id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-        where q.is_active and v.status = 'published' and v.type = 'mcq' and v.subject_id = $1`,
+        where q.is_active and v.status = 'approved' and v.type = 'mcq' and v.subject_id = $1`,
       [w.tag.subjectId],
     )
     pool = ofSubject.map((r) => r.id).filter((id) => tagged.has(id))

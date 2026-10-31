@@ -7,20 +7,21 @@
  * module. A draft saves with gaps; the gate is at approval. Status buttons (Hantar untuk semakan, Terbitkan, Arkib) are F03a.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { useFlash } from '@/composables'
+import { useSessionStore } from '@/stores'
 import { DsBadge, DsCallout, DsCluster, DsFormBar, DsFormField, DsFormSection, DsGrid, DsLoadError, DsNativeSelect, DsPage, DsPillNav, DsStack, DsText } from '@/ds'
 
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import {
+  createQuestionInGroup,
   createStudioQuestion,
   fetchStudioQuestion,
   STUDIO_UNAVAILABLE,
   studioAvailable,
   updateStudioQuestion,
-  type StudioGroup,
   type StudioQuestionDetail,
 } from '../api/studio'
 import ChapterSelect from '../components/ChapterSelect.vue'
@@ -29,6 +30,7 @@ import StudioGroupEditor from '../components/studio/StudioGroupEditor.vue'
 import StudioImageField from '../components/studio/StudioImageField.vue'
 import StudioLeafEditor from '../components/studio/StudioLeafEditor.vue'
 import StudioPreview from '../components/studio/StudioPreview.vue'
+import type { GroupView } from '../lib/studio/group-members'
 import {
   blankDraft,
   blankLeaf,
@@ -53,6 +55,8 @@ import { errorLines, GENERIC_ERROR, LOAD_ERROR } from '../lib/ui-errors'
 
 const props = defineProps<{ id?: string }>()
 const router = useRouter()
+const route = useRoute()
+const session = useSessionStore()
 const flash = useFlash()
 
 const edit = computed(() => props.id !== undefined)
@@ -66,16 +70,15 @@ const loading = ref(true)
 const saving = ref(false)
 const problems = ref<string[]>([])
 const fieldProblems = ref<Record<string, string>>({})
-const originalGroupId = ref<string | null>(null)
 /** An approved or published question is read-only until "Edit sebagai draf" (V2 S1.3). */
 const unlocked = ref(true)
 
-const groupView = ref<StudioGroup | null>(null)
+const groupView = ref<GroupView | null>(null)
 const previewOpen = ref(false)
 
 /* ---- draft recovery (V2 flow 1 step 2): unsaved work is kept in the browser and offered again ---- */
 const store: Storage | null = typeof window === 'undefined' ? null : window.localStorage
-const storeKey = computed(() => recoveryKey(props.id))
+const storeKey = computed(() => recoveryKey(session.user?.id === undefined ? 'tetamu' : String(session.user.id), props.id))
 const saved = ref<StudioDraft | null>(null)
 const offer = ref<StudioDraft | null>(null)
 let keepTimer: ReturnType<typeof setTimeout> | undefined
@@ -110,7 +113,8 @@ onBeforeUnmount(() => clearTimeout(keepTimer))
 
 const SERVING = ['approved', 'published']
 const readOnly = computed(() => !unlocked.value || unsupported.value.length > 0)
-const gaps = computed(() => draftGaps(draft.value))
+const levelName = computed(() => levels.value.find((l) => l.id === draft.value.educationLevelId)?.name ?? '')
+const gaps = computed(() => draftGaps(draft.value, levelName.value))
 const tabs = [
   { key: 'kertas', label: 'Kertas' },
   { key: 'rangsangan', label: 'Rangsangan' },
@@ -132,13 +136,15 @@ async function load(): Promise<void> {
     const [s, l] = await Promise.all([fetchSubjects(), fetchEducationLevels()])
     subjects.value = s.data.map((x) => ({ id: String(x.id), name: x.name }))
     levels.value = l.data.map((x) => ({ id: String(x.id), name: x.name }))
+    if (props.id === undefined && typeof route.query.kumpulan === 'string' && /^\d+$/.test(route.query.kumpulan)) {
+      draft.value.groupId = route.query.kumpulan
+    }
     if (props.id !== undefined) {
       const q: StudioQuestionDetail = await fetchStudioQuestion(props.id)
       const h = hydrate(q)
       draft.value = h.draft
       unsupported.value = h.unsupported
       status.value = q.status
-      originalGroupId.value = h.draft.groupId
       unlocked.value = !SERVING.includes(q.status)
     }
   } catch {
@@ -166,14 +172,15 @@ async function save(): Promise<void> {
   fieldProblems.value = {}
   try {
     if (edit.value && props.id !== undefined) {
-      const res = await updateStudioQuestion(props.id, toRequestBody(draft.value, { groupId: originalGroupId.value }))
+      const res = await updateStudioQuestion(props.id, toRequestBody(draft.value))
       flash.success(res.status)
       if (store !== null) clearSnapshot(store, storeKey.value)
-      originalGroupId.value = res.data ? draft.value.groupId : originalGroupId.value
       await load()
       unlocked.value = !SERVING.includes(status.value)
     } else {
-      const res = await createStudioQuestion(toRequestBody(draft.value))
+      const into = typeof route.query.kumpulan === 'string' && /^\d+$/.test(route.query.kumpulan) ? route.query.kumpulan : null
+      const body = toRequestBody(draft.value)
+      const res = into === null ? await createStudioQuestion(body) : await createQuestionInGroup(into, body)
       flash.success('Soalan draf disimpan. Terbitkan melalui semakan apabila sedia.')
       clearTimeout(keepTimer)
       if (store !== null) clearSnapshot(store, storeKey.value)
@@ -255,6 +262,9 @@ async function save(): Promise<void> {
               </DsNativeSelect>
             </DsFormField>
           </DsGrid>
+          <DsFormField v-slot="{ id: fid }" native label="Nombor soalan" for="studio-number" required :error="fieldProblems.numberLabel">
+            <UInput :id="fid" v-model="draft.numberLabel" placeholder="1" maxlength="32" :disabled="readOnly" data-testid="studio-number" />
+          </DsFormField>
           <DsFormField v-slot="{ id: fid }" native label="Teks soalan (stem)" for="studio-stem" required :error="fieldProblems.questionText">
             <UTextarea :id="fid" v-model="draft.stem" :rows="4" placeholder="Contoh: Rajah 1 menunjukkan litar bersiri." :disabled="readOnly" data-testid="studio-stem" />
           </DsFormField>

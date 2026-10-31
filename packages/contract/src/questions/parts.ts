@@ -8,8 +8,8 @@ import { IdSchema } from '../common/ids'
  * unions). Keys live only in the admin/editor schemas: the student-facing projection below omits them.
  */
 
-/** D12 / D54(a): the only lifecycle codes on the wire. BM labels (UI only): Draf, Semakan, Lulus, Diterbitkan, Diarkib. */
-export const QUESTION_STATUSES = ['draft', 'review', 'approved', 'published', 'archived'] as const
+/** D12 / D54(a) as amended by ADR-0027: the only lifecycle codes on the wire; `approved` is the only servable one. BM labels (UI only): Draf, Semakan, Diterbitkan, Diarkib. */
+export const QUESTION_STATUSES = ['draft', 'review', 'approved', 'archived'] as const
 export const QUESTION_STATUS_MESSAGE = 'Status tidak sah.'
 export const QuestionStatusSchema = z.enum(QUESTION_STATUSES, QUESTION_STATUS_MESSAGE).meta({ id: 'QuestionStatus' })
 export type QuestionStatus = z.infer<typeof QuestionStatusSchema>
@@ -28,6 +28,8 @@ export const QUESTION_LEAF_MODES = [
   'essay',
   'drawing',
   'table_fill',
+  /** R1-T07 (V2 `essay_choice`, 31 approved parts): the pupil picks one of 2 to 6 topics, then writes an essay marked like `essay`. */
+  'essay_choice',
   /** BE-42 (M07 PKSK): 0 or 2 to 6 options, any number of correct labels. Valid only on a question tagged `pksk_domain`. */
   'pksk_choice',
 ] as const
@@ -175,6 +177,14 @@ const McqLeaf = keyed('mcq', OptionKey).extend({ options: z.array(QuestionOption
  * tagged `pksk_domain`: the question service rejects it with 422 otherwise.
  */
 const PkskChoiceLeaf = keyed('pksk_choice', OptionsKey).extend({ options: z.array(QuestionOptionSchema).max(6) })
+/** R1-T07: one topic of an `essay_choice` leaf (V2 `config.topics`). `id` is the stable key of the topic inside the leaf. */
+export const QuestionEssayTopicSchema = z
+  .object({ id: z.string().min(1).max(40), label: z.string().min(1) })
+  .meta({ id: 'QuestionEssayTopic' })
+const EssayChoiceLeaf = keyed('essay_choice', z.discriminatedUnion('kind', [RubricKey, PointsKey])).extend({
+  topics: z.array(QuestionEssayTopicSchema).min(2, 'Sila masukkan 2 hingga 6 tajuk.').max(6, 'Sila masukkan 2 hingga 6 tajuk.'),
+  wordRange: z.object({ min: z.number().int(), max: z.number().int() }).optional(),
+})
 const LeafBranches = [
   McqLeaf,
   PkskChoiceLeaf,
@@ -187,6 +197,7 @@ const LeafBranches = [
   }),
   keyed('drawing', PointsKey),
   keyed('table_fill', CellsKey),
+  EssayChoiceLeaf,
 ] as const
 
 export const QuestionLeafPartSchema = z
@@ -195,6 +206,9 @@ export const QuestionLeafPartSchema = z
     const p = ctx.value
     if (p.mode === 'mcq' && !p.options.some((o) => o.label === p.key.correct)) {
       ctx.issues.push({ code: 'custom', input: p, path: ['key', 'correct'], message: 'Jawapan betul mesti salah satu pilihan.' })
+    }
+    if (p.mode === 'essay_choice' && new Set(p.topics.map((t) => t.id)).size !== p.topics.length) {
+      ctx.issues.push({ code: 'custom', input: p, path: ['topics'], message: 'Setiap tajuk mesti mempunyai id yang berbeza.' })
     }
     if (p.mode === 'pksk_choice') {
       const labels = new Set(p.options.map((o) => o.label))
@@ -227,15 +241,31 @@ export const QuestionCurriculumTagSchema = z
   })
   .meta({ id: 'QuestionCurriculumTag' })
 
-/** D6: a stimulus (diagram, passage, table) and a group that keeps ordered questions together. */
+/** R1-T07: the seven V2 production stimulus kinds (audio exists in the store but is never served as a stimulus). */
+export const QUESTION_STIMULUS_KINDS = ['passage', 'image', 'diagram', 'table', 'map', 'infographic', 'graph'] as const
+export const QuestionStimulusKindSchema = z.enum(QUESTION_STIMULUS_KINDS).meta({ id: 'QuestionStimulusKind' })
+export type QuestionStimulusKind = z.infer<typeof QuestionStimulusKindSchema>
+
+/** Table grid of a `table` stimulus (`stimuli.table_data`): header cells and body rows. */
+export const QuestionStimulusTableSchema = z
+  .object({ head: z.array(z.string()), rows: z.array(z.array(z.string())) })
+  .meta({ id: 'QuestionStimulusTable' })
+
+/**
+ * D6: a stimulus and a group that keeps ordered questions together. D90: a shared stimulus is ONE group shown once with all
+ * its member questions; it carries no marks and is never a question. `caption`, `sourceCitation` and `tableData` are additive.
+ */
 export const QuestionStimulusSchema = z
   .object({
     id: IdSchema,
-    kind: z.enum(['diagram', 'passage', 'table']),
+    kind: QuestionStimulusKindSchema,
     label: z.string(),
     body: QuestionRichTextSchema.nullable(),
     imageId: IdSchema.nullable(),
     alt: z.string().nullable(),
+    caption: z.string().nullable().optional(),
+    sourceCitation: z.string().nullable().optional(),
+    tableData: QuestionStimulusTableSchema.nullable().optional(),
   })
   .meta({ id: 'QuestionStimulus' })
 

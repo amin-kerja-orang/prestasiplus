@@ -9,7 +9,8 @@ import { isCognitive } from './dskp-tags'
 
 export const RECOVERY_MESSAGE = 'Terdapat kerja yang belum disimpan daripada sesi sebelum ini.'
 const VERSION = 1
-const PREFIX = 'pp:studio-draft:'
+/** `pp:draft:` is the prefix the session store clears at sign-out; the user id keeps one person's draft from another's. */
+const PREFIX = 'pp:draft:studio:'
 
 export interface KeyValueStore {
   getItem(key: string): string | null
@@ -17,7 +18,8 @@ export interface KeyValueStore {
   removeItem(key: string): void
 }
 
-export const recoveryKey = (questionId?: string): string => `${PREFIX}${questionId === undefined ? 'baharu' : `soalan-${questionId}`}`
+export const recoveryKey = (userId: string, questionId?: string): string =>
+  `${PREFIX}${userId}:${questionId === undefined ? 'baharu' : `soalan-${questionId}`}`
 
 /** The state without the local row keys, so two drafts compare by content. */
 export const contentOf = (d: StudioDraft): string => JSON.stringify({ ...d, leaves: d.leaves.map((l) => ({ ...l, uid: '' })) })
@@ -57,13 +59,13 @@ export function parseSnapshot(text: string | null): StudioDraft | null {
   }
   if (!isObj(raw) || raw.v !== VERSION || !isObj(raw.draft) || raw.draft.leaves === undefined || !Array.isArray(raw.draft.leaves)) return null
   const d = raw.draft
-  if (!isStr(d.subjectId) || !isStr(d.educationLevelId) || !isStr(d.stem) || !isStr(d.chapterId) || typeof d.difficulty !== 'number') return null
+  if (!isStr(d.subjectId) || !isStr(d.educationLevelId) || !isStr(d.stem) || !isStr(d.numberLabel) || !isStr(d.chapterId) || typeof d.difficulty !== 'number') return null
   if (!isNullStr(d.stemImageToken) || !isNullStr(d.unitId) || !isNullStr(d.groupId) || !['', '1', '2', '3'].includes(d.kertas as string)) return null
   if (!Array.isArray(d.spIds) || !d.spIds.every(isStr) || d.spIds.length > 3) return null
   const leaves = (d.leaves as unknown[]).map(leafOf)
   if (leaves.some((l) => l === null) || leaves.length > 26) return null
   return {
-    subjectId: d.subjectId, educationLevelId: d.educationLevelId, kertas: d.kertas as StudioDraft['kertas'], stem: d.stem,
+    subjectId: d.subjectId, educationLevelId: d.educationLevelId, kertas: d.kertas as StudioDraft['kertas'], numberLabel: d.numberLabel, stem: d.stem,
     stemImageToken: d.stemImageToken, chapterId: d.chapterId, difficulty: d.difficulty, unitId: d.unitId, spIds: d.spIds, groupId: d.groupId,
     leaves: leaves as LeafDraft[],
   }

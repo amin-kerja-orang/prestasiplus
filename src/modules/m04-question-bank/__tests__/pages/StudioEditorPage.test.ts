@@ -15,14 +15,16 @@ const studio = vi.hoisted(() => ({
   fetchStudioQuestion: vi.fn(),
   createStudioQuestion: vi.fn(),
   updateStudioQuestion: vi.fn(),
-  fetchStudioGroup: vi.fn(),
-  createStudioGroup: vi.fn(),
-  updateStudioGroup: vi.fn(),
-  dissolveStudioGroup: vi.fn(),
-  addStudioStimulus: vi.fn(),
-  patchStudioStimulus: vi.fn(),
-  removeStudioStimulus: vi.fn(),
-  setStudioGroupMembers: vi.fn(),
+  createQuestionInGroup: vi.fn(),
+  fetchGroup: vi.fn(),
+  createGroup: vi.fn(),
+  createStimulus: vi.fn(),
+  updateStimulus: vi.fn(),
+  setGroupStimuli: vi.fn(),
+  dissolveGroup: vi.fn(),
+  addGroupMember: vi.fn(),
+  removeGroupMember: vi.fn(),
+  reorderGroupMembers: vi.fn(),
   searchQuestions: vi.fn(),
   uploadStudioImage: vi.fn(),
 }))
@@ -35,16 +37,13 @@ const DSKP = { units: [{ id: '40', code: '1.0', title: 'Bentuk piawai', sps: [{ 
 const GROUP = {
   id: '9',
   label: 'Rajah 1',
-  stimuli: [{ id: '70', kind: 'diagram', label: 'Rajah 1', caption: null, alt: 'Segi tiga', body: 'Penerangan', table: null, sourceCitation: null, imageId: null }],
-  members: [
-    { id: '501', position: 1, numberLabel: '1', stem: 'S1 berdasarkan Rajah 1', status: 'draft' },
-    { id: '502', position: 2, numberLabel: '2', stem: 'S2 berdasarkan Rajah 1', status: 'draft' },
-  ],
-  memberCount: 2,
-  complete: true,
-  locked: false,
-  issues: [],
+  scope: 'section',
+  stimuli: [{ id: '70', kind: 'diagram', label: 'Rajah 1', caption: null, alt: 'Segi tiga', body: { ms: 'Penerangan' }, tableData: null, sourceCitation: null, imageId: null }],
+  questionIds: ['501', '502'],
 }
+const serve = (main: { id: string; [k: string]: unknown }) =>
+  studio.fetchStudioQuestion.mockImplementation((id: string) => Promise.resolve(id === main.id ? main : member(id)))
+const member = (id: string) => ({ id, status: 'draft', questionText: `S${id} berdasarkan Rajah 1`, numberLabel: id === '501' ? '1' : '2' })
 
 let wrapper: VueWrapper | null = null
 let router: Router
@@ -72,7 +71,8 @@ beforeEach(() => {
   for (const f of Object.values(studio)) if (typeof f === 'function' && 'mockReset' in f) (f as ReturnType<typeof vi.fn>).mockReset()
   studio.studioAvailable.mockReturnValue(true)
   studio.fetchStudioDskp.mockResolvedValue(DSKP)
-  studio.fetchStudioGroup.mockResolvedValue(GROUP)
+  studio.fetchStudioQuestion.mockImplementation((id: string) => Promise.resolve(member(id)))
+  studio.fetchGroup.mockResolvedValue(GROUP)
   lookups.fetchSubjects.mockReset().mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }], meta: {} })
   lookups.fetchEducationLevels.mockReset().mockResolvedValue({ data: [{ id: 7, name: 'Tingkatan 4' }], meta: {} })
   lookups.fetchChapters.mockReset().mockResolvedValue([{ id: 12, name: 'Bentuk piawai', chapterNumber: 1 }])
@@ -90,9 +90,8 @@ describe('StudioEditorPage (R1-F03b)', () => {
     expect(has(w, 'studio-form')).toBe(false)
   })
 
-  it('creates a draft with per-leaf TP and cognitive level, the DSKP unit and SP, the Bab, the kertas and a new stimulus group', async () => {
+  it('creates a draft with number, per-leaf TP and cognitive level, the DSKP unit and SP and the kertas; the group is not sent', async () => {
     studio.createStudioQuestion.mockResolvedValue({ data: { id: '77', status: 'draft' }, status: 'Soalan berjaya ditambah.' })
-    studio.createStudioGroup.mockResolvedValue({ data: { ...GROUP, members: [], memberCount: 0, complete: false }, status: 'Kumpulan rangsangan dicipta.' })
     const w = await render('/admin/studio/questions/create')
     expect(t(w, 'studio-save-gaps').text()).toContain('belum lengkap')
     const before = Number(/(\d+) belum lengkap/.exec(t(w, 'studio-save-gaps').text())?.[1])
@@ -100,6 +99,7 @@ describe('StudioEditorPage (R1-F03b)', () => {
     await t(w, 'studio-subject').setValue('3')
     await t(w, 'studio-level').setValue('7')
     await t(w, 'studio-kertas').setValue('1')
+    await t(w, 'studio-number').setValue('1')
     await t(w, 'studio-stem').setValue('Berdasarkan Rajah 1, apakah jenis segi tiga itu?')
     await flushPromises()
     await t(w, 'studio-unit').setValue('40')
@@ -114,11 +114,8 @@ describe('StudioEditorPage (R1-F03b)', () => {
     expect(t(w, 'studio-question-tp').text()).toContain('TP soalan: 3')
     expect(Number(/(\d+) belum lengkap/.exec(w.find('[data-testid="studio-save-gaps"]').exists() ? t(w, 'studio-save-gaps').text() : '0 belum lengkap')?.[1])).toBeLessThan(before)
 
-    // a new shared stimulus (group) in Langkah 2
-    await t(w, 'studio-group-new-body').setValue('Segi tiga bersudut tegak.')
-    await t(w, 'studio-group-create').trigger('click')
-    await flushPromises()
-    expect(studio.createStudioGroup).toHaveBeenCalledTimes(1)
+    // Langkah 2 asks to save first: a group is made from a saved question
+    expect(has(w, 'studio-group-save-first')).toBe(true)
     await t(w, 'studio-form').trigger('submit')
     await flushPromises()
 
@@ -129,37 +126,40 @@ describe('StudioEditorPage (R1-F03b)', () => {
       educationLevelId: '7',
       kertas: '1',
       curriculumChapterId: null,
-      stimulusGroupId: '9',
+      numberLabel: '1',
       tag: { unitId: '40', spIds: ['41', '42'], tp: 3 },
     })
-    expect((body.parts as Array<Record<string, unknown>>)[0]).toMatchObject({ label: 'a', mode: 'mcq', difficultyTp: 3, kbat: 'menganalisis', key: { kind: 'option', correct: 'B' } })
+    expect('stimulusGroupId' in body).toBe(false)
+    expect((body.parts as Array<Record<string, unknown>>)[0]).toMatchObject({ label: 'a', mode: 'mcq', difficultyTp: 3, cognitiveLevel: 'menganalisis', kbat: 'menganalisis', key: { kind: 'option', correct: 'B' } })
     expect(router.currentRoute.value.fullPath).toBe('/admin/studio/questions/77/sunting')
   })
 
-  it('opens a saved question, shows its group, and saves without re-sending the group it already has', async () => {
-    studio.fetchStudioQuestion.mockResolvedValue({
+  it('opens a saved question, shows its group read through the stimulus API, and saves without sending the group', async () => {
+    serve({
       id: '501',
       status: 'draft',
+      numberLabel: '1',
       subjectId: '3',
       educationLevelId: '7',
       difficultyLevel: 3,
       questionText: 'S1 berdasarkan Rajah 1, apakah ini?',
       questionImage: null,
-      kertas: null,
+      kertas: '1',
       curriculumChapterId: '12',
       stimulusGroup: { id: '9' },
       tag: { unitId: '40', spIds: ['41'], tp: 2 },
-      parts: [{ label: 'a', prompt: { ms: 'Pilih.' }, mode: 'mcq', marks: 1, difficultyTp: 2, kbat: 'bukan', options: [{ label: 'A', body: { ms: 'x' } }, { label: 'B', body: { ms: 'y' } }, { label: 'C', body: { ms: 'z' } }], key: { kind: 'option', correct: 'A' } }],
+      parts: [{ label: 'a', prompt: { ms: 'Pilih.' }, mode: 'mcq', marks: 1, difficultyTp: 2, cognitiveLevel: 'memahami', kbat: 'bukan', options: [{ label: 'A', body: { ms: 'x' } }, { label: 'B', body: { ms: 'y' } }, { label: 'C', body: { ms: 'z' } }], key: { kind: 'option', correct: 'A' } }],
     })
     studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'Soalan berjaya dikemaskini.' })
     const w = await render('/admin/studio/questions/501/sunting', '501')
     expect(studio.fetchStudioQuestion).toHaveBeenCalledWith('501')
-    expect(studio.fetchStudioGroup).toHaveBeenCalledWith('9')
+    expect(studio.fetchGroup).toHaveBeenCalledWith('9')
     expect(w.findAll('[data-testid^="studio-group-member-"][data-testid$="-pos"]')).toHaveLength(2)
     expect(has(w, 'studio-save-gaps')).toBe(false) // every field and every DSKP tag is filled
     expect(t(w, 'studio-save-marks').text()).toBe('1 markah')
     await t(w, 'studio-form').trigger('submit')
     await flushPromises()
+    expect(studio.updateStudioQuestion).toHaveBeenCalledTimes(1)
     const [id, body] = studio.updateStudioQuestion.mock.calls[0] as [string, Record<string, unknown>]
     expect(id).toBe('501')
     expect('stimulusGroupId' in body).toBe(false)
@@ -201,13 +201,13 @@ describe('StudioEditorPage (R1-F03b)', () => {
   })
 
   describe('draft recovery and Pratonton', () => {
-    const KEY = 'pp:studio-draft:baharu'
+    const KEY = 'pp:draft:studio:tetamu:baharu'
     const snapshot = (stem: string) =>
       JSON.stringify({
         v: 1,
         savedAt: '2026-10-31T10:00:00Z',
         draft: {
-          subjectId: '3', educationLevelId: '7', kertas: '', stem, stemImageToken: null, chapterId: '', difficulty: 3, unitId: null, spIds: [], groupId: null,
+          subjectId: '3', educationLevelId: '7', kertas: '', numberLabel: '1', stem, stemImageToken: null, chapterId: '', difficulty: 3, unitId: null, spIds: [], groupId: null,
           leaves: [{ label: 'a', mode: 'short_text', prompt: 'Jawab.', marks: 1, tp: null, cognitive: null, options: [], correct: '', accepted: 'abc', numeric: { value: '', tolerance: '', unit: '' } }],
         },
       })
@@ -256,7 +256,7 @@ describe('StudioEditorPage (R1-F03b)', () => {
     })
 
     it('Pratonton shows the shared stimulus once with the members of the group', async () => {
-      studio.fetchStudioQuestion.mockResolvedValue({
+      serve({
         id: '501', status: 'draft', subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'S1 berdasarkan Rajah 1, apakah ini?',
         questionImage: null, curriculumChapterId: null, stimulusGroup: { id: '9' }, tag: { unitId: '40', spIds: ['41'], tp: 2 },
         parts: [{ label: 'a', prompt: { ms: 'Pilih.' }, mode: 'short_text', marks: 1, difficultyTp: 2, kbat: 'bukan', key: { kind: 'accepted', values: ['x'] } }],
@@ -270,7 +270,29 @@ describe('StudioEditorPage (R1-F03b)', () => {
       const questions = body.querySelector('[data-testid="stimulus-questions"]')
       expect(questions?.querySelectorAll('[data-testid^="studio-preview-q-"]')).toHaveLength(2)
       expect(body.querySelector('[data-testid="studio-preview-q-501"]')?.textContent).toContain('S1 berdasarkan Rajah 1')
-      expect(body.querySelector('[data-testid="studio-preview-q-502"]')?.textContent).toContain('S2 berdasarkan Rajah 1')
+      expect(body.querySelector('[data-testid="studio-preview-q-502"]')?.textContent).toContain('S502 berdasarkan Rajah 1')
     })
+  })
+
+  it('creates a question straight into a group with ?kumpulan= (POST /stimulus-groups/:id/questions)', async () => {
+    studio.createQuestionInGroup.mockResolvedValue({ data: { id: '88', status: 'draft' }, status: 'Soalan berjaya ditambah ke dalam kumpulan.' })
+    const w = await render('/admin/studio/questions/create?kumpulan=9')
+    expect(studio.fetchGroup).toHaveBeenCalledWith('9')
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect(studio.createQuestionInGroup).toHaveBeenCalledTimes(1)
+    expect(studio.createQuestionInGroup.mock.calls[0]?.[0]).toBe('9')
+    expect(studio.createStudioQuestion).not.toHaveBeenCalled()
+    expect('stimulusGroupId' in (studio.createQuestionInGroup.mock.calls[0]?.[1] as Record<string, unknown>)).toBe(false)
+  })
+
+  it('asks for the number of the question and, on an SPM level, for the kertas', async () => {
+    const w = await render('/admin/studio/questions/create')
+    expect(has(w, 'studio-number')).toBe(true)
+    await t(w, 'studio-level').setValue('7')
+    await flushPromises()
+    const gaps = Number(/(\d+) belum lengkap/.exec(t(w, 'studio-save-gaps').text())?.[1])
+    await t(w, 'studio-kertas').setValue('2')
+    expect(Number(/(\d+) belum lengkap/.exec(t(w, 'studio-save-gaps').text())?.[1])).toBe(gaps - 1)
   })
 })

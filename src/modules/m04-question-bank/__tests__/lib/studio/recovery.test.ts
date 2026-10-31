@@ -11,6 +11,7 @@ const filled = () => {
   const d = blankDraft()
   d.subjectId = '3'
   d.stem = 'Berdasarkan Rajah 1, apakah ini?'
+  d.numberLabel = '2'
   d.spIds = ['41']
   d.groupId = '9'
   d.leaves[0]!.prompt = 'Pilih.'
@@ -21,16 +22,18 @@ const filled = () => {
 }
 
 describe('Studio draft recovery (V2 flow 1 step 2)', () => {
-  it('keys a new question and each saved question apart', () => {
-    expect(recoveryKey()).not.toBe(recoveryKey('5'))
-    expect(recoveryKey('5')).not.toBe(recoveryKey('6'))
+  it('keys a new question, each saved question and each user apart, under the prefix sign-out clears', () => {
+    expect(recoveryKey('1')).not.toBe(recoveryKey('1', '5'))
+    expect(recoveryKey('1', '5')).not.toBe(recoveryKey('1', '6'))
+    expect(recoveryKey('1', '5')).not.toBe(recoveryKey('2', '5'))
+    expect(recoveryKey('1')).toMatch(/^pp:draft:/)
   })
 
   it('round-trips the draft and compares by content, not by row key', () => {
     const store = memory()
     const d = filled()
-    saveSnapshot(store, recoveryKey(), d)
-    const back = loadSnapshot(store, recoveryKey())
+    saveSnapshot(store, recoveryKey('1'), d)
+    const back = loadSnapshot(store, recoveryKey('1'))
     expect(back).not.toBeNull()
     expect(sameDraft(back!, d)).toBe(true)
     expect(back!.leaves[0]!.uid).not.toBe(d.leaves[0]!.uid)
@@ -40,9 +43,9 @@ describe('Studio draft recovery (V2 flow 1 step 2)', () => {
 
   it('clears the snapshot', () => {
     const store = memory()
-    saveSnapshot(store, recoveryKey('5'), filled())
-    clearSnapshot(store, recoveryKey('5'))
-    expect(loadSnapshot(store, recoveryKey('5'))).toBeNull()
+    saveSnapshot(store, recoveryKey('1', '5'), filled())
+    clearSnapshot(store, recoveryKey('1', '5'))
+    expect(loadSnapshot(store, recoveryKey('1', '5'))).toBeNull()
   })
 
   it('ignores a value that is damaged, from another version or of the wrong shape', () => {

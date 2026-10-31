@@ -35,8 +35,8 @@ describe('CompositeBuilderQuestionSource', () => {
     const composite = new CompositeBuilderQuestionSource(poc, matBank())
     const pocId = wire(POC_BANK.questions[0]!.id)
     const got = await composite.describe([{ id: pocId }, { id: '700001' }, { id: '999999' }])
-    expect(got.get(pocId)?.status).toBe('published')
-    expect(got.get('700001')?.status).toBe('published')
+    expect(got.get(pocId)?.status).toBe('approved')
+    expect(got.get('700001')?.status).toBe('approved')
     expect(got.has('999999')).toBe(false)
   })
 

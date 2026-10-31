@@ -341,6 +341,7 @@ async function submit(): Promise<void> {
   const b = batch.value
   if (!b || issues.value.length > 0 || submitting.value) return
   submitting.value = true
+  serverIssues.value = []
   try {
     clearTimeout(timer)
     await save()
@@ -515,6 +516,21 @@ async function submit(): Promise<void> {
               </li>
             </ul>
           </template>
+          <UAlert
+            v-if="serverIssues.length > 0"
+            class="mt-3"
+            color="error"
+            variant="subtle"
+            icon="i-ph-warning-circle"
+            title="Pelayan tidak menerima kumpulan ini untuk semakan"
+            data-testid="server-issues"
+          >
+            <template #description>
+              <ul class="flex flex-col gap-1">
+                <li v-for="(i, k) in serverIssues" :key="k"><span class="font-medium">{{ i.where }}:</span> {{ i.message }}</li>
+              </ul>
+            </template>
+          </UAlert>
           <UAlert
             v-if="batch.unmatched.length > 0"
             class="mt-3"

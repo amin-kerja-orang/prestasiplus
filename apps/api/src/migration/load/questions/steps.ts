@@ -79,7 +79,7 @@ async function insertBatch(ctx: BatchContext, plans: readonly QuestionPlan[]): P
   const versions = await db.query<{ id: string; question_id: string }>(
     `INSERT INTO question_versions (question_id, version_no, status, published_at, type, stem_ms, language, explanation_ms,
         subject_id, education_level_id, chapter_id, topic_id, form_origin, difficulty_tp, rights_status, import_issues, created_at, updated_at)
-     SELECT x.question_id, 1, 'published', x.published_at::timestamptz, 'mcq', x.stem, 'ms', x.explanation,
+     SELECT x.question_id, 1, 'approved', x.published_at::timestamptz, 'mcq', x.stem, 'ms', x.explanation,
         x.subject_id, x.education_level_id, x.chapter_id, x.topic_id, x.form_origin, x.difficulty_tp, 'unclear', x.import_issues,
         x.created_at::timestamptz, x.updated_at::timestamptz
      FROM jsonb_to_recordset($1::jsonb) AS x(question_id bigint, published_at text, stem text, explanation text, subject_id bigint,

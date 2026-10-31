@@ -170,13 +170,12 @@ export const BIJAK_BUILDER_QUESTION_STATUSES = [
   'draft',
   'review',
   'approved',
-  'published',
   'archived',
 ] as const
 export const BijakBuilderQuestionStatusSchema = z.enum(BIJAK_BUILDER_QUESTION_STATUSES).meta({
   id: 'BijakBuilderQuestionStatus',
   description:
-    'Question lifecycle code (D54a): draft, review, approved, published, archived. Prototype mapping: semakan = review, terbit = published, draf = draft (the prototype also reports draf for a question that is not in the bank); ditolak (rejected) has no D54 code and maps to draft, a contract choice [PROPOSED]. The builder offers only published questions as candidates (`getPaperEditor`: terbit, same subject and kertas); a paper can reference questions of any status, and publish refuses any that is not published ("{N} soalan belum Terbit").',
+    'Question lifecycle code (D54a, ADR-0027): draft, review, approved, archived. Prototype mapping: semakan = review, terbit = approved, draf = draft (the prototype also reports draf for a question that is not in the bank); ditolak (rejected) has no D54 code and maps to draft, a contract choice [PROPOSED]. The builder offers only approved questions as candidates (`getPaperEditor`: terbit, same subject and kertas); a paper can reference questions of any status, and publish refuses any that is not approved ("{N} soalan belum Terbit").',
 })
 export type BijakBuilderQuestionStatus = z.infer<typeof BijakBuilderQuestionStatusSchema>
 
@@ -651,6 +650,13 @@ export const BijakBuilderPreviewSchema = z
   .strictObject({
     questions: z.array(BijakBuilderReviewQuestionSchema),
     stimuli: z.record(z.string(), BijakAttemptStimulusSchema),
+    groupStimuli: z
+      .record(z.string(), z.array(BijakAttemptStimulusSchema).min(1).max(3))
+      .optional()
+      .meta({
+        description:
+          'D90 (R1-T07): every stimulus (1 to 3, in order) of each group, keyed by group id; `stimuli[groupId]` is the first. A group is shown once above all its member questions.',
+      }),
     optionBanks: z.record(z.string(), z.array(BijakAttemptOptionSchema)),
   })
   .meta({ id: 'BijakBuilderPreview' })

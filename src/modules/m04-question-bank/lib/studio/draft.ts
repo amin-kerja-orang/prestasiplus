@@ -3,7 +3,7 @@
  * request body of `POST/PUT /api/questions`. The part tree is the v2 wire model: leaves carry marks, a mode, a key, and here
  * the DSKP tags `difficultyTp` (TP) and `kbat` (Aras pemikiran). Pure, no I/O.
  */
-import { dskpGaps, isCognitive, questionTp, type CognitiveValue } from './dskp-tags'
+import { dskpGaps, isCognitive, isKbat, questionTp, type CognitiveValue } from './dskp-tags'
 
 export type LeafMode = 'mcq' | 'short_text' | 'numeric'
 export const LEAF_MODES: readonly { value: LeafMode; label: string }[] = [
@@ -52,6 +52,8 @@ export interface StudioDraft {
   subjectId: string
   educationLevelId: string
   kertas: Kertas
+  /** V2 `Nombor soalan`. */
+  numberLabel: string
   /** Teks soalan (stem). */
   stem: string
   /** Public token of the stem picture. */
@@ -93,6 +95,7 @@ export function blankDraft(): StudioDraft {
     subjectId: '',
     educationLevelId: '',
     kertas: '',
+    numberLabel: '',
     stem: '',
     stemImageToken: null,
     chapterId: '',
@@ -147,10 +150,12 @@ export interface Gap {
 }
 
 /** What stops a draft being ready to approve. A draft may be saved with gaps; the gate is at Terbitkan (V2 S1.2). */
-export function draftGaps(d: StudioDraft): Gap[] {
+export function draftGaps(d: StudioDraft, levelName = ''): Gap[] {
   const gaps: Gap[] = []
   if (d.subjectId === '') gaps.push({ step: 1, message: 'Sila pilih subjek.' })
   if (d.educationLevelId === '') gaps.push({ step: 1, message: 'Sila pilih tahap pendidikan.' })
+  if (d.numberLabel.trim() === '') gaps.push({ step: 1, message: 'Sila isi nombor soalan.' })
+  if (d.kertas === '' && /\b[45]\b/.test(levelName)) gaps.push({ step: 1, message: 'Soalan SPM belum ada kertas.' })
   if ([...d.stem.trim()].length < STEM_MIN) gaps.push({ step: 1, message: 'Teks soalan mesti sekurang-kurangnya 10 aksara.' })
   if (d.leaves.length === 0) gaps.push({ step: 3, message: 'Soalan tiada sub-bahagian — tiada apa untuk dijawab.' })
   for (const l of d.leaves) {
@@ -184,7 +189,7 @@ function leafToPart(l: LeafDraft): Json {
     prompt: { ms: l.prompt.trim() },
     marks: Math.max(0, Math.trunc(l.marks)),
     ...(l.tp === null ? {} : { difficultyTp: l.tp }),
-    ...(l.cognitive === null ? {} : { kbat: l.cognitive }),
+    ...(l.cognitive === null ? {} : { cognitiveLevel: l.cognitive, kbat: isKbat(l.cognitive) ? l.cognitive : 'bukan' }),
   }
   if (l.mode === 'mcq') {
     return {
@@ -205,13 +210,12 @@ function leafToPart(l: LeafDraft): Json {
 }
 
 /**
- * Body of `POST /api/questions` (create) and `PUT /api/questions/:id` (pass `original`). The question TP is the highest leaf TP (AC-03.6).
+ * Body of `POST /api/questions` (create), `POST /api/stimulus-groups/:id/questions` and `PUT /api/questions/:id`. The question TP is the highest leaf TP (AC-03.6).
  * `questionType: 'essay'` is the wire wrapper of a part tree: the server derives the stored type from the parts, and the
  * flat objective fields (four options, one answer) are not needed.
  */
-export function toRequestBody(d: StudioDraft, original?: { groupId: string | null }): Json {
-  // Re-sending the group a question already belongs to would move it to the end of the group: send it only when it changed.
-  const groupChanged = original === undefined ? d.groupId !== null : original.groupId !== d.groupId
+export function toRequestBody(d: StudioDraft): Json {
+  // The group is NOT sent: membership is changed through the group API (`StudioGroupEditor`), never by this save.
   return {
     subjectId: d.subjectId,
     educationLevelId: d.educationLevelId,
@@ -222,7 +226,7 @@ export function toRequestBody(d: StudioDraft, original?: { groupId: string | nul
     tag: { unitId: d.unitId, spIds: d.spIds, tp: draftTp(d) },
     curriculumChapterId: d.chapterId === '' ? null : d.chapterId,
     kertas: d.kertas === '' ? null : d.kertas,
-    ...(groupChanged ? { stimulusGroupId: d.groupId } : {}),
+    numberLabel: d.numberLabel.trim() === '' ? null : d.numberLabel.trim(),
     questionImageFileId: d.stemImageToken,
   }
 }
@@ -238,6 +242,7 @@ interface WirePart {
   key?: { kind: string; correct?: string; values?: Array<string | { v: number; tol?: number; unit?: string }> }
   difficultyTp?: number | null
   kbat?: string | null
+  cognitiveLevel?: string | null
   children?: unknown[]
 }
 
@@ -247,6 +252,7 @@ export interface WireQuestion {
   difficultyLevel: number
   questionText: string
   questionImage: string | null
+  numberLabel?: string | null
   kertas?: string | null
   curriculumChapterId: string | null
   parts?: unknown[]
@@ -274,7 +280,8 @@ export function hydrate(q: WireQuestion): Hydrated {
     leaf.prompt = p.prompt.ms
     leaf.marks = p.marks ?? 1
     leaf.tp = typeof p.difficultyTp === 'number' ? p.difficultyTp : null
-    leaf.cognitive = isCognitive(p.kbat) ? p.kbat : null
+    // `kbat: 'bukan'` alone cannot tell Mengingat from Memahami: left unset so the author chooses.
+    leaf.cognitive = isCognitive(p.cognitiveLevel) ? p.cognitiveLevel : isCognitive(p.kbat) ? p.kbat : null
     if (p.mode === 'mcq' && p.key?.kind === 'option') {
       leaf.mode = 'mcq'
       leaf.options = (p.options ?? []).map((o) => ({ label: o.label, text: o.body.ms === o.label ? '' : o.body.ms, imageToken: o.imageId ?? null }))
@@ -298,6 +305,7 @@ export function hydrate(q: WireQuestion): Hydrated {
     subjectId: q.subjectId ?? '',
     educationLevelId: q.educationLevelId ?? '',
     kertas: q.kertas === '1' || q.kertas === '2' || q.kertas === '3' ? q.kertas : '',
+    numberLabel: q.numberLabel ?? '',
     stem: q.questionText,
     stemImageToken: q.questionImage,
     chapterId: q.curriculumChapterId ?? '',

@@ -7,7 +7,7 @@
  * PINNED version (the repository serves only the live and the latest version), the pool tags and paper
  * code used for the kertas, and stimulus groups with their stimuli. Nothing here writes.
  *
- * - candidates: one bounded SQL query (limit = editor cap + slack): live version published AND active (BE-09 Q-2),
+ * - candidates: one bounded SQL query (limit = editor cap + slack): live version approved AND active (BE-09 Q-2),
  *   subject = the paper subject, kertas by the `kertasOf` rule, in bank order (question id ascending).
  * - review: shows the live version, else the latest (the port takes ids only, no version).
  * - describe: the pinned version when the ref has one, else the live version, else the latest (a question
@@ -33,7 +33,7 @@ import {
   previewOfRows,
   reviewQuestion,
   statusOf,
-  stimulusOf,
+  stimuliOf,
   type Curriculum,
   type PartRow,
 } from './question-bank.mapping'
@@ -70,13 +70,13 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     const subject = await this.builder.subjectByCode(curriculumCodeOf(scope.subject))
     if (!subject) return []
     const pool = poolPattern(scope.subject)
-    // One bounded query. Same eligibility as `QuestionsRepository.eligibleIds` (live version published AND
+    // One bounded query. Same eligibility as `QuestionsRepository.eligibleIds` (live version approved AND
     // active) and the same kertas rule as `kertasOf` (lowest pool digit, else the paper code digit).
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`
       SELECT q.id
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'published' AND v.subject_id = ${subject.id}
+       WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${subject.id}
          AND COALESCE(
                (SELECT min((substring(t.code from ${pool}))::int) FROM question_tags t
                  WHERE t.question_id = q.id AND t.kind = 'pool' AND t.code ~ ${pool}),
@@ -175,8 +175,8 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
       },
     })
     for (const g of groups) {
-      const stimulus = firstStimulus(g.stimuli.map((s) => s.stimulus))
-      if (stimulus) out.set(g.id.toString(), { id: g.id.toString(), stimulus, questionIds: g.questions.map((m) => m.id.toString()) })
+      const [stimulus, ...rest] = stimuliOf(g.stimuli.map((s) => s.stimulus))
+      if (stimulus) out.set(g.id.toString(), { id: g.id.toString(), stimulus, stimuli: [stimulus, ...rest], questionIds: g.questions.map((m) => m.id.toString()) })
     }
     return out
   }
@@ -216,6 +216,7 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     }
 
     const stimuli: Record<string, BijakAttemptStimulus> = {}
+    const groupStimuli: Record<string, BijakAttemptStimulus[]> = {}
     const optionBanks: Record<string, BijakAttemptOption[]> = {}
     const groupKeys = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))].flatMap((id) => {
       const k = toBigint(id)
@@ -227,12 +228,15 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         include: { stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } }, options: { orderBy: { position: 'asc' } } },
       })
       for (const g of groups) {
-        const st = firstStimulus(g.stimuli.map((s) => s.stimulus))
-        if (st) stimuli[g.id.toString()] = st
+        const all = stimuliOf(g.stimuli.map((s) => s.stimulus))
+        if (all[0]) {
+          stimuli[g.id.toString()] = all[0]
+          groupStimuli[g.id.toString()] = all
+        }
         if (g.options.length) optionBanks[g.id.toString()] = g.options.map((o) => ({ id: o.label, text: o.bodyMs ?? '' }))
       }
     }
-    return { questions, stimuli, optionBanks }
+    return { questions, stimuli, groupStimuli, optionBanks }
   }
 
   /** Curriculum unit title and code by node id (read-only; the curriculum module has no batch read by id). */
@@ -252,12 +256,4 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     const rows = await this.db.educationLevel.findMany({ where: { id: { in: [...new Set(ids)] } }, select: { id: true, code: true } })
     return new Map(rows.map((r) => [r.id, r.code]))
   }
-}
-
-function firstStimulus(list: readonly Parameters<typeof stimulusOf>[0][]): BijakAttemptStimulus | undefined {
-  for (const s of list) {
-    const mapped = stimulusOf(s)
-    if (mapped) return mapped
-  }
-  return undefined
 }

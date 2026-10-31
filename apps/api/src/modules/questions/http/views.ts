@@ -12,6 +12,7 @@ import {
   QuestionRowSchema,
   QuestionSchema,
   QuestionStimulusGroupSchema,
+  QuestionStimulusTableSchema,
   QuestionStructuredDetailSchema,
   QuestionStructuredRowSchema,
   type QuestionPart,
@@ -28,7 +29,7 @@ export type QuestionRow = z.output<typeof QuestionRowSchema>
 export type QuestionWire = z.output<typeof QuestionSchema>
 export type QuestionDetailWire = z.output<typeof QuestionDetailSchema>
 
-/** BM label of a lifecycle code (Draf, Semakan, Lulus, Diterbitkan, Diarkib). */
+/** BM label of a lifecycle code (Draf, Semakan, Diterbitkan, Diarkib). */
 export const statusLabel = (status: QuestionStatus): string => QUESTION_WORKFLOW_STATUS_LABELS[status]
 
 /** Id of a row whose creator account was removed: the wire needs an id, so a fixed placeholder. */
@@ -100,6 +101,7 @@ function flatBase(q: QuestionView) {
     updatedAt: toMytTimestamp(q.updatedAt),
     usage: c.usage,
     parts: partsOf(q),
+    numberLabel: v.numberLabel,
     tag: { unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp },
     kbat: v.kbat,
     tagReview: v.tagReview,
@@ -107,7 +109,11 @@ function flatBase(q: QuestionView) {
   }
 }
 
-export function stimulusGroupView(g: StimulusGroupRecord): z.output<typeof QuestionStimulusGroupSchema> {
+/**
+ * `tokens` maps an internal file id to its public token (the wire names a file by the token `POST /files` returned, the same
+ * form the stimulus routes answer with). An id with no token stays as stored.
+ */
+export function stimulusGroupView(g: StimulusGroupRecord, tokens: Record<string, string> = {}): z.output<typeof QuestionStimulusGroupSchema> {
   return QuestionStimulusGroupSchema.parse({
     id: g.id,
     stimuli: g.stimuli.map((s) => ({
@@ -115,8 +121,11 @@ export function stimulusGroupView(g: StimulusGroupRecord): z.output<typeof Quest
       kind: s.kind,
       label: s.label,
       body: s.bodyMs === null && s.bodyEn === null ? null : { ms: s.bodyMs ?? s.bodyEn ?? '', ...(s.bodyEn === null || s.bodyMs === null ? {} : { en: s.bodyEn }) },
-      imageId: s.assetFileId,
+      imageId: s.assetFileId === null ? null : (tokens[s.assetFileId] ?? s.assetFileId),
       alt: s.alt,
+      ...(s.caption ? { caption: s.caption } : {}),
+      ...(s.sourceCitation ? { sourceCitation: s.sourceCitation } : {}),
+      ...(QuestionStimulusTableSchema.safeParse(s.tableData).success ? { tableData: QuestionStimulusTableSchema.parse(s.tableData) } : {}),
     })),
     ...(g.optionBank.length === 0
       ? {}
@@ -156,7 +165,7 @@ export function detailView(d: QuestionDetailView): QuestionDetailWire {
   return QuestionDetailSchema.parse({
     ...base,
     parts: partsOf(d),
-    ...(d.stimulusGroup === null ? { stimulusGroup: null } : { stimulusGroup: stimulusGroupView(d.stimulusGroup) }),
+    ...(d.stimulusGroup === null ? { stimulusGroup: null } : { stimulusGroup: stimulusGroupView(d.stimulusGroup, d.imageTokens) }),
     subject: d.subject,
     level: d.level,
     dskp: d.dskp,

@@ -38,7 +38,7 @@ export interface BuilderQuestionInfo {
   id: string
   /** The version described (the pinned one when asked, else the current one). */
   versionNo: number
-  /** Current lifecycle status (D54a); `published` = Terbit. */
+  /** Current lifecycle status (D54a, ADR-0027); `approved` = Terbit (the only servable status). */
   status: BijakBuilderQuestionStatus
   /** Bijak subject code (MAT, SN, SEJ ...), as `curriculum.subject` of the question. */
   subject: string
@@ -58,8 +58,13 @@ export interface BuilderQuestionInfo {
 
 export interface BuilderGroupInfo {
   id: string
-  /** The group stimulus; a group without one is absent from `groups(...)`. */
+  /** The first group stimulus; a group without one is absent from `groups(...)`. */
   stimulus: BijakAttemptStimulus
+  /**
+   * D90 (R1-T07): every stimulus of the group in order, 1 to 3, the first being `stimulus`. The group is ONE unit: the stimuli
+   * are shown once above all member questions and carry no marks. Absent = `[stimulus]` (PoC fixture).
+   */
+  stimuli?: BijakAttemptStimulus[]
   /** Member question ids in published order. */
   questionIds: string[]
 }
@@ -73,6 +78,8 @@ export interface BuilderCandidateScope {
 export interface BuilderPreview {
   questions: BijakBuilderReviewQuestion[]
   stimuli: Record<string, BijakAttemptStimulus>
+  /** R1-T07: all stimuli (1 to 3) per group, in order; `stimuli[groupId]` is the first. Absent = one per group. */
+  groupStimuli?: Record<string, BijakAttemptStimulus[]>
   optionBanks: Record<string, BijakAttemptOption[]>
 }
 

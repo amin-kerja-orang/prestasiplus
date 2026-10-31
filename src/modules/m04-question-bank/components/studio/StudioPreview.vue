@@ -11,11 +11,11 @@ import { computed } from 'vue'
 import { StimulusFigure, StimulusGroup } from '../../../../components/question-display'
 import { DsDialog, DsStack, DsText } from '@/ds'
 
-import type { StudioGroup } from '../../api/studio'
 import type { StudioDraft } from '../../lib/studio/draft'
+import type { GroupView } from '../../lib/studio/group-members'
 import { previewItems, toStimulusData } from '../../lib/studio/preview'
 
-const props = defineProps<{ group: StudioGroup | null; draft: StudioDraft; questionId: string | null }>()
+const props = defineProps<{ group: GroupView | null; draft: StudioDraft; questionId: string | null }>()
 const open = defineModel<boolean>('open', { required: true })
 const sheet = defineModel<boolean>('sheet', { default: false })
 

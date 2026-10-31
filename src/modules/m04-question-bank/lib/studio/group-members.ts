@@ -5,7 +5,19 @@
 
 /** D90: a stimulus with fewer members than this is not a group yet. */
 export const MIN_GROUP_MEMBERS = 2
-export const MAX_GROUP_MEMBERS = 20
+/** The stimulus API takes at most 40 member questions per group (`STIMULUS_LIMITS.groupQuestions`). */
+export const MAX_GROUP_MEMBERS = 40
+
+import type { WireStimulus } from './stimulus'
+
+/** A group as the Studio shows it: stimuli, ordered members (stem, number) and whether a member is being served. */
+export interface GroupView {
+  id: string
+  stimuli: WireStimulus[]
+  members: GroupMember[]
+  /** A member is being served: pupils see the group, so its structure is read-only. */
+  locked: boolean
+}
 
 export interface GroupMember {
   id: string
@@ -18,7 +30,7 @@ export interface GroupMember {
 export const GROUP_MEMBER_MESSAGES = {
   needsTwo: 'Kumpulan rangsangan mesti ada sekurang-kurangnya 2 soalan.',
   duplicate: 'Soalan ini sudah ada dalam kumpulan.',
-  full: 'Satu kumpulan boleh mempunyai paling banyak 20 soalan.',
+  full: 'Satu kumpulan boleh mempunyai paling banyak 40 soalan.',
 } as const
 
 export function isComplete(members: readonly GroupMember[]): boolean {
@@ -61,4 +73,22 @@ export const memberIds = (members: readonly GroupMember[]): string[] => members.
 /** True when the saved and the edited lists differ in membership or order. */
 export function membersChanged(saved: readonly GroupMember[], edited: readonly GroupMember[]): boolean {
   return saved.length !== edited.length || saved.some((m, i) => m.id !== edited[i]?.id)
+}
+
+export interface MemberPlan {
+  /** Members to take out of the group, then to put in (in the final order), then the final order. */
+  remove: string[]
+  add: string[]
+  order: string[]
+}
+
+/**
+ * The calls that turn the saved member list into the edited one on the stimulus API (T32): `DELETE` each removed member,
+ * `POST` each new one (appended), then `PUT .../members/order` with the final order. Empty when nothing changed.
+ */
+export function planMembers(saved: readonly GroupMember[], edited: readonly GroupMember[]): MemberPlan | null {
+  if (!membersChanged(saved, edited)) return null
+  const had = new Set(saved.map((m) => m.id))
+  const want = new Set(edited.map((m) => m.id))
+  return { remove: saved.filter((m) => !want.has(m.id)).map((m) => m.id), add: edited.filter((m) => !had.has(m.id)).map((m) => m.id), order: edited.map((m) => m.id) }
 }

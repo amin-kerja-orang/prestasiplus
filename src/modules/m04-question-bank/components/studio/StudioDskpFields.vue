@@ -61,7 +61,7 @@ const full = computed(() => spIds.value.length >= MAX_SP)
 <template>
   <DsStack gap="md" data-testid="studio-dskp">
     <DsText v-if="failed" variant="body" tone="error" role="alert" data-testid="studio-dskp-error">{{ LOAD_ERROR }}</DsText>
-    <DsFormField v-slot="{ id }" native label="Unit DSKP" for="studio-unit" hint="Topik menentukan unit DSKP soalan ini." :error="error">
+    <DsFormField v-slot="{ id }" native label="Topik" for="studio-unit" hint="Topik menentukan unit DSKP soalan ini." :error="error">
       <DsNativeSelect
         :id="id"
         :model-value="unitId ?? ''"
