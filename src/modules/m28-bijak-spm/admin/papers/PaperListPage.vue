@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /** Pembina Kertas (`/admin/spm/kertas`): the papers assembled by the admin, draft and published. */
 import type { TableColumn } from '@nuxt/ui'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
@@ -10,13 +10,18 @@ import { DsDataTable, DsLoadError, DsPage, DsStatRow, DsStatusBadge, type StatIt
 
 import type { AdminPaperSummary } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
+import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
+import { builderCopy as bt } from '../builder/domain/copy'
+import { usePaperActions } from '../builder/lib/use-paper-actions'
 import { BUILDER_PATH } from '../builder/server/api'
+import { builderServer } from '../builder/server/client'
 import { bijakAdminServer } from '../../server/client'
 import { ADMIN_ROUTES, detailMessage } from './ui'
 
 type Row = AdminPaperSummary & Record<string, unknown>
 
 const server = bijakAdminServer()
+const previewId = ref('')
 const router = useRouter()
 const flash = useFlash()
 const { data, error, loading, reload } = useApi(() => server.listAdminPapers())
@@ -39,16 +44,37 @@ const stats = computed<StatItem[]>(() => [
   },
 ])
 
+/** V2 lane list columns (R12, scope R1-21.2): Tajuk, Status, Perhatian, Tindakan. */
 const columns: TableColumn<Row>[] = [
-  { accessorKey: 'title', header: 'Kertas' },
-  { accessorKey: 'subjectName', header: 'Subjek' },
-  { accessorKey: 'questionCount', header: 'Soalan' },
-  { accessorKey: 'marks', header: 'Markah' },
-  { accessorKey: 'ok', header: 'Blueprint' },
-  { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'updatedAt', header: 'Dikemas kini' },
-  { id: 'actions', header: 'Tindakan' },
+  { accessorKey: 'title', header: bt.listTitleCol },
+  { accessorKey: 'status', header: bt.listStatusCol },
+  { accessorKey: 'ok', header: bt.listAttentionCol },
+  { id: 'actions', header: bt.listActionsCol },
 ]
+
+/**
+ * Perhatian text of a row. Seam: the servability lane list (t30 `GET /admin/servability/lanes/bijak-spm`,
+ * `attentionCount` + reasons) replaces this once it is in base; until then it is derived from the summary.
+ */
+function attentionOf(row: Row): string {
+  if (row.questionCount === 0) return bt.attnEmpty
+  return row.ok ? '' : bt.attnIncomplete
+}
+
+const preview = usePaperActions({
+  api: builderServer(),
+  id: previewId,
+  title: () => '',
+  onChanged: () => {},
+})
+async function openPreview(row: Row): Promise<void> {
+  previewId.value = row.id
+  await preview.openStudentView()
+}
+async function copyRow(row: Row): Promise<void> {
+  previewId.value = row.id
+  await preview.copy()
+}
 
 function open(row: Row): void {
   void router.push({ name: ADMIN_ROUTES.paperEdit, params: { id: row.id } })
@@ -118,25 +144,28 @@ async function remove(row: Row): Promise<void> {
         <div class="flex flex-col">
           <span class="text-body text-default">{{ row.original.title }}</span>
           <span class="text-caption text-muted"
-            >{{ row.original.code }} · Kertas {{ row.original.kertas }}</span
+            >{{ row.original.subjectName }} · {{ row.original.questionCount }} soalan ·
+            {{ row.original.marks }} / {{ row.original.budget }} markah · {{ row.original.code }} · Kertas
+            {{ row.original.kertas }}</span
           >
         </div>
       </template>
-      <template #marks-cell="{ row }"
-        >{{ row.original.marks }} / {{ row.original.budget }}</template
-      >
       <template #ok-cell="{ row }">
-        <UBadge
-          :color="row.original.ok ? 'success' : 'warning'"
-          variant="subtle"
-          :icon="row.original.ok ? 'i-ph-check-circle' : 'i-ph-warning'"
-          :label="row.original.ok ? 'Sepadan' : 'Belum sepadan'"
-        />
+        <div class="flex flex-col items-start gap-1">
+          <UBadge
+            :color="row.original.ok ? 'success' : 'warning'"
+            variant="subtle"
+            :icon="row.original.ok ? 'i-ph-check-circle' : 'i-ph-warning'"
+            :label="row.original.ok ? 'Sepadan' : 'Belum sepadan'"
+          />
+          <span v-if="attentionOf(row.original)" class="text-caption text-muted">{{
+            attentionOf(row.original)
+          }}</span>
+        </div>
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge :status="row.original.status === 'terbit' ? 'published' : 'draft'" />
       </template>
-      <template #updatedAt-cell="{ row }">{{ formatDateTime(row.original.updatedAt) }}</template>
       <template #card="{ row }">
         <div class="flex min-w-0 flex-col gap-1" :data-testid="`paper-card-${String(row.id)}`">
           <UButton
@@ -178,10 +207,30 @@ async function remove(row: Row): Promise<void> {
           <UButton
             size="sm"
             icon="i-ph-pencil-simple"
-            label="Buka"
+            :label="bt.edit"
             class="min-h-11"
             :to="{ name: ADMIN_ROUTES.paperEdit, params: { id: row.id } }"
             :data-testid="`paper-open-${String(row.id)}`"
+          />
+          <UButton
+            size="sm"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-eye"
+            :label="bt.preview"
+            class="min-h-11"
+            :data-testid="`paper-preview-${String(row.id)}`"
+            @click.stop="openPreview(row as Row)"
+          />
+          <UButton
+            size="sm"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-copy"
+            :label="bt.copy"
+            class="min-h-11"
+            :data-testid="`paper-copy-${String(row.id)}`"
+            @click.stop="copyRow(row as Row)"
           />
           <UButton
             v-if="row.status === 'draf'"
@@ -197,14 +246,34 @@ async function remove(row: Row): Promise<void> {
         </div>
       </template>
       <template #actions-cell="{ row }">
-        <div class="flex gap-1">
+        <div class="flex flex-wrap gap-1">
           <UButton
             size="sm"
             icon="i-ph-pencil-simple"
-            label="Buka"
+            :label="bt.edit"
             class="min-h-11"
             :to="{ name: ADMIN_ROUTES.paperEdit, params: { id: row.original.id } }"
             :data-testid="`paper-open-${row.original.id}`"
+          />
+          <UButton
+            size="sm"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-eye"
+            :label="bt.preview"
+            class="min-h-11"
+            :data-testid="`paper-preview-${row.original.id}`"
+            @click.stop="openPreview(row.original)"
+          />
+          <UButton
+            size="sm"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-copy"
+            :label="bt.copy"
+            class="min-h-11"
+            :data-testid="`paper-copy-${row.original.id}`"
+            @click.stop="copyRow(row.original)"
           />
           <UButton
             v-if="row.original.status === 'draf'"
@@ -219,5 +288,7 @@ async function remove(row: Row): Promise<void> {
         </div>
       </template>
     </DsDataTable>
+
+    <StudentViewDrawer v-model:open="preview.viewOpen.value" :view="preview.view.value" :error="preview.viewError.value" />
   </DsPage>
 </template>

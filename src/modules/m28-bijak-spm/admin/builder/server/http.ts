@@ -29,6 +29,7 @@ import {
   type RawReview,
   type PublishOptions,
   type PublishResult,
+  type ReferencePanel,
   type SectionPatch,
   type SectionPool,
   type SectionPoolQuery,
@@ -196,6 +197,12 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
   async updateSection(id: string, sectionId: string, patch: SectionPatch): Promise<PaperEditorData> {
     return editorFromWire(
       await this.call<BijakBuilderEditor>('PUT', `/api/admin/papers/${enc(id)}`, { sections: [{ id: sectionId, ...patch }] }),
+    )
+  }
+
+  async updateReference(id: string, panels: ReferencePanel[]): Promise<PaperEditorData> {
+    return editorFromWire(
+      await this.call<BijakBuilderEditor>('PUT', `/api/admin/papers/${enc(id)}`, { reference: panels }),
     )
   }
 

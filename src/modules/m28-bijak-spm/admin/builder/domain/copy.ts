@@ -51,7 +51,7 @@ export const builderCopy = {
   renamed: (t: string): string => `Set '${t}' telah dinamakan semula.`, // V2
   titleAria: 'Tajuk set', // V2
   bank: 'Bank Soalan', // V2
-  search: 'Cari teks soalan…', // V2
+  search: 'Cari soalan…', // V2 (P4: admin.md A18, scope R1-21.6)
   destination: 'Bahagian destinasi', // V2
   levelAll: 'Semua tingkatan', // [PROPOSED]
   levelT4: 'Tingkatan 4', // [PROPOSED]
@@ -101,7 +101,7 @@ export const builderCopy = {
   fCode: 'Kod kertas (kulit)', // V2 (read-only here: not in the contract)
   fInstructions: 'Arahan kulit kertas', // V2
   fInstructionsHint: 'Satu baris = satu arahan bernombor di kulit kertas.', // V2
-  metaSave: 'Kemas kini', // [PROPOSED]
+  metaSave: 'Simpan', // V2 (R1)
   metaSaved: (t: string): string => `Kertas '${t}' telah dikemas kini.`, // V2
   review: 'Semakan kertas', // [PROPOSED]
   blockers: 'Belum boleh diterbitkan', // V2 ("Belum boleh diterbitkan" blockers)
@@ -113,7 +113,7 @@ export const builderCopy = {
   publishDisabledWhy: (n: number): string => `Terbitkan dinyahaktifkan: ${n} masalah perlu dibetulkan.`, // [PROPOSED]
   notPublishable: (n: number): string => `Kertas ini belum boleh diterbitkan — ${n} masalah perlu dibetulkan.`, // V2
   publishedFlash: (t: string): string => `Kertas '${t}' telah DITERBITKAN — kini boleh diakses pelajar di Simulasi.`, // V2
-  withdraw: 'Tarik balik', // task label
+  withdraw: 'Sembunyikan', // V2 Panel (R7); Blade says "Tarik balik ke draf"
   withdrawnFlash: (t: string): string => `Kertas '${t}' ditarik balik ke DRAF — tidak lagi diakses pelajar.`, // V2
   live: 'Kertas ini sedang DITERBITKAN — pelajar boleh mengaksesnya di Simulasi.', // V2
   lockedNote: 'Kertas ini sudah diterbitkan — tekan “Salin set” di atas untuk menyunting salinan draf.', // V2
@@ -138,11 +138,11 @@ export const builderCopy = {
   sectionRule: 'Peraturan menjawab', // V2 (read-only: set by the blueprint)
   sectionCount: 'Bilangan soalan dipilih', // V2 (read-only: set by the blueprint)
   sectionSaved: (l: string): string => `Bahagian '${l}' telah dikemas kini.`, // V2
-  sectionSave: 'Kemas kini bahagian', // [PROPOSED]
+  sectionSave: 'Simpan bahagian', // V2 (R2)
   passagesEdit: 'Sunting petikan', // V2
   passageTitle: 'Tajuk petikan', // V2
   passageSaved: (l: string): string => `Petikan '${l}' telah dikemas kini.`, // [PROPOSED]
-  passageSave: 'Kemas kini petikan', // [PROPOSED]
+  passageSave: 'Simpan petikan', // V2 (R3)
   passageShared: 'Tajuk ini dikongsi oleh semua kertas yang menggunakan kumpulan rangsangan ini.', // [PROPOSED] D90 deviation
   overrideTick: 'Terbitkan walaupun tidak memenuhi kontrak blueprint', // V2
   overrideReason: 'Sebab (sekurang-kurangnya 5 aksara)', // [PROPOSED]
@@ -152,6 +152,30 @@ export const builderCopy = {
   deleteConfirm: 'Soalan tambahan ini, termasuk bahagian, pilihan jawapan dan skemanya, akan dibuang dari kertas. Tindakan ini tidak boleh dibatalkan.', // V2
   questionAdded: 'Soalan ditambah ke kertas.', // [PROPOSED]
   questionDeleted: 'Soalan dipadam dari kertas.', // [PROPOSED]
+  pinned: 'Disematkan', // V2 chip (P5): the question version pinned at Terbit
+  poolCap: 'Menunjukkan 150 teratas — tapis lagi untuk menyempitkan.', // V2 (P4)
+  copyForEdit: 'Salin untuk sunting', // V2 live banner button (R6)
+  publishConfirm: 'Terbitkan kertas ini? Ia akan terus boleh diakses pelajar di Simulasi.', // V2 native paper (R8)
+  refTitle: 'Bahan rujukan (kulit kertas)', // V2 (R4)
+  refAddPanel: 'Tambah panel', // V2
+  refAddImage: 'Tambah gambar', // V2
+  refAddText: 'Tambah teks / rumus', // V2
+  refPanelTitle: 'Tajuk panel', // V2
+  refRemovePanel: 'Buang panel', // V2
+  refSave: 'Simpan bahan rujukan', // V2
+  refSaved: 'Bahan rujukan kertas telah dikemas kini.', // V2
+  refLine: 'Teks / rumus', // [PROPOSED]
+  refUploadFailed: 'Gambar gagal dimuat naik.', // existing upload copy
+  refImageAttached: 'Gambar dilampirkan', // [PROPOSED]
+  refRemoveImage: 'Buang gambar', // [PROPOSED]
+  listTitleCol: 'Tajuk', // V2 (R12)
+  listStatusCol: 'Status', // V2
+  listAttentionCol: 'Perhatian', // V2
+  listActionsCol: 'Tindakan', // V2
+  preview: 'Pratonton (baca sahaja)', // V2 (H5)
+  edit: 'Sunting', // V2 (H5)
+  attnEmpty: 'Kertas ini tiada soalan — tidak boleh diterbitkan.', // V2 design P-COMP-EMPTY
+  attnIncomplete: 'set tidak lengkap', // V2 attention label
   semak: 'Semak Kertas', // V2
   openBuilder: 'Buka di Set Builder', // [PROPOSED]
   contractNone: 'Tiada kontrak untuk subjek/kertas ini.', // V2

@@ -140,6 +140,7 @@ async function loadPool(append = false): Promise<void> {
       ...(level.value ? { level: level.value as 't4' | 't5' | 't1_t3' } : {}),
       ...(unit.value ? { unit: unit.value } : {}),
       page: append ? poolPage.value + 1 : 1,
+      pageSize: 50,
     })
     if (seq !== poolSeq) return
     poolPage.value = append ? poolPage.value + 1 : 1
@@ -159,7 +160,11 @@ watch([dest, level, unit], () => void loadPool())
 onBeforeUnmount(() => clearTimeout(timer))
 
 const poolKey = (u: BijakBuilderPoolUnit): string => u.groupId ?? u.questionIds[0]!
-const hasMore = computed(() => (pool.value ? poolPage.value < pool.value.totalPages : false))
+/** V2 lists at most 150 bank rows (P4); beyond that the admin narrows the filter instead of paging on. */
+const POOL_CAP = 150
+const shown = computed(() => pool.value?.units.length ?? 0)
+const capped = computed(() => !!pool.value && pool.value.total > POOL_CAP && shown.value >= POOL_CAP)
+const hasMore = computed(() => (pool.value ? poolPage.value < pool.value.totalPages && shown.value < POOL_CAP : false))
 
 /* ----------------------------------------------------------------- unit operations */
 async function guarded(key: string, run: () => Promise<void>, fallback: string): Promise<void> {
@@ -301,9 +306,19 @@ const dskpItems = computed(() => [
             />
           </div>
         </div>
-        <p v-if="locked" class="mt-3 text-body text-muted" data-testid="builder-locked">
-          {{ t.live }} {{ t.lockedNote }}
-        </p>
+        <div v-if="locked" class="mt-3 flex flex-wrap items-center gap-3" data-testid="builder-locked">
+          <p class="text-body text-muted">{{ t.live }} {{ t.lockedNote }}</p>
+          <UButton
+            color="neutral"
+            variant="soft"
+            icon="i-ph-copy"
+            :label="t.copyForEdit"
+            class="min-h-11"
+            :loading="actions.busy.value"
+            data-testid="builder-copy-for-edit"
+            @click="actions.copy"
+          />
+        </div>
       </DsPanel>
 
       <!-- review -->
@@ -412,6 +427,7 @@ const dskpItems = computed(() => [
                   </div>
                 </li>
               </ul>
+              <p v-if="capped" class="text-caption text-muted" data-testid="bank-cap">{{ t.poolCap }}</p>
               <UButton
                 v-if="hasMore"
                 color="neutral"
@@ -481,6 +497,15 @@ const dskpItems = computed(() => [
                         <span class="text-caption text-muted">
                           {{ q.marks }} markah · {{ KIND_LABEL[q.kind] }} · {{ q.topic }}
                         </span>
+                        <UBadge
+                          v-if="q.pinned"
+                          color="neutral"
+                          variant="subtle"
+                          icon="i-ph-push-pin"
+                          :label="t.pinned"
+                          class="self-start"
+                          data-testid="chip-pinned"
+                        />
                       </div>
                     </div>
                     <div v-if="!locked" class="flex shrink-0 flex-col gap-1 sm:flex-row">

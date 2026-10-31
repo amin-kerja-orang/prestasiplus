@@ -259,6 +259,11 @@ export interface BuilderQuestion {
   status: QuestionStatus
   kertas: number
   subject: SubjectCode
+  /**
+   * V2 chip "Disematkan" (P5): the question version pinned when the paper was published. Absent until the
+   * builder answer carries it (request to team A: `pinned` per placed question).
+   */
+  pinned?: boolean
 }
 
 export interface BuilderGroup {

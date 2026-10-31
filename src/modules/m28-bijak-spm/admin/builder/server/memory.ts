@@ -23,6 +23,7 @@ import {
   type RawReview,
   type PublishOptions,
   type PublishResult,
+  type ReferencePanel,
   type SectionPatch,
   type SectionPool,
   type SectionPoolQuery,
@@ -289,6 +290,15 @@ export class MockBuilderServer implements BuilderApi {
     }
     if (patch.compulsory !== undefined) sec.compulsory = patch.compulsory
     // The mock hands out its live paper: saving persists it.
+    return a.savePaper(id, {})
+  }
+
+  async updateReference(id: string, panels: ReferencePanel[]): Promise<PaperEditorData> {
+    const a = await this.a()
+    const ed = await a.getPaperEditor(id)
+    if (ed.paper.status === 'terbit') throw new BuilderError('invalid', LOCKED)
+    if (panels.some((p) => !p.title.trim())) throw new BuilderError('invalid', 'Tajuk panel diperlukan')
+    ;(ed.paper as unknown as { reference: ReferencePanel[] }).reference = panels.map((p) => ({ ...p, items: [...p.items] }))
     return a.savePaper(id, {})
   }
 

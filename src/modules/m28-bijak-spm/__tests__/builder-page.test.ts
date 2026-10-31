@@ -182,4 +182,32 @@ describe('SetBuilderPage', () => {
     await flushPromises()
     expect(m.addPlacement).toHaveBeenCalledWith('p1', 's1', 'n1')
   })
+
+  it('V2 parity: pinned chip, live-banner "Salin untuk sunting", "Sembunyikan"', async () => {
+    const ed = editor(paper({ status: 'terbit' }))
+    ed.questions[0]!.pinned = true
+    const { m, api } = stub({ getEditor: vi.fn().mockResolvedValue(ed) })
+    const w = await render(api)
+    expect(w.findAll('[data-testid="chip-pinned"]')).toHaveLength(1)
+    expect(w.get('[data-testid="chip-pinned"]').text()).toContain('Disematkan')
+    expect(w.get('[data-testid="builder-withdraw"]').text()).toContain('Sembunyikan')
+    await w.get('[data-testid="builder-copy-for-edit"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid="builder-copy-for-edit"]').text()).toContain('Salin untuk sunting')
+    expect(m.copy).toHaveBeenCalledWith('p1')
+  })
+
+  it('V2 parity: bank search label and the 150-row cap sentence', async () => {
+    const mk = (i: number) => ({
+      questionIds: [`b${i}`],
+      questions: [{ id: `b${i}`, preview: `B${i}`, marks: 1, kind: 'objektif', topic: 'T', status: 'terbit', kertas: 2, subject: 'MAT' }],
+      marks: 1, eligible: true, reasons: [], placed: false,
+    })
+    const units = Array.from({ length: 150 }, (_, i) => mk(i))
+    const { api } = stub({ pool: vi.fn().mockResolvedValue({ units, total: 400, totalPages: 8 }) })
+    const w = await render(api)
+    expect(w.get('[data-testid="bank-search"]').attributes('placeholder')).toBe('Cari soalan…')
+    expect(w.get('[data-testid="bank-cap"]').text()).toBe('Menunjukkan 150 teratas — tapis lagi untuk menyempitkan.')
+    expect(w.find('[data-testid="bank-more"]').exists()).toBe(false)
+  })
 })

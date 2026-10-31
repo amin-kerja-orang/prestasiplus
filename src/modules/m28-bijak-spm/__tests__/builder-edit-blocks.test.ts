@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 
 import PaperEditBlocks from '../admin/builder/components/PaperEditBlocks.vue'
 import PaperMetaForm from '../admin/builder/components/PaperMetaForm.vue'
+import PaperReferenceEditor from '../admin/builder/components/PaperReferenceEditor.vue'
 import PaperQuestionOps from '../admin/builder/components/PaperQuestionOps.vue'
 import PublishOverride from '../admin/builder/components/PublishOverride.vue'
 import { normalizeBlockers, overrideOffered } from '../admin/builder/domain/blockers'
@@ -114,5 +115,51 @@ describe('Tambah / Padam soalan', () => {
     const ed = await api.getEditor(id)
     ed.paper.status = 'terbit'
     await expect(api.addPlacement(id, ed.paper.sections[0]!.id, 'q')).rejects.toThrow()
+  })
+})
+
+describe('Bahan rujukan editor (R4)', () => {
+  const upload = (f: File): Promise<string> => Promise.resolve(`tok-${f.name}`)
+  it('adds a panel, a line and an image, reorders, and saves the whole list', async () => {
+    const w = mount(PaperReferenceEditor, { props: { panels: [{ title: 'Rumus', items: ['a'] }], upload } })
+    await w.get('[data-testid="ref-add-panel"]').trigger('click')
+    await w.get('[data-testid="ref-title-1"]').setValue('Jadual')
+    await w.get('[data-testid="ref-add-line-1"]').trigger('click')
+    await w.get('[data-testid="ref-line-1-0"]').setValue(' $x^2$ ')
+    const file = new File(['x'], 'rajah.png', { type: 'image/png' })
+    const input = w.get('[data-testid="ref-file-1"]')
+    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+    await input.trigger('change')
+    await flushPromises()
+    expect(w.find('[data-testid="ref-image-1"]').exists()).toBe(true)
+    await w.get('[data-testid="ref-up-1"]').trigger('click')
+    await w.get('[data-testid="reference-editor"]').trigger('submit')
+    expect(w.emitted('save')![0]![0]).toEqual([
+      { title: 'Jadual', items: ['$x^2$'], imageFileId: 'tok-rajah.png' },
+      { title: 'Rumus', items: ['a'] },
+    ])
+  })
+  it('needs a title per panel and is inert when read-only', () => {
+    const w = mount(PaperReferenceEditor, { props: { panels: [{ title: '', items: [] }], upload } })
+    expect(w.get('[data-testid="ref-save"]').attributes('disabled')).toBeDefined()
+    const ro = mount(PaperReferenceEditor, { props: { panels: [{ title: 'R', items: [] }], readonly: true, upload } })
+    expect(ro.find('[data-testid="ref-save"]').exists()).toBe(false)
+  })
+  it('shows an upload failure and keeps the panel without an image', async () => {
+    const w = mount(PaperReferenceEditor, { props: { panels: [{ title: 'R', items: [] }], upload: () => Promise.reject(new Error('Gambar terlalu besar')) } })
+    const input = w.get('[data-testid="ref-file-0"]')
+    Object.defineProperty(input.element, 'files', { value: [new File(['x'], 'a.png')], configurable: true })
+    await input.trigger('change')
+    await flushPromises()
+    expect(w.get('[data-testid="ref-upload-error"]').text()).toBe('Gambar terlalu besar')
+    expect(w.find('[data-testid="ref-image-0"]').exists()).toBe(false)
+  })
+  it('the mock stores the reference list and refuses it on a published paper', async () => {
+    const api = new MockBuilderServer()
+    const s = (await api.builderSubjects())[0]!
+    const id = await api.create({ subject: s.code, kertas: s.kertas[0]!, title: 'T' })
+    const ed = await api.updateReference(id, [{ title: 'Rumus', items: ['a'] }])
+    expect((ed.paper as unknown as { reference: unknown[] }).reference).toHaveLength(1)
+    await expect(api.updateReference(id, [{ title: ' ', items: [] }])).rejects.toThrow()
   })
 })

@@ -243,6 +243,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
       await expect(page.getByTestId('paper-save')).toBeDisabled()
 
       await page.getByTestId('paper-publish').click()
+      await page.locator('[data-ds=confirm-ok]').click()
       await expect(page.getByTestId('paper-unpublish')).toBeVisible()
       await expect(page.getByTestId('paper-view-student')).toBeVisible()
       await expect(page.getByTestId('paper-publish')).toHaveCount(0)

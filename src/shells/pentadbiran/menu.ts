@@ -1,6 +1,6 @@
 /**
  * Menu of the Portal Pentadbiran (D30; `docs/requirements/v2-portals.md` section 6): 9 groups and
- * 105 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
+ * 106 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
  * next round; `PENTADBIRAN_MENU` (rendered) holds built screens only and drops empty groups.
  * Unbuilt items are listed in `docs/requirements/v2-pentadbiran-backlog.md`.
  */
@@ -99,6 +99,8 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['BS-05', 'Laporan Soalan', '/admin/question-reports'],
       ['BS-06', 'Soalan PKSK', '/admin/pksk/questions'],
       ['BS-07', 'Audio KBAT', '/admin/audio-kbat'],
+      // Studio list (V2 `Question Studio`, v3-bijak-spm-scope R1-21 P5): the screen is built on the Studio branch (C3).
+      ['BS-08', 'Bank Soalan (Studio)', '/admin/studio'],
     ]),
   },
   {
@@ -106,7 +108,8 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     label: 'Kertas & SPM',
     icon: 'scroll',
     items: items([
-      ['KS-01', 'Gambaran SPM'],
+      // V2 hub `Kandungan SPM` (admin.md A21, scope R1-21 P1): menu label `SPM`, route `/admin/spm` (page built by C2).
+      ['KS-01', 'SPM', '/admin/spm'],
       ['KS-13', 'Muat Naik Kertas', '/admin/spm/soalan/muat-naik'],
       ['KS-16', 'Tulis Soalan Manual', '/admin/spm/soalan/manual'],
       ['KS-14', 'Senarai Ekstrak', '/admin/spm/soalan/ekstrak'],
@@ -117,7 +120,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['KS-05', 'Subjektif'],
       ['KS-06', 'Bijak SPM (Simulasi)'],
       ['KS-07', 'Kertas Subjektif'],
-      ['KS-08', 'Kontrak Blueprint', '/admin/spm/kontrak'],
+      ['KS-08', 'Kontrak Simulasi', '/admin/spm/kontrak'], // V2 K1 / scope R1-21 P4
       ['KS-09', 'Pembina Kertas', '/admin/spm/kertas'],
       ['KS-17', 'Set Builder', '/admin/studio/sets'],
       ['KS-10', 'Tanda Karangan'],

@@ -71,10 +71,10 @@ async function render(): Promise<VueWrapper> {
 }
 
 describe('PaperListPage card list (mobile)', () => {
-  it('shows Buka and Padam kertas for a draft, only Buka for a published paper', async () => {
+  it('shows Sunting and Padam kertas for a draft, only Sunting for a published paper', async () => {
     const w = await render()
     expect(w.find('[data-ds=data-table-cards]').exists()).toBe(true)
-    expect(w.find('[data-testid=paper-open-d1]').text()).toContain('Buka')
+    expect(w.find('[data-testid=paper-open-d1]').text()).toContain('Sunting')
     expect(w.find('[data-testid=paper-delete-d1]').attributes('aria-label')).toBe('Padam kertas')
     expect(w.find('[data-testid=paper-open-p1]').exists()).toBe(true)
     expect(w.find('[data-testid=paper-delete-p1]').exists()).toBe(false)

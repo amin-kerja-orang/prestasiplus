@@ -9,13 +9,14 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
-import { DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
+import { useConfirm, DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
 
 import RichText from '../../components/RichText.vue'
 import type { BuilderGroup, BuilderQuestion } from '../../domain/admin-types'
 import { addUnit, checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
 import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
+import PaperReferenceEditor from '../builder/components/PaperReferenceEditor.vue'
 import PaperQuestionOps from '../builder/components/PaperQuestionOps.vue'
 import PaperEditBlocks from '../builder/components/PaperEditBlocks.vue'
 import PublishOverride from '../builder/components/PublishOverride.vue'
@@ -25,12 +26,14 @@ import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
 import { builderCopy as bt } from '../builder/domain/copy'
 import { publishGate } from '../builder/domain/publish-gate'
 import { usePaperActions } from '../builder/lib/use-paper-actions'
-import { builderMessage, builderPath } from '../builder/server/api'
+import { uploadQuestionImage } from '@/api/files'
+import { builderMessage, builderPath, type ReferencePanel } from '../builder/server/api'
 import { builderServer } from '../builder/server/client'
 import QuestionPreview from './QuestionPreview.vue'
 import { ADMIN_ROUTES, KIND_LABEL, detailMessage } from './ui'
 
 const server = bijakAdminServer()
+const confirm = useConfirm()
 const route = useRoute()
 const flash = useFlash()
 
@@ -220,6 +223,8 @@ async function onSave(): Promise<void> {
 }
 async function publish(): Promise<void> {
   if (publishBlocked.value) return
+  // V2 native paper: confirm before it goes live (R8; a composite set in the Set Builder has none).
+  if (!(await confirm({ message: bt.publishConfirm, confirmLabel: bt.publish }))) return
   if (!(await save())) return
   busy.value = true
   try {
@@ -236,6 +241,10 @@ async function publish(): Promise<void> {
   } finally {
     busy.value = false
   }
+}
+async function overridePublish(reason: string): Promise<void> {
+  if (!(await confirm({ message: bt.publishConfirm, confirmLabel: bt.publish }))) return
+  await actions.publish({ override: true, reason })
 }
 async function unpublish(): Promise<void> {
   busy.value = true
@@ -284,6 +293,16 @@ const addQuestion = (sid: string, qid: string): Promise<void> =>
   editThen(() => builderServer().addPlacement(id.value, sid, qid), bt.questionAdded, bt.errAdd)
 const deleteQuestion = (qid: string): Promise<void> =>
   editThen(() => builderServer().removePlacement(id.value, qid), bt.questionDeleted, bt.errRemove)
+const referencePanels = computed(
+  () => ((data.value?.paper as { reference?: ReferencePanel[] } | undefined)?.reference ?? []),
+)
+/** Reference images use the question image upload (security-reviewed input); the mock keeps a placeholder token. */
+const uploadReferenceImage = (file: File): Promise<string> =>
+  import.meta.env.VITE_API_MODE === 'http'
+    ? uploadQuestionImage(file, 'reference')
+    : Promise.resolve(`mock-${file.name}`)
+const saveReference = (panels: ReferencePanel[]): Promise<void> =>
+  editThen(() => builderServer().updateReference(id.value, panels), bt.refSaved)
 const savePassage = (gid: string, label: string): Promise<void> =>
   editThen(() => builderServer().updateGroupLabel(id.value, gid, label), bt.passageSaved(label))
 
@@ -446,7 +465,7 @@ const previewBlocks = computed(() => {
                 color="warning"
                 variant="soft"
                 icon="i-ph-arrow-u-up-left"
-                label="Tarik balik"
+                label="Sembunyikan"
                 class="min-h-11"
                 :loading="busy || actions.busy.value"
                 data-testid="paper-unpublish"
@@ -505,9 +524,19 @@ const previewBlocks = computed(() => {
 
       <DsPanel data-testid="paper-review" aria-live="polite">
         <h3 class="mb-2 text-heading text-highlighted">{{ bt.review }}</h3>
-        <p v-if="readonly" class="mb-2 text-body text-muted" data-testid="paper-live-note">
-          {{ bt.live }} {{ bt.lockedNote }}
-        </p>
+        <div v-if="readonly" class="mb-2 flex flex-wrap items-center gap-3" data-testid="paper-live-note">
+          <p class="text-body text-muted">{{ bt.live }} {{ bt.lockedNote }}</p>
+          <UButton
+            color="neutral"
+            variant="soft"
+            icon="i-ph-copy"
+            :label="bt.copyForEdit"
+            class="min-h-11"
+            :loading="actions.busy.value"
+            data-testid="paper-copy-for-edit"
+            @click="actions.copy"
+          />
+        </div>
         <ReviewBlock v-if="review" :review="review" />
         <p v-else-if="actions.reviewError.value" class="text-body text-error" role="alert">
           {{ bt.reviewError }}
@@ -545,6 +574,16 @@ const previewBlocks = computed(() => {
         />
       </DsPanel>
 
+      <DsPanel data-testid="paper-reference">
+        <PaperReferenceEditor
+          :panels="referencePanels"
+          :readonly="readonly"
+          :busy="busy"
+          :upload="uploadReferenceImage"
+          @save="saveReference"
+        />
+      </DsPanel>
+
       <DsPanel data-testid="paper-edit-blocks">
         <PaperEditBlocks
           :editor="data"
@@ -559,7 +598,7 @@ const previewBlocks = computed(() => {
           :blockers="actions.blockers.value"
           :available="actions.overrideAvailable.value"
           :busy="actions.busy.value"
-          @override="(reason) => actions.publish({ override: true, reason })"
+          @override="overridePublish"
         />
       </DsPanel>
 

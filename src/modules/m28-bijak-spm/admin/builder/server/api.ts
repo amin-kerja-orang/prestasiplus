@@ -84,6 +84,14 @@ export interface SectionPatch {
   compulsory?: boolean
 }
 
+/** A reference-sheet panel (`BijakPaperReferencePanel`): title, text / formula lines and an optional stored image. */
+export interface ReferencePanel {
+  title: string
+  items: string[]
+  /** File token from `POST /api/files?purpose=question_image`. */
+  imageFileId?: string
+}
+
 /** Terbitkan with the audited override (R1-T34 `BijakBuilderPublishRequest`): reason of at least 5 characters. */
 /** Publish answer; `overridden` is R1-T34 (absent on the base contract until T34 merges). */
 export type PublishResult = BijakBuilderPublishResult & { overridden?: string[] }
@@ -121,6 +129,8 @@ export interface BuilderApi {
   publish(id: string, options?: PublishOptions): Promise<PublishResult>
   /** Sunting bahagian. */
   updateSection(id: string, sectionId: string, patch: SectionPatch): Promise<PaperEditorData>
+  /** Bahan rujukan (kulit kertas): replaces the whole reference-sheet list (`PUT /admin/papers/:id {reference}`, R1-T34). */
+  updateReference(id: string, panels: ReferencePanel[]): Promise<PaperEditorData>
   /** Sunting petikan: the title of a stimulus group (`PUT /admin/papers/:id/groups/:groupId`). */
   updateGroupLabel(id: string, groupId: string, label: string): Promise<PaperEditorData>
   /** Tarik balik. */

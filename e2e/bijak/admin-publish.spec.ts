@@ -35,7 +35,7 @@ async function openPaperBuilder(page: Page, gotoApp: (p: string) => Promise<void
 const openBtn = (page: Page, row: Locator, id: string): Locator =>
   isMobileWidth(page)
     ? page.getByTestId(`paper-open-${id}`)
-    : row.getByRole('link', { name: 'Buka' })
+    : row.getByRole('link', { name: 'Sunting' })
 const delBtn = (page: Page, row: Locator, id: string): Locator =>
   isMobileWidth(page)
     ? page.getByTestId(`paper-delete-${id}`)
@@ -105,6 +105,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await page.keyboard.press('Escape')
 
     await page.getByTestId('paper-publish').click()
+    await page.locator('[data-ds=confirm-ok]').click() // V2 native-paper confirm (R8)
     // Published: editing controls give way to the student link and "Tarik balik".
     await expect(page.getByTestId('paper-unpublish')).toBeVisible()
     await expect(page.getByTestId('paper-view-student')).toBeVisible()
@@ -210,6 +211,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await fillObjektif(page)
     // Unsaved edits: Terbitkan saves first (Jana set + Terbitkan = 2 clicks).
     await page.getByTestId('paper-publish').click()
+    await page.locator('[data-ds=confirm-ok]').click()
     await expect(page.getByTestId('paper-unpublish')).toBeVisible()
     await openListFromEditor(page)
     await expectNoHorizontalScroll(page)
