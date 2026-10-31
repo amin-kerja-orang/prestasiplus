@@ -104,7 +104,7 @@ Team C note (C3 Studio on T32 @ 87a9a363): admin-only, envelope {data,status}; `
 | H-A15 | A | **READY-FOR-REVIEW** `r1/ha15-blueprint-evidence` @ 7e5d637e (+ server-side note required: trimmed 1–2000, 422 \"Isi nota pengesahan dahulu.\"; 350/350; unit 1635/1635; base merge pending): (i) checkEvidence gates on origin='admin' rows only (AC-39.2); (iii) skema Markah agrees with budget OR choose-section offered marks (SPP 10.3, AC-39.7/39.8) in exam-core; 4 D9 rows; blueprint/exam specs 164/164; exam-core + contract 1620/1620; tsc 0; eslint 0. B3: origin filter |
 | H-A16 | A | **READY-FOR-REVIEW** `r1/ha16-table-reader` @ b283a746 (BASE-17; 119 + 3 todo); before 8e04a9fa (on T32 87a9a363 + T07 b0421c6b; merge after both): one reader `questions/stimulus-table.ts` (+ `stimulusTableParts` → body:null when the table comes from the body); stimuli.repository duplicate removed; parity spec on A3's 10 shapes (Studio 10/10, builder 8 + 2 todo, bridge 19 + 1 todo — todos flip after T31 / R1E2E-05b one-liners); 85 pass + 3 todo; bridge stimuli 35/35; tsc 0; eslint 0 |
 | H-A17 | A | **READY-FOR-REVIEW** `r1/ha17-ac-coverage` @ 53164687 (docs): 176 entries → proven 88, partial 50, no backend proof 7, FE-only 31; 56 gaps → T40–T46 |
-| H-A18 | A (A2 after T45b; plan + migration 0105 to lead first) | BE-09 does not store duplicate-flag, media and AI-editor facts, so those approve-gate rules are always satisfied on every path (pre-existing, from T33) |
+| H-A18 | A (A2, r1/ha18-gate-facts; plan APPROVED incl. migration **0105** question_versions.last_editor + declared_marks) | BE-09 does not store duplicate-flag, media and AI-editor facts, so those approve-gate rules are always satisfied on every path (pre-existing, from T33) |
 | H-C6 | C | Kontrak evidence drawer: omit `rule` (and duration) on skema rows (SPP 10.3: a skema prints no rules) so choose sections don't show `differs`; keep "Isi nota pengesahan dahulu." (server now also refuses, H-A15) |
 | H-A19 | A (A3 docs agent, r1/ha19-admin-parity) | D79 admin-UX parity check for R1: every admin.md row R1 covers vs V3 API (team A branches) and FE (team C branches): parity / label / steps / missing API / missing FE → `docs/qa/r1-admin-parity-check.md`; gap lists for A and C |
 | H-C7 | C | Student FE: `QuestionBlock.vue` ~122-127 and `ResultPage.vue` ~409-413 render `<StimulusStack :stimuli="question.stimuli ?? (question.stemImage ? [question.stemImage] : [])" />` ABOVE the stem (V2 §1.5), one or the other (else a single picture shows twice). API from R1E2E-05b |
@@ -130,7 +130,7 @@ B: review, security, E2E and release for each R2 unit.
 
 ## Migration ranges (update)
 
-Team A 0100–0109, overflow **0120–0129**; team C 0110–0119. In code today: 0092, 0093, 0100 (T04), 0101 (T25), 0102 (T33). Reserved: 0103 (T42, A2). 0104 free (T44 needed no migration). Planned numbers are in `docs/architecture/v2-admin-student-pipeline.md` §2 (renumbered on T25).
+Team A 0100–0109, overflow **0120–0129**; team C 0110–0119. In code today: 0092, 0093, 0100 (T04), 0101 (T25), 0102 (T33). Reserved: 0103 (T42, A2), 0105 (H-A18, A2). 0104 free (T44 needed no migration). Planned numbers are in `docs/architecture/v2-admin-student-pipeline.md` §2 (renumbered on T25).
 
 ## Decisions this cycle
 
@@ -217,6 +217,8 @@ Also noted: user decisions of 18:03 relayed by team B — B09b paper-review edit
 | servability-own-stimuli | r1/servability-own-stimuli @ 11a4db3c | A4 | after T29 + 05b |
 | H-A12 | r1/ha12-conformance @ e1fa7217 | A4 | shared setPocMarkBudgets; 406/406 |
 | H-A21 | r1/ha21-overview-cache @ 7399b63c | A4 | after T30 → t45-lanes |
+| T45b | r1/t45b-question-detail-acs @ 8342f9a0 | A2 | AC-04.4 placements on admin question detail; AC-16.3 fix (approve releases legacy image hold); BASE-21 |
+| T49 | r1/t49-stimulus-lists @ ed3f585f | A2 | REQ-C-004/005 lists + members summary; B3 |
 | T38 / T40 | r1/t38-selfmark-reward @ 662e602f / r1/t40-attempts-acs @ 90973d72 | A1 | |
 | T41 | r1/t41-curriculum-acs @ 067ff3cc | A1 | DSKP loader BM reasons (code fix), load changes no served count, Darjah text; dskp-acs 3/3 |
 | b-requests-a1 | r1/b-requests-a1 @ aa9f89dd | A1 | REQ-B-005/006/007/014a; B3 for 005/007 |
