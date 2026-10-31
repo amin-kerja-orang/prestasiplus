@@ -150,4 +150,4 @@ T04 scope widened by planning: raw-SQL `'published'` question-status spots in `p
 | R1E2E-09 | Low | A2 | Soalan by Chapter tile counts chaptered + drawable only (D91, V2 §2.3) → in r1/t04-minors |
 | B3 bulk-approve gap | Medium | A2 | bulk approve runs the full approve gate (+ DSKP) → in T33 |
 
-Answer to B1 Q-B1-2: T01 removed the old `0092_part_options_image_file_index` folder (A1 verified: only 0092_bijak_standards and 0093_part_options_image_file_index exist). Q-B1-1 (UAT blueprints) → QUESTIONS.md Q3.
+Answer to B1 Q-B1-2: T01 removed the old `0092_part_options_image_file_index` folder (A1 verified: only 0092_bijak_standards and 0093_part_options_image_file_index exist). Q-B1-1 (UAT blueprints) → answered by the user (Q3, D95): follow V2 — DevOps runs the launch-blueprint seed on UAT (Spec), admin Sahkan in Kontrak, first 3472/2. A1 adds the runbook step (T37).
