@@ -878,7 +878,29 @@ export class QuestionsRepository {
   async addVersion(questionId: string, versionNo: number, draft: VersionDraft, now: Date): Promise<void> {
     const id = bi(questionId)
     if (id === null) return
-    await this.insertVersion(id, versionNo, draft, now, null)
+    // REQ-B-017: the declaration and provenance of the version being edited carry over. Without this a new version had rights_status NULL,
+    // which the approve gate reads as `own`, so one edit of a question declared `unclear` skipped the rights rule.
+    const prev = await this.db.questionVersion.findUnique({
+      where: { questionId_versionNo: { questionId: id, versionNo: versionNo - 1 } },
+      select: {
+        rightsStatus: true,
+        sourceKind: true,
+        contributorId: true,
+        year: true,
+        examType: true,
+        examBoard: true,
+        textbookBab: true,
+        textbookTingkatan: true,
+        textbookPage: true,
+        sourcePaperId: true,
+        sourceFileId: true,
+        sourceRegion: true,
+        aiRunId: true,
+        aiModel: true,
+        intakeItemId: true,
+      },
+    })
+    await this.insertVersion(id, versionNo, draft, now, null, undefined, prev ?? undefined)
     await this.db.question.update({ where: { id }, data: { latestVersionNo: versionNo, updatedAt: now } })
   }
 
@@ -1104,6 +1126,23 @@ export class QuestionsRepository {
     now: Date,
     publishedAt: Date | null,
     provenance?: VersionProvenance,
+    inherited?: {
+      rightsStatus: string | null
+      sourceKind: string | null
+      contributorId: bigint | null
+      year: number | null
+      examType: string | null
+      examBoard: string | null
+      textbookBab: number | null
+      textbookTingkatan: number | null
+      textbookPage: number | null
+      sourcePaperId: bigint | null
+      sourceFileId: bigint | null
+      sourceRegion: unknown
+      aiRunId: bigint | null
+      aiModel: string | null
+      intakeItemId: bigint | null
+    },
   ): Promise<void> {
     const { parts, spNodeIds, stimulusIds, ...columns } = draft
     const version = await this.db.questionVersion.create({
@@ -1114,6 +1153,9 @@ export class QuestionsRepository {
         createdAt: now,
         updatedAt: now,
         ...this.versionColumns(columns),
+        ...(inherited === undefined
+          ? {}
+          : { ...inherited, sourceRegion: inherited.sourceRegion === null || inherited.sourceRegion === undefined ? undefined : (inherited.sourceRegion as object) }),
         ...(provenance === undefined
           ? {}
           : {
