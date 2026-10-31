@@ -23,8 +23,9 @@ const router = useRouter()
 
 const code = computed(() => String(route.params.code ?? ''))
 const query = computed(() => parseLatihTubiQuery(route.query))
-// The result link "Senarai Subjek" (V2) goes to the subject list; a refused start returns to this subject's setup.
-const backUrl = '/spm/latih-tubi'
+// The result link "Senarai Subjek" (V2) goes to the subject list; leaving the quiz and a refused start return
+// to this subject's setup.
+const listUrl = '/spm/latih-tubi'
 const setupUrl = computed(() => `/spm/latih-tubi/${encodeURIComponent(code.value)}`)
 
 const start = computed<StartSessionRequest>(() => {
@@ -70,7 +71,8 @@ const headerTitle = (s: StartSessionResponse): string => s.subject?.name ?? ''
     :start="start"
     :api="api"
     :header-title="headerTitle"
-    :back-url="backUrl"
+    :back-url="setupUrl"
+    :result-url="listUrl"
     :labels="LATIH_TUBI_LABELS"
     retry="restart"
     :report="{ source: 'spm' }"

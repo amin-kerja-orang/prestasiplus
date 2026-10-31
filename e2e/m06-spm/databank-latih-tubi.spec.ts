@@ -296,18 +296,18 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
 
       expect(await tabCount(page, 'level-10')).toBe('976 soalan')
       expect(await tabCount(page, 'level-11')).toBe('705 soalan')
-      expect(await diff(page)).toEqual(['514 soalan', '577 soalan', '85 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['0 soalan', '514 soalan', '577 soalan', '85 soalan', '0 soalan'])
       await expect(page.getByText('Biarkan kosong untuk campuran semua tahap')).toBeVisible()
 
       await tid(page, 'level-10').click()
       await expect(tid(page, 'level-10')).toHaveClass(/border-blue-500/)
       await expect(tid(page, 'level-10')).toHaveClass(/bg-blue-50/)
-      expect(await diff(page)).toEqual(['309 soalan', '410 soalan', '58 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['0 soalan', '309 soalan', '410 soalan', '58 soalan', '0 soalan'])
       await tid(page, 'level-11').click()
-      expect(await diff(page)).toEqual(['205 soalan', '167 soalan', '27 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['0 soalan', '205 soalan', '167 soalan', '27 soalan', '0 soalan'])
       await tid(page, 'level-11').click()
       await expect(tid(page, 'level-11')).not.toHaveClass(/border-blue-500/)
-      expect(await diff(page)).toEqual(['514 soalan', '577 soalan', '85 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['0 soalan', '514 soalan', '577 soalan', '85 soalan', '0 soalan'])
 
       await tid(page, 'difficulty-2').click()
       await expect(tid(page, 'difficulty-2')).toHaveClass(/border-green-500/)
@@ -393,14 +393,15 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
     )
   })
 
-  test('E2E-M06-40 S4 difficulty is 2 per row at 375 and 4 per row from 640; "Pertengahan" stays inside', async ({
+  test('E2E-M06-40 S4 difficulty is 2 per row at 375, 3 from 640 and 5 from 1024; "Pertengahan" stays inside', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/latih-tubi/MATH')
-    expect(await columnsOf(page, 'config-difficulties')).toBe(isMobileWidth(page) ? 2 : 4)
+    const width = viewportWidth(page)
+    expect(await columnsOf(page, 'config-difficulties')).toBe(width >= 1024 ? 5 : width >= 640 ? 3 : 2)
     const inside = await tid(page, 'difficulty-3').evaluate(
       (el) => el.scrollWidth <= el.clientWidth,
     )

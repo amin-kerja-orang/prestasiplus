@@ -233,7 +233,7 @@ describe('S4 ChapterIndexPage', () => {
     expect(w.text()).toContain('Mode Sistematik')
     expect(t(w, 'chapter-index-page').get('h1').text()).toBe('Soalan by Chapter')
     expect(w.text()).toContain(
-      'Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap dan mencapai sekurang-kurangnya 70%.',
+      'Pelajar jawab bab demi bab.',
     )
     expect(t(w, 'chapter-random').attributes('href')).toBe('/practice')
     expect(t(w, 'chapter-random').text()).toBe('Latih Tubi Rawak')

@@ -64,7 +64,6 @@ const groups = (d: { teras: LatihTubiCard[]; elektif: LatihTubiCard[] }) => [
           <DsIconChip icon="i-ph-list-numbers-duotone" accent="trial" size="lg" />
           <div class="flex min-w-0 flex-1 flex-col">
             <h2 class="text-subheading text-highlighted">Soalan by Chapter</h2>
-            <p class="text-caption text-muted">Jawab soalan bab demi bab.</p>
           </div>
           <span class="shrink-0 text-label text-primary-t">Mula →</span>
         </UCard>
