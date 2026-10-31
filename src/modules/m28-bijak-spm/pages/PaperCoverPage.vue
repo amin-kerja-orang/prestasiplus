@@ -128,6 +128,15 @@ async function begin(restart: boolean): Promise<void> {
         </template>
       </UAlert>
 
+      <UButton
+        :to="`/simulasi/${paperId}/kuiz`"
+        color="neutral"
+        variant="outline"
+        class="min-h-11 self-start"
+        data-testid="paper-kuiz-link"
+        >Kuiz</UButton
+      >
+
       <section class="flex flex-col gap-2" aria-labelledby="h-arahan">
         <h2 id="h-arahan" class="text-heading text-highlighted">Arahan</h2>
         <ol class="flex flex-col gap-1 text-body text-default" data-testid="instructions">

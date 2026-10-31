@@ -27,6 +27,8 @@ export const BIJAK_KUIZ_MESSAGES = {
   noQuestions: 'Belum ada soalan objektif',
   notFound: 'Kuiz tidak ditemui',
   paperNotFound: 'Kertas tidak ditemui',
+  /** [PROPOSED] H-A13: same line as a new sitting of a paper that places an archived question. */
+  paperUnavailable: 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.',
   alreadyFinished: 'Kuiz ini sudah selesai.',
 } as const
 
@@ -34,14 +36,18 @@ export const BijakKuizStartRequestSchema = z
   .strictObject({
     subject: z.string().trim().min(1).max(20).optional().meta({ description: 'Curriculum subject code, for example MATH. Absent = every subject.' }),
     count: z
-      .number()
-      .int()
-      .refine((n) => (BIJAK_KUIZ_COUNTS as readonly number[]).includes(n), BIJAK_KUIZ_MESSAGES.invalidValue)
+      .unknown()
       .optional()
-      .meta({ description: '5, 10, 20 or 40. Default 20.' }),
+      .meta({ description: '5, 10, 20 or 40. Anything else, or absent, falls back to 20 (V2 ExamQuizController). Never a 422.' }),
   })
   .meta({ id: 'BijakKuizStartRequest' })
 export type BijakKuizStartRequest = z.infer<typeof BijakKuizStartRequestSchema>
+
+/** V2 `(int) $request->query('count', 20)` then `in_array(COUNTS) ? $count : 20`. */
+export function normaliseKuizCount(raw: unknown): number {
+  const n = typeof raw === 'number' ? Math.trunc(raw) : typeof raw === 'string' ? Number.parseInt(raw, 10) : Number.NaN
+  return (BIJAK_KUIZ_COUNTS as readonly number[]).includes(n) ? n : BIJAK_KUIZ_DEFAULT_COUNT
+}
 
 export const BijakKuizOptionSchema = z
   .strictObject({
@@ -54,17 +60,24 @@ export const BijakKuizOptionSchema = z
 
 export const BijakKuizStimulusSchema = z
   .strictObject({
-    kind: z.enum(['diagram', 'passage', 'table']),
+    kind: z.enum(['passage', 'table', 'diagram', 'image', 'map', 'infographic', 'graph']).meta({ description: 'The seven stimulus kinds (R1-T07).' }),
     label: z.string(),
     body: z.string().nullable(),
     imageToken: z.string().nullable(),
     alt: z.string().nullable(),
+    caption: z.string().nullable().meta({ description: 'Figure caption (R1-T07).' }),
+    source: z.string().nullable().meta({ description: 'Source line of a passage or picture (R1-T07).' }),
+    table: z
+      .strictObject({ head: z.array(z.string()), rows: z.array(z.array(z.string())) })
+      .nullable()
+      .meta({ description: 'The grid of a table stimulus; null for every other kind.' }),
   })
   .meta({ id: 'BijakKuizStimulus' })
 
 export const BijakKuizItemSchema = z
   .strictObject({
     id: z.string().min(1).max(80).meta({ description: 'Question id, or "{questionId}:{part path}" for a part of a structured question (per-paper quiz).' }),
+    groupId: z.string().nullable().meta({ description: 'Shared stimulus group (D90). Random quiz: the group stimulus is in `stimuli` above the item. Per-paper quiz: it is in the page `groups[]`, once for all members.' }),
     kind: z.enum(['mcq', 'open']).meta({ description: 'open = a non-objective part: shown with an unsaved textarea, cannot be checked.' }),
     stem: z.string().nullable(),
     lead: z.array(z.string()).meta({ description: 'Prompts of the parent parts, outermost first.' }),
@@ -138,7 +151,10 @@ export const BijakKuizPaperPageSchema = z
       .strictObject({ id: IdSchema, label: z.string(), instruction: z.string().nullable() })
       .nullable()
       .meta({ description: 'The Bahagian of this page; null when the paper has no question to show.' }),
-    items: z.array(BijakKuizItemSchema),
+    items: z.array(BijakKuizItemSchema).meta({ description: 'In display order. The members of a stimulus group are contiguous, in group order.' }),
+    groups: z
+      .array(z.strictObject({ id: z.string(), stimuli: z.array(BijakKuizStimulusSchema) }))
+      .meta({ description: 'D90: each stimulus group of this page once. Render its stimuli above its member items (items whose groupId matches); the stimulus is never an item.' }),
     markableTotal: z.number().int().min(0).meta({ description: 'Objective parts of the whole paper (V2 "Skor: n / markableTotal").' }),
   })
   .meta({ id: 'BijakKuizPaperPage' })

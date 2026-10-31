@@ -12783,8 +12783,7 @@
             "description": "Curriculum subject code, for example MATH. Absent = every subject."
           },
           "count": {
-            "type": "integer",
-            "description": "5, 10, 20 or 40. Default 20."
+            "description": "5, 10, 20 or 40. Anything else, or absent, falls back to 20 (V2 ExamQuizController). Never a 422."
           }
         },
         "additionalProperties": false
@@ -12827,10 +12826,15 @@
           "kind": {
             "type": "string",
             "enum": [
-              "diagram",
               "passage",
-              "table"
-            ]
+              "table",
+              "diagram",
+              "image",
+              "map",
+              "infographic",
+              "graph"
+            ],
+            "description": "The seven stimulus kinds (R1-T07)."
           },
           "label": {
             "type": "string"
@@ -12852,6 +12856,49 @@
               "string",
               "null"
             ]
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Figure caption (R1-T07)."
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Source line of a passage or picture (R1-T07)."
+          },
+          "table": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false,
+            "description": "The grid of a table stimulus; null for every other kind."
           }
         },
         "required": [
@@ -12859,7 +12906,10 @@
           "label",
           "body",
           "imageToken",
-          "alt"
+          "alt",
+          "caption",
+          "source",
+          "table"
         ],
         "additionalProperties": false
       },
@@ -12871,6 +12921,13 @@
             "minLength": 1,
             "maxLength": 80,
             "description": "Question id, or \"{questionId}:{part path}\" for a part of a structured question (per-paper quiz)."
+          },
+          "groupId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Shared stimulus group (D90). Random quiz: the group stimulus is in `stimuli` above the item. Per-paper quiz: it is in the page `groups[]`, once for all members."
           },
           "kind": {
             "type": "string",
@@ -12931,6 +12988,7 @@
         },
         "required": [
           "id",
+          "groupId",
           "kind",
           "stem",
           "lead",
@@ -13141,7 +13199,31 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BijakKuizItem"
-            }
+            },
+            "description": "In display order. The members of a stimulus group are contiguous, in group order."
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "stimuli": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BijakKuizStimulus"
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "stimuli"
+              ],
+              "additionalProperties": false
+            },
+            "description": "D90: each stimulus group of this page once. Render its stimuli above its member items (items whose groupId matches); the stimulus is never an item."
           },
           "markableTotal": {
             "type": "integer",
@@ -13155,6 +13237,7 @@
           "pageCount",
           "section",
           "items",
+          "groups",
           "markableTotal"
         ],
         "additionalProperties": false
@@ -81036,7 +81119,7 @@
             }
           },
           "422": {
-            "description": "NO_QUESTIONS, or VALIDATION_ERROR with fields (subject, count).",
+            "description": "NO_QUESTIONS, or VALIDATION_ERROR with fields (subject, or an unknown key). An invalid or missing count is not an error: it falls back to 20 (V2).",
             "content": {
               "application/json": {
                 "schema": {
