@@ -2,7 +2,7 @@
  * Evidence comparison (architecture 6.6, AC-39.2, AC-39.7): compares the values a blueprint states
  * with the values read from trial papers, skema and LPM format documents.
  */
-import type { SectionRule, StandardBlueprint } from './standard-model'
+import { offeredMarks, type SectionRule, type StandardBlueprint } from './standard-model'
 
 export type EvidenceKind = 'trial_paper' | 'skema' | 'lpm_format'
 
@@ -58,6 +58,8 @@ interface Probe {
   sectionPosition?: number
   expected: unknown
   read: (v: EvidenceValues) => unknown
+  /** Whether a statement of this kind agrees with the blueprint; default: equal to `expected`. */
+  agrees?: (value: unknown, kind: EvidenceKind) => boolean
 }
 
 function buildLine(probe: Probe, items: readonly EvidenceItem[]): EvidenceLine {
@@ -73,7 +75,7 @@ function buildLine(probe: Probe, items: readonly EvidenceItem[]): EvidenceLine {
   let supporting = 0
   let lpmSupport = false
   for (const list of byBody.values()) {
-    if (list.every((st) => same(st.value, probe.expected))) {
+    if (list.every((st) => (probe.agrees ? probe.agrees(st.value, st.kind) : same(st.value, probe.expected)))) {
       supporting++
       if (list.some((st) => st.kind === 'lpm_format')) lpmSupport = true
     } else contradicts = true
@@ -113,7 +115,16 @@ export function checkEvidence(bp: StandardBlueprint, evidence: readonly Evidence
   })
   for (const s of [...bp.sections].sort((a, b) => a.position - b.position)) {
     const at = (v: EvidenceValues) => v.sections?.find((x) => x.position === s.position)
-    probes.push({ field: 'markBudget', sectionPosition: s.position, expected: s.markBudget, read: (v) => at(v)?.markBudget })
+    // A skema prints the marks of every question the paper offers (SPP 10.3, AC-39.8), so on a choose-N section its Markah is
+    // the OFFERED marks (budget / N x M); the trial paper states the effective budget. Each is compared with its own figure.
+    const offered = offeredMarks(s)
+    probes.push({
+      field: 'markBudget',
+      sectionPosition: s.position,
+      expected: s.markBudget,
+      read: (v) => at(v)?.markBudget,
+      agrees: (value, kind) => same(value, s.markBudget) || (kind === 'skema' && same(value, offered)),
+    })
     probes.push({ field: 'rule', sectionPosition: s.position, expected: ruleValue(s.rule), read: (v) => {
       const r = at(v)?.rule
       return r === undefined ? undefined : ruleValue(r)

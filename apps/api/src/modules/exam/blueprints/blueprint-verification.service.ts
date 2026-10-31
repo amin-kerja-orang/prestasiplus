@@ -233,7 +233,9 @@ export class BlueprintVerificationService {
       unitLevels: unitLevelsOf(units),
       subjectHasBothLevels: units.some((u) => u.level === 'T4') && units.some((u) => u.level === 'T5'),
     })
-    const items: EvidenceItem[] = evidenceRows.map((r) => ({
+    // AC-39.2 (G2, design D-5): rows seeded from the study (`origin = 'study'`) do not count until the verifier replaces them with
+    // evidence entered by hand; only `admin` rows reach the body rule and the comparison. The record still lists every row.
+    const items: EvidenceItem[] = evidenceRows.filter((r) => r.origin === 'admin').map((r) => ({
       id: idToString(r.id),
       kind: r.kind as EvidenceItem['kind'],
       body: r.body,

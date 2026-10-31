@@ -546,6 +546,96 @@ describe('BJS-09 verification', () => {
     expectError(await admin.post(url(999, '/verify'), {}), 'NOT_FOUND', 404)
   })
 
+  // H-A15 (i), AC-39.2 (G2, design D-5): seeded study rows do not count until the verifier replaces them. The body counter of the
+  // Kontrak screen already ignored them; now the server check and Sahkan do too.
+  describe('study-origin evidence does not count (H-A15 i, AC-39.2)', () => {
+    /** A complete, agreeing evidence set for fullSection(): two bodies, each with a paper and a skema, as seeded study rows. */
+    const studyRow = (kind: string, bodyId: string, values: Record<string, unknown>) =>
+      rows(
+        `insert into blueprint_evidence (blueprint_id, kind, body, year, paper_code, values, origin) values ($1, $2, $3, 2025, '1449/1', $4::jsonb, 'study')`,
+        [studyBlueprintId, kind, bodyId, JSON.stringify(values)],
+      )
+    const full = { durationMin: 60, totalMarks: 4, sections: [{ position: 1, markBudget: 4, rule: { type: 'all' }, questionCount: 4 }] }
+    const skemaOnly = { totalMarks: 4, sections: [{ position: 1, markBudget: 4 }] }
+    let studyBlueprintId = ''
+    const stateOf = async (k: number) => envelopeOf(BijakVerificationStateSchema).parse((await admin.get(url(k, '/verification'))).body).data
+
+    it('study rows that would satisfy the check alone make no body count: NO_EVIDENCE_BODIES, lines not_covered, Sahkan refused', async () => {
+      expect((await admin.post('/api/admin/blueprints', create(49))).status).toBe(201)
+      studyBlueprintId = String((await bpRow('MAT/S49'))?.id)
+      for (const [kind, bodyId, values] of [['trial_paper', 'sbp', full], ['skema', 'sbp', skemaOnly], ['trial_paper', 'selangor_mpsm', full], ['skema', 'selangor_mpsm', skemaOnly], ['lpm_format', 'lpm', full]] as const) await studyRow(kind, bodyId, values)
+      // the rows are listed (with their origin) ...
+      const listed = envelopeOf(z.array(BijakEvidenceItemSchema)).parse((await admin.get(url(49, '/evidence'))).body).data
+      expect(listed).toHaveLength(5)
+      expect(listed.every((e) => e.origin === 'study')).toBe(true)
+      // ... but none of them counts: not two bodies, not even the LPM document
+      const state = await stateOf(49)
+      expect(state.check.passes).toBe(false)
+      expect(state.check.completeness.map((c) => c.code)).toContain('NO_EVIDENCE_BODIES')
+      expect(state.check.lines.every((l) => l.status === 'not_covered' && l.statements.length === 0)).toBe(true)
+      const res = await admin.post(url(49, '/verify'), { note: 'Disemak.' })
+      expect(res.status).toBe(422)
+      expect(BijakVerificationFailedErrorSchema.parse(res.body).error.details.check.completeness.map((c) => c.code)).toContain('NO_EVIDENCE_BODIES')
+      expect(await bpRow('MAT/S49')).toMatchObject({ source: 'spec', verification_id: null, serves_students: false })
+    })
+
+    it('a study row does not contradict either: one that states another duration is ignored, the admin evidence decides', async () => {
+      expect((await admin.post('/api/admin/blueprints', create(50))).status).toBe(201)
+      studyBlueprintId = String((await bpRow('MAT/S50'))?.id)
+      await studyRow('trial_paper', 'sbp', { ...full, durationMin: 120 })
+      expect((await admin.post(url(50, '/evidence'), lpmEvidence())).status).toBe(201)
+      const state = await stateOf(50)
+      expect(state.check.lines.find((l) => l.field === 'durationMin')).toMatchObject({ status: 'ok', supportingBodies: 2 })
+      expect(state.check).toMatchObject({ passes: true, completeness: [] })
+      const res = await admin.post(url(50, '/verify'), { note: 'Disemak.' })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+    })
+
+    it('the same rows entered by the admin (origin admin) do count', async () => {
+      expect((await admin.post('/api/admin/blueprints', create(51))).status).toBe(201)
+      for (const [kind, bodyId, values] of [['trial_paper', 'sbp', full], ['skema', 'sbp', skemaOnly], ['trial_paper', 'selangor_mpsm', full], ['skema', 'selangor_mpsm', skemaOnly]] as const) {
+        expect((await admin.post(url(51, '/evidence'), lpmEvidence({ kind, body: bodyId, values }))).status).toBe(201)
+      }
+      const state = await stateOf(51)
+      expect(state.check).toMatchObject({ passes: true, completeness: [] })
+      expect(state.check.lines.every((l) => l.status === 'ok')).toBe(true)
+    })
+  })
+
+  // H-A15 (iii), AC-39.7 / AC-39.8 / SPP 10.3: a skema's Markah on a choose-N section is the offered marks.
+  describe('Markah of a skema on a choose-N section (H-A15 iii)', () => {
+    const choose = (kertas: number) => create(kertas, {
+      sections: [
+        fullSection(),
+        fullSection({ label: 'Bahagian B', markBudget: 6, questionCount: 4, rule: { type: 'choose', n: 2 }, profile: { kind: 'bahagian', groups: [{ from: 1, to: 4, tpMin: 1, tpMax: 4 }] }, quota: { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: t4[0]?.nodeId }, value: 2 }, { unit: { kind: 'unit', nodeId: t5[0]?.nodeId }, value: 2 }] }, kbatMarks: 1 }),
+      ],
+    })
+    const paper = { durationMin: 60, totalMarks: 10, sections: [{ position: 1, markBudget: 4, rule: { type: 'all' }, questionCount: 4 }, { position: 2, markBudget: 6, rule: { type: 'choose', n: 2 }, questionCount: 4 }] }
+    const skemaValues = (b: number) => ({ totalMarks: 10, sections: [{ position: 1, markBudget: 4 }, { position: 2, markBudget: b }] })
+    const addSet = async (k: number, skemaB: number) => {
+      for (const [kind, bodyId, values] of [['trial_paper', 'sbp', paper], ['skema', 'sbp', skemaValues(skemaB)], ['trial_paper', 'selangor_mpsm', paper], ['skema', 'selangor_mpsm', skemaValues(skemaB)]] as const) {
+        expect((await admin.post(url(k, '/evidence'), lpmEvidence({ kind, body: bodyId, values }))).status).toBe(201)
+      }
+    }
+    const line = async (k: number, position: number) => (await (async () => envelopeOf(BijakVerificationStateSchema).parse((await admin.get(url(k, '/verification'))).body).data)()).check.lines.find((l) => l.field === 'markBudget' && l.sectionPosition === position)
+
+    it('the skema offered marks (6 / 2 x 4 = 12) agree with the budget 6: ok, and Sahkan succeeds', async () => {
+      expect((await admin.post('/api/admin/blueprints', choose(52))).status).toBe(201)
+      await addSet(52, 12)
+      expect(await line(52, 2)).toMatchObject({ status: 'ok', expected: 6, supportingBodies: 2 })
+      expect(await line(52, 1)).toMatchObject({ status: 'ok', expected: 4 })
+      expect((await admin.post(url(52, '/verify'), { note: 'Disemak.' })).status).toBe(200)
+    })
+
+    it('another skema figure for the choose section differs; for the non-choose section only the budget agrees', async () => {
+      expect((await admin.post('/api/admin/blueprints', choose(53))).status).toBe(201)
+      await addSet(53, 10)
+      expect(await line(53, 2)).toMatchObject({ status: 'differs', expected: 6 })
+      expect(await line(53, 1)).toMatchObject({ status: 'ok' })
+      expect((await admin.post(url(53, '/verify'), {})).status).toBe(422)
+    })
+  })
+
   it('two concurrent verifies: one wins (200), the other gets 409', async () => {
     expect((await admin.post('/api/admin/blueprints', create(48))).status).toBe(201)
     await admin.post(url(48, '/evidence'), lpmEvidence())
