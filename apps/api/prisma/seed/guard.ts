@@ -24,3 +24,17 @@ export function assertSeedAllowed(env: Record<string, string | undefined> = proc
     'Refusing to seed demo data: NODE_ENV is not development or test, so this run counts as production. Set ALLOW_DEMO_SEED=true (or 1) only if you really mean it. The database was not touched.',
   )
 }
+
+/**
+ * True when the demo guard counts `env` as production, i.e. `assertSeedAllowed` would refuse it with no ALLOW_DEMO_SEED key.
+ * Uses the guard itself, so it follows the guard's own definition of production. Lives here (a leaf) so a seed module can use
+ * it without importing the registry; re-exported from `index.ts`.
+ */
+export function countsAsProduction(env: Record<string, string | undefined> = process.env): boolean {
+  try {
+    assertSeedAllowed({ ...env, ALLOW_DEMO_SEED: undefined })
+    return false
+  } catch {
+    return true
+  }
+}

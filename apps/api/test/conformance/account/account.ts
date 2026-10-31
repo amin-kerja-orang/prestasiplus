@@ -28,7 +28,7 @@ export async function registerStudent(ctx: ScenarioContext): Promise<Registered>
   const school = await schoolIdByCode(admin, 'DEMO001')
   const email = `${nextTag('murid')}@ujian.test`
   const res = await anon.request('POST', '/auth/register', {
-    body: { name: 'Murid Konformans', email, role: 'student', grade: 4, icNumber: IC, schoolId: school, password: PASSWORD, passwordConfirmation: PASSWORD },
+    body: { name: 'Murid Konformans', email, role: 'student', grade: 10, icNumber: IC, schoolId: school, password: PASSWORD, passwordConfirmation: PASSWORD },
   })
   ctx.expectStatus(res, 201)
   const client = await sessionLogin(anon, { identifier: email, password: PASSWORD })
@@ -45,7 +45,7 @@ export const accountScenarios: Scenario[] = [
     async run(ctx) {
       const anon = ctx.anonymous()
       const email = `${nextTag('murid')}@ujian.test`
-      const body = { name: 'Murid Baharu', email, role: 'student', grade: 3, password: PASSWORD, passwordConfirmation: PASSWORD }
+      const body = { name: 'Murid Baharu', email, role: 'student', grade: 10, password: PASSWORD, passwordConfirmation: PASSWORD }
       const res = await anon.request('POST', '/auth/register', { body })
       ctx.expectStatus(res, 201)
       ctx.check(/pp_session=[^;]+/.test(res.headers['set-cookie'] ?? ''), 'register did not set the session cookie')
@@ -137,7 +137,7 @@ export const accountScenarios: Scenario[] = [
       ctx.check(before.headers['cache-control']?.includes('no-store') === true, 'GET /me is cacheable')
       const session = dataOf(await me.client.request('GET', '/session'))
       ctx.check(dataOf(before).id === (session.user as { id?: string }).id, 'GET /me and GET /session disagree on the id')
-      const saved = await me.client.request('PUT', '/me', { body: { name: 'Nama Baharu', email: 'lain@ujian.test', bio: 'Motto', grade: 5 } })
+      const saved = await me.client.request('PUT', '/me', { body: { name: 'Nama Baharu', email: 'lain@ujian.test', bio: 'Motto', grade: 11 } })
       ctx.expectStatus(saved, 200)
       ctx.check((saved.body as { status?: string }).status === 'Profil berjaya dikemaskini.', 'profile status text differs')
       ctx.check(dataOf(saved).email === me.email && dataOf(saved).name === 'Nama Baharu', 'the e-mail must be ignored and the name saved')
