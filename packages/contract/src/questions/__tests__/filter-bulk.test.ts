@@ -28,6 +28,13 @@ describe('filter-based bulk action request (AC-03.3)', () => {
     expect(issues(QuestionFilterBulkRequestSchema.safeParse({ action: 'approved', filter: { tahun: '2024' } }))).toEqual({ expectedCount: QUESTION_MESSAGES.filterCountNeeded })
     expect(issues(QuestionFilterBulkRequestSchema.safeParse({ action: 'approved', filter: {}, expectedCount: 1 }))).toEqual({ filter: QUESTION_MESSAGES.filterNeeded })
   })
+  it('T47-L1: a blank string is not a filter for approve; archive stays allowed', () => {
+    for (const filter of [{ search: '   ' }, { search: '' }, { search: ' \t' }]) {
+      expect(issues(QuestionFilterBulkRequestSchema.safeParse({ action: 'approved', filter, expectedCount: 1 })), JSON.stringify(filter)).toEqual({ filter: QUESTION_MESSAGES.filterNeeded })
+    }
+    expect(QuestionFilterBulkRequestSchema.safeParse({ action: 'approved', filter: { search: ' x ' }, expectedCount: 1 }).success).toBe(true)
+    expect(QuestionFilterBulkRequestSchema.safeParse({ action: 'archived', filter: { search: '  ' }, expectedCount: 1 }).success).toBe(true)
+  })
   it('is strict: unknown keys, other actions and ids are refused', () => {
     expect(QuestionFilterBulkRequestSchema.safeParse({ ...ok, ids: ['1'] }).success).toBe(false)
     expect(QuestionFilterBulkRequestSchema.safeParse({ ...ok, filter: { tahun: '2024', bogus: 'x' } }).success).toBe(false)

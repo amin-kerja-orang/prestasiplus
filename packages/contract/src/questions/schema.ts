@@ -419,7 +419,8 @@ export const QuestionFilterBulkRequestSchema = z
   })
   .superRefine((v, ctx) => {
     if (v.expectedCount === undefined && v.dryRun !== true) ctx.addIssue({ code: 'custom', path: ['expectedCount'], message: QUESTION_MESSAGES.filterCountNeeded })
-    if (v.action === 'approved' && Object.values(v.filter).every((x) => x === undefined)) ctx.addIssue({ code: 'custom', path: ['filter'], message: QUESTION_MESSAGES.filterNeeded })
+    // A blank string is not a filter (the server drops a blank search): `{ search: '   ' }` would otherwise approve the whole bank (T47-L1).
+    if (v.action === 'approved' && Object.values(v.filter).every((x) => x === undefined || (typeof x === 'string' && x.trim() === ''))) ctx.addIssue({ code: 'custom', path: ['filter'], message: QUESTION_MESSAGES.filterNeeded })
   })
   .meta({ id: 'QuestionFilterBulkRequest' })
 

@@ -1,4 +1,4 @@
-import { QuestionSchema, mutationEnvelopeOf } from '@pp/contract'
+import { QUESTION_MESSAGES, QuestionSchema, mutationEnvelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { QuestionsService } from '../../src/modules/questions'
@@ -45,6 +45,7 @@ describe('filter-based bulk action (Luluskan Hasil Tapisan, Arkib Semua)', () =>
   }
 
   beforeAll(async () => {
+    process.env.THROTTLE_QUESTIONS_WRITE_PER_MINUTE = '100000' // the suite makes many questions; the limit itself is the decorator's
     t = await bootQuestionsApp()
     admin = await loginAs(t, 'admin')
     teacher = await loginAs(t, 'teacher')
@@ -152,6 +153,27 @@ describe('filter-based bulk action (Luluskan Hasil Tapisan, Arkib Semua)', () =>
     expectError(await post(admin, { action: 'approved', filter: { tahun: b.year }, expectedCount: -1 }), 'VALIDATION_ERROR')
     expectError(await post(admin, { action: 'approved', filter: { search: 'x'.repeat(101) }, expectedCount: 1 }), 'VALIDATION_ERROR')
     expect(await statusOf(b.review[0]!)).toBe('review')
+  })
+
+  it('T47-L1: a blank-only filter is NOT a filter for approve (422 with the V2 guard text), applying nothing; Arkib Semua stays allowed', async () => {
+    const b = await batch({ review: 2 })
+    const total = (await admin.get('/api/questions?pageSize=1')).body.meta.totalItems as number
+    for (const filter of [{ search: '   ' }, { search: '' }, { search: '\t\n ' }, { search: '  ', tahun: undefined }]) {
+      for (const extra of [{ expectedCount: total }, { dryRun: true }]) {
+        const res = await post(admin, { action: 'approved', filter, ...extra })
+        const error = expectError(res, 'VALIDATION_ERROR')
+        expect(error.fields?.filter, JSON.stringify(filter)).toBe(QUESTION_MESSAGES.filterNeeded)
+      }
+    }
+    for (const id of b.review) expect(await statusOf(id)).toBe('review')
+    // Defence in depth: the service refuses an approve whose filter is empty after normalisation, even without the schema in front.
+    const svc = t.app.get(QuestionsService)
+    await expect(svc.bulkByFilter({ action: 'approved', filter: {}, expectedCount: total }, { userId: admin.userId, role: 'admin' })).rejects.toMatchObject({ code: 'VALIDATION_ERROR' })
+    for (const id of b.review) expect(await statusOf(id)).toBe('review')
+    // A blank search on archive is the same as no filter: Arkib Semua is allowed (dry run only here, so the bank stays for the next tests).
+    const dry = await post(admin, { action: 'archived', filter: { search: '   ' }, dryRun: true })
+    expect(dry.status, JSON.stringify(dry.body)).toBe(200)
+    expect(dry.body.data.matched).toBe(total)
   })
 
   it('Admin Pusat only, with a session and a CSRF token', async () => {

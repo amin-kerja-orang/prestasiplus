@@ -347,6 +347,8 @@ export class QuestionsService {
     cap: number = FILTER_ACTION_CAP,
   ): Promise<FilterBulkOutcome> {
     const dryRun = input.dryRun === true
+    // Defence in depth (T47-L1): after parse normalisation an approve with no real filter is the whole bank. Never approve that.
+    if (input.action === 'approved' && Object.keys(input.filter).length === 0) throw fail({ filter: QUESTION_MESSAGES.filterNeeded })
     const from = QUESTION_WORKFLOW_STATUSES.filter((s) => isQuestionWorkflowTransitionAllowed(s, input.action, 'admin'))
     const targets = await this.repo.filterTargets(input.filter, from, dryRun ? 0 : cap)
     if (!dryRun && input.expectedCount !== targets.matched) {
