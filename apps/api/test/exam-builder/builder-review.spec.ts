@@ -33,6 +33,7 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       questionText: 'Berapakah hasil tambah 2 dan 3?',
       options: ['4', '5', '6', '7'],
       correctAnswer: 1,
+      cognitiveLevel: 'mengaplikasi',
       kertas: '2',
       tag,
       ...over,
@@ -44,6 +45,8 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
+      // the T33 approve gate: every leaf needs a cognitive level (and the kertas); nothing may fail silently
+      expect(res.body.data, `${action}: ${JSON.stringify(res.body.data)}`).toMatchObject({ affected: ids.length, failed: [] })
     }
   }
   const approved = async (over: Record<string, unknown> = {}): Promise<string> => {
@@ -269,6 +272,39 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect((await admin.put(`/api/admin/papers/${paper}`, { reference: [] })).body.data.paper.reference ?? []).toEqual([])
     })
 
+    // B3 T34-L1: the picture is named by its PUBLIC token only, and only an image the editing admin uploaded (or already on this paper) is accepted.
+    it('Bahan rujukan: a decimal file id, and an image another user uploaded, are refused', async () => {
+      const paper = await newPaper()
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      expect(up.status).toBe(201)
+      const token = up.body.data.id as string
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [token]))[0]!.id)
+      const byId = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: [], imageFileId: internal }] })
+      expect(byId.status, JSON.stringify(byId.body)).toBe(422)
+      expect(byId.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+
+      // an image another user (a teacher) uploaded and attached to nothing is not the admin's to publish on a paper
+      const teacher = await loginFull(t, ACCOUNTS.teacher)
+      const other = await teacher.upload('/api/files?purpose=question_image', makePng())
+      expect(other.status, JSON.stringify(other.body)).toBe(201)
+      const foreign = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: [], imageFileId: other.body.data.id as string }] })
+      expect(foreign.status, JSON.stringify(foreign.body)).toBe(422)
+      expect(foreign.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+      // the admin's own upload stays accepted and survives a later save of the same list by another editor path (already on the paper)
+      const own = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: [], imageFileId: token }] })
+      expect(own.status, JSON.stringify(own.body)).toBe(200)
+    })
+
+    // B3 T34-L3: a panel is bounded (title 200, 20 items of 500 characters), so a reference sheet cannot be used to store a blob.
+    it('Bahan rujukan: an over-long title, too many items or an over-long item are refused', async () => {
+      const paper = await newPaper()
+      const put = (panel: Record<string, unknown>) => admin.put(`/api/admin/papers/${paper}`, { reference: [panel] })
+      expect((await put({ title: 'T'.repeat(200), items: Array.from({ length: 20 }, () => 'x'.repeat(500)) })).status).toBe(200)
+      expect((await put({ title: 'T'.repeat(201), items: [] })).status).toBe(422)
+      expect((await put({ title: 'T', items: Array.from({ length: 21 }, () => 'x') })).status).toBe(422)
+      expect((await put({ title: 'T', items: ['x'.repeat(501)] })).status).toBe(422)
+    })
+
     it('Sunting petikan: renames the group title; the group must be on the paper', async () => {
       const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan lama', body: { ms: 'Petikan ujian untuk kertas.' } })
       expect(stim.status, JSON.stringify(stim.body)).toBe(201)
@@ -463,7 +499,7 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
         questionText: 'Terangkan cara mengira luas segi empat tepat.',
         kertas: '2',
         tag,
-        parts: [{ label: 'a', mode: 'working', prompt: { ms: 'Kira luas segi empat tepat itu.' }, marks: 2, reveal: 'never', key: { kind: 'points', marks: 2, points: [{ id: 'p1', code: 'M', label: 'Darabkan', marks: 2, text: { ms: 'panjang darab lebar' } }] } }],
+        parts: [{ label: 'a', mode: 'working', cognitiveLevel: 'mengaplikasi', prompt: { ms: 'Kira luas segi empat tepat itu.' }, marks: 2, reveal: 'never', key: { kind: 'points', marks: 2, points: [{ id: 'p1', code: 'M', label: 'Darabkan', marks: 2, text: { ms: 'panjang darab lebar' } }] } }],
       })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       await approve([res.body.data.id as string])

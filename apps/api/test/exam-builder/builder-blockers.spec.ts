@@ -30,6 +30,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
       questionText: 'Berapakah hasil tambah 2 dan 3?',
       options: ['4', '5', '6', '7'],
       correctAnswer: 1,
+      cognitiveLevel: 'mengaplikasi',
       kertas: '2',
       tag,
       ...over,
@@ -41,6 +42,8 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
+      // the T33 approve gate: every leaf needs a cognitive level (and the kertas); nothing may fail silently
+      expect(res.body.data, `${action}: ${JSON.stringify(res.body.data)}`).toMatchObject({ affected: ids.length, failed: [] })
     }
   }
   const approved = async (over: Record<string, unknown> = {}): Promise<string> => {
@@ -161,7 +164,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
       questionText: 'Terangkan cara mengira luas segi empat tepat.',
       kertas: '2',
       tag,
-      parts: [{ label: 'a', mode: 'working', prompt: { ms: 'Kira luas segi empat tepat itu.' }, marks: 2, reveal: 'never', key: { kind: 'points', marks: 2, points: [{ id: 'p1', code: 'M', label: 'Darabkan', marks: 2, text: { ms: 'panjang darab lebar' } }] } }],
+      parts: [{ label: 'a', mode: 'working', cognitiveLevel: 'mengaplikasi', prompt: { ms: 'Kira luas segi empat tepat itu.' }, marks: 2, reveal: 'never', key: { kind: 'points', marks: 2, points: [{ id: 'p1', code: 'M', label: 'Darabkan', marks: 2, text: { ms: 'panjang darab lebar' } }] } }],
     })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const bad = res.body.data.id as string
@@ -190,6 +193,90 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     expect(review.canOverride).toBe(false)
     expect(review.blockerDetails).toContainEqual({ code: 'GROUP_MIN_MEMBERS', message: 'Kumpulan perlu sekurang-kurangnya 2 soalan.', overridable: false })
     expect(review.blockerDetails.some((b) => b.overridable)).toBe(false)
+  })
+
+  // B2 MAJOR 1 / B3 T34-L2 (PIPE AC-07.5, AC-26.3): the audited override lifts only the blueprint-conformance failures. A question without a key
+  // or marks, in a mode the section does not allow, or in a broken group is a structural failure with its own hard code.
+  describe('structural failures of a question are hard (the override never lifts them)', () => {
+    const refuseOverride = async (paper: string) => {
+      const forced = await publishOf(paper, { override: true, reason: 'sebab yang sah' })
+      expect(forced).toMatchObject({ ok: false, canOverride: false })
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+      expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(0)
+    }
+
+    it('MODE_NOT_ALLOWED: a section that allows only numeric answers refuses a placed MCQ; the override cannot publish (B2 probe)', async () => {
+      const bp = `select id from blueprints where status = 'active' and kertas = 2 and subject_id = ${subject}`
+      await q(`update blueprint_sections set allowed_modes = '{numeric}' where position = 1 and blueprint_id in (${bp})`)
+      try {
+        const { paper, ids } = await fullPaper()
+        const review = await reviewOf(paper)
+        const hits = review.blockerDetails.filter((b) => b.code === 'MODE_NOT_ALLOWED')
+        expect(hits.map((b) => b.questionId).sort()).toEqual([ids[0], ids[1], ids[2]].sort())
+        expect(hits.every((b) => !b.overridable && b.section === 'Bahagian A')).toBe(true)
+        expect(review.canOverride).toBe(false)
+        await refuseOverride(paper)
+      } finally {
+        await q(`update blueprint_sections set allowed_modes = '{}' where position = 1 and blueprint_id in (${bp})`)
+      }
+    })
+
+    /** An approved written (working) question worth 2 marks, tagged for Bahagian C. */
+    async function written(): Promise<string> {
+      const res = await admin.post('/api/questions', {
+        subjectId: subject,
+        educationLevelId: level,
+        difficultyLevel: 3,
+        questionType: 'essay',
+        questionText: 'Terangkan cara mengira luas segi empat tepat.',
+        kertas: '2',
+        tag,
+        parts: [{ label: 'a', mode: 'working', cognitiveLevel: 'mengaplikasi', prompt: { ms: 'Kira luas segi empat tepat itu.' }, marks: 2, key: { kind: 'points', marks: 2, points: [{ id: 'p1', code: 'M', label: 'Darabkan', marks: 2, text: { ms: 'panjang darab lebar' } }] } }],
+      })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      await approve([res.body.data.id as string])
+      expect((await setPool(res.body.data.id as string, ['MAT2-C'])).status).toBe(200)
+      return res.body.data.id as string
+    }
+    const dropKey = (questionId: string) =>
+      q(`delete from answer_keys where part_id in (select p.id from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1)`, [questionId])
+
+    it('NO_KEY: a written question that lost its key is a named hard blocker with its id and section, never a 500', async () => {
+      const bad = await written()
+      const { paper } = await fullPaper({ last: bad })
+      await dropKey(bad)
+      const res = await admin.get(`/api/admin/papers/${paper}/review`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const details = (res.body.data as { blockerDetails: Detail[] }).blockerDetails
+      expect(details.find((b) => b.code === 'NO_KEY')).toMatchObject({ questionId: bad, overridable: false, section: 'Bahagian C' })
+      // the bank cannot read the keyless question, so it has no servability verdict: that is a HARD NOT_SERVABLE, never a silent pass
+      expect(details.find((b) => b.code === 'NOT_SERVABLE' && b.questionId === bad)).toMatchObject({ overridable: false, message: `Soalan ${bad} tidak dapat disemak untuk murid; cuba lagi.` })
+      expect(res.body.data.canOverride).toBe(false)
+      await refuseOverride(paper)
+    })
+
+    it('NO_MARKS: a zero-mark question is a named hard blocker with its id (next to the marks mismatch)', async () => {
+      const { paper, ids } = await fullPaper()
+      await q(`update question_parts set marks = 0 where question_version_id in (select id from question_versions where question_id = $1)`, [ids[1]])
+      const res = await admin.get(`/api/admin/papers/${paper}/review`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const details = (res.body.data as { blockerDetails: Detail[] }).blockerDetails
+      expect(details.find((b) => b.code === 'NO_MARKS')).toMatchObject({ questionId: ids[1], overridable: false })
+      expect(res.body.data.canOverride).toBe(false)
+      await refuseOverride(paper)
+    })
+
+    it('a no-unit question next to a no-key question: the override is refused as a whole (canOverride false) but the unit row stays overridable', async () => {
+      const bad = await written()
+      const { paper, ids } = await fullPaper({ last: bad })
+      await q(`update question_versions set unit_node_id = null where question_id = $1`, [ids[0]])
+      await dropKey(bad)
+      const review = await reviewOf(paper)
+      expect(review.blockerDetails.find((b) => b.questionId === ids[0])).toMatchObject({ code: 'INELIGIBLE', overridable: true })
+      expect(review.blockerDetails.find((b) => b.questionId === bad)).toMatchObject({ code: 'NO_KEY', overridable: false })
+      expect(review.canOverride).toBe(false)
+      await refuseOverride(paper)
+    })
   })
 
   describe('R1E2E-07: the Kontrak is not Disahkan', () => {
@@ -224,9 +311,10 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     })
   })
 
-  it('every code of the contract has an overridable flag; only the three blueprint codes are overridable', () => {
+  it('every code of the contract has an overridable flag; only the two blueprint-conformance codes are overridable (PIPE AC-07.5)', () => {
     const overridable = Object.entries(BIJAK_BUILDER_BLOCKER_OVERRIDABLE).filter(([, v]) => v).map(([k]) => k).sort()
-    expect(overridable).toEqual(['BLUEPRINT_NOT_VERIFIED', 'GROUP_BROKEN', 'INELIGIBLE'])
+    expect(overridable).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE'])
+    for (const hard of ['NO_KEY', 'NO_MARKS', 'MODE_NOT_ALLOWED', 'GROUP_BROKEN'] as const) expect(BIJAK_BUILDER_BLOCKER_OVERRIDABLE[hard], hard).toBe(false)
     const sample: BijakBuilderBlocker = { code: 'NOT_SERVABLE', message: 'x', overridable: false }
     expect(sample.overridable).toBe(false)
   })

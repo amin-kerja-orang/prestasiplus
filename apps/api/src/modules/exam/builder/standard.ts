@@ -48,6 +48,9 @@ export function standardForPaper(paper: PaperTree, blueprint: BlueprintWithSecti
 /** Base reasons that block a curated paper (structural tier). `pool_mismatch` is an explicit admin choice and only a note. */
 const BLOCKING_REASONS = new Set(['no_unit', 'no_tp', 'no_marks', 'no_key', 'tag_review', 'mode_not_allowed'])
 
+/** Structural reasons that can never be overridden, with their blocker code. */
+const HARD_REASON_CODE: Readonly<Record<string, BijakBuilderBlockerCode>> = { no_key: 'NO_KEY', no_marks: 'NO_MARKS', mode_not_allowed: 'MODE_NOT_ALLOWED' }
+
 const text = (reason: string | undefined): string => (INELIGIBLE_TEXT as Record<string, string>)[reason ?? ''] ?? (reason ?? 'tidak layak')
 
 /**
@@ -61,7 +64,7 @@ export function violationLines(
   labelOf: (position: number) => string,
 ): { blockers: string[]; fixed: string[]; notes: string[]; blockerIssues: BlockerDraft[]; fixedIssues: BlockerDraft[] } {
   const blockerIssues: BlockerDraft[] = []
-  /** Blockers that the audited override can never lift (the question itself cannot be checked at all). */
+  /** Blockers that the audited override can never lift (a question missing from the pool, no key, no marks, a mode not allowed, a broken group). */
   const fixedIssues: BlockerDraft[] = []
   const notes: string[] = []
   const at = (v: Violation, line: string): string => (v.sectionPosition === undefined ? line : LINES.sectionLine(labelOf(v.sectionPosition), line))
@@ -75,9 +78,14 @@ export function violationLines(
     if (v.code === 'UNKNOWN_QUESTION') {
       fixedIssues.push(draft(v, 'UNKNOWN_QUESTION', LINES.ineligible(v.questionId ?? '', MISSING_FROM_POOL_TEXT)))
     } else if (v.code === 'INELIGIBLE' && v.tier === 'structural' && BLOCKING_REASONS.has(v.detail ?? '')) {
-      blockerIssues.push(draft(v, 'INELIGIBLE', LINES.ineligible(v.questionId ?? '', text(v.detail))))
+      const line = LINES.ineligible(v.questionId ?? '', text(v.detail))
+      // PIPE AC-07.5 / AC-26.3: the audited override lifts the blueprint-conformance failures (no unit, no TP, tags awaiting review) only.
+      // A question without a key or marks, or in an answer mode the section does not allow, is a structural failure: never overridable.
+      const hard = HARD_REASON_CODE[v.detail ?? '']
+      if (hard) fixedIssues.push(draft(v, hard, line))
+      else blockerIssues.push(draft(v, 'INELIGIBLE', line))
     } else if (v.code === 'GROUP_BROKEN') {
-      blockerIssues.push(draft(v, 'GROUP_BROKEN', LINES.groupNotConsecutive(v.detail ?? '')))
+      fixedIssues.push(draft(v, 'GROUP_BROKEN', LINES.groupNotConsecutive(v.detail ?? '')))
     } else if (v.tier === 'standard' || v.code === 'INELIGIBLE' || v.code === 'MARKS_EACH') {
       notes.push(at(v, noteOf(v)))
     }
