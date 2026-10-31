@@ -154,7 +154,7 @@ describe('Kuiz routes', () => {
 describe('parseCount (V2 (int) cast, fallback 20)', () => {
   it('truncates like V2 and falls back to 20', async () => {
     const { parseCount } = await import('../lib/kuiz')
-    expect([5.5, '5', '10', 7, 'abc', null, undefined, 40].map(parseCount)).toEqual([5, 5, 10, 20, 20, 20, 20, 40])
+    expect([5.5, '5', '10', 7, 'abc', null, undefined, 40, '5abc'].map(parseCount)).toEqual([5, 5, 10, 20, 20, 20, 20, 40, 5])
   })
 })
 

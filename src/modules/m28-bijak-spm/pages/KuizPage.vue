@@ -2,14 +2,14 @@
 /**
  * Simulasi — Kuiz (`/simulasi/kuiz`, R1-F12): a random quiz of 5/10/20/40 objective questions, one
  * per screen (V2 `exam-sim/quiz.blade.php`). Count and subject come from the URL only (`?count=`,
- * `?subject=`; D83 D-7: no picker). "✓ Semak Jawapan" is marked on the server; the verdict shows the
+ * `?subject=`; D83 D-7: no picker). "✓ Semak" is marked on the server; the verdict shows the
  * right option and the explanation. The quiz is stored as a practice session (U8), so Tamat finishes
  * it and shows the reward.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { DsEmptyState, DsLoadError, DsPage, DsProgress, DsRewardChip, DsStatTile } from '@/ds'
+import { DsEmptyState, DsLoadError, DsPage, DsProgress, DsStatTile } from '@/ds'
 import type { BijakKuizCheckResult, BijakKuizResult, BijakKuizSession } from '@pp/contract'
 
 import KuizItem from '../components/KuizItem.vue'
@@ -188,10 +188,6 @@ void start()
             />
           </div>
           <p class="text-caption text-muted">{{ kuizCopy.time }}: {{ time }}</p>
-          <div class="flex flex-wrap justify-center gap-2" data-testid="kuiz-rewards">
-            <DsRewardChip art="coin" :value="result.gamification.coinsEarned" label="Syiling" />
-            <DsRewardChip art="bolt" :value="result.gamification.pointsEarned" label="Mata" />
-          </div>
           <div class="flex w-full flex-col justify-center gap-2 sm:w-auto sm:flex-row">
             <UButton class="min-h-11 justify-center" data-testid="kuiz-retry" @click="start">{{
               kuizCopy.retry

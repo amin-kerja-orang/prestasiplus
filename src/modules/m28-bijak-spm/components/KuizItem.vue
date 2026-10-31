@@ -21,7 +21,7 @@ const props = withDefaults(
     /** The server verdict once checked. */
     verdict?: BijakKuizCheckResult | null
     busy?: boolean
-    /** Label of the check button (V2: "✓ Semak Jawapan" random, "✓ Semak" paper). */
+    /** Label of the check button (V2: "✓ Semak" in both modes). */
     semakLabel?: string
     /** Stimuli pinned once by the page (shared group): not repeated here. */
     hideStimuli?: boolean

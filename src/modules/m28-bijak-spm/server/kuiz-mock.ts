@@ -210,6 +210,9 @@ export class MockKuiz {
       (n, s) => n + this.itemsOf(s.questionIds).filter((i) => i.markable).length,
       0,
     )
+    // Like the API (422 on a page outside 1..pageCount); a paper with nothing to show has only page 1.
+    if (!Number.isInteger(page) || page < 1 || page > Math.max(1, sections.length))
+      throw new BijakError('bad_request', 'Nilai tidak sah.')
     const s = sections[page - 1] ?? null
     // D90: a stimulus group is sent once in `groups`; its members follow each other and carry no stimulus.
     const raw = s ? this.itemsOf(s.questionIds) : []

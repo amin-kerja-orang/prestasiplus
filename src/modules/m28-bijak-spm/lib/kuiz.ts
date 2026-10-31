@@ -18,7 +18,7 @@ export const kuizCopy = {
   score: 'Markah',
   accuracy: 'Ketepatan',
   retry: '↻ Cuba Lagi',
-  fullPapers: 'Kertas penuh',
+  fullPapers: '← Kertas penuh',
   empty: 'Belum ada soalan objektif',
   /** Source: docs/discovery/BIJAK-SPM-cloud.md S5 row (V2 empty state text). */
   emptyHelp:

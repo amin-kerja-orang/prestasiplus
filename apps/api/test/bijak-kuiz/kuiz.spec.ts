@@ -497,6 +497,56 @@ describe('own stimuli of every kind (H-C8, R1E2E-05b)', () => {
   })
 })
 
+describe('kuiz marker (paywall bypass guard)', () => {
+  it('26. an in-progress practice session that is not a kuiz is 404 on kuiz check and finish', async () => {
+    const q = id('SEED-MCQ-MATH-T5')
+    const row = (
+      await t.db.query<{ id: string }>(
+        `insert into practice_sessions (user_id, mode, question_count, status, started_at) values ($1::bigint, 'latih_tubi', 1, 'in_progress', now()) returning id::text`,
+        [student.userId],
+      )
+    )[0]!
+    await t.db.query(`insert into practice_session_questions (session_id, position, question_id, question_version_no) values ($1::uuid, 0, $2::bigint, 1)`, [row.id, q])
+    const key = await keyOf(q)
+    const chk = await student.post(`/api/bijak/kuiz/sessions/${row.id}/check`, { itemId: q, optionId: key })
+    expect(chk.status).toBe(404)
+    expect(JSON.stringify(chk.body)).not.toContain('correctOptionId')
+    expect((await student.post(`/api/bijak/kuiz/sessions/${row.id}/finish`, {})).status).toBe(404)
+    expect((await t.db.query<{ status: string }>(`select status from practice_sessions where id = $1::uuid`, [row.id]))[0]!.status).toBe('in_progress')
+    expect(Number((await t.db.query(`select count(*) as n from practice_checks where session_id = $1::uuid`, [row.id]))[0]!.n)).toBe(0)
+    // a real kuiz session of the same pupil still works
+    const s = sessionOf(await start(student, { subject: 'MATH', count: 5 }))
+    const it = s.items[0]!
+    expect((await student.post(`/api/bijak/kuiz/sessions/${s.sessionId}/check`, { itemId: it.id, optionId: await keyOf(it.id) })).status).toBe(200)
+  })
+})
+
+describe('per-paper quiz skips a question without its stimulus (UX-22)', () => {
+  it('27. the pager, the score total and the check count only the shown questions', async () => {
+    const st = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, body_ms) values ('passage', 'Petikan', null) returning id::text`))[0]!
+    await t.db.query(
+      `insert into question_version_stimuli (question_version_id, stimulus_id, position) select v.id, $2::bigint, 1 from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1::bigint`,
+      [id('SEED-MCQ-MATH-T4'), st.id],
+    )
+    try {
+      const paper = await createPaper('Kertas tanpa rangsangan', [
+        { label: 'Bahagian A', questionIds: [id('SEED-MCQ-MATH-T4')] },
+        { label: 'Bahagian B', questionIds: [id('SEED-MCQ-MATH-T5')] },
+      ])
+      const page = BijakKuizPaperPageSchema.parse((await student.get(`/api/bijak/kuiz/papers/${paper}`)).body.data)
+      expect(page.pageCount).toBe(1)
+      expect(page.section?.label).toBe('Bahagian B')
+      expect(page.markableTotal).toBe(1)
+      expect(page.items.map((i) => i.id)).toEqual([id('SEED-MCQ-MATH-T5')])
+      const skipped = await student.post(`/api/bijak/kuiz/papers/${paper}/check`, { itemId: id('SEED-MCQ-MATH-T4'), optionId: 'A' })
+      expect(skipped.status).toBe(422)
+      expect((await student.post(`/api/bijak/kuiz/papers/${paper}/check`, { itemId: id('SEED-MCQ-MATH-T5'), optionId: await keyOf(id('SEED-MCQ-MATH-T5')) })).status).toBe(200)
+    } finally {
+      await t.db.query(`delete from question_version_stimuli where stimulus_id = $1::bigint`, [st.id])
+    }
+  })
+})
+
 describe('auth and role', () => {
   it('20. 401 without a session, 403 for a teacher, 403 without CSRF', async () => {
     const anon = t.agent()
