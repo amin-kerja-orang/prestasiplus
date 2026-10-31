@@ -54,4 +54,22 @@ describe('essay_choice write rules (REQ-B-021)', () => {
     const part = (await repo.get(ok.id, 'latest'))?.version.parts[0] as { topics?: { label: string }[] }
     expect(part.topics?.[0]?.label).toBe('Kepentingan membaca')
   })
+
+  it('(c) a flat edit cannot change the model answer or the marks of an essay_choice question: 422 in BM, nothing written; echoing the stored values is fine', async () => {
+    const id = (await make([leaf()])).id
+    const flat = { questionText: 'Karangan pilihan tajuk (disunting).', difficultyLevel: 3, subjectId: tag.subjectId, educationLevelId: tag.levelId }
+    const versionsBefore = (await t.db.query<{ n: string }>(`select count(*) n from question_versions where question_id = $1`, [id]))[0]?.n
+    const model = await apiError(() => svc.update(id, { ...flat, modelAnswer: 'Jawapan model baharu.' } as never, admin))
+    expect(model.getStatus()).toBe(422)
+    expect(model.fields?.modelAnswer).toBe('Jawapan model esei pilihan tidak boleh disunting di sini. Ubah kunci rubrik pada bahagian soalan.')
+    const marks = await apiError(() => svc.update(id, { ...flat, pointsValue: 10 } as never, admin))
+    expect(marks.getStatus()).toBe(422)
+    expect(marks.fields?.pointsValue).toBe('Markah esei pilihan tidak boleh disunting di sini. Ubah markah pada bahagian soalan.')
+    expect((await t.db.query<{ n: string }>(`select count(*) n from question_versions where question_id = $1`, [id]))[0]?.n).toBe(versionsBefore)
+    // The edit form sends back what it read: that is not a change.
+    const updated = await svc.update(id, { ...flat, pointsValue: 30, modelAnswer: null } as never, admin)
+    expect(updated.id).toBe(id)
+    const part = (await repo.get(id, 'latest'))?.version.parts[0] as { mode: string; marks: number }
+    expect(part).toMatchObject({ mode: 'essay_choice', marks: 30 })
+  })
 })
