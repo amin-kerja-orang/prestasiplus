@@ -98,7 +98,7 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
     const out = new Map<string, { bundle: Be09QuestionBundle; groupId: string | null }>()
     if (ids.length === 0) return out
     let records = (await this.questions.getMany(ids, 'live')).filter(
-      (r) => !published || r.version.status === 'published',
+      (r) => !published || r.version.status === 'approved',
     )
     if (!published && records.length < ids.length) {
       // Withdrawn since the paper was built (BE-09 clears the live version): keep serving the version

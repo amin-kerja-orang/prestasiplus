@@ -22,6 +22,9 @@ export const noQuestions = (): ApiError =>
 export const quizNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: BIJAK_KUIZ_MESSAGES.notFound })
 export const kuizPaperNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: BIJAK_KUIZ_MESSAGES.paperNotFound })
 
+/** H-A13 / AC-R1-18.4: the paper places a question the bank no longer serves (archived after Terbit). */
+export const kuizPaperUnavailable = (): ApiError => ApiError.of('FORBIDDEN', { message: BIJAK_KUIZ_MESSAGES.paperUnavailable })
+
 export const alreadyFinished = (): ApiError =>
   new ApiError({ code: 'ALREADY_SUBMITTED', status: 409, message: BIJAK_KUIZ_MESSAGES.alreadyFinished })
 

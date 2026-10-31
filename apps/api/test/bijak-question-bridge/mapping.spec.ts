@@ -34,7 +34,7 @@ function record(
   const base = {
     id: 'v1',
     versionNo: 3,
-    status: 'published',
+    status: 'approved',
     archiveReason: null,
     publishedAt: now,
     type: 'structured',

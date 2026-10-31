@@ -89,10 +89,10 @@ describe('admin question Bab (curriculumChapterId)', () => {
     expect(await storedChapter(q.id)).toBeNull()
   })
 
-  it('editing a published question keeps the live version (with its chapter) and writes the new chapter on the draft version 2', async () => {
+  it('editing an approved (live) question keeps the live version (with its chapter) and writes the new chapter on the draft version 2', async () => {
     const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
-    const q = await create({ status: 'published', tag, curriculumChapterId: c1 })
-    expect(q.status).toBe('published')
+    const q = await create({ status: 'approved', tag, curriculumChapterId: c1 })
+    expect(q.status).toBe('approved')
     expect((await put(q.id, { tag, curriculumChapterId: c2 })).status).toBe(200)
     expect(await storedChapter(q.id, 1)).toBe(c1)
     expect(await storedChapter(q.id, 2)).toBe(c2)
@@ -101,10 +101,10 @@ describe('admin question Bab (curriculumChapterId)', () => {
     expect(admin2.curriculumChapterId).toBe(c2)
   })
 
-  it('editing an approved question drops it to draft and writes the chapter in place', async () => {
-    const q = await create({ status: 'approved', curriculumChapterId: c1 })
+  it('editing a review question writes the chapter in place and keeps it in review (only an approved question drops to draft, as version n+1)', async () => {
+    const q = await create({ status: 'review', curriculumChapterId: c1 })
     expect((await put(q.id, { curriculumChapterId: c2 })).status).toBe(200)
     expect(await storedChapter(q.id, 1)).toBe(c2)
-    expect(parseData(await admin.get(`/api/questions/${q.id}`), QuestionDetailSchema).status).toBe('draft')
+    expect(parseData(await admin.get(`/api/questions/${q.id}`), QuestionDetailSchema).status).toBe('review')
   })
 })

@@ -145,7 +145,7 @@ export async function publishStructured(
     mcqInput(tag, {
       questionType: 'essay',
       questionText: opts.stem,
-      status: 'published',
+      status: 'approved',
       tag: tagBody(tag, 3),
       parts: opts.parts ?? [leaf('(a)', 2), leaf('(b)', 3)],
     }),

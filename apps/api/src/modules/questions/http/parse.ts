@@ -34,6 +34,8 @@ export const SEARCH_MESSAGE = 'Carian tidak boleh melebihi 100 aksara.'
 export const FILTER_MESSAGE = 'Nilai penapis tidak sah.'
 export const BULK_TOO_MANY_MESSAGE = 'Terlalu banyak soalan dipilih (had 200).'
 export const BODY_MESSAGE = 'Badan permintaan mesti objek JSON.'
+/** The bulk action name that ADR-0027 removed; accepted as an input alias of `approved` for one release. */
+export const LEGACY_PUBLISHED_ACTION = 'published'
 
 const newFields = (): Record<string, string> => Object.create(null) as Record<string, string>
 
@@ -156,7 +158,9 @@ export function parseGuruPage(raw: unknown): number {
 /** `POST /questions/bulk-action`: the contract message for a missing or unknown action, ids capped. */
 export function parseBulk(raw: unknown): z.output<typeof QuestionBulkRequestSchema> {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw invalid({ _: BODY_MESSAGE })
-  const res = QuestionBulkRequestSchema.safeParse(raw)
+  // ADR-0027: one release still accepts the removed `published` action from an old client and treats it as `approved`.
+  const body = (raw as { action?: unknown }).action === LEGACY_PUBLISHED_ACTION ? { ...raw, action: 'approved' } : raw
+  const res = QuestionBulkRequestSchema.safeParse(body)
   if (!res.success) {
     // The mock reports a bad element under `ids`, not `ids.<i>`.
     const fields = newFields()
