@@ -38,6 +38,14 @@ export const STIMULUS_MESSAGES = {
   stimuliCount: 'Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan.',
   stimuliInvalid: 'Rangsangan tidak sah atau berulang.',
   membersMin: 'Satu kumpulan mesti mempunyai sekurang-kurangnya 2 soalan.',
+  /** The paper builder blocker for a group with fewer than 2 questions (D93). */
+  builderBlocker: 'Kumpulan perlu sekurang-kurangnya 2 soalan.',
+  membersTooMany: 'Satu kumpulan boleh mempunyai paling banyak 40 soalan.',
+  memberMixed: 'Soalan dalam satu kumpulan mesti sama subjek.',
+  memberInactive: 'Soalan yang diarkibkan atau dinyahaktifkan tidak boleh dimasukkan ke dalam kumpulan.',
+  memberServed: 'Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.',
+  groupServed: 'Kumpulan ini mempunyai soalan yang sedang dipaparkan kepada murid. Soalan itu tidak boleh dikeluarkan atau disusun semula, dan kumpulan tidak boleh diubah rangsangannya atau dibubarkan. Sunting soalan sebagai draf atau arkibkannya dahulu.',
+  stimulusServed: 'Rangsangan ini sedang dipaparkan kepada murid melalui soalan yang diterbitkan. Cipta rangsangan baharu dan gunakan pada draf soalan, atau arkibkan soalan itu dahulu.',
   membersInvalid: 'Soalan tidak sah, berulang atau tidak boleh dikumpulkan.',
   memberTaken: 'Soalan ini sudah berada dalam kumpulan rangsangan lain.',
   memberExists: 'Soalan ini sudah berada dalam kumpulan ini.',
@@ -129,13 +137,15 @@ const OptionBank = z
   .array(z.object({ label: z.string().regex(/^[A-H]$/), body: QuestionRichTextSchema }))
   .max(STIMULUS_LIMITS.optionBank)
 
-/** `POST /stimulus-groups`: 1 to 3 existing stimuli and at least 2 existing questions (D90). No marks anywhere. */
+/** `POST /stimulus-groups`: 1 to 3 existing stimuli and 0 to 40 existing questions (D90, D93: the Studio makes the group first, then adds the questions). No marks anywhere. */
 export const StimulusGroupCreateRequestSchema = z
   .strictObject({
     label: GroupLabel.nullish(),
     scope: z.enum(['section', 'paper']).optional(),
     stimulusIds: z.array(IdSchema).min(1, STIMULUS_MESSAGES.stimuliCount).max(3, STIMULUS_MESSAGES.stimuliCount),
-    questionIds: z.array(IdSchema).min(2, STIMULUS_MESSAGES.membersMin).max(STIMULUS_LIMITS.groupQuestions),
+    questionIds: z.array(IdSchema).max(STIMULUS_LIMITS.groupQuestions, STIMULUS_MESSAGES.membersTooMany).default([]).meta({
+      description: 'D93: 0 or more existing questions (a group with fewer than 2 is a draft group; every write answers with `warning` until it has 2).',
+    }),
     optionBank: OptionBank.optional(),
   })
   .meta({ id: 'StimulusGroupCreateRequest' })
@@ -155,6 +165,10 @@ export const StimulusGroupMemberRequestSchema = z.strictObject({ questionId: IdS
 export const StimulusGroupReorderRequestSchema = z
   .strictObject({ questionIds: z.array(IdSchema).min(1).max(STIMULUS_LIMITS.groupQuestions) })
   .meta({ id: 'StimulusGroupReorderRequest' })
+/** `PUT /stimulus-groups/{id}/members`: the complete ordered member list after the change (adds, removals and reordering in one atomic call). */
+export const StimulusGroupMembersSetRequestSchema = z
+  .strictObject({ questionIds: z.array(IdSchema).max(STIMULUS_LIMITS.groupQuestions, STIMULUS_MESSAGES.membersTooMany) })
+  .meta({ id: 'StimulusGroupMembersSetRequest' })
 
 /** The group with the read model of the question side (stimuli in order, member ids in published order) plus label and scope. */
 export const StimulusGroupDetailSchema = z
@@ -165,6 +179,7 @@ export const StimulusGroupDetailSchema = z
     stimuli: QuestionStimulusGroupSchema.shape.stimuli,
     optionBank: QuestionStimulusGroupSchema.shape.optionBank,
     questionIds: z.array(IdSchema),
+    warning: z.string().nullable().optional().meta({ description: 'BM warning while the group has fewer than 2 questions (a draft group, D93); null otherwise. The write went through.' }),
   })
   .meta({ id: 'StimulusGroupDetail' })
 export type StimulusGroupDetail = z.infer<typeof StimulusGroupDetailSchema>
@@ -188,6 +203,7 @@ export const STIMULI_COMPONENT_SCHEMAS = {
   StimulusGroupUpdateRequest: StimulusGroupUpdateRequestSchema,
   StimulusGroupMemberRequest: StimulusGroupMemberRequestSchema,
   StimulusGroupReorderRequest: StimulusGroupReorderRequestSchema,
+  StimulusGroupMembersSetRequest: StimulusGroupMembersSetRequestSchema,
   StimulusGroupDetail: StimulusGroupDetailSchema,
   StimulusGroupMemberRemoved: StimulusGroupRemovedResultSchema,
   StimulusGroupDeleteResult: StimulusGroupDeleteResultSchema,
@@ -202,7 +218,7 @@ const csrf = z.object({ 'X-CSRF-Token': z.string().min(1).meta({ description: 'V
 const unauthorized = err('UNAUTHORIZED: no valid session.')
 const forbidden = err('FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.')
 const notFound = err('NOT_FOUND: unknown id.')
-const conflict = err('CONFLICT: the stimulus is still used by a group or a question.')
+const conflict = err('CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).')
 const invalid = err('VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).')
 const tags = ['questions', 'stimuli']
 
@@ -231,9 +247,9 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     path: '/stimuli/{id}',
     tags,
     summary: 'Edit a stimulus (only the keys sent change; the kind never changes)',
-    description: 'The result must still satisfy the kind rules of the create body. Editing a stimulus that groups already show changes what every member question shows; the question versions are not re-issued (D90).',
+    description: 'The result must still satisfy the kind rules of the create body. A stimulus that is shown to pupils (by a group with a served member, or linked to a served question) is refused with 409: follow the lifecycle (edit the question as a draft, or archive it) first.',
     request: { params: idParams, headers: [csrf], body: body(StimulusUpdateRequestSchema) },
-    responses: { 200: json(mutationEnvelopeOf(StimulusSchema), 'Updated.'), 401: unauthorized, 403: forbidden, 404: notFound, 422: invalid },
+    responses: { 200: json(mutationEnvelopeOf(StimulusSchema), 'Updated.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
   registry.registerPath({
     method: 'delete',
@@ -249,9 +265,9 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     method: 'post',
     path: '/stimulus-groups',
     tags,
-    summary: 'Create a group: 1 to 3 stimuli and at least 2 member questions',
+    summary: 'Create a group: 1 to 3 stimuli and 0 to 40 member questions (D93: a group with fewer than 2 is a draft group)',
     description:
-      'D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group is refused (422 `questionIds`). Members get positions 1..n in the order sent. Flash: "Kumpulan rangsangan berjaya dicipta."',
+      'D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has fewer than 2 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker "Kumpulan perlu sekurang-kurangnya 2 soalan."). Members get positions 1..n in the order sent. Flash: "Kumpulan rangsangan berjaya dicipta."',
     request: { headers: [csrf], body: body(StimulusGroupCreateRequestSchema) },
     responses: { 201: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'Created.'), 401: unauthorized, 403: forbidden, 422: invalid },
   })
@@ -269,7 +285,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Relabel a group and/or replace its ordered stimuli (1 to 3)',
     request: { params: idParams, headers: [csrf], body: body(StimulusGroupUpdateRequestSchema) },
-    responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'Updated.'), 401: unauthorized, 403: forbidden, 404: notFound, 422: invalid },
+    responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'Updated.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
   registry.registerPath({
     method: 'delete',
@@ -278,7 +294,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     summary: 'Dissolve a group',
     description: 'The member questions stay, without the shared stimulus; the stimuli stay in the library.',
     request: { params: idParams, headers: [csrf] },
-    responses: { 200: json(mutationEnvelopeOf(StimulusGroupDeleteResultSchema), 'Dissolved.'), 401: unauthorized, 403: forbidden, 404: notFound },
+    responses: { 200: json(mutationEnvelopeOf(StimulusGroupDeleteResultSchema), 'Dissolved.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict },
   })
   registry.registerPath({
     method: 'post',
@@ -287,7 +303,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     summary: 'Add a question to a group (appended at the end)',
     description: 'A question already in another group is refused with 422 `questionId` ("Soalan ini sudah berada dalam kumpulan rangsangan lain."). Moving a question between groups is remove, then add.',
     request: { params: idParams, headers: [csrf], body: body(StimulusGroupMemberRequestSchema) },
-    responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The group after the change.'), 401: unauthorized, 403: forbidden, 404: notFound, 422: invalid },
+    responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The group after the change.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
   registry.registerPath({
     method: 'delete',
@@ -296,7 +312,17 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     summary: 'Remove a question from a group',
     description: 'Positions of the others close up. When fewer than 2 members remain the removal still succeeds and `warning` carries a BM message ("Kumpulan ini kini hanya mempunyai 1 soalan. ...").',
     request: { params: memberParams, headers: [csrf] },
-    responses: { 200: json(mutationEnvelopeOf(StimulusGroupRemovedResultSchema), 'The group after the change, with an optional warning.'), 401: unauthorized, 403: forbidden, 404: notFound },
+    responses: { 200: json(mutationEnvelopeOf(StimulusGroupRemovedResultSchema), 'The group after the change, with an optional warning.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict },
+  })
+  registry.registerPath({
+    method: 'put',
+    path: '/stimulus-groups/{id}/members',
+    tags,
+    summary: 'Set the complete ordered member list of a group (atomic)',
+    description:
+      'Adds, removals and reordering in one call. A question that is already shown to pupils (live version approved, active) cannot be added, removed or have its relative order changed; new draft or review questions can still be appended to a group that has served members (409 `groupServed` / `memberServed` otherwise). A question of another group, a PKSK, archived or inactive question, a question of another subject, and more than 40 members are 422.',
+    request: { params: idParams, headers: [csrf], body: body(StimulusGroupMembersSetRequestSchema) },
+    responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The group after the change.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
   registry.registerPath({
     method: 'put',
@@ -305,7 +331,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     summary: 'Reorder the members of a group',
     description: '`questionIds` must list every current member exactly once (422 `questionIds` otherwise).',
     request: { params: idParams, headers: [csrf], body: body(StimulusGroupReorderRequestSchema) },
-    responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The group after the change.'), 401: unauthorized, 403: forbidden, 404: notFound, 422: invalid },
+    responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The group after the change.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
   registry.registerPath({
     method: 'post',
@@ -314,6 +340,6 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     summary: 'Create a question directly inside a group',
     description: 'Same body as `POST /questions` (a `stimulusGroupId` in the body must equal the path id). The question is appended at the end of the group. Flash: "Soalan berjaya ditambah ke dalam kumpulan."',
     request: { params: idParams, headers: [csrf], body: body(QuestionCreateRequestSchema) },
-    responses: { 201: json(mutationEnvelopeOf(QuestionSchema), 'Created.'), 401: unauthorized, 403: forbidden, 404: notFound, 422: invalid },
+    responses: { 201: json(mutationEnvelopeOf(QuestionSchema), 'Created.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
 }

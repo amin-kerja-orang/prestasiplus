@@ -14,6 +14,7 @@ import { ApiError } from '../../common/errors/api-error'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { FilesService } from '../files'
+import { GroupMembers } from './group-members'
 import { type GroupRow, type StimulusData, type StimulusRow, StimuliRepository } from './stimuli.repository'
 import { QuestionsService } from './questions.service'
 import { STIMULUS_KINDS } from './types'
@@ -43,6 +44,7 @@ export interface StimulusWrite<T> {
 export class StimuliService {
   constructor(
     @Inject(StimuliRepository) private readonly repo: StimuliRepository,
+    @Inject(GroupMembers) private readonly members: GroupMembers,
     @Inject(QuestionsService) private readonly questions: QuestionsService,
     @Inject(FilesService) private readonly files: FilesService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -78,6 +80,7 @@ export class StimuliService {
     return this.prisma.transaction(async () => {
       if (!(await this.repo.lockStimulus(id))) throw notFound(STIMULUS_MESSAGES.notFound)
       const current = await this.stimulusOrThrow(id)
+      if (await this.repo.stimulusServed(id)) throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.stimulusServed })
       const fields: Record<string, string> = {}
       let assetFileId = current.assetFileId
       if (input.imageFileId !== undefined) {
@@ -97,9 +100,9 @@ export class StimuliService {
         assetFileId,
       }
       // The merged state must still satisfy the rules of the kind (same rules as the create body).
-      if (data.kind === 'passage' && !data.bodyMs) fields.body = STIMULUS_MESSAGES.bodyRequired
-      if (data.kind === 'table' && data.tableData === null && data.assetFileId === null) fields.tableData = STIMULUS_MESSAGES.tableRequired
-      if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(data.kind) && data.assetFileId === null) fields.imageFileId = STIMULUS_MESSAGES.imageRequired
+      if (data.kind === 'passage' && !data.bodyMs) fields.body ??= STIMULUS_MESSAGES.bodyRequired
+      if (data.kind === 'table' && data.tableData === null && data.assetFileId === null) fields.tableData ??= STIMULUS_MESSAGES.tableRequired
+      if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(data.kind) && data.assetFileId === null) fields.imageFileId ??= STIMULUS_MESSAGES.imageRequired
       if (Object.keys(fields).length > 0) throw fail(fields)
       await this.repo.updateStimulus(id, data)
       return { result: await this.getStimulus(id), audit: { kind: data.kind, keys: Object.keys(input) } }
@@ -127,7 +130,6 @@ export class StimuliService {
     return this.prisma.transaction(async () => {
       const fields: Record<string, string> = {}
       const stimulusIds = await this.checkStimuli(input.stimulusIds, fields)
-      const members = await this.checkMembers(input.questionIds, null, fields)
       if (Object.keys(fields).length > 0) throw fail(fields)
       const id = await this.repo.createGroup({
         label: input.label ?? null,
@@ -135,7 +137,8 @@ export class StimuliService {
         stimulusIds,
         optionBank: (input.optionBank ?? []).map((o) => ({ label: o.label, bodyMs: o.body.ms, bodyEn: o.body.en ?? null })),
       })
-      await this.repo.attachQuestions(id, members, 1)
+      // D93: 0 or more members; the same rules as every later member change (a failure rolls the group back).
+      const members = input.questionIds.length === 0 ? [] : await this.members.set(id, input.questionIds)
       return { result: await this.getGroup(id), audit: { stimuli: stimulusIds.length, members: members.length } }
     }, TX)
   }
@@ -143,10 +146,11 @@ export class StimuliService {
   async updateGroup(id: string, input: StimulusGroupUpdateRequest): Promise<StimulusWrite<StimulusGroupDetail>> {
     await this.groupOrThrow(id)
     return this.prisma.transaction(async () => {
-      if (!(await this.repo.lockGroup(id))) throw notFound(STIMULUS_MESSAGES.groupNotFound)
+      await this.members.lock(id)
       const fields: Record<string, string> = {}
       const stimulusIds = input.stimulusIds === undefined ? null : await this.checkStimuli(input.stimulusIds, fields)
       if (Object.keys(fields).length > 0) throw fail(fields)
+      if (stimulusIds !== null) await this.members.assertNotServed(id) // what the served questions show changes
       if (input.label !== undefined) await this.repo.setGroupLabel(id, input.label)
       if (stimulusIds !== null) await this.repo.replaceGroupStimuli(id, stimulusIds)
       return { result: await this.getGroup(id), audit: { keys: Object.keys(input) } }
@@ -155,7 +159,8 @@ export class StimuliService {
 
   async deleteGroup(id: string): Promise<StimulusWrite<{ deleted: 1; releasedQuestionIds: string[] }>> {
     return this.prisma.transaction(async () => {
-      if (!(await this.repo.lockGroup(id))) throw notFound(STIMULUS_MESSAGES.groupNotFound)
+      await this.members.lock(id)
+      await this.members.assertNotServed(id)
       const members = (await this.groupOrThrow(id)).questionIds.map(idToString)
       await this.repo.lockQuestions(members)
       const released = await this.repo.deleteGroup(id)
@@ -166,33 +171,23 @@ export class StimuliService {
   async addMember(id: string, questionId: string): Promise<StimulusWrite<StimulusGroupDetail>> {
     await this.groupOrThrow(id)
     return this.prisma.transaction(async () => {
-      if (!(await this.repo.lockGroup(id))) throw notFound(STIMULUS_MESSAGES.groupNotFound)
-      const group = await this.groupOrThrow(id)
-      const fields: Record<string, string> = {}
-      const [added] = await this.checkMembers([questionId], id, fields, 'questionId')
-      if (Object.keys(fields).length > 0 || added === undefined) throw fail(fields)
-      const order = [...group.questionIds.map(idToString), added]
-      await this.repo.attachQuestions(id, [added], 5000) // parked past the end, then closed up by renumber
-      await this.repo.renumber(id, order)
-      await this.repo.touchGroup(id)
-      return { result: await this.getGroup(id), audit: { added: 1, members: order.length } }
+      await this.members.lock(id)
+      const current = await this.repo.memberIds(id)
+      if (current.includes(questionId)) throw fail({ questionId: STIMULUS_MESSAGES.memberExists })
+      const after = await this.members.set(id, [...current, questionId], 'questionId')
+      return { result: await this.getGroup(id), audit: { added: 1, members: after.length } }
     }, TX)
   }
 
   async removeMember(id: string, questionId: string): Promise<StimulusWrite<{ group: StimulusGroupDetail; warning: string | null }>> {
     await this.groupOrThrow(id)
     return this.prisma.transaction(async () => {
-      if (!(await this.repo.lockGroup(id))) throw notFound(STIMULUS_MESSAGES.groupNotFound)
-      const group = await this.groupOrThrow(id)
-      const members = group.questionIds.map(idToString)
-      if (!members.includes(questionId)) throw notFound(STIMULUS_MESSAGES.memberMissing)
-      await this.repo.lockQuestions(members)
-      await this.repo.detachQuestion(questionId)
-      const rest = members.filter((m) => m !== questionId)
-      await this.repo.renumber(id, rest)
-      await this.repo.touchGroup(id)
+      await this.members.lock(id)
+      const current = await this.repo.memberIds(id)
+      if (!current.includes(questionId)) throw notFound(STIMULUS_MESSAGES.memberMissing)
+      const rest = await this.members.set(id, current.filter((m) => m !== questionId))
       return {
-        result: { group: await this.getGroup(id), warning: rest.length < 2 ? STIMULUS_MESSAGES.smallGroup(rest.length) : null },
+        result: { group: await this.getGroup(id), warning: this.members.warning(rest.length) },
         audit: { removed: 1, members: rest.length },
       }
     }, TX)
@@ -201,14 +196,21 @@ export class StimuliService {
   async reorderMembers(id: string, questionIds: readonly string[]): Promise<StimulusWrite<StimulusGroupDetail>> {
     await this.groupOrThrow(id)
     return this.prisma.transaction(async () => {
-      if (!(await this.repo.lockGroup(id))) throw notFound(STIMULUS_MESSAGES.groupNotFound)
-      const members = (await this.groupOrThrow(id)).questionIds.map(idToString)
-      const same = questionIds.length === members.length && new Set(questionIds).size === members.length && questionIds.every((q) => members.includes(q))
+      await this.members.lock(id)
+      const current = await this.repo.memberIds(id)
+      const same = questionIds.length === current.length && new Set(questionIds).size === current.length && questionIds.every((q) => current.includes(q))
       if (!same) throw fail({ questionIds: STIMULUS_MESSAGES.orderInvalid })
-      await this.repo.lockQuestions(members)
-      await this.repo.renumber(id, questionIds)
-      await this.repo.touchGroup(id)
-      return { result: await this.getGroup(id), audit: { members: members.length } }
+      await this.members.set(id, questionIds)
+      return { result: await this.getGroup(id), audit: { members: current.length } }
+    }, TX)
+  }
+
+  /** The complete ordered member list after the change, in one atomic call (adds, removals and reordering). */
+  async setMembers(id: string, questionIds: readonly string[]): Promise<StimulusWrite<StimulusGroupDetail>> {
+    await this.groupOrThrow(id)
+    return this.prisma.transaction(async () => {
+      const after = await this.members.set(id, questionIds)
+      return { result: await this.getGroup(id), audit: { members: after.length } }
     }, TX)
   }
 
@@ -261,27 +263,6 @@ export class StimuliService {
     return ids.map((i) => BigInt(i))
   }
 
-  /**
-   * Members must exist, be unique, not be PKSK questions and not be in another group (`inGroup` is the group being changed,
-   * for which a re-add is the "already a member" error). Locks the question rows.
-   */
-  private async checkMembers(ids: readonly string[], inGroup: string | null, fields: Record<string, string>, key = 'questionIds'): Promise<string[]> {
-    if (new Set(ids).size !== ids.length) {
-      fields[key] = STIMULUS_MESSAGES.membersInvalid
-      return []
-    }
-    const found = await this.repo.lockQuestions(ids)
-    for (const q of ids) {
-      const row = found.get(q)
-      if (row === undefined || row.pksk) {
-        fields[key] = STIMULUS_MESSAGES.membersInvalid
-      } else if (row.groupId !== null) {
-        fields[key] = inGroup !== null && row.groupId === inGroup ? STIMULUS_MESSAGES.memberExists : STIMULUS_MESSAGES.memberTaken
-      }
-    }
-    return [...ids]
-  }
-
   private async stimulusView(row: StimulusRow): Promise<Stimulus> {
     const tokens = row.assetFileId === null ? new Map<string, string>() : await this.files.publicIdsOf([idToString(row.assetFileId)])
     return {
@@ -326,6 +307,7 @@ export class StimuliService {
         ? {}
         : { optionBank: g.optionBank.map((o) => ({ label: o.label, body: { ms: o.bodyMs ?? o.bodyEn ?? o.label, ...(o.bodyMs !== null && o.bodyEn !== null ? { en: o.bodyEn } : {}) } })) }),
       questionIds: g.questionIds.map(idToString),
+      warning: this.members.warning(g.questionIds.length),
     }
   }
 }
