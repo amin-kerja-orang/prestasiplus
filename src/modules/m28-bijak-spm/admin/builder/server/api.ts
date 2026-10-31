@@ -74,7 +74,7 @@ export interface HeaderPatch {
 export interface BuilderApi {
   listSets(): Promise<AdminPaperSummary[]>
   /** Subjects and the kertas that have a blueprint (Mula kosong / Jana set choices). */
-  subjects(): Promise<BuilderSubject[]>
+  builderSubjects(): Promise<BuilderSubject[]>
   /** "Mula kosong": an empty draft with the blueprint's sections. Returns the paper id. */
   create(input: { subject: string; kertas: number; title?: string }): Promise<string>
   /** "Jana set": a draft generated from the blueprint. Rejects with `BuilderError('shortage')`. */

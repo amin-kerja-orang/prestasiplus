@@ -48,7 +48,7 @@ export class MockBuilderServer implements BuilderApi {
     return (await this.a()).listAdminPapers()
   }
 
-  async subjects(): Promise<BuilderSubject[]> {
+  async builderSubjects(): Promise<BuilderSubject[]> {
     const rows = await (await this.a()).listBlueprints()
     const out = new Map<string, BuilderSubject>()
     for (const b of rows) {
@@ -167,7 +167,7 @@ export class MockBuilderServer implements BuilderApi {
       const stimulus = q.groupId ? h.g.get(q.groupId)?.stimulus : undefined
       units.push({
         ...(q.groupId ? { groupId: q.groupId } : {}),
-        ...(stimulus ? { stimulus: stimulus as BijakBuilderPoolUnit['stimulus'] } : {}),
+        ...(stimulus ? { stimulus: stimulus } : {}),
         questionIds: ids,
         questions: qs as unknown as BijakBuilderPoolUnit['questions'],
         marks: qs.reduce((n, x) => n + x.marks, 0),
@@ -250,7 +250,7 @@ export class MockBuilderServer implements BuilderApi {
         units: unitsOf(s.questionIds, h.groupOf).map((u) => ({
           ...(u.groupId ? { groupId: u.groupId } : {}),
           ...(u.groupId && h.g.get(u.groupId)
-            ? { stimulus: h.g.get(u.groupId)!.stimulus as unknown as BijakBuilderStudentView['sections'][number]['units'][number]['stimulus'] }
+            ? { stimulus: h.g.get(u.groupId)!.stimulus }
             : {}),
           questions: u.ids.map((qid) => ({
             id: qid,

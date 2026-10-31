@@ -24,7 +24,7 @@ const router = useRouter()
 const flash = useFlash()
 
 const sets = useApi(() => api.listSets())
-const subjects = useApi(() => api.subjects())
+const subjects = useApi(() => api.builderSubjects())
 
 /* ------------------------------------------------------------------ Mula kosong */
 const blankTitle = ref('')

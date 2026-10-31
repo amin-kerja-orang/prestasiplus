@@ -98,7 +98,7 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
     return rows.map(summaryFromWire)
   }
 
-  async subjects(): Promise<BuilderSubject[]> {
+  async builderSubjects(): Promise<BuilderSubject[]> {
     const rows = await this.listAll<BijakBlueprintView>('/api/admin/blueprints')
     const out = new Map<string, BuilderSubject>()
     for (const b of rows) {

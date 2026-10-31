@@ -121,6 +121,18 @@ export const builderCopy = {
   studentViewDesc: 'Paparan kertas tanpa skema.', // existing
   studentViewError: 'Tidak dapat memuatkan paparan pelajar.', // [PROPOSED]
   seen: 'Dilihat murid', // task label
+  notServed: 'Tidak disajikan', // V2 design S4.2 chip
+  loading: 'Memuatkan…', // [PROPOSED]
+  poolEnd: 'Tiada lagi soalan.', // [PROPOSED]
+  unitNoMarks: 'Kumpulan rangsangan: markah ada pada setiap soalan.', // [PROPOSED] D90
+  groupMembers: (n: number): string => `${n} soalan dalam kumpulan`, // [PROPOSED] D90
+  sectionFull: 'Bahagian ini sudah penuh.', // [PROPOSED]
+  reviewStale: 'Simpan draf untuk menyegarkan semakan.', // [PROPOSED]
+  reviewError: 'Tidak dapat memuatkan semakan kertas.', // [PROPOSED]
+  semak: 'Semak Kertas', // V2
+  openBuilder: 'Buka di Set Builder', // [PROPOSED]
+  contractNone: 'Tiada kontrak untuk subjek/kertas ini.', // V2
+  metaYearAria: 'Tahun kertas', // [PROPOSED]
 } as const
 
 /** Option labels of the level filter. */
