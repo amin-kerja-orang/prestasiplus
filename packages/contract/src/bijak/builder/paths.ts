@@ -166,13 +166,13 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: list papers (draf and terbit)',
-    description: `Newest update first. Optional filter: status. Each row (AdminPaperSummary) carries subjectName, code, budget and ok. The mock listAdminPapers returns a plain array; this route is paged (deviations log). ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Newest update first. Optional filters: status, subject (Bijak code) and search (title or code, substring, case-insensitive). Each row (AdminPaperSummary) carries subjectName, code, budget and ok. The mock listAdminPapers returns a plain array; this route is paged (deviations log). ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { query: BijakBuilderPaperListQuerySchema },
     responses: {
       200: json(listEnvelopeOf(BijakBuilderPaperSummarySchema), 'Papers (paged).'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
-      422: err('VALIDATION_ERROR with fields (page, pageSize, status).'),
+      422: err('VALIDATION_ERROR with fields (page, pageSize, status, subject, search).'),
     },
   })
 

@@ -103,6 +103,7 @@ const confirm = useConfirm()
 const archive = async (): Promise<void> => {
   const ok = await confirm({
     title: 'Arkibkan soalan ini?',
+    // [PROPOSED] body (UX-73): V2's archive text is a success flash, not a confirm body.
     message: `Soalan #${String(r.value.questionId)} akan diarkibkan dan dikeluarkan daripada semua aktiviti murid.`,
     tone: 'error',
     confirmLabel: 'Arkib',

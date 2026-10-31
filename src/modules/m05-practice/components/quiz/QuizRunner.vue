@@ -253,6 +253,12 @@ function leave(): void {
   void router.push(props.backUrl)
 }
 const nextLabel = computed(() => (isLast.value ? 'Lihat Keputusan' : 'Soalan Seterusnya'))
+/** The server text is the title again in Q1/Q2 ("Salah" / "Betul!"): show it only when it adds something. */
+const feedbackBody = computed(() => {
+  const f = result.value?.feedback
+  const title = result.value?.isCorrect ? labels.value.correctTitle : labels.value.wrongTitle
+  return f && f !== title ? f : undefined
+})
 const feedbackExplanation = computed(() =>
   result.value?.explanation ? `Penjelasan: ${result.value.explanation}` : undefined,
 )
@@ -435,7 +441,7 @@ const feedbackExplanation = computed(() =>
               }"
               :tone="result.isCorrect ? 'success' : 'error'"
               :title="result.isCorrect ? labels.correctTitle : labels.wrongTitle"
-              :body="result.feedback || undefined"
+              :body="feedbackBody"
               :ai-line="feedbackExplanation"
               :combo="result.isCorrect ? '+10' : undefined"
               :continue-label="nextLabel"
