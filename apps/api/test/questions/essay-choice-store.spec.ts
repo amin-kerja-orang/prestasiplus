@@ -28,7 +28,7 @@ const leaf = (over: Record<string, unknown> = {}) => ({
 })
 
 /**
- * R1-T25: `essay_choice` is stored (migration 0101), read back with its topics and word range, approved and published, shown to a
+ * R1-T25: `essay_choice` is stored (migration 0101), read back with its topics and word range, approved (Terbit), shown to a
  * pupil without the key, graded as needs-review, mapped as an essay by the builder, and a bad topics set is refused in BM.
  * V2 has 39 such parts, 31 on approved questions (cloud-student-mechanism 1.4).
  */
@@ -64,7 +64,7 @@ describe('essay_choice storage (migration 0101)', () => {
     expect(defs.map((d) => d.def).join(' ')).toContain('essay_choice')
   })
 
-  it('stores a question, reads it back with topics, word range and rubric key, approves and publishes it', async () => {
+  it('stores a question, reads it back with topics, word range and rubric key, approves it (Terbit)', async () => {
     const q = await make([leaf()], { tag: tagBody(tag, 4) })
     const [row] = await t.db.query<{ mode: string; topics: unknown; word_min: number; word_max: number }>(
       `select p.mode, p.topics, p.word_min, p.word_max from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1`,
@@ -73,9 +73,9 @@ describe('essay_choice storage (migration 0101)', () => {
     expect(row).toEqual({ mode: 'essay_choice', topics, word_min: 150, word_max: 200 })
 
     await svc.setStatus(q.id, 'review', admin.userId)
-    await svc.setStatus(q.id, 'approved', admin.userId)
-    const published = await svc.setStatus(q.id, 'published', admin.userId)
-    expect(published.version.status).toBe('published')
+    // `approved` is Terbit, the one servable status (ADR-0027, R1-T04): there is no separate published step.
+    const approved = await svc.setStatus(q.id, 'approved', admin.userId)
+    expect(approved.version.status).toBe('approved')
     const stored = (await repo.get(q.id, 'live'))?.version.parts[0]
     expect(stored).toMatchObject({ mode: 'essay_choice', marks: 30, topics, wordRange: { min: 150, max: 200 }, key: { kind: 'rubric' } })
 
