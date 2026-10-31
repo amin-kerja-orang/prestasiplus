@@ -41,18 +41,18 @@ Spec branches: a proof tagged `BASE-n` is in base (BASE-6 or the later merge nam
 | t29 | t29-servability @ c53e655d | questions/servability-rules.spec.ts, servability-parity.spec.ts, packages/contract servability test (READY) |
 | t30 | t30-servability-reads @ 409df4bf | questions/servability-reads.spec.ts, servability-perf.spec.ts (READY) |
 | t33 | t33-leaf-tags @ 95cea5be | questions-workflow/dskp-gate.spec.ts, intake-workflow/cognitive-level.spec.ts, migration 0102 (READY) |
-| t31 / t34 | t31-builder-wire @ 085c4945, t34-builder-review @ 7bc3419e | exam-builder/builder-review.spec.ts, builder-blockers.spec.ts (structured blockers, canOverride), test/r1/pipeline-chain.spec.ts (READY; t31 contains t34) |
+| t31 / t34 | t31-builder-wire @ 49419468, t34-builder-review @ 5bb590d0 | exam-builder/builder-review.spec.ts, builder-blockers.spec.ts (structured blockers, canOverride), test/r1/pipeline-chain.spec.ts (READY; t31 contains t34) |
 | t43 | t43-chain-publish @ 89d30dab | test/r1/pipeline-chain.spec.ts: Kontrak made Disahkan over the API, plain Terbit, T5 pupil, Jana Kertas T4/T5, SHORTAGE, NO_BLUEPRINT on Spec, draft/withdrawn negatives (READY; contains t31 and t34) |
-| t44 | t44-blueprint-fields @ 77984abc (contains H-A15 @ 7e5d637e) | exam-builder/blueprint-standards-api.spec.ts (autoMarkable, origin filter AC-39.2, note gate, skema Markah AC-39.7), r1/blueprint-review-flag.spec.ts (READY) |
-| t48 | t48-builder-parity @ 2cbe7d28 | exam-builder/builder-parity.spec.ts (cover code, per-paper rule, Tambah bahagian / soalan, Padam soalan, pinned, stimulus edit), migration 0104 (READY; contains t34) |
+| t44 | t44-blueprint-fields @ 072d8f4b (contains H-A15 @ 7e5d637e) | exam-builder/blueprint-standards-api.spec.ts (autoMarkable, origin filter AC-39.2, note gate, skema Markah AC-39.7), r1/blueprint-review-flag.spec.ts (READY) |
+| t48 | t48-builder-parity @ 54f5e0bc | exam-builder/builder-parity.spec.ts (cover code, per-paper rule, Tambah bahagian / soalan, Padam soalan, pinned, stimulus edit), migration 0104 (READY; contains t34) |
 | t48a | t48a-paper-list @ e5041595 | exam-builder/builder-api.spec.ts: "REQ-C-008" title at most 200, "R12" paper list filters Subjek and Cari (READY); no matrix row names them |
 | t38 / t40 | t38-selfmark-reward @ ff1e8a1b, t40-attempts-acs @ 1ef1341b (contains t38) | bijak-integration/rewards.spec.ts (D94), cuba-lagi-rewards.spec.ts, bijak-attempts/ac-r1.spec.ts, five-modes.spec.ts, practice/databank-prestasi.spec.ts (READY) |
 | t41 | t41-curriculum-acs @ 067ff3cc | curriculum/dskp-acs.spec.ts (READY) |
 | t50 | t50-partial-acs @ 50dd05ab | practice/databank-sejarah.spec.ts, bijak-attempts/reveal-data.spec.ts (READY) |
-| ha9 | ha9-pipeline-chain @ 1e80b005 | earlier chain spec (READY; superseded by t43) |
+| ha9 | ha9-pipeline-chain @ d3257e69 | earlier chain spec (READY; superseded by t43) |
 | ha13 | ha13-archived-paper @ 61b8851d | archived-paper refusal, Cuba Lagi 409 (READY) |
 | e2e05 | e2e05-stem-image @ 00cec26f (inside e2e05b-own-stimuli @ 9895d004) | bijak-integration/stem-image.spec.ts (READY) |
-| t04-minors / t05-minors | t04-minors @ ec179b12 (READY), t05-minors (BASE-19) | only changed existing specs; no new behaviour proof used here |
+| t04-minors / t05-minors | t04-minors @ 40061140 (READY), t05-minors (BASE-19) | only changed existing specs; no new behaviour proof used here |
 | t51 / t52 / T50-T52 placeholders | t51-partial-acs-a3 (A3 dev-1), t52-examiner-grid (A1) | not pushed: they are the owners of AC-07.4/07.6/07.7/07.9, AC-18.1 and AC-20.3 |
 
 ## 2. Gap list (partial and no-proof, front-end-only rows excluded)
