@@ -49,6 +49,13 @@ const props = defineProps<{
 const emit = defineEmits<{ submit: [body: QuestionInputBody] }>()
 
 const edit = computed(() => props.mode === 'edit')
+/**
+ * An esei pilihan question reads as `essay` but its model answer and points live in the part tree, which the
+ * form does not send ([PROPOSED] BM note): those two fields are read-only here.
+ */
+const essayChoice = computed(() => (props.initial?.essayTopics?.length ?? 0) > 0)
+const ESSAY_CHOICE_NOTE =
+  'Soalan esei pilihan: jawapan model dan nilai mata disunting melalui editor Studio / berstruktur, bukan di borang ini.'
 const values = reactive<QuestionFormValues>(
   props.initial ? valuesFromQuestion(props.initial) : emptyValues(),
 )
@@ -513,6 +520,14 @@ const correctItems = (i: number, letter: string) => [
           icon="file-text"
           data-testid="essay-card"
         >
+          <UAlert
+            v-if="essayChoice"
+            color="info"
+            variant="subtle"
+            icon="i-ph-info"
+            :description="ESSAY_CHOICE_NOTE"
+            data-testid="essay-choice-note"
+          />
           <DsFormField
             v-slot="{ id }"
             native
@@ -524,6 +539,7 @@ const correctItems = (i: number, letter: string) => [
               v-model="values.modelAnswer"
               name="model_answer"
               :rows="6"
+              :disabled="essayChoice"
               placeholder="Tulis jawapan contoh di sini..."
               class="w-full"
               data-testid="q-model"
@@ -605,6 +621,7 @@ const correctItems = (i: number, letter: string) => [
                 type="number"
                 name="points_value"
                 min="1"
+                :disabled="essayChoice"
                 :color="invalid ? 'error' : undefined"
                 class="w-full"
                 data-testid="q-points"

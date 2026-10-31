@@ -7,6 +7,7 @@
  * imports and direct creation as review / approved.
  */
 import type { QuestionGateData } from '../ports'
+import { checkDskpGate } from '../../dskp-gate'
 import { checkKeysGate, checkTagGate, leavesOf } from './keys-gate'
 
 export type GateName = 'submit' | 'approve'
@@ -64,6 +65,8 @@ export function publishGate(d: QuestionGateData): GateFields {
   Object.assign(f, checkTagGate(d)) // difficulty TP, DSKP unit and SP chosen from the curriculum
   if (d.rightsStatus === null || d.rightsStatus === 'unclear') f.rightsStatus = GATE_MESSAGES.rights // not "belum jelas"
   if (d.hasOpenDuplicateFlag) f.duplicate = GATE_MESSAGES.duplicate // no open duplicate flag
+  // R1-B05 (ADR-0031): DSKP complete for a NEW approval of an SPM-bound question: a cognitive level on every leaf, and the kertas.
+  Object.assign(f, checkDskpGate({ parts: d.parts, tp: d.tp, unitId: d.unitId, spIds: d.spIds, paperCode: d.paperCode ?? null, spmBound: d.spmBound ?? false }))
   return f
 }
 

@@ -22,7 +22,7 @@ import PastSittingsLink from '../components/PastSittingsLink.vue'
 import ResultGroup from '../components/ResultGroup.vue'
 import RichText from '../components/RichText.vue'
 import SelfMarkControl from '../components/SelfMarkControl.vue'
-import StimulusView from '../components/StimulusView.vue'
+import StimulusStack from '../components/StimulusStack.vue'
 import { needsAttention, sectionRuleLine } from '../domain/paper-model'
 import type { ReviewPart } from '../domain/semakan'
 import type {
@@ -31,6 +31,7 @@ import type {
   PartResult,
   QuestionResult,
   QuestionView,
+  StimulusDef,
   SubjectCode,
 } from '../domain/types'
 import { rewardItems } from '../lib/rewards'
@@ -66,7 +67,7 @@ const result = computed(() => refreshed.value ?? data.value?.result)
 const review = (p: PartResult): ReviewPart => p
 
 /**
- * Dirty-draft guard [PROPOSED: V2 has no such warning]: a stepper change that is not saved yet asks
+ * Dirty-draft guard (copy approved, Q1; V2 has no such warning): a stepper change that is not saved yet asks
  * before the pupil leaves the page (in-app navigation and tab close / reload).
  */
 const LEAVE_WARNING = 'Anda ada markah kendiri yang belum disimpan. Tinggalkan halaman ini?'
@@ -120,6 +121,14 @@ const rewards = computed(() => rewardItems(data.value?.result))
 const questionMap = computed(
   () => new Map<string, QuestionView>((data.value?.paper.questions ?? []).map((q) => [q.id, q])),
 )
+/** Own stimuli above the stem; `stemImage` only when `stimuli` is absent (a picture never shows twice). */
+const ownStimuli = computed(
+  () =>
+    new Map<string, StimulusDef[]>(
+      [...questionMap.value].map(([id, q]) => [id, q.stimuli ?? (q.stemImage ? [q.stemImage] : [])]),
+    ),
+)
+const ownStimuliOf = (id: string): StimulusDef[] => ownStimuli.value.get(id) ?? []
 const shown = computed<QuestionResult[]>(() =>
   (result.value?.questions ?? []).filter((q) => {
     return filter.value === 'semua' || needsAttention(q)
@@ -404,13 +413,14 @@ const home = computed(() => landingPath.value || '/dashboard')
               <span class="tabular" data-testid="q-score">{{ q.awarded }} / {{ q.marks }}</span>
             </summary>
             <div class="mt-3 flex flex-col gap-3">
+              <StimulusStack
+                v-if="ownStimuliOf(q.questionId).length"
+                :stimuli="ownStimuliOf(q.questionId)"
+                data-testid="own-stimuli"
+              />
               <p v-if="questionMap.get(q.questionId)?.stem" class="text-body text-default">
                 <RichText :text="questionMap.get(q.questionId)!.stem" />
               </p>
-              <StimulusView
-                v-if="questionMap.get(q.questionId)?.stemImage"
-                :stimulus="questionMap.get(q.questionId)!.stemImage!"
-              />
               <PartResultCard
                 v-for="p in q.parts"
                 :key="p.partId"

@@ -429,6 +429,22 @@ describe('QuestionCreatePage (M04 S2)', () => {
 })
 
 describe('QuestionEditPage (M04 S4)', () => {
+  it('an esei pilihan question has a read-only model answer and points, with a note (H-C3)', async () => {
+    questions.fetchQuestion.mockResolvedValue(
+      detail({ questionType: 'essay', essayTopics: [{ id: 't1', label: 'A' }, { id: 't2', label: 'B' }] }),
+    )
+    const w = await render('edit')
+    expect(t(w, 'essay-choice-note').text()).toContain('disunting melalui editor Studio')
+    expect(w.get('[data-testid=q-model]').attributes('disabled')).toBeDefined()
+    expect(w.get('[data-testid=q-points]').attributes('disabled')).toBeDefined()
+  })
+
+  it('a plain question keeps them editable', async () => {
+    const w = await render('edit')
+    expect(w.find('[data-testid=essay-choice-note]').exists()).toBe(false)
+    expect(w.get('[data-testid=q-points]').attributes('disabled')).toBeUndefined()
+  })
+
   it('pre-fills the form, has no type select or keyboard, and preloads the DSKP chain', async () => {
     const w = await render('edit')
     expect(questions.fetchQuestion).toHaveBeenCalledWith(564159, expect.anything())
