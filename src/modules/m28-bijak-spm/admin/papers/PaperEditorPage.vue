@@ -24,9 +24,12 @@ import PaperMetaForm from '../builder/components/PaperMetaForm.vue'
 import ReviewBlock from '../builder/components/ReviewBlock.vue'
 import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
 import { builderCopy as bt } from '../builder/domain/copy'
+import { validTitle } from '../builder/domain/stimulus'
 import { publishGate } from '../builder/domain/publish-gate'
 import { usePaperActions } from '../builder/lib/use-paper-actions'
 import { uploadQuestionImage } from '@/api/files'
+import type { BijakBuilderPoolUnit, BijakBuilderQuestionStatus } from '@pp/contract'
+import { questionStatusFromWire } from '../../server/http-admin'
 import { builderMessage, builderPath, type ReferencePanel } from '../builder/server/api'
 import { builderServer } from '../builder/server/client'
 import QuestionPreview from './QuestionPreview.vue'
@@ -56,6 +59,7 @@ const actions = usePaperActions({
   api: builderServer(),
   id,
   title: () => data.value?.paper.title ?? title.value,
+  ensureSaved: () => (dirty.value ? save() : Promise.resolve(true)),
   onChanged: reload,
   copyTarget: (nid) => `/admin/spm/kertas/${encodeURIComponent(nid)}`,
 })
@@ -73,6 +77,8 @@ watch(
   (d) => {
     if (!d) return
     void actions.loadReview()
+    extraQ.clear()
+    extraG.clear()
     title.value = d.paper.title
     durationMin.value = d.paper.durationMin
     for (const k of Object.keys(ids)) delete ids[k]
@@ -83,14 +89,17 @@ watch(
 )
 
 const readonly = computed(() => data.value?.paper.status === 'terbit')
+/** Pool units added through Tambah soalan that the editor data does not carry yet (until the next reload). */
+const extraQ = reactive(new Map<string, BuilderQuestion>())
+const extraG = reactive(new Map<string, string[]>())
 const qMap = computed(
-  () => new Map<string, BuilderQuestion>((data.value?.questions ?? []).map((q) => [q.id, q])),
+  () => new Map<string, BuilderQuestion>([...(data.value?.questions ?? []).map((q): [string, BuilderQuestion] => [q.id, q]), ...extraQ]),
 )
 const gMap = computed(
   () => new Map<string, BuilderGroup>((data.value?.groups ?? []).map((g) => [g.id, g])),
 )
 const groupOf = (qid: string): string | undefined => qMap.value.get(qid)?.groupId
-const membersOf = (gid: string): string[] => gMap.value.get(gid)?.questionIds ?? []
+const membersOf = (gid: string): string[] => gMap.value.get(gid)?.questionIds ?? extraG.get(gid) ?? []
 
 const sections = computed(() => data.value?.paper.sections ?? [])
 
@@ -205,6 +214,10 @@ function patch() {
   }
 }
 async function save(): Promise<boolean> {
+  if (!validTitle(title.value)) {
+    flash.show({ type: 'error', message: bt.titleInvalid })
+    return false
+  }
   busy.value = true
   try {
     await server.savePaper(id.value, patch())
@@ -231,12 +244,10 @@ async function publish(): Promise<void> {
     const res = await server.publishPaper(id.value)
     if (!res.ok) {
       publishErrors.value = res.errors
+      flash.show({ type: 'error', message: bt.notPublishable(res.errors.length) })
       return
     }
-    flash.show({
-      type: 'success',
-      message: 'Kertas diterbitkan. Ia kini ada dalam hab Bijak SPM pelajar.',
-    })
+    flash.show({ type: 'success', message: bt.publishedFlash(data.value?.paper.title ?? title.value) })
     await reload()
   } finally {
     busy.value = false
@@ -250,7 +261,7 @@ async function unpublish(): Promise<void> {
   busy.value = true
   try {
     await server.unpublishPaper(id.value)
-    flash.show({ type: 'success', message: 'Kertas ditarik balik ke Draf.' })
+    flash.show({ type: 'success', message: bt.withdrawnFlash(data.value?.paper.title ?? title.value) })
     await reload()
   } finally {
     busy.value = false
@@ -266,7 +277,7 @@ async function saveMeta(patchData: Parameters<ReturnType<typeof builderServer>['
     flash.show({ type: 'success', message: bt.metaSaved(data.value?.paper.title ?? title.value) })
     await reload()
   } catch (e) {
-    flash.show({ type: 'error', message: builderMessage(e, bt.errRename) })
+    flash.show({ type: 'error', message: builderMessage(e, bt.errMeta) })
   } finally {
     busy.value = false
   }
@@ -287,12 +298,30 @@ async function editThen(run: () => Promise<unknown>, okMessage: string, fallback
   }
 }
 const saveSection = (sid: string, p: Parameters<ReturnType<typeof builderServer>['updateSection']>[2]): Promise<void> =>
-  editThen(() => builderServer().updateSection(id.value, sid, p), bt.sectionSaved(p.label ?? ''))
-const loadOpsPool = (sid: string, q: string) => builderServer().pool(id.value, sid, { q, pageSize: 20 })
-const addQuestion = (sid: string, qid: string): Promise<void> =>
-  editThen(() => builderServer().addPlacement(id.value, sid, qid), bt.questionAdded, bt.errAdd)
-const deleteQuestion = (qid: string): Promise<void> =>
-  editThen(() => builderServer().removePlacement(id.value, qid), bt.questionDeleted, bt.errRemove)
+  editThen(() => builderServer().updateSection(id.value, sid, p), bt.sectionSaved(p.label ?? ''), bt.errRename)
+const loadOpsPool = (sid: string, q: string, page: number) =>
+  builderServer().pool(id.value, sid, { q, page, pageSize: 20 })
+const knownQuestion = (qid: string) => {
+  const q = qMap.value.get(qid)
+  return q ? { preview: q.preview, ...(q.groupId ? { groupId: q.groupId } : {}) } : undefined
+}
+/** Tambah / Padam soalan share the local model with the picker: applied on Simpan draf or Terbitkan. */
+function addPoolUnit(sectionId: string, u: BijakBuilderPoolUnit): void {
+  for (const q of u.questions) {
+    const wire = q as unknown as { status: string }
+    const status = ['draft', 'review', 'approved', 'archived'].includes(wire.status)
+      ? questionStatusFromWire(wire.status as BijakBuilderQuestionStatus)
+      : (wire.status as BuilderQuestion['status'])
+    extraQ.set(q.id, { ...(q as unknown as BuilderQuestion), status })
+  }
+  if (u.groupId) extraG.set(u.groupId, [...u.questionIds])
+  const all = new Set(Object.values(ids).flat())
+  setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((q) => !all.has(q))])
+}
+function removeIds(sectionId: string, qids: string[]): void {
+  const gone = new Set(qids)
+  setIds(sectionId, (ids[sectionId] ?? []).filter((q) => !gone.has(q)))
+}
 const referencePanels = computed(
   () => ((data.value?.paper as { reference?: ReferencePanel[] } | undefined)?.reference ?? []),
 )
@@ -302,9 +331,9 @@ const uploadReferenceImage = (file: File): Promise<string> =>
     ? uploadQuestionImage(file, 'reference')
     : Promise.resolve(`mock-${file.name}`)
 const saveReference = (panels: ReferencePanel[]): Promise<void> =>
-  editThen(() => builderServer().updateReference(id.value, panels), bt.refSaved)
+  editThen(() => builderServer().updateReference(id.value, panels), bt.refSaved, bt.errReference)
 const savePassage = (gid: string, label: string): Promise<void> =>
-  editThen(() => builderServer().updateGroupLabel(id.value, gid, label), bt.passageSaved(label))
+  editThen(() => builderServer().updateGroupLabel(id.value, gid, label), bt.passageSaved(label), bt.errPassage)
 
 /* -------------------------------------------------------------------------- preview */
 const previewOpen = ref(false)
@@ -512,7 +541,7 @@ const previewBlocks = computed(() => {
           role="status"
           data-testid="publish-errors"
         >
-          <template v-if="publishBlockedCount">
+          <template v-if="allIssues.length">
             Kertas belum boleh diterbitkan: selesaikan {{ publishBlockedCount }} perkara di atas.
           </template>
           <template v-else>{{ gate.reason }}</template>
@@ -524,6 +553,14 @@ const previewBlocks = computed(() => {
 
       <DsPanel data-testid="paper-review" aria-live="polite">
         <h3 class="mb-2 text-heading text-highlighted">{{ bt.review }}</h3>
+        <p class="mb-2 text-body" data-testid="paper-contract">
+          <span class="font-semibold">{{ bt.contractTitle }}:</span>
+          {{
+            data.blueprint
+              ? bt.contractLine(data.blueprint.subjectName, data.paper.kertas, data.blueprint.source)
+              : bt.contractNone
+          }}
+        </p>
         <div v-if="readonly" class="mb-2 flex flex-wrap items-center gap-3" data-testid="paper-live-note">
           <p class="text-body text-muted">{{ bt.live }} {{ bt.lockedNote }}</p>
           <UButton
@@ -565,12 +602,13 @@ const previewBlocks = computed(() => {
 
       <DsPanel data-testid="paper-question-ops">
         <PaperQuestionOps
-          :editor="data"
+          :sections="sections"
+          :ids="ids"
+          :known="knownQuestion"
           :readonly="readonly"
-          :busy="busy"
           :load-pool="loadOpsPool"
-          @add="addQuestion"
-          @remove="deleteQuestion"
+          @add="addPoolUnit"
+          @remove="removeIds"
         />
       </DsPanel>
 

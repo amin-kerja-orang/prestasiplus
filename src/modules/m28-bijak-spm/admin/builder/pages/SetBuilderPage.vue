@@ -23,6 +23,7 @@ import PublishOverride from '../components/PublishOverride.vue'
 import ReviewBlock from '../components/ReviewBlock.vue'
 import StudentViewDrawer from '../components/StudentViewDrawer.vue'
 import { builderCopy as t, LEVEL_ITEMS } from '../domain/copy'
+import { hasStimulus, hasStimulusOf, validTitle } from '../domain/stimulus'
 import { movedOrder, sectionUnits, type SectionUnit } from '../domain/units'
 import { usePaperActions } from '../lib/use-paper-actions'
 import { BUILDER_PATH, builderMessage, type SectionPool } from '../server/api'
@@ -52,6 +53,8 @@ const actions = usePaperActions({
   api,
   id,
   title: () => paper.value?.title ?? '',
+  // V2 composite set: "Set ini telah diterbitkan." (design S4.2)
+  publishedMessage: (_title, n) => (n ? t.overriddenFlash(n) : t.published_ok),
   onChanged: load,
 })
 const { review, view, viewOpen, viewError } = actions
@@ -96,8 +99,13 @@ watch(
 )
 async function rename(): Promise<void> {
   const next = titleDraft.value.trim()
-  if (!paper.value || locked.value || !next || next === paper.value.title) {
+  if (!paper.value || locked.value || next === paper.value.title) {
     titleDraft.value = paper.value?.title ?? ''
+    return
+  }
+  if (!validTitle(next)) {
+    titleDraft.value = paper.value.title
+    flash.show({ type: 'error', message: t.titleInvalid })
     return
   }
   try {
@@ -197,14 +205,21 @@ function remove(u: SectionUnit): Promise<void> {
     t.errRemove,
   )
 }
-function move(sectionId: string, list: SectionUnit[], index: number, delta: -1 | 1): Promise<void> {
+/** One reorder at a time page-wide: a second `movedOrder` built from stale units would undo the first. */
+const reordering = ref(false)
+async function move(sectionId: string, list: SectionUnit[], index: number, delta: -1 | 1): Promise<void> {
   const order = movedOrder(list, index, delta)
-  if (!order) return Promise.resolve()
-  return guarded(
-    list[index]!.ids[0]!,
-    async () => refresh(await api.reorder(id.value, sectionId, order)),
-    t.errOrder,
-  )
+  if (!order || reordering.value) return
+  reordering.value = true
+  try {
+    await guarded(
+      list[index]!.ids[0]!,
+      async () => refresh(await api.reorder(id.value, sectionId, order)),
+      t.errOrder,
+    )
+  } finally {
+    reordering.value = false
+  }
 }
 
 const unitsBySection = computed(() => {
@@ -393,12 +408,12 @@ const dskpItems = computed(() => [
                   class="flex flex-col gap-2 rounded-lg bg-muted p-3"
                   :data-testid="u.groupId ? `pool-group-${u.groupId}` : `pool-${u.questionIds[0]}`"
                 >
-                  <div v-if="u.groupId && u.stimulus" class="flex flex-col gap-1">
+                  <div v-if="u.groupId" class="flex flex-col gap-1">
                     <p class="flex flex-wrap items-center gap-2 text-caption font-semibold text-info">
                       <UIcon name="i-ph-image" class="size-4" aria-hidden="true" />
-                      {{ t.groupBadge((u.stimulus as unknown as StimulusDef).label ?? '', u.questionIds.length) }}
+                      {{ t.groupBadge((u.stimulus as unknown as StimulusDef | undefined)?.label ?? '', u.questionIds.length) }}
                     </p>
-                    <div class="max-h-48 overflow-auto rounded bg-default p-2" data-testid="pool-stimulus">
+                    <div v-if="hasStimulusOf(u.stimulus)" class="max-h-48 overflow-auto rounded bg-default p-2" data-testid="pool-stimulus">
                       <StimulusView :stimulus="u.stimulus as unknown as StimulusDef" />
                     </div>
                   </div>
@@ -485,7 +500,7 @@ const dskpItems = computed(() => [
                           {{ t.groupBadge(stimulusOf(u.groupId)?.label ?? '', u.ids.length) }}
                         </p>
                         <div
-                          v-if="stimulusOf(u.groupId)"
+                          v-if="hasStimulus(stimulusOf(u.groupId))"
                           class="max-h-48 overflow-auto rounded bg-default p-2"
                           data-testid="set-stimulus"
                         >
@@ -515,7 +530,7 @@ const dskpItems = computed(() => [
                         icon="i-ph-arrow-up"
                         :aria-label="t.upAria(ui + 1)"
                         class="min-h-11 min-w-11"
-                        :disabled="ui === 0 || pending.has(u.ids[0]!)"
+                        :disabled="ui === 0 || reordering || pending.has(u.ids[0]!)"
                         :data-testid="`up-${u.ids[0]}`"
                         @click="move(s.id, unitsIn(s.id), ui, -1)"
                       />
@@ -525,7 +540,7 @@ const dskpItems = computed(() => [
                         icon="i-ph-arrow-down"
                         :aria-label="t.downAria(ui + 1)"
                         class="min-h-11 min-w-11"
-                        :disabled="ui === unitsIn(s.id).length - 1 || pending.has(u.ids[0]!)"
+                        :disabled="ui === unitsIn(s.id).length - 1 || reordering || pending.has(u.ids[0]!)"
                         :data-testid="`down-${u.ids[0]}`"
                         @click="move(s.id, unitsIn(s.id), ui, 1)"
                       />

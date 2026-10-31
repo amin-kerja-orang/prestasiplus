@@ -22,6 +22,13 @@ export interface PaperActionsOptions {
   id: Ref<string>
   /** The current title, for the flash lines. */
   title: () => string
+  /** Success line of Terbitkan; default the Semak Kertas line, the Set Builder passes "Set ini telah diterbitkan." (V2). */
+  publishedMessage?: (title: string, overridden: number) => string
+  /**
+   * Saves unsaved edits before an override publish. Returns false when saving failed. The override must
+   * act on what is on screen, so the review is reloaded after the save (the offer may change).
+   */
+  ensureSaved?: () => Promise<boolean>
   /** Called after Terbitkan or Tarik balik succeeded (reload the editor). */
   onChanged: () => Promise<void> | void
   /** Where Salin set goes; default the Set Builder page of the copy. */
@@ -67,13 +74,25 @@ export function usePaperActions(o: PaperActionsOptions) {
     if (busy.value || (publishBlocked.value && !options?.override)) return false
     busy.value = true
     try {
+      if (options?.override && o.ensureSaved) {
+        if (!(await o.ensureSaved())) return false
+        await loadReview()
+        if (!overrideAvailable.value) {
+          flash.show({ type: 'error', message: t.overrideGone })
+          return false
+        }
+      }
       const r = options ? await o.api.publish(o.id.value, options) : await o.api.publish(o.id.value)
       if (!r.ok) {
         flash.show({ type: 'error', message: t.notPublishable(r.errors.length) })
         await loadReview()
         return false
       }
-      flash.show({ type: 'success', message: r.overridden?.length ? t.overriddenFlash(r.overridden.length) : t.publishedFlash(o.title()) })
+      const n = r.overridden?.length ?? 0
+      flash.show({
+        type: 'success',
+        message: o.publishedMessage ? o.publishedMessage(o.title(), n) : n ? t.overriddenFlash(n) : t.publishedFlash(o.title()),
+      })
       await o.onChanged()
       await loadReview()
       return true

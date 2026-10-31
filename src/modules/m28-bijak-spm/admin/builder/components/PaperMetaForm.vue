@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
- * "Kemas kini metadata" of Semak Kertas (S4.4; V2 cloud-student-mechanism 3.4): Tahun, Tempoh
- * (minit), Kod kertas (read-only: not in the contract) and the cover instructions, one line per
- * numbered instruction. The title is edited in the page header.
+ * "Kemas kini metadata" of Semak Kertas (S4.4; V2 cloud-student-mechanism 3.4): Tajuk (shared with
+ * the page header), Tahun, Tempoh (minit), Kod kertas and the cover instructions, one line per
+ * numbered instruction. Kod kertas is read-only here: the paper contract has no cover-code write
+ * (deviation UX-51; V2 edits it).
  */
 import { computed, ref, watch } from 'vue'
 

@@ -1080,6 +1080,8 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 | UX-46 | Publish confirm "Terbitkan kertas ini? ..." on native papers (Semak Kertas); composite sets in the Set Builder keep no confirm; the override also needs a reason of 5+ characters (audited) | R8/R10; D78 |
 | UX-47 | Menu: "Kontrak Blueprint" renamed "Kontrak Simulasi" (KS-08) and a new "Bank Soalan (Studio)" item BS-08 `/admin/studio` | K1, S1; D79 |
 | UX-48 | Kontrak: labels Kod Kertas / Jumlah Markah / Sumber / Peraturan Pilihan / Arahan (opsyenal) / Mod Jawapan Dijangka, flashes "Kontrak dicipta." / "Kontrak dikemas kini.", delete body and empty state, banner "Kontrak dikongsi." and button "Baharu" follow V2; V3 keeps the delete block when Terbit papers depend (AC-25.5), the extra Bahagian fields (M, markah selepas pilih N) and the duplicate wording of D92(3) | K1-K10 |
+| UX-50 | Semak Kertas "Tambah soalan" / "Padam soalan" place and remove a bank question on this paper (one model with the picker, saved on Simpan draf / Terbitkan); V2 creates and deletes an extra question with Nombor soalan / Jenis jawapan / Markah. The confirm is [PROPOSED]: "Soalan ini akan dibuang daripada kertas ini sahaja. Ia kekal dalam bank soalan dan boleh ditambah semula." (V2 text says the question and its scheme are deleted for good) | R5; V3 has no create-blank-question route (D90 shared bank) |
+| UX-51 | "Kod kertas (kulit)" is read-only in "Kemas kini metadata" (the paper contract has no cover-code write); V2 edits it | R1; request to team A if V2 parity is wanted |
 
 ---
 

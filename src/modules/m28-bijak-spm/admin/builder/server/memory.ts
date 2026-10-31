@@ -40,7 +40,15 @@ async function loadAdmin() {
   return bijakAdminServer()
 }
 
+/**
+ * Test / demo hook: blueprint-conformance lines (the kind T34 lets an admin override, for example
+ * "Kontrak Simulasi ... belum Disahkan") for a paper. The default mock has none, so the mock e2e
+ * keeps its 2-click publish.
+ */
+export type OverridableLines = (editor: PaperEditorData) => string[]
+
 export class MockBuilderServer implements BuilderApi {
+  constructor(private readonly overridable: OverridableLines = () => []) {}
   private admin: Promise<AdminMock> | null = null
   private a(): Promise<AdminMock> {
     this.admin ??= loadAdmin()
@@ -199,13 +207,15 @@ export class MockBuilderServer implements BuilderApi {
       membersOf: h.membersOf,
       isLive: (qid) => h.q.get(qid)?.status === 'terbit',
     })
+    const overridableLines = this.overridable(ed)
     const blockers = [...check.errors, ...check.sections.flatMap((s) => s.errors.map((e) => `${s.label}: ${e}`))]
     const notes = check.sections.flatMap((s) => s.notes.map((n) => `${s.label}: ${n}`))
     return {
       paperId: id,
       status: ed.paper.status,
-      ok: blockers.length === 0,
-      blockers,
+      ok: blockers.length === 0 && overridableLines.length === 0,
+      blockers: [...blockers, ...overridableLines.map((message) => ({ code: 'CONTRACT', message, overridable: true }))],
+      canOverride: blockers.length === 0 && overridableLines.length > 0,
       notes,
       blueprintNeedsReview: notes.length > 0,
       visibleToStudents: ed.paper.status === 'terbit',
@@ -269,8 +279,11 @@ export class MockBuilderServer implements BuilderApi {
   async publish(id: string, options: PublishOptions = {}): Promise<PublishResult> {
     if (options.override && (options.reason ?? '').trim().length < 5)
       throw new BuilderError('invalid', 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint')
-    const r = await (await this.a()).publishPaper(id)
-    return { ok: r.ok, errors: r.errors }
+    const a = await this.a()
+    const lines = this.overridable(await a.getPaperEditor(id))
+    if (lines.length && !options.override) return { ok: false, errors: lines }
+    const r = await a.publishPaper(id)
+    return { ok: r.ok, errors: r.errors, ...(r.ok && lines.length ? { overridden: lines } : {}) }
   }
 
   async updateSection(id: string, sectionId: string, patch: SectionPatch): Promise<PaperEditorData> {

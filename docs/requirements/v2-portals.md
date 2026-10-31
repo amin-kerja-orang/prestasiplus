@@ -143,7 +143,7 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 | BS-06 | Soalan PKSK | premium question bank | F | — | — | B `:895` (`pusat:`); F PkskQuestions |
 | BS-07 | Audio KBAT | audio KBAT items | F | — | — | B `:900`; F AudioKbats |
 
-### 6.4 Kertas & SPM (17) — Pusat only [D30]
+### 6.4 Kertas & SPM (13) — Pusat only [D30]
 | ID | Item | Function(s) merged | Pusat | PPD·JPN | Sekolah | Evidence |
 |---|---|---|---|---|---|---|
 | KS-01 | Gambaran SPM | hub of lanes (landing page of the group) | F | — | — | B `:691`; P `/spm` `:196` |
@@ -251,15 +251,15 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 | Papan Pemuka | 2 |
 | Pemantauan | 28 (Kirkpatrick = 7) |
 | Bank Soalan | 7 |
-| Kertas & SPM | 17 |
+| Kertas & SPM | 13 |
 | Kurikulum & Kandungan | 12 |
 | Pengguna & Sekolah | 6 |
 | Penglibatan | 22 |
 | Kewangan | 6 |
 | Sistem | 5 |
-| **Total** | **105** |
+| **Total** | **101** |
 
-Note: the menu now has 105 items (Kertas & SPM 17): KS-17 Set Builder was added by T10 (R1-F08). The Kertas & SPM count already includes the KS-13..KS-16 intake items built after this table was written.
+Note: this table lists 12 original Kertas & SPM rows plus KS-17 Set Builder (added by T10, R1-F08). The built menu in `src/shells/pentadbiran/menu.ts` also carries KS-13..KS-16 (intake items) and BS-08 (Studio list), which post-date this table, so the data definition has more items than the table.
 
 Merges applied ("one function = one place"): Analitik (B+P) → PM-04; Users (B+P+F) → PS-01; Schools (B+P+F) → PS-02; Studio (B+P) → BS-01/BS-02/KS-09; SPM hub (B+P) → KS-01..; legacy "Bank Lama" list and Soalan Berstruktur → BS-01/KS-05; Statistik Penggunaan (ppd, jpn, M27) → PM-15; Laporan (B) = Laporan Aktiviti (M27) → PM-12.
 

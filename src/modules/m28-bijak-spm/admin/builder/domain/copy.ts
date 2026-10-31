@@ -69,10 +69,10 @@ export const builderCopy = {
   down: 'Turun', // D83 D-9
   upAria: (n: number): string => `Naikkan soalan ${n}`, // [PROPOSED] design D-9
   downAria: (n: number): string => `Turunkan soalan ${n}`, // [PROPOSED] design D-9
-  groupBadge: (label: string, n: number): string => `Kumpulan rangsangan ${label} · ${n} soalan bergerak bersama`, // existing editor copy
+  groupBadge: (label: string, n: number): string =>
+    `Kumpulan rangsangan${label.trim() ? ` ${label.trim()}` : ''} · ${n} soalan bergerak bersama`, // existing editor copy
   contractTitle: 'Kontrak Simulasi', // V2
   editContract: 'Sunting kontrak', // V2
-  blockedCount: (n: number): string => `${n} masalah menghalang penerbitan.`, // V2 design
   published_ok: 'Set ini telah diterbitkan.', // V2
   visibleDraft: 'Belum boleh dibuka murid — set ini masih draf.', // V2 design [PROPOSED]
   visibleLive: 'Murid boleh membuka set ini di: Simulasi, Simulasi — Kuiz, Tracking A (jika ditanda).', // V2 design [PROPOSED]
@@ -81,14 +81,16 @@ export const builderCopy = {
   paneNav: 'Paparan pembina', // [PROPOSED]
   poolMore: 'Muat lagi', // [PROPOSED]
   // error toasts (V2 verbatim, used when the server sent no BM line)
-  errAdd: 'Soalan gagal ditambah — cuba lagi.',
-  errOrder: 'Susunan gagal disimpan — muat semula halaman dan cuba lagi.',
-  errRemove: 'Soalan gagal dibuang — cuba lagi.',
-  errPool: 'Ralat semasa mencari bank soalan.',
-  errValidate: 'Set ini tidak lulus pengesahan.',
-  errPublish: 'Ralat tidak dijangka semasa menerbitkan.',
-  errNetwork: 'Ralat rangkaian semasa menerbitkan.',
-  errRename: 'Bahagian gagal dikemas kini.',
+  errAdd: 'Soalan gagal ditambah — cuba lagi.', // V2
+  errOrder: 'Susunan gagal disimpan — muat semula halaman dan cuba lagi.', // V2
+  errRemove: 'Soalan gagal dibuang — cuba lagi.', // V2
+  errPool: 'Ralat semasa mencari bank soalan.', // V2
+  errPublish: 'Ralat tidak dijangka semasa menerbitkan.', // V2
+  errRename: 'Bahagian gagal dikemas kini.', // V2 (Sunting bahagian)
+  errMeta: 'Kertas gagal dikemas kini.', // [PROPOSED] (Kemas kini metadata)
+  errPassage: 'Petikan gagal dikemas kini.', // [PROPOSED] (Sunting petikan)
+  errReference: 'Bahan rujukan gagal dikemas kini.', // [PROPOSED]
+  titleInvalid: 'Tajuk diperlukan (paling banyak 200 aksara).', // [PROPOSED] contract title 1..200
   errLoad: 'Tidak dapat memuatkan set ini.', // [PROPOSED]
   errGenerate: 'Set tidak dapat dijana. Sila cuba lagi.', // [PROPOSED]
   errGenerateShortage: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.', // existing K3 copy
@@ -144,14 +146,14 @@ export const builderCopy = {
   passageSaved: (l: string): string => `Petikan '${l}' telah dikemas kini.`, // [PROPOSED]
   passageSave: 'Simpan petikan', // V2 (R3)
   passageShared: 'Tajuk ini dikongsi oleh semua kertas yang menggunakan kumpulan rangsangan ini.', // [PROPOSED] D90 deviation
-  overrideTick: 'Terbitkan walaupun tidak memenuhi kontrak blueprint', // V2
+  overrideTick: 'Terbitkan walaupun tidak memenuhi kontrak Simulasi', // V2 Panel / design S4.4 (Blade: "kontrak blueprint")
+  overrideGone: 'Pengecualian tidak lagi tersedia selepas menyimpan. Semak masalah yang tinggal.', // [PROPOSED]
   overrideReason: 'Sebab (sekurang-kurangnya 5 aksara)', // [PROPOSED]
   overriddenFlash: (n: number): string => `Diterbitkan dengan ${n} pengecualian kontrak (direkodkan).`, // [PROPOSED]
   addQuestion: 'Tambah soalan', // V2
   deleteQuestion: 'Padam soalan', // V2
-  deleteConfirm: 'Soalan tambahan ini, termasuk bahagian, pilihan jawapan dan skemanya, akan dibuang dari kertas. Tindakan ini tidak boleh dibatalkan.', // V2
-  questionAdded: 'Soalan ditambah ke kertas.', // [PROPOSED]
-  questionDeleted: 'Soalan dipadam dari kertas.', // [PROPOSED]
+  deleteConfirm: 'Soalan ini akan dibuang daripada kertas ini sahaja. Ia kekal dalam bank soalan dan boleh ditambah semula.', // [PROPOSED] (V2 deletes an extra question for good; V3 only removes the placement, UX-50)
+  contractLine: (subject: string, kertas: number, source: string): string => `${subject} Kertas ${kertas} · ${source}`, // [PROPOSED]
   pinned: 'Disematkan', // V2 chip (P5): the question version pinned at Terbit
   poolCap: 'Menunjukkan 150 teratas — tapis lagi untuk menyempitkan.', // V2 (P4)
   copyForEdit: 'Salin untuk sunting', // V2 live banner button (R6)

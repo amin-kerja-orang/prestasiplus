@@ -9,6 +9,7 @@ import { reactive, watch } from 'vue'
 
 import type { PaperEditorData } from '../../../domain/admin-types'
 import { builderCopy as t } from '../domain/copy'
+import { hasStimulus } from '../domain/stimulus'
 import type { SectionPatch } from '../server/api'
 
 const props = defineProps<{ editor: PaperEditorData; readonly?: boolean; busy?: boolean }>()
@@ -38,7 +39,8 @@ watch(
 /** Groups that are on the paper, in paper order. */
 function placedGroups(): { id: string }[] {
   const placed = new Set(props.editor.paper.sections.flatMap((s) => s.questionIds))
-  return props.editor.groups.filter((g) => g.questionIds.some((q) => placed.has(q)))
+  // A group without stimulus content (T07 placeholder) has no title to edit.
+  return props.editor.groups.filter((g) => g.questionIds.some((q) => placed.has(q)) && hasStimulus(g.stimulus))
 }
 const ruleText = (r: { type: 'all' } | { type: 'choose'; n: number }): string =>
   r.type === 'all' ? 'Jawab Semua' : `Pilih ${r.n}`
