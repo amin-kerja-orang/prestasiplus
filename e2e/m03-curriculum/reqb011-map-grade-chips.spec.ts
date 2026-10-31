@@ -7,11 +7,11 @@ import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, moduleTag, viewportWidth } from '../support'
 
 test.describe('Peta Belajar grade chips (REQ-B-011) @m03', () => {
-  test('two Tingkatan chips, a 2-column grid at 375, no horizontal scroll', { tag: [moduleTag(3)] }, async ({
+  test('two Tingkatan chips: 2-column grid below 640 px, flex row above, no horizontal scroll', { tag: [moduleTag(3)] }, async ({
     page,
     loginAs,
     gotoApp,
-  }) => {
+  }, testInfo) => {
     await loginAs('pelajar@demo.test')
     await gotoApp('/peta-belajar?grade=TINGKATAN_4')
     await expect(page.getByTestId('map-hero')).toBeVisible()
@@ -35,6 +35,6 @@ test.describe('Peta Belajar grade chips (REQ-B-011) @m03', () => {
       expect(box.display).toBe('flex')
     }
     await expectNoHorizontalScroll(page)
-    await page.screenshot({ path: `/home/claude/scratch/c1/shots/map-chips-${String(viewportWidth(page))}.png` })
+    await page.screenshot({ path: testInfo.outputPath(`map-chips-${String(viewportWidth(page))}.png`) })
   })
 })
