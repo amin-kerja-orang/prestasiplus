@@ -194,7 +194,7 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
         expect.arrayContaining([
           expect.objectContaining({ code: 'TOTAL_MARKS_BELOW_ONE', message: LINES.totalMarksBelowOne, overridable: false }),
           expect.objectContaining({ code: 'ZERO_MARK_SECTION', section: 'Bahagian A', message: `Bahagian A: ${LINES.zeroMarkSection}`, overridable: false }),
-          expect.objectContaining({ code: 'INELIGIBLE', questionId: id, overridable: true }),
+          expect.objectContaining({ code: 'NO_MARKS', questionId: id, overridable: false }),
         ]),
       )
       expect(res.canOverride).toBe(false)

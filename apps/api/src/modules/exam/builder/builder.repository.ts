@@ -6,6 +6,12 @@ import { PrismaService } from '../../../db/prisma.service'
 export type PaperTree = Paper & { sections: (PaperSection & { placements: PaperPlacement[] })[] }
 export type BlueprintWithSections = Blueprint & { sections: BlueprintSection[] }
 
+/** R12: optional list filters. `subjectId` narrows to one subject; `search` is a substring of the title or the paper code. */
+export interface PaperListFilter {
+  subjectId?: bigint
+  search?: string
+}
+
 export interface SubjectRef {
   id: bigint
   code: string
@@ -64,13 +70,13 @@ export class BuilderRepository {
     return this.prisma.client.paper.findFirst({ where: { id, kind: 'pilihan' }, include: TREE })
   }
 
-  countPilihan(statuses: readonly string[] | undefined): Promise<number> {
-    return this.prisma.client.paper.count({ where: this.listWhere(statuses) })
+  countPilihan(statuses: readonly string[] | undefined, filter?: PaperListFilter): Promise<number> {
+    return this.prisma.client.paper.count({ where: this.listWhere(statuses, filter) })
   }
 
-  listPilihan(statuses: readonly string[] | undefined, skip: number, take: number): Promise<PaperTree[]> {
+  listPilihan(statuses: readonly string[] | undefined, skip: number, take: number, filter?: PaperListFilter): Promise<PaperTree[]> {
     return this.prisma.client.paper.findMany({
-      where: this.listWhere(statuses),
+      where: this.listWhere(statuses, filter),
       include: TREE,
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       skip,
@@ -78,8 +84,15 @@ export class BuilderRepository {
     })
   }
 
-  private listWhere(statuses: readonly string[] | undefined): Prisma.PaperWhereInput {
-    return { kind: 'pilihan', ...(statuses ? { status: { in: [...statuses] } } : {}) }
+  private listWhere(statuses: readonly string[] | undefined, filter?: PaperListFilter): Prisma.PaperWhereInput {
+    // `contains` passes the text to LIKE unescaped, so a typed % or _ would match everything: escape them (backslash is the LIKE default).
+    const search = filter?.search?.replace(/[\\%_]/g, (c) => `\\${c}`)
+    return {
+      kind: 'pilihan',
+      ...(statuses ? { status: { in: [...statuses] } } : {}),
+      ...(filter?.subjectId !== undefined ? { subjectId: filter.subjectId } : {}),
+      ...(search ? { OR: [{ title: { contains: search, mode: 'insensitive' } }, { paperCode: { contains: search, mode: 'insensitive' } }] } : {}),
+    }
   }
 
   async subjectsByIds(ids: readonly bigint[]): Promise<Map<string, SubjectRef>> {
@@ -167,15 +180,23 @@ export class BuilderRepository {
     await this.prisma.client.paperSection.update({ where: { id }, data })
   }
 
-  /** The given references (public token or decimal id) that name a stored question image. */
-  async existingImages(refs: readonly string[]): Promise<Set<string>> {
-    const unique = [...new Set(refs)]
-    const ids = unique.filter((r) => /^[1-9][0-9]{0,17}$/.test(r)).map((r) => BigInt(r))
+  /**
+   * The given references that may be used as a reference-sheet picture: a stored `question_image` file named by its PUBLIC TOKEN (never the
+   * internal id, which would leak it and lets any caller probe ids) AND either uploaded by the editing admin or already on this paper's sheet.
+   * Another user's unattached upload is therefore refused (B3 T34-L1).
+   */
+  async existingImages(refs: readonly string[], ownerUserId: bigint, onPaper: readonly string[]): Promise<Set<string>> {
+    const unique = [...new Set(refs)].filter((r) => /^[A-Za-z0-9_-]{8,64}$/.test(r))
+    if (unique.length === 0) return new Set()
     const rows = await this.prisma.client.file.findMany({
-      where: { purpose: 'question_image', OR: [{ publicId: { in: unique } }, ...(ids.length > 0 ? [{ id: { in: ids } }] : [])] },
-      select: { id: true, publicId: true },
+      where: {
+        purpose: 'question_image',
+        publicId: { in: unique },
+        OR: [{ ownerUserId }, { publicId: { in: [...onPaper] } }],
+      },
+      select: { publicId: true },
     })
-    return new Set(rows.flatMap((r) => [r.publicId, r.id.toString()]))
+    return new Set(rows.map((r) => r.publicId))
   }
 
   async pinPlacement(id: bigint, pinnedVersionNo: number, marksOverride: number): Promise<void> {
