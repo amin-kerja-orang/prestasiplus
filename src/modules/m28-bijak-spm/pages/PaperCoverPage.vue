@@ -15,6 +15,7 @@ import RichText from '../components/RichText.vue'
 import { formatClock } from '../domain/paper-model'
 import type { AttemptMode } from '../domain/types'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
+import { BijakError } from '../server/errors'
 import { bijakServer } from '../server/client'
 
 useLearnerTheme()
@@ -57,8 +58,12 @@ async function begin(restart: boolean): Promise<void> {
     const target = open.value && !restart ? open.value.mode : mode.value
     const out = await server.startAttempt(user.value, paperId.value, target, { restart })
     await router.push({ name: 'm28.bijak.attempt', params: { attemptId: out.attemptId } })
-  } catch {
-    failure.value = 'Percubaan tidak dapat dimulakan. Cuba lagi.'
+  } catch (e) {
+    // 403 carries the API's BM reason (the paper is being updated): show it, not the generic line.
+    failure.value =
+      e instanceof BijakError && e.code === 'forbidden' && e.message
+        ? e.message
+        : 'Percubaan tidak dapat dimulakan. Cuba lagi.'
     starting.value = false
     await reloadOpen()
   }
@@ -173,8 +178,10 @@ async function begin(restart: boolean): Promise<void> {
           legend="Mod menjawab"
           data-testid="mode-choice"
         />
-        <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" />
       </section>
+
+      <!-- Outside both branches: a refusal of "Mula" or "Mula Semula" (403, paper being updated) is always visible. -->
+      <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" data-testid="start-failure" />
     </template>
 
     <UModal
