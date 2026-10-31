@@ -15,6 +15,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { FormOrigin, LeafFact, QuestionFacts, UnitFact } from '@pp/exam-core'
 
 import { idFromString, idToString, isIdString } from '../../db/ids'
+import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { loadEffectiveLeaves, type EffectiveLeaf } from './effective-leaf'
 
@@ -56,16 +57,21 @@ function chunked<T>(items: readonly T[], size: number): T[][] {
 export class QuestionsBijakPoolSource {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  /** Facts of every published, active question of a curriculum subject (decimal-string id), in question id order. */
-  async candidatesOf(subjectId: string): Promise<QuestionFacts[]> {
+  /**
+   * Facts of every published, active question of a curriculum subject (decimal-string id), in question id order. `only` (R1-T30)
+   * narrows the read to those question ids, so a per-question read costs the same in a subject of 5 or 50,000 questions.
+   */
+  async candidatesOf(subjectId: string, only?: readonly string[]): Promise<QuestionFacts[]> {
     if (!isIdString(subjectId)) return []
+    const wanted = only === undefined ? null : only.filter(isIdString).map((id) => idFromString(id))
+    if (wanted !== null && wanted.length === 0) return []
     const db = this.prisma.client
     const rows = await db.$queryRaw<QuestionRow[]>`
       SELECT q.id AS question_id, q.group_id, q.group_position,
              v.id AS version_id, v.version_no, v.tag_review, v.unit_node_id, v.form_origin,
              (SELECT array_agg(t.code ORDER BY t.code) FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pool') AS pools
         FROM questions q
-        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND (${wanted === null ? Prisma.sql`TRUE` : Prisma.sql`q.id = ANY(${wanted}::bigint[])`})
        WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${idFromString(subjectId)}
        ORDER BY q.id`
     if (rows.length === 0) return []
