@@ -2,4 +2,3 @@ export { LifecycleService, gateFailure, type BulkResult, type BulkSkipped, type 
 export { GATES, GATE_MESSAGES, approveGate, publishGate, submitGate, type GateFields, type GateName } from './gates'
 export { checkKeysGate, checkTagGate } from './keys-gate'
 export { gateIssuesOf } from './gate-issues'
-export { LifecycleController } from './lifecycle.controller'
