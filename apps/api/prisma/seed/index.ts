@@ -29,7 +29,7 @@ import { questionPoolSeed } from './questions/pool'
 import { bijakSittingsSeed } from './poc/bijak-sittings'
 import { classesSeed } from './poc/classes'
 import { marketplaceSeed } from './marketplace'
-import { assertSeedAllowed } from './guard'
+import { assertSeedAllowed, countsAsProduction } from './guard'
 import { walletSeed } from './wallet'
 import { contentSeed } from './content'
 import { gamificationSeed } from './gamification'
@@ -42,12 +42,14 @@ import { spmSubjectConfigsSeed } from './spm-subject-configs'
 import { pocProfileSeed } from './poc'
 import { pkskSeed } from './pksk'
 
-export { assertSeedAllowed }
+export { assertSeedAllowed, countsAsProduction }
 
 export const DEFAULT_PROFILE = 'poc'
 
 export interface SeedContext {
   profile: string
+  /** The environment of this run (`RunSeedsOptions.env`, default `process.env`): the same one the demo guard reads. */
+  readonly env: Record<string, string | undefined>
   /** Fixed at the ADR-0006 anchor; never the real time. */
   clock: Clock
   /** Independent seeded stream per name; call once per generator. */
@@ -115,6 +117,7 @@ export async function runSeeds(
   const { prisma, seedBase = DEFAULT_SEED_BASE } = options
   const ctx: SeedContext = {
     profile,
+    env,
     clock: new FixedClock(SEED_NOW),
     prng: (name) => prngStream(name, seedBase),
     get prisma(): PrismaClient {
@@ -172,19 +175,6 @@ export function applyForceDemo(argv: readonly string[], env: Record<string, stri
   }
   env.ALLOW_DEMO_SEED = 'true'
   return true
-}
-
-/**
- * True when the demo guard counts `env` as production, i.e. `assertSeedAllowed` would refuse it with no
- * ALLOW_DEMO_SEED key. Uses the guard itself, so it follows the guard's own definition of production.
- */
-export function countsAsProduction(env: Record<string, string | undefined> = process.env): boolean {
-  try {
-    assertSeedAllowed({ ...env, ALLOW_DEMO_SEED: undefined })
-    return false
-  } catch {
-    return true
-  }
 }
 
 /**

@@ -15,6 +15,7 @@ import { bootPapersApp, expectError, loginAs, type PapersTestApp } from '../bija
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 const BASE = [identitySeed, curriculumSeed, examSeed, examDemoBlueprintsSeed, examLaunchBlueprintsSeed]
+const FLAGGED = { ...process.env, E2E_SEED: '1' }
 const CODE = '3472/2'
 
 describe('e2e seed guard', () => {
@@ -34,8 +35,7 @@ describe('e2e seed guard', () => {
     const db = await createTestDatabase()
     try {
       await runSeeds(BASE, { prisma: db.prisma })
-      process.env.E2E_SEED = '1'
-      const poc = await runSeeds([...BASE, e2eSeed], { prisma: db.prisma, profile: 'poc' })
+      const poc = await runSeeds([...BASE, e2eSeed], { prisma: db.prisma, profile: 'poc', env: FLAGGED })
       expect(poc).not.toContain('e2e-bijak')
       expect(await db.query(`select 1 from users where email = $1`, [E2E_PUPIL_EMAIL])).toHaveLength(0)
     } finally {
@@ -43,11 +43,31 @@ describe('e2e seed guard', () => {
     }
   }, 180_000)
 
-  it('profile e2e without the flag creates nothing (default off)', async () => {
+  it('profile e2e without the flag creates nothing (default off); the flag is read from the runner env, not from process.env', async () => {
     const db = await createTestDatabase()
     try {
       await runSeeds(BASE, { prisma: db.prisma })
-      await runSeeds([e2eSeed], { prisma: db.prisma, profile: 'e2e' })
+      process.env.E2E_SEED = '1'
+      await runSeeds([e2eSeed], { prisma: db.prisma, profile: 'e2e', env: { ...process.env, E2E_SEED: undefined } })
+      expect(await db.query(`select 1 from users where email in ($1, $2)`, [E2E_PUPIL_EMAIL, E2E_ADMIN_EMAIL])).toHaveLength(0)
+      expect(await db.query(`select 1 from blueprints where source = 'verified'`)).toHaveLength(0)
+    } finally {
+      await db.drop()
+    }
+  }, 180_000)
+})
+
+describe('e2e seed refuses a run that counts as production', () => {
+  it('throws before touching the database, even with ALLOW_DEMO_SEED and E2E_SEED', async () => {
+    const db = await createTestDatabase()
+    try {
+      await runSeeds(BASE, { prisma: db.prisma })
+      for (const nodeEnv of ['production', undefined, 'staging']) {
+        const env = { NODE_ENV: nodeEnv, ALLOW_DEMO_SEED: 'true', E2E_SEED: '1' }
+        await expect(runSeeds([e2eSeed], { prisma: db.prisma, profile: 'e2e', env })).rejects.toThrow(/counts as production/)
+      }
+      // without ALLOW_DEMO_SEED the runner skips the demo module, as for every demo seed
+      expect(await runSeeds([e2eSeed], { prisma: db.prisma, profile: 'e2e', env: { NODE_ENV: 'production', E2E_SEED: '1' } })).toEqual([])
       expect(await db.query(`select 1 from users where email in ($1, $2)`, [E2E_PUPIL_EMAIL, E2E_ADMIN_EMAIL])).toHaveLength(0)
       expect(await db.query(`select 1 from blueprints where source = 'verified'`)).toHaveLength(0)
     } finally {
@@ -62,12 +82,10 @@ describe('e2e seed with the guard on', () => {
 
   beforeAll(async () => {
     db = await createTestDatabase()
-    process.env.E2E_SEED = '1'
-    await runSeeds([...BASE, e2eSeed], { prisma: db.prisma, profile: 'e2e' })
+    await runSeeds([...BASE, e2eSeed], { prisma: db.prisma, profile: 'e2e', env: FLAGGED })
     t = await bootPapersApp({ db })
   }, 240_000)
   afterAll(async () => {
-    delete process.env.E2E_SEED
     await t.close()
     await db.drop()
   })
@@ -107,12 +125,15 @@ describe('e2e seed with the guard on', () => {
   })
 
   it('is idempotent: a second run keeps one verification row and the same accounts', async () => {
-    await runSeeds([e2eSeed], { prisma: db.prisma, profile: 'e2e' })
+    await runSeeds([e2eSeed], { prisma: db.prisma, profile: 'e2e', env: FLAGGED })
     expect(await db.query(`select 1 from blueprint_verifications v join blueprints b on b.id = v.blueprint_id where b.code = $1`, [CODE])).toHaveLength(1)
     expect(await db.query(`select 1 from users where email in ($1, $2)`, [E2E_PUPIL_EMAIL, E2E_ADMIN_EMAIL])).toHaveLength(2)
   })
 
-  it('the pupil can Jana Kertas against it: 201, or a 422 SHORTAGE that the question pool explains (never NO_BLUEPRINT)', async () => {
+  it('the pupil can Jana Kertas against it: 201, or a 422 SHORTAGE that the question bank explains (never NO_BLUEPRINT)', async () => {
+    // Blueprint 3472/2 asks for structured Matematik Tambahan questions of 5 to 10 marks per unit (Bahagian A, B, C). The only pool seed
+    // (`questions-pool`) holds single-part MCQs of 1 mark, so no honest pool exists for it and the seed adds none: today this answers
+    // 422 SHORTAGE with have 0. The test stays correct if a structured pool is ever seeded.
     const pupil = await loginAs(t, E2E_PUPIL_EMAIL)
     const contracts = (await pupil.get('/api/bijak/contracts')).body.data as { code: string; subject: string; kertas: number; canGenerate: boolean }[]
     const mine = contracts.find((c) => c.code === CODE)

@@ -1,7 +1,9 @@
 /**
  * Local / E2E seed (R1-B19, T26). Profile `e2e` only, and only behind an explicit flag: it runs when the seed is started with
  * `--profile=e2e` AND `E2E_SEED=1` (or `true`) is set. Default off: with the flag missing the module logs one line and creates nothing,
- * and a server never runs it by default (the `poc` profile does not include it, and as a demo module the production guard skips it).
+ * and a server never runs it by default (the `poc` profile does not include it, and as a demo module the production guard skips it). Besides that, `run` throws when `countsAsProduction(ctx.env)` is true, even with ALLOW_DEMO_SEED. The flag and the blueprint override are read from the runner env (`ctx.env`), not from `process.env`.
+ *
+ * Question pool: none is loaded. Blueprint 3472/2 asks for structured Matematik Tambahan questions of 5 to 10 marks per unit; the only pool seed (`questions-pool`) holds 1-mark MCQs, so no honest pool exists for it and this seed invents none: Jana Kertas on 3472/2 answers 422 SHORTAGE until a structured pool is seeded.
  *
  * What it creates or ensures (all fictitious, idempotent):
  * - a Tingkatan 4 pupil (`murid.t4.e2e@example.test`, grade 10, school DEMO001);
@@ -28,6 +30,7 @@ import { reviewedQuotaDoc, structureHashOf, toStandard, unitLevelsOf } from '../
 import { BlueprintsRepository } from '../../src/modules/exam/blueprints/blueprints.repository'
 import { checkEvidence, validateForVerification, type EvidenceItem } from '../../src/modules/exam/blueprints/exam-core.adapter'
 import { demoPasswordHash } from './core/demo-password'
+import { countsAsProduction } from './guard'
 import type { SeedContext, SeedModule } from './index'
 
 export const E2E_FLAG = 'E2E_SEED'
@@ -35,8 +38,8 @@ export const E2E_PUPIL_EMAIL = 'murid.t4.e2e@example.test'
 export const E2E_ADMIN_EMAIL = 'admin.pusat.e2e@example.test'
 export const E2E_DEFAULT_BLUEPRINT = '3472/2'
 
-/** True only for an explicit `E2E_SEED=1` or `E2E_SEED=true`. */
-export function e2eSeedEnabled(env: Record<string, string | undefined> = process.env): boolean {
+/** True only for an explicit `E2E_SEED=1` or `E2E_SEED=true` in `env`; the seed passes the environment of the run (`ctx.env`). */
+export function e2eSeedEnabled(env: Record<string, string | undefined>): boolean {
   return env[E2E_FLAG] === '1' || env[E2E_FLAG] === 'true'
 }
 
@@ -124,7 +127,11 @@ export const e2eSeed: SeedModule = {
   kind: 'demo',
   profiles: ['e2e'],
   async run(ctx) {
-    if (!e2eSeedEnabled()) {
+    // Hard refusal: a run the demo guard counts as production never creates the E2E accounts, not even with ALLOW_DEMO_SEED or E2E_SEED.
+    if (countsAsProduction(ctx.env)) {
+      throw new Error('e2e seed: refused, this run counts as production (NODE_ENV is not development or test). The E2E accounts and blueprint are local only. The database was not touched.')
+    }
+    if (!e2eSeedEnabled(ctx.env)) {
       console.warn(`seed: e2e-bijak skipped: set ${E2E_FLAG}=1 to create the local E2E accounts and the Disahkan blueprint`)
       return
     }
@@ -133,7 +140,7 @@ export const e2eSeed: SeedModule = {
     if (!school) throw new Error('e2e seed: school DEMO001 is missing (core-identity must run first)')
     await ensureUser(ctx, { email: E2E_PUPIL_EMAIL, name: 'Murid Ujian E2E', username: 'murid-t4-e2e', role: 'student', grade: 10, schoolId: school.id, national: false })
     const adminId = await ensureUser(ctx, { email: E2E_ADMIN_EMAIL, name: 'Admin Pusat Ujian E2E', username: 'admin-pusat-e2e', role: 'admin', grade: null, schoolId: null, national: true })
-    const code = (process.env.E2E_BLUEPRINT ?? E2E_DEFAULT_BLUEPRINT).trim() || E2E_DEFAULT_BLUEPRINT
+    const code = (ctx.env.E2E_BLUEPRINT ?? E2E_DEFAULT_BLUEPRINT).trim() || E2E_DEFAULT_BLUEPRINT
     await verifyBlueprint(prisma, code, adminId, ctx.clock.now())
   },
 }
