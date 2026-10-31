@@ -44,9 +44,10 @@ import {
 import { errorLines, LOAD_ERROR } from '../../lib/ui-errors'
 import StudioStimulusEditor from './StudioStimulusEditor.vue'
 
-const props = withDefaults(defineProps<{ disabled?: boolean; currentQuestionId?: string | null; testid?: string }>(), {
+const props = withDefaults(defineProps<{ disabled?: boolean; currentQuestionId?: string | null; subjectId?: string | null; testid?: string }>(), {
   disabled: false,
   currentQuestionId: null,
+  subjectId: null,
   testid: 'studio-group',
 })
 const groupId = defineModel<string | null>('groupId', { required: true })
@@ -192,7 +193,7 @@ async function loadGroups(page = 1): Promise<void> {
   groupsLoading.value = true
   groupsFailed.value = false
   try {
-    const res = await listGroups({ q: groupSearch.value.trim() || null, page, pageSize: GROUP_PAGE_SIZE })
+    const res = await listGroups({ q: groupSearch.value.trim() || null, subjectId: props.subjectId || null, page, pageSize: GROUP_PAGE_SIZE })
     if (token !== groupSeq) return
     groupRows.value = res.data
     groupPage.value = res.meta.page
@@ -218,6 +219,14 @@ watch(
     if (browse) void loadGroups(1)
   },
   { immediate: true },
+)
+
+// A group of another subject cannot take this question (422 memberMixed): browse only the question's own subject.
+watch(
+  () => props.subjectId,
+  () => {
+    if (view.value === null && !loading.value && !loadFailed.value) void loadGroups(1)
+  },
 )
 
 const groupTitle = (g: GroupListRow): string => g.label?.trim() || g.stimuli.map((s) => s.label).join(', ') || `Kumpulan #${g.id}`
@@ -387,7 +396,7 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
 
         <DsHeading :level="3">Atau sertai kumpulan sedia ada</DsHeading>
         <DsFormField v-slot="{ id }" native label="Cari kumpulan" :for="`${testid}-group-search`">
-          <UInput :id="id" v-model="groupSearch" :disabled="disabled" placeholder="Label atau tajuk rangsangan" :data-testid="`${testid}-group-search`" @update:model-value="onGroupSearch" />
+          <UInput :id="id" v-model="groupSearch" :disabled="disabled" placeholder="Label atau tajuk rangsangan" maxlength="100" :data-testid="`${testid}-group-search`" @update:model-value="onGroupSearch" />
         </DsFormField>
         <DsText v-if="groupsLoading" variant="caption" tone="muted" :data-testid="`${testid}-groups-loading`">Mencari…</DsText>
         <DsLoadError v-else-if="groupsFailed" :message="LOAD_ERROR" :testid="`${testid}-groups-error`" :retry-testid="`${testid}-groups-retry`" @retry="loadGroups(groupPage)" />

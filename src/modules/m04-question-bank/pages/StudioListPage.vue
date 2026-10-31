@@ -417,7 +417,7 @@ const cardFields: CardField[] = [
           <UInput v-model="draft.tahun" type="text" name="tahun" inputmode="numeric" maxlength="4" placeholder="Tahun" aria-label="Tahun" data-testid="studio-tahun-filter" />
         </div>
         <div class="w-full min-w-0 md:w-48">
-          <UInput v-model="draft.negeri" type="text" name="negeri" maxlength="64" placeholder="Negeri / badan" aria-label="Negeri" data-testid="studio-negeri-filter" />
+          <UInput v-model="draft.negeri" type="text" name="negeri" maxlength="64" placeholder="Negeri / badan" aria-label="negeri atau badan peperiksaan" data-testid="studio-negeri-filter" />
         </div>
         <div class="w-full min-w-0 md:w-44">
           <DsNativeSelect id="studio-kertas-filter" v-model="draft.kertas" name="kertas" aria-label="Kertas" data-testid="studio-kertas-filter">
