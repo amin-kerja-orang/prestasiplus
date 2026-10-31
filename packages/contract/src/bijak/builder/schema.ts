@@ -341,10 +341,9 @@ export type BijakBuilderQuestion = z.infer<typeof BijakBuilderQuestionSchema>
  */
 const GroupStimuli = z
   .array(BijakAttemptStimulusSchema)
-  .min(1)
   .max(3)
   .optional()
-  .meta({ description: 'Every stimulus of the group in order (1 to 3), shown once per group (D90). `stimulus` is the first of them.' })
+  .meta({ description: 'Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable.' })
 
 /**
  * Stimulus group of the picker (`BuilderGroup` = { id, stimulus: StimulusDef, questionIds }); its
@@ -354,7 +353,9 @@ const GroupStimuli = z
 export const BijakBuilderGroupSchema = z
   .strictObject({
     id: IdSchema,
-    stimulus: BijakAttemptStimulusSchema,
+    stimulus: BijakAttemptStimulusSchema.optional().meta({
+      description: 'The first stimulus of the group. Absent when the group has nothing displayable (audio only, or empty): the group is still emitted (D90) with `stimuli: []`.',
+    }),
     stimuli: GroupStimuli,
     questionIds: z.array(IdSchema).meta({ description: 'Question ids in published order.' }),
   })

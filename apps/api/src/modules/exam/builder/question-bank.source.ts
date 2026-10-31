@@ -175,9 +175,12 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
       },
     })
     for (const g of groups) {
+      // D90: the group is always emitted, with or without a displayable stimulus, so every builder read treats its members as one unit.
+      // A group with nothing to display (audio only, or empty) has no `stimulus` and `stimuli: []`.
       const tokens = await this.tokensOf(g.stimuli.map((s) => s.stimulus))
-      const [stimulus, ...rest] = stimuliOf(g.stimuli.map((s) => s.stimulus), tokens)
-      if (stimulus) out.set(g.id.toString(), { id: g.id.toString(), stimulus, stimuli: [stimulus, ...rest], questionIds: g.questions.map((m) => m.id.toString()) })
+      const shown = stimuliOf(g.stimuli.map((s) => s.stimulus), tokens)
+      const [stimulus, ...rest] = shown
+      out.set(g.id.toString(), { id: g.id.toString(), ...(stimulus ? { stimulus } : {}), stimuli: stimulus ? [stimulus, ...rest] : [], questionIds: g.questions.map((m) => m.id.toString()) })
     }
     return out
   }

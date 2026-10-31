@@ -58,11 +58,11 @@ export interface BuilderQuestionInfo {
 
 export interface BuilderGroupInfo {
   id: string
-  /** The first group stimulus; a group without one is absent from `groups(...)`. */
-  stimulus: BijakAttemptStimulus
+  /** The first group stimulus. A group with nothing to display still appears in `groups(...)` (D90), with no `stimulus` and `stimuli: []`. */
+  stimulus?: BijakAttemptStimulus
   /**
-   * D90 (R1-T07): every stimulus of the group in order, 1 to 3, the first being `stimulus`. The group is ONE unit: the stimuli
-   * are shown once above all member questions and carry no marks. Absent = `[stimulus]` (PoC fixture).
+   * D90 (R1-T07): every displayable stimulus of the group in order, 0 to 3, the first being `stimulus` when there is one. The group is ONE unit: the stimuli
+   * are shown once above all member questions and carry no marks. Absent = `[stimulus]` when there is one, else `[]` (PoC fixture).
    */
   stimuli?: BijakAttemptStimulus[]
   /** Member question ids in published order. */

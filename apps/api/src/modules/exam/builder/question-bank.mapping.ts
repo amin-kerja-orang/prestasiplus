@@ -18,8 +18,9 @@ import {
   type BijakBuilderReviewQuestion,
 } from '@pp/contract'
 
-import { fileUrlOf, tableOf } from '../../bijak/question-bridge/be09-mapping'
+import { fileUrlOf } from '../../bijak/question-bridge/be09-mapping'
 import type { QuestionPart } from '../../questions'
+import { stimulusTableOf } from '../../questions/stimulus-table'
 
 type SchemeLine = { tag?: string; text: string; marks?: number }
 type ReviewScheme = BijakBuilderReviewQuestion['scheme']
@@ -135,9 +136,12 @@ export function stimulusOf(s: StimulusSource, tokens: FileTokens = new Map()): B
   if (!WIRE_KINDS.has(s.kind)) return undefined
   const kind = s.kind as BijakAttemptStimulus['kind']
   const label = s.label ?? ''
-  const table = kind === 'table' ? tableOf(s.tableData, s.bodyMs) : undefined
-  // A table parsed from the body replaces the body text; any other body stays the text.
-  const text = table && !s.tableData ? undefined : (s.bodyMs ?? undefined)
+  const table = kind === 'table' ? stimulusTableOf(s.tableData, s.bodyMs) : undefined
+  // A table read from the body replaces the body text; a table read from `tableData` leaves the body as text. When `tableData` is not a
+  // usable grid but the body is a pipe table, the grid comes from the body and the body must not be shown a second time. (Same rule as
+  // `stimulusTableParts` of H-A16: grid from `tableData` = text stays, grid from the body = no text.)
+  const gridFromData = kind === 'table' ? stimulusTableOf(s.tableData) : undefined
+  const text = table && !gridFromData ? undefined : (s.bodyMs ?? undefined)
   const token = s.assetFileId == null ? undefined : tokens.get(s.assetFileId.toString())
   return {
     id: s.id.toString(),

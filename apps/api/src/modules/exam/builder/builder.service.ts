@@ -29,6 +29,7 @@ import {
   type BijakBuilderPreview,
   type BijakBuilderPublishResult,
   type BijakBuilderQuestion,
+  type BijakAttemptStimulus,
   type ServabilityReport,
   type ListMeta,
 } from '@pp/contract'
@@ -88,6 +89,13 @@ const MAX_KERTAS = 32767
 const DEFAULT_TITLE = (subjectName: string, kertas: number) => `Percubaan SPM ${subjectName} Kertas ${String(kertas)} (draf)`
 
 const statusOf = (dbStatus: string): BijakBuilderPaperStatus => (dbStatus === 'published' ? 'terbit' : 'draf')
+
+/** `stimuli` of a group on the wire: the port's list, else the single stimulus, else none (a group with nothing displayable, D90). */
+const stimuliOfGroup = (g: BuilderGroupInfo): BijakAttemptStimulus[] => g.stimuli ?? (g.stimulus ? [g.stimulus] : [])
+
+/** The stimulus fields of a group unit: `stimulus` only when there is one; `stimuli` is always present for a group. */
+const groupStimulusFields = (g: BuilderGroupInfo | undefined): { stimulus?: BijakAttemptStimulus; stimuli: BijakAttemptStimulus[] } =>
+  g ? { ...(g.stimulus ? { stimulus: g.stimulus } : {}), stimuli: stimuliOfGroup(g) } : { stimuli: [] }
 
 const notFound = () => ApiError.of('NOT_FOUND', { message: MESSAGES.paperNotFound })
 const invalid = (message: string) => ApiError.of('VALIDATION_ERROR', { message })
@@ -205,7 +213,8 @@ export class BuilderService {
         groupOf: (id) => info.get(id)?.groupId ?? undefined,
         membersOf: (g) => groups.get(g)?.questionIds ?? placed.filter((id) => info.get(id)?.groupId === g),
         isLive: (id) => isServableStatus(info.get(id)?.status ?? ''),
-        isStimulusGroup: (g) => groups.has(g),
+        // D93 is about stimulus groups: a group the bank emits without a stimulus is still a unit (D90) but stays outside the minimum.
+        isStimulusGroup: (g) => groups.get(g)?.stimulus !== undefined,
       })
       return { info, groups, check }
     })
@@ -294,7 +303,7 @@ export class BuilderService {
       questions: ordered.map((q) => this.questionWire(q)),
       groups: groupIds.flatMap((id) => {
         const g = groupMap.get(id)
-        return g ? [{ id: g.id, stimulus: g.stimulus, stimuli: g.stimuli ?? [g.stimulus], questionIds: g.questionIds }] : []
+        return g ? [{ id: g.id, ...(g.stimulus ? { stimulus: g.stimulus } : {}), stimuli: stimuliOfGroup(g), questionIds: g.questionIds }] : []
       }),
     }
   }
@@ -816,7 +825,7 @@ export class BuilderService {
       const ids = s.placements.map((pl) => idToString(pl.questionId))
       const marksOf = (id: string) => s.placements.find((pl) => idToString(pl.questionId) === id)?.marksOverride ?? ev.info.get(id)?.marks ?? 0
       const units = unitsOf(ids, groupOf).map((u) => ({
-        ...(u.groupId ? { groupId: u.groupId, stimulus: ev.groups.get(u.groupId)!.stimulus, stimuli: ev.groups.get(u.groupId)!.stimuli ?? [ev.groups.get(u.groupId)!.stimulus] } : {}),
+        ...(u.groupId ? { groupId: u.groupId, ...groupStimulusFields(ev.groups.get(u.groupId)) } : {}),
         questions: u.ids.map((id) => ({ id, number: ++number, preview: ev.info.get(id)?.preview ?? '', marks: marksOf(id) })),
       }))
       const marks = this.sectionMarksOf(s, ev.info)
@@ -921,10 +930,10 @@ export class BuilderService {
       const group = u.groupId ? groups.get(u.groupId) : undefined
       const reasons = eligibilityOfUnit(u)
       // D93: a stimulus group with fewer than two members cannot be placed (only a group the bank knows has a stimulus).
-      if (group && u.ids.length < MIN_GROUP_MEMBERS) reasons.push(GROUP_MIN_MEMBERS_MESSAGE)
+      if (group?.stimulus && u.ids.length < MIN_GROUP_MEMBERS) reasons.push(GROUP_MIN_MEMBERS_MESSAGE)
       return {
         ...(u.groupId ? { groupId: u.groupId } : {}),
-        ...(group ? { stimulus: group.stimulus, stimuli: group.stimuli ?? [group.stimulus] } : {}),
+        ...(group ? groupStimulusFields(group) : {}),
         questionIds: u.ids,
         questions,
         marks: questions.reduce((n, q) => n + q.marks, 0),

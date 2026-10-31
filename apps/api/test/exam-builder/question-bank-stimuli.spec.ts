@@ -1,7 +1,7 @@
 import { QuestionPartSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
-import { mapBe09Question, tableOf, type CurriculumLabels } from '../../src/modules/bijak/question-bridge/be09-mapping'
+import { mapBe09Question, type CurriculumLabels } from '../../src/modules/bijak/question-bridge/be09-mapping'
 import type { QuestionRecord, StimulusGroupRecord, StimulusRecord } from '../../src/modules/questions/types'
 
 import {
@@ -12,6 +12,7 @@ import {
   type Curriculum,
   type StimulusSource,
 } from '../../src/modules/exam/builder/question-bank.mapping'
+import { stimulusTableOf } from '../../src/modules/questions/stimulus-table'
 
 const source = (over: Partial<StimulusSource> & { id: bigint; kind: string }): StimulusSource => ({
   label: null,
@@ -62,6 +63,17 @@ describe('builder stimulus mapping (R1-T07)', () => {
     expect(t?.text).toBeUndefined()
   })
 
+  it('reads the table grid through the shared helper: every stored shape gives the same grid as the Studio and Bijak readers', () => {
+    const grid = { head: ['A', 'B'], rows: [['1', '2']] }
+    for (const data of [grid, { headers: ['A', 'B'], rows: [['1', '2']] }, { columns: ['A', 'B'], rows: [['1', '2']] }, [['A', 'B'], ['1', '2']]]) {
+      expect(stimulusOf(source({ id: 4n, kind: 'table', tableData: data }))?.table).toEqual(stimulusTableOf(data))
+      expect(stimulusTableOf(data)).toEqual(grid)
+    }
+    // A number cell is shown as text; a pipe table in the body is read only when the caller passes the body.
+    expect(stimulusTableOf({ head: ['A'], rows: [[7]] })).toEqual({ head: ['A'], rows: [['7']] })
+    expect(stimulusTableOf(null, 'A | B\n--- | ---\n1 | 2')).toEqual(grid)
+  })
+
   it('stimuliOf keeps every displayable stimulus of a group in order (1 to 3) and skips audio', () => {
     const list = [
       source({ id: 1n, kind: 'passage', label: 'P' }),
@@ -108,11 +120,11 @@ describe('builder review of an essay_choice leaf (R1-T07)', () => {
 })
 
 /**
- * R1-T31 (T07 review): the builder reads a table stimulus with the bridge's own `tableOf` (one helper), so the admin preview and
+ * R1-T31 (T07 review): the builder reads a table stimulus with the shared `stimulusTableOf` (one helper, as the bridge and the Studio), so the admin preview and
  * the pupil attempt show the same grid and text for the same stored stimulus. Each case goes through the REAL bridge mapper
  * (`mapBe09Question`, the pupil path) and the builder's `stimulusOf`, and the two must agree on table, text, picture and the rest.
  */
-describe('builder table stimulus = the bridge table stimulus (one tableOf)', () => {
+describe('builder table stimulus = the bridge table stimulus (one stimulusTableOf)', () => {
   const LABELS: CurriculumLabels = { subjectCode: 'MAT', unitLabel: 'Bab 1', unitCode: '1' }
   const part = QuestionPartSchema.parse({
     label: '',
@@ -173,7 +185,7 @@ describe('builder table stimulus = the bridge table stimulus (one tableOf)', () 
       expect(bridge).toBeDefined()
       expect(builder).toBeDefined()
       // the same table by the same helper, and the same shape for everything else (the wire id prefix is the only difference)
-      expect(builder?.table).toEqual(tableOf(c.tableData, c.bodyMs))
+      expect(builder?.table).toEqual(stimulusTableOf(c.tableData, c.bodyMs))
       expect(builder?.table).toEqual(bridge?.table)
       const { id: bridgeId, ...bridgeRest } = bridge!
       const { id: builderId, ...builderRest } = builder!

@@ -77,7 +77,7 @@ describe('PocBuilderQuestionSource', () => {
     const info = await source.describe(POC_BANK.groups.flatMap((g) => g.questionIds.map((id) => ({ id: wire(id) }))))
     for (const q of info.values()) {
       expect(q.groupId).not.toBeNull()
-      expect(q.stimulusLabel).toBe(groups.get(q.groupId!)?.stimulus.label)
+      expect(q.stimulusLabel).toBe(groups.get(q.groupId!)?.stimulus?.label)
     }
   })
 
