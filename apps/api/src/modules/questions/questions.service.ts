@@ -201,6 +201,12 @@ interface Normalized {
  * Errors: 404 `NOT_FOUND` for an unknown id and for a row the caller may not see; 422
  * `VALIDATION_ERROR` with `fields`; 409 `CONFLICT` for a status pair outside the contract table.
  */
+/** [PROPOSED] (no V2 phrase): a flat edit of an `essay_choice` question may not change what lives on its part (REQ-B-021c). */
+const ESSAY_CHOICE_FLAT_MESSAGES = {
+  modelAnswer: 'Jawapan model esei pilihan tidak boleh disunting di sini. Ubah kunci rubrik pada bahagian soalan.',
+  pointsValue: 'Markah esei pilihan tidak boleh disunting di sini. Ubah markah pada bahagian soalan.',
+} as const
+
 @Injectable()
 export class QuestionsService {
   private readonly logger = new Logger(QuestionsService.name)
@@ -947,6 +953,15 @@ export class QuestionsService {
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
       parts = this.checkedParts(partsFromFlat(src), false)
     } else {
+      // REQ-B-021c: an essay_choice question has no flat model answer or points field (its key and marks live on the part). A
+      // flat edit that CHANGES either is refused; echoing the stored value (what the edit form reads back) is not a change.
+      if (single !== undefined && isLeaf(single) && single.mode === 'essay_choice') {
+        const blank = (x: string | null | undefined): string => (x ?? '').trim()
+        const refused: Record<string, string> = {}
+        if (input.modelAnswer !== undefined && blank(input.modelAnswer) !== blank(flat.modelAnswer)) refused.modelAnswer = ESSAY_CHOICE_FLAT_MESSAGES.modelAnswer
+        if (input.pointsValue !== undefined && input.pointsValue !== flat.pointsValue) refused.pointsValue = ESSAY_CHOICE_FLAT_MESSAGES.pointsValue
+        if (Object.keys(refused).length > 0) throw fail(refused)
+      }
       parts = v.parts
     }
 
