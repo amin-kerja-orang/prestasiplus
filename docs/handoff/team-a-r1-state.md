@@ -1,6 +1,6 @@
 # Team A R1 state: resume sheet
 
-Date: 2026-10-31. Written off `feature/v3-bijak-r1` @ 17797f487 (BASE-62). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
+Date: 2026-10-31. Written off `feature/v3-bijak-r1` @ 1b028710b (BASE-63). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
 
 Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 
@@ -48,7 +48,7 @@ Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 | R1E2E-05 / 05b own stimuli | `r1/e2e05b-own-stimuli` @ 9895d004 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 | servability-own-stimuli | `r1/servability-own-stimuli` @ eea90859 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 
-Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13 (BASE-22), REQ-A-001 (BASE-25), H-C3 (BASE-29), H-C7 (BASE-30), H-C5 (BASE-37), R1-21 hub (BASE-45), REQ-B-030 (BASE-46), REQ-B-001/016 (BASE-47), REQ-B-002 (BASE-48), T11 (BASE-49), REQ-A-010 (BASE-50), H-C6 (BASE-51), REQ-B-011 (BASE-52), T13 follow-up (BASE-53), intake parity (BASE-54), T13b (BASE-55), REQ-B-027 (form part) (BASE-56), H-C5 follow-up (BASE-57), T12 (BASE-58), T13c (BASE-59), intake cognitive (BASE-61), H-C3 follow-up (BASE-62).
+Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13 (BASE-22), REQ-A-001 (BASE-25), H-C3 (BASE-29), H-C7 (BASE-30), H-C5 (BASE-37), R1-21 hub (BASE-45), REQ-B-030 (BASE-46), REQ-B-001/016 (BASE-47), REQ-B-002 (BASE-48), T11 (BASE-49), REQ-A-010 (BASE-50), H-C6 (BASE-51), REQ-B-011 (BASE-52), T13 follow-up (BASE-53), intake parity (BASE-54), T13b (BASE-55), REQ-B-027 (form part) (BASE-56), H-C5 follow-up (BASE-57), T12 (BASE-58), T13c (BASE-59), intake cognitive (BASE-61), H-C3 follow-up (BASE-62), BASE type-check fix (BASE-63).
 
 ### 1.2 READY, not merged (team B merges)
 
@@ -64,7 +64,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T36 remove PoC | `r1/t36-remove-poc` @ 5bc34543 | A2 | REQ-A-001 (b1-e2e-off-poc, team B) merged first | CHANGES-REQUESTED (REQ-B-029: PoC seeds published) (A2 + lead) |
 | T42b figure crop | `r1/t42b-intake-acs` @ 5318a971 | A2 | base | Approve w/ Minors; head moved after the verdict (delta unreviewed) |
 | T45b question detail papers | `r1/t45b-question-detail-acs` @ cfe98740 | A2 | T42 | CHANGES-REQUESTED (A2) |
-| H-A16 table reader | `r1/ha16-table-reader` @ b283a746 | A2 | T32, T07 | CHANGES-REQUESTED (A2) |
+| H-A16 table reader | `r1/ha16-table-reader` @ 085dec38 | A2 | T32, T07 | CHANGES-REQUESTED (A2) |
 | H-A8 stale specs | `r1/ha8-stale-specs` @ 56b1b6cc | A2 | base | READY (test-only) |
 | T04 minors (R1E2E-09) | `r1/t04-minors` @ ec179b12 | A2 | T04 | CHANGES-REQUESTED (docs) (A2) |
 | T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ ff1e8a1b | A1 | T28 | CHANGES-REQUESTED (A1) |
@@ -72,7 +72,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T50 partial ACs | `r1/t50-partial-acs` @ 50dd05ab | A1 | none | READY (not in the B queue table) |
 | H-A13 archived paper | `r1/ha13-archived-paper` @ 61b8851d | A1 | T35 (base) | B2 Approve w/ Minors; needs base merge + contract:emit (A1) |
 | T34 builder review (+ structured blockers) | `r1/t34-builder-review` @ 7bc3419e | A3 | T29; B2 order T29 -> T33 -> T34 | CHANGES-REQUESTED by B2 (A3 fixing: override vs structural blockers, T33 cognitiveLevel fixtures) |
-| T31 builder wire | `r1/t31-builder-wire` @ b3501db9 | A3 | T34; waits for C1 REQ-A-008 | CHANGES-REQUESTED (needs fixed T34 + REQ-A-008) |
+| T31 builder wire | `r1/t31-builder-wire` @ 085c4945 | A3 | T34; waits for C1 REQ-A-008 | CHANGES-REQUESTED (needs fixed T34 + REQ-A-008) |
 | T43 chain + publish ACs | `r1/t43-chain-publish` @ 89d30dab | A3 dev-1 | T31 (contains T34) | CHANGES-REQUESTED (follows T34) |
 | T44 Kontrak fields (contains H-A15) | `r1/t44-blueprint-fields` @ 77984abc | A3 dev-2 | none | CHANGES-REQUESTED (A3; T33 fixtures, REQ-B-028 pool) |
 | H-A15 blueprint evidence | `r1/ha15-blueprint-evidence` @ 7e5d637e | A3 dev-2 | none (hazard X1) | B3 Pass; X1 seed decision |
@@ -80,7 +80,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | H-A9 pipeline chain (older) | `r1/ha9-pipeline-chain` @ 1e80b005 | A3 | superseded by T43 | superseded by T43 |
 | T43b publish ACs | `r1/t43b-publish-acs` @ 92866aa8 | A3 dev-2 | T43 | pushed; not yet in the B queue |
 | T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 359fe16e | A3 dev-1 | T43 | pushed; not yet in the B queue |
-| T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ c8490879 | A1 | none | Approve w/ Minors; eslint error to fix (A1) |
+| T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ 31812d8c | A1 | none | Approve w/ Minors; eslint error to fix (A1) |
 
 ### 1.3 In progress, not pushed
 
@@ -94,7 +94,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 |---|---|---|
 | T37 runbook | `r1/t37-r1-runbook` @ 80101199 | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 8b307ce8 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ c6313b1a | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
@@ -145,7 +145,7 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 
 | Direction | IDs |
 |---|---|
-| Open for A | REQ-B-017, REQ-B-019, REQ-B-022, REQ-B-023, REQ-B-025, REQ-B-026, REQ-B-029, REQ-B-031, REQ-B-032, REQ-B-033, REQ-B-034, REQ-B-035, REQ-B-037, REQ-C-009, REQ-C-010, REQ-C-012, REQ-C-013, REQ-C-019, REQ-C-020, REQ-C-021 |
+| Open for A | REQ-B-017, REQ-B-019, REQ-B-022, REQ-B-023, REQ-B-025, REQ-B-026, REQ-B-029, REQ-B-031, REQ-B-032, REQ-B-033, REQ-B-034, REQ-B-035, REQ-B-037, REQ-B-040, REQ-C-009, REQ-C-010, REQ-C-012, REQ-C-013, REQ-C-019, REQ-C-020, REQ-C-021 |
 | Delivered by A (waiting for merge or the other side) | REQ-B-003, REQ-B-004, REQ-B-007, REQ-B-013, REQ-B-014, REQ-B-028, REQ-C-016, REQ-C-017, REQ-C-018, REQ-C-022 |
 | Open to B | REQ-A-007, REQ-A-009, REQ-A-011 |
 | Open to C | REQ-A-004 |
