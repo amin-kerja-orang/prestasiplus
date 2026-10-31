@@ -209,6 +209,7 @@ export function versionTypeOf(parts: readonly QuestionPart[]): 'mcq' | 'match' |
     case 'working':
       return 'working'
     case 'essay':
+    case 'essay_choice':
       return 'essay'
     case 'drawing':
       return 'drawing'
