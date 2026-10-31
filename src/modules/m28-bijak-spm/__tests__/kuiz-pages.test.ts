@@ -158,9 +158,9 @@ describe('KuizPage (random)', () => {
     expect(document.body.textContent).toContain('Kuiz Selesai!')
     expect(text('[data-testid=kuiz-score]')).toContain('2/2')
     expect(text('[data-testid=kuiz-accuracy]')).toContain('100%')
-    expect(text('[data-testid=kuiz-rewards]')).toContain('20')
+    expect(q('[data-testid=kuiz-rewards]')).toBeNull() // the Syiling/Mata chips are not in V2 §1.8
     expect(q('[data-testid=kuiz-retry]')).not.toBeNull()
-    expect(document.body.textContent).toContain('Kertas penuh')
+    expect(document.body.textContent).toContain('← Kertas penuh')
   })
 
   it('"Cuba Lagi" starts a fresh quiz with the chosen count and subject', async () => {
@@ -362,6 +362,36 @@ describe('PaperQuizPage', () => {
     expect(document.body.textContent.split('Teks kongsi unik.').length - 1).toBeLessThanOrEqual(1)
     expect(document.querySelectorAll('[data-testid="stimulus-group"]').length).toBe(1)
     for (const id of ['g1', 'g2', 'q9']) expect(q(`[data-testid="kuiz-item-${id}"]`)).not.toBeNull()
+  })
+
+  it('numbers questions, not parts, and continues across the Bahagian pages', async () => {
+    const part = (id: string): BijakKuizItem => ({ ...open, id, path: id.split(':')[1]! })
+    server.getKuizPaperPage.mockImplementation((_id: string, n: number) =>
+      Promise.resolve(
+        n === 1
+          ? { ...page1, items: [mcq('q1'), part('q3:a'), part('q3:b')] }
+          : { ...page2, items: [mcq('q4')] },
+      ),
+    )
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    const chips = (): string[] => [...document.body.querySelectorAll('[data-testid=kuiz-chip]')].map((c) => c.textContent.trim())
+    expect(chips()).toEqual(['Soalan 1', 'Soalan 2', 'Soalan 2'])
+    await click('[data-testid=paper-quiz-next]')
+    expect(chips()).toEqual(['Soalan 3'])
+  })
+
+  it('ignores a slow response of a page the pupil already left (loadSeq guard)', async () => {
+    let release!: (v: unknown) => void
+    server.getKuizPaperPage.mockImplementation((_id: string, n: number) =>
+      n === 1 ? Promise.resolve(page1) : new Promise((r) => (release = r)),
+    )
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    await click('[data-testid=paper-quiz-next]') // page 2 pending
+    await click('[data-testid=paper-quiz-prev]') // back to page 1 (its answer arrives at once)
+    release({ ...page2, items: [mcq('late')] })
+    await flushPromises()
+    expect(q('[data-testid="kuiz-item-late"]')).toBeNull()
+    expect(text('[data-testid=paper-quiz-meta]')).toContain('Bahagian A (1/2)')
   })
 
   it('shows "Kertas ini tiada soalan" for an empty paper', async () => {

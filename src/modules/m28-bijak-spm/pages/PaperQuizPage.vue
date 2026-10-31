@@ -38,6 +38,8 @@ const markableTotal = ref(0)
 /** The API's BM refusal (403: the paper places an archived question, AC-R1-18.4). */
 const unavailableMessage = ref('')
 const sheetOpen = ref('')
+/** Questions shown before each page (page 1 = 0), learnt as the pupil moves forward, so the numbering is continuous. */
+const before = ref<Record<number, number>>({ 1: 0 })
 const timer = setInterval(() => (seconds.value += 1), 1000)
 onBeforeUnmount(() => clearInterval(timer))
 
@@ -65,8 +67,16 @@ const blocks = computed<Block[]>(() => {
   const items = data.value?.items ?? []
   const groups = new Map((data.value?.groups ?? []).map((g) => [g.id, g.stimuli]))
   const out: Block[] = []
-  items.forEach((item, i) => {
-    const entry = { item, number: i + 1 }
+  // "Soalan n" counts questions, not parts, and runs on across the Bahagian pages (V2): a structured question's parts share one number.
+  const numbers = new Map<string, number>()
+  const base = before.value[page.value] ?? 0
+  const numberOf = (item: BijakKuizItem): number => {
+    const qid = item.id.split(':')[0]!
+    if (!numbers.has(qid)) numbers.set(qid, base + numbers.size + 1)
+    return numbers.get(qid)!
+  }
+  items.forEach((item) => {
+    const entry = { item, number: numberOf(item) }
     const last = out[out.length - 1]
     if (item.groupId !== null && groups.has(item.groupId)) {
       if (last && last.key === item.groupId) last.items.push(entry)
@@ -89,6 +99,7 @@ async function load(): Promise<void> {
     const res = await server.getKuizPaperPage(paperId.value, page.value)
     if (seq !== loadSeq) return // a newer page was requested meanwhile: drop this response
     data.value = res
+    before.value = { ...before.value, [page.value + 1]: (before.value[page.value] ?? 0) + new Set(res.items.map((i) => i.id.split(':')[0])).size }
     markableTotal.value = res.markableTotal
     phase.value = 'ready'
     window.scrollTo?.({ top: 0 })
@@ -133,6 +144,10 @@ function go(delta: number): void {
 watch(page, load)
 watch(paperId, () => {
   page.value = 1
+  before.value = { 1: 0 }
+  picked.value = {}
+  written.value = {}
+  errors.value = {}
   verdicts.value = {}
   void load()
 })
