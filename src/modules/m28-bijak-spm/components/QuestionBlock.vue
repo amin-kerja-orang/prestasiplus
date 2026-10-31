@@ -6,13 +6,16 @@
  */
 import { computed, ref } from 'vue'
 
+import { McqOptions, qdCopy } from '@/components/question-display'
 import { DsQuizOption, DsStack, DsText } from '@/ds'
 
 import { leavesOf } from '../domain/paper-model'
 import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
+import { toOptionData } from '../lib/stimulus-data'
 import PartNode from './PartNode.vue'
 import PartResultCard from './PartResultCard.vue'
 import RichText from './RichText.vue'
+import StimulusView from './StimulusView.vue'
 
 const props = defineProps<{
   question: QuestionView
@@ -20,6 +23,8 @@ const props = defineProps<{
   attemptId: string
   /** Label of the pinned stimulus, e.g. "Rajah 2". */
   stimulusLabel?: string
+  /** The group picture failed to load: say why Seterusnya waits (AC-07.4). */
+  stimulusBlocked?: boolean
   flagged: boolean
   /** Latihan after "Semak": the marked question (inputs lock, results show). */
   check?: QuestionResult
@@ -40,6 +45,9 @@ const chosenOption = computed(() => props.answers[props.question.id]?.choice)
 const correctOption = computed(() => props.check?.parts[0]?.scheme.correctOption)
 const partResults = computed(() => props.check?.parts ?? [])
 const leaves = computed(() => leavesOf(props.question.parts ?? []))
+/** An option with a picture switches the choices to the shared `McqOptions` (picture boxes, load-failure state). */
+const optionPictures = computed(() => !!props.question.mcq?.options.some((o) => o.image))
+const optionData = computed(() => (props.question.mcq?.options ?? []).map(toOptionData))
 
 function optionState(id: string) {
   if (props.check) {
@@ -112,7 +120,38 @@ function pick(id: string): void {
       <RichText :text="question.stem" />
     </p>
 
-    <div v-if="question.mcq" class="flex flex-col gap-3" role="group" aria-label="Pilihan jawapan">
+    <StimulusView
+      v-if="question.stemImage"
+      :stimulus="question.stemImage"
+      data-testid="stem-image"
+    />
+
+    <p
+      v-if="stimulusBlocked"
+      class="text-caption text-error"
+      role="status"
+      data-testid="need-stimulus"
+    >
+      {{ qdCopy.needStimulus }}
+    </p>
+
+    <McqOptions
+      v-if="question.mcq && optionPictures"
+      :options="optionData"
+      :model-value="chosenOption"
+      :disabled="disabled"
+      :name="`mcq-${question.id}`"
+      :reveal="!!check"
+      :correct-id="correctOption"
+      @update:model-value="!disabled && pick($event)"
+    />
+
+    <div
+      v-else-if="question.mcq"
+      class="flex flex-col gap-3"
+      role="group"
+      aria-label="Pilihan jawapan"
+    >
       <DsQuizOption
         v-for="(o, i) in question.mcq.options"
         :key="o.id"

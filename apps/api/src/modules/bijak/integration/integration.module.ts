@@ -2,6 +2,7 @@ import { Inject, Module, type OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 import { CurriculumModule } from '../../curriculum'
+import { FilesModule } from '../../files'
 import { GamificationModule, GamificationPorts } from '../../gamification'
 import { PracticeModule } from '../../practice'
 import { PracticeAggregateService } from '../../practice/aggregate'
@@ -50,7 +51,7 @@ import { PocBijakQuestionSource } from './poc-question-source'
  *   eligible", `getMany` omits them) and Jana's pool is empty (422 SHORTAGE); BE-09 questions work either way.
  */
 @Module({
-  imports: [BijakPapersModule, BijakAttemptsModule, PracticeModule, WalletModule, QuestionsModule, CurriculumModule, PerformanceModule, GamificationModule],
+  imports: [BijakPapersModule, BijakAttemptsModule, PracticeModule, WalletModule, QuestionsModule, CurriculumModule, PerformanceModule, GamificationModule, FilesModule],
   providers: [WalletBijakReward, WalletPracticeReward, PracticeFactsAdapter, Be09BijakQuestionSource, PrismaBijakAggregate],
 })
 export class BijakIntegrationModule implements OnModuleInit {

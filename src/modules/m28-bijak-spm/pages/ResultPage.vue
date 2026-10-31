@@ -19,18 +19,22 @@ import GenerateShortageAlert from '../components/GenerateShortageAlert.vue'
 import KeywordSuggestion from '../components/KeywordSuggestion.vue'
 import PartResultCard from '../components/PartResultCard.vue'
 import PastSittingsLink from '../components/PastSittingsLink.vue'
+import ResultGroup from '../components/ResultGroup.vue'
 import RichText from '../components/RichText.vue'
 import SelfMarkControl from '../components/SelfMarkControl.vue'
+import StimulusView from '../components/StimulusView.vue'
 import { needsAttention, sectionRuleLine } from '../domain/paper-model'
 import type { ReviewPart } from '../domain/semakan'
 import type {
   AttemptResult,
+  GroupView,
   PartResult,
   QuestionResult,
   QuestionView,
   SubjectCode,
 } from '../domain/types'
 import { rewardItems } from '../lib/rewards'
+import { stimuliOf } from '../lib/stimulus-data'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
 import { bijakServer } from '../server/client'
 
@@ -100,6 +104,23 @@ const shown = computed<QuestionResult[]>(() =>
     return filter.value === 'semua' || needsAttention(q)
   }),
 )
+
+/**
+ * The shown questions in reading order, consecutive members of one stimulus group gathered into ONE block: the
+ * group stimuli are drawn once above all its members (D90), never once per question.
+ */
+const blocks = computed(() => {
+  const groupOf = new Map<string, GroupView>()
+  for (const g of data.value?.paper.groups ?? []) for (const id of g.questionIds) groupOf.set(id, g)
+  const out: { key: string; group?: GroupView; items: QuestionResult[] }[] = []
+  for (const q of shown.value) {
+    const g = groupOf.get(q.questionId)
+    const last = out[out.length - 1]
+    if (g && last?.group?.id === g.id) last.items.push(q)
+    else out.push({ key: `${g?.id ?? 'q'}:${q.questionId}`, group: g, items: [q] })
+  }
+  return out
+})
 
 /** Topics where the most marks were lost (US-21). */
 const weakTopics = computed(() => {
@@ -338,7 +359,17 @@ const home = computed(() => landingPath.value || '/dashboard')
         <h2 id="h-questions" class="text-heading text-highlighted">Semakan soalan</h2>
         <UTabs v-model="filter" :items="filterItems" :content="false" />
         <p v-if="!shown.length" class="text-body text-muted">Tiada soalan dalam paparan ini.</p>
-        <UCard v-for="q in shown" :key="q.questionId" :data-testid="`result-q-${q.number}`">
+        <component
+          :is="b.group ? ResultGroup : 'div'"
+          v-for="b in blocks"
+          :key="b.key"
+          v-bind="
+            b.group
+              ? { groupId: b.group.id, stimuli: stimuliOf(b.group) }
+              : { class: 'flex flex-col gap-3' }
+          "
+        >
+        <UCard v-for="q in b.items" :key="q.questionId" :data-testid="`result-q-${q.number}`">
           <details>
             <summary
               class="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-body text-highlighted"
@@ -355,6 +386,10 @@ const home = computed(() => landingPath.value || '/dashboard')
               <p v-if="questionMap.get(q.questionId)?.stem" class="text-body text-default">
                 <RichText :text="questionMap.get(q.questionId)!.stem" />
               </p>
+              <StimulusView
+                v-if="questionMap.get(q.questionId)?.stemImage"
+                :stimulus="questionMap.get(q.questionId)!.stemImage!"
+              />
               <PartResultCard
                 v-for="p in q.parts"
                 :key="p.partId"
@@ -373,6 +408,7 @@ const home = computed(() => landingPath.value || '/dashboard')
             </div>
           </details>
         </UCard>
+        </component>
       </section>
     </template>
   </main>
