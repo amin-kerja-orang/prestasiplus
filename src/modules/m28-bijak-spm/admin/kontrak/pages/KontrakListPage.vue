@@ -151,7 +151,7 @@ function actionsOf(r: Row): RowAction[] {
     { label: 'Edit', icon: 'i-ph-pencil-simple', to: editTo(r), testid: `edit-${r.subject}-${r.kertas}` },
     { label: 'Pratonton Kolam', icon: 'i-ph-stack', to: poolTo(r), testid: `pool-${r.subject}-${r.kertas}` },
     {
-      label: 'Padam',
+      label: 'Padam kontrak',
       danger: true,
       icon: 'i-ph-trash',
       confirm: {

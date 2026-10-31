@@ -1068,6 +1068,12 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 | UX-7 | `Halaman` column becomes `Kandungan`; page tabs become `Kertas`/`Skema` document tabs | FD-10 |
 | UX-8 | Chip + sheet instead of sticky header for the shared stimulus below 1024px | AC-11.8; D-3 |
 | UX-9 | Kontrak: tabs per Bahagian and the evidence/Sahkan tab instead of one inline table and a free `Sumber` select | D75-D78 (approved K2 design) |
+| UX-34 | Kontrak screen title is "Kontrak Simulasi" and the list heading "Senarai Kontrak" (was "Kontrak Blueprint") | R1 Kontrak parity K1 (R1-21). The menu label is a separate change in `menu.ts` (C1) |
+| UX-35 | Create keeps two steps: "Baharu" > dialog "Kontrak Baharu" (Subjek, Kertas) > "Teruskan" > editor > "Simpan". V2 asks Subjek, Kertas, Sumber, Kod Kertas, Tempoh, Jumlah Markah, Nota in the dialog with "Cipta" | K2. A V3 contract needs sections before it can be stored, so the other fields are filled in the editor, where they already were. Button and dialog names follow V2 ("Baharu", "Kontrak Baharu") |
+| UX-36 | Editor field labels follow V2: "Kod Kertas", "Jumlah Markah", "Sumber" (was "Status"); Bahagian labels "Peraturan Pilihan" with "Jawab Semua" / "Pilih N", "Arahan (opsyenal)", "Mod Jawapan Dijangka". V3 keeps "Bilangan soalan (M)", "Jawab (N)" and the mark budget after choose-N, and has no "Tiada" rule option | K4, K6. The extra fields are needed by choose-N; "Boleh tanda auto" (K5) is T44 |
+| UX-37 | Flashes "Kontrak dicipta." (create), "Kontrak dikemas kini." (update), "Kontrak dipadam." (delete) replace the shared "Kontrak berjaya disimpan." | K7; V2 wording |
+| UX-38 | Delete is "Padam kontrak" (row action, button, section) with the V2 confirm "Padam kontrak ini?" and body about SEMUA kertas. V3 still blocks the delete when a Terbit paper depends on the contract (V2 only warns) | K8; the block is the approved V3 safety (dependentPaperCount) |
+| UX-39 | Banner "Kontrak dikongsi." with the shared publish-gate warning on the list and the editor; empty state "Tiada kontrak lagi. Cipta kontrak pertama menggunakan butang \"Baharu\" di atas." The duplicate guard keeps the V3 wording of D92(3) (K3) | K9, K10 |
 | UX-10 | Simulasi subheading corrected | FD-3 |
 | UX-11 | "Dilihat murid di" and `Tidak dihidangkan kerana …` on existing surfaces | FD-5 |
 

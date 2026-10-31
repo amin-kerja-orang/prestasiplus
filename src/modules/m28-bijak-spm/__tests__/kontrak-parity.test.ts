@@ -33,6 +33,7 @@ describe('V2 labels in the Kontrak screens', () => {
     expect(general).toContain('label="Sumber"')
     expect(general).not.toContain('label="Status"')
     expect(general).toContain('Semua Bahagian kontrak turut dipadam.')
+    expect(general).toContain('label="Padam kontrak"')
     const section = await read('../admin/kontrak/components/SectionEditor.vue')
     for (const l of ['Peraturan Pilihan', 'Arahan (opsyenal)', 'Mod Jawapan Dijangka', 'Jawab Semua', 'Pilih N'])
       expect(section).toContain(l)

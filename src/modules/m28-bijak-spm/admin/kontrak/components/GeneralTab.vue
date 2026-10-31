@@ -220,7 +220,7 @@ async function retire(): Promise<void> {
       </div>
     </DsFormSection>
 
-    <DsFormSection v-if="!isNew" title="Padam Kontrak" icon="trash" tone="error">
+    <DsFormSection v-if="!isNew" title="Padam kontrak" icon="trash" tone="error">
       <p class="text-body text-muted">
         Kontrak yang dipadam tidak lagi disenaraikan dan tidak boleh digunakan untuk kertas baharu.
       </p>
@@ -232,7 +232,7 @@ async function retire(): Promise<void> {
         Tidak boleh dipadam: {{ dependentPapers }} kertas Terbit bergantung pada kontrak ini.
       </p>
       <div>
-        <UButton color="error" variant="soft" class="min-h-11" icon="i-ph-trash" label="Padam Kontrak" :aria-disabled="dependentPapers > 0 ? 'true' : undefined" :aria-describedby="dependentPapers > 0 ? 'retire-blocked' : undefined" data-testid="retire" @click="retire" />
+        <UButton color="error" variant="soft" class="min-h-11" icon="i-ph-trash" label="Padam kontrak" :aria-disabled="dependentPapers > 0 ? 'true' : undefined" :aria-describedby="dependentPapers > 0 ? 'retire-blocked' : undefined" data-testid="retire" @click="retire" />
       </div>
     </DsFormSection>
   </div>
